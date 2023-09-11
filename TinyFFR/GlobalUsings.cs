@@ -1,0 +1,7 @@
+﻿// Created on 2023-09-10 by Ben Bowen
+// (c) Egodystonic / TinyFFR 2023
+
+global using System;
+global using System.Numerics;
+global using System.Runtime.CompilerServices;
+global using System.Runtime.InteropServices;
