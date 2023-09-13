@@ -53,5 +53,54 @@ public readonly partial struct Vect : IVect<Vect>, IComparable<Vect>, ICompariso
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect ConvertFromSpan(ReadOnlySpan<float> src) => new(new Vector3(src));
 
-	// TODO tostring and missing members
+	public override string ToString() => this.ToString(null, null);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vect Parse(string s, IFormatProvider? provider) => new(IVect.ParseVector3String(s, provider));
+
+	public static bool TryParse(string? s, IFormatProvider? provider, out Vect result) {
+		if (!IVect.TryParseVector3String(s, provider, out var vec3)) {
+			result = default;
+			return false;
+		}
+		else {
+			result = new(vec3);
+			return true;
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vect Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => new(IVect.ParseVector3String(s, provider));
+
+	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Vect result) {
+		if (!IVect.TryParseVector3String(s, provider, out var vec3)) {
+			result = default;
+			return false;
+		}
+		else {
+			result = new(vec3);
+			return true;
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool Equals(Vect other) => AsVector4.Equals(other.AsVector4);
+	public bool Equals(Vect other, float tolerance) {
+		return MathF.Abs(X - other.X) <= tolerance
+			&& MathF.Abs(Y - other.Y) <= tolerance
+			&& MathF.Abs(Z - other.Z) <= tolerance;
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool operator ==(Vect left, Vect right) => left.Equals(right);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool operator !=(Vect left, Vect right) => !left.Equals(right);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public override bool Equals(object? obj) => obj is Vect other && Equals(other);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public override int GetHashCode() => AsVector4.GetHashCode();
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static explicit operator Vect(Direction directionOperand) => new(directionOperand.AsVector4);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static explicit operator Vect(Location locationOperand) => new(locationOperand.AsVector4 with { W = WValue });
 }

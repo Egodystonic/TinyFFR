@@ -26,7 +26,7 @@ public interface IVect : ILinearAlgebraComposite {
 		s = s[1..]; // Assume starts with VectorStringPrefixChar
 
 		var indexOfSeparator = s.IndexOf(numberFormatter.NumberGroupSeparator);
-		var x = Single.Parse(s[..indexOfSeparator], provider);
+		var x = Single.Parse(s[..indexOfSeparator], provider); 
 		s = s[(indexOfSeparator + numberFormatter.NumberGroupSeparator.Length)..];
 
 		indexOfSeparator = s.IndexOf(numberFormatter.NumberGroupSeparator);

@@ -57,4 +57,54 @@ public readonly partial struct Direction : IVect<Direction> {
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction ConvertFromSpan(ReadOnlySpan<float> src) => FromVector3PreNormalized(src);
+
+	public override string ToString() => this.ToString(null, null);
+
+	/*
+	 * We don't use FromVector3PreNormalized for these methods that parse from a string because it's possible (likely?) that the
+	 * string representation has lost some precision and therefore the re-parsed value won't actually be unit-length.
+	 */
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Direction Parse(string s, IFormatProvider? provider) => new(IVect.ParseVector3String(s, provider));
+
+	public static bool TryParse(string? s, IFormatProvider? provider, out Direction result) {
+		if (!IVect.TryParseVector3String(s, provider, out var vec3)) {
+			result = default;
+			return false;
+		}
+		else {
+			result = new(vec3);
+			return true;
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Direction Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => new(IVect.ParseVector3String(s, provider));
+
+	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Direction result) {
+		if (!IVect.TryParseVector3String(s, provider, out var vec3)) {
+			result = default;
+			return false;
+		}
+		else {
+			result = new(vec3);
+			return true;
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool Equals(Direction other) => AsVector4.Equals(other.AsVector4);
+	public bool Equals(Direction other, float tolerance) {
+		return MathF.Abs(X - other.X) <= tolerance
+			&& MathF.Abs(Y - other.Y) <= tolerance
+			&& MathF.Abs(Z - other.Z) <= tolerance;
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool operator ==(Direction left, Direction right) => left.Equals(right);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool operator !=(Direction left, Direction right) => !left.Equals(right);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public override bool Equals(object? obj) => obj is Direction other && Equals(other);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public override int GetHashCode() => AsVector4.GetHashCode();
 }
