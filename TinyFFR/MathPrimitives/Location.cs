@@ -52,4 +52,50 @@ public readonly partial struct Location : IVect<Location> {
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Location ConvertFromSpan(ReadOnlySpan<float> src) => new(new Vector3(src));
+
+	public override string ToString() => this.ToString(null, null);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location Parse(string s, IFormatProvider? provider) => new(IVect.ParseVector3String(s, provider));
+
+	public static bool TryParse(string? s, IFormatProvider? provider, out Location result) {
+		if (!IVect.TryParseVector3String(s, provider, out var vec3)) {
+			result = default;
+			return false;
+		}
+		else {
+			result = new(vec3);
+			return true;
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => new(IVect.ParseVector3String(s, provider));
+
+	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Location result) {
+		if (!IVect.TryParseVector3String(s, provider, out var vec3)) {
+			result = default;
+			return false;
+		}
+		else {
+			result = new(vec3);
+			return true;
+		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool Equals(Location other) => AsVector4.Equals(other.AsVector4);
+	public bool Equals(Location other, float tolerance) {
+		return MathF.Abs(X - other.X) <= tolerance
+			&& MathF.Abs(Y - other.Y) <= tolerance
+			&& MathF.Abs(Z - other.Z) <= tolerance;
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool operator ==(Location left, Location right) => left.Equals(right);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool operator !=(Location left, Location right) => !left.Equals(right);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public override bool Equals(object? obj) => obj is Location other && Equals(other);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public override int GetHashCode() => AsVector4.GetHashCode();
 }
