@@ -42,6 +42,9 @@ public readonly partial struct Vect : IVect<Vect>, IComparable<Vect>, ICompariso
 	internal Vect(Vector4 v) { AsVector4 = v; }
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vect FromDirectionAndDistance(Direction direction, float distance) => direction * distance;
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect FromVector3(Vector3 v) => new(v);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

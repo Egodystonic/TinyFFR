@@ -23,7 +23,7 @@ partial struct Direction {
 	public Direction GetAnyPerpendicularDirection() {
 		return FromVector3PreNormalized(Vector3.Cross(
 			ToVector3(),
-			Y > X ? new Vector3(1f, 0f, 0f) : new Vector3(0f, 1f, 0f)
+			Z > X ? new Vector3(1f, 0f, 0f) : new Vector3(0f, 0f, 1f)
 		));
 	}
 	public Direction OrthogonalizedAgainst(Direction d) {
