@@ -12,10 +12,11 @@ public readonly partial struct Angle {
 	const float TauReciprocal = 1f / MathF.Tau;
 	const float RadiansToDegreesRatio = 360f / Tau;
 	const float DegreesToRadiansRatio = Tau / 360f;
-	public static readonly Angle None = FromFullTurnFraction(0f);
-	public static readonly Angle QuarterCircle = FromFullTurnFraction(0.25f);
-	public static readonly Angle HalfCircle = FromFullTurnFraction(0.5f);
-	public static readonly Angle ThreeQuarterCircle = FromFullTurnFraction(0.75f);
+	public static readonly Angle None = FromFractionOfFullCircle(0f);
+	public static readonly Angle QuarterCircle = FromFractionOfFullCircle(0.25f);
+	public static readonly Angle HalfCircle = FromFractionOfFullCircle(0.5f);
+	public static readonly Angle ThreeQuarterCircle = FromFractionOfFullCircle(0.75f);
+	public static readonly Angle PiRadians = FromRadians(MathF.PI);
 
 	public float AsRadians { get; init; }
 	public float AsDegrees {
@@ -24,20 +25,22 @@ public readonly partial struct Angle {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		init => AsRadians = value * DegreesToRadiansRatio;
 	}
-	public float AsFullTurnFraction {
+	public float AsFractionOfFullCircle {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsRadians * TauReciprocal;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		init => AsRadians = Tau * value;
 	}
 
+	public Angle(float fullCircleFraction) => AsFractionOfFullCircle = fullCircleFraction;
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle FromRadians(float radians) => new() { AsRadians = radians };
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle FromDegrees(float degrees) => new() { AsDegrees = degrees };
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle FromFullTurnFraction(float fullTurnFraction) => new() { AsFullTurnFraction = fullTurnFraction };
+	public static Angle FromFractionOfFullCircle(float fullCircleFraction) => new() { AsFractionOfFullCircle = fullCircleFraction };
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator Angle(float operand) => FromFullTurnFraction(operand);
+	public static implicit operator Angle(float operand) => FromFractionOfFullCircle(operand);
 }

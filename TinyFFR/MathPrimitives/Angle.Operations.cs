@@ -6,7 +6,6 @@ using static System.Numerics.Vector4;
 
 namespace Egodystonic.TinyFFR;
 
-partial struct Vect {
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect FromDirectionAndDistance(Direction direction, float distance) => direction * distance;
+partial struct Angle {
+	
 }

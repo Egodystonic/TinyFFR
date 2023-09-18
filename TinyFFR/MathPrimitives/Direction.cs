@@ -47,6 +47,13 @@ public readonly partial struct Direction : IVect<Direction> {
 	internal Direction(Vector4 v) { AsVector4 = v; }
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Direction FromVector3PreNormalized(float x, float y, float z) => FromVector3PreNormalized(new Vector3(x, y, z));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Direction FromVector3PreNormalized(ReadOnlySpan<float> xyz) => FromVector3PreNormalized(new Vector3(xyz));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Direction FromVector3PreNormalized(Vector3 v) => new(new Vector4(v, WValue));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromVector3(Vector3 v) => new(v);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
