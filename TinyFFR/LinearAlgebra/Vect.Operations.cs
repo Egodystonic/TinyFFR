@@ -55,6 +55,9 @@ partial struct Vect {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect WithLength(float length) => Direction * length;
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect RotateBy(Rotation rotation) => rotation.Rotate(this);
+
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator *(Vect vectOperand, float scalarOperand) => vectOperand.ScaledBy(scalarOperand);

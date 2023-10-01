@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR;
  * Does a Location actually equal a Direction even if their XYZ components are identical?
  * If users really just want equality of the components they can use `ToVector3().Equals(other.ToVector3())` which is more explicit.
  */
-public interface IVect : ILinearAlgebraComposite {
+public interface IVect : ILinearAlgebraConstruct {
 	internal const char VectorStringPrefixChar = '<';
 	internal const char VectorStringSuffixChar = '>';
 
@@ -58,7 +58,7 @@ public interface IVect : ILinearAlgebraComposite {
 	}
 }
 
-public interface IVect<TSelf> : IVect, ILinearAlgebraComposite<TSelf>, IToleranceEquatable<TSelf>, IEqualityOperators<TSelf, TSelf, bool> where TSelf : IVect<TSelf> {
+public interface IVect<TSelf> : IVect, ILinearAlgebraConstruct<TSelf> where TSelf : IVect<TSelf> {
 	static abstract TSelf FromVector3(Vector3 v);
 }
 
