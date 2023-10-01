@@ -19,7 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="LinearAlgebra\" />
+    <Folder Include="Math\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TinyFFR\TinyFFR.csproj" />
   </ItemGroup>
 
 </Project>

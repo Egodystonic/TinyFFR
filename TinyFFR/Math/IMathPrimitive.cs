@@ -3,15 +3,15 @@
 
 namespace Egodystonic.TinyFFR;
 
-public interface ILinearAlgebraConstruct : ISpanFormattable {
+public interface IMathPrimitive : ISpanFormattable {
 	
 }
 
-public interface ILinearAlgebraConstruct<TSelf> : ILinearAlgebraConstruct, 
+public interface IMathPrimitive<TSelf> : IMathPrimitive, 
 	ISpanParsable<TSelf>, 
 	ISpanConvertible<TSelf, float>,
 	IToleranceEquatable<TSelf>, 
 	IEqualityOperators<TSelf, TSelf, bool>
-	where TSelf : ILinearAlgebraConstruct<TSelf> {
+	where TSelf : IMathPrimitive<TSelf> {
 	
 }
