@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33414.496
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TinyFFR", "TinyFFR\TinyFFR.csproj", "{3A08F4EC-595C-499E-A2B4-95B471BB8670}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TinyFFR", "TinyFFR\TinyFFR.csproj", "{3A08F4EC-595C-499E-A2B4-95B471BB8670}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TinyFFR.Tests", "TinyFFR.Tests\TinyFFR.Tests.csproj", "{211B347D-9943-4223-B679-6107411FF253}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{3A08F4EC-595C-499E-A2B4-95B471BB8670}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3A08F4EC-595C-499E-A2B4-95B471BB8670}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3A08F4EC-595C-499E-A2B4-95B471BB8670}.Release|Any CPU.Build.0 = Release|Any CPU
+		{211B347D-9943-4223-B679-6107411FF253}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{211B347D-9943-4223-B679-6107411FF253}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{211B347D-9943-4223-B679-6107411FF253}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{211B347D-9943-4223-B679-6107411FF253}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

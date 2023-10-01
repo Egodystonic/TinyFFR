@@ -33,4 +33,16 @@ partial struct Direction {
 
 
 	public static Direction FromThirdOrthogonal(Direction ortho1, Direction ortho2) => FromVector3PreNormalized(Vector3.Cross(ortho1.ToVector3(), ortho2.ToVector3()));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Rotation operator >>(Direction start, Direction end) => Rotation.FromStartAndEndDirection(start, end);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Rotation operator <<(Direction end, Direction start) => Rotation.FromStartAndEndDirection(start, end);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Rotation RotationTo(Direction other) => Rotation.FromStartAndEndDirection(this, other);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Rotation RotationFrom(Direction other) => Rotation.FromStartAndEndDirection(other, this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction RotateBy(Rotation rotation) => rotation.Rotate(this);
 }

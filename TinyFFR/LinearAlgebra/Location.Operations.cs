@@ -18,7 +18,10 @@ partial struct Location {
 
 
 
-
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vect operator >>(Location start, Location end) => start.GetVectTo(end);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vect operator <<(Location end, Location start) => start.GetVectTo(end);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator -(Location lhs, Location rhs) => lhs.GetVectFrom(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

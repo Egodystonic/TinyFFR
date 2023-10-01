@@ -7,7 +7,7 @@ using static System.Numerics.Vector4;
 namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float), Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from float
-public readonly partial struct Angle {
+public readonly partial struct Angle : ILinearAlgebraConstruct<Angle> {
 	const float Tau = MathF.Tau;
 	const float TauReciprocal = 1f / MathF.Tau;
 	const float RadiansToDegreesRatio = 360f / Tau;
@@ -18,28 +18,28 @@ public readonly partial struct Angle {
 	public static readonly Angle ThreeQuarterCircle = FromFractionOfFullCircle(0.75f);
 	public static readonly Angle PiRadians = FromRadians(MathF.PI);
 
-	public float AsRadians { get; init; }
-	public float AsDegrees {
+	public float Radians { get; init; }
+	public float Degrees {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => AsRadians * RadiansToDegreesRatio;
+		get => Radians * RadiansToDegreesRatio;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => AsRadians = value * DegreesToRadiansRatio;
+		init => Radians = value * DegreesToRadiansRatio;
 	}
-	public float AsFractionOfFullCircle {
+	public float FractionOfFullCircle {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => AsRadians * TauReciprocal;
+		get => Radians * TauReciprocal;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => AsRadians = Tau * value;
+		init => Radians = Tau * value;
 	}
 
-	public Angle(float fullCircleFraction) => AsFractionOfFullCircle = fullCircleFraction;
+	public Angle(float fullCircleFraction) => FractionOfFullCircle = fullCircleFraction;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle FromRadians(float radians) => new() { AsRadians = radians };
+	public static Angle FromRadians(float radians) => new() { Radians = radians };
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle FromDegrees(float degrees) => new() { AsDegrees = degrees };
+	public static Angle FromDegrees(float degrees) => new() { Degrees = degrees };
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle FromFractionOfFullCircle(float fullCircleFraction) => new() { AsFractionOfFullCircle = fullCircleFraction };
+	public static Angle FromFractionOfFullCircle(float fullCircleFraction) => new(fullCircleFraction);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator Angle(float operand) => FromFractionOfFullCircle(operand);
