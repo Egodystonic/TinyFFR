@@ -8,7 +8,7 @@ using static System.Numerics.Vector4;
 namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Quaternion
-public readonly partial struct Rotation : ILinearAlgebraConstruct<Rotation> {
+public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 	public static readonly Rotation None = new(Quaternion.Identity);
 
 	internal readonly Quaternion AsQuaternion;
@@ -91,13 +91,13 @@ public readonly partial struct Rotation : ILinearAlgebraConstruct<Rotation> {
 		angle = Angle.FromRadians(halfAngleRadians * 2f);
 	}
 
-	public void ToYawPitchRoll(out Angle yawAngle, out Angle pitchAngle, out Angle rollAngle) {
-		var yawDir = new Direction(0f, 1f, 0f);
-		var pitchDir = new Direction(1f, 0f, 0f);
-		var rollDir = new Direction(0f, 0f, 1f);
-
-		yawAngle = yawDir.AngleTo(yawDir * this);
-	}
+	// public void ToYawPitchRoll(out Angle yawAngle, out Angle pitchAngle, out Angle rollAngle) {
+	// 	var yawDir = new Direction(0f, 1f, 0f);
+	// 	var pitchDir = new Direction(1f, 0f, 0f);
+	// 	var rollDir = new Direction(0f, 0f, 1f);
+	//
+	// 	yawAngle = yawDir.AngleTo(yawDir * this);
+	// } // TODO
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ReadOnlySpan<float> ConvertToSpan(in Rotation src) => MemoryMarshal.Cast<Rotation, float>(new ReadOnlySpan<Rotation>(src))[..4];

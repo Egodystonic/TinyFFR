@@ -42,12 +42,12 @@ partial struct Rotation {
 	public Rotation CombinedWith(Rotation other) => new(AsQuaternion * other.AsQuaternion);
 
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation operator *(Rotation rotation, float scalar) => rotation.ScaledBy(scalar);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation operator *(float scalar, Rotation rotation) => rotation.ScaledBy(scalar);
-	public Rotation ScaledBy(float scalar) {
-		var normalizedVectorPart = NormalizeOrZero(AsVector4 with { W = 0f });
-
-	}
+	// [MethodImpl(MethodImplOptions.AggressiveInlining)]
+	// public static Rotation operator *(Rotation rotation, float scalar) => rotation.ScaledBy(scalar);
+	// [MethodImpl(MethodImplOptions.AggressiveInlining)]
+	// public static Rotation operator *(float scalar, Rotation rotation) => rotation.ScaledBy(scalar);
+	// public Rotation ScaledBy(float scalar) {
+	// 	var normalizedVectorPart = NormalizeOrZero(AsVector4 with { W = 0f });
+	//
+	// } // TODO
 }

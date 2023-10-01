@@ -14,8 +14,8 @@ public readonly partial struct Direction : IVect<Direction> {
 	public static readonly Direction Backward = new(0f, 0f, -1f);
 	public static readonly Direction Up = new(0f, 1f, 0f);
 	public static readonly Direction Down = new(0f, -1f, 0f);
-	public static readonly Direction Left = new(-1f, 0f, 0f);
-	public static readonly Direction Right = new(1f, 0f, 0f);
+	public static readonly Direction Left = new(1f, 0f, 0f);
+	public static readonly Direction Right = new(-1f, 0f, 0f);
 
 	internal readonly Vector4 AsVector4;
 
