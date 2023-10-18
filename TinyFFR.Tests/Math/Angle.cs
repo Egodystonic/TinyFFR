@@ -31,48 +31,48 @@ class AngleTest {
 	public void PropertiesShouldCorrectlyConvertToAndFromRadians() {
 		Assert.AreEqual(0f, Angle.None.Radians, 0f);
 		Assert.AreEqual(0f, Angle.None.Degrees, 0f);
-		Assert.AreEqual(0f, Angle.None.CoefficientOfFullCircle, 0f);
+		Assert.AreEqual(0f, Angle.None.FullCircleFraction, 0f);
 
 		Assert.AreEqual(MathF.PI * 0.5f, Angle.QuarterCircle.Radians, 0f);
 		Assert.AreEqual(90f, Angle.QuarterCircle.Degrees, TestTolerance);
-		Assert.AreEqual(0.25f, Angle.QuarterCircle.CoefficientOfFullCircle, TestTolerance);
+		Assert.AreEqual(0.25f, Angle.QuarterCircle.FullCircleFraction, TestTolerance);
 		Assert.AreEqual(-MathF.PI * 0.5f, -Angle.QuarterCircle.Radians, 0f);
 		Assert.AreEqual(-90f, -Angle.QuarterCircle.Degrees, TestTolerance);
-		Assert.AreEqual(-0.25f, -Angle.QuarterCircle.CoefficientOfFullCircle, TestTolerance);
+		Assert.AreEqual(-0.25f, -Angle.QuarterCircle.FullCircleFraction, TestTolerance);
 
 		Assert.AreEqual(MathF.PI, Angle.HalfCircle.Radians, 0f);
 		Assert.AreEqual(180f, Angle.HalfCircle.Degrees, TestTolerance);
-		Assert.AreEqual(0.5f, Angle.HalfCircle.CoefficientOfFullCircle, TestTolerance);
+		Assert.AreEqual(0.5f, Angle.HalfCircle.FullCircleFraction, TestTolerance);
 		Assert.AreEqual(-MathF.PI, -Angle.HalfCircle.Radians, 0f);
 		Assert.AreEqual(-180f, -Angle.HalfCircle.Degrees, TestTolerance);
-		Assert.AreEqual(-0.5f, -Angle.HalfCircle.CoefficientOfFullCircle, TestTolerance);
+		Assert.AreEqual(-0.5f, -Angle.HalfCircle.FullCircleFraction, TestTolerance);
 
 		Assert.AreEqual(MathF.PI * 1.5f, Angle.ThreeQuarterCircle.Radians, 0f);
 		Assert.AreEqual(270f, Angle.ThreeQuarterCircle.Degrees, TestTolerance);
-		Assert.AreEqual(0.75f, Angle.ThreeQuarterCircle.CoefficientOfFullCircle, TestTolerance);
+		Assert.AreEqual(0.75f, Angle.ThreeQuarterCircle.FullCircleFraction, TestTolerance);
 		Assert.AreEqual(-MathF.PI * 1.5f, -Angle.ThreeQuarterCircle.Radians, 0f);
 		Assert.AreEqual(-270f, -Angle.ThreeQuarterCircle.Degrees, TestTolerance);
-		Assert.AreEqual(-0.75f, -Angle.ThreeQuarterCircle.CoefficientOfFullCircle, TestTolerance);
+		Assert.AreEqual(-0.75f, -Angle.ThreeQuarterCircle.FullCircleFraction, TestTolerance);
 
 		Assert.AreEqual(MathF.PI * 2f, Angle.FullCircle.Radians, 0f);
 		Assert.AreEqual(360f, Angle.FullCircle.Degrees, TestTolerance);
-		Assert.AreEqual(1f, Angle.FullCircle.CoefficientOfFullCircle, TestTolerance);
+		Assert.AreEqual(1f, Angle.FullCircle.FullCircleFraction, TestTolerance);
 		Assert.AreEqual(-MathF.PI * 2f, -Angle.FullCircle.Radians, 0f);
 		Assert.AreEqual(-360f, -Angle.FullCircle.Degrees, TestTolerance);
-		Assert.AreEqual(-1f, -Angle.FullCircle.CoefficientOfFullCircle, TestTolerance);
+		Assert.AreEqual(-1f, -Angle.FullCircle.FullCircleFraction, TestTolerance);
 
-		for (var f = -4f; f <= 4.05f; f += 0.05f) {
-			Assert.AreEqual(MathF.PI * 2f * f, new Angle(f).Radians, TestTolerance);
-			Assert.AreEqual(360f * f, new Angle(f).Degrees, TestTolerance);
-			Assert.AreEqual(f, new Angle(f).CoefficientOfFullCircle, TestTolerance);
+		for (var f = -720f; f <= 720f + 36f; f += 36f) {
+			Assert.AreEqual((MathF.Tau / 360f) * f, new Angle(f).Radians, TestTolerance);
+			Assert.AreEqual(f, new Angle(f).Degrees, TestTolerance);
+			Assert.AreEqual(new Fraction(f / 360f), new Angle(f).FullCircleFraction, TestTolerance);
 		}		
 	}
 
 	[Test]
 	public void ConstructorsAndConversionsShouldCorrectlyInitializeValue() {
-		for (var f = -4f; f <= 4.05f; f += 0.05f) {
-			AssertToleranceEquals(Angle.FromCoefficientOfFullCircle(f), new Angle(f), 0f);
-			AssertToleranceEquals(Angle.FromCoefficientOfFullCircle(f), f, 0f);
+		for (var f = -720f; f <= 720f + 36f; f += 36f) {
+			AssertToleranceEquals(Angle.FromDegrees(f), new Angle(f), 0f);
+			AssertToleranceEquals(Angle.FromDegrees(f), f, 0f);
 		}
 	}
 
@@ -90,8 +90,8 @@ class AngleTest {
 
 		// coefficient
 		for (var f = -2f; f < 2.05f; f += 0.05f) {
-			Assert.AreEqual(f, Angle.FromCoefficientOfFullCircle(f).CoefficientOfFullCircle, TestTolerance);
-			Assert.AreEqual(f, Angle.FromCoefficientOfFullCircle(Fraction.FromCoefficient(f)).CoefficientOfFullCircle, TestTolerance);
+			Assert.AreEqual(f, Angle.FromFullCircleFraction(f).FullCircleFraction, TestTolerance);
+			Assert.AreEqual(f, Angle.FromFullCircleFraction(Fraction.FromDecimal(f)).FullCircleFraction, TestTolerance);
 		}
 	}
 
@@ -106,16 +106,16 @@ class AngleTest {
 		Assert.AreEqual(Angle.QuarterCircle, Angle.FromAngleBetweenDirections(Direction.Backward, Direction.Left));
 		Assert.AreEqual(Angle.QuarterCircle, Angle.FromAngleBetweenDirections(Direction.Backward, Direction.Right));
 
-		Assert.AreEqual(Angle.None, Angle.FromAngleBetweenDirections(Direction.None, Direction.Forward));
-		Assert.AreEqual(Angle.None, Angle.FromAngleBetweenDirections(Direction.None, Direction.Backward));
-		Assert.AreEqual(Angle.None, Angle.FromAngleBetweenDirections(Direction.None, Direction.Left));
-		Assert.AreEqual(Angle.None, Angle.FromAngleBetweenDirections(Direction.None, Direction.Up));
+		var rot45AroundUp = Rotation.FromAngleAroundAxis(45f, Direction.Up);
+		var rotNeg45AroundUp = Rotation.FromAngleAroundAxis(-45f, Direction.Up);
 
-		var rot45AroundUp = Rotation.FromAngleAroundAxis(0.125f, Direction.Up);
-		var rotNeg45AroundUp = Rotation.FromAngleAroundAxis(-0.125f, Direction.Up);
+		AssertToleranceEquals(new Angle(45f), Angle.FromAngleBetweenDirections(Direction.Forward * rot45AroundUp, Direction.Forward), TestTolerance);
+		AssertToleranceEquals(new Angle(90f), Angle.FromAngleBetweenDirections(Direction.Forward * rot45AroundUp, Direction.Forward * rotNeg45AroundUp), TestTolerance);
 
-		Assert.AreEqual(new Angle(0.125f), Angle.FromAngleBetweenDirections(Direction.Forward * rot45AroundUp, Direction.Forward));
-		Assert.AreEqual(new Angle(0.25f), Angle.FromAngleBetweenDirections(Direction.Forward * rot45AroundUp, Direction.Forward * rotNeg45AroundUp));
+		// One using Wolfram Alpha as a sanity check (randomish vectors): https://www.wolframalpha.com/input?i=angle+between+%280.251398%2C+-0.967884%2C+0%29+and+%280.733632%2C+0.507899%2C+-0.451466%29
+		var d1 = new Direction(0.733632f, 0.507899f, -0.451466f);
+		var d2 = new Direction(0.251398f, -0.967884f, 0f);
+		AssertToleranceEquals(new Angle(107.888f), Angle.FromAngleBetweenDirections(d1, d2), TestTolerance);
 	}
 
 	[Test]
@@ -127,7 +127,7 @@ class AngleTest {
 			Assert.AreEqual(input, Angle.ConvertFromSpan(span));
 		}
 
-		for (var f = -2f; f < 2.05f; f += 0.05f) AssertIteration(f);
+		for (var f = -2f; f < 2.05f; f += 0.05f) AssertIteration(Angle.FromFullCircleFraction(f));
 
 		var noneSpan = Angle.ConvertToSpan(Angle.None);
 		var quarterSpan = Angle.ConvertToSpan(Angle.QuarterCircle);
@@ -240,9 +240,9 @@ class AngleTest {
 		Assert.AreNotEqual(Angle.None, Angle.QuarterCircle);
 		Assert.IsTrue(Angle.HalfCircle.Equals(Angle.HalfCircle));
 		Assert.IsFalse(Angle.FullCircle.Equals(Angle.HalfCircle));
-		Assert.IsTrue(Angle.HalfCircle == 0.5f);
+		Assert.IsTrue(Angle.HalfCircle == 180f);
 		Assert.IsFalse(Angle.FullCircle == Angle.HalfCircle);
-		Assert.IsFalse(Angle.HalfCircle != 0.5f);
+		Assert.IsFalse(Angle.HalfCircle != 180f);
 		Assert.IsTrue(Angle.FullCircle != Angle.HalfCircle);
 
 		Assert.IsTrue(Angle.None.Equals(Angle.None, 0f));
