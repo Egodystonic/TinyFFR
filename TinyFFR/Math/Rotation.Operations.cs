@@ -42,6 +42,7 @@ partial struct Rotation {
 	public Rotation CombinedWith(Rotation other) => new(AsQuaternion * other.AsQuaternion);
 
 
+
 	// [MethodImpl(MethodImplOptions.AggressiveInlining)]
 	// public static Rotation operator *(Rotation rotation, float scalar) => rotation.ScaledBy(scalar);
 	// [MethodImpl(MethodImplOptions.AggressiveInlining)]

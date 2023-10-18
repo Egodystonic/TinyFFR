@@ -7,7 +7,7 @@ namespace Egodystonic.TinyFFR;
 public readonly partial struct Fraction : IMathPrimitive<Fraction> {
 	public const string StringSuffix = " %";
 	public static readonly Fraction Full = new(1f);
-	public static readonly Fraction FullInverse = new(-1f);
+	public static readonly Fraction FullNegative = new(-1f);
 	public static readonly Fraction Zero = new(0f);
 
 	readonly float _asCoefficient;

@@ -56,7 +56,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 	internal Rotation(Quaternion q) { AsQuaternion = q; }
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation FromAngleAroundAxis(Direction axis, Angle angle) => new(Quaternion.CreateFromAxisAngle(axis.ToVector3(), angle.Radians));
+	public static Rotation FromAngleAroundAxis(Angle angle, Direction axis) => new(Quaternion.CreateFromAxisAngle(axis.ToVector3(), angle.Radians));
 
 	public static Rotation FromStartAndEndDirection(Direction startDirection, Direction endDirection) {
 		var dot = Dot(startDirection.AsVector4, endDirection.AsVector4);
@@ -65,7 +65,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 		// If we're rotating exactly 180 degrees there are infinitely many arcs of "shortest" path, so the math breaks down.
 		// Therefore we just pick any perpendicular vector and rotate around that.
 		var perpVec = startDirection.GetAnyPerpendicularDirection();
-		return FromAngleAroundAxis(perpVec, 0.5f);
+		return FromAngleAroundAxis(0.5f, perpVec);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

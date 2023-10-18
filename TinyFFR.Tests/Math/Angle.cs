@@ -77,7 +77,7 @@ class AngleTest {
 	}
 
 	[Test]
-	public void FactoryMethodsShouldCorrectlyInitializeValue() {
+	public void BasicFactoryMethodsShouldCorrectlyInitializeValue() {
 		// radians
 		for (var f = -MathF.Tau * 2f; f < MathF.Tau * 2.05f; f += MathF.Tau * 0.05f) {
 			Assert.AreEqual(f, Angle.FromRadians(f).Radians);
@@ -93,6 +93,29 @@ class AngleTest {
 			Assert.AreEqual(f, Angle.FromCoefficientOfFullCircle(f).CoefficientOfFullCircle, TestTolerance);
 			Assert.AreEqual(f, Angle.FromCoefficientOfFullCircle(Fraction.FromCoefficient(f)).CoefficientOfFullCircle, TestTolerance);
 		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateAngleBetweenDirections() {
+		Assert.AreEqual(Angle.None, Angle.FromAngleBetweenDirections(Direction.Forward, Direction.Forward));
+		Assert.AreEqual(Angle.HalfCircle, Angle.FromAngleBetweenDirections(Direction.Forward, Direction.Backward));
+		Assert.AreEqual(Angle.HalfCircle, Angle.FromAngleBetweenDirections(Direction.Right, Direction.Left));
+		Assert.AreEqual(Angle.HalfCircle, Angle.FromAngleBetweenDirections(Direction.Up, Direction.Down));
+		Assert.AreEqual(Angle.QuarterCircle, Angle.FromAngleBetweenDirections(Direction.Forward, Direction.Left));
+		Assert.AreEqual(Angle.QuarterCircle, Angle.FromAngleBetweenDirections(Direction.Forward, Direction.Right));
+		Assert.AreEqual(Angle.QuarterCircle, Angle.FromAngleBetweenDirections(Direction.Backward, Direction.Left));
+		Assert.AreEqual(Angle.QuarterCircle, Angle.FromAngleBetweenDirections(Direction.Backward, Direction.Right));
+
+		Assert.AreEqual(Angle.None, Angle.FromAngleBetweenDirections(Direction.None, Direction.Forward));
+		Assert.AreEqual(Angle.None, Angle.FromAngleBetweenDirections(Direction.None, Direction.Backward));
+		Assert.AreEqual(Angle.None, Angle.FromAngleBetweenDirections(Direction.None, Direction.Left));
+		Assert.AreEqual(Angle.None, Angle.FromAngleBetweenDirections(Direction.None, Direction.Up));
+
+		var rot45AroundUp = Rotation.FromAngleAroundAxis(0.125f, Direction.Up);
+		var rotNeg45AroundUp = Rotation.FromAngleAroundAxis(-0.125f, Direction.Up);
+
+		Assert.AreEqual(new Angle(0.125f), Angle.FromAngleBetweenDirections(Direction.Forward * rot45AroundUp, Direction.Forward));
+		Assert.AreEqual(new Angle(0.25f), Angle.FromAngleBetweenDirections(Direction.Forward * rot45AroundUp, Direction.Forward * rotNeg45AroundUp));
 	}
 
 	[Test]
@@ -153,5 +176,81 @@ class AngleTest {
 		AssertIteration(-Angle.FullCircle * 2f, "-720");
 	}
 
-	// TODO next step I want to test bad inputs to TryFormat are handled correctly
+	[Test]
+	public void ShouldCorrectlyFormatToString() {
+		void AssertFail(Angle input, Span<char> destination, ReadOnlySpan<char> format, IFormatProvider? provider) {
+			Assert.AreEqual(false, input.TryFormat(destination, out _, format, provider));
+		}
+
+		void AssertSuccess(
+			Angle input, 
+			Span<char> destination, 
+			ReadOnlySpan<char> format, 
+			IFormatProvider? provider,
+			ReadOnlySpan<char> expectedDestSpanValue
+		) {
+			var actualReturnValue = input.TryFormat(destination, out var numCharsWritten, format, provider);
+			Assert.AreEqual(true, actualReturnValue);
+			Assert.AreEqual(expectedDestSpanValue.Length, numCharsWritten);
+			Assert.IsTrue(
+				expectedDestSpanValue.SequenceEqual(destination[..expectedDestSpanValue.Length]),
+				$"Destination as string was {new String(destination)}"
+			);
+		}
+
+		var fractionalAngle = Angle.FromDegrees(12.345f);
+
+		AssertFail(Angle.None, Array.Empty<char>(), "", null);
+		AssertFail(Angle.None, new char[1], "", null);
+		AssertSuccess(Angle.None, new char[2], "N0", null, "0" + Angle.StringSuffix);
+		AssertFail(fractionalAngle, new char[2], "N0", null);
+		AssertSuccess(fractionalAngle, new char[3], "N0", null, "12" + Angle.StringSuffix);
+		AssertFail(fractionalAngle, new char[4], "N1", null);
+		AssertSuccess(fractionalAngle, new char[5], "N1", null, "12.3" + Angle.StringSuffix);
+		AssertSuccess(fractionalAngle, new char[5], "N1", CultureInfo.CreateSpecificCulture("de-DE"), "12,3" + Angle.StringSuffix);
+		AssertSuccess(fractionalAngle, new char[20], "N5", null, "12.34500" + Angle.StringSuffix);
+	}
+
+	[Test]
+	public void ShouldCorrectlyParseFromString() {
+		void AssertIteration(string input, Angle expectedResult) {
+			var testCulture = CultureInfo.InvariantCulture;
+
+			AssertToleranceEquals(expectedResult, Angle.Parse(input, testCulture), TestTolerance);
+			AssertToleranceEquals(expectedResult, Angle.Parse(input.AsSpan(), testCulture), TestTolerance);
+			Assert.IsTrue(Angle.TryParse(input, testCulture, out var parseResult));
+			AssertToleranceEquals(expectedResult, parseResult, TestTolerance);
+			Assert.IsTrue(Angle.TryParse(input.AsSpan(), testCulture, out parseResult));
+			AssertToleranceEquals(expectedResult, parseResult, TestTolerance);
+		}
+
+		AssertIteration("180", Angle.HalfCircle);
+		AssertIteration("180.000", Angle.HalfCircle);
+		AssertIteration("180" + Angle.StringSuffix, Angle.HalfCircle);
+		AssertIteration("-180", -Angle.HalfCircle);
+		AssertIteration("-180.000", -Angle.HalfCircle);
+		AssertIteration("-180" + Angle.StringSuffix, -Angle.HalfCircle);
+		AssertIteration("123.456", Angle.FromDegrees(123.456f));
+		AssertIteration("-123.456" + Angle.StringSuffix, Angle.FromDegrees(-123.456f));
+	}
+
+	[Test]
+	public void ShouldCorrectlyImplementEqualityMembers() {
+		Assert.AreEqual(Angle.None, -Angle.None);
+		Assert.AreNotEqual(Angle.None, Angle.QuarterCircle);
+		Assert.IsTrue(Angle.HalfCircle.Equals(Angle.HalfCircle));
+		Assert.IsFalse(Angle.FullCircle.Equals(Angle.HalfCircle));
+		Assert.IsTrue(Angle.HalfCircle == 0.5f);
+		Assert.IsFalse(Angle.FullCircle == Angle.HalfCircle);
+		Assert.IsFalse(Angle.HalfCircle != 0.5f);
+		Assert.IsTrue(Angle.FullCircle != Angle.HalfCircle);
+
+		Assert.IsTrue(Angle.None.Equals(Angle.None, 0f));
+		Assert.IsTrue(Angle.HalfCircle.Equals(Angle.HalfCircle, 0f));
+		Assert.IsTrue(new Angle(0.5f).Equals(new Angle(0.4f), 0.11f));
+		Assert.IsFalse(new Angle(0.5f).Equals(new Angle(0.4f), 0.09f));
+		Assert.IsTrue(new Angle(-0.5f).Equals(new Angle(-0.4f), 0.11f));
+		Assert.IsFalse(new Angle(-0.5f).Equals(new Angle(-0.4f), 0.09f));
+		Assert.IsFalse(new Angle(-0.5f).Equals(new Angle(0.4f), 0.11f));
+	}
 }
