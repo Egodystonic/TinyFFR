@@ -13,5 +13,4 @@ public interface IMathPrimitive<TSelf> : IMathPrimitive,
 	IToleranceEquatable<TSelf>, 
 	IEqualityOperators<TSelf, TSelf, bool>
 	where TSelf : IMathPrimitive<TSelf> {
-	
 }

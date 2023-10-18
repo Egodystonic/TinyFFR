@@ -65,7 +65,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 		// If we're rotating exactly 180 degrees there are infinitely many arcs of "shortest" path, so the math breaks down.
 		// Therefore we just pick any perpendicular vector and rotate around that.
 		var perpVec = startDirection.GetAnyPerpendicularDirection();
-		return FromAngleAroundAxis(0.5f, perpVec);
+		return FromAngleAroundAxis(Angle.HalfCircle, perpVec);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -172,10 +172,10 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 		return true;
 	}
 
-	public static Rotation Parse(string s, IFormatProvider? provider) => Parse(s.AsSpan(), provider);
+	public static Rotation Parse(string s, IFormatProvider? provider = null) => Parse(s.AsSpan(), provider);
 	public static bool TryParse(string? s, IFormatProvider? provider, out Rotation result) => TryParse(s.AsSpan(), provider, out result);
 
-	public static Rotation Parse(ReadOnlySpan<char> s, IFormatProvider? provider) {
+	public static Rotation Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null) {
 		var numberFormatter = NumberFormatInfo.GetInstance(provider);
 		s = s[1..]; // Assume starts with VectorStringPrefixChar
 

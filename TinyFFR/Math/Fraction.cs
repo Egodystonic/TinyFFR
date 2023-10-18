@@ -10,40 +10,40 @@ public readonly partial struct Fraction : IMathPrimitive<Fraction> {
 	public static readonly Fraction FullNegative = new(-1f);
 	public static readonly Fraction Zero = new(0f);
 
-	readonly float _asCoefficient;
+	readonly float _asDecimal;
 
-	public float AsCoefficient {
+	public float AsDecimal {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => _asCoefficient;
+		get => _asDecimal;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => _asCoefficient = value;
+		init => _asDecimal = value;
 	}
 	public float AsPercentage {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => AsCoefficient * 100f;
+		get => AsDecimal * 100f;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => AsCoefficient = value * 0.01f;
+		init => AsDecimal = value * 0.01f;
 	}
 
-	public Fraction(float coefficient) => AsCoefficient = coefficient;
+	public Fraction(float @decimal) => AsDecimal = @decimal;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Fraction FromCoefficient(float coefficient) => new() { AsCoefficient = coefficient };
+	public static Fraction FromDecimal(float @decimal) => new() { AsDecimal = @decimal };
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Fraction FromRatio(float numerator, float denominator) => new() { AsCoefficient = MathF.Abs(denominator) >= 0.0000001f ? numerator / denominator : 0f };
+	public static Fraction FromRatio(float numerator, float denominator) => new() { AsDecimal = MathF.Abs(denominator) >= 0.0000001f ? numerator / denominator : 0f };
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Fraction FromPercentage(float percentage) => new() { AsPercentage = percentage };
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator Fraction(float operand) => FromCoefficient(operand);
+	public static implicit operator Fraction(float operand) => FromDecimal(operand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator float(Fraction operand) => operand.AsCoefficient;
+	public static implicit operator float(Fraction operand) => operand.AsDecimal;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ReadOnlySpan<float> ConvertToSpan(in Fraction src) => new(src._asCoefficient);
+	public static ReadOnlySpan<float> ConvertToSpan(in Fraction src) => new(src._asDecimal);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Fraction ConvertFromSpan(ReadOnlySpan<float> src) => FromCoefficient(src[0]);
+	public static Fraction ConvertFromSpan(ReadOnlySpan<float> src) => FromDecimal(src[0]);
 
 	public override string ToString() => ToString(null, null);
 
@@ -66,10 +66,10 @@ public readonly partial struct Fraction : IMathPrimitive<Fraction> {
 		return writeSuccess;
 	}
 
-	public static Fraction Parse(string s, IFormatProvider? provider) => Parse(s.AsSpan(), provider);
+	public static Fraction Parse(string s, IFormatProvider? provider = null) => Parse(s.AsSpan(), provider);
 	public static bool TryParse(string? s, IFormatProvider? provider, out Fraction result) => TryParse(s.AsSpan(), provider, out result);
 
-	public static Fraction Parse(ReadOnlySpan<char> s, IFormatProvider? provider) {
+	public static Fraction Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null) {
 		var indexOfSuffix = s.IndexOf(StringSuffix);
 
 		var percentage = indexOfSuffix >= 0
@@ -92,13 +92,13 @@ public readonly partial struct Fraction : IMathPrimitive<Fraction> {
 		return true;
 	}
 
-	public bool Equals(Fraction other, float tolerance) => MathF.Abs(_asCoefficient - other._asCoefficient) <= tolerance;
+	public bool Equals(Fraction other, float tolerance) => MathF.Abs(_asDecimal - other._asDecimal) <= tolerance;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool Equals(Fraction other) => _asCoefficient.Equals(other._asCoefficient);
+	public bool Equals(Fraction other) => _asDecimal.Equals(other._asDecimal);
 	public override bool Equals(object? obj) => obj is Fraction other && Equals(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public override int GetHashCode() => _asCoefficient.GetHashCode();
+	public override int GetHashCode() => _asDecimal.GetHashCode();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator ==(Fraction left, Fraction right) => left.Equals(right);

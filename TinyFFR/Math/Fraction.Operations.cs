@@ -5,13 +5,13 @@ namespace Egodystonic.TinyFFR;
 
 partial struct Fraction {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Fraction ClampZeroToFull() => new(Math.Clamp(AsCoefficient, Zero.AsCoefficient, Full.AsCoefficient));
+	public Fraction ClampZeroToFull() => new(Math.Clamp(AsDecimal, Zero.AsDecimal, Full.AsDecimal));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Fraction ClampFullNegativeToFull() => new(Math.Clamp(AsCoefficient, FullNegative.AsCoefficient, Full.AsCoefficient));
+	public Fraction ClampFullNegativeToFull() => new(Math.Clamp(AsDecimal, FullNegative.AsDecimal, Full.AsDecimal));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Fraction Clamp(Fraction min, Fraction max) => new(Math.Clamp(AsCoefficient, min.AsCoefficient, max.AsCoefficient));
+	public Fraction Clamp(Fraction min, Fraction max) => new(Math.Clamp(AsDecimal, min.AsDecimal, max.AsDecimal));
 
 	// TODO consider overrideable operators
 

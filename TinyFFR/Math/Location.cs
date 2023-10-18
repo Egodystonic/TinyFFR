@@ -56,7 +56,7 @@ public readonly partial struct Location : IVect<Location> {
 	public override string ToString() => this.ToString(null, null);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location Parse(string s, IFormatProvider? provider) => new(IVect.ParseVector3String(s, provider));
+	public static Location Parse(string s, IFormatProvider? provider = null) => new(IVect.ParseVector3String(s, provider));
 
 	public static bool TryParse(string? s, IFormatProvider? provider, out Location result) {
 		if (!IVect.TryParseVector3String(s, provider, out var vec3)) {
@@ -70,7 +70,7 @@ public readonly partial struct Location : IVect<Location> {
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => new(IVect.ParseVector3String(s, provider));
+	public static Location Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null) => new(IVect.ParseVector3String(s, provider));
 
 	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Location result) {
 		if (!IVect.TryParseVector3String(s, provider, out var vec3)) {

@@ -72,7 +72,7 @@ public readonly partial struct Direction : IVect<Direction> {
 	 * string representation has lost some precision and therefore the re-parsed value won't actually be unit-length.
 	 */
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction Parse(string s, IFormatProvider? provider) => new(IVect.ParseVector3String(s, provider));
+	public static Direction Parse(string s, IFormatProvider? provider = null) => new(IVect.ParseVector3String(s, provider));
 
 	public static bool TryParse(string? s, IFormatProvider? provider, out Direction result) {
 		if (!IVect.TryParseVector3String(s, provider, out var vec3)) {
@@ -86,7 +86,7 @@ public readonly partial struct Direction : IVect<Direction> {
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => new(IVect.ParseVector3String(s, provider));
+	public static Direction Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null) => new(IVect.ParseVector3String(s, provider));
 
 	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Direction result) {
 		if (!IVect.TryParseVector3String(s, provider, out var vec3)) {
