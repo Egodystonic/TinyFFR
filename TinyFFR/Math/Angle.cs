@@ -2,11 +2,12 @@
 // (c) Egodystonic / TinyFFR 2023
 
 using System.Globalization;
+using System.Numerics;
 
 namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float), Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from float
-public readonly partial struct Angle : IMathPrimitive<Angle> {
+public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>, IComparisonOperators<Angle, Angle, bool> {
 	public const string StringSuffix = "°";
 	const float Tau = MathF.Tau;
 	const float TauReciprocal = 1f / MathF.Tau;
@@ -49,9 +50,37 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	public static Angle FromCoefficientOfFullCircle(float fullCircleCoefficient) => new(fullCircleCoefficient);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle FromCoefficientOfFullCircle(Fraction fullCircleFraction) => FromCoefficientOfFullCircle(fullCircleFraction.AsCoefficient);
+	public static Angle FromAngleBetweenDirections(Direction d1, Direction d2) => FromRadians(MathF.Acos(Vector4.Dot(d1.AsVector4, d2.AsVector4)));
+
+	/* I thought long and hard about whether this conversion should even exist and what it should assume the operand is.
+	 * Arguments for/against 'operand' being:
+	 * -- Coefficient of full circle:
+	 *		It would be nice to specify some things as fractions of a full turn. For example, if I want to turn 30%
+	 *		to the right, I could just specify a Rotation as 0.3f * Direction.Up.
+	 *		In the end though, allowing this via the Fraction type seemed like the best compromise.
+	 * -- Radians:
+	 *		It will probably be obvious to a sizable chunk of users using this API that this type most naturally
+	 *		represents a value in radians, so perhaps a natural conversion from radians made the most sense.
+	 *		However, this API (and library) is meant to be usable by people who don't have a strong background
+	 *		in maths; and the fact this this type is ultimately abstracting over a value in radians actually has
+	 *		a performance reasoning behind it more than anything (i.e. it makes it easy to feed in to underlying
+	 *		libraries that work with radians). Radians are ultimately probably the least user-friendly abstraction
+	 *		for encoding angles (from a software engineering perspective, not a math perspective) as they require
+	 *		thinking in multiples of pi. It's tedious to think of "rotating 30% to the right" and having to work that
+	 *		out as Pi * 0.15f IMO. Implicit conversions are basically convenience methods so offering a
+	 *		convenience method that requires you to write "MathF.PI * " every time you want to specify an angle constant
+	 *		is dumb, IMO. Perhaps it's naive but if I write this API/type correctly it should be possible to use the
+	 *		entire library oblivious to the idea of radians, and that's what I'm aiming for.
+	 * -- Degrees:
+	 *		Degrees are probably the unit that most people in the world are most familiar with. It's also the unit I
+	 *		chose to output in ToString & related methods for that reason. I think it would be odd to be able to
+	 *		specify a 
+	 */
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static implicit operator Angle(float operand) => FromDegrees(operand);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator Angle(float operand) => FromCoefficientOfFullCircle(operand);
+	public static implicit operator Angle(Fraction operand) => FromCoefficientOfFullCircle(operand);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ReadOnlySpan<float> ConvertToSpan(in Angle src) => new(src._asRadians);

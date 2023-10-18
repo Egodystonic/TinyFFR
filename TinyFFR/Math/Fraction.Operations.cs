@@ -8,7 +8,7 @@ partial struct Fraction {
 	public Fraction ClampZeroToFull() => new(Math.Clamp(AsCoefficient, Zero.AsCoefficient, Full.AsCoefficient));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Fraction ClampFullInverseToFull() => new(Math.Clamp(AsCoefficient, FullInverse.AsCoefficient, Full.AsCoefficient));
+	public Fraction ClampFullNegativeToFull() => new(Math.Clamp(AsCoefficient, FullNegative.AsCoefficient, Full.AsCoefficient));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Fraction Clamp(Fraction min, Fraction max) => new(Math.Clamp(AsCoefficient, min.AsCoefficient, max.AsCoefficient));

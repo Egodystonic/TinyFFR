@@ -16,7 +16,8 @@ partial struct Direction {
 
 
 
-	public Angle AngleTo(Direction other) => Angle.FromRadians(MathF.Acos(Dot(AsVector4, other.AsVector4)));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(Direction other) => Angle.FromAngleBetweenDirections(this, other);
 
 
 
@@ -42,6 +43,11 @@ partial struct Direction {
 	public Rotation RotationTo(Direction other) => Rotation.FromStartAndEndDirection(this, other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Rotation RotationFrom(Direction other) => Rotation.FromStartAndEndDirection(other, this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Rotation operator *(Direction axis, Angle angle) => Rotation.FromAngleAroundAxis(angle, axis);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Rotation operator *(Angle angle, Direction axis) => Rotation.FromAngleAroundAxis(angle, axis);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction RotateBy(Rotation rotation) => rotation.Rotate(this);
