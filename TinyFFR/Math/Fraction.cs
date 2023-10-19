@@ -3,8 +3,9 @@
 
 namespace Egodystonic.TinyFFR;
 
-[StructLayout(LayoutKind.Sequential, Size = sizeof(float), Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from float
-public readonly partial struct Fraction : IMathPrimitive<Fraction> {
+// TODO is there actually much value to this over instead just some util methods to convert to/from string and percentage etc?
+[StructLayout(LayoutKind.Sequential, Size = sizeof(float), Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from float. Describe this as a light wrapper around float that provides some nice tostring
+public readonly partial struct Fraction : IMathPrimitive<Fraction>, IComparable<Fraction>, IComparisonOperators<Fraction, Fraction, bool> {
 	public const string StringSuffix = " %";
 	public static readonly Fraction Full = new(1f);
 	public static readonly Fraction FullNegative = new(-1f);
@@ -16,21 +17,23 @@ public readonly partial struct Fraction : IMathPrimitive<Fraction> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _asDecimal;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => _asDecimal = value;
+		private init => _asDecimal = value;
 	}
 	public float AsPercentage {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsDecimal * 100f;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => AsDecimal = value * 0.01f;
+		private init => AsDecimal = value * 0.01f;
 	}
 
 	public Fraction(float @decimal) => AsDecimal = @decimal;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Fraction FromDecimal(float @decimal) => new() { AsDecimal = @decimal };
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Fraction FromRatio(float numerator, float denominator) => new() { AsDecimal = MathF.Abs(denominator) >= 0.0000001f ? numerator / denominator : 0f };
+	public static Fraction FromRatio(float numerator, float denominator) => FromDecimal(numerator / denominator);
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Fraction FromPercentage(float percentage) => new() { AsPercentage = percentage };
 

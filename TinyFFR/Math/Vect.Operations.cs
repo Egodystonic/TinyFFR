@@ -15,7 +15,10 @@ partial struct Vect {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsVector4.LengthSquared();
 	}
-
+	public bool IsNormalized {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => MathF.Abs(1f - LengthSquared) < 0.001f;
+	}
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -42,6 +45,10 @@ partial struct Vect {
 
 
 	public Direction Direction {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(NormalizeOrZero(AsVector4));
+	}
+	public Vect Normalized {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(NormalizeOrZero(AsVector4));
 	}

@@ -6,17 +6,12 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture]
-class AngleTest {
+partial class AngleTest {
 	const float TestTolerance = 0.001f;
-
-	[SetUp]
-	public void SetUpTest() {
-
-	}
 
 	[Test]
 	public void StaticReadonlyMembersShouldBeCorrectlyInitialized() {
-		AssertToleranceEquals(Angle.FromRadians(0f), Angle.None, 0f);
+		AssertToleranceEquals(Angle.FromRadians(0f), Angle.Zero, 0f);
 		AssertToleranceEquals(Angle.FromRadians(MathF.PI * 0.5f), Angle.QuarterCircle, TestTolerance);
 		AssertToleranceEquals(Angle.FromRadians(MathF.PI), Angle.HalfCircle, TestTolerance);
 		AssertToleranceEquals(Angle.FromRadians(MathF.PI * 1.5f), Angle.ThreeQuarterCircle, TestTolerance);
@@ -29,9 +24,9 @@ class AngleTest {
 
 	[Test]
 	public void PropertiesShouldCorrectlyConvertToAndFromRadians() {
-		Assert.AreEqual(0f, Angle.None.Radians, 0f);
-		Assert.AreEqual(0f, Angle.None.Degrees, 0f);
-		Assert.AreEqual(0f, Angle.None.FullCircleFraction, 0f);
+		Assert.AreEqual(0f, Angle.Zero.Radians, 0f);
+		Assert.AreEqual(0f, Angle.Zero.Degrees, 0f);
+		Assert.AreEqual(0f, Angle.Zero.FullCircleFraction, 0f);
 
 		Assert.AreEqual(MathF.PI * 0.5f, Angle.QuarterCircle.Radians, 0f);
 		Assert.AreEqual(90f, Angle.QuarterCircle.Degrees, TestTolerance);
@@ -88,16 +83,28 @@ class AngleTest {
 			Assert.AreEqual(f, Angle.FromDegrees(f).Degrees, TestTolerance);
 		}
 
-		// coefficient
+		// circle fraction
 		for (var f = -2f; f < 2.05f; f += 0.05f) {
 			Assert.AreEqual(f, Angle.FromFullCircleFraction(f).FullCircleFraction, TestTolerance);
 			Assert.AreEqual(f, Angle.FromFullCircleFraction(Fraction.FromDecimal(f)).FullCircleFraction, TestTolerance);
+		}
+
+		// sine
+		for (var f = -2f; f < 2.05f; f += 0.05f) {
+			if (f < -1f || f > 1f) Assert.Throws<ArgumentOutOfRangeException>(() => Angle.FromSine(f));
+			else Assert.AreEqual(Angle.FromRadians(MathF.Asin(f)), Angle.FromSine(f));
+		}
+
+		// cosine
+		for (var f = -2f; f < 2.05f; f += 0.05f) {
+			if (f < -1f || f > 1f) Assert.Throws<ArgumentOutOfRangeException>(() => Angle.FromCosine(f));
+			else Assert.AreEqual(Angle.FromRadians(MathF.Acos(f)), Angle.FromCosine(f));
 		}
 	}
 
 	[Test]
 	public void ShouldCorrectlyCalculateAngleBetweenDirections() {
-		Assert.AreEqual(Angle.None, Angle.FromAngleBetweenDirections(Direction.Forward, Direction.Forward));
+		Assert.AreEqual(Angle.Zero, Angle.FromAngleBetweenDirections(Direction.Forward, Direction.Forward));
 		Assert.AreEqual(Angle.HalfCircle, Angle.FromAngleBetweenDirections(Direction.Forward, Direction.Backward));
 		Assert.AreEqual(Angle.HalfCircle, Angle.FromAngleBetweenDirections(Direction.Right, Direction.Left));
 		Assert.AreEqual(Angle.HalfCircle, Angle.FromAngleBetweenDirections(Direction.Up, Direction.Down));
@@ -116,6 +123,21 @@ class AngleTest {
 		var d1 = new Direction(0.733632f, 0.507899f, -0.451466f);
 		var d2 = new Direction(0.251398f, -0.967884f, 0f);
 		AssertToleranceEquals(new Angle(107.888f), Angle.FromAngleBetweenDirections(d1, d2), TestTolerance);
+		AssertToleranceEquals(new Angle(107.888f), Angle.FromAngleBetweenDirections(d2, d1), TestTolerance);
+
+		// Check that the order of arguments makes no difference
+		for (var i = 0; i < Direction.AllCardinals.Count; ++i) {
+			for (var j = i; j < Direction.AllCardinals.Count; ++j) {
+				d1 = Direction.AllCardinals.ElementAt(i);
+				d2 = Direction.AllCardinals.ElementAt(j);
+				Assert.AreEqual(Angle.FromAngleBetweenDirections(d1, d2), Angle.FromAngleBetweenDirections(d2, d1));
+			}
+		}
+
+		Assert.Throws<ArgumentOutOfRangeException>(() => Angle.FromAngleBetweenDirections(Direction.None, Direction.Left));
+		Assert.Throws<ArgumentOutOfRangeException>(() => Angle.FromAngleBetweenDirections(Direction.Left, Direction.None));
+		Assert.Throws<ArgumentOutOfRangeException>(() => Angle.FromAngleBetweenDirections(Direction.FromVector3PreNormalized(1f, 1f, 1f), Direction.Left));
+		Assert.Throws<ArgumentOutOfRangeException>(() => Angle.FromAngleBetweenDirections(Direction.Left, Direction.FromVector3PreNormalized(1f, 1f, 1f)));
 	}
 
 	[Test]
@@ -129,7 +151,7 @@ class AngleTest {
 
 		for (var f = -2f; f < 2.05f; f += 0.05f) AssertIteration(Angle.FromFullCircleFraction(f));
 
-		var noneSpan = Angle.ConvertToSpan(Angle.None);
+		var noneSpan = Angle.ConvertToSpan(Angle.Zero);
 		var quarterSpan = Angle.ConvertToSpan(Angle.QuarterCircle);
 		var halfSpan = Angle.ConvertToSpan(Angle.HalfCircle);
 		var threeQuarterSpan = Angle.ConvertToSpan(Angle.ThreeQuarterCircle);
@@ -141,7 +163,7 @@ class AngleTest {
 		Assert.AreEqual(MathF.PI * 1.5f, threeQuarterSpan[0]);
 		Assert.AreEqual(MathF.PI * 2f, fullSpan[0]);
 
-		Assert.AreEqual(Angle.None, Angle.ConvertFromSpan(new ReadOnlySpan<float>(0f)));
+		Assert.AreEqual(Angle.Zero, Angle.ConvertFromSpan(new ReadOnlySpan<float>(0f)));
 		Assert.AreEqual(Angle.QuarterCircle, Angle.ConvertFromSpan(new ReadOnlySpan<float>(MathF.PI * 0.5f)));
 		Assert.AreEqual(Angle.HalfCircle, Angle.ConvertFromSpan(new ReadOnlySpan<float>(MathF.PI)));
 		Assert.AreEqual(Angle.ThreeQuarterCircle, Angle.ConvertFromSpan(new ReadOnlySpan<float>(MathF.PI * 1.5f)));
@@ -163,7 +185,7 @@ class AngleTest {
 			Assert.AreEqual(expectedValue, new String(formatSpan));
 		}
 
-		AssertIteration(Angle.None, "0");
+		AssertIteration(Angle.Zero, "0");
 		AssertIteration(Angle.QuarterCircle, "90");
 		AssertIteration(Angle.HalfCircle, "180");
 		AssertIteration(Angle.ThreeQuarterCircle, "270");
@@ -174,6 +196,8 @@ class AngleTest {
 		AssertIteration(-Angle.ThreeQuarterCircle, "-270");
 		AssertIteration(-Angle.FullCircle, "-360");
 		AssertIteration(-Angle.FullCircle * 2f, "-720");
+		AssertIteration(1080f, "1,080");
+		AssertIteration(-1080f, "-1,080");
 	}
 
 	[Test]
@@ -200,9 +224,9 @@ class AngleTest {
 
 		var fractionalAngle = Angle.FromDegrees(12.345f);
 
-		AssertFail(Angle.None, Array.Empty<char>(), "", null);
-		AssertFail(Angle.None, new char[1], "", null);
-		AssertSuccess(Angle.None, new char[2], "N0", null, "0" + Angle.StringSuffix);
+		AssertFail(Angle.Zero, Array.Empty<char>(), "", null);
+		AssertFail(Angle.Zero, new char[1], "", null);
+		AssertSuccess(Angle.Zero, new char[2], "N0", null, "0" + Angle.StringSuffix);
 		AssertFail(fractionalAngle, new char[2], "N0", null);
 		AssertSuccess(fractionalAngle, new char[3], "N0", null, "12" + Angle.StringSuffix);
 		AssertFail(fractionalAngle, new char[4], "N1", null);
@@ -236,8 +260,8 @@ class AngleTest {
 
 	[Test]
 	public void ShouldCorrectlyImplementEqualityMembers() {
-		Assert.AreEqual(Angle.None, -Angle.None);
-		Assert.AreNotEqual(Angle.None, Angle.QuarterCircle);
+		Assert.AreEqual(Angle.Zero, -Angle.Zero);
+		Assert.AreNotEqual(Angle.Zero, Angle.QuarterCircle);
 		Assert.IsTrue(Angle.HalfCircle.Equals(Angle.HalfCircle));
 		Assert.IsFalse(Angle.FullCircle.Equals(Angle.HalfCircle));
 		Assert.IsTrue(Angle.HalfCircle == 180f);
@@ -245,7 +269,7 @@ class AngleTest {
 		Assert.IsFalse(Angle.HalfCircle != 180f);
 		Assert.IsTrue(Angle.FullCircle != Angle.HalfCircle);
 
-		Assert.IsTrue(Angle.None.Equals(Angle.None, 0f));
+		Assert.IsTrue(Angle.Zero.Equals(Angle.Zero, 0f));
 		Assert.IsTrue(Angle.HalfCircle.Equals(Angle.HalfCircle, 0f));
 		Assert.IsTrue(new Angle(0.5f).Equals(new Angle(0.4f), 0.11f));
 		Assert.IsFalse(new Angle(0.5f).Equals(new Angle(0.4f), 0.09f));
