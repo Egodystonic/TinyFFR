@@ -16,6 +16,18 @@ partial struct Angle {
 
 
 
+	public Angle Absolute { // TODO make it clear that this is not the same as normalizing
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => FromRadians(MathF.Abs(_asRadians));
+	}
+	public Angle Normalized {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => FromRadians(MathUtils.TrueModulus(_asRadians, Tau));
+	}
+
+
+
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator *(Angle angle, float scalar) => angle.MultipliedBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -48,34 +60,29 @@ partial struct Angle {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => MathF.Cos(_asRadians);
 	}
-	// TODO Sine, Cosine, and other convenience properties
 
-
-
-	// TODO interactions with other types
-
-	// TODO consider overrideable operators
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle Clamp(Angle min, Angle max) => FromRadians(Math.Clamp(_asRadians, min._asRadians, max._asRadians));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle ClampZeroToFullCircle() => Clamp(None, FullCircle);
+	public Angle ClampZeroToHalfCircle() => Clamp(Zero, HalfCircle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle ClampZeroToFullCircle() => Clamp(Zero, FullCircle); // TODO make it clear that this is not the same as normalizing
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle ClampNegativeFullCircleToFullCircle() => Clamp(-FullCircle, FullCircle);
 
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int CompareTo(Angle other) => Radians.CompareTo(other.Radians);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool operator >(Angle left, Angle right) => left.Radians > right.Radians;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool operator >=(Angle left, Angle right) => left.Radians >= right.Radians;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool operator <(Angle left, Angle right) => left.Radians < right.Radians;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool operator <=(Angle left, Angle right) => left.Radians <= right.Radians;
 
-	// TODO parameter validation + exception throwing here and everywhere where it's relevant and not performance critical
-	// TODO and then check that validation in unit tests
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int CompareTo(Angle other) => _asRadians.CompareTo(other._asRadians);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool operator >(Angle left, Angle right) => left._asRadians > right._asRadians;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool operator >=(Angle left, Angle right) => left._asRadians >= right._asRadians;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool operator <(Angle left, Angle right) => left._asRadians < right._asRadians;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool operator <=(Angle left, Angle right) => left._asRadians <= right._asRadians;
 }

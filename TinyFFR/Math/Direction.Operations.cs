@@ -7,6 +7,12 @@ using static System.Numerics.Vector4;
 namespace Egodystonic.TinyFFR;
 
 partial struct Direction {
+	internal bool IsUnitLength {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => MathF.Abs(AsVector4.LengthSquared() - 1f) < 0.001f;
+	}
+
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator *(Direction directionOperand, float scalarOperand) => directionOperand.WithDistance(scalarOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -16,6 +22,8 @@ partial struct Direction {
 
 
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle operator %(Direction d1, Direction d2) => Angle.FromAngleBetweenDirections(d1, d2);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(Direction other) => Angle.FromAngleBetweenDirections(this, other);
 

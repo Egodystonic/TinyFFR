@@ -1,6 +1,7 @@
 ﻿// Created on 2023-09-05 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
+using System.Drawing;
 using System.Globalization;
 using System.Numerics;
 
@@ -13,7 +14,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>
 	const float TauReciprocal = 1f / MathF.Tau;
 	const float RadiansToDegreesRatio = 360f / Tau;
 	const float DegreesToRadiansRatio = Tau / 360f;
-	public static readonly Angle None = FromRadians(0f);
+	public static readonly Angle Zero = FromRadians(0f);
 	public static readonly Angle QuarterCircle = FromRadians(Tau * 0.25f);
 	public static readonly Angle HalfCircle = FromRadians(Tau * 0.5f);
 	public static readonly Angle ThreeQuarterCircle = FromRadians(Tau * 0.75f);
@@ -25,19 +26,19 @@ public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _asRadians;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => _asRadians = value;
+		private init => _asRadians = value;
 	}
 	public float Degrees {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Radians * RadiansToDegreesRatio;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => Radians = value * DegreesToRadiansRatio;
+		private init => Radians = value * DegreesToRadiansRatio;
 	}
 	public Fraction FullCircleFraction {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Radians * TauReciprocal;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => Radians = Tau * value;
+		private init => Radians = Tau * value;
 	}
 
 	// Chose degrees rather than radians to keep consistency with implicit conversion. See notes above implicit operator for more reasoning.
@@ -49,7 +50,22 @@ public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>
 	public static Angle FromDegrees(float degrees) => new() { Degrees = degrees };
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle FromFullCircleFraction(Fraction fullCircleFraction) => new() { FullCircleFraction = fullCircleFraction };
-	public static Angle FromAngleBetweenDirections(Direction d1, Direction d2) => FromRadians(MathF.Acos(Vector4.Dot(d1.AsVector4, d2.AsVector4)));
+	
+	public static Angle FromSine(float sine) {
+		if (sine < -1f || sine > 1f) throw new ArgumentOutOfRangeException(nameof(sine), sine, "Values outside range [-1, 1] are not permitted.");
+		return FromRadians(MathF.Asin(sine));
+	}
+
+	public static Angle FromCosine(float cosine) {
+		if (cosine < -1f || cosine > 1f) throw new ArgumentOutOfRangeException(nameof(cosine), cosine, "Values outside range [-1, 1] are not permitted.");
+		return FromRadians(MathF.Acos(cosine));
+	}
+
+	public static Angle FromAngleBetweenDirections(Direction d1, Direction d2) {
+		if (!d1.IsUnitLength) throw new ArgumentOutOfRangeException(nameof(d1), d1, $"Directions must not be {nameof(Direction.None)} or non-normalized.");
+		if (!d2.IsUnitLength) throw new ArgumentOutOfRangeException(nameof(d2), d2, $"Directions must not be {nameof(Direction.None)} or non-normalized.");
+		return FromCosine(Vector4.Dot(d1.AsVector4, d2.AsVector4));
+	}
 
 	/* I thought long and hard about whether this conversion should even exist and what it should assume the operand is.
 	 * Arguments for/against 'operand' being:
@@ -58,7 +74,8 @@ public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>
 	 *		to the right, I could just specify a Rotation as 0.3f * Direction.Up.
 	 *		In the end though, the static factory method is probably enough. I don't
 	 *		think there's a natural idea of a conversion between Fraction<->Angle without a context of what that
-	 *		means-- the name of the static factory method provides that context.
+	 *		means-- the name of the static factory method provides that context, but an implicit conversion leaves
+	 *		the reader of the code guessing/assuming.
 	 * -- Radians:
 	 *		It will probably be obvious to a sizable chunk of users using this API that this type most naturally
 	 *		represents a value in radians, so perhaps an implicit conversion from radians made the most sense.
@@ -69,9 +86,13 @@ public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>
 	 *		for encoding angles (from a software engineering perspective, not a math perspective) as they require
 	 *		thinking in multiples of pi. It's tedious to think of "rotating 30% to the right" and having to work that
 	 *		out as Pi * 0.15f IMO. Implicit conversions are basically convenience methods so offering a
-	 *		convenience method that requires you to write "MathF.PI * " every time you want to specify an angle constant
+	 *		convenience method that requires you to write "MathF.PI * " every time you want to specify an angle literal
 	 *		is a little contrived. Perhaps it's naive but if I write this API/type correctly it should be possible to use the
 	 *		entire library oblivious to the idea of radians, and that's what I'm aiming for.
+	 *
+	 *		I do foresee one group of users who would prefer this in radians-- people writing scientific/mathematical
+	 *		software who will be doing a lot of calculations in radians naturally anyway. To those people... Sorry :).
+	 *		Angle.FromRadians() will still be there for you!
 	 * -- Degrees:
 	 *		Degrees are probably the unit that most people in the world are most familiar with. It's also the unit I
 	 *		chose to output in ToString & related methods for that very reason. I think it would be odd to be able to
@@ -83,6 +104,8 @@ public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>
 	 *		-720f to 720f is a lot safer to manipulate than -4pi to 4pi and/or -2f to 2f). That positive falls on its
 	 *		arse once actually converted to Angle (radians under the hood) but at least it might encourage working in
 	 *		degrees naturally in places. Maybe.
+	 *		Ultimately the justification is more like "why did you choose degrees for Parse/ToString?" in this case...
+	 *		See below.
 	 *
 	 * Another note: I probably won't include the opposite implicit conversion (e.g. Angle->float) because I think it's
 	 * probably just error prone AF and I don't think specifying .Degrees is very onerous anyway. I actually don't think there's
@@ -91,6 +114,16 @@ public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>
 	 * everywhere so there shouldn't be much need to get a float value back out at all. The implicit conversion from
 	 * float->Angle is just something to help quickly specify Angle "literals"-- not a declaration that there is a pure
 	 * natural link between float and Angle. Angle to float makes a lot less sense for these reasons IMO.
+	 *
+	 * Finally, the reason for using degrees in the Parse/ToString methods instead of radians is basically the same
+	 * as what I touched upon above: I think radians are ugly and unintuitive to look at on their own, e.g. "3.66519" vs "210°".
+	 * Yes, you can make an educated guess usually by working out how far you are from/between 3.1415 or 6.283, but still, when
+	 * printing an Angle to the console or screen or whatever it's SO much nicer to see the value in degrees! We could also print both
+	 * I suppose, and in the future I might add format specifiers to let people override the ToString/Parse but the default will
+	 * remain as degrees.
+	 *
+	 * TLDR: Chose degrees for ToString/Parse because they're nicer to work with/print out than radians, and wanted the implicit
+	 * conversion to match the Parse (e.g. "270f" == "Angle.Parse("270")").
 	 */
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator Angle(float operand) => FromDegrees(operand);

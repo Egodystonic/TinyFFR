@@ -1,0 +1,5 @@
+﻿Parameter Checking / Validation:
+	General philosophy is to parameter validate/check only where the branching + checking will not dwarf the runtime cost of the method.
+	A starting rule-of-thumb is that if the method is inlinable we should consider skipping parameter validation.
+		However, this isn't always the case-- for example if the actual function body still invokes something costly or if the function is not expected to be called often, it's probably still worth validating.
+	Overall, the idea is that by validating wherever possible we can hopefully balance helping users catch mistakes without sacrificing performance.

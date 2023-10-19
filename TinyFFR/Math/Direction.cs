@@ -16,6 +16,7 @@ public readonly partial struct Direction : IVect<Direction> {
 	public static readonly Direction Down = new(0f, -1f, 0f);
 	public static readonly Direction Left = new(1f, 0f, 0f);
 	public static readonly Direction Right = new(-1f, 0f, 0f);
+	public static readonly IReadOnlyCollection<Direction> AllCardinals = new[] { Left, Right, Up, Down, Forward, Backward };
 
 	internal readonly Vector4 AsVector4;
 

@@ -49,8 +49,6 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Rotation() { AsQuaternion = Quaternion.Identity; }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Rotation(ReadOnlySpan<float> xyzw) : this(new Quaternion(xyzw[0], xyzw[1], xyzw[2], xyzw[3])) { }
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Rotation(float x, float y, float z, float w) : this(new Quaternion(x, y, z, w)) { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal Rotation(Quaternion q) { AsQuaternion = q; }
@@ -82,12 +80,11 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 		
 		if (halfAngleRadians < 0.0001f) {
 			axis = Direction.None;
-			angle = Angle.None;
+			angle = Angle.Zero;
 			return;
 		}
 
-		var cosecant = 1f / MathF.Sin(halfAngleRadians);
-		axis = Direction.FromVector3PreNormalized(new Vector3(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z) * cosecant);
+		axis = Direction.FromVector3PreNormalized(new Vector3(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z) / MathF.Sin(halfAngleRadians));
 		angle = Angle.FromRadians(halfAngleRadians * 2f);
 	}
 
@@ -103,7 +100,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 	public static ReadOnlySpan<float> ConvertToSpan(in Rotation src) => MemoryMarshal.Cast<Rotation, float>(new ReadOnlySpan<Rotation>(src))[..4];
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation ConvertFromSpan(ReadOnlySpan<float> src) => new(src);
+	public static Rotation ConvertFromSpan(ReadOnlySpan<float> src) => new(new Quaternion(src[0], src[1], src[2], src[3]));
 
 	public override string ToString() => ToString(null, null);
 
