@@ -9,32 +9,26 @@ namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Quaternion
 public readonly partial struct Rotation : IMathPrimitive<Rotation> {
+	public const string ToStringMiddleSection = " around ";
 	public static readonly Rotation None = new(Quaternion.Identity);
 
 	internal readonly Quaternion AsQuaternion;
 
-	public Direction Axis {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get {
-			ToAngleAroundAxis(out var result, out _);
-			return result;
-		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init {
-			AsQuaternion = Quaternion.CreateFromAxisAngle(value.ToVector3(), Angle.Radians);
-		}
-	}
-
 	public Angle Angle {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Angle.FromRadians(MathF.Acos(AsQuaternion.W));
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		init => AsQuaternion = Quaternion.CreateFromAxisAngle(Axis.ToVector3(), value.Radians);
+	}
+
+	public Direction Axis {
 		get {
-			ToAngleAroundAxis(out _, out var result);
-			return result;
+			var halfAngleRadians = MathF.Acos(AsQuaternion.W);
+			if (halfAngleRadians < 0.0001f) return Direction.None;
+			else return Direction.FromVector3PreNormalized(new Vector3(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z) / MathF.Sin(halfAngleRadians));
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init {
-			AsQuaternion = Quaternion.CreateFromAxisAngle(Axis.ToVector3(), value.Radians);
-		}
+		init => AsQuaternion = Quaternion.CreateFromAxisAngle(value.ToVector3(), Angle.Radians);
 	}
 	
 	internal Vector4 AsVector4 {
@@ -45,16 +39,20 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 	}
 
 	// TODO for the lerp/slerp ... We probably need to expose them here but I wonder if a dedicated Lerper object could be smarter about e.g. a 180deg rotation around an axis
+	// TODO I don't think a generalized lerper is the right thing here -- instead just provide a static method that helps lerp around an axis/angle (or provides something that helps with that to reduce calcuations)
+	// TODO A generalized interpolator type might be useful (research interface vs delegate and weigh against garbage management etc)-- this can abstract over functions and timing etc
+	// TODO interpolator/timeinterpolator -- interpolator should use a delegate* to get virtualisation for free; timeinterpolator maybe could optionally plug in to a global time ticker
+	// TODO will probably use an IInterpolatable
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Rotation() { AsQuaternion = Quaternion.Identity; }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Rotation(float x, float y, float z, float w) : this(new Quaternion(x, y, z, w)) { }
+	public Rotation(Angle angle, Direction axis) { AsQuaternion = Quaternion.CreateFromAxisAngle(axis.ToVector3(), angle.Radians); }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal Rotation(Quaternion q) { AsQuaternion = q; }
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation FromAngleAroundAxis(Angle angle, Direction axis) => new(Quaternion.CreateFromAxisAngle(axis.ToVector3(), angle.Radians));
+	public static Rotation FromAngleAroundAxis(Angle angle, Direction axis) => new(angle, axis);
 
 	public static Rotation FromStartAndEndDirection(Direction startDirection, Direction endDirection) {
 		var dot = Dot(startDirection.AsVector4, endDirection.AsVector4);
@@ -75,7 +73,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Quaternion ToQuaternion() => AsQuaternion; // Q: Why not just make AsQuaternion a public prop? A: To keep the "To<numericsTypeHere>" pattern consistent with vector abstraction types
 
-	public void ToAngleAroundAxis(out Direction axis, out Angle angle) {
+	public void ExtractAngleAndAxis(out Angle angle, out Direction axis) {
 		var halfAngleRadians = MathF.Acos(AsQuaternion.W);
 		
 		if (halfAngleRadians < 0.0001f) {
@@ -88,13 +86,15 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 		angle = Angle.FromRadians(halfAngleRadians * 2f);
 	}
 
-	// public void ToYawPitchRoll(out Angle yawAngle, out Angle pitchAngle, out Angle rollAngle) {
-	// 	var yawDir = new Direction(0f, 1f, 0f);
-	// 	var pitchDir = new Direction(1f, 0f, 0f);
-	// 	var rollDir = new Direction(0f, 0f, 1f);
-	//
-	// 	yawAngle = yawDir.AngleTo(yawDir * this);
-	// } // TODO
+	public void ToYawPitchRoll(out Angle yawAngle, out Angle pitchAngle, out Angle rollAngle) {
+		var yawDir = new Direction(0f, 1f, 0f);
+		var pitchDir = new Direction(1f, 0f, 0f);
+		var rollDir = new Direction(0f, 0f, 1f);
+	
+		yawAngle = yawDir.AngleTo(yawDir * this);
+		pitchAngle = pitchDir.AngleTo(pitchDir * this);
+		rollAngle = rollDir.AngleTo(rollDir * this);
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ReadOnlySpan<float> ConvertToSpan(in Rotation src) => MemoryMarshal.Cast<Rotation, float>(new ReadOnlySpan<Rotation>(src))[..4];
@@ -104,114 +104,55 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 
 	public override string ToString() => ToString(null, null);
 
-	public string ToString(string? format, IFormatProvider? formatProvider) => AsVector4.ToString(format, formatProvider);
+	public string ToString(string? format, IFormatProvider? formatProvider) => $"{Angle.ToString(format, formatProvider)}{ToStringMiddleSection}{Axis.ToString(format, formatProvider)}";
 
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
-		var numberFormatter = NumberFormatInfo.GetInstance(provider);
+		ExtractAngleAndAxis(out var angle, out var axis);
 		charsWritten = 0;
 		// ReSharper disable once InlineOutVariableDeclaration This is neater
 		int tryWriteCharsWrittenOutVar;
 		// ReSharper disable once JoinDeclarationAndInitializer This is neater
 		bool writeSuccess;
 
-		// <
-		if (destination.Length == 0) return false;
-		destination[0] = IVect.VectorStringPrefixChar;
-		charsWritten++;
-		destination = destination[1..];
-
-		// X
-		writeSuccess = AsQuaternion.X.TryFormat(destination, out tryWriteCharsWrittenOutVar, format, provider);
+		// Angle
+		writeSuccess = angle.TryFormat(destination, out tryWriteCharsWrittenOutVar, format, provider);
 		charsWritten += tryWriteCharsWrittenOutVar;
 		if (!writeSuccess) return false;
 		destination = destination[tryWriteCharsWrittenOutVar..];
 
-		// ,
-		writeSuccess = destination.TryWrite($"{numberFormatter.NumberGroupSeparator} ", out tryWriteCharsWrittenOutVar);
+		// Middle Section
+		writeSuccess = destination.TryWrite(provider, $"{ToStringMiddleSection}", out tryWriteCharsWrittenOutVar);
 		charsWritten += tryWriteCharsWrittenOutVar;
 		if (!writeSuccess) return false;
 		destination = destination[tryWriteCharsWrittenOutVar..];
 
-		// Y
-		writeSuccess = AsQuaternion.Y.TryFormat(destination, out tryWriteCharsWrittenOutVar, format, provider);
+		// Axis
+		writeSuccess = axis.TryFormat(destination, out tryWriteCharsWrittenOutVar, format, provider);
 		charsWritten += tryWriteCharsWrittenOutVar;
-		if (!writeSuccess) return false;
-		destination = destination[tryWriteCharsWrittenOutVar..];
-
-		// ,
-		writeSuccess = destination.TryWrite($"{numberFormatter.NumberGroupSeparator} ", out tryWriteCharsWrittenOutVar);
-		charsWritten += tryWriteCharsWrittenOutVar;
-		if (!writeSuccess) return false;
-		destination = destination[tryWriteCharsWrittenOutVar..];
-
-		// Z
-		writeSuccess = AsQuaternion.Z.TryFormat(destination, out tryWriteCharsWrittenOutVar, format, provider);
-		charsWritten += tryWriteCharsWrittenOutVar;
-		if (!writeSuccess) return false;
-		destination = destination[tryWriteCharsWrittenOutVar..];
-
-		// ,
-		writeSuccess = destination.TryWrite($"{numberFormatter.NumberGroupSeparator} ", out tryWriteCharsWrittenOutVar);
-		charsWritten += tryWriteCharsWrittenOutVar;
-		if (!writeSuccess) return false;
-		destination = destination[tryWriteCharsWrittenOutVar..];
-
-		// W
-		writeSuccess = AsQuaternion.W.TryFormat(destination, out tryWriteCharsWrittenOutVar, format, provider);
-		charsWritten += tryWriteCharsWrittenOutVar;
-		if (!writeSuccess) return false;
-		destination = destination[tryWriteCharsWrittenOutVar..];
-
-		// >
-		if (destination.Length == 0) return false;
-		destination[0] = IVect.VectorStringSuffixChar;
-		charsWritten++;
-		return true;
+		return writeSuccess;
 	}
 
 	public static Rotation Parse(string s, IFormatProvider? provider = null) => Parse(s.AsSpan(), provider);
 	public static bool TryParse(string? s, IFormatProvider? provider, out Rotation result) => TryParse(s.AsSpan(), provider, out result);
 
 	public static Rotation Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null) {
-		var numberFormatter = NumberFormatInfo.GetInstance(provider);
-		s = s[1..]; // Assume starts with VectorStringPrefixChar
-
-		var indexOfSeparator = s.IndexOf(numberFormatter.NumberGroupSeparator);
-		var x = Single.Parse(s[..indexOfSeparator], provider);
-		s = s[(indexOfSeparator + numberFormatter.NumberGroupSeparator.Length)..];
-
-		indexOfSeparator = s.IndexOf(numberFormatter.NumberGroupSeparator);
-		var y = Single.Parse(s[..indexOfSeparator], provider);
-		s = s[(indexOfSeparator + numberFormatter.NumberGroupSeparator.Length)..];
-
-		indexOfSeparator = s.IndexOf(numberFormatter.NumberGroupSeparator);
-		var z = Single.Parse(s[..indexOfSeparator], provider);
-		s = s[(indexOfSeparator + numberFormatter.NumberGroupSeparator.Length)..];
-
-		var w = Single.Parse(s[..^1], provider); // Assume ends with VectorStringSuffixChar
-
-		return new(x, y, z, w);
+		var indexOfMiddlePart = s.IndexOf(ToStringMiddleSection);
+		var angle = Angle.Parse(s[..indexOfMiddlePart], provider);
+		var axis = Direction.Parse(s[(indexOfMiddlePart + ToStringMiddleSection.Length + 1)..], provider);
+		return FromAngleAroundAxis(angle, axis);
 	}
 
 	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Rotation result) {
-		var numberFormatter = NumberFormatInfo.GetInstance(provider);
 		result = default;
 
-		var indexOfSeparator = s.IndexOf(numberFormatter.NumberGroupSeparator);
-		if (indexOfSeparator < 0) return false;
+		var indexOfMiddlePart = s.IndexOf(ToStringMiddleSection);
+		if (indexOfMiddlePart < 0) return false;
+		if (indexOfMiddlePart + ToStringMiddleSection.Length + 1 >= s.Length) return false;
 
-		if (!Single.TryParse(s[..indexOfSeparator], provider, out var x)) return false;
-		s = s[(indexOfSeparator + numberFormatter.NumberGroupSeparator.Length)..];
+		if (!Angle.TryParse(s[..indexOfMiddlePart], provider, out var angle)) return false;
+		if (!Direction.TryParse(s[(indexOfMiddlePart + ToStringMiddleSection.Length + 1)..], provider, out var axis)) return false;
 
-		if (!Single.TryParse(s[..indexOfSeparator], provider, out var y)) return false;
-		s = s[(indexOfSeparator + numberFormatter.NumberGroupSeparator.Length)..];
-
-		if (!Single.TryParse(s[..indexOfSeparator], provider, out var z)) return false;
-		s = s[(indexOfSeparator + numberFormatter.NumberGroupSeparator.Length)..];
-
-		if (!Single.TryParse(s[..indexOfSeparator], provider, out var w)) return false;
-
-		result = new(x, y, z, w);
+		result = FromAngleAroundAxis(angle, axis);
 		return true;
 	}
 

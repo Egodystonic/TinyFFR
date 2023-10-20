@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float), Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from float
 public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>, IComparisonOperators<Angle, Angle, bool> {
-	public const string StringSuffix = "°";
+	public const string ToStringSuffix = "°";
 	const float Tau = MathF.Tau;
 	const float TauReciprocal = 1f / MathF.Tau;
 	const float RadiansToDegreesRatio = 360f / Tau;
@@ -34,7 +34,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private init => Radians = value * DegreesToRadiansRatio;
 	}
-	public Fraction FullCircleFraction {
+	public float FullCircleFraction {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Radians * TauReciprocal;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -49,7 +49,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle FromDegrees(float degrees) => new() { Degrees = degrees };
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle FromFullCircleFraction(Fraction fullCircleFraction) => new() { FullCircleFraction = fullCircleFraction };
+	public static Angle FromFullCircleFraction(float fullCircleFraction) => new() { FullCircleFraction = fullCircleFraction };
 	
 	public static Angle FromSine(float sine) {
 		if (sine < -1f || sine > 1f) throw new ArgumentOutOfRangeException(nameof(sine), sine, "Values outside range [-1, 1] are not permitted.");
@@ -69,12 +69,12 @@ public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>
 
 	/* I thought long and hard about whether this conversion should even exist and what it should assume the operand is.
 	 * Arguments for/against 'operand' being:
-	 * -- Coefficient of full circle:
+	 * -- Full circle fraction:
 	 *		It would be nice to specify some things as fractions of a full turn. For example, if I want to turn 30%
 	 *		to the right, I could just specify a Rotation as 0.3f * Direction.Up.
 	 *		In the end though, the static factory method is probably enough. I don't
-	 *		think there's a natural idea of a conversion between Fraction<->Angle without a context of what that
-	 *		means-- the name of the static factory method provides that context, but an implicit conversion leaves
+	 *		think there's a natural idea of a float naturally being a fraction of a full turn without a context of what that
+	 *		means-- the name of the static factory method provides that context, but an implicit conversion would leave
 	 *		the reader of the code guessing/assuming.
 	 * -- Radians:
 	 *		It will probably be obvious to a sizable chunk of users using this API that this type most naturally
@@ -136,7 +136,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>
 
 	public override string ToString() => ToString(null, null);
 
-	public string ToString(string? format, IFormatProvider? formatProvider) => $"{Degrees.ToString(format, formatProvider)}{StringSuffix}";
+	public string ToString(string? format, IFormatProvider? formatProvider) => $"{Degrees.ToString(format, formatProvider)}{ToStringSuffix}";
 
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
 		charsWritten = 0;
@@ -150,7 +150,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>
 		if (!writeSuccess) return false;
 		destination = destination[tryWriteCharsWrittenOutVar..];
 
-		writeSuccess = destination.TryWrite($"{StringSuffix}", out tryWriteCharsWrittenOutVar);
+		writeSuccess = destination.TryWrite($"{ToStringSuffix}", out tryWriteCharsWrittenOutVar);
 		charsWritten += tryWriteCharsWrittenOutVar;
 		return writeSuccess;
 	}
@@ -159,7 +159,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>
 	public static bool TryParse(string? s, IFormatProvider? provider, out Angle result) => TryParse(s.AsSpan(), provider, out result);
 
 	public static Angle Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null) {
-		var indexOfSuffix = s.IndexOf(StringSuffix);
+		var indexOfSuffix = s.IndexOf(ToStringSuffix);
 
 		var degrees = indexOfSuffix >= 0
 			? Single.Parse(s[..indexOfSuffix], provider)
@@ -169,7 +169,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>
 	}
 
 	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Angle result) {
-		var indexOfSuffix = s.IndexOf(StringSuffix);
+		var indexOfSuffix = s.IndexOf(ToStringSuffix);
 		if (indexOfSuffix < 0) indexOfSuffix = s.Length;
 
 		if (!Single.TryParse(s[..indexOfSuffix], provider, out var degrees)) {
