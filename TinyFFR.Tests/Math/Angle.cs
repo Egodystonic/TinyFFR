@@ -59,7 +59,7 @@ partial class AngleTest {
 		for (var f = -720f; f <= 720f + 36f; f += 36f) {
 			Assert.AreEqual((MathF.Tau / 360f) * f, new Angle(f).Radians, TestTolerance);
 			Assert.AreEqual(f, new Angle(f).Degrees, TestTolerance);
-			Assert.AreEqual(new Fraction(f / 360f), new Angle(f).FullCircleFraction, TestTolerance);
+			Assert.AreEqual(f / 360f, new Angle(f).FullCircleFraction, TestTolerance);
 		}		
 	}
 
@@ -86,7 +86,6 @@ partial class AngleTest {
 		// circle fraction
 		for (var f = -2f; f < 2.05f; f += 0.05f) {
 			Assert.AreEqual(f, Angle.FromFullCircleFraction(f).FullCircleFraction, TestTolerance);
-			Assert.AreEqual(f, Angle.FromFullCircleFraction(Fraction.FromDecimal(f)).FullCircleFraction, TestTolerance);
 		}
 
 		// sine
@@ -175,7 +174,7 @@ partial class AngleTest {
 		void AssertIteration(Angle input, string expectedStringValuePart) {
 			var testCulture = CultureInfo.InvariantCulture;
 			var testFormat = "N0";
-			var expectedValue = $"{expectedStringValuePart}{Angle.StringSuffix}";
+			var expectedValue = $"{expectedStringValuePart}{Angle.ToStringSuffix}";
 
 			Span<char> formatSpan = stackalloc char[expectedValue.Length];
 			Assert.IsTrue(input.TryFormat(formatSpan, out var charsWritten, testFormat, testCulture));
@@ -226,20 +225,20 @@ partial class AngleTest {
 
 		AssertFail(Angle.Zero, Array.Empty<char>(), "", null);
 		AssertFail(Angle.Zero, new char[1], "", null);
-		AssertSuccess(Angle.Zero, new char[2], "N0", null, "0" + Angle.StringSuffix);
+		AssertSuccess(Angle.Zero, new char[2], "N0", null, "0" + Angle.ToStringSuffix);
 		AssertFail(fractionalAngle, new char[2], "N0", null);
-		AssertSuccess(fractionalAngle, new char[3], "N0", null, "12" + Angle.StringSuffix);
+		AssertSuccess(fractionalAngle, new char[3], "N0", null, "12" + Angle.ToStringSuffix);
 		AssertFail(fractionalAngle, new char[4], "N1", null);
-		AssertSuccess(fractionalAngle, new char[5], "N1", null, "12.3" + Angle.StringSuffix);
-		AssertSuccess(fractionalAngle, new char[5], "N1", CultureInfo.CreateSpecificCulture("de-DE"), "12,3" + Angle.StringSuffix);
-		AssertSuccess(fractionalAngle, new char[20], "N5", null, "12.34500" + Angle.StringSuffix);
+		AssertSuccess(fractionalAngle, new char[5], "N1", null, "12.3" + Angle.ToStringSuffix);
+		AssertSuccess(fractionalAngle, new char[5], "N1", CultureInfo.CreateSpecificCulture("de-DE"), "12,3" + Angle.ToStringSuffix);
+		AssertSuccess(fractionalAngle, new char[20], "N5", null, "12.34500" + Angle.ToStringSuffix);
 	}
 
 	[Test]
 	public void ShouldCorrectlyParseFromString() {
-		void AssertIteration(string input, Angle expectedResult) {
-			var testCulture = CultureInfo.InvariantCulture;
+		var testCulture = CultureInfo.InvariantCulture;
 
+		void AssertSuccess(string input, Angle expectedResult) {
 			AssertToleranceEquals(expectedResult, Angle.Parse(input, testCulture), TestTolerance);
 			AssertToleranceEquals(expectedResult, Angle.Parse(input.AsSpan(), testCulture), TestTolerance);
 			Assert.IsTrue(Angle.TryParse(input, testCulture, out var parseResult));
@@ -248,14 +247,27 @@ partial class AngleTest {
 			AssertToleranceEquals(expectedResult, parseResult, TestTolerance);
 		}
 
-		AssertIteration("180", Angle.HalfCircle);
-		AssertIteration("180.000", Angle.HalfCircle);
-		AssertIteration("180" + Angle.StringSuffix, Angle.HalfCircle);
-		AssertIteration("-180", -Angle.HalfCircle);
-		AssertIteration("-180.000", -Angle.HalfCircle);
-		AssertIteration("-180" + Angle.StringSuffix, -Angle.HalfCircle);
-		AssertIteration("123.456", Angle.FromDegrees(123.456f));
-		AssertIteration("-123.456" + Angle.StringSuffix, Angle.FromDegrees(-123.456f));
+		void AssertFailure(string input) {
+			Assert.Catch(() => Angle.Parse(input, testCulture));
+			Assert.Catch(() => Angle.Parse(input.AsSpan(), testCulture));
+			Assert.False(Angle.TryParse(input, testCulture, out _));
+			Assert.False(Angle.TryParse(input.AsSpan(), testCulture, out _));
+		}
+
+		AssertSuccess("180", Angle.HalfCircle);
+		AssertSuccess("180.000", Angle.HalfCircle);
+		AssertSuccess("180" + Angle.ToStringSuffix, Angle.HalfCircle);
+		AssertSuccess("180 " + Angle.ToStringSuffix, Angle.HalfCircle);
+		AssertSuccess("-180", -Angle.HalfCircle);
+		AssertSuccess("-180.000", -Angle.HalfCircle);
+		AssertSuccess("-180" + Angle.ToStringSuffix, -Angle.HalfCircle);
+		AssertSuccess("123.456", Angle.FromDegrees(123.456f));
+		AssertSuccess("-123.456" + Angle.ToStringSuffix, Angle.FromDegrees(-123.456f));
+
+		AssertFailure("");
+		AssertFailure("abc");
+		AssertFailure(Angle.ToStringSuffix);
+		AssertFailure(Angle.ToStringSuffix + "123");
 	}
 
 	[Test]
