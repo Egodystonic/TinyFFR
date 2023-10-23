@@ -1,24 +1,22 @@
 ﻿// Created on 2023-09-05 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
-using System.Globalization;
-using static Egodystonic.TinyFFR.VectorUtils;
-using static System.Numerics.Vector4;
+using static System.Numerics.Quaternion;
 
 namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Quaternion
 public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 	public const string ToStringMiddleSection = " around ";
-	public static readonly Rotation None = new(Quaternion.Identity);
+	public static readonly Rotation None = new(Identity);
 
 	internal readonly Quaternion AsQuaternion;
 
 	public Angle Angle {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Angle.FromRadians(MathF.Acos(AsQuaternion.W));
+		get => Angle.FromRadians(MathF.Acos(AsQuaternion.W)) * 2f;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => AsQuaternion = Quaternion.CreateFromAxisAngle(Axis.ToVector3(), value.Radians);
+		init => AsQuaternion = CreateFromAxisAngle(Axis.ToVector3(), value.Radians);
 	}
 
 	public Direction Axis {
@@ -28,7 +26,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 			else return Direction.FromVector3PreNormalized(new Vector3(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z) / MathF.Sin(halfAngleRadians));
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => AsQuaternion = Quaternion.CreateFromAxisAngle(value.ToVector3(), Angle.Radians);
+		init => AsQuaternion = CreateFromAxisAngle(value.ToVector3(), Angle.Radians);
 	}
 	
 	internal Vector4 AsVector4 {
@@ -43,11 +41,13 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 	// TODO A generalized interpolator type might be useful (research interface vs delegate and weigh against garbage management etc)-- this can abstract over functions and timing etc
 	// TODO interpolator/timeinterpolator -- interpolator should use a delegate* to get virtualisation for free; timeinterpolator maybe could optionally plug in to a global time ticker
 	// TODO will probably use an IInterpolatable
+	// TODO do we need an interpolator 'object' instead of a static class? It does allow people to hot-swap the interpolation strat...
+	// TODO also same with a randomizer I think
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Rotation() { AsQuaternion = Quaternion.Identity; }
+	public Rotation() { AsQuaternion = Identity; }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Rotation(Angle angle, Direction axis) { AsQuaternion = Quaternion.CreateFromAxisAngle(axis.ToVector3(), angle.Radians); }
+	public Rotation(Angle angle, Direction axis) { AsQuaternion = CreateFromAxisAngle(axis.ToVector3(), angle.Radians); }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal Rotation(Quaternion q) { AsQuaternion = q; }
 
@@ -55,8 +55,8 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 	public static Rotation FromAngleAroundAxis(Angle angle, Direction axis) => new(angle, axis);
 
 	public static Rotation FromStartAndEndDirection(Direction startDirection, Direction endDirection) {
-		var dot = Dot(startDirection.AsVector4, endDirection.AsVector4);
-		if (dot > -0.9999f) return new(Quaternion.Normalize(new(Vector3.Cross(startDirection.ToVector3(), endDirection.ToVector3()), dot + 1f)));
+		var dot = Vector4.Dot(startDirection.AsVector4, endDirection.AsVector4);
+		if (dot > -0.9999f) return new(Normalize(new(Vector3.Cross(startDirection.ToVector3(), endDirection.ToVector3()), dot + 1f)));
 
 		// If we're rotating exactly 180 degrees there are infinitely many arcs of "shortest" path, so the math breaks down.
 		// Therefore we just pick any perpendicular vector and rotate around that.
@@ -65,7 +65,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation FromYawPitchRoll(Angle yaw, Angle pitch, Angle roll) => new(Quaternion.CreateFromYawPitchRoll(yaw.Radians, pitch.Radians, roll.Radians));
+	public static Rotation FromYawPitchRoll(Angle yaw, Angle pitch, Angle roll) => new(CreateFromYawPitchRoll(yaw.Radians, pitch.Radians, roll.Radians));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation FromQuaternion(Quaternion q) => new(q);
@@ -154,6 +154,14 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 
 		result = FromAngleAroundAxis(angle, axis);
 		return true;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool EqualsForDirection(Rotation other, Direction targetDirection) => EqualsForDirection(other, targetDirection, 0f);
+	public bool EqualsForDirection(Rotation other, Direction targetDirection, float tolerance) {
+		var thisResult = Rotate(targetDirection);
+		var otherResult = other.Rotate(targetDirection);
+		return thisResult.Equals(otherResult, tolerance);
 	}
 
 	public bool Equals(Rotation other, float tolerance) {

@@ -1,7 +1,7 @@
 ﻿// Created on 2023-09-05 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
-using static Egodystonic.TinyFFR.VectorUtils;
+using static Egodystonic.TinyFFR.MathUtils;
 using static System.Numerics.Vector4;
 
 namespace Egodystonic.TinyFFR;

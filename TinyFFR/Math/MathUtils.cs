@@ -5,4 +5,9 @@ namespace Egodystonic.TinyFFR;
 
 static class MathUtils {
 	public static T TrueModulus<T>(T lhs, T rhs) where T : IModulusOperators<T, T, T>, IAdditionOperators<T, T, T> => (lhs % rhs + rhs) % rhs;
+
+	public static Vector4 NormalizeOrZero(Vector4 v) {
+		var norm = Vector4.Normalize(v);
+		return Single.IsInfinity(norm.X) ? Vector4.Zero : v;
+	}
 }
