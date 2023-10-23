@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2023
 
 using static System.Numerics.Quaternion;
+using static Egodystonic.TinyFFR.MathUtils;
 
 namespace Egodystonic.TinyFFR;
 
@@ -20,7 +21,7 @@ partial struct Rotation {
 	public static Rotation operator -(Rotation operand) => operand.Reversed;
 	public Rotation Reversed {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => FromQuaternion(new(-AsQuaternion.X, -AsQuaternion.Y, -AsQuaternion.Z, AsQuaternion.W));
+		get => new(new(-AsQuaternion.X, -AsQuaternion.Y, -AsQuaternion.Z, AsQuaternion.W));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -56,20 +57,20 @@ partial struct Rotation {
 	public Rotation ScaledBy(float scalar) {
 		var halfAngleRadians = MathF.Acos(AsQuaternion.W);
 		if (halfAngleRadians < 0.0001f) return None;
-
+		
 		var newHalfAngleRadians = halfAngleRadians * scalar;
 		var sinNewHalfAngle = MathF.Sin(newHalfAngleRadians);
 		if (MathF.Abs(sinNewHalfAngle) < 0.0001f) return None;
 		var cosNewHalfAngle = MathF.Cos(newHalfAngleRadians);
 
-		var axisScalingFactor = MathF.Sin(halfAngleRadians) / sinNewHalfAngle;
-		
-		return FromQuaternion(Normalize(new(
-			AsQuaternion.X * axisScalingFactor,
-			AsQuaternion.Y * axisScalingFactor,
-			AsQuaternion.Z * axisScalingFactor,
+		var normalizedVectorComponent = Vector3.Normalize(new(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z));
+		// Shouldn't be possible unless someone's scaling default(Rotation) (or some other non-unit quaternion) but we already have two other branches so we may as well check for the user here
+		if (Single.IsNaN(normalizedVectorComponent.X)) return None;
+
+		return new(new(
+			normalizedVectorComponent * sinNewHalfAngle,
 			cosNewHalfAngle
-		)));
+		));
 	}
 
 

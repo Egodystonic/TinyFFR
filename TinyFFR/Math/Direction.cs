@@ -24,26 +24,26 @@ public readonly partial struct Direction : IVect<Direction> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsVector4.X;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => AsVector4 = MathUtils.NormalizeOrZero(AsVector4 with { X = value });
+		init => AsVector4 = NormalizeOrZero(AsVector4 with { X = value });
 	}
 	public float Y {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsVector4.Y;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => AsVector4 = MathUtils.NormalizeOrZero(AsVector4 with { Y = value });
+		init => AsVector4 = NormalizeOrZero(AsVector4 with { Y = value });
 	}
 	public float Z {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsVector4.Z;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => AsVector4 = MathUtils.NormalizeOrZero(AsVector4 with { Z = value });
+		init => AsVector4 = NormalizeOrZero(AsVector4 with { Z = value });
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction() { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction(float x, float y, float z) : this(new Vector3(x, y, z)) { }
-	public Direction(Vector3 v) : this(MathUtils.NormalizeOrZero(new Vector4(v.X, v.Y, v.Z, WValue))) { }
+	public Direction(Vector3 v) : this(NormalizeOrZero(new Vector4(v.X, v.Y, v.Z, WValue))) { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal Direction(Vector4 v) { AsVector4 = v; }
 

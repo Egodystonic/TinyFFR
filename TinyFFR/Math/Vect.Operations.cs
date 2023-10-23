@@ -46,11 +46,11 @@ partial struct Vect {
 
 	public Direction Direction {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => new(MathUtils.NormalizeOrZero(AsVector4));
+		get => new(NormalizeOrZero(AsVector4));
 	}
 	public Vect Normalized {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => new(MathUtils.NormalizeOrZero(AsVector4));
+		get => new(NormalizeOrZero(AsVector4));
 	}
 
 
