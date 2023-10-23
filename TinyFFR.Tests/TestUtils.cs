@@ -8,8 +8,8 @@ static class TestUtils {
 		Assert.IsTrue(
 			expected.Equals(actual, tolerance),
 			$"Expected and actual value were not within tolerance of {tolerance}" + Environment.NewLine +
-			$"Expected value: {expected}" + Environment.NewLine +
-			$"Actual value: {actual}"
+			$"\tExpected value: {expected}" + Environment.NewLine +
+			$"\tActual value: {actual}"
 		);
 	}
 }

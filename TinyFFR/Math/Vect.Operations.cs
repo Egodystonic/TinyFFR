@@ -1,7 +1,7 @@
 ﻿// Created on 2023-09-05 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
-using static Egodystonic.TinyFFR.VectorUtils;
+using static Egodystonic.TinyFFR.MathUtils;
 using static System.Numerics.Vector4;
 
 namespace Egodystonic.TinyFFR;
@@ -46,11 +46,11 @@ partial struct Vect {
 
 	public Direction Direction {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => new(NormalizeOrZero(AsVector4));
+		get => new(MathUtils.NormalizeOrZero(AsVector4));
 	}
 	public Vect Normalized {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => new(NormalizeOrZero(AsVector4));
+		get => new(MathUtils.NormalizeOrZero(AsVector4));
 	}
 
 

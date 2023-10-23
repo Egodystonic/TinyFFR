@@ -1,8 +1,7 @@
 ﻿// Created on 2023-09-05 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
-using static Egodystonic.TinyFFR.VectorUtils;
-using static System.Numerics.Vector4;
+using static System.Numerics.Quaternion;
 
 namespace Egodystonic.TinyFFR;
 
@@ -15,6 +14,13 @@ partial struct Rotation {
 			targetVec + q.W * t + Vector3.Cross(quatVec, t),
 			v.W
 		);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Rotation operator -(Rotation operand) => operand.Reversed;
+	public Rotation Reversed {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => FromQuaternion(new(-AsQuaternion.X, -AsQuaternion.Y, -AsQuaternion.Z, AsQuaternion.W));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -33,22 +39,44 @@ partial struct Rotation {
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation operator *(Rotation lhs, Rotation rhs) => lhs.CombinedWith(rhs);
+	public static Rotation operator *(Rotation lhs, Rotation rhs) => lhs.FollowedBy(rhs);
 	// We provide this as a probably more intuitive way of adding rotations, even if it's not the arithmetic operation used to combine quaternions.
 	// Ultimately this type is meant to be an abstraction of a Rotation, not a Quaternion, which is a type I don't want users to have to care about or even know about if they don't want to.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation operator +(Rotation lhs, Rotation rhs) => lhs.CombinedWith(rhs);
+	public static Rotation operator +(Rotation lhs, Rotation rhs) => lhs.FollowedBy(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Rotation CombinedWith(Rotation other) => new(AsQuaternion * other.AsQuaternion);
+	public Rotation FollowedBy(Rotation other) => new(AsQuaternion * other.AsQuaternion);
 
 
 
-	// [MethodImpl(MethodImplOptions.AggressiveInlining)]
-	// public static Rotation operator *(Rotation rotation, float scalar) => rotation.ScaledBy(scalar);
-	// [MethodImpl(MethodImplOptions.AggressiveInlining)]
-	// public static Rotation operator *(float scalar, Rotation rotation) => rotation.ScaledBy(scalar);
-	// public Rotation ScaledBy(float scalar) {
-	// 	var normalizedVectorPart = NormalizeOrZero(AsVector4 with { W = 0f });
-	//
-	// } // TODO
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Rotation operator *(Rotation rotation, float scalar) => rotation.ScaledBy(scalar);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Rotation operator *(float scalar, Rotation rotation) => rotation.ScaledBy(scalar);
+	public Rotation ScaledBy(float scalar) {
+		var halfAngleRadians = MathF.Acos(AsQuaternion.W);
+		if (halfAngleRadians < 0.0001f) return None;
+
+		var newHalfAngleRadians = halfAngleRadians * scalar;
+		var sinNewHalfAngle = MathF.Sin(newHalfAngleRadians);
+		if (MathF.Abs(sinNewHalfAngle) < 0.0001f) return None;
+		var cosNewHalfAngle = MathF.Cos(newHalfAngleRadians);
+
+		var axisScalingFactor = MathF.Sin(halfAngleRadians) / sinNewHalfAngle;
+		
+		return FromQuaternion(Normalize(new(
+			AsQuaternion.X * axisScalingFactor,
+			AsQuaternion.Y * axisScalingFactor,
+			AsQuaternion.Z * axisScalingFactor,
+			cosNewHalfAngle
+		)));
+	}
+
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Rotation operator +(Rotation rotation, Angle angle) => rotation with { Angle = rotation.Angle + angle };
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Rotation operator +(Angle angle, Rotation rotation) => rotation with { Angle = rotation.Angle + angle };
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Rotation operator -(Rotation rotation, Angle angle) => rotation with { Angle = rotation.Angle - angle };
 }
