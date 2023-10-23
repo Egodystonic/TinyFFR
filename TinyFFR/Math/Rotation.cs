@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2023
 
 using static System.Numerics.Quaternion;
+using static Egodystonic.TinyFFR.MathUtils;
 
 namespace Egodystonic.TinyFFR;
 
@@ -12,7 +13,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 
 	internal readonly Quaternion AsQuaternion;
 
-	public Angle Angle {
+	public Angle Angle { // TODO indicate this is clockwise everywhere
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Angle.FromRadians(MathF.Acos(AsQuaternion.W)) * 2f;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -68,7 +69,10 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 	public static Rotation FromYawPitchRoll(Angle yaw, Angle pitch, Angle roll) => new(CreateFromYawPitchRoll(yaw.Radians, pitch.Radians, roll.Radians));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation FromQuaternion(Quaternion q) => new(q);
+	public static Rotation FromQuaternion(Quaternion q) => new(NormalizeOrIdentity(q));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Rotation FromQuaternionPreNormalized(Quaternion q) => new(q);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Quaternion ToQuaternion() => AsQuaternion; // Q: Why not just make AsQuaternion a public prop? A: To keep the "To<numericsTypeHere>" pattern consistent with vector abstraction types
