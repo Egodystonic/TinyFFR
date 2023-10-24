@@ -22,7 +22,7 @@ partial struct Angle {
 	}
 	public Angle Normalized {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => FromRadians(MathUtils.TrueModulus(_asRadians, Tau));
+		get => FromRadians(TrueModulus(_asRadians, Tau));
 	}
 
 
