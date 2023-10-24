@@ -14,6 +14,14 @@ partial struct Direction {
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Direction operator -(Direction operand) => operand.Reversed;
+	public Direction Reversed {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(-AsVector4);
+	}
+
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect ToVect() => new(AsVector4);
 
 
@@ -37,7 +45,7 @@ partial struct Direction {
 	public Direction GetAnyPerpendicularDirection() {
 		return FromVector3PreNormalized(Vector3.Cross(
 			ToVector3(),
-			Z > X ? new Vector3(1f, 0f, 0f) : new Vector3(0f, 0f, 1f)
+			MathF.Abs(Z) > MathF.Abs(X) ? new Vector3(1f, 0f, 0f) : new Vector3(0f, 0f, 1f)
 		));
 	}
 	public Direction OrthogonalizedAgainst(Direction d) {
