@@ -55,12 +55,12 @@ partial struct Vect {
 
 
 
-	public Vect ProjectedOnTo(Direction d) => Dot(AsVector4, d.AsVector4) * d;
-	public Vect OrthogonalizedAgainst(Direction d) => Direction.OrthogonalizedAgainst(d) * Length;
+	public Vect ProjectedOnTo(Direction d) => d >> Dot(AsVector4, d.AsVector4);
+	public Vect OrthogonalizedAgainst(Direction d) => Direction.OrthogonalizedAgainst(d) >> Length;
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect WithLength(float length) => Direction * length;
+	public Vect WithLength(float length) => Direction >> length;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect RotateBy(Rotation rotation) => rotation.Rotate(this);

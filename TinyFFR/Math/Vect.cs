@@ -1,6 +1,7 @@
 ﻿// Created on 2023-09-05 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
+using System.Globalization;
 using static Egodystonic.TinyFFR.MathUtils;
 using static System.Numerics.Vector4;
 
@@ -42,7 +43,7 @@ public readonly partial struct Vect : IVect<Vect>, IComparable<Vect>, ICompariso
 	internal Vect(Vector4 v) { AsVector4 = v; }
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect FromDirectionAndDistance(Direction direction, float distance) => direction * distance;
+	public static Vect FromDirectionAndDistance(Direction direction, float distance) => direction >> distance;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect FromVector3(Vector3 v) => new(v);
@@ -57,6 +58,10 @@ public readonly partial struct Vect : IVect<Vect>, IComparable<Vect>, ICompariso
 	public static Vect ConvertFromSpan(ReadOnlySpan<float> src) => new(new Vector3(src));
 
 	public override string ToString() => this.ToString(null, null);
+
+	public string ToStringDescriptive() {
+		return $"{Direction.ToStringDescriptive()} with length {Length.ToString("N1", CultureInfo.InvariantCulture)}";
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect Parse(string s, IFormatProvider? provider = null) => new(IVect.ParseVector3String(s, provider));
