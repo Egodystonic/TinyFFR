@@ -1,6 +1,7 @@
 ﻿// Created on 2023-09-05 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
+using System.Globalization;
 using static Egodystonic.TinyFFR.MathUtils;
 using static System.Numerics.Vector4;
 
@@ -67,6 +68,51 @@ public readonly partial struct Direction : IVect<Direction> {
 	public static Direction ConvertFromSpan(ReadOnlySpan<float> src) => FromVector3PreNormalized(src);
 
 	public override string ToString() => this.ToString(null, null);
+
+	public string ToStringDescriptive() {
+		static void GetCardinalAngles(Direction @this, Span<(Direction, Angle)> destSpan) {
+			for (var i = 0; i < AllCardinals.Count; ++i) destSpan[i] = (AllCardinals.ElementAt(i), AllCardinals.ElementAt(i) % @this);
+		}
+		static string GetCardinalEnglishName(Direction cardinal) {
+			static string? CheckAndReturn(Direction input, Direction test, [CallerArgumentExpression(nameof(test))] string? argName = null) {
+				if (input.Equals(test, 0.1f)) return argName;
+				else return null;
+			}
+
+			return CheckAndReturn(cardinal, Forward)
+				?? CheckAndReturn(cardinal, Up)
+				?? CheckAndReturn(cardinal, Down)
+				?? CheckAndReturn(cardinal, Backward)
+				?? CheckAndReturn(cardinal, Left)
+				?? CheckAndReturn(cardinal, Right)
+				?? "None";
+		}
+
+		if (this == None) return "None";
+
+		Span<(Direction Cardinal, Angle Angle)> cardinalTuples = stackalloc (Direction, Angle)[AllCardinals.Count];
+		GetCardinalAngles(this, cardinalTuples);
+
+		var closestTuple = (Cardinal: None, Angle: Angle.FullCircle);
+		for (var i = 0; i < cardinalTuples.Length; ++i) {
+			if (cardinalTuples[i].Angle < closestTuple.Angle) closestTuple = cardinalTuples[i];
+		}
+		if (closestTuple.Angle == Angle.Zero) return $"{GetCardinalEnglishName(closestTuple.Cardinal)} exactly";
+
+		var nextClosestTuple = (Cardinal: None, Angle: Angle.FullCircle);
+		for (var i = 0; i < cardinalTuples.Length; ++i) {
+			if (cardinalTuples[i].Cardinal == closestTuple.Cardinal) continue;
+			if (cardinalTuples[i].Angle < nextClosestTuple.Angle) nextClosestTuple = cardinalTuples[i];
+		}
+
+		if (closestTuple.Angle.Equals(45f, 0.1f)) {
+			return $"Between {GetCardinalEnglishName(closestTuple.Cardinal)} and {GetCardinalEnglishName(nextClosestTuple.Cardinal)}";
+		}
+		else {
+			return $"{closestTuple.Angle.ToString("N1", CultureInfo.InvariantCulture)} from {GetCardinalEnglishName(closestTuple.Cardinal)} " +
+				   $"(mostly towards {GetCardinalEnglishName(nextClosestTuple.Cardinal)})";
+		}
+	}
 
 	/*
 	 * We don't use FromVector3PreNormalized for these methods that parse from a string because it's possible (likely?) that the

@@ -197,4 +197,43 @@ partial class RotationTest {
 			}
 		}
 	}
+
+	[Test]
+	public void ShouldCorrectlyFormatToString() {
+		int GetExpectedStrLen(Rotation input, string format, IFormatProvider? provider) {
+			var dest = new char[200];
+			input.Angle.TryFormat(dest, out var angleCharsWritten, format, provider);
+			input.Axis.TryFormat(dest, out var dirCharsWritten, format, provider);
+			return angleCharsWritten + Rotation.ToStringMiddleSection.Length + dirCharsWritten;
+		}
+
+		void AssertFail(Rotation input, Span<char> destination, ReadOnlySpan<char> format, IFormatProvider? provider) {
+			Assert.AreEqual(false, input.TryFormat(destination, out _, format, provider));
+		}
+
+		void AssertSuccess(
+			Rotation input,
+			Span<char> destination,
+			ReadOnlySpan<char> format,
+			IFormatProvider? provider,
+			ReadOnlySpan<char> expectedDestSpanValue
+		) {
+			var actualReturnValue = input.TryFormat(destination, out var numCharsWritten, format, provider);
+			Assert.AreEqual(true, actualReturnValue);
+			Assert.AreEqual(expectedDestSpanValue.Length, numCharsWritten);
+			Assert.IsTrue(
+				expectedDestSpanValue.SequenceEqual(destination[..expectedDestSpanValue.Length]),
+				$"Destination as string was {new String(destination)}"
+			);
+		}
+
+		var testRot = 12.345f ^ new Direction(1f, 1f, 1f);
+
+		AssertFail(Rotation.None, Array.Empty<char>(), "", null);
+		AssertFail(Rotation.None, new char[GetExpectedStrLen(Rotation.None, "", null) - 1], "", null);
+		AssertSuccess(Rotation.None, new char[GetExpectedStrLen(Rotation.None, "N0", null)], "N0", null, "0" + Angle.ToStringSuffix + Rotation.ToStringMiddleSection + "<0, 0, 0>");
+		AssertFail(testRot, new char[GetExpectedStrLen(testRot, "N0", null) - 1], "N0", null);
+		AssertSuccess(testRot, new char[GetExpectedStrLen(testRot, "N0", null)], "N0", null, "12" + Angle.ToStringSuffix + Rotation.ToStringMiddleSection + "<1, 1, 1>");
+		AssertSuccess(testRot, new char[GetExpectedStrLen(testRot, "N3", null)], "N3", null, "12.345" + Angle.ToStringSuffix + Rotation.ToStringMiddleSection + "<0.577, 0.577, 0.577>");
+	}
 }

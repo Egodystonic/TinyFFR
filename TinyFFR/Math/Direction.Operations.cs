@@ -26,9 +26,9 @@ partial struct Direction {
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator *(Direction directionOperand, float scalarOperand) => directionOperand.WithDistance(scalarOperand);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator *(float scalarOperand, Direction directionOperand) => directionOperand.WithDistance(scalarOperand);
+	public static Vect operator >>(Direction directionOperand, float scalarOperand) => directionOperand.WithDistance(scalarOperand);
+	// [MethodImpl(MethodImplOptions.AggressiveInlining)]
+	// public static Vect operator *(float scalarOperand, Direction directionOperand) => directionOperand.WithDistance(scalarOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect WithDistance(float scalar) => new(AsVector4 * scalar);
 
