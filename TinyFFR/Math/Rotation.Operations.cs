@@ -39,14 +39,13 @@ partial struct Rotation {
 
 
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation operator *(Rotation lhs, Rotation rhs) => lhs.FollowedBy(rhs);
 	// We provide this as a probably more intuitive way of adding rotations, even if it's not the arithmetic operation used to combine quaternions.
 	// Ultimately this type is meant to be an abstraction of a Rotation, not a Quaternion, which is a type I don't want users to have to care about or even know about if they don't want to.
+	// Notice that (lhs + rhs) is the OPPOSITE of (lhs.AsQuaternion * rhs.AsQuaternion) (see how we multiply other.AsQuaternion by this.AsQuaternion in FollowedBy())
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator +(Rotation lhs, Rotation rhs) => lhs.FollowedBy(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Rotation FollowedBy(Rotation other) => new(AsQuaternion * other.AsQuaternion);
+	public Rotation FollowedBy(Rotation other) => new(other.AsQuaternion * AsQuaternion);
 
 
 
@@ -72,12 +71,4 @@ partial struct Rotation {
 			cosNewHalfAngle
 		));
 	}
-
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation operator +(Rotation rotation, Angle angle) => rotation with { Angle = rotation.Angle + angle };
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation operator +(Angle angle, Rotation rotation) => rotation with { Angle = rotation.Angle + angle };
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation operator -(Rotation rotation, Angle angle) => rotation with { Angle = rotation.Angle - angle };
 }

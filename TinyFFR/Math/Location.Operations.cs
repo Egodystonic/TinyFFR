@@ -19,7 +19,7 @@ partial struct Location {
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator >>(Location start, Location end) => start.GetVectTo(end); // TODO maybe these should give Rays ... Use >>> for Vect?
+	public static Vect operator >>(Location start, Location end) => start.GetVectTo(end); // TODO maybe these should give Rays ... Use >>> for Vect? .. No, other way IMO
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator <<(Location end, Location start) => start.GetVectTo(end);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

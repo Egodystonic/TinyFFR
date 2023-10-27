@@ -71,7 +71,7 @@ public readonly partial struct Direction : IVect<Direction> {
 
 	public string ToStringDescriptive() {
 		static void GetCardinalAngles(Direction @this, Span<(Direction, Angle)> destSpan) {
-			for (var i = 0; i < AllCardinals.Count; ++i) destSpan[i] = (AllCardinals.ElementAt(i), AllCardinals.ElementAt(i) % @this);
+			for (var i = 0; i < AllCardinals.Count; ++i) destSpan[i] = (AllCardinals.ElementAt(i), AllCardinals.ElementAt(i) ^ @this);
 		}
 		static string GetCardinalEnglishName(Direction cardinal) {
 			static string? CheckAndReturn(Direction input, Direction test, [CallerArgumentExpression(nameof(test))] string? argName = null) {
@@ -97,7 +97,7 @@ public readonly partial struct Direction : IVect<Direction> {
 		for (var i = 0; i < cardinalTuples.Length; ++i) {
 			if (cardinalTuples[i].Angle < closestTuple.Angle) closestTuple = cardinalTuples[i];
 		}
-		if (closestTuple.Angle == Angle.Zero) return $"{GetCardinalEnglishName(closestTuple.Cardinal)} exactly";
+		if (closestTuple.Angle.Equals(Angle.Zero, 0.1f)) return $"{GetCardinalEnglishName(closestTuple.Cardinal)} exactly";
 
 		var nextClosestTuple = (Cardinal: None, Angle: Angle.FullCircle);
 		for (var i = 0; i < cardinalTuples.Length; ++i) {
@@ -161,4 +161,7 @@ public readonly partial struct Direction : IVect<Direction> {
 	public override bool Equals(object? obj) => obj is Direction other && Equals(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override int GetHashCode() => AsVector4.GetHashCode();
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool EqualsWithinAngle(Direction other, Angle angle) => (this ^ other) <= angle;
 }

@@ -3,3 +3,16 @@
 	A starting rule-of-thumb is that if the method is inlinable we should consider skipping parameter validation.
 		However, this isn't always the case-- for example if the actual function body still invokes something costly or if the function is not expected to be called often, it's probably still worth validating.
 	Overall, the idea is that by validating wherever possible we can hopefully balance helping users catch mistakes without sacrificing performance.
+
+Overloaded Operators:
+	% operator creates rotations
+	^ operator creates angles
+	* and / operator scales things
+	+ operator combines things
+	>>/<< operators return something that represents the transition between the two operands
+
+	Chose ^ for angles because it looks like an angle
+	Chose % for rotations because:
+		It has higher precedence (avoids annoying things like having to parenthesize `someRot == 90f % Direction.Up` instead of e.g. using a bitwise operator)
+		It's a better fit than any of the other binary overloadable operators IMO (though it's still not perfect)
+		It kind of looks like the top right of a clock face with the minute hand between two numbers?

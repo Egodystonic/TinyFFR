@@ -26,9 +26,9 @@ partial struct Direction {
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator >>(Direction directionOperand, float scalarOperand) => directionOperand.WithDistance(scalarOperand);
-	// [MethodImpl(MethodImplOptions.AggressiveInlining)]
-	// public static Vect operator *(float scalarOperand, Direction directionOperand) => directionOperand.WithDistance(scalarOperand);
+	public static Vect operator *(Direction directionOperand, float scalarOperand) => directionOperand.WithDistance(scalarOperand);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vect operator *(float scalarOperand, Direction directionOperand) => directionOperand.WithDistance(scalarOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect WithDistance(float scalar) => new(AsVector4 * scalar);
 
@@ -36,7 +36,7 @@ partial struct Direction {
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle operator %(Direction d1, Direction d2) => Angle.FromAngleBetweenDirections(d1, d2);
+	public static Angle operator ^(Direction d1, Direction d2) => Angle.FromAngleBetweenDirections(d1, d2);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(Direction other) => Angle.FromAngleBetweenDirections(this, other);
 
@@ -66,9 +66,9 @@ partial struct Direction {
 	public Rotation RotationFrom(Direction other) => Rotation.FromStartAndEndDirection(other, this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation operator ^(Direction axis, Angle angle) => Rotation.FromAngleAroundAxis(angle, axis);
+	public static Rotation operator %(Direction axis, Angle angle) => Rotation.FromAngleAroundAxis(angle, axis);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation operator ^(Angle angle, Direction axis) => Rotation.FromAngleAroundAxis(angle, axis);
+	public static Rotation operator %(Angle angle, Direction axis) => Rotation.FromAngleAroundAxis(angle, axis);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction RotateBy(Rotation rotation) => rotation.Rotate(this);
