@@ -135,7 +135,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 	public static Rotation Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null) {
 		var indexOfMiddlePart = s.IndexOf(ToStringMiddleSection);
 		var angle = Angle.Parse(s[..indexOfMiddlePart], provider);
-		var axis = Direction.Parse(s[(indexOfMiddlePart + ToStringMiddleSection.Length + 1)..], provider);
+		var axis = Direction.Parse(s[(indexOfMiddlePart + ToStringMiddleSection.Length)..], provider);
 		return FromAngleAroundAxis(angle, axis);
 	}
 
@@ -144,10 +144,10 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 
 		var indexOfMiddlePart = s.IndexOf(ToStringMiddleSection);
 		if (indexOfMiddlePart < 0) return false;
-		if (indexOfMiddlePart + ToStringMiddleSection.Length + 1 >= s.Length) return false;
+		if (indexOfMiddlePart + ToStringMiddleSection.Length >= s.Length) return false;
 
 		if (!Angle.TryParse(s[..indexOfMiddlePart], provider, out var angle)) return false;
-		if (!Direction.TryParse(s[(indexOfMiddlePart + ToStringMiddleSection.Length + 1)..], provider, out var axis)) return false;
+		if (!Direction.TryParse(s[(indexOfMiddlePart + ToStringMiddleSection.Length)..], provider, out var axis)) return false;
 
 		result = FromAngleAroundAxis(angle, axis);
 		return true;
