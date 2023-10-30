@@ -42,16 +42,23 @@ public interface IVect : IMathPrimitive {
 		var numberFormatter = NumberFormatInfo.GetInstance(provider);
 		result = default;
 
+		if (s.Length <= 2) return false;
+		if (s[0] != VectorStringPrefixChar) return false;
+		if (s[^1] != VectorStringSuffixChar) return false;
+		s = s[1..^1];
+
 		var indexOfSeparator = s.IndexOf(numberFormatter.NumberGroupSeparator);
 		if (indexOfSeparator < 0) return false;
 
 		if (!Single.TryParse(s[..indexOfSeparator], provider, out var x)) return false;
 		s = s[(indexOfSeparator + numberFormatter.NumberGroupSeparator.Length)..];
+		indexOfSeparator = s.IndexOf(numberFormatter.NumberGroupSeparator);
+		if (indexOfSeparator < 0) return false;
 
 		if (!Single.TryParse(s[..indexOfSeparator], provider, out var y)) return false;
 		s = s[(indexOfSeparator + numberFormatter.NumberGroupSeparator.Length)..];
-
-		if (!Single.TryParse(s[..indexOfSeparator], provider, out var z)) return false;
+		
+		if (!Single.TryParse(s, provider, out var z)) return false;
 
 		result = new(x, y, z);
 		return true;

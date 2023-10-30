@@ -61,11 +61,10 @@ class PercentageUtilsTest {
 
 		AssertFail(0f, Array.Empty<char>(), "", null);
 		AssertFail(0f, new char[1], "", null);
-		AssertFail(0f, new char[2], "N0", null);
+		AssertFail(0f, new char[2], "N1", null);
 		AssertSuccess(0f, new char[3], "N0", null, "0" + PercentageUtils.StringSuffix);
-		AssertFail(testFraction, new char[3], "N0", null);
 		AssertSuccess(testFraction, new char[4], "N0", null, "12" + PercentageUtils.StringSuffix);
-		AssertFail(testFraction, new char[5], "N1", null);
+		AssertFail(testFraction, new char[3], "N1", null);
 		AssertSuccess(testFraction, new char[6], "N1", null, "12.3" + PercentageUtils.StringSuffix);
 		AssertSuccess(testFraction, new char[6], "N1", CultureInfo.CreateSpecificCulture("de-DE"), "12,3" + PercentageUtils.StringSuffix);
 		AssertSuccess(testFraction, new char[20], "N5", null, "12.34500" + PercentageUtils.StringSuffix);

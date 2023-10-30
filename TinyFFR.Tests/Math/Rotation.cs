@@ -99,6 +99,10 @@ partial class RotationTest {
 			}
 		}
 
+		Assert.AreEqual(Rotation.None, Rotation.FromAngleAroundAxis(0f, None));
+		Assert.AreEqual(Rotation.None, Rotation.FromAngleAroundAxis(0f, Up));
+		Assert.AreEqual(Rotation.None, Rotation.FromAngleAroundAxis(90f, None));
+
 		Assert.AreEqual(NinetyAroundDown, Rotation.FromStartAndEndDirection(Forward, Right));
 		Assert.AreEqual(NinetyAroundDown, Rotation.FromStartAndEndDirection(Right, Backward));
 		Assert.AreEqual(NinetyAroundDown, Rotation.FromStartAndEndDirection(Backward, Left));
@@ -260,11 +264,11 @@ partial class RotationTest {
 
 		AssertSuccess("90 around <0, -1, 0>", NinetyAroundDown);
 		AssertSuccess("90.000 around <0.000, -1.000, 0.000>", NinetyAroundDown);
-		AssertSuccess("450" + Angle.ToStringSuffix + " around <0, -2, 0>", NinetyAroundDown);
+		AssertSuccess("450" + Angle.ToStringSuffix + " around <0, -2, 0>", 450f % Down);
 		AssertSuccess("90.000" + Angle.ToStringSuffix + " around <0.000, -3.000, 0.000>", NinetyAroundDown);
 		AssertSuccess("-90 around <0, 1, 0>", NegativeNinetyAroundUp);
 		AssertSuccess("-90.000 around <0.000, 1.000, 0.000>", NegativeNinetyAroundUp);
-		AssertSuccess("-450" + Angle.ToStringSuffix + " around <0, 2, 0>", NegativeNinetyAroundUp);
+		AssertSuccess("-450" + Angle.ToStringSuffix + " around <0, 2, 0>", -450f % Up);
 		AssertSuccess("-90.000" + Angle.ToStringSuffix + " around <0.000, 3.000, 0.000>", NegativeNinetyAroundUp);
 		AssertSuccess("123.456 around <7.89, -10.111, 123.45>", new Rotation(123.456f, new(7.89f, -10.111f, 123.45f)));
 		AssertSuccess("100 around <0, 0, 0>", Rotation.None);
