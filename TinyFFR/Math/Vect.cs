@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Vector4
 public readonly partial struct Vect : IVect<Vect>, IComparable<Vect>, IComparisonOperators<Vect, Vect, bool> {
-	const float WValue = 0f;
+	internal const float WValue = 0f;
 	public static readonly Vect Zero = new(0f, 0f, 0f);
 
 	internal readonly Vector4 AsVector4;
@@ -36,9 +36,7 @@ public readonly partial struct Vect : IVect<Vect>, IComparable<Vect>, ICompariso
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect() { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect(float x, float y, float z) : this(new Vector3(x, y, z)) { }
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect(Vector3 v) : this(new Vector4(v, WValue)) { }
+	public Vect(float x, float y, float z) : this(new Vector4(x, y, z, WValue)) { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal Vect(Vector4 v) { AsVector4 = v; }
 
@@ -46,7 +44,7 @@ public readonly partial struct Vect : IVect<Vect>, IComparable<Vect>, ICompariso
 	public static Vect FromDirectionAndDistance(Direction direction, float distance) => direction * distance;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect FromVector3(Vector3 v) => new(v);
+	public static Vect FromVector3(Vector3 v) => new(new Vector4(v, WValue));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vector3 ToVector3() => new(AsVector4.X, AsVector4.Y, AsVector4.Z);
@@ -55,7 +53,7 @@ public readonly partial struct Vect : IVect<Vect>, IComparable<Vect>, ICompariso
 	public static ReadOnlySpan<float> ConvertToSpan(in Vect src) => MemoryMarshal.Cast<Vect, float>(new ReadOnlySpan<Vect>(src))[..3];
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect ConvertFromSpan(ReadOnlySpan<float> src) => new(new Vector3(src));
+	public static Vect ConvertFromSpan(ReadOnlySpan<float> src) => FromVector3(new Vector3(src));
 
 	public override string ToString() => this.ToString(null, null);
 
@@ -64,7 +62,7 @@ public readonly partial struct Vect : IVect<Vect>, IComparable<Vect>, ICompariso
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect Parse(string s, IFormatProvider? provider = null) => new(IVect.ParseVector3String(s, provider));
+	public static Vect Parse(string s, IFormatProvider? provider = null) => FromVector3(IVect.ParseVector3String(s, provider));
 
 	public static bool TryParse(string? s, IFormatProvider? provider, out Vect result) {
 		if (!IVect.TryParseVector3String(s, provider, out var vec3)) {
@@ -72,13 +70,13 @@ public readonly partial struct Vect : IVect<Vect>, IComparable<Vect>, ICompariso
 			return false;
 		}
 		else {
-			result = new(vec3);
+			result = FromVector3(vec3);
 			return true;
 		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null) => new(IVect.ParseVector3String(s, provider));
+	public static Vect Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null) => FromVector3(IVect.ParseVector3String(s, provider));
 
 	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Vect result) {
 		if (!IVect.TryParseVector3String(s, provider, out var vec3)) {
@@ -86,7 +84,7 @@ public readonly partial struct Vect : IVect<Vect>, IComparable<Vect>, ICompariso
 			return false;
 		}
 		else {
-			result = new(vec3);
+			result = FromVector3(vec3);
 			return true;
 		}
 	}
@@ -108,7 +106,7 @@ public readonly partial struct Vect : IVect<Vect>, IComparable<Vect>, ICompariso
 	public override int GetHashCode() => AsVector4.GetHashCode();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static explicit operator Vect(Direction directionOperand) => new(directionOperand.AsVector4);
+	public static explicit operator Vect(Direction directionOperand) => new(directionOperand.AsVector4 with { W = WValue });
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static explicit operator Vect(Location locationOperand) => new(locationOperand.AsVector4 with { W = WValue });
 }
