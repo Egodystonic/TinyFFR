@@ -43,8 +43,7 @@ public readonly partial struct Direction : IVect<Direction> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction() { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction(float x, float y, float z) : this(new Vector3(x, y, z)) { }
-	public Direction(Vector3 v) : this(NormalizeOrZero(new Vector4(v.X, v.Y, v.Z, WValue))) { }
+	public Direction(float x, float y, float z) : this(NormalizeOrZero(new Vector4(x, y, z, WValue))) { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal Direction(Vector4 v) { AsVector4 = v; }
 
@@ -56,7 +55,7 @@ public readonly partial struct Direction : IVect<Direction> {
 	public static Direction FromVector3PreNormalized(Vector3 v) => new(new Vector4(v, WValue));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction FromVector3(Vector3 v) => new(v);
+	public static Direction FromVector3(Vector3 v) => new(NormalizeOrZero(new Vector4(v, WValue)));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vector3 ToVector3() => new(AsVector4.X, AsVector4.Y, AsVector4.Z);
@@ -119,7 +118,7 @@ public readonly partial struct Direction : IVect<Direction> {
 	 * string representation has lost some precision and therefore the re-parsed value won't actually be unit-length.
 	 */
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction Parse(string s, IFormatProvider? provider = null) => new(IVect.ParseVector3String(s, provider));
+	public static Direction Parse(string s, IFormatProvider? provider = null) => FromVector3(IVect.ParseVector3String(s, provider));
 
 	public static bool TryParse(string? s, IFormatProvider? provider, out Direction result) {
 		if (!IVect.TryParseVector3String(s, provider, out var vec3)) {
@@ -127,13 +126,13 @@ public readonly partial struct Direction : IVect<Direction> {
 			return false;
 		}
 		else {
-			result = new(vec3);
+			result = FromVector3(vec3);
 			return true;
 		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null) => new(IVect.ParseVector3String(s, provider));
+	public static Direction Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null) => FromVector3(IVect.ParseVector3String(s, provider));
 
 	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Direction result) {
 		if (!IVect.TryParseVector3String(s, provider, out var vec3)) {
@@ -141,7 +140,7 @@ public readonly partial struct Direction : IVect<Direction> {
 			return false;
 		}
 		else {
-			result = new(vec3);
+			result = FromVector3(vec3);
 			return true;
 		}
 	}

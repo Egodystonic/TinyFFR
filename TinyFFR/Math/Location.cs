@@ -33,16 +33,14 @@ public readonly partial struct Location : IVect<Location> {
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location() : this(Vector3.Zero) { } 
+	public Location() : this(0f, 0f, 0f) { } 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location(float x, float y, float z) : this(new Vector3(x, y, z)) { }
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location(Vector3 v) : this(new Vector4(v, WValue)) { }
+	public Location(float x, float y, float z) : this(new Vector4(x, y, z, WValue)) { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal Location(Vector4 v) { AsVector4 = v; }
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location FromVector3(Vector3 v) => new(v);
+	public static Location FromVector3(Vector3 v) => new(new Vector4(v, WValue));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vector3 ToVector3() => new(AsVector4.X, AsVector4.Y, AsVector4.Z);
@@ -51,12 +49,12 @@ public readonly partial struct Location : IVect<Location> {
 	public static ReadOnlySpan<float> ConvertToSpan(in Location src) => MemoryMarshal.Cast<Location, float>(new ReadOnlySpan<Location>(src))[..3];
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ConvertFromSpan(ReadOnlySpan<float> src) => new(new Vector3(src));
+	public static Location ConvertFromSpan(ReadOnlySpan<float> src) => FromVector3(new Vector3(src));
 
 	public override string ToString() => this.ToString(null, null);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location Parse(string s, IFormatProvider? provider = null) => new(IVect.ParseVector3String(s, provider));
+	public static Location Parse(string s, IFormatProvider? provider = null) => FromVector3(IVect.ParseVector3String(s, provider));
 
 	public static bool TryParse(string? s, IFormatProvider? provider, out Location result) {
 		if (!IVect.TryParseVector3String(s, provider, out var vec3)) {
@@ -64,13 +62,13 @@ public readonly partial struct Location : IVect<Location> {
 			return false;
 		}
 		else {
-			result = new(vec3);
+			result = FromVector3(vec3);
 			return true;
 		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null) => new(IVect.ParseVector3String(s, provider));
+	public static Location Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null) => FromVector3(IVect.ParseVector3String(s, provider));
 
 	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Location result) {
 		if (!IVect.TryParseVector3String(s, provider, out var vec3)) {
@@ -78,7 +76,7 @@ public readonly partial struct Location : IVect<Location> {
 			return false;
 		}
 		else {
-			result = new(vec3);
+			result = FromVector3(vec3);
 			return true;
 		}
 	}
