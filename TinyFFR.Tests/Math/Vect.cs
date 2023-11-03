@@ -7,7 +7,7 @@ using System.Numerics;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture]
-class VectTest {
+partial class VectTest {
 	const float TestTolerance = 0.001f;
 	static readonly Vect OneTwoNegThree = new(1f, 2f, -3f);
 	
