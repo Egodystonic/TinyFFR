@@ -176,6 +176,9 @@ partial class VectTest {
 		Assert.IsFalse(Vect.Zero == OneTwoNegThree);
 		Assert.IsFalse(Vect.Zero != new Vect(0f, 0f, 0f));
 		Assert.IsTrue(OneTwoNegThree != Vect.Zero);
+		Assert.IsTrue(new Vect(1f, 2f, 3f) != new Vect(0f, 2f, 3f));
+		Assert.IsTrue(new Vect(1f, 2f, 3f) != new Vect(1f, 0f, 3f));
+		Assert.IsTrue(new Vect(1f, 2f, 3f) != new Vect(1f, 2f, 0f));
 
 		Assert.IsTrue(Vect.Zero.Equals(Vect.Zero, 0f));
 		Assert.IsTrue(OneTwoNegThree.Equals(OneTwoNegThree, 0f));
