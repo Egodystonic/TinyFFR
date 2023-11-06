@@ -8,7 +8,7 @@ namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Vector4
 public readonly partial struct Location : IVect<Location> {
-	const float WValue = 1f;
+	internal const float WValue = 1f;
 	public static readonly Location Origin = new(0f, 0f, 0f);
 
 	internal readonly Vector4 AsVector4;
