@@ -84,16 +84,4 @@ partial struct Vect {
 	public static Vect operator /(Vect vectOperand, float scalarOperand) => vectOperand.ScaledBy(1f / scalarOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect ScaledBy(float scalar) => new(Multiply(AsVector4, scalar));
-
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int CompareTo(Vect other) => LengthSquared.CompareTo(other.LengthSquared);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool operator >(Vect left, Vect right) => left.LengthSquared > right.LengthSquared;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool operator >=(Vect left, Vect right) => left.LengthSquared >= right.LengthSquared;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool operator <(Vect left, Vect right) => left.LengthSquared < right.LengthSquared;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool operator <=(Vect left, Vect right) => left.LengthSquared <= right.LengthSquared;
 }
