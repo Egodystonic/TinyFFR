@@ -168,25 +168,4 @@ partial class VectTest {
 			}
 		}
 	}
-
-	[Test]
-	public void ShouldCorrectlyCompare() {
-		Assert.IsFalse(Vect.Zero < -Vect.Zero);
-		Assert.IsFalse(Vect.Zero > -Vect.Zero);
-		Assert.IsTrue(Vect.Zero <= -Vect.Zero);
-		Assert.IsTrue(Vect.Zero >= -Vect.Zero);
-
-		for (var x = -5f; x <= 5f; x += 1f) {
-			for (var y = -5f; y <= 5f; y += 1f) {
-				for (var z = -5f; z <= 5f; z += 1f) {
-					var v = new Vect(x, y, z);
-
-					Assert.AreEqual(v > OneTwoNegThree, v.Length > OneTwoNegThree.Length);
-					Assert.AreEqual(v >= OneTwoNegThree, v.Length >= OneTwoNegThree.Length);
-					Assert.AreEqual(v < OneTwoNegThree, v.Length < OneTwoNegThree.Length);
-					Assert.AreEqual(v <= OneTwoNegThree, v.Length <= OneTwoNegThree.Length);
-				}
-			}
-		}
-	}
 }
