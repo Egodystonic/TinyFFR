@@ -62,8 +62,15 @@ public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>
 	}
 
 	public static Angle FromAngleBetweenDirections(Direction d1, Direction d2) {
-		if (!d1.IsUnitLength) throw new ArgumentOutOfRangeException(nameof(d1), d1, $"Directions must not be {nameof(Direction.None)} or non-normalized.");
-		if (!d2.IsUnitLength) throw new ArgumentOutOfRangeException(nameof(d2), d2, $"Directions must not be {nameof(Direction.None)} or non-normalized.");
+		if (!d1.IsUnitLength) {
+			if (d1 == Direction.None) throw new ArgumentOutOfRangeException(nameof(d1), d1, $"Directions must not be {nameof(Direction.None)}.");
+			d1 = d1.Renormalized;
+		}
+		if (!d2.IsUnitLength) {
+			if (d2 == Direction.None) throw new ArgumentOutOfRangeException(nameof(d2), d2, $"Directions must not be {nameof(Direction.None)}.");
+			d2 = d2.Renormalized;
+		}
+		if (d1.Equals(d2)) return Zero; // The Dot between two identical Directions can sometimes not return exactly 1 due to FP inaccuracy, and this is confusing as you'd expect the Angle to always be 0.
 		return FromCosine(Vector4.Dot(d1.AsVector4, d2.AsVector4));
 	}
 

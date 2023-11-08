@@ -1,7 +1,9 @@
 ﻿Parameter Checking / Validation:
-	General philosophy is to parameter validate/check only where the branching + checking will not dwarf the runtime cost of the method.
+	General philosophy is to parameter validate/check where the branching + checking will not dwarf the runtime cost of the method or where the check provides significant protection against programming errors.
 	A starting rule-of-thumb is that if the method is inlinable we should consider skipping parameter validation.
 		However, this isn't always the case-- for example if the actual function body still invokes something costly or if the function is not expected to be called often, it's probably still worth validating.
+		Also, when a method is easy to make mistakes with, it's still worth considering a parameter validation even if it might be detrimental to the performance of it; 
+		ultimately this library is meant to eschew some performance for the sake of user-friendliness. People seeking every last CPU cycle can write their own DX/OGL/Vulkan/Metal wrapper.
 	Overall, the idea is that by validating wherever possible we can hopefully balance helping users catch mistakes without sacrificing performance.
 
 Overloaded Operators:

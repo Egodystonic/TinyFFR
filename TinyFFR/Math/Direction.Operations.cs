@@ -9,9 +9,12 @@ namespace Egodystonic.TinyFFR;
 partial struct Direction {
 	internal bool IsUnitLength {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => MathF.Abs(AsVector4.LengthSquared() - 1f) < 0.001f;
+		get => MathF.Abs(AsVector4.LengthSquared() - 1f) < 0.002f;
 	}
-
+	public Direction Renormalized {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(NormalizeOrZero(AsVector4));
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction operator -(Direction operand) => operand.Reversed;
@@ -48,6 +51,16 @@ partial struct Direction {
 			MathF.Abs(Z) > MathF.Abs(X) ? new Vector3(1f, 0f, 0f) : new Vector3(0f, 0f, 1f)
 		));
 	}
+	public Direction GetAnyPerpendicularDirection(Direction additionalConstrainingDirection) {
+		var cross = Vector3.Cross(ToVector3(), additionalConstrainingDirection.ToVector3());
+		var crossLength = cross.LengthSquared();
+
+		if (crossLength - 1f <= 0.001f) return FromPreNormalizedComponents(cross);
+		else if (crossLength >= 0.001f) return FromVector3(cross);
+		else if ((this ^ additionalConstrainingDirection) > 90f) return GetAnyPerpendicularDirection();
+		else return None;
+	}
+
 	public Direction OrthogonalizedAgainst(Direction d) {
 		return new(NormalizeOrZero(AsVector4 - d.AsVector4 * Dot(AsVector4, d.AsVector4)));
 	}
