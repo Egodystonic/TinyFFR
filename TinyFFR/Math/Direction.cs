@@ -21,8 +21,8 @@ public readonly partial struct Direction : IVect<Direction> {
 
 	internal readonly Vector4 AsVector4;
 
-	/*
-	 *
+	/* No init accessor on these properties. It's not intuitive that Direction tries to keep itself normalized, so
+	 * setting e.g. new Direction(1f, 2f, 3f) with { X = 4f, Y = 5f } is very hard to reason about.
 	 */
 	public float X {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -48,8 +48,6 @@ public readonly partial struct Direction : IVect<Direction> {
 	public static Direction FromPreNormalizedComponents(Vector3 v) => new(new Vector4(v, WValue));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromPreNormalizedComponents(float x, float y, float z) => new(new Vector4(x, y, z, WValue));
-
-	public static Direction FromThirdOrthogonal(Direction ortho1, Direction ortho2) => FromVector3(Vector3.Cross(ortho1.ToVector3(), ortho2.ToVector3()));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromVector3(Vector3 v) => new(NormalizeOrZero(new Vector4(v, WValue)));
@@ -159,5 +157,5 @@ public readonly partial struct Direction : IVect<Direction> {
 	public override int GetHashCode() => AsVector4.GetHashCode();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool EqualsWithinAngle(Direction other, Angle angle) => (this ^ other) <= angle;
+	public bool EqualsWithinAngle(Direction other, Angle angle) => (this ^ other) <= angle; // TODO make it clear that this will throw exception if this or other are None
 }

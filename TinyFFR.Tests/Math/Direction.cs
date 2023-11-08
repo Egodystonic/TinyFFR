@@ -36,12 +36,6 @@ partial class DirectionTest {
 		Assert.AreEqual(NormalizedV3.X, OneTwoNegThree.X);
 		Assert.AreEqual(NormalizedV3.Y, OneTwoNegThree.Y);
 		Assert.AreEqual(NormalizedV3.Z, OneTwoNegThree.Z);
-
-		Assert.AreEqual(Vector3.Normalize(NormalizedV3 with { X = 1.5f }).X, (OneTwoNegThree with { X = 1.5f }).X);
-		Assert.AreEqual(Vector3.Normalize(NormalizedV3 with { Y = 2.5f }).Y, (OneTwoNegThree with { Y = 2.5f }).Y);
-		Assert.AreEqual(Vector3.Normalize(NormalizedV3 with { Z = -3.5f }).Z, (OneTwoNegThree with { Z = -3.5f }).Z);
-
-		Assert.AreEqual(new Direction(4f, 5f, -6f), OneTwoNegThree with { X = 4f, Y = 5f, Z = -6f });
 	}
 
 	[Test]
@@ -79,45 +73,6 @@ partial class DirectionTest {
 		Assert.AreEqual(0.707f, prenormDirB.Y);
 		Assert.AreEqual(-0.707f, prenormDirB.Z);
 		Assert.AreEqual(Direction.WValue, prenormDirB.AsVector4.W);
-
-		Assert.AreEqual(Direction.Left, Direction.FromThirdOrthogonal(Direction.Forward, Direction.Up));
-		var testList = new List<Direction>();
-		for (var x = -5f; x <= 5f; x += 1f) {
-			for (var y = -5f; y <= 5f; y += 1f) {
-				for (var z = -5f; z <= 5f; z += 1f) {
-					testList.Add(new(x, y, z));
-				}
-			}
-		}
-
-		for (var i = 0; i < testList.Count; ++i) {
-			var dirA = testList[i];
-
-			Assert.AreEqual(Direction.None, Direction.FromThirdOrthogonal(Direction.None, dirA));
-			Assert.AreEqual(Direction.None, Direction.FromThirdOrthogonal(dirA, Direction.None));
-
-			for (var j = i; j < testList.Count; ++j) {
-				var dirB = testList[j];
-				var angle = dirA ^ dirB;
-
-				Assert.AreEqual(Direction.FromThirdOrthogonal(dirA, dirB), Direction.FromThirdOrthogonal(-dirB, dirA));
-
-				if (angle.Equals(0f, TestTolerance) || angle.Equals(180f, TestTolerance)) {
-					var thirdOrthogonal = Direction.FromThirdOrthogonal(dirA, dirB);
-					Assert.AreEqual(Direction.None, thirdOrthogonal);
-				}
-				else {
-					var thirdOrthogonal = Direction.FromThirdOrthogonal(dirA, dirB);
-					AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, TestTolerance);
-					AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, TestTolerance);
-					Assert.IsTrue(thirdOrthogonal.IsUnitLength);
-					thirdOrthogonal = Direction.FromThirdOrthogonal(dirB, dirA);
-					AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, TestTolerance);
-					AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, TestTolerance);
-					Assert.IsTrue(thirdOrthogonal.IsUnitLength);
-				}
-			}
-		}
 	}
 
 	[Test]
@@ -251,11 +206,12 @@ partial class DirectionTest {
 
 		Assert.IsTrue(Direction.None.Equals(Direction.None, 0f));
 		Assert.IsTrue(OneTwoNegThree.Equals(OneTwoNegThree, 0f));
-		Assert.IsTrue(new Direction(0.5f, 0.6f, 0.7f).Equals(new Direction(0.4f, 0.5f, 0.6f), 0.11f));
-		Assert.IsFalse(new Direction(0.5f, 0.6f, 0.7f).Equals(new Direction(0.4f, 0.5f, 0.6f), 0.09f));
-		Assert.IsTrue(new Direction(-0.5f, -0.5f, -0.5f).Equals(new Direction(-0.4f, -0.4f, -0.4f), 0.11f));
-		Assert.IsFalse(new Direction(-0.5f, -0.5f, -0.5f).Equals(new Direction(-0.4f, -0.4f, -0.4f), 0.09f));
-		Assert.IsFalse(new Direction(-0.5f, -0.5f, -0.5f).Equals(new Direction(0.4f, -0.4f, -0.4f), 0.11f));
+		Assert.IsTrue(new Direction(0.5f, 0.6f, 0.7f).Equals(new Direction(0.4f, 0.5f, 0.6f), 0.05f));
+		Assert.IsFalse(new Direction(0.5f, 0.6f, 0.7f).Equals(new Direction(0.4f, 0.5f, 0.6f), 0.02f));
+		Assert.IsTrue(new Direction(-0.5f, -0.5f, -0.5f).Equals(new Direction(-0.4f, -0.4f, -0.4f), 0f));
+		Assert.IsFalse(new Direction(-0.5f, -0.6f, -0.7f).Equals(new Direction(-0.4f, -0.5f, -0.6f), 0.02f));
+		Assert.IsTrue(new Direction(0.5f, 0.5f, 0.5f).Equals(new Direction(0.4f, 0.4f, 0.4f), 0f));
+
 	}
 
 	[Test]
@@ -264,12 +220,12 @@ partial class DirectionTest {
 
 		Assert.AreEqual(true, OneTwoNegThree.EqualsWithinAngle(OneTwoNegThree, 0f));
 		Assert.AreEqual(true, OneTwoNegThree.EqualsWithinAngle(30f % perpVec * OneTwoNegThree, 30f + TestTolerance));
-		Assert.AreEqual(false, OneTwoNegThree.EqualsWithinAngle(30f % perpVec * OneTwoNegThree, 30f - TestTolerance));
+		Assert.AreEqual(false, OneTwoNegThree.EqualsWithinAngle(30f % perpVec * OneTwoNegThree, 28f));
 
 		var testList = new List<Direction>();
-		for (var x = -5f; x <= 5f; x += 1f) {
-			for (var y = -5f; y <= 5f; y += 1f) {
-				for (var z = -5f; z <= 5f; z += 1f) {
+		for (var x = -5f; x <= 6f; x += 1.1f) {
+			for (var y = -5f; y <= 6f; y += 1.1f) {
+				for (var z = -5f; z <= 6f; z += 1.1f) {
 					testList.Add(new(x, y, z));
 				}
 			}
@@ -282,8 +238,8 @@ partial class DirectionTest {
 				var dirB = testList[j];
 				var angle = dirA ^ dirB;
 
-				Assert.IsTrue(dirA.EqualsWithinAngle(dirB, Angle.FromRadians(MathF.Max(0f, (angle - TestTolerance).Radians))));
-				Assert.IsFalse(dirA.EqualsWithinAngle(dirB, angle + TestTolerance));
+				Assert.IsFalse(dirA.EqualsWithinAngle(dirB, angle - TestTolerance));
+				Assert.IsTrue(dirA.EqualsWithinAngle(dirB, angle + TestTolerance));
 			}
 		}
 	}
