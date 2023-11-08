@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Vector4
 public readonly partial struct Direction : IVect<Direction> {
-	const float WValue = 0f;
+	internal const float WValue = 0f;
 	public static readonly Direction None = new();
 	public static readonly Direction Forward = new(0f, 0f, 1f);
 	public static readonly Direction Backward = new(0f, 0f, -1f);
@@ -21,23 +21,20 @@ public readonly partial struct Direction : IVect<Direction> {
 
 	internal readonly Vector4 AsVector4;
 
+	/*
+	 *
+	 */
 	public float X {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsVector4.X;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => AsVector4 = NormalizeOrZero(AsVector4 with { X = value });
 	}
 	public float Y {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsVector4.Y;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => AsVector4 = NormalizeOrZero(AsVector4 with { Y = value });
 	}
 	public float Z {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsVector4.Z;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => AsVector4 = NormalizeOrZero(AsVector4 with { Z = value });
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -48,11 +45,11 @@ public readonly partial struct Direction : IVect<Direction> {
 	internal Direction(Vector4 v) { AsVector4 = v; }
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction FromVector3PreNormalized(float x, float y, float z) => FromVector3PreNormalized(new Vector3(x, y, z));
+	public static Direction FromPreNormalizedComponents(Vector3 v) => new(new Vector4(v, WValue));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction FromVector3PreNormalized(ReadOnlySpan<float> xyz) => FromVector3PreNormalized(new Vector3(xyz));
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction FromVector3PreNormalized(Vector3 v) => new(new Vector4(v, WValue));
+	public static Direction FromPreNormalizedComponents(float x, float y, float z) => new(new Vector4(x, y, z, WValue));
+
+	public static Direction FromThirdOrthogonal(Direction ortho1, Direction ortho2) => FromVector3(Vector3.Cross(ortho1.ToVector3(), ortho2.ToVector3()));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromVector3(Vector3 v) => new(NormalizeOrZero(new Vector4(v, WValue)));
@@ -64,7 +61,7 @@ public readonly partial struct Direction : IVect<Direction> {
 	public static ReadOnlySpan<float> ConvertToSpan(in Direction src) => MemoryMarshal.Cast<Direction, float>(new ReadOnlySpan<Direction>(src))[..3];
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction ConvertFromSpan(ReadOnlySpan<float> src) => FromVector3PreNormalized(src);
+	public static Direction ConvertFromSpan(ReadOnlySpan<float> src) => FromPreNormalizedComponents(new Vector3(src));
 
 	public override string ToString() => this.ToString(null, null);
 
@@ -114,7 +111,7 @@ public readonly partial struct Direction : IVect<Direction> {
 	}
 
 	/*
-	 * We don't use FromVector3PreNormalized for these methods that parse from a string because it's possible (likely?) that the
+	 * We don't use FromPreNormalizedComponents for these methods that parse from a string because it's possible (likely?) that the
 	 * string representation has lost some precision and therefore the re-parsed value won't actually be unit-length.
 	 */
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

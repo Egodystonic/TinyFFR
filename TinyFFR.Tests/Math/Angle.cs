@@ -135,8 +135,8 @@ partial class AngleTest {
 
 		Assert.Throws<ArgumentOutOfRangeException>(() => Angle.FromAngleBetweenDirections(Direction.None, Direction.Left));
 		Assert.Throws<ArgumentOutOfRangeException>(() => Angle.FromAngleBetweenDirections(Direction.Left, Direction.None));
-		Assert.Throws<ArgumentOutOfRangeException>(() => Angle.FromAngleBetweenDirections(Direction.FromVector3PreNormalized(1f, 1f, 1f), Direction.Left));
-		Assert.Throws<ArgumentOutOfRangeException>(() => Angle.FromAngleBetweenDirections(Direction.Left, Direction.FromVector3PreNormalized(1f, 1f, 1f)));
+		Assert.Throws<ArgumentOutOfRangeException>(() => Angle.FromAngleBetweenDirections(Direction.FromPreNormalizedComponents(1f, 1f, 1f), Direction.Left));
+		Assert.Throws<ArgumentOutOfRangeException>(() => Angle.FromAngleBetweenDirections(Direction.Left, Direction.FromPreNormalizedComponents(1f, 1f, 1f)));
 	}
 
 	[Test]

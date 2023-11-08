@@ -28,7 +28,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 		get {
 			var halfAngleRadians = MathF.Acos(AsQuaternion.W);
 			if (halfAngleRadians < 0.0001f) return Direction.None;
-			else return Direction.FromVector3PreNormalized(new Vector3(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z) / MathF.Sin(halfAngleRadians));
+			else return Direction.FromPreNormalizedComponents(new Vector3(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z) / MathF.Sin(halfAngleRadians));
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		init {
@@ -92,7 +92,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 			return;
 		}
 
-		axis = Direction.FromVector3PreNormalized(new Vector3(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z) / MathF.Sin(halfAngleRadians));
+		axis = Direction.FromPreNormalizedComponents(new Vector3(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z) / MathF.Sin(halfAngleRadians));
 		angle = Angle.FromRadians(halfAngleRadians * 2f);
 	}
 

@@ -43,7 +43,7 @@ partial struct Direction {
 
 
 	public Direction GetAnyPerpendicularDirection() {
-		return FromVector3PreNormalized(Vector3.Cross(
+		return FromPreNormalizedComponents(Vector3.Cross(
 			ToVector3(),
 			MathF.Abs(Z) > MathF.Abs(X) ? new Vector3(1f, 0f, 0f) : new Vector3(0f, 0f, 1f)
 		));
@@ -53,8 +53,6 @@ partial struct Direction {
 	}
 
 
-
-	public static Direction FromThirdOrthogonal(Direction ortho1, Direction ortho2) => FromVector3PreNormalized(Vector3.Cross(ortho1.ToVector3(), ortho2.ToVector3()));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator >>(Direction start, Direction end) => Rotation.FromStartAndEndDirection(start, end);
