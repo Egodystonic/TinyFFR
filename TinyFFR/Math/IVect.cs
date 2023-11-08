@@ -13,9 +13,9 @@ public interface IVect : IMathPrimitive {
 	internal const char VectorStringPrefixChar = '<';
 	internal const char VectorStringSuffixChar = '>';
 
-	float X { get; init; }
-	float Y { get; init; }
-	float Z { get; init; }
+	float X { get; }
+	float Y { get; }
+	float Z { get; }
 	Vector3 ToVector3();
 
 	string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => VectExtensions.ToString(this, format, formatProvider);
