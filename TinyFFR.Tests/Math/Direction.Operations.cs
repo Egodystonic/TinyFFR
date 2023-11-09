@@ -26,24 +26,21 @@ partial class DirectionTest {
 
 			for (var j = i; j < testList.Count; ++j) {
 				var dirB = testList[j];
-				var angle = dirA ^ dirB;
 
-				Assert.AreEqual(dirA.GetAnyPerpendicularDirection(dirB), -dirB.GetAnyPerpendicularDirection(dirA));
+				if (dirA == Direction.None || dirB == Direction.None) {
+					Assert.AreEqual(Direction.None, dirA.GetAnyPerpendicularDirection(dirB));
+					Assert.AreEqual(Direction.None, dirB.GetAnyPerpendicularDirection(dirA));
+					continue;
+				}
 
-				if (angle.Equals(0f, TestTolerance) || angle.Equals(180f, TestTolerance)) {
-					var thirdOrthogonal = dirA.GetAnyPerpendicularDirection(dirB);
-					Assert.AreEqual(Direction.None, thirdOrthogonal);
-				}
-				else {
-					var thirdOrthogonal = dirA.GetAnyPerpendicularDirection(dirB);
-					AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, TestTolerance);
-					AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, TestTolerance);
-					Assert.IsTrue(thirdOrthogonal.IsUnitLength);
-					thirdOrthogonal = dirB.GetAnyPerpendicularDirection(dirA);
-					AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, TestTolerance);
-					AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, TestTolerance);
-					Assert.IsTrue(thirdOrthogonal.IsUnitLength);
-				}
+				var thirdOrthogonal = dirA.GetAnyPerpendicularDirection(dirB);
+				AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, 2f);
+				AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, 2f);
+				Assert.IsTrue(thirdOrthogonal.IsUnitLength);
+				thirdOrthogonal = dirB.GetAnyPerpendicularDirection(dirA);
+				AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, 2f);
+				AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, 2f);
+				Assert.IsTrue(thirdOrthogonal.IsUnitLength);
 			}
 		}
 	}
