@@ -46,7 +46,7 @@ partial struct Direction {
 
 
 	public Direction GetAnyPerpendicularDirection() {
-		return FromPreNormalizedComponents(Vector3.Cross(
+		return FromVector3(Vector3.Cross(
 			ToVector3(),
 			MathF.Abs(Z) > MathF.Abs(X) ? new Vector3(1f, 0f, 0f) : new Vector3(0f, 0f, 1f)
 		));
@@ -55,10 +55,10 @@ partial struct Direction {
 		var cross = Vector3.Cross(ToVector3(), additionalConstrainingDirection.ToVector3());
 		var crossLength = cross.LengthSquared();
 
-		if (crossLength - 1f <= 0.001f) return FromPreNormalizedComponents(cross);
+		if (MathF.Abs(crossLength - 1f) <= 0.001f) return FromPreNormalizedComponents(cross);
 		else if (crossLength >= 0.001f) return FromVector3(cross);
-		else if ((this ^ additionalConstrainingDirection) > 90f) return GetAnyPerpendicularDirection();
-		else return None;
+		else if (this.Equals(None, 0.001f) || additionalConstrainingDirection.Equals(None, 0.001f)) return None;
+		else return GetAnyPerpendicularDirection();
 	}
 
 	public Direction OrthogonalizedAgainst(Direction d) {
