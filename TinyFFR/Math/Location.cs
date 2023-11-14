@@ -45,6 +45,13 @@ public readonly partial struct Location : IVect<Location> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vector3 ToVector3() => new(AsVector4.X, AsVector4.Y, AsVector4.Z);
 
+	public void Deconstruct(out float x, out float y, out float z) {
+		x = X;
+		y = Y;
+		z = Z;
+	}
+	public static implicit operator Location((float X, float Y, float Z) tuple) => new(tuple.X, tuple.Y, tuple.Z);
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ReadOnlySpan<float> ConvertToSpan(in Location src) => MemoryMarshal.Cast<Location, float>(new ReadOnlySpan<Location>(src))[..3];
 

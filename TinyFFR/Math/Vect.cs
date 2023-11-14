@@ -49,6 +49,13 @@ public readonly partial struct Vect : IVect<Vect> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vector3 ToVector3() => new(AsVector4.X, AsVector4.Y, AsVector4.Z);
 
+	public void Deconstruct(out float x, out float y, out float z) {
+		x = X;
+		y = Y;
+		z = Z;
+	}
+	public static implicit operator Vect((float X, float Y, float Z) tuple) => new(tuple.X, tuple.Y, tuple.Z);
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ReadOnlySpan<float> ConvertToSpan(in Vect src) => MemoryMarshal.Cast<Vect, float>(new ReadOnlySpan<Vect>(src))[..3];
 

@@ -49,6 +49,15 @@ partial class LocationTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyConvertToAndFromValueTuple() {
+		Assert.AreEqual(OneTwoNegThree, (Location) (1, 2, -3));
+		var (x, y, z) = OneTwoNegThree;
+		Assert.AreEqual(1f, x);
+		Assert.AreEqual(2f, y);
+		Assert.AreEqual(-3f, z);
+	}
+
+	[Test]
 	public void ShouldCorrectlyConvertToAndFromSpan() {
 		void AssertIteration(Location input) {
 			var span = Location.ConvertToSpan(input);
