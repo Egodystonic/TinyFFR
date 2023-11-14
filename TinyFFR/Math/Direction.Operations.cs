@@ -25,15 +25,13 @@ partial struct Direction {
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect ToVect() => new(AsVector4);
-
-
+	public Vect ToVect() => ToVect(1f);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator *(Direction directionOperand, float scalarOperand) => directionOperand.WithDistance(scalarOperand);
+	public static Vect operator *(Direction directionOperand, float scalarOperand) => directionOperand.ToVect(scalarOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator *(float scalarOperand, Direction directionOperand) => directionOperand.WithDistance(scalarOperand);
+	public static Vect operator *(float scalarOperand, Direction directionOperand) => directionOperand.ToVect(scalarOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect WithDistance(float scalar) => new(AsVector4 * scalar);
+	public Vect ToVect(float length) => new(AsVector4 * length);
 
 
 
@@ -62,7 +60,16 @@ partial struct Direction {
 	}
 
 	public Direction OrthogonalizedAgainst(Direction d) {
-		return new(NormalizeOrZero(AsVector4 - d.AsVector4 * Dot(AsVector4, d.AsVector4)));
+		var dot = Dot(AsVector4, d.AsVector4);
+		// These checks are important to protect against fp inaccuracy with cases where we're orthogonalizing against the self or reverse of self etc
+		dot = MathF.Abs(dot) switch {
+			> 0.9999f => 1f * MathF.Sign(dot),
+			< 0.0001f => 0f,
+			_ => dot
+		};
+		var nonNormalizedResult = AsVector4 - d.AsVector4 * dot;
+		if (nonNormalizedResult.LengthSquared() < 0.00001f) return None;
+		else return new(Normalize(nonNormalizedResult));
 	}
 
 
