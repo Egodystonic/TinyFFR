@@ -21,6 +21,8 @@ public interface IVect : IMathPrimitive {
 	string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => VectExtensions.ToString(this, format, formatProvider);
 	bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => VectExtensions.TryFormat(this, destination, out charsWritten, format, provider);
 
+	void Deconstruct(out float x, out float y, out float z);
+	
 	protected static Vector3 ParseVector3String(ReadOnlySpan<char> s, IFormatProvider? provider) {
 		var numberFormatter = NumberFormatInfo.GetInstance(provider);
 		s = s[1..]; // Assume starts with VectorStringPrefixChar
@@ -67,6 +69,7 @@ public interface IVect : IMathPrimitive {
 
 public interface IVect<TSelf> : IVect, IMathPrimitive<TSelf> where TSelf : IVect<TSelf> {
 	static abstract TSelf FromVector3(Vector3 v);
+	static abstract implicit operator TSelf((float X, float Y, float Z) tuple);
 }
 
 public static class VectExtensions {

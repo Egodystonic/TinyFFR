@@ -81,6 +81,15 @@ partial class DirectionTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyConvertToAndFromValueTuple() {
+		Assert.AreEqual(OneTwoNegThree, (Direction) (1, 2, -3));
+		var (x, y, z) = OneTwoNegThree;
+		Assert.AreEqual(NormalizedV3.X, x);
+		Assert.AreEqual(NormalizedV3.Y, y);
+		Assert.AreEqual(NormalizedV3.Z, z);
+	}
+
+	[Test]
 	public void ShouldCorrectlyConvertToAndFromSpan() {
 		void AssertIteration(Direction input) {
 			var span = Direction.ConvertToSpan(input);
