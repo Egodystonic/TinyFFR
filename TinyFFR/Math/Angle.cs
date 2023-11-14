@@ -70,8 +70,15 @@ public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>
 			if (d2 == Direction.None) throw new ArgumentOutOfRangeException(nameof(d2), d2, $"Directions must not be {nameof(Direction.None)}.");
 			d2 = d2.Renormalized;
 		}
-		if (d1.Equals(d2)) return Zero; // The Dot between two identical Directions can sometimes not return exactly 1 due to FP inaccuracy, and this is confusing as you'd expect the Angle to always be 0.
-		return FromCosine(Vector4.Dot(d1.AsVector4, d2.AsVector4));
+
+		// Taking care of FP inaccuracy
+		var dot = Vector4.Dot(d1.AsVector4, d2.AsVector4);
+		dot = MathF.Abs(dot) switch {
+			> 0.9999f => 1f * MathF.Sign(dot),
+			< 0.0001f => 0f,
+			_ => dot
+		};
+		return FromCosine(dot);
 	}
 
 	/* I thought long and hard about whether this conversion should even exist and what it should assume the operand is.
