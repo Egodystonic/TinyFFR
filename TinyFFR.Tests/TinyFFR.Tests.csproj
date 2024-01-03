@@ -8,6 +8,8 @@
     <IsPackable>false</IsPackable>
 
     <RootNamespace>Egodystonic.TinyFFR</RootNamespace>
+
+    <Platforms>x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

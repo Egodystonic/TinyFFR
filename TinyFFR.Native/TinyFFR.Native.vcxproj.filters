@@ -30,4 +30,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="third_party\third_party_lib_versions.txt" />
+  </ItemGroup>
 </Project>
