@@ -1,0 +1,7 @@
+Filament 
+Assimp 5.3.1 https://github.com/assimp/assimp/releases/tag/v5.3.1
+	Run following in commandline in root dir after unzipping:
+		cmake CMakeLists.txt -DASSIMP_BUILD_TESTS=OFF -DASSIMP_BUILD_ASSIMP_VIEW=OFF
+		cmake --build .
+		cmake --build . --config Release
+SDL 2.28.5 https://github.com/libsdl-org/SDL/releases/tag/release-2.28.5
