@@ -160,11 +160,13 @@ partial class AngleTest {
 		Assert.AreEqual(MathF.PI * 1.5f, threeQuarterSpan[0]);
 		Assert.AreEqual(MathF.PI * 2f, fullSpan[0]);
 
+#pragma warning disable CS9193 // Argument should be a variable because it is passed to a 'ref readonly' parameter: Not wrong, but passing in rvalues is just easier for a small test
 		Assert.AreEqual(Angle.Zero, Angle.ConvertFromSpan(new ReadOnlySpan<float>(0f)));
 		Assert.AreEqual(Angle.QuarterCircle, Angle.ConvertFromSpan(new ReadOnlySpan<float>(MathF.PI * 0.5f)));
 		Assert.AreEqual(Angle.HalfCircle, Angle.ConvertFromSpan(new ReadOnlySpan<float>(MathF.PI)));
 		Assert.AreEqual(Angle.ThreeQuarterCircle, Angle.ConvertFromSpan(new ReadOnlySpan<float>(MathF.PI * 1.5f)));
 		Assert.AreEqual(Angle.FullCircle, Angle.ConvertFromSpan(new ReadOnlySpan<float>(MathF.PI * 2f)));
+#pragma warning restore CS9193
 	}
 
 	[Test]

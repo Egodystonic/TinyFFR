@@ -40,7 +40,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 
 	internal Vector4 AsVector4 {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Unsafe.As<Quaternion, Vector4>(ref Unsafe.AsRef(AsQuaternion));
+		get => Unsafe.As<Quaternion, Vector4>(ref Unsafe.AsRef(in AsQuaternion));
 	}
 
 	// TODO for the lerp/slerp ... We probably need to expose them here but I wonder if a dedicated Lerper object could be smarter about e.g. a 180deg rotation around an axis
@@ -97,7 +97,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation> {
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ReadOnlySpan<float> ConvertToSpan(in Rotation src) => MemoryMarshal.Cast<Rotation, float>(new ReadOnlySpan<Rotation>(src))[..4];
+	public static ReadOnlySpan<float> ConvertToSpan(in Rotation src) => MemoryMarshal.Cast<Rotation, float>(new ReadOnlySpan<Rotation>(in src))[..4];
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation ConvertFromSpan(ReadOnlySpan<float> src) => new(new Quaternion(src[0], src[1], src[2], src[3]));

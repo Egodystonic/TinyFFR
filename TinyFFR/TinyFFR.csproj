@@ -1,13 +1,34 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PlatformTarget>x64</PlatformTarget>
     <RootNamespace>Egodystonic.TinyFFR</RootNamespace>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Platforms>x64</Platforms>
+    <IncludeSymbols>False</IncludeSymbols>
+    <RunAnalyzersDuringBuild>True</RunAnalyzersDuringBuild>
+    <RunAnalyzersDuringLiveAnalysis>True</RunAnalyzersDuringLiveAnalysis>
+    <AnalysisLevel>latest-all</AnalysisLevel>
+    <NoWarn>
+      1701;
+      1702;
+      CA1000; <!-- Do not declare static members on generic types: Rule is overzealous (sometimes it makes sense even despite the considerations for readability) -->
+      CA2225; <!-- Provide a method named 'x' as a friendly alternate for operator op_X: Most operators do have named methods provided too, just not always using recommended nomenclature (for ease of understanding) -->
+      CA1033; <!-- Make '...' sealed [...]: Fires on interfaces with implementations erroneously -->
+    </NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>False</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
 </Project>

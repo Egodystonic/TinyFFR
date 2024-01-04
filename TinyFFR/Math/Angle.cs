@@ -106,7 +106,9 @@ public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>
 	 *
 	 *		I do foresee one group of users who would prefer this in radians-- people writing scientific/mathematical
 	 *		software who will be doing a lot of calculations in radians naturally anyway. To those people... Sorry :).
-	 *		Angle.FromRadians() will still be there for you!
+	 *		Angle.FromRadians() will still be there for you! But in actuality I don't foresee this being as big a deal
+	 *		as it maybe first seems because most scientific/math libraries tend to use full-precision floats (e.g. double)
+	 *		which won't implicitly convert to Angles anyway.
 	 * -- Degrees:
 	 *		Degrees are probably the unit that most people in the world are most familiar with. It's also the unit I
 	 *		chose to output in ToString & related methods for that very reason. I think it would be odd to be able to
@@ -143,7 +145,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle>, IComparable<Angle>
 	public static implicit operator Angle(float operand) => FromDegrees(operand);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ReadOnlySpan<float> ConvertToSpan(in Angle src) => new(src._asRadians);
+	public static ReadOnlySpan<float> ConvertToSpan(in Angle src) => new(in src._asRadians);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle ConvertFromSpan(ReadOnlySpan<float> src) => FromRadians(src[0]);
