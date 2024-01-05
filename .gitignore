@@ -396,3 +396,9 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# notepad++ backups
+*.bak
+
+# TinyFFR - include third_party always
+!TinyFFR.Native/third_party/**
