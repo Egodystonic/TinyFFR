@@ -400,5 +400,5 @@ FodyWeavers.xsd
 # notepad++ backups
 *.bak
 
-# TinyFFR - include third_party always
-!TinyFFR.Native/third_party/**
+# TinyFFR - ignore third party binaries
+TinyFFR.Native/third_party/binaries/**
