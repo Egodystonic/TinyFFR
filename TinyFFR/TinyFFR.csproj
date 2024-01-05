@@ -19,16 +19,21 @@
       CA2225; <!-- Provide a method named 'x' as a friendly alternate for operator op_X: Most operators do have named methods provided too, just not always using recommended nomenclature (for ease of understanding) -->
       CA1033; <!-- Make '...' sealed [...]: Fires on interfaces with implementations erroneously -->
     </NoWarn>
+    <BaseIntermediateOutputPath>..\build_output\intermediate</BaseIntermediateOutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
     <GenerateDocumentationFile>False</GenerateDocumentationFile>
+    <OutputPath>..\build_output\Debug</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <OutputPath>..\build_output\Release</OutputPath>
   </PropertyGroup>
 
 </Project>

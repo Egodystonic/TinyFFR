@@ -44,12 +44,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)temp\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)build_output\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build_output\intermediate\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)temp\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)build_output\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build_output\intermediate\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -105,7 +105,7 @@
     <ClCompile Include="tffr\impl\tffr_string.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="third_party\third_party_lib_versions.txt" />
+    <Text Include="third_party\third_party_installation_instructions.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

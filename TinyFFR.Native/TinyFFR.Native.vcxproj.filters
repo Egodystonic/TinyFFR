@@ -31,6 +31,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="third_party\third_party_lib_versions.txt" />
+    <Text Include="third_party\third_party_installation_instructions.txt" />
   </ItemGroup>
 </Project>

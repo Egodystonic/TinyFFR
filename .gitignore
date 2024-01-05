@@ -402,3 +402,6 @@ FodyWeavers.xsd
 
 # TinyFFR - ignore third party binaries
 TinyFFR.Native/third_party/binaries/**
+
+# TinyFFR - ignore build output
+build_output/**

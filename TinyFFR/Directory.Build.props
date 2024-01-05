@@ -1,0 +1,9 @@
+<Project>
+  <!-- See https://aka.ms/dotnet/msbuild/customize for more details on customizing your build -->
+  <PropertyGroup>
+
+    <BaseIntermediateOutputPath>..\build_output\intermediate</BaseIntermediateOutputPath>
+    
+
+  </PropertyGroup>
+</Project>
