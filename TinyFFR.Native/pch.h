@@ -8,8 +8,9 @@
 #define PCH_H
 
 // add headers that you want to pre-compile here
-#ifdef TFFR_WIN
-#define WIN32_LEAN_AND_MEAN
-#endif
+#include <string>
+#include <cstdint>
+
+#include "sdl/SDL.h"
 
 #endif //PCH_H

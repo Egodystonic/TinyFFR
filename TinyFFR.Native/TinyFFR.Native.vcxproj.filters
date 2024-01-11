@@ -18,7 +18,13 @@
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="tffr\headers\tffr_string.h">
+    <ClInclude Include="tffr\headers\utils_and_constants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tffr\headers\interop_bool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tffr\headers\environment\window_factory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -26,7 +32,10 @@
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tffr\impl\tffr_string.cpp">
+    <ClCompile Include="tffr\impl\interop_bool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tffr\impl\environment\window_factory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

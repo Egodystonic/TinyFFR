@@ -7,8 +7,8 @@ static class TestUtils {
 	public static void AssertToleranceEquals<T>(T expected, T actual, float tolerance) where T : IToleranceEquatable<T> {
 		Assert.IsTrue(
 			expected.Equals(actual, tolerance),
-			$"Expected and actual value were not within tolerance of {tolerance}" + Environment.NewLine +
-			$"\tExpected value: {expected}" + Environment.NewLine +
+			$"Expected and actual value were not within tolerance of {tolerance}" + System.Environment.NewLine +
+			$"\tExpected value: {expected}" + System.Environment.NewLine +
 			$"\tActual value: {actual}"
 		);
 	}
