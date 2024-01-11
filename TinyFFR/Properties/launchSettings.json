@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "TinyFFR": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}
