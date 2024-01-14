@@ -6,7 +6,7 @@ namespace Egodystonic.TinyFFR;
 public static class TffrInitializer {
 	static InitOptions? _initOptions = null;
 
-	internal static InitOptions InitOptions => _initOptions ?? throw new InvalidOperationException($"Please initialize TinyFFR first (using the {nameof(TffrInitializer)} class).");
+	internal static InitOptions InitOptions => _initOptions ?? throw new InvalidOperationException($"Please initialize TinyFFR first (using the {nameof(ITffrFactory)} class).");
 
 	public static void Init() => Init(new());
 	public static void Init(in InitOptions options) {

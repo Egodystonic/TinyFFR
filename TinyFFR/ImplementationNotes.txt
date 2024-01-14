@@ -18,3 +18,12 @@ Overloaded Operators:
 		It has higher precedence (avoids annoying things like having to parenthesize `someRot == 90f % Direction.Up` instead of e.g. using a bitwise operator)
 		It's a better fit than any of the other binary overloadable operators IMO (though it's still not perfect)
 		It kind of looks like the top right of a clock face with the minute hand between two numbers?
+
+The factory is the "root" object of everything and acts as a pseudo-DI/lookup provider for everything else while allowing us to effectively unit test.
+Loaders tell TinyFFR how to load files to make RamResourceHandles.
+Builders tell TinyFFR how to build RamResourceHandles programmatically.
+A RamResourceHandle can then be transferred to VRAM to get hold of a VramResourceHandle, optionally unloading the RAM resource in the same moment (to free up RAM)
+Most of the time, 
+
+... Actually, take above idea but instead streamline it in to RamLoaders and VramLoaders. Default is VramLoader, but let users load in to Ram for more advanced scenarios where they wanna stage resources .
+No, just have loaders that by default return a non-ram resource (no prefix), but let people have the option. With a RamResource they can transfer manually.

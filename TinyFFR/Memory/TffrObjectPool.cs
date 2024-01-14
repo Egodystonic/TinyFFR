@@ -14,7 +14,7 @@ sealed class TffrObjectPool<T, TInitParams> where T : class, IPoolable<T, TInitP
 		T result;
 		if (_nextReturnIndex == 0) result = T.InstantiateNew();
 		else result = (T) _curArray[_nextReturnIndex--];
-		if (TffrInitializer.InitOptions.TrackResourceLeaks) TffrMemoryManager.AddTrackedObject(result);
+		if (ITffrFactory.InitOptions.TrackResourceLeaks) TffrMemoryManager.AddTrackedObject(result);
 		result.Reinitialize(initParams);
 		return result;
 	}
@@ -22,6 +22,6 @@ sealed class TffrObjectPool<T, TInitParams> where T : class, IPoolable<T, TInitP
 	public void ReturnOne(T item) {
 		if (_nextReturnIndex == _curArray.Length) _curArray = TffrMemoryManager.SwapPooledObjectArray(_curArray.Length * 2, _curArray);
 		_curArray[_nextReturnIndex++] = item;
-		if (TffrInitializer.InitOptions.TrackResourceLeaks) TffrMemoryManager.RemoveTrackedObject(item);
+		if (ITffrFactory.InitOptions.TrackResourceLeaks) TffrMemoryManager.RemoveTrackedObject(item);
 	}
 }
