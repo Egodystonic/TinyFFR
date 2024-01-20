@@ -24,7 +24,10 @@
     <ClInclude Include="tffr\headers\interop_bool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="tffr\headers\environment\window_factory.h">
+    <ClInclude Include="tffr\headers\environment\native_impl_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tffr\headers\interop_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -35,7 +38,10 @@
     <ClCompile Include="tffr\impl\interop_bool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tffr\impl\environment\window_factory.cpp">
+    <ClCompile Include="tffr\impl\environment\native_impl_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tffr\impl\interop_utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

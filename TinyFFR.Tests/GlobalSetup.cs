@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Runtime.InteropServices;
+using Egodystonic.TinyFFR.Factory;
 
 namespace Egodystonic.TinyFFR;
 
@@ -13,7 +14,7 @@ sealed class GlobalSetup {
 	[OneTimeSetUp]
 	public void TestSetup() {
 		NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
-			typeof(TffrInitializer).Assembly,
+			typeof(TffrFactory).Assembly,
 			(libName, assy, searchPath) => {
 				var curDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 

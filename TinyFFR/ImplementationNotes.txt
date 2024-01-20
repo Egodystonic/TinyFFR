@@ -27,3 +27,5 @@ Most of the time,
 
 ... Actually, take above idea but instead streamline it in to RamLoaders and VramLoaders. Default is VramLoader, but let users load in to Ram for more advanced scenarios where they wanna stage resources .
 No, just have loaders that by default return a non-ram resource (no prefix), but let people have the option. With a RamResource they can transfer manually.
+
+XyzCreationConfig objects are structs so we can avoid garbage. Tend to pass them as "in" to avoid the large copies. Means we're basically helping the user stackalloc the options object in a roundabout way.

@@ -6,7 +6,12 @@ using static System.Numerics.Vector4;
 
 namespace Egodystonic.TinyFFR;
 
-partial struct Vect {
+partial struct Vect :
+	IUnaryNegationOperators<Vect, Vect>,
+	IAdditionOperators<Vect, Vect, Vect>,
+	ISubtractionOperators<Vect, Vect, Vect>,
+	IMultiplyOperators<Vect, float, Vect>,
+	IDivisionOperators<Vect, float, Vect> {
 	public float Length {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsVector4.Length();

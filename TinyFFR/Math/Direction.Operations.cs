@@ -6,7 +6,10 @@ using static System.Numerics.Vector4;
 
 namespace Egodystonic.TinyFFR;
 
-partial struct Direction {
+partial struct Direction :
+	IUnaryNegationOperators<Direction, Direction>,
+	IMultiplyOperators<Direction, float, Vect>,
+	IModulusOperators<Direction, Angle, Rotation> {
 	internal bool IsUnitLength {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => MathF.Abs(AsVector4.LengthSquared() - 1f) < 0.002f;

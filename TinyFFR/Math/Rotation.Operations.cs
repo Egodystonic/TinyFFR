@@ -6,7 +6,12 @@ using static Egodystonic.TinyFFR.MathUtils;
 
 namespace Egodystonic.TinyFFR;
 
-partial struct Rotation {
+partial struct Rotation : 
+	IUnaryNegationOperators<Rotation, Rotation>,
+	IMultiplyOperators<Rotation, Direction, Direction>,
+	IMultiplyOperators<Rotation, Vect, Vect>,
+	IAdditionOperators<Rotation, Rotation, Rotation>,
+	IMultiplyOperators<Rotation, float, Rotation> {
 	static Vector4 Rotate(Quaternion q, Vector4 v) {
 		var quatVec = new Vector3(q.X, q.Y, q.Z);
 		var targetVec = new Vector3(v.X, v.Y, v.Z);

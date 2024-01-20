@@ -49,7 +49,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Memory\Factory\" />
+    <Folder Include="Math\Geometry\" />
   </ItemGroup>
 
 </Project>

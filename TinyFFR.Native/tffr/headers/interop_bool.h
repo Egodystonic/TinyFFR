@@ -1,8 +1,7 @@
 #pragma once
-#include "utils_and_constants.h"
 #include <cstdint>
 
-PushSafeStructPacking
+#pragma pack(push, 1)
 class interop_bool {
 public:
 	static constexpr uint8_t true_int_val = static_cast<uint8_t>(255);
@@ -24,4 +23,4 @@ public:
 private:
 	uint8_t _valAsInt;
 };
-PopSafeStructPacking
+#pragma pack(pop)

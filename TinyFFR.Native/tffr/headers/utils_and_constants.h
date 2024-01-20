@@ -1,5 +1,8 @@
 #pragma once
 
+#include "interop_utils.h"
+#include "interop_bool.h"
+
 #pragma region Alloc/Dealloc
 
 #define AlignedNew(type, alignment) new(_aligned_malloc(sizeof(type), alignment)) type
@@ -18,24 +21,25 @@
 
 #pragma region Export and Interop
 
-static constexpr int FailMessageMemSize = 1000;
-static constexpr int MaxFailMessageLength = FailMessageMemSize - 1;
-
 #define PushSafeStructPacking _Pragma("pack(push, 1)")
 #define PopSafeStructPacking _Pragma("pack(pop)")
 
 #define ExportFuncFail(msg)																	\
 {																							\
-	strncat_s(ptrToFailMessageMemory, FailMessageMemSize, msg, MaxFailMessageLength);		\
-	return interop_bool::false_val;															\
+	interop_utils::combine_in_concat_space(func_name, " -> ", msg); \
+	interop_utils::copy_concat_space_to_err_buffer(); \
+	return interop_bool::false_int_val;															\
 }
 
+#define MacroStr(s) #s
+
 #define StartExportedFunc(funcName, ...)																			\
-	extern "C" __declspec(dllexport) uint8_t funcName(char* ptrToFailMessageMemory, __VA_ARGS__) {					\
+	extern "C" __declspec(dllexport) uint8_t funcName(__VA_ARGS__) {					\
+	static const char* func_name = MacroStr(funcName); \
 	try																												\
 
 #define EndExportedFunc									\
-		return interop_bool::true_val;					\
+		return interop_bool::true_int_val;					\
 	}													\
 	catch (std::exception& e) {							\
 		ExportFuncFail(e.what());						\
@@ -43,5 +47,20 @@ static constexpr int MaxFailMessageLength = FailMessageMemSize - 1;
 	catch (...) {										\
 		ExportFuncFail("Unknown exception occurred.");	\
 	}													\
+
+#pragma endregion
+
+#pragma region Misc
+
+#define ReturnUnlessNull(ptr, ...)	\
+	if ((ptr) != nullptr) return (ptr); \
+	interop_utils::combine_in_concat_space(__VA_ARGS__); \
+	throw std::exception{ interop_utils::err_msg_concat_space }; \
+
+#define ThrowIfNull(ptr, ...)	\
+	if ((ptr) == nullptr) { \
+		interop_utils::combine_in_concat_space(__VA_ARGS__); \
+		throw std::exception{ interop_utils::err_msg_concat_space }; \
+	} \
 
 #pragma endregion

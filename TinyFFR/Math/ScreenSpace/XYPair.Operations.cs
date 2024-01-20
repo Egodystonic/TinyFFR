@@ -1,17 +1,13 @@
-﻿// Created on 2023-09-05 by Ben Bowen
-// (c) Egodystonic / TinyFFR 2023
+﻿// Created on 2024-01-16 by Ben Bowen
+// (c) Egodystonic / TinyFFR 2024
 
-using static Egodystonic.TinyFFR.MathUtils;
-using static System.Numerics.Vector4;
+using System.Numerics;
 
 namespace Egodystonic.TinyFFR;
 
-partial struct Location : 
-	IAdditionOperators<Location, Vect, Location>,
-	ISubtractionOperators<Location, Vect, Location>,
-	ISubtractionOperators<Location, Location, Vect> {
+public readonly partial struct XYPair {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location operator +(Location locationOperand, Vect vectOperand) => locationOperand.MovedBy(vectOperand);
+	public static XYPair operator +(XYPair lhs, XYPair rhs) => locationOperand.MovedBy(vectOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Location operator +(Vect vectOperand, Location locationOperand) => locationOperand.MovedBy(vectOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

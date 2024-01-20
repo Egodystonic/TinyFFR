@@ -6,7 +6,14 @@ using static System.Numerics.Vector4;
 
 namespace Egodystonic.TinyFFR;
 
-partial struct Angle {
+partial struct Angle : 
+	IUnaryNegationOperators<Angle, Angle>, 
+	IMultiplyOperators<Angle, float, Angle>, 
+	IDivisionOperators<Angle, float, Angle>,
+	IAdditionOperators<Angle, Angle, Angle>,
+	ISubtractionOperators<Angle, Angle, Angle>,
+	IComparable<Angle>, 
+	IComparisonOperators<Angle, Angle, bool> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator -(Angle operand) => operand.Negated;
 	public Angle Negated {
