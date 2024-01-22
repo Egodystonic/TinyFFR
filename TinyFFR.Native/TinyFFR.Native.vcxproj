@@ -106,7 +106,7 @@ xcopy /y "$(ProjectDir)third_party\binaries\sdl\*.*" "$(SolutionDir)build_output
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="tffr\headers\environment\native_impl_window.h" />
-    <ClInclude Include="tffr\headers\interop_bool.h" />
+    <ClInclude Include="tffr\headers\interop_result.h" />
     <ClInclude Include="tffr\headers\interop_utils.h" />
     <ClInclude Include="tffr\headers\utils_and_constants.h" />
   </ItemGroup>
@@ -116,7 +116,7 @@ xcopy /y "$(ProjectDir)third_party\binaries\sdl\*.*" "$(SolutionDir)build_output
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="tffr\impl\environment\native_impl_window.cpp" />
-    <ClCompile Include="tffr\impl\interop_bool.cpp" />
+    <ClCompile Include="tffr\impl\interop_result.cpp" />
     <ClCompile Include="tffr\impl\interop_utils.cpp" />
   </ItemGroup>
   <ItemGroup>

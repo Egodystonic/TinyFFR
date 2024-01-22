@@ -3,7 +3,7 @@
 
 namespace Egodystonic.TinyFFR.Environment.Windowing;
 
-public readonly struct WindowHandle : IEquatable<WindowHandle>, ITrackedDisposable {
+public readonly struct Window : IEquatable<Window>, ITrackedDisposable {
 	readonly IWindowHandleImplProvider _impl;
 	internal WindowPtr Pointer { get; }
 
@@ -20,7 +20,21 @@ public readonly struct WindowHandle : IEquatable<WindowHandle>, ITrackedDisposab
 		set => SetTitleUsingSpan(value);
 	}
 
-	internal WindowHandle(WindowPtr pointer, IWindowHandleImplProvider impl) {
+	public XYPair Size {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.GetSize(Pointer);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => _impl.SetSize(Pointer, value);
+	}
+	public XYPair Position {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.GetPosition(Pointer);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => _impl.SetPosition(Pointer, value);
+	}
+
+
+	internal Window(WindowPtr pointer, IWindowHandleImplProvider impl) {
 		Pointer = pointer;
 		_impl = impl;
 	}
@@ -32,11 +46,11 @@ public readonly struct WindowHandle : IEquatable<WindowHandle>, ITrackedDisposab
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int GetTitleSpanMaxLength() => _impl.GetTitleMaxLength();
 
-	public bool Equals(WindowHandle other) => Pointer == other.Pointer;
-	public override bool Equals(object? obj) => obj is WindowHandle other && Equals(other);
+	public bool Equals(Window other) => Pointer == other.Pointer;
+	public override bool Equals(object? obj) => obj is Window other && Equals(other);
 	public override int GetHashCode() => Pointer.GetHashCode();
-	public static bool operator ==(WindowHandle left, WindowHandle right) => left.Equals(right);
-	public static bool operator !=(WindowHandle left, WindowHandle right) => !left.Equals(right);
+	public static bool operator ==(Window left, Window right) => left.Equals(right);
+	public static bool operator !=(Window left, Window right) => !left.Equals(right);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => _impl.Dispose(Pointer);

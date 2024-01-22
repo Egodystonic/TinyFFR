@@ -21,7 +21,7 @@
     <ClInclude Include="tffr\headers\utils_and_constants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="tffr\headers\interop_bool.h">
+    <ClInclude Include="tffr\headers\interop_result.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="tffr\headers\environment\native_impl_window.h">
@@ -35,7 +35,7 @@
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tffr\impl\interop_bool.cpp">
+    <ClCompile Include="tffr\impl\interop_result.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="tffr\impl\environment\native_impl_window.cpp">

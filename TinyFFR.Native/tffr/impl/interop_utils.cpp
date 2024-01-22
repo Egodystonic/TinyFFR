@@ -36,3 +36,9 @@ void interop_utils::copy_concat_space_to_err_buffer() {
 extern "C" __declspec(dllexport) char* get_err_buffer() {
 	return interop_utils::error_msg_buffer;
 }
+
+extern "C" __declspec(dllexport) char inject_fake_error() {
+	interop_utils::combine_in_concat_space("This is a fake error deliberately injected.");
+	interop_utils::copy_concat_space_to_err_buffer();
+	return 0;
+}

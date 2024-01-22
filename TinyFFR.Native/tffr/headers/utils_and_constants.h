@@ -1,7 +1,7 @@
 #pragma once
 
 #include "interop_utils.h"
-#include "interop_bool.h"
+#include "interop_result.h"
 
 #pragma region Alloc/Dealloc
 
@@ -28,7 +28,7 @@
 {																							\
 	interop_utils::combine_in_concat_space(func_name, " -> ", msg); \
 	interop_utils::copy_concat_space_to_err_buffer(); \
-	return interop_bool::false_int_val;															\
+	return interop_result::failure_int_val;															\
 }
 
 #define MacroStr(s) #s
@@ -39,7 +39,7 @@
 	try																												\
 
 #define EndExportedFunc									\
-		return interop_bool::true_int_val;					\
+		return interop_result::success_int_val;					\
 	}													\
 	catch (std::exception& e) {							\
 		ExportFuncFail(e.what());						\
