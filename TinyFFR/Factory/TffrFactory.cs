@@ -5,6 +5,7 @@ using Egodystonic.TinyFFR.Environment.Windowing;
 
 namespace Egodystonic.TinyFFR.Factory;
 
+#pragma warning disable CA2000 // "Dispose local variables of IDisposable type": Overzealous in this class
 // Implementation note: Using GetXyz() instead of properties because it allows us to parameterize the getting of builders/loaders now or in future and keep everything consistent API-wise
 public sealed class TffrFactory : ITffrFactory {
 	readonly FactoryObjectStore<WindowBuilderCreationConfig, IWindowBuilder> _windowBuilders = new();
@@ -15,7 +16,7 @@ public sealed class TffrFactory : ITffrFactory {
 	public TffrFactory(FactoryCreationConfig config) { }
 
 	public void Dispose() {
-		if (IsDisposed) throw new InvalidOperationException("Factory is already disposed.");
+		if (IsDisposed) return;
 		try {
 			_windowBuilders.DisposeAll();
 		}
@@ -39,3 +40,4 @@ public sealed class TffrFactory : ITffrFactory {
 	// TODO maybe instead of a tuple we can do the compositeresourcehandle again but allow ways of us trying to get certain handle types out of it
 	// TODO or maybe this type can act as a global lookup of active resources? So we could auto-create things in the ctor (config-overridden) and then just look them up
 }
+#pragma warning restore CA2000

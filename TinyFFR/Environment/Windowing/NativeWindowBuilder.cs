@@ -9,14 +9,11 @@ namespace Egodystonic.TinyFFR.Environment.Windowing;
 [SuppressUnmanagedCodeSecurity]
 sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, IDisposable {
 	const int InitialWindowHandleTrackingSpace = 20;
-	readonly HashSet<Window> _activeWindows = new(InitialWindowHandleTrackingSpace);
+	readonly HashSet<WindowPtr> _activeWindows = new(InitialWindowHandleTrackingSpace);
 	readonly InteropStringBuffer _windowTitleBuffer;
 	bool _isDisposed = false;
 
-	public IReadOnlyCollection<Window> ActiveWindows => _activeWindows;
-
 	public NativeWindowBuilder(WindowBuilderCreationConfig config) {
-		if (config.MaxWindowTitleLength <= 0) throw new ArgumentOutOfRangeException(nameof(config.MaxWindowTitleLength), config.MaxWindowTitleLength, "Max window title length must be positive.");
 		_windowTitleBuffer = new InteropStringBuffer(config.MaxWindowTitleLength + 1); // + 1 for null terminator
 	}
 
@@ -31,11 +28,9 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 			(int) (config.Position?.X ?? -1f),
 			(int) (config.Position?.Y ?? -1f)
 		).ThrowIfFailure();
-		var result = PointerToHandle(outPtr);
-		_activeWindows.Add(result);
-
+		_activeWindows.Add(outPtr);
 		SetTitle(outPtr, config.Title);
-		return result;
+		return new(outPtr, this);
 	}
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_window_title")]
@@ -116,23 +111,24 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 		return new(x, y);
 	}
 
-	public bool IsDisposed(WindowPtr ptr) => !_activeWindows.Contains(PointerToHandle(ptr));
+	public bool IsDisposed(WindowPtr ptr) => !_activeWindows.Contains(ptr);
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "dispose_window")]
 	static extern InteropResult DisposeWindow(WindowPtr ptr);
 	public void Dispose(WindowPtr ptr) {
-		ThrowIfPointerOrThisIsDisposed(ptr);
+		if (_isDisposed || IsDisposed(ptr)) return;
 		DisposeWindow(
 			ptr
 		).ThrowIfFailure();
-		_activeWindows.Remove(PointerToHandle(ptr));
+		_activeWindows.Remove(ptr);
 	}
 
 	public void Dispose() {
-		if (_isDisposed) throw new InvalidOperationException("Build has already been disposed.");
+		if (_isDisposed) return;
 		try {
-			foreach (var ow in _activeWindows) ow.Dispose();
+			foreach (var ptr in _activeWindows) DisposeWindow(ptr).ThrowIfFailure();
 			_activeWindows.Clear();
+			_windowTitleBuffer.Dispose();
 		}
 		finally {
 			_isDisposed = true;
@@ -146,5 +142,4 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 		if (IsDisposed(ptr)) throw new InvalidOperationException("Window has been disposed.");
 		ThrowIfThisIsDisposed();
 	}
-	Window PointerToHandle(WindowPtr ptr) => new(ptr, this);
 }

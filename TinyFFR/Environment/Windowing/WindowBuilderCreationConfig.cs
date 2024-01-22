@@ -6,5 +6,13 @@ using System;
 namespace Egodystonic.TinyFFR.Environment.Windowing;
 
 public sealed record WindowBuilderCreationConfig {
-	public int MaxWindowTitleLength { get; init; } = 200;
+	readonly int _maxWindowTitleLength = 200;
+
+	public int MaxWindowTitleLength {
+		get => _maxWindowTitleLength;
+		init {
+			if (value <= 0) throw new ArgumentOutOfRangeException(nameof(MaxWindowTitleLength), value, $"Must be at least 1.");
+			_maxWindowTitleLength = value;
+		}
+	}
 }
