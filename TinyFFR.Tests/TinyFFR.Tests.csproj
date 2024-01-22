@@ -27,4 +27,8 @@
     <ProjectReference Include="..\TinyFFR\TinyFFR.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="IntegrationTests\" />
+  </ItemGroup>
+
 </Project>

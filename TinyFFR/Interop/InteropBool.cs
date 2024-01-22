@@ -13,7 +13,7 @@ readonly struct InteropBool : IEquatable<InteropBool> {
 
 	public void ThrowIfFalse() {
 		if (this) return;
-		throw new InteropException(NativeUtils.GetLastError());
+		throw new InvalidOperationException(NativeUtils.GetLastError());
 	}
 
 	public bool Equals(InteropBool other) => _asByte == other._asByte;

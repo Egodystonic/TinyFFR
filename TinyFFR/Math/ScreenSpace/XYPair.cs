@@ -144,7 +144,4 @@ public readonly partial struct XYPair : IMathPrimitive<XYPair> {
 	public override bool Equals(object? obj) => obj is XYPair other && Equals(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override int GetHashCode() => AsVector2.GetHashCode();
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool EqualsWithinDistance(XYPair other, float distance) => (this - other).LengthSquared <= distance * distance;
 }

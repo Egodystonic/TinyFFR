@@ -4,5 +4,9 @@
 namespace Egodystonic.TinyFFR.Environment.Windowing;
 
 interface IWindowHandleImplProvider {
-	void Dispose(WindowHandle h);
+	int GetTitleMaxLength();
+	int GetTitle(WindowPtr ptr, Span<char> dest);
+	void SetTitle(WindowPtr ptr, ReadOnlySpan<char> src);
+	bool IsDisposed(WindowPtr ptr);
+	void Dispose(WindowPtr ptr);
 }

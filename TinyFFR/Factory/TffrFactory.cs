@@ -6,15 +6,33 @@ using Egodystonic.TinyFFR.Environment.Windowing;
 namespace Egodystonic.TinyFFR.Factory;
 
 // Implementation note: Using GetXyz() instead of properties because it allows us to parameterize the getting of builders/loaders now or in future and keep everything consistent API-wise
-public sealed class TffrFactory {
-	readonly FactoryObjectStore<IWindowBuilder> _windowBuilders = new();
+public sealed class TffrFactory : ITffrFactory {
+	readonly FactoryObjectStore<WindowBuilderCreationConfig, IWindowBuilder> _windowBuilders = new();
+
+	public bool IsDisposed { get; private set; }
 
 	public TffrFactory() : this(new()) { }
 	public TffrFactory(FactoryCreationConfig config) { }
 
-	public IWindowBuilder GetWindowBuilder() {
-		if (!_windowBuilders.ContainsObject<NativeWindowBuilder>()) _windowBuilders.SetObject(new NativeWindowBuilder());
-		return _windowBuilders.GetObject<NativeWindowBuilder>();
+	public void Dispose() {
+		if (IsDisposed) throw new InvalidOperationException("Factory is already disposed.");
+		try {
+			_windowBuilders.DisposeAll();
+		}
+		finally {
+			IsDisposed = true;
+		}
+	}
+
+	public IWindowBuilder GetWindowBuilder() => GetWindowBuilder(new());
+	public IWindowBuilder GetWindowBuilder(WindowBuilderCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		if (!_windowBuilders.ContainsObjectForConfig(config)) _windowBuilders.SetObjectForConfig(config, new NativeWindowBuilder(config));
+		return _windowBuilders.GetObjectForConfig(config);
+	}
+
+	void ThrowIfThisIsDisposed() {
+		if (IsDisposed) throw new InvalidOperationException("Factory has been disposed.");
 	}
 
 	//public (/* TODO tuple or dedicated struct of stuff handles */) BuildDefaultStuff() { } // TODO a better name, but I'd like to use this as a way to quickly create a window, camera, etc for quick "hello cube" and so on

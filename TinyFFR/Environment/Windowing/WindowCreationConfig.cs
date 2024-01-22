@@ -8,6 +8,7 @@ namespace Egodystonic.TinyFFR.Environment.Windowing;
 public readonly record struct WindowCreationConfig {
 	public XYPair? ScreenLocation { get; init; } = null;
 	public XYPair? ScreenDimensions { get; init; } = null;
+	public string Title { get; init; } = "Tiny FFR Application";
 
 	public WindowCreationConfig() { }
 }

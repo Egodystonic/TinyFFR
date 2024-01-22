@@ -5,33 +5,39 @@ using System.Numerics;
 
 namespace Egodystonic.TinyFFR;
 
-public readonly partial struct XYPair {
+public readonly partial struct XYPair :
+	IAdditionOperators<XYPair, XYPair, XYPair>,
+	ISubtractionOperators<XYPair, XYPair, XYPair>,
+	IMultiplyOperators<XYPair, float, XYPair>,
+	IDivisionOperators<XYPair, float, XYPair> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair operator +(XYPair lhs, XYPair rhs) => locationOperand.MovedBy(vectOperand);
+	public static XYPair operator +(XYPair lhs, XYPair rhs) => lhs.Plus(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location operator +(Vect vectOperand, Location locationOperand) => locationOperand.MovedBy(vectOperand);
+	public XYPair Plus(XYPair other) => new(AsVector2 + other.AsVector2);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location operator -(Location locationOperand, Vect vectOperand) => locationOperand.MovedBy(-vectOperand);
+	public static XYPair operator -(XYPair lhs, XYPair rhs) => lhs.Minus(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location MovedBy(Vect vect) => new(AsVector4 + vect.AsVector4);
-
-
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator >>(Location start, Location end) => start.GetVectTo(end); // TODO maybe these should give Rays ... Use >>> for Vect? .. No, other way IMO
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator <<(Location end, Location start) => start.GetVectTo(end);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator -(Location lhs, Location rhs) => lhs.GetVectFrom(rhs);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect GetVectFrom(Location otherLocation) => new(AsVector4 - otherLocation.AsVector4);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect GetVectTo(Location otherLocation) => new(otherLocation.AsVector4 - AsVector4);
-
+	public XYPair Minus(XYPair other) => new(AsVector2 - other.AsVector2);
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction GetDirectionFrom(Location otherLocation) => GetVectFrom(otherLocation).Direction;
+	public static XYPair operator -(XYPair operand) => operand.Reversed;
+	public XYPair Reversed {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(-AsVector2);
+	}
+
+	public Angle PolarAngle { // TODO clarify this is the four-quadrant inverse tangent
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Angle.FromRadians(MathF.Atan2(Y, X));
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction GetDirectionTo(Location otherLocation) => GetVectTo(otherLocation).Direction;
+	public static XYPair operator *(XYPair vectOperand, float scalarOperand) => vectOperand.ScaledBy(scalarOperand);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static XYPair operator *(float scalarOperand, XYPair vectOperand) => vectOperand.ScaledBy(scalarOperand);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static XYPair operator /(XYPair vectOperand, float scalarOperand) => vectOperand.ScaledBy(1f / scalarOperand);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public XYPair ScaledBy(float scalar) => new(Vector2.Multiply(AsVector2, scalar));
 }

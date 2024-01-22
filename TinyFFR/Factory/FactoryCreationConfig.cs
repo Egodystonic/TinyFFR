@@ -3,6 +3,6 @@
 
 namespace Egodystonic.TinyFFR.Factory;
 
-public readonly record struct FactoryCreationConfig {
+public sealed record FactoryCreationConfig {
 	
 }

@@ -4,6 +4,8 @@
 namespace Egodystonic.TinyFFR.Environment.Windowing;
 
 public interface IWindowBuilder {
+	IReadOnlyCollection<WindowHandle> ActiveWindows { get; }
+
 	WindowHandle Build() => Build(new());
 	WindowHandle Build(in WindowCreationConfig config);
 }
