@@ -1,6 +1,7 @@
 ﻿// Created on 2024-01-22 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Environment.Windowing;
 using Egodystonic.TinyFFR.Factory;
 
 namespace Egodystonic.TinyFFR;
@@ -16,10 +17,13 @@ class NativeWindowTest {
 	[Test]
 	public void Execute() {
 		using var factory = new TffrFactory();
-		using var window = factory.GetWindowBuilder(new() {
+		var monitorLoader = factory.GetMonitorLoader();
+		var windowBuilder = factory.GetWindowBuilder(new() {
 			MaxWindowTitleLength = 10
-		}).Build(new() {
-			Size = (500, 300), 
+		});
+		using var window = windowBuilder.Build(new() {
+			Monitor = monitorLoader.LoadAll()[0],
+			Size = (500, 300),
 			Position = (100, 100),
 			Title = "Test 456"
 		});

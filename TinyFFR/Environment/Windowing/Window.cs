@@ -1,13 +1,15 @@
 ﻿// Created on 2024-01-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Environment.Desktop;
+
 namespace Egodystonic.TinyFFR.Environment.Windowing;
 
 public readonly struct Window : IEquatable<Window>, ITrackedDisposable {
 	readonly IWindowHandleImplProvider _impl;
-	internal WindowPtr Pointer { get; }
+	internal WindowHandle Handle { get; }
 
-	public bool IsDisposed => _impl.IsDisposed(Pointer);
+	public bool IsDisposed => _impl.IsDisposed(Handle);
 
 	public string Title {
 		get {
@@ -20,38 +22,54 @@ public readonly struct Window : IEquatable<Window>, ITrackedDisposable {
 		set => SetTitleUsingSpan(value);
 	}
 
+	public Monitor Monitor {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.GetMonitor(Handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => _impl.SetMonitor(Handle, value);
+	}
 	public XYPair Size {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => _impl.GetSize(Pointer);
+		get => _impl.GetSize(Handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => _impl.SetSize(Pointer, value);
+		set => _impl.SetSize(Handle, value);
 	}
-	public XYPair Position {
+	public XYPair Position { // TODO explain in XMLDoc that this is relative positioning on the selected Monitor
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => _impl.GetPosition(Pointer);
+		get => _impl.GetPosition(Handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => _impl.SetPosition(Pointer, value);
+		set => _impl.SetPosition(Handle, value);
 	}
 
+	public WindowFullscreenStyle FullscreenStyle {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.GetFullscreenState(Handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => _impl.SetFullscreenState(Handle, value);
+	}
 
-	internal Window(WindowPtr pointer, IWindowHandleImplProvider impl) {
-		Pointer = pointer;
+	internal Window(WindowHandle handle, IWindowHandleImplProvider impl) {
+		Handle = handle;
 		_impl = impl;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetTitleUsingSpan(ReadOnlySpan<char> src) => _impl.SetTitle(Pointer, src);
+	public void SetTitleUsingSpan(ReadOnlySpan<char> src) => _impl.SetTitle(Handle, src);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetTitleUsingSpan(Span<char> dest) => _impl.GetTitle(Pointer, dest);
+	public int GetTitleUsingSpan(Span<char> dest) => _impl.GetTitle(Handle, dest);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int GetTitleSpanMaxLength() => _impl.GetTitleMaxLength();
 
-	public bool Equals(Window other) => Pointer == other.Pointer;
+	internal void ThrowIfInvalid() {
+		if (_impl == null) throw InvalidObjectException.InvalidDefault<Window>();
+	}
+
+	public bool Equals(Window other) => Handle == other.Handle;
 	public override bool Equals(object? obj) => obj is Window other && Equals(other);
-	public override int GetHashCode() => Pointer.GetHashCode();
+	public override int GetHashCode() => Handle.GetHashCode();
 	public static bool operator ==(Window left, Window right) => left.Equals(right);
 	public static bool operator !=(Window left, Window right) => !left.Equals(right);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Dispose() => _impl.Dispose(Pointer);
+	public void Dispose() => _impl.Dispose(Handle);
 }

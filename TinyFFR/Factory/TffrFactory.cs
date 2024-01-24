@@ -1,6 +1,7 @@
 ﻿// Created on 2024-01-16 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Environment.Desktop;
 using Egodystonic.TinyFFR.Environment.Windowing;
 
 namespace Egodystonic.TinyFFR.Factory;
@@ -8,12 +9,26 @@ namespace Egodystonic.TinyFFR.Factory;
 #pragma warning disable CA2000 // "Dispose local variables of IDisposable type": Overzealous in this class
 // Implementation note: Using GetXyz() instead of properties because it allows us to parameterize the getting of builders/loaders now or in future and keep everything consistent API-wise
 public sealed class TffrFactory : ITffrFactory {
+	readonly FactoryObjectStore<IMonitorLoader> _monitorLoaders = new();
 	readonly FactoryObjectStore<WindowBuilderCreationConfig, IWindowBuilder> _windowBuilders = new();
 
 	public bool IsDisposed { get; private set; }
 
 	public TffrFactory() : this(new()) { }
 	public TffrFactory(FactoryCreationConfig config) { }
+
+	public IMonitorLoader GetMonitorLoader() {
+		ThrowIfThisIsDisposed();
+		if (!_monitorLoaders.ContainsObjectType<NativeMonitorLoader>()) _monitorLoaders.SetObjectOfType(new NativeMonitorLoader());
+		return _monitorLoaders.GetObjectOfType<NativeMonitorLoader>();
+	}
+
+	public IWindowBuilder GetWindowBuilder() => GetWindowBuilder(new());
+	public IWindowBuilder GetWindowBuilder(WindowBuilderCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		if (!_windowBuilders.ContainsObjectForConfig(config)) _windowBuilders.SetObjectForConfig(config, new NativeWindowBuilder(config));
+		return _windowBuilders.GetObjectForConfig(config);
+	}
 
 	public void Dispose() {
 		if (IsDisposed) return;
@@ -23,13 +38,6 @@ public sealed class TffrFactory : ITffrFactory {
 		finally {
 			IsDisposed = true;
 		}
-	}
-
-	public IWindowBuilder GetWindowBuilder() => GetWindowBuilder(new());
-	public IWindowBuilder GetWindowBuilder(WindowBuilderCreationConfig config) {
-		ThrowIfThisIsDisposed();
-		if (!_windowBuilders.ContainsObjectForConfig(config)) _windowBuilders.SetObjectForConfig(config, new NativeWindowBuilder(config));
-		return _windowBuilders.GetObjectForConfig(config);
 	}
 
 	void ThrowIfThisIsDisposed() {

@@ -1,21 +1,25 @@
 #pragma once
 
+#include "utils_and_constants.h"
 #include "sdl/SDL.h"
 
-typedef SDL_Window* WindowPtr;
+typedef SDL_Window* WindowHandle;
 
 class native_impl_window {
 public:
-	static WindowPtr create_window(int32_t width, int32_t height, int32_t xPos, int32_t yPos);
+	static WindowHandle create_window(int32_t width, int32_t height, int32_t xPos, int32_t yPos);
 
-	static void set_window_title(WindowPtr ptr, const char* newTitle);
-	static void get_window_title(WindowPtr ptr, char* resultBuffer, int32_t bufferLen);
+	static void set_window_title(WindowHandle handle, const char* newTitle);
+	static void get_window_title(WindowHandle handle, char* resultBuffer, int32_t bufferLen);
 
-	static void set_window_size(WindowPtr ptr, int32_t newWidth, int32_t newHeight);
-	static void get_window_size(WindowPtr ptr, int32_t* outWidth, int32_t* outHeight);
+	static void set_window_size(WindowHandle handle, int32_t newWidth, int32_t newHeight);
+	static void get_window_size(WindowHandle handle, int32_t* outWidth, int32_t* outHeight);
 
-	static void set_window_position(WindowPtr ptr, int32_t newX, int32_t newY);
-	static void get_window_position(WindowPtr ptr, int32_t* outX, int32_t* outY);
+	static void set_window_position(WindowHandle handle, int32_t newX, int32_t newY);
+	static void get_window_position(WindowHandle handle, int32_t* outX, int32_t* outY);
 
-	static void dispose_window(WindowPtr ptr);
+	static void set_window_fullscreen_state(WindowHandle handle, interop_bool fullscreen, interop_bool borderless);
+	static void get_window_fullscreen_state(WindowHandle handle, interop_bool* outFullscreen, interop_bool* outBorderless);
+
+	static void dispose_window(WindowHandle handle);
 };

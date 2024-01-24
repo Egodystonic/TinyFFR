@@ -3,20 +3,20 @@
 
 #include "utils_and_constants.h"
 
-WindowPtr native_impl_window::create_window(int32_t width, int32_t height, int32_t xPos, int32_t yPos) {
+WindowHandle native_impl_window::create_window(int32_t width, int32_t height, int32_t xPos, int32_t yPos) {
 	auto result = SDL_CreateWindow(
 		"TinyFFR Application", 
-		xPos >= 0 ? xPos : SDL_WINDOWPOS_CENTERED, 
-		yPos >= 0 ? yPos : SDL_WINDOWPOS_CENTERED, 
-		width > 0 ? width : 1024, 
-		height > 0 ? height : 1080, 
+		xPos, 
+		yPos, 
+		width,
+		height, 
 		SDL_WINDOW_OPENGL
 	);
 	ThrowIfNull(result, SDL_GetError());
 	SDL_ShowWindow(result);
 	return result;
 }
-StartExportedFunc(create_window, WindowPtr* outResult, int32_t width, int32_t height, int32_t xPos, int32_t yPos) {
+StartExportedFunc(create_window, WindowHandle* outResult, int32_t width, int32_t height, int32_t xPos, int32_t yPos) {
 	auto result = native_impl_window::create_window(width, height, xPos, yPos);
 	*outResult = result;
 	EndExportedFunc
@@ -24,63 +24,85 @@ StartExportedFunc(create_window, WindowPtr* outResult, int32_t width, int32_t he
 
 
 
-void native_impl_window::set_window_title(WindowPtr ptr, const char* newTitle) {
-	SDL_SetWindowTitle(ptr, newTitle);
+void native_impl_window::set_window_title(WindowHandle handle, const char* newTitle) {
+	SDL_SetWindowTitle(handle, newTitle);
 }
-StartExportedFunc(set_window_title, WindowPtr ptr, const char* newTitle) {
+StartExportedFunc(set_window_title, WindowHandle ptr, const char* newTitle) {
 	native_impl_window::set_window_title(ptr, newTitle);
 	EndExportedFunc
 }
-void native_impl_window::get_window_title(WindowPtr ptr, char* resultBuffer, int32_t bufferLen) {
-	auto title = SDL_GetWindowTitle(ptr);
+void native_impl_window::get_window_title(WindowHandle handle, char* resultBuffer, int32_t bufferLen) {
+	auto title = SDL_GetWindowTitle(handle);
 	strcpy_s(resultBuffer, bufferLen, title);
 }
-StartExportedFunc(get_window_title, WindowPtr ptr, char* resultBuffer, int32_t bufferLen) {
+StartExportedFunc(get_window_title, WindowHandle ptr, char* resultBuffer, int32_t bufferLen) {
 	native_impl_window::get_window_title(ptr, resultBuffer, bufferLen);
 	EndExportedFunc
 }
 
 
 
-void native_impl_window::set_window_size(WindowPtr ptr, int32_t newWidth, int32_t newHeight) {
-	SDL_SetWindowSize(ptr, newWidth, newHeight);
+void native_impl_window::set_window_size(WindowHandle handle, int32_t newWidth, int32_t newHeight) {
+	SDL_SetWindowSize(handle, newWidth, newHeight);
 }
-StartExportedFunc(set_window_size, WindowPtr ptr, int32_t newWidth, int32_t newHeight) {
+StartExportedFunc(set_window_size, WindowHandle ptr, int32_t newWidth, int32_t newHeight) {
 	native_impl_window::set_window_size(ptr, newWidth, newHeight);
 	EndExportedFunc
 }
-void native_impl_window::get_window_size(WindowPtr ptr, int32_t* outWidth, int32_t* outHeight) {
-	SDL_GetWindowSize(ptr, outWidth, outHeight);
+void native_impl_window::get_window_size(WindowHandle handle, int32_t* outWidth, int32_t* outHeight) {
+	SDL_GetWindowSize(handle, outWidth, outHeight);
 }
-StartExportedFunc(get_window_size, WindowPtr ptr, int32_t* outWidth, int32_t* outHeight) {
+StartExportedFunc(get_window_size, WindowHandle ptr, int32_t* outWidth, int32_t* outHeight) {
 	native_impl_window::get_window_size(ptr, outWidth, outHeight);
 	EndExportedFunc
 }
 
 
 
-void native_impl_window::set_window_position(WindowPtr ptr, int32_t newX, int32_t newY) {
-	SDL_SetWindowPosition(ptr, newX, newY);
+void native_impl_window::set_window_position(WindowHandle handle, int32_t newX, int32_t newY) {
+	SDL_SetWindowPosition(handle, newX, newY);
 }
-StartExportedFunc(set_window_position, WindowPtr ptr, int32_t newX, int32_t newY) {
+StartExportedFunc(set_window_position, WindowHandle ptr, int32_t newX, int32_t newY) {
 	native_impl_window::set_window_position(ptr, newX, newY);
 	EndExportedFunc
 }
-void native_impl_window::get_window_position(WindowPtr ptr, int32_t* outX, int32_t* outY) {
-	SDL_GetWindowPosition(ptr, outX, outY);
+void native_impl_window::get_window_position(WindowHandle handle, int32_t* outX, int32_t* outY) {
+	SDL_GetWindowPosition(handle, outX, outY);
 }
-StartExportedFunc(get_window_position, WindowPtr ptr, int32_t* outX, int32_t* outY) {
+StartExportedFunc(get_window_position, WindowHandle ptr, int32_t* outX, int32_t* outY) {
 	native_impl_window::get_window_position(ptr, outX, outY);
 	EndExportedFunc
 }
 
 
 
-
-void native_impl_window::dispose_window(WindowPtr ptr) {
-	SDL_DestroyWindow(ptr);
+void native_impl_window::set_window_fullscreen_state(WindowHandle handle, interop_bool fullscreen, interop_bool borderless) {
+	auto fsSetResult = SDL_SetWindowFullscreen(handle, fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
+	ThrowIfNotPositive(fsSetResult, "Could not set fullscreen state of window. ", SDL_GetError());
+	SDL_SetWindowBordered(handle, borderless && fullscreen ? SDL_FALSE : SDL_TRUE);
 }
-StartExportedFunc(dispose_window, WindowPtr handle) {
+StartExportedFunc(set_window_fullscreen_state, WindowHandle ptr, interop_bool fullscreen, interop_bool borderless) {
+	native_impl_window::set_window_fullscreen_state(ptr, fullscreen, borderless);
+	EndExportedFunc
+}
+void native_impl_window::get_window_fullscreen_state(WindowHandle handle, interop_bool* outFullscreen, interop_bool* outBorderless) {
+	auto flags = SDL_GetWindowFlags(handle);
+	*outFullscreen = (flags & SDL_WINDOW_FULLSCREEN) > 0 ? interop_bool_true : interop_bool_false;
+	*outBorderless = (flags & SDL_WINDOW_BORDERLESS) > 0 ? interop_bool_true : interop_bool_false;
+}
+StartExportedFunc(get_window_fullscreen_state, WindowHandle ptr, interop_bool* outFullscreen, interop_bool* outBorderless) {
+	native_impl_window::get_window_fullscreen_state(ptr, outFullscreen, outBorderless);
+	EndExportedFunc
+}
+
+
+
+
+
+void native_impl_window::dispose_window(WindowHandle handle) {
+	SDL_DestroyWindow(handle);
+}
+StartExportedFunc(dispose_window, WindowHandle handle) {
 	native_impl_window::dispose_window(handle);
 	EndExportedFunc
 }

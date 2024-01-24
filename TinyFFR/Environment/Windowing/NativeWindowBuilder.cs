@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System.Security;
+using Egodystonic.TinyFFR.Environment.Desktop;
 using Egodystonic.TinyFFR.Interop;
 
 namespace Egodystonic.TinyFFR.Environment.Windowing;
@@ -9,7 +10,8 @@ namespace Egodystonic.TinyFFR.Environment.Windowing;
 [SuppressUnmanagedCodeSecurity]
 sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, IDisposable {
 	const int InitialWindowHandleTrackingSpace = 20;
-	readonly HashSet<WindowPtr> _activeWindows = new(InitialWindowHandleTrackingSpace);
+	readonly HashSet<WindowHandle> _activeWindows = new(InitialWindowHandleTrackingSpace);
+	readonly Dictionary<WindowHandle, Monitor> _windowMonitorMap = new();
 	readonly InteropStringBuffer _windowTitleBuffer;
 	bool _isDisposed = false;
 
@@ -18,28 +20,40 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 	}
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "create_window")]
-	static extern InteropResult CreateWindow(out WindowPtr outPtr, int width, int height, int xPos, int yPos);
+	static extern InteropResult CreateWindow(out WindowHandle outHandle, int width, int height, int xPos, int yPos);
+	public Window Build(Monitor monitor, WindowFullscreenStyle fullscreenStyle) {
+		return Build(new() {
+			Monitor = monitor,
+			FullscreenStyle = fullscreenStyle,
+			Size = fullscreenStyle == WindowFullscreenStyle.NotFullscreen ? monitor.Resolution * 0.66f : monitor.Resolution
+		});
+	}
+
 	public Window Build(in WindowCreationConfig config) {
 		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+		var globalPosition = config.Monitor.TranslateMonitorLocalWindowPositionToGlobal(config.Position);
 		CreateWindow(
 			out var outPtr,
-			(int) (config.Size?.X ?? -1f),
-			(int) (config.Size?.Y ?? -1f),
-			(int) (config.Position?.X ?? -1f),
-			(int) (config.Position?.Y ?? -1f)
+			(int) config.Size.X,
+			(int) config.Size.Y,
+			(int) globalPosition.X,
+			(int) globalPosition.Y
 		).ThrowIfFailure();
 		_activeWindows.Add(outPtr);
+		_windowMonitorMap.Add(outPtr, config.Monitor);
 		SetTitle(outPtr, config.Title);
+		SetFullscreenState(outPtr, config.FullscreenStyle);
 		return new(outPtr, this);
 	}
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_window_title")]
-	static extern InteropResult SetWindowTitle(WindowPtr ptr, ref readonly byte utf8BufferPtr);
-	public void SetTitle(WindowPtr ptr, ReadOnlySpan<char> src) {
-		ThrowIfPointerOrThisIsDisposed(ptr);
+	static extern InteropResult SetWindowTitle(WindowHandle handle, ref readonly byte utf8BufferPtr);
+	public void SetTitle(WindowHandle handle, ReadOnlySpan<char> src) {
+		ThrowIfHandleOrThisIsDisposed(handle);
 		_windowTitleBuffer.WriteFrom(src);
 		SetWindowTitle(
-			ptr, 
+			handle, 
 			ref _windowTitleBuffer.BufferRef
 		).ThrowIfFailure();
 	}
@@ -47,21 +61,34 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 	public int GetTitleMaxLength() => _windowTitleBuffer.BufferLength;
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_window_title")]
-	static extern InteropResult GetWindowTitle(WindowPtr ptr, ref byte utf8BufferPtr, int bufferLength);
-	public int GetTitle(WindowPtr ptr, Span<char> dest) {
-		ThrowIfPointerOrThisIsDisposed(ptr);
+	static extern InteropResult GetWindowTitle(WindowHandle handle, ref byte utf8BufferPtr, int bufferLength);
+	public int GetTitle(WindowHandle handle, Span<char> dest) {
+		ThrowIfHandleOrThisIsDisposed(handle);
 		GetWindowTitle(
-			ptr,
+			handle,
 			ref _windowTitleBuffer.BufferRef,
 			_windowTitleBuffer.BufferLength
 		).ThrowIfFailure();
 		return _windowTitleBuffer.ReadTo(dest);
 	}
 
+	public Monitor GetMonitor(WindowHandle handle) {
+		if (!_windowMonitorMap.ContainsKey(handle)) throw new InvalidOperationException($"Given window handle did not have a corresponding monitor mapped.");
+		return _windowMonitorMap[handle];
+	}
+
+	public void SetMonitor(WindowHandle handle, Monitor newMonitor) {
+		ThrowIfHandleOrThisIsDisposed(handle);
+		newMonitor.ThrowIfInvalid();
+		var localPos = GetPosition(handle);
+		_windowMonitorMap[handle] = newMonitor;
+		SetPosition(handle, localPos);
+	}
+
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_window_size")]
-	static extern InteropResult SetWindowSize(WindowPtr ptr, int newWidth, int newHeight);
-	public void SetSize(WindowPtr ptr, XYPair newDimensions) {
-		ThrowIfPointerOrThisIsDisposed(ptr);
+	static extern InteropResult SetWindowSize(WindowHandle handle, int newWidth, int newHeight);
+	public void SetSize(WindowHandle handle, XYPair newDimensions) {
+		ThrowIfHandleOrThisIsDisposed(handle);
 
 		var newWidth = (int) newDimensions.X;
 		var newHeight = (int) newDimensions.Y;
@@ -70,18 +97,18 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 		if (newHeight < 0) throw new ArgumentOutOfRangeException(nameof(newDimensions), newDimensions, $"'{nameof(XYPair.Y)}' value must be positive or 0.");
 
 		SetWindowSize(
-			ptr,
+			handle,
 			newWidth,
 			newHeight
 		).ThrowIfFailure();
 	}
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_window_size")]
-	static extern InteropResult GetWindowSize(WindowPtr ptr, out int outWidth, out int outHeight);
-	public XYPair GetSize(WindowPtr ptr) {
-		ThrowIfPointerOrThisIsDisposed(ptr);
+	static extern InteropResult GetWindowSize(WindowHandle handle, out int outWidth, out int outHeight);
+	public XYPair GetSize(WindowHandle handle) {
+		ThrowIfHandleOrThisIsDisposed(handle);
 		GetWindowSize(
-			ptr,
+			handle,
 			out var width,
 			out var height
 		).ThrowIfFailure();
@@ -89,38 +116,68 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 	}
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_window_position")]
-	static extern InteropResult SetWindowPosition(WindowPtr ptr, int newX, int newY);
-	public void SetPosition(WindowPtr ptr, XYPair newPosition) {
-		ThrowIfPointerOrThisIsDisposed(ptr);
+	static extern InteropResult SetWindowPosition(WindowHandle handle, int newX, int newY);
+	public void SetPosition(WindowHandle handle, XYPair newPosition) {
+		ThrowIfHandleOrThisIsDisposed(handle);
+		var translatedPosition = GetMonitor(handle).TranslateMonitorLocalWindowPositionToGlobal(newPosition);
 		SetWindowPosition(
-			ptr,
-			(int) newPosition.X,
-			(int) newPosition.Y
+			handle,
+			(int) translatedPosition.X,
+			(int) translatedPosition.Y
 		).ThrowIfFailure();
 	}
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_window_position")]
-	static extern InteropResult GetWindowPosition(WindowPtr ptr, out int outX, out int outY);
-	public XYPair GetPosition(WindowPtr ptr) {
-		ThrowIfPointerOrThisIsDisposed(ptr);
+	static extern InteropResult GetWindowPosition(WindowHandle handle, out int outX, out int outY);
+	public XYPair GetPosition(WindowHandle handle) {
+		ThrowIfHandleOrThisIsDisposed(handle);
 		GetWindowPosition(
-			ptr,
+			handle,
 			out var x,
 			out var y
 		).ThrowIfFailure();
-		return new(x, y);
+		return GetMonitor(handle).TranslateGlobalWindowPositionToMonitorLocal(new(x, y));
 	}
 
-	public bool IsDisposed(WindowPtr ptr) => !_activeWindows.Contains(ptr);
+	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_window_fullscreen_state")]
+	static extern InteropResult SetWindowFullscreenState(WindowHandle handle, [MarshalAs(UnmanagedType.U1)] bool fullscreen, [MarshalAs(UnmanagedType.U1)] bool borderless);
+	public void SetFullscreenState(WindowHandle handle, WindowFullscreenStyle style) {
+		ThrowIfHandleOrThisIsDisposed(handle);
+		SetWindowFullscreenState(
+			handle,
+			style != WindowFullscreenStyle.NotFullscreen,
+			style == WindowFullscreenStyle.FullscreenBorderless
+		).ThrowIfFailure();
+	}
+
+	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_window_fullscreen_state")]
+	static extern InteropResult GetWindowFullscreenState(WindowHandle handle, [MarshalAs(UnmanagedType.U1)] out bool fullscreen, [MarshalAs(UnmanagedType.U1)] out bool borderless);
+	public WindowFullscreenStyle GetFullscreenState(WindowHandle handle) {
+		ThrowIfHandleOrThisIsDisposed(handle);
+		GetWindowFullscreenState(
+			handle,
+			out var isFullscreen,
+			out var isBorderless
+		).ThrowIfFailure();
+
+		return (isFullscreen, isBorderless) switch {
+			(true, true) => WindowFullscreenStyle.FullscreenBorderless,
+			(true, false) => WindowFullscreenStyle.Fullscreen,
+			_ => WindowFullscreenStyle.NotFullscreen
+		};
+	}
+
+	public bool IsDisposed(WindowHandle handle) => !_activeWindows.Contains(handle);
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "dispose_window")]
-	static extern InteropResult DisposeWindow(WindowPtr ptr);
-	public void Dispose(WindowPtr ptr) {
-		if (_isDisposed || IsDisposed(ptr)) return;
+	static extern InteropResult DisposeWindow(WindowHandle handle);
+	public void Dispose(WindowHandle handle) {
+		if (_isDisposed || IsDisposed(handle)) return;
 		DisposeWindow(
-			ptr
+			handle
 		).ThrowIfFailure();
-		_activeWindows.Remove(ptr);
+		_activeWindows.Remove(handle);
+		_windowMonitorMap.Remove(handle);
 	}
 
 	public void Dispose() {
@@ -128,6 +185,7 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 		try {
 			foreach (var ptr in _activeWindows) DisposeWindow(ptr).ThrowIfFailure();
 			_activeWindows.Clear();
+			_windowMonitorMap.Clear();
 			_windowTitleBuffer.Dispose();
 		}
 		finally {
@@ -138,8 +196,8 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 	void ThrowIfThisIsDisposed() {
 		if (_isDisposed) throw new InvalidOperationException("Builder has been disposed.");
 	}
-	void ThrowIfPointerOrThisIsDisposed(WindowPtr ptr) {
-		if (IsDisposed(ptr)) throw new InvalidOperationException("Window has been disposed.");
+	void ThrowIfHandleOrThisIsDisposed(WindowHandle handle) {
+		if (IsDisposed(handle)) throw new InvalidOperationException("Window has been disposed.");
 		ThrowIfThisIsDisposed();
 	}
 }

@@ -30,6 +30,9 @@
     <ClInclude Include="tffr\headers\interop_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="tffr\headers\environment\native_impl_monitor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -42,6 +45,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="tffr\impl\interop_utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tffr\impl\environment\native_impl_monitor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

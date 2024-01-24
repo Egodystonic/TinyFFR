@@ -2,14 +2,17 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Environment.Desktop;
 
 namespace Egodystonic.TinyFFR.Environment.Windowing;
 
 public readonly record struct WindowCreationConfig {
-	public XYPair? Position { get; init; } = null;
-	
-	readonly XYPair? _size = null;
-	public XYPair? Size {
+	public required Monitor Monitor { get; init; }
+
+	public XYPair Position { get; init; } = (0, 0); // TODO explain in XMLDoc that this is relative positioning on the selected Monitor
+
+	readonly XYPair _size = (800, 600);
+	public XYPair Size {
 		get => _size;
 		init {
 			if (value is { X: < 0f } or { Y: < 0f }) {
@@ -28,5 +31,12 @@ public readonly record struct WindowCreationConfig {
 		}
 	}
 
+	public WindowFullscreenStyle FullscreenStyle { get; init; } = WindowFullscreenStyle.NotFullscreen;
+
 	public WindowCreationConfig() { }
+
+	internal void ThrowIfInvalid() {
+		if (Title == null) throw InvalidObjectException.InvalidDefault<WindowCreationConfig>();
+		Monitor.ThrowIfInvalid();
+	}
 }

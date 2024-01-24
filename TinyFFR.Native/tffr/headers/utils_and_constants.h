@@ -21,6 +21,10 @@
 
 #pragma region Export and Interop
 
+typedef uint8_t interop_bool;
+#define interop_bool_true ((uint8_t) 255)
+#define interop_bool_false ((uint8_t) 0)
+
 #define PushSafeStructPacking _Pragma("pack(push, 1)")
 #define PopSafeStructPacking _Pragma("pack(pop)")
 
@@ -62,5 +66,27 @@
 		interop_utils::combine_in_concat_space(__VA_ARGS__); \
 		throw std::exception{ interop_utils::err_msg_concat_space }; \
 	} \
+
+#define ThrowIfNegative(val, ...) \
+	if ((val) < 0) { \
+		interop_utils::combine_in_concat_space(__VA_ARGS__); \
+		throw std::exception{ interop_utils::err_msg_concat_space }; \
+	} \
+
+#define ThrowIfNotPositive(val, ...) \
+	if ((val) <= 0) { \
+		interop_utils::combine_in_concat_space(__VA_ARGS__); \
+		throw std::exception{ interop_utils::err_msg_concat_space }; \
+	} \
+
+#define ThrowIfNotZero(val, ...) \
+	if ((val) != 0) { \
+		interop_utils::combine_in_concat_space(__VA_ARGS__); \
+		throw std::exception{ interop_utils::err_msg_concat_space }; \
+	} \
+
+#define Throw(...) \
+	interop_utils::combine_in_concat_space(__VA_ARGS__); \
+	throw std::exception{ interop_utils::err_msg_concat_space }; \
 
 #pragma endregion
