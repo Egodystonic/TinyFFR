@@ -17,16 +17,19 @@ class NativeWindowTest {
 	[Test]
 	public void Execute() {
 		using var factory = new TffrFactory();
-		var monitorLoader = factory.GetMonitorLoader();
+		var displayLoader = factory.GetDisplayLoader();
 		var windowBuilder = factory.GetWindowBuilder(new() {
 			MaxWindowTitleLength = 10
 		});
 		using var window = windowBuilder.Build(new() {
-			Monitor = monitorLoader.LoadAll()[0],
+			Display = displayLoader.LoadAll()[0],
 			Size = (500, 300),
 			Position = (100, 100),
 			Title = "Test 456"
 		});
+		foreach (var display in displayLoader.LoadAll()) {
+			Console.WriteLine(display);
+		}
 		Assert.AreEqual("Test 456", window.Title);
 		window.Title = "Test 123";
 		Assert.AreEqual("Test 123", window.Title);

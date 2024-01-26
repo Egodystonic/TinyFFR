@@ -105,10 +105,11 @@ xcopy /y "$(ProjectDir)third_party\binaries\sdl\*.*" "$(SolutionDir)build_output
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="tffr\headers\environment\native_impl_monitor.h" />
+    <ClInclude Include="tffr\headers\environment\native_impl_display.h" />
     <ClInclude Include="tffr\headers\environment\native_impl_window.h" />
     <ClInclude Include="tffr\headers\interop_result.h" />
     <ClInclude Include="tffr\headers\interop_utils.h" />
+    <ClInclude Include="tffr\headers\native_impl_init.h" />
     <ClInclude Include="tffr\headers\utils_and_constants.h" />
   </ItemGroup>
   <ItemGroup>
@@ -116,10 +117,11 @@ xcopy /y "$(ProjectDir)third_party\binaries\sdl\*.*" "$(SolutionDir)build_output
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="tffr\impl\environment\native_impl_monitor.cpp" />
+    <ClCompile Include="tffr\impl\environment\native_impl_display.cpp" />
     <ClCompile Include="tffr\impl\environment\native_impl_window.cpp" />
     <ClCompile Include="tffr\impl\interop_result.cpp" />
     <ClCompile Include="tffr\impl\interop_utils.cpp" />
+    <ClCompile Include="tffr\impl\native_impl_init.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="third_party\third_party_installation_instructions.txt" />

@@ -10,8 +10,8 @@ interface IWindowHandleImplProvider {
 	int GetTitle(WindowHandle handle, Span<char> dest);
 	void SetTitle(WindowHandle handle, ReadOnlySpan<char> src);
 
-	Monitor GetMonitor(WindowHandle handle);
-	void SetMonitor(WindowHandle handle, Monitor newMonitor);
+	Display GetDisplay(WindowHandle handle);
+	void SetDisplay(WindowHandle handle, Display newDisplay);
 
 	XYPair GetSize(WindowHandle handle);
 	void SetSize(WindowHandle handle, XYPair newDimensions);

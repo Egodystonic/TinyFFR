@@ -6,6 +6,6 @@ using Egodystonic.TinyFFR.Environment.Desktop;
 namespace Egodystonic.TinyFFR.Environment.Windowing;
 
 public interface IWindowBuilder {
-	Window Build(Monitor monitor, WindowFullscreenStyle fullscreenStyle);
+	Window Build(Display display, WindowFullscreenStyle fullscreenStyle);
 	Window Build(in WindowCreationConfig config);
 }

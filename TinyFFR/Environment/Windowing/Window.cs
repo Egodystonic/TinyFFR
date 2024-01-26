@@ -22,11 +22,11 @@ public readonly struct Window : IEquatable<Window>, ITrackedDisposable {
 		set => SetTitleUsingSpan(value);
 	}
 
-	public Monitor Monitor {
+	public Display Display {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => _impl.GetMonitor(Handle);
+		get => _impl.GetDisplay(Handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => _impl.SetMonitor(Handle, value);
+		set => _impl.SetDisplay(Handle, value);
 	}
 	public XYPair Size {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -34,7 +34,7 @@ public readonly struct Window : IEquatable<Window>, ITrackedDisposable {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => _impl.SetSize(Handle, value);
 	}
-	public XYPair Position { // TODO explain in XMLDoc that this is relative positioning on the selected Monitor
+	public XYPair Position { // TODO explain in XMLDoc that this is relative positioning on the selected Display
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _impl.GetPosition(Handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -72,4 +72,6 @@ public readonly struct Window : IEquatable<Window>, ITrackedDisposable {
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => _impl.Dispose(Handle);
+
+	public override string ToString() => $"{nameof(Window)} \"{Title}\"";
 }

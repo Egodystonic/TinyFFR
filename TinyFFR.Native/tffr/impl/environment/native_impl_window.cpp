@@ -12,7 +12,7 @@ WindowHandle native_impl_window::create_window(int32_t width, int32_t height, in
 		height, 
 		SDL_WINDOW_OPENGL
 	);
-	ThrowIfNull(result, SDL_GetError());
+	ThrowIfNull(result, "Could not create window: ", SDL_GetError());
 	SDL_ShowWindow(result);
 	return result;
 }
@@ -78,7 +78,7 @@ StartExportedFunc(get_window_position, WindowHandle ptr, int32_t* outX, int32_t*
 
 void native_impl_window::set_window_fullscreen_state(WindowHandle handle, interop_bool fullscreen, interop_bool borderless) {
 	auto fsSetResult = SDL_SetWindowFullscreen(handle, fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
-	ThrowIfNotPositive(fsSetResult, "Could not set fullscreen state of window. ", SDL_GetError());
+	ThrowIfNotZero(fsSetResult, "Could not set fullscreen state of window: ", SDL_GetError());
 	SDL_SetWindowBordered(handle, borderless && fullscreen ? SDL_FALSE : SDL_TRUE);
 }
 StartExportedFunc(set_window_fullscreen_state, WindowHandle ptr, interop_bool fullscreen, interop_bool borderless) {

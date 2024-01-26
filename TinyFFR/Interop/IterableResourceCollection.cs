@@ -41,7 +41,7 @@ public readonly unsafe struct IterableResourceCollection<T> : IReadOnlyList<T>, 
 	public T this[int index] {
 		get {
 			ThrowIfInvalid();
-			if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be between 0 and Count - 1 ({Count - 1}).");
+			if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be >= 0 and < Count ({Count}).");
 			return _getItemFunc(_instanceParam, index);
 		}
 	}

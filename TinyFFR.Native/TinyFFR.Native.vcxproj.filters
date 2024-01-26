@@ -30,7 +30,10 @@
     <ClInclude Include="tffr\headers\interop_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="tffr\headers\environment\native_impl_monitor.h">
+    <ClInclude Include="tffr\headers\environment\native_impl_display.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tffr\headers\native_impl_init.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -47,7 +50,10 @@
     <ClCompile Include="tffr\impl\interop_utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tffr\impl\environment\native_impl_monitor.cpp">
+    <ClCompile Include="tffr\impl\environment\native_impl_display.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tffr\impl\native_impl_init.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -7,9 +7,9 @@ using Egodystonic.TinyFFR.Environment.Desktop;
 namespace Egodystonic.TinyFFR.Environment.Windowing;
 
 public readonly record struct WindowCreationConfig {
-	public required Monitor Monitor { get; init; }
+	public required Display Display { get; init; }
 
-	public XYPair Position { get; init; } = (0, 0); // TODO explain in XMLDoc that this is relative positioning on the selected Monitor
+	public XYPair Position { get; init; } = (0, 0); // TODO explain in XMLDoc that this is relative positioning on the selected Display
 
 	readonly XYPair _size = (800, 600);
 	public XYPair Size {
@@ -37,6 +37,6 @@ public readonly record struct WindowCreationConfig {
 
 	internal void ThrowIfInvalid() {
 		if (Title == null) throw InvalidObjectException.InvalidDefault<WindowCreationConfig>();
-		Monitor.ThrowIfInvalid();
+		Display.ThrowIfInvalid();
 	}
 }
