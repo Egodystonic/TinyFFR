@@ -1,6 +1,8 @@
 ﻿// Created on 2024-01-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Interop;
+
 namespace Egodystonic.TinyFFR.Environment.Desktop;
 
 public readonly struct Display : IEquatable<Display> {
@@ -31,6 +33,11 @@ public readonly struct Display : IEquatable<Display> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _impl.GetResolution(Handle);
 	}
+
+	public NativeResourceCollection<RefreshRate> SupportedRefreshRates {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.GetSupportedRefreshRates(Handle);
+	}
 	
 	internal Display(DisplayHandle handle, IDisplayHandleImplProvider impl) {
 		Handle = handle;
@@ -47,10 +54,6 @@ public readonly struct Display : IEquatable<Display> {
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal XYPair TranslateGlobalWindowPositionToDisplayLocal(XYPair globalPosition) => globalPosition - _impl.GetPositionOffset(Handle);
-
-	internal void ThrowIfInvalid() {
-		if (_impl == null) throw InvalidObjectException.InvalidDefault<Display>();
-	}
 
 	public bool Equals(Display other) => Handle == other.Handle;
 	public override bool Equals(object? obj) => obj is Display other && Equals(other);

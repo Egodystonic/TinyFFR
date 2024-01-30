@@ -2,7 +2,6 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using Egodystonic.TinyFFR.Environment.Desktop;
-using Egodystonic.TinyFFR.Environment.Windowing;
 using Egodystonic.TinyFFR.Interop;
 
 namespace Egodystonic.TinyFFR.Factory;
@@ -10,7 +9,7 @@ namespace Egodystonic.TinyFFR.Factory;
 #pragma warning disable CA2000 // "Dispose local variables of IDisposable type": Overzealous in this class
 // Implementation note: Using GetXyz() instead of properties because it allows us to parameterize the getting of builders/loaders now or in future and keep everything consistent API-wise
 public sealed class TffrFactory : ITffrFactory {
-	readonly FactoryObjectStore<IDisplayLoader> _displayLoaders = new();
+	readonly FactoryObjectStore<IDisplayDiscoverer> _displayDiscoverers = new();
 	readonly FactoryObjectStore<WindowBuilderCreationConfig, IWindowBuilder> _windowBuilders = new();
 
 	public bool IsDisposed { get; private set; }
@@ -20,10 +19,10 @@ public sealed class TffrFactory : ITffrFactory {
 		NativeUtils.InitializeNativeLibIfNecessary();
 	}
 
-	public IDisplayLoader GetDisplayLoader() {
+	public IDisplayDiscoverer GetDisplayDiscoverer() {
 		ThrowIfThisIsDisposed();
-		if (!_displayLoaders.ContainsObjectType<NativeDisplayLoader>()) _displayLoaders.SetObjectOfType(new NativeDisplayLoader());
-		return _displayLoaders.GetObjectOfType<NativeDisplayLoader>();
+		if (!_displayDiscoverers.ContainsObjectType<NativeDisplayDiscoverer>()) _displayDiscoverers.SetObjectOfType(new NativeDisplayDiscoverer());
+		return _displayDiscoverers.GetObjectOfType<NativeDisplayDiscoverer>();
 	}
 
 	public IWindowBuilder GetWindowBuilder() => GetWindowBuilder(new());

@@ -5,8 +5,8 @@ using Egodystonic.TinyFFR.Interop;
 
 namespace Egodystonic.TinyFFR.Environment.Desktop;
 
-public interface IDisplayLoader {
-	IterableResourceCollection<Display> LoadAll();
-	Display LoadRecommended();
-	Display LoadPrimary();
+public interface IDisplayDiscoverer {
+	NativeResourceCollection<Display> GetAll();
+	Display GetRecommended();
+	Display GetPrimary();
 }

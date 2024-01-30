@@ -1,9 +1,9 @@
 ﻿// Created on 2024-01-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-using Egodystonic.TinyFFR.Environment.Desktop;
+using System;
 
-namespace Egodystonic.TinyFFR.Environment.Windowing;
+namespace Egodystonic.TinyFFR.Environment.Desktop;
 
 public readonly struct Window : IEquatable<Window>, ITrackedDisposable {
 	readonly IWindowHandleImplProvider _impl;
@@ -59,10 +59,6 @@ public readonly struct Window : IEquatable<Window>, ITrackedDisposable {
 	public int GetTitleUsingSpan(Span<char> dest) => _impl.GetTitle(Handle, dest);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int GetTitleSpanMaxLength() => _impl.GetTitleMaxLength();
-
-	internal void ThrowIfInvalid() {
-		if (_impl == null) throw InvalidObjectException.InvalidDefault<Window>();
-	}
 
 	public bool Equals(Window other) => Handle == other.Handle;
 	public override bool Equals(object? obj) => obj is Window other && Equals(other);

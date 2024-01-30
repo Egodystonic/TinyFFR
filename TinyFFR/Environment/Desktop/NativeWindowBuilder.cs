@@ -1,11 +1,11 @@
 ﻿// Created on 2024-01-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System;
 using System.Security;
-using Egodystonic.TinyFFR.Environment.Desktop;
 using Egodystonic.TinyFFR.Interop;
 
-namespace Egodystonic.TinyFFR.Environment.Windowing;
+namespace Egodystonic.TinyFFR.Environment.Desktop;
 
 [SuppressUnmanagedCodeSecurity]
 sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, IDisposable {
@@ -197,7 +197,7 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 		if (_isDisposed) throw new InvalidOperationException("Builder has been disposed.");
 	}
 	void ThrowIfHandleOrThisIsDisposed(WindowHandle handle) {
-		if (IsDisposed(handle)) throw new InvalidOperationException("Window has been disposed.");
+		if (IsDisposed(handle)) throw new InvalidOperationException($"{nameof(Window)} has been disposed.");
 		ThrowIfThisIsDisposed();
 	}
 }

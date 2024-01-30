@@ -1,7 +1,6 @@
 ﻿// Created on 2024-01-22 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-using Egodystonic.TinyFFR.Environment.Windowing;
 using Egodystonic.TinyFFR.Factory;
 
 namespace Egodystonic.TinyFFR;
@@ -22,7 +21,7 @@ class NativeWindowTest {
 			MaxWindowTitleLength = 10
 		});
 		using var window = windowBuilder.Build(new() {
-			Display = displayLoader.LoadAll()[0],
+			Display = displayLoader.LoadRecommended(),
 			Size = (500, 300),
 			Position = (100, 100),
 			Title = "Test 456"

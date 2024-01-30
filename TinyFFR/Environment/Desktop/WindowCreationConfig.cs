@@ -2,9 +2,8 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
-using Egodystonic.TinyFFR.Environment.Desktop;
 
-namespace Egodystonic.TinyFFR.Environment.Windowing;
+namespace Egodystonic.TinyFFR.Environment.Desktop;
 
 public readonly record struct WindowCreationConfig {
 	public required Display Display { get; init; }

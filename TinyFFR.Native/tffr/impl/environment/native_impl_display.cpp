@@ -106,7 +106,7 @@ DisplayHandle native_impl_display::get_primary_display() {
 		get_display_positional_offset(i, &xOffset, &yOffset);
 		if (xOffset == 0 && yOffset == 0) return i;
 	}
-
+	
 	// If we can't find the primary this way, just return the first display in the list
 	return 0;
 }

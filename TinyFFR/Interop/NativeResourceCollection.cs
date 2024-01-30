@@ -3,7 +3,7 @@
 
 namespace Egodystonic.TinyFFR.Interop;
 
-public readonly unsafe struct IterableResourceCollection<T> : IReadOnlyList<T>, IEquatable<IterableResourceCollection<T>> {
+public readonly unsafe struct NativeResourceCollection<T> : IReadOnlyList<T>, IEquatable<NativeResourceCollection<T>> {
 	public struct Enumerator : IEnumerator<T> {
 		readonly int _count;
 		readonly object _instanceParam;
@@ -29,6 +29,7 @@ public readonly unsafe struct IterableResourceCollection<T> : IReadOnlyList<T>, 
 	}
 
 	readonly object _instanceParam;
+	// TODO maybe a readonly fixed 8-byte optional arg to allow parameterization of the collection
 	readonly delegate* managed<object, int> _getCountFunc;
 	readonly delegate* managed<object, int, T> _getItemFunc;
 
@@ -46,7 +47,7 @@ public readonly unsafe struct IterableResourceCollection<T> : IReadOnlyList<T>, 
 		}
 	}
 
-	internal IterableResourceCollection(object instanceParam, delegate*<object, int> getCountFunc, delegate*<object, int, T> getItemFunc) {
+	internal NativeResourceCollection(object instanceParam, delegate*<object, int> getCountFunc, delegate*<object, int, T> getItemFunc) {
 		ArgumentNullException.ThrowIfNull(getCountFunc);
 		ArgumentNullException.ThrowIfNull(getItemFunc);
 		_instanceParam = instanceParam;
@@ -62,21 +63,21 @@ public readonly unsafe struct IterableResourceCollection<T> : IReadOnlyList<T>, 
 	}
 
 	internal void ThrowIfInvalid() {
-		if (_getCountFunc == null) throw InvalidObjectException.InvalidDefault<IterableResourceCollection<T>>();
+		if (_getCountFunc == null) throw InvalidObjectException.InvalidDefault<NativeResourceCollection<T>>();
 	}
 
-	public bool Equals(IterableResourceCollection<T> other) {
+	public bool Equals(NativeResourceCollection<T> other) {
 		return _getCountFunc == other._getCountFunc && _getItemFunc == other._getItemFunc;
 	}
 
 	public override bool Equals(object? obj) {
-		return obj is IterableResourceCollection<T> other && Equals(other);
+		return obj is NativeResourceCollection<T> other && Equals(other);
 	}
 
 	public override int GetHashCode() {
 		return HashCode.Combine((IntPtr) _getCountFunc, (IntPtr) _getItemFunc);
 	}
 
-	public static bool operator ==(IterableResourceCollection<T> left, IterableResourceCollection<T> right) => left.Equals(right);
-	public static bool operator !=(IterableResourceCollection<T> left, IterableResourceCollection<T> right) => !left.Equals(right);
+	public static bool operator ==(NativeResourceCollection<T> left, NativeResourceCollection<T> right) => left.Equals(right);
+	public static bool operator !=(NativeResourceCollection<T> left, NativeResourceCollection<T> right) => !left.Equals(right);
 }

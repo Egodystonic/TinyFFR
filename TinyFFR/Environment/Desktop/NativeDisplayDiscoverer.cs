@@ -7,26 +7,26 @@ using Egodystonic.TinyFFR.Interop;
 namespace Egodystonic.TinyFFR.Environment.Desktop;
 
 [SuppressUnmanagedCodeSecurity]
-sealed class NativeDisplayLoader : IDisplayLoader, IDisplayHandleImplProvider, IDisposable {
+sealed class NativeDisplayDiscoverer : IDisplayDiscoverer, IDisplayHandleImplProvider, IDisposable {
 	readonly InteropStringBuffer _displayNameBuffer = new(200);
 	bool _isDisposed = false;
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_count")]
 	static extern InteropResult GetDisplayCount(out int outResult);
-	public unsafe IterableResourceCollection<Display> LoadAll() {
+	public unsafe NativeResourceCollection<Display> GetAll() {
 		ThrowIfThisIsDisposed();
-		return new IterableResourceCollection<Display>(this, &GetResourceCollectionCount, &GetResourceCollectionItem);
+		return new NativeResourceCollection<Display>(this, &GetResourceCollectionCount, &GetResourceCollectionItem);
 	}
 	static int GetResourceCollectionCount(object loader) {
-		((NativeDisplayLoader) loader).ThrowIfThisIsDisposed();
+		((NativeDisplayDiscoverer) loader).ThrowIfThisIsDisposed();
 		GetDisplayCount(out var result).ThrowIfFailure();
 		return result;
 	}
-	static Display GetResourceCollectionItem(object loader, int index) => new(index, ((NativeDisplayLoader) loader));
+	static Display GetResourceCollectionItem(object loader, int index) => new(index, ((NativeDisplayDiscoverer) loader));
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_recommended_display")]
 	static extern InteropResult GetRecommendedDisplay(out DisplayHandle outResult);
-	public Display LoadRecommended() {
+	public Display GetRecommended() {
 		ThrowIfThisIsDisposed();
 		GetRecommendedDisplay(
 			out var result
@@ -43,7 +43,7 @@ sealed class NativeDisplayLoader : IDisplayLoader, IDisplayHandleImplProvider, I
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_primary_display")]
 	static extern InteropResult GetPrimaryDisplay(out DisplayHandle outResult);
-	public Display LoadPrimary() {
+	public Display GetPrimary() {
 		ThrowIfThisIsDisposed();
 		GetPrimaryDisplay(
 			out var result
@@ -106,6 +106,6 @@ sealed class NativeDisplayLoader : IDisplayLoader, IDisplayHandleImplProvider, I
 	}
 
 	void ThrowIfThisIsDisposed() {
-		if (_isDisposed) throw new InvalidOperationException("Loader has been disposed.");
+		if (_isDisposed) throw new InvalidOperationException("Discoverer has been disposed.");
 	}
 }
