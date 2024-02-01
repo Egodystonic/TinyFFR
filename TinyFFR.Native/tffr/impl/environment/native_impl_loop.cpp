@@ -4,7 +4,8 @@
 #include "utils_and_constants.h"
 
 void native_impl_loop::iterate_events() {
-	
+	SDL_Event e;
+	e.
 }
 StartExportedFunc(iterate_events) {
 	native_impl_loop::iterate_events();

@@ -32,6 +32,11 @@ public readonly partial struct XYPair :
 		get => Angle.FromRadians(MathF.Atan2(Y, X));
 	}
 
+	public XYPair Absolute {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(MathF.Abs(AsVector2.X), MathF.Abs(AsVector2.Y));
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static XYPair operator *(XYPair vectOperand, float scalarOperand) => vectOperand.ScaledBy(scalarOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

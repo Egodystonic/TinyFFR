@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using Egodystonic.TinyFFR.Environment.Desktop;
+using Egodystonic.TinyFFR.Environment.Input;
 
 namespace Egodystonic.TinyFFR.Environment.Loop;
 
@@ -9,18 +10,21 @@ public readonly struct ApplicationLoop : IEquatable<ApplicationLoop>, ITrackedDi
 	readonly IApplicationLoopImplProvider _impl;
 	internal ApplicationLoopHandle Handle { get; }
 
+	public IInputTracker InputTracker {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.GetInputTracker(Handle);
+	}
+
 	internal ApplicationLoop(ApplicationLoopHandle handle, IApplicationLoopImplProvider impl) {
 		_impl = impl;
 		Handle = handle;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public TimeSpan IterateOnce() => _impl.IterateOnce(Handle);
+	public float IterateOnce() => _impl.IterateOnce(Handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public TimeSpan? TryIterateOnce() => _impl.TryIterateOnce(Handle);
-
-	// TODO input gathering
+	public float? TryIterateOnce() => _impl.TryIterateOnce(Handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => _impl.Dispose(Handle);

@@ -5,11 +5,13 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Security;
 using System.Threading;
+using Egodystonic.TinyFFR.Environment.Input;
 
 namespace Egodystonic.TinyFFR.Environment.Loop;
 
 [SuppressUnmanagedCodeSecurity]
-sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IApplicationLoopImplProvider {
+sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IApplicationLoopImplProvider, ITrackedDisposable {
+	readonly NativeInputTracker _inputTracker = new();
 	int _nextLoopHandleIndex = 1;
 	ApplicationLoopCreationConfig? _activeLoopConfig = null;
 	ApplicationLoopHandle? _activeLoopHandle = null;
@@ -37,7 +39,7 @@ sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IApplicatio
 		if (_lastIterationTimestamp != null) return Stopwatch.GetElapsedTime(_lastIterationTimestamp.Value);
 		return _activeLoopConfig!.Value.FrameInterval;
 	}
-	public TimeSpan IterateOnce(ApplicationLoopHandle handle) {
+	public float IterateOnce(ApplicationLoopHandle handle) {
 		ThrowIfHandleIsDisposed(handle);
 
 		var waitTime = GetTimeUntilNextFrame();
@@ -45,16 +47,16 @@ sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IApplicatio
 
 		ExecuteIteration();
 
-		return GetTimeSinceLastFrame();
+		return (float) GetTimeSinceLastFrame().TotalSeconds;
 	}
-	public TimeSpan? TryIterateOnce(ApplicationLoopHandle handle) {
+	public float? TryIterateOnce(ApplicationLoopHandle handle) {
 		ThrowIfHandleIsDisposed(handle);
 
 		if (GetTimeUntilNextFrame() > TimeSpan.Zero) return null;
 
 		ExecuteIteration();
 
-		return GetTimeSinceLastFrame();
+		return (float) GetTimeSinceLastFrame().TotalSeconds;
 	}
 
 	public void Dispose(ApplicationLoopHandle handle) {
@@ -66,10 +68,14 @@ sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IApplicatio
 		return _activeLoopHandle != handle;
 	}
 
+	public IInputTracker GetInputTracker(ApplicationLoopHandle handle) {
+		ThrowIfHandleIsDisposed(handle);
+		return _inputTracker;
+	}
 
 
 	void ExecuteIteration() {
-
+		_inputTracker.ExecuteIteration();
 	}
 
 	void ThrowIfHandleIsDisposed(ApplicationLoopHandle handle) {
