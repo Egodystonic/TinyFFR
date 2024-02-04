@@ -21,10 +21,10 @@ public readonly struct ApplicationLoop : IEquatable<ApplicationLoop>, ITrackedDi
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float IterateOnce() => _impl.IterateOnce(Handle);
+	public DeltaTime IterateOnce() => _impl.IterateOnce(Handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float? TryIterateOnce() => _impl.TryIterateOnce(Handle);
+	public DeltaTime? TryIterateOnce() => _impl.TryIterateOnce(Handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => _impl.Dispose(Handle);

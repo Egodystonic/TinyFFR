@@ -3,10 +3,11 @@
 
 namespace Egodystonic.TinyFFR.Environment.Input;
 
-[StructLayout(LayoutKind.Sequential, Pack = 1, Size = sizeof(KeyboardOrMouseKey) + sizeof(bool))]
+[StructLayout(LayoutKind.Explicit, Pack = 1, Size = 8)]
 public readonly struct KeyboardOrMouseKeyEvent : IEquatable<KeyboardOrMouseKeyEvent> {
+	[FieldOffset(0)]
 	readonly KeyboardOrMouseKey _key;
-	[MarshalAs(UnmanagedType.U1)]
+	[FieldOffset(4), MarshalAs(UnmanagedType.U1)]
 	readonly bool _keyDown;
 
 	public KeyboardOrMouseKey Key => _key;

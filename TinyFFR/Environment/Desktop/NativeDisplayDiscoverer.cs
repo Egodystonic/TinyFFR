@@ -13,16 +13,20 @@ sealed class NativeDisplayDiscoverer : IDisplayDiscoverer, IDisplayHandleImplPro
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_count")]
 	static extern InteropResult GetDisplayCount(out int outResult);
-	public unsafe NativeResourceCollection<Display> GetAll() {
+	public unsafe UnmanagedResourceIterator<Display> GetAll() {
 		ThrowIfThisIsDisposed();
-		return new NativeResourceCollection<Display>(this, &GetResourceCollectionCount, &GetResourceCollectionItem);
+		return new UnmanagedResourceIterator<Display>(this, &GetResourceCollectionCount, &GetResourceCollectionItem);
 	}
-	static int GetResourceCollectionCount(object loader) {
+	static int GetResourceCollectionCount(object? loader) {
+		ArgumentNullException.ThrowIfNull(loader);
 		((NativeDisplayDiscoverer) loader).ThrowIfThisIsDisposed();
 		GetDisplayCount(out var result).ThrowIfFailure();
 		return result;
 	}
-	static Display GetResourceCollectionItem(object loader, int index) => new(index, ((NativeDisplayDiscoverer) loader));
+	static Display GetResourceCollectionItem(object? loader, int index) {
+		ArgumentNullException.ThrowIfNull(loader);
+		return new Display(index, ((NativeDisplayDiscoverer) loader));
+	}
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_recommended_display")]
 	static extern InteropResult GetRecommendedDisplay(out DisplayHandle outResult);

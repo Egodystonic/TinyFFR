@@ -3,10 +3,8 @@
 
 namespace Egodystonic.TinyFFR.Environment.Input;
 
-[StructLayout(LayoutKind.Sequential, Pack = 1, Size = sizeof(GameControllerButton) + sizeof(bool))]
 public readonly struct GameControllerButtonEvent : IEquatable<GameControllerButtonEvent> {
 	readonly GameControllerButton _button;
-	[MarshalAs(UnmanagedType.U1)]
 	readonly bool _keyDown;
 
 	public GameControllerButton Button => _button;

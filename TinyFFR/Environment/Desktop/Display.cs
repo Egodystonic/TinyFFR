@@ -34,7 +34,7 @@ public readonly struct Display : IEquatable<Display> {
 		get => _impl.GetResolution(Handle);
 	}
 
-	public NativeResourceCollection<RefreshRate> SupportedRefreshRates {
+	public UnmanagedResourceIterator<RefreshRate> SupportedRefreshRates {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _impl.GetSupportedRefreshRates(Handle);
 	}

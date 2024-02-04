@@ -6,7 +6,7 @@ using Egodystonic.TinyFFR.Interop;
 namespace Egodystonic.TinyFFR.Environment.Input;
 
 public interface IGameControllerInputTracker {
-	GameControllerId ControllerId { get; }
+	GameControllerId? ControllerId { get; }
 	bool IsConnected { get; }
 
 	GameControllerStickPosition LeftStickPosition { get; }
@@ -14,6 +14,6 @@ public interface IGameControllerInputTracker {
 	GameControllerTriggerPosition LeftTriggerPosition { get; }
 	GameControllerTriggerPosition RightTriggerPosition { get; }
 
-	NativeResourceCollection<GameControllerButtonEvent> NewButtonEvents { get; }
-	NativeResourceCollection<GameControllerButton> CurrentlyPressedButtons { get; }
+	ReadOnlySpan<GameControllerButtonEvent> NewButtonEvents { get; }
+	ReadOnlySpan<GameControllerButton> CurrentlyPressedButtons { get; }
 }

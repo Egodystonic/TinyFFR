@@ -4,6 +4,7 @@
 using System;
 using System.Security;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Environment.Desktop;
 
@@ -11,7 +12,7 @@ namespace Egodystonic.TinyFFR.Environment.Desktop;
 sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, IDisposable {
 	const int InitialWindowHandleTrackingSpace = 20;
 	readonly HashSet<WindowHandle> _activeWindows = new(InitialWindowHandleTrackingSpace);
-	readonly Dictionary<WindowHandle, Display> _windowDisplayMap = new();
+	readonly ArrayPoolBackedMap<WindowHandle, Display> _windowDisplayMap = new();
 	readonly InteropStringBuffer _windowTitleBuffer;
 	bool _isDisposed = false;
 
