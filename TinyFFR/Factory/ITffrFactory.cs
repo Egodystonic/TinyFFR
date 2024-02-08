@@ -2,11 +2,14 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using Egodystonic.TinyFFR.Environment.Desktop;
+using Egodystonic.TinyFFR.Environment.Loop;
 
 namespace Egodystonic.TinyFFR.Factory;
 
 public interface ITffrFactory : ITrackedDisposable {
 	IDisplayDiscoverer GetDisplayDiscoverer();
 	IWindowBuilder GetWindowBuilder();
-	IWindowBuilder GetWindowBuilder(WindowBuilderCreationConfig config);
+	IWindowBuilder GetWindowBuilder(WindowBuilderConfig config);
+	IApplicationLoopBuilder GetApplicationLoopBuilder();
+	IApplicationLoopBuilder GetApplicationLoopBuilder(ApplicationLoopBuilderConfig config);
 }

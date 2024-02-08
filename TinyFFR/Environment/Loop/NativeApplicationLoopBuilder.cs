@@ -12,15 +12,19 @@ namespace Egodystonic.TinyFFR.Environment.Loop;
 
 [SuppressUnmanagedCodeSecurity]
 sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IApplicationLoopImplProvider, IDisposable {
-	readonly NativeInputTracker _inputTracker = new();
+	readonly NativeInputTracker _inputTracker;
 	int _nextLoopHandleIndex = 1;
-	ApplicationLoopCreationConfig? _activeLoopConfig = null;
+	ApplicationLoopConfig? _activeLoopConfig = null;
 	ApplicationLoopHandle? _activeLoopHandle = null;
 	long? _lastIterationTimestamp = null;
 	bool _isDisposed = false;
 
+	public NativeApplicationLoopBuilder(ApplicationLoopBuilderConfig config) {
+		_inputTracker = new(config.InputTrackerConfig);
+	}
+
 	public ApplicationLoop BuildLoop() => BuildLoop(new());
-	public ApplicationLoop BuildLoop(in ApplicationLoopCreationConfig config) {
+	public ApplicationLoop BuildLoop(in ApplicationLoopConfig config) {
 		ThrowIfThisIsDisposed();
 		if (_activeLoopHandle != null) throw new InvalidOperationException($"Only one {nameof(ApplicationLoop)} at a time may be built. Dispose the previous instance before building another.");
 		config.ThrowIfInvalid();

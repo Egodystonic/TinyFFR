@@ -13,7 +13,6 @@ public interface IInputTracker {
 
 	XYPair MouseCursorPosition { get; }
 
-	ReadOnlySpan<GameControllerId> DetectedGameControllers { get; }
-	// TODO document that null input means we'll return an "amalgamated" tracker that just uses events from all game controllers together -- easy to support whatever the user wants to use then
-	IGameControllerInputTracker GetInputTrackerForGameController(GameControllerId? controllerId = null);
+	ReadOnlySpan<GameController> GameControllers { get; }
+	GameController GetAmalgamatedGameController();
 }

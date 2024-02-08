@@ -1,14 +1,16 @@
 ﻿// Created on 2024-01-29 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Interop;
+
 namespace Egodystonic.TinyFFR.Environment.Input;
 
 [StructLayout(LayoutKind.Explicit, Pack = 1, Size = 8)]
 public readonly struct KeyboardOrMouseKeyEvent : IEquatable<KeyboardOrMouseKeyEvent> {
 	[FieldOffset(0)]
 	readonly KeyboardOrMouseKey _key;
-	[FieldOffset(4), MarshalAs(UnmanagedType.U1)]
-	readonly bool _keyDown;
+	[FieldOffset(4)]
+	readonly InteropBool _keyDown;
 
 	public KeyboardOrMouseKey Key => _key;
 	public bool KeyDown => _keyDown;

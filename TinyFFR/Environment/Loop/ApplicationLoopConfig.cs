@@ -2,10 +2,11 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Environment.Input;
 
 namespace Egodystonic.TinyFFR.Environment.Loop;
 
-public readonly record struct ApplicationLoopCreationConfig {
+public readonly record struct ApplicationLoopConfig {
 	internal readonly TimeSpan FrameInterval = TimeSpan.Zero;
 
 	public int? FrameRateCapHz {
@@ -22,7 +23,7 @@ public readonly record struct ApplicationLoopCreationConfig {
 
 	public bool WaitForVSync { get; init; } = false;
 
-	public ApplicationLoopCreationConfig() { }
+	public ApplicationLoopConfig() { }
 
 	internal void ThrowIfInvalid() {
 		

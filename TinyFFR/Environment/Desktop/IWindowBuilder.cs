@@ -7,5 +7,5 @@ namespace Egodystonic.TinyFFR.Environment.Desktop;
 
 public interface IWindowBuilder {
 	Window Build(Display display, WindowFullscreenStyle fullscreenStyle);
-	Window Build(in WindowCreationConfig config);
+	Window Build(in WindowConfig config);
 }

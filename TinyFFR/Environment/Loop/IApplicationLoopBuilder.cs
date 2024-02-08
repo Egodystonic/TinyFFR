@@ -5,5 +5,5 @@ namespace Egodystonic.TinyFFR.Environment.Loop;
 
 public interface IApplicationLoopBuilder {
 	ApplicationLoop BuildLoop();
-	ApplicationLoop BuildLoop(in ApplicationLoopCreationConfig config);
+	ApplicationLoop BuildLoop(in ApplicationLoopConfig config);
 }

@@ -16,7 +16,7 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 	readonly InteropStringBuffer _windowTitleBuffer;
 	bool _isDisposed = false;
 
-	public NativeWindowBuilder(WindowBuilderCreationConfig config) {
+	public NativeWindowBuilder(WindowBuilderConfig config) {
 		_windowTitleBuffer = new InteropStringBuffer(config.MaxWindowTitleLength + 1); // + 1 for null terminator
 	}
 
@@ -30,7 +30,7 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 		});
 	}
 
-	public Window Build(in WindowCreationConfig config) {
+	public Window Build(in WindowConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 		var globalPosition = config.Display.TranslateDisplayLocalWindowPositionToGlobal(config.Position);
@@ -80,7 +80,6 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 
 	public void SetDisplay(WindowHandle handle, Display newDisplay) {
 		ThrowIfHandleOrThisIsDisposed(handle);
-		newDisplay.ThrowIfInvalid();
 		var localPos = GetPosition(handle);
 		_windowDisplayMap[handle] = newDisplay;
 		SetPosition(handle, localPos);
@@ -141,7 +140,7 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 	}
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_window_fullscreen_state")]
-	static extern InteropResult SetWindowFullscreenState(WindowHandle handle, [MarshalAs(UnmanagedType.U1)] bool fullscreen, [MarshalAs(UnmanagedType.U1)] bool borderless);
+	static extern InteropResult SetWindowFullscreenState(WindowHandle handle, InteropBool fullscreen, InteropBool borderless);
 	public void SetFullscreenState(WindowHandle handle, WindowFullscreenStyle style) {
 		ThrowIfHandleOrThisIsDisposed(handle);
 		SetWindowFullscreenState(
@@ -152,7 +151,7 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 	}
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_window_fullscreen_state")]
-	static extern InteropResult GetWindowFullscreenState(WindowHandle handle, [MarshalAs(UnmanagedType.U1)] out bool fullscreen, [MarshalAs(UnmanagedType.U1)] out bool borderless);
+	static extern InteropResult GetWindowFullscreenState(WindowHandle handle, out InteropBool fullscreen, out InteropBool borderless);
 	public WindowFullscreenStyle GetFullscreenState(WindowHandle handle) {
 		ThrowIfHandleOrThisIsDisposed(handle);
 		GetWindowFullscreenState(
@@ -161,7 +160,7 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 			out var isBorderless
 		).ThrowIfFailure();
 
-		return (isFullscreen, isBorderless) switch {
+		return ((bool) isFullscreen, (bool) isBorderless) switch {
 			(true, true) => WindowFullscreenStyle.FullscreenBorderless,
 			(true, false) => WindowFullscreenStyle.Fullscreen,
 			_ => WindowFullscreenStyle.NotFullscreen

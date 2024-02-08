@@ -5,7 +5,7 @@ using System;
 
 namespace Egodystonic.TinyFFR.Environment.Desktop;
 
-public sealed record WindowBuilderCreationConfig {
+public sealed record WindowBuilderConfig {
 	readonly int _maxWindowTitleLength = 200;
 
 	public int MaxWindowTitleLength {

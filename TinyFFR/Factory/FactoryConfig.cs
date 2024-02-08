@@ -3,6 +3,6 @@
 
 namespace Egodystonic.TinyFFR.Factory;
 
-public sealed record FactoryCreationConfig {
+public sealed record FactoryConfig {
 	
 }

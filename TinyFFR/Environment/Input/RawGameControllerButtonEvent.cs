@@ -6,7 +6,7 @@ namespace Egodystonic.TinyFFR.Environment.Input;
 [StructLayout(LayoutKind.Explicit, Pack = 1, Size = 16)]
 readonly struct RawGameControllerButtonEvent {
 	[FieldOffset(0)]
-	public readonly GameControllerId Id;
+	public readonly GameControllerHandle Controller;
 	[FieldOffset(8)]
 	public readonly RawGameControllerEventType Type;
 	[FieldOffset(12)]

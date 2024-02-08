@@ -5,7 +5,7 @@ using System;
 
 namespace Egodystonic.TinyFFR.Environment.Desktop;
 
-public readonly record struct WindowCreationConfig {
+public readonly record struct WindowConfig {
 	public required Display Display { get; init; }
 
 	public XYPair Position { get; init; } = (0, 0); // TODO explain in XMLDoc that this is relative positioning on the selected Display
@@ -32,10 +32,9 @@ public readonly record struct WindowCreationConfig {
 
 	public WindowFullscreenStyle FullscreenStyle { get; init; } = WindowFullscreenStyle.NotFullscreen;
 
-	public WindowCreationConfig() { }
+	public WindowConfig() { }
 
 	internal void ThrowIfInvalid() {
-		if (Title == null) throw InvalidObjectException.InvalidDefault<WindowCreationConfig>();
-		Display.ThrowIfInvalid();
+		if (Title == null) throw InvalidObjectException.InvalidDefault<WindowConfig>();
 	}
 }

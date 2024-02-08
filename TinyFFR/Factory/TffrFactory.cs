@@ -2,20 +2,22 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using Egodystonic.TinyFFR.Environment.Desktop;
+using Egodystonic.TinyFFR.Environment.Input;
+using Egodystonic.TinyFFR.Environment.Loop;
 using Egodystonic.TinyFFR.Interop;
 
 namespace Egodystonic.TinyFFR.Factory;
 
 #pragma warning disable CA2000 // "Dispose local variables of IDisposable type": Overzealous in this class
-// Implementation note: Using GetXyz() instead of properties because it allows us to parameterize the getting of builders/loaders now or in future and keep everything consistent API-wise
 public sealed class TffrFactory : ITffrFactory {
 	readonly FactoryObjectStore<IDisplayDiscoverer> _displayDiscoverers = new();
-	readonly FactoryObjectStore<WindowBuilderCreationConfig, IWindowBuilder> _windowBuilders = new();
+	readonly FactoryObjectStore<WindowBuilderConfig, IWindowBuilder> _windowBuilders = new();
+	readonly FactoryObjectStore<ApplicationLoopBuilderConfig, IApplicationLoopBuilder> _loopBuilders = new();
 
 	public bool IsDisposed { get; private set; }
 
 	public TffrFactory() : this(new()) { }
-	public TffrFactory(FactoryCreationConfig config) {
+	public TffrFactory(FactoryConfig config) {
 		NativeUtils.InitializeNativeLibIfNecessary();
 	}
 
@@ -26,16 +28,25 @@ public sealed class TffrFactory : ITffrFactory {
 	}
 
 	public IWindowBuilder GetWindowBuilder() => GetWindowBuilder(new());
-	public IWindowBuilder GetWindowBuilder(WindowBuilderCreationConfig config) {
+	public IWindowBuilder GetWindowBuilder(WindowBuilderConfig config) {
 		ThrowIfThisIsDisposed();
 		if (!_windowBuilders.ContainsObjectForConfig(config)) _windowBuilders.SetObjectForConfig(config, new NativeWindowBuilder(config));
 		return _windowBuilders.GetObjectForConfig(config);
 	}
 
+	public IApplicationLoopBuilder GetApplicationLoopBuilder() => GetApplicationLoopBuilder(new());
+	public IApplicationLoopBuilder GetApplicationLoopBuilder(ApplicationLoopBuilderConfig config) {
+		ThrowIfThisIsDisposed();
+		if (!_loopBuilders.ContainsObjectForConfig(config)) _loopBuilders.SetObjectForConfig(config, new NativeApplicationLoopBuilder(config));
+		return _loopBuilders.GetObjectForConfig(config);
+	}
+
 	public void Dispose() {
 		if (IsDisposed) return;
 		try {
+			_displayDiscoverers.DisposeAll();
 			_windowBuilders.DisposeAll();
+			_loopBuilders.DisposeAll();
 		}
 		finally {
 			IsDisposed = true;
