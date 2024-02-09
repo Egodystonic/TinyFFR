@@ -159,6 +159,6 @@ sealed class NativeDisplayDiscoverer : IDisplayDiscoverer, IDisplayHandleImplPro
 	}
 
 	void ThrowIfThisIsDisposed() {
-		if (_isDisposed) throw new InvalidOperationException("Discoverer has been disposed.");
+		ObjectDisposedException.ThrowIf(_isDisposed, this);
 	}
 }

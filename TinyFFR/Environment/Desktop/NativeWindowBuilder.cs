@@ -193,10 +193,10 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 	}
 
 	void ThrowIfThisIsDisposed() {
-		if (_isDisposed) throw new InvalidOperationException("Builder has been disposed.");
+		ObjectDisposedException.ThrowIf(_isDisposed, this);
 	}
 	void ThrowIfHandleOrThisIsDisposed(WindowHandle handle) {
-		if (IsDisposed(handle)) throw new InvalidOperationException($"{nameof(Window)} has been disposed.");
+		ObjectDisposedException.ThrowIf(IsDisposed(handle), handle);
 		ThrowIfThisIsDisposed();
 	}
 }

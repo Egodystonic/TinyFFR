@@ -1,9 +1,9 @@
 ﻿// Created on 2024-01-16 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Desktop;
 using Egodystonic.TinyFFR.Environment.Input;
-using Egodystonic.TinyFFR.Environment.Loop;
 using Egodystonic.TinyFFR.Interop;
 
 namespace Egodystonic.TinyFFR.Factory;
@@ -54,7 +54,7 @@ public sealed class TffrFactory : ITffrFactory {
 	}
 
 	void ThrowIfThisIsDisposed() {
-		if (IsDisposed) throw new InvalidOperationException("Factory has been disposed.");
+		ObjectDisposedException.ThrowIf(IsDisposed, this);
 	}
 
 	//public (/* TODO tuple or dedicated struct of stuff handles */) BuildDefaultStuff() { } // TODO a better name, but I'd like to use this as a way to quickly create a window, camera, etc for quick "hello cube" and so on

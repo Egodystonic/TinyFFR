@@ -1,13 +1,25 @@
 ﻿// Created on 2024-02-01 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-namespace Egodystonic.TinyFFR.Environment.Loop;
+using System;
 
-public readonly record struct DeltaTime(float ElapsedSeconds) {
+namespace Egodystonic.TinyFFR.Environment;
+
+public readonly record struct DeltaTime(float ElapsedSeconds) : 
+	IComparable<DeltaTime>, 
+	IComparisonOperators<DeltaTime, DeltaTime, bool>, 
+	IAdditionOperators<DeltaTime, DeltaTime, DeltaTime>, 
+	ISubtractionOperators<DeltaTime, DeltaTime, DeltaTime>,
+	IMultiplyOperators<DeltaTime, float, DeltaTime>,
+	IDivisionOperators<DeltaTime, float, DeltaTime> {
 	public DeltaTime(TimeSpan timeSpan) : this((float) timeSpan.TotalSeconds) { }
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public TimeSpan ToTimeSpan() => TimeSpan.FromSeconds(ElapsedSeconds);
+
+	public override string ToString() {
+		return $"{ToTimeSpan().TotalMilliseconds:N2}ms";
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator TimeSpan(DeltaTime operand) => operand.ToTimeSpan();
@@ -15,9 +27,15 @@ public readonly record struct DeltaTime(float ElapsedSeconds) {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator DeltaTime(TimeSpan operand) => new(operand);
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator float(DeltaTime operand) => operand.ElapsedSeconds;
+	public int CompareTo(DeltaTime other) => ElapsedSeconds.CompareTo(other.ElapsedSeconds);
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator DeltaTime(float operand) => new(operand);
+	public static bool operator >(DeltaTime left, DeltaTime right) => left.ElapsedSeconds > right.ElapsedSeconds;
+	public static bool operator >=(DeltaTime left, DeltaTime right) => left.ElapsedSeconds >= right.ElapsedSeconds;
+	public static bool operator <(DeltaTime left, DeltaTime right) => left.ElapsedSeconds < right.ElapsedSeconds;
+	public static bool operator <=(DeltaTime left, DeltaTime right) => left.ElapsedSeconds <= right.ElapsedSeconds;
+	public static DeltaTime operator +(DeltaTime left, DeltaTime right) => new(left.ElapsedSeconds + right.ElapsedSeconds);
+	public static DeltaTime operator -(DeltaTime left, DeltaTime right) => new(left.ElapsedSeconds - right.ElapsedSeconds);
+	public static DeltaTime operator *(DeltaTime left, float right) => new(left.ElapsedSeconds * right);
+	public static DeltaTime operator *(float left, DeltaTime right) => new(left * right.ElapsedSeconds);
+	public static DeltaTime operator /(DeltaTime left, float right) => new(left.ElapsedSeconds / right);
 } 

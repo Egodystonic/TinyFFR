@@ -27,6 +27,7 @@
     <BaseIntermediateOutputPath>..\build_output\intermediate</BaseIntermediateOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <Configurations>Debug;Release;Optimized</Configurations>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
@@ -45,6 +46,11 @@
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <OutputPath>..\build_output\Release</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Optimized'">
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
     <OutputPath>..\build_output\Release</OutputPath>
   </PropertyGroup>
 

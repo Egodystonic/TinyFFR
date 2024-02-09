@@ -1,7 +1,9 @@
 ﻿// Created on 2024-01-22 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-namespace Egodystonic.TinyFFR.Environment.Loop;
+using System;
+
+namespace Egodystonic.TinyFFR.Environment;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 readonly record struct ApplicationLoopHandle(int Index) {

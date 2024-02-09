@@ -4,7 +4,7 @@
 using System;
 using Egodystonic.TinyFFR.Environment.Input;
 
-namespace Egodystonic.TinyFFR.Environment.Loop;
+namespace Egodystonic.TinyFFR.Environment;
 
 public sealed record ApplicationLoopBuilderConfig {
 	readonly InputTrackerConfig _inputTrackerConfig = new();

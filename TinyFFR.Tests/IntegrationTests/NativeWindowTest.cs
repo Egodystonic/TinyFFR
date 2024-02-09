@@ -26,13 +26,22 @@ class NativeWindowTest {
 			foreach (var refreshRate in display.SupportedDisplayModes) {
 				Console.WriteLine($"\t\t{refreshRate}");
 			}
+
+			Assert.AreEqual(
+				display.SupportedDisplayModes.ToArray().OrderByDescending(mode => mode.Resolution.AsVector2.LengthSquared()).ThenByDescending(mode => mode.RefreshRateHz).First(),
+				display.HighestSupportedResolution
+			);
+			Assert.AreEqual(
+				display.SupportedDisplayModes.ToArray().OrderByDescending(mode => mode.RefreshRateHz).ThenByDescending(mode => mode.Resolution.AsVector2.LengthSquared()).First(),
+				display.HighestSupportedRefreshRate
+			);
 		}
 
 		var windowBuilder = factory.GetWindowBuilder(new() {
 			MaxWindowTitleLength = 10
 		});
 		using var window = windowBuilder.Build(new() {
-			Display = displayDiscoverer.GetRecommended(),
+			Display = displayDiscoverer.GetPrimary(),
 			Size = (500, 300),
 			Position = (100, 100),
 			Title = "Test 456"
@@ -56,11 +65,9 @@ class NativeWindowTest {
 
 		Assert.AreEqual(new XYPair(500, 300), window.Size);
 		Assert.AreEqual(new XYPair(100, 100), window.Position);
-		
-		Thread.Sleep(500);
+		 
 		window.Size = (100, 800);
 		window.Position = (400, -50);
-		Thread.Sleep(500);
 		Assert.Throws<ArgumentOutOfRangeException>(() => window.Size = (-1, -1));
 		Assert.Throws<ArgumentOutOfRangeException>(() => window.Size = (-1, 100));
 		Assert.Throws<ArgumentOutOfRangeException>(() => window.Size = (100, -1));

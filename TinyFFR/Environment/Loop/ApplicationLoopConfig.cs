@@ -2,12 +2,12 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
-using Egodystonic.TinyFFR.Environment.Input;
 
-namespace Egodystonic.TinyFFR.Environment.Loop;
+namespace Egodystonic.TinyFFR.Environment;
 
 public readonly record struct ApplicationLoopConfig {
 	internal readonly TimeSpan FrameInterval = TimeSpan.Zero;
+	internal readonly TimeSpan MaxCpuBusyWaitTime = TimeSpan.FromMilliseconds(1d);
 
 	public int? FrameRateCapHz {
 		get {
@@ -22,6 +22,18 @@ public readonly record struct ApplicationLoopConfig {
 	}
 
 	public bool WaitForVSync { get; init; } = false;
+
+	public TimeSpan FrameTimingPrecisionBusyWaitTime {
+		get {
+			return MaxCpuBusyWaitTime;
+		}
+		init {
+			if (value < TimeSpan.Zero) {
+				throw new ArgumentOutOfRangeException(nameof(FrameTimingPrecisionBusyWaitTime), value, "Value must be positive or zero.");
+			}
+			MaxCpuBusyWaitTime = value;
+		}
+	}
 
 	public ApplicationLoopConfig() { }
 

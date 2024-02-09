@@ -6,7 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security;
 using System.Threading;
 using Egodystonic.TinyFFR.Environment.Desktop;
-using Egodystonic.TinyFFR.Environment.Loop;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
 
@@ -164,6 +163,6 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 	}
 
 	void ThrowIfThisIsDisposed() {
-		if (_isDisposed) throw new InvalidOperationException("Tracker has been disposed.");
+		ObjectDisposedException.ThrowIf(_isDisposed, this);
 	}
 }

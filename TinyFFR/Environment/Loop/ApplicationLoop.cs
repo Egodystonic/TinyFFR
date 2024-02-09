@@ -1,10 +1,10 @@
 ﻿// Created on 2024-01-26 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-using Egodystonic.TinyFFR.Environment.Desktop;
+using System;
 using Egodystonic.TinyFFR.Environment.Input;
 
-namespace Egodystonic.TinyFFR.Environment.Loop;
+namespace Egodystonic.TinyFFR.Environment;
 
 public readonly struct ApplicationLoop : IEquatable<ApplicationLoop>, ITrackedDisposable {
 	readonly IApplicationLoopImplProvider _impl;
@@ -20,11 +20,16 @@ public readonly struct ApplicationLoop : IEquatable<ApplicationLoop>, ITrackedDi
 		Handle = handle;
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public TimeSpan TimeUntilNextIteration {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.GetTimeUntilNextIteration(Handle);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // TODO make it clear here and in TryIterateOnce that the DeltaTime returned is the time since the last iteration, not the time it took to iterate
 	public DeltaTime IterateOnce() => _impl.IterateOnce(Handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public DeltaTime? TryIterateOnce() => _impl.TryIterateOnce(Handle);
+	public bool TryIterateOnce(out DeltaTime outDeltaTime) => _impl.TryIterateOnce(Handle, out outDeltaTime);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => _impl.Dispose(Handle);
