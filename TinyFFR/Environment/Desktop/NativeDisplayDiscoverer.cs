@@ -10,23 +10,28 @@ namespace Egodystonic.TinyFFR.Environment.Desktop;
 [SuppressUnmanagedCodeSecurity]
 sealed class NativeDisplayDiscoverer : IDisplayDiscoverer, IDisplayHandleImplProvider, IDisposable {
 	readonly InteropStringBuffer _displayNameBuffer = new(200);
+	readonly ArrayPoolBackedVector<Display> _displays = new();
+	readonly ArrayPoolBackedMap<DisplayHandle, ArrayPoolBackedVector<RefreshRate>> _refreshRates = new();
 	bool _isDisposed = false;
+
+	public NativeDisplayDiscoverer() {
+		GetDisplayCount(out var numDisplays).ThrowIfFailure();
+		for (var i = 0; i < numDisplays; ++i) {
+			_displays.Add(new Display(i, this));
+			_refreshRates.Add(i, new ArrayPoolBackedVector<RefreshRate>());
+			GetDisplayModeCount(i, out var numDisplayModes).ThrowIfFailure();
+			for (var j = 0; j < numDisplayModes; ++j) {
+				GetDisplayMode(i, j, out var modeWidth, out var modeHeight, out var modeRate).ThrowIfFailure();
+				_refreshRates[i].Add(new RefreshRate((modeWidth, modeHeight), modeRate));
+			}
+		}
+	}
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_count")]
 	static extern InteropResult GetDisplayCount(out int outResult);
-	public unsafe LazyReadOnlySpan<Display> GetAll() {
+	public ReadOnlySpan<Display> GetAll() {
 		ThrowIfThisIsDisposed();
-		return new LazyReadOnlySpan<Display>(this, &GetDisplayResourceCollectionCount, &GetDisplayResourceCollectionItem);
-	}
-	static int GetDisplayResourceCollectionCount(object? loader, ReadOnlySpan<byte> _) {
-		ArgumentNullException.ThrowIfNull(loader);
-		((NativeDisplayDiscoverer) loader).ThrowIfThisIsDisposed();
-		GetDisplayCount(out var result).ThrowIfFailure();
-		return result;
-	}
-	static Display GetDisplayResourceCollectionItem(object? loader, ReadOnlySpan<byte> _, int index) {
-		ArgumentNullException.ThrowIfNull(loader);
-		return new Display(index, ((NativeDisplayDiscoverer) loader));
+		return _displays.AsSpan;
 	}
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_recommended_display")]
@@ -104,41 +109,19 @@ sealed class NativeDisplayDiscoverer : IDisplayDiscoverer, IDisplayHandleImplPro
 	static extern InteropResult GetDisplayModeCount(DisplayHandle handle, out int outNumDisplayModes);
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_mode")]
 	static extern InteropResult GetDisplayMode(DisplayHandle handle, int displayModeIndex, out int outWidth, out int outHeight, out int outRefreshRateHz);
-	static int GetDisplayModeResourceCollectionCount(object? loader, ReadOnlySpan<byte> argData) {
-		ArgumentNullException.ThrowIfNull(loader);
-		((NativeDisplayDiscoverer) loader).ThrowIfThisIsDisposed();
-		GetDisplayModeCount(
-			LazyReadOnlySpan<RefreshRate>.ConvertArgData<DisplayHandle>(argData), 
-			out var result
-		).ThrowIfFailure();
-		return result;
-	}
-	static RefreshRate GetDisplayModeResourceCollectionItem(object? loader, ReadOnlySpan<byte> argData, int index) {
-		ArgumentNullException.ThrowIfNull(loader);
-		((NativeDisplayDiscoverer) loader).ThrowIfThisIsDisposed();
-		GetDisplayMode(
-			LazyReadOnlySpan<RefreshRate>.ConvertArgData<DisplayHandle>(argData), 
-			index,
-			out var resultWidth, 
-			out var resultHeight, 
-			out var resultRefreshRate
-		).ThrowIfFailure();
-		return new RefreshRate((resultWidth, resultHeight), resultRefreshRate);
-	}
-	public unsafe LazyReadOnlySpan<RefreshRate> GetSupportedRefreshRates(DisplayHandle handle) {
+	public ReadOnlySpan<RefreshRate> GetSupportedRefreshRates(DisplayHandle handle) {
 		ThrowIfThisIsDisposed();
-		return new LazyReadOnlySpan<RefreshRate>(
-			this,
-			LazyReadOnlySpan<RefreshRate>.CreateArgData(in handle),
-			&GetDisplayModeResourceCollectionCount,
-			&GetDisplayModeResourceCollectionItem
-		);
+		if (!_refreshRates.TryGetValue(handle, out var vector)) throw new InvalidOperationException($"Invalid {nameof(Display)}.");
+		return vector.AsSpan;
 	}
 
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
 			_displayNameBuffer.Dispose();
+			_displays.Dispose();
+			foreach (var kvp in _refreshRates) kvp.Value.Dispose();
+			_refreshRates.Dispose();
 		}
 		finally {
 			_isDisposed = true;

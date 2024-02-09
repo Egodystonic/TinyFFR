@@ -34,7 +34,7 @@ public readonly struct Display : IEquatable<Display> {
 		get => _impl.GetResolution(Handle);
 	}
 
-	public LazyReadOnlySpan<RefreshRate> SupportedRefreshRates {
+	public ReadOnlySpan<RefreshRate> SupportedRefreshRates {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _impl.GetSupportedRefreshRates(Handle);
 	}

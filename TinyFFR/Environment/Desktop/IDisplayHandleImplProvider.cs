@@ -10,7 +10,7 @@ interface IDisplayHandleImplProvider {
 	bool GetIsRecommended(DisplayHandle handle);
 	XYPair GetResolution(DisplayHandle handle);
 	XYPair GetPositionOffset(DisplayHandle handle);
-	LazyReadOnlySpan<RefreshRate> GetSupportedRefreshRates(DisplayHandle handle);
+	ReadOnlySpan<RefreshRate> GetSupportedRefreshRates(DisplayHandle handle);
 	int GetNameMaxLength();
 	int GetName(DisplayHandle handle, Span<char> dest);
 }
