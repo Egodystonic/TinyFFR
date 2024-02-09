@@ -6,7 +6,7 @@ using Egodystonic.TinyFFR.Interop;
 namespace Egodystonic.TinyFFR.Environment.Desktop;
 
 public interface IDisplayDiscoverer {
-	UnmanagedResourceIterator<Display> GetAll();
+	LazyReadOnlySpan<Display> GetAll();
 	Display GetRecommended();
 	Display GetPrimary();
 }

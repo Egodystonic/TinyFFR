@@ -3,6 +3,7 @@
 
 using System.Security;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Environment.Desktop;
 
@@ -13,17 +14,17 @@ sealed class NativeDisplayDiscoverer : IDisplayDiscoverer, IDisplayHandleImplPro
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_count")]
 	static extern InteropResult GetDisplayCount(out int outResult);
-	public unsafe UnmanagedResourceIterator<Display> GetAll() {
+	public unsafe LazyReadOnlySpan<Display> GetAll() {
 		ThrowIfThisIsDisposed();
-		return new UnmanagedResourceIterator<Display>(this, &GetResourceCollectionCount, &GetResourceCollectionItem);
+		return new LazyReadOnlySpan<Display>(this, &GetDisplayResourceCollectionCount, &GetDisplayResourceCollectionItem);
 	}
-	static int GetResourceCollectionCount(object? loader) {
+	static int GetDisplayResourceCollectionCount(object? loader, ReadOnlySpan<byte> _) {
 		ArgumentNullException.ThrowIfNull(loader);
 		((NativeDisplayDiscoverer) loader).ThrowIfThisIsDisposed();
 		GetDisplayCount(out var result).ThrowIfFailure();
 		return result;
 	}
-	static Display GetResourceCollectionItem(object? loader, int index) {
+	static Display GetDisplayResourceCollectionItem(object? loader, ReadOnlySpan<byte> _, int index) {
 		ArgumentNullException.ThrowIfNull(loader);
 		return new Display(index, ((NativeDisplayDiscoverer) loader));
 	}
@@ -97,6 +98,41 @@ sealed class NativeDisplayDiscoverer : IDisplayDiscoverer, IDisplayHandleImplPro
 			_displayNameBuffer.BufferLength
 		).ThrowIfFailure();
 		return _displayNameBuffer.ReadTo(dest);
+	}
+
+	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_mode_count")]
+	static extern InteropResult GetDisplayModeCount(DisplayHandle handle, out int outNumDisplayModes);
+	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_mode")]
+	static extern InteropResult GetDisplayMode(DisplayHandle handle, int displayModeIndex, out int outWidth, out int outHeight, out int outRefreshRateHz);
+	static int GetDisplayModeResourceCollectionCount(object? loader, ReadOnlySpan<byte> argData) {
+		ArgumentNullException.ThrowIfNull(loader);
+		((NativeDisplayDiscoverer) loader).ThrowIfThisIsDisposed();
+		GetDisplayModeCount(
+			LazyReadOnlySpan<RefreshRate>.ConvertArgData<DisplayHandle>(argData), 
+			out var result
+		).ThrowIfFailure();
+		return result;
+	}
+	static RefreshRate GetDisplayModeResourceCollectionItem(object? loader, ReadOnlySpan<byte> argData, int index) {
+		ArgumentNullException.ThrowIfNull(loader);
+		((NativeDisplayDiscoverer) loader).ThrowIfThisIsDisposed();
+		GetDisplayMode(
+			LazyReadOnlySpan<RefreshRate>.ConvertArgData<DisplayHandle>(argData), 
+			index,
+			out var resultWidth, 
+			out var resultHeight, 
+			out var resultRefreshRate
+		).ThrowIfFailure();
+		return new RefreshRate((resultWidth, resultHeight), resultRefreshRate);
+	}
+	public unsafe LazyReadOnlySpan<RefreshRate> GetSupportedRefreshRates(DisplayHandle handle) {
+		ThrowIfThisIsDisposed();
+		return new LazyReadOnlySpan<RefreshRate>(
+			this,
+			LazyReadOnlySpan<RefreshRate>.CreateArgData(in handle),
+			&GetDisplayModeResourceCollectionCount,
+			&GetDisplayModeResourceCollectionItem
+		);
 	}
 
 	public void Dispose() {

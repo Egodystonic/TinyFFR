@@ -116,3 +116,22 @@ StartExportedFunc(get_primary_display, DisplayHandle* outHandle) {
 	EndExportedFunc
 }
 
+int32_t native_impl_display::get_display_mode_count(DisplayHandle handle) {
+	return SDL_GetNumDisplayModes(handle);
+}
+StartExportedFunc(get_display_mode_count, DisplayHandle handle, int32_t* outNumDisplayModes) {
+	*outNumDisplayModes = native_impl_display::get_display_mode_count(handle);
+	EndExportedFunc
+}
+
+void native_impl_display::get_display_mode(DisplayHandle handle, int32_t modeIndex, int32_t* outWidth, int32_t* outHeight, int32_t* outRefreshRateHz) {
+	SDL_DisplayMode mode;
+	SDL_GetDisplayMode(handle, modeIndex, &mode);
+	*outWidth = mode.w;
+	*outHeight = mode.h;
+	*outRefreshRateHz = mode.refresh_rate;
+}
+StartExportedFunc(get_display_mode, DisplayHandle handle, int32_t modeIndex, int32_t* outWidth, int32_t* outHeight, int32_t* outRefreshRateHz) {
+	native_impl_display::get_display_mode(handle, modeIndex, outWidth, outHeight, outRefreshRateHz);
+	EndExportedFunc
+}

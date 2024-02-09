@@ -15,7 +15,7 @@ public readonly record struct ApplicationLoopConfig {
 		}
 		init {
 			if (value <= 0) {
-				throw new ArgumentOutOfRangeException(nameof(FrameRateCapHz), value, $"Frame rate cap must be a positive integer, or 'null' for no cap.");
+				throw new ArgumentOutOfRangeException(nameof(FrameRateCapHz), value, $"Frame rate cap must be a positive value, or 'null' for no cap.");
 			}
 			FrameInterval = value != null ? (TimeSpan.FromSeconds(1d) / value.Value) : TimeSpan.Zero;
 		}
