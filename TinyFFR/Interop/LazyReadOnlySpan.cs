@@ -5,7 +5,6 @@ namespace Egodystonic.TinyFFR.Interop;
 
 // This needs to be a ref struct so that we can safely convert ArgData to a Span without needing to fix it (as ref structs can only live on the stack, but normal structs could be boxed or allocated as fields heap objects)
 // Name "LazyReadOnlySpan" isn't *really* what this is exactly, but it hopefully makes more sense to consumers of the API (should make it easy to understand what it is at first glance)
-// TODO is this actually useful or should we just pre-iterate everything and store the stuff in ArrayPoolBackedVectors etc?
 public readonly unsafe ref struct LazyReadOnlySpan<T> {
 	static readonly ArgData NullArgData = default;
 
