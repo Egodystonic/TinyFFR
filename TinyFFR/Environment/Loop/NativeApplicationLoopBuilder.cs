@@ -12,10 +12,10 @@ namespace Egodystonic.TinyFFR.Environment.Loop;
 
 [SuppressUnmanagedCodeSecurity]
 sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IApplicationLoopImplProvider, IDisposable {
+	static ApplicationLoopConfig? _activeLoopConfig = null;
+	static ApplicationLoopHandle? _activeLoopHandle = null;
 	readonly NativeInputTracker _inputTracker;
 	int _nextLoopHandleIndex = 1;
-	ApplicationLoopConfig? _activeLoopConfig = null;
-	ApplicationLoopHandle? _activeLoopHandle = null;
 	long? _lastIterationTimestamp = null;
 	bool _isDisposed = false;
 

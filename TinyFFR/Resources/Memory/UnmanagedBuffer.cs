@@ -71,14 +71,14 @@ sealed unsafe class UnmanagedBuffer<T> : IEnumerable<T>, ITrackedDisposable wher
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public T GetAtIndex(int index) {
-		if (IsDisposed) throw new ObjectDisposedException("Buffer has been disposed.");
+		if (IsDisposed) ObjectDisposedException.ThrowIf(IsDisposed, this);
 		if (index < 0 || index >= Length) throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be >= 0 and < Length.");
 		return BufferPointer[index];
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetAtIndex(int index, T value) {
-		if (IsDisposed) throw new ObjectDisposedException("Buffer has been disposed.");
+		if (IsDisposed) ObjectDisposedException.ThrowIf(IsDisposed, this);
 		if (index < 0 || index >= Length) throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be >= 0 and < Length.");
 		BufferPointer[index] = value;
 	}
@@ -88,7 +88,7 @@ sealed unsafe class UnmanagedBuffer<T> : IEnumerable<T>, ITrackedDisposable wher
 
 	public void Resize(int numElements) {
 		if (numElements < 0) throw new ArgumentOutOfRangeException(nameof(numElements), numElements, $"Must be positive or zero.");
-		if (IsDisposed) throw new ObjectDisposedException("Buffer has been disposed.");
+		if (IsDisposed) ObjectDisposedException.ThrowIf(IsDisposed, this);
 
 		Length = numElements;
 		var newLengthBytes = (uint) (numElements * sizeof(T));

@@ -11,18 +11,21 @@ file static class DirectionalBits {
 	public const int DownBit = 0b1000;
 }
 
+[Flags]
 public enum HorizontalDirection {
 	None = 0,
 	Right = RightBit,
 	Left = LeftBit,
 }
 
+[Flags]
 public enum VerticalDirection {
 	None = 0,
 	Up = UpBit,
 	Down = DownBit,
 }
 
+[Flags]
 public enum CardinalDirection {
 	None = 0,
 	Right = RightBit,

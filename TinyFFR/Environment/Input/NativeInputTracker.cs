@@ -116,8 +116,8 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 
 	NativeGameControllerState GetControllerState(GameControllerHandle handle) {
 		if (handle == _amalgamatedController.Handle) return _amalgamatedControllerState;
-		if (!_controllerInputTrackers.ContainsKey(handle)) throw new InvalidOperationException($"Unrecognized {nameof(GameControllerHandle)}.");
-		return _controllerInputTrackers[handle];
+		if (!_controllerInputTrackers.TryGetValue(handle, out var result)) throw new InvalidOperationException($"Unrecognized {nameof(GameControllerHandle)}.");
+		return result;
 	}
 
 	public int GetName(GameControllerHandle handle, Span<char> dest) {
@@ -152,8 +152,11 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 			foreach (var kvp in _controllerInputTrackers) kvp.Value.Dispose();
 
 			_kbmEventBuffer.Dispose();
+			_controllerEventBuffer.Dispose();
+			_detectedControllers.Dispose();
 			_currentlyPressedKeys.Dispose();
 			_controllerInputTrackers.Dispose();
+			_amalgamatedControllerState.Dispose();
 		}
 		finally {
 			_isDisposed = true;

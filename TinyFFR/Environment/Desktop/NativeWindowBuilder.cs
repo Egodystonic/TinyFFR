@@ -10,8 +10,7 @@ namespace Egodystonic.TinyFFR.Environment.Desktop;
 
 [SuppressUnmanagedCodeSecurity]
 sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, IDisposable {
-	const int InitialWindowHandleTrackingSpace = 20;
-	readonly HashSet<WindowHandle> _activeWindows = new(InitialWindowHandleTrackingSpace);
+	readonly ArrayPoolBackedVector<WindowHandle> _activeWindows = new();
 	readonly ArrayPoolBackedMap<WindowHandle, Display> _windowDisplayMap = new();
 	readonly InteropStringBuffer _windowTitleBuffer;
 	bool _isDisposed = false;
@@ -26,7 +25,7 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 		return Build(new() {
 			Display = display,
 			FullscreenStyle = fullscreenStyle,
-			Size = fullscreenStyle == WindowFullscreenStyle.NotFullscreen ? display.Resolution * 0.66f : display.Resolution
+			Size = fullscreenStyle == WindowFullscreenStyle.NotFullscreen ? display.CurrentResolution * 0.66f : display.CurrentResolution
 		});
 	}
 
@@ -74,8 +73,8 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 	}
 
 	public Display GetDisplay(WindowHandle handle) {
-		if (!_windowDisplayMap.ContainsKey(handle)) throw new InvalidOperationException($"Given window handle did not have a corresponding display mapped.");
-		return _windowDisplayMap[handle];
+		if (!_windowDisplayMap.TryGetValue(handle, out var result)) throw new InvalidOperationException($"Given {nameof(Window)} did not have a corresponding {nameof(Display)} mapped.");
+		return result;
 	}
 
 	public void SetDisplay(WindowHandle handle, Display newDisplay) {
@@ -184,8 +183,8 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 		if (_isDisposed) return;
 		try {
 			foreach (var ptr in _activeWindows) DisposeWindow(ptr).ThrowIfFailure();
-			_activeWindows.Clear();
-			_windowDisplayMap.Clear();
+			_activeWindows.Dispose();
+			_windowDisplayMap.Dispose();
 			_windowTitleBuffer.Dispose();
 		}
 		finally {

@@ -33,5 +33,5 @@ typedef RawGameControllerButtonEvent*(*controller_event_buffer_size_double_deleg
 class native_impl_loop {
 public:
 	static void iterate_events(KeyboardOrMouseKeyEvent* kbmEventBuffer, int32_t kbmEventBufferLength, RawGameControllerButtonEvent* controllerEventBuffer, int32_t controllerEventBufferLength, int32_t* outNumKbmEventsWritten, int32_t* outNumControllerEventsWritten);
-	static void set_event_poll_delegates(sdl_keycode_filter_delegate* keycodeFilterFuncPtr, kbm_event_buffer_size_double_delegate* kbmBufferDoubleDelegate, controller_event_buffer_size_double_delegate* controllerBufferDoubleDelegate);
+	static void set_event_poll_delegates(sdl_keycode_filter_delegate keycodeFilterFuncPtr, kbm_event_buffer_size_double_delegate kbmBufferDoubleDelegate, controller_event_buffer_size_double_delegate controllerBufferDoubleDelegate);
 };

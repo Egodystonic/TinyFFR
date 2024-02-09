@@ -44,9 +44,9 @@ public sealed class TffrFactory : ITffrFactory {
 	public void Dispose() {
 		if (IsDisposed) return;
 		try {
-			_displayDiscoverers.DisposeAll();
-			_windowBuilders.DisposeAll();
-			_loopBuilders.DisposeAll();
+			_displayDiscoverers.Dispose();
+			_windowBuilders.Dispose();
+			_loopBuilders.Dispose();
 		}
 		finally {
 			IsDisposed = true;

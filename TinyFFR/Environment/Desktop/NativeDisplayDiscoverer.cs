@@ -11,18 +11,18 @@ namespace Egodystonic.TinyFFR.Environment.Desktop;
 sealed class NativeDisplayDiscoverer : IDisplayDiscoverer, IDisplayHandleImplProvider, IDisposable {
 	readonly InteropStringBuffer _displayNameBuffer = new(200);
 	readonly ArrayPoolBackedVector<Display> _displays = new();
-	readonly ArrayPoolBackedMap<DisplayHandle, ArrayPoolBackedVector<RefreshRate>> _refreshRates = new();
+	readonly ArrayPoolBackedMap<DisplayHandle, ArrayPoolBackedVector<DisplayMode>> _displayModes = new();
 	bool _isDisposed = false;
 
 	public NativeDisplayDiscoverer() {
 		GetDisplayCount(out var numDisplays).ThrowIfFailure();
 		for (var i = 0; i < numDisplays; ++i) {
 			_displays.Add(new Display(i, this));
-			_refreshRates.Add(i, new ArrayPoolBackedVector<RefreshRate>());
+			_displayModes.Add(i, new ArrayPoolBackedVector<DisplayMode>());
 			GetDisplayModeCount(i, out var numDisplayModes).ThrowIfFailure();
 			for (var j = 0; j < numDisplayModes; ++j) {
 				GetDisplayMode(i, j, out var modeWidth, out var modeHeight, out var modeRate).ThrowIfFailure();
-				_refreshRates[i].Add(new RefreshRate((modeWidth, modeHeight), modeRate));
+				_displayModes[i].Add(new DisplayMode((modeWidth, modeHeight), modeRate));
 			}
 		}
 	}
@@ -109,10 +109,40 @@ sealed class NativeDisplayDiscoverer : IDisplayDiscoverer, IDisplayHandleImplPro
 	static extern InteropResult GetDisplayModeCount(DisplayHandle handle, out int outNumDisplayModes);
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_mode")]
 	static extern InteropResult GetDisplayMode(DisplayHandle handle, int displayModeIndex, out int outWidth, out int outHeight, out int outRefreshRateHz);
-	public ReadOnlySpan<RefreshRate> GetSupportedRefreshRates(DisplayHandle handle) {
+	public ReadOnlySpan<DisplayMode> GetSupportedDisplayModes(DisplayHandle handle) {
 		ThrowIfThisIsDisposed();
-		if (!_refreshRates.TryGetValue(handle, out var vector)) throw new InvalidOperationException($"Invalid {nameof(Display)}.");
+		if (!_displayModes.TryGetValue(handle, out var vector)) throw new InvalidOperationException($"Invalid {nameof(Display)}.");
 		return vector.AsSpan;
+	}
+	public DisplayMode GetHighestSupportedResolution(DisplayHandle handle) {
+		var supportedModes = GetSupportedDisplayModes(handle);
+		if (supportedModes.Length == 0) throw new InvalidOperationException($"Can not get highest resolution mode for {nameof(Display)}; no supported modes found.");
+		
+		var result = supportedModes[0];
+		foreach (var displayMode in supportedModes[1..]) {
+			if (displayMode.Resolution.AsVector2.LengthSquared() > result.Resolution.AsVector2.LengthSquared()) {
+				result = displayMode;
+			}
+			else if (displayMode.Resolution == result.Resolution && displayMode.RefreshRateHz > result.RefreshRateHz) {
+				result = displayMode;
+			}
+		}
+		return result;
+	}
+	public DisplayMode GetHighestSupportedRefreshRate(DisplayHandle handle) {
+		var supportedModes = GetSupportedDisplayModes(handle);
+		if (supportedModes.Length == 0) throw new InvalidOperationException($"Can not get highest refresh-rate mode for {nameof(Display)}; no supported modes found.");
+
+		var result = supportedModes[0];
+		foreach (var displayMode in supportedModes[1..]) {
+			if (displayMode.RefreshRateHz > result.RefreshRateHz) {
+				result = displayMode;
+			}
+			else if (displayMode.RefreshRateHz == result.RefreshRateHz && displayMode.Resolution.AsVector2.LengthSquared() > result.Resolution.AsVector2.LengthSquared()) {
+				result = displayMode;
+			}
+		}
+		return result;
 	}
 
 	public void Dispose() {
@@ -120,8 +150,8 @@ sealed class NativeDisplayDiscoverer : IDisplayDiscoverer, IDisplayHandleImplPro
 		try {
 			_displayNameBuffer.Dispose();
 			_displays.Dispose();
-			foreach (var kvp in _refreshRates) kvp.Value.Dispose();
-			_refreshRates.Dispose();
+			foreach (var kvp in _displayModes) kvp.Value.Dispose();
+			_displayModes.Dispose();
 		}
 		finally {
 			_isDisposed = true;

@@ -29,16 +29,26 @@ public readonly struct Display : IEquatable<Display> {
 		}
 	}
 
-	public XYPair Resolution {
+	public XYPair CurrentResolution {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _impl.GetResolution(Handle);
 	}
 
-	public ReadOnlySpan<RefreshRate> SupportedRefreshRates {
+	public ReadOnlySpan<DisplayMode> SupportedDisplayModes {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => _impl.GetSupportedRefreshRates(Handle);
+		get => _impl.GetSupportedDisplayModes(Handle);
 	}
-	
+
+	public DisplayMode HighestSupportedResolution {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.GetHighestSupportedResolution(Handle);
+	}
+
+	public DisplayMode HighestSupportedRefreshRate {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.GetHighestSupportedRefreshRate(Handle);
+	}
+
 	internal Display(DisplayHandle handle, IDisplayHandleImplProvider impl) {
 		Handle = handle;
 		_impl = impl;
@@ -61,5 +71,5 @@ public readonly struct Display : IEquatable<Display> {
 	public static bool operator ==(Display left, Display right) => left.Equals(right);
 	public static bool operator !=(Display left, Display right) => !left.Equals(right);
 
-	public override string ToString() => $"{nameof(Display)} \"{Name}\" ({Resolution.X:#} x {Resolution.Y:#}){(IsPrimary ? " (Primary)" : "")}{(IsRecommended ? " (Recommended)" : "")}";
+	public override string ToString() => $"{nameof(Display)} \"{Name}\" ({CurrentResolution.X:#} x {CurrentResolution.Y:#}){(IsPrimary ? " (Primary)" : "")}{(IsRecommended ? " (Recommended)" : "")}";
 }

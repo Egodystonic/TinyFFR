@@ -91,19 +91,4 @@ public readonly unsafe ref struct LazyReadOnlySpan<T> {
 	internal void ThrowIfInvalid() {
 		if (_getCountFunc == null) throw InvalidObjectException.InvalidDefault(typeof(LazyReadOnlySpan<T>));
 	}
-
-	public bool Equals(LazyReadOnlySpan<T> other) {
-		return _instanceParam == other._instanceParam && _getCountFunc == other._getCountFunc && _getItemFunc == other._getItemFunc;
-	}
-
-	public override bool Equals(object? obj) {
-		throw new NotSupportedException("Can not invoke Equals(object) on ref-struct.");
-	}
-
-	public override int GetHashCode() {
-		return HashCode.Combine(_instanceParam, (IntPtr) _getCountFunc, (IntPtr) _getItemFunc);
-	}
-
-	public static bool operator ==(LazyReadOnlySpan<T> left, LazyReadOnlySpan<T> right) => left.Equals(right);
-	public static bool operator !=(LazyReadOnlySpan<T> left, LazyReadOnlySpan<T> right) => !left.Equals(right);
 }

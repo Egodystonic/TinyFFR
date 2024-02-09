@@ -299,7 +299,9 @@ public static class KeyboardOrMouseKeyExtensions {
 	static KeyboardOrMouseKeyExtensions() {
 		foreach (var key in Enum.GetValues<KeyboardOrMouseKey>()) {
 			var maskedVal = ((int) key) & ~SdlScancodeToKeycodeBit;
+#pragma warning disable CA1065 //Don't raise exceptions in static constructors -> Usually a good rule, but I'm using this exception as essentially a static assert
 			if (maskedVal < 0 || maskedVal >= _precomputedCategoryArray.Length) throw new InvalidOperationException("Precomputed key category array needs to be larger (or negative value found).");
+#pragma warning restore CA1065
 
 			_precomputedCategoryArray[maskedVal] = key switch {
 				>= KeyboardOrMouseKey.MouseLeft and <= KeyboardOrMouseKey.MouseWheelDown => KeyboardOrMouseKeyCategory.Mouse,
