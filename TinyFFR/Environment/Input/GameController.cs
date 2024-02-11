@@ -59,6 +59,8 @@ public readonly struct GameController : IEquatable<GameController> {
 	public int GetNameUsingSpan(Span<char> dest) => _impl.GetName(Handle, dest);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int GetNameSpanMaxLength() => _impl.GetNameMaxLength();
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	bool IsButtonDown(GameControllerButton button) => _impl.IsButtonDown(Handle, button);
 
 	public bool Equals(GameController other) => Handle == other.Handle;
 	public override bool Equals(object? obj) => obj is GameController other && Equals(other);

@@ -10,6 +10,7 @@ interface IApplicationLoopImplProvider {
 	DeltaTime IterateOnce(ApplicationLoopHandle handle);
 	bool TryIterateOnce(ApplicationLoopHandle handle, out DeltaTime outDeltaTime);
 	TimeSpan GetTimeUntilNextIteration(ApplicationLoopHandle handle);
+	TimeSpan GetTotalIteratedTime(ApplicationLoopHandle handle);
 	void Dispose(ApplicationLoopHandle handle);
 	bool IsDisposed(ApplicationLoopHandle handle);
 	IInputTracker GetInputTracker(ApplicationLoopHandle handle);

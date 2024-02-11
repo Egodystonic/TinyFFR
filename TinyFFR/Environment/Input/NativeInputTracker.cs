@@ -68,6 +68,14 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 		}
 	}
 
+	public bool IsKeyDown(KeyboardOrMouseKey key) {
+		var curKeys = CurrentlyPressedKeys;
+		for (var i = 0; i < curKeys.Length; ++i) {
+			if (curKeys[i] == key) return true;
+		}
+		return false;
+	}
+
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_event_poll_delegates")]
 	static extern unsafe InteropResult SetEventPollDelegates(
 		delegate* unmanaged<int, InteropBool> filterKeycapValueDelegate,
@@ -143,6 +151,13 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 	public ReadOnlySpan<GameControllerButton> GetCurrentlyPressedButtons(GameControllerHandle handle) {
 		ThrowIfThisIsDisposed();
 		return GetControllerState(handle).CurrentlyPressedButtons.AsSpan;
+	}
+	public bool IsButtonDown(GameControllerHandle handle, GameControllerButton button) {
+		var curButtons = GetCurrentlyPressedButtons(handle);
+		for (var i = 0; i < curButtons.Length; ++i) {
+			if (curButtons[i] == button) return true;
+		}
+		return false;
 	}
 
 	public void Dispose() {

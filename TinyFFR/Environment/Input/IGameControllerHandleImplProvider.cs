@@ -16,4 +16,6 @@ interface IGameControllerHandleImplProvider {
 
 	ReadOnlySpan<GameControllerButtonEvent> GetNewButtonEvents(GameControllerHandle handle);
 	ReadOnlySpan<GameControllerButton> GetCurrentlyPressedButtons(GameControllerHandle handle);
+
+	bool IsButtonDown(GameControllerHandle handle, GameControllerButton button);
 }

@@ -20,6 +20,11 @@ public readonly struct ApplicationLoop : IEquatable<ApplicationLoop>, ITrackedDi
 		Handle = handle;
 	}
 
+	public TimeSpan TotalIteratedTime {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.GetTotalIteratedTime(Handle);
+	}
+
 	public TimeSpan TimeUntilNextIteration {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _impl.GetTimeUntilNextIteration(Handle);

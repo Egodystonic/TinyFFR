@@ -15,4 +15,6 @@ public interface IInputTracker {
 
 	ReadOnlySpan<GameController> GameControllers { get; }
 	GameController GetAmalgamatedGameController();
+
+	bool IsKeyDown(KeyboardOrMouseKey key);
 }

@@ -17,6 +17,7 @@ sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IApplicatio
 	int _nextLoopHandleIndex = 1;
 	long _previousIterationStartTimestamp;
 	long _previousIterationReturnTimestamp;
+	TimeSpan _totalIteratedTime;
 	bool _isDisposed = false;
 
 	public NativeApplicationLoopBuilder(ApplicationLoopBuilderConfig config) {
@@ -32,6 +33,7 @@ sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IApplicatio
 		_activeLoopHandle = new(_nextLoopHandleIndex++);
 		_activeLoopConfig = config;
 		_previousIterationReturnTimestamp = _previousIterationStartTimestamp = Stopwatch.GetTimestamp();
+		_totalIteratedTime = TimeSpan.Zero;
 		return new(_activeLoopHandle.Value, this);
 	}
 
@@ -58,6 +60,7 @@ sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IApplicatio
 
 		var result = Stopwatch.GetElapsedTime(_previousIterationReturnTimestamp);
 		_previousIterationReturnTimestamp = Stopwatch.GetTimestamp();
+		_totalIteratedTime += result;
 		return result;
 	}
 	public bool TryIterateOnce(ApplicationLoopHandle handle, out DeltaTime outDeltaTime) {
@@ -71,14 +74,20 @@ sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IApplicatio
 		_previousIterationStartTimestamp = Stopwatch.GetTimestamp();
 		ExecuteIteration();
 
-		outDeltaTime = Stopwatch.GetElapsedTime(_previousIterationReturnTimestamp);
+		var dt = Stopwatch.GetElapsedTime(_previousIterationReturnTimestamp);
 		_previousIterationReturnTimestamp = Stopwatch.GetTimestamp();
+		_totalIteratedTime += dt;
+		outDeltaTime = dt;
 		return true;
 	}
 
 	public TimeSpan GetTimeUntilNextIteration(ApplicationLoopHandle handle) {
 		ThrowIfHandleOrThisIsDisposed(handle);
 		return GetWaitTimeUntilNextFrameStart();
+	}
+	public TimeSpan GetTotalIteratedTime(ApplicationLoopHandle handle) {
+		ThrowIfHandleOrThisIsDisposed(handle);
+		return _totalIteratedTime;
 	}
 
 	public void Dispose(ApplicationLoopHandle handle) {

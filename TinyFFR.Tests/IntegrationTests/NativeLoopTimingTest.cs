@@ -16,13 +16,13 @@ class NativeLoopTimingTest {
 	public void TearDownTest() { }
 
 	[Test]
+	// No assertions around timing because it leads to flaky tests, but manual check of output in console is still useful
 	public void Execute() {
 		using var factory = new TffrFactory();
 
 		var loopBuilder = factory.GetApplicationLoopBuilder(new() { InputTrackerConfig = new() { MaxControllerNameLength = 20 } });
-		using var loop = loopBuilder.BuildLoop(new() { FrameRateCapHz = 30 });
+		var loop = loopBuilder.BuildLoop(new() { FrameRateCapHz = 30 });
 
-		// No assertions around timing because it leads to flaky tests, but manual check of output in console is still useful
 		var reportedTimesList = new List<DeltaTime>();
 		var measuredTimesList = new List<DeltaTime>();
 		var stopwatch = Stopwatch.StartNew();
@@ -36,12 +36,14 @@ class NativeLoopTimingTest {
 			measuredTimesList.Add(measured);
 		}
 
-		Console.WriteLine($"Total time: {stopwatch.Elapsed.TotalMilliseconds:N2}ms measured, {reportedTimesList.Sum(dt => dt.ToTimeSpan().TotalMilliseconds):N2}ms reported");
+		Console.WriteLine($"Total time: {stopwatch.Elapsed.TotalMilliseconds:N2}ms measured, {reportedTimesList.Sum(dt => dt.ToTimeSpan().TotalMilliseconds):N2}ms reported sum-of-dt, {loop.TotalIteratedTime.TotalMilliseconds:N2}ms reported");
 		// Skip first 10% as JIT interferes with it
 		Console.WriteLine($"Average time: {measuredTimesList.Skip(measuredTimesList.Count / 10).Average(dt => dt.ToTimeSpan().TotalMilliseconds):N2}ms measured, {reportedTimesList.Skip(reportedTimesList.Count / 10).Average(dt => dt.ToTimeSpan().TotalMilliseconds):N2}ms reported");
 
 		Console.WriteLine("===========================================================================================================================");
 
+		loop.Dispose();
+		loop = loopBuilder.BuildLoop(new() { FrameRateCapHz = 30 });
 		reportedTimesList = new List<DeltaTime>();
 		measuredTimesList = new List<DeltaTime>();
 		stopwatch = Stopwatch.StartNew();
@@ -59,8 +61,9 @@ class NativeLoopTimingTest {
 			measuredTimesList.Add(measured);
 		}
 
-		Console.WriteLine($"Total time: {stopwatch.Elapsed.TotalMilliseconds:N2}ms measured, {reportedTimesList.Sum(dt => dt.ToTimeSpan().TotalMilliseconds):N2}ms reported");
+		Console.WriteLine($"Total time: {stopwatch.Elapsed.TotalMilliseconds:N2}ms measured, {reportedTimesList.Sum(dt => dt.ToTimeSpan().TotalMilliseconds):N2}ms reported sum-of-dt, {loop.TotalIteratedTime.TotalMilliseconds:N2}ms reported");
 		// Skip first 10% as JIT interferes with it
 		Console.WriteLine($"Average time: {measuredTimesList.Skip(measuredTimesList.Count / 10).Average(dt => dt.ToTimeSpan().TotalMilliseconds):N2}ms measured, {reportedTimesList.Skip(reportedTimesList.Count / 10).Average(dt => dt.ToTimeSpan().TotalMilliseconds):N2}ms reported");
+		loop.Dispose();
 	}
 } 
