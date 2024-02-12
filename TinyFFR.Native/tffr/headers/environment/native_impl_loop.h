@@ -31,7 +31,18 @@ typedef KeyboardOrMouseKeyEvent*(*kbm_event_buffer_size_double_delegate)();
 typedef RawGameControllerButtonEvent*(*controller_event_buffer_size_double_delegate)();
 
 class native_impl_loop {
+private:
+	static sdl_keycode_filter_delegate keycode_filter_delegate;
+	static kbm_event_buffer_size_double_delegate kbm_event_buffer_double_delegate;
+	static controller_event_buffer_size_double_delegate controller_event_buffer_double_delegate;
+
+	static KeyboardOrMouseKeyEvent* kbm_event_buffer;
+	static int32_t kbm_event_buffer_length;
+	static RawGameControllerButtonEvent* controller_event_buffer;
+	static int32_t controller_event_buffer_length;
+
 public:
-	static void iterate_events(KeyboardOrMouseKeyEvent* kbmEventBuffer, int32_t kbmEventBufferLength, RawGameControllerButtonEvent* controllerEventBuffer, int32_t controllerEventBufferLength, int32_t* outNumKbmEventsWritten, int32_t* outNumControllerEventsWritten);
+	static void iterate_events(int32_t* outNumKbmEventsWritten, int32_t* outNumControllerEventsWritten, float_t* outMousePosX, float_t* outMousePosY, interop_bool* outQuitRequested);
 	static void set_event_poll_delegates(sdl_keycode_filter_delegate keycodeFilterFuncPtr, kbm_event_buffer_size_double_delegate kbmBufferDoubleDelegate, controller_event_buffer_size_double_delegate controllerBufferDoubleDelegate);
+	static void set_event_poll_buffer_pointers(KeyboardOrMouseKeyEvent* kbmEventBuffer, int32_t kbmEventBufferLength, RawGameControllerButtonEvent* controllerEventBuffer, int32_t controllerEventBufferLength);
 };

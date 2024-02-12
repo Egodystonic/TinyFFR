@@ -27,6 +27,10 @@ sealed class NativeGameControllerState : IDisposable {
 		NameBuffer = new(nameBufferLength);
 	}
 
+	public void ApplyEvent(RawGameControllerButtonEvent rawEvent) {
+
+	}
+
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
