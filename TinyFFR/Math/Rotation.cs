@@ -7,7 +7,7 @@ using static Egodystonic.TinyFFR.MathUtils;
 namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Quaternion
-public readonly partial struct Rotation : IMathPrimitive<Rotation> {
+public readonly partial struct Rotation : IMathPrimitive<Rotation, float> {
 	public const string ToStringMiddleSection = " around ";
 	public static readonly Rotation None = new(Identity);
 

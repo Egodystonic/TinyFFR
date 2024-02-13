@@ -17,7 +17,7 @@ sealed unsafe class InteropStringBuffer : IDisposable {
 	public int BufferLength { get; }
 	public ref byte BufferRef => ref Unsafe.AsRef<byte>(BufferPtr);
 
-	Span<byte> AsSpan => new(BufferPtr, BufferLength);
+	public Span<byte> AsSpan => new(BufferPtr, BufferLength);
 
 	public void WriteFrom(ReadOnlySpan<char> src) {
 		var subStrLength = src.Length;
@@ -40,7 +40,8 @@ sealed unsafe class InteropStringBuffer : IDisposable {
 
 	public int ReadTo(Span<char> dest) {
 		var firstZero = AsSpan.IndexOf((byte) 0);
-		var destSizeRequired = Encoding.UTF8.GetCharCount(BufferPtr, firstZero >= 0 ? firstZero : BufferLength);
+		if (firstZero < 0) firstZero = BufferLength;
+		var destSizeRequired = Encoding.UTF8.GetCharCount(BufferPtr, firstZero);
 
 		while (destSizeRequired > dest.Length) {
 			var diff = destSizeRequired - dest.Length;
@@ -56,6 +57,12 @@ sealed unsafe class InteropStringBuffer : IDisposable {
 		}
 
 		return Encoding.UTF8.GetChars(AsSpan[..firstZero], dest);
+	}
+
+	public override string ToString() {
+		var span = new char[BufferLength];
+		ReadTo(span);
+		return new String(span);
 	}
 
 	public void Dispose() => NativeMemory.Free(BufferPtr);

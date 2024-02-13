@@ -8,14 +8,14 @@ namespace Egodystonic.TinyFFR.Environment.Desktop;
 public readonly record struct WindowConfig {
 	public required Display Display { get; init; }
 
-	public XYPair Position { get; init; } = (0, 0); // TODO explain in XMLDoc that this is relative positioning on the selected Display
+	public XYPair<int> Position { get; init; } = (0, 0); // TODO explain in XMLDoc that this is relative positioning on the selected Display
 
-	readonly XYPair _size = (800, 600);
-	public XYPair Size {
+	readonly XYPair<int> _size = (800, 600);
+	public XYPair<int> Size {
 		get => _size;
 		init {
-			if (value is { X: < 0f } or { Y: < 0f }) {
-				throw new ArgumentOutOfRangeException(nameof(Size), value, $"{nameof(XYPair.X)} and {nameof(XYPair.Y)} components must not be negative.");
+			if (value is { X: < 0 } or { Y: < 0 }) {
+				throw new ArgumentOutOfRangeException(nameof(Size), value, $"{nameof(XYPair<int>.X)} and {nameof(XYPair<int>.Y)} components must not be negative.");
 			}
 			_size = value;
 		}

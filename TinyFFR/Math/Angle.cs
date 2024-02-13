@@ -8,7 +8,7 @@ using System.Numerics;
 namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float), Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from float
-public readonly partial struct Angle : IMathPrimitive<Angle> {
+public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 	public const string ToStringSuffix = "°";
 	const float Tau = MathF.Tau;
 	const float TauReciprocal = 1f / MathF.Tau;

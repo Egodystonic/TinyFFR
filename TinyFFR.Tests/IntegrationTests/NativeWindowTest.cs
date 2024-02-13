@@ -28,11 +28,11 @@ class NativeWindowTest {
 			}
 
 			Assert.AreEqual(
-				display.SupportedDisplayModes.ToArray().OrderByDescending(mode => mode.Resolution.AsVector2.LengthSquared()).ThenByDescending(mode => mode.RefreshRateHz).First(),
+				display.SupportedDisplayModes.ToArray().OrderByDescending(mode => mode.Resolution.ToVector2().LengthSquared()).ThenByDescending(mode => mode.RefreshRateHz).First(),
 				display.HighestSupportedResolution
 			);
 			Assert.AreEqual(
-				display.SupportedDisplayModes.ToArray().OrderByDescending(mode => mode.RefreshRateHz).ThenByDescending(mode => mode.Resolution.AsVector2.LengthSquared()).First(),
+				display.SupportedDisplayModes.ToArray().OrderByDescending(mode => mode.RefreshRateHz).ThenByDescending(mode => mode.Resolution.ToVector2().LengthSquared()).First(),
 				display.HighestSupportedRefreshRate
 			);
 		}
@@ -63,15 +63,15 @@ class NativeWindowTest {
 		Assert.AreEqual(10, window.GetTitleUsingSpan(oversizeSpan));
 		Assert.AreEqual("1234567890", new String(oversizeSpan[..10]));
 
-		Assert.AreEqual(new XYPair(500, 300), window.Size);
-		Assert.AreEqual(new XYPair(100, 100), window.Position);
+		Assert.AreEqual(new XYPair<int>(500, 300), window.Size);
+		Assert.AreEqual(new XYPair<int>(100, 100), window.Position);
 		 
 		window.Size = (100, 800);
 		window.Position = (400, -50);
 		Assert.Throws<ArgumentOutOfRangeException>(() => window.Size = (-1, -1));
 		Assert.Throws<ArgumentOutOfRangeException>(() => window.Size = (-1, 100));
 		Assert.Throws<ArgumentOutOfRangeException>(() => window.Size = (100, -1));
-		Assert.AreEqual(new XYPair(100, 800), window.Size);
-		Assert.AreEqual(new XYPair(400, -50), window.Position);
+		Assert.AreEqual(new XYPair<int>(100, 800), window.Size);
+		Assert.AreEqual(new XYPair<int>(400, -50), window.Position);
 	}
 }

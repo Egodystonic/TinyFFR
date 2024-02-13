@@ -35,10 +35,10 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 		var globalPosition = config.Display.TranslateDisplayLocalWindowPositionToGlobal(config.Position);
 		CreateWindow(
 			out var outPtr,
-			(int) config.Size.X,
-			(int) config.Size.Y,
-			(int) globalPosition.X,
-			(int) globalPosition.Y
+			config.Size.X,
+			config.Size.Y,
+			globalPosition.X,
+			globalPosition.Y
 		).ThrowIfFailure();
 		_activeWindows.Add(outPtr);
 		_windowDisplayMap.Add(outPtr, config.Display);
@@ -86,14 +86,14 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_window_size")]
 	static extern InteropResult SetWindowSize(WindowHandle handle, int newWidth, int newHeight);
-	public void SetSize(WindowHandle handle, XYPair newDimensions) {
+	public void SetSize(WindowHandle handle, XYPair<int> newDimensions) {
 		ThrowIfHandleOrThisIsDisposed(handle);
 
-		var newWidth = (int) newDimensions.X;
-		var newHeight = (int) newDimensions.Y;
+		var newWidth = newDimensions.X;
+		var newHeight = newDimensions.Y;
 
-		if (newWidth < 0) throw new ArgumentOutOfRangeException(nameof(newDimensions), newDimensions, $"'{nameof(XYPair.X)}' value must be positive or 0.");
-		if (newHeight < 0) throw new ArgumentOutOfRangeException(nameof(newDimensions), newDimensions, $"'{nameof(XYPair.Y)}' value must be positive or 0.");
+		if (newWidth < 0) throw new ArgumentOutOfRangeException(nameof(newDimensions), newDimensions, $"'{nameof(XYPair<int>.X)}' value must be positive or 0.");
+		if (newHeight < 0) throw new ArgumentOutOfRangeException(nameof(newDimensions), newDimensions, $"'{nameof(XYPair<int>.Y)}' value must be positive or 0.");
 
 		SetWindowSize(
 			handle,
@@ -104,7 +104,7 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_window_size")]
 	static extern InteropResult GetWindowSize(WindowHandle handle, out int outWidth, out int outHeight);
-	public XYPair GetSize(WindowHandle handle) {
+	public XYPair<int> GetSize(WindowHandle handle) {
 		ThrowIfHandleOrThisIsDisposed(handle);
 		GetWindowSize(
 			handle,
@@ -116,7 +116,7 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_window_position")]
 	static extern InteropResult SetWindowPosition(WindowHandle handle, int newX, int newY);
-	public void SetPosition(WindowHandle handle, XYPair newPosition) {
+	public void SetPosition(WindowHandle handle, XYPair<int> newPosition) {
 		ThrowIfHandleOrThisIsDisposed(handle);
 		var translatedPosition = GetDisplay(handle).TranslateDisplayLocalWindowPositionToGlobal(newPosition);
 		SetWindowPosition(
@@ -128,7 +128,7 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_window_position")]
 	static extern InteropResult GetWindowPosition(WindowHandle handle, out int outX, out int outY);
-	public XYPair GetPosition(WindowHandle handle) {
+	public XYPair<int> GetPosition(WindowHandle handle) {
 		ThrowIfHandleOrThisIsDisposed(handle);
 		GetWindowPosition(
 			handle,

@@ -3,7 +3,7 @@
 
 namespace Egodystonic.TinyFFR.Environment.Desktop;
 
-public readonly record struct DisplayMode(XYPair Resolution, int RefreshRateHz) {
+public readonly record struct DisplayMode(XYPair<int> Resolution, int RefreshRateHz) {
 	public override string ToString() {
 		return $"{RefreshRateHz}Hz @ {Resolution.X:#} x {Resolution.Y:#}";
 	}

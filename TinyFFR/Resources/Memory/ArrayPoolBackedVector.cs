@@ -81,7 +81,7 @@ sealed class ArrayPoolBackedVector<T> : IList<T>, IDisposable {
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int IndexOf(T item) => Array.IndexOf(_backingArray, item);
+	public int IndexOf(T item) => Array.IndexOf(_backingArray, item, 0, Count);
 
 	public void Insert(int index, T item) {
 		IncreaseBackingArraySizeIfFull();

@@ -6,49 +6,35 @@ using System.Numerics;
 
 namespace Egodystonic.TinyFFR;
 
-[StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 2, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Vector2
-public readonly partial struct XYPair : IMathPrimitive<XYPair> {
-	public static readonly XYPair Zero = new(0f, 0f);
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>, T> where T : unmanaged, INumber<T> {
+	public static readonly XYPair<T> Zero = new(T.Zero, T.Zero);
 
-	internal readonly Vector2 AsVector2;
+	public T X { get; init; }
+	public T Y { get; init; }
 
-	public float X {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => AsVector2.X;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => AsVector2.X = value;
-	}
-	public float Y {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => AsVector2.Y;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => AsVector2.Y = value;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public XYPair(T x, T y) {
+		X = x;
+		Y = y;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public XYPair() { }
+	public Vector2 ToVector2() => new(Single.CreateSaturating(X), Single.CreateSaturating(Y));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public XYPair(float x, float y) : this(new Vector2(x, y)) { }
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal XYPair(Vector2 v) => AsVector2 = v;
+	public static XYPair<T> FromVector2(Vector2 v) => new(T.CreateSaturating(v.X), T.CreateSaturating(v.Y));
 
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vector2 ToVector2() => AsVector2;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair FromVector2(Vector2 v) => new(v);
-
-	public void Deconstruct(out float x, out float y) {
+	public void Deconstruct(out T x, out T y) {
 		x = X;
 		y = Y;
 	}
-	public static implicit operator XYPair((float X, float Y) tuple) => new(tuple.X, tuple.Y);
+	public static implicit operator XYPair<T>((T X, T Y) tuple) => new(tuple.X, tuple.Y);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ReadOnlySpan<float> ConvertToSpan(in XYPair src) => MemoryMarshal.Cast<XYPair, float>(new ReadOnlySpan<XYPair>(in src));
+	public static ReadOnlySpan<T> ConvertToSpan(in XYPair<T> src) => MemoryMarshal.Cast<XYPair<T>, T>(new ReadOnlySpan<XYPair<T>>(in src));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair ConvertFromSpan(ReadOnlySpan<float> src) => FromVector2(new Vector2(src));
+	public static XYPair<T> ConvertFromSpan(ReadOnlySpan<T> src) => new(src[0], src[1]);
 
 	public override string ToString() => ToString(null, null);
 
@@ -93,23 +79,23 @@ public readonly partial struct XYPair : IMathPrimitive<XYPair> {
 		return true;
 	}
 
-	public static XYPair Parse(string s, IFormatProvider? provider = null) => Parse(s.AsSpan(), provider);
-	public static bool TryParse(string? s, IFormatProvider? provider, out XYPair result) => TryParse(s.AsSpan(), provider, out result);
+	public static XYPair<T> Parse(string s, IFormatProvider? provider = null) => Parse(s.AsSpan(), provider);
+	public static bool TryParse(string? s, IFormatProvider? provider, out XYPair<T> result) => TryParse(s.AsSpan(), provider, out result);
 
-	public static XYPair Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null) {
+	public static XYPair<T> Parse(ReadOnlySpan<char> s, IFormatProvider? provider = null) {
 		var numberFormatter = NumberFormatInfo.GetInstance(provider);
 		s = s[1..]; // Assume starts with VectorStringPrefixChar
 
 		var indexOfSeparator = s.IndexOf(numberFormatter.NumberGroupSeparator);
-		var x = Single.Parse(s[..indexOfSeparator], provider);
+		var x = T.Parse(s[..indexOfSeparator], provider);
 		s = s[(indexOfSeparator + numberFormatter.NumberGroupSeparator.Length)..];
 
-		var y = Single.Parse(s[..^1], provider); // Assume ends with VectorStringSuffixChar
+		var y = T.Parse(s[..^1], provider); // Assume ends with VectorStringSuffixChar
 
 		return new(x, y);
 	}
 
-	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out XYPair result) {
+	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out XYPair<T> result) {
 		var numberFormatter = NumberFormatInfo.GetInstance(provider);
 		result = default;
 
@@ -121,27 +107,27 @@ public readonly partial struct XYPair : IMathPrimitive<XYPair> {
 		var indexOfSeparator = s.IndexOf(numberFormatter.NumberGroupSeparator);
 		if (indexOfSeparator < 0) return false;
 
-		if (!Single.TryParse(s[..indexOfSeparator], provider, out var x)) return false;
+		if (!T.TryParse(s[..indexOfSeparator], provider, out var x)) return false;
 		s = s[(indexOfSeparator + numberFormatter.NumberGroupSeparator.Length)..];
 		
-		if (!Single.TryParse(s[..indexOfSeparator], provider, out var y)) return false;
+		if (!T.TryParse(s[..indexOfSeparator], provider, out var y)) return false;
 
 		result = new(x, y);
 		return true;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool Equals(XYPair other) => AsVector2.Equals(other.AsVector2);
-	public bool Equals(XYPair other, float tolerance) {
-		return MathF.Abs(X - other.X) <= tolerance
-			&& MathF.Abs(Y - other.Y) <= tolerance;
+	public bool Equals(XYPair<T> other) => X.Equals(other.X) && Y.Equals(other.Y);
+	public bool Equals(XYPair<T> other, float tolerance) {
+		return Single.CreateSaturating(T.Abs(X - other.X)) <= tolerance
+			&& Single.CreateSaturating(T.Abs(Y - other.Y)) <= tolerance;
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool operator ==(XYPair left, XYPair right) => left.Equals(right);
+	public static bool operator ==(XYPair<T> left, XYPair<T> right) => left.Equals(right);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool operator !=(XYPair left, XYPair right) => !left.Equals(right);
+	public static bool operator !=(XYPair<T> left, XYPair<T> right) => !left.Equals(right);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public override bool Equals(object? obj) => obj is XYPair other && Equals(other);
+	public override bool Equals(object? obj) => obj is XYPair<T> other && Equals(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public override int GetHashCode() => AsVector2.GetHashCode();
+	public override int GetHashCode() => HashCode.Combine(X, Y);
 }

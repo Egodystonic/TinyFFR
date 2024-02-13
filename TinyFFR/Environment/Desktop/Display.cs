@@ -29,7 +29,7 @@ public readonly struct Display : IEquatable<Display> {
 		}
 	}
 
-	public XYPair CurrentResolution {
+	public XYPair<int> CurrentResolution {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _impl.GetResolution(Handle);
 	}
@@ -60,10 +60,10 @@ public readonly struct Display : IEquatable<Display> {
 	public int GetNameSpanMaxLength() => _impl.GetNameMaxLength();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal XYPair TranslateDisplayLocalWindowPositionToGlobal(XYPair displayLocalPosition) => displayLocalPosition + _impl.GetPositionOffset(Handle);
+	internal XYPair<int> TranslateDisplayLocalWindowPositionToGlobal(XYPair<int> displayLocalPosition) => displayLocalPosition + _impl.GetPositionOffset(Handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal XYPair TranslateGlobalWindowPositionToDisplayLocal(XYPair globalPosition) => globalPosition - _impl.GetPositionOffset(Handle);
+	internal XYPair<int> TranslateGlobalWindowPositionToDisplayLocal(XYPair<int> globalPosition) => globalPosition - _impl.GetPositionOffset(Handle);
 
 	public bool Equals(Display other) => Handle == other.Handle;
 	public override bool Equals(object? obj) => obj is Display other && Equals(other);

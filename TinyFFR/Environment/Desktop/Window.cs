@@ -28,13 +28,13 @@ public readonly struct Window : IEquatable<Window>, ITrackedDisposable {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => _impl.SetDisplay(Handle, value);
 	}
-	public XYPair Size {
+	public XYPair<int> Size {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _impl.GetSize(Handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => _impl.SetSize(Handle, value);
 	}
-	public XYPair Position { // TODO explain in XMLDoc that this is relative positioning on the selected Display
+	public XYPair<int> Position { // TODO explain in XMLDoc that this is relative positioning on the selected Display
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _impl.GetPosition(Handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -282,8 +282,8 @@ public enum KeyboardOrMouseKey : int {
 	// ========= This is the end of SDL's SDL_Keycode; everything below this line is just TinyFFR =========
 
 	MouseLeft = KeyboardOrMouseKeyExtensions.NonSdlKeyStartValue,
-	MouseRight = KeyboardOrMouseKeyExtensions.NonSdlKeyStartValue + 1,
-	MouseMiddle = KeyboardOrMouseKeyExtensions.NonSdlKeyStartValue + 2,
+	MouseMiddle = KeyboardOrMouseKeyExtensions.NonSdlKeyStartValue + 1,
+	MouseRight = KeyboardOrMouseKeyExtensions.NonSdlKeyStartValue + 2,
 	Mouse4 = KeyboardOrMouseKeyExtensions.NonSdlKeyStartValue + 3,
 	Mouse5 = KeyboardOrMouseKeyExtensions.NonSdlKeyStartValue + 4,
 	MouseWheelUp = KeyboardOrMouseKeyExtensions.NonSdlKeyStartValue + 5,
@@ -291,7 +291,7 @@ public enum KeyboardOrMouseKey : int {
 }
 
 public static class KeyboardOrMouseKeyExtensions {
-	internal const int NonSdlKeyStartValue = 380;
+	internal const int NonSdlKeyStartValue = 380; // Note: This is linked with a constant in native_impl_loop::iterate_events
 	internal const int SdlScancodeToKeycodeBit = 1 << 30;
 	internal const int RecommendedEnumValueArraySize = 400;
 	static readonly KeyboardOrMouseKeyCategory[] _precomputedCategoryArray = new KeyboardOrMouseKeyCategory[RecommendedEnumValueArraySize];

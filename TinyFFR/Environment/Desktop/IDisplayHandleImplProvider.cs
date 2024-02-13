@@ -8,8 +8,8 @@ namespace Egodystonic.TinyFFR.Environment.Desktop;
 interface IDisplayHandleImplProvider {
 	bool GetIsPrimary(DisplayHandle handle);
 	bool GetIsRecommended(DisplayHandle handle);
-	XYPair GetResolution(DisplayHandle handle);
-	XYPair GetPositionOffset(DisplayHandle handle);
+	XYPair<int> GetResolution(DisplayHandle handle);
+	XYPair<int> GetPositionOffset(DisplayHandle handle);
 	ReadOnlySpan<DisplayMode> GetSupportedDisplayModes(DisplayHandle handle);
 	DisplayMode GetHighestSupportedResolution(DisplayHandle handle);
 	DisplayMode GetHighestSupportedRefreshRate(DisplayHandle handle);

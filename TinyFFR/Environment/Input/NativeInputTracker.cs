@@ -18,22 +18,41 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 	readonly UnmanagedBuffer<KeyboardOrMouseKeyEvent> _kbmEventBuffer = new(InitialEventBufferLength);
 	readonly UnmanagedBuffer<RawGameControllerButtonEvent> _controllerEventBuffer = new(InitialEventBufferLength);
 	readonly ArrayPoolBackedVector<KeyboardOrMouseKey> _currentlyPressedKeys = new();
+	readonly ArrayPoolBackedVector<KeyboardOrMouseKey> _keyDownEventBuffer = new();
+	readonly ArrayPoolBackedVector<KeyboardOrMouseKey> _keyUpEventBuffer = new();
 	readonly ArrayPoolBackedVector<GameController> _detectedControllers = new();
 	readonly ArrayPoolBackedMap<GameControllerHandle, NativeGameControllerState> _controllerInputTrackers = new();
 	readonly InputTrackerConfig _config;
 	readonly GameController _amalgamatedController;
 	readonly NativeGameControllerState _amalgamatedControllerState;
 	bool _userQuitRequested = false;
-	XYPair _mouseCursorPos = default;
+	XYPair<int> _mouseCursorPos = default;
 	int _kbmEventBufferCount = 0;
 	bool _isDisposed = false;
 
 	public ReadOnlySpan<KeyboardOrMouseKeyEvent> NewKeyEvents => _kbmEventBuffer.AsSpan[.._kbmEventBufferCount];
+	public ReadOnlySpan<KeyboardOrMouseKey> NewKeyDownEvents => _keyDownEventBuffer.AsSpan;
+	public ReadOnlySpan<KeyboardOrMouseKey> NewKeyUpEvents => _keyUpEventBuffer.AsSpan;
 	public ReadOnlySpan<KeyboardOrMouseKey> CurrentlyPressedKeys => _currentlyPressedKeys.AsSpan;
 	public bool UserQuitRequested => _userQuitRequested;
-	public XYPair MouseCursorPosition => _mouseCursorPos;
+	public XYPair<int> MouseCursorPosition => _mouseCursorPos;
 	public ReadOnlySpan<GameController> GameControllers => _detectedControllers.AsSpan;
 	public GameController GetAmalgamatedGameController() => _amalgamatedController;
+
+	public int MouseScrollWheelDelta {
+		get {
+			var result = 0;
+			var newEvents = NewKeyDownEvents;
+			for (var i = 0; i < newEvents.Length; ++i) {
+				result += newEvents[i] switch {
+					KeyboardOrMouseKey.MouseWheelDown => 1,
+					KeyboardOrMouseKey.MouseWheelUp => -1,
+					_ => 0
+				};
+			}
+			return result;
+		}
+	}
 
 	public unsafe NativeInputTracker(InputTrackerConfig config) {
 		if (_liveInstance != null) throw new InvalidOperationException($"Only one {nameof(NativeInputTracker)} may be active at any time.");
@@ -44,7 +63,8 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 		SetEventPollDelegates(
 			&FilterKeycode,
 			&ResizeCurrentPollInstanceKbmEventBuffer,
-			&ResizeCurrentPollInstanceControllerEventBuffer
+			&ResizeCurrentPollInstanceControllerEventBuffer,
+			&HandlePotentialNewController
 		);
 		SetEventPollBufferPointers(
 			_kbmEventBuffer.BufferPointer,
@@ -52,6 +72,7 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 			_controllerEventBuffer.BufferPointer,
 			_controllerEventBuffer.Length
 		);
+		DetectControllers();
 	}
 
 	public void ExecuteIteration() {
@@ -65,7 +86,7 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 			out var quitRequested
 		).ThrowIfFailure();
 
-		// TODO mouse click events
+		// TODO mouse click events. Also mouse pos doesn't seem to work right? Not sure
 
 		UpdateCurrentlyPressedKeys(numKbmEvents);
 		UpdateControllerStates(numControllerEvents);
@@ -75,17 +96,26 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 
 	void UpdateCurrentlyPressedKeys(int numNewEvents) {
 		_kbmEventBufferCount = numNewEvents;
+		_keyDownEventBuffer.ClearWithoutZeroingMemory();
+		_keyUpEventBuffer.ClearWithoutZeroingMemory();
 		foreach (var kbmEvent in NewKeyEvents) {
 			if (kbmEvent.KeyDown) {
 				if (!_currentlyPressedKeys.Contains(kbmEvent.Key)) _currentlyPressedKeys.Add(kbmEvent.Key);
+				_keyDownEventBuffer.Add(kbmEvent.Key);
 			}
 			else {
 				_currentlyPressedKeys.Remove(kbmEvent.Key);
+				_keyUpEventBuffer.Add(kbmEvent.Key);
 			}
 		}
 	}
 
 	void UpdateControllerStates(int numNewEvents) {
+		_amalgamatedControllerState.ClearForNextIteration();
+		foreach (var kvp in _controllerInputTrackers) {
+			kvp.Value.ClearForNextIteration();
+		}
+
 		for (var i = 0; i < numNewEvents; ++i) {
 			var rawEvent = _controllerEventBuffer.AsSpan[i];
 			_amalgamatedControllerState.ApplyEvent(rawEvent);
@@ -99,10 +129,24 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 		}
 	}
 
-	public bool IsKeyDown(KeyboardOrMouseKey key) {
+	public bool KeyIsCurrentlyDown(KeyboardOrMouseKey key) {
 		var curKeys = CurrentlyPressedKeys;
 		for (var i = 0; i < curKeys.Length; ++i) {
 			if (curKeys[i] == key) return true;
+		}
+		return false;
+	}
+	public bool KeyWasPressedThisIteration(KeyboardOrMouseKey key) {
+		var newDownEvents = NewKeyDownEvents;
+		for (var i = 0; i < newDownEvents.Length; ++i) {
+			if (newDownEvents[i] == key) return true;
+		}
+		return false;
+	}
+	public bool KeyWasReleasedThisIteration(KeyboardOrMouseKey key) {
+		var newUpEvents = NewKeyUpEvents;
+		for (var i = 0; i < newUpEvents.Length; ++i) {
+			if (newUpEvents[i] == key) return true;
 		}
 		return false;
 	}
@@ -111,7 +155,8 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 	static extern unsafe InteropResult SetEventPollDelegates(
 		delegate* unmanaged<int, InteropBool> filterKeycapValueDelegate,
 		delegate* unmanaged<KeyboardOrMouseKeyEvent*> doubleKbmEventBufferDelegate,
-		delegate* unmanaged<RawGameControllerButtonEvent*> doubleControllerEventBufferDelegate
+		delegate* unmanaged<RawGameControllerButtonEvent*> doubleControllerEventBufferDelegate,
+		delegate* unmanaged<GameControllerHandle, byte*, int, void> handleNewControllerDelegate
 	);
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_event_poll_buffer_pointers")]
 	static extern unsafe InteropResult SetEventPollBufferPointers(
@@ -137,14 +182,30 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 		return Enum.IsDefined((KeyboardOrMouseKey) keycode) && keycode < KeyboardOrMouseKeyExtensions.NonSdlKeyStartValue;
 	}
 
+	[DllImport(NativeUtils.NativeLibName, EntryPoint = "detect_controllers")]
+	static extern InteropResult DetectControllers();
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "iterate_events")]
 	static extern InteropResult IterateEvents(
 		out int numKbmEventsWritten,
 		out int numControllerEventsWritten,
-		out float mousePosX,
-		out float mousePosY,
+		out int mousePosX,
+		out int mousePosY,
 		out InteropBool quitRequested
 	);
+
+	[UnmanagedCallersOnly]
+	static unsafe void HandlePotentialNewController(GameControllerHandle handle, byte* utf8NamePtr, int utf8NameLen) {
+		if (_liveInstance == null || _liveInstance._isDisposed) throw new InvalidOperationException("Live instance was null or disposed.");
+		for (var i = 0; i < _liveInstance._detectedControllers.Count; ++i) {
+			if (_liveInstance._detectedControllers[i].Handle == handle) return;
+		}
+		_liveInstance._detectedControllers.Add(new(handle, _liveInstance));
+		var state = new NativeGameControllerState(_liveInstance._config.MaxControllerNameLength);
+		var nameSpan = new ReadOnlySpan<byte>(utf8NamePtr, utf8NameLen);
+		if (nameSpan.Length > state.NameBuffer.AsSpan.Length) nameSpan = nameSpan[..state.NameBuffer.AsSpan.Length];
+		nameSpan.CopyTo(state.NameBuffer.AsSpan);
+		_liveInstance._controllerInputTrackers.Add(handle, state);
+	}
 
 	NativeGameControllerState GetControllerState(GameControllerHandle handle) {
 		if (handle == _amalgamatedController.Handle) return _amalgamatedControllerState;
@@ -157,10 +218,6 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 		return GetControllerState(handle).NameBuffer.ReadTo(dest);
 	}
 	public int GetNameMaxLength() => _config.MaxControllerNameLength;
-	public bool IsConnected(GameControllerHandle handle) {
-		ThrowIfThisIsDisposed();
-		return GetControllerState(handle).IsConnected;
-	}
 	public GameControllerStickPosition GetStickPosition(GameControllerHandle handle, bool leftStick) {
 		ThrowIfThisIsDisposed();
 		return leftStick ? GetControllerState(handle).LeftStickPos : GetControllerState(handle).RightStickPos;
@@ -173,6 +230,14 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 		ThrowIfThisIsDisposed();
 		return GetControllerState(handle).NewButtonEvents.AsSpan;
 	}
+	public ReadOnlySpan<GameControllerButton> GetNewButtonDownEvents(GameControllerHandle handle) {
+		ThrowIfThisIsDisposed();
+		return GetControllerState(handle).NewButtonDownEvents.AsSpan;
+	}
+	public ReadOnlySpan<GameControllerButton> GetNewButtonUpEvents(GameControllerHandle handle) {
+		ThrowIfThisIsDisposed();
+		return GetControllerState(handle).NewButtonUpEvents.AsSpan;
+	}
 	public ReadOnlySpan<GameControllerButton> GetCurrentlyPressedButtons(GameControllerHandle handle) {
 		ThrowIfThisIsDisposed();
 		return GetControllerState(handle).CurrentlyPressedButtons.AsSpan;
@@ -184,6 +249,20 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 		}
 		return false;
 	}
+	public bool WasButtonPressed(GameControllerHandle handle, GameControllerButton button) {
+		var newDownButtons = GetNewButtonDownEvents(handle);
+		for (var i = 0; i < newDownButtons.Length; ++i) {
+			if (newDownButtons[i] == button) return true;
+		}
+		return false;
+	}
+	public bool WasButtonReleased(GameControllerHandle handle, GameControllerButton button) {
+		var newUpButtons = GetNewButtonUpEvents(handle);
+		for (var i = 0; i < newUpButtons.Length; ++i) {
+			if (newUpButtons[i] == button) return true;
+		}
+		return false;
+	}
 
 	public void Dispose() {
 		if (_isDisposed) return;
@@ -192,6 +271,8 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 			foreach (var kvp in _controllerInputTrackers) kvp.Value.Dispose();
 
 			_kbmEventBuffer.Dispose();
+			_keyDownEventBuffer.Dispose();
+			_keyUpEventBuffer.Dispose();
 			_controllerEventBuffer.Dispose();
 			_detectedControllers.Dispose();
 			_currentlyPressedKeys.Dispose();

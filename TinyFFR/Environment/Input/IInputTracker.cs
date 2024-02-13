@@ -9,12 +9,17 @@ public interface IInputTracker {
 	bool UserQuitRequested { get; }
 
 	ReadOnlySpan<KeyboardOrMouseKeyEvent> NewKeyEvents { get; }
+	ReadOnlySpan<KeyboardOrMouseKey> NewKeyDownEvents { get; }
+	ReadOnlySpan<KeyboardOrMouseKey> NewKeyUpEvents { get; }
 	ReadOnlySpan<KeyboardOrMouseKey> CurrentlyPressedKeys { get; } 
 
-	XYPair MouseCursorPosition { get; }
+	XYPair<int> MouseCursorPosition { get; }
+	int MouseScrollWheelDelta { get; } // TODO document that down is positive, up is negative
 
 	ReadOnlySpan<GameController> GameControllers { get; }
 	GameController GetAmalgamatedGameController();
 
-	bool IsKeyDown(KeyboardOrMouseKey key);
+	bool KeyIsCurrentlyDown(KeyboardOrMouseKey key);
+	bool KeyWasPressedThisIteration(KeyboardOrMouseKey key);
+	bool KeyWasReleasedThisIteration(KeyboardOrMouseKey key);
 }

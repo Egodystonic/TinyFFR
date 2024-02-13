@@ -70,7 +70,7 @@ sealed class NativeDisplayDiscoverer : IDisplayDiscoverer, IDisplayHandleImplPro
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_resolution")]
 	static extern InteropResult GetDisplayResolution(DisplayHandle handle, out int outWidth, out int outHeight);
-	public XYPair GetResolution(DisplayHandle handle) {
+	public XYPair<int> GetResolution(DisplayHandle handle) {
 		ThrowIfThisIsDisposed();
 		GetDisplayResolution(
 			handle,
@@ -82,7 +82,7 @@ sealed class NativeDisplayDiscoverer : IDisplayDiscoverer, IDisplayHandleImplPro
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_positional_offset")]
 	static extern InteropResult GetDisplayPositionalOffset(DisplayHandle handle, out int outXOffset, out int outYOffset);
-	public XYPair GetPositionOffset(DisplayHandle handle) {
+	public XYPair<int> GetPositionOffset(DisplayHandle handle) {
 		ThrowIfThisIsDisposed();
 		GetDisplayPositionalOffset(
 			handle,
@@ -120,7 +120,7 @@ sealed class NativeDisplayDiscoverer : IDisplayDiscoverer, IDisplayHandleImplPro
 		
 		var result = supportedModes[0];
 		foreach (var displayMode in supportedModes[1..]) {
-			if (displayMode.Resolution.AsVector2.LengthSquared() > result.Resolution.AsVector2.LengthSquared()) {
+			if (displayMode.Resolution.ToVector2().LengthSquared() > result.Resolution.ToVector2().LengthSquared()) {
 				result = displayMode;
 			}
 			else if (displayMode.Resolution == result.Resolution && displayMode.RefreshRateHz > result.RefreshRateHz) {
@@ -138,7 +138,7 @@ sealed class NativeDisplayDiscoverer : IDisplayDiscoverer, IDisplayHandleImplPro
 			if (displayMode.RefreshRateHz > result.RefreshRateHz) {
 				result = displayMode;
 			}
-			else if (displayMode.RefreshRateHz == result.RefreshRateHz && displayMode.Resolution.AsVector2.LengthSquared() > result.Resolution.AsVector2.LengthSquared()) {
+			else if (displayMode.RefreshRateHz == result.RefreshRateHz && displayMode.Resolution.ToVector2().LengthSquared() > result.Resolution.ToVector2().LengthSquared()) {
 				result = displayMode;
 			}
 		}

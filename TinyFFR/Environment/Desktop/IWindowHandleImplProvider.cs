@@ -13,11 +13,11 @@ interface IWindowHandleImplProvider {
 	Display GetDisplay(WindowHandle handle);
 	void SetDisplay(WindowHandle handle, Display newDisplay);
 
-	XYPair GetSize(WindowHandle handle);
-	void SetSize(WindowHandle handle, XYPair newDimensions);
+	XYPair<int> GetSize(WindowHandle handle);
+	void SetSize(WindowHandle handle, XYPair<int> newDimensions);
 
-	XYPair GetPosition(WindowHandle handle);
-	void SetPosition(WindowHandle handle, XYPair newDimensions);
+	XYPair<int> GetPosition(WindowHandle handle);
+	void SetPosition(WindowHandle handle, XYPair<int> newDimensions);
 
 	WindowFullscreenStyle GetFullscreenState(WindowHandle handle);
 	void SetFullscreenState(WindowHandle handle, WindowFullscreenStyle style);

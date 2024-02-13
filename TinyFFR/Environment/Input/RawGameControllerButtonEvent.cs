@@ -9,10 +9,12 @@ readonly struct RawGameControllerButtonEvent {
 	public readonly GameControllerHandle Handle;
 	[FieldOffset(8)]
 	public readonly RawGameControllerEventType Type;
-	[FieldOffset(12)]
-	public readonly short NewValueX;
 	[FieldOffset(14)]
-	public readonly short NewValueY;
+	public readonly short NewValue;
+
+	public override string ToString() {
+		return $"{Type} = {NewValue}";
+	}
 }
 
 enum RawGameControllerEventType {
@@ -39,10 +41,12 @@ enum RawGameControllerEventType {
 	TouchPad = 20,
 
 	// ========= This is the end of SDL's SDL_GameControllerButton; everything below this line is just TinyFFR =========
+	// Note: These values are linked with a constant in native_impl_loop::iterate_events
 
-	LeftTrigger = 100,
-	RightTrigger = 101,
-	LeftStickAxis = 200,
-	RightStickAxis = 201,
-	ConnectDisconnect = 300
+	LeftStickAxisX = 200, 
+	LeftStickAxisY = 201,
+	RightStickAxisX = 202,
+	RightStickAxisY = 203,
+	LeftTrigger = 204,
+	RightTrigger = 205,
 }
