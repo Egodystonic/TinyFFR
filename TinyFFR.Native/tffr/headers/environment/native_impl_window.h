@@ -21,5 +21,8 @@ public:
 	static void set_window_fullscreen_state(WindowHandle handle, interop_bool fullscreen, interop_bool borderless);
 	static void get_window_fullscreen_state(WindowHandle handle, interop_bool* outFullscreen, interop_bool* outBorderless);
 
+	static void set_window_cursor_lock_state(WindowHandle handle, interop_bool lockState);
+	static void get_window_cursor_lock_state(WindowHandle handle, interop_bool* outLockState);
+
 	static void dispose_window(WindowHandle handle);
 };

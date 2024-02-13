@@ -22,6 +22,9 @@ interface IWindowHandleImplProvider {
 	WindowFullscreenStyle GetFullscreenState(WindowHandle handle);
 	void SetFullscreenState(WindowHandle handle, WindowFullscreenStyle style);
 
+	bool GetCursorLockState(WindowHandle handle);
+	void SetCursorLockState(WindowHandle handle, bool state);
+
 	bool IsDisposed(WindowHandle handle);
 	void Dispose(WindowHandle handle);
 }

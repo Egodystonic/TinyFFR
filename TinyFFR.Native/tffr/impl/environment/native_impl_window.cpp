@@ -98,6 +98,22 @@ StartExportedFunc(get_window_fullscreen_state, WindowHandle ptr, interop_bool* o
 
 
 
+void native_impl_window::set_window_cursor_lock_state(WindowHandle handle, interop_bool lockState) {
+	auto setModeResult = SDL_SetRelativeMouseMode(lockState == interop_bool_true ? SDL_TRUE : SDL_FALSE);
+	ThrowIfNotZero(setModeResult, "Could not set relative mouse mode: ", SDL_GetError());
+}
+StartExportedFunc(set_window_cursor_lock_state, WindowHandle handle, interop_bool lockState) {
+	native_impl_window::set_window_cursor_lock_state(handle, lockState);
+	EndExportedFunc
+}
+void native_impl_window::get_window_cursor_lock_state(WindowHandle handle, interop_bool* outLockState) {
+	*outLockState = SDL_GetRelativeMouseMode() == SDL_TRUE ? interop_bool_true : interop_bool_false;
+}
+StartExportedFunc(get_window_cursor_lock_state, WindowHandle handle, interop_bool* outLockState) {
+	native_impl_window::get_window_cursor_lock_state(handle, outLockState);
+	EndExportedFunc
+}
+
 
 
 void native_impl_window::dispose_window(WindowHandle handle) {

@@ -122,8 +122,8 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 		var translatedPosition = GetDisplay(handle).TranslateDisplayLocalWindowPositionToGlobal(newPosition);
 		SetWindowPosition(
 			handle,
-			(int) translatedPosition.X,
-			(int) translatedPosition.Y
+			translatedPosition.X,
+			translatedPosition.Y
 		).ThrowIfFailure();
 	}
 
@@ -165,6 +165,27 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 			(true, false) => WindowFullscreenStyle.Fullscreen,
 			_ => WindowFullscreenStyle.NotFullscreen
 		};
+	}
+
+	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_window_cursor_lock_state")]
+	static extern InteropResult SetWindowCursorLockState(WindowHandle handle, InteropBool lockState);
+	public void SetCursorLockState(WindowHandle handle, bool state) {
+		ThrowIfHandleOrThisIsDisposed(handle);
+		SetWindowCursorLockState(
+			handle,
+			state
+		).ThrowIfFailure();
+	}
+
+	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_window_cursor_lock_state")]
+	static extern InteropResult GetWindowCursorLockState(WindowHandle handle, out InteropBool outLockState);
+	public bool GetCursorLockState(WindowHandle handle) {
+		ThrowIfHandleOrThisIsDisposed(handle);
+		GetWindowCursorLockState(
+			handle,
+			out var result
+		).ThrowIfFailure();
+		return result;
 	}
 
 	public bool IsDisposed(WindowHandle handle) => !_activeWindows.Contains(handle);

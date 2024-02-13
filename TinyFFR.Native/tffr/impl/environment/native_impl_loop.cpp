@@ -110,7 +110,7 @@ void append_click_event(int32_t numEventsWrittenSoFar, int32_t x, int32_t y, int
 	native_impl_loop::click_event_buffer[numEventsWrittenSoFar].EventType = keyCode;
 	native_impl_loop::click_event_buffer[numEventsWrittenSoFar].ClickCount = clickCount;
 }
-void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* outNumControllerEventsWritten, int32_t* outNumClickEventsWritten, int32_t* outMousePosX, int32_t* outMousePosY, interop_bool* outQuitRequested) {
+void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* outNumControllerEventsWritten, int32_t* outNumClickEventsWritten, int32_t* outMousePosX, int32_t* outMousePosY, int32_t* outMouseDeltaX, int32_t* outMouseDeltaY, interop_bool* outQuitRequested) {
 	static constexpr int32_t NonSdlKeyStartValue = 380;
 	static constexpr int32_t RawGameControllerAxisEventStartValue = 200;
 	int32_t numKbmEventsWritten = 0;
@@ -118,6 +118,8 @@ void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* 
 	int32_t numClickEventsWritten = 0;
 	int32_t mousePosX = INT32_MIN;
 	int32_t mousePosY = INT32_MIN;
+	int32_t mouseDeltaX = 0;
+	int32_t mouseDeltaY = 0;
 	interop_bool quitRequested = interop_bool_false;
 
 	SDL_Event event;
@@ -127,6 +129,8 @@ void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* 
 				auto motionEvent = event.motion;
 				mousePosX = motionEvent.x;
 				mousePosY = motionEvent.y;
+				mouseDeltaX += motionEvent.xrel;
+				mouseDeltaY += motionEvent.yrel;
 				break;
 			}
 
@@ -192,15 +196,19 @@ void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* 
 	*outNumClickEventsWritten = numClickEventsWritten;
 	*outMousePosX = mousePosX;
 	*outMousePosY = mousePosY;
+	*outMouseDeltaX = mouseDeltaX;
+	*outMouseDeltaY = mouseDeltaY;
 	*outQuitRequested = quitRequested;
 }
-StartExportedFunc(iterate_events, int32_t* outNumKbmEventsWritten, int32_t* outNumControllerEventsWritten, int32_t* outNumClickEventsWritten, int32_t* outMousePosX, int32_t* outMousePosY, interop_bool* outQuitRequested) {
+StartExportedFunc(iterate_events, int32_t* outNumKbmEventsWritten, int32_t* outNumControllerEventsWritten, int32_t* outNumClickEventsWritten, int32_t* outMousePosX, int32_t* outMousePosY, int32_t* outMouseDeltaX, int32_t* outMouseDeltaY, interop_bool* outQuitRequested) {
 	native_impl_loop::iterate_events(
 		outNumKbmEventsWritten,
 		outNumControllerEventsWritten,
 		outNumClickEventsWritten,
 		outMousePosX,
 		outMousePosY,
+		outMouseDeltaX,
+		outMouseDeltaY,
 		outQuitRequested
 	);
 	EndExportedFunc

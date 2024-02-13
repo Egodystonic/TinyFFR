@@ -57,7 +57,7 @@ public:
 	static int32_t click_event_buffer_length;
 
 	static void detect_controllers();
-	static void iterate_events(int32_t* outNumKbmEventsWritten, int32_t* outNumControllerEventsWritten, int32_t* outNumClickEventsWritten, int32_t* outMousePosX, int32_t* outMousePosY, interop_bool* outQuitRequested);
+	static void iterate_events(int32_t* outNumKbmEventsWritten, int32_t* outNumControllerEventsWritten, int32_t* outNumClickEventsWritten, int32_t* outMousePosX, int32_t* outMousePosY, int32_t* outMouseDeltaX, int32_t* outMouseDeltaY, interop_bool* outQuitRequested);
 	static void set_event_poll_delegates(sdl_keycode_filter_delegate keycodeFilterFuncPtr, kbm_event_buffer_size_double_delegate kbmBufferDoubleDelegate, controller_event_buffer_size_double_delegate controllerBufferDoubleDelegate, click_event_buffer_size_double_delegate clickBufferDoubleDelegate, handle_new_controller_delegate handleControllerDelegate);
 	static void set_event_poll_buffer_pointers(KeyboardOrMouseKeyEvent* kbmEventBuffer, int32_t kbmEventBufferLength, RawGameControllerButtonEvent* controllerEventBuffer, int32_t controllerEventBufferLength, MouseClickEvent* clickEventBuffer, int32_t clickEventBufferLength);
 };

@@ -39,6 +39,7 @@ class NativeInputTest {
 
 		_numControllers = 0;
 		while (!loop.InputTracker.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(20d)) {
+			if (loop.InputTracker.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) window.LockCursor = !window.LockCursor;
 			HandleInput(loop.InputTracker);
 			loop.IterateOnce();
 		}
@@ -46,6 +47,7 @@ class NativeInputTest {
 		Console.WriteLine($"Quit requested: {loop.InputTracker.UserQuitRequested}");
 		Console.WriteLine("KBM Event Buffer Length: " + ((UnmanagedBuffer<KeyboardOrMouseKeyEvent>) typeof(NativeInputTracker).GetField("_kbmEventBuffer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(loop.InputTracker)).Length);
 		Console.WriteLine("Controller Event Buffer Length: " + ((UnmanagedBuffer<RawGameControllerButtonEvent>) typeof(NativeInputTracker).GetField("_controllerEventBuffer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(loop.InputTracker)).Length);
+		Console.WriteLine("Click Event Buffer Length: " + ((UnmanagedBuffer<MouseClickEvent>) typeof(NativeInputTracker).GetField("_clickEventBuffer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(loop.InputTracker)).Length);
 	}
 
 	int _numControllers;
@@ -80,7 +82,7 @@ class NativeInputTest {
 		Console.WriteLine("[" + String.Join(", ", input.CurrentlyPressedKeys.ToArray()) + "] " + String.Join(", ", input.NewKeyEvents.ToArray().Select(ke => $"{(ke.KeyDown ? "+" : "-")}{ke.Key}")));
 		if (input.NewKeyDownEvents.Length > 0) Console.WriteLine("\t\t\t+" + String.Join(", ", input.NewKeyDownEvents.ToArray()));
 		if (input.NewKeyUpEvents.Length > 0) Console.WriteLine("\t\t\t-" + String.Join(", ", input.NewKeyUpEvents.ToArray()));
-		Console.WriteLine($"\t\t\tMouse: {input.MouseCursorPosition}; Wheel: {input.MouseScrollWheelDelta}");
+		Console.WriteLine($"\t\t\tMouse: {input.MouseCursorPosition} (delta {input.MouseCursorDelta}); Wheel: {input.MouseScrollWheelDelta}");
 		for (var i = 0; i < input.NewMouseClicks.Length; ++i) {
 			Console.WriteLine($"\t\t\t\tClick: {input.NewMouseClicks[i]}");
 		}

@@ -48,6 +48,13 @@ public readonly struct Window : IEquatable<Window>, ITrackedDisposable {
 		set => _impl.SetFullscreenState(Handle, value);
 	}
 
+	public bool LockCursor {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.GetCursorLockState(Handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => _impl.SetCursorLockState(Handle, value);
+	}
+
 	internal Window(WindowHandle handle, IWindowHandleImplProvider impl) {
 		Handle = handle;
 		_impl = impl;

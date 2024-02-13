@@ -28,6 +28,7 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 	readonly NativeGameControllerState _amalgamatedControllerState;
 	bool _userQuitRequested = false;
 	XYPair<int> _mouseCursorPos = default;
+	XYPair<int> _mouseCursorDelta = default;
 	int _kbmEventBufferCount = 0;
 	int _clickEventBufferCount = 0;
 	bool _isDisposed = false;
@@ -39,6 +40,7 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 	public ReadOnlySpan<MouseClickEvent> NewMouseClicks => _clickEventBuffer.AsSpan[.._clickEventBufferCount];
 	public bool UserQuitRequested => _userQuitRequested;
 	public XYPair<int> MouseCursorPosition => _mouseCursorPos;
+	public XYPair<int> MouseCursorDelta => _mouseCursorDelta;
 	public ReadOnlySpan<GameController> GameControllers => _detectedControllers.AsSpan;
 	public GameController GetAmalgamatedGameController() => _amalgamatedController;
 
@@ -69,7 +71,7 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 			&ResizeCurrentPollInstanceControllerEventBuffer,
 			&ResizeCurrentPollInstanceClickEventBuffer,
 			&HandlePotentialNewController
-		);
+		).ThrowIfFailure();
 		SetEventPollBufferPointers(
 			_kbmEventBuffer.BufferPointer,
 			_kbmEventBuffer.Length,
@@ -77,7 +79,7 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 			_controllerEventBuffer.Length,
 			_clickEventBuffer.BufferPointer,
 			_clickEventBuffer.Length
-		);
+		).ThrowIfFailure();
 		DetectControllers();
 	}
 
@@ -90,12 +92,15 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 			out var numClickEvents,
 			out var mousePosX,
 			out var mousePosY,
+			out var mouseDeltaX,
+			out var mouseDeltaY,
 			out var quitRequested
 		).ThrowIfFailure();
 
 		UpdateCurrentlyPressedKeys(numKbmEvents, numClickEvents);
 		UpdateControllerStates(numControllerEvents);
 		_mouseCursorPos = (mousePosX == Int32.MinValue ? _mouseCursorPos.X : mousePosX, mousePosY == Int32.MinValue ? _mouseCursorPos.Y : mousePosY);
+		_mouseCursorDelta = (mouseDeltaX, mouseDeltaY);
 		_userQuitRequested = quitRequested;
 	}
 
@@ -194,7 +199,7 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 	}
 	[UnmanagedCallersOnly]
 	static InteropBool FilterKeycode(int keycode) {
-		return Enum.IsDefined((KeyboardOrMouseKey) keycode) && keycode < KeyboardOrMouseKeyExtensions.NonSdlKeyStartValue;
+		return Enum.IsDefined((KeyboardOrMouseKey) keycode) && (keycode & ~KeyboardOrMouseKeyExtensions.SdlScancodeToKeycodeBit) < KeyboardOrMouseKeyExtensions.NonSdlKeyStartValue;
 	}
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "detect_controllers")]
@@ -206,6 +211,8 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 		out int numClickEventsWritten,
 		out int mousePosX,
 		out int mousePosY,
+		out int mouseDeltaX,
+		out int mouseDeltaY,
 		out InteropBool quitRequested
 	);
 
