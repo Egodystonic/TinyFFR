@@ -86,11 +86,11 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 			out var quitRequested
 		).ThrowIfFailure();
 
-		// TODO mouse click events. Also mouse pos doesn't seem to work right? Not sure
+		// TODO mouse click events.
 
 		UpdateCurrentlyPressedKeys(numKbmEvents);
 		UpdateControllerStates(numControllerEvents);
-		_mouseCursorPos = (mousePosX, mousePosY);
+		_mouseCursorPos = (mousePosX == Int32.MinValue ? _mouseCursorPos.X : mousePosX, mousePosY == Int32.MinValue ? _mouseCursorPos.Y : mousePosY);
 		_userQuitRequested = quitRequested;
 	}
 

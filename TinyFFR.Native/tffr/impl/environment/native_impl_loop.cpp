@@ -95,8 +95,8 @@ void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* 
 	static constexpr int32_t RawGameControllerAxisEventStartValue = 200;
 	int32_t numKbmEventsWritten = 0;
 	int32_t numControllerEventsWritten = 0;
-	int32_t mousePosX = 0;
-	int32_t mousePosY = 0;
+	int32_t mousePosX = INT32_MIN;
+	int32_t mousePosY = INT32_MIN;
 	interop_bool quitRequested = interop_bool_false;
 
 	SDL_Event event;
