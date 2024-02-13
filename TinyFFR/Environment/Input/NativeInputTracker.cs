@@ -17,6 +17,7 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 	static NativeInputTracker? _liveInstance = null;
 	readonly UnmanagedBuffer<KeyboardOrMouseKeyEvent> _kbmEventBuffer = new(InitialEventBufferLength);
 	readonly UnmanagedBuffer<RawGameControllerButtonEvent> _controllerEventBuffer = new(InitialEventBufferLength);
+	readonly UnmanagedBuffer<MouseClickEvent> _clickEventBuffer = new(InitialEventBufferLength);
 	readonly ArrayPoolBackedVector<KeyboardOrMouseKey> _currentlyPressedKeys = new();
 	readonly ArrayPoolBackedVector<KeyboardOrMouseKey> _keyDownEventBuffer = new();
 	readonly ArrayPoolBackedVector<KeyboardOrMouseKey> _keyUpEventBuffer = new();
@@ -28,12 +29,14 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 	bool _userQuitRequested = false;
 	XYPair<int> _mouseCursorPos = default;
 	int _kbmEventBufferCount = 0;
+	int _clickEventBufferCount = 0;
 	bool _isDisposed = false;
 
 	public ReadOnlySpan<KeyboardOrMouseKeyEvent> NewKeyEvents => _kbmEventBuffer.AsSpan[.._kbmEventBufferCount];
 	public ReadOnlySpan<KeyboardOrMouseKey> NewKeyDownEvents => _keyDownEventBuffer.AsSpan;
 	public ReadOnlySpan<KeyboardOrMouseKey> NewKeyUpEvents => _keyUpEventBuffer.AsSpan;
 	public ReadOnlySpan<KeyboardOrMouseKey> CurrentlyPressedKeys => _currentlyPressedKeys.AsSpan;
+	public ReadOnlySpan<MouseClickEvent> NewMouseClicks => _clickEventBuffer.AsSpan[.._clickEventBufferCount];
 	public bool UserQuitRequested => _userQuitRequested;
 	public XYPair<int> MouseCursorPosition => _mouseCursorPos;
 	public ReadOnlySpan<GameController> GameControllers => _detectedControllers.AsSpan;
@@ -64,13 +67,16 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 			&FilterKeycode,
 			&ResizeCurrentPollInstanceKbmEventBuffer,
 			&ResizeCurrentPollInstanceControllerEventBuffer,
+			&ResizeCurrentPollInstanceClickEventBuffer,
 			&HandlePotentialNewController
 		);
 		SetEventPollBufferPointers(
 			_kbmEventBuffer.BufferPointer,
 			_kbmEventBuffer.Length,
 			_controllerEventBuffer.BufferPointer,
-			_controllerEventBuffer.Length
+			_controllerEventBuffer.Length,
+			_clickEventBuffer.BufferPointer,
+			_clickEventBuffer.Length
 		);
 		DetectControllers();
 	}
@@ -81,21 +87,21 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 		IterateEvents(
 			out var numKbmEvents,
 			out var numControllerEvents,
+			out var numClickEvents,
 			out var mousePosX,
 			out var mousePosY,
 			out var quitRequested
 		).ThrowIfFailure();
 
-		// TODO mouse click events.
-
-		UpdateCurrentlyPressedKeys(numKbmEvents);
+		UpdateCurrentlyPressedKeys(numKbmEvents, numClickEvents);
 		UpdateControllerStates(numControllerEvents);
 		_mouseCursorPos = (mousePosX == Int32.MinValue ? _mouseCursorPos.X : mousePosX, mousePosY == Int32.MinValue ? _mouseCursorPos.Y : mousePosY);
 		_userQuitRequested = quitRequested;
 	}
 
-	void UpdateCurrentlyPressedKeys(int numNewEvents) {
-		_kbmEventBufferCount = numNewEvents;
+	void UpdateCurrentlyPressedKeys(int newKbmEventCount, int newClickEventCount) {
+		_kbmEventBufferCount = newKbmEventCount;
+		_clickEventBufferCount = newClickEventCount;
 		_keyDownEventBuffer.ClearWithoutZeroingMemory();
 		_keyUpEventBuffer.ClearWithoutZeroingMemory();
 		foreach (var kbmEvent in NewKeyEvents) {
@@ -156,6 +162,7 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 		delegate* unmanaged<int, InteropBool> filterKeycapValueDelegate,
 		delegate* unmanaged<KeyboardOrMouseKeyEvent*> doubleKbmEventBufferDelegate,
 		delegate* unmanaged<RawGameControllerButtonEvent*> doubleControllerEventBufferDelegate,
+		delegate* unmanaged<MouseClickEvent*> doubleClickEventBufferDelegate,
 		delegate* unmanaged<GameControllerHandle, byte*, int, void> handleNewControllerDelegate
 	);
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_event_poll_buffer_pointers")]
@@ -163,7 +170,9 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 		KeyboardOrMouseKeyEvent* kbmEventBufferPtr,
 		int kbmEventBufferLen,
 		RawGameControllerButtonEvent* controllerEventBufferPtr,
-		int controllerEventBufferLen
+		int controllerEventBufferLen,
+		MouseClickEvent* clickEventBufferPtr,
+		int clickEventBufferLen
 	);
 	[UnmanagedCallersOnly]
 	static unsafe KeyboardOrMouseKeyEvent* ResizeCurrentPollInstanceKbmEventBuffer() {
@@ -178,6 +187,12 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 		return _liveInstance._controllerEventBuffer.BufferPointer;
 	}
 	[UnmanagedCallersOnly]
+	static unsafe MouseClickEvent* ResizeCurrentPollInstanceClickEventBuffer() {
+		if (_liveInstance == null || _liveInstance._isDisposed) throw new InvalidOperationException("Live instance was null or disposed.");
+		_liveInstance._clickEventBuffer.DoubleSize();
+		return _liveInstance._clickEventBuffer.BufferPointer;
+	}
+	[UnmanagedCallersOnly]
 	static InteropBool FilterKeycode(int keycode) {
 		return Enum.IsDefined((KeyboardOrMouseKey) keycode) && keycode < KeyboardOrMouseKeyExtensions.NonSdlKeyStartValue;
 	}
@@ -188,6 +203,7 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 	static extern InteropResult IterateEvents(
 		out int numKbmEventsWritten,
 		out int numControllerEventsWritten,
+		out int numClickEventsWritten,
 		out int mousePosX,
 		out int mousePosY,
 		out InteropBool quitRequested
@@ -274,6 +290,7 @@ sealed class NativeInputTracker : IInputTracker, IGameControllerHandleImplProvid
 			_keyDownEventBuffer.Dispose();
 			_keyUpEventBuffer.Dispose();
 			_controllerEventBuffer.Dispose();
+			_clickEventBuffer.Dispose();
 			_detectedControllers.Dispose();
 			_currentlyPressedKeys.Dispose();
 			_controllerInputTrackers.Dispose();

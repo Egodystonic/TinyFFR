@@ -32,6 +32,7 @@ sealed class NativeWindowBuilder : IWindowBuilder, IWindowHandleImplProvider, ID
 	public Window Build(in WindowConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
+		if (_activeWindows.Count > 0) throw new InvalidOperationException("Currently TinyFFR only supports one window at a time. This restriction will be lifted in the future.");
 		var globalPosition = config.Display.TranslateDisplayLocalWindowPositionToGlobal(config.Position);
 		CreateWindow(
 			out var outPtr,

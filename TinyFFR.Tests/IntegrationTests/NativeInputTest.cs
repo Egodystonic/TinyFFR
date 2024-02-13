@@ -35,10 +35,10 @@ class NativeInputTest {
 		});
 
 		var loopBuilder = factory.GetApplicationLoopBuilder(new() { InputTrackerConfig = new() { MaxControllerNameLength = 20 } });
-		using var loop = loopBuilder.BuildLoop(new() { FrameRateCapHz = 30 });
+		using var loop = loopBuilder.BuildLoop(new() { FrameRateCapHz = 1 });
 
 		_numControllers = 0;
-		while (!loop.InputTracker.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(30d)) {
+		while (!loop.InputTracker.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(20d)) {
 			HandleInput(loop.InputTracker);
 			loop.IterateOnce();
 		}
@@ -81,6 +81,9 @@ class NativeInputTest {
 		if (input.NewKeyDownEvents.Length > 0) Console.WriteLine("\t\t\t+" + String.Join(", ", input.NewKeyDownEvents.ToArray()));
 		if (input.NewKeyUpEvents.Length > 0) Console.WriteLine("\t\t\t-" + String.Join(", ", input.NewKeyUpEvents.ToArray()));
 		Console.WriteLine($"\t\t\tMouse: {input.MouseCursorPosition}; Wheel: {input.MouseScrollWheelDelta}");
+		for (var i = 0; i < input.NewMouseClicks.Length; ++i) {
+			Console.WriteLine($"\t\t\t\tClick: {input.NewMouseClicks[i]}");
+		}
 
 		foreach (var curKey in input.CurrentlyPressedKeys) {
 			Assert.AreEqual(true, input.KeyIsCurrentlyDown(curKey));

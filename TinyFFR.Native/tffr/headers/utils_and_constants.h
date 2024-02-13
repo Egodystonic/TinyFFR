@@ -57,9 +57,11 @@ typedef uint8_t interop_bool;
 #pragma region Misc
 
 #define ReturnUnlessNull(ptr, ...)	\
+	{ \
 	if ((ptr) != nullptr) return (ptr); \
 	interop_utils::combine_in_concat_space(__VA_ARGS__); \
 	throw std::exception{ interop_utils::err_msg_concat_space }; \
+	} \
 
 #define ThrowIfNull(ptr, ...)	\
 	if ((ptr) == nullptr) { \
@@ -86,7 +88,9 @@ typedef uint8_t interop_bool;
 	} \
 
 #define Throw(...) \
+	{ \
 	interop_utils::combine_in_concat_space(__VA_ARGS__); \
 	throw std::exception{ interop_utils::err_msg_concat_space }; \
+	} \
 
 #pragma endregion

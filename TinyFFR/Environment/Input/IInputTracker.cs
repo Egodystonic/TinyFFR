@@ -11,7 +11,8 @@ public interface IInputTracker {
 	ReadOnlySpan<KeyboardOrMouseKeyEvent> NewKeyEvents { get; }
 	ReadOnlySpan<KeyboardOrMouseKey> NewKeyDownEvents { get; }
 	ReadOnlySpan<KeyboardOrMouseKey> NewKeyUpEvents { get; }
-	ReadOnlySpan<KeyboardOrMouseKey> CurrentlyPressedKeys { get; } 
+	ReadOnlySpan<KeyboardOrMouseKey> CurrentlyPressedKeys { get; }
+	ReadOnlySpan<MouseClickEvent> NewMouseClicks { get; }
 
 	XYPair<int> MouseCursorPosition { get; } // TODO document that this is relative to window, e.g. (0, 0) is top left corner of the window
 	int MouseScrollWheelDelta { get; } // TODO document that down is positive, up is negative

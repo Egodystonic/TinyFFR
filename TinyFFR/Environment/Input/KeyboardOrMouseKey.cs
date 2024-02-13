@@ -327,4 +327,7 @@ public static class KeyboardOrMouseKeyExtensions {
 												  $"resulting in an {nameof(IndexOutOfRangeException)} when looking up its precomputed {nameof(KeyboardOrMouseKeyCategory)}.", e);
 		}
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static KeyboardOrMouseKey ToKeyboardOrMouseKey(this MouseKey @this) => (KeyboardOrMouseKey) @this;
 }
