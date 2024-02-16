@@ -291,9 +291,9 @@ public enum KeyboardOrMouseKey : int {
 }
 
 public static class KeyboardOrMouseKeyExtensions {
-	internal const int NonSdlKeyStartValue = 380; // Note: This is linked with a constant in native_impl_loop::iterate_events
 	internal const int SdlScancodeToKeycodeBit = 1 << 30;
-	internal const int RecommendedEnumValueArraySize = 400;
+	internal const int NonSdlKeyStartValue = 380; // Note: This is linked with a constant in native_impl_loop::iterate_events
+	internal const int RecommendedEnumValueArraySize = NonSdlKeyStartValue + 20;
 	static readonly KeyboardOrMouseKeyCategory[] _precomputedCategoryArray = new KeyboardOrMouseKeyCategory[RecommendedEnumValueArraySize];
 
 	static KeyboardOrMouseKeyExtensions() {
@@ -323,7 +323,7 @@ public static class KeyboardOrMouseKeyExtensions {
 			return _precomputedCategoryArray[((int) @this) & ~SdlScancodeToKeycodeBit];
 		}
 		catch (IndexOutOfRangeException e) {
-			throw new ArgumentOutOfRangeException($"Given {nameof(KeyboardOrMouseKey)} value ({@this}) is likely not defined, " +
+			throw new ArgumentOutOfRangeException($"Given {nameof(KeyboardOrMouseKey)} value '{nameof(@this)}' ({@this}) is likely not defined, " +
 												  $"resulting in an {nameof(IndexOutOfRangeException)} when looking up its precomputed {nameof(KeyboardOrMouseKeyCategory)}.", e);
 		}
 	}

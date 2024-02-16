@@ -35,7 +35,7 @@ class NativeInputTest {
 		});
 
 		var loopBuilder = factory.GetApplicationLoopBuilder(new() { InputTrackerConfig = new() { MaxControllerNameLength = 20 } });
-		using var loop = loopBuilder.BuildLoop(new() { FrameRateCapHz = 1 });
+		using var loop = loopBuilder.BuildLoop(new() { FrameRateCapHz = 60 });
 
 		_numControllers = 0;
 		while (!loop.InputTracker.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(20d)) {

@@ -28,9 +28,9 @@ public readonly partial struct XYPair<T> :
 		get => new(-X, -Y);
 	}
 
-	public Angle PolarAngle { // TODO clarify this is the four-quadrant inverse tangent
+	public Angle? PolarAngle { // TODO clarify this is the four-quadrant inverse tangent
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Angle.FromRadians(MathF.Atan2(Single.CreateSaturating(Y), Single.CreateSaturating(X))).Normalized;
+		get => T.IsZero(X) && T.IsZero(Y) ? null : Angle.FromRadians(MathF.Atan2(Single.CreateSaturating(Y), Single.CreateSaturating(X))).Normalized;
 	}
 
 	public XYPair<T> Absolute {

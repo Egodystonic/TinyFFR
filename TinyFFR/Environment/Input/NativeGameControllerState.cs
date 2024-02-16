@@ -53,10 +53,10 @@ sealed class NativeGameControllerState : IDisposable {
 				var prevDisplacementLevel = LeftTriggerPos.DisplacementLevel;
 				LeftTriggerPos = new(rawEvent.NewValue);
 				var newDisplacementLevel = LeftTriggerPos.DisplacementLevel;
-				if (prevDisplacementLevel == GameControllerTriggerDisplacementLevel.None && newDisplacementLevel != GameControllerTriggerDisplacementLevel.None) {
+				if (prevDisplacementLevel == AnalogDisplacementLevel.None && newDisplacementLevel != AnalogDisplacementLevel.None) {
 					PushButtonEvent(RawGameControllerEventType.LeftTrigger, true);
 				}
-				else if (prevDisplacementLevel != GameControllerTriggerDisplacementLevel.None && newDisplacementLevel == GameControllerTriggerDisplacementLevel.None) {
+				else if (prevDisplacementLevel != AnalogDisplacementLevel.None && newDisplacementLevel == AnalogDisplacementLevel.None) {
 					PushButtonEvent(RawGameControllerEventType.LeftTrigger, false);
 				}
 				break;
@@ -65,10 +65,10 @@ sealed class NativeGameControllerState : IDisposable {
 				var prevDisplacementLevel = RightTriggerPos.DisplacementLevel;
 				RightTriggerPos = new(rawEvent.NewValue);
 				var newDisplacementLevel = RightTriggerPos.DisplacementLevel;
-				if (prevDisplacementLevel == GameControllerTriggerDisplacementLevel.None && newDisplacementLevel != GameControllerTriggerDisplacementLevel.None) {
+				if (prevDisplacementLevel == AnalogDisplacementLevel.None && newDisplacementLevel != AnalogDisplacementLevel.None) {
 					PushButtonEvent(RawGameControllerEventType.RightTrigger, true);
 				}
-				else if (prevDisplacementLevel != GameControllerTriggerDisplacementLevel.None && newDisplacementLevel == GameControllerTriggerDisplacementLevel.None) {
+				else if (prevDisplacementLevel != AnalogDisplacementLevel.None && newDisplacementLevel == AnalogDisplacementLevel.None) {
 					PushButtonEvent(RawGameControllerEventType.RightTrigger, false);
 				}
 				break;
