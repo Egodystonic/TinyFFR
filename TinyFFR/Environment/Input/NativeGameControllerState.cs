@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection.Metadata;
 using System.Security;
 using System.Threading;
 using Egodystonic.TinyFFR.Environment.Desktop;
@@ -11,20 +12,92 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Environment.Input;
 
-[SuppressUnmanagedCodeSecurity]
-sealed class NativeGameControllerState : IDisposable {
+sealed class NativeGameControllerState : IGameControllerInputTracker, IDisposable {
 	public InteropStringBuffer NameBuffer { get; }
+	public GameControllerHandle Handle { get; }
 	public ArrayPoolBackedVector<GameControllerButtonEvent> NewButtonEvents { get; } = new();
 	public ArrayPoolBackedVector<GameControllerButton> NewButtonDownEvents { get; } = new();
 	public ArrayPoolBackedVector<GameControllerButton> NewButtonUpEvents { get; } = new();
 	public ArrayPoolBackedVector<GameControllerButton> CurrentlyPressedButtons { get; } = new();
-	public GameControllerStickPosition LeftStickPos { get; set; } = default;
-	public GameControllerStickPosition RightStickPos { get; set; } = default;
-	public GameControllerTriggerPosition LeftTriggerPos { get; set; } = default;
-	public GameControllerTriggerPosition RightTriggerPos { get; set; } = default;
+	public GameControllerStickPosition LeftStickPosition { get; set; } = default;
+	public GameControllerStickPosition RightStickPosition { get; set; } = default;
+	public GameControllerTriggerPosition LeftTriggerPosition { get; set; } = default;
+	public GameControllerTriggerPosition RightTriggerPosition { get; set; } = default;
 	bool _isDisposed = false;
 
-	public NativeGameControllerState(int nameBufferLength) => NameBuffer = new(nameBufferLength);
+	public string ControllerName {
+		get {
+			ThrowIfThisIsDisposed();
+			var maxSpanLength = GetControllerNameSpanMaxLength();
+			var dest = maxSpanLength <= 1000 ? stackalloc char[maxSpanLength] : new char[maxSpanLength];
+
+			var numCharsWritten = GetControllerNameUsingSpan(dest);
+			return new(dest[..numCharsWritten]);
+		}
+	}
+
+	ReadOnlySpan<GameControllerButtonEvent> IGameControllerInputTracker.NewButtonEvents {
+		get {
+			ThrowIfThisIsDisposed();
+			return NewButtonEvents.AsSpan;
+		}
+	}
+	ReadOnlySpan<GameControllerButton> IGameControllerInputTracker.NewButtonDownEvents {
+		get {
+			ThrowIfThisIsDisposed();
+			return NewButtonDownEvents.AsSpan;
+		}
+	}
+	ReadOnlySpan<GameControllerButton> IGameControllerInputTracker.NewButtonUpEvents {
+		get {
+			ThrowIfThisIsDisposed();
+			return NewButtonUpEvents.AsSpan;
+		}
+	}
+	ReadOnlySpan<GameControllerButton> IGameControllerInputTracker.CurrentlyPressedButtons {
+		get {
+			ThrowIfThisIsDisposed();
+			return CurrentlyPressedButtons.AsSpan;
+		}
+	}
+
+	public NativeGameControllerState(GameControllerHandle handle, InputTrackerConfig config) {
+		Handle = handle;
+		NameBuffer = new(config.MaxControllerNameLength);
+	}
+
+	public int GetControllerNameUsingSpan(Span<char> dest) {
+		ThrowIfThisIsDisposed();
+		return NameBuffer.ReadTo(dest);
+	}
+	public int GetControllerNameSpanMaxLength() {
+		ThrowIfThisIsDisposed();
+		return NameBuffer.BufferLength;
+	}
+	public bool ButtonIsCurrentlyDown(GameControllerButton button) {
+		ThrowIfThisIsDisposed();
+		var curButtons = CurrentlyPressedButtons;
+		for (var i = 0; i < curButtons.Count; ++i) {
+			if (curButtons[i] == button) return true;
+		}
+		return false;
+	}
+	public bool ButtonWasPressedThisIteration(GameControllerButton button) {
+		ThrowIfThisIsDisposed();
+		var downButtons = NewButtonDownEvents;
+		for (var i = 0; i < downButtons.Count; ++i) {
+			if (downButtons[i] == button) return true;
+		}
+		return false;
+	}
+	public bool ButtonWasReleasedThisIteration(GameControllerButton button) {
+		ThrowIfThisIsDisposed();
+		var upButtons = NewButtonUpEvents;
+		for (var i = 0; i < upButtons.Count; ++i) {
+			if (upButtons[i] == button) return true;
+		}
+		return false;
+	}
 
 	public void ClearForNextIteration() {
 		ThrowIfThisIsDisposed();
@@ -38,21 +111,21 @@ sealed class NativeGameControllerState : IDisposable {
 		ThrowIfThisIsDisposed();
 		switch (rawEvent.Type) {
 			case RawGameControllerEventType.LeftStickAxisX:
-				LeftStickPos = LeftStickPos with { HorizontalOffsetRaw = rawEvent.NewValue };
+				LeftStickPosition = LeftStickPosition with { HorizontalOffsetRaw = rawEvent.NewValue };
 				break;
 			case RawGameControllerEventType.LeftStickAxisY:
-				LeftStickPos = LeftStickPos with { VerticalOffsetRaw = rawEvent.NewValue != Int16.MinValue ? ((short) -rawEvent.NewValue) : Int16.MaxValue };
+				LeftStickPosition = LeftStickPosition with { VerticalOffsetRaw = rawEvent.NewValue != Int16.MinValue ? ((short) -rawEvent.NewValue) : Int16.MaxValue };
 				break;
 			case RawGameControllerEventType.RightStickAxisX:
-				RightStickPos = RightStickPos with { HorizontalOffsetRaw = rawEvent.NewValue };
+				RightStickPosition = RightStickPosition with { HorizontalOffsetRaw = rawEvent.NewValue };
 				break;
 			case RawGameControllerEventType.RightStickAxisY:
-				RightStickPos = RightStickPos with { VerticalOffsetRaw = rawEvent.NewValue != Int16.MinValue ? ((short) -rawEvent.NewValue) : Int16.MaxValue };
+				RightStickPosition = RightStickPosition with { VerticalOffsetRaw = rawEvent.NewValue != Int16.MinValue ? ((short) -rawEvent.NewValue) : Int16.MaxValue };
 				break;
 			case RawGameControllerEventType.LeftTrigger: {
-				var prevDisplacementLevel = LeftTriggerPos.DisplacementLevel;
-				LeftTriggerPos = new(rawEvent.NewValue);
-				var newDisplacementLevel = LeftTriggerPos.DisplacementLevel;
+				var prevDisplacementLevel = LeftTriggerPosition.DisplacementLevel;
+				LeftTriggerPosition = new(rawEvent.NewValue);
+				var newDisplacementLevel = LeftTriggerPosition.DisplacementLevel;
 				if (prevDisplacementLevel == AnalogDisplacementLevel.None && newDisplacementLevel != AnalogDisplacementLevel.None) {
 					PushButtonEvent(RawGameControllerEventType.LeftTrigger, true);
 				}
@@ -62,9 +135,9 @@ sealed class NativeGameControllerState : IDisposable {
 				break;
 			}
 			case RawGameControllerEventType.RightTrigger: {
-				var prevDisplacementLevel = RightTriggerPos.DisplacementLevel;
-				RightTriggerPos = new(rawEvent.NewValue);
-				var newDisplacementLevel = RightTriggerPos.DisplacementLevel;
+				var prevDisplacementLevel = RightTriggerPosition.DisplacementLevel;
+				RightTriggerPosition = new(rawEvent.NewValue);
+				var newDisplacementLevel = RightTriggerPosition.DisplacementLevel;
 				if (prevDisplacementLevel == AnalogDisplacementLevel.None && newDisplacementLevel != AnalogDisplacementLevel.None) {
 					PushButtonEvent(RawGameControllerEventType.RightTrigger, true);
 				}

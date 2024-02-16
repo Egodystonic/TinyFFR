@@ -7,7 +7,7 @@ namespace Egodystonic.TinyFFR.Environment.Input;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 readonly record struct GameControllerHandle(IntPtr Pointer) {
-	public static GameControllerHandle Amalgamated = IntPtr.Zero;
+	public static GameControllerHandle Combined = IntPtr.Zero;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator IntPtr(GameControllerHandle h) => h.Pointer;

@@ -10,7 +10,7 @@ public readonly struct ApplicationLoop : IEquatable<ApplicationLoop>, ITrackedDi
 	readonly IApplicationLoopImplProvider _impl;
 	internal ApplicationLoopHandle Handle { get; }
 
-	public IInputTracker InputTracker {
+	public IInputTracker Input {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _impl.GetInputTracker(Handle);
 	}

@@ -38,16 +38,13 @@ class NativeInputTest {
 		using var loop = loopBuilder.BuildLoop(new() { FrameRateCapHz = 60 });
 
 		_numControllers = 0;
-		while (!loop.InputTracker.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(20d)) {
-			if (loop.InputTracker.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) window.LockCursor = !window.LockCursor;
-			HandleInput(loop.InputTracker);
+		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(20d)) {
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) window.LockCursor = !window.LockCursor;
+			HandleInput(loop.Input);
 			loop.IterateOnce();
 		}
-		HandleInput(loop.InputTracker);
-		Console.WriteLine($"Quit requested: {loop.InputTracker.UserQuitRequested}");
-		Console.WriteLine("KBM Event Buffer Length: " + ((UnmanagedBuffer<KeyboardOrMouseKeyEvent>) typeof(NativeInputTracker).GetField("_kbmEventBuffer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(loop.InputTracker)).Length);
-		Console.WriteLine("Controller Event Buffer Length: " + ((UnmanagedBuffer<RawGameControllerButtonEvent>) typeof(NativeInputTracker).GetField("_controllerEventBuffer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(loop.InputTracker)).Length);
-		Console.WriteLine("Click Event Buffer Length: " + ((UnmanagedBuffer<MouseClickEvent>) typeof(NativeInputTracker).GetField("_clickEventBuffer", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(loop.InputTracker)).Length);
+		HandleInput(loop.Input);
+		Console.WriteLine($"Quit requested: {loop.Input.UserQuitRequested}");
 	}
 
 	int _numControllers;
@@ -59,7 +56,7 @@ class NativeInputTest {
 			_numControllers = input.GameControllers.Length;
 		}
 
-		var amalgamatedController = input.GetAmalgamatedGameController();
+		var amalgamatedController = input.GameControllersCombined;
 		if (amalgamatedController.NewButtonEvents.Length > 0) {
 			Console.WriteLine("[" + String.Join(", ", amalgamatedController.CurrentlyPressedButtons.ToArray()) + "] " + String.Join(", ", amalgamatedController.NewButtonEvents.ToArray().Select(ke => $"{(ke.ButtonDown ? "+" : "-")}{ke.Button}")));
 			if (amalgamatedController.NewButtonDownEvents.Length > 0) Console.WriteLine("\t\t\t+" + String.Join(", ", amalgamatedController.NewButtonDownEvents.ToArray()));
@@ -78,23 +75,25 @@ class NativeInputTest {
 			}
 		}
 
-		if (input.NewKeyEvents.Length == 0) return;
-		Console.WriteLine("[" + String.Join(", ", input.CurrentlyPressedKeys.ToArray()) + "] " + String.Join(", ", input.NewKeyEvents.ToArray().Select(ke => $"{(ke.KeyDown ? "+" : "-")}{ke.Key}")));
-		if (input.NewKeyDownEvents.Length > 0) Console.WriteLine("\t\t\t+" + String.Join(", ", input.NewKeyDownEvents.ToArray()));
-		if (input.NewKeyUpEvents.Length > 0) Console.WriteLine("\t\t\t-" + String.Join(", ", input.NewKeyUpEvents.ToArray()));
-		Console.WriteLine($"\t\t\tMouse: {input.MouseCursorPosition} (delta {input.MouseCursorDelta}); Wheel: {input.MouseScrollWheelDelta}");
-		for (var i = 0; i < input.NewMouseClicks.Length; ++i) {
-			Console.WriteLine($"\t\t\t\tClick: {input.NewMouseClicks[i]}");
+		var kbm = input.KeyboardAndMouse;
+
+		if (kbm.NewKeyEvents.Length == 0) return;
+		Console.WriteLine("[" + String.Join(", ", kbm.CurrentlyPressedKeys.ToArray()) + "] " + String.Join(", ", kbm.NewKeyEvents.ToArray().Select(ke => $"{(ke.KeyDown ? "+" : "-")}{ke.Key}")));
+		if (kbm.NewKeyDownEvents.Length > 0) Console.WriteLine("\t\t\t+" + String.Join(", ", kbm.NewKeyDownEvents.ToArray()));
+		if (kbm.NewKeyUpEvents.Length > 0) Console.WriteLine("\t\t\t-" + String.Join(", ", kbm.NewKeyUpEvents.ToArray()));
+		Console.WriteLine($"\t\t\tMouse: {kbm.MouseCursorPosition} (delta {kbm.MouseCursorDelta}); Wheel: {kbm.MouseScrollWheelDelta}");
+		for (var i = 0; i < kbm.NewMouseClicks.Length; ++i) {
+			Console.WriteLine($"\t\t\t\tClick: {kbm.NewMouseClicks[i]}");
 		}
 
-		foreach (var curKey in input.CurrentlyPressedKeys) {
-			Assert.AreEqual(true, input.KeyIsCurrentlyDown(curKey));
+		foreach (var curKey in kbm.CurrentlyPressedKeys) {
+			Assert.AreEqual(true, kbm.KeyIsCurrentlyDown(curKey));
 		}
-		foreach (var newDownKey in input.NewKeyDownEvents) {
-			Assert.AreEqual(true, input.KeyWasPressedThisIteration(newDownKey));
+		foreach (var newDownKey in kbm.NewKeyDownEvents) {
+			Assert.AreEqual(true, kbm.KeyWasPressedThisIteration(newDownKey));
 		}
-		foreach (var newUpKey in input.NewKeyUpEvents) {
-			Assert.AreEqual(true, input.KeyWasReleasedThisIteration(newUpKey));
+		foreach (var newUpKey in kbm.NewKeyUpEvents) {
+			Assert.AreEqual(true, kbm.KeyWasReleasedThisIteration(newUpKey));
 		}
 	}
 } 
