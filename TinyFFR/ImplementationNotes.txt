@@ -29,3 +29,6 @@ Most of the time,
 No, just have loaders that by default return a non-ram resource (no prefix), but let people have the option. With a RamResource they can transfer manually.
 
 XyzCreationConfig objects are structs so we can avoid garbage. Tend to pass them as "in" to avoid the large copies. Means we're basically helping the user stackalloc the options object in a roundabout way.
+
+There are places that I expose spans when I could just as easily expose collection types. I do that to help users avoid using LINQ and other garbage generating APIs by accident. 
+If they want those APIs anyway they can always copy the span contents in to collections first (or even create an extension method to convert span to IEnumerable and go from there- easy).

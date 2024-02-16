@@ -7,7 +7,7 @@ static const char* GameControllerNameFallbackValue = "Misc Game Controller";
 static GameControllerHandle* _gameControllerList = nullptr;
 static int32_t _gameControllerListLen = 0;
 
-sdl_keycode_filter_delegate native_impl_loop::keycode_filter_delegate;
+sdl_keycode_filter_translate_delegate native_impl_loop::keycode_filter_translate_delegate;
 kbm_event_buffer_size_double_delegate native_impl_loop::kbm_event_buffer_double_delegate;
 controller_event_buffer_size_double_delegate native_impl_loop::controller_event_buffer_double_delegate;
 click_event_buffer_size_double_delegate native_impl_loop::click_event_buffer_double_delegate;
@@ -19,14 +19,14 @@ int32_t native_impl_loop::controller_event_buffer_length;
 MouseClickEvent* native_impl_loop::click_event_buffer;
 int32_t native_impl_loop::click_event_buffer_length;
 
-void native_impl_loop::set_event_poll_delegates(sdl_keycode_filter_delegate keycodeFilterFuncPtr, kbm_event_buffer_size_double_delegate kbmBufferDoubleDelegate, controller_event_buffer_size_double_delegate controllerBufferDoubleDelegate, click_event_buffer_size_double_delegate clickBufferDoubleDelegate, handle_new_controller_delegate handleControllerDelegate) {
-	keycode_filter_delegate = keycodeFilterFuncPtr;
+void native_impl_loop::set_event_poll_delegates(sdl_keycode_filter_translate_delegate keycodeFilterFuncPtr, kbm_event_buffer_size_double_delegate kbmBufferDoubleDelegate, controller_event_buffer_size_double_delegate controllerBufferDoubleDelegate, click_event_buffer_size_double_delegate clickBufferDoubleDelegate, handle_new_controller_delegate handleControllerDelegate) {
+	keycode_filter_translate_delegate = keycodeFilterFuncPtr;
 	kbm_event_buffer_double_delegate = kbmBufferDoubleDelegate;
 	controller_event_buffer_double_delegate = controllerBufferDoubleDelegate;
 	click_event_buffer_double_delegate = clickBufferDoubleDelegate;
 	handle_controller_delegate = handleControllerDelegate;
 }
-StartExportedFunc(set_event_poll_delegates, sdl_keycode_filter_delegate keycodeFilterFuncPtr, kbm_event_buffer_size_double_delegate kbmBufferDoubleDelegate, controller_event_buffer_size_double_delegate controllerBufferDoubleDelegate, click_event_buffer_size_double_delegate clickBufferDoubleDelegate, handle_new_controller_delegate handleControllerDelegate) {
+StartExportedFunc(set_event_poll_delegates, sdl_keycode_filter_translate_delegate keycodeFilterFuncPtr, kbm_event_buffer_size_double_delegate kbmBufferDoubleDelegate, controller_event_buffer_size_double_delegate controllerBufferDoubleDelegate, click_event_buffer_size_double_delegate clickBufferDoubleDelegate, handle_new_controller_delegate handleControllerDelegate) {
 	native_impl_loop::set_event_poll_delegates(keycodeFilterFuncPtr, kbmBufferDoubleDelegate, controllerBufferDoubleDelegate, clickBufferDoubleDelegate, handleControllerDelegate);
 	EndExportedFunc
 }
@@ -143,8 +143,9 @@ void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* 
 			case SDL_EventType::SDL_KEYDOWN:
 			case SDL_EventType::SDL_KEYUP: {
 				auto keyEvent = event.key;
-				if (!keycode_filter_delegate(keyEvent.keysym.sym) || keyEvent.repeat > 0) continue;
-				append_kbm_event(numKbmEventsWritten++, keyEvent.keysym.sym, keyEvent.type == SDL_EventType::SDL_KEYDOWN);
+				auto keyVal = keyEvent.keysym.sym;
+				if (!keycode_filter_translate_delegate(&keyVal) || keyEvent.repeat > 0) continue;
+				append_kbm_event(numKbmEventsWritten++, keyVal, keyEvent.type == SDL_EventType::SDL_KEYDOWN);
 				break;
 			}
 

@@ -23,7 +23,7 @@ public enum KeyboardOrMouseKeyCategory {
 	/// <summary>
 	/// Represents all keyboard keys that are symbols or punctuation (including space).
 	/// </summary>
-	PunctuationAndSymbology,
+	PunctuationAndSymbols,
 	/// <summary>
 	/// Represents control, alt, and shift (left and right) keyboard keys.
 	/// </summary>

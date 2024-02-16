@@ -36,7 +36,7 @@ sealed class NativeInputTracker : IInputTracker, IDisposable {
 		_kbmStateObject = new NativeKeyboardAndMouseInputState(config);
 		_combinedControllerState = new NativeGameControllerState(GameControllerHandle.Combined, config);
 		SetEventPollDelegates(
-			&FilterKeycode,
+			&FilterAndTranslateKeycode,
 			&ResizeCurrentPollInstanceKbmEventBuffer,
 			&ResizeCurrentPollInstanceControllerEventBuffer,
 			&ResizeCurrentPollInstanceClickEventBuffer,
@@ -91,7 +91,7 @@ sealed class NativeInputTracker : IInputTracker, IDisposable {
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_event_poll_delegates")]
 	static extern unsafe InteropResult SetEventPollDelegates(
-		delegate* unmanaged<int, InteropBool> filterKeycapValueDelegate,
+		delegate* unmanaged<int*, InteropBool> filterTranslateKeycapValueDelegate,
 		delegate* unmanaged<KeyboardOrMouseKeyEvent*> doubleKbmEventBufferDelegate,
 		delegate* unmanaged<RawGameControllerButtonEvent*> doubleControllerEventBufferDelegate,
 		delegate* unmanaged<MouseClickEvent*> doubleClickEventBufferDelegate,
@@ -125,8 +125,9 @@ sealed class NativeInputTracker : IInputTracker, IDisposable {
 		return _liveInstance._kbmStateObject.ClickBuffer.BufferPointer;
 	}
 	[UnmanagedCallersOnly]
-	static InteropBool FilterKeycode(int keycode) {
-		return Enum.IsDefined((KeyboardOrMouseKey) keycode) && (keycode & ~KeyboardOrMouseKeyExtensions.SdlScancodeToKeycodeBit) < KeyboardOrMouseKeyExtensions.NonSdlKeyStartValue;
+	static unsafe InteropBool FilterAndTranslateKeycode(int* keycode) {
+		*keycode |= (~*keycode & KeyboardOrMouseKeyExtensions.SdlScancodeToKeycodeBit) >> KeyboardOrMouseKeyExtensions.CharBasedValueBitDistanceToScancodeBit;
+		return Enum.IsDefined((KeyboardOrMouseKey) (*keycode));
 	}
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "detect_controllers")]
