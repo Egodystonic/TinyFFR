@@ -4,7 +4,7 @@
 char* interop_utils::error_msg_buffer = new char[interop_utils::error_msg_buf_len];
 char* interop_utils::err_msg_concat_space = new char[interop_utils::error_msg_buf_len];
 
-int accumulate_str(int cur_space_taken, const char* s) {
+size_t accumulate_str(size_t cur_space_taken, const char* s) {
 	strcpy_s(interop_utils::err_msg_concat_space + cur_space_taken, interop_utils::error_msg_buf_len - cur_space_taken, s);
 	return cur_space_taken + strlen(s);
 }

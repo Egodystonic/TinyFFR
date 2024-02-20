@@ -1,12 +1,4 @@
-﻿Parameter Checking / Validation:
-	General philosophy is to parameter validate/check where the branching + checking will not dwarf the runtime cost of the method or where the check provides significant protection against programming errors.
-	A starting rule-of-thumb is that if the method is inlinable we should consider skipping parameter validation.
-		However, this isn't always the case-- for example if the actual function body still invokes something costly or if the function is not expected to be called often, it's probably still worth validating.
-		Also, when a method is easy to make mistakes with, it's still worth considering a parameter validation even if it might be detrimental to the performance of it; 
-		ultimately this library is meant to eschew some performance for the sake of user-friendliness. People seeking every last CPU cycle can write their own DX/OGL/Vulkan/Metal wrapper.
-	Overall, the idea is that by validating wherever possible we can hopefully balance helping users catch mistakes without sacrificing performance.
-
-Overloaded Operators:
+﻿Overloaded Operators:
 	% operator creates rotations
 	^ operator creates angles
 	* and / operator scales things
@@ -19,16 +11,32 @@ Overloaded Operators:
 		It's a better fit than any of the other binary overloadable operators IMO (though it's still not perfect)
 		It kind of looks like the top right of a clock face with the minute hand between two numbers?
 
-The factory is the "root" object of everything and acts as a pseudo-DI/lookup provider for everything else while allowing us to effectively unit test.
-Loaders tell TinyFFR how to load files to make RamResourceHandles.
-Builders tell TinyFFR how to build RamResourceHandles programmatically.
-A RamResourceHandle can then be transferred to VRAM to get hold of a VramResourceHandle, optionally unloading the RAM resource in the same moment (to free up RAM)
-Most of the time, 
+API high-level theory:
+	The factory is the "root" object of everything and acts as a pseudo-DI/lookup provider for everything else while allowing us to effectively unit test.
+	Loaders tell TinyFFR how to load things (usually from disc).
+	Builders tell TinyFFR how to build things programmatically.
 
-... Actually, take above idea but instead streamline it in to RamLoaders and VramLoaders. Default is VramLoader, but let users load in to Ram for more advanced scenarios where they wanna stage resources .
-No, just have loaders that by default return a non-ram resource (no prefix), but let people have the option. With a RamResource they can transfer manually.
+Performance misc.:
+	XyzConfig objects are structs (except those that create the builders/loaders/etc) so we can avoid garbage. Tend to pass them as "in" to avoid the large copies. Means we're basically helping the user stackalloc the options object in a roundabout way.
 
-XyzCreationConfig objects are structs so we can avoid garbage. Tend to pass them as "in" to avoid the large copies. Means we're basically helping the user stackalloc the options object in a roundabout way.
+	There are places that I expose spans when I could just as easily expose collection types. I do that to help users avoid using LINQ and other garbage generating APIs by accident. 
+	If they want those APIs anyway they can always copy the span contents in to collections first (or even create an extension method to convert span to IEnumerable and go from there- easy).
 
-There are places that I expose spans when I could just as easily expose collection types. I do that to help users avoid using LINQ and other garbage generating APIs by accident. 
-If they want those APIs anyway they can always copy the span contents in to collections first (or even create an extension method to convert span to IEnumerable and go from there- easy).
+	I really wanted to expose all resource-representing objects as interfaces even though there's a potential overhead of indirection.
+		.NET8 introduced some very nice tiered JIT tricks that can reduce the call in hot paths to a simple type check and inlined implementation.
+			The branch predictor should in theory always be able to predict correctly on that check as we only have one implementation for each type in a non-testing scenario.
+			So in general... It should even out to zero cost. "Should".
+		This would have made it all unit testable and much clearner, but unfortunately I think this could still have a huge impact due to the inability to guarantee 
+		contiguous storage of the wrapped handles (e.g. 1000 x IWhatever vs 1000 x Whatever(struct) -- the first may not be stored contiguously in the heap in all cases; meaning the handles they represent are scattered).
+		I could also provide the user the wrapped handles and get them to pass them to an explicit implementation provider object (e.g. IWhateverImplmentationProvider).
+			They could get the provider from the factory for the non-testing case.
+			But, this seems awkward. Now if you want to do anything useful with any resource type you have to pass around an impl object alongside it. 
+			We *could* offer the standard implementation as a static property of the interface type, I suppose, but just for the sake of making the library more testable I'm not sure the ugliness is worth it.
+		Ultimately all of this caused me a lot of consternation and I'm not sure I came up with the best possible solution, but we can change it in future if necessary.
+
+	General philosophy is to parameter validate/check where the branching + checking will not dwarf the runtime cost of the method or where the check provides significant protection against programming errors.
+		A starting rule-of-thumb is that if the method is inlinable we should consider skipping parameter validation.
+			However, this isn't always the case-- for example if the actual function body still invokes something costly or if the function is not expected to be called often, it's probably still worth validating.
+			Also, when a method is easy to make mistakes with, it's still worth considering a parameter validation even if it might be detrimental to the performance of it; 
+			ultimately this library is meant to eschew some performance for the sake of user-friendliness. People seeking every last CPU cycle can write their own DX/OGL/Vulkan/Metal wrapper.
+		Overall, the idea is that by validating wherever possible we can hopefully balance helping users catch mistakes without sacrificing performance.

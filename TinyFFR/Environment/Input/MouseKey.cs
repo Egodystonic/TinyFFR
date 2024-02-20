@@ -4,6 +4,7 @@
 namespace Egodystonic.TinyFFR.Environment.Input;
 
 public enum MouseKey : int {
+	Unknown = 0,
 	MouseLeft = KeyboardOrMouseKey.MouseLeft,
 	MouseMiddle = KeyboardOrMouseKey.MouseMiddle,
 	MouseRight = KeyboardOrMouseKey.MouseRight,

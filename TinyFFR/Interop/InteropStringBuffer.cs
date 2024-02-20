@@ -6,10 +6,13 @@ using System.Text;
 namespace Egodystonic.TinyFFR.Interop;
 
 sealed unsafe class InteropStringBuffer : IDisposable {
-	public InteropStringBuffer(int bufferLength) {
+	public InteropStringBuffer(int bufferLength, bool addOneForNullTerminator) {
 		if (bufferLength <= 0) throw new ArgumentOutOfRangeException(nameof(bufferLength), bufferLength, "Buffer length must be positive.");
+		if (addOneForNullTerminator) bufferLength++;
 
-		BufferPtr = (byte*) NativeMemory.AllocZeroed((uint) bufferLength);
+		checked { // Shouldn't be possible to overflow considering we checked for non-positive values, but just in case
+			BufferPtr = (byte*) NativeMemory.AllocZeroed((uint) bufferLength);
+		}
 		BufferLength = bufferLength;
 	}
 
@@ -19,7 +22,7 @@ sealed unsafe class InteropStringBuffer : IDisposable {
 
 	public Span<byte> AsSpan => new(BufferPtr, BufferLength);
 
-	public void WriteFrom(ReadOnlySpan<char> src) {
+	public void ConvertFromUtf16(ReadOnlySpan<char> src) {
 		var subStrLength = src.Length;
 		var lengthRequired = Encoding.UTF8.GetByteCount(src[..subStrLength]);
 		while (lengthRequired > BufferLength) {
@@ -38,7 +41,7 @@ sealed unsafe class InteropStringBuffer : IDisposable {
 		BufferPtr[numBytesWritten < BufferLength ? numBytesWritten : (BufferLength - 1)] = 0;
 	}
 
-	public int ReadTo(Span<char> dest) {
+	public int ConvertToUtf16(Span<char> dest) {
 		var firstZero = AsSpan.IndexOf((byte) 0);
 		if (firstZero < 0) firstZero = BufferLength;
 		var destSizeRequired = Encoding.UTF8.GetCharCount(BufferPtr, firstZero);
@@ -61,7 +64,7 @@ sealed unsafe class InteropStringBuffer : IDisposable {
 
 	public override string ToString() {
 		var span = new char[BufferLength];
-		ReadTo(span);
+		ConvertToUtf16(span);
 		return new String(span);
 	}
 

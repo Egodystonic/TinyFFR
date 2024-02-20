@@ -45,8 +45,6 @@ sealed class NativeKeyboardAndMouseInputState : IKeyboardAndMouseInputTracker, I
 		}
 	}
 
-	public NativeKeyboardAndMouseInputState(InputTrackerConfig config) { }
-
 	public void UpdateCurrentlyPressedKeys(int newKbmEventCount, int newClickEventCount) {
 		ThrowIfThisIsDisposed();
 		_kbmEventBufferCount = newKbmEventCount;
@@ -90,6 +88,9 @@ sealed class NativeKeyboardAndMouseInputState : IKeyboardAndMouseInputTracker, I
 		return false;
 	}
 
+	public override string ToString() => _isDisposed ? "TinyFFR Native Input Tracker [Keyboard/Mouse] [Disposed]" : "TinyFFR Native Input Tracker [Keyboard/Mouse]";
+
+	#region Disposal
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
@@ -107,4 +108,5 @@ sealed class NativeKeyboardAndMouseInputState : IKeyboardAndMouseInputTracker, I
 	void ThrowIfThisIsDisposed() {
 		ObjectDisposedException.ThrowIf(_isDisposed, this);
 	}
+	#endregion
 }

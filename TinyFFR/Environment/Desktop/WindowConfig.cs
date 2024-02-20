@@ -21,20 +21,11 @@ public readonly record struct WindowConfig {
 		}
 	}
 
-	readonly string _title = "Tiny FFR Application";
-	public string Title {
-		get => _title;
-		init {
-			ArgumentNullException.ThrowIfNull(value, nameof(Title));
-			_title = value;
-		}
-	}
-
 	public WindowFullscreenStyle FullscreenStyle { get; init; } = WindowFullscreenStyle.NotFullscreen;
 
 	public WindowConfig() { }
 
 	internal void ThrowIfInvalid() {
-		if (Title == null) throw InvalidObjectException.InvalidDefault<WindowConfig>();
+		/* no op */
 	}
 }

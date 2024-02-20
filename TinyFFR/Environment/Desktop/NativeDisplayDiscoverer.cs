@@ -1,6 +1,7 @@
 ﻿// Created on 2024-01-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Reflection.Metadata;
 using System.Security;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
@@ -8,157 +9,74 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Environment.Desktop;
 
 [SuppressUnmanagedCodeSecurity]
-sealed class NativeDisplayDiscoverer : IDisplayDiscoverer, IDisplayHandleImplProvider, IDisposable {
-	readonly InteropStringBuffer _displayNameBuffer = new(200);
-	readonly ArrayPoolBackedVector<Display> _displays = new();
-	readonly ArrayPoolBackedMap<DisplayHandle, ArrayPoolBackedVector<DisplayMode>> _displayModes = new();
-	bool _isDisposed = false;
+sealed class NativeDisplayDiscoverer : IDisplayDiscoverer {
+	const int MaxDisplayNameLength = 200; // Should be enough to be stackalloc'able (or rewrite ctor)
+	const int MaxDisplayCount = 1_000_000;
+	readonly Display[] _displays;
+
+	public ReadOnlySpan<Display> All => _displays.AsSpan();
+	public Display? Recommended { get; }
+	public Display? Primary { get; }
 
 	public NativeDisplayDiscoverer() {
 		GetDisplayCount(out var numDisplays).ThrowIfFailure();
-		for (var i = 0; i < numDisplays; ++i) {
-			_displays.Add(new Display(i, this));
-			_displayModes.Add(i, new ArrayPoolBackedVector<DisplayMode>());
-			GetDisplayModeCount(i, out var numDisplayModes).ThrowIfFailure();
-			for (var j = 0; j < numDisplayModes; ++j) {
-				GetDisplayMode(i, j, out var modeWidth, out var modeHeight, out var modeRate).ThrowIfFailure();
-				_displayModes[i].Add(new DisplayMode((modeWidth, modeHeight), modeRate));
+		if (numDisplays > MaxDisplayCount || numDisplays < 0) throw new InvalidOperationException($"Display discoverer found {numDisplays} displays (invalid number).");
+		_displays = new Display[numDisplays];
+		if (numDisplays == 0) {
+			Recommended = null;
+			Primary = null;
+			return;
+		}
+
+		GetPrimaryDisplay(out var primaryHandle).ThrowIfFailure();
+		GetRecommendedDisplay(out var recommendedHandle).ThrowIfFailure();
+
+		using var nameBuffer = new InteropStringBuffer(MaxDisplayNameLength, true);
+		Span<char> nameBufferUtf16 = stackalloc char[MaxDisplayNameLength];
+
+		for (var handle = 0; handle < numDisplays; ++handle) {
+			GetDisplayModeCount(handle, out var numDisplayModes).ThrowIfFailure();
+			if (numDisplayModes < 1) continue;
+			var modes = new DisplayMode[numDisplayModes];
+			for (var i = 0; i < numDisplayModes; ++i) {
+				GetDisplayMode(handle, i, out var modeWidth, out var modeHeight, out var modeRate).ThrowIfFailure();
+				modes[i] = new DisplayMode((modeWidth, modeHeight), modeRate);
 			}
+
+			var isPrimary = handle == primaryHandle;
+			var isRecommended = handle == recommendedHandle;
+
+			GetDisplayName(
+				handle,
+				ref nameBuffer.BufferRef,
+				nameBuffer.BufferLength
+			).ThrowIfFailure();
+			var nameLen = nameBuffer.ConvertToUtf16(nameBufferUtf16);
+
+			var display = new Display(handle, modes, isPrimary, isRecommended, new(nameBufferUtf16[..nameLen]));
+			if (isPrimary) Primary = display;
+			if (isRecommended) Recommended = display;
+			_displays[handle] = display;
 		}
 	}
-
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_count")]
-	static extern InteropResult GetDisplayCount(out int outResult);
-	public ReadOnlySpan<Display> GetAll() {
-		ThrowIfThisIsDisposed();
-		return _displays.AsSpan;
-	}
-
+	
+	#region Native Methods
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_recommended_display")]
 	static extern InteropResult GetRecommendedDisplay(out DisplayHandle outResult);
-	public Display GetRecommended() {
-		ThrowIfThisIsDisposed();
-		GetRecommendedDisplay(
-			out var result
-		).ThrowIfFailure();
-		return new(result, this);
-	}
-	public bool GetIsRecommended(DisplayHandle handle) {
-		ThrowIfThisIsDisposed();
-		GetRecommendedDisplay(
-			out var result
-		).ThrowIfFailure();
-		return handle == result;
-	}
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_primary_display")]
 	static extern InteropResult GetPrimaryDisplay(out DisplayHandle outResult);
-	public Display GetPrimary() {
-		ThrowIfThisIsDisposed();
-		GetPrimaryDisplay(
-			out var result
-		).ThrowIfFailure();
-		return new(result, this);
-	}
-	public bool GetIsPrimary(DisplayHandle handle) {
-		ThrowIfThisIsDisposed();
-		GetPrimaryDisplay(
-			out var result
-		).ThrowIfFailure();
-		return handle == result;
-	}
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_resolution")]
-	static extern InteropResult GetDisplayResolution(DisplayHandle handle, out int outWidth, out int outHeight);
-	public XYPair<int> GetResolution(DisplayHandle handle) {
-		ThrowIfThisIsDisposed();
-		GetDisplayResolution(
-			handle,
-			out var width,
-			out var height
-		).ThrowIfFailure();
-		return (width, height);
-	}
-
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_positional_offset")]
-	static extern InteropResult GetDisplayPositionalOffset(DisplayHandle handle, out int outXOffset, out int outYOffset);
-	public XYPair<int> GetPositionOffset(DisplayHandle handle) {
-		ThrowIfThisIsDisposed();
-		GetDisplayPositionalOffset(
-			handle,
-			out var x,
-			out var y
-		).ThrowIfFailure();
-		return (x, y);
-	}
+	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_count")]
+	static extern InteropResult GetDisplayCount(out int outResult);
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_name")]
 	static extern InteropResult GetDisplayName(DisplayHandle handle, ref byte utf8BufferPtr, int bufferLength);
-	public int GetNameMaxLength() => _displayNameBuffer.BufferLength;
-	public int GetName(DisplayHandle handle, Span<char> dest) {
-		ThrowIfThisIsDisposed();
-		GetDisplayName(
-			handle,
-			ref _displayNameBuffer.BufferRef,
-			_displayNameBuffer.BufferLength
-		).ThrowIfFailure();
-		return _displayNameBuffer.ReadTo(dest);
-	}
 
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_mode_count")]
 	static extern InteropResult GetDisplayModeCount(DisplayHandle handle, out int outNumDisplayModes);
+
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_mode")]
 	static extern InteropResult GetDisplayMode(DisplayHandle handle, int displayModeIndex, out int outWidth, out int outHeight, out int outRefreshRateHz);
-	public ReadOnlySpan<DisplayMode> GetSupportedDisplayModes(DisplayHandle handle) {
-		ThrowIfThisIsDisposed();
-		if (!_displayModes.TryGetValue(handle, out var vector)) throw new InvalidOperationException($"Invalid {nameof(Display)}.");
-		return vector.AsSpan;
-	}
-	public DisplayMode GetHighestSupportedResolution(DisplayHandle handle) {
-		var supportedModes = GetSupportedDisplayModes(handle);
-		if (supportedModes.Length == 0) throw new InvalidOperationException($"Can not get highest resolution mode for {nameof(Display)}; no supported modes found.");
-		
-		var result = supportedModes[0];
-		foreach (var displayMode in supportedModes[1..]) {
-			if (displayMode.Resolution.ToVector2().LengthSquared() > result.Resolution.ToVector2().LengthSquared()) {
-				result = displayMode;
-			}
-			else if (displayMode.Resolution == result.Resolution && displayMode.RefreshRateHz > result.RefreshRateHz) {
-				result = displayMode;
-			}
-		}
-		return result;
-	}
-	public DisplayMode GetHighestSupportedRefreshRate(DisplayHandle handle) {
-		var supportedModes = GetSupportedDisplayModes(handle);
-		if (supportedModes.Length == 0) throw new InvalidOperationException($"Can not get highest refresh-rate mode for {nameof(Display)}; no supported modes found.");
-
-		var result = supportedModes[0];
-		foreach (var displayMode in supportedModes[1..]) {
-			if (displayMode.RefreshRateHz > result.RefreshRateHz) {
-				result = displayMode;
-			}
-			else if (displayMode.RefreshRateHz == result.RefreshRateHz && displayMode.Resolution.ToVector2().LengthSquared() > result.Resolution.ToVector2().LengthSquared()) {
-				result = displayMode;
-			}
-		}
-		return result;
-	}
-
-	public void Dispose() {
-		if (_isDisposed) return;
-		try {
-			_displayNameBuffer.Dispose();
-			_displays.Dispose();
-			foreach (var kvp in _displayModes) kvp.Value.Dispose();
-			_displayModes.Dispose();
-		}
-		finally {
-			_isDisposed = true;
-		}
-	}
-
-	void ThrowIfThisIsDisposed() {
-		ObjectDisposedException.ThrowIf(_isDisposed, this);
-	}
+	#endregion
 }

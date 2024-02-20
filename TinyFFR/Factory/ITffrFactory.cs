@@ -11,5 +11,4 @@ public interface ITffrFactory : ITrackedDisposable {
 	IWindowBuilder GetWindowBuilder();
 	IWindowBuilder GetWindowBuilder(WindowBuilderConfig config);
 	IApplicationLoopBuilder GetApplicationLoopBuilder();
-	IApplicationLoopBuilder GetApplicationLoopBuilder(ApplicationLoopBuilderConfig config);
 }

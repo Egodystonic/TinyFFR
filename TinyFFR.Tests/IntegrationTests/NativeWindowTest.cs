@@ -18,7 +18,7 @@ class NativeWindowTest {
 		using var factory = new TffrFactory();
 		
 		var displayDiscoverer = factory.GetDisplayDiscoverer();
-		foreach (var display in displayDiscoverer.GetAll()) {
+		foreach (var display in displayDiscoverer.All) {
 			Console.WriteLine(display);
 			Console.WriteLine($"\tHighest resolution mode: {display.HighestSupportedResolution}");
 			Console.WriteLine($"\tHighest refresh rate mode: {display.HighestSupportedRefreshRate}");
@@ -41,11 +41,11 @@ class NativeWindowTest {
 			MaxWindowTitleLength = 10
 		});
 		using var window = windowBuilder.Build(new() {
-			Display = displayDiscoverer.GetPrimary(),
+			Display = displayDiscoverer.Primary!.Value,
 			Size = (500, 300),
-			Position = (100, 100),
-			Title = "Test 456"
+			Position = (100, 100)
 		});
+		window.Title = "Test 456";
 
 		Assert.AreEqual("Test 456", window.Title);
 		window.Title = "Test 123";

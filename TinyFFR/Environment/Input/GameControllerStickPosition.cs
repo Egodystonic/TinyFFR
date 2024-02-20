@@ -1,6 +1,8 @@
 ﻿// Created on 2024-02-01 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Globalization;
+
 namespace Egodystonic.TinyFFR.Environment.Input;
 
 public readonly struct GameControllerStickPosition : IEquatable<GameControllerStickPosition> {
@@ -106,8 +108,8 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 		var dir = GetDirection();
 		var dirString = dir == CardinalDirection.None ? "No direction" : $"{DisplacementLevel} {dir}";
 		var angle = GetPolarAngle();
-		var angleString = angle == null ? "Within deadzone" : $"{GetPolarAngle():N0} with {PercentageUtils.ConvertFractionToPercentageString(Displacement, "N0")} displacement";
-		return $"X:{PercentageUtils.ConvertFractionToPercentageString(HorizontalOffset, "N0")} Y:{PercentageUtils.ConvertFractionToPercentageString(VerticalOffset, "N0")} " +
+		var angleString = angle == null ? "Within deadzone" : $"{GetPolarAngle():N0} with {PercentageUtils.ConvertFractionToPercentageString(Displacement, "N0", CultureInfo.CurrentCulture)} displacement";
+		return $"X:{PercentageUtils.ConvertFractionToPercentageString(HorizontalOffset, "N0", CultureInfo.CurrentCulture)} Y:{PercentageUtils.ConvertFractionToPercentageString(VerticalOffset, "N0", CultureInfo.CurrentCulture)} " +
 			   $"({angleString}, {dirString})";
 	}
 

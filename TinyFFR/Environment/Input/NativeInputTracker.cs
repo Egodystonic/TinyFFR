@@ -20,7 +20,6 @@ sealed class NativeInputTracker : IInputTracker, IDisposable {
 	readonly UnmanagedBuffer<RawGameControllerButtonEvent> _controllerEventBuffer = new(InitialEventBufferLength);
 	readonly ArrayPoolBackedVector<IGameControllerInputTracker> _detectedControllerStateObjectVector = new();
 	readonly ArrayPoolBackedMap<GameControllerHandle, NativeGameControllerState> _detectedControllerStateObjectMap = new();
-	readonly InputTrackerConfig _config;
 	readonly NativeGameControllerState _combinedControllerState;
 	bool _isDisposed = false;
 
@@ -29,12 +28,11 @@ sealed class NativeInputTracker : IInputTracker, IDisposable {
 	public ReadOnlySpan<IGameControllerInputTracker> GameControllers => _detectedControllerStateObjectVector.AsSpan;
 	public IGameControllerInputTracker GameControllersCombined => _combinedControllerState;
 
-	public unsafe NativeInputTracker(InputTrackerConfig config) {
+	public unsafe NativeInputTracker() {
 		if (_liveInstance != null) throw new InvalidOperationException($"Only one {nameof(NativeInputTracker)} may be active at any time.");
 		_liveInstance = this;
-		_config = config;
-		_kbmStateObject = new NativeKeyboardAndMouseInputState(config);
-		_combinedControllerState = new NativeGameControllerState(GameControllerHandle.Combined, config);
+		_kbmStateObject = new NativeKeyboardAndMouseInputState();
+		_combinedControllerState = new NativeGameControllerState(GameControllerHandle.Combined);
 		SetEventPollDelegates(
 			&FilterAndTranslateKeycode,
 			&ResizeCurrentPollInstanceKbmEventBuffer,
@@ -89,6 +87,9 @@ sealed class NativeInputTracker : IInputTracker, IDisposable {
 		}
 	}
 
+	public override string ToString() => "TinyFFR Native Input Tracker";
+
+	#region Native Methods
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_event_poll_delegates")]
 	static extern unsafe InteropResult SetEventPollDelegates(
 		delegate* unmanaged<int*, InteropBool> filterTranslateKeycapValueDelegate,
@@ -151,14 +152,16 @@ sealed class NativeInputTracker : IInputTracker, IDisposable {
 			if (kvp.Value.Handle == handle) return;
 		}
 
-		var state = new NativeGameControllerState(handle, _liveInstance._config);
+		var state = new NativeGameControllerState(handle);
 		var nameSpan = new ReadOnlySpan<byte>(utf8NamePtr, utf8NameLen);
 		if (nameSpan.Length > state.NameBuffer.AsSpan.Length) nameSpan = nameSpan[..state.NameBuffer.AsSpan.Length];
 		nameSpan.CopyTo(state.NameBuffer.AsSpan);
 		_liveInstance._detectedControllerStateObjectVector.Add(state);
 		_liveInstance._detectedControllerStateObjectMap.Add(handle, state);
 	}
+	#endregion
 
+	#region Disposal
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
@@ -179,4 +182,5 @@ sealed class NativeInputTracker : IInputTracker, IDisposable {
 	void ThrowIfThisIsDisposed() {
 		ObjectDisposedException.ThrowIf(_isDisposed, this);
 	}
+	#endregion
 }

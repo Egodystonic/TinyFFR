@@ -10,18 +10,20 @@ using Egodystonic.TinyFFR.Environment.Input;
 namespace Egodystonic.TinyFFR.Environment;
 
 [SuppressUnmanagedCodeSecurity]
-sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IApplicationLoopImplProvider, IDisposable {
-	static ApplicationLoopConfig? _activeLoopConfig = null;
-	static ApplicationLoopHandle? _activeLoopHandle = null;
+sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IDisposable {
+	static NativeApplicationLoopBuilder? _instance;
 	readonly NativeInputTracker _inputTracker;
+	ApplicationLoopConfig? _activeLoopConfig = null;
+	ApplicationLoopHandle? _activeLoopHandle = null;
 	int _nextLoopHandleIndex = 1;
 	long _previousIterationStartTimestamp;
 	long _previousIterationReturnTimestamp;
 	TimeSpan _totalIteratedTime;
 	bool _isDisposed = false;
 
-	public NativeApplicationLoopBuilder(ApplicationLoopBuilderConfig config) {
-		_inputTracker = new(config.InputTrackerConfig);
+	public NativeApplicationLoopBuilder() {
+		_instance = this;
+		_inputTracker = new();
 	}
 
 	public ApplicationLoop BuildLoop() => BuildLoop(new());
@@ -30,11 +32,18 @@ sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IApplicatio
 		if (_activeLoopHandle != null) throw new InvalidOperationException($"Only one {nameof(ApplicationLoop)} at a time may be built. Dispose the previous instance before building another.");
 		config.ThrowIfInvalid();
 
-		_activeLoopHandle = new(_nextLoopHandleIndex++);
+		_activeLoopHandle = _nextLoopHandleIndex++;
 		_activeLoopConfig = config;
 		_previousIterationReturnTimestamp = _previousIterationStartTimestamp = Stopwatch.GetTimestamp();
 		_totalIteratedTime = TimeSpan.Zero;
-		return new(_activeLoopHandle.Value, this);
+		return new(_activeLoopHandle.Value);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static IInputTracker GetInputTracker(ApplicationLoopHandle handle) => GetInstanceOrThrow().InstanceGetInputTracker(handle);
+	NativeInputTracker InstanceGetInputTracker(ApplicationLoopHandle handle) {
+		ThrowIfHandleIsDisposed(handle);
+		return _inputTracker;
 	}
 
 	TimeSpan GetWaitTimeUntilNextFrameStart() {
@@ -46,8 +55,10 @@ sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IApplicatio
 		_inputTracker.ExecuteIteration();
 	}
 
-	public DeltaTime IterateOnce(ApplicationLoopHandle handle) {
-		ThrowIfHandleOrThisIsDisposed(handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static DeltaTime IterateOnce(ApplicationLoopHandle handle) => GetInstanceOrThrow().InstanceIterateOnce(handle);
+	DeltaTime InstanceIterateOnce(ApplicationLoopHandle handle) {
+		ThrowIfHandleIsDisposed(handle);
 
 		var waitTime = GetWaitTimeUntilNextFrameStart();
 		if (waitTime > _activeLoopConfig!.Value.MaxCpuBusyWaitTime) {
@@ -63,8 +74,10 @@ sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IApplicatio
 		_totalIteratedTime += result;
 		return result;
 	}
-	public bool TryIterateOnce(ApplicationLoopHandle handle, out DeltaTime outDeltaTime) {
-		ThrowIfHandleOrThisIsDisposed(handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool TryIterateOnce(ApplicationLoopHandle handle, out DeltaTime outDeltaTime) => GetInstanceOrThrow().InstanceTryIterateOnce(handle, out outDeltaTime);
+	bool InstanceTryIterateOnce(ApplicationLoopHandle handle, out DeltaTime outDeltaTime) {
+		ThrowIfHandleIsDisposed(handle);
 		
 		if (GetWaitTimeUntilNextFrameStart() > TimeSpan.Zero) {
 			outDeltaTime = default;
@@ -81,27 +94,33 @@ sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IApplicatio
 		return true;
 	}
 
-	public TimeSpan GetTimeUntilNextIteration(ApplicationLoopHandle handle) {
-		ThrowIfHandleOrThisIsDisposed(handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TimeSpan GetTimeUntilNextIteration(ApplicationLoopHandle handle) => GetInstanceOrThrow().InstanceGetTimeUntilNextIteration(handle);
+	TimeSpan InstanceGetTimeUntilNextIteration(ApplicationLoopHandle handle) {
+		ThrowIfHandleIsDisposed(handle);
 		return GetWaitTimeUntilNextFrameStart();
 	}
-	public TimeSpan GetTotalIteratedTime(ApplicationLoopHandle handle) {
-		ThrowIfHandleOrThisIsDisposed(handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static TimeSpan GetTotalIteratedTime(ApplicationLoopHandle handle) => GetInstanceOrThrow().InstanceGetTotalIteratedTime(handle);
+	TimeSpan InstanceGetTotalIteratedTime(ApplicationLoopHandle handle) {
+		ThrowIfHandleIsDisposed(handle);
 		return _totalIteratedTime;
 	}
 
-	public void Dispose(ApplicationLoopHandle handle) {
+	public override string ToString() => "TinyFFR Native Application Loop Builder";
+
+	#region Disposal
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static void Dispose(ApplicationLoopHandle handle) => GetInstanceOrThrow().InstanceDispose(handle);
+	void InstanceDispose(ApplicationLoopHandle handle) {
 		if (_activeLoopHandle != handle) return;
 		_activeLoopHandle = null;
 		_activeLoopConfig = null;
 	}
-	public bool IsDisposed(ApplicationLoopHandle handle) {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool IsDisposed(ApplicationLoopHandle handle) => GetInstanceOrThrow().InstanceIsDisposed(handle);
+	bool InstanceIsDisposed(ApplicationLoopHandle handle) {
 		return _activeLoopHandle != handle;
-	}
-
-	public IInputTracker GetInputTracker(ApplicationLoopHandle handle) {
-		ThrowIfHandleOrThisIsDisposed(handle);
-		return _inputTracker;
 	}
 
 	public void Dispose() {
@@ -112,14 +131,15 @@ sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IApplicatio
 		}
 		finally {
 			_isDisposed = true;
+			_instance = null;
 		}
 	}
 
-	void ThrowIfThisIsDisposed() {
-		ObjectDisposedException.ThrowIf(_isDisposed, this);
+	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
+	static void ThrowIfHandleIsDisposed(ApplicationLoopHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(ApplicationLoop));
+	static NativeApplicationLoopBuilder GetInstanceOrThrow() {
+		ObjectDisposedException.ThrowIf(_instance == null, typeof(NativeApplicationLoopBuilder));
+		return _instance;
 	}
-	void ThrowIfHandleOrThisIsDisposed(ApplicationLoopHandle handle) {
-		ObjectDisposedException.ThrowIf(IsDisposed(handle), handle);
-		ThrowIfThisIsDisposed();
-	}
+	#endregion
 }

@@ -20,7 +20,7 @@ class NativeLoopTimingTest {
 	public void Execute() {
 		using var factory = new TffrFactory();
 
-		var loopBuilder = factory.GetApplicationLoopBuilder(new() { InputTrackerConfig = new() { MaxControllerNameLength = 20 } });
+		var loopBuilder = factory.GetApplicationLoopBuilder();
 		var loop = loopBuilder.BuildLoop(new() { FrameRateCapHz = 30 });
 
 		var reportedTimesList = new List<DeltaTime>();

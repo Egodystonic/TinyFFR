@@ -12,9 +12,7 @@ namespace Egodystonic.TinyFFR.Factory;
 public sealed class TffrFactory : ITffrFactory {
 	readonly FactoryObjectStore<IDisplayDiscoverer> _displayDiscoverers = new();
 	readonly FactoryObjectStore<WindowBuilderConfig, IWindowBuilder> _windowBuilders = new();
-	readonly FactoryObjectStore<ApplicationLoopBuilderConfig, IApplicationLoopBuilder> _loopBuilders = new();
-
-	public bool IsDisposed { get; private set; }
+	readonly FactoryObjectStore<IApplicationLoopBuilder> _loopBuilders = new();
 
 	public TffrFactory() : this(new()) { }
 	public TffrFactory(FactoryConfig config) {
@@ -34,12 +32,16 @@ public sealed class TffrFactory : ITffrFactory {
 		return _windowBuilders.GetObjectForConfig(config);
 	}
 
-	public IApplicationLoopBuilder GetApplicationLoopBuilder() => GetApplicationLoopBuilder(new());
-	public IApplicationLoopBuilder GetApplicationLoopBuilder(ApplicationLoopBuilderConfig config) {
+	public IApplicationLoopBuilder GetApplicationLoopBuilder() {
 		ThrowIfThisIsDisposed();
-		if (!_loopBuilders.ContainsObjectForConfig(config)) _loopBuilders.SetObjectForConfig(config, new NativeApplicationLoopBuilder(config));
-		return _loopBuilders.GetObjectForConfig(config);
+		if (!_loopBuilders.ContainsObjectType<NativeApplicationLoopBuilder>()) _loopBuilders.SetObjectOfType(new NativeApplicationLoopBuilder());
+		return _loopBuilders.GetObjectOfType<NativeApplicationLoopBuilder>();
 	}
+
+	public override string ToString() => IsDisposed ? "TinyFFR Native Factory [Disposed]" : "TinyFFR Native Factory";
+
+	#region Disposal
+	public bool IsDisposed { get; private set; }
 
 	public void Dispose() {
 		if (IsDisposed) return;
@@ -56,6 +58,7 @@ public sealed class TffrFactory : ITffrFactory {
 	void ThrowIfThisIsDisposed() {
 		ObjectDisposedException.ThrowIf(IsDisposed, this);
 	}
+	#endregion
 
 	//public (/* TODO tuple or dedicated struct of stuff handles */) BuildDefaultStuff() { } // TODO a better name, but I'd like to use this as a way to quickly create a window, camera, etc for quick "hello cube" and so on
 	// TODO maybe instead of a tuple we can do the compositeresourcehandle again but allow ways of us trying to get certain handle types out of it

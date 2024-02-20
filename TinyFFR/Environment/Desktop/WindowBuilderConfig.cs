@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Factory;
 
 namespace Egodystonic.TinyFFR.Environment.Desktop;
 

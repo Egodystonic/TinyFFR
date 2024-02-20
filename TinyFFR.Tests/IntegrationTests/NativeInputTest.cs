@@ -28,13 +28,13 @@ class NativeInputTest {
 		var windowBuilder = factory.GetWindowBuilder();
 
 		using var window = windowBuilder.Build(new() {
-			Display = displayDiscoverer.GetPrimary(),
+			Display = displayDiscoverer.Primary!.Value,
 			FullscreenStyle = WindowFullscreenStyle.NotFullscreen,
-			Position = displayDiscoverer.GetPrimary().CurrentResolution / 2 - (200, 200),
+			Position = displayDiscoverer.Primary!.Value.CurrentResolution / 2 - (200, 200),
 			Size = (400, 400)
 		});
 
-		var loopBuilder = factory.GetApplicationLoopBuilder(new() { InputTrackerConfig = new() { MaxControllerNameLength = 20 } });
+		var loopBuilder = factory.GetApplicationLoopBuilder();
 		using var loop = loopBuilder.BuildLoop(new() { FrameRateCapHz = 60 });
 
 		_numControllers = 0;

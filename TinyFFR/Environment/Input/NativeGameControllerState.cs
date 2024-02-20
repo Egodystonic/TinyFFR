@@ -13,6 +13,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Environment.Input;
 
 sealed class NativeGameControllerState : IGameControllerInputTracker, IDisposable {
+	const int MaxControllerNameLength = 500;
 	public InteropStringBuffer NameBuffer { get; }
 	public GameControllerHandle Handle { get; }
 	public ArrayPoolBackedVector<GameControllerButtonEvent> NewButtonEvents { get; } = new();
@@ -61,14 +62,14 @@ sealed class NativeGameControllerState : IGameControllerInputTracker, IDisposabl
 		}
 	}
 
-	public NativeGameControllerState(GameControllerHandle handle, InputTrackerConfig config) {
+	public NativeGameControllerState(GameControllerHandle handle) {
 		Handle = handle;
-		NameBuffer = new(config.MaxControllerNameLength);
+		NameBuffer = new(MaxControllerNameLength, true);
 	}
 
 	public int GetControllerNameUsingSpan(Span<char> dest) {
 		ThrowIfThisIsDisposed();
-		return NameBuffer.ReadTo(dest);
+		return NameBuffer.ConvertToUtf16(dest);
 	}
 	public int GetControllerNameSpanMaxLength() {
 		ThrowIfThisIsDisposed();
@@ -165,6 +166,9 @@ sealed class NativeGameControllerState : IGameControllerInputTracker, IDisposabl
 		}
 	}
 
+	public override string ToString() => $"TinyFFR Native Input Tracker [Game Controller '{ControllerName}']{(_isDisposed ? " [Disposed]" : "")}";
+
+	#region Disposal
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
@@ -182,4 +186,5 @@ sealed class NativeGameControllerState : IGameControllerInputTracker, IDisposabl
 	void ThrowIfThisIsDisposed() {
 		ObjectDisposedException.ThrowIf(_isDisposed, this);
 	}
+	#endregion
 }
