@@ -64,7 +64,7 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 	}
 
 	// TODO clarify this is the four-quadrant inverse tangent
-	public Angle? GetPolarAngle(float deadzoneSize = RecommendedDeadzoneSize) => AsXYPair(deadzoneSize).PolarAngle;
+	public Angle? GetPolarAngle(float deadzoneSize = RecommendedDeadzoneSize) => Angle.FromPolarAngleAround2DPlane(AsXYPair(deadzoneSize));
 
 
 	public bool IsHorizontalOffsetOutsideDeadzone(float deadzoneSize = RecommendedDeadzoneSize) {
@@ -81,22 +81,9 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 	}
 
 
-	public HorizontalDirection GetHorizontalDirection(float deadzoneSize = RecommendedDeadzoneSize) {
-		if (deadzoneSize is < 0f or > 1f) throw new ArgumentOutOfRangeException(nameof(deadzoneSize), deadzoneSize, $"Deadzone must be between 0 and 1 (inclusive).");
-		if (HorizontalOffset > deadzoneSize) return HorizontalDirection.Right;
-		else if (HorizontalOffset < -deadzoneSize) return HorizontalDirection.Left;
-		else return HorizontalDirection.None;
-	}
-	public VerticalDirection GetVerticalDirection(float deadzoneSize = RecommendedDeadzoneSize) {
-		if (deadzoneSize is < 0f or > 1f) throw new ArgumentOutOfRangeException(nameof(deadzoneSize), deadzoneSize, $"Deadzone must be between 0 and 1 (inclusive).");
-		if (VerticalOffset > deadzoneSize) return VerticalDirection.Up;
-		else if (VerticalOffset < -deadzoneSize) return VerticalDirection.Down;
-		else return VerticalDirection.None;
-	}
-	public CardinalDirection GetDirection(float deadzoneSize = RecommendedDeadzoneSize) {
-		if (deadzoneSize is < 0f or > 1f) throw new ArgumentOutOfRangeException(nameof(deadzoneSize), deadzoneSize, $"Deadzone must be between 0 and 1 (inclusive).");
-		return (CardinalDirection) ((int) GetHorizontalDirection(deadzoneSize) | (int) GetVerticalDirection(deadzoneSize));
-	}
+	public HorizontalDirection GetHorizontalDirection(float deadzoneSize = RecommendedDeadzoneSize) => GetDirection(deadzoneSize).GetHorizontalComponent();
+	public VerticalDirection GetVerticalDirection(float deadzoneSize = RecommendedDeadzoneSize) => GetDirection(deadzoneSize).GetVerticalComponent();
+	public CardinalDirection GetDirection(float deadzoneSize = RecommendedDeadzoneSize) => GetPolarAngle(deadzoneSize)?.PolarDirection ?? CardinalDirection.None;
 
 	// TODO explain these are for performance or custom implementation only if necessary and which sign points which way etc
 	public void GetRawOffsetValues(out short outRawHorizontalOffset, out short outRawVerticalOffset) {

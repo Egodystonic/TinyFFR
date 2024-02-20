@@ -115,4 +115,16 @@ partial class AngleTest {
 			}
 		}
 	}
+
+	[Test]
+	public void ShouldCorrectlyCalculatePolarDirection() {
+		Assert.AreEqual(CardinalDirection.Right, Angle.FromPolarAngleAround2DPlane(1f, 0f)!.Value.PolarDirection);
+		Assert.AreEqual(CardinalDirection.UpRight, Angle.FromPolarAngleAround2DPlane(1f, 1f)!.Value.PolarDirection);
+		Assert.AreEqual(CardinalDirection.Up, Angle.FromPolarAngleAround2DPlane(0f, 1f)!.Value.PolarDirection);
+		Assert.AreEqual(CardinalDirection.UpLeft, Angle.FromPolarAngleAround2DPlane(-1f, 1f)!.Value.PolarDirection);
+		Assert.AreEqual(CardinalDirection.Left, Angle.FromPolarAngleAround2DPlane(-1f, 0f)!.Value.PolarDirection);
+		Assert.AreEqual(CardinalDirection.DownLeft, Angle.FromPolarAngleAround2DPlane(-1f, -1f)!.Value.PolarDirection);
+		Assert.AreEqual(CardinalDirection.Down, Angle.FromPolarAngleAround2DPlane(0f, -1f)!.Value.PolarDirection);
+		Assert.AreEqual(CardinalDirection.DownRight, Angle.FromPolarAngleAround2DPlane(1f, -1f)!.Value.PolarDirection);
+	}
 }

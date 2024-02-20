@@ -38,7 +38,7 @@ public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>, T> where T 
 
 	public override string ToString() => ToString(null, null);
 
-	public string ToString(string? format, IFormatProvider? formatProvider) => $"{X.ToString(format, formatProvider)}{NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator} {Y.ToString(format, formatProvider)}";
+	public string ToString(string? format, IFormatProvider? formatProvider) => $"{IVect.VectorStringPrefixChar}{X.ToString(format, formatProvider)}{NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator} {Y.ToString(format, formatProvider)}{IVect.VectorStringSuffixChar}";
 
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
 		var numberFormatter = NumberFormatInfo.GetInstance(provider);
@@ -110,7 +110,7 @@ public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>, T> where T 
 		if (!T.TryParse(s[..indexOfSeparator], provider, out var x)) return false;
 		s = s[(indexOfSeparator + numberFormatter.NumberGroupSeparator.Length)..];
 		
-		if (!T.TryParse(s[..indexOfSeparator], provider, out var y)) return false;
+		if (!T.TryParse(s, provider, out var y)) return false;
 
 		result = new(x, y);
 		return true;

@@ -34,6 +34,25 @@ partial struct Angle :
 
 
 
+	public CardinalDirection PolarDirection { // TODO make it clear that this is four-quadrant 2D plane direction
+		get {
+			const float SegmentSize = 45 * DegreesToRadiansRatio;
+			const float SegmentHalfSize = SegmentSize / 2f;
+			return Normalized._asRadians switch {
+				< SegmentHalfSize + SegmentSize * 0f => CardinalDirection.Right,
+				< SegmentHalfSize + SegmentSize * 1f => CardinalDirection.UpRight,
+				< SegmentHalfSize + SegmentSize * 2f => CardinalDirection.Up,
+				< SegmentHalfSize + SegmentSize * 3f => CardinalDirection.UpLeft,
+				< SegmentHalfSize + SegmentSize * 4f => CardinalDirection.Left,
+				< SegmentHalfSize + SegmentSize * 5f => CardinalDirection.DownLeft,
+				< SegmentHalfSize + SegmentSize * 6f => CardinalDirection.Down,
+				< SegmentHalfSize + SegmentSize * 7f => CardinalDirection.DownRight,
+				_ => CardinalDirection.Right
+			};
+		}
+	}
+
+
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator *(Angle angle, float scalar) => angle.MultipliedBy(scalar);

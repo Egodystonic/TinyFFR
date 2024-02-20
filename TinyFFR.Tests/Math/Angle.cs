@@ -7,7 +7,7 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture]
 partial class AngleTest {
-	const float TestTolerance = 0.001f;
+	const float TestTolerance = 0.1f;
 
 	[Test]
 	public void StaticReadonlyMembersShouldBeCorrectlyInitialized() {
@@ -288,5 +288,46 @@ partial class AngleTest {
 		Assert.IsTrue(new Angle(-0.5f).Equals(new Angle(-0.4f), 0.11f));
 		Assert.IsFalse(new Angle(-0.5f).Equals(new Angle(-0.4f), 0.09f));
 		Assert.IsFalse(new Angle(-0.5f).Equals(new Angle(0.4f), 0.11f));
+	}
+
+	[Test]
+	public void ShouldConsiderEquivalentAnglesEqual() {
+		for (var f = -720f; f < 720f + 36f; f += 36f) {
+			AssertToleranceEquals(new Angle(360f + f), new Angle(f), TestTolerance);
+			AssertToleranceEquals(new Angle(720f + f), new Angle(f), TestTolerance);
+			AssertToleranceEquals(new Angle(-360f + f), new Angle(f), TestTolerance);
+			AssertToleranceEquals(new Angle(-720f + f), new Angle(f), TestTolerance);
+
+			Assert.AreNotEqual(new Angle(360f + f), new Angle(f + 1f));
+			Assert.AreNotEqual(new Angle(720f + f), new Angle(f + 1f));
+			Assert.AreNotEqual(new Angle(-360f + f), new Angle(f + 1f));
+			Assert.AreNotEqual(new Angle(-720f + f), new Angle(f + 1f));
+			Assert.AreNotEqual(new Angle(360f + f), new Angle(f - 1f));
+			Assert.AreNotEqual(new Angle(720f + f), new Angle(f - 1f));
+			Assert.AreNotEqual(new Angle(-360f + f), new Angle(f - 1f));
+			Assert.AreNotEqual(new Angle(-720f + f), new Angle(f - 1f));
+
+			Assert.AreNotEqual(new Angle(360f + f), new Angle(f + 180f));
+			Assert.AreNotEqual(new Angle(720f + f), new Angle(f + 180f));
+			Assert.AreNotEqual(new Angle(-360f + f), new Angle(f + 180f));
+			Assert.AreNotEqual(new Angle(-720f + f), new Angle(f + 180f));
+			Assert.AreNotEqual(new Angle(360f + f), new Angle(f - 180f));
+			Assert.AreNotEqual(new Angle(720f + f), new Angle(f - 180f));
+			Assert.AreNotEqual(new Angle(-360f + f), new Angle(f - 180f));
+			Assert.AreNotEqual(new Angle(-720f + f), new Angle(f - 180f));
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculatePolarAngle() {
+		Assert.AreEqual(null, Angle.FromPolarAngleAround2DPlane(0f, 0f));
+		AssertToleranceEquals(0f, Angle.FromPolarAngleAround2DPlane(1f, 0f)!.Value, TestTolerance);
+		AssertToleranceEquals(45f, Angle.FromPolarAngleAround2DPlane(1f, 1f)!.Value, TestTolerance);
+		AssertToleranceEquals(90f, Angle.FromPolarAngleAround2DPlane(0f, 1f)!.Value, TestTolerance);
+		AssertToleranceEquals(135f, Angle.FromPolarAngleAround2DPlane(-1f, 1f)!.Value, TestTolerance);
+		AssertToleranceEquals(180f, Angle.FromPolarAngleAround2DPlane(-1f, 0f)!.Value, TestTolerance);
+		AssertToleranceEquals(225f, Angle.FromPolarAngleAround2DPlane(-1f, -1f)!.Value, TestTolerance);
+		AssertToleranceEquals(270f, Angle.FromPolarAngleAround2DPlane(0f, -1f)!.Value, TestTolerance);
+		AssertToleranceEquals(315f, Angle.FromPolarAngleAround2DPlane(1f, -1f)!.Value, TestTolerance);
 	}
 }

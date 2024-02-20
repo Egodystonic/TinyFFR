@@ -81,6 +81,14 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 		return FromCosine(dot);
 	}
 
+	// TODO clarify this is the four-quadrant inverse tangent
+	public static Angle? FromPolarAngleAround2DPlane<T>(XYPair<T> xy) where T : unmanaged, INumber<T> => FromPolarAngleAround2DPlane(Single.CreateSaturating(xy.X), Single.CreateSaturating(xy.Y));
+	// TODO clarify this is the four-quadrant inverse tangent
+	public static Angle? FromPolarAngleAround2DPlane(float x, float y) {
+		if (x == 0f && y == 0f) return null;
+		return FromRadians(MathF.Atan2(y, x)).Normalized;
+	}
+
 	/* I thought long and hard about whether this conversion should even exist and what it should assume the operand is.
 	 * Arguments for/against 'operand' being:
 	 * -- Full circle fraction:
@@ -200,14 +208,20 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 	public bool Equals(Angle other, float tolerance) {
 		// Using Degrees rather than _asRadians because the implicit conversion from float to Angle
 		// assumes degrees and therefore I feel like the tolerance value here should also be degrees
-		return MathF.Abs(Degrees - other.Degrees) <= tolerance;
+		var absDiff = MathF.Abs(Normalized.Degrees - other.Normalized.Degrees);
+		if (absDiff <= tolerance) return true;
+
+		// This is to accomodate for cases where the normalized value is close but opposite sides of the 0/360 degree boundary;
+		// e.g. this normalized is 0.1 deg and other normalized is 359.9 deg
+		absDiff = MathF.Abs((this + HalfCircle).Normalized.Degrees - (other + HalfCircle).Normalized.Degrees);
+		return absDiff <= tolerance;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool Equals(Angle other) => _asRadians.Equals(other._asRadians);
+	public bool Equals(Angle other) => Normalized._asRadians.Equals(other.Normalized._asRadians);
 	public override bool Equals(object? obj) => obj is Angle other && Equals(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public override int GetHashCode() => _asRadians.GetHashCode();
+	public override int GetHashCode() => Normalized._asRadians.GetHashCode();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator ==(Angle left, Angle right) => left.Equals(right);
