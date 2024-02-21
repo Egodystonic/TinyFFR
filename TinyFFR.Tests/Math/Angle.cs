@@ -291,30 +291,30 @@ partial class AngleTest {
 	}
 
 	[Test]
-	public void ShouldConsiderEquivalentAnglesEqual() {
+	public void ShouldConsiderEquivalentAnglesEqualWhenNormalized() {
 		for (var f = -720f; f < 720f + 36f; f += 36f) {
-			AssertToleranceEquals(new Angle(360f + f), new Angle(f), TestTolerance);
-			AssertToleranceEquals(new Angle(720f + f), new Angle(f), TestTolerance);
-			AssertToleranceEquals(new Angle(-360f + f), new Angle(f), TestTolerance);
-			AssertToleranceEquals(new Angle(-720f + f), new Angle(f), TestTolerance);
+			Assert.IsTrue(new Angle(360f + f).Equals(new Angle(f), TestTolerance, normalizeAngles: true));
+			Assert.IsTrue(new Angle(720f + f).Equals(new Angle(f), TestTolerance, normalizeAngles: true));
+			Assert.IsTrue(new Angle(-360f + f).Equals(new Angle(f), TestTolerance, normalizeAngles: true));
+			Assert.IsTrue(new Angle(-720f + f).Equals(new Angle(f), TestTolerance, normalizeAngles: true));
 
-			Assert.AreNotEqual(new Angle(360f + f), new Angle(f + 1f));
-			Assert.AreNotEqual(new Angle(720f + f), new Angle(f + 1f));
-			Assert.AreNotEqual(new Angle(-360f + f), new Angle(f + 1f));
-			Assert.AreNotEqual(new Angle(-720f + f), new Angle(f + 1f));
-			Assert.AreNotEqual(new Angle(360f + f), new Angle(f - 1f));
-			Assert.AreNotEqual(new Angle(720f + f), new Angle(f - 1f));
-			Assert.AreNotEqual(new Angle(-360f + f), new Angle(f - 1f));
-			Assert.AreNotEqual(new Angle(-720f + f), new Angle(f - 1f));
+			Assert.IsFalse(new Angle(360f + f).Equals(new Angle(f + 1f), TestTolerance, normalizeAngles: true));
+			Assert.IsFalse(new Angle(720f + f).Equals(new Angle(f + 1f), TestTolerance, normalizeAngles: true));
+			Assert.IsFalse(new Angle(-360f + f).Equals(new Angle(f + 1f), TestTolerance, normalizeAngles: true));
+			Assert.IsFalse(new Angle(-720f + f).Equals(new Angle(f + 1f), TestTolerance, normalizeAngles: true));
+			Assert.IsFalse(new Angle(360f + f).Equals(new Angle(f - 1f), TestTolerance, normalizeAngles: true));
+			Assert.IsFalse(new Angle(720f + f).Equals(new Angle(f - 1f), TestTolerance, normalizeAngles: true));
+			Assert.IsFalse(new Angle(-360f + f).Equals(new Angle(f - 1f), TestTolerance, normalizeAngles: true));
+			Assert.IsFalse(new Angle(-720f + f).Equals(new Angle(f - 1f), TestTolerance, normalizeAngles: true));
 
-			Assert.AreNotEqual(new Angle(360f + f), new Angle(f + 180f));
-			Assert.AreNotEqual(new Angle(720f + f), new Angle(f + 180f));
-			Assert.AreNotEqual(new Angle(-360f + f), new Angle(f + 180f));
-			Assert.AreNotEqual(new Angle(-720f + f), new Angle(f + 180f));
-			Assert.AreNotEqual(new Angle(360f + f), new Angle(f - 180f));
-			Assert.AreNotEqual(new Angle(720f + f), new Angle(f - 180f));
-			Assert.AreNotEqual(new Angle(-360f + f), new Angle(f - 180f));
-			Assert.AreNotEqual(new Angle(-720f + f), new Angle(f - 180f));
+			Assert.IsFalse(new Angle(360f + f).Equals(new Angle(f + 180f), TestTolerance, normalizeAngles: true));
+			Assert.IsFalse(new Angle(720f + f).Equals(new Angle(f + 180f), TestTolerance, normalizeAngles: true));
+			Assert.IsFalse(new Angle(-360f + f).Equals(new Angle(f + 180f), TestTolerance, normalizeAngles: true));
+			Assert.IsFalse(new Angle(-720f + f).Equals(new Angle(f + 180f), TestTolerance, normalizeAngles: true));
+			Assert.IsFalse(new Angle(360f + f).Equals(new Angle(f - 180f), TestTolerance, normalizeAngles: true));
+			Assert.IsFalse(new Angle(720f + f).Equals(new Angle(f - 180f), TestTolerance, normalizeAngles: true));
+			Assert.IsFalse(new Angle(-360f + f).Equals(new Angle(f - 180f), TestTolerance, normalizeAngles: true));
+			Assert.IsFalse(new Angle(-720f + f).Equals(new Angle(f - 180f), TestTolerance, normalizeAngles: true));
 		}
 	}
 
