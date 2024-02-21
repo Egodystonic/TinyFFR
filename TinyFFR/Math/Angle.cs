@@ -216,6 +216,10 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 		absDiff = MathF.Abs((this + HalfCircle).Normalized.Degrees - (other + HalfCircle).Normalized.Degrees);
 		return absDiff <= tolerance;
 	}
+	public bool Equals(Angle other, float tolerance, bool normalizeAngles) {
+		if (normalizeAngles) return Equals(other, tolerance);
+		else return MathF.Abs(Degrees - other.Degrees) <= tolerance;
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Equals(Angle other) => Normalized._asRadians.Equals(other.Normalized._asRadians);

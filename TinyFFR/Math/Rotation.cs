@@ -55,7 +55,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float> {
 	public Rotation() { AsQuaternion = Identity; }
 	
 	public Rotation(Angle angle, Direction axis) { // TODO make it clear that the resultant Rotation Angle/Axis will be auto-normalized by the nature of Quaternion math
-		if (angle.Equals(0f, 0.0001f) || axis.Equals(Direction.None, 0.0001f)) AsQuaternion = Identity;
+		if (angle.Equals(0f, 0.0001f, normalizeAngles: false) || axis.Equals(Direction.None, 0.0001f)) AsQuaternion = Identity;
 		else AsQuaternion = CreateFromAxisAngle(axis.ToVector3(), angle.Radians);
 	} 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -112,16 +112,16 @@ sealed class NativeGameControllerState : IGameControllerInputTracker, IDisposabl
 		ThrowIfThisIsDisposed();
 		switch (rawEvent.Type) {
 			case RawGameControllerEventType.LeftStickAxisX:
-				LeftStickPosition = LeftStickPosition with { HorizontalOffsetRaw = rawEvent.NewValue };
+				LeftStickPosition = LeftStickPosition with { RawDisplacementHorizontal = rawEvent.NewValue };
 				break;
 			case RawGameControllerEventType.LeftStickAxisY:
-				LeftStickPosition = LeftStickPosition with { VerticalOffsetRaw = rawEvent.NewValue != Int16.MinValue ? ((short) -rawEvent.NewValue) : Int16.MaxValue };
+				LeftStickPosition = LeftStickPosition with { RawDisplacementVertical = rawEvent.NewValue != Int16.MinValue ? ((short) -rawEvent.NewValue) : Int16.MaxValue };
 				break;
 			case RawGameControllerEventType.RightStickAxisX:
-				RightStickPosition = RightStickPosition with { HorizontalOffsetRaw = rawEvent.NewValue };
+				RightStickPosition = RightStickPosition with { RawDisplacementHorizontal = rawEvent.NewValue };
 				break;
 			case RawGameControllerEventType.RightStickAxisY:
-				RightStickPosition = RightStickPosition with { VerticalOffsetRaw = rawEvent.NewValue != Int16.MinValue ? ((short) -rawEvent.NewValue) : Int16.MaxValue };
+				RightStickPosition = RightStickPosition with { RawDisplacementVertical = rawEvent.NewValue != Int16.MinValue ? ((short) -rawEvent.NewValue) : Int16.MaxValue };
 				break;
 			case RawGameControllerEventType.LeftTrigger: {
 				var prevDisplacementLevel = LeftTriggerPosition.DisplacementLevel;

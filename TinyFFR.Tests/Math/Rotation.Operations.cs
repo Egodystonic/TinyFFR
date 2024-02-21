@@ -70,7 +70,7 @@ partial class RotationTest {
 
 			foreach (var cardinal in AllCardinals) {
 				var expected = cardinal % angle;
-
+				// TODO this fails when f = 360. Seems like the new check for 360 basically being 0 thwarts it. Need to think carefully
 				AssertToleranceEquals(expected, cardinal % (angle * 0.5f) + cardinal % (angle * 0.5f), TestTolerance);
 				AssertToleranceEquals(expected, cardinal % (angle * 0.25f) + cardinal % (angle * 0.25f) + cardinal % (angle * 0.25f) + cardinal % (angle * 0.25f), TestTolerance);
 				AssertToleranceEquals(expected, cardinal % (angle * -0.5f) + cardinal % (angle * 1f) + cardinal % (angle * 0.5f), TestTolerance);
