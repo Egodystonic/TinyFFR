@@ -23,47 +23,47 @@ class NativeLoopTimingTest {
 		var loopBuilder = factory.GetApplicationLoopBuilder();
 		var loop = loopBuilder.BuildLoop(new() { FrameRateCapHz = 30 });
 
-		var reportedTimesList = new List<DeltaTime>();
-		var measuredTimesList = new List<DeltaTime>();
+		var reportedTimesList = new List<TimeSpan>();
+		var measuredTimesList = new List<TimeSpan>();
 		var stopwatch = Stopwatch.StartNew();
 		var prevMeasuredTime = stopwatch.Elapsed;
 		while (stopwatch.Elapsed < TimeSpan.FromSeconds(3d)) {
 			var dt = loop.IterateOnce();
 			var measured = stopwatch.Elapsed - prevMeasuredTime;
 			prevMeasuredTime = stopwatch.Elapsed;
-			Console.WriteLine($"{new DeltaTime(measured)} measured vs {dt} reported");
+			Console.WriteLine($"{measured.ToStringMs()} measured vs {dt.ToStringMs()} reported");
 			reportedTimesList.Add(dt);
 			measuredTimesList.Add(measured);
 		}
 
-		Console.WriteLine($"Total time: {stopwatch.Elapsed.TotalMilliseconds:N2}ms measured, {reportedTimesList.Sum(dt => dt.ToTimeSpan().TotalMilliseconds):N2}ms reported sum-of-dt, {loop.TotalIteratedTime.TotalMilliseconds:N2}ms reported");
+		Console.WriteLine($"Total time: {stopwatch.Elapsed.ToStringMs()} measured, {TimeSpan.FromTicks(reportedTimesList.Sum(ts => ts.Ticks)).ToStringMs()} reported sum-of-dt, {loop.TotalIteratedTime.ToStringMs()} reported");
 		// Skip first 10% as JIT interferes with it
-		Console.WriteLine($"Average time: {measuredTimesList.Skip(measuredTimesList.Count / 10).Average(dt => dt.ToTimeSpan().TotalMilliseconds):N2}ms measured, {reportedTimesList.Skip(reportedTimesList.Count / 10).Average(dt => dt.ToTimeSpan().TotalMilliseconds):N2}ms reported");
+		Console.WriteLine($"Average time: {TimeSpan.FromTicks((long) measuredTimesList.Skip(measuredTimesList.Count / 10).Average(dt => dt.Ticks)).ToStringMs()} measured, {TimeSpan.FromTicks((long) reportedTimesList.Skip(reportedTimesList.Count / 10).Average(dt => dt.Ticks)).ToStringMs()} reported");
 
 		Console.WriteLine("===========================================================================================================================");
 
 		loop.Dispose();
 		loop = loopBuilder.BuildLoop(new() { FrameRateCapHz = 30 });
-		reportedTimesList = new List<DeltaTime>();
-		measuredTimesList = new List<DeltaTime>();
+		reportedTimesList = new List<TimeSpan>();
+		measuredTimesList = new List<TimeSpan>();
 		stopwatch = Stopwatch.StartNew();
 		prevMeasuredTime = stopwatch.Elapsed;
 		while (stopwatch.Elapsed < TimeSpan.FromSeconds(3d)) {
-			DeltaTime dt;
+			TimeSpan dt;
 			while (!loop.TryIterateOnce(out dt)) {
 				Thread.Sleep(10);
-				Console.WriteLine($"Time remaining: {loop.TimeUntilNextIteration.TotalMilliseconds:N2}ms");
+				Console.WriteLine($"Time remaining: {loop.TimeUntilNextIteration.ToStringMs()}");
 			}
 			var measured = stopwatch.Elapsed - prevMeasuredTime;
 			prevMeasuredTime = stopwatch.Elapsed;
-			Console.WriteLine($"{new DeltaTime(measured)} measured vs {dt} reported");
+			Console.WriteLine($"{measured.ToStringMs()} measured vs {dt.ToStringMs()} reported");
 			reportedTimesList.Add(dt);
 			measuredTimesList.Add(measured);
 		}
 
-		Console.WriteLine($"Total time: {stopwatch.Elapsed.TotalMilliseconds:N2}ms measured, {reportedTimesList.Sum(dt => dt.ToTimeSpan().TotalMilliseconds):N2}ms reported sum-of-dt, {loop.TotalIteratedTime.TotalMilliseconds:N2}ms reported");
+		Console.WriteLine($"Total time: {stopwatch.Elapsed.ToStringMs()} measured, {TimeSpan.FromTicks(reportedTimesList.Sum(ts => ts.Ticks)).ToStringMs()} reported sum-of-dt, {loop.TotalIteratedTime.ToStringMs()} reported");
 		// Skip first 10% as JIT interferes with it
-		Console.WriteLine($"Average time: {measuredTimesList.Skip(measuredTimesList.Count / 10).Average(dt => dt.ToTimeSpan().TotalMilliseconds):N2}ms measured, {reportedTimesList.Skip(reportedTimesList.Count / 10).Average(dt => dt.ToTimeSpan().TotalMilliseconds):N2}ms reported");
+		Console.WriteLine($"Average time: {TimeSpan.FromTicks((long) measuredTimesList.Skip(measuredTimesList.Count / 10).Average(dt => dt.Ticks)).ToStringMs()} measured, {TimeSpan.FromTicks((long) reportedTimesList.Skip(reportedTimesList.Count / 10).Average(dt => dt.Ticks)).ToStringMs()} reported");
 		loop.Dispose();
 	}
 } 

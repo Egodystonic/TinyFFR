@@ -10,7 +10,8 @@ public readonly partial struct XYPair<T> :
 	ISubtractionOperators<XYPair<T>, XYPair<T>, XYPair<T>>,
 	IMultiplyOperators<XYPair<T>, T, XYPair<T>>,
 	IDivisionOperators<XYPair<T>, T, XYPair<T>>,
-	IUnaryNegationOperators<XYPair<T>, XYPair<T>> {
+	IUnaryNegationOperators<XYPair<T>, XYPair<T>>,
+	IInterpolatable<XYPair<T>> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static XYPair<T> operator +(XYPair<T> lhs, XYPair<T> rhs) => lhs.Plus(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -58,4 +59,8 @@ public readonly partial struct XYPair<T> :
 	public XYPair<T> DividedBy(T divisor) => new(X / divisor, Y / divisor);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public XYPair<T> DividedBy(float divisor) => new(T.CreateSaturating(Single.CreateSaturating(X) / divisor), T.CreateSaturating((Single.CreateSaturating(Y) / divisor)));
+
+	public static XYPair<T> Interpolate(XYPair<T> start, XYPair<T> end, float distance) {
+		return start + (end - start) * distance;
+	}
 }

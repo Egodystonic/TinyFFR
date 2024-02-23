@@ -29,10 +29,10 @@ public readonly struct ApplicationLoop : IEquatable<ApplicationLoop>, ITrackedDi
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // TODO make it clear here and in TryIterateOnce that the DeltaTime returned is the time since the last iteration, not the time it took to iterate
-	public DeltaTime IterateOnce() => NativeApplicationLoopBuilder.IterateOnce(_handle);
+	public TimeSpan IterateOnce() => NativeApplicationLoopBuilder.IterateOnce(_handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool TryIterateOnce(out DeltaTime outDeltaTime) => NativeApplicationLoopBuilder.TryIterateOnce(_handle, out outDeltaTime);
+	public bool TryIterateOnce(out TimeSpan outDeltaTime) => NativeApplicationLoopBuilder.TryIterateOnce(_handle, out outDeltaTime);
 
 	public override string ToString() => $"Application Loop #{_handle}";
 

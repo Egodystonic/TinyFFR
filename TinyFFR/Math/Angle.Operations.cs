@@ -13,7 +13,8 @@ partial struct Angle :
 	IAdditionOperators<Angle, Angle, Angle>,
 	ISubtractionOperators<Angle, Angle, Angle>,
 	IComparable<Angle>, 
-	IComparisonOperators<Angle, Angle, bool> {
+	IComparisonOperators<Angle, Angle, bool>,
+	IInterpolatable<Angle> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator -(Angle operand) => operand.Negated;
 	public Angle Negated {
@@ -111,4 +112,7 @@ partial struct Angle :
 	public static bool operator <(Angle left, Angle right) => left._asRadians < right._asRadians;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator <=(Angle left, Angle right) => left._asRadians <= right._asRadians;
+
+
+	public static Angle Interpolate(Angle start, Angle end, float distance) => FromRadians(Single.Lerp(start._asRadians, end._asRadians, distance));
 }

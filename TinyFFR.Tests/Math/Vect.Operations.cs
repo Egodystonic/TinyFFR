@@ -168,4 +168,32 @@ partial class VectTest {
 			}
 		}
 	}
+
+	[Test]
+	public void ShouldCorrectlyInterpolate() {
+		AssertToleranceEquals(OneTwoNegThree, Vect.Interpolate(OneTwoNegThree, Vect.Zero, 0f), TestTolerance);
+		AssertToleranceEquals(Vect.Zero, Vect.Interpolate(OneTwoNegThree, Vect.Zero, 1f), TestTolerance);
+		AssertToleranceEquals(Vect.FromVector3(OneTwoNegThree.ToVector3() * 0.5f), Vect.Interpolate(OneTwoNegThree, Vect.Zero, 0.5f), TestTolerance);
+		AssertToleranceEquals(Vect.FromVector3(OneTwoNegThree.ToVector3() * 2f), Vect.Interpolate(OneTwoNegThree, Vect.Zero, -1f), TestTolerance);
+		AssertToleranceEquals(Vect.FromVector3(OneTwoNegThree.ToVector3() * -1f), Vect.Interpolate(OneTwoNegThree, Vect.Zero, 2f), TestTolerance);
+
+		var testList = new List<Vect>();
+		for (var x = -5f; x <= 5f; x += 1f) {
+			for (var y = -5f; y <= 5f; y += 1f) {
+				for (var z = -5f; z <= 5f; z += 1f) {
+					testList.Add(new(x, y, z));
+				}
+			}
+		}
+		for (var i = 0; i < testList.Count; ++i) {
+			for (var j = i; j < testList.Count; ++j) {
+				var start = testList[i];
+				var end = testList[j];
+
+				for (var f = -1f; f <= 2f; f += 0.1f) {
+					AssertToleranceEquals(new(Single.Lerp(start.X, end.X, f), Single.Lerp(start.Y, end.Y, f), Single.Lerp(start.Z, end.Z, f)), Vect.Interpolate(start, end, f), TestTolerance);
+				}
+			}
+		}
+	}
 }

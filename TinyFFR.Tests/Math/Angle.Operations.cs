@@ -127,4 +127,19 @@ partial class AngleTest {
 		Assert.AreEqual(CardinalDirection.Down, Angle.FromPolarAngleAround2DPlane(0f, -1f)!.Value.PolarDirection);
 		Assert.AreEqual(CardinalDirection.DownRight, Angle.FromPolarAngleAround2DPlane(1f, -1f)!.Value.PolarDirection);
 	}
+
+	[Test]
+	public void ShouldCorrectlyInterpolate() {
+		AssertToleranceEquals(0f, Angle.Interpolate(-100f, 100f, 0.5f), TestTolerance);
+		AssertToleranceEquals(-100f, Angle.Interpolate(-100f, 100f, 0f), TestTolerance);
+		AssertToleranceEquals(100f, Angle.Interpolate(-100f, 100f, 1f), TestTolerance);
+		AssertToleranceEquals(-200f, Angle.Interpolate(-100f, 100f, -0.5f), TestTolerance);
+		AssertToleranceEquals(200f, Angle.Interpolate(-100f, 100f, 1.5f), TestTolerance);
+
+		AssertToleranceEquals(30f, Angle.Interpolate(30f, 30f, -1f), TestTolerance);
+		AssertToleranceEquals(30f, Angle.Interpolate(30f, 30f, 0f), TestTolerance);
+		AssertToleranceEquals(30f, Angle.Interpolate(30f, 30f, 0.5f), TestTolerance);
+		AssertToleranceEquals(30f, Angle.Interpolate(30f, 30f, 1f), TestTolerance);
+		AssertToleranceEquals(30f, Angle.Interpolate(30f, 30f, 2f), TestTolerance);
+	}
 }

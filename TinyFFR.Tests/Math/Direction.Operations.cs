@@ -207,4 +207,51 @@ partial class DirectionTest {
 		AssertToleranceEquals(Direction.Left, Direction.Forward.RotateBy(rot), TestTolerance);
 		Assert.AreEqual(rot * Direction.Forward, Direction.Forward.RotateBy(rot));
 	}
+
+	[Test]
+	public void ShouldCorrectlyInterpolate() {
+		void AssertCombination(Direction start, Direction end, float distance, Direction expectation) {
+			var result = Direction.Interpolate(start, end, distance);
+			AssertToleranceEquals(expectation, result, TestTolerance);
+			Assert.IsTrue(result.IsUnitLength);
+			var precomputation = Direction.CreateInterpolationPrecomputation(start, end);
+			result = Direction.InterpolateUsingPrecomputation(start, end, precomputation, distance);
+			AssertToleranceEquals(expectation, result, TestTolerance);
+			Assert.IsTrue(result.IsUnitLength);
+		}
+
+		AssertCombination(Direction.Right, Direction.Right, 0f, Direction.Right);
+		AssertCombination(Direction.Right, Direction.Right, 1f, Direction.Right);
+		AssertCombination(Direction.Right, Direction.Right, -1f, Direction.Right);
+		AssertCombination(Direction.Right, Direction.Right, 0.5f, Direction.Right);
+		AssertCombination(Direction.Right, Direction.Right, 2f, Direction.Right);
+
+		AssertCombination(Direction.Up, Direction.Right, 0f, Direction.Up);
+		AssertCombination(Direction.Up, Direction.Right, 1f, Direction.Right);
+		AssertCombination(Direction.Up, Direction.Right, -1f, Direction.Left);
+		AssertCombination(Direction.Up, Direction.Right, 0.5f, Direction.FromVector3(Direction.Up.ToVector3() + Direction.Right.ToVector3()));
+		AssertCombination(Direction.Up, Direction.Right, 2f, Direction.Down);
+
+		var testList = new List<Direction>();
+		for (var x = -4f; x <= 4f; x += 1f) {
+			for (var y = -4f; y <= 4f; y += 1f) {
+				for (var z = -4f; z <= 4f; z += 1f) {
+					if (x == 0f && y == 0f && z == 0f) continue;
+					testList.Add(new(x, y, z));
+				}
+			}
+		}
+		for (var i = 0; i < testList.Count; ++i) {
+			for (var j = i; j < testList.Count; ++j) {
+				var start = testList[i];
+				var end = testList[j];
+				AssertCombination(start, end, 0f, start);
+				AssertCombination(start, end, 1f, end);
+
+				for (var f = -1f; f <= 2f; f += 0.1f) {
+					AssertCombination(start, end, f, Rotation.FromStartAndEndDirection(start, end).ScaledBy(f) * start);
+				}
+			}
+		}
+	}
 }

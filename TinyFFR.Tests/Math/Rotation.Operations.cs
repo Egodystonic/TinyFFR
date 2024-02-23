@@ -61,6 +61,8 @@ partial class RotationTest {
 			new Direction(-0.813f, -0.273f, -0.515f) % 69f * new Vect(5.2f, 1.3f, -19f),
 			TestTolerance
 		);
+
+		AssertToleranceEquals(FromVector3(Forward.ToVector3() + Left.ToVector3()), Rotation.FromAngleAroundAxis(-90f, Down).ScaledBy(0.5f) * Forward, TestTolerance);
 	}
 
 	[Test]
@@ -133,5 +135,72 @@ partial class RotationTest {
 		Assert.AreEqual(Rotation.None, new Rotation(new(0f, 0f, 0f, -1f)) * 0.5f);
 		Assert.AreEqual(Rotation.None, new Rotation(new(0f, 0f, 0f, -1f)) * 1f);
 		Assert.AreEqual(Rotation.None, new Rotation(new(0f, 0f, 0f, -1f)) * 2f);
+	}
+
+	[Test]
+	public void ShouldCorrectlyInterpolate() {
+		// Some examples from external sources
+		var a = Rotation.None;
+		var b = Rotation.FromAngleAroundAxis(-Angle.HalfCircle, Up);
+		var c = Rotation.FromAngleAroundAxis(Angle.FromRadians(-((3.1415f * 3f) / 2f)), Forward);
+
+		AssertToleranceEquals(Rotation.FromQuaternion(new(0f, 0.58777f, 0f, 0.809028f)), Rotation.InterpolateSpherical(a, b, 0.4f), TestTolerance);
+		AssertToleranceEquals(Rotation.FromQuaternion(new(0f, -0.233f, -0.688f, -0.688f)), Rotation.InterpolateSpherical(b, c, 0.85f), TestTolerance);
+		AssertToleranceEquals(Rotation.None, Rotation.InterpolateSpherical(c, a, 1f), TestTolerance);
+
+		// Testing similarity of linear/spherical
+		var testList = new List<Rotation>();
+		for (var x = -3f; x <= 3f; x += 1f) {
+			for (var y = -3f; y <= 3f; y += 1f) {
+				for (var z = -3f; z <= 3f; z += 1f) {
+					for (var w = -3f; w <= 3f; w += 1f) {
+						testList.Add(Rotation.FromQuaternion(new Quaternion(x, y, z, w)));
+					}
+				}
+			}
+		}
+		
+		for (var i = 0; i < testList.Count; ++i) {
+			for (var j = i; j < testList.Count; ++j) {
+				var start = testList[i];
+				var end = testList[j];
+		
+				var distance = start.AngleTo(end);
+				if (distance > Angle.QuarterCircle) continue; // Don't try this with rotations too far apart
+				for (var f = -0.05f; f <= 1.05f; f += 0.05f) {
+					try {
+						AssertToleranceEquals(
+							Rotation.InterpolateSpherical(start, end, f),
+							Rotation.InterpolateLinear(start, end, f),
+							0.01f
+						);
+					}
+					catch (AssertionException) {
+						Console.WriteLine(start + " -> " + end + " x " + f);
+						Console.WriteLine("Distance " + distance);
+						Console.WriteLine("\t" + Rotation.InterpolateSpherical(start, end, f) + " / " + Rotation.InterpolateSpherical(start, end, f).AsQuaternion);
+						Console.WriteLine("\t" + Rotation.InterpolateLinear(start, end, f) + " / " + Rotation.InterpolateLinear(start, end, f).AsQuaternion);
+						throw;
+					}
+				}
+			}
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateAngleBetweenRotations() {
+		void AssertPair(Angle a1, Direction d1, Angle a2, Direction d2, Angle expectation) {
+			AssertToleranceEquals(expectation, (a1 % d1).AngleTo(a2 % d2), TestTolerance);
+			AssertToleranceEquals(expectation, (a2 % d2).AngleTo(a1 % d1), TestTolerance);
+		}
+
+		AssertPair(90f, Up, 70f, Up, 20f);
+		AssertPair(0f, Right, 0f, Down, 0f);
+		AssertPair(0f, Right, 0f, Left, 0f);
+		AssertPair(180f, Right, 180f, Left, 360f);
+		AssertPair(180f, Right, 180f, Right, 0f);
+		AssertPair(360f, Right, 360f, Left, 0f);
+		AssertPair(90f, Up, 90f, Right, 120f);
+		AssertPair(180f, Up, 180f, Right, 180f);
 	}
 }

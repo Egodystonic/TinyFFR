@@ -9,7 +9,8 @@ namespace Egodystonic.TinyFFR;
 partial struct Location : 
 	IAdditionOperators<Location, Vect, Location>,
 	ISubtractionOperators<Location, Vect, Location>,
-	ISubtractionOperators<Location, Location, Vect> {
+	ISubtractionOperators<Location, Location, Vect>,
+	IInterpolatable<Location> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Location operator +(Location locationOperand, Vect vectOperand) => locationOperand.MovedBy(vectOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -38,4 +39,8 @@ partial struct Location :
 	public Direction GetDirectionFrom(Location otherLocation) => GetVectFrom(otherLocation).Direction;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction GetDirectionTo(Location otherLocation) => GetVectTo(otherLocation).Direction;
+
+	public static Location Interpolate(Location start, Location end, float distance) {
+		return start + (end - start) * distance;
+	}
 }

@@ -11,7 +11,8 @@ partial struct Rotation :
 	IMultiplyOperators<Rotation, Direction, Direction>,
 	IMultiplyOperators<Rotation, Vect, Vect>,
 	IAdditionOperators<Rotation, Rotation, Rotation>,
-	IMultiplyOperators<Rotation, float, Rotation> {
+	IMultiplyOperators<Rotation, float, Rotation>,
+	IInterpolatable<Rotation> {
 	static Vector4 Rotate(Quaternion q, Vector4 v) {
 		var quatVec = new Vector3(q.X, q.Y, q.Z);
 		var targetVec = new Vector3(v.X, v.Y, v.Z);
@@ -28,6 +29,7 @@ partial struct Rotation :
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(new(-AsQuaternion.X, -AsQuaternion.Y, -AsQuaternion.Z, AsQuaternion.W));
 	}
+
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction operator *(Direction d, Rotation r) => r.Rotate(d);
@@ -54,6 +56,12 @@ partial struct Rotation :
 
 
 
+	public Angle AngleTo(Rotation other) {
+		return FromQuaternion(Reversed.AsQuaternion * other.AsQuaternion).Angle;
+	}
+
+
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator *(Rotation rotation, float scalar) => rotation.ScaledBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -75,5 +83,22 @@ partial struct Rotation :
 			normalizedVectorComponent * sinNewHalfAngle,
 			cosNewHalfAngle
 		));
+	}
+
+
+	public static Rotation Interpolate(Rotation start, Rotation end, float distance) {
+		const float CosPhiMinForLinearRenormalization = 1f - 0.001f;
+		return MathF.Abs(Dot(start.AsQuaternion, end.AsQuaternion)) > CosPhiMinForLinearRenormalization
+			? InterpolateLinear(start, end, distance)
+			: InterpolateSpherical(start, end, distance);
+	}
+	public static Rotation InterpolateSpherical(Rotation start, Rotation end, float distance) {
+		return FromQuaternionPreNormalized(Slerp(start.AsQuaternion, end.AsQuaternion, distance));
+	}
+	public static Rotation InterpolateLinear(Rotation start, Rotation end, float distance) {
+		return FromQuaternion(start.AsQuaternion + (end.AsQuaternion - start.AsQuaternion) * distance);
+	}
+	public static Rotation Interpolate(Angle start, Angle end, Direction axis, float distance) {
+		return FromAngleAroundAxis(Angle.Interpolate(start, end, distance), axis);
 	}
 }

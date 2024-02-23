@@ -56,8 +56,8 @@ sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IDisposable
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static DeltaTime IterateOnce(ApplicationLoopHandle handle) => GetInstanceOrThrow().InstanceIterateOnce(handle);
-	DeltaTime InstanceIterateOnce(ApplicationLoopHandle handle) {
+	public static TimeSpan IterateOnce(ApplicationLoopHandle handle) => GetInstanceOrThrow().InstanceIterateOnce(handle);
+	TimeSpan InstanceIterateOnce(ApplicationLoopHandle handle) {
 		ThrowIfHandleIsDisposed(handle);
 
 		var waitTime = GetWaitTimeUntilNextFrameStart();
@@ -75,8 +75,8 @@ sealed class NativeApplicationLoopBuilder : IApplicationLoopBuilder, IDisposable
 		return result;
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool TryIterateOnce(ApplicationLoopHandle handle, out DeltaTime outDeltaTime) => GetInstanceOrThrow().InstanceTryIterateOnce(handle, out outDeltaTime);
-	bool InstanceTryIterateOnce(ApplicationLoopHandle handle, out DeltaTime outDeltaTime) {
+	public static bool TryIterateOnce(ApplicationLoopHandle handle, out TimeSpan outDeltaTime) => GetInstanceOrThrow().InstanceTryIterateOnce(handle, out outDeltaTime);
+	bool InstanceTryIterateOnce(ApplicationLoopHandle handle, out TimeSpan outDeltaTime) {
 		ThrowIfHandleIsDisposed(handle);
 		
 		if (GetWaitTimeUntilNextFrameStart() > TimeSpan.Zero) {

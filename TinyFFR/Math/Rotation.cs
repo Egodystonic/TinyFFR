@@ -15,7 +15,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float> {
 
 	public Angle Angle { // TODO indicate this is clockwise everywhere
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Angle.FromRadians(MathF.Acos(AsQuaternion.W)) * 2f;
+		get => Angle.FromRadians(MathF.Acos(AsQuaternion.W) * 2f);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		init {
 			// This if check helps prevent non-unit quaternions if someone invokes with{} for this property on Rotation.None
@@ -54,12 +54,12 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Rotation() { AsQuaternion = Identity; }
 	
-	public Rotation(Angle angle, Direction axis) { // TODO make it clear that the resultant Rotation Angle/Axis will be auto-normalized by the nature of Quaternion math
+	public Rotation(Angle angle, Direction axis) { // TODO make it clear that the resultant Rotation Angle/Axis will be auto-normalized by the nature of Quaternion math (e.g. negative angle results in positive angle with flipped axis)
 		if (angle.Equals(0f, 0.0001f) || axis.Equals(Direction.None, 0.0001f)) AsQuaternion = Identity;
 		else AsQuaternion = CreateFromAxisAngle(axis.ToVector3(), angle.Radians);
 	} 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal Rotation(Quaternion q) { AsQuaternion = q; }
+	internal Rotation(Quaternion q) => AsQuaternion = q;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation FromAngleAroundAxis(Angle angle, Direction axis) => new(angle, axis);
@@ -102,6 +102,8 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation ConvertFromSpan(ReadOnlySpan<float> src) => new(new Quaternion(src[0], src[1], src[2], src[3]));
 
+	public string ToStringDescriptive() => $"{Angle}{ToStringMiddleSection}{Axis.ToStringDescriptive()}";
+	
 	public override string ToString() => ToString(null, null);
 
 	public string ToString(string? format, IFormatProvider? formatProvider) => $"{Angle.ToString(format, formatProvider)}{ToStringMiddleSection}{Axis.ToString(format, formatProvider)}";
@@ -156,8 +158,11 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float> {
 		return true;
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool EqualsForDirection(Rotation other, Direction targetDirection) => EqualsForDirection(other, targetDirection, 0f);
+	public bool EqualsForDirection(Rotation other, Direction targetDirection) {
+		var thisResult = Rotate(targetDirection);
+		var otherResult = other.Rotate(targetDirection);
+		return thisResult.Equals(otherResult);
+	}
 	public bool EqualsForDirection(Rotation other, Direction targetDirection, float tolerance) {
 		var thisResult = Rotate(targetDirection);
 		var otherResult = other.Rotate(targetDirection);
@@ -165,14 +170,18 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float> {
 	}
 
 	public bool Equals(Rotation other, float tolerance) {
-		return MathF.Abs(AsQuaternion.X - other.AsQuaternion.X) <= tolerance
-			&& MathF.Abs(AsQuaternion.Y - other.AsQuaternion.Y) <= tolerance
-			&& MathF.Abs(AsQuaternion.Z - other.AsQuaternion.Z) <= tolerance
-			&& MathF.Abs(AsQuaternion.W - other.AsQuaternion.W) <= tolerance;
+		static bool Compare(Quaternion a, Quaternion b, float t) {
+			return MathF.Abs(a.X - b.X) <= t
+				&& MathF.Abs(a.Y - b.Y) <= t
+				&& MathF.Abs(a.Z - b.Z) <= t
+				&& MathF.Abs(a.W - b.W) <= t;
+		}
+
+		return Compare(AsQuaternion, other.AsQuaternion, tolerance) || Compare(AsQuaternion, -other.AsQuaternion, tolerance);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool Equals(Rotation other) => AsQuaternion.Equals(other.AsQuaternion);
+	public bool Equals(Rotation other) => AsQuaternion.Equals(other.AsQuaternion) || AsQuaternion.Equals(-other.AsQuaternion);
 	public override bool Equals(object? obj) => obj is Rotation other && Equals(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override int GetHashCode() => AsQuaternion.GetHashCode();

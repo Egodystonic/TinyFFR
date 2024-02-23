@@ -70,4 +70,46 @@ partial class XYPairTest {
 		AssertForType<long>();
 		AssertForType<double>();
 	}
+
+	[Test]
+	public void ShouldCorrectlyInterpolate() {
+		void AssertForType<T>() where T : unmanaged, INumber<T> {
+			var nonZeroTestInput = new XYPair<T>(T.CreateSaturating(-200f), T.CreateSaturating(400f));
+
+			AssertToleranceEquals(nonZeroTestInput, XYPair<T>.Interpolate(nonZeroTestInput, XYPair<T>.Zero, 0f), TestTolerance);
+			AssertToleranceEquals(XYPair<T>.Zero, XYPair<T>.Interpolate(nonZeroTestInput, XYPair<T>.Zero, 1f), TestTolerance);
+			AssertToleranceEquals(XYPair<T>.FromVector2(nonZeroTestInput.ToVector2() * 0.5f), XYPair<T>.Interpolate(nonZeroTestInput, XYPair<T>.Zero, 0.5f), TestTolerance);
+			AssertToleranceEquals(XYPair<T>.FromVector2(nonZeroTestInput.ToVector2() * 2f), XYPair<T>.Interpolate(nonZeroTestInput, XYPair<T>.Zero, -1f), TestTolerance);
+			AssertToleranceEquals(XYPair<T>.FromVector2(nonZeroTestInput.ToVector2() * -1f), XYPair<T>.Interpolate(nonZeroTestInput, XYPair<T>.Zero, 2f), TestTolerance);
+
+			var testList = new List<XYPair<T>>();
+			for (var x = -5f; x <= 5f; x += 1f) {
+				for (var y = -5f; y <= 5f; y += 1f) {
+					testList.Add(new(T.CreateSaturating(x * 100f), T.CreateSaturating(y * 100f)));
+				}
+			}
+			for (var i = 0; i < testList.Count; ++i) {
+				for (var j = i; j < testList.Count; ++j) {
+					var start = testList[i];
+					var end = testList[j];
+
+					for (var f = -1f; f <= 2f; f += 0.1f) {
+						AssertToleranceEquals(
+							new(
+								T.CreateSaturating(Single.CreateSaturating(end.X - start.X) * f + Single.CreateSaturating(start.X)), 
+								T.CreateSaturating(Single.CreateSaturating(end.Y - start.Y) * f + Single.CreateSaturating(start.Y))
+							), 
+							XYPair<T>.Interpolate(start, end, f), 
+							TestTolerance + 1
+						);
+					}
+				}
+			}
+		}
+
+		AssertForType<int>();
+		AssertForType<float>();
+		AssertForType<long>();
+		AssertForType<double>();
+	}
 }

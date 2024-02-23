@@ -11,7 +11,8 @@ partial struct Vect :
 	IAdditionOperators<Vect, Vect, Vect>,
 	ISubtractionOperators<Vect, Vect, Vect>,
 	IMultiplyOperators<Vect, float, Vect>,
-	IDivisionOperators<Vect, float, Vect> {
+	IDivisionOperators<Vect, float, Vect>,
+	IInterpolatable<Vect> {
 	public float Length {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsVector4.Length();
@@ -89,4 +90,9 @@ partial struct Vect :
 	public static Vect operator /(Vect vectOperand, float scalarOperand) => vectOperand.ScaledBy(1f / scalarOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect ScaledBy(float scalar) => new(Multiply(AsVector4, scalar));
+
+
+	public static Vect Interpolate(Vect start, Vect end, float distance) {
+		return start + (end - start) * distance;
+	}
 }

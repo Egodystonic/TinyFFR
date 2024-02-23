@@ -57,4 +57,32 @@ partial class LocationTest {
 		AssertCombination(OneTwoNegThree, Location.Origin, new(-1f, -2f, 3f));
 		AssertCombination(new(0.5f, -14f, 7.6f), new(9.2f, 17f, -0.1f), new(8.7f, 31f, -7.7f));
 	}
+
+	[Test]
+	public void ShouldCorrectlyInterpolate() {
+		AssertToleranceEquals(OneTwoNegThree, Location.Interpolate(OneTwoNegThree, Location.Origin, 0f), TestTolerance); 
+		AssertToleranceEquals(Location.Origin, Location.Interpolate(OneTwoNegThree, Location.Origin, 1f), TestTolerance); 
+		AssertToleranceEquals(Location.FromVector3(OneTwoNegThree.ToVector3() * 0.5f), Location.Interpolate(OneTwoNegThree, Location.Origin, 0.5f), TestTolerance); 
+		AssertToleranceEquals(Location.FromVector3(OneTwoNegThree.ToVector3() * 2f), Location.Interpolate(OneTwoNegThree, Location.Origin, -1f), TestTolerance); 
+		AssertToleranceEquals(Location.FromVector3(OneTwoNegThree.ToVector3() * -1f), Location.Interpolate(OneTwoNegThree, Location.Origin, 2f), TestTolerance); 
+
+		var testList = new List<Location>();
+		for (var x = -5f; x <= 5f; x += 1f) {
+			for (var y = -5f; y <= 5f; y += 1f) {
+				for (var z = -5f; z <= 5f; z += 1f) {
+					testList.Add(new(x, y, z));
+				}
+			}
+		}
+		for (var i = 0; i < testList.Count; ++i) {
+			for (var j = i; j < testList.Count; ++j) {
+				var start = testList[i];
+				var end = testList[j];
+
+				for (var f = -1f; f <= 2f; f += 0.1f) {
+					AssertToleranceEquals(new(Single.Lerp(start.X, end.X, f), Single.Lerp(start.Y, end.Y, f), Single.Lerp(start.Z, end.Z, f)), Location.Interpolate(start, end, f), TestTolerance);
+				}
+			}
+		}
+	}
 }

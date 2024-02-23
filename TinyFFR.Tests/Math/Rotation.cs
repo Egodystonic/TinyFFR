@@ -307,5 +307,8 @@ partial class RotationTest {
 		Assert.IsFalse((90 % Down).EqualsForDirection(-45f % Down, Right));
 		Assert.IsFalse((89 % Down).EqualsForDirection(91f % Down, Right));
 		Assert.IsTrue((89 % Down).EqualsForDirection(91f % Down, Right, 0.3f));
+
+		Assert.AreEqual(Rotation.FromQuaternion(new(1f, 1f, 1f, 1f)), Rotation.FromQuaternion(new(-1f, -1f, -1f, -1f)));
+		AssertToleranceEquals(Rotation.FromQuaternion(new(1f, 1f, 1f, 0.999f)), Rotation.FromQuaternion(new(-0.999f, -0.999f, -0.999f, -1f)), 0.001f);
 	}
 }

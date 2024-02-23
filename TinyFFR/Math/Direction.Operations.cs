@@ -9,7 +9,8 @@ namespace Egodystonic.TinyFFR;
 partial struct Direction :
 	IUnaryNegationOperators<Direction, Direction>,
 	IMultiplyOperators<Direction, float, Vect>,
-	IModulusOperators<Direction, Angle, Rotation> {
+	IModulusOperators<Direction, Angle, Rotation>,
+	IPrecomputationInterpolatable<Direction, Rotation> {
 	internal bool IsUnitLength {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => MathF.Abs(AsVector4.LengthSquared() - 1f) < 0.002f;
@@ -93,4 +94,14 @@ partial struct Direction :
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction RotateBy(Rotation rotation) => rotation.Rotate(this);
+
+	public static Direction Interpolate(Direction start, Direction end, float distance) {
+		return Rotation.FromStartAndEndDirection(start, end).ScaledBy(distance) * start;
+	}
+	public static Rotation CreateInterpolationPrecomputation(Direction start, Direction end) {
+		return Rotation.FromStartAndEndDirection(start, end);
+	}
+	public static Direction InterpolateUsingPrecomputation(Direction start, Direction end, Rotation precomputation, float distance) {
+		return precomputation.ScaledBy(distance) * start;
+	}
 }
