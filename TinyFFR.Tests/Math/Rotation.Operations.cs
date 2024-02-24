@@ -86,6 +86,40 @@ partial class RotationTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyCalculateDifferenceBetweenRotations() {
+		void AssertPair(Angle a1, Direction d1, Angle a2, Direction d2, Rotation expectation) {
+			AssertToleranceEquals(expectation, (a1 % d1).DifferenceTo(a2 % d2), TestTolerance);
+			AssertToleranceEquals(-expectation, (a2 % d2).DifferenceTo(a1 % d1), TestTolerance);
+		}
+
+		AssertPair(90f, Up, 70f, Up, -20f % Up);
+		AssertPair(0f, Right, 0f, Down, Rotation.None);
+		AssertPair(0f, Right, 0f, Left, Rotation.None);
+		AssertPair(180f, Right, 180f, Left, 360f % Up);
+		AssertPair(180f, Right, 180f, Right, Rotation.None);
+		AssertPair(360f, Right, 360f, Left, Rotation.None);
+		AssertPair(90f, Up, 90f, Right, 120f % FromVector3(Down.ToVector3() + Right.ToVector3() + Backward.ToVector3()));
+		AssertPair(180f, Up, 180f, Right, 180f % Backward);
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateAngleBetweenRotations() {
+		void AssertPair(Angle a1, Direction d1, Angle a2, Direction d2, Angle expectation) {
+			AssertToleranceEquals(expectation, (a1 % d1).AngleTo(a2 % d2), TestTolerance);
+			AssertToleranceEquals(expectation, (a2 % d2).AngleTo(a1 % d1), TestTolerance);
+		}
+
+		AssertPair(90f, Up, 70f, Up, 20f);
+		AssertPair(0f, Right, 0f, Down, 0f);
+		AssertPair(0f, Right, 0f, Left, 0f);
+		AssertPair(180f, Right, 180f, Left, 360f);
+		AssertPair(180f, Right, 180f, Right, 0f);
+		AssertPair(360f, Right, 360f, Left, 0f);
+		AssertPair(90f, Up, 90f, Right, 120f);
+		AssertPair(180f, Up, 180f, Right, 180f);
+	}
+
+	[Test]
 	public void ShouldCorrectlyScaleRotations() {
 		AssertToleranceEquals(NegativeNinetyAroundUp, NinetyAroundUp * -1f, TestTolerance);
 		AssertToleranceEquals(NinetyAroundUp, NegativeNinetyAroundUp * -1f, TestTolerance);
@@ -185,22 +219,5 @@ partial class RotationTest {
 				}
 			}
 		}
-	}
-
-	[Test]
-	public void ShouldCorrectlyCalculateAngleBetweenRotations() {
-		void AssertPair(Angle a1, Direction d1, Angle a2, Direction d2, Angle expectation) {
-			AssertToleranceEquals(expectation, (a1 % d1).AngleTo(a2 % d2), TestTolerance);
-			AssertToleranceEquals(expectation, (a2 % d2).AngleTo(a1 % d1), TestTolerance);
-		}
-
-		AssertPair(90f, Up, 70f, Up, 20f);
-		AssertPair(0f, Right, 0f, Down, 0f);
-		AssertPair(0f, Right, 0f, Left, 0f);
-		AssertPair(180f, Right, 180f, Left, 360f);
-		AssertPair(180f, Right, 180f, Right, 0f);
-		AssertPair(360f, Right, 360f, Left, 0f);
-		AssertPair(90f, Up, 90f, Right, 120f);
-		AssertPair(180f, Up, 180f, Right, 180f);
 	}
 }

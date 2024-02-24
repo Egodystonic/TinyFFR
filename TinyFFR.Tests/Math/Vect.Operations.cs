@@ -196,4 +196,19 @@ partial class VectTest {
 			}
 		}
 	}
+
+	[Test]
+	public void ShouldCorrectlyCreateNonBoundedRandomValues() {
+		const int NumIterations = 50_000;
+
+		for (var i = 0; i < NumIterations; ++i) {
+			var val = Vect.CreateNewRandom();
+			Assert.GreaterOrEqual(val.X, -Vect.DefaultRandomRange);
+			Assert.LessOrEqual(val.X, Vect.DefaultRandomRange);
+			Assert.GreaterOrEqual(val.Y, -Vect.DefaultRandomRange);
+			Assert.LessOrEqual(val.Y, Vect.DefaultRandomRange);
+			Assert.GreaterOrEqual(val.Z, -Vect.DefaultRandomRange);
+			Assert.LessOrEqual(val.Z, Vect.DefaultRandomRange);
+		}
+	}
 }

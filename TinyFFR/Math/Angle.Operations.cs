@@ -14,7 +14,8 @@ partial struct Angle :
 	ISubtractionOperators<Angle, Angle, Angle>,
 	IComparable<Angle>, 
 	IComparisonOperators<Angle, Angle, bool>,
-	IInterpolatable<Angle> {
+	IInterpolatable<Angle>,
+	IBoundedRandomizable<Angle> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator -(Angle operand) => operand.Negated;
 	public Angle Negated {
@@ -115,4 +116,9 @@ partial struct Angle :
 
 
 	public static Angle Interpolate(Angle start, Angle end, float distance) => FromRadians(Single.Lerp(start._asRadians, end._asRadians, distance));
+
+	public static Angle CreateNewRandom() => CreateNewRandom(Zero, FullCircle);
+	public static Angle CreateNewRandom(Angle minInclusive, Angle maxExclusive) {
+		return FromRadians(RandomUtils.NextSingle(minInclusive.Radians, maxExclusive.Radians));
+	}
 }

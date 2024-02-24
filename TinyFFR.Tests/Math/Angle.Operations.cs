@@ -142,4 +142,26 @@ partial class AngleTest {
 		AssertToleranceEquals(30f, Angle.Interpolate(30f, 30f, 1f), TestTolerance);
 		AssertToleranceEquals(30f, Angle.Interpolate(30f, 30f, 2f), TestTolerance);
 	}
+
+	[Test]
+	public void ShouldCorrectlyCreateNonBoundedRandomValues() {
+		const int NumIterations = 10_000;
+
+		for (var i = 0; i < NumIterations; ++i) {
+			var val = Angle.CreateNewRandom();
+			Assert.GreaterOrEqual(val.Degrees, 0f);
+			Assert.Less(val.Degrees, 360f);
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyCreateBoundedRandomValues() {
+		const int NumIterations = 10_000;
+
+		for (var i = 0; i < NumIterations; ++i) {
+			var val = Angle.CreateNewRandom(-720f, 720f);
+			Assert.GreaterOrEqual(val.Degrees, -720f);
+			Assert.Less(val.Degrees, 720f);
+		}
+	}
 }

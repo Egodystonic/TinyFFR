@@ -254,4 +254,33 @@ partial class DirectionTest {
 			}
 		}
 	}
+
+	[Test]
+	public void ShouldCorrectlyCreateNonBoundedRandomValues() {
+		const int NumIterations = 10_000;
+
+		for (var i = 0; i < NumIterations; ++i) {
+			var val = Direction.CreateNewRandom();
+			Assert.IsTrue(val.IsUnitLength);
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyCreateBoundedRandomValues() {
+		const int NumIterations = 10_000;
+
+		for (var i = 0; i < NumIterations; ++i) {
+			var start = Direction.CreateNewRandom();
+			var end = Direction.CreateNewRandom();
+
+			var angle = start ^ end;
+			if (angle > 179f) continue;
+
+			var val = Direction.CreateNewRandom(start, end);
+			if (val.Equals(start, 0.1f) || val.Equals(end, 0.1f)) continue;
+
+			AssertToleranceEquals((start >> val).Axis, (start >> end).Axis, 0.1f);
+			AssertToleranceEquals((start >> end), (start >> val) + (val >> end), 0.1f);
+		}
+	}
 }

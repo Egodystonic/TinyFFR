@@ -10,7 +10,10 @@ partial struct Location :
 	IAdditionOperators<Location, Vect, Location>,
 	ISubtractionOperators<Location, Vect, Location>,
 	ISubtractionOperators<Location, Location, Vect>,
-	IInterpolatable<Location> {
+	IInterpolatable<Location>,
+	IBoundedRandomizable<Location> {
+	internal const float DefaultRandomRange = 100f;
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Location operator +(Location locationOperand, Vect vectOperand) => locationOperand.MovedBy(vectOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -42,5 +45,16 @@ partial struct Location :
 
 	public static Location Interpolate(Location start, Location end, float distance) {
 		return start + (end - start) * distance;
+	}
+
+	public static Location CreateNewRandom() {
+		return FromVector3(new Vector3(
+			RandomUtils.NextSingleNegOneToOneInclusive(),
+			RandomUtils.NextSingleNegOneToOneInclusive(),
+			RandomUtils.NextSingleNegOneToOneInclusive()
+		) * DefaultRandomRange);
+	}
+	public static Location CreateNewRandom(Location minInclusive, Location maxExclusive) {
+		return minInclusive + ((minInclusive >> maxExclusive) * RandomUtils.NextSingle());
 	}
 }

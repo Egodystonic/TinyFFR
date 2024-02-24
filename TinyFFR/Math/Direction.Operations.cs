@@ -10,7 +10,8 @@ partial struct Direction :
 	IUnaryNegationOperators<Direction, Direction>,
 	IMultiplyOperators<Direction, float, Vect>,
 	IModulusOperators<Direction, Angle, Rotation>,
-	IPrecomputationInterpolatable<Direction, Rotation> {
+	IPrecomputationInterpolatable<Direction, Rotation>,
+	IBoundedRandomizable<Direction> {
 	internal bool IsUnitLength {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => MathF.Abs(AsVector4.LengthSquared() - 1f) < 0.002f;
@@ -103,5 +104,20 @@ partial struct Direction :
 	}
 	public static Direction InterpolateUsingPrecomputation(Direction start, Direction end, Rotation precomputation, float distance) {
 		return precomputation.ScaledBy(distance) * start;
+	}
+
+	public static Direction CreateNewRandom() {
+		Direction result;
+		do {
+			result = new(
+				RandomUtils.NextSingleNegOneToOneInclusive(),
+				RandomUtils.NextSingleNegOneToOneInclusive(),
+				RandomUtils.NextSingleNegOneToOneInclusive()
+			);
+		} while (result == None);
+		return result;
+	}
+	public static Direction CreateNewRandom(Direction minInclusive, Direction maxExclusive) {
+		return (minInclusive >> maxExclusive).ScaledBy(RandomUtils.NextSingle()) * minInclusive;
 	}
 }

@@ -12,7 +12,10 @@ partial struct Vect :
 	ISubtractionOperators<Vect, Vect, Vect>,
 	IMultiplyOperators<Vect, float, Vect>,
 	IDivisionOperators<Vect, float, Vect>,
-	IInterpolatable<Vect> {
+	IInterpolatable<Vect>,
+	IRandomizable<Vect> {
+	internal const float DefaultRandomRange = 100f;
+
 	public float Length {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsVector4.Length();
@@ -94,5 +97,13 @@ partial struct Vect :
 
 	public static Vect Interpolate(Vect start, Vect end, float distance) {
 		return start + (end - start) * distance;
+	}
+
+	public static Vect CreateNewRandom() {
+		return FromVector3(new Vector3(
+			RandomUtils.NextSingleNegOneToOneInclusive(),
+			RandomUtils.NextSingleNegOneToOneInclusive(),
+			RandomUtils.NextSingleNegOneToOneInclusive()
+		) * DefaultRandomRange);
 	}
 }

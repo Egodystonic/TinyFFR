@@ -112,4 +112,50 @@ partial class XYPairTest {
 		AssertForType<long>();
 		AssertForType<double>();
 	}
+
+	[Test]
+	public void ShouldCorrectlyCreateNonBoundedRandomValues() {
+		const int NumIterations = 10_000;
+
+		void AssertForType<T>() where T : unmanaged, INumber<T> {
+			for (var i = 0; i < NumIterations; ++i) {
+				var val = XYPair<T>.CreateNewRandom();
+				Assert.GreaterOrEqual(val.X, T.CreateChecked(-XYPair<T>.DefaultRandomRange));
+				Assert.GreaterOrEqual(val.Y, T.CreateChecked(-XYPair<T>.DefaultRandomRange));
+				Assert.LessOrEqual(val.X, T.CreateChecked(XYPair<T>.DefaultRandomRange));
+				Assert.LessOrEqual(val.Y, T.CreateChecked(XYPair<T>.DefaultRandomRange));
+			}
+		}
+
+		AssertForType<int>();
+		AssertForType<float>();
+		AssertForType<long>();
+		AssertForType<double>();
+	}
+
+	[Test]
+	public void ShouldCorrectlyCreateBoundedRandomValues() {
+		const int NumIterations = 10_000;
+
+		void AssertForType<T>() where T : unmanaged, INumber<T> {
+			for (var i = 0; i < NumIterations; ++i) {
+				var val = XYPair<T>.CreateNewRandom(T.CreateChecked(-1000), T.CreateChecked(1000));
+				Assert.GreaterOrEqual(val.X, T.CreateChecked(-1000));
+				Assert.GreaterOrEqual(val.Y, T.CreateChecked(-1000));
+				Assert.LessOrEqual(val.X, T.CreateChecked(1000));
+				Assert.LessOrEqual(val.Y, T.CreateChecked(1000));
+
+				val = XYPair<T>.CreateNewRandom((T.CreateChecked(-500), T.CreateChecked(-200)), (T.CreateChecked(500), T.CreateChecked(200)));
+				Assert.GreaterOrEqual(val.X, T.CreateChecked(-500));
+				Assert.GreaterOrEqual(val.Y, T.CreateChecked(-200));
+				Assert.LessOrEqual(val.X, T.CreateChecked(500));
+				Assert.LessOrEqual(val.Y, T.CreateChecked(200));
+			}
+		}
+
+		AssertForType<int>();
+		AssertForType<float>();
+		AssertForType<long>();
+		AssertForType<double>();
+	}
 }

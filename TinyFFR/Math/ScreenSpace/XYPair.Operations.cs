@@ -11,7 +11,10 @@ public readonly partial struct XYPair<T> :
 	IMultiplyOperators<XYPair<T>, T, XYPair<T>>,
 	IDivisionOperators<XYPair<T>, T, XYPair<T>>,
 	IUnaryNegationOperators<XYPair<T>, XYPair<T>>,
-	IInterpolatable<XYPair<T>> {
+	IInterpolatable<XYPair<T>>,
+	IBoundedRandomizable<XYPair<T>> {
+	internal const int DefaultRandomRange = 100;
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static XYPair<T> operator +(XYPair<T> lhs, XYPair<T> rhs) => lhs.Plus(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -62,5 +65,21 @@ public readonly partial struct XYPair<T> :
 
 	public static XYPair<T> Interpolate(XYPair<T> start, XYPair<T> end, float distance) {
 		return start + (end - start) * distance;
+	}
+
+	public static XYPair<T> CreateNewRandom() {
+		return new(
+			T.CreateChecked(RandomUtils.NextSingleNegOneToOneInclusive() * DefaultRandomRange),
+			T.CreateChecked(RandomUtils.NextSingleNegOneToOneInclusive() * DefaultRandomRange)
+		);
+	}
+	public static XYPair<T> CreateNewRandom(T minInclusive, T maxExclusive) => CreateNewRandom((minInclusive, maxExclusive), (minInclusive, maxExclusive));
+	public static XYPair<T> CreateNewRandom(XYPair<T> minInclusive, XYPair<T> maxExclusive) {
+		var x = (Min: Double.CreateChecked(minInclusive.X), Max: Double.CreateChecked(maxExclusive.X));
+		var y = (Min: Double.CreateChecked(minInclusive.Y), Max: Double.CreateChecked(maxExclusive.Y));
+		return new(
+			T.CreateChecked(RandomUtils.GlobalRng.NextDouble() * (x.Max - x.Min) + x.Min),
+			T.CreateChecked(RandomUtils.GlobalRng.NextDouble() * (y.Max - y.Min) + y.Min)
+		);
 	}
 }

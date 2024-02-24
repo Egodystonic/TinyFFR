@@ -85,4 +85,39 @@ partial class LocationTest {
 			}
 		}
 	}
+
+	[Test]
+	public void ShouldCorrectlyCreateNonBoundedRandomValues() {
+		const int NumIterations = 50_000;
+
+		for (var i = 0; i < NumIterations; ++i) {
+			var val = Location.CreateNewRandom();
+			Assert.GreaterOrEqual(val.X, -Location.DefaultRandomRange);
+			Assert.LessOrEqual(val.X, Location.DefaultRandomRange);
+			Assert.GreaterOrEqual(val.Y, -Location.DefaultRandomRange);
+			Assert.LessOrEqual(val.Y, Location.DefaultRandomRange);
+			Assert.GreaterOrEqual(val.Z, -Location.DefaultRandomRange);
+			Assert.LessOrEqual(val.Z, Location.DefaultRandomRange);
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyCreateBoundedRandomValues() {
+		const int NumIterations = 50_000;
+
+		for (var i = 0; i < NumIterations; ++i) {
+			var start = Location.CreateNewRandom();
+			var end = Location.CreateNewRandom();
+			var val = Location.CreateNewRandom(start, end);
+
+			var startToEnd = start >> end;
+			var startToVal = start >> val;
+			var valToEnd = val >> end;
+
+			AssertToleranceEquals(startToEnd.Direction, startToVal.Direction, 0.01f);
+			AssertToleranceEquals(startToEnd.Direction, valToEnd.Direction, 0.01f);
+			Assert.LessOrEqual(startToVal.LengthSquared, startToEnd.LengthSquared);
+			Assert.LessOrEqual(valToEnd.LengthSquared, startToEnd.LengthSquared);
+		}
+	}
 }

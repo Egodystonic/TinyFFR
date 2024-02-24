@@ -12,7 +12,8 @@ partial struct Rotation :
 	IMultiplyOperators<Rotation, Vect, Vect>,
 	IAdditionOperators<Rotation, Rotation, Rotation>,
 	IMultiplyOperators<Rotation, float, Rotation>,
-	IInterpolatable<Rotation> {
+	IInterpolatable<Rotation>,
+	IBoundedRandomizable<Rotation> {
 	static Vector4 Rotate(Quaternion q, Vector4 v) {
 		var quatVec = new Vector3(q.X, q.Y, q.Z);
 		var targetVec = new Vector3(v.X, v.Y, v.Z);
@@ -26,7 +27,6 @@ partial struct Rotation :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator -(Rotation operand) => operand.Reversed;
 	public Rotation Reversed {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(new(-AsQuaternion.X, -AsQuaternion.Y, -AsQuaternion.Z, AsQuaternion.W));
 	}
 
@@ -54,12 +54,9 @@ partial struct Rotation :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Rotation FollowedBy(Rotation other) => new(other.AsQuaternion * AsQuaternion);
 
-
-
-	public Angle AngleTo(Rotation other) {
-		return FromQuaternion(Reversed.AsQuaternion * other.AsQuaternion).Angle;
-	}
-
+	public Rotation DifferenceTo(Rotation other) => FromQuaternion(Reversed.AsQuaternion * other.AsQuaternion);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(Rotation other) => DifferenceTo(other).Angle;
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -100,5 +97,18 @@ partial struct Rotation :
 	}
 	public static Rotation Interpolate(Angle start, Angle end, Direction axis, float distance) {
 		return FromAngleAroundAxis(Angle.Interpolate(start, end, distance), axis);
+	}
+
+	public static Rotation CreateNewRandom() {
+		return FromQuaternion(new(
+			RandomUtils.NextSingleNegOneToOneInclusive(),
+			RandomUtils.NextSingleNegOneToOneInclusive(),
+			RandomUtils.NextSingleNegOneToOneInclusive(),
+			RandomUtils.NextSingleNegOneToOneInclusive()
+		));
+	}
+	public static Rotation CreateNewRandom(Rotation minInclusive, Rotation maxExclusive) {
+		var difference = minInclusive.DifferenceTo(maxExclusive);
+		return minInclusive + difference.ScaledBy(RandomUtils.NextSingle());
 	}
 }
