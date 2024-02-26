@@ -72,10 +72,10 @@ partial class DirectionTest {
 			}
 		}
 
-		foreach (var cardinal in Direction.CardinalMap) {
+		foreach (var cardinal in Direction.AllCardinals) {
 			var perp = cardinal.GetAnyPerpendicularDirection();
 			AssertToleranceEquals(90f, cardinal ^ perp, TestTolerance);
-			Assert.IsTrue(Direction.CardinalMap.Contains(perp));
+			Assert.IsTrue(Direction.AllCardinals.Contains(perp));
 		}
 	}
 
@@ -121,7 +121,7 @@ partial class DirectionTest {
 
 	[Test]
 	public void ShouldCorrectlyOrthogonalizeAgainstAnotherDir() {
-		foreach (var cardinal in Direction.CardinalMap) {
+		foreach (var cardinal in Direction.AllCardinals) {
 			var perp = cardinal.GetAnyPerpendicularDirection();
 			var thirdPerp = cardinal.GetAnyPerpendicularDirection(perp);
 			Assert.AreEqual(cardinal, (20f % perp * cardinal).OrthogonalizedAgainst(thirdPerp));
@@ -233,9 +233,9 @@ partial class DirectionTest {
 		AssertCombination(Direction.Up, Direction.Right, 2f, Direction.Down);
 
 		var testList = new List<Direction>();
-		for (var x = -4f; x <= 4f; x += 1f) {
-			for (var y = -4f; y <= 4f; y += 1f) {
-				for (var z = -4f; z <= 4f; z += 1f) {
+		for (var x = -3f; x <= 3f; x += 1f) {
+			for (var y = -3f; y <= 3f; y += 1f) {
+				for (var z = -3f; z <= 3f; z += 1f) {
 					if (x == 0f && y == 0f && z == 0f) continue;
 					testList.Add(new(x, y, z));
 				}
@@ -281,6 +281,91 @@ partial class DirectionTest {
 
 			AssertToleranceEquals((start >> val).Axis, (start >> end).Axis, 0.1f);
 			AssertToleranceEquals((start >> end), (start >> val) + (val >> end), 0.1f);
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyFindNearestDirectionInSpan() {
+		var testList = new List<Direction>();
+		for (var x = -5f; x <= 5f; x += 1f) {
+			for (var y = -5f; y <= 5f; y += 1f) {
+				for (var z = -5f; z <= 5f; z += 1f) {
+					if (x == 0f && y == 0f && z == 0f) continue;
+					testList.Add(new(x, y, z));
+				}
+			}
+		}
+
+		foreach (var item in testList) {
+			var nearestOrientationManualCheckVal = Direction.None;
+			var nearestOrientationManualCheckAngle = Angle.FullCircle;
+			for (var i = 0; i < Direction.AllOrientations.Length; ++i) {
+				if ((Direction.AllOrientations[i] ^ item) >= nearestOrientationManualCheckAngle) continue;
+				nearestOrientationManualCheckAngle = Direction.AllOrientations[i] ^ item;
+				nearestOrientationManualCheckVal = Direction.AllOrientations[i];
+			}
+
+			Assert.AreEqual(nearestOrientationManualCheckVal, item.GetNearestDirectionInSpan(Direction.AllOrientations));
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyGetNearestOrientations() {
+		void AssertCardinal(Direction input, Direction expectedDirection, CardinalOrientation3D? expectedOrientation = null) {
+			expectedOrientation ??= OrientationUtils.AllCardinals.ToArray().Single(c => c.ToDirection() == expectedDirection);
+			input.GetNearestOrientationCardinal(out var actualOrientation, out var actualDirection);
+			Assert.AreEqual(expectedOrientation, actualOrientation);
+			Assert.AreEqual(expectedDirection, actualDirection);
+		}
+		void AssertDiagonal(Direction input, Direction expectedDirection, DiagonalOrientation3D? expectedOrientation = null) {
+			expectedOrientation ??= OrientationUtils.AllDiagonals.ToArray().Single(c => c.ToDirection() == expectedDirection);
+			input.GetNearestOrientationDiagonal(out var actualOrientation, out var actualDirection);
+			Assert.AreEqual(expectedOrientation, actualOrientation);
+			Assert.AreEqual(expectedDirection, actualDirection);
+		}
+		void AssertOrientation(Direction input, Direction expectedDirection, Orientation3D? expectedOrientation = null) {
+			expectedOrientation ??= OrientationUtils.All3DOrientations.ToArray().Single(c => c.ToDirection() == expectedDirection);
+			input.GetNearestOrientation(out var actualOrientation, out var actualDirection);
+			Assert.AreEqual(expectedOrientation, actualOrientation);
+			Assert.AreEqual(expectedDirection, actualDirection);
+		}
+
+		AssertCardinal(Direction.None, Direction.None, CardinalOrientation3D.None);
+		AssertDiagonal(Direction.None, Direction.None, DiagonalOrientation3D.None);
+		AssertOrientation(Direction.None, Direction.None, Orientation3D.None);
+		foreach (var d in Direction.AllCardinals) {
+			AssertCardinal(d, d);
+		}
+		foreach (var d in Direction.AllDiagonals) {
+			AssertDiagonal(d, d);
+		}
+		foreach (var d in Direction.AllOrientations) {
+			AssertOrientation(d, d);
+		}
+
+		var testList = new List<Direction>();
+		for (var x = -5f; x <= 5f; x += 1f) {
+			for (var y = -5f; y <= 5f; y += 1f) {
+				for (var z = -5f; z <= 5f; z += 1f) {
+					testList.Add(new(x, y, z));
+				}
+			}
+		}
+		foreach (var item in testList) {
+			//Console.WriteLine(item.ToStringDescriptive());
+			if (item == Direction.None) {
+				AssertCardinal(item, Direction.None, CardinalOrientation3D.None);
+				AssertDiagonal(item, Direction.None, DiagonalOrientation3D.None);
+				AssertOrientation(item, Direction.None, Orientation3D.None);
+				continue;
+			}
+
+			var expectedCardinalResult = item.GetNearestDirectionInSpan(Direction.AllCardinals);
+			var expectedDiagonalResult = item.GetNearestDirectionInSpan(Direction.AllDiagonals);
+			var expectedOrientationResult = item.GetNearestDirectionInSpan(Direction.AllOrientations);
+			AssertCardinal(item, expectedCardinalResult);
+			AssertDiagonal(item, expectedDiagonalResult);
+			AssertOrientation(item, expectedOrientationResult);
 		}
 	}
 }

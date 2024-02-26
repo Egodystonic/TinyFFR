@@ -17,23 +17,39 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	public static readonly Direction Down = new(0f, -1f, 0f);
 	public static readonly Direction Left = new(1f, 0f, 0f);
 	public static readonly Direction Right = new(-1f, 0f, 0f);
-	static readonly IReadOnlyDictionary<Orientation3D, Direction> _orientationMap = new Dictionary<Orientation3D, Direction> {
-		[Orientation3D.None] = None,
-		[Orientation3D.Left] = Left,
-		[Orientation3D.Right] = Right,
-		[Orientation3D.Up] = Up,
-		[Orientation3D.Down] = Down,
-		[Orientation3D.Forward] = Forward,
-		[Orientation3D.Backward] = Backward,
-		[Orientation3D.UpLeftForward] = FromVector3(Up.ToVector3() + Left.ToVector3() + Forward.ToVector3()),
-		[Orientation3D.UpRightForward] = FromVector3(Up.ToVector3() + Right.ToVector3() + Forward.ToVector3()),
-		[Orientation3D.UpLeftBackward] = FromVector3(Up.ToVector3() + Left.ToVector3() + Backward.ToVector3()),
-		[Orientation3D.UpRightBackward] = FromVector3(Up.ToVector3() + Right.ToVector3() + Backward.ToVector3()),
-		[Orientation3D.DownLeftForward] = FromVector3(Down.ToVector3() + Left.ToVector3() + Forward.ToVector3()),
-		[Orientation3D.DownRightForward] = FromVector3(Down.ToVector3() + Right.ToVector3() + Forward.ToVector3()),
-		[Orientation3D.DownLeftBackward] = FromVector3(Down.ToVector3() + Left.ToVector3() + Backward.ToVector3()),
-		[Orientation3D.DownRightBackward] = FromVector3(Down.ToVector3() + Right.ToVector3() + Backward.ToVector3()),
+	static readonly Direction[] _allCardinals = {
+		new(1, 0, 0),   new(0, 1, 0),   new(0, 0, 1),
+		new(-1, 0, 0),  new(0, -1, 0),  new(0, 0, -1),
 	};
+	static readonly Direction[] _allDiagonals = {
+		new(-1, 1, 1),  new(1, -1, 1),  new(1, 1, -1),
+		new(1, -1, -1), new(-1, 1, -1), new(-1, -1, 1),
+		new(1, 1, 1),   new(-1, -1, -1)
+	};
+	static readonly Direction[] _allOrientations = {
+		_allCardinals[0],
+		_allCardinals[1],
+		_allCardinals[2],
+		_allCardinals[3],
+		_allCardinals[4],
+		_allCardinals[5],
+		new(1, 1, 0),   new(0, 1, 1),   new(1, 0, 1),
+		new(-1, -1, 0), new(0, -1, -1),	new(-1, 0, -1),
+		new(1, -1, 0),  new(0, 1, -1),	new(1, 0, -1),
+		new(-1, 1, 0),	new(0, -1, 1),	new(-1, 0, 1),
+		_allDiagonals[0],
+		_allDiagonals[1],
+		_allDiagonals[2],
+		_allDiagonals[3],
+		_allDiagonals[4],
+		_allDiagonals[5],
+		_allDiagonals[6],
+		_allDiagonals[7],
+	};
+
+	public static ReadOnlySpan<Direction> AllCardinals => _allCardinals;
+	public static ReadOnlySpan<Direction> AllDiagonals => _allDiagonals;
+	public static ReadOnlySpan<Direction> AllOrientations => _allOrientations;
 
 	internal readonly Vector4 AsVector4;
 
@@ -66,7 +82,7 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	public static Direction FromPreNormalizedComponents(float x, float y, float z) => new(new Vector4(x, y, z, WValue));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction FromOrientation(Orientation3D orientation) => _orientationMap[orientation];
+	public static Direction FromOrientation(Orientation3D orientation) => new(orientation.GetAxisSign(Axis.X), orientation.GetAxisSign(Axis.Y), orientation.GetAxisSign(Axis.Z));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromVector3(Vector3 v) => new(NormalizeOrZero(new Vector4(v, WValue)));
@@ -89,53 +105,10 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 
 	public override string ToString() => this.ToString(null, null);
 
-	public string ToStringDescriptive() { // TODO this could be reworked a lot nicer to just go through the _orientationMap and find the closest orientation -- was written before that map existed
-		static void GetCardinalAngles(Direction @this, Span<(Direction, Angle)> destSpan) {
-			var nextSpanIndex = 0;
-			foreach (var kvp in _orientationMap) {
-				if (!kvp.Key.IsCardinal()) continue;
-				destSpan[nextSpanIndex++] = (kvp.Value, kvp.Value ^ @this);
-			}
-		}
-		static string GetCardinalEnglishName(Direction cardinal) {
-			static string? CheckAndReturn(Direction input, Direction test, [CallerArgumentExpression(nameof(test))] string? argName = null) {
-				if (input.Equals(test, 0.1f)) return argName;
-				else return null;
-			}
-
-			return CheckAndReturn(cardinal, Forward)
-				?? CheckAndReturn(cardinal, Up)
-				?? CheckAndReturn(cardinal, Down)
-				?? CheckAndReturn(cardinal, Backward)
-				?? CheckAndReturn(cardinal, Left)
-				?? CheckAndReturn(cardinal, Right)
-				?? "None";
-		}
-
-		if (this == None) return "None";
-
-		Span<(Direction Cardinal, Angle Angle)> cardinalTuples = stackalloc (Direction, Angle)[6];
-		GetCardinalAngles(this, cardinalTuples);
-
-		var closestTuple = (Cardinal: None, Angle: Angle.FullCircle);
-		for (var i = 0; i < cardinalTuples.Length; ++i) {
-			if (cardinalTuples[i].Angle < closestTuple.Angle) closestTuple = cardinalTuples[i];
-		}
-		if (closestTuple.Angle.Equals(Angle.Zero, 0.1f)) return $"{GetCardinalEnglishName(closestTuple.Cardinal)} exactly";
-
-		var nextClosestTuple = (Cardinal: None, Angle: Angle.FullCircle);
-		for (var i = 0; i < cardinalTuples.Length; ++i) {
-			if (cardinalTuples[i].Cardinal == closestTuple.Cardinal) continue;
-			if (cardinalTuples[i].Angle < nextClosestTuple.Angle) nextClosestTuple = cardinalTuples[i];
-		}
-
-		if (closestTuple.Angle.Equals(45f, 0.1f)) {
-			return $"Between {GetCardinalEnglishName(closestTuple.Cardinal)} and {GetCardinalEnglishName(nextClosestTuple.Cardinal)}";
-		}
-		else {
-			return $"{closestTuple.Angle.ToString("N1", CultureInfo.InvariantCulture)} from {GetCardinalEnglishName(closestTuple.Cardinal)} " +
-				   $"(mostly towards {GetCardinalEnglishName(nextClosestTuple.Cardinal)})";
-		}
+	public string ToStringDescriptive() {
+		GetNearestOrientation(out var orientation, out var direction);
+		var angle = (this == None || direction == None) ? Angle.Zero : (this ^ direction);
+		return $"{ToString()} ({angle:N0} from {orientation})";
 	}
 
 	/*

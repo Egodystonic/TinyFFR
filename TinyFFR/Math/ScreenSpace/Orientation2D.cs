@@ -15,14 +15,14 @@ file static class Bits {
 }
 
 [Flags]
-public enum Orientation2DHorizontal { // TODO mention in XMLDoc that's always safe to cast this to Orientation2D but not the other way around
+public enum HorizontalOrientation2D { // TODO mention in XMLDoc that's always safe to cast this to Orientation2D but not the other way around
 	None = 0,
 	Right = RightBit,
 	Left = LeftBit,
 }
 
 [Flags]
-public enum Orientation2DVertical { // TODO mention in XMLDoc that's always safe to cast this to Orientation2D but not the other way around
+public enum VerticalOrientation2D { // TODO mention in XMLDoc that's always safe to cast this to Orientation2D but not the other way around
 	None = 0,
 	Up = UpBit,
 	Down = DownBit,
@@ -42,13 +42,19 @@ public enum Orientation2D {
 }
 
 public static class Orientation2DExtensions {
-	public static Orientation2D Plus(this Orientation2DHorizontal @this, Orientation2DVertical verticalComponent) => (Orientation2D) ((int) @this | (int) verticalComponent);
-
-	public static Orientation2D Plus(this Orientation2DVertical @this, Orientation2DHorizontal horizontalComponent) => (Orientation2D) ((int) @this | (int) horizontalComponent);
-
-	public static Orientation2DHorizontal GetHorizontalComponent(this Orientation2D @this) => (Orientation2DHorizontal) ((int) @this & HorizontalBits);
-	public static Orientation2DVertical GetVerticalComponent(this Orientation2D @this) => (Orientation2DVertical) ((int) @this & VerticalBits);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Orientation2D AsGeneralOrientation(this HorizontalOrientation2D @this) => (Orientation2D) @this;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle? ToAngle(this Orientation2D @this) => Angle.FromPolarAngleAround2DPlane(@this);
+	public static Orientation2D AsGeneralOrientation(this VerticalOrientation2D @this) => (Orientation2D) @this;
+
+	public static Orientation2D Plus(this HorizontalOrientation2D @this, VerticalOrientation2D verticalComponent) => (Orientation2D) ((int) @this | (int) verticalComponent);
+
+	public static Orientation2D Plus(this VerticalOrientation2D @this, HorizontalOrientation2D horizontalComponent) => (Orientation2D) ((int) @this | (int) horizontalComponent);
+
+	public static HorizontalOrientation2D GetHorizontalComponent(this Orientation2D @this) => (HorizontalOrientation2D) ((int) @this & HorizontalBits);
+	public static VerticalOrientation2D GetVerticalComponent(this Orientation2D @this) => (VerticalOrientation2D) ((int) @this & VerticalBits);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle? GetPolarAngle(this Orientation2D @this) => Angle.FromPolarAngleAround2DPlane(@this);
 }

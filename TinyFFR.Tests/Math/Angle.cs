@@ -125,10 +125,10 @@ partial class AngleTest {
 		AssertToleranceEquals(new Angle(107.888f), Angle.FromAngleBetweenDirections(d2, d1), TestTolerance);
 
 		// Check that the order of arguments makes no difference
-		for (var i = 0; i < Direction.CardinalMap.Count; ++i) {
-			for (var j = i; j < Direction.CardinalMap.Count; ++j) {
-				d1 = Direction.CardinalMap.ElementAt(i);
-				d2 = Direction.CardinalMap.ElementAt(j);
+		for (var i = 0; i < Direction.AllCardinals.Length; ++i) {
+			for (var j = i; j < Direction.AllCardinals.Length; ++j) {
+				d1 = Direction.AllCardinals[i];
+				d2 = Direction.AllCardinals[j];
 				Assert.AreEqual(Angle.FromAngleBetweenDirections(d1, d2), Angle.FromAngleBetweenDirections(d2, d1));
 			}
 		}
@@ -329,5 +329,15 @@ partial class AngleTest {
 		AssertToleranceEquals(225f, Angle.FromPolarAngleAround2DPlane(-1f, -1f)!.Value, TestTolerance);
 		AssertToleranceEquals(270f, Angle.FromPolarAngleAround2DPlane(0f, -1f)!.Value, TestTolerance);
 		AssertToleranceEquals(315f, Angle.FromPolarAngleAround2DPlane(1f, -1f)!.Value, TestTolerance);
+
+		Assert.AreEqual(null, Angle.FromPolarAngleAround2DPlane(Orientation2D.None));
+		AssertToleranceEquals(0f, Angle.FromPolarAngleAround2DPlane(Orientation2D.Right)!.Value, TestTolerance);
+		AssertToleranceEquals(45f, Angle.FromPolarAngleAround2DPlane(Orientation2D.UpRight)!.Value, TestTolerance);
+		AssertToleranceEquals(90f, Angle.FromPolarAngleAround2DPlane(Orientation2D.Up)!.Value, TestTolerance);
+		AssertToleranceEquals(135f, Angle.FromPolarAngleAround2DPlane(Orientation2D.UpLeft)!.Value, TestTolerance);
+		AssertToleranceEquals(180f, Angle.FromPolarAngleAround2DPlane(Orientation2D.Left)!.Value, TestTolerance);
+		AssertToleranceEquals(225f, Angle.FromPolarAngleAround2DPlane(Orientation2D.DownLeft)!.Value, TestTolerance);
+		AssertToleranceEquals(270f, Angle.FromPolarAngleAround2DPlane(Orientation2D.Down)!.Value, TestTolerance);
+		AssertToleranceEquals(315f, Angle.FromPolarAngleAround2DPlane(Orientation2D.DownRight)!.Value, TestTolerance);
 	}
 }

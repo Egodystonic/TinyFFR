@@ -9,7 +9,7 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 	public const float RecommendedDeadzoneSize = ((float) AnalogDisplacementLevel.Slight / Int16.MaxValue) + 0.01f;
 
 	public static readonly GameControllerStickPosition Centered = new(0, 0);
-	public static readonly IReadOnlyDictionary<Orientation2D, GameControllerStickPosition> OrientationMap = new Dictionary<Orientation2D, GameControllerStickPosition> {
+	static readonly IReadOnlyDictionary<Orientation2D, GameControllerStickPosition> _orientationMap = new Dictionary<Orientation2D, GameControllerStickPosition> {
 		[Orientation2D.None] = Centered,
 		[Orientation2D.Right] = new(Int16.MaxValue, 0),
 		[Orientation2D.UpRight] = new(Int16.MaxValue, Int16.MaxValue),
@@ -55,6 +55,8 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 		RawDisplacementVertical = rawDisplacementVertical;
 	}
 
+	public static GameControllerStickPosition FromMaxOrientation(Orientation2D orientation) => _orientationMap[orientation];
+
 	public XYPair<float> AsXYPair(float deadzoneSize = RecommendedDeadzoneSize) {
 		if (deadzoneSize is < 0f or > 1f) throw new ArgumentOutOfRangeException(nameof(deadzoneSize), deadzoneSize, $"Deadzone must be between 0 and 1 (inclusive).");
 		var x = NormalizedDisplacementHorizontal;
@@ -83,9 +85,9 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 	}
 
 
-	public Orientation2DHorizontal GetHorizontalOrientation(float deadzoneSize = RecommendedDeadzoneSize) => GetOrientation(deadzoneSize).GetHorizontalComponent();
-	public Orientation2DVertical GetVerticalOrientation(float deadzoneSize = RecommendedDeadzoneSize) => GetOrientation(deadzoneSize).GetVerticalComponent();
-	public Orientation2D GetOrientation(float deadzoneSize = RecommendedDeadzoneSize) => GetPolarAngle(deadzoneSize)?.PolarDirection ?? Orientation2D.None;
+	public HorizontalOrientation2D GetHorizontalOrientation(float deadzoneSize = RecommendedDeadzoneSize) => GetOrientation(deadzoneSize).GetHorizontalComponent();
+	public VerticalOrientation2D GetVerticalOrientation(float deadzoneSize = RecommendedDeadzoneSize) => GetOrientation(deadzoneSize).GetVerticalComponent();
+	public Orientation2D GetOrientation(float deadzoneSize = RecommendedDeadzoneSize) => GetPolarAngle(deadzoneSize)?.PolarOrientation ?? Orientation2D.None;
 
 	// TODO explain these are for performance or custom implementation only if necessary and which sign points which way etc
 	public void GetRawDisplacementValues(out short outRawHorizontalOffset, out short outRawVerticalOffset) {

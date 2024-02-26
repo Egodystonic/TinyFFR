@@ -120,4 +120,58 @@ partial struct Direction :
 	public static Direction CreateNewRandom(Direction minInclusive, Direction maxExclusive) {
 		return (minInclusive >> maxExclusive).ScaledBy(RandomUtils.NextSingle()) * minInclusive;
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction GetNearestDirectionInSpan(ReadOnlySpan<Direction> span) => span[GetIndexOfNearestDirectionInSpan(span)];
+	public int GetIndexOfNearestDirectionInSpan(ReadOnlySpan<Direction> span) {
+		var result = -1;
+		var resultAngle = Angle.FullCircle;
+		for (var i = 0; i < span.Length; ++i) {
+			var newAngle = span[i] ^ this;
+			if (newAngle >= resultAngle) continue;
+
+			resultAngle = newAngle;
+			result = i;
+		}
+		return result;
+	}
+	public void GetNearestOrientationCardinal(out CardinalOrientation3D orientation, out Direction direction) {
+		GetNearestOrientation(AllCardinals, out var o, out direction);
+		orientation = (CardinalOrientation3D) o;
+	}
+	public void GetNearestOrientationDiagonal(out DiagonalOrientation3D orientation, out Direction direction) {
+		GetNearestOrientation(AllDiagonals, out var o, out direction);
+		orientation = (DiagonalOrientation3D) o;
+	}
+	public void GetNearestOrientation(out Orientation3D orientation, out Direction direction) {
+		GetNearestOrientation(AllOrientations, out orientation, out direction);
+	}
+	void GetNearestOrientation(ReadOnlySpan<Direction> span, out Orientation3D orientation, out Direction direction) {
+		if (Equals(None, 0.0001f)) {
+			orientation = Orientation3D.None;
+			direction = None;
+			return;
+		}
+	
+		direction = default;
+		var dirAngle = Angle.FullCircle;
+		for (var i = 0; i < span.Length; ++i) {
+			var testDir = span[i];
+			if (X != 0f && Single.Sign(testDir.X) == -Single.Sign(X)) continue;
+			if (Y != 0f && Single.Sign(testDir.Y) == -Single.Sign(Y)) continue;
+			if (Z != 0f && Single.Sign(testDir.Z) == -Single.Sign(Z)) continue;
+	
+			var newAngle = testDir ^ this;
+			if (newAngle >= dirAngle) continue;
+	
+			dirAngle = newAngle;
+			direction = testDir;
+		}
+	
+		orientation = OrientationUtils.CreateOrientation(
+			OrientationUtils.CreateXAxisOrientationFromSign(direction.X),
+			OrientationUtils.CreateYAxisOrientationFromSign(direction.Y),
+			OrientationUtils.CreateZAxisOrientationFromSign(direction.Z)
+		);
+	}
 }

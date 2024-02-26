@@ -39,8 +39,11 @@ partial struct Rotation :
 	public static Vect operator *(Vect d, Rotation r) => r.Rotate(d);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator *(Rotation r, Vect d) => r.Rotate(d);
+	// Renormalize because we can accrue a lot of error here and we're doing a heavy operation anyway. Offer RotateWithoutRenormalizing for perf sensitive cases
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction Rotate(Direction d) => new(Rotate(AsQuaternion, d.AsVector4));
+	public Direction Rotate(Direction d) => RotateWithoutRenormalizing(d).Renormalized;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction RotateWithoutRenormalizing(Direction d) => new(Rotate(AsQuaternion, d.AsVector4));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect Rotate(Vect v) => new(Rotate(AsQuaternion, v.AsVector4));
 

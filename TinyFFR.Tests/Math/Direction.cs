@@ -22,13 +22,33 @@ partial class DirectionTest {
 		Assert.AreEqual(new Direction(1f, 0f, 0f), Direction.Left);
 		Assert.AreEqual(new Direction(-1f, 0f, 0f), Direction.Right);
 
-		Assert.IsTrue(Direction.CardinalMap.Contains(Direction.Backward));
-		Assert.IsTrue(Direction.CardinalMap.Contains(Direction.Forward));
-		Assert.IsTrue(Direction.CardinalMap.Contains(Direction.Left));
-		Assert.IsTrue(Direction.CardinalMap.Contains(Direction.Right));
-		Assert.IsTrue(Direction.CardinalMap.Contains(Direction.Up));
-		Assert.IsTrue(Direction.CardinalMap.Contains(Direction.Down));
-		Assert.AreEqual(6, Direction.CardinalMap.Count);
+		Assert.IsTrue(Direction.AllCardinals.Contains(Direction.Backward));
+		Assert.IsTrue(Direction.AllCardinals.Contains(Direction.Forward));
+		Assert.IsTrue(Direction.AllCardinals.Contains(Direction.Left));
+		Assert.IsTrue(Direction.AllCardinals.Contains(Direction.Right));
+		Assert.IsTrue(Direction.AllCardinals.Contains(Direction.Up));
+		Assert.IsTrue(Direction.AllCardinals.Contains(Direction.Down));
+		Assert.AreEqual(6, Direction.AllCardinals.Length);
+
+		foreach (var diagonal in OrientationUtils.AllDiagonals) {
+			Assert.Contains(diagonal.ToDirection(), Direction.AllDiagonals.ToArray());
+		}
+		Assert.AreEqual(OrientationUtils.AllDiagonals.Length, Direction.AllDiagonals.Length);
+		for (var i = 0; i < Direction.AllDiagonals.Length; ++i) {
+			for (var j = i + 1; j < Direction.AllDiagonals.Length; ++j) {
+				Assert.AreNotEqual(Direction.AllDiagonals[i], Direction.AllDiagonals[j]);
+			}
+		}
+
+		foreach (var orientation in OrientationUtils.All3DOrientations) {
+			Assert.Contains(orientation.ToDirection(), Direction.AllOrientations.ToArray());
+		}
+		Assert.AreEqual(OrientationUtils.All3DOrientations.Length, Direction.AllOrientations.Length);
+		for (var i = 0; i < Direction.AllOrientations.Length; ++i) {
+			for (var j = i + 1; j < Direction.AllOrientations.Length; ++j) {
+				Assert.AreNotEqual(Direction.AllOrientations[i], Direction.AllOrientations[j]);
+			}
+		}
 	}
 
 	[Test]
@@ -78,6 +98,30 @@ partial class DirectionTest {
 	[Test]
 	public void ShouldCorrectlyConvertToVector3() {
 		Assert.AreEqual(NormalizedV3, OneTwoNegThree.ToVector3());
+	}
+
+	[Test]
+	public void ShouldCorrectlyConvertFromOrientation3D() {
+		foreach (var orientation in OrientationUtils.All3DOrientations) {
+			var result = Direction.FromOrientation(orientation);
+			try {
+				Assert.AreEqual(orientation.GetAxisSign(Axis.X), Single.Sign(result.X));
+				Assert.AreEqual(orientation.GetAxisSign(Axis.Y), Single.Sign(result.Y));
+				Assert.AreEqual(orientation.GetAxisSign(Axis.Z), Single.Sign(result.Z));
+			}
+			catch (Exception) {
+				Console.WriteLine(orientation + " => " + result);
+				throw;
+			}
+		}
+
+		Assert.AreEqual(Direction.None, Orientation3D.None.ToDirection());
+		Assert.AreEqual(Direction.Left, Orientation3D.Left.ToDirection());
+		Assert.AreEqual(Direction.Right, Orientation3D.Right.ToDirection());
+		Assert.AreEqual(Direction.Up, Orientation3D.Up.ToDirection());
+		Assert.AreEqual(Direction.Down, Orientation3D.Down.ToDirection());
+		Assert.AreEqual(Direction.Forward, Orientation3D.Forward.ToDirection());
+		Assert.AreEqual(Direction.Backward, Orientation3D.Backward.ToDirection());
 	}
 
 	[Test]

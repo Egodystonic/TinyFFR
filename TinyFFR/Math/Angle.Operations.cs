@@ -36,9 +36,9 @@ partial struct Angle :
 
 
 
-	public Orientation2D PolarDirection { // TODO make it clear that this is four-quadrant 2D plane direction
+	public Orientation2D PolarOrientation { // TODO make it clear that this is four-quadrant 2D plane direction
 		get {
-			const float SegmentSize = 45 * DegreesToRadiansRatio;
+			const float SegmentSize = 45f * DegreesToRadiansRatio;
 			const float SegmentHalfSize = SegmentSize / 2f;
 			return Normalized._asRadians switch {
 				< SegmentHalfSize + SegmentSize * 0f => Orientation2D.Right,

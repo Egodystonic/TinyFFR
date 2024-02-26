@@ -24,7 +24,7 @@ public readonly struct Cuboid : IShape<Cuboid> {
 		get => (Width * Height + Height * Depth + Depth * Width) * 2f;
 	}
 
-	public Location this[Orientation3DDiagonal diagonal] {
+	public Location this[DiagonalOrientation3D diagonal] {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => GetCornerLocation(diagonal);
 	}
@@ -46,19 +46,19 @@ public readonly struct Cuboid : IShape<Cuboid> {
 		_ => throw new ArgumentException($"{nameof(Axis)} can not be {nameof(Axis.None)}.", nameof(axis))
 	};
 
-	public Location GetCornerLocation(Orientation3DDiagonal diagonal) {
+	public Location GetCornerLocation(DiagonalOrientation3D diagonal) {
 		return new(
-			this[Axis.X] * 0.5f * ((Orientation3D) diagonal).GetAxisSign(Axis.X),
-			this[Axis.Y] * 0.5f * ((Orientation3D) diagonal).GetAxisSign(Axis.Y),
-			this[Axis.Z] * 0.5f * ((Orientation3D) diagonal).GetAxisSign(Axis.Z)
+			this[Axis.X] * 0.5f * diagonal.AsGeneralOrientation().GetAxisSign(Axis.X),
+			this[Axis.Y] * 0.5f * diagonal.AsGeneralOrientation().GetAxisSign(Axis.Y),
+			this[Axis.Z] * 0.5f * diagonal.AsGeneralOrientation().GetAxisSign(Axis.Z)
 		);
 	}
-	public float GetSideSurfaceArea(Orientation3DCardinal side) {
+	public float GetSideSurfaceArea(CardinalOrientation3D side) {
 		return side.GetAxis() switch {
 			Axis.X => Height * Depth,
 			Axis.Y => Depth * Width,
 			Axis.Z => Width * Height,
-			_ => throw new ArgumentException($"{nameof(Orientation3DCardinal)} can not be {nameof(Orientation3DCardinal.None)}.", nameof(side))
+			_ => throw new ArgumentException($"{nameof(CardinalOrientation3D)} can not be {nameof(CardinalOrientation3D.None)}.", nameof(side))
 		};
 	}
 

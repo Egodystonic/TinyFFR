@@ -29,6 +29,7 @@
 
   <ItemGroup>
     <Folder Include="Environment\Loop\" />
+    <Folder Include="Math\Geometry\" />
     <Folder Include="Math\Randomization\" />
   </ItemGroup>
 

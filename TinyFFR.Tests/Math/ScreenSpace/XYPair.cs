@@ -41,6 +41,37 @@ partial class XYPairTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyConvertFromAngleAndLength() {
+		for (var f = -720f; f <= 720f; f += 36f) {
+			for (var l = 0f; l <= 3f; ++l) {
+				var result = XYPair<float>.FromAngleAndLength(f, l);
+				if (l == 0f) {
+					Assert.AreEqual(null, result.PolarAngle);
+					Assert.AreEqual(0, result.ToVector2().Length());
+				}
+				else {
+					Assert.IsTrue(Angle.FromDegrees(f).Equals(result.PolarAngle!.Value, normalizeAngles: true, tolerance: TestTolerance));
+					Assert.AreEqual(l, result.ToVector2().Length(), TestTolerance);
+				}
+			}
+		}
+
+		foreach (var orientation in Enum.GetValues<Orientation2D>()) {
+			for (var l = 0f; l <= 3f; ++l) {
+				var result = XYPair<float>.FromOrientationAndLength(orientation, l);
+				if (l == 0f || orientation == Orientation2D.None) {
+					Assert.AreEqual(null, result.PolarAngle);
+					Assert.AreEqual(0, result.ToVector2().Length());
+				}
+				else {
+					Assert.IsTrue(orientation.GetPolarAngle()!.Value.Equals(result.PolarAngle!.Value, normalizeAngles: true, tolerance: TestTolerance));
+					Assert.AreEqual(l, result.ToVector2().Length(), TestTolerance);
+				}
+			}
+		}
+	}
+
+	[Test]
 	public void ShouldCorrectlyConvertToString() {
 		void AssertIteration(XYPair<float> input, string expectedValue) {
 			var testCulture = CultureInfo.InvariantCulture;

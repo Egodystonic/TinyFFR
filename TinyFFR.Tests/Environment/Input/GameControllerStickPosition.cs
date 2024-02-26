@@ -13,9 +13,12 @@ class GameControllerStickPositionTest {
 	public void TearDownTest() { }
 
 	IReadOnlyDictionary<Orientation2D, GameControllerStickPosition> GetProportionalDirectionals(float proportion) {
-		return GameControllerStickPosition.OrientationMap.ToDictionary(
-			kvp => kvp.Key,
-			kvp => new GameControllerStickPosition((short) (kvp.Value.RawDisplacementHorizontal * proportion), (short) (kvp.Value.RawDisplacementVertical * proportion))
+		return Enum.GetValues<Orientation2D>().ToDictionary(
+			o => o,
+			o => {
+				var max = GameControllerStickPosition.FromMaxOrientation(o);
+				return new GameControllerStickPosition((short) (max.RawDisplacementHorizontal * proportion), (short) (max.RawDisplacementVertical * proportion));
+			}
 		);
 	}
 
@@ -164,23 +167,23 @@ class GameControllerStickPositionTest {
 	public void ShouldCorrectlyDetermineDirection() {
 		foreach (var kvp in GetProportionalDirectionals(1f)) {
 			Assert.AreEqual(kvp.Key, kvp.Value.GetOrientation(0.5f));
-			Assert.AreEqual(((Orientation2DHorizontal) kvp.Key) & (Orientation2DHorizontal.Right | Orientation2DHorizontal.Left), kvp.Value.GetHorizontalOrientation(0.5f));
-			Assert.AreEqual(((Orientation2DVertical) kvp.Key) & (Orientation2DVertical.Down | Orientation2DVertical.Up), kvp.Value.GetVerticalOrientation(0.5f));
+			Assert.AreEqual(((HorizontalOrientation2D) kvp.Key) & (HorizontalOrientation2D.Right | HorizontalOrientation2D.Left), kvp.Value.GetHorizontalOrientation(0.5f));
+			Assert.AreEqual(((VerticalOrientation2D) kvp.Key) & (VerticalOrientation2D.Down | VerticalOrientation2D.Up), kvp.Value.GetVerticalOrientation(0.5f));
 		}
 
 		foreach (var kvp in GetProportionalDirectionals(0.4f)) {
 			Assert.AreEqual(Orientation2D.None, kvp.Value.GetOrientation(0.5f));
-			Assert.AreEqual(Orientation2DHorizontal.None, kvp.Value.GetHorizontalOrientation(0.5f));
-			Assert.AreEqual(Orientation2DVertical.None, kvp.Value.GetVerticalOrientation(0.5f));
+			Assert.AreEqual(HorizontalOrientation2D.None, kvp.Value.GetHorizontalOrientation(0.5f));
+			Assert.AreEqual(VerticalOrientation2D.None, kvp.Value.GetVerticalOrientation(0.5f));
 		}
 	}
 
 	[Test]
 	public void ShouldCorrectlyExtractRawValues() {
-		foreach (var kvp in GameControllerStickPosition.OrientationMap) {
-			kvp.Value.GetRawDisplacementValues(out var actualRawHorizontal, out var actualRawVertical);
-			Assert.AreEqual(kvp.Value.RawDisplacementHorizontal, actualRawHorizontal);
-			Assert.AreEqual(kvp.Value.RawDisplacementVertical, actualRawVertical);
+		foreach (var pos in Enum.GetValues<Orientation2D>().Select(GameControllerStickPosition.FromMaxOrientation)) {
+			pos.GetRawDisplacementValues(out var actualRawHorizontal, out var actualRawVertical);
+			Assert.AreEqual(pos.RawDisplacementHorizontal, actualRawHorizontal);
+			Assert.AreEqual(pos.RawDisplacementVertical, actualRawVertical);
 		}
 	}
 }
