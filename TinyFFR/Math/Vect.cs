@@ -8,7 +8,7 @@ using static System.Numerics.Vector4;
 namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Vector4
-public readonly partial struct Vect : IVect<Vect> {
+public readonly partial struct Vect : IVect<Vect>, IDescriptiveStringProvider {
 	internal const float WValue = 0f;
 	public static readonly Vect Zero = new(0f, 0f, 0f);
 

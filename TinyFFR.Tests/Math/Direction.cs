@@ -22,13 +22,13 @@ partial class DirectionTest {
 		Assert.AreEqual(new Direction(1f, 0f, 0f), Direction.Left);
 		Assert.AreEqual(new Direction(-1f, 0f, 0f), Direction.Right);
 
-		Assert.IsTrue(Direction.AllCardinals.Contains(Direction.Backward));
-		Assert.IsTrue(Direction.AllCardinals.Contains(Direction.Forward));
-		Assert.IsTrue(Direction.AllCardinals.Contains(Direction.Left));
-		Assert.IsTrue(Direction.AllCardinals.Contains(Direction.Right));
-		Assert.IsTrue(Direction.AllCardinals.Contains(Direction.Up));
-		Assert.IsTrue(Direction.AllCardinals.Contains(Direction.Down));
-		Assert.AreEqual(6, Direction.AllCardinals.Count);
+		Assert.IsTrue(Direction.CardinalMap.Contains(Direction.Backward));
+		Assert.IsTrue(Direction.CardinalMap.Contains(Direction.Forward));
+		Assert.IsTrue(Direction.CardinalMap.Contains(Direction.Left));
+		Assert.IsTrue(Direction.CardinalMap.Contains(Direction.Right));
+		Assert.IsTrue(Direction.CardinalMap.Contains(Direction.Up));
+		Assert.IsTrue(Direction.CardinalMap.Contains(Direction.Down));
+		Assert.AreEqual(6, Direction.CardinalMap.Count);
 	}
 
 	[Test]

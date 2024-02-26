@@ -7,7 +7,7 @@ using static Egodystonic.TinyFFR.MathUtils;
 namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Quaternion
-public readonly partial struct Rotation : IMathPrimitive<Rotation, float> {
+public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDescriptiveStringProvider {
 	public const string ToStringMiddleSection = " around ";
 	public static readonly Rotation None = new(Identity);
 
@@ -97,7 +97,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float> {
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ReadOnlySpan<float> ConvertToSpan(in Rotation src) => MemoryMarshal.Cast<Rotation, float>(new ReadOnlySpan<Rotation>(in src))[..4];
+	public static ReadOnlySpan<float> ConvertToSpan(in Rotation src) => MemoryMarshal.Cast<Rotation, float>(new ReadOnlySpan<Rotation>(in src));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation ConvertFromSpan(ReadOnlySpan<float> src) => new(new Quaternion(src[0], src[1], src[2], src[3]));

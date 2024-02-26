@@ -8,7 +8,7 @@ using static System.Numerics.Vector4;
 namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Vector4
-public readonly partial struct Direction : IVect<Direction> {
+public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringProvider {
 	internal const float WValue = 0f;
 	public static readonly Direction None = new();
 	public static readonly Direction Forward = new(0f, 0f, 1f);
@@ -17,7 +17,23 @@ public readonly partial struct Direction : IVect<Direction> {
 	public static readonly Direction Down = new(0f, -1f, 0f);
 	public static readonly Direction Left = new(1f, 0f, 0f);
 	public static readonly Direction Right = new(-1f, 0f, 0f);
-	public static readonly IReadOnlyCollection<Direction> AllCardinals = new[] { Left, Right, Up, Down, Forward, Backward };
+	static readonly IReadOnlyDictionary<Orientation3D, Direction> _orientationMap = new Dictionary<Orientation3D, Direction> {
+		[Orientation3D.None] = None,
+		[Orientation3D.Left] = Left,
+		[Orientation3D.Right] = Right,
+		[Orientation3D.Up] = Up,
+		[Orientation3D.Down] = Down,
+		[Orientation3D.Forward] = Forward,
+		[Orientation3D.Backward] = Backward,
+		[Orientation3D.UpLeftForward] = FromVector3(Up.ToVector3() + Left.ToVector3() + Forward.ToVector3()),
+		[Orientation3D.UpRightForward] = FromVector3(Up.ToVector3() + Right.ToVector3() + Forward.ToVector3()),
+		[Orientation3D.UpLeftBackward] = FromVector3(Up.ToVector3() + Left.ToVector3() + Backward.ToVector3()),
+		[Orientation3D.UpRightBackward] = FromVector3(Up.ToVector3() + Right.ToVector3() + Backward.ToVector3()),
+		[Orientation3D.DownLeftForward] = FromVector3(Down.ToVector3() + Left.ToVector3() + Forward.ToVector3()),
+		[Orientation3D.DownRightForward] = FromVector3(Down.ToVector3() + Right.ToVector3() + Forward.ToVector3()),
+		[Orientation3D.DownLeftBackward] = FromVector3(Down.ToVector3() + Left.ToVector3() + Backward.ToVector3()),
+		[Orientation3D.DownRightBackward] = FromVector3(Down.ToVector3() + Right.ToVector3() + Backward.ToVector3()),
+	};
 
 	internal readonly Vector4 AsVector4;
 
@@ -50,6 +66,9 @@ public readonly partial struct Direction : IVect<Direction> {
 	public static Direction FromPreNormalizedComponents(float x, float y, float z) => new(new Vector4(x, y, z, WValue));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Direction FromOrientation(Orientation3D orientation) => _orientationMap[orientation];
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromVector3(Vector3 v) => new(NormalizeOrZero(new Vector4(v, WValue)));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -70,9 +89,13 @@ public readonly partial struct Direction : IVect<Direction> {
 
 	public override string ToString() => this.ToString(null, null);
 
-	public string ToStringDescriptive() {
+	public string ToStringDescriptive() { // TODO this could be reworked a lot nicer to just go through the _orientationMap and find the closest orientation -- was written before that map existed
 		static void GetCardinalAngles(Direction @this, Span<(Direction, Angle)> destSpan) {
-			for (var i = 0; i < AllCardinals.Count; ++i) destSpan[i] = (AllCardinals.ElementAt(i), AllCardinals.ElementAt(i) ^ @this);
+			var nextSpanIndex = 0;
+			foreach (var kvp in _orientationMap) {
+				if (!kvp.Key.IsCardinal()) continue;
+				destSpan[nextSpanIndex++] = (kvp.Value, kvp.Value ^ @this);
+			}
 		}
 		static string GetCardinalEnglishName(Direction cardinal) {
 			static string? CheckAndReturn(Direction input, Direction test, [CallerArgumentExpression(nameof(test))] string? argName = null) {
@@ -91,7 +114,7 @@ public readonly partial struct Direction : IVect<Direction> {
 
 		if (this == None) return "None";
 
-		Span<(Direction Cardinal, Angle Angle)> cardinalTuples = stackalloc (Direction, Angle)[AllCardinals.Count];
+		Span<(Direction Cardinal, Angle Angle)> cardinalTuples = stackalloc (Direction, Angle)[6];
 		GetCardinalAngles(this, cardinalTuples);
 
 		var closestTuple = (Cardinal: None, Angle: Angle.FullCircle);

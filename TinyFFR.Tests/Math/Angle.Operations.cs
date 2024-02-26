@@ -118,14 +118,14 @@ partial class AngleTest {
 
 	[Test]
 	public void ShouldCorrectlyCalculatePolarDirection() {
-		Assert.AreEqual(CardinalDirection.Right, Angle.FromPolarAngleAround2DPlane(1f, 0f)!.Value.PolarDirection);
-		Assert.AreEqual(CardinalDirection.UpRight, Angle.FromPolarAngleAround2DPlane(1f, 1f)!.Value.PolarDirection);
-		Assert.AreEqual(CardinalDirection.Up, Angle.FromPolarAngleAround2DPlane(0f, 1f)!.Value.PolarDirection);
-		Assert.AreEqual(CardinalDirection.UpLeft, Angle.FromPolarAngleAround2DPlane(-1f, 1f)!.Value.PolarDirection);
-		Assert.AreEqual(CardinalDirection.Left, Angle.FromPolarAngleAround2DPlane(-1f, 0f)!.Value.PolarDirection);
-		Assert.AreEqual(CardinalDirection.DownLeft, Angle.FromPolarAngleAround2DPlane(-1f, -1f)!.Value.PolarDirection);
-		Assert.AreEqual(CardinalDirection.Down, Angle.FromPolarAngleAround2DPlane(0f, -1f)!.Value.PolarDirection);
-		Assert.AreEqual(CardinalDirection.DownRight, Angle.FromPolarAngleAround2DPlane(1f, -1f)!.Value.PolarDirection);
+		Assert.AreEqual(Orientation2D.Right, Angle.FromPolarAngleAround2DPlane(1f, 0f)!.Value.PolarDirection);
+		Assert.AreEqual(Orientation2D.UpRight, Angle.FromPolarAngleAround2DPlane(1f, 1f)!.Value.PolarDirection);
+		Assert.AreEqual(Orientation2D.Up, Angle.FromPolarAngleAround2DPlane(0f, 1f)!.Value.PolarDirection);
+		Assert.AreEqual(Orientation2D.UpLeft, Angle.FromPolarAngleAround2DPlane(-1f, 1f)!.Value.PolarDirection);
+		Assert.AreEqual(Orientation2D.Left, Angle.FromPolarAngleAround2DPlane(-1f, 0f)!.Value.PolarDirection);
+		Assert.AreEqual(Orientation2D.DownLeft, Angle.FromPolarAngleAround2DPlane(-1f, -1f)!.Value.PolarDirection);
+		Assert.AreEqual(Orientation2D.Down, Angle.FromPolarAngleAround2DPlane(0f, -1f)!.Value.PolarDirection);
+		Assert.AreEqual(Orientation2D.DownRight, Angle.FromPolarAngleAround2DPlane(1f, -1f)!.Value.PolarDirection);
 	}
 
 	[Test]

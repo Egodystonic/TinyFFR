@@ -20,6 +20,8 @@
       CA2225; <!-- Provide a method named 'x' as a friendly alternate for operator op_X: Most operators do have named methods provided too, just not always using recommended nomenclature (for ease of understanding) -->
       CA1033; <!-- Make '...' sealed [...]: Fires on interfaces with implementations erroneously -->
       CA1805; <!-- Member explicitly initialized to default value: It communicates that was you intention and that you didn't just forget to initialize a member. Performance isn't that much of a requirement -->
+      CA1040; <!-- Do not use empty interfaces: Sometimes there are good reasons -->
+      CA5394; <!-- 'Random' class isn't crypto-secure: We don't need crypto-level randomness (and we prefer performance) -->
       IDE0028; <!-- Prompt to use collection initializers: Sometimes I don't want them -->
       IDE0040; <!-- Always include access modifiers (even when it would be the default): Just plain don't like this style -->
       IDE1006; <!-- Underscore for private const fields: Yuck -->
@@ -55,9 +57,5 @@
     <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
     <OutputPath>..\build_output\Release</OutputPath>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Folder Include="Math\Geometry\" />
-  </ItemGroup>
 
 </Project>

@@ -36,20 +36,20 @@ partial struct Angle :
 
 
 
-	public CardinalDirection PolarDirection { // TODO make it clear that this is four-quadrant 2D plane direction
+	public Orientation2D PolarDirection { // TODO make it clear that this is four-quadrant 2D plane direction
 		get {
 			const float SegmentSize = 45 * DegreesToRadiansRatio;
 			const float SegmentHalfSize = SegmentSize / 2f;
 			return Normalized._asRadians switch {
-				< SegmentHalfSize + SegmentSize * 0f => CardinalDirection.Right,
-				< SegmentHalfSize + SegmentSize * 1f => CardinalDirection.UpRight,
-				< SegmentHalfSize + SegmentSize * 2f => CardinalDirection.Up,
-				< SegmentHalfSize + SegmentSize * 3f => CardinalDirection.UpLeft,
-				< SegmentHalfSize + SegmentSize * 4f => CardinalDirection.Left,
-				< SegmentHalfSize + SegmentSize * 5f => CardinalDirection.DownLeft,
-				< SegmentHalfSize + SegmentSize * 6f => CardinalDirection.Down,
-				< SegmentHalfSize + SegmentSize * 7f => CardinalDirection.DownRight,
-				_ => CardinalDirection.Right
+				< SegmentHalfSize + SegmentSize * 0f => Orientation2D.Right,
+				< SegmentHalfSize + SegmentSize * 1f => Orientation2D.UpRight,
+				< SegmentHalfSize + SegmentSize * 2f => Orientation2D.Up,
+				< SegmentHalfSize + SegmentSize * 3f => Orientation2D.UpLeft,
+				< SegmentHalfSize + SegmentSize * 4f => Orientation2D.Left,
+				< SegmentHalfSize + SegmentSize * 5f => Orientation2D.DownLeft,
+				< SegmentHalfSize + SegmentSize * 6f => Orientation2D.Down,
+				< SegmentHalfSize + SegmentSize * 7f => Orientation2D.DownRight,
+				_ => Orientation2D.Right
 			};
 		}
 	}

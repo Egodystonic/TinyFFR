@@ -4,7 +4,7 @@
 namespace Egodystonic.TinyFFR;
 
 [TestFixture]
-class CardinalDirectionTest {
+class Orientation2DTest {
 	[SetUp]
 	public void SetUpTest() { }
 
@@ -13,61 +13,61 @@ class CardinalDirectionTest {
 
 	[Test]
 	public void ShouldCorrectlyCombineBits() {
-		Assert.AreEqual((int) HorizontalDirection.Left, (int) CardinalDirection.Left);
-		Assert.AreEqual((int) HorizontalDirection.Right, (int) CardinalDirection.Right);
-		Assert.AreEqual((int) VerticalDirection.Up, (int) CardinalDirection.Up);
-		Assert.AreEqual((int) VerticalDirection.Down, (int) CardinalDirection.Down);
+		Assert.AreEqual((int) Orientation2DHorizontal.Left, (int) Orientation2D.Left);
+		Assert.AreEqual((int) Orientation2DHorizontal.Right, (int) Orientation2D.Right);
+		Assert.AreEqual((int) Orientation2DVertical.Up, (int) Orientation2D.Up);
+		Assert.AreEqual((int) Orientation2DVertical.Down, (int) Orientation2D.Down);
 
-		Assert.AreEqual((int) HorizontalDirection.Left | (int) VerticalDirection.Up, (int) CardinalDirection.UpLeft);
-		Assert.AreEqual((int) HorizontalDirection.Right | (int) VerticalDirection.Up, (int) CardinalDirection.UpRight);
-		Assert.AreEqual((int) HorizontalDirection.Left | (int) VerticalDirection.Down, (int) CardinalDirection.DownLeft);
-		Assert.AreEqual((int) HorizontalDirection.Right | (int) VerticalDirection.Down, (int) CardinalDirection.DownRight);
+		Assert.AreEqual((int) Orientation2DHorizontal.Left | (int) Orientation2DVertical.Up, (int) Orientation2D.UpLeft);
+		Assert.AreEqual((int) Orientation2DHorizontal.Right | (int) Orientation2DVertical.Up, (int) Orientation2D.UpRight);
+		Assert.AreEqual((int) Orientation2DHorizontal.Left | (int) Orientation2DVertical.Down, (int) Orientation2D.DownLeft);
+		Assert.AreEqual((int) Orientation2DHorizontal.Right | (int) Orientation2DVertical.Down, (int) Orientation2D.DownRight);
 	}
 
 	[Test]
 	public void ShouldCorrectlyCombineVerticalAndHorizontalDirections() {
-		Assert.AreEqual(CardinalDirection.None, VerticalDirection.None.Plus(HorizontalDirection.None));
-		Assert.AreEqual(CardinalDirection.None, HorizontalDirection.None.Plus(VerticalDirection.None));
+		Assert.AreEqual(Orientation2D.None, Orientation2DVertical.None.Plus(Orientation2DHorizontal.None));
+		Assert.AreEqual(Orientation2D.None, Orientation2DHorizontal.None.Plus(Orientation2DVertical.None));
 
-		Assert.AreEqual(CardinalDirection.Up, VerticalDirection.Up.Plus(HorizontalDirection.None));
-		Assert.AreEqual(CardinalDirection.UpRight, VerticalDirection.Up.Plus(HorizontalDirection.Right));
-		Assert.AreEqual(CardinalDirection.UpLeft, VerticalDirection.Up.Plus(HorizontalDirection.Left));
-		Assert.AreEqual(CardinalDirection.Down, VerticalDirection.Down.Plus(HorizontalDirection.None));
-		Assert.AreEqual(CardinalDirection.DownRight, VerticalDirection.Down.Plus(HorizontalDirection.Right));
-		Assert.AreEqual(CardinalDirection.DownLeft, VerticalDirection.Down.Plus(HorizontalDirection.Left));
+		Assert.AreEqual(Orientation2D.Up, Orientation2DVertical.Up.Plus(Orientation2DHorizontal.None));
+		Assert.AreEqual(Orientation2D.UpRight, Orientation2DVertical.Up.Plus(Orientation2DHorizontal.Right));
+		Assert.AreEqual(Orientation2D.UpLeft, Orientation2DVertical.Up.Plus(Orientation2DHorizontal.Left));
+		Assert.AreEqual(Orientation2D.Down, Orientation2DVertical.Down.Plus(Orientation2DHorizontal.None));
+		Assert.AreEqual(Orientation2D.DownRight, Orientation2DVertical.Down.Plus(Orientation2DHorizontal.Right));
+		Assert.AreEqual(Orientation2D.DownLeft, Orientation2DVertical.Down.Plus(Orientation2DHorizontal.Left));
 
-		Assert.AreEqual(CardinalDirection.Left, HorizontalDirection.Left.Plus(VerticalDirection.None));
-		Assert.AreEqual(CardinalDirection.UpLeft, HorizontalDirection.Left.Plus(VerticalDirection.Up));
-		Assert.AreEqual(CardinalDirection.DownLeft, HorizontalDirection.Left.Plus(VerticalDirection.Down));
-		Assert.AreEqual(CardinalDirection.Right, HorizontalDirection.Right.Plus(VerticalDirection.None));
-		Assert.AreEqual(CardinalDirection.UpRight, HorizontalDirection.Right.Plus(VerticalDirection.Up));
-		Assert.AreEqual(CardinalDirection.DownRight, HorizontalDirection.Right.Plus(VerticalDirection.Down));
+		Assert.AreEqual(Orientation2D.Left, Orientation2DHorizontal.Left.Plus(Orientation2DVertical.None));
+		Assert.AreEqual(Orientation2D.UpLeft, Orientation2DHorizontal.Left.Plus(Orientation2DVertical.Up));
+		Assert.AreEqual(Orientation2D.DownLeft, Orientation2DHorizontal.Left.Plus(Orientation2DVertical.Down));
+		Assert.AreEqual(Orientation2D.Right, Orientation2DHorizontal.Right.Plus(Orientation2DVertical.None));
+		Assert.AreEqual(Orientation2D.UpRight, Orientation2DHorizontal.Right.Plus(Orientation2DVertical.Up));
+		Assert.AreEqual(Orientation2D.DownRight, Orientation2DHorizontal.Right.Plus(Orientation2DVertical.Down));
 	}
 
 	[Test]
 	public void ShouldCorrectlyExtract1DDirections() {
-		Assert.AreEqual(HorizontalDirection.Right, CardinalDirection.Right.GetHorizontalComponent());
-		Assert.AreEqual(VerticalDirection.None, CardinalDirection.Right.GetVerticalComponent());
+		Assert.AreEqual(Orientation2DHorizontal.Right, Orientation2D.Right.GetHorizontalComponent());
+		Assert.AreEqual(Orientation2DVertical.None, Orientation2D.Right.GetVerticalComponent());
 
-		Assert.AreEqual(HorizontalDirection.Right, CardinalDirection.UpRight.GetHorizontalComponent());
-		Assert.AreEqual(VerticalDirection.Up, CardinalDirection.UpRight.GetVerticalComponent());
+		Assert.AreEqual(Orientation2DHorizontal.Right, Orientation2D.UpRight.GetHorizontalComponent());
+		Assert.AreEqual(Orientation2DVertical.Up, Orientation2D.UpRight.GetVerticalComponent());
 
-		Assert.AreEqual(HorizontalDirection.None, CardinalDirection.Up.GetHorizontalComponent());
-		Assert.AreEqual(VerticalDirection.Up, CardinalDirection.Up.GetVerticalComponent());
+		Assert.AreEqual(Orientation2DHorizontal.None, Orientation2D.Up.GetHorizontalComponent());
+		Assert.AreEqual(Orientation2DVertical.Up, Orientation2D.Up.GetVerticalComponent());
 
-		Assert.AreEqual(HorizontalDirection.Left, CardinalDirection.UpLeft.GetHorizontalComponent());
-		Assert.AreEqual(VerticalDirection.Up, CardinalDirection.UpLeft.GetVerticalComponent());
+		Assert.AreEqual(Orientation2DHorizontal.Left, Orientation2D.UpLeft.GetHorizontalComponent());
+		Assert.AreEqual(Orientation2DVertical.Up, Orientation2D.UpLeft.GetVerticalComponent());
 
-		Assert.AreEqual(HorizontalDirection.Left, CardinalDirection.Left.GetHorizontalComponent());
-		Assert.AreEqual(VerticalDirection.None, CardinalDirection.Left.GetVerticalComponent());
+		Assert.AreEqual(Orientation2DHorizontal.Left, Orientation2D.Left.GetHorizontalComponent());
+		Assert.AreEqual(Orientation2DVertical.None, Orientation2D.Left.GetVerticalComponent());
 
-		Assert.AreEqual(HorizontalDirection.Left, CardinalDirection.DownLeft.GetHorizontalComponent());
-		Assert.AreEqual(VerticalDirection.Down, CardinalDirection.DownLeft.GetVerticalComponent());
+		Assert.AreEqual(Orientation2DHorizontal.Left, Orientation2D.DownLeft.GetHorizontalComponent());
+		Assert.AreEqual(Orientation2DVertical.Down, Orientation2D.DownLeft.GetVerticalComponent());
 
-		Assert.AreEqual(HorizontalDirection.None, CardinalDirection.Down.GetHorizontalComponent());
-		Assert.AreEqual(VerticalDirection.Down, CardinalDirection.Down.GetVerticalComponent());
+		Assert.AreEqual(Orientation2DHorizontal.None, Orientation2D.Down.GetHorizontalComponent());
+		Assert.AreEqual(Orientation2DVertical.Down, Orientation2D.Down.GetVerticalComponent());
 
-		Assert.AreEqual(HorizontalDirection.Right, CardinalDirection.DownRight.GetHorizontalComponent());
-		Assert.AreEqual(VerticalDirection.Down, CardinalDirection.DownRight.GetVerticalComponent());
+		Assert.AreEqual(Orientation2DHorizontal.Right, Orientation2D.DownRight.GetHorizontalComponent());
+		Assert.AreEqual(Orientation2DVertical.Down, Orientation2D.DownRight.GetVerticalComponent());
 	}
 }

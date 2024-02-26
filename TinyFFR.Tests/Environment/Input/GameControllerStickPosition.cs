@@ -12,8 +12,8 @@ class GameControllerStickPositionTest {
 	[TearDown]
 	public void TearDownTest() { }
 
-	IReadOnlyDictionary<CardinalDirection, GameControllerStickPosition> GetProportionalDirectionals(float proportion) {
-		return GameControllerStickPosition.AllCardinals.ToDictionary(
+	IReadOnlyDictionary<Orientation2D, GameControllerStickPosition> GetProportionalDirectionals(float proportion) {
+		return GameControllerStickPosition.OrientationMap.ToDictionary(
 			kvp => kvp.Key,
 			kvp => new GameControllerStickPosition((short) (kvp.Value.RawDisplacementHorizontal * proportion), (short) (kvp.Value.RawDisplacementVertical * proportion))
 		);
@@ -104,15 +104,15 @@ class GameControllerStickPositionTest {
 		foreach (var kvp in GetProportionalDirectionals(1f)) {
 			var actual = kvp.Value.GetPolarAngle(0.5f);
 			Angle? expected = kvp.Key switch {
-				CardinalDirection.None => null,
-				CardinalDirection.Right => 0f,
-				CardinalDirection.UpRight => 45f,
-				CardinalDirection.Up => 90f,
-				CardinalDirection.UpLeft => 135f,
-				CardinalDirection.Left => 180f,
-				CardinalDirection.DownLeft => 225f,
-				CardinalDirection.Down => 270f,
-				CardinalDirection.DownRight => 315f,
+				Orientation2D.None => null,
+				Orientation2D.Right => 0f,
+				Orientation2D.UpRight => 45f,
+				Orientation2D.Up => 90f,
+				Orientation2D.UpLeft => 135f,
+				Orientation2D.Left => 180f,
+				Orientation2D.DownLeft => 225f,
+				Orientation2D.Down => 270f,
+				Orientation2D.DownRight => 315f,
 				_ => throw new ArgumentOutOfRangeException()
 			};
 			if (expected == null || actual == null) Assert.AreEqual(expected, actual);
@@ -121,15 +121,15 @@ class GameControllerStickPositionTest {
 		foreach (var kvp in GetProportionalDirectionals(0.6f)) {
 			var actual = kvp.Value.GetPolarAngle(0.5f);
 			Angle? expected = kvp.Key switch {
-				CardinalDirection.None => null,
-				CardinalDirection.Right => 0f,
-				CardinalDirection.UpRight => 45f,
-				CardinalDirection.Up => 90f,
-				CardinalDirection.UpLeft => 135f,
-				CardinalDirection.Left => 180f,
-				CardinalDirection.DownLeft => 225f,
-				CardinalDirection.Down => 270f,
-				CardinalDirection.DownRight => 315f,
+				Orientation2D.None => null,
+				Orientation2D.Right => 0f,
+				Orientation2D.UpRight => 45f,
+				Orientation2D.Up => 90f,
+				Orientation2D.UpLeft => 135f,
+				Orientation2D.Left => 180f,
+				Orientation2D.DownLeft => 225f,
+				Orientation2D.Down => 270f,
+				Orientation2D.DownRight => 315f,
 				_ => throw new ArgumentOutOfRangeException()
 			};
 			if (expected == null || actual == null) Assert.AreEqual(expected, actual);
@@ -148,7 +148,7 @@ class GameControllerStickPositionTest {
 	[Test]
 	public void ShouldCorrectlyDetermineDeadzoneCondition() {
 		foreach (var kvp in GetProportionalDirectionals(1f)) {
-			Assert.AreEqual(kvp.Key != CardinalDirection.None, kvp.Value.IsOutsideDeadzone(0.5f));
+			Assert.AreEqual(kvp.Key != Orientation2D.None, kvp.Value.IsOutsideDeadzone(0.5f));
 			Assert.AreEqual(MathF.Abs(kvp.Value.NormalizedDisplacementHorizontal) > 0.5f, kvp.Value.IsHorizontalOffsetOutsideDeadzone(0.5f));
 			Assert.AreEqual(MathF.Abs(kvp.Value.NormalizedDisplacementVertical) > 0.5f, kvp.Value.IsVerticalOffsetOutsideDeadzone(0.5f));
 		}
@@ -163,21 +163,21 @@ class GameControllerStickPositionTest {
 	[Test]
 	public void ShouldCorrectlyDetermineDirection() {
 		foreach (var kvp in GetProportionalDirectionals(1f)) {
-			Assert.AreEqual(kvp.Key, kvp.Value.GetDirection(0.5f));
-			Assert.AreEqual(((HorizontalDirection) kvp.Key) & (HorizontalDirection.Right | HorizontalDirection.Left), kvp.Value.GetHorizontalDirection(0.5f));
-			Assert.AreEqual(((VerticalDirection) kvp.Key) & (VerticalDirection.Down | VerticalDirection.Up), kvp.Value.GetVerticalDirection(0.5f));
+			Assert.AreEqual(kvp.Key, kvp.Value.GetOrientation(0.5f));
+			Assert.AreEqual(((Orientation2DHorizontal) kvp.Key) & (Orientation2DHorizontal.Right | Orientation2DHorizontal.Left), kvp.Value.GetHorizontalOrientation(0.5f));
+			Assert.AreEqual(((Orientation2DVertical) kvp.Key) & (Orientation2DVertical.Down | Orientation2DVertical.Up), kvp.Value.GetVerticalOrientation(0.5f));
 		}
 
 		foreach (var kvp in GetProportionalDirectionals(0.4f)) {
-			Assert.AreEqual(CardinalDirection.None, kvp.Value.GetDirection(0.5f));
-			Assert.AreEqual(HorizontalDirection.None, kvp.Value.GetHorizontalDirection(0.5f));
-			Assert.AreEqual(VerticalDirection.None, kvp.Value.GetVerticalDirection(0.5f));
+			Assert.AreEqual(Orientation2D.None, kvp.Value.GetOrientation(0.5f));
+			Assert.AreEqual(Orientation2DHorizontal.None, kvp.Value.GetHorizontalOrientation(0.5f));
+			Assert.AreEqual(Orientation2DVertical.None, kvp.Value.GetVerticalOrientation(0.5f));
 		}
 	}
 
 	[Test]
 	public void ShouldCorrectlyExtractRawValues() {
-		foreach (var kvp in GameControllerStickPosition.AllCardinals) {
+		foreach (var kvp in GameControllerStickPosition.OrientationMap) {
 			kvp.Value.GetRawDisplacementValues(out var actualRawHorizontal, out var actualRawVertical);
 			Assert.AreEqual(kvp.Value.RawDisplacementHorizontal, actualRawHorizontal);
 			Assert.AreEqual(kvp.Value.RawDisplacementVertical, actualRawVertical);

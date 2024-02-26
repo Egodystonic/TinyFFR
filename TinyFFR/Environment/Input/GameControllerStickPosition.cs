@@ -9,16 +9,16 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 	public const float RecommendedDeadzoneSize = ((float) AnalogDisplacementLevel.Slight / Int16.MaxValue) + 0.01f;
 
 	public static readonly GameControllerStickPosition Centered = new(0, 0);
-	public static readonly IReadOnlyDictionary<CardinalDirection, GameControllerStickPosition> AllCardinals = new Dictionary<CardinalDirection, GameControllerStickPosition> {
-		[CardinalDirection.None] = Centered,
-		[CardinalDirection.Right] = new(Int16.MaxValue, 0),
-		[CardinalDirection.UpRight] = new(Int16.MaxValue, Int16.MaxValue),
-		[CardinalDirection.Up] = new(0, Int16.MaxValue),
-		[CardinalDirection.UpLeft] = new(Int16.MinValue, Int16.MaxValue),
-		[CardinalDirection.Left] = new(Int16.MinValue, 0),
-		[CardinalDirection.DownLeft] = new(Int16.MinValue, Int16.MinValue),
-		[CardinalDirection.Down] = new(0, Int16.MinValue),
-		[CardinalDirection.DownRight] = new(Int16.MaxValue, Int16.MinValue),
+	public static readonly IReadOnlyDictionary<Orientation2D, GameControllerStickPosition> OrientationMap = new Dictionary<Orientation2D, GameControllerStickPosition> {
+		[Orientation2D.None] = Centered,
+		[Orientation2D.Right] = new(Int16.MaxValue, 0),
+		[Orientation2D.UpRight] = new(Int16.MaxValue, Int16.MaxValue),
+		[Orientation2D.Up] = new(0, Int16.MaxValue),
+		[Orientation2D.UpLeft] = new(Int16.MinValue, Int16.MaxValue),
+		[Orientation2D.Left] = new(Int16.MinValue, 0),
+		[Orientation2D.DownLeft] = new(Int16.MinValue, Int16.MinValue),
+		[Orientation2D.Down] = new(0, Int16.MinValue),
+		[Orientation2D.DownRight] = new(Int16.MaxValue, Int16.MinValue),
 	};
 
 	internal short RawDisplacementHorizontal { get; init; }
@@ -83,9 +83,9 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 	}
 
 
-	public HorizontalDirection GetHorizontalDirection(float deadzoneSize = RecommendedDeadzoneSize) => GetDirection(deadzoneSize).GetHorizontalComponent();
-	public VerticalDirection GetVerticalDirection(float deadzoneSize = RecommendedDeadzoneSize) => GetDirection(deadzoneSize).GetVerticalComponent();
-	public CardinalDirection GetDirection(float deadzoneSize = RecommendedDeadzoneSize) => GetPolarAngle(deadzoneSize)?.PolarDirection ?? CardinalDirection.None;
+	public Orientation2DHorizontal GetHorizontalOrientation(float deadzoneSize = RecommendedDeadzoneSize) => GetOrientation(deadzoneSize).GetHorizontalComponent();
+	public Orientation2DVertical GetVerticalOrientation(float deadzoneSize = RecommendedDeadzoneSize) => GetOrientation(deadzoneSize).GetVerticalComponent();
+	public Orientation2D GetOrientation(float deadzoneSize = RecommendedDeadzoneSize) => GetPolarAngle(deadzoneSize)?.PolarDirection ?? Orientation2D.None;
 
 	// TODO explain these are for performance or custom implementation only if necessary and which sign points which way etc
 	public void GetRawDisplacementValues(out short outRawHorizontalOffset, out short outRawVerticalOffset) {
@@ -94,12 +94,12 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 	}
 
 	public override string ToString() {
-		var dir = GetDirection();
-		var dirString = dir == CardinalDirection.None ? "No direction" : $"{DisplacementLevel} {dir}";
+		var orientation = GetOrientation();
+		var orString = orientation == Orientation2D.None ? "No orientation" : $"{DisplacementLevel} {orientation}";
 		var angle = GetPolarAngle();
 		var angleString = angle == null ? "Within deadzone" : $"{GetPolarAngle():N0} with {PercentageUtils.ConvertFractionToPercentageString(NormalizedDisplacement, "N0", CultureInfo.CurrentCulture)} displacement";
 		return $"X:{PercentageUtils.ConvertFractionToPercentageString(NormalizedDisplacementHorizontal, "N0", CultureInfo.CurrentCulture)} Y:{PercentageUtils.ConvertFractionToPercentageString(NormalizedDisplacementVertical, "N0", CultureInfo.CurrentCulture)} " +
-			   $"({angleString}, {dirString})";
+			   $"({angleString}, {orString})";
 	}
 
 	public bool Equals(GameControllerStickPosition other) => RawDisplacementHorizontal == other.RawDisplacementHorizontal && RawDisplacementVertical == other.RawDisplacementVertical;

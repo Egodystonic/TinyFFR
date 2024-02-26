@@ -25,7 +25,9 @@ public readonly record struct WindowConfig {
 
 	public WindowConfig() { }
 
+#pragma warning disable CA1822 // "Could be static" - Yes, for now. Keeping this as a placeholder for future.
 	internal void ThrowIfInvalid() {
 		/* no op */
 	}
+#pragma warning restore CA1822
 }

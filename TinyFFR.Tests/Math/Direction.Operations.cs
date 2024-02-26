@@ -72,10 +72,10 @@ partial class DirectionTest {
 			}
 		}
 
-		foreach (var cardinal in Direction.AllCardinals) {
+		foreach (var cardinal in Direction.CardinalMap) {
 			var perp = cardinal.GetAnyPerpendicularDirection();
 			AssertToleranceEquals(90f, cardinal ^ perp, TestTolerance);
-			Assert.IsTrue(Direction.AllCardinals.Contains(perp));
+			Assert.IsTrue(Direction.CardinalMap.Contains(perp));
 		}
 	}
 
@@ -121,7 +121,7 @@ partial class DirectionTest {
 
 	[Test]
 	public void ShouldCorrectlyOrthogonalizeAgainstAnotherDir() {
-		foreach (var cardinal in Direction.AllCardinals) {
+		foreach (var cardinal in Direction.CardinalMap) {
 			var perp = cardinal.GetAnyPerpendicularDirection();
 			var thirdPerp = cardinal.GetAnyPerpendicularDirection(perp);
 			Assert.AreEqual(cardinal, (20f % perp * cardinal).OrthogonalizedAgainst(thirdPerp));

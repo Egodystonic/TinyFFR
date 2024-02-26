@@ -88,6 +88,19 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 		if (x == 0f && y == 0f) return null;
 		return FromRadians(MathF.Atan2(y, x)).Normalized;
 	}
+	// TODO clarify this is the four-quadrant inverse tangent
+	public static Angle? FromPolarAngleAround2DPlane(Orientation2D orientation) => orientation switch {
+		Orientation2D.None => null,
+		Orientation2D.Right => 0f,
+		Orientation2D.UpRight => 45f,
+		Orientation2D.Up => 90f,
+		Orientation2D.UpLeft => 135f,
+		Orientation2D.Left => 180f,
+		Orientation2D.DownLeft => 225f,
+		Orientation2D.Down => 270f,
+		Orientation2D.DownRight => 315f,
+		_ => throw new ArgumentException($"Undefined {nameof(Orientation2D)} '{orientation}'.", nameof(orientation))
+	};
 
 	/* I thought long and hard about whether this conversion should even exist and what it should assume the operand is.
 	 * Arguments for/against 'operand' being:

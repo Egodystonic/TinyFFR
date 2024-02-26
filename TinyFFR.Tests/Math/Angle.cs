@@ -125,10 +125,10 @@ partial class AngleTest {
 		AssertToleranceEquals(new Angle(107.888f), Angle.FromAngleBetweenDirections(d2, d1), TestTolerance);
 
 		// Check that the order of arguments makes no difference
-		for (var i = 0; i < Direction.AllCardinals.Count; ++i) {
-			for (var j = i; j < Direction.AllCardinals.Count; ++j) {
-				d1 = Direction.AllCardinals.ElementAt(i);
-				d2 = Direction.AllCardinals.ElementAt(j);
+		for (var i = 0; i < Direction.CardinalMap.Count; ++i) {
+			for (var j = i; j < Direction.CardinalMap.Count; ++j) {
+				d1 = Direction.CardinalMap.ElementAt(i);
+				d2 = Direction.CardinalMap.ElementAt(j);
 				Assert.AreEqual(Angle.FromAngleBetweenDirections(d1, d2), Angle.FromAngleBetweenDirections(d2, d1));
 			}
 		}

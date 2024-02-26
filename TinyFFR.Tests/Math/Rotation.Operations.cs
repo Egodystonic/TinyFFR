@@ -19,7 +19,7 @@ partial class RotationTest {
 					for (var w = -5f; w <= 5f; w += 1f) {
 						var rot = Rotation.FromQuaternion(new Quaternion(x, y, z, w));
 
-						foreach (var cardinal in AllCardinals) {
+						foreach (var cardinal in CardinalMap) {
 							AssertToleranceEquals(cardinal, cardinal * rot * -rot, TestTolerance);
 							AssertToleranceEquals(cardinal, cardinal * -rot * rot, TestTolerance);
 							AssertToleranceEquals(cardinal * rot, cardinal * -(-rot), TestTolerance);
@@ -70,7 +70,7 @@ partial class RotationTest {
 		for (var f = 0f; f <= 360f; f += 18f) {
 			var angle = Angle.FromDegrees(f);
 
-			foreach (var cardinal in AllCardinals) {
+			foreach (var cardinal in CardinalMap) {
 				var expected = cardinal % angle;
 				// TODO this fails when f = 360. Seems like the new check for 360 basically being 0 thwarts it. Need to think carefully
 				AssertToleranceEquals(expected, cardinal % (angle * 0.5f) + cardinal % (angle * 0.5f), TestTolerance);

@@ -22,7 +22,7 @@ partial class RotationTest {
 
 	[Test]
 	public void AxisAndAnglePropertiesShouldBeImplementedCorrectly() {
-		foreach (var cardinal in AllCardinals) {
+		foreach (var cardinal in CardinalMap) {
 			for (var r = 0f; r < MathF.Tau * 0.95f; r += MathF.Tau * 0.1f) {
 				var cosHalfAngle = MathF.Cos(r / 2f);
 				var sinHalfAngle = MathF.Sin(r / 2f);
@@ -69,7 +69,7 @@ partial class RotationTest {
 		AssertInitConstructedQuatIsUnit(90f, None);
 		AssertInitConstructedQuatIsUnit(180f, None);
 		AssertInitConstructedQuatIsUnit(360f, None);
-		foreach (var cardinal in AllCardinals) {
+		foreach (var cardinal in CardinalMap) {
 			AssertInitConstructedQuatIsUnit(-360f, cardinal);
 			AssertInitConstructedQuatIsUnit(-180f, cardinal);
 			AssertInitConstructedQuatIsUnit(-90f, cardinal);
@@ -84,7 +84,7 @@ partial class RotationTest {
 	public void ConstructorsShouldCorrectlyConstruct() { // Also, the floor should be made out of floor
 		Assert.AreEqual(Rotation.None, new Rotation());
 
-		foreach (var cardinal in AllCardinals) {
+		foreach (var cardinal in CardinalMap) {
 			for (var r = 0f; r < MathF.Tau * 0.95f; r += MathF.Tau * 0.1f) {
 				Assert.AreEqual(new Rotation(Quaternion.CreateFromAxisAngle(cardinal.ToVector3(), r)), new Rotation(Angle.FromRadians(r), cardinal));
 			}
@@ -93,7 +93,7 @@ partial class RotationTest {
 
 	[Test]
 	public void StaticFactoryMethodsShouldCorrectlyConstruct() {
-		foreach (var cardinal in AllCardinals) {
+		foreach (var cardinal in CardinalMap) {
 			for (var r = 0f; r < MathF.Tau * 0.95f; r += MathF.Tau * 0.1f) {
 				Assert.AreEqual(Rotation.FromAngleAroundAxis(Angle.FromRadians(r), cardinal), new Rotation(Angle.FromRadians(r), cardinal));
 			}
@@ -113,14 +113,14 @@ partial class RotationTest {
 		Assert.AreEqual(NinetyAroundUp, Rotation.FromStartAndEndDirection(Left, Backward));
 		Assert.AreEqual(NinetyAroundUp, Rotation.FromStartAndEndDirection(Forward, Left));
 
-		foreach (var cardinal in AllCardinals) {
+		foreach (var cardinal in CardinalMap) {
 			Assert.AreEqual(Rotation.None, Rotation.FromStartAndEndDirection(cardinal, cardinal));
 		}
 
-		for (var i = 0; i < AllCardinals.Count; ++i) {
-			for (var j = i; j < AllCardinals.Count; ++j) {
-				var dirA = AllCardinals.ElementAt(i);
-				var dirB = AllCardinals.ElementAt(j);
+		for (var i = 0; i < CardinalMap.Count; ++i) {
+			for (var j = i; j < CardinalMap.Count; ++j) {
+				var dirA = CardinalMap.ElementAt(i);
+				var dirB = CardinalMap.ElementAt(j);
 
 				AssertToleranceEquals(dirB, Rotation.FromStartAndEndDirection(dirA, dirB) * dirA, TestTolerance);
 				AssertToleranceEquals(dirA, Rotation.FromStartAndEndDirection(dirB, dirA) * dirB, TestTolerance);
@@ -148,7 +148,7 @@ partial class RotationTest {
 
 	[Test]
 	public void ShouldCorrectlyExtractAngleAndAxis() {
-		foreach (var cardinal in AllCardinals) {
+		foreach (var cardinal in CardinalMap) {
 			for (var r = 0f; r < MathF.Tau * 0.95f; r += MathF.Tau * 0.1f) {
 				var cosHalfAngle = MathF.Cos(r / 2f);
 				var sinHalfAngle = MathF.Sin(r / 2f);
@@ -170,7 +170,7 @@ partial class RotationTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertToAndFromSpan() {
-		foreach (var cardinal in AllCardinals) {
+		foreach (var cardinal in CardinalMap) {
 			for (var angle = -360f; angle <= 360f; angle += 36f) {
 				var expected = Rotation.FromAngleAroundAxis(angle, cardinal);
 				var span = Rotation.ConvertToSpan(expected);
@@ -189,7 +189,7 @@ partial class RotationTest {
 		var testFormat = "N0";
 		Span<char> formatSpan = stackalloc char[300];
 
-		foreach (var cardinal in AllCardinals) {
+		foreach (var cardinal in CardinalMap) {
 			for (var angle = 10f; angle <= 170f; angle += 10f) {
 				var expectedValue = $"{new Angle(angle).ToString(testFormat, testCulture)}{Rotation.ToStringMiddleSection}{cardinal.ToString(testFormat, testCulture)}";
 				var testRot = new Rotation(angle, cardinal);
