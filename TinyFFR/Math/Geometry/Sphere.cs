@@ -4,8 +4,8 @@
 namespace Egodystonic.TinyFFR;
 
 public readonly struct Sphere : IShape<Sphere> {
-	const float DefaultRandomMin = 1f;
-	const float DefaultRandomMax = 3f;
+	internal const float DefaultRandomMin = 1f;
+	internal const float DefaultRandomMax = 3f;
 	public static readonly Sphere UnitSphere = new(1f);
 
 	readonly float _radius;
