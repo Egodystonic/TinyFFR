@@ -112,42 +112,6 @@ public enum Orientation3D {
 }
 
 public static class Orientation3DExtensions {
-	const int MaxDesiredLookupArrayLength = 1_000;
-	static readonly Direction[] _orientationToDirectionLookup;
-
-	static Orientation3DExtensions() {
-		const int LookupLengthRequired = 2 << (ZAxisShift + NegativeDirectionBitShift);
-#pragma warning disable CS8519 // "The given expression never matches the provided pattern" -> That's fine. This is basically as close as we can get to a static assert in C#.
-		if (LookupLengthRequired is < 0 or > MaxDesiredLookupArrayLength) {
-			throw new InvalidOperationException("Directional bits have changed; no longer works to store directions as index-based lookup array.");
-		}
-#pragma warning restore CS8519
-
-		_orientationToDirectionLookup = new Direction[LookupLengthRequired];
-		for (var x = -1; x <= 1; ++x) {
-			for (var y = -1; y <= 1; ++y) {
-				for (var z = -1; z <= 1; ++z) {
-					var xBits = x switch {
-						-1 => 1 << NegativeDirectionBitShift,
-						1 => 1 << PositiveDirectionBitShift,
-						_ => 0
-					} << XAxisShift;
-					var yBits = y switch {
-						-1 => 1 << NegativeDirectionBitShift,
-						1 => 1 << PositiveDirectionBitShift,
-						_ => 0
-					} << YAxisShift;
-					var zBits = z switch {
-						-1 => 1 << NegativeDirectionBitShift,
-						1 => 1 << PositiveDirectionBitShift,
-						_ => 0
-					} << ZAxisShift;
-					_orientationToDirectionLookup[xBits | yBits | zBits] = new Direction(x, y, z);
-				}
-			}
-		}
-	}
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Orientation3D AsGeneralOrientation(this CardinalOrientation3D @this) => (Orientation3D) @this;
 
@@ -207,22 +171,22 @@ public static class Orientation3DExtensions {
 	public static bool IsDiagonal(this Orientation3D @this) => Int32.PopCount((int) @this) == 3; // TODO in XMLDoc make it clear that "None" does not count for this
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction ToDirection(this CardinalOrientation3D @this) => @this.AsGeneralOrientation().ToDirection();
+	public static Direction ToDirection(this CardinalOrientation3D @this) => Direction.FromOrientation(@this.AsGeneralOrientation());
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction ToDirection(this DiagonalOrientation3D @this) => @this.AsGeneralOrientation().ToDirection();
+	public static Direction ToDirection(this DiagonalOrientation3D @this) => Direction.FromOrientation(@this.AsGeneralOrientation());
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction ToDirection(this XAxisOrientation3D @this) => @this.AsGeneralOrientation().ToDirection();
+	public static Direction ToDirection(this XAxisOrientation3D @this) => Direction.FromOrientation(@this.AsGeneralOrientation());
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction ToDirection(this YAxisOrientation3D @this) => @this.AsGeneralOrientation().ToDirection();
+	public static Direction ToDirection(this YAxisOrientation3D @this) => Direction.FromOrientation(@this.AsGeneralOrientation());
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction ToDirection(this ZAxisOrientation3D @this) => @this.AsGeneralOrientation().ToDirection();
+	public static Direction ToDirection(this ZAxisOrientation3D @this) => Direction.FromOrientation(@this.AsGeneralOrientation());
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction ToDirection(this Orientation3D @this) => _orientationToDirectionLookup[(int) @this];
+	public static Direction ToDirection(this Orientation3D @this) => Direction.FromOrientation(@this);
 
 	public static Axis GetAxis(this CardinalOrientation3D @this) {
 		// This mask comes from saying we want the TZCNT of @this, but only care about the bottom five bits (e.g. 0b1_1111) as TZCNT should be < 32 for valid values or 32 (e.g. 0b10_0000) if @this is None.
