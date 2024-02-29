@@ -19,10 +19,17 @@ class SphereTest {
 	public void ShouldCorrectlyCalculateProperties() {
 		// https://www.wolframalpha.com/input?i=volume%2C+surface+area%2C+circumference%2C+diameter+of+sphere+with+radius+7.4
 		var sphere = new Sphere(7.4f);
+		Assert.AreEqual(7.4f, sphere.Radius, TestTolerance);
 		Assert.AreEqual(14.8f, sphere.Diameter, TestTolerance);
 		Assert.AreEqual(46.4956f, sphere.Circumference, TestTolerance);
 		Assert.AreEqual(688.134f, sphere.SurfaceArea, TestTolerance);
 		Assert.AreEqual(1697.4f, sphere.Volume, TestTolerance);
+		Assert.AreEqual(7.4f * 7.4f, sphere.RadiusSquared, TestTolerance);
+	}
+
+	[Test]
+	public void ShouldCorrectlyScale() {
+		AssertToleranceEquals(new Sphere(7.4f * 3f), new Sphere(7.4f).ScaledBy(3f), TestTolerance);
 	}
 
 	// TODO this test could be fleshed out a lot more

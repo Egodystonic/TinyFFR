@@ -6,8 +6,8 @@ namespace Egodystonic.TinyFFR;
 public interface IShape {
 	// TODO
 	// bool Contains(Location localLocation);
-	// bool IsIntersectedBy(Ray localRay);
+	// Location? GetIntersectionPoint(Ray localRay);
 }
 public interface IShape<TSelf> : IShape, IMathPrimitive<TSelf, float>, IInterpolatable<TSelf>, IBoundedRandomizable<TSelf> where TSelf : IShape<TSelf> {
-	
+	TSelf ScaledBy(float scalar);
 }

@@ -207,22 +207,25 @@ static class GeometryUtils {
 	public static void StandardizedParse<T1, T2>(ReadOnlySpan<char> s, IFormatProvider? provider, out T1 outParamA, out T2 outParamB) where T1 : ISpanParsable<T1> where T2 : ISpanParsable<T2> {
 		s = s[(s.IndexOf(ParameterKeyValueSeparatorToken) + ParameterKeyValueSeparatorToken.Length)..];
 		var separatorTokenIndex = s.IndexOf(ParameterSeparatorToken);
-		outParamA = T1.Parse(s[..^separatorTokenIndex], provider);
+		outParamA = T1.Parse(s[..separatorTokenIndex], provider);
 
 		s = s[(separatorTokenIndex + ParameterSeparatorToken.Length)..];
+		s = s[(s.IndexOf(ParameterKeyValueSeparatorToken) + ParameterKeyValueSeparatorToken.Length)..];
 		outParamB = T2.Parse(s[..^ParameterEndToken.Length], provider);
 	}
 
 	public static void StandardizedParse<T1, T2, T3>(ReadOnlySpan<char> s, IFormatProvider? provider, out T1 outParamA, out T2 outParamB, out T3 outParamC) where T1 : ISpanParsable<T1> where T2 : ISpanParsable<T2> where T3 : ISpanParsable<T3> {
 		s = s[(s.IndexOf(ParameterKeyValueSeparatorToken) + ParameterKeyValueSeparatorToken.Length)..];
 		var separatorTokenIndex = s.IndexOf(ParameterSeparatorToken);
-		outParamA = T1.Parse(s[..^separatorTokenIndex], provider);
+		outParamA = T1.Parse(s[..separatorTokenIndex], provider);
 
 		s = s[(separatorTokenIndex + ParameterSeparatorToken.Length)..];
+		s = s[(s.IndexOf(ParameterKeyValueSeparatorToken) + ParameterKeyValueSeparatorToken.Length)..];
 		separatorTokenIndex = s.IndexOf(ParameterSeparatorToken);
-		outParamB = T2.Parse(s[..^separatorTokenIndex], provider);
+		outParamB = T2.Parse(s[..separatorTokenIndex], provider);
 
 		s = s[(separatorTokenIndex + ParameterSeparatorToken.Length)..];
+		s = s[(s.IndexOf(ParameterKeyValueSeparatorToken) + ParameterKeyValueSeparatorToken.Length)..];
 		outParamC = T3.Parse(s[..^ParameterEndToken.Length], provider);
 	}
 	#endregion
@@ -234,7 +237,7 @@ static class GeometryUtils {
 		var kvSeparatorTokenIndex = s.IndexOf(ParameterKeyValueSeparatorToken);
 		if (kvSeparatorTokenIndex < 0) return false;
 
-		s = s[kvSeparatorTokenIndex..];
+		s = s[(kvSeparatorTokenIndex + ParameterKeyValueSeparatorToken.Length)..];
 		var paramsEndTokenIndex = s.IndexOf(ParameterEndToken);
 		if (paramsEndTokenIndex < 0) return false;
 
@@ -251,18 +254,18 @@ static class GeometryUtils {
 		var kvSeparatorTokenIndex = s.IndexOf(ParameterKeyValueSeparatorToken);
 		if (kvSeparatorTokenIndex < 0) return false;
 
-		s = s[kvSeparatorTokenIndex..];
+		s = s[(kvSeparatorTokenIndex + ParameterKeyValueSeparatorToken.Length)..];
 		var paramSeparatorTokenIndex = s.IndexOf(ParameterSeparatorToken);
 		if (paramSeparatorTokenIndex < 0) return false;
 		if (!T1.TryParse(s[..paramSeparatorTokenIndex], provider, out outParamA!)) return false;
-
+		s = s[(paramSeparatorTokenIndex + ParameterSeparatorToken.Length)..];
 
 		kvSeparatorTokenIndex = s.IndexOf(ParameterKeyValueSeparatorToken);
 		if (kvSeparatorTokenIndex < 0) return false;
 		var paramsEndTokenIndex = s.IndexOf(ParameterEndToken);
 		if (paramsEndTokenIndex < 0) return false;
 
-		s = s[..paramsEndTokenIndex];
+		s = s[(kvSeparatorTokenIndex + ParameterKeyValueSeparatorToken.Length)..paramsEndTokenIndex];
 
 		if (!T2.TryParse(s, provider, out outParamB!)) return false;
 		return true;
@@ -276,24 +279,26 @@ static class GeometryUtils {
 		var kvSeparatorTokenIndex = s.IndexOf(ParameterKeyValueSeparatorToken);
 		if (kvSeparatorTokenIndex < 0) return false;
 
-		s = s[kvSeparatorTokenIndex..];
+		s = s[(kvSeparatorTokenIndex + ParameterKeyValueSeparatorToken.Length)..];
 		var paramSeparatorTokenIndex = s.IndexOf(ParameterSeparatorToken);
 		if (paramSeparatorTokenIndex < 0) return false;
 		if (!T1.TryParse(s[..paramSeparatorTokenIndex], provider, out outParamA!)) return false;
+		s = s[(paramSeparatorTokenIndex + ParameterSeparatorToken.Length)..];
 
 		kvSeparatorTokenIndex = s.IndexOf(ParameterKeyValueSeparatorToken);
 		if (kvSeparatorTokenIndex < 0) return false;
-		s = s[kvSeparatorTokenIndex..];
+		s = s[(kvSeparatorTokenIndex + ParameterKeyValueSeparatorToken.Length)..];
 		paramSeparatorTokenIndex = s.IndexOf(ParameterSeparatorToken);
 		if (paramSeparatorTokenIndex < 0) return false;
 		if (!T2.TryParse(s[..paramSeparatorTokenIndex], provider, out outParamB!)) return false;
+		s = s[(paramSeparatorTokenIndex + ParameterSeparatorToken.Length)..];
 
 		kvSeparatorTokenIndex = s.IndexOf(ParameterKeyValueSeparatorToken);
 		if (kvSeparatorTokenIndex < 0) return false;
 		var paramsEndTokenIndex = s.IndexOf(ParameterEndToken);
 		if (paramsEndTokenIndex < 0) return false;
 
-		s = s[..paramsEndTokenIndex];
+		s = s[(kvSeparatorTokenIndex + ParameterKeyValueSeparatorToken.Length)..paramsEndTokenIndex];
 
 		if (!T3.TryParse(s, provider, out outParamC!)) return false;
 		return true;

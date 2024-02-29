@@ -6,41 +6,49 @@ using static Egodystonic.TinyFFR.DirectionalBits;
 namespace Egodystonic.TinyFFR;
 
 file static class DirectionalBits {
-	// Important -- Less significant bit in each axis pair (e.g. Left in Left/Right) should correspond to positive values in world (e.g. positive X means left Direction)
-	// This makes GetAxisSign() below work, and some stuff in OrientationUtils
-	public const int LeftBit = 0b1;
-	public const int RightBit = 0b10;
-	public const int UpBit = 0b100;
-	public const int DownBit = 0b1000;
-	public const int ForwardBit = 0b1_0000;
-	public const int BackwardBit = 0b10_0000;
+	public const int PositiveDirectionBitShift = 0;
+	public const int NegativeDirectionBitShift = 1;
+	public const int PositiveDirectionBitMask = 0b1 << PositiveDirectionBitShift;
+	public const int NegativeDirectionBitMask = 0b1 << NegativeDirectionBitShift;
 
-	public const int XAxisBits = LeftBit | RightBit;
-	public const int YAxisBits = UpBit | DownBit;
-	public const int ZAxisBits = ForwardBit | BackwardBit;
+	// These should probably remain even values. See GetAxis() implementation below for more info.
+	public const int XAxisShift = 2;
+	public const int YAxisShift = 4;
+	public const int ZAxisShift = 6;
+
+	public const int LeftBit = PositiveDirectionBitMask << XAxisShift;
+	public const int RightBit = NegativeDirectionBitMask << XAxisShift;
+	public const int UpBit = PositiveDirectionBitMask << YAxisShift;
+	public const int DownBit = NegativeDirectionBitMask << YAxisShift;
+	public const int ForwardBit = PositiveDirectionBitMask << ZAxisShift;
+	public const int BackwardBit = NegativeDirectionBitMask << ZAxisShift;
+
+	public const int XAxisBitMask = (PositiveDirectionBitMask | NegativeDirectionBitMask) << XAxisShift;
+	public const int YAxisBitMask = (PositiveDirectionBitMask | NegativeDirectionBitMask) << YAxisShift;
+	public const int ZAxisBitMask = (PositiveDirectionBitMask | NegativeDirectionBitMask) << ZAxisShift;
 }
 
 public enum Axis {
 	None = 0,
-	X = XAxisBits,
-	Y = YAxisBits,
-	Z = ZAxisBits
+	X = XAxisShift,
+	Y = YAxisShift,
+	Z = ZAxisShift
 }
 
 [Flags]
-public enum XAxisOrientation3D {
+public enum XAxisOrientation3D { // TODO mention in XMLDoc that's always safe to cast this to Orientation3D but not the other way around
 	None = 0,
 	Left = LeftBit,
 	Right = RightBit,
 }
 [Flags]
-public enum YAxisOrientation3D {
+public enum YAxisOrientation3D { // TODO mention in XMLDoc that's always safe to cast this to Orientation3D but not the other way around
 	None = 0,
 	Up = UpBit,
 	Down = DownBit,
 }
 [Flags]
-public enum ZAxisOrientation3D {
+public enum ZAxisOrientation3D { // TODO mention in XMLDoc that's always safe to cast this to Orientation3D but not the other way around
 	None = 0,
 	Forward = ForwardBit,
 	Backward = BackwardBit
@@ -59,51 +67,87 @@ public enum CardinalOrientation3D { // TODO mention in XMLDoc that's always safe
 
 public enum DiagonalOrientation3D { // TODO mention in XMLDoc that's always safe to cast this to Orientation3D but not the other way around
 	None = 0,
-	UpLeftForward = UpBit | LeftBit | ForwardBit,
-	UpRightForward = UpBit | RightBit | ForwardBit,
-	UpLeftBackward = UpBit | LeftBit | BackwardBit,
-	UpRightBackward = UpBit | RightBit | BackwardBit,
-	DownLeftForward = DownBit | LeftBit | ForwardBit,
-	DownRightForward = DownBit | RightBit | ForwardBit,
-	DownLeftBackward = DownBit | LeftBit | BackwardBit,
-	DownRightBackward = DownBit | RightBit | BackwardBit,
+	LeftUpForward = LeftBit | UpBit | ForwardBit,
+	RightUpForward = RightBit | UpBit | ForwardBit,
+	LeftUpBackward = LeftBit | UpBit | BackwardBit,
+	RightUpBackward = RightBit | UpBit | BackwardBit,
+	LeftDownForward = LeftBit | DownBit | ForwardBit,
+	RightDownForward = RightBit | DownBit | ForwardBit,
+	LeftDownBackward = LeftBit | DownBit | BackwardBit,
+	RightDownBackward = RightBit | DownBit | BackwardBit,
 }
 
 [Flags]
 public enum Orientation3D {
 	None = 0,
 
-	Left = CardinalOrientation3D.Left,
-	Right = CardinalOrientation3D.Right,
-	Up = CardinalOrientation3D.Up,
-	Down = CardinalOrientation3D.Down,
-	Forward = CardinalOrientation3D.Forward,
-	Backward = CardinalOrientation3D.Backward,
+	Left = LeftBit,
+	Right = RightBit,
+	Up = UpBit,
+	Down = DownBit,
+	Forward = ForwardBit,
+	Backward = BackwardBit,
 
-	UpLeft = CardinalOrientation3D.Up | CardinalOrientation3D.Left,
-	UpRight = CardinalOrientation3D.Up | CardinalOrientation3D.Right,
-	UpForward = CardinalOrientation3D.Up | CardinalOrientation3D.Forward,
-	UpBackward = CardinalOrientation3D.Up | CardinalOrientation3D.Backward,
-	DownLeft = CardinalOrientation3D.Down | CardinalOrientation3D.Left,
-	DownRight = CardinalOrientation3D.Down | CardinalOrientation3D.Right,
-	DownForward = CardinalOrientation3D.Down | CardinalOrientation3D.Forward,
-	DownBackward = CardinalOrientation3D.Down | CardinalOrientation3D.Backward,
-	LeftForward = CardinalOrientation3D.Left | CardinalOrientation3D.Forward,
-	LeftBackward = CardinalOrientation3D.Left | CardinalOrientation3D.Backward,
-	RightForward = CardinalOrientation3D.Right | CardinalOrientation3D.Forward,
-	RightBackward = CardinalOrientation3D.Right | CardinalOrientation3D.Backward,
+	LeftUp = LeftBit | UpBit,
+	RightUp = RightBit | UpBit,
+	UpForward = UpBit | ForwardBit,
+	UpBackward = UpBit | BackwardBit,
+	LeftDown = LeftBit | DownBit,
+	RightDown = RightBit | DownBit,
+	DownForward = DownBit | ForwardBit,
+	DownBackward = DownBit | BackwardBit,
+	LeftForward = LeftBit | ForwardBit,
+	LeftBackward = LeftBit | BackwardBit,
+	RightForward = RightBit | ForwardBit,
+	RightBackward = RightBit | BackwardBit,
 
-	UpLeftForward = DiagonalOrientation3D.UpLeftForward,
-	UpRightForward = DiagonalOrientation3D.UpRightForward,
-	UpLeftBackward = DiagonalOrientation3D.UpLeftBackward,
-	UpRightBackward = DiagonalOrientation3D.UpRightBackward,
-	DownLeftForward = DiagonalOrientation3D.DownLeftForward,
-	DownRightForward = DiagonalOrientation3D.DownRightForward,
-	DownLeftBackward = DiagonalOrientation3D.DownLeftBackward,
-	DownRightBackward = DiagonalOrientation3D.DownRightBackward, // Also known as the Conservative Party orientation amirite
+	LeftUpForward = LeftBit | UpBit | ForwardBit,
+	RightUpForward = RightBit | UpBit | ForwardBit,
+	LeftUpBackward = LeftBit | UpBit | BackwardBit,
+	RightUpBackward = RightBit | UpBit | BackwardBit,
+	LeftDownForward = LeftBit | DownBit | ForwardBit,
+	RightDownForward = RightBit | DownBit | ForwardBit,
+	LeftDownBackward = LeftBit | DownBit | BackwardBit,
+	RightDownBackward = RightBit | DownBit | BackwardBit,
 }
 
 public static class Orientation3DExtensions {
+	const int MaxDesiredLookupArrayLength = 1_000;
+	static readonly Direction[] _orientationToDirectionLookup;
+
+	static Orientation3DExtensions() {
+		const int LookupLengthRequired = 2 << (ZAxisShift + NegativeDirectionBitShift);
+#pragma warning disable CS8519 // "The given expression never matches the provided pattern" -> That's fine. This is basically as close as we can get to a static assert in C#.
+		if (LookupLengthRequired is < 0 or > MaxDesiredLookupArrayLength) {
+			throw new InvalidOperationException("Directional bits have changed; no longer works to store directions as index-based lookup array.");
+		}
+#pragma warning restore CS8519
+
+		_orientationToDirectionLookup = new Direction[LookupLengthRequired];
+		for (var x = -1; x <= 1; ++x) {
+			for (var y = -1; y <= 1; ++y) {
+				for (var z = -1; z <= 1; ++z) {
+					var xBits = x switch {
+						-1 => 1 << NegativeDirectionBitShift,
+						1 => 1 << PositiveDirectionBitShift,
+						_ => 0
+					} << XAxisShift;
+					var yBits = y switch {
+						-1 => 1 << NegativeDirectionBitShift,
+						1 => 1 << PositiveDirectionBitShift,
+						_ => 0
+					} << YAxisShift;
+					var zBits = z switch {
+						-1 => 1 << NegativeDirectionBitShift,
+						1 => 1 << PositiveDirectionBitShift,
+						_ => 0
+					} << ZAxisShift;
+					_orientationToDirectionLookup[xBits | yBits | zBits] = new Direction(x, y, z);
+				}
+			}
+		}
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Orientation3D AsGeneralOrientation(this CardinalOrientation3D @this) => (Orientation3D) @this;
 
@@ -129,72 +173,112 @@ public static class Orientation3DExtensions {
 	public static Orientation3D AsGeneralOrientation(this ZAxisOrientation3D @this) => (Orientation3D) @this;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Orientation3D Plus(this XAxisOrientation3D @this, YAxisOrientation3D y, ZAxisOrientation3D z) => OrientationUtils.CreateOrientation(@this, y, z);
+	public static Orientation3D Plus(this XAxisOrientation3D @this, YAxisOrientation3D other) => (Orientation3D) ((int) @this | (int) other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Orientation3D Plus(this YAxisOrientation3D @this, XAxisOrientation3D x, ZAxisOrientation3D z) => OrientationUtils.CreateOrientation(x, @this, z);
+	public static Orientation3D Plus(this XAxisOrientation3D @this, ZAxisOrientation3D other) => (Orientation3D) ((int) @this | (int) other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Orientation3D Plus(this ZAxisOrientation3D @this, XAxisOrientation3D x, YAxisOrientation3D y) => OrientationUtils.CreateOrientation(x, y, @this);
+	public static Orientation3D Plus(this YAxisOrientation3D @this, XAxisOrientation3D other) => (Orientation3D) ((int) @this | (int) other);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Orientation3D Plus(this YAxisOrientation3D @this, ZAxisOrientation3D other) => (Orientation3D) ((int) @this | (int) other);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Orientation3D Plus(this ZAxisOrientation3D @this, YAxisOrientation3D other) => (Orientation3D) ((int) @this | (int) other);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Orientation3D Plus(this ZAxisOrientation3D @this, XAxisOrientation3D other) => (Orientation3D) ((int) @this | (int) other);
 
-	public static CardinalOrientation3D ToCardinal(this Axis @this, int sign) => @this switch {
-		Axis.X => OrientationUtils.CreateXAxisOrientationFromSign(sign).AsCardinalOrientation(),
-		Axis.Y => OrientationUtils.CreateYAxisOrientationFromSign(sign).AsCardinalOrientation(),
-		Axis.Z => OrientationUtils.CreateZAxisOrientationFromSign(sign).AsCardinalOrientation(),
-		_ => CardinalOrientation3D.None
-	};
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Orientation3D Plus(this XAxisOrientation3D @this, YAxisOrientation3D y, ZAxisOrientation3D z) => (Orientation3D) ((int) @this | (int) y | (int) z);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Orientation3D Plus(this XAxisOrientation3D @this, ZAxisOrientation3D z, YAxisOrientation3D y) => (Orientation3D) ((int) @this | (int) y | (int) z);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Orientation3D Plus(this YAxisOrientation3D @this, XAxisOrientation3D x, ZAxisOrientation3D z) => (Orientation3D) ((int) @this | (int) x | (int) z);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Orientation3D Plus(this YAxisOrientation3D @this, ZAxisOrientation3D z, XAxisOrientation3D x) => (Orientation3D) ((int) @this | (int) x | (int) z);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Orientation3D Plus(this ZAxisOrientation3D @this, XAxisOrientation3D x, YAxisOrientation3D y) => (Orientation3D) ((int) @this | (int) x | (int) y);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Orientation3D Plus(this ZAxisOrientation3D @this, YAxisOrientation3D y, XAxisOrientation3D x) => (Orientation3D) ((int) @this | (int) x | (int) y);
+
+	public static CardinalOrientation3D ToCardinal(this Axis @this, int sign) {
+		var leadingZeroes = (uint) Int32.LeadingZeroCount(sign);
+		return (CardinalOrientation3D) (((sign & 0x8000_0000) >> (31 - NegativeDirectionBitShift)) | ((~leadingZeroes & 0b10_0000) >> (6 - PositiveDirectionBitShift)));
+	}
 
 	public static bool IsCardinal(this Orientation3D @this) => Int32.PopCount((int) @this) == 1; // TODO in XMLDoc make it clear that "None" does not count for this
 	public static bool IsDiagonal(this Orientation3D @this) => Int32.PopCount((int) @this) == 3; // TODO in XMLDoc make it clear that "None" does not count for this
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction ToDirection(this CardinalOrientation3D @this) => Direction.FromOrientation(@this.AsGeneralOrientation());
+	public static Direction ToDirection(this CardinalOrientation3D @this) => @this.AsGeneralOrientation().ToDirection();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction ToDirection(this DiagonalOrientation3D @this) => Direction.FromOrientation(@this.AsGeneralOrientation());
+	public static Direction ToDirection(this DiagonalOrientation3D @this) => @this.AsGeneralOrientation().ToDirection();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction ToDirection(this XAxisOrientation3D @this) => Direction.FromOrientation(@this.AsGeneralOrientation());
+	public static Direction ToDirection(this XAxisOrientation3D @this) => @this.AsGeneralOrientation().ToDirection();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction ToDirection(this YAxisOrientation3D @this) => Direction.FromOrientation(@this.AsGeneralOrientation());
+	public static Direction ToDirection(this YAxisOrientation3D @this) => @this.AsGeneralOrientation().ToDirection();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction ToDirection(this ZAxisOrientation3D @this) => Direction.FromOrientation(@this.AsGeneralOrientation());
+	public static Direction ToDirection(this ZAxisOrientation3D @this) => @this.AsGeneralOrientation().ToDirection();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction ToDirection(this Orientation3D @this) => Direction.FromOrientation(@this);
+	public static Direction ToDirection(this Orientation3D @this) => _orientationToDirectionLookup[(int) @this];
 
 	public static Axis GetAxis(this CardinalOrientation3D @this) {
-		return @this switch {
-			CardinalOrientation3D.Left or CardinalOrientation3D.Right => Axis.X,
-			CardinalOrientation3D.Up or CardinalOrientation3D.Down => Axis.Y,
-			CardinalOrientation3D.Forward or CardinalOrientation3D.Backward => Axis.Z,
-			_ => Axis.None
-		};
+		// This mask comes from saying we want the TZCNT of @this, but only care about the bottom five bits (e.g. 0b1_1111) as TZCNT should be < 32 for valid values or 32 (e.g. 0b10_0000) if @this is None.
+		// We then knock off the lsb to "join" related pairs of bits (e.g. at time of writing 2 or 3 become 2 (Axis.X), 4 or 5 become 4 (Axis.Y), 6 or 7 become 6 (Axis.Z));
+		// and the value will simply remain at 0 if TZCNT was 32 (indicating @this is None), meaning we'll return Axis.None.
+		// This relies on the shift amount for each axis being a positive value. If in future we need to make them odd, it might be as simple as instead OR'ing the result with 0b1 instead, but not sure.
+		const int TrailingZeroCountMask = 0b1_1110;
+		return (Axis) (Int32.TrailingZeroCount((int) @this) & TrailingZeroCountMask); 
 	}
 
-	public static XAxisOrientation3D GetXAxis(this Orientation3D @this) => (XAxisOrientation3D) (((int) @this) & XAxisBits);
-	public static YAxisOrientation3D GetYAxis(this Orientation3D @this) => (YAxisOrientation3D) (((int) @this) & YAxisBits);
-	public static ZAxisOrientation3D GetZAxis(this Orientation3D @this) => (ZAxisOrientation3D) (((int) @this) & ZAxisBits);
+	public static XAxisOrientation3D GetXAxis(this Orientation3D @this) => (XAxisOrientation3D) (((int) @this) & XAxisBitMask);
+	public static YAxisOrientation3D GetYAxis(this Orientation3D @this) => (YAxisOrientation3D) (((int) @this) & YAxisBitMask);
+	public static ZAxisOrientation3D GetZAxis(this Orientation3D @this) => (ZAxisOrientation3D) (((int) @this) & ZAxisBitMask);
 	public static XAxisOrientation3D GetXAxis(this DiagonalOrientation3D @this) => @this.AsGeneralOrientation().GetXAxis();
 	public static YAxisOrientation3D GetYAxis(this DiagonalOrientation3D @this) => @this.AsGeneralOrientation().GetYAxis();
 	public static ZAxisOrientation3D GetZAxis(this DiagonalOrientation3D @this) => @this.AsGeneralOrientation().GetZAxis();
 
-	public static int GetAxisSign(this Orientation3D @this, Axis axis) => axis switch {
-		Axis.X => @this.GetXAxis().GetAxisSign(),
-		Axis.Y => @this.GetYAxis().GetAxisSign(),
-		Axis.Z => @this.GetZAxis().GetAxisSign(),
-		_ => 0
-	};
+	public static int GetAxisSign(this Orientation3D @this, Axis axis) {
+		var directionalBits = ((int) @this) >> ((int) axis);
+		return ((directionalBits & PositiveDirectionBitMask) >> PositiveDirectionBitShift) - ((directionalBits & NegativeDirectionBitMask) >> NegativeDirectionBitShift);
+	}
+
 	public static int GetAxisSign(this XAxisOrientation3D @this) {
-		var intThis = ((int) @this) >> 0;
-		return (intThis & 0b1) - ((intThis & 0b10) >> 1);
+		var intThis = ((int) @this) >> XAxisShift;
+		return ((intThis & PositiveDirectionBitMask) >> PositiveDirectionBitShift) - ((intThis & NegativeDirectionBitMask) >> NegativeDirectionBitShift);
 	}
 	public static int GetAxisSign(this YAxisOrientation3D @this) {
-		var intThis = ((int) @this) >> 2;
-		return (intThis & 0b1) - ((intThis & 0b10) >> 1);
+		var intThis = ((int) @this) >> YAxisShift;
+		return ((intThis & PositiveDirectionBitMask) >> PositiveDirectionBitShift) - ((intThis & NegativeDirectionBitMask) >> NegativeDirectionBitShift);
 	}
 	public static int GetAxisSign(this ZAxisOrientation3D @this) {
-		var intThis = ((int) @this) >> 4;
-		return (intThis & 0b1) - ((intThis & 0b10) >> 1);
+		var intThis = ((int) @this) >> ZAxisShift;
+		return ((intThis & PositiveDirectionBitMask) >> PositiveDirectionBitShift) - ((intThis & NegativeDirectionBitMask) >> NegativeDirectionBitShift);
+	}
+
+	internal static XAxisOrientation3D CreateXAxisOrientationFromValueSign<T>(T v) where T : INumber<T> {
+		var sign = T.Sign(v);
+		var bits = ((sign & 0x8000_0000) >> (31 - NegativeDirectionBitShift));
+		bits |= (sign & 0b1 & ~(bits >> NegativeDirectionBitShift));
+
+		return (XAxisOrientation3D) (bits << XAxisShift);
+	}
+
+	internal static YAxisOrientation3D CreateYAxisOrientationFromValueSign<T>(T v) where T : INumber<T> {
+		var sign = T.Sign(v);
+		var bits = ((sign & 0x8000_0000) >> (31 - NegativeDirectionBitShift));
+		bits |= (sign & 0b1 & ~(bits >> NegativeDirectionBitShift));
+
+		return (YAxisOrientation3D) (bits << YAxisShift);
+	}
+
+	internal static ZAxisOrientation3D CreateZAxisOrientationFromValueSign<T>(T v) where T : INumber<T> {
+		var sign = T.Sign(v);
+		var bits = ((sign & 0x8000_0000) >> (31 - NegativeDirectionBitShift));
+		bits |= (sign & 0b1 & ~(bits >> NegativeDirectionBitShift));
+
+		return (ZAxisOrientation3D) (bits << ZAxisShift);
 	}
 }

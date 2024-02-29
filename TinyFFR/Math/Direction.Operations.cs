@@ -168,10 +168,6 @@ partial struct Direction :
 			direction = testDir;
 		}
 	
-		orientation = OrientationUtils.CreateOrientation(
-			OrientationUtils.CreateXAxisOrientationFromSign(direction.X),
-			OrientationUtils.CreateYAxisOrientationFromSign(direction.Y),
-			OrientationUtils.CreateZAxisOrientationFromSign(direction.Z)
-		);
+		orientation = OrientationUtils.CreateOrientationFromValueSigns(direction.X, direction.Y, direction.Z);
 	}
 }

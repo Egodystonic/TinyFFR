@@ -45,16 +45,16 @@ class OrientationUtilsTest {
 
 	[Test]
 	public void ShouldCorrectlyCreateAxesFromSigns() {
-		Assert.AreEqual(XAxisOrientation3D.None, CreateXAxisOrientationFromSign(0));
-		Assert.AreEqual(XAxisOrientation3D.Left, CreateXAxisOrientationFromSign(1));
-		Assert.AreEqual(XAxisOrientation3D.Right, CreateXAxisOrientationFromSign(-1));
+		Assert.AreEqual(XAxisOrientation3D.None, CreateXAxisOrientationFromValueSign(0));
+		Assert.AreEqual(XAxisOrientation3D.Left, CreateXAxisOrientationFromValueSign(1));
+		Assert.AreEqual(XAxisOrientation3D.Right, CreateXAxisOrientationFromValueSign(-1));
 
-		Assert.AreEqual(YAxisOrientation3D.None, CreateYAxisOrientationFromSign(0));
-		Assert.AreEqual(YAxisOrientation3D.Up, CreateYAxisOrientationFromSign(1));
-		Assert.AreEqual(YAxisOrientation3D.Down, CreateYAxisOrientationFromSign(-1));
+		Assert.AreEqual(YAxisOrientation3D.None, CreateYAxisOrientationFromValueSign(0));
+		Assert.AreEqual(YAxisOrientation3D.Up, CreateYAxisOrientationFromValueSign(1));
+		Assert.AreEqual(YAxisOrientation3D.Down, CreateYAxisOrientationFromValueSign(-1));
 
-		Assert.AreEqual(ZAxisOrientation3D.None, CreateZAxisOrientationFromSign(0));
-		Assert.AreEqual(ZAxisOrientation3D.Forward, CreateZAxisOrientationFromSign(1));
-		Assert.AreEqual(ZAxisOrientation3D.Backward, CreateZAxisOrientationFromSign(-1));
+		Assert.AreEqual(ZAxisOrientation3D.None, CreateZAxisOrientationFromValueSign(0));
+		Assert.AreEqual(ZAxisOrientation3D.Forward, CreateZAxisOrientationFromValueSign(1));
+		Assert.AreEqual(ZAxisOrientation3D.Backward, CreateZAxisOrientationFromValueSign(-1));
 	}
 }

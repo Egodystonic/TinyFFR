@@ -4,40 +4,46 @@
 namespace Egodystonic.TinyFFR;
 
 public readonly struct Cuboid : IShape<Cuboid> {
-	const float DefaultRandomMin = 1f;
-	const float DefaultRandomMax = 3f;
+	internal const float DefaultRandomMin = 1f;
+	internal const float DefaultRandomMax = 3f;
 	public static readonly Cuboid UnitCube = new(1f, 1f, 1f);
 
-	readonly float _width;
-	readonly float _height;
-	readonly float _depth;
+	readonly float _halfWidth;
+	readonly float _halfHeight;
+	readonly float _halfDepth;
 
-	public float Width => _width;
-	public float Height => _height;
-	public float Depth => _depth;
+	public float HalfWidth => _halfWidth;
+	public float HalfHeight => _halfHeight;
+	public float HalfDepth => _halfDepth;
+
+	public float Width => _halfWidth * 2f;
+	public float Height => _halfHeight * 2f;
+	public float Depth => _halfDepth * 2f;
 
 	public float Volume {
-		get => Width * Height * Depth;
+		get => HalfWidth * HalfHeight * HalfDepth * 8f;
 	}
 
 	public float SurfaceArea {
 		get => (Width * Height + Height * Depth + Depth * Width) * 2f;
 	}
 
-	public Location this[DiagonalOrientation3D diagonal] {
+	public Location this[Orientation3D orientationFromCentrePoint] {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => GetCornerLocation(diagonal);
+		get => GetSurfaceLocation(orientationFromCentrePoint);
 	}
-	public float this[Axis axis] {
+	public float this[Axis dimensionAxis] {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => GetDimension(axis);
+		get => GetDimension(dimensionAxis);
 	}
 
 	public Cuboid(float width, float height, float depth) {
-		_width = width;
-		_height = height;
-		_depth = depth;
+		_halfWidth = width * 0.5f;
+		_halfHeight = height * 0.5f;
+		_halfDepth = depth * 0.5f;
 	}
+
+	public Cuboid ScaledBy(float scalar) => new(Width * scalar, Height * scalar, Depth * scalar);
 
 	public float GetDimension(Axis axis) => axis switch {
 		Axis.X => Width,
@@ -46,18 +52,18 @@ public readonly struct Cuboid : IShape<Cuboid> {
 		_ => throw new ArgumentException($"{nameof(Axis)} can not be {nameof(Axis.None)}.", nameof(axis))
 	};
 
-	public Location GetCornerLocation(DiagonalOrientation3D diagonal) {
+	public Location GetSurfaceLocation(Orientation3D orientationFromCentrePoint) {
 		return new(
-			this[Axis.X] * 0.5f * diagonal.AsGeneralOrientation().GetAxisSign(Axis.X),
-			this[Axis.Y] * 0.5f * diagonal.AsGeneralOrientation().GetAxisSign(Axis.Y),
-			this[Axis.Z] * 0.5f * diagonal.AsGeneralOrientation().GetAxisSign(Axis.Z)
+			_halfWidth * orientationFromCentrePoint.GetAxisSign(Axis.X),
+			_halfHeight * orientationFromCentrePoint.GetAxisSign(Axis.Y),
+			_halfDepth * orientationFromCentrePoint.GetAxisSign(Axis.Z)
 		);
 	}
 	public float GetSideSurfaceArea(CardinalOrientation3D side) {
 		return side.GetAxis() switch {
-			Axis.X => Height * Depth,
-			Axis.Y => Depth * Width,
-			Axis.Z => Width * Height,
+			Axis.X => HalfHeight * HalfDepth * 4f,
+			Axis.Y => HalfDepth * HalfWidth * 4f,
+			Axis.Z => HalfWidth * HalfHeight * 4f,
 			_ => throw new ArgumentException($"{nameof(CardinalOrientation3D)} can not be {nameof(CardinalOrientation3D.None)}.", nameof(side))
 		};
 	}
@@ -86,7 +92,7 @@ public readonly struct Cuboid : IShape<Cuboid> {
 	}
 
 	public static ReadOnlySpan<float> ConvertToSpan(in Cuboid src) => MemoryMarshal.Cast<Cuboid, float>(new ReadOnlySpan<Cuboid>(in src));
-	public static Cuboid ConvertFromSpan(ReadOnlySpan<float> src) => new(src[0], src[1], src[2]);
+	public static Cuboid ConvertFromSpan(ReadOnlySpan<float> src) => MemoryMarshal.Cast<float, Cuboid>(src)[0];
 
 	public override string ToString() => ToString(null, null);
 	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(Cuboid), (nameof(Width), Width), (nameof(Height), Height), (nameof(Depth), Depth));

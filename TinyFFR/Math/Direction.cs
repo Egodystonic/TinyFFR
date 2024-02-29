@@ -82,7 +82,7 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	public static Direction FromPreNormalizedComponents(float x, float y, float z) => new(new Vector4(x, y, z, WValue));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction FromOrientation(Orientation3D orientation) => new(orientation.GetAxisSign(Axis.X), orientation.GetAxisSign(Axis.Y), orientation.GetAxisSign(Axis.Z));
+	public static Direction FromOrientation(Orientation3D orientation) => orientation.ToDirection();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromVector3(Vector3 v) => new(NormalizeOrZero(new Vector4(v, WValue)));

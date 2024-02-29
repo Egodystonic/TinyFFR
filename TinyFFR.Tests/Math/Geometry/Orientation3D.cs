@@ -19,10 +19,6 @@ class Orientation3DTest {
 			Assert.AreEqual((int) (object) expected, (int) (object) actual);
 		}
 
-		AssertIntEquals(Axis.X, XAxisOrientation3D.Left | XAxisOrientation3D.Right);
-		AssertIntEquals(Axis.Y, YAxisOrientation3D.Up | YAxisOrientation3D.Down);
-		AssertIntEquals(Axis.Z, ZAxisOrientation3D.Forward | ZAxisOrientation3D.Backward);
-
 		AssertIntEquals(CardinalOrientation3D.Left, XAxisOrientation3D.Left);
 		AssertIntEquals(CardinalOrientation3D.Right, XAxisOrientation3D.Right);
 		AssertIntEquals(CardinalOrientation3D.Up, YAxisOrientation3D.Up);
@@ -30,14 +26,14 @@ class Orientation3DTest {
 		AssertIntEquals(CardinalOrientation3D.Forward, ZAxisOrientation3D.Forward);
 		AssertIntEquals(CardinalOrientation3D.Backward, ZAxisOrientation3D.Backward);
 
-		AssertIntEquals(DiagonalOrientation3D.UpLeftForward, CardinalOrientation3D.Up | CardinalOrientation3D.Left | CardinalOrientation3D.Forward);
-		AssertIntEquals(DiagonalOrientation3D.UpRightForward, CardinalOrientation3D.Up | CardinalOrientation3D.Right | CardinalOrientation3D.Forward);
-		AssertIntEquals(DiagonalOrientation3D.UpLeftBackward, CardinalOrientation3D.Up | CardinalOrientation3D.Left | CardinalOrientation3D.Backward);
-		AssertIntEquals(DiagonalOrientation3D.UpRightBackward, CardinalOrientation3D.Up | CardinalOrientation3D.Right | CardinalOrientation3D.Backward);
-		AssertIntEquals(DiagonalOrientation3D.DownLeftForward, CardinalOrientation3D.Down | CardinalOrientation3D.Left | CardinalOrientation3D.Forward);
-		AssertIntEquals(DiagonalOrientation3D.DownRightForward, CardinalOrientation3D.Down | CardinalOrientation3D.Right | CardinalOrientation3D.Forward);
-		AssertIntEquals(DiagonalOrientation3D.DownLeftBackward, CardinalOrientation3D.Down | CardinalOrientation3D.Left | CardinalOrientation3D.Backward);
-		AssertIntEquals(DiagonalOrientation3D.DownRightBackward, CardinalOrientation3D.Down | CardinalOrientation3D.Right | CardinalOrientation3D.Backward);
+		AssertIntEquals(DiagonalOrientation3D.LeftUpForward, CardinalOrientation3D.Up | CardinalOrientation3D.Left | CardinalOrientation3D.Forward);
+		AssertIntEquals(DiagonalOrientation3D.RightUpForward, CardinalOrientation3D.Up | CardinalOrientation3D.Right | CardinalOrientation3D.Forward);
+		AssertIntEquals(DiagonalOrientation3D.LeftUpBackward, CardinalOrientation3D.Up | CardinalOrientation3D.Left | CardinalOrientation3D.Backward);
+		AssertIntEquals(DiagonalOrientation3D.RightUpBackward, CardinalOrientation3D.Up | CardinalOrientation3D.Right | CardinalOrientation3D.Backward);
+		AssertIntEquals(DiagonalOrientation3D.LeftDownForward, CardinalOrientation3D.Down | CardinalOrientation3D.Left | CardinalOrientation3D.Forward);
+		AssertIntEquals(DiagonalOrientation3D.RightDownForward, CardinalOrientation3D.Down | CardinalOrientation3D.Right | CardinalOrientation3D.Forward);
+		AssertIntEquals(DiagonalOrientation3D.LeftDownBackward, CardinalOrientation3D.Down | CardinalOrientation3D.Left | CardinalOrientation3D.Backward);
+		AssertIntEquals(DiagonalOrientation3D.RightDownBackward, CardinalOrientation3D.Down | CardinalOrientation3D.Right | CardinalOrientation3D.Backward);
 
 		AssertIntEquals(Orientation3D.Left, CardinalOrientation3D.Left);
 		AssertIntEquals(Orientation3D.Right, CardinalOrientation3D.Right);
@@ -46,12 +42,12 @@ class Orientation3DTest {
 		AssertIntEquals(Orientation3D.Forward, CardinalOrientation3D.Forward);
 		AssertIntEquals(Orientation3D.Backward, CardinalOrientation3D.Backward);
 
-		AssertIntEquals(Orientation3D.UpLeft, CardinalOrientation3D.Up | CardinalOrientation3D.Left);
-		AssertIntEquals(Orientation3D.UpRight, CardinalOrientation3D.Up | CardinalOrientation3D.Right);
+		AssertIntEquals(Orientation3D.LeftUp, CardinalOrientation3D.Up | CardinalOrientation3D.Left);
+		AssertIntEquals(Orientation3D.RightUp, CardinalOrientation3D.Up | CardinalOrientation3D.Right);
 		AssertIntEquals(Orientation3D.UpBackward, CardinalOrientation3D.Up | CardinalOrientation3D.Backward);
 		AssertIntEquals(Orientation3D.UpForward, CardinalOrientation3D.Up | CardinalOrientation3D.Forward);
-		AssertIntEquals(Orientation3D.DownLeft, CardinalOrientation3D.Down | CardinalOrientation3D.Left);
-		AssertIntEquals(Orientation3D.DownRight, CardinalOrientation3D.Down | CardinalOrientation3D.Right);
+		AssertIntEquals(Orientation3D.LeftDown, CardinalOrientation3D.Down | CardinalOrientation3D.Left);
+		AssertIntEquals(Orientation3D.RightDown, CardinalOrientation3D.Down | CardinalOrientation3D.Right);
 		AssertIntEquals(Orientation3D.DownBackward, CardinalOrientation3D.Down | CardinalOrientation3D.Backward);
 		AssertIntEquals(Orientation3D.DownForward, CardinalOrientation3D.Down | CardinalOrientation3D.Forward);
 		AssertIntEquals(Orientation3D.LeftForward, CardinalOrientation3D.Left | CardinalOrientation3D.Forward);
@@ -59,14 +55,14 @@ class Orientation3DTest {
 		AssertIntEquals(Orientation3D.RightForward, CardinalOrientation3D.Right | CardinalOrientation3D.Forward);
 		AssertIntEquals(Orientation3D.RightBackward, CardinalOrientation3D.Right | CardinalOrientation3D.Backward);
 
-		AssertIntEquals(Orientation3D.UpLeftForward, DiagonalOrientation3D.UpLeftForward);
-		AssertIntEquals(Orientation3D.UpRightForward, DiagonalOrientation3D.UpRightForward);
-		AssertIntEquals(Orientation3D.UpLeftBackward, DiagonalOrientation3D.UpLeftBackward);
-		AssertIntEquals(Orientation3D.UpRightBackward, DiagonalOrientation3D.UpRightBackward);
-		AssertIntEquals(Orientation3D.DownLeftForward, DiagonalOrientation3D.DownLeftForward);
-		AssertIntEquals(Orientation3D.DownRightForward, DiagonalOrientation3D.DownRightForward);
-		AssertIntEquals(Orientation3D.DownLeftBackward, DiagonalOrientation3D.DownLeftBackward);
-		AssertIntEquals(Orientation3D.DownRightBackward, DiagonalOrientation3D.DownRightBackward);
+		AssertIntEquals(Orientation3D.LeftUpForward, DiagonalOrientation3D.LeftUpForward);
+		AssertIntEquals(Orientation3D.RightUpForward, DiagonalOrientation3D.RightUpForward);
+		AssertIntEquals(Orientation3D.LeftUpBackward, DiagonalOrientation3D.LeftUpBackward);
+		AssertIntEquals(Orientation3D.RightUpBackward, DiagonalOrientation3D.RightUpBackward);
+		AssertIntEquals(Orientation3D.LeftDownForward, DiagonalOrientation3D.LeftDownForward);
+		AssertIntEquals(Orientation3D.RightDownForward, DiagonalOrientation3D.RightDownForward);
+		AssertIntEquals(Orientation3D.LeftDownBackward, DiagonalOrientation3D.LeftDownBackward);
+		AssertIntEquals(Orientation3D.RightDownBackward, DiagonalOrientation3D.RightDownBackward);
 	}
 
 	[Test]
@@ -165,12 +161,12 @@ class Orientation3DTest {
 		AssertOrientation(Orientation3D.Forward, XAxisOrientation3D.None, YAxisOrientation3D.None, ZAxisOrientation3D.Forward);
 		AssertOrientation(Orientation3D.Backward, XAxisOrientation3D.None, YAxisOrientation3D.None, ZAxisOrientation3D.Backward);
 
-		AssertOrientation(Orientation3D.UpLeft, XAxisOrientation3D.Left, YAxisOrientation3D.Up, ZAxisOrientation3D.None);
-		AssertOrientation(Orientation3D.UpRight, XAxisOrientation3D.Right, YAxisOrientation3D.Up, ZAxisOrientation3D.None);
+		AssertOrientation(Orientation3D.LeftUp, XAxisOrientation3D.Left, YAxisOrientation3D.Up, ZAxisOrientation3D.None);
+		AssertOrientation(Orientation3D.RightUp, XAxisOrientation3D.Right, YAxisOrientation3D.Up, ZAxisOrientation3D.None);
 		AssertOrientation(Orientation3D.UpBackward, XAxisOrientation3D.None, YAxisOrientation3D.Up, ZAxisOrientation3D.Backward);
 		AssertOrientation(Orientation3D.UpForward, XAxisOrientation3D.None, YAxisOrientation3D.Up, ZAxisOrientation3D.Forward);
-		AssertOrientation(Orientation3D.DownLeft, XAxisOrientation3D.Left, YAxisOrientation3D.Down, ZAxisOrientation3D.None);
-		AssertOrientation(Orientation3D.DownRight, XAxisOrientation3D.Right, YAxisOrientation3D.Down, ZAxisOrientation3D.None);
+		AssertOrientation(Orientation3D.LeftDown, XAxisOrientation3D.Left, YAxisOrientation3D.Down, ZAxisOrientation3D.None);
+		AssertOrientation(Orientation3D.RightDown, XAxisOrientation3D.Right, YAxisOrientation3D.Down, ZAxisOrientation3D.None);
 		AssertOrientation(Orientation3D.DownBackward, XAxisOrientation3D.None, YAxisOrientation3D.Down, ZAxisOrientation3D.Backward);
 		AssertOrientation(Orientation3D.DownForward, XAxisOrientation3D.None, YAxisOrientation3D.Down, ZAxisOrientation3D.Forward);
 		AssertOrientation(Orientation3D.LeftForward, XAxisOrientation3D.Left, YAxisOrientation3D.None, ZAxisOrientation3D.Forward);
@@ -178,14 +174,14 @@ class Orientation3DTest {
 		AssertOrientation(Orientation3D.RightForward, XAxisOrientation3D.Right, YAxisOrientation3D.None, ZAxisOrientation3D.Forward);
 		AssertOrientation(Orientation3D.RightBackward, XAxisOrientation3D.Right, YAxisOrientation3D.None, ZAxisOrientation3D.Backward);
 
-		AssertOrientation(Orientation3D.UpLeftForward, XAxisOrientation3D.Left, YAxisOrientation3D.Up, ZAxisOrientation3D.Forward);
-		AssertOrientation(Orientation3D.UpRightForward, XAxisOrientation3D.Right, YAxisOrientation3D.Up, ZAxisOrientation3D.Forward);
-		AssertOrientation(Orientation3D.UpLeftBackward, XAxisOrientation3D.Left, YAxisOrientation3D.Up, ZAxisOrientation3D.Backward);
-		AssertOrientation(Orientation3D.UpRightBackward, XAxisOrientation3D.Right, YAxisOrientation3D.Up, ZAxisOrientation3D.Backward);
-		AssertOrientation(Orientation3D.DownLeftForward, XAxisOrientation3D.Left, YAxisOrientation3D.Down, ZAxisOrientation3D.Forward);
-		AssertOrientation(Orientation3D.DownRightForward, XAxisOrientation3D.Right, YAxisOrientation3D.Down, ZAxisOrientation3D.Forward);
-		AssertOrientation(Orientation3D.DownLeftBackward, XAxisOrientation3D.Left, YAxisOrientation3D.Down, ZAxisOrientation3D.Backward);
-		AssertOrientation(Orientation3D.DownRightBackward, XAxisOrientation3D.Right, YAxisOrientation3D.Down, ZAxisOrientation3D.Backward);
+		AssertOrientation(Orientation3D.LeftUpForward, XAxisOrientation3D.Left, YAxisOrientation3D.Up, ZAxisOrientation3D.Forward);
+		AssertOrientation(Orientation3D.RightUpForward, XAxisOrientation3D.Right, YAxisOrientation3D.Up, ZAxisOrientation3D.Forward);
+		AssertOrientation(Orientation3D.LeftUpBackward, XAxisOrientation3D.Left, YAxisOrientation3D.Up, ZAxisOrientation3D.Backward);
+		AssertOrientation(Orientation3D.RightUpBackward, XAxisOrientation3D.Right, YAxisOrientation3D.Up, ZAxisOrientation3D.Backward);
+		AssertOrientation(Orientation3D.LeftDownForward, XAxisOrientation3D.Left, YAxisOrientation3D.Down, ZAxisOrientation3D.Forward);
+		AssertOrientation(Orientation3D.RightDownForward, XAxisOrientation3D.Right, YAxisOrientation3D.Down, ZAxisOrientation3D.Forward);
+		AssertOrientation(Orientation3D.LeftDownBackward, XAxisOrientation3D.Left, YAxisOrientation3D.Down, ZAxisOrientation3D.Backward);
+		AssertOrientation(Orientation3D.RightDownBackward, XAxisOrientation3D.Right, YAxisOrientation3D.Down, ZAxisOrientation3D.Backward);
 	}
 
 	[Test]
@@ -208,12 +204,12 @@ class Orientation3DTest {
 		AssertAxes(Orientation3D.Forward, 0, 0, 1);
 		AssertAxes(Orientation3D.Backward, 0, 0, -1);
 
-		AssertAxes(Orientation3D.UpLeft, 1, 1, 0);
-		AssertAxes(Orientation3D.UpRight, -1, 1, 0);
+		AssertAxes(Orientation3D.LeftUp, 1, 1, 0);
+		AssertAxes(Orientation3D.RightUp, -1, 1, 0);
 		AssertAxes(Orientation3D.UpBackward, 0, 1, -1);
 		AssertAxes(Orientation3D.UpForward, 0, 1, 1);
-		AssertAxes(Orientation3D.DownLeft, 1, -1, 0);
-		AssertAxes(Orientation3D.DownRight, -1, -1, 0);
+		AssertAxes(Orientation3D.LeftDown, 1, -1, 0);
+		AssertAxes(Orientation3D.RightDown, -1, -1, 0);
 		AssertAxes(Orientation3D.DownBackward, 0, -1, -1);
 		AssertAxes(Orientation3D.DownForward, 0, -1, 1);
 		AssertAxes(Orientation3D.LeftForward, 1, 0, 1);
@@ -221,13 +217,66 @@ class Orientation3DTest {
 		AssertAxes(Orientation3D.RightForward, -1, 0, 1);
 		AssertAxes(Orientation3D.RightBackward, -1, 0, -1);
 
-		AssertAxes(Orientation3D.UpLeftForward, 1, 1, 1);
-		AssertAxes(Orientation3D.UpRightForward, -1, 1, 1);
-		AssertAxes(Orientation3D.UpLeftBackward, 1, 1, -1);
-		AssertAxes(Orientation3D.UpRightBackward, -1, 1, -1);
-		AssertAxes(Orientation3D.DownLeftForward, 1, -1, 1);
-		AssertAxes(Orientation3D.DownRightForward, -1, -1, 1);
-		AssertAxes(Orientation3D.DownLeftBackward, 1, -1, -1);
-		AssertAxes(Orientation3D.DownRightBackward, -1, -1, -1);
+		AssertAxes(Orientation3D.LeftUpForward, 1, 1, 1);
+		AssertAxes(Orientation3D.RightUpForward, -1, 1, 1);
+		AssertAxes(Orientation3D.LeftUpBackward, 1, 1, -1);
+		AssertAxes(Orientation3D.RightUpBackward, -1, 1, -1);
+		AssertAxes(Orientation3D.LeftDownForward, 1, -1, 1);
+		AssertAxes(Orientation3D.RightDownForward, -1, -1, 1);
+		AssertAxes(Orientation3D.LeftDownBackward, 1, -1, -1);
+		AssertAxes(Orientation3D.RightDownBackward, -1, -1, -1);
+	}
+
+	[Test]
+	public void ShouldCorrectlyCombine() {
+		void AssertPair<T1, T2>(Orientation3D expectation, T1 input1, T2 input2) where T1 : notnull where T2 : notnull {
+			var actual = Orientation3DExtensions.Plus((dynamic) input1, (dynamic) input2);
+			Assert.AreEqual(expectation, actual);
+
+			actual = Orientation3DExtensions.Plus((dynamic) input2, (dynamic) input1);
+			Assert.AreEqual(expectation, actual);
+		}
+		void AssertTrio<T1, T2, T3>(Orientation3D expectation, T1 input1, T2 input2, T3 input3) where T1 : notnull where T2 : notnull where T3 : notnull {
+			var actual = Orientation3DExtensions.Plus((dynamic) input1, (dynamic) input2, (dynamic) input3);
+			Assert.AreEqual(expectation, actual);
+			actual = Orientation3DExtensions.Plus((dynamic) input1, (dynamic) input3, (dynamic) input2);
+			Assert.AreEqual(expectation, actual);
+
+			actual = Orientation3DExtensions.Plus((dynamic) input2, (dynamic) input1, (dynamic) input3);
+			Assert.AreEqual(expectation, actual);
+			actual = Orientation3DExtensions.Plus((dynamic) input2, (dynamic) input3, (dynamic) input1);
+			Assert.AreEqual(expectation, actual);
+
+			actual = Orientation3DExtensions.Plus((dynamic) input3, (dynamic) input1, (dynamic) input2);
+			Assert.AreEqual(expectation, actual);
+			actual = Orientation3DExtensions.Plus((dynamic) input3, (dynamic) input2, (dynamic) input1);
+			Assert.AreEqual(expectation, actual);
+		}
+
+		foreach (var x in Enum.GetValues<XAxisOrientation3D>()) {
+			foreach (var y in Enum.GetValues<YAxisOrientation3D>()) {
+				foreach (var z in Enum.GetValues<ZAxisOrientation3D>()) {
+					AssertPair((Orientation3D) ((int) x | (int) y), x, y);
+					AssertPair((Orientation3D) ((int) x | (int) z), x, z);
+					AssertPair((Orientation3D) ((int) y | (int) z), y, z);
+					AssertTrio((Orientation3D) ((int) x | (int) y | (int) z), x, y, z);
+				}
+			}
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyCreateAxesFromSigns() {
+		Assert.AreEqual(XAxisOrientation3D.None, Orientation3DExtensions.CreateXAxisOrientationFromValueSign(0));
+		Assert.AreEqual(XAxisOrientation3D.Left, Orientation3DExtensions.CreateXAxisOrientationFromValueSign(1));
+		Assert.AreEqual(XAxisOrientation3D.Right, Orientation3DExtensions.CreateXAxisOrientationFromValueSign(-1));
+
+		Assert.AreEqual(YAxisOrientation3D.None, Orientation3DExtensions.CreateYAxisOrientationFromValueSign(0));
+		Assert.AreEqual(YAxisOrientation3D.Up, Orientation3DExtensions.CreateYAxisOrientationFromValueSign(1));
+		Assert.AreEqual(YAxisOrientation3D.Down, Orientation3DExtensions.CreateYAxisOrientationFromValueSign(-1));
+
+		Assert.AreEqual(ZAxisOrientation3D.None, Orientation3DExtensions.CreateZAxisOrientationFromValueSign(0));
+		Assert.AreEqual(ZAxisOrientation3D.Forward, Orientation3DExtensions.CreateZAxisOrientationFromValueSign(1));
+		Assert.AreEqual(ZAxisOrientation3D.Backward, Orientation3DExtensions.CreateZAxisOrientationFromValueSign(-1));
 	}
 }

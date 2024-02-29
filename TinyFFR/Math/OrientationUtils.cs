@@ -13,12 +13,12 @@ public static class OrientationUtils {
 		Orientation3D.Forward,
 		Orientation3D.Backward,
 
-		Orientation3D.UpLeft,
-		Orientation3D.UpRight,
+		Orientation3D.LeftUp,
+		Orientation3D.RightUp,
 		Orientation3D.UpBackward,
 		Orientation3D.UpForward,
-		Orientation3D.DownLeft,
-		Orientation3D.DownRight,
+		Orientation3D.LeftDown,
+		Orientation3D.RightDown,
 		Orientation3D.DownBackward,
 		Orientation3D.DownForward,
 		Orientation3D.LeftForward,
@@ -26,14 +26,14 @@ public static class OrientationUtils {
 		Orientation3D.RightForward,
 		Orientation3D.RightBackward,
 
-		Orientation3D.UpLeftForward,
-		Orientation3D.UpRightForward,
-		Orientation3D.UpLeftBackward,
-		Orientation3D.UpRightBackward,
-		Orientation3D.DownLeftForward,
-		Orientation3D.DownRightForward,
-		Orientation3D.DownLeftBackward,
-		Orientation3D.DownRightBackward
+		Orientation3D.LeftUpForward,
+		Orientation3D.RightUpForward,
+		Orientation3D.LeftUpBackward,
+		Orientation3D.RightUpBackward,
+		Orientation3D.LeftDownForward,
+		Orientation3D.RightDownForward,
+		Orientation3D.LeftDownBackward,
+		Orientation3D.RightDownBackward
 	};
 	static readonly Axis[] _allAxes = { Axis.X, Axis.Y, Axis.Z };
 	static readonly CardinalOrientation3D[] _allCardinals = {
@@ -45,14 +45,14 @@ public static class OrientationUtils {
 		CardinalOrientation3D.Backward
 	};
 	static readonly DiagonalOrientation3D[] _allDiagonals = {
-		DiagonalOrientation3D.UpLeftForward,
-		DiagonalOrientation3D.UpRightForward,
-		DiagonalOrientation3D.UpLeftBackward,
-		DiagonalOrientation3D.UpRightBackward,
-		DiagonalOrientation3D.DownLeftForward,
-		DiagonalOrientation3D.DownRightForward,
-		DiagonalOrientation3D.DownLeftBackward,
-		DiagonalOrientation3D.DownRightBackward
+		DiagonalOrientation3D.LeftUpForward,
+		DiagonalOrientation3D.RightUpForward,
+		DiagonalOrientation3D.LeftUpBackward,
+		DiagonalOrientation3D.RightUpBackward,
+		DiagonalOrientation3D.LeftDownForward,
+		DiagonalOrientation3D.RightDownForward,
+		DiagonalOrientation3D.LeftDownBackward,
+		DiagonalOrientation3D.RightDownBackward
 	};
 
 	static readonly Orientation2D[] _all2DOrientations = {
@@ -82,23 +82,19 @@ public static class OrientationUtils {
 	public static ReadOnlySpan<HorizontalOrientation2D> AllHorizontals => _allHorizontals;
 	public static ReadOnlySpan<VerticalOrientation2D> AllVerticals => _allVerticals;
 
-	public static Orientation3D CreateOrientation(XAxisOrientation3D xValue, YAxisOrientation3D yValue, ZAxisOrientation3D zValue) {
-		return (Orientation3D) ((int) xValue | (int) yValue | (int) zValue);
-	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Orientation3D CreateOrientation(XAxisOrientation3D xValue, YAxisOrientation3D yValue, ZAxisOrientation3D zValue) => xValue.Plus(yValue, zValue);
+	
+	public static Orientation3D CreateOrientationFromValueSigns<T>(T x, T y, T z) where T : INumber<T> => CreateOrientation(
+		CreateXAxisOrientationFromValueSign(x),
+		CreateYAxisOrientationFromValueSign(y),
+		CreateZAxisOrientationFromValueSign(z)
+	);
 
-	public static XAxisOrientation3D CreateXAxisOrientationFromSign<T>(T v) where T : INumber<T> => (XAxisOrientation3D) (T.Sign(v) switch {
-		1 => (0b1 << 0),
-		-1 => (0b1 << 1),
-		_ => 0
-	});
-	public static YAxisOrientation3D CreateYAxisOrientationFromSign<T>(T v) where T : INumber<T> => (YAxisOrientation3D) (T.Sign(v) switch {
-		1 => (0b1 << 2),
-		-1 => (0b1 << 3),
-		_ => 0
-	});
-	public static ZAxisOrientation3D CreateZAxisOrientationFromSign<T>(T v) where T : INumber<T> => (ZAxisOrientation3D) (T.Sign(v) switch {
-		1 => (0b1 << 4),
-		-1 => (0b1 << 5),
-		_ => 0
-	});
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static XAxisOrientation3D CreateXAxisOrientationFromValueSign<T>(T v) where T : INumber<T> => Orientation3DExtensions.CreateXAxisOrientationFromValueSign(v);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static YAxisOrientation3D CreateYAxisOrientationFromValueSign<T>(T v) where T : INumber<T> => Orientation3DExtensions.CreateYAxisOrientationFromValueSign(v);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static ZAxisOrientation3D CreateZAxisOrientationFromValueSign<T>(T v) where T : INumber<T> => Orientation3DExtensions.CreateZAxisOrientationFromValueSign(v);
 }

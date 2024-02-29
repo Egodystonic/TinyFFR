@@ -9,15 +9,22 @@ public readonly struct Sphere : IShape<Sphere> {
 	public static readonly Sphere UnitSphere = new(1f);
 
 	readonly float _radius;
+	readonly float _radiusSquared;
 
 	public float Radius => _radius;
+	public float RadiusSquared => _radiusSquared;
 
-	public Sphere(float radius) => _radius = radius;
+	public Sphere(float radius) {
+		_radius = radius;
+		_radiusSquared = radius * radius;
+	}
 
-	public float Volume => 2f / 3f * MathF.Tau * Radius * Radius * Radius;
-	public float SurfaceArea => 2f * MathF.Tau * Radius * Radius;
+	public float Volume => 2f / 3f * MathF.Tau * Radius * RadiusSquared;
+	public float SurfaceArea => 2f * MathF.Tau * RadiusSquared;
 	public float Circumference => MathF.Tau * Radius;
 	public float Diameter => 2f * Radius;
+
+	public Sphere ScaledBy(float scalar) => new(Radius * scalar);
 
 	public override string ToString() => ToString(null, null);
 	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(Sphere), (nameof(Radius), Radius));
