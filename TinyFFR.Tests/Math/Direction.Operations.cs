@@ -204,8 +204,8 @@ partial class DirectionTest {
 	[Test]
 	public void ShouldCorrectlyRotateDirections() {
 		var rot = new Rotation(90f, Direction.Up);
-		AssertToleranceEquals(Direction.Left, Direction.Forward.RotateBy(rot), TestTolerance);
-		Assert.AreEqual(rot * Direction.Forward, Direction.Forward.RotateBy(rot));
+		AssertToleranceEquals(Direction.Left, Direction.Forward.RotatedBy(rot), TestTolerance);
+		Assert.AreEqual(rot * Direction.Forward, Direction.Forward.RotatedBy(rot));
 	}
 
 	[Test]

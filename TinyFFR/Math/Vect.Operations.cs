@@ -13,7 +13,7 @@ partial struct Vect :
 	IMultiplyOperators<Vect, float, Vect>,
 	IDivisionOperators<Vect, float, Vect>,
 	IInterpolatable<Vect>,
-	IRandomizable<Vect> {
+	IBoundedRandomizable<Vect> {
 	internal const float DefaultRandomRange = 100f;
 
 	public float Length {
@@ -80,6 +80,7 @@ partial struct Vect :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect WithLength(float length) => Direction * length;
 
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect RotateBy(Rotation rotation) => rotation.Rotate(this);
 
@@ -105,5 +106,12 @@ partial struct Vect :
 			RandomUtils.NextSingleNegOneToOneInclusive(),
 			RandomUtils.NextSingleNegOneToOneInclusive()
 		) * DefaultRandomRange);
+	}
+	public static Vect CreateNewRandom(Vect minInclusive, Vect maxExclusive) {
+		return FromVector3(new(
+			RandomUtils.NextSingle(minInclusive.X, maxExclusive.X),
+			RandomUtils.NextSingle(minInclusive.Y, maxExclusive.Y),
+			RandomUtils.NextSingle(minInclusive.Z, maxExclusive.Z)
+		));
 	}
 }

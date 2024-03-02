@@ -120,4 +120,19 @@ partial class LocationTest {
 			Assert.LessOrEqual(valToEnd.LengthSquared, startToEnd.LengthSquared);
 		}
 	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateDistanceBetweenLocations() {
+		void AssertCombination(Location startPoint, Location endPoint, float expectedDistance) {
+			Assert.AreEqual(expectedDistance, startPoint.DistanceFrom(endPoint), TestTolerance);
+			Assert.AreEqual(expectedDistance, endPoint.DistanceFrom(startPoint), TestTolerance);
+			Assert.AreEqual(expectedDistance * expectedDistance, startPoint.DistanceSquaredFrom(endPoint), TestTolerance);
+			Assert.AreEqual(expectedDistance * expectedDistance, endPoint.DistanceSquaredFrom(startPoint), TestTolerance);
+		}
+
+		AssertCombination(Location.Origin, Location.Origin, 0f);
+		AssertCombination(Location.Origin, OneTwoNegThree, new Vect(1f, 2f, -3f).Length);
+		AssertCombination(OneTwoNegThree, Location.Origin, new Vect(-1f, -2f, 3f).Length);
+		AssertCombination(new(0.5f, -14f, 7.6f), new(9.2f, 17f, -0.1f), new Vect(8.7f, 31f, -7.7f).Length);
+	}
 }

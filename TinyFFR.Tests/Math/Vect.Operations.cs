@@ -211,4 +211,21 @@ partial class VectTest {
 			Assert.LessOrEqual(val.Z, Vect.DefaultRandomRange);
 		}
 	}
+
+	[Test]
+	public void ShouldCorrectlyCreateBoundedRandomValues() {
+		const int NumIterations = 50_000;
+
+		for (var i = 0; i < NumIterations; ++i) {
+			var a = Vect.CreateNewRandom();
+			var b = Vect.CreateNewRandom();
+			var val = Vect.CreateNewRandom(a, b);
+			Assert.GreaterOrEqual(val.X, a.X);
+			Assert.Less(val.X, b.X);
+			Assert.GreaterOrEqual(val.Y, a.Y);
+			Assert.Less(val.Y, b.Y);
+			Assert.GreaterOrEqual(val.Z, a.Z);
+			Assert.Less(val.Z, b.Z);
+		}
+	}
 }

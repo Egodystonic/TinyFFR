@@ -37,11 +37,28 @@ partial struct Location :
 	public Vect GetVectTo(Location otherLocation) => new(otherLocation.AsVector4 - AsVector4);
 
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Ray operator >>>(Location startPoint, Direction direction) => startPoint.CreateRay(direction);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray CreateRay(Direction direction) => new(this, direction);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Line operator >>>(Location startPoint, Vect vect) => startPoint.CreateLine(vect);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line CreateLine(Vect vect) => new(this, vect);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Line operator >>>(Location startPoint, Location endPoint) => startPoint.CreateLine(endPoint);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line CreateLine(Location endPoint) => new(this, endPoint);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction GetDirectionFrom(Location otherLocation) => GetVectFrom(otherLocation).Direction;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction GetDirectionTo(Location otherLocation) => GetVectTo(otherLocation).Direction;
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(Location otherLocation) => GetVectFrom(otherLocation).Length;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(Location otherLocation) => GetVectFrom(otherLocation).LengthSquared;
 
 	public static Location Interpolate(Location start, Location end, float distance) {
 		return start + (end - start) * distance;

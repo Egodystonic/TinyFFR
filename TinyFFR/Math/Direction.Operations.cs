@@ -30,7 +30,7 @@ partial struct Direction :
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect ToVect() => ToVect(1f);
+	public Vect ToVect() => (Vect) this;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator *(Direction directionOperand, float scalarOperand) => directionOperand.ToVect(scalarOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -94,7 +94,7 @@ partial struct Direction :
 	public static Rotation operator %(Angle angle, Direction axis) => Rotation.FromAngleAroundAxis(angle, axis);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction RotateBy(Rotation rotation) => rotation.Rotate(this);
+	public Direction RotatedBy(Rotation rotation) => rotation.Rotate(this);
 
 	public static Direction Interpolate(Direction start, Direction end, float distance) {
 		return Rotation.FromStartAndEndDirection(start, end).ScaledBy(distance) * start;
