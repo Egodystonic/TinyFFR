@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using System.Net;
 
 namespace Egodystonic.TinyFFR;
 
@@ -11,7 +12,9 @@ public readonly partial struct Ray :
 	IMultiplyOperators<Ray, Rotation, Ray>, 
 	IAdditionOperators<Ray, Vect, Ray> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line ToLine(float length) => new(_startPoint, _direction * length);
+	public BoundedLine ToBoundedLine(float length) => new(_startPoint, _direction * length);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line ToLine() => new(_startPoint, _direction);
 
 	public Ray Reversed {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -56,5 +59,29 @@ public readonly partial struct Ray :
 	public static Ray CreateNewRandom(Ray minInclusive, Ray maxExclusive) => new(Location.CreateNewRandom(minInclusive.StartPoint, maxExclusive.StartPoint), Direction.CreateNewRandom(minInclusive.Direction, maxExclusive.Direction));
 
 
-	
+	public Location ClosestPointTo(Location location) {
+		var distance = Vector3.Dot((location - _startPoint).ToVector3(), Direction.ToVector3());
+		return distance switch {
+			< 0f => _startPoint,
+			_ => _startPoint + Direction * distance
+		};
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(Location location) => location.DistanceFrom(ClosestPointTo(location));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool Contains(Location location) => Contains(location, ILine.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool Contains(Location location, float lineThickness) => DistanceFrom(location) <= lineThickness;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => ILine.CalculateClosestPointToOtherLine(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => DistanceFrom(ClosestPointTo(line));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionPointWith<TLine>(TLine line) where TLine : ILine => GetIntersectionPointOn(line, ILine.DefaultLineThickness);
+	public Location? GetIntersectionPointOn<TLine>(TLine line, float lineThickness) where TLine : ILine {
+		var closestPointOnLine = line.ClosestPointTo(this);
+		return DistanceFrom(closestPointOnLine) <= lineThickness ? closestPointOnLine : null;
+	}
 }

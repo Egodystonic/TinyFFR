@@ -7,7 +7,7 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = sizeof(float) * 4 * 2)]
-public readonly partial struct Ray : ILineLike<Ray>, IDescriptiveStringProvider {
+public readonly partial struct Ray : ILine<Ray>, IDescriptiveStringProvider {
 	readonly Location _startPoint;
 	readonly Direction _direction;
 
@@ -23,10 +23,11 @@ public readonly partial struct Ray : ILineLike<Ray>, IDescriptiveStringProvider 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		init => _direction = value;
 	}
-	float? ILineLike.Length => null;
-	float? ILineLike.LengthSquared => null;
-	Vect? ILineLike.StartToEndVect => null;
-	Location? ILineLike.EndPoint => null;
+	bool ILine.IsUnboundedInBothDirections => false;
+	float? ILine.Length => null;
+	float? ILine.LengthSquared => null;
+	Vect? ILine.StartToEndVect => null;
+	Location? ILine.EndPoint => null;
 
 	public Ray(Location startPoint, Direction direction) {
 		_startPoint = startPoint;

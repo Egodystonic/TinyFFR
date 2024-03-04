@@ -42,13 +42,13 @@ partial struct Location :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray CreateRay(Direction direction) => new(this, direction);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Line operator >>>(Location startPoint, Vect vect) => startPoint.CreateLine(vect);
+	public static BoundedLine operator >>>(Location startPoint, Vect vect) => startPoint.CreateLine(vect);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line CreateLine(Vect vect) => new(this, vect);
+	public BoundedLine CreateLine(Vect vect) => new(this, vect);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Line operator >>>(Location startPoint, Location endPoint) => startPoint.CreateLine(endPoint);
+	public static BoundedLine operator >>>(Location startPoint, Location endPoint) => startPoint.CreateLine(endPoint);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line CreateLine(Location endPoint) => new(this, endPoint);
+	public BoundedLine CreateLine(Location endPoint) => new(this, endPoint);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction GetDirectionFrom(Location otherLocation) => GetVectFrom(otherLocation).Direction;

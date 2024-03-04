@@ -3,7 +3,7 @@
 
 namespace Egodystonic.TinyFFR;
 
-public readonly struct Sphere : IShape<Sphere> {
+public readonly partial struct Sphere : IShape<Sphere> {
 	internal const float DefaultRandomMin = 1f;
 	internal const float DefaultRandomMax = 3f;
 	public static readonly Sphere UnitSphere = new(1f);

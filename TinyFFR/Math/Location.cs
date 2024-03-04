@@ -106,4 +106,9 @@ public readonly partial struct Location : IVect<Location> {
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool EqualsWithinDistance(Location other, float distance) => (this - other).LengthSquared <= distance * distance;
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static explicit operator Location(Direction directionOperand) => new(directionOperand.AsVector4 with { W = WValue });
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static explicit operator Location(Vect vectOperand) => new(vectOperand.AsVector4 with { W = WValue });
 }

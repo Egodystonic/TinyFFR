@@ -19,6 +19,8 @@ partial struct Vect :
 	public float Length {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsVector4.Length();
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		init => AsVector4 = Direction.AsVector4 * value;
 	}
 	public float LengthSquared {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -71,14 +73,11 @@ partial struct Vect :
 		if (!retainLength) return projectedVect;
 
 		if (projectedVect.LengthSquared < 0.0001f) return Zero;
-		else return projectedVect.WithLength(Length);
+		else return projectedVect with { Length = Length };
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect OrthogonalizedAgainst(Direction d) => Direction.OrthogonalizedAgainst(d) * Length;
 
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect WithLength(float length) => Direction * length;
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -94,6 +93,13 @@ partial struct Vect :
 	public static Vect operator /(Vect vectOperand, float scalarOperand) => vectOperand.ScaledBy(1f / scalarOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect ScaledBy(float scalar) => new(Multiply(AsVector4, scalar));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect WithLength(float newLength) => this with { Length = newLength };
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect ShortenedBy(float lengthDecrease) => this with { Length = Length - lengthDecrease };
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect LengthenedBy(float lengthIncrease) => this with { Length = Length + lengthIncrease };
 
 
 	public static Vect Interpolate(Vect start, Vect end, float distance) {

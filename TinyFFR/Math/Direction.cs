@@ -161,4 +161,9 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool EqualsWithinAngle(Direction other, Angle angle) => (this ^ other) <= angle; // TODO make it clear that this will throw exception if this or other are None
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static explicit operator Direction(Location locationOperand) => new(locationOperand.AsVector4 with { W = WValue });
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static explicit operator Direction(Vect vectOperand) => new(vectOperand.AsVector4 with { W = WValue });
 }
