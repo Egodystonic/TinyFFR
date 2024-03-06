@@ -3,9 +3,8 @@
 
 namespace Egodystonic.TinyFFR.Interop;
 
-// This needs to be a ref struct so that we can safely convert ArgData to a Span without needing to fix it (as ref structs can only live on the stack, but normal structs could be boxed or allocated as fields heap objects)
-// Name "LazyReadOnlySpan" isn't *really* what this is exactly, but it hopefully makes more sense to consumers of the API (should make it easy to understand what it is at first glance)
-public readonly unsafe ref struct LazyReadOnlySpan<T> {
+// This needs to be a ref struct so that we can safely convert ArgData to a Span without needing to fix it (as ref structs can only live on the stack, but normal structs could be boxed or allocated as fields/heap objects)
+public readonly unsafe ref struct RefIterator<T> {
 	static readonly ArgData NullArgData = default;
 
 	public struct Enumerator : IEnumerator<T> {
@@ -36,7 +35,7 @@ public readonly unsafe ref struct LazyReadOnlySpan<T> {
 
 	[InlineArray(DataLengthBytes)]
 	internal struct ArgData {
-		public const int DataLengthBytes = 8;
+		public const int DataLengthBytes = 16;
 		byte _;
 	}
 
@@ -52,15 +51,12 @@ public readonly unsafe ref struct LazyReadOnlySpan<T> {
 		}
 	}
 	public T this[int index] {
-		get {
-			ThrowIfInvalid();
-			if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be >= 0 and < Count ({Count}).");
-			return _getItemFunc(_instanceParam, _argData, index);
-		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => ElementAt(index);
 	}
 
-	internal LazyReadOnlySpan(object? instanceParam, delegate*<object?, ReadOnlySpan<byte>, int> getCountFunc, delegate*<object?, ReadOnlySpan<byte>, int, T> getItemFunc) : this(instanceParam, NullArgData, getCountFunc, getItemFunc) { }
-	internal LazyReadOnlySpan(object? instanceParam, scoped ReadOnlySpan<byte> argData, delegate*<object?, ReadOnlySpan<byte>, int> getCountFunc, delegate*<object?, ReadOnlySpan<byte>, int, T> getItemFunc) {
+	internal RefIterator(object? instanceParam, delegate*<object?, ReadOnlySpan<byte>, int> getCountFunc, delegate*<object?, ReadOnlySpan<byte>, int, T> getItemFunc) : this(instanceParam, NullArgData, getCountFunc, getItemFunc) { }
+	internal RefIterator(object? instanceParam, scoped ReadOnlySpan<byte> argData, delegate*<object?, ReadOnlySpan<byte>, int> getCountFunc, delegate*<object?, ReadOnlySpan<byte>, int, T> getItemFunc) {
 		ArgumentNullException.ThrowIfNull(getCountFunc);
 		ArgumentNullException.ThrowIfNull(getItemFunc);
 		if (argData.Length > ArgData.DataLengthBytes) throw new ArgumentException("Argument data must be no more than 8 bytes in length.");
@@ -71,7 +67,25 @@ public readonly unsafe ref struct LazyReadOnlySpan<T> {
 		argData.CopyTo(_argData);
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public T ElementAt(int index) {
+		ThrowIfInvalid();
+		if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be >= 0 and < Count ({Count}).");
+		return _getItemFunc(_instanceParam, _argData, index);
+	}
+
+	public void CopyTo(Span<T> dest) {
+		ThrowIfInvalid();
+		for (var i = 0; i < Count; ++i) {
+			dest[i] = this[i];
+		}
+	}
+	public bool TryCopyTo(Span<T> dest) {
+		ThrowIfInvalid();
+		if (dest.Length < Count) return false;
+		CopyTo(dest);
+		return true;
+	}
+
 	internal static ReadOnlySpan<byte> CreateArgData<TArgData>(ref readonly TArgData data) where TArgData : unmanaged {
 		var result = MemoryMarshal.AsBytes(new ReadOnlySpan<TArgData>(in data));
 		if (result.Length > ArgData.DataLengthBytes) throw new ArgumentException("Argument data must be no more than 8 bytes in length.");
@@ -89,6 +103,6 @@ public readonly unsafe ref struct LazyReadOnlySpan<T> {
 	}
 
 	internal void ThrowIfInvalid() {
-		if (_getCountFunc == null) throw InvalidObjectException.InvalidDefault(typeof(LazyReadOnlySpan<T>));
+		if (_getCountFunc == null) throw InvalidObjectException.InvalidDefault(typeof(RefIterator<T>));
 	}
 }

@@ -28,6 +28,18 @@ class SphereTest {
 	}
 
 	[Test]
+	public void StaticFactoryMethodsShouldCorrectlyConstruct() {
+		// https://www.wolframalpha.com/input?i=volume%2C+surface+area%2C+circumference%2C+diameter+of+sphere+with+radius+7.4
+		var sphere = new Sphere(7.4f);
+
+		AssertToleranceEquals(sphere, Sphere.FromDiameter(14.8f), TestTolerance);
+		AssertToleranceEquals(sphere, Sphere.FromCircumference(46.4956f), TestTolerance);
+		AssertToleranceEquals(sphere, Sphere.FromSurfaceArea(688.134f), TestTolerance);
+		AssertToleranceEquals(sphere, Sphere.FromVolume(1697.4f), TestTolerance);
+		AssertToleranceEquals(sphere, Sphere.FromRadiusSquared(7.4f * 7.4f), TestTolerance);
+	}
+
+	[Test]
 	public void ShouldCorrectlyScale() {
 		AssertToleranceEquals(new Sphere(7.4f * 3f), new Sphere(7.4f).ScaledBy(3f), TestTolerance);
 	}

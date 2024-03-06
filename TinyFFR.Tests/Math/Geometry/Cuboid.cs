@@ -30,6 +30,36 @@ class CuboidTest {
 	}
 
 	[Test]
+	public void StaticFactoriesShouldCorrectlyConstruct() {
+		AssertToleranceEquals(
+			new Cuboid(width: 7.2f, height: 13.6f, depth: 1.4f),
+			Cuboid.FromHalfDimensions(7.2f / 2f, 13.6f / 2f, 1.4f / 2f),
+			TestTolerance
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyModifyWithInitProperties() {
+		void AssertCuboid(Cuboid input, float expectedWidth, float expectedHeight, float expectedDepth) {
+			AssertToleranceEquals(new Cuboid(expectedWidth, expectedHeight, expectedDepth), input, TestTolerance);
+		}
+		
+		var startingValue = new Cuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
+
+		AssertCuboid(startingValue with { Width = 10f }, 10f, startingValue.Height, startingValue.Depth);
+		AssertCuboid(startingValue with { Height = 10f }, startingValue.Width, 10f, startingValue.Depth);
+		AssertCuboid(startingValue with { Depth = 10f }, startingValue.Width, startingValue.Height, 10f);
+		AssertCuboid(startingValue with { HalfWidth = 10f }, 20f, startingValue.Height, startingValue.Depth);
+		AssertCuboid(startingValue with { HalfHeight = 10f }, startingValue.Width, 20f, startingValue.Depth);
+		AssertCuboid(startingValue with { HalfDepth = 10f }, startingValue.Width, startingValue.Height, 20f);
+
+		Assert.AreEqual(400f, (startingValue with { SurfaceArea = 400f }).SurfaceArea, TestTolerance);
+		Assert.AreEqual(100f, (startingValue with { SurfaceArea = 100f }).SurfaceArea, TestTolerance);
+		Assert.AreEqual(300f, (startingValue with { Volume = 300f }).Volume, TestTolerance);
+		Assert.AreEqual(100f, (startingValue with { Volume = 100f }).Volume, TestTolerance);
+	}
+
+	[Test]
 	public void ShouldCorrectlyScale() {
 		AssertToleranceEquals(
 			new Cuboid(width: 7.2f * 3f, height: 13.6f * 3f, depth: 1.4f * 3f), 

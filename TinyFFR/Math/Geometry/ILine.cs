@@ -22,6 +22,7 @@ public interface ILine : IPointTestable, ILineTestable {
 
 	bool Contains(Location location, float lineThickness);
 	Location? GetIntersectionPointOn<TLine>(TLine line, float lineThickness) where TLine : ILine;
+	Location ClosestPointToOrigin();
 
 	protected static Location CalculateClosestPointToOtherLine<TThis, TOther>(TThis @this, TOther other) where TThis : ILine where TOther : ILine {
 		const float ZeroEpsilon = 0.001f;
@@ -72,5 +73,5 @@ public interface ILine : IPointTestable, ILineTestable {
 	}
 }
 public interface ILine<TSelf> : ILine, IMathPrimitive<TSelf, float>, IInterpolatable<TSelf>, IBoundedRandomizable<TSelf> where TSelf : ILine<TSelf> {
-
+	
 }

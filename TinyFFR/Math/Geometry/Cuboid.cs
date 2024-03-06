@@ -3,7 +3,7 @@
 
 namespace Egodystonic.TinyFFR;
 
-public readonly struct Cuboid : IShape<Cuboid> {
+public readonly partial struct Cuboid : IShape<Cuboid> {
 	internal const float DefaultRandomMin = 1f;
 	internal const float DefaultRandomMax = 3f;
 	public static readonly Cuboid UnitCube = new(1f, 1f, 1f);
@@ -12,20 +12,62 @@ public readonly struct Cuboid : IShape<Cuboid> {
 	readonly float _halfHeight;
 	readonly float _halfDepth;
 
-	public float HalfWidth => _halfWidth;
-	public float HalfHeight => _halfHeight;
-	public float HalfDepth => _halfDepth;
+	public float HalfWidth {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _halfWidth;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		init => _halfWidth = value;
+	}
+	public float HalfHeight {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _halfHeight;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		init => _halfHeight = value;
+	}
+	public float HalfDepth {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _halfDepth;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		init => _halfDepth = value;
+	}
 
-	public float Width => _halfWidth * 2f;
-	public float Height => _halfHeight * 2f;
-	public float Depth => _halfDepth * 2f;
+	public float Width {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _halfWidth * 2f;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		init => _halfWidth = value * 0.5f;
+	}
+	public float Height {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _halfHeight * 2f;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		init => _halfHeight = value * 0.5f;
+	}
+	public float Depth {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _halfDepth * 2f;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		init => _halfDepth = value * 0.5f;
+	}
 
 	public float Volume {
 		get => HalfWidth * HalfHeight * HalfDepth * 8f;
+		init {
+			var diffCubeRoot = MathF.Cbrt(value / Volume);
+			_halfWidth *= diffCubeRoot;
+			_halfHeight *= diffCubeRoot;
+			_halfDepth *= diffCubeRoot;
+		}
 	}
 
 	public float SurfaceArea {
 		get => (Width * Height + Height * Depth + Depth * Width) * 2f;
+		init {
+			var diffSquareRoot = MathF.Sqrt(value / SurfaceArea);
+			_halfWidth *= diffSquareRoot;
+			_halfHeight *= diffSquareRoot;
+			_halfDepth *= diffSquareRoot;
+		}
 	}
 
 	public Location this[Orientation3D orientationFromCentrePoint] {
@@ -43,7 +85,13 @@ public readonly struct Cuboid : IShape<Cuboid> {
 		_halfDepth = depth * 0.5f;
 	}
 
-	public Cuboid ScaledBy(float scalar) => new(Width * scalar, Height * scalar, Depth * scalar);
+	public static Cuboid FromHalfDimensions(float halfWidth, float halfHeight, float halfDepth) {
+		return new() {
+			HalfWidth = halfWidth,
+			HalfHeight = halfHeight,
+			HalfDepth = halfDepth
+		};
+	}
 
 	public float GetDimension(Axis axis) => axis switch {
 		Axis.X => Width,

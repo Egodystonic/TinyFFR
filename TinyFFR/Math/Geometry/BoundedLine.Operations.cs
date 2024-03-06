@@ -80,6 +80,14 @@ public readonly partial struct BoundedLine :
 			_ => _startPoint + _vect * vectCoefficient
 		};
 	}
+	public Location ClosestPointToOrigin() {
+		var vectCoefficient = -Vector3.Dot(_startPoint.ToVector3(), _vect.ToVector3()) / LengthSquared;
+		return vectCoefficient switch {
+			<= 0f => _startPoint,
+			>= 1f => EndPoint,
+			_ => _startPoint + _vect * vectCoefficient
+		};
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(Location location) => location.DistanceFrom(ClosestPointTo(location));

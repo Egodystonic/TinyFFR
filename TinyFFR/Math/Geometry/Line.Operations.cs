@@ -9,16 +9,6 @@ namespace Egodystonic.TinyFFR;
 public readonly partial struct Line :
 	IAdditionOperators<Line, Vect, Line>,
 	IMultiplyOperators<Line, Rotation, Line> {
-	public enum LineToRayStrategy {
-		RayPointsInLineDirection = 0,
-		RayPointsOppositeToLineDirection = 1
-	}
-	public enum LineToBoundedLineStrategy {
-		ClosestPointToOriginIsBoundedLineStart = 0,
-		ClosestPointToOriginIsBoundedLineMiddle = 1,
-		ClosestPointToOriginIsBoundedLineEnd = 2,
-	}
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray ToRay(LineToRayStrategy conversionStrategy) => new(_closestPointToOrigin, Direction.FromVector3(_direction.ToVector3() * (((int) conversionStrategy) + 1f)));
 
@@ -33,20 +23,21 @@ public readonly partial struct Line :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Line operator *(Rotation rot, Line line) => line.RotatedBy(rot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line RotatedBy(Rotation rotation) => new(_closestPointToOrigin, _direction.RotatedBy(rotation));
-	
-	
+	public Line RotatedBy(Rotation rotation) => new(PointOnLine, _direction.RotatedBy(rotation));
+
+
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Line operator +(Line line, Vect v) => line.MovedBy(v);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Line operator +(Vect v, Line line) => line.MovedBy(v);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line MovedBy(Vect v) => new(_closestPointToOrigin + v, _direction);
+	public Line MovedBy(Vect v) => new(PointOnLine + v, _direction);
 	
 	
 	public static Line Interpolate(Line start, Line end, float distance) {
 		return new(
-			Location.Interpolate(start._closestPointToOrigin, end._closestPointToOrigin, distance),
+			Location.Interpolate(start.PointOnLine, end.PointOnLine, distance),
 			Direction.Interpolate(start._direction, end._direction, distance)
 		);
 	}
@@ -55,17 +46,22 @@ public readonly partial struct Line :
 	}
 	public static Line InterpolateUsingPrecomputation(Line start, Line end, Rotation precomputation, float distance) {
 		return new(
-			Location.Interpolate(start._closestPointToOrigin, end._closestPointToOrigin, distance),
+			Location.Interpolate(start.PointOnLine, end.PointOnLine, distance),
 			Direction.InterpolateUsingPrecomputation(start._direction, end._direction, precomputation, distance)
 		);
 	}
 	public static Line CreateNewRandom() => new(Location.CreateNewRandom(), Direction.CreateNewRandom());
-	public static Line CreateNewRandom(Line minInclusive, Line maxExclusive) => new(Location.CreateNewRandom(minInclusive._closestPointToOrigin, maxExclusive._closestPointToOrigin), Direction.CreateNewRandom(minInclusive._direction, maxExclusive._direction));
+	public static Line CreateNewRandom(Line minInclusive, Line maxExclusive) => new(Location.CreateNewRandom(minInclusive.PointOnLine, maxExclusive.PointOnLine), Direction.CreateNewRandom(minInclusive._direction, maxExclusive._direction));
 	
 
 	public Location ClosestPointTo(Location location) {
-		var distance = Vector3.Dot((location - _closestPointToOrigin).ToVector3(), Direction.ToVector3());
-		return _closestPointToOrigin + Direction * distance;
+		var distance = Vector3.Dot((location - PointOnLine).ToVector3(), Direction.ToVector3());
+		return PointOnLine + Direction * distance;
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointToOrigin() {
+		var distance = -Vector3.Dot(PointOnLine.ToVector3(), Direction.ToVector3());
+		return PointOnLine + Direction * distance;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

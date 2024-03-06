@@ -78,7 +78,6 @@ partial struct Direction :
 	}
 
 
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator >>(Direction start, Direction end) => Rotation.FromStartAndEndDirection(start, end);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

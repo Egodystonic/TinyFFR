@@ -66,6 +66,13 @@ public readonly partial struct Ray :
 			_ => _startPoint + Direction * distance
 		};
 	}
+	public Location ClosestPointToOrigin() {
+		var distance = -Vector3.Dot(_startPoint.ToVector3(), Direction.ToVector3());
+		return distance switch {
+			< 0f => _startPoint,
+			_ => _startPoint + Direction * distance
+		};
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(Location location) => location.DistanceFrom(ClosestPointTo(location));
