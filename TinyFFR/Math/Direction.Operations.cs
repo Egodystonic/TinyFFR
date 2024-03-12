@@ -39,13 +39,20 @@ partial struct Direction :
 	public Vect ToVect(float length) => new(AsVector4 * length);
 
 
+	// TODO in XMLDoc indicate that this is the dot product of the two directions, and that therefore the range is 1 for identical, to -1 for complete opposite, with 0 being orthogonal
+	public float SimilarityTo(Direction other) => Dot(AsVector4, other.AsVector4);
+	
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(Direction d1, Direction d2) => Angle.FromAngleBetweenDirections(d1, d2);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(Direction other) => Angle.FromAngleBetweenDirections(this, other);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(Plane plane) => plane.AngleTo(this);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction ReflectedBy(Plane plane) => plane.Reflect(this);
 
 
 	public Direction GetAnyPerpendicularDirection() {

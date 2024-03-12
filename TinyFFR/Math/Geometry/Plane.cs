@@ -4,45 +4,40 @@
 namespace Egodystonic.TinyFFR;
 
 public readonly partial struct Plane : IMathPrimitive<Plane, float>, IPointTestable, ILineTestable, IPrecomputationInterpolatable<Plane, Rotation>, IBoundedRandomizable<Plane>, IDescriptiveStringProvider {
-	readonly Direction _normal;
-	readonly Location _pointClosestToOrigin;
+	public const float DefaultPlaneThickness = ILine.DefaultLineThickness;
+	readonly Vector3 _normal;
+	readonly float _coefficientOfNormalToCreateMinimalVectFromPlaneToOrigin;
 
 	public Direction Normal {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => _normal;
+		get => Direction.FromVector3(_normal);
 	}
 
 	public Location PointClosestToOrigin {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => _pointClosestToOrigin;
+		get => Location.FromVector3(_normal * -_coefficientOfNormalToCreateMinimalVectFromPlaneToOrigin);
 	}
 
-	public Plane(Direction normal, Location anyPointOnPlane) {
-		_normal = normal;
-		var translationFromOriginAlongNormal = Vector3.Dot(normal.ToVector3(), -anyPointOnPlane.ToVector3());
-		_pointClosestToOrigin = Location.FromVector3(normal.ToVector3() * translationFromOriginAlongNormal);
-	}
+	public Plane(Direction normal, Location anyPointOnPlane) : this(normal.ToVector3(), -Vector3.Dot(normal.ToVector3(), -anyPointOnPlane.ToVector3())) { }
 
-	Plane(Direction normal, Vector3 pointClosestToOrigin) {
+	Plane(Vector3 normal, float coefficientOfNormal) {
 		_normal = normal;
-		_pointClosestToOrigin = Location.FromVector3(pointClosestToOrigin);
+		_coefficientOfNormalToCreateMinimalVectFromPlaneToOrigin = coefficientOfNormal;
 	}
 
 	// TODO in xmldoc note that this is a translation in the direction of the normal vector, e.g. how far in the direction of the normal vector is the plane's closest point away from the origin
-	public static Plane FromNormalAndTranslationFromOrigin(Direction normal, float translationFromOrigin) => new(normal, normal.ToVector3() * translationFromOrigin);
+	public static Plane FromNormalAndTranslationFromOrigin(Direction normal, float translationFromOrigin) => new(normal.ToVector3(), -translationFromOrigin);
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Plane FromNormalAndPointClosestToOrigin(Direction normal, Location pointClosestToOrigin) => new(normal, pointClosestToOrigin.ToVector3());
-
-	public static Plane FromNormalAndPointClosestToOrigin(bool normalFacesOrigin, Location pointClosestToOrigin) {
+	public static Plane FromPointClosestToOriginAndOrientation(bool normalFacesOrigin, Location pointClosestToOrigin) {
 		var vectFromOriginToClosestPoint = (Vect) pointClosestToOrigin;
-		return FromNormalAndTranslationFromOrigin(vectFromOriginToClosestPoint.Direction, vectFromOriginToClosestPoint.Length * (normalFacesOrigin ? -1f : 1f));
+		return new(vectFromOriginToClosestPoint.Direction.ToVector3(), vectFromOriginToClosestPoint.Length * (normalFacesOrigin ? 1f : -1f));
 	}
 
 	public static Plane FromTriangleOnSurface(Location a, Location b, Location c) {
 		var normal = Direction.FromVector3(Vector3.Cross(b.ToVector3() - a.ToVector3(), c.ToVector3() - a.ToVector3()));
 		if (normal != Direction.None) return new(normal, a);
 
+		// Everything below this line is just handling the fact that the points are colinear and creating the right exception message
 		Line? line;
 		if (!a.Equals(b, 0.001f)) line = new Line(a, b);
 		else if (!b.Equals(c, 0.001f)) line = new Line(b, c);
@@ -103,25 +98,16 @@ public readonly partial struct Plane : IMathPrimitive<Plane, float>, IPointTesta
 	public static Plane CreateNewRandom(Plane minInclusive, Plane maxExclusive) => new(Direction.CreateNewRandom(minInclusive.Normal, maxExclusive.Normal), Location.CreateNewRandom(minInclusive.PointClosestToOrigin, maxExclusive.PointClosestToOrigin));
 
 	#region Equality
-	public bool Equals(Plane other) => _normal.Equals(other._normal) && _pointClosestToOrigin.Equals(other._pointClosestToOrigin);
-	public bool Equals(Plane other, float tolerance) => _normal.Equals(other._normal) && _pointClosestToOrigin.Equals(other._pointClosestToOrigin);
-	public bool EqualsWithinAngleAndDistance(Plane other, Angle angle, float distance) => _normal.EqualsWithinAngle(other._normal, angle) && _pointClosestToOrigin.EqualsWithinDistance(other._pointClosestToOrigin, distance);
+	public bool Equals(Plane other) => _normal.Equals(other._normal) && _coefficientOfNormalToCreateMinimalVectFromPlaneToOrigin.Equals(other._coefficientOfNormalToCreateMinimalVectFromPlaneToOrigin);
+	public bool Equals(Plane other, float tolerance) => _normal.Equals(other._normal) && _coefficientOfNormalToCreateMinimalVectFromPlaneToOrigin.Equals(other._coefficientOfNormalToCreateMinimalVectFromPlaneToOrigin);
+	public bool EqualsWithinAngleAndDistanceFromOrigin(Plane other, Angle angle, float distance) => Normal.EqualsWithinAngle(other.Normal, angle) && PointClosestToOrigin.EqualsWithinDistance(other.PointClosestToOrigin, distance);
 	public override bool Equals(object? obj) => obj is Plane other && Equals(other);
-	public override int GetHashCode() => HashCode.Combine(_normal, _pointClosestToOrigin);
+	public override int GetHashCode() => HashCode.Combine(_normal, _coefficientOfNormalToCreateMinimalVectFromPlaneToOrigin);
 	public static bool operator ==(Plane left, Plane right) => left.Equals(right);
 	public static bool operator !=(Plane left, Plane right) => !left.Equals(right);
 	#endregion
 }
 
 public static class PlaneExtensions {
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TLine SnappedOnTo<TLine>(this TLine @this, Plane plane) where TLine : ILine<TLine> => plane.Snap(@this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle AngleTo<TLine>(this TLine @this, Plane plane) where TLine : ILine<TLine> => plane.AngleTo(@this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Ray? ReflectedAgainst(this Line @this, Plane plane) => plane.Reflect(@this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Ray? ReflectedAgainst(this Ray @this, Plane plane) => plane.Reflect(@this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static BoundedLine? ReflectedAgainst(this BoundedLine @this, Plane plane) => plane.Reflect(@this);
+	public static Angle AngleTo<TLine>(this TLine @this, Plane plane) where TLine : ILine => plane.AngleTo(@this);
 }

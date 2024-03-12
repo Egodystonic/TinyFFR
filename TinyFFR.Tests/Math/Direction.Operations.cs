@@ -1,6 +1,7 @@
 ﻿// Created on 2023-11-08 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
+using System.Numerics;
 using NUnit.Framework.Constraints;
 using NUnit.Framework.Internal;
 
@@ -367,5 +368,37 @@ partial class DirectionTest {
 			AssertDiagonal(item, expectedDiagonalResult);
 			AssertOrientation(item, expectedOrientationResult);
 		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyExposeDotProductAsSimilarity() {
+		var testList = new List<Direction>();
+		for (var x = -5f; x <= 5f; x += 1f) {
+			for (var y = -5f; y <= 5f; y += 1f) {
+				for (var z = -5f; z <= 5f; z += 1f) {
+					testList.Add(new(x, y, z));
+				}
+			}
+		}
+
+		for (var i = 0; i < testList.Count; ++i) {
+			for (var j = i; j < testList.Count; ++j) {
+				var a = testList[i];
+				var b = testList[j];
+				Assert.AreEqual(Vector3.Dot(a.ToVector3(), b.ToVector3()), a.SimilarityTo(b), TestTolerance);
+				Assert.AreEqual(a.SimilarityTo(b), b.SimilarityTo(a));
+			}
+		}
+
+		Assert.AreEqual(1f, Direction.Forward.SimilarityTo(Direction.Forward));
+		Assert.AreEqual(0f, Direction.Forward.SimilarityTo(Direction.Up));
+		Assert.AreEqual(0f, Direction.Forward.SimilarityTo(Direction.Down));
+		Assert.AreEqual(0f, Direction.Forward.SimilarityTo(Direction.Left));
+		Assert.AreEqual(0f, Direction.Forward.SimilarityTo(Direction.Right));
+		Assert.AreEqual(-1f, Direction.Forward.SimilarityTo(Direction.Backward));
+
+		Assert.AreEqual(0f, Direction.Forward.SimilarityTo(Direction.None));
+		Assert.AreEqual(0f, Direction.None.SimilarityTo(Direction.Forward));
+		Assert.AreEqual(0f, Direction.None.SimilarityTo(Direction.None));
 	}
 }

@@ -81,14 +81,25 @@ public readonly partial struct Ray :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(Location location, float lineThickness) => DistanceFrom(location) <= lineThickness;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => ILine.CalculateClosestPointToOtherLine(this, line);
+	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => ILine.CalculateClosestLocationToOtherLine(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn<TLine>(TLine line) where TLine : ILine => ILine.CalculateClosestLocationToOtherLine(line, this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => DistanceFrom(ClosestPointTo(line));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location? IntersectionPointWith<TLine>(TLine line) where TLine : ILine => GetIntersectionPointOn(line, ILine.DefaultLineThickness);
-	public Location? GetIntersectionPointOn<TLine>(TLine line, float lineThickness) where TLine : ILine {
+	public Location? IntersectionPointWith<TLine>(TLine line) where TLine : ILine => IntersectionPointWith(line, ILine.DefaultLineThickness);
+	public Location? IntersectionPointWith<TLine>(TLine line, float lineThickness) where TLine : ILine {
 		var closestPointOnLine = line.ClosestPointTo(this);
 		return DistanceFrom(closestPointOnLine) <= lineThickness ? closestPointOnLine : null;
+	}
+
+	public Location LocationAtDistance(float distanceFromStart) => UnboundedLocationAtDistance(distanceFromStart > 0f ? distanceFromStart : 0f);
+	public Location UnboundedLocationAtDistance(float distanceFromStart) => _startPoint + _direction * distanceFromStart;
+
+	public Ray? ReflectedBy(Plane plane) {
+		var intersectionPoint = IntersectionPointWith(plane);
+		if (intersectionPoint == null) return null;
+		return new Ray(intersectionPoint.Value, _direction.ReflectedBy(plane));
 	}
 }

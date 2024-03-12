@@ -65,15 +65,18 @@ partial struct Vect :
 	}
 
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float LengthWhenProjectedOnTo(Direction d) => Dot(AsVector4, d.AsVector4);
+
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect ProjectedOnTo(Direction d) => d * Dot(AsVector4, d.AsVector4);
-	public Vect ProjectedOnTo(Direction d, bool retainLength) {
+	public Vect ProjectedOnTo(Direction d) => d * LengthWhenProjectedOnTo(d);
+	public Vect ProjectedOnTo(Direction d, bool preserveLength) {
 		var projectedVect = ProjectedOnTo(d);
-		if (!retainLength) return projectedVect;
+		if (!preserveLength) return projectedVect;
 
 		if (projectedVect.LengthSquared < 0.0001f) return Zero;
-		else return projectedVect with { Length = Length };
+		else return projectedVect.WithLength(Length);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect OrthogonalizedAgainst(Direction d) => Direction.OrthogonalizedAgainst(d) * Length;

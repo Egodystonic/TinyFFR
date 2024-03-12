@@ -7,7 +7,7 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = sizeof(float) * 4 * 2)]
-public readonly partial struct Line : ILine<Line>, IDescriptiveStringProvider {
+public readonly partial struct Line : ILine<Line, Ray>, IDescriptiveStringProvider {
 	readonly Location _pointOnLine;
 	readonly Direction _direction;
 

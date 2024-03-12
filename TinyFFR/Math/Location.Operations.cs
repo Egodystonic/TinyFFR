@@ -10,6 +10,8 @@ partial struct Location :
 	IAdditionOperators<Location, Vect, Location>,
 	ISubtractionOperators<Location, Vect, Location>,
 	ISubtractionOperators<Location, Location, Vect>,
+	IMultiplyOperators<Location, (Location Pivot, Rotation Rotation), Location>,
+	IMultiplyOperators<Location, (Rotation Rotation, Location Pivot), Location>,
 	IInterpolatable<Location>,
 	IBoundedRandomizable<Location> {
 	internal const float DefaultRandomRange = 100f;
@@ -35,6 +37,12 @@ partial struct Location :
 	public Vect GetVectFrom(Location otherLocation) => new(AsVector4 - otherLocation.AsVector4);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect GetVectTo(Location otherLocation) => new(otherLocation.AsVector4 - AsVector4);
+
+	public static Location operator *(Location locationToRotate, (Location Pivot, Rotation Rotation) pivotRotationTuple) => locationToRotate.RotatedAround(pivotRotationTuple.Pivot, pivotRotationTuple.Rotation);
+	public static Location operator *((Location Pivot, Rotation Rotation) pivotRotationTuple, Location locationToRotate) => locationToRotate.RotatedAround(pivotRotationTuple.Pivot, pivotRotationTuple.Rotation);
+	public static Location operator *(Location locationToRotate, (Rotation Rotation, Location Pivot) pivotRotationTuple) => locationToRotate.RotatedAround(pivotRotationTuple.Pivot, pivotRotationTuple.Rotation);
+	public static Location operator *((Rotation Rotation, Location Pivot) pivotRotationTuple, Location locationToRotate) => locationToRotate.RotatedAround(pivotRotationTuple.Pivot, pivotRotationTuple.Rotation);
+	public Location RotatedAround(Location pivotPoint, Rotation rot) => pivotPoint + GetVectFrom(pivotPoint) * rot;
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

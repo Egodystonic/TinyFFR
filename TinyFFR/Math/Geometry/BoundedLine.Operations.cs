@@ -14,7 +14,7 @@ public readonly partial struct BoundedLine :
 	public Ray ToRayFromEnd() => new(_startPoint + _vect, -Direction);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line ToUnboundedLine() => new(_startPoint, Direction);
+	public Line ToLine() => new(_startPoint, Direction);
 
 	public BoundedLine Reversed {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -96,14 +96,29 @@ public readonly partial struct BoundedLine :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(Location location, float lineThickness) => DistanceFrom(location) <= lineThickness;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => ILine.CalculateClosestPointToOtherLine(this, line);
+	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => ILine.CalculateClosestLocationToOtherLine(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn<TLine>(TLine line) where TLine : ILine => ILine.CalculateClosestLocationToOtherLine(line, this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => DistanceFrom(ClosestPointTo(line));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location? IntersectionPointWith<TLine>(TLine line) where TLine : ILine => GetIntersectionPointOn(line, ILine.DefaultLineThickness);
-	public Location? GetIntersectionPointOn<TLine>(TLine line, float lineThickness) where TLine : ILine {
+	public Location? IntersectionPointWith<TLine>(TLine line) where TLine : ILine => IntersectionPointWith(line, ILine.DefaultLineThickness);
+	public Location? IntersectionPointWith<TLine>(TLine line, float lineThickness) where TLine : ILine {
 		var closestPointOnLine = line.ClosestPointTo(this);
 		return DistanceFrom(closestPointOnLine) <= lineThickness ? closestPointOnLine : null;
+	}
+
+	public Location LocationAtDistance(float distanceFromStart) => UnboundedLocationAtDistance(Single.Clamp(distanceFromStart, 0f, _vect.Length));
+	public Location UnboundedLocationAtDistance(float distanceFromStart) => _startPoint + _vect.WithLength(distanceFromStart);
+
+	public BoundedLine? ReflectedBy(Plane plane) {
+		var intersectionPoint = IntersectionPointWith(plane);
+		if (intersectionPoint == null) return null;
+		return new BoundedLine(intersectionPoint.Value, Direction.ReflectedBy(plane) * (Length - intersectionPoint.Value.DistanceFrom(StartPoint)));
+	}
+
+	public BoundedLine ProjectedOnTo(Plane plane, bool preserveLength) {
+
 	}
 }

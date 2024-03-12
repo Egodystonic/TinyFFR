@@ -4,7 +4,7 @@
 namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = sizeof(float) * 4 * 2)]
-public readonly partial struct BoundedLine : ILine<BoundedLine> {
+public readonly partial struct BoundedLine : ILine<BoundedLine, BoundedLine> {
 	readonly Location _startPoint;
 	readonly Vect _vect;
 
