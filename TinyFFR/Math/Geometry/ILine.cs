@@ -172,3 +172,50 @@ public interface ILine<TSelf, TSplit> : ILine<TSelf> where TSelf : ILine<TSelf> 
 	TSplit? ReflectedBy(Plane plane);
 	bool TrySplit(Plane plane, out BoundedLine outBeforePlane, out TSplit outAfterPlane);
 }
+
+// ==================== Below this line: Various "inverted" line testing methods defined as either extensions or added directly in partial definitions ====================
+// I do it this way to keep these definitions close by as they're basically just the same as the definitions above but "the inverse of"
+// and I think it makes more sense to keep it all in this one file.
+// ReSharper disable UnusedTypeParameter Type parameterization instead of directly using interface type is used to prevent boxing (instead relying on reification of each parameter combination)
+partial struct Location {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsContainedBy<TLine>(TLine line, float lineThickness) where TLine : ILine => line.Contains(this, lineThickness);
+}
+partial struct Plane {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle operator ^(Plane lhs, Plane rhs) => lhs.AngleTo(rhs);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle operator ^(Plane plane, Line line) => plane.AngleTo(line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle operator ^(Line line, Plane plane) => plane.AngleTo(line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle operator ^(Plane plane, Ray line) => plane.AngleTo(line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle operator ^(Ray line, Plane plane) => plane.AngleTo(line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle operator ^(Plane plane, BoundedLine line) => plane.AngleTo(line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle operator ^(BoundedLine line, Plane plane) => plane.AngleTo(line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo<TLine>(TLine line) where TLine : ILine => AngleTo(line.Direction);
+
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public TSplit? Reflect<TLine, TSplit>(TLine line) where TLine : ILine<TLine, TSplit> where TSplit : struct, ILine<TSplit> => line.ReflectedBy(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool TrySplit<TLine, TSplit>(TLine line, out BoundedLine outBeforePlane, out TSplit outAfterPlane) where TLine : ILine<TLine, TSplit> where TSplit : struct, ILine<TSplit> => line.TrySplit(this, out outBeforePlane, out outAfterPlane);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public TLine ProjectLine<TLine>(TLine line) where TLine : ILine<TLine> => line.ProjectedOnTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public TLine AlignLine<TLine>(TLine line) where TLine : ILine<TLine> => line.AlignedWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => line.ClosestPointOn(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn<TLine>(TLine line) where TLine : ILine => line.ClosestPointTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => line.DistanceFrom(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionPointWith<TLine>(TLine line) where TLine : ILine => line.IntersectionPointWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public PlaneObjectRelationship RelationshipTo<TLine>(TLine line) where TLine : ILine => line.RelationshipTo(this);
+}

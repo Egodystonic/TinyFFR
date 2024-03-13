@@ -107,7 +107,3 @@ public readonly partial struct Plane : IMathPrimitive<Plane, float>, IPointTesta
 	public static bool operator !=(Plane left, Plane right) => !left.Equals(right);
 	#endregion
 }
-
-public static class PlaneExtensions {
-	public static Angle AngleTo<TLine>(this TLine @this, Plane plane) where TLine : ILine => plane.AngleTo(@this);
-}

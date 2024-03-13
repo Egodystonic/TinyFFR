@@ -43,7 +43,7 @@ public readonly partial struct Cuboid
 			Single.Clamp(location.Z, -HalfDepth, HalfDepth)
 		);
 	}
-	public Location ClosestSurfacePointTo(Location location) {
+	public Location ClosestPointOnSurfaceTo(Location location) {
 		static Axis GetMinAxis(float x, float y, float z) {
 			if (MathF.Abs(x) < MathF.Abs(y)) return MathF.Abs(x) < MathF.Abs(z) ? Axis.X : Axis.Z;
 			else return MathF.Abs(y) < MathF.Abs(z) ? Axis.Y : Axis.Z;

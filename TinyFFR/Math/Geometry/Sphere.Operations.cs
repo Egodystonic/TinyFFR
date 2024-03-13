@@ -24,12 +24,13 @@ public readonly partial struct Sphere
 		if (vectFromLocToCentre.LengthSquared <= RadiusSquared) return location;
 		else return location - vectFromLocToCentre.ShortenedBy(Radius);
 	}
-	public Location ClosestSurfacePointTo(Location location) {
+	public Location ClosestPointOnSurfaceTo(Location location) {
 		var vectFromLocToCentre = (Vect) location;
 		return (Location) vectFromLocToCentre.WithLength(vectFromLocToCentre.Length - Radius);
 	}
+
 	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => line.ClosestPointToOrigin();
-	public Location ClosestSurfacePointTo<TLine>(TLine line) where TLine : ILine => (Location) ((Vect) line.ClosestPointToOrigin()).WithLength(Radius);
+	public Location ClosestPointOnSurfaceTo<TLine>(TLine line) where TLine : ILine => (Location) ((Vect) line.ClosestPointToOrigin()).WithLength(Radius);
 
 	public Location? SurfaceIntersectionPointWith<TLine>(TLine line) where TLine : ILine {
 		// Firstly we solve this always as a simple line as it lets us solve as a quadratic, e.g. distance-from-start = (-b +/- sqrt(b^2 - 4ac)) / 2a

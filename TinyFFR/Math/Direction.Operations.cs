@@ -48,11 +48,6 @@ partial struct Direction :
 	public static Angle operator ^(Direction d1, Direction d2) => Angle.FromAngleBetweenDirections(d1, d2);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(Direction other) => Angle.FromAngleBetweenDirections(this, other);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle AngleTo(Plane plane) => plane.AngleTo(this);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction ReflectedBy(Plane plane) => plane.Reflect(this);
 
 
 	public Direction GetAnyPerpendicularDirection() {

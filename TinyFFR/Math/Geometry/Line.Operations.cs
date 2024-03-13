@@ -91,4 +91,14 @@ public readonly partial struct Line :
 		if (intersectionPoint == null) return null;
 		return new Ray(intersectionPoint.Value, _direction.ReflectedBy(plane));
 	}
+
+	public Location? IntersectionPointWith(Plane plane) {
+		var similarityToNormal = plane.Normal.SimilarityTo(Direction);
+		if (similarityToNormal == 0f) { // Line is parallel to plane
+
+			
+		}
+
+
+	}
 }
