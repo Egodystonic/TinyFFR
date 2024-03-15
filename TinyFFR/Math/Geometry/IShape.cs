@@ -25,7 +25,7 @@ public interface IPlaneTestable {
 	float DistanceFrom(Plane plane);
 	PlaneObjectRelationship RelationshipTo(Plane plane);
 }
-// TODO mention in XMLDoc that this represents specifically a shape whose origin is always Location.Origin (e.g. all parameters are shape-local).
+// TODO mention in XMLDoc that this represents specifically a shape whose origin is always Location.Origin (e.g. all parameters are shape-local). Or think of a better naming prefix for them all (LocalXyz?) (XyzParameters/Descriptor?)
 public interface IShape : IPointTestable, ILineTestable, IPlaneTestable {
 	Location ClosestPointOnSurfaceTo(Location location);
 	Location ClosestPointOnSurfaceTo<TLine>(TLine line) where TLine : ILine;
@@ -37,8 +37,8 @@ public interface IShape : IPointTestable, ILineTestable, IPlaneTestable {
 	float SurfaceDistanceFrom(Plane plane);
 
 	// These two lines are essentially a rename of IntersectionPointWith to SurfaceIntersectionPointWith for shapes
-	// as anything BUT a surface intersection doesn't really make much sense once you think about it and I wanted to
-	// be explicit to keep with the naming convention of all the other SurfaceXyz methods.
+	// as anything BUT a surface intersection doesn't really make much sense once you think about it (e.g. that's not really an intersection that's just a contains)
+	// and I wanted to be explicit to keep with the naming convention of all the other SurfaceXyz methods.
 	Location? ILineTestable.IntersectionPointWith<TLine>(TLine line) => SurfaceIntersectionPointWith(line);
 	Location? SurfaceIntersectionPointWith<TLine>(TLine line) where TLine : ILine;
 

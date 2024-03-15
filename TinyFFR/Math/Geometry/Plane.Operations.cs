@@ -9,11 +9,11 @@ public readonly partial struct Plane :
 	IMultiplyOperators<Plane, (Rotation Rotation, Location Pivot), Plane>,
 	IUnaryNegationOperators<Plane, Plane> {
 
-	public Plane Reversed {
-		get => new(-_normal, -_coefficientOfNormalToCreateMinimalVectFromPlaneToOrigin);
+	public Plane Flipped {
+		get => new(-_normal, -_smallestDistanceFromOriginAlongNormal);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Plane operator -(Plane operand) => operand.Reversed;
+	public static Plane operator -(Plane operand) => operand.Flipped;
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -46,7 +46,7 @@ public readonly partial struct Plane :
 	}
 
 	public Location ClosestPointTo(Location location) => location - PointClosestToOrigin.GetVectTo(location).ProjectedOnTo(Normal);
-	public float SignedDistanceFrom(Location location) => Vector3.Dot(location.ToVector3(), _normal) + _coefficientOfNormalToCreateMinimalVectFromPlaneToOrigin;
+	public float SignedDistanceFrom(Location location) => Vector3.Dot(location.ToVector3(), _normal) - _smallestDistanceFromOriginAlongNormal;
 	public float DistanceFrom(Location location) => MathF.Abs(SignedDistanceFrom(location));
 	
 	// TODO in Xml make it clear that "facing towards" means the normal is pointing out of this side of the plane; and that points on the plane (within the thickness value) will return false
@@ -64,7 +64,43 @@ public readonly partial struct Plane :
 
 	public float DistanceFrom(Plane other) => MathF.Abs(Normal.SimilarityTo(other.Normal)) >= 0.999f ? PointClosestToOrigin.DistanceFrom(other.PointClosestToOrigin) : 0f;
 	public Line? IntersectionLineWith(Plane other) {
-		// Check for parallel
+		static (float A, float B) FindNonZeroComponents(float thisA, float thisB, float thisCoefficient, float otherA, float otherB, float otherCoefficient) {
+			var divisor = thisA * otherB - otherA * thisB;
+
+			return (
+				(otherB * thisCoefficient - thisB * otherCoefficient) / divisor,
+				(thisA * otherCoefficient - otherA * thisCoefficient) / divisor
+			);
+		}
+
+		var lineDirection = Vector3.Cross(_normal, other._normal);
+		if (lineDirection.LengthSquared() == 0f) return null; // parallel planes
+
+		var dirXAbs = MathF.Abs(lineDirection.X);
+		var dirYAbs = MathF.Abs(lineDirection.Y);
+		var dirZAbs = MathF.Abs(lineDirection.Z);
+
+		if (dirXAbs > dirYAbs) {
+			if (dirXAbs > dirZAbs) goto calculateUsingZeroX;
+			else goto calculateUsingZeroZ;
+		}
+		else if (dirYAbs > dirZAbs) goto calculateUsingZeroY;
+		else goto calculateUsingZeroZ;
+
+		calculateUsingZeroX: {
+			var (y, z) = FindNonZeroComponents(_normal.Y, _normal.Z, _smallestDistanceFromOriginAlongNormal, other._normal.Y, other._normal.Z, other._smallestDistanceFromOriginAlongNormal);
+			return new Line((0f, y, z), Direction.FromVector3(lineDirection));
+		}
+
+		calculateUsingZeroY: {
+			var (x, z) = FindNonZeroComponents(_normal.X, _normal.Z, _smallestDistanceFromOriginAlongNormal, other._normal.X, other._normal.Z, other._smallestDistanceFromOriginAlongNormal);
+			return new Line((x, 0f, z), Direction.FromVector3(lineDirection));
+		}
+
+		calculateUsingZeroZ: {
+			var (x, y) = FindNonZeroComponents(_normal.X, _normal.Y, _smallestDistanceFromOriginAlongNormal, other._normal.X, other._normal.Y, other._smallestDistanceFromOriginAlongNormal);
+			return new Line((x, y, 0f), Direction.FromVector3(lineDirection));
+		}
 	}
 }
 

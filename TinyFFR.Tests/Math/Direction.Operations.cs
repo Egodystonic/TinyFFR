@@ -65,7 +65,7 @@ partial class DirectionTest {
 			for (var y = -5f; y <= 5f; y += 1f) {
 				for (var z = -5f; z <= 5f; z += 1f) {
 					var dir = new Direction(x, y, z);
-					var perp = dir.GetAnyPerpendicularDirection();
+					var perp = dir.GetAnyPerpendicular();
 
 					if (dir == Direction.None) Assert.AreEqual(Direction.None, perp);
 					else AssertToleranceEquals(90f, dir ^ perp, TestTolerance);
@@ -74,7 +74,7 @@ partial class DirectionTest {
 		}
 
 		foreach (var cardinal in Direction.AllCardinals) {
-			var perp = cardinal.GetAnyPerpendicularDirection();
+			var perp = cardinal.GetAnyPerpendicular();
 			AssertToleranceEquals(90f, cardinal ^ perp, TestTolerance);
 			Assert.IsTrue(Direction.AllCardinals.Contains(perp));
 		}
@@ -82,7 +82,7 @@ partial class DirectionTest {
 
 	[Test]
 	public void ShouldCorrectlyFindPerpendicularDirectionWithAdditionalConstrainingDirection() {
-		Assert.AreEqual(Direction.Left, Direction.Up.GetAnyPerpendicularDirection(Direction.Forward));
+		Assert.AreEqual(Direction.Left, Direction.Up.PerpendicularWith(Direction.Forward));
 
 		var testList = new List<Direction>();
 		for (var x = -5f; x <= 5f; x += 1f) {
@@ -96,23 +96,23 @@ partial class DirectionTest {
 		for (var i = 0; i < testList.Count; ++i) {
 			var dirA = testList[i];
 
-			Assert.AreEqual(Direction.None, Direction.None.GetAnyPerpendicularDirection(dirA));
-			Assert.AreEqual(Direction.None, dirA.GetAnyPerpendicularDirection(Direction.None));
+			Assert.AreEqual(Direction.None, Direction.None.PerpendicularWith(dirA));
+			Assert.AreEqual(Direction.None, dirA.PerpendicularWith(Direction.None));
 
 			for (var j = i; j < testList.Count; ++j) {
 				var dirB = testList[j];
 
 				if (dirA == Direction.None || dirB == Direction.None) {
-					Assert.AreEqual(Direction.None, dirA.GetAnyPerpendicularDirection(dirB));
-					Assert.AreEqual(Direction.None, dirB.GetAnyPerpendicularDirection(dirA));
+					Assert.AreEqual(Direction.None, dirA.PerpendicularWith(dirB));
+					Assert.AreEqual(Direction.None, dirB.PerpendicularWith(dirA));
 					continue;
 				}
 
-				var thirdOrthogonal = dirA.GetAnyPerpendicularDirection(dirB);
+				var thirdOrthogonal = dirA.PerpendicularWith(dirB);
 				AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, 2f);
 				AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, 2f);
 				Assert.IsTrue(thirdOrthogonal.IsUnitLength);
-				thirdOrthogonal = dirB.GetAnyPerpendicularDirection(dirA);
+				thirdOrthogonal = dirB.PerpendicularWith(dirA);
 				AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, 2f);
 				AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, 2f);
 				Assert.IsTrue(thirdOrthogonal.IsUnitLength);
@@ -123,8 +123,8 @@ partial class DirectionTest {
 	[Test]
 	public void ShouldCorrectlyOrthogonalizeAgainstAnotherDir() {
 		foreach (var cardinal in Direction.AllCardinals) {
-			var perp = cardinal.GetAnyPerpendicularDirection();
-			var thirdPerp = cardinal.GetAnyPerpendicularDirection(perp);
+			var perp = cardinal.GetAnyPerpendicular();
+			var thirdPerp = cardinal.PerpendicularWith(perp);
 			Assert.AreEqual(cardinal, (20f % perp * cardinal).OrthogonalizedAgainst(thirdPerp));
 			Assert.AreEqual(cardinal, (-20f % perp * cardinal).OrthogonalizedAgainst(thirdPerp));
 			Assert.AreEqual(cardinal, (20f % thirdPerp * cardinal).OrthogonalizedAgainst(perp));

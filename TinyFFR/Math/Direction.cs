@@ -84,6 +84,16 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromOrientation(Orientation3D orientation) => new(orientation.GetAxisSign(Axis.X), orientation.GetAxisSign(Axis.Y), orientation.GetAxisSign(Axis.Z));
 
+	public static Direction FromPerpendicularToBoth(Direction dirA, Direction dirB) { // TODO in Xmldoc note that this will return any perp to both, no guarantee on which one. If either is None, then it throws
+		var cross = Vector3.Cross(dirA.ToVector3(), dirB.ToVector3());
+		var crossLength = cross.LengthSquared();
+
+		if (MathF.Abs(crossLength - 1f) <= 0.001f) return FromPreNormalizedComponents(cross);
+		else if (crossLength >= 0.001f) return FromVector3(cross);
+		else if (dirA.Equals(None, 0.001f) || dirB.Equals(None, 0.001f)) throw new ArgumentException($"Neither {nameof(Direction)} can be {nameof(None)}.");
+		else return dirA.GetAnyPerpendicular();
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromVector3(Vector3 v) => new(NormalizeOrZero(new Vector4(v, WValue)));
 

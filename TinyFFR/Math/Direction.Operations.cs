@@ -49,21 +49,11 @@ partial struct Direction :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(Direction other) => Angle.FromAngleBetweenDirections(this, other);
 
-
-	public Direction GetAnyPerpendicularDirection() {
+	public Direction GetAnyPerpendicular() {
 		return FromVector3(Vector3.Cross(
 			ToVector3(),
 			MathF.Abs(Z) > MathF.Abs(X) ? new Vector3(1f, 0f, 0f) : new Vector3(0f, 0f, 1f)
 		));
-	}
-	public Direction GetAnyPerpendicularDirection(Direction additionalConstrainingDirection) {
-		var cross = Vector3.Cross(ToVector3(), additionalConstrainingDirection.ToVector3());
-		var crossLength = cross.LengthSquared();
-
-		if (MathF.Abs(crossLength - 1f) <= 0.001f) return FromPreNormalizedComponents(cross);
-		else if (crossLength >= 0.001f) return FromVector3(cross);
-		else if (this.Equals(None, 0.001f) || additionalConstrainingDirection.Equals(None, 0.001f)) return None;
-		else return GetAnyPerpendicularDirection();
 	}
 
 	public Direction OrthogonalizedAgainst(Direction d) {

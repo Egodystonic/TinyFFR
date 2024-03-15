@@ -6,7 +6,7 @@ namespace Egodystonic.TinyFFR;
 public readonly partial struct Plane : IMathPrimitive<Plane, float>, IPointTestable, ILineTestable, IPrecomputationInterpolatable<Plane, Rotation>, IBoundedRandomizable<Plane>, IDescriptiveStringProvider {
 	public const float DefaultPlaneThickness = ILine.DefaultLineThickness;
 	readonly Vector3 _normal;
-	readonly float _coefficientOfNormalToCreateMinimalVectFromPlaneToOrigin;
+	readonly float _smallestDistanceFromOriginAlongNormal;
 
 	public Direction Normal {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -15,22 +15,22 @@ public readonly partial struct Plane : IMathPrimitive<Plane, float>, IPointTesta
 
 	public Location PointClosestToOrigin {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Location.FromVector3(_normal * -_coefficientOfNormalToCreateMinimalVectFromPlaneToOrigin);
+		get => Location.FromVector3(_normal * _smallestDistanceFromOriginAlongNormal);
 	}
 
-	public Plane(Direction normal, Location anyPointOnPlane) : this(normal.ToVector3(), -Vector3.Dot(normal.ToVector3(), -anyPointOnPlane.ToVector3())) { }
+	public Plane(Direction normal, Location anyPointOnPlane) : this(normal.ToVector3(), -Vector3.Dot(normal.ToVector3(), anyPointOnPlane.ToVector3())) { }
 
 	Plane(Vector3 normal, float coefficientOfNormal) {
 		_normal = normal;
-		_coefficientOfNormalToCreateMinimalVectFromPlaneToOrigin = coefficientOfNormal;
+		_smallestDistanceFromOriginAlongNormal = coefficientOfNormal;
 	}
 
 	// TODO in xmldoc note that this is a translation in the direction of the normal vector, e.g. how far in the direction of the normal vector is the plane's closest point away from the origin
-	public static Plane FromNormalAndTranslationFromOrigin(Direction normal, float translationFromOrigin) => new(normal.ToVector3(), -translationFromOrigin);
+	public static Plane FromNormalAndTranslationFromOrigin(Direction normal, float translationFromOrigin) => new(normal.ToVector3(), translationFromOrigin);
 
 	public static Plane FromPointClosestToOriginAndOrientation(bool normalFacesOrigin, Location pointClosestToOrigin) {
 		var vectFromOriginToClosestPoint = (Vect) pointClosestToOrigin;
-		return new(vectFromOriginToClosestPoint.Direction.ToVector3(), vectFromOriginToClosestPoint.Length * (normalFacesOrigin ? 1f : -1f));
+		return new(vectFromOriginToClosestPoint.Direction.ToVector3(), vectFromOriginToClosestPoint.Length * (normalFacesOrigin ? -1f : 1f));
 	}
 
 	public static Plane FromTriangleOnSurface(Location a, Location b, Location c) {
@@ -98,11 +98,11 @@ public readonly partial struct Plane : IMathPrimitive<Plane, float>, IPointTesta
 	public static Plane CreateNewRandom(Plane minInclusive, Plane maxExclusive) => new(Direction.CreateNewRandom(minInclusive.Normal, maxExclusive.Normal), Location.CreateNewRandom(minInclusive.PointClosestToOrigin, maxExclusive.PointClosestToOrigin));
 
 	#region Equality
-	public bool Equals(Plane other) => _normal.Equals(other._normal) && _coefficientOfNormalToCreateMinimalVectFromPlaneToOrigin.Equals(other._coefficientOfNormalToCreateMinimalVectFromPlaneToOrigin);
-	public bool Equals(Plane other, float tolerance) => _normal.Equals(other._normal) && _coefficientOfNormalToCreateMinimalVectFromPlaneToOrigin.Equals(other._coefficientOfNormalToCreateMinimalVectFromPlaneToOrigin);
+	public bool Equals(Plane other) => _normal.Equals(other._normal) && _smallestDistanceFromOriginAlongNormal.Equals(other._smallestDistanceFromOriginAlongNormal);
+	public bool Equals(Plane other, float tolerance) => _normal.Equals(other._normal) && _smallestDistanceFromOriginAlongNormal.Equals(other._smallestDistanceFromOriginAlongNormal);
 	public bool EqualsWithinAngleAndDistanceFromOrigin(Plane other, Angle angle, float distance) => Normal.EqualsWithinAngle(other.Normal, angle) && PointClosestToOrigin.EqualsWithinDistance(other.PointClosestToOrigin, distance);
 	public override bool Equals(object? obj) => obj is Plane other && Equals(other);
-	public override int GetHashCode() => HashCode.Combine(_normal, _coefficientOfNormalToCreateMinimalVectFromPlaneToOrigin);
+	public override int GetHashCode() => HashCode.Combine(_normal, _smallestDistanceFromOriginAlongNormal);
 	public static bool operator ==(Plane left, Plane right) => left.Equals(right);
 	public static bool operator !=(Plane left, Plane right) => !left.Equals(right);
 	#endregion
