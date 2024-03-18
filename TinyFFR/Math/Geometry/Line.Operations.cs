@@ -80,10 +80,10 @@ public readonly partial struct Line :
 		return DistanceFrom(closestPointOnLine) <= lineThickness ? closestPointOnLine : null;
 	}
 
-	// These are implemented explicitly because a line isn't really meant to have a "distance" or a "start point" etc
-	Location ILine.LocationAtDistance(float distanceFromStart) => LocationAtDistance(distanceFromStart);
+	// These are implemented explicitly because an unbounded line isn't really meant to have a "distance" or a "start point" etc.
+	Location ILine.BoundedLocationAtDistance(float distanceFromStart) => BoundedLocationAtDistance(distanceFromStart);
 	Location ILine.UnboundedLocationAtDistance(float distanceFromStart) => UnboundedLocationAtDistance(distanceFromStart);
-	Location LocationAtDistance(float distanceFromStart) => UnboundedLocationAtDistance(distanceFromStart);
+	Location BoundedLocationAtDistance(float distanceFromStart) => UnboundedLocationAtDistance(distanceFromStart);
 	Location UnboundedLocationAtDistance(float distanceFromStart) => _pointOnLine + _direction * distanceFromStart;
 
 	public Ray? ReflectedBy(Plane plane) {
@@ -94,11 +94,75 @@ public readonly partial struct Line :
 
 	public Location? IntersectionPointWith(Plane plane) {
 		var similarityToNormal = plane.Normal.SimilarityTo(Direction);
-		if (similarityToNormal == 0f) { // Line is parallel to plane
+		if (similarityToNormal == 0f) return null; // Parallel with plane -- either infinite or zero answers. Return null either way
 
-			
+		var distance = (plane.ClosestPointToOrigin - PointOnLine).LengthWhenProjectedOnTo(plane.Normal) / similarityToNormal;
+		return UnboundedLocationAtDistance(distance);
+	}
+
+	public float SignedDistanceFrom(Plane plane) {
+		if (plane.Normal.SimilarityTo(Direction) != 0f) return 0f;
+		var originToPlaneVect = (Vect) plane.ClosestPointToOrigin;
+		return ((Vect) PointOnLine).LengthWhenProjectedOnTo(originToPlaneVect.Direction) - originToPlaneVect.Length;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(Plane plane) => MathF.Abs(SignedDistanceFrom(plane));
+
+	// TODO in xmldoc explain that it's probably better to use IntersectionPointWith and/or DistanceFrom than these two methods
+	public Location ClosestPointTo(Plane plane) {
+		// If we're parallel with the plane there are infinite answers so we just return the easiest one
+		return IntersectionPointWith(plane) ?? PointOnLine;
+	}
+	public Location ClosestPointOn(Plane plane) {
+		// If we're parallel with the plane there are infinite answers so we just return the easiest one
+		return IntersectionPointWith(plane) ?? plane.ClosestPointToOrigin;
+	}
+
+	public PlaneObjectRelationship RelationshipTo(Plane plane) {
+		return SignedDistanceFrom(plane) switch {
+			> 0f => PlaneObjectRelationship.PlaneFacesTowardsObject,
+			< 0f => PlaneObjectRelationship.PlaneFacesAwayFromObject,
+			_ => PlaneObjectRelationship.PlaneIntersectsObject
+		};
+	}
+
+	public Line ProjectedOnTo(Plane plane) {
+		var projectedDirection = Direction.ProjectedOnTo(plane);
+		if (projectedDirection == Direction.None) projectedDirection = Direction; // TODO xmldoc this behaviour
+		return new Line(PointOnLine.ClosestPointOn(plane), projectedDirection);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line ParallelizedWith(Plane plane) => ParallelizedWith(plane, pivotPoint: PointOnLine);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line OrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane, pivotPoint: PointOnLine);
+
+	public Line ParallelizedWith(Plane plane, Location pivotPoint) {
+		var projectedDirection = Direction.ProjectedOnTo(plane);
+		if (projectedDirection == Direction.None) projectedDirection = Direction; // TODO xmldoc this behaviour
+		return new Line(pivotPoint, projectedDirection);
+	}
+	public Line OrthogonalizedAgainst(Plane plane, Location pivotPoint) {
+		return new Line(pivotPoint, Direction.OrthogonalizedAgainst(plane));
+	}
+
+	public Ray? SplitBy(Plane plane) {
+		if (TrySplit(plane, out _, out var result)) return result;
+		else return null;
+	}
+
+	public bool TrySplit(Plane plane, out Ray outWithLineDir, out Ray outOpposingLineDir) {
+		var intersectionPoint = IntersectionPointWith(plane);
+		if (intersectionPoint == null) {
+			outWithLineDir = default;
+			outOpposingLineDir = default;
+			return false;
 		}
 
-
+		outWithLineDir = new Ray(intersectionPoint.Value, Direction);
+		outOpposingLineDir = new Ray(intersectionPoint.Value, -Direction);
+		return true;
 	}
 }

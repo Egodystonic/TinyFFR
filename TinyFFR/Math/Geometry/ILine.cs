@@ -25,8 +25,9 @@ public interface ILine : IPlaneTestable, IPointTestable, ILineTestable {
 	Location ClosestPointToOrigin();
 	Location? IntersectionPointWith(Plane plane);
 
-	Location LocationAtDistance(float distanceFromStart);
+	Location BoundedLocationAtDistance(float distanceFromStart);
 	Location UnboundedLocationAtDistance(float distanceFromStart);
+	Location? LocationAtDistanceOrNull(float distanceFromStart);
 
 	protected static Location CalculateClosestLocationToOtherLine<TThis, TOther>(TThis @this, TOther other) where TThis : ILine where TOther : ILine {
 		const float ParallelTolerance = 0.0001f;
@@ -46,7 +47,7 @@ public interface ILine : IPlaneTestable, IPointTestable, ILineTestable {
 			var otherOrientationStartDiffDot = Vector3.Dot(otherDir, startDiff);
 			var oneMinusDotSquared = 1f - (dot * dot);
 			var distFromThisStart = (dot * otherOrientationStartDiffDot - localOrientationStartDiffDot) / oneMinusDotSquared;
-			return @this.LocationAtDistance(distFromThisStart);
+			return @this.BoundedLocationAtDistance(distFromThisStart);
 		}
 
 		// ==================================== Parallel Lines ========================================================================
@@ -166,11 +167,12 @@ public interface ILine : IPlaneTestable, IPointTestable, ILineTestable {
 }
 public interface ILine<TSelf> : ILine, IMathPrimitive<TSelf, float>, IInterpolatable<TSelf>, IBoundedRandomizable<TSelf> where TSelf : ILine<TSelf> {
 	TSelf ProjectedOnTo(Plane plane);
-	TSelf AlignedWith(Plane plane);
+	TSelf ParallelizedWith(Plane plane);
+	TSelf OrthogonalizedAgainst(Plane plane);
 }
 public interface ILine<TSelf, TSplit> : ILine<TSelf> where TSelf : ILine<TSelf> where TSplit : struct, ILine<TSplit> {
 	TSplit? ReflectedBy(Plane plane);
-	bool TrySplit(Plane plane, out BoundedLine outBeforePlane, out TSplit outAfterPlane);
+	TSplit? SplitBy(Plane plane);
 }
 
 // ==================== Below this line: Various "inverted" line testing methods defined as either extensions or added directly in partial definitions ====================
@@ -198,16 +200,20 @@ partial struct Plane {
 	public static Angle operator ^(BoundedLine line, Plane plane) => plane.AngleTo(line);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo<TLine>(TLine line) where TLine : ILine => AngleTo(line.Direction);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float ParallelismWith<TLine>(TLine line) where TLine : ILine => ParallelismWith(line.Direction);
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public TSplit? Reflect<TLine, TSplit>(TLine line) where TLine : ILine<TLine, TSplit> where TSplit : struct, ILine<TSplit> => line.ReflectedBy(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool TrySplit<TLine, TSplit>(TLine line, out BoundedLine outBeforePlane, out TSplit outAfterPlane) where TLine : ILine<TLine, TSplit> where TSplit : struct, ILine<TSplit> => line.TrySplit(this, out outBeforePlane, out outAfterPlane);
+	public TSplit? Split<TLine, TSplit>(TLine line) where TLine : ILine<TLine, TSplit> where TSplit : struct, ILine<TSplit> => line.SplitBy(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public TLine ProjectLine<TLine>(TLine line) where TLine : ILine<TLine> => line.ProjectedOnTo(this);
+	public TLine ProjectionOf<TLine>(TLine line) where TLine : ILine<TLine> => line.ProjectedOnTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public TLine AlignLine<TLine>(TLine line) where TLine : ILine<TLine> => line.AlignedWith(this);
+	public TLine ParallelizationOf<TLine>(TLine line) where TLine : ILine<TLine> => line.ParallelizedWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public TLine OrthogonalizationOf<TLine>(TLine line) where TLine : ILine<TLine> => line.OrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => line.ClosestPointOn(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -94,12 +94,85 @@ public readonly partial struct Ray :
 		return DistanceFrom(closestPointOnLine) <= lineThickness ? closestPointOnLine : null;
 	}
 
-	public Location LocationAtDistance(float distanceFromStart) => UnboundedLocationAtDistance(distanceFromStart > 0f ? distanceFromStart : 0f);
+	public Location BoundedLocationAtDistance(float distanceFromStart) => UnboundedLocationAtDistance(distanceFromStart > 0f ? distanceFromStart : 0f);
 	public Location UnboundedLocationAtDistance(float distanceFromStart) => _startPoint + _direction * distanceFromStart;
 
 	public Ray? ReflectedBy(Plane plane) {
 		var intersectionPoint = IntersectionPointWith(plane);
 		if (intersectionPoint == null) return null;
 		return new Ray(intersectionPoint.Value, _direction.ReflectedBy(plane));
+	}
+
+	float? GetUnboundedPlaneIntersectionDistance(Plane plane) {
+		var similarityToNormal = plane.Normal.SimilarityTo(Direction);
+		if (similarityToNormal == 0f) return null; // Parallel with plane -- either infinite or zero answers. Return null either way
+
+		return (plane.ClosestPointToOrigin - StartPoint).LengthWhenProjectedOnTo(plane.Normal) / similarityToNormal;
+	}
+
+	public Location? IntersectionPointWith(Plane plane) {
+		var distance = GetUnboundedPlaneIntersectionDistance(plane);
+		if (distance >= 0f) return UnboundedLocationAtDistance(distance.Value);
+		else return null; // Plane behind ray or parallel with ray
+	}
+
+	public float SignedDistanceFrom(Plane plane) {
+		var unboundedDistance = GetUnboundedPlaneIntersectionDistance(plane);
+		if (unboundedDistance >= 0f) return 0f;
+		else return plane.SignedDistanceFrom(StartPoint);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(Plane plane) => MathF.Abs(SignedDistanceFrom(plane));
+
+	public Location ClosestPointTo(Plane plane) {
+		var unboundedDistance = GetUnboundedPlaneIntersectionDistance(plane);
+		return BoundedLocationAtDistance(unboundedDistance ?? 0f); // If unboundedDistance is null we're parallel so the StartPoint is as close as any other point
+	}
+	public Location ClosestPointOn(Plane plane) {
+		var unboundedDistance = GetUnboundedPlaneIntersectionDistance(plane);
+		var closestPointOnLine = BoundedLocationAtDistance(unboundedDistance ?? 0f);
+		if (unboundedDistance >= 0f) return closestPointOnLine; // Actual intersection
+		else return plane.ClosestPointTo(closestPointOnLine);
+	}
+
+	public PlaneObjectRelationship RelationshipTo(Plane plane) {
+		return SignedDistanceFrom(plane) switch {
+			> 0f => PlaneObjectRelationship.PlaneFacesTowardsObject,
+			< 0f => PlaneObjectRelationship.PlaneFacesAwayFromObject,
+			_ => PlaneObjectRelationship.PlaneIntersectsObject
+		};
+	}
+
+	public Ray ProjectedOnTo(Plane plane) {
+		var projectedDirection = Direction.ProjectedOnTo(plane);
+		if (projectedDirection == Direction.None) projectedDirection = Direction;
+		return new Ray(StartPoint.ClosestPointOn(plane), projectedDirection);
+	}
+	public Ray ParallelizedWith(Plane plane) {
+		var projectedDirection = Direction.ProjectedOnTo(plane);
+		if (projectedDirection == Direction.None) projectedDirection = Direction;
+		return new Ray(StartPoint, projectedDirection);
+	}
+	public Ray OrthogonalizedAgainst(Plane plane) {
+		return new Ray(StartPoint, Direction.OrthogonalizedAgainst(plane));
+	}
+
+	public Ray? SplitBy(Plane plane) {
+		if (TrySplit(plane, out _, out var result)) return result;
+		else return null;
+	}
+
+	public bool TrySplit(Plane plane, out BoundedLine outStartPointToPlane, out Ray outPlaneToInfinity) {
+		var intersectionPoint = IntersectionPointWith(plane);
+		if (intersectionPoint == null) {
+			outStartPointToPlane = default;
+			outPlaneToInfinity = default;
+			return false;
+		}
+
+		outStartPointToPlane = new BoundedLine(StartPoint, intersectionPoint.Value);
+		outPlaneToInfinity = new Ray(intersectionPoint.Value, Direction);
+		return true;
 	}
 }

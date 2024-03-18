@@ -74,8 +74,6 @@ partial struct Vect :
 	public Vect ProjectedOnTo(Direction d, bool preserveLength) {
 		var projectedVect = ProjectedOnTo(d);
 		if (!preserveLength) return projectedVect;
-
-		if (projectedVect.LengthSquared < 0.0001f) return Zero;
 		else return projectedVect.WithLength(Length);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -103,6 +101,10 @@ partial struct Vect :
 	public Vect ShortenedBy(float lengthDecrease) => this with { Length = Length - lengthDecrease };
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect LengthenedBy(float lengthIncrease) => this with { Length = Length + lengthIncrease };
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect WithMaxLength(float maxLength) => this with { Length = MathF.Min(Length, maxLength) };
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect WithMinLength(float minLength) => this with { Length = MathF.Max(Length, minLength) };
 
 
 	public static Vect Interpolate(Vect start, Vect end, float distance) {

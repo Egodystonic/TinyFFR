@@ -12,6 +12,12 @@ public readonly partial struct Sphere
 
 	public Sphere ScaledBy(float scalar) => new(Radius * scalar);
 
+	public float CircleRadiusAtDistanceFromCenter(float distanceFromCenter) => CircleRadiusAtDistanceFromCenterSquared(distanceFromCenter * distanceFromCenter);
+	float CircleRadiusAtDistanceFromCenterSquared(float distanceFromCenterSquared) {
+		var resultSquared = RadiusSquared - distanceFromCenterSquared;
+		return MathF.Sqrt(MathF.Max(0f, resultSquared));
+	}
+
 	public float DistanceFrom(Location location) => MathF.Max(0f, ((Vect) location).Length - Radius);
 	public float SurfaceDistanceFrom(Location location) => MathF.Abs(((Vect) location).Length - Radius);
 	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => MathF.Max(0f, line.DistanceFrom(Location.Origin) - Radius);
@@ -26,14 +32,54 @@ public readonly partial struct Sphere
 	}
 	public Location ClosestPointOnSurfaceTo(Location location) {
 		var vectFromLocToCentre = (Vect) location;
-		return (Location) vectFromLocToCentre.WithLength(vectFromLocToCentre.Length - Radius);
+		return (Location) vectFromLocToCentre.WithLength(Radius);
 	}
 
-	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => line.ClosestPointToOrigin();
-	public Location ClosestPointOnSurfaceTo<TLine>(TLine line) where TLine : ILine => (Location) ((Vect) line.ClosestPointToOrigin()).WithLength(Radius);
+	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => (Location) ((Vect) line.ClosestPointToOrigin()).WithMaxLength(Radius);
+	public Location ClosestPointOn<TLine>(TLine line) where TLine : ILine => line.ClosestPointToOrigin();
+	public Location ClosestPointOnSurfaceTo<TLine>(TLine line) where TLine : ILine {
+		var potentialIntersectionDistances = GetUnboundedSurfaceIntersectionDistances(line);
+		if (potentialIntersectionDistances == null) {
+			// Line would never intersect even if infinite, so the answer is easy: It's the vector with length Radius that points to the closest point on the line to the sphere centre
+			return (Location) ((Vect) line.ClosestPointToOrigin()).WithLength(Radius);
+		}
+
+		// Find the distance from the potential intersection points to the line. Pick the one that is closest to the line
+		var intersectionPointOne = line.UnboundedLocationAtDistance(potentialIntersectionDistances.Value.First);
+		var intersectionPointTwo = line.UnboundedLocationAtDistance(potentialIntersectionDistances.Value.Second);
+		if (line.DistanceFrom(intersectionPointTwo) < line.DistanceFrom(intersectionPointOne)) return intersectionPointTwo;
+		else return intersectionPointOne;
+	}
+	public Location ClosestPointToSurfaceOn<TLine>(TLine line) where TLine : ILine {
+		var potentialIntersectionDistances = GetUnboundedSurfaceIntersectionDistances(line);
+		if (potentialIntersectionDistances == null) {
+			// Line would never intersect even if infinite, so the answer is easy: It's the point on the line that's closest to the sphere centre
+			return line.ClosestPointToOrigin();
+		}
+
+		// Find the distance from the potential intersection points to the line. Pick the one that is closest to the line, then find the closest point on the line to that point
+		var intersectionPointOne = line.UnboundedLocationAtDistance(potentialIntersectionDistances.Value.First);
+		var intersectionPointTwo = line.UnboundedLocationAtDistance(potentialIntersectionDistances.Value.Second);
+		if (line.DistanceFrom(intersectionPointTwo) < line.DistanceFrom(intersectionPointOne)) return line.ClosestPointTo(intersectionPointTwo);
+		else return line.ClosestPointTo(intersectionPointOne);
+	}
 
 	public Location? SurfaceIntersectionPointWith<TLine>(TLine line) where TLine : ILine {
-		// Firstly we solve this always as a simple line as it lets us solve as a quadratic, e.g. distance-from-start = (-b +/- sqrt(b^2 - 4ac)) / 2a
+		var distanceTuple = GetUnboundedSurfaceIntersectionDistances(line);
+		if (distanceTuple == null) return null;
+		var (firstDistance, secondDistance) = distanceTuple.Value;
+
+		var distance = (firstDistance, secondDistance) switch {
+			(>= 0f, >= 0f) => MathF.Min(firstDistance, secondDistance),
+			(>= 0f, _) => firstDistance,
+			(_, >= 0f) => secondDistance,
+			_ => MathF.MinMagnitude(firstDistance, secondDistance)
+		};
+		return line.LocationAtDistanceOrNull(distance);
+	}
+
+	(float First, float Second)? GetUnboundedSurfaceIntersectionDistances<TLine>(TLine line) where TLine : ILine {
+		// We solve this always as a simple unbounded line as it lets us solve as a quadratic, e.g. distance-from-start = (-b +/- sqrt(b^2 - 4ac)) / 2a
 		//																								where a = direction dot direction	(always 1 for unit-length vectors)
 		//																								where b = 2(start dot direction)
 		//																								where c = (start dot start) - radius^2	(v dot v is equal to v.LengthSquared)
@@ -41,9 +87,6 @@ public readonly partial struct Sphere
 		//	- negative -> sqrt(negative number) has no real solutions, this indicates there is no intersection
 		//	- zero -> sqrt(zero) is zero, meaning "both" solutions are actually identical, meaning the line is exactly tangent to the sphere surface (there is one intersection)
 		//	- positive -> sqrt(positive number) has two solutions, this indicates the line enters and exits
-		// For simple lines we choose the closest intersection point as the "direction" of an infinite line is irrelevant.
-		// For rays we choose the closest intersection in the correction direction
-		// For bounded lines we do the same as rays and then make sure it's not further than the end point
 
 		var direction = line.Direction.ToVector3();
 		var start = line.StartPoint.ToVector3();
@@ -55,23 +98,56 @@ public readonly partial struct Sphere
 
 		var sqrtDiscriminant = MathF.Sqrt(discriminant);
 		var negB = -b;
-		var intersectionOne = (negB + sqrtDiscriminant) * 0.5f;
-		var intersectionTwo = (negB - sqrtDiscriminant) * 0.5f;
 
-		var intersectionOneIsCloserToStart = MathF.Abs(intersectionOne) < MathF.Abs(intersectionTwo);
-
-		if (line.IsUnboundedInBothDirections) {
-			return Location.FromVector3(start + direction * (intersectionOneIsCloserToStart ? intersectionOne : intersectionTwo));
-		}
-
-		var lengthFromStart = (MathF.Sign(intersectionOne), MathF.Sign(intersectionTwo), intersectionOneIsCloserToStart) switch {
-			(>= 0, >= 0, true) => intersectionOne,
-			(>= 0, >= 0, false) => intersectionTwo,
-			(>= 0, _, _) => intersectionOne,
-			(_, >= 0, _) => intersectionTwo,
-			_ => (float?) null
-		};
-		if (lengthFromStart == null) return null;
-		return lengthFromStart > line.Length ? null : Location.FromVector3(start + direction * lengthFromStart.Value);
+		return ((negB + sqrtDiscriminant) * 0.5f, (negB - sqrtDiscriminant) * 0.5f);
 	}
+
+	public Location ClosestPointTo(Plane plane) => (Location) ((Vect) plane.ClosestPointToOrigin).WithMaxLength(Radius);
+	public Location ClosestPointOn(Plane plane) => plane.ClosestPointToOrigin;
+
+	public float SignedDistanceFrom(Plane plane) {
+		var distanceFromSphereCentre = plane.SignedDistanceFromOrigin();
+		var distanceFromSphereSurface = distanceFromSphereCentre - MathF.Sign(distanceFromSphereCentre) * Radius;
+		return MathF.Sign(distanceFromSphereCentre) == MathF.Sign(distanceFromSphereSurface) ? distanceFromSphereSurface : 0f;
+	}
+	public float DistanceFrom(Plane plane) => MathF.Max(0f, plane.DistanceFromOrigin() - Radius);
+	public PlaneObjectRelationship RelationshipTo(Plane plane) => SignedDistanceFrom(plane) switch {
+		> 0f => PlaneObjectRelationship.PlaneFacesTowardsObject,
+		< 0f => PlaneObjectRelationship.PlaneFacesAwayFromObject,
+		_ => PlaneObjectRelationship.PlaneIntersectsObject
+	};
+
+	public bool TrySplit(Plane plane, out Location circleCentrePoint, out float circleRadius) {
+		circleCentrePoint = plane.ClosestPointToOrigin;
+		var vectToPlane = (Vect) circleCentrePoint;
+		var vectLengthSquared = vectToPlane.LengthSquared;
+		if (vectLengthSquared > RadiusSquared) {
+			circleRadius = default;
+			return false;
+		}
+		circleRadius = CircleRadiusAtDistanceFromCenterSquared(vectLengthSquared);
+		return true;
+	}
+
+	public Location ClosestPointOnSurfaceTo(Plane plane) {
+		// If the plane doesn't intersect this sphere, we can just return the simple closest point
+		if (!TrySplit(plane, out var circleCentrePoint, out var circleRadius)) return ClosestPointTo(plane);
+
+		// Otherwise there are infinite valid answers around the circle formed by the intersection. Any will do
+		return circleCentrePoint + ((Vect) circleCentrePoint).Direction.GetAnyPerpendicular() * circleRadius;
+	}
+	public Location ClosestPointToSurfaceOn(Plane plane) {
+		// If the plane doesn't intersect this sphere, we can just return the plane's closest point to the sphere
+		if (!TrySplit(plane, out var circleCentrePoint, out var circleRadius)) return plane.ClosestPointToOrigin;
+
+		// Otherwise there are infinite valid answers around the circle formed by the intersection. Any will do
+		return circleCentrePoint + ((Vect) circleCentrePoint).Direction.GetAnyPerpendicular() * circleRadius;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float SurfaceDistanceFrom(Plane plane) => DistanceFrom(plane);
+}
+public partial struct Plane {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool TrySplit(Sphere sphere, out Location circleCentrePoint, out float circleRadius) => sphere.TrySplit(this, out circleCentrePoint, out circleRadius);
 }

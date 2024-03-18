@@ -13,7 +13,7 @@ public readonly partial struct Plane : IMathPrimitive<Plane, float>, IPointTesta
 		get => Direction.FromVector3(_normal);
 	}
 
-	public Location PointClosestToOrigin {
+	public Location ClosestPointToOrigin {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Location.FromVector3(_normal * _smallestDistanceFromOriginAlongNormal);
 	}
@@ -58,13 +58,13 @@ public readonly partial struct Plane : IMathPrimitive<Plane, float>, IPointTesta
 
 	public string ToStringDescriptive() => $"{nameof(Plane)}{GeometryUtils.ParameterStartToken}" +
 										   $"{nameof(Normal)}{GeometryUtils.ParameterKeyValueSeparatorToken}{Normal.ToStringDescriptive()}{GeometryUtils.ParameterSeparatorToken}" +
-										   $"{nameof(PointClosestToOrigin)}{GeometryUtils.ParameterKeyValueSeparatorToken}{PointClosestToOrigin}" +
+										   $"{nameof(ClosestPointToOrigin)}{GeometryUtils.ParameterKeyValueSeparatorToken}{ClosestPointToOrigin}" +
 										   $"{GeometryUtils.ParameterEndToken}";
 
 	public override string ToString() => ToString(null, null);
 
-	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(Plane), (nameof(Normal), Normal), (nameof(PointClosestToOrigin), PointClosestToOrigin));
-	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => GeometryUtils.StandardizedTryFormat(destination, out charsWritten, format, provider, nameof(Plane), (nameof(Normal), Normal), (nameof(PointClosestToOrigin), PointClosestToOrigin));
+	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(Plane), (nameof(Normal), Normal), (nameof(ClosestPointToOrigin), PointClosestToOrigin: ClosestPointToOrigin));
+	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => GeometryUtils.StandardizedTryFormat(destination, out charsWritten, format, provider, nameof(Plane), (nameof(Normal), Normal), (nameof(ClosestPointToOrigin), PointClosestToOrigin: ClosestPointToOrigin));
 
 	public static Plane Parse(string s, IFormatProvider? provider) => Parse(s.AsSpan(), provider);
 	public static bool TryParse(string? s, IFormatProvider? provider, out Plane result) => TryParse(s.AsSpan(), provider, out result);
@@ -84,23 +84,23 @@ public readonly partial struct Plane : IMathPrimitive<Plane, float>, IPointTesta
 	public static Plane Interpolate(Plane start, Plane end, float distance) {
 		return new(
 			Direction.Interpolate(start.Normal, end.Normal, distance),
-			Location.Interpolate(start.PointClosestToOrigin, end.PointClosestToOrigin, distance)
+			Location.Interpolate(start.ClosestPointToOrigin, end.ClosestPointToOrigin, distance)
 		);
 	}
 	public static Rotation CreateInterpolationPrecomputation(Plane start, Plane end) => Direction.CreateInterpolationPrecomputation(start.Normal, end.Normal);
 	public static Plane InterpolateUsingPrecomputation(Plane start, Plane end, Rotation precomputation, float distance) {
 		return new(
 			Direction.InterpolateUsingPrecomputation(start.Normal, end.Normal, precomputation, distance),
-			Location.Interpolate(start.PointClosestToOrigin, end.PointClosestToOrigin, distance)
+			Location.Interpolate(start.ClosestPointToOrigin, end.ClosestPointToOrigin, distance)
 		);
 	}
 	public static Plane CreateNewRandom() => new(Direction.CreateNewRandom(), Location.CreateNewRandom());
-	public static Plane CreateNewRandom(Plane minInclusive, Plane maxExclusive) => new(Direction.CreateNewRandom(minInclusive.Normal, maxExclusive.Normal), Location.CreateNewRandom(minInclusive.PointClosestToOrigin, maxExclusive.PointClosestToOrigin));
+	public static Plane CreateNewRandom(Plane minInclusive, Plane maxExclusive) => new(Direction.CreateNewRandom(minInclusive.Normal, maxExclusive.Normal), Location.CreateNewRandom(minInclusive.ClosestPointToOrigin, maxExclusive.ClosestPointToOrigin));
 
 	#region Equality
 	public bool Equals(Plane other) => _normal.Equals(other._normal) && _smallestDistanceFromOriginAlongNormal.Equals(other._smallestDistanceFromOriginAlongNormal);
 	public bool Equals(Plane other, float tolerance) => _normal.Equals(other._normal) && _smallestDistanceFromOriginAlongNormal.Equals(other._smallestDistanceFromOriginAlongNormal);
-	public bool EqualsWithinAngleAndDistanceFromOrigin(Plane other, Angle angle, float distance) => Normal.EqualsWithinAngle(other.Normal, angle) && PointClosestToOrigin.EqualsWithinDistance(other.PointClosestToOrigin, distance);
+	public bool EqualsWithinAngleAndDistanceFromOrigin(Plane other, Angle angle, float distance) => Normal.EqualsWithinAngle(other.Normal, angle) && ClosestPointToOrigin.EqualsWithinDistance(other.ClosestPointToOrigin, distance);
 	public override bool Equals(object? obj) => obj is Plane other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(_normal, _smallestDistanceFromOriginAlongNormal);
 	public static bool operator ==(Plane left, Plane right) => left.Equals(right);

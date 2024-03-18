@@ -39,7 +39,7 @@ partial struct Direction :
 	public Vect ToVect(float length) => new(AsVector4 * length);
 
 
-	// TODO in XMLDoc indicate that this is the dot product of the two directions, and that therefore the range is 1 for identical, to -1 for complete opposite, with 0 being orthogonal
+	// TODO in XMLDoc indicate that this is the dot product of the two directions, and that therefore the range is 1 for identical, to -1 for complete opposite, with 0 being orthogonal; and that this is the cosine of the angle
 	public float SimilarityTo(Direction other) => Dot(AsVector4, other.AsVector4);
 	
 

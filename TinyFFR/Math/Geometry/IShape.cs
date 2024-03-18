@@ -22,6 +22,7 @@ public enum PlaneObjectRelationship {
 public interface IPlaneTestable {
 	Location ClosestPointTo(Plane plane);
 	Location ClosestPointOn(Plane plane);
+	float SignedDistanceFrom(Plane plane); // TODO xmldoc note that positive = in front of plane, negative = behind
 	float DistanceFrom(Plane plane);
 	PlaneObjectRelationship RelationshipTo(Plane plane);
 }
