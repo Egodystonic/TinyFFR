@@ -21,13 +21,17 @@ public interface ILine : IPlaneTestable, IPointTestable, ILineTestable {
 	Location? EndPoint { get; }
 
 	bool Contains(Location location, float lineThickness);
-	Location? IntersectionPointWith<TLine>(TLine line, float lineThickness) where TLine : ILine;
+	Location? IntersectionWith<TLine>(TLine line, float lineThickness) where TLine : ILine;
 	Location ClosestPointToOrigin();
-	Location? IntersectionPointWith(Plane plane);
+	Location? IntersectionWith(Plane plane);
 
 	Location BoundedLocationAtDistance(float distanceFromStart);
 	Location UnboundedLocationAtDistance(float distanceFromStart);
 	Location? LocationAtDistanceOrNull(float distanceFromStart);
+
+	sealed Line CoerceToLine() => new(StartPoint, Direction);
+	sealed Ray CoerceToRay() => new(StartPoint, Direction);
+	sealed BoundedLine CoerceToBoundedLine(float length) => new(StartPoint, Direction * length);
 
 	protected static Location CalculateClosestLocationToOtherLine<TThis, TOther>(TThis @this, TOther other) where TThis : ILine where TOther : ILine {
 		const float ParallelTolerance = 0.0001f;
@@ -221,7 +225,7 @@ partial struct Plane {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => line.DistanceFrom(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location? IntersectionPointWith<TLine>(TLine line) where TLine : ILine => line.IntersectionPointWith(this);
+	public Location? IntersectionWith<TLine>(TLine line) where TLine : ILine => line.IntersectionWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public PlaneObjectRelationship RelationshipTo<TLine>(TLine line) where TLine : ILine => line.RelationshipTo(this);
 }

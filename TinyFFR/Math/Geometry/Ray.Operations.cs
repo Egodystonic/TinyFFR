@@ -88,17 +88,18 @@ public readonly partial struct Ray :
 	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => DistanceFrom(ClosestPointTo(line));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location? IntersectionPointWith<TLine>(TLine line) where TLine : ILine => IntersectionPointWith(line, ILine.DefaultLineThickness);
-	public Location? IntersectionPointWith<TLine>(TLine line, float lineThickness) where TLine : ILine {
+	public Location? IntersectionWith<TLine>(TLine line) where TLine : ILine => IntersectionWith(line, ILine.DefaultLineThickness);
+	public Location? IntersectionWith<TLine>(TLine line, float lineThickness) where TLine : ILine {
 		var closestPointOnLine = line.ClosestPointTo(this);
 		return DistanceFrom(closestPointOnLine) <= lineThickness ? closestPointOnLine : null;
 	}
 
 	public Location BoundedLocationAtDistance(float distanceFromStart) => UnboundedLocationAtDistance(distanceFromStart > 0f ? distanceFromStart : 0f);
 	public Location UnboundedLocationAtDistance(float distanceFromStart) => _startPoint + _direction * distanceFromStart;
+	public Location? LocationAtDistanceOrNull(float distanceFromStart) => distanceFromStart >= 0f ? UnboundedLocationAtDistance(distanceFromStart) : null;
 
 	public Ray? ReflectedBy(Plane plane) {
-		var intersectionPoint = IntersectionPointWith(plane);
+		var intersectionPoint = IntersectionWith(plane);
 		if (intersectionPoint == null) return null;
 		return new Ray(intersectionPoint.Value, _direction.ReflectedBy(plane));
 	}
@@ -110,7 +111,7 @@ public readonly partial struct Ray :
 		return (plane.ClosestPointToOrigin - StartPoint).LengthWhenProjectedOnTo(plane.Normal) / similarityToNormal;
 	}
 
-	public Location? IntersectionPointWith(Plane plane) {
+	public Location? IntersectionWith(Plane plane) {
 		var distance = GetUnboundedPlaneIntersectionDistance(plane);
 		if (distance >= 0f) return UnboundedLocationAtDistance(distance.Value);
 		else return null; // Plane behind ray or parallel with ray
@@ -164,7 +165,7 @@ public readonly partial struct Ray :
 	}
 
 	public bool TrySplit(Plane plane, out BoundedLine outStartPointToPlane, out Ray outPlaneToInfinity) {
-		var intersectionPoint = IntersectionPointWith(plane);
+		var intersectionPoint = IntersectionWith(plane);
 		if (intersectionPoint == null) {
 			outStartPointToPlane = default;
 			outPlaneToInfinity = default;

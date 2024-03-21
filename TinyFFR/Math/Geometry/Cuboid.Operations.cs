@@ -12,6 +12,28 @@ public readonly partial struct Cuboid
 
 	public Cuboid ScaledBy(float scalar) => FromHalfDimensions(_halfWidth * scalar, _halfHeight * scalar, _halfDepth * scalar);
 
+	// TODO these GetX methods need a naming pass and this file vs Cuboid.cs? etc
+
+	public Location GetCorner(DiagonalOrientation3D corner) {
+		return new(
+			corner.GetAxisSign(Axis.X) * HalfWidth,
+			corner.GetAxisSign(Axis.Y) * HalfHeight,
+			corner.GetAxisSign(Axis.Z) * HalfDepth
+		);
+	}
+	
+	public Plane GetSurfacePlane(CardinalOrientation3D side) { // TODO xmldoc that the planes' normals point away from the cuboid centre
+		return Plane.FromNormalAndTranslationFromOrigin(Direction.FromOrientation(side.AsGeneralOrientation()), GetHalfDimension(side.GetAxis()));
+	}
+
+	public BoundedLine GetEdge(IntercardinalOrientation3D edge) {
+		var unspecifiedAxis = edge.GetUnspecifiedAxis();
+		return new(
+			GetCorner((DiagonalOrientation3D) edge.AsGeneralOrientation().WithAxisSign(unspecifiedAxis, -1)),
+			GetCorner((DiagonalOrientation3D) edge.AsGeneralOrientation().WithAxisSign(unspecifiedAxis, 1))
+		);
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Cuboid WithWidth(float newWidth) => this with { Width = newWidth };
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -63,5 +85,120 @@ public readonly partial struct Cuboid
 		};
 	}
 
-	
+	[InlineArray(3)] // TODO delete these two methods if we don't need them
+	struct PlaneDistanceBuffer { float _; }
+	// near plane distances are [x, y, z] axis; negative if point inside cuboid on that axis, zero if on edge, positive if point outside.
+	// far plane distances are [x, y, z] axis; always positive (or zero for cuboid of extent 0 on that axis, god knows if extent is negative)
+	void GetPlanePointDistances(Location startPoint, ref PlaneDistanceBuffer nearPlaneDistances, ref PlaneDistanceBuffer farPlaneDistances) {
+		for (var i = 0; i < OrientationUtils.AllAxes.Length; ++i) {
+			var axis = OrientationUtils.AllAxes[i];
+
+			var nearPlaneSign = MathF.Sign(startPoint[axis]) & 0b1; // & 0b1 ensures it's either -1 or 1, never 0
+			nearPlaneDistances[i] = GetSurfacePlane(axis.ToCardinal(nearPlaneSign)).SignedDistanceFrom(startPoint);
+			// Flip the further plane so that both planes face the startPoint (unless it's inside the cuboid on this axis, in which case the signed distances will have differing signs)
+			farPlaneDistances[i] = GetSurfacePlane(axis.ToCardinal(-nearPlaneSign)).Flipped.SignedDistanceFrom(startPoint);
+		}
+	}
+
+	[InlineArray(3)]
+	struct PlaneIntersectionBuffer { Location? _; }
+	void GetPlaneLineIntersections<TLine>(TLine line, ref PlaneIntersectionBuffer frontFacingIntersections, ref PlaneIntersectionBuffer backFacingIntersections) where TLine : ILine {
+		for (var i = 0; i < OrientationUtils.AllAxes.Length; ++i) {
+			var axis = OrientationUtils.AllAxes[i];
+
+			var farPlaneSign = MathF.Sign(line.Direction[axis]);
+			if (farPlaneSign == 0) continue; // No intersections as we're parallel
+			frontFacingIntersections[i] = GetSurfacePlane(axis.ToCardinal(-farPlaneSign)).IntersectionWith(line);
+			backFacingIntersections[i] = GetSurfacePlane(axis.ToCardinal(farPlaneSign)).IntersectionWith(line);
+		}
+	}
+
+	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => ClosestPointTo(ClosestPointOn(line));
+	public Location ClosestPointOn<TLine>(TLine line) where TLine : ILine {
+		var unboundedIntersectionDistances = GetUnboundedLineIntersectionDistances(line.CoerceToRay());
+		if (unboundedIntersectionDistances != null) {
+			var potentialAnswerA = line.BoundedLocationAtDistance(unboundedIntersectionDistances.Value.Item1);
+			var potentialAnswerB = line.BoundedLocationAtDistance(unboundedIntersectionDistances.Value.Item2);
+			var distA = line.DistanceFrom(potentialAnswerA);
+			var distB = line.DistanceFrom(potentialAnswerB);
+			return distA < distB ? potentialAnswerA : potentialAnswerB;
+		}
+
+		if (Contains(line.StartPoint)) return line.StartPoint;
+
+		var answerDistance = Single.PositiveInfinity;
+		var answer = Location.Origin;
+		foreach (var edgeOrientation in OrientationUtils.AllIntercardinals) {
+			var edge = GetEdge(edgeOrientation);
+			var closestPointToEdge = line.ClosestPointTo(edge);
+			var distanceToEdge = edge.DistanceFrom(closestPointToEdge);
+			if (distanceToEdge < answerDistance) {
+				answerDistance = distanceToEdge;
+				answer = closestPointToEdge;
+			}
+		}
+		return answer;
+	}
+	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => DistanceFrom(ClosestPointOn(line));
+	public Location ClosestPointOnSurfaceTo<TLine>(TLine line) where TLine : ILine => ClosestPointOnSurfaceTo(ClosestPointToSurfaceOn(line));
+	public Location ClosestPointToSurfaceOn<TLine>(TLine line) where TLine : ILine {
+		var unboundedIntersectionDistances = GetUnboundedLineIntersectionDistances(line.CoerceToRay());
+		if (unboundedIntersectionDistances != null) {
+			var potentialAnswerA = line.BoundedLocationAtDistance(unboundedIntersectionDistances.Value.Item1);
+			var potentialAnswerB = line.BoundedLocationAtDistance(unboundedIntersectionDistances.Value.Item2);
+			var distA = line.DistanceFrom(potentialAnswerA);
+			var distB = line.DistanceFrom(potentialAnswerB);
+			return distA < distB ? potentialAnswerA : potentialAnswerB;
+		}
+
+		var answerDistance = Single.PositiveInfinity;
+		var answer = Location.Origin;
+		foreach (var edgeOrientation in OrientationUtils.AllIntercardinals) {
+			var edge = GetEdge(edgeOrientation);
+			var closestPointToEdge = line.ClosestPointTo(edge);
+			var distanceToEdge = edge.DistanceFrom(closestPointToEdge);
+			if (distanceToEdge < answerDistance) {
+				answerDistance = distanceToEdge;
+				answer = closestPointToEdge;
+			}
+		}
+		return answer;
+	}
+	public float SurfaceDistanceFrom<TLine>(TLine line) where TLine : ILine { return 0; }
+	public ConvexShapeLineIntersection IntersectionWith<TLine>(TLine line) where TLine : ILine {
+		var unboundedDistances = GetUnboundedLineIntersectionDistances(line.CoerceToRay());
+		if (unboundedDistances == null) return ConvexShapeLineIntersection.NoIntersections;
+		return ConvexShapeLineIntersection.FromTwoPotentiallyNullArgs(line.LocationAtDistanceOrNull(unboundedDistances.Value.Item1), line.LocationAtDistanceOrNull(unboundedDistances.Value.Item2));
+	}
+
+	(float, float)? GetUnboundedLineIntersectionDistances(Ray ray) {
+		var x1 = SignedLineDistanceToPositiveSurfacePlane(ray.StartPoint, ray.Direction, Axis.X);
+		var x2 = SignedLineDistanceToNegativeSurfacePlane(ray.StartPoint, ray.Direction, Axis.X);
+		var minX = MathF.Min(x1, x2);
+		var maxX = MathF.Max(x1, x2);
+
+		var y1 = SignedLineDistanceToPositiveSurfacePlane(ray.StartPoint, ray.Direction, Axis.Y);
+		var y2 = SignedLineDistanceToNegativeSurfacePlane(ray.StartPoint, ray.Direction, Axis.Y);
+		var minY = MathF.Min(y1, y2);
+		var maxY = MathF.Min(y1, y2);
+
+		var z1 = SignedLineDistanceToPositiveSurfacePlane(ray.StartPoint, ray.Direction, Axis.Z);
+		var z2 = SignedLineDistanceToNegativeSurfacePlane(ray.StartPoint, ray.Direction, Axis.Z);
+		var minZ = MathF.Min(z1, z2);
+		var maxZ = MathF.Min(z1, z2);
+
+		var startDist = MathF.Max(MathF.Max(minX, minY), minZ);
+		var endDist = MathF.Min(MathF.Min(maxX, maxY), maxZ);
+		if (endDist > startDist) return null;
+		else return (startDist, endDist);
+	}
+
+	// Returns an Infinity when line is parallel to plane -- but still with correct sign depending on which side of the face the start point is
+	float SignedLineDistanceToPositiveSurfacePlane(Location lineStartPoint, Direction lineDirection, Axis axis) {
+		return (GetHalfDimension(axis) - lineStartPoint[axis]) / lineDirection[axis];
+	}
+	// Returns an Infinity when line is parallel to plane -- but still with correct sign depending on which side of the face the start point is
+	float SignedLineDistanceToNegativeSurfacePlane(Location lineStartPoint, Direction lineDirection, Axis axis) {
+		return (-GetHalfDimension(axis) - lineStartPoint[axis]) / lineDirection[axis];
+	}
 }

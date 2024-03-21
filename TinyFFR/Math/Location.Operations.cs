@@ -16,6 +16,15 @@ partial struct Location :
 	IBoundedRandomizable<Location> {
 	internal const float DefaultRandomRange = 100f;
 
+	public float this[Axis axis] => axis switch {
+		Axis.X => X,
+		Axis.Y => Y,
+		Axis.Z => Z,
+		_ => throw new ArgumentOutOfRangeException(nameof(axis), axis, $"{nameof(Axis)} must not be anything except {nameof(Axis.X)}, {nameof(Axis.Y)} or {nameof(Axis.Z)}.")
+	};
+	public XYPair<float> this[Axis first, Axis second] => new(this[first], this[second]);
+	public Location this[Axis first, Axis second, Axis third] => new(this[first], this[second], this[third]);
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Location operator +(Location locationOperand, Vect vectOperand) => locationOperand.MovedBy(vectOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

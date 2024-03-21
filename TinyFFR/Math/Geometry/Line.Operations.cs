@@ -74,25 +74,29 @@ public readonly partial struct Line :
 	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => DistanceFrom(ClosestPointTo(line));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location? IntersectionPointWith<TLine>(TLine line) where TLine : ILine => IntersectionPointWith(line, ILine.DefaultLineThickness);
-	public Location? IntersectionPointWith<TLine>(TLine line, float lineThickness) where TLine : ILine {
+	public Location? IntersectionWith<TLine>(TLine line) where TLine : ILine => IntersectionWith(line, ILine.DefaultLineThickness);
+	public Location? IntersectionWith<TLine>(TLine line, float lineThickness) where TLine : ILine {
 		var closestPointOnLine = line.ClosestPointTo(this);
 		return DistanceFrom(closestPointOnLine) <= lineThickness ? closestPointOnLine : null;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	Location LocationAtDistance(float distance) => UnboundedLocationAtDistance(distance);
+
 	// These are implemented explicitly because an unbounded line isn't really meant to have a "distance" or a "start point" etc.
 	Location ILine.BoundedLocationAtDistance(float distanceFromStart) => BoundedLocationAtDistance(distanceFromStart);
 	Location ILine.UnboundedLocationAtDistance(float distanceFromStart) => UnboundedLocationAtDistance(distanceFromStart);
+	Location? ILine.LocationAtDistanceOrNull(float distanceFromStart) => UnboundedLocationAtDistance(distanceFromStart);
 	Location BoundedLocationAtDistance(float distanceFromStart) => UnboundedLocationAtDistance(distanceFromStart);
 	Location UnboundedLocationAtDistance(float distanceFromStart) => _pointOnLine + _direction * distanceFromStart;
 
 	public Ray? ReflectedBy(Plane plane) {
-		var intersectionPoint = IntersectionPointWith(plane);
+		var intersectionPoint = IntersectionWith(plane);
 		if (intersectionPoint == null) return null;
 		return new Ray(intersectionPoint.Value, _direction.ReflectedBy(plane));
 	}
 
-	public Location? IntersectionPointWith(Plane plane) {
+	public Location? IntersectionWith(Plane plane) {
 		var similarityToNormal = plane.Normal.SimilarityTo(Direction);
 		if (similarityToNormal == 0f) return null; // Parallel with plane -- either infinite or zero answers. Return null either way
 
@@ -109,14 +113,14 @@ public readonly partial struct Line :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(Plane plane) => MathF.Abs(SignedDistanceFrom(plane));
 
-	// TODO in xmldoc explain that it's probably better to use IntersectionPointWith and/or DistanceFrom than these two methods
+	// TODO in xmldoc explain that it's probably better to use IntersectionWith and/or DistanceFrom than these two methods
 	public Location ClosestPointTo(Plane plane) {
 		// If we're parallel with the plane there are infinite answers so we just return the easiest one
-		return IntersectionPointWith(plane) ?? PointOnLine;
+		return IntersectionWith(plane) ?? PointOnLine;
 	}
 	public Location ClosestPointOn(Plane plane) {
 		// If we're parallel with the plane there are infinite answers so we just return the easiest one
-		return IntersectionPointWith(plane) ?? plane.ClosestPointToOrigin;
+		return IntersectionWith(plane) ?? plane.ClosestPointToOrigin;
 	}
 
 	public PlaneObjectRelationship RelationshipTo(Plane plane) {
@@ -154,7 +158,7 @@ public readonly partial struct Line :
 	}
 
 	public bool TrySplit(Plane plane, out Ray outWithLineDir, out Ray outOpposingLineDir) {
-		var intersectionPoint = IntersectionPointWith(plane);
+		var intersectionPoint = IntersectionWith(plane);
 		if (intersectionPoint == null) {
 			outWithLineDir = default;
 			outOpposingLineDir = default;

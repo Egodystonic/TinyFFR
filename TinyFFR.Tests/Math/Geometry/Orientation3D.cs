@@ -26,6 +26,19 @@ class Orientation3DTest {
 		AssertIntEquals(CardinalOrientation3D.Forward, ZAxisOrientation3D.Forward);
 		AssertIntEquals(CardinalOrientation3D.Backward, ZAxisOrientation3D.Backward);
 
+		AssertIntEquals(IntercardinalOrientation3D.LeftUp, CardinalOrientation3D.Up | CardinalOrientation3D.Left);
+		AssertIntEquals(IntercardinalOrientation3D.RightUp, CardinalOrientation3D.Up | CardinalOrientation3D.Right);
+		AssertIntEquals(IntercardinalOrientation3D.UpForward, CardinalOrientation3D.Up | CardinalOrientation3D.Forward);
+		AssertIntEquals(IntercardinalOrientation3D.UpBackward, CardinalOrientation3D.Up | CardinalOrientation3D.Backward);
+		AssertIntEquals(IntercardinalOrientation3D.LeftDown, CardinalOrientation3D.Down | CardinalOrientation3D.Left);
+		AssertIntEquals(IntercardinalOrientation3D.RightDown, CardinalOrientation3D.Down | CardinalOrientation3D.Right);
+		AssertIntEquals(IntercardinalOrientation3D.DownForward, CardinalOrientation3D.Down | CardinalOrientation3D.Forward);
+		AssertIntEquals(IntercardinalOrientation3D.DownBackward, CardinalOrientation3D.Down | CardinalOrientation3D.Backward);
+		AssertIntEquals(IntercardinalOrientation3D.LeftForward, CardinalOrientation3D.Forward | CardinalOrientation3D.Left);
+		AssertIntEquals(IntercardinalOrientation3D.LeftBackward, CardinalOrientation3D.Backward | CardinalOrientation3D.Left);
+		AssertIntEquals(IntercardinalOrientation3D.RightForward, CardinalOrientation3D.Forward | CardinalOrientation3D.Right);
+		AssertIntEquals(IntercardinalOrientation3D.RightBackward, CardinalOrientation3D.Backward | CardinalOrientation3D.Right);
+
 		AssertIntEquals(DiagonalOrientation3D.LeftUpForward, CardinalOrientation3D.Up | CardinalOrientation3D.Left | CardinalOrientation3D.Forward);
 		AssertIntEquals(DiagonalOrientation3D.RightUpForward, CardinalOrientation3D.Up | CardinalOrientation3D.Right | CardinalOrientation3D.Forward);
 		AssertIntEquals(DiagonalOrientation3D.LeftUpBackward, CardinalOrientation3D.Up | CardinalOrientation3D.Left | CardinalOrientation3D.Backward);
@@ -86,6 +99,7 @@ class Orientation3DTest {
 
 		AssertForEnum<CardinalOrientation3D, Orientation3D>(v => v.AsGeneralOrientation());
 		AssertForEnum<DiagonalOrientation3D, Orientation3D>(v => v.AsGeneralOrientation());
+		AssertForEnum<IntercardinalOrientation3D, Orientation3D>(v => v.AsGeneralOrientation());
 	}
 
 	[Test]
@@ -100,6 +114,13 @@ class Orientation3DTest {
 		foreach (var orientation in Enum.GetValues<Orientation3D>()) {
 			if (orientation == Orientation3D.None) continue;
 			Assert.AreEqual(((int[]) Enum.GetValuesAsUnderlyingType<DiagonalOrientation3D>()).Contains((int) orientation), orientation.IsDiagonal());
+		}
+	}
+	[Test]
+	public void ShouldCorrectlyAscertainWhetherIsIntercardinal() {
+		foreach (var orientation in Enum.GetValues<Orientation3D>()) {
+			if (orientation == Orientation3D.None) continue;
+			Assert.AreEqual(((int[]) Enum.GetValuesAsUnderlyingType<IntercardinalOrientation3D>()).Contains((int) orientation), orientation.IsIntercardinal());
 		}
 	}
 
@@ -138,6 +159,23 @@ class Orientation3DTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyAscertainUnspecifiedAxis() {
+		Assert.AreEqual(Axis.None, IntercardinalOrientation3D.None.GetUnspecifiedAxis());
+		Assert.AreEqual(Axis.Z, IntercardinalOrientation3D.LeftUp.GetUnspecifiedAxis());
+		Assert.AreEqual(Axis.Z, IntercardinalOrientation3D.RightUp.GetUnspecifiedAxis());
+		Assert.AreEqual(Axis.X, IntercardinalOrientation3D.UpForward.GetUnspecifiedAxis());
+		Assert.AreEqual(Axis.X, IntercardinalOrientation3D.UpBackward.GetUnspecifiedAxis());
+		Assert.AreEqual(Axis.Z, IntercardinalOrientation3D.LeftDown.GetUnspecifiedAxis());
+		Assert.AreEqual(Axis.Z, IntercardinalOrientation3D.RightDown.GetUnspecifiedAxis());
+		Assert.AreEqual(Axis.X, IntercardinalOrientation3D.DownForward.GetUnspecifiedAxis());
+		Assert.AreEqual(Axis.X, IntercardinalOrientation3D.DownBackward.GetUnspecifiedAxis());
+		Assert.AreEqual(Axis.Y, IntercardinalOrientation3D.LeftForward.GetUnspecifiedAxis());
+		Assert.AreEqual(Axis.Y, IntercardinalOrientation3D.LeftBackward.GetUnspecifiedAxis());
+		Assert.AreEqual(Axis.Y, IntercardinalOrientation3D.RightForward.GetUnspecifiedAxis());
+		Assert.AreEqual(Axis.Y, IntercardinalOrientation3D.RightBackward.GetUnspecifiedAxis());
+	}
+
+	[Test]
 	public void ShouldCorrectlyGrabAxes() {
 		void AssertOrientation(Orientation3D input, XAxisOrientation3D expectedX, YAxisOrientation3D expectedY, ZAxisOrientation3D expectedZ) {
 			Assert.AreEqual(expectedX, input.GetXAxis());
@@ -149,6 +187,13 @@ class Orientation3DTest {
 				Assert.AreEqual(expectedX, diag.GetXAxis());
 				Assert.AreEqual(expectedY, diag.GetYAxis());
 				Assert.AreEqual(expectedZ, diag.GetZAxis());
+			}
+
+			if (input.IsIntercardinal()) {
+				var ic = (IntercardinalOrientation3D) input;
+				Assert.AreEqual(expectedX, ic.GetXAxis());
+				Assert.AreEqual(expectedY, ic.GetYAxis());
+				Assert.AreEqual(expectedZ, ic.GetZAxis());
 			}
 		}
 
@@ -193,6 +238,24 @@ class Orientation3DTest {
 			Assert.AreEqual(expectedX, input.GetAxisSign(Axis.X));
 			Assert.AreEqual(expectedY, input.GetAxisSign(Axis.Y));
 			Assert.AreEqual(expectedZ, input.GetAxisSign(Axis.Z));
+
+			if (input.IsCardinal()) {
+				Assert.AreEqual(expectedX, ((CardinalOrientation3D) input).GetAxisSign(Axis.X));
+				Assert.AreEqual(expectedY, ((CardinalOrientation3D) input).GetAxisSign(Axis.Y));
+				Assert.AreEqual(expectedZ, ((CardinalOrientation3D) input).GetAxisSign(Axis.Z));
+			}
+
+			if (input.IsIntercardinal()) {
+				Assert.AreEqual(expectedX, ((IntercardinalOrientation3D) input).GetAxisSign(Axis.X));
+				Assert.AreEqual(expectedY, ((IntercardinalOrientation3D) input).GetAxisSign(Axis.Y));
+				Assert.AreEqual(expectedZ, ((IntercardinalOrientation3D) input).GetAxisSign(Axis.Z));
+			}
+
+			if (input.IsDiagonal()) {
+				Assert.AreEqual(expectedX, ((DiagonalOrientation3D) input).GetAxisSign(Axis.X));
+				Assert.AreEqual(expectedY, ((DiagonalOrientation3D) input).GetAxisSign(Axis.Y));
+				Assert.AreEqual(expectedZ, ((DiagonalOrientation3D) input).GetAxisSign(Axis.Z));
+			}
 		}
 
 		AssertAxes(Orientation3D.None, 0, 0, 0);
@@ -225,6 +288,32 @@ class Orientation3DTest {
 		AssertAxes(Orientation3D.RightDownForward, -1, -1, 1);
 		AssertAxes(Orientation3D.LeftDownBackward, 1, -1, -1);
 		AssertAxes(Orientation3D.RightDownBackward, -1, -1, -1);
+	}
+
+	[Test]
+	public void ShouldCorrectlyReplaceAxisSigns() { // Wrote this really tired, sorry. I know it sucks
+		foreach (var orientation in Enum.GetValues<Orientation3D>()) {
+			foreach (var axis in OrientationUtils.AllAxes) {
+				var posOrientation = orientation.WithAxisSign(axis, -1);
+				var zeroOrientation = orientation.WithAxisSign(axis, 0);
+				var negOrientation = orientation.WithAxisSign(axis, 1);
+
+				Assert.AreEqual(1, posOrientation.GetAxisSign(axis));
+				Assert.AreEqual(0, zeroOrientation.GetAxisSign(axis));
+				Assert.AreEqual(-1, negOrientation.GetAxisSign(axis));
+
+				foreach (var otherAxis in OrientationUtils.AllAxes) {
+					if (otherAxis == axis) continue;
+					Assert.AreEqual(orientation.GetAxisSign(otherAxis), posOrientation.GetAxisSign(otherAxis));
+					Assert.AreEqual(orientation.GetAxisSign(otherAxis), zeroOrientation.GetAxisSign(otherAxis));
+					Assert.AreEqual(orientation.GetAxisSign(otherAxis), negOrientation.GetAxisSign(otherAxis));
+				}
+			}
+
+			Assert.AreEqual(orientation, orientation.WithAxisSign(Axis.None, -1));
+			Assert.AreEqual(orientation, orientation.WithAxisSign(Axis.None, 0));
+			Assert.AreEqual(orientation, orientation.WithAxisSign(Axis.None, 1));
+		}
 	}
 
 	[Test]

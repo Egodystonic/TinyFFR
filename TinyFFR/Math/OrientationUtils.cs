@@ -44,6 +44,20 @@ public static class OrientationUtils {
 		CardinalOrientation3D.Forward,
 		CardinalOrientation3D.Backward
 	};
+	static readonly IntercardinalOrientation3D[] _allIntercardinals = {
+		IntercardinalOrientation3D.LeftUp,
+		IntercardinalOrientation3D.RightUp,
+		IntercardinalOrientation3D.UpForward,
+		IntercardinalOrientation3D.UpBackward,
+		IntercardinalOrientation3D.LeftDown,
+		IntercardinalOrientation3D.RightDown,
+		IntercardinalOrientation3D.DownForward,
+		IntercardinalOrientation3D.DownBackward,
+		IntercardinalOrientation3D.LeftForward,
+		IntercardinalOrientation3D.LeftBackward,
+		IntercardinalOrientation3D.RightForward,
+		IntercardinalOrientation3D.RightBackward,
+	};
 	static readonly DiagonalOrientation3D[] _allDiagonals = {
 		DiagonalOrientation3D.LeftUpForward,
 		DiagonalOrientation3D.RightUpForward,
@@ -77,6 +91,7 @@ public static class OrientationUtils {
 	public static ReadOnlySpan<Orientation3D> All3DOrientations => _all3DOrientations;
 	public static ReadOnlySpan<Axis> AllAxes => _allAxes;
 	public static ReadOnlySpan<CardinalOrientation3D> AllCardinals => _allCardinals;
+	public static ReadOnlySpan<IntercardinalOrientation3D> AllIntercardinals => _allIntercardinals;
 	public static ReadOnlySpan<DiagonalOrientation3D> AllDiagonals => _allDiagonals;
 	public static ReadOnlySpan<Orientation2D> All2DOrientations => _all2DOrientations;
 	public static ReadOnlySpan<HorizontalOrientation2D> AllHorizontals => _allHorizontals;

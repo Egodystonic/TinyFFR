@@ -12,6 +12,15 @@ partial struct Direction :
 	IModulusOperators<Direction, Angle, Rotation>,
 	IPrecomputationInterpolatable<Direction, Rotation>,
 	IBoundedRandomizable<Direction> {
+	public float this[Axis axis] => axis switch {
+		Axis.X => X,
+		Axis.Y => Y,
+		Axis.Z => Z,
+		_ => throw new ArgumentOutOfRangeException(nameof(axis), axis, $"{nameof(Axis)} must not be anything except {nameof(Axis.X)}, {nameof(Axis.Y)} or {nameof(Axis.Z)}.")
+	};
+	public XYPair<float> this[Axis first, Axis second] => new(this[first], this[second]);
+	public Direction this[Axis first, Axis second, Axis third] => new(this[first], this[second], this[third]);
+
 	internal bool IsUnitLength {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => MathF.Abs(AsVector4.LengthSquared() - 1f) < 0.002f;

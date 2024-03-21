@@ -30,6 +30,7 @@ class OrientationUtilsTest {
 		AssertSpan(All3DOrientations);
 		AssertSpan(AllAxes);
 		AssertSpan(AllCardinals);
+		AssertSpan(AllIntercardinals);
 		AssertSpan(AllDiagonals);
 		AssertSpan(All2DOrientations);
 		AssertSpan(AllHorizontals);

@@ -1,6 +1,8 @@
 ﻿// Created on 2024-02-25 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Egodystonic.TinyFFR;
 
 public interface IPointTestable {
@@ -12,7 +14,7 @@ public interface ILineTestable {
 	Location ClosestPointTo<TLine>(TLine line) where TLine : ILine;
 	Location ClosestPointOn<TLine>(TLine line) where TLine : ILine;
 	float DistanceFrom<TLine>(TLine line) where TLine : ILine;
-	Location? IntersectionPointWith<TLine>(TLine line) where TLine : ILine;
+	Location? IntersectionWith<TLine>(TLine line) where TLine : ILine;
 }
 public enum PlaneObjectRelationship {
 	PlaneIntersectsObject,
@@ -26,6 +28,19 @@ public interface IPlaneTestable {
 	float DistanceFrom(Plane plane);
 	PlaneObjectRelationship RelationshipTo(Plane plane);
 }
+public readonly record struct ConvexShapeLineIntersection(Location? First, Location? Second) {
+	public static readonly ConvexShapeLineIntersection NoIntersections = new(null, null);
+
+	public Location? First { get; } = First;
+	[property: MemberNotNull(nameof(First))]
+	public Location? Second { get; } = Second;
+	
+	public bool None => First == null;
+	public bool AtLeastOne => First != null;
+	public bool Both => Second != null;
+
+	public static ConvexShapeLineIntersection FromTwoPotentiallyNullArgs(Location? a, Location? b) => a == null ? new(b, a) : new(a, b);
+}
 // TODO mention in XMLDoc that this represents specifically a shape whose origin is always Location.Origin (e.g. all parameters are shape-local). Or think of a better naming prefix for them all (LocalXyz?) (XyzParameters/Descriptor?)
 public interface IShape : IPointTestable, ILineTestable, IPlaneTestable {
 	Location ClosestPointOnSurfaceTo(Location location);
@@ -37,11 +52,8 @@ public interface IShape : IPointTestable, ILineTestable, IPlaneTestable {
 	float SurfaceDistanceFrom<TLine>(TLine line) where TLine : ILine;
 	float SurfaceDistanceFrom(Plane plane);
 
-	// These two lines are essentially a rename of IntersectionPointWith to SurfaceIntersectionPointWith for shapes
-	// as anything BUT a surface intersection doesn't really make much sense once you think about it (e.g. that's not really an intersection that's just a contains)
-	// and I wanted to be explicit to keep with the naming convention of all the other SurfaceXyz methods.
-	Location? ILineTestable.IntersectionPointWith<TLine>(TLine line) => SurfaceIntersectionPointWith(line);
-	Location? SurfaceIntersectionPointWith<TLine>(TLine line) where TLine : ILine;
+	Location? ILineTestable.IntersectionWith<TLine>(TLine line) => IntersectionWith(line).First;
+	new ConvexShapeLineIntersection IntersectionWith<TLine>(TLine line) where TLine : ILine; // TODO I'd like to move this in to a ConvexShape interface
 
 	// TODO RefIterator for faces and vertices
 	// TODO would it be better to have type that holds a ref field of type T and can then easily iterate against that T assuming it implements an interface? Something like RefEnumerable? Yes, the interface approach means we can only have one implementation but that's fiiiiine
@@ -49,6 +61,9 @@ public interface IShape : IPointTestable, ILineTestable, IPlaneTestable {
 public interface IShape<TSelf> : IShape, IMathPrimitive<TSelf, float>, IInterpolatable<TSelf>, IBoundedRandomizable<TSelf> where TSelf : IShape<TSelf> {
 	TSelf ScaledBy(float scalar);
 }
+// TODO add TPlaneIntersection overload of IShape e.g. Sphere -> Circle and Cuboid -> four points; replace TrySplit on Sphere with IntersectionWith
+// Circle and BoundedPlane
+// Finding polygon should be as easy as getting the intersection of the plane with every edge, but just in case: https://www.asawicki.info/news_1428_finding_polygon_of_plane-aabb_intersection
 
 // ==================== Below this line: Various "inverted" shape testing methods defined as either extensions or added directly in partial definitions ====================
 // I do it this way to keep these definitions close by as they're basically just the same as the definitions above but "the inverse of"
@@ -63,15 +78,13 @@ public static class ShapeExtensions {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static float DistanceFrom<TLine, TShape>(this TLine @this, TShape shape) where TLine : ILine where TShape : IShape => shape.DistanceFrom(@this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location? IntersectionPointWith<TLine, TShape>(this TLine @this, TShape shape) where TLine : ILine where TShape : IShape => shape.IntersectionPointWith(@this);
+	public static ConvexShapeLineIntersection IntersectionWith<TLine, TShape>(this TLine @this, TShape shape) where TLine : ILine where TShape : IShape => shape.IntersectionWith(@this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Location ClosestPointOnSurfaceOf<TLine, TShape>(this TLine @this, TShape shape) where TLine : ILine where TShape : IShape => shape.ClosestPointOnSurfaceTo(@this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Location ClosestPointToSurfaceOf<TLine, TShape>(this TLine @this, TShape shape) where TLine : ILine where TShape : IShape => shape.ClosestPointToSurfaceOn(@this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static float DistanceFromSurfaceOf<TLine, TShape>(this TLine @this, TShape shape) where TLine : ILine where TShape : IShape => shape.SurfaceDistanceFrom(@this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location? IntersectionPointWithSurfaceOf<TLine, TShape>(this TLine @this, TShape shape) where TLine : ILine where TShape : IShape => shape.SurfaceIntersectionPointWith(@this);
 
 	// These are implemented as extension methods because Plane already has the exact same method names with the same number of generic arguments, so it wouldn't compile otherwise
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

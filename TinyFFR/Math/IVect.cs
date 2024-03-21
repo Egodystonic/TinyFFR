@@ -18,6 +18,9 @@ public interface IVect : IMathPrimitive {
 	float Z { get; }
 	Vector3 ToVector3();
 
+	float this[Axis axis] { get; }
+	XYPair<float> this[Axis first, Axis second] { get; }
+
 	string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => VectExtensions.ToString(this, format, formatProvider);
 	bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => VectExtensions.TryFormat(this, destination, out charsWritten, format, provider);
 
@@ -70,6 +73,7 @@ public interface IVect : IMathPrimitive {
 public interface IVect<TSelf> : IVect, IMathPrimitive<TSelf, float> where TSelf : IVect<TSelf> {
 	static abstract TSelf FromVector3(Vector3 v);
 	static abstract implicit operator TSelf((float X, float Y, float Z) tuple);
+	TSelf this[Axis first, Axis second, Axis third] { get; }
 }
 
 public static class VectExtensions {

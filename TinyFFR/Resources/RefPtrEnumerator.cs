@@ -1,10 +1,10 @@
 ﻿// Created on 2024-01-23 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-namespace Egodystonic.TinyFFR.Interop;
+namespace Egodystonic.TinyFFR.Resources;
 
 // This needs to be a ref struct so that we can safely convert ArgData to a Span without needing to fix it (as ref structs can only live on the stack, but normal structs could be boxed or allocated as fields/heap objects)
-public readonly unsafe ref struct RefIterator<T> {
+public readonly unsafe ref struct RefPtrEnumerator<T> {
 	static readonly ArgData NullArgData = default;
 
 	public struct Enumerator : IEnumerator<T> {
@@ -55,8 +55,8 @@ public readonly unsafe ref struct RefIterator<T> {
 		get => ElementAt(index);
 	}
 
-	internal RefIterator(object? instanceParam, delegate*<object?, ReadOnlySpan<byte>, int> getCountFunc, delegate*<object?, ReadOnlySpan<byte>, int, T> getItemFunc) : this(instanceParam, NullArgData, getCountFunc, getItemFunc) { }
-	internal RefIterator(object? instanceParam, scoped ReadOnlySpan<byte> argData, delegate*<object?, ReadOnlySpan<byte>, int> getCountFunc, delegate*<object?, ReadOnlySpan<byte>, int, T> getItemFunc) {
+	internal RefPtrEnumerator(object? instanceParam, delegate*<object?, ReadOnlySpan<byte>, int> getCountFunc, delegate*<object?, ReadOnlySpan<byte>, int, T> getItemFunc) : this(instanceParam, NullArgData, getCountFunc, getItemFunc) { }
+	internal RefPtrEnumerator(object? instanceParam, scoped ReadOnlySpan<byte> argData, delegate*<object?, ReadOnlySpan<byte>, int> getCountFunc, delegate*<object?, ReadOnlySpan<byte>, int, T> getItemFunc) {
 		ArgumentNullException.ThrowIfNull(getCountFunc);
 		ArgumentNullException.ThrowIfNull(getItemFunc);
 		if (argData.Length > ArgData.DataLengthBytes) throw new ArgumentException("Argument data must be no more than 8 bytes in length.");
@@ -103,6 +103,6 @@ public readonly unsafe ref struct RefIterator<T> {
 	}
 
 	internal void ThrowIfInvalid() {
-		if (_getCountFunc == null) throw InvalidObjectException.InvalidDefault(typeof(RefIterator<T>));
+		if (_getCountFunc == null) throw InvalidObjectException.InvalidDefault(typeof(RefPtrEnumerator<T>));
 	}
 }

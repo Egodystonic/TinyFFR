@@ -36,6 +36,8 @@ public readonly partial struct Plane :
 	// TODO explain in XML that this is a normalized value from 0 to 1, where 0 is a direction completely perpendicular to the plane and 1 is completely parallel; and is also the cosine of the angle formed
 	public float ParallelismWith(Direction direction) => 1f - MathF.Abs(Normal.SimilarityTo(direction));
 
+	// TODO I'd like a function here to convert locations to XYPairs on the surface of the plane given a centre point (default ClosestPointToOrigin)
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(Plane plane, Direction dir) => plane.AngleTo(dir);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -67,7 +69,7 @@ public readonly partial struct Plane :
 	public bool Contains(Location location, float planeThickness) => DistanceFrom(location) <= planeThickness;
 
 	public float DistanceFrom(Plane other) => MathF.Abs(Normal.SimilarityTo(other.Normal)) >= 0.999f ? ClosestPointToOrigin.DistanceFrom(other.ClosestPointToOrigin) : 0f;
-	public Line? IntersectionLineWith(Plane other) {
+	public Line? IntersectionWith(Plane other) {
 		static (float A, float B) FindNonZeroComponents(float thisA, float thisB, float thisCoefficient, float otherA, float otherB, float otherCoefficient) {
 			var divisor = thisA * otherB - otherA * thisB;
 

@@ -64,18 +64,17 @@ public readonly partial struct Sphere
 		else return line.ClosestPointTo(intersectionPointOne);
 	}
 
-	public Location? SurfaceIntersectionPointWith<TLine>(TLine line) where TLine : ILine {
+	public ConvexShapeLineIntersection IntersectionWith<TLine>(TLine line) where TLine : ILine {
 		var distanceTuple = GetUnboundedSurfaceIntersectionDistances(line);
-		if (distanceTuple == null) return null;
+		if (distanceTuple == null) return new(null, null);
 		var (firstDistance, secondDistance) = distanceTuple.Value;
 
-		var distance = (firstDistance, secondDistance) switch {
-			(>= 0f, >= 0f) => MathF.Min(firstDistance, secondDistance),
-			(>= 0f, _) => firstDistance,
-			(_, >= 0f) => secondDistance,
-			_ => MathF.MinMagnitude(firstDistance, secondDistance)
+		var result = (firstDistance, secondDistance) switch {
+			(>= 0f, < 0f) => (firstDistance, secondDistance),
+			(< 0f, >= 0f) => (secondDistance, firstDistance),
+			_ => (MathF.MinMagnitude(firstDistance, secondDistance), MathF.MaxMagnitude(firstDistance, secondDistance))
 		};
-		return line.LocationAtDistanceOrNull(distance);
+		return new(line.LocationAtDistanceOrNull(result.Item1), line.LocationAtDistanceOrNull(result.Item2));
 	}
 
 	(float First, float Second)? GetUnboundedSurfaceIntersectionDistances<TLine>(TLine line) where TLine : ILine {

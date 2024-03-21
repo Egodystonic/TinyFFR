@@ -103,17 +103,18 @@ public readonly partial struct BoundedLine :
 	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => DistanceFrom(ClosestPointTo(line));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location? IntersectionPointWith<TLine>(TLine line) where TLine : ILine => IntersectionPointWith(line, ILine.DefaultLineThickness);
-	public Location? IntersectionPointWith<TLine>(TLine line, float lineThickness) where TLine : ILine {
+	public Location? IntersectionWith<TLine>(TLine line) where TLine : ILine => IntersectionWith(line, ILine.DefaultLineThickness);
+	public Location? IntersectionWith<TLine>(TLine line, float lineThickness) where TLine : ILine {
 		var closestPointOnLine = line.ClosestPointTo(this);
 		return DistanceFrom(closestPointOnLine) <= lineThickness ? closestPointOnLine : null;
 	}
 
 	public Location BoundedLocationAtDistance(float distanceFromStart) => UnboundedLocationAtDistance(Single.Clamp(distanceFromStart, 0f, _vect.Length));
 	public Location UnboundedLocationAtDistance(float distanceFromStart) => _startPoint + _vect.WithLength(distanceFromStart);
+	public Location? LocationAtDistanceOrNull(float distanceFromStart) => distanceFromStart >= 0f && (distanceFromStart * distanceFromStart) <= _vect.LengthSquared ? UnboundedLocationAtDistance(distanceFromStart) : null;
 
 	public BoundedLine? ReflectedBy(Plane plane) {
-		var intersectionPoint = IntersectionPointWith(plane);
+		var intersectionPoint = IntersectionWith(plane);
 		if (intersectionPoint == null) return null;
 		return new BoundedLine(intersectionPoint.Value, Direction.ReflectedBy(plane) * (Length - intersectionPoint.Value.DistanceFrom(StartPoint)));
 	}
@@ -125,7 +126,7 @@ public readonly partial struct BoundedLine :
 		return (plane.ClosestPointToOrigin - StartPoint).LengthWhenProjectedOnTo(plane.Normal) / similarityToNormal;
 	}
 
-	public Location? IntersectionPointWith(Plane plane) {
+	public Location? IntersectionWith(Plane plane) {
 		var distance = GetUnboundedPlaneIntersectionDistance(plane);
 		if (distance >= 0f && distance <= Length) return UnboundedLocationAtDistance(distance.Value);
 		else return null; // Plane parallel with line or outside line boundaries
@@ -180,7 +181,7 @@ public readonly partial struct BoundedLine :
 	}
 
 	public bool TrySplit(Plane plane, out BoundedLine outStartPointToPlane, out BoundedLine outPlaneToEndPoint) {
-		var intersectionPoint = IntersectionPointWith(plane);
+		var intersectionPoint = IntersectionWith(plane);
 		if (intersectionPoint == null) {
 			outStartPointToPlane = default;
 			outPlaneToEndPoint = default;

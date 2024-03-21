@@ -70,15 +70,6 @@ public readonly partial struct Cuboid : IShape<Cuboid> {
 		}
 	}
 
-	public Location this[Orientation3D orientationFromCentrePoint] {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => GetSurfaceLocation(orientationFromCentrePoint);
-	}
-	public float this[Axis dimensionAxis] {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => GetDimension(dimensionAxis);
-	}
-
 	public Cuboid(float width, float height, float depth) {
 		_halfWidth = width * 0.5f;
 		_halfHeight = height * 0.5f;
@@ -97,6 +88,12 @@ public readonly partial struct Cuboid : IShape<Cuboid> {
 		Axis.X => Width,
 		Axis.Y => Height,
 		Axis.Z => Depth,
+		_ => throw new ArgumentException($"{nameof(Axis)} can not be {nameof(Axis.None)}.", nameof(axis))
+	};
+	public float GetHalfDimension(Axis axis) => axis switch {
+		Axis.X => HalfWidth,
+		Axis.Y => HalfHeight,
+		Axis.Z => HalfDepth,
 		_ => throw new ArgumentException($"{nameof(Axis)} can not be {nameof(Axis.None)}.", nameof(axis))
 	};
 
