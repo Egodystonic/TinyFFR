@@ -92,13 +92,13 @@ partial class VectTest {
 
 	[Test]
 	public void ShouldCorrectlyProjectOnToDirection() {
-		Assert.AreEqual(new Vect(1f, 0f, 0f), new Vect(1f, 1f, 0f).ProjectedOnTo(new(1f, 0f, 0f)));
-		AssertToleranceEquals(new Vect(1.4142f, 0f, 0f), new Vect(1f, 1f, 0f).ProjectedOnTo(new(1f, 0f, 0f), preserveLength: true), TestTolerance);
-		Assert.AreEqual(new Vect(1f, 0f, 0f), new Vect(1f, 1f, 0f).ProjectedOnTo(new(1f, 0f, 0f), preserveLength: false));
+		Assert.AreEqual(new Vect(1f, 0f, 0f), new Vect(1f, 1f, 0f).ProjectedOnTo(new Direction(1f, 0f, 0f)));
+		AssertToleranceEquals(new Vect(1.4142f, 0f, 0f), new Vect(1f, 1f, 0f).ProjectedOnTo(new Direction(1f, 0f, 0f), preserveLength: true), TestTolerance);
+		Assert.AreEqual(new Vect(1f, 0f, 0f), new Vect(1f, 1f, 0f).ProjectedOnTo(new Direction(1f, 0f, 0f), preserveLength: false));
 
 		// https://www.wolframalpha.com/input?i=project+%5B14.2%2C+-7.1%2C+8.9%5D+on+to+%5B0.967%2C+0.137%2C+-0.216%5D
-		AssertToleranceEquals(new Vect(10.473f, 1.484f, -2.339f), new Vect(14.2f, -7.1f, 8.9f).ProjectedOnTo(new(0.967f, 0.137f, -0.216f), preserveLength: false), TestTolerance);
-		Assert.AreEqual(new Vect(14.2f, -7.1f, 8.9f).Length, new Vect(14.2f, -7.1f, 8.9f).ProjectedOnTo(new(0.967f, 0.137f, -0.216f), preserveLength: true).Length, TestTolerance);
+		AssertToleranceEquals(new Vect(10.473f, 1.484f, -2.339f), new Vect(14.2f, -7.1f, 8.9f).ProjectedOnTo(new Direction(0.967f, 0.137f, -0.216f), preserveLength: false), TestTolerance);
+		Assert.AreEqual(new Vect(14.2f, -7.1f, 8.9f).Length, new Vect(14.2f, -7.1f, 8.9f).ProjectedOnTo(new Direction(0.967f, 0.137f, -0.216f), preserveLength: true).Length, TestTolerance);
 
 		Assert.AreEqual(Vect.Zero, new Vect(1f, 0f, 0f).ProjectedOnTo(new Direction(0f, 1f, 0f)));
 		Assert.AreEqual(Vect.Zero, new Vect(1f, 0f, 0f).ProjectedOnTo(new Direction(0f, 1f, 0f), preserveLength: true));
@@ -114,19 +114,19 @@ partial class VectTest {
 
 		AssertToleranceEquals(
 			new Vect(1f, 0f, 0f),
-			new Vect(0.8f, 0.2f, 0f) { Length = 1f }.OrthogonalizedAgainst(new(0f, 1f, 0f)),
+			new Vect(0.8f, 0.2f, 0f) { Length = 1f }.OrthogonalizedAgainst(new Direction(0f, 1f, 0f)),
 			TestTolerance
 		);
 
 		AssertToleranceEquals(
 			new Vect(0f, -10f, 0f),
-			new Vect(1f, -5f, 0f) { Length = 10f }.OrthogonalizedAgainst(new(-1f, 0f, 0f)),
+			new Vect(1f, -5f, 0f) { Length = 10f }.OrthogonalizedAgainst(new Direction(-1f, 0f, 0f)),
 			TestTolerance
 		);
 
 		AssertToleranceEquals(
 			new Vect(0f, -10f, 0f),
-			new Vect(1f, -5f, 0f) { Length = 10f }.OrthogonalizedAgainst(new(1f, 0f, 0f)),
+			new Vect(1f, -5f, 0f) { Length = 10f }.OrthogonalizedAgainst(new Direction(1f, 0f, 0f)),
 			TestTolerance
 		);
 	}
@@ -182,7 +182,7 @@ partial class VectTest {
 		AssertToleranceEquals(OneTwoNegThree.WithLength(-10f), OneTwoNegThree.WithLength(-7f).LengthenedBy(3f), TestTolerance);
 		AssertToleranceEquals(OneTwoNegThree.WithLength(10f), OneTwoNegThree.WithLength(-7f).LengthenedBy(-17f), TestTolerance);
 		AssertToleranceEquals(Vect.Zero, OneTwoNegThree.WithLength(7f).LengthenedBy(-7f), TestTolerance);
-		AssertToleranceEquals(Vect.Zero, OneTwoNegThree.WithLength(-7f).LengthenedBy(7f), TestTolerance);
+		AssertToleranceEquals(Vect.Zero, OneTwoNegThree.WithLength(-7f).LengthenedBy(-7f), TestTolerance);
 	}
 
 	[Test]
@@ -234,7 +234,7 @@ partial class VectTest {
 
 		for (var i = 0; i < NumIterations; ++i) {
 			var a = Vect.CreateNewRandom();
-			var b = Vect.CreateNewRandom();
+			var b = a + new Vect(3f, 3f, 3f);
 			var val = Vect.CreateNewRandom(a, b);
 			Assert.GreaterOrEqual(val.X, a.X);
 			Assert.Less(val.X, b.X);

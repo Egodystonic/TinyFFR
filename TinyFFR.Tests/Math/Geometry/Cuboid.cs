@@ -69,53 +69,77 @@ class CuboidTest {
 	}
 
 	[Test]
-	public void ShouldCorrectlyCalculateLocations() {
+	public void ShouldCorrectlyCalculateVertexLocations() {
 		var cuboid = new Cuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
 
-		// 8 vertices
-		AssertToleranceEquals(new(3.6f, 6.8f, 0.7f),	cuboid[Orientation3D.LeftUpForward],		TestTolerance);
-		AssertToleranceEquals(new(3.6f, 6.8f, -0.7f),	cuboid[Orientation3D.LeftUpBackward],		TestTolerance);
-		AssertToleranceEquals(new(3.6f, -6.8f, 0.7f),	cuboid[Orientation3D.LeftDownForward],		TestTolerance);
-		AssertToleranceEquals(new(3.6f, -6.8f, -0.7f),	cuboid[Orientation3D.LeftDownBackward],		TestTolerance);
-		AssertToleranceEquals(new(-3.6f, 6.8f, 0.7f),	cuboid[Orientation3D.RightUpForward],		TestTolerance);
-		AssertToleranceEquals(new(-3.6f, 6.8f, -0.7f),	cuboid[Orientation3D.RightUpBackward],		TestTolerance);
-		AssertToleranceEquals(new(-3.6f, -6.8f, 0.7f),	cuboid[Orientation3D.RightDownForward],		TestTolerance);
-		AssertToleranceEquals(new(-3.6f, -6.8f, -0.7f),	cuboid[Orientation3D.RightDownBackward],	TestTolerance);
+		AssertToleranceEquals(new(3.6f, 6.8f, 0.7f), cuboid.GetCorner(DiagonalOrientation3D.LeftUpForward), TestTolerance);
+		AssertToleranceEquals(new(3.6f, 6.8f, -0.7f), cuboid.GetCorner(DiagonalOrientation3D.LeftUpBackward), TestTolerance);
+		AssertToleranceEquals(new(3.6f, -6.8f, 0.7f), cuboid.GetCorner(DiagonalOrientation3D.LeftDownForward), TestTolerance);
+		AssertToleranceEquals(new(3.6f, -6.8f, -0.7f), cuboid.GetCorner(DiagonalOrientation3D.LeftDownBackward), TestTolerance);
+		AssertToleranceEquals(new(-3.6f, 6.8f, 0.7f), cuboid.GetCorner(DiagonalOrientation3D.RightUpForward), TestTolerance);
+		AssertToleranceEquals(new(-3.6f, 6.8f, -0.7f), cuboid.GetCorner(DiagonalOrientation3D.RightUpBackward), TestTolerance);
+		AssertToleranceEquals(new(-3.6f, -6.8f, 0.7f), cuboid.GetCorner(DiagonalOrientation3D.RightDownForward), TestTolerance);
+		AssertToleranceEquals(new(-3.6f, -6.8f, -0.7f), cuboid.GetCorner(DiagonalOrientation3D.RightDownBackward), TestTolerance);
 
-		// 6 side centre-points
-		AssertToleranceEquals(new(3.6f, 0f, 0f),		cuboid[Orientation3D.Left],					TestTolerance);
-		AssertToleranceEquals(new(-3.6f, 0f, 0f),		cuboid[Orientation3D.Right],				TestTolerance);
-		AssertToleranceEquals(new(0f, 6.8f, 0f),		cuboid[Orientation3D.Up],					TestTolerance);
-		AssertToleranceEquals(new(0f, -6.8f, 0f),		cuboid[Orientation3D.Down],					TestTolerance);
-		AssertToleranceEquals(new(0f, 0f, 0.7f),		cuboid[Orientation3D.Forward],				TestTolerance);
-		AssertToleranceEquals(new(0f, 0f, -0.7f),		cuboid[Orientation3D.Backward],				TestTolerance);
+		Assert.Throws<ArgumentOutOfRangeException>(() => cuboid.GetCorner(DiagonalOrientation3D.None));
+	}
 
-		// 12 edge centre-points
-		AssertToleranceEquals(new(3.6f, 0f, 0.7f),		cuboid[Orientation3D.LeftForward],			TestTolerance);
-		AssertToleranceEquals(new(3.6f, 6.8f, 0f),		cuboid[Orientation3D.LeftUp],				TestTolerance);
-		AssertToleranceEquals(new(3.6f, 0f, -0.7f),		cuboid[Orientation3D.LeftBackward],			TestTolerance);
-		AssertToleranceEquals(new(3.6f, -6.8f, 0f),		cuboid[Orientation3D.LeftDown],				TestTolerance);
-		AssertToleranceEquals(new(-3.6f, 0f, 0.7f),		cuboid[Orientation3D.RightForward],			TestTolerance);
-		AssertToleranceEquals(new(-3.6f, 6.8f, 0f),		cuboid[Orientation3D.RightUp],				TestTolerance);
-		AssertToleranceEquals(new(-3.6f, 0f, -0.7f),	cuboid[Orientation3D.RightBackward],		TestTolerance);
-		AssertToleranceEquals(new(-3.6f, -6.8f, 0f),	cuboid[Orientation3D.RightDown],			TestTolerance);
-		AssertToleranceEquals(new(0f, 6.8f, 0.7f),		cuboid[Orientation3D.UpForward],			TestTolerance);
-		AssertToleranceEquals(new(0f, 6.8f, -0.7f),		cuboid[Orientation3D.UpBackward],			TestTolerance);
-		AssertToleranceEquals(new(0f, -6.8f, 0.7f),		cuboid[Orientation3D.DownForward],			TestTolerance);
-		AssertToleranceEquals(new(0f, -6.8f, -0.7f),	cuboid[Orientation3D.DownBackward],			TestTolerance);
+	[Test]
+	public void ShouldCorrectlyCalculateSidePlanes() {
+		var cuboid = new Cuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
 
-		// Centre
-		AssertToleranceEquals(Location.Origin, cuboid[Orientation3D.None], TestTolerance);
+		AssertToleranceEquals(new Plane(Direction.Left, new(3.6f, 0f, 0f)), cuboid.GetSurfacePlane(CardinalOrientation3D.Left), TestTolerance);
+		AssertToleranceEquals(new Plane(Direction.Right, new(-3.6f, 0f, 0f)), cuboid.GetSurfacePlane(CardinalOrientation3D.Right), TestTolerance);
+		AssertToleranceEquals(new Plane(Direction.Up, new(0f, 6.8f, 0f)), cuboid.GetSurfacePlane(CardinalOrientation3D.Up), TestTolerance);
+		AssertToleranceEquals(new Plane(Direction.Down, new(0f, -6.8f, 0f)), cuboid.GetSurfacePlane(CardinalOrientation3D.Down), TestTolerance);
+		AssertToleranceEquals(new Plane(Direction.Forward, new(0f, 0f, 0.7f)), cuboid.GetSurfacePlane(CardinalOrientation3D.Forward), TestTolerance);
+		AssertToleranceEquals(new Plane(Direction.Backward, new(0f, 0f, -0.7f)), cuboid.GetSurfacePlane(CardinalOrientation3D.Backward), TestTolerance);
+
+		Assert.Throws<ArgumentOutOfRangeException>(() => cuboid.GetSurfacePlane(CardinalOrientation3D.None));
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateEdges() {
+		const float W = 0.5f * 7.2f;
+		const float H = 0.5f * 13.6f;
+		const float D = 0.5f * 1.4f;
+		var cuboid = new Cuboid(W * 2f, H * 2f, D * 2f);
+
+		void AssertOrientation(IntercardinalOrientation3D orientation, Location expectedLinePointA, Location expectedLinePointB) {
+			Assert.IsTrue(cuboid.GetEdge(orientation).EqualsDisregardingDirection(new(expectedLinePointA, expectedLinePointB), TestTolerance));
+		}
+
+		AssertOrientation(IntercardinalOrientation3D.UpForward, new(W, H, D), new(-W, H, D));
+		AssertOrientation(IntercardinalOrientation3D.UpBackward, new(W, H, -D), new(-W, H, -D));
+		AssertOrientation(IntercardinalOrientation3D.DownForward, new(W, -H, D), new(-W, -H, D));
+		AssertOrientation(IntercardinalOrientation3D.DownBackward, new(W, -H, -D), new(-W, -H, -D));
+
+		AssertOrientation(IntercardinalOrientation3D.LeftForward, new(W, H, D), new(W, -H, D));
+		AssertOrientation(IntercardinalOrientation3D.LeftBackward, new(W, H, -D), new(W, -H, -D));
+		AssertOrientation(IntercardinalOrientation3D.RightForward, new(-W, H, D), new(-W, -H, D));
+		AssertOrientation(IntercardinalOrientation3D.RightBackward, new(-W, H, -D), new(-W, -H, -D));
+
+		AssertOrientation(IntercardinalOrientation3D.LeftUp, new(W, H, D), new(W, H, -D));
+		AssertOrientation(IntercardinalOrientation3D.LeftDown, new(W, -H, D), new(W, -H, -D));
+		AssertOrientation(IntercardinalOrientation3D.RightUp, new(-W, H, D), new(-W, H, -D));
+		AssertOrientation(IntercardinalOrientation3D.RightDown, new(-W, -H, D), new(-W, -H, -D));
+
+		Assert.Throws<ArgumentOutOfRangeException>(() => cuboid.GetEdge(IntercardinalOrientation3D.None));
 	}
 
 	[Test]
 	public void ShouldCorrectlyReturnDimensionFromAxis() {
 		var cuboid = new Cuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
-		
-		Assert.AreEqual(7.2f, cuboid[Axis.X], TestTolerance);
-		Assert.AreEqual(13.6f, cuboid[Axis.Y], TestTolerance);
-		Assert.AreEqual(1.4f, cuboid[Axis.Z], TestTolerance);
-		Assert.Throws<ArgumentException>(() => _ = cuboid[Axis.None]);
+
+		Assert.AreEqual(7.2f, cuboid.GetDimension(Axis.X), TestTolerance);
+		Assert.AreEqual(13.6f, cuboid.GetDimension(Axis.Y), TestTolerance);
+		Assert.AreEqual(1.4f, cuboid.GetDimension(Axis.Z), TestTolerance);
+		Assert.Throws<ArgumentException>(() => _ = cuboid.GetDimension(Axis.None));
+
+		Assert.AreEqual(0.5f * 7.2f, cuboid.GetHalfDimension(Axis.X), TestTolerance);
+		Assert.AreEqual(0.5f * 13.6f, cuboid.GetHalfDimension(Axis.Y), TestTolerance);
+		Assert.AreEqual(0.5f * 1.4f, cuboid.GetHalfDimension(Axis.Z), TestTolerance);
+		Assert.Throws<ArgumentException>(() => _ = cuboid.GetHalfDimension(Axis.None));
 	}
 
 	[Test]

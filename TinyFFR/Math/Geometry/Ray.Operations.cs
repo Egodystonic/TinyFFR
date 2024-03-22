@@ -16,12 +16,12 @@ public readonly partial struct Ray :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line ToLine() => new(_startPoint, _direction);
 
-	public Ray Reversed {
+	public Ray Flipped {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(_startPoint, -_direction);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Ray operator -(Ray operand) => operand.Reversed;
+	public static Ray operator -(Ray operand) => operand.Flipped;
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

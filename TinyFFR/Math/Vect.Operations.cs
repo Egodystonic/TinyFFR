@@ -121,17 +121,17 @@ partial struct Vect :
 	}
 
 	public static Vect CreateNewRandom() {
-		return FromVector3(new Vector3(
+		return new Vect(
 			RandomUtils.NextSingleNegOneToOneInclusive(),
 			RandomUtils.NextSingleNegOneToOneInclusive(),
 			RandomUtils.NextSingleNegOneToOneInclusive()
-		) * DefaultRandomRange);
+		) * DefaultRandomRange;
 	}
 	public static Vect CreateNewRandom(Vect minInclusive, Vect maxExclusive) {
-		return FromVector3(new(
+		return new(
 			RandomUtils.NextSingle(minInclusive.X, maxExclusive.X),
 			RandomUtils.NextSingle(minInclusive.Y, maxExclusive.Y),
 			RandomUtils.NextSingle(minInclusive.Z, maxExclusive.Z)
-		));
+		);
 	}
 }

@@ -18,7 +18,7 @@ public readonly partial struct Plane : IMathPrimitive<Plane, float>, IPointTesta
 		get => Location.FromVector3(_normal * _smallestDistanceFromOriginAlongNormal);
 	}
 
-	public Plane(Direction normal, Location anyPointOnPlane) : this(normal.ToVector3(), -Vector3.Dot(normal.ToVector3(), anyPointOnPlane.ToVector3())) { }
+	public Plane(Direction normal, Location anyPointOnPlane) : this(normal.ToVector3(), Vector3.Dot(normal.ToVector3(), anyPointOnPlane.ToVector3())) { }
 
 	Plane(Vector3 normal, float coefficientOfNormal) {
 		_normal = normal;

@@ -18,6 +18,8 @@ public readonly partial struct Cuboid
 	// TODO these GetX methods need a naming pass and this file vs Cuboid.cs? etc
 
 	public Location GetCorner(DiagonalOrientation3D corner) { // TODO add properties that enumerate corners, surfaces, etc and use them instead of foreach loops internally
+		if (corner == DiagonalOrientation3D.None) throw new ArgumentOutOfRangeException(nameof(corner), corner, $"Can not be '{nameof(DiagonalOrientation3D.None)}'.");
+
 		return new(
 			corner.GetAxisSign(Axis.X) * HalfWidth,
 			corner.GetAxisSign(Axis.Y) * HalfHeight,
@@ -25,11 +27,15 @@ public readonly partial struct Cuboid
 		);
 	}
 	
-	public Plane GetSurfacePlane(CardinalOrientation3D side) { // TODO xmldoc that the planes' normals point away from the cuboid centre
-		return Plane.FromNormalAndTranslationFromOrigin(Direction.FromOrientation(side.AsGeneralOrientation()), GetHalfDimension(side.GetAxis()));
+	public Plane GetSurfacePlane(CardinalOrientation3D side) { // TODO xmldoc that the planes' normals point away from the cuboid centre, e.g. side.ToDirection()
+		if (side == CardinalOrientation3D.None) throw new ArgumentOutOfRangeException(nameof(side), side, $"Can not be '{nameof(CardinalOrientation3D.None)}'.");
+
+		return Plane.FromNormalAndTranslationFromOrigin(side.ToDirection(), GetHalfDimension(side.GetAxis()));
 	}
 
 	public BoundedLine GetEdge(IntercardinalOrientation3D edge) {
+		if (edge == IntercardinalOrientation3D.None) throw new ArgumentOutOfRangeException(nameof(edge), edge, $"Can not be '{nameof(IntercardinalOrientation3D.None)}'.");
+
 		var unspecifiedAxis = edge.GetUnspecifiedAxis();
 		return new(
 			GetCorner((DiagonalOrientation3D) edge.AsGeneralOrientation().WithAxisSign(unspecifiedAxis, -1)),

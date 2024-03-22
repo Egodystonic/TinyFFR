@@ -85,6 +85,8 @@ public readonly partial struct BoundedLine : ILine<BoundedLine, BoundedLine> {
 	#region Equality
 	public bool Equals(BoundedLine other) => _startPoint.Equals(other._startPoint) && _vect.Equals(other._vect);
 	public bool Equals(BoundedLine other, float tolerance) => _startPoint.Equals(other.StartPoint, tolerance) && _vect.Equals(other.StartToEndVect, tolerance);
+	public bool EqualsDisregardingDirection(BoundedLine other) => Equals(other) || Equals(other.Flipped);
+	public bool EqualsDisregardingDirection(BoundedLine other, float tolerance) => Equals(other, tolerance) || Equals(other.Flipped, tolerance);
 	public override bool Equals(object? obj) => obj is BoundedLine other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(_startPoint, _vect);
 	public static bool operator ==(BoundedLine left, BoundedLine right) => left.Equals(right);

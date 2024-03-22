@@ -20,6 +20,9 @@ class VectTestStubType : IVect {
 	public static Vector3 InvokeParseVector3String(ReadOnlySpan<char> s, IFormatProvider? provider) => IVect.ParseVector3String(s, provider);
 	public static bool InvokeTryParseVector3String(ReadOnlySpan<char> s, IFormatProvider? provider, out Vector3 result) => IVect.TryParseVector3String(s, provider, out result);
 	public static implicit operator VectTestStubType((float X, float Y, float Z) tuple) => new() { X = tuple.X, Y = tuple.Y, Z = tuple.Z };
+
+	public float this[Axis axis] => throw new NotImplementedException();
+	public XYPair<float> this[Axis first, Axis second] => throw new NotImplementedException();
 }
 
 [TestFixture]

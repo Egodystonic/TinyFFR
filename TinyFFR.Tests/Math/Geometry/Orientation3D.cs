@@ -294,9 +294,9 @@ class Orientation3DTest {
 	public void ShouldCorrectlyReplaceAxisSigns() { // Wrote this really tired, sorry. I know it sucks
 		foreach (var orientation in Enum.GetValues<Orientation3D>()) {
 			foreach (var axis in OrientationUtils.AllAxes) {
-				var posOrientation = orientation.WithAxisSign(axis, -1);
+				var posOrientation = orientation.WithAxisSign(axis, 1);
 				var zeroOrientation = orientation.WithAxisSign(axis, 0);
-				var negOrientation = orientation.WithAxisSign(axis, 1);
+				var negOrientation = orientation.WithAxisSign(axis, -1);
 
 				Assert.AreEqual(1, posOrientation.GetAxisSign(axis));
 				Assert.AreEqual(0, zeroOrientation.GetAxisSign(axis));
@@ -314,6 +314,23 @@ class Orientation3DTest {
 			Assert.AreEqual(orientation, orientation.WithAxisSign(Axis.None, 0));
 			Assert.AreEqual(orientation, orientation.WithAxisSign(Axis.None, 1));
 		}
+
+		// Loop above covers everything, these tests are just additional manual sanity checks
+		Assert.AreEqual(Orientation3D.LeftUpForward, Orientation3D.RightUpForward.WithAxisSign(Axis.X, 1));
+		Assert.AreEqual(Orientation3D.LeftUpForward, Orientation3D.LeftDownForward.WithAxisSign(Axis.Y, 1));
+		Assert.AreEqual(Orientation3D.LeftUpForward, Orientation3D.LeftUpBackward.WithAxisSign(Axis.Z, 1));
+
+		Assert.AreEqual(Orientation3D.RightUpForward, Orientation3D.LeftUpForward.WithAxisSign(Axis.X, -1));
+		Assert.AreEqual(Orientation3D.LeftDownForward, Orientation3D.LeftUpForward.WithAxisSign(Axis.Y, -1));
+		Assert.AreEqual(Orientation3D.LeftUpBackward, Orientation3D.LeftUpForward.WithAxisSign(Axis.Z, -1));
+
+		Assert.AreEqual(Orientation3D.LeftUpForward, Orientation3D.LeftUpForward.WithAxisSign(Axis.X, 1));
+		Assert.AreEqual(Orientation3D.LeftUpForward, Orientation3D.LeftUpForward.WithAxisSign(Axis.Y, 1));
+		Assert.AreEqual(Orientation3D.LeftUpForward, Orientation3D.LeftUpForward.WithAxisSign(Axis.Z, 1));
+
+		Assert.AreEqual(Orientation3D.UpForward, Orientation3D.LeftUpForward.WithAxisSign(Axis.X, 0));
+		Assert.AreEqual(Orientation3D.LeftForward, Orientation3D.LeftUpForward.WithAxisSign(Axis.Y, 0));
+		Assert.AreEqual(Orientation3D.LeftUp, Orientation3D.LeftUpForward.WithAxisSign(Axis.Z, 0));
 	}
 
 	[Test]

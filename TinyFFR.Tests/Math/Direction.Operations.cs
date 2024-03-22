@@ -82,7 +82,7 @@ partial class DirectionTest {
 
 	[Test]
 	public void ShouldCorrectlyFindPerpendicularDirectionWithAdditionalConstrainingDirection() {
-		Assert.AreEqual(Direction.Left, Direction.Up.PerpendicularWith(Direction.Forward));
+		Assert.AreEqual(Direction.Left, Direction.FromPerpendicularToBoth(Direction.Up, Direction.Forward));
 
 		var testList = new List<Direction>();
 		for (var x = -5f; x <= 5f; x += 1f) {
@@ -96,23 +96,18 @@ partial class DirectionTest {
 		for (var i = 0; i < testList.Count; ++i) {
 			var dirA = testList[i];
 
-			Assert.AreEqual(Direction.None, Direction.None.PerpendicularWith(dirA));
-			Assert.AreEqual(Direction.None, dirA.PerpendicularWith(Direction.None));
-
 			for (var j = i; j < testList.Count; ++j) {
 				var dirB = testList[j];
 
 				if (dirA == Direction.None || dirB == Direction.None) {
-					Assert.AreEqual(Direction.None, dirA.PerpendicularWith(dirB));
-					Assert.AreEqual(Direction.None, dirB.PerpendicularWith(dirA));
 					continue;
 				}
 
-				var thirdOrthogonal = dirA.PerpendicularWith(dirB);
+				var thirdOrthogonal = Direction.FromPerpendicularToBoth(dirA, dirB);
 				AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, 2f);
 				AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, 2f);
 				Assert.IsTrue(thirdOrthogonal.IsUnitLength);
-				thirdOrthogonal = dirB.PerpendicularWith(dirA);
+				thirdOrthogonal = Direction.FromPerpendicularToBoth(dirB, dirA);
 				AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, 2f);
 				AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, 2f);
 				Assert.IsTrue(thirdOrthogonal.IsUnitLength);
@@ -124,7 +119,7 @@ partial class DirectionTest {
 	public void ShouldCorrectlyOrthogonalizeAgainstAnotherDir() {
 		foreach (var cardinal in Direction.AllCardinals) {
 			var perp = cardinal.GetAnyPerpendicular();
-			var thirdPerp = cardinal.PerpendicularWith(perp);
+			var thirdPerp = Direction.FromPerpendicularToBoth(cardinal, perp);
 			Assert.AreEqual(cardinal, (20f % perp * cardinal).OrthogonalizedAgainst(thirdPerp));
 			Assert.AreEqual(cardinal, (-20f % perp * cardinal).OrthogonalizedAgainst(thirdPerp));
 			Assert.AreEqual(cardinal, (20f % thirdPerp * cardinal).OrthogonalizedAgainst(perp));

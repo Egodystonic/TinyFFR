@@ -16,12 +16,12 @@ public readonly partial struct BoundedLine :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line ToLine() => new(_startPoint, Direction);
 
-	public BoundedLine Reversed {
+	public BoundedLine Flipped {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => new(_startPoint, -_vect);
+		get => new(EndPoint, StartPoint);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static BoundedLine operator -(BoundedLine operand) => operand.Reversed;
+	public static BoundedLine operator -(BoundedLine operand) => operand.Flipped;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static BoundedLine operator *(BoundedLine line, float scalar) => line.ScaledFromMiddleBy(scalar);

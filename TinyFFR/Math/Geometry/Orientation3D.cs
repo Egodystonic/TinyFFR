@@ -223,7 +223,13 @@ public static class Orientation3DExtensions {
 	}
 
 	public static Axis GetUnspecifiedAxis(this IntercardinalOrientation3D @this) { // TODO document that this returns None if @this is None
-		return GetAxis((CardinalOrientation3D) ~(int) @this);
+		var xBit = @this.GetAxisSign(Axis.X) & 0b1;
+		var yBit = @this.GetAxisSign(Axis.Y) & 0b1;
+		var zBit = @this.GetAxisSign(Axis.Z) & 0b1;
+		var result = XAxisShift * (1 - xBit) + YAxisShift * (1 - yBit) + ZAxisShift * (1 - zBit);
+		var noneBit = result & 0b1000;
+		result &= ~(noneBit | noneBit >> 1 | noneBit >> 2 | noneBit >> 3);
+		return (Axis) result;
 	}
 
 	public static XAxisOrientation3D GetXAxis(this Orientation3D @this) => (XAxisOrientation3D) (((int) @this) & XAxisBitMask);
@@ -250,6 +256,9 @@ public static class Orientation3DExtensions {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int GetAxisSign(this CardinalOrientation3D @this, Axis axis) => GetAxisSign(@this.AsGeneralOrientation(), axis);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static int GetAxisSign(this CardinalOrientation3D @this) => GetAxisSign(@this.AsGeneralOrientation(), @this.GetAxis());
+
 	public static int GetAxisSign(this XAxisOrientation3D @this) {
 		var intThis = ((int) @this) >> XAxisShift;
 		return ((intThis & PositiveDirectionBitMask) >> PositiveDirectionBitShift) - ((intThis & NegativeDirectionBitMask) >> NegativeDirectionBitShift);
@@ -268,9 +277,7 @@ public static class Orientation3DExtensions {
 		var intAxis = (int) axis;
 		var secondBit = sign & 0b10;
 		var signBits = secondBit | ((sign & 0b1) ^ (secondBit >> 1));
-		// This line makes sure if axis is None we do nothing
-		signBits &= (intAxis >> ZAxisShift) | (intAxis >> YAxisShift) | (intAxis >> XAxisShift);
-		return (Orientation3D) ((intThis & ~(0b11 << intAxis)) | (signBits << intAxis));
+		return (Orientation3D) ((intThis & ~(0b11 << intAxis)) | ((signBits << intAxis) & ~0b11)); // Second mask against ~0b11 makes this have no effect when axis is None
 	}
 
 	internal static XAxisOrientation3D CreateXAxisOrientationFromValueSign<T>(T v) where T : INumber<T> {
