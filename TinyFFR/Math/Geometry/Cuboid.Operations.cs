@@ -1,6 +1,9 @@
 ﻿// Created on 2024-02-24 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
+
 namespace Egodystonic.TinyFFR;
 
 public readonly partial struct Cuboid
@@ -14,7 +17,7 @@ public readonly partial struct Cuboid
 
 	// TODO these GetX methods need a naming pass and this file vs Cuboid.cs? etc
 
-	public Location GetCorner(DiagonalOrientation3D corner) {
+	public Location GetCorner(DiagonalOrientation3D corner) { // TODO add properties that enumerate corners, surfaces, etc and use them instead of foreach loops internally
 		return new(
 			corner.GetAxisSign(Axis.X) * HalfWidth,
 			corner.GetAxisSign(Axis.Y) * HalfHeight,
@@ -201,4 +204,75 @@ public readonly partial struct Cuboid
 	float SignedLineDistanceToNegativeSurfacePlane(Location lineStartPoint, Direction lineDirection, Axis axis) {
 		return (-GetHalfDimension(axis) - lineStartPoint[axis]) / lineDirection[axis];
 	}
+
+	bool QuickPlaneCuboidIntersectionTest(Plane plane) { // https://gdbooks.gitbooks.io/3dcollisions/content/Chapter2/static_aabb_plane.html
+		var halfDiagonalProjection = Width * MathF.Abs(plane.Normal.X) + Height * MathF.Abs(plane.Normal.Y) + Depth * MathF.Abs(plane.Normal.Z);
+		return plane.DistanceFromOrigin() <= halfDiagonalProjection;
+	}
+
+	const int MaxPlaneIntersectionPoints = 6;
+	int GetPlaneIntersectionPoints(Plane plane, Span<Location> pointSpan) { 
+		var intersectionCount = 0;
+		foreach (var edge in OrientationUtils.AllIntercardinals) {
+			var edgeIntersection = GetEdge(edge).IntersectionWith(plane);
+			if (edgeIntersection.HasValue) pointSpan[intersectionCount++] = edgeIntersection.Value;
+		}
+		return intersectionCount;
+	}
+	Location? GetAnyPlaneIntersectionPoint(Plane plane) {
+		foreach (var edge in OrientationUtils.AllIntercardinals) {
+			var edgeIntersection = GetEdge(edge).IntersectionWith(plane);
+			if (edgeIntersection.HasValue) return edgeIntersection.Value;
+		}
+		return null;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointTo(Plane plane) => ClosestPointOnSurfaceTo(plane);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(Plane plane) => ClosestPointToSurfaceOn(plane);
+	public float SignedDistanceFrom(Plane plane) {
+		if (QuickPlaneCuboidIntersectionTest(plane)) return 0f;
+
+		var result = Single.PositiveInfinity;
+		foreach (var diagonal in OrientationUtils.AllDiagonals) {
+			var corner = GetCorner(diagonal);
+			var distance = plane.SignedDistanceFrom(corner);
+			if (MathF.Abs(distance) < result) result = distance;
+		}
+		return result;
+	}
+	public float DistanceFrom(Plane plane) {
+		if (QuickPlaneCuboidIntersectionTest(plane)) return 0f;
+
+		var result = Single.PositiveInfinity;
+		foreach (var diagonal in OrientationUtils.AllDiagonals) {
+			var corner = GetCorner(diagonal);
+			var distance = plane.DistanceFrom(corner);
+			if (distance < result) result = distance;
+		}
+		return result;
+	}
+	public PlaneObjectRelationship RelationshipTo(Plane plane) {
+		if (QuickPlaneCuboidIntersectionTest(plane)) return PlaneObjectRelationship.PlaneIntersectsObject;
+		return plane.FacesTowardsOrigin(planeThickness: 0f) ? PlaneObjectRelationship.PlaneFacesTowardsObject : PlaneObjectRelationship.PlaneFacesAwayFromObject;
+	}
+	public Location ClosestPointOnSurfaceTo(Plane plane) {
+		if (QuickPlaneCuboidIntersectionTest(plane)) return GetAnyPlaneIntersectionPoint(plane)!.Value;
+		var resultDistance = Single.PositiveInfinity;
+		var result = Location.Origin;
+		foreach (var diagonal in OrientationUtils.AllDiagonals) {
+			var corner = GetCorner(diagonal);
+			var distance = plane.DistanceFrom(corner);
+			if (distance < resultDistance) {
+				resultDistance = distance;
+				result = corner;
+			}
+		}
+		return result;
+	}
+	public Location ClosestPointToSurfaceOn(Plane plane) => plane.ClosestPointTo(ClosestPointOnSurfaceTo(plane));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float SurfaceDistanceFrom(Plane plane) => DistanceFrom(plane);
 }

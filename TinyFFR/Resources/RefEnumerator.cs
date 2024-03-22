@@ -4,12 +4,13 @@
 namespace Egodystonic.TinyFFR.Resources;
 
 public readonly ref struct RefEnumerator<TOwner, TItem> where TOwner : IRefEnumerable<TItem> {
-	public ref struct Enumerator {
+#pragma warning disable CA1034 // "Don't have public nested types" -- generally agreeable rule but we need this to be public to allow the duck typed GetEnumerator() and I'd rather it be nested so it's LESS visible in intellisense
+	public ref struct ForeachDuckEnumerator {
 		readonly ref TOwner _owner;
 		readonly int _count;
 		int _curIndex = -1;
 
-		public Enumerator(ref TOwner owner) {
+		public ForeachDuckEnumerator(ref TOwner owner) {
 			_owner = ref owner;
 			_count = owner.Count;
 		}
@@ -23,6 +24,7 @@ public readonly ref struct RefEnumerator<TOwner, TItem> where TOwner : IRefEnume
 		public void Reset() => _curIndex = -1;
 		public void Dispose() { /* no op */ }
 	}
+#pragma warning restore CA1034
 
 	readonly ref TOwner _owner;
 
@@ -37,7 +39,7 @@ public readonly ref struct RefEnumerator<TOwner, TItem> where TOwner : IRefEnume
 
 	public RefEnumerator(ref TOwner owner) => _owner = ref owner;
 
-	public Enumerator GetEnumerator() => new(ref _owner);
+	public ForeachDuckEnumerator GetEnumerator() => new(ref _owner);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public TItem ElementAt(int index) => _owner.ElementAt(index);

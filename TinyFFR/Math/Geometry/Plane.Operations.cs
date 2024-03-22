@@ -63,6 +63,10 @@ public readonly partial struct Plane :
 	public bool FacesAwayFrom(Location location) => FacesAwayFrom(location, DefaultPlaneThickness);
 	public bool FacesTowards(Location location, float planeThickness) => SignedDistanceFrom(location) > planeThickness;
 	public bool FacesAwayFrom(Location location, float planeThickness) => SignedDistanceFrom(location) < -planeThickness;
+	public bool FacesTowardsOrigin() => FacesTowardsOrigin(DefaultPlaneThickness);
+	public bool FacesAwayFromOrigin() => FacesAwayFromOrigin(DefaultPlaneThickness);
+	public bool FacesTowardsOrigin(float planeThickness) => SignedDistanceFromOrigin() > planeThickness;
+	public bool FacesAwayFromOrigin(float planeThickness) => SignedDistanceFromOrigin() < -planeThickness;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(Location location) => Contains(location, DefaultPlaneThickness);

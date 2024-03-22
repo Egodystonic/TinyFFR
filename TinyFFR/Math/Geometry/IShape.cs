@@ -52,14 +52,18 @@ public interface IShape : IPointTestable, ILineTestable, IPlaneTestable {
 	float SurfaceDistanceFrom<TLine>(TLine line) where TLine : ILine;
 	float SurfaceDistanceFrom(Plane plane);
 
-	Location? ILineTestable.IntersectionWith<TLine>(TLine line) => IntersectionWith(line).First;
-	new ConvexShapeLineIntersection IntersectionWith<TLine>(TLine line) where TLine : ILine; // TODO I'd like to move this in to a ConvexShape interface
-
 	// TODO RefIterator for faces and vertices
 	// TODO would it be better to have type that holds a ref field of type T and can then easily iterate against that T assuming it implements an interface? Something like RefEnumerable? Yes, the interface approach means we can only have one implementation but that's fiiiiine
 }
 public interface IShape<TSelf> : IShape, IMathPrimitive<TSelf, float>, IInterpolatable<TSelf>, IBoundedRandomizable<TSelf> where TSelf : IShape<TSelf> {
 	TSelf ScaledBy(float scalar);
+}
+public interface IConvexShape : IShape {
+	Location? ILineTestable.IntersectionWith<TLine>(TLine line) => IntersectionWith(line).First;
+	new ConvexShapeLineIntersection IntersectionWith<TLine>(TLine line) where TLine : ILine;
+}
+public interface IPlaneIntersectableShape<TPlaneIntersection> : IShape where TPlaneIntersection : struct {
+	TPlaneIntersection? IntersectionWith(Plane plane);
 }
 // TODO add TPlaneIntersection overload of IShape e.g. Sphere -> Circle and Cuboid -> four points; replace TrySplit on Sphere with IntersectionWith
 // Circle and BoundedPlane
@@ -78,7 +82,7 @@ public static class ShapeExtensions {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static float DistanceFrom<TLine, TShape>(this TLine @this, TShape shape) where TLine : ILine where TShape : IShape => shape.DistanceFrom(@this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ConvexShapeLineIntersection IntersectionWith<TLine, TShape>(this TLine @this, TShape shape) where TLine : ILine where TShape : IShape => shape.IntersectionWith(@this);
+	public static ConvexShapeLineIntersection IntersectionWith<TLine, TShape>(this TLine @this, TShape shape) where TLine : ILine where TShape : IConvexShape => shape.IntersectionWith(@this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Location ClosestPointOnSurfaceOf<TLine, TShape>(this TLine @this, TShape shape) where TLine : ILine where TShape : IShape => shape.ClosestPointOnSurfaceTo(@this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

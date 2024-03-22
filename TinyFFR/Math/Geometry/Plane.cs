@@ -63,8 +63,8 @@ public readonly partial struct Plane : IMathPrimitive<Plane, float>, IPointTesta
 
 	public override string ToString() => ToString(null, null);
 
-	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(Plane), (nameof(Normal), Normal), (nameof(ClosestPointToOrigin), PointClosestToOrigin: ClosestPointToOrigin));
-	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => GeometryUtils.StandardizedTryFormat(destination, out charsWritten, format, provider, nameof(Plane), (nameof(Normal), Normal), (nameof(ClosestPointToOrigin), PointClosestToOrigin: ClosestPointToOrigin));
+	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(Plane), (nameof(Normal), Normal), (nameof(ClosestPointToOrigin), ClosestPointToOrigin));
+	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => GeometryUtils.StandardizedTryFormat(destination, out charsWritten, format, provider, nameof(Plane), (nameof(Normal), Normal), (nameof(ClosestPointToOrigin), ClosestPointToOrigin));
 
 	public static Plane Parse(string s, IFormatProvider? provider) => Parse(s.AsSpan(), provider);
 	public static bool TryParse(string? s, IFormatProvider? provider, out Plane result) => TryParse(s.AsSpan(), provider, out result);
