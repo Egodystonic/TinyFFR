@@ -3,7 +3,7 @@
 
 namespace Egodystonic.TinyFFR;
 
-public readonly partial struct Plane : IMathPrimitive<Plane, float>, IPointTestable, ILineTestable, IPrecomputationInterpolatable<Plane, Rotation>, IBoundedRandomizable<Plane>, IDescriptiveStringProvider {
+public readonly partial struct Plane : IGeometryPrimitive<Plane>, IPrecomputationInterpolatable<Plane, Rotation>, IDescriptiveStringProvider {
 	public const float DefaultPlaneThickness = ILine.DefaultLineThickness;
 	readonly Vector3 _normal;
 	readonly float _smallestDistanceFromOriginAlongNormal;

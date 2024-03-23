@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR;
  * Does a Location actually equal a Direction even if their XYZ components are identical?
  * If users really just want equality of the components they can use `ToVector3().Equals(other.ToVector3())` which is more explicit.
  */
-public interface IVect : IMathPrimitive {
+public interface IVect : IMathPrimitive, IGeometryInteractable {
 	internal const char VectorStringPrefixChar = '<';
 	internal const char VectorStringSuffixChar = '>';
 

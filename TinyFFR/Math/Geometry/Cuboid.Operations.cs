@@ -148,7 +148,10 @@ public readonly partial struct Cuboid
 		}
 		return answer;
 	}
-	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => DistanceFrom(ClosestPointOn(line));
+	public float DistanceFrom<TLine>(TLine line) where TLine : ILine {
+		// TODO reimplement algo above but simply return distance, to make sure we always return 0 for actual intersections
+	}
+
 	public Location ClosestPointOnSurfaceTo<TLine>(TLine line) where TLine : ILine => ClosestPointOnSurfaceTo(ClosestPointToSurfaceOn(line));
 	public Location ClosestPointToSurfaceOn<TLine>(TLine line) where TLine : ILine {
 		var unboundedIntersectionDistances = GetUnboundedLineIntersectionDistances(line.CoerceToRay());
@@ -173,10 +176,12 @@ public readonly partial struct Cuboid
 		}
 		return answer;
 	}
-	public float SurfaceDistanceFrom<TLine>(TLine line) where TLine : ILine { return 0; }
-	public ConvexShapeLineIntersection IntersectionWith<TLine>(TLine line) where TLine : ILine {
+	public float SurfaceDistanceFrom<TLine>(TLine line) where TLine : ILine {
+		// TODO reimplement algo above but simply return distance, to make sure we always return 0 for actual intersections
+	}
+	public ConvexShapeLineIntersection? IntersectionWith<TLine>(TLine line) where TLine : ILine {
 		var unboundedDistances = GetUnboundedLineIntersectionDistances(line.CoerceToRay());
-		if (unboundedDistances == null) return ConvexShapeLineIntersection.NoIntersections;
+		if (unboundedDistances == null) return null;
 		return ConvexShapeLineIntersection.FromTwoPotentiallyNullArgs(line.LocationAtDistanceOrNull(unboundedDistances.Value.Item1), line.LocationAtDistanceOrNull(unboundedDistances.Value.Item2));
 	}
 

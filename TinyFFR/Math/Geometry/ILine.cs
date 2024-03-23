@@ -5,7 +5,11 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Egodystonic.TinyFFR;
 
-public interface ILine : IPlaneTestable, IPointTestable, ILineTestable {
+public interface ILine : 
+	IClosestEndogenousPointDiscoverable<Location>, IDistanceMeasurable<Location>, IContainmentTestable<Location>,
+	ILineDistanceMeasurable, ILineClosestPointDiscoverable, ILineIntersectable<Location>,
+	IClosestPointDiscoverable<Plane>, ISignedDistanceMeasurable<Plane>, IRelationshipDeterminable<Plane, PlaneObjectRelationship>, IIntersectable<Plane, Location>,
+	IGeometryInteractable {
 	public const float DefaultLineThickness = 0.01f;
 
 	Location StartPoint { get; }
@@ -23,7 +27,6 @@ public interface ILine : IPlaneTestable, IPointTestable, ILineTestable {
 	bool Contains(Location location, float lineThickness);
 	Location? IntersectionWith<TLine>(TLine line, float lineThickness) where TLine : ILine;
 	Location ClosestPointToOrigin();
-	Location? IntersectionWith(Plane plane);
 
 	Location BoundedLocationAtDistance(float distanceFromStart);
 	Location UnboundedLocationAtDistance(float distanceFromStart);
@@ -169,7 +172,7 @@ public interface ILine : IPlaneTestable, IPointTestable, ILineTestable {
 		return @this.UnboundedLocationAtDistance(answerAsDistance); // Using Unbounded variant because we've already done all the bounding in the code above
 	}
 }
-public interface ILine<TSelf> : ILine, IMathPrimitive<TSelf, float>, IInterpolatable<TSelf>, IBoundedRandomizable<TSelf> where TSelf : ILine<TSelf> {
+public interface ILine<TSelf> : ILine, IGeometryPrimitive<TSelf> where TSelf : ILine<TSelf> {
 	TSelf ProjectedOnTo(Plane plane);
 	TSelf ParallelizedWith(Plane plane);
 	TSelf OrthogonalizedAgainst(Plane plane);

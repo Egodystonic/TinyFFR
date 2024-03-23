@@ -83,7 +83,7 @@ public readonly partial struct Line :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Location LocationAtDistance(float distance) => UnboundedLocationAtDistance(distance);
 
-	// These are implemented explicitly because an unbounded line isn't really meant to have a "distance" or a "start point" etc.
+	// These are implemented explicitly & privately because an unbounded line isn't really meant to have a "distance" or a "start point" etc.
 	Location ILine.BoundedLocationAtDistance(float distanceFromStart) => BoundedLocationAtDistance(distanceFromStart);
 	Location ILine.UnboundedLocationAtDistance(float distanceFromStart) => UnboundedLocationAtDistance(distanceFromStart);
 	Location? ILine.LocationAtDistanceOrNull(float distanceFromStart) => UnboundedLocationAtDistance(distanceFromStart);

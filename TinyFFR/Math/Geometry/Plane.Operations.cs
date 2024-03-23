@@ -4,6 +4,8 @@
 namespace Egodystonic.TinyFFR;
 
 public readonly partial struct Plane : 
+	ISignedDistanceMeasurable<Location>, IContainmentTestable<Location>, IClosestEndogenousPointDiscoverable<Location>,
+	IDistanceMeasurable<Plane>, IIntersectable<Plane, Line>,
 	IAdditionOperators<Plane, Vect, Plane>,
 	IMultiplyOperators<Plane, (Location Pivot, Rotation Rotation), Plane>,
 	IMultiplyOperators<Plane, (Rotation Rotation, Location Pivot), Plane>,
