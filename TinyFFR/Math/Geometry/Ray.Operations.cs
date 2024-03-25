@@ -88,8 +88,8 @@ public readonly partial struct Ray :
 	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => DistanceFrom(ClosestPointTo(line));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location? IntersectionWith<TLine>(TLine line) where TLine : ILine => IntersectionWith(line, ILine.DefaultLineThickness);
-	public Location? IntersectionWith<TLine>(TLine line, float lineThickness) where TLine : ILine {
+	Location? ILineIntersectable<Location>.IntersectionWith<TLine>(TLine line) => IntersectionWith(line, ILine.DefaultLineThickness);
+	public Location? IntersectionWith<TLine>(TLine line, float lineThickness = ILine.DefaultLineThickness) where TLine : ILine {
 		var closestPointOnLine = line.ClosestPointTo(this);
 		return DistanceFrom(closestPointOnLine) <= lineThickness ? closestPointOnLine : null;
 	}

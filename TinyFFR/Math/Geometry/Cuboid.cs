@@ -3,7 +3,7 @@
 
 namespace Egodystonic.TinyFFR;
 
-public readonly partial struct Cuboid : IFullyInteractableConvexShape<Cuboid> {
+public readonly partial struct Cuboid : IFullyInteractableConvexShape<Cuboid> {  // TODO IIntersectable<Plane, BoundedPlane or similar>
 	internal const float DefaultRandomMin = 1f;
 	internal const float DefaultRandomMax = 3f;
 	public static readonly Cuboid UnitCube = new(1f, 1f, 1f);

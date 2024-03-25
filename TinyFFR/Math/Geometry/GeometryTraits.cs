@@ -3,8 +3,6 @@
 
 // This file hosts all the trait interfaces for geometric primitives
 
-using System.Numerics;
-
 namespace Egodystonic.TinyFFR;
 
 #region Primitive building block trait interfaces
@@ -38,6 +36,9 @@ public interface IRelationshipDeterminable<in T, out TRelationship> {
 public interface ISurfaceDistanceMeasurable<in T> : IDistanceMeasurable<T> {
 	float SurfaceDistanceFrom(T element);
 }
+public interface ISignedSurfaceDistanceMeasurable<in T> : ISignedDistanceMeasurable<T>, ISurfaceDistanceMeasurable<T> {
+	float SignedSurfaceDistanceFrom(T element);
+}
 public interface IClosestEndogenousSurfacePointDiscoverable<in T> : IClosestEndogenousPointDiscoverable<T> {
 	Location ClosestPointOnSurfaceTo(T element);
 }
@@ -56,6 +57,8 @@ public interface IClosestSurfacePointDiscoverable<in T> : IClosestPointDiscovera
 	static on the interface itself, which is in turn used by more generic extension methods that are public. It's all a bit
 	nasty and if it causes too much trouble in the future it might be better to just dump these interfaces entirely, but then
 	you will have to find another way to let types/methods automatically work for any line type (or maybe it doesn't matter...).
+
+	Or maybe we'll get HKT, traits, or macros proper in C#.
 */
 public interface ILineDistanceMeasurable : IDistanceMeasurable<Line>, IDistanceMeasurable<Ray>, IDistanceMeasurable<BoundedLine> {
 	protected float DistanceFrom<TLine>(TLine line) where TLine : ILine;
@@ -142,29 +145,33 @@ public interface ILineIntersectable<TIntersection> : IIntersectable<Line, TInter
 }
 #endregion
 
+// These extensions automatically implement the "reverse"/mirror implementation between types
+// (e.g. if T implements IDistanceMeasurable<TGeo>, we now get TGeo.DistanceFrom(T) for free as well as the existing T.DistanceFrom(TGeo)).
 public static class GeometryExtensions {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float DistanceFrom<TGeo, T>(this TGeo @this, T element) where TGeo : IGeometryInteractable where T : IDistanceMeasurable<TGeo> => element.DistanceFrom(@this);
+	public static float DistanceFrom<TGeo, T>(this TGeo @this, T geometricPrimitive) where TGeo : IGeometryInteractable where T : IDistanceMeasurable<TGeo> => geometricPrimitive.DistanceFrom(@this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float SignedDistanceFrom<TGeo, T>(this TGeo @this, T element) where TGeo : IGeometryInteractable where T : ISignedDistanceMeasurable<TGeo> => element.SignedDistanceFrom(@this);
+	public static float SignedDistanceFrom<TGeo, T>(this TGeo @this, T geometricPrimitive) where TGeo : IGeometryInteractable where T : ISignedDistanceMeasurable<TGeo> => geometricPrimitive.SignedDistanceFrom(@this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool IsContainedWithin<TGeo, T>(this TGeo @this, T element) where TGeo : IGeometryInteractable where T : IContainmentTestable<TGeo> => element.Contains(@this);
+	public static bool IsContainedWithin<TGeo, T>(this TGeo @this, T geometricPrimitive) where TGeo : IGeometryInteractable where T : IContainmentTestable<TGeo> => geometricPrimitive.Contains(@this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointOn<TGeo, T>(this TGeo @this, T element) where TGeo : IGeometryInteractable where T : IClosestEndogenousPointDiscoverable<TGeo> => element.ClosestPointTo(@this);
+	public static Location ClosestPointOn<TGeo, T>(this TGeo @this, T geometricPrimitive) where TGeo : IGeometryInteractable where T : IClosestEndogenousPointDiscoverable<TGeo> => geometricPrimitive.ClosestPointTo(@this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointTo<TGeo, T>(this TGeo @this, T element) where TGeo : IGeometryInteractable where T : IClosestExogenousPointDiscoverable<TGeo> => element.ClosestPointOn(@this);
+	public static Location ClosestPointTo<TGeo, T>(this TGeo @this, T geometricPrimitive) where TGeo : IGeometryInteractable where T : IClosestExogenousPointDiscoverable<TGeo> => geometricPrimitive.ClosestPointOn(@this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float DistanceFromSurfaceOf<TGeo, T>(this TGeo @this, T element) where TGeo : IGeometryInteractable where T : ISurfaceDistanceMeasurable<TGeo> => element.SurfaceDistanceFrom(@this);
+	public static float DistanceFromSurfaceOf<TGeo, T>(this TGeo @this, T geometricPrimitive) where TGeo : IGeometryInteractable where T : ISurfaceDistanceMeasurable<TGeo> => geometricPrimitive.SurfaceDistanceFrom(@this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointToSurfaceOn<TGeo, T>(this TGeo @this, T element) where TGeo : IGeometryInteractable where T : IClosestEndogenousSurfacePointDiscoverable<TGeo> => element.ClosestPointOnSurfaceTo(@this);
+	public static float SignedDistanceFromSurfaceOf<TGeo, T>(this TGeo @this, T geometricPrimitive) where TGeo : IGeometryInteractable where T : ISignedSurfaceDistanceMeasurable<TGeo> => geometricPrimitive.SignedSurfaceDistanceFrom(@this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointOnSurfaceTo<TGeo, T>(this TGeo @this, T element) where TGeo : IGeometryInteractable where T : IClosestExogenousSurfacePointDiscoverable<TGeo> => element.ClosestPointToSurfaceOn(@this);
+	public static Location ClosestPointOnSurfaceOf<TGeo, T>(this TGeo @this, T geometricPrimitive) where TGeo : IGeometryInteractable where T : IClosestEndogenousSurfacePointDiscoverable<TGeo> => geometricPrimitive.ClosestPointOnSurfaceTo(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointToSurfaceOf<TGeo, T>(this TGeo @this, T geometricPrimitive) where TGeo : IGeometryInteractable where T : IClosestExogenousSurfacePointDiscoverable<TGeo> => geometricPrimitive.ClosestPointToSurfaceOn(@this);
 }
-// TODO partial additions for intersectable, relationship, etc. -- probably at the classes themselves

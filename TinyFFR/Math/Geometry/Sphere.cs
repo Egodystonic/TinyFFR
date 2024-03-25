@@ -3,7 +3,7 @@
 
 namespace Egodystonic.TinyFFR;
 
-public readonly partial struct Sphere : IFullyInteractableConvexShape<Sphere> {
+public readonly partial struct Sphere : IFullyInteractableConvexShape<Sphere> { // TODO IIntersectable<Plane, Circle>
 	internal const float DefaultRandomMin = 1f;
 	internal const float DefaultRandomMax = 3f;
 	public static readonly Sphere UnitSphere = new(1f);

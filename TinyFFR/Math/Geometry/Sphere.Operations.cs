@@ -113,6 +113,7 @@ public readonly partial struct Sphere
 		_ => PlaneObjectRelationship.PlaneIntersectsObject
 	};
 
+	// TODO this will become a circle when we implement IIntersectable properly
 	public bool TrySplit(Plane plane, out Location circleCentrePoint, out float circleRadius) {
 		circleCentrePoint = plane.ClosestPointToOrigin;
 		var vectToPlane = (Vect) circleCentrePoint;
@@ -142,8 +143,7 @@ public readonly partial struct Sphere
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float SurfaceDistanceFrom(Plane plane) => DistanceFrom(plane);
-}
-public partial struct Plane {
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool TrySplit(Sphere sphere, out Location circleCentrePoint, out float circleRadius) => sphere.TrySplit(this, out circleCentrePoint, out circleRadius);
+	public float SignedSurfaceDistanceFrom(Plane plane) => SignedDistanceFrom(plane);
 }

@@ -26,13 +26,15 @@ public interface ILine :
 	[MemberNotNull(nameof(Length), nameof(LengthSquared), nameof(StartToEndVect))]
 	Location? EndPoint { get; }
 
-	bool Contains(Location location, float lineThickness);
-	Location? IntersectionWith<TLine>(TLine line, float lineThickness) where TLine : ILine;
-	Location ClosestPointToOrigin();
-
 	Location BoundedLocationAtDistance(float distanceFromStart);
 	Location UnboundedLocationAtDistance(float distanceFromStart);
 	Location? LocationAtDistanceOrNull(float distanceFromStart);
+
+	Location ClosestPointToOrigin();
+	bool Contains(Location location, float lineThickness);
+
+	Location? IntersectionWith<TLine>(TLine line, float lineThickness = DefaultLineThickness) where TLine : ILine;
+	new Location? IntersectionWith(Plane plane);
 
 	sealed Line CoerceToLine() => new(StartPoint, Direction);
 	sealed Ray CoerceToRay() => new(StartPoint, Direction);
@@ -184,15 +186,16 @@ public interface ILine<TSelf, TSplit> : ILine<TSelf> where TSelf : ILine<TSelf> 
 	TSplit? SplitBy(Plane plane);
 }
 
-// ==================== Below this line: Various "inverted" line testing methods defined as either extensions or added directly in partial definitions ====================
+// ==================== Below this line: Various "inverted"/reversed/mirrored line methods defined as either extensions or added directly in partial definitions ====================
 // I do it this way to keep these definitions close by as they're basically just the same as the definitions above but "the inverse of"
-// and I think it makes more sense to keep it all in this one file.
+// and I think it makes more sense to keep it all in the same file that's related to Line types.
 // ReSharper disable UnusedTypeParameter Type parameterization instead of directly using interface type is used to prevent boxing (instead relying on reification of each parameter combination)
 partial struct Location {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsContainedWithin<TLine>(TLine line, float lineThickness) where TLine : ILine => line.Contains(this, lineThickness);
+	public bool IsContainedWithin<TLine>(TLine line, float lineThickness = ILine.DefaultLineThickness) where TLine : ILine => line.Contains(this, lineThickness);
 }
-partial struct Plane { // TODO come back to this
+// Just a bunch of functions specific to working with every line type and Planes that I also want visible when using Plane as the single dispatch target
+partial struct Plane {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(Plane lhs, Plane rhs) => lhs.AngleTo(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -211,8 +214,6 @@ partial struct Plane { // TODO come back to this
 	public Angle AngleTo<TLine>(TLine line) where TLine : ILine => AngleTo(line.Direction);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float ParallelismWith<TLine>(TLine line) where TLine : ILine => ParallelismWith(line.Direction);
-
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public TSplit? Reflect<TLine, TSplit>(TLine line) where TLine : ILine<TLine, TSplit> where TSplit : struct, ILine<TSplit> => line.ReflectedBy(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -223,107 +224,105 @@ partial struct Plane { // TODO come back to this
 	public TLine ParallelizationOf<TLine>(TLine line) where TLine : ILine<TLine> => line.ParallelizedWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public TLine OrthogonalizationOf<TLine>(TLine line) where TLine : ILine<TLine> => line.OrthogonalizedAgainst(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => line.ClosestPointOn(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointOn<TLine>(TLine line) where TLine : ILine => line.ClosestPointTo(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => line.DistanceFrom(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location? IntersectionWith<TLine>(TLine line) where TLine : ILine => line.IntersectionWith(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public PlaneObjectRelationship RelationshipTo<TLine>(TLine line) where TLine : ILine => line.RelationshipTo(this);
 }
 
-public static class LineExtensions { // These extensions try to make TLine (where TLine : ILine) work everywhere
-	// static void Test<TLine, TLine2>(TLine line, TLine2 line2) where TLine : ILine where TLine2 : ILine {
-	// 	var f = line.DistanceFrom(new Sphere());
-	// 	new Plane().IntersectionWith(line);
-	// 	line.ClosestPointTo(new Ray());
-	// 	line.ClosestPointTo(line2);
-	// 	line.ClosestPointTo(new Sphere());
-	// 	line.ClosestPointTo(Location.Origin);
-	// 	line.ClosestPointTo(new Plane());
-	// 	new Ray().ClosestPointTo(new Sphere());
-	//
-	// 	new Ray().ClosestPointTo(line);
-	// 	new Sphere().ClosestPointTo(line);
-	// 	Location.Origin.ClosestPointToSurfaceOn(new Sphere());
-	// 	new Plane().ClosestPointTo(line);
-	// }
+// These extensions try to make the reverse/mirror implementations work for TLine (where TLine : ILine) work everywhere in a way that's more or less transparent to the user
+public static class LineExtensions {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle AngleTo<TLine>(this TLine @this, Plane plane) where TLine : ILine => plane.AngleTo(@this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float DistanceFrom<TLine, T>(this TLine @this, T element) where TLine : ILine where T : ILineDistanceMeasurable => ILineDistanceMeasurable.InvokeProtectedDistanceFrom(element, @this);
+	public static float ParallelismWith<TLine>(this TLine @this, Plane plane) where TLine : ILine => plane.ParallelismWith(@this);
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float DistanceFromSurfaceOf<TLine, T>(this TLine @this, T element) where TLine : ILine where T : ILineSurfaceDistanceMeasurable => ILineSurfaceDistanceMeasurable.InvokeProtectedSurfaceDistanceFrom(element, @this);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointOn<TLine, T>(this TLine @this, T element) where TLine : ILine where T : ILineClosestPointDiscoverable => ILineClosestPointDiscoverable.InvokeProtectedClosestPointTo(element, @this);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointTo<TLine, T>(this TLine @this, T element) where TLine : ILine where T : ILineClosestPointDiscoverable => ILineClosestPointDiscoverable.InvokeProtectedClosestPointOn(element, @this);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointToSurfaceOn<TLine, T>(this TLine @this, T element) where TLine : ILine where T : ILineClosestSurfacePointDiscoverable => ILineClosestSurfacePointDiscoverable.InvokeProtectedClosestPointOnSurfaceTo(element, @this);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointOnSurfaceTo<TLine, T>(this TLine @this, T element) where TLine : ILine where T : ILineClosestSurfacePointDiscoverable => ILineClosestSurfacePointDiscoverable.InvokeProtectedClosestPointToSurfaceOn(element, @this);
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float DistanceFrom<T>(this Line @this, T element) where T : ILineDistanceMeasurable => element.DistanceFrom(@this);
+	public static float DistanceFrom<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineDistanceMeasurable => ILineDistanceMeasurable.InvokeProtectedDistanceFrom(geometricPrimitive, @this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float DistanceFromSurfaceOf<T>(this Line @this, T element) where T : ILineSurfaceDistanceMeasurable => element.SurfaceDistanceFrom(@this);
+	public static float DistanceFromSurfaceOf<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineSurfaceDistanceMeasurable => ILineSurfaceDistanceMeasurable.InvokeProtectedSurfaceDistanceFrom(geometricPrimitive, @this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointOn<T>(this Line @this, T element) where T : IClosestEndogenousPointDiscoverable<Line> => element.ClosestPointTo(@this);
+	public static Location ClosestPointOn<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineClosestPointDiscoverable => ILineClosestPointDiscoverable.InvokeProtectedClosestPointTo(geometricPrimitive, @this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointTo<T>(this Line @this, T element) where T : IClosestExogenousPointDiscoverable<Line> => element.ClosestPointOn(@this);
+	public static Location ClosestPointTo<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineClosestPointDiscoverable => ILineClosestPointDiscoverable.InvokeProtectedClosestPointOn(geometricPrimitive, @this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointToSurfaceOn<T>(this Line @this, T element) where T : IClosestEndogenousSurfacePointDiscoverable<Line> => element.ClosestPointOnSurfaceTo(@this);
+	public static Location ClosestPointOnSurfaceOf<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineClosestSurfacePointDiscoverable => ILineClosestSurfacePointDiscoverable.InvokeProtectedClosestPointOnSurfaceTo(geometricPrimitive, @this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointOnSurfaceTo<T>(this Line @this, T element) where T : IClosestExogenousSurfacePointDiscoverable<Line> => element.ClosestPointToSurfaceOn(@this);
-
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float DistanceFrom<T>(this Ray @this, T element) where T : ILineDistanceMeasurable => element.DistanceFrom(@this);
+	public static Location ClosestPointToSurfaceOf<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineClosestSurfacePointDiscoverable => ILineClosestSurfacePointDiscoverable.InvokeProtectedClosestPointToSurfaceOn(geometricPrimitive, @this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float DistanceFromSurfaceOf<T>(this Ray @this, T element) where T : ILineSurfaceDistanceMeasurable => element.SurfaceDistanceFrom(@this);
+	public static ConvexShapeLineIntersection? IntersectionWith<TLine, T>(this TLine @this, T geometricPrimitive) where T : ILineIntersectable<ConvexShapeLineIntersection> where TLine : ILine => ILineIntersectable<ConvexShapeLineIntersection>.InvokeProtectedIntersectionWith(geometricPrimitive, @this);
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointOn<T>(this Ray @this, T element) where T : IClosestEndogenousPointDiscoverable<Ray> => element.ClosestPointTo(@this);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointTo<T>(this Ray @this, T element) where T : IClosestExogenousPointDiscoverable<Ray> => element.ClosestPointOn(@this);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointToSurfaceOn<T>(this Ray @this, T element) where T : IClosestEndogenousSurfacePointDiscoverable<Ray> => element.ClosestPointOnSurfaceTo(@this);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointOnSurfaceTo<T>(this Ray @this, T element) where T : IClosestExogenousSurfacePointDiscoverable<Ray> => element.ClosestPointToSurfaceOn(@this);
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float DistanceFrom<T>(this BoundedLine @this, T element) where T : ILineDistanceMeasurable => element.DistanceFrom(@this);
+	public static float DistanceFrom<T>(this Line @this, T geometricPrimitive) where T : ILineDistanceMeasurable => geometricPrimitive.DistanceFrom(@this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float DistanceFromSurfaceOf<T>(this BoundedLine @this, T element) where T : ILineSurfaceDistanceMeasurable => element.SurfaceDistanceFrom(@this);
+	public static float DistanceFromSurfaceOf<T>(this Line @this, T geometricPrimitive) where T : ILineSurfaceDistanceMeasurable => geometricPrimitive.SurfaceDistanceFrom(@this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointOn<T>(this BoundedLine @this, T element) where T : IClosestEndogenousPointDiscoverable<BoundedLine> => element.ClosestPointTo(@this);
+	public static Location ClosestPointOn<T>(this Line @this, T geometricPrimitive) where T : IClosestEndogenousPointDiscoverable<Line> => geometricPrimitive.ClosestPointTo(@this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointTo<T>(this BoundedLine @this, T element) where T : IClosestExogenousPointDiscoverable<BoundedLine> => element.ClosestPointOn(@this);
+	public static Location ClosestPointTo<T>(this Line @this, T geometricPrimitive) where T : IClosestExogenousPointDiscoverable<Line> => geometricPrimitive.ClosestPointOn(@this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointToSurfaceOn<T>(this BoundedLine @this, T element) where T : IClosestEndogenousSurfacePointDiscoverable<BoundedLine> => element.ClosestPointOnSurfaceTo(@this);
+	public static Location ClosestPointOnSurfaceOf<T>(this Line @this, T geometricPrimitive) where T : IClosestEndogenousSurfacePointDiscoverable<Line> => geometricPrimitive.ClosestPointOnSurfaceTo(@this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointOnSurfaceTo<T>(this BoundedLine @this, T element) where T : IClosestExogenousSurfacePointDiscoverable<BoundedLine> => element.ClosestPointToSurfaceOn(@this);
+	public static Location ClosestPointToSurfaceOf<T>(this Line @this, T geometricPrimitive) where T : IClosestExogenousSurfacePointDiscoverable<Line> => geometricPrimitive.ClosestPointToSurfaceOn(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static ConvexShapeLineIntersection? IntersectionWith<T>(this Line @this, T geometricPrimitive) where T : IIntersectable<Line, ConvexShapeLineIntersection> => geometricPrimitive.IntersectionWith(@this);
+
+
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static float DistanceFrom<T>(this Ray @this, T geometricPrimitive) where T : ILineDistanceMeasurable => geometricPrimitive.DistanceFrom(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static float DistanceFromSurfaceOf<T>(this Ray @this, T geometricPrimitive) where T : ILineSurfaceDistanceMeasurable => geometricPrimitive.SurfaceDistanceFrom(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointOn<T>(this Ray @this, T geometricPrimitive) where T : IClosestEndogenousPointDiscoverable<Ray> => geometricPrimitive.ClosestPointTo(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointTo<T>(this Ray @this, T geometricPrimitive) where T : IClosestExogenousPointDiscoverable<Ray> => geometricPrimitive.ClosestPointOn(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointOnSurfaceOf<T>(this Ray @this, T geometricPrimitive) where T : IClosestEndogenousSurfacePointDiscoverable<Ray> => geometricPrimitive.ClosestPointOnSurfaceTo(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointToSurfaceOf<T>(this Ray @this, T geometricPrimitive) where T : IClosestExogenousSurfacePointDiscoverable<Ray> => geometricPrimitive.ClosestPointToSurfaceOn(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static ConvexShapeLineIntersection? IntersectionWith<T>(this Ray @this, T geometricPrimitive) where T : IIntersectable<Ray, ConvexShapeLineIntersection> => geometricPrimitive.IntersectionWith(@this);
+
+
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static float DistanceFrom<T>(this BoundedLine @this, T geometricPrimitive) where T : ILineDistanceMeasurable => geometricPrimitive.DistanceFrom(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static float DistanceFromSurfaceOf<T>(this BoundedLine @this, T geometricPrimitive) where T : ILineSurfaceDistanceMeasurable => geometricPrimitive.SurfaceDistanceFrom(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointOn<T>(this BoundedLine @this, T geometricPrimitive) where T : IClosestEndogenousPointDiscoverable<BoundedLine> => geometricPrimitive.ClosestPointTo(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointTo<T>(this BoundedLine @this, T geometricPrimitive) where T : IClosestExogenousPointDiscoverable<BoundedLine> => geometricPrimitive.ClosestPointOn(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointOnSurfaceOf<T>(this BoundedLine @this, T geometricPrimitive) where T : IClosestEndogenousSurfacePointDiscoverable<BoundedLine> => geometricPrimitive.ClosestPointOnSurfaceTo(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointToSurfaceOf<T>(this BoundedLine @this, T geometricPrimitive) where T : IClosestExogenousSurfacePointDiscoverable<BoundedLine> => geometricPrimitive.ClosestPointToSurfaceOn(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static ConvexShapeLineIntersection? IntersectionWith<T>(this BoundedLine @this, T geometricPrimitive) where T : IIntersectable<BoundedLine, ConvexShapeLineIntersection> => geometricPrimitive.IntersectionWith(@this);
 }

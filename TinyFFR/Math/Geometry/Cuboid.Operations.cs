@@ -324,4 +324,7 @@ public readonly partial struct Cuboid
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float SurfaceDistanceFrom(Plane plane) => DistanceFrom(plane);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float SignedSurfaceDistanceFrom(Plane plane) => SignedDistanceFrom(plane);
 }

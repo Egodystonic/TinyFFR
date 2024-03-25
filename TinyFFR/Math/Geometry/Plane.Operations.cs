@@ -127,13 +127,12 @@ public readonly partial struct Plane :
 	public Vect OrthogonalizationOf(Vect vect) => OrthogonalizationOf(vect.Direction) * vect.Length;
 	// Idea here is to pick the closest direction (normal or -normal) and have parallel directions just pick the positive normal, all without branching. Probably a smarter way to do it but I'm tired af
 	public Direction OrthogonalizationOf(Direction direction) => Direction.FromPreNormalizedComponents(Normal.ToVector3() * MathF.Sign(direction.SimilarityTo(Normal) * 2f + Single.Epsilon));
+
+	public PlaneObjectRelationship RelationshipTo<TGeo>(TGeo element) where TGeo : IRelationshipDeterminable<Plane, PlaneObjectRelationship> => element.RelationshipTo(this);
+	public Location? IntersectionWith<TGeo>(TGeo element) where TGeo : IIntersectable<Plane, Location> => element.IntersectionWith(this);
 }
 
-// ReSharper disable UnusedTypeParameter Type parameterization instead of directly using interface type is used to prevent boxing (instead relying on reification of each parameter combination)
-public static class PlaneExtensions {
-	public static Angle AngleTo<TLine>(this TLine @this, Plane plane) where TLine : ILine => plane.AngleTo(@this);
-	public static float ParallelismWith<TLine>(this TLine @this, Plane plane) where TLine : ILine => plane.ParallelismWith(@this);
-}
+// Just some implementations of "mirror"/reverse functions kept here rather than in their respective types as it makes more sense to me to keep them close to the Plane class.
 partial struct Direction {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(Plane plane) => plane.AngleTo(this);
