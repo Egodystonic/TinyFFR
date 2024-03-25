@@ -149,7 +149,27 @@ public readonly partial struct Cuboid
 		return answer;
 	}
 	public float DistanceFrom<TLine>(TLine line) where TLine : ILine {
-		// TODO reimplement algo above but simply return distance, to make sure we always return 0 for actual intersections
+		var unboundedIntersectionDistances = GetUnboundedLineIntersectionDistances(line.CoerceToRay());
+		if (unboundedIntersectionDistances != null) {
+			var potentialAnswerA = line.BoundedLocationAtDistance(unboundedIntersectionDistances.Value.Item1);
+			var potentialAnswerB = line.BoundedLocationAtDistance(unboundedIntersectionDistances.Value.Item2);
+			var distA = line.DistanceFrom(potentialAnswerA);
+			var distB = line.DistanceFrom(potentialAnswerB);
+			return distA < distB ? distA : distB;
+		}
+
+		if (Contains(line.StartPoint)) return 0f;
+
+		var answerDistance = Single.PositiveInfinity;
+		foreach (var edgeOrientation in OrientationUtils.AllIntercardinals) {
+			var edge = GetEdge(edgeOrientation);
+			var closestPointToEdge = line.ClosestPointTo(edge);
+			var distanceToEdge = edge.DistanceFrom(closestPointToEdge);
+			if (distanceToEdge < answerDistance) {
+				answerDistance = distanceToEdge;
+			}
+		}
+		return answerDistance;
 	}
 
 	public Location ClosestPointOnSurfaceTo<TLine>(TLine line) where TLine : ILine => ClosestPointOnSurfaceTo(ClosestPointToSurfaceOn(line));
@@ -177,7 +197,25 @@ public readonly partial struct Cuboid
 		return answer;
 	}
 	public float SurfaceDistanceFrom<TLine>(TLine line) where TLine : ILine {
-		// TODO reimplement algo above but simply return distance, to make sure we always return 0 for actual intersections
+		var unboundedIntersectionDistances = GetUnboundedLineIntersectionDistances(line.CoerceToRay());
+		if (unboundedIntersectionDistances != null) {
+			var potentialAnswerA = line.BoundedLocationAtDistance(unboundedIntersectionDistances.Value.Item1);
+			var potentialAnswerB = line.BoundedLocationAtDistance(unboundedIntersectionDistances.Value.Item2);
+			var distA = line.DistanceFrom(potentialAnswerA);
+			var distB = line.DistanceFrom(potentialAnswerB);
+			return distA < distB ? distA : distB;
+		}
+
+		var answerDistance = Single.PositiveInfinity;
+		foreach (var edgeOrientation in OrientationUtils.AllIntercardinals) {
+			var edge = GetEdge(edgeOrientation);
+			var closestPointToEdge = line.ClosestPointTo(edge);
+			var distanceToEdge = edge.DistanceFrom(closestPointToEdge);
+			if (distanceToEdge < answerDistance) {
+				answerDistance = distanceToEdge;
+			}
+		}
+		return answerDistance;
 	}
 	public ConvexShapeLineIntersection? IntersectionWith<TLine>(TLine line) where TLine : ILine {
 		var unboundedDistances = GetUnboundedLineIntersectionDistances(line.CoerceToRay());

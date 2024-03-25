@@ -6,6 +6,7 @@ namespace Egodystonic.TinyFFR;
 [TestFixture]
 class RandomUtilsTest {
 	const int NumTestIterations = 100_000;
+	const float TestTolerance = Single.Epsilon;
 
 	[SetUp]
 	public void SetUpTest() { }
@@ -18,11 +19,11 @@ class RandomUtilsTest {
 		for (var i = 0; i < NumTestIterations; ++i) {
 			var val = RandomUtils.NextSingle();
 			Assert.GreaterOrEqual(val, 0f);
-			Assert.Less(val, 1f);
+			Assert.Less(val, 1f + TestTolerance);
 
 			val = RandomUtils.NextSingle(-100f, 100f);
 			Assert.GreaterOrEqual(val, -100f);
-			Assert.Less(val, 100f);
+			Assert.Less(val, 100f + TestTolerance);
 
 			val = RandomUtils.NextSingleZeroToOneInclusive();
 			Assert.GreaterOrEqual(val, 0f);

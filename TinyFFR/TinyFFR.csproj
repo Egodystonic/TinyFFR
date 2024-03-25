@@ -22,6 +22,7 @@
       CA1805; <!-- Member explicitly initialized to default value: It communicates that was you intention and that you didn't just forget to initialize a member. Performance isn't that much of a requirement -->
       CA1040; <!-- Do not use empty interfaces: Sometimes there are good reasons -->
       CA5394; <!-- 'Random' class isn't crypto-secure: We don't need crypto-level randomness (and we prefer performance) -->
+      CA1725; <!-- Don't rename parameters when implementing methods from inherited/implemented parents/interfaces: Generally agree but we have some very generalized interfaces and renaming the parameter names to be more specific downstream is probably better for the end user -->
       IDE0028; <!-- Prompt to use collection initializers: Sometimes I don't want them -->
       IDE0040; <!-- Always include access modifiers (even when it would be the default): Just plain don't like this style -->
       IDE1006; <!-- Underscore for private const fields: Yuck -->

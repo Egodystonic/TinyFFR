@@ -7,7 +7,9 @@ namespace Egodystonic.TinyFFR;
 
 public interface ILine : 
 	IClosestEndogenousPointDiscoverable<Location>, IDistanceMeasurable<Location>, IContainmentTestable<Location>,
-	ILineDistanceMeasurable, ILineClosestPointDiscoverable, ILineIntersectable<Location>,
+	ILineDistanceMeasurable, 
+	ILineClosestPointDiscoverable, 
+	ILineIntersectable<Location>,
 	IClosestPointDiscoverable<Plane>, ISignedDistanceMeasurable<Plane>, IRelationshipDeterminable<Plane, PlaneObjectRelationship>, IIntersectable<Plane, Location>,
 	IGeometryInteractable {
 	public const float DefaultLineThickness = 0.01f;
@@ -188,9 +190,9 @@ public interface ILine<TSelf, TSplit> : ILine<TSelf> where TSelf : ILine<TSelf> 
 // ReSharper disable UnusedTypeParameter Type parameterization instead of directly using interface type is used to prevent boxing (instead relying on reification of each parameter combination)
 partial struct Location {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsContainedBy<TLine>(TLine line, float lineThickness) where TLine : ILine => line.Contains(this, lineThickness);
+	public bool IsContainedWithin<TLine>(TLine line, float lineThickness) where TLine : ILine => line.Contains(this, lineThickness);
 }
-partial struct Plane {
+partial struct Plane { // TODO come back to this
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(Plane lhs, Plane rhs) => lhs.AngleTo(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -231,4 +233,97 @@ partial struct Plane {
 	public Location? IntersectionWith<TLine>(TLine line) where TLine : ILine => line.IntersectionWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public PlaneObjectRelationship RelationshipTo<TLine>(TLine line) where TLine : ILine => line.RelationshipTo(this);
+}
+
+public static class LineExtensions { // These extensions try to make TLine (where TLine : ILine) work everywhere
+	// static void Test<TLine, TLine2>(TLine line, TLine2 line2) where TLine : ILine where TLine2 : ILine {
+	// 	var f = line.DistanceFrom(new Sphere());
+	// 	new Plane().IntersectionWith(line);
+	// 	line.ClosestPointTo(new Ray());
+	// 	line.ClosestPointTo(line2);
+	// 	line.ClosestPointTo(new Sphere());
+	// 	line.ClosestPointTo(Location.Origin);
+	// 	line.ClosestPointTo(new Plane());
+	// 	new Ray().ClosestPointTo(new Sphere());
+	//
+	// 	new Ray().ClosestPointTo(line);
+	// 	new Sphere().ClosestPointTo(line);
+	// 	Location.Origin.ClosestPointToSurfaceOn(new Sphere());
+	// 	new Plane().ClosestPointTo(line);
+	// }
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static float DistanceFrom<TLine, T>(this TLine @this, T element) where TLine : ILine where T : ILineDistanceMeasurable => ILineDistanceMeasurable.InvokeProtectedDistanceFrom(element, @this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static float DistanceFromSurfaceOf<TLine, T>(this TLine @this, T element) where TLine : ILine where T : ILineSurfaceDistanceMeasurable => ILineSurfaceDistanceMeasurable.InvokeProtectedSurfaceDistanceFrom(element, @this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointOn<TLine, T>(this TLine @this, T element) where TLine : ILine where T : ILineClosestPointDiscoverable => ILineClosestPointDiscoverable.InvokeProtectedClosestPointTo(element, @this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointTo<TLine, T>(this TLine @this, T element) where TLine : ILine where T : ILineClosestPointDiscoverable => ILineClosestPointDiscoverable.InvokeProtectedClosestPointOn(element, @this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointToSurfaceOn<TLine, T>(this TLine @this, T element) where TLine : ILine where T : ILineClosestSurfacePointDiscoverable => ILineClosestSurfacePointDiscoverable.InvokeProtectedClosestPointOnSurfaceTo(element, @this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointOnSurfaceTo<TLine, T>(this TLine @this, T element) where TLine : ILine where T : ILineClosestSurfacePointDiscoverable => ILineClosestSurfacePointDiscoverable.InvokeProtectedClosestPointToSurfaceOn(element, @this);
+
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static float DistanceFrom<T>(this Line @this, T element) where T : ILineDistanceMeasurable => element.DistanceFrom(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static float DistanceFromSurfaceOf<T>(this Line @this, T element) where T : ILineSurfaceDistanceMeasurable => element.SurfaceDistanceFrom(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointOn<T>(this Line @this, T element) where T : IClosestEndogenousPointDiscoverable<Line> => element.ClosestPointTo(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointTo<T>(this Line @this, T element) where T : IClosestExogenousPointDiscoverable<Line> => element.ClosestPointOn(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointToSurfaceOn<T>(this Line @this, T element) where T : IClosestEndogenousSurfacePointDiscoverable<Line> => element.ClosestPointOnSurfaceTo(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointOnSurfaceTo<T>(this Line @this, T element) where T : IClosestExogenousSurfacePointDiscoverable<Line> => element.ClosestPointToSurfaceOn(@this);
+
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static float DistanceFrom<T>(this Ray @this, T element) where T : ILineDistanceMeasurable => element.DistanceFrom(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static float DistanceFromSurfaceOf<T>(this Ray @this, T element) where T : ILineSurfaceDistanceMeasurable => element.SurfaceDistanceFrom(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointOn<T>(this Ray @this, T element) where T : IClosestEndogenousPointDiscoverable<Ray> => element.ClosestPointTo(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointTo<T>(this Ray @this, T element) where T : IClosestExogenousPointDiscoverable<Ray> => element.ClosestPointOn(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointToSurfaceOn<T>(this Ray @this, T element) where T : IClosestEndogenousSurfacePointDiscoverable<Ray> => element.ClosestPointOnSurfaceTo(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointOnSurfaceTo<T>(this Ray @this, T element) where T : IClosestExogenousSurfacePointDiscoverable<Ray> => element.ClosestPointToSurfaceOn(@this);
+
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static float DistanceFrom<T>(this BoundedLine @this, T element) where T : ILineDistanceMeasurable => element.DistanceFrom(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static float DistanceFromSurfaceOf<T>(this BoundedLine @this, T element) where T : ILineSurfaceDistanceMeasurable => element.SurfaceDistanceFrom(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointOn<T>(this BoundedLine @this, T element) where T : IClosestEndogenousPointDiscoverable<BoundedLine> => element.ClosestPointTo(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointTo<T>(this BoundedLine @this, T element) where T : IClosestExogenousPointDiscoverable<BoundedLine> => element.ClosestPointOn(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointToSurfaceOn<T>(this BoundedLine @this, T element) where T : IClosestEndogenousSurfacePointDiscoverable<BoundedLine> => element.ClosestPointOnSurfaceTo(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location ClosestPointOnSurfaceTo<T>(this BoundedLine @this, T element) where T : IClosestExogenousSurfacePointDiscoverable<BoundedLine> => element.ClosestPointToSurfaceOn(@this);
 }

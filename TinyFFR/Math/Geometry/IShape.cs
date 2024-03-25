@@ -138,7 +138,7 @@ public interface IFullyInteractableConvexShape<TSelf> :
 // 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 // 	public float DistanceFrom<TPointTestable>(TPointTestable pointTestableObject) where TPointTestable : IPointTestable => pointTestableObject.DistanceFrom(this);
 // 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-// 	public bool IsContainedBy<TPointTestable>(TPointTestable pointTestableObject) where TPointTestable : IPointTestable => pointTestableObject.Contains(this);
+// 	public bool IsContainedWithin<TPointTestable>(TPointTestable pointTestableObject) where TPointTestable : IPointTestable => pointTestableObject.Contains(this);
 //
 // 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 // 	public Location ClosestPointOnSurfaceOf<TShape>(TShape shape) where TShape : IShape => shape.ClosestPointOnSurfaceTo(this);

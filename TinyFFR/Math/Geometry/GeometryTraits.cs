@@ -138,7 +138,7 @@ public interface ILineIntersectable<TIntersection> : IIntersectable<Line, TInter
 	TIntersection? IIntersectable<BoundedLine, TIntersection>.IntersectionWith(BoundedLine line) => IntersectionWith(line);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static Location InvokeProtectedClosestPointToSurfaceOn<T, TLine>(T @this, TLine line) where TLine : ILine where T : ILineClosestSurfacePointDiscoverable => @this.ClosestPointToSurfaceOn(line);
+	internal static TIntersection? InvokeProtectedIntersectionWith<T, TLine>(T @this, TLine line) where TLine : ILine where T : ILineIntersectable<TIntersection> => @this.IntersectionWith(line);
 }
 #endregion
 
@@ -166,35 +166,5 @@ public static class GeometryExtensions {
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Location ClosestPointOnSurfaceTo<TGeo, T>(this TGeo @this, T element) where TGeo : IGeometryInteractable where T : IClosestExogenousSurfacePointDiscoverable<TGeo> => element.ClosestPointToSurfaceOn(@this);
-}
-
-public static class LineExtensions { // These extensions try to make TLine (where TLine : ILine) work everywhere
-	static void Test<TLine, TLine2>(TLine line, TLine2 line2) where TLine : ILine where TLine2 : ILine {
-		var f = line.DistanceFrom(new Sphere());
-		new Plane().IntersectionWith(line);
-		line.ClosestPointTo(new Ray());
-		line.ClosestPointTo(line2);
-		line.ClosestPointTo(new Sphere());
-		line.ClosestPointTo(Location.Origin);
-		new Ray().ClosestPointTo(new Sphere());
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float DistanceFrom<TLine, T>(this TLine @this, T element) where TLine : ILine where T : ILineDistanceMeasurable => ILineDistanceMeasurable.InvokeProtectedDistanceFrom(element, @this);
-	
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float DistanceFromSurfaceOf<TLine, T>(this TLine @this, T element) where TLine : ILine where T : ILineSurfaceDistanceMeasurable => ILineSurfaceDistanceMeasurable.InvokeProtectedSurfaceDistanceFrom(element, @this);
-	
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointOn<TLine, T>(this TLine @this, T element) where TLine : ILine where T : ILineClosestPointDiscoverable => ILineClosestPointDiscoverable.InvokeProtectedClosestPointTo(element, @this);
-	
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointTo<TLine, T>(this TLine @this, T element) where TLine : ILine where T : ILineClosestPointDiscoverable => ILineClosestPointDiscoverable.InvokeProtectedClosestPointOn(element, @this);
-	
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointToSurfaceOn<TLine, T>(this TLine @this, T element) where TLine : ILine where T : ILineClosestSurfacePointDiscoverable => ILineClosestSurfacePointDiscoverable.InvokeProtectedClosestPointOnSurfaceTo(element, @this);
-	
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointOnSurfaceTo<TLine, T>(this TLine @this, T element) where TLine : ILine where T : ILineClosestSurfacePointDiscoverable => ILineClosestSurfacePointDiscoverable.InvokeProtectedClosestPointToSurfaceOn(element, @this);
 }
 // TODO partial additions for intersectable, relationship, etc. -- probably at the classes themselves
