@@ -1,6 +1,8 @@
 ﻿// Created on 2024-03-25 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using NSubstitute;
+
 namespace Egodystonic.TinyFFR;
 
 [TestFixture]
@@ -93,12 +95,23 @@ class LineExtensionsTest {
 			new Plane().ParallelismWith(line);
 			new Plane().AngleTo(new Ray());
 			new Plane().ParallelismWith(new Ray());
+
+			new OriginSphere().DistanceFrom(line);
 		}
 
 		try {
 			Test(new Ray(), new BoundedLine());
 		}
-		catch { /* Don't care about any actual parameter validation exceptions or errors from executing the functions. */}
+		catch { /* Don't care about any actual parameter validation exceptions or errors from executing the functions. */ }
 		Assert.Pass("Compiling test is successful test.");
+	}
+
+	[Test]
+	public void ShouldCorrectlyImplementMirrorMethods() {
+		var genericLine = Substitute.For<ILine>();
+
+		var lineSurfaceDistanceMeasurable = Substitute.For<ILineSurfaceDistanceMeasurable>();
+		_ = genericLine.DistanceFrom(lineSurfaceDistanceMeasurable);
+		_ = lineSurfaceDistanceMeasurable.Received(1).DistanceFrom(
 	}
 }

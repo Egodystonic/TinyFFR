@@ -51,12 +51,14 @@ public interface IClosestSurfacePointDiscoverable<in T> : IClosestPointDiscovera
 #region Line composites
 /*  The reason these interfaces exist is to make it possible to implement the same algorithm for all line types generically,
 	and also declare the requisite traits for those line types all in one go. Making the generic method protected
-	means it doesn't interfere with some of the extension methods declared further down below. However, it's also needed for
+	means it doesn't interfere with some of the generic methods with the same name on other interfaces. However, it's also needed for
 	certain cases where we want/need to actually work with a TLine instead of a specific type (and the compiler of course
-	can't know that Ray/Line/BoundedLine are the only three options), so we still expose that protected method via an internal
+	can't know that Ray/Line/BoundedLine are the only three options), so we still expose that protected method via a public
 	static on the interface itself, which is in turn used by more generic extension methods that are public. It's all a bit
 	nasty and if it causes too much trouble in the future it might be better to just dump these interfaces entirely, but then
 	you will have to find another way to let types/methods automatically work for any line type (or maybe it doesn't matter...).
+	Also, on types that I implement in this library that implement these interfaces I re-declare the generic method as public so
+	the end-user shouldn't really know or care about any of this.
 
 	Or maybe we'll get HKT, traits, or macros proper in C#.
 */
@@ -71,7 +73,7 @@ public interface ILineDistanceMeasurable : IDistanceMeasurable<Line>, IDistanceM
 	float IDistanceMeasurable<BoundedLine>.DistanceFrom(BoundedLine line) => DistanceFrom(line);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static float InvokeProtectedDistanceFrom<T, TLine>(T @this, TLine line) where TLine : ILine where T : ILineDistanceMeasurable => @this.DistanceFrom(line);
+	public static float GetDistanceFromGenericLine<T, TLine>(T @this, TLine line) where TLine : ILine where T : ILineDistanceMeasurable => @this.DistanceFrom(line);
 }
 public interface ILineSurfaceDistanceMeasurable : ILineDistanceMeasurable, ISurfaceDistanceMeasurable<Line>, ISurfaceDistanceMeasurable<Ray>, ISurfaceDistanceMeasurable<BoundedLine> {
 	protected float SurfaceDistanceFrom<TLine>(TLine line) where TLine : ILine;

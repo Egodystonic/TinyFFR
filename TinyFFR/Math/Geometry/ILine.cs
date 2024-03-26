@@ -237,7 +237,7 @@ public static class LineExtensions {
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float DistanceFrom<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineDistanceMeasurable => ILineDistanceMeasurable.InvokeProtectedDistanceFrom(geometricPrimitive, @this);
+	public static float DistanceFrom<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineDistanceMeasurable => geometricPrimitive.DistanceFrom(@this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static float DistanceFromSurfaceOf<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineSurfaceDistanceMeasurable => ILineSurfaceDistanceMeasurable.InvokeProtectedSurfaceDistanceFrom(geometricPrimitive, @this);
