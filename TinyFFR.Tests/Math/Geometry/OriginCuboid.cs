@@ -6,7 +6,7 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture]
-class CuboidTest {
+class OriginCuboidTest {
 	const float TestTolerance = 0.01f;
 
 	[SetUp]
@@ -18,7 +18,7 @@ class CuboidTest {
 	[Test]
 	public void ShouldCorrectlyCalculateProperties() {
 		// https://www.wolframalpha.com/input?i=volume%2C+surface+area+of+cuboid+with+width+7.2+height+13.6+depth+1.4
-		var cuboid = new Cuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
+		var cuboid = new OriginCuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
 		Assert.AreEqual(7.2f, cuboid.Width, TestTolerance);
 		Assert.AreEqual(13.6f, cuboid.Height, TestTolerance);
 		Assert.AreEqual(1.4f, cuboid.Depth, TestTolerance);
@@ -32,19 +32,19 @@ class CuboidTest {
 	[Test]
 	public void StaticFactoriesShouldCorrectlyConstruct() {
 		AssertToleranceEquals(
-			new Cuboid(width: 7.2f, height: 13.6f, depth: 1.4f),
-			Cuboid.FromHalfDimensions(7.2f / 2f, 13.6f / 2f, 1.4f / 2f),
+			new OriginCuboid(width: 7.2f, height: 13.6f, depth: 1.4f),
+			OriginCuboid.FromHalfDimensions(7.2f / 2f, 13.6f / 2f, 1.4f / 2f),
 			TestTolerance
 		);
 	}
 
 	[Test]
 	public void ShouldCorrectlyModifyWithInitProperties() {
-		void AssertCuboid(Cuboid input, float expectedWidth, float expectedHeight, float expectedDepth) {
-			AssertToleranceEquals(new Cuboid(expectedWidth, expectedHeight, expectedDepth), input, TestTolerance);
+		void AssertCuboid(OriginCuboid input, float expectedWidth, float expectedHeight, float expectedDepth) {
+			AssertToleranceEquals(new OriginCuboid(expectedWidth, expectedHeight, expectedDepth), input, TestTolerance);
 		}
 		
-		var startingValue = new Cuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
+		var startingValue = new OriginCuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
 
 		AssertCuboid(startingValue with { Width = 10f }, 10f, startingValue.Height, startingValue.Depth);
 		AssertCuboid(startingValue with { Height = 10f }, startingValue.Width, 10f, startingValue.Depth);
@@ -62,15 +62,15 @@ class CuboidTest {
 	[Test]
 	public void ShouldCorrectlyScale() {
 		AssertToleranceEquals(
-			new Cuboid(width: 7.2f * 3f, height: 13.6f * 3f, depth: 1.4f * 3f), 
-			new Cuboid(width: 7.2f, height: 13.6f, depth: 1.4f).ScaledBy(3f), 
+			new OriginCuboid(width: 7.2f * 3f, height: 13.6f * 3f, depth: 1.4f * 3f), 
+			new OriginCuboid(width: 7.2f, height: 13.6f, depth: 1.4f).ScaledBy(3f), 
 			TestTolerance
 		);
 	}
 
 	[Test]
 	public void ShouldCorrectlyCalculateVertexLocations() {
-		var cuboid = new Cuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
+		var cuboid = new OriginCuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
 
 		AssertToleranceEquals(new(3.6f, 6.8f, 0.7f), cuboid.GetCorner(DiagonalOrientation3D.LeftUpForward), TestTolerance);
 		AssertToleranceEquals(new(3.6f, 6.8f, -0.7f), cuboid.GetCorner(DiagonalOrientation3D.LeftUpBackward), TestTolerance);
@@ -86,7 +86,7 @@ class CuboidTest {
 
 	[Test]
 	public void ShouldCorrectlyCalculateSidePlanes() {
-		var cuboid = new Cuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
+		var cuboid = new OriginCuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
 
 		AssertToleranceEquals(new Plane(Direction.Left, new(3.6f, 0f, 0f)), cuboid.GetSurfacePlane(CardinalOrientation3D.Left), TestTolerance);
 		AssertToleranceEquals(new Plane(Direction.Right, new(-3.6f, 0f, 0f)), cuboid.GetSurfacePlane(CardinalOrientation3D.Right), TestTolerance);
@@ -103,7 +103,7 @@ class CuboidTest {
 		const float W = 0.5f * 7.2f;
 		const float H = 0.5f * 13.6f;
 		const float D = 0.5f * 1.4f;
-		var cuboid = new Cuboid(W * 2f, H * 2f, D * 2f);
+		var cuboid = new OriginCuboid(W * 2f, H * 2f, D * 2f);
 
 		void AssertOrientation(IntercardinalOrientation3D orientation, Location expectedLinePointA, Location expectedLinePointB) {
 			Assert.IsTrue(cuboid.GetEdge(orientation).EqualsDisregardingDirection(new(expectedLinePointA, expectedLinePointB), TestTolerance));
@@ -129,7 +129,7 @@ class CuboidTest {
 
 	[Test]
 	public void ShouldCorrectlyReturnDimensionFromAxis() {
-		var cuboid = new Cuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
+		var cuboid = new OriginCuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
 
 		Assert.AreEqual(7.2f, cuboid.GetDimension(Axis.X), TestTolerance);
 		Assert.AreEqual(13.6f, cuboid.GetDimension(Axis.Y), TestTolerance);
@@ -144,7 +144,7 @@ class CuboidTest {
 
 	[Test]
 	public void ShouldCorrectlyCalculateSideSurfaceAreas() {
-		var cuboid = new Cuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
+		var cuboid = new OriginCuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
 
 		Assert.AreEqual(13.6f * 1.4f, cuboid.GetSideSurfaceArea(CardinalOrientation3D.Left), TestTolerance);
 		Assert.AreEqual(13.6f * 1.4f, cuboid.GetSideSurfaceArea(CardinalOrientation3D.Right), TestTolerance);
@@ -158,8 +158,8 @@ class CuboidTest {
 	// TODO this test could be fleshed out a lot more
 	[Test]
 	public void ShouldCorrectlyConvertToString() {
-		const string Expectation = "Cuboid[Width 7.2 | Height 13.6 | Depth 1.4]";
-		var cuboid = new Cuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
+		const string Expectation = "OriginCuboid[Width 7.2 | Height 13.6 | Depth 1.4]";
+		var cuboid = new OriginCuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
 
 		Assert.AreEqual(Expectation, cuboid.ToString("N1", CultureInfo.InvariantCulture));
 		Span<char> dest = stackalloc char[Expectation.Length * 2];
@@ -171,43 +171,43 @@ class CuboidTest {
 	// TODO this test could be fleshed out a lot more
 	[Test]
 	public void ShouldCorrectlyParse() {
-		const string Input = "Cuboid[Width 7.2 | Height 13.6 | Depth 1.4]";
-		var expectation = new Cuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
+		const string Input = "OriginCuboid[Width 7.2 | Height 13.6 | Depth 1.4]";
+		var expectation = new OriginCuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
 
-		Assert.AreEqual(expectation, Cuboid.Parse(Input, CultureInfo.InvariantCulture));
-		Assert.AreEqual(true, Cuboid.TryParse(Input, CultureInfo.InvariantCulture, out var result));
+		Assert.AreEqual(expectation, OriginCuboid.Parse(Input, CultureInfo.InvariantCulture));
+		Assert.AreEqual(true, OriginCuboid.TryParse(Input, CultureInfo.InvariantCulture, out var result));
 		Assert.AreEqual(expectation, result);
 	}
 	
 	[Test]
 	public void ShouldCorrectlyConvertToAndFromSpan() {
-		var cuboid = new Cuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
-		Assert.AreEqual(3, Cuboid.ConvertToSpan(cuboid).Length);
-		Assert.AreEqual(7.2f / 2f, Cuboid.ConvertToSpan(cuboid)[0]);
-		Assert.AreEqual(13.6f / 2f, Cuboid.ConvertToSpan(cuboid)[1]);
-		Assert.AreEqual(1.4f / 2f, Cuboid.ConvertToSpan(cuboid)[2]);
-		Assert.AreEqual(cuboid, Cuboid.ConvertFromSpan(Cuboid.ConvertToSpan(cuboid)));
+		var cuboid = new OriginCuboid(width: 7.2f, height: 13.6f, depth: 1.4f);
+		Assert.AreEqual(3, OriginCuboid.ConvertToSpan(cuboid).Length);
+		Assert.AreEqual(7.2f / 2f, OriginCuboid.ConvertToSpan(cuboid)[0]);
+		Assert.AreEqual(13.6f / 2f, OriginCuboid.ConvertToSpan(cuboid)[1]);
+		Assert.AreEqual(1.4f / 2f, OriginCuboid.ConvertToSpan(cuboid)[2]);
+		Assert.AreEqual(cuboid, OriginCuboid.ConvertFromSpan(OriginCuboid.ConvertToSpan(cuboid)));
 	}
 	
 	[Test]
 	public void ShouldCorrectlyInterpolate() {
-		var a = new Cuboid(5f, 10f, 20f);
-		var b = new Cuboid(15f, 30f, 60f);
-		Assert.AreEqual(new Cuboid(10f, 20f, 40f), Cuboid.Interpolate(a, b, 0.5f));
-		Assert.AreEqual(new Cuboid(5f, 10f, 20f), Cuboid.Interpolate(a, b, 0f));
-		Assert.AreEqual(new Cuboid(15f, 30f, 60f), Cuboid.Interpolate(a, b, 1f));
-		Assert.AreEqual(new Cuboid(20f, 40f, 80f), Cuboid.Interpolate(a, b, 1.5f));
-		Assert.AreEqual(new Cuboid(0f, 0f, 0f), Cuboid.Interpolate(a, b, -0.5f));
+		var a = new OriginCuboid(5f, 10f, 20f);
+		var b = new OriginCuboid(15f, 30f, 60f);
+		Assert.AreEqual(new OriginCuboid(10f, 20f, 40f), OriginCuboid.Interpolate(a, b, 0.5f));
+		Assert.AreEqual(new OriginCuboid(5f, 10f, 20f), OriginCuboid.Interpolate(a, b, 0f));
+		Assert.AreEqual(new OriginCuboid(15f, 30f, 60f), OriginCuboid.Interpolate(a, b, 1f));
+		Assert.AreEqual(new OriginCuboid(20f, 40f, 80f), OriginCuboid.Interpolate(a, b, 1.5f));
+		Assert.AreEqual(new OriginCuboid(0f, 0f, 0f), OriginCuboid.Interpolate(a, b, -0.5f));
 	}
 	
 	[Test]
 	public void ShouldCorrectlyCreateRandomObjects() {
 		const int NumIterations = 10_000;
-		var a = new Cuboid(5f, 10f, 20f);
-		var b = new Cuboid(15f, 30f, 60f);
+		var a = new OriginCuboid(5f, 10f, 20f);
+		var b = new OriginCuboid(15f, 30f, 60f);
 
 		for (var i = 0; i < NumIterations; ++i) {
-			var val = Cuboid.CreateNewRandom(a, b);
+			var val = OriginCuboid.CreateNewRandom(a, b);
 			Assert.GreaterOrEqual(val.Width, a.Width);
 			Assert.Less(val.Width, b.Width);
 			Assert.GreaterOrEqual(val.Height, a.Height);
@@ -215,13 +215,13 @@ class CuboidTest {
 			Assert.GreaterOrEqual(val.Depth, a.Depth);
 			Assert.Less(val.Depth, b.Depth);
 
-			val = Cuboid.CreateNewRandom();
-			Assert.GreaterOrEqual(val.Width, Cuboid.DefaultRandomMin);
-			Assert.Less(val.Width, Cuboid.DefaultRandomMax);
-			Assert.GreaterOrEqual(val.Height, Cuboid.DefaultRandomMin);
-			Assert.Less(val.Height, Cuboid.DefaultRandomMax);
-			Assert.GreaterOrEqual(val.Depth, Cuboid.DefaultRandomMin);
-			Assert.Less(val.Depth, Cuboid.DefaultRandomMax);
+			val = OriginCuboid.CreateNewRandom();
+			Assert.GreaterOrEqual(val.Width, OriginCuboid.DefaultRandomMin);
+			Assert.Less(val.Width, OriginCuboid.DefaultRandomMax);
+			Assert.GreaterOrEqual(val.Height, OriginCuboid.DefaultRandomMin);
+			Assert.Less(val.Height, OriginCuboid.DefaultRandomMax);
+			Assert.GreaterOrEqual(val.Depth, OriginCuboid.DefaultRandomMin);
+			Assert.Less(val.Depth, OriginCuboid.DefaultRandomMax);
 		}
 	}
 }

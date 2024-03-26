@@ -3,10 +3,10 @@
 
 namespace Egodystonic.TinyFFR;
 
-public readonly partial struct Cuboid : IFullyInteractableConvexShape<Cuboid> {  // TODO IIntersectable<Plane, BoundedPlane or similar>
+public readonly partial struct OriginCuboid : IFullyInteractableConvexShape<OriginCuboid> {  // TODO IIntersectable<Plane, BoundedPlane or similar>
 	internal const float DefaultRandomMin = 1f;
 	internal const float DefaultRandomMax = 3f;
-	public static readonly Cuboid UnitCube = new(1f, 1f, 1f);
+	public static readonly OriginCuboid UnitCube = new(1f, 1f, 1f);
 
 	readonly float _halfWidth;
 	readonly float _halfHeight;
@@ -70,13 +70,13 @@ public readonly partial struct Cuboid : IFullyInteractableConvexShape<Cuboid> { 
 		}
 	}
 
-	public Cuboid(float width, float height, float depth) {
+	public OriginCuboid(float width, float height, float depth) {
 		_halfWidth = width * 0.5f;
 		_halfHeight = height * 0.5f;
 		_halfDepth = depth * 0.5f;
 	}
 
-	public static Cuboid FromHalfDimensions(float halfWidth, float halfHeight, float halfDepth) {
+	public static OriginCuboid FromHalfDimensions(float halfWidth, float halfHeight, float halfDepth) {
 		return new() {
 			HalfWidth = halfWidth,
 			HalfHeight = halfHeight,
@@ -113,7 +113,7 @@ public readonly partial struct Cuboid : IFullyInteractableConvexShape<Cuboid> { 
 		};
 	}
 
-	public static Cuboid Interpolate(Cuboid start, Cuboid end, float distance) {
+	public static OriginCuboid Interpolate(OriginCuboid start, OriginCuboid end, float distance) {
 		return new(
 			Single.Lerp(start.Width, end.Width, distance),
 			Single.Lerp(start.Height, end.Height, distance),
@@ -121,14 +121,14 @@ public readonly partial struct Cuboid : IFullyInteractableConvexShape<Cuboid> { 
 		);
 	}
 
-	public static Cuboid CreateNewRandom() {
+	public static OriginCuboid CreateNewRandom() {
 		return new(
 			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax),
 			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax),
 			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax)
 		);
 	}
-	public static Cuboid CreateNewRandom(Cuboid minInclusive, Cuboid maxExclusive) {
+	public static OriginCuboid CreateNewRandom(OriginCuboid minInclusive, OriginCuboid maxExclusive) {
 		return new(
 			RandomUtils.NextSingle(minInclusive.Width, maxExclusive.Width),
 			RandomUtils.NextSingle(minInclusive.Height, maxExclusive.Height),
@@ -136,21 +136,21 @@ public readonly partial struct Cuboid : IFullyInteractableConvexShape<Cuboid> { 
 		);
 	}
 
-	public static ReadOnlySpan<float> ConvertToSpan(in Cuboid src) => MemoryMarshal.Cast<Cuboid, float>(new ReadOnlySpan<Cuboid>(in src));
-	public static Cuboid ConvertFromSpan(ReadOnlySpan<float> src) => MemoryMarshal.Cast<float, Cuboid>(src)[0];
+	public static ReadOnlySpan<float> ConvertToSpan(in OriginCuboid src) => MemoryMarshal.Cast<OriginCuboid, float>(new ReadOnlySpan<OriginCuboid>(in src));
+	public static OriginCuboid ConvertFromSpan(ReadOnlySpan<float> src) => MemoryMarshal.Cast<float, OriginCuboid>(src)[0];
 
 	public override string ToString() => ToString(null, null);
-	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(Cuboid), (nameof(Width), Width), (nameof(Height), Height), (nameof(Depth), Depth));
-	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => GeometryUtils.StandardizedTryFormat(destination, out charsWritten, format, provider, nameof(Cuboid), (nameof(Width), Width), (nameof(Height), Height), (nameof(Depth), Depth));
+	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(OriginCuboid), (nameof(Width), Width), (nameof(Height), Height), (nameof(Depth), Depth));
+	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => GeometryUtils.StandardizedTryFormat(destination, out charsWritten, format, provider, nameof(OriginCuboid), (nameof(Width), Width), (nameof(Height), Height), (nameof(Depth), Depth));
 
-	public static Cuboid Parse(string s, IFormatProvider? provider) => Parse(s.AsSpan(), provider);
-	public static bool TryParse(string? s, IFormatProvider? provider, out Cuboid result) => TryParse(s.AsSpan(), provider, out result);
+	public static OriginCuboid Parse(string s, IFormatProvider? provider) => Parse(s.AsSpan(), provider);
+	public static bool TryParse(string? s, IFormatProvider? provider, out OriginCuboid result) => TryParse(s.AsSpan(), provider, out result);
 
-	public static Cuboid Parse(ReadOnlySpan<char> s, IFormatProvider? provider) {
+	public static OriginCuboid Parse(ReadOnlySpan<char> s, IFormatProvider? provider) {
 		GeometryUtils.StandardizedParse(s, provider, out float width, out float height, out float depth);
 		return new(width, height, depth);
 	}
-	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Cuboid result) {
+	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out OriginCuboid result) {
 		result = default;
 		if (!GeometryUtils.StandardizedTryParse(s, provider, out float width, out float height, out float depth)) return false;
 		result = new(width, height, depth);
@@ -158,15 +158,15 @@ public readonly partial struct Cuboid : IFullyInteractableConvexShape<Cuboid> { 
 	}
 
 	#region Equality
-	public bool Equals(Cuboid other) => Width.Equals(other.Width) && Height.Equals(other.Height) && Depth.Equals(other.Depth);
-	public bool Equals(Cuboid other, float tolerance) {
+	public bool Equals(OriginCuboid other) => Width.Equals(other.Width) && Height.Equals(other.Height) && Depth.Equals(other.Depth);
+	public bool Equals(OriginCuboid other, float tolerance) {
 		return MathF.Abs(Width - other.Width) <= tolerance
 			&& MathF.Abs(Height - other.Height) <= tolerance
 			&& MathF.Abs(Depth - other.Depth) <= tolerance;
 	}
-	public override bool Equals(object? obj) => obj is Cuboid other && Equals(other);
+	public override bool Equals(object? obj) => obj is OriginCuboid other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(Width, Height, Depth);
-	public static bool operator ==(Cuboid left, Cuboid right) => left.Equals(right);
-	public static bool operator !=(Cuboid left, Cuboid right) => !left.Equals(right);
+	public static bool operator ==(OriginCuboid left, OriginCuboid right) => left.Equals(right);
+	public static bool operator !=(OriginCuboid left, OriginCuboid right) => !left.Equals(right);
 	#endregion
 }

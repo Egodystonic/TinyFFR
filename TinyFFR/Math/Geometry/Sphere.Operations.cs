@@ -3,14 +3,14 @@
 
 namespace Egodystonic.TinyFFR;
 
-public readonly partial struct Sphere
-	: IMultiplyOperators<Sphere, float, Sphere> {
+public readonly partial struct OriginSphere
+	: IMultiplyOperators<OriginSphere, float, OriginSphere> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Sphere operator *(Sphere sphere, float scalar) => sphere.ScaledBy(scalar);
+	public static OriginSphere operator *(OriginSphere sphere, float scalar) => sphere.ScaledBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Sphere operator *(float scalar, Sphere sphere) => sphere.ScaledBy(scalar);
+	public static OriginSphere operator *(float scalar, OriginSphere sphere) => sphere.ScaledBy(scalar);
 
-	public Sphere ScaledBy(float scalar) => new(Radius * scalar);
+	public OriginSphere ScaledBy(float scalar) => new(Radius * scalar);
 
 	public float CircleRadiusAtDistanceFromCenter(float distanceFromCenter) => CircleRadiusAtDistanceFromCenterSquared(distanceFromCenter * distanceFromCenter);
 	float CircleRadiusAtDistanceFromCenterSquared(float distanceFromCenterSquared) {

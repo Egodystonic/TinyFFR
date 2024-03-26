@@ -6,14 +6,14 @@ using System.Diagnostics.Metrics;
 
 namespace Egodystonic.TinyFFR;
 
-public readonly partial struct Cuboid
-	: IMultiplyOperators<Cuboid, float, Cuboid> {
+public readonly partial struct OriginCuboid
+	: IMultiplyOperators<OriginCuboid, float, OriginCuboid> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Cuboid operator *(Cuboid cuboid, float scalar) => cuboid.ScaledBy(scalar);
+	public static OriginCuboid operator *(OriginCuboid cuboid, float scalar) => cuboid.ScaledBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Cuboid operator *(float scalar, Cuboid cuboid) => cuboid.ScaledBy(scalar);
+	public static OriginCuboid operator *(float scalar, OriginCuboid cuboid) => cuboid.ScaledBy(scalar);
 
-	public Cuboid ScaledBy(float scalar) => FromHalfDimensions(_halfWidth * scalar, _halfHeight * scalar, _halfDepth * scalar);
+	public OriginCuboid ScaledBy(float scalar) => FromHalfDimensions(_halfWidth * scalar, _halfHeight * scalar, _halfDepth * scalar);
 
 	// TODO these GetX methods need a naming pass and this file vs Cuboid.cs? etc
 
@@ -44,11 +44,11 @@ public readonly partial struct Cuboid
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Cuboid WithWidth(float newWidth) => this with { Width = newWidth };
+	public OriginCuboid WithWidth(float newWidth) => this with { Width = newWidth };
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Cuboid WithHeight(float newHeight) => this with { Height = newHeight };
+	public OriginCuboid WithHeight(float newHeight) => this with { Height = newHeight };
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Cuboid WithDepth(float newDepth) => this with { Depth = newDepth };
+	public OriginCuboid WithDepth(float newDepth) => this with { Depth = newDepth };
 
 	public float DistanceFrom(Location location) {
 		var xDist = MathF.Max(0f, MathF.Abs(location.X) - HalfWidth);
