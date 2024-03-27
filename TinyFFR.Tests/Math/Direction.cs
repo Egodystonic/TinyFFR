@@ -40,6 +40,16 @@ partial class DirectionTest {
 			}
 		}
 
+		foreach (var intercardinal in OrientationUtils.AllIntercardinals) {
+			Assert.Contains(intercardinal.ToDirection(), Direction.AllIntercardinals.ToArray());
+		}
+		Assert.AreEqual(OrientationUtils.AllIntercardinals.Length, Direction.AllIntercardinals.Length);
+		for (var i = 0; i < Direction.AllIntercardinals.Length; ++i) {
+			for (var j = i + 1; j < Direction.AllIntercardinals.Length; ++j) {
+				Assert.AreNotEqual(Direction.AllIntercardinals[i], Direction.AllIntercardinals[j]);
+			}
+		}
+
 		foreach (var orientation in OrientationUtils.All3DOrientations) {
 			Assert.Contains(orientation.ToDirection(), Direction.AllOrientations.ToArray());
 		}

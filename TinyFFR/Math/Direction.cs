@@ -21,6 +21,12 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 		new(1, 0, 0),   new(0, 1, 0),   new(0, 0, 1),
 		new(-1, 0, 0),  new(0, -1, 0),  new(0, 0, -1),
 	};
+	static readonly Direction[] _allIntercardinals = {
+		new(1, 1, 0),   new(1, 0, 1),   new(0, 1, 1),
+		new(-1, -1, 0), new(-1, 0, -1), new(0, -1, -1),
+		new(-1, 1, 0),  new(-1, 0, 1),	new(0, -1, 1),
+		new(1, -1, 0),  new(1, 0, -1),	new(0, 1, -1),
+	};
 	static readonly Direction[] _allDiagonals = {
 		new(-1, 1, 1),  new(1, -1, 1),  new(1, 1, -1),
 		new(1, -1, -1), new(-1, 1, -1), new(-1, -1, 1),
@@ -48,6 +54,7 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	};
 
 	public static ReadOnlySpan<Direction> AllCardinals => _allCardinals;
+	public static ReadOnlySpan<Direction> AllIntercardinals => _allIntercardinals;
 	public static ReadOnlySpan<Direction> AllDiagonals => _allDiagonals;
 	public static ReadOnlySpan<Direction> AllOrientations => _allOrientations;
 

@@ -37,10 +37,10 @@ public readonly partial struct Ray : ILine<Ray, Ray>, IDescriptiveStringProvider
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ReadOnlySpan<float> ConvertToSpan(in Ray src) => MemoryMarshal.Cast<Ray, float>(new ReadOnlySpan<Ray>(in src));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Ray ConvertFromSpan(ReadOnlySpan<float> src) => new(Location.ConvertFromSpan(src), Direction.ConvertFromSpan(src[3..]));
+	public static Ray ConvertFromSpan(ReadOnlySpan<float> src) => new(Location.ConvertFromSpan(src), Direction.ConvertFromSpan(src[4..]));
 
 	public override string ToString() => ToString(null, null);
-	public string ToStringDescriptive() => $"{nameof(Ray)}{GeometryUtils.ParameterStartToken}{nameof(StartPoint)}{GeometryUtils.ParameterKeyValueSeparatorToken}{_startPoint}{GeometryUtils.ParameterKeyValueSeparatorToken}{nameof(Direction)}{_direction.ToStringDescriptive()}{GeometryUtils.ParameterEndToken}";
+	public string ToStringDescriptive() => $"{nameof(Ray)}{GeometryUtils.ParameterStartToken}{nameof(StartPoint)}{GeometryUtils.ParameterKeyValueSeparatorToken}{_startPoint}{GeometryUtils.ParameterSeparatorToken}{nameof(Direction)}{GeometryUtils.ParameterKeyValueSeparatorToken}{_direction.ToStringDescriptive()}{GeometryUtils.ParameterEndToken}";
 	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(Ray), (nameof(StartPoint), _startPoint), (nameof(Direction), _direction));
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => GeometryUtils.StandardizedTryFormat(destination, out charsWritten, format, provider, nameof(Ray), (nameof(StartPoint), _startPoint), (nameof(Direction), _direction));
 

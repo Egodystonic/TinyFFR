@@ -139,6 +139,10 @@ partial struct Direction :
 		GetNearestOrientation(AllCardinals, out var o, out direction);
 		orientation = (CardinalOrientation3D) o;
 	}
+	public void GetNearestOrientationIntercardinal(out IntercardinalOrientation3D orientation, out Direction direction) {
+		GetNearestOrientation(AllIntercardinals, out var o, out direction);
+		orientation = (IntercardinalOrientation3D) o;
+	}
 	public void GetNearestOrientationDiagonal(out DiagonalOrientation3D orientation, out Direction direction) {
 		GetNearestOrientation(AllDiagonals, out var o, out direction);
 		orientation = (DiagonalOrientation3D) o;

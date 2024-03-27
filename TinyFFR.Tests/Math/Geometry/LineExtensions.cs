@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using NSubstitute;
+using NSubstitute.Core;
 
 namespace Egodystonic.TinyFFR;
 
@@ -17,7 +18,7 @@ class LineExtensionsTest {
 	// Some of these are arguably more tests of GeometryExtensions, but improperly implemented LineExtension methods can
 	// interfere with those (and those are much easier to make compile correctly), so it's really actually a test of LineExtensions.
 	[Test]
-	public void ShouldBeAbleToCompileAllOfTheFollowing() {
+	public void ShouldBeAbleToCompileAllExamples() {
 		static void Test<TLine, TLine2>(TLine line, TLine2 line2) where TLine : ILine where TLine2 : ILine {
 			line.DistanceFrom(new OriginSphere());
 			new Plane().IntersectionWith(line);
@@ -108,10 +109,122 @@ class LineExtensionsTest {
 
 	[Test]
 	public void ShouldCorrectlyImplementMirrorMethods() {
-		var genericLine = Substitute.For<ILine>();
+		void AssertGenericMethodInvoked(object sub, string methodName, object genericLine) {
+			Assert.AreEqual(
+				genericLine,
+				sub.ReceivedCalls().Single(c => c.GetMethodInfo().Name == methodName && c.GetMethodInfo().IsGenericMethod).GetArguments()[0]
+			);
+			sub.ClearReceivedCalls();
+		}
+
+		void ExecuteGenericLineTests<TLine>(TLine genericLine) where TLine : ILine {
+			var lineSurfaceDistanceMeasurable = Substitute.For<ILineSurfaceDistanceMeasurable>();
+			_ = genericLine.DistanceFrom(lineSurfaceDistanceMeasurable);
+			AssertGenericMethodInvoked(lineSurfaceDistanceMeasurable, nameof(ILineDistanceMeasurable.DistanceFrom), genericLine);
+			_ = genericLine.DistanceFromSurfaceOf(lineSurfaceDistanceMeasurable);
+			AssertGenericMethodInvoked(lineSurfaceDistanceMeasurable, nameof(ILineSurfaceDistanceMeasurable.SurfaceDistanceFrom), genericLine);
+
+			var lineClosestSurfacePointDiscoverable = Substitute.For<ILineClosestSurfacePointDiscoverable>();
+			_ = genericLine.ClosestPointOn(lineClosestSurfacePointDiscoverable);
+			AssertGenericMethodInvoked(lineClosestSurfacePointDiscoverable, nameof(ILineClosestPointDiscoverable.ClosestPointTo), genericLine);
+			_ = genericLine.ClosestPointTo(lineClosestSurfacePointDiscoverable);
+			AssertGenericMethodInvoked(lineClosestSurfacePointDiscoverable, nameof(ILineClosestPointDiscoverable.ClosestPointOn), genericLine);
+			_ = genericLine.ClosestPointOnSurfaceOf(lineClosestSurfacePointDiscoverable);
+			AssertGenericMethodInvoked(lineClosestSurfacePointDiscoverable, nameof(ILineClosestSurfacePointDiscoverable.ClosestPointOnSurfaceTo), genericLine);
+			_ = genericLine.ClosestPointToSurfaceOf(lineClosestSurfacePointDiscoverable);
+			AssertGenericMethodInvoked(lineClosestSurfacePointDiscoverable, nameof(ILineClosestSurfacePointDiscoverable.ClosestPointToSurfaceOn), genericLine);
+		}
+
+		ExecuteGenericLineTests(new Line(Location.Origin, Direction.Forward));
 
 		var lineSurfaceDistanceMeasurable = Substitute.For<ILineSurfaceDistanceMeasurable>();
-		_ = genericLine.DistanceFrom(lineSurfaceDistanceMeasurable);
-		_ = lineSurfaceDistanceMeasurable.Received(1).DistanceFrom(
+		var lineClosestSurfacePointDiscoverable = Substitute.For<ILineClosestSurfacePointDiscoverable>();
+		var line = new Line(Location.Origin, Direction.Forward);
+		var ray = new Ray(Location.Origin, Direction.Backward);
+		var boundedLine = new BoundedLine(Location.Origin, Direction.Forward * 3f);
+
+		_ = line.DistanceFrom(lineSurfaceDistanceMeasurable);
+		_ = lineSurfaceDistanceMeasurable.Received(1).DistanceFrom(line);
+		_ = lineSurfaceDistanceMeasurable.Received(0).SurfaceDistanceFrom(line);
+		_ = line.DistanceFromSurfaceOf(lineSurfaceDistanceMeasurable);
+		_ = lineSurfaceDistanceMeasurable.Received(1).DistanceFrom(line);
+		_ = lineSurfaceDistanceMeasurable.Received(1).SurfaceDistanceFrom(line);
+
+		_ = ray.DistanceFrom(lineSurfaceDistanceMeasurable);
+		_ = lineSurfaceDistanceMeasurable.Received(1).DistanceFrom(ray);
+		_ = lineSurfaceDistanceMeasurable.Received(0).SurfaceDistanceFrom(ray);
+		_ = ray.DistanceFromSurfaceOf(lineSurfaceDistanceMeasurable);
+		_ = lineSurfaceDistanceMeasurable.Received(1).DistanceFrom(ray);
+		_ = lineSurfaceDistanceMeasurable.Received(1).SurfaceDistanceFrom(ray);
+
+		_ = boundedLine.DistanceFrom(lineSurfaceDistanceMeasurable);
+		_ = lineSurfaceDistanceMeasurable.Received(1).DistanceFrom(boundedLine);
+		_ = lineSurfaceDistanceMeasurable.Received(0).SurfaceDistanceFrom(boundedLine);
+		_ = boundedLine.DistanceFromSurfaceOf(lineSurfaceDistanceMeasurable);
+		_ = lineSurfaceDistanceMeasurable.Received(1).DistanceFrom(boundedLine);
+		_ = lineSurfaceDistanceMeasurable.Received(1).SurfaceDistanceFrom(boundedLine);
+
+		_ = line.ClosestPointOn(lineClosestSurfacePointDiscoverable);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointTo(line);
+		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointOn(line);
+		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointOnSurfaceTo(line);
+		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointToSurfaceOn(line);
+		_ = line.ClosestPointTo(lineClosestSurfacePointDiscoverable);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointTo(line);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOn(line);
+		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointOnSurfaceTo(line);
+		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointToSurfaceOn(line);
+		_ = line.ClosestPointOnSurfaceOf(lineClosestSurfacePointDiscoverable);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointTo(line);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOn(line);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOnSurfaceTo(line);
+		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointToSurfaceOn(line);
+		_ = line.ClosestPointToSurfaceOf(lineClosestSurfacePointDiscoverable);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointTo(line);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOn(line);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOnSurfaceTo(line);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointToSurfaceOn(line);
+
+		_ = ray.ClosestPointOn(lineClosestSurfacePointDiscoverable);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointTo(ray);
+		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointOn(ray);
+		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointOnSurfaceTo(ray);
+		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointToSurfaceOn(ray);
+		_ = ray.ClosestPointTo(lineClosestSurfacePointDiscoverable);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointTo(ray);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOn(ray);
+		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointOnSurfaceTo(ray);
+		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointToSurfaceOn(ray);
+		_ = ray.ClosestPointOnSurfaceOf(lineClosestSurfacePointDiscoverable);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointTo(ray);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOn(ray);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOnSurfaceTo(ray);
+		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointToSurfaceOn(ray);
+		_ = ray.ClosestPointToSurfaceOf(lineClosestSurfacePointDiscoverable);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointTo(ray);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOn(ray);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOnSurfaceTo(ray);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointToSurfaceOn(ray);
+
+		_ = boundedLine.ClosestPointOn(lineClosestSurfacePointDiscoverable);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointTo(boundedLine);
+		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointOn(boundedLine);
+		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointOnSurfaceTo(boundedLine);
+		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointToSurfaceOn(boundedLine);
+		_ = boundedLine.ClosestPointTo(lineClosestSurfacePointDiscoverable);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointTo(boundedLine);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOn(boundedLine);
+		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointOnSurfaceTo(boundedLine);
+		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointToSurfaceOn(boundedLine);
+		_ = boundedLine.ClosestPointOnSurfaceOf(lineClosestSurfacePointDiscoverable);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointTo(boundedLine);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOn(boundedLine);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOnSurfaceTo(boundedLine);
+		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointToSurfaceOn(boundedLine);
+		_ = boundedLine.ClosestPointToSurfaceOf(lineClosestSurfacePointDiscoverable);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointTo(boundedLine);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOn(boundedLine);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOnSurfaceTo(boundedLine);
+		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointToSurfaceOn(boundedLine);
 	}
 }

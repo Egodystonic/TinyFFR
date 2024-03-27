@@ -9,9 +9,9 @@ namespace Egodystonic.TinyFFR;
 public readonly partial struct Line :
 	IAdditionOperators<Line, Vect, Line>,
 	IMultiplyOperators<Line, Rotation, Line> {
-	public Ray ToRay(float signedDistanceFromPointOnLine, bool flipDirection) => new(UnboundedLocationAtDistance(signedDistanceFromPointOnLine), flipDirection ? _direction.Reversed : _direction);
-	public BoundedLine ToBoundedLine(float startPointSignedDistanceFromPointOnLine, float endPointSignedDistanceFromPointOnLine) {
-		return new(UnboundedLocationAtDistance(startPointSignedDistanceFromPointOnLine), UnboundedLocationAtDistance(endPointSignedDistanceFromPointOnLine));
+	public Ray ToRay(float signedDistanceAlongLine, bool flipDirection) => new(UnboundedLocationAtDistance(signedDistanceAlongLine), flipDirection ? _direction.Reversed : _direction);
+	public BoundedLine ToBoundedLine(float startSignedDistanceAlongLine, float endSignedDistanceAlongLine) {
+		return new(UnboundedLocationAtDistance(startSignedDistanceAlongLine), UnboundedLocationAtDistance(endSignedDistanceAlongLine));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -32,12 +32,14 @@ public readonly partial struct Line :
 	
 	
 	public static Line Interpolate(Line start, Line end, float distance) {
+		var startPoint = start.ClosestPointTo(end);
+		var endPoint = end.ClosestPointTo(start);
 		return new(
-			Location.Interpolate(start.PointOnLine, end.PointOnLine, distance),
+			Location.Interpolate(startPoint, endPoint, distance),
 			Direction.Interpolate(start._direction, end._direction, distance)
 		);
 	}
-	public static Rotation CreateInterpolationPrecomputation(Line start, Line end) {
+	public static Rotation CreateInterpolationPrecomputation(Line start, Line end) { // TODO add startPoint/endPoint to precomputation object
 		return Direction.CreateInterpolationPrecomputation(start._direction, end._direction);
 	}
 	public static Line InterpolateUsingPrecomputation(Line start, Line end, Rotation precomputation, float distance) {

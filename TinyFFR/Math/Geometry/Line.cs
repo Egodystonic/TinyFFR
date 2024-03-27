@@ -43,10 +43,10 @@ public readonly partial struct Line : ILine<Line, Ray>, IDescriptiveStringProvid
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ReadOnlySpan<float> ConvertToSpan(in Line src) => MemoryMarshal.Cast<Line, float>(new ReadOnlySpan<Line>(in src));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Line ConvertFromSpan(ReadOnlySpan<float> src) => new(Location.ConvertFromSpan(src), Direction.ConvertFromSpan(src[3..]));
+	public static Line ConvertFromSpan(ReadOnlySpan<float> src) => new(Location.ConvertFromSpan(src), Direction.ConvertFromSpan(src[4..]));
 	
 	public override string ToString() => ToString(null, null);
-	public string ToStringDescriptive() => $"{nameof(Line)}{GeometryUtils.ParameterStartToken}{nameof(PointOnLine)}{GeometryUtils.ParameterKeyValueSeparatorToken}{PointOnLine}{GeometryUtils.ParameterKeyValueSeparatorToken}{nameof(Direction)}{_direction.ToStringDescriptive()}{GeometryUtils.ParameterEndToken}";
+	public string ToStringDescriptive() => $"{nameof(Line)}{GeometryUtils.ParameterStartToken}{nameof(PointOnLine)}{GeometryUtils.ParameterKeyValueSeparatorToken}{PointOnLine}{GeometryUtils.ParameterSeparatorToken}{nameof(ClosestPointToOrigin)}{GeometryUtils.ParameterKeyValueSeparatorToken}{ClosestPointToOrigin()}{GeometryUtils.ParameterSeparatorToken}{nameof(Direction)}{GeometryUtils.ParameterKeyValueSeparatorToken}{_direction.ToStringDescriptive()}{GeometryUtils.ParameterEndToken}";
 	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(Line), (nameof(PointOnLine), PointOnLine), (nameof(Direction), _direction));
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => GeometryUtils.StandardizedTryFormat(destination, out charsWritten, format, provider, nameof(Line), (nameof(PointOnLine), PointOnLine), (nameof(Direction), _direction));
 	
@@ -63,10 +63,13 @@ public readonly partial struct Line : ILine<Line, Ray>, IDescriptiveStringProvid
 		result = new(closestPointToOrigin, direction);
 		return true;
 	}
-	
+
 	#region Equality
-	public bool Equals(Line other) => PointOnLine.Equals(other.PointOnLine) && _direction.Equals(other._direction);
-	public bool Equals(Line other, float tolerance) => PointOnLine.Equals(other.PointOnLine, tolerance) && _direction.Equals(other.Direction, tolerance);
+	public bool Equals(Line other) => DistanceFrom(other) == 0f && (_direction.Equals(other.Direction) || _direction.Equals(-other.Direction));
+	public bool Equals(Line other, float tolerance) => DistanceFrom(other) <= tolerance && (_direction.Equals(other.Direction, tolerance) || _direction.Equals(-other.Direction, tolerance));
+	public bool EqualsWithinDistanceAndAngle(Line other, float distance, Angle angle) {
+		return DistanceFrom(other) <= distance && (Direction.EqualsWithinAngle(other.Direction, angle) || Direction.EqualsWithinAngle(-other.Direction, angle));
+	}
 	public override bool Equals(object? obj) => obj is Line other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(PointOnLine, _direction);
 	public static bool operator ==(Line left, Line right) => left.Equals(right);

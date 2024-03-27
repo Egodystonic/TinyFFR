@@ -60,7 +60,8 @@ public interface IClosestSurfacePointDiscoverable<in T> : IClosestPointDiscovera
 	Also, on types that I implement in this library that implement these interfaces I re-declare the generic method as public so
 	the end-user shouldn't really know or care about any of this.
 
-	Or maybe we'll get HKT, traits, or macros proper in C#.
+	Or maybe we'll get HKT, traits, or macros proper in C#. Or maybe I did this all in a completely dumb way, I can't see the wood
+	for the trees, and someone will look at this one day and be like "why did this dumb fucker do this like this" and fix it all.
 */
 public interface ILineDistanceMeasurable : IDistanceMeasurable<Line>, IDistanceMeasurable<Ray>, IDistanceMeasurable<BoundedLine> {
 	protected float DistanceFrom<TLine>(TLine line) where TLine : ILine;
@@ -73,7 +74,7 @@ public interface ILineDistanceMeasurable : IDistanceMeasurable<Line>, IDistanceM
 	float IDistanceMeasurable<BoundedLine>.DistanceFrom(BoundedLine line) => DistanceFrom(line);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float GetDistanceFromGenericLine<T, TLine>(T @this, TLine line) where TLine : ILine where T : ILineDistanceMeasurable => @this.DistanceFrom(line);
+	public static float GetDistanceFromGenericLine<T, TLine>(T lineDistanceMeasurable, TLine line) where TLine : ILine where T : ILineDistanceMeasurable => lineDistanceMeasurable.DistanceFrom(line);
 }
 public interface ILineSurfaceDistanceMeasurable : ILineDistanceMeasurable, ISurfaceDistanceMeasurable<Line>, ISurfaceDistanceMeasurable<Ray>, ISurfaceDistanceMeasurable<BoundedLine> {
 	protected float SurfaceDistanceFrom<TLine>(TLine line) where TLine : ILine;
@@ -86,7 +87,7 @@ public interface ILineSurfaceDistanceMeasurable : ILineDistanceMeasurable, ISurf
 	float ISurfaceDistanceMeasurable<BoundedLine>.SurfaceDistanceFrom(BoundedLine line) => SurfaceDistanceFrom(line);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static float InvokeProtectedSurfaceDistanceFrom<T, TLine>(T @this, TLine line) where TLine : ILine where T : ILineSurfaceDistanceMeasurable => @this.SurfaceDistanceFrom(line);
+	public static float GetSurfaceDistanceFromGenericLine<T, TLine>(T lineSurfaceDistanceMeasurable, TLine line) where TLine : ILine where T : ILineSurfaceDistanceMeasurable => lineSurfaceDistanceMeasurable.SurfaceDistanceFrom(line);
 }
 public interface ILineClosestPointDiscoverable : IClosestPointDiscoverable<Line>, IClosestPointDiscoverable<Ray>, IClosestPointDiscoverable<BoundedLine> {
 	protected Location ClosestPointTo<TLine>(TLine line) where TLine : ILine;
@@ -106,9 +107,9 @@ public interface ILineClosestPointDiscoverable : IClosestPointDiscoverable<Line>
 	Location IClosestExogenousPointDiscoverable<BoundedLine>.ClosestPointOn(BoundedLine line) => ClosestPointOn(line);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static Location InvokeProtectedClosestPointTo<T, TLine>(T @this, TLine line) where TLine : ILine where T : ILineClosestPointDiscoverable => @this.ClosestPointTo(line);
+	public static Location GetClosestPointToGenericLine<T, TLine>(T lineClosestPointDiscoverable, TLine line) where TLine : ILine where T : ILineClosestPointDiscoverable => lineClosestPointDiscoverable.ClosestPointTo(line);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static Location InvokeProtectedClosestPointOn<T, TLine>(T @this, TLine line) where TLine : ILine where T : ILineClosestPointDiscoverable => @this.ClosestPointOn(line);
+	public static Location GetClosestPointOnGenericLine<T, TLine>(T lineClosestPointDiscoverable, TLine line) where TLine : ILine where T : ILineClosestPointDiscoverable => lineClosestPointDiscoverable.ClosestPointOn(line);
 }
 public interface ILineClosestSurfacePointDiscoverable : ILineClosestPointDiscoverable, IClosestSurfacePointDiscoverable<Line>, IClosestSurfacePointDiscoverable<Ray>, IClosestSurfacePointDiscoverable<BoundedLine> {
 	protected Location ClosestPointOnSurfaceTo<TLine>(TLine line) where TLine : ILine;
@@ -128,9 +129,9 @@ public interface ILineClosestSurfacePointDiscoverable : ILineClosestPointDiscove
 	Location IClosestExogenousSurfacePointDiscoverable<BoundedLine>.ClosestPointToSurfaceOn(BoundedLine line) => ClosestPointToSurfaceOn(line);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static Location InvokeProtectedClosestPointOnSurfaceTo<T, TLine>(T @this, TLine line) where TLine : ILine where T : ILineClosestSurfacePointDiscoverable => @this.ClosestPointOnSurfaceTo(line);
+	public static Location GetClosestPointOnSurfaceToGenericLine<T, TLine>(T lineClosestSurfacePointDiscoverable, TLine line) where TLine : ILine where T : ILineClosestSurfacePointDiscoverable => lineClosestSurfacePointDiscoverable.ClosestPointOnSurfaceTo(line);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static Location InvokeProtectedClosestPointToSurfaceOn<T, TLine>(T @this, TLine line) where TLine : ILine where T : ILineClosestSurfacePointDiscoverable => @this.ClosestPointToSurfaceOn(line);
+	public static Location GetClosestPointToSurfaceOnGenericLine<T, TLine>(T lineClosestSurfacePointDiscoverable, TLine line) where TLine : ILine where T : ILineClosestSurfacePointDiscoverable => lineClosestSurfacePointDiscoverable.ClosestPointToSurfaceOn(line);
 }
 public interface ILineIntersectable<TIntersection> : IIntersectable<Line, TIntersection>, IIntersectable<Ray, TIntersection>, IIntersectable<BoundedLine, TIntersection> where TIntersection : struct {
 	protected TIntersection? IntersectionWith<TLine>(TLine line) where TLine : ILine;
@@ -143,7 +144,7 @@ public interface ILineIntersectable<TIntersection> : IIntersectable<Line, TInter
 	TIntersection? IIntersectable<BoundedLine, TIntersection>.IntersectionWith(BoundedLine line) => IntersectionWith(line);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static TIntersection? InvokeProtectedIntersectionWith<T, TLine>(T @this, TLine line) where TLine : ILine where T : ILineIntersectable<TIntersection> => @this.IntersectionWith(line);
+	public static TIntersection? GetIntersectionWithGenericLine<T, TLine>(T lineIntersectable, TLine line) where TLine : ILine where T : ILineIntersectable<TIntersection> => lineIntersectable.IntersectionWith(line);
 }
 #endregion
 

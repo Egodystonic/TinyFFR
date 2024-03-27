@@ -4,6 +4,8 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Egodystonic.TinyFFR.Factory;
+using NUnit.Framework.Constraints;
+using NUnit.Framework.Internal;
 
 namespace Egodystonic.TinyFFR;
 
@@ -13,6 +15,7 @@ sealed class GlobalSetup {
 
 	[OneTimeSetUp]
 	public void TestSetup() {
+		TestExecutionContext.CurrentContext.AddFormatter(_ => obj => (obj as IDescriptiveStringProvider)?.ToStringDescriptive() ?? obj.ToString()!);
 		NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
 			typeof(TffrFactory).Assembly,
 			(libName, assy, searchPath) => {

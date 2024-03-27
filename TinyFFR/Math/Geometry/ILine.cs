@@ -237,25 +237,25 @@ public static class LineExtensions {
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float DistanceFrom<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineDistanceMeasurable => geometricPrimitive.DistanceFrom(@this);
+	public static float DistanceFrom<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineDistanceMeasurable => ILineDistanceMeasurable.GetDistanceFromGenericLine(geometricPrimitive, @this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float DistanceFromSurfaceOf<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineSurfaceDistanceMeasurable => ILineSurfaceDistanceMeasurable.InvokeProtectedSurfaceDistanceFrom(geometricPrimitive, @this);
+	public static float DistanceFromSurfaceOf<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineSurfaceDistanceMeasurable => ILineSurfaceDistanceMeasurable.GetSurfaceDistanceFromGenericLine(geometricPrimitive, @this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointOn<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineClosestPointDiscoverable => ILineClosestPointDiscoverable.InvokeProtectedClosestPointTo(geometricPrimitive, @this);
+	public static Location ClosestPointOn<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineClosestPointDiscoverable => ILineClosestPointDiscoverable.GetClosestPointToGenericLine(geometricPrimitive, @this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointTo<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineClosestPointDiscoverable => ILineClosestPointDiscoverable.InvokeProtectedClosestPointOn(geometricPrimitive, @this);
+	public static Location ClosestPointTo<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineClosestPointDiscoverable => ILineClosestPointDiscoverable.GetClosestPointOnGenericLine(geometricPrimitive, @this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointOnSurfaceOf<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineClosestSurfacePointDiscoverable => ILineClosestSurfacePointDiscoverable.InvokeProtectedClosestPointOnSurfaceTo(geometricPrimitive, @this);
+	public static Location ClosestPointOnSurfaceOf<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineClosestSurfacePointDiscoverable => ILineClosestSurfacePointDiscoverable.GetClosestPointOnSurfaceToGenericLine(geometricPrimitive, @this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ClosestPointToSurfaceOf<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineClosestSurfacePointDiscoverable => ILineClosestSurfacePointDiscoverable.InvokeProtectedClosestPointToSurfaceOn(geometricPrimitive, @this);
+	public static Location ClosestPointToSurfaceOf<TLine, T>(this TLine @this, T geometricPrimitive) where TLine : ILine where T : ILineClosestSurfacePointDiscoverable => ILineClosestSurfacePointDiscoverable.GetClosestPointToSurfaceOnGenericLine(geometricPrimitive, @this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ConvexShapeLineIntersection? IntersectionWith<TLine, T>(this TLine @this, T geometricPrimitive) where T : ILineIntersectable<ConvexShapeLineIntersection> where TLine : ILine => ILineIntersectable<ConvexShapeLineIntersection>.InvokeProtectedIntersectionWith(geometricPrimitive, @this);
+	public static ConvexShapeLineIntersection? IntersectionWith<TLine, T>(this TLine @this, T geometricPrimitive) where T : ILineIntersectable<ConvexShapeLineIntersection> where TLine : ILine => ILineIntersectable<ConvexShapeLineIntersection>.GetIntersectionWithGenericLine(geometricPrimitive, @this);
 
 
 

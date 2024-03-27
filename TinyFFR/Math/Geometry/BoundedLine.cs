@@ -4,7 +4,7 @@
 namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = sizeof(float) * 4 * 2)]
-public readonly partial struct BoundedLine : ILine<BoundedLine, BoundedLine> {
+public readonly partial struct BoundedLine : ILine<BoundedLine, BoundedLine>, IDescriptiveStringProvider {
 	readonly Location _startPoint;
 	readonly Vect _vect;
 
@@ -62,9 +62,17 @@ public readonly partial struct BoundedLine : ILine<BoundedLine, BoundedLine> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ReadOnlySpan<float> ConvertToSpan(in BoundedLine src) => MemoryMarshal.Cast<BoundedLine, float>(new ReadOnlySpan<BoundedLine>(in src));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static BoundedLine ConvertFromSpan(ReadOnlySpan<float> src) => new(Location.ConvertFromSpan(src), Vect.ConvertFromSpan(src[3..]));
+	public static BoundedLine ConvertFromSpan(ReadOnlySpan<float> src) => new(Location.ConvertFromSpan(src), Vect.ConvertFromSpan(src[4..]));
 
 	public override string ToString() => ToString(null, null);
+	public string ToStringDescriptive() {
+		return $"{nameof(BoundedLine)}{GeometryUtils.ParameterStartToken}" +
+			   $"{nameof(StartPoint)}{GeometryUtils.ParameterKeyValueSeparatorToken}{StartPoint}{GeometryUtils.ParameterSeparatorToken}" +
+			   $"{nameof(EndPoint)}{GeometryUtils.ParameterKeyValueSeparatorToken}{EndPoint}{GeometryUtils.ParameterSeparatorToken}" +
+			   $"{nameof(Length)}{GeometryUtils.ParameterKeyValueSeparatorToken}{Length:N2}{GeometryUtils.ParameterSeparatorToken}" +
+			   $"{nameof(Direction)}{GeometryUtils.ParameterKeyValueSeparatorToken}{Direction.ToStringDescriptive()}" +
+			   $"{GeometryUtils.ParameterEndToken}";
+	}
 	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(BoundedLine), (nameof(StartPoint), _startPoint), (nameof(EndPoint), EndPoint));
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => GeometryUtils.StandardizedTryFormat(destination, out charsWritten, format, provider, nameof(BoundedLine), (nameof(StartPoint), _startPoint), (nameof(EndPoint), EndPoint));
 
