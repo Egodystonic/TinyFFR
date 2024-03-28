@@ -9,9 +9,9 @@ namespace Egodystonic.TinyFFR;
 public readonly partial struct Line :
 	IAdditionOperators<Line, Vect, Line>,
 	IMultiplyOperators<Line, Rotation, Line> {
-	public Ray ToRay(float signedDistanceAlongLine, bool flipDirection) => new(UnboundedLocationAtDistance(signedDistanceAlongLine), flipDirection ? _direction.Reversed : _direction);
+	public Ray ToRay(float signedDistanceAlongLine, bool flipDirection) => new(LocationAtDistance(signedDistanceAlongLine), flipDirection ? _direction.Reversed : _direction);
 	public BoundedLine ToBoundedLine(float startSignedDistanceAlongLine, float endSignedDistanceAlongLine) {
-		return new(UnboundedLocationAtDistance(startSignedDistanceAlongLine), UnboundedLocationAtDistance(endSignedDistanceAlongLine));
+		return new(LocationAtDistance(startSignedDistanceAlongLine), LocationAtDistance(endSignedDistanceAlongLine));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -68,29 +68,61 @@ public readonly partial struct Line :
 	public bool Contains(Location location) => Contains(location, ILine.DefaultLineThickness);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(Location location, float lineThickness) => DistanceFrom(location) <= lineThickness;
+
+	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine {
+		return line switch {
+			Line l => ClosestPointTo(l),
+			Ray r => ClosestPointTo(r),
+			BoundedLine b => ClosestPointTo(b),
+			_ => line.ClosestPointOn(this) // Possible stack overflow if the other line doesn't implement both sides (To/On), but this allows users to add their own line implementations
+		};
+	}
+	public Location ClosestPointTo(Line line) {
+		var intersectionDistance = ILine.CalculateUnboundedIntersectionDistanceOnThisLine(this, line);
+		return LocationAtDistance(intersectionDistance ?? 0f);
+	}
+	public Location ClosestPointTo(Ray ray) {
+		var intersectionDistances = ILine.CalculateUnboundedIntersectionDistancesOnBothLines(this, ray);
+		if (intersectionDistances == null || !ray.DistanceIsWithinLineBounds(intersectionDistances.Value.OtherDistance)) return ClosestPointTo(ray.StartPoint);
+		else return LocationAtDistance(intersectionDistances.Value.ThisDistance);
+	}
+	public Location ClosestPointTo(BoundedLine boundedLine) {
+		var intersectionDistances = ILine.CalculateUnboundedIntersectionDistancesOnBothLines(this, boundedLine);
+		if (intersectionDistances == null || intersectionDistances.Value.OtherDistance < 0f) return ClosestPointTo(boundedLine.StartPoint);
+		else if (!boundedLine.DistanceIsWithinLineBounds(intersectionDistances.Value.OtherDistance)) return ClosestPointTo(boundedLine.EndPoint);
+		else return LocationAtDistance(intersectionDistances.Value.ThisDistance);
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => ILine.CalculateClosestLocationToOtherLine(this, line);
+	public Location ClosestPointOn<TLine>(TLine line) where TLine : ILine => line.ClosestPointTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointOn<TLine>(TLine line) where TLine : ILine => ILine.CalculateClosestLocationToOtherLine(line, this);
+	public Location ClosestPointOn(Line line) => line.ClosestPointTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => DistanceFrom(ClosestPointTo(line));
+	public Location ClosestPointOn(Ray ray) => ray.ClosestPointTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(BoundedLine boundedLine) => boundedLine.ClosestPointTo(this);
+
+	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => DistanceFrom(ClosestPointOn(line));
+	public float DistanceFrom(Line line) => DistanceFrom(ClosestPointOn(line));
+	public float DistanceFrom(Ray ray) => DistanceFrom(ClosestPointOn(ray));
+	public float DistanceFrom(BoundedLine boundedLine) => DistanceFrom(ClosestPointOn(boundedLine));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Location? ILineIntersectable<Location>.IntersectionWith<TLine>(TLine line) => IntersectionWith(line, ILine.DefaultLineThickness);
 	public Location? IntersectionWith<TLine>(TLine line, float lineThickness = ILine.DefaultLineThickness) where TLine : ILine {
-		var closestPointOnLine = line.ClosestPointTo(this);
+		var closestPointOnLine = ClosestPointOn(line);
 		return DistanceFrom(closestPointOnLine) <= lineThickness ? closestPointOnLine : null;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	Location LocationAtDistance(float distance) => UnboundedLocationAtDistance(distance);
+	public Location LocationAtDistance(float signedDistanceFromStart) => _pointOnLine + _direction * signedDistanceFromStart;
 
-	// These are implemented explicitly & privately because an unbounded line isn't really meant to have a "distance" or a "start point" etc.
-	Location ILine.BoundedLocationAtDistance(float distanceFromStart) => BoundedLocationAtDistance(distanceFromStart);
-	Location ILine.UnboundedLocationAtDistance(float distanceFromStart) => UnboundedLocationAtDistance(distanceFromStart);
-	Location? ILine.LocationAtDistanceOrNull(float distanceFromStart) => UnboundedLocationAtDistance(distanceFromStart);
-	Location BoundedLocationAtDistance(float distanceFromStart) => UnboundedLocationAtDistance(distanceFromStart);
-	Location UnboundedLocationAtDistance(float distanceFromStart) => _pointOnLine + _direction * distanceFromStart;
+	// These are implemented explicitly because they're all basically the same thing or useless for an unbounded line.
+	bool ILine.DistanceIsWithinLineBounds(float signedDistanceFromStart) => true;
+	float ILine.BindDistance(float signedDistanceFromStart) => signedDistanceFromStart;
+	Location ILine.BoundedLocationAtDistance(float signedDistanceFromStart) => LocationAtDistance(signedDistanceFromStart);
+	Location ILine.UnboundedLocationAtDistance(float signedDistanceFromStart) => LocationAtDistance(signedDistanceFromStart);
+	Location? ILine.LocationAtDistanceOrNull(float signedDistanceFromStart) => LocationAtDistance(signedDistanceFromStart);
 
 	public Ray? ReflectedBy(Plane plane) {
 		var intersectionPoint = IntersectionWith(plane);
@@ -103,7 +135,7 @@ public readonly partial struct Line :
 		if (similarityToNormal == 0f) return null; // Parallel with plane -- either infinite or zero answers. Return null either way
 
 		var distance = (plane.ClosestPointToOrigin - PointOnLine).LengthWhenProjectedOnTo(plane.Normal) / similarityToNormal;
-		return UnboundedLocationAtDistance(distance);
+		return LocationAtDistance(distance);
 	}
 
 	public float SignedDistanceFrom(Plane plane) {

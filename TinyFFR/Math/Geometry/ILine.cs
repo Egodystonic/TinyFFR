@@ -26,9 +26,11 @@ public interface ILine :
 	[MemberNotNull(nameof(Length), nameof(LengthSquared), nameof(StartToEndVect))]
 	Location? EndPoint { get; }
 
-	Location BoundedLocationAtDistance(float distanceFromStart);
-	Location UnboundedLocationAtDistance(float distanceFromStart);
-	Location? LocationAtDistanceOrNull(float distanceFromStart);
+	bool DistanceIsWithinLineBounds(float signedDistanceFromStart);
+	float BindDistance(float signedDistanceFromStart);
+	Location BoundedLocationAtDistance(float signedDistanceFromStart);
+	Location UnboundedLocationAtDistance(float signedDistanceFromStart);
+	Location? LocationAtDistanceOrNull(float signedDistanceFromStart);
 
 	Location ClosestPointToOrigin();
 	bool Contains(Location location, float lineThickness);
@@ -39,6 +41,50 @@ public interface ILine :
 	sealed Line CoerceToLine() => new(StartPoint, Direction);
 	sealed Ray CoerceToRay() => new(StartPoint, Direction);
 	sealed BoundedLine CoerceToBoundedLine(float length) => new(StartPoint, Direction * length);
+
+	protected internal static float? CalculateUnboundedIntersectionDistanceOnThisLine<TThis, TOther>(TThis @this, TOther other) where TThis : ILine where TOther : ILine {
+		const float ParallelTolerance = 0.00001f;
+
+		var thisStart = @this.StartPoint.ToVector3();
+		var otherStart = other.StartPoint.ToVector3();
+
+		var thisDir = @this.Direction.ToVector3();
+		var otherDir = other.Direction.ToVector3();
+
+		var dot = Vector3.Dot(thisDir, otherDir);
+		var linesAreParallel = 1f - MathF.Abs(dot) < ParallelTolerance;
+
+		if (linesAreParallel) return null;
+
+		var oneMinusDotSquared = 1f - (dot * dot);
+		var startDiff = thisStart - otherStart;
+		var localOrientationStartDiffDot = Vector3.Dot(thisDir, startDiff);
+		var otherOrientationStartDiffDot = Vector3.Dot(otherDir, startDiff);
+		return (dot * otherOrientationStartDiffDot - localOrientationStartDiffDot) / oneMinusDotSquared;
+	}
+
+	protected internal static (float ThisDistance, float OtherDistance)? CalculateUnboundedIntersectionDistancesOnBothLines<TThis, TOther>(TThis @this, TOther other) where TThis : ILine where TOther : ILine {
+		const float ParallelTolerance = 0.00001f;
+
+		var thisStart = @this.StartPoint.ToVector3();
+		var otherStart = other.StartPoint.ToVector3();
+
+		var thisDir = @this.Direction.ToVector3();
+		var otherDir = other.Direction.ToVector3();
+
+		var dot = Vector3.Dot(thisDir, otherDir);
+		var linesAreParallel = 1f - MathF.Abs(dot) < ParallelTolerance;
+
+		if (linesAreParallel) return null;
+
+		var oneMinusDotSquared = 1f - (dot * dot);
+		var startDiff = thisStart - otherStart;
+		var localOrientationStartDiffDot = Vector3.Dot(thisDir, startDiff);
+		var otherOrientationStartDiffDot = Vector3.Dot(otherDir, startDiff);
+		var thisDist = (dot * otherOrientationStartDiffDot - localOrientationStartDiffDot) / oneMinusDotSquared;
+		var otherDist = (-dot * localOrientationStartDiffDot + otherOrientationStartDiffDot) / oneMinusDotSquared;
+		return (thisDist, otherDist);
+	}
 
 	protected static Location CalculateClosestLocationToOtherLine<TThis, TOther>(TThis @this, TOther other) where TThis : ILine where TOther : ILine {
 		const float ParallelTolerance = 0.0001f;

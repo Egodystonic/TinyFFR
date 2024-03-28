@@ -109,9 +109,11 @@ public readonly partial struct BoundedLine :
 		return DistanceFrom(closestPointOnLine) <= lineThickness ? closestPointOnLine : null;
 	}
 
-	public Location BoundedLocationAtDistance(float distanceFromStart) => UnboundedLocationAtDistance(Single.Clamp(distanceFromStart, 0f, _vect.Length));
-	public Location UnboundedLocationAtDistance(float distanceFromStart) => _startPoint + _vect.WithLength(distanceFromStart);
-	public Location? LocationAtDistanceOrNull(float distanceFromStart) => distanceFromStart >= 0f && (distanceFromStart * distanceFromStart) <= _vect.LengthSquared ? UnboundedLocationAtDistance(distanceFromStart) : null;
+	public bool DistanceIsWithinLineBounds(float signedDistanceFromStart) => signedDistanceFromStart >= 0f && signedDistanceFromStart * signedDistanceFromStart <= LengthSquared;
+	public float BindDistance(float signedDistanceFromStart) => Single.Clamp(signedDistanceFromStart, 0f, Length);
+	public Location BoundedLocationAtDistance(float signedDistanceFromStart) => UnboundedLocationAtDistance(BindDistance(signedDistanceFromStart));
+	public Location UnboundedLocationAtDistance(float signedDistanceFromStart) => _startPoint + _vect.WithLength(signedDistanceFromStart);
+	public Location? LocationAtDistanceOrNull(float signedDistanceFromStart) => DistanceIsWithinLineBounds(signedDistanceFromStart) ? UnboundedLocationAtDistance(signedDistanceFromStart) : null;
 
 	public BoundedLine? ReflectedBy(Plane plane) {
 		var intersectionPoint = IntersectionWith(plane);

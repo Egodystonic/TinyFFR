@@ -94,9 +94,13 @@ public readonly partial struct Ray :
 		return DistanceFrom(closestPointOnLine) <= lineThickness ? closestPointOnLine : null;
 	}
 
-	public Location BoundedLocationAtDistance(float distanceFromStart) => UnboundedLocationAtDistance(distanceFromStart > 0f ? distanceFromStart : 0f);
-	public Location UnboundedLocationAtDistance(float distanceFromStart) => _startPoint + _direction * distanceFromStart;
-	public Location? LocationAtDistanceOrNull(float distanceFromStart) => distanceFromStart >= 0f ? UnboundedLocationAtDistance(distanceFromStart) : null;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool DistanceIsWithinLineBounds(float signedDistanceFromStart) => signedDistanceFromStart >= 0f;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float BindDistance(float signedDistanceFromStart) => MathF.Max(0f, signedDistanceFromStart);
+	public Location BoundedLocationAtDistance(float signedDistanceFromStart) => UnboundedLocationAtDistance(BindDistance(signedDistanceFromStart));
+	public Location UnboundedLocationAtDistance(float signedDistanceFromStart) => _startPoint + _direction * signedDistanceFromStart;
+	public Location? LocationAtDistanceOrNull(float signedDistanceFromStart) => DistanceIsWithinLineBounds(signedDistanceFromStart) ? UnboundedLocationAtDistance(signedDistanceFromStart) : null;
 
 	public Ray? ReflectedBy(Plane plane) {
 		var intersectionPoint = IntersectionWith(plane);

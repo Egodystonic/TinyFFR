@@ -30,6 +30,8 @@ class LineExtensionsTest {
 			new Ray().ClosestPointTo(new OriginSphere());
 
 			new Ray().ClosestPointTo(line);
+			new Line().ClosestPointTo(line);
+			new Line().ClosestPointTo(new Line());
 			new OriginSphere().ClosestPointTo(line);
 			Location.Origin.ClosestPointOnSurfaceOf(new OriginSphere());
 			new Plane().ClosestPointTo(line);
