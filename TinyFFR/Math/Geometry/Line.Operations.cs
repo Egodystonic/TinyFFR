@@ -172,18 +172,18 @@ public readonly partial struct Line :
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line ParallelizedWith(Plane plane) => ParallelizedWith(plane, pivotPoint: PointOnLine);
+	public Line ParallelizedWith(Plane plane) => ParallelizedWith(plane, 0f);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line OrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane, pivotPoint: PointOnLine);
+	public Line OrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane, 0f);
 
-	public Line ParallelizedWith(Plane plane, Location pivotPoint) {
+	public Line ParallelizedWith(Plane plane, float pivotPointSignedDistance) {
 		var projectedDirection = Direction.ProjectedOnTo(plane);
 		if (projectedDirection == Direction.None) projectedDirection = Direction; // TODO xmldoc this behaviour
-		return new Line(pivotPoint, projectedDirection);
+		return new Line(LocationAtDistance(pivotPointSignedDistance), projectedDirection);
 	}
-	public Line OrthogonalizedAgainst(Plane plane, Location pivotPoint) {
-		return new Line(pivotPoint, Direction.OrthogonalizedAgainst(plane));
+	public Line OrthogonalizedAgainst(Plane plane, float pivotPointSignedDistance) {
+		return new Line(LocationAtDistance(pivotPointSignedDistance), Direction.OrthogonalizedAgainst(plane));
 	}
 
 	public Ray? SplitBy(Plane plane) {

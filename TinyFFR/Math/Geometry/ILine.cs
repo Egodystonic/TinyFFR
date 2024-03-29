@@ -86,6 +86,7 @@ public interface ILine :
 		return (thisDist, otherDist);
 	}
 
+	// TODO delete this 🔫
 	protected static Location CalculateClosestLocationToOtherLine<TThis, TOther>(TThis @this, TOther other) where TThis : ILine where TOther : ILine {
 		const float ParallelTolerance = 0.0001f;
 
