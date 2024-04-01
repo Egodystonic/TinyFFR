@@ -6,19 +6,26 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture]
-partial class LineTest {
+partial class RayTest {
 	[Test]
-	public void ShouldCorrectlyConvertToRay() {
-		AssertToleranceEquals(new Ray(new Location(1f, 2f, -3f) + TestLineDirection * 10f, TestLineDirection), TestLine.ToRay(10f, false), TestTolerance);
-		AssertToleranceEquals(new Ray(new Location(1f, 2f, -3f) + TestLineDirection * -10f, TestLineDirection), TestLine.ToRay(-10f, false), TestTolerance);
-		AssertToleranceEquals(new Ray(new Location(1f, 2f, -3f) + TestLineDirection * 10f, -TestLineDirection), TestLine.ToRay(10f, true), TestTolerance);
-		AssertToleranceEquals(new Ray(new Location(1f, 2f, -3f) + TestLineDirection * -10f, -TestLineDirection), TestLine.ToRay(-10f, true), TestTolerance);
+	public void ShouldCorrectlyConvertToLine() {
+		Assert.AreEqual(new Line(TestRay.StartPoint, TestRay.Direction), TestRay.ToLine());
 	}
 
 	[Test]
 	public void ShouldCorrectlyConvertToBoundedLine() {
-		AssertToleranceEquals(new BoundedLine(new Location(1f, 2f, -3f) + TestLineDirection * 10f, new Location(1f, 2f, -3f) + TestLineDirection * -10f), TestLine.ToBoundedLine(10f, -10f), TestTolerance);
-		AssertToleranceEquals(new BoundedLine(new Location(1f, 2f, -3f) + TestLineDirection * -10f, new Location(1f, 2f, -3f) + TestLineDirection * 10f), TestLine.ToBoundedLine(-10f, 10f), TestTolerance);
+		AssertToleranceEquals(new BoundedLine(TestRay.StartPoint, TestRay.StartPoint + TestRay.Direction * 10f), TestRay.ToBoundedLine(10f), TestTolerance);
+		AssertToleranceEquals(TestRay.Direction, TestRay.ToBoundedLine(10f).Direction, TestTolerance);
+		AssertToleranceEquals(new BoundedLine(TestRay.StartPoint, TestRay.StartPoint + TestRay.Direction * -10f), TestRay.ToBoundedLine(-10f), TestTolerance);
+		AssertToleranceEquals(-TestRay.Direction, TestRay.ToBoundedLine(-10f).Direction, TestTolerance);
+	}
+
+	[Test]
+	public void ShouldCorrectlyFlip() {
+		Assert.AreEqual(
+			new Ray(new Location(10f, -20f, 0f), Direction.Up),
+			-new Ray(new Location(10f, -20f, 0f), Direction.Down)
+		);
 	}
 
 	[Test]
@@ -26,14 +33,13 @@ partial class LineTest {
 		var rotation = 70f % Direction.Down;
 
 		AssertToleranceEquals(
-			new Line(TestLine.PointOnLine, TestLineDirection * rotation),
-			TestLine * rotation,
+			new Ray(TestRay.StartPoint, TestRay.Direction * rotation),
+			TestRay * rotation,
 			TestTolerance
 		);
-		AssertToleranceEquals(
-			new Line(TestLine.PointOnLine, TestLineDirection * rotation),
-			rotation * TestLine,
-			TestTolerance
+		Assert.AreEqual(
+			new Ray(Location.Origin, Direction.Right),
+			new Ray(Location.Origin, Direction.Left) * (Direction.Up % 180f)
 		);
 	}
 
@@ -42,13 +48,13 @@ partial class LineTest {
 		var vect = new Vect(5f, -3f, 12f);
 
 		AssertToleranceEquals(
-			new Line(TestLine.PointOnLine + vect, TestLineDirection),
-			TestLine + vect,
+			new Ray(TestRay.StartPoint + vect, TestRay.Direction),
+			TestRay + vect,
 			TestTolerance
 		);
 		AssertToleranceEquals(
-			new Line(TestLine.PointOnLine + vect, TestLineDirection),
-			vect + TestLine,
+			new Ray(TestRay.StartPoint + vect, TestRay.Direction),
+			vect + TestRay,
 			TestTolerance
 		);
 	}
@@ -57,16 +63,19 @@ partial class LineTest {
 	public void ShouldCorrectlyFindClosestPointToLocation() {
 		Assert.AreEqual(
 			new Location(0f, 0f, 0f),
-			new Line(new Location(100f, 0f, 0f), Direction.Left).ClosestPointTo(new Location(0f, 1f, 0f))
+			new Ray(new Location(-100f, 0f, 0f), Direction.Left).ClosestPointTo(new Location(0f, 1f, 0f))
 		);
 		Assert.AreEqual(
 			new Location(-100f, 0f, 0f),
-			new Line(new Location(100f, 0f, 0f), Direction.Left).ClosestPointTo(new Location(-100f, 1f, 0f))
+			new Ray(new Location(0f, 0f, 0f), Direction.Right).ClosestPointTo(new Location(-100f, 1f, 0f))
 		);
-		AssertToleranceEquals(
-			new Location(2f, 5f, 2f),
-			new Line(new Location(0f, 3f, 0f), new Direction(1f, 1f, 1f)).ClosestPointTo(new Direction(1f, 1f, 1f).GetAnyPerpendicular() * 10f + new Location(2f, 5f, 2f)),
-			TestTolerance
+		Assert.AreEqual(
+			new Location(100f, 0f, 0f),
+			new Ray(new Location(100f, 0f, 0f), Direction.Left).ClosestPointTo(new Location(0f, 1f, 0f))
+		);
+		Assert.AreEqual(
+			new Location(0f, 0f, 0f),
+			new Ray(new Location(0f, 0f, 0f), Direction.Left).ClosestPointTo(new Location(-100f, 1f, 0f))
 		);
 	}
 
@@ -74,16 +83,19 @@ partial class LineTest {
 	public void ShouldCorrectlyFindClosestPointToOrigin() {
 		Assert.AreEqual(
 			new Location(0f, 0f, 0f),
-			new Line(new Location(100f, 0f, 0f), Direction.Left).ClosestPointToOrigin()
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).ClosestPointToOrigin()
 		);
 		Assert.AreEqual(
 			new Location(0f, -1f, 0f),
-			new Line(new Location(100f, -1f, 0f), Direction.Left).ClosestPointToOrigin()
+			new Ray(new Location(100f, -1f, 0f), Direction.Right).ClosestPointToOrigin()
 		);
-		AssertToleranceEquals(
-			new Location(-1f, 2f, -1f),
-			new Line(new Location(0f, 3f, 0f), new Direction(1f, 1f, 1f)).ClosestPointToOrigin(),
-			TestTolerance
+		Assert.AreEqual(
+			new Location(100f, 0f, 0f),
+			new Ray(new Location(100f, 0f, 0f), Direction.Left).ClosestPointToOrigin()
+		);
+		Assert.AreEqual(
+			new Location(100f, -1f, 0f),
+			new Ray(new Location(100f, -1f, 0f), Direction.Left).ClosestPointToOrigin()
 		);
 	}
 
@@ -91,19 +103,37 @@ partial class LineTest {
 	public void ShouldCorrectlyDetermineDistanceFromLocation() {
 		Assert.AreEqual(
 			1f,
-			new Line(new Location(100f, 0f, 0f), Direction.Left).DistanceFrom(new Location(0f, 1f, 0f))
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).DistanceFrom(new Location(0f, 1f, 0f))
 		);
 		Assert.AreEqual(
 			1f,
-			new Line(new Location(100f, 0f, 0f), Direction.Left).DistanceFrom(new Location(0f, -1f, 0f))
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).DistanceFrom(new Location(0f, -1f, 0f))
 		);
 		Assert.AreEqual(
 			0f,
-			new Line(new Location(100f, 0f, 0f), Direction.Left).DistanceFrom(new Location(-100f, 0f, 0f))
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).DistanceFrom(new Location(-100f, 0f, 0f))
 		);
 		Assert.AreEqual(
 			MathF.Sqrt(2f),
-			new Line(new Location(100f, 0f, 0f), Direction.Left).DistanceFrom(new Location(-100f, 1f, -1f)),
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).DistanceFrom(new Location(-100f, 1f, -1f)),
+			TestTolerance
+		);
+
+		Assert.AreEqual(
+			MathF.Sqrt(10001f),
+			new Ray(new Location(100f, 0f, 0f), Direction.Left).DistanceFrom(new Location(0f, 1f, 0f))
+		);
+		Assert.AreEqual(
+			MathF.Sqrt(10001f),
+			new Ray(new Location(100f, 0f, 0f), Direction.Left).DistanceFrom(new Location(0f, -1f, 0f))
+		);
+		Assert.AreEqual(
+			200f,
+			new Ray(new Location(100f, 0f, 0f), Direction.Left).DistanceFrom(new Location(-100f, 0f, 0f))
+		);
+		Assert.AreEqual(
+			MathF.Sqrt(40002f),
+			new Ray(new Location(100f, 0f, 0f), Direction.Left).DistanceFrom(new Location(-100f, 1f, -1f)),
 			TestTolerance
 		);
 	}
@@ -112,128 +142,126 @@ partial class LineTest {
 	public void ShouldCorrectlyDetermineContainmentOfLocation() {
 		Assert.AreEqual(
 			false,
-			new Line(new Location(100f, 0f, 0f), Direction.Left).Contains(new Location(0f, 1f, 0f))
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).Contains(new Location(0f, 1f, 0f))
 		);
 		Assert.AreEqual(
 			true,
-			new Line(new Location(100f, 0f, 0f), Direction.Left).Contains(new Location(0f, 1f, 0f), 1.1f)
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).Contains(new Location(0f, 1f, 0f), 1.1f)
 		);
 		Assert.AreEqual(
 			false,
-			new Line(new Location(100f, 0f, 0f), Direction.Left).Contains(new Location(0f, 1f, 0f), 0.9f)
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).Contains(new Location(0f, 1f, 0f), 0.9f)
 		);
 		Assert.AreEqual(
 			true,
-			new Line(new Location(100f, 0f, 0f), Direction.Left).Contains(new Location(0f, -1f, 0f), 1.1f)
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).Contains(new Location(0f, -1f, 0f), 1.1f)
 		);
 		Assert.AreEqual(
 			false,
-			new Line(new Location(100f, 0f, 0f), Direction.Left).Contains(new Location(0f, -1f, 0f), 0.9f)
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).Contains(new Location(0f, -1f, 0f), 0.9f)
+		);
+		Assert.AreEqual(
+			false,
+			new Ray(new Location(100f, 0f, 0f), Direction.Left).Contains(new Location(99f, 0f, 0f), 0.9f)
+		);
+		Assert.AreEqual(
+			true,
+			new Ray(new Location(100f, 0f, 0f), Direction.Left).Contains(new Location(99f, 0f, 0f), 1.1f)
+		);
+		Assert.AreEqual(
+			true,
+			new Ray(new Location(100f, 0f, 0f), Direction.Left).Contains(new Location(100f, 0f, 0f))
+		);
+		Assert.AreEqual(
+			true,
+			new Ray(new Location(100f, 0f, 0f), Direction.Left).Contains(new Location(110f, 0f, 0f))
 		);
 	}
 
 	[Test]
-	public void ShouldCorrectlyDetermineClosestPointBetweenLines() {
-		void AssertPair<TLine>(Location expectedResult, Line line, TLine other) where TLine : ILine {
-			AssertToleranceEquals(expectedResult, line.ClosestPointTo(other), TestTolerance);
-			Assert.AreEqual(line.ClosestPointTo(other), other.ClosestPointOn(line));
+	public void ShouldCorrectlyReturnClosestPointToOtherLine() {
+		void AssertPair<TLine>(Location expectedResult, Ray ray, TLine other) where TLine : ILine {
+			AssertToleranceEquals(expectedResult, ray.ClosestPointTo(other), TestTolerance);
+			//Assert.AreEqual(ray.ClosestPointTo(other), other.ClosestPointOn(ray));
 		}
 
 		// Line
 		AssertPair(
 			new Location(0f, 0f, 0f),
-			new Line(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f)),
+			new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f)),
 			new Line(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 1f))
 		);
 		AssertPair(
-			new Location(0f, 0f, 0f),
-			new Line(new Location(1f, 1f, 1f), new Direction(1f, 1f, 1f)),
-			new Line(new Location(-1f, -1f, 1f), new Direction(-1f, -1f, 1f))
+			new Location(0f, 10f, 0f),
+			new Ray(Location.Origin, Direction.Up),
+			new Line(new Location(100f, 10f, 0f), Direction.Left)
 		);
 		AssertPair(
-			new Location(0f, 1f, 0f),
-			new Line(new Location(1f, 2f, 1f), new Direction(1f, 1f, 1f)),
-			new Line(new Location(-1f, 0f, 1f), new Direction(-1f, -1f, 1f))
+			new Location(0f, 0f, 0f),
+			new Ray(Location.Origin, Direction.Up),
+			new Line(new Location(100f, -10f, 0f), Direction.Left)
 		);
 
 		// Ray
 		AssertPair(
-			new Location(0f, 0f, 0f),
-			new Line(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f)), 
-			new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 1f))
+			new Location(0f, 20f, 0),
+			new Ray(Location.Origin, Direction.Up),
+			new Ray(new Location(0f, 10f, -10f), new Direction(0f, 1f, 1f))
 		);
 		AssertPair(
-			new Location(-1f, -1f, -1f),
-			new Line(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f)),
-			new Ray(new Location(-1f, -1f, -1f), new Direction(-1f, -1f, -1f))
+			new Location(0f, 0f, 0),
+			new Ray(Location.Origin, Direction.Up),
+			new Ray(new Location(0f, 10f, -10f), new Direction(0f, -1f, 1f))
 		);
 		AssertPair(
-			new Location(1f, 1f, 0f),
-			new Line(new Location(0f, 0f, 0f), new Direction(1f, 1f, 0f)),
-			new Ray(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f))
+			new Location(0f, 30f, 0),
+			new Ray(Location.Origin, Direction.Up),
+			new Ray(new Location(0f, 10f, -10f), new Direction(0f, 2f, 1f))
 		);
 		AssertPair(
-			new Location(0f, 1f, 0f),
-			new Line(new Location(0f, 1f, 0f), Direction.Right),
-			new Ray(new Location(0f, 2f, 0f), Direction.Up)
+			new Location(0f, 0f, 0),
+			new Ray(Location.Origin, Direction.Up),
+			new Ray(new Location(0f, 10f, -10f), new Direction(0f, -1.5f, 1f))
 		);
 		AssertPair(
-			new Location(100f, 1f, 0f),
-			new Line(new Location(0f, 1f, 0f), Direction.Right), 
-			new Ray(new Location(100f, 2f, 0f), Direction.Up)
+			new Location(0f, 0f, 0),
+			new Ray(Location.Origin, Direction.Up),
+			new Ray(new Location(0f, 10f, -10f), new Direction(0f, -2.5f, 1f))
 		);
 		AssertPair(
-			new Location(0f, 1f, 0f),
-			new Line(new Location(0f, 1f, 0f), Direction.Right),
-			new Ray(new Location(0f, 2f, 0f), Direction.Down)
+			new Location(0f, 10f, 0),
+			new Ray(Location.Origin, Direction.Up),
+			new Ray(new Location(0f, 10f, -10f), new Direction(0f, -2.5f, -1f))
 		);
 		AssertPair(
-			new Location(0f, 1f, 0f),
-			new Line(new Location(0f, 1f, 0f), Direction.Right),
-			new Ray(new Location(0f, 2f, 0f), new Direction(1f, 1f, 0f))
+			new Location(0f, 10f, 0),
+			new Ray(Location.Origin, Direction.Up),
+			new Ray(new Location(0f, 10f, -10f), new Direction(0f, 1f, -1f))
 		);
 		AssertPair(
-			new Location(-1f, 1f, 0f),
-			new Line(new Location(0f, 1f, 0f), Direction.Right),
-			new Ray(new Location(0f, 2f, 0f), new Direction(-1f, -1f, 0f))
+			new Location(0f, 0f, 0),
+			new Ray(Location.Origin, Direction.Up),
+			new Ray(new Location(0f, -1f, -10f), Direction.Forward)
 		);
 		AssertPair(
-			new Location(100f, 1f, 0f),
-			new Line(new Location(0f, 1f, 0f), Direction.Right),
-			new Ray(new Location(100f, 2000f, 0f), Direction.Left)
-		);
-		AssertPair(
-			new Location(100f, 1f, 0f),
-			new Line(new Location(0f, 1f, 0f), Direction.Right),
-			new Ray(new Location(100f, 2000f, 0f), Direction.Right)
+			new Location(0f, 0f, 0),
+			new Ray(Location.Origin, Direction.Up),
+			new Ray(new Location(0f, 1f, -1f), new Direction(0f, -100f, 0.1f))
 		);
 
 		// BoundedLine
 		AssertPair(
-			new Location(0f, 0f, 0f),
-			new Line(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f)),
-			new BoundedLine(new Location(-1f, -1f, 1f), new Location(1f, 1f, -1f))
+			new Location(0f, 20f, 0),
+			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 30f, 10f))
 		);
 		AssertPair(
-			new Location(0f, 1f, 0f),
-			new Line(new Location(0f, 1f, 0f), Direction.Right),
-			new BoundedLine(new Location(0f, 2f, 0f), new Location(0f, 4f, 0f))
+			new Location(0f, 20f, 0),
+			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(new Location(0f, 30f, 10f), new Location(0f, 10, -10f))
 		);
-		AssertPair(
-			new Location(0f, 1f, 0f),
-			new Line(new Location(1000f, 1f, 0f), Direction.Right),
-			new BoundedLine(new Location(0f, 4f, 0f), new Location(0f, 2f, 0f))
-		);
-		AssertPair(
-			new Location(-3f, 0f, 0f),
-			new Line(new Location(0f, 0f, 0f), Direction.Left),
-			new BoundedLine(new Location(-3f, 1f, 0f), new Location(3f, 2f, 0f))
-		);
-		AssertPair(
-			new Location(-5f, 1f, 0f),
-			new Line(new Location(0f, 1f, 0f), Direction.Right),
-			new BoundedLine(new Location(-10f, -4f, 0f), new Location(0f, 6f, 0f))
-		);
+		// TODO continue here
+		
 	}
 
 	[Test]

@@ -43,7 +43,7 @@ public interface ILine :
 	sealed BoundedLine CoerceToBoundedLine(float length) => new(StartPoint, Direction * length);
 
 	protected internal static float? CalculateUnboundedIntersectionDistanceOnThisLine<TThis, TOther>(TThis @this, TOther other) where TThis : ILine where TOther : ILine {
-		const float ParallelTolerance = 0.00001f;
+		const float ParallelTolerance = 1E-7f;
 
 		var thisStart = @this.StartPoint.ToVector3();
 		var otherStart = other.StartPoint.ToVector3();
@@ -64,7 +64,7 @@ public interface ILine :
 	}
 
 	protected internal static (float ThisDistance, float OtherDistance)? CalculateUnboundedIntersectionDistancesOnBothLines<TThis, TOther>(TThis @this, TOther other) where TThis : ILine where TOther : ILine {
-		const float ParallelTolerance = 0.00001f;
+		const float ParallelTolerance = 1E-7f;
 
 		var thisStart = @this.StartPoint.ToVector3();
 		var otherStart = other.StartPoint.ToVector3();
