@@ -93,22 +93,28 @@ partial class BoundedLineTest {
 		);
 	}
 
-	// [Test]
-	// public void ShouldCorrectlyRotate() {
-	// 	var rotation = 70f % Direction.Down;
-	//
-	// 	AssertToleranceEquals(
-	// 		new Ray(TestRay.StartPoint, TestRay.Direction * rotation),
-	// 		TestRay * rotation,
-	// 		TestTolerance
-	// 	);
-	// 	AssertToleranceEquals(
-	// 		new Ray(Location.Origin, Direction.Right),
-	// 		new Ray(Location.Origin, Direction.Left) * (Direction.Up % 180f),
-	// 		TestTolerance
-	// 	);
-	// }
-	//
+	[Test]
+	public void ShouldCorrectlyRotate() {
+		var rotation = 90f % Direction.Down;
+		var xzLine = new BoundedLine(new Location(3f, 0f, -3f), new Location(-3f, 0f, 3f));
+
+		AssertToleranceEquals(
+			new BoundedLine(new Location(3f, 0f, 3f), new Location(-3f, 0f, -3f)),
+			xzLine * rotation,
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			xzLine.RotatedAroundMiddleBy(rotation),
+			rotation * xzLine,
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedLine(new Location(3f, 0f, -3f), new Location(-3f, 0f, -9f)),
+			xzLine.RotatedAroundStartBy(rotation),
+			TestTolerance
+		);
+	}
+	
 	// [Test]
 	// public void ShouldCorrectlyMove() {
 	// 	var vect = new Vect(5f, -3f, 12f);
