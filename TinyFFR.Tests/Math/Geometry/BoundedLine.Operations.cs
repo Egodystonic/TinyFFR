@@ -113,23 +113,53 @@ partial class BoundedLineTest {
 			xzLine.RotatedAroundStartBy(rotation),
 			TestTolerance
 		);
+		AssertToleranceEquals(
+			new BoundedLine(new Location(3f, 0f, 9f), new Location(-3f, 0f, 3f)),
+			xzLine.RotatedAroundEndBy(rotation),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedLine(new Location(3f, 0f, 6f), new Location(-3f, 0f, 0f)),
+			xzLine.RotatedAroundPivotDistanceBy(rotation, xzLine.Length * 0.75f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedLine(new Location(3f, 0f, 0f), new Location(-3f, 0f, -6f)),
+			xzLine.RotatedAroundPivotDistanceBy(rotation, xzLine.Length * 0.25f),
+			TestTolerance
+		);
 	}
 	
-	// [Test]
-	// public void ShouldCorrectlyMove() {
-	// 	var vect = new Vect(5f, -3f, 12f);
-	//
-	// 	AssertToleranceEquals(
-	// 		new Ray(TestRay.StartPoint + vect, TestRay.Direction),
-	// 		TestRay + vect,
-	// 		TestTolerance
-	// 	);
-	// 	AssertToleranceEquals(
-	// 		new Ray(TestRay.StartPoint + vect, TestRay.Direction),
-	// 		vect + TestRay,
-	// 		TestTolerance
-	// 	);
-	// }
+	[Test]
+	public void ShouldCorrectlyMove() {
+		var vect = new Vect(5f, -3f, 12f);
+	
+		AssertToleranceEquals(
+			new BoundedLine(TestLine.StartPoint + vect, TestLine.EndPoint + vect),
+			TestLine + vect,
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			TestLine.Direction,
+			(vect + TestLine).Direction,
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			TestLine.StartToEndVect,
+			(vect + TestLine).StartToEndVect,
+			TestTolerance
+		);
+		Assert.AreEqual(
+			TestLine.Length,
+			(vect + TestLine).Length,
+			TestTolerance
+		);
+		Assert.AreEqual(
+			TestLine.LengthSquared,
+			(vect + TestLine).LengthSquared,
+			TestTolerance
+		);
+	}
 
 	[Test]
 	public void ShouldCorrectlyFindClosestPointToLocation() {
