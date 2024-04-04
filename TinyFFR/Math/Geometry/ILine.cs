@@ -31,6 +31,8 @@ public interface ILine :
 	Location BoundedLocationAtDistance(float signedDistanceFromStart);
 	Location UnboundedLocationAtDistance(float signedDistanceFromStart);
 	Location? LocationAtDistanceOrNull(float signedDistanceFromStart);
+	//float BoundedDistanceAtPointClosestTo(Location point); //TODO
+	//float UnboundedDistanceAtPointClosestTo(Location point); //TODO
 
 	Location ClosestPointToOrigin();
 	bool Contains(Location location, float lineThickness);

@@ -92,7 +92,7 @@ public readonly partial struct BoundedLine : ILine<BoundedLine, BoundedLine>, ID
 
 	#region Equality
 	public bool Equals(BoundedLine other) => _startPoint.Equals(other._startPoint) && _vect.Equals(other._vect);
-	public bool Equals(BoundedLine other, float tolerance) => _startPoint.Equals(other.StartPoint, tolerance) && _vect.Equals(other.StartToEndVect, tolerance);
+	public bool Equals(BoundedLine other, float tolerance) => _startPoint.Equals(other.StartPoint, tolerance) && EndPoint.Equals(other.EndPoint, tolerance);
 	public bool EqualsDisregardingDirection(BoundedLine other) => Equals(other) || Equals(other.Flipped);
 	public bool EqualsDisregardingDirection(BoundedLine other, float tolerance) => Equals(other, tolerance) || Equals(other.Flipped, tolerance);
 	public override bool Equals(object? obj) => obj is BoundedLine other && Equals(other);

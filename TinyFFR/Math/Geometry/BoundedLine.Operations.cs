@@ -30,12 +30,22 @@ public readonly partial struct BoundedLine :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedLine ScaledFromStartBy(float scalar) => new(_startPoint, _vect.ScaledBy(scalar));
 	public BoundedLine ScaledFromMiddleBy(float scalar) {
+		var halfVect = _vect * 0.5f;
+		var midPoint = _startPoint + halfVect;
 		var scaledVect = _vect.ScaledBy(scalar);
-		return new BoundedLine(_startPoint - scaledVect * 0.5f, scaledVect);
+		var newStart = midPoint - halfVect.ScaledBy(scalar);
+		return new BoundedLine(newStart, newStart + scaledVect);
 	}
 	public BoundedLine ScaledFromEndBy(float scalar) {
 		var scaledVect = _vect.ScaledBy(scalar);
-		return new BoundedLine(_startPoint - scaledVect, scaledVect);
+		var newStart = EndPoint - scaledVect;
+		return new BoundedLine(newStart, scaledVect);
+	}
+	public BoundedLine ScaledAroundPivotDistanceBy(float scalar, float signedPivotDistance) {
+		var pivotPoint = UnboundedLocationAtDistance(signedPivotDistance);
+		var pivotToStartVect = -_vect.WithLength(signedPivotDistance);
+		var pivotToEndVect = _vect.WithLength(_vect.Length - signedPivotDistance);
+		return new BoundedLine(pivotPoint + pivotToStartVect * scalar, pivotPoint + pivotToEndVect * scalar);
 	}
 
 
@@ -54,6 +64,10 @@ public readonly partial struct BoundedLine :
 		var newStartPoint = _startPoint + ((_vect * 0.5f) - (newVect * 0.5f));
 		return new(newStartPoint, newVect);
 	}
+	public BoundedLine RotatedAroundPivotDistanceBy(Rotation rotation, float signedPivotDistance) { // TODO something similar for Ray
+		var pivotPoint = UnboundedLocationAtDistance(signedPivotDistance);
+		return new(pivotPoint + (pivotPoint >> StartPoint) * rotation, pivotPoint + (pivotPoint >> EndPoint) * rotation);
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static BoundedLine operator +(BoundedLine line, Vect v) => line.MovedBy(v);
@@ -70,7 +84,7 @@ public readonly partial struct BoundedLine :
 		);
 	}
 	public static BoundedLine CreateNewRandom() => new(Location.CreateNewRandom(), Location.CreateNewRandom());
-	public static BoundedLine CreateNewRandom(BoundedLine minInclusive, BoundedLine maxExclusive) => new(Location.CreateNewRandom(minInclusive.StartPoint, maxExclusive.StartPoint), Vect.CreateNewRandom(minInclusive._vect, maxExclusive._vect));
+	public static BoundedLine CreateNewRandom(BoundedLine minInclusive, BoundedLine maxExclusive) => new(Location.CreateNewRandom(minInclusive.StartPoint, maxExclusive.StartPoint), Location.CreateNewRandom(minInclusive.EndPoint, maxExclusive.EndPoint));
 
 	public Location ClosestPointTo(Location location) {
 		var vectCoefficient = Vector3.Dot((location - _startPoint).ToVector3(), _vect.ToVector3()) / LengthSquared;
