@@ -183,7 +183,7 @@ partial class RayTest {
 	public void ShouldCorrectlyReturnClosestPointToOtherLine() {
 		void AssertPair<TLine>(Location expectedResult, Ray ray, TLine other) where TLine : ILine {
 			AssertToleranceEquals(expectedResult, ray.ClosestPointTo(other), TestTolerance);
-			//Assert.AreEqual(ray.ClosestPointTo(other), other.ClosestPointOn(ray));
+			Assert.AreEqual(ray.ClosestPointTo(other), other.ClosestPointOn(ray));
 		}
 
 		// Line
@@ -321,8 +321,38 @@ partial class RayTest {
 	}
 
 	[Test]
-	public void ShouldCorrectlyCalculateDistanceFromLines() { // TODO add the right answers in later, this is just a regression test
-		Assert.Fail("Todo");
+	public void ShouldCorrectlyCalculateDistanceFromLines() { // These are regression tests
+		Assert.AreEqual(
+			16.738178f,
+			TestRay.DistanceFrom(new Line(new Location(15f, -3f, 12f), new Direction(-2f, 0f, 14f))),
+			TestTolerance
+		);
+		Assert.AreEqual(
+			18.053491f,
+			TestRay.DistanceFrom(new Ray(new Location(15f, -3f, 12f), new Direction(-2f, 0f, 14f))),
+			TestTolerance
+		);
+		Assert.AreEqual(
+			17.34369f,
+			TestRay.DistanceFrom(new BoundedLine(new Location(15f, -3f, 12f), new Direction(-2f, 0f, 14f) * -4f)),
+			TestTolerance
+		);
+
+		Assert.AreEqual(
+			0f,
+			TestRay.DistanceFrom(TestRay.ToLine()),
+			TestTolerance
+		);
+		Assert.AreEqual(
+			0f,
+			TestRay.DistanceFrom(TestRay),
+			TestTolerance
+		);
+		Assert.AreEqual(
+			0f,
+			TestRay.DistanceFrom(TestRay.ToBoundedLine(1f)),
+			TestTolerance
+		);
 	}
 
 	[Test]

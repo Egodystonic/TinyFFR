@@ -48,6 +48,7 @@ public readonly partial struct BoundedLine :
 		return new BoundedLine(pivotPoint + pivotToStartVect * scalar, pivotPoint + pivotToEndVect * scalar);
 	}
 
+	// TODO WithLength and derivatives
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static BoundedLine operator *(BoundedLine line, Rotation rot) => line.RotatedAroundMiddleBy(rot);
@@ -64,9 +65,11 @@ public readonly partial struct BoundedLine :
 		var newStartPoint = _startPoint + ((_vect * 0.5f) - (newVect * 0.5f));
 		return new(newStartPoint, newVect);
 	}
-	public BoundedLine RotatedAroundPivotDistanceBy(Rotation rotation, float signedPivotDistance) { // TODO something similar for Ray
-		var pivotPoint = UnboundedLocationAtDistance(signedPivotDistance);
-		return new(pivotPoint + (pivotPoint >> StartPoint) * rotation, pivotPoint + (pivotPoint >> EndPoint) * rotation);
+	public BoundedLine RotatedAroundPivotDistance(Rotation rotation, float signedPivotDistance) { // TODO something similar for both lines (maybe in interface)
+		return RotatedAroundPoint(rotation, UnboundedLocationAtDistance(signedPivotDistance));
+	}
+	public BoundedLine RotatedAroundPoint(Rotation rotation, Location point) { // TODO add this to ILine as well, and the multi operators with tuples
+		return new(point + (point >> StartPoint) * rotation, point + (point >> EndPoint) * rotation);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -109,12 +112,56 @@ public readonly partial struct BoundedLine :
 	public bool Contains(Location location) => Contains(location, ILine.DefaultLineThickness);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(Location location, float lineThickness) => DistanceFrom(location) <= lineThickness;
+
+
+	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine {
+		return line switch {
+			Line l => ClosestPointTo(l),
+			Ray r => ClosestPointTo(r),
+			BoundedLine b => ClosestPointTo(b),
+			_ => line.ClosestPointOn(this) // Possible stack overflow if the other line doesn't implement both sides (To/On), but this allows users to add their own line implementations
+		};
+	}
+	public Location ClosestPointTo(Line line) {
+		var intersectionDistance = ILine.CalculateUnboundedIntersectionDistanceOnThisLine(this, line);
+		return intersectionDistance != null ? BoundedLocationAtDistance(intersectionDistance.Value) : StartPoint;
+	}
+	public Location ClosestPointTo(Ray ray) {
+		var intersectionDistances = ILine.CalculateUnboundedIntersectionDistancesOnBothLines(this, ray);
+		if (intersectionDistances == null || !ray.DistanceIsWithinLineBounds(intersectionDistances.Value.OtherDistance)) return ClosestPointTo(ray.StartPoint);
+		else return BoundedLocationAtDistance(intersectionDistances.Value.ThisDistance);
+	}
+	public Location ClosestPointTo(BoundedLine boundedLine) {
+		var intersectionDistances = ILine.CalculateUnboundedIntersectionDistancesOnBothLines(this, boundedLine);
+		if (intersectionDistances == null) {
+			var distanceToOtherStart = DistanceFrom(boundedLine.StartPoint);
+			var distanceToOtherEnd = DistanceFrom(boundedLine.EndPoint);
+			return distanceToOtherStart < distanceToOtherEnd ? ClosestPointTo(boundedLine.StartPoint) : ClosestPointTo(boundedLine.EndPoint);
+		}
+		var boundOtherDistance = boundedLine.BindDistance(intersectionDistances.Value.OtherDistance);
+		// ReSharper disable once CompareOfFloatsByEqualityOperator distance will be unchanged if within line bounds
+		if (boundOtherDistance == intersectionDistances.Value.OtherDistance) {
+			return BoundedLocationAtDistance(intersectionDistances.Value.ThisDistance);
+		}
+		else {
+			return ClosestPointTo(boundedLine.UnboundedLocationAtDistance(boundOtherDistance));
+		}
+	}
+
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => ILine.CalculateClosestLocationToOtherLine(this, line);
+	public Location ClosestPointOn<TLine>(TLine line) where TLine : ILine => line.ClosestPointTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointOn<TLine>(TLine line) where TLine : ILine => ILine.CalculateClosestLocationToOtherLine(line, this);
+	public Location ClosestPointOn(Line line) => line.ClosestPointTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => DistanceFrom(ClosestPointTo(line));
+	public Location ClosestPointOn(Ray ray) => ray.ClosestPointTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(BoundedLine boundedLine) => boundedLine.ClosestPointTo(this);
+
+	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => DistanceFrom(ClosestPointOn(line));
+	public float DistanceFrom(Line line) => DistanceFrom(ClosestPointOn(line));
+	public float DistanceFrom(Ray ray) => DistanceFrom(ClosestPointOn(ray));
+	public float DistanceFrom(BoundedLine boundedLine) => DistanceFrom(ClosestPointOn(boundedLine));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Location? ILineIntersectable<Location>.IntersectionWith<TLine>(TLine line) => IntersectionWith(line, ILine.DefaultLineThickness);
@@ -171,10 +218,15 @@ public readonly partial struct BoundedLine :
 		return new BoundedLine(StartPoint.ClosestPointOn(plane), EndPoint.ClosestPointOn(plane));
 	}
 	public BoundedLine ProjectedOnTo(Plane plane, bool preserveLength) {
-		return new BoundedLine(StartPoint.ClosestPointOn(plane), StartToEndVect.ProjectedOnTo(plane, preserveLength));
+		if (!preserveLength) return ProjectedOnTo(plane);
+		var newVect = StartToEndVect.ParallelizedWith(plane);
+		if (newVect.LengthSquared == 0f && LengthSquared > 0f) newVect = StartToEndVect;
+		return new BoundedLine(StartPoint.ClosestPointOn(plane), newVect);
 	}
-	public BoundedLine ParallelizedWith(Plane plane) {
-		return new BoundedLine(StartPoint, StartToEndVect.ProjectedOnTo(plane, preserveLength: true));
+	public BoundedLine ParallelizedWith(Plane plane) { // TODO in xmldoc mention that length will be 0 if this is perpendicular, regardless
+		var newVect = StartToEndVect.ParallelizedWith(plane);
+		if (newVect.LengthSquared == 0f && LengthSquared > 0f) newVect = StartToEndVect;
+		return new BoundedLine(StartPoint, newVect);
 	}
 	public BoundedLine OrthogonalizedAgainst(Plane plane) {
 		return new BoundedLine(StartPoint, StartToEndVect.OrthogonalizedAgainst(plane));

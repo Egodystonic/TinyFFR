@@ -120,12 +120,17 @@ partial class BoundedLineTest {
 		);
 		AssertToleranceEquals(
 			new BoundedLine(new Location(3f, 0f, 6f), new Location(-3f, 0f, 0f)),
-			xzLine.RotatedAroundPivotDistanceBy(rotation, xzLine.Length * 0.75f),
+			xzLine.RotatedAroundPivotDistance(rotation, xzLine.Length * 0.75f),
 			TestTolerance
 		);
 		AssertToleranceEquals(
 			new BoundedLine(new Location(3f, 0f, 0f), new Location(-3f, 0f, -6f)),
-			xzLine.RotatedAroundPivotDistanceBy(rotation, xzLine.Length * 0.25f),
+			xzLine.RotatedAroundPivotDistance(rotation, xzLine.Length * 0.25f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedLine(new Location(-3f, 0f, 3f), new Location(-9f, 0f, -3f)),
+			xzLine.RotatedAroundPoint(rotation, (-3f, 0f, -3f)),
 			TestTolerance
 		);
 	}
@@ -165,19 +170,19 @@ partial class BoundedLineTest {
 	public void ShouldCorrectlyFindClosestPointToLocation() {
 		Assert.AreEqual(
 			new Location(0f, 0f, 0f),
-			new Ray(new Location(-100f, 0f, 0f), Direction.Left).ClosestPointTo(new Location(0f, 1f, 0f))
+			new BoundedLine(new Location(-100f, 0f, 0f), Direction.Left * 200f).ClosestPointTo(new Location(0f, 1f, 0f))
 		);
 		Assert.AreEqual(
 			new Location(-100f, 0f, 0f),
-			new Ray(new Location(0f, 0f, 0f), Direction.Right).ClosestPointTo(new Location(-100f, 1f, 0f))
+			new BoundedLine(new Location(0f, 0f, 0f), Direction.Right * 200f).ClosestPointTo(new Location(-100f, 1f, 0f))
 		);
 		Assert.AreEqual(
 			new Location(100f, 0f, 0f),
-			new Ray(new Location(100f, 0f, 0f), Direction.Left).ClosestPointTo(new Location(0f, 1f, 0f))
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).ClosestPointTo(new Location(0f, 1f, 0f))
 		);
 		Assert.AreEqual(
 			new Location(0f, 0f, 0f),
-			new Ray(new Location(0f, 0f, 0f), Direction.Left).ClosestPointTo(new Location(-100f, 1f, 0f))
+			new BoundedLine(new Location(0f, 0f, 0f), Direction.Left * 200f).ClosestPointTo(new Location(-100f, 1f, 0f))
 		);
 	}
 
@@ -185,19 +190,19 @@ partial class BoundedLineTest {
 	public void ShouldCorrectlyFindClosestPointToOrigin() {
 		Assert.AreEqual(
 			new Location(0f, 0f, 0f),
-			new Ray(new Location(100f, 0f, 0f), Direction.Right).ClosestPointToOrigin()
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Right * 200f).ClosestPointToOrigin()
 		);
 		Assert.AreEqual(
 			new Location(0f, -1f, 0f),
-			new Ray(new Location(100f, -1f, 0f), Direction.Right).ClosestPointToOrigin()
+			new BoundedLine(new Location(100f, -1f, 0f), Direction.Right * 200f).ClosestPointToOrigin()
 		);
 		Assert.AreEqual(
 			new Location(100f, 0f, 0f),
-			new Ray(new Location(100f, 0f, 0f), Direction.Left).ClosestPointToOrigin()
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).ClosestPointToOrigin()
 		);
 		Assert.AreEqual(
 			new Location(100f, -1f, 0f),
-			new Ray(new Location(100f, -1f, 0f), Direction.Left).ClosestPointToOrigin()
+			new BoundedLine(new Location(100f, -1f, 0f), Direction.Left * 200f).ClosestPointToOrigin()
 		);
 	}
 
@@ -205,37 +210,48 @@ partial class BoundedLineTest {
 	public void ShouldCorrectlyDetermineDistanceFromLocation() {
 		Assert.AreEqual(
 			1f,
-			new Ray(new Location(100f, 0f, 0f), Direction.Right).DistanceFrom(new Location(0f, 1f, 0f))
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Right * 200f).DistanceFrom(new Location(0f, 1f, 0f))
 		);
 		Assert.AreEqual(
 			1f,
-			new Ray(new Location(100f, 0f, 0f), Direction.Right).DistanceFrom(new Location(0f, -1f, 0f))
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Right * 200f).DistanceFrom(new Location(0f, -1f, 0f))
 		);
 		Assert.AreEqual(
 			0f,
-			new Ray(new Location(100f, 0f, 0f), Direction.Right).DistanceFrom(new Location(-100f, 0f, 0f))
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Right * 200f).DistanceFrom(new Location(-100f, 0f, 0f))
 		);
 		Assert.AreEqual(
 			MathF.Sqrt(2f),
-			new Ray(new Location(100f, 0f, 0f), Direction.Right).DistanceFrom(new Location(-100f, 1f, -1f)),
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Right * 200f).DistanceFrom(new Location(-100f, 1f, -1f)),
 			TestTolerance
 		);
 
 		Assert.AreEqual(
 			MathF.Sqrt(10001f),
-			new Ray(new Location(100f, 0f, 0f), Direction.Left).DistanceFrom(new Location(0f, 1f, 0f))
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).DistanceFrom(new Location(0f, 1f, 0f))
 		);
 		Assert.AreEqual(
 			MathF.Sqrt(10001f),
-			new Ray(new Location(100f, 0f, 0f), Direction.Left).DistanceFrom(new Location(0f, -1f, 0f))
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).DistanceFrom(new Location(0f, -1f, 0f))
 		);
 		Assert.AreEqual(
 			200f,
-			new Ray(new Location(100f, 0f, 0f), Direction.Left).DistanceFrom(new Location(-100f, 0f, 0f))
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).DistanceFrom(new Location(-100f, 0f, 0f))
 		);
 		Assert.AreEqual(
 			MathF.Sqrt(40002f),
-			new Ray(new Location(100f, 0f, 0f), Direction.Left).DistanceFrom(new Location(-100f, 1f, -1f)),
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).DistanceFrom(new Location(-100f, 1f, -1f)),
+			TestTolerance
+		);
+
+		Assert.AreEqual(
+			10f,
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).DistanceFrom(new Location(310f, 0f, 0f)),
+			TestTolerance
+		);
+		Assert.AreEqual(
+			10f,
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).DistanceFrom(new Location(90f, 0f, 0f)),
 			TestTolerance
 		);
 	}
@@ -244,365 +260,538 @@ partial class BoundedLineTest {
 	public void ShouldCorrectlyDetermineContainmentOfLocation() {
 		Assert.AreEqual(
 			false,
-			new Ray(new Location(100f, 0f, 0f), Direction.Right).Contains(new Location(0f, 1f, 0f))
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Right * 200f).Contains(new Location(0f, 1f, 0f))
 		);
 		Assert.AreEqual(
 			true,
-			new Ray(new Location(100f, 0f, 0f), Direction.Right).Contains(new Location(0f, 1f, 0f), 1.1f)
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Right * 200f).Contains(new Location(0f, 1f, 0f), 1.1f)
 		);
 		Assert.AreEqual(
 			false,
-			new Ray(new Location(100f, 0f, 0f), Direction.Right).Contains(new Location(0f, 1f, 0f), 0.9f)
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Right * 200f).Contains(new Location(0f, 1f, 0f), 0.9f)
 		);
 		Assert.AreEqual(
 			true,
-			new Ray(new Location(100f, 0f, 0f), Direction.Right).Contains(new Location(0f, -1f, 0f), 1.1f)
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Right * 200f).Contains(new Location(0f, -1f, 0f), 1.1f)
 		);
 		Assert.AreEqual(
 			false,
-			new Ray(new Location(100f, 0f, 0f), Direction.Right).Contains(new Location(0f, -1f, 0f), 0.9f)
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Right * 200f).Contains(new Location(0f, -1f, 0f), 0.9f)
 		);
 		Assert.AreEqual(
 			false,
-			new Ray(new Location(100f, 0f, 0f), Direction.Left).Contains(new Location(99f, 0f, 0f), 0.9f)
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).Contains(new Location(99f, 0f, 0f), 0.9f)
 		);
 		Assert.AreEqual(
 			true,
-			new Ray(new Location(100f, 0f, 0f), Direction.Left).Contains(new Location(99f, 0f, 0f), 1.1f)
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).Contains(new Location(99f, 0f, 0f), 1.1f)
 		);
 		Assert.AreEqual(
 			true,
-			new Ray(new Location(100f, 0f, 0f), Direction.Left).Contains(new Location(100f, 0f, 0f))
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).Contains(new Location(100f, 0f, 0f))
 		);
 		Assert.AreEqual(
 			true,
-			new Ray(new Location(100f, 0f, 0f), Direction.Left).Contains(new Location(110f, 0f, 0f))
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).Contains(new Location(110f, 0f, 0f))
+		);
+		Assert.AreEqual(
+			false,
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).Contains(new Location(310f, 0f, 0f))
+		);
+		Assert.AreEqual(
+			false,
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).Contains(new Location(90f, 0f, 0f))
+		);
+		Assert.AreEqual(
+			false,
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).Contains(new Location(310f, 0f, 0f), 9.9f)
+		);
+		Assert.AreEqual(
+			false,
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).Contains(new Location(90f, 0f, 0f), 9.9f)
+		);
+		Assert.AreEqual(
+			true,
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).Contains(new Location(310f, 0f, 0f), 10.1f)
+		);
+		Assert.AreEqual(
+			true,
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).Contains(new Location(90f, 0f, 0f), 10.1f)
 		);
 	}
 
 	[Test]
 	public void ShouldCorrectlyReturnClosestPointToOtherLine() {
-		void AssertPair<TLine>(Location expectedResult, Ray ray, TLine other) where TLine : ILine {
-			AssertToleranceEquals(expectedResult, ray.ClosestPointTo(other), TestTolerance);
-			//Assert.AreEqual(ray.ClosestPointTo(other), other.ClosestPointOn(ray));
+		void AssertPair<TLine>(Location expectedResult, BoundedLine line, TLine other) where TLine : ILine {
+			AssertToleranceEquals(expectedResult, line.ClosestPointTo(other), TestTolerance);
+			Assert.AreEqual(line.ClosestPointTo(other), other.ClosestPointOn(line));
 		}
 
 		// Line
 		AssertPair(
 			new Location(0f, 0f, 0f),
-			new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f)),
+			new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f),
 			new Line(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 1f))
 		);
 		AssertPair(
 			new Location(0f, 10f, 0f),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new Line(new Location(100f, 10f, 0f), Direction.Left)
 		);
 		AssertPair(
 			new Location(0f, 0f, 0f),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new Line(new Location(100f, -10f, 0f), Direction.Left)
+		);
+		AssertPair(
+			new Location(0f, 100f, 0f),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
+			new Line(new Location(100f, 110f, 0f), Direction.Left)
 		);
 
 		// Ray
 		AssertPair(
 			new Location(0f, 20f, 0),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new Ray(new Location(0f, 10f, -10f), new Direction(0f, 1f, 1f))
 		);
 		AssertPair(
 			new Location(0f, 0f, 0),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new Ray(new Location(0f, 10f, -10f), new Direction(0f, -1f, 1f))
 		);
 		AssertPair(
 			new Location(0f, 30f, 0),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new Ray(new Location(0f, 10f, -10f), new Direction(0f, 2f, 1f))
 		);
 		AssertPair(
 			new Location(0f, 0f, 0),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new Ray(new Location(0f, 10f, -10f), new Direction(0f, -1.5f, 1f))
 		);
 		AssertPair(
 			new Location(0f, 0f, 0),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new Ray(new Location(0f, 10f, -10f), new Direction(0f, -2.5f, 1f))
 		);
 		AssertPair(
 			new Location(0f, 10f, 0),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new Ray(new Location(0f, 10f, -10f), new Direction(0f, -2.5f, -1f))
 		);
 		AssertPair(
 			new Location(0f, 10f, 0),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new Ray(new Location(0f, 10f, -10f), new Direction(0f, 1f, -1f))
 		);
 		AssertPair(
 			new Location(0f, 0f, 0),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new Ray(new Location(0f, -1f, -10f), Direction.Forward)
 		);
 		AssertPair(
 			new Location(0f, 0f, 0),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new Ray(new Location(0f, 1f, -1f), new Direction(0f, -100f, 0.1f))
+		);
+		AssertPair(
+			new Location(0f, 15f, 0),
+			new BoundedLine(Location.Origin, Direction.Up * 15f),
+			new Ray(new Location(0f, 10f, -10f), new Direction(0f, 1f, 1f))
+		);
+		AssertPair(
+			new Location(0f, 10f, 0),
+			new BoundedLine(Location.Origin, Direction.Up * 15f),
+			new Ray(new Location(0f, 10f, -10f), new Direction(0f, -1f, -1f))
+		);
+		AssertPair(
+			new Location(0f, 10f, 0),
+			new BoundedLine(Location.Origin, Direction.Up * 15f),
+			new Ray(new Location(0f, 10f, -10f), new Direction(0f, -1f, -1f))
+		);
+		AssertPair(
+			new Location(0f, 15f, 0),
+			new BoundedLine(Location.Origin, Direction.Up * 15f),
+			new Ray(new Location(0f, 20f, -10f), new Direction(0f, -1f, -1f))
 		);
 
 		// BoundedLine
 		AssertPair(
 			new Location(0f, 20f, 0),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 30f, 10f))
 		);
 		AssertPair(
 			new Location(0f, 20f, 0),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new BoundedLine(new Location(0f, 30f, 10f), new Location(0f, 10f, -10f))
 		);
 		AssertPair(
 			new Location(0f, 30f, 0f),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new BoundedLine(new Location(0f, 30f, 10f), new Location(0f, 10f, 30f))
 		);
 		AssertPair(
 			new Location(0f, 30f, 0f),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new BoundedLine(new Location(0f, 10f, 30f), new Location(0f, 30f, 10f))
 		);
 		AssertPair(
 			new Location(0f, 0f, 0f),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 0f, 10f))
 		);
 		AssertPair(
 			new Location(0f, 0f, 0f),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new BoundedLine(new Location(0f, 0f, 10f), new Location(0f, -10f, -10f))
 		);
 		AssertPair(
 			new Location(0f, 0f, 0f),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, -10f, 0f))
 		);
 		AssertPair(
 			new Location(0f, 0f, 0f),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new BoundedLine(new Location(0f, -10f, 0f), new Location(0f, -10f, -10f))
 		);
 		AssertPair(
 			new Location(0f, 0f, 0f),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, -50f, -10f))
 		);
 		AssertPair(
 			new Location(0f, 0f, 0f),
-			new Ray(Location.Origin, Direction.Up),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
 			new BoundedLine(new Location(0f, -50f, -10f), new Location(0f, -10f, -10f))
 		);
-		Assert.GreaterOrEqual(new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).Y, 0f);
-		Assert.LessOrEqual(new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).Y, 50f);
-		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).X);
-		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).Z);
-		Assert.GreaterOrEqual(new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).Y, 0f);
-		Assert.LessOrEqual(new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).Y, 50f);
-		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).X);
-		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).Z);
-
-		Assert.GreaterOrEqual(new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).Y, 10f);
-		Assert.LessOrEqual(new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).Y, 50f);
-		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).X);
-		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).Z);
-		Assert.GreaterOrEqual(new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).Y, 10f);
-		Assert.LessOrEqual(new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).Y, 50f);
-		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).X);
-		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).Z);
+		AssertPair(
+			new Location(0f, 20f, 0),
+			new BoundedLine(Location.Origin, Direction.Up * 100f),
+			new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 30f, 10f))
+		);
+		AssertPair(
+			new Location(0f, 10f, 0),
+			new BoundedLine(Location.Origin, Direction.Up * 10f),
+			new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 30f, 10f))
+		);
+		AssertPair(
+			new Location(0f, 10f, 0),
+			new BoundedLine(Location.Origin, Direction.Up * 10f),
+			new BoundedLine(new Location(0f, 30f, 10f), new Location(0f, 10f, -10f))
+		);
+		AssertPair(
+			new Location(0f, 10f, 0f),
+			new BoundedLine(Location.Origin, Direction.Up * 10f),
+			new BoundedLine(new Location(0f, 30f, 10f), new Location(0f, 10f, 30f))
+		);
+		AssertPair(
+			new Location(0f, 10f, 0f),
+			new BoundedLine(Location.Origin, Direction.Up * 10f),
+			new BoundedLine(new Location(0f, 10f, 30f), new Location(0f, 30f, 10f))
+		);
+		AssertPair(
+			new Location(0f, 0f, 0f),
+			new BoundedLine(Location.Origin, Direction.Up * 10f),
+			new BoundedLine(new Location(0f, -10f, 10f), new Location(0f, -20f, 10f))
+		);
+		AssertPair(
+			new Location(0f, 0f, 0f),
+			new BoundedLine(Location.Origin, Direction.Up * 10f),
+			new BoundedLine(new Location(0f, -20f, 10f), new Location(0f, -10f, 10f))
+		);
+		AssertPair(
+			new Location(0f, 10f, 0f),
+			new BoundedLine(Location.Origin, Direction.Up * 10f),
+			new BoundedLine(new Location(0f, 30f, 10f), new Location(0f, 20f, 10f))
+		);
+		AssertPair(
+			new Location(0f, 10f, 0f),
+			new BoundedLine(Location.Origin, Direction.Up * 10f),
+			new BoundedLine(new Location(0f, 20f, 10f), new Location(0f, 30f, 10f))
+		);
+		Assert.GreaterOrEqual(new BoundedLine(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).Y, 0f);
+		Assert.LessOrEqual(new BoundedLine(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).Y, 50f);
+		Assert.AreEqual(0f, new BoundedLine(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).X);
+		Assert.AreEqual(0f, new BoundedLine(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).Z);
+		Assert.GreaterOrEqual(new BoundedLine(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).Y, 0f);
+		Assert.LessOrEqual(new BoundedLine(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).Y, 50f);
+		Assert.AreEqual(0f, new BoundedLine(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).X);
+		Assert.AreEqual(0f, new BoundedLine(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).Z);
+		
+		Assert.GreaterOrEqual(new BoundedLine(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).Y, 10f);
+		Assert.LessOrEqual(new BoundedLine(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).Y, 50f);
+		Assert.AreEqual(0f, new BoundedLine(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).X);
+		Assert.AreEqual(0f, new BoundedLine(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).Z);
+		Assert.GreaterOrEqual(new BoundedLine(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).Y, 10f);
+		Assert.LessOrEqual(new BoundedLine(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).Y, 50f);
+		Assert.AreEqual(0f, new BoundedLine(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).X);
+		Assert.AreEqual(0f, new BoundedLine(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).Z);
 	}
 
 	[Test]
-	public void ShouldCorrectlyCalculateDistanceFromLines() { // TODO add the right answers in later, this is just a regression test
-		Assert.Fail("Todo");
+	public void ShouldCorrectlyCalculateDistanceFromLines() { // These are regression tests
+		Assert.AreEqual(
+			16.738178f,
+			TestLine.DistanceFrom(new Line(new Location(15f, -3f, 12f), new Direction(-2f, 0f, 14f))),
+			TestTolerance
+		);
+		Assert.AreEqual(
+			18.3847770f,
+			TestLine.DistanceFrom(new Ray(new Location(15f, -3f, 12f), new Direction(-2f, 0f, 14f))),
+			TestTolerance
+		);
+		Assert.AreEqual(
+			17.34369f,
+			TestLine.DistanceFrom(new BoundedLine(new Location(15f, -3f, 12f), new Direction(-2f, 0f, 14f) * -4f)),
+			TestTolerance
+		);
+
+		Assert.AreEqual(
+			0f,
+			TestLine.DistanceFrom(TestLine.ToLine()),
+			TestTolerance
+		);
+		Assert.AreEqual(
+			0f,
+			TestLine.DistanceFrom(TestLine.ToRayFromStart()),
+			TestTolerance
+		);
+		Assert.AreEqual(
+			0f,
+			TestLine.DistanceFrom(TestLine),
+			TestTolerance
+		);
 	}
 
 	[Test]
 	public void ShouldCorrectlyImplementLocationAtDistanceFunctions() {
-		var ray = new Ray(new Location(0f, 1f, 0f), Direction.Right);
+		var line = new BoundedLine(new Location(0f, 1f, 0f), Direction.Right * 100f);
 
-		Assert.AreEqual(false, ray.DistanceIsWithinLineBounds(-30000f));
-		Assert.AreEqual(true, ray.DistanceIsWithinLineBounds(30000f));
-		Assert.AreEqual(true, ray.DistanceIsWithinLineBounds(0f));
+		Assert.AreEqual(false, line.DistanceIsWithinLineBounds(-30000f));
+		Assert.AreEqual(false, line.DistanceIsWithinLineBounds(30000f));
+		Assert.AreEqual(true, line.DistanceIsWithinLineBounds(0f));
+		Assert.AreEqual(true, line.DistanceIsWithinLineBounds(50f));
+		Assert.AreEqual(true, line.DistanceIsWithinLineBounds(99f));
+		Assert.AreEqual(false, line.DistanceIsWithinLineBounds(101f));
+		Assert.AreEqual(false, line.DistanceIsWithinLineBounds(-1f));
 		
-		Assert.AreEqual(0f, ray.BindDistance(-30000f));
-		Assert.AreEqual(30000f, ray.BindDistance(30000f));
-		Assert.AreEqual(0f, ray.BindDistance(0f));
+		Assert.AreEqual(0f, line.BindDistance(-30000f));
+		Assert.AreEqual(100f, line.BindDistance(30000f));
+		Assert.AreEqual(0f, line.BindDistance(0f));
+		Assert.AreEqual(0f, line.BindDistance(-1f));
+		Assert.AreEqual(100f, line.BindDistance(100f));
+		Assert.AreEqual(100f, line.BindDistance(101f));
 
-		Assert.AreEqual(new Location(0f, 1f, 0f), ray.BoundedLocationAtDistance(0f));
-		Assert.AreEqual(new Location(-3f, 1f, 0f), ray.BoundedLocationAtDistance(3f));
-		Assert.AreEqual(new Location(0f, 1f, 0f), ray.BoundedLocationAtDistance(-3f));
+		Assert.AreEqual(new Location(0f, 1f, 0f), line.BoundedLocationAtDistance(0f));
+		Assert.AreEqual(new Location(-3f, 1f, 0f), line.BoundedLocationAtDistance(3f));
+		Assert.AreEqual(new Location(-100f, 1f, 0f), line.BoundedLocationAtDistance(101f));
+		Assert.AreEqual(new Location(0f, 1f, 0f), line.BoundedLocationAtDistance(-3f));
 
-		Assert.AreEqual(new Location(0f, 1f, 0f), ray.UnboundedLocationAtDistance(0f));
-		Assert.AreEqual(new Location(-3f, 1f, 0f), ray.UnboundedLocationAtDistance(3f));
-		Assert.AreEqual(new Location(3f, 1f, 0f), ray.UnboundedLocationAtDistance(-3f));
+		Assert.AreEqual(new Location(0f, 1f, 0f), line.UnboundedLocationAtDistance(0f));
+		Assert.AreEqual(new Location(-3f, 1f, 0f), line.UnboundedLocationAtDistance(3f));
+		Assert.AreEqual(new Location(-101f, 1f, 0f), line.UnboundedLocationAtDistance(101f));
+		Assert.AreEqual(new Location(3f, 1f, 0f), line.UnboundedLocationAtDistance(-3f));
 
-		Assert.AreEqual(new Location(0f, 1f, 0f), ray.LocationAtDistanceOrNull(0f));
-		Assert.AreEqual(new Location(-3f, 1f, 0f), ray.LocationAtDistanceOrNull(3f));
-		Assert.AreEqual(null, ray.LocationAtDistanceOrNull(-3f));
+		Assert.AreEqual(new Location(0f, 1f, 0f), line.LocationAtDistanceOrNull(0f));
+		Assert.AreEqual(new Location(-3f, 1f, 0f), line.LocationAtDistanceOrNull(3f));
+		Assert.AreEqual(null, line.LocationAtDistanceOrNull(-3f));
+		Assert.AreEqual(null, line.LocationAtDistanceOrNull(101f));
 	}
 
 	[Test]
 	public void ShouldCorrectlyDetectLineIntersections() {
 		// Line
 		Assert.Null(
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new Line(new Location(0f, 2f, 0f), Direction.Left),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.NotNull(
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new Line(new Location(0f, 2f, 0f), Direction.Left),
 				lineThickness: 1.01f
 			)
 		);
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new Line(new Location(100f, 2f, 0f), Direction.Down),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.Null(
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new Line(new Location(-1f, 2f, 0f), Direction.Down),
 				lineThickness: 0.01f
+			)
+		);
+		Assert.Null(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
+				new Line(new Location(101f, 2f, 0f), Direction.Down),
+				lineThickness: 0.99f
+			)
+		);
+		Assert.AreEqual(
+			new Location(101f, 1f, 0f),
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
+				new Line(new Location(101f, 2f, 0f), Direction.Down),
+				lineThickness: 1.01f
 			)
 		);
 
 		// Ray
 		Assert.Null(
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new Ray(new Location(0f, 2f, 0f), Direction.Left),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.NotNull(
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new Ray(new Location(0f, 2f, 0f), Direction.Left),
 				lineThickness: 1.01f
 			)
 		);
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new Ray(new Location(100f, 2f, 0f), Direction.Down),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.Null(
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new Ray(new Location(100f, 2f, 0f), Direction.Up),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.AreEqual(
 			new Location(100f, 2f, 0f),
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new Ray(new Location(100f, 2f, 0f), Direction.Up),
 				lineThickness: 1.01f
 			)
 		);
 		Assert.Null(
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new Ray(new Location(-1f, 1f, 0f), Direction.Right),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.AreEqual(
 			new Location(-1f, 1f, 0f),
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new Ray(new Location(-1f, 1f, 0f), Direction.Right),
+				lineThickness: 1.01f
+			)
+		);
+		Assert.Null(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
+				new Ray(new Location(101f, 1f, 0f), Direction.Left),
+				lineThickness: 0.99f
+			)
+		);
+		Assert.AreEqual(
+			new Location(101f, 1f, 0f),
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
+				new Ray(new Location(101f, 1f, 0f), Direction.Left),
+				lineThickness: 1.01f
+			)
+		);
+		Assert.Null(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
+				new Ray(new Location(101f, 2f, 0f), Direction.Down),
+				lineThickness: 0.99f
+			)
+		);
+		Assert.AreEqual(
+			new Location(101f, 1f, 0f),
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
+				new Ray(new Location(101f, 2f, 0f), Direction.Down),
 				lineThickness: 1.01f
 			)
 		);
 
 		// BoundedLine
 		Assert.Null(
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new BoundedLine(new Location(0f, 2f, 0f), Direction.Left * 1f),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.NotNull(
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new BoundedLine(new Location(0f, 2f, 0f), Direction.Left * 1f),
 				lineThickness: 1.01f
 			)
 		);
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new BoundedLine(new Location(100f, 2f, 0f), Direction.Down * 4f),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.Null(
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new BoundedLine(new Location(100f, 2f, 0f), Direction.Up * 4f),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.AreEqual(
 			new Location(100f, 2f, 0f),
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new BoundedLine(new Location(100f, 2f, 0f), Direction.Up * 4f),
 				lineThickness: 1.01f
 			)
 		);
 		Assert.Null(
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new BoundedLine(new Location(100f, 6f, 0f), Direction.Down * 4f),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.AreEqual(
 			new Location(100f, 2f, 0f),
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new BoundedLine(new Location(100f, 6f, 0f), Direction.Down * 4f),
 				lineThickness: 1.01f
 			)
 		);
 		Assert.AreEqual(
 			new Location(0f, 1f, 0f),
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new BoundedLine(new Location(0f, 1f, 0f), new Location(-1f, 1f, 0f))
 			)
 		);
 		Assert.AreEqual(
 			new Location(0f, 1f, 0f),
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new BoundedLine(new Location(-1f, 1f, 0f), new Location(0f, 1f, 0f))
 			)
 		);
 		Assert.Null(
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new BoundedLine(new Location(-1f, 1f, 0f), new Location(-2f, 1f, 0f))
 			)
 		);
 		Assert.Null(
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new BoundedLine(new Location(-2f, 1f, 0f), new Location(-1f, 1f, 0f))
 			)
 		);
 		Assert.AreEqual(
 			new Location(10f, 1f, 0f),
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new BoundedLine(new Location(10f, 2f, 0f), new Location(10f, 0f, 0f))
 			)
 		);
 		Assert.Null(
-			new Ray(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).IntersectionWith(
 				new BoundedLine(new Location(10f, 2f, 0f), new Location(10f, 4f, 0f))
 			)
 		);
@@ -613,24 +802,41 @@ partial class BoundedLineTest {
 		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
 
 		Assert.AreEqual(
-			new Ray(new Location(100f, 1f, 0f), Direction.Up),
-			new Ray(new Location(100f, 100f, 0f), Direction.Down).ReflectedBy(plane)
+			new BoundedLine(new Location(100f, 1f, 0f), Direction.Up * 100f),
+			new BoundedLine(new Location(100f, 1f, 0f), Direction.Down * 100f).ReflectedBy(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(100f, 1f, 0f), Direction.Down),
-			new Ray(new Location(100f, -100f, 0f), Direction.Up).ReflectedBy(plane)
+			new BoundedLine(new Location(100f, 1f, 0f), Direction.Down * 100f),
+			new BoundedLine(new Location(100f, 1f, 0f), Direction.Up * 100f).ReflectedBy(plane)
 		);
 		Assert.Null(
-			new Ray(new Location(0f, 2f, 0f), Direction.Right).ReflectedBy(plane)
+			new BoundedLine(new Location(0f, 2f, 0f), Direction.Right * 100f).ReflectedBy(plane)
 		);
 		Assert.Null(
-			new Ray(new Location(0f, 0f, 0f), Direction.Right).ReflectedBy(plane)
+			new BoundedLine(new Location(0f, 0f, 0f), Direction.Right * 100f).ReflectedBy(plane)
 		);
 		Assert.Null(
-			new Ray(new Location(100f, 100f, 0f), Direction.Up).ReflectedBy(plane)
+			new BoundedLine(new Location(100f, 100f, 0f), Direction.Up * 100f).ReflectedBy(plane)
 		);
 		Assert.Null(
-			new Ray(new Location(100f, -100f, 0f), Direction.Down).ReflectedBy(plane)
+			new BoundedLine(new Location(100f, -100f, 0f), Direction.Down * 100f).ReflectedBy(plane)
+		);
+
+		AssertToleranceEquals(
+			new BoundedLine(new Location(0f, 1f, 0f), new Direction(0f, 1f, -1f) * MathF.Sqrt(50f) * 2f),
+			new BoundedLine(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).ReflectedBy(plane),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedLine(new Location(0f, 1f, 0f), new Direction(0f, -1f, 1f) * MathF.Sqrt(50f) * 1f),
+			new BoundedLine(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).Flipped.ReflectedBy(plane),
+			TestTolerance
+		);
+		Assert.Null(
+			new BoundedLine(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 0.5f).ReflectedBy(plane)
+		);
+		Assert.Null(
+			new BoundedLine(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 0.5f).Flipped.ReflectedBy(plane)
 		);
 	}
 
@@ -640,23 +846,40 @@ partial class BoundedLineTest {
 
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
-			new Ray(new Location(100f, 100f, 0f), Direction.Down).IntersectionWith(plane)
+			new BoundedLine(new Location(100f, 101f, 0f), Direction.Down * 100f).IntersectionWith(plane)
 		);
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
-			new Ray(new Location(100f, -100f, 0f), Direction.Up).IntersectionWith(plane)
+			new BoundedLine(new Location(100f, -99f, 0f), Direction.Up * 100f).IntersectionWith(plane)
 		);
 		Assert.Null(
-			new Ray(new Location(0f, 2f, 0f), Direction.Right).IntersectionWith(plane)
+			new BoundedLine(new Location(0f, 2f, 0f), Direction.Right * 100f).IntersectionWith(plane)
 		);
 		Assert.Null(
-			new Ray(new Location(0f, 0f, 0f), Direction.Right).IntersectionWith(plane)
+			new BoundedLine(new Location(0f, 0f, 0f), Direction.Right * 100f).IntersectionWith(plane)
 		);
 		Assert.Null(
-			new Ray(new Location(100f, 100f, 0f), Direction.Up).IntersectionWith(plane)
+			new BoundedLine(new Location(100f, 100f, 0f), Direction.Up * 100f).IntersectionWith(plane)
 		);
 		Assert.Null(
-			new Ray(new Location(100f, -100f, 0f), Direction.Down).IntersectionWith(plane)
+			new BoundedLine(new Location(100f, -100f, 0f), Direction.Down * 100f).IntersectionWith(plane)
+		);
+
+		AssertToleranceEquals(
+			new Location(0f, 1f, 0f),
+			new BoundedLine(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).IntersectionWith(plane),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Location(0f, 1f, 0f),
+			new BoundedLine(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).Flipped.IntersectionWith(plane),
+			TestTolerance
+		);
+		Assert.Null(
+			new BoundedLine(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 0.5f).IntersectionWith(plane)
+		);
+		Assert.Null(
+			new BoundedLine(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 0.5f).Flipped.IntersectionWith(plane)
 		);
 	}
 
@@ -664,34 +887,36 @@ partial class BoundedLineTest {
 	public void ShouldCorrectlyDetermineSignedDistanceFromPlane() {
 		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
 
-		void AssertDistance(float expectedSignedDistance, Ray ray) {
-			Assert.AreEqual(expectedSignedDistance, ray.SignedDistanceFrom(plane));
-			Assert.AreEqual(MathF.Abs(expectedSignedDistance), ray.DistanceFrom(plane));
+		void AssertDistance(float expectedSignedDistance, BoundedLine line) {
+			Assert.AreEqual(expectedSignedDistance, line.SignedDistanceFrom(plane));
+			Assert.AreEqual(MathF.Abs(expectedSignedDistance), line.DistanceFrom(plane));
+			Assert.AreEqual(expectedSignedDistance, line.Flipped.SignedDistanceFrom(plane));
+			Assert.AreEqual(MathF.Abs(expectedSignedDistance), line.Flipped.DistanceFrom(plane));
 		}
 
 		AssertDistance(
 			0f,
-			new Ray(new Location(100f, 100f, 0f), Direction.Down)
+			new BoundedLine(new Location(100f, 101f, 0f), Direction.Down * 100f)
 		);
 		AssertDistance(
 			0f,
-			new Ray(new Location(100f, -100f, 0f), Direction.Up)
+			new BoundedLine(new Location(100f, -99f, 0f), Direction.Up * 100f)
 		);
 		AssertDistance(
 			1f,
-			new Ray(new Location(0f, 2f, 0f), Direction.Right)
+			new BoundedLine(new Location(0f, 2f, 0f), Direction.Right * 100f)
 		);
 		AssertDistance(
 			-1f,
-			new Ray(new Location(0f, 0f, 0f), Direction.Right)
+			new BoundedLine(new Location(0f, 0f, 0f), Direction.Right * 100f)
 		);
 		AssertDistance(
 			99f,
-			new Ray(new Location(100f, 100f, 0f), Direction.Up)
+			new BoundedLine(new Location(100f, 100f, 0f), Direction.Up * 100f)
 		);
 		AssertDistance(
 			-101f,
-			new Ray(new Location(100f, -100f, 0f), Direction.Down)
+			new BoundedLine(new Location(100f, -100f, 0f), Direction.Down * 100f)
 		);
 	}
 
@@ -701,27 +926,51 @@ partial class BoundedLineTest {
 
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
-			new Ray(new Location(100f, 100f, 0f), Direction.Down).ClosestPointTo(plane)
+			new BoundedLine(new Location(100f, 100f, 0f), Direction.Down * 100f).ClosestPointTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
-			new Ray(new Location(100f, -100f, 0f), Direction.Up).ClosestPointTo(plane)
+			new BoundedLine(new Location(100f, 100f, 0f), Direction.Down * 100f).Flipped.ClosestPointTo(plane)
+		);
+		Assert.AreEqual(
+			new Location(100f, 0f, 0f),
+			new BoundedLine(new Location(100f, -100f, 0f), Direction.Up * 100f).ClosestPointTo(plane)
+		);
+		Assert.AreEqual(
+			new Location(100f, 0f, 0f),
+			new BoundedLine(new Location(100f, -100f, 0f), Direction.Up * 100f).Flipped.ClosestPointTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(0f, 2f, 0f),
-			new Ray(new Location(0f, 2f, 0f), Direction.Right).ClosestPointTo(plane)
+			new BoundedLine(new Location(0f, 2f, 0f), Direction.Right * 100f).ClosestPointTo(plane)
+		);
+		Assert.AreEqual(
+			new Location(-100f, 2f, 0f),
+			new BoundedLine(new Location(0f, 2f, 0f), Direction.Right * 100f).Flipped.ClosestPointTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(0f, 0f, 0f),
-			new Ray(new Location(0f, 0f, 0f), Direction.Right).ClosestPointTo(plane)
+			new BoundedLine(new Location(0f, 0f, 0f), Direction.Right * 100f).ClosestPointTo(plane)
+		);
+		Assert.AreEqual(
+			new Location(-100f, 0f, 0f),
+			new BoundedLine(new Location(0f, 0f, 0f), Direction.Right * 100f).Flipped.ClosestPointTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(100f, 100f, 0f),
-			new Ray(new Location(100f, 100f, 0f), Direction.Up).ClosestPointTo(plane)
+			new BoundedLine(new Location(100f, 100f, 0f), Direction.Up * 100f).ClosestPointTo(plane)
+		);
+		Assert.AreEqual(
+			new Location(100f, 100f, 0f),
+			new BoundedLine(new Location(100f, 100f, 0f), Direction.Up * 100f).Flipped.ClosestPointTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(100f, -100f, 0f),
-			new Ray(new Location(100f, -100f, 0f), Direction.Down).ClosestPointTo(plane)
+			new BoundedLine(new Location(100f, -100f, 0f), Direction.Down * 100f).ClosestPointTo(plane)
+		);
+		Assert.AreEqual(
+			new Location(100f, -100f, 0f),
+			new BoundedLine(new Location(100f, -100f, 0f), Direction.Down * 100f).Flipped.ClosestPointTo(plane)
 		);
 	}
 
@@ -731,27 +980,35 @@ partial class BoundedLineTest {
 
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
-			new Ray(new Location(100f, 100f, 0f), Direction.Down).ClosestPointOn(plane)
+			new BoundedLine(new Location(100f, 100f, 0f), Direction.Down * 200f).ClosestPointOn(plane)
 		);
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
-			new Ray(new Location(100f, -100f, 0f), Direction.Up).ClosestPointOn(plane)
+			new BoundedLine(new Location(100f, -100f, 0f), Direction.Up * 200f).ClosestPointOn(plane)
+		);
+		Assert.AreEqual(
+			new Location(100f, 1f, 0f),
+			new BoundedLine(new Location(100f, 100f, 0f), Direction.Down * 50f).ClosestPointOn(plane)
+		);
+		Assert.AreEqual(
+			new Location(100f, 1f, 0f),
+			new BoundedLine(new Location(100f, -100f, 0f), Direction.Up * 50f).ClosestPointOn(plane)
 		);
 		Assert.AreEqual(
 			plane.ClosestPointToOrigin,
-			new Ray(new Location(0f, 2f, 0f), Direction.Right).ClosestPointOn(plane)
+			new BoundedLine(new Location(0f, 2f, 0f), Direction.Right * 200f).ClosestPointOn(plane)
 		);
 		Assert.AreEqual(
 			plane.ClosestPointToOrigin,
-			new Ray(new Location(0f, 0f, 0f), Direction.Right).ClosestPointOn(plane)
+			new BoundedLine(new Location(0f, 0f, 0f), Direction.Right * 200f).ClosestPointOn(plane)
 		);
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
-			new Ray(new Location(100f, 100f, 0f), Direction.Up).ClosestPointOn(plane)
+			new BoundedLine(new Location(100f, 100f, 0f), Direction.Up * 200f).ClosestPointOn(plane)
 		);
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
-			new Ray(new Location(100f, -100f, 0f), Direction.Down).ClosestPointOn(plane)
+			new BoundedLine(new Location(100f, -100f, 0f), Direction.Down * 200f).ClosestPointOn(plane)
 		);
 	}
 
@@ -761,27 +1018,51 @@ partial class BoundedLineTest {
 
 		Assert.AreEqual(
 			PlaneObjectRelationship.PlaneIntersectsObject,
-			new Ray(new Location(100f, 100f, 0f), Direction.Down).RelationshipTo(plane)
+			new BoundedLine(new Location(100f, 100f, 0f), Direction.Down * 200f).RelationshipTo(plane)
 		);
 		Assert.AreEqual(
 			PlaneObjectRelationship.PlaneIntersectsObject,
-			new Ray(new Location(100f, -100f, 0f), Direction.Up).RelationshipTo(plane)
+			new BoundedLine(new Location(100f, -100f, 0f), Direction.Up * 200f).RelationshipTo(plane)
 		);
 		Assert.AreEqual(
 			PlaneObjectRelationship.PlaneFacesTowardsObject,
-			new Ray(new Location(0f, 2f, 0f), Direction.Right).RelationshipTo(plane)
+			new BoundedLine(new Location(100f, 100f, 0f), Direction.Down * 50f).RelationshipTo(plane)
 		);
 		Assert.AreEqual(
 			PlaneObjectRelationship.PlaneFacesAwayFromObject,
-			new Ray(new Location(0f, 0f, 0f), Direction.Right).RelationshipTo(plane)
+			new BoundedLine(new Location(100f, -100f, 0f), Direction.Up * 50f).RelationshipTo(plane)
+		);
+		Assert.AreEqual(
+			PlaneObjectRelationship.PlaneIntersectsObject,
+			new BoundedLine(new Location(100f, 100f, 0f), Direction.Down * 200f).Flipped.RelationshipTo(plane)
+		);
+		Assert.AreEqual(
+			PlaneObjectRelationship.PlaneIntersectsObject,
+			new BoundedLine(new Location(100f, -100f, 0f), Direction.Up * 200f).Flipped.RelationshipTo(plane)
 		);
 		Assert.AreEqual(
 			PlaneObjectRelationship.PlaneFacesTowardsObject,
-			new Ray(new Location(100f, 100f, 0f), Direction.Up).RelationshipTo(plane)
+			new BoundedLine(new Location(100f, 100f, 0f), Direction.Down * 50f).Flipped.RelationshipTo(plane)
 		);
 		Assert.AreEqual(
 			PlaneObjectRelationship.PlaneFacesAwayFromObject,
-			new Ray(new Location(100f, -100f, 0f), Direction.Down).RelationshipTo(plane)
+			new BoundedLine(new Location(100f, -100f, 0f), Direction.Up * 50f).Flipped.RelationshipTo(plane)
+		);
+		Assert.AreEqual(
+			PlaneObjectRelationship.PlaneFacesTowardsObject,
+			new BoundedLine(new Location(0f, 2f, 0f), Direction.Right * 200f).RelationshipTo(plane)
+		);
+		Assert.AreEqual(
+			PlaneObjectRelationship.PlaneFacesAwayFromObject,
+			new BoundedLine(new Location(0f, 0f, 0f), Direction.Right * 200f).RelationshipTo(plane)
+		);
+		Assert.AreEqual(
+			PlaneObjectRelationship.PlaneFacesTowardsObject,
+			new BoundedLine(new Location(100f, 100f, 0f), Direction.Up * 200f).RelationshipTo(plane)
+		);
+		Assert.AreEqual(
+			PlaneObjectRelationship.PlaneFacesAwayFromObject,
+			new BoundedLine(new Location(100f, -100f, 0f), Direction.Down * 200f).RelationshipTo(plane)
 		);
 	}
 
@@ -791,72 +1072,120 @@ partial class BoundedLineTest {
 
 		// Various projections from behind the plane
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Left),
-			new Ray(new Location(10f, 0f, 0f), Direction.Left).ProjectedOnTo(plane)
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Left * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Left * 100f).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Right),
-			new Ray(new Location(10f, 0f, 0f), Direction.Right).ProjectedOnTo(plane)
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Right * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Right * 100f).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Left),
-			new Ray(new Location(10f, 0f, 0f), new Direction(1f, 1f, 0f)).ProjectedOnTo(plane)
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Left * 100f / MathF.Sqrt(2f)),
+			new BoundedLine(new Location(10f, 0f, 0f), new Direction(1f, 1f, 0f) * 100f).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Right),
-			new Ray(new Location(10f, 0f, 0f), new Direction(-1f, 1f, 0f)).ProjectedOnTo(plane)
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Right * 100f / MathF.Sqrt(2f)),
+			new BoundedLine(new Location(10f, 0f, 0f), new Direction(-1f, 1f, 0f) * 100f).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Left),
-			new Ray(new Location(10f, 0f, 0f), new Direction(1f, -1f, 0f)).ProjectedOnTo(plane)
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Left * 100f / MathF.Sqrt(2f)),
+			new BoundedLine(new Location(10f, 0f, 0f), new Direction(1f, -1f, 0f) * 100f).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Right),
-			new Ray(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f)).ProjectedOnTo(plane)
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Right * 100f / MathF.Sqrt(2f)),
+			new BoundedLine(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f) * 100f).ProjectedOnTo(plane)
 		);
-	
+		Assert.AreEqual(
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Left * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), new Direction(1f, 1f, 0f) * 100f).ProjectedOnTo(plane, preserveLength: true)
+		);
+		Assert.AreEqual(
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Right * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), new Direction(-1f, 1f, 0f) * 100f).ProjectedOnTo(plane, preserveLength: true)
+		);
+		Assert.AreEqual(
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Left * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), new Direction(1f, -1f, 0f) * 100f).ProjectedOnTo(plane, preserveLength: true)
+		);
+		Assert.AreEqual(
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Right * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f) * 100f).ProjectedOnTo(plane, preserveLength: true)
+		);
+
 		// Various projections from in front the plane
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Left),
-			new Ray(new Location(10f, 2f, 0f), Direction.Left).ProjectedOnTo(plane)
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Left * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Left * 100f).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Right),
-			new Ray(new Location(10f, 2f, 0f), Direction.Right).ProjectedOnTo(plane)
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Right * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Right * 100f).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Left),
-			new Ray(new Location(10f, 2f, 0f), new Direction(1f, 1f, 0f)).ProjectedOnTo(plane)
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Left * 100f / MathF.Sqrt(2f)),
+			new BoundedLine(new Location(10f, 2f, 0f), new Direction(1f, 1f, 0f) * 100f).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Right),
-			new Ray(new Location(10f, 2f, 0f), new Direction(-1f, 1f, 0f)).ProjectedOnTo(plane)
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Right * 100f / MathF.Sqrt(2f)),
+			new BoundedLine(new Location(10f, 2f, 0f), new Direction(-1f, 1f, 0f) * 100f).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Left),
-			new Ray(new Location(10f, 2f, 0f), new Direction(1f, -1f, 0f)).ProjectedOnTo(plane)
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Left * 100f / MathF.Sqrt(2f)),
+			new BoundedLine(new Location(10f, 2f, 0f), new Direction(1f, -1f, 0f) * 100f).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Right),
-			new Ray(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f)).ProjectedOnTo(plane)
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Right * 100f / MathF.Sqrt(2f)),
+			new BoundedLine(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f) * 100f).ProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Left * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), new Direction(1f, 1f, 0f) * 100f).ProjectedOnTo(plane, preserveLength: true)
+		);
+		Assert.AreEqual(
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Right * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), new Direction(-1f, 1f, 0f) * 100f).ProjectedOnTo(plane, preserveLength: true)
+		);
+		Assert.AreEqual(
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Left * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), new Direction(1f, -1f, 0f) * 100f).ProjectedOnTo(plane, preserveLength: true)
+		);
+		Assert.AreEqual(
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Right * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f) * 100f).ProjectedOnTo(plane, preserveLength: true)
 		);
 
 		// Projections from perpendicular directions
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Up),
-			new Ray(new Location(10f, 2f, 0f), Direction.Up).ProjectedOnTo(plane)
+			new BoundedLine(new Location(10f, 1f, 0f), Vect.Zero),
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Up * 100f).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Down),
-			new Ray(new Location(10f, 2f, 0f), Direction.Down).ProjectedOnTo(plane)
+			new BoundedLine(new Location(10f, 1f, 0f), Vect.Zero),
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Down * 100f).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Up),
-			new Ray(new Location(10f, 0f, 0f), Direction.Up).ProjectedOnTo(plane)
+			new BoundedLine(new Location(10f, 1f, 0f), Vect.Zero),
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Up * 100f).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Down),
-			new Ray(new Location(10f, 0f, 0f), Direction.Down).ProjectedOnTo(plane)
+			new BoundedLine(new Location(10f, 1f, 0f), Vect.Zero),
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Down * 100f).ProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Up * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Up * 100f).ProjectedOnTo(plane, preserveLength: true)
+		);
+		Assert.AreEqual(
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Down * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Down * 100f).ProjectedOnTo(plane, preserveLength: true)
+		);
+		Assert.AreEqual(
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Up * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Up * 100f).ProjectedOnTo(plane, preserveLength: true)
+		);
+		Assert.AreEqual(
+			new BoundedLine(new Location(10f, 1f, 0f), Direction.Down * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Down * 100f).ProjectedOnTo(plane, preserveLength: true)
 		);
 	}
 
@@ -866,72 +1195,72 @@ partial class BoundedLineTest {
 
 		// Various parallelizations from behind the plane
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Left),
-			new Ray(new Location(10f, 0f, 0f), Direction.Left).ParallelizedWith(plane)
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Left * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Left * 100f).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Right),
-			new Ray(new Location(10f, 0f, 0f), Direction.Right).ParallelizedWith(plane)
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Right * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Right * 100f).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Left),
-			new Ray(new Location(10f, 0f, 0f), new Direction(1f, 1f, 0f)).ParallelizedWith(plane)
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Left * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), new Direction(1f, 1f, 0f) * 100f).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Right),
-			new Ray(new Location(10f, 0f, 0f), new Direction(-1f, 1f, 0f)).ParallelizedWith(plane)
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Right * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), new Direction(-1f, 1f, 0f) * 100f).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Left),
-			new Ray(new Location(10f, 0f, 0f), new Direction(1f, -1f, 0f)).ParallelizedWith(plane)
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Left * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), new Direction(1f, -1f, 0f) * 100f).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Right),
-			new Ray(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f)).ParallelizedWith(plane)
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Right * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f) * 100f).ParallelizedWith(plane)
 		);
 
 		// Various parallelizations from in front the plane
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Left),
-			new Ray(new Location(10f, 2f, 0f), Direction.Left).ParallelizedWith(plane)
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Left * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Left * 100f).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Right),
-			new Ray(new Location(10f, 2f, 0f), Direction.Right).ParallelizedWith(plane)
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Right * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Right * 100f).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Left),
-			new Ray(new Location(10f, 2f, 0f), new Direction(1f, 1f, 0f)).ParallelizedWith(plane)
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Left * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), new Direction(1f, 1f, 0f) * 100f).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Right),
-			new Ray(new Location(10f, 2f, 0f), new Direction(-1f, 1f, 0f)).ParallelizedWith(plane)
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Right * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), new Direction(-1f, 1f, 0f) * 100f).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Left),
-			new Ray(new Location(10f, 2f, 0f), new Direction(1f, -1f, 0f)).ParallelizedWith(plane)
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Left * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), new Direction(1f, -1f, 0f) * 100f).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Right),
-			new Ray(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f)).ParallelizedWith(plane)
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Right * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f) * 100f).ParallelizedWith(plane)
 		);
 
-		// Parallelizations from perpendicular directions
+		// Projections from parallelizations directions
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Up),
-			new Ray(new Location(10f, 2f, 0f), Direction.Up).ParallelizedWith(plane)
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Up * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Up * 100f).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Down),
-			new Ray(new Location(10f, 2f, 0f), Direction.Down).ParallelizedWith(plane)
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Down * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Down * 100f).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Up),
-			new Ray(new Location(10f, 0f, 0f), Direction.Up).ParallelizedWith(plane)
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Up * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Up * 100f).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Down),
-			new Ray(new Location(10f, 0f, 0f), Direction.Down).ParallelizedWith(plane)
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Down * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Down * 100f).ParallelizedWith(plane)
 		);
 	}
 
@@ -941,72 +1270,72 @@ partial class BoundedLineTest {
 
 		// Various orthogonalizations from behind the plane
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Up),
-			new Ray(new Location(10f, 0f, 0f), Direction.Left).OrthogonalizedAgainst(plane)
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Up * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Left * 100f).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Up),
-			new Ray(new Location(10f, 0f, 0f), Direction.Right).OrthogonalizedAgainst(plane)
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Up * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Right * 100f).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Up),
-			new Ray(new Location(10f, 0f, 0f), new Direction(1f, 1f, 0f)).OrthogonalizedAgainst(plane)
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Up * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), new Direction(1f, 1f, 0f) * 100f).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Up),
-			new Ray(new Location(10f, 0f, 0f), new Direction(-1f, 1f, 0f)).OrthogonalizedAgainst(plane)
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Up * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), new Direction(-1f, 1f, 0f) * 100f).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Down),
-			new Ray(new Location(10f, 0f, 0f), new Direction(1f, -1f, 0f)).OrthogonalizedAgainst(plane)
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Down * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), new Direction(1f, -1f, 0f) * 100f).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Down),
-			new Ray(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f)).OrthogonalizedAgainst(plane)
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Down * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f) * 100f).OrthogonalizedAgainst(plane)
 		);
 
 		// Various orthogonalizations from in front the plane
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Up),
-			new Ray(new Location(10f, 2f, 0f), Direction.Left).OrthogonalizedAgainst(plane)
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Up * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Left * 100f).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Up),
-			new Ray(new Location(10f, 2f, 0f), Direction.Right).OrthogonalizedAgainst(plane)
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Up * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Right * 100f).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Up),
-			new Ray(new Location(10f, 2f, 0f), new Direction(1f, 1f, 0f)).OrthogonalizedAgainst(plane)
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Up * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), new Direction(1f, 1f, 0f) * 100f).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Up),
-			new Ray(new Location(10f, 2f, 0f), new Direction(-1f, 1f, 0f)).OrthogonalizedAgainst(plane)
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Up * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), new Direction(-1f, 1f, 0f) * 100f).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Down),
-			new Ray(new Location(10f, 2f, 0f), new Direction(1f, -1f, 0f)).OrthogonalizedAgainst(plane)
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Down * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), new Direction(1f, -1f, 0f) * 100f).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Down),
-			new Ray(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f)).OrthogonalizedAgainst(plane)
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Down * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f) * 100f).OrthogonalizedAgainst(plane)
 		);
 
 		// Orthogonalizations from perpendicular directions
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Up),
-			new Ray(new Location(10f, 2f, 0f), Direction.Up).OrthogonalizedAgainst(plane)
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Up * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Up * 100f).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Down),
-			new Ray(new Location(10f, 2f, 0f), Direction.Down).OrthogonalizedAgainst(plane)
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Down * 100f),
+			new BoundedLine(new Location(10f, 2f, 0f), Direction.Down * 100f).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Up),
-			new Ray(new Location(10f, 0f, 0f), Direction.Up).OrthogonalizedAgainst(plane)
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Up * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Up * 100f).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Down),
-			new Ray(new Location(10f, 0f, 0f), Direction.Down).OrthogonalizedAgainst(plane)
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Down * 100f),
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Down * 100f).OrthogonalizedAgainst(plane)
 		);
 	}
 
@@ -1014,9 +1343,9 @@ partial class BoundedLineTest {
 	public void ShouldCorrectlyBeSplitByPlanes() {
 		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
 
-		void AssertSplit(BoundedLine? expectedToPlane, Ray? expectedFromPlane, Ray ray) {
-			AssertToleranceEquals(expectedFromPlane, ray.SplitBy(plane), TestTolerance);
-			var trySplitResult = ray.TrySplit(plane, out var actualToPlane, out var actualFromPlane);
+		void AssertSplit(BoundedLine? expectedToPlane, BoundedLine? expectedFromPlane, BoundedLine line) {
+			AssertToleranceEquals(expectedFromPlane, line.SplitBy(plane), TestTolerance);
+			var trySplitResult = line.TrySplit(plane, out var actualToPlane, out var actualFromPlane);
 			if (expectedToPlane == null) Assert.AreEqual(false, trySplitResult);
 			else {
 				Assert.AreEqual(true, trySplitResult);
@@ -1028,63 +1357,84 @@ partial class BoundedLineTest {
 		AssertSplit(
 			null,
 			null,
-			new Ray(new Location(0f, 2f, 0f), Direction.Right)
+			new BoundedLine(new Location(0f, 2f, 0f), Direction.Right * 100f)
 		);
 		AssertSplit(
 			null,
 			null,
-			new Ray(new Location(0f, 2f, 0f), Direction.Left)
+			new BoundedLine(new Location(0f, 2f, 0f), Direction.Left * 100f)
 		);
 		AssertSplit(
 			null,
 			null,
-			new Ray(new Location(0f, 0f, 0f), Direction.Right)
+			new BoundedLine(new Location(0f, 0f, 0f), Direction.Right * 100f)
 		);
 		AssertSplit(
 			null,
 			null,
-			new Ray(new Location(0f, 0f, 0f), Direction.Left)
+			new BoundedLine(new Location(0f, 0f, 0f), Direction.Left * 100f)
 		);
 		AssertSplit(
 			null,
 			null,
-			new Ray(new Location(0f, 1f, 0f), Direction.Right)
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Right * 100f)
 		);
 		AssertSplit(
 			null,
 			null,
-			new Ray(new Location(0f, 1f, 0f), Direction.Left)
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f)
 		);
 
 		AssertSplit(
 			new BoundedLine(new Location(100f, 2f, 0f), new Location(100f, 1f, 0f)),
-			new Ray(new Location(100f, 1f, 0f), Direction.Down),
-			new Ray(new Location(100f, 2f, 0f), Direction.Down)
+			new BoundedLine(new Location(100f, 1f, 0f), Direction.Down * 99f),
+			new BoundedLine(new Location(100f, 2f, 0f), Direction.Down * 100f)
 		);
 		AssertSplit(
 			new BoundedLine(new Location(100f, 0f, 0f), new Location(100f, 1f, 0f)),
-			new Ray(new Location(100f, 1f, 0f), Direction.Up),
-			new Ray(new Location(100f, 0f, 0f), Direction.Up)
+			new BoundedLine(new Location(100f, 1f, 0f), Direction.Up * 99f),
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Up * 100f)
 		);
 		AssertSplit(
 			null,
 			null,
-			new Ray(new Location(100f, 2f, 0f), Direction.Up)
+			new BoundedLine(new Location(100f, 2f, 0f), Direction.Up * 100f)
 		);
 		AssertSplit(
 			null,
 			null,
-			new Ray(new Location(100f, 0f, 0f), Direction.Down)
+			new BoundedLine(new Location(100f, 0f, 0f), Direction.Down * 100f)
 		);
 		AssertSplit(
 			new BoundedLine(new Location(100f, 2f, 0f), new Location(101f, 1f, 0f)),
-			new Ray(new Location(101f, 1f, 0f), new Direction(1f, -1f, 0f)),
-			new Ray(new Location(100f, 2f, 0f), new Direction(1f, -1f, 0f))
+			new BoundedLine(new Location(101f, 1f, 0f), new Direction(1f, -1f, 0f) * (100f - MathF.Sqrt(2f))),
+			new BoundedLine(new Location(100f, 2f, 0f), new Direction(1f, -1f, 0f) * 100f)
 		);
 		AssertSplit(
 			new BoundedLine(new Location(100f, 0f, 0f), new Location(101f, 1f, 0f)),
-			new Ray(new Location(101f, 1f, 0f), new Direction(1f, 1f, 0f)),
-			new Ray(new Location(100f, 0f, 0f), new Direction(1f, 1f, 0f))
+			new BoundedLine(new Location(101f, 1f, 0f), new Direction(1f, 1f, 0f) * (100f - MathF.Sqrt(2f))),
+			new BoundedLine(new Location(100f, 0f, 0f), new Direction(1f, 1f, 0f) * 100f)
+		);
+
+		AssertSplit(
+			null,
+			null,
+			new BoundedLine(new Location(0f, 10f, 0f), Direction.Down * 5f)
+		);
+		AssertSplit(
+			null,
+			null,
+			new BoundedLine(new Location(0f, -10f, 0f), Direction.Up * 5f)
+		);
+		AssertSplit(
+			new BoundedLine(new Location(0f, 10f, 0f), Direction.Down * 9f),
+			new BoundedLine(new Location(0f, 1f, 0f), Vect.Zero),
+			new BoundedLine(new Location(0f, 10f, 0f), Direction.Down * 9f)
+		);
+		AssertSplit(
+			new BoundedLine(new Location(0f, -10f, 0f), Direction.Up * 11f),
+			new BoundedLine(new Location(0f, 1f, 0f), Vect.Zero),
+			new BoundedLine(new Location(0f, -10f, 0f), Direction.Up * 11f)
 		);
 	}
 }

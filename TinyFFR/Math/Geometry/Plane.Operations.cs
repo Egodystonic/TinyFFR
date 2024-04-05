@@ -26,14 +26,14 @@ public readonly partial struct Plane :
 	
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Plane operator *(Plane plane, (Location Pivot, Rotation Rotation) rotTuple) => plane.RotatedAround(rotTuple.Pivot, rotTuple.Rotation);
+	public static Plane operator *(Plane plane, (Location Pivot, Rotation Rotation) rotTuple) => plane.RotatedAroundPoint(rotTuple.Rotation, rotTuple.Pivot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Plane operator *((Location Pivot, Rotation Rotation) rotTuple, Plane plane) => plane.RotatedAround(rotTuple.Pivot, rotTuple.Rotation);
+	public static Plane operator *((Location Pivot, Rotation Rotation) rotTuple, Plane plane) => plane.RotatedAroundPoint(rotTuple.Rotation, rotTuple.Pivot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Plane operator *(Plane plane, (Rotation Rotation, Location Pivot) rotTuple) => plane.RotatedAround(rotTuple.Pivot, rotTuple.Rotation);
+	public static Plane operator *(Plane plane, (Rotation Rotation, Location Pivot) rotTuple) => plane.RotatedAroundPoint(rotTuple.Rotation, rotTuple.Pivot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Plane operator *((Rotation Rotation, Location Pivot) rotTuple, Plane plane) => plane.RotatedAround(rotTuple.Pivot, rotTuple.Rotation);
-	public Plane RotatedAround(Location pivotPoint, Rotation rot) => new(Normal * rot, ClosestPointTo(pivotPoint) * (pivotPoint, rot));
+	public static Plane operator *((Rotation Rotation, Location Pivot) rotTuple, Plane plane) => plane.RotatedAroundPoint(rotTuple.Rotation, rotTuple.Pivot);
+	public Plane RotatedAroundPoint(Rotation rot, Location pivotPoint) => new(Normal * rot, ClosestPointTo(pivotPoint) * (pivotPoint, rot));
 
 	// TODO explain in XML that this is a normalized value from 0 to 1, where 0 is a direction completely perpendicular to the plane and 1 is completely parallel; and is also the cosine of the angle formed
 	public float ParallelismWith(Direction direction) => 1f - MathF.Abs(Normal.SimilarityTo(direction));
@@ -116,11 +116,8 @@ public readonly partial struct Plane :
 	}
 
 	public Vect ProjectionOf(Vect vect) => vect - vect.ProjectedOnTo(Normal);
-	public Vect ProjectionOf(Vect vect, bool preserveLength) {
-		var projection = ProjectionOf(vect);
-		if (!preserveLength) return projection;
-		else return projection.WithLength(vect.Length);
-	}
+	public Vect ParallelizationOf(Vect vect) => ProjectionOf(vect).WithLength(vect.Length); // TODO in xmldoc mention that length will be 0 if this is perpendicular, regardless
+
 	public Direction ProjectionOf(Direction direction) => direction.OrthogonalizedAgainst(Normal);
 
 	// TODO xmldoc explain that these two methods will basically just make the vect/dir point either along the normal or opposite, whichever they're closer to
@@ -147,7 +144,7 @@ partial struct Vect {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect ProjectedOnTo(Plane plane) => plane.ProjectionOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect ProjectedOnTo(Plane plane, bool preserveLength) => plane.ProjectionOf(this, preserveLength);
+	public Vect ParallelizedWith(Plane plane) => plane.ParallelizationOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect OrthogonalizedAgainst(Plane plane) => plane.OrthogonalizationOf(this);
 }
