@@ -15,6 +15,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 	const float RadiansToDegreesRatio = 360f / Tau;
 	const float DegreesToRadiansRatio = Tau / 360f;
 	public static readonly Angle Zero = FromRadians(0f);
+	public static readonly Angle EighthCircle = FromRadians(Tau * 0.125f);
 	public static readonly Angle QuarterCircle = FromRadians(Tau * 0.25f);
 	public static readonly Angle HalfCircle = FromRadians(Tau * 0.5f);
 	public static readonly Angle ThreeQuarterCircle = FromRadians(Tau * 0.75f);

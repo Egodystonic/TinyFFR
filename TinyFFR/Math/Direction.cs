@@ -125,7 +125,8 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	public string ToStringDescriptive() {
 		GetNearestOrientation(out var orientation, out var direction);
 		var angle = (this == None || direction == None) ? Angle.Zero : (this ^ direction);
-		return $"{ToString()} ({angle:N0} from {orientation})";
+		if (angle < 0.001f) return $"{ToString()} ({orientation})";
+		else return $"{ToString()} ({orientation} +{angle:N0})";
 	}
 
 	/*

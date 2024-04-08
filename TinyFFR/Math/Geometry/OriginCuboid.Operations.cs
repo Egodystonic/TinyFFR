@@ -30,7 +30,7 @@ public readonly partial struct OriginCuboid
 	public Plane GetSurfacePlane(CardinalOrientation3D side) { // TODO xmldoc that the planes' normals point away from the cuboid centre, e.g. side.ToDirection()
 		if (side == CardinalOrientation3D.None) throw new ArgumentOutOfRangeException(nameof(side), side, $"Can not be '{nameof(CardinalOrientation3D.None)}'.");
 
-		return Plane.FromNormalAndTranslationFromOrigin(side.ToDirection(), GetHalfDimension(side.GetAxis()));
+		return Plane.FromDistanceFromOrigin(side.ToDirection(), GetHalfDimension(side.GetAxis()));
 	}
 
 	public BoundedLine GetEdge(IntercardinalOrientation3D edge) {

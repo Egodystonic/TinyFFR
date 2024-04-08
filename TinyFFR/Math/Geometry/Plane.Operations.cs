@@ -35,8 +35,8 @@ public readonly partial struct Plane :
 	public static Plane operator *((Rotation Rotation, Location Pivot) rotTuple, Plane plane) => plane.RotatedAroundPoint(rotTuple.Rotation, rotTuple.Pivot);
 	public Plane RotatedAroundPoint(Rotation rot, Location pivotPoint) => new(Normal * rot, ClosestPointTo(pivotPoint) * (pivotPoint, rot));
 
-	// TODO explain in XML that this is a normalized value from 0 to 1, where 0 is a direction completely perpendicular to the plane and 1 is completely parallel; and is also the cosine of the angle formed
-	public float ParallelismWith(Direction direction) => 1f - MathF.Abs(Normal.SimilarityTo(direction));
+	// TODO explain in XML that this is a normalized value from 0 to 1, where 1 is a direction completely perpendicular to the plane and 0 is completely parallel; and is also the cosine of the angle formed with the normal
+	public float PerpendicularityWith(Direction direction) => MathF.Abs(Normal.SimilarityTo(direction));
 
 	// TODO I'd like a function here to convert locations to XYPairs on the surface of the plane given a centre point (default ClosestPointToOrigin)
 
@@ -45,8 +45,8 @@ public readonly partial struct Plane :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(Direction dir, Plane plane) => plane.AngleTo(dir);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle AngleTo(Plane other) => Normal.AngleTo(other.Normal);
-	public Angle AngleTo(Direction direction) => Angle.FromRadians(MathF.Acos(ParallelismWith(direction)));
+	public Angle AngleTo(Plane other) => Angle.FromRadians(MathF.Acos(PerpendicularityWith(other.Normal)));
+	public Angle AngleTo(Direction direction) => Angle.FromRadians(MathF.Asin(PerpendicularityWith(direction)));
 	public Direction Reflect(Direction direction) { // TODO explain in XML that this returns the same direction if the input is parallel to the plane
 		return Direction.FromVector3(-2f * Vector3.Dot(Normal.ToVector3(), direction.ToVector3()) * Normal.ToVector3() + direction.ToVector3());
 	}
@@ -74,7 +74,7 @@ public readonly partial struct Plane :
 	public bool Contains(Location location) => Contains(location, DefaultPlaneThickness);
 	public bool Contains(Location location, float planeThickness) => DistanceFrom(location) <= planeThickness;
 
-	public float DistanceFrom(Plane other) => MathF.Abs(Normal.SimilarityTo(other.Normal)) >= 0.999f ? ClosestPointToOrigin.DistanceFrom(other.ClosestPointToOrigin) : 0f;
+	public float DistanceFrom(Plane other) => MathF.Abs(Normal.SimilarityTo(other.Normal)) >= 0.999999f ? ClosestPointToOrigin.DistanceFrom(other.ClosestPointToOrigin) : 0f;
 	public Line? IntersectionWith(Plane other) {
 		static (float A, float B) FindNonZeroComponents(float thisA, float thisB, float thisCoefficient, float otherA, float otherB, float otherCoefficient) {
 			var divisor = thisA * otherB - otherA * thisB;
@@ -115,7 +115,7 @@ public readonly partial struct Plane :
 		}
 	}
 
-	public Vect ProjectionOf(Vect vect) => vect - vect.ProjectedOnTo(Normal);
+	public Vect ProjectionOf(Vect vect) => vect - vect.ProjectedOnTo(Normal); // TODO in xmldoc mention that length will be 0 if this is perpendicular, regardless
 	public Vect ParallelizationOf(Vect vect) => ProjectionOf(vect).WithLength(vect.Length); // TODO in xmldoc mention that length will be 0 if this is perpendicular, regardless
 
 	public Direction ProjectionOf(Direction direction) => direction.OrthogonalizedAgainst(Normal);

@@ -90,14 +90,14 @@ class LineExtensionsTest {
 			Location.Origin.DistanceFrom(new OriginSphere());
 
 			line.AngleTo(new Plane());
-			line.ParallelismWith(new Plane());
+			line.PerpendicularityWith(new Plane());
 			new Ray().AngleTo(new Plane());
-			new Ray().ParallelismWith(new Plane());
+			new Ray().PerpendicularityWith(new Plane());
 
 			new Plane().AngleTo(line);
-			new Plane().ParallelismWith(line);
+			new Plane().PerpendicularityWith(line);
 			new Plane().AngleTo(new Ray());
-			new Plane().ParallelismWith(new Ray());
+			new Plane().PerpendicularityWith(new Ray());
 
 			new OriginSphere().DistanceFrom(line);
 		}

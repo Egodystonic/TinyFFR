@@ -125,7 +125,7 @@ partial struct Plane {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo<TLine>(TLine line) where TLine : ILine => AngleTo(line.Direction);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float ParallelismWith<TLine>(TLine line) where TLine : ILine => ParallelismWith(line.Direction);
+	public float PerpendicularityWith<TLine>(TLine line) where TLine : ILine => PerpendicularityWith(line.Direction);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public TSplit? Reflect<TLine, TSplit>(TLine line) where TLine : ILine<TLine, TSplit> where TSplit : struct, ILine<TSplit> => line.ReflectedBy(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -144,7 +144,7 @@ public static class LineExtensions {
 	public static Angle AngleTo<TLine>(this TLine @this, Plane plane) where TLine : ILine => plane.AngleTo(@this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float ParallelismWith<TLine>(this TLine @this, Plane plane) where TLine : ILine => plane.ParallelismWith(@this);
+	public static float PerpendicularityWith<TLine>(this TLine @this, Plane plane) where TLine : ILine => plane.PerpendicularityWith(@this);
 
 
 

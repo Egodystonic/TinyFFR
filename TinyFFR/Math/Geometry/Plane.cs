@@ -25,12 +25,19 @@ public readonly partial struct Plane : IGeometryPrimitive<Plane>, IPrecomputatio
 		_smallestDistanceFromOriginAlongNormal = coefficientOfNormal;
 	}
 
-	// TODO in xmldoc note that this is a translation in the direction of the normal vector, e.g. how far in the direction of the normal vector is the plane's closest point away from the origin
-	public static Plane FromNormalAndTranslationFromOrigin(Direction normal, float translationFromOrigin) => new(normal.ToVector3(), translationFromOrigin);
+	// TODO in xmldoc note that this is the minimum distance from the origin to the plane along the normal, e.g. positive means the normal points away from the origin
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Plane FromDistanceFromOrigin(Direction normal, float signedDistanceFromOrigin) => new(normal.ToVector3(), signedDistanceFromOrigin);
 
-	public static Plane FromPointClosestToOriginAndOrientation(bool normalFacesOrigin, Location pointClosestToOrigin) {
+	// TODO in xmldoc recommend using FromDistanceFromOrigin where possible as it can't throw an exception and it's faster
+	public static Plane FromPointClosestToOrigin(Location pointClosestToOrigin, bool normalFacesOrigin) {
 		var vectFromOriginToClosestPoint = (Vect) pointClosestToOrigin;
-		return new(vectFromOriginToClosestPoint.Direction.ToVector3(), vectFromOriginToClosestPoint.Length * (normalFacesOrigin ? -1f : 1f));
+		var direction = vectFromOriginToClosestPoint.Direction;
+		if (direction == Direction.None) {
+			throw new ArgumentException($"{nameof(FromPointClosestToOrigin)} can not be used when {nameof(pointClosestToOrigin)} is equal to {nameof(Location.Origin)} " +
+										$"as there are infinite possible solutions.", nameof(pointClosestToOrigin));
+		}
+		return new(direction.ToVector3() * (normalFacesOrigin ? -1f : 1f), vectFromOriginToClosestPoint.Length * (normalFacesOrigin ? -1f : 1f));
 	}
 
 	public static Plane FromTriangleOnSurface(Location a, Location b, Location c) {
@@ -44,12 +51,12 @@ public readonly partial struct Plane : IGeometryPrimitive<Plane>, IPrecomputatio
 		else line = null;
 
 		if (line != null) {
-			throw new ArgumentException($"The three given locations ({a}, {b}, {c}) were colinear (along {line}) (i.e. they do not form a triangle), " +
-										$"which is not sufficient to specify a single unique {nameof(Plane)}.");
+			throw new ArgumentException($"The three given locations ({a}, {b}, {c}) were colinear along {line}, " +
+										$"which is not sufficient to specify a single unique {nameof(Plane)} (i.e. the locations do not form a triangle).");
 		}
 		else {
 			throw new ArgumentException($"The three given locations were all identical, " +
-										$"which is not sufficient to specify a single unique {nameof(Plane)}.");
+										$"which is not sufficient to specify a single unique {nameof(Plane)} (i.e. the locations do not form a triangle).");
 		}
 	}
 
@@ -99,8 +106,8 @@ public readonly partial struct Plane : IGeometryPrimitive<Plane>, IPrecomputatio
 
 	#region Equality
 	public bool Equals(Plane other) => _normal.Equals(other._normal) && _smallestDistanceFromOriginAlongNormal.Equals(other._smallestDistanceFromOriginAlongNormal);
-	public bool Equals(Plane other, float tolerance) => _normal.Equals(other._normal) && _smallestDistanceFromOriginAlongNormal.Equals(other._smallestDistanceFromOriginAlongNormal);
-	public bool EqualsWithinAngleAndDistanceFromOrigin(Plane other, Angle angle, float distance) => Normal.EqualsWithinAngle(other.Normal, angle) && ClosestPointToOrigin.EqualsWithinDistance(other.ClosestPointToOrigin, distance);
+	public bool Equals(Plane other, float tolerance) => Normal.Equals(other.Normal, tolerance) && ClosestPointToOrigin.Equals(other.ClosestPointToOrigin, tolerance);
+	public bool EqualsWithinAngleAndLocation(Plane other, Angle angle, float distance) => Normal.EqualsWithinAngle(other.Normal, angle) && ClosestPointToOrigin.EqualsWithinDistance(other.ClosestPointToOrigin, distance);
 	public override bool Equals(object? obj) => obj is Plane other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(_normal, _smallestDistanceFromOriginAlongNormal);
 	public static bool operator ==(Plane left, Plane right) => left.Equals(right);

@@ -12,10 +12,12 @@ partial class AngleTest {
 	[Test]
 	public void StaticReadonlyMembersShouldBeCorrectlyInitialized() {
 		AssertToleranceEquals(Angle.FromRadians(0f), Angle.Zero, 0f);
+		AssertToleranceEquals(Angle.FromRadians(MathF.PI * 0.25f), Angle.EighthCircle, TestTolerance);
 		AssertToleranceEquals(Angle.FromRadians(MathF.PI * 0.5f), Angle.QuarterCircle, TestTolerance);
 		AssertToleranceEquals(Angle.FromRadians(MathF.PI), Angle.HalfCircle, TestTolerance);
 		AssertToleranceEquals(Angle.FromRadians(MathF.PI * 1.5f), Angle.ThreeQuarterCircle, TestTolerance);
 		AssertToleranceEquals(Angle.FromRadians(MathF.PI * 2f), Angle.FullCircle, TestTolerance);
+		AssertToleranceEquals(Angle.FromRadians(-MathF.PI * 0.25f), -Angle.EighthCircle, TestTolerance);
 		AssertToleranceEquals(Angle.FromRadians(-MathF.PI * 0.5f), -Angle.QuarterCircle, TestTolerance);
 		AssertToleranceEquals(Angle.FromRadians(-MathF.PI), -Angle.HalfCircle, TestTolerance);
 		AssertToleranceEquals(Angle.FromRadians(-MathF.PI * 1.5f), -Angle.ThreeQuarterCircle, TestTolerance);
