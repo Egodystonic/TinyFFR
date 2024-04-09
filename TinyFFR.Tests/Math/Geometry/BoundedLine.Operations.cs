@@ -254,6 +254,35 @@ partial class BoundedLineTest {
 			new BoundedLine(new Location(100f, 0f, 0f), Direction.Left * 200f).DistanceFrom(new Location(90f, 0f, 0f)),
 			TestTolerance
 		);
+
+		Assert.AreEqual(
+			1f,
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).DistanceFromOrigin()
+		);
+		Assert.AreEqual(
+			1f,
+			new BoundedLine(new Location(0f, 1f, 0f), Direction.Left * 100f).DistanceFromOrigin()
+		);
+		Assert.AreEqual(
+			0f,
+			new BoundedLine(new Location(0f, 0f, 0f), Direction.Left * 100f).DistanceFromOrigin()
+		);
+		Assert.AreEqual(
+			1f,
+			new BoundedLine(new Location(1f, 0f, 0f), Direction.Left * 100f).DistanceFromOrigin()
+		);
+		Assert.AreEqual(
+			0f,
+			new BoundedLine(new Location(-1f, 0f, 0f), Direction.Left * 100f).DistanceFromOrigin()
+		);
+		Assert.AreEqual(
+			1f,
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Right * 9f).DistanceFromOrigin()
+		);
+		Assert.AreEqual(
+			0f,
+			new BoundedLine(new Location(10f, 0f, 0f), Direction.Right * 11f).DistanceFromOrigin()
+		);
 	}
 
 	[Test]

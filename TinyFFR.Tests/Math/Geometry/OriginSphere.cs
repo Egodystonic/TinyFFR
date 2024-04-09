@@ -6,8 +6,9 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture]
-class OriginSphereTest {
+partial class OriginSphereTest {
 	const float TestTolerance = 0.01f;
+	static readonly OriginSphere TestSphere = new(7.4f);
 
 	[SetUp]
 	public void SetUpTest() { }
@@ -37,11 +38,6 @@ class OriginSphereTest {
 		AssertToleranceEquals(sphere, OriginSphere.FromSurfaceArea(688.134f), TestTolerance);
 		AssertToleranceEquals(sphere, OriginSphere.FromVolume(1697.4f), TestTolerance);
 		AssertToleranceEquals(sphere, OriginSphere.FromRadiusSquared(7.4f * 7.4f), TestTolerance);
-	}
-
-	[Test]
-	public void ShouldCorrectlyScale() {
-		AssertToleranceEquals(new OriginSphere(7.4f * 3f), new OriginSphere(7.4f).ScaledBy(3f), TestTolerance);
 	}
 
 	// TODO this test could be fleshed out a lot more

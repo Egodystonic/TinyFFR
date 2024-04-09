@@ -76,6 +76,10 @@ partial struct Location :
 	public float DistanceFrom(Location otherLocation) => GetVectFrom(otherLocation).Length;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFrom(Location otherLocation) => GetVectFrom(otherLocation).LengthSquared;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFromOrigin() => ((Vect) this).Length;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFromOrigin() => ((Vect) this).LengthSquared;
 
 	public static Location Interpolate(Location start, Location end, float distance) {
 		return start + (end - start) * distance;

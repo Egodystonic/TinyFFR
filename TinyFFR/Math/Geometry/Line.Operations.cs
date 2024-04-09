@@ -65,6 +65,8 @@ public readonly partial struct Line :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(Location location) => location.DistanceFrom(ClosestPointTo(location));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFromOrigin() => ((Vect) ClosestPointToOrigin()).Length;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(Location location) => Contains(location, ILine.DefaultLineThickness);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(Location location, float lineThickness) => DistanceFrom(location) <= lineThickness;

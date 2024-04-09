@@ -36,6 +36,7 @@ public interface ILine :
 
 	Location ClosestPointToOrigin();
 	bool Contains(Location location, float lineThickness);
+	float DistanceFromOrigin();
 
 	Location? IntersectionWith<TLine>(TLine line, float lineThickness = DefaultLineThickness) where TLine : ILine;
 	new Location? IntersectionWith(Plane plane);

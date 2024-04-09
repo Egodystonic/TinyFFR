@@ -20,8 +20,8 @@ public readonly partial struct OriginSphere
 
 	public float DistanceFrom(Location location) => MathF.Max(0f, ((Vect) location).Length - Radius);
 	public float SurfaceDistanceFrom(Location location) => MathF.Abs(((Vect) location).Length - Radius);
-	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => MathF.Max(0f, line.DistanceFrom(Location.Origin) - Radius);
-	public float SurfaceDistanceFrom<TLine>(TLine line) where TLine : ILine => MathF.Abs(line.DistanceFrom(Location.Origin) - Radius);
+	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => MathF.Max(0f, line.DistanceFromOrigin() - Radius);
+	public float SurfaceDistanceFrom<TLine>(TLine line) where TLine : ILine => SurfaceDistanceFrom(ClosestPointToSurfaceOn(line));
 
 	public bool Contains(Location location) => ((Vect) location).LengthSquared <= RadiusSquared;
 	
@@ -30,7 +30,7 @@ public readonly partial struct OriginSphere
 		if (vectFromLocToCentre.LengthSquared <= RadiusSquared) return location;
 		else return location - vectFromLocToCentre.ShortenedBy(Radius);
 	}
-	public Location ClosestPointOnSurfaceTo(Location location) {
+	public Location ClosestPointOnSurfaceTo(Location location) { // TODO xmldoc that if location == Origin this will return Origin (or we should add an overload?)
 		var vectFromLocToCentre = (Vect) location;
 		return (Location) vectFromLocToCentre.WithLength(Radius);
 	}
@@ -70,11 +70,11 @@ public readonly partial struct OriginSphere
 
 		return ConvexShapeLineIntersection.FromTwoPotentiallyNullArgs(
 			line.LocationAtDistanceOrNull(distanceTuple.Value.First), 
-			line.LocationAtDistanceOrNull(distanceTuple.Value.Second)
+			distanceTuple.Value.SecondIsIdenticalToFirst ? null : line.LocationAtDistanceOrNull(distanceTuple.Value.Second)
 		);
 	}
 
-	(float First, float Second)? GetUnboundedSurfaceIntersectionDistances<TLine>(TLine line) where TLine : ILine {
+	(float First, float Second, bool SecondIsIdenticalToFirst)? GetUnboundedSurfaceIntersectionDistances<TLine>(TLine line) where TLine : ILine {
 		// We solve this always as a simple unbounded line as it lets us solve as a quadratic, e.g. distance-from-start = (-b +/- sqrt(b^2 - 4ac)) / 2a
 		//																								where a = direction dot direction	(always 1 for unit-length vectors)
 		//																								where b = 2(start dot direction)
@@ -95,7 +95,7 @@ public readonly partial struct OriginSphere
 		var sqrtDiscriminant = MathF.Sqrt(discriminant);
 		var negB = -b;
 
-		return ((negB + sqrtDiscriminant) * 0.5f, (negB - sqrtDiscriminant) * 0.5f);
+		return ((negB + sqrtDiscriminant) * 0.5f, (negB - sqrtDiscriminant) * 0.5f, discriminant == 0f);
 	}
 
 	public Location ClosestPointTo(Plane plane) => (Location) ((Vect) plane.ClosestPointToOrigin).WithMaxLength(Radius);
@@ -131,14 +131,16 @@ public readonly partial struct OriginSphere
 		if (!TrySplit(plane, out var circleCentrePoint, out var circleRadius)) return ClosestPointTo(plane);
 
 		// Otherwise there are infinite valid answers around the circle formed by the intersection. Any will do
-		return circleCentrePoint + ((Vect) circleCentrePoint).Direction.GetAnyPerpendicular() * circleRadius;
+		var centrePointDirection = circleCentrePoint == Location.Origin ? plane.Normal : ((Vect) circleCentrePoint).Direction;
+		return circleCentrePoint + centrePointDirection.GetAnyPerpendicular() * circleRadius;
 	}
 	public Location ClosestPointToSurfaceOn(Plane plane) {
 		// If the plane doesn't intersect this sphere, we can just return the plane's closest point to the sphere
 		if (!TrySplit(plane, out var circleCentrePoint, out var circleRadius)) return plane.ClosestPointToOrigin;
 
 		// Otherwise there are infinite valid answers around the circle formed by the intersection. Any will do
-		return circleCentrePoint + ((Vect) circleCentrePoint).Direction.GetAnyPerpendicular() * circleRadius;
+		var centrePointDirection = circleCentrePoint == Location.Origin ? plane.Normal : ((Vect) circleCentrePoint).Direction;
+		return circleCentrePoint + centrePointDirection.GetAnyPerpendicular() * circleRadius;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

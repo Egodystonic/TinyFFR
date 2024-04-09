@@ -106,6 +106,19 @@ partial class LineTest {
 			new Line(new Location(100f, 0f, 0f), Direction.Left).DistanceFrom(new Location(-100f, 1f, -1f)),
 			TestTolerance
 		);
+
+		Assert.AreEqual(
+			1f,
+			new Line(new Location(0f, 1f, 0f), Direction.Left).DistanceFromOrigin()
+		);
+		Assert.AreEqual(
+			1f,
+			new Line(new Location(0f, 1f, 0f), Direction.Left).DistanceFromOrigin()
+		);
+		Assert.AreEqual(
+			0f,
+			new Line(new Location(0f, 0f, 0f), Direction.Left).DistanceFromOrigin()
+		);
 	}
 
 	[Test]
