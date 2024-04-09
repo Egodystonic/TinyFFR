@@ -237,11 +237,11 @@ partial class VectTest {
 			var b = a + new Vect(3f, 3f, 3f);
 			var val = Vect.CreateNewRandom(a, b);
 			Assert.GreaterOrEqual(val.X, a.X);
-			Assert.Less(val.X, b.X + Single.Epsilon); // Epsilon added for FP rounding issues
+			Assert.LessOrEqual(val.X, b.X);
 			Assert.GreaterOrEqual(val.Y, a.Y);
-			Assert.Less(val.Y, b.Y + Single.Epsilon);
+			Assert.LessOrEqual(val.Y, b.Y);
 			Assert.GreaterOrEqual(val.Z, a.Z);
-			Assert.Less(val.Z, b.Z + Single.Epsilon);
+			Assert.LessOrEqual(val.Z, b.Z);
 		}
 	}
 }

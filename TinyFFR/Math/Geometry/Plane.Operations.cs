@@ -74,7 +74,7 @@ public readonly partial struct Plane :
 	public bool Contains(Location location) => Contains(location, DefaultPlaneThickness);
 	public bool Contains(Location location, float planeThickness) => DistanceFrom(location) <= planeThickness;
 
-	public float DistanceFrom(Plane other) => MathF.Abs(Normal.SimilarityTo(other.Normal)) >= 0.999999f ? ClosestPointToOrigin.DistanceFrom(other.ClosestPointToOrigin) : 0f;
+	public float DistanceFrom(Plane other) => MathF.Abs(Normal.SimilarityTo(other.Normal)) >= 0.99999999f ? ClosestPointToOrigin.DistanceFrom(other.ClosestPointToOrigin) : 0f;
 	public Line? IntersectionWith(Plane other) {
 		static (float A, float B) FindNonZeroComponents(float thisA, float thisB, float thisCoefficient, float otherA, float otherB, float otherCoefficient) {
 			var divisor = thisA * otherB - otherA * thisB;
