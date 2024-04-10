@@ -129,6 +129,12 @@ public readonly partial struct Ray :
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	bool ILineIntersectable<Location>.IsIntersectedBy<TLine>(TLine line) => IsIntersectedBy(line, ILine.DefaultLineThickness);
+	public bool IsIntersectedBy<TLine>(TLine line, float lineThickness = ILine.DefaultLineThickness) where TLine : ILine {
+		return DistanceFrom(ClosestPointOn(line)) <= lineThickness;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool DistanceIsWithinLineBounds(float signedDistanceFromStart) => signedDistanceFromStart >= 0f;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float BindDistance(float signedDistanceFromStart) => MathF.Max(0f, signedDistanceFromStart);
@@ -154,6 +160,7 @@ public readonly partial struct Ray :
 		if (distance >= 0f) return UnboundedLocationAtDistance(distance.Value);
 		else return null; // Plane behind ray or parallel with ray
 	}
+	public bool IsIntersectedBy(Plane plane) => GetUnboundedPlaneIntersectionDistance(plane) >= 0f;
 
 	public float SignedDistanceFrom(Plane plane) {
 		var unboundedDistance = GetUnboundedPlaneIntersectionDistance(plane);

@@ -64,6 +64,11 @@ public readonly partial struct OriginSphere
 		else return line.ClosestPointTo(intersectionPointOne);
 	}
 
+	public bool IsIntersectedBy<TLine>(TLine line) where TLine : ILine {
+		var distanceTuple = GetUnboundedSurfaceIntersectionDistances(line);
+		if (distanceTuple == null) return false;
+		return line.DistanceIsWithinLineBounds(distanceTuple.Value.First) || line.DistanceIsWithinLineBounds(distanceTuple.Value.Second);
+	}
 	public ConvexShapeLineIntersection? IntersectionWith<TLine>(TLine line) where TLine : ILine {
 		var distanceTuple = GetUnboundedSurfaceIntersectionDistances(line);
 		if (distanceTuple == null) return null;

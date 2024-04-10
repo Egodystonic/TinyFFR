@@ -100,6 +100,17 @@ class LineExtensionsTest {
 			new Plane().PerpendicularityWith(new Ray());
 
 			new OriginSphere().DistanceFrom(line);
+
+			new Line().IsIntersectedBy(new Plane());
+			new Plane().IsIntersectedBy(new Line());
+			new Line().IsIntersectedBy(new OriginCuboid());
+			new OriginCuboid().IsIntersectedBy(new Line());
+
+			line.IsIntersectedBy(new Plane());
+			line.IntersectionWith(new Plane());
+			new Plane().IsIntersectedBy(line);
+			line.IsIntersectedBy(new OriginCuboid());
+			new OriginCuboid().IsIntersectedBy(line);
 		}
 
 		try {

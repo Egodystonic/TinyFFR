@@ -75,6 +75,8 @@ public readonly partial struct Plane :
 	public bool Contains(Location location, float planeThickness) => DistanceFrom(location) <= planeThickness;
 
 	public float DistanceFrom(Plane other) => MathF.Abs(Normal.SimilarityTo(other.Normal)) >= 0.99999999f ? ClosestPointToOrigin.DistanceFrom(other.ClosestPointToOrigin) : 0f;
+	
+	public bool IsIntersectedBy(Plane other) => Vector3.Cross(_normal, other._normal).LengthSquared() != 0f;
 	public Line? IntersectionWith(Plane other) {
 		static (float A, float B) FindNonZeroComponents(float thisA, float thisB, float thisCoefficient, float otherA, float otherB, float otherCoefficient) {
 			var divisor = thisA * otherB - otherA * thisB;
@@ -126,6 +128,7 @@ public readonly partial struct Plane :
 	public Direction OrthogonalizationOf(Direction direction) => Direction.FromPreNormalizedComponents(Normal.ToVector3() * MathF.Sign(direction.SimilarityTo(Normal) * 2f + Single.Epsilon));
 
 	public PlaneObjectRelationship RelationshipTo<TGeo>(TGeo element) where TGeo : IRelationshipDeterminable<Plane, PlaneObjectRelationship> => element.RelationshipTo(this);
+	public bool IsIntersectedBy<TGeo>(TGeo element) where TGeo : IIntersectable<Plane> => element.IsIntersectedBy(this);
 	public Location? IntersectionWith<TGeo>(TGeo element) where TGeo : IIntersectable<Plane, Location> => element.IntersectionWith(this);
 }
 

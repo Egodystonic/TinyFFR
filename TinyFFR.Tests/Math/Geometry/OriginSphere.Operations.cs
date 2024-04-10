@@ -362,6 +362,36 @@ partial class OriginSphereTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyTestForLineIntersections() {
+		ConvexShapeLineIntersection intersection;
+
+		// Line
+		Assert.False(TestSphere.IsIntersectedBy(new Line(new Location(0f, 10f, 0f), Direction.Right)));
+		Assert.True(TestSphere.IsIntersectedBy(new Line(new Location(0f, 6f, 0f), Direction.Right)));
+		Assert.True(TestSphere.IsIntersectedBy(new Line(new Location(0f, 7.4f, 0f), Direction.Right)));
+
+
+		// Ray
+		Assert.False(TestSphere.IsIntersectedBy(new Ray(new Location(0f, 10f, 0f), Direction.Right)));
+		Assert.False(TestSphere.IsIntersectedBy(new Ray(new Location(10f, 10f, 0f), Direction.Right)));
+		Assert.False(TestSphere.IsIntersectedBy(new Ray(new Location(-10f, 0f, 0f), Direction.Right)));
+		Assert.True(TestSphere.IsIntersectedBy(new Ray(new Location(10f, 6f, 0f), Direction.Right)));
+		Assert.True(TestSphere.IsIntersectedBy(new Ray(new Location(0f, 6f, 0f), Direction.Right)));
+		Assert.True(TestSphere.IsIntersectedBy(new Ray(new Location(0f, 7.4f, 0f), Direction.Right)));
+
+
+		// BoundedLine
+		Assert.False(TestSphere.IsIntersectedBy(new BoundedLine(new Location(0f, 10f, 0f), Direction.Right * 100f)));
+		Assert.False(TestSphere.IsIntersectedBy(new BoundedLine(new Location(10f, 10f, 0f), Direction.Right * 100f)));
+		Assert.False(TestSphere.IsIntersectedBy(new BoundedLine(new Location(-10f, 0f, 0f), Direction.Right * 100f)));
+		Assert.False(TestSphere.IsIntersectedBy(new BoundedLine(new Location(-10f, 0f, 0f), Direction.Left * 2.5f)));
+		Assert.True(TestSphere.IsIntersectedBy(new BoundedLine(new Location(10f, 6f, 0f), Direction.Right * 100f)));
+		Assert.True(TestSphere.IsIntersectedBy(new BoundedLine(new Location(0f, 6f, 0f), Direction.Right * 100f)));
+		Assert.True(TestSphere.IsIntersectedBy(new BoundedLine(new Location(10f, 6f, 0f), Direction.Right * 10f)));
+		Assert.True(TestSphere.IsIntersectedBy(new BoundedLine(new Location(0f, 7.4f, 0f), Direction.Right * 100f)));
+	}
+
+	[Test]
 	public void ShouldCorrectlyDetermineClosestPointToPlanes() {
 		AssertToleranceEquals((0f, 0f, 0f), TestSphere.ClosestPointTo(new Plane(Direction.Up, (0f, 0f, 0f))), TestTolerance);
 		AssertToleranceEquals((0f, 1f, 0f), TestSphere.ClosestPointTo(new Plane(Direction.Up, (0f, 1f, 0f))), TestTolerance);

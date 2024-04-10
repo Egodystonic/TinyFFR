@@ -38,8 +38,10 @@ public interface ILine :
 	bool Contains(Location location, float lineThickness);
 	float DistanceFromOrigin();
 
+	bool IsIntersectedBy<TLine>(TLine line, float lineThickness = DefaultLineThickness) where TLine : ILine;
 	Location? IntersectionWith<TLine>(TLine line, float lineThickness = DefaultLineThickness) where TLine : ILine;
 	new Location? IntersectionWith(Plane plane);
+	new bool IsIntersectedBy(Plane plane);
 
 	sealed Line CoerceToLine() => new(StartPoint, Direction);
 	sealed Ray CoerceToRay() => new(StartPoint, Direction);
@@ -170,6 +172,9 @@ public static class LineExtensions {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ConvexShapeLineIntersection? IntersectionWith<TLine, T>(this TLine @this, T geometricPrimitive) where T : ILineIntersectable<ConvexShapeLineIntersection> where TLine : ILine => ILineIntersectable<ConvexShapeLineIntersection>.GetIntersectionWithGenericLine(geometricPrimitive, @this);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool IsIntersectedBy<TLine, T>(this TLine @this, T geometricPrimitive) where T : ILineIntersectable<ConvexShapeLineIntersection> where TLine : ILine => ILineIntersectable<ConvexShapeLineIntersection>.IsIntersectedByGenericLine(geometricPrimitive, @this);
+
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -192,6 +197,9 @@ public static class LineExtensions {
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ConvexShapeLineIntersection? IntersectionWith<T>(this Line @this, T geometricPrimitive) where T : IIntersectable<Line, ConvexShapeLineIntersection> => geometricPrimitive.IntersectionWith(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool IsIntersectedBy<T>(this Line @this, T geometricPrimitive) where T : IIntersectable<Line> => geometricPrimitive.IsIntersectedBy(@this);
 
 
 
@@ -216,6 +224,9 @@ public static class LineExtensions {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ConvexShapeLineIntersection? IntersectionWith<T>(this Ray @this, T geometricPrimitive) where T : IIntersectable<Ray, ConvexShapeLineIntersection> => geometricPrimitive.IntersectionWith(@this);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool IsIntersectedBy<T>(this Ray @this, T geometricPrimitive) where T : IIntersectable<Ray> => geometricPrimitive.IsIntersectedBy(@this);
+
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -238,4 +249,7 @@ public static class LineExtensions {
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ConvexShapeLineIntersection? IntersectionWith<T>(this BoundedLine @this, T geometricPrimitive) where T : IIntersectable<BoundedLine, ConvexShapeLineIntersection> => geometricPrimitive.IntersectionWith(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool IsIntersectedBy<T>(this BoundedLine @this, T geometricPrimitive) where T : IIntersectable<BoundedLine> => geometricPrimitive.IsIntersectedBy(@this);
 }

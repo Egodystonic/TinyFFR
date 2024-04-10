@@ -559,6 +559,153 @@ partial class RayTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyTestForLineIntersections() {
+		// Line
+		Assert.False(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Line(new Location(0f, 2f, 0f), Direction.Left),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.True(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Line(new Location(0f, 2f, 0f), Direction.Left),
+				lineThickness: 1.01f
+			)
+		);
+		Assert.True(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Line(new Location(100f, 2f, 0f), Direction.Down),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.False(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Line(new Location(-1f, 2f, 0f), Direction.Down),
+				lineThickness: 0.01f
+			)
+		);
+
+		// Ray
+		Assert.False(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Ray(new Location(0f, 2f, 0f), Direction.Left),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.True(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Ray(new Location(0f, 2f, 0f), Direction.Left),
+				lineThickness: 1.01f
+			)
+		);
+		Assert.True(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Ray(new Location(100f, 2f, 0f), Direction.Down),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.False(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Ray(new Location(100f, 2f, 0f), Direction.Up),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.True(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Ray(new Location(100f, 2f, 0f), Direction.Up),
+				lineThickness: 1.01f
+			)
+		);
+		Assert.False(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Ray(new Location(-1f, 1f, 0f), Direction.Right),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.True(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Ray(new Location(-1f, 1f, 0f), Direction.Right),
+				lineThickness: 1.01f
+			)
+		);
+
+		// BoundedLine
+		Assert.False(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(0f, 2f, 0f), Direction.Left * 1f),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.True(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(0f, 2f, 0f), Direction.Left * 1f),
+				lineThickness: 1.01f
+			)
+		);
+		Assert.True(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(100f, 2f, 0f), Direction.Down * 4f),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.False(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(100f, 2f, 0f), Direction.Up * 4f),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.True(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(100f, 2f, 0f), Direction.Up * 4f),
+				lineThickness: 1.01f
+			)
+		);
+		Assert.False(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(100f, 6f, 0f), Direction.Down * 4f),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.True(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(100f, 6f, 0f), Direction.Down * 4f),
+				lineThickness: 1.01f
+			)
+		);
+		Assert.True(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(0f, 1f, 0f), new Location(-1f, 1f, 0f))
+			)
+		);
+		Assert.True(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(-1f, 1f, 0f), new Location(0f, 1f, 0f))
+			)
+		);
+		Assert.False(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(-1f, 1f, 0f), new Location(-2f, 1f, 0f))
+			)
+		);
+		Assert.False(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(-2f, 1f, 0f), new Location(-1f, 1f, 0f))
+			)
+		);
+		Assert.True(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(10f, 2f, 0f), new Location(10f, 0f, 0f))
+			)
+		);
+		Assert.False(
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(10f, 2f, 0f), new Location(10f, 4f, 0f))
+			)
+		);
+	}
+
+	[Test]
 	public void ShouldCorrectlyReflectOnPlanes() {
 		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
 
@@ -607,6 +754,30 @@ partial class RayTest {
 		);
 		Assert.Null(
 			new Ray(new Location(100f, -100f, 0f), Direction.Down).IntersectionWith(plane)
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyTestForIntersectionWithPlanes() {
+		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
+
+		Assert.True(
+			new Ray(new Location(100f, 100f, 0f), Direction.Down).IsIntersectedBy(plane)
+		);
+		Assert.True(
+			new Ray(new Location(100f, -100f, 0f), Direction.Up).IsIntersectedBy(plane)
+		);
+		Assert.False(
+			new Ray(new Location(0f, 2f, 0f), Direction.Right).IsIntersectedBy(plane)
+		);
+		Assert.False(
+			new Ray(new Location(0f, 0f, 0f), Direction.Right).IsIntersectedBy(plane)
+		);
+		Assert.False(
+			new Ray(new Location(100f, 100f, 0f), Direction.Up).IsIntersectedBy(plane)
+		);
+		Assert.False(
+			new Ray(new Location(100f, -100f, 0f), Direction.Down).IsIntersectedBy(plane)
 		);
 	}
 

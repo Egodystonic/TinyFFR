@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using System.Numerics;
 
 namespace Egodystonic.TinyFFR;
 
@@ -117,6 +118,12 @@ public readonly partial struct Line :
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	bool ILineIntersectable<Location>.IsIntersectedBy<TLine>(TLine line) => IsIntersectedBy(line, ILine.DefaultLineThickness);
+	public bool IsIntersectedBy<TLine>(TLine line, float lineThickness = ILine.DefaultLineThickness) where TLine : ILine {
+		return DistanceFrom(ClosestPointOn(line)) <= lineThickness;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location LocationAtDistance(float signedDistanceFromStart) => _pointOnLine + _direction * signedDistanceFromStart;
 
 	// These are implemented explicitly because they're all basically the same thing or useless for an unbounded line.
@@ -139,6 +146,8 @@ public readonly partial struct Line :
 		var distance = (plane.ClosestPointToOrigin - PointOnLine).LengthWhenProjectedOnTo(plane.Normal) / similarityToNormal;
 		return LocationAtDistance(distance);
 	}
+
+	public bool IsIntersectedBy(Plane plane) => plane.Normal.SimilarityTo(Direction) != 0f;
 
 	public float SignedDistanceFrom(Plane plane) {
 		if (plane.Normal.SimilarityTo(Direction) != 0f) return 0f;

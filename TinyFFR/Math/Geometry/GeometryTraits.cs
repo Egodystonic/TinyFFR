@@ -26,7 +26,10 @@ public interface IClosestExogenousPointDiscoverable<in T> {
 }
 public interface IClosestPointDiscoverable<in T> : IClosestEndogenousPointDiscoverable<T>, IClosestExogenousPointDiscoverable<T>;
 
-public interface IIntersectable<in T, TIntersection> where TIntersection : struct {
+public interface IIntersectable<in T> {
+	bool IsIntersectedBy(T element);
+}
+public interface IIntersectable<in T, TIntersection> : IIntersectable<T> where TIntersection : struct {
 	TIntersection? IntersectionWith(T element);
 }
 public interface IRelationshipDeterminable<in T, out TRelationship> {
@@ -135,6 +138,7 @@ public interface ILineClosestSurfacePointDiscoverable : ILineClosestPointDiscove
 }
 public interface ILineIntersectable<TIntersection> : IIntersectable<Line, TIntersection>, IIntersectable<Ray, TIntersection>, IIntersectable<BoundedLine, TIntersection> where TIntersection : struct {
 	protected TIntersection? IntersectionWith<TLine>(TLine line) where TLine : ILine;
+	protected bool IsIntersectedBy<TLine>(TLine line) where TLine : ILine;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	TIntersection? IIntersectable<Line, TIntersection>.IntersectionWith(Line line) => IntersectionWith(line);
@@ -144,7 +148,16 @@ public interface ILineIntersectable<TIntersection> : IIntersectable<Line, TInter
 	TIntersection? IIntersectable<BoundedLine, TIntersection>.IntersectionWith(BoundedLine line) => IntersectionWith(line);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	bool IIntersectable<Line>.IsIntersectedBy(Line line) => IsIntersectedBy(line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	bool IIntersectable<Ray>.IsIntersectedBy(Ray line) => IsIntersectedBy(line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	bool IIntersectable<BoundedLine>.IsIntersectedBy(BoundedLine line) => IsIntersectedBy(line);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static TIntersection? GetIntersectionWithGenericLine<T, TLine>(T lineIntersectable, TLine line) where TLine : ILine where T : ILineIntersectable<TIntersection> => lineIntersectable.IntersectionWith(line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool IsIntersectedByGenericLine<T, TLine>(T lineIntersectable, TLine line) where TLine : ILine where T : ILineIntersectable<TIntersection> => lineIntersectable.IsIntersectedBy(line);
 }
 #endregion
 

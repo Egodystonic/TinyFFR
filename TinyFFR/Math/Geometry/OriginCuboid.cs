@@ -4,8 +4,8 @@
 namespace Egodystonic.TinyFFR;
 
 public readonly partial struct OriginCuboid : IFullyInteractableConvexShape<OriginCuboid> {  // TODO IIntersectable<Plane, BoundedPlane or similar>
-	internal const float DefaultRandomMin = 1f;
-	internal const float DefaultRandomMax = 3f;
+	internal const float DefaultRandomMin = 0.5f;
+	internal const float DefaultRandomMax = 1.5f;
 	public static readonly OriginCuboid UnitCube = new(1f, 1f, 1f);
 
 	readonly float _halfWidth;
@@ -97,13 +97,6 @@ public readonly partial struct OriginCuboid : IFullyInteractableConvexShape<Orig
 		_ => throw new ArgumentException($"{nameof(Axis)} can not be {nameof(Axis.None)}.", nameof(axis))
 	};
 
-	public Location GetSurfaceLocation(Orientation3D orientationFromCentrePoint) {
-		return new(
-			_halfWidth * orientationFromCentrePoint.GetAxisSign(Axis.X),
-			_halfHeight * orientationFromCentrePoint.GetAxisSign(Axis.Y),
-			_halfDepth * orientationFromCentrePoint.GetAxisSign(Axis.Z)
-		);
-	}
 	public float GetSideSurfaceArea(CardinalOrientation3D side) {
 		return side.GetAxis() switch {
 			Axis.X => HalfHeight * HalfDepth * 4f,
@@ -114,25 +107,25 @@ public readonly partial struct OriginCuboid : IFullyInteractableConvexShape<Orig
 	}
 
 	public static OriginCuboid Interpolate(OriginCuboid start, OriginCuboid end, float distance) {
-		return new(
-			Single.Lerp(start.Width, end.Width, distance),
-			Single.Lerp(start.Height, end.Height, distance),
-			Single.Lerp(start.Depth, end.Depth, distance)
+		return FromHalfDimensions(
+			Single.Lerp(start.HalfWidth, end.HalfWidth, distance),
+			Single.Lerp(start.HalfHeight, end.HalfHeight, distance),
+			Single.Lerp(start.HalfDepth, end.HalfDepth, distance)
 		);
 	}
 
 	public static OriginCuboid CreateNewRandom() {
-		return new(
+		return FromHalfDimensions(
 			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax),
 			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax),
 			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax)
 		);
 	}
 	public static OriginCuboid CreateNewRandom(OriginCuboid minInclusive, OriginCuboid maxExclusive) {
-		return new(
-			RandomUtils.NextSingle(minInclusive.Width, maxExclusive.Width),
-			RandomUtils.NextSingle(minInclusive.Height, maxExclusive.Height),
-			RandomUtils.NextSingle(minInclusive.Depth, maxExclusive.Depth)
+		return FromHalfDimensions(
+			RandomUtils.NextSingle(minInclusive.HalfWidth, maxExclusive.HalfWidth),
+			RandomUtils.NextSingle(minInclusive.HalfHeight, maxExclusive.HalfHeight),
+			RandomUtils.NextSingle(minInclusive.HalfDepth, maxExclusive.HalfDepth)
 		);
 	}
 

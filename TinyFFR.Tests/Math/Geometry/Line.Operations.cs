@@ -419,6 +419,105 @@ partial class LineTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyTestForLineIntersections() {
+		// Line
+		Assert.False(
+			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Line(new Location(0f, 2f, 0f), Direction.Left),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.True(
+			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Line(new Location(0f, 2f, 0f), Direction.Left),
+				lineThickness: 1.01f
+			)
+		);
+		Assert.True(
+			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Line(new Location(100f, 2f, 0f), Direction.Down),
+				lineThickness: 0.01f
+			)
+		);
+
+		// Ray
+		Assert.False(
+			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Ray(new Location(0f, 2f, 0f), Direction.Left),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.True(
+			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Ray(new Location(0f, 2f, 0f), Direction.Left),
+				lineThickness: 1.01f
+			)
+		);
+		Assert.True(
+			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Ray(new Location(100f, 2f, 0f), Direction.Down),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.False(
+			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Ray(new Location(100f, 2f, 0f), Direction.Up),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.True(
+			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new Ray(new Location(100f, 2f, 0f), Direction.Up),
+				lineThickness: 1.01f
+			)
+		);
+
+		// BoundedLine
+		Assert.False(
+			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(0f, 2f, 0f), Direction.Left * 1f),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.True(
+			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(0f, 2f, 0f), Direction.Left * 1f),
+				lineThickness: 1.01f
+			)
+		);
+		Assert.True(
+			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(100f, 2f, 0f), Direction.Down * 4f),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.False(
+			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(100f, 2f, 0f), Direction.Up * 4f),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.True(
+			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(100f, 2f, 0f), Direction.Up * 4f),
+				lineThickness: 1.01f
+			)
+		);
+		Assert.False(
+			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(100f, 6f, 0f), Direction.Down * 4f),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.True(
+			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
+				new BoundedLine(new Location(100f, 6f, 0f), Direction.Down * 4f),
+				lineThickness: 1.01f
+			)
+		);
+	}
+
+	[Test]
 	public void ShouldCorrectlyReflectOnPlanes() {
 		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
 
@@ -455,6 +554,24 @@ partial class LineTest {
 		);
 		Assert.Null(
 			new Line(new Location(0f, 0f, 0f), Direction.Right).IntersectionWith(plane)
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyTestForIntersectionWithPlanes() {
+		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
+
+		Assert.True(
+			new Line(new Location(100f, 100f, 0f), Direction.Down).IsIntersectedBy(plane)
+		);
+		Assert.True(
+			new Line(new Location(100f, -100f, 0f), Direction.Up).IsIntersectedBy(plane)
+		);
+		Assert.False(
+			new Line(new Location(0f, 2f, 0f), Direction.Right).IsIntersectedBy(plane)
+		);
+		Assert.False(
+			new Line(new Location(0f, 0f, 0f), Direction.Right).IsIntersectedBy(plane)
 		);
 	}
 

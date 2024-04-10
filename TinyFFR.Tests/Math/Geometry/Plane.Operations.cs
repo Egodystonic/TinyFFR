@@ -189,6 +189,23 @@ partial class PlaneTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyTestForIntersectionWithOtherPlanes() {
+		Assert.False(TestPlane.IsIntersectedBy(new Plane(Direction.Down, Location.Origin)));
+		Assert.False(TestPlane.IsIntersectedBy(new Plane(Direction.Down, TestPlane.ClosestPointToOrigin)));
+		Assert.False(TestPlane.IsIntersectedBy(new Plane(Direction.Up, TestPlane.ClosestPointToOrigin)));
+
+		Assert.True(
+			TestPlane.IsIntersectedBy(new Plane(Direction.Right, (-1f, 0f, 0f)))
+		);
+		Assert.True(
+			TestPlane.IsIntersectedBy(new Plane((0f, 1f, 1f), (0f, 99f, 0f)))
+		);
+		Assert.True(
+			new Plane((1f, 0f, 1f), Location.Origin).IsIntersectedBy(new Plane((-1f, 0f, 1f), Location.Origin))
+		);
+	}
+
+	[Test]
 	public void ShouldCorrectlyCalculateIntersectionWithOtherPlanes() {
 		void AssertIntersection(Line expectedLine, Plane planeA, Plane planeB) {
 			AssertToleranceEquals(expectedLine, planeA.IntersectionWith(planeB), TestTolerance);

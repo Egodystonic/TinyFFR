@@ -172,6 +172,12 @@ public readonly partial struct BoundedLine :
 		return DistanceFrom(closestPointOnLine) <= lineThickness ? closestPointOnLine : null;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	bool ILineIntersectable<Location>.IsIntersectedBy<TLine>(TLine line) => IsIntersectedBy(line, ILine.DefaultLineThickness);
+	public bool IsIntersectedBy<TLine>(TLine line, float lineThickness = ILine.DefaultLineThickness) where TLine : ILine {
+		return DistanceFrom(ClosestPointOn(line)) <= lineThickness;
+	}
+
 	public bool DistanceIsWithinLineBounds(float signedDistanceFromStart) => signedDistanceFromStart >= 0f && signedDistanceFromStart * signedDistanceFromStart <= LengthSquared;
 	public float BindDistance(float signedDistanceFromStart) => Single.Clamp(signedDistanceFromStart, 0f, Length);
 	public Location BoundedLocationAtDistance(float signedDistanceFromStart) => UnboundedLocationAtDistance(BindDistance(signedDistanceFromStart));
@@ -195,6 +201,10 @@ public readonly partial struct BoundedLine :
 		var distance = GetUnboundedPlaneIntersectionDistance(plane);
 		if (distance >= 0f && distance <= Length) return UnboundedLocationAtDistance(distance.Value);
 		else return null; // Plane parallel with line or outside line boundaries
+	}
+	public bool IsIntersectedBy(Plane plane) {
+		var unboundedIntersectionDistance = GetUnboundedPlaneIntersectionDistance(plane);
+		return unboundedIntersectionDistance >= 0f && unboundedIntersectionDistance <= Length;
 	}
 
 	public float SignedDistanceFrom(Plane plane) {

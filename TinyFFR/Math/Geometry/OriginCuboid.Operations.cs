@@ -27,7 +27,7 @@ public readonly partial struct OriginCuboid
 		);
 	}
 	
-	public Plane GetSurfacePlane(CardinalOrientation3D side) { // TODO xmldoc that the planes' normals point away from the cuboid centre, e.g. side.ToDirection()
+	public Plane GetSideSurfacePlane(CardinalOrientation3D side) { // TODO xmldoc that the planes' normals point away from the cuboid centre, e.g. side.ToDirection()
 		if (side == CardinalOrientation3D.None) throw new ArgumentOutOfRangeException(nameof(side), side, $"Can not be '{nameof(CardinalOrientation3D.None)}'.");
 
 		return Plane.FromDistanceFromOrigin(side.ToDirection(), GetHalfDimension(side.GetAxis()));
@@ -43,13 +43,6 @@ public readonly partial struct OriginCuboid
 		);
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public OriginCuboid WithWidth(float newWidth) => this with { Width = newWidth };
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public OriginCuboid WithHeight(float newHeight) => this with { Height = newHeight };
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public OriginCuboid WithDepth(float newDepth) => this with { Depth = newDepth };
-
 	public float DistanceFrom(Location location) {
 		var xDist = MathF.Max(0f, MathF.Abs(location.X) - HalfWidth);
 		var yDist = MathF.Max(0f, MathF.Abs(location.Y) - HalfHeight);
@@ -58,11 +51,15 @@ public readonly partial struct OriginCuboid
 		return new Vector3(xDist, yDist, zDist).Length();
 	}
 	public float SurfaceDistanceFrom(Location location) {
-		var xDist = MathF.Abs(MathF.Abs(location.X) - HalfWidth);
-		var yDist = MathF.Abs(MathF.Abs(location.Y) - HalfHeight);
-		var zDist = MathF.Abs(MathF.Abs(location.Z) - HalfDepth);
+		var xDist = MathF.Abs(location.X) - HalfWidth;
+		var yDist = MathF.Abs(location.Y) - HalfHeight;
+		var zDist = MathF.Abs(location.Z) - HalfDepth;
 
-		return new Vector3(xDist, yDist, zDist).Length();
+		if (xDist < 0f && yDist < 0f && zDist < 0f) { // Inside the cuboid
+			return MathF.Abs(MathF.Max(xDist, MathF.Max(yDist, zDist)));
+		}
+
+		return new Vector3(MathF.Max(0f, xDist), MathF.Max(0f, yDist), MathF.Max(0f, zDist)).Length();
 	}
 
 	public bool Contains(Location location) => MathF.Abs(location.X) <= HalfWidth && MathF.Abs(location.Y) <= HalfHeight && MathF.Abs(location.Z) <= HalfDepth;
@@ -75,51 +72,18 @@ public readonly partial struct OriginCuboid
 		);
 	}
 	public Location ClosestPointOnSurfaceTo(Location location) {
-		static Axis GetMinAxis(float x, float y, float z) {
-			if (MathF.Abs(x) < MathF.Abs(y)) return MathF.Abs(x) < MathF.Abs(z) ? Axis.X : Axis.Z;
-			else return MathF.Abs(y) < MathF.Abs(z) ? Axis.Y : Axis.Z;
+		var closestNonSurfacePoint = ClosestPointTo(location);
+		if (location != closestNonSurfacePoint) return closestNonSurfacePoint;
+
+		var xDiff = HalfWidth - MathF.Abs(location.X);
+		var yDiff = HalfHeight - MathF.Abs(location.Y);
+		var zDiff = HalfDepth - MathF.Abs(location.Z);
+		if (xDiff < yDiff) {
+			if (xDiff < zDiff) return location with { X = HalfWidth * (location.X < 0f ? -1f : 1f) };
+			else return location with { Z = HalfDepth * (location.Z < 0f ? -1f : 1f) };
 		}
-
-		var xSign = location.X < 0f ? -1f : 1f;
-		var ySign = location.Y < 0f ? -1f : 1f;
-		var zSign = location.Z < 0f ? -1f : 1f;
-		var xDelta = xSign * (HalfWidth - MathF.Abs(location.X));
-		var yDelta = ySign * (HalfHeight - MathF.Abs(location.Y));
-		var zDelta = zSign * (HalfDepth - MathF.Abs(location.Z));
-
-		return GetMinAxis(xDelta, yDelta, zDelta) switch {
-			Axis.X => location with { X = location.X + xDelta },
-			Axis.Y => location with { Y = location.Y + yDelta },
-			_ => location with { Z = location.Z + zDelta },
-		};
-	}
-
-	[InlineArray(3)] // TODO delete these two methods if we don't need them
-	struct PlaneDistanceBuffer { float _; }
-	// near plane distances are [x, y, z] axis; negative if point inside cuboid on that axis, zero if on edge, positive if point outside.
-	// far plane distances are [x, y, z] axis; always positive (or zero for cuboid of extent 0 on that axis, god knows if extent is negative)
-	void GetPlanePointDistances(Location startPoint, ref PlaneDistanceBuffer nearPlaneDistances, ref PlaneDistanceBuffer farPlaneDistances) {
-		for (var i = 0; i < OrientationUtils.AllAxes.Length; ++i) {
-			var axis = OrientationUtils.AllAxes[i];
-
-			var nearPlaneSign = MathF.Sign(startPoint[axis]) & 0b1; // & 0b1 ensures it's either -1 or 1, never 0
-			nearPlaneDistances[i] = GetSurfacePlane(axis.ToCardinal(nearPlaneSign)).SignedDistanceFrom(startPoint);
-			// Flip the further plane so that both planes face the startPoint (unless it's inside the cuboid on this axis, in which case the signed distances will have differing signs)
-			farPlaneDistances[i] = GetSurfacePlane(axis.ToCardinal(-nearPlaneSign)).Flipped.SignedDistanceFrom(startPoint);
-		}
-	}
-
-	[InlineArray(3)]
-	struct PlaneIntersectionBuffer { Location? _; }
-	void GetPlaneLineIntersections<TLine>(TLine line, ref PlaneIntersectionBuffer frontFacingIntersections, ref PlaneIntersectionBuffer backFacingIntersections) where TLine : ILine {
-		for (var i = 0; i < OrientationUtils.AllAxes.Length; ++i) {
-			var axis = OrientationUtils.AllAxes[i];
-
-			var farPlaneSign = MathF.Sign(line.Direction[axis]);
-			if (farPlaneSign == 0) continue; // No intersections as we're parallel
-			frontFacingIntersections[i] = GetSurfacePlane(axis.ToCardinal(-farPlaneSign)).IntersectionWith(line);
-			backFacingIntersections[i] = GetSurfacePlane(axis.ToCardinal(farPlaneSign)).IntersectionWith(line);
-		}
+		else if (yDiff < zDiff) return location with { Y = HalfHeight * (location.Y < 0f ? -1f : 1f) };
+		else return location with { Z = HalfDepth * (location.Z < 0f ? -1f : 1f) };
 	}
 
 	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => ClosestPointTo(ClosestPointOn(line));
@@ -216,6 +180,12 @@ public readonly partial struct OriginCuboid
 			}
 		}
 		return answerDistance;
+	}
+
+	public bool IsIntersectedBy<TLine>(TLine line) where TLine : ILine {
+		var distanceTuple = GetUnboundedLineIntersectionDistances(line.CoerceToRay());
+		if (distanceTuple == null) return false;
+		return line.DistanceIsWithinLineBounds(distanceTuple.Value.Item1) || line.DistanceIsWithinLineBounds(distanceTuple.Value.Item2);
 	}
 	public ConvexShapeLineIntersection? IntersectionWith<TLine>(TLine line) where TLine : ILine {
 		var unboundedDistances = GetUnboundedLineIntersectionDistances(line.CoerceToRay());
