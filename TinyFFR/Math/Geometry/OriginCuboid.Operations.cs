@@ -202,16 +202,16 @@ public readonly partial struct OriginCuboid
 		var y1 = SignedLineDistanceToPositiveSurfacePlane(ray.StartPoint, ray.Direction, Axis.Y);
 		var y2 = SignedLineDistanceToNegativeSurfacePlane(ray.StartPoint, ray.Direction, Axis.Y);
 		var minY = MathF.Min(y1, y2);
-		var maxY = MathF.Min(y1, y2);
+		var maxY = MathF.Max(y1, y2);
 
 		var z1 = SignedLineDistanceToPositiveSurfacePlane(ray.StartPoint, ray.Direction, Axis.Z);
 		var z2 = SignedLineDistanceToNegativeSurfacePlane(ray.StartPoint, ray.Direction, Axis.Z);
 		var minZ = MathF.Min(z1, z2);
-		var maxZ = MathF.Min(z1, z2);
+		var maxZ = MathF.Max(z1, z2);
 
 		var startDist = MathF.Max(MathF.Max(minX, minY), minZ);
 		var endDist = MathF.Min(MathF.Min(maxX, maxY), maxZ);
-		if (endDist > startDist) return null;
+		if (endDist < startDist) return null;
 		else return (startDist, endDist);
 	}
 
