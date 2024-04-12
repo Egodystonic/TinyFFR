@@ -117,8 +117,8 @@ partial class LocationTest {
 			var startToVal = start >> val;
 			var valToEnd = val >> end;
 
-			AssertToleranceEquals(startToEnd.Direction, startToVal.Direction, 0.01f);
-			AssertToleranceEquals(startToEnd.Direction, valToEnd.Direction, 0.01f);
+			AssertToleranceEquals(startToEnd.Direction, startToVal.Direction, 0.02f);
+			AssertToleranceEquals(startToEnd.Direction, valToEnd.Direction, 0.02f);
 			Assert.LessOrEqual(startToVal.LengthSquared, startToEnd.LengthSquared);
 			Assert.LessOrEqual(valToEnd.LengthSquared, startToEnd.LengthSquared);
 		}

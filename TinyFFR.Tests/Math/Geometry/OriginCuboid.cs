@@ -118,12 +118,12 @@ partial class OriginCuboidTest {
 			Assert.Less(val.Depth, b.Depth);
 
 			val = OriginCuboid.CreateNewRandom();
-			Assert.GreaterOrEqual(val.Width, OriginCuboid.DefaultRandomMin);
-			Assert.Less(val.Width, OriginCuboid.DefaultRandomMax);
-			Assert.GreaterOrEqual(val.Height, OriginCuboid.DefaultRandomMin);
-			Assert.Less(val.Height, OriginCuboid.DefaultRandomMax);
-			Assert.GreaterOrEqual(val.Depth, OriginCuboid.DefaultRandomMin);
-			Assert.Less(val.Depth, OriginCuboid.DefaultRandomMax);
+			Assert.GreaterOrEqual(val.HalfWidth, OriginCuboid.DefaultRandomMin);
+			Assert.Less(val.HalfWidth, OriginCuboid.DefaultRandomMax);
+			Assert.GreaterOrEqual(val.HalfHeight, OriginCuboid.DefaultRandomMin);
+			Assert.Less(val.HalfHeight, OriginCuboid.DefaultRandomMax);
+			Assert.GreaterOrEqual(val.HalfDepth, OriginCuboid.DefaultRandomMin);
+			Assert.Less(val.HalfDepth, OriginCuboid.DefaultRandomMax);
 		}
 	}
 }

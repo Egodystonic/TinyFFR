@@ -363,8 +363,6 @@ partial class OriginSphereTest {
 
 	[Test]
 	public void ShouldCorrectlyTestForLineIntersections() {
-		ConvexShapeLineIntersection intersection;
-
 		// Line
 		Assert.False(TestSphere.IsIntersectedBy(new Line(new Location(0f, 10f, 0f), Direction.Right)));
 		Assert.True(TestSphere.IsIntersectedBy(new Line(new Location(0f, 6f, 0f), Direction.Right)));
