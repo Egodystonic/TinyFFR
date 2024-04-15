@@ -29,8 +29,8 @@ partial class PlaneTest {
 
 	[Test]
 	public void FactoryMethodsShouldCorrectlyConstructPlane() {
-		Assert.AreEqual(TestPlane, Plane.FromDistanceFromOrigin(Direction.Up, -1f));
-		Assert.AreEqual(new Plane(Direction.Backward, Location.Origin), Plane.FromDistanceFromOrigin(Direction.Backward, 0f));
+		Assert.AreEqual(TestPlane, Plane.FromNormalAndDistanceFromOrigin(Direction.Up, -1f));
+		Assert.AreEqual(new Plane(Direction.Backward, Location.Origin), Plane.FromNormalAndDistanceFromOrigin(Direction.Backward, 0f));
 
 		Assert.AreEqual(TestPlane, Plane.FromPointClosestToOrigin((0f, -1f, 0f), true));
 		Assert.AreEqual(new Plane(Direction.Backward, (0f, 0f, -3f)), Plane.FromPointClosestToOrigin((0f, 0f, -3f), false));

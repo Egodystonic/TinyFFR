@@ -30,7 +30,7 @@ public readonly partial struct OriginCuboid
 	public Plane GetSideSurfacePlane(CardinalOrientation3D side) { // TODO xmldoc that the planes' normals point away from the cuboid centre, e.g. side.ToDirection()
 		if (side == CardinalOrientation3D.None) throw new ArgumentOutOfRangeException(nameof(side), side, $"Can not be '{nameof(CardinalOrientation3D.None)}'.");
 
-		return Plane.FromDistanceFromOrigin(side.ToDirection(), GetHalfDimension(side.GetAxis()));
+		return Plane.FromNormalAndDistanceFromOrigin(side.ToDirection(), GetHalfDimension(side.GetAxis()));
 	}
 
 	public BoundedLine GetEdge(IntercardinalOrientation3D edge) {
@@ -225,7 +225,7 @@ public readonly partial struct OriginCuboid
 		foreach (var diagonal in OrientationUtils.AllDiagonals) {
 			var corner = GetCorner(diagonal);
 			var distance = plane.SignedDistanceFrom(corner);
-			if (MathF.Abs(distance) < result) result = distance;
+			result = MathF.MinMagnitude(distance, result);
 		}
 		return result;
 	}
@@ -236,7 +236,7 @@ public readonly partial struct OriginCuboid
 		foreach (var diagonal in OrientationUtils.AllDiagonals) {
 			var corner = GetCorner(diagonal);
 			var distance = plane.DistanceFrom(corner);
-			if (distance < result) result = distance;
+			result = MathF.Min(distance, result);
 		}
 		return result;
 	}

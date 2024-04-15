@@ -84,7 +84,7 @@ public readonly partial struct OriginCuboid : IFullyInteractableConvexShape<Orig
 		};
 	}
 
-	public float GetDimension(Axis axis) => axis switch {
+	public float GetDimension(Axis axis) => axis switch { // TODO rename this and below to get extent? Probably because it's actually an extent (e.g. it's just a measurement, not any actual point)
 		Axis.X => Width,
 		Axis.Y => Height,
 		Axis.Z => Depth,

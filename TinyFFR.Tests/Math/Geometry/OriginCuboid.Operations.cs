@@ -1,6 +1,7 @@
 ﻿// Created on 2024-02-26 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Diagnostics.Metrics;
 using System.Globalization;
 
 namespace Egodystonic.TinyFFR;
@@ -1200,5 +1201,273 @@ partial class OriginCuboidTest {
 		line = new BoundedLine(new Location(-495f, -4f, 0f), new Vect(980f, -0.9f, 0f));
 		Assert.AreEqual(0.1f, longCuboid.SurfaceDistanceFrom(line), TestTolerance);
 		Assert.AreEqual(0.1f, longCuboid.SurfaceDistanceFrom(line.Flipped), TestTolerance);
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineClosestPointToPlane() {
+		foreach (var orientation in OrientationUtils.AllDiagonals) {
+			AssertToleranceEquals(
+				TestCuboid.GetCorner(orientation),
+				TestCuboid.ClosestPointTo(Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f)),
+				TestTolerance
+			);
+			AssertToleranceEquals(
+				TestCuboid.GetCorner(orientation),
+				TestCuboid.ClosestPointOnSurfaceTo(Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f)),
+				TestTolerance
+			);
+		}
+
+		foreach (var orientation in OrientationUtils.AllIntercardinals) {
+			var edge = TestCuboid.GetEdge(orientation);
+			Assert.AreEqual(
+				0f,
+				edge.DistanceFrom(TestCuboid.ClosestPointTo(Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f))),
+				TestTolerance
+			);
+			Assert.AreEqual(
+				0f,
+				edge.DistanceFrom(TestCuboid.ClosestPointOnSurfaceTo(Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f))),
+				TestTolerance
+			);
+		}
+
+		foreach (var orientation in OrientationUtils.AllCardinals) {
+			var plane = Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f);
+
+			foreach (var axis in OrientationUtils.AllAxes) {
+				if (axis == orientation.GetAxis()) {
+					Assert.AreEqual(
+						TestCuboid.GetHalfDimension(axis) * orientation.GetAxisSign(),
+						TestCuboid.ClosestPointTo(plane)[axis],
+						TestTolerance
+					);
+					Assert.AreEqual(
+						TestCuboid.GetHalfDimension(axis) * orientation.GetAxisSign(),
+						TestCuboid.ClosestPointOnSurfaceTo(plane)[axis],
+						TestTolerance
+					);
+				}
+				else {
+					Assert.GreaterOrEqual(
+						TestCuboid.ClosestPointTo(plane)[axis],
+						-TestCuboid.GetHalfDimension(axis) - TestTolerance
+					);
+					Assert.LessOrEqual(
+						TestCuboid.ClosestPointTo(plane)[axis],
+						TestCuboid.GetHalfDimension(axis) + TestTolerance
+					);
+					Assert.GreaterOrEqual(
+						TestCuboid.ClosestPointOnSurfaceTo(plane)[axis],
+						-TestCuboid.GetHalfDimension(axis) - TestTolerance
+					);
+					Assert.LessOrEqual(
+						TestCuboid.ClosestPointOnSurfaceTo(plane)[axis],
+						TestCuboid.GetHalfDimension(axis) + TestTolerance
+					);
+				}
+			}
+		}
+
+		foreach (var orientation in OrientationUtils.All3DOrientations) {
+			var plane = Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 0f);
+
+			Assert.AreEqual(
+				0f,
+				TestCuboid.DistanceFrom(TestCuboid.ClosestPointTo(plane)),
+				TestTolerance
+			);
+			Assert.AreEqual(
+				0f,
+				TestCuboid.DistanceFrom(TestCuboid.ClosestPointOnSurfaceTo(plane)),
+				TestTolerance
+			);
+			Assert.AreEqual(
+				0f,
+				plane.DistanceFrom(TestCuboid.ClosestPointTo(plane)),
+				TestTolerance
+			);
+			Assert.AreEqual(
+				0f,
+				plane.DistanceFrom(TestCuboid.ClosestPointOnSurfaceTo(plane)),
+				TestTolerance
+			);
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineClosestPointOnPlane() {
+		foreach (var orientation in OrientationUtils.AllDiagonals) {
+			var corner = TestCuboid.GetCorner(orientation);
+			var plane = Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f);
+			AssertToleranceEquals(
+				orientation.ToDirection() * plane.DistanceFrom(corner) + corner,
+				TestCuboid.ClosestPointOn(plane),
+				TestTolerance
+			);
+			AssertToleranceEquals(
+				orientation.ToDirection() * plane.DistanceFrom(corner) + corner,
+				TestCuboid.ClosestPointToSurfaceOn(plane),
+				TestTolerance
+			);
+		}
+
+		foreach (var orientation in OrientationUtils.AllIntercardinals) {
+			var edge = TestCuboid.GetEdge(orientation);
+			var plane = Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f);
+			var projectedEdge = edge.ProjectedOnTo(plane);
+			Assert.AreEqual(
+				0f,
+				projectedEdge.DistanceFrom(TestCuboid.ClosestPointOn(plane)),
+				TestTolerance
+			);
+			Assert.AreEqual(
+				0f,
+				projectedEdge.DistanceFrom(TestCuboid.ClosestPointToSurfaceOn(plane)),
+				TestTolerance
+			);
+		}
+
+		foreach (var orientation in OrientationUtils.AllCardinals) {
+			var plane = Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f);
+
+			foreach (var axis in OrientationUtils.AllAxes) {
+				if (axis == orientation.GetAxis()) {
+					Assert.AreEqual(
+						(orientation.ToDirection() * 1000f)[axis],
+						TestCuboid.ClosestPointOn(plane)[axis],
+						TestTolerance
+					);
+					Assert.AreEqual(
+						(orientation.ToDirection() * 1000f)[axis],
+						TestCuboid.ClosestPointToSurfaceOn(plane)[axis],
+						TestTolerance
+					);
+				}
+				else {
+					Assert.GreaterOrEqual(
+						TestCuboid.ClosestPointOn(plane)[axis],
+						-TestCuboid.GetHalfDimension(axis) - TestTolerance
+					);
+					Assert.LessOrEqual(
+						TestCuboid.ClosestPointOn(plane)[axis],
+						TestCuboid.GetHalfDimension(axis) + TestTolerance
+					);
+					Assert.GreaterOrEqual(
+						TestCuboid.ClosestPointToSurfaceOn(plane)[axis],
+						-TestCuboid.GetHalfDimension(axis) - TestTolerance
+					);
+					Assert.LessOrEqual(
+						TestCuboid.ClosestPointToSurfaceOn(plane)[axis],
+						TestCuboid.GetHalfDimension(axis) + TestTolerance
+					);
+				}
+			}
+		}
+
+		foreach (var orientation in OrientationUtils.All3DOrientations) {
+			var plane = Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 0f);
+
+			Assert.AreEqual(
+				0f,
+				TestCuboid.DistanceFrom(TestCuboid.ClosestPointOn(plane)),
+				TestTolerance
+			);
+			Assert.AreEqual(
+				0f,
+				TestCuboid.DistanceFrom(TestCuboid.ClosestPointToSurfaceOn(plane)),
+				TestTolerance
+			);
+			Assert.AreEqual(
+				0f,
+				plane.DistanceFrom(TestCuboid.ClosestPointOn(plane)),
+				TestTolerance
+			);
+			Assert.AreEqual(
+				0f,
+				plane.DistanceFrom(TestCuboid.ClosestPointToSurfaceOn(plane)),
+				TestTolerance
+			);
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineDistanceFromPlanes() {
+		void AssertDistance(float expectedSignedDistance, Plane plane) {
+			Assert.AreEqual(
+				expectedSignedDistance,
+				TestCuboid.SignedDistanceFrom(plane),
+				TestTolerance
+			);
+			Assert.AreEqual(
+				expectedSignedDistance,
+				TestCuboid.SignedSurfaceDistanceFrom(plane),
+				TestTolerance
+			);
+			Assert.AreEqual(
+				MathF.Abs(expectedSignedDistance),
+				TestCuboid.DistanceFrom(plane),
+				TestTolerance
+			);
+			Assert.AreEqual(
+				MathF.Abs(expectedSignedDistance),
+				TestCuboid.SurfaceDistanceFrom(plane),
+				TestTolerance
+			);
+		}
+
+		foreach (var orientation in OrientationUtils.AllDiagonals) {
+			var corner = TestCuboid.GetCorner(orientation);
+			var plane = Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f);
+			AssertDistance(-plane.DistanceFrom(corner), plane);
+			AssertDistance(plane.DistanceFrom(corner), plane.Flipped);
+		}
+
+		foreach (var orientation in OrientationUtils.AllIntercardinals) {
+			var plane = Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f);
+			var edge = TestCuboid.GetEdge(orientation);
+			AssertDistance(-plane.DistanceFrom(edge), plane);
+			AssertDistance(plane.DistanceFrom(edge), plane.Flipped);
+		}
+
+		foreach (var orientation in OrientationUtils.AllCardinals) {
+			var plane = Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f);
+			var expectedSignedDistance = -(1000f - TestCuboid.GetHalfDimension(orientation.GetAxis()));
+			AssertDistance(expectedSignedDistance, plane);
+			AssertDistance(-expectedSignedDistance, plane.Flipped);
+		}
+
+		foreach (var orientation in OrientationUtils.All3DOrientations) {
+			var plane = Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 0f);
+			AssertDistance(0f, plane);
+			AssertDistance(0f, plane.Flipped);
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineRelationshipToPlane() {
+		foreach (var orientation in OrientationUtils.AllDiagonals) {
+			var plane = Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f);
+			Assert.AreEqual(PlaneObjectRelationship.PlaneFacesAwayFromObject, TestCuboid.RelationshipTo(plane));
+			Assert.AreEqual(PlaneObjectRelationship.PlaneFacesTowardsObject, TestCuboid.RelationshipTo(plane.Flipped));
+		}
+
+		foreach (var orientation in OrientationUtils.AllIntercardinals) {
+			var plane = Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f);
+			Assert.AreEqual(PlaneObjectRelationship.PlaneFacesAwayFromObject, TestCuboid.RelationshipTo(plane));
+			Assert.AreEqual(PlaneObjectRelationship.PlaneFacesTowardsObject, TestCuboid.RelationshipTo(plane.Flipped));
+		}
+
+		foreach (var orientation in OrientationUtils.AllCardinals) {
+			var plane = Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f);
+			Assert.AreEqual(PlaneObjectRelationship.PlaneFacesAwayFromObject, TestCuboid.RelationshipTo(plane));
+			Assert.AreEqual(PlaneObjectRelationship.PlaneFacesTowardsObject, TestCuboid.RelationshipTo(plane.Flipped));
+		}
+
+		foreach (var orientation in OrientationUtils.All3DOrientations) {
+			var plane = Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 0f);
+			Assert.AreEqual(PlaneObjectRelationship.PlaneIntersectsObject, TestCuboid.RelationshipTo(plane));
+			Assert.AreEqual(PlaneObjectRelationship.PlaneIntersectsObject, TestCuboid.RelationshipTo(plane.Flipped));
+		}
 	}
 }

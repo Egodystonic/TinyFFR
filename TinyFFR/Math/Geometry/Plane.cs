@@ -27,9 +27,9 @@ public readonly partial struct Plane : IGeometryPrimitive<Plane>, IPrecomputatio
 
 	// TODO in xmldoc note that this is the minimum distance from the origin to the plane along the normal, e.g. positive means the normal points away from the origin
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Plane FromDistanceFromOrigin(Direction normal, float signedDistanceFromOrigin) => new(normal.ToVector3(), signedDistanceFromOrigin);
+	public static Plane FromNormalAndDistanceFromOrigin(Direction normal, float signedDistanceFromOrigin) => new(normal.ToVector3(), signedDistanceFromOrigin);
 
-	// TODO in xmldoc recommend using FromDistanceFromOrigin where possible as it can't throw an exception and it's faster
+	// TODO in xmldoc recommend using FromNormalAndDistanceFromOrigin where possible as it can't throw an exception and it's faster
 	public static Plane FromPointClosestToOrigin(Location pointClosestToOrigin, bool normalFacesOrigin) {
 		var vectFromOriginToClosestPoint = (Vect) pointClosestToOrigin;
 		var direction = vectFromOriginToClosestPoint.Direction;
