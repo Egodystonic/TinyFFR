@@ -41,7 +41,7 @@ public sealed class TffrFactory : ITffrFactory {
 	public override string ToString() => IsDisposed ? "TinyFFR Native Factory [Disposed]" : "TinyFFR Native Factory";
 
 	#region Disposal
-	public bool IsDisposed { get; private set; }
+	bool IsDisposed { get; set; }
 
 	public void Dispose() {
 		if (IsDisposed) return;

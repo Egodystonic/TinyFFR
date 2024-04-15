@@ -8,8 +8,8 @@ using System.Reflection.Metadata;
 
 namespace Egodystonic.TinyFFR.Environment.Desktop;
 
-public readonly unsafe struct Window : IEquatable<Window>, ITrackedDisposable {
-	static readonly ArrayPoolBackedVector<UIntPtr> _activeWindows = new();
+public readonly unsafe struct Window : IEquatable<Window> {
+	static readonly ArrayPoolBackedVector<UIntPtr> _activeWindows = new(); // TODO these should be threadsafe?
 	static readonly ArrayPoolBackedMap<UIntPtr, Display> _displayMap = new();
 	static readonly ArrayPoolBackedMap<UIntPtr, InteropStringBuffer> _titleBufferMap = new();
 	readonly WindowHandle _handle;
@@ -201,7 +201,7 @@ public readonly unsafe struct Window : IEquatable<Window>, ITrackedDisposable {
 	#endregion
 
 	#region Disposal
-	public bool IsDisposed => !_activeWindows.Contains(HandleAsPtr);
+	bool IsDisposed => !_activeWindows.Contains(HandleAsPtr);
 
 	public void Dispose() {
 		if (IsDisposed) return;

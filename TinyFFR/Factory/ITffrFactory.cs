@@ -6,7 +6,7 @@ using Egodystonic.TinyFFR.Environment.Desktop;
 
 namespace Egodystonic.TinyFFR.Factory;
 
-public interface ITffrFactory : ITrackedDisposable {
+public interface ITffrFactory : IDisposable {
 	IDisplayDiscoverer GetDisplayDiscoverer();
 	IWindowBuilder GetWindowBuilder();
 	IWindowBuilder GetWindowBuilder(WindowBuilderConfig config);

@@ -5,7 +5,7 @@ using Egodystonic.TinyFFR.Interop;
 
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
-sealed unsafe class UnmanagedBuffer<T> : IEnumerable<T>, ITrackedDisposable where T : unmanaged {
+sealed unsafe class UnmanagedBuffer<T> : IEnumerable<T> where T : unmanaged {
 	public struct Enumerator : IEnumerator<T> {
 		readonly UnmanagedBuffer<T> _owner;
 		int _curIndex;
@@ -43,7 +43,7 @@ sealed unsafe class UnmanagedBuffer<T> : IEnumerable<T>, ITrackedDisposable wher
 		get => ref Unsafe.AsRef<T>(BufferPointer);
 	}
 	public int Length { get; private set; }
-	public bool IsDisposed {
+	bool IsDisposed {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => BufferPointer == null;
 	}

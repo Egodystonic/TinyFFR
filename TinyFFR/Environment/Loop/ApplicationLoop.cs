@@ -6,7 +6,7 @@ using Egodystonic.TinyFFR.Environment.Input;
 
 namespace Egodystonic.TinyFFR.Environment;
 
-public readonly struct ApplicationLoop : IEquatable<ApplicationLoop>, ITrackedDisposable {
+public readonly struct ApplicationLoop : IEquatable<ApplicationLoop> {
 	readonly ApplicationLoopHandle _handle;
 
 	public IInputTracker Input {
@@ -40,7 +40,7 @@ public readonly struct ApplicationLoop : IEquatable<ApplicationLoop>, ITrackedDi
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => NativeApplicationLoopBuilder.Dispose(_handle);
 
-	public bool IsDisposed {
+	bool IsDisposed {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => NativeApplicationLoopBuilder.IsDisposed(_handle);
 	}
