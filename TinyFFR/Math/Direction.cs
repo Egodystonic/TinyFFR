@@ -91,7 +91,7 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromOrientation(Orientation3D orientation) => new(orientation.GetAxisSign(Axis.X), orientation.GetAxisSign(Axis.Y), orientation.GetAxisSign(Axis.Z));
 
-	public static Direction FromPerpendicularToBoth(Direction dirA, Direction dirB) { // TODO in Xmldoc note that this will return any perp to both, no guarantee on which one. If either is None, then it throws
+	public static Direction FromPerpendicular(Direction dirA, Direction dirB) { // TODO in Xmldoc note that this will return any perp to both, no guarantee on which one. If either is None, then it throws
 		var cross = Vector3.Cross(dirA.ToVector3(), dirB.ToVector3());
 		var crossLength = cross.LengthSquared();
 
@@ -101,6 +101,9 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 		else return dirA.GetAnyPerpendicular();
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Direction FromNearestDirectionInSpan(Direction targetDir, ReadOnlySpan<Direction> span) => span[GetIndexOfNearestDirectionInSpan(targetDir, span)];
+	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromVector3(Vector3 v) => new(NormalizeOrZero(new Vector4(v, WValue)));
 
@@ -123,7 +126,7 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	public override string ToString() => this.ToString(null, null);
 
 	public string ToStringDescriptive() {
-		GetNearestOrientation(out var orientation, out var direction);
+		var (orientation, direction) = NearestOrientation;
 		var angle = (this == None || direction == None) ? Angle.Zero : (this ^ direction);
 		if (angle < 0.001f) return $"{ToString()} ({orientation})";
 		else return $"{ToString()} ({orientation} +{angle:N0})";

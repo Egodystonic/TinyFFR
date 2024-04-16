@@ -26,42 +26,42 @@ partial class AngleTest {
 
 	[Test]
 	public void PropertiesShouldCorrectlyConvertToAndFromRadians() {
-		Assert.AreEqual(0f, Angle.Zero.Radians, 0f);
-		Assert.AreEqual(0f, Angle.Zero.Degrees, 0f);
-		Assert.AreEqual(0f, Angle.Zero.FullCircleFraction, 0f);
+		Assert.AreEqual(0f, Angle.Zero.AsRadians, 0f);
+		Assert.AreEqual(0f, Angle.Zero.AsDegrees, 0f);
+		Assert.AreEqual(0f, Angle.Zero.AsFullCircleFraction, 0f);
 
-		Assert.AreEqual(MathF.PI * 0.5f, Angle.QuarterCircle.Radians, 0f);
-		Assert.AreEqual(90f, Angle.QuarterCircle.Degrees, TestTolerance);
-		Assert.AreEqual(0.25f, Angle.QuarterCircle.FullCircleFraction, TestTolerance);
-		Assert.AreEqual(-MathF.PI * 0.5f, -Angle.QuarterCircle.Radians, 0f);
-		Assert.AreEqual(-90f, -Angle.QuarterCircle.Degrees, TestTolerance);
-		Assert.AreEqual(-0.25f, -Angle.QuarterCircle.FullCircleFraction, TestTolerance);
+		Assert.AreEqual(MathF.PI * 0.5f, Angle.QuarterCircle.AsRadians, 0f);
+		Assert.AreEqual(90f, Angle.QuarterCircle.AsDegrees, TestTolerance);
+		Assert.AreEqual(0.25f, Angle.QuarterCircle.AsFullCircleFraction, TestTolerance);
+		Assert.AreEqual(-MathF.PI * 0.5f, -Angle.QuarterCircle.AsRadians, 0f);
+		Assert.AreEqual(-90f, -Angle.QuarterCircle.AsDegrees, TestTolerance);
+		Assert.AreEqual(-0.25f, -Angle.QuarterCircle.AsFullCircleFraction, TestTolerance);
 
-		Assert.AreEqual(MathF.PI, Angle.HalfCircle.Radians, 0f);
-		Assert.AreEqual(180f, Angle.HalfCircle.Degrees, TestTolerance);
-		Assert.AreEqual(0.5f, Angle.HalfCircle.FullCircleFraction, TestTolerance);
-		Assert.AreEqual(-MathF.PI, -Angle.HalfCircle.Radians, 0f);
-		Assert.AreEqual(-180f, -Angle.HalfCircle.Degrees, TestTolerance);
-		Assert.AreEqual(-0.5f, -Angle.HalfCircle.FullCircleFraction, TestTolerance);
+		Assert.AreEqual(MathF.PI, Angle.HalfCircle.AsRadians, 0f);
+		Assert.AreEqual(180f, Angle.HalfCircle.AsDegrees, TestTolerance);
+		Assert.AreEqual(0.5f, Angle.HalfCircle.AsFullCircleFraction, TestTolerance);
+		Assert.AreEqual(-MathF.PI, -Angle.HalfCircle.AsRadians, 0f);
+		Assert.AreEqual(-180f, -Angle.HalfCircle.AsDegrees, TestTolerance);
+		Assert.AreEqual(-0.5f, -Angle.HalfCircle.AsFullCircleFraction, TestTolerance);
 
-		Assert.AreEqual(MathF.PI * 1.5f, Angle.ThreeQuarterCircle.Radians, 0f);
-		Assert.AreEqual(270f, Angle.ThreeQuarterCircle.Degrees, TestTolerance);
-		Assert.AreEqual(0.75f, Angle.ThreeQuarterCircle.FullCircleFraction, TestTolerance);
-		Assert.AreEqual(-MathF.PI * 1.5f, -Angle.ThreeQuarterCircle.Radians, 0f);
-		Assert.AreEqual(-270f, -Angle.ThreeQuarterCircle.Degrees, TestTolerance);
-		Assert.AreEqual(-0.75f, -Angle.ThreeQuarterCircle.FullCircleFraction, TestTolerance);
+		Assert.AreEqual(MathF.PI * 1.5f, Angle.ThreeQuarterCircle.AsRadians, 0f);
+		Assert.AreEqual(270f, Angle.ThreeQuarterCircle.AsDegrees, TestTolerance);
+		Assert.AreEqual(0.75f, Angle.ThreeQuarterCircle.AsFullCircleFraction, TestTolerance);
+		Assert.AreEqual(-MathF.PI * 1.5f, -Angle.ThreeQuarterCircle.AsRadians, 0f);
+		Assert.AreEqual(-270f, -Angle.ThreeQuarterCircle.AsDegrees, TestTolerance);
+		Assert.AreEqual(-0.75f, -Angle.ThreeQuarterCircle.AsFullCircleFraction, TestTolerance);
 
-		Assert.AreEqual(MathF.PI * 2f, Angle.FullCircle.Radians, 0f);
-		Assert.AreEqual(360f, Angle.FullCircle.Degrees, TestTolerance);
-		Assert.AreEqual(1f, Angle.FullCircle.FullCircleFraction, TestTolerance);
-		Assert.AreEqual(-MathF.PI * 2f, -Angle.FullCircle.Radians, 0f);
-		Assert.AreEqual(-360f, -Angle.FullCircle.Degrees, TestTolerance);
-		Assert.AreEqual(-1f, -Angle.FullCircle.FullCircleFraction, TestTolerance);
+		Assert.AreEqual(MathF.PI * 2f, Angle.FullCircle.AsRadians, 0f);
+		Assert.AreEqual(360f, Angle.FullCircle.AsDegrees, TestTolerance);
+		Assert.AreEqual(1f, Angle.FullCircle.AsFullCircleFraction, TestTolerance);
+		Assert.AreEqual(-MathF.PI * 2f, -Angle.FullCircle.AsRadians, 0f);
+		Assert.AreEqual(-360f, -Angle.FullCircle.AsDegrees, TestTolerance);
+		Assert.AreEqual(-1f, -Angle.FullCircle.AsFullCircleFraction, TestTolerance);
 
 		for (var f = -720f; f <= 720f + 36f; f += 36f) {
-			Assert.AreEqual((MathF.Tau / 360f) * f, new Angle(f).Radians, TestTolerance);
-			Assert.AreEqual(f, new Angle(f).Degrees, TestTolerance);
-			Assert.AreEqual(f / 360f, new Angle(f).FullCircleFraction, TestTolerance);
+			Assert.AreEqual((MathF.Tau / 360f) * f, new Angle(f).AsRadians, TestTolerance);
+			Assert.AreEqual(f, new Angle(f).AsDegrees, TestTolerance);
+			Assert.AreEqual(f / 360f, new Angle(f).AsFullCircleFraction, TestTolerance);
 		}		
 	}
 
@@ -77,17 +77,17 @@ partial class AngleTest {
 	public void BasicFactoryMethodsShouldCorrectlyInitializeValue() {
 		// radians
 		for (var f = -MathF.Tau * 2f; f < MathF.Tau * 2.05f; f += MathF.Tau * 0.05f) {
-			Assert.AreEqual(f, Angle.FromRadians(f).Radians);
+			Assert.AreEqual(f, Angle.FromRadians(f).AsRadians);
 		}
 
 		// degrees
 		for (var f = -720f; f < 720f + 36f; f += 36f) {
-			Assert.AreEqual(f, Angle.FromDegrees(f).Degrees, TestTolerance);
+			Assert.AreEqual(f, Angle.FromDegrees(f).AsDegrees, TestTolerance);
 		}
 
 		// circle fraction
 		for (var f = -2f; f < 2.05f; f += 0.05f) {
-			Assert.AreEqual(f, Angle.FromFullCircleFraction(f).FullCircleFraction, TestTolerance);
+			Assert.AreEqual(f, Angle.FromFullCircleFraction(f).AsFullCircleFraction, TestTolerance);
 		}
 
 		// sine
@@ -114,8 +114,8 @@ partial class AngleTest {
 		Assert.AreEqual(Angle.QuarterCircle, Angle.FromAngleBetweenDirections(Direction.Backward, Direction.Left));
 		Assert.AreEqual(Angle.QuarterCircle, Angle.FromAngleBetweenDirections(Direction.Backward, Direction.Right));
 
-		var rot45AroundUp = Rotation.FromAngleAroundAxis(45f, Direction.Up);
-		var rotNeg45AroundUp = Rotation.FromAngleAroundAxis(-45f, Direction.Up);
+		var rot45AroundUp = new Rotation(45f, Direction.Up);
+		var rotNeg45AroundUp = new Rotation(-45f, Direction.Up);
 
 		AssertToleranceEquals(new Angle(45f), Angle.FromAngleBetweenDirections(Direction.Forward * rot45AroundUp, Direction.Forward), TestTolerance);
 		AssertToleranceEquals(new Angle(90f), Angle.FromAngleBetweenDirections(Direction.Forward * rot45AroundUp, Direction.Forward * rotNeg45AroundUp), TestTolerance);
@@ -144,7 +144,7 @@ partial class AngleTest {
 		void AssertIteration(Angle input) {
 			var span = Angle.ConvertToSpan(input);
 			Assert.AreEqual(1, span.Length);
-			Assert.AreEqual(input.Radians, span[0]);
+			Assert.AreEqual(input.AsRadians, span[0]);
 			Assert.AreEqual(input, Angle.ConvertFromSpan(span));
 		}
 
@@ -322,24 +322,24 @@ partial class AngleTest {
 
 	[Test]
 	public void ShouldCorrectlyCalculatePolarAngle() {
-		Assert.AreEqual(null, Angle.FromPolarAngleAround2DPlane(0f, 0f));
-		AssertToleranceEquals(0f, Angle.FromPolarAngleAround2DPlane(1f, 0f)!.Value, TestTolerance);
-		AssertToleranceEquals(45f, Angle.FromPolarAngleAround2DPlane(1f, 1f)!.Value, TestTolerance);
-		AssertToleranceEquals(90f, Angle.FromPolarAngleAround2DPlane(0f, 1f)!.Value, TestTolerance);
-		AssertToleranceEquals(135f, Angle.FromPolarAngleAround2DPlane(-1f, 1f)!.Value, TestTolerance);
-		AssertToleranceEquals(180f, Angle.FromPolarAngleAround2DPlane(-1f, 0f)!.Value, TestTolerance);
-		AssertToleranceEquals(225f, Angle.FromPolarAngleAround2DPlane(-1f, -1f)!.Value, TestTolerance);
-		AssertToleranceEquals(270f, Angle.FromPolarAngleAround2DPlane(0f, -1f)!.Value, TestTolerance);
-		AssertToleranceEquals(315f, Angle.FromPolarAngleAround2DPlane(1f, -1f)!.Value, TestTolerance);
+		Assert.AreEqual(null, Angle.From2DPolarAngle(0f, 0f));
+		AssertToleranceEquals(0f, Angle.From2DPolarAngle(1f, 0f)!.Value, TestTolerance);
+		AssertToleranceEquals(45f, Angle.From2DPolarAngle(1f, 1f)!.Value, TestTolerance);
+		AssertToleranceEquals(90f, Angle.From2DPolarAngle(0f, 1f)!.Value, TestTolerance);
+		AssertToleranceEquals(135f, Angle.From2DPolarAngle(-1f, 1f)!.Value, TestTolerance);
+		AssertToleranceEquals(180f, Angle.From2DPolarAngle(-1f, 0f)!.Value, TestTolerance);
+		AssertToleranceEquals(225f, Angle.From2DPolarAngle(-1f, -1f)!.Value, TestTolerance);
+		AssertToleranceEquals(270f, Angle.From2DPolarAngle(0f, -1f)!.Value, TestTolerance);
+		AssertToleranceEquals(315f, Angle.From2DPolarAngle(1f, -1f)!.Value, TestTolerance);
 
-		Assert.AreEqual(null, Angle.FromPolarAngleAround2DPlane(Orientation2D.None));
-		AssertToleranceEquals(0f, Angle.FromPolarAngleAround2DPlane(Orientation2D.Right)!.Value, TestTolerance);
-		AssertToleranceEquals(45f, Angle.FromPolarAngleAround2DPlane(Orientation2D.UpRight)!.Value, TestTolerance);
-		AssertToleranceEquals(90f, Angle.FromPolarAngleAround2DPlane(Orientation2D.Up)!.Value, TestTolerance);
-		AssertToleranceEquals(135f, Angle.FromPolarAngleAround2DPlane(Orientation2D.UpLeft)!.Value, TestTolerance);
-		AssertToleranceEquals(180f, Angle.FromPolarAngleAround2DPlane(Orientation2D.Left)!.Value, TestTolerance);
-		AssertToleranceEquals(225f, Angle.FromPolarAngleAround2DPlane(Orientation2D.DownLeft)!.Value, TestTolerance);
-		AssertToleranceEquals(270f, Angle.FromPolarAngleAround2DPlane(Orientation2D.Down)!.Value, TestTolerance);
-		AssertToleranceEquals(315f, Angle.FromPolarAngleAround2DPlane(Orientation2D.DownRight)!.Value, TestTolerance);
+		Assert.AreEqual(null, Angle.From2DPolarAngle(Orientation2D.None));
+		AssertToleranceEquals(0f, Angle.From2DPolarAngle(Orientation2D.Right)!.Value, TestTolerance);
+		AssertToleranceEquals(45f, Angle.From2DPolarAngle(Orientation2D.UpRight)!.Value, TestTolerance);
+		AssertToleranceEquals(90f, Angle.From2DPolarAngle(Orientation2D.Up)!.Value, TestTolerance);
+		AssertToleranceEquals(135f, Angle.From2DPolarAngle(Orientation2D.UpLeft)!.Value, TestTolerance);
+		AssertToleranceEquals(180f, Angle.From2DPolarAngle(Orientation2D.Left)!.Value, TestTolerance);
+		AssertToleranceEquals(225f, Angle.From2DPolarAngle(Orientation2D.DownLeft)!.Value, TestTolerance);
+		AssertToleranceEquals(270f, Angle.From2DPolarAngle(Orientation2D.Down)!.Value, TestTolerance);
+		AssertToleranceEquals(315f, Angle.From2DPolarAngle(Orientation2D.DownRight)!.Value, TestTolerance);
 	}
 }

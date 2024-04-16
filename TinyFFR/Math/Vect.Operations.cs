@@ -28,14 +28,12 @@ partial struct Vect :
 	public float Length {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsVector4.Length();
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => AsVector4 = Direction.AsVector4 * value;
 	}
 	public float LengthSquared {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => AsVector4.LengthSquared();
 	}
-	public bool IsNormalized {
+	public bool IsUnitLength {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => MathF.Abs(1f - LengthSquared) < 0.001f;
 	}
@@ -68,7 +66,7 @@ partial struct Vect :
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(NormalizeOrZero(AsVector4));
 	}
-	public Vect Normalized {
+	public Vect AsUnitLength {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(NormalizeOrZero(AsVector4));
 	}
@@ -91,7 +89,7 @@ partial struct Vect :
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect RotateBy(Rotation rotation) => rotation.Rotate(this);
+	public Vect RotatedBy(Rotation rotation) => rotation.Rotate(this);
 
 
 
@@ -105,15 +103,17 @@ partial struct Vect :
 	public Vect ScaledBy(float scalar) => new(Multiply(AsVector4, scalar));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect WithLength(float newLength) => this with { Length = newLength };
+	public Vect WithLength(float newLength) => new(Direction.AsVector4 * newLength);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect ShortenedBy(float lengthDecrease) => this with { Length = Length - lengthDecrease };
+	public Vect WithLengthOne() => AsUnitLength;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect LengthenedBy(float lengthIncrease) => this with { Length = Length + lengthIncrease };
+	public Vect ShortenedBy(float lengthDecrease) => WithLength(Length - lengthDecrease);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect WithMaxLength(float maxLength) => this with { Length = MathF.Min(Length, maxLength) };
+	public Vect LengthenedBy(float lengthIncrease) => WithLength(Length + lengthIncrease);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect WithMinLength(float minLength) => this with { Length = MathF.Max(Length, minLength) };
+	public Vect WithMaxLength(float maxLength) => WithLength(MathF.Min(Length, maxLength));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect WithMinLength(float minLength) => WithLength(MathF.Max(Length, minLength));
 
 
 	public static Vect Interpolate(Vect start, Vect end, float distance) {

@@ -140,17 +140,17 @@ public readonly partial struct Line :
 	}
 
 	public Location? IntersectionWith(Plane plane) {
-		var similarityToNormal = plane.Normal.SimilarityTo(Direction);
+		var similarityToNormal = plane.Normal.Dot(Direction);
 		if (similarityToNormal == 0f) return null; // Parallel with plane -- either infinite or zero answers. Return null either way
 
 		var distance = (plane.ClosestPointToOrigin - PointOnLine).LengthWhenProjectedOnTo(plane.Normal) / similarityToNormal;
 		return LocationAtDistance(distance);
 	}
 
-	public bool IsIntersectedBy(Plane plane) => plane.Normal.SimilarityTo(Direction) != 0f;
+	public bool IsIntersectedBy(Plane plane) => plane.Normal.Dot(Direction) != 0f;
 
 	public float SignedDistanceFrom(Plane plane) {
-		if (plane.Normal.SimilarityTo(Direction) != 0f) return 0f;
+		if (plane.Normal.Dot(Direction) != 0f) return 0f;
 		var originToPlaneVect = (Vect) plane.ClosestPointToOrigin;
 		return ((Vect) PointOnLine).LengthWhenProjectedOnTo(originToPlaneVect.Direction) - originToPlaneVect.Length;
 	}

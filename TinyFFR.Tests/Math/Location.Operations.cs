@@ -33,23 +33,27 @@ partial class LocationTest {
 			AssertToleranceEquals(-(endPoint >> startPoint), startPoint >> endPoint, TestTolerance);
 			AssertToleranceEquals(fromStartToEndExpectation, endPoint - startPoint, TestTolerance);
 			AssertToleranceEquals(-fromStartToEndExpectation, startPoint - endPoint, TestTolerance);
-			AssertToleranceEquals(fromStartToEndExpectation, startPoint.GetVectTo(endPoint), TestTolerance);
-			AssertToleranceEquals(-fromStartToEndExpectation, endPoint.GetVectTo(startPoint), TestTolerance);
-			AssertToleranceEquals(-fromStartToEndExpectation, startPoint.GetVectFrom(endPoint), TestTolerance);
-			AssertToleranceEquals(fromStartToEndExpectation, endPoint.GetVectFrom(startPoint), TestTolerance);
+			AssertToleranceEquals(fromStartToEndExpectation, startPoint.VectTo(endPoint), TestTolerance);
+			AssertToleranceEquals(-fromStartToEndExpectation, endPoint.VectTo(startPoint), TestTolerance);
+			AssertToleranceEquals(-fromStartToEndExpectation, startPoint.VectFrom(endPoint), TestTolerance);
+			AssertToleranceEquals(fromStartToEndExpectation, endPoint.VectFrom(startPoint), TestTolerance);
 		}
 
 		AssertCombination(Location.Origin, Location.Origin, Vect.Zero);
 		AssertCombination(Location.Origin, OneTwoNegThree, new(1f, 2f, -3f));
 		AssertCombination(OneTwoNegThree, Location.Origin, new(-1f, -2f, 3f));
 		AssertCombination(new(0.5f, -14f, 7.6f), new(9.2f, 17f, -0.1f), new(8.7f, 31f, -7.7f));
+		Assert.AreEqual(OneTwoNegThree.VectFrom(Location.Origin), OneTwoNegThree.VectFromOrigin());
+		Assert.AreEqual(OneTwoNegThree.VectTo(Location.Origin), OneTwoNegThree.VectToOrigin());
+		Assert.AreEqual(new Vect(-1f, -2f, 3f), OneTwoNegThree.VectToOrigin());
+		Assert.AreEqual(new Vect(1f, 2f, -3f), OneTwoNegThree.VectFromOrigin());
 	}
 
 	[Test]
 	public void ShouldCorrectlyReturnDirectionBetweenLocations() {
 		void AssertCombination(Location startPoint, Location endPoint, Direction fromStartToEndExpectation) {
-			AssertToleranceEquals(fromStartToEndExpectation, startPoint.GetDirectionTo(endPoint), TestTolerance);
-			AssertToleranceEquals(-fromStartToEndExpectation, startPoint.GetDirectionFrom(endPoint), TestTolerance);
+			AssertToleranceEquals(fromStartToEndExpectation, startPoint.DirectionTo(endPoint), TestTolerance);
+			AssertToleranceEquals(-fromStartToEndExpectation, startPoint.DirectionFrom(endPoint), TestTolerance);
 		}
 
 		AssertCombination(Location.Origin, Location.Origin, Direction.None);

@@ -6,7 +6,7 @@ using Egodystonic.TinyFFR.Environment.Input;
 
 namespace Egodystonic.TinyFFR.Environment;
 
-public readonly struct ApplicationLoop : IEquatable<ApplicationLoop> {
+public readonly struct ApplicationLoop : IEquatable<ApplicationLoop>, IDisposable {
 	readonly ApplicationLoopHandle _handle;
 
 	public IInputTracker Input {

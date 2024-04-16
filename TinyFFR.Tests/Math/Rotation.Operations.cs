@@ -34,7 +34,7 @@ partial class RotationTest {
 	public void ShouldCorrectlyRotateDirectionsAndVects() {
 		for (var f = 0f; f <= 360f; f += 18f) {
 			var angle = Angle.FromDegrees(f);
-			var expected = new Direction(MathF.Sin(angle.Radians), 0f, MathF.Cos(angle.Radians));
+			var expected = new Direction(MathF.Sin(angle.AsRadians), 0f, MathF.Cos(angle.AsRadians));
 			AssertToleranceEquals(expected, angle % Up * Forward, TestTolerance);
 		}
 
@@ -62,7 +62,7 @@ partial class RotationTest {
 			TestTolerance
 		);
 
-		AssertToleranceEquals(FromVector3(Forward.ToVector3() + Left.ToVector3()), Rotation.FromAngleAroundAxis(-90f, Down).ScaledBy(0.5f) * Forward, TestTolerance);
+		AssertToleranceEquals(FromVector3(Forward.ToVector3() + Left.ToVector3()), new Rotation(-90f, Down).ScaledBy(0.5f) * Forward, TestTolerance);
 	}
 
 	[Test]
@@ -174,8 +174,8 @@ partial class RotationTest {
 	public void ShouldCorrectlyInterpolate() {
 		// Some examples from external sources
 		var a = Rotation.None;
-		var b = Rotation.FromAngleAroundAxis(-Angle.HalfCircle, Up);
-		var c = Rotation.FromAngleAroundAxis(Angle.FromRadians(-((3.1415f * 3f) / 2f)), Forward);
+		var b = new Rotation(-Angle.HalfCircle, Up);
+		var c = new Rotation(Angle.FromRadians(-((3.1415f * 3f) / 2f)), Forward);
 
 		AssertToleranceEquals(Rotation.FromQuaternion(new(0f, 0.58777f, 0f, 0.809028f)), Rotation.InterpolateSpherical(a, b, 0.4f), TestTolerance);
 		AssertToleranceEquals(Rotation.FromQuaternion(new(0f, -0.233f, -0.688f, -0.688f)), Rotation.InterpolateSpherical(b, c, 0.85f), TestTolerance);

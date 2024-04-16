@@ -38,11 +38,11 @@ partial class DirectionTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertToVect() {
-		Assert.AreEqual(new Vect(1f, 2f, -3f).Normalized, OneTwoNegThree.ToVect());
+		Assert.AreEqual(new Vect(1f, 2f, -3f).AsUnitLength, OneTwoNegThree.ToVect());
 		Assert.AreEqual(Vect.Zero, Direction.None.ToVect());
 		Assert.AreEqual(Vect.WValue, OneTwoNegThree.ToVect().AsVector4.W);
 
-		Assert.AreEqual(new Vect(1f, 2f, -3f) { Length = 10f }, OneTwoNegThree.ToVect(10f));
+		Assert.AreEqual(new Vect(1f, 2f, -3f).WithLength(10f), OneTwoNegThree.ToVect(10f));
 		Assert.AreEqual(OneTwoNegThree.ToVect(10f), OneTwoNegThree * 10f);
 		Assert.AreEqual(OneTwoNegThree.ToVect(10f), 10f * OneTwoNegThree);
 		Assert.AreEqual(Vect.Zero, 10f * Direction.None);
@@ -82,7 +82,7 @@ partial class DirectionTest {
 
 	[Test]
 	public void ShouldCorrectlyFindPerpendicularDirectionWithAdditionalConstrainingDirection() {
-		Assert.AreEqual(Direction.Left, Direction.FromPerpendicularToBoth(Direction.Up, Direction.Forward));
+		Assert.AreEqual(Direction.Left, Direction.FromPerpendicular(Direction.Up, Direction.Forward));
 
 		var testList = new List<Direction>();
 		for (var x = -5f; x <= 5f; x += 1f) {
@@ -103,11 +103,11 @@ partial class DirectionTest {
 					continue;
 				}
 
-				var thirdOrthogonal = Direction.FromPerpendicularToBoth(dirA, dirB);
+				var thirdOrthogonal = Direction.FromPerpendicular(dirA, dirB);
 				AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, 2f);
 				AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, 2f);
 				Assert.IsTrue(thirdOrthogonal.IsUnitLength);
-				thirdOrthogonal = Direction.FromPerpendicularToBoth(dirB, dirA);
+				thirdOrthogonal = Direction.FromPerpendicular(dirB, dirA);
 				AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, 2f);
 				AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, 2f);
 				Assert.IsTrue(thirdOrthogonal.IsUnitLength);
@@ -119,7 +119,7 @@ partial class DirectionTest {
 	public void ShouldCorrectlyOrthogonalizeAgainstAnotherDir() {
 		foreach (var cardinal in Direction.AllCardinals) {
 			var perp = cardinal.GetAnyPerpendicular();
-			var thirdPerp = Direction.FromPerpendicularToBoth(cardinal, perp);
+			var thirdPerp = Direction.FromPerpendicular(cardinal, perp);
 			Assert.AreEqual(cardinal, (20f % perp * cardinal).OrthogonalizedAgainst(thirdPerp));
 			Assert.AreEqual(cardinal, (-20f % perp * cardinal).OrthogonalizedAgainst(thirdPerp));
 			Assert.AreEqual(cardinal, (20f % thirdPerp * cardinal).OrthogonalizedAgainst(perp));
@@ -301,7 +301,7 @@ partial class DirectionTest {
 				nearestOrientationManualCheckVal = Direction.AllOrientations[i];
 			}
 
-			Assert.AreEqual(nearestOrientationManualCheckVal, item.GetNearestDirectionInSpan(Direction.AllOrientations));
+			Assert.AreEqual(nearestOrientationManualCheckVal, Direction.FromNearestDirectionInSpan(item, Direction.AllOrientations));
 		}
 	}
 
@@ -309,19 +309,19 @@ partial class DirectionTest {
 	public void ShouldCorrectlyGetNearestOrientations() {
 		void AssertCardinal(Direction input, Direction expectedDirection, CardinalOrientation3D? expectedOrientation = null) {
 			expectedOrientation ??= OrientationUtils.AllCardinals.ToArray().Single(c => c.ToDirection() == expectedDirection);
-			input.GetNearestOrientationCardinal(out var actualOrientation, out var actualDirection);
+			var (actualOrientation, actualDirection) = input.NearestOrientationCardinal;
 			Assert.AreEqual(expectedOrientation, actualOrientation);
 			Assert.AreEqual(expectedDirection, actualDirection);
 		}
 		void AssertDiagonal(Direction input, Direction expectedDirection, DiagonalOrientation3D? expectedOrientation = null) {
 			expectedOrientation ??= OrientationUtils.AllDiagonals.ToArray().Single(c => c.ToDirection() == expectedDirection);
-			input.GetNearestOrientationDiagonal(out var actualOrientation, out var actualDirection);
+			var (actualOrientation, actualDirection) = input.NearestOrientationDiagonal;
 			Assert.AreEqual(expectedOrientation, actualOrientation);
 			Assert.AreEqual(expectedDirection, actualDirection);
 		}
 		void AssertOrientation(Direction input, Direction expectedDirection, Orientation3D? expectedOrientation = null) {
 			expectedOrientation ??= OrientationUtils.All3DOrientations.ToArray().Single(c => c.ToDirection() == expectedDirection);
-			input.GetNearestOrientation(out var actualOrientation, out var actualDirection);
+			var (actualOrientation, actualDirection) = input.NearestOrientation;
 			Assert.AreEqual(expectedOrientation, actualOrientation);
 			Assert.AreEqual(expectedDirection, actualDirection);
 		}
@@ -356,9 +356,9 @@ partial class DirectionTest {
 				continue;
 			}
 
-			var expectedCardinalResult = item.GetNearestDirectionInSpan(Direction.AllCardinals);
-			var expectedDiagonalResult = item.GetNearestDirectionInSpan(Direction.AllDiagonals);
-			var expectedOrientationResult = item.GetNearestDirectionInSpan(Direction.AllOrientations);
+			var expectedCardinalResult = Direction.FromNearestDirectionInSpan(item, Direction.AllCardinals);
+			var expectedDiagonalResult = Direction.FromNearestDirectionInSpan(item, Direction.AllDiagonals);
+			var expectedOrientationResult = Direction.FromNearestDirectionInSpan(item, Direction.AllOrientations);
 			AssertCardinal(item, expectedCardinalResult);
 			AssertDiagonal(item, expectedDiagonalResult);
 			AssertOrientation(item, expectedOrientationResult);
@@ -380,20 +380,20 @@ partial class DirectionTest {
 			for (var j = i; j < testList.Count; ++j) {
 				var a = testList[i];
 				var b = testList[j];
-				Assert.AreEqual(Vector3.Dot(a.ToVector3(), b.ToVector3()), a.SimilarityTo(b), TestTolerance);
-				Assert.AreEqual(a.SimilarityTo(b), b.SimilarityTo(a));
+				Assert.AreEqual(Vector3.Dot(a.ToVector3(), b.ToVector3()), a.Dot(b), TestTolerance);
+				Assert.AreEqual(a.Dot(b), b.Dot(a));
 			}
 		}
 
-		Assert.AreEqual(1f, Direction.Forward.SimilarityTo(Direction.Forward));
-		Assert.AreEqual(0f, Direction.Forward.SimilarityTo(Direction.Up));
-		Assert.AreEqual(0f, Direction.Forward.SimilarityTo(Direction.Down));
-		Assert.AreEqual(0f, Direction.Forward.SimilarityTo(Direction.Left));
-		Assert.AreEqual(0f, Direction.Forward.SimilarityTo(Direction.Right));
-		Assert.AreEqual(-1f, Direction.Forward.SimilarityTo(Direction.Backward));
+		Assert.AreEqual(1f, Direction.Forward.Dot(Direction.Forward));
+		Assert.AreEqual(0f, Direction.Forward.Dot(Direction.Up));
+		Assert.AreEqual(0f, Direction.Forward.Dot(Direction.Down));
+		Assert.AreEqual(0f, Direction.Forward.Dot(Direction.Left));
+		Assert.AreEqual(0f, Direction.Forward.Dot(Direction.Right));
+		Assert.AreEqual(-1f, Direction.Forward.Dot(Direction.Backward));
 
-		Assert.AreEqual(0f, Direction.Forward.SimilarityTo(Direction.None));
-		Assert.AreEqual(0f, Direction.None.SimilarityTo(Direction.Forward));
-		Assert.AreEqual(0f, Direction.None.SimilarityTo(Direction.None));
+		Assert.AreEqual(0f, Direction.Forward.Dot(Direction.None));
+		Assert.AreEqual(0f, Direction.None.Dot(Direction.Forward));
+		Assert.AreEqual(0f, Direction.None.Dot(Direction.None));
 	}
 }

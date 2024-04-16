@@ -29,7 +29,7 @@ partial class XYPairTest {
 	public void ShouldCorrectlyCalculatePolarAngle() {
 		for (var x = -1f; x <= 1.05f; x += 0.05f) {
 			for (var y = -1f; y <= 1.05f; y += 0.05f) {
-				Assert.AreEqual(new XYPair<float>(x, y).PolarAngle, Angle.FromPolarAngleAround2DPlane(x, y));
+				Assert.AreEqual(new XYPair<float>(x, y).PolarAngle, Angle.From2DPolarAngle(x, y));
 			}
 		}
 	}

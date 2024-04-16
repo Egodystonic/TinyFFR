@@ -68,7 +68,7 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 	}
 
 	// TODO clarify this is the four-quadrant inverse tangent
-	public Angle? GetPolarAngle(float deadzoneSize = RecommendedDeadzoneSize) => Angle.FromPolarAngleAround2DPlane(AsXYPair(deadzoneSize));
+	public Angle? GetPolarAngle(float deadzoneSize = RecommendedDeadzoneSize) => Angle.From2DPolarAngle(AsXYPair(deadzoneSize));
 
 
 	public bool IsHorizontalOffsetOutsideDeadzone(float deadzoneSize = RecommendedDeadzoneSize) {

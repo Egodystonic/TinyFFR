@@ -27,8 +27,8 @@ partial class AngleTest {
 		for (var f = -720f; f < 720f + 36f; f += 36f) {
 			AssertToleranceEquals(new Angle(MathUtils.TrueModulus(f, 360f)), new Angle(f).Normalized, TestTolerance);
 			Assert.AreEqual(new Angle(f).Sine, new Angle(f).Normalized.Sine, TestTolerance);
-			Assert.GreaterOrEqual(new Angle(f).Normalized.Degrees, 0f);
-			Assert.LessOrEqual(new Angle(f).Normalized.Degrees, 360f);
+			Assert.GreaterOrEqual(new Angle(f).Normalized.AsDegrees, 0f);
+			Assert.LessOrEqual(new Angle(f).Normalized.AsDegrees, 360f);
 		}
 	}
 
@@ -107,25 +107,25 @@ partial class AngleTest {
 				var lhs = angleList[i];
 				var rhs = angleList[j];
 
-				Assert.AreEqual(lhs.Radians > rhs.Radians, lhs > rhs);
-				Assert.AreEqual(lhs.Radians >= rhs.Radians, lhs >= rhs);
-				Assert.AreEqual(lhs.Radians < rhs.Radians, lhs < rhs);
-				Assert.AreEqual(lhs.Radians <= rhs.Radians, lhs <= rhs);
-				Assert.AreEqual(lhs.Radians.CompareTo(rhs.Radians), lhs.CompareTo(rhs));
+				Assert.AreEqual(lhs.AsRadians > rhs.AsRadians, lhs > rhs);
+				Assert.AreEqual(lhs.AsRadians >= rhs.AsRadians, lhs >= rhs);
+				Assert.AreEqual(lhs.AsRadians < rhs.AsRadians, lhs < rhs);
+				Assert.AreEqual(lhs.AsRadians <= rhs.AsRadians, lhs <= rhs);
+				Assert.AreEqual(lhs.AsRadians.CompareTo(rhs.AsRadians), lhs.CompareTo(rhs));
 			}
 		}
 	}
 
 	[Test]
 	public void ShouldCorrectlyCalculatePolarDirection() {
-		Assert.AreEqual(Orientation2D.Right, Angle.FromPolarAngleAround2DPlane(1f, 0f)!.Value.PolarOrientation);
-		Assert.AreEqual(Orientation2D.UpRight, Angle.FromPolarAngleAround2DPlane(1f, 1f)!.Value.PolarOrientation);
-		Assert.AreEqual(Orientation2D.Up, Angle.FromPolarAngleAround2DPlane(0f, 1f)!.Value.PolarOrientation);
-		Assert.AreEqual(Orientation2D.UpLeft, Angle.FromPolarAngleAround2DPlane(-1f, 1f)!.Value.PolarOrientation);
-		Assert.AreEqual(Orientation2D.Left, Angle.FromPolarAngleAround2DPlane(-1f, 0f)!.Value.PolarOrientation);
-		Assert.AreEqual(Orientation2D.DownLeft, Angle.FromPolarAngleAround2DPlane(-1f, -1f)!.Value.PolarOrientation);
-		Assert.AreEqual(Orientation2D.Down, Angle.FromPolarAngleAround2DPlane(0f, -1f)!.Value.PolarOrientation);
-		Assert.AreEqual(Orientation2D.DownRight, Angle.FromPolarAngleAround2DPlane(1f, -1f)!.Value.PolarOrientation);
+		Assert.AreEqual(Orientation2D.Right, Angle.From2DPolarAngle(1f, 0f)!.Value.PolarOrientation);
+		Assert.AreEqual(Orientation2D.UpRight, Angle.From2DPolarAngle(1f, 1f)!.Value.PolarOrientation);
+		Assert.AreEqual(Orientation2D.Up, Angle.From2DPolarAngle(0f, 1f)!.Value.PolarOrientation);
+		Assert.AreEqual(Orientation2D.UpLeft, Angle.From2DPolarAngle(-1f, 1f)!.Value.PolarOrientation);
+		Assert.AreEqual(Orientation2D.Left, Angle.From2DPolarAngle(-1f, 0f)!.Value.PolarOrientation);
+		Assert.AreEqual(Orientation2D.DownLeft, Angle.From2DPolarAngle(-1f, -1f)!.Value.PolarOrientation);
+		Assert.AreEqual(Orientation2D.Down, Angle.From2DPolarAngle(0f, -1f)!.Value.PolarOrientation);
+		Assert.AreEqual(Orientation2D.DownRight, Angle.From2DPolarAngle(1f, -1f)!.Value.PolarOrientation);
 	}
 
 	[Test]
@@ -149,8 +149,8 @@ partial class AngleTest {
 
 		for (var i = 0; i < NumIterations; ++i) {
 			var val = Angle.CreateNewRandom();
-			Assert.GreaterOrEqual(val.Degrees, 0f);
-			Assert.Less(val.Degrees, 360f);
+			Assert.GreaterOrEqual(val.AsDegrees, 0f);
+			Assert.Less(val.AsDegrees, 360f);
 		}
 	}
 
@@ -160,8 +160,8 @@ partial class AngleTest {
 
 		for (var i = 0; i < NumIterations; ++i) {
 			var val = Angle.CreateNewRandom(-720f, 720f);
-			Assert.GreaterOrEqual(val.Degrees, -720f);
-			Assert.Less(val.Degrees, 720f);
+			Assert.GreaterOrEqual(val.AsDegrees, -720f);
+			Assert.Less(val.AsDegrees, 720f);
 		}
 	}
 }

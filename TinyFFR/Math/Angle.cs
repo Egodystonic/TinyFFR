@@ -23,34 +23,34 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 
 	readonly float _asRadians;
 
-	public float Radians {
+	public float AsRadians {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _asRadians;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private init => _asRadians = value;
 	}
-	public float Degrees {
+	public float AsDegrees {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Radians * RadiansToDegreesRatio;
+		get => AsRadians * RadiansToDegreesRatio;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private init => Radians = value * DegreesToRadiansRatio;
+		private init => AsRadians = value * DegreesToRadiansRatio;
 	}
-	public float FullCircleFraction {
+	public float AsFullCircleFraction {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Radians * TauReciprocal;
+		get => AsRadians * TauReciprocal;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private init => Radians = Tau * value;
+		private init => AsRadians = Tau * value;
 	}
 
 	// Chose degrees rather than radians to keep consistency with implicit conversion. See notes above implicit operator for more reasoning.
-	public Angle(float degrees) => Degrees = degrees;
+	public Angle(float degrees) => AsDegrees = degrees;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle FromRadians(float radians) => new() { Radians = radians };
+	public static Angle FromRadians(float radians) => new() { AsRadians = radians };
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle FromDegrees(float degrees) => new() { Degrees = degrees };
+	public static Angle FromDegrees(float degrees) => new() { AsDegrees = degrees };
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle FromFullCircleFraction(float fullCircleFraction) => new() { FullCircleFraction = fullCircleFraction };
+	public static Angle FromFullCircleFraction(float fullCircleFraction) => new() { AsFullCircleFraction = fullCircleFraction };
 	
 	public static Angle FromSine(float sine) {
 		if (sine < -1f || sine > 1f) throw new ArgumentOutOfRangeException(nameof(sine), sine, "Values outside range [-1, 1] are not permitted.");
@@ -83,14 +83,14 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 	}
 
 	// TODO clarify this is the four-quadrant inverse tangent
-	public static Angle? FromPolarAngleAround2DPlane<T>(XYPair<T> xy) where T : unmanaged, INumber<T> => FromPolarAngleAround2DPlane(Single.CreateSaturating(xy.X), Single.CreateSaturating(xy.Y));
+	public static Angle? From2DPolarAngle<T>(XYPair<T> xy) where T : unmanaged, INumber<T> => From2DPolarAngle(Single.CreateSaturating(xy.X), Single.CreateSaturating(xy.Y));
 	// TODO clarify this is the four-quadrant inverse tangent
-	public static Angle? FromPolarAngleAround2DPlane(float x, float y) {
+	public static Angle? From2DPolarAngle(float x, float y) {
 		if (x == 0f && y == 0f) return null;
 		return FromRadians(MathF.Atan2(y, x)).Normalized;
 	}
 	// TODO clarify this is the four-quadrant inverse tangent
-	public static Angle? FromPolarAngleAround2DPlane(Orientation2D orientation) => orientation switch {
+	public static Angle? From2DPolarAngle(Orientation2D orientation) => orientation switch {
 		Orientation2D.None => null,
 		Orientation2D.Right => 0f,
 		Orientation2D.UpRight => 45f,
@@ -146,9 +146,9 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 	 *		See below.
 	 *
 	 * Another note: I probably won't include the opposite implicit conversion (e.g. Angle->float) because I think it's
-	 * probably just error prone AF and I don't think specifying .Degrees is very onerous anyway. I actually don't think there's
+	 * probably just error prone AF and I don't think specifying .AsDegrees is very onerous anyway. I actually don't think there's
 	 * actually much use-case for it too: When you wanna convert to string, use ToString(), and when dealing with third-party
-	 * APIs (e.g. math libs) you'll actually more likely want .Radians. And within this API/lib I will be using Angle
+	 * APIs (e.g. math libs) you'll actually more likely want .AsRadians. And within this API/lib I will be using Angle
 	 * everywhere so there shouldn't be much need to get a float value back out at all. The implicit conversion from
 	 * float->Angle is just something to help quickly specify Angle "literals"-- not a declaration that there is a pure
 	 * natural link between float and Angle. Angle to float makes a lot less sense for these reasons IMO.
@@ -174,7 +174,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 
 	public override string ToString() => ToString(null, null);
 
-	public string ToString(string? format, IFormatProvider? formatProvider) => $"{Degrees.ToString(format, formatProvider)}{ToStringSuffix}";
+	public string ToString(string? format, IFormatProvider? formatProvider) => $"{AsDegrees.ToString(format, formatProvider)}{ToStringSuffix}";
 
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
 		charsWritten = 0;
@@ -183,7 +183,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 		// ReSharper disable once JoinDeclarationAndInitializer This is neater
 		bool writeSuccess;
 
-		writeSuccess = Degrees.TryFormat(destination, out tryWriteCharsWrittenOutVar, format, provider);
+		writeSuccess = AsDegrees.TryFormat(destination, out tryWriteCharsWrittenOutVar, format, provider);
 		charsWritten += tryWriteCharsWrittenOutVar;
 		if (!writeSuccess) return false;
 		destination = destination[tryWriteCharsWrittenOutVar..];
@@ -220,19 +220,19 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 	}
 
 	public bool Equals(Angle other, float tolerance) {
-		// Using Degrees rather than _asRadians because the implicit conversion from float to Angle
+		// Using AsDegrees rather than _asRadians because the implicit conversion from float to Angle
 		// assumes degrees and therefore I feel like the tolerance value here should also be degrees
-		return MathF.Abs(Degrees - other.Degrees) <= tolerance;
+		return MathF.Abs(AsDegrees - other.AsDegrees) <= tolerance;
 	}
 	public bool Equals(Angle other, float tolerance, bool normalizeAngles) {
 		if (!normalizeAngles) return Equals(other, tolerance);
 
-		var absDiff = MathF.Abs(Normalized.Degrees - other.Normalized.Degrees);
+		var absDiff = MathF.Abs(Normalized.AsDegrees - other.Normalized.AsDegrees);
 		if (absDiff <= tolerance) return true;
 
 		// This is to accomodate for cases where the normalized value is close but opposite sides of the 0/360 degree boundary;
 		// e.g. this normalized is 0.1 deg and other normalized is 359.9 deg
-		absDiff = MathF.Abs((this + HalfCircle).Normalized.Degrees - (other + HalfCircle).Normalized.Degrees);
+		absDiff = MathF.Abs((this + HalfCircle).Normalized.AsDegrees - (other + HalfCircle).Normalized.AsDegrees);
 		return absDiff <= tolerance;
 	}
 

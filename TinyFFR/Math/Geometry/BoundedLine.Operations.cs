@@ -191,7 +191,7 @@ public readonly partial struct BoundedLine :
 	}
 
 	float? GetUnboundedPlaneIntersectionDistance(Plane plane) {
-		var similarityToNormal = plane.Normal.SimilarityTo(Direction);
+		var similarityToNormal = plane.Normal.Dot(Direction);
 		if (similarityToNormal == 0f) return null; // Parallel with plane -- either infinite or zero answers. Return null either way
 
 		return (plane.ClosestPointToOrigin - StartPoint).LengthWhenProjectedOnTo(plane.Normal) / similarityToNormal;

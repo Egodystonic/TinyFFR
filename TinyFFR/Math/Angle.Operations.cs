@@ -119,6 +119,6 @@ partial struct Angle :
 
 	public static Angle CreateNewRandom() => CreateNewRandom(Zero, FullCircle);
 	public static Angle CreateNewRandom(Angle minInclusive, Angle maxExclusive) {
-		return FromRadians(RandomUtils.NextSingle(minInclusive.Radians, maxExclusive.Radians));
+		return FromRadians(RandomUtils.NextSingle(minInclusive.AsRadians, maxExclusive.AsRadians));
 	}
 }

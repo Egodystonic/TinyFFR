@@ -37,45 +37,36 @@ partial struct Location :
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator >>(Location start, Location end) => start.GetVectTo(end); // TODO maybe these should give Rays ... Use >>> for Vect? .. No, other way IMO
+	public static Vect operator >>(Location start, Location end) => start.VectTo(end);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator <<(Location end, Location start) => start.GetVectTo(end);
+	public static Vect operator <<(Location end, Location start) => start.VectTo(end);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator -(Location lhs, Location rhs) => lhs.GetVectFrom(rhs);
+	public static Vect operator -(Location lhs, Location rhs) => lhs.VectFrom(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect GetVectFrom(Location otherLocation) => new(AsVector4 - otherLocation.AsVector4);
+	public Vect VectFrom(Location otherLocation) => new(AsVector4 - otherLocation.AsVector4);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect GetVectTo(Location otherLocation) => new(otherLocation.AsVector4 - AsVector4);
+	public Vect VectTo(Location otherLocation) => new(otherLocation.AsVector4 - AsVector4);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect VectFromOrigin() => (Vect) this;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect VectToOrigin() => -((Vect) this);
 
 	public static Location operator *(Location locationToRotate, (Location Pivot, Rotation Rotation) pivotRotationTuple) => locationToRotate.RotatedAround(pivotRotationTuple.Pivot, pivotRotationTuple.Rotation);
 	public static Location operator *((Location Pivot, Rotation Rotation) pivotRotationTuple, Location locationToRotate) => locationToRotate.RotatedAround(pivotRotationTuple.Pivot, pivotRotationTuple.Rotation);
 	public static Location operator *(Location locationToRotate, (Rotation Rotation, Location Pivot) pivotRotationTuple) => locationToRotate.RotatedAround(pivotRotationTuple.Pivot, pivotRotationTuple.Rotation);
 	public static Location operator *((Rotation Rotation, Location Pivot) pivotRotationTuple, Location locationToRotate) => locationToRotate.RotatedAround(pivotRotationTuple.Pivot, pivotRotationTuple.Rotation);
-	public Location RotatedAround(Location pivotPoint, Rotation rot) => pivotPoint + GetVectFrom(pivotPoint) * rot;
+	public Location RotatedAround(Location pivotPoint, Rotation rotation) => pivotPoint + VectFrom(pivotPoint) * rotation;
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Ray operator >>>(Location startPoint, Direction direction) => startPoint.CreateRay(direction);
+	public Direction DirectionFrom(Location otherLocation) => VectFrom(otherLocation).Direction;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray CreateRay(Direction direction) => new(this, direction);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static BoundedLine operator >>>(Location startPoint, Vect vect) => startPoint.CreateLine(vect);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedLine CreateLine(Vect vect) => new(this, vect);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static BoundedLine operator >>>(Location startPoint, Location endPoint) => startPoint.CreateLine(endPoint);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedLine CreateLine(Location endPoint) => new(this, endPoint);
+	public Direction DirectionTo(Location otherLocation) => VectTo(otherLocation).Direction;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction GetDirectionFrom(Location otherLocation) => GetVectFrom(otherLocation).Direction;
+	public float DistanceFrom(Location otherLocation) => VectFrom(otherLocation).Length;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction GetDirectionTo(Location otherLocation) => GetVectTo(otherLocation).Direction;
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceFrom(Location otherLocation) => GetVectFrom(otherLocation).Length;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceSquaredFrom(Location otherLocation) => GetVectFrom(otherLocation).LengthSquared;
+	public float DistanceSquaredFrom(Location otherLocation) => VectFrom(otherLocation).LengthSquared;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFromOrigin() => ((Vect) this).Length;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

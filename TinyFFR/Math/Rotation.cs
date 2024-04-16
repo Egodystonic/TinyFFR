@@ -16,12 +16,6 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 	public Angle Angle { // TODO indicate this is clockwise everywhere
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Angle.FromRadians(MathF.Acos(AsQuaternion.W) * 2f);
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init {
-			// This if check helps prevent non-unit quaternions if someone invokes with{} for this property on Rotation.None
-			if (MathF.Abs(AsQuaternion.W) > 0.999f) AsQuaternion = Identity;
-			else AsQuaternion = CreateFromAxisAngle(Axis.ToVector3(), value.Radians);
-		}
 	}
 
 	public Direction Axis {
@@ -29,12 +23,6 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 			var halfAngleRadians = MathF.Acos(AsQuaternion.W);
 			if (halfAngleRadians < 0.0001f) return Direction.None;
 			else return Direction.FromPreNormalizedComponents(new Vector3(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z) / MathF.Sin(halfAngleRadians));
-		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init {
-			// This if check helps prevent non-unit quaternions if someone invokes with{} for this property on a non-zero Rotation with a value of Direction.None
-			if (value.Equals(Direction.None, 0.0001f)) AsQuaternion = Identity;
-			else AsQuaternion = CreateFromAxisAngle(value.ToVector3(), Angle.Radians);
 		}
 	}
 
@@ -52,17 +40,14 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 	// TODO also same with a randomizer I think
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Rotation() { AsQuaternion = Identity; }
-	
+	public Rotation() => AsQuaternion = Identity;
+
 	public Rotation(Angle angle, Direction axis) { // TODO make it clear that the resultant Rotation Angle/Axis will be auto-normalized by the nature of Quaternion math (e.g. negative angle results in positive angle with flipped axis)
 		if (angle.Equals(0f, 0.0001f) || axis.Equals(Direction.None, 0.0001f)) AsQuaternion = Identity;
-		else AsQuaternion = CreateFromAxisAngle(axis.ToVector3(), angle.Radians);
+		else AsQuaternion = CreateFromAxisAngle(axis.ToVector3(), angle.AsRadians);
 	} 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal Rotation(Quaternion q) => AsQuaternion = q;
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation FromAngleAroundAxis(Angle angle, Direction axis) => new(angle, axis);
 
 	public static Rotation FromStartAndEndDirection(Direction startDirection, Direction endDirection) {
 		var dot = Vector4.Dot(startDirection.AsVector4, endDirection.AsVector4);
@@ -71,7 +56,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 		// If we're rotating exactly 180 degrees there are infinitely many arcs of "shortest" path, so the math breaks down.
 		// Therefore we just pick any perpendicular vector and rotate around that.
 		var perpVec = startDirection.GetAnyPerpendicular();
-		return FromAngleAroundAxis(Angle.HalfCircle, perpVec);
+		return new(Angle.HalfCircle, perpVec);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -83,7 +68,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Quaternion ToQuaternion() => AsQuaternion; // Q: Why not just make AsQuaternion a public prop? A: To keep the "To<numericsTypeHere>" pattern consistent with vector abstraction types
 
-	public void ExtractAngleAndAxis(out Angle angle, out Direction axis) {
+	public void Deconstruct(out Angle angle, out Direction axis) {
 		var halfAngleRadians = MathF.Acos(AsQuaternion.W);
 		
 		if (halfAngleRadians < 0.0001f) {
@@ -95,6 +80,9 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 		axis = Direction.FromPreNormalizedComponents(new Vector3(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z) / MathF.Sin(halfAngleRadians));
 		angle = Angle.FromRadians(halfAngleRadians * 2f);
 	}
+
+	public static implicit operator Rotation((Angle Angle, Direction Axis) operand) => new(operand.Angle, operand.Axis);
+	public static implicit operator Rotation((Direction Axis, Angle Angle) operand) => new(operand.Angle, operand.Axis);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ReadOnlySpan<float> ConvertToSpan(in Rotation src) => MemoryMarshal.Cast<Rotation, float>(new ReadOnlySpan<Rotation>(in src));
@@ -109,7 +97,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 	public string ToString(string? format, IFormatProvider? formatProvider) => $"{Angle.ToString(format, formatProvider)}{ToStringMiddleSection}{Axis.ToString(format, formatProvider)}";
 
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
-		ExtractAngleAndAxis(out var angle, out var axis);
+		var (angle, axis) = this;
 		charsWritten = 0;
 		// ReSharper disable once InlineOutVariableDeclaration This is neater
 		int tryWriteCharsWrittenOutVar;
@@ -141,7 +129,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 		var indexOfMiddlePart = s.IndexOf(ToStringMiddleSection);
 		var angle = Angle.Parse(s[..indexOfMiddlePart], provider);
 		var axis = Direction.Parse(s[(indexOfMiddlePart + ToStringMiddleSection.Length)..], provider);
-		return FromAngleAroundAxis(angle, axis);
+		return new(angle, axis);
 	}
 
 	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Rotation result) {
@@ -154,7 +142,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 		if (!Angle.TryParse(s[..indexOfMiddlePart], provider, out var angle)) return false;
 		if (!Direction.TryParse(s[(indexOfMiddlePart + ToStringMiddleSection.Length)..], provider, out var axis)) return false;
 
-		result = FromAngleAroundAxis(angle, axis);
+		result = new(angle, axis);
 		return true;
 	}
 

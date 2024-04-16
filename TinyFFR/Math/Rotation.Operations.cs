@@ -30,6 +30,10 @@ partial struct Rotation :
 		get => new(new(-AsQuaternion.X, -AsQuaternion.Y, -AsQuaternion.Z, AsQuaternion.W));
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Rotation WithAngle(Angle angle) => new(angle, Axis);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Rotation WithAxis(Direction axis) => new(Angle, axis);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction operator *(Direction d, Rotation r) => r.Rotate(d);
@@ -99,7 +103,7 @@ partial struct Rotation :
 		return FromQuaternion(start.AsQuaternion + (end.AsQuaternion - start.AsQuaternion) * distance);
 	}
 	public static Rotation Interpolate(Angle start, Angle end, Direction axis, float distance) {
-		return FromAngleAroundAxis(Angle.Interpolate(start, end, distance), axis);
+		return new(Angle.Interpolate(start, end, distance), axis);
 	}
 
 	public static Rotation CreateNewRandom() {

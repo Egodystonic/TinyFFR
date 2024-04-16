@@ -37,7 +37,7 @@ partial class PlaneTest {
 		Assert.AreEqual(0f, TestPlane.PerpendicularityWith(Direction.Right));
 		Assert.AreEqual(0f, TestPlane.PerpendicularityWith(Direction.Forward));
 
-		Assert.AreEqual(MathF.Cos(Angle.EighthCircle.Radians), TestPlane.PerpendicularityWith((1f, 1f, 0f)));
+		Assert.AreEqual(MathF.Cos(Angle.EighthCircle.AsRadians), TestPlane.PerpendicularityWith((1f, 1f, 0f)));
 	}
 
 	[Test]

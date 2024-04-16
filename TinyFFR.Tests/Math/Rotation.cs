@@ -21,7 +21,7 @@ partial class RotationTest {
 	}
 
 	[Test]
-	public void AxisAndAnglePropertiesShouldBeImplementedCorrectly() {
+	public void AxisAndAnglePropertiesAndWithMethodsShouldBeImplementedCorrectly() {
 		foreach (var cardinal in AllCardinals) {
 			for (var r = 0f; r < MathF.Tau * 0.95f; r += MathF.Tau * 0.1f) {
 				var cosHalfAngle = MathF.Cos(r / 2f);
@@ -33,50 +33,50 @@ partial class RotationTest {
 					cosHalfAngle
 				));
 
-				Assert.AreEqual(r, rot.Angle.Radians, TestTolerance);
+				Assert.AreEqual(r, rot.Angle.AsRadians, TestTolerance);
 				var expectedAxis = r == 0f ? None : cardinal;
 				AssertToleranceEquals(expectedAxis, rot.Axis, TestTolerance);
 
-				Assert.AreEqual(Rotation.None, rot with { Angle = Angle.Zero });
-				Assert.AreEqual(Rotation.None, rot with { Axis = None });
+				Assert.AreEqual(Rotation.None, rot.WithAngle(Angle.Zero));
+				Assert.AreEqual(Rotation.None, rot.WithAxis(None));
 
 				if (r == 0f) {
-					Assert.AreEqual(Rotation.None, rot with { Axis = Left });
-					Assert.AreEqual(Rotation.None, rot with { Angle = 270f });
+					Assert.AreEqual(Rotation.None, rot.WithAxis(Left));
+					Assert.AreEqual(Rotation.None, rot.WithAngle(270f));
 					continue;
 				}
 
 				var anyPerp = cardinal.GetAnyPerpendicular();
-				rot = rot with { Axis = anyPerp };
+				rot = rot.WithAxis(anyPerp);
 				AssertToleranceEquals(anyPerp, rot.Axis, TestTolerance);
-				Assert.AreEqual(r, rot.Angle.Radians, TestTolerance);
-				rot = rot with { Angle = Angle.FromRadians(r * 0.5f) };
+				Assert.AreEqual(r, rot.Angle.AsRadians, TestTolerance);
+				rot = rot.WithAngle(Angle.FromRadians(r * 0.5f));
 				AssertToleranceEquals(anyPerp, rot.Axis, TestTolerance);
-				Assert.AreEqual(r * 0.5f, rot.Angle.Radians, TestTolerance);
+				Assert.AreEqual(r * 0.5f, rot.Angle.AsRadians, TestTolerance);
 			}
 		}
 
 		// Check that it's never possible to create a non-unit quaternion underlying a rotation using these properties
 		// (assuming Direction is unit length or Zero-- if it's not that's a different invariant being violated that we should be stopping in the Direction type if we can)
-		void AssertInitConstructedQuatIsUnit(Angle angle, Direction axis) {
-			Assert.AreEqual(1f, new Rotation { Angle = angle, Axis = axis }.AsQuaternion.Length(), TestTolerance);
-			Assert.AreEqual(1f, new Rotation { Axis = axis, Angle = angle }.AsQuaternion.Length(), TestTolerance);
+		void AssertWithMethodsOnNoneRotQuatIsUnit(Angle angle, Direction axis) {
+			Assert.AreEqual(1f, Rotation.None.WithAngle(angle).WithAxis(axis).AsQuaternion.Length(), TestTolerance);
+			Assert.AreEqual(1f, Rotation.None.WithAxis(axis).WithAngle(angle).AsQuaternion.Length(), TestTolerance);
 		}
-		AssertInitConstructedQuatIsUnit(-360f, None);
-		AssertInitConstructedQuatIsUnit(-180f, None);
-		AssertInitConstructedQuatIsUnit(-90f, None);
-		AssertInitConstructedQuatIsUnit(0f, None);
-		AssertInitConstructedQuatIsUnit(90f, None);
-		AssertInitConstructedQuatIsUnit(180f, None);
-		AssertInitConstructedQuatIsUnit(360f, None);
+		AssertWithMethodsOnNoneRotQuatIsUnit(-360f, None);
+		AssertWithMethodsOnNoneRotQuatIsUnit(-180f, None);
+		AssertWithMethodsOnNoneRotQuatIsUnit(-90f, None);
+		AssertWithMethodsOnNoneRotQuatIsUnit(0f, None);
+		AssertWithMethodsOnNoneRotQuatIsUnit(90f, None);
+		AssertWithMethodsOnNoneRotQuatIsUnit(180f, None);
+		AssertWithMethodsOnNoneRotQuatIsUnit(360f, None);
 		foreach (var cardinal in AllCardinals) {
-			AssertInitConstructedQuatIsUnit(-360f, cardinal);
-			AssertInitConstructedQuatIsUnit(-180f, cardinal);
-			AssertInitConstructedQuatIsUnit(-90f, cardinal);
-			AssertInitConstructedQuatIsUnit(0f, cardinal);
-			AssertInitConstructedQuatIsUnit(90f, cardinal);
-			AssertInitConstructedQuatIsUnit(180f, cardinal);
-			AssertInitConstructedQuatIsUnit(360f, cardinal);
+			AssertWithMethodsOnNoneRotQuatIsUnit(-360f, cardinal);
+			AssertWithMethodsOnNoneRotQuatIsUnit(-180f, cardinal);
+			AssertWithMethodsOnNoneRotQuatIsUnit(-90f, cardinal);
+			AssertWithMethodsOnNoneRotQuatIsUnit(0f, cardinal);
+			AssertWithMethodsOnNoneRotQuatIsUnit(90f, cardinal);
+			AssertWithMethodsOnNoneRotQuatIsUnit(180f, cardinal);
+			AssertWithMethodsOnNoneRotQuatIsUnit(360f, cardinal);
 		}
 	}
 
@@ -95,13 +95,13 @@ partial class RotationTest {
 	public void StaticFactoryMethodsShouldCorrectlyConstruct() {
 		foreach (var cardinal in AllCardinals) {
 			for (var r = 0f; r < MathF.Tau * 0.95f; r += MathF.Tau * 0.1f) {
-				Assert.AreEqual(Rotation.FromAngleAroundAxis(Angle.FromRadians(r), cardinal), new Rotation(Angle.FromRadians(r), cardinal));
+				Assert.AreEqual(new Rotation(Angle.FromRadians(r), cardinal), new Rotation(Angle.FromRadians(r), cardinal));
 			}
 		}
 
-		Assert.AreEqual(Rotation.None, Rotation.FromAngleAroundAxis(0f, None));
-		Assert.AreEqual(Rotation.None, Rotation.FromAngleAroundAxis(0f, Up));
-		Assert.AreEqual(Rotation.None, Rotation.FromAngleAroundAxis(90f, None));
+		Assert.AreEqual(Rotation.None, new Rotation(0f, None));
+		Assert.AreEqual(Rotation.None, new Rotation(0f, Up));
+		Assert.AreEqual(Rotation.None, new Rotation(90f, None));
 
 		Assert.AreEqual(NinetyAroundDown, Rotation.FromStartAndEndDirection(Forward, Right));
 		Assert.AreEqual(NinetyAroundDown, Rotation.FromStartAndEndDirection(Right, Backward));
@@ -147,7 +147,7 @@ partial class RotationTest {
 	}
 
 	[Test]
-	public void ShouldCorrectlyExtractAngleAndAxis() {
+	public void ShouldCorrectlyDeconstruct() {
 		foreach (var cardinal in AllCardinals) {
 			for (var r = 0f; r < MathF.Tau * 0.95f; r += MathF.Tau * 0.1f) {
 				var cosHalfAngle = MathF.Cos(r / 2f);
@@ -159,9 +159,9 @@ partial class RotationTest {
 					cosHalfAngle
 				));
 
-				rot.ExtractAngleAndAxis(out var angle, out var axis);
+				var (angle, axis) = rot;
 
-				Assert.AreEqual(r, angle.Radians, TestTolerance);
+				Assert.AreEqual(r, angle.AsRadians, TestTolerance);
 				var expectedAxis = r == 0f ? None : cardinal;
 				AssertToleranceEquals(expectedAxis, axis, TestTolerance);
 			}
@@ -172,7 +172,7 @@ partial class RotationTest {
 	public void ShouldCorrectlyConvertToAndFromSpan() {
 		foreach (var cardinal in AllCardinals) {
 			for (var angle = -360f; angle <= 360f; angle += 36f) {
-				var expected = Rotation.FromAngleAroundAxis(angle, cardinal);
+				var expected = new Rotation(angle, cardinal);
 				var span = Rotation.ConvertToSpan(expected);
 				Assert.AreEqual(expected.AsQuaternion.X, span[0]);
 				Assert.AreEqual(expected.AsQuaternion.Y, span[1]);

@@ -38,6 +38,32 @@ partial struct Direction :
 	}
 
 
+	public (CardinalOrientation3D AsEnum, Direction AsDirection) NearestOrientationCardinal {
+		get {
+			GetNearestDirectionAndOrientation(this, AllCardinals, out var e, out var d);
+			return ((CardinalOrientation3D) e, d);
+		}
+	}
+	public (IntercardinalOrientation3D AsEnum, Direction AsDirection) NearestOrientationIntercardinal {
+		get {
+			GetNearestDirectionAndOrientation(this, AllIntercardinals, out var e, out var d);
+			return ((IntercardinalOrientation3D) e, d);
+		}
+	}
+	public (DiagonalOrientation3D AsEnum, Direction AsDirection) NearestOrientationDiagonal {
+		get {
+			GetNearestDirectionAndOrientation(this, AllDiagonals, out var e, out var d);
+			return ((DiagonalOrientation3D) e, d);
+		}
+	}
+	public (Orientation3D AsEnum, Direction AsDirection) NearestOrientation {
+		get {
+			GetNearestDirectionAndOrientation(this, AllOrientations, out var e, out var d);
+			return (e, d);
+		}
+	}
+
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect ToVect() => (Vect) this;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -49,7 +75,7 @@ partial struct Direction :
 
 
 	// TODO in XMLDoc indicate that this is the dot product of the two directions, and that therefore the range is 1 for identical, to -1 for complete opposite, with 0 being orthogonal; and that this is the cosine of the angle
-	public float SimilarityTo(Direction other) => Dot(AsVector4, other.AsVector4);
+	public float Dot(Direction other) => Vector4.Dot(AsVector4, other.AsVector4);
 	
 
 
@@ -66,7 +92,7 @@ partial struct Direction :
 	}
 
 	public Direction OrthogonalizedAgainst(Direction d) {
-		var dot = Dot(AsVector4, d.AsVector4);
+		var dot = Vector4.Dot(AsVector4, d.AsVector4);
 		// These checks are important to protect against fp inaccuracy with cases where we're orthogonalizing against the self or reverse of self etc
 		dot = MathF.Abs(dot) switch {
 			> 0.9999f => 1f * MathF.Sign(dot),
@@ -89,9 +115,9 @@ partial struct Direction :
 	public Rotation RotationFrom(Direction other) => Rotation.FromStartAndEndDirection(other, this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation operator %(Direction axis, Angle angle) => Rotation.FromAngleAroundAxis(angle, axis);
+	public static Rotation operator %(Direction axis, Angle angle) => new(angle, axis);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation operator %(Angle angle, Direction axis) => Rotation.FromAngleAroundAxis(angle, axis);
+	public static Rotation operator %(Angle angle, Direction axis) => new(angle, axis);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction RotatedBy(Rotation rotation) => rotation.Rotate(this);
@@ -121,13 +147,11 @@ partial struct Direction :
 		return (minInclusive >> maxExclusive).ScaledBy(RandomUtils.NextSingle()) * minInclusive;
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction GetNearestDirectionInSpan(ReadOnlySpan<Direction> span) => span[GetIndexOfNearestDirectionInSpan(span)];
-	public int GetIndexOfNearestDirectionInSpan(ReadOnlySpan<Direction> span) {
+	public static int GetIndexOfNearestDirectionInSpan(Direction targetDir, ReadOnlySpan<Direction> span) {
 		var result = -1;
 		var resultAngle = Angle.FullCircle;
 		for (var i = 0; i < span.Length; ++i) {
-			var newAngle = span[i] ^ this;
+			var newAngle = span[i] ^ targetDir;
 			if (newAngle >= resultAngle) continue;
 
 			resultAngle = newAngle;
@@ -135,43 +159,28 @@ partial struct Direction :
 		}
 		return result;
 	}
-	public void GetNearestOrientationCardinal(out CardinalOrientation3D orientation, out Direction direction) {
-		GetNearestOrientation(AllCardinals, out var o, out direction);
-		orientation = (CardinalOrientation3D) o;
-	}
-	public void GetNearestOrientationIntercardinal(out IntercardinalOrientation3D orientation, out Direction direction) {
-		GetNearestOrientation(AllIntercardinals, out var o, out direction);
-		orientation = (IntercardinalOrientation3D) o;
-	}
-	public void GetNearestOrientationDiagonal(out DiagonalOrientation3D orientation, out Direction direction) {
-		GetNearestOrientation(AllDiagonals, out var o, out direction);
-		orientation = (DiagonalOrientation3D) o;
-	}
-	public void GetNearestOrientation(out Orientation3D orientation, out Direction direction) {
-		GetNearestOrientation(AllOrientations, out orientation, out direction);
-	}
-	void GetNearestOrientation(ReadOnlySpan<Direction> span, out Orientation3D orientation, out Direction direction) {
-		if (Equals(None, 0.0001f)) {
+	static void GetNearestDirectionAndOrientation(Direction targetDir, ReadOnlySpan<Direction> span, out Orientation3D orientation, out Direction direction) {
+		if (targetDir.Equals(None, 0.0001f)) {
 			orientation = Orientation3D.None;
 			direction = None;
 			return;
 		}
-	
+
 		direction = default;
 		var dirAngle = Angle.FullCircle;
 		for (var i = 0; i < span.Length; ++i) {
 			var testDir = span[i];
-			if (X != 0f && Single.Sign(testDir.X) == -Single.Sign(X)) continue;
-			if (Y != 0f && Single.Sign(testDir.Y) == -Single.Sign(Y)) continue;
-			if (Z != 0f && Single.Sign(testDir.Z) == -Single.Sign(Z)) continue;
-	
-			var newAngle = testDir ^ this;
+			if (targetDir.X != 0f && Single.Sign(testDir.X) == -Single.Sign(targetDir.X)) continue;
+			if (targetDir.Y != 0f && Single.Sign(testDir.Y) == -Single.Sign(targetDir.Y)) continue;
+			if (targetDir.Z != 0f && Single.Sign(testDir.Z) == -Single.Sign(targetDir.Z)) continue;
+
+			var newAngle = testDir ^ targetDir;
 			if (newAngle >= dirAngle) continue;
-	
+
 			dirAngle = newAngle;
 			direction = testDir;
 		}
-	
+
 		orientation = OrientationUtils.CreateOrientationFromValueSigns(direction.X, direction.Y, direction.Z);
 	}
 }

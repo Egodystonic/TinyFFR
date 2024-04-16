@@ -38,14 +38,14 @@ partial class VectTest {
 
 	[Test]
 	public void ShouldCorrectlyDetermineIfIsNormalized() {
-		Assert.AreEqual(false, Vect.Zero.IsNormalized);
-		Assert.AreEqual(false, Vect.Zero.Normalized.IsNormalized);
-		Assert.AreEqual(false, OneTwoNegThree.IsNormalized);
-		Assert.AreEqual(true, OneTwoNegThree.Normalized.IsNormalized);
-		Assert.AreEqual(true, new Vect(1f, 0f, 0f).IsNormalized);
-		Assert.AreEqual(true, new Vect(0f, -1f, 0f).IsNormalized);
-		Assert.AreEqual(true, new Vect(0.707f, 0f, 0.707f).IsNormalized);
-		Assert.AreEqual(true, new Vect(0f, 0.707f, -0.707f).IsNormalized);
+		Assert.AreEqual(false, Vect.Zero.IsUnitLength);
+		Assert.AreEqual(false, Vect.Zero.AsUnitLength.IsUnitLength);
+		Assert.AreEqual(false, OneTwoNegThree.IsUnitLength);
+		Assert.AreEqual(true, OneTwoNegThree.AsUnitLength.IsUnitLength);
+		Assert.AreEqual(true, new Vect(1f, 0f, 0f).IsUnitLength);
+		Assert.AreEqual(true, new Vect(0f, -1f, 0f).IsUnitLength);
+		Assert.AreEqual(true, new Vect(0.707f, 0f, 0.707f).IsUnitLength);
+		Assert.AreEqual(true, new Vect(0f, 0.707f, -0.707f).IsUnitLength);
 	}
 
 	[Test]
@@ -74,7 +74,7 @@ partial class VectTest {
 			for (var y = -5f; y <= 5f; y += 1f) {
 				for (var z = -5f; z <= 5f; z += 1f) {
 					var v = new Vect(x, y, z);
-					var vNorm = v.Normalized;
+					var vNorm = v.AsUnitLength;
 
 					AssertToleranceEquals(new Direction(vNorm.X, vNorm.Y, vNorm.Z), v.Direction, TestTolerance);
 				}
@@ -84,10 +84,10 @@ partial class VectTest {
 
 	[Test]
 	public void ShouldCorrectlyNormalize() {
-		AssertToleranceEquals(new Vect(0.707f, 0f, -0.707f), new Vect(1f, 0f, -1f).Normalized, TestTolerance);
-		Assert.AreEqual(Vect.Zero, Vect.Zero.Normalized);
-		Assert.AreEqual(Vect.Zero, (-Vect.Zero).Normalized);
-		Assert.AreEqual(new Vect(0f, 1f, 0f), new Vect(0f, 0.0001f, 0f).Normalized);
+		AssertToleranceEquals(new Vect(0.707f, 0f, -0.707f), new Vect(1f, 0f, -1f).AsUnitLength, TestTolerance);
+		Assert.AreEqual(Vect.Zero, Vect.Zero.AsUnitLength);
+		Assert.AreEqual(Vect.Zero, (-Vect.Zero).AsUnitLength);
+		Assert.AreEqual(new Vect(0f, 1f, 0f), new Vect(0f, 0.0001f, 0f).AsUnitLength);
 	}
 
 	[Test]
@@ -114,38 +114,41 @@ partial class VectTest {
 
 		AssertToleranceEquals(
 			new Vect(1f, 0f, 0f),
-			new Vect(0.8f, 0.2f, 0f) { Length = 1f }.OrthogonalizedAgainst(new Direction(0f, 1f, 0f)),
+			new Vect(0.8f, 0.2f, 0f).WithLength(1f).OrthogonalizedAgainst(new Direction(0f, 1f, 0f)),
 			TestTolerance
 		);
 
 		AssertToleranceEquals(
 			new Vect(0f, -10f, 0f),
-			new Vect(1f, -5f, 0f) { Length = 10f }.OrthogonalizedAgainst(new Direction(-1f, 0f, 0f)),
+			new Vect(1f, -5f, 0f).WithLength(10f).OrthogonalizedAgainst(new Direction(-1f, 0f, 0f)),
 			TestTolerance
 		);
 
 		AssertToleranceEquals(
 			new Vect(0f, -10f, 0f),
-			new Vect(1f, -5f, 0f) { Length = 10f }.OrthogonalizedAgainst(new Direction(1f, 0f, 0f)),
+			new Vect(1f, -5f, 0f).WithLength(10f).OrthogonalizedAgainst(new Direction(1f, 0f, 0f)),
 			TestTolerance
 		);
 	}
 
 	[Test]
 	public void ShouldCorrectlyRescale() {
-		Assert.AreEqual(Vect.Zero, Vect.Zero with { Length = -10f });
-		Assert.AreEqual(Vect.Zero, Vect.Zero with { Length = 0f });
-		Assert.AreEqual(Vect.Zero, Vect.Zero with { Length = 10f });
-		Assert.AreEqual(OneTwoNegThree, OneTwoNegThree with { Length = OneTwoNegThree.Length });
+		Assert.AreEqual(Vect.Zero, Vect.Zero.WithLength(-10f));
+		Assert.AreEqual(Vect.Zero, Vect.Zero.WithLength(0f));
+		Assert.AreEqual(Vect.Zero, Vect.Zero.WithLength(10f));
+		Assert.AreEqual(Vect.Zero, Vect.Zero.WithLengthOne());
+		Assert.AreEqual(OneTwoNegThree, OneTwoNegThree.WithLength(OneTwoNegThree.Length));
 
 		// https://www.wolframalpha.com/input?i=normalize+%5B1%2C+2%2C+-3%5D
-		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f), OneTwoNegThree with { Length = 1f }, TestTolerance);
-		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * 2f, OneTwoNegThree with { Length = 2f }, TestTolerance);
-		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * -1f, OneTwoNegThree with { Length = -1f }, TestTolerance);
-		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * -2f, OneTwoNegThree with { Length = -2f }, TestTolerance);
-		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * 0.5f, OneTwoNegThree with { Length = 0.5f }, TestTolerance);
-		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * -0.5f, OneTwoNegThree with { Length = -0.5f }, TestTolerance);
-		Assert.AreEqual(Vect.Zero, OneTwoNegThree with { Length = 0f });
+		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f), OneTwoNegThree.WithLength(1f), TestTolerance);
+		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f), OneTwoNegThree.WithLengthOne(), TestTolerance);
+		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * 2f, OneTwoNegThree.WithLength(2f), TestTolerance);
+		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * -1f, OneTwoNegThree.WithLength(-1f), TestTolerance);
+		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * -1f, OneTwoNegThree.WithLengthOne().Reversed, TestTolerance);
+		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * -2f, OneTwoNegThree.WithLength(-2f), TestTolerance);
+		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * 0.5f, OneTwoNegThree.WithLength(0.5f), TestTolerance);
+		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * -0.5f, OneTwoNegThree.WithLength(-0.5f), TestTolerance);
+		Assert.AreEqual(Vect.Zero, OneTwoNegThree.WithLength(0f));
 	}
 
 	[Test]

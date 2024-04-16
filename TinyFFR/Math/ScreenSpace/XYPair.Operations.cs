@@ -34,7 +34,7 @@ public readonly partial struct XYPair<T> :
 
 	public Angle? PolarAngle { // TODO clarify this is the four-quadrant inverse tangent
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Angle.FromPolarAngleAround2DPlane(this);
+		get => Angle.From2DPolarAngle(this);
 	}
 
 	public XYPair<T> Absolute {

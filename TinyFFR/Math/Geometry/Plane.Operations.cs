@@ -36,7 +36,7 @@ public readonly partial struct Plane :
 	public Plane RotatedAroundPoint(Rotation rot, Location pivotPoint) => new(Normal * rot, ClosestPointTo(pivotPoint) * (pivotPoint, rot));
 
 	// TODO explain in XML that this is a normalized value from 0 to 1, where 1 is a direction completely perpendicular to the plane and 0 is completely parallel; and is also the cosine of the angle formed with the normal
-	public float PerpendicularityWith(Direction direction) => MathF.Abs(Normal.SimilarityTo(direction));
+	public float PerpendicularityWith(Direction direction) => MathF.Abs(Normal.Dot(direction));
 
 	// TODO I'd like a function here to convert locations to XYPairs on the surface of the plane given a centre point (default ClosestPointToOrigin)
 
@@ -51,7 +51,7 @@ public readonly partial struct Plane :
 		return Direction.FromVector3(-2f * Vector3.Dot(Normal.ToVector3(), direction.ToVector3()) * Normal.ToVector3() + direction.ToVector3());
 	}
 
-	public Location ClosestPointTo(Location location) => location - ClosestPointToOrigin.GetVectTo(location).ProjectedOnTo(Normal);
+	public Location ClosestPointTo(Location location) => location - ClosestPointToOrigin.VectTo(location).ProjectedOnTo(Normal);
 	public float SignedDistanceFrom(Location location) => Vector3.Dot(location.ToVector3(), _normal) - _smallestDistanceFromOriginAlongNormal; // TODO xmldoc positive means normal faces towards, etc
 	public float DistanceFrom(Location location) => MathF.Abs(SignedDistanceFrom(location));
 	public float SignedDistanceFromOrigin() => -_smallestDistanceFromOriginAlongNormal;
@@ -74,7 +74,7 @@ public readonly partial struct Plane :
 	public bool Contains(Location location) => Contains(location, DefaultPlaneThickness);
 	public bool Contains(Location location, float planeThickness) => DistanceFrom(location) <= planeThickness;
 
-	public float DistanceFrom(Plane other) => MathF.Abs(Normal.SimilarityTo(other.Normal)) >= 0.99999999f ? ClosestPointToOrigin.DistanceFrom(other.ClosestPointToOrigin) : 0f;
+	public float DistanceFrom(Plane other) => MathF.Abs(Normal.Dot(other.Normal)) >= 0.99999999f ? ClosestPointToOrigin.DistanceFrom(other.ClosestPointToOrigin) : 0f;
 	
 	public bool IsIntersectedBy(Plane other) => Vector3.Cross(_normal, other._normal).LengthSquared() != 0f;
 	public Line? IntersectionWith(Plane other) {
@@ -125,7 +125,7 @@ public readonly partial struct Plane :
 	// TODO xmldoc explain that these two methods will basically just make the vect/dir point either along the normal or opposite, whichever they're closer to
 	public Vect OrthogonalizationOf(Vect vect) => OrthogonalizationOf(vect.Direction) * vect.Length;
 	// Idea here is to pick the closest direction (normal or -normal) and have parallel directions just pick the positive normal, all without branching. There's probably a smarter way to do it but I'm not smart enough to know it
-	public Direction OrthogonalizationOf(Direction direction) => Direction.FromPreNormalizedComponents(Normal.ToVector3() * MathF.Sign(direction.SimilarityTo(Normal) * 2f + Single.Epsilon));
+	public Direction OrthogonalizationOf(Direction direction) => Direction.FromPreNormalizedComponents(Normal.ToVector3() * MathF.Sign(direction.Dot(Normal) * 2f + Single.Epsilon));
 
 	public PlaneObjectRelationship RelationshipTo<TGeo>(TGeo element) where TGeo : IRelationshipDeterminable<Plane, PlaneObjectRelationship> => element.RelationshipTo(this);
 	public bool IsIntersectedBy<TGeo>(TGeo element) where TGeo : IIntersectable<Plane> => element.IsIntersectedBy(this);
