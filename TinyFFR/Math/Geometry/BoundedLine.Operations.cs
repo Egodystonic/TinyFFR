@@ -9,19 +9,19 @@ public readonly partial struct BoundedLine :
 	IMultiplyOperators<BoundedLine, Rotation, BoundedLine>,
 	IAdditionOperators<BoundedLine, Vect, BoundedLine> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray ToRayFromStart() => new(_startPoint, Direction);
+	public Ray ToRayFromStart() => new(StartPoint, Direction);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray ToRayFromEnd() => new(_startPoint + _vect, -Direction);
+	public Ray ToRayFromEnd() => new(EndPoint, -Direction);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line ToLine() => new(_startPoint, Direction);
+	public Line ToLine() => new(StartPoint, Direction);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static BoundedLine operator -(BoundedLine operand) => operand.Flipped;
 	public BoundedLine Flipped {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(EndPoint, StartPoint);
 	}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static BoundedLine operator -(BoundedLine operand) => operand.Flipped;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static BoundedLine operator *(BoundedLine line, float scalar) => line.ScaledFromMiddleBy(scalar);
@@ -38,7 +38,7 @@ public readonly partial struct BoundedLine :
 	}
 	public BoundedLine ScaledFromEndBy(float scalar) {
 		var scaledVect = _vect.ScaledBy(scalar);
-		var newStart = EndPoint - scaledVect;
+		var newStart = (_startPoint + _vect) - scaledVect;
 		return new BoundedLine(newStart, scaledVect);
 	}
 	public BoundedLine ScaledAroundPivotDistanceBy(float scalar, float signedPivotDistance) {
@@ -66,7 +66,7 @@ public readonly partial struct BoundedLine :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedLine RotatedAroundStartBy(Rotation rotation) => new(_startPoint, _vect * rotation);
 	public BoundedLine RotatedAroundEndBy(Rotation rotation) {
-		var endPoint = EndPoint;
+		var endPoint = _startPoint + _vect;
 		return new(endPoint + _vect.Reversed * rotation, endPoint);
 	}
 	public BoundedLine RotatedAroundMiddleBy(Rotation rotation) {

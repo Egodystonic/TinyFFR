@@ -220,7 +220,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 	}
 
 	public bool Equals(Angle other, float tolerance) {
-		// Using AsDegrees rather than _asRadians because the implicit conversion from float to Angle
+		// Using AsDegrees rather than AsRadians because the implicit conversion from float to Angle
 		// assumes degrees and therefore I feel like the tolerance value here should also be degrees
 		return MathF.Abs(AsDegrees - other.AsDegrees) <= tolerance;
 	}
@@ -237,10 +237,10 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool Equals(Angle other) => Normalized._asRadians.Equals(other.Normalized._asRadians);
+	public bool Equals(Angle other) => Normalized.AsRadians.Equals(other.Normalized.AsRadians);
 	public override bool Equals(object? obj) => obj is Angle other && Equals(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public override int GetHashCode() => Normalized._asRadians.GetHashCode();
+	public override int GetHashCode() => Normalized.AsRadians.GetHashCode();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator ==(Angle left, Angle right) => left.Equals(right);

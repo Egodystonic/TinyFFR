@@ -55,10 +55,10 @@ public readonly partial struct OriginSphere : IFullyInteractableConvexShape<Orig
 	public static OriginSphere CreateNewRandom(OriginSphere minInclusive, OriginSphere maxExclusive) => new(RandomUtils.NextSingle(minInclusive.Radius, maxExclusive.Radius));
 
 	#region Equality
-	public bool Equals(OriginSphere other) => Radius.Equals(other.Radius);
+	public bool Equals(OriginSphere other) => _radius.Equals(other._radius);
 	public bool Equals(OriginSphere other, float tolerance) => MathF.Abs(Radius - other.Radius) <= tolerance;
 	public override bool Equals(object? obj) => obj is OriginSphere other && Equals(other);
-	public override int GetHashCode() => Radius.GetHashCode();
+	public override int GetHashCode() => _radius.GetHashCode();
 	public static bool operator ==(OriginSphere left, OriginSphere right) => left.Equals(right);
 	public static bool operator !=(OriginSphere left, OriginSphere right) => !left.Equals(right);
 	#endregion

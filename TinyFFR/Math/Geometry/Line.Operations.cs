@@ -10,7 +10,7 @@ namespace Egodystonic.TinyFFR;
 public readonly partial struct Line :
 	IAdditionOperators<Line, Vect, Line>,
 	IMultiplyOperators<Line, Rotation, Line> {
-	public Ray ToRay(float signedDistanceAlongLine, bool flipDirection) => new(LocationAtDistance(signedDistanceAlongLine), flipDirection ? _direction.Reversed : _direction);
+	public Ray ToRay(float signedDistanceAlongLine, bool flipDirection) => new(LocationAtDistance(signedDistanceAlongLine), flipDirection ? Direction.Reversed : Direction);
 	public BoundedLine ToBoundedLine(float startSignedDistanceAlongLine, float endSignedDistanceAlongLine) {
 		return new(LocationAtDistance(startSignedDistanceAlongLine), LocationAtDistance(endSignedDistanceAlongLine));
 	}
@@ -20,7 +20,7 @@ public readonly partial struct Line :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Line operator *(Rotation rot, Line line) => line.RotatedBy(rot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line RotatedBy(Rotation rotation) => new(PointOnLine, _direction.RotatedBy(rotation));
+	public Line RotatedBy(Rotation rotation) => new(PointOnLine, Direction.RotatedBy(rotation));
 
 
 
@@ -29,7 +29,7 @@ public readonly partial struct Line :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Line operator +(Vect v, Line line) => line.MovedBy(v);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line MovedBy(Vect v) => new(PointOnLine + v, _direction);
+	public Line MovedBy(Vect v) => new(PointOnLine + v, Direction);
 	
 	
 	public static Line Interpolate(Line start, Line end, float distance) {
@@ -37,20 +37,20 @@ public readonly partial struct Line :
 		var endPoint = end.ClosestPointTo(start);
 		return new(
 			Location.Interpolate(startPoint, endPoint, distance),
-			Direction.Interpolate(start._direction, end._direction, distance)
+			Direction.Interpolate(start.Direction, end.Direction, distance)
 		);
 	}
 	public static Rotation CreateInterpolationPrecomputation(Line start, Line end) { // TODO add startPoint/endPoint to precomputation object
-		return Direction.CreateInterpolationPrecomputation(start._direction, end._direction);
+		return Direction.CreateInterpolationPrecomputation(start.Direction, end.Direction);
 	}
 	public static Line InterpolateUsingPrecomputation(Line start, Line end, Rotation precomputation, float distance) {
 		return new(
 			Location.Interpolate(start.PointOnLine, end.PointOnLine, distance),
-			Direction.InterpolateUsingPrecomputation(start._direction, end._direction, precomputation, distance)
+			Direction.InterpolateUsingPrecomputation(start.Direction, end.Direction, precomputation, distance)
 		);
 	}
 	public static Line CreateNewRandom() => new(Location.CreateNewRandom(), Direction.CreateNewRandom());
-	public static Line CreateNewRandom(Line minInclusive, Line maxExclusive) => new(Location.CreateNewRandom(minInclusive.PointOnLine, maxExclusive.PointOnLine), Direction.CreateNewRandom(minInclusive._direction, maxExclusive._direction));
+	public static Line CreateNewRandom(Line minInclusive, Line maxExclusive) => new(Location.CreateNewRandom(minInclusive.PointOnLine, maxExclusive.PointOnLine), Direction.CreateNewRandom(minInclusive.Direction, maxExclusive.Direction));
 	
 
 	public Location ClosestPointTo(Location location) {
@@ -124,7 +124,7 @@ public readonly partial struct Line :
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location LocationAtDistance(float signedDistanceFromStart) => _pointOnLine + _direction * signedDistanceFromStart;
+	public Location LocationAtDistance(float signedDistanceFromStart) => PointOnLine + Direction * signedDistanceFromStart;
 
 	// These are implemented explicitly because they're all basically the same thing or useless for an unbounded line.
 	bool ILine.DistanceIsWithinLineBounds(float signedDistanceFromStart) => true;
@@ -136,7 +136,7 @@ public readonly partial struct Line :
 	public Ray? ReflectedBy(Plane plane) {
 		var intersectionPoint = IntersectionWith(plane);
 		if (intersectionPoint == null) return null;
-		return new Ray(intersectionPoint.Value, _direction.ReflectedBy(plane));
+		return new Ray(intersectionPoint.Value, Direction.ReflectedBy(plane));
 	}
 
 	public Location? IntersectionWith(Plane plane) {

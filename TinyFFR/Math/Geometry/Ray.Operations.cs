@@ -12,13 +12,13 @@ public readonly partial struct Ray :
 	IMultiplyOperators<Ray, Rotation, Ray>, 
 	IAdditionOperators<Ray, Vect, Ray> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedLine ToBoundedLine(float signedDistanceToEndPoint) => new(_startPoint, _direction * signedDistanceToEndPoint);
+	public BoundedLine ToBoundedLine(float signedDistanceToEndPoint) => new(StartPoint, Direction * signedDistanceToEndPoint);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line ToLine() => new(_startPoint, _direction);
+	public Line ToLine() => new(StartPoint, Direction);
 
 	public Ray Flipped {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => new(_startPoint, -_direction);
+		get => new(StartPoint, -Direction);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Ray operator -(Ray operand) => operand.Flipped;
@@ -29,7 +29,7 @@ public readonly partial struct Ray :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Ray operator *(Rotation rot, Ray ray) => ray.RotatedBy(rot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray RotatedBy(Rotation rotation) => new(_startPoint, _direction.RotatedBy(rotation));
+	public Ray RotatedBy(Rotation rotation) => new(StartPoint, Direction.RotatedBy(rotation));
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -37,7 +37,7 @@ public readonly partial struct Ray :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Ray operator +(Vect v, Ray ray) => ray.MovedBy(v);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray MovedBy(Vect v) => new(_startPoint + v, _direction);
+	public Ray MovedBy(Vect v) => new(StartPoint + v, Direction);
 
 
 	public static Ray Interpolate(Ray start, Ray end, float distance) {
@@ -60,17 +60,17 @@ public readonly partial struct Ray :
 
 
 	public Location ClosestPointTo(Location location) {
-		var distance = Vector3.Dot((location - _startPoint).ToVector3(), Direction.ToVector3());
+		var distance = Vector3.Dot((location - StartPoint).ToVector3(), Direction.ToVector3());
 		return distance switch {
-			< 0f => _startPoint,
-			_ => _startPoint + Direction * distance
+			< 0f => StartPoint,
+			_ => StartPoint + Direction * distance
 		};
 	}
 	public Location ClosestPointToOrigin() {
-		var distance = -Vector3.Dot(_startPoint.ToVector3(), Direction.ToVector3());
+		var distance = -Vector3.Dot(StartPoint.ToVector3(), Direction.ToVector3());
 		return distance switch {
-			< 0f => _startPoint,
-			_ => _startPoint + Direction * distance
+			< 0f => StartPoint,
+			_ => StartPoint + Direction * distance
 		};
 	}
 
@@ -139,13 +139,13 @@ public readonly partial struct Ray :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float BindDistance(float signedDistanceFromStart) => MathF.Max(0f, signedDistanceFromStart);
 	public Location BoundedLocationAtDistance(float signedDistanceFromStart) => UnboundedLocationAtDistance(BindDistance(signedDistanceFromStart));
-	public Location UnboundedLocationAtDistance(float signedDistanceFromStart) => _startPoint + _direction * signedDistanceFromStart;
+	public Location UnboundedLocationAtDistance(float signedDistanceFromStart) => StartPoint + Direction * signedDistanceFromStart;
 	public Location? LocationAtDistanceOrNull(float signedDistanceFromStart) => DistanceIsWithinLineBounds(signedDistanceFromStart) ? UnboundedLocationAtDistance(signedDistanceFromStart) : null;
 
 	public Ray? ReflectedBy(Plane plane) {
 		var intersectionPoint = IntersectionWith(plane);
 		if (intersectionPoint == null) return null;
-		return new Ray(intersectionPoint.Value, _direction.ReflectedBy(plane));
+		return new Ray(intersectionPoint.Value, Direction.ReflectedBy(plane));
 	}
 
 	float? GetUnboundedPlaneIntersectionDistance(Plane plane) {

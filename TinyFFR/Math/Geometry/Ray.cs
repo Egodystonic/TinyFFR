@@ -60,7 +60,7 @@ public readonly partial struct Ray : ILine<Ray, Ray>, IDescriptiveStringProvider
 
 	#region Equality
 	public bool Equals(Ray other) => _startPoint.Equals(other._startPoint) && _direction.Equals(other._direction);
-	public bool Equals(Ray other, float tolerance) => _startPoint.Equals(other.StartPoint, tolerance) && _direction.Equals(other.Direction, tolerance);
+	public bool Equals(Ray other, float tolerance) => StartPoint.Equals(other.StartPoint, tolerance) && Direction.Equals(other.Direction, tolerance);
 	public bool EqualsWithinDistanceAndAngle(Ray other, float distance, Angle angle) {
 		return StartPoint.DistanceSquaredFrom(other.StartPoint) <= distance * distance && Direction.EqualsWithinAngle(other.Direction, angle);
 	}

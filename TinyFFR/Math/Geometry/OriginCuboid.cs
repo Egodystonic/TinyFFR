@@ -134,14 +134,14 @@ public readonly partial struct OriginCuboid : IFullyInteractableConvexShape<Orig
 	}
 
 	#region Equality
-	public bool Equals(OriginCuboid other) => Width.Equals(other.Width) && Height.Equals(other.Height) && Depth.Equals(other.Depth);
+	public bool Equals(OriginCuboid other) => _halfWidth.Equals(other._halfWidth) && _halfHeight.Equals(other._halfHeight) && _halfDepth.Equals(other._halfDepth);
 	public bool Equals(OriginCuboid other, float tolerance) {
 		return MathF.Abs(Width - other.Width) <= tolerance
 			&& MathF.Abs(Height - other.Height) <= tolerance
 			&& MathF.Abs(Depth - other.Depth) <= tolerance;
 	}
 	public override bool Equals(object? obj) => obj is OriginCuboid other && Equals(other);
-	public override int GetHashCode() => HashCode.Combine(Width, Height, Depth);
+	public override int GetHashCode() => HashCode.Combine(_halfWidth, _halfHeight, _halfDepth);
 	public static bool operator ==(OriginCuboid left, OriginCuboid right) => left.Equals(right);
 	public static bool operator !=(OriginCuboid left, OriginCuboid right) => !left.Equals(right);
 	#endregion

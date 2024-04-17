@@ -13,14 +13,14 @@ public readonly partial struct OriginCuboid
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static OriginCuboid operator *(float scalar, OriginCuboid cuboid) => cuboid.ScaledBy(scalar);
 
-	public OriginCuboid ScaledBy(float scalar) => FromHalfDimensions(_halfWidth * scalar, _halfHeight * scalar, _halfDepth * scalar);
+	public OriginCuboid ScaledBy(float scalar) => FromHalfDimensions(HalfWidth * scalar, HalfHeight * scalar, HalfDepth * scalar);
 	public OriginCuboid WithVolume(float newVolume) {
 		var diffCubeRoot = MathF.Cbrt(newVolume / Volume);
-		return FromHalfDimensions(_halfWidth * diffCubeRoot, _halfHeight * diffCubeRoot, _halfDepth * diffCubeRoot);
+		return FromHalfDimensions(HalfWidth * diffCubeRoot, HalfHeight * diffCubeRoot, HalfDepth * diffCubeRoot);
 	}
 	public OriginCuboid WithSurfaceArea(float newSurfaceArea) {
 		var diffSquareRoot = MathF.Sqrt(newSurfaceArea / SurfaceArea);
-		return FromHalfDimensions(_halfWidth * diffSquareRoot, _halfHeight * diffSquareRoot, _halfDepth * diffSquareRoot);
+		return FromHalfDimensions(HalfWidth * diffSquareRoot, HalfHeight * diffSquareRoot, HalfDepth * diffSquareRoot);
 	}
 
 	// TODO these GetX methods need a naming pass and this file vs Cuboid.cs? etc
