@@ -17,8 +17,6 @@ public readonly partial struct BoundedLine : ILine<BoundedLine, BoundedLine>, ID
 	public Direction Direction {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _vect.Direction;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => _vect = Vect.FromDirectionAndDistance(value, Length);
 	}
 	public float Length {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -29,8 +27,6 @@ public readonly partial struct BoundedLine : ILine<BoundedLine, BoundedLine>, ID
 	public float LengthSquared {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _vect.LengthSquared;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		init => _vect = _vect.WithLength(MathF.Sqrt(value));
 	}
 	public Vect StartToEndVect {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

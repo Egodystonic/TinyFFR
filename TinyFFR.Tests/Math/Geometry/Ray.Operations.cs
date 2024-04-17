@@ -1136,7 +1136,7 @@ partial class RayTest {
 		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
 
 		void AssertSplit(BoundedLine? expectedToPlane, Ray? expectedFromPlane, Ray ray) {
-			AssertToleranceEquals(expectedFromPlane, ray.SplitBy(plane), TestTolerance);
+			AssertToleranceEquals(expectedFromPlane, ray.SlicedBy(plane), TestTolerance);
 			var trySplitResult = ray.TrySplit(plane, out var actualToPlane, out var actualFromPlane);
 			if (expectedToPlane == null) Assert.AreEqual(false, trySplitResult);
 			else {

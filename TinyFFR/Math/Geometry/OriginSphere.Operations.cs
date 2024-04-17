@@ -12,8 +12,8 @@ public readonly partial struct OriginSphere
 
 	public OriginSphere ScaledBy(float scalar) => new(Radius * scalar);
 
-	public float CircleRadiusAtDistanceFromCenter(float distanceFromCenter) => CircleRadiusAtDistanceFromCenterSquared(distanceFromCenter * distanceFromCenter);
-	float CircleRadiusAtDistanceFromCenterSquared(float distanceFromCenterSquared) {
+	public float GetCircleRadiusAtDistanceFromCenter(float distanceFromCenter) => GetCircleRadiusAtDistanceFromCenterSquared(distanceFromCenter * distanceFromCenter);
+	float GetCircleRadiusAtDistanceFromCenterSquared(float distanceFromCenterSquared) {
 		var resultSquared = RadiusSquared - distanceFromCenterSquared;
 		return MathF.Sqrt(MathF.Max(0f, resultSquared));
 	}
@@ -127,7 +127,7 @@ public readonly partial struct OriginSphere
 			circleRadius = default;
 			return false;
 		}
-		circleRadius = CircleRadiusAtDistanceFromCenterSquared(vectLengthSquared);
+		circleRadius = GetCircleRadiusAtDistanceFromCenterSquared(vectLengthSquared);
 		return true;
 	}
 
@@ -137,7 +137,7 @@ public readonly partial struct OriginSphere
 
 		// Otherwise there are infinite valid answers around the circle formed by the intersection. Any will do
 		var centrePointDirection = circleCentrePoint == Location.Origin ? plane.Normal : ((Vect) circleCentrePoint).Direction;
-		return circleCentrePoint + centrePointDirection.GetAnyPerpendicular() * circleRadius;
+		return circleCentrePoint + centrePointDirection.AnyPerpendicular() * circleRadius;
 	}
 	public Location ClosestPointToSurfaceOn(Plane plane) {
 		// If the plane doesn't intersect this sphere, we can just return the plane's closest point to the sphere
@@ -145,7 +145,7 @@ public readonly partial struct OriginSphere
 
 		// Otherwise there are infinite valid answers around the circle formed by the intersection. Any will do
 		var centrePointDirection = circleCentrePoint == Location.Origin ? plane.Normal : ((Vect) circleCentrePoint).Direction;
-		return circleCentrePoint + centrePointDirection.GetAnyPerpendicular() * circleRadius;
+		return circleCentrePoint + centrePointDirection.AnyPerpendicular() * circleRadius;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

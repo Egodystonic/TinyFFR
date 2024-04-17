@@ -19,16 +19,16 @@ partial class OriginCuboidTest {
 
 	[Test]
 	public void ShouldCorrectlyCalculateCornerLocations() {
-		AssertToleranceEquals(new(3.6f, 6.8f, 0.7f), TestCuboid.GetCorner(DiagonalOrientation3D.LeftUpForward), TestTolerance);
-		AssertToleranceEquals(new(3.6f, 6.8f, -0.7f), TestCuboid.GetCorner(DiagonalOrientation3D.LeftUpBackward), TestTolerance);
-		AssertToleranceEquals(new(3.6f, -6.8f, 0.7f), TestCuboid.GetCorner(DiagonalOrientation3D.LeftDownForward), TestTolerance);
-		AssertToleranceEquals(new(3.6f, -6.8f, -0.7f), TestCuboid.GetCorner(DiagonalOrientation3D.LeftDownBackward), TestTolerance);
-		AssertToleranceEquals(new(-3.6f, 6.8f, 0.7f), TestCuboid.GetCorner(DiagonalOrientation3D.RightUpForward), TestTolerance);
-		AssertToleranceEquals(new(-3.6f, 6.8f, -0.7f), TestCuboid.GetCorner(DiagonalOrientation3D.RightUpBackward), TestTolerance);
-		AssertToleranceEquals(new(-3.6f, -6.8f, 0.7f), TestCuboid.GetCorner(DiagonalOrientation3D.RightDownForward), TestTolerance);
-		AssertToleranceEquals(new(-3.6f, -6.8f, -0.7f), TestCuboid.GetCorner(DiagonalOrientation3D.RightDownBackward), TestTolerance);
+		AssertToleranceEquals(new(3.6f, 6.8f, 0.7f), TestCuboid.GetCornerLocation(DiagonalOrientation3D.LeftUpForward), TestTolerance);
+		AssertToleranceEquals(new(3.6f, 6.8f, -0.7f), TestCuboid.GetCornerLocation(DiagonalOrientation3D.LeftUpBackward), TestTolerance);
+		AssertToleranceEquals(new(3.6f, -6.8f, 0.7f), TestCuboid.GetCornerLocation(DiagonalOrientation3D.LeftDownForward), TestTolerance);
+		AssertToleranceEquals(new(3.6f, -6.8f, -0.7f), TestCuboid.GetCornerLocation(DiagonalOrientation3D.LeftDownBackward), TestTolerance);
+		AssertToleranceEquals(new(-3.6f, 6.8f, 0.7f), TestCuboid.GetCornerLocation(DiagonalOrientation3D.RightUpForward), TestTolerance);
+		AssertToleranceEquals(new(-3.6f, 6.8f, -0.7f), TestCuboid.GetCornerLocation(DiagonalOrientation3D.RightUpBackward), TestTolerance);
+		AssertToleranceEquals(new(-3.6f, -6.8f, 0.7f), TestCuboid.GetCornerLocation(DiagonalOrientation3D.RightDownForward), TestTolerance);
+		AssertToleranceEquals(new(-3.6f, -6.8f, -0.7f), TestCuboid.GetCornerLocation(DiagonalOrientation3D.RightDownBackward), TestTolerance);
 
-		Assert.Throws<ArgumentOutOfRangeException>(() => TestCuboid.GetCorner(DiagonalOrientation3D.None));
+		Assert.Throws<ArgumentOutOfRangeException>(() => TestCuboid.GetCornerLocation(DiagonalOrientation3D.None));
 	}
 
 	[Test]
@@ -74,15 +74,15 @@ partial class OriginCuboidTest {
 
 	[Test]
 	public void ShouldCorrectlyReturnDimensionOfGivenAxis() {
-		Assert.AreEqual(7.2f, TestCuboid.GetDimension(Axis.X), TestTolerance);
-		Assert.AreEqual(13.6f, TestCuboid.GetDimension(Axis.Y), TestTolerance);
-		Assert.AreEqual(1.4f, TestCuboid.GetDimension(Axis.Z), TestTolerance);
-		Assert.Throws<ArgumentException>(() => _ = TestCuboid.GetDimension(Axis.None));
+		Assert.AreEqual(7.2f, TestCuboid.GetExtent(Axis.X), TestTolerance);
+		Assert.AreEqual(13.6f, TestCuboid.GetExtent(Axis.Y), TestTolerance);
+		Assert.AreEqual(1.4f, TestCuboid.GetExtent(Axis.Z), TestTolerance);
+		Assert.Throws<ArgumentException>(() => _ = TestCuboid.GetExtent(Axis.None));
 
-		Assert.AreEqual(0.5f * 7.2f, TestCuboid.GetHalfDimension(Axis.X), TestTolerance);
-		Assert.AreEqual(0.5f * 13.6f, TestCuboid.GetHalfDimension(Axis.Y), TestTolerance);
-		Assert.AreEqual(0.5f * 1.4f, TestCuboid.GetHalfDimension(Axis.Z), TestTolerance);
-		Assert.Throws<ArgumentException>(() => _ = TestCuboid.GetHalfDimension(Axis.None));
+		Assert.AreEqual(0.5f * 7.2f, TestCuboid.GetHalfExtent(Axis.X), TestTolerance);
+		Assert.AreEqual(0.5f * 13.6f, TestCuboid.GetHalfExtent(Axis.Y), TestTolerance);
+		Assert.AreEqual(0.5f * 1.4f, TestCuboid.GetHalfExtent(Axis.Z), TestTolerance);
+		Assert.Throws<ArgumentException>(() => _ = TestCuboid.GetHalfExtent(Axis.None));
 	}
 
 	[Test]
@@ -515,12 +515,12 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(0f, TestCuboid.ClosestPointTo(new Line(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f))).Z);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointTo(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).X);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointTo(new Line(new Location(0f, 0f, 100f), new Direction(0f, 0f, 1f))).Y);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Line(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X, -TestCuboid.GetHalfDimension(Axis.X));
-		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Line(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X, TestCuboid.GetHalfDimension(Axis.X));
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Line(new Location(0f, 100f, 0f), new Direction(0f, 1f, 0f))).Y, -TestCuboid.GetHalfDimension(Axis.Y));
-		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Line(new Location(0f, 100f, 0f), new Direction(0f, 1f, 0f))).Y, TestCuboid.GetHalfDimension(Axis.Y));
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z, -TestCuboid.GetHalfDimension(Axis.Z));
-		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z, TestCuboid.GetHalfDimension(Axis.Z));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Line(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X, -TestCuboid.GetHalfExtent(Axis.X));
+		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Line(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X, TestCuboid.GetHalfExtent(Axis.X));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Line(new Location(0f, 100f, 0f), new Direction(0f, 1f, 0f))).Y, -TestCuboid.GetHalfExtent(Axis.Y));
+		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Line(new Location(0f, 100f, 0f), new Direction(0f, 1f, 0f))).Y, TestCuboid.GetHalfExtent(Axis.Y));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z, -TestCuboid.GetHalfExtent(Axis.Z));
+		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z, TestCuboid.GetHalfExtent(Axis.Z));
 
 		// Ray
 		AssertToleranceEquals((3.6f, -6.8f, 0f), TestCuboid.ClosestPointTo(new Ray(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f))), TestTolerance);
@@ -534,25 +534,25 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(0f, TestCuboid.ClosestPointTo(new Ray(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f))).Z);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).X);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f))).Y);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X, -TestCuboid.GetHalfDimension(Axis.X));
-		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X, TestCuboid.GetHalfDimension(Axis.X));
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f))).Y, -TestCuboid.GetHalfDimension(Axis.Y));
-		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f))).Y, TestCuboid.GetHalfDimension(Axis.Y));
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z, -TestCuboid.GetHalfDimension(Axis.Z));
-		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z, TestCuboid.GetHalfDimension(Axis.Z));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X, -TestCuboid.GetHalfExtent(Axis.X));
+		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X, TestCuboid.GetHalfExtent(Axis.X));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f))).Y, -TestCuboid.GetHalfExtent(Axis.Y));
+		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f))).Y, TestCuboid.GetHalfExtent(Axis.Y));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z, -TestCuboid.GetHalfExtent(Axis.Z));
+		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z, TestCuboid.GetHalfExtent(Axis.Z));
 
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))).X, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))).X, TestCuboid.GetHalfDimension(Axis.X));
+		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))).X, TestCuboid.GetHalfExtent(Axis.X));
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))).Y, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))).Y, TestCuboid.GetHalfDimension(Axis.Y));
+		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))).Y, TestCuboid.GetHalfExtent(Axis.Y));
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))).Z, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))).Z, TestCuboid.GetHalfDimension(Axis.Z));
+		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))).Z, TestCuboid.GetHalfExtent(Axis.Z));
 		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))).X, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))).X, -TestCuboid.GetHalfDimension(Axis.X));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))).X, -TestCuboid.GetHalfExtent(Axis.X));
 		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))).Y, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))).Y, -TestCuboid.GetHalfDimension(Axis.Y));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))).Y, -TestCuboid.GetHalfExtent(Axis.Y));
 		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))).Z, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))).Z, -TestCuboid.GetHalfDimension(Axis.Z));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))).Z, -TestCuboid.GetHalfExtent(Axis.Z));
 
 		Assert.AreEqual(0f, TestCuboid.ClosestPointTo(new Ray(new Location(-100f, 0f, 0f), new Direction(-1f, 0f, 0f))).Y);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointTo(new Ray(new Location(100f, 0f, 0f), new Direction(1f, 0f, 0f))).Z);
@@ -579,38 +579,38 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(0f, TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)).Z);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).X);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)).Y);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X, -TestCuboid.GetHalfDimension(Axis.X));
-		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X, TestCuboid.GetHalfDimension(Axis.X));
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y, -TestCuboid.GetHalfDimension(Axis.Y));
-		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y, TestCuboid.GetHalfDimension(Axis.Y));
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z, -TestCuboid.GetHalfDimension(Axis.Z));
-		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z, TestCuboid.GetHalfDimension(Axis.Z));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X, -TestCuboid.GetHalfExtent(Axis.X));
+		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X, TestCuboid.GetHalfExtent(Axis.X));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y, -TestCuboid.GetHalfExtent(Axis.Y));
+		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y, TestCuboid.GetHalfExtent(Axis.Y));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z, -TestCuboid.GetHalfExtent(Axis.Z));
+		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z, TestCuboid.GetHalfExtent(Axis.Z));
 
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).X, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).X, TestCuboid.GetHalfDimension(Axis.X));
+		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).X, TestCuboid.GetHalfExtent(Axis.X));
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Y, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Y, TestCuboid.GetHalfDimension(Axis.Y));
+		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Y, TestCuboid.GetHalfExtent(Axis.Y));
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Z, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Z, TestCuboid.GetHalfDimension(Axis.Z));
+		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Z, TestCuboid.GetHalfExtent(Axis.Z));
 		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).X, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).X, -TestCuboid.GetHalfDimension(Axis.X));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).X, -TestCuboid.GetHalfExtent(Axis.X));
 		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Y, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Y, -TestCuboid.GetHalfDimension(Axis.Y));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Y, -TestCuboid.GetHalfExtent(Axis.Y));
 		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Z, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Z, -TestCuboid.GetHalfDimension(Axis.Z));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Z, -TestCuboid.GetHalfExtent(Axis.Z));
 
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).X, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).X, TestCuboid.GetHalfDimension(Axis.X));
+		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).X, TestCuboid.GetHalfExtent(Axis.X));
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Y, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Y, TestCuboid.GetHalfDimension(Axis.Y));
+		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Y, TestCuboid.GetHalfExtent(Axis.Y));
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Z, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Z, TestCuboid.GetHalfDimension(Axis.Z));
+		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Z, TestCuboid.GetHalfExtent(Axis.Z));
 		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).X, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).X, -TestCuboid.GetHalfDimension(Axis.X));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).X, -TestCuboid.GetHalfExtent(Axis.X));
 		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Y, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Y, -TestCuboid.GetHalfDimension(Axis.Y));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Y, -TestCuboid.GetHalfExtent(Axis.Y));
 		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Z, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Z, -TestCuboid.GetHalfDimension(Axis.Z));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Z, -TestCuboid.GetHalfExtent(Axis.Z));
 
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).X, 0f);
 		Assert.LessOrEqual(TestCuboid.ClosestPointTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).X, 0.5f);
@@ -666,12 +666,12 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new Line(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f))).Z);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).X);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new Line(new Location(0f, 0f, 100f), new Direction(0f, 0f, 1f))).Y);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Line(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X, -TestCuboid.GetHalfDimension(Axis.X) - TestTolerance);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Line(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X, TestCuboid.GetHalfDimension(Axis.X) + TestTolerance);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Line(new Location(0f, 100f, 0f), new Direction(0f, 1f, 0f))).Y, -TestCuboid.GetHalfDimension(Axis.Y) - TestTolerance);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Line(new Location(0f, 100f, 0f), new Direction(0f, 1f, 0f))).Y, TestCuboid.GetHalfDimension(Axis.Y) + TestTolerance);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z, -TestCuboid.GetHalfDimension(Axis.Z) - TestTolerance);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z, TestCuboid.GetHalfDimension(Axis.Z) + TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Line(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X, -TestCuboid.GetHalfExtent(Axis.X) - TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Line(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X, TestCuboid.GetHalfExtent(Axis.X) + TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Line(new Location(0f, 100f, 0f), new Direction(0f, 1f, 0f))).Y, -TestCuboid.GetHalfExtent(Axis.Y) - TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Line(new Location(0f, 100f, 0f), new Direction(0f, 1f, 0f))).Y, TestCuboid.GetHalfExtent(Axis.Y) + TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z, -TestCuboid.GetHalfExtent(Axis.Z) - TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z, TestCuboid.GetHalfExtent(Axis.Z) + TestTolerance);
 
 		// Ray
 		AssertToleranceEquals((48.9f, -52.1f, 0f), TestCuboid.ClosestPointOn(new Ray(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f))), TestTolerance);
@@ -685,25 +685,25 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new Ray(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f))).Z);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).X);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f))).Y);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X, -TestCuboid.GetHalfDimension(Axis.X) - TestTolerance);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X, TestCuboid.GetHalfDimension(Axis.X) + TestTolerance);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f))).Y, -TestCuboid.GetHalfDimension(Axis.Y) - TestTolerance);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f))).Y, TestCuboid.GetHalfDimension(Axis.Y) + TestTolerance);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z, -TestCuboid.GetHalfDimension(Axis.Z) - TestTolerance);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z, TestCuboid.GetHalfDimension(Axis.Z) + TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X, -TestCuboid.GetHalfExtent(Axis.X) - TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X, TestCuboid.GetHalfExtent(Axis.X) + TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f))).Y, -TestCuboid.GetHalfExtent(Axis.Y) - TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f))).Y, TestCuboid.GetHalfExtent(Axis.Y) + TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z, -TestCuboid.GetHalfExtent(Axis.Z) - TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z, TestCuboid.GetHalfExtent(Axis.Z) + TestTolerance);
 
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))).X, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))).X, TestCuboid.GetHalfDimension(Axis.X));
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))).X, TestCuboid.GetHalfExtent(Axis.X));
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))).Y, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))).Y, TestCuboid.GetHalfDimension(Axis.Y));
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))).Y, TestCuboid.GetHalfExtent(Axis.Y));
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))).Z, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))).Z, TestCuboid.GetHalfDimension(Axis.Z));
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))).Z, TestCuboid.GetHalfExtent(Axis.Z));
 		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))).X, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))).X, -TestCuboid.GetHalfDimension(Axis.X));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))).X, -TestCuboid.GetHalfExtent(Axis.X));
 		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))).Y, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))).Y, -TestCuboid.GetHalfDimension(Axis.Y));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))).Y, -TestCuboid.GetHalfExtent(Axis.Y));
 		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))).Z, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))).Z, -TestCuboid.GetHalfDimension(Axis.Z));
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))).Z, -TestCuboid.GetHalfExtent(Axis.Z));
 
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new Ray(new Location(-100f, 0f, 0f), new Direction(-1f, 0f, 0f))).Y);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new Ray(new Location(100f, 0f, 0f), new Direction(1f, 0f, 0f))).Z);
@@ -730,38 +730,38 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)).Z);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).X);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)).Y);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X, -TestCuboid.GetHalfDimension(Axis.X) - TestTolerance);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X, TestCuboid.GetHalfDimension(Axis.X) + TestTolerance);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y, -TestCuboid.GetHalfDimension(Axis.Y) - TestTolerance);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y, TestCuboid.GetHalfDimension(Axis.Y) + TestTolerance);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z, -TestCuboid.GetHalfDimension(Axis.Z) - TestTolerance);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z, TestCuboid.GetHalfDimension(Axis.Z) + TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X, -TestCuboid.GetHalfExtent(Axis.X) - TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X, TestCuboid.GetHalfExtent(Axis.X) + TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y, -TestCuboid.GetHalfExtent(Axis.Y) - TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y, TestCuboid.GetHalfExtent(Axis.Y) + TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z, -TestCuboid.GetHalfExtent(Axis.Z) - TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z, TestCuboid.GetHalfExtent(Axis.Z) + TestTolerance);
 
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).X, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).X, TestCuboid.GetHalfDimension(Axis.X) + TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).X, TestCuboid.GetHalfExtent(Axis.X) + TestTolerance);
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Y, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Y, TestCuboid.GetHalfDimension(Axis.Y) + TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Y, TestCuboid.GetHalfExtent(Axis.Y) + TestTolerance);
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Z, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Z, TestCuboid.GetHalfDimension(Axis.Z) + TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Z, TestCuboid.GetHalfExtent(Axis.Z) + TestTolerance);
 		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).X, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).X, -TestCuboid.GetHalfDimension(Axis.X) - TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).X, -TestCuboid.GetHalfExtent(Axis.X) - TestTolerance);
 		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Y, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Y, -TestCuboid.GetHalfDimension(Axis.Y) - TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Y, -TestCuboid.GetHalfExtent(Axis.Y) - TestTolerance);
 		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Z, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Z, -TestCuboid.GetHalfDimension(Axis.Z) - TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Z, -TestCuboid.GetHalfExtent(Axis.Z) - TestTolerance);
 
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).X, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).X, TestCuboid.GetHalfDimension(Axis.X) + TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).X, TestCuboid.GetHalfExtent(Axis.X) + TestTolerance);
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Y, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Y, TestCuboid.GetHalfDimension(Axis.Y) + TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Y, TestCuboid.GetHalfExtent(Axis.Y) + TestTolerance);
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Z, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Z, TestCuboid.GetHalfDimension(Axis.Z) + TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Z, TestCuboid.GetHalfExtent(Axis.Z) + TestTolerance);
 		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).X, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).X, -TestCuboid.GetHalfDimension(Axis.X) - TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).X, -TestCuboid.GetHalfExtent(Axis.X) - TestTolerance);
 		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Y, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Y, -TestCuboid.GetHalfDimension(Axis.Y) - TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Y, -TestCuboid.GetHalfExtent(Axis.Y) - TestTolerance);
 		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Z, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Z, -TestCuboid.GetHalfDimension(Axis.Z) - TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Z, -TestCuboid.GetHalfExtent(Axis.Z) - TestTolerance);
 
 		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).X, 0f);
 		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).X, 0.5f);
@@ -919,9 +919,9 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOnSurfaceTo(new Line(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f))).Z);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOnSurfaceTo(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).X);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOnSurfaceTo(new Line(new Location(0f, 0f, 100f), new Direction(0f, 0f, 1f))).Y);
-		Assert.AreEqual(TestCuboid.GetHalfDimension(Axis.X), MathF.Abs(TestCuboid.ClosestPointOnSurfaceTo(new Line(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X), TestTolerance);
-		Assert.AreEqual(TestCuboid.GetHalfDimension(Axis.Y), MathF.Abs(TestCuboid.ClosestPointOnSurfaceTo(new Line(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f))).Y), TestTolerance);
-		Assert.AreEqual(TestCuboid.GetHalfDimension(Axis.Z), MathF.Abs(TestCuboid.ClosestPointOnSurfaceTo(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.X), MathF.Abs(TestCuboid.ClosestPointOnSurfaceTo(new Line(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Y), MathF.Abs(TestCuboid.ClosestPointOnSurfaceTo(new Line(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f))).Y), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Z), MathF.Abs(TestCuboid.ClosestPointOnSurfaceTo(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z), TestTolerance);
 
 		// Ray
 		AssertToleranceEquals((3.6f, -6.8f, 0f), TestCuboid.ClosestPointOnSurfaceTo(new Ray(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f))), TestTolerance);
@@ -935,9 +935,9 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOnSurfaceTo(new Ray(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f))).Z);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOnSurfaceTo(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).X);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOnSurfaceTo(new Ray(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f))).Y);
-		Assert.AreEqual(TestCuboid.GetHalfDimension(Axis.X), MathF.Abs(TestCuboid.ClosestPointOnSurfaceTo(new Ray(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X), TestTolerance);
-		Assert.AreEqual(TestCuboid.GetHalfDimension(Axis.Y), MathF.Abs(TestCuboid.ClosestPointOnSurfaceTo(new Ray(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f))).Y), TestTolerance);
-		Assert.AreEqual(TestCuboid.GetHalfDimension(Axis.Z), MathF.Abs(TestCuboid.ClosestPointOnSurfaceTo(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.X), MathF.Abs(TestCuboid.ClosestPointOnSurfaceTo(new Ray(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Y), MathF.Abs(TestCuboid.ClosestPointOnSurfaceTo(new Ray(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f))).Y), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Z), MathF.Abs(TestCuboid.ClosestPointOnSurfaceTo(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z), TestTolerance);
 
 		AssertToleranceEquals((0.7f, 0.7f, 0.7f), TestCuboid.ClosestPointOnSurfaceTo(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))), TestTolerance);
 		AssertToleranceEquals((-0.7f, -0.7f, -0.7f), TestCuboid.ClosestPointOnSurfaceTo(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))), TestTolerance);
@@ -967,9 +967,9 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOnSurfaceTo(new BoundedLine(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)).Z);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOnSurfaceTo(new BoundedLine(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).X);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointOnSurfaceTo(new BoundedLine(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)).Y);
-		Assert.AreEqual(TestCuboid.GetHalfDimension(Axis.X), MathF.Abs(TestCuboid.ClosestPointOnSurfaceTo(new BoundedLine(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X), TestTolerance);
-		Assert.AreEqual(TestCuboid.GetHalfDimension(Axis.Y), MathF.Abs(TestCuboid.ClosestPointOnSurfaceTo(new BoundedLine(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y), TestTolerance);
-		Assert.AreEqual(TestCuboid.GetHalfDimension(Axis.Z), MathF.Abs(TestCuboid.ClosestPointOnSurfaceTo(new BoundedLine(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.X), MathF.Abs(TestCuboid.ClosestPointOnSurfaceTo(new BoundedLine(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Y), MathF.Abs(TestCuboid.ClosestPointOnSurfaceTo(new BoundedLine(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Z), MathF.Abs(TestCuboid.ClosestPointOnSurfaceTo(new BoundedLine(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z), TestTolerance);
 
 		AssertToleranceEquals((0.7f, 0.7f, 0.7f), TestCuboid.ClosestPointOnSurfaceTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 1000f)), TestTolerance);
 		AssertToleranceEquals((-0.7f, -0.7f, -0.7f), TestCuboid.ClosestPointOnSurfaceTo(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 1000f)), TestTolerance);
@@ -1009,9 +1009,9 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new Line(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f))).Z);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).X);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new Line(new Location(0f, 0f, 100f), new Direction(0f, 0f, 1f))).Y);
-		Assert.AreEqual(TestCuboid.GetHalfDimension(Axis.X), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new Line(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X), TestTolerance);
-		Assert.AreEqual(TestCuboid.GetHalfDimension(Axis.Y), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new Line(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f))).Y), TestTolerance);
-		Assert.AreEqual(TestCuboid.GetHalfDimension(Axis.Z), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.X), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new Line(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Y), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new Line(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f))).Y), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Z), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z), TestTolerance);
 
 		// Ray
 		AssertToleranceEquals((48.9f, -52.1f, 0f), TestCuboid.ClosestPointToSurfaceOn(new Ray(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f))), TestTolerance);
@@ -1025,9 +1025,9 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new Ray(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f))).Z);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).X);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new Ray(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f))).Y);
-		Assert.AreEqual(TestCuboid.GetHalfDimension(Axis.X), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new Ray(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X), TestTolerance);
-		Assert.AreEqual(TestCuboid.GetHalfDimension(Axis.Y), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new Ray(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f))).Y), TestTolerance);
-		Assert.AreEqual(TestCuboid.GetHalfDimension(Axis.Z), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.X), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new Ray(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))).X), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Y), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new Ray(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f))).Y), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Z), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))).Z), TestTolerance);
 
 		AssertToleranceEquals((0.7f, 0.7f, 0.7f), TestCuboid.ClosestPointToSurfaceOn(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))), TestTolerance);
 		AssertToleranceEquals((-0.7f, -0.7f, -0.7f), TestCuboid.ClosestPointToSurfaceOn(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))), TestTolerance);
@@ -1057,9 +1057,9 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new BoundedLine(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)).Z);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new BoundedLine(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).X);
 		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new BoundedLine(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)).Y);
-		Assert.AreEqual(TestCuboid.GetHalfDimension(Axis.X), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new BoundedLine(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X), TestTolerance);
-		Assert.AreEqual(TestCuboid.GetHalfDimension(Axis.Y), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new BoundedLine(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y), TestTolerance);
-		Assert.AreEqual(TestCuboid.GetHalfDimension(Axis.Z), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new BoundedLine(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.X), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new BoundedLine(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Y), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new BoundedLine(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Z), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new BoundedLine(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z), TestTolerance);
 
 		AssertToleranceEquals((0.7f, 0.7f, 0.7f), TestCuboid.ClosestPointToSurfaceOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 1000f)), TestTolerance);
 		AssertToleranceEquals((-0.7f, -0.7f, -0.7f), TestCuboid.ClosestPointToSurfaceOn(new BoundedLine(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 1000f)), TestTolerance);
@@ -1207,12 +1207,12 @@ partial class OriginCuboidTest {
 	public void ShouldCorrectlyDetermineClosestPointToPlane() {
 		foreach (var orientation in OrientationUtils.AllDiagonals) {
 			AssertToleranceEquals(
-				TestCuboid.GetCorner(orientation),
+				TestCuboid.GetCornerLocation(orientation),
 				TestCuboid.ClosestPointTo(Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f)),
 				TestTolerance
 			);
 			AssertToleranceEquals(
-				TestCuboid.GetCorner(orientation),
+				TestCuboid.GetCornerLocation(orientation),
 				TestCuboid.ClosestPointOnSurfaceTo(Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f)),
 				TestTolerance
 			);
@@ -1238,12 +1238,12 @@ partial class OriginCuboidTest {
 			foreach (var axis in OrientationUtils.AllAxes) {
 				if (axis == orientation.GetAxis()) {
 					Assert.AreEqual(
-						TestCuboid.GetHalfDimension(axis) * orientation.GetAxisSign(),
+						TestCuboid.GetHalfExtent(axis) * orientation.GetAxisSign(),
 						TestCuboid.ClosestPointTo(plane)[axis],
 						TestTolerance
 					);
 					Assert.AreEqual(
-						TestCuboid.GetHalfDimension(axis) * orientation.GetAxisSign(),
+						TestCuboid.GetHalfExtent(axis) * orientation.GetAxisSign(),
 						TestCuboid.ClosestPointOnSurfaceTo(plane)[axis],
 						TestTolerance
 					);
@@ -1251,19 +1251,19 @@ partial class OriginCuboidTest {
 				else {
 					Assert.GreaterOrEqual(
 						TestCuboid.ClosestPointTo(plane)[axis],
-						-TestCuboid.GetHalfDimension(axis) - TestTolerance
+						-TestCuboid.GetHalfExtent(axis) - TestTolerance
 					);
 					Assert.LessOrEqual(
 						TestCuboid.ClosestPointTo(plane)[axis],
-						TestCuboid.GetHalfDimension(axis) + TestTolerance
+						TestCuboid.GetHalfExtent(axis) + TestTolerance
 					);
 					Assert.GreaterOrEqual(
 						TestCuboid.ClosestPointOnSurfaceTo(plane)[axis],
-						-TestCuboid.GetHalfDimension(axis) - TestTolerance
+						-TestCuboid.GetHalfExtent(axis) - TestTolerance
 					);
 					Assert.LessOrEqual(
 						TestCuboid.ClosestPointOnSurfaceTo(plane)[axis],
-						TestCuboid.GetHalfDimension(axis) + TestTolerance
+						TestCuboid.GetHalfExtent(axis) + TestTolerance
 					);
 				}
 			}
@@ -1298,7 +1298,7 @@ partial class OriginCuboidTest {
 	[Test]
 	public void ShouldCorrectlyDetermineClosestPointOnPlane() {
 		foreach (var orientation in OrientationUtils.AllDiagonals) {
-			var corner = TestCuboid.GetCorner(orientation);
+			var corner = TestCuboid.GetCornerLocation(orientation);
 			var plane = Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f);
 			AssertToleranceEquals(
 				orientation.ToDirection() * plane.DistanceFrom(corner) + corner,
@@ -1347,19 +1347,19 @@ partial class OriginCuboidTest {
 				else {
 					Assert.GreaterOrEqual(
 						TestCuboid.ClosestPointOn(plane)[axis],
-						-TestCuboid.GetHalfDimension(axis) - TestTolerance
+						-TestCuboid.GetHalfExtent(axis) - TestTolerance
 					);
 					Assert.LessOrEqual(
 						TestCuboid.ClosestPointOn(plane)[axis],
-						TestCuboid.GetHalfDimension(axis) + TestTolerance
+						TestCuboid.GetHalfExtent(axis) + TestTolerance
 					);
 					Assert.GreaterOrEqual(
 						TestCuboid.ClosestPointToSurfaceOn(plane)[axis],
-						-TestCuboid.GetHalfDimension(axis) - TestTolerance
+						-TestCuboid.GetHalfExtent(axis) - TestTolerance
 					);
 					Assert.LessOrEqual(
 						TestCuboid.ClosestPointToSurfaceOn(plane)[axis],
-						TestCuboid.GetHalfDimension(axis) + TestTolerance
+						TestCuboid.GetHalfExtent(axis) + TestTolerance
 					);
 				}
 			}
@@ -1417,7 +1417,7 @@ partial class OriginCuboidTest {
 		}
 
 		foreach (var orientation in OrientationUtils.AllDiagonals) {
-			var corner = TestCuboid.GetCorner(orientation);
+			var corner = TestCuboid.GetCornerLocation(orientation);
 			var plane = Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f);
 			AssertDistance(-plane.DistanceFrom(corner), plane);
 			AssertDistance(plane.DistanceFrom(corner), plane.Flipped);
@@ -1432,7 +1432,7 @@ partial class OriginCuboidTest {
 
 		foreach (var orientation in OrientationUtils.AllCardinals) {
 			var plane = Plane.FromNormalAndDistanceFromOrigin(orientation.ToDirection(), 1000f);
-			var expectedSignedDistance = -(1000f - TestCuboid.GetHalfDimension(orientation.GetAxis()));
+			var expectedSignedDistance = -(1000f - TestCuboid.GetHalfExtent(orientation.GetAxis()));
 			AssertDistance(expectedSignedDistance, plane);
 			AssertDistance(-expectedSignedDistance, plane.Flipped);
 		}

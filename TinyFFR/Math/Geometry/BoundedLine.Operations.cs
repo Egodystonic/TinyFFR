@@ -48,7 +48,16 @@ public readonly partial struct BoundedLine :
 		return new BoundedLine(pivotPoint + pivotToStartVect * scalar, pivotPoint + pivotToEndVect * scalar);
 	}
 
-	// TODO WithLength and derivatives
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedLine WithLength(float newLength) => new(_startPoint, _vect.WithLength(newLength));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedLine ShortenedBy(float lengthDecrease) => WithLength(Length - lengthDecrease);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedLine LengthenedBy(float lengthIncrease) => WithLength(Length + lengthIncrease);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedLine WithMaxLength(float maxLength) => WithLength(MathF.Min(Length, maxLength));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedLine WithMinLength(float minLength) => WithLength(MathF.Max(Length, minLength));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static BoundedLine operator *(BoundedLine line, Rotation rot) => line.RotatedAroundMiddleBy(rot);
@@ -255,7 +264,7 @@ public readonly partial struct BoundedLine :
 		else return plane.ClosestPointTo(closestPointOnLine);
 	}
 
-	public BoundedLine? SplitBy(Plane plane) {
+	public BoundedLine? SlicedBy(Plane plane) {
 		if (TrySplit(plane, out _, out var result)) return result;
 		else return null;
 	}

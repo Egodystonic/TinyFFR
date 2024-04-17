@@ -1593,7 +1593,7 @@ partial class BoundedLineTest {
 		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
 
 		void AssertSplit(BoundedLine? expectedToPlane, BoundedLine? expectedFromPlane, BoundedLine line) {
-			AssertToleranceEquals(expectedFromPlane, line.SplitBy(plane), TestTolerance);
+			AssertToleranceEquals(expectedFromPlane, line.SlicedBy(plane), TestTolerance);
 			var trySplitResult = line.TrySplit(plane, out var actualToPlane, out var actualFromPlane);
 			if (expectedToPlane == null) Assert.AreEqual(false, trySplitResult);
 			else {

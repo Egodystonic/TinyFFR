@@ -16,11 +16,11 @@ partial class OriginSphereTest {
 	public void ShouldCorrectlyDetermineCircleRadiusAtDistanceFromCentre() {
 		// https://github.com/Egodystonic/EscapeLizards/blob/master/LosgapTests/Core/Math/Sphere.cs#L94
 
-		Assert.AreEqual(7.4f, TestSphere.CircleRadiusAtDistanceFromCenter(0f));
-		Assert.AreEqual(0f, TestSphere.CircleRadiusAtDistanceFromCenter(7.4f));
-		Assert.AreEqual(0f, TestSphere.CircleRadiusAtDistanceFromCenter(10f));
-		Assert.AreEqual(8.66025448f, new OriginSphere(10f).CircleRadiusAtDistanceFromCenter(5f), TestTolerance);
-		Assert.AreEqual(0.1410673f, new OriginSphere(1f).CircleRadiusAtDistanceFromCenter(0.99f), TestTolerance);
+		Assert.AreEqual(7.4f, TestSphere.GetCircleRadiusAtDistanceFromCenter(0f));
+		Assert.AreEqual(0f, TestSphere.GetCircleRadiusAtDistanceFromCenter(7.4f));
+		Assert.AreEqual(0f, TestSphere.GetCircleRadiusAtDistanceFromCenter(10f));
+		Assert.AreEqual(8.66025448f, new OriginSphere(10f).GetCircleRadiusAtDistanceFromCenter(5f), TestTolerance);
+		Assert.AreEqual(0.1410673f, new OriginSphere(1f).GetCircleRadiusAtDistanceFromCenter(0.99f), TestTolerance);
 	}
 
 	[Test]

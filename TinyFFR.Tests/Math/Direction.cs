@@ -279,7 +279,7 @@ partial class DirectionTest {
 
 	[Test]
 	public void ShouldCorrectlyImplementEqualityWithAngleTolerance() {
-		var perpVec = OneTwoNegThree.GetAnyPerpendicular();
+		var perpVec = OneTwoNegThree.AnyPerpendicular();
 
 		Assert.AreEqual(true, OneTwoNegThree.EqualsWithinAngle(OneTwoNegThree, 0f));
 		Assert.AreEqual(true, OneTwoNegThree.EqualsWithinAngle(30f % perpVec * OneTwoNegThree, 30f + TestTolerance));

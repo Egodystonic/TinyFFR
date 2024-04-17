@@ -65,7 +65,7 @@ partial class DirectionTest {
 			for (var y = -5f; y <= 5f; y += 1f) {
 				for (var z = -5f; z <= 5f; z += 1f) {
 					var dir = new Direction(x, y, z);
-					var perp = dir.GetAnyPerpendicular();
+					var perp = dir.AnyPerpendicular();
 
 					if (dir == Direction.None) Assert.AreEqual(Direction.None, perp);
 					else AssertToleranceEquals(90f, dir ^ perp, TestTolerance);
@@ -74,7 +74,7 @@ partial class DirectionTest {
 		}
 
 		foreach (var cardinal in Direction.AllCardinals) {
-			var perp = cardinal.GetAnyPerpendicular();
+			var perp = cardinal.AnyPerpendicular();
 			AssertToleranceEquals(90f, cardinal ^ perp, TestTolerance);
 			Assert.IsTrue(Direction.AllCardinals.Contains(perp));
 		}
@@ -118,7 +118,7 @@ partial class DirectionTest {
 	[Test]
 	public void ShouldCorrectlyOrthogonalizeAgainstAnotherDir() {
 		foreach (var cardinal in Direction.AllCardinals) {
-			var perp = cardinal.GetAnyPerpendicular();
+			var perp = cardinal.AnyPerpendicular();
 			var thirdPerp = Direction.FromPerpendicular(cardinal, perp);
 			Assert.AreEqual(cardinal, (20f % perp * cardinal).OrthogonalizedAgainst(thirdPerp));
 			Assert.AreEqual(cardinal, (-20f % perp * cardinal).OrthogonalizedAgainst(thirdPerp));

@@ -56,5 +56,5 @@ public static class Orientation2DExtensions {
 	public static VerticalOrientation2D GetVerticalComponent(this Orientation2D @this) => (VerticalOrientation2D) ((int) @this & VerticalBits);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle? GetPolarAngle(this Orientation2D @this) => Angle.From2DPolarAngle(@this);
+	public static Angle? ToPolarAngle(this Orientation2D @this) => Angle.From2DPolarAngle(@this);
 }

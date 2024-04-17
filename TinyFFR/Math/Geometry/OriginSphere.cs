@@ -25,7 +25,7 @@ public readonly partial struct OriginSphere : IFullyInteractableConvexShape<Orig
 	public static OriginSphere FromVolume(float volume) => new(MathF.Cbrt(volume / (2f / 3f * MathF.Tau)));
 	public static OriginSphere FromSurfaceArea(float surfaceArea) => new(MathF.Sqrt(surfaceArea / (2f * MathF.Tau)));
 	public static OriginSphere FromCircumference(float circumference) => new(circumference / MathF.Tau);
-	public static OriginSphere FromDiameter(float diameter) => new(diameter / 2f);
+	public static OriginSphere FromDiameter(float diameter) => new(diameter * 0.5f);
 	public static OriginSphere FromRadiusSquared(float radiusSquared) => new(MathF.Sqrt(radiusSquared));
 
 	public override string ToString() => ToString(null, null);

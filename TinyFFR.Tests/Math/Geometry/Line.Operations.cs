@@ -65,7 +65,7 @@ partial class LineTest {
 		);
 		AssertToleranceEquals(
 			new Location(2f, 5f, 2f),
-			new Line(new Location(0f, 3f, 0f), new Direction(1f, 1f, 1f)).ClosestPointTo(new Direction(1f, 1f, 1f).GetAnyPerpendicular() * 10f + new Location(2f, 5f, 2f)),
+			new Line(new Location(0f, 3f, 0f), new Direction(1f, 1f, 1f)).ClosestPointTo(new Direction(1f, 1f, 1f).AnyPerpendicular() * 10f + new Location(2f, 5f, 2f)),
 			TestTolerance
 		);
 	}
@@ -1024,7 +1024,7 @@ partial class LineTest {
 		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
 
 		void AssertSplit(Ray? expectedWithLineDir, Ray? expectedOpposingLineDir, Line line) {
-			Assert.AreEqual(expectedOpposingLineDir, line.SplitBy(plane));
+			Assert.AreEqual(expectedOpposingLineDir, line.SlicedBy(plane));
 			var trySplitResult = line.TrySplit(plane, out var actualWithLineDir, out var actualOpposingLineDir);
 			if (expectedWithLineDir == null) Assert.AreEqual(false, trySplitResult);
 			else {

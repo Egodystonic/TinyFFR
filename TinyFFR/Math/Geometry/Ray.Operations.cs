@@ -204,7 +204,7 @@ public readonly partial struct Ray :
 		return new Ray(StartPoint, Direction.OrthogonalizedAgainst(plane));
 	}
 
-	public Ray? SplitBy(Plane plane) {
+	public Ray? SlicedBy(Plane plane) {
 		if (TrySplit(plane, out _, out var result)) return result;
 		else return null;
 	}

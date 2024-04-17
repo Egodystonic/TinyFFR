@@ -50,25 +50,8 @@ public readonly partial struct OriginCuboid : IFullyInteractableConvexShape<Orig
 		init => _halfDepth = value * 0.5f;
 	}
 
-	public float Volume {
-		get => HalfWidth * HalfHeight * HalfDepth * 8f;
-		init {
-			var diffCubeRoot = MathF.Cbrt(value / Volume);
-			_halfWidth *= diffCubeRoot;
-			_halfHeight *= diffCubeRoot;
-			_halfDepth *= diffCubeRoot;
-		}
-	}
-
-	public float SurfaceArea {
-		get => (Width * Height + Height * Depth + Depth * Width) * 2f;
-		init {
-			var diffSquareRoot = MathF.Sqrt(value / SurfaceArea);
-			_halfWidth *= diffSquareRoot;
-			_halfHeight *= diffSquareRoot;
-			_halfDepth *= diffSquareRoot;
-		}
-	}
+	public float Volume => HalfWidth * HalfHeight * HalfDepth * 8f;
+	public float SurfaceArea => (Width * Height + Height * Depth + Depth * Width) * 2f;
 
 	public OriginCuboid(float width, float height, float depth) {
 		_halfWidth = width * 0.5f;
@@ -84,13 +67,13 @@ public readonly partial struct OriginCuboid : IFullyInteractableConvexShape<Orig
 		};
 	}
 
-	public float GetDimension(Axis axis) => axis switch { // TODO rename this and below to get extent? Probably because it's actually an extent (e.g. it's just a measurement, not any actual point)
+	public float GetExtent(Axis axis) => axis switch { // TODO rename this and below to get extent? Probably because it's actually an extent (e.g. it's just a measurement, not any actual point)
 		Axis.X => Width,
 		Axis.Y => Height,
 		Axis.Z => Depth,
 		_ => throw new ArgumentException($"{nameof(Axis)} can not be {nameof(Axis.None)}.", nameof(axis))
 	};
-	public float GetHalfDimension(Axis axis) => axis switch {
+	public float GetHalfExtent(Axis axis) => axis switch {
 		Axis.X => HalfWidth,
 		Axis.Y => HalfHeight,
 		Axis.Z => HalfDepth,

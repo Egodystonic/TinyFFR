@@ -14,10 +14,18 @@ public readonly partial struct OriginCuboid
 	public static OriginCuboid operator *(float scalar, OriginCuboid cuboid) => cuboid.ScaledBy(scalar);
 
 	public OriginCuboid ScaledBy(float scalar) => FromHalfDimensions(_halfWidth * scalar, _halfHeight * scalar, _halfDepth * scalar);
+	public OriginCuboid WithVolume(float newVolume) {
+		var diffCubeRoot = MathF.Cbrt(newVolume / Volume);
+		return FromHalfDimensions(_halfWidth * diffCubeRoot, _halfHeight * diffCubeRoot, _halfDepth * diffCubeRoot);
+	}
+	public OriginCuboid WithSurfaceArea(float newSurfaceArea) {
+		var diffSquareRoot = MathF.Sqrt(newSurfaceArea / SurfaceArea);
+		return FromHalfDimensions(_halfWidth * diffSquareRoot, _halfHeight * diffSquareRoot, _halfDepth * diffSquareRoot);
+	}
 
 	// TODO these GetX methods need a naming pass and this file vs Cuboid.cs? etc
 
-	public Location GetCorner(DiagonalOrientation3D corner) { // TODO add properties that enumerate corners, surfaces, etc and use them instead of foreach loops internally
+	public Location GetCornerLocation(DiagonalOrientation3D corner) { // TODO add properties that enumerate corners, surfaces, etc and use them instead of foreach loops internally
 		if (corner == DiagonalOrientation3D.None) throw new ArgumentOutOfRangeException(nameof(corner), corner, $"Can not be '{nameof(DiagonalOrientation3D.None)}'.");
 
 		return new(
@@ -30,7 +38,7 @@ public readonly partial struct OriginCuboid
 	public Plane GetSideSurfacePlane(CardinalOrientation3D side) { // TODO xmldoc that the planes' normals point away from the cuboid centre, e.g. side.ToDirection()
 		if (side == CardinalOrientation3D.None) throw new ArgumentOutOfRangeException(nameof(side), side, $"Can not be '{nameof(CardinalOrientation3D.None)}'.");
 
-		return Plane.FromNormalAndDistanceFromOrigin(side.ToDirection(), GetHalfDimension(side.GetAxis()));
+		return Plane.FromNormalAndDistanceFromOrigin(side.ToDirection(), GetHalfExtent(side.GetAxis()));
 	}
 
 	public BoundedLine GetEdge(IntercardinalOrientation3D edge) {
@@ -38,8 +46,8 @@ public readonly partial struct OriginCuboid
 
 		var unspecifiedAxis = edge.GetUnspecifiedAxis();
 		return new(
-			GetCorner((DiagonalOrientation3D) edge.AsGeneralOrientation().WithAxisSign(unspecifiedAxis, -1)),
-			GetCorner((DiagonalOrientation3D) edge.AsGeneralOrientation().WithAxisSign(unspecifiedAxis, 1))
+			GetCornerLocation((DiagonalOrientation3D) edge.AsGeneralOrientation().WithAxisSign(unspecifiedAxis, -1)),
+			GetCornerLocation((DiagonalOrientation3D) edge.AsGeneralOrientation().WithAxisSign(unspecifiedAxis, 1))
 		);
 	}
 
@@ -185,11 +193,11 @@ public readonly partial struct OriginCuboid
 
 	// Returns an Infinity when line is parallel to plane -- but still with correct sign depending on which side of the face the start point is
 	float SignedLineDistanceToPositiveSurfacePlane(Location lineStartPoint, Direction lineDirection, Axis axis) {
-		return (GetHalfDimension(axis) - lineStartPoint[axis]) / lineDirection[axis];
+		return (GetHalfExtent(axis) - lineStartPoint[axis]) / lineDirection[axis];
 	}
 	// Returns an Infinity when line is parallel to plane -- but still with correct sign depending on which side of the face the start point is
 	float SignedLineDistanceToNegativeSurfacePlane(Location lineStartPoint, Direction lineDirection, Axis axis) {
-		return (-GetHalfDimension(axis) - lineStartPoint[axis]) / lineDirection[axis];
+		return (-GetHalfExtent(axis) - lineStartPoint[axis]) / lineDirection[axis];
 	}
 
 	bool QuickPlaneCuboidIntersectionTest(Plane plane) { // https://gdbooks.gitbooks.io/3dcollisions/content/Chapter2/static_aabb_plane.html
@@ -223,7 +231,7 @@ public readonly partial struct OriginCuboid
 
 		var result = Single.PositiveInfinity;
 		foreach (var diagonal in OrientationUtils.AllDiagonals) {
-			var corner = GetCorner(diagonal);
+			var corner = GetCornerLocation(diagonal);
 			var distance = plane.SignedDistanceFrom(corner);
 			result = MathF.MinMagnitude(distance, result);
 		}
@@ -234,7 +242,7 @@ public readonly partial struct OriginCuboid
 
 		var result = Single.PositiveInfinity;
 		foreach (var diagonal in OrientationUtils.AllDiagonals) {
-			var corner = GetCorner(diagonal);
+			var corner = GetCornerLocation(diagonal);
 			var distance = plane.DistanceFrom(corner);
 			result = MathF.Min(distance, result);
 		}
@@ -249,7 +257,7 @@ public readonly partial struct OriginCuboid
 		var resultDistance = Single.PositiveInfinity;
 		var result = Location.Origin;
 		foreach (var diagonal in OrientationUtils.AllDiagonals) {
-			var corner = GetCorner(diagonal);
+			var corner = GetCornerLocation(diagonal);
 			var distance = plane.DistanceFrom(corner);
 			if (distance < resultDistance) {
 				resultDistance = distance;

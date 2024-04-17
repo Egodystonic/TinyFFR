@@ -26,8 +26,8 @@ public readonly partial struct XYPair<T> :
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair<T> operator -(XYPair<T> operand) => operand.Reversed;
-	public XYPair<T> Reversed {
+	public static XYPair<T> operator -(XYPair<T> operand) => operand.Negated;
+	public XYPair<T> Negated {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(-X, -Y);
 	}

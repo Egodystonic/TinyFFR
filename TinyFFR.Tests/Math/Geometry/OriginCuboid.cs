@@ -53,11 +53,21 @@ partial class OriginCuboidTest {
 		AssertCuboid(startingValue with { HalfWidth = 10f }, 20f, startingValue.Height, startingValue.Depth);
 		AssertCuboid(startingValue with { HalfHeight = 10f }, startingValue.Width, 20f, startingValue.Depth);
 		AssertCuboid(startingValue with { HalfDepth = 10f }, startingValue.Width, startingValue.Height, 20f);
+	}
 
-		Assert.AreEqual(400f, (startingValue with { SurfaceArea = 400f }).SurfaceArea, TestTolerance);
-		Assert.AreEqual(100f, (startingValue with { SurfaceArea = 100f }).SurfaceArea, TestTolerance);
-		Assert.AreEqual(300f, (startingValue with { Volume = 300f }).Volume, TestTolerance);
-		Assert.AreEqual(100f, (startingValue with { Volume = 100f }).Volume, TestTolerance);
+	[Test]
+	public void ShouldCorrectlyModifyCuboidUsingWithMethods() {
+		Assert.AreEqual(400f, TestCuboid.WithSurfaceArea(400f).SurfaceArea, TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.WithSurfaceArea(100f).SurfaceArea, TestTolerance);
+		Assert.AreEqual(300f, TestCuboid.WithVolume(300f).Volume, TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.WithVolume(100f).Volume, TestTolerance);
+
+		AssertToleranceEquals(TestCuboid, TestCuboid.WithSurfaceArea(TestCuboid.SurfaceArea), TestTolerance);
+		AssertToleranceEquals(TestCuboid, TestCuboid.WithVolume(TestCuboid.Volume), TestTolerance);
+		AssertToleranceEquals(TestCuboid, TestCuboid.WithSurfaceArea(TestCuboid.SurfaceArea * 3f).WithSurfaceArea(TestCuboid.SurfaceArea), TestTolerance);
+		AssertToleranceEquals(TestCuboid, TestCuboid.WithVolume(TestCuboid.Volume * 3f).WithVolume(TestCuboid.Volume), TestTolerance);
+		AssertToleranceEquals(TestCuboid, TestCuboid.WithSurfaceArea(TestCuboid.SurfaceArea * 0.3f).WithSurfaceArea(TestCuboid.SurfaceArea), TestTolerance);
+		AssertToleranceEquals(TestCuboid, TestCuboid.WithVolume(TestCuboid.Volume * 0.3f).WithVolume(TestCuboid.Volume), TestTolerance);
 	}
 	
 	// TODO this test could be fleshed out a lot more

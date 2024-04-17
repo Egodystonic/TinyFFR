@@ -84,7 +84,7 @@ partial struct Direction :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(Direction other) => Angle.FromAngleBetweenDirections(this, other);
 
-	public Direction GetAnyPerpendicular() {
+	public Direction AnyPerpendicular() {
 		return FromVector3(Vector3.Cross(
 			ToVector3(),
 			MathF.Abs(Z) > MathF.Abs(X) ? new Vector3(1f, 0f, 0f) : new Vector3(0f, 0f, 1f)

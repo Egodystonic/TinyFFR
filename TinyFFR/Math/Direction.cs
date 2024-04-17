@@ -98,7 +98,7 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 		if (MathF.Abs(crossLength - 1f) <= 0.001f) return FromPreNormalizedComponents(cross);
 		else if (crossLength >= 0.001f) return FromVector3(cross);
 		else if (dirA.Equals(None, 0.001f) || dirB.Equals(None, 0.001f)) throw new ArgumentException($"Neither {nameof(Direction)} can be {nameof(None)}.");
-		else return dirA.GetAnyPerpendicular();
+		else return dirA.AnyPerpendicular();
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

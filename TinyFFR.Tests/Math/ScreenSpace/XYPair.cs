@@ -44,7 +44,7 @@ partial class XYPairTest {
 	public void ShouldCorrectlyConvertFromAngleAndLength() {
 		for (var f = -720f; f <= 720f; f += 36f) {
 			for (var l = 0f; l <= 3f; ++l) {
-				var result = XYPair<float>.FromAngleAndLength(f, l);
+				var result = XYPair<float>.FromPolarAngleAndLength(f, l);
 				if (l == 0f) {
 					Assert.AreEqual(null, result.PolarAngle);
 					Assert.AreEqual(0, result.ToVector2().Length());
@@ -64,7 +64,7 @@ partial class XYPairTest {
 					Assert.AreEqual(0, result.ToVector2().Length());
 				}
 				else {
-					Assert.IsTrue(orientation.GetPolarAngle()!.Value.Equals(result.PolarAngle!.Value, normalizeAngles: true, tolerance: TestTolerance));
+					Assert.IsTrue(orientation.ToPolarAngle()!.Value.Equals(result.PolarAngle!.Value, normalizeAngles: true, tolerance: TestTolerance));
 					Assert.AreEqual(l, result.ToVector2().Length(), TestTolerance);
 				}
 			}

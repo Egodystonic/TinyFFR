@@ -98,7 +98,7 @@ public interface ILine<TSelf> : ILine, IGeometryPrimitive<TSelf> where TSelf : I
 }
 public interface ILine<TSelf, TSplit> : ILine<TSelf> where TSelf : ILine<TSelf> where TSplit : struct, ILine<TSplit> {
 	TSplit? ReflectedBy(Plane plane);
-	TSplit? SplitBy(Plane plane);
+	TSplit? SlicedBy(Plane plane);
 }
 
 // ==================== Below this line: Various "inverted"/reversed/mirrored line methods defined as either extensions or added directly in partial definitions ====================
@@ -132,7 +132,7 @@ partial struct Plane {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public TSplit? Reflect<TLine, TSplit>(TLine line) where TLine : ILine<TLine, TSplit> where TSplit : struct, ILine<TSplit> => line.ReflectedBy(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public TSplit? Split<TLine, TSplit>(TLine line) where TLine : ILine<TLine, TSplit> where TSplit : struct, ILine<TSplit> => line.SplitBy(this);
+	public TSplit? Slice<TLine, TSplit>(TLine line) where TLine : ILine<TLine, TSplit> where TSplit : struct, ILine<TSplit> => line.SlicedBy(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public TLine ProjectionOf<TLine>(TLine line) where TLine : ILine<TLine> => line.ProjectedOnTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

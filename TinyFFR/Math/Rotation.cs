@@ -55,7 +55,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 
 		// If we're rotating exactly 180 degrees there are infinitely many arcs of "shortest" path, so the math breaks down.
 		// Therefore we just pick any perpendicular vector and rotate around that.
-		var perpVec = startDirection.GetAnyPerpendicular();
+		var perpVec = startDirection.AnyPerpendicular();
 		return new(Angle.HalfCircle, perpVec);
 	}
 

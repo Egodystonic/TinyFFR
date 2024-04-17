@@ -25,12 +25,12 @@ public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>, T> where T 
 	public static XYPair<T> FromVector2(Vector2 v) => new(T.CreateSaturating(v.X), T.CreateSaturating(v.Y));
 
 	public static XYPair<T> FromOrientationAndLength(Orientation2D orientation, T length) {
-		var angle = orientation.GetPolarAngle();
+		var angle = orientation.ToPolarAngle();
 		if (angle == null) return Zero;
-		else return FromAngleAndLength(angle.Value, length);
+		else return FromPolarAngleAndLength(angle.Value, length);
 	}
 
-	public static XYPair<T> FromAngleAndLength(Angle angle, T length) => new XYPair<T>(T.CreateSaturating(MathF.Cos(angle.AsRadians)), T.CreateSaturating(MathF.Sin(angle.AsRadians))) * length;
+	public static XYPair<T> FromPolarAngleAndLength(Angle angle, T length) => new XYPair<T>(T.CreateSaturating(MathF.Cos(angle.AsRadians)), T.CreateSaturating(MathF.Sin(angle.AsRadians))) * length;
 
 	public void Deconstruct(out T x, out T y) {
 		x = X;
