@@ -22,12 +22,20 @@ public readonly partial struct OriginSphere : IFullyInteractableConvexShape<Orig
 	public float Circumference => MathF.Tau * Radius;
 	public float Diameter => 2f * Radius;
 
+	#region Factories and Conversions
 	public static OriginSphere FromVolume(float volume) => new(MathF.Cbrt(volume / (2f / 3f * MathF.Tau)));
 	public static OriginSphere FromSurfaceArea(float surfaceArea) => new(MathF.Sqrt(surfaceArea / (2f * MathF.Tau)));
 	public static OriginSphere FromCircumference(float circumference) => new(circumference / MathF.Tau);
 	public static OriginSphere FromDiameter(float diameter) => new(diameter * 0.5f);
 	public static OriginSphere FromRadiusSquared(float radiusSquared) => new(MathF.Sqrt(radiusSquared));
+	#endregion
 
+	#region Span Conversions
+	public static ReadOnlySpan<float> ConvertToSpan(in OriginSphere src) => new(in src._radius);
+	public static OriginSphere ConvertFromSpan(ReadOnlySpan<float> src) => new(src[0]);
+	#endregion
+
+	#region String Conversions
 	public override string ToString() => ToString(null, null);
 	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(OriginSphere), (nameof(Radius), Radius));
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => GeometryUtils.StandardizedTryFormat(destination, out charsWritten, format, provider, nameof(OriginSphere), (nameof(Radius), Radius));
@@ -45,14 +53,7 @@ public readonly partial struct OriginSphere : IFullyInteractableConvexShape<Orig
 		result = new(radius);
 		return true;
 	}
-
-	public static ReadOnlySpan<float> ConvertToSpan(in OriginSphere src) => new(in src._radius);
-	public static OriginSphere ConvertFromSpan(ReadOnlySpan<float> src) => new(src[0]);
-
-	public static OriginSphere Interpolate(OriginSphere start, OriginSphere end, float distance) => new(Single.Lerp(start.Radius, end.Radius, distance));
-
-	public static OriginSphere CreateNewRandom() => new(RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax));
-	public static OriginSphere CreateNewRandom(OriginSphere minInclusive, OriginSphere maxExclusive) => new(RandomUtils.NextSingle(minInclusive.Radius, maxExclusive.Radius));
+	#endregion
 
 	#region Equality
 	public bool Equals(OriginSphere other) => _radius.Equals(other._radius);

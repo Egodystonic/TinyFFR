@@ -39,12 +39,15 @@ public readonly partial struct Line : ILine<Line, Ray>, IDescriptiveStringProvid
 		_pointOnLine = firstPointOnLine;
 		_direction = (secondPointOnLine - firstPointOnLine).Direction;
 	}
-	
+
+	#region Span Conversions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ReadOnlySpan<float> ConvertToSpan(in Line src) => MemoryMarshal.Cast<Line, float>(new ReadOnlySpan<Line>(in src));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Line ConvertFromSpan(ReadOnlySpan<float> src) => new(Location.ConvertFromSpan(src), Direction.ConvertFromSpan(src[4..]));
-	
+	#endregion
+
+	#region String Conversions
 	public override string ToString() => ToString(null, null);
 	public string ToStringDescriptive() => $"{nameof(Line)}{GeometryUtils.ParameterStartToken}{nameof(PointOnLine)}{GeometryUtils.ParameterKeyValueSeparatorToken}{PointOnLine}{GeometryUtils.ParameterSeparatorToken}{nameof(ClosestPointToOrigin)}{GeometryUtils.ParameterKeyValueSeparatorToken}{ClosestPointToOrigin()}{GeometryUtils.ParameterSeparatorToken}{nameof(Direction)}{GeometryUtils.ParameterKeyValueSeparatorToken}{_direction.ToStringDescriptive()}{GeometryUtils.ParameterEndToken}";
 	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(Line), (nameof(PointOnLine), PointOnLine), (nameof(Direction), _direction));
@@ -63,6 +66,7 @@ public readonly partial struct Line : ILine<Line, Ray>, IDescriptiveStringProvid
 		result = new(closestPointToOrigin, direction);
 		return true;
 	}
+	#endregion
 
 	#region Equality
 	public bool Equals(Line other) => DistanceFrom(other) == 0f && (Direction.Equals(other.Direction) || Direction.Equals(-other.Direction));

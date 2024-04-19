@@ -39,6 +39,7 @@ public readonly partial struct Location : IVect<Location> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal Location(Vector4 v) { AsVector4 = v; }
 
+	#region Factories and Conversions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Location FromVector3(Vector3 v) => new(new Vector4(v, WValue));
 
@@ -53,11 +54,20 @@ public readonly partial struct Location : IVect<Location> {
 	public static implicit operator Location((float X, float Y, float Z) tuple) => new(tuple.X, tuple.Y, tuple.Z);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static explicit operator Location(Direction directionOperand) => new(directionOperand.AsVector4 with { W = WValue });
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static explicit operator Location(Vect vectOperand) => new(vectOperand.AsVector4 with { W = WValue });
+	#endregion
+
+	#region Span Conversion
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ReadOnlySpan<float> ConvertToSpan(in Location src) => MemoryMarshal.Cast<Location, float>(new ReadOnlySpan<Location>(in src))[..3];
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Location ConvertFromSpan(ReadOnlySpan<float> src) => FromVector3(new Vector3(src));
+	#endregion
 
+	#region String Conversion
 	public override string ToString() => this.ToString(null, null);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -87,7 +97,9 @@ public readonly partial struct Location : IVect<Location> {
 			return true;
 		}
 	}
+	#endregion
 
+	#region Equality
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Equals(Location other) => AsVector4.Equals(other.AsVector4);
 	public bool Equals(Location other, float tolerance) {
@@ -106,9 +118,5 @@ public readonly partial struct Location : IVect<Location> {
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool EqualsWithinDistance(Location other, float distance) => (this - other).LengthSquared <= distance * distance;
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static explicit operator Location(Direction directionOperand) => new(directionOperand.AsVector4 with { W = WValue });
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static explicit operator Location(Vect vectOperand) => new(vectOperand.AsVector4 with { W = WValue });
+	#endregion
 }

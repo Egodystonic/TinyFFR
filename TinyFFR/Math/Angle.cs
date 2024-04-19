@@ -45,6 +45,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 	// Chose degrees rather than radians to keep consistency with implicit conversion. See notes above implicit operator for more reasoning.
 	public Angle(float degrees) => AsDegrees = degrees;
 
+	#region Factories and Conversions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle FromRadians(float radians) => new() { AsRadians = radians };
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -165,13 +166,17 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 	 */
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator Angle(float operand) => FromDegrees(operand);
+	#endregion
 
+	#region Span Conversion
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ReadOnlySpan<float> ConvertToSpan(in Angle src) => new(in src._asRadians);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle ConvertFromSpan(ReadOnlySpan<float> src) => FromRadians(src[0]);
+	#endregion
 
+	#region String Conversion
 	public override string ToString() => ToString(null, null);
 
 	public string ToString(string? format, IFormatProvider? formatProvider) => $"{AsDegrees.ToString(format, formatProvider)}{ToStringSuffix}";
@@ -218,7 +223,9 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 		result = FromDegrees(degrees);
 		return true;
 	}
+	#endregion
 
+	#region Equality
 	public bool Equals(Angle other, float tolerance) {
 		// Using AsDegrees rather than AsRadians because the implicit conversion from float to Angle
 		// assumes degrees and therefore I feel like the tolerance value here should also be degrees
@@ -246,4 +253,5 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 	public static bool operator ==(Angle left, Angle right) => left.Equals(right);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator !=(Angle left, Angle right) => !left.Equals(right);
+	#endregion
 }

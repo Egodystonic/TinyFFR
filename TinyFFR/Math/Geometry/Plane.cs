@@ -25,6 +25,7 @@ public readonly partial struct Plane : IGeometryPrimitive<Plane>, IPrecomputatio
 		_smallestDistanceFromOriginAlongNormal = coefficientOfNormal;
 	}
 
+	#region Factories and Conversions
 	// TODO in xmldoc note that this is the minimum distance from the origin to the plane along the normal, e.g. positive means the normal points away from the origin
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Plane FromNormalAndDistanceFromOrigin(Direction normal, float signedDistanceFromOrigin) => new(normal.ToVector3(), signedDistanceFromOrigin);
@@ -59,10 +60,14 @@ public readonly partial struct Plane : IGeometryPrimitive<Plane>, IPrecomputatio
 										$"which is not sufficient to specify a single unique {nameof(Plane)} (i.e. the locations do not form a triangle).");
 		}
 	}
+	#endregion
 
+	#region Span Conversions
 	public static ReadOnlySpan<float> ConvertToSpan(in Plane src) => MemoryMarshal.Cast<Plane, float>(new ReadOnlySpan<Plane>(in src));
 	public static Plane ConvertFromSpan(ReadOnlySpan<float> src) => MemoryMarshal.Cast<float, Plane>(src)[0];
+	#endregion
 
+	#region String Conversions
 	public string ToStringDescriptive() => $"{nameof(Plane)}{GeometryUtils.ParameterStartToken}" +
 										   $"{nameof(Normal)}{GeometryUtils.ParameterKeyValueSeparatorToken}{Normal.ToStringDescriptive()}{GeometryUtils.ParameterSeparatorToken}" +
 										   $"{nameof(ClosestPointToOrigin)}{GeometryUtils.ParameterKeyValueSeparatorToken}{ClosestPointToOrigin}" +
@@ -87,22 +92,7 @@ public readonly partial struct Plane : IGeometryPrimitive<Plane>, IPrecomputatio
 		result = new(normal, pointClosestToOrigin);
 		return true;
 	}
-
-	public static Plane Interpolate(Plane start, Plane end, float distance) {
-		return new(
-			Direction.Interpolate(start.Normal, end.Normal, distance),
-			Location.Interpolate(start.ClosestPointToOrigin, end.ClosestPointToOrigin, distance)
-		);
-	}
-	public static Rotation CreateInterpolationPrecomputation(Plane start, Plane end) => Direction.CreateInterpolationPrecomputation(start.Normal, end.Normal);
-	public static Plane InterpolateUsingPrecomputation(Plane start, Plane end, Rotation precomputation, float distance) {
-		return new(
-			Direction.InterpolateUsingPrecomputation(start.Normal, end.Normal, precomputation, distance),
-			Location.Interpolate(start.ClosestPointToOrigin, end.ClosestPointToOrigin, distance)
-		);
-	}
-	public static Plane CreateNewRandom() => new(Direction.CreateNewRandom(), Location.CreateNewRandom());
-	public static Plane CreateNewRandom(Plane minInclusive, Plane maxExclusive) => new(Direction.CreateNewRandom(minInclusive.Normal, maxExclusive.Normal), Location.CreateNewRandom(minInclusive.ClosestPointToOrigin, maxExclusive.ClosestPointToOrigin));
+	#endregion
 
 	#region Equality
 	public bool Equals(Plane other) => _normal.Equals(other._normal) && _smallestDistanceFromOriginAlongNormal.Equals(other._smallestDistanceFromOriginAlongNormal);

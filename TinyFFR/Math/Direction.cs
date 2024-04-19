@@ -83,6 +83,7 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal Direction(Vector4 v) { AsVector4 = v; }
 
+	#region Factories and Conversions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromPreNormalizedComponents(Vector3 v) => new(new Vector4(v, WValue));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -118,11 +119,20 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	public static implicit operator Direction((float X, float Y, float Z) tuple) => new(tuple.X, tuple.Y, tuple.Z);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static explicit operator Direction(Location locationOperand) => new(locationOperand.AsVector4 with { W = WValue });
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static explicit operator Direction(Vect vectOperand) => new(vectOperand.AsVector4 with { W = WValue });
+	#endregion
+
+	#region Span Conversion
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ReadOnlySpan<float> ConvertToSpan(in Direction src) => MemoryMarshal.Cast<Direction, float>(new ReadOnlySpan<Direction>(in src))[..3];
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction ConvertFromSpan(ReadOnlySpan<float> src) => FromPreNormalizedComponents(new Vector3(src));
+	#endregion
 
+	#region String Conversion
 	public override string ToString() => this.ToString(null, null);
 
 	public string ToStringDescriptive() {
@@ -163,7 +173,9 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 			return true;
 		}
 	}
+	#endregion
 
+	#region Equality
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Equals(Direction other) => AsVector4.Equals(other.AsVector4);
 	public bool Equals(Direction other, float tolerance) {
@@ -182,9 +194,5 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool EqualsWithinAngle(Direction other, Angle angle) => (this ^ other) <= angle; // TODO make it clear that this will throw exception if this or other are None
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static explicit operator Direction(Location locationOperand) => new(locationOperand.AsVector4 with { W = WValue });
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static explicit operator Direction(Vect vectOperand) => new(vectOperand.AsVector4 with { W = WValue });
+	#endregion
 }

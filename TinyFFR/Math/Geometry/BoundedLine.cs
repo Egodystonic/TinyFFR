@@ -55,11 +55,14 @@ public readonly partial struct BoundedLine : ILine<BoundedLine, BoundedLine>, ID
 		_vect = startToEndVect;
 	}
 
+	#region Span Conversions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ReadOnlySpan<float> ConvertToSpan(in BoundedLine src) => MemoryMarshal.Cast<BoundedLine, float>(new ReadOnlySpan<BoundedLine>(in src));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static BoundedLine ConvertFromSpan(ReadOnlySpan<float> src) => new(Location.ConvertFromSpan(src), Vect.ConvertFromSpan(src[4..]));
+	#endregion
 
+	#region String Conversions
 	public override string ToString() => ToString(null, null);
 	public string ToStringDescriptive() {
 		return $"{nameof(BoundedLine)}{GeometryUtils.ParameterStartToken}" +
@@ -85,6 +88,7 @@ public readonly partial struct BoundedLine : ILine<BoundedLine, BoundedLine>, ID
 		result = new(startPoint, endPoint);
 		return true;
 	}
+	#endregion
 
 	#region Equality
 	public bool Equals(BoundedLine other) => _startPoint.Equals(other._startPoint) && _vect.Equals(other._vect);

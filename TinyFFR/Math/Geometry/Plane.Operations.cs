@@ -130,6 +130,23 @@ public readonly partial struct Plane :
 	public PlaneObjectRelationship RelationshipTo<TGeo>(TGeo element) where TGeo : IRelationshipDeterminable<Plane, PlaneObjectRelationship> => element.RelationshipTo(this);
 	public bool IsIntersectedBy<TGeo>(TGeo element) where TGeo : IIntersectable<Plane> => element.IsIntersectedBy(this);
 	public Location? IntersectionWith<TGeo>(TGeo element) where TGeo : IIntersectable<Plane, Location> => element.IntersectionWith(this);
+
+
+	public static Plane Interpolate(Plane start, Plane end, float distance) {
+		return new(
+			Direction.Interpolate(start.Normal, end.Normal, distance),
+			Location.Interpolate(start.ClosestPointToOrigin, end.ClosestPointToOrigin, distance)
+		);
+	}
+	public static Rotation CreateInterpolationPrecomputation(Plane start, Plane end) => Direction.CreateInterpolationPrecomputation(start.Normal, end.Normal);
+	public static Plane InterpolateUsingPrecomputation(Plane start, Plane end, Rotation precomputation, float distance) {
+		return new(
+			Direction.InterpolateUsingPrecomputation(start.Normal, end.Normal, precomputation, distance),
+			Location.Interpolate(start.ClosestPointToOrigin, end.ClosestPointToOrigin, distance)
+		);
+	}
+	public static Plane CreateNewRandom() => new(Direction.CreateNewRandom(), Location.CreateNewRandom());
+	public static Plane CreateNewRandom(Plane minInclusive, Plane maxExclusive) => new(Direction.CreateNewRandom(minInclusive.Normal, maxExclusive.Normal), Location.CreateNewRandom(minInclusive.ClosestPointToOrigin, maxExclusive.ClosestPointToOrigin));
 }
 
 // Just some implementations of "mirror"/reverse functions kept here rather than in their respective types as it makes more sense to me to keep them close to the Plane class.

@@ -31,14 +31,6 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 		get => Unsafe.As<Quaternion, Vector4>(ref Unsafe.AsRef(in AsQuaternion));
 	}
 
-	// TODO for the lerp/slerp ... We probably need to expose them here but I wonder if a dedicated Lerper object could be smarter about e.g. a 180deg rotation around an axis
-	// TODO I don't think a generalized lerper is the right thing here -- instead just provide a static method that helps lerp around an axis/angle (or provides something that helps with that to reduce calcuations)
-	// TODO A generalized interpolator type might be useful (research interface vs delegate and weigh against garbage management etc)-- this can abstract over functions and timing etc
-	// TODO interpolator/timeinterpolator -- interpolator should use a delegate* to get virtualisation for free; timeinterpolator maybe could optionally plug in to a global time ticker
-	// TODO will probably use an IInterpolatable
-	// TODO do we need an interpolator 'object' instead of a static class? It does allow people to hot-swap the interpolation strat...
-	// TODO also same with a randomizer I think
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Rotation() => AsQuaternion = Identity;
 
@@ -49,6 +41,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal Rotation(Quaternion q) => AsQuaternion = q;
 
+	#region Factories and Conversions
 	public static Rotation FromStartAndEndDirection(Direction startDirection, Direction endDirection) {
 		var dot = Vector4.Dot(startDirection.AsVector4, endDirection.AsVector4);
 		if (dot > -0.9999f) return new(Normalize(new(Vector3.Cross(startDirection.ToVector3(), endDirection.ToVector3()), dot + 1f)));
@@ -61,12 +54,11 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation FromQuaternion(Quaternion q) => new(NormalizeOrIdentity(q));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Quaternion ToQuaternion() => AsQuaternion; // Q: Why not just make AsQuaternion a public prop? A: To keep the "To<numericsTypeHere>" pattern consistent with vector abstraction types
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation FromQuaternionPreNormalized(Quaternion q) => new(q);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Quaternion ToQuaternion() => AsQuaternion; // Q: Why not just make AsQuaternion a public prop? A: To keep the "To<numericsTypeHere>" pattern consistent with vector abstraction types
 
 	public void Deconstruct(out Angle angle, out Direction axis) {
 		var halfAngleRadians = MathF.Acos(AsQuaternion.W);
@@ -83,13 +75,17 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 
 	public static implicit operator Rotation((Angle Angle, Direction Axis) operand) => new(operand.Angle, operand.Axis);
 	public static implicit operator Rotation((Direction Axis, Angle Angle) operand) => new(operand.Angle, operand.Axis);
+	#endregion
 
+	#region Span Conversions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ReadOnlySpan<float> ConvertToSpan(in Rotation src) => MemoryMarshal.Cast<Rotation, float>(new ReadOnlySpan<Rotation>(in src));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation ConvertFromSpan(ReadOnlySpan<float> src) => new(new Quaternion(src[0], src[1], src[2], src[3]));
+	#endregion
 
+	#region String Conversion
 	public string ToStringDescriptive() => $"{Angle}{ToStringMiddleSection}{Axis.ToStringDescriptive()}";
 	
 	public override string ToString() => ToString(null, null);
@@ -145,7 +141,9 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 		result = new(angle, axis);
 		return true;
 	}
+	#endregion
 
+	#region Equality
 	public bool EqualsForDirection(Rotation other, Direction targetDirection) {
 		var thisResult = Rotate(targetDirection);
 		var otherResult = other.Rotate(targetDirection);
@@ -178,4 +176,5 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 	public static bool operator ==(Rotation left, Rotation right) => left.Equals(right);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator !=(Rotation left, Rotation right) => !left.Equals(right);
+	#endregion
 }

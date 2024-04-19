@@ -153,4 +153,9 @@ public readonly partial struct OriginSphere
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float SignedSurfaceDistanceFrom(Plane plane) => SignedDistanceFrom(plane);
+
+	public static OriginSphere Interpolate(OriginSphere start, OriginSphere end, float distance) => new(Single.Lerp(start.Radius, end.Radius, distance));
+
+	public static OriginSphere CreateNewRandom() => new(RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax));
+	public static OriginSphere CreateNewRandom(OriginSphere minInclusive, OriginSphere maxExclusive) => new(RandomUtils.NextSingle(minInclusive.Radius, maxExclusive.Radius));
 }

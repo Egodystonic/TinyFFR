@@ -34,11 +34,14 @@ public readonly partial struct Ray : ILine<Ray, Ray>, IDescriptiveStringProvider
 		_direction = direction;
 	}
 
+	#region Span Conversions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ReadOnlySpan<float> ConvertToSpan(in Ray src) => MemoryMarshal.Cast<Ray, float>(new ReadOnlySpan<Ray>(in src));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Ray ConvertFromSpan(ReadOnlySpan<float> src) => new(Location.ConvertFromSpan(src), Direction.ConvertFromSpan(src[4..]));
+	#endregion
 
+	#region String Conversions
 	public override string ToString() => ToString(null, null);
 	public string ToStringDescriptive() => $"{nameof(Ray)}{GeometryUtils.ParameterStartToken}{nameof(StartPoint)}{GeometryUtils.ParameterKeyValueSeparatorToken}{_startPoint}{GeometryUtils.ParameterSeparatorToken}{nameof(Direction)}{GeometryUtils.ParameterKeyValueSeparatorToken}{_direction.ToStringDescriptive()}{GeometryUtils.ParameterEndToken}";
 	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(Ray), (nameof(StartPoint), _startPoint), (nameof(Direction), _direction));
@@ -57,6 +60,7 @@ public readonly partial struct Ray : ILine<Ray, Ray>, IDescriptiveStringProvider
 		result = new(startPoint, direction);
 		return true;
 	}
+	#endregion
 
 	#region Equality
 	public bool Equals(Ray other) => _startPoint.Equals(other._startPoint) && _direction.Equals(other._direction);

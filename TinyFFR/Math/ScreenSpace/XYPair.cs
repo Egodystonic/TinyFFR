@@ -19,6 +19,7 @@ public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>, T> where T 
 		Y = y;
 	}
 
+	#region Factories and Conversions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vector2 ToVector2() => new(Single.CreateSaturating(X), Single.CreateSaturating(Y));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -37,13 +38,17 @@ public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>, T> where T 
 		y = Y;
 	}
 	public static implicit operator XYPair<T>((T X, T Y) tuple) => new(tuple.X, tuple.Y);
+	#endregion
 
+	#region Span Conversions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ReadOnlySpan<T> ConvertToSpan(in XYPair<T> src) => MemoryMarshal.Cast<XYPair<T>, T>(new ReadOnlySpan<XYPair<T>>(in src));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static XYPair<T> ConvertFromSpan(ReadOnlySpan<T> src) => new(src[0], src[1]);
+	#endregion
 
+	#region String Conversions
 	public override string ToString() => ToString(null, null);
 
 	public string ToString(string? format, IFormatProvider? formatProvider) => $"{IVect.VectorStringPrefixChar}{X.ToString(format, formatProvider)}{NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator} {Y.ToString(format, formatProvider)}{IVect.VectorStringSuffixChar}";
@@ -123,7 +128,9 @@ public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>, T> where T 
 		result = new(x, y);
 		return true;
 	}
+	#endregion
 
+	#region Equality
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Equals(XYPair<T> other) => X.Equals(other.X) && Y.Equals(other.Y);
 	public bool Equals(XYPair<T> other, float tolerance) {
@@ -138,4 +145,5 @@ public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>, T> where T 
 	public override bool Equals(object? obj) => obj is XYPair<T> other && Equals(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override int GetHashCode() => HashCode.Combine(X, Y);
+	#endregion
 }

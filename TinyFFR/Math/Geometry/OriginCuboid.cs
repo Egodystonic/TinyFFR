@@ -59,6 +59,7 @@ public readonly partial struct OriginCuboid : IFullyInteractableConvexShape<Orig
 		_halfDepth = depth * 0.5f;
 	}
 
+	#region Factories and Conversions
 	public static OriginCuboid FromHalfDimensions(float halfWidth, float halfHeight, float halfDepth) {
 		return new() {
 			HalfWidth = halfWidth,
@@ -66,55 +67,14 @@ public readonly partial struct OriginCuboid : IFullyInteractableConvexShape<Orig
 			HalfDepth = halfDepth
 		};
 	}
+	#endregion
 
-	public float GetExtent(Axis axis) => axis switch { // TODO rename this and below to get extent? Probably because it's actually an extent (e.g. it's just a measurement, not any actual point)
-		Axis.X => Width,
-		Axis.Y => Height,
-		Axis.Z => Depth,
-		_ => throw new ArgumentException($"{nameof(Axis)} can not be {nameof(Axis.None)}.", nameof(axis))
-	};
-	public float GetHalfExtent(Axis axis) => axis switch {
-		Axis.X => HalfWidth,
-		Axis.Y => HalfHeight,
-		Axis.Z => HalfDepth,
-		_ => throw new ArgumentException($"{nameof(Axis)} can not be {nameof(Axis.None)}.", nameof(axis))
-	};
-
-	public float GetSideSurfaceArea(CardinalOrientation3D side) {
-		return side.GetAxis() switch {
-			Axis.X => HalfHeight * HalfDepth * 4f,
-			Axis.Y => HalfDepth * HalfWidth * 4f,
-			Axis.Z => HalfWidth * HalfHeight * 4f,
-			_ => throw new ArgumentException($"{nameof(CardinalOrientation3D)} can not be {nameof(CardinalOrientation3D.None)}.", nameof(side))
-		};
-	}
-
-	public static OriginCuboid Interpolate(OriginCuboid start, OriginCuboid end, float distance) {
-		return FromHalfDimensions(
-			Single.Lerp(start.HalfWidth, end.HalfWidth, distance),
-			Single.Lerp(start.HalfHeight, end.HalfHeight, distance),
-			Single.Lerp(start.HalfDepth, end.HalfDepth, distance)
-		);
-	}
-
-	public static OriginCuboid CreateNewRandom() {
-		return FromHalfDimensions(
-			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax),
-			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax),
-			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax)
-		);
-	}
-	public static OriginCuboid CreateNewRandom(OriginCuboid minInclusive, OriginCuboid maxExclusive) {
-		return FromHalfDimensions(
-			RandomUtils.NextSingle(minInclusive.HalfWidth, maxExclusive.HalfWidth),
-			RandomUtils.NextSingle(minInclusive.HalfHeight, maxExclusive.HalfHeight),
-			RandomUtils.NextSingle(minInclusive.HalfDepth, maxExclusive.HalfDepth)
-		);
-	}
-
+	#region Span Conversions
 	public static ReadOnlySpan<float> ConvertToSpan(in OriginCuboid src) => MemoryMarshal.Cast<OriginCuboid, float>(new ReadOnlySpan<OriginCuboid>(in src));
 	public static OriginCuboid ConvertFromSpan(ReadOnlySpan<float> src) => MemoryMarshal.Cast<float, OriginCuboid>(src)[0];
+	#endregion
 
+	#region String Conversions
 	public override string ToString() => ToString(null, null);
 	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(OriginCuboid), (nameof(Width), Width), (nameof(Height), Height), (nameof(Depth), Depth));
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => GeometryUtils.StandardizedTryFormat(destination, out charsWritten, format, provider, nameof(OriginCuboid), (nameof(Width), Width), (nameof(Height), Height), (nameof(Depth), Depth));
@@ -132,6 +92,7 @@ public readonly partial struct OriginCuboid : IFullyInteractableConvexShape<Orig
 		result = new(width, height, depth);
 		return true;
 	}
+	#endregion
 
 	#region Equality
 	public bool Equals(OriginCuboid other) => _halfWidth.Equals(other._halfWidth) && _halfHeight.Equals(other._halfHeight) && _halfDepth.Equals(other._halfDepth);

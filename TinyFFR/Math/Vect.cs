@@ -40,6 +40,7 @@ public readonly partial struct Vect : IVect<Vect>, IDescriptiveStringProvider {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal Vect(Vector4 v) { AsVector4 = v; }
 
+	#region Factories and Conversions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect FromDirectionAndDistance(Direction direction, float distance) => direction * distance;
 
@@ -57,11 +58,20 @@ public readonly partial struct Vect : IVect<Vect>, IDescriptiveStringProvider {
 	public static implicit operator Vect((float X, float Y, float Z) tuple) => new(tuple.X, tuple.Y, tuple.Z);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static explicit operator Vect(Direction directionOperand) => new(directionOperand.AsVector4 with { W = WValue });
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static explicit operator Vect(Location locationOperand) => new(locationOperand.AsVector4 with { W = WValue });
+	#endregion
+
+	#region Span Conversion
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ReadOnlySpan<float> ConvertToSpan(in Vect src) => MemoryMarshal.Cast<Vect, float>(new ReadOnlySpan<Vect>(in src))[..3];
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect ConvertFromSpan(ReadOnlySpan<float> src) => FromVector3(new Vector3(src));
+	#endregion
 
+	#region String Conversion
 	public override string ToString() => this.ToString(null, null);
 
 	public string ToStringDescriptive() {
@@ -95,7 +105,9 @@ public readonly partial struct Vect : IVect<Vect>, IDescriptiveStringProvider {
 			return true;
 		}
 	}
+	#endregion
 
+	#region Equality
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Equals(Vect other) => AsVector4.Equals(other.AsVector4);
 	public bool Equals(Vect other, float tolerance) {
@@ -111,9 +123,5 @@ public readonly partial struct Vect : IVect<Vect>, IDescriptiveStringProvider {
 	public override bool Equals(object? obj) => obj is Vect other && Equals(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override int GetHashCode() => AsVector4.GetHashCode();
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static explicit operator Vect(Direction directionOperand) => new(directionOperand.AsVector4 with { W = WValue });
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static explicit operator Vect(Location locationOperand) => new(locationOperand.AsVector4 with { W = WValue });
+	#endregion
 }

@@ -273,4 +273,49 @@ public readonly partial struct OriginCuboid
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float SignedSurfaceDistanceFrom(Plane plane) => SignedDistanceFrom(plane);
+
+	public float GetExtent(Axis axis) => axis switch { // TODO rename this and below to get extent? Probably because it's actually an extent (e.g. it's just a measurement, not any actual point)
+		Axis.X => Width,
+		Axis.Y => Height,
+		Axis.Z => Depth,
+		_ => throw new ArgumentException($"{nameof(Axis)} can not be {nameof(Axis.None)}.", nameof(axis))
+	};
+	public float GetHalfExtent(Axis axis) => axis switch {
+		Axis.X => HalfWidth,
+		Axis.Y => HalfHeight,
+		Axis.Z => HalfDepth,
+		_ => throw new ArgumentException($"{nameof(Axis)} can not be {nameof(Axis.None)}.", nameof(axis))
+	};
+
+	public float GetSideSurfaceArea(CardinalOrientation3D side) {
+		return side.GetAxis() switch {
+			Axis.X => HalfHeight * HalfDepth * 4f,
+			Axis.Y => HalfDepth * HalfWidth * 4f,
+			Axis.Z => HalfWidth * HalfHeight * 4f,
+			_ => throw new ArgumentException($"{nameof(CardinalOrientation3D)} can not be {nameof(CardinalOrientation3D.None)}.", nameof(side))
+		};
+	}
+
+	public static OriginCuboid Interpolate(OriginCuboid start, OriginCuboid end, float distance) {
+		return FromHalfDimensions(
+			Single.Lerp(start.HalfWidth, end.HalfWidth, distance),
+			Single.Lerp(start.HalfHeight, end.HalfHeight, distance),
+			Single.Lerp(start.HalfDepth, end.HalfDepth, distance)
+		);
+	}
+
+	public static OriginCuboid CreateNewRandom() {
+		return FromHalfDimensions(
+			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax),
+			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax),
+			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax)
+		);
+	}
+	public static OriginCuboid CreateNewRandom(OriginCuboid minInclusive, OriginCuboid maxExclusive) {
+		return FromHalfDimensions(
+			RandomUtils.NextSingle(minInclusive.HalfWidth, maxExclusive.HalfWidth),
+			RandomUtils.NextSingle(minInclusive.HalfHeight, maxExclusive.HalfHeight),
+			RandomUtils.NextSingle(minInclusive.HalfDepth, maxExclusive.HalfDepth)
+		);
+	}
 }
