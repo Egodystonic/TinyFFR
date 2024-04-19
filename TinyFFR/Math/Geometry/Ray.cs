@@ -2,10 +2,12 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using System.Diagnostics;
 using System.Globalization;
 
 namespace Egodystonic.TinyFFR;
 
+[DebuggerDisplay("{ToStringDescriptive()}")]
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = sizeof(float) * 4 * 2)]
 public readonly partial struct Ray : ILine<Ray, Ray>, IDescriptiveStringProvider {
 	readonly Location _startPoint;

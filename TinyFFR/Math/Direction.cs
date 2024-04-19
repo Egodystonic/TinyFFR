@@ -1,12 +1,14 @@
 ﻿// Created on 2023-09-05 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
+using System.Diagnostics;
 using System.Globalization;
 using static Egodystonic.TinyFFR.MathUtils;
 using static System.Numerics.Vector4;
 
 namespace Egodystonic.TinyFFR;
 
+[DebuggerDisplay("{ToStringDescriptive()}")]
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Vector4
 public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringProvider {
 	internal const float WValue = 0f;

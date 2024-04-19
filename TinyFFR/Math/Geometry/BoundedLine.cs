@@ -1,8 +1,11 @@
 ﻿// Created on 2024-02-25 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Diagnostics;
+
 namespace Egodystonic.TinyFFR;
 
+[DebuggerDisplay("{ToStringDescriptive()}")]
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = sizeof(float) * 4 * 2)]
 public readonly partial struct BoundedLine : ILine<BoundedLine, BoundedLine>, IDescriptiveStringProvider {
 	readonly Location _startPoint;

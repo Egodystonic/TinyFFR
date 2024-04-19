@@ -1,8 +1,11 @@
 ﻿// Created on 2024-03-05 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Diagnostics;
+
 namespace Egodystonic.TinyFFR;
 
+[DebuggerDisplay("{ToStringDescriptive()}")]
 public readonly partial struct Plane : IGeometryPrimitive<Plane>, IPrecomputationInterpolatable<Plane, Rotation>, IDescriptiveStringProvider {
 	public const float DefaultPlaneThickness = ILine.DefaultLineThickness;
 	readonly Vector3 _normal;

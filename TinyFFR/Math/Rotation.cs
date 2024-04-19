@@ -1,11 +1,13 @@
 ﻿// Created on 2023-09-05 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
+using System.Diagnostics;
 using static System.Numerics.Quaternion;
 using static Egodystonic.TinyFFR.MathUtils;
 
 namespace Egodystonic.TinyFFR;
 
+[DebuggerDisplay("{ToStringDescriptive()}")]
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Quaternion
 public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDescriptiveStringProvider {
 	public const string ToStringMiddleSection = " around ";
