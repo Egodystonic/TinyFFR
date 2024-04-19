@@ -154,7 +154,7 @@ class LineExtensionsTest {
 		var lineClosestSurfacePointDiscoverable = Substitute.For<ILineClosestSurfacePointDiscoverable>();
 		var line = new Line(Location.Origin, Direction.Forward);
 		var ray = new Ray(Location.Origin, Direction.Backward);
-		var boundedLine = new BoundedLine(Location.Origin, Direction.Forward * 3f);
+		var boundedLine = BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Forward * 3f);
 
 		_ = line.DistanceFrom(lineSurfaceDistanceMeasurable);
 		_ = lineSurfaceDistanceMeasurable.Received(1).DistanceFrom(line);

@@ -108,7 +108,7 @@ partial class BoundedLineTest {
 	public void ShouldCorrectlyImplementEquality() {
 		Assert.AreEqual(
 			new BoundedLine(new Location(100f, 0f, 0f), new Location(0f, 0f, 0f)),
-			new BoundedLine(new Location(100f, 0f, 0f), new Vect(-100f, 0f, 0f))
+			BoundedLine.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(-100f, 0f, 0f))
 		);
 
 		AssertToleranceEquals(
@@ -124,14 +124,14 @@ partial class BoundedLineTest {
 		);
 
 		AssertToleranceEquals(
-			new BoundedLine(new Location(100f, 0f, 0f), new Vect(99.9f, 0f, 0f)),
-			new BoundedLine(new Location(100f, 0f, 0.1f), new Vect(100f, 0f, 0f)),
+			BoundedLine.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(99.9f, 0f, 0f)),
+			BoundedLine.FromStartPointAndVect(new Location(100f, 0f, 0.1f), new Vect(100f, 0f, 0f)),
 			0.2f
 		);
 
 		AssertToleranceNotEquals(
-			new BoundedLine(new Location(100f, 0f, 0f), new Vect(99.9f, 0f, 0f)),
-			new BoundedLine(new Location(100f, 0f, 0.1f), new Vect(100f, 0f, 0f)),
+			BoundedLine.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(99.9f, 0f, 0f)),
+			BoundedLine.FromStartPointAndVect(new Location(100f, 0f, 0.1f), new Vect(100f, 0f, 0f)),
 			0.05f
 		);
 

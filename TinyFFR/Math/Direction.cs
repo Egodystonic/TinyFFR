@@ -79,7 +79,7 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction() { }
+	public Direction() : this(0f, 0f, 0f) { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction(float x, float y, float z) : this(NormalizeOrZero(new Vector4(x, y, z, WValue))) { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

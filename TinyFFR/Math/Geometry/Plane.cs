@@ -21,18 +21,14 @@ public readonly partial struct Plane : IGeometryPrimitive<Plane>, IPrecomputatio
 		get => Location.FromVector3(_normal * _smallestDistanceFromOriginAlongNormal);
 	}
 
-	public Plane(Direction normal, Location anyPointOnPlane) : this(normal.ToVector3(), Vector3.Dot(normal.ToVector3(), anyPointOnPlane.ToVector3())) { }
-
-	Plane(Vector3 normal, float coefficientOfNormal) {
-		_normal = normal;
-		_smallestDistanceFromOriginAlongNormal = coefficientOfNormal;
+	public Plane(Direction normal, Location anyPointOnPlane) : this(normal, Vector3.Dot(normal.ToVector3(), anyPointOnPlane.ToVector3())) { }
+	// TODO in xmldoc note that this is the minimum distance from the origin to the plane along the normal, e.g. positive means the normal points away from the origin
+	public Plane(Direction normal, float coefficientOfNormalFromOrigin) {
+		_normal = normal.ToVector3();
+		_smallestDistanceFromOriginAlongNormal = coefficientOfNormalFromOrigin;
 	}
 
 	#region Factories and Conversions
-	// TODO in xmldoc note that this is the minimum distance from the origin to the plane along the normal, e.g. positive means the normal points away from the origin
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Plane FromNormalAndDistanceFromOrigin(Direction normal, float signedDistanceFromOrigin) => new(normal.ToVector3(), signedDistanceFromOrigin);
-
 	// TODO in xmldoc recommend using FromNormalAndDistanceFromOrigin where possible as it can't throw an exception and it's faster
 	public static Plane FromPointClosestToOrigin(Location pointClosestToOrigin, bool normalFacesOrigin) {
 		var vectFromOriginToClosestPoint = (Vect) pointClosestToOrigin;
@@ -41,7 +37,7 @@ public readonly partial struct Plane : IGeometryPrimitive<Plane>, IPrecomputatio
 			throw new ArgumentException($"{nameof(FromPointClosestToOrigin)} can not be used when {nameof(pointClosestToOrigin)} is equal to {nameof(Location.Origin)} " +
 										$"as there are infinite possible solutions.", nameof(pointClosestToOrigin));
 		}
-		return new(direction.ToVector3() * (normalFacesOrigin ? -1f : 1f), vectFromOriginToClosestPoint.Length * (normalFacesOrigin ? -1f : 1f));
+		return new(normalFacesOrigin ? direction.Reversed : direction, vectFromOriginToClosestPoint.Length * (normalFacesOrigin ? -1f : 1f));
 	}
 
 	public static Plane FromTriangleOnSurface(Location a, Location b, Location c) {
@@ -50,8 +46,8 @@ public readonly partial struct Plane : IGeometryPrimitive<Plane>, IPrecomputatio
 
 		// Everything below this line is just handling the fact that the points are colinear and creating the right exception message
 		Line? line;
-		if (!a.Equals(b, 0.001f)) line = new Line(a, b);
-		else if (!b.Equals(c, 0.001f)) line = new Line(b, c);
+		if (!a.Equals(b, 0.001f)) line = Line.FromTwoPoints(a, b);
+		else if (!b.Equals(c, 0.001f)) line = Line.FromTwoPoints(b, c);
 		else line = null;
 
 		if (line != null) {

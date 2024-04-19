@@ -12,7 +12,7 @@ public readonly partial struct Plane :
 	IUnaryNegationOperators<Plane, Plane> {
 
 	public Plane Flipped {
-		get => new(-_normal, -_smallestDistanceFromOriginAlongNormal);
+		get => new(-Normal, -_smallestDistanceFromOriginAlongNormal);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Plane operator -(Plane operand) => operand.Flipped;

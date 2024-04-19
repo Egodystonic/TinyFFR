@@ -36,7 +36,7 @@ public readonly partial struct Vect : IVect<Vect>, IDescriptiveStringProvider {
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect() { }
+	public Vect() : this(0f, 0f, 0f) { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect(float x, float y, float z) : this(new Vector4(x, y, z, WValue)) { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

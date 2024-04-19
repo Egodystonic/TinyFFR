@@ -12,7 +12,7 @@ public readonly partial struct Ray :
 	IMultiplyOperators<Ray, Rotation, Ray>, 
 	IAdditionOperators<Ray, Vect, Ray> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedLine ToBoundedLine(float signedDistanceToEndPoint) => new(StartPoint, Direction * signedDistanceToEndPoint);
+	public BoundedLine ToBoundedLine(float signedDistanceToEndPoint) => BoundedLine.FromStartPointAndVect(StartPoint, Direction * signedDistanceToEndPoint);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line ToLine() => new(StartPoint, Direction);
 

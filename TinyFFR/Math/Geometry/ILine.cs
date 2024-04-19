@@ -45,7 +45,7 @@ public interface ILine :
 
 	sealed Line CoerceToLine() => new(StartPoint, Direction);
 	sealed Ray CoerceToRay() => new(StartPoint, Direction);
-	sealed BoundedLine CoerceToBoundedLine(float length) => new(StartPoint, Direction * length);
+	sealed BoundedLine CoerceToBoundedLine(float length) => BoundedLine.FromStartPointAndVect(StartPoint, Direction * length);
 
 	protected internal static float? CalculateUnboundedIntersectionDistanceOnThisLine<TThis, TOther>(TThis @this, TOther other) where TThis : ILine where TOther : ILine {
 		const float ParallelTolerance = 1E-7f;

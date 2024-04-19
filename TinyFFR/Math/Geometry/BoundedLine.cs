@@ -49,14 +49,17 @@ public readonly partial struct BoundedLine : ILine<BoundedLine, BoundedLine>, ID
 	Vect? ILine.StartToEndVect => StartToEndVect;
 	Location? ILine.EndPoint => EndPoint;
 
-	public BoundedLine(Location startPoint, Location endPoint) {
-		_startPoint = startPoint;
-		_vect = endPoint - startPoint;
-	}
-	public BoundedLine(Location startPoint, Vect startToEndVect) {
+	public BoundedLine(Location startPoint, Location endPoint) : this(startPoint, endPoint - startPoint) { }
+	
+	BoundedLine(Location startPoint, Vect startToEndVect) {
 		_startPoint = startPoint;
 		_vect = startToEndVect;
 	}
+
+	#region Factories and Conversions
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static BoundedLine FromStartPointAndVect(Location startPoint, Vect startToEndVect) => new(startPoint, startToEndVect);
+	#endregion
 
 	#region Span Conversions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

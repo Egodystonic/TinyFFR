@@ -37,10 +37,11 @@ public readonly partial struct Line : ILine<Line, Ray>, IDescriptiveStringProvid
 		_direction = direction;
 	}
 
-	public Line(Location firstPointOnLine, Location secondPointOnLine) {
-		_pointOnLine = firstPointOnLine;
-		_direction = (secondPointOnLine - firstPointOnLine).Direction;
+	#region Factories and Conversions
+	public static Line FromTwoPoints(Location firstPointOnLine, Location secondPointOnLine) {
+		return new(firstPointOnLine, (secondPointOnLine - firstPointOnLine).Direction);
 	}
+	#endregion
 
 	#region Span Conversions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

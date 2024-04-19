@@ -8,7 +8,7 @@ namespace Egodystonic.TinyFFR;
 [TestFixture]
 partial class LineTest {
 	const float TestTolerance = 0.001f;
-	static readonly Line TestLine = new(new Location(1f, 2f, -3f), new Location(-1f, -2f, 3f));
+	static readonly Line TestLine = Line.FromTwoPoints(new Location(1f, 2f, -3f), new Location(-1f, -2f, 3f));
 	static readonly Direction TestLineDirection = new(-1f - 1f, -2f - 2f, 3f - -3f);
 
 	[SetUp]
