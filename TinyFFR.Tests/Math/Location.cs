@@ -10,7 +10,10 @@ namespace Egodystonic.TinyFFR;
 partial class LocationTest {
 	const float TestTolerance = 0.001f;
 	static readonly Location OneTwoNegThree = new(1f, 2f, -3f);
-	
+
+	[Test]
+	public void ShouldBeCorrectStructSize() => AssertStructLayout<Location>();
+
 	[Test]
 	public void ShouldCorrectlyInitializeStaticReadonlyMembers() {
 		Assert.AreEqual(new Location(0f, 0f, 0f), Location.Origin);

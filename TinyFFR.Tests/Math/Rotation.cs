@@ -16,6 +16,9 @@ partial class RotationTest {
 	static readonly Rotation NegativeNinetyAroundUp = -90f % Up;
 
 	[Test]
+	public void ShouldBeCorrectStructSize() => AssertStructLayout<Rotation>();
+
+	[Test]
 	public void ShouldCorrectlyInitializeStaticMembers() {
 		Assert.AreEqual(new Rotation(Quaternion.Identity), Rotation.None);
 	}

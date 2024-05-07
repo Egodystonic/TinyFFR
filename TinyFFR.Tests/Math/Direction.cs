@@ -13,6 +13,9 @@ partial class DirectionTest {
 	static readonly Vector3 NormalizedV3 = Vector3.Normalize(new(1f, 2f, -3f));
 
 	[Test]
+	public void ShouldBeCorrectStructSize() => AssertStructLayout<Direction>();
+
+	[Test]
 	public void ShouldCorrectlyInitializeStaticReadonlyMembers() {
 		Assert.AreEqual(new Direction(0f, 0f, 0f), Direction.None);
 		Assert.AreEqual(new Direction(0f, 0f, 1f), Direction.Forward);

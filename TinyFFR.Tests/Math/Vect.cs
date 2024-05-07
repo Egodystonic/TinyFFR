@@ -10,7 +10,10 @@ namespace Egodystonic.TinyFFR;
 partial class VectTest {
 	const float TestTolerance = 0.001f;
 	static readonly Vect OneTwoNegThree = new(1f, 2f, -3f);
-	
+
+	[Test]
+	public void ShouldBeCorrectStructSize() => AssertStructLayout<Vect>();
+
 	[Test]
 	public void ShouldCorrectlyInitializeStaticReadonlyMembers() {
 		Assert.AreEqual(new Vect(0f, 0f, 0f), Vect.Zero);

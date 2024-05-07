@@ -18,6 +18,9 @@ partial class LineTest {
 	public void TearDownTest() { }
 
 	[Test]
+	public void ShouldBeCorrectStructSize() => AssertStructLayout<Line>();
+
+	[Test]
 	public void ShouldCorrectlyCalculateProperties() {
 		Assert.AreEqual(new Location(1f, 2f, -3f), TestLine.PointOnLine);
 		Assert.AreEqual(new Direction(-1f - 1f, -2f - 2f, 3f - -3f), TestLine.Direction);

@@ -14,6 +14,10 @@ public sealed class TffrFactory : ITffrFactory {
 	readonly FactoryObjectStore<WindowBuilderConfig, IWindowBuilder> _windowBuilders = new();
 	readonly FactoryObjectStore<IApplicationLoopBuilder> _loopBuilders = new();
 
+	public IDisplayDiscoverer DefaultDisplayDiscoverer => GetDisplayDiscoverer();
+	public IWindowBuilder DefaultWindowBuilder => GetWindowBuilder();
+	public IApplicationLoopBuilder DefaultApplicationLoopBuilder => GetApplicationLoopBuilder();
+
 	public TffrFactory() : this(new()) { }
 	public TffrFactory(FactoryConfig config) {
 		NativeUtils.InitializeNativeLibIfNecessary();

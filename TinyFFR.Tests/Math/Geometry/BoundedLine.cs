@@ -17,6 +17,9 @@ partial class BoundedLineTest {
 	public void TearDownTest() { }
 
 	[Test]
+	public void ShouldBeCorrectStructSize() => AssertStructLayout<BoundedLine>();
+
+	[Test]
 	public void ShouldCorrectlyCalculateProperties() {
 		Assert.AreEqual(new Location(1f, 2f, -3f), TestLine.StartPoint);
 		Assert.AreEqual(new Direction(-1f, -2f, 3f), TestLine.Direction);

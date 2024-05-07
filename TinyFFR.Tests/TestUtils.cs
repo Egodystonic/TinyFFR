@@ -1,6 +1,9 @@
 ﻿// Created on 2023-10-01 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
+using System.Reflection;
+using System.Runtime.InteropServices;
+
 namespace Egodystonic.TinyFFR;
 
 static class TestUtils {
@@ -50,5 +53,12 @@ static class TestUtils {
 			$"\tExpected value: {expectedString}" + System.Environment.NewLine +
 			$"\tActual value: {actualString}"
 		);
+	}
+
+	public static unsafe void AssertStructLayout<T>() where T : unmanaged {
+		var expectedSize = typeof(T).StructLayoutAttribute!.Size;
+		Assert.AreEqual(expectedSize, sizeof(T));
+		var stackValue = default(T);
+		Assert.AreEqual(expectedSize, MemoryMarshal.AsBytes(new ReadOnlySpan<T>(in stackValue)).Length);
 	}
 }

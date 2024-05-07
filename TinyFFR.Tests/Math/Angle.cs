@@ -11,6 +11,9 @@ partial class AngleTest {
 	const float TestTolerance = 0.1f;
 
 	[Test]
+	public void ShouldBeCorrectStructSize() => AssertStructLayout<Angle>();
+
+	[Test]
 	public void StaticReadonlyMembersShouldBeCorrectlyInitialized() {
 		AssertToleranceEquals(Angle.FromRadians(0f), Angle.Zero, 0f);
 		AssertToleranceEquals(Angle.FromRadians(MathF.PI * 0.25f), Angle.EighthCircle, TestTolerance);

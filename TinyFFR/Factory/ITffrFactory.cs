@@ -7,6 +7,10 @@ using Egodystonic.TinyFFR.Environment.Desktop;
 namespace Egodystonic.TinyFFR.Factory;
 
 public interface ITffrFactory : IDisposable {
+	IDisplayDiscoverer DefaultDisplayDiscoverer { get; }
+	IWindowBuilder DefaultWindowBuilder { get; }
+	IApplicationLoopBuilder DefaultApplicationLoopBuilder { get; }
+
 	IDisplayDiscoverer GetDisplayDiscoverer();
 	IWindowBuilder GetWindowBuilder();
 	IWindowBuilder GetWindowBuilder(WindowBuilderConfig config);

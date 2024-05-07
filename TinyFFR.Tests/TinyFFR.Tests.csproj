@@ -13,6 +13,7 @@
     <NoWarn>
       NUnit2006; <!-- Consider using the constraint model: I hate fluent APIs and I don't think mixing expected and actual params is the end of the world -->
     </NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
