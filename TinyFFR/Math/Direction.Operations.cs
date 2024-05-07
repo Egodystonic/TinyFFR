@@ -23,7 +23,10 @@ partial struct Direction :
 
 	internal bool IsUnitLength {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => MathF.Abs(AsVector4.LengthSquared() - 1f) < 0.002f;
+		get {
+			const float FloatingPointErrorMargin = 2E-3f;
+			return MathF.Abs(AsVector4.LengthSquared() - 1f) < FloatingPointErrorMargin;
+		}
 	}
 	public Direction Renormalized {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -92,15 +95,17 @@ partial struct Direction :
 	}
 
 	public Direction OrthogonalizedAgainst(Direction d) {
+		const float DotProductFloatingPointErrorMargin = 1E-4f;
+		const float ResultLengthSquaredMin = 1E-5f;
 		var dot = Vector4.Dot(AsVector4, d.AsVector4);
 		// These checks are important to protect against fp inaccuracy with cases where we're orthogonalizing against the self or reverse of self etc
 		dot = MathF.Abs(dot) switch {
-			> 0.9999f => 1f * MathF.Sign(dot),
-			< 0.0001f => 0f,
+			> 1f - DotProductFloatingPointErrorMargin => 1f * MathF.Sign(dot),
+			< DotProductFloatingPointErrorMargin => 0f,
 			_ => dot
 		};
 		var nonNormalizedResult = AsVector4 - d.AsVector4 * dot;
-		if (nonNormalizedResult.LengthSquared() < 0.00001f) return None;
+		if (nonNormalizedResult.LengthSquared() < ResultLengthSquaredMin) return None;
 		else return new(Normalize(nonNormalizedResult));
 	}
 
@@ -160,7 +165,8 @@ partial struct Direction :
 		return result;
 	}
 	static void GetNearestDirectionAndOrientation(Direction targetDir, ReadOnlySpan<Direction> span, out Orientation3D orientation, out Direction direction) {
-		if (targetDir.Equals(None, 0.0001f)) {
+		const float NoneDirectionEqualityTolerance = 1E-4f;
+		if (targetDir.Equals(None, NoneDirectionEqualityTolerance)) {
 			orientation = Orientation3D.None;
 			direction = None;
 			return;

@@ -6,7 +6,7 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR.Environment.Input;
 
 public readonly struct GameControllerStickPosition : IEquatable<GameControllerStickPosition> {
-	public const float RecommendedDeadzoneSize = ((float) AnalogDisplacementLevel.Slight / Int16.MaxValue) + 0.01f;
+	public const float RecommendedDeadzoneSize = ((float) AnalogDisplacementLevel.Slight / Int16.MaxValue) + 0.01f; // Just slightly over the raw trigger level for 'slight'
 
 	public static readonly GameControllerStickPosition Centered = new(0, 0);
 	static readonly IReadOnlyDictionary<Orientation2D, GameControllerStickPosition> _orientationMap = new Dictionary<Orientation2D, GameControllerStickPosition> {

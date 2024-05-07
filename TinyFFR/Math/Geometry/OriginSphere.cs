@@ -1,6 +1,8 @@
 ﻿// Created on 2024-02-24 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Buffers.Binary;
+
 namespace Egodystonic.TinyFFR;
 
 public readonly partial struct OriginSphere : IFullyInteractableConvexShape<OriginSphere> { // TODO IIntersectable<Plane, Circle>
@@ -31,8 +33,13 @@ public readonly partial struct OriginSphere : IFullyInteractableConvexShape<Orig
 	#endregion
 
 	#region Span Conversions
-	public static ReadOnlySpan<float> ConvertToSpan(in OriginSphere src) => new(in src._radius);
-	public static OriginSphere ConvertFromSpan(ReadOnlySpan<float> src) => new(src[0]);
+	public static int SerializationByteSpanLength { get; } = sizeof(float);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static void SerializeToBytes(Span<byte> dest, OriginSphere src) => BinaryPrimitives.WriteSingleLittleEndian(dest, src._radius);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static OriginSphere DeserializeFromBytes(ReadOnlySpan<byte> src) => new(BinaryPrimitives.ReadSingleLittleEndian(src));
 	#endregion
 
 	#region String Conversions

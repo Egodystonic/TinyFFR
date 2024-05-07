@@ -13,16 +13,24 @@ partial class DirectionTest {
 	public void ShouldCorrectlyDetermineUnitLength() {
 		Assert.AreEqual(true, OneTwoNegThree.IsUnitLength);
 		Assert.AreEqual(false, Direction.None.IsUnitLength);
-		Assert.AreEqual(true, Direction.FromPreNormalizedComponents(0.707f, 0f, -0.707f).IsUnitLength);
-		Assert.AreEqual(false, Direction.FromPreNormalizedComponents(1, 1f, -1f).IsUnitLength);
+		Assert.AreEqual(true, Direction.FromVector3PreNormalized(0.707f, 0f, -0.707f).IsUnitLength);
+		Assert.AreEqual(false, Direction.FromVector3PreNormalized(1, 1f, -1f).IsUnitLength);
+	}
+
+	[Test]
+	public void ShouldUseAppropriateErrorMarginForUnitLengthTest() {
+		Assert.AreEqual(true, Direction.FromVector3PreNormalized(0.707f, 0f, -0.707f).IsUnitLength);
+		Assert.AreEqual(true, Direction.FromVector3PreNormalized(0.706f, 0f, -0.707f).IsUnitLength);
+		Assert.AreEqual(true, Direction.FromVector3PreNormalized(0.707f, 0f, -0.706f).IsUnitLength);
+		Assert.AreEqual(false, Direction.FromVector3PreNormalized(0.706f, 0f, -0.706f).IsUnitLength);
 	}
 
 	[Test]
 	public void ShouldCorrectlyRenormalize() {
 		AssertToleranceEquals(OneTwoNegThree, OneTwoNegThree.Renormalized, TestTolerance);
 		AssertToleranceEquals(Direction.None, Direction.None.Renormalized, TestTolerance);
-		AssertToleranceEquals(new Direction(0.707f, 0f, -0.707f), Direction.FromPreNormalizedComponents(0.707f, 0f, -0.707f).Renormalized, TestTolerance);
-		AssertToleranceEquals(new Direction(1f, 1f, -1f), Direction.FromPreNormalizedComponents(1, 1f, -1f).Renormalized, TestTolerance);
+		AssertToleranceEquals(new Direction(0.707f, 0f, -0.707f), Direction.FromVector3PreNormalized(0.707f, 0f, -0.707f).Renormalized, TestTolerance);
+		AssertToleranceEquals(new Direction(1f, 1f, -1f), Direction.FromVector3PreNormalized(1, 1f, -1f).Renormalized, TestTolerance);
 	}
 
 	[Test]

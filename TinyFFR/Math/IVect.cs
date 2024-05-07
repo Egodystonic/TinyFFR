@@ -70,7 +70,7 @@ public interface IVect : IMathPrimitive, IGeometryInteractable {
 	}
 }
 
-public interface IVect<TSelf> : IVect, IMathPrimitive<TSelf, float> where TSelf : IVect<TSelf> {
+public interface IVect<TSelf> : IVect, IMathPrimitive<TSelf> where TSelf : IVect<TSelf> {
 	static abstract TSelf FromVector3(Vector3 v);
 	static abstract implicit operator TSelf((float X, float Y, float Z) tuple);
 	TSelf this[Axis first, Axis second, Axis third] { get; }

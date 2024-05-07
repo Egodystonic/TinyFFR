@@ -59,18 +59,11 @@ partial class LocationTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertToAndFromSpan() {
-		void AssertIteration(Location input) {
-			var span = Location.ConvertToSpan(input);
-			Assert.AreEqual(3, span.Length);
-			Assert.AreEqual(input.X, span[0]);
-			Assert.AreEqual(input.Y, span[1]);
-			Assert.AreEqual(input.Z, span[2]);
-			Assert.AreEqual(input, Location.ConvertFromSpan(span));
-		}
-
-		AssertIteration(Location.Origin);
-		AssertIteration(OneTwoNegThree);
-		AssertIteration(new Location(-0.001f, 0f, 100000f));
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength(OneTwoNegThree);
+		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(Location.Origin, OneTwoNegThree, new(-0.001f, 0f, 100000f));
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(Location.Origin, 0f, 0f, 0f);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(OneTwoNegThree, 1f, 2f, -3f);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(new Location(-0.001f, 0f, 100000f), -0.001f, 0f, 100000f);
 	}
 
 	[Test]

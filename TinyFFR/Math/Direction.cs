@@ -1,6 +1,7 @@
 ﻿// Created on 2023-09-05 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Globalization;
 using static Egodystonic.TinyFFR.MathUtils;
@@ -87,20 +88,22 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 
 	#region Factories and Conversions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction FromPreNormalizedComponents(Vector3 v) => new(new Vector4(v, WValue));
+	public static Direction FromVector3PreNormalized(Vector3 v) => new(new Vector4(v, WValue));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction FromPreNormalizedComponents(float x, float y, float z) => new(new Vector4(x, y, z, WValue));
+	public static Direction FromVector3PreNormalized(float x, float y, float z) => new(new Vector4(x, y, z, WValue));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromOrientation(Orientation3D orientation) => new(orientation.GetAxisSign(Axis.X), orientation.GetAxisSign(Axis.Y), orientation.GetAxisSign(Axis.Z));
 
 	public static Direction FromPerpendicular(Direction dirA, Direction dirB) { // TODO in Xmldoc note that this will return any perp to both, no guarantee on which one. If either is None, then it throws
+		const float CrossLengthErrorMargin = 1E-3f;
+		const float NoneEqualityErrorMargin = 1E-5f;
 		var cross = Vector3.Cross(dirA.ToVector3(), dirB.ToVector3());
 		var crossLength = cross.LengthSquared();
 
-		if (MathF.Abs(crossLength - 1f) <= 0.001f) return FromPreNormalizedComponents(cross);
-		else if (crossLength >= 0.001f) return FromVector3(cross);
-		else if (dirA.Equals(None, 0.001f) || dirB.Equals(None, 0.001f)) throw new ArgumentException($"Neither {nameof(Direction)} can be {nameof(None)}.");
+		if (MathF.Abs(crossLength - 1f) <= CrossLengthErrorMargin) return FromVector3PreNormalized(cross);
+		else if (crossLength >= CrossLengthErrorMargin) return FromVector3(cross);
+		else if (dirA.Equals(None, NoneEqualityErrorMargin) || dirB.Equals(None, NoneEqualityErrorMargin)) throw new ArgumentException($"Neither {nameof(Direction)} can be {nameof(None)}.");
 		else return dirA.AnyPerpendicular();
 	}
 
@@ -127,25 +130,36 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	#endregion
 
 	#region Span Conversion
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ReadOnlySpan<float> ConvertToSpan(in Direction src) => MemoryMarshal.Cast<Direction, float>(new ReadOnlySpan<Direction>(in src))[..3];
+	public static int SerializationByteSpanLength { get; } = sizeof(float) * 3;
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction ConvertFromSpan(ReadOnlySpan<float> src) => FromPreNormalizedComponents(new Vector3(src));
+	public static void SerializeToBytes(Span<byte> dest, Direction src) {
+		BinaryPrimitives.WriteSingleLittleEndian(dest, src.X);
+		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 1)..], src.Y);
+		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 2)..], src.Z);
+	}
+
+	public static Direction DeserializeFromBytes(ReadOnlySpan<byte> src) {
+		return FromVector3PreNormalized(
+			BinaryPrimitives.ReadSingleLittleEndian(src),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 1)..]),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 2)..])
+		);
+	}
 	#endregion
 
 	#region String Conversion
 	public override string ToString() => this.ToString(null, null);
 
 	public string ToStringDescriptive() {
+		const float ZeroAngleMaxProximity = 1E-3f;
 		var (orientation, direction) = NearestOrientation;
 		var angle = (this == None || direction == None) ? Angle.Zero : (this ^ direction);
-		if (angle < 0.001f) return $"{ToString()} ({orientation})";
+		if (angle < ZeroAngleMaxProximity) return $"{ToString()} ({orientation})";
 		else return $"{ToString()} ({orientation} +{angle:N0})";
 	}
 
 	/*
-	 * We don't use FromPreNormalizedComponents for these methods that parse from a string because it's possible (likely?) that the
+	 * We don't use FromVector3PreNormalized for these methods that parse from a string because it's likely that the
 	 * string representation has lost some precision and therefore the re-parsed value won't actually be unit-length.
 	 */
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

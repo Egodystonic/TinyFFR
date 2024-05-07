@@ -1,6 +1,7 @@
 ﻿// Created on 2023-09-05 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Globalization;
 using static Egodystonic.TinyFFR.MathUtils;
@@ -66,11 +67,21 @@ public readonly partial struct Vect : IVect<Vect>, IDescriptiveStringProvider {
 	#endregion
 
 	#region Span Conversion
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ReadOnlySpan<float> ConvertToSpan(in Vect src) => MemoryMarshal.Cast<Vect, float>(new ReadOnlySpan<Vect>(in src))[..3];
+	public static int SerializationByteSpanLength { get; } = sizeof(float) * 3;
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect ConvertFromSpan(ReadOnlySpan<float> src) => FromVector3(new Vector3(src));
+	public static void SerializeToBytes(Span<byte> dest, Vect src) {
+		BinaryPrimitives.WriteSingleLittleEndian(dest, src.X);
+		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 1)..], src.Y);
+		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 2)..], src.Z);
+	}
+
+	public static Vect DeserializeFromBytes(ReadOnlySpan<byte> src) {
+		return new(
+			BinaryPrimitives.ReadSingleLittleEndian(src),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 1)..]),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 2)..])
+		);
+	}
 	#endregion
 
 	#region String Conversion

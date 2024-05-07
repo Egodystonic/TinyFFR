@@ -73,7 +73,7 @@ partial class DirectionTest {
 		Assert.AreEqual(Direction.None, new Direction());
 		Assert.AreEqual(Direction.WValue, new Direction().AsVector4.W);
 
-		Assert.AreEqual(new Direction(new Vector4(0.1f, 0.2f, 0.3f, Direction.WValue)), Direction.FromPreNormalizedComponents(0.1f, 0.2f, 0.3f));
+		Assert.AreEqual(new Direction(new Vector4(0.1f, 0.2f, 0.3f, Direction.WValue)), Direction.FromVector3PreNormalized(0.1f, 0.2f, 0.3f));
 		Assert.AreEqual(Direction.WValue, new Direction(0.1f, 0.2f, 0.3f).AsVector4.W);
 
 		for (var x = -5f; x <= 5f; x += 1f) {
@@ -93,8 +93,8 @@ partial class DirectionTest {
 	public void StaticFactoryMethodsShouldCorrectlyConstruct() {
 		Assert.AreEqual(new Direction(-1.2f, 2.4f, 0f), Direction.FromVector3(new(-1.2f, 2.4f, 0f)));
 
-		var prenormDirA = Direction.FromPreNormalizedComponents(7f, -1.2f, 0f);
-		var prenormDirB = Direction.FromPreNormalizedComponents(new(0f, 0.707f, -0.707f));
+		var prenormDirA = Direction.FromVector3PreNormalized(7f, -1.2f, 0f);
+		var prenormDirB = Direction.FromVector3PreNormalized(new(0f, 0.707f, -0.707f));
 		Assert.AreEqual(7f, prenormDirA.X);
 		Assert.AreEqual(-1.2f, prenormDirA.Y);
 		Assert.AreEqual(0f, prenormDirA.Z);
@@ -145,18 +145,11 @@ partial class DirectionTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertToAndFromSpan() {
-		void AssertIteration(Direction input) {
-			var span = Direction.ConvertToSpan(input);
-			Assert.AreEqual(3, span.Length);
-			Assert.AreEqual(input.X, span[0]);
-			Assert.AreEqual(input.Y, span[1]);
-			Assert.AreEqual(input.Z, span[2]);
-			Assert.AreEqual(input, Direction.ConvertFromSpan(span));
-		}
-
-		AssertIteration(Direction.None);
-		AssertIteration(OneTwoNegThree);
-		AssertIteration(new Direction(-0.001f, 0f, 100000f));
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<Direction>();
+		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(Direction.None, OneTwoNegThree, new(-0.001f, 0f, 100000f));
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(Direction.None, 0f, 0f, 0f);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(OneTwoNegThree, 1f / MathF.Sqrt(14f), 2f / MathF.Sqrt(14f), -3f / MathF.Sqrt(14f));
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(new Direction(-0.001f, 0f, 100000f), new Direction(-0.001f, 0f, 100000f).X, new Direction(-0.001f, 0f, 100000f).Y, new Direction(-0.001f, 0f, 100000f).Z);
 	}
 
 	[Test]

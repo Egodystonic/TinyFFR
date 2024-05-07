@@ -1,14 +1,12 @@
 ﻿// Created on 2023-09-05 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
-using System.Drawing;
-using System.Globalization;
-using System.Numerics;
+using System.Buffers.Binary;
 
 namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float), Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from float
-public readonly partial struct Angle : IMathPrimitive<Angle, float> {
+public readonly partial struct Angle : IMathPrimitive<Angle> {
 	public const string ToStringSuffix = "°";
 	const float Tau = MathF.Tau;
 	const float TauReciprocal = 1f / MathF.Tau;
@@ -64,6 +62,8 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 	}
 
 	public static Angle FromAngleBetweenDirections(Direction d1, Direction d2) {
+		const float FloatingPointErrorMargin = 1E-6f;
+
 		if (!d1.IsUnitLength) {
 			if (d1 == Direction.None) throw new ArgumentOutOfRangeException(nameof(d1), d1, $"Directions must not be {nameof(Direction.None)}.");
 			d1 = d1.Renormalized;
@@ -76,8 +76,8 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 		// Taking care of FP inaccuracy
 		var dot = Vector4.Dot(d1.AsVector4, d2.AsVector4);
 		dot = MathF.Abs(dot) switch {
-			> 0.9999f => 1f * MathF.Sign(dot),
-			< 0.0001f => 0f,
+			> 1f - FloatingPointErrorMargin => 1f * MathF.Sign(dot),
+			< FloatingPointErrorMargin => 0f,
 			_ => dot
 		};
 		return FromCosine(dot);
@@ -169,11 +169,13 @@ public readonly partial struct Angle : IMathPrimitive<Angle, float> {
 	#endregion
 
 	#region Span Conversion
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ReadOnlySpan<float> ConvertToSpan(in Angle src) => new(in src._asRadians);
+	public static int SerializationByteSpanLength { get; } = sizeof(float);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle ConvertFromSpan(ReadOnlySpan<float> src) => FromRadians(src[0]);
+	public static void SerializeToBytes(Span<byte> dest, Angle src) => BinaryPrimitives.WriteSingleLittleEndian(dest, src.AsRadians);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle DeserializeFromBytes(ReadOnlySpan<byte> src) => FromRadians(BinaryPrimitives.ReadSingleLittleEndian(src));
 	#endregion
 
 	#region String Conversion

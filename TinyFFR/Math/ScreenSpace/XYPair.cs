@@ -1,22 +1,37 @@
 ﻿// Created on 2024-01-16 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Buffers.Binary;
 using System.Globalization;
 using System.Numerics;
 
 namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>, T> where T : unmanaged, INumber<T> {
+public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>> where T : unmanaged, INumber<T> {
 	public static readonly XYPair<T> Zero = new(T.Zero, T.Zero);
+	static readonly int _marshalledElementSizeBytes = MemoryMarshal.AsBytes(new ReadOnlySpan<T>(in Zero._x)).Length;
 
-	public T X { get; init; }
-	public T Y { get; init; }
+	readonly T _x;
+	readonly T _y;
+
+	public T X {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _x;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		init => _x = value;
+	}
+	public T Y {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _y;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		init => _y = value;
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public XYPair(T x, T y) {
-		X = x;
-		Y = y;
+		_x = x;
+		_y = y;
 	}
 
 	#region Factories and Conversions
@@ -41,11 +56,20 @@ public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>, T> where T 
 	#endregion
 
 	#region Span Conversions
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ReadOnlySpan<T> ConvertToSpan(in XYPair<T> src) => MemoryMarshal.Cast<XYPair<T>, T>(new ReadOnlySpan<XYPair<T>>(in src));
+	// ReSharper disable once StaticMemberInGenericType We actually want to specialize the value for type T, so this is correct
+	public static int SerializationByteSpanLength { get; } = _marshalledElementSizeBytes * 2;
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair<T> ConvertFromSpan(ReadOnlySpan<T> src) => new(src[0], src[1]);
+	public static void SerializeToBytes(Span<byte> dest, XYPair<T> src) {
+		MemoryMarshal.AsBytes(new ReadOnlySpan<T>(in src._x)).CopyTo(dest);
+		MemoryMarshal.AsBytes(new ReadOnlySpan<T>(in src._y)).CopyTo(dest[_marshalledElementSizeBytes..]);
+	}
+
+	public static XYPair<T> DeserializeFromBytes(ReadOnlySpan<byte> src) {
+		return new(
+			MemoryMarshal.AsRef<T>(src),
+			MemoryMarshal.AsRef<T>(src[_marshalledElementSizeBytes..])
+		);
+	}
 	#endregion
 
 	#region String Conversions

@@ -1,6 +1,7 @@
 ﻿// Created on 2023-09-05 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using static System.Numerics.Quaternion;
 using static Egodystonic.TinyFFR.MathUtils;
@@ -9,22 +10,22 @@ namespace Egodystonic.TinyFFR;
 
 [DebuggerDisplay("{ToStringDescriptive()}")]
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Quaternion
-public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDescriptiveStringProvider {
+public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptiveStringProvider {
 	public const string ToStringMiddleSection = " around ";
 	public static readonly Rotation None = new(Identity);
+	const float MinHalfAngleRadiansForAxisExtraction = 1E-5f;
 
 	internal readonly Quaternion AsQuaternion;
 
 	public Angle Angle { // TODO indicate this is clockwise everywhere
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Angle.FromRadians(MathF.Acos(AsQuaternion.W) * 2f);
 	}
 
 	public Direction Axis {
 		get {
 			var halfAngleRadians = MathF.Acos(AsQuaternion.W);
-			if (halfAngleRadians < 0.0001f) return Direction.None;
-			else return Direction.FromPreNormalizedComponents(new Vector3(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z) / MathF.Sin(halfAngleRadians));
+			if (halfAngleRadians < MinHalfAngleRadiansForAxisExtraction) return Direction.None;
+			return Direction.FromVector3PreNormalized(new Vector3(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z) / MathF.Sin(halfAngleRadians));
 		}
 	}
 
@@ -37,7 +38,8 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 	public Rotation() => AsQuaternion = Identity;
 
 	public Rotation(Angle angle, Direction axis) { // TODO make it clear that the resultant Rotation Angle/Axis will be auto-normalized by the nature of Quaternion math (e.g. negative angle results in positive angle with flipped axis)
-		if (angle.Equals(0f, 0.0001f) || axis.Equals(Direction.None, 0.0001f)) AsQuaternion = Identity;
+		const float FloatingPointErrorMargin = 1E-5f;
+		if (angle.Equals(0f, FloatingPointErrorMargin) || axis.Equals(Direction.None, FloatingPointErrorMargin)) AsQuaternion = Identity;
 		else AsQuaternion = CreateFromAxisAngle(axis.ToVector3(), angle.AsRadians);
 	} 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -65,14 +67,9 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 	public void Deconstruct(out Angle angle, out Direction axis) {
 		var halfAngleRadians = MathF.Acos(AsQuaternion.W);
 		
-		if (halfAngleRadians < 0.0001f) {
-			axis = Direction.None;
-			angle = Angle.Zero;
-			return;
-		}
-
-		axis = Direction.FromPreNormalizedComponents(new Vector3(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z) / MathF.Sin(halfAngleRadians));
 		angle = Angle.FromRadians(halfAngleRadians * 2f);
+		if (halfAngleRadians < MinHalfAngleRadiansForAxisExtraction) axis = Direction.None;
+		else axis = Direction.FromVector3PreNormalized(new Vector3(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z) / MathF.Sin(halfAngleRadians));
 	}
 
 	public static implicit operator Rotation((Angle Angle, Direction Axis) operand) => new(operand.Angle, operand.Axis);
@@ -80,11 +77,23 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation, float>, IDesc
 	#endregion
 
 	#region Span Conversions
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ReadOnlySpan<float> ConvertToSpan(in Rotation src) => MemoryMarshal.Cast<Rotation, float>(new ReadOnlySpan<Rotation>(in src));
+	public static int SerializationByteSpanLength { get; } = sizeof(float) * 4;
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation ConvertFromSpan(ReadOnlySpan<float> src) => new(new Quaternion(src[0], src[1], src[2], src[3]));
+	public static void SerializeToBytes(Span<byte> dest, Rotation src) {
+		BinaryPrimitives.WriteSingleLittleEndian(dest, src.AsQuaternion.X);
+		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 1)..], src.AsQuaternion.Y);
+		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 2)..], src.AsQuaternion.Z);
+		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 3)..], src.AsQuaternion.W);
+	}
+
+	public static Rotation DeserializeFromBytes(ReadOnlySpan<byte> src) {
+		return FromQuaternionPreNormalized(new(
+			BinaryPrimitives.ReadSingleLittleEndian(src),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 1)..]),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 2)..]),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 3)..])
+		));
+	}
 	#endregion
 
 	#region String Conversion

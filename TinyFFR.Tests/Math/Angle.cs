@@ -1,6 +1,7 @@
 ﻿// Created on 2023-09-23 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
+using System.Buffers.Binary;
 using System.Globalization;
 
 namespace Egodystonic.TinyFFR;
@@ -140,35 +141,30 @@ partial class AngleTest {
 	}
 
 	[Test]
+	public void AngleBetweenDirectionsShouldUseAppropriateErrorMargin() {
+		Assert.AreEqual(Angle.Zero, Angle.FromAngleBetweenDirections((1f, 0f, 0f), (1f, 0f, 0f)));
+		Assert.AreEqual(Angle.Zero, Angle.FromAngleBetweenDirections((1f, 0f, 0f), (0.999f, 0f, 0.001f)));
+		Assert.AreNotEqual(Angle.Zero, Angle.FromAngleBetweenDirections((1f, 0f, 0f), (0.99f, 0f, 0.01f)));
+
+		Assert.AreEqual(Angle.QuarterCircle, Angle.FromAngleBetweenDirections((1f, 0f, 0f), (0f, 1f, 0f)));
+		Assert.AreEqual(Angle.QuarterCircle, Angle.FromAngleBetweenDirections((1f, 0f, 0f), (0f, 0.999f, 0.001f)));
+		Assert.AreNotEqual(Angle.QuarterCircle, Angle.FromAngleBetweenDirections((1f, 0f, 0f), (0.01f, 0.99f, 0f)));
+
+		Assert.AreEqual(Angle.HalfCircle, Angle.FromAngleBetweenDirections((1f, 0f, 0f), (-1f, 0f, 0f)));
+		Assert.AreEqual(Angle.HalfCircle, Angle.FromAngleBetweenDirections((1f, 0f, 0f), (-0.999f, 0f, -0.001f)));
+		Assert.AreNotEqual(Angle.HalfCircle, Angle.FromAngleBetweenDirections((1f, 0f, 0f), (-0.99f, 0f, -0.01f)));
+	}
+
+	[Test]
 	public void ShouldCorrectlyConvertToAndFromSpan() {
-		void AssertIteration(Angle input) {
-			var span = Angle.ConvertToSpan(input);
-			Assert.AreEqual(1, span.Length);
-			Assert.AreEqual(input.AsRadians, span[0]);
-			Assert.AreEqual(input, Angle.ConvertFromSpan(span));
-		}
-
-		for (var f = -2f; f < 2.05f; f += 0.05f) AssertIteration(Angle.FromFullCircleFraction(f));
-
-		var noneSpan = Angle.ConvertToSpan(Angle.Zero);
-		var quarterSpan = Angle.ConvertToSpan(Angle.QuarterCircle);
-		var halfSpan = Angle.ConvertToSpan(Angle.HalfCircle);
-		var threeQuarterSpan = Angle.ConvertToSpan(Angle.ThreeQuarterCircle);
-		var fullSpan = Angle.ConvertToSpan(Angle.FullCircle);
-		
-		Assert.AreEqual(0f, noneSpan[0]);
-		Assert.AreEqual(MathF.PI * 0.5f, quarterSpan[0]);
-		Assert.AreEqual(MathF.PI, halfSpan[0]);
-		Assert.AreEqual(MathF.PI * 1.5f, threeQuarterSpan[0]);
-		Assert.AreEqual(MathF.PI * 2f, fullSpan[0]);
-
-#pragma warning disable CS9193 // Argument should be a variable because it is passed to a 'ref readonly' parameter: Not wrong, but passing in rvalues is just easier for a small test
-		Assert.AreEqual(Angle.Zero, Angle.ConvertFromSpan(new ReadOnlySpan<float>(0f)));
-		Assert.AreEqual(Angle.QuarterCircle, Angle.ConvertFromSpan(new ReadOnlySpan<float>(MathF.PI * 0.5f)));
-		Assert.AreEqual(Angle.HalfCircle, Angle.ConvertFromSpan(new ReadOnlySpan<float>(MathF.PI)));
-		Assert.AreEqual(Angle.ThreeQuarterCircle, Angle.ConvertFromSpan(new ReadOnlySpan<float>(MathF.PI * 1.5f)));
-		Assert.AreEqual(Angle.FullCircle, Angle.ConvertFromSpan(new ReadOnlySpan<float>(MathF.PI * 2f)));
-#pragma warning restore CS9193
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<Angle>();
+		var anglesToTest = new List<Angle>();
+		for (var f = -2f; f < 2.05f; f += 0.05f) anglesToTest.Add(f);
+		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(anglesToTest.ToArray());
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(Angle.Zero, 0f);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(Angle.EighthCircle, Angle.EighthCircle.AsRadians);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(Angle.ThreeQuarterCircle, Angle.ThreeQuarterCircle.AsRadians);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(-Angle.ThreeQuarterCircle, -Angle.ThreeQuarterCircle.AsRadians);
 	}
 
 	[Test]

@@ -29,15 +29,22 @@ partial class XYPairTest {
 	}
 
 	[Test]
-	public void ShouldCorrectlyConvertToSpan() {
-		Assert.AreEqual(2, XYPair<float>.ConvertToSpan(ThreeFourFloat).Length);
-		Assert.AreEqual(3f, XYPair<float>.ConvertToSpan(ThreeFourFloat)[0]);
-		Assert.AreEqual(4f, XYPair<float>.ConvertToSpan(ThreeFourFloat)[1]);
-	}
-
-	[Test]
-	public void ShouldCorrectlyConvertFromSpan() {
-		Assert.AreEqual(ThreeFourFloat, XYPair<float>.ConvertFromSpan([3f, 4f]));
+	public void ShouldCorrectlyConvertToAndFromSpan() {
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<XYPair<float>>();
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<XYPair<int>>();
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<XYPair<byte>>();
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<XYPair<ushort>>();
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<XYPair<double>>();
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<XYPair<long>>();
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<XYPair<decimal>>();
+		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(XYPair<float>.Zero, ThreeFourFloat, -ThreeFourFloat);
+		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(XYPair<int>.Zero, (3, 4), (-3, -4));
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(XYPair<float>.Zero, 0f, 0f);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(ThreeFourFloat, 3f, 4f);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(-ThreeFourFloat, -3f, -4f);
+		ByteSpanSerializationTestUtils.AssertLittleEndianInt32s(XYPair<int>.Zero, 0, 0);
+		ByteSpanSerializationTestUtils.AssertLittleEndianInt32s(new XYPair<int>(3, 4), 3, 4);
+		ByteSpanSerializationTestUtils.AssertLittleEndianInt32s(-new XYPair<int>(3, 4), -3, -4);
 	}
 
 	[Test]

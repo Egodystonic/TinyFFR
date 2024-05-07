@@ -35,7 +35,10 @@ partial struct Vect :
 	}
 	public bool IsUnitLength {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => MathF.Abs(1f - LengthSquared) < 0.001f;
+		get {
+			const float FloatingPointErrorMargin = 1E-3f;
+			return MathF.Abs(1f - LengthSquared) < FloatingPointErrorMargin;
+		}
 	}
 
 

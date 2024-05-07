@@ -53,16 +53,9 @@ partial class BoundedLineTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertToAndFromSpan() {
-		Assert.AreEqual(8, BoundedLine.ConvertToSpan(TestLine).Length);
-		Assert.AreEqual(TestLine.StartPoint.X, BoundedLine.ConvertToSpan(TestLine)[0]);
-		Assert.AreEqual(TestLine.StartPoint.Y, BoundedLine.ConvertToSpan(TestLine)[1]);
-		Assert.AreEqual(TestLine.StartPoint.Z, BoundedLine.ConvertToSpan(TestLine)[2]);
-		Assert.AreEqual(TestLine.StartPoint.AsVector4.W, BoundedLine.ConvertToSpan(TestLine)[3]);
-		Assert.AreEqual(TestLine.StartToEndVect.X, BoundedLine.ConvertToSpan(TestLine)[4]);
-		Assert.AreEqual(TestLine.StartToEndVect.Y, BoundedLine.ConvertToSpan(TestLine)[5]);
-		Assert.AreEqual(TestLine.StartToEndVect.Z, BoundedLine.ConvertToSpan(TestLine)[6]);
-		Assert.AreEqual(TestLine.StartToEndVect.AsVector4.W, BoundedLine.ConvertToSpan(TestLine)[7]);
-		Assert.AreEqual(TestLine, BoundedLine.ConvertFromSpan(BoundedLine.ConvertToSpan(TestLine)));
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength(TestLine);
+		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(TestLine);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestLine, TestLine.StartPoint.X, TestLine.StartPoint.Y, TestLine.StartPoint.Z, TestLine.EndPoint.X, TestLine.EndPoint.Y, TestLine.EndPoint.Z);
 	}
 
 	[Test]

@@ -1,6 +1,7 @@
 ﻿// Created on 2024-03-05 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 
 namespace Egodystonic.TinyFFR;
@@ -45,9 +46,10 @@ public readonly partial struct Plane : IGeometryPrimitive<Plane>, IPrecomputatio
 		if (normal != Direction.None) return new(normal, a);
 
 		// Everything below this line is just handling the fact that the points are colinear and creating the right exception message
+		const float FloatingPointErrorMargin = 1E-2f;
 		Line? line;
-		if (!a.Equals(b, 0.001f)) line = Line.FromTwoPoints(a, b);
-		else if (!b.Equals(c, 0.001f)) line = Line.FromTwoPoints(b, c);
+		if (!a.Equals(b, FloatingPointErrorMargin)) line = Line.FromTwoPoints(a, b);
+		else if (!b.Equals(c, FloatingPointErrorMargin)) line = Line.FromTwoPoints(b, c);
 		else line = null;
 
 		if (line != null) {
@@ -62,8 +64,19 @@ public readonly partial struct Plane : IGeometryPrimitive<Plane>, IPrecomputatio
 	#endregion
 
 	#region Span Conversions
-	public static ReadOnlySpan<float> ConvertToSpan(in Plane src) => MemoryMarshal.Cast<Plane, float>(new ReadOnlySpan<Plane>(in src));
-	public static Plane ConvertFromSpan(ReadOnlySpan<float> src) => MemoryMarshal.Cast<float, Plane>(src)[0];
+	public static int SerializationByteSpanLength { get; } = Direction.SerializationByteSpanLength + Location.SerializationByteSpanLength;
+
+	public static void SerializeToBytes(Span<byte> dest, Plane src) {
+		Direction.SerializeToBytes(dest, src.Normal);
+		Location.SerializeToBytes(dest[Direction.SerializationByteSpanLength..], src.ClosestPointToOrigin);
+	}
+
+	public static Plane DeserializeFromBytes(ReadOnlySpan<byte> src) {
+		return new(
+			Direction.DeserializeFromBytes(src),
+			Location.DeserializeFromBytes(src[Direction.SerializationByteSpanLength..])
+		);
+	}
 	#endregion
 
 	#region String Conversions

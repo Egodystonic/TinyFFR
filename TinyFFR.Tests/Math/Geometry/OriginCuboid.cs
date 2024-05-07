@@ -94,11 +94,9 @@ partial class OriginCuboidTest {
 	
 	[Test]
 	public void ShouldCorrectlyConvertToAndFromSpan() {
-		Assert.AreEqual(3, OriginCuboid.ConvertToSpan(TestCuboid).Length);
-		Assert.AreEqual(7.2f / 2f, OriginCuboid.ConvertToSpan(TestCuboid)[0]);
-		Assert.AreEqual(13.6f / 2f, OriginCuboid.ConvertToSpan(TestCuboid)[1]);
-		Assert.AreEqual(1.4f / 2f, OriginCuboid.ConvertToSpan(TestCuboid)[2]);
-		Assert.AreEqual(TestCuboid, OriginCuboid.ConvertFromSpan(OriginCuboid.ConvertToSpan(TestCuboid)));
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<OriginCuboid>();
+		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(TestCuboid);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestCuboid, TestCuboid.Width, TestCuboid.Height, TestCuboid.Depth);
 	}
 	
 	[Test]

@@ -49,6 +49,13 @@ partial class VectTest {
 	}
 
 	[Test]
+	public void UnitLengthTestShouldUseAppropriateErrorMargin() {
+		Assert.AreEqual(true, new Vect(1f, 0f, 0f).IsUnitLength);
+		Assert.AreEqual(true, new Vect(0.9999f, 0f, 0f).IsUnitLength);
+		Assert.AreEqual(false, new Vect(0.999f, 0f, 0f).IsUnitLength);
+	}
+
+	[Test]
 	public void ShouldCorrectlyReverse() {
 		Assert.AreEqual(Vect.Zero, -Vect.Zero);
 		Assert.AreEqual(new Vect(-1f, -2f, 3f), -OneTwoNegThree);

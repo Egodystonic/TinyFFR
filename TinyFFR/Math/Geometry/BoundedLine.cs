@@ -1,6 +1,7 @@
 ﻿// Created on 2024-02-25 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 
 namespace Egodystonic.TinyFFR;
@@ -62,10 +63,19 @@ public readonly partial struct BoundedLine : ILine<BoundedLine, BoundedLine>, ID
 	#endregion
 
 	#region Span Conversions
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ReadOnlySpan<float> ConvertToSpan(in BoundedLine src) => MemoryMarshal.Cast<BoundedLine, float>(new ReadOnlySpan<BoundedLine>(in src));
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static BoundedLine ConvertFromSpan(ReadOnlySpan<float> src) => new(Location.ConvertFromSpan(src), Vect.ConvertFromSpan(src[4..]));
+	public static int SerializationByteSpanLength { get; } = Location.SerializationByteSpanLength * 2;
+
+	public static void SerializeToBytes(Span<byte> dest, BoundedLine src) {
+		Location.SerializeToBytes(dest, src.StartPoint);
+		Location.SerializeToBytes(dest[Location.SerializationByteSpanLength..], src.EndPoint);
+	}
+
+	public static BoundedLine DeserializeFromBytes(ReadOnlySpan<byte> src) {
+		return new(
+			Location.DeserializeFromBytes(src),
+			Location.DeserializeFromBytes(src[Location.SerializationByteSpanLength..])
+		);
+	}
 	#endregion
 
 	#region String Conversions

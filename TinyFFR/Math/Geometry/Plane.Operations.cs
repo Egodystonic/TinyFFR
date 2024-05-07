@@ -125,7 +125,7 @@ public readonly partial struct Plane :
 	// TODO xmldoc explain that these two methods will basically just make the vect/dir point either along the normal or opposite, whichever they're closer to
 	public Vect OrthogonalizationOf(Vect vect) => OrthogonalizationOf(vect.Direction) * vect.Length;
 	// Idea here is to pick the closest direction (normal or -normal) and have parallel directions just pick the positive normal, all without branching. There's probably a smarter way to do it but I'm not smart enough to know it
-	public Direction OrthogonalizationOf(Direction direction) => Direction.FromPreNormalizedComponents(Normal.ToVector3() * MathF.Sign(direction.Dot(Normal) * 2f + Single.Epsilon));
+	public Direction OrthogonalizationOf(Direction direction) => Direction.FromVector3PreNormalized(Normal.ToVector3() * MathF.Sign(direction.Dot(Normal) * 2f + Single.Epsilon));
 
 	public PlaneObjectRelationship RelationshipTo<TGeo>(TGeo element) where TGeo : IRelationshipDeterminable<Plane, PlaneObjectRelationship> => element.RelationshipTo(this);
 	public bool IsIntersectedBy<TGeo>(TGeo element) where TGeo : IIntersectable<Plane> => element.IsIntersectedBy(this);

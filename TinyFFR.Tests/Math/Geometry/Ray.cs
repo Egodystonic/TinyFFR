@@ -49,16 +49,9 @@ partial class RayTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertToAndFromSpan() {
-		Assert.AreEqual(8, Ray.ConvertToSpan(TestRay).Length);
-		Assert.AreEqual(TestRay.StartPoint.X, Ray.ConvertToSpan(TestRay)[0]);
-		Assert.AreEqual(TestRay.StartPoint.Y, Ray.ConvertToSpan(TestRay)[1]);
-		Assert.AreEqual(TestRay.StartPoint.Z, Ray.ConvertToSpan(TestRay)[2]);
-		Assert.AreEqual(TestRay.StartPoint.AsVector4.W, Ray.ConvertToSpan(TestRay)[3]);
-		Assert.AreEqual(TestRay.Direction.X, Ray.ConvertToSpan(TestRay)[4]);
-		Assert.AreEqual(TestRay.Direction.Y, Ray.ConvertToSpan(TestRay)[5]);
-		Assert.AreEqual(TestRay.Direction.Z, Ray.ConvertToSpan(TestRay)[6]);
-		Assert.AreEqual(TestRay.Direction.AsVector4.W, Ray.ConvertToSpan(TestRay)[7]);
-		Assert.AreEqual(TestRay, Ray.ConvertFromSpan(Ray.ConvertToSpan(TestRay)));
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength(TestRay);
+		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(TestRay);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestRay, TestRay.StartPoint.X, TestRay.StartPoint.Y, TestRay.StartPoint.Z, TestRay.Direction.X, TestRay.Direction.Y, TestRay.Direction.Z);
 	}
 
 	[Test]

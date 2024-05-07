@@ -67,18 +67,11 @@ partial class VectTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertToAndFromSpan() {
-		void AssertIteration(Vect input) {
-			var span = Vect.ConvertToSpan(input);
-			Assert.AreEqual(3, span.Length);
-			Assert.AreEqual(input.X, span[0]);
-			Assert.AreEqual(input.Y, span[1]);
-			Assert.AreEqual(input.Z, span[2]);
-			Assert.AreEqual(input, Vect.ConvertFromSpan(span));
-		}
-
-		AssertIteration(Vect.Zero);
-		AssertIteration(OneTwoNegThree);
-		AssertIteration(new Vect(-0.001f, 0f, 100000f));
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<Vect>();
+		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(Vect.Zero, OneTwoNegThree, new(-0.001f, 0f, 100000f));
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(Vect.Zero, 0f, 0f, 0f);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(OneTwoNegThree, 1f, 2f, -3f);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(new Vect(-0.001f, 0f, 100000f), -0.001f, 0f, 100000f);
 	}
 
 	[Test]

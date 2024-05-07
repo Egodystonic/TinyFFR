@@ -7,10 +7,10 @@ public interface IMathPrimitive : ISpanFormattable {
 	
 }
 
-public interface IMathPrimitive<TSelf, TUnderlying> : IMathPrimitive, 
+public interface IMathPrimitive<TSelf> : IMathPrimitive, 
 	ISpanParsable<TSelf>, 
-	ISpanConvertible<TSelf, TUnderlying>,
+	IByteSpanSerializable<TSelf>,
 	IToleranceEquatable<TSelf>, 
 	IEqualityOperators<TSelf, TSelf, bool>
-	where TSelf : IMathPrimitive<TSelf, TUnderlying> {
+	where TSelf : IMathPrimitive<TSelf> {
 }

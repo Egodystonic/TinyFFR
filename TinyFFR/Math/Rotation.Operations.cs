@@ -71,12 +71,14 @@ partial struct Rotation :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator *(float scalar, Rotation rotation) => rotation.ScaledBy(scalar);
 	public Rotation ScaledBy(float scalar) {
+		const float FloatingPointErrorMargin = 1E-4f;
+
 		var halfAngleRadians = MathF.Acos(AsQuaternion.W);
-		if (halfAngleRadians < 0.0001f) return None;
+		if (halfAngleRadians < FloatingPointErrorMargin) return None;
 		
 		var newHalfAngleRadians = halfAngleRadians * scalar;
 		var sinNewHalfAngle = MathF.Sin(newHalfAngleRadians);
-		if (MathF.Abs(sinNewHalfAngle) < 0.0001f) return None;
+		if (MathF.Abs(sinNewHalfAngle) < FloatingPointErrorMargin) return None;
 		var cosNewHalfAngle = MathF.Cos(newHalfAngleRadians);
 
 		var normalizedVectorComponent = Vector3.Normalize(new(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z));

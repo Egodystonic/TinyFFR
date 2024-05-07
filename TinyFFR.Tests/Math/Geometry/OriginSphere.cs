@@ -60,9 +60,9 @@ partial class OriginSphereTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertToAndFromSpan() {
-		Assert.AreEqual(1, OriginSphere.ConvertToSpan(TestSphere).Length);
-		Assert.AreEqual(7.4f, OriginSphere.ConvertToSpan(TestSphere)[0]);
-		Assert.AreEqual(TestSphere, OriginSphere.ConvertFromSpan(OriginSphere.ConvertToSpan(TestSphere)));
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<OriginSphere>();
+		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(TestSphere);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestSphere, TestSphere.Radius);
 	}
 
 	[Test]

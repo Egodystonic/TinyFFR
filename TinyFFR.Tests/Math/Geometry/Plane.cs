@@ -63,11 +63,9 @@ partial class PlaneTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertToAndFromSpan() {
-		Assert.AreEqual(4, Plane.ConvertToSpan(TestPlane).Length);
-		Assert.AreEqual(TestPlane.Normal.X, Plane.ConvertToSpan(TestPlane)[0]);
-		Assert.AreEqual(TestPlane.Normal.Y, Plane.ConvertToSpan(TestPlane)[1]);
-		Assert.AreEqual(TestPlane.Normal.Z, Plane.ConvertToSpan(TestPlane)[2]);
-		Assert.AreEqual(TestPlane, Plane.ConvertFromSpan(Plane.ConvertToSpan(TestPlane)));
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<Plane>();
+		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(TestPlane);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestPlane, TestPlane.Normal.X, TestPlane.Normal.Y, TestPlane.Normal.Z, TestPlane.ClosestPointToOrigin.X, TestPlane.ClosestPointToOrigin.Y, TestPlane.ClosestPointToOrigin.Z);
 	}
 
 	[Test]

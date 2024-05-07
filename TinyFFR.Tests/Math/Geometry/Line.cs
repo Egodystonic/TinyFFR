@@ -57,16 +57,9 @@ partial class LineTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertToAndFromSpan() {
-		Assert.AreEqual(8, Line.ConvertToSpan(TestLine).Length);
-		Assert.AreEqual(TestLine.PointOnLine.X, Line.ConvertToSpan(TestLine)[0]);
-		Assert.AreEqual(TestLine.PointOnLine.Y, Line.ConvertToSpan(TestLine)[1]);
-		Assert.AreEqual(TestLine.PointOnLine.Z, Line.ConvertToSpan(TestLine)[2]);
-		Assert.AreEqual(TestLine.PointOnLine.AsVector4.W, Line.ConvertToSpan(TestLine)[3]);
-		Assert.AreEqual(TestLine.Direction.X, Line.ConvertToSpan(TestLine)[4]);
-		Assert.AreEqual(TestLine.Direction.Y, Line.ConvertToSpan(TestLine)[5]);
-		Assert.AreEqual(TestLine.Direction.Z, Line.ConvertToSpan(TestLine)[6]);
-		Assert.AreEqual(TestLine.Direction.AsVector4.W, Line.ConvertToSpan(TestLine)[7]);
-		Assert.AreEqual(TestLine, Line.ConvertFromSpan(Line.ConvertToSpan(TestLine)));
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength(TestLine);
+		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(TestLine);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestLine, TestLine.PointOnLine.X, TestLine.PointOnLine.Y, TestLine.PointOnLine.Z, TestLine.Direction.X, TestLine.Direction.Y, TestLine.Direction.Z);
 	}
 
 	[Test]

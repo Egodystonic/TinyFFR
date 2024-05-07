@@ -81,6 +81,17 @@ partial class RotationTest {
 	}
 
 	[Test]
+	public void ShouldUseAppropriateErrorMarginForAxisExtraction() {
+		Assert.AreEqual(None, Rotation.FromQuaternion(new(0f, 0f, 0.00001f, 0.99999f)).Axis);
+		Assert.AreNotEqual(None, Rotation.FromQuaternion(new(0f, 0f, 0.001f, 0.99999f)).Axis);
+
+		var (_, axis) = Rotation.FromQuaternion(new(0f, 0f, 0.00001f, 0.99999f));
+		Assert.AreEqual(None, axis);
+		(_, axis) = Rotation.FromQuaternion(new(0f, 0f, 0.001f, 0.99999f));
+		Assert.AreNotEqual(None, axis);
+	}
+
+	[Test]
 	public void ConstructorsShouldCorrectlyConstruct() { // Also, the floor should be made out of floor
 		Assert.AreEqual(Rotation.None, new Rotation());
 
@@ -89,6 +100,15 @@ partial class RotationTest {
 				Assert.AreEqual(new Rotation(Quaternion.CreateFromAxisAngle(cardinal.ToVector3(), r)), new Rotation(Angle.FromRadians(r), cardinal));
 			}
 		}
+	}
+
+	[Test]
+	public void ShouldUseAppropriateErrorMarginInConstructor() {
+		Assert.AreEqual(Rotation.None, new Rotation(0.00001f, Left));
+		Assert.AreNotEqual(Rotation.None, new Rotation(0.0001f, Left));
+
+		Assert.AreEqual(Rotation.None, new Rotation(10f, FromVector3PreNormalized(0f, 0f, 0.00001f)));
+		Assert.AreNotEqual(Rotation.None, new Rotation(10f, FromVector3PreNormalized(0f, 0f, 0.0001f)));
 	}
 
 	[Test]
@@ -170,15 +190,12 @@ partial class RotationTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertToAndFromSpan() {
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<Rotation>();
 		foreach (var cardinal in AllCardinals) {
 			for (var angle = -360f; angle <= 360f; angle += 36f) {
 				var expected = new Rotation(angle, cardinal);
-				var span = Rotation.ConvertToSpan(expected);
-				Assert.AreEqual(expected.AsQuaternion.X, span[0]);
-				Assert.AreEqual(expected.AsQuaternion.Y, span[1]);
-				Assert.AreEqual(expected.AsQuaternion.Z, span[2]);
-				Assert.AreEqual(expected.AsQuaternion.W, span[3]);
-				Assert.AreEqual(expected, Rotation.ConvertFromSpan(span));
+				ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(expected);
+				ByteSpanSerializationTestUtils.AssertLittleEndianSingles(expected, expected.AsQuaternion.X, expected.AsQuaternion.Y, expected.AsQuaternion.Z, expected.AsQuaternion.W);
 			}
 		}
 	}

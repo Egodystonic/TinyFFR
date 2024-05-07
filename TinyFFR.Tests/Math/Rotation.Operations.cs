@@ -171,6 +171,23 @@ partial class RotationTest {
 	}
 
 	[Test]
+	public void RotationScalingShouldUseAppropriateErrorMargin() {
+		Assert.AreEqual(Rotation.None, Rotation.FromQuaternionPreNormalized(new(0.001f, 0f, 0f, 1f)) * 1f);
+		Assert.AreEqual(Rotation.None, Rotation.FromQuaternionPreNormalized(new(-0.001f, 0f, 0f, 1f)) * 1f);
+		Assert.AreEqual(Rotation.None, Rotation.FromQuaternionPreNormalized(new(0f, 0f, 0f, 0.999f)) * 1f);
+		Assert.AreEqual(Rotation.None, Rotation.FromQuaternionPreNormalized(new(0f, 0f, 0f, 1.001f)) * 1f);
+		Assert.AreEqual(Rotation.None, Rotation.FromQuaternionPreNormalized(new(0.001f, 0f, 0f, -1f)) * 1f);
+		Assert.AreEqual(Rotation.None, Rotation.FromQuaternionPreNormalized(new(-0.001f, 0f, 0f, -1f)) * 1f);
+		Assert.AreEqual(Rotation.None, Rotation.FromQuaternionPreNormalized(new(0f, 0f, 0f, -0.999f)) * 1f);
+		Assert.AreEqual(Rotation.None, Rotation.FromQuaternionPreNormalized(new(0f, 0f, 0f, -1.001f)) * 1f);
+
+		Assert.AreNotEqual(Rotation.None, (Left >> Right) * 0.0001f);
+		Assert.AreEqual(Rotation.None, (Left >> Right) * 0.00001f);
+		Assert.AreNotEqual(Rotation.None, (Left >> Right) * -0.0001f);
+		Assert.AreEqual(Rotation.None, (Left >> Right) * -0.00001f);
+	}
+
+	[Test]
 	public void ShouldCorrectlyInterpolate() {
 		// Some examples from external sources
 		var a = Rotation.None;
@@ -197,7 +214,7 @@ partial class RotationTest {
 			for (var j = i; j < testList.Count; ++j) {
 				var start = testList[i];
 				var end = testList[j];
-		
+
 				var distance = start.AngleTo(end);
 				if (distance > Angle.QuarterCircle) continue; // Don't try this with rotations too far apart
 				for (var f = -0.05f; f <= 1.05f; f += 0.05f) {

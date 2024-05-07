@@ -44,10 +44,19 @@ public readonly partial struct Line : ILine<Line, Ray>, IDescriptiveStringProvid
 	#endregion
 
 	#region Span Conversions
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ReadOnlySpan<float> ConvertToSpan(in Line src) => MemoryMarshal.Cast<Line, float>(new ReadOnlySpan<Line>(in src));
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Line ConvertFromSpan(ReadOnlySpan<float> src) => new(Location.ConvertFromSpan(src), Direction.ConvertFromSpan(src[4..]));
+	public static int SerializationByteSpanLength { get; } = Location.SerializationByteSpanLength + Direction.SerializationByteSpanLength;
+
+	public static void SerializeToBytes(Span<byte> dest, Line src) {
+		Location.SerializeToBytes(dest, src.PointOnLine);
+		Direction.SerializeToBytes(dest[Location.SerializationByteSpanLength..], src.Direction);
+	}
+
+	public static Line DeserializeFromBytes(ReadOnlySpan<byte> src) {
+		return new(
+			Location.DeserializeFromBytes(src),
+			Direction.DeserializeFromBytes(src[Location.SerializationByteSpanLength..])
+		);
+	}
 	#endregion
 
 	#region String Conversions

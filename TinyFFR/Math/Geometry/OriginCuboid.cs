@@ -1,6 +1,8 @@
 ﻿// Created on 2024-02-24 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Buffers.Binary;
+
 namespace Egodystonic.TinyFFR;
 
 public readonly partial struct OriginCuboid : IFullyInteractableConvexShape<OriginCuboid> {  // TODO IIntersectable<Plane, BoundedPlane or similar>
@@ -70,8 +72,21 @@ public readonly partial struct OriginCuboid : IFullyInteractableConvexShape<Orig
 	#endregion
 
 	#region Span Conversions
-	public static ReadOnlySpan<float> ConvertToSpan(in OriginCuboid src) => MemoryMarshal.Cast<OriginCuboid, float>(new ReadOnlySpan<OriginCuboid>(in src));
-	public static OriginCuboid ConvertFromSpan(ReadOnlySpan<float> src) => MemoryMarshal.Cast<float, OriginCuboid>(src)[0];
+	public static int SerializationByteSpanLength { get; } = sizeof(float) * 3;
+
+	public static void SerializeToBytes(Span<byte> dest, OriginCuboid src) {
+		BinaryPrimitives.WriteSingleLittleEndian(dest, src.Width);
+		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 1)..], src.Height);
+		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 2)..], src.Depth);
+	}
+
+	public static OriginCuboid DeserializeFromBytes(ReadOnlySpan<byte> src) {
+		return new(
+			BinaryPrimitives.ReadSingleLittleEndian(src),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 1)..]),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 2)..])
+		);
+	}
 	#endregion
 
 	#region String Conversions

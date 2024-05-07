@@ -1,6 +1,7 @@
 ﻿// Created on 2023-09-05 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
+using System.Buffers.Binary;
 using static Egodystonic.TinyFFR.MathUtils;
 using static System.Numerics.Vector4;
 
@@ -60,11 +61,21 @@ public readonly partial struct Location : IVect<Location> {
 	#endregion
 
 	#region Span Conversion
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ReadOnlySpan<float> ConvertToSpan(in Location src) => MemoryMarshal.Cast<Location, float>(new ReadOnlySpan<Location>(in src))[..3];
+	public static int SerializationByteSpanLength { get; } = sizeof(float) * 3;
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Location ConvertFromSpan(ReadOnlySpan<float> src) => FromVector3(new Vector3(src));
+	public static void SerializeToBytes(Span<byte> dest, Location src) {
+		BinaryPrimitives.WriteSingleLittleEndian(dest, src.X);
+		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 1)..], src.Y);
+		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 2)..], src.Z);
+	}
+
+	public static Location DeserializeFromBytes(ReadOnlySpan<byte> src) {
+		return new(
+			BinaryPrimitives.ReadSingleLittleEndian(src),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 1)..]),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 2)..])
+		);
+	}
 	#endregion
 
 	#region String Conversion
