@@ -7,13 +7,11 @@ using static System.Numerics.Vector4;
 namespace Egodystonic.TinyFFR;
 
 partial struct Location : 
-	IAdditionOperators<Location, Vect, Location>,
-	ISubtractionOperators<Location, Vect, Location>,
+	ITranslatable<Location>,
+	ITransitionRepresentable<Location, Vect>,
 	ISubtractionOperators<Location, Location, Vect>,
-	IMultiplyOperators<Location, (Location Pivot, Rotation Rotation), Location>,
-	IMultiplyOperators<Location, (Rotation Rotation, Location Pivot), Location>,
-	IInterpolatable<Location>,
-	IBoundedRandomizable<Location> {
+	IPointRotatable<Location>,
+	IDistanceMeasurable<Location, Location> {
 	internal const float DefaultRandomRange = 100f;
 
 	public float this[Axis axis] => axis switch {
@@ -47,21 +45,22 @@ partial struct Location :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect VectTo(Location otherLocation) => new(otherLocation.AsVector4 - AsVector4);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect VectFromOrigin() => (Vect) this;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect VectToOrigin() => -((Vect) this);
-
-	public static Location operator *(Location locationToRotate, (Location Pivot, Rotation Rotation) pivotRotationTuple) => locationToRotate.RotatedAround(pivotRotationTuple.Pivot, pivotRotationTuple.Rotation);
-	public static Location operator *((Location Pivot, Rotation Rotation) pivotRotationTuple, Location locationToRotate) => locationToRotate.RotatedAround(pivotRotationTuple.Pivot, pivotRotationTuple.Rotation);
-	public static Location operator *(Location locationToRotate, (Rotation Rotation, Location Pivot) pivotRotationTuple) => locationToRotate.RotatedAround(pivotRotationTuple.Pivot, pivotRotationTuple.Rotation);
-	public static Location operator *((Rotation Rotation, Location Pivot) pivotRotationTuple, Location locationToRotate) => locationToRotate.RotatedAround(pivotRotationTuple.Pivot, pivotRotationTuple.Rotation);
-	public Location RotatedAround(Location pivotPoint, Rotation rotation) => pivotPoint + VectFrom(pivotPoint) * rotation;
-
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction DirectionFrom(Location otherLocation) => VectFrom(otherLocation).Direction;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction DirectionTo(Location otherLocation) => VectTo(otherLocation).Direction;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect VectFromOrigin() => (Vect) this;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect VectToOrigin() => -((Vect) this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect AsVect() => (Vect) this;
+
+	public static Location operator *(Location locationToRotate, (Location Pivot, Rotation Rotation) pivotRotationTuple) => locationToRotate.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public static Location operator *((Location Pivot, Rotation Rotation) pivotRotationTuple, Location locationToRotate) => locationToRotate.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public static Location operator *(Location locationToRotate, (Rotation Rotation, Location Pivot) pivotRotationTuple) => locationToRotate.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public static Location operator *((Rotation Rotation, Location Pivot) pivotRotationTuple, Location locationToRotate) => locationToRotate.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public Location RotatedAroundPoint(Rotation rotation, Location pivot) => pivot + VectFrom(pivot) * rotation;
+
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(Location otherLocation) => VectFrom(otherLocation).Length;
@@ -71,6 +70,8 @@ partial struct Location :
 	public float DistanceFromOrigin() => ((Vect) this).Length;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFromOrigin() => ((Vect) this).LengthSquared;
+
+	public Location Clamp(Location min, Location max) => this.ClosestPointOn(new BoundedLine(min, max));
 
 	public static Location Interpolate(Location start, Location end, float distance) {
 		return start + (end - start) * distance;

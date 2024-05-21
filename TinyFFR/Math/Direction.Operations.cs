@@ -7,11 +7,15 @@ using static System.Numerics.Vector4;
 namespace Egodystonic.TinyFFR;
 
 partial struct Direction :
-	IUnaryNegationOperators<Direction, Direction>,
+	IInvertible<Direction>,
 	IMultiplyOperators<Direction, float, Vect>,
 	IModulusOperators<Direction, Angle, Rotation>,
 	IPrecomputationInterpolatable<Direction, Rotation>,
-	IBoundedRandomizable<Direction> {
+	IInnerProductSpace<Direction>,
+	IVectorProductSpace<Direction>,
+	IAngleMeasurable<Direction, Direction>,
+	ITransitionRepresentable<Direction, Rotation>,
+	IRotatable<Direction> {
 	public float this[Axis axis] => axis switch {
 		Axis.X => X,
 		Axis.Y => Y,
@@ -28,19 +32,15 @@ partial struct Direction :
 			return MathF.Abs(AsVector4.LengthSquared() - 1f) < FloatingPointErrorMargin;
 		}
 	}
-	public Direction Renormalized {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => new(NormalizeOrZero(AsVector4));
-	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction operator -(Direction operand) => operand.Reversed;
-	public Direction Reversed {
+	public static Direction operator -(Direction operand) => operand.Inverted;
+	public Direction Inverted {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(-AsVector4);
 	}
 
-
+	// TODO make these a proper record struct type. ValueTuples shouldn't be public (they're mutable and just meh)
 	public (CardinalOrientation3D AsEnum, Direction AsDirection) NearestOrientationCardinal {
 		get {
 			GetNearestDirectionAndOrientation(this, AllCardinals, out var e, out var d);
@@ -68,7 +68,7 @@ partial struct Direction :
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect ToVect() => (Vect) this;
+	public Vect AsVect() => (Vect) this;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator *(Direction directionOperand, float scalarOperand) => directionOperand.ToVect(scalarOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -78,8 +78,15 @@ partial struct Direction :
 
 
 	// TODO in XMLDoc indicate that this is the dot product of the two directions, and that therefore the range is 1 for identical, to -1 for complete opposite, with 0 being orthogonal; and that this is the cosine of the angle
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float Dot(Direction other) => Vector4.Dot(AsVector4, other.AsVector4);
-	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float Dot(Vect other) => other.Dot(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction Cross(Direction other) => FromVector3(Vector3.Cross(ToVector3(), other.ToVector3()));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction Cross(Vect other) => FromVector3(Vector3.Cross(ToVector3(), other.ToVector3()));
+
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -126,6 +133,10 @@ partial struct Direction :
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction RotatedBy(Rotation rotation) => rotation.Rotate(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Direction operator *(Direction d, Rotation r) => r.Rotate(d);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Direction operator *(Rotation r, Direction d) => r.Rotate(d);
 
 	public static Direction Interpolate(Direction start, Direction end, float distance) {
 		return Rotation.FromStartAndEndDirection(start, end).ScaledBy(distance) * start;
@@ -135,6 +146,11 @@ partial struct Direction :
 	}
 	public static Direction InterpolateUsingPrecomputation(Direction start, Direction end, Rotation precomputation, float distance) {
 		return precomputation.ScaledBy(distance) * start;
+	}
+
+	public Direction Clamp(Direction min, Direction max) {
+		// TODO this needs to be the geodesic one
+		// TODO and handle if min ^ max == 180
 	}
 
 	public static Direction CreateNewRandom() {

@@ -168,44 +168,44 @@ partial class OriginCuboidTest {
 
 	[Test]
 	public void ShouldCorrectlyFindClosestPointToLocations() {
-		AssertToleranceEquals((0f, 0f, 0f), TestCuboid.ClosestPointTo((0f, 0f, 0f)), TestTolerance);
-		AssertToleranceEquals((3.6f, 0f, 0f), TestCuboid.ClosestPointTo((3.6f, 0f, 0f)), TestTolerance);
-		AssertToleranceEquals((0f, 6.8f, 0f), TestCuboid.ClosestPointTo((0f, 6.8f, 0f)), TestTolerance);
-		AssertToleranceEquals((0f, 0f, 0.7f), TestCuboid.ClosestPointTo((0f, 0f, 0.7f)), TestTolerance);
-		AssertToleranceEquals((-3.6f, 0f, 0f), TestCuboid.ClosestPointTo((-3.6f, 0f, 0f)), TestTolerance);
-		AssertToleranceEquals((0f, -6.8f, 0f), TestCuboid.ClosestPointTo((0f, -6.8f, 0f)), TestTolerance);
-		AssertToleranceEquals((0f, 0f, -0.7f), TestCuboid.ClosestPointTo((0f, 0f, -0.7f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0f), TestCuboid.PointClosestTo((0f, 0f, 0f)), TestTolerance);
+		AssertToleranceEquals((3.6f, 0f, 0f), TestCuboid.PointClosestTo((3.6f, 0f, 0f)), TestTolerance);
+		AssertToleranceEquals((0f, 6.8f, 0f), TestCuboid.PointClosestTo((0f, 6.8f, 0f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0.7f), TestCuboid.PointClosestTo((0f, 0f, 0.7f)), TestTolerance);
+		AssertToleranceEquals((-3.6f, 0f, 0f), TestCuboid.PointClosestTo((-3.6f, 0f, 0f)), TestTolerance);
+		AssertToleranceEquals((0f, -6.8f, 0f), TestCuboid.PointClosestTo((0f, -6.8f, 0f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, -0.7f), TestCuboid.PointClosestTo((0f, 0f, -0.7f)), TestTolerance);
 
-		AssertToleranceEquals((3.6f, 0f, 0f), TestCuboid.ClosestPointTo((4.6f, 0f, 0f)), TestTolerance);
-		AssertToleranceEquals((0f, 6.8f, 0f), TestCuboid.ClosestPointTo((0, 7.8f, 0f)), TestTolerance);
-		AssertToleranceEquals((0f, 0f, 0.7f), TestCuboid.ClosestPointTo((0, 0f, 1.7f)), TestTolerance);
-		AssertToleranceEquals((-3.6f, 0f, 0f), TestCuboid.ClosestPointTo((-4.6f, 0f, 0f)), TestTolerance);
-		AssertToleranceEquals((0f, -6.8f, 0f), TestCuboid.ClosestPointTo((0, -7.8f, 0f)), TestTolerance);
-		AssertToleranceEquals((0f, 0f, -0.7f), TestCuboid.ClosestPointTo((0, 0f, -1.7f)), TestTolerance);
+		AssertToleranceEquals((3.6f, 0f, 0f), TestCuboid.PointClosestTo((4.6f, 0f, 0f)), TestTolerance);
+		AssertToleranceEquals((0f, 6.8f, 0f), TestCuboid.PointClosestTo((0, 7.8f, 0f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0.7f), TestCuboid.PointClosestTo((0, 0f, 1.7f)), TestTolerance);
+		AssertToleranceEquals((-3.6f, 0f, 0f), TestCuboid.PointClosestTo((-4.6f, 0f, 0f)), TestTolerance);
+		AssertToleranceEquals((0f, -6.8f, 0f), TestCuboid.PointClosestTo((0, -7.8f, 0f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, -0.7f), TestCuboid.PointClosestTo((0, 0f, -1.7f)), TestTolerance);
 
-		AssertToleranceEquals((3.6f, -6.8f, 0.7f), TestCuboid.ClosestPointTo((4.6f, -7.8f, 0.7f)), TestTolerance);
-		AssertToleranceEquals((0f, 6.8f, -0.7f), TestCuboid.ClosestPointTo((0f, 100f, -100f)), TestTolerance);
+		AssertToleranceEquals((3.6f, -6.8f, 0.7f), TestCuboid.PointClosestTo((4.6f, -7.8f, 0.7f)), TestTolerance);
+		AssertToleranceEquals((0f, 6.8f, -0.7f), TestCuboid.PointClosestTo((0f, 100f, -100f)), TestTolerance);
 	}
 
 	[Test]
 	public void ShouldCorrectlyFindClosestSurfacePointToLocations() {
-		AssertToleranceEquals((0f, 0f, 0.7f), TestCuboid.ClosestPointOnSurfaceTo((0f, 0f, 0f)), TestTolerance);
-		AssertToleranceEquals((3.6f, 0f, 0f), TestCuboid.ClosestPointOnSurfaceTo((3.6f, 0f, 0f)), TestTolerance);
-		AssertToleranceEquals((0f, 6.8f, 0f), TestCuboid.ClosestPointOnSurfaceTo((0f, 6.8f, 0f)), TestTolerance);
-		AssertToleranceEquals((0f, 0f, 0.7f), TestCuboid.ClosestPointOnSurfaceTo((0f, 0f, 0.7f)), TestTolerance);
-		AssertToleranceEquals((-3.6f, 0f, 0f), TestCuboid.ClosestPointOnSurfaceTo((-3.6f, 0f, 0f)), TestTolerance);
-		AssertToleranceEquals((0f, -6.8f, 0f), TestCuboid.ClosestPointOnSurfaceTo((0f, -6.8f, 0f)), TestTolerance);
-		AssertToleranceEquals((0f, 0f, -0.7f), TestCuboid.ClosestPointOnSurfaceTo((0f, 0f, -0.7f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0.7f), TestCuboid.SurfacePointClosestTo((0f, 0f, 0f)), TestTolerance);
+		AssertToleranceEquals((3.6f, 0f, 0f), TestCuboid.SurfacePointClosestTo((3.6f, 0f, 0f)), TestTolerance);
+		AssertToleranceEquals((0f, 6.8f, 0f), TestCuboid.SurfacePointClosestTo((0f, 6.8f, 0f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0.7f), TestCuboid.SurfacePointClosestTo((0f, 0f, 0.7f)), TestTolerance);
+		AssertToleranceEquals((-3.6f, 0f, 0f), TestCuboid.SurfacePointClosestTo((-3.6f, 0f, 0f)), TestTolerance);
+		AssertToleranceEquals((0f, -6.8f, 0f), TestCuboid.SurfacePointClosestTo((0f, -6.8f, 0f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, -0.7f), TestCuboid.SurfacePointClosestTo((0f, 0f, -0.7f)), TestTolerance);
 
-		AssertToleranceEquals((3.6f, 0f, 0f), TestCuboid.ClosestPointOnSurfaceTo((4.6f, 0f, 0f)), TestTolerance);
-		AssertToleranceEquals((0f, 6.8f, 0f), TestCuboid.ClosestPointOnSurfaceTo((0, 7.8f, 0f)), TestTolerance);
-		AssertToleranceEquals((0f, 0f, 0.7f), TestCuboid.ClosestPointOnSurfaceTo((0, 0f, 1.7f)), TestTolerance);
-		AssertToleranceEquals((-3.6f, 0f, 0f), TestCuboid.ClosestPointOnSurfaceTo((-4.6f, 0f, 0f)), TestTolerance);
-		AssertToleranceEquals((0f, -6.8f, 0f), TestCuboid.ClosestPointOnSurfaceTo((0, -7.8f, 0f)), TestTolerance);
-		AssertToleranceEquals((0f, 0f, -0.7f), TestCuboid.ClosestPointOnSurfaceTo((0, 0f, -1.7f)), TestTolerance);
+		AssertToleranceEquals((3.6f, 0f, 0f), TestCuboid.SurfacePointClosestTo((4.6f, 0f, 0f)), TestTolerance);
+		AssertToleranceEquals((0f, 6.8f, 0f), TestCuboid.SurfacePointClosestTo((0, 7.8f, 0f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0.7f), TestCuboid.SurfacePointClosestTo((0, 0f, 1.7f)), TestTolerance);
+		AssertToleranceEquals((-3.6f, 0f, 0f), TestCuboid.SurfacePointClosestTo((-4.6f, 0f, 0f)), TestTolerance);
+		AssertToleranceEquals((0f, -6.8f, 0f), TestCuboid.SurfacePointClosestTo((0, -7.8f, 0f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, -0.7f), TestCuboid.SurfacePointClosestTo((0, 0f, -1.7f)), TestTolerance);
 
-		AssertToleranceEquals((3.6f, -6.8f, 0.7f), TestCuboid.ClosestPointOnSurfaceTo((4.6f, -7.8f, 0.7f)), TestTolerance);
-		AssertToleranceEquals((0f, 6.8f, -0.7f), TestCuboid.ClosestPointOnSurfaceTo((0f, 100f, -100f)), TestTolerance);
+		AssertToleranceEquals((3.6f, -6.8f, 0.7f), TestCuboid.SurfacePointClosestTo((4.6f, -7.8f, 0.7f)), TestTolerance);
+		AssertToleranceEquals((0f, 6.8f, -0.7f), TestCuboid.SurfacePointClosestTo((0f, 100f, -100f)), TestTolerance);
 	}
 
 	[Test]
@@ -1208,7 +1208,7 @@ partial class OriginCuboidTest {
 		foreach (var orientation in OrientationUtils.AllDiagonals) {
 			AssertToleranceEquals(
 				TestCuboid.GetCornerLocation(orientation),
-				TestCuboid.ClosestPointTo(new Plane(orientation.ToDirection(), 1000f)),
+				TestCuboid.PointClosestTo(new Plane(orientation.ToDirection(), 1000f)),
 				TestTolerance
 			);
 			AssertToleranceEquals(
@@ -1222,7 +1222,7 @@ partial class OriginCuboidTest {
 			var edge = TestCuboid.GetEdge(orientation);
 			Assert.AreEqual(
 				0f,
-				edge.DistanceFrom(TestCuboid.ClosestPointTo(new Plane(orientation.ToDirection(), 1000f))),
+				edge.DistanceFrom(TestCuboid.PointClosestTo(new Plane(orientation.ToDirection(), 1000f))),
 				TestTolerance
 			);
 			Assert.AreEqual(
@@ -1239,7 +1239,7 @@ partial class OriginCuboidTest {
 				if (axis == orientation.GetAxis()) {
 					Assert.AreEqual(
 						TestCuboid.GetHalfExtent(axis) * orientation.GetAxisSign(),
-						TestCuboid.ClosestPointTo(plane)[axis],
+						TestCuboid.PointClosestTo(plane)[axis],
 						TestTolerance
 					);
 					Assert.AreEqual(
@@ -1250,11 +1250,11 @@ partial class OriginCuboidTest {
 				}
 				else {
 					Assert.GreaterOrEqual(
-						TestCuboid.ClosestPointTo(plane)[axis],
+						TestCuboid.PointClosestTo(plane)[axis],
 						-TestCuboid.GetHalfExtent(axis) - TestTolerance
 					);
 					Assert.LessOrEqual(
-						TestCuboid.ClosestPointTo(plane)[axis],
+						TestCuboid.PointClosestTo(plane)[axis],
 						TestCuboid.GetHalfExtent(axis) + TestTolerance
 					);
 					Assert.GreaterOrEqual(
@@ -1274,7 +1274,7 @@ partial class OriginCuboidTest {
 
 			Assert.AreEqual(
 				0f,
-				TestCuboid.DistanceFrom(TestCuboid.ClosestPointTo(plane)),
+				TestCuboid.DistanceFrom(TestCuboid.PointClosestTo(plane)),
 				TestTolerance
 			);
 			Assert.AreEqual(
@@ -1284,7 +1284,7 @@ partial class OriginCuboidTest {
 			);
 			Assert.AreEqual(
 				0f,
-				plane.DistanceFrom(TestCuboid.ClosestPointTo(plane)),
+				plane.DistanceFrom(TestCuboid.PointClosestTo(plane)),
 				TestTolerance
 			);
 			Assert.AreEqual(

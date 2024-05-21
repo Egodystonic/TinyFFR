@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR;
  * Does a Location actually equal a Direction even if their XYZ components are identical?
  * If users really just want equality of the components they can use `ToVector3().Equals(other.ToVector3())` which is more explicit.
  */
-public interface IVect : IMathPrimitive, IGeometryInteractable {
+public interface IVect : IMathPrimitive {
 	internal const char VectorStringPrefixChar = '<';
 	internal const char VectorStringSuffixChar = '>';
 
@@ -25,6 +25,8 @@ public interface IVect : IMathPrimitive, IGeometryInteractable {
 	bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => VectExtensions.TryFormat(this, destination, out charsWritten, format, provider);
 
 	void Deconstruct(out float x, out float y, out float z);
+
+	Vect AsVect();
 	
 	protected static Vector3 ParseVector3String(ReadOnlySpan<char> s, IFormatProvider? provider) {
 		var numberFormatter = NumberFormatInfo.GetInstance(provider);
@@ -70,7 +72,7 @@ public interface IVect : IMathPrimitive, IGeometryInteractable {
 	}
 }
 
-public interface IVect<TSelf> : IVect, IMathPrimitive<TSelf> where TSelf : IVect<TSelf> {
+public interface IVect<TSelf> : IVect, IMathPrimitive<TSelf>, IInterpolatable<TSelf> where TSelf : IVect<TSelf> {
 	static abstract TSelf FromVector3(Vector3 v);
 	static abstract implicit operator TSelf((float X, float Y, float Z) tuple);
 	TSelf this[Axis first, Axis second, Axis third] { get; }

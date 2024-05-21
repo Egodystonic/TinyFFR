@@ -5,7 +5,7 @@ using System.Buffers.Binary;
 
 namespace Egodystonic.TinyFFR;
 
-public readonly partial struct OriginCuboid : IFullyInteractableConvexShape<OriginCuboid> {  // TODO IIntersectable<Plane, BoundedPlane or similar>
+public readonly partial struct OriginCuboid : IConvexShape<OriginCuboid> {  // TODO IIntersectionDeterminable<Plane, BoundedPlane or similar>
 	internal const float DefaultRandomMin = 0.5f;
 	internal const float DefaultRandomMax = 1.5f;
 	public static readonly OriginCuboid UnitCube = new(1f, 1f, 1f);

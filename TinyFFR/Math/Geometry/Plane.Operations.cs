@@ -4,16 +4,19 @@
 namespace Egodystonic.TinyFFR;
 
 public readonly partial struct Plane : 
-	ISignedDistanceMeasurable<Location>, IContainmentTestable<Location>, IClosestEndogenousPointDiscoverable<Location>,
-	IDistanceMeasurable<Plane>, IIntersectable<Plane, Line>,
-	IAdditionOperators<Plane, Vect, Plane>,
-	IMultiplyOperators<Plane, (Location Pivot, Rotation Rotation), Plane>,
-	IMultiplyOperators<Plane, (Rotation Rotation, Location Pivot), Plane>,
-	IUnaryNegationOperators<Plane, Plane> {
+	IInvertible<Plane>,
+	ITranslatable<Plane>,
+	IPointRotatable<Plane>,
+	IDistanceMeasurable<Plane>, IIntersectionDeterminable<Plane, Line>,
+	ISignedDistanceMeasurable<Location>, IContainer<Location>, IClosestEndogenousPointDiscoverable<Location>,
+	I
+	 {
+	const float MaxPlaneToPlaneDistanceNormalSimilarity = 1 - 1E-8f;
 
 	public Plane Flipped {
 		get => new(-Normal, -_smallestDistanceFromOriginAlongNormal);
 	}
+	Plane IInvertible<Plane>.Inverted => Flipped;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Plane operator -(Plane operand) => operand.Flipped;
 
@@ -22,6 +25,8 @@ public readonly partial struct Plane :
 	public static Plane operator +(Plane plane, Vect v) => plane.MovedBy(v);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Plane operator +(Vect v, Plane plane) => plane.MovedBy(v);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Plane operator -(Plane plane, Vect v) => plane.MovedBy(-v);
 	public Plane MovedBy(Vect v) => new(Normal, ClosestPointToOrigin + v);
 	
 
@@ -33,7 +38,7 @@ public readonly partial struct Plane :
 	public static Plane operator *(Plane plane, (Rotation Rotation, Location Pivot) rotTuple) => plane.RotatedAroundPoint(rotTuple.Rotation, rotTuple.Pivot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Plane operator *((Rotation Rotation, Location Pivot) rotTuple, Plane plane) => plane.RotatedAroundPoint(rotTuple.Rotation, rotTuple.Pivot);
-	public Plane RotatedAroundPoint(Rotation rot, Location pivotPoint) => new(Normal * rot, ClosestPointTo(pivotPoint) * (pivotPoint, rot));
+	public Plane RotatedAroundPoint(Rotation rot, Location pivotPoint) => new(Normal * rot, PointClosestTo(pivotPoint) * (pivotPoint, rot));
 
 	// TODO explain in XML that this is a normalized value from 0 to 1, where 1 is a direction completely perpendicular to the plane and 0 is completely parallel; and is also the cosine of the angle formed with the normal
 	public float PerpendicularityWith(Direction direction) => MathF.Abs(Normal.Dot(direction));
@@ -51,9 +56,13 @@ public readonly partial struct Plane :
 		return Direction.FromVector3(-2f * Vector3.Dot(Normal.ToVector3(), direction.ToVector3()) * Normal.ToVector3() + direction.ToVector3());
 	}
 
-	public Location ClosestPointTo(Location location) => location - ClosestPointToOrigin.VectTo(location).ProjectedOnTo(Normal);
+	public Location PointClosestTo(Location location) => location - ClosestPointToOrigin.VectTo(location).ProjectedOnTo(Normal);
 	public float SignedDistanceFrom(Location location) => Vector3.Dot(location.ToVector3(), _normal) - _smallestDistanceFromOriginAlongNormal; // TODO xmldoc positive means normal faces towards, etc
 	public float DistanceFrom(Location location) => MathF.Abs(SignedDistanceFrom(location));
+	float IDistanceMeasurable<Location>.DistanceSquaredFrom(Location location) {
+		var distanceSqrt = DistanceFrom(location);
+		return distanceSqrt * distanceSqrt;
+	}
 	public float SignedDistanceFromOrigin() => -_smallestDistanceFromOriginAlongNormal;
 	public float DistanceFromOrigin() => MathF.Abs(SignedDistanceFromOrigin());
 
@@ -74,7 +83,8 @@ public readonly partial struct Plane :
 	public bool Contains(Location location) => Contains(location, DefaultPlaneThickness);
 	public bool Contains(Location location, float planeThickness) => DistanceFrom(location) <= planeThickness;
 
-	public float DistanceFrom(Plane other) => MathF.Abs(Normal.Dot(other.Normal)) >= 0.99999999f ? ClosestPointToOrigin.DistanceFrom(other.ClosestPointToOrigin) : 0f;
+	public float DistanceFrom(Plane other) => MathF.Abs(Normal.Dot(other.Normal)) >= MaxPlaneToPlaneDistanceNormalSimilarity ? ClosestPointToOrigin.DistanceFrom(other.ClosestPointToOrigin) : 0f;
+	public float DistanceSquaredFrom(Plane other) => MathF.Abs(Normal.Dot(other.Normal)) >= MaxPlaneToPlaneDistanceNormalSimilarity ? ClosestPointToOrigin.DistanceSquaredFrom(other.ClosestPointToOrigin) : 0f;
 	
 	public bool IsIntersectedBy(Plane other) => Vector3.Cross(_normal, other._normal).LengthSquared() != 0f;
 	public Line? IntersectionWith(Plane other) {
@@ -127,15 +137,22 @@ public readonly partial struct Plane :
 	// Idea here is to pick the closest direction (normal or -normal) and have parallel directions just pick the positive normal, all without branching. There's probably a smarter way to do it but I'm not smart enough to know it
 	public Direction OrthogonalizationOf(Direction direction) => Direction.FromVector3PreNormalized(Normal.ToVector3() * MathF.Sign(direction.Dot(Normal) * 2f + Single.Epsilon));
 
-	public PlaneObjectRelationship RelationshipTo<TGeo>(TGeo element) where TGeo : IRelationshipDeterminable<Plane, PlaneObjectRelationship> => element.RelationshipTo(this);
+	public PlaneObjectRelationship RelationshipTo<TGeo>(TGeo element) where TGeo : IRelatable<Plane, PlaneObjectRelationship> => element.RelationshipTo(this);
 	public bool IsIntersectedBy<TGeo>(TGeo element) where TGeo : IIntersectable<Plane> => element.IsIntersectedBy(this);
-	public Location? IntersectionWith<TGeo>(TGeo element) where TGeo : IIntersectable<Plane, Location> => element.IntersectionWith(this);
+	public Location? IntersectionWith<TGeo>(TGeo element) where TGeo : IIntersectionDeterminable<Plane, Location> => element.IntersectionWith(this);
 
 
 	public static Plane Interpolate(Plane start, Plane end, float distance) {
 		return new(
 			Direction.Interpolate(start.Normal, end.Normal, distance),
 			Location.Interpolate(start.ClosestPointToOrigin, end.ClosestPointToOrigin, distance)
+		);
+	}
+
+	public Plane Clamp(Plane min, Plane max) {
+		return new(
+			Normal.Clamp(min.Normal, max.Normal),
+			ClosestPointToOrigin.Clamp(min.ClosestPointToOrigin, max.ClosestPointToOrigin)
 		);
 	}
 	public static Rotation CreateInterpolationPrecomputation(Plane start, Plane end) => Direction.CreateInterpolationPrecomputation(start.Normal, end.Normal);

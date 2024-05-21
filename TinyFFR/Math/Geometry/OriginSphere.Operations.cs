@@ -25,12 +25,12 @@ public readonly partial struct OriginSphere
 
 	public bool Contains(Location location) => ((Vect) location).LengthSquared <= RadiusSquared;
 	
-	public Location ClosestPointTo(Location location) {
+	public Location PointClosestTo(Location location) {
 		var vectFromLocToCentre = (Vect) location;
 		if (vectFromLocToCentre.LengthSquared <= RadiusSquared) return location;
 		else return location - vectFromLocToCentre.ShortenedBy(Radius);
 	}
-	public Location ClosestPointOnSurfaceTo(Location location) { // TODO xmldoc that if location == Origin this will return Origin (or we should add an overload?)
+	public Location SurfacePointClosestTo(Location location) { // TODO xmldoc that if location == Origin this will return Origin (or we should add an overload?)
 		var vectFromLocToCentre = (Vect) location;
 		return (Location) vectFromLocToCentre.WithLength(Radius);
 	}
@@ -60,8 +60,8 @@ public readonly partial struct OriginSphere
 		// Find the distance from the potential intersection points to the line. Pick the one that is closest to the line, then find the closest point on the line to that point
 		var intersectionPointOne = line.UnboundedLocationAtDistance(potentialIntersectionDistances.Value.First);
 		var intersectionPointTwo = line.UnboundedLocationAtDistance(potentialIntersectionDistances.Value.Second);
-		if (line.DistanceFrom(intersectionPointTwo) < line.DistanceFrom(intersectionPointOne)) return line.ClosestPointTo(intersectionPointTwo);
-		else return line.ClosestPointTo(intersectionPointOne);
+		if (line.DistanceFrom(intersectionPointTwo) < line.DistanceFrom(intersectionPointOne)) return line.PointClosestTo(intersectionPointTwo);
+		else return line.PointClosestTo(intersectionPointOne);
 	}
 
 	public bool IsIntersectedBy<TLine>(TLine line) where TLine : ILine {
@@ -103,7 +103,7 @@ public readonly partial struct OriginSphere
 		return ((negB + sqrtDiscriminant) * 0.5f, (negB - sqrtDiscriminant) * 0.5f, discriminant == 0f);
 	}
 
-	public Location ClosestPointTo(Plane plane) => (Location) ((Vect) plane.ClosestPointToOrigin).WithMaxLength(Radius);
+	public Location PointClosestTo(Plane plane) => (Location) ((Vect) plane.ClosestPointToOrigin).WithMaxLength(Radius);
 	public Location ClosestPointOn(Plane plane) => plane.ClosestPointToOrigin;
 
 	public float SignedDistanceFrom(Plane plane) {
@@ -118,7 +118,7 @@ public readonly partial struct OriginSphere
 		_ => PlaneObjectRelationship.PlaneIntersectsObject
 	};
 
-	// TODO this will become a circle when we implement IIntersectable properly
+	// TODO this will become a circle when we implement IIntersectionDeterminable properly
 	public bool TrySplit(Plane plane, out Location circleCentrePoint, out float circleRadius) {
 		circleCentrePoint = plane.ClosestPointToOrigin;
 		var vectToPlane = (Vect) circleCentrePoint;
@@ -133,7 +133,7 @@ public readonly partial struct OriginSphere
 
 	public Location ClosestPointOnSurfaceTo(Plane plane) {
 		// If the plane doesn't intersect this sphere, we can just return the simple closest point
-		if (!TrySplit(plane, out var circleCentrePoint, out var circleRadius)) return ClosestPointTo(plane);
+		if (!TrySplit(plane, out var circleCentrePoint, out var circleRadius)) return PointClosestTo(plane);
 
 		// Otherwise there are infinite valid answers around the circle formed by the intersection. Any will do
 		var centrePointDirection = circleCentrePoint == Location.Origin ? plane.Normal : ((Vect) circleCentrePoint).Direction;

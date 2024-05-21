@@ -64,6 +64,9 @@ public readonly partial struct Vect : IVect<Vect>, IDescriptiveStringProvider {
 	public static explicit operator Vect(Direction directionOperand) => new(directionOperand.AsVector4 with { W = WValue });
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static explicit operator Vect(Location locationOperand) => new(locationOperand.AsVector4 with { W = WValue });
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	Vect IVect.AsVect() => this;
 	#endregion
 
 	#region Span Conversion

@@ -22,7 +22,7 @@ partial class XYPairTest {
 	public void ShouldCorrectlyReverse() {
 		Assert.AreEqual(XYPair<float>.Zero, -XYPair<float>.Zero);
 		Assert.AreEqual(new XYPair<float>(-3f, -4f), -ThreeFourFloat);
-		Assert.AreEqual(new XYPair<float>(-1f, -1f), new XYPair<float>(1f, 1f).Negated);
+		Assert.AreEqual(new XYPair<float>(-1f, -1f), new XYPair<float>(1f, 1f).Inverted);
 	}
 
 	[Test]

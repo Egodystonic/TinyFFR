@@ -7,13 +7,11 @@ using static System.Numerics.Vector4;
 namespace Egodystonic.TinyFFR;
 
 partial struct Vect :
-	IUnaryNegationOperators<Vect, Vect>,
-	IAdditionOperators<Vect, Vect, Vect>,
-	ISubtractionOperators<Vect, Vect, Vect>,
-	IMultiplyOperators<Vect, float, Vect>,
-	IDivisionOperators<Vect, float, Vect>,
-	IInterpolatable<Vect>,
-	IBoundedRandomizable<Vect> {
+	IAlgebraicRing<Vect>,
+	IScalable<Vect>,
+	IRotatable<Vect>,
+	IInnerProductSpace<Vect>,
+	IVectorProductSpace<Vect> {
 	internal const float DefaultRandomRange = 100f;
 
 	public float this[Axis axis] => axis switch {
@@ -24,6 +22,7 @@ partial struct Vect :
 	};
 	public XYPair<float> this[Axis first, Axis second] => new(this[first], this[second]);
 	public Vect this[Axis first, Axis second, Axis third] => new(this[first], this[second], this[third]);
+	static Vect IAdditiveIdentity<Vect, Vect>.AdditiveIdentity => Zero;
 
 	public float Length {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -43,10 +42,14 @@ partial struct Vect :
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator -(Vect operand) => operand.Reversed;
-	public Vect Reversed {
+	public static Vect operator -(Vect operand) => operand.Inverted;
+	public Vect Inverted {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(-AsVector4);
+	}
+	public Vect Reciprocal {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(1f / X, 1f / Y, 1f / Z);
 	}
 
 
@@ -55,14 +58,17 @@ partial struct Vect :
 	public static Vect operator +(Vect lhs, Vect rhs) => lhs.Plus(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect Plus(Vect other) => new(AsVector4 + other.AsVector4);
-
-
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator -(Vect lhs, Vect rhs) => lhs.Minus(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect Minus(Vect other) => new(AsVector4 - other.AsVector4);
 
+
+	public static Vect operator *(Vect left, Vect right) => left.MultipliedBy(right);
+	public static Vect operator /(Vect left, Vect right) => right.MultipliedBy(left);
+	public Vect MultipliedBy(Vect other) => new(AsVector4 * other.AsVector4);
+	public Vect DividedBy(Vect other) => new(AsVector4 / other.AsVector4);
+	static Vect IMultiplicativeIdentity<Vect, Vect>.MultiplicativeIdentity => new(1f, 1f, 1f);
 
 
 	public Direction Direction {
@@ -75,8 +81,17 @@ partial struct Vect :
 	}
 
 
+	// Friendlier name for the maths-impaired like me
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float LengthWhenProjectedOnTo(Direction d) => Dot(AsVector4, d.AsVector4);
+	public float LengthWhenProjectedOnTo(Direction d) => Dot(d);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float Dot(Vect other) => Vector4.Dot(AsVector4, other.AsVector4);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float Dot(Direction other) => Vector4.Dot(AsVector4, other.AsVector4);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect Cross(Vect other) => FromVector3(Vector3.Cross(ToVector3(), other.ToVector3()));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect Cross(Direction other) => FromVector3(Vector3.Cross(ToVector3(), other.ToVector3()));
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -92,7 +107,14 @@ partial struct Vect :
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vect operator *(Vect d, Rotation r) => r.Rotate(d);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vect operator *(Rotation r, Vect d) => r.Rotate(d);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect RotatedBy(Rotation rotation) => rotation.Rotate(this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location AsLocationFromOrigin() => (Location) this;
 
 
 
@@ -104,6 +126,7 @@ partial struct Vect :
 	public static Vect operator /(Vect vectOperand, float scalarOperand) => vectOperand.ScaledBy(1f / scalarOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect ScaledBy(float scalar) => new(Multiply(AsVector4, scalar));
+
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect WithLength(float newLength) => new(Direction.AsVector4 * newLength);
@@ -122,6 +145,8 @@ partial struct Vect :
 	public static Vect Interpolate(Vect start, Vect end, float distance) {
 		return start + (end - start) * distance;
 	}
+
+	public Vect Clamp(Vect min, Vect max) => AsLocationFromOrigin().ClosestPointOn(new BoundedLine(min.AsLocationFromOrigin(), max.AsLocationFromOrigin())).AsVect();
 
 	public static Vect CreateNewRandom() {
 		return new Vect(

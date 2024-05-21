@@ -25,16 +25,16 @@ class GeometryExtensionsTest {
 		_ = signedDistanceMeasurable.Received(1).SignedDistanceFrom(geometryInteractable);
 		_ = signedDistanceMeasurable.Received(1).DistanceFrom(geometryInteractable);
 
-		var containmentTestable = Substitute.For<IContainmentTestable<IGeometryInteractable>>();
+		var containmentTestable = Substitute.For<IContainer<IGeometryInteractable>>();
 		_ = geometryInteractable.IsContainedWithin(containmentTestable);
 		_ = containmentTestable.Received(1).Contains(geometryInteractable);
 
 		var closestPointDiscoverable = Substitute.For<IClosestPointDiscoverable<IGeometryInteractable>>();
 		_ = geometryInteractable.ClosestPointOn(closestPointDiscoverable);
-		_ = closestPointDiscoverable.Received(1).ClosestPointTo(geometryInteractable);
+		_ = closestPointDiscoverable.Received(1).PointClosestTo(geometryInteractable);
 		_ = closestPointDiscoverable.Received(0).ClosestPointOn(geometryInteractable);
 		_ = geometryInteractable.ClosestPointTo(closestPointDiscoverable);
-		_ = closestPointDiscoverable.Received(1).ClosestPointTo(geometryInteractable);
+		_ = closestPointDiscoverable.Received(1).PointClosestTo(geometryInteractable);
 		_ = closestPointDiscoverable.Received(1).ClosestPointOn(geometryInteractable);
 
 		var signedSurfaceDistanceMeasurable = Substitute.For<ISignedSurfaceDistanceMeasurable<IGeometryInteractable>>();

@@ -7,13 +7,10 @@ using static Egodystonic.TinyFFR.MathUtils;
 namespace Egodystonic.TinyFFR;
 
 partial struct Rotation : 
-	IUnaryNegationOperators<Rotation, Rotation>,
-	IMultiplyOperators<Rotation, Direction, Direction>,
-	IMultiplyOperators<Rotation, Vect, Vect>,
-	IAdditionOperators<Rotation, Rotation, Rotation>,
-	IMultiplyOperators<Rotation, float, Rotation>,
-	IInterpolatable<Rotation>,
-	IBoundedRandomizable<Rotation> {
+	IAlgebraicGroup<Rotation>,
+	IAngleMeasurable<Rotation, Rotation>,
+	IScalable<Rotation>,
+	IInterpolatable<Rotation> {
 	static Vector4 Rotate(Quaternion q, Vector4 v) {
 		var quatVec = new Vector3(q.X, q.Y, q.Z);
 		var targetVec = new Vector3(v.X, v.Y, v.Z);
@@ -25,27 +22,20 @@ partial struct Rotation :
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation operator -(Rotation operand) => operand.Reversed;
-	public Rotation Reversed {
+	public static Rotation operator -(Rotation operand) => operand.Inverted;
+	public Rotation Inverted {
 		get => new(new(-AsQuaternion.X, -AsQuaternion.Y, -AsQuaternion.Z, AsQuaternion.W));
 	}
+	static Rotation IAdditiveIdentity<Rotation, Rotation>.AdditiveIdentity => None;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Rotation WithAngle(Angle angle) => new(angle, Axis);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Rotation WithAxis(Direction axis) => new(Angle, axis);
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction operator *(Direction d, Rotation r) => r.Rotate(d);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction operator *(Rotation r, Direction d) => r.Rotate(d);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator *(Vect d, Rotation r) => r.Rotate(d);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator *(Rotation r, Vect d) => r.Rotate(d);
 	// Renormalize because we can accrue a lot of error here and we're doing a heavy operation anyway. Offer RotateWithoutRenormalizing for perf sensitive cases
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction Rotate(Direction d) => RotateWithoutRenormalizing(d).Renormalized;
+	public Direction Rotate(Direction d) => Direction.Renormalize(RotateWithoutRenormalizing(d));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction RotateWithoutRenormalizing(Direction d) => new(Rotate(AsQuaternion, d.AsVector4));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -55,21 +45,29 @@ partial struct Rotation :
 
 	// We provide this as a probably more intuitive way of adding rotations, even if it's not the arithmetic operation used to combine quaternions.
 	// Ultimately this type is meant to be an abstraction of a Rotation, not a Quaternion, which is a type I don't want users to have to care about or even know about if they don't want to.
-	// Notice that (lhs + rhs) is the OPPOSITE of (lhs.AsQuaternion * rhs.AsQuaternion) (see how we multiply other.AsQuaternion by this.AsQuaternion in FollowedBy())
+	// Notice that (lhs + rhs) is the OPPOSITE of (lhs.AsQuaternion * rhs.AsQuaternion) (see how we multiply other.AsQuaternion by this.AsQuaternion in Plus())
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation operator +(Rotation lhs, Rotation rhs) => lhs.FollowedBy(rhs);
+	public static Rotation operator +(Rotation lhs, Rotation rhs) => lhs.Plus(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Rotation FollowedBy(Rotation other) => new(other.AsQuaternion * AsQuaternion);
+	public static Rotation operator -(Rotation lhs, Rotation rhs) => lhs.Minus(rhs);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Rotation Plus(Rotation other) => new(other.AsQuaternion * AsQuaternion);
+	// Was previously known as "DifferenceTo()" because this method is trying to mimic the standard - function for Reals/Integers (e.g. 7 - 3 = 4, 4 is the difference of 7 to 3).
+	public Rotation Minus(Rotation other) => FromQuaternion(Inverted.AsQuaternion * other.AsQuaternion);
 
-	public Rotation DifferenceTo(Rotation other) => FromQuaternion(Reversed.AsQuaternion * other.AsQuaternion);
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle AngleTo(Rotation other) => DifferenceTo(other).Angle;
+	public static Angle operator ^(Rotation left, Rotation right) => left.AngleTo(right);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(Rotation other) => Minus(other).Angle;
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator *(Rotation rotation, float scalar) => rotation.ScaledBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator *(float scalar, Rotation rotation) => rotation.ScaledBy(scalar);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Rotation operator /(Rotation rotation, float scalar) => rotation.ScaledBy(1f / scalar);
 	public Rotation ScaledBy(float scalar) {
 		const float FloatingPointErrorMargin = 1E-4f;
 
@@ -108,6 +106,13 @@ partial struct Rotation :
 		return new(Angle.Interpolate(start, end, distance), axis);
 	}
 
+	public Rotation Clamp(Rotation min, Rotation max) {
+		var (minAngle, minAxis) = min;
+		var (maxAngle, maxAxis) = max;
+		return new(Angle.Clamp(minAngle, maxAngle), Axis.Clamp(minAxis, maxAxis));
+	}
+
+
 	public static Rotation CreateNewRandom() {
 		return FromQuaternion(new(
 			RandomUtils.NextSingleNegOneToOneInclusive(),
@@ -117,7 +122,7 @@ partial struct Rotation :
 		));
 	}
 	public static Rotation CreateNewRandom(Rotation minInclusive, Rotation maxExclusive) {
-		var difference = minInclusive.DifferenceTo(maxExclusive);
+		var difference = minInclusive.Minus(maxExclusive);
 		return minInclusive + difference.ScaledBy(RandomUtils.NextSingle());
 	}
 }

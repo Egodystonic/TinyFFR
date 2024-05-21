@@ -81,14 +81,14 @@ partial class RotationTest {
 		}
 
 		Assert.IsTrue(NinetyAroundDown.EqualsForDirection(90f % Right + 90f % Forward, Forward, TestTolerance));
-		Assert.IsTrue((45f % Up).FollowedBy(180f % Forward).EqualsForDirection(-45f % Up, Forward, TestTolerance));
+		Assert.IsTrue((45f % Up).Plus(180f % Forward).EqualsForDirection(-45f % Up, Forward, TestTolerance));
 	}
 
 	[Test]
 	public void ShouldCorrectlyCalculateDifferenceBetweenRotations() {
 		void AssertPair(Angle a1, Direction d1, Angle a2, Direction d2, Rotation expectation) {
-			AssertToleranceEquals(expectation, (a1 % d1).DifferenceTo(a2 % d2), TestTolerance);
-			AssertToleranceEquals(-expectation, (a2 % d2).DifferenceTo(a1 % d1), TestTolerance);
+			AssertToleranceEquals(expectation, (a1 % d1).Minus(a2 % d2), TestTolerance);
+			AssertToleranceEquals(-expectation, (a2 % d2).Minus(a1 % d1), TestTolerance);
 		}
 
 		AssertPair(90f, Up, 70f, Up, -20f % Up);
@@ -143,13 +143,13 @@ partial class RotationTest {
 		AssertToleranceEquals(180f % Down, NegativeNinetyAroundDown * -2f, TestTolerance);
 
 		for (var f = -12f; f <= 12f; f += 4f) {
-			AssertToleranceEquals((Forward.ToVect() + Right.ToVect()).Direction, Forward * (NinetyAroundDown * (0.5f + f)), TestTolerance);
+			AssertToleranceEquals((Forward.AsVect() + Right.AsVect()).Direction, Forward * (NinetyAroundDown * (0.5f + f)), TestTolerance);
 			AssertToleranceEquals(Right, Forward * (NinetyAroundDown * (1f + f)), TestTolerance);
-			AssertToleranceEquals((Right.ToVect() + Backward.ToVect()).Direction, Forward * (NinetyAroundDown * (1.5f + f)), TestTolerance);
+			AssertToleranceEquals((Right.AsVect() + Backward.AsVect()).Direction, Forward * (NinetyAroundDown * (1.5f + f)), TestTolerance);
 			AssertToleranceEquals(Backward, Forward * (NinetyAroundDown * (2f + f)), TestTolerance);
-			AssertToleranceEquals((Backward.ToVect() + Left.ToVect()).Direction, Forward * (NinetyAroundDown * (2.5f + f)), TestTolerance);
+			AssertToleranceEquals((Backward.AsVect() + Left.AsVect()).Direction, Forward * (NinetyAroundDown * (2.5f + f)), TestTolerance);
 			AssertToleranceEquals(Left, Forward * (NinetyAroundDown * (3f + f)), TestTolerance);
-			AssertToleranceEquals((Left.ToVect() + Forward.ToVect()).Direction, Forward * (NinetyAroundDown * (3.5f + f)), TestTolerance);
+			AssertToleranceEquals((Left.AsVect() + Forward.AsVect()).Direction, Forward * (NinetyAroundDown * (3.5f + f)), TestTolerance);
 			AssertToleranceEquals(Forward, Forward * (NinetyAroundDown * (4f + f)), TestTolerance);
 		}
 

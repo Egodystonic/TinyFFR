@@ -72,15 +72,15 @@ public readonly partial struct OriginCuboid
 
 	public bool Contains(Location location) => MathF.Abs(location.X) <= HalfWidth && MathF.Abs(location.Y) <= HalfHeight && MathF.Abs(location.Z) <= HalfDepth;
 
-	public Location ClosestPointTo(Location location) {
+	public Location PointClosestTo(Location location) {
 		return new(
 			Single.Clamp(location.X, -HalfWidth, HalfWidth),
 			Single.Clamp(location.Y, -HalfHeight, HalfHeight),
 			Single.Clamp(location.Z, -HalfDepth, HalfDepth)
 		);
 	}
-	public Location ClosestPointOnSurfaceTo(Location location) {
-		var closestNonSurfacePoint = ClosestPointTo(location);
+	public Location SurfacePointClosestTo(Location location) {
+		var closestNonSurfacePoint = PointClosestTo(location);
 		if (location != closestNonSurfacePoint) return closestNonSurfacePoint;
 
 		var xDiff = HalfWidth - MathF.Abs(location.X);
@@ -94,7 +94,7 @@ public readonly partial struct OriginCuboid
 		else return location with { Z = HalfDepth * (location.Z < 0f ? -1f : 1f) };
 	}
 
-	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => ClosestPointTo(ClosestPointOn(line));
+	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => PointClosestTo(ClosestPointOn(line));
 	public Location ClosestPointOn<TLine>(TLine line) where TLine : ILine {
 		if (Contains(line.StartPoint)) return line.StartPoint;
 		else return ClosestPointToSurfaceOn(line);
@@ -104,7 +104,7 @@ public readonly partial struct OriginCuboid
 		else return SurfaceDistanceFrom(line);
 	}
 
-	public Location ClosestPointOnSurfaceTo<TLine>(TLine line) where TLine : ILine => ClosestPointOnSurfaceTo(ClosestPointToSurfaceOn(line));
+	public Location ClosestPointOnSurfaceTo<TLine>(TLine line) where TLine : ILine => SurfacePointClosestTo(ClosestPointToSurfaceOn(line));
 	public Location ClosestPointToSurfaceOn(Line line) {
 		var intersections = GetUnboundedLineIntersectionDistances(new Ray(line.PointOnLine, line.Direction));
 		if (intersections != null) return line.LocationAtDistance(intersections.Value.Item1);
@@ -147,7 +147,7 @@ public readonly partial struct OriginCuboid
 		var answer = Location.Origin;
 		foreach (var edgeOrientation in OrientationUtils.AllIntercardinals) {
 			var edge = GetEdge(edgeOrientation);
-			var closestPointToEdge = line.ClosestPointTo(edge);
+			var closestPointToEdge = line.PointClosestTo(edge);
 			var distanceToEdge = edge.DistanceFrom(closestPointToEdge);
 			if (distanceToEdge < answerDistance) {
 				answerDistance = distanceToEdge;
@@ -223,7 +223,7 @@ public readonly partial struct OriginCuboid
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointTo(Plane plane) => ClosestPointOnSurfaceTo(plane);
+	public Location PointClosestTo(Plane plane) => ClosestPointOnSurfaceTo(plane);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointOn(Plane plane) => ClosestPointToSurfaceOn(plane);
 	public float SignedDistanceFrom(Plane plane) {
@@ -266,7 +266,7 @@ public readonly partial struct OriginCuboid
 		}
 		return result;
 	}
-	public Location ClosestPointToSurfaceOn(Plane plane) => plane.ClosestPointTo(ClosestPointOnSurfaceTo(plane));
+	public Location ClosestPointToSurfaceOn(Plane plane) => plane.PointClosestTo(ClosestPointOnSurfaceTo(plane));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float SurfaceDistanceFrom(Plane plane) => DistanceFrom(plane);

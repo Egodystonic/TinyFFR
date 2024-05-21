@@ -11,6 +11,7 @@ public interface IMathPrimitive<TSelf> : IMathPrimitive,
 	ISpanParsable<TSelf>, 
 	IByteSpanSerializable<TSelf>,
 	IToleranceEquatable<TSelf>, 
-	IEqualityOperators<TSelf, TSelf, bool>
+	IEqualityOperators<TSelf, TSelf, bool>,
+	IRandomizable<TSelf>
 	where TSelf : IMathPrimitive<TSelf> {
 }

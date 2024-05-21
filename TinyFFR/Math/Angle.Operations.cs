@@ -7,18 +7,14 @@ using static System.Numerics.Vector4;
 namespace Egodystonic.TinyFFR;
 
 partial struct Angle : 
-	IUnaryNegationOperators<Angle, Angle>, 
-	IMultiplyOperators<Angle, float, Angle>, 
-	IDivisionOperators<Angle, float, Angle>,
-	IAdditionOperators<Angle, Angle, Angle>,
-	ISubtractionOperators<Angle, Angle, Angle>,
-	IComparable<Angle>, 
-	IComparisonOperators<Angle, Angle, bool>,
-	IInterpolatable<Angle>,
-	IBoundedRandomizable<Angle> {
+	IAlgebraicGroup<Angle>,
+	IScalable<Angle>, 
+	IOrdinal<Angle> {
+	static Angle IAdditiveIdentity<Angle, Angle>.AdditiveIdentity => Zero;
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle operator -(Angle operand) => operand.Negated;
-	public Angle Negated {
+	public static Angle operator -(Angle operand) => operand.Inverted;
+	public Angle Inverted {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FromRadians(-AsRadians);
 	}
@@ -57,15 +53,13 @@ partial struct Angle :
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle operator *(Angle angle, float scalar) => angle.MultipliedBy(scalar);
+	public static Angle operator *(Angle angle, float scalar) => angle.ScaledBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle operator *(float scalar, Angle angle) => angle.MultipliedBy(scalar);
+	public static Angle operator *(float scalar, Angle angle) => angle.ScaledBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle operator /(Angle angle, float scalar) => angle.DividedBy(scalar);
+	public static Angle operator /(Angle angle, float scalar) => FromRadians(angle.AsRadians / scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle MultipliedBy(float scalar) => FromRadians(AsRadians * scalar);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle DividedBy(float scalar) => FromRadians(AsRadians / scalar);
+	public Angle ScaledBy(float scalar) => FromRadians(AsRadians * scalar);
 
 
 

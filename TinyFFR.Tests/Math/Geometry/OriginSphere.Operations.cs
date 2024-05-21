@@ -122,22 +122,22 @@ partial class OriginSphereTest {
 
 	[Test]
 	public void ShouldCorrectlyFindClosestPointToGivenLocation() {
-		AssertToleranceEquals(new Location(0f, 0f, 0f), TestSphere.ClosestPointTo(new Location(0f, 0f, 0f)), TestTolerance);
-		AssertToleranceEquals(new Location(0f, 7.4f, 0f), TestSphere.ClosestPointTo(new Location(0f, 7.4f, 0f)), TestTolerance);
-		AssertToleranceEquals(new Location(0f, -7.4f, 0f), TestSphere.ClosestPointTo(new Location(0f, -7.4f, 0f)), TestTolerance);
-		AssertToleranceEquals(new Location(0f, 7.4f, 0f), TestSphere.ClosestPointTo(new Location(0f, 17.4f, 0f)), TestTolerance);
-		AssertToleranceEquals(new Location(0f, -7.4f, 0f), TestSphere.ClosestPointTo(new Location(0f, -17.4f, 0f)), TestTolerance);
+		AssertToleranceEquals(new Location(0f, 0f, 0f), TestSphere.PointClosestTo(new Location(0f, 0f, 0f)), TestTolerance);
+		AssertToleranceEquals(new Location(0f, 7.4f, 0f), TestSphere.PointClosestTo(new Location(0f, 7.4f, 0f)), TestTolerance);
+		AssertToleranceEquals(new Location(0f, -7.4f, 0f), TestSphere.PointClosestTo(new Location(0f, -7.4f, 0f)), TestTolerance);
+		AssertToleranceEquals(new Location(0f, 7.4f, 0f), TestSphere.PointClosestTo(new Location(0f, 17.4f, 0f)), TestTolerance);
+		AssertToleranceEquals(new Location(0f, -7.4f, 0f), TestSphere.PointClosestTo(new Location(0f, -17.4f, 0f)), TestTolerance);
 	}
 
 	[Test]
 	public void ShouldCorrectlyFindClosestPointOnSurfaceToGivenLocation() {
-		AssertToleranceEquals(new Location(0f, 0f, 0f), TestSphere.ClosestPointOnSurfaceTo(new Location(0f, 0f, 0f)), TestTolerance);
-		AssertToleranceEquals(new Location(0f, 7.4f, 0f), TestSphere.ClosestPointOnSurfaceTo(new Location(0f, 7.4f, 0f)), TestTolerance);
-		AssertToleranceEquals(new Location(0f, -7.4f, 0f), TestSphere.ClosestPointOnSurfaceTo(new Location(0f, -7.4f, 0f)), TestTolerance);
-		AssertToleranceEquals(new Location(0f, 7.4f, 0f), TestSphere.ClosestPointOnSurfaceTo(new Location(0f, 17.4f, 0f)), TestTolerance);
-		AssertToleranceEquals(new Location(0f, -7.4f, 0f), TestSphere.ClosestPointOnSurfaceTo(new Location(0f, -17.4f, 0f)), TestTolerance);
-		AssertToleranceEquals(new Location(0f, 7.4f, 0f), TestSphere.ClosestPointOnSurfaceTo(new Location(0f, 2f, 0f)), TestTolerance);
-		AssertToleranceEquals(new Location(0f, -7.4f, 0f), TestSphere.ClosestPointOnSurfaceTo(new Location(0f, -2f, 0f)), TestTolerance);
+		AssertToleranceEquals(new Location(0f, 0f, 0f), TestSphere.SurfacePointClosestTo(new Location(0f, 0f, 0f)), TestTolerance);
+		AssertToleranceEquals(new Location(0f, 7.4f, 0f), TestSphere.SurfacePointClosestTo(new Location(0f, 7.4f, 0f)), TestTolerance);
+		AssertToleranceEquals(new Location(0f, -7.4f, 0f), TestSphere.SurfacePointClosestTo(new Location(0f, -7.4f, 0f)), TestTolerance);
+		AssertToleranceEquals(new Location(0f, 7.4f, 0f), TestSphere.SurfacePointClosestTo(new Location(0f, 17.4f, 0f)), TestTolerance);
+		AssertToleranceEquals(new Location(0f, -7.4f, 0f), TestSphere.SurfacePointClosestTo(new Location(0f, -17.4f, 0f)), TestTolerance);
+		AssertToleranceEquals(new Location(0f, 7.4f, 0f), TestSphere.SurfacePointClosestTo(new Location(0f, 2f, 0f)), TestTolerance);
+		AssertToleranceEquals(new Location(0f, -7.4f, 0f), TestSphere.SurfacePointClosestTo(new Location(0f, -2f, 0f)), TestTolerance);
 	}
 
 	[Test]
@@ -391,10 +391,10 @@ partial class OriginSphereTest {
 
 	[Test]
 	public void ShouldCorrectlyDetermineClosestPointToPlanes() {
-		AssertToleranceEquals((0f, 0f, 0f), TestSphere.ClosestPointTo(new Plane(Direction.Up, (0f, 0f, 0f))), TestTolerance);
-		AssertToleranceEquals((0f, 1f, 0f), TestSphere.ClosestPointTo(new Plane(Direction.Up, (0f, 1f, 0f))), TestTolerance);
-		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.ClosestPointTo(new Plane(Direction.Up, (0f, 7.4f, 0f))), TestTolerance);
-		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.ClosestPointTo(new Plane(Direction.Up, (0f, 10f, 0f))), TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0f), TestSphere.PointClosestTo(new Plane(Direction.Up, (0f, 0f, 0f))), TestTolerance);
+		AssertToleranceEquals((0f, 1f, 0f), TestSphere.PointClosestTo(new Plane(Direction.Up, (0f, 1f, 0f))), TestTolerance);
+		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.PointClosestTo(new Plane(Direction.Up, (0f, 7.4f, 0f))), TestTolerance);
+		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.PointClosestTo(new Plane(Direction.Up, (0f, 10f, 0f))), TestTolerance);
 	}
 
 	[Test]

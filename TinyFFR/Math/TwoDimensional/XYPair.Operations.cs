@@ -6,13 +6,9 @@ using System.Numerics;
 namespace Egodystonic.TinyFFR;
 
 public readonly partial struct XYPair<T> :
-	IAdditionOperators<XYPair<T>, XYPair<T>, XYPair<T>>,
-	ISubtractionOperators<XYPair<T>, XYPair<T>, XYPair<T>>,
-	IMultiplyOperators<XYPair<T>, T, XYPair<T>>,
-	IDivisionOperators<XYPair<T>, T, XYPair<T>>,
-	IUnaryNegationOperators<XYPair<T>, XYPair<T>>,
+	IAlgebraicRing<XYPair<T>>,
 	IInterpolatable<XYPair<T>>,
-	IBoundedRandomizable<XYPair<T>> {
+	IDistanceMeasurable<XYPair<T>> { // TODO Angle-measurable
 	internal const int DefaultRandomRange = 100;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -26,11 +22,24 @@ public readonly partial struct XYPair<T> :
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair<T> operator -(XYPair<T> operand) => operand.Negated;
-	public XYPair<T> Negated {
+	public static XYPair<T> operator -(XYPair<T> operand) => operand.Inverted;
+	public XYPair<T> Inverted {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(-X, -Y);
 	}
+	public XYPair<T> Reciprocal {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(T.One / X, T.One / Y);
+	}
+
+	static XYPair<T> IAdditiveIdentity<XYPair<T>, XYPair<T>>.AdditiveIdentity => new(T.Zero, T.Zero);
+
+	public static XYPair<T> operator *(XYPair<T> left, XYPair<T> right) => left.MultipliedBy(right);
+	public static XYPair<T> operator /(XYPair<T> left, XYPair<T> right) => left.DividedBy(right);
+	public XYPair<T> MultipliedBy(XYPair<T> other) => new(X * other.X, Y * other.Y);
+	public XYPair<T> DividedBy(XYPair<T> other) => new(X / other.X, Y / other.Y);
+
+	static XYPair<T> IMultiplicativeIdentity<XYPair<T>, XYPair<T>>.MultiplicativeIdentity => new(T.One, T.One);
 
 	public Angle? PolarAngle { // TODO clarify this is the four-quadrant inverse tangent
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -42,29 +51,30 @@ public readonly partial struct XYPair<T> :
 		get => new(T.Abs(X), T.Abs(Y));
 	}
 
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair<T> operator *(XYPair<T> pairOperand, T scalarOperand) => pairOperand.ScaledBy(scalarOperand);
+	public static XYPair<T> operator *(XYPair<T> pairOperand, T scalarOperand) => pairOperand.MultipliedBy(scalarOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair<T> operator *(XYPair<T> pairOperand, float scalarOperand) => pairOperand.ScaledBy(scalarOperand);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair<T> operator *(T scalarOperand, XYPair<T> pairOperand) => pairOperand.ScaledBy(scalarOperand);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair<T> operator *(float scalarOperand, XYPair<T> pairOperand) => pairOperand.ScaledBy(scalarOperand);
+	public static XYPair<T> operator *(T scalarOperand, XYPair<T> pairOperand) => pairOperand.MultipliedBy(scalarOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static XYPair<T> operator /(XYPair<T> pairOperand, T divisorOperand) => pairOperand.DividedBy(divisorOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair<T> operator /(XYPair<T> pairOperand, float divisorOperand) => pairOperand.DividedBy(divisorOperand);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public XYPair<T> ScaledBy(T scalar) => new(X * scalar, Y * scalar);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public XYPair<T> ScaledBy(float scalar) => new(T.CreateSaturating(Single.CreateSaturating(X) * scalar), T.CreateSaturating((Single.CreateSaturating(Y) * scalar)));
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public XYPair<T> DividedBy(T divisor) => new(X / divisor, Y / divisor);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public XYPair<T> DividedBy(float divisor) => new(T.CreateSaturating(Single.CreateSaturating(X) / divisor), T.CreateSaturating((Single.CreateSaturating(Y) / divisor)));
+	public XYPair<T> MultipliedBy(T scalar) => new(X * scalar, Y * scalar);
+
+	public float DistanceSquaredFrom(XYPair<T> pair) => Single.CreateSaturating(T.Abs(X - pair.X) + T.Abs(Y - pair.Y));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(XYPair<T> pair) => MathF.Sqrt(DistanceSquaredFrom(pair));
 
 	public static XYPair<T> Interpolate(XYPair<T> start, XYPair<T> end, float distance) {
-		return start + (end - start) * distance;
+		return start + (end - start) * T.CreateSaturating(distance);
+	}
+	public XYPair<T> Clamp(XYPair<T> min, XYPair<T> max) {
+		return new(
+			T.Clamp(X, min.X, max.X),
+			T.Clamp(Y, min.Y, max.Y)
+		);
 	}
 
 	public static XYPair<T> CreateNewRandom() {

@@ -91,14 +91,14 @@ partial class PlaneTest {
 
 	[Test]
 	public void ShouldCorrectlyFindClosestPointToGivenLocation() {
-		Assert.AreEqual(new Location(0f, -1f, 0f), TestPlane.ClosestPointTo((0f, -1f, 0f)));
-		Assert.AreEqual(new Location(0f, -1f, 0f), TestPlane.ClosestPointTo((0f, -1000f, 0f)));
-		Assert.AreEqual(new Location(0f, -1f, 0f), TestPlane.ClosestPointTo((0f, 1000f, 0f)));
-		Assert.AreEqual(new Location(100f, -1f, -100f), TestPlane.ClosestPointTo((100f, -1000f, -100f)));
-		Assert.AreEqual(new Location(0f, -1f, 0f), TestPlane.Flipped.ClosestPointTo((0f, -1f, 0f)));
-		Assert.AreEqual(new Location(0f, -1f, 0f), TestPlane.Flipped.ClosestPointTo((0f, -1000f, 0f)));
-		Assert.AreEqual(new Location(0f, -1f, 0f), TestPlane.Flipped.ClosestPointTo((0f, 1000f, 0f)));
-		Assert.AreEqual(new Location(100f, -1f, -100f), TestPlane.Flipped.ClosestPointTo((100f, -1000f, -100f)));
+		Assert.AreEqual(new Location(0f, -1f, 0f), TestPlane.PointClosestTo((0f, -1f, 0f)));
+		Assert.AreEqual(new Location(0f, -1f, 0f), TestPlane.PointClosestTo((0f, -1000f, 0f)));
+		Assert.AreEqual(new Location(0f, -1f, 0f), TestPlane.PointClosestTo((0f, 1000f, 0f)));
+		Assert.AreEqual(new Location(100f, -1f, -100f), TestPlane.PointClosestTo((100f, -1000f, -100f)));
+		Assert.AreEqual(new Location(0f, -1f, 0f), TestPlane.Flipped.PointClosestTo((0f, -1f, 0f)));
+		Assert.AreEqual(new Location(0f, -1f, 0f), TestPlane.Flipped.PointClosestTo((0f, -1000f, 0f)));
+		Assert.AreEqual(new Location(0f, -1f, 0f), TestPlane.Flipped.PointClosestTo((0f, 1000f, 0f)));
+		Assert.AreEqual(new Location(100f, -1f, -100f), TestPlane.Flipped.PointClosestTo((100f, -1000f, -100f)));
 	}
 
 	[Test]

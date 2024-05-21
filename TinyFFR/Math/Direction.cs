@@ -114,6 +114,9 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	public static Direction FromVector3(Vector3 v) => new(NormalizeOrZero(new Vector4(v, WValue)));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Direction Renormalize(Direction d) => new(NormalizeOrZero(d.AsVector4));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vector3 ToVector3() => new(AsVector4.X, AsVector4.Y, AsVector4.Z);
 
 	public void Deconstruct(out float x, out float y, out float z) {

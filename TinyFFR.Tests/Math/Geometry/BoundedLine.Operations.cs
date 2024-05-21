@@ -170,19 +170,19 @@ partial class BoundedLineTest {
 	public void ShouldCorrectlyFindClosestPointToLocation() {
 		Assert.AreEqual(
 			new Location(0f, 0f, 0f),
-			BoundedLine.FromStartPointAndVect(new Location(-100f, 0f, 0f), Direction.Left * 200f).ClosestPointTo(new Location(0f, 1f, 0f))
+			BoundedLine.FromStartPointAndVect(new Location(-100f, 0f, 0f), Direction.Left * 200f).PointClosestTo(new Location(0f, 1f, 0f))
 		);
 		Assert.AreEqual(
 			new Location(-100f, 0f, 0f),
-			BoundedLine.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Right * 200f).ClosestPointTo(new Location(-100f, 1f, 0f))
+			BoundedLine.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Right * 200f).PointClosestTo(new Location(-100f, 1f, 0f))
 		);
 		Assert.AreEqual(
 			new Location(100f, 0f, 0f),
-			BoundedLine.FromStartPointAndVect(new Location(100f, 0f, 0f), Direction.Left * 200f).ClosestPointTo(new Location(0f, 1f, 0f))
+			BoundedLine.FromStartPointAndVect(new Location(100f, 0f, 0f), Direction.Left * 200f).PointClosestTo(new Location(0f, 1f, 0f))
 		);
 		Assert.AreEqual(
 			new Location(0f, 0f, 0f),
-			BoundedLine.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Left * 200f).ClosestPointTo(new Location(-100f, 1f, 0f))
+			BoundedLine.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Left * 200f).PointClosestTo(new Location(-100f, 1f, 0f))
 		);
 	}
 
@@ -541,23 +541,23 @@ partial class BoundedLineTest {
 			BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 10f),
 			new BoundedLine(new Location(0f, 20f, 10f), new Location(0f, 30f, 10f))
 		);
-		Assert.GreaterOrEqual(BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).Y, 0f);
-		Assert.LessOrEqual(BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).Y, 50f);
-		Assert.AreEqual(0f, BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).X);
-		Assert.AreEqual(0f, BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).Z);
-		Assert.GreaterOrEqual(BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).Y, 0f);
-		Assert.LessOrEqual(BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).Y, 50f);
-		Assert.AreEqual(0f, BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).X);
-		Assert.AreEqual(0f, BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).Z);
+		Assert.GreaterOrEqual(BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).PointClosestTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).Y, 0f);
+		Assert.LessOrEqual(BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).PointClosestTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).Y, 50f);
+		Assert.AreEqual(0f, BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).PointClosestTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).X);
+		Assert.AreEqual(0f, BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).PointClosestTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).Z);
+		Assert.GreaterOrEqual(BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).PointClosestTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).Y, 0f);
+		Assert.LessOrEqual(BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).PointClosestTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).Y, 50f);
+		Assert.AreEqual(0f, BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).PointClosestTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).X);
+		Assert.AreEqual(0f, BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).PointClosestTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).Z);
 		
-		Assert.GreaterOrEqual(BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).Y, 10f);
-		Assert.LessOrEqual(BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).Y, 50f);
-		Assert.AreEqual(0f, BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).X);
-		Assert.AreEqual(0f, BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).Z);
-		Assert.GreaterOrEqual(BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).Y, 10f);
-		Assert.LessOrEqual(BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).Y, 50f);
-		Assert.AreEqual(0f, BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).X);
-		Assert.AreEqual(0f, BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).Z);
+		Assert.GreaterOrEqual(BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).PointClosestTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).Y, 10f);
+		Assert.LessOrEqual(BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).PointClosestTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).Y, 50f);
+		Assert.AreEqual(0f, BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).PointClosestTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).X);
+		Assert.AreEqual(0f, BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).PointClosestTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).Z);
+		Assert.GreaterOrEqual(BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).PointClosestTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).Y, 10f);
+		Assert.LessOrEqual(BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).PointClosestTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).Y, 50f);
+		Assert.AreEqual(0f, BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).PointClosestTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).X);
+		Assert.AreEqual(0f, BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Up * 100f).PointClosestTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).Z);
 	}
 
 	[Test]
@@ -1175,51 +1175,51 @@ partial class BoundedLineTest {
 
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
-			BoundedLine.FromStartPointAndVect(new Location(100f, 100f, 0f), Direction.Down * 100f).ClosestPointTo(plane)
+			BoundedLine.FromStartPointAndVect(new Location(100f, 100f, 0f), Direction.Down * 100f).PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
-			BoundedLine.FromStartPointAndVect(new Location(100f, 100f, 0f), Direction.Down * 100f).Flipped.ClosestPointTo(plane)
+			BoundedLine.FromStartPointAndVect(new Location(100f, 100f, 0f), Direction.Down * 100f).Flipped.PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(100f, 0f, 0f),
-			BoundedLine.FromStartPointAndVect(new Location(100f, -100f, 0f), Direction.Up * 100f).ClosestPointTo(plane)
+			BoundedLine.FromStartPointAndVect(new Location(100f, -100f, 0f), Direction.Up * 100f).PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(100f, 0f, 0f),
-			BoundedLine.FromStartPointAndVect(new Location(100f, -100f, 0f), Direction.Up * 100f).Flipped.ClosestPointTo(plane)
+			BoundedLine.FromStartPointAndVect(new Location(100f, -100f, 0f), Direction.Up * 100f).Flipped.PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(0f, 2f, 0f),
-			BoundedLine.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Right * 100f).ClosestPointTo(plane)
+			BoundedLine.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Right * 100f).PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(-100f, 2f, 0f),
-			BoundedLine.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Right * 100f).Flipped.ClosestPointTo(plane)
+			BoundedLine.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Right * 100f).Flipped.PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(0f, 0f, 0f),
-			BoundedLine.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Right * 100f).ClosestPointTo(plane)
+			BoundedLine.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Right * 100f).PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(-100f, 0f, 0f),
-			BoundedLine.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Right * 100f).Flipped.ClosestPointTo(plane)
+			BoundedLine.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Right * 100f).Flipped.PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(100f, 100f, 0f),
-			BoundedLine.FromStartPointAndVect(new Location(100f, 100f, 0f), Direction.Up * 100f).ClosestPointTo(plane)
+			BoundedLine.FromStartPointAndVect(new Location(100f, 100f, 0f), Direction.Up * 100f).PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(100f, 100f, 0f),
-			BoundedLine.FromStartPointAndVect(new Location(100f, 100f, 0f), Direction.Up * 100f).Flipped.ClosestPointTo(plane)
+			BoundedLine.FromStartPointAndVect(new Location(100f, 100f, 0f), Direction.Up * 100f).Flipped.PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(100f, -100f, 0f),
-			BoundedLine.FromStartPointAndVect(new Location(100f, -100f, 0f), Direction.Down * 100f).ClosestPointTo(plane)
+			BoundedLine.FromStartPointAndVect(new Location(100f, -100f, 0f), Direction.Down * 100f).PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(100f, -100f, 0f),
-			BoundedLine.FromStartPointAndVect(new Location(100f, -100f, 0f), Direction.Down * 100f).Flipped.ClosestPointTo(plane)
+			BoundedLine.FromStartPointAndVect(new Location(100f, -100f, 0f), Direction.Down * 100f).Flipped.PointClosestTo(plane)
 		);
 	}
 

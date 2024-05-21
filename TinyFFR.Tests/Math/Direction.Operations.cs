@@ -36,7 +36,7 @@ partial class DirectionTest {
 	[Test]
 	public void ShouldCorrectlyReverse() {
 		Assert.AreEqual(new Direction(-1f, -2f, 3f), -OneTwoNegThree);
-		Assert.AreEqual(-OneTwoNegThree, OneTwoNegThree.Reversed);
+		Assert.AreEqual(-OneTwoNegThree, OneTwoNegThree.Inverted);
 		Assert.AreEqual(Direction.None, -Direction.None);
 
 		Assert.AreEqual(Direction.Left, -Direction.Right);
@@ -46,9 +46,9 @@ partial class DirectionTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertToVect() {
-		Assert.AreEqual(new Vect(1f, 2f, -3f).AsUnitLength, OneTwoNegThree.ToVect());
-		Assert.AreEqual(Vect.Zero, Direction.None.ToVect());
-		Assert.AreEqual(Vect.WValue, OneTwoNegThree.ToVect().AsVector4.W);
+		Assert.AreEqual(new Vect(1f, 2f, -3f).AsUnitLength, OneTwoNegThree.AsVect());
+		Assert.AreEqual(Vect.Zero, Direction.None.AsVect());
+		Assert.AreEqual(Vect.WValue, OneTwoNegThree.AsVect().AsVector4.W);
 
 		Assert.AreEqual(new Vect(1f, 2f, -3f).WithLength(10f), OneTwoNegThree.ToVect(10f));
 		Assert.AreEqual(OneTwoNegThree.ToVect(10f), OneTwoNegThree * 10f);

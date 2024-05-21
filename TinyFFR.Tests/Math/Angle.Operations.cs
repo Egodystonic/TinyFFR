@@ -10,7 +10,7 @@ partial class AngleTest {
 	[Test]
 	public void ShouldCorrectlyNegateAngle() {
 		for (var f = -720f; f < 720f + 36f; f += 36f) {
-			Assert.AreEqual(new Angle(-f), new Angle(f).Negated);
+			Assert.AreEqual(new Angle(-f), new Angle(f).Inverted);
 			Assert.AreEqual(new Angle(-f), -new Angle(f));
 		}
 	}

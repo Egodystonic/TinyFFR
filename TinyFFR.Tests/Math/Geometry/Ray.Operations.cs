@@ -64,19 +64,19 @@ partial class RayTest {
 	public void ShouldCorrectlyFindClosestPointToLocation() {
 		Assert.AreEqual(
 			new Location(0f, 0f, 0f),
-			new Ray(new Location(-100f, 0f, 0f), Direction.Left).ClosestPointTo(new Location(0f, 1f, 0f))
+			new Ray(new Location(-100f, 0f, 0f), Direction.Left).PointClosestTo(new Location(0f, 1f, 0f))
 		);
 		Assert.AreEqual(
 			new Location(-100f, 0f, 0f),
-			new Ray(new Location(0f, 0f, 0f), Direction.Right).ClosestPointTo(new Location(-100f, 1f, 0f))
+			new Ray(new Location(0f, 0f, 0f), Direction.Right).PointClosestTo(new Location(-100f, 1f, 0f))
 		);
 		Assert.AreEqual(
 			new Location(100f, 0f, 0f),
-			new Ray(new Location(100f, 0f, 0f), Direction.Left).ClosestPointTo(new Location(0f, 1f, 0f))
+			new Ray(new Location(100f, 0f, 0f), Direction.Left).PointClosestTo(new Location(0f, 1f, 0f))
 		);
 		Assert.AreEqual(
 			new Location(0f, 0f, 0f),
-			new Ray(new Location(0f, 0f, 0f), Direction.Left).ClosestPointTo(new Location(-100f, 1f, 0f))
+			new Ray(new Location(0f, 0f, 0f), Direction.Left).PointClosestTo(new Location(-100f, 1f, 0f))
 		);
 	}
 
@@ -322,23 +322,23 @@ partial class RayTest {
 			new Ray(Location.Origin, Direction.Up),
 			new BoundedLine(new Location(0f, -50f, -10f), new Location(0f, -10f, -10f))
 		);
-		Assert.GreaterOrEqual(new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).Y, 0f);
-		Assert.LessOrEqual(new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).Y, 50f);
-		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).X);
-		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).Z);
-		Assert.GreaterOrEqual(new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).Y, 0f);
-		Assert.LessOrEqual(new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).Y, 50f);
-		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).X);
-		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).Z);
+		Assert.GreaterOrEqual(new Ray(Location.Origin, Direction.Up).PointClosestTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).Y, 0f);
+		Assert.LessOrEqual(new Ray(Location.Origin, Direction.Up).PointClosestTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).Y, 50f);
+		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).PointClosestTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).X);
+		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).PointClosestTo(new BoundedLine(new Location(0f, -10f, -10f), new Location(0f, 50f, -10f))).Z);
+		Assert.GreaterOrEqual(new Ray(Location.Origin, Direction.Up).PointClosestTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).Y, 0f);
+		Assert.LessOrEqual(new Ray(Location.Origin, Direction.Up).PointClosestTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).Y, 50f);
+		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).PointClosestTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).X);
+		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).PointClosestTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, -10f, -10f))).Z);
 
-		Assert.GreaterOrEqual(new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).Y, 10f);
-		Assert.LessOrEqual(new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).Y, 50f);
-		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).X);
-		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).Z);
-		Assert.GreaterOrEqual(new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).Y, 10f);
-		Assert.LessOrEqual(new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).Y, 50f);
-		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).X);
-		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).ClosestPointTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).Z);
+		Assert.GreaterOrEqual(new Ray(Location.Origin, Direction.Up).PointClosestTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).Y, 10f);
+		Assert.LessOrEqual(new Ray(Location.Origin, Direction.Up).PointClosestTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).Y, 50f);
+		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).PointClosestTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).X);
+		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).PointClosestTo(new BoundedLine(new Location(0f, 10f, -10f), new Location(0f, 50f, -10f))).Z);
+		Assert.GreaterOrEqual(new Ray(Location.Origin, Direction.Up).PointClosestTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).Y, 10f);
+		Assert.LessOrEqual(new Ray(Location.Origin, Direction.Up).PointClosestTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).Y, 50f);
+		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).PointClosestTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).X);
+		Assert.AreEqual(0f, new Ray(Location.Origin, Direction.Up).PointClosestTo(new BoundedLine(new Location(0f, 50f, -10f), new Location(0f, 10f, -10f))).Z);
 	}
 
 	[Test]
@@ -822,27 +822,27 @@ partial class RayTest {
 
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
-			new Ray(new Location(100f, 100f, 0f), Direction.Down).ClosestPointTo(plane)
+			new Ray(new Location(100f, 100f, 0f), Direction.Down).PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
-			new Ray(new Location(100f, -100f, 0f), Direction.Up).ClosestPointTo(plane)
+			new Ray(new Location(100f, -100f, 0f), Direction.Up).PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(0f, 2f, 0f),
-			new Ray(new Location(0f, 2f, 0f), Direction.Right).ClosestPointTo(plane)
+			new Ray(new Location(0f, 2f, 0f), Direction.Right).PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(0f, 0f, 0f),
-			new Ray(new Location(0f, 0f, 0f), Direction.Right).ClosestPointTo(plane)
+			new Ray(new Location(0f, 0f, 0f), Direction.Right).PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(100f, 100f, 0f),
-			new Ray(new Location(100f, 100f, 0f), Direction.Up).ClosestPointTo(plane)
+			new Ray(new Location(100f, 100f, 0f), Direction.Up).PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(100f, -100f, 0f),
-			new Ray(new Location(100f, -100f, 0f), Direction.Down).ClosestPointTo(plane)
+			new Ray(new Location(100f, -100f, 0f), Direction.Down).PointClosestTo(plane)
 		);
 	}
 

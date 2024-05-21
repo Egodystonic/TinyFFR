@@ -69,8 +69,8 @@ partial class LineTest {
 	public void ShouldCorrectlyInterpolate() {
 		var start = new Line(new Location(5f, 5f, 5f), Direction.Forward);
 		var end = new Line(new Location(15f, 15f, 15f), Direction.Right);
-		var startLoc = start.ClosestPointTo(end);
-		var startToEndLoc = start.ClosestPointTo(end).VectTo(end.ClosestPointTo(start));
+		var startLoc = start.PointClosestTo(end);
+		var startToEndLoc = start.PointClosestTo(end).VectTo(end.PointClosestTo(start));
 		var startToEndDir = Direction.Forward >> Direction.Right;
 
 		Assert.AreEqual(new Line(startLoc + startToEndLoc * -0.5f, Direction.Forward * (startToEndDir * -0.5f)), Line.Interpolate(start, end, -0.5f));

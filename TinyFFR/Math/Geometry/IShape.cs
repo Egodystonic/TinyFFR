@@ -24,15 +24,17 @@ public readonly record struct ConvexShapeLineIntersection(Location First, Locati
 	}
 }
 
-public interface IShape<TSelf> : IGeometryPrimitive<TSelf> where TSelf : IShape<TSelf> {
-	TSelf ScaledBy(float scalar);
-}
-public interface IFullyInteractableConvexShape<TSelf> : 
-	IShape<TSelf>,
-	ISurfaceDistanceMeasurable<Location>, IContainmentTestable<Location>, IClosestEndogenousSurfacePointDiscoverable<Location>,
+public interface IShape : IGeometryPrimitive;
+public interface IShape<TSelf> :
+	IShape,
+	IGeometryPrimitive<TSelf>,
+	IScalable<TSelf>
+	where TSelf : IShape<TSelf>;
+public interface IConvexShape : IShape,
+	ISurfaceDistanceMeasurable<Location>, IContainer<Location>, IClosestEndogenousSurfacePointDiscoverable<Location>,
 	ILineSurfaceDistanceMeasurable, ILineClosestSurfacePointDiscoverable,
-	ISignedSurfaceDistanceMeasurable<Plane>, IClosestSurfacePointDiscoverable<Plane>, IRelationshipDeterminable<Plane, PlaneObjectRelationship>,
-	ILineIntersectable<ConvexShapeLineIntersection>
-	where TSelf : IFullyInteractableConvexShape<TSelf> {
-
-}
+	ISignedSurfaceDistanceMeasurable<Plane>, IClosestSurfacePointDiscoverable<Plane>, IRelatable<Plane, PlaneObjectRelationship>,
+	ILineIntersectable<ConvexShapeLineIntersection>;
+public interface IConvexShape<TSelf> : 
+	IConvexShape, IShape<TSelf>
+	where TSelf : IConvexShape<TSelf>;

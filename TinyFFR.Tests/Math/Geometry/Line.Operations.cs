@@ -57,15 +57,15 @@ partial class LineTest {
 	public void ShouldCorrectlyFindClosestPointToLocation() {
 		Assert.AreEqual(
 			new Location(0f, 0f, 0f),
-			new Line(new Location(100f, 0f, 0f), Direction.Left).ClosestPointTo(new Location(0f, 1f, 0f))
+			new Line(new Location(100f, 0f, 0f), Direction.Left).PointClosestTo(new Location(0f, 1f, 0f))
 		);
 		Assert.AreEqual(
 			new Location(-100f, 0f, 0f),
-			new Line(new Location(100f, 0f, 0f), Direction.Left).ClosestPointTo(new Location(-100f, 1f, 0f))
+			new Line(new Location(100f, 0f, 0f), Direction.Left).PointClosestTo(new Location(-100f, 1f, 0f))
 		);
 		AssertToleranceEquals(
 			new Location(2f, 5f, 2f),
-			new Line(new Location(0f, 3f, 0f), new Direction(1f, 1f, 1f)).ClosestPointTo(new Direction(1f, 1f, 1f).AnyPerpendicular() * 10f + new Location(2f, 5f, 2f)),
+			new Line(new Location(0f, 3f, 0f), new Direction(1f, 1f, 1f)).PointClosestTo(new Direction(1f, 1f, 1f).AnyPerpendicular() * 10f + new Location(2f, 5f, 2f)),
 			TestTolerance
 		);
 	}
@@ -608,19 +608,19 @@ partial class LineTest {
 
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
-			new Line(new Location(100f, 100f, 0f), Direction.Down).ClosestPointTo(plane)
+			new Line(new Location(100f, 100f, 0f), Direction.Down).PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
-			new Line(new Location(100f, -100f, 0f), Direction.Up).ClosestPointTo(plane)
+			new Line(new Location(100f, -100f, 0f), Direction.Up).PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(0f, 2f, 0f),
-			new Line(new Location(0f, 2f, 0f), Direction.Right).ClosestPointTo(plane)
+			new Line(new Location(0f, 2f, 0f), Direction.Right).PointClosestTo(plane)
 		);
 		Assert.AreEqual(
 			new Location(0f, 0f, 0f),
-			new Line(new Location(0f, 0f, 0f), Direction.Right).ClosestPointTo(plane)
+			new Line(new Location(0f, 0f, 0f), Direction.Right).PointClosestTo(plane)
 		);
 	}
 
