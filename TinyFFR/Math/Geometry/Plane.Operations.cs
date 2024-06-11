@@ -7,10 +7,11 @@ public readonly partial struct Plane :
 	IInvertible<Plane>,
 	ITranslatable<Plane>,
 	IPointRotatable<Plane>,
-	IDistanceMeasurable<Plane>, IIntersectionDeterminable<Plane, Line>,
-	ISignedDistanceMeasurable<Location>, IContainer<Location>, IClosestEndogenousPointDiscoverable<Location>,
-	I
-	 {
+	IDistanceMeasurable<Plane, Plane>,
+	ISignedDistanceMeasurable<Plane, Location>, IContainer<Plane, Location>, IClosestEndogenousPointDiscoverable<Plane, Location>,
+	IAngleMeasurable<Plane, Direction>, IReflectionTarget<Plane, Direction, Direction>, IProjectionTarget<Plane, Direction>, IParallelizationTarget<Plane, Direction>, IOrthogonalizationTarget<Plane, Direction>,
+	IAngleMeasurable<Plane, Vect>, IReflectionTarget<Plane, Vect, Vect>, IProjectionTarget<Plane, Vect>, IParallelizationTarget<Plane, Vect>, IOrthogonalizationTarget<Plane, Vect>,
+	IPrecomputationInterpolatable<Plane, Rotation> {
 	const float MaxPlaneToPlaneDistanceNormalSimilarity = 1 - 1E-8f;
 
 	public Plane Flipped {
@@ -50,11 +51,22 @@ public readonly partial struct Plane :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(Direction dir, Plane plane) => plane.AngleTo(dir);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle operator ^(Plane plane, Vect v) => plane.AngleTo(v);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle operator ^(Vect v, Plane plane) => plane.AngleTo(v);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(Plane other) => Angle.FromRadians(MathF.Acos(PerpendicularityWith(other.Normal)));
 	public Angle AngleTo(Direction direction) => Angle.FromRadians(MathF.Asin(PerpendicularityWith(direction)));
-	public Direction Reflect(Direction direction) { // TODO explain in XML that this returns the same direction if the input is parallel to the plane
+	public Angle AngleTo(Vect vect) => AngleTo(vect.Direction);
+	public Direction ReflectionOf(Direction direction) { // TODO explain in XML that this returns the same direction if the input is parallel to the plane
 		return Direction.FromVector3(-2f * Vector3.Dot(Normal.ToVector3(), direction.ToVector3()) * Normal.ToVector3() + direction.ToVector3());
 	}
+	public Vect ReflectionOf(Vect vect) { // TODO explain in XML that this returns the same direction if the input is parallel to the plane
+		return Vect.FromVector3(-2f * Vector3.Dot(Normal.ToVector3(), vect.ToVector3()) * Normal.ToVector3() + vect.ToVector3());
+	}
+	Direction? IReflectionTarget<Direction, Direction>.ReflectionOf(Direction direction) => ReflectionOf(direction);
+	Vect? IReflectionTarget<Vect, Vect>.ReflectionOf(Vect vect) => ReflectionOf(vect);
+	public Direction ParallelizationOf(Direction direction) => direction.OrthogonalizedAgainst(Normal);
 
 	public Location PointClosestTo(Location location) => location - ClosestPointToOrigin.VectTo(location).ProjectedOnTo(Normal);
 	public float SignedDistanceFrom(Location location) => Vector3.Dot(location.ToVector3(), _normal) - _smallestDistanceFromOriginAlongNormal; // TODO xmldoc positive means normal faces towards, etc
@@ -165,19 +177,41 @@ public readonly partial struct Plane :
 	public static Plane CreateNewRandom() => new(Direction.CreateNewRandom(), Location.CreateNewRandom());
 	public static Plane CreateNewRandom(Plane minInclusive, Plane maxExclusive) => new(Direction.CreateNewRandom(minInclusive.Normal, maxExclusive.Normal), Location.CreateNewRandom(minInclusive.ClosestPointToOrigin, maxExclusive.ClosestPointToOrigin));
 }
-
-// Just some implementations of "mirror"/reverse functions kept here rather than in their respective types as it makes more sense to me to keep them close to the Plane class.
-partial struct Direction {
+partial struct Location : ISignedDistanceMeasurable<Location, Plane>, IContainable<Location, Plane>, IClosestExogenousPointDiscoverable<Location, Plane> {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(Plane plane) => plane.DistanceFrom(this);
+	float IDistanceMeasurable<Plane>.DistanceSquaredFrom(Plane plane) {
+		var sqrtResult = DistanceFrom(plane);
+		return sqrtResult * sqrtResult;
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float SignedDistanceFrom(Plane plane) => plane.SignedDistanceFrom(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsContainedWithin(Plane plane) => plane.Contains(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsContainedWithin(Plane plane, float planeThickness) => plane.Contains(this, planeThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(Plane plane) => plane.PointClosestTo(this);
+}
+partial struct Direction : IAngleMeasurable<Plane>, IReflectable<Plane, Direction>, IProjectable<Direction, Plane>, IParallelizable<Direction, Plane>, IOrthogonalizable<Direction, Plane> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(Plane plane) => plane.AngleTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction ReflectedBy(Plane plane) => plane.Reflect(this);
+	public Direction ReflectedBy(Plane plane) => plane.ReflectionOf(this);
+	Direction? IReflectable<Plane, Direction>.ReflectedBy(Plane plane) => plane.ReflectionOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction ProjectedOnTo(Plane plane) => plane.ProjectionOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction ParallelizedWith(Plane plane) => plane.ParallelizationOf(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction OrthogonalizedAgainst(Plane plane) => plane.OrthogonalizationOf(this);
 }
-partial struct Vect {
+partial struct Vect : IAngleMeasurable<Plane>, IReflectable<Plane, Vect>, IProjectable<Vect, Plane>, IParallelizable<Vect, Plane>, IOrthogonalizable<Vect, Plane> {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(Plane plane) => plane.AngleTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect ReflectedBy(Plane plane) => plane.ReflectionOf(this);
+	Vect? IReflectable<Plane, Vect>.ReflectedBy(Plane plane) => plane.ReflectionOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect ProjectedOnTo(Plane plane) => plane.ProjectionOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

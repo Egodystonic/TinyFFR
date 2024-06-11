@@ -71,7 +71,7 @@ partial struct Location :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFromOrigin() => ((Vect) this).LengthSquared;
 
-	public Location Clamp(Location min, Location max) => this.ClosestPointOn(new BoundedLine(min, max));
+	public Location Clamp(Location min, Location max) => ClosestPointOn(new BoundedRay(min, max));
 
 	public static Location Interpolate(Location start, Location end, float distance) {
 		return start + (end - start) * distance;

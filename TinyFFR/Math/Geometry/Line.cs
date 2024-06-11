@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR;
 
 [DebuggerDisplay("{ToStringDescriptive()}")]
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = sizeof(float) * 4 * 2)]
-public readonly partial struct Line : ILine<Line, Ray>, IDescriptiveStringProvider {
+public readonly partial struct Line : ILineLike<Line, Ray>, IPrecomputationInterpolatable<Line, Rotation>, IDescriptiveStringProvider {
 	readonly Location _pointOnLine;
 	readonly Direction _direction;
 
@@ -25,12 +25,12 @@ public readonly partial struct Line : ILine<Line, Ray>, IDescriptiveStringProvid
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		init => _direction = value;
 	}
-	Location ILine.StartPoint => PointOnLine;
-	bool ILine.IsUnboundedInBothDirections => true;
-	float? ILine.Length => null;
-	float? ILine.LengthSquared => null;
-	Vect? ILine.StartToEndVect => null;
-	Location? ILine.EndPoint => null;
+	Location ILineLike.StartPoint => PointOnLine;
+	bool ILineLike.IsUnboundedInBothDirections => true;
+	float? ILineLike.Length => null;
+	float? ILineLike.LengthSquared => null;
+	Vect? ILineLike.StartToEndVect => null;
+	Location? ILineLike.EndPoint => null;
 
 	public Line(Location pointOnLine, Direction direction) {
 		_pointOnLine = pointOnLine;

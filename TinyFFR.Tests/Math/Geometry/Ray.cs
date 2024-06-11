@@ -23,11 +23,11 @@ partial class RayTest {
 	public void ShouldCorrectlyCalculateProperties() {
 		Assert.AreEqual(new Location(1f, 2f, -3f), TestRay.StartPoint);
 		Assert.AreEqual(new Direction(-1f, -2f, 3f), TestRay.Direction);
-		Assert.AreEqual(false, ((ILine) TestRay).IsUnboundedInBothDirections);
-		Assert.AreEqual(null, ((ILine) TestRay).Length);
-		Assert.AreEqual(null, ((ILine) TestRay).LengthSquared);
-		Assert.AreEqual(null, ((ILine) TestRay).StartToEndVect);
-		Assert.AreEqual(null, ((ILine) TestRay).EndPoint);
+		Assert.AreEqual(false, ((ILineLike) TestRay).IsUnboundedInBothDirections);
+		Assert.AreEqual(null, ((ILineLike) TestRay).Length);
+		Assert.AreEqual(null, ((ILineLike) TestRay).LengthSquared);
+		Assert.AreEqual(null, ((ILineLike) TestRay).StartToEndVect);
+		Assert.AreEqual(null, ((ILineLike) TestRay).EndPoint);
 	}
 
 	// TODO this test could be fleshed out a lot more

@@ -24,12 +24,12 @@ partial class LineTest {
 	public void ShouldCorrectlyCalculateProperties() {
 		Assert.AreEqual(new Location(1f, 2f, -3f), TestLine.PointOnLine);
 		Assert.AreEqual(new Direction(-1f - 1f, -2f - 2f, 3f - -3f), TestLine.Direction);
-		Assert.AreEqual(TestLine.PointOnLine, ((ILine) TestLine).StartPoint);
-		Assert.AreEqual(true, ((ILine) TestLine).IsUnboundedInBothDirections);
-		Assert.AreEqual(null, ((ILine) TestLine).Length);
-		Assert.AreEqual(null, ((ILine) TestLine).LengthSquared);
-		Assert.AreEqual(null, ((ILine) TestLine).StartToEndVect);
-		Assert.AreEqual(null, ((ILine) TestLine).EndPoint);
+		Assert.AreEqual(TestLine.PointOnLine, ((ILineLike) TestLine).StartPoint);
+		Assert.AreEqual(true, ((ILineLike) TestLine).IsUnboundedInBothDirections);
+		Assert.AreEqual(null, ((ILineLike) TestLine).Length);
+		Assert.AreEqual(null, ((ILineLike) TestLine).LengthSquared);
+		Assert.AreEqual(null, ((ILineLike) TestLine).StartToEndVect);
+		Assert.AreEqual(null, ((ILineLike) TestLine).EndPoint);
 	}
 
 	[Test]

@@ -11,7 +11,8 @@ partial struct Vect :
 	IScalable<Vect>,
 	IRotatable<Vect>,
 	IInnerProductSpace<Vect>,
-	IVectorProductSpace<Vect> {
+	IVectorProductSpace<Vect>,
+	ILengthAdjustable<Vect> {
 	internal const float DefaultRandomRange = 100f;
 
 	public float this[Axis axis] => axis switch {
@@ -146,7 +147,7 @@ partial struct Vect :
 		return start + (end - start) * distance;
 	}
 
-	public Vect Clamp(Vect min, Vect max) => AsLocationFromOrigin().ClosestPointOn(new BoundedLine(min.AsLocationFromOrigin(), max.AsLocationFromOrigin())).AsVect();
+	public Vect Clamp(Vect min, Vect max) => AsLocationFromOrigin().ClosestPointOn(new BoundedRay(min.AsLocationFromOrigin(), max.AsLocationFromOrigin())).AsVect();
 
 	public static Vect CreateNewRandom() {
 		return new Vect(

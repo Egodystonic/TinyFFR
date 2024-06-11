@@ -20,8 +20,8 @@ public readonly partial struct OriginSphere
 
 	public float DistanceFrom(Location location) => MathF.Max(0f, ((Vect) location).Length - Radius);
 	public float SurfaceDistanceFrom(Location location) => MathF.Abs(((Vect) location).Length - Radius);
-	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => MathF.Max(0f, line.DistanceFromOrigin() - Radius);
-	public float SurfaceDistanceFrom<TLine>(TLine line) where TLine : ILine => SurfaceDistanceFrom(ClosestPointToSurfaceOn(line));
+	public float DistanceFrom<TLine>(TLine line) where TLine : ILineLike => MathF.Max(0f, line.DistanceFromOrigin() - Radius);
+	public float SurfaceDistanceFrom<TLine>(TLine line) where TLine : ILineLike => SurfaceDistanceFrom(ClosestPointToSurfaceOn(line));
 
 	public bool Contains(Location location) => ((Vect) location).LengthSquared <= RadiusSquared;
 	
@@ -35,9 +35,9 @@ public readonly partial struct OriginSphere
 		return (Location) vectFromLocToCentre.WithLength(Radius);
 	}
 
-	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => (Location) ((Vect) line.ClosestPointToOrigin()).WithMaxLength(Radius);
-	public Location ClosestPointOn<TLine>(TLine line) where TLine : ILine => line.ClosestPointToOrigin();
-	public Location ClosestPointOnSurfaceTo<TLine>(TLine line) where TLine : ILine {
+	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILineLike => (Location) ((Vect) line.ClosestPointToOrigin()).WithMaxLength(Radius);
+	public Location ClosestPointOn<TLine>(TLine line) where TLine : ILineLike => line.ClosestPointToOrigin();
+	public Location ClosestPointOnSurfaceTo<TLine>(TLine line) where TLine : ILineLike {
 		var potentialIntersectionDistances = GetUnboundedSurfaceIntersectionDistances(line);
 		if (potentialIntersectionDistances == null) {
 			// Line would never intersect even if infinite, so the answer is easy: It's the vector with length Radius that points to the closest point on the line to the sphere centre
@@ -50,7 +50,7 @@ public readonly partial struct OriginSphere
 		if (line.DistanceFrom(intersectionPointTwo) < line.DistanceFrom(intersectionPointOne)) return intersectionPointTwo;
 		else return intersectionPointOne;
 	}
-	public Location ClosestPointToSurfaceOn<TLine>(TLine line) where TLine : ILine {
+	public Location ClosestPointToSurfaceOn<TLine>(TLine line) where TLine : ILineLike {
 		var potentialIntersectionDistances = GetUnboundedSurfaceIntersectionDistances(line);
 		if (potentialIntersectionDistances == null) {
 			// Line would never intersect even if infinite, so the answer is easy: It's the point on the line that's closest to the sphere centre
@@ -64,12 +64,12 @@ public readonly partial struct OriginSphere
 		else return line.PointClosestTo(intersectionPointOne);
 	}
 
-	public bool IsIntersectedBy<TLine>(TLine line) where TLine : ILine {
+	public bool IsIntersectedBy<TLine>(TLine line) where TLine : ILineLike {
 		var distanceTuple = GetUnboundedSurfaceIntersectionDistances(line);
 		if (distanceTuple == null) return false;
 		return line.DistanceIsWithinLineBounds(distanceTuple.Value.First) || line.DistanceIsWithinLineBounds(distanceTuple.Value.Second);
 	}
-	public ConvexShapeLineIntersection? IntersectionWith<TLine>(TLine line) where TLine : ILine {
+	public ConvexShapeLineIntersection? IntersectionWith<TLine>(TLine line) where TLine : ILineLike {
 		var distanceTuple = GetUnboundedSurfaceIntersectionDistances(line);
 		if (distanceTuple == null) return null;
 
@@ -79,7 +79,7 @@ public readonly partial struct OriginSphere
 		);
 	}
 
-	(float First, float Second, bool SecondIsIdenticalToFirst)? GetUnboundedSurfaceIntersectionDistances<TLine>(TLine line) where TLine : ILine {
+	(float First, float Second, bool SecondIsIdenticalToFirst)? GetUnboundedSurfaceIntersectionDistances<TLine>(TLine line) where TLine : ILineLike {
 		// We solve this always as a simple unbounded line as it lets us solve as a quadratic, e.g. distance-from-start = (-b +/- sqrt(b^2 - 4ac)) / 2a
 		//																								where a = direction dot direction	(always 1 for unit-length vectors)
 		//																								where b = 2(start dot direction)

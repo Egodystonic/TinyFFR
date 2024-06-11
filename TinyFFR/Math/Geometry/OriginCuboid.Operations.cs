@@ -41,7 +41,7 @@ public readonly partial struct OriginCuboid
 		return new(side.ToDirection(), GetHalfExtent(side.GetAxis()));
 	}
 
-	public BoundedLine GetEdge(IntercardinalOrientation3D edge) {
+	public BoundedRay GetEdge(IntercardinalOrientation3D edge) {
 		if (edge == IntercardinalOrientation3D.None) throw new ArgumentOutOfRangeException(nameof(edge), edge, $"Can not be '{nameof(IntercardinalOrientation3D.None)}'.");
 
 		var unspecifiedAxis = edge.GetUnspecifiedAxis();
@@ -94,17 +94,17 @@ public readonly partial struct OriginCuboid
 		else return location with { Z = HalfDepth * (location.Z < 0f ? -1f : 1f) };
 	}
 
-	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine => PointClosestTo(ClosestPointOn(line));
-	public Location ClosestPointOn<TLine>(TLine line) where TLine : ILine {
+	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILineLike => PointClosestTo(ClosestPointOn(line));
+	public Location ClosestPointOn<TLine>(TLine line) where TLine : ILineLike {
 		if (Contains(line.StartPoint)) return line.StartPoint;
 		else return ClosestPointToSurfaceOn(line);
 	}
-	public float DistanceFrom<TLine>(TLine line) where TLine : ILine {
+	public float DistanceFrom<TLine>(TLine line) where TLine : ILineLike {
 		if (Contains(line.StartPoint)) return 0f;
 		else return SurfaceDistanceFrom(line);
 	}
 
-	public Location ClosestPointOnSurfaceTo<TLine>(TLine line) where TLine : ILine => SurfacePointClosestTo(ClosestPointToSurfaceOn(line));
+	public Location ClosestPointOnSurfaceTo<TLine>(TLine line) where TLine : ILineLike => SurfacePointClosestTo(ClosestPointToSurfaceOn(line));
 	public Location ClosestPointToSurfaceOn(Line line) {
 		var intersections = GetUnboundedLineIntersectionDistances(new Ray(line.PointOnLine, line.Direction));
 		if (intersections != null) return line.LocationAtDistance(intersections.Value.Item1);
@@ -119,30 +119,30 @@ public readonly partial struct OriginCuboid
 			_ => GetClosestPointToSurfaceOnNonIntersectingLine(ray)
 		};
 	}
-	public Location ClosestPointToSurfaceOn(BoundedLine line) {
-		var intersections = GetUnboundedLineIntersectionDistances(new Ray(line.StartPoint, line.Direction));
-		var lineLength = line.Length;
+	public Location ClosestPointToSurfaceOn(BoundedRay ray) {
+		var intersections = GetUnboundedLineIntersectionDistances(new Ray(ray.StartPoint, ray.Direction));
+		var lineLength = ray.Length;
 		return (intersections?.Item1 >= 0f && intersections?.Item1 <= lineLength, intersections?.Item2 >= 0f && intersections?.Item2 <= lineLength) switch {
-			(true, true) => line.UnboundedLocationAtDistance(intersections!.Value.Item1 < intersections.Value.Item2 ? intersections.Value.Item1 : intersections.Value.Item2),
-			(true, false) => line.UnboundedLocationAtDistance(intersections!.Value.Item1),
-			(false, true) => line.UnboundedLocationAtDistance(intersections!.Value.Item2),
-			_ => GetClosestPointToSurfaceOnNonIntersectingLine(line)
+			(true, true) => ray.UnboundedLocationAtDistance(intersections!.Value.Item1 < intersections.Value.Item2 ? intersections.Value.Item1 : intersections.Value.Item2),
+			(true, false) => ray.UnboundedLocationAtDistance(intersections!.Value.Item1),
+			(false, true) => ray.UnboundedLocationAtDistance(intersections!.Value.Item2),
+			_ => GetClosestPointToSurfaceOnNonIntersectingLine(ray)
 		};
 	}
-	public Location ClosestPointToSurfaceOn<TLine>(TLine line) where TLine : ILine {
+	public Location ClosestPointToSurfaceOn<TLine>(TLine line) where TLine : ILineLike {
 		return line switch {
 			Line l => ClosestPointToSurfaceOn(l),
 			Ray r => ClosestPointToSurfaceOn(r),
-			BoundedLine b => ClosestPointToSurfaceOn(b),
+			BoundedRay b => ClosestPointToSurfaceOn(b),
 			_ => FallbackClosestPointToSurfaceOn(line)
 		};
 	}
-	Location FallbackClosestPointToSurfaceOn<TLine>(TLine line) where TLine : ILine {
+	Location FallbackClosestPointToSurfaceOn<TLine>(TLine line) where TLine : ILineLike {
 		var intersection = IntersectionWith(line);
 		if (intersection == null) return GetClosestPointToSurfaceOnNonIntersectingLine(line);
 		else return intersection.Value.First;
 	}
-	Location GetClosestPointToSurfaceOnNonIntersectingLine<TLine>(TLine line) where TLine : ILine {
+	Location GetClosestPointToSurfaceOnNonIntersectingLine<TLine>(TLine line) where TLine : ILineLike {
 		var answerDistance = Single.PositiveInfinity;
 		var answer = Location.Origin;
 		foreach (var edgeOrientation in OrientationUtils.AllIntercardinals) {
@@ -156,14 +156,14 @@ public readonly partial struct OriginCuboid
 		}
 		return answer;
 	}
-	public float SurfaceDistanceFrom<TLine>(TLine line) where TLine : ILine => SurfaceDistanceFrom(ClosestPointToSurfaceOn(line));
+	public float SurfaceDistanceFrom<TLine>(TLine line) where TLine : ILineLike => SurfaceDistanceFrom(ClosestPointToSurfaceOn(line));
 
-	public bool IsIntersectedBy<TLine>(TLine line) where TLine : ILine {
+	public bool IsIntersectedBy<TLine>(TLine line) where TLine : ILineLike {
 		var distanceTuple = GetUnboundedLineIntersectionDistances(line.CoerceToRay());
 		if (distanceTuple == null) return false;
 		return line.DistanceIsWithinLineBounds(distanceTuple.Value.Item1) || line.DistanceIsWithinLineBounds(distanceTuple.Value.Item2);
 	}
-	public ConvexShapeLineIntersection? IntersectionWith<TLine>(TLine line) where TLine : ILine {
+	public ConvexShapeLineIntersection? IntersectionWith<TLine>(TLine line) where TLine : ILineLike {
 		var unboundedDistances = GetUnboundedLineIntersectionDistances(line.CoerceToRay());
 		if (unboundedDistances == null) return null;
 		return ConvexShapeLineIntersection.FromTwoPotentiallyNullArgs(line.LocationAtDistanceOrNull(unboundedDistances.Value.Item1), line.LocationAtDistanceOrNull(unboundedDistances.Value.Item2));

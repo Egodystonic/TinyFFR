@@ -20,23 +20,23 @@ class LineInterfaceTest {
 			var otherLine = new Line(l2, d2);
 
 			if (expectation == null) {
-				Assert.IsNull(ILine.CalculateUnboundedIntersectionDistanceOnThisLine(thisLine, otherLine));
-				Assert.IsNull(ILine.CalculateUnboundedIntersectionDistancesOnBothLines(thisLine, otherLine));
-				Assert.IsNull(ILine.CalculateUnboundedIntersectionDistanceOnThisLine(otherLine, thisLine));
-				Assert.IsNull(ILine.CalculateUnboundedIntersectionDistancesOnBothLines(otherLine, thisLine));
+				Assert.IsNull(ILineLike.CalculateUnboundedIntersectionDistanceOnThisLine(thisLine, otherLine));
+				Assert.IsNull(ILineLike.CalculateUnboundedIntersectionDistancesOnBothLines(thisLine, otherLine));
+				Assert.IsNull(ILineLike.CalculateUnboundedIntersectionDistanceOnThisLine(otherLine, thisLine));
+				Assert.IsNull(ILineLike.CalculateUnboundedIntersectionDistancesOnBothLines(otherLine, thisLine));
 			}
 			else {
 				Assert.AreEqual(
 					expectation.Value.First,
-					ILine.CalculateUnboundedIntersectionDistanceOnThisLine(thisLine, otherLine),
+					ILineLike.CalculateUnboundedIntersectionDistanceOnThisLine(thisLine, otherLine),
 					TestTolerance
 				);
 				Assert.AreEqual(
 					expectation.Value.Second,
-					ILine.CalculateUnboundedIntersectionDistanceOnThisLine(otherLine, thisLine),
+					ILineLike.CalculateUnboundedIntersectionDistanceOnThisLine(otherLine, thisLine),
 					TestTolerance
 				);
-				var bothActual = ILine.CalculateUnboundedIntersectionDistancesOnBothLines(thisLine, otherLine)!;
+				var bothActual = ILineLike.CalculateUnboundedIntersectionDistancesOnBothLines(thisLine, otherLine)!;
 				Assert.AreEqual(
 					expectation.Value.First,
 					bothActual.Value.ThisDistance,
@@ -47,7 +47,7 @@ class LineInterfaceTest {
 					bothActual.Value.OtherDistance,
 					TestTolerance
 				);
-				bothActual = ILine.CalculateUnboundedIntersectionDistancesOnBothLines(otherLine, thisLine)!;
+				bothActual = ILineLike.CalculateUnboundedIntersectionDistancesOnBothLines(otherLine, thisLine)!;
 				Assert.AreEqual(
 					expectation.Value.Second,
 					bothActual.Value.ThisDistance,

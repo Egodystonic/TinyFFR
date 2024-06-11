@@ -72,21 +72,21 @@ partial class PlaneTest {
 
 	[Test]
 	public void ShouldCorrectlyReflectDirections() {
-		Assert.AreEqual(Direction.Up, TestPlane.Reflect(Direction.Down));
-		Assert.AreEqual(Direction.Down, TestPlane.Reflect(Direction.Up));
-		Assert.AreEqual(Direction.Left, TestPlane.Reflect(Direction.Left));
-		Assert.AreEqual(Direction.Right, TestPlane.Reflect(Direction.Right));
-		Assert.AreEqual(Direction.Forward, TestPlane.Reflect(Direction.Forward));
-		Assert.AreEqual(Direction.Backward, TestPlane.Reflect(Direction.Backward));
-		AssertToleranceEquals(new Direction(1f, -1f, 0f), TestPlane.Reflect((1f, 1f, 0f)), TestTolerance);
+		Assert.AreEqual(Direction.Up, TestPlane.ReflectionOf(Direction.Down));
+		Assert.AreEqual(Direction.Down, TestPlane.ReflectionOf(Direction.Up));
+		Assert.AreEqual(Direction.Left, TestPlane.ReflectionOf(Direction.Left));
+		Assert.AreEqual(Direction.Right, TestPlane.ReflectionOf(Direction.Right));
+		Assert.AreEqual(Direction.Forward, TestPlane.ReflectionOf(Direction.Forward));
+		Assert.AreEqual(Direction.Backward, TestPlane.ReflectionOf(Direction.Backward));
+		AssertToleranceEquals(new Direction(1f, -1f, 0f), TestPlane.ReflectionOf((1f, 1f, 0f)), TestTolerance);
 
-		Assert.AreEqual(Direction.Up, TestPlane.Flipped.Reflect(Direction.Down));
-		Assert.AreEqual(Direction.Down, TestPlane.Flipped.Reflect(Direction.Up));
-		Assert.AreEqual(Direction.Left, TestPlane.Flipped.Reflect(Direction.Left));
-		Assert.AreEqual(Direction.Right, TestPlane.Flipped.Reflect(Direction.Right));
-		Assert.AreEqual(Direction.Forward, TestPlane.Flipped.Reflect(Direction.Forward));
-		Assert.AreEqual(Direction.Backward, TestPlane.Flipped.Reflect(Direction.Backward));
-		AssertToleranceEquals(new Direction(1f, -1f, 0f), TestPlane.Flipped.Reflect((1f, 1f, 0f)), TestTolerance);
+		Assert.AreEqual(Direction.Up, TestPlane.Flipped.ReflectionOf(Direction.Down));
+		Assert.AreEqual(Direction.Down, TestPlane.Flipped.ReflectionOf(Direction.Up));
+		Assert.AreEqual(Direction.Left, TestPlane.Flipped.ReflectionOf(Direction.Left));
+		Assert.AreEqual(Direction.Right, TestPlane.Flipped.ReflectionOf(Direction.Right));
+		Assert.AreEqual(Direction.Forward, TestPlane.Flipped.ReflectionOf(Direction.Forward));
+		Assert.AreEqual(Direction.Backward, TestPlane.Flipped.ReflectionOf(Direction.Backward));
+		AssertToleranceEquals(new Direction(1f, -1f, 0f), TestPlane.Flipped.ReflectionOf((1f, 1f, 0f)), TestTolerance);
 	}
 
 	[Test]

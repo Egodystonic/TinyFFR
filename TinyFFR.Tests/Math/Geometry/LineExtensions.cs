@@ -19,7 +19,7 @@ class LineExtensionsTest {
 	// interfere with those (and those are much easier to make compile correctly), so it's really actually a test of LineExtensions.
 	[Test]
 	public void ShouldBeAbleToCompileAllExamples() {
-		static void Test<TLine, TLine2>(TLine line, TLine2 line2) where TLine : ILine where TLine2 : ILine {
+		static void Test<TLine, TLine2>(TLine line, TLine2 line2) where TLine : ILineLike where TLine2 : ILineLike {
 			line.DistanceFrom(new OriginSphere());
 			new Plane().IntersectionWith(line);
 			line.PointClosestTo(new Ray());
@@ -73,12 +73,12 @@ class LineExtensionsTest {
 			new Plane().RelationshipTo(new Ray());
 			new Ray().IntersectionWith(new OriginSphere());
 
-			new BoundedLine().IntersectionWith(line);
-			new BoundedLine().IntersectionWith(line, 0f);
-			new BoundedLine().IntersectionWith(new Ray());
-			new BoundedLine().IntersectionWith(new Ray(), 0f);
-			line.IntersectionWith(new BoundedLine());
-			line.IntersectionWith(new BoundedLine(), 0f);
+			new BoundedRay().IntersectionWith(line);
+			new BoundedRay().IntersectionWith(line, 0f);
+			new BoundedRay().IntersectionWith(new Ray());
+			new BoundedRay().IntersectionWith(new Ray(), 0f);
+			line.IntersectionWith(new BoundedRay());
+			line.IntersectionWith(new BoundedRay(), 0f);
 
 			Location.Origin.IsContainedWithin(new OriginSphere());
 			Location.Origin.IsContainedWithin(new Ray());
@@ -114,7 +114,7 @@ class LineExtensionsTest {
 		}
 
 		try {
-			Test(new Ray(), new BoundedLine());
+			Test(new Ray(), new BoundedRay());
 		}
 		catch { /* Don't care about any actual parameter validation exceptions or errors from executing the functions. */ }
 		Assert.Pass("Compiling test is successful test.");
@@ -130,7 +130,7 @@ class LineExtensionsTest {
 			sub.ClearReceivedCalls();
 		}
 
-		void ExecuteGenericLineTests<TLine>(TLine genericLine) where TLine : ILine {
+		void ExecuteGenericLineTests<TLine>(TLine genericLine) where TLine : ILineLike {
 			var lineSurfaceDistanceMeasurable = Substitute.For<ILineSurfaceDistanceMeasurable>();
 			_ = genericLine.DistanceFrom(lineSurfaceDistanceMeasurable);
 			AssertGenericMethodInvoked(lineSurfaceDistanceMeasurable, nameof(ILineDistanceMeasurable.DistanceFrom), genericLine);
@@ -154,7 +154,7 @@ class LineExtensionsTest {
 		var lineClosestSurfacePointDiscoverable = Substitute.For<ILineClosestSurfacePointDiscoverable>();
 		var line = new Line(Location.Origin, Direction.Forward);
 		var ray = new Ray(Location.Origin, Direction.Backward);
-		var boundedLine = BoundedLine.FromStartPointAndVect(Location.Origin, Direction.Forward * 3f);
+		var boundedLine = BoundedRay.FromStartPointAndVect(Location.Origin, Direction.Forward * 3f);
 
 		_ = line.DistanceFrom(lineSurfaceDistanceMeasurable);
 		_ = lineSurfaceDistanceMeasurable.Received(1).DistanceFrom(line);

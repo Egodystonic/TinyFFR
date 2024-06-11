@@ -7,8 +7,8 @@ using System.Diagnostics;
 namespace Egodystonic.TinyFFR;
 
 [DebuggerDisplay("{ToStringDescriptive()}")]
-public readonly partial struct Plane : IGeometryPrimitive<Plane>, IPrecomputationInterpolatable<Plane, Rotation>, IDescriptiveStringProvider {
-	public const float DefaultPlaneThickness = ILine.DefaultLineThickness;
+public readonly partial struct Plane : IMathPrimitive<Plane>, IDescriptiveStringProvider {
+	public const float DefaultPlaneThickness = ILineLike.DefaultLineThickness;
 	readonly Vector3 _normal;
 	readonly float _smallestDistanceFromOriginAlongNormal;
 

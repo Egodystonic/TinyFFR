@@ -7,13 +7,14 @@ using System.Numerics;
 
 namespace Egodystonic.TinyFFR;
 
-public readonly partial struct Line :
-	IAdditionOperators<Line, Vect, Line>,
-	IMultiplyOperators<Line, Rotation, Line> {
+public readonly partial struct Line {
 	public Ray ToRay(float signedDistanceAlongLine, bool flipDirection) => new(LocationAtDistance(signedDistanceAlongLine), flipDirection ? Direction.Inverted : Direction);
-	public BoundedLine ToBoundedLine(float startSignedDistanceAlongLine, float endSignedDistanceAlongLine) {
+	public BoundedRay ToBoundedLine(float startSignedDistanceAlongLine, float endSignedDistanceAlongLine) {
 		return new(LocationAtDistance(startSignedDistanceAlongLine), LocationAtDistance(endSignedDistanceAlongLine));
 	}
+
+	Line IInvertible<Line>.Inverted => new(PointOnLine, -Direction);
+	static Line IUnaryNegationOperators<Line, Line>.operator -(Line line) => new Line(line.PointOnLine, -line.Direction);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Line operator *(Line line, Rotation rot) => line.RotatedBy(rot);
@@ -22,10 +23,24 @@ public readonly partial struct Line :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line RotatedBy(Rotation rotation) => new(PointOnLine, Direction.RotatedBy(rotation));
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Line operator *(Line line, (Rotation Rotation, Location Pivot) pivotRotationTuple) => line.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Line operator *(Line line, (Location Pivot, Rotation Rotation) pivotRotationTuple) => line.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Line operator *((Rotation Rotation, Location Pivot) pivotRotationTuple, Line line) => line.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Line operator *((Location Pivot, Rotation Rotation) pivotRotationTuple, Line line) => line.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public Line RotatedAroundPoint(Rotation rot, Location pivot) {
+		var lineToPivotVect = PointClosestTo(pivot) >> pivot;
+		return new(pivot + lineToPivotVect * rot, Direction * rot);
+	}
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Line operator +(Line line, Vect v) => line.MovedBy(v);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Line operator -(Line line, Vect v) => line.MovedBy(-v);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Line operator +(Vect v, Line line) => line.MovedBy(v);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -49,6 +64,8 @@ public readonly partial struct Line :
 			Direction.InterpolateUsingPrecomputation(start.Direction, end.Direction, precomputation, distance)
 		);
 	}
+	public Line Clamp(Line min, Line max) => new(PointOnLine.Clamp(min.PointOnLine, max.PointOnLine), Direction.Clamp(min.Direction, max.Direction));
+
 	public static Line CreateNewRandom() => new(Location.CreateNewRandom(), Direction.CreateNewRandom());
 	public static Line CreateNewRandom(Line minInclusive, Line maxExclusive) => new(Location.CreateNewRandom(minInclusive.PointOnLine, maxExclusive.PointOnLine), Direction.CreateNewRandom(minInclusive.Direction, maxExclusive.Direction));
 	
@@ -66,85 +83,61 @@ public readonly partial struct Line :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(Location location) => location.DistanceFrom(PointClosestTo(location));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(Location location) => location.DistanceSquaredFrom(PointClosestTo(location));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFromOrigin() => ((Vect) ClosestPointToOrigin()).Length;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool Contains(Location location) => Contains(location, ILine.DefaultLineThickness);
+	public float DistanceSquaredFromOrigin() => ((Vect) ClosestPointToOrigin()).LengthSquared;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool Contains(Location location) => Contains(location, ILineLike.DefaultLineThickness);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(Location location, float lineThickness) => DistanceFrom(location) <= lineThickness;
 
-	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILine {
-		return line switch {
-			Line l => PointClosestTo(l),
-			Ray r => PointClosestTo(r),
-			BoundedLine b => PointClosestTo(b),
-			_ => line.ClosestPointOn(this) // Possible stack overflow if the other line doesn't implement both sides (To/On), but this allows users to add their own line implementations
-		};
-	}
 	public Location PointClosestTo(Line line) {
-		var intersectionDistance = ILine.CalculateUnboundedIntersectionDistanceOnThisLine(this, line);
+		var intersectionDistance = ILineLike.CalculateUnboundedIntersectionDistanceOnThisLine(this, line);
 		return LocationAtDistance(intersectionDistance ?? 0f);
 	}
 	public Location PointClosestTo(Ray ray) {
-		var intersectionDistances = ILine.CalculateUnboundedIntersectionDistancesOnBothLines(this, ray);
+		var intersectionDistances = ILineLike.CalculateUnboundedIntersectionDistancesOnBothLines(this, ray);
 		if (intersectionDistances == null || !ray.DistanceIsWithinLineBounds(intersectionDistances.Value.OtherDistance)) return PointClosestTo(ray.StartPoint);
 		else return LocationAtDistance(intersectionDistances.Value.ThisDistance);
 	}
-	public Location PointClosestTo(BoundedLine boundedLine) {
-		var intersectionDistances = ILine.CalculateUnboundedIntersectionDistancesOnBothLines(this, boundedLine);
-		if (intersectionDistances == null || intersectionDistances.Value.OtherDistance < 0f) return PointClosestTo(boundedLine.StartPoint);
-		else if (!boundedLine.DistanceIsWithinLineBounds(intersectionDistances.Value.OtherDistance)) return PointClosestTo(boundedLine.EndPoint);
+	public Location PointClosestTo(BoundedRay boundedRay) {
+		var intersectionDistances = ILineLike.CalculateUnboundedIntersectionDistancesOnBothLines(this, boundedRay);
+		if (intersectionDistances == null || intersectionDistances.Value.OtherDistance < 0f) return PointClosestTo(boundedRay.StartPoint);
+		else if (!boundedRay.DistanceIsWithinLineBounds(intersectionDistances.Value.OtherDistance)) return PointClosestTo(boundedRay.EndPoint);
 		else return LocationAtDistance(intersectionDistances.Value.ThisDistance);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointOn<TLine>(TLine line) where TLine : ILine => line.PointClosestTo(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointOn(Line line) => line.PointClosestTo(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointOn(Ray ray) => ray.PointClosestTo(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointOn(BoundedLine boundedLine) => boundedLine.PointClosestTo(this);
-
-	public float DistanceFrom<TLine>(TLine line) where TLine : ILine => DistanceFrom(ClosestPointOn(line));
-	public float DistanceFrom(Line line) => DistanceFrom(ClosestPointOn(line));
-	public float DistanceFrom(Ray ray) => DistanceFrom(ClosestPointOn(ray));
-	public float DistanceFrom(BoundedLine boundedLine) => DistanceFrom(ClosestPointOn(boundedLine));
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	Location? ILineIntersectable<Location>.IntersectionWith<TLine>(TLine line) => IntersectionWith(line, ILine.DefaultLineThickness);
-	public Location? IntersectionWith<TLine>(TLine line, float lineThickness = ILine.DefaultLineThickness) where TLine : ILine {
-		var closestPointOnLine = ClosestPointOn(line);
-		return DistanceFrom(closestPointOnLine) <= lineThickness ? closestPointOnLine : null;
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	bool ILineIntersectable<Location>.IsIntersectedBy<TLine>(TLine line) => IsIntersectedBy(line, ILine.DefaultLineThickness);
-	public bool IsIntersectedBy<TLine>(TLine line, float lineThickness = ILine.DefaultLineThickness) where TLine : ILine {
-		return DistanceFrom(ClosestPointOn(line)) <= lineThickness;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location LocationAtDistance(float signedDistanceFromStart) => PointOnLine + Direction * signedDistanceFromStart;
 
 	// These are implemented explicitly because they're all basically the same thing or useless for an unbounded line.
-	bool ILine.DistanceIsWithinLineBounds(float signedDistanceFromStart) => true;
-	float ILine.BindDistance(float signedDistanceFromStart) => signedDistanceFromStart;
-	Location ILine.BoundedLocationAtDistance(float signedDistanceFromStart) => LocationAtDistance(signedDistanceFromStart);
-	Location ILine.UnboundedLocationAtDistance(float signedDistanceFromStart) => LocationAtDistance(signedDistanceFromStart);
-	Location? ILine.LocationAtDistanceOrNull(float signedDistanceFromStart) => LocationAtDistance(signedDistanceFromStart);
+	bool ILineLike.DistanceIsWithinLineBounds(float signedDistanceFromStart) => true;
+	float ILineLike.BindDistance(float signedDistanceFromStart) => signedDistanceFromStart;
+	Location ILineLike.BoundedLocationAtDistance(float signedDistanceFromStart) => LocationAtDistance(signedDistanceFromStart);
+	Location ILineLike.UnboundedLocationAtDistance(float signedDistanceFromStart) => LocationAtDistance(signedDistanceFromStart);
+	Location? ILineLike.LocationAtDistanceOrNull(float signedDistanceFromStart) => LocationAtDistance(signedDistanceFromStart);
+
+	float ILineLike.BoundedDistanceAtPointClosestTo(Location point) => DistanceAtPointClosestTo(point);
+	float ILineLike.UnboundedDistanceAtPointClosestTo(Location point) => DistanceAtPointClosestTo(point);
+	public float DistanceAtPointClosestTo(Location point) {
+		var closestPoint = PointClosestTo(point);
+		return closestPoint.DistanceFrom(PointOnLine) * MathF.Sign((PointOnLine >> closestPoint).Dot(Direction));
+	}
 
 	public Ray? ReflectedBy(Plane plane) {
-		var intersectionPoint = IntersectionWith(plane);
+		var intersectionPoint = IntersectionWith(plane)?.StartPoint;
 		if (intersectionPoint == null) return null;
 		return new Ray(intersectionPoint.Value, Direction.ReflectedBy(plane));
 	}
 
-	public Location? IntersectionWith(Plane plane) {
+	public Ray? IntersectionWith(Plane plane) {
 		var similarityToNormal = plane.Normal.Dot(Direction);
 		if (similarityToNormal == 0f) return null; // Parallel with plane -- either infinite or zero answers. Return null either way
 
 		var distance = (plane.ClosestPointToOrigin - PointOnLine).LengthWhenProjectedOnTo(plane.Normal) / similarityToNormal;
-		return LocationAtDistance(distance);
+		return new(LocationAtDistance(distance), Direction);
 	}
 
 	public bool IsIntersectedBy(Plane plane) => plane.Normal.Dot(Direction) != 0f;
@@ -161,11 +154,11 @@ public readonly partial struct Line :
 	// TODO in xmldoc explain that it's probably better to use IntersectionWith and/or DistanceFrom than these two methods
 	public Location PointClosestTo(Plane plane) {
 		// If we're parallel with the plane there are infinite answers so we just return the easiest one
-		return IntersectionWith(plane) ?? PointOnLine;
+		return IntersectionWith(plane)?.StartPoint ?? PointOnLine;
 	}
 	public Location ClosestPointOn(Plane plane) {
 		// If we're parallel with the plane there are infinite answers so we just return the easiest one
-		return IntersectionWith(plane) ?? plane.ClosestPointToOrigin;
+		return IntersectionWith(plane)?.StartPoint ?? plane.ClosestPointToOrigin;
 	}
 
 	public PlaneObjectRelationship RelationshipTo(Plane plane) {
@@ -197,21 +190,16 @@ public readonly partial struct Line :
 		return new Line(LocationAtDistance(pivotPointSignedDistance), Direction.OrthogonalizedAgainst(plane));
 	}
 
-	public Ray? SlicedBy(Plane plane) {
-		if (TrySplit(plane, out _, out var result)) return result;
-		else return null;
-	}
-
 	public bool TrySplit(Plane plane, out Ray outWithLineDir, out Ray outOpposingLineDir) {
-		var intersectionPoint = IntersectionWith(plane);
-		if (intersectionPoint == null) {
+		var intersection = IntersectionWith(plane);
+		if (intersection == null) {
 			outWithLineDir = default;
 			outOpposingLineDir = default;
 			return false;
 		}
 
-		outWithLineDir = new Ray(intersectionPoint.Value, Direction);
-		outOpposingLineDir = new Ray(intersectionPoint.Value, -Direction);
+		outWithLineDir = intersection.Value;
+		outOpposingLineDir = intersection.Value.Flipped;
 		return true;
 	}
 }
