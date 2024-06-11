@@ -45,6 +45,7 @@ public readonly partial struct BoundedRay : ILineLike<BoundedRay, BoundedRay>, I
 		init => _vect = value - _startPoint;
 	}
 	bool ILineLike.IsUnboundedInBothDirections => false;
+	bool ILineLike.IsFiniteLength => true;
 	float? ILineLike.Length => Length;
 	float? ILineLike.LengthSquared => LengthSquared;
 	Vect? ILineLike.StartToEndVect => StartToEndVect;

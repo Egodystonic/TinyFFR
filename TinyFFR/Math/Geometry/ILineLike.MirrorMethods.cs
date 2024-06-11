@@ -1,0 +1,280 @@
+﻿// Created on 2024-03-01 by Ben Bowen
+// (c) Egodystonic / TinyFFR 2024
+
+using System.Diagnostics.CodeAnalysis;
+
+namespace Egodystonic.TinyFFR;
+
+partial struct Line {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(Line line) => ILineLike.AngleTo(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(Ray ray) => ILineLike.AngleTo(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(BoundedRay ray) => ILineLike.AngleTo(this, ray);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(Line line) => DistanceSquaredFrom(ClosestPointOn(line));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(Ray ray) => DistanceSquaredFrom(ClosestPointOn(ray));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(BoundedRay ray) => DistanceSquaredFrom(ClosestPointOn(ray));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(Plane plane) => DistanceSquaredFrom(ClosestPointOn(plane));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(Line line) => IsIntersectedBy(line, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(Line line, float lineThickness) => ILineLike.IntersectionWith(this, line, lineThickness) != null;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(Ray ray) => IsIntersectedBy(ray, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(Ray ray, float lineThickness) => ILineLike.IntersectionWith(this, ray, lineThickness) != null;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(BoundedRay ray) => IsIntersectedBy(ray, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(BoundedRay ray, float lineThickness) => ILineLike.IntersectionWith(this, ray, lineThickness) != null;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionWith(Line line) => IntersectionWith(line, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionWith(Line line, float lineThickness) => ILineLike.IntersectionWith(this, line, lineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionWith(Ray ray) => IntersectionWith(ray, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionWith(Ray ray, float lineThickness) => ILineLike.IntersectionWith(this, ray, lineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionWith(BoundedRay ray) => IntersectionWith(ray, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionWith(BoundedRay ray, float lineThickness) => ILineLike.IntersectionWith(this, ray, lineThickness);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(Line line) => line.PointClosestTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(Ray ray) => ray.PointClosestTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(BoundedRay boundedRay) => boundedRay.PointClosestTo(this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(Line line) => DistanceFrom(ClosestPointOn(line));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(Ray ray) => DistanceFrom(ClosestPointOn(ray));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(BoundedRay boundedRay) => DistanceFrom(ClosestPointOn(boundedRay));
+}
+partial struct Ray {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(Line line) => ILineLike.AngleTo(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(Ray ray) => ILineLike.AngleTo(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(BoundedRay ray) => ILineLike.AngleTo(this, ray);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(Line line) => DistanceSquaredFrom(ClosestPointOn(line));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(Ray ray) => DistanceSquaredFrom(ClosestPointOn(ray));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(BoundedRay ray) => DistanceSquaredFrom(ClosestPointOn(ray));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(Plane plane) => DistanceSquaredFrom(ClosestPointOn(plane));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(Line line) => IsIntersectedBy(line, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(Line line, float lineThickness) => ILineLike.IntersectionWith(this, line, lineThickness) != null;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(Ray ray) => IsIntersectedBy(ray, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(Ray ray, float lineThickness) => ILineLike.IntersectionWith(this, ray, lineThickness) != null;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(BoundedRay ray) => IsIntersectedBy(ray, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(BoundedRay ray, float lineThickness) => ILineLike.IntersectionWith(this, ray, lineThickness) != null;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionWith(Line line) => IntersectionWith(line, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionWith(Line line, float lineThickness) => ILineLike.IntersectionWith(this, line, lineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionWith(Ray ray) => IntersectionWith(ray, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionWith(Ray ray, float lineThickness) => ILineLike.IntersectionWith(this, ray, lineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionWith(BoundedRay ray) => IntersectionWith(ray, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionWith(BoundedRay ray, float lineThickness) => ILineLike.IntersectionWith(this, ray, lineThickness);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(Line line) => line.PointClosestTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(Ray ray) => ray.PointClosestTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(BoundedRay boundedRay) => boundedRay.PointClosestTo(this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(Line line) => DistanceFrom(ClosestPointOn(line));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(Ray ray) => DistanceFrom(ClosestPointOn(ray));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(BoundedRay boundedRay) => DistanceFrom(ClosestPointOn(boundedRay));
+}
+partial struct BoundedRay {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(Line line) => ILineLike.AngleTo(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(Ray ray) => ILineLike.AngleTo(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(BoundedRay ray) => ILineLike.AngleTo(this, ray);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(Line line) => DistanceSquaredFrom(ClosestPointOn(line));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(Ray ray) => DistanceSquaredFrom(ClosestPointOn(ray));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(BoundedRay ray) => DistanceSquaredFrom(ClosestPointOn(ray));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(Plane plane) => DistanceSquaredFrom(ClosestPointOn(plane));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(Line line) => IsIntersectedBy(line, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(Line line, float lineThickness) => ILineLike.IntersectionWith(this, line, lineThickness) != null;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(Ray ray) => IsIntersectedBy(ray, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(Ray ray, float lineThickness) => ILineLike.IntersectionWith(this, ray, lineThickness) != null;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(BoundedRay ray) => IsIntersectedBy(ray, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(BoundedRay ray, float lineThickness) => ILineLike.IntersectionWith(this, ray, lineThickness) != null;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionWith(Line line) => IntersectionWith(line, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionWith(Line line, float lineThickness) => ILineLike.IntersectionWith(this, line, lineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionWith(Ray ray) => IntersectionWith(ray, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionWith(Ray ray, float lineThickness) => ILineLike.IntersectionWith(this, ray, lineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionWith(BoundedRay ray) => IntersectionWith(ray, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location? IntersectionWith(BoundedRay ray, float lineThickness) => ILineLike.IntersectionWith(this, ray, lineThickness);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(Line line) => line.PointClosestTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(Ray ray) => ray.PointClosestTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(BoundedRay boundedRay) => boundedRay.PointClosestTo(this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(Line line) => DistanceFrom(ClosestPointOn(line));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(Ray ray) => DistanceFrom(ClosestPointOn(ray));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(BoundedRay boundedRay) => DistanceFrom(ClosestPointOn(boundedRay));
+}
+
+partial struct Location : ILineDistanceMeasurable, ILineClosestExogenousPointDiscoverable, ILineContainable {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(Line line) => line.DistanceFrom(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(Ray ray) => ray.DistanceFrom(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(BoundedRay ray) => ray.DistanceFrom(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(Line line) => line.DistanceSquaredFrom(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(Ray ray) => ray.DistanceSquaredFrom(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(BoundedRay ray) => ray.DistanceSquaredFrom(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(Line line) => line.PointClosestTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(Ray ray) => ray.PointClosestTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(BoundedRay ray) => ray.PointClosestTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsContainedWithin(Line line) => line.Contains(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsContainedWithin(Ray ray) => ray.Contains(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsContainedWithin(BoundedRay ray) => ray.Contains(this);
+}
+partial struct Plane : 
+	ILineProjectionTarget, 
+	ILineOrthogonalizationTarget, 
+	ILineParallelizationTarget, 
+	ILineSignedDistanceMeasurable, 
+	ILineClosestEndogenousPointDiscoverable, 
+	ILineClosestExogenousPointDiscoverable,
+	ILineRelatable<PlaneObjectRelationship>,
+	IIntersectionDeterminable<Plane, Line, Ray>,
+	IIntersectionDeterminable<Plane, Ray, Ray>,
+	IIntersectionDeterminable<Plane, BoundedRay, BoundedRay> {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line ProjectionOf(Line line) => line.ProjectedOnTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray ProjectionOf(Ray ray) => ray.ProjectedOnTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay ProjectionOf(BoundedRay ray) => ray.ProjectedOnTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line OrthogonalizationOf(Line line) => line.OrthogonalizedAgainst(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray OrthogonalizationOf(Ray ray) => ray.OrthogonalizedAgainst(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay OrthogonalizationOf(BoundedRay ray) => ray.OrthogonalizedAgainst(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line ParallelizationOf(Line line) => line.ParallelizedWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray ParallelizationOf(Ray ray) => ray.ParallelizedWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay ParallelizationOf(BoundedRay ray) => ray.ParallelizedWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(Line line) => line.IsIntersectedBy(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(Ray ray) => ray.IsIntersectedBy(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(BoundedRay ray) => ray.IsIntersectedBy(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray? IntersectionWith(Line line) => line.IntersectionWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray? IntersectionWith(Ray ray) => ray.IntersectionWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay? IntersectionWith(BoundedRay ray) => ray.IntersectionWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(Line line) => line.DistanceFrom(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float SignedDistanceFrom(Line line) => line.SignedDistanceFrom(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(Line line) => line.DistanceSquaredFrom(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(Ray ray) => ray.DistanceFrom(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float SignedDistanceFrom(Ray ray) => ray.SignedDistanceFrom(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(Ray ray) => ray.DistanceSquaredFrom(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(BoundedRay ray) => ray.DistanceFrom(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float SignedDistanceFrom(BoundedRay ray) => ray.SignedDistanceFrom(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(BoundedRay ray) => ray.DistanceSquaredFrom(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location PointClosestTo(Line line) => line.ClosestPointOn(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location PointClosestTo(Ray ray) => ray.ClosestPointOn(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location PointClosestTo(BoundedRay ray) => ray.ClosestPointOn(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(Line line) => line.PointClosestTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(Ray ray) => ray.PointClosestTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointOn(BoundedRay ray) => ray.PointClosestTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public PlaneObjectRelationship RelationshipTo(Line line) => line.RelationshipTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public PlaneObjectRelationship RelationshipTo(Ray ray) => ray.RelationshipTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public PlaneObjectRelationship RelationshipTo(BoundedRay ray) => ray.RelationshipTo(this);
+}

@@ -27,6 +27,7 @@ public readonly partial struct Line : ILineLike<Line, Ray>, IPrecomputationInter
 	}
 	Location ILineLike.StartPoint => PointOnLine;
 	bool ILineLike.IsUnboundedInBothDirections => true;
+	bool ILineLike.IsFiniteLength => false;
 	float? ILineLike.Length => null;
 	float? ILineLike.LengthSquared => null;
 	Vect? ILineLike.StartToEndVect => null;

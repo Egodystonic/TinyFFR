@@ -26,6 +26,7 @@ public readonly partial struct Ray : ILineLike<Ray, Ray>, IPrecomputationInterpo
 		init => _direction = value;
 	}
 	bool ILineLike.IsUnboundedInBothDirections => false;
+	bool ILineLike.IsFiniteLength => false;
 	float? ILineLike.Length => null;
 	float? ILineLike.LengthSquared => null;
 	Vect? ILineLike.StartToEndVect => null;
