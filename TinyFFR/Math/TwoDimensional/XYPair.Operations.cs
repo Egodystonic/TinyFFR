@@ -5,7 +5,7 @@ using System.Numerics;
 
 namespace Egodystonic.TinyFFR;
 
-public readonly partial struct XYPair<T> :
+partial struct XYPair<T> :
 	IAlgebraicRing<XYPair<T>>,
 	IInterpolatable<XYPair<T>>,
 	IDistanceMeasurable<XYPair<T>> { // TODO Angle-measurable

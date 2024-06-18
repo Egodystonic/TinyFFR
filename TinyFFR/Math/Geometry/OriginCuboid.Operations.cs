@@ -6,7 +6,7 @@ using System.Diagnostics.Metrics;
 
 namespace Egodystonic.TinyFFR;
 
-public readonly partial struct OriginCuboid
+partial struct OriginCuboid
 	: IMultiplyOperators<OriginCuboid, float, OriginCuboid> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static OriginCuboid operator *(OriginCuboid cuboid, float scalar) => cuboid.ScaledBy(scalar);

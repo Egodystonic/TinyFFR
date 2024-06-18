@@ -24,17 +24,31 @@ public readonly record struct ConvexShapeLineIntersection(Location First, Locati
 	}
 }
 
-public interface IShape : IGeometryPrimitive;
+public interface IShape : IMathPrimitive;
 public interface IShape<TSelf> :
 	IShape,
-	IGeometryPrimitive<TSelf>,
+	IMathPrimitive<TSelf>,
 	IScalable<TSelf>
 	where TSelf : IShape<TSelf>;
 public interface IConvexShape : IShape,
-	ISurfaceDistanceMeasurable<Location>, IContainer<Location>, IClosestEndogenousSurfacePointDiscoverable<Location>,
-	ILineSurfaceDistanceMeasurable, ILineClosestSurfacePointDiscoverable,
-	ISignedSurfaceDistanceMeasurable<Plane>, IClosestSurfacePointDiscoverable<Plane>, IRelatable<Plane, PlaneObjectRelationship>,
-	ILineIntersectable<ConvexShapeLineIntersection>;
-public interface IConvexShape<TSelf> : 
-	IConvexShape, IShape<TSelf>
-	where TSelf : IConvexShape<TSelf>;
+	IClosestEndogenousSurfacePointDiscoverable<Location>,
+	IEndogenousSurfaceDistanceMeasurable<Location>,
+	IContainer<Location>,
+
+	ILineReflectionTarget, 
+	ILineClosestExogenousPointDiscoverable,
+	ILineClosestEndogenousSurfacePointDiscoverable,
+	ILineEndogenousSurfaceDistanceMeasurable, 
+	IContainer<BoundedRay>,
+	ILineIntersectionDeterminable<ConvexShapeLineIntersection>,
+
+	ISignedEndogenousSurfaceDistanceMeasurable<Plane>,
+	IClosestEndogenousSurfacePointDiscoverable<Plane>,
+	IClosestExogenousPointDiscoverable<Plane>,
+	IRelatable<Plane, PlaneObjectRelationship> {
+	Angle? IncidentAngleTo(Line line);
+	Angle? IncidentAngleTo(Ray ray);
+	Angle? IncidentAngleTo(BoundedRay ray);
+}
+
+public interface IConvexShape<TSelf> : IConvexShape, IShape<TSelf> where TSelf : IConvexShape<TSelf>;

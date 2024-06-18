@@ -3,7 +3,7 @@
 
 namespace Egodystonic.TinyFFR;
 
-public readonly partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay> {
+partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray ToRayFromStart() => new(StartPoint, Direction);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

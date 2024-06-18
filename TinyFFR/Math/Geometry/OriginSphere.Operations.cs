@@ -3,13 +3,11 @@
 
 namespace Egodystonic.TinyFFR;
 
-public readonly partial struct OriginSphere
-	: IMultiplyOperators<OriginSphere, float, OriginSphere> {
+partial struct OriginSphere {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static OriginSphere operator *(OriginSphere sphere, float scalar) => sphere.ScaledBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static OriginSphere operator *(float scalar, OriginSphere sphere) => sphere.ScaledBy(scalar);
-
 	public OriginSphere ScaledBy(float scalar) => new(Radius * scalar);
 
 	public float GetCircleRadiusAtDistanceFromCenter(float distanceFromCenter) => GetCircleRadiusAtDistanceFromCenterSquared(distanceFromCenter * distanceFromCenter);
@@ -20,8 +18,13 @@ public readonly partial struct OriginSphere
 
 	public float DistanceFrom(Location location) => MathF.Max(0f, ((Vect) location).Length - Radius);
 	public float SurfaceDistanceFrom(Location location) => MathF.Abs(((Vect) location).Length - Radius);
-	public float DistanceFrom<TLine>(TLine line) where TLine : ILineLike => MathF.Max(0f, line.DistanceFromOrigin() - Radius);
-	public float SurfaceDistanceFrom<TLine>(TLine line) where TLine : ILineLike => SurfaceDistanceFrom(ClosestPointToSurfaceOn(line));
+
+	public float DistanceFrom(Line line) => MathF.Max(0f, line.DistanceFromOrigin() - Radius);
+	public float DistanceFrom(Ray ray) => MathF.Max(0f, ray.DistanceFromOrigin() - Radius);
+	public float DistanceFrom(BoundedRay ray) => MathF.Max(0f, ray.DistanceFromOrigin() - Radius);
+	public float SurfaceDistanceFrom(Line line) => SurfaceDistanceFrom(ClosestPointToSurfaceOn(line));
+	public float SurfaceDistanceFrom(Ray ray) => SurfaceDistanceFrom(ClosestPointToSurfaceOn(ray));
+	public float SurfaceDistanceFrom(BoundedRay ray) => SurfaceDistanceFrom(ClosestPointToSurfaceOn(ray));
 
 	public bool Contains(Location location) => ((Vect) location).LengthSquared <= RadiusSquared;
 	
@@ -34,6 +37,14 @@ public readonly partial struct OriginSphere
 		var vectFromLocToCentre = (Vect) location;
 		return (Location) vectFromLocToCentre.WithLength(Radius);
 	}
+
+	public Location ClosestPointOn(Line line) => line.ClosestPointToOrigin();
+	public Location ClosestPointOn(Ray ray) => ray.ClosestPointToOrigin();
+	public Location ClosestPointOn(BoundedRay ray) => ray.ClosestPointToOrigin();
+	public Location PointClosestTo(Line line) => (Location) ((Vect) line.ClosestPointToOrigin()).WithMaxLength(Radius);
+	public Location PointClosestTo(Ray ray) => (Location) ((Vect) ray.ClosestPointToOrigin()).WithMaxLength(Radius);
+	public Location PointClosestTo(BoundedRay ray) => (Location) ((Vect) ray.ClosestPointToOrigin()).WithMaxLength(Radius);
+	
 
 	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILineLike => (Location) ((Vect) line.ClosestPointToOrigin()).WithMaxLength(Radius);
 	public Location ClosestPointOn<TLine>(TLine line) where TLine : ILineLike => line.ClosestPointToOrigin();

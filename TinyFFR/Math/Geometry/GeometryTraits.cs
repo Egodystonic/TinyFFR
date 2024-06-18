@@ -74,6 +74,7 @@ public interface IReflectionTarget<in TOther, TReflection> where TReflection : s
 	TReflection? ReflectionOf(TOther element);
 }
 public interface ILineReflectionTarget<TReflection> : IReflectionTarget<Line, TReflection>, IReflectionTarget<Ray, TReflection>, IReflectionTarget<BoundedRay, TReflection> where TReflection : struct;
+public interface ILineReflectionTarget : IReflectionTarget<Line, Ray>, IReflectionTarget<Ray, Ray>, IReflectionTarget<BoundedRay, BoundedRay>;
 interface IReflectionTarget<in TSelf, in TOther, TReflection> : IReflectionTarget<TOther, TReflection> where TOther : IReflectable<TSelf, TReflection> where TSelf : IReflectionTarget<TOther, TReflection> where TReflection : struct;
 
 
