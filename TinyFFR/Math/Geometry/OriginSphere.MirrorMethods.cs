@@ -7,7 +7,7 @@ partial struct Location : IClosestExogenousSurfacePointDiscoverable<Location, Or
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointOn(OriginSphere sphere) => sphere.ClosestPointTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointToSurfaceOf(OriginSphere sphere) => sphere.SurfacePointClosestTo(this);
+	public Location ClosestPointToSurfaceOf(OriginSphere sphere) => 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(OriginSphere sphere) => sphere.DistanceFrom(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -36,7 +36,7 @@ partial struct Plane : ISignedExogenousSurfaceDistanceMeasurable<Plane, OriginSp
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointOn(OriginSphere sphere) => sphere.PointClosestTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointToSurfaceOf(OriginSphere sphere) => sphere.SurfacePointClosestTo(this);
+	public Location ClosestPointToSurfaceOf(OriginSphere sphere) => 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location PointClosestTo(OriginSphere sphere) => sphere.ClosestPointOn(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -51,7 +51,7 @@ partial struct Line : IReflectable<OriginSphere, Ray>, IClosestEndogenousPointDi
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointOn(OriginSphere sphere) => sphere.PointClosestTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointToSurfaceOf(OriginSphere sphere) => sphere.SurfacePointClosestTo(this);
+	public Location ClosestPointToSurfaceOf(OriginSphere sphere) => 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(OriginSphere sphere) => sphere.DistanceFrom(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -74,7 +74,7 @@ partial struct Ray : IReflectable<OriginSphere, Ray>, IClosestEndogenousPointDis
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointOn(OriginSphere sphere) => sphere.PointClosestTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointToSurfaceOf(OriginSphere sphere) => sphere.SurfacePointClosestTo(this);
+	public Location ClosestPointToSurfaceOf(OriginSphere sphere) => 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(OriginSphere sphere) => sphere.DistanceFrom(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -97,7 +97,7 @@ partial struct BoundedRay : IReflectable<OriginSphere, BoundedRay>, IClosestEndo
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointOn(OriginSphere sphere) => sphere.PointClosestTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointToSurfaceOf(OriginSphere sphere) => sphere.SurfacePointClosestTo(this);
+	public Location ClosestPointToSurfaceOf(OriginSphere sphere) => 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(OriginSphere sphere) => sphere.DistanceFrom(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

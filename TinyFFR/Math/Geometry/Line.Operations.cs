@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR;
 
 public readonly partial struct Line {
 	public Ray ToRay(float signedDistanceAlongLine, bool flipDirection) => new(LocationAtDistance(signedDistanceAlongLine), flipDirection ? Direction.Inverted : Direction);
-	public BoundedRay ToBoundedLine(float startSignedDistanceAlongLine, float endSignedDistanceAlongLine) {
+	public BoundedRay ToBoundedRay(float startSignedDistanceAlongLine, float endSignedDistanceAlongLine) {
 		return new(LocationAtDistance(startSignedDistanceAlongLine), LocationAtDistance(endSignedDistanceAlongLine));
 	}
 

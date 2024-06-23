@@ -14,10 +14,10 @@ partial class RayTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertToBoundedLine() {
-		AssertToleranceEquals(new BoundedRay(TestRay.StartPoint, TestRay.StartPoint + TestRay.Direction * 10f), TestRay.ToBoundedLine(10f), TestTolerance);
-		AssertToleranceEquals(TestRay.Direction, TestRay.ToBoundedLine(10f).Direction, TestTolerance);
-		AssertToleranceEquals(new BoundedRay(TestRay.StartPoint, TestRay.StartPoint + TestRay.Direction * -10f), TestRay.ToBoundedLine(-10f), TestTolerance);
-		AssertToleranceEquals(-TestRay.Direction, TestRay.ToBoundedLine(-10f).Direction, TestTolerance);
+		AssertToleranceEquals(new BoundedRay(TestRay.StartPoint, TestRay.StartPoint + TestRay.Direction * 10f), TestRay.ToBoundedRay(10f), TestTolerance);
+		AssertToleranceEquals(TestRay.Direction, TestRay.ToBoundedRay(10f).Direction, TestTolerance);
+		AssertToleranceEquals(new BoundedRay(TestRay.StartPoint, TestRay.StartPoint + TestRay.Direction * -10f), TestRay.ToBoundedRay(-10f), TestTolerance);
+		AssertToleranceEquals(-TestRay.Direction, TestRay.ToBoundedRay(-10f).Direction, TestTolerance);
 	}
 
 	[Test]
@@ -371,7 +371,7 @@ partial class RayTest {
 		);
 		Assert.AreEqual(
 			0f,
-			TestRay.DistanceFrom(TestRay.ToBoundedLine(1f)),
+			TestRay.DistanceFrom(TestRay.ToBoundedRay(1f)),
 			TestTolerance
 		);
 	}

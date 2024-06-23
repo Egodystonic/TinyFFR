@@ -111,7 +111,7 @@ interface IOrthogonalizationTarget<in TSelf, TOther> : IOrthogonalizationTarget<
 #region Distance measurable
 public interface IDistanceMeasurable<in TOther> {
 	float DistanceFrom(TOther element);
-	float DistanceSquaredFrom(TOther element);
+	float DistanceSquaredFrom(TOther element); // TODO break this in to a separate interface so it's possible to tell if it's "worth calling" from the outside
 }
 public interface ILineDistanceMeasurable : IDistanceMeasurable<Line>, IDistanceMeasurable<Ray>, IDistanceMeasurable<BoundedRay>;
 interface IDistanceMeasurable<in TSelf, in TOther> : IDistanceMeasurable<TOther> where TOther : IDistanceMeasurable<TSelf>;
@@ -124,7 +124,7 @@ interface ISignedDistanceMeasurable<in TSelf, in TOther> : ISignedDistanceMeasur
 
 public interface IEndogenousSurfaceDistanceMeasurable<in TOther> : IDistanceMeasurable<TOther> {
 	float SurfaceDistanceFrom(TOther element);
-	float SurfaceDistanceSquaredFrom(TOther element);
+	float SurfaceDistanceSquaredFrom(TOther element); // TODO break this in to a separate interface so it's possible to tell if it's "worth calling" from the outside
 }
 public interface ILineEndogenousSurfaceDistanceMeasurable : ILineDistanceMeasurable, IEndogenousSurfaceDistanceMeasurable<Line>, IEndogenousSurfaceDistanceMeasurable<Ray>, IEndogenousSurfaceDistanceMeasurable<BoundedRay>;
 interface IEndogenousSurfaceDistanceMeasurable<in TSelf, in TOther> : IEndogenousSurfaceDistanceMeasurable<TOther> where TOther : IExogenousSurfaceDistanceMeasurable<TSelf>;
@@ -135,7 +135,7 @@ public interface ILineSignedEndogenousSurfaceDistanceMeasurable : ILineEndogenou
 interface ISignedEndogenousSurfaceDistanceMeasurable<in TSelf, in TOther> : ISignedEndogenousSurfaceDistanceMeasurable<TOther> where TOther : ISignedExogenousSurfaceDistanceMeasurable<TSelf>;
 public interface IExogenousSurfaceDistanceMeasurable<in TOther> : IDistanceMeasurable<TOther> {
 	float DistanceFromSurfaceOf(TOther element);
-	float DistanceSquaredFromSurfaceOf(TOther element);
+	float DistanceSquaredFromSurfaceOf(TOther element); // TODO break this in to a separate interface so it's possible to tell if it's "worth calling" from the outside
 }
 public interface ILineExogenousSurfaceDistanceMeasurable : ILineDistanceMeasurable, IExogenousSurfaceDistanceMeasurable<Line>, IExogenousSurfaceDistanceMeasurable<Ray>, IExogenousSurfaceDistanceMeasurable<BoundedRay>;
 interface IExogenousSurfaceDistanceMeasurable<in TSelf, in TOther> : IExogenousSurfaceDistanceMeasurable<TOther> where TOther : IEndogenousSurfaceDistanceMeasurable<TSelf>;

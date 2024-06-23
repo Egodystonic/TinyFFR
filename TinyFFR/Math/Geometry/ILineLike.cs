@@ -53,7 +53,7 @@ public partial interface ILineLike :
 
 	sealed Line CoerceToLine() => new(StartPoint, Direction);
 	sealed Ray CoerceToRay() => new(StartPoint, Direction);
-	sealed BoundedRay CoerceToBoundedLine(float length) => BoundedRay.FromStartPointAndVect(StartPoint, Direction * length);
+	sealed BoundedRay CoerceToBoundedRay(float length) => BoundedRay.FromStartPointAndVect(StartPoint, Direction * length);
 
 	// TODO static methods for generic usage of ILineLike interfaces with TLines (maybe defined on ILineLike<TSelf>? would make sense I think... Do they even need to be static, or can they be implemented as instance methods on the interface?)
 	// Could we move our internal statics below on to that? The thing about making them non-static is that means we sometimes might need to cast to the generic interface, so I don't like that

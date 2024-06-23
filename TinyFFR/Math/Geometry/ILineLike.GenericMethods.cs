@@ -17,7 +17,7 @@ public partial interface ILineLike {
 			Ray ray => @this.ClosestPointOn(ray),
 			BoundedRay boundedRay => @this.ClosestPointOn(boundedRay),
 			_ when arg.IsUnboundedInBothDirections => @this.ClosestPointOn(arg.CoerceToLine()),
-			_ when arg.IsFiniteLength => @this.ClosestPointOn(arg.CoerceToBoundedLine(arg.Length.Value)),
+			_ when arg.IsFiniteLength => @this.ClosestPointOn(arg.CoerceToBoundedRay(arg.Length.Value)),
 			_ => @this.ClosestPointOn(arg.CoerceToRay()),
 		};
 	}

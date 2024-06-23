@@ -17,8 +17,8 @@ partial class LineTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertToBoundedLine() {
-		AssertToleranceEquals(new BoundedRay(new Location(1f, 2f, -3f) + TestLineDirection * 10f, new Location(1f, 2f, -3f) + TestLineDirection * -10f), TestLine.ToBoundedLine(10f, -10f), TestTolerance);
-		AssertToleranceEquals(new BoundedRay(new Location(1f, 2f, -3f) + TestLineDirection * -10f, new Location(1f, 2f, -3f) + TestLineDirection * 10f), TestLine.ToBoundedLine(-10f, 10f), TestTolerance);
+		AssertToleranceEquals(new BoundedRay(new Location(1f, 2f, -3f) + TestLineDirection * 10f, new Location(1f, 2f, -3f) + TestLineDirection * -10f), TestLine.ToBoundedRay(10f, -10f), TestTolerance);
+		AssertToleranceEquals(new BoundedRay(new Location(1f, 2f, -3f) + TestLineDirection * -10f, new Location(1f, 2f, -3f) + TestLineDirection * 10f), TestLine.ToBoundedRay(-10f, 10f), TestTolerance);
 	}
 
 	[Test]
@@ -279,7 +279,7 @@ partial class LineTest {
 		);
 		Assert.AreEqual(
 			0f,
-			TestLine.DistanceFrom(TestLine.ToBoundedLine(-1f, 1f)),
+			TestLine.DistanceFrom(TestLine.ToBoundedRay(-1f, 1f)),
 			TestTolerance
 		);
 	}
