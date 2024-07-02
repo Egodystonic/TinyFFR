@@ -190,19 +190,19 @@ partial class BoundedRayTest {
 	public void ShouldCorrectlyFindClosestPointToOrigin() {
 		Assert.AreEqual(
 			new Location(0f, 0f, 0f),
-			BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), Direction.Right * 200f).ClosestPointToOrigin()
+			BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), Direction.Right * 200f).PointClosestToOrigin()
 		);
 		Assert.AreEqual(
 			new Location(0f, -1f, 0f),
-			BoundedRay.FromStartPointAndVect(new Location(100f, -1f, 0f), Direction.Right * 200f).ClosestPointToOrigin()
+			BoundedRay.FromStartPointAndVect(new Location(100f, -1f, 0f), Direction.Right * 200f).PointClosestToOrigin()
 		);
 		Assert.AreEqual(
 			new Location(100f, 0f, 0f),
-			BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), Direction.Left * 200f).ClosestPointToOrigin()
+			BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), Direction.Left * 200f).PointClosestToOrigin()
 		);
 		Assert.AreEqual(
 			new Location(100f, -1f, 0f),
-			BoundedRay.FromStartPointAndVect(new Location(100f, -1f, 0f), Direction.Left * 200f).ClosestPointToOrigin()
+			BoundedRay.FromStartPointAndVect(new Location(100f, -1f, 0f), Direction.Left * 200f).PointClosestToOrigin()
 		);
 	}
 

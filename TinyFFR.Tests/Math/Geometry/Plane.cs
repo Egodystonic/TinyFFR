@@ -44,7 +44,7 @@ partial class PlaneTest {
 	// TODO this test could be fleshed out a lot more
 	[Test]
 	public void ShouldCorrectlyConvertToString() {
-		const string Expectation = "Plane[Normal <0.0, 1.0, 0.0> | ClosestPointToOrigin <-0.0, -1.0, -0.0>]"; // Negative zero can be removed at a later date if we expunge it from formatting
+		const string Expectation = "Plane[Normal <0.0, 1.0, 0.0> | PointClosestToOrigin <-0.0, -1.0, -0.0>]"; // Negative zero can be removed at a later date if we expunge it from formatting
 		Assert.AreEqual(Expectation, TestPlane.ToString("N1", CultureInfo.InvariantCulture));
 		Span<char> dest = stackalloc char[Expectation.Length * 2];
 		TestPlane.TryFormat(dest, out var numCharsWritten, "N1", CultureInfo.InvariantCulture);
@@ -55,7 +55,7 @@ partial class PlaneTest {
 	// TODO this test could be fleshed out a lot more
 	[Test]
 	public void ShouldCorrectlyParse() {
-		const string Input = "Plane[Normal <0.0, 1.0, 0.0> | ClosestPointToOrigin <0.0, -1.0, 0.0>]";
+		const string Input = "Plane[Normal <0.0, 1.0, 0.0> | PointClosestToOrigin <0.0, -1.0, 0.0>]";
 		Assert.AreEqual(TestPlane, Plane.Parse(Input, CultureInfo.InvariantCulture));
 		Assert.AreEqual(true, Plane.TryParse(Input, CultureInfo.InvariantCulture, out var result));
 		Assert.AreEqual(TestPlane, result);

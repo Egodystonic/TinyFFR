@@ -29,9 +29,9 @@ partial struct OriginSphere {
 	float IDistanceMeasurable<Line>.DistanceSquaredFrom(Line line) { var sqrt = DistanceFrom(line); return sqrt * sqrt; }
 	float IDistanceMeasurable<Ray>.DistanceSquaredFrom(Ray ray) { var sqrt = DistanceFrom(ray); return sqrt * sqrt; }
 	float IDistanceMeasurable<BoundedRay>.DistanceSquaredFrom(BoundedRay ray) { var sqrt = DistanceFrom(ray); return sqrt * sqrt; }
-	public float SurfaceDistanceFrom(Line line) => SurfaceDistanceFrom(line.ClosestPointToSurfaceOf(this));
-	public float SurfaceDistanceFrom(Ray ray) => SurfaceDistanceFrom(ray.ClosestPointToSurfaceOf(this));
-	public float SurfaceDistanceFrom(BoundedRay ray) => SurfaceDistanceFrom(ray.ClosestPointToSurfaceOf(this));
+	public float SurfaceDistanceFrom(Line line) => SurfaceDistanceFrom(line.ClosestPointOnSurfaceOf(this));
+	public float SurfaceDistanceFrom(Ray ray) => SurfaceDistanceFrom(ray.ClosestPointOnSurfaceOf(this));
+	public float SurfaceDistanceFrom(BoundedRay ray) => SurfaceDistanceFrom(ray.ClosestPointOnSurfaceOf(this));
 	float IEndogenousSurfaceDistanceMeasurable<Line>.SurfaceDistanceSquaredFrom(Line line) { var sqrt = SurfaceDistanceFrom(line); return sqrt * sqrt; }
 	float IEndogenousSurfaceDistanceMeasurable<Ray>.SurfaceDistanceSquaredFrom(Ray ray) { var sqrt = SurfaceDistanceFrom(ray); return sqrt * sqrt; }
 	float IEndogenousSurfaceDistanceMeasurable<BoundedRay>.SurfaceDistanceSquaredFrom(BoundedRay ray) { var sqrt = SurfaceDistanceFrom(ray); return sqrt * sqrt; }
@@ -48,12 +48,12 @@ partial struct OriginSphere {
 		return (Location) vectFromLocToCentre.WithLength(Radius);
 	}
 
-	public Location ClosestPointOn(Line line) => line.ClosestPointToOrigin();
-	public Location ClosestPointOn(Ray ray) => ray.ClosestPointToOrigin();
-	public Location ClosestPointOn(BoundedRay ray) => ray.ClosestPointToOrigin();
-	public Location PointClosestTo(Line line) => (Location) ((Vect) line.ClosestPointToOrigin()).WithMaxLength(Radius);
-	public Location PointClosestTo(Ray ray) => (Location) ((Vect) ray.ClosestPointToOrigin()).WithMaxLength(Radius);
-	public Location PointClosestTo(BoundedRay ray) => (Location) ((Vect) ray.ClosestPointToOrigin()).WithMaxLength(Radius);
+	public Location ClosestPointOn(Line line) => line.PointClosestToOrigin();
+	public Location ClosestPointOn(Ray ray) => ray.PointClosestToOrigin();
+	public Location ClosestPointOn(BoundedRay ray) => ray.PointClosestToOrigin();
+	public Location PointClosestTo(Line line) => (Location) ((Vect) line.PointClosestToOrigin()).WithMaxLength(Radius);
+	public Location PointClosestTo(Ray ray) => (Location) ((Vect) ray.PointClosestToOrigin()).WithMaxLength(Radius);
+	public Location PointClosestTo(BoundedRay ray) => (Location) ((Vect) ray.PointClosestToOrigin()).WithMaxLength(Radius);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location SurfacePointClosestTo(Line line) => SurfacePointClosestToLineLike(line);
@@ -68,7 +68,7 @@ partial struct OriginSphere {
 		var potentialIntersectionDistances = GetUnboundedLineLikeSurfaceIntersectionDistances(line);
 		if (potentialIntersectionDistances == null) {
 			// Line would never intersect even if infinite, so the answer is easy: It's the vector with length Radius that points to the closest point on the line to the sphere centre
-			return (Location) ((Vect) line.ClosestPointToOrigin()).WithLength(Radius);
+			return (Location) ((Vect) line.PointClosestToOrigin()).WithLength(Radius);
 		}
 
 		// Find the distance from the potential intersection points to the line. Pick the one that is closest to the line
@@ -81,7 +81,7 @@ partial struct OriginSphere {
 		var potentialIntersectionDistances = GetUnboundedLineLikeSurfaceIntersectionDistances(line);
 		if (potentialIntersectionDistances == null) {
 			// Line would never intersect even if infinite, so the answer is easy: It's the point on the line that's closest to the sphere centre
-			return line.ClosestPointToOrigin();
+			return line.PointClosestToOrigin();
 		}
 
 		// Find the distance from the potential intersection points to the line. Pick the one that is closest to the line, then find the closest point on the line to that point
@@ -134,6 +134,8 @@ partial struct OriginSphere {
 			? new Ray(reflection.Value.Item1, reflection.Value.Item2).ToBoundedRay(ray.Length - ray.UnboundedDistanceAtPointClosestTo(reflection.Value.Item1)) 
 			: null;
 	}
+
+	public bool Contains(BoundedRay ray) => Contains(ray.StartPoint) && Contains(ray.EndPoint);
 
 	Angle? IncidentAngleToLineLike<TLine>(TLine line) where TLine : ILineLike {
 		return GetLineLikeIntersectionPointClosestToStartPoint(line)?.AsVect().Direction.Inverted.AngleTo(line.Direction);
@@ -209,7 +211,7 @@ partial struct OriginSphere {
 		return true;
 	}
 
-	public Location ClosestPointOnSurfaceTo(Plane plane) {
+	public Location SurfacePointClosestTo(Plane plane) {
 		// If the plane doesn't intersect this sphere, we can just return the simple closest point
 		if (!TrySplit(plane, out var circleCentrePoint, out var circleRadius)) return PointClosestTo(plane);
 
@@ -225,6 +227,9 @@ partial struct OriginSphere {
 		var centrePointDirection = circleCentrePoint == Location.Origin ? plane.Normal : ((Vect) circleCentrePoint).Direction;
 		return circleCentrePoint + centrePointDirection.AnyPerpendicular() * circleRadius;
 	}
+
+	float IDistanceMeasurable<Plane>.DistanceSquaredFrom(Plane plane) { var sqrt = DistanceFrom(plane); return sqrt * sqrt; }
+	float IEndogenousSurfaceDistanceMeasurable<Plane>.SurfaceDistanceSquaredFrom(Plane plane) { var sqrt = SurfaceDistanceFrom(plane); return sqrt * sqrt; }
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float SurfaceDistanceFrom(Plane plane) => DistanceFrom(plane);

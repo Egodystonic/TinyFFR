@@ -177,7 +177,10 @@ public interface IClosestEndogenousSurfacePointDiscoverable<in TOther> : ICloses
 public interface ILineClosestEndogenousSurfacePointDiscoverable : ILineClosestEndogenousPointDiscoverable, IClosestEndogenousSurfacePointDiscoverable<Line>, IClosestEndogenousSurfacePointDiscoverable<Ray>, IClosestEndogenousSurfacePointDiscoverable<BoundedRay>;
 interface IClosestEndogenousSurfacePointDiscoverable<in TSelf, in TOther> : IClosestEndogenousSurfacePointDiscoverable<TOther> where TOther : IClosestExogenousSurfacePointDiscoverable<TSelf>;
 public interface IClosestExogenousSurfacePointDiscoverable<in TOther> : IClosestExogenousPointDiscoverable<TOther> {
-	Location ClosestPointToSurfaceOf(TOther element);
+	Location ClosestPointOnSurfaceOf(TOther element);
+	Location ClosestPointInsideOf(TOther element);
+	Location PointClosestToSurfaceOf(TOther element);
+	Location IClosestExogenousPointDiscoverable<TOther>.ClosestPointOn(TOther element) => ClosestPointInsideOf(element);
 }
 public interface ILineClosestExogenousSurfacePointDiscoverable : ILineClosestExogenousPointDiscoverable, IClosestExogenousSurfacePointDiscoverable<Line>, IClosestExogenousSurfacePointDiscoverable<Ray>, IClosestExogenousSurfacePointDiscoverable<BoundedRay>;
 interface IClosestExogenousSurfacePointDiscoverable<in TSelf, in TOther> : IClosestExogenousSurfacePointDiscoverable<TOther> where TOther : IClosestEndogenousSurfacePointDiscoverable<TSelf>;

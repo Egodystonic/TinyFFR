@@ -128,7 +128,7 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 			_ => _startPoint + _vect * vectCoefficient
 		};
 	}
-	public Location ClosestPointToOrigin() {
+	public Location PointClosestToOrigin() {
 		var vectCoefficient = -Vector3.Dot(_startPoint.ToVector3(), _vect.ToVector3()) / LengthSquared;
 		return vectCoefficient switch {
 			<= 0f => _startPoint,
@@ -142,9 +142,9 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFrom(Location location) => location.DistanceSquaredFrom(PointClosestTo(location));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceFromOrigin() => ((Vect) ClosestPointToOrigin()).Length;
+	public float DistanceFromOrigin() => ((Vect) PointClosestToOrigin()).Length;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceSquaredFromOrigin() => ((Vect) ClosestPointToOrigin()).LengthSquared;
+	public float DistanceSquaredFromOrigin() => ((Vect) PointClosestToOrigin()).LengthSquared;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(Location location) => Contains(location, ILineLike.DefaultLineThickness);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

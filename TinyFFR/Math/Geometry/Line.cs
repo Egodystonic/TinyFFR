@@ -62,7 +62,7 @@ public readonly partial struct Line : ILineLike<Line, Ray>, IPrecomputationInter
 
 	#region String Conversions
 	public override string ToString() => ToString(null, null);
-	public string ToStringDescriptive() => $"{nameof(Line)}{GeometryUtils.ParameterStartToken}{nameof(PointOnLine)}{GeometryUtils.ParameterKeyValueSeparatorToken}{PointOnLine}{GeometryUtils.ParameterSeparatorToken}{nameof(ClosestPointToOrigin)}{GeometryUtils.ParameterKeyValueSeparatorToken}{ClosestPointToOrigin()}{GeometryUtils.ParameterSeparatorToken}{nameof(Direction)}{GeometryUtils.ParameterKeyValueSeparatorToken}{_direction.ToStringDescriptive()}{GeometryUtils.ParameterEndToken}";
+	public string ToStringDescriptive() => $"{nameof(Line)}{GeometryUtils.ParameterStartToken}{nameof(PointOnLine)}{GeometryUtils.ParameterKeyValueSeparatorToken}{PointOnLine}{GeometryUtils.ParameterSeparatorToken}{nameof(PointClosestToOrigin)}{GeometryUtils.ParameterKeyValueSeparatorToken}{PointClosestToOrigin()}{GeometryUtils.ParameterSeparatorToken}{nameof(Direction)}{GeometryUtils.ParameterKeyValueSeparatorToken}{_direction.ToStringDescriptive()}{GeometryUtils.ParameterEndToken}";
 	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(Line), (nameof(PointOnLine), PointOnLine), (nameof(Direction), _direction));
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => GeometryUtils.StandardizedTryFormat(destination, out charsWritten, format, provider, nameof(Line), (nameof(PointOnLine), PointOnLine), (nameof(Direction), _direction));
 	

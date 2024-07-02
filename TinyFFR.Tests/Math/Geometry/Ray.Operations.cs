@@ -84,19 +84,19 @@ partial class RayTest {
 	public void ShouldCorrectlyFindClosestPointToOrigin() {
 		Assert.AreEqual(
 			new Location(0f, 0f, 0f),
-			new Ray(new Location(100f, 0f, 0f), Direction.Right).ClosestPointToOrigin()
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).PointClosestToOrigin()
 		);
 		Assert.AreEqual(
 			new Location(0f, -1f, 0f),
-			new Ray(new Location(100f, -1f, 0f), Direction.Right).ClosestPointToOrigin()
+			new Ray(new Location(100f, -1f, 0f), Direction.Right).PointClosestToOrigin()
 		);
 		Assert.AreEqual(
 			new Location(100f, 0f, 0f),
-			new Ray(new Location(100f, 0f, 0f), Direction.Left).ClosestPointToOrigin()
+			new Ray(new Location(100f, 0f, 0f), Direction.Left).PointClosestToOrigin()
 		);
 		Assert.AreEqual(
 			new Location(100f, -1f, 0f),
-			new Ray(new Location(100f, -1f, 0f), Direction.Left).ClosestPointToOrigin()
+			new Ray(new Location(100f, -1f, 0f), Direction.Left).PointClosestToOrigin()
 		);
 	}
 

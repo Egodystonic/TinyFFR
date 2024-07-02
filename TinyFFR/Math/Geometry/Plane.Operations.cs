@@ -44,7 +44,7 @@ partial struct Plane :
 	// TODO explain in XML that this is a normalized value from 0 to 1, where 1 is a direction completely perpendicular to the plane and 0 is completely parallel; and is also the cosine of the angle formed with the normal
 	public float PerpendicularityWith(Direction direction) => MathF.Abs(Normal.Dot(direction));
 
-	// TODO I'd like a function here to convert locations to XYPairs on the surface of the plane given a centre point (default ClosestPointToOrigin)
+	// TODO I'd like a function here to convert locations to XYPairs on the surface of the plane given a centre point (default PointClosestToOrigin)
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(Plane plane, Direction dir) => plane.AngleTo(dir);

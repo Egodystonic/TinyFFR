@@ -81,7 +81,7 @@ public readonly partial struct Ray {
 			_ => StartPoint + Direction * distance
 		};
 	}
-	public Location ClosestPointToOrigin() {
+	public Location PointClosestToOrigin() {
 		var distance = -Vector3.Dot(StartPoint.ToVector3(), Direction.ToVector3());
 		return distance switch {
 			< 0f => StartPoint,
@@ -94,22 +94,14 @@ public readonly partial struct Ray {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFrom(Location location) => location.DistanceSquaredFrom(PointClosestTo(location));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceFromOrigin() => ((Vect) ClosestPointToOrigin()).Length;
+	public float DistanceFromOrigin() => ((Vect) PointClosestToOrigin()).Length;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceSquaredFromOrigin() => ((Vect) ClosestPointToOrigin()).LengthSquared;
+	public float DistanceSquaredFromOrigin() => ((Vect) PointClosestToOrigin()).LengthSquared;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(Location location) => Contains(location, ILineLike.DefaultLineThickness);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(Location location, float lineThickness) => DistanceFrom(location) <= lineThickness;
 
-	public Location ClosestPointTo<TLine>(TLine line) where TLine : ILineLike {
-		return line switch {
-			Line l => PointClosestTo(l),
-			Ray r => PointClosestTo(r),
-			BoundedRay b => PointClosestTo(b),
-			_ => line.ClosestPointOn(this) // Possible stack overflow if the other line doesn't implement both sides (To/On), but this allows users to add their own line implementations
-		};
-	}
 	public Location PointClosestTo(Line line) {
 		var intersectionDistance = ILineLike.CalculateUnboundedIntersectionDistanceOnThisLine(this, line);
 		return intersectionDistance != null ? BoundedLocationAtDistance(intersectionDistance.Value) : StartPoint;

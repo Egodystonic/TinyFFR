@@ -43,20 +43,20 @@ class LineExtensionsTest {
 			line.ClosestPointOnSurfaceOf(new OriginSphere());
 
 			new OriginSphere().IntersectionWith(new Ray());
-			new Ray().ClosestPointToSurfaceOf(new OriginSphere());
+			new Ray().ClosestPointOnSurfaceOf(new OriginSphere());
 			new Ray().ClosestPointOnSurfaceOf(new OriginSphere());
 
 			new Plane().DistanceFrom(new OriginSphere());
 			new OriginSphere().ClosestPointOnSurfaceTo(new Plane());
 			new OriginSphere().ClosestPointToSurfaceOn(new Plane());
 			new Plane().ClosestPointOnSurfaceOf(new OriginSphere());
-			new Plane().ClosestPointToSurfaceOf(new OriginSphere());
+			new Plane().ClosestPointOnSurfaceOf(new OriginSphere());
 			new OriginSphere().SurfaceDistanceFrom(new Plane());
 			new Plane().DistanceFromSurfaceOf(new OriginSphere());
 			new OriginSphere().SignedSurfaceDistanceFrom(new Plane());
 			new Plane().SignedDistanceFromSurfaceOf(new OriginSphere());
 
-			new Ray().ClosestPointToSurfaceOf(new OriginSphere());
+			new Ray().ClosestPointOnSurfaceOf(new OriginSphere());
 
 			line.IntersectionWith(line2);
 			line.IntersectionWith(line2, 0f);
@@ -192,7 +192,7 @@ class LineExtensionsTest {
 		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOn(line);
 		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOnSurfaceTo(line);
 		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointToSurfaceOn(line);
-		_ = line.ClosestPointToSurfaceOf(lineClosestSurfacePointDiscoverable);
+		_ = line.ClosestPointOnSurfaceOf(lineClosestSurfacePointDiscoverable);
 		_ = lineClosestSurfacePointDiscoverable.Received(1).PointClosestTo(line);
 		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOn(line);
 		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOnSurfaceTo(line);
@@ -213,7 +213,7 @@ class LineExtensionsTest {
 		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOn(ray);
 		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOnSurfaceTo(ray);
 		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointToSurfaceOn(ray);
-		_ = ray.ClosestPointToSurfaceOf(lineClosestSurfacePointDiscoverable);
+		_ = ray.ClosestPointOnSurfaceOf(lineClosestSurfacePointDiscoverable);
 		_ = lineClosestSurfacePointDiscoverable.Received(1).PointClosestTo(ray);
 		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOn(ray);
 		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOnSurfaceTo(ray);
@@ -234,7 +234,7 @@ class LineExtensionsTest {
 		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOn(boundedLine);
 		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOnSurfaceTo(boundedLine);
 		_ = lineClosestSurfacePointDiscoverable.Received(0).ClosestPointToSurfaceOn(boundedLine);
-		_ = boundedLine.ClosestPointToSurfaceOf(lineClosestSurfacePointDiscoverable);
+		_ = boundedLine.ClosestPointOnSurfaceOf(lineClosestSurfacePointDiscoverable);
 		_ = lineClosestSurfacePointDiscoverable.Received(1).PointClosestTo(boundedLine);
 		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOn(boundedLine);
 		_ = lineClosestSurfacePointDiscoverable.Received(1).ClosestPointOnSurfaceTo(boundedLine);

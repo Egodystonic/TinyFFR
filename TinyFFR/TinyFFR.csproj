@@ -59,8 +59,4 @@
     <OutputPath>..\build_output\Release</OutputPath>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Folder Include="Math\Geometry\Shapes\" />
-  </ItemGroup>
-
 </Project>

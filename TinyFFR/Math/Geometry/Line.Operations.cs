@@ -75,7 +75,7 @@ public readonly partial struct Line {
 		return PointOnLine + Direction * distance;
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location ClosestPointToOrigin() {
+	public Location PointClosestToOrigin() {
 		var distance = -Vector3.Dot(PointOnLine.ToVector3(), Direction.ToVector3());
 		return PointOnLine + Direction * distance;
 	}
@@ -85,9 +85,9 @@ public readonly partial struct Line {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFrom(Location location) => location.DistanceSquaredFrom(PointClosestTo(location));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceFromOrigin() => ((Vect) ClosestPointToOrigin()).Length;
+	public float DistanceFromOrigin() => ((Vect) PointClosestToOrigin()).Length;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceSquaredFromOrigin() => ((Vect) ClosestPointToOrigin()).LengthSquared;
+	public float DistanceSquaredFromOrigin() => ((Vect) PointClosestToOrigin()).LengthSquared;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(Location location) => Contains(location, ILineLike.DefaultLineThickness);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

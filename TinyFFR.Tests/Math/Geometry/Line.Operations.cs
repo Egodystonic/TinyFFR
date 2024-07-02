@@ -74,15 +74,15 @@ partial class LineTest {
 	public void ShouldCorrectlyFindClosestPointToOrigin() {
 		Assert.AreEqual(
 			new Location(0f, 0f, 0f),
-			new Line(new Location(100f, 0f, 0f), Direction.Left).ClosestPointToOrigin()
+			new Line(new Location(100f, 0f, 0f), Direction.Left).PointClosestToOrigin()
 		);
 		Assert.AreEqual(
 			new Location(0f, -1f, 0f),
-			new Line(new Location(100f, -1f, 0f), Direction.Left).ClosestPointToOrigin()
+			new Line(new Location(100f, -1f, 0f), Direction.Left).PointClosestToOrigin()
 		);
 		AssertToleranceEquals(
 			new Location(-1f, 2f, -1f),
-			new Line(new Location(0f, 3f, 0f), new Direction(1f, 1f, 1f)).ClosestPointToOrigin(),
+			new Line(new Location(0f, 3f, 0f), new Direction(1f, 1f, 1f)).PointClosestToOrigin(),
 			TestTolerance
 		);
 	}

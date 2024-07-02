@@ -46,7 +46,7 @@ public partial interface ILineLike :
 	float BoundedDistanceAtPointClosestTo(Location point);
 	float UnboundedDistanceAtPointClosestTo(Location point);
 
-	Location ClosestPointToOrigin();
+	Location PointClosestToOrigin();
 	bool Contains(Location location, float lineThickness);
 	float DistanceFromOrigin();
 	float DistanceSquaredFromOrigin();
