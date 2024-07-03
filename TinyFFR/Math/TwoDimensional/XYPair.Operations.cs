@@ -8,7 +8,8 @@ namespace Egodystonic.TinyFFR;
 partial struct XYPair<T> :
 	IAlgebraicRing<XYPair<T>>,
 	IInterpolatable<XYPair<T>>,
-	IDistanceMeasurable<XYPair<T>> { // TODO Angle-measurable
+	IDistanceMeasurable<XYPair<T>>,
+	IScalable<XYPair<T>> { // TODO Angle-measurable
 	internal const int DefaultRandomRange = 100;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -40,6 +41,13 @@ partial struct XYPair<T> :
 	public XYPair<T> DividedBy(XYPair<T> other) => new(X / other.X, Y / other.Y);
 
 	static XYPair<T> IMultiplicativeIdentity<XYPair<T>, XYPair<T>>.MultiplicativeIdentity => new(T.One, T.One);
+
+	public static XYPair<T> operator *(XYPair<T> pair, float scalar) => pair.ScaledBy(scalar);
+	public static XYPair<T> operator /(XYPair<T> pair, float scalar) => pair.ScaledBy(1f / scalar);
+	public static XYPair<T> operator *(float scalar, XYPair<T> pair) => pair.ScaledBy(scalar);
+	public XYPair<T> ScaledBy(float scalar) => (Cast<float>() * scalar).Cast<T>();
+
+	public XYPair<TNew> Cast<TNew>() where TNew : unmanaged, INumber<TNew> => new(TNew.CreateTruncating(X), TNew.CreateTruncating(Y));
 
 	public Angle? PolarAngle { // TODO clarify this is the four-quadrant inverse tangent
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

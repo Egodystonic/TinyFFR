@@ -149,8 +149,12 @@ partial struct Direction :
 	}
 
 	public Direction Clamp(Direction min, Direction max) {
-		// TODO this needs to be the geodesic one
+		// Decided this is probably best modelled as finding the nearest point on a geodesic between the the two directions on the unit sphere
+		// Found this after some googling: https://math.stackexchange.com/a/3090156
 		// TODO and handle if min ^ max == 180
+
+		var minCrossMax = min.Cross(max);
+		return minCrossMax.Cross(minCrossMax.Cross(this));
 	}
 
 	public static Direction CreateNewRandom() {

@@ -66,11 +66,11 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 
 		if (!d1.IsUnitLength) {
 			if (d1 == Direction.None) throw new ArgumentOutOfRangeException(nameof(d1), d1, $"Directions must not be {nameof(Direction.None)}.");
-			d1 = d1.Renormalized;
+			d1 = Direction.Renormalize(d1);
 		}
 		if (!d2.IsUnitLength) {
 			if (d2 == Direction.None) throw new ArgumentOutOfRangeException(nameof(d2), d2, $"Directions must not be {nameof(Direction.None)}.");
-			d2 = d2.Renormalized;
+			d2 = Direction.Renormalize(d2);
 		}
 
 		// Taking care of FP inaccuracy
