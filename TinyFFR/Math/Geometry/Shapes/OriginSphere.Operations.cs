@@ -21,7 +21,7 @@ partial struct OriginSphere {
 	public float DistanceFrom(Location location) => MathF.Max(0f, ((Vect) location).Length - Radius);
 	public float SurfaceDistanceFrom(Location location) => MathF.Abs(((Vect) location).Length - Radius);
 	float IDistanceMeasurable<Location>.DistanceSquaredFrom(Location location) { var sqrt = DistanceFrom(location); return sqrt * sqrt; }
-	float IEndogenousSurfaceDistanceMeasurable<Location>.SurfaceDistanceSquaredFrom(Location location) { var sqrt = SurfaceDistanceFrom(location); return sqrt * sqrt; }
+	float IConvexShape.SurfaceDistanceSquaredFrom(Location location) { var sqrt = SurfaceDistanceFrom(location); return sqrt * sqrt; }
 
 	public float DistanceFrom(Line line) => MathF.Max(0f, line.DistanceFromOrigin() - Radius);
 	public float DistanceFrom(Ray ray) => MathF.Max(0f, ray.DistanceFromOrigin() - Radius);
@@ -32,9 +32,9 @@ partial struct OriginSphere {
 	public float SurfaceDistanceFrom(Line line) => SurfaceDistanceFrom(line.ClosestPointOnSurfaceOf(this));
 	public float SurfaceDistanceFrom(Ray ray) => SurfaceDistanceFrom(ray.ClosestPointOnSurfaceOf(this));
 	public float SurfaceDistanceFrom(BoundedRay ray) => SurfaceDistanceFrom(ray.ClosestPointOnSurfaceOf(this));
-	float IEndogenousSurfaceDistanceMeasurable<Line>.SurfaceDistanceSquaredFrom(Line line) { var sqrt = SurfaceDistanceFrom(line); return sqrt * sqrt; }
-	float IEndogenousSurfaceDistanceMeasurable<Ray>.SurfaceDistanceSquaredFrom(Ray ray) { var sqrt = SurfaceDistanceFrom(ray); return sqrt * sqrt; }
-	float IEndogenousSurfaceDistanceMeasurable<BoundedRay>.SurfaceDistanceSquaredFrom(BoundedRay ray) { var sqrt = SurfaceDistanceFrom(ray); return sqrt * sqrt; }
+	float IConvexShape.SurfaceDistanceSquaredFrom(Line line) { var sqrt = SurfaceDistanceFrom(line); return sqrt * sqrt; }
+	float IConvexShape.SurfaceDistanceSquaredFrom(Ray ray) { var sqrt = SurfaceDistanceFrom(ray); return sqrt * sqrt; }
+	float IConvexShape.SurfaceDistanceSquaredFrom(BoundedRay ray) { var sqrt = SurfaceDistanceFrom(ray); return sqrt * sqrt; }
 
 	public bool Contains(Location location) => ((Vect) location).LengthSquared <= RadiusSquared;
 	
@@ -62,6 +62,12 @@ partial struct OriginSphere {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location SurfacePointClosestTo(BoundedRay ray) => SurfacePointClosestToLineLike(ray);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointToSurfaceOn(Line line) => ClosestPointToSurfaceOnLineLike(line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointToSurfaceOn(Ray ray) => ClosestPointToSurfaceOnLineLike(ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location ClosestPointToSurfaceOn(BoundedRay ray) => ClosestPointToSurfaceOnLineLike(ray);
 
 
 	Location SurfacePointClosestToLineLike<TLine>(TLine line) where TLine : ILineLike {
@@ -229,7 +235,7 @@ partial struct OriginSphere {
 	}
 
 	float IDistanceMeasurable<Plane>.DistanceSquaredFrom(Plane plane) { var sqrt = DistanceFrom(plane); return sqrt * sqrt; }
-	float IEndogenousSurfaceDistanceMeasurable<Plane>.SurfaceDistanceSquaredFrom(Plane plane) { var sqrt = SurfaceDistanceFrom(plane); return sqrt * sqrt; }
+	float IConvexShape.SurfaceDistanceSquaredFrom(Plane plane) { var sqrt = SurfaceDistanceFrom(plane); return sqrt * sqrt; }
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float SurfaceDistanceFrom(Plane plane) => DistanceFrom(plane);

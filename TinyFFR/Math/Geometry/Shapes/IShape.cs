@@ -31,24 +31,48 @@ public interface IShape<TSelf> :
 	IScalable<TSelf>
 	where TSelf : IShape<TSelf>;
 public interface IConvexShape : IShape,
-	IClosestEndogenousSurfacePointDiscoverable<Location>,
-	IEndogenousSurfaceDistanceMeasurable<Location>,
+	IClosestEndogenousPointDiscoverable<Location>,
+	IDistanceMeasurable<Location>,
 	IContainer<Location>,
 
 	ILineReflectionTarget, 
 	ILineClosestExogenousPointDiscoverable,
-	ILineClosestEndogenousSurfacePointDiscoverable,
-	ILineEndogenousSurfaceDistanceMeasurable, 
+	ILineClosestEndogenousPointDiscoverable,
+	ILineDistanceMeasurable, 
 	IContainer<BoundedRay>,
 	ILineIntersectionDeterminable<ConvexShapeLineIntersection>,
 
-	ISignedEndogenousSurfaceDistanceMeasurable<Plane>,
-	IClosestEndogenousSurfacePointDiscoverable<Plane>,
+	ISignedDistanceMeasurable<Plane>,
+	IClosestEndogenousPointDiscoverable<Plane>,
 	IClosestExogenousPointDiscoverable<Plane>,
 	IRelatable<Plane, PlaneObjectRelationship> {
 	Angle? IncidentAngleTo(Line line);
 	Angle? IncidentAngleTo(Ray ray);
 	Angle? IncidentAngleTo(BoundedRay ray);
+
+	Location SurfacePointClosestTo(Location point);
+	float SurfaceDistanceFrom(Location point);
+	float SurfaceDistanceSquaredFrom(Location point);
+
+	Location SurfacePointClosestTo(Line line);
+	Location ClosestPointToSurfaceOn(Line line);
+	float SurfaceDistanceFrom(Line line);
+	float SurfaceDistanceSquaredFrom(Line line);
+
+	Location SurfacePointClosestTo(Ray ray);
+	Location ClosestPointToSurfaceOn(Ray ray);
+	float SurfaceDistanceFrom(Ray ray);
+	float SurfaceDistanceSquaredFrom(Ray ray);
+
+	Location SurfacePointClosestTo(BoundedRay ray);
+	Location ClosestPointToSurfaceOn(BoundedRay ray);
+	float SurfaceDistanceFrom(BoundedRay ray);
+	float SurfaceDistanceSquaredFrom(BoundedRay ray);
+
+	Location SurfacePointClosestTo(Plane plane);
+	Location ClosestPointToSurfaceOn(Plane plane);
+	float SurfaceDistanceFrom(Plane plane);
+	float SurfaceDistanceSquaredFrom(Plane plane);
 }
 
 public interface IConvexShape<TSelf> : IConvexShape, IShape<TSelf> where TSelf : IConvexShape<TSelf>;

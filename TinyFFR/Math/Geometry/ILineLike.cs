@@ -21,7 +21,10 @@ public partial interface ILineLike :
 	ISignedDistanceMeasurable<Plane>,
 	IRelatable<Plane, PlaneObjectRelationship>,
 	IClosestEndogenousPointDiscoverable<Plane>,
-	IClosestExogenousPointDiscoverable<Plane> {
+	IClosestExogenousPointDiscoverable<Plane>,
+
+	IClosestConvexShapePointsDiscoverable, 
+	IConvexShapeDistanceMeasurable {
 	public const float DefaultLineThickness = 0.01f;
 
 	Location StartPoint { get; }

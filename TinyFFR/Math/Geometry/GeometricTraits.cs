@@ -122,28 +122,12 @@ public interface ISignedDistanceMeasurable<in TOther> : IDistanceMeasurable<TOth
 public interface ILineSignedDistanceMeasurable : ILineDistanceMeasurable, ISignedDistanceMeasurable<Line>, ISignedDistanceMeasurable<Ray>, ISignedDistanceMeasurable<BoundedRay>;
 interface ISignedDistanceMeasurable<in TSelf, in TOther> : ISignedDistanceMeasurable<TOther> where TOther : ISignedDistanceMeasurable<TSelf>;
 
-public interface IEndogenousSurfaceDistanceMeasurable<in TOther> : IDistanceMeasurable<TOther> {
-	float SurfaceDistanceFrom(TOther element);
-	float SurfaceDistanceSquaredFrom(TOther element); // TODO break this in to a separate interface so it's possible to tell if it's "worth calling" from the outside
+public interface IConvexShapeDistanceMeasurable {
+	float DistanceFrom<TShape>(TShape shape) where TShape : IConvexShape<TShape>;
+	float DistanceFromSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape>;
+	float DistanceSquaredFrom<TShape>(TShape shape) where TShape : IConvexShape<TShape>; // TODO break this in to a separate interface so it's possible to tell if it's "worth calling" from the outside
+	float DistanceSquaredFromSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape>; // TODO break this in to a separate interface so it's possible to tell if it's "worth calling" from the outside
 }
-public interface ILineEndogenousSurfaceDistanceMeasurable : ILineDistanceMeasurable, IEndogenousSurfaceDistanceMeasurable<Line>, IEndogenousSurfaceDistanceMeasurable<Ray>, IEndogenousSurfaceDistanceMeasurable<BoundedRay>;
-interface IEndogenousSurfaceDistanceMeasurable<in TSelf, in TOther> : IEndogenousSurfaceDistanceMeasurable<TOther> where TOther : IExogenousSurfaceDistanceMeasurable<TSelf>;
-public interface ISignedEndogenousSurfaceDistanceMeasurable<in TOther> : ISignedDistanceMeasurable<TOther>, IEndogenousSurfaceDistanceMeasurable<TOther> {
-	float SignedSurfaceDistanceFrom(TOther element);
-}
-public interface ILineSignedEndogenousSurfaceDistanceMeasurable : ILineEndogenousSurfaceDistanceMeasurable, ISignedEndogenousSurfaceDistanceMeasurable<Line>, ISignedEndogenousSurfaceDistanceMeasurable<Ray>, ISignedEndogenousSurfaceDistanceMeasurable<BoundedRay>;
-interface ISignedEndogenousSurfaceDistanceMeasurable<in TSelf, in TOther> : ISignedEndogenousSurfaceDistanceMeasurable<TOther> where TOther : ISignedExogenousSurfaceDistanceMeasurable<TSelf>;
-public interface IExogenousSurfaceDistanceMeasurable<in TOther> : IDistanceMeasurable<TOther> {
-	float DistanceFromSurfaceOf(TOther element);
-	float DistanceSquaredFromSurfaceOf(TOther element); // TODO break this in to a separate interface so it's possible to tell if it's "worth calling" from the outside
-}
-public interface ILineExogenousSurfaceDistanceMeasurable : ILineDistanceMeasurable, IExogenousSurfaceDistanceMeasurable<Line>, IExogenousSurfaceDistanceMeasurable<Ray>, IExogenousSurfaceDistanceMeasurable<BoundedRay>;
-interface IExogenousSurfaceDistanceMeasurable<in TSelf, in TOther> : IExogenousSurfaceDistanceMeasurable<TOther> where TOther : IEndogenousSurfaceDistanceMeasurable<TSelf>;
-public interface ISignedExogenousSurfaceDistanceMeasurable<in TOther> : ISignedDistanceMeasurable<TOther>, IExogenousSurfaceDistanceMeasurable<TOther> {
-	float SignedDistanceFromSurfaceOf(TOther element);
-}
-public interface ILineSignedExogenousSurfaceDistanceMeasurable : ILineExogenousSurfaceDistanceMeasurable, ISignedExogenousSurfaceDistanceMeasurable<Line>, ISignedExogenousSurfaceDistanceMeasurable<Ray>, ISignedExogenousSurfaceDistanceMeasurable<BoundedRay>;
-interface ISignedExogenousSurfaceDistanceMeasurable<in TSelf, in TOther> : ISignedExogenousSurfaceDistanceMeasurable<TOther> where TOther : ISignedEndogenousSurfaceDistanceMeasurable<TSelf>;
 #endregion
 
 #region Containment testable
@@ -171,19 +155,12 @@ public interface IClosestExogenousPointDiscoverable<in TOther> {
 public interface ILineClosestExogenousPointDiscoverable : IClosestExogenousPointDiscoverable<Line>, IClosestExogenousPointDiscoverable<Ray>, IClosestExogenousPointDiscoverable<BoundedRay>;
 interface IClosestExogenousPointDiscoverable<in TSelf, in TOther> : IClosestExogenousPointDiscoverable<TOther> where TOther : IClosestEndogenousPointDiscoverable<TSelf>;
 
-public interface IClosestEndogenousSurfacePointDiscoverable<in TOther> : IClosestEndogenousPointDiscoverable<TOther> {
-	Location SurfacePointClosestTo(TOther element);
+public interface IClosestConvexShapePointsDiscoverable {
+	Location ClosestPointInsideOf<TShape>(TShape shape) where TShape : IConvexShape<TShape>;
+	Location ClosestPointOnSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape>;
+	Location PointClosestTo<TShape>(TShape shape) where TShape : IConvexShape<TShape>;
+	Location PointClosestToSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape>;
 }
-public interface ILineClosestEndogenousSurfacePointDiscoverable : ILineClosestEndogenousPointDiscoverable, IClosestEndogenousSurfacePointDiscoverable<Line>, IClosestEndogenousSurfacePointDiscoverable<Ray>, IClosestEndogenousSurfacePointDiscoverable<BoundedRay>;
-interface IClosestEndogenousSurfacePointDiscoverable<in TSelf, in TOther> : IClosestEndogenousSurfacePointDiscoverable<TOther> where TOther : IClosestExogenousSurfacePointDiscoverable<TSelf>;
-public interface IClosestExogenousSurfacePointDiscoverable<in TOther> : IClosestExogenousPointDiscoverable<TOther> {
-	Location ClosestPointOnSurfaceOf(TOther element);
-	Location ClosestPointInsideOf(TOther element);
-	Location PointClosestToSurfaceOf(TOther element);
-	Location IClosestExogenousPointDiscoverable<TOther>.ClosestPointOn(TOther element) => ClosestPointInsideOf(element);
-}
-public interface ILineClosestExogenousSurfacePointDiscoverable : ILineClosestExogenousPointDiscoverable, IClosestExogenousSurfacePointDiscoverable<Line>, IClosestExogenousSurfacePointDiscoverable<Ray>, IClosestExogenousSurfacePointDiscoverable<BoundedRay>;
-interface IClosestExogenousSurfacePointDiscoverable<in TSelf, in TOther> : IClosestExogenousSurfacePointDiscoverable<TOther> where TOther : IClosestEndogenousSurfacePointDiscoverable<TSelf>;
 #endregion
 
 #region Intersectable / Relatable
