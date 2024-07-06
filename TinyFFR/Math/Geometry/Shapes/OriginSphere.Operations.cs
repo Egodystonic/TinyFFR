@@ -29,9 +29,9 @@ partial struct OriginSphere {
 	float IDistanceMeasurable<Line>.DistanceSquaredFrom(Line line) { var sqrt = DistanceFrom(line); return sqrt * sqrt; }
 	float IDistanceMeasurable<Ray>.DistanceSquaredFrom(Ray ray) { var sqrt = DistanceFrom(ray); return sqrt * sqrt; }
 	float IDistanceMeasurable<BoundedRay>.DistanceSquaredFrom(BoundedRay ray) { var sqrt = DistanceFrom(ray); return sqrt * sqrt; }
-	public float SurfaceDistanceFrom(Line line) => SurfaceDistanceFrom(line.ClosestPointOnSurfaceOf(this));
-	public float SurfaceDistanceFrom(Ray ray) => SurfaceDistanceFrom(ray.ClosestPointOnSurfaceOf(this));
-	public float SurfaceDistanceFrom(BoundedRay ray) => SurfaceDistanceFrom(ray.ClosestPointOnSurfaceOf(this));
+	public float SurfaceDistanceFrom(Line line) => SurfaceDistanceFrom(line.PointClosestToSurfaceOf(this));
+	public float SurfaceDistanceFrom(Ray ray) => SurfaceDistanceFrom(ray.PointClosestToSurfaceOf(this));
+	public float SurfaceDistanceFrom(BoundedRay ray) => SurfaceDistanceFrom(ray.PointClosestToSurfaceOf(this));
 	float IConvexShape.SurfaceDistanceSquaredFrom(Line line) { var sqrt = SurfaceDistanceFrom(line); return sqrt * sqrt; }
 	float IConvexShape.SurfaceDistanceSquaredFrom(Ray ray) { var sqrt = SurfaceDistanceFrom(ray); return sqrt * sqrt; }
 	float IConvexShape.SurfaceDistanceSquaredFrom(BoundedRay ray) { var sqrt = SurfaceDistanceFrom(ray); return sqrt * sqrt; }
@@ -189,8 +189,8 @@ partial struct OriginSphere {
 		return secondLocation;
 	}
 
-	public Location PointClosestTo(Plane plane) => (Location) ((Vect) plane.ClosestPointToOrigin).WithMaxLength(Radius);
-	public Location ClosestPointOn(Plane plane) => plane.ClosestPointToOrigin;
+	public Location PointClosestTo(Plane plane) => (Location) ((Vect) plane.PointClosestToOrigin).WithMaxLength(Radius);
+	public Location ClosestPointOn(Plane plane) => plane.PointClosestToOrigin;
 
 	public float SignedDistanceFrom(Plane plane) {
 		var distanceFromSphereCentre = plane.SignedDistanceFromOrigin();
@@ -206,7 +206,7 @@ partial struct OriginSphere {
 
 	// TODO this will become a circle when we implement IIntersectionDeterminable properly
 	public bool TrySplit(Plane plane, out Location circleCentrePoint, out float circleRadius) {
-		circleCentrePoint = plane.ClosestPointToOrigin;
+		circleCentrePoint = plane.PointClosestToOrigin;
 		var vectToPlane = (Vect) circleCentrePoint;
 		var vectLengthSquared = vectToPlane.LengthSquared;
 		if (vectLengthSquared > RadiusSquared) {
@@ -227,7 +227,7 @@ partial struct OriginSphere {
 	}
 	public Location ClosestPointToSurfaceOn(Plane plane) {
 		// If the plane doesn't intersect this sphere, we can just return the plane's closest point to the sphere
-		if (!TrySplit(plane, out var circleCentrePoint, out var circleRadius)) return plane.ClosestPointToOrigin;
+		if (!TrySplit(plane, out var circleCentrePoint, out var circleRadius)) return plane.PointClosestToOrigin;
 
 		// Otherwise there are infinite valid answers around the circle formed by the intersection. Any will do
 		var centrePointDirection = circleCentrePoint == Location.Origin ? plane.Normal : ((Vect) circleCentrePoint).Direction;

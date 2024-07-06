@@ -45,7 +45,7 @@ partial struct XYPair<T> :
 	public static XYPair<T> operator *(XYPair<T> pair, float scalar) => pair.ScaledBy(scalar);
 	public static XYPair<T> operator /(XYPair<T> pair, float scalar) => pair.ScaledBy(1f / scalar);
 	public static XYPair<T> operator *(float scalar, XYPair<T> pair) => pair.ScaledBy(scalar);
-	public XYPair<T> ScaledBy(float scalar) => (Cast<float>() * scalar).Cast<T>();
+	public XYPair<T> ScaledBy(float scalar) => Cast<float>().MultipliedBy(scalar).Cast<T>();
 
 	public XYPair<TNew> Cast<TNew>() where TNew : unmanaged, INumber<TNew> => new(TNew.CreateTruncating(X), TNew.CreateTruncating(Y));
 
@@ -76,7 +76,7 @@ partial struct XYPair<T> :
 	public float DistanceFrom(XYPair<T> pair) => MathF.Sqrt(DistanceSquaredFrom(pair));
 
 	public static XYPair<T> Interpolate(XYPair<T> start, XYPair<T> end, float distance) {
-		return start + (end - start) * T.CreateSaturating(distance);
+		return start + (end - start).ScaledBy(distance);
 	}
 	public XYPair<T> Clamp(XYPair<T> min, XYPair<T> max) {
 		return new(

@@ -27,10 +27,10 @@ partial class DirectionTest {
 
 	[Test]
 	public void ShouldCorrectlyRenormalize() {
-		AssertToleranceEquals(OneTwoNegThree, OneTwoNegThree.Renormalized, TestTolerance);
-		AssertToleranceEquals(Direction.None, Direction.None.Renormalized, TestTolerance);
-		AssertToleranceEquals(new Direction(0.707f, 0f, -0.707f), Direction.FromVector3PreNormalized(0.707f, 0f, -0.707f).Renormalized, TestTolerance);
-		AssertToleranceEquals(new Direction(1f, 1f, -1f), Direction.FromVector3PreNormalized(1, 1f, -1f).Renormalized, TestTolerance);
+		AssertToleranceEquals(OneTwoNegThree, Direction.Renormalize(OneTwoNegThree), TestTolerance);
+		AssertToleranceEquals(Direction.None, Direction.Renormalize(Direction.None), TestTolerance);
+		AssertToleranceEquals(new Direction(0.707f, 0f, -0.707f), Direction.Renormalize(Direction.FromVector3PreNormalized(0.707f, 0f, -0.707f)), TestTolerance);
+		AssertToleranceEquals(new Direction(1f, 1f, -1f), Direction.Renormalize(Direction.FromVector3PreNormalized(1, 1f, -1f)), TestTolerance);
 	}
 
 	[Test]

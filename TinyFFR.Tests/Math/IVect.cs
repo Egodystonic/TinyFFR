@@ -23,6 +23,7 @@ class VectTestStubType : IVect {
 
 	public float this[Axis axis] => throw new NotImplementedException();
 	public XYPair<float> this[Axis first, Axis second] => throw new NotImplementedException();
+	public Vect AsVect() => new(X, Y, Z);
 }
 
 [TestFixture]

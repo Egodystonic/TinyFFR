@@ -136,7 +136,7 @@ public readonly partial struct Line {
 		var similarityToNormal = plane.Normal.Dot(Direction);
 		if (similarityToNormal == 0f) return null; // Parallel with plane -- either infinite or zero answers. Return null either way
 
-		var distance = (plane.ClosestPointToOrigin - PointOnLine).LengthWhenProjectedOnTo(plane.Normal) / similarityToNormal;
+		var distance = (plane.PointClosestToOrigin - PointOnLine).LengthWhenProjectedOnTo(plane.Normal) / similarityToNormal;
 		return new(LocationAtDistance(distance), Direction);
 	}
 
@@ -144,7 +144,7 @@ public readonly partial struct Line {
 
 	public float SignedDistanceFrom(Plane plane) {
 		if (plane.Normal.Dot(Direction) != 0f) return 0f;
-		var originToPlaneVect = (Vect) plane.ClosestPointToOrigin;
+		var originToPlaneVect = (Vect) plane.PointClosestToOrigin;
 		return ((Vect) PointOnLine).LengthWhenProjectedOnTo(originToPlaneVect.Direction) - originToPlaneVect.Length;
 	}
 
@@ -158,7 +158,7 @@ public readonly partial struct Line {
 	}
 	public Location ClosestPointOn(Plane plane) {
 		// If we're parallel with the plane there are infinite answers so we just return the easiest one
-		return IntersectionWith(plane)?.StartPoint ?? plane.ClosestPointToOrigin;
+		return IntersectionWith(plane)?.StartPoint ?? plane.PointClosestToOrigin;
 	}
 
 	public PlaneObjectRelationship RelationshipTo(Plane plane) {

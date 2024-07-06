@@ -19,7 +19,7 @@ partial class PlaneTest {
 	[Test]
 	public void PropertiesShouldBeCorrectlyImplemented() {
 		Assert.AreEqual(Direction.Up, TestPlane.Normal);
-		Assert.AreEqual(new Location(0f, -1f, 0f), TestPlane.ClosestPointToOrigin);
+		Assert.AreEqual(new Location(0f, -1f, 0f), TestPlane.PointClosestToOrigin);
 	}
 
 	[Test]
@@ -65,7 +65,7 @@ partial class PlaneTest {
 	public void ShouldCorrectlyConvertToAndFromSpan() {
 		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<Plane>();
 		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(TestPlane);
-		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestPlane, TestPlane.Normal.X, TestPlane.Normal.Y, TestPlane.Normal.Z, TestPlane.ClosestPointToOrigin.X, TestPlane.ClosestPointToOrigin.Y, TestPlane.ClosestPointToOrigin.Z);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestPlane, TestPlane.Normal.X, TestPlane.Normal.Y, TestPlane.Normal.Z, TestPlane.PointClosestToOrigin.X, TestPlane.PointClosestToOrigin.Y, TestPlane.PointClosestToOrigin.Z);
 	}
 
 	[Test]
@@ -73,13 +73,13 @@ partial class PlaneTest {
 		var start = new Plane(Direction.Forward, new Location(5f, 0f, 0f));
 		var end = new Plane(Direction.Up, new Location(0f, 0f, -5f));
 		var normalTransition = start.Normal >> end.Normal;
-		var pointTransition = start.ClosestPointToOrigin >> end.ClosestPointToOrigin;
+		var pointTransition = start.PointClosestToOrigin >> end.PointClosestToOrigin;
 
-		AssertToleranceEquals(new Plane(start.Normal * (normalTransition * -0.5f), start.ClosestPointToOrigin + (pointTransition * -0.5f)), Plane.Interpolate(start, end, -0.5f), TestTolerance);
-		AssertToleranceEquals(new Plane(start.Normal * (normalTransition * 0.5f), start.ClosestPointToOrigin + (pointTransition * 0.5f)), Plane.Interpolate(start, end, 0.5f), TestTolerance);
-		AssertToleranceEquals(new Plane(start.Normal * (normalTransition * 1.5f), start.ClosestPointToOrigin + (pointTransition * 1.5f)), Plane.Interpolate(start, end, 1.5f), TestTolerance);
-		AssertToleranceEquals(new Plane(start.Normal, start.ClosestPointToOrigin), Plane.Interpolate(start, end, 0f), TestTolerance);
-		AssertToleranceEquals(new Plane(end.Normal, end.ClosestPointToOrigin), Plane.Interpolate(start, end, 1f), TestTolerance);
+		AssertToleranceEquals(new Plane(start.Normal * (normalTransition * -0.5f), start.PointClosestToOrigin + (pointTransition * -0.5f)), Plane.Interpolate(start, end, -0.5f), TestTolerance);
+		AssertToleranceEquals(new Plane(start.Normal * (normalTransition * 0.5f), start.PointClosestToOrigin + (pointTransition * 0.5f)), Plane.Interpolate(start, end, 0.5f), TestTolerance);
+		AssertToleranceEquals(new Plane(start.Normal * (normalTransition * 1.5f), start.PointClosestToOrigin + (pointTransition * 1.5f)), Plane.Interpolate(start, end, 1.5f), TestTolerance);
+		AssertToleranceEquals(new Plane(start.Normal, start.PointClosestToOrigin), Plane.Interpolate(start, end, 0f), TestTolerance);
+		AssertToleranceEquals(new Plane(end.Normal, end.PointClosestToOrigin), Plane.Interpolate(start, end, 1f), TestTolerance);
 	}
 
 	[Test]
@@ -97,11 +97,11 @@ partial class PlaneTest {
 			Assert.GreaterOrEqual(val.Normal.Z, 0f);
 			Assert.LessOrEqual(val.Normal.Z, 1f);
 
-			Assert.LessOrEqual(val.ClosestPointToOrigin.X, start.ClosestPointToOrigin.X);
-			Assert.GreaterOrEqual(val.ClosestPointToOrigin.X, 0f);
-			Assert.AreEqual(0f, val.ClosestPointToOrigin.Y);
-			Assert.LessOrEqual(val.ClosestPointToOrigin.Z, 0f);
-			Assert.GreaterOrEqual(val.ClosestPointToOrigin.Z, -5f);
+			Assert.LessOrEqual(val.PointClosestToOrigin.X, start.PointClosestToOrigin.X);
+			Assert.GreaterOrEqual(val.PointClosestToOrigin.X, 0f);
+			Assert.AreEqual(0f, val.PointClosestToOrigin.Y);
+			Assert.LessOrEqual(val.PointClosestToOrigin.Z, 0f);
+			Assert.GreaterOrEqual(val.PointClosestToOrigin.Z, -5f);
 		}
 	}
 
@@ -122,14 +122,14 @@ partial class PlaneTest {
 
 		Assert.IsTrue(
 			TestPlane.EqualsWithinAngleAndLocation(
-				new Plane(Direction.Up * ((Direction.Up >> Direction.Forward) * 0.1f), TestPlane.ClosestPointToOrigin),
+				new Plane(Direction.Up * ((Direction.Up >> Direction.Forward) * 0.1f), TestPlane.PointClosestToOrigin),
 				10f,
 				Single.MaxValue
 			)
 		);
 		Assert.IsFalse(
 			TestPlane.EqualsWithinAngleAndLocation(
-				new Plane(Direction.Up * ((Direction.Up >> Direction.Forward) * 0.1f), TestPlane.ClosestPointToOrigin),
+				new Plane(Direction.Up * ((Direction.Up >> Direction.Forward) * 0.1f), TestPlane.PointClosestToOrigin),
 				8f,
 				Single.MaxValue
 			)

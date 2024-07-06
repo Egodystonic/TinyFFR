@@ -203,8 +203,23 @@ partial class RayTest {
 	[Test]
 	public void ShouldCorrectlyReturnClosestPointToOtherLine() {
 		void AssertPair<TLine>(Location expectedResult, Ray ray, TLine other) where TLine : ILineLike {
-			AssertToleranceEquals(expectedResult, ray.ClosestPointTo(other), TestTolerance);
-			Assert.AreEqual(ray.ClosestPointTo(other), other.ClosestPointOn(ray));
+			switch (other) {
+				case Line l:
+					AssertToleranceEquals(expectedResult, ray.PointClosestTo(l), TestTolerance);
+					Assert.AreEqual(ray.PointClosestTo(l), other.ClosestPointOn(ray));
+					break;
+				case Ray r:
+					AssertToleranceEquals(expectedResult, ray.PointClosestTo(r), TestTolerance);
+					Assert.AreEqual(ray.PointClosestTo(r), other.ClosestPointOn(ray));
+					break;
+				case BoundedRay b:
+					AssertToleranceEquals(expectedResult, ray.PointClosestTo(b), TestTolerance);
+					Assert.AreEqual(ray.PointClosestTo(b), other.ClosestPointOn(ray));
+					break;
+				default:
+					Assert.Fail("Unknown line type");
+					break;
+			}
 		}
 
 		// Line
@@ -736,11 +751,11 @@ partial class RayTest {
 		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
 
 		Assert.AreEqual(
-			new Location(100f, 1f, 0f),
+			new Ray(new Location(100f, 1f, 0f), Direction.Down),
 			new Ray(new Location(100f, 100f, 0f), Direction.Down).IntersectionWith(plane)
 		);
 		Assert.AreEqual(
-			new Location(100f, 1f, 0f),
+			new Ray(new Location(100f, 1f, 0f), Direction.Up),
 			new Ray(new Location(100f, -100f, 0f), Direction.Up).IntersectionWith(plane)
 		);
 		Assert.Null(
@@ -859,11 +874,11 @@ partial class RayTest {
 			new Ray(new Location(100f, -100f, 0f), Direction.Up).ClosestPointOn(plane)
 		);
 		Assert.AreEqual(
-			plane.ClosestPointToOrigin,
+			plane.PointClosestToOrigin,
 			new Ray(new Location(0f, 2f, 0f), Direction.Right).ClosestPointOn(plane)
 		);
 		Assert.AreEqual(
-			plane.ClosestPointToOrigin,
+			plane.PointClosestToOrigin,
 			new Ray(new Location(0f, 0f, 0f), Direction.Right).ClosestPointOn(plane)
 		);
 		Assert.AreEqual(
@@ -1136,11 +1151,15 @@ partial class RayTest {
 		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
 
 		void AssertSplit(BoundedRay? expectedToPlane, Ray? expectedFromPlane, Ray ray) {
-			AssertToleranceEquals(expectedFromPlane, ray.SlicedBy(plane), TestTolerance);
+			AssertToleranceEquals(expectedFromPlane, ray.IntersectionWith(plane), TestTolerance);
 			var trySplitResult = ray.TrySplit(plane, out var actualToPlane, out var actualFromPlane);
-			if (expectedToPlane == null) Assert.AreEqual(false, trySplitResult);
+			if (expectedToPlane == null) {
+				Assert.AreEqual(false, trySplitResult);
+				Assert.AreEqual(false, ray.IsIntersectedBy(plane));
+			}
 			else {
 				Assert.AreEqual(true, trySplitResult);
+				Assert.AreEqual(true, ray.IsIntersectedBy(plane));
 				AssertToleranceEquals(expectedToPlane, actualToPlane, TestTolerance);
 				AssertToleranceEquals(expectedFromPlane, actualFromPlane, TestTolerance);
 			}

@@ -17,7 +17,7 @@ public readonly partial struct Plane : IMathPrimitive<Plane>, IDescriptiveString
 		get => Direction.FromVector3(_normal);
 	}
 
-	public Location ClosestPointToOrigin {
+	public Location PointClosestToOrigin {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Location.FromVector3(_normal * _smallestDistanceFromOriginAlongNormal);
 	}
@@ -68,7 +68,7 @@ public readonly partial struct Plane : IMathPrimitive<Plane>, IDescriptiveString
 
 	public static void SerializeToBytes(Span<byte> dest, Plane src) {
 		Direction.SerializeToBytes(dest, src.Normal);
-		Location.SerializeToBytes(dest[Direction.SerializationByteSpanLength..], src.ClosestPointToOrigin);
+		Location.SerializeToBytes(dest[Direction.SerializationByteSpanLength..], src.PointClosestToOrigin);
 	}
 
 	public static Plane DeserializeFromBytes(ReadOnlySpan<byte> src) {
@@ -82,13 +82,13 @@ public readonly partial struct Plane : IMathPrimitive<Plane>, IDescriptiveString
 	#region String Conversions
 	public string ToStringDescriptive() => $"{nameof(Plane)}{GeometryUtils.ParameterStartToken}" +
 										   $"{nameof(Normal)}{GeometryUtils.ParameterKeyValueSeparatorToken}{Normal.ToStringDescriptive()}{GeometryUtils.ParameterSeparatorToken}" +
-										   $"{nameof(ClosestPointToOrigin)}{GeometryUtils.ParameterKeyValueSeparatorToken}{ClosestPointToOrigin}" +
+										   $"{nameof(PointClosestToOrigin)}{GeometryUtils.ParameterKeyValueSeparatorToken}{PointClosestToOrigin}" +
 										   $"{GeometryUtils.ParameterEndToken}";
 
 	public override string ToString() => ToString(null, null);
 
-	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(Plane), (nameof(Normal), Normal), (nameof(ClosestPointToOrigin), ClosestPointToOrigin));
-	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => GeometryUtils.StandardizedTryFormat(destination, out charsWritten, format, provider, nameof(Plane), (nameof(Normal), Normal), (nameof(ClosestPointToOrigin), ClosestPointToOrigin));
+	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(Plane), (nameof(Normal), Normal), (nameof(PointClosestToOrigin), ClosestPointToOrigin: PointClosestToOrigin));
+	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => GeometryUtils.StandardizedTryFormat(destination, out charsWritten, format, provider, nameof(Plane), (nameof(Normal), Normal), (nameof(PointClosestToOrigin), ClosestPointToOrigin: PointClosestToOrigin));
 
 	public static Plane Parse(string s, IFormatProvider? provider) => Parse(s.AsSpan(), provider);
 	public static bool TryParse(string? s, IFormatProvider? provider, out Plane result) => TryParse(s.AsSpan(), provider, out result);
@@ -108,8 +108,8 @@ public readonly partial struct Plane : IMathPrimitive<Plane>, IDescriptiveString
 
 	#region Equality
 	public bool Equals(Plane other) => _normal.Equals(other._normal) && _smallestDistanceFromOriginAlongNormal.Equals(other._smallestDistanceFromOriginAlongNormal);
-	public bool Equals(Plane other, float tolerance) => Normal.Equals(other.Normal, tolerance) && ClosestPointToOrigin.Equals(other.ClosestPointToOrigin, tolerance);
-	public bool EqualsWithinAngleAndLocation(Plane other, Angle angle, float distance) => Normal.EqualsWithinAngle(other.Normal, angle) && ClosestPointToOrigin.EqualsWithinDistance(other.ClosestPointToOrigin, distance);
+	public bool Equals(Plane other, float tolerance) => Normal.Equals(other.Normal, tolerance) && PointClosestToOrigin.Equals(other.PointClosestToOrigin, tolerance);
+	public bool EqualsWithinAngleAndLocation(Plane other, Angle angle, float distance) => Normal.EqualsWithinAngle(other.Normal, angle) && PointClosestToOrigin.EqualsWithinDistance(other.PointClosestToOrigin, distance);
 	public override bool Equals(object? obj) => obj is Plane other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(_normal, _smallestDistanceFromOriginAlongNormal);
 	public static bool operator ==(Plane left, Plane right) => left.Equals(right);

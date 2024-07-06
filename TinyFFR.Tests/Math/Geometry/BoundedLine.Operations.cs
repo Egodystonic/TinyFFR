@@ -99,17 +99,17 @@ partial class BoundedRayTest {
 		var xzLine = new BoundedRay(new Location(3f, 0f, -3f), new Location(-3f, 0f, 3f));
 
 		AssertToleranceEquals(
-			new BoundedRay(new Location(3f, 0f, 3f), new Location(-3f, 0f, -3f)),
+			new BoundedRay(new Location(3f, 0f, -3f), new Location(-3f, 0f, -9f)),
 			xzLine * rotation,
 			TestTolerance
 		);
 		AssertToleranceEquals(
+			new BoundedRay(new Location(3f, 0f, 3f), new Location(-3f, 0f, -3f)),
 			xzLine.RotatedAroundMiddleBy(rotation),
-			rotation * xzLine,
 			TestTolerance
 		);
 		AssertToleranceEquals(
-			new BoundedRay(new Location(3f, 0f, -3f), new Location(-3f, 0f, -9f)),
+			rotation * xzLine,
 			xzLine.RotatedAroundStartBy(rotation),
 			TestTolerance
 		);
@@ -120,12 +120,12 @@ partial class BoundedRayTest {
 		);
 		AssertToleranceEquals(
 			new BoundedRay(new Location(3f, 0f, 6f), new Location(-3f, 0f, 0f)),
-			xzLine.RotatedAroundPivotDistance(rotation, xzLine.Length * 0.75f),
+			xzLine.RotatedAroundPoint(rotation, xzLine.UnboundedLocationAtDistance(xzLine.Length * 0.75f)),
 			TestTolerance
 		);
 		AssertToleranceEquals(
 			new BoundedRay(new Location(3f, 0f, 0f), new Location(-3f, 0f, -6f)),
-			xzLine.RotatedAroundPivotDistance(rotation, xzLine.Length * 0.25f),
+			xzLine.RotatedAroundPoint(rotation, xzLine.UnboundedLocationAtDistance(xzLine.Length * 0.25f)),
 			TestTolerance
 		);
 		AssertToleranceEquals(
@@ -351,9 +351,24 @@ partial class BoundedRayTest {
 
 	[Test]
 	public void ShouldCorrectlyReturnClosestPointToOtherLine() {
-		void AssertPair<TLine>(Location expectedResult, BoundedRay line, TLine other) where TLine : ILineLike {
-			AssertToleranceEquals(expectedResult, line.ClosestPointTo(other), TestTolerance);
-			Assert.AreEqual(line.ClosestPointTo(other), other.ClosestPointOn(line));
+		void AssertPair<TLine>(Location expectedResult, BoundedRay ray, TLine other) where TLine : ILineLike {
+			switch (other) {
+				case Line l:
+					AssertToleranceEquals(expectedResult, ray.PointClosestTo(l), TestTolerance);
+					Assert.AreEqual(ray.PointClosestTo(l), other.ClosestPointOn(ray));
+					break;
+				case Ray r:
+					AssertToleranceEquals(expectedResult, ray.PointClosestTo(r), TestTolerance);
+					Assert.AreEqual(ray.PointClosestTo(r), other.ClosestPointOn(ray));
+					break;
+				case BoundedRay b:
+					AssertToleranceEquals(expectedResult, ray.PointClosestTo(b), TestTolerance);
+					Assert.AreEqual(ray.PointClosestTo(b), other.ClosestPointOn(ray));
+					break;
+				default:
+					Assert.Fail("Unknown line type");
+					break;
+			}
 		}
 
 		// Line
@@ -1057,11 +1072,11 @@ partial class BoundedRayTest {
 		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
 
 		Assert.AreEqual(
-			new Location(100f, 1f, 0f),
+			new BoundedRay(new Location(100f, 1f, 0f), new Location(100f, 1f, 0f)),
 			BoundedRay.FromStartPointAndVect(new Location(100f, 101f, 0f), Direction.Down * 100f).IntersectionWith(plane)
 		);
 		Assert.AreEqual(
-			new Location(100f, 1f, 0f),
+			new BoundedRay(new Location(100f, 1f, 0f), new Location(100f, 1f, 0f)),
 			BoundedRay.FromStartPointAndVect(new Location(100f, -99f, 0f), Direction.Up * 100f).IntersectionWith(plane)
 		);
 		Assert.Null(
@@ -1078,12 +1093,12 @@ partial class BoundedRayTest {
 		);
 
 		AssertToleranceEquals(
-			new Location(0f, 1f, 0f),
+			new BoundedRay(new Location(0f, 1f, 0f), new Location(0f, -9f, -10f)),
 			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).IntersectionWith(plane),
 			TestTolerance
 		);
 		AssertToleranceEquals(
-			new Location(0f, 1f, 0f),
+			new BoundedRay(new Location(0f, 1f, 0f), new Location(0f, 6f, 5f)),
 			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).Flipped.IntersectionWith(plane),
 			TestTolerance
 		);
@@ -1244,11 +1259,11 @@ partial class BoundedRayTest {
 			BoundedRay.FromStartPointAndVect(new Location(100f, -100f, 0f), Direction.Up * 50f).ClosestPointOn(plane)
 		);
 		Assert.AreEqual(
-			plane.ClosestPointToOrigin,
+			plane.PointClosestToOrigin,
 			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Right * 200f).ClosestPointOn(plane)
 		);
 		Assert.AreEqual(
-			plane.ClosestPointToOrigin,
+			plane.PointClosestToOrigin,
 			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Right * 200f).ClosestPointOn(plane)
 		);
 		Assert.AreEqual(
@@ -1593,11 +1608,15 @@ partial class BoundedRayTest {
 		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
 
 		void AssertSplit(BoundedRay? expectedToPlane, BoundedRay? expectedFromPlane, BoundedRay line) {
-			AssertToleranceEquals(expectedFromPlane, line.SlicedBy(plane), TestTolerance);
+			AssertToleranceEquals(expectedFromPlane, line.IntersectionWith(plane), TestTolerance);
 			var trySplitResult = line.TrySplit(plane, out var actualToPlane, out var actualFromPlane);
-			if (expectedToPlane == null) Assert.AreEqual(false, trySplitResult);
+			if (expectedToPlane == null) {
+				Assert.AreEqual(false, trySplitResult);
+				Assert.AreEqual(false, line.IsIntersectedBy(plane));
+			}
 			else {
 				Assert.AreEqual(true, trySplitResult);
+				Assert.AreEqual(true, line.IsIntersectedBy(plane));
 				AssertToleranceEquals(expectedToPlane, actualToPlane, TestTolerance);
 				AssertToleranceEquals(expectedFromPlane, actualFromPlane, TestTolerance);
 			}

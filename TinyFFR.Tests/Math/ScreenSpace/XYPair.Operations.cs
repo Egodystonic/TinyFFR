@@ -13,6 +13,7 @@ partial class XYPairTest {
 		Assert.AreEqual(XYPair<float>.Zero, XYPair<float>.Zero + XYPair<float>.Zero);
 		Assert.AreEqual(XYPair<float>.Zero, XYPair<float>.Zero - XYPair<float>.Zero);
 		Assert.AreEqual(ThreeFourFloat * 2f, ThreeFourFloat + ThreeFourFloat);
+		Assert.AreEqual(ThreeFourFloat * 2, ThreeFourFloat + ThreeFourFloat);
 		Assert.AreEqual(XYPair<float>.Zero, ThreeFourFloat - ThreeFourFloat);
 		Assert.AreEqual(new XYPair<float>(2f, 4f), new XYPair<float>(-1f, -2f) + new XYPair<float>(3f, 6f));
 		Assert.AreEqual(new XYPair<float>(-4f, -8f), new XYPair<float>(-1f, -2f) - new XYPair<float>(3f, 6f));

@@ -58,10 +58,9 @@ partial struct OriginCuboid {
 		var yDist = MathF.Max(0f, MathF.Abs(location.Y) - HalfHeight);
 		var zDist = MathF.Max(0f, MathF.Abs(location.Z) - HalfDepth);
 
-		return new Vector3(xDist, yDist, zDist).Length();
+		return new Vector3(xDist, yDist, zDist).LengthSquared();
 	}
-	public float SurfaceDistanceFrom(Location location) => MathF.Sqrt(SurfaceDistanceSquaredFrom(location));
-	public float SurfaceDistanceSquaredFrom(Location location) {
+	public float SurfaceDistanceFrom(Location location) {
 		var xDist = MathF.Abs(location.X) - HalfWidth;
 		var yDist = MathF.Abs(location.Y) - HalfHeight;
 		var zDist = MathF.Abs(location.Z) - HalfDepth;
@@ -70,8 +69,9 @@ partial struct OriginCuboid {
 			return MathF.Abs(MathF.Max(xDist, MathF.Max(yDist, zDist)));
 		}
 
-		return new Vector3(MathF.Max(0f, xDist), MathF.Max(0f, yDist), MathF.Max(0f, zDist)).LengthSquared();
+		return new Vector3(MathF.Max(0f, xDist), MathF.Max(0f, yDist), MathF.Max(0f, zDist)).Length();
 	}
+	public float SurfaceDistanceSquaredFrom(Location location) { var sqrt = SurfaceDistanceFrom(location); return sqrt * sqrt; }
 
 	public bool Contains(Location location) => MathF.Abs(location.X) <= HalfWidth && MathF.Abs(location.Y) <= HalfHeight && MathF.Abs(location.Z) <= HalfDepth;
 

@@ -48,11 +48,11 @@ partial class PlaneTest {
 		Assert.AreEqual(Angle.Zero, TestPlane.AngleTo(Direction.Left));
 		Assert.AreEqual(Angle.QuarterCircle, TestPlane.AngleTo(Direction.Up));
 		Assert.AreEqual(Angle.QuarterCircle, TestPlane.AngleTo(Direction.Down));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo((1f, 1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo((-1f, 1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo((-1f, -1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo((1f, -1f, 0f)));
-		Assert.AreEqual(Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.AngleTo((2f, -1f, 0f)));
+		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo(new Direction(1f, 1f, 0f)));
+		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo(new Direction(-1f, 1f, 0f)));
+		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo(new Direction(-1f, -1f, 0f)));
+		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo(new Direction(1f, -1f, 0f)));
+		Assert.AreEqual(Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.AngleTo(new Direction(2f, -1f, 0f)));
 	}
 
 	[Test]
@@ -78,7 +78,7 @@ partial class PlaneTest {
 		Assert.AreEqual(Direction.Right, TestPlane.ReflectionOf(Direction.Right));
 		Assert.AreEqual(Direction.Forward, TestPlane.ReflectionOf(Direction.Forward));
 		Assert.AreEqual(Direction.Backward, TestPlane.ReflectionOf(Direction.Backward));
-		AssertToleranceEquals(new Direction(1f, -1f, 0f), TestPlane.ReflectionOf((1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(new Direction(1f, -1f, 0f), TestPlane.ReflectionOf(new Direction(1f, 1f, 0f)), TestTolerance);
 
 		Assert.AreEqual(Direction.Up, TestPlane.Flipped.ReflectionOf(Direction.Down));
 		Assert.AreEqual(Direction.Down, TestPlane.Flipped.ReflectionOf(Direction.Up));
@@ -86,7 +86,7 @@ partial class PlaneTest {
 		Assert.AreEqual(Direction.Right, TestPlane.Flipped.ReflectionOf(Direction.Right));
 		Assert.AreEqual(Direction.Forward, TestPlane.Flipped.ReflectionOf(Direction.Forward));
 		Assert.AreEqual(Direction.Backward, TestPlane.Flipped.ReflectionOf(Direction.Backward));
-		AssertToleranceEquals(new Direction(1f, -1f, 0f), TestPlane.Flipped.ReflectionOf((1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(new Direction(1f, -1f, 0f), TestPlane.Flipped.ReflectionOf(new Direction(1f, 1f, 0f)), TestTolerance);
 	}
 
 	[Test]
@@ -191,8 +191,8 @@ partial class PlaneTest {
 	[Test]
 	public void ShouldCorrectlyTestForIntersectionWithOtherPlanes() {
 		Assert.False(TestPlane.IsIntersectedBy(new Plane(Direction.Down, Location.Origin)));
-		Assert.False(TestPlane.IsIntersectedBy(new Plane(Direction.Down, TestPlane.ClosestPointToOrigin)));
-		Assert.False(TestPlane.IsIntersectedBy(new Plane(Direction.Up, TestPlane.ClosestPointToOrigin)));
+		Assert.False(TestPlane.IsIntersectedBy(new Plane(Direction.Down, TestPlane.PointClosestToOrigin)));
+		Assert.False(TestPlane.IsIntersectedBy(new Plane(Direction.Up, TestPlane.PointClosestToOrigin)));
 
 		Assert.True(
 			TestPlane.IsIntersectedBy(new Plane(Direction.Right, (-1f, 0f, 0f)))
@@ -215,8 +215,8 @@ partial class PlaneTest {
 		}
 
 		Assert.AreEqual(null, TestPlane.IntersectionWith(new Plane(Direction.Down, Location.Origin)));
-		Assert.AreEqual(null, TestPlane.IntersectionWith(new Plane(Direction.Down, TestPlane.ClosestPointToOrigin)));
-		Assert.AreEqual(null, TestPlane.IntersectionWith(new Plane(Direction.Up, TestPlane.ClosestPointToOrigin)));
+		Assert.AreEqual(null, TestPlane.IntersectionWith(new Plane(Direction.Down, TestPlane.PointClosestToOrigin)));
+		Assert.AreEqual(null, TestPlane.IntersectionWith(new Plane(Direction.Up, TestPlane.PointClosestToOrigin)));
 
 		AssertIntersection(
 			new Line((-1f, -1f, 0f), Direction.Forward),

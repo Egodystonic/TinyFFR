@@ -28,7 +28,7 @@ partial struct Plane :
 	public static Plane operator +(Vect v, Plane plane) => plane.MovedBy(v);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Plane operator -(Plane plane, Vect v) => plane.MovedBy(-v);
-	public Plane MovedBy(Vect v) => new(Normal, ClosestPointToOrigin + v);
+	public Plane MovedBy(Vect v) => new(Normal, PointClosestToOrigin + v);
 	
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -68,7 +68,7 @@ partial struct Plane :
 	Vect? IReflectionTarget<Vect, Vect>.ReflectionOf(Vect vect) => ReflectionOf(vect);
 	public Direction ParallelizationOf(Direction direction) => direction.OrthogonalizedAgainst(Normal);
 
-	public Location PointClosestTo(Location location) => location - ClosestPointToOrigin.VectTo(location).ProjectedOnTo(Normal);
+	public Location PointClosestTo(Location location) => location - PointClosestToOrigin.VectTo(location).ProjectedOnTo(Normal);
 	public float SignedDistanceFrom(Location location) => Vector3.Dot(location.ToVector3(), _normal) - _smallestDistanceFromOriginAlongNormal; // TODO xmldoc positive means normal faces towards, etc
 	public float DistanceFrom(Location location) => MathF.Abs(SignedDistanceFrom(location));
 	float IDistanceMeasurable<Location>.DistanceSquaredFrom(Location location) {
@@ -95,8 +95,8 @@ partial struct Plane :
 	public bool Contains(Location location) => Contains(location, DefaultPlaneThickness);
 	public bool Contains(Location location, float planeThickness) => DistanceFrom(location) <= planeThickness;
 
-	public float DistanceFrom(Plane other) => MathF.Abs(Normal.Dot(other.Normal)) >= MaxPlaneToPlaneDistanceNormalSimilarity ? ClosestPointToOrigin.DistanceFrom(other.ClosestPointToOrigin) : 0f;
-	public float DistanceSquaredFrom(Plane other) => MathF.Abs(Normal.Dot(other.Normal)) >= MaxPlaneToPlaneDistanceNormalSimilarity ? ClosestPointToOrigin.DistanceSquaredFrom(other.ClosestPointToOrigin) : 0f;
+	public float DistanceFrom(Plane other) => MathF.Abs(Normal.Dot(other.Normal)) >= MaxPlaneToPlaneDistanceNormalSimilarity ? PointClosestToOrigin.DistanceFrom(other.PointClosestToOrigin) : 0f;
+	public float DistanceSquaredFrom(Plane other) => MathF.Abs(Normal.Dot(other.Normal)) >= MaxPlaneToPlaneDistanceNormalSimilarity ? PointClosestToOrigin.DistanceSquaredFrom(other.PointClosestToOrigin) : 0f;
 	
 	public bool IsIntersectedBy(Plane other) => Vector3.Cross(_normal, other._normal).LengthSquared() != 0f;
 	public Line? IntersectionWith(Plane other) {
@@ -157,23 +157,23 @@ partial struct Plane :
 	public static Plane Interpolate(Plane start, Plane end, float distance) {
 		return new(
 			Direction.Interpolate(start.Normal, end.Normal, distance),
-			Location.Interpolate(start.ClosestPointToOrigin, end.ClosestPointToOrigin, distance)
+			Location.Interpolate(start.PointClosestToOrigin, end.PointClosestToOrigin, distance)
 		);
 	}
 
 	public Plane Clamp(Plane min, Plane max) {
 		return new(
 			Normal.Clamp(min.Normal, max.Normal),
-			ClosestPointToOrigin.Clamp(min.ClosestPointToOrigin, max.ClosestPointToOrigin)
+			PointClosestToOrigin.Clamp(min.PointClosestToOrigin, max.PointClosestToOrigin)
 		);
 	}
 	public static Rotation CreateInterpolationPrecomputation(Plane start, Plane end) => Direction.CreateInterpolationPrecomputation(start.Normal, end.Normal);
 	public static Plane InterpolateUsingPrecomputation(Plane start, Plane end, Rotation precomputation, float distance) {
 		return new(
 			Direction.InterpolateUsingPrecomputation(start.Normal, end.Normal, precomputation, distance),
-			Location.Interpolate(start.ClosestPointToOrigin, end.ClosestPointToOrigin, distance)
+			Location.Interpolate(start.PointClosestToOrigin, end.PointClosestToOrigin, distance)
 		);
 	}
 	public static Plane CreateNewRandom() => new(Direction.CreateNewRandom(), Location.CreateNewRandom());
-	public static Plane CreateNewRandom(Plane minInclusive, Plane maxExclusive) => new(Direction.CreateNewRandom(minInclusive.Normal, maxExclusive.Normal), Location.CreateNewRandom(minInclusive.ClosestPointToOrigin, maxExclusive.ClosestPointToOrigin));
+	public static Plane CreateNewRandom(Plane minInclusive, Plane maxExclusive) => new(Direction.CreateNewRandom(minInclusive.Normal, maxExclusive.Normal), Location.CreateNewRandom(minInclusive.PointClosestToOrigin, maxExclusive.PointClosestToOrigin));
 }

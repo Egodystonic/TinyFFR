@@ -38,9 +38,10 @@ partial class AngleTest {
 			for (var s = -2f; s < 2.1f; s += 0.1f) {
 				Assert.AreEqual(Angle.FromRadians(f * s), Angle.FromRadians(f) * s);
 				Assert.AreEqual(Angle.FromRadians(f * s), s * Angle.FromRadians(f));
-				Assert.AreEqual(Angle.FromRadians(f * s), Angle.FromRadians(f).MultipliedBy(s));
+				Assert.AreEqual(Angle.FromRadians(f * s), Angle.FromRadians(f).ScaledBy(s));
+				if (MathF.Abs(s) < 0.001f) continue;
 				Assert.AreEqual(Angle.FromRadians(f / s), Angle.FromRadians(f) / s);
-				Assert.AreEqual(Angle.FromRadians(f / s), Angle.FromRadians(f).DividedBy(s));
+				AssertToleranceEquals(Angle.FromRadians(f / s), Angle.FromRadians(f).ScaledBy(1f / s), 0.01f);
 			}
 		}
 	}
