@@ -194,9 +194,9 @@ partial class RotationTest {
 		var b = new Rotation(-Angle.HalfCircle, Up);
 		var c = new Rotation(Angle.FromRadians(-((3.1415f * 3f) / 2f)), Forward);
 
-		AssertToleranceEquals(Rotation.FromQuaternion(new(0f, 0.58777f, 0f, 0.809028f)), Rotation.InterpolateSpherical(a, b, 0.4f), TestTolerance);
-		AssertToleranceEquals(Rotation.FromQuaternion(new(0f, -0.233f, -0.688f, -0.688f)), Rotation.InterpolateSpherical(b, c, 0.85f), TestTolerance);
-		AssertToleranceEquals(Rotation.None, Rotation.InterpolateSpherical(c, a, 1f), TestTolerance);
+		AssertToleranceEquals(Rotation.FromQuaternion(new(0f, 0.58777f, 0f, 0.809028f)), Rotation.AccuratelyInterpolate(a, b, 0.4f), TestTolerance);
+		AssertToleranceEquals(Rotation.FromQuaternion(new(0f, -0.233f, -0.688f, -0.688f)), Rotation.AccuratelyInterpolate(b, c, 0.85f), TestTolerance);
+		AssertToleranceEquals(Rotation.None, Rotation.AccuratelyInterpolate(c, a, 1f), TestTolerance);
 
 		// Testing similarity of linear/spherical
 		var testList = new List<Rotation>();
@@ -220,16 +220,16 @@ partial class RotationTest {
 				for (var f = -0.05f; f <= 1.05f; f += 0.05f) {
 					try {
 						AssertToleranceEquals(
-							Rotation.InterpolateSpherical(start, end, f),
-							Rotation.InterpolateLinear(start, end, f),
+							Rotation.AccuratelyInterpolate(start, end, f),
+							Rotation.ApproximatelyInterpolate(start, end, f),
 							0.01f
 						);
 					}
 					catch (AssertionException) {
 						Console.WriteLine(start + " -> " + end + " x " + f);
 						Console.WriteLine("Distance " + distance);
-						Console.WriteLine("\t" + Rotation.InterpolateSpherical(start, end, f) + " / " + Rotation.InterpolateSpherical(start, end, f).AsQuaternion);
-						Console.WriteLine("\t" + Rotation.InterpolateLinear(start, end, f) + " / " + Rotation.InterpolateLinear(start, end, f).AsQuaternion);
+						Console.WriteLine("\t" + Rotation.AccuratelyInterpolate(start, end, f) + " / " + Rotation.AccuratelyInterpolate(start, end, f).AsQuaternion);
+						Console.WriteLine("\t" + Rotation.ApproximatelyInterpolate(start, end, f) + " / " + Rotation.ApproximatelyInterpolate(start, end, f).AsQuaternion);
 						throw;
 					}
 				}

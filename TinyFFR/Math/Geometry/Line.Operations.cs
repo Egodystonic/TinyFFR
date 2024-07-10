@@ -169,26 +169,28 @@ public readonly partial struct Line {
 		};
 	}
 
-	public Line ProjectedOnTo(Plane plane) {
+	public Line? ProjectedOnTo(Plane plane) {
 		var projectedDirection = Direction.ProjectedOnTo(plane);
-		if (projectedDirection == Direction.None) projectedDirection = Direction; // TODO xmldoc this behaviour
-		return new Line(PointOnLine.ClosestPointOn(plane), projectedDirection);
+		return projectedDirection == null ? null : new Line(PointOnLine.ClosestPointOn(plane), projectedDirection.Value);
 	}
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line ParallelizedWith(Plane plane) => ParallelizedWith(plane, 0f);
+	public Line FastProjectedOnTo(Plane plane) => new(PointOnLine.ClosestPointOn(plane), Direction.FastProjectedOnTo(plane));
+
+	public Line? ParallelizedWith(Plane plane) => ParallelizedWith(plane, 0f);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line FastParallelizedWith(Plane plane) => FastParallelizedWith(plane, 0f);
+	public Line? ParallelizedWith(Plane plane, float pivotPointSignedDistance) {
+		var projectedDirection = Direction.ProjectedOnTo(plane);
+		if (projectedDirection == null) return null;
+		return new Line(LocationAtDistance(pivotPointSignedDistance), projectedDirection.Value);
+	}
+	public Line FastParallelizedWith(Plane plane, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.FastProjectedOnTo(plane));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line OrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane, 0f);
-
-	public Line ParallelizedWith(Plane plane, float pivotPointSignedDistance) {
-		var projectedDirection = Direction.ProjectedOnTo(plane);
-		if (projectedDirection == Direction.None) projectedDirection = Direction; // TODO xmldoc this behaviour
-		return new Line(LocationAtDistance(pivotPointSignedDistance), projectedDirection);
-	}
-	public Line OrthogonalizedAgainst(Plane plane, float pivotPointSignedDistance) {
-		return new Line(LocationAtDistance(pivotPointSignedDistance), Direction.OrthogonalizedAgainst(plane));
-	}
+	public Line OrthogonalizedAgainst(Plane plane, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.OrthogonalizedAgainst(plane));
+	Line? IOrthogonalizable<Line, Plane>.OrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane);
+	Line IOrthogonalizable<Line, Plane>.FastOrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane);
 
 	public bool TrySplit(Plane plane, out Ray outWithLineDir, out Ray outOpposingLineDir) {
 		var intersection = IntersectionWith(plane);

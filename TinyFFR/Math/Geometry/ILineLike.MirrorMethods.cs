@@ -212,23 +212,46 @@ partial struct Plane :
 	IIntersectionDeterminable<Plane, Ray, Ray>,
 	IIntersectionDeterminable<Plane, BoundedRay, BoundedRay> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line ProjectionOf(Line line) => line.ProjectedOnTo(this);
+	public Line? ProjectionOf(Line line) => line.ProjectedOnTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray ProjectionOf(Ray ray) => ray.ProjectedOnTo(this);
+	public Ray? ProjectionOf(Ray ray) => ray.ProjectedOnTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay ProjectionOf(BoundedRay ray) => ray.ProjectedOnTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line FastProjectionOf(Line line) => line.FastProjectedOnTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray FastProjectionOf(Ray ray) => ray.FastProjectedOnTo(this);
+	BoundedRay? IProjectionTarget<BoundedRay>.ProjectionOf(BoundedRay ray) => ProjectionOf(ray);
+	BoundedRay IProjectionTarget<BoundedRay>.FastProjectionOf(BoundedRay ray) => ProjectionOf(ray);
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line OrthogonalizationOf(Line line) => line.OrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray OrthogonalizationOf(Ray ray) => ray.OrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay OrthogonalizationOf(BoundedRay ray) => ray.OrthogonalizedAgainst(this);
+	Line? IOrthogonalizationTarget<Line>.OrthogonalizationOf(Line line) => OrthogonalizationOf(line);
+	Line IOrthogonalizationTarget<Line>.FastOrthogonalizationOf(Line line) => OrthogonalizationOf(line);
+	Ray? IOrthogonalizationTarget<Ray>.OrthogonalizationOf(Ray ray) => OrthogonalizationOf(ray);
+	Ray IOrthogonalizationTarget<Ray>.FastOrthogonalizationOf(Ray ray) => OrthogonalizationOf(ray);
+	BoundedRay? IOrthogonalizationTarget<BoundedRay>.OrthogonalizationOf(BoundedRay ray) => OrthogonalizationOf(ray);
+	BoundedRay IOrthogonalizationTarget<BoundedRay>.FastOrthogonalizationOf(BoundedRay ray) => OrthogonalizationOf(ray);
+
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line ParallelizationOf(Line line) => line.ParallelizedWith(this);
+	public Line? ParallelizationOf(Line line) => line.ParallelizedWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray ParallelizationOf(Ray ray) => ray.ParallelizedWith(this);
+	public Ray? ParallelizationOf(Ray ray) => ray.ParallelizedWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay ParallelizationOf(BoundedRay ray) => ray.ParallelizedWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line FastParallelizationOf(Line line) => line.FastParallelizedWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray FastParallelizationOf(Ray ray) => ray.FastParallelizedWith(this);
+	BoundedRay? IParallelizationTarget<BoundedRay>.ParallelizationOf(BoundedRay ray) => ParallelizationOf(ray);
+	BoundedRay IParallelizationTarget<BoundedRay>.FastParallelizationOf(BoundedRay ray) => ParallelizationOf(ray);
+
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsIntersectedBy(Line line) => line.IsIntersectedBy(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

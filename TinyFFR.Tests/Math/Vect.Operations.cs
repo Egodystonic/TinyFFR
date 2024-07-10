@@ -100,16 +100,13 @@ partial class VectTest {
 	[Test]
 	public void ShouldCorrectlyProjectOnToDirection() {
 		Assert.AreEqual(new Vect(1f, 0f, 0f), new Vect(1f, 1f, 0f).ProjectedOnTo(new Direction(1f, 0f, 0f)));
-		AssertToleranceEquals(new Vect(1.4142f, 0f, 0f), new Vect(1f, 1f, 0f).ProjectedOnTo(new Direction(1f, 0f, 0f), preserveLength: true), TestTolerance);
-		Assert.AreEqual(new Vect(1f, 0f, 0f), new Vect(1f, 1f, 0f).ProjectedOnTo(new Direction(1f, 0f, 0f), preserveLength: false));
+		Assert.AreEqual(new Vect(1f, 0f, 0f), new Vect(1f, 1f, 0f).ProjectedOnTo(new Direction(1f, 0f, 0f)));
 
 		// https://www.wolframalpha.com/input?i=project+%5B14.2%2C+-7.1%2C+8.9%5D+on+to+%5B0.967%2C+0.137%2C+-0.216%5D
-		AssertToleranceEquals(new Vect(10.473f, 1.484f, -2.339f), new Vect(14.2f, -7.1f, 8.9f).ProjectedOnTo(new Direction(0.967f, 0.137f, -0.216f), preserveLength: false), TestTolerance);
-		Assert.AreEqual(new Vect(14.2f, -7.1f, 8.9f).Length, new Vect(14.2f, -7.1f, 8.9f).ProjectedOnTo(new Direction(0.967f, 0.137f, -0.216f), preserveLength: true).Length, TestTolerance);
+		AssertToleranceEquals(new Vect(10.473f, 1.484f, -2.339f), new Vect(14.2f, -7.1f, 8.9f).ProjectedOnTo(new Direction(0.967f, 0.137f, -0.216f)), TestTolerance);
 
 		Assert.AreEqual(Vect.Zero, new Vect(1f, 0f, 0f).ProjectedOnTo(new Direction(0f, 1f, 0f)));
-		Assert.AreEqual(Vect.Zero, new Vect(1f, 0f, 0f).ProjectedOnTo(new Direction(0f, 1f, 0f), preserveLength: true));
-		Assert.AreEqual(Vect.Zero, new Vect(1f, 0f, 0f).ProjectedOnTo(new Direction(0f, 1f, 0f), preserveLength: false));
+		Assert.AreEqual(Vect.Zero, new Vect(1f, 0f, 0f).ProjectedOnTo(new Direction(0f, 1f, 0f)));
 	}
 
 	[Test]

@@ -41,7 +41,7 @@ partial struct Plane :
 	public static Plane operator *((Rotation Rotation, Location Pivot) rotTuple, Plane plane) => plane.RotatedAroundPoint(rotTuple.Rotation, rotTuple.Pivot);
 	public Plane RotatedAroundPoint(Rotation rot, Location pivotPoint) => new(Normal * rot, PointClosestTo(pivotPoint) * (pivotPoint, rot));
 
-	// TODO explain in XML that this is a normalized value from 0 to 1, where 1 is a direction completely perpendicular to the plane and 0 is completely parallel; and is also the cosine of the angle formed with the normal
+	// TODO explain in XML that this is a value from 0 to 1, where 1 is a direction completely perpendicular to the plane and 0 is completely parallel; and is also the cosine of the angle formed with the normal
 	public float PerpendicularityWith(Direction direction) => MathF.Abs(Normal.Dot(direction));
 
 	// TODO I'd like a function here to convert locations to XYPairs on the surface of the plane given a centre point (default PointClosestToOrigin)
@@ -58,15 +58,16 @@ partial struct Plane :
 	public Angle AngleTo(Plane other) => Angle.FromRadians(MathF.Acos(PerpendicularityWith(other.Normal)));
 	public Angle AngleTo(Direction direction) => Angle.FromRadians(MathF.Asin(PerpendicularityWith(direction)));
 	public Angle AngleTo(Vect vect) => AngleTo(vect.Direction);
-	public Direction ReflectionOf(Direction direction) { // TODO explain in XML that this returns the same direction if the input is parallel to the plane
+	public Direction ReflectionOf(Direction direction) { // TODO explain in XML that this returns the same direction if the input is parallel to the plane (this is okay as it's continuous across the whole range, so is the expected answer, just need to note it)
 		return Direction.FromVector3(-2f * Vector3.Dot(Normal.ToVector3(), direction.ToVector3()) * Normal.ToVector3() + direction.ToVector3());
 	}
-	public Vect ReflectionOf(Vect vect) { // TODO explain in XML that this returns the same direction if the input is parallel to the plane
+	public Vect ReflectionOf(Vect vect) { // TODO explain in XML that this returns the same direction if the input is parallel to the plane (this is okay as it's continuous across the whole range, so is the expected answer, just need to note it)
 		return Vect.FromVector3(-2f * Vector3.Dot(Normal.ToVector3(), vect.ToVector3()) * Normal.ToVector3() + vect.ToVector3());
 	}
 	Direction? IReflectionTarget<Direction, Direction>.ReflectionOf(Direction direction) => ReflectionOf(direction);
 	Vect? IReflectionTarget<Vect, Vect>.ReflectionOf(Vect vect) => ReflectionOf(vect);
-	public Direction ParallelizationOf(Direction direction) => direction.OrthogonalizedAgainst(Normal);
+	public Direction? ParallelizationOf(Direction direction) => direction.OrthogonalizedAgainst(Normal);
+	public Direction FastParallelizationOf(Direction direction) => direction.FastOrthogonalizedAgainst(Normal);
 
 	public Location PointClosestTo(Location location) => location - PointClosestToOrigin.VectTo(location).ProjectedOnTo(Normal);
 	public float SignedDistanceFrom(Location location) => Vector3.Dot(location.ToVector3(), _normal) - _smallestDistanceFromOriginAlongNormal; // TODO xmldoc positive means normal faces towards, etc
@@ -139,15 +140,31 @@ partial struct Plane :
 		}
 	}
 
-	public Vect ProjectionOf(Vect vect) => vect - vect.ProjectedOnTo(Normal); // TODO in xmldoc mention that length will be 0 if this is perpendicular, regardless
-	public Vect ParallelizationOf(Vect vect) => ProjectionOf(vect).WithLength(vect.Length); // TODO in xmldoc mention that length will be 0 if this is perpendicular, regardless
+	public Vect FastProjectionOf(Vect vect) => vect - vect.ProjectedOnTo(Normal); // TODO in xmldoc mention that length will be 0 if this is perpendicular
+	public Vect? ProjectionOf(Vect vect) {
+		const float ZeroLengthFloatingPointMargin = 1E-5f;
+		var result = FastProjectionOf(vect);
+		return result.LengthSquared < ZeroLengthFloatingPointMargin ? null : result;
+	}
+	public Vect FastParallelizationOf(Vect vect) => FastProjectionOf(vect).WithLength(vect.Length); // TODO in xmldoc mention that length will be 0 if this is perpendicular
+	public Vect? ParallelizationOf(Vect vect) {
+		const float ZeroLengthFloatingPointMargin = 1E-5f;
+		var result = FastParallelizationOf(vect);
+		return result.LengthSquared < ZeroLengthFloatingPointMargin ? null : result;
+	}
 
-	public Direction ProjectionOf(Direction direction) => direction.OrthogonalizedAgainst(Normal);
+	public Direction FastProjectionOf(Direction direction) => direction.FastOrthogonalizedAgainst(Normal);
+	public Direction? ProjectionOf(Direction direction) => direction.OrthogonalizedAgainst(Normal);
 
 	// TODO xmldoc explain that these two methods will basically just make the vect/dir point either along the normal or opposite, whichever they're closer to
 	public Vect OrthogonalizationOf(Vect vect) => OrthogonalizationOf(vect.Direction) * vect.Length;
+	Vect? IOrthogonalizationTarget<Vect>.OrthogonalizationOf(Vect vect) => OrthogonalizationOf(vect);
+	Vect IOrthogonalizationTarget<Vect>.FastOrthogonalizationOf(Vect vect) => OrthogonalizationOf(vect);
+
 	// Idea here is to pick the closest direction (normal or -normal) and have parallel directions just pick the positive normal, all without branching. There's probably a smarter way to do it but I'm not smart enough to know it
 	public Direction OrthogonalizationOf(Direction direction) => Direction.FromVector3PreNormalized(Normal.ToVector3() * MathF.Sign(direction.Dot(Normal) * 2f + Single.Epsilon));
+	Direction? IOrthogonalizationTarget<Direction>.OrthogonalizationOf(Direction direction) => OrthogonalizationOf(direction);
+	Direction IOrthogonalizationTarget<Direction>.FastOrthogonalizationOf(Direction direction) => OrthogonalizationOf(direction);
 
 	public PlaneObjectRelationship RelationshipTo<TGeo>(TGeo element) where TGeo : IRelatable<Plane, PlaneObjectRelationship> => element.RelationshipTo(this);
 	public bool IsIntersectedBy<TGeo>(TGeo element) where TGeo : IIntersectable<Plane> => element.IsIntersectedBy(this);

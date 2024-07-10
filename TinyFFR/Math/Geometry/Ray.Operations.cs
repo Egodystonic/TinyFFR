@@ -176,19 +176,23 @@ public readonly partial struct Ray {
 		};
 	}
 
-	public Ray ProjectedOnTo(Plane plane) {
+	public Ray? ProjectedOnTo(Plane plane) {
 		var projectedDirection = Direction.ProjectedOnTo(plane);
-		if (projectedDirection == Direction.None) projectedDirection = Direction;
-		return new Ray(StartPoint.ClosestPointOn(plane), projectedDirection);
+		if (projectedDirection == null) return null;
+		return new Ray(StartPoint.ClosestPointOn(plane), projectedDirection.Value);
 	}
-	public Ray ParallelizedWith(Plane plane) {
+	public Ray FastProjectedOnTo(Plane plane) => new(StartPoint.ClosestPointOn(plane), Direction.FastProjectedOnTo(plane));
+
+	public Ray? ParallelizedWith(Plane plane) {
 		var projectedDirection = Direction.ProjectedOnTo(plane);
-		if (projectedDirection == Direction.None) projectedDirection = Direction;
-		return new Ray(StartPoint, projectedDirection);
+		if (projectedDirection == null) return null;
+		return new Ray(StartPoint, projectedDirection.Value);
 	}
-	public Ray OrthogonalizedAgainst(Plane plane) {
-		return new Ray(StartPoint, Direction.OrthogonalizedAgainst(plane));
-	}
+	public Ray FastParallelizedWith(Plane plane) => new(StartPoint, Direction.FastProjectedOnTo(plane));
+
+	public Ray OrthogonalizedAgainst(Plane plane) => new(StartPoint, Direction.OrthogonalizedAgainst(plane));
+	Ray? IOrthogonalizable<Ray, Plane>.OrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane);
+	Ray IOrthogonalizable<Ray, Plane>.FastOrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane);
 
 	public bool TrySplit(Plane plane, out BoundedRay outStartPointToPlane, out Ray outPlaneToInfinity) {
 		var intersection = IntersectionWith(plane);

@@ -6,6 +6,8 @@ using static System.Numerics.Vector4;
 
 namespace Egodystonic.TinyFFR;
 
+public readonly record struct NearestOrientationResult<TOrientation>(TOrientation AsEnum, Direction AsDirection) where TOrientation : Enum;
+
 partial struct Direction :
 	IInvertible<Direction>,
 	IMultiplyOperators<Direction, float, Vect>,
@@ -15,7 +17,10 @@ partial struct Direction :
 	IVectorProductSpace<Direction>,
 	IAngleMeasurable<Direction, Direction>,
 	ITransitionRepresentable<Direction, Rotation>,
-	IRotatable<Direction> {
+	IRotatable<Direction>,
+	IOrthogonalizable<Direction, Direction>,
+	IProjectionTarget<Direction, Vect>,
+	IOrthogonalizationTarget<Direction, Vect> {
 	public float this[Axis axis] => axis switch {
 		Axis.X => X,
 		Axis.Y => Y,
@@ -40,29 +45,28 @@ partial struct Direction :
 		get => new(-AsVector4);
 	}
 
-	// TODO make these a proper record struct type. ValueTuples shouldn't be public (they're mutable and just meh)
-	public (CardinalOrientation3D AsEnum, Direction AsDirection) NearestOrientationCardinal {
+	public NearestOrientationResult<CardinalOrientation3D> NearestOrientationCardinal {
 		get {
 			GetNearestDirectionAndOrientation(this, AllCardinals, out var e, out var d);
-			return ((CardinalOrientation3D) e, d);
+			return new((CardinalOrientation3D) e, d);
 		}
 	}
-	public (IntercardinalOrientation3D AsEnum, Direction AsDirection) NearestOrientationIntercardinal {
+	public NearestOrientationResult<IntercardinalOrientation3D> NearestOrientationIntercardinal {
 		get {
 			GetNearestDirectionAndOrientation(this, AllIntercardinals, out var e, out var d);
-			return ((IntercardinalOrientation3D) e, d);
+			return new((IntercardinalOrientation3D) e, d);
 		}
 	}
-	public (DiagonalOrientation3D AsEnum, Direction AsDirection) NearestOrientationDiagonal {
+	public NearestOrientationResult<DiagonalOrientation3D> NearestOrientationDiagonal {
 		get {
 			GetNearestDirectionAndOrientation(this, AllDiagonals, out var e, out var d);
-			return ((DiagonalOrientation3D) e, d);
+			return new((DiagonalOrientation3D) e, d);
 		}
 	}
-	public (Orientation3D AsEnum, Direction AsDirection) NearestOrientation {
+	public NearestOrientationResult<Orientation3D> NearestOrientation {
 		get {
 			GetNearestDirectionAndOrientation(this, AllOrientations, out var e, out var d);
-			return (e, d);
+			return new(e, d);
 		}
 	}
 
@@ -70,11 +74,11 @@ partial struct Direction :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect AsVect() => (Vect) this;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator *(Direction directionOperand, float scalarOperand) => directionOperand.ToVect(scalarOperand);
+	public static Vect operator *(Direction directionOperand, float scalarOperand) => directionOperand.AsVect(scalarOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator *(float scalarOperand, Direction directionOperand) => directionOperand.ToVect(scalarOperand);
+	public static Vect operator *(float scalarOperand, Direction directionOperand) => directionOperand.AsVect(scalarOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect ToVect(float length) => new(AsVector4 * length);
+	public Vect AsVect(float length) => new(AsVector4 * length);
 
 
 	// TODO in XMLDoc indicate that this is the dot product of the two directions, and that therefore the range is 1 for identical, to -1 for complete opposite, with 0 being orthogonal; and that this is the cosine of the angle
@@ -101,7 +105,7 @@ partial struct Direction :
 		));
 	}
 
-	public Direction OrthogonalizedAgainst(Direction d) {
+	public Direction? OrthogonalizedAgainst(Direction d) {
 		const float DotProductFloatingPointErrorMargin = 1E-4f;
 		const float ResultLengthSquaredMin = 1E-5f;
 		var dot = Vector4.Dot(AsVector4, d.AsVector4);
@@ -112,9 +116,19 @@ partial struct Direction :
 			_ => dot
 		};
 		var nonNormalizedResult = AsVector4 - d.AsVector4 * dot;
-		if (nonNormalizedResult.LengthSquared() < ResultLengthSquaredMin) return None;
+		if (nonNormalizedResult.LengthSquared() < ResultLengthSquaredMin) return null;
 		else return new(Normalize(nonNormalizedResult));
 	}
+	public Direction FastOrthogonalizedAgainst(Direction d) => new(Normalize(AsVector4 - d.AsVector4 * Vector4.Dot(AsVector4, d.AsVector4)));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect? OrthogonalizationOf(Vect v) => v.OrthogonalizedAgainst(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect FastOrthogonalizationOf(Vect v) => v.FastOrthogonalizedAgainst(this);
+
+	Vect ProjectionOf(Vect v) => v.ProjectedOnTo(this);
+	Vect? IProjectionTarget<Vect>.ProjectionOf(Vect v) => ProjectionOf(v);
+	Vect IProjectionTarget<Vect>.FastProjectionOf(Vect v) => ProjectionOf(v);
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

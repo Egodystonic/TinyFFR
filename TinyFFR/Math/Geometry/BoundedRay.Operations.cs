@@ -1,6 +1,8 @@
 ﻿// Created on 2024-03-01 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Numerics;
+
 namespace Egodystonic.TinyFFR;
 
 partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay> {
@@ -227,23 +229,24 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 		};
 	}
 
-	public BoundedRay ProjectedOnTo(Plane plane) {
-		return new BoundedRay(StartPoint.ClosestPointOn(plane), EndPoint.ClosestPointOn(plane));
-	}
+	public BoundedRay ProjectedOnTo(Plane plane) => new(StartPoint.ClosestPointOn(plane), EndPoint.ClosestPointOn(plane)); // TODO in xmldoc mention that length will be 0 if this is perpendicular (correct & acceptable, but noteworthy)
+	BoundedRay? IProjectable<BoundedRay, Plane>.ProjectedOnTo(Plane plane) => ProjectedOnTo(plane);
+	BoundedRay IProjectable<BoundedRay, Plane>.FastProjectedOnTo(Plane plane) => ProjectedOnTo(plane);
 	public BoundedRay ProjectedOnTo(Plane plane, bool preserveLength) {
 		if (!preserveLength) return ProjectedOnTo(plane);
-		var newVect = StartToEndVect.ParallelizedWith(plane);
-		if (newVect.LengthSquared == 0f && LengthSquared > 0f) newVect = StartToEndVect;
-		return new BoundedRay(StartPoint.ClosestPointOn(plane), newVect);
+		return new BoundedRay(StartPoint.ClosestPointOn(plane), StartToEndVect.ParallelizedWith(plane) ?? Vect.Zero);
 	}
-	public BoundedRay ParallelizedWith(Plane plane) { // TODO in xmldoc mention that length will be 0 if this is perpendicular, regardless
-		var newVect = StartToEndVect.ParallelizedWith(plane);
-		if (newVect.LengthSquared == 0f && LengthSquared > 0f) newVect = StartToEndVect;
+
+	public BoundedRay ParallelizedWith(Plane plane) { // TODO in xmldoc mention that length will be 0 if this is perpendicular (correct & acceptable, but noteworthy)
+		var newVect = StartToEndVect.FastParallelizedWith(plane);
 		return new BoundedRay(StartPoint, newVect);
 	}
-	public BoundedRay OrthogonalizedAgainst(Plane plane) {
-		return new BoundedRay(StartPoint, StartToEndVect.OrthogonalizedAgainst(plane));
-	}
+	BoundedRay? IParallelizable<BoundedRay, Plane>.ParallelizedWith(Plane plane) => ParallelizedWith(plane);
+	BoundedRay IParallelizable<BoundedRay, Plane>.FastParallelizedWith(Plane plane) => ParallelizedWith(plane);
+
+	public BoundedRay OrthogonalizedAgainst(Plane plane) => new(StartPoint, StartToEndVect.OrthogonalizedAgainst(plane));
+	BoundedRay? IOrthogonalizable<BoundedRay, Plane>.OrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane);
+	BoundedRay IOrthogonalizable<BoundedRay, Plane>.FastOrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane);
 
 	public Location PointClosestTo(Plane plane) {
 		var unboundedDistance = GetUnboundedPlaneIntersectionDistance(plane);

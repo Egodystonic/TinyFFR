@@ -78,34 +78,40 @@ public interface ILineReflectionTarget : IReflectionTarget<Line, Ray>, IReflecti
 interface IReflectionTarget<in TSelf, in TOther, TReflection> : IReflectionTarget<TOther, TReflection> where TOther : IReflectable<TSelf, TReflection> where TSelf : IReflectionTarget<TOther, TReflection> where TReflection : struct;
 
 
-public interface IProjectable<out TSelf, in TOther> {
-	TSelf ProjectedOnTo(TOther element);
+public interface IProjectable<TSelf, in TOther> where TSelf : struct {
+	TSelf? ProjectedOnTo(TOther element);
+	TSelf FastProjectedOnTo(TOther element);
 }
-public interface IProjectionTarget<TOther> {
-	TOther ProjectionOf(TOther element);
+public interface IProjectionTarget<TOther> where TOther : struct {
+	TOther? ProjectionOf(TOther element);
+	TOther FastProjectionOf(TOther element);
 }
 public interface ILineProjectionTarget : IProjectionTarget<Line>, IProjectionTarget<Ray>, IProjectionTarget<BoundedRay>;
-interface IProjectionTarget<in TSelf, TOther> : IProjectionTarget<TOther> where TOther : IProjectable<TOther, TSelf> where TSelf : IProjectionTarget<TOther>;
+interface IProjectionTarget<in TSelf, TOther> : IProjectionTarget<TOther> where TOther : struct, IProjectable<TOther, TSelf> where TSelf : IProjectionTarget<TOther>;
 
 
-public interface IParallelizable<out TSelf, in TOther> {
-	TSelf ParallelizedWith(TOther element);
+public interface IParallelizable<TSelf, in TOther> where TSelf : struct {
+	TSelf? ParallelizedWith(TOther element);
+	TSelf FastParallelizedWith(TOther element);
 }
-public interface IParallelizationTarget<TOther> {
-	TOther ParallelizationOf(TOther element);
+public interface IParallelizationTarget<TOther> where TOther : struct {
+	TOther? ParallelizationOf(TOther element);
+	TOther FastParallelizationOf(TOther element);
 }
 public interface ILineParallelizationTarget : IParallelizationTarget<Line>, IParallelizationTarget<Ray>, IParallelizationTarget<BoundedRay>;
-interface IParallelizationTarget<in TSelf, TOther> : IParallelizationTarget<TOther> where TOther : IParallelizable<TOther, TSelf> where TSelf : IParallelizationTarget<TOther>;
+interface IParallelizationTarget<in TSelf, TOther> : IParallelizationTarget<TOther> where TOther : struct, IParallelizable<TOther, TSelf> where TSelf : IParallelizationTarget<TOther>;
 
 
-public interface IOrthogonalizable<out TSelf, in TOther> {
-	TSelf OrthogonalizedAgainst(TOther element);
+public interface IOrthogonalizable<TSelf, in TOther> where TSelf : struct {
+	TSelf? OrthogonalizedAgainst(TOther element);
+	TSelf FastOrthogonalizedAgainst(TOther element);
 }
-public interface IOrthogonalizationTarget<TOther> {
-	TOther OrthogonalizationOf(TOther element);
+public interface IOrthogonalizationTarget<TOther> where TOther : struct {
+	TOther? OrthogonalizationOf(TOther element);
+	TOther FastOrthogonalizationOf(TOther element);
 }
 public interface ILineOrthogonalizationTarget : IOrthogonalizationTarget<Line>, IOrthogonalizationTarget<Ray>, IOrthogonalizationTarget<BoundedRay>;
-interface IOrthogonalizationTarget<in TSelf, TOther> : IOrthogonalizationTarget<TOther> where TOther : IOrthogonalizable<TOther, TSelf> where TSelf : IOrthogonalizationTarget<TOther>;
+interface IOrthogonalizationTarget<in TSelf, TOther> : IOrthogonalizationTarget<TOther> where TOther : struct, IOrthogonalizable<TOther, TSelf> where TSelf : IOrthogonalizationTarget<TOther>;
 #endregion
 
 #region Distance measurable

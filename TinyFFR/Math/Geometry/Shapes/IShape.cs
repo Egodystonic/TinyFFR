@@ -5,12 +5,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Egodystonic.TinyFFR;
 
-public enum PlaneObjectRelationship {
-	PlaneIntersectsObject,
-	PlaneFacesTowardsObject,
-	PlaneFacesAwayFromObject
-}
-
 public readonly record struct ConvexShapeLineIntersection(Location First, Location? Second) {
 	public Location First { get; } = First;
 	public Location? Second { get; } = Second;

@@ -50,12 +50,12 @@ partial class DirectionTest {
 		Assert.AreEqual(Vect.Zero, Direction.None.AsVect());
 		Assert.AreEqual(Vect.WValue, OneTwoNegThree.AsVect().AsVector4.W);
 
-		Assert.AreEqual(new Vect(1f, 2f, -3f).WithLength(10f), OneTwoNegThree.ToVect(10f));
-		Assert.AreEqual(OneTwoNegThree.ToVect(10f), OneTwoNegThree * 10f);
-		Assert.AreEqual(OneTwoNegThree.ToVect(10f), 10f * OneTwoNegThree);
+		Assert.AreEqual(new Vect(1f, 2f, -3f).WithLength(10f), OneTwoNegThree.AsVect(10f));
+		Assert.AreEqual(OneTwoNegThree.AsVect(10f), OneTwoNegThree * 10f);
+		Assert.AreEqual(OneTwoNegThree.AsVect(10f), 10f * OneTwoNegThree);
 		Assert.AreEqual(Vect.Zero, 10f * Direction.None);
-		Assert.AreEqual(Vect.WValue, OneTwoNegThree.ToVect(10f).AsVector4.W);
-		Assert.AreEqual(Vect.WValue, Direction.None.ToVect(10f).AsVector4.W);
+		Assert.AreEqual(Vect.WValue, OneTwoNegThree.AsVect(10f).AsVector4.W);
+		Assert.AreEqual(Vect.WValue, Direction.None.AsVect(10f).AsVector4.W);
 	}
 
 	[Test]

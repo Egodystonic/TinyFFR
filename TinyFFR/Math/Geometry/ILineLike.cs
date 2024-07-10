@@ -58,10 +58,6 @@ public partial interface ILineLike :
 	sealed Ray CoerceToRay() => new(StartPoint, Direction);
 	sealed BoundedRay CoerceToBoundedRay(float length) => BoundedRay.FromStartPointAndVect(StartPoint, Direction * length);
 
-	// TODO static methods for generic usage of ILineLike interfaces with TLines (maybe defined on ILineLike<TSelf>? would make sense I think... Do they even need to be static, or can they be implemented as instance methods on the interface?)
-	// Could we move our internal statics below on to that? The thing about making them non-static is that means we sometimes might need to cast to the generic interface, so I don't like that
-	// Make it statics so we don't have overload resolution issues
-
 	protected internal static float? CalculateUnboundedIntersectionDistanceOnThisLine<TThis, TOther>(TThis @this, TOther other) where TThis : ILineLike where TOther : ILineLike {
 		const float ParallelTolerance = 1E-7f;
 
@@ -116,5 +112,5 @@ public interface ILineLike<TSelf> : ILineLike,
 	IProjectable<TSelf, Plane>,
 	IParallelizable<TSelf, Plane>,
 	IOrthogonalizable<TSelf, Plane>
-	where TSelf : ILineLike<TSelf>;
-public interface ILineLike<TSelf, TSplit> : IReflectable<Plane, TSplit>, IIntersectionDeterminable<Plane, TSplit>, ILineLike<TSelf> where TSelf : ILineLike<TSelf> where TSplit : struct, ILineLike<TSplit>;
+	where TSelf : struct, ILineLike<TSelf>;
+public interface ILineLike<TSelf, TSplit> : IReflectable<Plane, TSplit>, IIntersectionDeterminable<Plane, TSplit>, ILineLike<TSelf> where TSelf : struct, ILineLike<TSelf> where TSplit : struct, ILineLike<TSplit>;

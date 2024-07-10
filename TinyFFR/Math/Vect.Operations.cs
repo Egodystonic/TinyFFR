@@ -12,7 +12,9 @@ partial struct Vect :
 	IRotatable<Vect>,
 	IInnerProductSpace<Vect>,
 	IVectorProductSpace<Vect>,
-	ILengthAdjustable<Vect> {
+	ILengthAdjustable<Vect>,
+	IOrthogonalizable<Vect, Direction>,
+	IProjectable<Vect, Direction> {
 	internal const float DefaultRandomRange = 100f;
 
 	public float this[Axis axis] => axis switch {
@@ -97,14 +99,15 @@ partial struct Vect :
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect ProjectedOnTo(Direction d) => d * LengthWhenProjectedOnTo(d);
-	public Vect ProjectedOnTo(Direction d, bool preserveLength) {
-		var projectedVect = ProjectedOnTo(d);
-		if (!preserveLength) return projectedVect;
-		else return projectedVect.WithLength(Length);
+	Vect? IProjectable<Vect, Direction>.ProjectedOnTo(Direction d) => ProjectedOnTo(d);
+	Vect IProjectable<Vect, Direction>.FastProjectedOnTo(Direction d) => ProjectedOnTo(d);
+
+	public Vect? OrthogonalizedAgainst(Direction d) {
+		var orthogonalizedDir = Direction.OrthogonalizedAgainst(d);
+		return orthogonalizedDir == null ? null : orthogonalizedDir * Length;
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect OrthogonalizedAgainst(Direction d) => Direction.OrthogonalizedAgainst(d) * Length;
-
+	public Vect FastOrthogonalizedAgainst(Direction d) => Direction.FastOrthogonalizedAgainst(d) * Length;
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -115,7 +118,7 @@ partial struct Vect :
 	public Vect RotatedBy(Rotation rotation) => rotation.Rotate(this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location AsLocationFromOrigin() => (Location) this;
+	public Location AsLocation() => (Location) this;
 
 
 
@@ -147,7 +150,7 @@ partial struct Vect :
 		return start + (end - start) * distance;
 	}
 
-	public Vect Clamp(Vect min, Vect max) => AsLocationFromOrigin().ClosestPointOn(new BoundedRay(min.AsLocationFromOrigin(), max.AsLocationFromOrigin())).AsVect();
+	public Vect Clamp(Vect min, Vect max) => AsLocation().ClosestPointOn(new BoundedRay(min.AsLocation(), max.AsLocation())).AsVect();
 
 	public static Vect CreateNewRandom() {
 		return new Vect(

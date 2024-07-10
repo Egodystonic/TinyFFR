@@ -43,7 +43,12 @@ partial struct OriginSphere {
 		if (vectFromLocToCentre.LengthSquared <= RadiusSquared) return location;
 		else return location - vectFromLocToCentre.ShortenedBy(Radius);
 	}
-	public Location SurfacePointClosestTo(Location location) { // TODO xmldoc that if location == Origin this will return Origin (or we should add an overload?)
+	public Location SurfacePointClosestTo(Location location) {
+		var vectFromLocToCentre = (Vect) location;
+		if (vectFromLocToCentre == Vect.Zero) return new(0f, Radius, 0f);
+		return (Location) vectFromLocToCentre.WithLength(Radius);
+	}
+	public Location FastSurfacePointClosestTo(Location location) { // TODO xmldoc that if location == Origin this will return Origin
 		var vectFromLocToCentre = (Vect) location;
 		return (Location) vectFromLocToCentre.WithLength(Radius);
 	}

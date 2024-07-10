@@ -11,16 +11,6 @@ partial struct Rotation :
 	IAngleMeasurable<Rotation, Rotation>,
 	IScalable<Rotation>,
 	IInterpolatable<Rotation> {
-	static Vector4 Rotate(Quaternion q, Vector4 v) {
-		var quatVec = new Vector3(q.X, q.Y, q.Z);
-		var targetVec = new Vector3(v.X, v.Y, v.Z);
-		var t = Vector3.Cross(quatVec, targetVec) * 2f;
-		return new Vector4(
-			targetVec + q.W * t + Vector3.Cross(quatVec, t),
-			v.W
-		);
-	}
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator -(Rotation operand) => operand.Inverted;
 	public Rotation Inverted {
@@ -45,7 +35,7 @@ partial struct Rotation :
 
 	// We provide this as a probably more intuitive way of adding rotations, even if it's not the arithmetic operation used to combine quaternions.
 	// Ultimately this type is meant to be an abstraction of a Rotation, not a Quaternion, which is a type I don't want users to have to care about or even know about if they don't want to.
-	// Notice that (lhs + rhs) is the OPPOSITE of (lhs.AsQuaternion * rhs.AsQuaternion) (see how we multiply other.AsQuaternion by this.AsQuaternion in Plus())
+	// Notice, for example, that (lhs + rhs) is the OPPOSITE of (lhs.AsQuaternion * rhs.AsQuaternion) (see how we multiply other.AsQuaternion by this.AsQuaternion in Plus())
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator +(Rotation lhs, Rotation rhs) => lhs.Plus(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -68,7 +58,7 @@ partial struct Rotation :
 	public static Rotation operator *(float scalar, Rotation rotation) => rotation.ScaledBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator /(Rotation rotation, float scalar) => rotation.ScaledBy(1f / scalar);
-	public Rotation ScaledBy(float scalar) {
+	public Rotation ScaledBy(float scalar) { // Quaternion exponentiation
 		const float FloatingPointErrorMargin = 1E-4f;
 
 		var halfAngleRadians = MathF.Acos(AsQuaternion.W);
@@ -93,17 +83,17 @@ partial struct Rotation :
 	public static Rotation Interpolate(Rotation start, Rotation end, float distance) {
 		const float CosPhiMinForLinearRenormalization = 1f - 0.001f;
 		return MathF.Abs(Dot(start.AsQuaternion, end.AsQuaternion)) > CosPhiMinForLinearRenormalization
-			? InterpolateLinear(start, end, distance)
-			: InterpolateSpherical(start, end, distance);
+			? ApproximatelyInterpolate(start, end, distance)
+			: AccuratelyInterpolate(start, end, distance);
 	}
-	public static Rotation InterpolateSpherical(Rotation start, Rotation end, float distance) {
+	public static Rotation AccuratelyInterpolate(Rotation start, Rotation end, float distance) { // Quaternion slerp
 		return FromQuaternionPreNormalized(Slerp(start.AsQuaternion, end.AsQuaternion, distance));
 	}
-	public static Rotation InterpolateLinear(Rotation start, Rotation end, float distance) {
+	public static Rotation ApproximatelyInterpolate(Rotation start, Rotation end, float distance) { // Vector lerp
 		return FromQuaternion(start.AsQuaternion + (end.AsQuaternion - start.AsQuaternion) * distance);
 	}
-	public static Rotation Interpolate(Angle start, Angle end, Direction axis, float distance) {
-		return new(Angle.Interpolate(start, end, distance), axis);
+	public static Rotation Interpolate(Angle startAngle, Angle endAngle, Direction axis, float distance) {
+		return new(Angle.Interpolate(startAngle, endAngle, distance), axis);
 	}
 
 	public Rotation Clamp(Rotation min, Rotation max) {
@@ -124,5 +114,15 @@ partial struct Rotation :
 	public static Rotation CreateNewRandom(Rotation minInclusive, Rotation maxExclusive) {
 		var difference = minInclusive.Minus(maxExclusive);
 		return minInclusive + difference.ScaledBy(RandomUtils.NextSingle());
+	}
+
+	static Vector4 Rotate(Quaternion q, Vector4 v) {
+		var quatVec = new Vector3(q.X, q.Y, q.Z);
+		var targetVec = new Vector3(v.X, v.Y, v.Z);
+		var t = Vector3.Cross(quatVec, targetVec) * 2f;
+		return new Vector4(
+			targetVec + q.W * t + Vector3.Cross(quatVec, t),
+			v.W
+		);
 	}
 }

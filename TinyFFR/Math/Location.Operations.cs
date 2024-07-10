@@ -49,10 +49,6 @@ partial struct Location :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction DirectionTo(Location otherLocation) => VectTo(otherLocation).Direction;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect VectFromOrigin() => (Vect) this;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect VectToOrigin() => -((Vect) this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect AsVect() => (Vect) this;
 
 	public static Location operator *(Location locationToRotate, (Location Pivot, Rotation Rotation) pivotRotationTuple) => locationToRotate.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);

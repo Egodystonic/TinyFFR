@@ -43,10 +43,6 @@ partial class LocationTest {
 		AssertCombination(Location.Origin, OneTwoNegThree, new(1f, 2f, -3f));
 		AssertCombination(OneTwoNegThree, Location.Origin, new(-1f, -2f, 3f));
 		AssertCombination(new(0.5f, -14f, 7.6f), new(9.2f, 17f, -0.1f), new(8.7f, 31f, -7.7f));
-		Assert.AreEqual(OneTwoNegThree.VectFrom(Location.Origin), OneTwoNegThree.VectFromOrigin());
-		Assert.AreEqual(OneTwoNegThree.VectTo(Location.Origin), OneTwoNegThree.VectToOrigin());
-		Assert.AreEqual(new Vect(-1f, -2f, 3f), OneTwoNegThree.VectToOrigin());
-		Assert.AreEqual(new Vect(1f, 2f, -3f), OneTwoNegThree.VectFromOrigin());
 	}
 
 	[Test]

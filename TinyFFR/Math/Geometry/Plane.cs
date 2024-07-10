@@ -6,6 +6,12 @@ using System.Diagnostics;
 
 namespace Egodystonic.TinyFFR;
 
+public enum PlaneObjectRelationship {
+	PlaneIntersectsObject,
+	PlaneFacesTowardsObject,
+	PlaneFacesAwayFromObject
+}
+
 [DebuggerDisplay("{ToStringDescriptive()}")]
 public readonly partial struct Plane : IMathPrimitive<Plane>, IDescriptiveStringProvider {
 	public const float DefaultPlaneThickness = ILineLike.DefaultLineThickness;
