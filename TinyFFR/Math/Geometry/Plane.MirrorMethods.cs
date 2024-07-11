@@ -34,9 +34,9 @@ partial struct Direction : IAngleMeasurable<Plane>, IReflectable<Plane, Directio
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction FastParallelizedWith(Plane plane) => plane.FastParallelizationOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction OrthogonalizedAgainst(Plane plane) => plane.OrthogonalizationOf(this);
-	Direction? IOrthogonalizable<Direction, Plane>.OrthogonalizedAgainst(Plane plane) => plane.OrthogonalizationOf(this);
-	Direction IOrthogonalizable<Direction, Plane>.FastOrthogonalizedAgainst(Plane plane) => plane.OrthogonalizationOf(this);
+	public Direction? OrthogonalizedAgainst(Plane plane) => plane.OrthogonalizationOf(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction FastOrthogonalizedAgainst(Plane plane) => plane.FastOrthogonalizationOf(this);
 }
 partial struct Vect : IAngleMeasurable<Plane>, IReflectable<Plane, Vect>, IProjectable<Vect, Plane>, IParallelizable<Vect, Plane>, IOrthogonalizable<Vect, Plane> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -53,7 +53,7 @@ partial struct Vect : IAngleMeasurable<Plane>, IReflectable<Plane, Vect>, IProje
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect FastParallelizedWith(Plane plane) => plane.FastParallelizationOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect OrthogonalizedAgainst(Plane plane) => plane.OrthogonalizationOf(this);
-	Vect? IOrthogonalizable<Vect, Plane>.OrthogonalizedAgainst(Plane plane) => plane.OrthogonalizationOf(this);
-	Vect IOrthogonalizable<Vect, Plane>.FastOrthogonalizedAgainst(Plane plane) => plane.OrthogonalizationOf(this);
+	public Vect? OrthogonalizedAgainst(Plane plane) => plane.OrthogonalizationOf(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect FastOrthogonalizedAgainst(Plane plane) => plane.FastOrthogonalizationOf(this);
 }

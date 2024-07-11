@@ -108,6 +108,7 @@ partial struct Direction :
 	public Direction? OrthogonalizedAgainst(Direction d) {
 		const float DotProductFloatingPointErrorMargin = 1E-4f;
 		const float ResultLengthSquaredMin = 1E-5f;
+		if (d == None) return null;
 		var dot = Vector4.Dot(AsVector4, d.AsVector4);
 		// These checks are important to protect against fp inaccuracy with cases where we're orthogonalizing against the self or reverse of self etc
 		dot = MathF.Abs(dot) switch {

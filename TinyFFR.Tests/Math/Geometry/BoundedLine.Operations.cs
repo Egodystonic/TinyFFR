@@ -1359,22 +1359,6 @@ partial class BoundedRayTest {
 			BoundedRay.FromStartPointAndVect(new Location(10f, 1f, 0f), Direction.Right * 100f / MathF.Sqrt(2f)),
 			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f) * 100f).ProjectedOnTo(plane)
 		);
-		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 1f, 0f), Direction.Left * 100f),
-			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), new Direction(1f, 1f, 0f) * 100f).ProjectedOnTo(plane, preserveLength: true)
-		);
-		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 1f, 0f), Direction.Right * 100f),
-			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), new Direction(-1f, 1f, 0f) * 100f).ProjectedOnTo(plane, preserveLength: true)
-		);
-		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 1f, 0f), Direction.Left * 100f),
-			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), new Direction(1f, -1f, 0f) * 100f).ProjectedOnTo(plane, preserveLength: true)
-		);
-		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 1f, 0f), Direction.Right * 100f),
-			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f) * 100f).ProjectedOnTo(plane, preserveLength: true)
-		);
 
 		// Various projections from in front the plane
 		Assert.AreEqual(
@@ -1401,22 +1385,6 @@ partial class BoundedRayTest {
 			BoundedRay.FromStartPointAndVect(new Location(10f, 1f, 0f), Direction.Right * 100f / MathF.Sqrt(2f)),
 			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f) * 100f).ProjectedOnTo(plane)
 		);
-		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 1f, 0f), Direction.Left * 100f),
-			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), new Direction(1f, 1f, 0f) * 100f).ProjectedOnTo(plane, preserveLength: true)
-		);
-		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 1f, 0f), Direction.Right * 100f),
-			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), new Direction(-1f, 1f, 0f) * 100f).ProjectedOnTo(plane, preserveLength: true)
-		);
-		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 1f, 0f), Direction.Left * 100f),
-			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), new Direction(1f, -1f, 0f) * 100f).ProjectedOnTo(plane, preserveLength: true)
-		);
-		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 1f, 0f), Direction.Right * 100f),
-			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f) * 100f).ProjectedOnTo(plane, preserveLength: true)
-		);
 
 		// Projections from perpendicular directions
 		Assert.AreEqual(
@@ -1434,22 +1402,6 @@ partial class BoundedRayTest {
 		Assert.AreEqual(
 			BoundedRay.FromStartPointAndVect(new Location(10f, 1f, 0f), Vect.Zero),
 			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Down * 100f).ProjectedOnTo(plane)
-		);
-		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 1f, 0f), Direction.Up * 100f),
-			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Up * 100f).ProjectedOnTo(plane, preserveLength: true)
-		);
-		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 1f, 0f), Direction.Down * 100f),
-			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Down * 100f).ProjectedOnTo(plane, preserveLength: true)
-		);
-		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 1f, 0f), Direction.Up * 100f),
-			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Up * 100f).ProjectedOnTo(plane, preserveLength: true)
-		);
-		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 1f, 0f), Direction.Down * 100f),
-			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Down * 100f).ProjectedOnTo(plane, preserveLength: true)
 		);
 	}
 
@@ -1482,6 +1434,30 @@ partial class BoundedRayTest {
 			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Right * 100f),
 			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f) * 100f).ParallelizedWith(plane)
 		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Left * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Left * 100f).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Right * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Right * 100f).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Left * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), new Direction(1f, 1f, 0f) * 100f).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Right * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), new Direction(-1f, 1f, 0f) * 100f).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Left * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), new Direction(1f, -1f, 0f) * 100f).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Right * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f) * 100f).FastParallelizedWith(plane)
+		);
 
 		// Various parallelizations from in front the plane
 		Assert.AreEqual(
@@ -1508,22 +1484,46 @@ partial class BoundedRayTest {
 			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Right * 100f),
 			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f) * 100f).ParallelizedWith(plane)
 		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Left * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Left * 100f).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Right * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Right * 100f).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Left * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), new Direction(1f, 1f, 0f) * 100f).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Right * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), new Direction(-1f, 1f, 0f) * 100f).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Left * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), new Direction(1f, -1f, 0f) * 100f).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Right * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f) * 100f).FastParallelizedWith(plane)
+		);
 
 		// Projections from parallelizations directions
 		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Up * 100f),
+			null,
 			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Up * 100f).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Down * 100f),
+			null,
 			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Down * 100f).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Up * 100f),
+			null,
 			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Up * 100f).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Down * 100f),
+			null,
 			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Down * 100f).ParallelizedWith(plane)
 		);
 	}
@@ -1534,11 +1534,11 @@ partial class BoundedRayTest {
 
 		// Various orthogonalizations from behind the plane
 		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Up * 100f),
+			null,
 			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Left * 100f).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Up * 100f),
+			null,
 			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Right * 100f).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
@@ -1557,14 +1557,30 @@ partial class BoundedRayTest {
 			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Down * 100f),
 			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f) * 100f).OrthogonalizedAgainst(plane)
 		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Up * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), new Direction(1f, 1f, 0f) * 100f).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Up * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), new Direction(-1f, 1f, 0f) * 100f).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Down * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), new Direction(1f, -1f, 0f) * 100f).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Down * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f) * 100f).FastOrthogonalizedAgainst(plane)
+		);
 
 		// Various orthogonalizations from in front the plane
 		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Up * 100f),
+			null,
 			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Left * 100f).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Up * 100f),
+			null,
 			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Right * 100f).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
@@ -1583,6 +1599,22 @@ partial class BoundedRayTest {
 			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Down * 100f),
 			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f) * 100f).OrthogonalizedAgainst(plane)
 		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Up * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), new Direction(1f, 1f, 0f) * 100f).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Up * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), new Direction(-1f, 1f, 0f) * 100f).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Down * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), new Direction(1f, -1f, 0f) * 100f).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Down * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f) * 100f).FastOrthogonalizedAgainst(plane)
+		);
 
 		// Orthogonalizations from perpendicular directions
 		Assert.AreEqual(
@@ -1600,6 +1632,22 @@ partial class BoundedRayTest {
 		Assert.AreEqual(
 			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Down * 100f),
 			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Down * 100f).OrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Up * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Up * 100f).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Down * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 2f, 0f), Direction.Down * 100f).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Up * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Up * 100f).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Down * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(10f, 0f, 0f), Direction.Down * 100f).FastOrthogonalizedAgainst(plane)
 		);
 	}
 

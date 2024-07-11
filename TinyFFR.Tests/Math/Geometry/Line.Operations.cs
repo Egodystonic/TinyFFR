@@ -712,7 +712,31 @@ partial class LineTest {
 			new Line(new Location(0f, 1f, 0f), Direction.Right),
 			new Line(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 0f)).ProjectedOnTo(plane)
 		);
-	
+		Assert.AreEqual(
+			new Line(new Location(0f, 1f, 0f), Direction.Left),
+			new Line(new Location(0f, 0f, 0f), Direction.Left).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 1f, 0f), Direction.Right),
+			new Line(new Location(0f, 0f, 0f), Direction.Right).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 1f, 0f), Direction.Left),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, 1f, 0f)).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 1f, 0f), Direction.Right),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, 1f, 0f)).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 1f, 0f), Direction.Left),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, -1f, 0f)).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 1f, 0f), Direction.Right),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 0f)).FastProjectedOnTo(plane)
+		);
+
 		// Various projections from in front the plane
 		Assert.AreEqual(
 			new Line(new Location(0f, 1f, 0f), Direction.Left),
@@ -738,22 +762,46 @@ partial class LineTest {
 			new Line(new Location(0f, 1f, 0f), Direction.Right),
 			new Line(new Location(0f, 2f, 0f), new Direction(-1f, -1f, 0f)).ProjectedOnTo(plane)
 		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 1f, 0f), Direction.Left),
+			new Line(new Location(0f, 2f, 0f), Direction.Left).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 1f, 0f), Direction.Right),
+			new Line(new Location(0f, 2f, 0f), Direction.Right).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 1f, 0f), Direction.Left),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, 1f, 0f)).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 1f, 0f), Direction.Right),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f)).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 1f, 0f), Direction.Left),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, -1f, 0f)).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 1f, 0f), Direction.Right),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, -1f, 0f)).FastProjectedOnTo(plane)
+		);
 
 		// Projections from perpendicular directions
 		Assert.AreEqual(
-			new Line(new Location(0f, 1f, 0f), Direction.Up),
+			null,
 			new Line(new Location(0f, 2f, 0f), Direction.Up).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Line(new Location(0f, 1f, 0f), Direction.Down),
+			null,
 			new Line(new Location(0f, 2f, 0f), Direction.Down).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Line(new Location(0f, 1f, 0f), Direction.Up),
+			null,
 			new Line(new Location(0f, 0f, 0f), Direction.Up).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Line(new Location(0f, 1f, 0f), Direction.Down),
+			null,
 			new Line(new Location(0f, 0f, 0f), Direction.Down).ProjectedOnTo(plane)
 		);
 	}
@@ -787,6 +835,30 @@ partial class LineTest {
 			new Line(new Location(0f, 0f, 0f), Direction.Right),
 			new Line(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 0f)).ParallelizedWith(plane)
 		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 0f, 0f), Direction.Left),
+			new Line(new Location(0f, 0f, 0f), Direction.Left).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 0f, 0f), Direction.Right),
+			new Line(new Location(0f, 0f, 0f), Direction.Right).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 0f, 0f), Direction.Left),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, 1f, 0f)).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 0f, 0f), Direction.Right),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, 1f, 0f)).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 0f, 0f), Direction.Left),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, -1f, 0f)).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 0f, 0f), Direction.Right),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 0f)).FastParallelizedWith(plane)
+		);
 
 		// Various parallelizations from in front the plane
 		Assert.AreEqual(
@@ -813,22 +885,46 @@ partial class LineTest {
 			new Line(new Location(0f, 2f, 0f), Direction.Right),
 			new Line(new Location(0f, 2f, 0f), new Direction(-1f, -1f, 0f)).ParallelizedWith(plane)
 		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 2f, 0f), Direction.Left),
+			new Line(new Location(0f, 2f, 0f), Direction.Left).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 2f, 0f), Direction.Right),
+			new Line(new Location(0f, 2f, 0f), Direction.Right).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 2f, 0f), Direction.Left),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, 1f, 0f)).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 2f, 0f), Direction.Right),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f)).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 2f, 0f), Direction.Left),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, -1f, 0f)).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 2f, 0f), Direction.Right),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, -1f, 0f)).FastParallelizedWith(plane)
+		);
 
 		// Parallelizations from perpendicular directions
 		Assert.AreEqual(
-			new Line(new Location(0f, 2f, 0f), Direction.Up),
+			null,
 			new Line(new Location(0f, 2f, 0f), Direction.Up).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Line(new Location(0f, 2f, 0f), Direction.Down),
+			null,
 			new Line(new Location(0f, 2f, 0f), Direction.Down).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Line(new Location(0f, 0f, 0f), Direction.Up),
+			null,
 			new Line(new Location(0f, 0f, 0f), Direction.Up).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Line(new Location(0f, 0f, 0f), Direction.Down),
+			null,
 			new Line(new Location(0f, 0f, 0f), Direction.Down).ParallelizedWith(plane)
 		);
 	}
@@ -856,6 +952,24 @@ partial class LineTest {
 			new Line(new Location(0f, 0f, 0f), new Direction(-1f, 1f, 0f)).ParallelizedWith(plane, -100f),
 			TestTolerance
 		);
+		Assert.AreEqual(
+			new Line(new Location(100f, 0f, 0f), Direction.Left),
+			new Line(new Location(0f, 0f, 0f), Direction.Left).FastParallelizedWith(plane, 100f)
+		);
+		Assert.AreEqual(
+			new Line(new Location(100f, 0f, 0f), Direction.Right),
+			new Line(new Location(0f, 0f, 0f), Direction.Right).FastParallelizedWith(plane, -100f)
+		);
+		AssertToleranceEquals(
+			new Line(new Location(100f / MathF.Sqrt(2f), 100f / MathF.Sqrt(2f), 0f), Direction.Left),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, 1f, 0f)).FastParallelizedWith(plane, 100f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Line(new Location(100f / MathF.Sqrt(2f), -100f / MathF.Sqrt(2f), 0f), Direction.Right),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, 1f, 0f)).FastParallelizedWith(plane, -100f),
+			TestTolerance
+		);
 
 		// Various parallelizations from in front the plane
 		Assert.AreEqual(
@@ -876,22 +990,40 @@ partial class LineTest {
 			new Line(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f)).ParallelizedWith(plane, -100f),
 			TestTolerance
 		);
+		Assert.AreEqual(
+			new Line(new Location(100f, 2f, 0f), Direction.Left),
+			new Line(new Location(0f, 2f, 0f), Direction.Left).FastParallelizedWith(plane, 100f)
+		);
+		Assert.AreEqual(
+			new Line(new Location(100f, 2f, 0f), Direction.Right),
+			new Line(new Location(0f, 2f, 0f), Direction.Right).FastParallelizedWith(plane, -100f)
+		);
+		AssertToleranceEquals(
+			new Line(new Location(100f / MathF.Sqrt(2f), 100f / MathF.Sqrt(2f) + 2f, 0f), Direction.Left),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, 1f, 0f)).FastParallelizedWith(plane, 100f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Line(new Location(100f / MathF.Sqrt(2f), -100f / MathF.Sqrt(2f) + 2f, 0f), Direction.Right),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f)).FastParallelizedWith(plane, -100f),
+			TestTolerance
+		);
 
 		// Parallelizations from perpendicular directions
 		Assert.AreEqual(
-			new Line(new Location(0f, 102f, 0f), Direction.Up),
+			null,
 			new Line(new Location(0f, 2f, 0f), Direction.Up).ParallelizedWith(plane, 100f)
 		);
 		Assert.AreEqual(
-			new Line(new Location(0f, -98f, 0f), Direction.Down),
+			null,
 			new Line(new Location(0f, 2f, 0f), Direction.Down).ParallelizedWith(plane, -100f)
 		);
 		Assert.AreEqual(
-			new Line(new Location(0f, 100f, 0f), Direction.Up),
+			null,
 			new Line(new Location(0f, 0f, 0f), Direction.Up).ParallelizedWith(plane, 100f)
 		);
 		Assert.AreEqual(
-			new Line(new Location(0f, -100f, 0f), Direction.Down),
+			null,
 			new Line(new Location(0f, 0f, 0f), Direction.Down).ParallelizedWith(plane, -100f)
 		);
 	}
@@ -902,11 +1034,11 @@ partial class LineTest {
 
 		// Various orthogonalizations from behind the plane
 		Assert.AreEqual(
-			new Line(new Location(0f, 0f, 0f), Direction.Up),
+			null,
 			new Line(new Location(0f, 0f, 0f), Direction.Left).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			new Line(new Location(0f, 0f, 0f), Direction.Up),
+			null,
 			new Line(new Location(0f, 0f, 0f), Direction.Right).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
@@ -925,14 +1057,30 @@ partial class LineTest {
 			new Line(new Location(0f, 0f, 0f), Direction.Down),
 			new Line(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 0f)).OrthogonalizedAgainst(plane)
 		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 0f, 0f), Direction.Up),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, 1f, 0f)).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 0f, 0f), Direction.Up),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, 1f, 0f)).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 0f, 0f), Direction.Down),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, -1f, 0f)).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 0f, 0f), Direction.Down),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 0f)).FastOrthogonalizedAgainst(plane)
+		);
 
 		// Various orthogonalizations from in front the plane
 		Assert.AreEqual(
-			new Line(new Location(0f, 2f, 0f), Direction.Up),
+			null,
 			new Line(new Location(0f, 2f, 0f), Direction.Left).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			new Line(new Location(0f, 2f, 0f), Direction.Up),
+			null,
 			new Line(new Location(0f, 2f, 0f), Direction.Right).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
@@ -950,6 +1098,22 @@ partial class LineTest {
 		Assert.AreEqual(
 			new Line(new Location(0f, 2f, 0f), Direction.Down),
 			new Line(new Location(0f, 2f, 0f), new Direction(-1f, -1f, 0f)).OrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 2f, 0f), Direction.Up),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, 1f, 0f)).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 2f, 0f), Direction.Up),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f)).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 2f, 0f), Direction.Down),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, -1f, 0f)).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 2f, 0f), Direction.Down),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, -1f, 0f)).FastOrthogonalizedAgainst(plane)
 		);
 
 		// Orthogonalizations from perpendicular directions
@@ -977,11 +1141,11 @@ partial class LineTest {
 
 		// Various orthogonalizations from behind the plane
 		Assert.AreEqual(
-			new Line(new Location(100f, 0f, 0f), Direction.Up),
+			null,
 			new Line(new Location(0f, 0f, 0f), Direction.Left).OrthogonalizedAgainst(plane, 100f)
 		);
 		Assert.AreEqual(
-			new Line(new Location(100f, 0f, 0f), Direction.Up),
+			null,
 			new Line(new Location(0f, 0f, 0f), Direction.Right).OrthogonalizedAgainst(plane, -100f)
 		);
 		AssertToleranceEquals(
@@ -994,14 +1158,24 @@ partial class LineTest {
 			new Line(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 0f)).OrthogonalizedAgainst(plane, -100f),
 			TestTolerance
 		);
+		AssertToleranceEquals(
+			new Line(new Location(100f / MathF.Sqrt(2f), 100f / MathF.Sqrt(2f), 0f), Direction.Up),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, 1f, 0f)).FastOrthogonalizedAgainst(plane, 100f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Line(new Location(100f / MathF.Sqrt(2f), 100f / MathF.Sqrt(2f), 0f), Direction.Down),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 0f)).FastOrthogonalizedAgainst(plane, -100f),
+			TestTolerance
+		);
 
 		// Various orthogonalizations from in front the plane
 		Assert.AreEqual(
-			new Line(new Location(100f, 2f, 0f), Direction.Up),
+			null,
 			new Line(new Location(0f, 2f, 0f), Direction.Left).OrthogonalizedAgainst(plane, 100f)
 		);
 		Assert.AreEqual(
-			new Line(new Location(100f, 2f, 0f), Direction.Up),
+			null,
 			new Line(new Location(0f, 2f, 0f), Direction.Right).OrthogonalizedAgainst(plane, -100f)
 		);
 		AssertToleranceEquals(
@@ -1012,6 +1186,16 @@ partial class LineTest {
 		AssertToleranceEquals(
 			new Line(new Location(100f / MathF.Sqrt(2f), -100f / MathF.Sqrt(2f) + 2f, 0f), Direction.Up),
 			new Line(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f)).OrthogonalizedAgainst(plane, -100f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Line(new Location(100f / MathF.Sqrt(2f), -100f / MathF.Sqrt(2f) + 2f, 0f), Direction.Down),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, -1f, 0f)).FastOrthogonalizedAgainst(plane, 100f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Line(new Location(100f / MathF.Sqrt(2f), -100f / MathF.Sqrt(2f) + 2f, 0f), Direction.Up),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f)).FastOrthogonalizedAgainst(plane, -100f),
 			TestTolerance
 		);
 
@@ -1031,6 +1215,22 @@ partial class LineTest {
 		Assert.AreEqual(
 			new Line(new Location(0f, -100f, 0f), Direction.Down),
 			new Line(new Location(0f, 0f, 0f), Direction.Down).OrthogonalizedAgainst(plane, -100f)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 102f, 0f), Direction.Up),
+			new Line(new Location(0f, 2f, 0f), Direction.Up).FastOrthogonalizedAgainst(plane, 100f)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, -98f, 0f), Direction.Down),
+			new Line(new Location(0f, 2f, 0f), Direction.Down).FastOrthogonalizedAgainst(plane, -100f)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, 100f, 0f), Direction.Up),
+			new Line(new Location(0f, 0f, 0f), Direction.Up).FastOrthogonalizedAgainst(plane, 100f)
+		);
+		Assert.AreEqual(
+			new Line(new Location(0f, -100f, 0f), Direction.Down),
+			new Line(new Location(0f, 0f, 0f), Direction.Down).FastOrthogonalizedAgainst(plane, -100f)
 		);
 	}
 

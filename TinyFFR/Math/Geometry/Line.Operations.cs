@@ -187,10 +187,15 @@ public readonly partial struct Line {
 	public Line FastParallelizedWith(Plane plane, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.FastProjectedOnTo(plane));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line OrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane, 0f);
-	public Line OrthogonalizedAgainst(Plane plane, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.OrthogonalizedAgainst(plane));
-	Line? IOrthogonalizable<Line, Plane>.OrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane);
-	Line IOrthogonalizable<Line, Plane>.FastOrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane);
+	public Line? OrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane, 0f);
+	public Line? OrthogonalizedAgainst(Plane plane, float pivotPointSignedDistance) {
+		var newDir = Direction.OrthogonalizedAgainst(plane);
+		if (newDir == null) return null;
+		return new(LocationAtDistance(pivotPointSignedDistance), newDir.Value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line FastOrthogonalizedAgainst(Plane plane) => FastOrthogonalizedAgainst(plane, 0f);
+	public Line FastOrthogonalizedAgainst(Plane plane, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.FastOrthogonalizedAgainst(plane));
 
 	public bool TrySplit(Plane plane, out Ray outWithLineDir, out Ray outOpposingLineDir) {
 		var intersection = IntersectionWith(plane);

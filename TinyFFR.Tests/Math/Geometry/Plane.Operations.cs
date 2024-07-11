@@ -240,9 +240,12 @@ partial class PlaneTest {
 		Assert.AreEqual(new Vect(10f, 0f, -10f), TestPlane.ProjectionOf(new Vect(10f, 0f, -10f)));
 		Assert.AreEqual(new Vect(10f, 0f, -10f), TestPlane.ProjectionOf(new Vect(10f, -20f, -10f)));
 		Assert.AreEqual(new Vect(10f, 0f, -10f), TestPlane.ProjectionOf(new Vect(10f, 20f, -10f)));
-		Assert.AreEqual(Vect.Zero, TestPlane.ProjectionOf(Vect.Zero));
-		Assert.AreEqual(Vect.Zero, TestPlane.ProjectionOf(new Vect(0f, 1f, 0f)));
-		Assert.AreEqual(Vect.Zero, TestPlane.ProjectionOf(new Vect(0f, -1f, 0f)));
+		Assert.AreEqual(new Vect(10f, 0f, -10f), TestPlane.FastProjectionOf(new Vect(10f, 0f, -10f)));
+		Assert.AreEqual(new Vect(10f, 0f, -10f), TestPlane.FastProjectionOf(new Vect(10f, -20f, -10f)));
+		Assert.AreEqual(new Vect(10f, 0f, -10f), TestPlane.FastProjectionOf(new Vect(10f, 20f, -10f)));
+		Assert.AreEqual(null, TestPlane.ProjectionOf(Vect.Zero));
+		Assert.AreEqual(null, TestPlane.ProjectionOf(new Vect(0f, 1f, 0f)));
+		Assert.AreEqual(null, TestPlane.ProjectionOf(new Vect(0f, -1f, 0f)));
 	}
 
 	[Test]
@@ -251,9 +254,13 @@ partial class PlaneTest {
 		Assert.AreEqual(new Vect(10f, 0f, 10f).WithLength(MathF.Sqrt(300f)), TestPlane.ParallelizationOf(new Vect(10f, -10f, 10f)));
 		Assert.AreEqual(new Vect(-10f, 0f, -10f).WithLength(MathF.Sqrt(300f)), TestPlane.ParallelizationOf(new Vect(-10f, 10f, -10f)));
 		Assert.AreEqual(new Vect(-10f, 0f, -10f).WithLength(MathF.Sqrt(300f)), TestPlane.ParallelizationOf(new Vect(-10f, -10f, -10f)));
-		Assert.AreEqual(Vect.Zero, TestPlane.ParallelizationOf(Vect.Zero));
-		Assert.AreEqual(Vect.Zero, TestPlane.ParallelizationOf(new Vect(0f, 1f, 0f)));
-		Assert.AreEqual(Vect.Zero, TestPlane.ParallelizationOf(new Vect(0f, -1f, 0f)));
+		Assert.AreEqual(new Vect(10f, 0f, 10f).WithLength(MathF.Sqrt(300f)), TestPlane.FastParallelizationOf(new Vect(10f, 10f, 10f)));
+		Assert.AreEqual(new Vect(10f, 0f, 10f).WithLength(MathF.Sqrt(300f)), TestPlane.FastParallelizationOf(new Vect(10f, -10f, 10f)));
+		Assert.AreEqual(new Vect(-10f, 0f, -10f).WithLength(MathF.Sqrt(300f)), TestPlane.FastParallelizationOf(new Vect(-10f, 10f, -10f)));
+		Assert.AreEqual(new Vect(-10f, 0f, -10f).WithLength(MathF.Sqrt(300f)), TestPlane.FastParallelizationOf(new Vect(-10f, -10f, -10f)));
+		Assert.AreEqual(null, TestPlane.ParallelizationOf(Vect.Zero));
+		Assert.AreEqual(null, TestPlane.ParallelizationOf(new Vect(0f, 1f, 0f)));
+		Assert.AreEqual(null, TestPlane.ParallelizationOf(new Vect(0f, -1f, 0f)));
 	}
 
 	[Test]
@@ -267,6 +274,15 @@ partial class PlaneTest {
 		AssertToleranceEquals(Direction.Backward, TestPlane.ProjectionOf(new Direction(0f, 1f, -1f)), TestTolerance);
 		AssertToleranceEquals(Direction.Backward, TestPlane.ProjectionOf(new Direction(0f, -1f, -1f)), TestTolerance);
 
+		AssertToleranceEquals(Direction.Left, TestPlane.FastProjectionOf(new Direction(1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Direction.Left, TestPlane.FastProjectionOf(new Direction(1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Direction.Right, TestPlane.FastProjectionOf(new Direction(-1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Direction.Right, TestPlane.FastProjectionOf(new Direction(-1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Direction.Forward, TestPlane.FastProjectionOf(new Direction(0f, 1f, 1f)), TestTolerance);
+		AssertToleranceEquals(Direction.Forward, TestPlane.FastProjectionOf(new Direction(0f, -1f, 1f)), TestTolerance);
+		AssertToleranceEquals(Direction.Backward, TestPlane.FastProjectionOf(new Direction(0f, 1f, -1f)), TestTolerance);
+		AssertToleranceEquals(Direction.Backward, TestPlane.FastProjectionOf(new Direction(0f, -1f, -1f)), TestTolerance);
+
 		AssertToleranceEquals(new Direction(1f, 0f, 1f), TestPlane.ProjectionOf(new Direction(1f, 0f, 1f)), TestTolerance);
 		AssertToleranceEquals(new Direction(1f, 0f, 1f), TestPlane.ProjectionOf(new Direction(1f, 1f, 1f)), TestTolerance);
 		AssertToleranceEquals(new Direction(1f, 0f, 1f), TestPlane.ProjectionOf(new Direction(1f, -1f, 1f)), TestTolerance);
@@ -274,9 +290,16 @@ partial class PlaneTest {
 		AssertToleranceEquals(new Direction(-1f, 0f, -1f), TestPlane.ProjectionOf(new Direction(-1f, 1f, -1f)), TestTolerance);
 		AssertToleranceEquals(new Direction(-1f, 0f, -1f), TestPlane.ProjectionOf(new Direction(-1f, -1f, -1f)), TestTolerance);
 
-		AssertToleranceEquals(Direction.None, TestPlane.ProjectionOf(Direction.Up), TestTolerance);
-		AssertToleranceEquals(Direction.None, TestPlane.ProjectionOf(Direction.Down), TestTolerance);
-		AssertToleranceEquals(Direction.None, TestPlane.ProjectionOf(Direction.None), TestTolerance);
+		AssertToleranceEquals(new Direction(1f, 0f, 1f), TestPlane.FastProjectionOf(new Direction(1f, 0f, 1f)), TestTolerance);
+		AssertToleranceEquals(new Direction(1f, 0f, 1f), TestPlane.FastProjectionOf(new Direction(1f, 1f, 1f)), TestTolerance);
+		AssertToleranceEquals(new Direction(1f, 0f, 1f), TestPlane.FastProjectionOf(new Direction(1f, -1f, 1f)), TestTolerance);
+		AssertToleranceEquals(new Direction(-1f, 0f, -1f), TestPlane.FastProjectionOf(new Direction(-1f, 0f, -1f)), TestTolerance);
+		AssertToleranceEquals(new Direction(-1f, 0f, -1f), TestPlane.FastProjectionOf(new Direction(-1f, 1f, -1f)), TestTolerance);
+		AssertToleranceEquals(new Direction(-1f, 0f, -1f), TestPlane.FastProjectionOf(new Direction(-1f, -1f, -1f)), TestTolerance);
+
+		AssertToleranceEquals(null, TestPlane.ProjectionOf(Direction.Up), TestTolerance);
+		AssertToleranceEquals(null, TestPlane.ProjectionOf(Direction.Down), TestTolerance);
+		AssertToleranceEquals(null, TestPlane.ProjectionOf(Direction.None), TestTolerance);
 	}
 
 	[Test]
@@ -285,9 +308,23 @@ partial class PlaneTest {
 		Assert.AreEqual(new Vect(0f, -10f, 0f).WithLength(MathF.Sqrt(300f)), TestPlane.OrthogonalizationOf(new Vect(10f, -10f, 10f)));
 		Assert.AreEqual(new Vect(0f, 10, 0f).WithLength(MathF.Sqrt(300f)), TestPlane.OrthogonalizationOf(new Vect(-10f, 10f, -10f)));
 		Assert.AreEqual(new Vect(0f, -10f, 0f).WithLength(MathF.Sqrt(300f)), TestPlane.OrthogonalizationOf(new Vect(-10f, -10f, -10f)));
-		Assert.AreEqual(Vect.Zero, TestPlane.OrthogonalizationOf(Vect.Zero));
 		Assert.AreEqual(new Vect(0f, 1f, 0f), TestPlane.OrthogonalizationOf(new Vect(0f, 1f, 0f)));
 		Assert.AreEqual(new Vect(0f, -1f, 0f), TestPlane.OrthogonalizationOf(new Vect(0f, -1f, 0f)));
+
+		Assert.AreEqual(new Vect(0f, 10f, 0f).WithLength(MathF.Sqrt(300f)), TestPlane.FastOrthogonalizationOf(new Vect(10f, 10f, 10f)));
+		Assert.AreEqual(new Vect(0f, -10f, 0f).WithLength(MathF.Sqrt(300f)), TestPlane.FastOrthogonalizationOf(new Vect(10f, -10f, 10f)));
+		Assert.AreEqual(new Vect(0f, 10, 0f).WithLength(MathF.Sqrt(300f)), TestPlane.FastOrthogonalizationOf(new Vect(-10f, 10f, -10f)));
+		Assert.AreEqual(new Vect(0f, -10f, 0f).WithLength(MathF.Sqrt(300f)), TestPlane.FastOrthogonalizationOf(new Vect(-10f, -10f, -10f)));
+		Assert.AreEqual(new Vect(0f, 1f, 0f), TestPlane.FastOrthogonalizationOf(new Vect(0f, 1f, 0f)));
+		Assert.AreEqual(new Vect(0f, -1f, 0f), TestPlane.FastOrthogonalizationOf(new Vect(0f, -1f, 0f)));
+
+		Assert.AreEqual(null, TestPlane.OrthogonalizationOf(Vect.Zero));
+		Assert.AreEqual(null, TestPlane.OrthogonalizationOf(new Vect(1f, 0f, 0f)));
+		Assert.AreEqual(null, TestPlane.OrthogonalizationOf(new Vect(0f, 0f, 1f)));
+		Assert.AreEqual(null, TestPlane.OrthogonalizationOf(new Vect(-1f, 0f, 0f)));
+		Assert.AreEqual(null, TestPlane.OrthogonalizationOf(new Vect(0f, 0f, -1f)));
+		Assert.AreEqual(null, TestPlane.OrthogonalizationOf(new Vect(1f, 0f, -1f)));
+		Assert.AreEqual(null, TestPlane.OrthogonalizationOf(new Vect(-1f, 0f, 1f)));
 	}
 
 	[Test]
@@ -301,15 +338,31 @@ partial class PlaneTest {
 		AssertToleranceEquals(Direction.Up, TestPlane.OrthogonalizationOf(new Direction(0f, 1f, -1f)), TestTolerance);
 		AssertToleranceEquals(Direction.Down, TestPlane.OrthogonalizationOf(new Direction(0f, -1f, -1f)), TestTolerance);
 
-		AssertToleranceEquals(Direction.Up, TestPlane.OrthogonalizationOf(new Direction(1f, 0f, 1f)), TestTolerance);
+		AssertToleranceEquals(null, TestPlane.OrthogonalizationOf(new Direction(1f, 0f, 1f)), TestTolerance);
 		AssertToleranceEquals(Direction.Up, TestPlane.OrthogonalizationOf(new Direction(1f, 1f, 1f)), TestTolerance);
 		AssertToleranceEquals(Direction.Down, TestPlane.OrthogonalizationOf(new Direction(1f, -1f, 1f)), TestTolerance);
-		AssertToleranceEquals(Direction.Up, TestPlane.OrthogonalizationOf(new Direction(-1f, 0f, -1f)), TestTolerance);
+		AssertToleranceEquals(null, TestPlane.OrthogonalizationOf(new Direction(-1f, 0f, -1f)), TestTolerance);
 		AssertToleranceEquals(Direction.Up, TestPlane.OrthogonalizationOf(new Direction(-1f, 1f, -1f)), TestTolerance);
 		AssertToleranceEquals(Direction.Down, TestPlane.OrthogonalizationOf(new Direction(-1f, -1f, -1f)), TestTolerance);
 
+		AssertToleranceEquals(Direction.Up, TestPlane.FastOrthogonalizationOf(new Direction(1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Direction.Down, TestPlane.FastOrthogonalizationOf(new Direction(1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Direction.Up, TestPlane.FastOrthogonalizationOf(new Direction(-1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Direction.Down, TestPlane.FastOrthogonalizationOf(new Direction(-1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Direction.Up, TestPlane.FastOrthogonalizationOf(new Direction(0f, 1f, 1f)), TestTolerance);
+		AssertToleranceEquals(Direction.Down, TestPlane.FastOrthogonalizationOf(new Direction(0f, -1f, 1f)), TestTolerance);
+		AssertToleranceEquals(Direction.Up, TestPlane.FastOrthogonalizationOf(new Direction(0f, 1f, -1f)), TestTolerance);
+		AssertToleranceEquals(Direction.Down, TestPlane.FastOrthogonalizationOf(new Direction(0f, -1f, -1f)), TestTolerance);
+
+		AssertToleranceEquals(Direction.Up, TestPlane.FastOrthogonalizationOf(new Direction(1f, 1f, 1f)), TestTolerance);
+		AssertToleranceEquals(Direction.Down, TestPlane.FastOrthogonalizationOf(new Direction(1f, -1f, 1f)), TestTolerance);
+		AssertToleranceEquals(Direction.Up, TestPlane.FastOrthogonalizationOf(new Direction(-1f, 1f, -1f)), TestTolerance);
+		AssertToleranceEquals(Direction.Down, TestPlane.FastOrthogonalizationOf(new Direction(-1f, -1f, -1f)), TestTolerance);
+
 		AssertToleranceEquals(Direction.Up, TestPlane.OrthogonalizationOf(Direction.Up), TestTolerance);
 		AssertToleranceEquals(Direction.Down, TestPlane.OrthogonalizationOf(Direction.Down), TestTolerance);
-		AssertToleranceEquals(Direction.Up, TestPlane.OrthogonalizationOf(Direction.None), TestTolerance);
+		AssertToleranceEquals(Direction.Up, TestPlane.FastOrthogonalizationOf(Direction.Up), TestTolerance);
+		AssertToleranceEquals(Direction.Down, TestPlane.FastOrthogonalizationOf(Direction.Down), TestTolerance);
+		AssertToleranceEquals(null, TestPlane.OrthogonalizationOf(Direction.None), TestTolerance);
 	}
 }

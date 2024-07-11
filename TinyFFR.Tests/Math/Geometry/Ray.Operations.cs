@@ -950,7 +950,31 @@ partial class RayTest {
 			new Ray(new Location(10f, 1f, 0f), Direction.Right),
 			new Ray(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f)).ProjectedOnTo(plane)
 		);
-	
+		Assert.AreEqual(
+			new Ray(new Location(10f, 1f, 0f), Direction.Left),
+			new Ray(new Location(10f, 0f, 0f), Direction.Left).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 1f, 0f), Direction.Right),
+			new Ray(new Location(10f, 0f, 0f), Direction.Right).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 1f, 0f), Direction.Left),
+			new Ray(new Location(10f, 0f, 0f), new Direction(1f, 1f, 0f)).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 1f, 0f), Direction.Right),
+			new Ray(new Location(10f, 0f, 0f), new Direction(-1f, 1f, 0f)).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 1f, 0f), Direction.Left),
+			new Ray(new Location(10f, 0f, 0f), new Direction(1f, -1f, 0f)).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 1f, 0f), Direction.Right),
+			new Ray(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f)).FastProjectedOnTo(plane)
+		);
+
 		// Various projections from in front the plane
 		Assert.AreEqual(
 			new Ray(new Location(10f, 1f, 0f), Direction.Left),
@@ -976,22 +1000,46 @@ partial class RayTest {
 			new Ray(new Location(10f, 1f, 0f), Direction.Right),
 			new Ray(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f)).ProjectedOnTo(plane)
 		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 1f, 0f), Direction.Left),
+			new Ray(new Location(10f, 2f, 0f), Direction.Left).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 1f, 0f), Direction.Right),
+			new Ray(new Location(10f, 2f, 0f), Direction.Right).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 1f, 0f), Direction.Left),
+			new Ray(new Location(10f, 2f, 0f), new Direction(1f, 1f, 0f)).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 1f, 0f), Direction.Right),
+			new Ray(new Location(10f, 2f, 0f), new Direction(-1f, 1f, 0f)).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 1f, 0f), Direction.Left),
+			new Ray(new Location(10f, 2f, 0f), new Direction(1f, -1f, 0f)).FastProjectedOnTo(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 1f, 0f), Direction.Right),
+			new Ray(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f)).FastProjectedOnTo(plane)
+		);
 
 		// Projections from perpendicular directions
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Up),
+			null,
 			new Ray(new Location(10f, 2f, 0f), Direction.Up).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Down),
+			null,
 			new Ray(new Location(10f, 2f, 0f), Direction.Down).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Up),
+			null,
 			new Ray(new Location(10f, 0f, 0f), Direction.Up).ProjectedOnTo(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 1f, 0f), Direction.Down),
+			null,
 			new Ray(new Location(10f, 0f, 0f), Direction.Down).ProjectedOnTo(plane)
 		);
 	}
@@ -1025,6 +1073,30 @@ partial class RayTest {
 			new Ray(new Location(10f, 0f, 0f), Direction.Right),
 			new Ray(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f)).ParallelizedWith(plane)
 		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 0f, 0f), Direction.Left),
+			new Ray(new Location(10f, 0f, 0f), Direction.Left).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 0f, 0f), Direction.Right),
+			new Ray(new Location(10f, 0f, 0f), Direction.Right).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 0f, 0f), Direction.Left),
+			new Ray(new Location(10f, 0f, 0f), new Direction(1f, 1f, 0f)).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 0f, 0f), Direction.Right),
+			new Ray(new Location(10f, 0f, 0f), new Direction(-1f, 1f, 0f)).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 0f, 0f), Direction.Left),
+			new Ray(new Location(10f, 0f, 0f), new Direction(1f, -1f, 0f)).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 0f, 0f), Direction.Right),
+			new Ray(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f)).FastParallelizedWith(plane)
+		);
 
 		// Various parallelizations from in front the plane
 		Assert.AreEqual(
@@ -1051,22 +1123,46 @@ partial class RayTest {
 			new Ray(new Location(10f, 2f, 0f), Direction.Right),
 			new Ray(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f)).ParallelizedWith(plane)
 		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 2f, 0f), Direction.Left),
+			new Ray(new Location(10f, 2f, 0f), Direction.Left).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 2f, 0f), Direction.Right),
+			new Ray(new Location(10f, 2f, 0f), Direction.Right).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 2f, 0f), Direction.Left),
+			new Ray(new Location(10f, 2f, 0f), new Direction(1f, 1f, 0f)).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 2f, 0f), Direction.Right),
+			new Ray(new Location(10f, 2f, 0f), new Direction(-1f, 1f, 0f)).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 2f, 0f), Direction.Left),
+			new Ray(new Location(10f, 2f, 0f), new Direction(1f, -1f, 0f)).FastParallelizedWith(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 2f, 0f), Direction.Right),
+			new Ray(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f)).FastParallelizedWith(plane)
+		);
 
 		// Parallelizations from perpendicular directions
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Up),
+			null,
 			new Ray(new Location(10f, 2f, 0f), Direction.Up).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Down),
+			null,
 			new Ray(new Location(10f, 2f, 0f), Direction.Down).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Up),
+			null,
 			new Ray(new Location(10f, 0f, 0f), Direction.Up).ParallelizedWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Down),
+			null,
 			new Ray(new Location(10f, 0f, 0f), Direction.Down).ParallelizedWith(plane)
 		);
 	}
@@ -1077,11 +1173,11 @@ partial class RayTest {
 
 		// Various orthogonalizations from behind the plane
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Up),
+			null,
 			new Ray(new Location(10f, 0f, 0f), Direction.Left).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 0f, 0f), Direction.Up),
+			null,
 			new Ray(new Location(10f, 0f, 0f), Direction.Right).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
@@ -1100,14 +1196,30 @@ partial class RayTest {
 			new Ray(new Location(10f, 0f, 0f), Direction.Down),
 			new Ray(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f)).OrthogonalizedAgainst(plane)
 		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 0f, 0f), Direction.Up),
+			new Ray(new Location(10f, 0f, 0f), new Direction(1f, 1f, 0f)).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 0f, 0f), Direction.Up),
+			new Ray(new Location(10f, 0f, 0f), new Direction(-1f, 1f, 0f)).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 0f, 0f), Direction.Down),
+			new Ray(new Location(10f, 0f, 0f), new Direction(1f, -1f, 0f)).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 0f, 0f), Direction.Down),
+			new Ray(new Location(10f, 0f, 0f), new Direction(-1f, -1f, 0f)).FastOrthogonalizedAgainst(plane)
+		);
 
 		// Various orthogonalizations from in front the plane
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Up),
+			null,
 			new Ray(new Location(10f, 2f, 0f), Direction.Left).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(10f, 2f, 0f), Direction.Up),
+			null,
 			new Ray(new Location(10f, 2f, 0f), Direction.Right).OrthogonalizedAgainst(plane)
 		);
 		Assert.AreEqual(
@@ -1126,6 +1238,22 @@ partial class RayTest {
 			new Ray(new Location(10f, 2f, 0f), Direction.Down),
 			new Ray(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f)).OrthogonalizedAgainst(plane)
 		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 2f, 0f), Direction.Up),
+			new Ray(new Location(10f, 2f, 0f), new Direction(1f, 1f, 0f)).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 2f, 0f), Direction.Up),
+			new Ray(new Location(10f, 2f, 0f), new Direction(-1f, 1f, 0f)).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 2f, 0f), Direction.Down),
+			new Ray(new Location(10f, 2f, 0f), new Direction(1f, -1f, 0f)).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 2f, 0f), Direction.Down),
+			new Ray(new Location(10f, 2f, 0f), new Direction(-1f, -1f, 0f)).FastOrthogonalizedAgainst(plane)
+		);
 
 		// Orthogonalizations from perpendicular directions
 		Assert.AreEqual(
@@ -1143,6 +1271,22 @@ partial class RayTest {
 		Assert.AreEqual(
 			new Ray(new Location(10f, 0f, 0f), Direction.Down),
 			new Ray(new Location(10f, 0f, 0f), Direction.Down).OrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 2f, 0f), Direction.Up),
+			new Ray(new Location(10f, 2f, 0f), Direction.Up).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 2f, 0f), Direction.Down),
+			new Ray(new Location(10f, 2f, 0f), Direction.Down).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 0f, 0f), Direction.Up),
+			new Ray(new Location(10f, 0f, 0f), Direction.Up).FastOrthogonalizedAgainst(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(10f, 0f, 0f), Direction.Down),
+			new Ray(new Location(10f, 0f, 0f), Direction.Down).FastOrthogonalizedAgainst(plane)
 		);
 	}
 

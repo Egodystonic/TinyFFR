@@ -229,24 +229,25 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 		};
 	}
 
-	public BoundedRay ProjectedOnTo(Plane plane) => new(StartPoint.ClosestPointOn(plane), EndPoint.ClosestPointOn(plane)); // TODO in xmldoc mention that length will be 0 if this is perpendicular (correct & acceptable, but noteworthy)
+	// Note: Projection treats this like two points (start/end), whereas parallelize/orthogonalize treat it as a start-point + vect; hence the ostensible discrepancy
+	// That being said, I feel like projection vs parallelization/orthogonalization are subtly different things even if they're thought of in a similar vein; hence why I chose it this way
+	public BoundedRay ProjectedOnTo(Plane plane) => new(StartPoint.ClosestPointOn(plane), EndPoint.ClosestPointOn(plane)); // TODO in xmldoc note that this does not preserve length, returns a zero-length ray if orthogonal to plane
 	BoundedRay? IProjectable<BoundedRay, Plane>.ProjectedOnTo(Plane plane) => ProjectedOnTo(plane);
 	BoundedRay IProjectable<BoundedRay, Plane>.FastProjectedOnTo(Plane plane) => ProjectedOnTo(plane);
-	public BoundedRay ProjectedOnTo(Plane plane, bool preserveLength) {
-		if (!preserveLength) return ProjectedOnTo(plane);
-		return new BoundedRay(StartPoint.ClosestPointOn(plane), StartToEndVect.ParallelizedWith(plane) ?? Vect.Zero);
-	}
 
-	public BoundedRay ParallelizedWith(Plane plane) { // TODO in xmldoc mention that length will be 0 if this is perpendicular (correct & acceptable, but noteworthy)
-		var newVect = StartToEndVect.FastParallelizedWith(plane);
-		return new BoundedRay(StartPoint, newVect);
+	public BoundedRay? ParallelizedWith(Plane plane) { // TODO in xmldoc note that this preserves length or returns null if orthogonal to the plane
+		var newVect = StartToEndVect.ParallelizedWith(plane);
+		if (newVect == null) return null;
+		return new BoundedRay(StartPoint, newVect.Value);
 	}
-	BoundedRay? IParallelizable<BoundedRay, Plane>.ParallelizedWith(Plane plane) => ParallelizedWith(plane);
-	BoundedRay IParallelizable<BoundedRay, Plane>.FastParallelizedWith(Plane plane) => ParallelizedWith(plane);
+	public BoundedRay FastParallelizedWith(Plane plane) => new(StartPoint, StartToEndVect.FastParallelizedWith(plane));
 
-	public BoundedRay OrthogonalizedAgainst(Plane plane) => new(StartPoint, StartToEndVect.OrthogonalizedAgainst(plane));
-	BoundedRay? IOrthogonalizable<BoundedRay, Plane>.OrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane);
-	BoundedRay IOrthogonalizable<BoundedRay, Plane>.FastOrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane);
+	public BoundedRay? OrthogonalizedAgainst(Plane plane) { // TODO in xmldoc note that this preserves length or returns null if orthogonal to the plane
+		var newVect = StartToEndVect.OrthogonalizedAgainst(plane);
+		if (newVect == null) return null;
+		return new(StartPoint, newVect.Value);
+	}
+	public BoundedRay FastOrthogonalizedAgainst(Plane plane) => new(StartPoint, StartToEndVect.FastOrthogonalizedAgainst(plane));
 
 	public Location PointClosestTo(Plane plane) {
 		var unboundedDistance = GetUnboundedPlaneIntersectionDistance(plane);

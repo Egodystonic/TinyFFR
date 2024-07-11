@@ -190,9 +190,12 @@ public readonly partial struct Ray {
 	}
 	public Ray FastParallelizedWith(Plane plane) => new(StartPoint, Direction.FastProjectedOnTo(plane));
 
-	public Ray OrthogonalizedAgainst(Plane plane) => new(StartPoint, Direction.OrthogonalizedAgainst(plane));
-	Ray? IOrthogonalizable<Ray, Plane>.OrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane);
-	Ray IOrthogonalizable<Ray, Plane>.FastOrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane);
+	public Ray? OrthogonalizedAgainst(Plane plane) {
+		var newDirection = Direction.OrthogonalizedAgainst(plane);
+		if (newDirection == null) return null;
+		return new(StartPoint, newDirection.Value);
+	}
+	public Ray FastOrthogonalizedAgainst(Plane plane) => new(StartPoint, Direction.FastOrthogonalizedAgainst(plane));
 
 	public bool TrySplit(Plane plane, out BoundedRay outStartPointToPlane, out Ray outPlaneToInfinity) {
 		var intersection = IntersectionWith(plane);

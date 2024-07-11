@@ -111,14 +111,19 @@ partial class VectTest {
 
 	[Test]
 	public void ShouldCorrectlyOrthogonalizeAgainstDirection() {
-		Assert.AreEqual(Vect.Zero, Vect.Zero.OrthogonalizedAgainst(Direction.Up));
-		Assert.AreEqual(Vect.Zero, (Direction.Up * 100f).OrthogonalizedAgainst(Direction.Up));
-		AssertToleranceEquals(OneTwoNegThree, OneTwoNegThree.OrthogonalizedAgainst(Direction.None), TestTolerance);
-		Assert.AreEqual(Vect.Zero, Vect.Zero.OrthogonalizedAgainst(Direction.None));
+		Assert.AreEqual(null, Vect.Zero.OrthogonalizedAgainst(Direction.Up));
+		Assert.AreEqual(null, (Direction.Up * 100f).OrthogonalizedAgainst(Direction.Up));
+		AssertToleranceEquals(null, OneTwoNegThree.OrthogonalizedAgainst(Direction.None), TestTolerance);
+		Assert.AreEqual(null, Vect.Zero.OrthogonalizedAgainst(Direction.None));
 
 		AssertToleranceEquals(
 			new Vect(1f, 0f, 0f),
 			new Vect(0.8f, 0.2f, 0f).WithLength(1f).OrthogonalizedAgainst(new Direction(0f, 1f, 0f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(1f, 0f, 0f),
+			new Vect(0.8f, 0.2f, 0f).WithLength(1f).FastOrthogonalizedAgainst(new Direction(0f, 1f, 0f)),
 			TestTolerance
 		);
 
@@ -127,10 +132,20 @@ partial class VectTest {
 			new Vect(1f, -5f, 0f).WithLength(10f).OrthogonalizedAgainst(new Direction(-1f, 0f, 0f)),
 			TestTolerance
 		);
+		AssertToleranceEquals(
+			new Vect(0f, -10f, 0f),
+			new Vect(1f, -5f, 0f).WithLength(10f).FastOrthogonalizedAgainst(new Direction(-1f, 0f, 0f)),
+			TestTolerance
+		);
 
 		AssertToleranceEquals(
 			new Vect(0f, -10f, 0f),
 			new Vect(1f, -5f, 0f).WithLength(10f).OrthogonalizedAgainst(new Direction(1f, 0f, 0f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(0f, -10f, 0f),
+			new Vect(1f, -5f, 0f).WithLength(10f).FastOrthogonalizedAgainst(new Direction(1f, 0f, 0f)),
 			TestTolerance
 		);
 	}

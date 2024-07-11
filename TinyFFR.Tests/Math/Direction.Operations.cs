@@ -134,13 +134,13 @@ partial class DirectionTest {
 			Assert.AreEqual(cardinal, (-20f % thirdPerp * cardinal).OrthogonalizedAgainst(perp));
 		}
 
-		AssertToleranceEquals(OneTwoNegThree, OneTwoNegThree.OrthogonalizedAgainst(Direction.None), TestTolerance);
-		AssertToleranceEquals(Direction.None, OneTwoNegThree.OrthogonalizedAgainst(OneTwoNegThree), TestTolerance);
-		AssertToleranceEquals(Direction.None, Direction.None.OrthogonalizedAgainst(OneTwoNegThree), TestTolerance);
-		AssertToleranceEquals(Direction.None, Direction.None.OrthogonalizedAgainst(Direction.None), TestTolerance);
+		AssertToleranceEquals(null, OneTwoNegThree.OrthogonalizedAgainst(Direction.None), TestTolerance);
+		AssertToleranceEquals(null, OneTwoNegThree.OrthogonalizedAgainst(OneTwoNegThree), TestTolerance);
+		AssertToleranceEquals(null, Direction.None.OrthogonalizedAgainst(OneTwoNegThree), TestTolerance);
+		AssertToleranceEquals(null, Direction.None.OrthogonalizedAgainst(Direction.None), TestTolerance);
 
-		AssertToleranceEquals(Direction.None, OneTwoNegThree.OrthogonalizedAgainst(-OneTwoNegThree), TestTolerance);
-		AssertToleranceEquals(Direction.None, -OneTwoNegThree.OrthogonalizedAgainst(OneTwoNegThree), TestTolerance);
+		AssertToleranceEquals(null, OneTwoNegThree.OrthogonalizedAgainst(-OneTwoNegThree), TestTolerance);
+		AssertToleranceEquals(null, -OneTwoNegThree.OrthogonalizedAgainst(OneTwoNegThree), TestTolerance);
 
 		var testList = new List<Direction>();
 		for (var x = -5f; x <= 5f; x += 1f) {
@@ -154,9 +154,9 @@ partial class DirectionTest {
 		for (var i = 0; i < testList.Count; ++i) {
 			var dirA = testList[i];
 
-			AssertToleranceEquals(dirA, dirA.OrthogonalizedAgainst(Direction.None), TestTolerance);
-			AssertToleranceEquals(Direction.None, dirA.OrthogonalizedAgainst(dirA), TestTolerance);
-			AssertToleranceEquals(Direction.None, Direction.None.OrthogonalizedAgainst(dirA), TestTolerance);
+			AssertToleranceEquals(null, dirA.OrthogonalizedAgainst(Direction.None), TestTolerance);
+			AssertToleranceEquals(null, dirA.OrthogonalizedAgainst(dirA), TestTolerance);
+			AssertToleranceEquals(null, Direction.None.OrthogonalizedAgainst(dirA), TestTolerance);
 
 			for (var j = i; j < testList.Count; ++j) {
 				var dirB = testList[j];
@@ -164,17 +164,20 @@ partial class DirectionTest {
 				if (dirA == Direction.None || dirB == Direction.None) continue;
 
 				if ((dirA ^ dirB).Equals(180f, 1.5f)) {
-					Assert.AreEqual(Direction.None, dirA.OrthogonalizedAgainst(dirB));
+					Assert.AreEqual(null, dirA.OrthogonalizedAgainst(dirB));
 				}
 				else if ((dirA ^ dirB).Equals(90f, 1.5f)) {
 					AssertToleranceEquals(dirA, dirA.OrthogonalizedAgainst(dirB), 0.1f);
+					AssertToleranceEquals(dirA, dirA.FastOrthogonalizedAgainst(dirB), 0.1f);
 				}
 				else if ((dirA ^ dirB).Equals(0f, 1.5f)) {
-					Assert.AreEqual(Direction.None, dirA.OrthogonalizedAgainst(dirB));
+					Assert.AreEqual(null, dirA.OrthogonalizedAgainst(dirB));
 				}
 				else {
 					AssertToleranceEquals(90f, dirA.OrthogonalizedAgainst(dirB) ^ dirB, 1.5f);
-					AssertToleranceEquals(90f, dirA.OrthogonalizedAgainst(dirB) ^ dirB, 1.5f);
+					AssertToleranceEquals(90f, dirB.OrthogonalizedAgainst(dirA) ^ dirA, 1.5f);
+					AssertToleranceEquals(90f, dirA.FastOrthogonalizedAgainst(dirB) ^ dirB, 1.5f);
+					AssertToleranceEquals(90f, dirB.FastOrthogonalizedAgainst(dirA) ^ dirA, 1.5f);
 				}
 			}
 		}

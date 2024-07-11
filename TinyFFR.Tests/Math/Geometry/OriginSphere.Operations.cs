@@ -131,13 +131,13 @@ partial class OriginSphereTest {
 
 	[Test]
 	public void ShouldCorrectlyFindClosestPointOnSurfaceToGivenLocation() {
-		AssertToleranceEquals(new Location(0f, 0f, 0f), TestSphere.SurfacePointClosestTo(new Location(0f, 0f, 0f)), TestTolerance);
 		AssertToleranceEquals(new Location(0f, 7.4f, 0f), TestSphere.SurfacePointClosestTo(new Location(0f, 7.4f, 0f)), TestTolerance);
 		AssertToleranceEquals(new Location(0f, -7.4f, 0f), TestSphere.SurfacePointClosestTo(new Location(0f, -7.4f, 0f)), TestTolerance);
 		AssertToleranceEquals(new Location(0f, 7.4f, 0f), TestSphere.SurfacePointClosestTo(new Location(0f, 17.4f, 0f)), TestTolerance);
 		AssertToleranceEquals(new Location(0f, -7.4f, 0f), TestSphere.SurfacePointClosestTo(new Location(0f, -17.4f, 0f)), TestTolerance);
 		AssertToleranceEquals(new Location(0f, 7.4f, 0f), TestSphere.SurfacePointClosestTo(new Location(0f, 2f, 0f)), TestTolerance);
 		AssertToleranceEquals(new Location(0f, -7.4f, 0f), TestSphere.SurfacePointClosestTo(new Location(0f, -2f, 0f)), TestTolerance);
+		Assert.AreEqual(7.4f, TestSphere.SurfacePointClosestTo(new Location(0f, 0f, 0f)).DistanceFrom(Location.Origin), TestTolerance);
 	}
 
 	[Test]
