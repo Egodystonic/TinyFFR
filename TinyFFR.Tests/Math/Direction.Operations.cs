@@ -410,12 +410,6 @@ partial class DirectionTest {
 
 	[Test]
 	public void ShouldCorrectlyClamp() {
-		// AssertToleranceEquals(
-		// 	Direction.Left,
-		// 	new Direction(1f, 0f, -0.5f).Clamp(Direction.Left, Direction.Forward),
-		// 	TestTolerance
-		// );
-
 		AssertToleranceEquals(
 			new Direction(1f, 0f, 1f),
 			new Direction(1f, 0.3f, 1f).Clamp(Direction.Left, Direction.Forward),
@@ -446,5 +440,7 @@ partial class DirectionTest {
 			new Direction(-0.2f, 0f, 1f).Clamp(Direction.Left, Direction.Forward),
 			TestTolerance
 		);
+
+		// TODO check for colinear directions, check for our direction being exactly perpendicular
 	}
 }

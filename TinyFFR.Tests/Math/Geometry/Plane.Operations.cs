@@ -543,21 +543,53 @@ partial class PlaneTest {
 	}
 
 	[Test]
+	public void ConvenienceMethodsShouldCorrectlyConvertBetween2DAnd3D() {
+		Assert.AreEqual(MathF.Sqrt(200f), new Location(10f, 10f, 10f).ProjectedTo2DOn(TestPlane).ToVector2().Length(), TestTolerance);
+		Assert.AreEqual(MathF.Sqrt(200f), new Location(-10f, -10f, -10f).ProjectedTo2DOn(TestPlane).ToVector2().Length(), TestTolerance);
+		Assert.AreEqual(new Location(10f, 10f, 10f).ProjectedTo2DOn(TestPlane).X, -new Location(-10f, -10f, -10f).ProjectedTo2DOn(TestPlane).X, TestTolerance);
+		Assert.AreEqual(new Location(10f, 10f, 10f).ProjectedTo2DOn(TestPlane).Y, -new Location(-10f, -10f, -10f).ProjectedTo2DOn(TestPlane).Y, TestTolerance);
+
+		AssertToleranceEquals(
+			new Location(10f, -1f, 10f),
+			new Location(10f, 10f, 10f).ProjectedTo2DOn(TestPlane).ExpandedTo3DOn(TestPlane),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Location(-10f, -1f, -10f),
+			new Location(-10f, -10f, -10f).ProjectedTo2DOn(TestPlane).ExpandedTo3DOn(TestPlane),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Location(10f, 10f, 10f),
+			new Location(10f, 10f, 10f).ProjectedTo2DOn(TestPlane).ExpandedTo3DOn(TestPlane, 11f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Location(-10f, -10f, -10f),
+			new Location(-10f, -10f, -10f).ProjectedTo2DOn(TestPlane).ExpandedTo3DOn(TestPlane, -9f),
+			TestTolerance
+		);
+	}
+
+	[Test]
 	public void ShouldCorrectlyConstructDimensionConverters() {
 		var converter = TestPlane.CreateDimensionConverter();
 		Assert.AreEqual(TestPlane.PointClosestToOrigin, converter.Origin);
+		Assert.AreEqual(TestPlane.Normal, converter.PlaneNormal);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ converter.YBasis, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ TestPlane.Normal, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.YBasis ^ TestPlane.Normal, TestTolerance);
 
 		converter = TestPlane.CreateDimensionConverter(new Location(-100f, 1000f, 33f));
 		Assert.AreEqual(new Location(-100f, -1f, 33f), converter.Origin);
+		Assert.AreEqual(TestPlane.Normal, converter.PlaneNormal);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ converter.YBasis, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ TestPlane.Normal, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.YBasis ^ TestPlane.Normal, TestTolerance);
 
 		converter = TestPlane.CreateDimensionConverter(new Location(-100f, 1000f, 33f), new Direction(1f, 1f, -1f));
 		Assert.AreEqual(new Location(-100f, -1f, 33f), converter.Origin);
+		Assert.AreEqual(TestPlane.Normal, converter.PlaneNormal);
 		AssertToleranceEquals(new Direction(1f, 0f, -1f), converter.XBasis, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ converter.YBasis, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ TestPlane.Normal, TestTolerance);
@@ -565,6 +597,7 @@ partial class PlaneTest {
 
 		converter = TestPlane.CreateDimensionConverter(new Location(-100f, 1000f, 33f), new Direction(1f, 1f, -1f), new Direction(1f, -1f, 0.8f));
 		Assert.AreEqual(new Location(-100f, -1f, 33f), converter.Origin);
+		Assert.AreEqual(TestPlane.Normal, converter.PlaneNormal);
 		AssertToleranceEquals(new Direction(1f, 0f, -1f), converter.XBasis, TestTolerance);
 		AssertToleranceEquals(new Direction(1f, 0f, 1f), converter.YBasis, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ converter.YBasis, TestTolerance);

@@ -44,8 +44,6 @@ partial struct Plane :
 	// TODO explain in XML that this is a value from 0 to 1, where 1 is a direction completely perpendicular to the plane and 0 is completely parallel; and is also the cosine of the angle formed with the normal
 	public float PerpendicularityWith(Direction direction) => MathF.Abs(Normal.Dot(direction));
 
-	// TODO I'd like a function here to convert locations to XYPairs on the surface of the plane given a centre point (default PointClosestToOrigin)
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(Plane plane, Direction dir) => plane.AngleTo(dir);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -194,14 +192,17 @@ partial struct Plane :
 	public static Plane CreateNewRandom() => new(Direction.CreateNewRandom(), Location.CreateNewRandom());
 	public static Plane CreateNewRandom(Plane minInclusive, Plane maxExclusive) => new(Direction.CreateNewRandom(minInclusive.Normal, maxExclusive.Normal), Location.CreateNewRandom(minInclusive.PointClosestToOrigin, maxExclusive.PointClosestToOrigin));
 
+	// TODO xmldoc that this converter only works for the plane it was generated for
 	public readonly struct DimensionConverter {
 		public Direction XBasis { get; }
 		public Direction YBasis { get; }
+		public Direction PlaneNormal { get; }
 		public Location Origin { get; }
 
-		public DimensionConverter(Direction xBasis, Direction yBasis, Location origin) {
+		public DimensionConverter(Direction xBasis, Direction yBasis, Direction planeNormal, Location origin) {
 			XBasis = xBasis;
 			YBasis = yBasis;
+			PlaneNormal = planeNormal;
 			Origin = origin;
 		}
 
@@ -213,25 +214,28 @@ partial struct Plane :
 		public Location Convert(XYPair<float> location2D) {
 			return (XBasis * location2D.X + YBasis * location2D.Y) + Origin;
 		}
+		public Location Convert(XYPair<float> location2D, float zAxisDimension) {
+			return Convert(location2D) + PlaneNormal * zAxisDimension;
+		}
 	}
 	public DimensionConverter CreateDimensionConverter() {
 		var xBasis = Normal.AnyPerpendicular();
 		var yBasis = Direction.FromPerpendicular(Normal, xBasis);
 		var origin = PointClosestToOrigin;
-		return new(xBasis, yBasis, origin);
+		return new(xBasis, yBasis, Normal, origin);
 	}
 	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin) {
 		var xBasis = Normal.AnyPerpendicular();
 		var yBasis = Direction.FromPerpendicular(Normal, xBasis);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
-		return new(xBasis, yBasis, origin);
+		return new(xBasis, yBasis, Normal, origin);
 	}
 	// TODO xmldoc exceptions and also that people who want to skip all the checks etc can create their own converter directly with the ctor
 	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis) {
 		var xBasis = ProjectionOf(twoDimensionalCoordinateXAxis) ?? throw new ArgumentException("X-Axis basis direction must not be perpendicular to the plane.", nameof(twoDimensionalCoordinateXAxis));
 		var yBasis = Direction.FromPerpendicular(Normal, xBasis);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
-		return new(xBasis, yBasis, origin);
+		return new(xBasis, yBasis, Normal, origin);
 	}
 	// TODO xmldoc exceptions and also that people who want to skip all the checks etc can create their own converter directly with the ctor
 	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis, Direction twoDimensionalCoordinateYAxis) {
@@ -248,6 +252,10 @@ partial struct Plane :
 			);
 		}
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
-		return new(xBasis, yBasis, origin);
+		return new(xBasis, yBasis, Normal, origin);
 	}
+	// TODO xmldoc that these methods are slower than using a converter
+	public XYPair<float> ProjectionTo2DOf(Location location) => CreateDimensionConverter().Convert(location);
+	public Location ExpansionTo3DOf(XYPair<float> xyPair) => CreateDimensionConverter().Convert(xyPair);
+	public Location ExpansionTo3DOf(XYPair<float> xyPair, float zDimension) => CreateDimensionConverter().Convert(xyPair, zDimension);
 }

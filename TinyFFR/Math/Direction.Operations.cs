@@ -203,8 +203,22 @@ partial struct Direction :
 		// Console.WriteLine("projection: " + projection.ToStringDescriptive());
 		// return FromVector3(ToVector3() - projection.ToVector3());
 
-		var greatCirclePlane = Plane.FromTriangleOnSurface((Location) min, (Location) max, Location.Origin);
-
+		const float Midpoint = MathF.PI * 1.25f;
+		var minLoc = (Location) min;
+		var maxLoc = (Location) max;
+		var thisLoc = (Location) this;
+		var greatCirclePlane = Plane.FromTriangleOnSurface(minLoc, maxLoc, Location.Origin);
+		var converter = greatCirclePlane.CreateDimensionConverter(Location.Origin, min);
+		var minProjection = converter.Convert(minLoc);
+		var maxProjection = converter.Convert(maxLoc);
+		var thisProjection = converter.Convert(thisLoc);
+		Console.WriteLine("Min: " + minProjection + " | " + minProjection.PolarAngle);
+		Console.WriteLine("Max: " + maxProjection + " | " + maxProjection.PolarAngle);
+		Console.WriteLine("This: " + thisProjection + " | " + thisProjection.PolarAngle);
+		if (thisProjection.PolarAngle < maxProjection.PolarAngle) Console.WriteLine("I think we'd return " + ((Direction) converter.Convert(thisProjection)).ToStringDescriptive());
+		else if (thisProjection.PolarAngle.Value.AsRadians < Midpoint) Console.WriteLine("I think we'd return " + ((Direction) converter.Convert(maxProjection)).ToStringDescriptive());
+		else Console.WriteLine("I think we'd return " + ((Direction) converter.Convert(minProjection)).ToStringDescriptive());
+		throw new NotImplementedException();
 	}
 
 	public static Direction CreateNewRandom() {
