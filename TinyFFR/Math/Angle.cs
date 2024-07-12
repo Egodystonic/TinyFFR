@@ -84,7 +84,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	}
 
 	// TODO clarify this is the four-quadrant inverse tangent
-	public static Angle? From2DPolarAngle<T>(XYPair<T> xy) where T : unmanaged, INumber<T> => From2DPolarAngle(Single.CreateSaturating(xy.X), Single.CreateSaturating(xy.Y));
+	public static Angle? From2DPolarAngle<T>(XYPair<T> xy) where T : unmanaged, INumber<T> => From2DPolarAngle(Single.CreateTruncating(xy.X), Single.CreateTruncating(xy.Y));
 	// TODO clarify this is the four-quadrant inverse tangent
 	public static Angle? From2DPolarAngle(float x, float y) {
 		if (x == 0f && y == 0f) return null;

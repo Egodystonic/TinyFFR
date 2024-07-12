@@ -91,7 +91,7 @@ public readonly partial struct Vect : IVect<Vect>, IDescriptiveStringProvider {
 	public override string ToString() => this.ToString(null, null);
 
 	public string ToStringDescriptive() {
-		return $"Direction {Direction.ToStringDescriptive()}, Length {Length.ToString(LengthSquared >= 10f ? "N1" : "N3", CultureInfo.InvariantCulture)}";
+		return $"{ToString()} (Direction {Direction.ToStringDescriptive()}, Length {Length.ToString(LengthSquared >= 10f ? "N1" : "N3", CultureInfo.InvariantCulture)})";
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

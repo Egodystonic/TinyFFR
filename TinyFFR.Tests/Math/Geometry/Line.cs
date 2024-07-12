@@ -30,6 +30,7 @@ partial class LineTest {
 		Assert.AreEqual(null, ((ILineLike) TestLine).LengthSquared);
 		Assert.AreEqual(null, ((ILineLike) TestLine).StartToEndVect);
 		Assert.AreEqual(null, ((ILineLike) TestLine).EndPoint);
+		Assert.AreEqual(false, ((ILineLike) TestLine).IsFiniteLength);
 	}
 
 	[Test]

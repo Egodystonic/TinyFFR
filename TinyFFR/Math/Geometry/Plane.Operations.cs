@@ -193,4 +193,61 @@ partial struct Plane :
 	}
 	public static Plane CreateNewRandom() => new(Direction.CreateNewRandom(), Location.CreateNewRandom());
 	public static Plane CreateNewRandom(Plane minInclusive, Plane maxExclusive) => new(Direction.CreateNewRandom(minInclusive.Normal, maxExclusive.Normal), Location.CreateNewRandom(minInclusive.PointClosestToOrigin, maxExclusive.PointClosestToOrigin));
+
+	public readonly struct DimensionConverter {
+		public Direction XBasis { get; }
+		public Direction YBasis { get; }
+		public Location Origin { get; }
+
+		public DimensionConverter(Direction xBasis, Direction yBasis, Location origin) {
+			XBasis = xBasis;
+			YBasis = yBasis;
+			Origin = origin;
+		}
+
+		public XYPair<float> Convert(Location location3D) {
+			location3D -= (Vect) Origin;
+			return new(XBasis.Dot((Vect) location3D), YBasis.Dot((Vect) location3D));
+		}
+
+		public Location Convert(XYPair<float> location2D) {
+			return (XBasis * location2D.X + YBasis * location2D.Y) + Origin;
+		}
+	}
+	public DimensionConverter CreateDimensionConverter() {
+		var xBasis = Normal.AnyPerpendicular();
+		var yBasis = Direction.FromPerpendicular(Normal, xBasis);
+		var origin = PointClosestToOrigin;
+		return new(xBasis, yBasis, origin);
+	}
+	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin) {
+		var xBasis = Normal.AnyPerpendicular();
+		var yBasis = Direction.FromPerpendicular(Normal, xBasis);
+		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
+		return new(xBasis, yBasis, origin);
+	}
+	// TODO xmldoc exceptions and also that people who want to skip all the checks etc can create their own converter directly with the ctor
+	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis) {
+		var xBasis = ProjectionOf(twoDimensionalCoordinateXAxis) ?? throw new ArgumentException("X-Axis basis direction must not be perpendicular to the plane.", nameof(twoDimensionalCoordinateXAxis));
+		var yBasis = Direction.FromPerpendicular(Normal, xBasis);
+		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
+		return new(xBasis, yBasis, origin);
+	}
+	// TODO xmldoc exceptions and also that people who want to skip all the checks etc can create their own converter directly with the ctor
+	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis, Direction twoDimensionalCoordinateYAxis) {
+		const float PerpendicularityErrorMargin = 1E-3f;
+
+		var xBasis = ProjectionOf(twoDimensionalCoordinateXAxis) ?? throw new ArgumentException("X-Axis basis direction must not be perpendicular to the plane.", nameof(twoDimensionalCoordinateXAxis));
+		var yBasis = ProjectionOf(twoDimensionalCoordinateYAxis) ?? throw new ArgumentException("Y-Axis basis direction must not be perpendicular to the plane.", nameof(twoDimensionalCoordinateYAxis));
+		if (!xBasis.AngleTo(yBasis).Equals(90f, PerpendicularityErrorMargin)) {
+			yBasis = yBasis.OrthogonalizedAgainst(xBasis) ?? throw new ArgumentException(
+				"Y-Axis basis direction must not be colinear with X-Axis basis direction (after both are projected on to the plane). " +
+				$"X after projection: {xBasis.ToStringDescriptive()}; " +
+				$"Y after projection: {yBasis.ToStringDescriptive()}; ", 
+				nameof(twoDimensionalCoordinateYAxis)
+			);
+		}
+		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
+		return new(xBasis, yBasis, origin);
+	}
 }

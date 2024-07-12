@@ -266,4 +266,48 @@ partial class VectTest {
 			Assert.LessOrEqual(val.Z, b.Z);
 		}
 	}
+
+	[Test]
+	public void ShouldCorrectlyClamp() {
+		var min = new Vect(-3f, 1f, 3f);
+		var max = new Vect(3f, -1f, -3f);
+
+		AssertToleranceEquals(
+			new Vect(0f, 0f, 0f),
+			new Vect(0f, 0f, 0f).Clamp(min, max),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(-3f, 1f, 3f),
+			new Vect(-3f, 1f, 3f).Clamp(min, max),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(3f, -1f, -3f),
+			new Vect(3f, -1f, -3f).Clamp(min, max),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(-3f, 1f, 3f),
+			new Vect(-4f, 2f, 4f).Clamp(min, max),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(3f, -1f, -3f),
+			new Vect(4f, -2f, -4f).Clamp(min, max),
+			TestTolerance
+		);
+
+
+		AssertToleranceEquals(
+			new Vect(-0.158f, 0.0526f, 0.158f),
+			new Vect(0f, 1f, 0f).Clamp(min, max),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(0.158f, -0.0526f, -0.158f),
+			new Vect(0f, -1f, 0f).Clamp(min, max),
+			TestTolerance
+		);
+	}
 }

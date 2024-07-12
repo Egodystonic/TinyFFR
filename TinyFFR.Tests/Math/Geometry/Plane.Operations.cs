@@ -365,4 +365,252 @@ partial class PlaneTest {
 		AssertToleranceEquals(Direction.Down, TestPlane.FastOrthogonalizationOf(Direction.Down), TestTolerance);
 		AssertToleranceEquals(null, TestPlane.OrthogonalizationOf(Direction.None), TestTolerance);
 	}
+
+	[Test]
+	public void ShouldCorrectlyConvertBetween3DAnd2D() {
+		// 3D -> 2D
+		AssertToleranceEquals(
+			new XYPair<float>(1f, -1f),
+			TestPlane.CreateDimensionConverter(Location.Origin, new(1f, 0f, 0f), new(0f, 0f, 1f)).Convert((1f, 1f, -1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new XYPair<float>(-2f, 2f),
+			TestPlane.CreateDimensionConverter(Location.Origin, new(-1f, 0f, 0f), new(0f, 0f, -1f)).Convert((2f, -100f, -2f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new XYPair<float>(-1f, 1f),
+			TestPlane.CreateDimensionConverter(Location.Origin, new(-1f, 0f, 0f), new(0f, 0f, -1f)).Convert((1f, 1f, -1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new XYPair<float>(2f, -2f),
+			TestPlane.CreateDimensionConverter(Location.Origin, new(1f, 0f, 0f), new(0f, 0f, 1f)).Convert((2f, -100f, -2f)),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			new XYPair<float>(1f, -1f),
+			TestPlane.CreateDimensionConverter(Location.Origin, new(1f, 1f, 0f), new(0f, -1f, 1f)).Convert((1f, 1f, -1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new XYPair<float>(-2f, 2f),
+			TestPlane.CreateDimensionConverter(Location.Origin, new(-1f, 1f, 0f), new(0f, -1f, -1f)).Convert((2f, -100f, -2f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new XYPair<float>(-1f, 1f),
+			TestPlane.CreateDimensionConverter(Location.Origin, new(-1f, -1f, 0f), new(0f, 1f, -1f)).Convert((1f, 1f, -1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new XYPair<float>(2f, -2f),
+			TestPlane.CreateDimensionConverter(Location.Origin, new(1f, -1f, 0f), new(0f, 1f, 1f)).Convert((2f, -100f, -2f)),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			new XYPair<float>(-2f, -4f),
+			TestPlane.CreateDimensionConverter(new Location(3f, 0f, 3f), new(1f, 0f, 0f), new(0f, 0f, 1f)).Convert((1f, 1f, -1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new XYPair<float>(-5f, -1f),
+			TestPlane.CreateDimensionConverter(new Location(-3f, 0f, -3f), new(-1f, 0f, 0f), new(0f, 0f, -1f)).Convert((2f, -100f, -2f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new XYPair<float>(2f, 4f),
+			TestPlane.CreateDimensionConverter(new Location(3f, 0f, 3f), new(-1f, 0f, 0f), new(0f, 0f, -1f)).Convert((1f, 1f, -1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new XYPair<float>(5f, 1f),
+			TestPlane.CreateDimensionConverter(new Location(-3f, 0f, -3f), new(1f, 0f, 0f), new(0f, 0f, 1f)).Convert((2f, -100f, -2f)),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			new XYPair<float>(-2f, -4f),
+			TestPlane.CreateDimensionConverter(new Location(3f, 10f, 3f), new(1f, 1f, 0f), new(0f, -1f, 1f)).Convert((1f, 1f, -1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new XYPair<float>(-5f, -1f),
+			TestPlane.CreateDimensionConverter(new Location(-3f, 10f, -3f), new(-1f, 1f, 0f), new(0f, -1f, -1f)).Convert((2f, -100f, -2f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new XYPair<float>(2f, 4f),
+			TestPlane.CreateDimensionConverter(new Location(3f, -10f, 3f), new(-1f, -1f, 0f), new(0f, 1f, -1f)).Convert((1f, 1f, -1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new XYPair<float>(5f, 1f),
+			TestPlane.CreateDimensionConverter(new Location(-3f, -10f, -3f), new(1f, -1f, 0f), new(0f, 1f, 1f)).Convert((2f, -100f, -2f)),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			new XYPair<float>(0f, 0f),
+			new Plane(new Direction(1f, 1f, 1f), 10f).CreateDimensionConverter(new Vect(1f, 1f, 1f).WithLength(10f).AsLocation(), new Direction(1f, -1f, 0f), new Direction(-1f, 0f, 1f)).Convert((20f, 20f, 20f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new XYPair<float>(1f, 0f),
+			new Plane(new Direction(1f, 1f, 1f), 10f)
+				.CreateDimensionConverter(
+					new Vect(1f, 1f, 1f).WithLength(10f).AsLocation(),
+					new Direction(1f, -1f, 0f),
+					new Direction(-0.408f, -0.408f, 0.816f)
+				).Convert(new Location(20f, 20f, 20f) + new Vect(1f, -1f, 0f).WithLength(1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new XYPair<float>(0f, 1f),
+			new Plane(new Direction(1f, 1f, 1f), 10f)
+				.CreateDimensionConverter(
+					new Vect(1f, 1f, 1f).WithLength(10f).AsLocation(),
+					new Direction(1f, -1f, 0f),
+					new Direction(-0.408f, -0.408f, 0.816f)
+				).Convert(new Location(20f, 20f, 20f) + new Vect(-0.408f, -0.408f, 0.816f).WithLength(1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new XYPair<float>(-3f, 0f),
+			new Plane(new Direction(1f, 1f, 1f), 10f)
+				.CreateDimensionConverter(
+					new Vect(1f, 1f, 1f).WithLength(10f).AsLocation(),
+					new Direction(1f, -1f, 0f),
+					new Direction(-0.408f, -0.408f, 0.816f)
+				).Convert(new Location(20f, 20f, 20f) + new Vect(1f, -1f, 0f).WithLength(-3f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new XYPair<float>(0f, -3f),
+			new Plane(new Direction(1f, 1f, 1f), 10f)
+				.CreateDimensionConverter(
+					new Vect(1f, 1f, 1f).WithLength(10f).AsLocation(),
+					new Direction(1f, -1f, 0f),
+					new Direction(-0.408f, -0.408f, 0.816f)
+				).Convert(new Location(20f, 20f, 20f) + new Vect(-0.408f, -0.408f, 0.816f).WithLength(-3f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new XYPair<float>(0f, 0f),
+			new Plane(new Direction(1f, 1f, 1f), 10f)
+				.CreateDimensionConverter(
+					new Vect(1f, 1f, 1f).WithLength(10f).AsLocation() + new Direction(1f, -1f, 0f) * -3f,
+					new Direction(1f, -1f, 0f),
+					new Direction(-0.408f, -0.408f, 0.816f)
+				).Convert(new Location(20f, 20f, 20f) + new Vect(1f, -1f, 0f).WithLength(-3f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new XYPair<float>(3f, -3f),
+			new Plane(new Direction(1f, 1f, 1f), 10f)
+				.CreateDimensionConverter(
+					new Vect(1f, 1f, 1f).WithLength(10f).AsLocation() + new Direction(1f, -1f, 0f) * -3f,
+					new Direction(1f, -1f, 0f),
+					new Direction(-0.408f, -0.408f, 0.816f)
+				).Convert(new Location(20f, 20f, 20f) + new Vect(-0.408f, -0.408f, 0.816f).WithLength(-3f)),
+			TestTolerance
+		);
+
+		// 2D -> 3D
+		AssertToleranceEquals(
+			new Location(1f, -1f, -1f),
+			TestPlane.CreateDimensionConverter(new Location(3f, 10f, 3f), new(1f, 1f, 0f), new(0f, -1f, 1f)).Convert((-2f, -4f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Location(2f, -1f, -2f),
+			TestPlane.CreateDimensionConverter(new Location(-3f, 10f, -3f), new(-1f, 1f, 0f), new(0f, -1f, -1f)).Convert((-5f, -1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Location(1f, -1f, -1f),
+			TestPlane.CreateDimensionConverter(new Location(3f, -10f, 3f), new(-1f, -1f, 0f), new(0f, 1f, -1f)).Convert((2f, 4f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Location(2f, -1f, -2f),
+			TestPlane.CreateDimensionConverter(new Location(-3f, -10f, -3f), new(1f, -1f, 0f), new(0f, 1f, 1f)).Convert((5f, 1f)),
+			TestTolerance
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyConstructDimensionConverters() {
+		var converter = TestPlane.CreateDimensionConverter();
+		Assert.AreEqual(TestPlane.PointClosestToOrigin, converter.Origin);
+		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ converter.YBasis, TestTolerance);
+		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ TestPlane.Normal, TestTolerance);
+		AssertToleranceEquals(new Angle(90f), converter.YBasis ^ TestPlane.Normal, TestTolerance);
+
+		converter = TestPlane.CreateDimensionConverter(new Location(-100f, 1000f, 33f));
+		Assert.AreEqual(new Location(-100f, -1f, 33f), converter.Origin);
+		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ converter.YBasis, TestTolerance);
+		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ TestPlane.Normal, TestTolerance);
+		AssertToleranceEquals(new Angle(90f), converter.YBasis ^ TestPlane.Normal, TestTolerance);
+
+		converter = TestPlane.CreateDimensionConverter(new Location(-100f, 1000f, 33f), new Direction(1f, 1f, -1f));
+		Assert.AreEqual(new Location(-100f, -1f, 33f), converter.Origin);
+		AssertToleranceEquals(new Direction(1f, 0f, -1f), converter.XBasis, TestTolerance);
+		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ converter.YBasis, TestTolerance);
+		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ TestPlane.Normal, TestTolerance);
+		AssertToleranceEquals(new Angle(90f), converter.YBasis ^ TestPlane.Normal, TestTolerance);
+
+		converter = TestPlane.CreateDimensionConverter(new Location(-100f, 1000f, 33f), new Direction(1f, 1f, -1f), new Direction(1f, -1f, 0.8f));
+		Assert.AreEqual(new Location(-100f, -1f, 33f), converter.Origin);
+		AssertToleranceEquals(new Direction(1f, 0f, -1f), converter.XBasis, TestTolerance);
+		AssertToleranceEquals(new Direction(1f, 0f, 1f), converter.YBasis, TestTolerance);
+		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ converter.YBasis, TestTolerance);
+		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ TestPlane.Normal, TestTolerance);
+		AssertToleranceEquals(new Angle(90f), converter.YBasis ^ TestPlane.Normal, TestTolerance);
+
+		var testList = new List<Direction>();
+		for (var x = -5f; x <= 5f; x += 1f) {
+			for (var y = -5f; y <= 5f; y += 1f) {
+				for (var z = -5f; z <= 5f; z += 1f) {
+					if (x == 0f && y == 0f && z == 0f) continue;
+					testList.Add(new(x, y, z));
+				}
+			}
+		}
+
+		for (var i = 0; i < testList.Count; ++i) {
+			var x = testList[i];
+			if (x.Equals(Direction.None, TestTolerance)) continue;
+			for (var j = i + 1; j < testList.Count; ++j) {
+				var y = testList[j];
+				if (y.Equals(Direction.None, TestTolerance)) continue;
+				if (x.AngleTo(TestPlane).Equals(90f, TestTolerance)) continue;
+				if (y.AngleTo(TestPlane).Equals(90f, TestTolerance)) continue;
+				if (1f - MathF.Abs(x.ProjectedOnTo(TestPlane)!.Value.Dot(y.ProjectedOnTo(TestPlane)!.Value)) < TestTolerance) continue;
+
+				try {
+					converter = TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, x, y);
+					AssertToleranceEquals(new Angle(90f), converter.XBasis ^ converter.YBasis, TestTolerance);
+					AssertToleranceEquals(new Angle(90f), converter.XBasis ^ TestPlane.Normal, TestTolerance);
+					AssertToleranceEquals(new Angle(90f), converter.YBasis ^ TestPlane.Normal, TestTolerance);
+				}
+				catch {
+					Console.WriteLine("X: " + x.ToStringDescriptive() + " | Y: " + y.ToStringDescriptive());
+					throw;
+				}
+			}
+		}
+
+		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Up));
+		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Down));
+		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Up, Direction.Right));
+		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Down, Direction.Right));
+		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Right, Direction.Right));
+		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Right));
+		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Up));
+		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Down));
+	}
 }

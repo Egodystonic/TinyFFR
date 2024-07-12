@@ -32,6 +32,7 @@ partial class BoundedRayTest {
 		Assert.AreEqual(TestRay.LengthSquared, ((ILineLike) TestRay).LengthSquared);
 		Assert.AreEqual(TestRay.StartToEndVect, ((ILineLike) TestRay).StartToEndVect);
 		Assert.AreEqual(TestRay.EndPoint, ((ILineLike) TestRay).EndPoint);
+		Assert.AreEqual(true, ((ILineLike) TestRay).IsFiniteLength);
 	}
 
 	// TODO this test could be fleshed out a lot more

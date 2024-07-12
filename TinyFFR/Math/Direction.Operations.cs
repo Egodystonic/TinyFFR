@@ -164,12 +164,47 @@ partial struct Direction :
 	}
 
 	public Direction Clamp(Direction min, Direction max) {
-		// Decided this is probably best modelled as finding the nearest point on a geodesic between the the two directions on the unit sphere
-		// Found this after some googling: https://math.stackexchange.com/a/3090156
-		// TODO and handle if min ^ max == 180
+		// If I can't get this to work, we can do linear reprojection ... Nope, that won't work either
+		// Idea -- Clamp this to great circle plane and then work out angles using min as 0/starting point. If greater than max, return max, if less than 0, return min, etc
 
-		var minCrossMax = min.Cross(max);
-		return minCrossMax.Cross(minCrossMax.Cross(this));
+		// // Decided this is probably best modelled as finding the nearest point on a geodesic between the the two directions on the unit sphere
+		// // Found this after some googling: https://math.stackexchange.com/a/3090156
+		// // TODO and handle if min ^ max == 180
+		//
+		// var minCrossMax = min.Cross(max);
+		// Console.WriteLine("C = " + this.ToStringDescriptive());
+		// Console.WriteLine("A X B = " + minCrossMax.ToStringDescriptive());
+		// Console.WriteLine("(A X B) X C = " + minCrossMax.Cross(this).ToStringDescriptive());
+		// return minCrossMax.Cross(minCrossMax.Cross(this));
+
+		// var n = FromVector3(max.ToVector3() - (min.ToVector3() * min.Dot(max)));
+		// Console.WriteLine(n.ToStringDescriptive());
+		// var pProj = FromVector3(ToVector3() - (min.ToVector3() * Dot(min)));
+		// Console.WriteLine(pProj.ToStringDescriptive());
+		// return FromVector3(min.ToVector3() * pProj.Dot(min) + n.ToVector3() * pProj.Dot(n));
+
+		// var greatCirclePlane = Plane.FromTriangleOnSurface((Location) min, (Location) max, Location.Origin);
+		// var pProj = Renormalize((Direction) ((Location) this).ClosestPointOn(greatCirclePlane));
+		// Console.WriteLine("pProj: " + pProj.ToStringDescriptive());
+		// // var n = FromVector3(max.ToVector3() - (min.ToVector3() * min.Dot(max)));
+		// // Console.WriteLine("n: " + n.ToStringDescriptive());
+		// //return FromVector3(min.ToVector3() * pProj.Dot(min) + n.ToVector3() * pProj.Dot(n));
+		// var angle = MathF.Acos(min.Dot(pProj));
+		// return FromVector3(MathF.Cos(angle) * min.ToVector3() + MathF.Sin(angle) * max.ToVector3());
+
+		// var greatCirclePlane = Plane.FromTriangleOnSurface((Location) min, (Location) max, Location.Origin);
+		// var projectedValue = ((Location) this).ClosestPointOn(greatCirclePlane);
+
+		// This might work if we check for <0, 0, 0> projection and do some special logic there
+		// var minCrossMax = Renormalize(min.Cross(max));
+		// Console.WriteLine("minCrossMax: " + minCrossMax.ToStringDescriptive());
+		// Console.WriteLine("this: " + ToStringDescriptive());
+		// var projection = ((Vect) this).ProjectedOnTo(minCrossMax);
+		// Console.WriteLine("projection: " + projection.ToStringDescriptive());
+		// return FromVector3(ToVector3() - projection.ToVector3());
+
+		var greatCirclePlane = Plane.FromTriangleOnSurface((Location) min, (Location) max, Location.Origin);
+
 	}
 
 	public static Direction CreateNewRandom() {

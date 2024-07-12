@@ -407,4 +407,44 @@ partial class DirectionTest {
 		Assert.AreEqual(0f, Direction.None.Dot(Direction.Forward));
 		Assert.AreEqual(0f, Direction.None.Dot(Direction.None));
 	}
+
+	[Test]
+	public void ShouldCorrectlyClamp() {
+		// AssertToleranceEquals(
+		// 	Direction.Left,
+		// 	new Direction(1f, 0f, -0.5f).Clamp(Direction.Left, Direction.Forward),
+		// 	TestTolerance
+		// );
+
+		AssertToleranceEquals(
+			new Direction(1f, 0f, 1f),
+			new Direction(1f, 0.3f, 1f).Clamp(Direction.Left, Direction.Forward),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Direction(1f, 0f, 1f),
+			new Direction(1f, -0.3f, 1f).Clamp(Direction.Left, Direction.Forward),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Direction(1f, 0f, 0f),
+			new Direction(1f, 0f, 0f).Clamp(Direction.Left, Direction.Forward),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Direction(0f, 0f, 1f),
+			new Direction(0f, 0f, 1f).Clamp(Direction.Left, Direction.Forward),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Direction(1f, 0f, 0f),
+			new Direction(1f, 0f, -0.2f).Clamp(Direction.Left, Direction.Forward),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Direction(0f, 0f, 1f),
+			new Direction(-0.2f, 0f, 1f).Clamp(Direction.Left, Direction.Forward),
+			TestTolerance
+		);
+	}
 }

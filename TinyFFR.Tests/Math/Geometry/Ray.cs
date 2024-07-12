@@ -28,6 +28,7 @@ partial class RayTest {
 		Assert.AreEqual(null, ((ILineLike) TestRay).LengthSquared);
 		Assert.AreEqual(null, ((ILineLike) TestRay).StartToEndVect);
 		Assert.AreEqual(null, ((ILineLike) TestRay).EndPoint);
+		Assert.AreEqual(false, ((ILineLike) TestRay).IsFiniteLength);
 	}
 
 	// TODO this test could be fleshed out a lot more
