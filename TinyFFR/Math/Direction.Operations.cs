@@ -203,8 +203,16 @@ partial struct Direction :
 		return (thisAngle < midpoint) ? max : min;
 	}
 
-	// TODO clamp to within a cone (angle) of another
-	// TODO create new random within a cone (angle) of another
+	public Direction Clamp(Direction target, Angle maxDifference) {
+		if (this == None) return None;
+		if (target == None) throw new ArgumentException($"Target direction can not be '{nameof(None)}'.", nameof(target));
+		maxDifference = maxDifference.ClampZeroToHalfCircle();
+
+		var difference = target ^ this;
+		if (difference <= maxDifference) return this;
+
+		return (target >> this).ScaledBy(maxDifference.AsRadians / difference.AsRadians) * target;
+	}
 
 	public static Direction CreateNewRandom() {
 		Direction result;
@@ -219,6 +227,11 @@ partial struct Direction :
 	}
 	public static Direction CreateNewRandom(Direction minInclusive, Direction maxExclusive) {
 		return (minInclusive >> maxExclusive).ScaledBy(RandomUtils.NextSingle()) * minInclusive;
+	}
+	public static Direction CreateNewRandom(Direction coneCentre, Angle coneAngle) {
+		if (coneCentre == None) throw new ArgumentException($"Cone centre can not be '{nameof(None)}'.", nameof(coneCentre));
+
+		return coneCentre * (coneCentre >> coneCentre.AnyPerpendicular()).WithAngle(Angle.CreateNewRandom(0f, coneAngle.ClampZeroToHalfCircle()));
 	}
 
 	public static int GetIndexOfNearestDirectionInSpan(Direction targetDir, ReadOnlySpan<Direction> span) {

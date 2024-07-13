@@ -292,6 +292,19 @@ partial class DirectionTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyCreateConicalRandomValues() {
+		const int NumIterations = 10_000;
+
+		for (var i = 0; i < NumIterations; ++i) {
+			var centre = Direction.CreateNewRandom();
+			var angle = Angle.CreateNewRandom(0f, 180f);
+
+			var result = Direction.CreateNewRandom(centre, angle);
+			Assert.LessOrEqual((result ^ centre).AsRadians, angle.AsRadians + TestTolerance);
+		}
+	}
+
+	[Test]
 	public void ShouldCorrectlyFindNearestDirectionInSpan() {
 		var testList = new List<Direction>();
 		for (var x = -5f; x <= 5f; x += 1f) {
@@ -459,5 +472,41 @@ partial class DirectionTest {
 		// Min or max are None
 		Assert.Throws<ArgumentException>(() => Direction.Right.Clamp(Direction.Forward, Direction.None));
 		Assert.Throws<ArgumentException>(() => Direction.Right.Clamp(Direction.None, Direction.Forward));
+	}
+
+	[Test]
+	public void ShouldCorrectlyClampWithinCone() {
+		AssertToleranceEquals(Direction.Forward, Direction.Forward.Clamp(Direction.Forward, 0f), TestTolerance);
+		AssertToleranceEquals(Direction.Forward, Direction.Up.Clamp(Direction.Forward, 0f), TestTolerance);
+		AssertToleranceEquals(Direction.Forward, Direction.Right.Clamp(Direction.Forward, 0f), TestTolerance);
+		AssertToleranceEquals(Direction.Forward, Direction.Backward.Clamp(Direction.Forward, 0f), TestTolerance);
+		AssertToleranceEquals(Direction.Forward, new Direction(0.1f, 0.1f, 1f).Clamp(Direction.Forward, 0f), TestTolerance);
+		AssertToleranceEquals(new Direction(0.1f, 0.1f, 1f), new Direction(0.1f, 0.1f, 1f).Clamp(Direction.Forward, 10f), TestTolerance);
+		AssertToleranceEquals(new Direction(-0.1f, -0.1f, 1f), new Direction(-0.1f, -0.1f, 1f).Clamp(Direction.Forward, 10f), TestTolerance);
+
+		Assert.AreEqual(Direction.None, Direction.None.Clamp(Direction.Down, 0f));
+		Assert.Throws<ArgumentException>(() => Direction.Forward.Clamp(Direction.None, 100f));
+
+		var testList = new List<Direction>();
+		for (var x = -4f; x <= 4f; x += 1f) {
+			for (var y = -4f; y <= 4f; y += 1f) {
+				for (var z = -4f; z <= 4f; z += 1f) {
+					testList.Add(new(x, y, z));
+				}
+			}
+		}
+
+		for (var i = 0; i < testList.Count; ++i) {
+			var input = testList[i];
+			if (input == Direction.None) continue;
+			for (var j = i; j < testList.Count; ++j) {
+				var target = testList[j];
+				if (target == Direction.None) continue;
+				for (var angle = 0f; angle <= 180f; angle += 15f) {
+					var clampedInput = input.Clamp(target, angle);
+					Assert.LessOrEqual((clampedInput ^ target).AsDegrees, angle + TestTolerance);
+				}
+			}
+		}
 	}
 }
