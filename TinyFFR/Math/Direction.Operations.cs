@@ -164,62 +164,47 @@ partial struct Direction :
 	}
 
 	public Direction Clamp(Direction min, Direction max) {
-		// If I can't get this to work, we can do linear reprojection ... Nope, that won't work either
-		// Idea -- Clamp this to great circle plane and then work out angles using min as 0/starting point. If greater than max, return max, if less than 0, return min, etc
+		const float OppositeDirectionsFloatingPointMargin = 1E-7f;
+		
+		// Doesn't make sense to clamp to "None", so throw exception
+		if (min == None) throw new ArgumentException($"Neither min nor max may be '{nameof(None)}'.", nameof(min));
+		if (max == None) throw new ArgumentException($"Neither min nor max may be '{nameof(None)}'.", nameof(max));
 
-		// // Decided this is probably best modelled as finding the nearest point on a geodesic between the the two directions on the unit sphere
-		// // Found this after some googling: https://math.stackexchange.com/a/3090156
-		// // TODO and handle if min ^ max == 180
-		//
-		// var minCrossMax = min.Cross(max);
-		// Console.WriteLine("C = " + this.ToStringDescriptive());
-		// Console.WriteLine("A X B = " + minCrossMax.ToStringDescriptive());
-		// Console.WriteLine("(A X B) X C = " + minCrossMax.Cross(this).ToStringDescriptive());
-		// return minCrossMax.Cross(minCrossMax.Cross(this));
+		// If this is None just return None
+		if (this == None) return None;
 
-		// var n = FromVector3(max.ToVector3() - (min.ToVector3() * min.Dot(max)));
-		// Console.WriteLine(n.ToStringDescriptive());
-		// var pProj = FromVector3(ToVector3() - (min.ToVector3() * Dot(min)));
-		// Console.WriteLine(pProj.ToStringDescriptive());
-		// return FromVector3(min.ToVector3() * pProj.Dot(min) + n.ToVector3() * pProj.Dot(n));
+		// If min and max are antipodal then the entire range of possible directions is valid, so just return this
+		if (min.Dot(max) < -1f + OppositeDirectionsFloatingPointMargin) return this;
 
-		// var greatCirclePlane = Plane.FromTriangleOnSurface((Location) min, (Location) max, Location.Origin);
-		// var pProj = Renormalize((Direction) ((Location) this).ClosestPointOn(greatCirclePlane));
-		// Console.WriteLine("pProj: " + pProj.ToStringDescriptive());
-		// // var n = FromVector3(max.ToVector3() - (min.ToVector3() * min.Dot(max)));
-		// // Console.WriteLine("n: " + n.ToStringDescriptive());
-		// //return FromVector3(min.ToVector3() * pProj.Dot(min) + n.ToVector3() * pProj.Dot(n));
-		// var angle = MathF.Acos(min.Dot(pProj));
-		// return FromVector3(MathF.Cos(angle) * min.ToVector3() + MathF.Sin(angle) * max.ToVector3());
-
-		// var greatCirclePlane = Plane.FromTriangleOnSurface((Location) min, (Location) max, Location.Origin);
-		// var projectedValue = ((Location) this).ClosestPointOn(greatCirclePlane);
-
-		// This might work if we check for <0, 0, 0> projection and do some special logic there
-		// var minCrossMax = Renormalize(min.Cross(max));
-		// Console.WriteLine("minCrossMax: " + minCrossMax.ToStringDescriptive());
-		// Console.WriteLine("this: " + ToStringDescriptive());
-		// var projection = ((Vect) this).ProjectedOnTo(minCrossMax);
-		// Console.WriteLine("projection: " + projection.ToStringDescriptive());
-		// return FromVector3(ToVector3() - projection.ToVector3());
-
-		const float Midpoint = MathF.PI * 1.25f;
+		// Create a plane that is aligned with the great circle formed between min and max on the unit sphere, 
+		// and then create a dimension converter to convert min, max, and this to 2D; with 'min' representing the X-axis
+		// (and therefore min in 2D is equal to <1, 0>). Because min is set by definition to be <1, 0> (e.g. the X-axis
+		// basis), its polar angle will be, by definition, 0 degrees.
 		var minLoc = (Location) min;
 		var maxLoc = (Location) max;
 		var thisLoc = (Location) this;
 		var greatCirclePlane = Plane.FromTriangleOnSurface(minLoc, maxLoc, Location.Origin);
 		var converter = greatCirclePlane.CreateDimensionConverter(Location.Origin, min);
-		var minProjection = converter.Convert(minLoc);
+
+		// Project max and this on to the 2D plane. Then, compare their polar angles. If this direction's polar angle is between 0 and
+		// max's polar angle, it already lies on the arc (after projection), so return the renormalization of the projected value back in
+		// to 3D (along the great-circle plane).
+		// Otherwise, if the polar angle is greater than max's, we just need to find which point is closer (min or max). We do that by seeing
+		// how far around the great circle 'this' is-- if it's further than halfway around from max back to min, we return min; otherwise
+		// we return max (that's the final if statement at the bottom).
+		// Finally, if this direction was projected down to <0, 0> it is exactly perpendicular to the plane, and therefore perpendicular
+		// to the arc. "ThisAngle" will be null, and the if check will result in 'false', and we'll fall through to the final
+		// check below, returning 'min'. This is fine, as anywhere on the arc is equally valid here.
 		var maxProjection = converter.Convert(maxLoc);
 		var thisProjection = converter.Convert(thisLoc);
-		Console.WriteLine("Min: " + minProjection + " | " + minProjection.PolarAngle);
-		Console.WriteLine("Max: " + maxProjection + " | " + maxProjection.PolarAngle);
-		Console.WriteLine("This: " + thisProjection + " | " + thisProjection.PolarAngle);
-		if (thisProjection.PolarAngle < maxProjection.PolarAngle) Console.WriteLine("I think we'd return " + ((Direction) converter.Convert(thisProjection)).ToStringDescriptive());
-		else if (thisProjection.PolarAngle.Value.AsRadians < Midpoint) Console.WriteLine("I think we'd return " + ((Direction) converter.Convert(maxProjection)).ToStringDescriptive());
-		else Console.WriteLine("I think we'd return " + ((Direction) converter.Convert(minProjection)).ToStringDescriptive());
-		throw new NotImplementedException();
+		var thisAngle = thisProjection.PolarAngle;
+		if (thisAngle < maxProjection.PolarAngle) return FromVector3(converter.Convert(thisProjection).ToVector3());
+		var midpoint = (Angle.FullCircle - maxProjection.PolarAngle) * 0.5f + maxProjection.PolarAngle;
+		return (thisAngle < midpoint) ? max : min;
 	}
+
+	// TODO clamp to within a cone (angle) of another
+	// TODO create new random within a cone (angle) of another
 
 	public static Direction CreateNewRandom() {
 		Direction result;

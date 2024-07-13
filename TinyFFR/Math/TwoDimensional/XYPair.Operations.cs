@@ -49,7 +49,7 @@ partial struct XYPair<T> :
 
 	public XYPair<TNew> Cast<TNew>() where TNew : unmanaged, INumber<TNew> => new(TNew.CreateTruncating(X), TNew.CreateTruncating(Y));
 
-	public Angle? PolarAngle { // TODO clarify this is the four-quadrant inverse tangent
+	public Angle? PolarAngle { // TODO clarify this is the four-quadrant inverse tangent. In this co-ordinate system, positive X is considered to move to the right (unlike our 3D system)
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Angle.From2DPolarAngle(this);
 	}

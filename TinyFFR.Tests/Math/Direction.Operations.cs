@@ -409,38 +409,55 @@ partial class DirectionTest {
 	}
 
 	[Test]
-	public void ShouldCorrectlyClamp() {
-		AssertToleranceEquals(
-			new Direction(1f, 0f, 1f),
-			new Direction(1f, 0.3f, 1f).Clamp(Direction.Left, Direction.Forward),
-			TestTolerance
-		);
-		AssertToleranceEquals(
-			new Direction(1f, 0f, 1f),
-			new Direction(1f, -0.3f, 1f).Clamp(Direction.Left, Direction.Forward),
-			TestTolerance
-		);
-		AssertToleranceEquals(
-			new Direction(1f, 0f, 0f),
-			new Direction(1f, 0f, 0f).Clamp(Direction.Left, Direction.Forward),
-			TestTolerance
-		);
-		AssertToleranceEquals(
-			new Direction(0f, 0f, 1f),
-			new Direction(0f, 0f, 1f).Clamp(Direction.Left, Direction.Forward),
-			TestTolerance
-		);
-		AssertToleranceEquals(
-			new Direction(1f, 0f, 0f),
-			new Direction(1f, 0f, -0.2f).Clamp(Direction.Left, Direction.Forward),
-			TestTolerance
-		);
-		AssertToleranceEquals(
-			new Direction(0f, 0f, 1f),
-			new Direction(-0.2f, 0f, 1f).Clamp(Direction.Left, Direction.Forward),
-			TestTolerance
-		);
+	public void ShouldCorrectlyClampBetweenTwoDirections() {
+		void AssertCombination(Direction expectation, Direction min, Direction max, Direction input) {
+			AssertToleranceEquals(expectation, input.Clamp(min, max), TestTolerance);
+			AssertToleranceEquals(expectation, input.Clamp(max, min), TestTolerance);
+			AssertToleranceEquals(expectation.Inverted, input.Inverted.Clamp(min.Inverted, max.Inverted), TestTolerance);
+			AssertToleranceEquals(expectation.Inverted, input.Inverted.Clamp(max.Inverted, min.Inverted), TestTolerance);
+		}
 
-		// TODO check for colinear directions, check for our direction being exactly perpendicular
+		// Within arc after projection
+		AssertCombination(new Direction(1f, 0f, 1f), Direction.Left, Direction.Forward, new Direction(1f, 0.3f, 1f));
+		AssertCombination(new Direction(1f, 0f, 1f), Direction.Left, Direction.Forward, new Direction(1f, -0.3f, 1f));
+		AssertCombination(new Direction(1f, 0f, 0f), Direction.Left, Direction.Forward, new Direction(1f, 0f, 0f));
+		AssertCombination(new Direction(0f, 0f, 1f), Direction.Left, Direction.Forward, new Direction(0f, 0f, 1f));
+
+		AssertCombination(new Direction(-1f, 0f, 1f), Direction.Right, Direction.Forward, new Direction(-1f, 0.3f, 1f));
+		AssertCombination(new Direction(-1f, 0f, 1f), Direction.Right, Direction.Forward, new Direction(-1f, -0.3f, 1f));
+		AssertCombination(new Direction(-1f, 0f, 0f), Direction.Right, Direction.Forward, new Direction(-1f, 0f, 0f));
+		AssertCombination(new Direction(0f, 0f, 1f), Direction.Right, Direction.Forward, new Direction(0f, 0f, 1f));
+
+		// Outside arc after projection
+		AssertCombination(new Direction(1f, 0f, 0f), Direction.Left, Direction.Forward, new Direction(1f, 0f, -0.2f));
+		AssertCombination(new Direction(0f, 0f, 1f), Direction.Left, Direction.Forward, new Direction(-0.2f, 0f, 1f));
+		AssertCombination(new Direction(-1f, 0f, 0f), Direction.Right, Direction.Forward, new Direction(-1f, 0f, -0.2f));
+		AssertCombination(new Direction(0f, 0f, 1f), Direction.Right, Direction.Forward, new Direction(0.2f, 0f, 1f));
+
+		// Min and max are antipodal
+		AssertCombination(Direction.Down, Direction.Up, Direction.Down, Direction.Down);
+		AssertCombination(Direction.Up, Direction.Up, Direction.Down, Direction.Up);
+		AssertCombination(Direction.Left, Direction.Up, Direction.Down, Direction.Left);
+		AssertCombination(Direction.Right, Direction.Up, Direction.Down, Direction.Right);
+
+		// This is perpendicular to arc
+		// ReSharper disable once JoinDeclarationAndInitializer
+		Direction perpClampResult;
+		perpClampResult = Direction.Down.Clamp(Direction.Left, Direction.Forward);
+		Assert.IsTrue(perpClampResult == Direction.Left || perpClampResult == Direction.Forward);
+		perpClampResult = Direction.Down.Clamp(Direction.Forward, Direction.Left);
+		Assert.IsTrue(perpClampResult == Direction.Left || perpClampResult == Direction.Forward);
+		perpClampResult = Direction.Up.Clamp(Direction.Left, Direction.Forward);
+		Assert.IsTrue(perpClampResult == Direction.Left || perpClampResult == Direction.Forward);
+		perpClampResult = Direction.Up.Clamp(Direction.Forward, Direction.Left);
+		Assert.IsTrue(perpClampResult == Direction.Left || perpClampResult == Direction.Forward);
+		
+		// This is None
+		Assert.AreEqual(Direction.None, Direction.None.Clamp(Direction.Left, Direction.Forward));
+		Assert.AreEqual(Direction.None, Direction.None.Clamp(Direction.Left, Direction.Right));
+
+		// Min or max are None
+		Assert.Throws<ArgumentException>(() => Direction.Right.Clamp(Direction.Forward, Direction.None));
+		Assert.Throws<ArgumentException>(() => Direction.Right.Clamp(Direction.None, Direction.Forward));
 	}
 }
