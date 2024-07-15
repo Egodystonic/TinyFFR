@@ -163,8 +163,12 @@ partial struct Direction :
 		return precomputation.ScaledBy(distance) * start;
 	}
 
+	// TODO xmldoc that this clamps on to the arc between two directions in 3D space. It's a mistake to try to clamp on any arc >= 180deg
+	// TODO because this function will clamp to the shortest arc between min and max (so trying to restrict to 270deg viewing arc for example is wrong)
+	// TODO if the user wants to clamp within a 3D cone (even >= 90deg cone), they should use the other Clamp overload.
+	// TODO If the user wants to clamp within a 2D arc, they should use the other other Clamp overload
 	public Direction Clamp(Direction min, Direction max) {
-		const float OppositeDirectionsFloatingPointMargin = 1E-7f;
+		const float ColinearityErrorMargin = 1E-2f; // Should match the error margin in Plane.FromTriangleOnSurface
 		
 		// Doesn't make sense to clamp to "None", so throw exception
 		if (min == None) throw new ArgumentException($"Neither min nor max may be '{nameof(None)}'.", nameof(min));
@@ -174,7 +178,9 @@ partial struct Direction :
 		if (this == None) return None;
 
 		// If min and max are antipodal then the entire range of possible directions is valid, so just return this
-		if (min.Dot(max) < -1f + OppositeDirectionsFloatingPointMargin) return this;
+		if (min.Equals(-max, ColinearityErrorMargin)) return this;
+		// Else if min and max are the same then we just return min
+		if (min.Equals(max, ColinearityErrorMargin)) return min;
 
 		// Create a plane that is aligned with the great circle formed between min and max on the unit sphere, 
 		// and then create a dimension converter to convert min, max, and this to 2D; with 'min' representing the X-axis
@@ -204,14 +210,37 @@ partial struct Direction :
 	}
 
 	public Direction Clamp(Direction target, Angle maxDifference) {
-		if (this == None) return None;
 		if (target == None) throw new ArgumentException($"Target direction can not be '{nameof(None)}'.", nameof(target));
+		if (this == None) return None;
 		maxDifference = maxDifference.ClampZeroToHalfCircle();
 
 		var difference = target ^ this;
 		if (difference <= maxDifference) return this;
 
 		return (target >> this).ScaledBy(maxDifference.AsRadians / difference.AsRadians) * target;
+	}
+
+	// TODO xmldoc: Clamps on to a given arc (arcCentre + maxDiff) around a plane (plane); either leaving this direction directly clamped on to the plane or still with the 3D component (retainEtc). Also mention that the plane's location is not used, only its normal
+	// TODO xmldoc make it clear that the max arc difference is split across the centre direction; so e.g. a max diff of 90deg will result in 45deg either side
+	public Direction? Clamp(Plane plane, Direction arcCentre, Angle maxArcCentreDifference, bool retainOrthogonalDimension) {
+		if (arcCentre.ProjectedOnTo(plane) == null) throw new ArgumentException($"Arc centre must not be '{None}' or perpendicular to plane.", nameof(arcCentre));
+		if (this == None) return None;
+		var halfArc = maxArcCentreDifference.ClampZeroToFullCircle() * 0.5f;
+		var converter = plane.CreateDimensionConverter(Location.Origin, arcCentre);
+		var resultOnPlane = converter.Convert((Location) this);
+		var polarAngle = (resultOnPlane with { Y = -resultOnPlane.Y }).PolarAngle; // We have to flip Y because the co-ordinate system after 2D conversion has inverted coordinates
+		if (polarAngle == null) return null;
+
+		// Outside the max arc diff
+		if (polarAngle.Value.NormalizedDifferenceTo(Angle.Zero) > halfArc) {
+			resultOnPlane = XYPair<float>.FromPolarAngleAndLength(polarAngle > Angle.HalfCircle ? halfArc : -halfArc, resultOnPlane.ToVector2().Length());
+		}
+
+		var result = FromVector3(converter.Convert(resultOnPlane).ToVector3());
+		if (!retainOrthogonalDimension) return result;
+
+		var angleToPlane = SignedAngleTo(plane);
+		return (result >> plane.Normal).WithAngle(angleToPlane) * result;
 	}
 
 	public static Direction CreateNewRandom() {
@@ -233,6 +262,8 @@ partial struct Direction :
 
 		return coneCentre * (coneCentre >> coneCentre.AnyPerpendicular()).WithAngle(Angle.CreateNewRandom(0f, coneAngle.ClampZeroToHalfCircle()));
 	}
+
+	// TODO CreateNewRandom on a plane or an axis as the normal. Make FromPlaneAndPolarAngle? or something like that, and also for axis-as-the-normal
 
 	public static int GetIndexOfNearestDirectionInSpan(Direction targetDir, ReadOnlySpan<Direction> span) {
 		var result = -1;

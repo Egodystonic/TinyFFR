@@ -71,7 +71,11 @@ partial struct Angle :
 	public Angle Plus(Angle other) => FromRadians(AsRadians + other.AsRadians);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle Minus(Angle other) => FromRadians(AsRadians - other.AsRadians);
-
+	
+	// TODO xmldoc explain that this is the difference "around the clock" to the other angle; e.g. 270 & 180 = 90; 270 & 90 = 180, etc. Range is always between 0 and 180
+	public Angle NormalizedDifferenceTo(Angle other) {
+		return FromRadians(MathF.Min((this - other).Normalized.AsRadians, (other - this).Normalized.AsRadians));
+	}
 
 
 	public float Sine {
@@ -85,14 +89,19 @@ partial struct Angle :
 
 
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle Clamp(Angle min, Angle max) => FromRadians(Math.Clamp(AsRadians, min.AsRadians, max.AsRadians));
+	public Angle Clamp(Angle min, Angle max) {
+		if (min > max) (min, max) = (max, min);
+		return FromRadians(Math.Clamp(AsRadians, min.AsRadians, max.AsRadians));
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle ClampZeroToHalfCircle() => Clamp(Zero, HalfCircle);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle ClampZeroToFullCircle() => Clamp(Zero, FullCircle); // TODO make it clear that this is not the same as normalizing
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle ClampNegativeFullCircleToFullCircle() => Clamp(-FullCircle, FullCircle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle ClampNegativeHalfCircleToHalfCircle() => Clamp(-HalfCircle, HalfCircle);
 
 
 

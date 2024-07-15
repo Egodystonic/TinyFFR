@@ -52,7 +52,7 @@ public readonly partial struct Plane : IMathPrimitive<Plane>, IDescriptiveString
 		if (normal != Direction.None) return new(normal, a);
 
 		// Everything below this line is just handling the fact that the points are colinear and creating the right exception message
-		const float FloatingPointErrorMargin = 1E-2f;
+		const float FloatingPointErrorMargin = 1E-2f; // Note: If changing this, Direction.Clamp(Direction,Direction) needs to be updated too
 		Line? line;
 		if (!a.Equals(b, FloatingPointErrorMargin)) line = Line.FromTwoPoints(a, b);
 		else if (!b.Equals(c, FloatingPointErrorMargin)) line = Line.FromTwoPoints(b, c);

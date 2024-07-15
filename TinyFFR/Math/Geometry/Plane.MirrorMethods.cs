@@ -25,6 +25,8 @@ partial struct Direction : IAngleMeasurable<Plane>, IReflectable<Plane, Directio
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(Plane plane) => plane.AngleTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle SignedAngleTo(Plane plane) => plane.SignedAngleTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction ReflectedBy(Plane plane) => plane.ReflectionOf(this);
 	Direction? IReflectable<Plane, Direction>.ReflectedBy(Plane plane) => plane.ReflectionOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -43,6 +45,8 @@ partial struct Direction : IAngleMeasurable<Plane>, IReflectable<Plane, Directio
 partial struct Vect : IAngleMeasurable<Plane>, IReflectable<Plane, Vect>, IProjectable<Vect, Plane>, IParallelizable<Vect, Plane>, IOrthogonalizable<Vect, Plane> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(Plane plane) => plane.AngleTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle SignedAngleTo(Plane plane) => plane.SignedAngleTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect ReflectedBy(Plane plane) => plane.ReflectionOf(this);
 	Vect? IReflectable<Plane, Vect>.ReflectedBy(Plane plane) => plane.ReflectionOf(this);

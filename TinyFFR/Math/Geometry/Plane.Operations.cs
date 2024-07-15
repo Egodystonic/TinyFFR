@@ -52,10 +52,11 @@ partial struct Plane :
 	public static Angle operator ^(Plane plane, Vect v) => plane.AngleTo(v);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(Vect v, Plane plane) => plane.AngleTo(v);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(Plane other) => Angle.FromRadians(MathF.Acos(PerpendicularityWith(other.Normal)));
 	public Angle AngleTo(Direction direction) => Angle.FromRadians(MathF.Asin(PerpendicularityWith(direction)));
 	public Angle AngleTo(Vect vect) => AngleTo(vect.Direction);
+	public Angle SignedAngleTo(Direction direction) => Angle.FromRadians(MathF.Asin(Normal.Dot(direction)));
+	public Angle SignedAngleTo(Vect vect) => SignedAngleTo(vect.Direction);
 	public Direction ReflectionOf(Direction direction) { // TODO explain in XML that this returns the same direction if the input is parallel to the plane (this is okay as it's continuous across the whole range, so is the expected answer, just need to note it)
 		return Direction.FromVector3(-2f * Vector3.Dot(Normal.ToVector3(), direction.ToVector3()) * Normal.ToVector3() + direction.ToVector3());
 	}

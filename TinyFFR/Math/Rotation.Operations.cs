@@ -96,12 +96,17 @@ partial struct Rotation :
 		return new(Angle.Interpolate(startAngle, endAngle, distance), axis);
 	}
 
+	// TODO in xmldoc explain that this is an esoteric function that you almost always don't actually want to use (are you sure you don't want to clamp between two directions?)
+	// TODO in xmldoc explain that this function breaks the rotation in to its constituent parts (angle + axis) and clamps on those separately
+	// TODO in xmldoc explain that if this is Rotation.None, it will return Rotation.None always
 	public Rotation Clamp(Rotation min, Rotation max) {
+		if (min == None) throw new ArgumentException($"Neither min nor max can be '{None}'.", nameof(min));
+		if (max == None) throw new ArgumentException($"Neither min nor max can be '{None}'.", nameof(max));
+
 		var (minAngle, minAxis) = min;
 		var (maxAngle, maxAxis) = max;
 		return new(Angle.Clamp(minAngle, maxAngle), Axis.Clamp(minAxis, maxAxis));
 	}
-
 
 	public static Rotation CreateNewRandom() {
 		return FromQuaternion(new(

@@ -53,6 +53,18 @@ partial class PlaneTest {
 		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo(new Direction(-1f, -1f, 0f)));
 		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo(new Direction(1f, -1f, 0f)));
 		Assert.AreEqual(Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.AngleTo(new Direction(2f, -1f, 0f)));
+
+		Assert.AreEqual(Angle.Zero, TestPlane.SignedAngleTo(Direction.Forward));
+		Assert.AreEqual(Angle.Zero, TestPlane.SignedAngleTo(Direction.Backward));
+		Assert.AreEqual(Angle.Zero, TestPlane.SignedAngleTo(Direction.Right));
+		Assert.AreEqual(Angle.Zero, TestPlane.SignedAngleTo(Direction.Left));
+		Assert.AreEqual(Angle.QuarterCircle, TestPlane.SignedAngleTo(Direction.Up));
+		Assert.AreEqual(-Angle.QuarterCircle, TestPlane.SignedAngleTo(Direction.Down));
+		Assert.AreEqual(Angle.EighthCircle, TestPlane.SignedAngleTo(new Direction(1f, 1f, 0f)));
+		Assert.AreEqual(Angle.EighthCircle, TestPlane.SignedAngleTo(new Direction(-1f, 1f, 0f)));
+		Assert.AreEqual(-Angle.EighthCircle, TestPlane.SignedAngleTo(new Direction(-1f, -1f, 0f)));
+		Assert.AreEqual(-Angle.EighthCircle, TestPlane.SignedAngleTo(new Direction(1f, -1f, 0f)));
+		Assert.AreEqual(-Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.SignedAngleTo(new Direction(2f, -1f, 0f)));
 	}
 
 	[Test]

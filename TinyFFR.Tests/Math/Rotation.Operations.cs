@@ -236,4 +236,101 @@ partial class RotationTest {
 			}
 		}
 	}
+
+	[Test]
+	public void ShouldCorrectlyClamp() {
+		// Same axis, clamp angle
+		AssertToleranceEquals(
+			new Rotation(30f, Up),
+			new Rotation(60f, Up).Clamp(new Rotation(10f, Up), new Rotation(30f, Up)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Rotation(30f, Up),
+			new Rotation(10f, Up).Clamp(new Rotation(30f, Up), new Rotation(60f, Up)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Rotation(30f, Up),
+			new Rotation(30f, Up).Clamp(new Rotation(10f, Up), new Rotation(60f, Up)),
+			TestTolerance
+		);
+
+		// Inverted axis, reversed angle
+		AssertToleranceEquals(
+			new Rotation(30f, Up),
+			new Rotation(60f, Up).Clamp(new Rotation(-10f, Down), new Rotation(-30f, Down)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Rotation(30f, Up),
+			new Rotation(10f, Up).Clamp(new Rotation(-30f, Down), new Rotation(-60f, Down)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Rotation(30f, Up),
+			new Rotation(30f, Up).Clamp(new Rotation(-10f, Down), new Rotation(-60f, Down)),
+			TestTolerance
+		);
+
+		// Orthogonal axis
+		AssertToleranceEquals(
+			new Rotation(20f, Right),
+			new Rotation(20f, Up).Clamp(new Rotation(10f, Right), new Rotation(30f, Right)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Rotation(10f, Right),
+			new Rotation(5f, Down).Clamp(new Rotation(10f, Right), new Rotation(30f, Right)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Rotation(30f, Right),
+			new Rotation(40f, Down).Clamp(new Rotation(10f, Right), new Rotation(30f, Right)),
+			TestTolerance
+		);
+
+		// All over the place
+		AssertToleranceEquals(
+			new Rotation(20f, Up),
+			new Rotation(20f, Up).Clamp(new Rotation(10f, (1f, 1f, 0f)), new Rotation(30f, (-1f, 1f, 0f))),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Rotation(30f, (1f, 1f, 0f)),
+			new Rotation(40f, Left).Clamp(new Rotation(10f, (1f, 1f, 0f)), new Rotation(30f, (-1f, 1f, 0f))),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Rotation(10f, (-1f, 1f, 0f)),
+			new Rotation(5f, Right).Clamp(new Rotation(10f, (1f, 1f, 0f)), new Rotation(30f, (-1f, 1f, 0f))),
+			TestTolerance
+		);
+
+		// None
+		var testList = new List<Rotation>();
+		for (var x = -2f; x <= 2f; x += 1f) {
+			for (var y = -2f; y <= 2f; y += 1f) {
+				for (var z = -2f; z <= 2f; z += 1f) {
+					for (var w = -2f; w <= 2f; w += 1f) {
+						testList.Add(Rotation.FromQuaternion(new Quaternion(x, y, z, w)));
+					}
+				}
+			}
+		}
+
+		for (var i = 0; i < testList.Count; ++i) {
+			var min = testList[i];
+			if (min == Rotation.None) continue;
+			for (var j = i; j < testList.Count; ++j) {
+				var max = testList[j];
+				if (max == Rotation.None) continue;
+
+				Assert.AreEqual(Rotation.None, Rotation.None.Clamp(min, max));
+			}
+		}
+
+		Assert.Throws<ArgumentException>(() => NinetyAroundDown.Clamp(Rotation.None, NinetyAroundUp));
+		Assert.Throws<ArgumentException>(() => NinetyAroundDown.Clamp(NinetyAroundUp, Rotation.None));
+	}
 }

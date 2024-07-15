@@ -33,6 +33,81 @@ partial class AngleTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyCalculateNormalizedDifferences() {
+		AssertToleranceEquals(0f, Angle.Zero.NormalizedDifferenceTo(Angle.Zero), TestTolerance);
+		AssertToleranceEquals(0f, Angle.Zero.NormalizedDifferenceTo(Angle.FullCircle), TestTolerance);
+		AssertToleranceEquals(180f, Angle.Zero.NormalizedDifferenceTo(Angle.HalfCircle), TestTolerance);
+		AssertToleranceEquals(90f, Angle.Zero.NormalizedDifferenceTo(Angle.QuarterCircle), TestTolerance);
+		AssertToleranceEquals(90f, Angle.Zero.NormalizedDifferenceTo(Angle.ThreeQuarterCircle), TestTolerance);
+
+		AssertToleranceEquals(180f, Angle.HalfCircle.NormalizedDifferenceTo(Angle.Zero), TestTolerance);
+		AssertToleranceEquals(180f, Angle.HalfCircle.NormalizedDifferenceTo(Angle.FullCircle), TestTolerance);
+		AssertToleranceEquals(0f, Angle.HalfCircle.NormalizedDifferenceTo(Angle.HalfCircle), TestTolerance);
+		AssertToleranceEquals(90f, Angle.HalfCircle.NormalizedDifferenceTo(Angle.QuarterCircle), TestTolerance);
+		AssertToleranceEquals(90f, Angle.HalfCircle.NormalizedDifferenceTo(Angle.ThreeQuarterCircle), TestTolerance);
+
+		AssertToleranceEquals(180f, new Angle(-180f).NormalizedDifferenceTo(Angle.Zero), TestTolerance);
+		AssertToleranceEquals(180f, new Angle(-180f).NormalizedDifferenceTo(Angle.FullCircle), TestTolerance);
+		AssertToleranceEquals(0f, new Angle(-180f).NormalizedDifferenceTo(Angle.HalfCircle), TestTolerance);
+		AssertToleranceEquals(90f, new Angle(-180f).NormalizedDifferenceTo(Angle.QuarterCircle), TestTolerance);
+		AssertToleranceEquals(90f, new Angle(-180f).NormalizedDifferenceTo(Angle.ThreeQuarterCircle), TestTolerance);
+
+		AssertToleranceEquals(0f, Angle.FullCircle.NormalizedDifferenceTo(Angle.Zero), TestTolerance);
+		AssertToleranceEquals(0f, Angle.FullCircle.NormalizedDifferenceTo(Angle.FullCircle), TestTolerance);
+		AssertToleranceEquals(180f, Angle.FullCircle.NormalizedDifferenceTo(Angle.HalfCircle), TestTolerance);
+		AssertToleranceEquals(90f, Angle.FullCircle.NormalizedDifferenceTo(Angle.QuarterCircle), TestTolerance);
+		AssertToleranceEquals(90f, Angle.FullCircle.NormalizedDifferenceTo(Angle.ThreeQuarterCircle), TestTolerance);
+
+		AssertToleranceEquals(0f, new Angle(720f).NormalizedDifferenceTo(Angle.Zero), TestTolerance);
+		AssertToleranceEquals(0f, new Angle(720f).NormalizedDifferenceTo(Angle.FullCircle), TestTolerance);
+		AssertToleranceEquals(180f, new Angle(720f).NormalizedDifferenceTo(Angle.HalfCircle), TestTolerance);
+		AssertToleranceEquals(90f, new Angle(720f).NormalizedDifferenceTo(Angle.QuarterCircle), TestTolerance);
+		AssertToleranceEquals(90f, new Angle(720f).NormalizedDifferenceTo(Angle.ThreeQuarterCircle), TestTolerance);
+
+		AssertToleranceEquals(0f, new Angle(360f).NormalizedDifferenceTo(Angle.Zero), TestTolerance);
+		AssertToleranceEquals(0f, new Angle(360f).NormalizedDifferenceTo(Angle.FullCircle), TestTolerance);
+		AssertToleranceEquals(180f, new Angle(360f).NormalizedDifferenceTo(Angle.HalfCircle), TestTolerance);
+		AssertToleranceEquals(90f, new Angle(360f).NormalizedDifferenceTo(Angle.QuarterCircle), TestTolerance);
+		AssertToleranceEquals(90f, new Angle(360f).NormalizedDifferenceTo(Angle.ThreeQuarterCircle), TestTolerance);
+
+		AssertToleranceEquals(0f, Angle.Zero.NormalizedDifferenceTo(-Angle.Zero), TestTolerance);
+		AssertToleranceEquals(0f, Angle.Zero.NormalizedDifferenceTo(-Angle.FullCircle), TestTolerance);
+		AssertToleranceEquals(180f, Angle.Zero.NormalizedDifferenceTo(-Angle.HalfCircle), TestTolerance);
+		AssertToleranceEquals(90f, Angle.Zero.NormalizedDifferenceTo(-Angle.QuarterCircle), TestTolerance);
+		AssertToleranceEquals(90f, Angle.Zero.NormalizedDifferenceTo(-Angle.ThreeQuarterCircle), TestTolerance);
+
+		AssertToleranceEquals(180f, Angle.HalfCircle.NormalizedDifferenceTo(-Angle.Zero), TestTolerance);
+		AssertToleranceEquals(180f, Angle.HalfCircle.NormalizedDifferenceTo(-Angle.FullCircle), TestTolerance);
+		AssertToleranceEquals(0f, Angle.HalfCircle.NormalizedDifferenceTo(-Angle.HalfCircle), TestTolerance);
+		AssertToleranceEquals(90f, Angle.HalfCircle.NormalizedDifferenceTo(-Angle.QuarterCircle), TestTolerance);
+		AssertToleranceEquals(90f, Angle.HalfCircle.NormalizedDifferenceTo(-Angle.ThreeQuarterCircle), TestTolerance);
+
+		AssertToleranceEquals(180f, new Angle(-180f).NormalizedDifferenceTo(-Angle.Zero), TestTolerance);
+		AssertToleranceEquals(180f, new Angle(-180f).NormalizedDifferenceTo(-Angle.FullCircle), TestTolerance);
+		AssertToleranceEquals(0f, new Angle(-180f).NormalizedDifferenceTo(-Angle.HalfCircle), TestTolerance);
+		AssertToleranceEquals(90f, new Angle(-180f).NormalizedDifferenceTo(-Angle.QuarterCircle), TestTolerance);
+		AssertToleranceEquals(90f, new Angle(-180f).NormalizedDifferenceTo(-Angle.ThreeQuarterCircle), TestTolerance);
+
+		AssertToleranceEquals(0f, Angle.FullCircle.NormalizedDifferenceTo(-Angle.Zero), TestTolerance);
+		AssertToleranceEquals(0f, Angle.FullCircle.NormalizedDifferenceTo(-Angle.FullCircle), TestTolerance);
+		AssertToleranceEquals(180f, Angle.FullCircle.NormalizedDifferenceTo(-Angle.HalfCircle), TestTolerance);
+		AssertToleranceEquals(90f, Angle.FullCircle.NormalizedDifferenceTo(-Angle.QuarterCircle), TestTolerance);
+		AssertToleranceEquals(90f, Angle.FullCircle.NormalizedDifferenceTo(-Angle.ThreeQuarterCircle), TestTolerance);
+
+		AssertToleranceEquals(0f, new Angle(720f).NormalizedDifferenceTo(-Angle.Zero), TestTolerance);
+		AssertToleranceEquals(0f, new Angle(720f).NormalizedDifferenceTo(-Angle.FullCircle), TestTolerance);
+		AssertToleranceEquals(180f, new Angle(720f).NormalizedDifferenceTo(-Angle.HalfCircle), TestTolerance);
+		AssertToleranceEquals(90f, new Angle(720f).NormalizedDifferenceTo(-Angle.QuarterCircle), TestTolerance);
+		AssertToleranceEquals(90f, new Angle(720f).NormalizedDifferenceTo(-Angle.ThreeQuarterCircle), TestTolerance);
+
+		AssertToleranceEquals(0f, new Angle(360f).NormalizedDifferenceTo(-Angle.Zero), TestTolerance);
+		AssertToleranceEquals(0f, new Angle(360f).NormalizedDifferenceTo(-Angle.FullCircle), TestTolerance);
+		AssertToleranceEquals(180f, new Angle(360f).NormalizedDifferenceTo(-Angle.HalfCircle), TestTolerance);
+		AssertToleranceEquals(90f, new Angle(360f).NormalizedDifferenceTo(-Angle.QuarterCircle), TestTolerance);
+		AssertToleranceEquals(90f, new Angle(360f).NormalizedDifferenceTo(-Angle.ThreeQuarterCircle), TestTolerance);
+	}
+
+	[Test]
 	public void ShouldCorrectlyMultiplyAndDivide() {
 		for (var f = -MathF.Tau * 2f; f < MathF.Tau * 2.05f; f += MathF.Tau * 0.05f) {
 			for (var s = -2f; s < 2.1f; s += 0.1f) {
@@ -66,9 +141,29 @@ partial class AngleTest {
 
 	[Test]
 	public void ShouldCorrectlyClamp() {
-		void AssertZeroToHalf(Angle input, Angle expectedOutput) => Assert.AreEqual(expectedOutput, input.ClampZeroToHalfCircle());
-		void AssertZeroToFull(Angle input, Angle expectedOutput) => Assert.AreEqual(expectedOutput, input.ClampZeroToFullCircle());
-		void AssertNegFullToFull(Angle input, Angle expectedOutput) => Assert.AreEqual(expectedOutput, input.ClampNegativeFullCircleToFullCircle());
+		void AssertZeroToHalf(Angle input, Angle expectedOutput) {
+			Assert.AreEqual(expectedOutput, input.ClampZeroToHalfCircle());
+			Assert.AreEqual(expectedOutput, input.Clamp(Angle.Zero, Angle.HalfCircle));
+			Assert.AreEqual(expectedOutput, input.Clamp(Angle.HalfCircle, Angle.Zero));
+		}
+
+		void AssertZeroToFull(Angle input, Angle expectedOutput) {
+			Assert.AreEqual(expectedOutput, input.ClampZeroToFullCircle());
+			Assert.AreEqual(expectedOutput, input.Clamp(Angle.Zero, Angle.FullCircle));
+			Assert.AreEqual(expectedOutput, input.Clamp(Angle.FullCircle, Angle.Zero));
+		}
+
+		void AssertNegFullToFull(Angle input, Angle expectedOutput) {
+			Assert.AreEqual(expectedOutput, input.ClampNegativeFullCircleToFullCircle());
+			Assert.AreEqual(expectedOutput, input.Clamp(-Angle.FullCircle, Angle.FullCircle));
+			Assert.AreEqual(expectedOutput, input.Clamp(Angle.FullCircle, -Angle.FullCircle));
+		}
+
+		void AssertNegHalfToHalf(Angle input, Angle expectedOutput) {
+			Assert.AreEqual(expectedOutput, input.ClampNegativeHalfCircleToHalfCircle());
+			Assert.AreEqual(expectedOutput, input.Clamp(-Angle.HalfCircle, Angle.HalfCircle));
+			Assert.AreEqual(expectedOutput, input.Clamp(Angle.HalfCircle, -Angle.HalfCircle));
+		}
 
 		AssertZeroToHalf(0f, 0f);
 		AssertZeroToHalf(90f, 90f);
@@ -97,6 +192,20 @@ partial class AngleTest {
 		AssertNegFullToFull(-270f, -270f);
 		AssertNegFullToFull(-360f, -360f);
 		AssertNegFullToFull(-450f, -360f);
+
+		AssertNegHalfToHalf(0f, 0f);
+		AssertNegHalfToHalf(90f, 90f);
+		AssertNegHalfToHalf(180f, 180f);
+		AssertNegHalfToHalf(270f, 180f);
+		AssertNegHalfToHalf(360f, 180f);
+		AssertNegHalfToHalf(450f, 180f);
+		AssertNegHalfToHalf(-90f, -90f);
+		AssertNegHalfToHalf(-180f, -180f);
+		AssertNegHalfToHalf(-270f, -180f);
+		AssertNegHalfToHalf(-360f, -180f);
+		AssertNegHalfToHalf(-450f, -180f);
+
+		Assert.AreEqual(new Angle(100f), new Angle(0f).Clamp(new Angle(100f), new Angle(100f)));
 	}
 
 	[Test]
