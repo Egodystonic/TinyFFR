@@ -134,7 +134,21 @@ partial class BoundedRayTest {
 			TestTolerance
 		);
 	}
-	
+
+	[Test]
+	public void ShouldCorrectlyRotateAroundPoints() {
+		void AssertCombination(BoundedRay expectation, BoundedRay input, Location pivotPoint, Rotation rotation) {
+			AssertToleranceEquals(expectation, input.RotatedAroundPoint(rotation, pivotPoint), TestTolerance);
+			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), input * (pivotPoint, rotation));
+			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), input * (rotation, pivotPoint));
+			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), (pivotPoint, rotation) * input);
+			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), (rotation, pivotPoint) * input);
+		}
+
+		AssertCombination(new BoundedRay((0f, 0f, 10f), Location.Origin), new BoundedRay(Location.Origin, (0f, 0f, 10f)), (0f, 0f, 5f), Direction.Down % 180f);
+		AssertCombination(new BoundedRay((-30f, 30f, 0f), (-30f, 10f, 0f)), new BoundedRay((10f, 10f, 0f), (-10f, 10f, 0f)), (-20f, 0f, 0f), Direction.Forward % 90f);
+	}
+
 	[Test]
 	public void ShouldCorrectlyMove() {
 		var vect = new Vect(5f, -3f, 12f);
@@ -1751,6 +1765,28 @@ partial class BoundedRayTest {
 			BoundedRay.FromStartPointAndVect(new Location(0f, -10f, 0f), Direction.Up * 11f),
 			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), Vect.Zero),
 			BoundedRay.FromStartPointAndVect(new Location(0f, -10f, 0f), Direction.Up * 11f)
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyClamp() {
+		var min = new BoundedRay((0f, 10f, 0f), (0f, 10f, 10f));
+		var max = new BoundedRay((0f, 20f, 0f), (0f, 20f, 20f));
+
+		AssertToleranceEquals(
+			new BoundedRay((0f, 15f, 0f), (0f, 15f, 15f)),
+			new BoundedRay((0f, 15f, 0f), (0f, 15f, 15f)).Clamp(min, max),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((0f, 10f, 0f), (0f, 10f, 10f)),
+			new BoundedRay((0f, 05f, 0f), (0f, 05f, 05f)).Clamp(min, max),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((0f, 20f, 0f), (0f, 20f, 20f)),
+			new BoundedRay((0f, 25f, 0f), (0f, 25f, 25f)).Clamp(min, max),
+			TestTolerance
 		);
 	}
 }

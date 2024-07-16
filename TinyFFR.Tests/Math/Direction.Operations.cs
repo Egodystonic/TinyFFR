@@ -305,6 +305,32 @@ partial class DirectionTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyCreateArcPlanarRandomValues() {
+		const int NumIterations = 10_000;
+
+		for (var a = 0f; a < 360f; a += 45f) {
+			for (var i = 0; i < NumIterations; ++i) {
+				var centre = Direction.CreateNewRandom();
+				var plane = Plane.CreateNewRandom();
+				while (centre.ProjectedOnTo(plane) == null) centre = Direction.CreateNewRandom();
+				
+				var result = Direction.CreateNewRandom(plane, centre, a);
+				try {
+					Assert.LessOrEqual(plane.AngleTo(result).AsDegrees, 1f);
+					Assert.LessOrEqual((result ^ centre.ProjectedOnTo(plane)!.Value).AsDegrees, a + 1f);
+				}
+				catch {
+					Console.WriteLine(new Angle(a).ToString());
+					Console.WriteLine(plane.ToStringDescriptive());
+					Console.WriteLine(centre.ToStringDescriptive());
+					Console.WriteLine(result.ToStringDescriptive());
+					throw;
+				}
+			}
+		}
+	}
+
+	[Test]
 	public void ShouldCorrectlyFindNearestDirectionInSpan() {
 		var testList = new List<Direction>();
 		for (var x = -5f; x <= 5f; x += 1f) {
@@ -555,380 +581,382 @@ partial class DirectionTest {
 			}
 		}
 
+		var testPlane = new Plane(Direction.Up, (300f, -1.3f, -100f));
+
 		// 0deg arc
-		AssertCombination(Direction.Forward, new Plane(Direction.Up, Location.Origin), Direction.Forward, 0f, Direction.Forward);
-		AssertCombination(Direction.Forward, new Plane(Direction.Up, Location.Origin), Direction.Forward, 0f, Direction.Backward);
-		AssertCombination(Direction.Forward, new Plane(Direction.Up, Location.Origin), Direction.Forward, 0f, Direction.Left);
-		AssertCombination(Direction.Forward, new Plane(Direction.Up, Location.Origin), Direction.Forward, 0f, Direction.Right);
+		AssertCombination(Direction.Forward, testPlane, Direction.Forward, 0f, Direction.Forward);
+		AssertCombination(Direction.Forward, testPlane, Direction.Forward, 0f, Direction.Backward);
+		AssertCombination(Direction.Forward, testPlane, Direction.Forward, 0f, Direction.Left);
+		AssertCombination(Direction.Forward, testPlane, Direction.Forward, 0f, Direction.Right);
 		AssertCombination(
-			Direction.Forward * (Direction.Forward >> Direction.Up).WithAngle(new Direction(1f, 1f, 1f).AngleTo(new Plane(Direction.Up, Location.Origin))), 
-			new Plane(Direction.Up, Location.Origin), 
+			Direction.Forward * (Direction.Forward >> Direction.Up).WithAngle(new Direction(1f, 1f, 1f).AngleTo(testPlane)), 
+			testPlane, 
 			Direction.Forward, 
 			0f, 
 			(1f, 1f, 1f)
 		);
 		AssertCombination(
-			Direction.Forward * (Direction.Forward >> Direction.Down).WithAngle(new Direction(-1f, -1f, -1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			Direction.Forward * (Direction.Forward >> Direction.Down).WithAngle(new Direction(-1f, -1f, -1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			0f,
 			(-1f, -1f, -1f)
 		);
-		AssertCombination(null, new Plane(Direction.Up, Location.Origin), Direction.Forward, 0f, Direction.Up);
-		AssertCombination(null, new Plane(Direction.Up, Location.Origin), Direction.Forward, 0f, Direction.Down);
-		AssertCombination(Direction.None, new Plane(Direction.Up, Location.Origin), Direction.Forward, 0f, Direction.None);
+		AssertCombination(null, testPlane, Direction.Forward, 0f, Direction.Up);
+		AssertCombination(null, testPlane, Direction.Forward, 0f, Direction.Down);
+		AssertCombination(Direction.None, testPlane, Direction.Forward, 0f, Direction.None);
 
 		// 45deg arc
 		var forwardRight22 = Direction.Forward * (Direction.Forward >> Direction.Right).ScaledBy(0.25f);
 		var forwardLeft22 = Direction.Forward * (Direction.Forward >> Direction.Left).ScaledBy(0.25f);
-		AssertCombination(Direction.Forward, new Plane(Direction.Up, Location.Origin), Direction.Forward, 45f, Direction.Forward); // 0 deg
-		AssertCombination((-0.01f, 0f, 1f), new Plane(Direction.Up, Location.Origin), Direction.Forward, 45f, (-0.01f, 0f, 1f)); // > 0deg
-		AssertCombination((0.01f, 0f, 1f), new Plane(Direction.Up, Location.Origin), Direction.Forward, 45f, (0.01f, 0f, 1f)); // > 0deg
-		AssertCombination(forwardRight22, new Plane(Direction.Up, Location.Origin), Direction.Forward, 45f, (-1f, 0f, 1f)); // 45deg 
-		AssertCombination(forwardLeft22, new Plane(Direction.Up, Location.Origin), Direction.Forward, 45f, (1f, 0f, 1f)); // 45deg
-		AssertCombination(forwardRight22, new Plane(Direction.Up, Location.Origin), Direction.Forward, 45f, Direction.Right); // 90deg 
-		AssertCombination(forwardLeft22, new Plane(Direction.Up, Location.Origin), Direction.Forward, 45f, Direction.Left); // 90deg
-		AssertCombination(forwardRight22, new Plane(Direction.Up, Location.Origin), Direction.Forward, 45f, (-1f, 0f, -1f)); // 135deg 
-		AssertCombination(forwardLeft22, new Plane(Direction.Up, Location.Origin), Direction.Forward, 45f, (1f, 0f, -1f)); // 135deg
-		AssertCombination(forwardRight22, new Plane(Direction.Up, Location.Origin), Direction.Forward, 45f, (-0.01f, 0f, -1f)); // < 180deg
-		AssertCombination(forwardLeft22, new Plane(Direction.Up, Location.Origin), Direction.Forward, 45f, (0.01f, 0f, -1f)); // < 180deg
+		AssertCombination(Direction.Forward, testPlane, Direction.Forward, 45f, Direction.Forward); // 0 deg
+		AssertCombination((-0.01f, 0f, 1f), testPlane, Direction.Forward, 45f, (-0.01f, 0f, 1f)); // > 0deg
+		AssertCombination((0.01f, 0f, 1f), testPlane, Direction.Forward, 45f, (0.01f, 0f, 1f)); // > 0deg
+		AssertCombination(forwardRight22, testPlane, Direction.Forward, 45f, (-1f, 0f, 1f)); // 45deg 
+		AssertCombination(forwardLeft22, testPlane, Direction.Forward, 45f, (1f, 0f, 1f)); // 45deg
+		AssertCombination(forwardRight22, testPlane, Direction.Forward, 45f, Direction.Right); // 90deg 
+		AssertCombination(forwardLeft22, testPlane, Direction.Forward, 45f, Direction.Left); // 90deg
+		AssertCombination(forwardRight22, testPlane, Direction.Forward, 45f, (-1f, 0f, -1f)); // 135deg 
+		AssertCombination(forwardLeft22, testPlane, Direction.Forward, 45f, (1f, 0f, -1f)); // 135deg
+		AssertCombination(forwardRight22, testPlane, Direction.Forward, 45f, (-0.01f, 0f, -1f)); // < 180deg
+		AssertCombination(forwardLeft22, testPlane, Direction.Forward, 45f, (0.01f, 0f, -1f)); // < 180deg
 		AssertCombination( // > 0 deg + orthogonal
-			new Direction(-0.01f, 0f, 1f) * (new Direction(-0.01f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(-0.01f, 0.5f, 1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			new Direction(-0.01f, 0f, 1f) * (new Direction(-0.01f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(-0.01f, 0.5f, 1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			45f,
 			(-0.01f, 0.5f, 1f)
 		);
 		AssertCombination( // > 0 deg + orthogonal
-			new Direction(0.01f, 0f, 1f) * (new Direction(0.01f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(0.01f, 0.5f, 1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			new Direction(0.01f, 0f, 1f) * (new Direction(0.01f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(0.01f, 0.5f, 1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			45f,
 			(0.01f, 0.5f, 1f)
 		);
 		AssertCombination( // 45 deg + orthogonal
-			forwardRight22 * (forwardRight22 >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, 1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardRight22 * (forwardRight22 >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, 1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			45f,
 			(-1f, 0.5f, 1f)
 		);
 		AssertCombination( // 45 deg + orthogonal
-			forwardLeft22 * (forwardLeft22 >> Direction.Up).WithAngle(new Direction(1f, 0.5f, 1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardLeft22 * (forwardLeft22 >> Direction.Up).WithAngle(new Direction(1f, 0.5f, 1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			45f,
 			(1f, 0.5f, 1f)
 		);
 		AssertCombination( // 90 deg + orthogonal
-			forwardRight22 * (forwardRight22 >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, 0f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardRight22 * (forwardRight22 >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, 0f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			45f,
 			(-1f, 0.5f, 0f)
 		);
 		AssertCombination( // 90 deg + orthogonal
-			forwardLeft22 * (forwardLeft22 >> Direction.Up).WithAngle(new Direction(1f, 0.5f, 0f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardLeft22 * (forwardLeft22 >> Direction.Up).WithAngle(new Direction(1f, 0.5f, 0f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			45f,
 			(1f, 0.5f, 0f)
 		);
 		AssertCombination( // 135 deg + orthogonal
-			forwardRight22 * (forwardRight22 >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, -1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardRight22 * (forwardRight22 >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, -1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			45f,
 			(-1f, 0.5f, -1f)
 		);
 		AssertCombination( // 135 deg + orthogonal
-			forwardLeft22 * (forwardLeft22 >> Direction.Up).WithAngle(new Direction(1f, 0.5f, -1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardLeft22 * (forwardLeft22 >> Direction.Up).WithAngle(new Direction(1f, 0.5f, -1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			45f,
 			(1f, 0.5f, -1f)
 		);
 		AssertCombination( // < 180 deg + orthogonal
-			forwardRight22 * (forwardRight22 >> Direction.Up).WithAngle(new Direction(-0.01f, 0.5f, -1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardRight22 * (forwardRight22 >> Direction.Up).WithAngle(new Direction(-0.01f, 0.5f, -1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			45f,
 			(-0.01f, 0.5f, -1f)
 		);
 		AssertCombination( // < 180 deg + orthogonal
-			forwardLeft22 * (forwardLeft22 >> Direction.Up).WithAngle(new Direction(0.01f, 0.5f, -1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardLeft22 * (forwardLeft22 >> Direction.Up).WithAngle(new Direction(0.01f, 0.5f, -1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			45f,
 			(0.01f, 0.5f, -1f)
 		);
-		AssertCombination(null, new Plane(Direction.Up, Location.Origin), Direction.Forward, 45f, Direction.Up);
-		AssertCombination(null, new Plane(Direction.Up, Location.Origin), Direction.Forward, 45f, Direction.Down);
-		AssertCombination(Direction.None, new Plane(Direction.Up, Location.Origin), Direction.Forward, 45f, Direction.None);
+		AssertCombination(null, testPlane, Direction.Forward, 45f, Direction.Up);
+		AssertCombination(null, testPlane, Direction.Forward, 45f, Direction.Down);
+		AssertCombination(Direction.None, testPlane, Direction.Forward, 45f, Direction.None);
 
 		// 90deg arc
 		var forwardRight45 = Direction.Forward * (Direction.Forward >> Direction.Right).ScaledBy(0.5f);
 		var forwardLeft45 = Direction.Forward * (Direction.Forward >> Direction.Left).ScaledBy(0.5f);
-		AssertCombination(Direction.Forward, new Plane(Direction.Up, Location.Origin), Direction.Forward, 90f, Direction.Forward); // 0 deg
-		AssertCombination((-0.01f, 0f, 1f), new Plane(Direction.Up, Location.Origin), Direction.Forward, 90f, (-0.01f, 0f, 1f)); // > 0deg
-		AssertCombination((0.01f, 0f, 1f), new Plane(Direction.Up, Location.Origin), Direction.Forward, 90f, (0.01f, 0f, 1f)); // > 0deg
-		AssertCombination((-1f, 0f, 1f), new Plane(Direction.Up, Location.Origin), Direction.Forward, 90f, (-1f, 0f, 1f)); // 45deg 
-		AssertCombination((1f, 0f, 1f), new Plane(Direction.Up, Location.Origin), Direction.Forward, 90f, (1f, 0f, 1f)); // 45deg
-		AssertCombination(forwardRight45, new Plane(Direction.Up, Location.Origin), Direction.Forward, 90f, Direction.Right); // 90deg 
-		AssertCombination(forwardLeft45, new Plane(Direction.Up, Location.Origin), Direction.Forward, 90f, Direction.Left); // 90deg
-		AssertCombination(forwardRight45, new Plane(Direction.Up, Location.Origin), Direction.Forward, 90f, (-1f, 0f, -1f)); // 135deg 
-		AssertCombination(forwardLeft45, new Plane(Direction.Up, Location.Origin), Direction.Forward, 90f, (1f, 0f, -1f)); // 135deg
-		AssertCombination(forwardRight45, new Plane(Direction.Up, Location.Origin), Direction.Forward, 90f, (-0.01f, 0f, -1f)); // < 180deg
-		AssertCombination(forwardLeft45, new Plane(Direction.Up, Location.Origin), Direction.Forward, 90f, (0.01f, 0f, -1f)); // < 180deg
+		AssertCombination(Direction.Forward, testPlane, Direction.Forward, 90f, Direction.Forward); // 0 deg
+		AssertCombination((-0.01f, 0f, 1f), testPlane, Direction.Forward, 90f, (-0.01f, 0f, 1f)); // > 0deg
+		AssertCombination((0.01f, 0f, 1f), testPlane, Direction.Forward, 90f, (0.01f, 0f, 1f)); // > 0deg
+		AssertCombination((-1f, 0f, 1f), testPlane, Direction.Forward, 90f, (-1f, 0f, 1f)); // 45deg 
+		AssertCombination((1f, 0f, 1f), testPlane, Direction.Forward, 90f, (1f, 0f, 1f)); // 45deg
+		AssertCombination(forwardRight45, testPlane, Direction.Forward, 90f, Direction.Right); // 90deg 
+		AssertCombination(forwardLeft45, testPlane, Direction.Forward, 90f, Direction.Left); // 90deg
+		AssertCombination(forwardRight45, testPlane, Direction.Forward, 90f, (-1f, 0f, -1f)); // 135deg 
+		AssertCombination(forwardLeft45, testPlane, Direction.Forward, 90f, (1f, 0f, -1f)); // 135deg
+		AssertCombination(forwardRight45, testPlane, Direction.Forward, 90f, (-0.01f, 0f, -1f)); // < 180deg
+		AssertCombination(forwardLeft45, testPlane, Direction.Forward, 90f, (0.01f, 0f, -1f)); // < 180deg
 		AssertCombination( // > 0 deg + orthogonal
-			new Direction(-0.01f, 0f, 1f) * (new Direction(-0.01f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(-0.01f, 0.5f, 1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			new Direction(-0.01f, 0f, 1f) * (new Direction(-0.01f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(-0.01f, 0.5f, 1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			90f,
 			(-0.01f, 0.5f, 1f)
 		);
 		AssertCombination( // > 0 deg + orthogonal
-			new Direction(0.01f, 0f, 1f) * (new Direction(0.01f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(0.01f, 0.5f, 1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			new Direction(0.01f, 0f, 1f) * (new Direction(0.01f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(0.01f, 0.5f, 1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			90f,
 			(0.01f, 0.5f, 1f)
 		);
 		AssertCombination( // 45 deg + orthogonal
-			new Direction(-1f, 0f, 1f) * (new Direction(-1f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, 1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			new Direction(-1f, 0f, 1f) * (new Direction(-1f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, 1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			90f,
 			(-1f, 0.5f, 1f)
 		);
 		AssertCombination( // 45 deg + orthogonal
-			new Direction(1f, 0f, 1f) * (new Direction(1f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(1f, 0.5f, 1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			new Direction(1f, 0f, 1f) * (new Direction(1f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(1f, 0.5f, 1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			90f,
 			(1f, 0.5f, 1f)
 		);
 		AssertCombination( // 90 deg + orthogonal
-			forwardRight45 * (forwardRight45 >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, 0f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardRight45 * (forwardRight45 >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, 0f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			90f,
 			(-1f, 0.5f, 0f)
 		);
 		AssertCombination( // 90 deg + orthogonal
-			forwardLeft45 * (forwardLeft45 >> Direction.Up).WithAngle(new Direction(1f, 0.5f, 0f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardLeft45 * (forwardLeft45 >> Direction.Up).WithAngle(new Direction(1f, 0.5f, 0f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			90f,
 			(1f, 0.5f, 0f)
 		);
 		AssertCombination( // 135 deg + orthogonal
-			forwardRight45 * (forwardRight45 >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, -1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardRight45 * (forwardRight45 >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, -1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			90f,
 			(-1f, 0.5f, -1f)
 		);
 		AssertCombination( // 135 deg + orthogonal
-			forwardLeft45 * (forwardLeft45 >> Direction.Up).WithAngle(new Direction(1f, 0.5f, -1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardLeft45 * (forwardLeft45 >> Direction.Up).WithAngle(new Direction(1f, 0.5f, -1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			90f,
 			(1f, 0.5f, -1f)
 		);
 		AssertCombination( // < 180 deg + orthogonal
-			forwardRight45 * (forwardRight45 >> Direction.Up).WithAngle(new Direction(-0.01f, 0.5f, -1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardRight45 * (forwardRight45 >> Direction.Up).WithAngle(new Direction(-0.01f, 0.5f, -1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			90f,
 			(-0.01f, 0.5f, -1f)
 		);
 		AssertCombination( // < 180 deg + orthogonal
-			forwardLeft45 * (forwardLeft45 >> Direction.Up).WithAngle(new Direction(0.01f, 0.5f, -1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardLeft45 * (forwardLeft45 >> Direction.Up).WithAngle(new Direction(0.01f, 0.5f, -1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			90f,
 			(0.01f, 0.5f, -1f)
 		);
-		AssertCombination(null, new Plane(Direction.Up, Location.Origin), Direction.Forward, 90f, Direction.Up);
-		AssertCombination(null, new Plane(Direction.Up, Location.Origin), Direction.Forward, 90f, Direction.Down);
-		AssertCombination(Direction.None, new Plane(Direction.Up, Location.Origin), Direction.Forward, 90f, Direction.None);
+		AssertCombination(null, testPlane, Direction.Forward, 90f, Direction.Up);
+		AssertCombination(null, testPlane, Direction.Forward, 90f, Direction.Down);
+		AssertCombination(Direction.None, testPlane, Direction.Forward, 90f, Direction.None);
 
 		// 180deg arc
 		var forwardRight90 = Direction.Right;
 		var forwardLeft90 = Direction.Left;
-		AssertCombination(Direction.Forward, new Plane(Direction.Up, Location.Origin), Direction.Forward, 180f, Direction.Forward); // 0 deg
-		AssertCombination((-0.01f, 0f, 1f), new Plane(Direction.Up, Location.Origin), Direction.Forward, 180f, (-0.01f, 0f, 1f)); // > 0deg
-		AssertCombination((0.01f, 0f, 1f), new Plane(Direction.Up, Location.Origin), Direction.Forward, 180f, (0.01f, 0f, 1f)); // > 0deg
-		AssertCombination((-1f, 0f, 1f), new Plane(Direction.Up, Location.Origin), Direction.Forward, 180f, (-1f, 0f, 1f)); // 45deg 
-		AssertCombination((1f, 0f, 1f), new Plane(Direction.Up, Location.Origin), Direction.Forward, 180f, (1f, 0f, 1f)); // 45deg
-		AssertCombination(Direction.Right, new Plane(Direction.Up, Location.Origin), Direction.Forward, 180f, Direction.Right); // 90deg 
-		AssertCombination(Direction.Left, new Plane(Direction.Up, Location.Origin), Direction.Forward, 180f, Direction.Left); // 90deg
-		AssertCombination(forwardRight90, new Plane(Direction.Up, Location.Origin), Direction.Forward, 180f, (-1f, 0f, -1f)); // 135deg 
-		AssertCombination(forwardLeft90, new Plane(Direction.Up, Location.Origin), Direction.Forward, 180f, (1f, 0f, -1f)); // 135deg
-		AssertCombination(forwardRight90, new Plane(Direction.Up, Location.Origin), Direction.Forward, 180f, (-0.01f, 0f, -1f)); // < 180deg
-		AssertCombination(forwardLeft90, new Plane(Direction.Up, Location.Origin), Direction.Forward, 180f, (0.01f, 0f, -1f)); // < 180deg
+		AssertCombination(Direction.Forward, testPlane, Direction.Forward, 180f, Direction.Forward); // 0 deg
+		AssertCombination((-0.01f, 0f, 1f), testPlane, Direction.Forward, 180f, (-0.01f, 0f, 1f)); // > 0deg
+		AssertCombination((0.01f, 0f, 1f), testPlane, Direction.Forward, 180f, (0.01f, 0f, 1f)); // > 0deg
+		AssertCombination((-1f, 0f, 1f), testPlane, Direction.Forward, 180f, (-1f, 0f, 1f)); // 45deg 
+		AssertCombination((1f, 0f, 1f), testPlane, Direction.Forward, 180f, (1f, 0f, 1f)); // 45deg
+		AssertCombination(Direction.Right, testPlane, Direction.Forward, 180f, Direction.Right); // 90deg 
+		AssertCombination(Direction.Left, testPlane, Direction.Forward, 180f, Direction.Left); // 90deg
+		AssertCombination(forwardRight90, testPlane, Direction.Forward, 180f, (-1f, 0f, -1f)); // 135deg 
+		AssertCombination(forwardLeft90, testPlane, Direction.Forward, 180f, (1f, 0f, -1f)); // 135deg
+		AssertCombination(forwardRight90, testPlane, Direction.Forward, 180f, (-0.01f, 0f, -1f)); // < 180deg
+		AssertCombination(forwardLeft90, testPlane, Direction.Forward, 180f, (0.01f, 0f, -1f)); // < 180deg
 		AssertCombination( // > 0 deg + orthogonal
-			new Direction(-0.01f, 0f, 1f) * (new Direction(-0.01f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(-0.01f, 0.5f, 1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			new Direction(-0.01f, 0f, 1f) * (new Direction(-0.01f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(-0.01f, 0.5f, 1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			180f,
 			(-0.01f, 0.5f, 1f)
 		);
 		AssertCombination( // > 0 deg + orthogonal
-			new Direction(0.01f, 0f, 1f) * (new Direction(0.01f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(0.01f, 0.5f, 1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			new Direction(0.01f, 0f, 1f) * (new Direction(0.01f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(0.01f, 0.5f, 1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			180f,
 			(0.01f, 0.5f, 1f)
 		);
 		AssertCombination( // 90 deg + orthogonal
-			new Direction(-1f, 0f, 1f) * (new Direction(-1f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, 1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			new Direction(-1f, 0f, 1f) * (new Direction(-1f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, 1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			180f,
 			(-1f, 0.5f, 1f)
 		);
 		AssertCombination( // 90 deg + orthogonal
-			new Direction(1f, 0f, 1f) * (new Direction(1f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(1f, 0.5f, 1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			new Direction(1f, 0f, 1f) * (new Direction(1f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(1f, 0.5f, 1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			180f,
 			(1f, 0.5f, 1f)
 		);
 		AssertCombination( // 90 deg + orthogonal
-			forwardRight90 * (forwardRight90 >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, 0f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardRight90 * (forwardRight90 >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, 0f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			180f,
 			(-1f, 0.5f, 0f)
 		);
 		AssertCombination( // 90 deg + orthogonal
-			forwardLeft90 * (forwardLeft90 >> Direction.Up).WithAngle(new Direction(1f, 0.5f, 0f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardLeft90 * (forwardLeft90 >> Direction.Up).WithAngle(new Direction(1f, 0.5f, 0f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			180f,
 			(1f, 0.5f, 0f)
 		);
 		AssertCombination( // 135 deg + orthogonal
-			forwardRight90 * (forwardRight90 >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, -1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardRight90 * (forwardRight90 >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, -1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			180f,
 			(-1f, 0.5f, -1f)
 		);
 		AssertCombination( // 135 deg + orthogonal
-			forwardLeft90 * (forwardLeft90 >> Direction.Up).WithAngle(new Direction(1f, 0.5f, -1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardLeft90 * (forwardLeft90 >> Direction.Up).WithAngle(new Direction(1f, 0.5f, -1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			180f,
 			(1f, 0.5f, -1f)
 		);
 		AssertCombination( // < 180 deg + orthogonal
-			forwardRight90 * (forwardRight90 >> Direction.Up).WithAngle(new Direction(-0.01f, 0.5f, -1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardRight90 * (forwardRight90 >> Direction.Up).WithAngle(new Direction(-0.01f, 0.5f, -1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			180f,
 			(-0.01f, 0.5f, -1f)
 		);
 		AssertCombination( // < 180 deg + orthogonal
-			forwardLeft90 * (forwardLeft90 >> Direction.Up).WithAngle(new Direction(0.01f, 0.5f, -1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardLeft90 * (forwardLeft90 >> Direction.Up).WithAngle(new Direction(0.01f, 0.5f, -1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			180f,
 			(0.01f, 0.5f, -1f)
 		);
-		AssertCombination(null, new Plane(Direction.Up, Location.Origin), Direction.Forward, 180f, Direction.Up);
-		AssertCombination(null, new Plane(Direction.Up, Location.Origin), Direction.Forward, 180f, Direction.Down);
-		AssertCombination(Direction.None, new Plane(Direction.Up, Location.Origin), Direction.Forward, 180f, Direction.None);
+		AssertCombination(null, testPlane, Direction.Forward, 180f, Direction.Up);
+		AssertCombination(null, testPlane, Direction.Forward, 180f, Direction.Down);
+		AssertCombination(Direction.None, testPlane, Direction.Forward, 180f, Direction.None);
 
 		// 270deg arc
 		var forwardRight135 = new Direction(-1f, 0f, -1f);
 		var forwardLeft135 = new Direction(1f, 0f, -1f);
-		AssertCombination(Direction.Forward, new Plane(Direction.Up, Location.Origin), Direction.Forward, 270f, Direction.Forward); // 0 deg
-		AssertCombination((-0.01f, 0f, 1f), new Plane(Direction.Up, Location.Origin), Direction.Forward, 270f, (-0.01f, 0f, 1f)); // > 0deg
-		AssertCombination((0.01f, 0f, 1f), new Plane(Direction.Up, Location.Origin), Direction.Forward, 270f, (0.01f, 0f, 1f)); // > 0deg
-		AssertCombination((-1f, 0f, 1f), new Plane(Direction.Up, Location.Origin), Direction.Forward, 270f, (-1f, 0f, 1f)); // 45deg 
-		AssertCombination((1f, 0f, 1f), new Plane(Direction.Up, Location.Origin), Direction.Forward, 270f, (1f, 0f, 1f)); // 45deg
-		AssertCombination(Direction.Right, new Plane(Direction.Up, Location.Origin), Direction.Forward, 270f, Direction.Right); // 90deg 
-		AssertCombination(Direction.Left, new Plane(Direction.Up, Location.Origin), Direction.Forward, 270f, Direction.Left); // 90deg
-		AssertCombination(forwardRight135, new Plane(Direction.Up, Location.Origin), Direction.Forward, 270f, (-1f, 0f, -1f)); // 135deg 
-		AssertCombination(forwardLeft135, new Plane(Direction.Up, Location.Origin), Direction.Forward, 270f, (1f, 0f, -1f)); // 135deg
-		AssertCombination(forwardRight135, new Plane(Direction.Up, Location.Origin), Direction.Forward, 270f, (-0.01f, 0f, -1f)); // < 180deg
-		AssertCombination(forwardLeft135, new Plane(Direction.Up, Location.Origin), Direction.Forward, 270f, (0.01f, 0f, -1f)); // < 180deg
+		AssertCombination(Direction.Forward, testPlane, Direction.Forward, 270f, Direction.Forward); // 0 deg
+		AssertCombination((-0.01f, 0f, 1f), testPlane, Direction.Forward, 270f, (-0.01f, 0f, 1f)); // > 0deg
+		AssertCombination((0.01f, 0f, 1f), testPlane, Direction.Forward, 270f, (0.01f, 0f, 1f)); // > 0deg
+		AssertCombination((-1f, 0f, 1f), testPlane, Direction.Forward, 270f, (-1f, 0f, 1f)); // 45deg 
+		AssertCombination((1f, 0f, 1f), testPlane, Direction.Forward, 270f, (1f, 0f, 1f)); // 45deg
+		AssertCombination(Direction.Right, testPlane, Direction.Forward, 270f, Direction.Right); // 90deg 
+		AssertCombination(Direction.Left, testPlane, Direction.Forward, 270f, Direction.Left); // 90deg
+		AssertCombination(forwardRight135, testPlane, Direction.Forward, 270f, (-1f, 0f, -1f)); // 135deg 
+		AssertCombination(forwardLeft135, testPlane, Direction.Forward, 270f, (1f, 0f, -1f)); // 135deg
+		AssertCombination(forwardRight135, testPlane, Direction.Forward, 270f, (-0.01f, 0f, -1f)); // < 180deg
+		AssertCombination(forwardLeft135, testPlane, Direction.Forward, 270f, (0.01f, 0f, -1f)); // < 180deg
 		AssertCombination( // > 0 deg + orthogonal
-			new Direction(-0.01f, 0f, 1f) * (new Direction(-0.01f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(-0.01f, 0.5f, 1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			new Direction(-0.01f, 0f, 1f) * (new Direction(-0.01f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(-0.01f, 0.5f, 1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			270f,
 			(-0.01f, 0.5f, 1f)
 		);
 		AssertCombination( // > 0 deg + orthogonal
-			new Direction(0.01f, 0f, 1f) * (new Direction(0.01f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(0.01f, 0.5f, 1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			new Direction(0.01f, 0f, 1f) * (new Direction(0.01f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(0.01f, 0.5f, 1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			270f,
 			(0.01f, 0.5f, 1f)
 		);
 		AssertCombination( // 90 deg + orthogonal
-			new Direction(-1f, 0f, 1f) * (new Direction(-1f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, 1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			new Direction(-1f, 0f, 1f) * (new Direction(-1f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, 1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			270f,
 			(-1f, 0.5f, 1f)
 		);
 		AssertCombination( // 90 deg + orthogonal
-			new Direction(1f, 0f, 1f) * (new Direction(1f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(1f, 0.5f, 1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			new Direction(1f, 0f, 1f) * (new Direction(1f, 0f, 1f) >> Direction.Up).WithAngle(new Direction(1f, 0.5f, 1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			270f,
 			(1f, 0.5f, 1f)
 		);
 		AssertCombination( // 90 deg + orthogonal
-			Direction.Right * (Direction.Right >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, 0f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			Direction.Right * (Direction.Right >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, 0f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			270f,
 			(-1f, 0.5f, 0f)
 		);
 		AssertCombination( // 90 deg + orthogonal
-			Direction.Left * (Direction.Left >> Direction.Up).WithAngle(new Direction(1f, 0.5f, 0f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			Direction.Left * (Direction.Left >> Direction.Up).WithAngle(new Direction(1f, 0.5f, 0f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			270f,
 			(1f, 0.5f, 0f)
 		);
 		AssertCombination( // 135 deg + orthogonal
-			forwardRight135 * (forwardRight135 >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, -1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardRight135 * (forwardRight135 >> Direction.Up).WithAngle(new Direction(-1f, 0.5f, -1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			270f,
 			(-1f, 0.5f, -1f)
 		);
 		AssertCombination( // 135 deg + orthogonal
-			forwardLeft135 * (forwardLeft135 >> Direction.Up).WithAngle(new Direction(1f, 0.5f, -1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardLeft135 * (forwardLeft135 >> Direction.Up).WithAngle(new Direction(1f, 0.5f, -1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			270f,
 			(1f, 0.5f, -1f)
 		);
 		AssertCombination( // < 180 deg + orthogonal
-			forwardRight135 * (forwardRight135 >> Direction.Up).WithAngle(new Direction(-0.01f, 0.5f, -1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardRight135 * (forwardRight135 >> Direction.Up).WithAngle(new Direction(-0.01f, 0.5f, -1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			270f,
 			(-0.01f, 0.5f, -1f)
 		);
 		AssertCombination( // < 180 deg + orthogonal
-			forwardLeft135 * (forwardLeft135 >> Direction.Up).WithAngle(new Direction(0.01f, 0.5f, -1f).AngleTo(new Plane(Direction.Up, Location.Origin))),
-			new Plane(Direction.Up, Location.Origin),
+			forwardLeft135 * (forwardLeft135 >> Direction.Up).WithAngle(new Direction(0.01f, 0.5f, -1f).AngleTo(testPlane)),
+			testPlane,
 			Direction.Forward,
 			270f,
 			(0.01f, 0.5f, -1f)
 		);
-		AssertCombination(null, new Plane(Direction.Up, Location.Origin), Direction.Forward, 270f, Direction.Up);
-		AssertCombination(null, new Plane(Direction.Up, Location.Origin), Direction.Forward, 270f, Direction.Down);
-		AssertCombination(Direction.None, new Plane(Direction.Up, Location.Origin), Direction.Forward, 270f, Direction.None);
+		AssertCombination(null, testPlane, Direction.Forward, 270f, Direction.Up);
+		AssertCombination(null, testPlane, Direction.Forward, 270f, Direction.Down);
+		AssertCombination(Direction.None, testPlane, Direction.Forward, 270f, Direction.None);
 		
 		// 360deg arc
 		var testList = new List<Direction>();
@@ -944,12 +972,12 @@ partial class DirectionTest {
 			for (var j = i; j < testList.Count; ++j) {
 				var target = testList[j];
 				if (target == Direction.None) continue;
-				AssertCombination(input, new Plane(Direction.Up, Location.Origin), target, 360f, input);
+				AssertCombination(input, testPlane, target, 360f, input);
 			}
 		}
 
 		// Parameter checks
-		Assert.Throws<ArgumentException>(() => Direction.Left.Clamp(new Plane(Direction.Up, Location.Origin), Direction.Down, 45f, false));
-		Assert.Throws<ArgumentException>(() => Direction.Left.Clamp(new Plane(Direction.Up, Location.Origin), Direction.None, 45f, false));
+		Assert.Throws<ArgumentException>(() => Direction.Left.Clamp(testPlane, Direction.Down, 45f, false));
+		Assert.Throws<ArgumentException>(() => Direction.Left.Clamp(testPlane, Direction.None, 45f, false));
 	}
 }

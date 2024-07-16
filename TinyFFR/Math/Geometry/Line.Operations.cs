@@ -32,8 +32,7 @@ public readonly partial struct Line {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Line operator *((Location Pivot, Rotation Rotation) pivotRotationTuple, Line line) => line.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
 	public Line RotatedAroundPoint(Rotation rot, Location pivot) {
-		var lineToPivotVect = PointClosestTo(pivot) >> pivot;
-		return new(pivot + lineToPivotVect * rot, Direction * rot);
+		return new(pivot + (pivot >> PointClosestTo(pivot)) * rot, Direction * rot);
 	}
 
 
@@ -64,7 +63,14 @@ public readonly partial struct Line {
 			Direction.InterpolateUsingPrecomputation(start.Direction, end.Direction, precomputation, distance)
 		);
 	}
-	public Line Clamp(Line min, Line max) => new(PointOnLine.Clamp(min.PointOnLine, max.PointOnLine), Direction.Clamp(min.Direction, max.Direction));
+	public Line Clamp(Line min, Line max) {
+		var startPoint = min.PointClosestTo(max);
+		var endPoint = max.PointClosestTo(min);
+		return new(
+			new BoundedRay(startPoint, endPoint).PointClosestTo(this).Clamp(startPoint, endPoint),
+			Direction.Clamp(min.Direction, max.Direction)
+		);
+	}
 
 	public static Line CreateNewRandom() => new(Location.CreateNewRandom(), Direction.CreateNewRandom());
 	public static Line CreateNewRandom(Line minInclusive, Line maxExclusive) => new(Location.CreateNewRandom(minInclusive.PointOnLine, maxExclusive.PointOnLine), Direction.CreateNewRandom(minInclusive.Direction, maxExclusive.Direction));

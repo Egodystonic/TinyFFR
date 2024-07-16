@@ -62,6 +62,20 @@ partial class LocationTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyRotateAroundPoints() {
+		void AssertCombination(Location expectation, Location startPoint, Location pivotPoint, Rotation rotation) {
+			AssertToleranceEquals(expectation, startPoint.RotatedAroundPoint(rotation, pivotPoint), TestTolerance);
+			Assert.AreEqual(startPoint.RotatedAroundPoint(rotation, pivotPoint), startPoint * (pivotPoint, rotation));
+			Assert.AreEqual(startPoint.RotatedAroundPoint(rotation, pivotPoint), startPoint * (rotation, pivotPoint));
+			Assert.AreEqual(startPoint.RotatedAroundPoint(rotation, pivotPoint), (pivotPoint, rotation) * startPoint);
+			Assert.AreEqual(startPoint.RotatedAroundPoint(rotation, pivotPoint), (rotation, pivotPoint) * startPoint);
+		}
+
+		AssertCombination((0f, 0f, 10f), (0f, 0f, 0f), (0f, 0f, 5f), Direction.Down % 180f);
+		AssertCombination((-10f, 0f, 0f), (0f, 10f, 0f), (0f, 0f, -10f), Direction.Forward % 90f);
+	}
+
+	[Test]
 	public void ShouldCorrectlyInterpolate() {
 		AssertToleranceEquals(OneTwoNegThree, Location.Interpolate(OneTwoNegThree, Location.Origin, 0f), TestTolerance); 
 		AssertToleranceEquals(Location.Origin, Location.Interpolate(OneTwoNegThree, Location.Origin, 1f), TestTolerance); 

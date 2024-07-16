@@ -38,6 +38,21 @@ partial class LineTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyRotateAroundPoints() {
+		void AssertCombination(Line expectation, Line input, Location pivotPoint, Rotation rotation) {
+			AssertToleranceEquals(expectation, input.RotatedAroundPoint(rotation, pivotPoint), TestTolerance);
+			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), input * (pivotPoint, rotation));
+			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), input * (rotation, pivotPoint));
+			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), (pivotPoint, rotation) * input);
+			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), (rotation, pivotPoint) * input);
+		}
+
+		AssertCombination(new Line(Location.Origin, Direction.Forward), new Line(Location.Origin, Direction.Forward), (0f, 0f, 5f), Direction.Down % 180f);
+		AssertCombination(new Line((0f, 0f, 10f), Direction.Right), new Line(Location.Origin, Direction.Right), (0f, 0f, 5f), Direction.Down % 180f);
+		AssertCombination(new Line((0f, 10f, 0f), Direction.Right), new Line((0f, 10f, 0f), Direction.Down), (0f, 10f, 0f), Direction.Forward % 90f);
+	}
+
+	[Test]
 	public void ShouldCorrectlyMove() {
 		var vect = new Vect(5f, -3f, 12f);
 
@@ -1293,6 +1308,28 @@ partial class LineTest {
 			new Ray(new Location(100f, 1f, 0f), Direction.Down),
 			new Ray(new Location(100f, 1f, 0f), Direction.Up),
 			new Line(new Location(100f, 0f, 0f), Direction.Down)
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyClamp() {
+		var min = new Line((0f, 10f, 0f), Direction.Forward);
+		var max = new Line((0f, 20f, 0f), Direction.Right);
+
+		AssertToleranceEquals(
+			new Line((0f, 15f, 0f), (-1f, 0f, 1f)),
+			new Line((0f, 15f, 0f), (-1f, 0f, 1f)).Clamp(min, max),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Line((0f, 20f, 0f), (-1f, 0f, 0f)),
+			new Line((0f, 25f, 0f), (-1f, 0f, -1f)).Clamp(min, max),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Line((0f, 10f, 0f), (0f, 0f, 1f)),
+			new Line((0f, 05f, 0f), (1f, 0f, 1f)).Clamp(min, max),
+			TestTolerance
 		);
 	}
 }

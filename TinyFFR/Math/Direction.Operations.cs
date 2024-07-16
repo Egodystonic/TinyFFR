@@ -227,7 +227,7 @@ partial struct Direction :
 		if (this == None) return None;
 		var halfArc = maxArcCentreDifference.ClampZeroToFullCircle() * 0.5f;
 		var converter = plane.CreateDimensionConverter(Location.Origin, arcCentre);
-		var resultOnPlane = converter.Convert((Location) this);
+		var resultOnPlane = converter.ConvertDisregardingOrigin((Location) this);
 		var polarAngle = (resultOnPlane with { Y = -resultOnPlane.Y }).PolarAngle; // We have to flip Y because the co-ordinate system after 2D conversion has inverted coordinates
 		if (polarAngle == null) return null;
 
@@ -236,7 +236,7 @@ partial struct Direction :
 			resultOnPlane = XYPair<float>.FromPolarAngleAndLength(polarAngle > Angle.HalfCircle ? halfArc : -halfArc, resultOnPlane.ToVector2().Length());
 		}
 
-		var result = FromVector3(converter.Convert(resultOnPlane).ToVector3());
+		var result = FromVector3(converter.ConvertDisregardingOrigin(resultOnPlane).ToVector3());
 		if (!retainOrthogonalDimension) return result;
 
 		var angleToPlane = SignedAngleTo(plane);
@@ -262,8 +262,12 @@ partial struct Direction :
 
 		return coneCentre * (coneCentre >> coneCentre.AnyPerpendicular()).WithAngle(Angle.CreateNewRandom(0f, coneAngle.ClampZeroToHalfCircle()));
 	}
-
-	// TODO CreateNewRandom on a plane or an axis as the normal. Make FromPlaneAndPolarAngle? or something like that, and also for axis-as-the-normal
+	public static Direction CreateNewRandom(Plane plane) => CreateNewRandom(plane, plane.Normal.AnyPerpendicular(), Angle.FullCircle);
+	public static Direction CreateNewRandom(Plane plane, Direction arcCentre, Angle arcAngle) {
+		if (arcCentre.ProjectedOnTo(plane) == null) throw new ArgumentException("Arc centre must not be orthogonal to the plane.", nameof(arcCentre));
+		var halfAngle = arcAngle * 0.5f;
+		return FromPlaneAndPolarAngle(plane, arcCentre, Angle.CreateNewRandom(-halfAngle, halfAngle)); 
+	}
 
 	public static int GetIndexOfNearestDirectionInSpan(Direction targetDir, ReadOnlySpan<Direction> span) {
 		var result = -1;

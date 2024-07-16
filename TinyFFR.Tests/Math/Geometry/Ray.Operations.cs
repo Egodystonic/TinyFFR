@@ -45,6 +45,20 @@ partial class RayTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyRotateAroundPoints() {
+		void AssertCombination(Ray expectation, Ray input, Location pivotPoint, Rotation rotation) {
+			AssertToleranceEquals(expectation, input.RotatedAroundPoint(rotation, pivotPoint), TestTolerance);
+			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), input * (pivotPoint, rotation));
+			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), input * (rotation, pivotPoint));
+			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), (pivotPoint, rotation) * input);
+			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), (rotation, pivotPoint) * input);
+		}
+
+		AssertCombination(new Ray((0f, 0f, 10f), Direction.Backward), new Ray(Location.Origin, Direction.Forward), (0f, 0f, 5f), Direction.Down % 180f);
+		AssertCombination(new Ray(Location.Origin, Direction.Forward), new Ray(Location.Origin, Direction.Forward), (0f, 0f, 5f), Direction.Forward % 180f);
+	}
+
+	[Test]
 	public void ShouldCorrectlyMove() {
 		var vect = new Vect(5f, -3f, 12f);
 
@@ -1369,6 +1383,28 @@ partial class RayTest {
 			new BoundedRay(new Location(100f, 0f, 0f), new Location(101f, 1f, 0f)),
 			new Ray(new Location(101f, 1f, 0f), new Direction(1f, 1f, 0f)),
 			new Ray(new Location(100f, 0f, 0f), new Direction(1f, 1f, 0f))
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyClamp() {
+		var min = new Ray((0f, 10f, 0f), Direction.Forward);
+		var max = new Ray((0f, 20f, 0f), Direction.Right);
+
+		AssertToleranceEquals(
+			new Ray((0f, 15f, 0f), (-1f, 0f, 1f)),
+			new Ray((0f, 15f, 0f), (-1f, 0f, 1f)).Clamp(min, max),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Ray((0f, 20f, 0f), (-1f, 0f, 0f)),
+			new Ray((0f, 25f, 0f), (-1f, 0f, -1f)).Clamp(min, max),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Ray((0f, 10f, 0f), (0f, 0f, 1f)),
+			new Ray((0f, 05f, 0f), (1f, 0f, 1f)).Clamp(min, max),
+			TestTolerance
 		);
 	}
 }

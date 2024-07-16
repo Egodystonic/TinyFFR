@@ -218,6 +218,17 @@ partial struct Plane :
 		public Location Convert(XYPair<float> location2D, float zAxisDimension) {
 			return Convert(location2D) + PlaneNormal * zAxisDimension;
 		}
+
+		public XYPair<float> ConvertDisregardingOrigin(Location location3D) {
+			return new(XBasis.Dot((Vect) location3D), YBasis.Dot((Vect) location3D));
+		}
+
+		public Location ConvertDisregardingOrigin(XYPair<float> location2D) {
+			return (Location) (XBasis * location2D.X + YBasis * location2D.Y);
+		}
+		public Location ConvertDisregardingOrigin(XYPair<float> location2D, float zAxisDimension) {
+			return ConvertDisregardingOrigin(location2D) + PlaneNormal * zAxisDimension;
+		}
 	}
 	public DimensionConverter CreateDimensionConverter() {
 		var xBasis = Normal.AnyPerpendicular();

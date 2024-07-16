@@ -658,4 +658,13 @@ partial class PlaneTest {
 		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Up));
 		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Down));
 	}
+
+	[Test]
+	public void ShouldCorrectlyClamp() {
+		AssertToleranceEquals(
+			new Plane((0f, 1f, 1f), (0f, 5f, 5f)),
+			new Plane((0f, 1f, 1f), (0f, 10f, 10f)).Clamp(new Plane(Direction.Up, (0f, 10f, 0f)), new Plane(Direction.Forward, (0f, 0f, 10f))),
+			TestTolerance
+		);
+	}
 }

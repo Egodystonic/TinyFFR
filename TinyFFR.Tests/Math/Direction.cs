@@ -114,6 +114,24 @@ partial class DirectionTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyConstructFromPlaneAndPolarAngle() {
+		var plane = new Plane(Direction.Down, (100f, 4f, -3f));
+		AssertToleranceEquals(Direction.Forward, Direction.FromPlaneAndPolarAngle(plane, Direction.Forward, 0f), TestTolerance);
+		AssertToleranceEquals(Direction.Backward, Direction.FromPlaneAndPolarAngle(plane, Direction.Backward, 0f), TestTolerance);
+		AssertToleranceEquals(Direction.Backward, Direction.FromPlaneAndPolarAngle(plane, Direction.Forward, 180f), TestTolerance);
+		AssertToleranceEquals(Direction.Forward, Direction.FromPlaneAndPolarAngle(plane, Direction.Backward, 180f), TestTolerance);
+		AssertToleranceEquals(Direction.Right, Direction.FromPlaneAndPolarAngle(plane, Direction.Forward, 90f), TestTolerance);
+		AssertToleranceEquals(Direction.Left, Direction.FromPlaneAndPolarAngle(plane, Direction.Forward, -90f), TestTolerance);
+		AssertToleranceEquals(Direction.Right, Direction.FromPlaneAndPolarAngle(plane, Direction.Backward, 270f), TestTolerance);
+		AssertToleranceEquals(Direction.Left, Direction.FromPlaneAndPolarAngle(plane, Direction.Backward, -270f), TestTolerance);
+		plane = plane.Flipped;
+		AssertToleranceEquals(Direction.Left, Direction.FromPlaneAndPolarAngle(plane, Direction.Forward, 90f), TestTolerance);
+		AssertToleranceEquals(Direction.Right, Direction.FromPlaneAndPolarAngle(plane, Direction.Forward, -90f), TestTolerance);
+		AssertToleranceEquals(Direction.Left, Direction.FromPlaneAndPolarAngle(plane, Direction.Backward, 270f), TestTolerance);
+		AssertToleranceEquals(Direction.Right, Direction.FromPlaneAndPolarAngle(plane, Direction.Backward, -270f), TestTolerance);
+	}
+
+	[Test]
 	public void ShouldCorrectlyConvertFromOrientation3D() {
 		foreach (var orientation in OrientationUtils.All3DOrientations) {
 			var result = Direction.FromOrientation(orientation);
