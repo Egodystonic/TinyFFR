@@ -28,9 +28,18 @@ partial struct XYPair<T> :
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(-X, -Y);
 	}
-	public XYPair<T> Reciprocal {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => new(T.One / X, T.One / Y);
+	public XYPair<T>? Reciprocal {
+		get {
+			if (X == T.Zero || Y == T.Zero) return null;
+			return new XYPair<T>(T.One / X, T.One / Y);
+		}
+	}
+
+	public float Length {
+		get => ToVector2().Length();
+	}
+	public float LengthSquared {
+		get => ToVector2().LengthSquared();
 	}
 
 	static XYPair<T> IAdditiveIdentity<XYPair<T>, XYPair<T>>.AdditiveIdentity => new(T.Zero, T.Zero);
@@ -71,17 +80,25 @@ partial struct XYPair<T> :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public XYPair<T> MultipliedBy(T scalar) => new(X * scalar, Y * scalar);
 
-	public float DistanceSquaredFrom(XYPair<T> pair) => Single.CreateSaturating(T.Abs(X - pair.X) + T.Abs(Y - pair.Y));
+	public float DistanceSquaredFrom(XYPair<T> pair) => Vector2.DistanceSquared(ToVector2(), pair.ToVector2());
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceFrom(XYPair<T> pair) => MathF.Sqrt(DistanceSquaredFrom(pair));
+	public float DistanceFrom(XYPair<T> pair) => Vector2.Distance(ToVector2(), pair.ToVector2());
 
 	public static XYPair<T> Interpolate(XYPair<T> start, XYPair<T> end, float distance) {
 		return start + (end - start).ScaledBy(distance);
 	}
 	public XYPair<T> Clamp(XYPair<T> min, XYPair<T> max) {
+		var minX = min.X;
+		var maxX = max.X;
+		var minY = min.Y;
+		var maxY = max.Y;
+
+		if (minX > maxX) (minX, maxX) = (maxX, minX);
+		if (minY > maxY) (minY, maxY) = (maxY, minY);
+
 		return new(
-			T.Clamp(X, min.X, max.X),
-			T.Clamp(Y, min.Y, max.Y)
+			T.Clamp(X, minX, maxX),
+			T.Clamp(Y, minY, maxY)
 		);
 	}
 

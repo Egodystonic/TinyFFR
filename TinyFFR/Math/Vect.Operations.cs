@@ -50,11 +50,12 @@ partial struct Vect :
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(-AsVector4);
 	}
-	public Vect Reciprocal {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => new(1f / X, 1f / Y, 1f / Z);
+	public Vect? Reciprocal {
+		get {
+			if (X == 0f || Y == 0f || Z == 0f) return null;
+			return new Vect(1f / X, 1f / Y, 1f / Z);
+		}
 	}
-
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

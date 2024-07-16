@@ -10,9 +10,9 @@ public interface IInvertible<TSelf> :
 	TSelf Inverted { get; }
 }
 
-public interface IMultiplicativeInvertible<out TSelf>
-	where TSelf : IMultiplicativeInvertible<TSelf> {
-	TSelf Reciprocal { get; }
+public interface IMultiplicativeInvertible<TSelf>
+	where TSelf : struct, IMultiplicativeInvertible<TSelf> {
+	TSelf? Reciprocal { get; }
 }
 
 public interface IAdditive<TSelf, TOther, TResult> :
@@ -64,7 +64,7 @@ public interface IAlgebraicRing<TSelf> :
 	IMultiplicative<TSelf, TSelf, TSelf>,
 	IMultiplicativeIdentity<TSelf, TSelf>,
 	IMultiplicativeInvertible<TSelf>
-	where TSelf : IAlgebraicRing<TSelf> {
+	where TSelf : struct, IAlgebraicRing<TSelf> {
 }
 
 public interface IInnerProductSpace<in TSelf>

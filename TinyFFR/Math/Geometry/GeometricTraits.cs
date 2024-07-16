@@ -27,7 +27,7 @@ public interface IIndependentAxisScalable<TSelf> :
 	IMultiplicative<TSelf, Vect, TSelf>
 	where TSelf : IIndependentAxisScalable<TSelf> {
 	TSelf IMultiplicative<TSelf, Vect, TSelf>.MultipliedBy(Vect vect) => ScaledBy(vect);
-	TSelf IMultiplicative<TSelf, Vect, TSelf>.DividedBy(Vect vect) => ScaledBy(vect.Reciprocal);
+	TSelf IMultiplicative<TSelf, Vect, TSelf>.DividedBy(Vect vect) => ScaledBy(vect.Reciprocal ?? Vect.Zero);
 	TSelf ScaledBy(Vect vect);
 }
 

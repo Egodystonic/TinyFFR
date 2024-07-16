@@ -134,6 +134,38 @@ partial class LineTest {
 			0f,
 			new Line(new Location(0f, 0f, 0f), Direction.Left).DistanceFromOrigin()
 		);
+
+		// Squared
+		Assert.AreEqual(
+			1f,
+			new Line(new Location(100f, 0f, 0f), Direction.Left).DistanceSquaredFrom(new Location(0f, 1f, 0f))
+		);
+		Assert.AreEqual(
+			1f,
+			new Line(new Location(100f, 0f, 0f), Direction.Left).DistanceSquaredFrom(new Location(0f, -1f, 0f))
+		);
+		Assert.AreEqual(
+			0f,
+			new Line(new Location(100f, 0f, 0f), Direction.Left).DistanceSquaredFrom(new Location(-100f, 0f, 0f))
+		);
+		Assert.AreEqual(
+			2f,
+			new Line(new Location(100f, 0f, 0f), Direction.Left).DistanceSquaredFrom(new Location(-100f, 1f, -1f)),
+			TestTolerance
+		);
+
+		Assert.AreEqual(
+			1f,
+			new Line(new Location(0f, 1f, 0f), Direction.Left).DistanceSquaredFromOrigin()
+		);
+		Assert.AreEqual(
+			1f,
+			new Line(new Location(0f, 1f, 0f), Direction.Left).DistanceSquaredFromOrigin()
+		);
+		Assert.AreEqual(
+			0f,
+			new Line(new Location(0f, 0f, 0f), Direction.Left).DistanceSquaredFromOrigin()
+		);
 	}
 
 	[Test]
@@ -310,6 +342,39 @@ partial class LineTest {
 		Assert.AreEqual(
 			0f,
 			TestLine.DistanceFrom(TestLine.ToBoundedRay(-1f, 1f)),
+			TestTolerance
+		);
+
+		// Squared
+		Assert.AreEqual(
+			16.738178f * 16.738178f,
+			TestLine.DistanceSquaredFrom(new Line(new Location(15f, -3f, 12f), new Direction(-2f, 0f, 14f))),
+			TestTolerance
+		);
+		Assert.AreEqual(
+			18.053492f * 18.053492f,
+			TestLine.DistanceSquaredFrom(new Ray(new Location(15f, -3f, 12f), new Direction(-2f, 0f, 14f))),
+			TestTolerance
+		);
+		Assert.AreEqual(
+			17.34369f * 17.34369f,
+			TestLine.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(15f, -3f, 12f), new Direction(-2f, 0f, 14f) * -4f)),
+			TestTolerance
+		);
+
+		Assert.AreEqual(
+			0f,
+			TestLine.DistanceSquaredFrom(TestLine),
+			TestTolerance
+		);
+		Assert.AreEqual(
+			0f,
+			TestLine.DistanceSquaredFrom(TestLine.ToRay(0f, false)),
+			TestTolerance
+		);
+		Assert.AreEqual(
+			0f,
+			TestLine.DistanceSquaredFrom(TestLine.ToBoundedRay(-1f, 1f)),
 			TestTolerance
 		);
 	}
@@ -1331,5 +1396,16 @@ partial class LineTest {
 			new Line((0f, 05f, 0f), (1f, 0f, 1f)).Clamp(min, max),
 			TestTolerance
 		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineDistanceAtPoints() {
+		Assert.AreEqual(0f, TestLine.DistanceAtPointClosestTo((1f, 2f, -3f)), TestTolerance);
+		Assert.AreEqual(10f, TestLine.DistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestLineDirection * 10f), TestTolerance);
+		Assert.AreEqual(-10f, TestLine.DistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestLineDirection * -10f), TestTolerance);
+
+		Assert.AreEqual(0f, TestLine.DistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestLineDirection.AnyPerpendicular() * 10f), TestTolerance);
+		Assert.AreEqual(10f, TestLine.DistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestLineDirection * 10f + TestLineDirection.AnyPerpendicular() * 10f), TestTolerance);
+		Assert.AreEqual(-10f, TestLine.DistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestLineDirection * -10f + TestLineDirection.AnyPerpendicular() * 10f), TestTolerance);
 	}
 }

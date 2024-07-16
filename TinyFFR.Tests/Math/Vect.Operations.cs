@@ -63,6 +63,15 @@ partial class VectTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyReciprocate() {
+		Assert.AreEqual(new Vect(1f, 0.5f, 1f / -3f), OneTwoNegThree.Reciprocal);
+		Assert.AreEqual(null, Vect.Zero.Reciprocal);
+		Assert.AreEqual(null, new Vect(0f, 1f, 1f).Reciprocal);
+		Assert.AreEqual(null, new Vect(1f, 0f, 1f).Reciprocal);
+		Assert.AreEqual(null, new Vect(1f, 1f, 0f).Reciprocal);
+	}
+
+	[Test]
 	public void ShouldCorrectlyAddAndSubtract() {
 		Assert.AreEqual(Vect.Zero, Vect.Zero + Vect.Zero);
 		Assert.AreEqual(Vect.Zero, Vect.Zero - Vect.Zero);
@@ -272,6 +281,46 @@ partial class VectTest {
 		var min = new Vect(-3f, 1f, 3f);
 		var max = new Vect(3f, -1f, -3f);
 
+		AssertToleranceEquals(
+			new Vect(0f, 0f, 0f),
+			new Vect(0f, 0f, 0f).Clamp(min, max),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(-3f, 1f, 3f),
+			new Vect(-3f, 1f, 3f).Clamp(min, max),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(3f, -1f, -3f),
+			new Vect(3f, -1f, -3f).Clamp(min, max),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(-3f, 1f, 3f),
+			new Vect(-4f, 2f, 4f).Clamp(min, max),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(3f, -1f, -3f),
+			new Vect(4f, -2f, -4f).Clamp(min, max),
+			TestTolerance
+		);
+
+
+		AssertToleranceEquals(
+			new Vect(-0.158f, 0.0526f, 0.158f),
+			new Vect(0f, 1f, 0f).Clamp(min, max),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(0.158f, -0.0526f, -0.158f),
+			new Vect(0f, -1f, 0f).Clamp(min, max),
+			TestTolerance
+		);
+
+
+		(min, max) = (max, min);
 		AssertToleranceEquals(
 			new Vect(0f, 0f, 0f),
 			new Vect(0f, 0f, 0f).Clamp(min, max),

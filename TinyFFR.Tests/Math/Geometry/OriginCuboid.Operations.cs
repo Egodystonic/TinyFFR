@@ -114,6 +114,24 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(1f, TestCuboid.DistanceFrom((0, 0f, -1.7f)), TestTolerance);
 
 		Assert.AreEqual(MathF.Sqrt(2f), TestCuboid.DistanceFrom((4.6f, -7.8f, 0.7f)), TestTolerance);
+
+		// Squared
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom((0f, 0f, 0f)));
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom((3.6f, 0f, 0f)));
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom((0f, 6.8f, 0f)));
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom((0f, 0f, 0.7f)));
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom((-3.6f, 0f, 0f)));
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom((0f, -6.8f, 0f)));
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom((0f, 0f, -0.7f)));
+
+		Assert.AreEqual(4f, TestCuboid.DistanceSquaredFrom((5.6f, 0f, 0f)), TestTolerance);
+		Assert.AreEqual(4f, TestCuboid.DistanceSquaredFrom((0, 8.8f, 0f)), TestTolerance);
+		Assert.AreEqual(4f, TestCuboid.DistanceSquaredFrom((0, 0f, 2.7f)), TestTolerance);
+		Assert.AreEqual(4f, TestCuboid.DistanceSquaredFrom((-5.6f, 0f, 0f)), TestTolerance);
+		Assert.AreEqual(4f, TestCuboid.DistanceSquaredFrom((0, -8.8f, 0f)), TestTolerance);
+		Assert.AreEqual(4f, TestCuboid.DistanceSquaredFrom((0, 0f, -2.7f)), TestTolerance);
+
+		Assert.AreEqual(2f, TestCuboid.DistanceSquaredFrom((4.6f, -7.8f, 0.7f)), TestTolerance);
 	}
 
 	[Test]
@@ -141,6 +159,31 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(11f, new OriginCuboid(200f, 40f, 60f).SurfaceDistanceFrom((-9f, -9f, -9f)), TestTolerance);
 		Assert.AreEqual(21f, new OriginCuboid(200f, 400f, 60f).SurfaceDistanceFrom((9f, 9f, 9f)), TestTolerance);
 		Assert.AreEqual(21f, new OriginCuboid(200f, 400f, 60f).SurfaceDistanceFrom((-9f, -9f, -9f)), TestTolerance);
+
+		// Squared
+		Assert.AreEqual(0.7f * 0.7f, TestCuboid.SurfaceDistanceSquaredFrom((0f, 0f, 0f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom((3.6f, 0f, 0f)));
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom((0f, 6.8f, 0f)));
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom((0f, 0f, 0.7f)));
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom((-3.6f, 0f, 0f)));
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom((0f, -6.8f, 0f)));
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom((0f, 0f, -0.7f)));
+
+		Assert.AreEqual(1f, TestCuboid.SurfaceDistanceSquaredFrom((4.6f, 0f, 0f)), TestTolerance);
+		Assert.AreEqual(1f, TestCuboid.SurfaceDistanceSquaredFrom((0, 7.8f, 0f)), TestTolerance);
+		Assert.AreEqual(1f, TestCuboid.SurfaceDistanceSquaredFrom((0, 0f, 1.7f)), TestTolerance);
+		Assert.AreEqual(1f, TestCuboid.SurfaceDistanceSquaredFrom((-4.6f, 0f, 0f)), TestTolerance);
+		Assert.AreEqual(1f, TestCuboid.SurfaceDistanceSquaredFrom((0, -7.8f, 0f)), TestTolerance);
+		Assert.AreEqual(1f, TestCuboid.SurfaceDistanceSquaredFrom((0, 0f, -1.7f)), TestTolerance);
+
+		Assert.AreEqual(2f, TestCuboid.SurfaceDistanceSquaredFrom((4.6f, -7.8f, 0.7f)), TestTolerance);
+
+		Assert.AreEqual(1f, new OriginCuboid(20f, 40f, 60f).SurfaceDistanceSquaredFrom((9f, 9f, 9f)), TestTolerance);
+		Assert.AreEqual(1f, new OriginCuboid(20f, 40f, 60f).SurfaceDistanceSquaredFrom((-9f, -9f, -9f)), TestTolerance);
+		Assert.AreEqual(121f, new OriginCuboid(200f, 40f, 60f).SurfaceDistanceSquaredFrom((9f, 9f, 9f)), TestTolerance);
+		Assert.AreEqual(121f, new OriginCuboid(200f, 40f, 60f).SurfaceDistanceSquaredFrom((-9f, -9f, -9f)), TestTolerance);
+		Assert.AreEqual(21f * 21f, new OriginCuboid(200f, 400f, 60f).SurfaceDistanceSquaredFrom((9f, 9f, 9f)), TestTolerance);
+		Assert.AreEqual(21f * 21f, new OriginCuboid(200f, 400f, 60f).SurfaceDistanceSquaredFrom((-9f, -9f, -9f)), TestTolerance);
 	}
 
 	[Test]
@@ -903,6 +946,109 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(10f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(-13.6f, 0f, 0f), Direction.Down * 1000f)), TestTolerance);
 		Assert.AreEqual(10f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -16.8f, 0f), Direction.Backward * 1000f)), TestTolerance);
 		Assert.AreEqual(10f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -10.7f), Direction.Right * 1000f)), TestTolerance);
+
+
+
+
+
+		// Line Squared
+		Assert.AreEqual(64.0638f * 64.0638f, TestCuboid.DistanceSquaredFrom(new Line(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f))), TestTolerance);
+		Assert.AreEqual(51.2652f * 51.2652f, TestCuboid.DistanceSquaredFrom(new Line(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f))), TestTolerance);
+		Assert.AreEqual(152.5229f * 152.5229f, TestCuboid.DistanceSquaredFrom(new Line(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f))), TestTolerance);
+		Assert.AreEqual(11.1016f * 11.1016f, TestCuboid.DistanceSquaredFrom(new Line(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f))), TestTolerance);
+
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new Line(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new Line(new Location(100f, 0f, 0f), new Direction(1f, 0f, 0f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new Line(new Location(0f, 100f, 0f), new Direction(0f, 1f, 0f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new Line(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new Line(new Location(0f, 0f, 100f), new Direction(0f, 0f, 1f))), TestTolerance);
+
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new Line(new Location(13.6f, 0f, 0f), Direction.Up)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new Line(new Location(0f, 16.8f, 0f), Direction.Forward)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new Line(new Location(0f, 0f, 10.7f), Direction.Left)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new Line(new Location(-13.6f, 0f, 0f), Direction.Down)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new Line(new Location(0f, -16.8f, 0f), Direction.Backward)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new Line(new Location(0f, 0f, -10.7f), Direction.Right)), TestTolerance);
+
+		// Ray Squared
+		Assert.AreEqual(64.0638f * 64.0638f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f))), TestTolerance);
+		Assert.AreEqual(51.2652f * 51.2652f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f))), TestTolerance);
+		Assert.AreEqual(152.5229f * 152.5229f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f))), TestTolerance);
+		Assert.AreEqual(153.3801f * 153.3801f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f))), TestTolerance);
+
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f))), TestTolerance);
+
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))), TestTolerance);
+
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.DistanceSquaredFrom(new Ray(new Location(-100f, 0f, 0f), new Direction(-1f, 0f, 0f))), TestTolerance);
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.DistanceSquaredFrom(new Ray(new Location(100f, 0f, 0f), new Direction(1f, 0f, 0f))), TestTolerance);
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.DistanceSquaredFrom(new Ray(new Location(0f, 100f, 0f), new Direction(0f, 1f, 0f))), TestTolerance);
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.DistanceSquaredFrom(new Ray(new Location(0f, -100f, 0f), new Direction(0f, -1f, 0f))), TestTolerance);
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.DistanceSquaredFrom(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, -1f))), TestTolerance);
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.DistanceSquaredFrom(new Ray(new Location(0f, 0f, 100f), new Direction(0f, 0f, 1f))), TestTolerance);
+
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(13.6f, 0f, 0f), Direction.Up)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(0f, 16.8f, 0f), Direction.Forward)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(0f, 0f, 10.7f), Direction.Left)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(-13.6f, 0f, 0f), Direction.Down)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(0f, -16.8f, 0f), Direction.Backward)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(0f, 0f, -10.7f), Direction.Right)), TestTolerance);
+
+		// BoundedRay Squared
+		Assert.AreEqual(64.0638f * 64.0638f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(51.2652f * 51.2652f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(152.5229f * 152.5229f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(153.3801f * 153.3801f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f) * 1000f)), TestTolerance);
+
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)), TestTolerance);
+
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)), TestTolerance);
+
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f).Flipped), TestTolerance);
+
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)), TestTolerance);
+
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped), TestTolerance);
+
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f)).Flipped));
+
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(13.6f, 0f, 0f), Direction.Up * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 16.8f, 0f), Direction.Forward * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 10.7f), Direction.Left * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-13.6f, 0f, 0f), Direction.Down * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -16.8f, 0f), Direction.Backward * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -10.7f), Direction.Right * 1000f)), TestTolerance);
 	}
 
 	[Test]
@@ -1194,13 +1340,117 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(10f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -16.8f, 0f), Direction.Backward * 1000f)), TestTolerance);
 		Assert.AreEqual(10f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -10.7f), Direction.Right * 1000f)), TestTolerance);
 
+
+		// Line Squared
+		Assert.AreEqual(64.0638f * 64.0638f, TestCuboid.SurfaceDistanceSquaredFrom(new Line(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f))), TestTolerance);
+		Assert.AreEqual(51.2652f * 51.2652f, TestCuboid.SurfaceDistanceSquaredFrom(new Line(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f))), TestTolerance);
+		Assert.AreEqual(152.5229f * 152.5229f, TestCuboid.SurfaceDistanceSquaredFrom(new Line(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f))), TestTolerance);
+		Assert.AreEqual(11.1016f * 11.1016f, TestCuboid.SurfaceDistanceSquaredFrom(new Line(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f))), TestTolerance);
+
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new Line(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new Line(new Location(100f, 0f, 0f), new Direction(1f, 0f, 0f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new Line(new Location(0f, 100f, 0f), new Direction(0f, 1f, 0f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new Line(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new Line(new Location(0f, 0f, 100f), new Direction(0f, 0f, 1f))), TestTolerance);
+
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new Line(new Location(13.6f, 0f, 0f), Direction.Up)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new Line(new Location(0f, 16.8f, 0f), Direction.Forward)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new Line(new Location(0f, 0f, 10.7f), Direction.Left)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new Line(new Location(-13.6f, 0f, 0f), Direction.Down)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new Line(new Location(0f, -16.8f, 0f), Direction.Backward)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new Line(new Location(0f, 0f, -10.7f), Direction.Right)), TestTolerance);
+
+		// Ray Squared
+		Assert.AreEqual(64.0638f * 64.0638f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f))), TestTolerance);
+		Assert.AreEqual(51.2652f * 51.2652f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f))), TestTolerance);
+		Assert.AreEqual(152.5229f * 152.5229f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f))), TestTolerance);
+		Assert.AreEqual(153.3801f * 153.3801f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f))), TestTolerance);
+
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f))), TestTolerance);
+
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f))), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f))), TestTolerance);
+
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(-100f, 0f, 0f), new Direction(-1f, 0f, 0f))), TestTolerance);
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(100f, 0f, 0f), new Direction(1f, 0f, 0f))), TestTolerance);
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(0f, 100f, 0f), new Direction(0f, 1f, 0f))), TestTolerance);
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(0f, -100f, 0f), new Direction(0f, -1f, 0f))), TestTolerance);
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, -1f))), TestTolerance);
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(0f, 0f, 100f), new Direction(0f, 0f, 1f))), TestTolerance);
+
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(13.6f, 0f, 0f), Direction.Up)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(0f, 16.8f, 0f), Direction.Forward)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(0f, 0f, 10.7f), Direction.Left)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(-13.6f, 0f, 0f), Direction.Down)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(0f, -16.8f, 0f), Direction.Backward)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(0f, 0f, -10.7f), Direction.Right)), TestTolerance);
+
+		// BoundedRay Squared
+		Assert.AreEqual(64.0638f * 64.0638f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(51.2652f * 51.2652f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(152.5229f * 152.5229f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(153.3801f * 153.3801f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f) * 1000f)), TestTolerance);
+
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)), TestTolerance);
+
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)), TestTolerance);
+
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f).Flipped), TestTolerance);
+
+		Assert.AreEqual(MathF.Pow(0.7f - 0.2887f, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)), TestTolerance);
+		Assert.AreEqual(MathF.Pow(0.7f - 0.2887f, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)), TestTolerance);
+
+		Assert.AreEqual(MathF.Pow(0.7f - 0.2887f, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped), TestTolerance);
+		Assert.AreEqual(MathF.Pow(0.7f - 0.2887f, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped), TestTolerance);
+
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f)).Flipped));
+
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(13.6f, 0f, 0f), Direction.Up * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 16.8f, 0f), Direction.Forward * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 10.7f), Direction.Left * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-13.6f, 0f, 0f), Direction.Down * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -16.8f, 0f), Direction.Backward * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -10.7f), Direction.Right * 1000f)), TestTolerance);
+
 		var longCuboid = new OriginCuboid(1000f, 10f, 1f);
 		var line = BoundedRay.FromStartPointAndVect(new Location(-485f, -4f, 0f), new Vect(980f, -0.9f, 0f));
 		Assert.AreEqual(0.1f, longCuboid.SurfaceDistanceFrom(line), TestTolerance);
 		Assert.AreEqual(0.1f, longCuboid.SurfaceDistanceFrom(line.Flipped), TestTolerance);
+		Assert.AreEqual(0.01f, longCuboid.SurfaceDistanceSquaredFrom(line), TestTolerance);
+		Assert.AreEqual(0.01f, longCuboid.SurfaceDistanceSquaredFrom(line.Flipped), TestTolerance);
 		line = BoundedRay.FromStartPointAndVect(new Location(-495f, -4f, 0f), new Vect(980f, -0.9f, 0f));
 		Assert.AreEqual(0.1f, longCuboid.SurfaceDistanceFrom(line), TestTolerance);
 		Assert.AreEqual(0.1f, longCuboid.SurfaceDistanceFrom(line.Flipped), TestTolerance);
+		Assert.AreEqual(0.01f, longCuboid.SurfaceDistanceSquaredFrom(line), TestTolerance);
+		Assert.AreEqual(0.01f, longCuboid.SurfaceDistanceSquaredFrom(line.Flipped), TestTolerance);
 	}
 
 	[Test]
@@ -1400,18 +1650,8 @@ partial class OriginCuboidTest {
 				TestTolerance
 			);
 			Assert.AreEqual(
-				expectedSignedDistance,
-				TestCuboid.SignedSurfaceDistanceFrom(plane),
-				TestTolerance
-			);
-			Assert.AreEqual(
 				MathF.Abs(expectedSignedDistance),
 				TestCuboid.DistanceFrom(plane),
-				TestTolerance
-			);
-			Assert.AreEqual(
-				MathF.Abs(expectedSignedDistance),
-				TestCuboid.SurfaceDistanceFrom(plane),
 				TestTolerance
 			);
 		}

@@ -27,6 +27,15 @@ partial class XYPairTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyReciprocate() {
+		Assert.AreEqual(null, XYPair<float>.Zero.Reciprocal);
+		Assert.AreEqual(null, new XYPair<int>(0, 1).Reciprocal);
+		Assert.AreEqual(null, new XYPair<int>(1, 0).Reciprocal);
+		Assert.AreEqual(new XYPair<float>(1f / 3f, 1f / 4f), ThreeFourFloat.Reciprocal);
+		Assert.AreEqual(new XYPair<float>(-1f / 3f, -1f / 4f), -ThreeFourFloat.Reciprocal);
+	}
+
+	[Test]
 	public void ShouldCorrectlyCalculatePolarAngle() {
 		for (var x = -1f; x <= 1.05f; x += 0.05f) {
 			for (var y = -1f; y <= 1.05f; y += 0.05f) {
@@ -158,5 +167,45 @@ partial class XYPairTest {
 		AssertForType<float>();
 		AssertForType<long>();
 		AssertForType<double>();
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateLength() {
+		Assert.AreEqual(MathF.Sqrt(9f + 16f), ThreeFourFloat.Length, TestTolerance);
+		Assert.AreEqual(9f + 16f, ThreeFourFloat.LengthSquared, TestTolerance);
+
+		Assert.AreEqual(MathF.Sqrt(9f + 16f), ThreeFourFloat.Cast<int>().Length);
+		Assert.AreEqual(9f + 16f, ThreeFourFloat.Cast<int>().LengthSquared);
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateDistance() {
+		Assert.AreEqual(10f, ThreeFourFloat.DistanceFrom(-ThreeFourFloat), TestTolerance);
+		Assert.AreEqual(5f, ThreeFourFloat.DistanceFrom(default), TestTolerance);
+		Assert.AreEqual(5f, ThreeFourFloat.Inverted.DistanceFrom(default), TestTolerance);
+
+		Assert.AreEqual(100f, ThreeFourFloat.DistanceSquaredFrom(-ThreeFourFloat), TestTolerance);
+		Assert.AreEqual(25f, ThreeFourFloat.DistanceSquaredFrom(default), TestTolerance);
+		Assert.AreEqual(25f, ThreeFourFloat.Inverted.DistanceSquaredFrom(default), TestTolerance);
+	}
+
+	[Test]
+	public void ShouldCorrectlyCast() {
+		Assert.AreEqual(3, ThreeFourFloat.Cast<int>().X);
+		Assert.AreEqual(4, ThreeFourFloat.Cast<int>().Y);
+		Assert.AreEqual(3f, new XYPair<int>(3, 4).Cast<float>().X);
+		Assert.AreEqual(4f, new XYPair<int>(3, 4).Cast<float>().Y);
+	}
+
+	[Test]
+	public void ShouldCorrectlyClamp() {
+		Assert.AreEqual(ThreeFourFloat, ThreeFourFloat.Clamp((2f, 3f), (4f, 5f)));
+		Assert.AreEqual(ThreeFourFloat, ThreeFourFloat.Clamp((4f, 5f), (2f, 3f)));
+		Assert.AreEqual(ThreeFourFloat, ThreeFourFloat.Clamp((3f, 4f), (3f, 4f)));
+
+		Assert.AreEqual(new XYPair<float>(2f, 5f), new XYPair<float>(1f, 6f).Clamp((2f, 3f), (4f, 5f)));
+		Assert.AreEqual(new XYPair<float>(4f, 3f), new XYPair<float>(5f, 2f).Clamp((2f, 3f), (4f, 5f)));
+		Assert.AreEqual(new XYPair<float>(2f, 5f), new XYPair<float>(1f, 6f).Clamp((4f, 3f), (2f, 5f)));
+		Assert.AreEqual(new XYPair<float>(4f, 3f), new XYPair<float>(5f, 2f).Clamp((4f, 3f), (2f, 5f)));
 	}
 }

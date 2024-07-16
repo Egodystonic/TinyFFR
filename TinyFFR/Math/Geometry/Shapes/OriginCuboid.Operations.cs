@@ -405,9 +405,7 @@ partial struct OriginCuboid {
 		if (QuickPlaneCuboidIntersectionTest(plane)) return PlaneObjectRelationship.PlaneIntersectsObject;
 		return plane.FacesTowardsOrigin(planeThickness: 0f) ? PlaneObjectRelationship.PlaneFacesTowardsObject : PlaneObjectRelationship.PlaneFacesAwayFromObject;
 	}
-
-	public float SurfaceDistanceSquaredFrom(Plane plane) { return 0; }
-
+	
 	public Location SurfacePointClosestTo(Plane plane) {
 		if (QuickPlaneCuboidIntersectionTest(plane)) return GetAnyPlaneIntersectionPoint(plane)!.Value;
 		var resultDistance = Single.PositiveInfinity;
@@ -424,11 +422,8 @@ partial struct OriginCuboid {
 	}
 	public Location ClosestPointToSurfaceOn(Plane plane) => plane.PointClosestTo(SurfacePointClosestTo(plane));
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float SurfaceDistanceFrom(Plane plane) => DistanceFrom(plane);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float SignedSurfaceDistanceFrom(Plane plane) => SignedDistanceFrom(plane);
+	float IConvexShape.SurfaceDistanceFrom(Plane plane) => DistanceFrom(plane);
+	float IConvexShape.SurfaceDistanceSquaredFrom(Plane plane) { var sqrt = DistanceFrom(plane); return sqrt * sqrt; }
 
 	public float GetExtent(Axis axis) => axis switch {
 		Axis.X => Width,

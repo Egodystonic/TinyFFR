@@ -198,6 +198,21 @@ partial class PlaneTest {
 		Assert.AreEqual(10f, TestPlane.DistanceFrom(new Plane(Direction.Up, (0f, 9f, 0f))));
 
 		Assert.AreEqual(0f, TestPlane.DistanceFrom(new Plane((0.001f, 1f, 0f), Location.Origin)));
+
+		// Squared
+		Assert.AreEqual(0f, TestPlane.DistanceSquaredFrom(new Plane(Direction.Backward, Location.Origin)));
+		Assert.AreEqual(0f, TestPlane.DistanceSquaredFrom(new Plane(Direction.Forward, Location.Origin)));
+		Assert.AreEqual(0f, TestPlane.DistanceSquaredFrom(new Plane(Direction.Left, Location.Origin)));
+		Assert.AreEqual(0f, TestPlane.DistanceSquaredFrom(new Plane(Direction.Right, Location.Origin)));
+		Assert.AreEqual(0f, TestPlane.DistanceSquaredFrom(new Plane(Direction.Up, (0f, -1f, 0f))));
+		Assert.AreEqual(0f, TestPlane.DistanceSquaredFrom(new Plane(Direction.Down, (0f, -1f, 0f))));
+
+		Assert.AreEqual(100f, TestPlane.DistanceSquaredFrom(new Plane(Direction.Up, (0f, -11f, 0f))));
+		Assert.AreEqual(100f, TestPlane.DistanceSquaredFrom(new Plane(Direction.Down, (0f, 9f, 0f))));
+		Assert.AreEqual(100f, TestPlane.DistanceSquaredFrom(new Plane(Direction.Down, (0f, -11f, 0f))));
+		Assert.AreEqual(100f, TestPlane.DistanceSquaredFrom(new Plane(Direction.Up, (0f, 9f, 0f))));
+
+		Assert.AreEqual(0f, TestPlane.DistanceSquaredFrom(new Plane((0.001f, 1f, 0f), Location.Origin)));
 	}
 
 	[Test]

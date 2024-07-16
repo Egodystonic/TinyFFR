@@ -172,6 +172,64 @@ partial class RayTest {
 			0f,
 			new Ray(new Location(-1f, 0f, 0f), Direction.Left).DistanceFromOrigin()
 		);
+
+		// Squared
+		Assert.AreEqual(
+			1f,
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).DistanceSquaredFrom(new Location(0f, 1f, 0f))
+		);
+		Assert.AreEqual(
+			1f,
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).DistanceSquaredFrom(new Location(0f, -1f, 0f))
+		);
+		Assert.AreEqual(
+			0f,
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).DistanceSquaredFrom(new Location(-100f, 0f, 0f))
+		);
+		Assert.AreEqual(
+			2f,
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).DistanceSquaredFrom(new Location(-100f, 1f, -1f)),
+			TestTolerance
+		);
+
+		Assert.AreEqual(
+			10001f,
+			new Ray(new Location(100f, 0f, 0f), Direction.Left).DistanceSquaredFrom(new Location(0f, 1f, 0f))
+		);
+		Assert.AreEqual(
+			10001f,
+			new Ray(new Location(100f, 0f, 0f), Direction.Left).DistanceSquaredFrom(new Location(0f, -1f, 0f))
+		);
+		Assert.AreEqual(
+			40_000f,
+			new Ray(new Location(100f, 0f, 0f), Direction.Left).DistanceSquaredFrom(new Location(-100f, 0f, 0f))
+		);
+		Assert.AreEqual(
+			40002f,
+			new Ray(new Location(100f, 0f, 0f), Direction.Left).DistanceSquaredFrom(new Location(-100f, 1f, -1f)),
+			TestTolerance
+		);
+
+		Assert.AreEqual(
+			1f,
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).DistanceSquaredFromOrigin()
+		);
+		Assert.AreEqual(
+			1f,
+			new Ray(new Location(0f, 1f, 0f), Direction.Left).DistanceSquaredFromOrigin()
+		);
+		Assert.AreEqual(
+			0f,
+			new Ray(new Location(0f, 0f, 0f), Direction.Left).DistanceSquaredFromOrigin()
+		);
+		Assert.AreEqual(
+			1f,
+			new Ray(new Location(1f, 0f, 0f), Direction.Left).DistanceSquaredFromOrigin()
+		);
+		Assert.AreEqual(
+			0f,
+			new Ray(new Location(-1f, 0f, 0f), Direction.Left).DistanceSquaredFromOrigin()
+		);
 	}
 
 	[Test]
@@ -401,6 +459,39 @@ partial class RayTest {
 		Assert.AreEqual(
 			0f,
 			TestRay.DistanceFrom(TestRay.ToBoundedRay(1f)),
+			TestTolerance
+		);
+
+		// Squared
+		Assert.AreEqual(
+			16.738178f * 16.738178f,
+			TestRay.DistanceSquaredFrom(new Line(new Location(15f, -3f, 12f), new Direction(-2f, 0f, 14f))),
+			TestTolerance
+		);
+		Assert.AreEqual(
+			18.053491f * 18.053491f,
+			TestRay.DistanceSquaredFrom(new Ray(new Location(15f, -3f, 12f), new Direction(-2f, 0f, 14f))),
+			TestTolerance
+		);
+		Assert.AreEqual(
+			17.34369f * 17.34369f,
+			TestRay.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(15f, -3f, 12f), new Direction(-2f, 0f, 14f) * -4f)),
+			TestTolerance
+		);
+
+		Assert.AreEqual(
+			0f,
+			TestRay.DistanceSquaredFrom(TestRay.ToLine()),
+			TestTolerance
+		);
+		Assert.AreEqual(
+			0f,
+			TestRay.DistanceSquaredFrom(TestRay),
+			TestTolerance
+		);
+		Assert.AreEqual(
+			0f,
+			TestRay.DistanceSquaredFrom(TestRay.ToBoundedRay(1f)),
 			TestTolerance
 		);
 	}
@@ -1406,5 +1497,25 @@ partial class RayTest {
 			new Ray((0f, 05f, 0f), (1f, 0f, 1f)).Clamp(min, max),
 			TestTolerance
 		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineDistanceAtPoints() {
+		Assert.AreEqual(0f, TestRay.UnboundedDistanceAtPointClosestTo((1f, 2f, -3f)), TestTolerance);
+		Assert.AreEqual(10f, TestRay.UnboundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * 10f), TestTolerance);
+		Assert.AreEqual(-10f, TestRay.UnboundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * -10f), TestTolerance);
+
+		Assert.AreEqual(0f, TestRay.BoundedDistanceAtPointClosestTo((1f, 2f, -3f)), TestTolerance);
+		Assert.AreEqual(10f, TestRay.BoundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * 10f), TestTolerance);
+		Assert.AreEqual(0f, TestRay.BoundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * -10f), TestTolerance);
+
+
+		Assert.AreEqual(0f, TestRay.UnboundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction.AnyPerpendicular() * 10f), TestTolerance);
+		Assert.AreEqual(10f, TestRay.UnboundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * 10f + TestRay.Direction.AnyPerpendicular() * 10f), TestTolerance);
+		Assert.AreEqual(-10f, TestRay.UnboundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * -10f + TestRay.Direction.AnyPerpendicular() * 10f), TestTolerance);
+
+		Assert.AreEqual(0f, TestRay.BoundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction.AnyPerpendicular() * 10f), TestTolerance);
+		Assert.AreEqual(10f, TestRay.BoundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * 10f + TestRay.Direction.AnyPerpendicular() * 10f), TestTolerance);
+		Assert.AreEqual(0f, TestRay.BoundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * -10f + TestRay.Direction.AnyPerpendicular() * 10f), TestTolerance);
 	}
 }
