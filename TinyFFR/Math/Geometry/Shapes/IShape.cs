@@ -40,10 +40,6 @@ public interface IConvexShape : IShape,
 	IClosestEndogenousPointDiscoverable<Plane>,
 	IClosestExogenousPointDiscoverable<Plane>,
 	IRelatable<Plane, PlaneObjectRelationship> {
-	Angle? IncidentAngleTo(Line line);
-	Angle? IncidentAngleTo(Ray ray);
-	Angle? IncidentAngleTo(BoundedRay ray);
-
 	Location SurfacePointClosestTo(Location point);
 	float SurfaceDistanceFrom(Location point);
 	float SurfaceDistanceSquaredFrom(Location point);

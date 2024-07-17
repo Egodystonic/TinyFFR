@@ -57,14 +57,29 @@ partial struct Plane :
 	public Angle AngleTo(Vect vect) => AngleTo(vect.Direction);
 	public Angle SignedAngleTo(Direction direction) => Angle.FromRadians(MathF.Asin(Normal.Dot(direction)));
 	public Angle SignedAngleTo(Vect vect) => SignedAngleTo(vect.Direction);
-	public Direction ReflectionOf(Direction direction) { // TODO explain in XML that this returns the same direction if the input is parallel to the plane (this is okay as it's continuous across the whole range, so is the expected answer, just need to note it)
+	public Direction? ReflectionOf(Direction direction) {
+		const float PerpendicularityErrorMargin = 1E-5f;
+		return PerpendicularityWith(direction) < PerpendicularityErrorMargin ? null : FastReflectionOf(direction);
+	}
+	public Vect? ReflectionOf(Vect vect) {
+		const float PerpendicularityErrorMargin = 1E-5f;
+		return PerpendicularityWith(vect.Direction) < PerpendicularityErrorMargin ? null : FastReflectionOf(vect);
+	}
+	public Direction FastReflectionOf(Direction direction) { // TODO explain in XML that this returns the same direction if the input is parallel to the plane (this is okay as it's continuous across the whole range, so is the expected answer, just need to note it)
 		return Direction.FromVector3(-2f * Vector3.Dot(Normal.ToVector3(), direction.ToVector3()) * Normal.ToVector3() + direction.ToVector3());
 	}
-	public Vect ReflectionOf(Vect vect) { // TODO explain in XML that this returns the same direction if the input is parallel to the plane (this is okay as it's continuous across the whole range, so is the expected answer, just need to note it)
+	public Vect FastReflectionOf(Vect vect) { // TODO explain in XML that this returns the same direction if the input is parallel to the plane (this is okay as it's continuous across the whole range, so is the expected answer, just need to note it)
 		return Vect.FromVector3(-2f * Vector3.Dot(Normal.ToVector3(), vect.ToVector3()) * Normal.ToVector3() + vect.ToVector3());
 	}
-	Direction? IReflectionTarget<Direction, Direction>.ReflectionOf(Direction direction) => ReflectionOf(direction);
-	Vect? IReflectionTarget<Vect, Vect>.ReflectionOf(Vect vect) => ReflectionOf(vect);
+	public Angle? IncidentAngleWith(Direction direction) {
+		const float PerpendicularityErrorMargin = 1E-5f;
+		var perpendicularity = PerpendicularityWith(direction);
+		if (perpendicularity < PerpendicularityErrorMargin) return null;
+		return Angle.FromRadians(MathF.Acos(perpendicularity));
+	}
+	public Angle FastIncidentAngleWith(Direction direction) => Angle.FromRadians(MathF.Acos(PerpendicularityWith(direction)));
+	public Angle? IncidentAngleWith(Vect vect) => IncidentAngleWith(vect.Direction);
+	public Angle FastIncidentAngleWith(Vect vect) => FastIncidentAngleWith(vect.Direction);
 	public Direction? ParallelizationOf(Direction direction) => direction.OrthogonalizedAgainst(Normal);
 	public Direction FastParallelizationOf(Direction direction) => direction.FastOrthogonalizedAgainst(Normal);
 

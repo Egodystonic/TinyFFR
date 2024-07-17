@@ -221,32 +221,59 @@ partial struct OriginCuboid {
 	public ConvexShapeLineIntersection? IntersectionWith(Ray ray) => IntersectionWithLineLike(ray);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ConvexShapeLineIntersection? IntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ConvexShapeLineIntersection FastIntersectionWith(Line line) => IntersectionWithLineLike(line)!.Value;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ConvexShapeLineIntersection FastIntersectionWith(Ray ray) => IntersectionWithLineLike(ray)!.Value;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ConvexShapeLineIntersection FastIntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray)!.Value;
 
 	public Ray? ReflectionOf(Line line) {
 		var tuple = GetHitPointAndSidePlaneOfLineLike(line);
-		if (tuple == null) return null;
+		var reflection = tuple?.Side.ReflectionOf(line.Direction);
+		if (reflection == null) return null;
 
-		return new Ray(tuple.Value.HitPoint, tuple.Value.Side.ReflectionOf(line.Direction));
+		return new Ray(tuple.Value.HitPoint, reflection.Value);
 	}
 	public Ray? ReflectionOf(Ray ray) {
 		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
-		if (tuple == null) return null;
+		var reflection = tuple?.Side.ReflectionOf(ray.Direction);
+		if (reflection == null) return null;
 
-		return new Ray(tuple.Value.HitPoint, tuple.Value.Side.ReflectionOf(ray.Direction));
+		return new Ray(tuple.Value.HitPoint, reflection.Value);
 	}
 	public BoundedRay? ReflectionOf(BoundedRay ray) {
 		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
-		if (tuple == null) return null;
+		var reflection = tuple?.Side.ReflectionOf(ray.Direction);
+		if (reflection == null) return null;
 
-		return BoundedRay.FromStartPointAndVect(tuple.Value.HitPoint, tuple.Value.Side.ReflectionOf(ray.Direction) * (ray.Length - tuple.Value.HitDistance));
+		return BoundedRay.FromStartPointAndVect(tuple.Value.HitPoint, reflection.Value * (ray.Length - tuple.Value.HitDistance));
+	}
+	public Ray FastReflectionOf(Line line) {
+		var tuple = GetHitPointAndSidePlaneOfLineLike(line);
+		return new Ray(tuple.Value.HitPoint, tuple.Value.Side.FastReflectionOf(line.Direction));
+	}
+	public Ray FastReflectionOf(Ray ray) {
+		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
+		return new Ray(tuple.Value.HitPoint, tuple.Value.Side.FastReflectionOf(ray.Direction));
+	}
+	public BoundedRay FastReflectionOf(BoundedRay ray) {
+		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
+		return BoundedRay.FromStartPointAndVect(tuple.Value.HitPoint, tuple.Value.Side.FastReflectionOf(ray.Direction) * (ray.Length - tuple.Value.HitDistance));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle? IncidentAngleTo(Line line) => GetIncidentAngleOfLineLike(line);
+	public Angle? IncidentAngleWith(Line line) => GetIncidentAngleOfLineLike(line);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle? IncidentAngleTo(Ray ray) => GetIncidentAngleOfLineLike(ray);
+	public Angle? IncidentAngleWith(Ray ray) => GetIncidentAngleOfLineLike(ray);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle? IncidentAngleTo(BoundedRay ray) => GetIncidentAngleOfLineLike(ray);
+	public Angle? IncidentAngleWith(BoundedRay ray) => GetIncidentAngleOfLineLike(ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle FastIncidentAngleWith(Line line) => GetIncidentAngleOfLineLike(line)!.Value;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle FastIncidentAngleWith(Ray ray) => GetIncidentAngleOfLineLike(ray)!.Value;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle FastIncidentAngleWith(BoundedRay ray) => GetIncidentAngleOfLineLike(ray)!.Value;
 
 	bool IsIntersectedByLineLike<TLine>(TLine line) where TLine : ILineLike {
 		var distanceTuple = GetUnboundedLineIntersectionDistances(line);

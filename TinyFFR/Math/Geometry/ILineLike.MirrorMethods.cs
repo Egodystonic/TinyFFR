@@ -46,6 +46,18 @@ partial struct Line {
 	public Location? IntersectionWith(BoundedRay ray) => IntersectionWith(ray, ILineLike.DefaultLineThickness);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location? IntersectionWith(BoundedRay ray, float lineThickness) => ILineLike.IntersectionWith(this, ray, lineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location FastIntersectionWith(Line line) => FastIntersectionWith(line, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location FastIntersectionWith(Line line, float lineThickness) => ILineLike.FastIntersectionWith(this, line, lineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location FastIntersectionWith(Ray ray) => FastIntersectionWith(ray, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location FastIntersectionWith(Ray ray, float lineThickness) => ILineLike.FastIntersectionWith(this, ray, lineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location FastIntersectionWith(BoundedRay ray) => FastIntersectionWith(ray, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location FastIntersectionWith(BoundedRay ray, float lineThickness) => ILineLike.FastIntersectionWith(this, ray, lineThickness);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointOn(Line line) => line.PointClosestTo(this);
@@ -102,6 +114,18 @@ partial struct Ray {
 	public Location? IntersectionWith(BoundedRay ray) => IntersectionWith(ray, ILineLike.DefaultLineThickness);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location? IntersectionWith(BoundedRay ray, float lineThickness) => ILineLike.IntersectionWith(this, ray, lineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location FastIntersectionWith(Line line) => FastIntersectionWith(line, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location FastIntersectionWith(Line line, float lineThickness) => ILineLike.FastIntersectionWith(this, line, lineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location FastIntersectionWith(Ray ray) => FastIntersectionWith(ray, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location FastIntersectionWith(Ray ray, float lineThickness) => ILineLike.FastIntersectionWith(this, ray, lineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location FastIntersectionWith(BoundedRay ray) => FastIntersectionWith(ray, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location FastIntersectionWith(BoundedRay ray, float lineThickness) => ILineLike.FastIntersectionWith(this, ray, lineThickness);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointOn(Line line) => line.PointClosestTo(this);
@@ -158,6 +182,18 @@ partial struct BoundedRay {
 	public Location? IntersectionWith(BoundedRay ray) => IntersectionWith(ray, ILineLike.DefaultLineThickness);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location? IntersectionWith(BoundedRay ray, float lineThickness) => ILineLike.IntersectionWith(this, ray, lineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location FastIntersectionWith(Line line) => FastIntersectionWith(line, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location FastIntersectionWith(Line line, float lineThickness) => ILineLike.FastIntersectionWith(this, line, lineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location FastIntersectionWith(Ray ray) => FastIntersectionWith(ray, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location FastIntersectionWith(Ray ray, float lineThickness) => ILineLike.FastIntersectionWith(this, ray, lineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location FastIntersectionWith(BoundedRay ray) => FastIntersectionWith(ray, ILineLike.DefaultLineThickness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location FastIntersectionWith(BoundedRay ray, float lineThickness) => ILineLike.FastIntersectionWith(this, ray, lineThickness);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointOn(Line line) => line.PointClosestTo(this);
@@ -204,6 +240,7 @@ partial struct Plane :
 	ILineProjectionTarget, 
 	ILineOrthogonalizationTarget, 
 	ILineParallelizationTarget, 
+	ILineReflectionTarget,
 	ILineSignedDistanceMeasurable, 
 	ILineClosestEndogenousPointDiscoverable, 
 	ILineClosestExogenousPointDiscoverable,
@@ -253,6 +290,32 @@ partial struct Plane :
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray? ReflectionOf(Line line) => line.ReflectedBy(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray FastReflectionOf(Line line) => line.FastReflectedBy(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle? IncidentAngleWith(Line line) => line.IncidentAngleWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle FastIncidentAngleWith(Line line) => line.FastIncidentAngleWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray? ReflectionOf(Ray ray) => ray.ReflectedBy(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray FastReflectionOf(Ray ray) => ray.FastReflectedBy(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle? IncidentAngleWith(Ray ray) => ray.IncidentAngleWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle FastIncidentAngleWith(Ray ray) => ray.FastIncidentAngleWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay? ReflectionOf(BoundedRay ray) => ray.ReflectedBy(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay FastReflectionOf(BoundedRay ray) => ray.FastReflectedBy(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle? IncidentAngleWith(BoundedRay ray) => ray.IncidentAngleWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle FastIncidentAngleWith(BoundedRay ray) => ray.FastIncidentAngleWith(this);
+
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsIntersectedBy(Line line) => line.IsIntersectedBy(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsIntersectedBy(Ray ray) => ray.IsIntersectedBy(this);
@@ -264,6 +327,12 @@ partial struct Plane :
 	public Ray? IntersectionWith(Ray ray) => ray.IntersectionWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay? IntersectionWith(BoundedRay ray) => ray.IntersectionWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray FastIntersectionWith(Line line) => line.FastIntersectionWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray FastIntersectionWith(Ray ray) => ray.FastIntersectionWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay FastIntersectionWith(BoundedRay ray) => ray.FastIntersectionWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(Line line) => line.DistanceFrom(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

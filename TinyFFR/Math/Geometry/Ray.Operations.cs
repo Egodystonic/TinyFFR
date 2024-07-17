@@ -131,8 +131,12 @@ public readonly partial struct Ray {
 	public Ray? ReflectedBy(Plane plane) {
 		var intersectionPoint = IntersectionWith(plane)?.StartPoint;
 		if (intersectionPoint == null) return null;
-		return new Ray(intersectionPoint.Value, Direction.ReflectedBy(plane));
+		return new Ray(intersectionPoint.Value, Direction.FastReflectedBy(plane));
 	}
+	public Ray FastReflectedBy(Plane plane) => new(FastIntersectionWith(plane).StartPoint, Direction.FastReflectedBy(plane));
+
+	public Angle? IncidentAngleWith(Plane plane) => IsIntersectedBy(plane) ? plane.IncidentAngleWith(Direction) : null;
+	public Angle FastIncidentAngleWith(Plane plane) => plane.FastIncidentAngleWith(Direction);
 
 	float? GetUnboundedPlaneIntersectionDistance(Plane plane) {
 		var similarityToNormal = plane.Normal.Dot(Direction);
@@ -145,6 +149,10 @@ public readonly partial struct Ray {
 		var distance = GetUnboundedPlaneIntersectionDistance(plane);
 		if (distance >= 0f) return new(UnboundedLocationAtDistance(distance.Value), Direction);
 		else return null; // Plane behind ray or parallel with ray
+	}
+	public Ray FastIntersectionWith(Plane plane) {
+		var distance = (plane.PointClosestToOrigin - StartPoint).LengthWhenProjectedOnTo(plane.Normal) / plane.Normal.Dot(Direction);
+		return new(UnboundedLocationAtDistance(distance), Direction);
 	}
 	public bool IsIntersectedBy(Plane plane) => GetUnboundedPlaneIntersectionDistance(plane) >= 0f;
 

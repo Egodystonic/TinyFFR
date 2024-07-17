@@ -624,6 +624,46 @@ partial class LineTest {
 			new Ray(new Location(100f, 1f, 0f), Direction.Down),
 			new Line(new Location(100f, -100f, 0f), Direction.Up).ReflectedBy(plane)
 		);
+		AssertToleranceEquals(
+			new Ray(new Location(0f, 1f, 0f), new Direction(1f, 1f, -1f)),
+			new Line(new Location(0f, 1f, 0f), new Direction(1f, -1f, -1f)).ReflectedBy(plane),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Ray(new Location(0f, 1f, 0f), new Direction(-2f, -1f, 2f)),
+			new Line(new Location(0f, 1f, 0f), new Direction(-2f, 1f, 2f)).ReflectedBy(plane),
+			TestTolerance
+		);
+		Assert.Null(
+			new Line(new Location(0f, 2f, 0f), Direction.Right).ReflectedBy(plane)
+		);
+		Assert.Null(
+			new Line(new Location(0f, 0f, 0f), Direction.Right).ReflectedBy(plane)
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineIncidentAngleOnPlanes() {
+		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
+
+		Assert.AreEqual(
+			new Ray(new Location(100f, 1f, 0f), Direction.Up),
+			new Line(new Location(100f, 100f, 0f), Direction.Down).ReflectedBy(plane)
+		);
+		Assert.AreEqual(
+			new Ray(new Location(100f, 1f, 0f), Direction.Down),
+			new Line(new Location(100f, -100f, 0f), Direction.Up).ReflectedBy(plane)
+		);
+		AssertToleranceEquals(
+			new Ray(new Location(0f, 1f, 0f), new Direction(1f, 1f, -1f)),
+			new Line(new Location(0f, 1f, 0f), new Direction(1f, -1f, -1f)).ReflectedBy(plane),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Ray(new Location(0f, 1f, 0f), new Direction(-2f, -1f, 2f)),
+			new Line(new Location(0f, 1f, 0f), new Direction(-2f, 1f, 2f)).ReflectedBy(plane),
+			TestTolerance
+		);
 		Assert.Null(
 			new Line(new Location(0f, 2f, 0f), Direction.Right).ReflectedBy(plane)
 		);

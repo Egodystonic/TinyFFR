@@ -114,6 +114,12 @@ partial struct OriginSphere {
 	public ConvexShapeLineIntersection? IntersectionWith(Ray ray) => IntersectionWithLineLike(ray);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ConvexShapeLineIntersection? IntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ConvexShapeLineIntersection FastIntersectionWith(Line line) => IntersectionWithLineLike(line)!.Value;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ConvexShapeLineIntersection FastIntersectionWith(Ray ray) => IntersectionWithLineLike(ray)!.Value;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ConvexShapeLineIntersection FastIntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray)!.Value;
 
 	bool IsIntersectedByLineLike<TLine>(TLine line) where TLine : ILineLike {
 		var distanceTuple = GetUnboundedLineLikeSurfaceIntersectionDistances(line);
@@ -125,17 +131,23 @@ partial struct OriginSphere {
 		if (distanceTuple == null) return null;
 
 		return ConvexShapeLineIntersection.FromTwoPotentiallyNullArgs(
-			line.LocationAtDistanceOrNull(distanceTuple.Value.First), 
+			line.LocationAtDistanceOrNull(distanceTuple.Value.First),
 			distanceTuple.Value.SecondIsIdenticalToFirst ? null : line.LocationAtDistanceOrNull(distanceTuple.Value.Second)
 		);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle? IncidentAngleTo(Line line) => IncidentAngleToLineLike(line);
+	public Angle? IncidentAngleWith(Line line) => IncidentAngleToLineLike(line);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle? IncidentAngleTo(Ray ray) => IncidentAngleToLineLike(ray);
+	public Angle? IncidentAngleWith(Ray ray) => IncidentAngleToLineLike(ray);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle? IncidentAngleTo(BoundedRay ray) => IncidentAngleToLineLike(ray);
+	public Angle? IncidentAngleWith(BoundedRay ray) => IncidentAngleToLineLike(ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle FastIncidentAngleWith(Line line) => IncidentAngleToLineLike(line)!.Value;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle FastIncidentAngleWith(Ray ray) => IncidentAngleToLineLike(ray)!.Value;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle FastIncidentAngleWith(BoundedRay ray) => IncidentAngleToLineLike(ray)!.Value;
 
 	public Ray? ReflectionOf(Line line) { var reflection = ReflectionOfLineLike(line); return reflection != null ? new Ray(reflection.Value.Item1, reflection.Value.Item2) : null; }
 	public Ray? ReflectionOf(Ray ray) { var reflection = ReflectionOfLineLike(ray); return reflection != null ? new Ray(reflection.Value.Item1, reflection.Value.Item2) : null; }
@@ -145,6 +157,10 @@ partial struct OriginSphere {
 			? new Ray(reflection.Value.Item1, reflection.Value.Item2).ToBoundedRay(ray.Length - ray.UnboundedDistanceAtPointClosestTo(reflection.Value.Item1)) 
 			: null;
 	}
+
+	public Ray FastReflectionOf(Line line) => ReflectionOf(line)!.Value;
+	public Ray FastReflectionOf(Ray ray) => ReflectionOf(ray)!.Value;
+	public BoundedRay FastReflectionOf(BoundedRay ray) => ReflectionOf(ray)!.Value;
 
 	public bool Contains(BoundedRay ray) => Contains(ray.StartPoint) && Contains(ray.EndPoint);
 
@@ -156,7 +172,7 @@ partial struct OriginSphere {
 		var reflectionPoint = GetLineLikeIntersectionPointClosestToStartPoint(line);
 		if (reflectionPoint == null) return null;
 
-		return (reflectionPoint.Value, new Plane(reflectionPoint.Value.AsVect().Direction, Radius).ReflectionOf(line.Direction));
+		return (reflectionPoint.Value, new Plane(reflectionPoint.Value.AsVect().Direction, Radius).FastReflectionOf(line.Direction));
 	}
 
 	(float First, float Second, bool SecondIsIdenticalToFirst)? GetUnboundedLineLikeSurfaceIntersectionDistances<TLine>(TLine line) where TLine : ILineLike {

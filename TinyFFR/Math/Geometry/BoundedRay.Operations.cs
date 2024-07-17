@@ -190,7 +190,11 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 	public BoundedRay? ReflectedBy(Plane plane) {
 		var intersectionPoint = IntersectionWith(plane)?.StartPoint;
 		if (intersectionPoint == null) return null;
-		return new BoundedRay(intersectionPoint.Value, Direction.ReflectedBy(plane) * (Length - intersectionPoint.Value.DistanceFrom(StartPoint)));
+		return new BoundedRay(intersectionPoint.Value, Direction.FastReflectedBy(plane) * (Length - intersectionPoint.Value.DistanceFrom(StartPoint)));
+	}
+	public BoundedRay FastReflectedBy(Plane plane) {
+		var intersectionPoint = FastIntersectionWith(plane).StartPoint;
+		return new BoundedRay(intersectionPoint, Direction.FastReflectedBy(plane) * (Length - intersectionPoint.DistanceFrom(StartPoint)));
 	}
 
 	float? GetUnboundedPlaneIntersectionDistance(Plane plane) {
@@ -200,11 +204,19 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 		return (plane.PointClosestToOrigin - StartPoint).LengthWhenProjectedOnTo(plane.Normal) / similarityToNormal;
 	}
 
+	public Angle? IncidentAngleWith(Plane plane) => IsIntersectedBy(plane) ? plane.IncidentAngleWith(Direction) : null;
+	public Angle FastIncidentAngleWith(Plane plane) => plane.FastIncidentAngleWith(Direction);
+
 	public BoundedRay? IntersectionWith(Plane plane) {
 		var distance = GetUnboundedPlaneIntersectionDistance(plane);
 		if (distance >= 0f && distance <= Length) return new BoundedRay(UnboundedLocationAtDistance(distance.Value), EndPoint);
 		else return null; // Plane parallel with line or outside line boundaries
 	}
+	public BoundedRay FastIntersectionWith(Plane plane) {
+		var distance = (plane.PointClosestToOrigin - StartPoint).LengthWhenProjectedOnTo(plane.Normal) / plane.Normal.Dot(Direction);
+		return new(UnboundedLocationAtDistance(distance), EndPoint);
+	}
+
 	public bool IsIntersectedBy(Plane plane) {
 		var unboundedIntersectionDistance = GetUnboundedPlaneIntersectionDistance(plane);
 		return unboundedIntersectionDistance >= 0f && unboundedIntersectionDistance <= Length;

@@ -24,7 +24,8 @@ public partial interface ILineLike :
 	IClosestExogenousPointDiscoverable<Plane>,
 
 	IClosestConvexShapePointsDiscoverable, 
-	IConvexShapeDistanceMeasurable {
+	IConvexShapeDistanceMeasurable,
+	IConvexShapeIntersectable<ConvexShapeLineIntersection> {
 	public const float DefaultLineThickness = 0.01f;
 
 	Location StartPoint { get; }

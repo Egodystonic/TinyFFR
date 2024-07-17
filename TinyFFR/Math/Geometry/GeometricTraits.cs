@@ -69,9 +69,15 @@ public interface IAngleMeasurable<in TSelf, in TOther> : IAngleMeasurable<TOther
 
 public interface IReflectable<in TOther, TReflection> where TReflection : struct {
 	TReflection? ReflectedBy(TOther element);
+	TReflection FastReflectedBy(TOther element);
+	Angle? IncidentAngleWith(TOther element);
+	Angle FastIncidentAngleWith(TOther element);
 }
 public interface IReflectionTarget<in TOther, TReflection> where TReflection : struct {
 	TReflection? ReflectionOf(TOther element);
+	TReflection FastReflectionOf(TOther element);
+	Angle? IncidentAngleWith(TOther element);
+	Angle FastIncidentAngleWith(TOther element);
 }
 public interface ILineReflectionTarget<TReflection> : IReflectionTarget<Line, TReflection>, IReflectionTarget<Ray, TReflection>, IReflectionTarget<BoundedRay, TReflection> where TReflection : struct;
 public interface ILineReflectionTarget : IReflectionTarget<Line, Ray>, IReflectionTarget<Ray, Ray>, IReflectionTarget<BoundedRay, BoundedRay>;
@@ -177,6 +183,7 @@ public interface ILineIntersectable : IIntersectable<Line>, IIntersectable<Ray>,
 interface IIntersectable<in TSelf, in TOther> : IIntersectable<TOther> where TOther : IIntersectable<TSelf>;
 public interface IIntersectionDeterminable<in TOther, TIntersection> : IIntersectable<TOther> where TIntersection : struct {
 	TIntersection? IntersectionWith(TOther element);
+	TIntersection FastIntersectionWith(TOther element);
 }
 public interface ILineIntersectionDeterminable<TIntersection> : ILineIntersectable, IIntersectionDeterminable<Line, TIntersection>, IIntersectionDeterminable<Ray, TIntersection>, IIntersectionDeterminable<BoundedRay, TIntersection> where TIntersection : struct;
 interface IIntersectionDeterminable<in TSelf, in TOther, TIntersection> : IIntersectionDeterminable<TOther, TIntersection> where TOther : IIntersectionDeterminable<TSelf, TIntersection> where TIntersection : struct;
@@ -185,4 +192,9 @@ public interface IRelatable<in TOther, out TRelationship> {
 }
 public interface ILineRelatable<out TRelationship> : IRelatable<Line, TRelationship>, IRelatable<Ray, TRelationship>, IRelatable<BoundedRay, TRelationship>;
 interface IRelatable<in TSelf, in TOther, out TRelationship> : IRelatable<TOther, TRelationship> where TOther : IRelatable<TSelf, TRelationship>;
+
+public interface IConvexShapeIntersectable<TIntersection> where TIntersection : struct {
+	TIntersection? IntersectionWith<TShape>(TShape shape) where TShape : IConvexShape<TShape>;
+	TIntersection FastIntersectionWith<TShape>(TShape shape) where TShape : IConvexShape<TShape>;
+}
 #endregion

@@ -27,4 +27,6 @@ public partial interface ILineLike {
 		var closestPointOnLine = ClosestPointOn(@this, arg);
 		return @this.DistanceFrom(closestPointOnLine) <= lineThickness ? closestPointOnLine : null;
 	}
+	public static Location FastIntersectionWith<TThis, TArg>(TThis @this, TArg arg) where TThis : ILineLike where TArg : ILineLike => FastIntersectionWith(@this, arg, DefaultLineThickness);
+	public static Location FastIntersectionWith<TThis, TArg>(TThis @this, TArg arg, float lineThickness) where TThis : ILineLike where TArg : ILineLike => ClosestPointOn(@this, arg);
 }

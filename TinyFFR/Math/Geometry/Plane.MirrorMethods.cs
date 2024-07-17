@@ -27,8 +27,13 @@ partial struct Direction : IAngleMeasurable<Plane>, IReflectable<Plane, Directio
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle SignedAngleTo(Plane plane) => plane.SignedAngleTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction ReflectedBy(Plane plane) => plane.ReflectionOf(this);
-	Direction? IReflectable<Plane, Direction>.ReflectedBy(Plane plane) => plane.ReflectionOf(this);
+	public Angle? IncidentAngleWith(Plane plane) => plane.IncidentAngleWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle FastIncidentAngleWith(Plane plane) => plane.FastIncidentAngleWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction? ReflectedBy(Plane plane) => plane.ReflectionOf(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction FastReflectedBy(Plane plane) => plane.FastReflectionOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction? ProjectedOnTo(Plane plane) => plane.ProjectionOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -48,8 +53,13 @@ partial struct Vect : IAngleMeasurable<Plane>, IReflectable<Plane, Vect>, IProje
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle SignedAngleTo(Plane plane) => plane.SignedAngleTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect ReflectedBy(Plane plane) => plane.ReflectionOf(this);
-	Vect? IReflectable<Plane, Vect>.ReflectedBy(Plane plane) => plane.ReflectionOf(this);
+	public Angle? IncidentAngleWith(Plane plane) => plane.IncidentAngleWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle FastIncidentAngleWith(Plane plane) => plane.FastIncidentAngleWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect? ReflectedBy(Plane plane) => plane.ReflectionOf(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect FastReflectedBy(Plane plane) => plane.FastReflectionOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect? ProjectedOnTo(Plane plane) => plane.ProjectionOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

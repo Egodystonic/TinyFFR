@@ -135,8 +135,12 @@ public readonly partial struct Line {
 	public Ray? ReflectedBy(Plane plane) {
 		var intersectionPoint = IntersectionWith(plane)?.StartPoint;
 		if (intersectionPoint == null) return null;
-		return new Ray(intersectionPoint.Value, Direction.ReflectedBy(plane));
+		return new Ray(intersectionPoint.Value, Direction.FastReflectedBy(plane));
 	}
+	public Ray FastReflectedBy(Plane plane) => new(FastIntersectionWith(plane).StartPoint, Direction.FastReflectedBy(plane));
+
+	public Angle? IncidentAngleWith(Plane plane) => IsIntersectedBy(plane) ? plane.IncidentAngleWith(Direction) : null;
+	public Angle FastIncidentAngleWith(Plane plane) => plane.FastIncidentAngleWith(Direction);
 
 	public Ray? IntersectionWith(Plane plane) {
 		var similarityToNormal = plane.Normal.Dot(Direction);
@@ -145,7 +149,11 @@ public readonly partial struct Line {
 		var distance = (plane.PointClosestToOrigin - PointOnLine).LengthWhenProjectedOnTo(plane.Normal) / similarityToNormal;
 		return new(LocationAtDistance(distance), Direction);
 	}
-
+	public Ray FastIntersectionWith(Plane plane) {
+		var similarityToNormal = plane.Normal.Dot(Direction);
+		var distance = (plane.PointClosestToOrigin - PointOnLine).LengthWhenProjectedOnTo(plane.Normal) / similarityToNormal;
+		return new(LocationAtDistance(distance), Direction);
+	}
 	public bool IsIntersectedBy(Plane plane) => plane.Normal.Dot(Direction) != 0f;
 
 	public float SignedDistanceFrom(Plane plane) {
