@@ -8,7 +8,7 @@ namespace Egodystonic.TinyFFR;
 public readonly record struct ConvexShapeLineIntersection(Location First, Location? Second) {
 	public Location First { get; } = First;
 	public Location? Second { get; } = Second;
-	
+
 	public static ConvexShapeLineIntersection? FromTwoPotentiallyNullArgs(Location? a, Location? b) {
 		return (a, b) switch {
 			(not null, _) => new(a.Value, b),
@@ -29,7 +29,8 @@ public interface IConvexShape : IShape,
 	IDistanceMeasurable<Location>,
 	IContainer<Location>,
 
-	ILineReflectionTarget, 
+	IReflectionTarget<Ray, Ray>, 
+	IReflectionTarget<BoundedRay, BoundedRay>, 
 	ILineClosestExogenousPointDiscoverable,
 	ILineClosestEndogenousPointDiscoverable,
 	ILineDistanceMeasurable, 

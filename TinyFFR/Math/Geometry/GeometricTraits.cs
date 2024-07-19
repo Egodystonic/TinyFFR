@@ -80,8 +80,14 @@ public interface IReflectionTarget<in TOther, TReflection> where TReflection : s
 	Angle FastIncidentAngleWith(TOther element);
 }
 public interface ILineReflectionTarget<TReflection> : IReflectionTarget<Line, TReflection>, IReflectionTarget<Ray, TReflection>, IReflectionTarget<BoundedRay, TReflection> where TReflection : struct;
-public interface ILineReflectionTarget : IReflectionTarget<Line, Ray>, IReflectionTarget<Ray, Ray>, IReflectionTarget<BoundedRay, BoundedRay>;
+public interface ILineReflectionTarget : IReflectionTarget<Line, Line>, IReflectionTarget<Ray, Ray>, IReflectionTarget<BoundedRay, BoundedRay>;
 interface IReflectionTarget<in TSelf, in TOther, TReflection> : IReflectionTarget<TOther, TReflection> where TOther : IReflectable<TSelf, TReflection> where TSelf : IReflectionTarget<TOther, TReflection> where TReflection : struct;
+public interface IConvexShapeReflectable<TReflection> where TReflection : struct {
+	TReflection? ReflectedBy<TShape>(TShape shape) where TShape : IConvexShape<TShape>;
+	TReflection FastReflectedBy<TShape>(TShape shape) where TShape : IConvexShape<TShape>;
+	Angle? IncidentAngleWith<TShape>(TShape shape) where TShape : IConvexShape<TShape>;
+	Angle FastIncidentAngleWith<TShape>(TShape shape) where TShape : IConvexShape<TShape>;
+}
 
 
 public interface IProjectable<TSelf, in TOther> where TSelf : struct {

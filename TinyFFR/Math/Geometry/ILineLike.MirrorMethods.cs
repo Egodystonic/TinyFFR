@@ -290,9 +290,9 @@ partial struct Plane :
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray? ReflectionOf(Line line) => line.ReflectedBy(this);
+	public Line? ReflectionOf(Line line) => line.ReflectedBy(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray FastReflectionOf(Line line) => line.FastReflectedBy(this);
+	public Line FastReflectionOf(Line line) => line.FastReflectedBy(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle? IncidentAngleWith(Line line) => line.IncidentAngleWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -963,6 +963,102 @@ partial class BoundedRayTest {
 				new BoundedRay(new Location(10f, 2f, 0f), new Location(10f, 4f, 0f))
 			)
 		);
+
+
+
+		// Line, Fast
+		Assert.AreEqual(
+			new Location(100f, 1f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), Direction.Left * 100f).FastIntersectionWith(
+				new Line(new Location(100f, 2f, 0f), Direction.Down),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.AreEqual(
+			new Location(101f, 1f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), Direction.Left * 100f).FastIntersectionWith(
+				new Line(new Location(101f, 2f, 0f), Direction.Down),
+				lineThickness: 1.01f
+			)
+		);
+
+		// Ray, Fast
+		Assert.AreEqual(
+			new Location(100f, 1f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), Direction.Left * 100f).FastIntersectionWith(
+				new Ray(new Location(100f, 2f, 0f), Direction.Down),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.AreEqual(
+			new Location(100f, 2f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), Direction.Left * 100f).FastIntersectionWith(
+				new Ray(new Location(100f, 2f, 0f), Direction.Up),
+				lineThickness: 1.01f
+			)
+		);
+		Assert.AreEqual(
+			new Location(-1f, 1f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), Direction.Left * 100f).FastIntersectionWith(
+				new Ray(new Location(-1f, 1f, 0f), Direction.Right),
+				lineThickness: 1.01f
+			)
+		);
+		Assert.AreEqual(
+			new Location(101f, 1f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), Direction.Left * 100f).FastIntersectionWith(
+				new Ray(new Location(101f, 1f, 0f), Direction.Left),
+				lineThickness: 1.01f
+			)
+		);
+		Assert.AreEqual(
+			new Location(101f, 1f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), Direction.Left * 100f).FastIntersectionWith(
+				new Ray(new Location(101f, 2f, 0f), Direction.Down),
+				lineThickness: 1.01f
+			)
+		);
+
+		// BoundedRay
+		Assert.AreEqual(
+			new Location(100f, 1f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), Direction.Left * 100f).FastIntersectionWith(
+				BoundedRay.FromStartPointAndVect(new Location(100f, 2f, 0f), Direction.Down * 4f),
+				lineThickness: 0.01f
+			)
+		);
+		Assert.AreEqual(
+			new Location(100f, 2f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), Direction.Left * 100f).FastIntersectionWith(
+				BoundedRay.FromStartPointAndVect(new Location(100f, 2f, 0f), Direction.Up * 4f),
+				lineThickness: 1.01f
+			)
+		);
+		Assert.AreEqual(
+			new Location(100f, 2f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), Direction.Left * 100f).FastIntersectionWith(
+				BoundedRay.FromStartPointAndVect(new Location(100f, 6f, 0f), Direction.Down * 4f),
+				lineThickness: 1.01f
+			)
+		);
+		Assert.AreEqual(
+			new Location(0f, 1f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), Direction.Left * 100f).FastIntersectionWith(
+				new BoundedRay(new Location(0f, 1f, 0f), new Location(-1f, 1f, 0f))
+			)
+		);
+		Assert.AreEqual(
+			new Location(0f, 1f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), Direction.Left * 100f).FastIntersectionWith(
+				new BoundedRay(new Location(-1f, 1f, 0f), new Location(0f, 1f, 0f))
+			)
+		);
+		Assert.AreEqual(
+			new Location(10f, 1f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), Direction.Left * 100f).FastIntersectionWith(
+				new BoundedRay(new Location(10f, 2f, 0f), new Location(10f, 0f, 0f))
+			)
+		);
 	}
 
 	[Test]
@@ -1183,11 +1279,108 @@ partial class BoundedRayTest {
 			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).Flipped.ReflectedBy(plane),
 			TestTolerance
 		);
+		AssertToleranceEquals(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), new Direction(1f, 1f, -1f) * (10f - MathF.Sqrt(3f))),
+			BoundedRay.FromStartPointAndVect(new Location(-1f, 2f, 1f), new Direction(1f, -1f, -1f) * 10f).ReflectedBy(plane),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), new Direction(-2f, -1f, 2f) * (10f - MathF.Sqrt(9f))),
+			BoundedRay.FromStartPointAndVect(new Location(2f, 0f, -2f), new Direction(-2f, 1f, 2f) * 10f).ReflectedBy(plane),
+			TestTolerance
+		);
 		Assert.Null(
 			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 0.5f).ReflectedBy(plane)
 		);
 		Assert.Null(
 			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 0.5f).Flipped.ReflectedBy(plane)
+		);
+
+		// Fast
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(100f, 1f, 0f), Direction.Up * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(100f, 1f, 0f), Direction.Down * 100f).FastReflectedBy(plane)
+		);
+		Assert.AreEqual(
+			BoundedRay.FromStartPointAndVect(new Location(100f, 1f, 0f), Direction.Down * 100f),
+			BoundedRay.FromStartPointAndVect(new Location(100f, 1f, 0f), Direction.Up * 100f).FastReflectedBy(plane)
+		);
+
+		AssertToleranceEquals(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), new Direction(0f, 1f, -1f) * MathF.Sqrt(50f) * 2f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).FastReflectedBy(plane),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), new Direction(0f, -1f, 1f) * MathF.Sqrt(50f) * 1f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).Flipped.FastReflectedBy(plane),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), new Direction(1f, 1f, -1f) * (10f - MathF.Sqrt(3f))),
+			BoundedRay.FromStartPointAndVect(new Location(-1f, 2f, 1f), new Direction(1f, -1f, -1f) * 10f).FastReflectedBy(plane),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 1f, 0f), new Direction(-2f, -1f, 2f) * (10f - MathF.Sqrt(9f))),
+			BoundedRay.FromStartPointAndVect(new Location(2f, 0f, -2f), new Direction(-2f, 1f, 2f) * 10f).FastReflectedBy(plane),
+			TestTolerance
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineIncidentAngleOnPlanes() {
+		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
+
+		Assert.AreEqual(
+			Angle.Zero,
+			BoundedRay.FromStartPointAndVect(new Location(100f, 1f, 0f), Direction.Down * 100f).IncidentAngleWith(plane)
+		);
+		Assert.AreEqual(
+			Angle.Zero,
+			BoundedRay.FromStartPointAndVect(new Location(100f, 1f, 0f), Direction.Up * 100f).IncidentAngleWith(plane)
+		);
+
+		AssertToleranceEquals(
+			Angle.EighthCircle,
+			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).IncidentAngleWith(plane),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			Angle.EighthCircle,
+			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).Flipped.IncidentAngleWith(plane),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			Angle.FromRadians(MathF.Acos(1f / 3f)),
+			BoundedRay.FromStartPointAndVect(new Location(2f, 0f, -2f), new Direction(-2f, 1f, 2f) * 10f).IncidentAngleWith(plane),
+			TestTolerance
+		);
+
+		// Fast
+		Assert.AreEqual(
+			Angle.Zero,
+			BoundedRay.FromStartPointAndVect(new Location(100f, 1f, 0f), Direction.Down * 100f).FastIncidentAngleWith(plane)
+		);
+		Assert.AreEqual(
+			Angle.Zero,
+			BoundedRay.FromStartPointAndVect(new Location(100f, 1f, 0f), Direction.Up * 100f).FastIncidentAngleWith(plane)
+		);
+
+		AssertToleranceEquals(
+			Angle.EighthCircle,
+			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).FastIncidentAngleWith(plane),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			Angle.EighthCircle,
+			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).Flipped.FastIncidentAngleWith(plane),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			Angle.FromRadians(MathF.Acos(1f / 3f)),
+			BoundedRay.FromStartPointAndVect(new Location(2f, 0f, -2f), new Direction(-2f, 1f, 2f) * 10f).FastIncidentAngleWith(plane),
+			TestTolerance
 		);
 	}
 
@@ -1231,6 +1424,27 @@ partial class BoundedRayTest {
 		);
 		Assert.Null(
 			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 0.5f).Flipped.IntersectionWith(plane)
+		);
+
+		// Fast
+		Assert.AreEqual(
+			new BoundedRay(new Location(100f, 1f, 0f), new Location(100f, 1f, 0f)),
+			BoundedRay.FromStartPointAndVect(new Location(100f, 101f, 0f), Direction.Down * 100f).FastIntersectionWith(plane)
+		);
+		Assert.AreEqual(
+			new BoundedRay(new Location(100f, 1f, 0f), new Location(100f, 1f, 0f)),
+			BoundedRay.FromStartPointAndVect(new Location(100f, -99f, 0f), Direction.Up * 100f).FastIntersectionWith(plane)
+		);
+
+		AssertToleranceEquals(
+			new BoundedRay(new Location(0f, 1f, 0f), new Location(0f, -9f, -10f)),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).FastIntersectionWith(plane),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay(new Location(0f, 1f, 0f), new Location(0f, 6f, 5f)),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).Flipped.FastIntersectionWith(plane),
+			TestTolerance
 		);
 	}
 

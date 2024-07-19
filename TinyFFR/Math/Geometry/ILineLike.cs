@@ -112,6 +112,7 @@ public interface ILineLike<TSelf> : ILineLike,
 	IPointRotatable<TSelf>,
 	IProjectable<TSelf, Plane>,
 	IParallelizable<TSelf, Plane>,
-	IOrthogonalizable<TSelf, Plane>
+	IOrthogonalizable<TSelf, Plane>,
+	IReflectable<Plane, TSelf>
 	where TSelf : struct, ILineLike<TSelf>;
-public interface ILineLike<TSelf, TSplit> : IReflectable<Plane, TSplit>, IIntersectionDeterminable<Plane, TSplit>, ILineLike<TSelf> where TSelf : struct, ILineLike<TSelf> where TSplit : struct, ILineLike<TSplit>;
+public interface ILineLike<TSelf, TSplit> : IIntersectionDeterminable<Plane, TSplit>, ILineLike<TSelf> where TSelf : struct, ILineLike<TSelf> where TSplit : struct, ILineLike<TSplit>;

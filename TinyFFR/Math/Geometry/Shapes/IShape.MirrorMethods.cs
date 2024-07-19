@@ -56,16 +56,16 @@ partial struct Line {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFromSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.SurfaceDistanceSquaredFrom(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray? ReflectedBy<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.ReflectionOf(this);
+	public Angle? IncidentAngleWith(OriginSphere shape) => shape.IncidentAngleWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray FastReflectedBy<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.FastReflectionOf(this);
+	public Angle FastIncidentAngleWith(OriginSphere shape) => shape.FastIncidentAngleWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ConvexShapeLineIntersection? IntersectionWith<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.IntersectionWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ConvexShapeLineIntersection FastIntersectionWith<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.FastIntersectionWith(this);
 }
 
-partial struct Ray {
+partial struct Ray : IConvexShapeReflectable<Ray> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointInsideOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.PointClosestTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -83,6 +83,10 @@ partial struct Ray {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFromSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.SurfaceDistanceSquaredFrom(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle? IncidentAngleWith<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.IncidentAngleWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle FastIncidentAngleWith<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.FastIncidentAngleWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray? ReflectedBy<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.ReflectionOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray FastReflectedBy<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.FastReflectionOf(this);
@@ -92,7 +96,7 @@ partial struct Ray {
 	public ConvexShapeLineIntersection FastIntersectionWith<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.FastIntersectionWith(this);
 }
 
-partial struct BoundedRay {
+partial struct BoundedRay : IConvexShapeReflectable<BoundedRay> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointInsideOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.PointClosestTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -109,6 +113,10 @@ partial struct BoundedRay {
 	public float DistanceSquaredFrom<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.DistanceSquaredFrom(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFromSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.SurfaceDistanceSquaredFrom(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle? IncidentAngleWith<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.IncidentAngleWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle FastIncidentAngleWith<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.FastIncidentAngleWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay? ReflectedBy<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.ReflectionOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

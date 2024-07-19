@@ -111,15 +111,15 @@ partial struct OriginSphere {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ConvexShapeLineIntersection? IntersectionWith(Line line) => IntersectionWithLineLike(line);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection? IntersectionWith(Ray ray) => IntersectionWithLineLike(ray);
+	public ConvexShapeLineIntersection? IntersectionWith(Ray ray) => IntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection? IntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray);
+	public ConvexShapeLineIntersection? IntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ConvexShapeLineIntersection FastIntersectionWith(Line line) => IntersectionWithLineLike(line)!.Value;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection FastIntersectionWith(Ray ray) => IntersectionWithLineLike(ray)!.Value;
+	public ConvexShapeLineIntersection FastIntersectionWith(Ray ray) => IntersectionWithLineLike(ray)!.Value; // TODO xmldoc that the first intersection is always the one nearest the start point
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection FastIntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray)!.Value;
+	public ConvexShapeLineIntersection FastIntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray)!.Value; // TODO xmldoc that the first intersection is always the one nearest the start point
 
 	bool IsIntersectedByLineLike<TLine>(TLine line) where TLine : ILineLike {
 		var distanceTuple = GetUnboundedLineLikeSurfaceIntersectionDistances(line);
@@ -129,6 +129,7 @@ partial struct OriginSphere {
 	ConvexShapeLineIntersection? IntersectionWithLineLike<TLine>(TLine line) where TLine : ILineLike {
 		var distanceTuple = GetUnboundedLineLikeSurfaceIntersectionDistances(line);
 		if (distanceTuple == null) return null;
+		if (distanceTuple.Value.Second < distanceTuple.Value.First) distanceTuple = (distanceTuple.Value.Second, distanceTuple.Value.First, false);
 
 		return ConvexShapeLineIntersection.FromTwoPotentiallyNullArgs(
 			line.LocationAtDistanceOrNull(distanceTuple.Value.First),
@@ -149,7 +150,6 @@ partial struct OriginSphere {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle FastIncidentAngleWith(BoundedRay ray) => IncidentAngleToLineLike(ray)!.Value;
 
-	public Ray? ReflectionOf(Line line) { var reflection = ReflectionOfLineLike(line); return reflection != null ? new Ray(reflection.Value.Item1, reflection.Value.Item2) : null; }
 	public Ray? ReflectionOf(Ray ray) { var reflection = ReflectionOfLineLike(ray); return reflection != null ? new Ray(reflection.Value.Item1, reflection.Value.Item2) : null; }
 	public BoundedRay? ReflectionOf(BoundedRay ray) {
 		var reflection = ReflectionOfLineLike(ray); 
@@ -158,14 +158,15 @@ partial struct OriginSphere {
 			: null;
 	}
 
-	public Ray FastReflectionOf(Line line) => ReflectionOf(line)!.Value;
 	public Ray FastReflectionOf(Ray ray) => ReflectionOf(ray)!.Value;
 	public BoundedRay FastReflectionOf(BoundedRay ray) => ReflectionOf(ray)!.Value;
 
 	public bool Contains(BoundedRay ray) => Contains(ray.StartPoint) && Contains(ray.EndPoint);
 
 	Angle? IncidentAngleToLineLike<TLine>(TLine line) where TLine : ILineLike {
-		return GetLineLikeIntersectionPointClosestToStartPoint(line)?.AsVect().Direction.Inverted.AngleTo(line.Direction);
+		var nearestIntersection = GetLineLikeIntersectionPointClosestToStartPoint(line);
+		if (nearestIntersection == null) return null;
+		return Angle.FromRadians(MathF.Acos(MathF.Abs(nearestIntersection.Value.AsVect().Direction.Dot(line.Direction))));
 	}
 
 	(Location, Direction)? ReflectionOfLineLike<TLine>(TLine line) where TLine : ILineLike {

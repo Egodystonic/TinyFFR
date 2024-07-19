@@ -473,6 +473,146 @@ partial class OriginCuboidTest {
 
 		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 20f, 100f), new Direction(0f, 0f, -1f) * 1000f));
 		Assert.IsNull(intersection);
+
+
+
+
+		// Line, Fast
+		intersection = TestCuboid.FastIntersectionWith(new Line(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f)));
+		AssertToleranceEquals((3.6f, 0f, 0f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((-3.6f, 0f, 0f), intersection.Value.Second, TestTolerance);
+
+		intersection = TestCuboid.FastIntersectionWith(new Line(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f)));
+		AssertToleranceEquals((-3.6f, 0f, 0f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((3.6f, 0f, 0f), intersection.Value.Second, TestTolerance);
+
+		intersection = TestCuboid.FastIntersectionWith(new Line(new Location(100f, 0f, 0f), new Direction(1f, 0f, 0f)));
+		AssertToleranceEquals((-3.6f, 0f, 0f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((3.6f, 0f, 0f), intersection.Value.Second, TestTolerance);
+
+		intersection = TestCuboid.FastIntersectionWith(new Line(new Location(-100f, 0f, 0f), new Direction(-1f, 0f, 0f)));
+		AssertToleranceEquals((3.6f, 0f, 0f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((-3.6f, 0f, 0f), intersection.Value.Second, TestTolerance);
+
+
+		intersection = TestCuboid.FastIntersectionWith(new Line(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f)));
+		AssertToleranceEquals((0f, 6.8f, 0f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((0f, -6.8f, 0f), intersection.Value.Second, TestTolerance);
+
+		intersection = TestCuboid.FastIntersectionWith(new Line(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f)));
+		AssertToleranceEquals((0f, -6.8f, 0f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((0f, 6.8f, 0f), intersection.Value.Second, TestTolerance);
+
+		intersection = TestCuboid.FastIntersectionWith(new Line(new Location(0f, 100f, 0f), new Direction(0f, 1f, 0f)));
+		AssertToleranceEquals((0f, -6.8f, 0f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((0f, 6.8f, 0f), intersection.Value.Second, TestTolerance);
+
+		intersection = TestCuboid.FastIntersectionWith(new Line(new Location(0f, -100f, 0f), new Direction(0f, -1f, 0f)));
+		AssertToleranceEquals((0f, 6.8f, 0f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((0f, -6.8f, 0f), intersection.Value.Second, TestTolerance);
+
+
+		intersection = TestCuboid.FastIntersectionWith(new Line(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f)));
+		AssertToleranceEquals((0f, 0f, 0.7f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((0f, 0f, -0.7f), intersection.Value.Second, TestTolerance);
+
+		intersection = TestCuboid.FastIntersectionWith(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f)));
+		AssertToleranceEquals((0f, 0f, -0.7f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0.7f), intersection.Value.Second, TestTolerance);
+
+		intersection = TestCuboid.FastIntersectionWith(new Line(new Location(0f, 0f, 100f), new Direction(0f, 0f, 1f)));
+		AssertToleranceEquals((0f, 0f, -0.7f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0.7f), intersection.Value.Second, TestTolerance);
+
+		intersection = TestCuboid.FastIntersectionWith(new Line(new Location(0f, 0f, -100f), new Direction(0f, 0f, -1f)));
+		AssertToleranceEquals((0f, 0f, 0.7f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((0f, 0f, -0.7f), intersection.Value.Second, TestTolerance);
+
+
+		intersection = TestCuboid.FastIntersectionWith(new Line(new Location(100f, 100f, 100f), new Direction(-1f, -1f, -1f)));
+		AssertToleranceEquals((0.7f, 0.7f, 0.7f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((-0.7f, -0.7f, -0.7f), intersection.Value.Second, TestTolerance);
+
+		intersection = TestCuboid.FastIntersectionWith(new Line(new Location(100f, 100f, 100f), new Direction(1f, 1f, 1f)));
+		AssertToleranceEquals((-0.7f, -0.7f, -0.7f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((0.7f, 0.7f, 0.7f), intersection.Value.Second, TestTolerance);
+
+
+
+
+		// Ray, Fast
+		intersection = TestCuboid.FastIntersectionWith(new Ray(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f)));
+		AssertToleranceEquals((3.6f, 0f, 0f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((-3.6f, 0f, 0f), intersection.Value.Second, TestTolerance);
+
+		intersection = TestCuboid.FastIntersectionWith(new Ray(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f)));
+		AssertToleranceEquals((-3.6f, 0f, 0f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((3.6f, 0f, 0f), intersection.Value.Second, TestTolerance);
+
+
+
+		intersection = TestCuboid.FastIntersectionWith(new Ray(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f)));
+		AssertToleranceEquals((0f, 6.8f, 0f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((0f, -6.8f, 0f), intersection.Value.Second, TestTolerance);
+
+		intersection = TestCuboid.FastIntersectionWith(new Ray(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f)));
+		AssertToleranceEquals((0f, -6.8f, 0f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((0f, 6.8f, 0f), intersection.Value.Second, TestTolerance);
+
+
+
+		intersection = TestCuboid.FastIntersectionWith(new Ray(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f)));
+		AssertToleranceEquals((0f, 0f, 0.7f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((0f, 0f, -0.7f), intersection.Value.Second, TestTolerance);
+
+		intersection = TestCuboid.FastIntersectionWith(new Ray(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f)));
+		AssertToleranceEquals((0f, 0f, -0.7f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0.7f), intersection.Value.Second, TestTolerance);
+
+
+		intersection = TestCuboid.FastIntersectionWith(new Ray(new Location(100f, 100f, 100f), new Direction(-1f, -1f, -1f)));
+		AssertToleranceEquals((0.7f, 0.7f, 0.7f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((-0.7f, -0.7f, -0.7f), intersection.Value.Second, TestTolerance);
+
+
+
+
+		// BoundedRay, Fast
+		intersection = TestCuboid.FastIntersectionWith(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f));
+		AssertToleranceEquals((3.6f, 0f, 0f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((-3.6f, 0f, 0f), intersection.Value.Second, TestTolerance);
+
+		intersection = TestCuboid.FastIntersectionWith(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f));
+		AssertToleranceEquals((-3.6f, 0f, 0f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((3.6f, 0f, 0f), intersection.Value.Second, TestTolerance);
+
+
+
+		intersection = TestCuboid.FastIntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f));
+		AssertToleranceEquals((0f, 6.8f, 0f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((0f, -6.8f, 0f), intersection.Value.Second, TestTolerance);
+
+		intersection = TestCuboid.FastIntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f));
+		AssertToleranceEquals((0f, -6.8f, 0f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((0f, 6.8f, 0f), intersection.Value.Second, TestTolerance);
+
+
+
+
+		intersection = TestCuboid.FastIntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f));
+		AssertToleranceEquals((0f, 0f, 0.7f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((0f, 0f, -0.7f), intersection.Value.Second, TestTolerance);
+
+		intersection = TestCuboid.FastIntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f));
+		AssertToleranceEquals((0f, 0f, -0.7f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0.7f), intersection.Value.Second, TestTolerance);
+
+
+
+
+		intersection = TestCuboid.FastIntersectionWith(BoundedRay.FromStartPointAndVect(new Location(100f, 100f, 100f), new Direction(-1f, -1f, -1f) * 1000f));
+		AssertToleranceEquals((0.7f, 0.7f, 0.7f), intersection.Value.First, TestTolerance);
+		AssertToleranceEquals((-0.7f, -0.7f, -0.7f), intersection.Value.Second, TestTolerance);
 	}
 
 	[Test]
@@ -1709,5 +1849,48 @@ partial class OriginCuboidTest {
 			Assert.AreEqual(PlaneObjectRelationship.PlaneIntersectsObject, TestCuboid.RelationshipTo(plane));
 			Assert.AreEqual(PlaneObjectRelationship.PlaneIntersectsObject, TestCuboid.RelationshipTo(plane.Flipped));
 		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineIncidentAngleWithLines() {
+		void AssertAngle(Angle? expectation, Ray ray) {
+			var boundedRay = BoundedRay.FromStartPointAndVect(ray.StartPoint, ray.Direction * (ray.StartPoint.DistanceFromOrigin() * 2f));
+
+			AssertToleranceEquals(expectation, TestCuboid.IncidentAngleWith(ray), TestTolerance);
+			AssertToleranceEquals(expectation, TestCuboid.IncidentAngleWith(boundedRay), TestTolerance);
+			if (expectation != null) {
+				AssertToleranceEquals(expectation, TestCuboid.FastIncidentAngleWith(ray), TestTolerance);
+				AssertToleranceEquals(expectation, TestCuboid.FastIncidentAngleWith(boundedRay), TestTolerance);
+			}
+		}
+
+		AssertAngle(Angle.Zero, new((-100f, 0f, 0f), (1f, 0f, 0f)));
+		AssertAngle(Angle.Zero, new((100f, 0f, 0f), (-1f, 0f, 0f)));
+		AssertAngle(Angle.Zero, new((0f, -100f, 0f), (0f, 1f, 0f)));
+		AssertAngle(Angle.Zero, new((0f, 100f, 0f), (0f, -1f, 0f)));
+		AssertAngle(Angle.Zero, new((0f, 0f, -100f), (0f, 0f, 1f)));
+		AssertAngle(Angle.Zero, new((0f, 0f, 100f), (0f, 0f, -1f)));
+
+		AssertAngle(Angle.EighthCircle, new((TestCuboid.HalfWidth + 100f, 100f, 0f), (-1f, -1f, 0f)));
+		AssertAngle(Angle.EighthCircle, new((0f, TestCuboid.HalfHeight + 100f, 100f), (0f, -1f, -1f)));
+		AssertAngle(Angle.EighthCircle, new((100f, 0f, TestCuboid.HalfDepth + 100f), (-1f, 0f, -1f)));
+		AssertAngle(Angle.EighthCircle, new((-TestCuboid.HalfWidth - 100f, -100f, 0f), (1f, 1f, 0f)));
+		AssertAngle(Angle.EighthCircle, new((0f, -TestCuboid.HalfHeight - 100f, -100f), (0f, 1f, 1f)));
+		AssertAngle(Angle.EighthCircle, new((-100f, 0f, -TestCuboid.HalfDepth - 100f), (1f, 0f, 1f)));
+
+		AssertAngle(null, new((TestCuboid.HalfWidth + TestTolerance, 0f, 0f), (1f, 0f, 0f)));
+		AssertAngle(null, new((-TestCuboid.HalfWidth - TestTolerance, 0f, 0f), (-1f, 0f, 0f)));
+		AssertAngle(null, new((0f, TestCuboid.HalfHeight + TestTolerance, 0f), (0f, 1f, 0f)));
+		AssertAngle(null, new((0f, -TestCuboid.HalfHeight - TestTolerance, 0f), (0f, -1f, 0f)));
+		AssertAngle(null, new((0f, 0f, TestCuboid.HalfDepth + TestTolerance), (0f, 0f, 1f)));
+		AssertAngle(null, new((0f, 0f, -TestCuboid.HalfDepth - TestTolerance), (0f, 0f, -1f)));
+
+
+		AssertAngle(Angle.Zero, new((0f, 0f, 0f), (1f, 0f, 0f)));
+		AssertAngle(Angle.Zero, new((0f, 0f, 0f), (-1f, 0f, 0f)));
+		AssertAngle(Angle.Zero, new((0f, 0f, 0f), (0f, 1f, 0f)));
+		AssertAngle(Angle.Zero, new((0f, 0f, 0f), (0f, -1f, 0f)));
+		AssertAngle(Angle.Zero, new((0f, 0f, 0f), (0f, 0f, 1f)));
+		AssertAngle(Angle.Zero, new((0f, 0f, 0f), (0f, 0f, -1f)));
 	}
 }

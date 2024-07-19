@@ -132,12 +132,12 @@ public readonly partial struct Line {
 		return closestPoint.DistanceFrom(PointOnLine) * MathF.Sign((PointOnLine >> closestPoint).Dot(Direction));
 	}
 
-	public Ray? ReflectedBy(Plane plane) {
+	public Line? ReflectedBy(Plane plane) {
 		var intersectionPoint = IntersectionWith(plane)?.StartPoint;
 		if (intersectionPoint == null) return null;
-		return new Ray(intersectionPoint.Value, Direction.FastReflectedBy(plane));
+		return new Line(intersectionPoint.Value, Direction.FastReflectedBy(plane));
 	}
-	public Ray FastReflectedBy(Plane plane) => new(FastIntersectionWith(plane).StartPoint, Direction.FastReflectedBy(plane));
+	public Line FastReflectedBy(Plane plane) => new(FastIntersectionWith(plane).StartPoint, Direction.FastReflectedBy(plane));
 
 	public Angle? IncidentAngleWith(Plane plane) => IsIntersectedBy(plane) ? plane.IncidentAngleWith(Direction) : null;
 	public Angle FastIncidentAngleWith(Plane plane) => plane.FastIncidentAngleWith(Direction);

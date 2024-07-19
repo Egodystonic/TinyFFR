@@ -218,23 +218,16 @@ partial struct OriginCuboid {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ConvexShapeLineIntersection? IntersectionWith(Line line) => IntersectionWithLineLike(line);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection? IntersectionWith(Ray ray) => IntersectionWithLineLike(ray);
+	public ConvexShapeLineIntersection? IntersectionWith(Ray ray) => IntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection? IntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray);
+	public ConvexShapeLineIntersection? IntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ConvexShapeLineIntersection FastIntersectionWith(Line line) => IntersectionWithLineLike(line)!.Value;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection FastIntersectionWith(Ray ray) => IntersectionWithLineLike(ray)!.Value;
+	public ConvexShapeLineIntersection FastIntersectionWith(Ray ray) => IntersectionWithLineLike(ray)!.Value; // TODO xmldoc that the first intersection is always the one nearest the start point
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection FastIntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray)!.Value;
+	public ConvexShapeLineIntersection FastIntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray)!.Value; // TODO xmldoc that the first intersection is always the one nearest the start point
 
-	public Ray? ReflectionOf(Line line) {
-		var tuple = GetHitPointAndSidePlaneOfLineLike(line);
-		var reflection = tuple?.Side.ReflectionOf(line.Direction);
-		if (reflection == null) return null;
-
-		return new Ray(tuple.Value.HitPoint, reflection.Value);
-	}
 	public Ray? ReflectionOf(Ray ray) {
 		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
 		var reflection = tuple?.Side.ReflectionOf(ray.Direction);
@@ -249,10 +242,6 @@ partial struct OriginCuboid {
 
 		return BoundedRay.FromStartPointAndVect(tuple.Value.HitPoint, reflection.Value * (ray.Length - tuple.Value.HitDistance));
 	}
-	public Ray FastReflectionOf(Line line) {
-		var tuple = GetHitPointAndSidePlaneOfLineLike(line);
-		return new Ray(tuple.Value.HitPoint, tuple.Value.Side.FastReflectionOf(line.Direction));
-	}
 	public Ray FastReflectionOf(Ray ray) {
 		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
 		return new Ray(tuple.Value.HitPoint, tuple.Value.Side.FastReflectionOf(ray.Direction));
@@ -263,13 +252,9 @@ partial struct OriginCuboid {
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle? IncidentAngleWith(Line line) => GetIncidentAngleOfLineLike(line);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle? IncidentAngleWith(Ray ray) => GetIncidentAngleOfLineLike(ray);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle? IncidentAngleWith(BoundedRay ray) => GetIncidentAngleOfLineLike(ray);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle FastIncidentAngleWith(Line line) => GetIncidentAngleOfLineLike(line)!.Value;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle FastIncidentAngleWith(Ray ray) => GetIncidentAngleOfLineLike(ray)!.Value;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -309,22 +294,27 @@ partial struct OriginCuboid {
 	}
 
 	Angle? GetIncidentAngleOfLineLike<TLine>(TLine line) where TLine : ILineLike {
-		var firstHitDistance = GetUnboundedLineIntersectionDistances(line)?.Item1;
-		if (firstHitDistance == null) return null;
-
-		var hitLoc = line.LocationAtDistanceOrNull(firstHitDistance.Value);
-		if (hitLoc == null) return null;
-
-		var xDiff = HalfWidth - MathF.Abs(hitLoc.Value.X);
-		var yDiff = HalfHeight - MathF.Abs(hitLoc.Value.Y);
-		var zDiff = HalfDepth - MathF.Abs(hitLoc.Value.Z);
-
-		if (xDiff < yDiff) {
-			if (xDiff < zDiff) return line.Direction.AngleTo(Direction.FromVector3PreNormalized(MathF.Sign(hitLoc.Value.X), 0f, 0f));
-			else return line.Direction.AngleTo(Direction.FromVector3PreNormalized(0f, MathF.Sign(hitLoc.Value.Y), 0f));
-		}
-		else if (yDiff < zDiff) return line.Direction.AngleTo(Direction.FromVector3PreNormalized(0f, MathF.Sign(hitLoc.Value.Y), 0f));
-		else return line.Direction.AngleTo(Direction.FromVector3PreNormalized(0f, 0f, MathF.Sign(hitLoc.Value.Z)));
+		// var firstHitDistance = GetUnboundedLineIntersectionDistances(line)?.Item1;
+		// if (firstHitDistance == null) return null;
+		//
+		// var hitLoc = line.LocationAtDistanceOrNull(firstHitDistance.Value);
+		// if (hitLoc == null) return null;
+		//
+		// var xDiff = HalfWidth - MathF.Abs(hitLoc.Value.X);
+		// var yDiff = HalfHeight - MathF.Abs(hitLoc.Value.Y);
+		// var zDiff = HalfDepth - MathF.Abs(hitLoc.Value.Z);
+		//
+		// Direction planeDir;
+		//
+		// if (xDiff < yDiff) {
+		// 	if (xDiff < zDiff) planeDir = Direction.FromVector3PreNormalized(MathF.Sign(hitLoc.Value.X), 0f, 0f);
+		// 	else planeDir = Direction.FromVector3PreNormalized(0f, MathF.Sign(hitLoc.Value.Y), 0f);
+		// }
+		// else if (yDiff < zDiff) planeDir = Direction.FromVector3PreNormalized(0f, MathF.Sign(hitLoc.Value.Y), 0f);
+		// else planeDir = Direction.FromVector3PreNormalized(0f, 0f, MathF.Sign(hitLoc.Value.Z));
+		//
+		// return Angle.FromRadians(MathF.Acos(MathF.Abs(line.Direction.Dot(planeDir))));
+		return GetHitPointAndSidePlaneOfLineLike(line)?.Side.IncidentAngleWith(line.Direction);
 	}
 
 	(float HitDistance, Location HitPoint, Plane Side)? GetHitPointAndSidePlaneOfLineLike<TLine>(TLine line) where TLine : ILineLike {
@@ -350,7 +340,7 @@ partial struct OriginCuboid {
 				return (
 					firstHitDistance.Value,
 					hitLoc.Value,
-					GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateXAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Y)))
+					GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Z)))
 				);
 			}
 		}
@@ -358,14 +348,14 @@ partial struct OriginCuboid {
 			return (
 				firstHitDistance.Value,
 				hitLoc.Value,
-				GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateXAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Y)))
+				GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateYAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Y)))
 			);
 		}
 		else {
 			return (
 				firstHitDistance.Value,
 				hitLoc.Value,
-				GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateXAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Z)))
+				GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Z)))
 			);
 		}
 	}
