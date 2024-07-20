@@ -1885,12 +1885,105 @@ partial class OriginCuboidTest {
 		AssertAngle(null, new((0f, 0f, TestCuboid.HalfDepth + TestTolerance), (0f, 0f, 1f)));
 		AssertAngle(null, new((0f, 0f, -TestCuboid.HalfDepth - TestTolerance), (0f, 0f, -1f)));
 
+		AssertToleranceEquals(Angle.Zero, TestCuboid.IncidentAngleWith(new Ray((0f, 0f, 0f), (1f, 0f, 0f))), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestCuboid.IncidentAngleWith(new Ray((0f, 0f, 0f), (-1f, 0f, 0f))), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestCuboid.IncidentAngleWith(new Ray((0f, 0f, 0f), (0f, 1f, 0f))), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestCuboid.IncidentAngleWith(new Ray((0f, 0f, 0f), (0f, -1f, 0f))), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestCuboid.IncidentAngleWith(new Ray((0f, 0f, 0f), (0f, 0f, 1f))), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestCuboid.IncidentAngleWith(new Ray((0f, 0f, 0f), (0f, 0f, -1f))), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestCuboid.FastIncidentAngleWith(new Ray((0f, 0f, 0f), (1f, 0f, 0f))), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestCuboid.FastIncidentAngleWith(new Ray((0f, 0f, 0f), (-1f, 0f, 0f))), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestCuboid.FastIncidentAngleWith(new Ray((0f, 0f, 0f), (0f, 1f, 0f))), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestCuboid.FastIncidentAngleWith(new Ray((0f, 0f, 0f), (0f, -1f, 0f))), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestCuboid.FastIncidentAngleWith(new Ray((0f, 0f, 0f), (0f, 0f, 1f))), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestCuboid.FastIncidentAngleWith(new Ray((0f, 0f, 0f), (0f, 0f, -1f))), TestTolerance);
 
-		AssertAngle(Angle.Zero, new((0f, 0f, 0f), (1f, 0f, 0f)));
-		AssertAngle(Angle.Zero, new((0f, 0f, 0f), (-1f, 0f, 0f)));
-		AssertAngle(Angle.Zero, new((0f, 0f, 0f), (0f, 1f, 0f)));
-		AssertAngle(Angle.Zero, new((0f, 0f, 0f), (0f, -1f, 0f)));
-		AssertAngle(Angle.Zero, new((0f, 0f, 0f), (0f, 0f, 1f)));
-		AssertAngle(Angle.Zero, new((0f, 0f, 0f), (0f, 0f, -1f)));
+		Assert.IsNull(TestCuboid.IncidentAngleWith(new BoundedRay((-TestCuboid.HalfWidth + TestTolerance, 0f, 0f), (TestCuboid.HalfWidth - TestTolerance, 0f, 0f))));
+		Assert.IsNull(TestCuboid.IncidentAngleWith(new BoundedRay((0f, -TestCuboid.HalfHeight + TestTolerance, 0f), (0f, TestCuboid.HalfHeight - TestTolerance, 0f))));
+		Assert.IsNull(TestCuboid.IncidentAngleWith(new BoundedRay((0f, 0f, -TestCuboid.HalfDepth + TestTolerance), (0f, 0f, TestCuboid.HalfDepth - TestTolerance))));
+		Assert.IsNull(TestCuboid.IncidentAngleWith(new BoundedRay((-TestCuboid.HalfWidth + TestTolerance, 0f, 0f), (TestCuboid.HalfWidth - TestTolerance, 0f, 0f)).Flipped));
+		Assert.IsNull(TestCuboid.IncidentAngleWith(new BoundedRay((0f, -TestCuboid.HalfHeight + TestTolerance, 0f), (0f, TestCuboid.HalfHeight - TestTolerance, 0f)).Flipped));
+		Assert.IsNull(TestCuboid.IncidentAngleWith(new BoundedRay((0f, 0f, -TestCuboid.HalfDepth + TestTolerance), (0f, 0f, TestCuboid.HalfDepth - TestTolerance)).Flipped));
+
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.IncidentAngleWith(new BoundedRay((TestCuboid.HalfWidth - 1f, 1f, 0f), (TestCuboid.HalfWidth + 1f, -1f, 0f))), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.FastIncidentAngleWith(new BoundedRay((TestCuboid.HalfWidth - 1f, 1f, 0f), (TestCuboid.HalfWidth + 1f, -1f, 0f))), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.IncidentAngleWith(new BoundedRay((TestCuboid.HalfWidth - 1f, 1f, 0f), (TestCuboid.HalfWidth + 1f, -1f, 0f)).Flipped), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.FastIncidentAngleWith(new BoundedRay((TestCuboid.HalfWidth - 1f, 1f, 0f), (TestCuboid.HalfWidth + 1f, -1f, 0f)).Flipped), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.IncidentAngleWith(new BoundedRay((0f, TestCuboid.HalfHeight - 1f, 1f), (0f, TestCuboid.HalfHeight + 1f, -1f))), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.FastIncidentAngleWith(new BoundedRay((0f, TestCuboid.HalfHeight - 1f, 1f), (0f, TestCuboid.HalfHeight + 1f, -1f))), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.IncidentAngleWith(new BoundedRay((0f, TestCuboid.HalfHeight - 1f, 1f), (0f, TestCuboid.HalfHeight + 1f, -1f)).Flipped), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.FastIncidentAngleWith(new BoundedRay((0f, TestCuboid.HalfHeight - 1f, 1f), (0f, TestCuboid.HalfHeight + 1f, -1f)).Flipped), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.IncidentAngleWith(new BoundedRay((1f, 0f, TestCuboid.HalfDepth - 1f), (-1f, 0f, TestCuboid.HalfDepth + 1f))), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.FastIncidentAngleWith(new BoundedRay((1f, 0f, TestCuboid.HalfDepth - 1f), (-1f, 0f, TestCuboid.HalfDepth + 1f))), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.IncidentAngleWith(new BoundedRay((1f, 0f, TestCuboid.HalfDepth - 1f), (-1f, 0f, TestCuboid.HalfDepth + 1f)).Flipped), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.FastIncidentAngleWith(new BoundedRay((1f, 0f, TestCuboid.HalfDepth - 1f), (-1f, 0f, TestCuboid.HalfDepth + 1f)).Flipped), TestTolerance);
+	}
+
+	[Test]
+	public void ShouldCorrectlyReflectLines() {
+		void AssertReflection(Ray? expectation, Ray ray) {
+			var boundedRay = BoundedRay.FromStartPointAndVect(ray.StartPoint, ray.Direction * 1000f);
+
+			AssertToleranceEquals(expectation, TestCuboid.ReflectionOf(ray), TestTolerance);
+			AssertToleranceEquals(expectation?.ToBoundedRay(1000f - ray.StartPoint.DistanceFrom(expectation!.Value.StartPoint)), TestCuboid.ReflectionOf(boundedRay), TestTolerance);
+			if (expectation != null) {
+				AssertToleranceEquals(expectation, TestCuboid.FastReflectionOf(ray), TestTolerance);
+				AssertToleranceEquals(expectation?.ToBoundedRay(1000f - ray.StartPoint.DistanceFrom(expectation!.Value.StartPoint)), TestCuboid.FastReflectionOf(boundedRay), TestTolerance);
+			}
+		}
+
+		AssertReflection(new Ray((-TestCuboid.HalfWidth, 0f, 0f), (-1f, 0f, 0f)), new((-100f, 0f, 0f), (1f, 0f, 0f)));
+		AssertReflection(new Ray((TestCuboid.HalfWidth, 0f, 0f), (1f, 0f, 0f)), new((100f, 0f, 0f), (-1f, 0f, 0f)));
+		AssertReflection(new Ray((0f, -TestCuboid.HalfHeight, 0f), (0f, -1f, 0f)), new((0f, -100f, 0f), (0f, 1f, 0f)));
+		AssertReflection(new Ray((0f, TestCuboid.HalfHeight, 0f), (0f, 1f, 0f)), new((0f, 100f, 0f), (0f, -1f, 0f)));
+		AssertReflection(new Ray((0f, 0f, -TestCuboid.HalfDepth), (0f, 0f, -1f)), new((0f, 0f, -100f), (0f, 0f, 1f)));
+		AssertReflection(new Ray((0f, 0f, TestCuboid.HalfDepth), (0f, 0f, 1f)), new((0f, 0f, 100f), (0f, 0f, -1f)));
+
+		AssertReflection(new((TestCuboid.HalfWidth, 0f, 0f), (1f, -1f, 0f)), new((TestCuboid.HalfWidth + 100f, 100f, 0f), (-1f, -1f, 0f)));
+		AssertReflection(new((0f, TestCuboid.HalfHeight, 0f), (0f, 1f, -1f)), new((0f, TestCuboid.HalfHeight + 100f, 100f), (0f, -1f, -1f)));
+		AssertReflection(new((0f, 0f, TestCuboid.HalfDepth), (-1f, 0f, 1f)), new((100f, 0f, TestCuboid.HalfDepth + 100f), (-1f, 0f, -1f)));
+		AssertReflection(new((-TestCuboid.HalfWidth, 0f, 0f), (-1f, 1f, 0f)), new((-TestCuboid.HalfWidth - 100f, -100f, 0f), (1f, 1f, 0f)));
+		AssertReflection(new((0f, -TestCuboid.HalfHeight, 0f), (0f, -1f, 1f)), new((0f, -TestCuboid.HalfHeight - 100f, -100f), (0f, 1f, 1f)));
+		AssertReflection(new((0f, 0f, -TestCuboid.HalfDepth), (1f, 0f, -1f)), new((-100f, 0f, -TestCuboid.HalfDepth - 100f), (1f, 0f, 1f)));
+		
+		AssertReflection(null, new((TestCuboid.HalfWidth + TestTolerance, 0f, 0f), (1f, 0f, 0f)));
+		AssertReflection(null, new((-TestCuboid.HalfWidth - TestTolerance, 0f, 0f), (-1f, 0f, 0f)));
+		AssertReflection(null, new((0f, TestCuboid.HalfHeight + TestTolerance, 0f), (0f, 1f, 0f)));
+		AssertReflection(null, new((0f, -TestCuboid.HalfHeight - TestTolerance, 0f), (0f, -1f, 0f)));
+		AssertReflection(null, new((0f, 0f, TestCuboid.HalfDepth + TestTolerance), (0f, 0f, 1f)));
+		AssertReflection(null, new((0f, 0f, -TestCuboid.HalfDepth - TestTolerance), (0f, 0f, -1f)));
+		
+		AssertToleranceEquals(new Ray((TestCuboid.HalfWidth, 0f, 0f), (-1f, 0f, 0f)), TestCuboid.ReflectionOf(new Ray((0f, 0f, 0f), (1f, 0f, 0f))), TestTolerance);
+		AssertToleranceEquals(new Ray((-TestCuboid.HalfWidth, 0f, 0f), (1f, 0f, 0f)), TestCuboid.ReflectionOf(new Ray((0f, 0f, 0f), (-1f, 0f, 0f))), TestTolerance);
+		AssertToleranceEquals(new Ray((0f, TestCuboid.HalfHeight, 0f), (0f, -1f, 0f)), TestCuboid.ReflectionOf(new Ray((0f, 0f, 0f), (0f, 1f, 0f))), TestTolerance);
+		AssertToleranceEquals(new Ray((0f, -TestCuboid.HalfHeight, 0f), (0f, 1f, 0f)), TestCuboid.ReflectionOf(new Ray((0f, 0f, 0f), (0f, -1f, 0f))), TestTolerance);
+		AssertToleranceEquals(new Ray((0f, 0f, TestCuboid.HalfDepth), (0f, 0f, -1f)), TestCuboid.ReflectionOf(new Ray((0f, 0f, 0f), (0f, 0f, 1f))), TestTolerance);
+		AssertToleranceEquals(new Ray((0f, 0f, -TestCuboid.HalfDepth), (0f, 0f, 1f)), TestCuboid.ReflectionOf(new Ray((0f, 0f, 0f), (0f, 0f, -1f))), TestTolerance);
+		AssertToleranceEquals(new Ray((TestCuboid.HalfWidth, 0f, 0f), (-1f, 0f, 0f)), TestCuboid.FastReflectionOf(new Ray((0f, 0f, 0f), (1f, 0f, 0f))), TestTolerance);
+		AssertToleranceEquals(new Ray((-TestCuboid.HalfWidth, 0f, 0f), (1f, 0f, 0f)), TestCuboid.FastReflectionOf(new Ray((0f, 0f, 0f), (-1f, 0f, 0f))), TestTolerance);
+		AssertToleranceEquals(new Ray((0f, TestCuboid.HalfHeight, 0f), (0f, -1f, 0f)), TestCuboid.FastReflectionOf(new Ray((0f, 0f, 0f), (0f, 1f, 0f))), TestTolerance);
+		AssertToleranceEquals(new Ray((0f, -TestCuboid.HalfHeight, 0f), (0f, 1f, 0f)), TestCuboid.FastReflectionOf(new Ray((0f, 0f, 0f), (0f, -1f, 0f))), TestTolerance);
+		AssertToleranceEquals(new Ray((0f, 0f, TestCuboid.HalfDepth), (0f, 0f, -1f)), TestCuboid.FastReflectionOf(new Ray((0f, 0f, 0f), (0f, 0f, 1f))), TestTolerance);
+		AssertToleranceEquals(new Ray((0f, 0f, -TestCuboid.HalfDepth), (0f, 0f, 1f)), TestCuboid.FastReflectionOf(new Ray((0f, 0f, 0f), (0f, 0f, -1f))), TestTolerance);
+
+		Assert.IsNull(TestCuboid.ReflectionOf(new BoundedRay((-TestCuboid.HalfWidth + TestTolerance, 0f, 0f), (TestCuboid.HalfWidth - TestTolerance, 0f, 0f))));
+		Assert.IsNull(TestCuboid.ReflectionOf(new BoundedRay((0f, -TestCuboid.HalfHeight + TestTolerance, 0f), (0f, TestCuboid.HalfHeight - TestTolerance, 0f))));
+		Assert.IsNull(TestCuboid.ReflectionOf(new BoundedRay((0f, 0f, -TestCuboid.HalfDepth + TestTolerance), (0f, 0f, TestCuboid.HalfDepth - TestTolerance))));
+		Assert.IsNull(TestCuboid.ReflectionOf(new BoundedRay((-TestCuboid.HalfWidth + TestTolerance, 0f, 0f), (TestCuboid.HalfWidth - TestTolerance, 0f, 0f)).Flipped));
+		Assert.IsNull(TestCuboid.ReflectionOf(new BoundedRay((0f, -TestCuboid.HalfHeight + TestTolerance, 0f), (0f, TestCuboid.HalfHeight - TestTolerance, 0f)).Flipped));
+		Assert.IsNull(TestCuboid.ReflectionOf(new BoundedRay((0f, 0f, -TestCuboid.HalfDepth + TestTolerance), (0f, 0f, TestCuboid.HalfDepth - TestTolerance)).Flipped));
+
+		AssertToleranceEquals(new BoundedRay((TestCuboid.HalfWidth, 0f, 0f), (TestCuboid.HalfWidth - 1f, -1f, 0f)), TestCuboid.ReflectionOf(new BoundedRay((TestCuboid.HalfWidth - 1f, 1f, 0f), (TestCuboid.HalfWidth + 1f, -1f, 0f))), TestTolerance);
+		AssertToleranceEquals(new BoundedRay((TestCuboid.HalfWidth, 0f, 0f), (TestCuboid.HalfWidth - 1f, -1f, 0f)), TestCuboid.FastReflectionOf(new BoundedRay((TestCuboid.HalfWidth - 1f, 1f, 0f), (TestCuboid.HalfWidth + 1f, -1f, 0f))), TestTolerance);
+		AssertToleranceEquals(new BoundedRay((TestCuboid.HalfWidth, 0f, 0f), (TestCuboid.HalfWidth + 1f, 1f, 0f)), TestCuboid.ReflectionOf(new BoundedRay((TestCuboid.HalfWidth - 1f, 1f, 0f), (TestCuboid.HalfWidth + 1f, -1f, 0f)).Flipped), TestTolerance);
+		AssertToleranceEquals(new BoundedRay((TestCuboid.HalfWidth, 0f, 0f), (TestCuboid.HalfWidth + 1f, 1f, 0f)), TestCuboid.FastReflectionOf(new BoundedRay((TestCuboid.HalfWidth - 1f, 1f, 0f), (TestCuboid.HalfWidth + 1f, -1f, 0f)).Flipped), TestTolerance);
+		AssertToleranceEquals(new BoundedRay((0f, TestCuboid.HalfHeight, 0f), (0f, TestCuboid.HalfHeight - 0.3f, -0.3f)), TestCuboid.ReflectionOf(new BoundedRay((0f, TestCuboid.HalfHeight - 0.3f, 0.3f), (0f, TestCuboid.HalfHeight + 0.3f, -0.3f))), TestTolerance);
+		AssertToleranceEquals(new BoundedRay((0f, TestCuboid.HalfHeight, 0f), (0f, TestCuboid.HalfHeight - 0.3f, -0.3f)), TestCuboid.FastReflectionOf(new BoundedRay((0f, TestCuboid.HalfHeight - 0.3f, 0.3f), (0f, TestCuboid.HalfHeight + 0.3f, -0.3f))), TestTolerance);
+		AssertToleranceEquals(new BoundedRay((0f, TestCuboid.HalfHeight, 0f), (0f, TestCuboid.HalfHeight + 0.3f, 0.3f)), TestCuboid.ReflectionOf(new BoundedRay((0f, TestCuboid.HalfHeight - 0.3f, 0.3f), (0f, TestCuboid.HalfHeight + 0.3f, -0.3f)).Flipped), TestTolerance);
+		AssertToleranceEquals(new BoundedRay((0f, TestCuboid.HalfHeight, 0f), (0f, TestCuboid.HalfHeight + 0.3f, 0.3f)), TestCuboid.FastReflectionOf(new BoundedRay((0f, TestCuboid.HalfHeight - 0.3f, 0.3f), (0f, TestCuboid.HalfHeight + 0.3f, -0.3f)).Flipped), TestTolerance);
+		AssertToleranceEquals(new BoundedRay((0f, 0f, TestCuboid.HalfDepth), (-0.3f, 0f, TestCuboid.HalfDepth - 0.3f)), TestCuboid.ReflectionOf(new BoundedRay((0.3f, 0f, TestCuboid.HalfDepth - 0.3f), (-0.3f, 0f, TestCuboid.HalfDepth + 0.3f))), TestTolerance);
+		AssertToleranceEquals(new BoundedRay((0f, 0f, TestCuboid.HalfDepth), (-0.3f, 0f, TestCuboid.HalfDepth - 0.3f)), TestCuboid.FastReflectionOf(new BoundedRay((0.3f, 0f, TestCuboid.HalfDepth - 0.3f), (-0.3f, 0f, TestCuboid.HalfDepth + 0.3f))), TestTolerance);
+		AssertToleranceEquals(new BoundedRay((0f, 0f, TestCuboid.HalfDepth), (0.3f, 0f, TestCuboid.HalfDepth + 0.3f)), TestCuboid.ReflectionOf(new BoundedRay((0.3f, 0f, TestCuboid.HalfDepth - 0.3f), (-0.3f, 0f, TestCuboid.HalfDepth + 0.3f)).Flipped), TestTolerance);
+		AssertToleranceEquals(new BoundedRay((0f, 0f, TestCuboid.HalfDepth), (0.3f, 0f, TestCuboid.HalfDepth + 0.3f)), TestCuboid.FastReflectionOf(new BoundedRay((0.3f, 0f, TestCuboid.HalfDepth - 0.3f), (-0.3f, 0f, TestCuboid.HalfDepth + 0.3f)).Flipped), TestTolerance);
 	}
 }

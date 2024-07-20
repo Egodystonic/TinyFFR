@@ -318,11 +318,16 @@ partial struct OriginCuboid {
 	}
 
 	(float HitDistance, Location HitPoint, Plane Side)? GetHitPointAndSidePlaneOfLineLike<TLine>(TLine line) where TLine : ILineLike {
-		var firstHitDistance = GetUnboundedLineIntersectionDistances(line)?.Item1;
-		if (firstHitDistance == null) return null;
+		var intersectionDistances = GetUnboundedLineIntersectionDistances(line);
+		if (intersectionDistances == null) return null;
 
-		var hitLoc = line.LocationAtDistanceOrNull(firstHitDistance.Value);
-		if (hitLoc == null) return null;
+		var firstHitDistance = intersectionDistances.Value.Item1;
+		var hitLoc = line.LocationAtDistanceOrNull(firstHitDistance);
+		if (hitLoc == null) {
+			firstHitDistance = intersectionDistances.Value.Item2;
+			hitLoc = line.LocationAtDistanceOrNull(firstHitDistance);
+			if (hitLoc == null) return null;
+		}
 
 		var xDiff = HalfWidth - MathF.Abs(hitLoc.Value.X);
 		var yDiff = HalfHeight - MathF.Abs(hitLoc.Value.Y);
@@ -331,14 +336,14 @@ partial struct OriginCuboid {
 		if (xDiff < yDiff) {
 			if (xDiff < zDiff) {
 				return (
-					firstHitDistance.Value,
+					firstHitDistance,
 					hitLoc.Value,
 					GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateXAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.X)))
 				);
 			}
 			else {
 				return (
-					firstHitDistance.Value,
+					firstHitDistance,
 					hitLoc.Value,
 					GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Z)))
 				);
@@ -346,14 +351,14 @@ partial struct OriginCuboid {
 		}
 		else if (yDiff < zDiff) {
 			return (
-				firstHitDistance.Value,
+				firstHitDistance,
 				hitLoc.Value,
 				GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateYAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Y)))
 			);
 		}
 		else {
 			return (
-				firstHitDistance.Value,
+				firstHitDistance,
 				hitLoc.Value,
 				GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Z)))
 			);
