@@ -134,25 +134,25 @@ partial struct OriginCuboid {
 	}
 	public Location ClosestPointToSurfaceOn(Line line) {
 		var intersections = GetUnboundedLineIntersectionDistances(new Ray(line.PointOnLine, line.Direction));
-		if (intersections != null) return line.LocationAtDistance(intersections.Value.Item1);
+		if (intersections != null) return line.LocationAtDistance(intersections.Value.First);
 		else return GetClosestPointToSurfaceOnNonIntersectingLine(line);
 	}
 	public Location ClosestPointToSurfaceOn(Ray ray) {
 		var intersections = GetUnboundedLineIntersectionDistances(ray);
-		return (intersections?.Item1 >= 0f, intersections?.Item2 >= 0f) switch {
-			(true, true) => ray.UnboundedLocationAtDistance(intersections!.Value.Item1 < intersections.Value.Item2 ? intersections.Value.Item1 : intersections.Value.Item2),
-			(true, false) => ray.UnboundedLocationAtDistance(intersections!.Value.Item1),
-			(false, true) => ray.UnboundedLocationAtDistance(intersections!.Value.Item2),
+		return (intersections?.First >= 0f, intersections?.Second >= 0f) switch {
+			(true, true) => ray.UnboundedLocationAtDistance(intersections!.Value.First < intersections.Value.Second ? intersections.Value.First : intersections.Value.Second),
+			(true, false) => ray.UnboundedLocationAtDistance(intersections!.Value.First),
+			(false, true) => ray.UnboundedLocationAtDistance(intersections!.Value.Second),
 			_ => GetClosestPointToSurfaceOnNonIntersectingLine(ray)
 		};
 	}
 	public Location ClosestPointToSurfaceOn(BoundedRay ray) {
 		var intersections = GetUnboundedLineIntersectionDistances(new Ray(ray.StartPoint, ray.Direction));
 		var lineLength = ray.Length;
-		return (intersections?.Item1 >= 0f && intersections.Value.Item1 <= lineLength, intersections?.Item2 >= 0f && intersections.Value.Item2 <= lineLength) switch {
-			(true, true) => ray.UnboundedLocationAtDistance(intersections!.Value.Item1 < intersections.Value.Item2 ? intersections.Value.Item1 : intersections.Value.Item2),
-			(true, false) => ray.UnboundedLocationAtDistance(intersections!.Value.Item1),
-			(false, true) => ray.UnboundedLocationAtDistance(intersections!.Value.Item2),
+		return (intersections?.First >= 0f && intersections.Value.First <= lineLength, intersections?.Second >= 0f && intersections.Value.Second <= lineLength) switch {
+			(true, true) => ray.UnboundedLocationAtDistance(intersections!.Value.First < intersections.Value.Second ? intersections.Value.First : intersections.Value.Second),
+			(true, false) => ray.UnboundedLocationAtDistance(intersections!.Value.First),
+			(false, true) => ray.UnboundedLocationAtDistance(intersections!.Value.Second),
 			_ => GetClosestPointToSurfaceOnNonIntersectingLine(ray)
 		};
 	}
@@ -222,11 +222,11 @@ partial struct OriginCuboid {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ConvexShapeLineIntersection? IntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection FastIntersectionWith(Line line) => IntersectionWithLineLike(line)!.Value;
+	public ConvexShapeLineIntersection FastIntersectionWith(Line line) => FastIntersectionWithLineLike(line);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection FastIntersectionWith(Ray ray) => IntersectionWithLineLike(ray)!.Value; // TODO xmldoc that the first intersection is always the one nearest the start point
+	public ConvexShapeLineIntersection FastIntersectionWith(Ray ray) => FastIntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection FastIntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray)!.Value; // TODO xmldoc that the first intersection is always the one nearest the start point
+	public ConvexShapeLineIntersection FastIntersectionWith(BoundedRay ray) => FastIntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
 
 	public Ray? ReflectionOf(Ray ray) {
 		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
@@ -256,22 +256,26 @@ partial struct OriginCuboid {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle? IncidentAngleWith(BoundedRay ray) => GetIncidentAngleOfLineLike(ray);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle FastIncidentAngleWith(Ray ray) => GetIncidentAngleOfLineLike(ray)!.Value;
+	public Angle FastIncidentAngleWith(Ray ray) => FastGetIncidentAngleOfLineLike(ray);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle FastIncidentAngleWith(BoundedRay ray) => GetIncidentAngleOfLineLike(ray)!.Value;
+	public Angle FastIncidentAngleWith(BoundedRay ray) => FastGetIncidentAngleOfLineLike(ray);
 
 	bool IsIntersectedByLineLike<TLine>(TLine line) where TLine : ILineLike {
 		var distanceTuple = GetUnboundedLineIntersectionDistances(line);
 		if (distanceTuple == null) return false;
-		return line.DistanceIsWithinLineBounds(distanceTuple.Value.Item1) || line.DistanceIsWithinLineBounds(distanceTuple.Value.Item2);
+		return line.DistanceIsWithinLineBounds(distanceTuple.Value.First) || line.DistanceIsWithinLineBounds(distanceTuple.Value.Second);
 	}
 	ConvexShapeLineIntersection? IntersectionWithLineLike<TLine>(TLine line) where TLine : ILineLike {
 		var unboundedDistances = GetUnboundedLineIntersectionDistances(line);
 		if (unboundedDistances == null) return null;
-		return ConvexShapeLineIntersection.FromTwoPotentiallyNullArgs(line.LocationAtDistanceOrNull(unboundedDistances.Value.Item1), line.LocationAtDistanceOrNull(unboundedDistances.Value.Item2));
+		return ConvexShapeLineIntersection.FromTwoPotentiallyNullArgs(line.LocationAtDistanceOrNull(unboundedDistances.Value.First), line.LocationAtDistanceOrNull(unboundedDistances.Value.Second));
+	}
+	ConvexShapeLineIntersection FastIntersectionWithLineLike<TLine>(TLine line) where TLine : ILineLike {
+		var unboundedDistances = FastGetUnboundedLineIntersectionDistances(line);
+		return ConvexShapeLineIntersection.FromTwoPotentiallyNullArgs(line.LocationAtDistanceOrNull(unboundedDistances.First), line.LocationAtDistanceOrNull(unboundedDistances.Second))!.Value;
 	}
 
-	(float, float)? GetUnboundedLineIntersectionDistances<TLine>(TLine line) where TLine : ILineLike {
+	(float First, float Second)? GetUnboundedLineIntersectionDistances<TLine>(TLine line) where TLine : ILineLike {
 		var x1 = SignedLineDistanceToPositiveSurfacePlane(line.StartPoint, line.Direction, Axis.X);
 		var x2 = SignedLineDistanceToNegativeSurfacePlane(line.StartPoint, line.Direction, Axis.X);
 		var minX = MathF.Min(x1, x2);
@@ -292,39 +296,43 @@ partial struct OriginCuboid {
 		if (endDist < startDist) return null;
 		else return (startDist, endDist);
 	}
+	(float First, float Second) FastGetUnboundedLineIntersectionDistances<TLine>(TLine line) where TLine : ILineLike {
+		var x1 = SignedLineDistanceToPositiveSurfacePlane(line.StartPoint, line.Direction, Axis.X);
+		var x2 = SignedLineDistanceToNegativeSurfacePlane(line.StartPoint, line.Direction, Axis.X);
+		var minX = MathF.Min(x1, x2);
+		var maxX = MathF.Max(x1, x2);
+
+		var y1 = SignedLineDistanceToPositiveSurfacePlane(line.StartPoint, line.Direction, Axis.Y);
+		var y2 = SignedLineDistanceToNegativeSurfacePlane(line.StartPoint, line.Direction, Axis.Y);
+		var minY = MathF.Min(y1, y2);
+		var maxY = MathF.Max(y1, y2);
+
+		var z1 = SignedLineDistanceToPositiveSurfacePlane(line.StartPoint, line.Direction, Axis.Z);
+		var z2 = SignedLineDistanceToNegativeSurfacePlane(line.StartPoint, line.Direction, Axis.Z);
+		var minZ = MathF.Min(z1, z2);
+		var maxZ = MathF.Max(z1, z2);
+
+		var startDist = MathF.Max(MathF.Max(minX, minY), minZ);
+		var endDist = MathF.Min(MathF.Min(maxX, maxY), maxZ);
+		
+		return (startDist, endDist);
+	}
 
 	Angle? GetIncidentAngleOfLineLike<TLine>(TLine line) where TLine : ILineLike {
-		// var firstHitDistance = GetUnboundedLineIntersectionDistances(line)?.Item1;
-		// if (firstHitDistance == null) return null;
-		//
-		// var hitLoc = line.LocationAtDistanceOrNull(firstHitDistance.Value);
-		// if (hitLoc == null) return null;
-		//
-		// var xDiff = HalfWidth - MathF.Abs(hitLoc.Value.X);
-		// var yDiff = HalfHeight - MathF.Abs(hitLoc.Value.Y);
-		// var zDiff = HalfDepth - MathF.Abs(hitLoc.Value.Z);
-		//
-		// Direction planeDir;
-		//
-		// if (xDiff < yDiff) {
-		// 	if (xDiff < zDiff) planeDir = Direction.FromVector3PreNormalized(MathF.Sign(hitLoc.Value.X), 0f, 0f);
-		// 	else planeDir = Direction.FromVector3PreNormalized(0f, MathF.Sign(hitLoc.Value.Y), 0f);
-		// }
-		// else if (yDiff < zDiff) planeDir = Direction.FromVector3PreNormalized(0f, MathF.Sign(hitLoc.Value.Y), 0f);
-		// else planeDir = Direction.FromVector3PreNormalized(0f, 0f, MathF.Sign(hitLoc.Value.Z));
-		//
-		// return Angle.FromRadians(MathF.Acos(MathF.Abs(line.Direction.Dot(planeDir))));
 		return GetHitPointAndSidePlaneOfLineLike(line)?.Side.IncidentAngleWith(line.Direction);
+	}
+	Angle FastGetIncidentAngleOfLineLike<TLine>(TLine line) where TLine : ILineLike {
+		return FastGetHitPointAndSidePlaneOfLineLike(line).Side.FastIncidentAngleWith(line.Direction);
 	}
 
 	(float HitDistance, Location HitPoint, Plane Side)? GetHitPointAndSidePlaneOfLineLike<TLine>(TLine line) where TLine : ILineLike {
 		var intersectionDistances = GetUnboundedLineIntersectionDistances(line);
 		if (intersectionDistances == null) return null;
 
-		var firstHitDistance = intersectionDistances.Value.Item1;
+		var firstHitDistance = intersectionDistances.Value.First;
 		var hitLoc = line.LocationAtDistanceOrNull(firstHitDistance);
 		if (hitLoc == null) {
-			firstHitDistance = intersectionDistances.Value.Item2;
+			firstHitDistance = intersectionDistances.Value.Second;
 			hitLoc = line.LocationAtDistanceOrNull(firstHitDistance);
 			if (hitLoc == null) return null;
 		}
@@ -361,6 +369,53 @@ partial struct OriginCuboid {
 				firstHitDistance,
 				hitLoc.Value,
 				GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Z)))
+			);
+		}
+	}
+	(float HitDistance, Location HitPoint, Plane Side) FastGetHitPointAndSidePlaneOfLineLike<TLine>(TLine line) where TLine : ILineLike {
+		var intersectionDistances = FastGetUnboundedLineIntersectionDistances(line);
+
+		var firstHitDistance = intersectionDistances.First;
+		Location hitLoc;
+		var prospectiveHitLoc = line.LocationAtDistanceOrNull(firstHitDistance);
+		if (prospectiveHitLoc != null) hitLoc = prospectiveHitLoc.Value;
+		else {
+			firstHitDistance = intersectionDistances.Second;
+			hitLoc = line.UnboundedLocationAtDistance(firstHitDistance);
+		}
+
+		var xDiff = HalfWidth - MathF.Abs(hitLoc.X);
+		var yDiff = HalfHeight - MathF.Abs(hitLoc.Y);
+		var zDiff = HalfDepth - MathF.Abs(hitLoc.Z);
+
+		if (xDiff < yDiff) {
+			if (xDiff < zDiff) {
+				return (
+					firstHitDistance,
+					hitLoc,
+					GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateXAxisOrientationFromValueSign(MathF.Sign(hitLoc.X)))
+				);
+			}
+			else {
+				return (
+					firstHitDistance,
+					hitLoc,
+					GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Z)))
+				);
+			}
+		}
+		else if (yDiff < zDiff) {
+			return (
+				firstHitDistance,
+				hitLoc,
+				GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateYAxisOrientationFromValueSign(MathF.Sign(hitLoc.Y)))
+			);
+		}
+		else {
+			return (
+				firstHitDistance,
+				hitLoc,
+				GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Z)))
 			);
 		}
 	}

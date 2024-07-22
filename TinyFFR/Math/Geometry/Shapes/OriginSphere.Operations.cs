@@ -115,11 +115,11 @@ partial struct OriginSphere {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ConvexShapeLineIntersection? IntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection FastIntersectionWith(Line line) => IntersectionWithLineLike(line)!.Value;
+	public ConvexShapeLineIntersection FastIntersectionWith(Line line) => FastIntersectionWithLineLike(line);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection FastIntersectionWith(Ray ray) => IntersectionWithLineLike(ray)!.Value; // TODO xmldoc that the first intersection is always the one nearest the start point
+	public ConvexShapeLineIntersection FastIntersectionWith(Ray ray) => FastIntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection FastIntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray)!.Value; // TODO xmldoc that the first intersection is always the one nearest the start point
+	public ConvexShapeLineIntersection FastIntersectionWith(BoundedRay ray) => FastIntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
 
 	bool IsIntersectedByLineLike<TLine>(TLine line) where TLine : ILineLike {
 		var distanceTuple = GetUnboundedLineLikeSurfaceIntersectionDistances(line);
@@ -136,6 +136,15 @@ partial struct OriginSphere {
 			distanceTuple.Value.SecondIsIdenticalToFirst ? null : line.LocationAtDistanceOrNull(distanceTuple.Value.Second)
 		);
 	}
+	ConvexShapeLineIntersection FastIntersectionWithLineLike<TLine>(TLine line) where TLine : ILineLike {
+		var distanceTuple = FastGetUnboundedLineLikeSurfaceIntersectionDistances(line);
+		if (distanceTuple.Second < distanceTuple.First) distanceTuple = (distanceTuple.Second, distanceTuple.First, false);
+
+		return ConvexShapeLineIntersection.FromTwoPotentiallyNullArgs(
+			line.LocationAtDistanceOrNull(distanceTuple.First),
+			distanceTuple.SecondIsIdenticalToFirst ? null : line.LocationAtDistanceOrNull(distanceTuple.Second)
+		)!.Value;
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle? IncidentAngleWith(Line line) => IncidentAngleToLineLike(line);
@@ -144,22 +153,31 @@ partial struct OriginSphere {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle? IncidentAngleWith(BoundedRay ray) => IncidentAngleToLineLike(ray);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle FastIncidentAngleWith(Line line) => IncidentAngleToLineLike(line)!.Value;
+	public Angle FastIncidentAngleWith(Line line) => FastIncidentAngleToLineLike(line);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle FastIncidentAngleWith(Ray ray) => IncidentAngleToLineLike(ray)!.Value;
+	public Angle FastIncidentAngleWith(Ray ray) => FastIncidentAngleToLineLike(ray);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle FastIncidentAngleWith(BoundedRay ray) => IncidentAngleToLineLike(ray)!.Value;
+	public Angle FastIncidentAngleWith(BoundedRay ray) => FastIncidentAngleToLineLike(ray);
 
-	public Ray? ReflectionOf(Ray ray) { var reflection = ReflectionOfLineLike(ray); return reflection != null ? new Ray(reflection.Value.Item1, reflection.Value.Item2) : null; }
+	public Ray? ReflectionOf(Ray ray) {
+		var reflection = ReflectionOfLineLike(ray); 
+		return reflection != null ? new Ray(reflection.Value.ReflectionPoint, reflection.Value.ReflectionDir) : null;
+	}
 	public BoundedRay? ReflectionOf(BoundedRay ray) {
 		var reflection = ReflectionOfLineLike(ray); 
 		return reflection != null
-			? new Ray(reflection.Value.Item1, reflection.Value.Item2).ToBoundedRay(ray.Length - ray.UnboundedDistanceAtPointClosestTo(reflection.Value.Item1)) 
+			? new Ray(reflection.Value.ReflectionPoint, reflection.Value.ReflectionDir).ToBoundedRay(ray.Length - ray.UnboundedDistanceAtPointClosestTo(reflection.Value.ReflectionPoint)) 
 			: null;
 	}
 
-	public Ray FastReflectionOf(Ray ray) => ReflectionOf(ray)!.Value;
-	public BoundedRay FastReflectionOf(BoundedRay ray) => ReflectionOf(ray)!.Value;
+	public Ray FastReflectionOf(Ray ray) {
+		var reflection = FastReflectionOfLineLike(ray);
+		return new Ray(reflection.ReflectionPoint, reflection.ReflectionDir);
+	}
+	public BoundedRay FastReflectionOf(BoundedRay ray) {
+		var reflection = FastReflectionOfLineLike(ray);
+		return new Ray(reflection.ReflectionPoint, reflection.ReflectionDir).ToBoundedRay(ray.Length - ray.UnboundedDistanceAtPointClosestTo(reflection.ReflectionPoint));
+	}
 
 	public bool Contains(BoundedRay ray) => Contains(ray.StartPoint) && Contains(ray.EndPoint);
 
@@ -168,12 +186,20 @@ partial struct OriginSphere {
 		if (nearestIntersection == null) return null;
 		return Angle.FromRadians(MathF.Acos(MathF.Abs(nearestIntersection.Value.AsVect().Direction.Dot(line.Direction))));
 	}
+	Angle FastIncidentAngleToLineLike<TLine>(TLine line) where TLine : ILineLike {
+		var nearestIntersection = FastGetLineLikeIntersectionPointClosestToStartPoint(line);
+		return Angle.FromRadians(MathF.Acos(MathF.Abs(nearestIntersection.AsVect().Direction.Dot(line.Direction))));
+	}
 
-	(Location, Direction)? ReflectionOfLineLike<TLine>(TLine line) where TLine : ILineLike {
+	(Location ReflectionPoint, Direction ReflectionDir)? ReflectionOfLineLike<TLine>(TLine line) where TLine : ILineLike {
 		var reflectionPoint = GetLineLikeIntersectionPointClosestToStartPoint(line);
 		if (reflectionPoint == null) return null;
 
 		return (reflectionPoint.Value, new Plane(reflectionPoint.Value.AsVect().Direction, Radius).FastReflectionOf(line.Direction));
+	}
+	(Location ReflectionPoint, Direction ReflectionDir) FastReflectionOfLineLike<TLine>(TLine line) where TLine : ILineLike {
+		var reflectionPoint = FastGetLineLikeIntersectionPointClosestToStartPoint(line);
+		return (reflectionPoint, new Plane(reflectionPoint.AsVect().Direction, Radius).FastReflectionOf(line.Direction));
 	}
 
 	(float First, float Second, bool SecondIsIdenticalToFirst)? GetUnboundedLineLikeSurfaceIntersectionDistances<TLine>(TLine line) where TLine : ILineLike {
@@ -199,6 +225,19 @@ partial struct OriginSphere {
 
 		return ((negB + sqrtDiscriminant) * 0.5f, (negB - sqrtDiscriminant) * 0.5f, discriminant == 0f);
 	}
+	(float First, float Second, bool SecondIsIdenticalToFirst) FastGetUnboundedLineLikeSurfaceIntersectionDistances<TLine>(TLine line) where TLine : ILineLike {
+		var direction = line.Direction.ToVector3();
+		var start = line.StartPoint.ToVector3();
+		var b = 2f * Vector3.Dot(start, direction);
+		var c = start.LengthSquared() - RadiusSquared;
+
+		var discriminant = b * b - 4 * c;
+
+		var sqrtDiscriminant = MathF.Sqrt(discriminant);
+		var negB = -b;
+
+		return ((negB + sqrtDiscriminant) * 0.5f, (negB - sqrtDiscriminant) * 0.5f, discriminant == 0f);
+	}
 
 	Location? GetLineLikeIntersectionPointClosestToStartPoint<TLine>(TLine line) where TLine : ILineLike {
 		var intersectionPoints = GetUnboundedLineLikeSurfaceIntersectionDistances(line);
@@ -209,6 +248,15 @@ partial struct OriginSphere {
 		if (firstLocation == null) return secondLocation;
 		if (secondLocation == null || MathF.Abs(intersectionPoints.Value.First) < MathF.Abs(intersectionPoints.Value.Second)) return firstLocation;
 		return secondLocation;
+	}
+	Location FastGetLineLikeIntersectionPointClosestToStartPoint<TLine>(TLine line) where TLine : ILineLike {
+		var intersectionPoints = FastGetUnboundedLineLikeSurfaceIntersectionDistances(line);
+		var firstLocation = line.LocationAtDistanceOrNull(intersectionPoints.First);
+		var secondLocation = line.LocationAtDistanceOrNull(intersectionPoints.Second);
+
+		if (firstLocation == null) return secondLocation!.Value;
+		if (secondLocation == null || MathF.Abs(intersectionPoints.First) < MathF.Abs(intersectionPoints.Second)) return firstLocation!.Value;
+		return secondLocation!.Value;
 	}
 
 	public Location PointClosestTo(Plane plane) => (Location) ((Vect) plane.PointClosestToOrigin).WithMaxLength(Radius);
