@@ -55,6 +55,9 @@ public partial interface ILineLike :
 	float DistanceFromOrigin();
 	float DistanceSquaredFromOrigin();
 
+	Location? IntersectionPointWith(Plane plane);
+	Location FastIntersectionPointWith(Plane plane);
+
 	sealed Line CoerceToLine() => new(StartPoint, Direction);
 	sealed Ray CoerceToRay() => new(StartPoint, Direction);
 	sealed BoundedRay CoerceToBoundedRay(float length) => BoundedRay.FromStartPointAndVect(StartPoint, Direction * length);
@@ -115,4 +118,4 @@ public interface ILineLike<TSelf> : ILineLike,
 	IOrthogonalizable<TSelf, Plane>,
 	IReflectable<Plane, TSelf>
 	where TSelf : struct, ILineLike<TSelf>;
-public interface ILineLike<TSelf, TSplit> : IIntersectionDeterminable<Plane, TSplit>, ILineLike<TSelf> where TSelf : struct, ILineLike<TSelf> where TSplit : struct, ILineLike<TSplit>;
+public interface ILineLike<TSelf, TSplit> : IIntersectionDeterminable<Plane, TSplit>, ILineLike<TSelf> where TSelf : struct, ILineLike<TSelf> where TSplit : struct;

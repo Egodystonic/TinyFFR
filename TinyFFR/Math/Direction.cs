@@ -133,11 +133,6 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 		z = Z;
 	}
 	public static implicit operator Direction((float X, float Y, float Z) tuple) => new(tuple.X, tuple.Y, tuple.Z);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static explicit operator Direction(Location locationOperand) => new(locationOperand.AsVector4 with { W = WValue });
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static explicit operator Direction(Vect vectOperand) => new(vectOperand.AsVector4 with { W = WValue });
 	#endregion
 
 	#region Span Conversion

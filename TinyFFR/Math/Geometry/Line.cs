@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR;
 
 [DebuggerDisplay("{ToStringDescriptive()}")]
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = sizeof(float) * 4 * 2)]
-public readonly partial struct Line : ILineLike<Line, Ray>, IPrecomputationInterpolatable<Line, Rotation>, IDescriptiveStringProvider {
+public readonly partial struct Line : ILineLike<Line, Pair<Ray, Ray>>, IPrecomputationInterpolatable<Line, Rotation>, IDescriptiveStringProvider {
 	readonly Location _pointOnLine;
 	readonly Direction _direction;
 

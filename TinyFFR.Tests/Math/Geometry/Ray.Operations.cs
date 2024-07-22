@@ -1049,6 +1049,42 @@ partial class RayTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyDetermineIntersectionPointWithPlanes() {
+		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
+
+		Assert.AreEqual(
+			new Location(100f, 1f, 0f),
+			new Ray(new Location(100f, 100f, 0f), Direction.Down).IntersectionPointWith(plane)
+		);
+		Assert.AreEqual(
+			new Location(100f, 1f, 0f),
+			new Ray(new Location(100f, -100f, 0f), Direction.Up).IntersectionPointWith(plane)
+		);
+		Assert.Null(
+			new Ray(new Location(0f, 2f, 0f), Direction.Right).IntersectionPointWith(plane)
+		);
+		Assert.Null(
+			new Ray(new Location(0f, 0f, 0f), Direction.Right).IntersectionPointWith(plane)
+		);
+		Assert.Null(
+			new Ray(new Location(100f, 100f, 0f), Direction.Up).IntersectionPointWith(plane)
+		);
+		Assert.Null(
+			new Ray(new Location(100f, -100f, 0f), Direction.Down).IntersectionPointWith(plane)
+		);
+
+		// Fast
+		Assert.AreEqual(
+			new Location(100f, 1f, 0f),
+			new Ray(new Location(100f, 100f, 0f), Direction.Down).FastIntersectionPointWith(plane)
+		);
+		Assert.AreEqual(
+			new Location(100f, 1f, 0f),
+			new Ray(new Location(100f, -100f, 0f), Direction.Up).FastIntersectionPointWith(plane)
+		);
+	}
+
+	[Test]
 	public void ShouldCorrectlyTestForIntersectionWithPlanes() {
 		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
 

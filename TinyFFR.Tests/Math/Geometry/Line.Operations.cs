@@ -767,11 +767,11 @@ partial class LineTest {
 		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
 
 		Assert.AreEqual(
-			new Ray(new Location(100f, 1f, 0f), Direction.Down),
+			new Pair<Ray, Ray>(new Ray(new Location(100f, 1f, 0f), Direction.Down), new Ray(new Location(100f, 1f, 0f), Direction.Up)),
 			new Line(new Location(100f, 100f, 0f), Direction.Down).IntersectionWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(100f, 1f, 0f), Direction.Up),
+			new Pair<Ray, Ray>(new Ray(new Location(100f, 1f, 0f), Direction.Up), new Ray(new Location(100f, 1f, 0f), Direction.Down)),
 			new Line(new Location(100f, -100f, 0f), Direction.Up).IntersectionWith(plane)
 		);
 		Assert.Null(
@@ -783,12 +783,42 @@ partial class LineTest {
 
 		// Fast
 		Assert.AreEqual(
-			new Ray(new Location(100f, 1f, 0f), Direction.Down),
+			new Pair<Ray, Ray>(new Ray(new Location(100f, 1f, 0f), Direction.Down), new Ray(new Location(100f, 1f, 0f), Direction.Up)),
 			new Line(new Location(100f, 100f, 0f), Direction.Down).FastIntersectionWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(100f, 1f, 0f), Direction.Up),
+			new Pair<Ray, Ray>(new Ray(new Location(100f, 1f, 0f), Direction.Up), new Ray(new Location(100f, 1f, 0f), Direction.Down)),
 			new Line(new Location(100f, -100f, 0f), Direction.Up).FastIntersectionWith(plane)
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyGetIntersectionPointWithPlanes() {
+		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
+
+		Assert.AreEqual(
+			new Location(100f, 1f, 0f),
+			new Line(new Location(100f, 100f, 0f), Direction.Down).IntersectionPointWith(plane)
+		);
+		Assert.AreEqual(
+			new Location(100f, 1f, 0f),
+			new Line(new Location(100f, -100f, 0f), Direction.Up).IntersectionPointWith(plane)
+		);
+		Assert.Null(
+			new Line(new Location(0f, 2f, 0f), Direction.Right).IntersectionPointWith(plane)
+		);
+		Assert.Null(
+			new Line(new Location(0f, 0f, 0f), Direction.Right).IntersectionPointWith(plane)
+		);
+
+		// Fast
+		Assert.AreEqual(
+			new Location(100f, 1f, 0f),
+			new Line(new Location(100f, 100f, 0f), Direction.Down).FastIntersectionPointWith(plane)
+		);
+		Assert.AreEqual(
+			new Location(100f, 1f, 0f),
+			new Line(new Location(100f, -100f, 0f), Direction.Up).FastIntersectionPointWith(plane)
 		);
 	}
 
@@ -1459,7 +1489,8 @@ partial class LineTest {
 		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
 
 		void AssertSplit(Ray? expectedWithLineDir, Ray? expectedOpposingLineDir, Line line) {
-			Assert.AreEqual(expectedWithLineDir, line.IntersectionWith(plane));
+			Assert.AreEqual(expectedWithLineDir, line.IntersectionWith(plane)?.First);
+			Assert.AreEqual(expectedOpposingLineDir, line.IntersectionWith(plane)?.Second);
 			var trySplitResult = line.TrySplit(plane, out var actualWithLineDir, out var actualOpposingLineDir);
 			if (expectedWithLineDir == null) {
 				Assert.AreEqual(false, trySplitResult);

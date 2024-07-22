@@ -1449,6 +1449,70 @@ partial class BoundedRayTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyFindIntersectionPointWithPlanes() {
+		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
+
+		Assert.AreEqual(
+			new Location(100f, 1f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(100f, 101f, 0f), Direction.Down * 100f).IntersectionPointWith(plane)
+		);
+		Assert.AreEqual(
+			new Location(100f, 1f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(100f, -99f, 0f), Direction.Up * 100f).IntersectionPointWith(plane)
+		);
+		Assert.Null(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Right * 100f).IntersectionPointWith(plane)
+		);
+		Assert.Null(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Right * 100f).IntersectionPointWith(plane)
+		);
+		Assert.Null(
+			BoundedRay.FromStartPointAndVect(new Location(100f, 100f, 0f), Direction.Up * 100f).IntersectionPointWith(plane)
+		);
+		Assert.Null(
+			BoundedRay.FromStartPointAndVect(new Location(100f, -100f, 0f), Direction.Down * 100f).IntersectionPointWith(plane)
+		);
+
+		AssertToleranceEquals(
+			new Location(0f, 1f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).IntersectionPointWith(plane),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Location(0f, 1f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).Flipped.IntersectionPointWith(plane),
+			TestTolerance
+		);
+		Assert.Null(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 0.5f).IntersectionPointWith(plane)
+		);
+		Assert.Null(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 0.5f).Flipped.IntersectionPointWith(plane)
+		);
+
+		// Fast
+		Assert.AreEqual(
+			new Location(100f, 1f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(100f, 101f, 0f), Direction.Down * 100f).FastIntersectionPointWith(plane)
+		);
+		Assert.AreEqual(
+			new Location(100f, 1f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(100f, -99f, 0f), Direction.Up * 100f).FastIntersectionPointWith(plane)
+		);
+
+		AssertToleranceEquals(
+			new Location(0f, 1f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).FastIntersectionPointWith(plane),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Location(0f, 1f, 0f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 5f), new Direction(0f, -1f, -1f) * MathF.Sqrt(50f) * 3f).Flipped.FastIntersectionPointWith(plane),
+			TestTolerance
+		);
+	}
+
+	[Test]
 	public void ShouldCorrectlyTestForIntersectionWithPlanes() {
 		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
 
