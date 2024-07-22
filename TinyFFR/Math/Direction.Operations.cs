@@ -168,7 +168,7 @@ partial struct Direction :
 	// TODO if the user wants to clamp within a 3D cone (even >= 90deg cone), they should use the other Clamp overload.
 	// TODO If the user wants to clamp within a 2D arc, they should use the other other Clamp overload
 	public Direction Clamp(Direction min, Direction max) {
-		const float ColinearityErrorMargin = 1E-2f; // Should match the error margin in Plane.FromTriangleOnSurface
+		const float ColinearityErrorMargin = 1E-3f; // Should match the error margin in Plane.FromTriangleOnSurface
 		
 		// Doesn't make sense to clamp to "None", so throw exception
 		if (min == None) throw new ArgumentException($"Neither min nor max may be '{nameof(None)}'.", nameof(min));
@@ -257,10 +257,12 @@ partial struct Direction :
 	public static Direction CreateNewRandom(Direction minInclusive, Direction maxExclusive) {
 		return (minInclusive >> maxExclusive).ScaledBy(RandomUtils.NextSingle()) * minInclusive;
 	}
-	public static Direction CreateNewRandom(Direction coneCentre, Angle coneAngle) {
+	public static Direction CreateNewRandom(Direction coneCentre, Angle coneAngleMax) => CreateNewRandom(coneCentre, coneAngleMax, Angle.Zero);
+	public static Direction CreateNewRandom(Direction coneCentre, Angle coneAngleMax, Angle coneAngleMin) {
 		if (coneCentre == None) throw new ArgumentException($"Cone centre can not be '{nameof(None)}'.", nameof(coneCentre));
 
-		return coneCentre * (coneCentre >> coneCentre.AnyPerpendicular()).WithAngle(Angle.CreateNewRandom(0f, coneAngle.ClampZeroToHalfCircle()));
+		var offset = coneCentre * (coneCentre >> coneCentre.AnyPerpendicular()).WithAngle(Angle.CreateNewRandom(coneAngleMin.ClampZeroToHalfCircle(), coneAngleMax.ClampZeroToHalfCircle()));
+		return offset * new Rotation(Angle.CreateNewRandom(Angle.Zero, Angle.FullCircle), coneCentre);
 	}
 	public static Direction CreateNewRandom(Plane plane) => CreateNewRandom(plane, plane.Normal.AnyPerpendicular(), Angle.FullCircle);
 	public static Direction CreateNewRandom(Plane plane, Direction arcCentre, Angle arcAngle) {

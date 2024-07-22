@@ -252,7 +252,7 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 		if (newVect == null) return null;
 		return new BoundedRay(StartPoint, newVect.Value);
 	}
-	public BoundedRay FastParallelizedWith(Plane plane) => new(StartPoint, StartToEndVect.FastParallelizedWith(plane));
+	public BoundedRay FastParallelizedWith(Plane plane) => new(StartPoint, StartToEndVect.FastParallelizedWith(plane)); // TODO in xmldoc note that this preserves length or returns null if orthogonal to the plane
 
 	public BoundedRay? OrthogonalizedAgainst(Plane plane) { // TODO in xmldoc note that this preserves length or returns null if orthogonal to the plane
 		var newVect = StartToEndVect.OrthogonalizedAgainst(plane);

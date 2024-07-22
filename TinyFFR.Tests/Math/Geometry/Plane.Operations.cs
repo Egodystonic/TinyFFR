@@ -232,6 +232,54 @@ partial class PlaneTest {
 	}
 
 	[Test]
+	public void ShouldUseAppropriateVectReflectionErrorMargin() {
+		const float MinDifferentiableAngleDegrees = 0.1f;
+		
+		for (var i = 0; i < 10_000; ++i) {
+			var randomVect = Direction.CreateNewRandom(Direction.Up, 90f - MinDifferentiableAngleDegrees, 90f - MinDifferentiableAngleDegrees) * 1f;
+			try {
+				Assert.IsNotNull(TestPlane.ReflectionOf(randomVect));
+			}
+			catch {
+				Console.WriteLine(randomVect + " (" + randomVect.AngleTo(TestPlane) + " angle to plane)");
+				throw;
+			}
+		}
+	}
+
+	[Test]
+	public void ShouldUseAppropriateDirectionReflectionErrorMargin() {
+		const float MinDifferentiableAngleDegrees = 0.1f;
+
+		for (var i = 0; i < 10_000; ++i) {
+			var randomDir = Direction.CreateNewRandom(Direction.Up, 90f - MinDifferentiableAngleDegrees, 90f - MinDifferentiableAngleDegrees);
+			try {
+				Assert.IsNotNull(TestPlane.ReflectionOf(randomDir));
+			}
+			catch {
+				Console.WriteLine(randomDir + " (" + randomDir.AngleTo(TestPlane) + " angle to plane)");
+				throw;
+			}
+		}
+	}
+
+	[Test]
+	public void ShouldUseAppropriateDirectionIncidentAngleErrorMargin() {
+		const float MinDifferentiableAngleDegrees = 0.1f;
+
+		for (var i = 0; i < 10_000; ++i) {
+			var randomDir = Direction.CreateNewRandom(Direction.Up, 90f - MinDifferentiableAngleDegrees, 90f - MinDifferentiableAngleDegrees);
+			try {
+				Assert.IsNotNull(TestPlane.ReflectionOf(randomDir));
+			}
+			catch {
+				Console.WriteLine(randomDir + " (" + randomDir.AngleTo(TestPlane) + " angle to plane)");
+				throw;
+			}
+		}
+	}
+
+	[Test]
 	public void ShouldCorrectlyFindClosestPointToGivenLocation() {
 		Assert.AreEqual(new Location(0f, -1f, 0f), TestPlane.PointClosestTo((0f, -1f, 0f)));
 		Assert.AreEqual(new Location(0f, -1f, 0f), TestPlane.PointClosestTo((0f, -1000f, 0f)));
@@ -397,12 +445,9 @@ partial class PlaneTest {
 		Assert.AreEqual(new Vect(10f, 0f, -10f), TestPlane.ProjectionOf(new Vect(10f, 0f, -10f)));
 		Assert.AreEqual(new Vect(10f, 0f, -10f), TestPlane.ProjectionOf(new Vect(10f, -20f, -10f)));
 		Assert.AreEqual(new Vect(10f, 0f, -10f), TestPlane.ProjectionOf(new Vect(10f, 20f, -10f)));
-		Assert.AreEqual(new Vect(10f, 0f, -10f), TestPlane.FastProjectionOf(new Vect(10f, 0f, -10f)));
-		Assert.AreEqual(new Vect(10f, 0f, -10f), TestPlane.FastProjectionOf(new Vect(10f, -20f, -10f)));
-		Assert.AreEqual(new Vect(10f, 0f, -10f), TestPlane.FastProjectionOf(new Vect(10f, 20f, -10f)));
-		Assert.AreEqual(null, TestPlane.ProjectionOf(Vect.Zero));
-		Assert.AreEqual(null, TestPlane.ProjectionOf(new Vect(0f, 1f, 0f)));
-		Assert.AreEqual(null, TestPlane.ProjectionOf(new Vect(0f, -1f, 0f)));
+		Assert.AreEqual(Vect.Zero, TestPlane.ProjectionOf(Vect.Zero));
+		Assert.AreEqual(Vect.Zero, TestPlane.ProjectionOf(new Vect(0f, 1f, 0f)));
+		Assert.AreEqual(Vect.Zero, TestPlane.ProjectionOf(new Vect(0f, -1f, 0f)));
 	}
 
 	[Test]
@@ -802,6 +847,46 @@ partial class PlaneTest {
 		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Right));
 		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Up));
 		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Down));
+	}
+
+	[Test]
+	public void DimensionConverterConstructionShouldUseAppropriateFloatingPointErrorMargin() {
+		var testList = new List<Direction>();
+		for (var x = -5f; x <= 5f; x += 1f) {
+			for (var y = -5f; y <= 5f; y += 1f) {
+				for (var z = -5f; z <= 5f; z += 1f) {
+					if (x == 0f && y == 0f && z == 0f) continue;
+					var dir = new Direction(x, y, z);
+					if (dir.OrthogonalizedAgainst(TestPlane) == dir) continue;
+					testList.Add(dir);
+				}
+			}
+		}
+
+		const float MinDifferentiablePostProjectionAngleDegrees = 0.01f;
+
+		for (var i = 0; i < testList.Count; ++i) {
+			var dirX = testList[i];
+			for (var j = i; j < testList.Count; ++j) {
+				var dirY = testList[j];
+
+				var dirXProjected = dirX.FastProjectedOnTo(TestPlane);
+				var dirYProjected = dirY.FastProjectedOnTo(TestPlane);
+				try {
+					if (dirXProjected.EqualsWithinAngle(dirYProjected, MinDifferentiablePostProjectionAngleDegrees) || dirXProjected.Inverted.EqualsWithinAngle(dirYProjected, MinDifferentiablePostProjectionAngleDegrees)) {
+						Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(Location.Origin, dirX, dirY));
+					}
+					else {
+						Assert.DoesNotThrow(() => TestPlane.CreateDimensionConverter(Location.Origin, dirX, dirY));
+					}
+				}
+				catch {
+					Console.WriteLine("\tX: " + dirX.ToStringDescriptive());
+					Console.WriteLine("\tY: " + dirY.ToStringDescriptive());
+					throw;
+				}
+			}
+		}
 	}
 
 	[Test]

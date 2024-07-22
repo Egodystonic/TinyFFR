@@ -61,9 +61,9 @@ partial struct Vect : IAngleMeasurable<Plane>, IReflectable<Plane, Vect>, IProje
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect FastReflectedBy(Plane plane) => plane.FastReflectionOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect? ProjectedOnTo(Plane plane) => plane.ProjectionOf(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect FastProjectedOnTo(Plane plane) => plane.FastProjectionOf(this);
+	public Vect ProjectedOnTo(Plane plane) => plane.ProjectionOf(this);
+	Vect? IProjectable<Vect, Plane>.ProjectedOnTo(Plane plane) => ProjectedOnTo(plane);
+	Vect IProjectable<Vect, Plane>.FastProjectedOnTo(Plane plane) => ProjectedOnTo(plane);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect? ParallelizedWith(Plane plane) => plane.ParallelizationOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

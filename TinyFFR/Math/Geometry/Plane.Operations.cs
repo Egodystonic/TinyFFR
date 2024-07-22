@@ -154,18 +154,12 @@ partial struct Plane :
 		}
 	}
 
-	public Vect FastProjectionOf(Vect vect) => vect - vect.ProjectedOnTo(Normal); // TODO in xmldoc mention that length will be 0 if this is perpendicular
-	public Vect? ProjectionOf(Vect vect) {
-		const float ZeroLengthFloatingPointMargin = 1E-5f;
-		var result = FastProjectionOf(vect);
-		return result.LengthSquared < ZeroLengthFloatingPointMargin ? null : result;
-	}
-	public Vect FastParallelizationOf(Vect vect) => FastProjectionOf(vect).WithLength(vect.Length); // TODO in xmldoc mention that length will be 0 if this is perpendicular
-	public Vect? ParallelizationOf(Vect vect) {
-		const float ZeroLengthFloatingPointMargin = 1E-5f;
-		var result = FastParallelizationOf(vect);
-		return result.LengthSquared < ZeroLengthFloatingPointMargin ? null : result;
-	}
+	public Vect ProjectionOf(Vect vect) => vect - vect.ProjectedOnTo(Normal); // TODO in xmldoc mention that length will be 0 if this is perpendicular
+	Vect? IProjectionTarget<Vect>.ProjectionOf(Vect vect) => ProjectionOf(vect);
+	Vect IProjectionTarget<Vect>.FastProjectionOf(Vect vect) => ProjectionOf(vect);
+
+	public Vect FastParallelizationOf(Vect vect) => ProjectionOf(vect).WithLength(vect.Length); // TODO in xmldoc mention that length will be 0 if this is perpendicular. NOT undefined
+	public Vect? ParallelizationOf(Vect vect) => ParallelizationOf(vect.Direction) == null ? null : FastParallelizationOf(vect);
 
 	public Direction? ProjectionOf(Direction direction) => direction.OrthogonalizedAgainst(Normal);
 	public Direction FastProjectionOf(Direction direction) => direction.FastOrthogonalizedAgainst(Normal);
