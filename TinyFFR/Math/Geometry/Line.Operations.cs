@@ -133,34 +133,34 @@ public readonly partial struct Line {
 	}
 
 	public Line? ReflectedBy(Plane plane) {
-		var intersectionPoint = IntersectionPointWith(plane);
+		var intersectionPoint = IntersectionWith(plane);
 		if (intersectionPoint == null) return null;
 		return new Line(intersectionPoint.Value, Direction.FastReflectedBy(plane));
 	}
-	public Line FastReflectedBy(Plane plane) => new(FastIntersectionPointWith(plane), Direction.FastReflectedBy(plane));
+	public Line FastReflectedBy(Plane plane) => new(FastIntersectionWith(plane), Direction.FastReflectedBy(plane));
 
 	public Angle? IncidentAngleWith(Plane plane) => IsIntersectedBy(plane) ? plane.IncidentAngleWith(Direction) : null;
 	public Angle FastIncidentAngleWith(Plane plane) => plane.FastIncidentAngleWith(Direction);
 
-	public Location? IntersectionPointWith(Plane plane) {
+	public Location? IntersectionWith(Plane plane) {
 		var similarityToNormal = plane.Normal.Dot(Direction);
 		if (similarityToNormal == 0f) return null; // Parallel with plane -- either infinite or zero answers. Return null either way
 
 		var distance = (plane.PointClosestToOrigin - PointOnLine).LengthWhenProjectedOnTo(plane.Normal) / similarityToNormal;
 		return LocationAtDistance(distance);
 	}
-	public Pair<Ray, Ray>? IntersectionWith(Plane plane) {
-		var intersectionPoint = IntersectionPointWith(plane);
+	public Pair<Ray, Ray>? SplitBy(Plane plane) {
+		var intersectionPoint = IntersectionWith(plane);
 		if (intersectionPoint == null) return null;
 		return new(new Ray(intersectionPoint.Value, Direction), new Ray(intersectionPoint.Value, -Direction));
 	}
-	public Location FastIntersectionPointWith(Plane plane) {
+	public Location FastIntersectionWith(Plane plane) {
 		var similarityToNormal = plane.Normal.Dot(Direction);
 		var distance = (plane.PointClosestToOrigin - PointOnLine).LengthWhenProjectedOnTo(plane.Normal) / similarityToNormal;
 		return LocationAtDistance(distance);
 	}
-	public Pair<Ray, Ray> FastIntersectionWith(Plane plane) {
-		var intersectionPoint = FastIntersectionPointWith(plane);
+	public Pair<Ray, Ray> FastSplitBy(Plane plane) {
+		var intersectionPoint = FastIntersectionWith(plane);
 		return new(new Ray(intersectionPoint, Direction), new Ray(intersectionPoint, -Direction));
 	}
 	public bool IsIntersectedBy(Plane plane) => plane.Normal.Dot(Direction) != 0f;
@@ -177,11 +177,11 @@ public readonly partial struct Line {
 	// TODO in xmldoc explain that it's probably better to use IntersectionWith and/or DistanceFrom than these two methods
 	public Location PointClosestTo(Plane plane) {
 		// If we're parallel with the plane there are infinite answers so we just return the easiest one
-		return IntersectionPointWith(plane) ?? PointOnLine;
+		return IntersectionWith(plane) ?? PointOnLine;
 	}
 	public Location ClosestPointOn(Plane plane) {
 		// If we're parallel with the plane there are infinite answers so we just return the easiest one
-		return IntersectionPointWith(plane) ?? plane.PointClosestToOrigin;
+		return IntersectionWith(plane) ?? plane.PointClosestToOrigin;
 	}
 
 	public PlaneObjectRelationship RelationshipTo(Plane plane) {
@@ -219,17 +219,4 @@ public readonly partial struct Line {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line FastOrthogonalizedAgainst(Plane plane) => FastOrthogonalizedAgainst(plane, 0f);
 	public Line FastOrthogonalizedAgainst(Plane plane, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.FastOrthogonalizedAgainst(plane));
-
-	public bool TrySplit(Plane plane, out Ray outWithLineDir, out Ray outOpposingLineDir) {
-		var intersection = IntersectionWith(plane);
-		if (intersection == null) {
-			outWithLineDir = default;
-			outOpposingLineDir = default;
-			return false;
-		}
-
-		outWithLineDir = intersection.Value.First;
-		outOpposingLineDir = intersection.Value.Second;
-		return true;
-	}
 }

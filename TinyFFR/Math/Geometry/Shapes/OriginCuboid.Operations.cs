@@ -438,14 +438,14 @@ partial struct OriginCuboid {
 	int GetPlaneIntersectionPoints(Plane plane, Span<Location> pointSpan) { 
 		var intersectionCount = 0;
 		foreach (var edge in OrientationUtils.AllIntercardinals) {
-			var edgeIntersection = GetEdge(edge).IntersectionWith(plane)?.StartPoint;
+			var edgeIntersection = GetEdge(edge).IntersectionWith(plane);
 			if (edgeIntersection.HasValue) pointSpan[intersectionCount++] = edgeIntersection.Value;
 		}
 		return intersectionCount;
 	}
 	Location? GetAnyPlaneIntersectionPoint(Plane plane) {
 		foreach (var edge in OrientationUtils.AllIntercardinals) {
-			var edgeIntersection = GetEdge(edge).IntersectionWith(plane)?.StartPoint;
+			var edgeIntersection = GetEdge(edge).IntersectionWith(plane);
 			if (edgeIntersection.HasValue) return edgeIntersection.Value;
 		}
 		return null;

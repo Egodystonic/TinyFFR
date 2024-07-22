@@ -1013,15 +1013,15 @@ partial class RayTest {
 	}
 
 	[Test]
-	public void ShouldCorrectlyIntersectWithPlanes() {
+	public void ShouldCorrectlyDetermineIntersectionPointWithPlanes() {
 		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
 
 		Assert.AreEqual(
-			new Ray(new Location(100f, 1f, 0f), Direction.Down),
+			new Location(100f, 1f, 0f),
 			new Ray(new Location(100f, 100f, 0f), Direction.Down).IntersectionWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(100f, 1f, 0f), Direction.Up),
+			new Location(100f, 1f, 0f),
 			new Ray(new Location(100f, -100f, 0f), Direction.Up).IntersectionWith(plane)
 		);
 		Assert.Null(
@@ -1039,48 +1039,12 @@ partial class RayTest {
 
 		// Fast
 		Assert.AreEqual(
-			new Ray(new Location(100f, 1f, 0f), Direction.Down),
+			new Location(100f, 1f, 0f),
 			new Ray(new Location(100f, 100f, 0f), Direction.Down).FastIntersectionWith(plane)
 		);
 		Assert.AreEqual(
-			new Ray(new Location(100f, 1f, 0f), Direction.Up),
+			new Location(100f, 1f, 0f),
 			new Ray(new Location(100f, -100f, 0f), Direction.Up).FastIntersectionWith(plane)
-		);
-	}
-
-	[Test]
-	public void ShouldCorrectlyDetermineIntersectionPointWithPlanes() {
-		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
-
-		Assert.AreEqual(
-			new Location(100f, 1f, 0f),
-			new Ray(new Location(100f, 100f, 0f), Direction.Down).IntersectionPointWith(plane)
-		);
-		Assert.AreEqual(
-			new Location(100f, 1f, 0f),
-			new Ray(new Location(100f, -100f, 0f), Direction.Up).IntersectionPointWith(plane)
-		);
-		Assert.Null(
-			new Ray(new Location(0f, 2f, 0f), Direction.Right).IntersectionPointWith(plane)
-		);
-		Assert.Null(
-			new Ray(new Location(0f, 0f, 0f), Direction.Right).IntersectionPointWith(plane)
-		);
-		Assert.Null(
-			new Ray(new Location(100f, 100f, 0f), Direction.Up).IntersectionPointWith(plane)
-		);
-		Assert.Null(
-			new Ray(new Location(100f, -100f, 0f), Direction.Down).IntersectionPointWith(plane)
-		);
-
-		// Fast
-		Assert.AreEqual(
-			new Location(100f, 1f, 0f),
-			new Ray(new Location(100f, 100f, 0f), Direction.Down).FastIntersectionPointWith(plane)
-		);
-		Assert.AreEqual(
-			new Location(100f, 1f, 0f),
-			new Ray(new Location(100f, -100f, 0f), Direction.Up).FastIntersectionPointWith(plane)
 		);
 	}
 
@@ -1607,15 +1571,16 @@ partial class RayTest {
 		var plane = new Plane(Direction.Up, new Location(0f, 1f, 0f));
 
 		void AssertSplit(BoundedRay? expectedToPlane, Ray? expectedFromPlane, Ray ray) {
-			AssertToleranceEquals(expectedFromPlane, ray.IntersectionWith(plane), TestTolerance);
-			var trySplitResult = ray.TrySplit(plane, out var actualToPlane, out var actualFromPlane);
 			if (expectedToPlane == null) {
-				Assert.AreEqual(false, trySplitResult);
+				Assert.AreEqual(null, ray.SplitBy(plane));
 				Assert.AreEqual(false, ray.IsIntersectedBy(plane));
 			}
 			else {
-				Assert.AreEqual(true, trySplitResult);
 				Assert.AreEqual(true, ray.IsIntersectedBy(plane));
+				var (actualToPlane, actualFromPlane) = ray.SplitBy(plane)!.Value;
+				AssertToleranceEquals(expectedToPlane, actualToPlane, TestTolerance);
+				AssertToleranceEquals(expectedFromPlane, actualFromPlane, TestTolerance);
+				(actualToPlane, actualFromPlane) = ray.FastSplitBy(plane);
 				AssertToleranceEquals(expectedToPlane, actualToPlane, TestTolerance);
 				AssertToleranceEquals(expectedFromPlane, actualFromPlane, TestTolerance);
 			}
@@ -1681,6 +1646,38 @@ partial class RayTest {
 			new BoundedRay(new Location(100f, 0f, 0f), new Location(101f, 1f, 0f)),
 			new Ray(new Location(101f, 1f, 0f), new Direction(1f, 1f, 0f)),
 			new Ray(new Location(100f, 0f, 0f), new Direction(1f, 1f, 0f))
+		);
+
+		// Some older tests from previous iteration
+		Assert.AreEqual(
+			new Pair<BoundedRay, Ray>(new BoundedRay(new Location(100f, 100f, 0f), new Location(100f, 1f, 0f)), new Ray(new Location(100f, 1f, 0f), Direction.Down)),
+			new Ray(new Location(100f, 100f, 0f), Direction.Down).SplitBy(plane)
+		);
+		Assert.AreEqual(
+			new Pair<BoundedRay, Ray>(new BoundedRay(new Location(100f, -100f, 0f), new Location(100f, 1f, 0f)), new Ray(new Location(100f, 1f, 0f), Direction.Up)),
+			new Ray(new Location(100f, -100f, 0f), Direction.Up).SplitBy(plane)
+		);
+		Assert.Null(
+			new Ray(new Location(0f, 2f, 0f), Direction.Right).SplitBy(plane)
+		);
+		Assert.Null(
+			new Ray(new Location(0f, 0f, 0f), Direction.Right).SplitBy(plane)
+		);
+		Assert.Null(
+			new Ray(new Location(100f, 100f, 0f), Direction.Up).SplitBy(plane)
+		);
+		Assert.Null(
+			new Ray(new Location(100f, -100f, 0f), Direction.Down).SplitBy(plane)
+		);
+
+		// Fast
+		Assert.AreEqual(
+			new Pair<BoundedRay, Ray>(new BoundedRay(new Location(100f, 100f, 0f), new Location(100f, 1f, 0f)), new Ray(new Location(100f, 1f, 0f), Direction.Down)),
+			new Ray(new Location(100f, 100f, 0f), Direction.Down).FastSplitBy(plane)
+		);
+		Assert.AreEqual(
+			new Pair<BoundedRay, Ray>(new BoundedRay(new Location(100f, -100f, 0f), new Location(100f, 1f, 0f)), new Ray(new Location(100f, 1f, 0f), Direction.Up)),
+			new Ray(new Location(100f, -100f, 0f), Direction.Up).FastSplitBy(plane)
 		);
 	}
 

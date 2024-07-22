@@ -245,9 +245,9 @@ partial struct Plane :
 	ILineClosestEndogenousPointDiscoverable, 
 	ILineClosestExogenousPointDiscoverable,
 	ILineRelatable<PlaneObjectRelationship>,
-	IIntersectionDeterminable<Plane, Line, Pair<Ray, Ray>>,
-	IIntersectionDeterminable<Plane, Ray, Ray>,
-	IIntersectionDeterminable<Plane, BoundedRay, BoundedRay> {
+	IIntersectionDeterminable<Plane, Line, Location>,
+	IIntersectionDeterminable<Plane, Ray, Location>,
+	IIntersectionDeterminable<Plane, BoundedRay, Location> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line? ProjectionOf(Line line) => line.ProjectedOnTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -322,29 +322,29 @@ partial struct Plane :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsIntersectedBy(BoundedRay ray) => ray.IsIntersectedBy(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Pair<Ray, Ray>? IntersectionWith(Line line) => line.IntersectionWith(this);
+	public Pair<Ray, Ray>? Split(Line line) => line.SplitBy(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray? IntersectionWith(Ray ray) => ray.IntersectionWith(this);
+	public Pair<BoundedRay, Ray>? Split(Ray ray) => ray.SplitBy(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedRay? IntersectionWith(BoundedRay ray) => ray.IntersectionWith(this);
+	public Pair<BoundedRay, BoundedRay>? Split(BoundedRay ray) => ray.SplitBy(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Pair<Ray, Ray> FastIntersectionWith(Line line) => line.FastIntersectionWith(this);
+	public Pair<Ray, Ray> FastSplit(Line line) => line.FastSplitBy(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray FastIntersectionWith(Ray ray) => ray.FastIntersectionWith(this);
+	public Pair<BoundedRay, Ray> FastSplit(Ray ray) => ray.FastSplitBy(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedRay FastIntersectionWith(BoundedRay ray) => ray.FastIntersectionWith(this);
+	public Pair<BoundedRay, BoundedRay> FastSplit(BoundedRay ray) => ray.FastSplitBy(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location? IntersectionPointWith(Line line) => line.IntersectionPointWith(this);
+	public Location? IntersectionWith(Line line) => line.IntersectionWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location? IntersectionPointWith(Ray ray) => ray.IntersectionPointWith(this);
+	public Location? IntersectionWith(Ray ray) => ray.IntersectionWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location? IntersectionPointWith(BoundedRay ray) => ray.IntersectionPointWith(this);
+	public Location? IntersectionWith(BoundedRay ray) => ray.IntersectionWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location FastIntersectionPointWith(Line line) => line.FastIntersectionPointWith(this);
+	public Location FastIntersectionWith(Line line) => line.FastIntersectionWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location FastIntersectionPointWith(Ray ray) => ray.FastIntersectionPointWith(this);
+	public Location FastIntersectionWith(Ray ray) => ray.FastIntersectionWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location FastIntersectionPointWith(BoundedRay ray) => ray.FastIntersectionPointWith(this);
+	public Location FastIntersectionWith(BoundedRay ray) => ray.FastIntersectionWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(Line line) => line.DistanceFrom(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

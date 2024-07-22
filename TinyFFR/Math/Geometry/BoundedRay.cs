@@ -8,7 +8,7 @@ namespace Egodystonic.TinyFFR;
 
 [DebuggerDisplay("{ToStringDescriptive()}")]
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = sizeof(float) * 4 * 2)]
-public readonly partial struct BoundedRay : ILineLike<BoundedRay, BoundedRay>, IDescriptiveStringProvider {
+public readonly partial struct BoundedRay : ILineLike<BoundedRay, BoundedRay, BoundedRay>, IDescriptiveStringProvider {
 	readonly Location _startPoint;
 	readonly Vect _vect;
 

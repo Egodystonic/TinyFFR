@@ -188,12 +188,12 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 	public float BoundedDistanceAtPointClosestTo(Location point) => PointClosestTo(point).DistanceFrom(StartPoint);
 
 	public BoundedRay? ReflectedBy(Plane plane) {
-		var intersectionPoint = IntersectionPointWith(plane);
+		var intersectionPoint = IntersectionWith(plane);
 		if (intersectionPoint == null) return null;
 		return new BoundedRay(intersectionPoint.Value, Direction.FastReflectedBy(plane) * (Length - intersectionPoint.Value.DistanceFrom(StartPoint)));
 	}
 	public BoundedRay FastReflectedBy(Plane plane) {
-		var intersectionPoint = FastIntersectionPointWith(plane);
+		var intersectionPoint = FastIntersectionWith(plane);
 		return new BoundedRay(intersectionPoint, Direction.FastReflectedBy(plane) * (Length - intersectionPoint.DistanceFrom(StartPoint)));
 	}
 
@@ -207,16 +207,19 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 	public Angle? IncidentAngleWith(Plane plane) => IsIntersectedBy(plane) ? plane.IncidentAngleWith(Direction) : null;
 	public Angle FastIncidentAngleWith(Plane plane) => plane.FastIncidentAngleWith(Direction);
 
-	public Location? IntersectionPointWith(Plane plane) {
+	public Location? IntersectionWith(Plane plane) {
 		var distance = GetUnboundedPlaneIntersectionDistance(plane);
 		return distance >= 0f && distance <= Length ? UnboundedLocationAtDistance(distance.Value) : null; // Null means Plane parallel with line or outside line boundaries
 	}
-	public BoundedRay? IntersectionWith(Plane plane) {
-		var intersectionPoint = IntersectionPointWith(plane);
-		return intersectionPoint == null ? null : new BoundedRay(intersectionPoint.Value, EndPoint);
+	public Pair<BoundedRay, BoundedRay>? SplitBy(Plane plane) {
+		var intersectionPoint = IntersectionWith(plane);
+		return intersectionPoint == null ? null : new(new(StartPoint, intersectionPoint.Value), new(intersectionPoint.Value, EndPoint));
 	}
-	public Location FastIntersectionPointWith(Plane plane) => UnboundedLocationAtDistance((plane.PointClosestToOrigin - StartPoint).LengthWhenProjectedOnTo(plane.Normal) / plane.Normal.Dot(Direction));
-	public BoundedRay FastIntersectionWith(Plane plane) => new(FastIntersectionPointWith(plane), EndPoint);
+	public Location FastIntersectionWith(Plane plane) => UnboundedLocationAtDistance((plane.PointClosestToOrigin - StartPoint).LengthWhenProjectedOnTo(plane.Normal) / plane.Normal.Dot(Direction));
+	public Pair<BoundedRay, BoundedRay> FastSplitBy(Plane plane) {
+		var intersectionPoint = FastIntersectionWith(plane);
+		return new(new(StartPoint, intersectionPoint), new(intersectionPoint, EndPoint));
+	}
 
 	public bool IsIntersectedBy(Plane plane) {
 		var unboundedIntersectionDistance = GetUnboundedPlaneIntersectionDistance(plane);
@@ -271,18 +274,5 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 		var closestPointOnLine = BoundedLocationAtDistance(unboundedDistance ?? 0f);
 		if (unboundedDistance >= 0f && unboundedDistance <= Length) return closestPointOnLine; // Actual intersection
 		else return plane.PointClosestTo(closestPointOnLine);
-	}
-
-	public bool TrySplit(Plane plane, out BoundedRay outStartPointToPlane, out BoundedRay outPlaneToEndPoint) {
-		var intersection = IntersectionWith(plane);
-		if (intersection == null) {
-			outStartPointToPlane = default;
-			outPlaneToEndPoint = default;
-			return false;
-		}
-
-		outStartPointToPlane = new BoundedRay(StartPoint, intersection.Value.StartPoint);
-		outPlaneToEndPoint = intersection.Value;
-		return true;
 	}
 }

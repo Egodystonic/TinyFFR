@@ -22,6 +22,7 @@ public partial interface ILineLike :
 	IRelatable<Plane, PlaneObjectRelationship>,
 	IClosestEndogenousPointDiscoverable<Plane>,
 	IClosestExogenousPointDiscoverable<Plane>,
+	IIntersectionDeterminable<Plane, Location>,
 
 	IClosestConvexShapePointsDiscoverable, 
 	IConvexShapeDistanceMeasurable,
@@ -54,9 +55,6 @@ public partial interface ILineLike :
 	bool Contains(Location location, float lineThickness);
 	float DistanceFromOrigin();
 	float DistanceSquaredFromOrigin();
-
-	Location? IntersectionPointWith(Plane plane);
-	Location FastIntersectionPointWith(Plane plane);
 
 	sealed Line CoerceToLine() => new(StartPoint, Direction);
 	sealed Ray CoerceToRay() => new(StartPoint, Direction);
@@ -118,4 +116,7 @@ public interface ILineLike<TSelf> : ILineLike,
 	IOrthogonalizable<TSelf, Plane>,
 	IReflectable<Plane, TSelf>
 	where TSelf : struct, ILineLike<TSelf>;
-public interface ILineLike<TSelf, TSplit> : IIntersectionDeterminable<Plane, TSplit>, ILineLike<TSelf> where TSelf : struct, ILineLike<TSelf> where TSplit : struct;
+public interface ILineLike<TSelf, TSplitFirst, TSplitSecond> : ILineLike<TSelf> where TSelf : struct, ILineLike<TSelf> {
+	Pair<TSplitFirst, TSplitSecond>? SplitBy(Plane plane);
+	Pair<TSplitFirst, TSplitSecond> FastSplitBy(Plane plane);
+}
