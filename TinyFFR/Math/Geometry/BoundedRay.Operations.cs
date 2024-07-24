@@ -275,4 +275,61 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 		if (unboundedDistance >= 0f && unboundedDistance <= Length) return closestPointOnLine; // Actual intersection
 		else return plane.PointClosestTo(closestPointOnLine);
 	}
+
+	public BoundedRay? ParallelizedWith(Direction direction) => ParallelizedAroundStartWith(direction);
+	public BoundedRay FastParallelizedWith(Direction direction) => FastParallelizedAroundStartWith(direction);
+	public BoundedRay? OrthogonalizedAgainst(Direction direction) => OrthogonalizedAroundStartAgainst(direction);
+	public BoundedRay FastOrthogonalizedAgainst(Direction direction) => FastOrthogonalizedAroundStartAgainst(direction);
+
+	public BoundedRay? ParallelizedAroundStartWith(Direction direction) {
+		var newVect = StartToEndVect.ParallelizedWith(direction);
+		return newVect == null ? null : FromStartPointAndVect(StartPoint, newVect.Value);
+	}
+	public BoundedRay? ParallelizedAroundMiddleWith(Direction direction) {
+		var newDir = Direction.ParallelizedWith(direction);
+		if (newDir == null) return null;
+		return RotatedAroundMiddleBy(Direction >> newDir.Value);
+	}
+	public BoundedRay? ParallelizedAroundEndWith(Direction direction) {
+		var newVect = StartToEndVect.ParallelizedWith(direction);
+		return newVect == null ? null : FromStartPointAndVect(EndPoint - newVect.Value, newVect.Value);
+	}
+	public BoundedRay? ParallelizedAroundPivotDistanceWith(Direction direction, float signedPivotDistance) {
+		var newDir = Direction.ParallelizedWith(direction);
+		if (newDir == null) return null;
+		return RotatedAroundPoint(Direction >> newDir.Value, UnboundedLocationAtDistance(signedPivotDistance));
+	}
+	public BoundedRay FastParallelizedAroundStartWith(Direction direction) => FromStartPointAndVect(StartPoint, StartToEndVect.FastParallelizedWith(direction));
+	public BoundedRay FastParallelizedAroundMiddleWith(Direction direction) => RotatedAroundMiddleBy(Direction >> Direction.FastParallelizedWith(direction));
+	public BoundedRay FastParallelizedAroundEndWith(Direction direction) {
+		var newVect = StartToEndVect.FastParallelizedWith(direction);
+		return FromStartPointAndVect(EndPoint - newVect, newVect);
+	}
+	public BoundedRay FastParallelizedAroundPivotDistanceWith(Direction direction, float signedPivotDistance) => RotatedAroundPoint(Direction >> Direction.FastParallelizedWith(direction), UnboundedLocationAtDistance(signedPivotDistance));
+
+	public BoundedRay? OrthogonalizedAroundStartAgainst(Direction direction) {
+		var newVect = StartToEndVect.OrthogonalizedAgainst(direction);
+		return newVect == null ? null : FromStartPointAndVect(StartPoint, newVect.Value);
+	}
+	public BoundedRay? OrthogonalizedAroundMiddleAgainst(Direction direction) {
+		var newDir = Direction.OrthogonalizedAgainst(direction);
+		if (newDir == null) return null;
+		return RotatedAroundMiddleBy(Direction >> newDir.Value);
+	}
+	public BoundedRay? OrthogonalizedAroundEndAgainst(Direction direction) {
+		var newVect = StartToEndVect.OrthogonalizedAgainst(direction);
+		return newVect == null ? null : FromStartPointAndVect(EndPoint - newVect.Value, newVect.Value);
+	}
+	public BoundedRay? OrthogonalizedAroundPivotDistanceAgainst(Direction direction, float signedPivotDistance) {
+		var newDir = Direction.OrthogonalizedAgainst(direction);
+		if (newDir == null) return null;
+		return RotatedAroundPoint(Direction >> newDir.Value, UnboundedLocationAtDistance(signedPivotDistance));
+	}
+	public BoundedRay FastOrthogonalizedAroundStartAgainst(Direction direction) => FromStartPointAndVect(StartPoint, StartToEndVect.FastOrthogonalizedAgainst(direction));
+	public BoundedRay FastOrthogonalizedAroundMiddleAgainst(Direction direction) => RotatedAroundMiddleBy(Direction >> Direction.FastOrthogonalizedAgainst(direction));
+	public BoundedRay FastOrthogonalizedAroundEndAgainst(Direction direction) {
+		var newVect = StartToEndVect.FastOrthogonalizedAgainst(direction);
+		return FromStartPointAndVect(EndPoint - newVect, newVect);
+	}
+	public BoundedRay FastOrthogonalizedAroundPivotDistanceAgainst(Direction direction, float signedPivotDistance) => RotatedAroundPoint(Direction >> Direction.FastOrthogonalizedAgainst(direction), UnboundedLocationAtDistance(signedPivotDistance));
 }

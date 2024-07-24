@@ -22,6 +22,17 @@ public partial interface ILineLike {
 		};
 	}
 
+	public static float DistanceFrom<TThis, TArg>(TThis @this, TArg arg) where TThis : ILineLike where TArg : ILineLike {
+		return arg switch {
+			Line line => @this.DistanceFrom(line),
+			Ray ray => @this.DistanceFrom(ray),
+			BoundedRay boundedRay => @this.DistanceFrom(boundedRay),
+			_ when arg.IsUnboundedInBothDirections => @this.DistanceFrom(arg.CoerceToLine()),
+			_ when arg.IsFiniteLength => @this.DistanceFrom(arg.CoerceToBoundedRay(arg.Length.Value)),
+			_ => @this.DistanceFrom(arg.CoerceToRay()),
+		};
+	}
+
 	public static Location? IntersectionWith<TThis, TArg>(TThis @this, TArg arg) where TThis : ILineLike where TArg : ILineLike => IntersectionWith(@this, arg, DefaultLineThickness);
 	public static Location? IntersectionWith<TThis, TArg>(TThis @this, TArg arg, float lineThickness) where TThis : ILineLike where TArg : ILineLike {
 		var closestPointOnLine = ClosestPointOn(@this, arg);
@@ -29,4 +40,25 @@ public partial interface ILineLike {
 	}
 	public static Location FastIntersectionWith<TThis, TArg>(TThis @this, TArg arg) where TThis : ILineLike where TArg : ILineLike => FastIntersectionWith(@this, arg, DefaultLineThickness);
 	public static Location FastIntersectionWith<TThis, TArg>(TThis @this, TArg arg, float lineThickness) where TThis : ILineLike where TArg : ILineLike => ClosestPointOn(@this, arg);
+
+	public static TThis? ParallelizedWith<TThis, TArg>(TThis @this, TArg arg) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => @this.ParallelizedWith(arg.Direction);
+	public static TThis FastParallelizedWith<TThis, TArg>(TThis @this, TArg arg) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => @this.FastParallelizedWith(arg.Direction);
+	public static bool IsParallelTo<TThis>(TThis @this, Direction direction) where TThis : struct, ILineLike<TThis> => @this.IsParallelTo(direction);
+	public static bool IsParallelTo<TThis>(TThis @this, Direction direction, Angle tolerance) where TThis : struct, ILineLike<TThis> {
+		return @this.Direction.IsParallelTo(direction, tolerance);
+	}
+	public static bool IsParallelTo<TThis, TArg>(TThis @this, TArg arg) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => @this.IsParallelTo(arg.Direction);
+	public static bool IsParallelTo<TThis, TArg>(TThis @this, TArg arg, Angle tolerance) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => @this.IsParallelTo(arg.Direction, tolerance);
+	public static TThis? OrthogonalizedAgainst<TThis, TArg>(TThis @this, TArg arg) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => @this.OrthogonalizedAgainst(arg.Direction);
+	public static TThis FastOrthogonalizedAgainst<TThis, TArg>(TThis @this, TArg arg) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => @this.FastOrthogonalizedAgainst(arg.Direction);
+	public static bool IsOrthogonalTo<TThis>(TThis @this, Direction direction) where TThis : struct, ILineLike<TThis> => @this.IsOrthogonalTo(direction);
+	public static bool IsOrthogonalTo<TThis>(TThis @this, Direction direction, Angle tolerance) where TThis : struct, ILineLike<TThis> {
+		return @this.Direction.IsOrthogonalTo(direction, tolerance);
+	}
+	public static bool IsOrthogonalTo<TThis, TArg>(TThis @this, TArg arg) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => @this.IsOrthogonalTo(arg.Direction);
+	public static bool IsOrthogonalTo<TThis, TArg>(TThis @this, TArg arg, Angle tolerance) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => @this.IsOrthogonalTo(arg.Direction, tolerance);
+	public static bool IsColinearWith<TThis, TArg>(TThis @this, TArg arg) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => IsColinearWith(@this, arg, DefaultLineThickness, DefaultAngularToleranceDegrees);
+	public static bool IsColinearWith<TThis, TArg>(TThis @this, TArg arg, float lineThickness, Angle tolerance) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> {
+		return IsParallelTo(@this, arg, tolerance) && DistanceFrom(@this, arg) <= (lineThickness * 2f);
+	}
 }

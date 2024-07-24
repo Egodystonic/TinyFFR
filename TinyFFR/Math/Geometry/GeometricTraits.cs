@@ -105,10 +105,14 @@ interface IProjectionTarget<in TSelf, TOther> : IProjectionTarget<TOther> where 
 public interface IParallelizable<TSelf, in TOther> where TSelf : struct {
 	TSelf? ParallelizedWith(TOther element);
 	TSelf FastParallelizedWith(TOther element);
+	bool IsParallelTo(TOther element);
+	bool IsParallelTo(TOther element, Angle tolerance);
 }
 public interface IParallelizationTarget<TOther> where TOther : struct {
 	TOther? ParallelizationOf(TOther element);
 	TOther FastParallelizationOf(TOther element);
+	bool IsParallelTo(TOther element);
+	bool IsParallelTo(TOther element, Angle tolerance);
 }
 public interface ILineParallelizationTarget : IParallelizationTarget<Line>, IParallelizationTarget<Ray>, IParallelizationTarget<BoundedRay>;
 interface IParallelizationTarget<in TSelf, TOther> : IParallelizationTarget<TOther> where TOther : struct, IParallelizable<TOther, TSelf> where TSelf : IParallelizationTarget<TOther>;
@@ -117,10 +121,14 @@ interface IParallelizationTarget<in TSelf, TOther> : IParallelizationTarget<TOth
 public interface IOrthogonalizable<TSelf, in TOther> where TSelf : struct {
 	TSelf? OrthogonalizedAgainst(TOther element);
 	TSelf FastOrthogonalizedAgainst(TOther element);
+	bool IsOrthogonalTo(TOther element);
+	bool IsOrthogonalTo(TOther element, Angle tolerance);
 }
 public interface IOrthogonalizationTarget<TOther> where TOther : struct {
 	TOther? OrthogonalizationOf(TOther element);
 	TOther FastOrthogonalizationOf(TOther element);
+	bool IsOrthogonalTo(TOther element);
+	bool IsOrthogonalTo(TOther element, Angle tolerance);
 }
 public interface ILineOrthogonalizationTarget : IOrthogonalizationTarget<Line>, IOrthogonalizationTarget<Ray>, IOrthogonalizationTarget<BoundedRay>;
 interface IOrthogonalizationTarget<in TSelf, TOther> : IOrthogonalizationTarget<TOther> where TOther : struct, IOrthogonalizable<TOther, TSelf> where TSelf : IOrthogonalizationTarget<TOther>;

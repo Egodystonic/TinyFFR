@@ -219,4 +219,59 @@ public readonly partial struct Line {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line FastOrthogonalizedAgainst(Plane plane) => FastOrthogonalizedAgainst(plane, 0f);
 	public Line FastOrthogonalizedAgainst(Plane plane, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.FastOrthogonalizedAgainst(plane));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line? ParallelizedWith(Direction dir) => ParallelizedWith(dir, 0f);
+	public Line? ParallelizedWith(Direction dir, float pivotPointSignedDistance) {
+		var newDir = Direction.ParallelizedWith(dir);
+		if (newDir == null) return null;
+		return new Line(LocationAtDistance(pivotPointSignedDistance), newDir.Value);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line FastParallelizedWith(Direction dir) => FastParallelizedWith(dir, 0f);
+	public Line FastParallelizedWith(Direction dir, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.FastParallelizedWith(dir));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line? OrthogonalizedAgainst(Direction dir) => OrthogonalizedAgainst(dir, 0f);
+	public Line? OrthogonalizedAgainst(Direction dir, float pivotPointSignedDistance) {
+		var newDir = Direction.ParallelizedWith(dir);
+		if (newDir == null) return null;
+		return new Line(LocationAtDistance(pivotPointSignedDistance), newDir.Value);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line FastOrthogonalizedAgainst(Direction dir) => FastOrthogonalizedAgainst(dir, 0f);
+	public Line FastOrthogonalizedAgainst(Direction dir, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.FastParallelizedWith(dir));
+
+	public Line? ParallelizedWith(Line line, float pivotPointSignedDistance) {
+		var newDir = Direction.ParallelizedWith(line.Direction);
+		return newDir == null ? null : new(LocationAtDistance(pivotPointSignedDistance), newDir.Value);
+	}
+	public Line FastParallelizedWith(Line line, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.FastParallelizedWith(line.Direction));
+	public Line? ParallelizedWith(Ray ray, float pivotPointSignedDistance) {
+		var newDir = Direction.ParallelizedWith(ray.Direction);
+		return newDir == null ? null : new(LocationAtDistance(pivotPointSignedDistance), newDir.Value);
+	}
+	public Line FastParallelizedWith(Ray ray, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.FastParallelizedWith(ray.Direction));
+	public Line? ParallelizedWith(BoundedRay ray, float pivotPointSignedDistance) {
+		var newDir = Direction.ParallelizedWith(ray.Direction);
+		return newDir == null ? null : new(LocationAtDistance(pivotPointSignedDistance), newDir.Value);
+	}
+	public Line FastParallelizedWith(BoundedRay ray, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.FastParallelizedWith(ray.Direction));
+
+	public Line? OrthogonalizedAgainst(Line line, float pivotPointSignedDistance) {
+		var newDir = Direction.OrthogonalizedAgainst(line.Direction);
+		return newDir == null ? null : new(LocationAtDistance(pivotPointSignedDistance), newDir.Value);
+	}
+	public Line FastOrthogonalizedAgainst(Line line, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.FastOrthogonalizedAgainst(line.Direction));
+	public Line? OrthogonalizedAgainst(Ray ray, float pivotPointSignedDistance) {
+		var newDir = Direction.OrthogonalizedAgainst(ray.Direction);
+		return newDir == null ? null : new(LocationAtDistance(pivotPointSignedDistance), newDir.Value);
+	}
+	public Line FastOrthogonalizedAgainst(Ray ray, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.FastOrthogonalizedAgainst(ray.Direction));
+	public Line? OrthogonalizedAgainst(BoundedRay ray, float pivotPointSignedDistance) {
+		var newDir = Direction.OrthogonalizedAgainst(ray.Direction);
+		return newDir == null ? null : new(LocationAtDistance(pivotPointSignedDistance), newDir.Value);
+	}
+	public Line FastOrthogonalizedAgainst(BoundedRay ray, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.FastOrthogonalizedAgainst(ray.Direction));
 }

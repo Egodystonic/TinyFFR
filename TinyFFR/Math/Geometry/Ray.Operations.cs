@@ -209,4 +209,15 @@ public readonly partial struct Ray {
 		return new(StartPoint, newDirection.Value);
 	}
 	public Ray FastOrthogonalizedAgainst(Plane plane) => new(StartPoint, Direction.FastOrthogonalizedAgainst(plane));
+
+	public Ray? ParallelizedWith(Direction direction) {
+		var newDir = Direction.ParallelizedWith(direction);
+		return newDir == null ? null : new(StartPoint, newDir.Value);
+	}
+	public Ray FastParallelizedWith(Direction direction) => new(StartPoint, Direction.FastParallelizedWith(direction));
+	public Ray? OrthogonalizedAgainst(Direction direction) {
+		var newDir = Direction.OrthogonalizedAgainst(direction);
+		return newDir == null ? null : new(StartPoint, newDir.Value);
+	}
+	public Ray FastOrthogonalizedAgainst(Direction direction) => new(StartPoint, Direction.FastOrthogonalizedAgainst(direction));
 }

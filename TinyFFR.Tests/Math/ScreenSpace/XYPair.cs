@@ -57,7 +57,7 @@ partial class XYPairTest {
 					Assert.AreEqual(0, result.ToVector2().Length());
 				}
 				else {
-					Assert.IsTrue(Angle.FromDegrees(f).Equals(result.PolarAngle!.Value, normalizeAngles: true, tolerance: TestTolerance));
+					Assert.IsTrue(Angle.FromDegrees(f).Equals(result.PolarAngle!.Value, normalizeAngles: true, toleranceDegrees: TestTolerance));
 					Assert.AreEqual(l, result.ToVector2().Length(), TestTolerance);
 				}
 			}
@@ -71,7 +71,7 @@ partial class XYPairTest {
 					Assert.AreEqual(0, result.ToVector2().Length());
 				}
 				else {
-					Assert.IsTrue(orientation.ToPolarAngle()!.Value.Equals(result.PolarAngle!.Value, normalizeAngles: true, tolerance: TestTolerance));
+					Assert.IsTrue(orientation.ToPolarAngle()!.Value.Equals(result.PolarAngle!.Value, normalizeAngles: true, toleranceDegrees: TestTolerance));
 					Assert.AreEqual(l, result.ToVector2().Length(), TestTolerance);
 				}
 			}

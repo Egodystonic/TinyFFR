@@ -228,21 +228,25 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	#endregion
 
 	#region Equality
-	public bool Equals(Angle other, float tolerance) {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool Equals(Angle other, Angle tolerance) => Equals(other, tolerance.AsDegrees);
+	public bool Equals(Angle other, float toleranceDegrees) {
 		// Using AsDegrees rather than AsRadians because the implicit conversion from float to Angle
 		// assumes degrees and therefore I feel like the tolerance value here should also be degrees
-		return MathF.Abs(AsDegrees - other.AsDegrees) <= tolerance;
+		return MathF.Abs(AsDegrees - other.AsDegrees) <= toleranceDegrees;
 	}
-	public bool Equals(Angle other, float tolerance, bool normalizeAngles) {
-		if (!normalizeAngles) return Equals(other, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool Equals(Angle other, Angle tolerance, bool normalizeAngles) => Equals(other, tolerance.AsDegrees, normalizeAngles);
+	public bool Equals(Angle other, float toleranceDegrees, bool normalizeAngles) {
+		if (!normalizeAngles) return Equals(other, toleranceDegrees);
 
 		var absDiff = MathF.Abs(Normalized.AsDegrees - other.Normalized.AsDegrees);
-		if (absDiff <= tolerance) return true;
+		if (absDiff <= toleranceDegrees) return true;
 
 		// This is to accomodate for cases where the normalized value is close but opposite sides of the 0/360 degree boundary;
 		// e.g. this normalized is 0.1 deg and other normalized is 359.9 deg
 		absDiff = MathF.Abs((this + HalfCircle).Normalized.AsDegrees - (other + HalfCircle).Normalized.AsDegrees);
-		return absDiff <= tolerance;
+		return absDiff <= toleranceDegrees;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

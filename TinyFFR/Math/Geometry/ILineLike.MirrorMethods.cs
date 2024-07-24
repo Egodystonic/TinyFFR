@@ -72,6 +72,88 @@ partial struct Line {
 	public float DistanceFrom(Ray ray) => DistanceFrom(ClosestPointOn(ray));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(BoundedRay boundedRay) => DistanceFrom(ClosestPointOn(boundedRay));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line? ParallelizedWith(Line line) => ILineLike.ParallelizedWith(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line FastParallelizedWith(Line line) => ILineLike.FastParallelizedWith(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line? ParallelizedWith(Ray ray) => ILineLike.ParallelizedWith(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line FastParallelizedWith(Ray ray) => ILineLike.FastParallelizedWith(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line? ParallelizedWith(BoundedRay ray) => ILineLike.ParallelizedWith(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line FastParallelizedWith(BoundedRay ray) => ILineLike.FastParallelizedWith(this, ray);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Direction direction) => IsParallelTo(direction, ILineLike.DefaultAngularToleranceDegrees);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Direction direction, Angle tolerance) => ILineLike.IsParallelTo(this, direction, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Line line) => ILineLike.IsParallelTo(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Line line, Angle tolerance) => ILineLike.IsParallelTo(this, line, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Ray ray) => ILineLike.IsParallelTo(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Ray ray, Angle tolerance) => ILineLike.IsParallelTo(this, ray, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(BoundedRay ray) => ILineLike.IsParallelTo(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(BoundedRay ray, Angle tolerance) => ILineLike.IsParallelTo(this, ray, tolerance);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line? OrthogonalizedAgainst(Line line) => ILineLike.OrthogonalizedAgainst(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line FastOrthogonalizedAgainst(Line line) => ILineLike.FastOrthogonalizedAgainst(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line? OrthogonalizedAgainst(Ray ray) => ILineLike.OrthogonalizedAgainst(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line FastOrthogonalizedAgainst(Ray ray) => ILineLike.FastOrthogonalizedAgainst(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line? OrthogonalizedAgainst(BoundedRay ray) => ILineLike.OrthogonalizedAgainst(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Line FastOrthogonalizedAgainst(BoundedRay ray) => ILineLike.FastOrthogonalizedAgainst(this, ray);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Direction direction) => IsOrthogonalTo(direction, ILineLike.DefaultAngularToleranceDegrees);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Direction direction, Angle tolerance) => ILineLike.IsOrthogonalTo(this, direction, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Line line) => ILineLike.IsOrthogonalTo(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Line line, Angle tolerance) => ILineLike.IsOrthogonalTo(this, line, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Ray ray) => ILineLike.IsOrthogonalTo(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Ray ray, Angle tolerance) => ILineLike.IsOrthogonalTo(this, ray, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(BoundedRay ray) => ILineLike.IsOrthogonalTo(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(BoundedRay ray, Angle tolerance) => ILineLike.IsOrthogonalTo(this, ray, tolerance);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsColinearWith(Line line) => ILineLike.IsColinearWith(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsColinearWith(Ray ray) => ILineLike.IsColinearWith(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsColinearWith(BoundedRay ray) => ILineLike.IsColinearWith(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsColinearWith(Line line, float lineThickness, Angle tolerance) => ILineLike.IsColinearWith(this, line, lineThickness, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsColinearWith(Ray ray, float lineThickness, Angle tolerance) => ILineLike.IsColinearWith(this, ray, lineThickness, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsColinearWith(BoundedRay ray, float lineThickness, Angle tolerance) => ILineLike.IsColinearWith(this, ray, lineThickness, tolerance);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(Plane plane) => Direction.AngleTo(plane);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Plane plane) => IsParallelTo(plane, ILineLike.DefaultAngularToleranceDegrees);
+	public bool IsParallelTo(Plane plane, Angle tolerance) => AngleTo(plane).Equals(0f, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Plane plane) => IsOrthogonalTo(plane, ILineLike.DefaultAngularToleranceDegrees);
+	public bool IsOrthogonalTo(Plane plane, Angle tolerance) => AngleTo(plane).Equals(90f, tolerance);
 }
 partial struct Ray {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -140,6 +222,88 @@ partial struct Ray {
 	public float DistanceFrom(Ray ray) => DistanceFrom(ClosestPointOn(ray));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(BoundedRay boundedRay) => DistanceFrom(ClosestPointOn(boundedRay));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray? ParallelizedWith(Line line) => ILineLike.ParallelizedWith(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray FastParallelizedWith(Line line) => ILineLike.FastParallelizedWith(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray? ParallelizedWith(Ray ray) => ILineLike.ParallelizedWith(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray FastParallelizedWith(Ray ray) => ILineLike.FastParallelizedWith(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray? ParallelizedWith(BoundedRay ray) => ILineLike.ParallelizedWith(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray FastParallelizedWith(BoundedRay ray) => ILineLike.FastParallelizedWith(this, ray);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Direction direction) => IsParallelTo(direction, ILineLike.DefaultAngularToleranceDegrees);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Direction direction, Angle tolerance) => ILineLike.IsParallelTo(this, direction, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Line line) => ILineLike.IsParallelTo(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Line line, Angle tolerance) => ILineLike.IsParallelTo(this, line, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Ray ray) => ILineLike.IsParallelTo(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Ray ray, Angle tolerance) => ILineLike.IsParallelTo(this, ray, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(BoundedRay ray) => ILineLike.IsParallelTo(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(BoundedRay ray, Angle tolerance) => ILineLike.IsParallelTo(this, ray, tolerance);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray? OrthogonalizedAgainst(Line line) => ILineLike.OrthogonalizedAgainst(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray FastOrthogonalizedAgainst(Line line) => ILineLike.FastOrthogonalizedAgainst(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray? OrthogonalizedAgainst(Ray ray) => ILineLike.OrthogonalizedAgainst(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray FastOrthogonalizedAgainst(Ray ray) => ILineLike.FastOrthogonalizedAgainst(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray? OrthogonalizedAgainst(BoundedRay ray) => ILineLike.OrthogonalizedAgainst(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray FastOrthogonalizedAgainst(BoundedRay ray) => ILineLike.FastOrthogonalizedAgainst(this, ray);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Direction direction) => IsOrthogonalTo(direction, ILineLike.DefaultAngularToleranceDegrees);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Direction direction, Angle tolerance) => ILineLike.IsOrthogonalTo(this, direction, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Line line) => ILineLike.IsOrthogonalTo(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Line line, Angle tolerance) => ILineLike.IsOrthogonalTo(this, line, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Ray ray) => ILineLike.IsOrthogonalTo(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Ray ray, Angle tolerance) => ILineLike.IsOrthogonalTo(this, ray, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(BoundedRay ray) => ILineLike.IsOrthogonalTo(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(BoundedRay ray, Angle tolerance) => ILineLike.IsOrthogonalTo(this, ray, tolerance);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsColinearWith(Line line) => ILineLike.IsColinearWith(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsColinearWith(Ray ray) => ILineLike.IsColinearWith(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsColinearWith(BoundedRay ray) => ILineLike.IsColinearWith(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsColinearWith(Line line, float lineThickness, Angle tolerance) => ILineLike.IsColinearWith(this, line, lineThickness, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsColinearWith(Ray ray, float lineThickness, Angle tolerance) => ILineLike.IsColinearWith(this, ray, lineThickness, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsColinearWith(BoundedRay ray, float lineThickness, Angle tolerance) => ILineLike.IsColinearWith(this, ray, lineThickness, tolerance);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(Plane plane) => Direction.AngleTo(plane);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Plane plane) => IsParallelTo(plane, ILineLike.DefaultAngularToleranceDegrees);
+	public bool IsParallelTo(Plane plane, Angle tolerance) => AngleTo(plane).Equals(0f, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Plane plane) => IsOrthogonalTo(plane, ILineLike.DefaultAngularToleranceDegrees);
+	public bool IsOrthogonalTo(Plane plane, Angle tolerance) => AngleTo(plane).Equals(90f, tolerance);
 }
 partial struct BoundedRay {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -208,6 +372,88 @@ partial struct BoundedRay {
 	public float DistanceFrom(Ray ray) => DistanceFrom(ClosestPointOn(ray));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(BoundedRay boundedRay) => DistanceFrom(ClosestPointOn(boundedRay));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay? ParallelizedWith(Line line) => ILineLike.ParallelizedWith(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay FastParallelizedWith(Line line) => ILineLike.FastParallelizedWith(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay? ParallelizedWith(Ray ray) => ILineLike.ParallelizedWith(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay FastParallelizedWith(Ray ray) => ILineLike.FastParallelizedWith(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay? ParallelizedWith(BoundedRay ray) => ILineLike.ParallelizedWith(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay FastParallelizedWith(BoundedRay ray) => ILineLike.FastParallelizedWith(this, ray);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Direction direction) => IsParallelTo(direction, ILineLike.DefaultAngularToleranceDegrees);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Direction direction, Angle tolerance) => ILineLike.IsParallelTo(this, direction, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Line line) => ILineLike.IsParallelTo(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Line line, Angle tolerance) => ILineLike.IsParallelTo(this, line, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Ray ray) => ILineLike.IsParallelTo(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Ray ray, Angle tolerance) => ILineLike.IsParallelTo(this, ray, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(BoundedRay ray) => ILineLike.IsParallelTo(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(BoundedRay ray, Angle tolerance) => ILineLike.IsParallelTo(this, ray, tolerance);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay? OrthogonalizedAgainst(Line line) => ILineLike.OrthogonalizedAgainst(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay FastOrthogonalizedAgainst(Line line) => ILineLike.FastOrthogonalizedAgainst(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay? OrthogonalizedAgainst(Ray ray) => ILineLike.OrthogonalizedAgainst(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay FastOrthogonalizedAgainst(Ray ray) => ILineLike.FastOrthogonalizedAgainst(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay? OrthogonalizedAgainst(BoundedRay ray) => ILineLike.OrthogonalizedAgainst(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay FastOrthogonalizedAgainst(BoundedRay ray) => ILineLike.FastOrthogonalizedAgainst(this, ray);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Direction direction) => IsOrthogonalTo(direction, ILineLike.DefaultAngularToleranceDegrees);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Direction direction, Angle tolerance) => ILineLike.IsOrthogonalTo(this, direction, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Line line) => ILineLike.IsOrthogonalTo(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Line line, Angle tolerance) => ILineLike.IsOrthogonalTo(this, line, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Ray ray) => ILineLike.IsOrthogonalTo(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Ray ray, Angle tolerance) => ILineLike.IsOrthogonalTo(this, ray, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(BoundedRay ray) => ILineLike.IsOrthogonalTo(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(BoundedRay ray, Angle tolerance) => ILineLike.IsOrthogonalTo(this, ray, tolerance);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsColinearWith(Line line) => ILineLike.IsColinearWith(this, line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsColinearWith(Ray ray) => ILineLike.IsColinearWith(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsColinearWith(BoundedRay ray) => ILineLike.IsColinearWith(this, ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsColinearWith(Line line, float lineThickness, Angle tolerance) => ILineLike.IsColinearWith(this, line, lineThickness, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsColinearWith(Ray ray, float lineThickness, Angle tolerance) => ILineLike.IsColinearWith(this, ray, lineThickness, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsColinearWith(BoundedRay ray, float lineThickness, Angle tolerance) => ILineLike.IsColinearWith(this, ray, lineThickness, tolerance);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(Plane plane) => Direction.AngleTo(plane);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Plane plane) => IsParallelTo(plane, ILineLike.DefaultAngularToleranceDegrees);
+	public bool IsParallelTo(Plane plane, Angle tolerance) => AngleTo(plane).Equals(0f, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Plane plane) => IsOrthogonalTo(plane, ILineLike.DefaultAngularToleranceDegrees);
+	public bool IsOrthogonalTo(Plane plane, Angle tolerance) => AngleTo(plane).Equals(90f, tolerance);
 }
 
 partial struct Location : ILineDistanceMeasurable, ILineClosestExogenousPointDiscoverable, ILineContainable {

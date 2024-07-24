@@ -19,8 +19,12 @@ partial struct Direction :
 	ITransitionRepresentable<Direction, Rotation>,
 	IRotatable<Direction>,
 	IOrthogonalizable<Direction, Direction>,
+	IParallelizable<Direction, Direction>,
 	IProjectionTarget<Direction, Vect>,
-	IOrthogonalizationTarget<Direction, Vect> {
+	IOrthogonalizationTarget<Direction, Vect>,
+	IParallelizationTarget<Direction, Vect>,
+	ILineOrthogonalizationTarget,
+	ILineParallelizationTarget {
 	public float this[Axis axis] => axis switch {
 		Axis.X => X,
 		Axis.Y => Y,
@@ -108,7 +112,8 @@ partial struct Direction :
 	public Direction? OrthogonalizedAgainst(Direction d) {
 		const float DotProductFloatingPointErrorMargin = 1E-4f;
 		const float ResultLengthSquaredMin = 1E-5f;
-		if (d == None) return null;
+		if (this == None) return None;
+		if (d == None) throw new ArgumentException($"Target direction can not be '{nameof(None)}'.", nameof(d));
 		var dot = Vector4.Dot(AsVector4, d.AsVector4);
 		// These checks are important to protect against fp inaccuracy with cases where we're orthogonalizing against the self or reverse of self etc
 		dot = MathF.Abs(dot) switch {
@@ -126,6 +131,19 @@ partial struct Direction :
 	public Vect? OrthogonalizationOf(Vect v) => v.OrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect FastOrthogonalizationOf(Vect v) => v.FastOrthogonalizedAgainst(this);
+
+	public Direction? ParallelizedWith(Direction d) {
+		if (this == None) return None;
+		if (d == None) throw new ArgumentException($"Target direction can not be '{nameof(None)}'.", nameof(d));
+		var result = d.AsVector4 * MathF.Sign(Vector4.Dot(AsVector4, d.AsVector4));
+		return result.LengthSquared() != 0f ? new Direction(result) : null;
+	}
+	public Direction FastParallelizedWith(Direction d) => new(d.AsVector4 * MathF.Sign(Vector4.Dot(AsVector4, d.AsVector4)));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect? ParallelizationOf(Vect v) => v.ParallelizedWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect FastParallelizationOf(Vect v) => v.FastParallelizedWith(this);
 
 	Vect ProjectionOf(Vect v) => v.ProjectedOnTo(this);
 	Vect? IProjectionTarget<Vect>.ProjectionOf(Vect v) => ProjectionOf(v);

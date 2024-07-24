@@ -14,7 +14,11 @@ partial struct Vect :
 	IVectorProductSpace<Vect>,
 	ILengthAdjustable<Vect>,
 	IOrthogonalizable<Vect, Direction>,
-	IProjectable<Vect, Direction> {
+	IProjectable<Vect, Direction>, 
+	IParallelizable<Vect, Direction>, 
+	IOrthogonalizable<Vect, Vect>,
+	IProjectable<Vect, Vect>, 
+	IParallelizable<Vect, Vect> { 
 	internal const float DefaultRandomRange = 100f;
 
 	public float this[Axis axis] => axis switch {
@@ -110,6 +114,13 @@ partial struct Vect :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect FastOrthogonalizedAgainst(Direction d) => Direction.FastOrthogonalizedAgainst(d) * Length;
 
+	public Vect? ParallelizedWith(Direction d) {
+		var parallelizedDir = Direction.ParallelizedWith(d);
+		return parallelizedDir == null ? null : parallelizedDir * Length;
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect FastParallelizedWith(Direction d) => Direction.FastParallelizedWith(d) * Length;
+
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator *(Vect d, Rotation r) => r.Rotate(d);
@@ -146,6 +157,8 @@ partial struct Vect :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect WithMinLength(float minLength) => WithLength(MathF.Max(Length, minLength));
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect WithDirection(Direction newDirection) => newDirection * Length;
 
 	public static Vect Interpolate(Vect start, Vect end, float distance) {
 		return start + (end - start) * distance;

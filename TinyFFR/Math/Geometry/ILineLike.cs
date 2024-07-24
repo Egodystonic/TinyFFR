@@ -13,11 +13,12 @@ public partial interface ILineLike :
 	ILineClosestEndogenousPointDiscoverable,
 	ILineClosestExogenousPointDiscoverable,
 	ILineIntersectionDeterminable<Location>,
-
+	
 	IDistanceMeasurable<Location>,
 	IClosestEndogenousPointDiscoverable<Location>,
 	IContainer<Location>,
 
+	IAngleMeasurable<Plane>,
 	ISignedDistanceMeasurable<Plane>,
 	IRelatable<Plane, PlaneObjectRelationship>,
 	IClosestEndogenousPointDiscoverable<Plane>,
@@ -28,6 +29,7 @@ public partial interface ILineLike :
 	IConvexShapeDistanceMeasurable,
 	IConvexShapeIntersectable<ConvexShapeLineIntersection> {
 	public const float DefaultLineThickness = 0.01f;
+	public const float DefaultAngularToleranceDegrees = 0.1f;
 
 	Location StartPoint { get; }
 	Direction Direction { get; }
@@ -59,6 +61,13 @@ public partial interface ILineLike :
 	sealed Line CoerceToLine() => new(StartPoint, Direction);
 	sealed Ray CoerceToRay() => new(StartPoint, Direction);
 	sealed BoundedRay CoerceToBoundedRay(float length) => BoundedRay.FromStartPointAndVect(StartPoint, Direction * length);
+
+	bool IsColinearWith(Line line);
+	bool IsColinearWith(Ray ray);
+	bool IsColinearWith(BoundedRay ray);
+	bool IsColinearWith(Line line, float lineThickness, Angle tolerance);
+	bool IsColinearWith(Ray ray, float lineThickness, Angle tolerance);
+	bool IsColinearWith(BoundedRay ray, float lineThickness, Angle tolerance);
 
 	protected internal static float? CalculateUnboundedIntersectionDistanceOnThisLine<TThis, TOther>(TThis @this, TOther other) where TThis : ILineLike where TOther : ILineLike {
 		const float ParallelTolerance = 1E-7f;
@@ -114,7 +123,15 @@ public interface ILineLike<TSelf> : ILineLike,
 	IProjectable<TSelf, Plane>,
 	IParallelizable<TSelf, Plane>,
 	IOrthogonalizable<TSelf, Plane>,
-	IReflectable<Plane, TSelf>
+	IReflectable<Plane, TSelf>,
+	IParallelizable<TSelf, Direction>,
+	IParallelizable<TSelf, Line>,
+	IParallelizable<TSelf, Ray>,
+	IParallelizable<TSelf, BoundedRay>,
+	IOrthogonalizable<TSelf, Direction>,
+	IOrthogonalizable<TSelf, Line>,
+	IOrthogonalizable<TSelf, Ray>,
+	IOrthogonalizable<TSelf, BoundedRay>
 	where TSelf : struct, ILineLike<TSelf>;
 public interface ILineLike<TSelf, TSplitFirst, TSplitSecond> : ILineLike<TSelf> where TSelf : struct, ILineLike<TSelf> {
 	Pair<TSplitFirst, TSplitSecond>? SplitBy(Plane plane);

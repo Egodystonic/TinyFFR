@@ -74,6 +74,6 @@ partial struct Vect : IAngleMeasurable<Plane>, IReflectable<Plane, Vect>, IProje
 	public Vect FastOrthogonalizedAgainst(Plane plane) => plane.FastOrthogonalizationOf(this);
 }
 partial struct XYPair<T> {
-	public Location ExpandedTo3DOn(Plane plane) => plane.ExpansionTo3DOf(Cast<float>());
+	public Location ExpandedTo3DOn(Plane plane) => plane.ExpansionTo3DOf(Cast<float>()); // TODO go back to "holograph" for these names?
 	public Location ExpandedTo3DOn(Plane plane, float zDimension) => plane.ExpansionTo3DOf(Cast<float>(), zDimension);
 }
