@@ -12,6 +12,7 @@ partial struct Plane :
 	IAngleMeasurable<Plane, Direction>, IReflectionTarget<Plane, Direction, Direction>, IProjectionTarget<Plane, Direction>, IParallelizationTarget<Plane, Direction>, IOrthogonalizationTarget<Plane, Direction>,
 	IAngleMeasurable<Plane, Vect>, IReflectionTarget<Plane, Vect, Vect>, IProjectionTarget<Plane, Vect>, IParallelizationTarget<Plane, Vect>, IOrthogonalizationTarget<Plane, Vect>,
 	IPrecomputationInterpolatable<Plane, Rotation> {
+	public const float DefaultAngularToleranceDegrees = 0.1f;
 	const float MaxPlaneToPlaneDistanceNormalSimilarity = 1 - 1E-8f;
 
 	public Plane Flipped {
@@ -82,6 +83,18 @@ partial struct Plane :
 	public Angle FastIncidentAngleWith(Vect vect) => FastIncidentAngleWith(vect.Direction);
 	public Direction? ParallelizationOf(Direction direction) => direction.OrthogonalizedAgainst(Normal);
 	public Direction FastParallelizationOf(Direction direction) => direction.FastOrthogonalizedAgainst(Normal);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Direction direction) => IsParallelTo(direction, DefaultAngularToleranceDegrees);
+	public bool IsParallelTo(Direction direction, Angle tolerance) => AngleTo(direction).Equals(Angle.Zero, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Vect vect) => IsParallelTo(vect, DefaultAngularToleranceDegrees);
+	public bool IsParallelTo(Vect vect, Angle tolerance) => AngleTo(vect).Equals(Angle.Zero, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Direction direction) => IsOrthogonalTo(direction, DefaultAngularToleranceDegrees);
+	public bool IsOrthogonalTo(Direction direction, Angle tolerance) => AngleTo(direction).Equals(Angle.QuarterCircle, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Vect vect) => IsOrthogonalTo(vect, DefaultAngularToleranceDegrees);
+	public bool IsOrthogonalTo(Vect vect, Angle tolerance) => AngleTo(vect).Equals(Angle.QuarterCircle, tolerance);
 
 	public Location PointClosestTo(Location location) => location - PointClosestToOrigin.VectTo(location).ProjectedOnTo(Normal);
 	public float SignedDistanceFrom(Location location) => Vector3.Dot(location.ToVector3(), _normal) - _smallestDistanceFromOriginAlongNormal; // TODO xmldoc positive means normal faces towards, etc

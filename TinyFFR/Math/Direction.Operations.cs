@@ -22,9 +22,9 @@ partial struct Direction :
 	IParallelizable<Direction, Direction>,
 	IProjectionTarget<Direction, Vect>,
 	IOrthogonalizationTarget<Direction, Vect>,
-	IParallelizationTarget<Direction, Vect>,
-	ILineOrthogonalizationTarget,
-	ILineParallelizationTarget {
+	IParallelizationTarget<Direction, Vect> {
+	public const float DefaultAngularToleranceDegrees = 0.1f;
+
 	public float this[Axis axis] => axis switch {
 		Axis.X => X,
 		Axis.Y => Y,
@@ -149,6 +149,19 @@ partial struct Direction :
 	Vect? IProjectionTarget<Vect>.ProjectionOf(Vect v) => ProjectionOf(v);
 	Vect IProjectionTarget<Vect>.FastProjectionOf(Vect v) => ProjectionOf(v);
 
+
+	public bool IsOrthogonalTo(Direction other) => IsOrthogonalTo(other, DefaultAngularToleranceDegrees);
+	public bool IsOrthogonalTo(Direction other, Angle tolerance) => AngleTo(other).Equals(Angle.QuarterCircle, tolerance);
+	public bool IsParallelTo(Direction other) => IsParallelTo(other, DefaultAngularToleranceDegrees);
+	public bool IsParallelTo(Direction other, Angle tolerance) {
+		var angle = AngleTo(other);
+		return angle.Equals(Angle.Zero, tolerance) || angle.Equals(Angle.HalfCircle, tolerance);
+	}
+
+	public bool IsOrthogonalTo(Vect v) => IsOrthogonalTo(v, DefaultAngularToleranceDegrees);
+	public bool IsOrthogonalTo(Vect v, Angle tolerance) => IsOrthogonalTo(v.Direction, tolerance);
+	public bool IsParallelTo(Vect v) => IsParallelTo(v, DefaultAngularToleranceDegrees);
+	public bool IsParallelTo(Vect v, Angle tolerance) => IsParallelTo(v.Direction, tolerance);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator >>(Direction start, Direction end) => Rotation.FromStartAndEndDirection(start, end);

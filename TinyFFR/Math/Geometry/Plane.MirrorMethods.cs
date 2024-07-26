@@ -46,6 +46,14 @@ partial struct Direction : IAngleMeasurable<Plane>, IReflectable<Plane, Directio
 	public Direction? OrthogonalizedAgainst(Plane plane) => plane.OrthogonalizationOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction FastOrthogonalizedAgainst(Plane plane) => plane.FastOrthogonalizationOf(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Plane plane) => plane.IsParallelTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Plane plane, Angle tolerance) => plane.IsParallelTo(this, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Plane plane) => plane.IsOrthogonalTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Plane plane, Angle tolerance) => plane.IsOrthogonalTo(this, tolerance);
 }
 partial struct Vect : IAngleMeasurable<Plane>, IReflectable<Plane, Vect>, IProjectable<Vect, Plane>, IParallelizable<Vect, Plane>, IOrthogonalizable<Vect, Plane> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -72,6 +80,14 @@ partial struct Vect : IAngleMeasurable<Plane>, IReflectable<Plane, Vect>, IProje
 	public Vect? OrthogonalizedAgainst(Plane plane) => plane.OrthogonalizationOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect FastOrthogonalizedAgainst(Plane plane) => plane.FastOrthogonalizationOf(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Plane plane) => plane.IsParallelTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Plane plane, Angle tolerance) => plane.IsParallelTo(this, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Plane plane) => plane.IsOrthogonalTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Plane plane, Angle tolerance) => plane.IsOrthogonalTo(this, tolerance);
 }
 partial struct XYPair<T> {
 	public Location ExpandedTo3DOn(Plane plane) => plane.ExpansionTo3DOf(Cast<float>()); // TODO go back to "holograph" for these names?

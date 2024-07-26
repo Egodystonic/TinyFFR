@@ -18,7 +18,10 @@ partial struct Vect :
 	IParallelizable<Vect, Direction>, 
 	IOrthogonalizable<Vect, Vect>,
 	IProjectable<Vect, Vect>, 
-	IParallelizable<Vect, Vect> { 
+	IParallelizable<Vect, Vect>,
+	IProjectionTarget<Vect, Vect>,
+	IOrthogonalizationTarget<Vect, Vect>,
+	IParallelizationTarget<Vect, Vect> { 
 	internal const float DefaultRandomRange = 100f;
 
 	public float this[Axis axis] => axis switch {
@@ -121,6 +124,47 @@ partial struct Vect :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect FastParallelizedWith(Direction d) => Direction.FastParallelizedWith(d) * Length;
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect? OrthogonalizedAgainst(Vect other) => OrthogonalizedAgainst(other.Direction);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect FastOrthogonalizedAgainst(Vect other) => FastOrthogonalizedAgainst(other.Direction);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect ProjectedOnTo(Vect other) => ProjectedOnTo(other.Direction);
+	Vect? IProjectable<Vect, Vect>.ProjectedOnTo(Vect other) => ProjectedOnTo(other);
+	Vect IProjectable<Vect, Vect>.FastProjectedOnTo(Vect other) => ProjectedOnTo(other);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect? ParallelizedWith(Vect other) => ParallelizedWith(other.Direction);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect FastParallelizedWith(Vect other) => FastParallelizedWith(other.Direction);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect ProjectionOf(Vect other) => other.ProjectedOnTo(this);
+	Vect? IProjectionTarget<Vect>.ProjectionOf(Vect other) => ProjectionOf(other);
+	Vect IProjectionTarget<Vect>.FastProjectionOf(Vect other) => ProjectionOf(other);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect? OrthogonalizationOf(Vect other) => other.OrthogonalizedAgainst(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect FastOrthogonalizationOf(Vect other) => other.FastOrthogonalizedAgainst(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect? ParallelizationOf(Vect other) => other.ParallelizedWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect FastParallelizationOf(Vect other) => other.FastParallelizedWith(this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Direction d) => d.IsOrthogonalTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Direction d, Angle tolerance) => d.IsOrthogonalTo(this, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Direction d) => d.IsParallelTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Direction d, Angle tolerance) => d.IsParallelTo(this, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Vect other) => other.IsOrthogonalTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Vect other, Angle tolerance) => other.IsOrthogonalTo(this, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Vect other) => other.IsParallelTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Vect other, Angle tolerance) => other.IsParallelTo(this, tolerance);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator *(Vect d, Rotation r) => r.Rotate(d);
