@@ -22,7 +22,9 @@ partial struct Direction :
 	IParallelizable<Direction, Direction>,
 	IProjectionTarget<Direction, Vect>,
 	IOrthogonalizationTarget<Direction, Vect>,
-	IParallelizationTarget<Direction, Vect> {
+	IParallelizationTarget<Direction, Vect>,
+	IOrthogonalizationTarget<Direction, Direction>,
+	IParallelizationTarget<Direction, Direction> {
 	public const float DefaultAngularToleranceDegrees = 0.1f;
 
 	public float this[Axis axis] => axis switch {
@@ -110,10 +112,9 @@ partial struct Direction :
 	}
 
 	public Direction? OrthogonalizedAgainst(Direction d) {
-		const float DotProductFloatingPointErrorMargin = 1E-4f;
-		const float ResultLengthSquaredMin = 1E-5f;
-		if (this == None) return None;
-		if (d == None) throw new ArgumentException($"Target direction can not be '{nameof(None)}'.", nameof(d));
+		const float DotProductFloatingPointErrorMargin = 1E-6f;
+		const float ResultLengthSquaredMin = 1E-8f;
+		if (this == None || d == None) return null;
 		var dot = Vector4.Dot(AsVector4, d.AsVector4);
 		// These checks are important to protect against fp inaccuracy with cases where we're orthogonalizing against the self or reverse of self etc
 		dot = MathF.Abs(dot) switch {
@@ -133,10 +134,15 @@ partial struct Direction :
 	public Vect FastOrthogonalizationOf(Vect v) => v.FastOrthogonalizedAgainst(this);
 
 	public Direction? ParallelizedWith(Direction d) {
-		if (this == None) return None;
-		if (d == None) throw new ArgumentException($"Target direction can not be '{nameof(None)}'.", nameof(d));
-		var result = d.AsVector4 * MathF.Sign(Vector4.Dot(AsVector4, d.AsVector4));
-		return result.LengthSquared() != 0f ? new Direction(result) : null;
+		const float DotProductFloatingPointErrorMargin = 1E-4f;
+		if (this == None || d == None) return null;
+		var dot = Vector4.Dot(AsVector4, d.AsVector4);
+		// These checks are important to protect against fp inaccuracy with cases where we're parallelizing against an orthogonal dir
+		return dot switch {
+			> DotProductFloatingPointErrorMargin => d,
+			< -DotProductFloatingPointErrorMargin => -d,
+			_ => null
+		};
 	}
 	public Direction FastParallelizedWith(Direction d) => new(d.AsVector4 * MathF.Sign(Vector4.Dot(AsVector4, d.AsVector4)));
 
@@ -149,11 +155,25 @@ partial struct Direction :
 	Vect? IProjectionTarget<Vect>.ProjectionOf(Vect v) => ProjectionOf(v);
 	Vect IProjectionTarget<Vect>.FastProjectionOf(Vect v) => ProjectionOf(v);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction? OrthogonalizationOf(Direction d) => d.OrthogonalizedAgainst(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction FastOrthogonalizationOf(Direction d) => d.FastOrthogonalizedAgainst(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction? ParallelizationOf(Direction d) => d.ParallelizedWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction FastParallelizationOf(Direction d) => d.FastParallelizedWith(this);
+
 
 	public bool IsOrthogonalTo(Direction other) => IsOrthogonalTo(other, DefaultAngularToleranceDegrees);
-	public bool IsOrthogonalTo(Direction other, Angle tolerance) => AngleTo(other).Equals(Angle.QuarterCircle, tolerance);
+	public bool IsOrthogonalTo(Direction other, Angle tolerance) {
+		if (this == None || other == None) return false;
+		return AngleTo(other).Equals(Angle.QuarterCircle, tolerance);
+	}
+
 	public bool IsParallelTo(Direction other) => IsParallelTo(other, DefaultAngularToleranceDegrees);
 	public bool IsParallelTo(Direction other, Angle tolerance) {
+		if (this == None || other == None) return false;
 		var angle = AngleTo(other);
 		return angle.Equals(Angle.Zero, tolerance) || angle.Equals(Angle.HalfCircle, tolerance);
 	}

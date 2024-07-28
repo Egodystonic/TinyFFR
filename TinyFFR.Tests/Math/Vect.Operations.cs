@@ -107,7 +107,7 @@ partial class VectTest {
 	}
 
 	[Test]
-	public void ShouldCorrectlyProjectOnToDirection() {
+	public void ShouldCorrectlyProjectOnToDirectionAndVect() {
 		Assert.AreEqual(new Vect(1f, 0f, 0f), new Vect(1f, 1f, 0f).ProjectedOnTo(new Direction(1f, 0f, 0f)));
 		Assert.AreEqual(new Vect(1f, 0f, 0f), new Vect(1f, 1f, 0f).ProjectedOnTo(new Direction(1f, 0f, 0f)));
 
@@ -116,14 +116,28 @@ partial class VectTest {
 
 		Assert.AreEqual(Vect.Zero, new Vect(1f, 0f, 0f).ProjectedOnTo(new Direction(0f, 1f, 0f)));
 		Assert.AreEqual(Vect.Zero, new Vect(1f, 0f, 0f).ProjectedOnTo(new Direction(0f, 1f, 0f)));
+
+		Assert.AreEqual(new Vect(1f, 0f, 0f), new Vect(1f, 1f, 0f).ProjectedOnTo(new Vect(1f, 0f, 0f)));
+		Assert.AreEqual(new Vect(1f, 0f, 0f), new Vect(1f, 1f, 0f).ProjectedOnTo(new Vect(1f, 0f, 0f)));
+
+		// https://www.wolframalpha.com/input?i=project+%5B14.2%2C+-7.1%2C+8.9%5D+on+to+%5B0.967%2C+0.137%2C+-0.216%5D
+		AssertToleranceEquals(new Vect(10.473f, 1.484f, -2.339f), new Vect(14.2f, -7.1f, 8.9f).ProjectedOnTo(new Vect(0.967f, 0.137f, -0.216f)), TestTolerance);
+
+		Assert.AreEqual(Vect.Zero, new Vect(1f, 0f, 0f).ProjectedOnTo(new Vect(0f, 1f, 0f)));
+		Assert.AreEqual(Vect.Zero, new Vect(1f, 0f, 0f).ProjectedOnTo(new Vect(0f, 1f, 0f)));
 	}
 
 	[Test]
-	public void ShouldCorrectlyOrthogonalizeAgainstDirection() {
+	public void ShouldCorrectlyOrthogonalizeAgainstDirectionAndVect() {
 		Assert.AreEqual(null, Vect.Zero.OrthogonalizedAgainst(Direction.Up));
 		Assert.AreEqual(null, (Direction.Up * 100f).OrthogonalizedAgainst(Direction.Up));
-		AssertToleranceEquals(null, OneTwoNegThree.OrthogonalizedAgainst(Direction.None), TestTolerance);
+		Assert.AreEqual(null, OneTwoNegThree.OrthogonalizedAgainst(Direction.None));
 		Assert.AreEqual(null, Vect.Zero.OrthogonalizedAgainst(Direction.None));
+
+		Assert.AreEqual(null, Vect.Zero.OrthogonalizedAgainst(Direction.Up * 10f));
+		Assert.AreEqual(null, (Direction.Up * 100f).OrthogonalizedAgainst(Direction.Up * 10f));
+		Assert.AreEqual(null, OneTwoNegThree.OrthogonalizedAgainst(Direction.None * 10f));
+		Assert.AreEqual(null, Vect.Zero.OrthogonalizedAgainst(Direction.None * 10f));
 
 		AssertToleranceEquals(
 			new Vect(1f, 0f, 0f),
@@ -155,6 +169,118 @@ partial class VectTest {
 		AssertToleranceEquals(
 			new Vect(0f, -10f, 0f),
 			new Vect(1f, -5f, 0f).WithLength(10f).FastOrthogonalizedAgainst(new Direction(1f, 0f, 0f)),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			new Vect(1f, 0f, 0f),
+			new Vect(0.8f, 0.2f, 0f).WithLength(1f).OrthogonalizedAgainst(new Vect(0f, 1f, 0f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(1f, 0f, 0f),
+			new Vect(0.8f, 0.2f, 0f).WithLength(1f).FastOrthogonalizedAgainst(new Vect(0f, 1f, 0f)),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			new Vect(0f, -10f, 0f),
+			new Vect(1f, -5f, 0f).WithLength(10f).OrthogonalizedAgainst(new Vect(-1f, 0f, 0f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(0f, -10f, 0f),
+			new Vect(1f, -5f, 0f).WithLength(10f).FastOrthogonalizedAgainst(new Vect(-1f, 0f, 0f)),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			new Vect(0f, -10f, 0f),
+			new Vect(1f, -5f, 0f).WithLength(10f).OrthogonalizedAgainst(new Vect(1f, 0f, 0f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(0f, -10f, 0f),
+			new Vect(1f, -5f, 0f).WithLength(10f).FastOrthogonalizedAgainst(new Vect(1f, 0f, 0f)),
+			TestTolerance
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyParallelizeWithDirectionAndVect() {
+		Assert.AreEqual(null, Vect.Zero.ParallelizedWith(Direction.Up));
+		Assert.AreEqual(null, (Direction.Up * 100f).ParallelizedWith(Direction.Right));
+		Assert.AreEqual(null, OneTwoNegThree.ParallelizedWith(Direction.None));
+		Assert.AreEqual(null, Vect.Zero.ParallelizedWith(Direction.None));
+
+		Assert.AreEqual(null, Vect.Zero.ParallelizedWith(Direction.Up * 10f));
+		Assert.AreEqual(null, (Direction.Up * 100f).ParallelizedWith(Direction.Right * 10f));
+		Assert.AreEqual(null, OneTwoNegThree.ParallelizedWith(Direction.None * 10f));
+		Assert.AreEqual(null, Vect.Zero.ParallelizedWith(Direction.None * 10f));
+
+		AssertToleranceEquals(
+			new Vect(1f, 0f, 0f),
+			new Vect(0.8f, 0.2f, 0f).WithLength(1f).ParallelizedWith(new Direction(1f, 0f, 0f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(1f, 0f, 0f),
+			new Vect(0.8f, 0.2f, 0f).WithLength(1f).FastParallelizedWith(new Direction(1f, 0f, 0f)),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			new Vect(0f, -10f, 0f),
+			new Vect(1f, -5f, 0f).WithLength(10f).ParallelizedWith(new Direction(0f, -1f, 0f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(0f, -10f, 0f),
+			new Vect(1f, -5f, 0f).WithLength(10f).FastParallelizedWith(new Direction(0f, -1f, 0f)),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			new Vect(0f, -10f, 0f),
+			new Vect(1f, -5f, 0f).WithLength(10f).ParallelizedWith(new Direction(0f, 1f, 0f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(0f, -10f, 0f),
+			new Vect(1f, -5f, 0f).WithLength(10f).FastParallelizedWith(new Direction(0f, 1f, 0f)),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			new Vect(1f, 0f, 0f),
+			new Vect(0.8f, 0.2f, 0f).WithLength(1f).ParallelizedWith(new Vect(1f, 0f, 0f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(1f, 0f, 0f),
+			new Vect(0.8f, 0.2f, 0f).WithLength(1f).FastParallelizedWith(new Vect(1f, 0f, 0f)),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			new Vect(0f, -10f, 0f),
+			new Vect(1f, -5f, 0f).WithLength(10f).ParallelizedWith(new Vect(0f, -1f, 0f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(0f, -10f, 0f),
+			new Vect(1f, -5f, 0f).WithLength(10f).FastParallelizedWith(new Vect(0f, -1f, 0f)),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			new Vect(0f, -10f, 0f),
+			new Vect(1f, -5f, 0f).WithLength(10f).ParallelizedWith(new Vect(0f, 1f, 0f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(0f, -10f, 0f),
+			new Vect(1f, -5f, 0f).WithLength(10f).FastParallelizedWith(new Vect(0f, 1f, 0f)),
 			TestTolerance
 		);
 	}
@@ -358,5 +484,200 @@ partial class VectTest {
 			new Vect(0f, -1f, 0f).Clamp(min, max),
 			TestTolerance
 		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineOrthogonalityToOtherDirectionsAndVects() {
+		void AssertCombination(bool expectation, Direction d1, Direction d2, Angle? tolerance) {
+			var v1 = d1 * 10f;
+			var v2 = d2 * 10f;
+
+			if (tolerance == null) {
+				Assert.AreEqual(expectation, v1.IsOrthogonalTo(d2));
+				Assert.AreEqual(expectation, v2.IsOrthogonalTo(d1));
+				Assert.AreEqual(expectation, v1.IsOrthogonalTo(-d2));
+				Assert.AreEqual(expectation, v2.IsOrthogonalTo(-d1));
+				Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(d2));
+				Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(d1));
+				Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(-d2));
+				Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(-d1));
+
+				Assert.AreEqual(expectation, v1.IsOrthogonalTo(v2));
+				Assert.AreEqual(expectation, v2.IsOrthogonalTo(v1));
+				Assert.AreEqual(expectation, v1.IsOrthogonalTo(-v2));
+				Assert.AreEqual(expectation, v2.IsOrthogonalTo(-v1));
+				Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(v2));
+				Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(v1));
+				Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(-v2));
+				Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(-v1));
+			}
+			else {
+				Assert.AreEqual(expectation, v1.IsOrthogonalTo(d2, tolerance.Value));
+				Assert.AreEqual(expectation, v2.IsOrthogonalTo(d1, tolerance.Value));
+				Assert.AreEqual(expectation, v1.IsOrthogonalTo(-d2, tolerance.Value));
+				Assert.AreEqual(expectation, v2.IsOrthogonalTo(-d1, tolerance.Value));
+				Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(d2, tolerance.Value));
+				Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(d1, tolerance.Value));
+				Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(-d2, tolerance.Value));
+				Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(-d1, tolerance.Value));
+
+				Assert.AreEqual(expectation, v1.IsOrthogonalTo(v2, tolerance.Value));
+				Assert.AreEqual(expectation, v2.IsOrthogonalTo(v1, tolerance.Value));
+				Assert.AreEqual(expectation, v1.IsOrthogonalTo(-v2, tolerance.Value));
+				Assert.AreEqual(expectation, v2.IsOrthogonalTo(-v1, tolerance.Value));
+				Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(v2, tolerance.Value));
+				Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(v1, tolerance.Value));
+				Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(-v2, tolerance.Value));
+				Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(-v1, tolerance.Value));
+			}
+		}
+
+		AssertCombination(true, Direction.Left, Direction.Down, null);
+		AssertCombination(true, Direction.Left, Direction.Up, null);
+		AssertCombination(false, Direction.Left, Direction.Right, null);
+		AssertCombination(false, Direction.Forward, Direction.Backward, null);
+		AssertCombination(false, Direction.Forward, Direction.None, null);
+		AssertCombination(false, Direction.None, Direction.Right, null);
+		AssertCombination(false, Direction.None, Direction.None, null);
+
+		AssertCombination(true, Direction.Left, Direction.Down, 0f);
+		AssertCombination(true, Direction.Left, Direction.Up, 0f);
+		AssertCombination(false, Direction.Left, Direction.Right, 89f);
+		AssertCombination(false, Direction.Forward, Direction.Backward, 89f);
+
+		AssertCombination(true, Direction.Left, Direction.Down, 90f);
+
+		var testList = new List<Direction>();
+		for (var x = -3f; x <= 3f; x += 1f) {
+			for (var y = -3f; y <= 3f; y += 1f) {
+				for (var z = -3f; z <= 3f; z += 1f) {
+					testList.Add(new(x, y, z));
+				}
+			}
+		}
+
+		for (var i = 0; i < testList.Count; ++i) {
+			for (var j = i; j < testList.Count; ++j) {
+				var a = testList[i];
+				var b = testList[j];
+				if (a == Direction.None || b == Direction.None) {
+					AssertCombination(false, a, b, null);
+					AssertCombination(false, a, b, 0f);
+					AssertCombination(false, a, b, 45f);
+					AssertCombination(false, a, b, 90f);
+					AssertCombination(false, a, b, 180f);
+					continue;
+				}
+
+				var angle = a ^ b;
+				var diffToOrthogonality = (angle - Angle.QuarterCircle).Absolute;
+				if (diffToOrthogonality == Angle.Zero) {
+					AssertCombination(true, a, b, null);
+					AssertCombination(true, a, b, 0f);
+				}
+				else {
+					AssertCombination(true, a, b, diffToOrthogonality + 0.1f);
+					AssertCombination(false, a, b, diffToOrthogonality - 0.1f);
+				}
+			}
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineParallelismToOtherDirectionsAndVects() {
+		void AssertCombination(bool expectation, Direction d1, Direction d2, Angle? tolerance) {
+			var v1 = d1 * 10f;
+			var v2 = d2 * 10f;
+
+			if (tolerance == null) {
+				Assert.AreEqual(expectation, v1.IsParallelTo(d2));
+				Assert.AreEqual(expectation, v2.IsParallelTo(d1));
+				Assert.AreEqual(expectation, v1.IsParallelTo(-d2));
+				Assert.AreEqual(expectation, v2.IsParallelTo(-d1));
+				Assert.AreEqual(expectation, (-v1).IsParallelTo(d2));
+				Assert.AreEqual(expectation, (-v2).IsParallelTo(d1));
+				Assert.AreEqual(expectation, (-v1).IsParallelTo(-d2));
+				Assert.AreEqual(expectation, (-v2).IsParallelTo(-d1));
+
+				Assert.AreEqual(expectation, v1.IsParallelTo(v2));
+				Assert.AreEqual(expectation, v2.IsParallelTo(v1));
+				Assert.AreEqual(expectation, v1.IsParallelTo(-v2));
+				Assert.AreEqual(expectation, v2.IsParallelTo(-v1));
+				Assert.AreEqual(expectation, (-v1).IsParallelTo(v2));
+				Assert.AreEqual(expectation, (-v2).IsParallelTo(v1));
+				Assert.AreEqual(expectation, (-v1).IsParallelTo(-v2));
+				Assert.AreEqual(expectation, (-v2).IsParallelTo(-v1));
+			}
+			else {
+				Assert.AreEqual(expectation, v1.IsParallelTo(d2, tolerance.Value));
+				Assert.AreEqual(expectation, v2.IsParallelTo(d1, tolerance.Value));
+				Assert.AreEqual(expectation, v1.IsParallelTo(-d2, tolerance.Value));
+				Assert.AreEqual(expectation, v2.IsParallelTo(-d1, tolerance.Value));
+				Assert.AreEqual(expectation, (-v1).IsParallelTo(d2, tolerance.Value));
+				Assert.AreEqual(expectation, (-v2).IsParallelTo(d1, tolerance.Value));
+				Assert.AreEqual(expectation, (-v1).IsParallelTo(-d2, tolerance.Value));
+				Assert.AreEqual(expectation, (-v2).IsParallelTo(-d1, tolerance.Value));
+
+				Assert.AreEqual(expectation, v1.IsParallelTo(v2, tolerance.Value));
+				Assert.AreEqual(expectation, v2.IsParallelTo(v1, tolerance.Value));
+				Assert.AreEqual(expectation, v1.IsParallelTo(-v2, tolerance.Value));
+				Assert.AreEqual(expectation, v2.IsParallelTo(-v1, tolerance.Value));
+				Assert.AreEqual(expectation, (-v1).IsParallelTo(v2, tolerance.Value));
+				Assert.AreEqual(expectation, (-v2).IsParallelTo(v1, tolerance.Value));
+				Assert.AreEqual(expectation, (-v1).IsParallelTo(-v2, tolerance.Value));
+				Assert.AreEqual(expectation, (-v2).IsParallelTo(-v1, tolerance.Value));
+			}
+		}
+
+		AssertCombination(false, Direction.Left, Direction.Down, null);
+		AssertCombination(false, Direction.Left, Direction.Up, null);
+		AssertCombination(true, Direction.Left, Direction.Right, null);
+		AssertCombination(true, Direction.Forward, Direction.Backward, null);
+		AssertCombination(true, Direction.Up, Direction.Up, null);
+		AssertCombination(true, Direction.Down, Direction.Down, null);
+		AssertCombination(false, Direction.Forward, Direction.None, null);
+		AssertCombination(false, Direction.None, Direction.Right, null);
+		AssertCombination(false, Direction.None, Direction.None, null);
+
+		AssertCombination(false, Direction.Left, Direction.Down, 89f);
+		AssertCombination(false, Direction.Left, Direction.Up, 89f);
+		AssertCombination(true, Direction.Left, Direction.Down, 90f);
+		AssertCombination(true, Direction.Left, Direction.Up, 90f);
+		AssertCombination(true, Direction.Up, Direction.Up, 0f);
+		AssertCombination(true, Direction.Down, Direction.Down, 0f);
+
+		var testList = new List<Direction>();
+		for (var x = -3f; x <= 3f; x += 1f) {
+			for (var y = -3f; y <= 3f; y += 1f) {
+				for (var z = -3f; z <= 3f; z += 1f) {
+					testList.Add(new(x, y, z));
+				}
+			}
+		}
+
+		for (var i = 0; i < testList.Count; ++i) {
+			for (var j = i; j < testList.Count; ++j) {
+				var a = testList[i];
+				var b = testList[j];
+				if (a == Direction.None || b == Direction.None) {
+					AssertCombination(false, a, b, null);
+					AssertCombination(false, a, b, 0f);
+					AssertCombination(false, a, b, 45f);
+					AssertCombination(false, a, b, 90f);
+					AssertCombination(false, a, b, 180f);
+					continue;
+				}
+
+				var angle = (a ^ b) < (a ^ -b) ? (a ^ b) : (a ^ -b);
+				if (angle == Angle.Zero) {
+					AssertCombination(true, a, b, null);
+					AssertCombination(true, a, b, 0f);
+				}
+				else {
+					AssertCombination(true, a, b, angle + 0.1f);
+					AssertCombination(false, a, b, angle - 0.1f);
+				}
+			}
+		}
 	}
 }

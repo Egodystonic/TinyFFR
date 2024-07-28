@@ -158,13 +158,13 @@ partial struct Vect :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsParallelTo(Direction d, Angle tolerance) => d.IsParallelTo(this, tolerance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsOrthogonalTo(Vect other) => other.IsOrthogonalTo(this);
+	public bool IsOrthogonalTo(Vect other) => IsOrthogonalTo(other.Direction);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsOrthogonalTo(Vect other, Angle tolerance) => other.IsOrthogonalTo(this, tolerance);
+	public bool IsOrthogonalTo(Vect other, Angle tolerance) => IsOrthogonalTo(other.Direction, tolerance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsParallelTo(Vect other) => other.IsParallelTo(this);
+	public bool IsParallelTo(Vect other) => IsParallelTo(other.Direction);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsParallelTo(Vect other, Angle tolerance) => other.IsParallelTo(this, tolerance);
+	public bool IsParallelTo(Vect other, Angle tolerance) => IsParallelTo(other.Direction, tolerance);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator *(Vect d, Rotation r) => r.Rotate(d);
