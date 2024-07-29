@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System.Globalization;
+using System.Reflection;
 
 namespace Egodystonic.TinyFFR;
 
@@ -2176,5 +2177,158 @@ partial class RayTest {
 			new Ray(new Location(0f, 0f, 0f), Direction.Down),
 			new Ray(new Location(0f, 0f, 0f), Direction.Down)
 		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyOrthogonalizeAndParallelizeAroundPoints() {
+		const float TestRayLength = 10f;
+		const float TestPivotDistance = 3f;
+
+		var testList = new List<Direction>();
+		for (var x = -3f; x <= 3f; x += 1f) {
+			for (var y = -3f; y <= 3f; y += 1f) {
+				for (var z = -3f; z <= 3f; z += 1f) {
+					testList.Add(new(x, y, z));
+				}
+			}
+		}
+
+		for (var i = 0; i < testList.Count; ++i) {
+			var rayDir = testList[i];
+			var ray = BoundedRay.FromStartPointAndVect(Location.Origin, rayDir * TestRayLength);
+			for (var j = i; j < testList.Count; ++j) {
+				var targetDir = testList[j];
+				var targetRayBounded = new BoundedRay(Location.Origin, Location.Origin + targetDir * TestRayLength);
+
+				if (targetDir == Direction.None) {
+					Assert.AreEqual(null, ray.ParallelizedWith(targetDir));
+					Assert.AreEqual(null, ray.ParallelizedAroundStartWith(targetDir));
+					Assert.AreEqual(null, ray.ParallelizedAroundMiddleWith(targetDir));
+					Assert.AreEqual(null, ray.ParallelizedAroundEndWith(targetDir));
+					Assert.AreEqual(null, ray.ParallelizedAroundPivotDistanceWith(targetDir, TestPivotDistance));
+					Assert.AreEqual(null, ray.OrthogonalizedAgainst(targetDir));
+					Assert.AreEqual(null, ray.OrthogonalizedAroundStartAgainst(targetDir));
+					Assert.AreEqual(null, ray.OrthogonalizedAroundMiddleAgainst(targetDir));
+					Assert.AreEqual(null, ray.OrthogonalizedAroundEndAgainst(targetDir));
+					Assert.AreEqual(null, ray.OrthogonalizedAroundPivotDistanceAgainst(targetDir, TestPivotDistance));
+
+					Assert.AreEqual(null, ray.ParallelizedWith(targetRayBounded));
+					Assert.AreEqual(null, ray.ParallelizedAroundStartWith(targetRayBounded));
+					Assert.AreEqual(null, ray.ParallelizedAroundMiddleWith(targetRayBounded));
+					Assert.AreEqual(null, ray.ParallelizedAroundEndWith(targetRayBounded));
+					Assert.AreEqual(null, ray.ParallelizedAroundPivotDistanceWith(targetRayBounded, TestPivotDistance));
+					Assert.AreEqual(null, ray.OrthogonalizedAgainst(targetRayBounded));
+					Assert.AreEqual(null, ray.OrthogonalizedAroundStartAgainst(targetRayBounded));
+					Assert.AreEqual(null, ray.OrthogonalizedAroundMiddleAgainst(targetRayBounded));
+					Assert.AreEqual(null, ray.OrthogonalizedAroundEndAgainst(targetRayBounded));
+					Assert.AreEqual(null, ray.OrthogonalizedAroundPivotDistanceAgainst(targetRayBounded, TestPivotDistance));
+					continue;
+				}
+
+				var targetLine = new Line(Location.Origin, targetDir);
+				var targetRay = new Ray(Location.Origin, targetDir);
+				var targetPlane = new Plane(targetDir.AnyPerpendicular(), 0f);
+				var allTargets = new object[] { targetDir, targetLine, targetRay, targetRayBounded, targetPlane };
+
+				void AssertAllTrue(Func<BoundedRay?, bool> assertionPredicate,
+					bool includeParallelizations = true, bool includeOrthogonalizations = true,
+					bool includeStandardFuncs = true, bool includeStartFuncs = true, bool includeMiddleFuncs = true,
+					bool includeEndFuncs = true, bool includePivotFuncs = true) => AssertAll(result => Assert.IsTrue(assertionPredicate(result)), includeParallelizations, includeOrthogonalizations, includeStandardFuncs, includeStartFuncs, includeMiddleFuncs, includeEndFuncs, includePivotFuncs);
+				void AssertAllNullOr(Action<BoundedRay> assertionAction,
+					bool includeParallelizations = true, bool includeOrthogonalizations = true,
+					bool includeStandardFuncs = true, bool includeStartFuncs = true, bool includeMiddleFuncs = true,
+					bool includeEndFuncs = true, bool includePivotFuncs = true) => AssertAll(result => { if (result == null) return; assertionAction(result.Value); }, includeParallelizations, includeOrthogonalizations, includeStandardFuncs, includeStartFuncs, includeMiddleFuncs, includeEndFuncs, includePivotFuncs);
+				void AssertAll(Action<BoundedRay?> assertionAction, 
+					bool includeParallelizations = true, bool includeOrthogonalizations = true, 
+					bool includeStandardFuncs = true, bool includeStartFuncs = true, bool includeMiddleFuncs = true,
+					bool includeEndFuncs = true, bool includePivotFuncs = true
+				) {
+					void TestMethod(string nonFastMethodName, params object[] args) {
+						BoundedRay? result = null;
+						try {
+							result = (BoundedRay?) typeof(BoundedRay).GetMethod(nonFastMethodName, args.Select(o => o.GetType()).ToArray())!.Invoke(ray, args);
+							assertionAction(result);
+							if (result != null) {
+								result = ((BoundedRay?) typeof(BoundedRay).GetMethod("Fast" + nonFastMethodName, args.Select(o => o.GetType()).ToArray())!.Invoke(ray, args))!.Value;
+								assertionAction(result);
+							}
+						}
+						catch {
+							Console.WriteLine($"Failure details:");
+							Console.WriteLine("\tInput: " + ray.ToStringDescriptive());
+							Console.WriteLine("\tFunc: " + nonFastMethodName);
+							Console.WriteLine("\tTarget: " + args[0]);
+							Console.WriteLine("\tResult: " + (result?.ToStringDescriptive() ?? "<null>"));
+							throw;
+						}
+					}
+
+					foreach (var target in allTargets!) {
+						if (includeParallelizations) {
+							if (includeStandardFuncs) TestMethod(nameof(BoundedRay.ParallelizedWith), target);
+							if (includeStartFuncs) TestMethod(nameof(BoundedRay.ParallelizedAroundStartWith), target);
+							if (includeMiddleFuncs) TestMethod(nameof(BoundedRay.ParallelizedAroundMiddleWith), target);
+							if (includeEndFuncs) TestMethod(nameof(BoundedRay.ParallelizedAroundEndWith), target);
+							if (includePivotFuncs) TestMethod(nameof(BoundedRay.ParallelizedAroundPivotDistanceWith), target, TestPivotDistance);
+						}
+						if (includeOrthogonalizations) {
+							if (includeStandardFuncs) TestMethod(nameof(BoundedRay.OrthogonalizedAgainst), target);
+							if (includeStartFuncs) TestMethod(nameof(BoundedRay.OrthogonalizedAroundStartAgainst), target);
+							if (includeMiddleFuncs) TestMethod(nameof(BoundedRay.OrthogonalizedAroundMiddleAgainst), target);
+							if (includeEndFuncs) TestMethod(nameof(BoundedRay.OrthogonalizedAroundEndAgainst), target);
+							if (includePivotFuncs) TestMethod(nameof(BoundedRay.OrthogonalizedAroundPivotDistanceAgainst), target, TestPivotDistance);
+						}
+					}
+				}
+				
+				if (rayDir == Direction.None) {
+					AssertAllTrue(
+						result => result == null
+					);
+				}
+				else {
+					AssertAllNullOr(
+						result => Assert.AreEqual(TestRayLength, result.Length, TestTolerance)
+					);
+					AssertAllNullOr(
+						result => AssertToleranceEquals(ray.StartPoint, result.StartPoint, TestTolerance), 
+						includeMiddleFuncs: false, includeEndFuncs: false, includePivotFuncs: false
+					);
+					AssertAllNullOr(
+						result => AssertToleranceEquals(ray.EndPoint, result.EndPoint, TestTolerance), 
+						includeStandardFuncs: false, includeStartFuncs: false, includeMiddleFuncs: false, includePivotFuncs: false
+					);
+					AssertAllNullOr(
+						result => AssertToleranceEquals(ray.LocationAtDistanceOrNull(TestRayLength * 0.5f), result.LocationAtDistanceOrNull(TestRayLength * 0.5f), TestTolerance),
+						includeStandardFuncs: false, includeStartFuncs: false, includeEndFuncs: false, includePivotFuncs: false
+					);
+					AssertAllNullOr(
+						result => AssertToleranceEquals(ray.LocationAtDistanceOrNull(TestPivotDistance), result.LocationAtDistanceOrNull(TestPivotDistance), TestTolerance), 
+						includeStandardFuncs: false, includeStartFuncs: false, includeMiddleFuncs: false, includeEndFuncs: false
+					);
+
+					if (rayDir.IsParallelTo(targetDir)) {
+						AssertAllTrue(
+							result => result == null,
+							includeParallelizations: false
+						);
+						AssertAllTrue(
+							result => result != null,
+							includeOrthogonalizations: false
+						);
+					}
+					if (rayDir.IsOrthogonalTo(targetDir)) {
+						AssertAllTrue(
+							result => result == null,
+							includeOrthogonalizations: false
+						);
+						AssertAllTrue(
+							result => result != null,
+							includeParallelizations: false
+						);
+					}
+				}
+			}
+		}
 	}
 }

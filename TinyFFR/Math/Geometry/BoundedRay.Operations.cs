@@ -253,20 +253,6 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 	BoundedRay? IProjectable<BoundedRay, Plane>.ProjectedOnTo(Plane plane) => ProjectedOnTo(plane);
 	BoundedRay IProjectable<BoundedRay, Plane>.FastProjectedOnTo(Plane plane) => ProjectedOnTo(plane);
 
-	public BoundedRay? ParallelizedWith(Plane plane) { // TODO in xmldoc note that this preserves length or returns null if orthogonal to the plane
-		var newVect = StartToEndVect.ParallelizedWith(plane);
-		if (newVect == null) return null;
-		return new BoundedRay(StartPoint, newVect.Value);
-	}
-	public BoundedRay FastParallelizedWith(Plane plane) => new(StartPoint, StartToEndVect.FastParallelizedWith(plane)); // TODO in xmldoc note that this preserves length or returns null if orthogonal to the plane
-
-	public BoundedRay? OrthogonalizedAgainst(Plane plane) { // TODO in xmldoc note that this preserves length or returns null if orthogonal to the plane
-		var newVect = StartToEndVect.OrthogonalizedAgainst(plane);
-		if (newVect == null) return null;
-		return new(StartPoint, newVect.Value);
-	}
-	public BoundedRay FastOrthogonalizedAgainst(Plane plane) => new(StartPoint, StartToEndVect.FastOrthogonalizedAgainst(plane));
-
 	public Location PointClosestTo(Plane plane) {
 		var unboundedDistance = GetUnboundedPlaneIntersectionDistance(plane);
 		return BoundedLocationAtDistance(unboundedDistance ?? 0f); // If unboundedDistance is null we're parallel so the StartPoint is as close as any other point
@@ -335,4 +321,115 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 		return FromStartPointAndVect(EndPoint - newVect, newVect);
 	}
 	public BoundedRay FastOrthogonalizedAroundPivotDistanceAgainst(Direction direction, float signedPivotDistance) => RotatedAroundPoint(Direction >> Direction.FastOrthogonalizedAgainst(direction), UnboundedLocationAtDistance(signedPivotDistance));
+
+	public BoundedRay? ParallelizedAroundStartWith(Line line) => ParallelizedAroundStartWith(line.Direction);
+	public BoundedRay? ParallelizedAroundMiddleWith(Line line) => ParallelizedAroundMiddleWith(line.Direction);
+	public BoundedRay? ParallelizedAroundEndWith(Line line) => ParallelizedAroundEndWith(line.Direction);
+	public BoundedRay? ParallelizedAroundPivotDistanceWith(Line line, float signedPivotDistance) => ParallelizedAroundPivotDistanceWith(line.Direction, signedPivotDistance);
+	public BoundedRay FastParallelizedAroundStartWith(Line line) => FastParallelizedAroundStartWith(line.Direction);
+	public BoundedRay FastParallelizedAroundMiddleWith(Line line) => FastParallelizedAroundMiddleWith(line.Direction);
+	public BoundedRay FastParallelizedAroundEndWith(Line line) => FastParallelizedAroundEndWith(line.Direction);
+	public BoundedRay FastParallelizedAroundPivotDistanceWith(Line line, float signedPivotDistance) => FastParallelizedAroundPivotDistanceWith(line.Direction, signedPivotDistance);
+	public BoundedRay? ParallelizedAroundStartWith(Ray ray) => ParallelizedAroundStartWith(ray.Direction);
+	public BoundedRay? ParallelizedAroundMiddleWith(Ray ray) => ParallelizedAroundMiddleWith(ray.Direction);
+	public BoundedRay? ParallelizedAroundEndWith(Ray ray) => ParallelizedAroundEndWith(ray.Direction);
+	public BoundedRay? ParallelizedAroundPivotDistanceWith(Ray ray, float signedPivotDistance) => ParallelizedAroundPivotDistanceWith(ray.Direction, signedPivotDistance);
+	public BoundedRay FastParallelizedAroundStartWith(Ray ray) => FastParallelizedAroundStartWith(ray.Direction);
+	public BoundedRay FastParallelizedAroundMiddleWith(Ray ray) => FastParallelizedAroundMiddleWith(ray.Direction);
+	public BoundedRay FastParallelizedAroundEndWith(Ray ray) => FastParallelizedAroundEndWith(ray.Direction);
+	public BoundedRay FastParallelizedAroundPivotDistanceWith(Ray ray, float signedPivotDistance) => FastParallelizedAroundPivotDistanceWith(ray.Direction, signedPivotDistance);
+	public BoundedRay? ParallelizedAroundStartWith(BoundedRay ray) => ParallelizedAroundStartWith(ray.Direction);
+	public BoundedRay? ParallelizedAroundMiddleWith(BoundedRay ray) => ParallelizedAroundMiddleWith(ray.Direction);
+	public BoundedRay? ParallelizedAroundEndWith(BoundedRay ray) => ParallelizedAroundEndWith(ray.Direction);
+	public BoundedRay? ParallelizedAroundPivotDistanceWith(BoundedRay ray, float signedPivotDistance) => ParallelizedAroundPivotDistanceWith(ray.Direction, signedPivotDistance);
+	public BoundedRay FastParallelizedAroundStartWith(BoundedRay ray) => FastParallelizedAroundStartWith(ray.Direction);
+	public BoundedRay FastParallelizedAroundMiddleWith(BoundedRay ray) => FastParallelizedAroundMiddleWith(ray.Direction);
+	public BoundedRay FastParallelizedAroundEndWith(BoundedRay ray) => FastParallelizedAroundEndWith(ray.Direction);
+	public BoundedRay FastParallelizedAroundPivotDistanceWith(BoundedRay ray, float signedPivotDistance) => FastParallelizedAroundPivotDistanceWith(ray.Direction, signedPivotDistance);
+
+	public BoundedRay? OrthogonalizedAroundStartAgainst(Line line) => OrthogonalizedAroundStartAgainst(line.Direction);
+	public BoundedRay? OrthogonalizedAroundMiddleAgainst(Line line) => OrthogonalizedAroundMiddleAgainst(line.Direction);
+	public BoundedRay? OrthogonalizedAroundEndAgainst(Line line) => OrthogonalizedAroundEndAgainst(line.Direction);
+	public BoundedRay? OrthogonalizedAroundPivotDistanceAgainst(Line line, float signedPivotDistance) => OrthogonalizedAroundPivotDistanceAgainst(line.Direction, signedPivotDistance);
+	public BoundedRay FastOrthogonalizedAroundStartAgainst(Line line) => FastOrthogonalizedAroundStartAgainst(line.Direction);
+	public BoundedRay FastOrthogonalizedAroundMiddleAgainst(Line line) => FastOrthogonalizedAroundMiddleAgainst(line.Direction);
+	public BoundedRay FastOrthogonalizedAroundEndAgainst(Line line) => FastOrthogonalizedAroundEndAgainst(line.Direction);
+	public BoundedRay FastOrthogonalizedAroundPivotDistanceAgainst(Line line, float signedPivotDistance) => FastOrthogonalizedAroundPivotDistanceAgainst(line.Direction, signedPivotDistance);
+	public BoundedRay? OrthogonalizedAroundStartAgainst(Ray ray) => OrthogonalizedAroundStartAgainst(ray.Direction);
+	public BoundedRay? OrthogonalizedAroundMiddleAgainst(Ray ray) => OrthogonalizedAroundMiddleAgainst(ray.Direction);
+	public BoundedRay? OrthogonalizedAroundEndAgainst(Ray ray) => OrthogonalizedAroundEndAgainst(ray.Direction);
+	public BoundedRay? OrthogonalizedAroundPivotDistanceAgainst(Ray ray, float signedPivotDistance) => OrthogonalizedAroundPivotDistanceAgainst(ray.Direction, signedPivotDistance);
+	public BoundedRay FastOrthogonalizedAroundStartAgainst(Ray ray) => FastOrthogonalizedAroundStartAgainst(ray.Direction);
+	public BoundedRay FastOrthogonalizedAroundMiddleAgainst(Ray ray) => FastOrthogonalizedAroundMiddleAgainst(ray.Direction);
+	public BoundedRay FastOrthogonalizedAroundEndAgainst(Ray ray) => FastOrthogonalizedAroundEndAgainst(ray.Direction);
+	public BoundedRay FastOrthogonalizedAroundPivotDistanceAgainst(Ray ray, float signedPivotDistance) => FastOrthogonalizedAroundPivotDistanceAgainst(ray.Direction, signedPivotDistance);
+	public BoundedRay? OrthogonalizedAroundStartAgainst(BoundedRay ray) => OrthogonalizedAroundStartAgainst(ray.Direction);
+	public BoundedRay? OrthogonalizedAroundMiddleAgainst(BoundedRay ray) => OrthogonalizedAroundMiddleAgainst(ray.Direction);
+	public BoundedRay? OrthogonalizedAroundEndAgainst(BoundedRay ray) => OrthogonalizedAroundEndAgainst(ray.Direction);
+	public BoundedRay? OrthogonalizedAroundPivotDistanceAgainst(BoundedRay ray, float signedPivotDistance) => OrthogonalizedAroundPivotDistanceAgainst(ray.Direction, signedPivotDistance);
+	public BoundedRay FastOrthogonalizedAroundStartAgainst(BoundedRay ray) => FastOrthogonalizedAroundStartAgainst(ray.Direction);
+	public BoundedRay FastOrthogonalizedAroundMiddleAgainst(BoundedRay ray) => FastOrthogonalizedAroundMiddleAgainst(ray.Direction);
+	public BoundedRay FastOrthogonalizedAroundEndAgainst(BoundedRay ray) => FastOrthogonalizedAroundEndAgainst(ray.Direction);
+	public BoundedRay FastOrthogonalizedAroundPivotDistanceAgainst(BoundedRay ray, float signedPivotDistance) => FastOrthogonalizedAroundPivotDistanceAgainst(ray.Direction, signedPivotDistance);
+
+	// TODO in xmldoc note that these preserve length or returns null if orthogonal/parallel to the plane
+	public BoundedRay? ParallelizedWith(Plane plane) => ParallelizedAroundStartWith(plane);
+	public BoundedRay FastParallelizedWith(Plane plane) => FastParallelizedAroundStartWith(plane);
+
+	public BoundedRay? ParallelizedAroundStartWith(Plane plane) {
+		var newVect = StartToEndVect.ParallelizedWith(plane);
+		if (newVect == null) return null;
+		return new BoundedRay(StartPoint, newVect.Value);
+	}
+	public BoundedRay? ParallelizedAroundMiddleWith(Plane plane) {
+		var newDir = Direction.ParallelizedWith(plane);
+		if (newDir == null) return null;
+		return RotatedAroundMiddleBy(Direction >> newDir.Value);
+	}
+	public BoundedRay? ParallelizedAroundEndWith(Plane plane) {
+		var newVect = StartToEndVect.ParallelizedWith(plane);
+		if (newVect == null) return null;
+		return new BoundedRay(EndPoint - newVect.Value, EndPoint);
+	}
+	public BoundedRay? ParallelizedAroundPivotDistanceWith(Plane plane, float signedPivotDistance) {
+		var newDir = Direction.ParallelizedWith(plane);
+		if (newDir == null) return null;
+		return RotatedAroundPoint(Direction >> newDir.Value, UnboundedLocationAtDistance(signedPivotDistance));
+	}
+	public BoundedRay FastParallelizedAroundStartWith(Plane plane) => new(StartPoint, StartToEndVect.FastParallelizedWith(plane));
+	public BoundedRay FastParallelizedAroundMiddleWith(Plane plane) => RotatedAroundMiddleBy(Direction >> Direction.FastParallelizedWith(plane));
+	public BoundedRay FastParallelizedAroundEndWith(Plane plane) => new(EndPoint - StartToEndVect.FastParallelizedWith(plane), EndPoint);
+	public BoundedRay FastParallelizedAroundPivotDistanceWith(Plane plane, float signedPivotDistance) => RotatedAroundPoint(Direction >> Direction.FastParallelizedWith(plane), UnboundedLocationAtDistance(signedPivotDistance));
+
+	public BoundedRay? OrthogonalizedAgainst(Plane plane) {
+		var newVect = StartToEndVect.OrthogonalizedAgainst(plane);
+		if (newVect == null) return null;
+		return new(StartPoint, newVect.Value);
+	}
+	public BoundedRay FastOrthogonalizedAgainst(Plane plane) => new(StartPoint, StartToEndVect.FastOrthogonalizedAgainst(plane));
+
+	public BoundedRay? OrthogonalizedAroundStartAgainst(Plane plane) {
+		var newVect = StartToEndVect.OrthogonalizedAgainst(plane);
+		if (newVect == null) return null;
+		return new BoundedRay(StartPoint, newVect.Value);
+	}
+	public BoundedRay? OrthogonalizedAroundMiddleAgainst(Plane plane) {
+		var newDir = Direction.OrthogonalizedAgainst(plane);
+		if (newDir == null) return null;
+		return RotatedAroundMiddleBy(Direction >> newDir.Value);
+	}
+	public BoundedRay? OrthogonalizedAroundEndAgainst(Plane plane) {
+		var newVect = StartToEndVect.OrthogonalizedAgainst(plane);
+		if (newVect == null) return null;
+		return new BoundedRay(EndPoint - newVect.Value, EndPoint);
+	}
+	public BoundedRay? OrthogonalizedAroundPivotDistanceAgainst(Plane plane, float signedPivotDistance) {
+		var newDir = Direction.OrthogonalizedAgainst(plane);
+		if (newDir == null) return null;
+		return RotatedAroundPoint(Direction >> newDir.Value, UnboundedLocationAtDistance(signedPivotDistance));
+	}
+	public BoundedRay FastOrthogonalizedAroundStartAgainst(Plane plane) => new(StartPoint, StartToEndVect.FastOrthogonalizedAgainst(plane));
+	public BoundedRay FastOrthogonalizedAroundMiddleAgainst(Plane plane) => RotatedAroundMiddleBy(Direction >> Direction.FastOrthogonalizedAgainst(plane));
+	public BoundedRay FastOrthogonalizedAroundEndAgainst(Plane plane) => new(EndPoint - StartToEndVect.FastOrthogonalizedAgainst(plane), EndPoint);
+	public BoundedRay FastOrthogonalizedAroundPivotDistanceAgainst(Plane plane, float signedPivotDistance) => RotatedAroundPoint(Direction >> Direction.FastParallelizedWith(plane), UnboundedLocationAtDistance(signedPivotDistance));
 }
