@@ -130,7 +130,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	 *		I do foresee one group of users who would prefer this in radians-- people writing scientific/mathematical
 	 *		software who will be doing a lot of calculations in radians naturally anyway. To those people... Sorry :).
 	 *		Angle.FromRadians() will still be there for you! But in actuality I don't foresee this being as big a deal
-	 *		as it maybe first seems because most scientific/math libraries tend to use full-precision floats (e.g. double)
+	 *		as it maybe first seems because most scientific/math libraries tend to use full-precision floats (e.g. double or higher)
 	 *		which won't implicitly convert to Angles anyway.
 	 * -- Degrees:
 	 *		Degrees are probably the unit that most people in the world are most familiar with. It's also the unit I
@@ -138,11 +138,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	 *		specify an Angle using a float literal in one unit and then have the ToString/Parse methods work with
 	 *		another unit. Degrees therefore feels like the most natural fit that has the least friction in general
 	 *		across the entire Angle type. You can specify an Angle as "270f" or "Angle.Parse("270") and get the same
-	 *		result each time-- I think that's really important. Finally, one minor positive of using degrees is that
-	 *		the range people will be working with is a lot less prone to floating point inaccuracy build-up (e.g.
-	 *		-720f to 720f is a lot safer to manipulate than -4pi to 4pi and/or -2f to 2f). That positive falls on its
-	 *		arse once actually converted to Angle (radians under the hood) but at least it might encourage working in
-	 *		degrees naturally in places. Maybe.
+	 *		result each time-- I think that's really important.
 	 *		Ultimately the justification is more like "why did you choose degrees for Parse/ToString?" in this case...
 	 *		See below.
 	 *
@@ -160,6 +156,8 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	 * printing an Angle to the console or screen or whatever it's SO much nicer to see the value in degrees! We could also print both
 	 * I suppose, and in the future I might add format specifiers to let people override the ToString/Parse but the default will
 	 * remain as degrees.
+	 *
+	 * If this ends up being problematic I'll probably just delete it and force people to be explicit using the factory methods.
 	 *
 	 * TLDR: Chose degrees for ToString/Parse because they're nicer to work with/print out than radians, and wanted the implicit
 	 * conversion to match the Parse (e.g. "270f" == "Angle.Parse("270")").
@@ -236,10 +234,9 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 		return MathF.Abs(AsDegrees - other.AsDegrees) <= toleranceDegrees;
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool Equals(Angle other, Angle tolerance, bool normalizeAngles) => Equals(other, tolerance.AsDegrees, normalizeAngles);
-	public bool Equals(Angle other, float toleranceDegrees, bool normalizeAngles) {
-		if (!normalizeAngles) return Equals(other, toleranceDegrees);
-
+	public bool EqualsWithinCircle(Angle other) => Equals(other, Zero);
+	public bool EqualsWithinCircle(Angle other, Angle tolerance) => Equals(other, tolerance.AsDegrees);
+	public bool EqualsWithinCircle(Angle other, float toleranceDegrees) {
 		var absDiff = MathF.Abs(Normalized.AsDegrees - other.Normalized.AsDegrees);
 		if (absDiff <= toleranceDegrees) return true;
 
@@ -250,7 +247,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool Equals(Angle other) => Normalized.AsRadians.Equals(other.Normalized.AsRadians);
+	public bool Equals(Angle other) => AsRadians.Equals(other.AsRadians);
 	public override bool Equals(object? obj) => obj is Angle other && Equals(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override int GetHashCode() => Normalized.AsRadians.GetHashCode();
