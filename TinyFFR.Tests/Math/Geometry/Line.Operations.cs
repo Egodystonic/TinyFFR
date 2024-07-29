@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System.Globalization;
+using System.Numerics;
 
 namespace Egodystonic.TinyFFR;
 
@@ -1574,5 +1575,664 @@ partial class LineTest {
 		Assert.AreEqual(0f, TestLine.DistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestLineDirection.AnyPerpendicular() * 10f), TestTolerance);
 		Assert.AreEqual(10f, TestLine.DistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestLineDirection * 10f + TestLineDirection.AnyPerpendicular() * 10f), TestTolerance);
 		Assert.AreEqual(-10f, TestLine.DistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestLineDirection * -10f + TestLineDirection.AnyPerpendicular() * 10f), TestTolerance);
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineColinearityWithOtherLineLikes() {
+		void AssertPair(bool expectation, Line line, Ray other, float? lineThickness, Angle? tolerance) {
+			var flippedLine = new Line(line.PointOnLine, line.Direction.Flipped);
+			var otherAsLine = other.ToLine();
+			var otherAsFlippedLine = new Line(other.StartPoint, other.Direction.Flipped);
+			var otherAsBoundedRay = other.ToBoundedRay(100f);
+
+			// Line
+			Assert.AreEqual(expectation, line.IsColinearWith(otherAsLine, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, otherAsLine.IsColinearWith(line, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			Assert.AreEqual(expectation, line.IsColinearWith(otherAsFlippedLine, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, otherAsLine.IsColinearWith(flippedLine, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			Assert.AreEqual(expectation, flippedLine.IsColinearWith(otherAsLine, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, otherAsFlippedLine.IsColinearWith(line, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			Assert.AreEqual(expectation, flippedLine.IsColinearWith(otherAsFlippedLine, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, otherAsFlippedLine.IsColinearWith(flippedLine, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			// Ray
+			Assert.AreEqual(expectation, line.IsColinearWith(other, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, other.IsColinearWith(line, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			Assert.AreEqual(expectation, line.IsColinearWith(other.Flipped, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, other.IsColinearWith(flippedLine, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			Assert.AreEqual(expectation, flippedLine.IsColinearWith(other, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, other.Flipped.IsColinearWith(line, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			Assert.AreEqual(expectation, flippedLine.IsColinearWith(other.Flipped, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, other.Flipped.IsColinearWith(flippedLine, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			// BoundedRay
+			Assert.AreEqual(expectation, line.IsColinearWith(otherAsBoundedRay, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, otherAsBoundedRay.IsColinearWith(line, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			Assert.AreEqual(expectation, line.IsColinearWith(otherAsBoundedRay.Flipped, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, otherAsBoundedRay.IsColinearWith(flippedLine, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			Assert.AreEqual(expectation, flippedLine.IsColinearWith(otherAsBoundedRay, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, otherAsBoundedRay.Flipped.IsColinearWith(line, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			Assert.AreEqual(expectation, flippedLine.IsColinearWith(otherAsBoundedRay.Flipped, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, otherAsBoundedRay.Flipped.IsColinearWith(flippedLine, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+		}
+
+		AssertPair(true, TestLine, TestLine.ToRay(0f, false), null, null);
+		AssertPair(false, TestLine.MovedBy(TestLine.Direction.AnyPerpendicular() * 1f), TestLine.ToRay(0f, false), 0.45f, null);
+		AssertPair(true, TestLine.MovedBy(TestLine.Direction.AnyPerpendicular() * 1f), TestLine.ToRay(0f, false), 0.55f, null);
+		AssertPair(false, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyPerpendicular()).WithAngle(1f)), TestLine.ToRay(0f, false), null, 0.9f);
+		AssertPair(true, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyPerpendicular()).WithAngle(1f)), TestLine.ToRay(0f, false), null, 1.1f);
+		AssertPair(false, TestLine.MovedBy(TestLine.Direction.AnyPerpendicular() * 1f).RotatedBy((TestLine.Direction >> TestLine.Direction.AnyPerpendicular()).WithAngle(1f)), TestLine.ToRay(0f, false), 0.45f, 0.9f);
+		AssertPair(true, TestLine.MovedBy(TestLine.Direction.AnyPerpendicular() * 1f).RotatedBy((TestLine.Direction >> TestLine.Direction.AnyPerpendicular()).WithAngle(1f)), TestLine.ToRay(0f, false), 0.55f, 1.1f);
+		AssertPair(false, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyPerpendicular()).WithAngle(1f)).MovedBy(TestLine.Direction.AnyPerpendicular() * 1f), TestLine.ToRay(0f, false), 0.45f, 0.9f);
+		AssertPair(true, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyPerpendicular()).WithAngle(1f)).MovedBy(TestLine.Direction.AnyPerpendicular() * 1f), TestLine.ToRay(0f, false), 0.55f, 1.1f);
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineParallelismWithOtherElements() {
+		void AssertCombination(bool expectation, Line line, Direction dir, Angle? tolerance) {
+			var flippedLine = new Line(line.PointOnLine, line.Direction.Flipped);
+			var plane = new Plane(dir.AnyPerpendicular(), Location.Origin);
+			var dirLine = new Line(Location.Origin, dir);
+			var dirRay = new Ray(Location.Origin, dir);
+			var dirRayBounded = BoundedRay.FromStartPointAndVect(Location.Origin, dir * 10f);
+
+			if (tolerance == null) {
+				Assert.AreEqual(expectation, line.IsParallelTo(dir));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(dir));
+				Assert.AreEqual(expectation, line.IsParallelTo(dir.Flipped));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(dir.Flipped));
+
+				Assert.AreEqual(expectation, line.IsParallelTo(plane));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(plane));
+				Assert.AreEqual(expectation, line.IsParallelTo(plane.Flipped));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(plane.Flipped));
+
+				Assert.AreEqual(expectation, line.IsParallelTo(dirLine));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(dirLine));
+				Assert.AreEqual(expectation, line.IsParallelTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped)));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped)));
+
+				Assert.AreEqual(expectation, line.IsParallelTo(dirRay));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(dirRay));
+				Assert.AreEqual(expectation, line.IsParallelTo(dirRay.Flipped));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(dirRay.Flipped));
+
+				Assert.AreEqual(expectation, line.IsParallelTo(dirRayBounded));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(dirRayBounded));
+				Assert.AreEqual(expectation, line.IsParallelTo(dirRayBounded.Flipped));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(dirRayBounded.Flipped));
+			}
+			else {
+				Assert.AreEqual(expectation, line.IsParallelTo(dir, tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(dir, tolerance.Value));
+				Assert.AreEqual(expectation, line.IsParallelTo(dir.Flipped, tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(dir.Flipped, tolerance.Value));
+
+				Assert.AreEqual(expectation, line.IsParallelTo(plane, tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(plane, tolerance.Value));
+				Assert.AreEqual(expectation, line.IsParallelTo(plane.Flipped, tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(plane.Flipped, tolerance.Value));
+
+				Assert.AreEqual(expectation, line.IsParallelTo(dirLine, tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(dirLine, tolerance.Value));
+				Assert.AreEqual(expectation, line.IsParallelTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped), tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped), tolerance.Value));
+
+				Assert.AreEqual(expectation, line.IsParallelTo(dirRay, tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(dirRay, tolerance.Value));
+				Assert.AreEqual(expectation, line.IsParallelTo(dirRay.Flipped, tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(dirRay.Flipped, tolerance.Value));
+
+				Assert.AreEqual(expectation, line.IsParallelTo(dirRayBounded, tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(dirRayBounded, tolerance.Value));
+				Assert.AreEqual(expectation, line.IsParallelTo(dirRayBounded.Flipped, tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsParallelTo(dirRayBounded.Flipped, tolerance.Value));
+			}
+		}
+
+		AssertCombination(true, new Line(Location.Origin, Direction.Up), Direction.Up, null);
+		AssertCombination(false, new Line(Location.Origin, Direction.Up), Direction.Left, null);
+		AssertCombination(false, new Line(Location.Origin, Direction.Up), (1f, 1f, 0f), 44f);
+		AssertCombination(true, new Line(Location.Origin, Direction.Up), (1f, 1f, 0f), 46f);
+
+		Assert.AreEqual(false, TestLine.IsParallelTo(Direction.None));
+		Assert.AreEqual(false, TestLine.IsParallelTo(new BoundedRay(Location.Origin, Location.Origin)));
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineOrthogonalityWithOtherElements() {
+		void AssertCombination(bool expectation, Line line, Direction dir, Angle? tolerance) {
+			var flippedLine = new Line(line.PointOnLine, line.Direction.Flipped);
+			var plane = new Plane(dir.AnyPerpendicular(), Location.Origin);
+			var dirLine = new Line(Location.Origin, dir);
+			var dirRay = new Ray(Location.Origin, dir);
+			var dirRayBounded = BoundedRay.FromStartPointAndVect(Location.Origin, dir * 10f);
+
+			if (tolerance == null) {
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(dir));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(dir));
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(dir.Flipped));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(dir.Flipped));
+
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(plane));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(plane));
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(plane.Flipped));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(plane.Flipped));
+
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(dirLine));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(dirLine));
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped)));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped)));
+
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(dirRay));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(dirRay));
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(dirRay.Flipped));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(dirRay.Flipped));
+
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(dirRayBounded));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(dirRayBounded));
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(dirRayBounded.Flipped));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(dirRayBounded.Flipped));
+			}
+			else {
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(dir, tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(dir, tolerance.Value));
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(dir.Flipped, tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(dir.Flipped, tolerance.Value));
+
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(plane, tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(plane, tolerance.Value));
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(plane.Flipped, tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(plane.Flipped, tolerance.Value));
+
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(dirLine, tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(dirLine, tolerance.Value));
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped), tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped), tolerance.Value));
+
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(dirRay, tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(dirRay, tolerance.Value));
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(dirRay.Flipped, tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(dirRay.Flipped, tolerance.Value));
+
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(dirRayBounded, tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(dirRayBounded, tolerance.Value));
+				Assert.AreEqual(expectation, line.IsOrthogonalTo(dirRayBounded.Flipped, tolerance.Value));
+				Assert.AreEqual(expectation, flippedLine.IsOrthogonalTo(dirRayBounded.Flipped, tolerance.Value));
+			}
+		}
+
+		AssertCombination(true, new Line(Location.Origin, Direction.Up), Direction.Left, null);
+		AssertCombination(false, new Line(Location.Origin, Direction.Up), Direction.Up, null);
+		AssertCombination(false, new Line(Location.Origin, Direction.Up), (1f, 1f, 0f), 44f);
+		AssertCombination(true, new Line(Location.Origin, Direction.Up), (1f, 1f, 0f), 46f);
+
+		Assert.AreEqual(false, TestLine.IsOrthogonalTo(Direction.None));
+		Assert.AreEqual(false, TestLine.IsOrthogonalTo(new BoundedRay(Location.Origin, Location.Origin)));
+	}
+
+	[Test]
+	public void ShouldCorrectlyParallelizeWithDirectionsAndLineLikes() {
+		void AssertAgainstLeft(Line? expectation, Line input) {
+			Assert.AreEqual(expectation, input.ParallelizedWith(Direction.Left));
+			Assert.AreEqual(expectation, input.ParallelizedWith(new Line(Location.Origin, Direction.Left)));
+			Assert.AreEqual(expectation, input.ParallelizedWith(new Ray(Location.Origin, Direction.Left)));
+			Assert.AreEqual(expectation, input.ParallelizedWith(new BoundedRay(Location.Origin, (1f, 0f, 0f))));
+		}
+		void AssertFastAgainstLeft(Line expectation, Line input) {
+			Assert.AreEqual(expectation, input.FastParallelizedWith(Direction.Left));
+			Assert.AreEqual(expectation, input.FastParallelizedWith(new Line(Location.Origin, Direction.Left)));
+			Assert.AreEqual(expectation, input.FastParallelizedWith(new Ray(Location.Origin, Direction.Left)));
+			Assert.AreEqual(expectation, input.FastParallelizedWith(new BoundedRay(Location.Origin, (1f, 0f, 0f))));
+		}
+
+		// Various parallelizations from behind the plane
+		AssertAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Left),
+			new Line(new Location(0f, 0f, 0f), Direction.Left)
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Right),
+			new Line(new Location(0f, 0f, 0f), Direction.Right)
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Left),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, 1f, 0f))
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Right),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, 1f, 0f))
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Left),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, -1f, 0f))
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Right),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 0f))
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Left),
+			new Line(new Location(0f, 0f, 0f), Direction.Left)
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Right),
+			new Line(new Location(0f, 0f, 0f), Direction.Right)
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Left),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, 1f, 0f))
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Right),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, 1f, 0f))
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Left),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, -1f, 0f))
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Right),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 0f))
+		);
+
+		// Various parallelizations from in front the dir
+		AssertAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Left),
+			new Line(new Location(0f, 2f, 0f), Direction.Left)
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Right),
+			new Line(new Location(0f, 2f, 0f), Direction.Right)
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Left),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, 1f, 0f))
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Right),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f))
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Left),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, -1f, 0f))
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Right),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, -1f, 0f))
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Left),
+			new Line(new Location(0f, 2f, 0f), Direction.Left)
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Right),
+			new Line(new Location(0f, 2f, 0f), Direction.Right)
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Left),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, 1f, 0f))
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Right),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f))
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Left),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, -1f, 0f))
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Right),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, -1f, 0f))
+		);
+
+		// Parallelizations from perpendicular directions
+		AssertAgainstLeft(
+			null,
+			new Line(new Location(0f, 2f, 0f), Direction.Up)
+		);
+		AssertAgainstLeft(
+			null,
+			new Line(new Location(0f, 2f, 0f), Direction.Down)
+		);
+		AssertAgainstLeft(
+			null,
+			new Line(new Location(0f, 0f, 0f), Direction.Up)
+		);
+		AssertAgainstLeft(
+			null,
+			new Line(new Location(0f, 0f, 0f), Direction.Down)
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyOrthogonalizeAgainstDirectionsAndLineLikes() {
+		void AssertAgainstLeft(Line? expectation, Line input) {
+			Assert.AreEqual(expectation, input.OrthogonalizedAgainst(Direction.Left));
+			Assert.AreEqual(expectation, input.OrthogonalizedAgainst(new Line(Location.Origin, Direction.Left)));
+			Assert.AreEqual(expectation, input.OrthogonalizedAgainst(new Ray(Location.Origin, Direction.Left)));
+			Assert.AreEqual(expectation, input.OrthogonalizedAgainst(new BoundedRay(Location.Origin, (1f, 0f, 0f))));
+		}
+		void AssertFastAgainstLeft(Line expectation, Line input) {
+			Assert.AreEqual(expectation, input.FastOrthogonalizedAgainst(Direction.Left));
+			Assert.AreEqual(expectation, input.FastOrthogonalizedAgainst(new Line(Location.Origin, Direction.Left)));
+			Assert.AreEqual(expectation, input.FastOrthogonalizedAgainst(new Ray(Location.Origin, Direction.Left)));
+			Assert.AreEqual(expectation, input.FastOrthogonalizedAgainst(new BoundedRay(Location.Origin, (1f, 0f, 0f))));
+		}
+
+		// Various orthogonalizations from behind the plane
+		AssertAgainstLeft(
+			null,
+			new Line(new Location(0f, 0f, 0f), Direction.Left)
+		);
+		AssertAgainstLeft(
+			null,
+			new Line(new Location(0f, 0f, 0f), Direction.Right)
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Up),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, 1f, 0f))
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Up),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, 1f, 0f))
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Down),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, -1f, 0f))
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Down),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 0f))
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Up),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, 1f, 0f))
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Up),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, 1f, 0f))
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Down),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, -1f, 0f))
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Down),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 0f))
+		);
+
+		// Various orthogonalizations from in front the plane
+		AssertAgainstLeft(
+		null,
+			new Line(new Location(0f, 2f, 0f), Direction.Left)
+		);
+		AssertAgainstLeft(
+		null,
+			new Line(new Location(0f, 2f, 0f), Direction.Right)
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Up),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, 1f, 0f))
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Up),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f))
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Down),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, -1f, 0f))
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Down),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, -1f, 0f))
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Up),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, 1f, 0f))
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Up),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f))
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Down),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, -1f, 0f))
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Down),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, -1f, 0f))
+		);
+
+		// Orthogonalizations from perpendicular directions
+		AssertAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Up),
+			new Line(new Location(0f, 2f, 0f), Direction.Up)
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 2f, 0f), Direction.Down),
+			new Line(new Location(0f, 2f, 0f), Direction.Down)
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Up),
+			new Line(new Location(0f, 0f, 0f), Direction.Up)
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 0f, 0f), Direction.Down),
+			new Line(new Location(0f, 0f, 0f), Direction.Down)
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyParallelizeWithDirectionsAndLineLikesUsingSpecifiedPivotPoint() {
+		void AssertAgainstLeft(Line? expectation, Line input, float pivotPointDistance) {
+			AssertToleranceEquals(expectation, input.ParallelizedWith(Direction.Left, pivotPointDistance), TestTolerance);
+			AssertToleranceEquals(expectation, input.ParallelizedWith(new Line(Location.Origin, Direction.Left), pivotPointDistance), TestTolerance);
+			AssertToleranceEquals(expectation, input.ParallelizedWith(new Ray(Location.Origin, Direction.Left), pivotPointDistance), TestTolerance);
+			AssertToleranceEquals(expectation, input.ParallelizedWith(new BoundedRay(Location.Origin, (1f, 0f, 0f)), pivotPointDistance), TestTolerance);
+		}
+		void AssertFastAgainstLeft(Line expectation, Line input, float pivotPointDistance) {
+			AssertToleranceEquals(expectation, input.FastParallelizedWith(Direction.Left, pivotPointDistance), TestTolerance);
+			AssertToleranceEquals(expectation, input.FastParallelizedWith(new Line(Location.Origin, Direction.Left), pivotPointDistance), TestTolerance);
+			AssertToleranceEquals(expectation, input.FastParallelizedWith(new Ray(Location.Origin, Direction.Left), pivotPointDistance), TestTolerance);
+			AssertToleranceEquals(expectation, input.FastParallelizedWith(new BoundedRay(Location.Origin, (1f, 0f, 0f)), pivotPointDistance), TestTolerance);
+		}
+
+		// Various parallelizations from behind the plane
+		AssertAgainstLeft(
+			new Line(new Location(100f, 0f, 0f), Direction.Left),
+			new Line(new Location(0f, 0f, 0f), Direction.Left), 100f
+		);
+		AssertAgainstLeft(
+			new Line(new Location(100f, 0f, 0f), Direction.Right),
+			new Line(new Location(0f, 0f, 0f), Direction.Right), -100f
+		);
+		AssertAgainstLeft(
+			new Line(new Location(100f / MathF.Sqrt(2f), 100f / MathF.Sqrt(2f), 0f), Direction.Left),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, 1f, 0f)), 100f
+		);
+		AssertAgainstLeft(
+			new Line(new Location(100f / MathF.Sqrt(2f), -100f / MathF.Sqrt(2f), 0f), Direction.Right),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, 1f, 0f)), -100f
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(100f, 0f, 0f), Direction.Left),
+			new Line(new Location(0f, 0f, 0f), Direction.Left), 100f
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(100f, 0f, 0f), Direction.Right),
+			new Line(new Location(0f, 0f, 0f), Direction.Right), -100f
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(100f / MathF.Sqrt(2f), 100f / MathF.Sqrt(2f), 0f), Direction.Left),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, 1f, 0f)), 100f
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(100f / MathF.Sqrt(2f), -100f / MathF.Sqrt(2f), 0f), Direction.Right),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, 1f, 0f)), -100f
+		);
+
+		// Various parallelizations from in front the plane
+		AssertAgainstLeft(
+			new Line(new Location(100f, 2f, 0f), Direction.Left),
+			new Line(new Location(0f, 2f, 0f), Direction.Left), 100f
+		);
+		AssertAgainstLeft(
+			new Line(new Location(100f, 2f, 0f), Direction.Right),
+			new Line(new Location(0f, 2f, 0f), Direction.Right), -100f
+		);
+		AssertAgainstLeft(
+			new Line(new Location(100f / MathF.Sqrt(2f), 100f / MathF.Sqrt(2f) + 2f, 0f), Direction.Left),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, 1f, 0f)), 100f
+		);
+		AssertAgainstLeft(
+			new Line(new Location(100f / MathF.Sqrt(2f), -100f / MathF.Sqrt(2f) + 2f, 0f), Direction.Right),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f)), -100f
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(100f, 2f, 0f), Direction.Left),
+			new Line(new Location(0f, 2f, 0f), Direction.Left), 100f
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(100f, 2f, 0f), Direction.Right),
+			new Line(new Location(0f, 2f, 0f), Direction.Right), -100f
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(100f / MathF.Sqrt(2f), 100f / MathF.Sqrt(2f) + 2f, 0f), Direction.Left),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, 1f, 0f)), 100f
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(100f / MathF.Sqrt(2f), -100f / MathF.Sqrt(2f) + 2f, 0f), Direction.Right),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f)), -100f
+		);
+
+		// Parallelizations from perpendicular directions
+		AssertAgainstLeft(
+			null,
+			new Line(new Location(0f, 2f, 0f), Direction.Up), 100f
+		);
+		AssertAgainstLeft(
+			null,
+			new Line(new Location(0f, 2f, 0f), Direction.Down), -100f
+		);
+		AssertAgainstLeft(
+			null,
+			new Line(new Location(0f, 0f, 0f), Direction.Up), 100f
+		);
+		AssertAgainstLeft(
+			null,
+			new Line(new Location(0f, 0f, 0f), Direction.Down), -100f
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyOrthogonalizeAgainstDirectionsAndLineLikesUsingSpecifiedPivotPoint() {
+		void AssertAgainstLeft(Line? expectation, Line input, float pivotPointDistance) {
+			AssertToleranceEquals(expectation, input.OrthogonalizedAgainst(Direction.Left, pivotPointDistance), TestTolerance);
+			AssertToleranceEquals(expectation, input.OrthogonalizedAgainst(new Line(Location.Origin, Direction.Left), pivotPointDistance), TestTolerance);
+			AssertToleranceEquals(expectation, input.OrthogonalizedAgainst(new Ray(Location.Origin, Direction.Left), pivotPointDistance), TestTolerance);
+			AssertToleranceEquals(expectation, input.OrthogonalizedAgainst(new BoundedRay(Location.Origin, (1f, 0f, 0f)), pivotPointDistance), TestTolerance);
+		}
+		void AssertFastAgainstLeft(Line expectation, Line input, float pivotPointDistance) {
+			AssertToleranceEquals(expectation, input.FastOrthogonalizedAgainst(Direction.Left, pivotPointDistance), TestTolerance);
+			AssertToleranceEquals(expectation, input.FastOrthogonalizedAgainst(new Line(Location.Origin, Direction.Left), pivotPointDistance), TestTolerance);
+			AssertToleranceEquals(expectation, input.FastOrthogonalizedAgainst(new Ray(Location.Origin, Direction.Left), pivotPointDistance), TestTolerance);
+			AssertToleranceEquals(expectation, input.FastOrthogonalizedAgainst(new BoundedRay(Location.Origin, (1f, 0f, 0f)), pivotPointDistance), TestTolerance);
+		}
+
+		// Various orthogonalizations from behind the plane
+		AssertAgainstLeft(
+			null,
+			new Line(new Location(0f, 0f, 0f), Direction.Left), 100f
+		);
+		AssertAgainstLeft(
+			null,
+			new Line(new Location(0f, 0f, 0f), Direction.Right), -100f
+		);
+		AssertAgainstLeft(
+			new Line(new Location(100f / MathF.Sqrt(2f), 100f / MathF.Sqrt(2f), 0f), Direction.Up),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, 1f, 0f)), 100f
+		);
+		AssertAgainstLeft(
+			new Line(new Location(100f / MathF.Sqrt(2f), 100f / MathF.Sqrt(2f), 0f), Direction.Down),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 0f)), -100f
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(100f / MathF.Sqrt(2f), 100f / MathF.Sqrt(2f), 0f), Direction.Up),
+			new Line(new Location(0f, 0f, 0f), new Direction(1f, 1f, 0f)), 100f
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(100f / MathF.Sqrt(2f), 100f / MathF.Sqrt(2f), 0f), Direction.Down),
+			new Line(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 0f)), -100f
+		);
+
+		// Various orthogonalizations from in front the plane
+		AssertAgainstLeft(
+			null,
+			new Line(new Location(0f, 2f, 0f), Direction.Left), 100f
+		);
+		AssertAgainstLeft(
+			null,
+			new Line(new Location(0f, 2f, 0f), Direction.Right), -100f
+		);
+		AssertAgainstLeft(
+			new Line(new Location(100f / MathF.Sqrt(2f), -100f / MathF.Sqrt(2f) + 2f, 0f), Direction.Down),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, -1f, 0f)), 100f
+		);
+		AssertAgainstLeft(
+			new Line(new Location(100f / MathF.Sqrt(2f), -100f / MathF.Sqrt(2f) + 2f, 0f), Direction.Up),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f)), -100f
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(100f / MathF.Sqrt(2f), -100f / MathF.Sqrt(2f) + 2f, 0f), Direction.Down),
+			new Line(new Location(0f, 2f, 0f), new Direction(1f, -1f, 0f)), 100f
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(100f / MathF.Sqrt(2f), -100f / MathF.Sqrt(2f) + 2f, 0f), Direction.Up),
+			new Line(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f)), -100f
+		);
+
+		// Orthogonalizations from perpendicular directions
+		AssertAgainstLeft(
+			new Line(new Location(0f, 102f, 0f), Direction.Up),
+			new Line(new Location(0f, 2f, 0f), Direction.Up), 100f
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, -98f, 0f), Direction.Down),
+			new Line(new Location(0f, 2f, 0f), Direction.Down), -100f
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, 100f, 0f), Direction.Up),
+			new Line(new Location(0f, 0f, 0f), Direction.Up), 100f
+		);
+		AssertAgainstLeft(
+			new Line(new Location(0f, -100f, 0f), Direction.Down),
+			new Line(new Location(0f, 0f, 0f), Direction.Down), -100f
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 102f, 0f), Direction.Up),
+			new Line(new Location(0f, 2f, 0f), Direction.Up), 100f
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, -98f, 0f), Direction.Down),
+			new Line(new Location(0f, 2f, 0f), Direction.Down), -100f
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, 100f, 0f), Direction.Up),
+			new Line(new Location(0f, 0f, 0f), Direction.Up), 100f
+		);
+		AssertFastAgainstLeft(
+			new Line(new Location(0f, -100f, 0f), Direction.Down),
+			new Line(new Location(0f, 0f, 0f), Direction.Down), -100f
+		);
 	}
 }

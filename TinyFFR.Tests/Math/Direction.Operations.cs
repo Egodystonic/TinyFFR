@@ -36,7 +36,7 @@ partial class DirectionTest {
 	[Test]
 	public void ShouldCorrectlyReverse() {
 		Assert.AreEqual(new Direction(-1f, -2f, 3f), -OneTwoNegThree);
-		Assert.AreEqual(-OneTwoNegThree, OneTwoNegThree.Inverted);
+		Assert.AreEqual(-OneTwoNegThree, OneTwoNegThree.Flipped);
 		Assert.AreEqual(Direction.None, -Direction.None);
 
 		Assert.AreEqual(Direction.Left, -Direction.Right);
@@ -556,7 +556,7 @@ partial class DirectionTest {
 	}
 
 	[Test]
-	public void ShouldCorrectlyExposeDotProductAsSimilarity() {
+	public void ShouldCorrectlyClampDotProduct() {
 		var testList = new List<Direction>();
 		for (var x = -5f; x <= 5f; x += 1f) {
 			for (var y = -5f; y <= 5f; y += 1f) {
@@ -585,6 +585,14 @@ partial class DirectionTest {
 		Assert.AreEqual(0f, Direction.Forward.Dot(Direction.None));
 		Assert.AreEqual(0f, Direction.None.Dot(Direction.Forward));
 		Assert.AreEqual(0f, Direction.None.Dot(Direction.None));
+
+		Assert.GreaterOrEqual(1f, new Direction(-1f, -1f, -1f).Dot(new Direction(-1f, -1f, -1f)));
+		Assert.LessOrEqual(-1f, new Direction(-1f, -1f, -1f).Dot(new Direction(1f, 1f, 1f)));
+		Assert.GreaterOrEqual(1f, new Direction(1f, 1f, 1f).Dot(new Direction(1f, 1f, 1f)));
+		Assert.LessOrEqual(-1f, new Direction(1f, 1f, 1f).Dot(new Direction(-1f, -1f, -1f)));
+
+		// Specific case that failed in other testing that caused me to add the clamp:
+		Assert.LessOrEqual(-1f, new Direction(-3f, -3f, -3f).Flipped.Dot(new Direction(-3f, -3f, -3f)));
 	}
 
 	[Test]
@@ -592,8 +600,8 @@ partial class DirectionTest {
 		void AssertCombination(Direction expectation, Direction min, Direction max, Direction input) {
 			AssertToleranceEquals(expectation, input.Clamp(min, max), TestTolerance);
 			AssertToleranceEquals(expectation, input.Clamp(max, min), TestTolerance);
-			AssertToleranceEquals(expectation.Inverted, input.Inverted.Clamp(min.Inverted, max.Inverted), TestTolerance);
-			AssertToleranceEquals(expectation.Inverted, input.Inverted.Clamp(max.Inverted, min.Inverted), TestTolerance);
+			AssertToleranceEquals(expectation.Flipped, input.Flipped.Clamp(min.Flipped, max.Flipped), TestTolerance);
+			AssertToleranceEquals(expectation.Flipped, input.Flipped.Clamp(max.Flipped, min.Flipped), TestTolerance);
 		}
 
 		// Within arc after projection
@@ -730,26 +738,26 @@ partial class DirectionTest {
 		void AssertCombination(Direction? expectation3D, Plane plane, Direction arcCentre, Angle arcMax, Direction input) {
 			if (expectation3D == null) {
 				AssertToleranceEquals(null, input.Clamp(plane, arcCentre, arcMax, true), TestTolerance);
-				AssertToleranceEquals(null, input.Inverted.Clamp(plane, arcCentre.Inverted, arcMax, true), TestTolerance);
+				AssertToleranceEquals(null, input.Flipped.Clamp(plane, arcCentre.Flipped, arcMax, true), TestTolerance);
 				plane = plane.Flipped;
 				AssertToleranceEquals(null, input.Clamp(plane, arcCentre, arcMax, true), TestTolerance);
-				AssertToleranceEquals(null, input.Inverted.Clamp(plane, arcCentre.Inverted, arcMax, true), TestTolerance);
+				AssertToleranceEquals(null, input.Flipped.Clamp(plane, arcCentre.Flipped, arcMax, true), TestTolerance);
 				return;
 			}
 
 			AssertToleranceEquals(expectation3D.Value, input.Clamp(plane, arcCentre, arcMax, true), TestTolerance);
-			AssertToleranceEquals(expectation3D.Value.Inverted, input.Inverted.Clamp(plane, arcCentre.Inverted, arcMax, true), TestTolerance);
+			AssertToleranceEquals(expectation3D.Value.Flipped, input.Flipped.Clamp(plane, arcCentre.Flipped, arcMax, true), TestTolerance);
 			if (expectation3D != Direction.None) {
 				AssertToleranceEquals(expectation3D.Value.ProjectedOnTo(plane), input.Clamp(plane, arcCentre, arcMax, false), TestTolerance);
-				AssertToleranceEquals(expectation3D.Value.Inverted.ProjectedOnTo(plane), input.Inverted.Clamp(plane, arcCentre.Inverted, arcMax, false), TestTolerance);
+				AssertToleranceEquals(expectation3D.Value.Flipped.ProjectedOnTo(plane), input.Flipped.Clamp(plane, arcCentre.Flipped, arcMax, false), TestTolerance);
 			}
 
 			plane = plane.Flipped;
 			AssertToleranceEquals(expectation3D.Value, input.Clamp(plane, arcCentre, arcMax, true), TestTolerance);
-			AssertToleranceEquals(expectation3D.Value.Inverted, input.Inverted.Clamp(plane, arcCentre.Inverted, arcMax, true), TestTolerance);
+			AssertToleranceEquals(expectation3D.Value.Flipped, input.Flipped.Clamp(plane, arcCentre.Flipped, arcMax, true), TestTolerance);
 			if (expectation3D != Direction.None) {
 				AssertToleranceEquals(expectation3D.Value.ProjectedOnTo(plane), input.Clamp(plane, arcCentre, arcMax, false), TestTolerance);
-				AssertToleranceEquals(expectation3D.Value.Inverted.ProjectedOnTo(plane), input.Inverted.Clamp(plane, arcCentre.Inverted, arcMax, false), TestTolerance);
+				AssertToleranceEquals(expectation3D.Value.Flipped.ProjectedOnTo(plane), input.Flipped.Clamp(plane, arcCentre.Flipped, arcMax, false), TestTolerance);
 			}
 		}
 

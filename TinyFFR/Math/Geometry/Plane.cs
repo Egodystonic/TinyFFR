@@ -44,7 +44,7 @@ public readonly partial struct Plane : IMathPrimitive<Plane>, IDescriptiveString
 			throw new ArgumentException($"{nameof(FromPointClosestToOrigin)} can not be used when {nameof(pointClosestToOrigin)} is equal to {nameof(Location.Origin)} " +
 										$"as there are infinite possible solutions.", nameof(pointClosestToOrigin));
 		}
-		return new(normalFacesOrigin ? direction.Inverted : direction, vectFromOriginToClosestPoint.Length * (normalFacesOrigin ? -1f : 1f));
+		return new(normalFacesOrigin ? direction.Flipped : direction, vectFromOriginToClosestPoint.Length * (normalFacesOrigin ? -1f : 1f));
 	}
 
 	public static Plane FromTriangleOnSurface(Location a, Location b, Location c) {

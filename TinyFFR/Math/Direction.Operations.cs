@@ -45,11 +45,12 @@ partial struct Direction :
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Direction operator -(Direction operand) => operand.Inverted;
-	public Direction Inverted {
+	public static Direction operator -(Direction operand) => operand.Flipped;
+	public Direction Flipped {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(-AsVector4);
 	}
+	Direction IInvertible<Direction>.Inverted => Flipped;
 
 	public NearestOrientationResult<CardinalOrientation3D> NearestOrientationCardinal {
 		get {
@@ -88,8 +89,11 @@ partial struct Direction :
 
 
 	// TODO in XMLDoc indicate that this is the dot product of the two directions, and that therefore the range is 1 for identical, to -1 for complete opposite, with 0 being orthogonal; and that this is the cosine of the angle
+	// Maintainer's note: Clamping dot product is necessary to prevent nasty issues elsewhere.
+	// FP inaccuracy can result in values outside the -1 to 1 range, which then really fucks up stuff like inverse trigonometic functions (arccos/arcsin will return NaN).
+	// The expectation is that any two unit vectors' dot product will always be in the [-1, 1] range, so this just helps ensure that.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float Dot(Direction other) => Vector4.Dot(AsVector4, other.AsVector4);
+	public float Dot(Direction other) => Single.Clamp(Vector4.Dot(AsVector4, other.AsVector4), -1f, 1f);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float Dot(Vect other) => other.Dot(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

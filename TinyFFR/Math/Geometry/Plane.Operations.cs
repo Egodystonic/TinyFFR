@@ -42,8 +42,8 @@ partial struct Plane :
 	public static Plane operator *((Rotation Rotation, Location Pivot) rotTuple, Plane plane) => plane.RotatedAroundPoint(rotTuple.Rotation, rotTuple.Pivot);
 	public Plane RotatedAroundPoint(Rotation rot, Location pivotPoint) => new(Normal * rot, PointClosestTo(pivotPoint) * (pivotPoint, rot));
 
-	// TODO explain in XML that this is a value from 0 to 1, where 1 is a direction completely perpendicular to the plane and 0 is completely parallel; and is also the cosine of the angle formed with the normal
-	public float PerpendicularityWith(Direction direction) => MathF.Abs(Normal.Dot(direction));
+	//0 to 1, where 1 is a direction completely perpendicular to the plane and 0 is completely parallel; is also the cosine of the angle formed with the normal
+	float PerpendicularityWith(Direction direction) => MathF.Abs(Normal.Dot(direction));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(Plane plane, Direction dir) => plane.AngleTo(dir);

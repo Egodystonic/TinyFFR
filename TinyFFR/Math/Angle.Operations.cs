@@ -13,12 +13,12 @@ partial struct Angle :
 	static Angle IAdditiveIdentity<Angle, Angle>.AdditiveIdentity => Zero;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle operator -(Angle operand) => operand.Inverted;
-	public Angle Inverted {
+	public static Angle operator -(Angle operand) => operand.Negated;
+	public Angle Negated {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => FromRadians(-AsRadians);
 	}
-
+	Angle IInvertible<Angle>.Inverted => Negated;
 
 
 	public Angle Absolute { // TODO make it clear that this is not the same as normalizing

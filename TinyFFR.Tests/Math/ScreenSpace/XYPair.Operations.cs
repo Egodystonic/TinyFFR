@@ -23,7 +23,7 @@ partial class XYPairTest {
 	public void ShouldCorrectlyReverse() {
 		Assert.AreEqual(XYPair<float>.Zero, -XYPair<float>.Zero);
 		Assert.AreEqual(new XYPair<float>(-3f, -4f), -ThreeFourFloat);
-		Assert.AreEqual(new XYPair<float>(-1f, -1f), new XYPair<float>(1f, 1f).Inverted);
+		Assert.AreEqual(new XYPair<float>(-1f, -1f), new XYPair<float>(1f, 1f).Negated);
 	}
 
 	[Test]
@@ -182,11 +182,11 @@ partial class XYPairTest {
 	public void ShouldCorrectlyCalculateDistance() {
 		Assert.AreEqual(10f, ThreeFourFloat.DistanceFrom(-ThreeFourFloat), TestTolerance);
 		Assert.AreEqual(5f, ThreeFourFloat.DistanceFrom(default), TestTolerance);
-		Assert.AreEqual(5f, ThreeFourFloat.Inverted.DistanceFrom(default), TestTolerance);
+		Assert.AreEqual(5f, ThreeFourFloat.Negated.DistanceFrom(default), TestTolerance);
 
 		Assert.AreEqual(100f, ThreeFourFloat.DistanceSquaredFrom(-ThreeFourFloat), TestTolerance);
 		Assert.AreEqual(25f, ThreeFourFloat.DistanceSquaredFrom(default), TestTolerance);
-		Assert.AreEqual(25f, ThreeFourFloat.Inverted.DistanceSquaredFrom(default), TestTolerance);
+		Assert.AreEqual(25f, ThreeFourFloat.Negated.DistanceSquaredFrom(default), TestTolerance);
 	}
 
 	[Test]

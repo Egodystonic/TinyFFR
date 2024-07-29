@@ -10,6 +10,8 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 	public Ray ToRayFromStart() => new(StartPoint, Direction);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray ToRayFromEnd() => new(EndPoint, -Direction);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray ToRay(float signedDistanceAlongLine) => new(UnboundedLocationAtDistance(signedDistanceAlongLine), Direction);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line ToLine() => new(StartPoint, Direction);
@@ -90,7 +92,7 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 	public BoundedRay RotatedAroundStartBy(Rotation rotation) => new(_startPoint, _vect * rotation);
 	public BoundedRay RotatedAroundEndBy(Rotation rotation) {
 		var endPoint = _startPoint + _vect;
-		return new(endPoint + _vect.Inverted * rotation, endPoint);
+		return new(endPoint + _vect.Flipped * rotation, endPoint);
 	}
 	public BoundedRay RotatedAroundMiddleBy(Rotation rotation) {
 		var newVect = _vect * rotation;
@@ -281,6 +283,7 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 	public BoundedRay? OrthogonalizedAgainst(Direction direction) => OrthogonalizedAroundStartAgainst(direction);
 	public BoundedRay FastOrthogonalizedAgainst(Direction direction) => FastOrthogonalizedAroundStartAgainst(direction);
 
+	// TODO add these for Plane too, and add overloads for line types
 	public BoundedRay? ParallelizedAroundStartWith(Direction direction) {
 		var newVect = StartToEndVect.ParallelizedWith(direction);
 		return newVect == null ? null : FromStartPointAndVect(StartPoint, newVect.Value);

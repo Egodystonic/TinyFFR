@@ -52,11 +52,12 @@ partial struct Vect :
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator -(Vect operand) => operand.Inverted;
-	public Vect Inverted {
+	public static Vect operator -(Vect operand) => operand.Flipped;
+	public Vect Flipped {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(-AsVector4);
 	}
+	Vect IInvertible<Vect>.Inverted => Flipped;
 	public Vect? Reciprocal {
 		get {
 			if (X == 0f || Y == 0f || Z == 0f) return null;

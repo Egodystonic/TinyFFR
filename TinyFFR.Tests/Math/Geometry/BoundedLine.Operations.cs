@@ -16,6 +16,7 @@ partial class BoundedRayTest {
 	public void ShouldCorrectlyConvertToRay() {
 		AssertToleranceEquals(new Ray(TestRay.StartPoint, TestRay.Direction), TestRay.ToRayFromStart(), TestTolerance);
 		AssertToleranceEquals(new Ray(TestRay.EndPoint, -TestRay.Direction), TestRay.ToRayFromEnd(), TestTolerance);
+		AssertToleranceEquals(new Ray((2f, 2f, 2f), (1f, 1f, 1f)), new BoundedRay((0f, 0f, 0f), (4f, 4f, 4f)).ToRay(MathF.Sqrt(12f)), TestTolerance);
 	}
 
 	[Test]
@@ -2186,4 +2187,461 @@ partial class BoundedRayTest {
 		Assert.AreEqual(TestRay.Length, TestRay.BoundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * 10f + TestRay.Direction.AnyPerpendicular() * 10f), TestTolerance);
 		Assert.AreEqual(0f, TestRay.BoundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * -10f + TestRay.Direction.AnyPerpendicular() * 10f), TestTolerance);
 	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineColinearityWithOtherLineLikes() {
+		void AssertPair(bool expectation, BoundedRay ray, Ray other, float? lineThickness, Angle? tolerance) {
+			var flippedRay = ray.Flipped;
+			var otherAsLine = other.ToLine();
+			var otherAsFlippedLine = new Line(other.StartPoint, other.Direction.Flipped);
+			var otherAsBoundedRay = other.ToBoundedRay(100f);
+
+			// Line
+			Assert.AreEqual(expectation, ray.IsColinearWith(otherAsLine, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, otherAsLine.IsColinearWith(ray, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			Assert.AreEqual(expectation, ray.IsColinearWith(otherAsFlippedLine, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, otherAsLine.IsColinearWith(flippedRay, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			Assert.AreEqual(expectation, flippedRay.IsColinearWith(otherAsLine, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, otherAsFlippedLine.IsColinearWith(ray, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			Assert.AreEqual(expectation, flippedRay.IsColinearWith(otherAsFlippedLine, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, otherAsFlippedLine.IsColinearWith(flippedRay, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			// Ray
+			Assert.AreEqual(expectation, ray.IsColinearWith(other, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, other.IsColinearWith(ray, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			Assert.AreEqual(expectation, ray.IsColinearWith(other.Flipped, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, other.IsColinearWith(flippedRay, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			Assert.AreEqual(expectation, flippedRay.IsColinearWith(other, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, other.Flipped.IsColinearWith(ray, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			Assert.AreEqual(expectation, flippedRay.IsColinearWith(other.Flipped, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, other.Flipped.IsColinearWith(flippedRay, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			// BoundedRay
+			Assert.AreEqual(expectation, ray.IsColinearWith(otherAsBoundedRay, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, otherAsBoundedRay.IsColinearWith(ray, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			Assert.AreEqual(expectation, ray.IsColinearWith(otherAsBoundedRay.Flipped, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, otherAsBoundedRay.IsColinearWith(flippedRay, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			Assert.AreEqual(expectation, flippedRay.IsColinearWith(otherAsBoundedRay, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, otherAsBoundedRay.Flipped.IsColinearWith(ray, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+
+			Assert.AreEqual(expectation, flippedRay.IsColinearWith(otherAsBoundedRay.Flipped, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+			Assert.AreEqual(expectation, otherAsBoundedRay.Flipped.IsColinearWith(flippedRay, lineThickness ?? ILineLike.DefaultLineThickness, tolerance ?? ILineLike.DefaultAngularToleranceDegrees));
+		}
+
+		AssertPair(true, TestRay, TestRay.ToRayFromStart(), null, null);
+		AssertPair(false, TestRay.MovedBy(TestRay.Direction.AnyPerpendicular() * 1f), TestRay.ToRayFromStart(), 0.45f, null);
+		AssertPair(true, TestRay.MovedBy(TestRay.Direction.AnyPerpendicular() * 1f), TestRay.ToRayFromStart(), 0.55f, null);
+		AssertPair(false, TestRay.RotatedAroundStartBy((TestRay.Direction >> TestRay.Direction.AnyPerpendicular()).WithAngle(1f)), TestRay.ToRayFromStart(), null, 0.9f);
+		AssertPair(true, TestRay.RotatedAroundStartBy((TestRay.Direction >> TestRay.Direction.AnyPerpendicular()).WithAngle(1f)), TestRay.ToRayFromStart(), null, 1.1f);
+		AssertPair(false, TestRay.MovedBy(TestRay.Direction.AnyPerpendicular() * 1f).RotatedAroundStartBy((TestRay.Direction >> TestRay.Direction.AnyPerpendicular()).WithAngle(1f)), TestRay.ToRayFromStart(), 0.45f, 0.9f);
+		AssertPair(true, TestRay.MovedBy(TestRay.Direction.AnyPerpendicular() * 1f).RotatedAroundStartBy((TestRay.Direction >> TestRay.Direction.AnyPerpendicular()).WithAngle(1f)), TestRay.ToRayFromStart(), 0.55f, 1.1f);
+		AssertPair(false, TestRay.RotatedAroundStartBy((TestRay.Direction >> TestRay.Direction.AnyPerpendicular()).WithAngle(1f)).MovedBy(TestRay.Direction.AnyPerpendicular() * 1f), TestRay.ToRayFromStart(), 0.45f, 0.9f);
+		AssertPair(true, TestRay.RotatedAroundStartBy((TestRay.Direction >> TestRay.Direction.AnyPerpendicular()).WithAngle(1f)).MovedBy(TestRay.Direction.AnyPerpendicular() * 1f), TestRay.ToRayFromStart(), 0.55f, 1.1f);
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineParallelismWithOtherElements() {
+		void AssertCombination(bool expectation, BoundedRay ray, Direction dir, Angle? tolerance) {
+			var flippedRay = ray.Flipped;
+			var plane = new Plane(dir.AnyPerpendicular(), Location.Origin);
+			var dirLine = new Line(Location.Origin, dir);
+			var dirRay = new Ray(Location.Origin, dir);
+			var dirRayBounded = BoundedRay.FromStartPointAndVect(Location.Origin, dir * 10f);
+
+			if (tolerance == null) {
+				Assert.AreEqual(expectation, ray.IsParallelTo(dir));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dir));
+				Assert.AreEqual(expectation, ray.IsParallelTo(dir.Flipped));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dir.Flipped));
+
+				Assert.AreEqual(expectation, ray.IsParallelTo(plane));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(plane));
+				Assert.AreEqual(expectation, ray.IsParallelTo(plane.Flipped));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(plane.Flipped));
+
+				Assert.AreEqual(expectation, ray.IsParallelTo(dirLine));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dirLine));
+				Assert.AreEqual(expectation, ray.IsParallelTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped)));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped)));
+
+				Assert.AreEqual(expectation, ray.IsParallelTo(dirRay));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dirRay));
+				Assert.AreEqual(expectation, ray.IsParallelTo(dirRay.Flipped));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dirRay.Flipped));
+
+				Assert.AreEqual(expectation, ray.IsParallelTo(dirRayBounded));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dirRayBounded));
+				Assert.AreEqual(expectation, ray.IsParallelTo(dirRayBounded.Flipped));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dirRayBounded.Flipped));
+			}
+			else {
+				Assert.AreEqual(expectation, ray.IsParallelTo(dir, tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dir, tolerance.Value));
+				Assert.AreEqual(expectation, ray.IsParallelTo(dir.Flipped, tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dir.Flipped, tolerance.Value));
+
+				Assert.AreEqual(expectation, ray.IsParallelTo(plane, tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(plane, tolerance.Value));
+				Assert.AreEqual(expectation, ray.IsParallelTo(plane.Flipped, tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(plane.Flipped, tolerance.Value));
+
+				Assert.AreEqual(expectation, ray.IsParallelTo(dirLine, tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dirLine, tolerance.Value));
+				Assert.AreEqual(expectation, ray.IsParallelTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped), tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped), tolerance.Value));
+
+				Assert.AreEqual(expectation, ray.IsParallelTo(dirRay, tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dirRay, tolerance.Value));
+				Assert.AreEqual(expectation, ray.IsParallelTo(dirRay.Flipped, tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dirRay.Flipped, tolerance.Value));
+
+				Assert.AreEqual(expectation, ray.IsParallelTo(dirRayBounded, tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dirRayBounded, tolerance.Value));
+				Assert.AreEqual(expectation, ray.IsParallelTo(dirRayBounded.Flipped, tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dirRayBounded.Flipped, tolerance.Value));
+			}
+		}
+
+		AssertCombination(true, new BoundedRay(Location.Origin, (0f, 1f, 0f)), Direction.Up, null);
+		AssertCombination(false, new BoundedRay(Location.Origin, (0f, 1f, 0f)), Direction.Left, null);
+		AssertCombination(false, new BoundedRay(Location.Origin, (0f, 1f, 0f)), (1f, 1f, 0f), 44f);
+		AssertCombination(true, new BoundedRay(Location.Origin, (0f, 1f, 0f)), (1f, 1f, 0f), 46f);
+
+		Assert.AreEqual(false, TestRay.IsParallelTo(Direction.None));
+		Assert.AreEqual(false, TestRay.IsParallelTo(new BoundedRay(Location.Origin, Location.Origin)));
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineOrthogonalityWithOtherElements() {
+		void AssertCombination(bool expectation, BoundedRay ray, Direction dir, Angle? tolerance) {
+			var flippedRay = ray.Flipped;
+			var plane = new Plane(dir.AnyPerpendicular(), Location.Origin);
+			var dirLine = new Line(Location.Origin, dir);
+			var dirRay = new Ray(Location.Origin, dir);
+			var dirRayBounded = BoundedRay.FromStartPointAndVect(Location.Origin, dir * 10f);
+
+			if (tolerance == null) {
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dir));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dir));
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dir.Flipped));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dir.Flipped));
+
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(plane));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(plane));
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(plane.Flipped));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(plane.Flipped));
+
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dirLine));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dirLine));
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped)));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped)));
+
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dirRay));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dirRay));
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dirRay.Flipped));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dirRay.Flipped));
+
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dirRayBounded));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dirRayBounded));
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dirRayBounded.Flipped));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dirRayBounded.Flipped));
+			}
+			else {
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dir, tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dir, tolerance.Value));
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dir.Flipped, tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dir.Flipped, tolerance.Value));
+
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(plane, tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(plane, tolerance.Value));
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(plane.Flipped, tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(plane.Flipped, tolerance.Value));
+
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dirLine, tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dirLine, tolerance.Value));
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped), tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped), tolerance.Value));
+
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dirRay, tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dirRay, tolerance.Value));
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dirRay.Flipped, tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dirRay.Flipped, tolerance.Value));
+
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dirRayBounded, tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dirRayBounded, tolerance.Value));
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dirRayBounded.Flipped, tolerance.Value));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dirRayBounded.Flipped, tolerance.Value));
+			}
+		}
+
+		AssertCombination(true, new BoundedRay(Location.Origin, (0f, 1f, 0f)), Direction.Left, null);
+		AssertCombination(false, new BoundedRay(Location.Origin, (0f, 1f, 0f)), Direction.Up, null);
+		AssertCombination(false, new BoundedRay(Location.Origin, (0f, 1f, 0f)), (1f, 1f, 0f), 44f);
+		AssertCombination(true, new BoundedRay(Location.Origin, (0f, 1f, 0f)), (1f, 1f, 0f), 46f);
+
+		Assert.AreEqual(false, TestRay.IsOrthogonalTo(Direction.None));
+		Assert.AreEqual(false, TestRay.IsOrthogonalTo(new BoundedRay(Location.Origin, Location.Origin)));
+	}
+
+	[Test]
+	public void ShouldCorrectlyParallelizeWithDirectionsAndLineLikes() {
+		void AssertAgainstLeft(BoundedRay? expectation, BoundedRay input) {
+			Assert.AreEqual(expectation, input.ParallelizedWith(Direction.Left));
+			Assert.AreEqual(expectation, input.ParallelizedWith(new Line(Location.Origin, Direction.Left)));
+			Assert.AreEqual(expectation, input.ParallelizedWith(new Ray(Location.Origin, Direction.Left)));
+			Assert.AreEqual(expectation, input.ParallelizedWith(new BoundedRay(Location.Origin, (1f, 0f, 0f))));
+		}
+		void AssertFastAgainstLeft(BoundedRay expectation, BoundedRay input) {
+			Assert.AreEqual(expectation, input.FastParallelizedWith(Direction.Left));
+			Assert.AreEqual(expectation, input.FastParallelizedWith(new Line(Location.Origin, Direction.Left)));
+			Assert.AreEqual(expectation, input.FastParallelizedWith(new Ray(Location.Origin, Direction.Left)));
+			Assert.AreEqual(expectation, input.FastParallelizedWith(new BoundedRay(Location.Origin, (1f, 0f, 0f))));
+		}
+
+		// Various parallelizations from behind the plane
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Left * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Left * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Right * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Right * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Left * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 0f) * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Right * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, 1f, 0f) * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Left * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, -1f, 0f) * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Right * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 0f) * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Left * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Left * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Right * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Right * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Left * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 0f) * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Right * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, 1f, 0f) * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Left * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, -1f, 0f) * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Right * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 0f) * 10f)
+		);
+
+		// Various parallelizations from in front the dir
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Left * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Left * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Right * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Right * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Left * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), new Direction(1f, 1f, 0f) * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Right * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f) * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Left * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), new Direction(1f, -1f, 0f) * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Right * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), new Direction(-1f, -1f, 0f) * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Left * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Left * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Right * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Right * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Left * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), new Direction(1f, 1f, 0f) * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Right * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f) * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Left * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), new Direction(1f, -1f, 0f) * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Right * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), new Direction(-1f, -1f, 0f) * 10f)
+		);
+
+		// Parallelizations from perpendicular directions
+		AssertAgainstLeft(
+			null,
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Up * 10f)
+		);
+		AssertAgainstLeft(
+			null,
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Down * 10f)
+		);
+		AssertAgainstLeft(
+			null,
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Up * 10f)
+		);
+		AssertAgainstLeft(
+			null,
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Down * 10f)
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyOrthogonalizeAgainstDirectionsAndLineLikes() {
+		void AssertAgainstLeft(BoundedRay? expectation, BoundedRay input) {
+			Assert.AreEqual(expectation, input.OrthogonalizedAgainst(Direction.Left));
+			Assert.AreEqual(expectation, input.OrthogonalizedAgainst(new Line(Location.Origin, Direction.Left)));
+			Assert.AreEqual(expectation, input.OrthogonalizedAgainst(new Ray(Location.Origin, Direction.Left)));
+			Assert.AreEqual(expectation, input.OrthogonalizedAgainst(new BoundedRay(Location.Origin, (1f, 0f, 0f))));
+		}
+		void AssertFastAgainstLeft(BoundedRay expectation, BoundedRay input) {
+			Assert.AreEqual(expectation, input.FastOrthogonalizedAgainst(Direction.Left));
+			Assert.AreEqual(expectation, input.FastOrthogonalizedAgainst(new Line(Location.Origin, Direction.Left)));
+			Assert.AreEqual(expectation, input.FastOrthogonalizedAgainst(new Ray(Location.Origin, Direction.Left)));
+			Assert.AreEqual(expectation, input.FastOrthogonalizedAgainst(new BoundedRay(Location.Origin, (1f, 0f, 0f))));
+		}
+
+		// Various orthogonalizations from behind the plane
+		AssertAgainstLeft(
+			null,
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Left * 10f)
+		);
+		AssertAgainstLeft(
+			null,
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Right * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Up * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 0f)  * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Up * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, 1f, 0f)  * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Down * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, -1f, 0f)  * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Down * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 0f)  * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Up * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 0f)  * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Up * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, 1f, 0f)  * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Down * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, -1f, 0f)  * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Down * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, 0f)  * 10f)
+		);
+
+		// Various orthogonalizations from in front the plane
+		AssertAgainstLeft(
+		null,
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Left * 10f)
+		);
+		AssertAgainstLeft(
+		null,
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Right * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Up * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), new Direction(1f, 1f, 0f)  * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Up * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f)  * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Down * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), new Direction(1f, -1f, 0f)  * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Down * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), new Direction(-1f, -1f, 0f)  * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Up * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), new Direction(1f, 1f, 0f)  * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Up * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), new Direction(-1f, 1f, 0f)  * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Down * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), new Direction(1f, -1f, 0f)  * 10f)
+		);
+		AssertFastAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Down * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), new Direction(-1f, -1f, 0f)  * 10f)
+		);
+
+		// Orthogonalizations from perpendicular directions
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Up * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Up * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Down * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Down * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Up * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Up * 10f)
+		);
+		AssertAgainstLeft(
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Down * 10f),
+			BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), Direction.Down * 10f)
+		);
+	}
+
+	
 }

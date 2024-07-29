@@ -12,10 +12,11 @@ partial struct Rotation :
 	IScalable<Rotation>,
 	IInterpolatable<Rotation> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation operator -(Rotation operand) => operand.Inverted;
-	public Rotation Inverted {
+	public static Rotation operator -(Rotation operand) => operand.Reversed;
+	public Rotation Reversed {
 		get => new(new(-AsQuaternion.X, -AsQuaternion.Y, -AsQuaternion.Z, AsQuaternion.W));
 	}
+	Rotation IInvertible<Rotation>.Inverted => Reversed;
 	static Rotation IAdditiveIdentity<Rotation, Rotation>.AdditiveIdentity => None;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -43,7 +44,7 @@ partial struct Rotation :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Rotation Plus(Rotation other) => new(other.AsQuaternion * AsQuaternion);
 	// Was previously known as "DifferenceTo()" because this method is trying to mimic the standard - function for Reals/Integers (e.g. 7 - 3 = 4, 4 is the difference of 7 to 3).
-	public Rotation Minus(Rotation other) => FromQuaternion(Inverted.AsQuaternion * other.AsQuaternion);
+	public Rotation Minus(Rotation other) => FromQuaternion(Reversed.AsQuaternion * other.AsQuaternion);
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

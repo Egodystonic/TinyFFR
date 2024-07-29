@@ -23,11 +23,12 @@ partial struct XYPair<T> :
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair<T> operator -(XYPair<T> operand) => operand.Inverted;
-	public XYPair<T> Inverted {
+	public static XYPair<T> operator -(XYPair<T> operand) => operand.Negated;
+	public XYPair<T> Negated {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(-X, -Y);
 	}
+	XYPair<T> IInvertible<XYPair<T>>.Inverted => Negated;
 	public XYPair<T>? Reciprocal {
 		get {
 			if (X == T.Zero || Y == T.Zero) return null;

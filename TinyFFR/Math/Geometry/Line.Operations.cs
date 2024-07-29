@@ -8,7 +8,7 @@ using System.Numerics;
 namespace Egodystonic.TinyFFR;
 
 public readonly partial struct Line {
-	public Ray ToRay(float signedDistanceAlongLine, bool flipDirection) => new(LocationAtDistance(signedDistanceAlongLine), flipDirection ? Direction.Inverted : Direction);
+	public Ray ToRay(float signedDistanceAlongLine, bool flipDirection) => new(LocationAtDistance(signedDistanceAlongLine), flipDirection ? Direction.Flipped : Direction);
 	public BoundedRay ToBoundedRay(float startSignedDistanceAlongLine, float endSignedDistanceAlongLine) {
 		return new(LocationAtDistance(startSignedDistanceAlongLine), LocationAtDistance(endSignedDistanceAlongLine));
 	}
@@ -234,14 +234,14 @@ public readonly partial struct Line {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line? OrthogonalizedAgainst(Direction dir) => OrthogonalizedAgainst(dir, 0f);
 	public Line? OrthogonalizedAgainst(Direction dir, float pivotPointSignedDistance) {
-		var newDir = Direction.ParallelizedWith(dir);
+		var newDir = Direction.OrthogonalizedAgainst(dir);
 		if (newDir == null) return null;
 		return new Line(LocationAtDistance(pivotPointSignedDistance), newDir.Value);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line FastOrthogonalizedAgainst(Direction dir) => FastOrthogonalizedAgainst(dir, 0f);
-	public Line FastOrthogonalizedAgainst(Direction dir, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.FastParallelizedWith(dir));
+	public Line FastOrthogonalizedAgainst(Direction dir, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.FastOrthogonalizedAgainst(dir));
 
 	public Line? ParallelizedWith(Line line, float pivotPointSignedDistance) {
 		var newDir = Direction.ParallelizedWith(line.Direction);

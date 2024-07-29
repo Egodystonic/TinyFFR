@@ -59,7 +59,7 @@ partial class VectTest {
 	public void ShouldCorrectlyReverse() {
 		Assert.AreEqual(Vect.Zero, -Vect.Zero);
 		Assert.AreEqual(new Vect(-1f, -2f, 3f), -OneTwoNegThree);
-		Assert.AreEqual(new Vect(-1f, -1f, -1f), new Vect(1f, 1f, 1f).Inverted);
+		Assert.AreEqual(new Vect(-1f, -1f, -1f), new Vect(1f, 1f, 1f).Flipped);
 	}
 
 	[Test]
@@ -298,7 +298,7 @@ partial class VectTest {
 		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f), OneTwoNegThree.WithLengthOne(), TestTolerance);
 		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * 2f, OneTwoNegThree.WithLength(2f), TestTolerance);
 		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * -1f, OneTwoNegThree.WithLength(-1f), TestTolerance);
-		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * -1f, OneTwoNegThree.WithLengthOne().Inverted, TestTolerance);
+		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * -1f, OneTwoNegThree.WithLengthOne().Flipped, TestTolerance);
 		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * -2f, OneTwoNegThree.WithLength(-2f), TestTolerance);
 		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * 0.5f, OneTwoNegThree.WithLength(0.5f), TestTolerance);
 		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * -0.5f, OneTwoNegThree.WithLength(-0.5f), TestTolerance);
