@@ -115,7 +115,7 @@ public readonly partial struct Plane : IMathPrimitive<Plane>, IDescriptiveString
 	#region Equality
 	public bool Equals(Plane other) => _normal.Equals(other._normal) && _smallestDistanceFromOriginAlongNormal.Equals(other._smallestDistanceFromOriginAlongNormal);
 	public bool Equals(Plane other, float tolerance) => Normal.Equals(other.Normal, tolerance) && PointClosestToOrigin.Equals(other.PointClosestToOrigin, tolerance);
-	public bool EqualsWithinAngleAndLocation(Plane other, Angle angle, float distance) => Normal.EqualsWithinAngle(other.Normal, angle) && PointClosestToOrigin.EqualsWithinDistance(other.PointClosestToOrigin, distance);
+	public bool EqualsWithinDistanceAndAngle(Plane other, float distance, Angle angle) => Normal.EqualsWithinAngle(other.Normal, angle) && PointClosestToOrigin.EqualsWithinDistance(other.PointClosestToOrigin, distance);
 	public override bool Equals(object? obj) => obj is Plane other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(_normal, _smallestDistanceFromOriginAlongNormal);
 	public static bool operator ==(Plane left, Plane right) => left.Equals(right);
