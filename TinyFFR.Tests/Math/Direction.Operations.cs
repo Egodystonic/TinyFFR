@@ -19,10 +19,28 @@ partial class DirectionTest {
 
 	[Test]
 	public void ShouldUseAppropriateErrorMarginForUnitLengthTest() {
+		const int NumNonNormalizedRotations = 200;
+
 		Assert.AreEqual(true, Direction.FromVector3PreNormalized(0.707f, 0f, -0.707f).IsUnitLength);
 		Assert.AreEqual(true, Direction.FromVector3PreNormalized(0.706f, 0f, -0.707f).IsUnitLength);
 		Assert.AreEqual(true, Direction.FromVector3PreNormalized(0.707f, 0f, -0.706f).IsUnitLength);
 		Assert.AreEqual(false, Direction.FromVector3PreNormalized(0.706f, 0f, -0.706f).IsUnitLength);
+
+		for (var x = -5f; x <= 5f; x += 1f) {
+			for (var y = -5f; y <= 5f; y += 1f) {
+				for (var z = -5f; z <= 5f; z += 1f) {
+					var dir = new Direction(x, y, z);
+					if (dir == Direction.None) {
+						Assert.IsFalse(dir.IsUnitLength);
+						continue;
+					}
+
+					var rot = (dir >> dir.AnyPerpendicular()) * 0.1f;
+					for (var i = 0; i < NumNonNormalizedRotations; ++i) dir = rot.RotateWithoutRenormalizing(dir);
+					Assert.IsTrue(dir.IsUnitLength);
+				}
+			}
+		}
 	}
 
 	[Test]
@@ -108,6 +126,7 @@ partial class DirectionTest {
 				var dirB = testList[j];
 
 				if (dirA == Direction.None || dirB == Direction.None) {
+					Assert.AreEqual(Direction.None, Direction.FromPerpendicular(dirA, dirB));
 					continue;
 				}
 
@@ -135,13 +154,13 @@ partial class DirectionTest {
 		}
 
 		AssertToleranceEquals(null, OneTwoNegThree.OrthogonalizedAgainst(OneTwoNegThree), TestTolerance);
-		AssertToleranceEquals(null, Direction.None.OrthogonalizedAgainst(OneTwoNegThree), TestTolerance);
+		AssertToleranceEquals(Direction.None, Direction.None.OrthogonalizedAgainst(OneTwoNegThree), TestTolerance);
 
 		AssertToleranceEquals(null, OneTwoNegThree.OrthogonalizedAgainst(-OneTwoNegThree), TestTolerance);
 		AssertToleranceEquals(null, -OneTwoNegThree.OrthogonalizedAgainst(OneTwoNegThree), TestTolerance);
 
-		Assert.AreEqual(null, OneTwoNegThree.OrthogonalizedAgainst(Direction.None));
-		Assert.AreEqual(null, Direction.None.OrthogonalizedAgainst(Direction.None));
+		Assert.AreEqual(Direction.None, OneTwoNegThree.OrthogonalizedAgainst(Direction.None));
+		Assert.AreEqual(Direction.None, Direction.None.OrthogonalizedAgainst(Direction.None));
 
 		var testList = new List<Direction>();
 		for (var x = -5f; x <= 5f; x += 1f) {
@@ -158,7 +177,7 @@ partial class DirectionTest {
 			if (dirA == Direction.None) continue;
 
 			AssertToleranceEquals(null, dirA.OrthogonalizedAgainst(dirA), TestTolerance);
-			AssertToleranceEquals(null, Direction.None.OrthogonalizedAgainst(dirA), TestTolerance);
+			AssertToleranceEquals(Direction.None, Direction.None.OrthogonalizedAgainst(dirA), TestTolerance);
 
 			for (var j = i; j < testList.Count; ++j) {
 				var dirB = testList[j];
@@ -202,8 +221,17 @@ partial class DirectionTest {
 			var dir = testList[i];
 			if (dir == Direction.None) continue;
 
-			Assert.IsNotNull(dir.OrthogonalizedAgainst((dir >> dir.AnyPerpendicular()).WithAngle(MinPermissibleAngleDegrees) * dir));
-			Assert.IsNull(dir.OrthogonalizedAgainst((dir >> dir.AnyPerpendicular()).WithAngle(MinPermissibleAngleDegrees * 0.1f) * dir));
+			try {
+				Assert.IsNotNull(dir.OrthogonalizedAgainst((dir >> dir.AnyPerpendicular()).WithAngle(MinPermissibleAngleDegrees) * dir));
+				Assert.IsNull(dir.OrthogonalizedAgainst((dir >> dir.AnyPerpendicular()).WithAngle(MinPermissibleAngleDegrees * 0.1f) * dir));
+			}
+			catch {
+				Console.WriteLine("Dir: " + dir.ToStringDescriptive());
+				Console.WriteLine("Perp: " + dir.AnyPerpendicular());
+				Console.WriteLine("Rotated: " + ((dir >> dir.AnyPerpendicular()).WithAngle(MinPermissibleAngleDegrees) * dir));
+				Console.WriteLine("Angle: " + (dir ^ ((dir >> dir.AnyPerpendicular()).WithAngle(MinPermissibleAngleDegrees) * dir)));
+				throw;
+			}
 		}
 	}
 

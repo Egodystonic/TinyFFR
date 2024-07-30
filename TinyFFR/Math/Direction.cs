@@ -95,15 +95,14 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromOrientation(Orientation3D orientation) => new(orientation.GetAxisSign(Axis.X), orientation.GetAxisSign(Axis.Y), orientation.GetAxisSign(Axis.Z));
 
-	public static Direction FromPerpendicular(Direction dirA, Direction dirB) { // TODO in Xmldoc note that this will return any perp to both, no guarantee on which one. If either is None, then it throws
-		const float CrossLengthErrorMargin = 1E-3f;
-		const float NoneEqualityErrorMargin = 1E-5f;
-		var cross = Vector3.Cross(dirA.ToVector3(), dirB.ToVector3());
-		var crossLength = cross.LengthSquared();
+	public static Direction FromPerpendicular(Direction dirA, Direction dirB) {
+		const float MinLenSquaredForValidAnswer = 1E-5f;
 
-		if (MathF.Abs(crossLength - 1f) <= CrossLengthErrorMargin) return FromVector3PreNormalized(cross);
-		else if (crossLength >= CrossLengthErrorMargin) return FromVector3(cross);
-		else if (dirA.Equals(None, NoneEqualityErrorMargin) || dirB.Equals(None, NoneEqualityErrorMargin)) throw new ArgumentException($"Neither {nameof(Direction)} can be {nameof(None)}.");
+		var cross = Vector3.Cross(dirA.ToVector3(), dirB.ToVector3());
+		var crossLengthSquared = cross.LengthSquared();
+
+		if (crossLengthSquared > MinLenSquaredForValidAnswer) return FromVector3(cross);
+		else if (dirA == None || dirB == None) return None;
 		else return dirA.AnyPerpendicular();
 	}
 

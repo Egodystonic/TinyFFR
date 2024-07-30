@@ -31,7 +31,7 @@ public partial interface ILineLike :
 	IConvexShapeDistanceMeasurable,
 	IConvexShapeIntersectable<ConvexShapeLineIntersection> {
 	public const float DefaultLineThickness = 0.01f;
-	public const float DefaultAngularToleranceDegrees = 0.1f;
+	public const float DefaultAngularToleranceDegrees = Direction.DefaultAngularToleranceDegrees;
 
 	Location StartPoint { get; }
 	Direction Direction { get; }

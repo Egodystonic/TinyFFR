@@ -25,7 +25,7 @@ partial struct Direction :
 	IParallelizationTarget<Direction, Vect>,
 	IOrthogonalizationTarget<Direction, Direction>,
 	IParallelizationTarget<Direction, Direction> {
-	public const float DefaultAngularToleranceDegrees = 0.1f;
+	public const float DefaultAngularToleranceDegrees = 0.01f;
 
 	public float this[Axis axis] => axis switch {
 		Axis.X => X,
@@ -116,19 +116,9 @@ partial struct Direction :
 	}
 
 	public Direction? OrthogonalizedAgainst(Direction d) {
-		const float DotProductFloatingPointErrorMargin = 1E-6f;
-		const float ResultLengthSquaredMin = 1E-8f;
-		if (this == None || d == None) return null;
-		var dot = Vector4.Dot(AsVector4, d.AsVector4);
-		// These checks are important to protect against fp inaccuracy with cases where we're orthogonalizing against the self or reverse of self etc
-		dot = MathF.Abs(dot) switch {
-			> 1f - DotProductFloatingPointErrorMargin => 1f * MathF.Sign(dot),
-			< DotProductFloatingPointErrorMargin => 0f,
-			_ => dot
-		};
-		var nonNormalizedResult = AsVector4 - d.AsVector4 * dot;
-		if (nonNormalizedResult.LengthSquared() < ResultLengthSquaredMin) return null;
-		else return new(Normalize(nonNormalizedResult));
+		if (this == None || d == None) return None;
+		if (IsParallelTo(d)) return null;
+		else return new(Normalize(AsVector4 - d.AsVector4 * Dot(d)));
 	}
 	public Direction FastOrthogonalizedAgainst(Direction d) => new(Normalize(AsVector4 - d.AsVector4 * Vector4.Dot(AsVector4, d.AsVector4)));
 

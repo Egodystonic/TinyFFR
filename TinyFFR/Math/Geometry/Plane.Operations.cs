@@ -12,7 +12,7 @@ partial struct Plane :
 	IAngleMeasurable<Plane, Direction>, IReflectionTarget<Plane, Direction, Direction>, IProjectionTarget<Plane, Direction>, IParallelizationTarget<Plane, Direction>, IOrthogonalizationTarget<Plane, Direction>,
 	IAngleMeasurable<Plane, Vect>, IReflectionTarget<Plane, Vect, Vect>, IProjectionTarget<Plane, Vect>, IParallelizationTarget<Plane, Vect>, IOrthogonalizationTarget<Plane, Vect>,
 	IPrecomputationInterpolatable<Plane, Rotation> {
-	public const float DefaultAngularToleranceDegrees = 0.1f;
+	public const float DefaultAngularToleranceDegrees = Direction.DefaultAngularToleranceDegrees;
 	const float MaxPlaneToPlaneDistanceNormalSimilarity = 1 - 1E-8f;
 
 	public Plane Flipped {
