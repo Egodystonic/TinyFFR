@@ -65,7 +65,7 @@ partial class VectTest {
 						continue;
 					}
 
-					var rot = (v.Direction >> v.Direction.AnyPerpendicular()) * 0.1f;
+					var rot = (v.Direction >> v.Direction.AnyOrthogonal()) * 0.1f;
 					for (var i = 0; i < NumNonNormalizedRotations; ++i) v = rot.Rotate(v);
 					Assert.IsTrue(v.IsUnitLength);
 				}
@@ -601,7 +601,7 @@ partial class VectTest {
 
 		for (var i = 0; i < testList.Count; ++i) {
 			AssertCombinationExactly(false, testList[i], testList[i]);
-			if (testList[i] != Direction.None) AssertCombinationExactly(true, testList[i], testList[i].AnyPerpendicular());
+			if (testList[i] != Direction.None) AssertCombinationExactly(true, testList[i], testList[i].AnyOrthogonal());
 			for (var j = i; j < testList.Count; ++j) {
 				var a = testList[i];
 				var b = testList[j];

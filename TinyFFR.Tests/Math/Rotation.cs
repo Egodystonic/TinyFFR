@@ -50,7 +50,7 @@ partial class RotationTest {
 					continue;
 				}
 
-				var anyPerp = cardinal.AnyPerpendicular();
+				var anyPerp = cardinal.AnyOrthogonal();
 				rot = rot.WithAxis(anyPerp);
 				AssertToleranceEquals(anyPerp, rot.Axis, TestTolerance);
 				Assert.AreEqual(r, rot.Angle.AsRadians, TestTolerance);

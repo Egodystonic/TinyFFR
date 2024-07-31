@@ -95,19 +95,19 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromOrientation(Orientation3D orientation) => new(orientation.GetAxisSign(Axis.X), orientation.GetAxisSign(Axis.Y), orientation.GetAxisSign(Axis.Z));
 
-	public static Direction FromPerpendicular(Direction dirA, Direction dirB) {
+	public static Direction FromOrthogonal(Direction dirA, Direction dirB) {
 		var cross = Vector3.Cross(dirA.ToVector3(), dirB.ToVector3());
 		var crossLengthSquared = cross.LengthSquared();
 
 		if (crossLengthSquared > 0f) return FromVector3(cross);
 		else if (dirA == None || dirB == None) return None;
-		else return dirA.AnyPerpendicular();
+		else return dirA.AnyOrthogonal();
 	}
 
 	// TODO xmldoc: Imagine a plane, and imagine one direction along the plane is set as "zero". This factory method lets you specify directions as a polar angle offset from the zero direction on the plane
 	// TODO xmldoc: Angle is clockwise looking along the plane normal (much like rotations)
 	public static Direction FromPlaneAndPolarAngle(Plane plane, Direction zeroDegreesDirection, Angle polarAngle) {
-		if (zeroDegreesDirection.ParallelizedWith(plane) == null) zeroDegreesDirection = plane.Normal.AnyPerpendicular();
+		if (zeroDegreesDirection.ParallelizedWith(plane) == null) zeroDegreesDirection = plane.Normal.AnyOrthogonal();
 		var converter = plane.CreateDimensionConverter(Location.Origin, zeroDegreesDirection);
 		return FromVector3(converter.ConvertDisregardingOrigin(XYPair<float>.FromPolarAngle(polarAngle)).ToVector3());
 	}

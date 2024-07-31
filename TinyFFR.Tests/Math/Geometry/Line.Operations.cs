@@ -81,7 +81,7 @@ partial class LineTest {
 		);
 		AssertToleranceEquals(
 			new Location(2f, 5f, 2f),
-			new Line(new Location(0f, 3f, 0f), new Direction(1f, 1f, 1f)).PointClosestTo(new Direction(1f, 1f, 1f).AnyPerpendicular() * 10f + new Location(2f, 5f, 2f)),
+			new Line(new Location(0f, 3f, 0f), new Direction(1f, 1f, 1f)).PointClosestTo(new Direction(1f, 1f, 1f).AnyOrthogonal() * 10f + new Location(2f, 5f, 2f)),
 			TestTolerance
 		);
 	}
@@ -1572,9 +1572,9 @@ partial class LineTest {
 		Assert.AreEqual(10f, TestLine.DistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestLineDirection * 10f), TestTolerance);
 		Assert.AreEqual(-10f, TestLine.DistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestLineDirection * -10f), TestTolerance);
 
-		Assert.AreEqual(0f, TestLine.DistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestLineDirection.AnyPerpendicular() * 10f), TestTolerance);
-		Assert.AreEqual(10f, TestLine.DistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestLineDirection * 10f + TestLineDirection.AnyPerpendicular() * 10f), TestTolerance);
-		Assert.AreEqual(-10f, TestLine.DistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestLineDirection * -10f + TestLineDirection.AnyPerpendicular() * 10f), TestTolerance);
+		Assert.AreEqual(0f, TestLine.DistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestLineDirection.AnyOrthogonal() * 10f), TestTolerance);
+		Assert.AreEqual(10f, TestLine.DistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestLineDirection * 10f + TestLineDirection.AnyOrthogonal() * 10f), TestTolerance);
+		Assert.AreEqual(-10f, TestLine.DistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestLineDirection * -10f + TestLineDirection.AnyOrthogonal() * 10f), TestTolerance);
 	}
 
 	[Test]
@@ -1626,21 +1626,21 @@ partial class LineTest {
 		}
 
 		AssertPair(true, TestLine, TestLine.ToRay(0f, false), null, null);
-		AssertPair(false, TestLine.MovedBy(TestLine.Direction.AnyPerpendicular() * 1f), TestLine.ToRay(0f, false), 0.45f, null);
-		AssertPair(true, TestLine.MovedBy(TestLine.Direction.AnyPerpendicular() * 1f), TestLine.ToRay(0f, false), 0.55f, null);
-		AssertPair(false, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyPerpendicular()).WithAngle(1f)), TestLine.ToRay(0f, false), null, 0.9f);
-		AssertPair(true, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyPerpendicular()).WithAngle(1f)), TestLine.ToRay(0f, false), null, 1.1f);
-		AssertPair(false, TestLine.MovedBy(TestLine.Direction.AnyPerpendicular() * 1f).RotatedBy((TestLine.Direction >> TestLine.Direction.AnyPerpendicular()).WithAngle(1f)), TestLine.ToRay(0f, false), 0.45f, 0.9f);
-		AssertPair(true, TestLine.MovedBy(TestLine.Direction.AnyPerpendicular() * 1f).RotatedBy((TestLine.Direction >> TestLine.Direction.AnyPerpendicular()).WithAngle(1f)), TestLine.ToRay(0f, false), 0.55f, 1.1f);
-		AssertPair(false, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyPerpendicular()).WithAngle(1f)).MovedBy(TestLine.Direction.AnyPerpendicular() * 1f), TestLine.ToRay(0f, false), 0.45f, 0.9f);
-		AssertPair(true, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyPerpendicular()).WithAngle(1f)).MovedBy(TestLine.Direction.AnyPerpendicular() * 1f), TestLine.ToRay(0f, false), 0.55f, 1.1f);
+		AssertPair(false, TestLine.MovedBy(TestLine.Direction.AnyOrthogonal() * 1f), TestLine.ToRay(0f, false), 0.45f, null);
+		AssertPair(true, TestLine.MovedBy(TestLine.Direction.AnyOrthogonal() * 1f), TestLine.ToRay(0f, false), 0.55f, null);
+		AssertPair(false, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyOrthogonal()).WithAngle(1f)), TestLine.ToRay(0f, false), null, 0.9f);
+		AssertPair(true, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyOrthogonal()).WithAngle(1f)), TestLine.ToRay(0f, false), null, 1.1f);
+		AssertPair(false, TestLine.MovedBy(TestLine.Direction.AnyOrthogonal() * 1f).RotatedBy((TestLine.Direction >> TestLine.Direction.AnyOrthogonal()).WithAngle(1f)), TestLine.ToRay(0f, false), 0.45f, 0.9f);
+		AssertPair(true, TestLine.MovedBy(TestLine.Direction.AnyOrthogonal() * 1f).RotatedBy((TestLine.Direction >> TestLine.Direction.AnyOrthogonal()).WithAngle(1f)), TestLine.ToRay(0f, false), 0.55f, 1.1f);
+		AssertPair(false, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyOrthogonal()).WithAngle(1f)).MovedBy(TestLine.Direction.AnyOrthogonal() * 1f), TestLine.ToRay(0f, false), 0.45f, 0.9f);
+		AssertPair(true, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyOrthogonal()).WithAngle(1f)).MovedBy(TestLine.Direction.AnyOrthogonal() * 1f), TestLine.ToRay(0f, false), 0.55f, 1.1f);
 	}
 
 	[Test]
 	public void ShouldCorrectlyDetermineParallelismWithOtherElements() {
 		void AssertCombination(bool expectation, Line line, Direction dir, Angle? tolerance) {
 			var flippedLine = new Line(line.PointOnLine, line.Direction.Flipped);
-			var plane = new Plane(dir.AnyPerpendicular(), Location.Origin);
+			var plane = new Plane(dir.AnyOrthogonal(), Location.Origin);
 			var dirLine = new Line(Location.Origin, dir);
 			var dirRay = new Ray(Location.Origin, dir);
 			var dirRayBounded = BoundedRay.FromStartPointAndVect(Location.Origin, dir * 10f);
@@ -1740,7 +1740,7 @@ partial class LineTest {
 	public void ShouldCorrectlyDetermineOrthogonalityWithOtherElements() {
 		void AssertCombination(bool expectation, Line line, Direction dir, Angle? tolerance) {
 			var flippedLine = new Line(line.PointOnLine, line.Direction.Flipped);
-			var plane = new Plane(dir.AnyPerpendicular(), Location.Origin);
+			var plane = new Plane(dir.AnyOrthogonal(), Location.Origin);
 			var dirLine = new Line(Location.Origin, dir);
 			var dirRay = new Ray(Location.Origin, dir);
 			var dirRayBounded = BoundedRay.FromStartPointAndVect(Location.Origin, dir * 10f);

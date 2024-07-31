@@ -293,7 +293,7 @@ partial struct OriginSphere {
 
 		// Otherwise there are infinite valid answers around the circle formed by the intersection. Any will do
 		var centrePointDirection = circleCentrePoint == Location.Origin ? plane.Normal : ((Vect) circleCentrePoint).Direction;
-		return circleCentrePoint + centrePointDirection.AnyPerpendicular() * circleRadius;
+		return circleCentrePoint + centrePointDirection.AnyOrthogonal() * circleRadius;
 	}
 	public Location ClosestPointToSurfaceOn(Plane plane) {
 		// If the plane doesn't intersect this sphere, we can just return the plane's closest point to the sphere
@@ -301,7 +301,7 @@ partial struct OriginSphere {
 
 		// Otherwise there are infinite valid answers around the circle formed by the intersection. Any will do
 		var centrePointDirection = circleCentrePoint == Location.Origin ? plane.Normal : ((Vect) circleCentrePoint).Direction;
-		return circleCentrePoint + centrePointDirection.AnyPerpendicular() * circleRadius;
+		return circleCentrePoint + centrePointDirection.AnyOrthogonal() * circleRadius;
 	}
 
 	float IDistanceMeasurable<Plane>.DistanceSquaredFrom(Plane plane) { var sqrt = DistanceFrom(plane); return sqrt * sqrt; }

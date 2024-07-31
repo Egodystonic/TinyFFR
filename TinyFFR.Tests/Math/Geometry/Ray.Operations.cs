@@ -1715,13 +1715,13 @@ partial class RayTest {
 		Assert.AreEqual(0f, TestRay.BoundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * -10f), TestTolerance);
 
 
-		Assert.AreEqual(0f, TestRay.UnboundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction.AnyPerpendicular() * 10f), TestTolerance);
-		Assert.AreEqual(10f, TestRay.UnboundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * 10f + TestRay.Direction.AnyPerpendicular() * 10f), TestTolerance);
-		Assert.AreEqual(-10f, TestRay.UnboundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * -10f + TestRay.Direction.AnyPerpendicular() * 10f), TestTolerance);
+		Assert.AreEqual(0f, TestRay.UnboundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction.AnyOrthogonal() * 10f), TestTolerance);
+		Assert.AreEqual(10f, TestRay.UnboundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * 10f + TestRay.Direction.AnyOrthogonal() * 10f), TestTolerance);
+		Assert.AreEqual(-10f, TestRay.UnboundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * -10f + TestRay.Direction.AnyOrthogonal() * 10f), TestTolerance);
 
-		Assert.AreEqual(0f, TestRay.BoundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction.AnyPerpendicular() * 10f), TestTolerance);
-		Assert.AreEqual(10f, TestRay.BoundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * 10f + TestRay.Direction.AnyPerpendicular() * 10f), TestTolerance);
-		Assert.AreEqual(0f, TestRay.BoundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * -10f + TestRay.Direction.AnyPerpendicular() * 10f), TestTolerance);
+		Assert.AreEqual(0f, TestRay.BoundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction.AnyOrthogonal() * 10f), TestTolerance);
+		Assert.AreEqual(10f, TestRay.BoundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * 10f + TestRay.Direction.AnyOrthogonal() * 10f), TestTolerance);
+		Assert.AreEqual(0f, TestRay.BoundedDistanceAtPointClosestTo(new Location(1f, 2f, -3f) + TestRay.Direction * -10f + TestRay.Direction.AnyOrthogonal() * 10f), TestTolerance);
 	}
 
 	[Test]
@@ -1773,21 +1773,21 @@ partial class RayTest {
 		}
 
 		AssertPair(true, TestRay, TestRay, null, null);
-		AssertPair(false, TestRay.MovedBy(TestRay.Direction.AnyPerpendicular() * 1f), TestRay, 0.45f, null);
-		AssertPair(true, TestRay.MovedBy(TestRay.Direction.AnyPerpendicular() * 1f), TestRay, 0.55f, null);
-		AssertPair(false, TestRay.RotatedBy((TestRay.Direction >> TestRay.Direction.AnyPerpendicular()).WithAngle(1f)), TestRay, null, 0.9f);
-		AssertPair(true, TestRay.RotatedBy((TestRay.Direction >> TestRay.Direction.AnyPerpendicular()).WithAngle(1f)), TestRay, null, 1.1f);
-		AssertPair(false, TestRay.MovedBy(TestRay.Direction.AnyPerpendicular() * 1f).RotatedBy((TestRay.Direction >> TestRay.Direction.AnyPerpendicular()).WithAngle(1f)), TestRay, 0.45f, 0.9f);
-		AssertPair(true, TestRay.MovedBy(TestRay.Direction.AnyPerpendicular() * 1f).RotatedBy((TestRay.Direction >> TestRay.Direction.AnyPerpendicular()).WithAngle(1f)), TestRay, 0.55f, 1.1f);
-		AssertPair(false, TestRay.RotatedBy((TestRay.Direction >> TestRay.Direction.AnyPerpendicular()).WithAngle(1f)).MovedBy(TestRay.Direction.AnyPerpendicular() * 1f), TestRay, 0.45f, 0.9f);
-		AssertPair(true, TestRay.RotatedBy((TestRay.Direction >> TestRay.Direction.AnyPerpendicular()).WithAngle(1f)).MovedBy(TestRay.Direction.AnyPerpendicular() * 1f), TestRay, 0.55f, 1.1f);
+		AssertPair(false, TestRay.MovedBy(TestRay.Direction.AnyOrthogonal() * 1f), TestRay, 0.45f, null);
+		AssertPair(true, TestRay.MovedBy(TestRay.Direction.AnyOrthogonal() * 1f), TestRay, 0.55f, null);
+		AssertPair(false, TestRay.RotatedBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()).WithAngle(1f)), TestRay, null, 0.9f);
+		AssertPair(true, TestRay.RotatedBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()).WithAngle(1f)), TestRay, null, 1.1f);
+		AssertPair(false, TestRay.MovedBy(TestRay.Direction.AnyOrthogonal() * 1f).RotatedBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()).WithAngle(1f)), TestRay, 0.45f, 0.9f);
+		AssertPair(true, TestRay.MovedBy(TestRay.Direction.AnyOrthogonal() * 1f).RotatedBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()).WithAngle(1f)), TestRay, 0.55f, 1.1f);
+		AssertPair(false, TestRay.RotatedBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()).WithAngle(1f)).MovedBy(TestRay.Direction.AnyOrthogonal() * 1f), TestRay, 0.45f, 0.9f);
+		AssertPair(true, TestRay.RotatedBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()).WithAngle(1f)).MovedBy(TestRay.Direction.AnyOrthogonal() * 1f), TestRay, 0.55f, 1.1f);
 	}
 
 	[Test]
 	public void ShouldCorrectlyDetermineParallelismWithOtherElements() {
 		void AssertCombination(bool expectation, Ray ray, Direction dir, Angle? tolerance) {
 			var flippedRay = ray.Flipped;
-			var plane = new Plane(dir.AnyPerpendicular(), Location.Origin);
+			var plane = new Plane(dir.AnyOrthogonal(), Location.Origin);
 			var dirLine = new Line(Location.Origin, dir);
 			var dirRay = new Ray(Location.Origin, dir);
 			var dirRayBounded = BoundedRay.FromStartPointAndVect(Location.Origin, dir * 10f);
@@ -1887,7 +1887,7 @@ partial class RayTest {
 	public void ShouldCorrectlyDetermineOrthogonalityWithOtherElements() {
 		void AssertCombination(bool expectation, Ray ray, Direction dir, Angle? tolerance) {
 			var flippedRay = ray.Flipped;
-			var plane = new Plane(dir.AnyPerpendicular(), Location.Origin);
+			var plane = new Plane(dir.AnyOrthogonal(), Location.Origin);
 			var dirLine = new Line(Location.Origin, dir);
 			var dirRay = new Ray(Location.Origin, dir);
 			var dirRayBounded = BoundedRay.FromStartPointAndVect(Location.Origin, dir * 10f);

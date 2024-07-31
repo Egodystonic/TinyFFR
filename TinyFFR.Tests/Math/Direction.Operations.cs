@@ -35,7 +35,7 @@ partial class DirectionTest {
 						continue;
 					}
 
-					var rot = (dir >> dir.AnyPerpendicular()) * 0.1f;
+					var rot = (dir >> dir.AnyOrthogonal()) * 0.1f;
 					for (var i = 0; i < NumNonNormalizedRotations; ++i) dir = rot.RotateWithoutRenormalizing(dir);
 					Assert.IsTrue(dir.IsUnitLength);
 				}
@@ -86,12 +86,12 @@ partial class DirectionTest {
 	}
 
 	[Test]
-	public void ShouldCorrectlyFindAnyPerpendicularDirection() {
+	public void ShouldCorrectlyFindAnyOrthogonalDirection() {
 		for (var x = -5f; x <= 5f; x += 1f) {
 			for (var y = -5f; y <= 5f; y += 1f) {
 				for (var z = -5f; z <= 5f; z += 1f) {
 					var dir = new Direction(x, y, z);
-					var perp = dir.AnyPerpendicular();
+					var perp = dir.AnyOrthogonal();
 
 					if (dir == Direction.None) Assert.AreEqual(Direction.None, perp);
 					else AssertToleranceEquals(90f, dir ^ perp, TestTolerance);
@@ -100,15 +100,15 @@ partial class DirectionTest {
 		}
 
 		foreach (var cardinal in Direction.AllCardinals) {
-			var perp = cardinal.AnyPerpendicular();
+			var perp = cardinal.AnyOrthogonal();
 			AssertToleranceEquals(90f, cardinal ^ perp, TestTolerance);
 			Assert.IsTrue(Direction.AllCardinals.Contains(perp));
 		}
 	}
 
 	[Test]
-	public void ShouldCorrectlyFindPerpendicularDirectionWithAdditionalConstrainingDirection() {
-		Assert.AreEqual(Direction.Left, Direction.FromPerpendicular(Direction.Up, Direction.Forward));
+	public void ShouldCorrectlyFindOrthogonalDirectionWithAdditionalConstrainingDirection() {
+		Assert.AreEqual(Direction.Left, Direction.FromOrthogonal(Direction.Up, Direction.Forward));
 
 		var testList = new List<Direction>();
 		for (var x = -5f; x <= 5f; x += 1f) {
@@ -126,15 +126,15 @@ partial class DirectionTest {
 				var dirB = testList[j];
 
 				if (dirA == Direction.None || dirB == Direction.None) {
-					Assert.AreEqual(Direction.None, Direction.FromPerpendicular(dirA, dirB));
+					Assert.AreEqual(Direction.None, Direction.FromOrthogonal(dirA, dirB));
 					continue;
 				}
 
-				var thirdOrthogonal = Direction.FromPerpendicular(dirA, dirB);
+				var thirdOrthogonal = Direction.FromOrthogonal(dirA, dirB);
 				AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, 2f);
 				AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, 2f);
 				Assert.IsTrue(thirdOrthogonal.IsUnitLength);
-				thirdOrthogonal = Direction.FromPerpendicular(dirB, dirA);
+				thirdOrthogonal = Direction.FromOrthogonal(dirB, dirA);
 				AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, 2f);
 				AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, 2f);
 				Assert.IsTrue(thirdOrthogonal.IsUnitLength);
@@ -145,8 +145,8 @@ partial class DirectionTest {
 	[Test]
 	public void ShouldCorrectlyOrthogonalizeAgainstAnotherDir() {
 		foreach (var cardinal in Direction.AllCardinals) {
-			var perp = cardinal.AnyPerpendicular();
-			var thirdPerp = Direction.FromPerpendicular(cardinal, perp);
+			var perp = cardinal.AnyOrthogonal();
+			var thirdPerp = Direction.FromOrthogonal(cardinal, perp);
 			Assert.AreEqual(cardinal, (20f % perp * cardinal).OrthogonalizedAgainst(thirdPerp));
 			Assert.AreEqual(cardinal, (-20f % perp * cardinal).OrthogonalizedAgainst(thirdPerp));
 			Assert.AreEqual(cardinal, (20f % thirdPerp * cardinal).OrthogonalizedAgainst(perp));
@@ -222,7 +222,7 @@ partial class DirectionTest {
 			if (dir == Direction.None) continue;
 
 			var orthoTarget = dir;
-			var perp = dir.AnyPerpendicular();
+			var perp = dir.AnyOrthogonal();
 			var angleToTestWith = Angle.Zero;
 			while ((dir ^ orthoTarget) < MinPermissibleAngleDegrees) {
 				angleToTestWith += MinPermissibleAngleDegrees * 0.25f;
@@ -239,8 +239,8 @@ partial class DirectionTest {
 	[Test]
 	public void ShouldCorrectlyParallelizeWithAnotherDir() {
 		foreach (var cardinal in Direction.AllCardinals) {
-			var perp = cardinal.AnyPerpendicular();
-			var thirdPerp = Direction.FromPerpendicular(cardinal, perp);
+			var perp = cardinal.AnyOrthogonal();
+			var thirdPerp = Direction.FromOrthogonal(cardinal, perp);
 			Assert.AreEqual(cardinal, (20f % perp * cardinal).ParallelizedWith(cardinal));
 			Assert.AreEqual(cardinal, (-20f % perp * cardinal).ParallelizedWith(cardinal));
 			Assert.AreEqual(cardinal, (20f % thirdPerp * cardinal).ParallelizedWith(cardinal));
@@ -252,11 +252,11 @@ partial class DirectionTest {
 			Assert.AreEqual(cardinal, (-20f % thirdPerp * cardinal).ParallelizedWith(-cardinal));
 		}
 
-		AssertToleranceEquals(null, OneTwoNegThree.ParallelizedWith(OneTwoNegThree.AnyPerpendicular()), TestTolerance);
+		AssertToleranceEquals(null, OneTwoNegThree.ParallelizedWith(OneTwoNegThree.AnyOrthogonal()), TestTolerance);
 		AssertToleranceEquals(Direction.None, Direction.None.ParallelizedWith(OneTwoNegThree), TestTolerance);
 
-		AssertToleranceEquals(null, OneTwoNegThree.ParallelizedWith(-OneTwoNegThree.AnyPerpendicular()), TestTolerance);
-		AssertToleranceEquals(null, -OneTwoNegThree.ParallelizedWith(OneTwoNegThree.AnyPerpendicular()), TestTolerance);
+		AssertToleranceEquals(null, OneTwoNegThree.ParallelizedWith(-OneTwoNegThree.AnyOrthogonal()), TestTolerance);
+		AssertToleranceEquals(null, -OneTwoNegThree.ParallelizedWith(OneTwoNegThree.AnyOrthogonal()), TestTolerance);
 
 		Assert.AreEqual(OneTwoNegThree, OneTwoNegThree.ParallelizedWith(Direction.None));
 		Assert.AreEqual(Direction.None, Direction.None.ParallelizedWith(Direction.None));
@@ -335,8 +335,8 @@ partial class DirectionTest {
 			var dir = testList[i];
 			if (dir == Direction.None) continue;
 
-			var perp = dir.AnyPerpendicular();
-			var thirdPerp = Direction.FromPerpendicular(dir, perp);
+			var perp = dir.AnyOrthogonal();
+			var thirdPerp = Direction.FromOrthogonal(dir, perp);
 			var parallelTarget = perp;
 			var angleToTestWith = Angle.Zero;
 			while ((dir ^ parallelTarget).Equals(Angle.QuarterCircle, MinPermissibleAngleDegrees)) {
@@ -1274,7 +1274,7 @@ partial class DirectionTest {
 
 		for (var i = 0; i < testList.Count; ++i) {
 			AssertCombinationExactly(false, testList[i], testList[i]);
-			if (testList[i] != Direction.None) AssertCombinationExactly(true, testList[i], testList[i].AnyPerpendicular());
+			if (testList[i] != Direction.None) AssertCombinationExactly(true, testList[i], testList[i].AnyOrthogonal());
 			for (var j = i; j < testList.Count; ++j) {
 				var a = testList[i];
 				var b = testList[j];

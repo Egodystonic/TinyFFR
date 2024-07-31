@@ -42,7 +42,7 @@ partial struct Plane :
 	public Plane RotatedAroundPoint(Rotation rot, Location pivotPoint) => new(Normal * rot, PointClosestTo(pivotPoint) * (pivotPoint, rot));
 
 	//0 to 1, where 1 is a direction completely perpendicular to the plane and 0 is completely parallel; is also the cosine of the angle formed with the normal
-	float PerpendicularityWith(Direction direction) => MathF.Abs(Normal.Dot(direction));
+	float OrthogonalityWith(Direction direction) => MathF.Abs(Normal.Dot(direction));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(Plane plane, Direction dir) => plane.AngleTo(dir);
@@ -52,8 +52,8 @@ partial struct Plane :
 	public static Angle operator ^(Plane plane, Vect v) => plane.AngleTo(v);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(Vect v, Plane plane) => plane.AngleTo(v);
-	public Angle AngleTo(Plane other) => Angle.FromRadians(MathF.Acos(PerpendicularityWith(other.Normal)));
-	public Angle AngleTo(Direction direction) => direction != Direction.None ? Angle.FromRadians(MathF.Asin(PerpendicularityWith(direction))) : 0f;
+	public Angle AngleTo(Plane other) => Angle.FromRadians(MathF.Acos(OrthogonalityWith(other.Normal)));
+	public Angle AngleTo(Direction direction) => direction != Direction.None ? Angle.FromRadians(MathF.Asin(OrthogonalityWith(direction))) : 0f;
 	public Angle AngleTo(Vect vect) => AngleTo(vect.Direction);
 	public Angle SignedAngleTo(Direction direction) => Angle.FromRadians(MathF.Asin(Normal.Dot(direction)));
 	public Angle SignedAngleTo(Vect vect) => SignedAngleTo(vect.Direction);
@@ -72,11 +72,11 @@ partial struct Plane :
 		return Vect.FromVector3(-2f * Vector3.Dot(Normal.ToVector3(), vect.ToVector3()) * Normal.ToVector3() + vect.ToVector3());
 	}
 	public Angle? IncidentAngleWith(Direction direction) {
-		var perpendicularity = PerpendicularityWith(direction);
+		var perpendicularity = OrthogonalityWith(direction);
 		if (perpendicularity == 0f) return null;
 		return Angle.FromRadians(MathF.Acos(perpendicularity));
 	}
-	public Angle FastIncidentAngleWith(Direction direction) => Angle.FromRadians(MathF.Acos(PerpendicularityWith(direction)));
+	public Angle FastIncidentAngleWith(Direction direction) => Angle.FromRadians(MathF.Acos(OrthogonalityWith(direction)));
 	public Angle? IncidentAngleWith(Vect vect) => IncidentAngleWith(vect.Direction);
 	public Angle FastIncidentAngleWith(Vect vect) => FastIncidentAngleWith(vect.Direction);
 	public Direction? ParallelizationOf(Direction direction) => direction.OrthogonalizedAgainst(Normal);
@@ -254,28 +254,28 @@ partial struct Plane :
 		}
 	}
 	public DimensionConverter CreateDimensionConverter() {
-		var xBasis = Normal.AnyPerpendicular();
-		var yBasis = Direction.FromPerpendicular(Normal, xBasis);
+		var xBasis = Normal.AnyOrthogonal();
+		var yBasis = Direction.FromOrthogonal(Normal, xBasis);
 		var origin = PointClosestToOrigin;
 		return new(xBasis, yBasis, Normal, origin);
 	}
 	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin) {
-		var xBasis = Normal.AnyPerpendicular();
-		var yBasis = Direction.FromPerpendicular(Normal, xBasis);
+		var xBasis = Normal.AnyOrthogonal();
+		var yBasis = Direction.FromOrthogonal(Normal, xBasis);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}
 	// TODO xmldoc what happens if axis is ortho to plane and also that people who want to skip all the checks or create a skewed basis etc can create their own converter directly with the ctor
 	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis) {
-		var xBasis = ParallelizationOf(twoDimensionalCoordinateXAxis) ?? Normal.AnyPerpendicular();
-		var yBasis = Direction.FromPerpendicular(Normal, xBasis);
+		var xBasis = ParallelizationOf(twoDimensionalCoordinateXAxis) ?? Normal.AnyOrthogonal();
+		var yBasis = Direction.FromOrthogonal(Normal, xBasis);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}
 	// TODO xmldoc what happens if either axis is ortho to plane or parallel to each other and also that people who want to skip all the checks or create a skewed basis etc can create their own converter directly with the ctor
 	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis, Direction twoDimensionalCoordinateYAxis) {
-		var xBasis = ParallelizationOf(twoDimensionalCoordinateXAxis) ?? Normal.AnyPerpendicular();
-		var yBasis = ParallelizationOf(twoDimensionalCoordinateYAxis)?.OrthogonalizedAgainst(xBasis) ?? Direction.FromPerpendicular(xBasis, Normal);
+		var xBasis = ParallelizationOf(twoDimensionalCoordinateXAxis) ?? Normal.AnyOrthogonal();
+		var yBasis = ParallelizationOf(twoDimensionalCoordinateYAxis)?.OrthogonalizedAgainst(xBasis) ?? Direction.FromOrthogonal(xBasis, Normal);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}

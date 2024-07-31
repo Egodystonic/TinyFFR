@@ -828,20 +828,20 @@ partial class PlaneTest {
 		}
 
 		// This section checks that the dimension converters are always constructed with perpendicular basis directions even if we pass the most degenerate possible arguments
-		void AssertPerpendicularity(Plane.DimensionConverter dc) {
+		void AssertOrthogonality(Plane.DimensionConverter dc) {
 			Assert.IsTrue(dc.XBasis.IsOrthogonalTo(dc.PlaneNormal));
 			Assert.IsTrue(dc.YBasis.IsOrthogonalTo(dc.PlaneNormal));
 			Assert.IsTrue(dc.XBasis.IsOrthogonalTo(dc.YBasis));
 		}
 
-		AssertPerpendicularity(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Up));
-		AssertPerpendicularity(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Down));
-		AssertPerpendicularity(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Up, Direction.Right));
-		AssertPerpendicularity(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Down, Direction.Right));
-		AssertPerpendicularity(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Right, Direction.Right));
-		AssertPerpendicularity(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Right));
-		AssertPerpendicularity(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Up));
-		AssertPerpendicularity(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Down));
+		AssertOrthogonality(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Up));
+		AssertOrthogonality(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Down));
+		AssertOrthogonality(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Up, Direction.Right));
+		AssertOrthogonality(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Down, Direction.Right));
+		AssertOrthogonality(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Right, Direction.Right));
+		AssertOrthogonality(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Right));
+		AssertOrthogonality(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Up));
+		AssertOrthogonality(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Down));
 	}
 
 	[Test]

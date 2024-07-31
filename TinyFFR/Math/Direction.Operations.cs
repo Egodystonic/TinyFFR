@@ -110,7 +110,7 @@ partial struct Direction :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(Direction other) => Angle.FromAngleBetweenDirections(this, other);
 
-	public Direction AnyPerpendicular() {
+	public Direction AnyOrthogonal() {
 		return FromVector3(Vector3.Cross(
 			ToVector3(),
 			MathF.Abs(Z) > MathF.Abs(X) ? new Vector3(1f, 0f, 0f) : new Vector3(0f, 0f, 1f)
@@ -302,12 +302,12 @@ partial struct Direction :
 	public static Direction CreateNewRandom(Direction coneCentre, Angle coneAngleMax, Angle coneAngleMin) {
 		if (coneCentre == None) return CreateNewRandom();
 
-		var offset = coneCentre * (coneCentre >> coneCentre.AnyPerpendicular()).WithAngle(Angle.CreateNewRandom(coneAngleMin.ClampZeroToHalfCircle(), coneAngleMax.ClampZeroToHalfCircle()));
+		var offset = coneCentre * (coneCentre >> coneCentre.AnyOrthogonal()).WithAngle(Angle.CreateNewRandom(coneAngleMin.ClampZeroToHalfCircle(), coneAngleMax.ClampZeroToHalfCircle()));
 		return offset * new Rotation(Angle.CreateNewRandom(Angle.Zero, Angle.FullCircle), coneCentre);
 	}
-	public static Direction CreateNewRandom(Plane plane) => CreateNewRandom(plane, plane.Normal.AnyPerpendicular(), Angle.FullCircle);
+	public static Direction CreateNewRandom(Plane plane) => CreateNewRandom(plane, plane.Normal.AnyOrthogonal(), Angle.FullCircle);
 	public static Direction CreateNewRandom(Plane plane, Direction arcCentre, Angle arcAngle) {
-		if (arcCentre.ParallelizedWith(plane) == null) arcCentre = plane.Normal.AnyPerpendicular();
+		if (arcCentre.ParallelizedWith(plane) == null) arcCentre = plane.Normal.AnyOrthogonal();
 		var halfAngle = arcAngle * 0.5f;
 		return FromPlaneAndPolarAngle(plane, arcCentre, Angle.CreateNewRandom(-halfAngle, halfAngle)); 
 	}

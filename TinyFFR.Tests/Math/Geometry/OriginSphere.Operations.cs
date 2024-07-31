@@ -605,7 +605,7 @@ partial class OriginSphereTest {
 		AssertAngle(30f, Direction.Down, (0f, 0f, TestSphere.Radius * -0.5f));
 		AssertAngle(30f, Direction.Down, (TestSphere.Radius * 0.5f, 0f, 0f));
 		AssertAngle(30f, Direction.Down, (TestSphere.Radius * -0.5f, 0f, 0f));
-		AssertAngle(30f, (-1f, -1f, -1f), Location.Origin + new Direction(-1f, -1f, -1f).AnyPerpendicular() * (TestSphere.Radius * 0.5f));
+		AssertAngle(30f, (-1f, -1f, -1f), Location.Origin + new Direction(-1f, -1f, -1f).AnyOrthogonal() * (TestSphere.Radius * 0.5f));
 
 		AssertAngle(null, Direction.Left, (0f, 0f, TestSphere.Radius + LocalTestTolerance));
 
