@@ -73,15 +73,19 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 			d2 = Direction.Renormalize(d2);
 		}
 
-		// TODO work out why replacing this with d1.Dot(d2) breaks so many tests for Direction.Operations
-		// Taking care of FP inaccuracy
+		// This switch tries to take care of some FP inaccuracy. For example,
+		// throughout my testing I've found that having two identical vectors/directions return an angle of "0.02degrees" instead of exactly 0 is frankly just irritating
+		// and throws off a lot of other assumptions throughout the codebase (similar for -v and v not returning 180 exactly, etc).
+		// Having "near enough" results 'clamp' to 0/90/180deg is a much less egregious "hack" for FP inaccuracy than having those identical vectors not return perfect results IMO.
+		// The other nice thing this does is make sure 'dot' never exceeds the [-1, 1] range (which causes NaNs from arccos).
+		// Also: If users REALLY don't want this, they can just do it manually for now.
 		var dot = Vector4.Dot(d1.AsVector4, d2.AsVector4);
-		dot = MathF.Abs(dot) switch {
-			> 1f - FloatingPointErrorMargin => 1f * MathF.Sign(dot),
-			< FloatingPointErrorMargin => 0f,
-			_ => dot
+		return dot switch {
+			> 1f - FloatingPointErrorMargin => Zero,
+			> -FloatingPointErrorMargin and < FloatingPointErrorMargin => QuarterCircle,
+			< -(1f - FloatingPointErrorMargin) => HalfCircle,
+			_ => FromCosine(dot)
 		};
-		return FromCosine(dot);
 	}
 
 	// TODO clarify this is the four-quadrant inverse tangent
