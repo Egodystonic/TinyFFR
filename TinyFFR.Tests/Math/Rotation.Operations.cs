@@ -313,7 +313,7 @@ partial class RotationTest {
 			}
 		}
 
-		Assert.Throws<ArgumentException>(() => NinetyAroundDown.Clamp(Rotation.None, NinetyAroundUp));
-		Assert.Throws<ArgumentException>(() => NinetyAroundDown.Clamp(NinetyAroundUp, Rotation.None));
+		Assert.AreEqual(NinetyAroundDown, NinetyAroundDown.Clamp(Rotation.None, NinetyAroundUp));
+		Assert.AreEqual(NinetyAroundDown, NinetyAroundDown.Clamp(NinetyAroundUp, Rotation.None));
 	}
 }

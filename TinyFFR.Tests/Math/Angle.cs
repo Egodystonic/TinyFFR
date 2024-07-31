@@ -96,13 +96,15 @@ partial class AngleTest {
 
 		// sine
 		for (var f = -2f; f < 2.05f; f += 0.05f) {
-			if (f < -1f || f > 1f) Assert.Throws<ArgumentOutOfRangeException>(() => Angle.FromSine(f));
+			if (f < -1f) Assert.AreEqual(-Angle.QuarterCircle, Angle.FromSine(f));
+			else if (f > 1f) Assert.AreEqual(Angle.QuarterCircle, Angle.FromSine(f));
 			else Assert.AreEqual(Angle.FromRadians(MathF.Asin(f)), Angle.FromSine(f));
 		}
 
 		// cosine
 		for (var f = -2f; f < 2.05f; f += 0.05f) {
-			if (f < -1f || f > 1f) Assert.Throws<ArgumentOutOfRangeException>(() => Angle.FromCosine(f));
+			if (f < -1f) Assert.AreEqual(Angle.HalfCircle, Angle.FromCosine(f));
+			else if (f > 1f) Assert.AreEqual(Angle.Zero, Angle.FromCosine(f));
 			else Assert.AreEqual(Angle.FromRadians(MathF.Acos(f)), Angle.FromCosine(f));
 		}
 	}
@@ -139,8 +141,8 @@ partial class AngleTest {
 			}
 		}
 
-		Assert.Throws<ArgumentOutOfRangeException>(() => Angle.FromAngleBetweenDirections(Direction.None, Direction.Left));
-		Assert.Throws<ArgumentOutOfRangeException>(() => Angle.FromAngleBetweenDirections(Direction.Left, Direction.None));
+		Assert.AreEqual(Angle.Zero, Angle.FromAngleBetweenDirections(Direction.None, Direction.Left));
+		Assert.AreEqual(Angle.Zero, Angle.FromAngleBetweenDirections(Direction.Left, Direction.None));
 	}
 
 	[Test]

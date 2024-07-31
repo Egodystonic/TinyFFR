@@ -827,54 +827,21 @@ partial class PlaneTest {
 			}
 		}
 
-		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Up));
-		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Down));
-		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Up, Direction.Right));
-		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Down, Direction.Right));
-		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Right, Direction.Right));
-		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Right));
-		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Up));
-		Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Down));
-	}
-
-	[Test]
-	public void DimensionConverterConstructionShouldUseAppropriateFloatingPointErrorMargin() {
-		var testList = new List<Direction>();
-		for (var x = -5f; x <= 5f; x += 1f) {
-			for (var y = -5f; y <= 5f; y += 1f) {
-				for (var z = -5f; z <= 5f; z += 1f) {
-					if (x == 0f && y == 0f && z == 0f) continue;
-					var dir = new Direction(x, y, z);
-					if (dir.OrthogonalizedAgainst(TestPlane) == dir) continue;
-					testList.Add(dir);
-				}
-			}
+		// This section checks that the dimension converters are always constructed with perpendicular basis directions even if we pass the most degenerate possible arguments
+		void AssertPerpendicularity(Plane.DimensionConverter dc) {
+			Assert.IsTrue(dc.XBasis.IsOrthogonalTo(dc.PlaneNormal));
+			Assert.IsTrue(dc.YBasis.IsOrthogonalTo(dc.PlaneNormal));
+			Assert.IsTrue(dc.XBasis.IsOrthogonalTo(dc.YBasis));
 		}
 
-		const float MinDifferentiablePostProjectionAngleDegrees = 0.01f;
-
-		for (var i = 0; i < testList.Count; ++i) {
-			var dirX = testList[i];
-			for (var j = i; j < testList.Count; ++j) {
-				var dirY = testList[j];
-
-				var dirXProjected = dirX.FastParallelizedWith(TestPlane);
-				var dirYProjected = dirY.FastParallelizedWith(TestPlane);
-				try {
-					if (dirXProjected.EqualsWithinAngle(dirYProjected, MinDifferentiablePostProjectionAngleDegrees) || dirXProjected.Flipped.EqualsWithinAngle(dirYProjected, MinDifferentiablePostProjectionAngleDegrees)) {
-						Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(Location.Origin, dirX, dirY));
-					}
-					else {
-						Assert.DoesNotThrow(() => TestPlane.CreateDimensionConverter(Location.Origin, dirX, dirY));
-					}
-				}
-				catch {
-					Console.WriteLine("\tX: " + dirX.ToStringDescriptive());
-					Console.WriteLine("\tY: " + dirY.ToStringDescriptive());
-					throw;
-				}
-			}
-		}
+		AssertPerpendicularity(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Up));
+		AssertPerpendicularity(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Down));
+		AssertPerpendicularity(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Up, Direction.Right));
+		AssertPerpendicularity(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Down, Direction.Right));
+		AssertPerpendicularity(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Right, Direction.Right));
+		AssertPerpendicularity(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Right));
+		AssertPerpendicularity(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Up));
+		AssertPerpendicularity(TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, Direction.Left, Direction.Down));
 	}
 
 	[Test]

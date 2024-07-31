@@ -58,11 +58,11 @@ partial struct Plane :
 	public Angle SignedAngleTo(Direction direction) => Angle.FromRadians(MathF.Asin(Normal.Dot(direction)));
 	public Angle SignedAngleTo(Vect vect) => SignedAngleTo(vect.Direction);
 	public Direction? ReflectionOf(Direction direction) {
-		if (direction.IsOrthogonalTo(Normal)) return null;
+		if (direction.IsParallelTo(this)) return null;
 		return FastReflectionOf(direction);
 	}
 	public Vect? ReflectionOf(Vect vect) {
-		if (vect.IsOrthogonalTo(Normal)) return null;
+		if (vect.IsParallelTo(this)) return null;
 		return FastReflectionOf(vect);
 	}
 	public Direction FastReflectionOf(Direction direction) { // TODO explain in XML that this returns the same direction if the input is parallel to the plane (this is okay as it's continuous across the whole range, so is the expected answer, just need to note it)
@@ -265,23 +265,17 @@ partial struct Plane :
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}
-	// TODO xmldoc exceptions and also that people who want to skip all the checks etc can create their own converter directly with the ctor
+	// TODO xmldoc what happens if axis is ortho to plane and also that people who want to skip all the checks or create a skewed basis etc can create their own converter directly with the ctor
 	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis) {
-		var xBasis = ParallelizationOf(twoDimensionalCoordinateXAxis) ?? throw new ArgumentException("X-Axis basis direction must not be perpendicular to the plane.", nameof(twoDimensionalCoordinateXAxis));
+		var xBasis = ParallelizationOf(twoDimensionalCoordinateXAxis) ?? Normal.AnyPerpendicular();
 		var yBasis = Direction.FromPerpendicular(Normal, xBasis);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}
-	// TODO xmldoc exceptions and also that people who want to skip all the checks etc can create their own converter directly with the ctor
+	// TODO xmldoc what happens if either axis is ortho to plane or parallel to each other and also that people who want to skip all the checks or create a skewed basis etc can create their own converter directly with the ctor
 	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis, Direction twoDimensionalCoordinateYAxis) {
-		var xBasis = ParallelizationOf(twoDimensionalCoordinateXAxis) ?? throw new ArgumentException("X-Axis basis direction must not be perpendicular to the plane.", nameof(twoDimensionalCoordinateXAxis));
-		var yBasis = ParallelizationOf(twoDimensionalCoordinateYAxis) ?? throw new ArgumentException("Y-Axis basis direction must not be perpendicular to the plane.", nameof(twoDimensionalCoordinateYAxis));
-		yBasis = yBasis.OrthogonalizedAgainst(xBasis) ?? throw new ArgumentException(
-			"Y-Axis basis direction must not be colinear with X-Axis basis direction (after both are projected on to the plane). " +
-			$"X after projection: {xBasis.ToStringDescriptive()}; " +
-			$"Y after projection: {yBasis.ToStringDescriptive()}; ",
-			nameof(twoDimensionalCoordinateYAxis)
-		);
+		var xBasis = ParallelizationOf(twoDimensionalCoordinateXAxis) ?? Normal.AnyPerpendicular();
+		var yBasis = ParallelizationOf(twoDimensionalCoordinateYAxis)?.OrthogonalizedAgainst(xBasis) ?? Direction.FromPerpendicular(xBasis, Normal);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}

@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2023
 
 using System.Buffers.Binary;
+using System.Drawing;
 
 namespace Egodystonic.TinyFFR;
 
@@ -52,33 +53,26 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	public static Angle FromFullCircleFraction(float fullCircleFraction) => new() { AsFullCircleFraction = fullCircleFraction };
 	
 	public static Angle FromSine(float sine) {
-		if (sine < -1f || sine > 1f) throw new ArgumentOutOfRangeException(nameof(sine), sine, "Values outside range [-1, 1] are not permitted.");
+		sine = Single.Clamp(sine, -1f, 1f);
 		return FromRadians(MathF.Asin(sine));
 	}
 
 	public static Angle FromCosine(float cosine) {
-		if (cosine < -1f || cosine > 1f) throw new ArgumentOutOfRangeException(nameof(cosine), cosine, "Values outside range [-1, 1] are not permitted.");
+		cosine = Single.Clamp(cosine, -1f, 1f);
 		return FromRadians(MathF.Acos(cosine));
 	}
 
 	public static Angle FromAngleBetweenDirections(Direction d1, Direction d2) {
 		const float FloatingPointErrorMargin = 1E-6f;
 
-		if (!d1.IsUnitLength) {
-			if (d1 == Direction.None) throw new ArgumentOutOfRangeException(nameof(d1), d1, $"Directions must not be {nameof(Direction.None)}.");
-			d1 = Direction.Renormalize(d1);
-		}
-		if (!d2.IsUnitLength) {
-			if (d2 == Direction.None) throw new ArgumentOutOfRangeException(nameof(d2), d2, $"Directions must not be {nameof(Direction.None)}.");
-			d2 = Direction.Renormalize(d2);
-		}
+		if (d1 == Direction.None || d2 == Direction.None) return Zero;
 
-		// This switch tries to take care of some FP inaccuracy. For example,
-		// throughout my testing I've found that having two identical vectors/directions return an angle of "0.02degrees" instead of exactly 0 is frankly just irritating
+		// This switch tries to take care of some FP inaccuracy.
+		// Throughout my testing I've found that having two identical vectors return an angle of "0.02degrees" instead of exactly 0 is frankly just irritating
 		// and throws off a lot of other assumptions throughout the codebase (similar for -v and v not returning 180 exactly, etc).
 		// Having "near enough" results 'clamp' to 0/90/180deg is a much less egregious "hack" for FP inaccuracy than having those identical vectors not return perfect results IMO.
 		// The other nice thing this does is make sure 'dot' never exceeds the [-1, 1] range (which causes NaNs from arccos).
-		// Also: If users REALLY don't want this, they can just do it manually for now.
+		// And ultimately, if users REALLY don't want this, they can just do it manually for now (it's not that hard to write a simpler version, it's just arccos(dot(d1, d2))).
 		var dot = Vector4.Dot(d1.AsVector4, d2.AsVector4);
 		return dot switch {
 			> 1f - FloatingPointErrorMargin => Zero,
@@ -106,7 +100,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 		Orientation2D.DownLeft => 225f,
 		Orientation2D.Down => 270f,
 		Orientation2D.DownRight => 315f,
-		_ => throw new ArgumentException($"Undefined {nameof(Orientation2D)} '{orientation}'.", nameof(orientation))
+		_ => throw new ArgumentOutOfRangeException($"Undefined {nameof(Orientation2D)}.", orientation, nameof(orientation))
 	};
 
 	/* I thought long and hard about whether this conversion should even exist and what it should assume the operand is.

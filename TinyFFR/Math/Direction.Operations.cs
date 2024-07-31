@@ -307,7 +307,7 @@ partial struct Direction :
 	}
 	public static Direction CreateNewRandom(Plane plane) => CreateNewRandom(plane, plane.Normal.AnyPerpendicular(), Angle.FullCircle);
 	public static Direction CreateNewRandom(Plane plane, Direction arcCentre, Angle arcAngle) {
-		if (arcCentre.ParallelizedWith(plane) == null) throw new ArgumentException("Arc centre must not be orthogonal to the plane.", nameof(arcCentre));
+		if (arcCentre.ParallelizedWith(plane) == null) arcCentre = plane.Normal.AnyPerpendicular();
 		var halfAngle = arcAngle * 0.5f;
 		return FromPlaneAndPolarAngle(plane, arcCentre, Angle.CreateNewRandom(-halfAngle, halfAngle)); 
 	}

@@ -77,12 +77,12 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(7.2f, TestCuboid.GetExtent(Axis.X), TestTolerance);
 		Assert.AreEqual(13.6f, TestCuboid.GetExtent(Axis.Y), TestTolerance);
 		Assert.AreEqual(1.4f, TestCuboid.GetExtent(Axis.Z), TestTolerance);
-		Assert.Throws<ArgumentException>(() => _ = TestCuboid.GetExtent(Axis.None));
+		Assert.Throws<ArgumentOutOfRangeException>(() => _ = TestCuboid.GetExtent(Axis.None));
 
 		Assert.AreEqual(0.5f * 7.2f, TestCuboid.GetHalfExtent(Axis.X), TestTolerance);
 		Assert.AreEqual(0.5f * 13.6f, TestCuboid.GetHalfExtent(Axis.Y), TestTolerance);
 		Assert.AreEqual(0.5f * 1.4f, TestCuboid.GetHalfExtent(Axis.Z), TestTolerance);
-		Assert.Throws<ArgumentException>(() => _ = TestCuboid.GetHalfExtent(Axis.None));
+		Assert.Throws<ArgumentOutOfRangeException>(() => _ = TestCuboid.GetHalfExtent(Axis.None));
 	}
 
 	[Test]
@@ -93,7 +93,7 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(7.2f * 1.4f, TestCuboid.GetSideSurfaceArea(CardinalOrientation3D.Down), TestTolerance);
 		Assert.AreEqual(7.2f * 13.6f, TestCuboid.GetSideSurfaceArea(CardinalOrientation3D.Forward), TestTolerance);
 		Assert.AreEqual(7.2f * 13.6f, TestCuboid.GetSideSurfaceArea(CardinalOrientation3D.Backward), TestTolerance);
-		Assert.Throws<ArgumentException>(() => _ = TestCuboid.GetSideSurfaceArea(CardinalOrientation3D.None));
+		Assert.Throws<ArgumentOutOfRangeException>(() => _ = TestCuboid.GetSideSurfaceArea(CardinalOrientation3D.None));
 	}
 
 	[Test]

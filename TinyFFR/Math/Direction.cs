@@ -107,7 +107,7 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	// TODO xmldoc: Imagine a plane, and imagine one direction along the plane is set as "zero". This factory method lets you specify directions as a polar angle offset from the zero direction on the plane
 	// TODO xmldoc: Angle is clockwise looking along the plane normal (much like rotations)
 	public static Direction FromPlaneAndPolarAngle(Plane plane, Direction zeroDegreesDirection, Angle polarAngle) {
-		if (zeroDegreesDirection.ParallelizedWith(plane) == null) throw new ArgumentException("0° direction can not be orthogonal to the plane.", nameof(zeroDegreesDirection));
+		if (zeroDegreesDirection.ParallelizedWith(plane) == null) zeroDegreesDirection = plane.Normal.AnyPerpendicular();
 		var converter = plane.CreateDimensionConverter(Location.Origin, zeroDegreesDirection);
 		return FromVector3(converter.ConvertDisregardingOrigin(XYPair<float>.FromPolarAngle(polarAngle)).ToVector3());
 	}

@@ -27,7 +27,7 @@ partial struct OriginCuboid {
 	// TODO these GetX methods need a naming pass and this file vs Cuboid.cs? etc
 
 	public Location GetCornerLocation(DiagonalOrientation3D corner) { // TODO add properties that enumerate corners, surfaces, etc and use them instead of foreach loops internally
-		if (corner == DiagonalOrientation3D.None) throw new ArgumentOutOfRangeException(nameof(corner), corner, $"Can not be '{nameof(DiagonalOrientation3D.None)}'.");
+		if (corner == DiagonalOrientation3D.None || !Enum.IsDefined(corner)) throw new ArgumentOutOfRangeException(nameof(corner), corner, $"Can not be '{nameof(DiagonalOrientation3D.None)}' or non-defined value.");
 
 		return new(
 			corner.GetAxisSign(Axis.X) * HalfWidth,
@@ -37,13 +37,13 @@ partial struct OriginCuboid {
 	}
 
 	public Plane GetSideSurfacePlane(CardinalOrientation3D side) { // TODO xmldoc that the planes' normals point away from the cuboid centre, e.g. side.ToDirection()
-		if (side == CardinalOrientation3D.None) throw new ArgumentOutOfRangeException(nameof(side), side, $"Can not be '{nameof(CardinalOrientation3D.None)}'.");
+		if (side == CardinalOrientation3D.None || !Enum.IsDefined(side)) throw new ArgumentOutOfRangeException(nameof(side), side, $"Can not be '{nameof(CardinalOrientation3D.None)}' or non-defined value.");
 
 		return new(side.ToDirection(), GetHalfExtent(side.GetAxis()));
 	}
 
 	public BoundedRay GetEdge(IntercardinalOrientation3D edge) {
-		if (edge == IntercardinalOrientation3D.None) throw new ArgumentOutOfRangeException(nameof(edge), edge, $"Can not be '{nameof(IntercardinalOrientation3D.None)}'.");
+		if (edge == IntercardinalOrientation3D.None || !Enum.IsDefined(edge)) throw new ArgumentOutOfRangeException(nameof(edge), edge, $"Can not be '{nameof(IntercardinalOrientation3D.None)}' or non-defined value.");
 
 		var unspecifiedAxis = edge.GetUnspecifiedAxis();
 		return new(
@@ -506,13 +506,13 @@ partial struct OriginCuboid {
 		Axis.X => Width,
 		Axis.Y => Height,
 		Axis.Z => Depth,
-		_ => throw new ArgumentException($"{nameof(Axis)} can not be {nameof(Axis.None)}.", nameof(axis))
+		_ => throw new ArgumentOutOfRangeException($"{nameof(Axis)} can not be {nameof(Axis.None)} or non-defined value.", axis, nameof(axis))
 	};
 	public float GetHalfExtent(Axis axis) => axis switch {
 		Axis.X => HalfWidth,
 		Axis.Y => HalfHeight,
 		Axis.Z => HalfDepth,
-		_ => throw new ArgumentException($"{nameof(Axis)} can not be {nameof(Axis.None)}.", nameof(axis))
+		_ => throw new ArgumentOutOfRangeException($"{nameof(Axis)} can not be {nameof(Axis.None)} or non-defined value.", axis, nameof(axis))
 	};
 
 	public float GetSideSurfaceArea(CardinalOrientation3D side) {
@@ -520,7 +520,7 @@ partial struct OriginCuboid {
 			Axis.X => HalfHeight * HalfDepth * 4f,
 			Axis.Y => HalfDepth * HalfWidth * 4f,
 			Axis.Z => HalfWidth * HalfHeight * 4f,
-			_ => throw new ArgumentException($"{nameof(CardinalOrientation3D)} can not be {nameof(CardinalOrientation3D.None)}.", nameof(side))
+			_ => throw new ArgumentOutOfRangeException($"{nameof(CardinalOrientation3D)} can not be {nameof(CardinalOrientation3D.None)} or non-defined value.", side, nameof(side))
 		};
 	}
 
