@@ -2281,6 +2281,31 @@ partial class BoundedRayTest {
 				Assert.AreEqual(expectation, flippedRay.IsApproximatelyParallelTo(dirRayBounded));
 				Assert.AreEqual(expectation, ray.IsApproximatelyParallelTo(dirRayBounded.Flipped));
 				Assert.AreEqual(expectation, flippedRay.IsApproximatelyParallelTo(dirRayBounded.Flipped));
+
+				Assert.AreEqual(expectation, ray.IsParallelTo(dir));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dir));
+				Assert.AreEqual(expectation, ray.IsParallelTo(dir.Flipped));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dir.Flipped));
+
+				Assert.AreEqual(expectation, ray.IsParallelTo(plane));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(plane));
+				Assert.AreEqual(expectation, ray.IsParallelTo(plane.Flipped));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(plane.Flipped));
+
+				Assert.AreEqual(expectation, ray.IsParallelTo(dirLine));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dirLine));
+				Assert.AreEqual(expectation, ray.IsParallelTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped)));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped)));
+
+				Assert.AreEqual(expectation, ray.IsParallelTo(dirRay));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dirRay));
+				Assert.AreEqual(expectation, ray.IsParallelTo(dirRay.Flipped));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dirRay.Flipped));
+
+				Assert.AreEqual(expectation, ray.IsParallelTo(dirRayBounded));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dirRayBounded));
+				Assert.AreEqual(expectation, ray.IsParallelTo(dirRayBounded.Flipped));
+				Assert.AreEqual(expectation, flippedRay.IsParallelTo(dirRayBounded.Flipped));
 			}
 			else {
 				Assert.AreEqual(expectation, ray.IsApproximatelyParallelTo(dir, tolerance.Value));
@@ -2317,6 +2342,13 @@ partial class BoundedRayTest {
 
 		Assert.AreEqual(false, TestRay.IsApproximatelyParallelTo(Direction.None));
 		Assert.AreEqual(false, TestRay.IsApproximatelyParallelTo(new BoundedRay(Location.Origin, Location.Origin)));
+		Assert.AreEqual(false, TestRay.IsParallelTo(Direction.None));
+		Assert.AreEqual(false, TestRay.IsParallelTo(new BoundedRay(Location.Origin, Location.Origin)));
+
+		Assert.AreEqual(false, new BoundedRay(Location.Origin, Location.Origin).IsApproximatelyParallelTo(Direction.Up));
+		Assert.AreEqual(false, new BoundedRay(Location.Origin, Location.Origin).IsParallelTo(Direction.Up));
+		Assert.AreEqual(false, new BoundedRay(Location.Origin, Location.Origin).IsApproximatelyParallelTo(Direction.None));
+		Assert.AreEqual(false, new BoundedRay(Location.Origin, Location.Origin).IsParallelTo(Direction.None));
 	}
 
 	[Test]
@@ -2353,6 +2385,32 @@ partial class BoundedRayTest {
 				Assert.AreEqual(expectation, flippedRay.IsApproximatelyOrthogonalTo(dirRayBounded));
 				Assert.AreEqual(expectation, ray.IsApproximatelyOrthogonalTo(dirRayBounded.Flipped));
 				Assert.AreEqual(expectation, flippedRay.IsApproximatelyOrthogonalTo(dirRayBounded.Flipped));
+
+
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dir));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dir));
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dir.Flipped));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dir.Flipped));
+
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(plane));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(plane));
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(plane.Flipped));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(plane.Flipped));
+
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dirLine));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dirLine));
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped)));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(new Line(dirLine.PointOnLine, dirLine.Direction.Flipped)));
+
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dirRay));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dirRay));
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dirRay.Flipped));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dirRay.Flipped));
+
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dirRayBounded));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dirRayBounded));
+				Assert.AreEqual(expectation, ray.IsOrthogonalTo(dirRayBounded.Flipped));
+				Assert.AreEqual(expectation, flippedRay.IsOrthogonalTo(dirRayBounded.Flipped));
 			}
 			else {
 				Assert.AreEqual(expectation, ray.IsApproximatelyOrthogonalTo(dir, tolerance.Value));
@@ -2389,6 +2447,13 @@ partial class BoundedRayTest {
 
 		Assert.AreEqual(false, TestRay.IsApproximatelyOrthogonalTo(Direction.None));
 		Assert.AreEqual(false, TestRay.IsApproximatelyOrthogonalTo(new BoundedRay(Location.Origin, Location.Origin)));
+		Assert.AreEqual(false, TestRay.IsOrthogonalTo(Direction.None));
+		Assert.AreEqual(false, TestRay.IsOrthogonalTo(new BoundedRay(Location.Origin, Location.Origin)));
+
+		Assert.AreEqual(false, new BoundedRay(Location.Origin, Location.Origin).IsApproximatelyOrthogonalTo(Direction.Up));
+		Assert.AreEqual(false, new BoundedRay(Location.Origin, Location.Origin).IsOrthogonalTo(Direction.Up));
+		Assert.AreEqual(false, new BoundedRay(Location.Origin, Location.Origin).IsApproximatelyOrthogonalTo(Direction.None));
+		Assert.AreEqual(false, new BoundedRay(Location.Origin, Location.Origin).IsOrthogonalTo(Direction.None));
 	}
 
 	[Test]

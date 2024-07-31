@@ -901,6 +901,15 @@ partial class PlaneTest {
 				Assert.AreEqual(expectation, (-p).IsApproximatelyParallelTo(v));
 				Assert.AreEqual(expectation, (-p).IsApproximatelyParallelTo(-d));
 				Assert.AreEqual(expectation, (-p).IsApproximatelyParallelTo(-v));
+
+				Assert.AreEqual(expectation, p.IsParallelTo(d));
+				Assert.AreEqual(expectation, p.IsParallelTo(v));
+				Assert.AreEqual(expectation, p.IsParallelTo(-d));
+				Assert.AreEqual(expectation, p.IsParallelTo(-v));
+				Assert.AreEqual(expectation, (-p).IsParallelTo(d));
+				Assert.AreEqual(expectation, (-p).IsParallelTo(v));
+				Assert.AreEqual(expectation, (-p).IsParallelTo(-d));
+				Assert.AreEqual(expectation, (-p).IsParallelTo(-v));
 			}
 			else {
 				Assert.AreEqual(expectation, p.IsApproximatelyParallelTo(d, tolerance.Value));
@@ -989,6 +998,15 @@ partial class PlaneTest {
 				Assert.AreEqual(expectation, (-p).IsApproximatelyOrthogonalTo(v));
 				Assert.AreEqual(expectation, (-p).IsApproximatelyOrthogonalTo(-d));
 				Assert.AreEqual(expectation, (-p).IsApproximatelyOrthogonalTo(-v));
+
+				Assert.AreEqual(expectation, p.IsOrthogonalTo(d));
+				Assert.AreEqual(expectation, p.IsOrthogonalTo(v));
+				Assert.AreEqual(expectation, p.IsOrthogonalTo(-d));
+				Assert.AreEqual(expectation, p.IsOrthogonalTo(-v));
+				Assert.AreEqual(expectation, (-p).IsOrthogonalTo(d));
+				Assert.AreEqual(expectation, (-p).IsOrthogonalTo(v));
+				Assert.AreEqual(expectation, (-p).IsOrthogonalTo(-d));
+				Assert.AreEqual(expectation, (-p).IsOrthogonalTo(-v));
 			}
 			else {
 				Assert.AreEqual(expectation, p.IsApproximatelyOrthogonalTo(d, tolerance.Value));

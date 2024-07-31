@@ -49,7 +49,7 @@ partial struct Direction : IAngleMeasurable<Plane>, IReflectable<Plane, Directio
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsApproximatelyParallelTo(Plane plane, Angle tolerance) => plane.IsApproximatelyParallelTo(this, tolerance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsOrthogonalTo(Plane plane) => plane.IsParallelTo(this);
+	public bool IsOrthogonalTo(Plane plane) => plane.IsOrthogonalTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsApproximatelyOrthogonalTo(Plane plane) => plane.IsApproximatelyOrthogonalTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -87,7 +87,7 @@ partial struct Vect : IAngleMeasurable<Plane>, IReflectable<Plane, Vect>, IProje
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsApproximatelyParallelTo(Plane plane, Angle tolerance) => plane.IsApproximatelyParallelTo(this, tolerance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsOrthogonalTo(Plane plane) => plane.IsParallelTo(this);
+	public bool IsOrthogonalTo(Plane plane) => plane.IsOrthogonalTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsApproximatelyOrthogonalTo(Plane plane) => plane.IsApproximatelyOrthogonalTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

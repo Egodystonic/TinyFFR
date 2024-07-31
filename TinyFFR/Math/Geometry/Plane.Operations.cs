@@ -97,7 +97,7 @@ partial struct Plane :
 	public bool IsApproximatelyOrthogonalTo(Direction direction) => IsApproximatelyOrthogonalTo(direction, DefaultParallelOrthogonalTestApproximationDegrees);
 	public bool IsApproximatelyOrthogonalTo(Direction direction, Angle tolerance) => direction != Direction.None && AngleTo(direction).Equals(Angle.QuarterCircle, tolerance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsOrthogonalTo(Vect vect) => Normal.IsOrthogonalTo(vect);
+	public bool IsOrthogonalTo(Vect vect) => Normal.IsParallelTo(vect);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsApproximatelyOrthogonalTo(Vect vect) => IsApproximatelyOrthogonalTo(vect, DefaultParallelOrthogonalTestApproximationDegrees);
 	public bool IsApproximatelyOrthogonalTo(Vect vect, Angle tolerance) => vect != Vect.Zero && AngleTo(vect).Equals(Angle.QuarterCircle, tolerance);
