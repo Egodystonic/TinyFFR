@@ -25,7 +25,9 @@ partial struct Direction :
 	IParallelizationTarget<Direction, Vect>,
 	IOrthogonalizationTarget<Direction, Direction>,
 	IParallelizationTarget<Direction, Direction> {
-	public const float DefaultAngularToleranceDegrees = 1E-4f;
+	public const float DefaultParallelOrthogonalTestApproximationDegrees = 0.1f;
+	const float ParallelComponentsCheckErrorMargin = 1E-5f;
+	const float OrthogonalDotErrorMargin = 1E-5f;
 
 	public float this[Axis axis] => axis switch {
 		Axis.X => X,
@@ -116,9 +118,9 @@ partial struct Direction :
 	}
 
 	public Direction? OrthogonalizedAgainst(Direction d) {
-		if (this == None || d == None) return None;
+		if (this == None || d == None) return this;
 		if (IsParallelTo(d)) return null;
-		else return new(Normalize(AsVector4 - d.AsVector4 * Dot(d)));
+		return new(Normalize(AsVector4 - d.AsVector4 * Dot(d)));
 	}
 	public Direction FastOrthogonalizedAgainst(Direction d) => new(Normalize(AsVector4 - d.AsVector4 * Vector4.Dot(AsVector4, d.AsVector4)));
 
@@ -128,9 +130,10 @@ partial struct Direction :
 	public Vect FastOrthogonalizationOf(Vect v) => v.FastOrthogonalizedAgainst(this);
 
 	public Direction? ParallelizedWith(Direction d) {
-		if (this == None || d == None) return None;
-		if (IsOrthogonalTo(d)) return null;
-		return new(d.AsVector4 * MathF.Sign(Dot(d)));
+		if (this == None || d == None) return this;
+		var dot = Vector4.Dot(AsVector4, d.AsVector4);
+		if (MathF.Abs(dot) < OrthogonalDotErrorMargin) return null;
+		return new(d.AsVector4 * MathF.Sign(dot));
 	}
 	public Direction FastParallelizedWith(Direction d) => new(d.AsVector4 * MathF.Sign(Vector4.Dot(AsVector4, d.AsVector4)));
 
@@ -152,24 +155,29 @@ partial struct Direction :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction FastParallelizationOf(Direction d) => d.FastParallelizedWith(this);
 
-
-	public bool IsOrthogonalTo(Direction other) => IsOrthogonalTo(other, DefaultAngularToleranceDegrees);
-	public bool IsOrthogonalTo(Direction other, Angle tolerance) {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // TODO make it clear in xmldoc that this is prone to fp inaccuracy, better to use approximate variant in most cases, but this is faster and helps determine whether ParallelizedWith will return null
+	public bool IsOrthogonalTo(Direction other) => MathF.Abs(Vector4.Dot(AsVector4, other.AsVector4)) < OrthogonalDotErrorMargin && this != None && other != None;
+	public bool IsApproximatelyOrthogonalTo(Direction other) => IsApproximatelyOrthogonalTo(other, DefaultParallelOrthogonalTestApproximationDegrees);
+	public bool IsApproximatelyOrthogonalTo(Direction other, Angle tolerance) {
 		if (this == None || other == None) return false;
 		return AngleTo(other).Equals(Angle.QuarterCircle, tolerance);
 	}
 
-	public bool IsParallelTo(Direction other) => IsParallelTo(other, DefaultAngularToleranceDegrees);
-	public bool IsParallelTo(Direction other, Angle tolerance) {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // TODO make it clear in xmldoc that this is prone to fp inaccuracy, better to use approximate variant in most cases, but this is faster, but this is faster and helps determine whether OrthogonalizedWith will return null
+	public bool IsParallelTo(Direction other) => (Equals(other, ParallelComponentsCheckErrorMargin) || Equals(-other, ParallelComponentsCheckErrorMargin)) && this != None;
+	public bool IsApproximatelyParallelTo(Direction other) => IsApproximatelyParallelTo(other, DefaultParallelOrthogonalTestApproximationDegrees);
+	public bool IsApproximatelyParallelTo(Direction other, Angle tolerance) {
 		if (this == None || other == None) return false;
 		var angle = AngleTo(other);
 		return angle.Equals(Angle.Zero, tolerance) || angle.Equals(Angle.HalfCircle, tolerance);
 	}
 
-	public bool IsOrthogonalTo(Vect v) => IsOrthogonalTo(v, DefaultAngularToleranceDegrees);
-	public bool IsOrthogonalTo(Vect v, Angle tolerance) => IsOrthogonalTo(v.Direction, tolerance);
-	public bool IsParallelTo(Vect v) => IsParallelTo(v, DefaultAngularToleranceDegrees);
-	public bool IsParallelTo(Vect v, Angle tolerance) => IsParallelTo(v.Direction, tolerance);
+	public bool IsOrthogonalTo(Vect v) => IsOrthogonalTo(v.Direction);
+	public bool IsApproximatelyOrthogonalTo(Vect v) => IsApproximatelyOrthogonalTo(v, DefaultParallelOrthogonalTestApproximationDegrees);
+	public bool IsApproximatelyOrthogonalTo(Vect v, Angle tolerance) => IsApproximatelyOrthogonalTo(v.Direction, tolerance);
+	public bool IsParallelTo(Vect v) => IsParallelTo(v.Direction);
+	public bool IsApproximatelyParallelTo(Vect v) => IsApproximatelyParallelTo(v, DefaultParallelOrthogonalTestApproximationDegrees);
+	public bool IsApproximatelyParallelTo(Vect v, Angle tolerance) => IsApproximatelyParallelTo(v.Direction, tolerance);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator >>(Direction start, Direction end) => Rotation.FromStartAndEndDirection(start, end);
@@ -207,13 +215,8 @@ partial struct Direction :
 	// TODO if the user wants to clamp within a 3D cone (even >= 90deg cone), they should use the other Clamp overload.
 	// TODO If the user wants to clamp within a 2D arc, they should use the other other Clamp overload
 	public Direction Clamp(Direction min, Direction max) {
-		// Doesn't make sense to clamp to "None", so return None
-		if (min == None || max == None || this == None) return None;
-
-		// If min and max are antipodal then the entire range of possible directions is valid, so just return this
-		if (min == -max) return this;
-		// Else if min and max are the same then we just return min
-		else if (min == max) return min;
+		// Doesn't make sense to clamp to "None", so return this
+		if (min == None || max == None || this == None) return this;
 
 		// Create a plane that is aligned with the great circle formed between min and max on the unit sphere, 
 		// and then create a dimension converter to convert min, max, and this to 2D; with 'min' representing the X-axis
@@ -223,7 +226,13 @@ partial struct Direction :
 		var maxLoc = (Location) max;
 		var thisLoc = (Location) this;
 		var greatCirclePlane = Plane.FromTriangleOnSurface(minLoc, maxLoc, Location.Origin);
-		var converter = greatCirclePlane.CreateDimensionConverter(Location.Origin, min);
+		if (greatCirclePlane == null) {
+			// If min and max are antipodal then the entire range of possible directions is valid, so just return this
+			if (min.Equals(-max, 0.5f)) return this;
+			// Else if min and max are the same then we just return min
+			else return min;
+		}
+		var converter = greatCirclePlane.Value.CreateDimensionConverter(Location.Origin, min);
 
 		// Project max and this on to the 2D plane. Then, compare their polar angles. If this direction's polar angle is between 0 and
 		// max's polar angle, it already lies on the arc (after projection), so return the renormalization of the projected value back in
@@ -243,8 +252,7 @@ partial struct Direction :
 	}
 
 	public Direction Clamp(Direction target, Angle maxDifference) {
-		if (target == None) throw new ArgumentException($"Target direction can not be '{nameof(None)}'.", nameof(target));
-		if (this == None) return None;
+		if (target == None || this == None) return this;
 		maxDifference = maxDifference.ClampZeroToHalfCircle();
 
 		var difference = target ^ this;
@@ -255,14 +263,14 @@ partial struct Direction :
 
 	// TODO xmldoc: Clamps on to a given arc (arcCentre + maxDiff) around a plane (plane); either leaving this direction directly clamped on to the plane or still with the 3D component (retainEtc). Also mention that the plane's location is not used, only its normal
 	// TODO xmldoc make it clear that the max arc difference is split across the centre direction; so e.g. a max diff of 90deg will result in 45deg either side
-	public Direction? Clamp(Plane plane, Direction arcCentre, Angle maxArcCentreDifference, bool retainOrthogonalDimension) {
-		if (this == None || arcCentre == None) return None;
-		if (arcCentre.ProjectedOnTo(plane) == null) return null;
+	public Direction Clamp(Plane plane, Direction arcCentre, Angle maxArcCentreDifference, bool retainOrthogonalDimension) {
+		if (this == None || arcCentre == None) return this;
+		if (arcCentre.ParallelizedWith(plane) == null) return this;
 		var halfArc = maxArcCentreDifference.ClampZeroToFullCircle() * 0.5f;
 		var converter = plane.CreateDimensionConverter(Location.Origin, arcCentre);
 		var resultOnPlane = converter.ConvertDisregardingOrigin((Location) this);
 		var polarAngle = (resultOnPlane with { Y = -resultOnPlane.Y }).PolarAngle; // We have to flip Y because the co-ordinate system after 2D conversion has inverted coordinates
-		if (polarAngle == null) return null;
+		if (polarAngle == null) return this;
 
 		// Outside the max arc diff
 		if (polarAngle.Value.NormalizedDifferenceTo(Angle.Zero) > halfArc) {
@@ -292,14 +300,14 @@ partial struct Direction :
 	}
 	public static Direction CreateNewRandom(Direction coneCentre, Angle coneAngleMax) => CreateNewRandom(coneCentre, coneAngleMax, Angle.Zero);
 	public static Direction CreateNewRandom(Direction coneCentre, Angle coneAngleMax, Angle coneAngleMin) {
-		if (coneCentre == None) throw new ArgumentException($"Cone centre can not be '{nameof(None)}'.", nameof(coneCentre));
+		if (coneCentre == None) return CreateNewRandom();
 
 		var offset = coneCentre * (coneCentre >> coneCentre.AnyPerpendicular()).WithAngle(Angle.CreateNewRandom(coneAngleMin.ClampZeroToHalfCircle(), coneAngleMax.ClampZeroToHalfCircle()));
 		return offset * new Rotation(Angle.CreateNewRandom(Angle.Zero, Angle.FullCircle), coneCentre);
 	}
 	public static Direction CreateNewRandom(Plane plane) => CreateNewRandom(plane, plane.Normal.AnyPerpendicular(), Angle.FullCircle);
 	public static Direction CreateNewRandom(Plane plane, Direction arcCentre, Angle arcAngle) {
-		if (arcCentre.ProjectedOnTo(plane) == null) throw new ArgumentException("Arc centre must not be orthogonal to the plane.", nameof(arcCentre));
+		if (arcCentre.ParallelizedWith(plane) == null) throw new ArgumentException("Arc centre must not be orthogonal to the plane.", nameof(arcCentre));
 		var halfAngle = arcAngle * 0.5f;
 		return FromPlaneAndPolarAngle(plane, arcCentre, Angle.CreateNewRandom(-halfAngle, halfAngle)); 
 	}
@@ -317,13 +325,12 @@ partial struct Direction :
 		return result;
 	}
 	static void GetNearestDirectionAndOrientation(Direction targetDir, ReadOnlySpan<Direction> span, out Orientation3D orientation, out Direction direction) {
+		orientation = Orientation3D.None;
+		direction = None;
 		if (targetDir == None) {
-			orientation = Orientation3D.None;
-			direction = None;
 			return;
 		}
 
-		direction = default;
 		var dirAngle = Angle.FullCircle;
 		for (var i = 0; i < span.Length; ++i) {
 			var testDir = span[i];

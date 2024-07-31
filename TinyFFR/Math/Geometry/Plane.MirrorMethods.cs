@@ -21,7 +21,7 @@ partial struct Location : ISignedDistanceMeasurable<Location, Plane>, IContainab
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public XYPair<float> ProjectedTo2DOn(Plane plane) => plane.ProjectionTo2DOf(this);
 }
-partial struct Direction : IAngleMeasurable<Plane>, IReflectable<Plane, Direction>, IProjectable<Direction, Plane>, IParallelizable<Direction, Plane>, IOrthogonalizable<Direction, Plane> {
+partial struct Direction : IAngleMeasurable<Plane>, IReflectable<Plane, Direction>, IParallelizable<Direction, Plane>, IOrthogonalizable<Direction, Plane> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(Plane plane) => plane.AngleTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -35,10 +35,6 @@ partial struct Direction : IAngleMeasurable<Plane>, IReflectable<Plane, Directio
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction FastReflectedBy(Plane plane) => plane.FastReflectionOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction? ProjectedOnTo(Plane plane) => plane.ProjectionOf(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction FastProjectedOnTo(Plane plane) => plane.FastProjectionOf(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction? ParallelizedWith(Plane plane) => plane.ParallelizationOf(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction FastParallelizedWith(Plane plane) => plane.FastParallelizationOf(this);
@@ -49,11 +45,15 @@ partial struct Direction : IAngleMeasurable<Plane>, IReflectable<Plane, Directio
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsParallelTo(Plane plane) => plane.IsParallelTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsParallelTo(Plane plane, Angle tolerance) => plane.IsParallelTo(this, tolerance);
+	public bool IsApproximatelyParallelTo(Plane plane) => plane.IsApproximatelyParallelTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsOrthogonalTo(Plane plane) => plane.IsOrthogonalTo(this);
+	public bool IsApproximatelyParallelTo(Plane plane, Angle tolerance) => plane.IsApproximatelyParallelTo(this, tolerance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsOrthogonalTo(Plane plane, Angle tolerance) => plane.IsOrthogonalTo(this, tolerance);
+	public bool IsOrthogonalTo(Plane plane) => plane.IsParallelTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsApproximatelyOrthogonalTo(Plane plane) => plane.IsApproximatelyOrthogonalTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsApproximatelyOrthogonalTo(Plane plane, Angle tolerance) => plane.IsApproximatelyOrthogonalTo(this, tolerance);
 }
 partial struct Vect : IAngleMeasurable<Plane>, IReflectable<Plane, Vect>, IProjectable<Vect, Plane>, IParallelizable<Vect, Plane>, IOrthogonalizable<Vect, Plane> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -83,11 +83,15 @@ partial struct Vect : IAngleMeasurable<Plane>, IReflectable<Plane, Vect>, IProje
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsParallelTo(Plane plane) => plane.IsParallelTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsParallelTo(Plane plane, Angle tolerance) => plane.IsParallelTo(this, tolerance);
+	public bool IsApproximatelyParallelTo(Plane plane) => plane.IsApproximatelyParallelTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsOrthogonalTo(Plane plane) => plane.IsOrthogonalTo(this);
+	public bool IsApproximatelyParallelTo(Plane plane, Angle tolerance) => plane.IsApproximatelyParallelTo(this, tolerance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsOrthogonalTo(Plane plane, Angle tolerance) => plane.IsOrthogonalTo(this, tolerance);
+	public bool IsOrthogonalTo(Plane plane) => plane.IsParallelTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsApproximatelyOrthogonalTo(Plane plane) => plane.IsApproximatelyOrthogonalTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsApproximatelyOrthogonalTo(Plane plane, Angle tolerance) => plane.IsApproximatelyOrthogonalTo(this, tolerance);
 }
 partial struct XYPair<T> {
 	public Location ExpandedTo3DOn(Plane plane) => plane.ExpansionTo3DOf(Cast<float>()); // TODO go back to "holograph" for these names?

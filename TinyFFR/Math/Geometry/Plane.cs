@@ -14,7 +14,7 @@ public enum PlaneObjectRelationship {
 
 [DebuggerDisplay("{ToStringDescriptive()}")]
 public readonly partial struct Plane : IMathPrimitive<Plane>, IDescriptiveStringProvider {
-	public const float DefaultPlaneThickness = ILineLike.DefaultLineThickness;
+	public const float DefaultPlaneThickness = 0.01f;
 	readonly Vector3 _normal;
 	readonly float _smallestDistanceFromOriginAlongNormal;
 
@@ -36,36 +36,17 @@ public readonly partial struct Plane : IMathPrimitive<Plane>, IDescriptiveString
 	}
 
 	#region Factories and Conversions
-	// TODO in xmldoc recommend using FromNormalAndDistanceFromOrigin where possible as it can't throw an exception and it's faster
-	public static Plane FromPointClosestToOrigin(Location pointClosestToOrigin, bool normalFacesOrigin) {
+	public static Plane? FromPointClosestToOrigin(Location pointClosestToOrigin, bool normalFacesOrigin) {
 		var vectFromOriginToClosestPoint = (Vect) pointClosestToOrigin;
 		var direction = vectFromOriginToClosestPoint.Direction;
-		if (direction == Direction.None) {
-			throw new ArgumentException($"{nameof(FromPointClosestToOrigin)} can not be used when {nameof(pointClosestToOrigin)} is equal to {nameof(Location.Origin)} " +
-										$"as there are infinite possible solutions.", nameof(pointClosestToOrigin));
-		}
+		if (direction == Direction.None) return null;
 		return new(normalFacesOrigin ? direction.Flipped : direction, vectFromOriginToClosestPoint.Length * (normalFacesOrigin ? -1f : 1f));
 	}
 
-	public static Plane FromTriangleOnSurface(Location a, Location b, Location c) { // TODO if we made this nullable we could use it in Direction.Clamp as a free check
+	public static Plane? FromTriangleOnSurface(Location a, Location b, Location c) {
 		var normal = Direction.FromVector3(Vector3.Cross(b.ToVector3() - a.ToVector3(), c.ToVector3() - a.ToVector3()));
-		if (normal != Direction.None) return new(normal, a);
-
-		// Everything below this line is just handling the fact that the points are colinear and creating the right exception message
-		const float FloatingPointErrorMargin = 1E-2f;
-		Line? line;
-		if (!a.Equals(b, FloatingPointErrorMargin)) line = Line.FromTwoPoints(a, b);
-		else if (!b.Equals(c, FloatingPointErrorMargin)) line = Line.FromTwoPoints(b, c);
-		else line = null;
-
-		if (line != null) {
-			throw new ArgumentException($"The three given locations ({a}, {b}, {c}) were colinear along {line}, " +
-										$"which is not sufficient to specify a single unique {nameof(Plane)} (i.e. the locations do not form a triangle).");
-		}
-		else {
-			throw new ArgumentException($"The three given locations were all identical, " +
-										$"which is not sufficient to specify a single unique {nameof(Plane)} (i.e. the locations do not form a triangle).");
-		}
+		if (normal == Direction.None) return null;
+		return new(normal, a);
 	}
 	#endregion
 

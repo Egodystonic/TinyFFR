@@ -103,7 +103,8 @@ interface IProjectionTarget<in TSelf, TOther> : IProjectionTarget<TOther> where 
 
 public interface IParallelDiscernible<in TOther> {
 	bool IsParallelTo(TOther element);
-	bool IsParallelTo(TOther element, Angle tolerance);
+	bool IsApproximatelyParallelTo(TOther element);
+	bool IsApproximatelyParallelTo(TOther element, Angle tolerance);
 }
 public interface IParallelizable<TSelf, in TOther> : IParallelDiscernible<TOther> where TSelf : struct {
 	TSelf? ParallelizedWith(TOther element);
@@ -118,7 +119,8 @@ interface IParallelizationTarget<in TSelf, TOther> : IParallelizationTarget<TOth
 
 public interface IOrthogonalDiscernible<in TOther> {
 	bool IsOrthogonalTo(TOther element);
-	bool IsOrthogonalTo(TOther element, Angle tolerance);
+	bool IsApproximatelyOrthogonalTo(TOther element);
+	bool IsApproximatelyOrthogonalTo(TOther element, Angle tolerance);
 }
 public interface IOrthogonalizable<TSelf, in TOther> : IOrthogonalDiscernible<TOther> where TSelf : struct {
 	TSelf? OrthogonalizedAgainst(TOther element);

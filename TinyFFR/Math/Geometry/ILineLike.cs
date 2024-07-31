@@ -31,7 +31,7 @@ public partial interface ILineLike :
 	IConvexShapeDistanceMeasurable,
 	IConvexShapeIntersectable<ConvexShapeLineIntersection> {
 	public const float DefaultLineThickness = 0.01f;
-	public const float DefaultAngularToleranceDegrees = Direction.DefaultAngularToleranceDegrees;
+	public const float DefaultParallelOrthogonalColinearTestApproximationDegrees = Direction.DefaultParallelOrthogonalTestApproximationDegrees;
 
 	Location StartPoint { get; }
 	Direction Direction { get; }
@@ -64,15 +64,18 @@ public partial interface ILineLike :
 	sealed Ray CoerceToRay() => new(StartPoint, Direction);
 	sealed BoundedRay CoerceToBoundedRay(float length) => BoundedRay.FromStartPointAndVect(StartPoint, Direction * length);
 
-	bool IsColinearWith(Line line);
-	bool IsColinearWith(Ray ray);
-	bool IsColinearWith(BoundedRay ray);
-	bool IsColinearWith(Line line, float lineThickness, Angle tolerance);
-	bool IsColinearWith(Ray ray, float lineThickness, Angle tolerance);
-	bool IsColinearWith(BoundedRay ray, float lineThickness, Angle tolerance);
+	bool IsExactlyColinearWith(Line line, float lineThickness);
+	bool IsExactlyColinearWith(Ray ray, float lineThickness);
+	bool IsExactlyColinearWith(BoundedRay ray, float lineThickness);
+	bool IsApproximatelyColinearWith(Line line);
+	bool IsApproximatelyColinearWith(Ray ray);
+	bool IsApproximatelyColinearWith(BoundedRay ray);
+	bool IsApproximatelyColinearWith(Line line, float lineThickness, Angle tolerance);
+	bool IsApproximatelyColinearWith(Ray ray, float lineThickness, Angle tolerance);
+	bool IsApproximatelyColinearWith(BoundedRay ray, float lineThickness, Angle tolerance);
 
 	protected internal static float? CalculateUnboundedIntersectionDistanceOnThisLine<TThis, TOther>(TThis @this, TOther other) where TThis : ILineLike where TOther : ILineLike {
-		const float ParallelTolerance = 1E-7f;
+		const float ParallelTolerance = 1E-6f;
 
 		var thisStart = @this.StartPoint.ToVector3();
 		var otherStart = other.StartPoint.ToVector3();
@@ -81,11 +84,9 @@ public partial interface ILineLike :
 		var otherDir = other.Direction.ToVector3();
 
 		var dot = Vector3.Dot(thisDir, otherDir);
-		var linesAreParallel = 1f - MathF.Abs(dot) < ParallelTolerance;
-
-		if (linesAreParallel) return null;
-
 		var oneMinusDotSquared = 1f - (dot * dot);
+		if (oneMinusDotSquared < ParallelTolerance) return null; // We have a small tolerance because as we approach 0 the division on the last step will balloon the resultant answer in to nonsensical values
+
 		var startDiff = thisStart - otherStart;
 		var localOrientationStartDiffDot = Vector3.Dot(thisDir, startDiff);
 		var otherOrientationStartDiffDot = Vector3.Dot(otherDir, startDiff);
@@ -93,7 +94,7 @@ public partial interface ILineLike :
 	}
 
 	protected internal static (float ThisDistance, float OtherDistance)? CalculateUnboundedIntersectionDistancesOnBothLines<TThis, TOther>(TThis @this, TOther other) where TThis : ILineLike where TOther : ILineLike {
-		const float ParallelTolerance = 1E-7f;
+		const float ParallelTolerance = 1E-6f;
 
 		var thisStart = @this.StartPoint.ToVector3();
 		var otherStart = other.StartPoint.ToVector3();
@@ -102,11 +103,9 @@ public partial interface ILineLike :
 		var otherDir = other.Direction.ToVector3();
 
 		var dot = Vector3.Dot(thisDir, otherDir);
-		var linesAreParallel = 1f - MathF.Abs(dot) < ParallelTolerance;
-
-		if (linesAreParallel) return null;
-
 		var oneMinusDotSquared = 1f - (dot * dot);
+		if (oneMinusDotSquared < ParallelTolerance) return null; // We have a small tolerance because as we approach 0 the division on the last steps will balloon the resultant answer in to nonsensical values
+
 		var startDiff = thisStart - otherStart;
 		var localOrientationStartDiffDot = Vector3.Dot(thisDir, startDiff);
 		var otherOrientationStartDiffDot = Vector3.Dot(otherDir, startDiff);

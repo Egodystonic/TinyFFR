@@ -264,6 +264,7 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 		else return plane.PointClosestTo(closestPointOnLine);
 	}
 
+	// TODO xmldoc for all Fast... variants here make it clear that as well direction not being None or ortho/parallel etc, StartToEndVect can not be zero
 	public BoundedRay? ParallelizedWith(Direction direction) => ParallelizedAroundStartWith(direction);
 	public BoundedRay FastParallelizedWith(Direction direction) => FastParallelizedAroundStartWith(direction);
 	public BoundedRay? OrthogonalizedAgainst(Direction direction) => OrthogonalizedAroundStartAgainst(direction);

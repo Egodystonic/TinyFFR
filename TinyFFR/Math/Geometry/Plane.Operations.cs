@@ -9,11 +9,10 @@ partial struct Plane :
 	IPointRotatable<Plane>,
 	IDistanceMeasurable<Plane, Plane>,
 	ISignedDistanceMeasurable<Plane, Location>, IContainer<Plane, Location>, IClosestEndogenousPointDiscoverable<Plane, Location>,
-	IAngleMeasurable<Plane, Direction>, IReflectionTarget<Plane, Direction, Direction>, IProjectionTarget<Plane, Direction>, IParallelizationTarget<Plane, Direction>, IOrthogonalizationTarget<Plane, Direction>,
+	IAngleMeasurable<Plane, Direction>, IReflectionTarget<Plane, Direction, Direction>, IParallelizationTarget<Plane, Direction>, IOrthogonalizationTarget<Plane, Direction>,
 	IAngleMeasurable<Plane, Vect>, IReflectionTarget<Plane, Vect, Vect>, IProjectionTarget<Plane, Vect>, IParallelizationTarget<Plane, Vect>, IOrthogonalizationTarget<Plane, Vect>,
 	IPrecomputationInterpolatable<Plane, Rotation> {
-	public const float DefaultAngularToleranceDegrees = Direction.DefaultAngularToleranceDegrees;
-	const float MaxPlaneToPlaneDistanceNormalSimilarity = 1 - 1E-8f;
+	public const float DefaultParallelOrthogonalTestApproximationDegrees = Direction.DefaultParallelOrthogonalTestApproximationDegrees;
 
 	public Plane Flipped {
 		get => new(-Normal, -_smallestDistanceFromOriginAlongNormal);
@@ -54,17 +53,17 @@ partial struct Plane :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(Vect v, Plane plane) => plane.AngleTo(v);
 	public Angle AngleTo(Plane other) => Angle.FromRadians(MathF.Acos(PerpendicularityWith(other.Normal)));
-	public Angle AngleTo(Direction direction) => Angle.FromRadians(MathF.Asin(PerpendicularityWith(direction)));
+	public Angle AngleTo(Direction direction) => direction != Direction.None ? Angle.FromRadians(MathF.Asin(PerpendicularityWith(direction))) : 0f;
 	public Angle AngleTo(Vect vect) => AngleTo(vect.Direction);
 	public Angle SignedAngleTo(Direction direction) => Angle.FromRadians(MathF.Asin(Normal.Dot(direction)));
 	public Angle SignedAngleTo(Vect vect) => SignedAngleTo(vect.Direction);
 	public Direction? ReflectionOf(Direction direction) {
-		const float PerpendicularityErrorMargin = 1E-5f;
-		return PerpendicularityWith(direction) < PerpendicularityErrorMargin ? null : FastReflectionOf(direction);
+		if (direction.IsOrthogonalTo(Normal)) return null;
+		return FastReflectionOf(direction);
 	}
 	public Vect? ReflectionOf(Vect vect) {
-		const float PerpendicularityErrorMargin = 1E-5f;
-		return PerpendicularityWith(vect.Direction) < PerpendicularityErrorMargin ? null : FastReflectionOf(vect);
+		if (vect.IsOrthogonalTo(Normal)) return null;
+		return FastReflectionOf(vect);
 	}
 	public Direction FastReflectionOf(Direction direction) { // TODO explain in XML that this returns the same direction if the input is parallel to the plane (this is okay as it's continuous across the whole range, so is the expected answer, just need to note it)
 		return Direction.FromVector3(-2f * Vector3.Dot(Normal.ToVector3(), direction.ToVector3()) * Normal.ToVector3() + direction.ToVector3());
@@ -73,9 +72,8 @@ partial struct Plane :
 		return Vect.FromVector3(-2f * Vector3.Dot(Normal.ToVector3(), vect.ToVector3()) * Normal.ToVector3() + vect.ToVector3());
 	}
 	public Angle? IncidentAngleWith(Direction direction) {
-		const float PerpendicularityErrorMargin = 1E-5f;
 		var perpendicularity = PerpendicularityWith(direction);
-		if (perpendicularity < PerpendicularityErrorMargin) return null;
+		if (perpendicularity == 0f) return null;
 		return Angle.FromRadians(MathF.Acos(perpendicularity));
 	}
 	public Angle FastIncidentAngleWith(Direction direction) => Angle.FromRadians(MathF.Acos(PerpendicularityWith(direction)));
@@ -84,17 +82,25 @@ partial struct Plane :
 	public Direction? ParallelizationOf(Direction direction) => direction.OrthogonalizedAgainst(Normal);
 	public Direction FastParallelizationOf(Direction direction) => direction.FastOrthogonalizedAgainst(Normal);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsParallelTo(Direction direction) => IsParallelTo(direction, DefaultAngularToleranceDegrees);
-	public bool IsParallelTo(Direction direction, Angle tolerance) => AngleTo(direction).Equals(Angle.Zero, tolerance);
+	public bool IsParallelTo(Direction direction) => Normal.IsOrthogonalTo(direction);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsParallelTo(Vect vect) => IsParallelTo(vect, DefaultAngularToleranceDegrees);
-	public bool IsParallelTo(Vect vect, Angle tolerance) => AngleTo(vect).Equals(Angle.Zero, tolerance);
+	public bool IsApproximatelyParallelTo(Direction direction) => IsApproximatelyParallelTo(direction, DefaultParallelOrthogonalTestApproximationDegrees);
+	public bool IsApproximatelyParallelTo(Direction direction, Angle tolerance) => direction != Direction.None && AngleTo(direction).Equals(Angle.Zero, tolerance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsOrthogonalTo(Direction direction) => IsOrthogonalTo(direction, DefaultAngularToleranceDegrees);
-	public bool IsOrthogonalTo(Direction direction, Angle tolerance) => AngleTo(direction).Equals(Angle.QuarterCircle, tolerance);
+	public bool IsParallelTo(Vect vect) => Normal.IsOrthogonalTo(vect);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsOrthogonalTo(Vect vect) => IsOrthogonalTo(vect, DefaultAngularToleranceDegrees);
-	public bool IsOrthogonalTo(Vect vect, Angle tolerance) => AngleTo(vect).Equals(Angle.QuarterCircle, tolerance);
+	public bool IsApproximatelyParallelTo(Vect vect) => IsApproximatelyParallelTo(vect, DefaultParallelOrthogonalTestApproximationDegrees);
+	public bool IsApproximatelyParallelTo(Vect vect, Angle tolerance) => vect != Vect.Zero && AngleTo(vect).Equals(Angle.Zero, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Direction direction) => Normal.IsParallelTo(direction);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsApproximatelyOrthogonalTo(Direction direction) => IsApproximatelyOrthogonalTo(direction, DefaultParallelOrthogonalTestApproximationDegrees);
+	public bool IsApproximatelyOrthogonalTo(Direction direction, Angle tolerance) => direction != Direction.None && AngleTo(direction).Equals(Angle.QuarterCircle, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Vect vect) => Normal.IsOrthogonalTo(vect);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsApproximatelyOrthogonalTo(Vect vect) => IsApproximatelyOrthogonalTo(vect, DefaultParallelOrthogonalTestApproximationDegrees);
+	public bool IsApproximatelyOrthogonalTo(Vect vect, Angle tolerance) => vect != Vect.Zero && AngleTo(vect).Equals(Angle.QuarterCircle, tolerance);
 
 	public Location PointClosestTo(Location location) => location - PointClosestToOrigin.VectTo(location).ProjectedOnTo(Normal);
 	public float SignedDistanceFrom(Location location) => Vector3.Dot(location.ToVector3(), _normal) - _smallestDistanceFromOriginAlongNormal; // TODO xmldoc positive means normal faces towards, etc
@@ -123,8 +129,9 @@ partial struct Plane :
 	public bool Contains(Location location) => Contains(location, DefaultPlaneThickness);
 	public bool Contains(Location location, float planeThickness) => DistanceFrom(location) <= planeThickness;
 
-	public float DistanceFrom(Plane other) => MathF.Abs(Normal.Dot(other.Normal)) >= MaxPlaneToPlaneDistanceNormalSimilarity ? PointClosestToOrigin.DistanceFrom(other.PointClosestToOrigin) : 0f;
-	public float DistanceSquaredFrom(Plane other) => MathF.Abs(Normal.Dot(other.Normal)) >= MaxPlaneToPlaneDistanceNormalSimilarity ? PointClosestToOrigin.DistanceSquaredFrom(other.PointClosestToOrigin) : 0f;
+	// TODO xmldoc make it clear that these will almost always be 0
+	public float DistanceFrom(Plane other) => Normal.IsParallelTo(other.Normal) ? PointClosestToOrigin.DistanceFrom(other.PointClosestToOrigin) : 0f;
+	public float DistanceSquaredFrom(Plane other) => Normal.IsParallelTo(other.Normal) ? PointClosestToOrigin.DistanceSquaredFrom(other.PointClosestToOrigin) : 0f;
 	
 	public bool IsIntersectedBy(Plane other) => Vector3.Cross(_normal, other._normal).LengthSquared() != 0f;
 	public Line? IntersectionWith(Plane other) {
@@ -171,21 +178,15 @@ partial struct Plane :
 	Vect? IProjectionTarget<Vect>.ProjectionOf(Vect vect) => ProjectionOf(vect);
 	Vect IProjectionTarget<Vect>.FastProjectionOf(Vect vect) => ProjectionOf(vect);
 
-	public Vect FastParallelizationOf(Vect vect) => ProjectionOf(vect).WithLength(vect.Length); // TODO in xmldoc mention that length will be 0 if this is perpendicular. NOT undefined
-	public Vect? ParallelizationOf(Vect vect) => ParallelizationOf(vect.Direction) == null ? null : FastParallelizationOf(vect);
+	public Direction? OrthogonalizationOf(Direction direction) => direction.ParallelizedWith(Normal);
+	public Direction FastOrthogonalizationOf(Direction direction) => direction.FastParallelizedWith(Normal);
 
-	public Direction? ProjectionOf(Direction direction) => direction.OrthogonalizedAgainst(Normal);
-	public Direction FastProjectionOf(Direction direction) => direction.FastOrthogonalizedAgainst(Normal);
+	public Vect? ParallelizationOf(Vect vect) => vect.OrthogonalizedAgainst(Normal);
+	public Vect FastParallelizationOf(Vect vect) => vect.FastOrthogonalizedAgainst(Normal); // TODO in xmldoc mention that length will be 0 if this is perpendicular. NOT undefined
 
-	public Vect? OrthogonalizationOf(Vect vect) => OrthogonalizationOf(vect.Direction) * vect.Length;
-	public Vect FastOrthogonalizationOf(Vect vect) => FastOrthogonalizationOf(vect.Direction) * vect.Length;
+	public Vect? OrthogonalizationOf(Vect vect) => vect.ParallelizedWith(Normal);
+	public Vect FastOrthogonalizationOf(Vect vect) => vect.FastParallelizedWith(Normal);
 
-	public Direction? OrthogonalizationOf(Direction direction) {
-		var result = FastOrthogonalizationOf(direction);
-		if (result == Direction.None) return null;
-		return result;
-	}
-	public Direction FastOrthogonalizationOf(Direction direction) => Direction.FromVector3PreNormalized(Normal.ToVector3() * MathF.Sign(direction.Dot(Normal)));
 
 	public PlaneObjectRelationship RelationshipTo<TGeo>(TGeo element) where TGeo : IRelatable<Plane, PlaneObjectRelationship> => element.RelationshipTo(this);
 	public bool IsIntersectedBy<TGeo>(TGeo element) where TGeo : IIntersectable<Plane> => element.IsIntersectedBy(this);
@@ -266,25 +267,21 @@ partial struct Plane :
 	}
 	// TODO xmldoc exceptions and also that people who want to skip all the checks etc can create their own converter directly with the ctor
 	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis) {
-		var xBasis = ProjectionOf(twoDimensionalCoordinateXAxis) ?? throw new ArgumentException("X-Axis basis direction must not be perpendicular to the plane.", nameof(twoDimensionalCoordinateXAxis));
+		var xBasis = ParallelizationOf(twoDimensionalCoordinateXAxis) ?? throw new ArgumentException("X-Axis basis direction must not be perpendicular to the plane.", nameof(twoDimensionalCoordinateXAxis));
 		var yBasis = Direction.FromPerpendicular(Normal, xBasis);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}
 	// TODO xmldoc exceptions and also that people who want to skip all the checks etc can create their own converter directly with the ctor
 	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis, Direction twoDimensionalCoordinateYAxis) {
-		const float PerpendicularityErrorMargin = 1E-3f;
-
-		var xBasis = ProjectionOf(twoDimensionalCoordinateXAxis) ?? throw new ArgumentException("X-Axis basis direction must not be perpendicular to the plane.", nameof(twoDimensionalCoordinateXAxis));
-		var yBasis = ProjectionOf(twoDimensionalCoordinateYAxis) ?? throw new ArgumentException("Y-Axis basis direction must not be perpendicular to the plane.", nameof(twoDimensionalCoordinateYAxis));
-		if (!xBasis.AngleTo(yBasis).Equals(90f, PerpendicularityErrorMargin)) {
-			yBasis = yBasis.OrthogonalizedAgainst(xBasis) ?? throw new ArgumentException(
-				"Y-Axis basis direction must not be colinear with X-Axis basis direction (after both are projected on to the plane). " +
-				$"X after projection: {xBasis.ToStringDescriptive()}; " +
-				$"Y after projection: {yBasis.ToStringDescriptive()}; ", 
-				nameof(twoDimensionalCoordinateYAxis)
-			);
-		}
+		var xBasis = ParallelizationOf(twoDimensionalCoordinateXAxis) ?? throw new ArgumentException("X-Axis basis direction must not be perpendicular to the plane.", nameof(twoDimensionalCoordinateXAxis));
+		var yBasis = ParallelizationOf(twoDimensionalCoordinateYAxis) ?? throw new ArgumentException("Y-Axis basis direction must not be perpendicular to the plane.", nameof(twoDimensionalCoordinateYAxis));
+		yBasis = yBasis.OrthogonalizedAgainst(xBasis) ?? throw new ArgumentException(
+			"Y-Axis basis direction must not be colinear with X-Axis basis direction (after both are projected on to the plane). " +
+			$"X after projection: {xBasis.ToStringDescriptive()}; " +
+			$"Y after projection: {yBasis.ToStringDescriptive()}; ",
+			nameof(twoDimensionalCoordinateYAxis)
+		);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}

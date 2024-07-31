@@ -1,6 +1,7 @@
 ﻿// Created on 2023-10-23 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
+using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 using static Egodystonic.TinyFFR.Direction;
@@ -84,17 +85,6 @@ partial class RotationTest {
 	}
 
 	[Test]
-	public void ShouldUseAppropriateErrorMarginForAxisExtraction() {
-		Assert.AreEqual(None, Rotation.FromQuaternion(new(0f, 0f, 0.00001f, 0.99999f)).Axis);
-		Assert.AreNotEqual(None, Rotation.FromQuaternion(new(0f, 0f, 0.001f, 0.99999f)).Axis);
-
-		var (_, axis) = Rotation.FromQuaternion(new(0f, 0f, 0.00001f, 0.99999f));
-		Assert.AreEqual(None, axis);
-		(_, axis) = Rotation.FromQuaternion(new(0f, 0f, 0.001f, 0.99999f));
-		Assert.AreNotEqual(None, axis);
-	}
-
-	[Test]
 	public void ConstructorsShouldCorrectlyConstruct() { // Also, the floor should be made out of floor
 		Assert.AreEqual(Rotation.None, new Rotation());
 
@@ -103,15 +93,6 @@ partial class RotationTest {
 				Assert.AreEqual(new Rotation(Quaternion.CreateFromAxisAngle(cardinal.ToVector3(), r)), new Rotation(Angle.FromRadians(r), cardinal));
 			}
 		}
-	}
-
-	[Test]
-	public void ShouldUseAppropriateErrorMarginInConstructor() {
-		Assert.AreEqual(Rotation.None, new Rotation(0.00001f, Left));
-		Assert.AreNotEqual(Rotation.None, new Rotation(0.0001f, Left));
-
-		Assert.AreEqual(Rotation.None, new Rotation(10f, FromVector3PreNormalized(0f, 0f, 0.00001f)));
-		Assert.AreNotEqual(Rotation.None, new Rotation(10f, FromVector3PreNormalized(0f, 0f, 0.0001f)));
 	}
 
 	[Test]

@@ -42,7 +42,7 @@ partial struct Rotation :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator -(Rotation lhs, Rotation rhs) => lhs.Minus(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Rotation Plus(Rotation other) => new(other.AsQuaternion * AsQuaternion);
+	public Rotation Plus(Rotation other) => FromQuaternion(other.AsQuaternion * AsQuaternion);
 	// Was previously known as "DifferenceTo()" because this method is trying to mimic the standard - function for Reals/Integers (e.g. 7 - 3 = 4, 4 is the difference of 7 to 3).
 	public Rotation Minus(Rotation other) => FromQuaternion(Reversed.AsQuaternion * other.AsQuaternion);
 
@@ -60,21 +60,15 @@ partial struct Rotation :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator /(Rotation rotation, float scalar) => rotation.ScaledBy(1f / scalar);
 	public Rotation ScaledBy(float scalar) { // Quaternion exponentiation
-		const float FloatingPointErrorMargin = 1E-4f;
-
 		var halfAngleRadians = MathF.Acos(AsQuaternion.W);
-		if (halfAngleRadians < FloatingPointErrorMargin) return None;
-		
 		var newHalfAngleRadians = halfAngleRadians * scalar;
 		var sinNewHalfAngle = MathF.Sin(newHalfAngleRadians);
-		if (MathF.Abs(sinNewHalfAngle) < FloatingPointErrorMargin) return None;
 		var cosNewHalfAngle = MathF.Cos(newHalfAngleRadians);
 
 		var normalizedVectorComponent = Vector3.Normalize(new(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z));
-		// Shouldn't be possible unless someone's scaling default(Rotation) (or some other non-unit quaternion) but we already have two other branches so we may as well check for the user here
 		if (Single.IsNaN(normalizedVectorComponent.X)) return None;
 
-		return new(new(
+		return FromQuaternion(new(
 			normalizedVectorComponent * sinNewHalfAngle,
 			cosNewHalfAngle
 		));
@@ -82,7 +76,7 @@ partial struct Rotation :
 
 
 	public static Rotation Interpolate(Rotation start, Rotation end, float distance) {
-		const float CosPhiMinForLinearRenormalization = 1f - 0.001f;
+		const float CosPhiMinForLinearRenormalization = 1f - 1E-3f;
 		return MathF.Abs(Dot(start.AsQuaternion, end.AsQuaternion)) > CosPhiMinForLinearRenormalization
 			? ApproximatelyInterpolate(start, end, distance)
 			: AccuratelyInterpolate(start, end, distance);

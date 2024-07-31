@@ -50,9 +50,27 @@ partial class VectTest {
 
 	[Test]
 	public void UnitLengthTestShouldUseAppropriateErrorMargin() {
+		const int NumNonNormalizedRotations = 200;
+
 		Assert.AreEqual(true, new Vect(1f, 0f, 0f).IsUnitLength);
 		Assert.AreEqual(true, new Vect(0.9999f, 0f, 0f).IsUnitLength);
 		Assert.AreEqual(false, new Vect(0.999f, 0f, 0f).IsUnitLength);
+
+		for (var x = -5f; x <= 5f; x += 1f) {
+			for (var y = -5f; y <= 5f; y += 1f) {
+				for (var z = -5f; z <= 5f; z += 1f) {
+					var v = new Vect(x, y, z).AsUnitLength;
+					if (v == Vect.Zero) {
+						Assert.IsFalse(v.IsUnitLength);
+						continue;
+					}
+
+					var rot = (v.Direction >> v.Direction.AnyPerpendicular()) * 0.1f;
+					for (var i = 0; i < NumNonNormalizedRotations; ++i) v = rot.Rotate(v);
+					Assert.IsTrue(v.IsUnitLength);
+				}
+			}
+		}
 	}
 
 	[Test]
@@ -129,15 +147,15 @@ partial class VectTest {
 
 	[Test]
 	public void ShouldCorrectlyOrthogonalizeAgainstDirectionAndVect() {
-		Assert.AreEqual(null, Vect.Zero.OrthogonalizedAgainst(Direction.Up));
+		Assert.AreEqual(Vect.Zero, Vect.Zero.OrthogonalizedAgainst(Direction.Up));
 		Assert.AreEqual(null, (Direction.Up * 100f).OrthogonalizedAgainst(Direction.Up));
-		Assert.AreEqual(null, OneTwoNegThree.OrthogonalizedAgainst(Direction.None));
-		Assert.AreEqual(null, Vect.Zero.OrthogonalizedAgainst(Direction.None));
+		Assert.AreEqual(OneTwoNegThree, OneTwoNegThree.OrthogonalizedAgainst(Direction.None));
+		Assert.AreEqual(Vect.Zero, Vect.Zero.OrthogonalizedAgainst(Direction.None));
 
-		Assert.AreEqual(null, Vect.Zero.OrthogonalizedAgainst(Direction.Up * 10f));
+		Assert.AreEqual(Vect.Zero, Vect.Zero.OrthogonalizedAgainst(Direction.Up * 10f));
 		Assert.AreEqual(null, (Direction.Up * 100f).OrthogonalizedAgainst(Direction.Up * 10f));
-		Assert.AreEqual(null, OneTwoNegThree.OrthogonalizedAgainst(Direction.None * 10f));
-		Assert.AreEqual(null, Vect.Zero.OrthogonalizedAgainst(Direction.None * 10f));
+		Assert.AreEqual(OneTwoNegThree, OneTwoNegThree.OrthogonalizedAgainst(Direction.None * 10f));
+		Assert.AreEqual(Vect.Zero, Vect.Zero.OrthogonalizedAgainst(Direction.None * 10f));
 
 		AssertToleranceEquals(
 			new Vect(1f, 0f, 0f),
@@ -208,15 +226,15 @@ partial class VectTest {
 
 	[Test]
 	public void ShouldCorrectlyParallelizeWithDirectionAndVect() {
-		Assert.AreEqual(null, Vect.Zero.ParallelizedWith(Direction.Up));
+		Assert.AreEqual(Vect.Zero, Vect.Zero.ParallelizedWith(Direction.Up));
 		Assert.AreEqual(null, (Direction.Up * 100f).ParallelizedWith(Direction.Right));
-		Assert.AreEqual(null, OneTwoNegThree.ParallelizedWith(Direction.None));
-		Assert.AreEqual(null, Vect.Zero.ParallelizedWith(Direction.None));
+		Assert.AreEqual(OneTwoNegThree, OneTwoNegThree.ParallelizedWith(Direction.None));
+		Assert.AreEqual(Vect.Zero, Vect.Zero.ParallelizedWith(Direction.None));
 
-		Assert.AreEqual(null, Vect.Zero.ParallelizedWith(Direction.Up * 10f));
+		Assert.AreEqual(Vect.Zero, Vect.Zero.ParallelizedWith(Direction.Up * 10f));
 		Assert.AreEqual(null, (Direction.Up * 100f).ParallelizedWith(Direction.Right * 10f));
-		Assert.AreEqual(null, OneTwoNegThree.ParallelizedWith(Direction.None * 10f));
-		Assert.AreEqual(null, Vect.Zero.ParallelizedWith(Direction.None * 10f));
+		Assert.AreEqual(OneTwoNegThree, OneTwoNegThree.ParallelizedWith(Direction.None * 10f));
+		Assert.AreEqual(Vect.Zero, Vect.Zero.ParallelizedWith(Direction.None * 10f));
 
 		AssertToleranceEquals(
 			new Vect(1f, 0f, 0f),
@@ -488,47 +506,69 @@ partial class VectTest {
 
 	[Test]
 	public void ShouldCorrectlyDetermineOrthogonalityToOtherDirectionsAndVects() {
+		void AssertCombinationExactly(bool expectation, Direction d1, Direction d2) {
+			var v1 = d1 * 10f;
+			var v2 = d2 * 10f;
+
+			Assert.AreEqual(expectation, v1.IsOrthogonalTo(d2));
+			Assert.AreEqual(expectation, v2.IsOrthogonalTo(d1));
+			Assert.AreEqual(expectation, v1.IsOrthogonalTo(-d2));
+			Assert.AreEqual(expectation, v2.IsOrthogonalTo(-d1));
+			Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(d2));
+			Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(d1));
+			Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(-d2));
+			Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(-d1));
+
+			Assert.AreEqual(expectation, v1.IsOrthogonalTo(v2));
+			Assert.AreEqual(expectation, v2.IsOrthogonalTo(v1));
+			Assert.AreEqual(expectation, v1.IsOrthogonalTo(-v2));
+			Assert.AreEqual(expectation, v2.IsOrthogonalTo(-v1));
+			Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(v2));
+			Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(v1));
+			Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(-v2));
+			Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(-v1));
+		}
 		void AssertCombination(bool expectation, Direction d1, Direction d2, Angle? tolerance) {
 			var v1 = d1 * 10f;
 			var v2 = d2 * 10f;
 
 			if (tolerance == null) {
-				Assert.AreEqual(expectation, v1.IsOrthogonalTo(d2));
-				Assert.AreEqual(expectation, v2.IsOrthogonalTo(d1));
-				Assert.AreEqual(expectation, v1.IsOrthogonalTo(-d2));
-				Assert.AreEqual(expectation, v2.IsOrthogonalTo(-d1));
-				Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(d2));
-				Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(d1));
-				Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(-d2));
-				Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(-d1));
+				Assert.AreEqual(expectation, v1.IsApproximatelyOrthogonalTo(d2));
+				Assert.AreEqual(expectation, v2.IsApproximatelyOrthogonalTo(d1));
+				Assert.AreEqual(expectation, v1.IsApproximatelyOrthogonalTo(-d2));
+				Assert.AreEqual(expectation, v2.IsApproximatelyOrthogonalTo(-d1));
+				Assert.AreEqual(expectation, (-v1).IsApproximatelyOrthogonalTo(d2));
+				Assert.AreEqual(expectation, (-v2).IsApproximatelyOrthogonalTo(d1));
+				Assert.AreEqual(expectation, (-v1).IsApproximatelyOrthogonalTo(-d2));
+				Assert.AreEqual(expectation, (-v2).IsApproximatelyOrthogonalTo(-d1));
 
-				Assert.AreEqual(expectation, v1.IsOrthogonalTo(v2));
-				Assert.AreEqual(expectation, v2.IsOrthogonalTo(v1));
-				Assert.AreEqual(expectation, v1.IsOrthogonalTo(-v2));
-				Assert.AreEqual(expectation, v2.IsOrthogonalTo(-v1));
-				Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(v2));
-				Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(v1));
-				Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(-v2));
-				Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(-v1));
+				Assert.AreEqual(expectation, v1.IsApproximatelyOrthogonalTo(v2));
+				Assert.AreEqual(expectation, v2.IsApproximatelyOrthogonalTo(v1));
+				Assert.AreEqual(expectation, v1.IsApproximatelyOrthogonalTo(-v2));
+				Assert.AreEqual(expectation, v2.IsApproximatelyOrthogonalTo(-v1));
+				Assert.AreEqual(expectation, (-v1).IsApproximatelyOrthogonalTo(v2));
+				Assert.AreEqual(expectation, (-v2).IsApproximatelyOrthogonalTo(v1));
+				Assert.AreEqual(expectation, (-v1).IsApproximatelyOrthogonalTo(-v2));
+				Assert.AreEqual(expectation, (-v2).IsApproximatelyOrthogonalTo(-v1));
 			}
 			else {
-				Assert.AreEqual(expectation, v1.IsOrthogonalTo(d2, tolerance.Value));
-				Assert.AreEqual(expectation, v2.IsOrthogonalTo(d1, tolerance.Value));
-				Assert.AreEqual(expectation, v1.IsOrthogonalTo(-d2, tolerance.Value));
-				Assert.AreEqual(expectation, v2.IsOrthogonalTo(-d1, tolerance.Value));
-				Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(d2, tolerance.Value));
-				Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(d1, tolerance.Value));
-				Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(-d2, tolerance.Value));
-				Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(-d1, tolerance.Value));
+				Assert.AreEqual(expectation, v1.IsApproximatelyOrthogonalTo(d2, tolerance.Value));
+				Assert.AreEqual(expectation, v2.IsApproximatelyOrthogonalTo(d1, tolerance.Value));
+				Assert.AreEqual(expectation, v1.IsApproximatelyOrthogonalTo(-d2, tolerance.Value));
+				Assert.AreEqual(expectation, v2.IsApproximatelyOrthogonalTo(-d1, tolerance.Value));
+				Assert.AreEqual(expectation, (-v1).IsApproximatelyOrthogonalTo(d2, tolerance.Value));
+				Assert.AreEqual(expectation, (-v2).IsApproximatelyOrthogonalTo(d1, tolerance.Value));
+				Assert.AreEqual(expectation, (-v1).IsApproximatelyOrthogonalTo(-d2, tolerance.Value));
+				Assert.AreEqual(expectation, (-v2).IsApproximatelyOrthogonalTo(-d1, tolerance.Value));
 
-				Assert.AreEqual(expectation, v1.IsOrthogonalTo(v2, tolerance.Value));
-				Assert.AreEqual(expectation, v2.IsOrthogonalTo(v1, tolerance.Value));
-				Assert.AreEqual(expectation, v1.IsOrthogonalTo(-v2, tolerance.Value));
-				Assert.AreEqual(expectation, v2.IsOrthogonalTo(-v1, tolerance.Value));
-				Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(v2, tolerance.Value));
-				Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(v1, tolerance.Value));
-				Assert.AreEqual(expectation, (-v1).IsOrthogonalTo(-v2, tolerance.Value));
-				Assert.AreEqual(expectation, (-v2).IsOrthogonalTo(-v1, tolerance.Value));
+				Assert.AreEqual(expectation, v1.IsApproximatelyOrthogonalTo(v2, tolerance.Value));
+				Assert.AreEqual(expectation, v2.IsApproximatelyOrthogonalTo(v1, tolerance.Value));
+				Assert.AreEqual(expectation, v1.IsApproximatelyOrthogonalTo(-v2, tolerance.Value));
+				Assert.AreEqual(expectation, v2.IsApproximatelyOrthogonalTo(-v1, tolerance.Value));
+				Assert.AreEqual(expectation, (-v1).IsApproximatelyOrthogonalTo(v2, tolerance.Value));
+				Assert.AreEqual(expectation, (-v2).IsApproximatelyOrthogonalTo(v1, tolerance.Value));
+				Assert.AreEqual(expectation, (-v1).IsApproximatelyOrthogonalTo(-v2, tolerance.Value));
+				Assert.AreEqual(expectation, (-v2).IsApproximatelyOrthogonalTo(-v1, tolerance.Value));
 			}
 		}
 
@@ -547,6 +587,9 @@ partial class VectTest {
 
 		AssertCombination(true, Direction.Left, Direction.Down, 90f);
 
+		AssertCombinationExactly(false, Direction.Left, Direction.Right);
+		AssertCombinationExactly(false, Direction.Left, Direction.None);
+
 		var testList = new List<Direction>();
 		for (var x = -3f; x <= 3f; x += 1f) {
 			for (var y = -3f; y <= 3f; y += 1f) {
@@ -557,6 +600,8 @@ partial class VectTest {
 		}
 
 		for (var i = 0; i < testList.Count; ++i) {
+			AssertCombinationExactly(false, testList[i], testList[i]);
+			if (testList[i] != Direction.None) AssertCombinationExactly(true, testList[i], testList[i].AnyPerpendicular());
 			for (var j = i; j < testList.Count; ++j) {
 				var a = testList[i];
 				var b = testList[j];
@@ -566,6 +611,7 @@ partial class VectTest {
 					AssertCombination(false, a, b, 45f);
 					AssertCombination(false, a, b, 90f);
 					AssertCombination(false, a, b, 180f);
+					AssertCombinationExactly(false, a, b);
 					continue;
 				}
 
@@ -585,47 +631,69 @@ partial class VectTest {
 
 	[Test]
 	public void ShouldCorrectlyDetermineParallelismToOtherDirectionsAndVects() {
+		void AssertCombinationExactly(bool expectation, Direction d1, Direction d2) {
+			var v1 = d1 * 10f;
+			var v2 = d2 * 10f;
+
+			Assert.AreEqual(expectation, v1.IsParallelTo(d2));
+			Assert.AreEqual(expectation, v2.IsParallelTo(d1));
+			Assert.AreEqual(expectation, v1.IsParallelTo(-d2));
+			Assert.AreEqual(expectation, v2.IsParallelTo(-d1));
+			Assert.AreEqual(expectation, (-v1).IsParallelTo(d2));
+			Assert.AreEqual(expectation, (-v2).IsParallelTo(d1));
+			Assert.AreEqual(expectation, (-v1).IsParallelTo(-d2));
+			Assert.AreEqual(expectation, (-v2).IsParallelTo(-d1));
+
+			Assert.AreEqual(expectation, v1.IsParallelTo(v2));
+			Assert.AreEqual(expectation, v2.IsParallelTo(v1));
+			Assert.AreEqual(expectation, v1.IsParallelTo(-v2));
+			Assert.AreEqual(expectation, v2.IsParallelTo(-v1));
+			Assert.AreEqual(expectation, (-v1).IsParallelTo(v2));
+			Assert.AreEqual(expectation, (-v2).IsParallelTo(v1));
+			Assert.AreEqual(expectation, (-v1).IsParallelTo(-v2));
+			Assert.AreEqual(expectation, (-v2).IsParallelTo(-v1));
+		}
 		void AssertCombination(bool expectation, Direction d1, Direction d2, Angle? tolerance) {
 			var v1 = d1 * 10f;
 			var v2 = d2 * 10f;
 
 			if (tolerance == null) {
-				Assert.AreEqual(expectation, v1.IsParallelTo(d2));
-				Assert.AreEqual(expectation, v2.IsParallelTo(d1));
-				Assert.AreEqual(expectation, v1.IsParallelTo(-d2));
-				Assert.AreEqual(expectation, v2.IsParallelTo(-d1));
-				Assert.AreEqual(expectation, (-v1).IsParallelTo(d2));
-				Assert.AreEqual(expectation, (-v2).IsParallelTo(d1));
-				Assert.AreEqual(expectation, (-v1).IsParallelTo(-d2));
-				Assert.AreEqual(expectation, (-v2).IsParallelTo(-d1));
+				Assert.AreEqual(expectation, v1.IsApproximatelyParallelTo(d2));
+				Assert.AreEqual(expectation, v2.IsApproximatelyParallelTo(d1));
+				Assert.AreEqual(expectation, v1.IsApproximatelyParallelTo(-d2));
+				Assert.AreEqual(expectation, v2.IsApproximatelyParallelTo(-d1));
+				Assert.AreEqual(expectation, (-v1).IsApproximatelyParallelTo(d2));
+				Assert.AreEqual(expectation, (-v2).IsApproximatelyParallelTo(d1));
+				Assert.AreEqual(expectation, (-v1).IsApproximatelyParallelTo(-d2));
+				Assert.AreEqual(expectation, (-v2).IsApproximatelyParallelTo(-d1));
 
-				Assert.AreEqual(expectation, v1.IsParallelTo(v2));
-				Assert.AreEqual(expectation, v2.IsParallelTo(v1));
-				Assert.AreEqual(expectation, v1.IsParallelTo(-v2));
-				Assert.AreEqual(expectation, v2.IsParallelTo(-v1));
-				Assert.AreEqual(expectation, (-v1).IsParallelTo(v2));
-				Assert.AreEqual(expectation, (-v2).IsParallelTo(v1));
-				Assert.AreEqual(expectation, (-v1).IsParallelTo(-v2));
-				Assert.AreEqual(expectation, (-v2).IsParallelTo(-v1));
+				Assert.AreEqual(expectation, v1.IsApproximatelyParallelTo(v2));
+				Assert.AreEqual(expectation, v2.IsApproximatelyParallelTo(v1));
+				Assert.AreEqual(expectation, v1.IsApproximatelyParallelTo(-v2));
+				Assert.AreEqual(expectation, v2.IsApproximatelyParallelTo(-v1));
+				Assert.AreEqual(expectation, (-v1).IsApproximatelyParallelTo(v2));
+				Assert.AreEqual(expectation, (-v2).IsApproximatelyParallelTo(v1));
+				Assert.AreEqual(expectation, (-v1).IsApproximatelyParallelTo(-v2));
+				Assert.AreEqual(expectation, (-v2).IsApproximatelyParallelTo(-v1));
 			}
 			else {
-				Assert.AreEqual(expectation, v1.IsParallelTo(d2, tolerance.Value));
-				Assert.AreEqual(expectation, v2.IsParallelTo(d1, tolerance.Value));
-				Assert.AreEqual(expectation, v1.IsParallelTo(-d2, tolerance.Value));
-				Assert.AreEqual(expectation, v2.IsParallelTo(-d1, tolerance.Value));
-				Assert.AreEqual(expectation, (-v1).IsParallelTo(d2, tolerance.Value));
-				Assert.AreEqual(expectation, (-v2).IsParallelTo(d1, tolerance.Value));
-				Assert.AreEqual(expectation, (-v1).IsParallelTo(-d2, tolerance.Value));
-				Assert.AreEqual(expectation, (-v2).IsParallelTo(-d1, tolerance.Value));
+				Assert.AreEqual(expectation, v1.IsApproximatelyParallelTo(d2, tolerance.Value));
+				Assert.AreEqual(expectation, v2.IsApproximatelyParallelTo(d1, tolerance.Value));
+				Assert.AreEqual(expectation, v1.IsApproximatelyParallelTo(-d2, tolerance.Value));
+				Assert.AreEqual(expectation, v2.IsApproximatelyParallelTo(-d1, tolerance.Value));
+				Assert.AreEqual(expectation, (-v1).IsApproximatelyParallelTo(d2, tolerance.Value));
+				Assert.AreEqual(expectation, (-v2).IsApproximatelyParallelTo(d1, tolerance.Value));
+				Assert.AreEqual(expectation, (-v1).IsApproximatelyParallelTo(-d2, tolerance.Value));
+				Assert.AreEqual(expectation, (-v2).IsApproximatelyParallelTo(-d1, tolerance.Value));
 
-				Assert.AreEqual(expectation, v1.IsParallelTo(v2, tolerance.Value));
-				Assert.AreEqual(expectation, v2.IsParallelTo(v1, tolerance.Value));
-				Assert.AreEqual(expectation, v1.IsParallelTo(-v2, tolerance.Value));
-				Assert.AreEqual(expectation, v2.IsParallelTo(-v1, tolerance.Value));
-				Assert.AreEqual(expectation, (-v1).IsParallelTo(v2, tolerance.Value));
-				Assert.AreEqual(expectation, (-v2).IsParallelTo(v1, tolerance.Value));
-				Assert.AreEqual(expectation, (-v1).IsParallelTo(-v2, tolerance.Value));
-				Assert.AreEqual(expectation, (-v2).IsParallelTo(-v1, tolerance.Value));
+				Assert.AreEqual(expectation, v1.IsApproximatelyParallelTo(v2, tolerance.Value));
+				Assert.AreEqual(expectation, v2.IsApproximatelyParallelTo(v1, tolerance.Value));
+				Assert.AreEqual(expectation, v1.IsApproximatelyParallelTo(-v2, tolerance.Value));
+				Assert.AreEqual(expectation, v2.IsApproximatelyParallelTo(-v1, tolerance.Value));
+				Assert.AreEqual(expectation, (-v1).IsApproximatelyParallelTo(v2, tolerance.Value));
+				Assert.AreEqual(expectation, (-v2).IsApproximatelyParallelTo(v1, tolerance.Value));
+				Assert.AreEqual(expectation, (-v1).IsApproximatelyParallelTo(-v2, tolerance.Value));
+				Assert.AreEqual(expectation, (-v2).IsApproximatelyParallelTo(-v1, tolerance.Value));
 			}
 		}
 
@@ -646,6 +714,9 @@ partial class VectTest {
 		AssertCombination(true, Direction.Up, Direction.Up, 0f);
 		AssertCombination(true, Direction.Down, Direction.Down, 0f);
 
+		AssertCombinationExactly(false, Direction.Left, Direction.Down);
+		AssertCombinationExactly(false, Direction.Left, Direction.None);
+
 		var testList = new List<Direction>();
 		for (var x = -3f; x <= 3f; x += 1f) {
 			for (var y = -3f; y <= 3f; y += 1f) {
@@ -656,6 +727,7 @@ partial class VectTest {
 		}
 
 		for (var i = 0; i < testList.Count; ++i) {
+			if (testList[i] != Direction.None) AssertCombinationExactly(true, testList[i], testList[i]);
 			for (var j = i; j < testList.Count; ++j) {
 				var a = testList[i];
 				var b = testList[j];
@@ -665,6 +737,7 @@ partial class VectTest {
 					AssertCombination(false, a, b, 45f);
 					AssertCombination(false, a, b, 90f);
 					AssertCombination(false, a, b, 180f);
+					AssertCombinationExactly(false, a, b);
 					continue;
 				}
 

@@ -190,18 +190,18 @@ public readonly partial struct Ray {
 	}
 
 	public Ray? ProjectedOnTo(Plane plane) {
-		var projectedDirection = Direction.ProjectedOnTo(plane);
+		var projectedDirection = Direction.ParallelizedWith(plane);
 		if (projectedDirection == null) return null;
 		return new Ray(StartPoint.ClosestPointOn(plane), projectedDirection.Value);
 	}
-	public Ray FastProjectedOnTo(Plane plane) => new(StartPoint.ClosestPointOn(plane), Direction.FastProjectedOnTo(plane));
+	public Ray FastProjectedOnTo(Plane plane) => new(StartPoint.ClosestPointOn(plane), Direction.FastParallelizedWith(plane));
 
 	public Ray? ParallelizedWith(Plane plane) {
-		var projectedDirection = Direction.ProjectedOnTo(plane);
+		var projectedDirection = Direction.ParallelizedWith(plane);
 		if (projectedDirection == null) return null;
 		return new Ray(StartPoint, projectedDirection.Value);
 	}
-	public Ray FastParallelizedWith(Plane plane) => new(StartPoint, Direction.FastProjectedOnTo(plane));
+	public Ray FastParallelizedWith(Plane plane) => new(StartPoint, Direction.FastParallelizedWith(plane));
 
 	public Ray? OrthogonalizedAgainst(Plane plane) {
 		var newDirection = Direction.OrthogonalizedAgainst(plane);

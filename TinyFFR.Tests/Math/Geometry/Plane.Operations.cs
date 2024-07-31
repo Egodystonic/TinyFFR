@@ -30,121 +30,121 @@ partial class PlaneTest {
 
 	[Test]
 	public void ShouldCorrectlyDetermineAngleToDirections() {
-		Assert.AreEqual(Angle.Zero, TestPlane.AngleTo(Direction.Forward));
-		Assert.AreEqual(Angle.Zero, TestPlane.AngleTo(Direction.Backward));
-		Assert.AreEqual(Angle.Zero, TestPlane.AngleTo(Direction.Right));
-		Assert.AreEqual(Angle.Zero, TestPlane.AngleTo(Direction.Left));
-		Assert.AreEqual(Angle.QuarterCircle, TestPlane.AngleTo(Direction.Up));
-		Assert.AreEqual(Angle.QuarterCircle, TestPlane.AngleTo(Direction.Down));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo(new Direction(1f, 1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo(new Direction(-1f, 1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo(new Direction(-1f, -1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo(new Direction(1f, -1f, 0f)));
-		Assert.AreEqual(Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.AngleTo(new Direction(2f, -1f, 0f)));
+		AssertToleranceEquals(Angle.Zero, TestPlane.AngleTo(Direction.Forward), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.AngleTo(Direction.Backward), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.AngleTo(Direction.Right), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.AngleTo(Direction.Left), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle, TestPlane.AngleTo(Direction.Up), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle, TestPlane.AngleTo(Direction.Down), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.AngleTo(new Direction(1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.AngleTo(new Direction(-1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.AngleTo(new Direction(-1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.AngleTo(new Direction(1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.AngleTo(new Direction(2f, -1f, 0f)), TestTolerance);
 
-		Assert.AreEqual(Angle.Zero, TestPlane.SignedAngleTo(Direction.Forward));
-		Assert.AreEqual(Angle.Zero, TestPlane.SignedAngleTo(Direction.Backward));
-		Assert.AreEqual(Angle.Zero, TestPlane.SignedAngleTo(Direction.Right));
-		Assert.AreEqual(Angle.Zero, TestPlane.SignedAngleTo(Direction.Left));
-		Assert.AreEqual(Angle.QuarterCircle, TestPlane.SignedAngleTo(Direction.Up));
-		Assert.AreEqual(-Angle.QuarterCircle, TestPlane.SignedAngleTo(Direction.Down));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.SignedAngleTo(new Direction(1f, 1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.SignedAngleTo(new Direction(-1f, 1f, 0f)));
-		Assert.AreEqual(-Angle.EighthCircle, TestPlane.SignedAngleTo(new Direction(-1f, -1f, 0f)));
-		Assert.AreEqual(-Angle.EighthCircle, TestPlane.SignedAngleTo(new Direction(1f, -1f, 0f)));
-		Assert.AreEqual(-Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.SignedAngleTo(new Direction(2f, -1f, 0f)));
+		AssertToleranceEquals(Angle.Zero, TestPlane.SignedAngleTo(Direction.Forward), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.SignedAngleTo(Direction.Backward), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.SignedAngleTo(Direction.Right), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.SignedAngleTo(Direction.Left), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle, TestPlane.SignedAngleTo(Direction.Up), TestTolerance);
+		AssertToleranceEquals(-Angle.QuarterCircle, TestPlane.SignedAngleTo(Direction.Down), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.SignedAngleTo(new Direction(1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.SignedAngleTo(new Direction(-1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(-Angle.EighthCircle, TestPlane.SignedAngleTo(new Direction(-1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(-Angle.EighthCircle, TestPlane.SignedAngleTo(new Direction(1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(-Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.SignedAngleTo(new Direction(2f, -1f, 0f)), TestTolerance);
 
 		// Incident angle
-		Assert.AreEqual(null, TestPlane.IncidentAngleWith(Direction.Forward));
-		Assert.AreEqual(null, TestPlane.IncidentAngleWith(Direction.Backward));
-		Assert.AreEqual(null, TestPlane.IncidentAngleWith(Direction.Right));
-		Assert.AreEqual(null, TestPlane.IncidentAngleWith(Direction.Left));
-		Assert.AreEqual(Angle.Zero, TestPlane.IncidentAngleWith(Direction.Up));
-		Assert.AreEqual(Angle.Zero, TestPlane.IncidentAngleWith(Direction.Down));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.IncidentAngleWith(new Direction(1f, 1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.IncidentAngleWith(new Direction(-1f, 1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.IncidentAngleWith(new Direction(-1f, -1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.IncidentAngleWith(new Direction(1f, -1f, 0f)));
-		Assert.AreEqual(Angle.QuarterCircle - Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.IncidentAngleWith(new Direction(2f, -1f, 0f)));
+		AssertToleranceEquals(null, TestPlane.IncidentAngleWith(Direction.Forward), TestTolerance);
+		AssertToleranceEquals(null, TestPlane.IncidentAngleWith(Direction.Backward), TestTolerance);
+		AssertToleranceEquals(null, TestPlane.IncidentAngleWith(Direction.Right), TestTolerance);
+		AssertToleranceEquals(null, TestPlane.IncidentAngleWith(Direction.Left), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.IncidentAngleWith(Direction.Up), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.IncidentAngleWith(Direction.Down), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.IncidentAngleWith(new Direction(1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.IncidentAngleWith(new Direction(-1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.IncidentAngleWith(new Direction(-1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.IncidentAngleWith(new Direction(1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle - Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.IncidentAngleWith(new Direction(2f, -1f, 0f)), TestTolerance);
 
-		Assert.AreEqual(Angle.QuarterCircle, TestPlane.FastIncidentAngleWith(Direction.Forward));
-		Assert.AreEqual(Angle.QuarterCircle, TestPlane.FastIncidentAngleWith(Direction.Backward));
-		Assert.AreEqual(Angle.QuarterCircle, TestPlane.FastIncidentAngleWith(Direction.Right));
-		Assert.AreEqual(Angle.QuarterCircle, TestPlane.FastIncidentAngleWith(Direction.Left));
-		Assert.AreEqual(Angle.Zero, TestPlane.FastIncidentAngleWith(Direction.Up));
-		Assert.AreEqual(Angle.Zero, TestPlane.FastIncidentAngleWith(Direction.Down));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.FastIncidentAngleWith(new Direction(1f, 1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.FastIncidentAngleWith(new Direction(-1f, 1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.FastIncidentAngleWith(new Direction(-1f, -1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.FastIncidentAngleWith(new Direction(1f, -1f, 0f)));
-		Assert.AreEqual(Angle.QuarterCircle - Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.FastIncidentAngleWith(new Direction(2f, -1f, 0f)));
+		AssertToleranceEquals(Angle.QuarterCircle, TestPlane.FastIncidentAngleWith(Direction.Forward), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle, TestPlane.FastIncidentAngleWith(Direction.Backward), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle, TestPlane.FastIncidentAngleWith(Direction.Right), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle, TestPlane.FastIncidentAngleWith(Direction.Left), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.FastIncidentAngleWith(Direction.Up), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.FastIncidentAngleWith(Direction.Down), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.FastIncidentAngleWith(new Direction(1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.FastIncidentAngleWith(new Direction(-1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.FastIncidentAngleWith(new Direction(-1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.FastIncidentAngleWith(new Direction(1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle - Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.FastIncidentAngleWith(new Direction(2f, -1f, 0f)), TestTolerance);
 	}
 
 	[Test]
-	public void ShouldCorrectlyDetermineVectToDirections() {
-		Assert.AreEqual(Angle.Zero, TestPlane.AngleTo(10f * Direction.Forward));
-		Assert.AreEqual(Angle.Zero, TestPlane.AngleTo(10f * Direction.Backward));
-		Assert.AreEqual(Angle.Zero, TestPlane.AngleTo(10f * Direction.Right));
-		Assert.AreEqual(Angle.Zero, TestPlane.AngleTo(10f * Direction.Left));
-		Assert.AreEqual(Angle.QuarterCircle, TestPlane.AngleTo(10f * Direction.Up));
-		Assert.AreEqual(Angle.QuarterCircle, TestPlane.AngleTo(10f * Direction.Down));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo(10f * new Direction(1f, 1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo(10f * new Direction(-1f, 1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo(10f * new Direction(-1f, -1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo(10f * new Direction(1f, -1f, 0f)));
-		Assert.AreEqual(Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.AngleTo(10f * new Direction(2f, -1f, 0f)));
+	public void ShouldCorrectlyDetermineAngleToVects() {
+		AssertToleranceEquals(Angle.Zero, TestPlane.AngleTo(10f * Direction.Forward), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.AngleTo(10f * Direction.Backward), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.AngleTo(10f * Direction.Right), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.AngleTo(10f * Direction.Left), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle, TestPlane.AngleTo(10f * Direction.Up), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle, TestPlane.AngleTo(10f * Direction.Down), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.AngleTo(10f * new Direction(1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.AngleTo(10f * new Direction(-1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.AngleTo(10f * new Direction(-1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.AngleTo(10f * new Direction(1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.AngleTo(10f * new Direction(2f, -1f, 0f)), TestTolerance);
 
-		Assert.AreEqual(Angle.Zero, TestPlane.SignedAngleTo(10f * Direction.Forward));
-		Assert.AreEqual(Angle.Zero, TestPlane.SignedAngleTo(10f * Direction.Backward));
-		Assert.AreEqual(Angle.Zero, TestPlane.SignedAngleTo(10f * Direction.Right));
-		Assert.AreEqual(Angle.Zero, TestPlane.SignedAngleTo(10f * Direction.Left));
-		Assert.AreEqual(Angle.QuarterCircle, TestPlane.SignedAngleTo(10f * Direction.Up));
-		Assert.AreEqual(-Angle.QuarterCircle, TestPlane.SignedAngleTo(10f * Direction.Down));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.SignedAngleTo(10f * new Direction(1f, 1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.SignedAngleTo(10f * new Direction(-1f, 1f, 0f)));
-		Assert.AreEqual(-Angle.EighthCircle, TestPlane.SignedAngleTo(10f * new Direction(-1f, -1f, 0f)));
-		Assert.AreEqual(-Angle.EighthCircle, TestPlane.SignedAngleTo(10f * new Direction(1f, -1f, 0f)));
-		Assert.AreEqual(-Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.SignedAngleTo(10f * new Direction(2f, -1f, 0f)));
+		AssertToleranceEquals(Angle.Zero, TestPlane.SignedAngleTo(10f * Direction.Forward), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.SignedAngleTo(10f * Direction.Backward), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.SignedAngleTo(10f * Direction.Right), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.SignedAngleTo(10f * Direction.Left), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle, TestPlane.SignedAngleTo(10f * Direction.Up), TestTolerance);
+		AssertToleranceEquals(-Angle.QuarterCircle, TestPlane.SignedAngleTo(10f * Direction.Down), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.SignedAngleTo(10f * new Direction(1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.SignedAngleTo(10f * new Direction(-1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(-Angle.EighthCircle, TestPlane.SignedAngleTo(10f * new Direction(-1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(-Angle.EighthCircle, TestPlane.SignedAngleTo(10f * new Direction(1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(-Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.SignedAngleTo(10f * new Direction(2f, -1f, 0f)), TestTolerance);
 
 		// Incident angle
-		Assert.AreEqual(null, TestPlane.IncidentAngleWith(10f * Direction.Forward));
-		Assert.AreEqual(null, TestPlane.IncidentAngleWith(10f * Direction.Backward));
-		Assert.AreEqual(null, TestPlane.IncidentAngleWith(10f * Direction.Right));
-		Assert.AreEqual(null, TestPlane.IncidentAngleWith(10f * Direction.Left));
-		Assert.AreEqual(Angle.Zero, TestPlane.IncidentAngleWith(10f * Direction.Up));
-		Assert.AreEqual(Angle.Zero, TestPlane.IncidentAngleWith(10f * Direction.Down));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.IncidentAngleWith(10f * new Direction(1f, 1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.IncidentAngleWith(10f * new Direction(-1f, 1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.IncidentAngleWith(10f * new Direction(-1f, -1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.IncidentAngleWith(10f * new Direction(1f, -1f, 0f)));
-		Assert.AreEqual(Angle.QuarterCircle - Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.IncidentAngleWith(10f * new Direction(2f, -1f, 0f)));
+		AssertToleranceEquals(null, TestPlane.IncidentAngleWith(10f * Direction.Forward), TestTolerance);
+		AssertToleranceEquals(null, TestPlane.IncidentAngleWith(10f * Direction.Backward), TestTolerance);
+		AssertToleranceEquals(null, TestPlane.IncidentAngleWith(10f * Direction.Right), TestTolerance);
+		AssertToleranceEquals(null, TestPlane.IncidentAngleWith(10f * Direction.Left), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.IncidentAngleWith(10f * Direction.Up), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.IncidentAngleWith(10f * Direction.Down), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.IncidentAngleWith(10f * new Direction(1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.IncidentAngleWith(10f * new Direction(-1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.IncidentAngleWith(10f * new Direction(-1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.IncidentAngleWith(10f * new Direction(1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle - Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.IncidentAngleWith(10f * new Direction(2f, -1f, 0f)), TestTolerance);
 
-		Assert.AreEqual(Angle.QuarterCircle, TestPlane.FastIncidentAngleWith(10f * Direction.Forward));
-		Assert.AreEqual(Angle.QuarterCircle, TestPlane.FastIncidentAngleWith(10f * Direction.Backward));
-		Assert.AreEqual(Angle.QuarterCircle, TestPlane.FastIncidentAngleWith(10f * Direction.Right));
-		Assert.AreEqual(Angle.QuarterCircle, TestPlane.FastIncidentAngleWith(10f * Direction.Left));
-		Assert.AreEqual(Angle.Zero, TestPlane.FastIncidentAngleWith(10f * Direction.Up));
-		Assert.AreEqual(Angle.Zero, TestPlane.FastIncidentAngleWith(10f * Direction.Down));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.FastIncidentAngleWith(10f * new Direction(1f, 1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.FastIncidentAngleWith(10f * new Direction(-1f, 1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.FastIncidentAngleWith(10f * new Direction(-1f, -1f, 0f)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.FastIncidentAngleWith(10f * new Direction(1f, -1f, 0f)));
-		Assert.AreEqual(Angle.QuarterCircle - Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.FastIncidentAngleWith(10f * new Direction(2f, -1f, 0f)));
+		AssertToleranceEquals(Angle.QuarterCircle, TestPlane.FastIncidentAngleWith(10f * Direction.Forward), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle, TestPlane.FastIncidentAngleWith(10f * Direction.Backward), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle, TestPlane.FastIncidentAngleWith(10f * Direction.Right), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle, TestPlane.FastIncidentAngleWith(10f * Direction.Left), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.FastIncidentAngleWith(10f * Direction.Up), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.FastIncidentAngleWith(10f * Direction.Down), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.FastIncidentAngleWith(10f * new Direction(1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.FastIncidentAngleWith(10f * new Direction(-1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.FastIncidentAngleWith(10f * new Direction(-1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.FastIncidentAngleWith(10f * new Direction(1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle - Angle.FromRadians(MathF.Atan(0.5f)), TestPlane.FastIncidentAngleWith(10f * new Direction(2f, -1f, 0f)), TestTolerance);
 	}
 
 	[Test]
 	public void ShouldCorrectlyDetermineAngleToPlanes() {
-		Assert.AreEqual(Angle.Zero, TestPlane.AngleTo(TestPlane));
-		Assert.AreEqual(Angle.Zero, TestPlane.AngleTo(-TestPlane));
-		Assert.AreEqual(Angle.QuarterCircle, TestPlane.AngleTo(new Plane(Direction.Backward, Location.Origin)));
-		Assert.AreEqual(Angle.QuarterCircle, TestPlane.AngleTo(new Plane(Direction.Forward, Location.Origin)));
-		Assert.AreEqual(Angle.QuarterCircle, TestPlane.AngleTo(new Plane(Direction.Left, Location.Origin)));
-		Assert.AreEqual(Angle.QuarterCircle, TestPlane.AngleTo(new Plane(Direction.Right, Location.Origin)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo(new Plane((1f, 1f, 0f), Location.Origin)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo(new Plane((-1f, -1f, 0f), Location.Origin)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo(new Plane((1f, -1f, 0f), Location.Origin)));
-		Assert.AreEqual(Angle.EighthCircle, TestPlane.AngleTo(new Plane((-1f, 1f, 0f), Location.Origin)));
-		Assert.AreEqual(Angle.FromRadians(MathF.Atan(2f)), TestPlane.AngleTo(new Plane((2f, -1f, 0f), Location.Origin)));
+		AssertToleranceEquals(Angle.Zero, TestPlane.AngleTo(TestPlane), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, TestPlane.AngleTo(-TestPlane), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle, TestPlane.AngleTo(new Plane(Direction.Backward, Location.Origin)), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle, TestPlane.AngleTo(new Plane(Direction.Forward, Location.Origin)), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle, TestPlane.AngleTo(new Plane(Direction.Left, Location.Origin)), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle, TestPlane.AngleTo(new Plane(Direction.Right, Location.Origin)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.AngleTo(new Plane((1f, 1f, 0f), Location.Origin)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.AngleTo(new Plane((-1f, -1f, 0f), Location.Origin)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.AngleTo(new Plane((1f, -1f, 0f), Location.Origin)), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestPlane.AngleTo(new Plane((-1f, 1f, 0f), Location.Origin)), TestTolerance);
+		AssertToleranceEquals(Angle.FromRadians(MathF.Atan(2f)), TestPlane.AngleTo(new Plane((2f, -1f, 0f), Location.Origin)), TestTolerance);
 	}
 
 	[Test]
@@ -448,48 +448,48 @@ partial class PlaneTest {
 		Assert.AreEqual(new Vect(10f, 0f, 10f).WithLength(MathF.Sqrt(300f)), TestPlane.FastParallelizationOf(new Vect(10f, -10f, 10f)));
 		Assert.AreEqual(new Vect(-10f, 0f, -10f).WithLength(MathF.Sqrt(300f)), TestPlane.FastParallelizationOf(new Vect(-10f, 10f, -10f)));
 		Assert.AreEqual(new Vect(-10f, 0f, -10f).WithLength(MathF.Sqrt(300f)), TestPlane.FastParallelizationOf(new Vect(-10f, -10f, -10f)));
-		Assert.AreEqual(null, TestPlane.ParallelizationOf(Vect.Zero));
+		Assert.AreEqual(Vect.Zero, TestPlane.ParallelizationOf(Vect.Zero));
 		Assert.AreEqual(null, TestPlane.ParallelizationOf(new Vect(0f, 1f, 0f)));
 		Assert.AreEqual(null, TestPlane.ParallelizationOf(new Vect(0f, -1f, 0f)));
 	}
 
 	[Test]
-	public void ShouldCorrectlyProjectDirections() {
-		AssertToleranceEquals(Direction.Left, TestPlane.ProjectionOf(new Direction(1f, 1f, 0f)), TestTolerance);
-		AssertToleranceEquals(Direction.Left, TestPlane.ProjectionOf(new Direction(1f, -1f, 0f)), TestTolerance);
-		AssertToleranceEquals(Direction.Right, TestPlane.ProjectionOf(new Direction(-1f, 1f, 0f)), TestTolerance);
-		AssertToleranceEquals(Direction.Right, TestPlane.ProjectionOf(new Direction(-1f, -1f, 0f)), TestTolerance);
-		AssertToleranceEquals(Direction.Forward, TestPlane.ProjectionOf(new Direction(0f, 1f, 1f)), TestTolerance);
-		AssertToleranceEquals(Direction.Forward, TestPlane.ProjectionOf(new Direction(0f, -1f, 1f)), TestTolerance);
-		AssertToleranceEquals(Direction.Backward, TestPlane.ProjectionOf(new Direction(0f, 1f, -1f)), TestTolerance);
-		AssertToleranceEquals(Direction.Backward, TestPlane.ProjectionOf(new Direction(0f, -1f, -1f)), TestTolerance);
+	public void ShouldCorrectlyParallelizeDirections() {
+		AssertToleranceEquals(Direction.Left, TestPlane.ParallelizationOf(new Direction(1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Direction.Left, TestPlane.ParallelizationOf(new Direction(1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Direction.Right, TestPlane.ParallelizationOf(new Direction(-1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Direction.Right, TestPlane.ParallelizationOf(new Direction(-1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Direction.Forward, TestPlane.ParallelizationOf(new Direction(0f, 1f, 1f)), TestTolerance);
+		AssertToleranceEquals(Direction.Forward, TestPlane.ParallelizationOf(new Direction(0f, -1f, 1f)), TestTolerance);
+		AssertToleranceEquals(Direction.Backward, TestPlane.ParallelizationOf(new Direction(0f, 1f, -1f)), TestTolerance);
+		AssertToleranceEquals(Direction.Backward, TestPlane.ParallelizationOf(new Direction(0f, -1f, -1f)), TestTolerance);
 
-		AssertToleranceEquals(Direction.Left, TestPlane.FastProjectionOf(new Direction(1f, 1f, 0f)), TestTolerance);
-		AssertToleranceEquals(Direction.Left, TestPlane.FastProjectionOf(new Direction(1f, -1f, 0f)), TestTolerance);
-		AssertToleranceEquals(Direction.Right, TestPlane.FastProjectionOf(new Direction(-1f, 1f, 0f)), TestTolerance);
-		AssertToleranceEquals(Direction.Right, TestPlane.FastProjectionOf(new Direction(-1f, -1f, 0f)), TestTolerance);
-		AssertToleranceEquals(Direction.Forward, TestPlane.FastProjectionOf(new Direction(0f, 1f, 1f)), TestTolerance);
-		AssertToleranceEquals(Direction.Forward, TestPlane.FastProjectionOf(new Direction(0f, -1f, 1f)), TestTolerance);
-		AssertToleranceEquals(Direction.Backward, TestPlane.FastProjectionOf(new Direction(0f, 1f, -1f)), TestTolerance);
-		AssertToleranceEquals(Direction.Backward, TestPlane.FastProjectionOf(new Direction(0f, -1f, -1f)), TestTolerance);
+		AssertToleranceEquals(Direction.Left, TestPlane.FastParallelizationOf(new Direction(1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Direction.Left, TestPlane.FastParallelizationOf(new Direction(1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Direction.Right, TestPlane.FastParallelizationOf(new Direction(-1f, 1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Direction.Right, TestPlane.FastParallelizationOf(new Direction(-1f, -1f, 0f)), TestTolerance);
+		AssertToleranceEquals(Direction.Forward, TestPlane.FastParallelizationOf(new Direction(0f, 1f, 1f)), TestTolerance);
+		AssertToleranceEquals(Direction.Forward, TestPlane.FastParallelizationOf(new Direction(0f, -1f, 1f)), TestTolerance);
+		AssertToleranceEquals(Direction.Backward, TestPlane.FastParallelizationOf(new Direction(0f, 1f, -1f)), TestTolerance);
+		AssertToleranceEquals(Direction.Backward, TestPlane.FastParallelizationOf(new Direction(0f, -1f, -1f)), TestTolerance);
 
-		AssertToleranceEquals(new Direction(1f, 0f, 1f), TestPlane.ProjectionOf(new Direction(1f, 0f, 1f)), TestTolerance);
-		AssertToleranceEquals(new Direction(1f, 0f, 1f), TestPlane.ProjectionOf(new Direction(1f, 1f, 1f)), TestTolerance);
-		AssertToleranceEquals(new Direction(1f, 0f, 1f), TestPlane.ProjectionOf(new Direction(1f, -1f, 1f)), TestTolerance);
-		AssertToleranceEquals(new Direction(-1f, 0f, -1f), TestPlane.ProjectionOf(new Direction(-1f, 0f, -1f)), TestTolerance);
-		AssertToleranceEquals(new Direction(-1f, 0f, -1f), TestPlane.ProjectionOf(new Direction(-1f, 1f, -1f)), TestTolerance);
-		AssertToleranceEquals(new Direction(-1f, 0f, -1f), TestPlane.ProjectionOf(new Direction(-1f, -1f, -1f)), TestTolerance);
+		AssertToleranceEquals(new Direction(1f, 0f, 1f), TestPlane.ParallelizationOf(new Direction(1f, 0f, 1f)), TestTolerance);
+		AssertToleranceEquals(new Direction(1f, 0f, 1f), TestPlane.ParallelizationOf(new Direction(1f, 1f, 1f)), TestTolerance);
+		AssertToleranceEquals(new Direction(1f, 0f, 1f), TestPlane.ParallelizationOf(new Direction(1f, -1f, 1f)), TestTolerance);
+		AssertToleranceEquals(new Direction(-1f, 0f, -1f), TestPlane.ParallelizationOf(new Direction(-1f, 0f, -1f)), TestTolerance);
+		AssertToleranceEquals(new Direction(-1f, 0f, -1f), TestPlane.ParallelizationOf(new Direction(-1f, 1f, -1f)), TestTolerance);
+		AssertToleranceEquals(new Direction(-1f, 0f, -1f), TestPlane.ParallelizationOf(new Direction(-1f, -1f, -1f)), TestTolerance);
 
-		AssertToleranceEquals(new Direction(1f, 0f, 1f), TestPlane.FastProjectionOf(new Direction(1f, 0f, 1f)), TestTolerance);
-		AssertToleranceEquals(new Direction(1f, 0f, 1f), TestPlane.FastProjectionOf(new Direction(1f, 1f, 1f)), TestTolerance);
-		AssertToleranceEquals(new Direction(1f, 0f, 1f), TestPlane.FastProjectionOf(new Direction(1f, -1f, 1f)), TestTolerance);
-		AssertToleranceEquals(new Direction(-1f, 0f, -1f), TestPlane.FastProjectionOf(new Direction(-1f, 0f, -1f)), TestTolerance);
-		AssertToleranceEquals(new Direction(-1f, 0f, -1f), TestPlane.FastProjectionOf(new Direction(-1f, 1f, -1f)), TestTolerance);
-		AssertToleranceEquals(new Direction(-1f, 0f, -1f), TestPlane.FastProjectionOf(new Direction(-1f, -1f, -1f)), TestTolerance);
+		AssertToleranceEquals(new Direction(1f, 0f, 1f), TestPlane.FastParallelizationOf(new Direction(1f, 0f, 1f)), TestTolerance);
+		AssertToleranceEquals(new Direction(1f, 0f, 1f), TestPlane.FastParallelizationOf(new Direction(1f, 1f, 1f)), TestTolerance);
+		AssertToleranceEquals(new Direction(1f, 0f, 1f), TestPlane.FastParallelizationOf(new Direction(1f, -1f, 1f)), TestTolerance);
+		AssertToleranceEquals(new Direction(-1f, 0f, -1f), TestPlane.FastParallelizationOf(new Direction(-1f, 0f, -1f)), TestTolerance);
+		AssertToleranceEquals(new Direction(-1f, 0f, -1f), TestPlane.FastParallelizationOf(new Direction(-1f, 1f, -1f)), TestTolerance);
+		AssertToleranceEquals(new Direction(-1f, 0f, -1f), TestPlane.FastParallelizationOf(new Direction(-1f, -1f, -1f)), TestTolerance);
 
-		AssertToleranceEquals(null, TestPlane.ProjectionOf(Direction.Up), TestTolerance);
-		AssertToleranceEquals(null, TestPlane.ProjectionOf(Direction.Down), TestTolerance);
-		AssertToleranceEquals(null, TestPlane.ProjectionOf(Direction.None), TestTolerance);
+		AssertToleranceEquals(null, TestPlane.ParallelizationOf(Direction.Up), TestTolerance);
+		AssertToleranceEquals(null, TestPlane.ParallelizationOf(Direction.Down), TestTolerance);
+		AssertToleranceEquals(Direction.None, TestPlane.ParallelizationOf(Direction.None), TestTolerance);
 	}
 
 	[Test]
@@ -508,7 +508,7 @@ partial class PlaneTest {
 		Assert.AreEqual(new Vect(0f, 1f, 0f), TestPlane.FastOrthogonalizationOf(new Vect(0f, 1f, 0f)));
 		Assert.AreEqual(new Vect(0f, -1f, 0f), TestPlane.FastOrthogonalizationOf(new Vect(0f, -1f, 0f)));
 
-		Assert.AreEqual(null, TestPlane.OrthogonalizationOf(Vect.Zero));
+		Assert.AreEqual(Vect.Zero, TestPlane.OrthogonalizationOf(Vect.Zero));
 		Assert.AreEqual(null, TestPlane.OrthogonalizationOf(new Vect(1f, 0f, 0f)));
 		Assert.AreEqual(null, TestPlane.OrthogonalizationOf(new Vect(0f, 0f, 1f)));
 		Assert.AreEqual(null, TestPlane.OrthogonalizationOf(new Vect(-1f, 0f, 0f)));
@@ -553,7 +553,7 @@ partial class PlaneTest {
 		AssertToleranceEquals(Direction.Down, TestPlane.OrthogonalizationOf(Direction.Down), TestTolerance);
 		AssertToleranceEquals(Direction.Up, TestPlane.FastOrthogonalizationOf(Direction.Up), TestTolerance);
 		AssertToleranceEquals(Direction.Down, TestPlane.FastOrthogonalizationOf(Direction.Down), TestTolerance);
-		AssertToleranceEquals(null, TestPlane.OrthogonalizationOf(Direction.None), TestTolerance);
+		AssertToleranceEquals(Direction.None, TestPlane.OrthogonalizationOf(Direction.None), TestTolerance);
 	}
 
 	[Test]
@@ -812,7 +812,7 @@ partial class PlaneTest {
 				if (y.Equals(Direction.None, TestTolerance)) continue;
 				if (x.AngleTo(TestPlane).Equals(90f, TestTolerance)) continue;
 				if (y.AngleTo(TestPlane).Equals(90f, TestTolerance)) continue;
-				if (1f - MathF.Abs(x.ProjectedOnTo(TestPlane)!.Value.Dot(y.ProjectedOnTo(TestPlane)!.Value)) < TestTolerance) continue;
+				if (1f - MathF.Abs(x.ParallelizedWith(TestPlane)!.Value.Dot(y.ParallelizedWith(TestPlane)!.Value)) < TestTolerance) continue;
 
 				try {
 					converter = TestPlane.CreateDimensionConverter(TestPlane.PointClosestToOrigin, x, y);
@@ -858,8 +858,8 @@ partial class PlaneTest {
 			for (var j = i; j < testList.Count; ++j) {
 				var dirY = testList[j];
 
-				var dirXProjected = dirX.FastProjectedOnTo(TestPlane);
-				var dirYProjected = dirY.FastProjectedOnTo(TestPlane);
+				var dirXProjected = dirX.FastParallelizedWith(TestPlane);
+				var dirYProjected = dirY.FastParallelizedWith(TestPlane);
 				try {
 					if (dirXProjected.EqualsWithinAngle(dirYProjected, MinDifferentiablePostProjectionAngleDegrees) || dirXProjected.Flipped.EqualsWithinAngle(dirYProjected, MinDifferentiablePostProjectionAngleDegrees)) {
 						Assert.Throws<ArgumentException>(() => TestPlane.CreateDimensionConverter(Location.Origin, dirX, dirY));
@@ -893,24 +893,24 @@ partial class PlaneTest {
 			var v = d * 10f;
 
 			if (tolerance == null) {
-				Assert.AreEqual(expectation, p.IsParallelTo(d));
-				Assert.AreEqual(expectation, p.IsParallelTo(v));
-				Assert.AreEqual(expectation, p.IsParallelTo(-d));
-				Assert.AreEqual(expectation, p.IsParallelTo(-v));
-				Assert.AreEqual(expectation, (-p).IsParallelTo(d));
-				Assert.AreEqual(expectation, (-p).IsParallelTo(v));
-				Assert.AreEqual(expectation, (-p).IsParallelTo(-d));
-				Assert.AreEqual(expectation, (-p).IsParallelTo(-v));
+				Assert.AreEqual(expectation, p.IsApproximatelyParallelTo(d));
+				Assert.AreEqual(expectation, p.IsApproximatelyParallelTo(v));
+				Assert.AreEqual(expectation, p.IsApproximatelyParallelTo(-d));
+				Assert.AreEqual(expectation, p.IsApproximatelyParallelTo(-v));
+				Assert.AreEqual(expectation, (-p).IsApproximatelyParallelTo(d));
+				Assert.AreEqual(expectation, (-p).IsApproximatelyParallelTo(v));
+				Assert.AreEqual(expectation, (-p).IsApproximatelyParallelTo(-d));
+				Assert.AreEqual(expectation, (-p).IsApproximatelyParallelTo(-v));
 			}
 			else {
-				Assert.AreEqual(expectation, p.IsParallelTo(d, tolerance.Value));
-				Assert.AreEqual(expectation, p.IsParallelTo(v, tolerance.Value));
-				Assert.AreEqual(expectation, p.IsParallelTo(-d, tolerance.Value));
-				Assert.AreEqual(expectation, p.IsParallelTo(-v, tolerance.Value));
-				Assert.AreEqual(expectation, (-p).IsParallelTo(d, tolerance.Value));
-				Assert.AreEqual(expectation, (-p).IsParallelTo(v, tolerance.Value));
-				Assert.AreEqual(expectation, (-p).IsParallelTo(-d, tolerance.Value));
-				Assert.AreEqual(expectation, (-p).IsParallelTo(-v, tolerance.Value));
+				Assert.AreEqual(expectation, p.IsApproximatelyParallelTo(d, tolerance.Value));
+				Assert.AreEqual(expectation, p.IsApproximatelyParallelTo(v, tolerance.Value));
+				Assert.AreEqual(expectation, p.IsApproximatelyParallelTo(-d, tolerance.Value));
+				Assert.AreEqual(expectation, p.IsApproximatelyParallelTo(-v, tolerance.Value));
+				Assert.AreEqual(expectation, (-p).IsApproximatelyParallelTo(d, tolerance.Value));
+				Assert.AreEqual(expectation, (-p).IsApproximatelyParallelTo(v, tolerance.Value));
+				Assert.AreEqual(expectation, (-p).IsApproximatelyParallelTo(-d, tolerance.Value));
+				Assert.AreEqual(expectation, (-p).IsApproximatelyParallelTo(-v, tolerance.Value));
 			}
 		}
 
@@ -928,9 +928,6 @@ partial class PlaneTest {
 		AssertCombination(true, Direction.Up, Direction.Up, 90f);
 		AssertCombination(true, Direction.Left, Direction.Up, 0f);
 		AssertCombination(true, Direction.Left, Direction.Down, 0f);
-
-		Assert.Throws<ArgumentException>(() => new Plane(Direction.None, Location.Origin).IsParallelTo(Direction.Left));
-		Assert.Throws<ArgumentException>(() => new Plane(Direction.None, Location.Origin).IsParallelTo(Direction.None));
 
 		var testList = new List<Direction>();
 		for (var x = -3f; x <= 3f; x += 1f) {
@@ -984,24 +981,24 @@ partial class PlaneTest {
 			var v = d * 10f;
 
 			if (tolerance == null) {
-				Assert.AreEqual(expectation, p.IsOrthogonalTo(d));
-				Assert.AreEqual(expectation, p.IsOrthogonalTo(v));
-				Assert.AreEqual(expectation, p.IsOrthogonalTo(-d));
-				Assert.AreEqual(expectation, p.IsOrthogonalTo(-v));
-				Assert.AreEqual(expectation, (-p).IsOrthogonalTo(d));
-				Assert.AreEqual(expectation, (-p).IsOrthogonalTo(v));
-				Assert.AreEqual(expectation, (-p).IsOrthogonalTo(-d));
-				Assert.AreEqual(expectation, (-p).IsOrthogonalTo(-v));
+				Assert.AreEqual(expectation, p.IsApproximatelyOrthogonalTo(d));
+				Assert.AreEqual(expectation, p.IsApproximatelyOrthogonalTo(v));
+				Assert.AreEqual(expectation, p.IsApproximatelyOrthogonalTo(-d));
+				Assert.AreEqual(expectation, p.IsApproximatelyOrthogonalTo(-v));
+				Assert.AreEqual(expectation, (-p).IsApproximatelyOrthogonalTo(d));
+				Assert.AreEqual(expectation, (-p).IsApproximatelyOrthogonalTo(v));
+				Assert.AreEqual(expectation, (-p).IsApproximatelyOrthogonalTo(-d));
+				Assert.AreEqual(expectation, (-p).IsApproximatelyOrthogonalTo(-v));
 			}
 			else {
-				Assert.AreEqual(expectation, p.IsOrthogonalTo(d, tolerance.Value));
-				Assert.AreEqual(expectation, p.IsOrthogonalTo(v, tolerance.Value));
-				Assert.AreEqual(expectation, p.IsOrthogonalTo(-d, tolerance.Value));
-				Assert.AreEqual(expectation, p.IsOrthogonalTo(-v, tolerance.Value));
-				Assert.AreEqual(expectation, (-p).IsOrthogonalTo(d, tolerance.Value));
-				Assert.AreEqual(expectation, (-p).IsOrthogonalTo(v, tolerance.Value));
-				Assert.AreEqual(expectation, (-p).IsOrthogonalTo(-d, tolerance.Value));
-				Assert.AreEqual(expectation, (-p).IsOrthogonalTo(-v, tolerance.Value));
+				Assert.AreEqual(expectation, p.IsApproximatelyOrthogonalTo(d, tolerance.Value));
+				Assert.AreEqual(expectation, p.IsApproximatelyOrthogonalTo(v, tolerance.Value));
+				Assert.AreEqual(expectation, p.IsApproximatelyOrthogonalTo(-d, tolerance.Value));
+				Assert.AreEqual(expectation, p.IsApproximatelyOrthogonalTo(-v, tolerance.Value));
+				Assert.AreEqual(expectation, (-p).IsApproximatelyOrthogonalTo(d, tolerance.Value));
+				Assert.AreEqual(expectation, (-p).IsApproximatelyOrthogonalTo(v, tolerance.Value));
+				Assert.AreEqual(expectation, (-p).IsApproximatelyOrthogonalTo(-d, tolerance.Value));
+				Assert.AreEqual(expectation, (-p).IsApproximatelyOrthogonalTo(-v, tolerance.Value));
 			}
 		}
 
@@ -1019,9 +1016,6 @@ partial class PlaneTest {
 		AssertCombination(true, Direction.Left, Direction.Up, 90f);
 		AssertCombination(true, Direction.Up, Direction.Down, 0f);
 		AssertCombination(true, Direction.Down, Direction.Up, 0f);
-
-		Assert.Throws<ArgumentException>(() => new Plane(Direction.None, Location.Origin).IsParallelTo(Direction.Left));
-		Assert.Throws<ArgumentException>(() => new Plane(Direction.None, Location.Origin).IsParallelTo(Direction.None));
 
 		var testList = new List<Direction>();
 		for (var x = -3f; x <= 3f; x += 1f) {

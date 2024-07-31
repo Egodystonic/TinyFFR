@@ -193,21 +193,21 @@ public readonly partial struct Line {
 	}
 
 	public Line? ProjectedOnTo(Plane plane) {
-		var projectedDirection = Direction.ProjectedOnTo(plane);
+		var projectedDirection = Direction.ParallelizedWith(plane);
 		return projectedDirection == null ? null : new Line(PointOnLine.ClosestPointOn(plane), projectedDirection.Value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line FastProjectedOnTo(Plane plane) => new(PointOnLine.ClosestPointOn(plane), Direction.FastProjectedOnTo(plane));
+	public Line FastProjectedOnTo(Plane plane) => new(PointOnLine.ClosestPointOn(plane), Direction.FastParallelizedWith(plane));
 
 	public Line? ParallelizedWith(Plane plane) => ParallelizedWith(plane, 0f);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line FastParallelizedWith(Plane plane) => FastParallelizedWith(plane, 0f);
 	public Line? ParallelizedWith(Plane plane, float pivotPointSignedDistance) {
-		var projectedDirection = Direction.ProjectedOnTo(plane);
+		var projectedDirection = Direction.ParallelizedWith(plane);
 		if (projectedDirection == null) return null;
 		return new Line(LocationAtDistance(pivotPointSignedDistance), projectedDirection.Value);
 	}
-	public Line FastParallelizedWith(Plane plane, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.FastProjectedOnTo(plane));
+	public Line FastParallelizedWith(Plane plane, float pivotPointSignedDistance) => new(LocationAtDistance(pivotPointSignedDistance), Direction.FastParallelizedWith(plane));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line? OrthogonalizedAgainst(Plane plane) => OrthogonalizedAgainst(plane, 0f);

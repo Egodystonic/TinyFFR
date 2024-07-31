@@ -34,11 +34,11 @@ partial class PlaneTest {
 
 		Assert.AreEqual(TestPlane, Plane.FromPointClosestToOrigin((0f, -1f, 0f), true));
 		Assert.AreEqual(new Plane(Direction.Backward, (0f, 0f, -3f)), Plane.FromPointClosestToOrigin((0f, 0f, -3f), false));
-		Assert.Throws<ArgumentException>(() => Plane.FromPointClosestToOrigin(Location.Origin, true));
+		Assert.AreEqual(null, Plane.FromPointClosestToOrigin(Location.Origin, true));
 
 		Assert.AreEqual(TestPlane, Plane.FromTriangleOnSurface((100f, -1f, 100f), (0f, -1f, 0f), (-100f, -1f, 0f)));
-		Assert.Throws<ArgumentException>(() => Plane.FromTriangleOnSurface((0f, 0f, 0f), (0f, 1f, 0f), (0f, 2f, 0f)));
-		Assert.Throws<ArgumentException>(() => Plane.FromTriangleOnSurface((0f, 0f, 0f), (0f, 0f, 0f), (0f, 0f, 0f)));
+		Assert.AreEqual(null, Plane.FromTriangleOnSurface((0f, 0f, 0f), (0f, 1f, 0f), (0f, 2f, 0f)));
+		Assert.AreEqual(null, Plane.FromTriangleOnSurface((0f, 0f, 0f), (0f, 0f, 0f), (0f, 0f, 0f)));
 	}
 
 	// TODO this test could be fleshed out a lot more

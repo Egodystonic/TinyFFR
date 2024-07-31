@@ -171,23 +171,6 @@ partial class RotationTest {
 	}
 
 	[Test]
-	public void RotationScalingShouldUseAppropriateErrorMargin() {
-		Assert.AreEqual(Rotation.None, Rotation.FromQuaternionPreNormalized(new(0.001f, 0f, 0f, 1f)) * 1f);
-		Assert.AreEqual(Rotation.None, Rotation.FromQuaternionPreNormalized(new(-0.001f, 0f, 0f, 1f)) * 1f);
-		Assert.AreEqual(Rotation.None, Rotation.FromQuaternionPreNormalized(new(0f, 0f, 0f, 0.999f)) * 1f);
-		Assert.AreEqual(Rotation.None, Rotation.FromQuaternionPreNormalized(new(0f, 0f, 0f, 1.001f)) * 1f);
-		Assert.AreEqual(Rotation.None, Rotation.FromQuaternionPreNormalized(new(0.001f, 0f, 0f, -1f)) * 1f);
-		Assert.AreEqual(Rotation.None, Rotation.FromQuaternionPreNormalized(new(-0.001f, 0f, 0f, -1f)) * 1f);
-		Assert.AreEqual(Rotation.None, Rotation.FromQuaternionPreNormalized(new(0f, 0f, 0f, -0.999f)) * 1f);
-		Assert.AreEqual(Rotation.None, Rotation.FromQuaternionPreNormalized(new(0f, 0f, 0f, -1.001f)) * 1f);
-
-		Assert.AreNotEqual(Rotation.None, (Left >> Right) * 0.0001f);
-		Assert.AreEqual(Rotation.None, (Left >> Right) * 0.00001f);
-		Assert.AreNotEqual(Rotation.None, (Left >> Right) * -0.0001f);
-		Assert.AreEqual(Rotation.None, (Left >> Right) * -0.00001f);
-	}
-
-	[Test]
 	public void ShouldCorrectlyInterpolate() {
 		// Some examples from external sources
 		var a = Rotation.None;

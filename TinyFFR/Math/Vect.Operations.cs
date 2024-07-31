@@ -153,19 +153,27 @@ partial struct Vect :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsOrthogonalTo(Direction d) => d.IsOrthogonalTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsOrthogonalTo(Direction d, Angle tolerance) => d.IsOrthogonalTo(this, tolerance);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsParallelTo(Direction d) => d.IsParallelTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsParallelTo(Direction d, Angle tolerance) => d.IsParallelTo(this, tolerance);
+	public bool IsApproximatelyOrthogonalTo(Direction d) => d.IsApproximatelyOrthogonalTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsApproximatelyOrthogonalTo(Direction d, Angle tolerance) => d.IsApproximatelyOrthogonalTo(this, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsApproximatelyParallelTo(Direction d) => d.IsApproximatelyParallelTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsApproximatelyParallelTo(Direction d, Angle tolerance) => d.IsApproximatelyParallelTo(this, tolerance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsOrthogonalTo(Vect other) => IsOrthogonalTo(other.Direction);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsOrthogonalTo(Vect other, Angle tolerance) => IsOrthogonalTo(other.Direction, tolerance);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsParallelTo(Vect other) => IsParallelTo(other.Direction);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsParallelTo(Vect other, Angle tolerance) => IsParallelTo(other.Direction, tolerance);
+	public bool IsApproximatelyOrthogonalTo(Vect other) => IsApproximatelyOrthogonalTo(other.Direction);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsApproximatelyOrthogonalTo(Vect other, Angle tolerance) => IsApproximatelyOrthogonalTo(other.Direction, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsApproximatelyParallelTo(Vect other) => IsApproximatelyParallelTo(other.Direction);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsApproximatelyParallelTo(Vect other, Angle tolerance) => IsApproximatelyParallelTo(other.Direction, tolerance);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator *(Vect d, Rotation r) => r.Rotate(d);

@@ -13,7 +13,6 @@ namespace Egodystonic.TinyFFR;
 public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptiveStringProvider {
 	public const string ToStringMiddleSection = " around ";
 	public static readonly Rotation None = new(Identity);
-	const float MinHalfAngleRadiansForAxisExtraction = 1E-5f;
 
 	internal readonly Quaternion AsQuaternion;
 
@@ -22,11 +21,8 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 	}
 
 	public Direction Axis {
-		get {
-			var halfAngleRadians = MathF.Acos(AsQuaternion.W);
-			if (halfAngleRadians < MinHalfAngleRadiansForAxisExtraction) return Direction.None;
-			return Direction.FromVector3PreNormalized(new Vector3(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z) / MathF.Sin(halfAngleRadians));
-		}
+		// Although we can extract the axis by dividing X/Y/Z by sin(acos(W)) and in theory skip the normalization of the direction, this is actually faster (and less prone to FP error around extreme values of W)
+		get => MathF.Abs(AsQuaternion.W) >= 1f ? Direction.None : new(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z);
 	}
 
 	internal Vector4 AsVector4 {
@@ -38,8 +34,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 	public Rotation() => AsQuaternion = Identity;
 
 	public Rotation(Angle angle, Direction axis) { // TODO make it clear that the resultant Rotation Angle/Axis will be auto-normalized by the nature of Quaternion math (e.g. negative angle results in positive angle with flipped axis)
-		const float FloatingPointErrorMargin = 1E-5f;
-		if (angle.Equals(0f, FloatingPointErrorMargin) || axis.Equals(Direction.None, FloatingPointErrorMargin)) AsQuaternion = Identity;
+		if (angle == Angle.Zero || axis == Direction.None) AsQuaternion = Identity;
 		else AsQuaternion = CreateFromAxisAngle(axis.ToVector3(), angle.AsRadians);
 	} 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -48,7 +43,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 	#region Factories and Conversions
 	public static Rotation FromStartAndEndDirection(Direction startDirection, Direction endDirection) {
 		var dot = Vector4.Dot(startDirection.AsVector4, endDirection.AsVector4);
-		if (dot > -0.9999f) return new(Normalize(new(Vector3.Cross(startDirection.ToVector3(), endDirection.ToVector3()), dot + 1f)));
+		if (dot > -0.9999f) return FromQuaternion(new(Vector3.Cross(startDirection.ToVector3(), endDirection.ToVector3()), dot + 1f));
 
 		// If we're rotating exactly 180 degrees there are infinitely many arcs of "shortest" path, so the math breaks down.
 		// Therefore we just pick any perpendicular vector and rotate around that.
@@ -65,11 +60,8 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 	public static Rotation FromQuaternionPreNormalized(Quaternion q) => new(q);
 
 	public void Deconstruct(out Angle angle, out Direction axis) {
-		var halfAngleRadians = MathF.Acos(AsQuaternion.W);
-		
-		angle = Angle.FromRadians(halfAngleRadians * 2f);
-		if (halfAngleRadians < MinHalfAngleRadiansForAxisExtraction) axis = Direction.None;
-		else axis = Direction.FromVector3PreNormalized(new Vector3(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z) / MathF.Sin(halfAngleRadians));
+		angle = Angle;
+		axis = Axis;
 	}
 
 	public static implicit operator Rotation((Angle Angle, Direction Axis) operand) => new(operand.Angle, operand.Axis);

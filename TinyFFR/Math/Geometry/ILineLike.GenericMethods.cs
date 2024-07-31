@@ -5,6 +5,7 @@ namespace Egodystonic.TinyFFR;
 
 // TODO we could probably auto-generate a lot of this with a source generator, so I've just implemented one example and anything else we actually need for now
 // TODO should we do the same for IConvexShape?
+// TODO maybe instead of copying the name exactly we can make it something like "AreApproximatelyColinear(...)" and "FindIntersectionWith(...)" etc
 // Implementation note: Q: "Why aren't these extension methods?" A: Because overload resolution doesn't work so well (and probably couldn't) when we're clashing extensions and trait interfaces and so on.
 // Better to keep things simple this time (trust me, I tried, go look at commit hash 762dc61f6d9f90def70088d2a389ee7923e4495c to see how this looked originally and see how nasty ILine.cs and GeometryTraits.cs was).
 // Unless you're some super genius with this stuff and want to have a go... Free cookie for you!
@@ -41,24 +42,12 @@ public partial interface ILineLike {
 	public static Location FastIntersectionWith<TThis, TArg>(TThis @this, TArg arg) where TThis : ILineLike where TArg : ILineLike => FastIntersectionWith(@this, arg, DefaultLineThickness);
 	public static Location FastIntersectionWith<TThis, TArg>(TThis @this, TArg arg, float lineThickness) where TThis : ILineLike where TArg : ILineLike => ClosestPointOn(@this, arg);
 
-	public static TThis? ParallelizedWith<TThis, TArg>(TThis @this, TArg arg) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => @this.ParallelizedWith(arg.Direction);
-	public static TThis FastParallelizedWith<TThis, TArg>(TThis @this, TArg arg) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => @this.FastParallelizedWith(arg.Direction);
-	public static bool IsParallelTo<TThis>(TThis @this, Direction direction) where TThis : struct, ILineLike<TThis> => @this.IsParallelTo(direction);
-	public static bool IsParallelTo<TThis>(TThis @this, Direction direction, Angle tolerance) where TThis : struct, ILineLike<TThis> {
-		return @this.Direction.IsParallelTo(direction, tolerance);
+	
+	public static bool IsApproximatelyColinearWith<TThis, TArg>(TThis @this, TArg arg) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => IsApproximatelyColinearWith(@this, arg, DefaultLineThickness, DefaultParallelOrthogonalColinearTestApproximationDegrees);
+	public static bool IsApproximatelyColinearWith<TThis, TArg>(TThis @this, TArg arg, float lineThickness, Angle tolerance) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> {
+		return @this.IsApproximatelyParallelTo(arg.Direction, tolerance) && DistanceFrom(@this, arg) <= (lineThickness * 2f);
 	}
-	public static bool IsParallelTo<TThis, TArg>(TThis @this, TArg arg) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => @this.IsParallelTo(arg.Direction);
-	public static bool IsParallelTo<TThis, TArg>(TThis @this, TArg arg, Angle tolerance) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => @this.IsParallelTo(arg.Direction, tolerance);
-	public static TThis? OrthogonalizedAgainst<TThis, TArg>(TThis @this, TArg arg) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => @this.OrthogonalizedAgainst(arg.Direction);
-	public static TThis FastOrthogonalizedAgainst<TThis, TArg>(TThis @this, TArg arg) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => @this.FastOrthogonalizedAgainst(arg.Direction);
-	public static bool IsOrthogonalTo<TThis>(TThis @this, Direction direction) where TThis : struct, ILineLike<TThis> => @this.IsOrthogonalTo(direction);
-	public static bool IsOrthogonalTo<TThis>(TThis @this, Direction direction, Angle tolerance) where TThis : struct, ILineLike<TThis> {
-		return @this.Direction.IsOrthogonalTo(direction, tolerance);
-	}
-	public static bool IsOrthogonalTo<TThis, TArg>(TThis @this, TArg arg) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => @this.IsOrthogonalTo(arg.Direction);
-	public static bool IsOrthogonalTo<TThis, TArg>(TThis @this, TArg arg, Angle tolerance) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => @this.IsOrthogonalTo(arg.Direction, tolerance);
-	public static bool IsColinearWith<TThis, TArg>(TThis @this, TArg arg) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> => IsColinearWith(@this, arg, DefaultLineThickness, DefaultAngularToleranceDegrees);
-	public static bool IsColinearWith<TThis, TArg>(TThis @this, TArg arg, float lineThickness, Angle tolerance) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> {
-		return IsParallelTo(@this, arg, tolerance) && DistanceFrom(@this, arg) <= (lineThickness * 2f);
+	public static bool IsExactlyColinearWith<TThis, TArg>(TThis @this, TArg arg, float lineThickness) where TThis : struct, ILineLike<TThis> where TArg : struct, ILineLike<TArg> {
+		return @this.IsParallelTo(arg.Direction) && DistanceFrom(@this, arg) <= (lineThickness * 2f);
 	}
 }
