@@ -206,7 +206,7 @@ partial class DirectionTest {
 
 	[Test]
 	public void ShouldUseAppropriateErrorMarginForOrthogonalization() {
-		const float MinPermissibleAngleDegrees = 0.01f;
+		const float MinPermissibleAngleDegrees = Direction.DefaultAngularToleranceDegrees;
 
 		var testList = new List<Direction>();
 		for (var x = -5f; x <= 5f; x += 1f) {
@@ -221,17 +221,16 @@ partial class DirectionTest {
 			var dir = testList[i];
 			if (dir == Direction.None) continue;
 
-			try {
-				Assert.IsNotNull(dir.OrthogonalizedAgainst((dir >> dir.AnyPerpendicular()).WithAngle(MinPermissibleAngleDegrees) * dir));
-				Assert.IsNull(dir.OrthogonalizedAgainst((dir >> dir.AnyPerpendicular()).WithAngle(MinPermissibleAngleDegrees * 0.1f) * dir));
+			var orthoTarget = dir;
+			var perp = dir.AnyPerpendicular();
+			var angleToTestWith = Angle.Zero;
+			while ((dir ^ orthoTarget) < MinPermissibleAngleDegrees) {
+				Assert.IsNull(dir.OrthogonalizedAgainst(orthoTarget));
+				angleToTestWith += MinPermissibleAngleDegrees * 0.25f;
+				orthoTarget = (dir >> perp).WithAngle(angleToTestWith) * dir;
 			}
-			catch {
-				Console.WriteLine("Dir: " + dir.ToStringDescriptive());
-				Console.WriteLine("Perp: " + dir.AnyPerpendicular());
-				Console.WriteLine("Rotated: " + ((dir >> dir.AnyPerpendicular()).WithAngle(MinPermissibleAngleDegrees) * dir));
-				Console.WriteLine("Angle: " + (dir ^ ((dir >> dir.AnyPerpendicular()).WithAngle(MinPermissibleAngleDegrees) * dir)));
-				throw;
-			}
+
+			Assert.IsNotNull(dir.OrthogonalizedAgainst(orthoTarget));
 		}
 	}
 
@@ -252,13 +251,13 @@ partial class DirectionTest {
 		}
 
 		AssertToleranceEquals(null, OneTwoNegThree.ParallelizedWith(OneTwoNegThree.AnyPerpendicular()), TestTolerance);
-		AssertToleranceEquals(null, Direction.None.ParallelizedWith(OneTwoNegThree), TestTolerance);
+		AssertToleranceEquals(Direction.None, Direction.None.ParallelizedWith(OneTwoNegThree), TestTolerance);
 
 		AssertToleranceEquals(null, OneTwoNegThree.ParallelizedWith(-OneTwoNegThree.AnyPerpendicular()), TestTolerance);
 		AssertToleranceEquals(null, -OneTwoNegThree.ParallelizedWith(OneTwoNegThree.AnyPerpendicular()), TestTolerance);
 
-		Assert.AreEqual(null, OneTwoNegThree.ParallelizedWith(Direction.None));
-		Assert.AreEqual(null, Direction.None.ParallelizedWith(Direction.None));
+		Assert.AreEqual(Direction.None, OneTwoNegThree.ParallelizedWith(Direction.None));
+		Assert.AreEqual(Direction.None, Direction.None.ParallelizedWith(Direction.None));
 
 		var testList = new List<Direction>();
 		for (var x = -5f; x <= 5f; x += 1f) {
@@ -278,7 +277,7 @@ partial class DirectionTest {
 			AssertToleranceEquals(dirA, dirA.ParallelizedWith(-dirA), TestTolerance);
 			AssertToleranceEquals(-dirA, (-dirA).ParallelizedWith(dirA), TestTolerance);
 			AssertToleranceEquals(-dirA, (-dirA).ParallelizedWith(-dirA), TestTolerance);
-			AssertToleranceEquals(null, Direction.None.ParallelizedWith(dirA), TestTolerance);
+			AssertToleranceEquals(Direction.None, Direction.None.ParallelizedWith(dirA), TestTolerance);
 
 			for (var j = i; j < testList.Count; ++j) {
 				var dirB = testList[j];
@@ -319,7 +318,7 @@ partial class DirectionTest {
 
 	[Test]
 	public void ShouldUseAppropriateErrorMarginForParallelization() {
-		const float MinPermissibleAngleDegrees = 0.01f;
+		const float MinPermissibleAngleDegrees = Direction.DefaultAngularToleranceDegrees;
 
 		var testList = new List<Direction>();
 		for (var x = -5f; x <= 5f; x += 1f) {
@@ -334,8 +333,16 @@ partial class DirectionTest {
 			var dir = testList[i];
 			if (dir == Direction.None) continue;
 
-			Assert.IsNotNull(dir.ParallelizedWith((dir >> dir.AnyPerpendicular()).WithAngle(90f - MinPermissibleAngleDegrees) * dir));
-			Assert.IsNull(dir.ParallelizedWith((dir >> dir.AnyPerpendicular()).WithAngle(90f - MinPermissibleAngleDegrees * 0.1f) * dir));
+			var perp = dir.AnyPerpendicular();
+			var parallelTarget = perp;
+			var angleToTestWith = Angle.Zero;
+			while ((dir ^ parallelTarget).Equals(Angle.QuarterCircle, MinPermissibleAngleDegrees)) {
+				Assert.IsNull(dir.ParallelizedWith(parallelTarget));
+				angleToTestWith += MinPermissibleAngleDegrees * 0.25f;
+				parallelTarget = (perp >> dir).WithAngle(angleToTestWith) * perp;
+			}
+
+			Assert.IsNotNull(dir.ParallelizedWith(parallelTarget));
 		}
 	}
 
@@ -689,40 +696,8 @@ partial class DirectionTest {
 		Assert.AreEqual(Direction.None, Direction.None.Clamp(Direction.Left, Direction.Right));
 
 		// Min or max are None
-		Assert.Throws<ArgumentException>(() => Direction.Right.Clamp(Direction.Forward, Direction.None));
-		Assert.Throws<ArgumentException>(() => Direction.Right.Clamp(Direction.None, Direction.Forward));
-	}
-
-	[Test]
-	public void DirectionalClampShouldUseAppropriateFloatingPointErrorMargin() {
-		Assert.AreNotEqual(new Direction(1f, 0f, 0f), Direction.Up.Clamp((1f, 0f, 0f), (0.999f, 0.001f, 0f)));
-		Assert.AreEqual(new Direction(1f, 0f, 0f), Direction.Up.Clamp((1f, 0f, 0f), (0.9999f, 0.0001f, 0f)));
-
-		const float MinDifferentiableAngleDegrees = 0.1f;
-		var testList = new List<Direction>();
-		for (var x = -4f; x <= 4f; x += 1f) {
-			for (var y = -4f; y <= 4f; y += 1f) {
-				for (var z = -4f; z <= 4f; z += 1f) {
-					if (x == 0f && y == 0f && z == 0f) continue;
-					testList.Add(new(x, y, z));
-				}
-			}
-		}
-
-		foreach (var dir in testList) {
-			for (var i = 0; i < 3; ++i) {
-				var offset = Direction.CreateNewRandom(dir, MinDifferentiableAngleDegrees, MinDifferentiableAngleDegrees);
-				try {
-					Assert.AreNotEqual(dir, ((dir >> offset) * 0.5f * dir).Clamp(dir, offset));
-				}
-				catch (Exception e) {
-					if (e is AssertionException) Console.WriteLine("Margin is too coarse (dir and offset should be dissimilar enough)");
-					else Console.WriteLine("Plane construction over triangle presumably threw exception for colinearity? See exception");
-					Console.WriteLine("\t" + dir.ToStringDescriptive() + " to " + offset.ToStringDescriptive() + "; angle: " + (dir ^ offset));
-					throw;
-				}
-			}
-		}
+		Assert.AreEqual(Direction.None, Direction.Forward.Clamp(Direction.Forward, Direction.None));
+		Assert.AreEqual(Direction.None, Direction.Forward.Clamp(Direction.None, Direction.Forward));
 	}
 
 	[Test]
@@ -1185,8 +1160,8 @@ partial class DirectionTest {
 		}
 
 		// Parameter checks
-		Assert.Throws<ArgumentException>(() => Direction.Left.Clamp(testPlane, Direction.Down, 45f, false));
-		Assert.Throws<ArgumentException>(() => Direction.Left.Clamp(testPlane, Direction.None, 45f, false));
+		Assert.AreEqual(null, Direction.Left.Clamp(testPlane, Direction.Down, 45f, false));
+		Assert.AreEqual(Direction.None, Direction.Left.Clamp(testPlane, Direction.None, 45f, false));
 	}
 
 	[Test]

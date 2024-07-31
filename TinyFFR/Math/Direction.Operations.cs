@@ -25,7 +25,7 @@ partial struct Direction :
 	IParallelizationTarget<Direction, Vect>,
 	IOrthogonalizationTarget<Direction, Direction>,
 	IParallelizationTarget<Direction, Direction> {
-	public const float DefaultAngularToleranceDegrees = 0.01f;
+	public const float DefaultAngularToleranceDegrees = 1E-4f;
 
 	public float this[Axis axis] => axis switch {
 		Axis.X => X,
@@ -128,15 +128,9 @@ partial struct Direction :
 	public Vect FastOrthogonalizationOf(Vect v) => v.FastOrthogonalizedAgainst(this);
 
 	public Direction? ParallelizedWith(Direction d) {
-		const float DotProductFloatingPointErrorMargin = 1E-4f;
-		if (this == None || d == None) return null;
-		var dot = Vector4.Dot(AsVector4, d.AsVector4);
-		// These checks are important to protect against fp inaccuracy with cases where we're parallelizing against an orthogonal dir
-		return dot switch {
-			> DotProductFloatingPointErrorMargin => d,
-			< -DotProductFloatingPointErrorMargin => -d,
-			_ => null
-		};
+		if (this == None || d == None) return None;
+		if (IsOrthogonalTo(d)) return null;
+		return new(d.AsVector4 * MathF.Sign(Dot(d)));
 	}
 	public Direction FastParallelizedWith(Direction d) => new(d.AsVector4 * MathF.Sign(Vector4.Dot(AsVector4, d.AsVector4)));
 
@@ -213,19 +207,13 @@ partial struct Direction :
 	// TODO if the user wants to clamp within a 3D cone (even >= 90deg cone), they should use the other Clamp overload.
 	// TODO If the user wants to clamp within a 2D arc, they should use the other other Clamp overload
 	public Direction Clamp(Direction min, Direction max) {
-		const float ColinearityErrorMargin = 1E-3f; // Should match the error margin in Plane.FromTriangleOnSurface
-		
-		// Doesn't make sense to clamp to "None", so throw exception
-		if (min == None) throw new ArgumentException($"Neither min nor max may be '{nameof(None)}'.", nameof(min));
-		if (max == None) throw new ArgumentException($"Neither min nor max may be '{nameof(None)}'.", nameof(max));
-
-		// If this is None just return None
-		if (this == None) return None;
+		// Doesn't make sense to clamp to "None", so return None
+		if (min == None || max == None || this == None) return None;
 
 		// If min and max are antipodal then the entire range of possible directions is valid, so just return this
-		if (min.Equals(-max, ColinearityErrorMargin)) return this;
+		if (min == -max) return this;
 		// Else if min and max are the same then we just return min
-		if (min.Equals(max, ColinearityErrorMargin)) return min;
+		else if (min == max) return min;
 
 		// Create a plane that is aligned with the great circle formed between min and max on the unit sphere, 
 		// and then create a dimension converter to convert min, max, and this to 2D; with 'min' representing the X-axis
@@ -268,8 +256,8 @@ partial struct Direction :
 	// TODO xmldoc: Clamps on to a given arc (arcCentre + maxDiff) around a plane (plane); either leaving this direction directly clamped on to the plane or still with the 3D component (retainEtc). Also mention that the plane's location is not used, only its normal
 	// TODO xmldoc make it clear that the max arc difference is split across the centre direction; so e.g. a max diff of 90deg will result in 45deg either side
 	public Direction? Clamp(Plane plane, Direction arcCentre, Angle maxArcCentreDifference, bool retainOrthogonalDimension) {
-		if (arcCentre.ProjectedOnTo(plane) == null) throw new ArgumentException($"Arc centre must not be '{None}' or perpendicular to plane.", nameof(arcCentre));
-		if (this == None) return None;
+		if (this == None || arcCentre == None) return None;
+		if (arcCentre.ProjectedOnTo(plane) == null) return null;
 		var halfArc = maxArcCentreDifference.ClampZeroToFullCircle() * 0.5f;
 		var converter = plane.CreateDimensionConverter(Location.Origin, arcCentre);
 		var resultOnPlane = converter.ConvertDisregardingOrigin((Location) this);
@@ -329,8 +317,7 @@ partial struct Direction :
 		return result;
 	}
 	static void GetNearestDirectionAndOrientation(Direction targetDir, ReadOnlySpan<Direction> span, out Orientation3D orientation, out Direction direction) {
-		const float NoneDirectionEqualityTolerance = 1E-4f;
-		if (targetDir.Equals(None, NoneDirectionEqualityTolerance)) {
+		if (targetDir == None) {
 			orientation = Orientation3D.None;
 			direction = None;
 			return;

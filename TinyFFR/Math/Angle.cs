@@ -73,6 +73,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 			d2 = Direction.Renormalize(d2);
 		}
 
+		// TODO work out why replacing this with d1.Dot(d2) breaks so many tests for Direction.Operations
 		// Taking care of FP inaccuracy
 		var dot = Vector4.Dot(d1.AsVector4, d2.AsVector4);
 		dot = MathF.Abs(dot) switch {

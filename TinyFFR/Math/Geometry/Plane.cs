@@ -47,12 +47,12 @@ public readonly partial struct Plane : IMathPrimitive<Plane>, IDescriptiveString
 		return new(normalFacesOrigin ? direction.Flipped : direction, vectFromOriginToClosestPoint.Length * (normalFacesOrigin ? -1f : 1f));
 	}
 
-	public static Plane FromTriangleOnSurface(Location a, Location b, Location c) {
+	public static Plane FromTriangleOnSurface(Location a, Location b, Location c) { // TODO if we made this nullable we could use it in Direction.Clamp as a free check
 		var normal = Direction.FromVector3(Vector3.Cross(b.ToVector3() - a.ToVector3(), c.ToVector3() - a.ToVector3()));
 		if (normal != Direction.None) return new(normal, a);
 
 		// Everything below this line is just handling the fact that the points are colinear and creating the right exception message
-		const float FloatingPointErrorMargin = 1E-2f; // Note: If changing this, Direction.Clamp(Direction,Direction) needs to be updated too
+		const float FloatingPointErrorMargin = 1E-2f;
 		Line? line;
 		if (!a.Equals(b, FloatingPointErrorMargin)) line = Line.FromTwoPoints(a, b);
 		else if (!b.Equals(c, FloatingPointErrorMargin)) line = Line.FromTwoPoints(b, c);
