@@ -75,7 +75,7 @@ public partial interface ILineLike :
 	bool IsApproximatelyColinearWith(BoundedRay ray, float lineThickness, Angle tolerance);
 
 	protected internal static float? CalculateUnboundedIntersectionDistanceOnThisLine<TThis, TOther>(TThis @this, TOther other) where TThis : ILineLike where TOther : ILineLike {
-		const float ParallelTolerance = 1E-6f;
+		const float ParallelTolerance = 1E-7f;
 
 		var thisStart = @this.StartPoint.ToVector3();
 		var otherStart = other.StartPoint.ToVector3();
@@ -84,9 +84,10 @@ public partial interface ILineLike :
 		var otherDir = other.Direction.ToVector3();
 
 		var dot = Vector3.Dot(thisDir, otherDir);
-		var oneMinusDotSquared = 1f - (dot * dot);
-		if (oneMinusDotSquared < ParallelTolerance) return null; // We have a small tolerance because as we approach 0 the division on the last step will balloon the resultant answer in to nonsensical values
+		var linesAreParallel = MathF.Abs(dot) >= 1f - ParallelTolerance; // Small tolerance margin to prevent runaway values as we approach 0
+		if (linesAreParallel) return null;
 
+		var oneMinusDotSquared = 1f - (dot * dot);
 		var startDiff = thisStart - otherStart;
 		var localOrientationStartDiffDot = Vector3.Dot(thisDir, startDiff);
 		var otherOrientationStartDiffDot = Vector3.Dot(otherDir, startDiff);
@@ -94,7 +95,7 @@ public partial interface ILineLike :
 	}
 
 	protected internal static (float ThisDistance, float OtherDistance)? CalculateUnboundedIntersectionDistancesOnBothLines<TThis, TOther>(TThis @this, TOther other) where TThis : ILineLike where TOther : ILineLike {
-		const float ParallelTolerance = 1E-6f;
+		const float ParallelTolerance = 1E-7f;
 
 		var thisStart = @this.StartPoint.ToVector3();
 		var otherStart = other.StartPoint.ToVector3();
@@ -103,9 +104,11 @@ public partial interface ILineLike :
 		var otherDir = other.Direction.ToVector3();
 
 		var dot = Vector3.Dot(thisDir, otherDir);
-		var oneMinusDotSquared = 1f - (dot * dot);
-		if (oneMinusDotSquared < ParallelTolerance) return null; // We have a small tolerance because as we approach 0 the division on the last steps will balloon the resultant answer in to nonsensical values
+		var linesAreParallel = MathF.Abs(dot) >= 1f - ParallelTolerance; // Small tolerance margin to prevent runaway values as we approach 0
 
+		if (linesAreParallel) return null;
+
+		var oneMinusDotSquared = 1f - (dot * dot);
 		var startDiff = thisStart - otherStart;
 		var localOrientationStartDiffDot = Vector3.Dot(thisDir, startDiff);
 		var otherOrientationStartDiffDot = Vector3.Dot(otherDir, startDiff);

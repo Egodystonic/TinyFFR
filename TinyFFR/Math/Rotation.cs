@@ -59,6 +59,9 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation FromQuaternionPreNormalized(Quaternion q) => new(q);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Rotation Renormalize(Rotation r) => FromQuaternion(r.AsQuaternion);
+
 	public void Deconstruct(out Angle angle, out Direction axis) {
 		angle = Angle;
 		axis = Axis;
