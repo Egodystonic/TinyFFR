@@ -532,14 +532,14 @@ partial struct OriginCuboid {
 		);
 	}
 
-	public static OriginCuboid CreateNewRandom() {
+	public static OriginCuboid NewRandom() {
 		return FromHalfDimensions(
 			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax),
 			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax),
 			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax)
 		);
 	}
-	public static OriginCuboid CreateNewRandom(OriginCuboid minInclusive, OriginCuboid maxExclusive) {
+	public static OriginCuboid NewRandom(OriginCuboid minInclusive, OriginCuboid maxExclusive) {
 		return FromHalfDimensions(
 			RandomUtils.NextSingle(minInclusive.HalfWidth, maxExclusive.HalfWidth),
 			RandomUtils.NextSingle(minInclusive.HalfHeight, maxExclusive.HalfHeight),

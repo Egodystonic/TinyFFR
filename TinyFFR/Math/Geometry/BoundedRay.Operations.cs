@@ -121,8 +121,8 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 		);
 	}
 	public BoundedRay Clamp(BoundedRay min, BoundedRay max) => new(StartPoint.Clamp(min.StartPoint, max.StartPoint), EndPoint.Clamp(min.EndPoint, max.EndPoint));
-	public static BoundedRay CreateNewRandom() => new(Location.CreateNewRandom(), Location.CreateNewRandom());
-	public static BoundedRay CreateNewRandom(BoundedRay minInclusive, BoundedRay maxExclusive) => new(Location.CreateNewRandom(minInclusive.StartPoint, maxExclusive.StartPoint), Location.CreateNewRandom(minInclusive.EndPoint, maxExclusive.EndPoint));
+	public static BoundedRay NewRandom() => new(Location.NewRandom(), Location.NewRandom());
+	public static BoundedRay NewRandom(BoundedRay minInclusive, BoundedRay maxExclusive) => new(Location.NewRandom(minInclusive.StartPoint, maxExclusive.StartPoint), Location.NewRandom(minInclusive.EndPoint, maxExclusive.EndPoint));
 
 	public Location PointClosestTo(Location location) {
 		var vectCoefficient = Vector3.Dot((location - _startPoint).ToVector3(), _vect.ToVector3()) / LengthSquared;

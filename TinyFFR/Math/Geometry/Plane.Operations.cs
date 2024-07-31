@@ -213,8 +213,8 @@ partial struct Plane :
 			Location.Interpolate(start.PointClosestToOrigin, end.PointClosestToOrigin, distance)
 		);
 	}
-	public static Plane CreateNewRandom() => new(Direction.CreateNewRandom(), Location.CreateNewRandom());
-	public static Plane CreateNewRandom(Plane minInclusive, Plane maxExclusive) => new(Direction.CreateNewRandom(minInclusive.Normal, maxExclusive.Normal), Location.CreateNewRandom(minInclusive.PointClosestToOrigin, maxExclusive.PointClosestToOrigin));
+	public static Plane NewRandom() => new(Direction.NewRandom(), Location.NewRandom());
+	public static Plane NewRandom(Plane minInclusive, Plane maxExclusive) => new(Direction.NewRandom(minInclusive.Normal, maxExclusive.Normal), Location.NewRandom(minInclusive.PointClosestToOrigin, maxExclusive.PointClosestToOrigin));
 
 	// TODO xmldoc that this converter only works for the plane it was generated for
 	public readonly struct DimensionConverter {

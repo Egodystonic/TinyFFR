@@ -103,14 +103,14 @@ partial struct XYPair<T> :
 		);
 	}
 
-	public static XYPair<T> CreateNewRandom() {
+	public static XYPair<T> NewRandom() {
 		return new(
 			T.CreateChecked(RandomUtils.NextSingleNegOneToOneInclusive() * DefaultRandomRange),
 			T.CreateChecked(RandomUtils.NextSingleNegOneToOneInclusive() * DefaultRandomRange)
 		);
 	}
-	public static XYPair<T> CreateNewRandom(T minInclusive, T maxExclusive) => CreateNewRandom((minInclusive, maxExclusive), (minInclusive, maxExclusive));
-	public static XYPair<T> CreateNewRandom(XYPair<T> minInclusive, XYPair<T> maxExclusive) {
+	public static XYPair<T> NewRandom(T minInclusive, T maxExclusive) => NewRandom((minInclusive, maxExclusive), (minInclusive, maxExclusive));
+	public static XYPair<T> NewRandom(XYPair<T> minInclusive, XYPair<T> maxExclusive) {
 		var x = (Min: Double.CreateChecked(minInclusive.X), Max: Double.CreateChecked(maxExclusive.X));
 		var y = (Min: Double.CreateChecked(minInclusive.Y), Max: Double.CreateChecked(maxExclusive.Y));
 		return new(

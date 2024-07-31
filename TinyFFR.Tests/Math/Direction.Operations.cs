@@ -442,7 +442,7 @@ partial class DirectionTest {
 		const int NumIterations = 10_000;
 
 		for (var i = 0; i < NumIterations; ++i) {
-			var val = Direction.CreateNewRandom();
+			var val = Direction.NewRandom();
 			Assert.IsTrue(val.IsUnitLength);
 		}
 	}
@@ -452,13 +452,13 @@ partial class DirectionTest {
 		const int NumIterations = 10_000;
 
 		for (var i = 0; i < NumIterations; ++i) {
-			var start = Direction.CreateNewRandom();
-			var end = Direction.CreateNewRandom();
+			var start = Direction.NewRandom();
+			var end = Direction.NewRandom();
 
 			var angle = start ^ end;
 			if (angle > 179f) continue;
 
-			var val = Direction.CreateNewRandom(start, end);
+			var val = Direction.NewRandom(start, end);
 			if (val.Equals(start, 0.1f) || val.Equals(end, 0.1f)) continue;
 
 			AssertToleranceEquals((start >> val).Axis, (start >> end).Axis, 0.1f);
@@ -471,23 +471,23 @@ partial class DirectionTest {
 		const int NumIterations = 10_000;
 
 		for (var i = 0; i < NumIterations; ++i) {
-			var centre = Direction.CreateNewRandom();
-			var angle = Angle.CreateNewRandom(0f, 180f);
+			var centre = Direction.NewRandom();
+			var angle = Angle.NewRandom(0f, 180f);
 
-			var result = Direction.CreateNewRandom(centre, angle);
+			var result = Direction.NewRandom(centre, angle);
 			Assert.LessOrEqual((result ^ centre).AsRadians, angle.AsRadians + TestTolerance);
 		}
 
 		for (var i = 0; i < NumIterations; ++i) {
-			var centre = Direction.CreateNewRandom();
+			var centre = Direction.NewRandom();
 
-			var result = Direction.CreateNewRandom(centre, 180f, 90f);
+			var result = Direction.NewRandom(centre, 180f, 90f);
 			Assert.LessOrEqual((result ^ centre).AsRadians, Angle.HalfCircle.AsRadians + TestTolerance);
 			Assert.GreaterOrEqual((result ^ centre).AsRadians, Angle.QuarterCircle.AsRadians - TestTolerance);
 		}
 
 		for (var i = 0; i < NumIterations; ++i) {
-			AssertToleranceEquals(90f, Direction.CreateNewRandom(Direction.Up, 90f, 90f) ^ Direction.Up, TestTolerance);
+			AssertToleranceEquals(90f, Direction.NewRandom(Direction.Up, 90f, 90f) ^ Direction.Up, TestTolerance);
 		}
 	}
 
@@ -497,11 +497,11 @@ partial class DirectionTest {
 
 		for (var a = 0f; a < 360f; a += 45f) {
 			for (var i = 0; i < NumIterations; ++i) {
-				var centre = Direction.CreateNewRandom();
-				var plane = Plane.CreateNewRandom();
-				while (centre.ParallelizedWith(plane) == null) centre = Direction.CreateNewRandom();
+				var centre = Direction.NewRandom();
+				var plane = Plane.NewRandom();
+				while (centre.ParallelizedWith(plane) == null) centre = Direction.NewRandom();
 				
-				var result = Direction.CreateNewRandom(plane, centre, a);
+				var result = Direction.NewRandom(plane, centre, a);
 				try {
 					Assert.LessOrEqual(plane.AngleTo(result).AsDegrees, 1f);
 					Assert.LessOrEqual((result ^ centre.ParallelizedWith(plane)!.Value).AsDegrees, a + 1f);
@@ -1432,8 +1432,8 @@ partial class DirectionTest {
 		const int NumIterations = 200_000;
 
 		for (var i = 0; i < NumIterations; ++i) {
-			var dir1 = Direction.CreateNewRandom();
-			var dir2 = Direction.CreateNewRandom();
+			var dir1 = Direction.NewRandom();
+			var dir2 = Direction.NewRandom();
 
 			Assert.AreEqual(dir1.IsParallelTo(dir2), dir1.OrthogonalizedAgainst(dir2) == null);
 			Assert.AreEqual(dir1.IsOrthogonalTo(dir2), dir1.ParallelizedWith(dir2) == null);

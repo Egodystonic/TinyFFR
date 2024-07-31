@@ -79,11 +79,11 @@ partial class OriginSphereTest {
 		const int NumIterations = 10_000;
 		
 		for (var i = 0; i < NumIterations; ++i) {
-			var val = OriginSphere.CreateNewRandom(new OriginSphere(10f), new OriginSphere(20f));
+			var val = OriginSphere.NewRandom(new OriginSphere(10f), new OriginSphere(20f));
 			Assert.GreaterOrEqual(val.Radius, 10f);
 			Assert.Less(val.Radius, 20f);
 
-			val = OriginSphere.CreateNewRandom();
+			val = OriginSphere.NewRandom();
 			Assert.GreaterOrEqual(val.Radius, OriginSphere.DefaultRandomMin);
 			Assert.Less(val.Radius, OriginSphere.DefaultRandomMax);
 		}

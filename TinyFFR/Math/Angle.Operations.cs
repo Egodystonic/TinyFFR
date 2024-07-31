@@ -120,8 +120,8 @@ partial struct Angle :
 
 	public static Angle Interpolate(Angle start, Angle end, float distance) => FromRadians(Single.Lerp(start.AsRadians, end.AsRadians, distance));
 
-	public static Angle CreateNewRandom() => CreateNewRandom(Zero, FullCircle);
-	public static Angle CreateNewRandom(Angle minInclusive, Angle maxExclusive) {
+	public static Angle NewRandom() => NewRandom(Zero, FullCircle);
+	public static Angle NewRandom(Angle minInclusive, Angle maxExclusive) {
 		return FromRadians(RandomUtils.NextSingle(minInclusive.AsRadians, maxExclusive.AsRadians));
 	}
 }

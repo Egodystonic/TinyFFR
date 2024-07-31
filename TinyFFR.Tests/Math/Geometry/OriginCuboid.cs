@@ -117,7 +117,7 @@ partial class OriginCuboidTest {
 		var b = new OriginCuboid(15f, 30f, 60f);
 
 		for (var i = 0; i < NumIterations; ++i) {
-			var val = OriginCuboid.CreateNewRandom(a, b);
+			var val = OriginCuboid.NewRandom(a, b);
 			Assert.GreaterOrEqual(val.Width, a.Width);
 			Assert.Less(val.Width, b.Width);
 			Assert.GreaterOrEqual(val.Height, a.Height);
@@ -125,7 +125,7 @@ partial class OriginCuboidTest {
 			Assert.GreaterOrEqual(val.Depth, a.Depth);
 			Assert.Less(val.Depth, b.Depth);
 
-			val = OriginCuboid.CreateNewRandom();
+			val = OriginCuboid.NewRandom();
 			Assert.GreaterOrEqual(val.HalfWidth, OriginCuboid.DefaultRandomMin);
 			Assert.Less(val.HalfWidth, OriginCuboid.DefaultRandomMax);
 			Assert.GreaterOrEqual(val.HalfHeight, OriginCuboid.DefaultRandomMin);

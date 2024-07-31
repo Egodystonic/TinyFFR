@@ -101,7 +101,7 @@ partial struct Rotation :
 		return new(Angle.Clamp(minAngle, maxAngle), Axis.Clamp(minAxis, maxAxis));
 	}
 
-	public static Rotation CreateNewRandom() {
+	public static Rotation NewRandom() {
 		return FromQuaternion(new(
 			RandomUtils.NextSingleNegOneToOneInclusive(),
 			RandomUtils.NextSingleNegOneToOneInclusive(),
@@ -109,7 +109,7 @@ partial struct Rotation :
 			RandomUtils.NextSingleNegOneToOneInclusive()
 		));
 	}
-	public static Rotation CreateNewRandom(Rotation minInclusive, Rotation maxExclusive) {
+	public static Rotation NewRandom(Rotation minInclusive, Rotation maxExclusive) {
 		var difference = minInclusive.Minus(maxExclusive);
 		return minInclusive + difference.ScaledBy(RandomUtils.NextSingle());
 	}

@@ -4,10 +4,10 @@
 namespace Egodystonic.TinyFFR;
 
 public interface IRandomizable<out TSelf> where TSelf : IRandomizable<TSelf> {
-	static abstract TSelf CreateNewRandom();
+	static abstract TSelf NewRandom();
 }
 public interface IBoundedRandomizable<TSelf> : IRandomizable<TSelf> where TSelf : IBoundedRandomizable<TSelf>, IRandomizable<TSelf> {
-	static abstract TSelf CreateNewRandom(TSelf minInclusive, TSelf maxExclusive);
+	static abstract TSelf NewRandom(TSelf minInclusive, TSelf maxExclusive);
 }
 
 static class RandomUtils {

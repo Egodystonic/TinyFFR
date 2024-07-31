@@ -129,7 +129,7 @@ partial class LineTest {
 		var end = new Line(new Location(15f, 15f, 15f), Direction.Right);
 
 		for (var i = 0; i < NumIterations; ++i) {
-			var val = Line.CreateNewRandom(start, end);
+			var val = Line.NewRandom(start, end);
 			Assert.GreaterOrEqual(val.PointOnLine.X, start.PointOnLine.X);
 			Assert.GreaterOrEqual(val.PointOnLine.Y, start.PointOnLine.Y);
 			Assert.GreaterOrEqual(val.PointOnLine.Z, start.PointOnLine.Z);

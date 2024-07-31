@@ -70,8 +70,8 @@ public readonly partial struct Ray {
 			Direction.InterpolateUsingPrecomputation(start.Direction, end.Direction, precomputation, distance)
 		);
 	}
-	public static Ray CreateNewRandom() => new(Location.CreateNewRandom(), Direction.CreateNewRandom());
-	public static Ray CreateNewRandom(Ray minInclusive, Ray maxExclusive) => new(Location.CreateNewRandom(minInclusive.StartPoint, maxExclusive.StartPoint), Direction.CreateNewRandom(minInclusive.Direction, maxExclusive.Direction));
+	public static Ray NewRandom() => new(Location.NewRandom(), Direction.NewRandom());
+	public static Ray NewRandom(Ray minInclusive, Ray maxExclusive) => new(Location.NewRandom(minInclusive.StartPoint, maxExclusive.StartPoint), Direction.NewRandom(minInclusive.Direction, maxExclusive.Direction));
 
 
 	public Location PointClosestTo(Location location) {
