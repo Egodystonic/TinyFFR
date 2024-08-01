@@ -75,7 +75,7 @@ partial struct XYPair<T> :
 		var otherAngle = other.PolarAngle;
 		var thisAngle = PolarAngle;
 		if (otherAngle == null || thisAngle == null) return Angle.Zero;
-		return thisAngle.Value.NormalizedDifferenceTo(otherAngle.Value);
+		return thisAngle.Value.AbsoluteDifferenceTo(otherAngle.Value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(XYPair<T> lhs, XYPair<T> rhs) => lhs.AngleTo(rhs);

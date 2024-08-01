@@ -73,7 +73,7 @@ partial struct Angle :
 	public Angle Minus(Angle other) => FromRadians(AsRadians - other.AsRadians);
 	
 	// TODO xmldoc explain that this is the difference "around the clock" to the other angle; e.g. 270 & 180 = 90; 270 & 90 = 180, etc. Range is always between 0 and 180
-	public Angle NormalizedDifferenceTo(Angle other) {
+	public Angle AbsoluteDifferenceTo(Angle other) {
 		return FromRadians(MathF.Min((this - other).Normalized.AsRadians, (other - this).Normalized.AsRadians));
 	}
 
