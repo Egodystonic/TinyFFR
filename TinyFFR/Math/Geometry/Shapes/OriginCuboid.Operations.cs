@@ -1,12 +1,20 @@
 ﻿// Created on 2024-02-24 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Resources;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 
 namespace Egodystonic.TinyFFR;
 
-partial struct OriginCuboid {
+partial struct OriginCuboid : IRefEnumerable<Location>/*, IRefEnumerable<BoundedRay>, IRefEnumerable<Plane>*/ {
+	public RefEnumerator<OriginCuboid, Location> Corners {
+		[UnscopedRef] get => new(in this);
+	}
+	int IRefEnumerable<Location>.Count => 8;
+	Location IRefEnumerable<Location>.ElementAt(int index) => GetCornerLocation(OrientationUtils.AllDiagonals[index]);
+
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static OriginCuboid operator *(OriginCuboid cuboid, float scalar) => cuboid.ScaledBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

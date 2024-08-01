@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System.Buffers.Binary;
+using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR;
 

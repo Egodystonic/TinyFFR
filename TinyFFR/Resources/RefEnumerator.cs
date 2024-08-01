@@ -37,7 +37,7 @@ public readonly ref struct RefEnumerator<TOwner, TItem> where TOwner : IRefEnume
 		get => _owner.ElementAt(index);
 	}
 
-	public RefEnumerator(ref TOwner owner) => _owner = ref owner;
+	public RefEnumerator(ref readonly TOwner owner) => _owner = owner;
 
 	public ForeachDuckEnumerator GetEnumerator() => new(ref _owner);
 

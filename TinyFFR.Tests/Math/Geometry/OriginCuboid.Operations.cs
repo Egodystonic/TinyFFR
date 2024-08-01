@@ -9,6 +9,19 @@ namespace Egodystonic.TinyFFR;
 [TestFixture]
 partial class OriginCuboidTest {
 	[Test]
+	public void ShouldCorrectlyEnumerateCorners() {
+		Assert.AreEqual(8, TestCuboid.Corners.Count);
+
+		var count = 0;
+		foreach (var corner in TestCuboid.Corners) {
+			Assert.AreEqual(TestCuboid.GetCornerLocation(OrientationUtils.AllDiagonals[count]), corner);
+			++count;
+		}
+
+		Assert.AreEqual(8, count);
+	}
+
+	[Test]
 	public void ShouldCorrectlyScale() {
 		AssertToleranceEquals(
 			new OriginCuboid(width: 7.2f * 3f, height: 13.6f * 3f, depth: 1.4f * 3f), 
