@@ -9,7 +9,8 @@ partial struct XYPair<T> :
 	IAlgebraicRing<XYPair<T>>,
 	IInterpolatable<XYPair<T>>,
 	IDistanceMeasurable<XYPair<T>>,
-	IScalable<XYPair<T>> { // TODO Angle-measurable
+	IScalable<XYPair<T>>,
+	IAngleMeasurable<XYPair<T>, XYPair<T>> {
 	internal const int DefaultRandomRange = 100;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -69,6 +70,15 @@ partial struct XYPair<T> :
 		get => new(T.Abs(X), T.Abs(Y));
 	}
 
+	// TODO xmldoc explain this always gives a positive value between 0 and 180, and describes the absolute difference in angle between the two pairs
+	public Angle AngleTo(XYPair<T> other) {
+		var otherAngle = other.PolarAngle;
+		var thisAngle = PolarAngle;
+		if (otherAngle == null || thisAngle == null) return Angle.Zero;
+		return thisAngle.Value.NormalizedDifferenceTo(otherAngle.Value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle operator ^(XYPair<T> lhs, XYPair<T> rhs) => lhs.AngleTo(rhs);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static XYPair<T> operator *(XYPair<T> pairOperand, T scalarOperand) => pairOperand.MultipliedBy(scalarOperand);

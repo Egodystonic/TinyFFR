@@ -45,6 +45,31 @@ partial class XYPairTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyDetermineAngleBetweenPairs() {
+		void AssertPair(Angle expectation, Angle leftAngle, Angle rightAngle) {
+			var left = XYPair<float>.FromPolarAngle(leftAngle);
+			var right = XYPair<float>.FromPolarAngle(rightAngle);
+			AssertToleranceEquals(expectation, left.AngleTo(right), TestTolerance);
+			AssertToleranceEquals(expectation, left ^ right, TestTolerance);
+			AssertToleranceEquals(expectation, right.AngleTo(left), TestTolerance);
+			AssertToleranceEquals(expectation, right ^ left, TestTolerance);
+		}
+
+		AssertPair(0f, 0f, 0f);
+		AssertPair(0f, 90f, 90f);
+		AssertPair(0f, -90f, -90f);
+		AssertPair(90f, 0f, 90f);
+		AssertPair(90f, 0f, -90f);
+		AssertPair(90f, 180f, 270f);
+		AssertPair(90f, 270f, 180f);
+		AssertPair(90f, -180f, -270f);
+		AssertPair(90f, -270f, -180f);
+		AssertPair(10f, 0f, 350f);
+		AssertPair(10f, -350f, 0f);
+		AssertPair(20f, -350f, 350f);
+	}
+
+	[Test]
 	public void ShouldCorrectlyCalculateAbsolute() {
 		Assert.AreEqual(3f, ThreeFourFloat.Absolute.X);
 		Assert.AreEqual(4f, ThreeFourFloat.Absolute.Y);
