@@ -7,13 +7,18 @@ using System.Diagnostics.Metrics;
 
 namespace Egodystonic.TinyFFR;
 
-partial struct OriginCuboid : IRefEnumerable<Location>/*, IRefEnumerable<BoundedRay>, IRefEnumerable<Plane>*/ {
-	public RefEnumerator<OriginCuboid, Location> Corners {
-		[UnscopedRef] get => new(in this);
-	}
-	int IRefEnumerable<Location>.Count => 8;
-	Location IRefEnumerable<Location>.ElementAt(int index) => GetCornerLocation(OrientationUtils.AllDiagonals[index]);
+partial struct OriginCuboid {
+	public unsafe OneToManyEnumerator<OriginCuboid, Location> Corners => new(this, &GetCornerCountForEnumerator, &GetCornerForEnumerator);
+	static int GetCornerCountForEnumerator(OriginCuboid _) => 8;
+	static Location GetCornerForEnumerator(OriginCuboid @this, int index) => @this.CornerAt(OrientationUtils.AllDiagonals[index]);
 
+	public unsafe OneToManyEnumerator<OriginCuboid, BoundedRay> Edges => new(this, &GetEdgeCountForEnumerator, &GetEdgeForEnumerator);
+	static int GetEdgeCountForEnumerator(OriginCuboid _) => 12;
+	static BoundedRay GetEdgeForEnumerator(OriginCuboid @this, int index) => @this.EdgeAt(OrientationUtils.AllIntercardinals[index]);
+
+	public unsafe OneToManyEnumerator<OriginCuboid, Plane> Sides => new(this, &GetSideCountForEnumerator, &GetSideForEnumerator);
+	static int GetSideCountForEnumerator(OriginCuboid _) => 6;
+	static Plane GetSideForEnumerator(OriginCuboid @this, int index) => @this.SideAt(OrientationUtils.AllCardinals[index]);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static OriginCuboid operator *(OriginCuboid cuboid, float scalar) => cuboid.ScaledBy(scalar);
@@ -32,9 +37,7 @@ partial struct OriginCuboid : IRefEnumerable<Location>/*, IRefEnumerable<Bounded
 		return FromHalfDimensions(HalfWidth * diffSquareRoot, HalfHeight * diffSquareRoot, HalfDepth * diffSquareRoot);
 	}
 
-	// TODO these GetX methods need a naming pass and this file vs Cuboid.cs? etc
-
-	public Location GetCornerLocation(DiagonalOrientation3D corner) { // TODO add properties that enumerate corners, surfaces, etc and use them instead of foreach loops internally
+	public Location CornerAt(DiagonalOrientation3D corner) {
 		if (corner == DiagonalOrientation3D.None || !Enum.IsDefined(corner)) throw new ArgumentOutOfRangeException(nameof(corner), corner, $"Can not be '{nameof(DiagonalOrientation3D.None)}' or non-defined value.");
 
 		return new(
@@ -44,19 +47,19 @@ partial struct OriginCuboid : IRefEnumerable<Location>/*, IRefEnumerable<Bounded
 		);
 	}
 
-	public Plane GetSideSurfacePlane(CardinalOrientation3D side) { // TODO xmldoc that the planes' normals point away from the cuboid centre, e.g. side.ToDirection()
+	public Plane SideAt(CardinalOrientation3D side) { // TODO xmldoc that the planes' normals point away from the cuboid centre, e.g. side.ToDirection()
 		if (side == CardinalOrientation3D.None || !Enum.IsDefined(side)) throw new ArgumentOutOfRangeException(nameof(side), side, $"Can not be '{nameof(CardinalOrientation3D.None)}' or non-defined value.");
 
 		return new(side.ToDirection(), GetHalfExtent(side.GetAxis()));
 	}
 
-	public BoundedRay GetEdge(IntercardinalOrientation3D edge) {
+	public BoundedRay EdgeAt(IntercardinalOrientation3D edge) {
 		if (edge == IntercardinalOrientation3D.None || !Enum.IsDefined(edge)) throw new ArgumentOutOfRangeException(nameof(edge), edge, $"Can not be '{nameof(IntercardinalOrientation3D.None)}' or non-defined value.");
 
 		var unspecifiedAxis = edge.GetUnspecifiedAxis();
 		return new(
-			GetCornerLocation((DiagonalOrientation3D) edge.AsGeneralOrientation().WithAxisSign(unspecifiedAxis, -1)),
-			GetCornerLocation((DiagonalOrientation3D) edge.AsGeneralOrientation().WithAxisSign(unspecifiedAxis, 1))
+			CornerAt((DiagonalOrientation3D) edge.AsGeneralOrientation().WithAxisSign(unspecifiedAxis, -1)),
+			CornerAt((DiagonalOrientation3D) edge.AsGeneralOrientation().WithAxisSign(unspecifiedAxis, 1))
 		);
 	}
 
@@ -167,8 +170,7 @@ partial struct OriginCuboid : IRefEnumerable<Location>/*, IRefEnumerable<Bounded
 	Location GetClosestPointToSurfaceOnNonIntersectingLine<TLine>(TLine line) where TLine : ILineLike {
 		var answerDistance = Single.PositiveInfinity;
 		var answer = Location.Origin;
-		foreach (var edgeOrientation in OrientationUtils.AllIntercardinals) {
-			var edge = GetEdge(edgeOrientation);
+		foreach (var edge in Edges) {
 			var closestPointToEdge = line.PointClosestTo(edge);
 			var distanceToEdge = edge.DistanceFrom(closestPointToEdge);
 			if (distanceToEdge < answerDistance) {
@@ -354,14 +356,14 @@ partial struct OriginCuboid : IRefEnumerable<Location>/*, IRefEnumerable<Bounded
 				return (
 					firstHitDistance,
 					hitLoc.Value,
-					GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateXAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.X)))
+					SideAt((CardinalOrientation3D) OrientationUtils.CreateXAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.X)))
 				);
 			}
 			else {
 				return (
 					firstHitDistance,
 					hitLoc.Value,
-					GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Z)))
+					SideAt((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Z)))
 				);
 			}
 		}
@@ -369,14 +371,14 @@ partial struct OriginCuboid : IRefEnumerable<Location>/*, IRefEnumerable<Bounded
 			return (
 				firstHitDistance,
 				hitLoc.Value,
-				GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateYAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Y)))
+				SideAt((CardinalOrientation3D) OrientationUtils.CreateYAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Y)))
 			);
 		}
 		else {
 			return (
 				firstHitDistance,
 				hitLoc.Value,
-				GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Z)))
+				SideAt((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Z)))
 			);
 		}
 	}
@@ -401,14 +403,14 @@ partial struct OriginCuboid : IRefEnumerable<Location>/*, IRefEnumerable<Bounded
 				return (
 					firstHitDistance,
 					hitLoc,
-					GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateXAxisOrientationFromValueSign(MathF.Sign(hitLoc.X)))
+					SideAt((CardinalOrientation3D) OrientationUtils.CreateXAxisOrientationFromValueSign(MathF.Sign(hitLoc.X)))
 				);
 			}
 			else {
 				return (
 					firstHitDistance,
 					hitLoc,
-					GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Z)))
+					SideAt((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Z)))
 				);
 			}
 		}
@@ -416,14 +418,14 @@ partial struct OriginCuboid : IRefEnumerable<Location>/*, IRefEnumerable<Bounded
 			return (
 				firstHitDistance,
 				hitLoc,
-				GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateYAxisOrientationFromValueSign(MathF.Sign(hitLoc.Y)))
+				SideAt((CardinalOrientation3D) OrientationUtils.CreateYAxisOrientationFromValueSign(MathF.Sign(hitLoc.Y)))
 			);
 		}
 		else {
 			return (
 				firstHitDistance,
 				hitLoc,
-				GetSideSurfacePlane((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Z)))
+				SideAt((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Z)))
 			);
 		}
 	}
@@ -445,15 +447,15 @@ partial struct OriginCuboid : IRefEnumerable<Location>/*, IRefEnumerable<Bounded
 	const int MaxPlaneIntersectionPoints = 6;
 	int GetPlaneIntersectionPoints(Plane plane, Span<Location> pointSpan) { 
 		var intersectionCount = 0;
-		foreach (var edge in OrientationUtils.AllIntercardinals) {
-			var edgeIntersection = GetEdge(edge).IntersectionWith(plane);
+		foreach (var edge in Edges) {
+			var edgeIntersection = edge.IntersectionWith(plane);
 			if (edgeIntersection.HasValue) pointSpan[intersectionCount++] = edgeIntersection.Value;
 		}
 		return intersectionCount;
 	}
 	Location? GetAnyPlaneIntersectionPoint(Plane plane) {
-		foreach (var edge in OrientationUtils.AllIntercardinals) {
-			var edgeIntersection = GetEdge(edge).IntersectionWith(plane);
+		foreach (var edge in Edges) {
+			var edgeIntersection = edge.IntersectionWith(plane);
 			if (edgeIntersection.HasValue) return edgeIntersection.Value;
 		}
 		return null;
@@ -467,8 +469,7 @@ partial struct OriginCuboid : IRefEnumerable<Location>/*, IRefEnumerable<Bounded
 		if (QuickPlaneCuboidIntersectionTest(plane)) return 0f;
 
 		var result = Single.PositiveInfinity;
-		foreach (var diagonal in OrientationUtils.AllDiagonals) {
-			var corner = GetCornerLocation(diagonal);
+		foreach (var corner in Corners) {
 			var distance = plane.SignedDistanceFrom(corner);
 			result = MathF.MinMagnitude(distance, result);
 		}
@@ -478,8 +479,7 @@ partial struct OriginCuboid : IRefEnumerable<Location>/*, IRefEnumerable<Bounded
 		if (QuickPlaneCuboidIntersectionTest(plane)) return 0f;
 
 		var result = Single.PositiveInfinity;
-		foreach (var diagonal in OrientationUtils.AllDiagonals) {
-			var corner = GetCornerLocation(diagonal);
+		foreach (var corner in Corners) {
 			var distance = plane.DistanceFrom(corner);
 			result = MathF.Min(distance, result);
 		}
@@ -495,8 +495,7 @@ partial struct OriginCuboid : IRefEnumerable<Location>/*, IRefEnumerable<Bounded
 		if (QuickPlaneCuboidIntersectionTest(plane)) return GetAnyPlaneIntersectionPoint(plane)!.Value;
 		var resultDistance = Single.PositiveInfinity;
 		var result = Location.Origin;
-		foreach (var diagonal in OrientationUtils.AllDiagonals) {
-			var corner = GetCornerLocation(diagonal);
+		foreach (var corner in Corners) {
 			var distance = plane.DistanceFrom(corner);
 			if (distance < resultDistance) {
 				resultDistance = distance;
