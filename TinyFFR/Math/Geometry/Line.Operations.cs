@@ -54,7 +54,7 @@ public readonly partial struct Line {
 			Direction.Interpolate(start.Direction, end.Direction, distance)
 		);
 	}
-	public static Rotation CreateInterpolationPrecomputation(Line start, Line end) { // TODO add startPoint/endPoint to precomputation object
+	public static Rotation CreateInterpolationPrecomputation(Line start, Line end) {
 		return Direction.CreateInterpolationPrecomputation(start.Direction, end.Direction);
 	}
 	public static Line InterpolateUsingPrecomputation(Line start, Line end, Rotation precomputation, float distance) {

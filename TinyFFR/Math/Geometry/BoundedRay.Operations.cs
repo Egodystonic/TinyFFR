@@ -270,7 +270,6 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 	public BoundedRay? OrthogonalizedAgainst(Direction direction) => OrthogonalizedAroundStartAgainst(direction);
 	public BoundedRay FastOrthogonalizedAgainst(Direction direction) => FastOrthogonalizedAroundStartAgainst(direction);
 
-	// TODO add these for Plane too, and add overloads for line types
 	public BoundedRay? ParallelizedAroundStartWith(Direction direction) {
 		var newVect = StartToEndVect.ParallelizedWith(direction);
 		return newVect == null ? null : FromStartPointAndVect(StartPoint, newVect.Value);
