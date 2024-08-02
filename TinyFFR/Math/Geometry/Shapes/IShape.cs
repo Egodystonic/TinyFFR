@@ -19,7 +19,7 @@ public readonly record struct ConvexShapeLineIntersection(Location First, Locati
 }
 
 public interface IShape : IMathPrimitive;
-public interface IShape<TSelf> : // TODO Interpolatable
+public interface IShape<TSelf> :
 	IShape,
 	IMathPrimitive<TSelf>,
 	IScalable<TSelf>

@@ -5,7 +5,7 @@ using System.Buffers.Binary;
 
 namespace Egodystonic.TinyFFR;
 
-public readonly partial struct OriginSphere : IConvexShape<OriginSphere> { // TODO IIntersectionDeterminable<Plane, Circle>
+public readonly partial struct OriginSphere : IConvexShape<OriginSphere> {
 	internal const float DefaultRandomMin = 1f;
 	internal const float DefaultRandomMax = 3f;
 	public static readonly OriginSphere UnitSphere = new(1f);

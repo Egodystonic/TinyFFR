@@ -31,7 +31,6 @@ partial class RayTest {
 		Assert.AreEqual(false, ((ILineLike) TestRay).IsFiniteLength);
 	}
 
-	// TODO this test could be fleshed out a lot more
 	[Test]
 	public void ShouldCorrectlyConvertToString() {
 		const string Expectation = "Ray[StartPoint <1.0, 2.0, -3.0> | Direction <-0.3, -0.5, 0.8>]";
@@ -42,7 +41,6 @@ partial class RayTest {
 		Assert.AreEqual(Expectation, new String(dest[..numCharsWritten]));
 	}
 
-	// TODO this test could be fleshed out a lot more
 	[Test]
 	public void ShouldCorrectlyParse() {
 		const string Input = "Ray[PointOnLine <1.0, 2.0, -3.0> | Direction <-0.3, -0.5, 0.8>]";

@@ -3,9 +3,6 @@
 
 namespace Egodystonic.TinyFFR;
 
-// TODO we could probably auto-generate a lot of this with a source generator, so I've just implemented one example and anything else we actually need for now
-// TODO should we do the same for IConvexShape?
-// TODO maybe instead of copying the name exactly we can make it something like "AreApproximatelyColinear(...)" and "FindIntersectionWith(...)" etc
 // Implementation note: Q: "Why aren't these extension methods?" A: Because overload resolution doesn't work so well (and probably couldn't) when we're clashing extensions and trait interfaces and so on.
 // Better to keep things simple this time (trust me, I tried, go look at commit hash 762dc61f6d9f90def70088d2a389ee7923e4495c to see how this looked originally and see how nasty ILine.cs and GeometryTraits.cs was).
 // Unless you're some super genius with this stuff and want to have a go... Free cookie for you!

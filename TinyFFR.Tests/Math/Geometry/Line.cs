@@ -39,7 +39,6 @@ partial class LineTest {
 		Assert.AreEqual(new Direction(-1f - 1f, -2f - 2f, 3f - -3f), new Line(TestLine.PointOnLine, new Direction(-1f - 1f, -2f - 2f, 3f - -3f)).Direction);
 	}
 
-	// TODO this test could be fleshed out a lot more
 	[Test]
 	public void ShouldCorrectlyConvertToString() {
 		const string Expectation = "Line[PointOnLine <1.0, 2.0, -3.0> | Direction <-0.3, -0.5, 0.8>]";
@@ -50,7 +49,6 @@ partial class LineTest {
 		Assert.AreEqual(Expectation, new String(dest[..numCharsWritten]));
 	}
 
-	// TODO this test could be fleshed out a lot more
 	[Test]
 	public void ShouldCorrectlyParse() {
 		const string Input = "Line[PointOnLine <1.0, 2.0, -3.0> | Direction <-0.3, -0.5, 0.8>]";

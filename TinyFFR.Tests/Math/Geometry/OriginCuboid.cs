@@ -70,7 +70,6 @@ partial class OriginCuboidTest {
 		AssertToleranceEquals(TestCuboid, TestCuboid.WithVolume(TestCuboid.Volume * 0.3f).WithVolume(TestCuboid.Volume), TestTolerance);
 	}
 	
-	// TODO this test could be fleshed out a lot more
 	[Test]
 	public void ShouldCorrectlyConvertToString() {
 		const string Expectation = "OriginCuboid[Width 7.2 | Height 13.6 | Depth 1.4]";
@@ -82,7 +81,6 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(Expectation, new String(dest[..numCharsWritten]));
 	}
 	
-	// TODO this test could be fleshed out a lot more
 	[Test]
 	public void ShouldCorrectlyParse() {
 		const string Input = "OriginCuboid[Width 7.2 | Height 13.6 | Depth 1.4]";

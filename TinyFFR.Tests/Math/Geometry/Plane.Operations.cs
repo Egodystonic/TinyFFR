@@ -741,22 +741,22 @@ partial class PlaneTest {
 
 		AssertToleranceEquals(
 			new Location(10f, -1f, 10f),
-			new Location(10f, 10f, 10f).ProjectedTo2DOn(TestPlane).ExpandedTo3DOn(TestPlane),
+			new Location(10f, 10f, 10f).ProjectedTo2DOn(TestPlane).HolographTo3DOn(TestPlane),
 			TestTolerance
 		);
 		AssertToleranceEquals(
 			new Location(-10f, -1f, -10f),
-			new Location(-10f, -10f, -10f).ProjectedTo2DOn(TestPlane).ExpandedTo3DOn(TestPlane),
+			new Location(-10f, -10f, -10f).ProjectedTo2DOn(TestPlane).HolographTo3DOn(TestPlane),
 			TestTolerance
 		);
 		AssertToleranceEquals(
 			new Location(10f, 10f, 10f),
-			new Location(10f, 10f, 10f).ProjectedTo2DOn(TestPlane).ExpandedTo3DOn(TestPlane, 11f),
+			new Location(10f, 10f, 10f).ProjectedTo2DOn(TestPlane).HolographTo3DOn(TestPlane, 11f),
 			TestTolerance
 		);
 		AssertToleranceEquals(
 			new Location(-10f, -10f, -10f),
-			new Location(-10f, -10f, -10f).ProjectedTo2DOn(TestPlane).ExpandedTo3DOn(TestPlane, -9f),
+			new Location(-10f, -10f, -10f).ProjectedTo2DOn(TestPlane).HolographTo3DOn(TestPlane, -9f),
 			TestTolerance
 		);
 	}

@@ -41,7 +41,6 @@ partial class PlaneTest {
 		Assert.AreEqual(null, Plane.FromTriangleOnSurface((0f, 0f, 0f), (0f, 0f, 0f), (0f, 0f, 0f)));
 	}
 
-	// TODO this test could be fleshed out a lot more
 	[Test]
 	public void ShouldCorrectlyConvertToString() {
 		const string Expectation = "Plane[Normal <0.0, 1.0, 0.0> | PointClosestToOrigin <-0.0, -1.0, -0.0>]"; // Negative zero can be removed at a later date if we expunge it from formatting
@@ -52,7 +51,6 @@ partial class PlaneTest {
 		Assert.AreEqual(Expectation, new String(dest[..numCharsWritten]));
 	}
 
-	// TODO this test could be fleshed out a lot more
 	[Test]
 	public void ShouldCorrectlyParse() {
 		const string Input = "Plane[Normal <0.0, 1.0, 0.0> | PointClosestToOrigin <0.0, -1.0, 0.0>]";

@@ -281,6 +281,6 @@ partial struct Plane :
 	}
 	// TODO xmldoc that these methods are slower than using a converter
 	public XYPair<float> ProjectionTo2DOf(Location location) => CreateDimensionConverter().Convert(location);
-	public Location ExpansionTo3DOf(XYPair<float> xyPair) => CreateDimensionConverter().Convert(xyPair);
-	public Location ExpansionTo3DOf(XYPair<float> xyPair, float zDimension) => CreateDimensionConverter().Convert(xyPair, zDimension);
+	public Location HolographTo3DOf(XYPair<float> xyPair) => CreateDimensionConverter().Convert(xyPair);
+	public Location HolographTo3DOf(XYPair<float> xyPair, float zDimension) => CreateDimensionConverter().Convert(xyPair, zDimension);
 }

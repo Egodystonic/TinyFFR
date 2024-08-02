@@ -94,6 +94,6 @@ partial struct Vect : IAngleMeasurable<Plane>, IReflectable<Plane, Vect>, IProje
 	public bool IsApproximatelyOrthogonalTo(Plane plane, Angle tolerance) => plane.IsApproximatelyOrthogonalTo(this, tolerance);
 }
 partial struct XYPair<T> {
-	public Location ExpandedTo3DOn(Plane plane) => plane.ExpansionTo3DOf(Cast<float>()); // TODO go back to "holograph" for these names?
-	public Location ExpandedTo3DOn(Plane plane, float zDimension) => plane.ExpansionTo3DOf(Cast<float>(), zDimension);
+	public Location HolographedTo3DOn(Plane plane) => plane.HolographTo3DOf(Cast<float>()); // TODO go back to "holograph" for these names?
+	public Location HolographedTo3DOn(Plane plane, float zDimension) => plane.HolographTo3DOf(Cast<float>(), zDimension);
 }

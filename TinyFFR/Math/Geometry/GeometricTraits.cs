@@ -137,7 +137,7 @@ interface IOrthogonalizationTarget<in TSelf, TOther> : IOrthogonalizationTarget<
 #region Distance measurable
 public interface IDistanceMeasurable<in TOther> {
 	float DistanceFrom(TOther element);
-	float DistanceSquaredFrom(TOther element); // TODO break this in to a separate interface so it's possible to tell if it's "worth calling" from the outside
+	float DistanceSquaredFrom(TOther element); 
 }
 public interface ILineDistanceMeasurable : IDistanceMeasurable<Line>, IDistanceMeasurable<Ray>, IDistanceMeasurable<BoundedRay>;
 interface IDistanceMeasurable<in TSelf, in TOther> : IDistanceMeasurable<TOther> where TOther : IDistanceMeasurable<TSelf>;
@@ -151,8 +151,8 @@ interface ISignedDistanceMeasurable<in TSelf, in TOther> : ISignedDistanceMeasur
 public interface IConvexShapeDistanceMeasurable {
 	float DistanceFrom<TShape>(TShape shape) where TShape : IConvexShape<TShape>;
 	float DistanceFromSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape>;
-	float DistanceSquaredFrom<TShape>(TShape shape) where TShape : IConvexShape<TShape>; // TODO break this in to a separate interface so it's possible to tell if it's "worth calling" from the outside
-	float DistanceSquaredFromSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape>; // TODO break this in to a separate interface so it's possible to tell if it's "worth calling" from the outside
+	float DistanceSquaredFrom<TShape>(TShape shape) where TShape : IConvexShape<TShape>;
+	float DistanceSquaredFromSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape>; 
 }
 #endregion
 

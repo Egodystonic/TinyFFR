@@ -274,7 +274,6 @@ partial struct OriginSphere {
 		_ => PlaneObjectRelationship.PlaneIntersectsObject
 	};
 
-	// TODO this will become a circle when we implement IIntersectionDeterminable properly
 	public bool TrySplit(Plane plane, out Location circleCentrePoint, out float circleRadius) {
 		circleCentrePoint = plane.PointClosestToOrigin;
 		var vectToPlane = (Vect) circleCentrePoint;

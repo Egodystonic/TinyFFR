@@ -38,7 +38,6 @@ partial class OriginSphereTest {
 		AssertToleranceEquals(TestSphere, OriginSphere.FromRadiusSquared(7.4f * 7.4f), TestTolerance);
 	}
 
-	// TODO this test could be fleshed out a lot more
 	[Test]
 	public void ShouldCorrectlyConvertToString() {
 		const string Expectation = "OriginSphere[Radius 7.4]";
@@ -49,7 +48,6 @@ partial class OriginSphereTest {
 		Assert.AreEqual(Expectation, new String(dest[..numCharsWritten]));
 	}
 
-	// TODO this test could be fleshed out a lot more
 	[Test]
 	public void ShouldCorrectlyParse() {
 		const string Input = "OriginSphere[Radius 7.4]";

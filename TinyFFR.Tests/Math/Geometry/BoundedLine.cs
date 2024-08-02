@@ -35,7 +35,6 @@ partial class BoundedRayTest {
 		Assert.AreEqual(true, ((ILineLike) TestRay).IsFiniteLength);
 	}
 
-	// TODO this test could be fleshed out a lot more
 	[Test]
 	public void ShouldCorrectlyConvertToString() {
 		const string Expectation = "BoundedRay[StartPoint <1.0, 2.0, -3.0> | EndPoint <-1.0, -2.0, 3.0>]";
@@ -46,7 +45,6 @@ partial class BoundedRayTest {
 		Assert.AreEqual(Expectation, new String(dest[..numCharsWritten]));
 	}
 
-	// TODO this test could be fleshed out a lot more
 	[Test]
 	public void ShouldCorrectlyParse() {
 		const string Input = "BoundedRay[StartPoint <1.0, 2.0, -3.0> | EndPoint <-1.0, -2.0, 3.0>]";

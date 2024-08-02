@@ -97,7 +97,7 @@ class GeometryUtilsTest {
 	}
 
 	[Test]
-	public void ShouldCorrectlyImplementStandardParse() { // TODO test failure cases throw exceptions
+	public void ShouldCorrectlyImplementStandardParse() {
 		void AssertAllArities(string? format, IFormatProvider? provider) {
 			GeometryUtils.StandardizedParse(CreateExpectedString(1, format, provider), provider, out float oneArityA);
 			GeometryUtils.StandardizedParse(CreateExpectedString(2, format, provider), provider, out float twoArityA, out float twoArityB);
@@ -120,7 +120,7 @@ class GeometryUtilsTest {
 	}
 
 	[Test]
-	public void ShouldCorrectlyImplementStandardTryParse() { // TODO test failure cases return false
+	public void ShouldCorrectlyImplementStandardTryParse() {
 		void AssertAllArities(string? format, IFormatProvider? provider) {
 			var oneAritySuccess = GeometryUtils.StandardizedTryParse(CreateExpectedString(1, format, provider), provider, out float oneArityA);
 			var twoAritySuccess = GeometryUtils.StandardizedTryParse(CreateExpectedString(2, format, provider), provider, out float twoArityA, out float twoArityB);
