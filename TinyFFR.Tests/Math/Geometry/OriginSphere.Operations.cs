@@ -6,10 +6,10 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture]
-partial class OriginSphereTest {
+partial class SphereDescriptorTest {
 	[Test]
 	public void ShouldCorrectlyScale() {
-		AssertToleranceEquals(new OriginSphere(7.4f * 3f), new OriginSphere(7.4f).ScaledBy(3f), TestTolerance);
+		AssertToleranceEquals(new SphereDescriptor(7.4f * 3f), new SphereDescriptor(7.4f).ScaledBy(3f), TestTolerance);
 	}
 
 	[Test]
@@ -19,8 +19,8 @@ partial class OriginSphereTest {
 		Assert.AreEqual(7.4f, TestSphere.GetCircleRadiusAtDistanceFromCenter(0f));
 		Assert.AreEqual(0f, TestSphere.GetCircleRadiusAtDistanceFromCenter(7.4f));
 		Assert.AreEqual(0f, TestSphere.GetCircleRadiusAtDistanceFromCenter(10f));
-		Assert.AreEqual(8.66025448f, new OriginSphere(10f).GetCircleRadiusAtDistanceFromCenter(5f), TestTolerance);
-		Assert.AreEqual(0.1410673f, new OriginSphere(1f).GetCircleRadiusAtDistanceFromCenter(0.99f), TestTolerance);
+		Assert.AreEqual(8.66025448f, new SphereDescriptor(10f).GetCircleRadiusAtDistanceFromCenter(5f), TestTolerance);
+		Assert.AreEqual(0.1410673f, new SphereDescriptor(1f).GetCircleRadiusAtDistanceFromCenter(0.99f), TestTolerance);
 	}
 
 	[Test]
@@ -520,7 +520,7 @@ partial class OriginSphereTest {
 	public void ShouldCorrectlyBeSplitByPlanes() {
 		Assert.AreEqual(false, TestSphere.TrySplit(new Plane(Direction.Up, (0f, 10f, 0f)), out _, out _));
 		
-		Assert.AreEqual(true, new OriginSphere(10f).TrySplit(new Plane(Direction.Up, (0f, 5f, 0f)), out var circleCentrePoint, out var circleRadius));
+		Assert.AreEqual(true, new SphereDescriptor(10f).TrySplit(new Plane(Direction.Up, (0f, 5f, 0f)), out var circleCentrePoint, out var circleRadius));
 		Assert.AreEqual(8.66025448f, circleRadius, TestTolerance);
 		Assert.AreEqual(new Location(0f, 5f, 0f), circleCentrePoint);
 

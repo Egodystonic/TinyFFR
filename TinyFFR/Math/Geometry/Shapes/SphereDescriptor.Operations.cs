@@ -3,14 +3,14 @@
 
 namespace Egodystonic.TinyFFR;
 
-partial struct OriginSphere {
+partial struct SphereDescriptor {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static OriginSphere operator *(OriginSphere sphere, float scalar) => sphere.ScaledBy(scalar);
+	public static SphereDescriptor operator *(SphereDescriptor descriptor, float scalar) => descriptor.ScaledBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static OriginSphere operator /(OriginSphere sphere, float scalar) => new(sphere.Radius / scalar);
+	public static SphereDescriptor operator /(SphereDescriptor descriptor, float scalar) => new(descriptor.Radius / scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static OriginSphere operator *(float scalar, OriginSphere sphere) => sphere.ScaledBy(scalar);
-	public OriginSphere ScaledBy(float scalar) => new(Radius * scalar);
+	public static SphereDescriptor operator *(float scalar, SphereDescriptor descriptor) => descriptor.ScaledBy(scalar);
+	public SphereDescriptor ScaledBy(float scalar) => new(Radius * scalar);
 
 	public float GetCircleRadiusAtDistanceFromCenter(float distanceFromCenter) => GetCircleRadiusAtDistanceFromCenterSquared(distanceFromCenter * distanceFromCenter);
 	float GetCircleRadiusAtDistanceFromCenterSquared(float distanceFromCenterSquared) {
@@ -312,8 +312,8 @@ partial struct OriginSphere {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float SignedSurfaceDistanceFrom(Plane plane) => SignedDistanceFrom(plane);
 
-	public static OriginSphere Interpolate(OriginSphere start, OriginSphere end, float distance) => new(Single.Lerp(start.Radius, end.Radius, distance));
+	public static SphereDescriptor Interpolate(SphereDescriptor start, SphereDescriptor end, float distance) => new(Single.Lerp(start.Radius, end.Radius, distance));
 
-	public static OriginSphere NewRandom() => new(RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax));
-	public static OriginSphere NewRandom(OriginSphere minInclusive, OriginSphere maxExclusive) => new(RandomUtils.NextSingle(minInclusive.Radius, maxExclusive.Radius));
+	public static SphereDescriptor NewRandom() => new(RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax));
+	public static SphereDescriptor NewRandom(SphereDescriptor minInclusive, SphereDescriptor maxExclusive) => new(RandomUtils.NextSingle(minInclusive.Radius, maxExclusive.Radius));
 }

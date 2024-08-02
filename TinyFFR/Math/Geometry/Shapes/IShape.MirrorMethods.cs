@@ -56,9 +56,9 @@ partial struct Line {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFromSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.SurfaceDistanceSquaredFrom(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle? IncidentAngleWith(OriginSphere shape) => shape.IncidentAngleWith(this);
+	public Angle? IncidentAngleWith(SphereDescriptor shape) => shape.IncidentAngleWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle FastIncidentAngleWith(OriginSphere shape) => shape.FastIncidentAngleWith(this);
+	public Angle FastIncidentAngleWith(SphereDescriptor shape) => shape.FastIncidentAngleWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ConvexShapeLineIntersection? IntersectionWith<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.IntersectionWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

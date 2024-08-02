@@ -7,32 +7,32 @@ using System.Diagnostics.Metrics;
 
 namespace Egodystonic.TinyFFR;
 
-partial struct OriginCuboid {
-	public unsafe OneToManyEnumerator<OriginCuboid, Location> Corners => new(this, &GetCornerCountForEnumerator, &GetCornerForEnumerator);
-	static int GetCornerCountForEnumerator(OriginCuboid _) => 8;
-	static Location GetCornerForEnumerator(OriginCuboid @this, int index) => @this.CornerAt(OrientationUtils.AllDiagonals[index]);
+partial struct CuboidDescriptor {
+	public unsafe OneToManyEnumerator<CuboidDescriptor, Location> Corners => new(this, &GetCornerCountForEnumerator, &GetCornerForEnumerator);
+	static int GetCornerCountForEnumerator(CuboidDescriptor _) => 8;
+	static Location GetCornerForEnumerator(CuboidDescriptor @this, int index) => @this.CornerAt(OrientationUtils.AllDiagonals[index]);
 
-	public unsafe OneToManyEnumerator<OriginCuboid, BoundedRay> Edges => new(this, &GetEdgeCountForEnumerator, &GetEdgeForEnumerator);
-	static int GetEdgeCountForEnumerator(OriginCuboid _) => 12;
-	static BoundedRay GetEdgeForEnumerator(OriginCuboid @this, int index) => @this.EdgeAt(OrientationUtils.AllIntercardinals[index]);
+	public unsafe OneToManyEnumerator<CuboidDescriptor, BoundedRay> Edges => new(this, &GetEdgeCountForEnumerator, &GetEdgeForEnumerator);
+	static int GetEdgeCountForEnumerator(CuboidDescriptor _) => 12;
+	static BoundedRay GetEdgeForEnumerator(CuboidDescriptor @this, int index) => @this.EdgeAt(OrientationUtils.AllIntercardinals[index]);
 
-	public unsafe OneToManyEnumerator<OriginCuboid, Plane> Sides => new(this, &GetSideCountForEnumerator, &GetSideForEnumerator);
-	static int GetSideCountForEnumerator(OriginCuboid _) => 6;
-	static Plane GetSideForEnumerator(OriginCuboid @this, int index) => @this.SideAt(OrientationUtils.AllCardinals[index]);
+	public unsafe OneToManyEnumerator<CuboidDescriptor, Plane> Sides => new(this, &GetSideCountForEnumerator, &GetSideForEnumerator);
+	static int GetSideCountForEnumerator(CuboidDescriptor _) => 6;
+	static Plane GetSideForEnumerator(CuboidDescriptor @this, int index) => @this.SideAt(OrientationUtils.AllCardinals[index]);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static OriginCuboid operator *(OriginCuboid cuboid, float scalar) => cuboid.ScaledBy(scalar);
+	public static CuboidDescriptor operator *(CuboidDescriptor descriptor, float scalar) => descriptor.ScaledBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static OriginCuboid operator /(OriginCuboid cuboid, float scalar) => cuboid.ScaledBy(1f / scalar);
+	public static CuboidDescriptor operator /(CuboidDescriptor descriptor, float scalar) => descriptor.ScaledBy(1f / scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static OriginCuboid operator *(float scalar, OriginCuboid cuboid) => cuboid.ScaledBy(scalar);
+	public static CuboidDescriptor operator *(float scalar, CuboidDescriptor descriptor) => descriptor.ScaledBy(scalar);
 
-	public OriginCuboid ScaledBy(float scalar) => FromHalfDimensions(HalfWidth * scalar, HalfHeight * scalar, HalfDepth * scalar);
-	public OriginCuboid WithVolume(float newVolume) {
+	public CuboidDescriptor ScaledBy(float scalar) => FromHalfDimensions(HalfWidth * scalar, HalfHeight * scalar, HalfDepth * scalar);
+	public CuboidDescriptor WithVolume(float newVolume) {
 		var diffCubeRoot = MathF.Cbrt(newVolume / Volume);
 		return FromHalfDimensions(HalfWidth * diffCubeRoot, HalfHeight * diffCubeRoot, HalfDepth * diffCubeRoot);
 	}
-	public OriginCuboid WithSurfaceArea(float newSurfaceArea) {
+	public CuboidDescriptor WithSurfaceArea(float newSurfaceArea) {
 		var diffSquareRoot = MathF.Sqrt(newSurfaceArea / SurfaceArea);
 		return FromHalfDimensions(HalfWidth * diffSquareRoot, HalfHeight * diffSquareRoot, HalfDepth * diffSquareRoot);
 	}
@@ -531,7 +531,7 @@ partial struct OriginCuboid {
 		};
 	}
 
-	public static OriginCuboid Interpolate(OriginCuboid start, OriginCuboid end, float distance) {
+	public static CuboidDescriptor Interpolate(CuboidDescriptor start, CuboidDescriptor end, float distance) {
 		return FromHalfDimensions(
 			Single.Lerp(start.HalfWidth, end.HalfWidth, distance),
 			Single.Lerp(start.HalfHeight, end.HalfHeight, distance),
@@ -539,14 +539,14 @@ partial struct OriginCuboid {
 		);
 	}
 
-	public static OriginCuboid NewRandom() {
+	public static CuboidDescriptor NewRandom() {
 		return FromHalfDimensions(
 			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax),
 			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax),
 			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax)
 		);
 	}
-	public static OriginCuboid NewRandom(OriginCuboid minInclusive, OriginCuboid maxExclusive) {
+	public static CuboidDescriptor NewRandom(CuboidDescriptor minInclusive, CuboidDescriptor maxExclusive) {
 		return FromHalfDimensions(
 			RandomUtils.NextSingle(minInclusive.HalfWidth, maxExclusive.HalfWidth),
 			RandomUtils.NextSingle(minInclusive.HalfHeight, maxExclusive.HalfHeight),

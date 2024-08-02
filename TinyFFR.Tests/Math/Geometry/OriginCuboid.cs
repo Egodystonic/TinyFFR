@@ -6,10 +6,10 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture]
-partial class OriginCuboidTest {
+partial class CuboidDescriptorTest {
 	const float TestTolerance = 0.01f;
 	// Half extents will be:							 3.6f		    6.8f		 0.7f
-	static readonly OriginCuboid TestCuboid = new(width: 7.2f, height: 13.6f, depth: 1.4f);
+	static readonly CuboidDescriptor TestCuboid = new(width: 7.2f, height: 13.6f, depth: 1.4f);
 
 	[SetUp]
 	public void SetUpTest() { }
@@ -34,15 +34,15 @@ partial class OriginCuboidTest {
 	public void StaticFactoriesShouldCorrectlyConstruct() {
 		AssertToleranceEquals(
 			TestCuboid,
-			OriginCuboid.FromHalfDimensions(7.2f / 2f, 13.6f / 2f, 1.4f / 2f),
+			CuboidDescriptor.FromHalfDimensions(7.2f / 2f, 13.6f / 2f, 1.4f / 2f),
 			TestTolerance
 		);
 	}
 
 	[Test]
 	public void ShouldCorrectlyModifyWithInitProperties() {
-		void AssertCuboid(OriginCuboid input, float expectedWidth, float expectedHeight, float expectedDepth) {
-			AssertToleranceEquals(new OriginCuboid(expectedWidth, expectedHeight, expectedDepth), input, TestTolerance);
+		void AssertCuboid(CuboidDescriptor input, float expectedWidth, float expectedHeight, float expectedDepth) {
+			AssertToleranceEquals(new CuboidDescriptor(expectedWidth, expectedHeight, expectedDepth), input, TestTolerance);
 		}
 		
 		var startingValue = TestCuboid;
@@ -72,7 +72,7 @@ partial class OriginCuboidTest {
 	
 	[Test]
 	public void ShouldCorrectlyConvertToString() {
-		const string Expectation = "OriginCuboid[Width 7.2 | Height 13.6 | Depth 1.4]";
+		const string Expectation = "CuboidDescriptor[Width 7.2 | Height 13.6 | Depth 1.4]";
 
 		Assert.AreEqual(Expectation, TestCuboid.ToString("N1", CultureInfo.InvariantCulture));
 		Span<char> dest = stackalloc char[Expectation.Length * 2];
@@ -83,39 +83,39 @@ partial class OriginCuboidTest {
 	
 	[Test]
 	public void ShouldCorrectlyParse() {
-		const string Input = "OriginCuboid[Width 7.2 | Height 13.6 | Depth 1.4]";
+		const string Input = "CuboidDescriptor[Width 7.2 | Height 13.6 | Depth 1.4]";
 
-		Assert.AreEqual(TestCuboid, OriginCuboid.Parse(Input, CultureInfo.InvariantCulture));
-		Assert.AreEqual(true, OriginCuboid.TryParse(Input, CultureInfo.InvariantCulture, out var result));
+		Assert.AreEqual(TestCuboid, CuboidDescriptor.Parse(Input, CultureInfo.InvariantCulture));
+		Assert.AreEqual(true, CuboidDescriptor.TryParse(Input, CultureInfo.InvariantCulture, out var result));
 		Assert.AreEqual(TestCuboid, result);
 	}
 	
 	[Test]
 	public void ShouldCorrectlyConvertToAndFromSpan() {
-		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<OriginCuboid>();
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<CuboidDescriptor>();
 		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(TestCuboid);
 		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestCuboid, TestCuboid.Width, TestCuboid.Height, TestCuboid.Depth);
 	}
 	
 	[Test]
 	public void ShouldCorrectlyInterpolate() {
-		var a = new OriginCuboid(5f, 10f, 20f);
-		var b = new OriginCuboid(15f, 30f, 60f);
-		Assert.AreEqual(new OriginCuboid(10f, 20f, 40f), OriginCuboid.Interpolate(a, b, 0.5f));
-		Assert.AreEqual(new OriginCuboid(5f, 10f, 20f), OriginCuboid.Interpolate(a, b, 0f));
-		Assert.AreEqual(new OriginCuboid(15f, 30f, 60f), OriginCuboid.Interpolate(a, b, 1f));
-		Assert.AreEqual(new OriginCuboid(20f, 40f, 80f), OriginCuboid.Interpolate(a, b, 1.5f));
-		Assert.AreEqual(new OriginCuboid(0f, 0f, 0f), OriginCuboid.Interpolate(a, b, -0.5f));
+		var a = new CuboidDescriptor(5f, 10f, 20f);
+		var b = new CuboidDescriptor(15f, 30f, 60f);
+		Assert.AreEqual(new CuboidDescriptor(10f, 20f, 40f), CuboidDescriptor.Interpolate(a, b, 0.5f));
+		Assert.AreEqual(new CuboidDescriptor(5f, 10f, 20f), CuboidDescriptor.Interpolate(a, b, 0f));
+		Assert.AreEqual(new CuboidDescriptor(15f, 30f, 60f), CuboidDescriptor.Interpolate(a, b, 1f));
+		Assert.AreEqual(new CuboidDescriptor(20f, 40f, 80f), CuboidDescriptor.Interpolate(a, b, 1.5f));
+		Assert.AreEqual(new CuboidDescriptor(0f, 0f, 0f), CuboidDescriptor.Interpolate(a, b, -0.5f));
 	}
 	
 	[Test]
 	public void ShouldCorrectlyCreateRandomObjects() {
 		const int NumIterations = 10_000;
-		var a = new OriginCuboid(5f, 10f, 20f);
-		var b = new OriginCuboid(15f, 30f, 60f);
+		var a = new CuboidDescriptor(5f, 10f, 20f);
+		var b = new CuboidDescriptor(15f, 30f, 60f);
 
 		for (var i = 0; i < NumIterations; ++i) {
-			var val = OriginCuboid.NewRandom(a, b);
+			var val = CuboidDescriptor.NewRandom(a, b);
 			Assert.GreaterOrEqual(val.Width, a.Width);
 			Assert.Less(val.Width, b.Width);
 			Assert.GreaterOrEqual(val.Height, a.Height);
@@ -123,13 +123,13 @@ partial class OriginCuboidTest {
 			Assert.GreaterOrEqual(val.Depth, a.Depth);
 			Assert.Less(val.Depth, b.Depth);
 
-			val = OriginCuboid.NewRandom();
-			Assert.GreaterOrEqual(val.HalfWidth, OriginCuboid.DefaultRandomMin);
-			Assert.Less(val.HalfWidth, OriginCuboid.DefaultRandomMax);
-			Assert.GreaterOrEqual(val.HalfHeight, OriginCuboid.DefaultRandomMin);
-			Assert.Less(val.HalfHeight, OriginCuboid.DefaultRandomMax);
-			Assert.GreaterOrEqual(val.HalfDepth, OriginCuboid.DefaultRandomMin);
-			Assert.Less(val.HalfDepth, OriginCuboid.DefaultRandomMax);
+			val = CuboidDescriptor.NewRandom();
+			Assert.GreaterOrEqual(val.HalfWidth, CuboidDescriptor.DefaultRandomMin);
+			Assert.Less(val.HalfWidth, CuboidDescriptor.DefaultRandomMax);
+			Assert.GreaterOrEqual(val.HalfHeight, CuboidDescriptor.DefaultRandomMin);
+			Assert.Less(val.HalfHeight, CuboidDescriptor.DefaultRandomMax);
+			Assert.GreaterOrEqual(val.HalfDepth, CuboidDescriptor.DefaultRandomMin);
+			Assert.Less(val.HalfDepth, CuboidDescriptor.DefaultRandomMax);
 		}
 	}
 }

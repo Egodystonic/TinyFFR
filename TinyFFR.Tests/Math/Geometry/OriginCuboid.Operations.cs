@@ -7,7 +7,7 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture]
-partial class OriginCuboidTest {
+partial class CuboidDescriptorTest {
 	[Test]
 	public void ShouldCorrectlyEnumerateCorners() {
 		Assert.AreEqual(OrientationUtils.AllDiagonals.Length, TestCuboid.Corners.Count);
@@ -50,7 +50,7 @@ partial class OriginCuboidTest {
 	[Test]
 	public void ShouldCorrectlyScale() {
 		AssertToleranceEquals(
-			new OriginCuboid(width: 7.2f * 3f, height: 13.6f * 3f, depth: 1.4f * 3f), 
+			new CuboidDescriptor(width: 7.2f * 3f, height: 13.6f * 3f, depth: 1.4f * 3f), 
 			TestCuboid.ScaledBy(3f), 
 			TestTolerance
 		);
@@ -87,7 +87,7 @@ partial class OriginCuboidTest {
 		const float W = 0.5f * 7.2f;
 		const float H = 0.5f * 13.6f;
 		const float D = 0.5f * 1.4f;
-		var cuboid = new OriginCuboid(W * 2f, H * 2f, D * 2f);
+		var cuboid = new CuboidDescriptor(W * 2f, H * 2f, D * 2f);
 
 		void AssertOrientation(IntercardinalOrientation3D orientation, Location expectedLinePointA, Location expectedLinePointB) {
 			Assert.IsTrue(cuboid.EdgeAt(orientation).EqualsDisregardingDirection(new(expectedLinePointA, expectedLinePointB), TestTolerance));
@@ -192,12 +192,12 @@ partial class OriginCuboidTest {
 
 		Assert.AreEqual(MathF.Sqrt(2f), TestCuboid.SurfaceDistanceFrom((4.6f, -7.8f, 0.7f)), TestTolerance);
 
-		Assert.AreEqual(1f, new OriginCuboid(20f, 40f, 60f).SurfaceDistanceFrom((9f, 9f, 9f)), TestTolerance);
-		Assert.AreEqual(1f, new OriginCuboid(20f, 40f, 60f).SurfaceDistanceFrom((-9f, -9f, -9f)), TestTolerance);
-		Assert.AreEqual(11f, new OriginCuboid(200f, 40f, 60f).SurfaceDistanceFrom((9f, 9f, 9f)), TestTolerance);
-		Assert.AreEqual(11f, new OriginCuboid(200f, 40f, 60f).SurfaceDistanceFrom((-9f, -9f, -9f)), TestTolerance);
-		Assert.AreEqual(21f, new OriginCuboid(200f, 400f, 60f).SurfaceDistanceFrom((9f, 9f, 9f)), TestTolerance);
-		Assert.AreEqual(21f, new OriginCuboid(200f, 400f, 60f).SurfaceDistanceFrom((-9f, -9f, -9f)), TestTolerance);
+		Assert.AreEqual(1f, new CuboidDescriptor(20f, 40f, 60f).SurfaceDistanceFrom((9f, 9f, 9f)), TestTolerance);
+		Assert.AreEqual(1f, new CuboidDescriptor(20f, 40f, 60f).SurfaceDistanceFrom((-9f, -9f, -9f)), TestTolerance);
+		Assert.AreEqual(11f, new CuboidDescriptor(200f, 40f, 60f).SurfaceDistanceFrom((9f, 9f, 9f)), TestTolerance);
+		Assert.AreEqual(11f, new CuboidDescriptor(200f, 40f, 60f).SurfaceDistanceFrom((-9f, -9f, -9f)), TestTolerance);
+		Assert.AreEqual(21f, new CuboidDescriptor(200f, 400f, 60f).SurfaceDistanceFrom((9f, 9f, 9f)), TestTolerance);
+		Assert.AreEqual(21f, new CuboidDescriptor(200f, 400f, 60f).SurfaceDistanceFrom((-9f, -9f, -9f)), TestTolerance);
 
 		// Squared
 		Assert.AreEqual(0.7f * 0.7f, TestCuboid.SurfaceDistanceSquaredFrom((0f, 0f, 0f)), TestTolerance);
@@ -217,12 +217,12 @@ partial class OriginCuboidTest {
 
 		Assert.AreEqual(2f, TestCuboid.SurfaceDistanceSquaredFrom((4.6f, -7.8f, 0.7f)), TestTolerance);
 
-		Assert.AreEqual(1f, new OriginCuboid(20f, 40f, 60f).SurfaceDistanceSquaredFrom((9f, 9f, 9f)), TestTolerance);
-		Assert.AreEqual(1f, new OriginCuboid(20f, 40f, 60f).SurfaceDistanceSquaredFrom((-9f, -9f, -9f)), TestTolerance);
-		Assert.AreEqual(121f, new OriginCuboid(200f, 40f, 60f).SurfaceDistanceSquaredFrom((9f, 9f, 9f)), TestTolerance);
-		Assert.AreEqual(121f, new OriginCuboid(200f, 40f, 60f).SurfaceDistanceSquaredFrom((-9f, -9f, -9f)), TestTolerance);
-		Assert.AreEqual(21f * 21f, new OriginCuboid(200f, 400f, 60f).SurfaceDistanceSquaredFrom((9f, 9f, 9f)), TestTolerance);
-		Assert.AreEqual(21f * 21f, new OriginCuboid(200f, 400f, 60f).SurfaceDistanceSquaredFrom((-9f, -9f, -9f)), TestTolerance);
+		Assert.AreEqual(1f, new CuboidDescriptor(20f, 40f, 60f).SurfaceDistanceSquaredFrom((9f, 9f, 9f)), TestTolerance);
+		Assert.AreEqual(1f, new CuboidDescriptor(20f, 40f, 60f).SurfaceDistanceSquaredFrom((-9f, -9f, -9f)), TestTolerance);
+		Assert.AreEqual(121f, new CuboidDescriptor(200f, 40f, 60f).SurfaceDistanceSquaredFrom((9f, 9f, 9f)), TestTolerance);
+		Assert.AreEqual(121f, new CuboidDescriptor(200f, 40f, 60f).SurfaceDistanceSquaredFrom((-9f, -9f, -9f)), TestTolerance);
+		Assert.AreEqual(21f * 21f, new CuboidDescriptor(200f, 400f, 60f).SurfaceDistanceSquaredFrom((9f, 9f, 9f)), TestTolerance);
+		Assert.AreEqual(21f * 21f, new CuboidDescriptor(200f, 400f, 60f).SurfaceDistanceSquaredFrom((-9f, -9f, -9f)), TestTolerance);
 	}
 
 	[Test]
@@ -1409,7 +1409,7 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(-100f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))).Z, TestTolerance);
 		Assert.AreEqual(100f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))).Z, TestTolerance);
 
-		var longCuboid = new OriginCuboid(1000f, 10f, 1f);
+		var longCuboid = new CuboidDescriptor(1000f, 10f, 1f);
 		var line = BoundedRay.FromStartPointAndVect(new Location(-485f, -4f, 0f), new Vect(980f, -0.9f, 0f));
 		AssertToleranceEquals(line.EndPoint, longCuboid.ClosestPointToSurfaceOn(line), TestTolerance);
 		AssertToleranceEquals(line.EndPoint, longCuboid.ClosestPointToSurfaceOn(line.Flipped), TestTolerance);
@@ -1619,7 +1619,7 @@ partial class OriginCuboidTest {
 		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -16.8f, 0f), Direction.Backward * 1000f)), TestTolerance);
 		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -10.7f), Direction.Right * 1000f)), TestTolerance);
 
-		var longCuboid = new OriginCuboid(1000f, 10f, 1f);
+		var longCuboid = new CuboidDescriptor(1000f, 10f, 1f);
 		var line = BoundedRay.FromStartPointAndVect(new Location(-485f, -4f, 0f), new Vect(980f, -0.9f, 0f));
 		Assert.AreEqual(0.1f, longCuboid.SurfaceDistanceFrom(line), TestTolerance);
 		Assert.AreEqual(0.1f, longCuboid.SurfaceDistanceFrom(line.Flipped), TestTolerance);
