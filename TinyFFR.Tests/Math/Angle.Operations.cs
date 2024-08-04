@@ -258,7 +258,7 @@ partial class AngleTest {
 		const int NumIterations = 10_000;
 
 		for (var i = 0; i < NumIterations; ++i) {
-			var val = Angle.NewRandom();
+			var val = Angle.Random();
 			Assert.GreaterOrEqual(val.AsDegrees, 0f);
 			Assert.Less(val.AsDegrees, 360f);
 		}
@@ -269,7 +269,7 @@ partial class AngleTest {
 		const int NumIterations = 10_000;
 
 		for (var i = 0; i < NumIterations; ++i) {
-			var val = Angle.NewRandom(-720f, 720f);
+			var val = Angle.Random(-720f, 720f);
 			Assert.GreaterOrEqual(val.AsDegrees, -720f);
 			Assert.Less(val.AsDegrees, 720f);
 		}

@@ -219,14 +219,14 @@ partial struct Vect :
 
 	public Vect Clamp(Vect min, Vect max) => AsLocation().ClosestPointOn(new BoundedRay(min.AsLocation(), max.AsLocation())).AsVect();
 
-	public static Vect NewRandom() {
+	public static Vect Random() {
 		return new Vect(
 			RandomUtils.NextSingleNegOneToOneInclusive(),
 			RandomUtils.NextSingleNegOneToOneInclusive(),
 			RandomUtils.NextSingleNegOneToOneInclusive()
 		) * DefaultRandomRange;
 	}
-	public static Vect NewRandom(Vect minInclusive, Vect maxExclusive) {
+	public static Vect Random(Vect minInclusive, Vect maxExclusive) {
 		return new(
 			RandomUtils.NextSingle(minInclusive.X, maxExclusive.X),
 			RandomUtils.NextSingle(minInclusive.Y, maxExclusive.Y),

@@ -284,7 +284,7 @@ partial struct Direction :
 		return (result >> plane.Normal).WithAngle(angleToPlane) * result;
 	}
 
-	public static Direction NewRandom() {
+	public static Direction Random() {
 		Direction result;
 		do {
 			result = new(
@@ -295,21 +295,21 @@ partial struct Direction :
 		} while (result == None);
 		return result;
 	}
-	public static Direction NewRandom(Direction minInclusive, Direction maxExclusive) {
+	public static Direction Random(Direction minInclusive, Direction maxExclusive) {
 		return (minInclusive >> maxExclusive).ScaledBy(RandomUtils.NextSingle()) * minInclusive;
 	}
-	public static Direction NewRandom(Direction coneCentre, Angle coneAngleMax) => NewRandom(coneCentre, coneAngleMax, Angle.Zero);
-	public static Direction NewRandom(Direction coneCentre, Angle coneAngleMax, Angle coneAngleMin) {
-		if (coneCentre == None) return NewRandom();
+	public static Direction Random(Direction coneCentre, Angle coneAngleMax) => Random(coneCentre, coneAngleMax, Angle.Zero);
+	public static Direction Random(Direction coneCentre, Angle coneAngleMax, Angle coneAngleMin) {
+		if (coneCentre == None) return Random();
 
-		var offset = coneCentre * (coneCentre >> coneCentre.AnyOrthogonal()).WithAngle(Angle.NewRandom(coneAngleMin.ClampZeroToHalfCircle(), coneAngleMax.ClampZeroToHalfCircle()));
-		return offset * new Rotation(Angle.NewRandom(Angle.Zero, Angle.FullCircle), coneCentre);
+		var offset = coneCentre * (coneCentre >> coneCentre.AnyOrthogonal()).WithAngle(Angle.Random(coneAngleMin.ClampZeroToHalfCircle(), coneAngleMax.ClampZeroToHalfCircle()));
+		return offset * new Rotation(Angle.Random(Angle.Zero, Angle.FullCircle), coneCentre);
 	}
-	public static Direction NewRandom(Plane plane) => NewRandom(plane, plane.Normal.AnyOrthogonal(), Angle.FullCircle);
-	public static Direction NewRandom(Plane plane, Direction arcCentre, Angle arcAngle) {
+	public static Direction Random(Plane plane) => Random(plane, plane.Normal.AnyOrthogonal(), Angle.FullCircle);
+	public static Direction Random(Plane plane, Direction arcCentre, Angle arcAngle) {
 		if (arcCentre.ParallelizedWith(plane) == null) arcCentre = plane.Normal.AnyOrthogonal();
 		var halfAngle = arcAngle * 0.5f;
-		return FromPlaneAndPolarAngle(plane, arcCentre, Angle.NewRandom(-halfAngle, halfAngle)); 
+		return FromPlaneAndPolarAngle(plane, arcCentre, Angle.Random(-halfAngle, halfAngle)); 
 	}
 
 	public static int GetIndexOfNearestDirectionInSpan(Direction targetDir, ReadOnlySpan<Direction> span) {

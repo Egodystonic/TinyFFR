@@ -118,7 +118,7 @@ partial class RayTest {
 		var end = new Ray(new Location(15f, 15f, 15f), Direction.Right);
 
 		for (var i = 0; i < NumIterations; ++i) {
-			var val = Ray.NewRandom(start, end);
+			var val = Ray.Random(start, end);
 			Assert.GreaterOrEqual(val.StartPoint.X, start.StartPoint.X);
 			Assert.GreaterOrEqual(val.StartPoint.Y, start.StartPoint.Y);
 			Assert.GreaterOrEqual(val.StartPoint.Z, start.StartPoint.Z);

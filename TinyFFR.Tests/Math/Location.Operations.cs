@@ -108,7 +108,7 @@ partial class LocationTest {
 		const int NumIterations = 50_000;
 
 		for (var i = 0; i < NumIterations; ++i) {
-			var val = Location.NewRandom();
+			var val = Location.Random();
 			Assert.GreaterOrEqual(val.X, -Location.DefaultRandomRange);
 			Assert.LessOrEqual(val.X, Location.DefaultRandomRange);
 			Assert.GreaterOrEqual(val.Y, -Location.DefaultRandomRange);
@@ -123,9 +123,9 @@ partial class LocationTest {
 		const int NumIterations = 50_000;
 
 		for (var i = 0; i < NumIterations; ++i) {
-			var start = Location.NewRandom();
-			var end = Location.NewRandom();
-			var val = Location.NewRandom(start, end);
+			var start = Location.Random();
+			var end = Location.Random();
+			var val = Location.Random(start, end);
 
 			var startToEnd = start >> end;
 			var startToVal = start >> val;

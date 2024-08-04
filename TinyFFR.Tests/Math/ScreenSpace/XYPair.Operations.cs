@@ -154,7 +154,7 @@ partial class XYPairTest {
 
 		void AssertForType<T>() where T : unmanaged, INumber<T> {
 			for (var i = 0; i < NumIterations; ++i) {
-				var val = XYPair<T>.NewRandom();
+				var val = XYPair<T>.Random();
 				Assert.GreaterOrEqual(val.X, T.CreateChecked(-XYPair<T>.DefaultRandomRange));
 				Assert.GreaterOrEqual(val.Y, T.CreateChecked(-XYPair<T>.DefaultRandomRange));
 				Assert.LessOrEqual(val.X, T.CreateChecked(XYPair<T>.DefaultRandomRange));
@@ -174,13 +174,13 @@ partial class XYPairTest {
 
 		void AssertForType<T>() where T : unmanaged, INumber<T> {
 			for (var i = 0; i < NumIterations; ++i) {
-				var val = XYPair<T>.NewRandom(T.CreateChecked(-1000), T.CreateChecked(1000));
+				var val = XYPair<T>.Random(T.CreateChecked(-1000), T.CreateChecked(1000));
 				Assert.GreaterOrEqual(val.X, T.CreateChecked(-1000));
 				Assert.GreaterOrEqual(val.Y, T.CreateChecked(-1000));
 				Assert.LessOrEqual(val.X, T.CreateChecked(1000));
 				Assert.LessOrEqual(val.Y, T.CreateChecked(1000));
 
-				val = XYPair<T>.NewRandom((T.CreateChecked(-500), T.CreateChecked(-200)), (T.CreateChecked(500), T.CreateChecked(200)));
+				val = XYPair<T>.Random((T.CreateChecked(-500), T.CreateChecked(-200)), (T.CreateChecked(500), T.CreateChecked(200)));
 				Assert.GreaterOrEqual(val.X, T.CreateChecked(-500));
 				Assert.GreaterOrEqual(val.Y, T.CreateChecked(-200));
 				Assert.LessOrEqual(val.X, T.CreateChecked(500));

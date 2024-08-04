@@ -165,6 +165,13 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	public static implicit operator Angle(float operand) => FromDegrees(operand);
 	#endregion
 
+	#region Random
+	public static Angle Random() => Random(Zero, FullCircle);
+	public static Angle Random(Angle minInclusive, Angle maxExclusive) {
+		return FromRadians(RandomUtils.NextSingle(minInclusive.AsRadians, maxExclusive.AsRadians));
+	}
+	#endregion
+
 	#region Span Conversion
 	public static int SerializationByteSpanLength { get; } = sizeof(float);
 

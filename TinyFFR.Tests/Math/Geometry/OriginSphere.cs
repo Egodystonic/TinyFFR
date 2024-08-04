@@ -77,11 +77,11 @@ partial class SphereDescriptorTest {
 		const int NumIterations = 10_000;
 		
 		for (var i = 0; i < NumIterations; ++i) {
-			var val = SphereDescriptor.NewRandom(new SphereDescriptor(10f), new SphereDescriptor(20f));
+			var val = SphereDescriptor.Random(new SphereDescriptor(10f), new SphereDescriptor(20f));
 			Assert.GreaterOrEqual(val.Radius, 10f);
 			Assert.Less(val.Radius, 20f);
 
-			val = SphereDescriptor.NewRandom();
+			val = SphereDescriptor.Random();
 			Assert.GreaterOrEqual(val.Radius, SphereDescriptor.DefaultRandomMin);
 			Assert.Less(val.Radius, SphereDescriptor.DefaultRandomMax);
 		}

@@ -88,7 +88,7 @@ partial class PlaneTest {
 		var end = new Plane(Direction.Up, new Location(0f, 0f, -5f));
 
 		for (var i = 0; i < NumIterations; ++i) {
-			var val = Plane.NewRandom(start, end);
+			var val = Plane.Random(start, end);
 			Assert.AreEqual(0f, val.Normal.X);
 			Assert.GreaterOrEqual(val.Normal.Y, 0f);
 			Assert.LessOrEqual(val.Normal.Y, 1f);

@@ -393,7 +393,7 @@ partial class VectTest {
 		const int NumIterations = 50_000;
 
 		for (var i = 0; i < NumIterations; ++i) {
-			var val = Vect.NewRandom();
+			var val = Vect.Random();
 			Assert.GreaterOrEqual(val.X, -Vect.DefaultRandomRange);
 			Assert.LessOrEqual(val.X, Vect.DefaultRandomRange);
 			Assert.GreaterOrEqual(val.Y, -Vect.DefaultRandomRange);
@@ -408,9 +408,9 @@ partial class VectTest {
 		const int NumIterations = 50_000;
 
 		for (var i = 0; i < NumIterations; ++i) {
-			var a = Vect.NewRandom();
+			var a = Vect.Random();
 			var b = a + new Vect(3f, 3f, 3f);
-			var val = Vect.NewRandom(a, b);
+			var val = Vect.Random(a, b);
 			Assert.GreaterOrEqual(val.X, a.X);
 			Assert.LessOrEqual(val.X, b.X);
 			Assert.GreaterOrEqual(val.Y, a.Y);

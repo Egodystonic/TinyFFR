@@ -72,8 +72,8 @@ public readonly partial struct Line {
 		);
 	}
 
-	public static Line NewRandom() => new(Location.NewRandom(), Direction.NewRandom());
-	public static Line NewRandom(Line minInclusive, Line maxExclusive) => new(Location.NewRandom(minInclusive.PointOnLine, maxExclusive.PointOnLine), Direction.NewRandom(minInclusive.Direction, maxExclusive.Direction));
+	public static Line Random() => new(Location.Random(), Direction.Random());
+	public static Line Random(Line minInclusive, Line maxExclusive) => new(Location.Random(minInclusive.PointOnLine, maxExclusive.PointOnLine), Direction.Random(minInclusive.Direction, maxExclusive.Direction));
 	
 
 	public Location PointClosestTo(Location location) {

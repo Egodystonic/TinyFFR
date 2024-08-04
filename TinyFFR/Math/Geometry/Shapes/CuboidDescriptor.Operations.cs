@@ -539,14 +539,14 @@ partial struct CuboidDescriptor {
 		);
 	}
 
-	public static CuboidDescriptor NewRandom() {
+	public static CuboidDescriptor Random() {
 		return FromHalfDimensions(
 			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax),
 			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax),
 			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax)
 		);
 	}
-	public static CuboidDescriptor NewRandom(CuboidDescriptor minInclusive, CuboidDescriptor maxExclusive) {
+	public static CuboidDescriptor Random(CuboidDescriptor minInclusive, CuboidDescriptor maxExclusive) {
 		return FromHalfDimensions(
 			RandomUtils.NextSingle(minInclusive.HalfWidth, maxExclusive.HalfWidth),
 			RandomUtils.NextSingle(minInclusive.HalfHeight, maxExclusive.HalfHeight),

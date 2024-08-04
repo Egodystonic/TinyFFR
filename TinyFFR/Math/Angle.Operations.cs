@@ -30,7 +30,40 @@ partial struct Angle :
 		get => FromRadians(TrueModulus(AsRadians, Tau));
 	}
 
+	#region Scaling and Addition/Subtraction
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle operator *(Angle angle, float scalar) => angle.ScaledBy(scalar);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle operator *(float scalar, Angle angle) => angle.ScaledBy(scalar);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle operator /(Angle angle, float scalar) => FromRadians(angle.AsRadians / scalar);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle ScaledBy(float scalar) => FromRadians(AsRadians * scalar);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle operator +(Angle lhs, Angle rhs) => lhs.Plus(rhs);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle operator -(Angle lhs, Angle rhs) => lhs.Minus(rhs);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle Plus(Angle other) => FromRadians(AsRadians + other.AsRadians);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle Minus(Angle other) => FromRadians(AsRadians - other.AsRadians);
+
+	// TODO xmldoc explain that this is the difference "around the clock" to the other angle; e.g. 270 & 180 = 90; 270 & 90 = 180, etc. Range is always between 0 and 180
+	public Angle AbsoluteDifferenceTo(Angle other) {
+		return FromRadians(MathF.Min((this - other).Normalized.AsRadians, (other - this).Normalized.AsRadians));
+	}
+	#endregion
+
+	#region Trigonometry
+	public float Sine {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => MathF.Sin(AsRadians);
+	}
+	public float Cosine {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => MathF.Cos(AsRadians);
+	}
 
 	public Orientation2D PolarOrientation { // TODO make it clear that this is four-quadrant 2D plane direction
 		get {
@@ -49,46 +82,9 @@ partial struct Angle :
 			};
 		}
 	}
+	#endregion
 
-
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle operator *(Angle angle, float scalar) => angle.ScaledBy(scalar);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle operator *(float scalar, Angle angle) => angle.ScaledBy(scalar);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle operator /(Angle angle, float scalar) => FromRadians(angle.AsRadians / scalar);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle ScaledBy(float scalar) => FromRadians(AsRadians * scalar);
-
-
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle operator +(Angle lhs, Angle rhs) => lhs.Plus(rhs);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle operator -(Angle lhs, Angle rhs) => lhs.Minus(rhs);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle Plus(Angle other) => FromRadians(AsRadians + other.AsRadians);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle Minus(Angle other) => FromRadians(AsRadians - other.AsRadians);
-	
-	// TODO xmldoc explain that this is the difference "around the clock" to the other angle; e.g. 270 & 180 = 90; 270 & 90 = 180, etc. Range is always between 0 and 180
-	public Angle AbsoluteDifferenceTo(Angle other) {
-		return FromRadians(MathF.Min((this - other).Normalized.AsRadians, (other - this).Normalized.AsRadians));
-	}
-
-
-	public float Sine {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => MathF.Sin(AsRadians);
-	}
-	public float Cosine {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => MathF.Cos(AsRadians);
-	}
-
-
-
+	#region Clamping and Interpolation
 	public Angle Clamp(Angle min, Angle max) {
 		if (min > max) (min, max) = (max, min);
 		return FromRadians(Math.Clamp(AsRadians, min.AsRadians, max.AsRadians));
@@ -103,9 +99,10 @@ partial struct Angle :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle ClampNegativeHalfCircleToHalfCircle() => Clamp(-HalfCircle, HalfCircle);
 
+	public static Angle Interpolate(Angle start, Angle end, float distance) => FromRadians(Single.Lerp(start.AsRadians, end.AsRadians, distance));
+	#endregion
 
-
-
+	#region Comparison
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int CompareTo(Angle other) => AsRadians.CompareTo(other.AsRadians);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -116,12 +113,5 @@ partial struct Angle :
 	public static bool operator <(Angle left, Angle right) => left.AsRadians < right.AsRadians;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator <=(Angle left, Angle right) => left.AsRadians <= right.AsRadians;
-
-
-	public static Angle Interpolate(Angle start, Angle end, float distance) => FromRadians(Single.Lerp(start.AsRadians, end.AsRadians, distance));
-
-	public static Angle NewRandom() => NewRandom(Zero, FullCircle);
-	public static Angle NewRandom(Angle minInclusive, Angle maxExclusive) {
-		return FromRadians(RandomUtils.NextSingle(minInclusive.AsRadians, maxExclusive.AsRadians));
-	}
+	#endregion
 }

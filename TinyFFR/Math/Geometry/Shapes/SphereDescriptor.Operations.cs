@@ -314,6 +314,6 @@ partial struct SphereDescriptor {
 
 	public static SphereDescriptor Interpolate(SphereDescriptor start, SphereDescriptor end, float distance) => new(Single.Lerp(start.Radius, end.Radius, distance));
 
-	public static SphereDescriptor NewRandom() => new(RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax));
-	public static SphereDescriptor NewRandom(SphereDescriptor minInclusive, SphereDescriptor maxExclusive) => new(RandomUtils.NextSingle(minInclusive.Radius, maxExclusive.Radius));
+	public static SphereDescriptor Random() => new(RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax));
+	public static SphereDescriptor Random(SphereDescriptor minInclusive, SphereDescriptor maxExclusive) => new(RandomUtils.NextSingle(minInclusive.Radius, maxExclusive.Radius));
 }

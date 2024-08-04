@@ -73,14 +73,14 @@ partial struct Location :
 		return start + (end - start) * distance;
 	}
 
-	public static Location NewRandom() {
+	public static Location Random() {
 		return FromVector3(new Vector3(
 			RandomUtils.NextSingleNegOneToOneInclusive(),
 			RandomUtils.NextSingleNegOneToOneInclusive(),
 			RandomUtils.NextSingleNegOneToOneInclusive()
 		) * DefaultRandomRange);
 	}
-	public static Location NewRandom(Location minInclusive, Location maxExclusive) {
+	public static Location Random(Location minInclusive, Location maxExclusive) {
 		return minInclusive + ((minInclusive >> maxExclusive) * RandomUtils.NextSingle());
 	}
 }

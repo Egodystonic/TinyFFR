@@ -224,7 +224,7 @@ partial class PlaneTest {
 		const float MinDifferentiableAngleDegrees = 0.1f;
 		
 		for (var i = 0; i < 10_000; ++i) {
-			var randomVect = Direction.NewRandom(Direction.Up, 90f - MinDifferentiableAngleDegrees, 90f - MinDifferentiableAngleDegrees) * 1f;
+			var randomVect = Direction.Random(Direction.Up, 90f - MinDifferentiableAngleDegrees, 90f - MinDifferentiableAngleDegrees) * 1f;
 			try {
 				Assert.IsNotNull(TestPlane.ReflectionOf(randomVect));
 			}
@@ -240,7 +240,7 @@ partial class PlaneTest {
 		const float MinDifferentiableAngleDegrees = 0.1f;
 
 		for (var i = 0; i < 10_000; ++i) {
-			var randomDir = Direction.NewRandom(Direction.Up, 90f - MinDifferentiableAngleDegrees, 90f - MinDifferentiableAngleDegrees);
+			var randomDir = Direction.Random(Direction.Up, 90f - MinDifferentiableAngleDegrees, 90f - MinDifferentiableAngleDegrees);
 			try {
 				Assert.IsNotNull(TestPlane.ReflectionOf(randomDir));
 			}
@@ -256,7 +256,7 @@ partial class PlaneTest {
 		const float MinDifferentiableAngleDegrees = 0.1f;
 
 		for (var i = 0; i < 10_000; ++i) {
-			var randomDir = Direction.NewRandom(Direction.Up, 90f - MinDifferentiableAngleDegrees, 90f - MinDifferentiableAngleDegrees);
+			var randomDir = Direction.Random(Direction.Up, 90f - MinDifferentiableAngleDegrees, 90f - MinDifferentiableAngleDegrees);
 			try {
 				Assert.IsNotNull(TestPlane.ReflectionOf(randomDir));
 			}

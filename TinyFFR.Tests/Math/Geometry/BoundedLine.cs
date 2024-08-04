@@ -82,7 +82,7 @@ partial class BoundedRayTest {
 		var end = new BoundedRay(new Location(15f, 15f, 15f), new Location(1f, 1f, 1f));
 
 		for (var i = 0; i < NumIterations; ++i) {
-			var val = BoundedRay.NewRandom(start, end);
+			var val = BoundedRay.Random(start, end);
 			Assert.GreaterOrEqual(val.StartPoint.X, start.StartPoint.X);
 			Assert.GreaterOrEqual(val.StartPoint.Y, start.StartPoint.Y);
 			Assert.GreaterOrEqual(val.StartPoint.Z, start.StartPoint.Z);
