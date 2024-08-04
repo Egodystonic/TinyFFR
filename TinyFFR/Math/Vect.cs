@@ -36,6 +36,15 @@ public readonly partial struct Vect : IVect<Vect>, IDescriptiveStringProvider {
 		init => AsVector4.Z = value;
 	}
 
+	public float this[Axis axis] => axis switch {
+		Axis.X => X,
+		Axis.Y => Y,
+		Axis.Z => Z,
+		_ => throw new ArgumentOutOfRangeException(nameof(axis), axis, $"{nameof(Axis)} must not be anything except {nameof(Axis.X)}, {nameof(Axis.Y)} or {nameof(Axis.Z)}.")
+	};
+	public XYPair<float> this[Axis first, Axis second] => new(this[first], this[second]);
+	public Vect this[Axis first, Axis second, Axis third] => new(this[first], this[second], this[third]);
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect() : this(0f, 0f, 0f) { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -67,6 +76,23 @@ public readonly partial struct Vect : IVect<Vect>, IDescriptiveStringProvider {
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Vect IVect.AsVect() => this;
+	#endregion
+
+	#region Random
+	public static Vect Random() {
+		return new Vect(
+			RandomUtils.NextSingleNegOneToOneInclusive(),
+			RandomUtils.NextSingleNegOneToOneInclusive(),
+			RandomUtils.NextSingleNegOneToOneInclusive()
+		) * DefaultRandomRange;
+	}
+	public static Vect Random(Vect minInclusive, Vect maxExclusive) {
+		return new(
+			RandomUtils.NextSingle(minInclusive.X, maxExclusive.X),
+			RandomUtils.NextSingle(minInclusive.Y, maxExclusive.Y),
+			RandomUtils.NextSingle(minInclusive.Z, maxExclusive.Z)
+		);
+	}
 	#endregion
 
 	#region Span Conversion

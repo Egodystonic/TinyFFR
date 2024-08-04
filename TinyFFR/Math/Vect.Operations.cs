@@ -24,14 +24,6 @@ partial struct Vect :
 	IParallelizationTarget<Vect, Vect> { 
 	internal const float DefaultRandomRange = 100f;
 
-	public float this[Axis axis] => axis switch {
-		Axis.X => X,
-		Axis.Y => Y,
-		Axis.Z => Z,
-		_ => throw new ArgumentOutOfRangeException(nameof(axis), axis, $"{nameof(Axis)} must not be anything except {nameof(Axis.X)}, {nameof(Axis.Y)} or {nameof(Axis.Z)}.")
-	};
-	public XYPair<float> this[Axis first, Axis second] => new(this[first], this[second]);
-	public Vect this[Axis first, Axis second, Axis third] => new(this[first], this[second], this[third]);
 	static Vect IAdditiveIdentity<Vect, Vect>.AdditiveIdentity => Zero;
 
 	public float Length {
@@ -49,7 +41,14 @@ partial struct Vect :
 			return MathF.Abs(1f - LengthSquared) < FloatingPointErrorMargin;
 		}
 	}
-
+	public Vect AsUnitLength {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(NormalizeOrZero(AsVector4));
+	}
+	public Direction Direction {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(NormalizeOrZero(AsVector4));
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator -(Vect operand) => operand.Flipped;
@@ -58,6 +57,7 @@ partial struct Vect :
 		get => new(-AsVector4);
 	}
 	Vect IInvertible<Vect>.Inverted => Flipped;
+
 	public Vect? Reciprocal {
 		get {
 			if (X == 0f || Y == 0f || Z == 0f) return null;
@@ -65,7 +65,28 @@ partial struct Vect :
 		}
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Location AsLocation() => (Location) this;
 
+	#region With Methods
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect WithLength(float newLength) => new(Direction.AsVector4 * newLength);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect WithLengthOne() => AsUnitLength;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect ShortenedBy(float lengthDecrease) => WithLength(Length - lengthDecrease);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect LengthenedBy(float lengthIncrease) => WithLength(Length + lengthIncrease);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect WithMaxLength(float maxLength) => WithLength(MathF.Min(Length, maxLength));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect WithMinLength(float minLength) => WithLength(MathF.Max(Length, minLength));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect WithDirection(Direction newDirection) => newDirection * Length;
+	#endregion
+
+	#region Scaling and Addition/Subtraction
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator +(Vect lhs, Vect rhs) => lhs.Plus(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -75,36 +96,30 @@ partial struct Vect :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect Minus(Vect other) => new(AsVector4 - other.AsVector4);
 
-
 	public static Vect operator *(Vect left, Vect right) => left.MultipliedBy(right);
 	public static Vect operator /(Vect left, Vect right) => right.MultipliedBy(left);
 	public Vect MultipliedBy(Vect other) => new(AsVector4 * other.AsVector4);
 	public Vect DividedBy(Vect other) => new(AsVector4 / other.AsVector4);
 	static Vect IMultiplicativeIdentity<Vect, Vect>.MultiplicativeIdentity => new(1f, 1f, 1f);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vect operator *(Vect vectOperand, float scalarOperand) => vectOperand.ScaledBy(scalarOperand);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vect operator *(float scalarOperand, Vect vectOperand) => vectOperand.ScaledBy(scalarOperand);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vect operator /(Vect vectOperand, float scalarOperand) => vectOperand.ScaledBy(1f / scalarOperand);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect ScaledBy(float scalar) => new(Multiply(AsVector4, scalar));
+	#endregion
 
-	public Direction Direction {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => new(NormalizeOrZero(AsVector4));
-	}
-	public Vect AsUnitLength {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => new(NormalizeOrZero(AsVector4));
-	}
-
-
+	#region Interactions w/ Direction
 	// Friendlier name for the maths-impaired like me
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float LengthWhenProjectedOnTo(Direction d) => Dot(d);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float Dot(Vect other) => Vector4.Dot(AsVector4, other.AsVector4);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float Dot(Direction other) => Vector4.Dot(AsVector4, other.AsVector4);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect Cross(Vect other) => FromVector3(Vector3.Cross(ToVector3(), other.ToVector3()));
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect Cross(Direction other) => FromVector3(Vector3.Cross(ToVector3(), other.ToVector3()));
-
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect ProjectedOnTo(Direction d) => d * LengthWhenProjectedOnTo(d);
@@ -124,6 +139,26 @@ partial struct Vect :
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect FastParallelizedWith(Direction d) => Direction.FastParallelizedWith(d) * Length;
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsOrthogonalTo(Direction d) => d.IsOrthogonalTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsParallelTo(Direction d) => d.IsParallelTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsApproximatelyOrthogonalTo(Direction d) => d.IsApproximatelyOrthogonalTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsApproximatelyOrthogonalTo(Direction d, Angle tolerance) => d.IsApproximatelyOrthogonalTo(this, tolerance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsApproximatelyParallelTo(Direction d) => d.IsApproximatelyParallelTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsApproximatelyParallelTo(Direction d, Angle tolerance) => d.IsApproximatelyParallelTo(this, tolerance);
+	#endregion
+
+	#region Interactions w/ Vect
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float Dot(Vect other) => Vector4.Dot(AsVector4, other.AsVector4);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect Cross(Vect other) => FromVector3(Vector3.Cross(ToVector3(), other.ToVector3()));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect? OrthogonalizedAgainst(Vect other) => OrthogonalizedAgainst(other.Direction);
@@ -151,18 +186,6 @@ partial struct Vect :
 	public Vect FastParallelizationOf(Vect other) => other.FastParallelizedWith(this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsOrthogonalTo(Direction d) => d.IsOrthogonalTo(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsParallelTo(Direction d) => d.IsParallelTo(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsApproximatelyOrthogonalTo(Direction d) => d.IsApproximatelyOrthogonalTo(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsApproximatelyOrthogonalTo(Direction d, Angle tolerance) => d.IsApproximatelyOrthogonalTo(this, tolerance);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsApproximatelyParallelTo(Direction d) => d.IsApproximatelyParallelTo(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsApproximatelyParallelTo(Direction d, Angle tolerance) => d.IsApproximatelyParallelTo(this, tolerance);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsOrthogonalTo(Vect other) => IsOrthogonalTo(other.Direction);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsParallelTo(Vect other) => IsParallelTo(other.Direction);
@@ -174,63 +197,22 @@ partial struct Vect :
 	public bool IsApproximatelyParallelTo(Vect other) => IsApproximatelyParallelTo(other.Direction);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsApproximatelyParallelTo(Vect other, Angle tolerance) => IsApproximatelyParallelTo(other.Direction, tolerance);
+	#endregion
 
+	#region Rotation
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator *(Vect d, Rotation r) => r.Rotate(d);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator *(Rotation r, Vect d) => r.Rotate(d);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect RotatedBy(Rotation rotation) => rotation.Rotate(this);
+	#endregion
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Location AsLocation() => (Location) this;
-
-
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator *(Vect vectOperand, float scalarOperand) => vectOperand.ScaledBy(scalarOperand);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator *(float scalarOperand, Vect vectOperand) => vectOperand.ScaledBy(scalarOperand);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator /(Vect vectOperand, float scalarOperand) => vectOperand.ScaledBy(1f / scalarOperand);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect ScaledBy(float scalar) => new(Multiply(AsVector4, scalar));
-
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect WithLength(float newLength) => new(Direction.AsVector4 * newLength);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect WithLengthOne() => AsUnitLength;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect ShortenedBy(float lengthDecrease) => WithLength(Length - lengthDecrease);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect LengthenedBy(float lengthIncrease) => WithLength(Length + lengthIncrease);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect WithMaxLength(float maxLength) => WithLength(MathF.Min(Length, maxLength));
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect WithMinLength(float minLength) => WithLength(MathF.Max(Length, minLength));
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect WithDirection(Direction newDirection) => newDirection * Length;
-
+	#region Clamping and Interpolation
 	public static Vect Interpolate(Vect start, Vect end, float distance) {
 		return start + (end - start) * distance;
 	}
 
 	public Vect Clamp(Vect min, Vect max) => AsLocation().ClosestPointOn(new BoundedRay(min.AsLocation(), max.AsLocation())).AsVect();
-
-	public static Vect Random() {
-		return new Vect(
-			RandomUtils.NextSingleNegOneToOneInclusive(),
-			RandomUtils.NextSingleNegOneToOneInclusive(),
-			RandomUtils.NextSingleNegOneToOneInclusive()
-		) * DefaultRandomRange;
-	}
-	public static Vect Random(Vect minInclusive, Vect maxExclusive) {
-		return new(
-			RandomUtils.NextSingle(minInclusive.X, maxExclusive.X),
-			RandomUtils.NextSingle(minInclusive.Y, maxExclusive.Y),
-			RandomUtils.NextSingle(minInclusive.Z, maxExclusive.Z)
-		);
-	}
+	#endregion
 }
