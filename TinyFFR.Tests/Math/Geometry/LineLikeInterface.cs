@@ -4,7 +4,7 @@
 namespace Egodystonic.TinyFFR;
 
 [TestFixture]
-class LineInterfaceTest {
+class LineLikeInterfaceTest {
 	const float TestTolerance = 0.0001f;
 
 	[SetUp]

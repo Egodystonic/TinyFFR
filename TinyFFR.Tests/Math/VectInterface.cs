@@ -33,7 +33,7 @@ class VectTestStubType : IVect {
 
 [TestFixture]
 // ReSharper disable once InconsistentNaming Tests for IVect interface
-class IVectTest {
+class VectInterfaceTest {
 	[Test]
 	public void ShouldCorrectlyParseVector3Strings() {
 		var testProvider = CultureInfo.InvariantCulture;
@@ -67,5 +67,39 @@ class IVectTest {
 		AssertSuccess("<1.1, 2.2, 3.3>", new(1.1f, 2.2f, 3.3f));
 		AssertSuccess("<1,2,3>", new(1f, 2f, 3f));
 		AssertSuccess("<-1.1, 2.2,3.3>", new(-1.1f, 2.2f, 3.3f));
+	}
+
+	[Test]
+	public void ShouldCorrectlyFormatToString() {
+		void AssertFail(VectTestStubType input, Span<char> destination, ReadOnlySpan<char> format, IFormatProvider? provider) {
+			Assert.AreEqual(false, input.TryFormat(destination, out _, format, provider));
+		}
+
+		void AssertSuccess(
+			VectTestStubType input,
+			Span<char> destination,
+			ReadOnlySpan<char> format,
+			IFormatProvider? provider,
+			ReadOnlySpan<char> expectedDestSpanValue
+		) {
+			var actualReturnValue = input.TryFormat(destination, out var numCharsWritten, format, provider);
+			Assert.AreEqual(true, actualReturnValue);
+			Assert.AreEqual(expectedDestSpanValue.Length, numCharsWritten);
+			Assert.IsTrue(
+				expectedDestSpanValue.SequenceEqual(destination[..expectedDestSpanValue.Length]),
+				$"Destination as string was {new String(destination)}"
+			);
+			Assert.AreEqual(new String(expectedDestSpanValue), input.ToString(new String(format), provider));
+		}
+
+		var testVect = new VectTestStubType { X = 1.123f, Y = 2.123f, Z = -3.123f };
+
+		AssertFail(testVect, Array.Empty<char>(), "", null);
+		AssertFail(testVect, Array.Empty<char>(), "", null);
+		AssertFail(testVect, new char[9], "N0", CultureInfo.InvariantCulture);
+		AssertSuccess(testVect, new char[10], "N0", CultureInfo.InvariantCulture, "<1, 2, -3>");
+		AssertFail(testVect, new char[15], "N1", CultureInfo.InvariantCulture);
+		AssertSuccess(testVect, new char[16], "N1", CultureInfo.InvariantCulture, "<1.1, 2.1, -3.1>");
+		AssertSuccess(testVect, new char[16], "N1", CultureInfo.CreateSpecificCulture("de-DE"), "<1,1. 2,1. -3,1>");
 	}
 }

@@ -34,8 +34,6 @@
 
   <ItemGroup>
     <Folder Include="Environment\Loop\" />
-    <Folder Include="Math\Randomization\" />
-    <Folder Include="Util\" />
   </ItemGroup>
 
 </Project>

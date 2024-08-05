@@ -6,7 +6,87 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture]
-partial class SphereDescriptorTest {
+class SphereDescriptorTest {
+	const float TestTolerance = 0.01f;
+	static readonly SphereDescriptor TestSphere = new(7.4f);
+
+	[SetUp]
+	public void SetUpTest() { }
+
+	[TearDown]
+	public void TearDownTest() { }
+
+	[Test]
+	public void ShouldCorrectlyCalculateProperties() {
+		// https://www.wolframalpha.com/input?i=volume%2C+surface+area%2C+circumference%2C+diameter+of+sphere+with+radius+7.4
+		Assert.AreEqual(7.4f, TestSphere.Radius, TestTolerance);
+		Assert.AreEqual(14.8f, TestSphere.Diameter, TestTolerance);
+		Assert.AreEqual(46.4956f, TestSphere.Circumference, TestTolerance);
+		Assert.AreEqual(688.134f, TestSphere.SurfaceArea, TestTolerance);
+		Assert.AreEqual(1697.4f, TestSphere.Volume, TestTolerance);
+		Assert.AreEqual(7.4f * 7.4f, TestSphere.RadiusSquared, TestTolerance);
+	}
+
+	[Test]
+	public void StaticFactoryMethodsShouldCorrectlyConstruct() {
+		// https://www.wolframalpha.com/input?i=volume%2C+surface+area%2C+circumference%2C+diameter+of+sphere+with+radius+7.4
+
+		AssertToleranceEquals(TestSphere, SphereDescriptor.FromDiameter(14.8f), TestTolerance);
+		AssertToleranceEquals(TestSphere, SphereDescriptor.FromCircumference(46.4956f), TestTolerance);
+		AssertToleranceEquals(TestSphere, SphereDescriptor.FromSurfaceArea(688.134f), TestTolerance);
+		AssertToleranceEquals(TestSphere, SphereDescriptor.FromVolume(1697.4f), TestTolerance);
+		AssertToleranceEquals(TestSphere, SphereDescriptor.FromRadiusSquared(7.4f * 7.4f), TestTolerance);
+	}
+
+	[Test]
+	public void ShouldCorrectlyConvertToString() {
+		const string Expectation = "SphereDescriptor[Radius 7.4]";
+		Assert.AreEqual(Expectation, TestSphere.ToString("N1", CultureInfo.InvariantCulture));
+		Span<char> dest = stackalloc char[Expectation.Length * 2];
+		TestSphere.TryFormat(dest, out var numCharsWritten, "N1", CultureInfo.InvariantCulture);
+		Assert.AreEqual(Expectation.Length, numCharsWritten);
+		Assert.AreEqual(Expectation, new String(dest[..numCharsWritten]));
+	}
+
+	[Test]
+	public void ShouldCorrectlyParse() {
+		const string Input = "SphereDescriptor[Radius 7.4]";
+		Assert.AreEqual(TestSphere, SphereDescriptor.Parse(Input, CultureInfo.InvariantCulture));
+		Assert.AreEqual(true, SphereDescriptor.TryParse(Input, CultureInfo.InvariantCulture, out var result));
+		Assert.AreEqual(TestSphere, result);
+	}
+
+	[Test]
+	public void ShouldCorrectlyConvertToAndFromSpan() {
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<SphereDescriptor>();
+		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(TestSphere);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestSphere, TestSphere.Radius);
+	}
+
+	[Test]
+	public void ShouldCorrectlyInterpolate() {
+		Assert.AreEqual(new SphereDescriptor(10f), SphereDescriptor.Interpolate(new(5f), new(15f), 0.5f));
+		Assert.AreEqual(new SphereDescriptor(5f), SphereDescriptor.Interpolate(new(5f), new(15f), 0f));
+		Assert.AreEqual(new SphereDescriptor(15f), SphereDescriptor.Interpolate(new(5f), new(15f), 1f));
+		Assert.AreEqual(new SphereDescriptor(20f), SphereDescriptor.Interpolate(new(5f), new(15f), 1.5f));
+		Assert.AreEqual(new SphereDescriptor(0f), SphereDescriptor.Interpolate(new(5f), new(15f), -0.5f));
+	}
+
+	[Test]
+	public void ShouldCorrectlyCreateRandomObjects() {
+		const int NumIterations = 10_000;
+		
+		for (var i = 0; i < NumIterations; ++i) {
+			var val = SphereDescriptor.Random(new SphereDescriptor(10f), new SphereDescriptor(20f));
+			Assert.GreaterOrEqual(val.Radius, 10f);
+			Assert.Less(val.Radius, 20f);
+
+			val = SphereDescriptor.Random();
+			Assert.GreaterOrEqual(val.Radius, SphereDescriptor.DefaultRandomMin);
+			Assert.Less(val.Radius, SphereDescriptor.DefaultRandomMax);
+		}
+	}
+
 	[Test]
 	public void ShouldCorrectlyScale() {
 		AssertToleranceEquals(new SphereDescriptor(7.4f * 3f), new SphereDescriptor(7.4f).ScaledBy(3f), TestTolerance);
@@ -161,7 +241,7 @@ partial class SphereDescriptorTest {
 		AssertToleranceEquals((0f, -7.4f, 0f), TestSphere.PointClosestTo(new Ray((0f, -7.4f, 0f), Direction.Down)), TestTolerance);
 		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.PointClosestTo(new Ray((0f, 17.4f, 0f), Direction.Up)), TestTolerance);
 		AssertToleranceEquals((0f, -7.4f, 0f), TestSphere.PointClosestTo(new Ray((0f, -17.4f, 0f), Direction.Down)), TestTolerance);
-		
+
 		AssertToleranceEquals((0f, 0f, 0f), TestSphere.PointClosestTo(BoundedRay.FromStartPointAndVect((0f, 0f, 0f), Direction.Down * 100f)), TestTolerance);
 		AssertToleranceEquals((0f, 0f, 0f), TestSphere.PointClosestTo(BoundedRay.FromStartPointAndVect((0f, 7.4f, 0f), Direction.Down * 100f)), TestTolerance);
 		AssertToleranceEquals((0f, 0f, 0f), TestSphere.PointClosestTo(BoundedRay.FromStartPointAndVect((0f, -7.4f, 0f), Direction.Up * 100f)), TestTolerance);
@@ -172,7 +252,7 @@ partial class SphereDescriptorTest {
 		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.PointClosestTo(BoundedRay.FromStartPointAndVect((0f, 17.4f, 0f), Direction.Up * 100f)), TestTolerance);
 		AssertToleranceEquals((0f, -7.4f, 0f), TestSphere.PointClosestTo(BoundedRay.FromStartPointAndVect((0f, -17.4f, 0f), Direction.Down * 100f)), TestTolerance);
 		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.PointClosestTo(BoundedRay.FromStartPointAndVect((0f, 27.4f, 0f), Direction.Down * 9f)), TestTolerance);
-		
+
 		AssertToleranceEquals((0f, 0f, 0f), TestSphere.PointClosestTo(new BoundedRay(new Location(-1f, 0f, 0f), new Location(1f, 0f, 0f))), TestTolerance);
 		AssertToleranceEquals((-2f, 0f, 0f), TestSphere.PointClosestTo(new BoundedRay(new Location(-5f, 0f, 0f), new Location(-2f, 0f, 0f))), TestTolerance);
 		AssertToleranceEquals((-2f, 0f, 0f), TestSphere.PointClosestTo(new BoundedRay(new Location(-15f, 0f, 0f), new Location(-2f, 0f, 0f))), TestTolerance);
@@ -295,7 +375,7 @@ partial class SphereDescriptorTest {
 	[Test]
 	public void ShouldCorrectlyFindLineIntersections() {
 		ConvexShapeLineIntersection intersection;
-		
+
 		// Line
 		Assert.AreEqual(null, TestSphere.IntersectionWith(new Line(new Location(0f, 10f, 0f), Direction.Right)));
 
@@ -341,7 +421,7 @@ partial class SphereDescriptorTest {
 		AssertToleranceEquals((0f, 7.4f, 0f), intersection.First, TestTolerance);
 		Assert.IsFalse(intersection.Second.HasValue);
 
-		
+
 		// BoundedRay
 		Assert.AreEqual(null, TestSphere.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 10f, 0f), Direction.Right * 100f)));
 		Assert.AreEqual(null, TestSphere.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(10f, 10f, 0f), Direction.Right * 100f)));
@@ -519,7 +599,7 @@ partial class SphereDescriptorTest {
 	[Test]
 	public void ShouldCorrectlyBeSplitByPlanes() {
 		Assert.AreEqual(false, TestSphere.TrySplit(new Plane(Direction.Up, (0f, 10f, 0f)), out _, out _));
-		
+
 		Assert.AreEqual(true, new SphereDescriptor(10f).TrySplit(new Plane(Direction.Up, (0f, 5f, 0f)), out var circleCentrePoint, out var circleRadius));
 		Assert.AreEqual(8.66025448f, circleRadius, TestTolerance);
 		Assert.AreEqual(new Location(0f, 5f, 0f), circleCentrePoint);
@@ -666,7 +746,7 @@ partial class SphereDescriptorTest {
 			(1f, 1f, 1f),
 			Location.Origin
 		);
-		
+
 		AssertReflection(null, Direction.Left, (0f, 0f, TestSphere.Radius + LocalTestTolerance));
 		Assert.IsNull(TestSphere.ReflectionOf(new Ray((0f, TestSphere.Radius + LocalTestTolerance, 0f), Direction.Up)));
 		AssertToleranceEquals(new Ray((0f, TestSphere.Radius, 0f), Direction.Down), TestSphere.ReflectionOf(new Ray((0f, TestSphere.Radius - LocalTestTolerance, 0f), Direction.Up)), LocalTestTolerance);
