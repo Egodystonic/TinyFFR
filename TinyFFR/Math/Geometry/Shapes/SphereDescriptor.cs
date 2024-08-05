@@ -32,6 +32,11 @@ public readonly partial struct SphereDescriptor : IConvexShape<SphereDescriptor>
 	public static SphereDescriptor FromRadiusSquared(float radiusSquared) => new(MathF.Sqrt(radiusSquared));
 	#endregion
 
+	#region Random
+	public static SphereDescriptor Random() => new(RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax));
+	public static SphereDescriptor Random(SphereDescriptor minInclusive, SphereDescriptor maxExclusive) => new(RandomUtils.NextSingle(minInclusive.Radius, maxExclusive.Radius));
+	#endregion
+
 	#region Span Conversions
 	public static int SerializationByteSpanLength { get; } = sizeof(float);
 

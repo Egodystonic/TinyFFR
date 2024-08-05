@@ -37,6 +37,11 @@ public readonly partial struct Ray : ILineLike<Ray, BoundedRay, Ray>, IPrecomput
 		_direction = direction;
 	}
 
+	#region Random
+	public static Ray Random() => new(Location.Random(), Direction.Random());
+	public static Ray Random(Ray minInclusive, Ray maxExclusive) => new(Location.Random(minInclusive.StartPoint, maxExclusive.StartPoint), Direction.Random(minInclusive.Direction, maxExclusive.Direction));
+	#endregion
+
 	#region Span Conversions
 	public static int SerializationByteSpanLength { get; } = Location.SerializationByteSpanLength + Direction.SerializationByteSpanLength;
 

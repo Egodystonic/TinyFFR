@@ -24,35 +24,7 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 	}
 	BoundedRay IInvertible<BoundedRay>.Inverted => Flipped;
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static BoundedRay operator *(BoundedRay ray, float scalar) => ray.ScaledFromMiddleBy(scalar);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static BoundedRay operator *(float scalar, BoundedRay ray) => ray.ScaledFromMiddleBy(scalar);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static BoundedRay operator /(BoundedRay ray, float scalar) => ray.ScaledFromMiddleBy(1f / scalar);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	BoundedRay IScalable<BoundedRay>.ScaledBy(float scalar) => ScaledFromMiddleBy(scalar);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedRay ScaledFromStartBy(float scalar) => new(_startPoint, _vect.ScaledBy(scalar));
-	public BoundedRay ScaledFromMiddleBy(float scalar) {
-		var halfVect = _vect * 0.5f;
-		var midPoint = _startPoint + halfVect;
-		var scaledVect = _vect.ScaledBy(scalar);
-		var newStart = midPoint - halfVect.ScaledBy(scalar);
-		return new BoundedRay(newStart, newStart + scaledVect);
-	}
-	public BoundedRay ScaledFromEndBy(float scalar) {
-		var scaledVect = _vect.ScaledBy(scalar);
-		var newStart = (_startPoint + _vect) - scaledVect;
-		return new BoundedRay(newStart, scaledVect);
-	}
-	public BoundedRay ScaledAroundPivotDistanceBy(float scalar, float signedPivotDistance) {
-		var pivotPoint = UnboundedLocationAtDistance(signedPivotDistance);
-		var pivotToStartVect = -_vect.WithLength(signedPivotDistance);
-		var pivotToEndVect = _vect.WithLength(_vect.Length - signedPivotDistance);
-		return new BoundedRay(pivotPoint + pivotToStartVect * scalar, pivotPoint + pivotToEndVect * scalar);
-	}
-
+	#region With Methods
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay WithLength(float newLength) => new(_startPoint, _vect.WithLength(newLength));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -73,8 +45,30 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 	public BoundedRay WithMaxLength(float maxLength, float signedPivotDistance) => WithLength(MathF.Min(Length, maxLength), signedPivotDistance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay WithMinLength(float minLength, float signedPivotDistance) => WithLength(MathF.Max(Length, minLength), signedPivotDistance);
+	#endregion
 
+	#region Line-Like Methods
+	public bool DistanceIsWithinLineBounds(float signedDistanceFromStart) => signedDistanceFromStart >= 0f && signedDistanceFromStart * signedDistanceFromStart <= LengthSquared;
+	public float BindDistance(float signedDistanceFromStart) => Single.Clamp(signedDistanceFromStart, 0f, Length);
+	public Location BoundedLocationAtDistance(float signedDistanceFromStart) => UnboundedLocationAtDistance(BindDistance(signedDistanceFromStart));
+	public Location UnboundedLocationAtDistance(float signedDistanceFromStart) => _startPoint + _vect.WithLength(signedDistanceFromStart);
+	public Location? LocationAtDistanceOrNull(float signedDistanceFromStart) => DistanceIsWithinLineBounds(signedDistanceFromStart) ? UnboundedLocationAtDistance(signedDistanceFromStart) : null;
+	public float UnboundedDistanceAtPointClosestTo(Location point) => ToLine().DistanceAtPointClosestTo(point);
+	public float BoundedDistanceAtPointClosestTo(Location point) => PointClosestTo(point).DistanceFrom(StartPoint);
+	#endregion
 
+	#region Translation
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static BoundedRay operator +(BoundedRay ray, Vect v) => ray.MovedBy(v);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static BoundedRay operator +(Vect v, BoundedRay ray) => ray.MovedBy(v);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static BoundedRay operator -(BoundedRay ray, Vect v) => ray.MovedBy(-v);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay MovedBy(Vect v) => new(_startPoint + v, _vect);
+	#endregion
+
+	#region Rotation
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static BoundedRay operator *(BoundedRay ray, Rotation rot) => ray.RotatedAroundStartBy(rot); // We choose AroundStart as the "default" rotation because it keeps thing consistent with Ray
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -103,27 +97,40 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 	public BoundedRay RotatedAroundPoint(Rotation rotation, Location pivot) {
 		return new(pivot + (pivot >> StartPoint) * rotation, pivot + (pivot >> EndPoint) * rotation);
 	}
+	#endregion
 
+	#region Scaling
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static BoundedRay operator +(BoundedRay ray, Vect v) => ray.MovedBy(v);
+	public static BoundedRay operator *(BoundedRay ray, float scalar) => ray.ScaledFromMiddleBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static BoundedRay operator +(Vect v, BoundedRay ray) => ray.MovedBy(v);
+	public static BoundedRay operator *(float scalar, BoundedRay ray) => ray.ScaledFromMiddleBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static BoundedRay operator -(BoundedRay ray, Vect v) => ray.MovedBy(-v);
+	public static BoundedRay operator /(BoundedRay ray, float scalar) => ray.ScaledFromMiddleBy(1f / scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedRay MovedBy(Vect v) => new(_startPoint + v, _vect);
-
-
-	public static BoundedRay Interpolate(BoundedRay start, BoundedRay end, float distance) {
-		return new(
-			Location.Interpolate(start._startPoint, end._startPoint, distance),
-			Vect.Interpolate(start._vect, end._vect, distance)
-		);
+	BoundedRay IScalable<BoundedRay>.ScaledBy(float scalar) => ScaledFromMiddleBy(scalar);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public BoundedRay ScaledFromStartBy(float scalar) => new(_startPoint, _vect.ScaledBy(scalar));
+	public BoundedRay ScaledFromMiddleBy(float scalar) {
+		var halfVect = _vect * 0.5f;
+		var midPoint = _startPoint + halfVect;
+		var scaledVect = _vect.ScaledBy(scalar);
+		var newStart = midPoint - halfVect.ScaledBy(scalar);
+		return new BoundedRay(newStart, newStart + scaledVect);
 	}
-	public BoundedRay Clamp(BoundedRay min, BoundedRay max) => new(StartPoint.Clamp(min.StartPoint, max.StartPoint), EndPoint.Clamp(min.EndPoint, max.EndPoint));
-	public static BoundedRay Random() => new(Location.Random(), Location.Random());
-	public static BoundedRay Random(BoundedRay minInclusive, BoundedRay maxExclusive) => new(Location.Random(minInclusive.StartPoint, maxExclusive.StartPoint), Location.Random(minInclusive.EndPoint, maxExclusive.EndPoint));
+	public BoundedRay ScaledFromEndBy(float scalar) {
+		var scaledVect = _vect.ScaledBy(scalar);
+		var newStart = (_startPoint + _vect) - scaledVect;
+		return new BoundedRay(newStart, scaledVect);
+	}
+	public BoundedRay ScaledAroundPivotDistanceBy(float scalar, float signedPivotDistance) {
+		var pivotPoint = UnboundedLocationAtDistance(signedPivotDistance);
+		var pivotToStartVect = -_vect.WithLength(signedPivotDistance);
+		var pivotToEndVect = _vect.WithLength(_vect.Length - signedPivotDistance);
+		return new BoundedRay(pivotPoint + pivotToStartVect * scalar, pivotPoint + pivotToEndVect * scalar);
+	}
+	#endregion
 
+	#region Distance / Closest Point / Containment
 	public Location PointClosestTo(Location location) {
 		var vectCoefficient = Vector3.Dot((location - _startPoint).ToVector3(), _vect.ToVector3()) / LengthSquared;
 		return vectCoefficient switch {
@@ -154,7 +161,6 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(Location location, float lineThickness) => DistanceFrom(location) <= lineThickness;
 
-
 	public Location PointClosestTo(Line line) {
 		var intersectionDistance = ILineLike.CalculateUnboundedIntersectionDistanceOnThisLine(this, line);
 		return intersectionDistance != null ? BoundedLocationAtDistance(intersectionDistance.Value) : StartPoint;
@@ -180,14 +186,38 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 			return PointClosestTo(boundedRay.UnboundedLocationAtDistance(boundOtherDistance));
 		}
 	}
+	#endregion
 
-	public bool DistanceIsWithinLineBounds(float signedDistanceFromStart) => signedDistanceFromStart >= 0f && signedDistanceFromStart * signedDistanceFromStart <= LengthSquared;
-	public float BindDistance(float signedDistanceFromStart) => Single.Clamp(signedDistanceFromStart, 0f, Length);
-	public Location BoundedLocationAtDistance(float signedDistanceFromStart) => UnboundedLocationAtDistance(BindDistance(signedDistanceFromStart));
-	public Location UnboundedLocationAtDistance(float signedDistanceFromStart) => _startPoint + _vect.WithLength(signedDistanceFromStart);
-	public Location? LocationAtDistanceOrNull(float signedDistanceFromStart) => DistanceIsWithinLineBounds(signedDistanceFromStart) ? UnboundedLocationAtDistance(signedDistanceFromStart) : null;
-	public float UnboundedDistanceAtPointClosestTo(Location point) => ToLine().DistanceAtPointClosestTo(point);
-	public float BoundedDistanceAtPointClosestTo(Location point) => PointClosestTo(point).DistanceFrom(StartPoint);
+	#region Plane Intersection / Split / Incident Angle / Reflection / Distance / Closest Point
+	float? GetUnboundedPlaneIntersectionDistance(Plane plane) {
+		var similarityToNormal = plane.Normal.Dot(Direction);
+		if (similarityToNormal == 0f) return null; // Parallel with plane -- either infinite or zero answers. Return null either way
+
+		return (plane.PointClosestToOrigin - StartPoint).LengthWhenProjectedOnTo(plane.Normal) / similarityToNormal;
+	}
+
+	public Location? IntersectionWith(Plane plane) {
+		var distance = GetUnboundedPlaneIntersectionDistance(plane);
+		return distance >= 0f && distance <= Length ? UnboundedLocationAtDistance(distance.Value) : null; // Null means Plane parallel with line or outside line boundaries
+	}
+	public Location FastIntersectionWith(Plane plane) => UnboundedLocationAtDistance((plane.PointClosestToOrigin - StartPoint).LengthWhenProjectedOnTo(plane.Normal) / plane.Normal.Dot(Direction));
+
+	public bool IsIntersectedBy(Plane plane) {
+		var unboundedIntersectionDistance = GetUnboundedPlaneIntersectionDistance(plane);
+		return unboundedIntersectionDistance >= 0f && unboundedIntersectionDistance <= Length;
+	}
+
+	public Pair<BoundedRay, BoundedRay> FastSplitBy(Plane plane) {
+		var intersectionPoint = FastIntersectionWith(plane);
+		return new(new(StartPoint, intersectionPoint), new(intersectionPoint, EndPoint));
+	}
+	public Pair<BoundedRay, BoundedRay>? SplitBy(Plane plane) {
+		var intersectionPoint = IntersectionWith(plane);
+		return intersectionPoint == null ? null : new(new(StartPoint, intersectionPoint.Value), new(intersectionPoint.Value, EndPoint));
+	}
+
+	public Angle? IncidentAngleWith(Plane plane) => IsIntersectedBy(plane) ? plane.IncidentAngleWith(Direction) : null;
+	public Angle FastIncidentAngleWith(Plane plane) => plane.FastIncidentAngleWith(Direction);
 
 	public BoundedRay? ReflectedBy(Plane plane) {
 		var intersectionPoint = IntersectionWith(plane);
@@ -199,33 +229,15 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 		return new BoundedRay(intersectionPoint, Direction.FastReflectedBy(plane) * (Length - intersectionPoint.DistanceFrom(StartPoint)));
 	}
 
-	float? GetUnboundedPlaneIntersectionDistance(Plane plane) {
-		var similarityToNormal = plane.Normal.Dot(Direction);
-		if (similarityToNormal == 0f) return null; // Parallel with plane -- either infinite or zero answers. Return null either way
-
-		return (plane.PointClosestToOrigin - StartPoint).LengthWhenProjectedOnTo(plane.Normal) / similarityToNormal;
+	public Location PointClosestTo(Plane plane) {
+		var unboundedDistance = GetUnboundedPlaneIntersectionDistance(plane);
+		return BoundedLocationAtDistance(unboundedDistance ?? 0f); // If unboundedDistance is null we're parallel so the StartPoint is as close as any other point
 	}
-
-	public Angle? IncidentAngleWith(Plane plane) => IsIntersectedBy(plane) ? plane.IncidentAngleWith(Direction) : null;
-	public Angle FastIncidentAngleWith(Plane plane) => plane.FastIncidentAngleWith(Direction);
-
-	public Location? IntersectionWith(Plane plane) {
-		var distance = GetUnboundedPlaneIntersectionDistance(plane);
-		return distance >= 0f && distance <= Length ? UnboundedLocationAtDistance(distance.Value) : null; // Null means Plane parallel with line or outside line boundaries
-	}
-	public Pair<BoundedRay, BoundedRay>? SplitBy(Plane plane) {
-		var intersectionPoint = IntersectionWith(plane);
-		return intersectionPoint == null ? null : new(new(StartPoint, intersectionPoint.Value), new(intersectionPoint.Value, EndPoint));
-	}
-	public Location FastIntersectionWith(Plane plane) => UnboundedLocationAtDistance((plane.PointClosestToOrigin - StartPoint).LengthWhenProjectedOnTo(plane.Normal) / plane.Normal.Dot(Direction));
-	public Pair<BoundedRay, BoundedRay> FastSplitBy(Plane plane) {
-		var intersectionPoint = FastIntersectionWith(plane);
-		return new(new(StartPoint, intersectionPoint), new(intersectionPoint, EndPoint));
-	}
-
-	public bool IsIntersectedBy(Plane plane) {
-		var unboundedIntersectionDistance = GetUnboundedPlaneIntersectionDistance(plane);
-		return unboundedIntersectionDistance >= 0f && unboundedIntersectionDistance <= Length;
+	public Location ClosestPointOn(Plane plane) {
+		var unboundedDistance = GetUnboundedPlaneIntersectionDistance(plane);
+		var closestPointOnLine = BoundedLocationAtDistance(unboundedDistance ?? 0f);
+		if (unboundedDistance >= 0f && unboundedDistance <= Length) return closestPointOnLine; // Actual intersection
+		else return plane.PointClosestTo(closestPointOnLine);
 	}
 
 	public float SignedDistanceFrom(Plane plane) {
@@ -246,29 +258,12 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 			_ => PlaneObjectRelationship.PlaneIntersectsObject
 		};
 	}
+	#endregion
 
-	// Note: Projection treats this like two points (start/end), whereas parallelize/orthogonalize treat it as a start-point + vect; hence the ostensible discrepancy
-	// That being said, I feel like projection vs parallelization/orthogonalization are subtly different things even if they're thought of in a similar vein; hence why I chose it this way
-	public BoundedRay ProjectedOnTo(Plane plane) => new(StartPoint.ClosestPointOn(plane), EndPoint.ClosestPointOn(plane)); // TODO in xmldoc note that this does not preserve length, returns a zero-length ray if orthogonal to plane
-	BoundedRay? IProjectable<BoundedRay, Plane>.ProjectedOnTo(Plane plane) => ProjectedOnTo(plane);
-	BoundedRay IProjectable<BoundedRay, Plane>.FastProjectedOnTo(Plane plane) => ProjectedOnTo(plane);
-
-	public Location PointClosestTo(Plane plane) {
-		var unboundedDistance = GetUnboundedPlaneIntersectionDistance(plane);
-		return BoundedLocationAtDistance(unboundedDistance ?? 0f); // If unboundedDistance is null we're parallel so the StartPoint is as close as any other point
-	}
-	public Location ClosestPointOn(Plane plane) {
-		var unboundedDistance = GetUnboundedPlaneIntersectionDistance(plane);
-		var closestPointOnLine = BoundedLocationAtDistance(unboundedDistance ?? 0f);
-		if (unboundedDistance >= 0f && unboundedDistance <= Length) return closestPointOnLine; // Actual intersection
-		else return plane.PointClosestTo(closestPointOnLine);
-	}
-
+	#region Parallelization / Orthogonalization / Projection
 	// TODO xmldoc for all Fast... variants here make it clear that as well direction not being None or ortho/parallel etc, StartToEndVect can not be zero
 	public BoundedRay? ParallelizedWith(Direction direction) => ParallelizedAroundStartWith(direction);
 	public BoundedRay FastParallelizedWith(Direction direction) => FastParallelizedAroundStartWith(direction);
-	public BoundedRay? OrthogonalizedAgainst(Direction direction) => OrthogonalizedAroundStartAgainst(direction);
-	public BoundedRay FastOrthogonalizedAgainst(Direction direction) => FastOrthogonalizedAroundStartAgainst(direction);
 
 	public BoundedRay? ParallelizedAroundStartWith(Direction direction) {
 		var newVect = StartToEndVect.ParallelizedWith(direction);
@@ -296,6 +291,9 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 	}
 	public BoundedRay FastParallelizedAroundPivotDistanceWith(Direction direction, float signedPivotDistance) => RotatedAroundPoint(Direction >> Direction.FastParallelizedWith(direction), UnboundedLocationAtDistance(signedPivotDistance));
 
+	public BoundedRay? OrthogonalizedAgainst(Direction direction) => OrthogonalizedAroundStartAgainst(direction);
+	public BoundedRay FastOrthogonalizedAgainst(Direction direction) => FastOrthogonalizedAroundStartAgainst(direction);
+
 	public BoundedRay? OrthogonalizedAroundStartAgainst(Direction direction) {
 		var newVect = StartToEndVect.OrthogonalizedAgainst(direction);
 		return newVect == null ? null : FromStartPointAndVect(StartPoint, newVect.Value);
@@ -321,6 +319,7 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 		return FromStartPointAndVect(EndPoint - newVect, newVect);
 	}
 	public BoundedRay FastOrthogonalizedAroundPivotDistanceAgainst(Direction direction, float signedPivotDistance) => RotatedAroundPoint(Direction >> Direction.FastOrthogonalizedAgainst(direction), UnboundedLocationAtDistance(signedPivotDistance));
+
 
 	public BoundedRay? ParallelizedAroundStartWith(Line line) => ParallelizedAroundStartWith(line.Direction);
 	public BoundedRay? ParallelizedAroundMiddleWith(Line line) => ParallelizedAroundMiddleWith(line.Direction);
@@ -371,6 +370,7 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 	public BoundedRay FastOrthogonalizedAroundMiddleAgainst(BoundedRay ray) => FastOrthogonalizedAroundMiddleAgainst(ray.Direction);
 	public BoundedRay FastOrthogonalizedAroundEndAgainst(BoundedRay ray) => FastOrthogonalizedAroundEndAgainst(ray.Direction);
 	public BoundedRay FastOrthogonalizedAroundPivotDistanceAgainst(BoundedRay ray, float signedPivotDistance) => FastOrthogonalizedAroundPivotDistanceAgainst(ray.Direction, signedPivotDistance);
+
 
 	// TODO in xmldoc note that these preserve length or returns null if orthogonal/parallel to the plane
 	public BoundedRay? ParallelizedWith(Plane plane) => ParallelizedAroundStartWith(plane);
@@ -432,4 +432,21 @@ partial struct BoundedRay : IScalable<BoundedRay>, ILengthAdjustable<BoundedRay>
 	public BoundedRay FastOrthogonalizedAroundMiddleAgainst(Plane plane) => RotatedAroundMiddleBy(Direction >> Direction.FastOrthogonalizedAgainst(plane));
 	public BoundedRay FastOrthogonalizedAroundEndAgainst(Plane plane) => new(EndPoint - StartToEndVect.FastOrthogonalizedAgainst(plane), EndPoint);
 	public BoundedRay FastOrthogonalizedAroundPivotDistanceAgainst(Plane plane, float signedPivotDistance) => RotatedAroundPoint(Direction >> Direction.FastParallelizedWith(plane), UnboundedLocationAtDistance(signedPivotDistance));
+
+	// Note: Projection treats this like two points (start/end), whereas parallelize/orthogonalize treat it as a start-point + vect; hence the ostensible discrepancy
+	// That being said, I feel like projection vs parallelization/orthogonalization are subtly different things even if they're thought of in a similar vein; hence why I chose it this way
+	public BoundedRay ProjectedOnTo(Plane plane) => new(StartPoint.ClosestPointOn(plane), EndPoint.ClosestPointOn(plane)); // TODO in xmldoc note that this does not preserve length, returns a zero-length ray if orthogonal to plane
+	BoundedRay? IProjectable<BoundedRay, Plane>.ProjectedOnTo(Plane plane) => ProjectedOnTo(plane);
+	BoundedRay IProjectable<BoundedRay, Plane>.FastProjectedOnTo(Plane plane) => ProjectedOnTo(plane);
+	#endregion
+
+	#region Clamping and Interpolation
+	public static BoundedRay Interpolate(BoundedRay start, BoundedRay end, float distance) {
+		return new(
+			Location.Interpolate(start._startPoint, end._startPoint, distance),
+			Vect.Interpolate(start._vect, end._vect, distance)
+		);
+	}
+	public BoundedRay Clamp(BoundedRay min, BoundedRay max) => new(StartPoint.Clamp(min.StartPoint, max.StartPoint), EndPoint.Clamp(min.EndPoint, max.EndPoint));
+	#endregion
 }

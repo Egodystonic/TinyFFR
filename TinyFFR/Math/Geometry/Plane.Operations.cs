@@ -21,7 +21,7 @@ partial struct Plane :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Plane operator -(Plane operand) => operand.Flipped;
 
-
+	#region Translation
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Plane operator +(Plane plane, Vect v) => plane.MovedBy(v);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -29,8 +29,9 @@ partial struct Plane :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Plane operator -(Plane plane, Vect v) => plane.MovedBy(-v);
 	public Plane MovedBy(Vect v) => new(Normal, PointClosestToOrigin + v);
-	
+	#endregion
 
+	#region Rotation
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Plane operator *(Plane plane, (Location Pivot, Rotation Rotation) rotTuple) => plane.RotatedAroundPoint(rotTuple.Rotation, rotTuple.Pivot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -40,7 +41,9 @@ partial struct Plane :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Plane operator *((Rotation Rotation, Location Pivot) rotTuple, Plane plane) => plane.RotatedAroundPoint(rotTuple.Rotation, rotTuple.Pivot);
 	public Plane RotatedAroundPoint(Rotation rot, Location pivotPoint) => new(Normal * rot, PointClosestTo(pivotPoint) * (pivotPoint, rot));
+	#endregion
 
+	#region Angle Measurement
 	//0 to 1, where 1 is a direction completely perpendicular to the plane and 0 is completely parallel; is also the cosine of the angle formed with the normal
 	float OrthogonalityWith(Direction direction) => MathF.Abs(Normal.Dot(direction));
 
@@ -57,6 +60,18 @@ partial struct Plane :
 	public Angle AngleTo(Vect vect) => AngleTo(vect.Direction);
 	public Angle SignedAngleTo(Direction direction) => Angle.FromRadians(MathF.Asin(Normal.Dot(direction)));
 	public Angle SignedAngleTo(Vect vect) => SignedAngleTo(vect.Direction);
+	#endregion
+
+	#region Reflection / Incident Angle Measurement
+	public Angle? IncidentAngleWith(Direction direction) {
+		var perpendicularity = OrthogonalityWith(direction);
+		if (perpendicularity == 0f) return null;
+		return Angle.FromRadians(MathF.Acos(perpendicularity));
+	}
+	public Angle FastIncidentAngleWith(Direction direction) => Angle.FromRadians(MathF.Acos(OrthogonalityWith(direction)));
+	public Angle? IncidentAngleWith(Vect vect) => IncidentAngleWith(vect.Direction);
+	public Angle FastIncidentAngleWith(Vect vect) => FastIncidentAngleWith(vect.Direction);
+
 	public Direction? ReflectionOf(Direction direction) {
 		if (direction.IsParallelTo(this)) return null;
 		return FastReflectionOf(direction);
@@ -71,16 +86,9 @@ partial struct Plane :
 	public Vect FastReflectionOf(Vect vect) { // TODO explain in XML that this returns the same direction if the input is parallel to the plane (this is okay as it's continuous across the whole range, so is the expected answer, just need to note it)
 		return Vect.FromVector3(-2f * Vector3.Dot(Normal.ToVector3(), vect.ToVector3()) * Normal.ToVector3() + vect.ToVector3());
 	}
-	public Angle? IncidentAngleWith(Direction direction) {
-		var perpendicularity = OrthogonalityWith(direction);
-		if (perpendicularity == 0f) return null;
-		return Angle.FromRadians(MathF.Acos(perpendicularity));
-	}
-	public Angle FastIncidentAngleWith(Direction direction) => Angle.FromRadians(MathF.Acos(OrthogonalityWith(direction)));
-	public Angle? IncidentAngleWith(Vect vect) => IncidentAngleWith(vect.Direction);
-	public Angle FastIncidentAngleWith(Vect vect) => FastIncidentAngleWith(vect.Direction);
-	public Direction? ParallelizationOf(Direction direction) => direction.OrthogonalizedAgainst(Normal);
-	public Direction FastParallelizationOf(Direction direction) => direction.FastOrthogonalizedAgainst(Normal);
+	#endregion
+
+	#region Parallelization / Orthogonalization / Projection
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsParallelTo(Direction direction) => Normal.IsOrthogonalTo(direction);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -91,6 +99,17 @@ partial struct Plane :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsApproximatelyParallelTo(Vect vect) => IsApproximatelyParallelTo(vect, DefaultParallelOrthogonalTestApproximationDegrees);
 	public bool IsApproximatelyParallelTo(Vect vect, Angle tolerance) => vect != Vect.Zero && AngleTo(vect).Equals(Angle.Zero, tolerance);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction? ParallelizationOf(Direction direction) => direction.OrthogonalizedAgainst(Normal);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction FastParallelizationOf(Direction direction) => direction.FastOrthogonalizedAgainst(Normal);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect? ParallelizationOf(Vect vect) => vect.OrthogonalizedAgainst(Normal);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect FastParallelizationOf(Vect vect) => vect.FastOrthogonalizedAgainst(Normal); // TODO in xmldoc mention that length will be 0 if this is perpendicular. NOT undefined
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsOrthogonalTo(Direction direction) => Normal.IsParallelTo(direction);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -102,6 +121,22 @@ partial struct Plane :
 	public bool IsApproximatelyOrthogonalTo(Vect vect) => IsApproximatelyOrthogonalTo(vect, DefaultParallelOrthogonalTestApproximationDegrees);
 	public bool IsApproximatelyOrthogonalTo(Vect vect, Angle tolerance) => vect != Vect.Zero && AngleTo(vect).Equals(Angle.QuarterCircle, tolerance);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction? OrthogonalizationOf(Direction direction) => direction.ParallelizedWith(Normal);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction FastOrthogonalizationOf(Direction direction) => direction.FastParallelizedWith(Normal);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect? OrthogonalizationOf(Vect vect) => vect.ParallelizedWith(Normal);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect FastOrthogonalizationOf(Vect vect) => vect.FastParallelizedWith(Normal);
+
+	public Vect ProjectionOf(Vect vect) => vect - vect.ProjectedOnTo(Normal); // TODO in xmldoc mention that length will be 0 if this is perpendicular
+	Vect? IProjectionTarget<Vect>.ProjectionOf(Vect vect) => ProjectionOf(vect);
+	Vect IProjectionTarget<Vect>.FastProjectionOf(Vect vect) => ProjectionOf(vect);
+	#endregion
+
+	#region Distance / Closest Point
 	public Location PointClosestTo(Location location) => location - PointClosestToOrigin.VectTo(location).ProjectedOnTo(Normal);
 	public float SignedDistanceFrom(Location location) => Vector3.Dot(location.ToVector3(), _normal) - _smallestDistanceFromOriginAlongNormal; // TODO xmldoc positive means normal faces towards, etc
 	public float DistanceFrom(Location location) => MathF.Abs(SignedDistanceFrom(location));
@@ -112,6 +147,12 @@ partial struct Plane :
 	public float SignedDistanceFromOrigin() => -_smallestDistanceFromOriginAlongNormal;
 	public float DistanceFromOrigin() => MathF.Abs(SignedDistanceFromOrigin());
 
+	// TODO xmldoc make it clear that these will almost always be 0
+	public float DistanceFrom(Plane other) => Normal.IsParallelTo(other.Normal) ? PointClosestToOrigin.DistanceFrom(other.PointClosestToOrigin) : 0f;
+	public float DistanceSquaredFrom(Plane other) => Normal.IsParallelTo(other.Normal) ? PointClosestToOrigin.DistanceSquaredFrom(other.PointClosestToOrigin) : 0f;
+	#endregion
+
+	#region Relationship / Containment
 	// TODO in Xml make it clear that "facing towards" means the normal is pointing out of this side of the plane; and that points on the plane (within the thickness value) will return false
 	// Implementation note: We use a plane thickness by default because relying on the signed distance being exactly 0 for anything other than axis-aligned planes is pretty much stochastic
 	// due to FP inaccuracy. Even for axis-aligned ones it's still pretty bad, but is possibly more consistent when moving around on the surface of the plane. In these cases, if users
@@ -128,11 +169,9 @@ partial struct Plane :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(Location location) => Contains(location, DefaultPlaneThickness);
 	public bool Contains(Location location, float planeThickness) => DistanceFrom(location) <= planeThickness;
+	#endregion
 
-	// TODO xmldoc make it clear that these will almost always be 0
-	public float DistanceFrom(Plane other) => Normal.IsParallelTo(other.Normal) ? PointClosestToOrigin.DistanceFrom(other.PointClosestToOrigin) : 0f;
-	public float DistanceSquaredFrom(Plane other) => Normal.IsParallelTo(other.Normal) ? PointClosestToOrigin.DistanceSquaredFrom(other.PointClosestToOrigin) : 0f;
-	
+	#region Intersection
 	public bool IsIntersectedBy(Plane other) => Vector3.Cross(_normal, other._normal).LengthSquared() != 0f;
 	public Line? IntersectionWith(Plane other) {
 		static (float A, float B) FindNonZeroComponents(float thisA, float thisB, float thisCoefficient, float otherA, float otherB, float otherCoefficient) {
@@ -158,41 +197,27 @@ partial struct Plane :
 		else if (dirYAbs > dirZAbs) goto calculateUsingZeroY;
 		else goto calculateUsingZeroZ;
 
-		calculateUsingZeroX: {
+		calculateUsingZeroX:
+		{
 			var (y, z) = FindNonZeroComponents(_normal.Y, _normal.Z, _smallestDistanceFromOriginAlongNormal, other._normal.Y, other._normal.Z, other._smallestDistanceFromOriginAlongNormal);
 			return new Line((0f, y, z), Direction.FromVector3(lineDirection));
 		}
 
-		calculateUsingZeroY: {
+		calculateUsingZeroY:
+		{
 			var (x, z) = FindNonZeroComponents(_normal.X, _normal.Z, _smallestDistanceFromOriginAlongNormal, other._normal.X, other._normal.Z, other._smallestDistanceFromOriginAlongNormal);
 			return new Line((x, 0f, z), Direction.FromVector3(lineDirection));
 		}
 
-		calculateUsingZeroZ: {
+		calculateUsingZeroZ:
+		{
 			var (x, y) = FindNonZeroComponents(_normal.X, _normal.Y, _smallestDistanceFromOriginAlongNormal, other._normal.X, other._normal.Y, other._smallestDistanceFromOriginAlongNormal);
 			return new Line((x, y, 0f), Direction.FromVector3(lineDirection));
 		}
 	}
+	#endregion
 
-	public Vect ProjectionOf(Vect vect) => vect - vect.ProjectedOnTo(Normal); // TODO in xmldoc mention that length will be 0 if this is perpendicular
-	Vect? IProjectionTarget<Vect>.ProjectionOf(Vect vect) => ProjectionOf(vect);
-	Vect IProjectionTarget<Vect>.FastProjectionOf(Vect vect) => ProjectionOf(vect);
-
-	public Direction? OrthogonalizationOf(Direction direction) => direction.ParallelizedWith(Normal);
-	public Direction FastOrthogonalizationOf(Direction direction) => direction.FastParallelizedWith(Normal);
-
-	public Vect? ParallelizationOf(Vect vect) => vect.OrthogonalizedAgainst(Normal);
-	public Vect FastParallelizationOf(Vect vect) => vect.FastOrthogonalizedAgainst(Normal); // TODO in xmldoc mention that length will be 0 if this is perpendicular. NOT undefined
-
-	public Vect? OrthogonalizationOf(Vect vect) => vect.ParallelizedWith(Normal);
-	public Vect FastOrthogonalizationOf(Vect vect) => vect.FastParallelizedWith(Normal);
-
-
-	public PlaneObjectRelationship RelationshipTo<TGeo>(TGeo element) where TGeo : IRelatable<Plane, PlaneObjectRelationship> => element.RelationshipTo(this);
-	public bool IsIntersectedBy<TGeo>(TGeo element) where TGeo : IIntersectable<Plane> => element.IsIntersectedBy(this);
-	public Location? IntersectionWith<TGeo>(TGeo element) where TGeo : IIntersectionDeterminable<Plane, Location> => element.IntersectionWith(this);
-
-
+	#region Clamping and Interpolation
 	public static Plane Interpolate(Plane start, Plane end, float distance) {
 		return new(
 			Direction.Interpolate(start.Normal, end.Normal, distance),
@@ -213,9 +238,9 @@ partial struct Plane :
 			Location.Interpolate(start.PointClosestToOrigin, end.PointClosestToOrigin, distance)
 		);
 	}
-	public static Plane Random() => new(Direction.Random(), Location.Random());
-	public static Plane Random(Plane minInclusive, Plane maxExclusive) => new(Direction.Random(minInclusive.Normal, maxExclusive.Normal), Location.Random(minInclusive.PointClosestToOrigin, maxExclusive.PointClosestToOrigin));
+	#endregion
 
+	#region Dimension Conversion
 	// TODO xmldoc that this converter only works for the plane it was generated for
 	public readonly struct DimensionConverter {
 		public Direction XBasis { get; }
@@ -283,4 +308,5 @@ partial struct Plane :
 	public XYPair<float> ProjectionTo2DOf(Location location) => CreateDimensionConverter().Convert(location);
 	public Location HolographTo3DOf(XYPair<float> xyPair) => CreateDimensionConverter().Convert(xyPair);
 	public Location HolographTo3DOf(XYPair<float> xyPair, float zDimension) => CreateDimensionConverter().Convert(xyPair, zDimension);
+	#endregion
 }

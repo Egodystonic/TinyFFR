@@ -12,17 +12,11 @@ partial struct Location :
 	ISubtractionOperators<Location, Location, Vect>,
 	IPointRotatable<Location>,
 	IDistanceMeasurable<Location, Location> {
-	internal const float DefaultRandomRange = 100f;
 
-	public float this[Axis axis] => axis switch {
-		Axis.X => X,
-		Axis.Y => Y,
-		Axis.Z => Z,
-		_ => throw new ArgumentOutOfRangeException(nameof(axis), axis, $"{nameof(Axis)} must not be anything except {nameof(Axis.X)}, {nameof(Axis.Y)} or {nameof(Axis.Z)}.")
-	};
-	public XYPair<float> this[Axis first, Axis second] => new(this[first], this[second]);
-	public Location this[Axis first, Axis second, Axis third] => new(this[first], this[second], this[third]);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect AsVect() => (Vect) this;
 
+	#region Addition/Subtraction/Move
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Location operator +(Location locationOperand, Vect vectOperand) => locationOperand.MovedBy(vectOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -31,9 +25,9 @@ partial struct Location :
 	public static Location operator -(Location locationOperand, Vect vectOperand) => locationOperand.MovedBy(-vectOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location MovedBy(Vect vect) => new(AsVector4 + vect.AsVector4);
+	#endregion
 
-
-
+	#region Interactions w/ Location
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator >>(Location start, Location end) => start.VectTo(end);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -48,15 +42,6 @@ partial struct Location :
 	public Direction DirectionFrom(Location otherLocation) => VectFrom(otherLocation).Direction;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction DirectionTo(Location otherLocation) => VectTo(otherLocation).Direction;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect AsVect() => (Vect) this;
-
-	public static Location operator *(Location locationToRotate, (Location Pivot, Rotation Rotation) pivotRotationTuple) => locationToRotate.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
-	public static Location operator *((Location Pivot, Rotation Rotation) pivotRotationTuple, Location locationToRotate) => locationToRotate.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
-	public static Location operator *(Location locationToRotate, (Rotation Rotation, Location Pivot) pivotRotationTuple) => locationToRotate.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
-	public static Location operator *((Rotation Rotation, Location Pivot) pivotRotationTuple, Location locationToRotate) => locationToRotate.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
-	public Location RotatedAroundPoint(Rotation rotation, Location pivot) => pivot + VectFrom(pivot) * rotation;
-
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(Location otherLocation) => VectFrom(otherLocation).Length;
@@ -66,21 +51,21 @@ partial struct Location :
 	public float DistanceFromOrigin() => ((Vect) this).Length;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFromOrigin() => ((Vect) this).LengthSquared;
+	#endregion
 
+	#region Rotation
+	public static Location operator *(Location locationToRotate, (Location Pivot, Rotation Rotation) pivotRotationTuple) => locationToRotate.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public static Location operator *((Location Pivot, Rotation Rotation) pivotRotationTuple, Location locationToRotate) => locationToRotate.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public static Location operator *(Location locationToRotate, (Rotation Rotation, Location Pivot) pivotRotationTuple) => locationToRotate.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public static Location operator *((Rotation Rotation, Location Pivot) pivotRotationTuple, Location locationToRotate) => locationToRotate.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public Location RotatedAroundPoint(Rotation rotation, Location pivot) => pivot + VectFrom(pivot) * rotation;
+	#endregion
+
+	#region Clamping and Interpolation
 	public Location Clamp(Location min, Location max) => ClosestPointOn(new BoundedRay(min, max));
 
 	public static Location Interpolate(Location start, Location end, float distance) {
 		return start + (end - start) * distance;
 	}
-
-	public static Location Random() {
-		return FromVector3(new Vector3(
-			RandomUtils.NextSingleNegOneToOneInclusive(),
-			RandomUtils.NextSingleNegOneToOneInclusive(),
-			RandomUtils.NextSingleNegOneToOneInclusive()
-		) * DefaultRandomRange);
-	}
-	public static Location Random(Location minInclusive, Location maxExclusive) {
-		return minInclusive + ((minInclusive >> maxExclusive) * RandomUtils.NextSingle());
-	}
+	#endregion
 }

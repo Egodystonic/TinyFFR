@@ -21,7 +21,30 @@ public readonly partial struct Ray {
 	public static Ray operator -(Ray operand) => operand.Flipped;
 	Ray IInvertible<Ray>.Inverted => Flipped;
 
+	#region Line-Like Methods
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool DistanceIsWithinLineBounds(float signedDistanceFromStart) => signedDistanceFromStart >= 0f;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float BindDistance(float signedDistanceFromStart) => MathF.Max(0f, signedDistanceFromStart);
+	public Location BoundedLocationAtDistance(float signedDistanceFromStart) => UnboundedLocationAtDistance(BindDistance(signedDistanceFromStart));
+	public Location UnboundedLocationAtDistance(float signedDistanceFromStart) => StartPoint + Direction * signedDistanceFromStart;
+	public Location? LocationAtDistanceOrNull(float signedDistanceFromStart) => DistanceIsWithinLineBounds(signedDistanceFromStart) ? UnboundedLocationAtDistance(signedDistanceFromStart) : null;
+	public float UnboundedDistanceAtPointClosestTo(Location point) => ToLine().DistanceAtPointClosestTo(point);
+	public float BoundedDistanceAtPointClosestTo(Location point) => PointClosestTo(point).DistanceFrom(StartPoint);
+	#endregion
 
+	#region Translation
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Ray operator +(Ray ray, Vect v) => ray.MovedBy(v);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Ray operator -(Ray ray, Vect v) => ray.MovedBy(-v);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Ray operator +(Vect v, Ray ray) => ray.MovedBy(v);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray MovedBy(Vect v) => new(StartPoint + v, Direction);
+	#endregion
+
+	#region Rotation
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Ray operator *(Ray ray, Rotation rot) => ray.RotatedBy(rot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -42,38 +65,9 @@ public readonly partial struct Ray {
 		var rotatedRay = boundedRay.RotatedAroundPoint(rot, pivot);
 		return new Ray(rotatedRay.StartPoint, Direction * rot);
 	}
+	#endregion
 
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Ray operator +(Ray ray, Vect v) => ray.MovedBy(v);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Ray operator -(Ray ray, Vect v) => ray.MovedBy(-v);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Ray operator +(Vect v, Ray ray) => ray.MovedBy(v);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray MovedBy(Vect v) => new(StartPoint + v, Direction);
-
-
-	public static Ray Interpolate(Ray start, Ray end, float distance) {
-		return new(
-			Location.Interpolate(start.StartPoint, end.StartPoint, distance),
-			Direction.Interpolate(start.Direction, end.Direction, distance)
-		);
-	}
-	public Ray Clamp(Ray min, Ray max) => new(StartPoint.Clamp(min.StartPoint, max.StartPoint), Direction.Clamp(min.Direction, max.Direction));
-	public static Rotation CreateInterpolationPrecomputation(Ray start, Ray end) {
-		return Direction.CreateInterpolationPrecomputation(start.Direction, end.Direction);
-	}
-	public static Ray InterpolateUsingPrecomputation(Ray start, Ray end, Rotation precomputation, float distance) {
-		return new(
-			Location.Interpolate(start.StartPoint, end.StartPoint, distance),
-			Direction.InterpolateUsingPrecomputation(start.Direction, end.Direction, precomputation, distance)
-		);
-	}
-	public static Ray Random() => new(Location.Random(), Direction.Random());
-	public static Ray Random(Ray minInclusive, Ray maxExclusive) => new(Location.Random(minInclusive.StartPoint, maxExclusive.StartPoint), Direction.Random(minInclusive.Direction, maxExclusive.Direction));
-
-
+	#region Distance / Closest Point / Containment
 	public Location PointClosestTo(Location location) {
 		var distance = Vector3.Dot((location - StartPoint).ToVector3(), Direction.ToVector3());
 		return distance switch {
@@ -117,27 +111,9 @@ public readonly partial struct Ray {
 		else if (!boundedRay.DistanceIsWithinLineBounds(intersectionDistances.Value.OtherDistance)) return PointClosestTo(boundedRay.EndPoint);
 		else return BoundedLocationAtDistance(intersectionDistances.Value.ThisDistance);
 	}
+	#endregion
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool DistanceIsWithinLineBounds(float signedDistanceFromStart) => signedDistanceFromStart >= 0f;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float BindDistance(float signedDistanceFromStart) => MathF.Max(0f, signedDistanceFromStart);
-	public Location BoundedLocationAtDistance(float signedDistanceFromStart) => UnboundedLocationAtDistance(BindDistance(signedDistanceFromStart));
-	public Location UnboundedLocationAtDistance(float signedDistanceFromStart) => StartPoint + Direction * signedDistanceFromStart;
-	public Location? LocationAtDistanceOrNull(float signedDistanceFromStart) => DistanceIsWithinLineBounds(signedDistanceFromStart) ? UnboundedLocationAtDistance(signedDistanceFromStart) : null;
-	public float UnboundedDistanceAtPointClosestTo(Location point) => ToLine().DistanceAtPointClosestTo(point);
-	public float BoundedDistanceAtPointClosestTo(Location point) => PointClosestTo(point).DistanceFrom(StartPoint);
-
-	public Ray? ReflectedBy(Plane plane) {
-		var intersectionPoint = IntersectionWith(plane);
-		if (intersectionPoint == null) return null;
-		return new Ray(intersectionPoint.Value, Direction.FastReflectedBy(plane));
-	}
-	public Ray FastReflectedBy(Plane plane) => new(FastIntersectionWith(plane), Direction.FastReflectedBy(plane));
-
-	public Angle? IncidentAngleWith(Plane plane) => IsIntersectedBy(plane) ? plane.IncidentAngleWith(Direction) : null;
-	public Angle FastIncidentAngleWith(Plane plane) => plane.FastIncidentAngleWith(Direction);
-
+	#region Plane Intersection / Split / Incident Angle / Reflection / Distance / Closest Point
 	float? GetUnboundedPlaneIntersectionDistance(Plane plane) {
 		var similarityToNormal = plane.Normal.Dot(Direction);
 		if (similarityToNormal == 0f) return null; // Parallel with plane -- either infinite or zero answers. Return null either way
@@ -149,17 +125,28 @@ public readonly partial struct Ray {
 		var distance = GetUnboundedPlaneIntersectionDistance(plane);
 		return distance >= 0f ? UnboundedLocationAtDistance(distance.Value) : null; // Null means Plane behind ray or parallel with ray
 	}
+	public Location FastIntersectionWith(Plane plane) => UnboundedLocationAtDistance((plane.PointClosestToOrigin - StartPoint).LengthWhenProjectedOnTo(plane.Normal) / plane.Normal.Dot(Direction));
+	
+	public bool IsIntersectedBy(Plane plane) => GetUnboundedPlaneIntersectionDistance(plane) >= 0f;
+
 	public Pair<BoundedRay, Ray>? SplitBy(Plane plane) {
 		var intersectionPoint = IntersectionWith(plane);
 		return intersectionPoint == null ? null : new(new(StartPoint, intersectionPoint.Value), new(intersectionPoint.Value, Direction));
 	}
-	public Location FastIntersectionWith(Plane plane) => UnboundedLocationAtDistance((plane.PointClosestToOrigin - StartPoint).LengthWhenProjectedOnTo(plane.Normal) / plane.Normal.Dot(Direction));
 	public Pair<BoundedRay, Ray> FastSplitBy(Plane plane) {
 		var intersectionPoint = FastIntersectionWith(plane);
 		return new(new(StartPoint, intersectionPoint), new(intersectionPoint, Direction));
 	}
 
-	public bool IsIntersectedBy(Plane plane) => GetUnboundedPlaneIntersectionDistance(plane) >= 0f;
+	public Angle? IncidentAngleWith(Plane plane) => IsIntersectedBy(plane) ? plane.IncidentAngleWith(Direction) : null;
+	public Angle FastIncidentAngleWith(Plane plane) => plane.FastIncidentAngleWith(Direction);
+
+	public Ray? ReflectedBy(Plane plane) {
+		var intersectionPoint = IntersectionWith(plane);
+		if (intersectionPoint == null) return null;
+		return new Ray(intersectionPoint.Value, Direction.FastReflectedBy(plane));
+	}
+	public Ray FastReflectedBy(Plane plane) => new(FastIntersectionWith(plane), Direction.FastReflectedBy(plane));
 
 	public float SignedDistanceFrom(Plane plane) {
 		var unboundedDistance = GetUnboundedPlaneIntersectionDistance(plane);
@@ -188,13 +175,19 @@ public readonly partial struct Ray {
 			_ => PlaneObjectRelationship.PlaneIntersectsObject
 		};
 	}
+	#endregion
 
-	public Ray? ProjectedOnTo(Plane plane) {
-		var projectedDirection = Direction.ParallelizedWith(plane);
-		if (projectedDirection == null) return null;
-		return new Ray(StartPoint.ClosestPointOn(plane), projectedDirection.Value);
+	#region Parallelization / Orthogonalization / Projection
+	public Ray? ParallelizedWith(Direction direction) {
+		var newDir = Direction.ParallelizedWith(direction);
+		return newDir == null ? null : new(StartPoint, newDir.Value);
 	}
-	public Ray FastProjectedOnTo(Plane plane) => new(StartPoint.ClosestPointOn(plane), Direction.FastParallelizedWith(plane));
+	public Ray FastParallelizedWith(Direction direction) => new(StartPoint, Direction.FastParallelizedWith(direction));
+	public Ray? OrthogonalizedAgainst(Direction direction) {
+		var newDir = Direction.OrthogonalizedAgainst(direction);
+		return newDir == null ? null : new(StartPoint, newDir.Value);
+	}
+	public Ray FastOrthogonalizedAgainst(Direction direction) => new(StartPoint, Direction.FastOrthogonalizedAgainst(direction));
 
 	public Ray? ParallelizedWith(Plane plane) {
 		var projectedDirection = Direction.ParallelizedWith(plane);
@@ -210,14 +203,31 @@ public readonly partial struct Ray {
 	}
 	public Ray FastOrthogonalizedAgainst(Plane plane) => new(StartPoint, Direction.FastOrthogonalizedAgainst(plane));
 
-	public Ray? ParallelizedWith(Direction direction) {
-		var newDir = Direction.ParallelizedWith(direction);
-		return newDir == null ? null : new(StartPoint, newDir.Value);
+	public Ray? ProjectedOnTo(Plane plane) {
+		var projectedDirection = Direction.ParallelizedWith(plane);
+		if (projectedDirection == null) return null;
+		return new Ray(StartPoint.ClosestPointOn(plane), projectedDirection.Value);
 	}
-	public Ray FastParallelizedWith(Direction direction) => new(StartPoint, Direction.FastParallelizedWith(direction));
-	public Ray? OrthogonalizedAgainst(Direction direction) {
-		var newDir = Direction.OrthogonalizedAgainst(direction);
-		return newDir == null ? null : new(StartPoint, newDir.Value);
+	public Ray FastProjectedOnTo(Plane plane) => new(StartPoint.ClosestPointOn(plane), Direction.FastParallelizedWith(plane));
+	#endregion
+
+	#region Clamping and Interpolation
+	public static Ray Interpolate(Ray start, Ray end, float distance) {
+		return new(
+			Location.Interpolate(start.StartPoint, end.StartPoint, distance),
+			Direction.Interpolate(start.Direction, end.Direction, distance)
+		);
 	}
-	public Ray FastOrthogonalizedAgainst(Direction direction) => new(StartPoint, Direction.FastOrthogonalizedAgainst(direction));
+	public static Rotation CreateInterpolationPrecomputation(Ray start, Ray end) {
+		return Direction.CreateInterpolationPrecomputation(start.Direction, end.Direction);
+	}
+	public static Ray InterpolateUsingPrecomputation(Ray start, Ray end, Rotation precomputation, float distance) {
+		return new(
+			Location.Interpolate(start.StartPoint, end.StartPoint, distance),
+			Direction.InterpolateUsingPrecomputation(start.Direction, end.Direction, precomputation, distance)
+		);
+	}
+
+	public Ray Clamp(Ray min, Ray max) => new(StartPoint.Clamp(min.StartPoint, max.StartPoint), Direction.Clamp(min.Direction, max.Direction));
+	#endregion
 }

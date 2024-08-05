@@ -10,6 +10,7 @@ namespace Egodystonic.TinyFFR;
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>> where T : unmanaged, INumber<T> {
 	public static readonly XYPair<T> Zero = new(T.Zero, T.Zero);
+	internal const int DefaultRandomRange = 100;
 	static readonly int _marshalledElementSizeBytes = MemoryMarshal.AsBytes(new ReadOnlySpan<T>(in Zero._x)).Length;
 
 	readonly T _x;
@@ -54,6 +55,24 @@ public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>> where T : u
 		y = Y;
 	}
 	public static implicit operator XYPair<T>((T X, T Y) tuple) => new(tuple.X, tuple.Y);
+	#endregion
+
+	#region Random
+	public static XYPair<T> Random() {
+		return new(
+			T.CreateChecked(RandomUtils.NextSingleNegOneToOneInclusive() * DefaultRandomRange),
+			T.CreateChecked(RandomUtils.NextSingleNegOneToOneInclusive() * DefaultRandomRange)
+		);
+	}
+	public static XYPair<T> Random(T minInclusive, T maxExclusive) => Random((minInclusive, maxExclusive), (minInclusive, maxExclusive));
+	public static XYPair<T> Random(XYPair<T> minInclusive, XYPair<T> maxExclusive) {
+		var x = (Min: Double.CreateChecked(minInclusive.X), Max: Double.CreateChecked(maxExclusive.X));
+		var y = (Min: Double.CreateChecked(minInclusive.Y), Max: Double.CreateChecked(maxExclusive.Y));
+		return new(
+			T.CreateChecked(RandomUtils.GlobalRng.NextDouble() * (x.Max - x.Min) + x.Min),
+			T.CreateChecked(RandomUtils.GlobalRng.NextDouble() * (y.Max - y.Min) + y.Min)
+		);
+	}
 	#endregion
 
 	#region Span Conversions

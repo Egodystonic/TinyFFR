@@ -22,8 +22,6 @@ partial struct Vect :
 	IProjectionTarget<Vect, Vect>,
 	IOrthogonalizationTarget<Vect, Vect>,
 	IParallelizationTarget<Vect, Vect> { 
-	internal const float DefaultRandomRange = 100f;
-
 	static Vect IAdditiveIdentity<Vect, Vect>.AdditiveIdentity => Zero;
 
 	public float Length {

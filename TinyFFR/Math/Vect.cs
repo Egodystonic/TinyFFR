@@ -13,6 +13,7 @@ namespace Egodystonic.TinyFFR;
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Vector4
 public readonly partial struct Vect : IVect<Vect>, IDescriptiveStringProvider {
 	internal const float WValue = 0f;
+	internal const float DefaultRandomRange = 100f;
 	public static readonly Vect Zero = new(0f, 0f, 0f);
 
 	internal readonly Vector4 AsVector4;

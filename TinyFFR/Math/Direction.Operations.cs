@@ -29,15 +29,6 @@ partial struct Direction :
 	const float ParallelComponentsCheckErrorMargin = 1E-5f;
 	const float OrthogonalDotErrorMargin = 1E-5f;
 
-	public float this[Axis axis] => axis switch {
-		Axis.X => X,
-		Axis.Y => Y,
-		Axis.Z => Z,
-		_ => throw new ArgumentOutOfRangeException(nameof(axis), axis, $"{nameof(Axis)} must not be anything except {nameof(Axis.X)}, {nameof(Axis.Y)} or {nameof(Axis.Z)}.")
-	};
-	public XYPair<float> this[Axis first, Axis second] => new(this[first], this[second]);
-	public Direction this[Axis first, Axis second, Axis third] => new(this[first], this[second], this[third]);
-
 	internal bool IsUnitLength {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get {
@@ -79,17 +70,55 @@ partial struct Direction :
 		}
 	}
 
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect AsVect() => (Vect) this;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect AsVect(float length) => new(AsVector4 * length);
+
+	public static int GetIndexOfNearestDirectionInSpan(Direction targetDir, ReadOnlySpan<Direction> span) {
+		var result = -1;
+		var resultAngle = Angle.FullCircle;
+		for (var i = 0; i < span.Length; ++i) {
+			var newAngle = span[i] ^ targetDir;
+			if (newAngle >= resultAngle) continue;
+
+			resultAngle = newAngle;
+			result = i;
+		}
+		return result;
+	}
+	static void GetNearestDirectionAndOrientation(Direction targetDir, ReadOnlySpan<Direction> span, out Orientation3D orientation, out Direction direction) {
+		orientation = Orientation3D.None;
+		direction = None;
+		if (targetDir == None) {
+			return;
+		}
+
+		var dirAngle = Angle.FullCircle;
+		for (var i = 0; i < span.Length; ++i) {
+			var testDir = span[i];
+			if (targetDir.X != 0f && Single.Sign(testDir.X) == -Single.Sign(targetDir.X)) continue;
+			if (targetDir.Y != 0f && Single.Sign(testDir.Y) == -Single.Sign(targetDir.Y)) continue;
+			if (targetDir.Z != 0f && Single.Sign(testDir.Z) == -Single.Sign(targetDir.Z)) continue;
+
+			var newAngle = testDir ^ targetDir;
+			if (newAngle >= dirAngle) continue;
+
+			dirAngle = newAngle;
+			direction = testDir;
+		}
+
+		orientation = OrientationUtils.CreateOrientationFromValueSigns(direction.X, direction.Y, direction.Z);
+	}
+
+	#region Scaling and Addition/Subtraction
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator *(Direction directionOperand, float scalarOperand) => directionOperand.AsVect(scalarOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator *(float scalarOperand, Direction directionOperand) => directionOperand.AsVect(scalarOperand);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect AsVect(float length) => new(AsVector4 * length);
+	#endregion
 
-
+	#region Interactions w/ Direction
 	// TODO in XMLDoc indicate that this is the dot product of the two directions, and that therefore the range is 1 for identical, to -1 for complete opposite, with 0 being orthogonal; and that this is the cosine of the angle
 	// Maintainer's note: Clamping dot product is necessary to prevent nasty issues elsewhere.
 	// FP inaccuracy can result in values outside the -1 to 1 range, which then really fucks up stuff like inverse trigonometic functions (arccos/arcsin will return NaN).
@@ -97,13 +126,7 @@ partial struct Direction :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float Dot(Direction other) => Single.Clamp(Vector4.Dot(AsVector4, other.AsVector4), -1f, 1f);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float Dot(Vect other) => other.Dot(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction Cross(Direction other) => FromVector3(Vector3.Cross(ToVector3(), other.ToVector3()));
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction Cross(Vect other) => FromVector3(Vector3.Cross(ToVector3(), other.ToVector3()));
-
-
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(Direction d1, Direction d2) => Angle.FromAngleBetweenDirections(d1, d2);
@@ -124,11 +147,6 @@ partial struct Direction :
 	}
 	public Direction FastOrthogonalizedAgainst(Direction d) => new(Normalize(AsVector4 - d.AsVector4 * Vector4.Dot(AsVector4, d.AsVector4)));
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect? OrthogonalizationOf(Vect v) => v.OrthogonalizedAgainst(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect FastOrthogonalizationOf(Vect v) => v.FastOrthogonalizedAgainst(this);
-
 	public Direction? ParallelizedWith(Direction d) {
 		if (this == None || d == None) return this;
 		var dot = Vector4.Dot(AsVector4, d.AsVector4);
@@ -136,15 +154,6 @@ partial struct Direction :
 		return new(d.AsVector4 * MathF.Sign(dot));
 	}
 	public Direction FastParallelizedWith(Direction d) => new(d.AsVector4 * MathF.Sign(Vector4.Dot(AsVector4, d.AsVector4)));
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect? ParallelizationOf(Vect v) => v.ParallelizedWith(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect FastParallelizationOf(Vect v) => v.FastParallelizedWith(this);
-
-	Vect ProjectionOf(Vect v) => v.ProjectedOnTo(this);
-	Vect? IProjectionTarget<Vect>.ProjectionOf(Vect v) => ProjectionOf(v);
-	Vect IProjectionTarget<Vect>.FastProjectionOf(Vect v) => ProjectionOf(v);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction? OrthogonalizationOf(Direction d) => d.OrthogonalizedAgainst(this);
@@ -171,6 +180,28 @@ partial struct Direction :
 		var angle = AngleTo(other);
 		return angle.Equals(Angle.Zero, tolerance) || angle.Equals(Angle.HalfCircle, tolerance);
 	}
+	#endregion
+
+	#region Interactions w/ Vect
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float Dot(Vect other) => other.Dot(this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Direction Cross(Vect other) => FromVector3(Vector3.Cross(ToVector3(), other.ToVector3()));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect? OrthogonalizationOf(Vect v) => v.OrthogonalizedAgainst(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect FastOrthogonalizationOf(Vect v) => v.FastOrthogonalizedAgainst(this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect? ParallelizationOf(Vect v) => v.ParallelizedWith(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect FastParallelizationOf(Vect v) => v.FastParallelizedWith(this);
+
+	Vect ProjectionOf(Vect v) => v.ProjectedOnTo(this);
+	Vect? IProjectionTarget<Vect>.ProjectionOf(Vect v) => ProjectionOf(v);
+	Vect IProjectionTarget<Vect>.FastProjectionOf(Vect v) => ProjectionOf(v);
 
 	public bool IsOrthogonalTo(Vect v) => IsOrthogonalTo(v.Direction);
 	public bool IsApproximatelyOrthogonalTo(Vect v) => IsApproximatelyOrthogonalTo(v, DefaultParallelOrthogonalTestApproximationDegrees);
@@ -178,7 +209,9 @@ partial struct Direction :
 	public bool IsParallelTo(Vect v) => IsParallelTo(v.Direction);
 	public bool IsApproximatelyParallelTo(Vect v) => IsApproximatelyParallelTo(v, DefaultParallelOrthogonalTestApproximationDegrees);
 	public bool IsApproximatelyParallelTo(Vect v, Angle tolerance) => IsApproximatelyParallelTo(v.Direction, tolerance);
+	#endregion
 
+	#region Rotation
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator >>(Direction start, Direction end) => Rotation.FromStartAndEndDirection(start, end);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -199,7 +232,9 @@ partial struct Direction :
 	public static Direction operator *(Direction d, Rotation r) => r.Rotate(d);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction operator *(Rotation r, Direction d) => r.Rotate(d);
+	#endregion
 
+	#region Clamping and Interpolation
 	public static Direction Interpolate(Direction start, Direction end, float distance) {
 		return Rotation.FromStartAndEndDirection(start, end).ScaledBy(distance) * start;
 	}
@@ -283,68 +318,5 @@ partial struct Direction :
 		var angleToPlane = SignedAngleTo(plane);
 		return (result >> plane.Normal).WithAngle(angleToPlane) * result;
 	}
-
-	public static Direction Random() {
-		Direction result;
-		do {
-			result = new(
-				RandomUtils.NextSingleNegOneToOneInclusive(),
-				RandomUtils.NextSingleNegOneToOneInclusive(),
-				RandomUtils.NextSingleNegOneToOneInclusive()
-			);
-		} while (result == None);
-		return result;
-	}
-	public static Direction Random(Direction minInclusive, Direction maxExclusive) {
-		return (minInclusive >> maxExclusive).ScaledBy(RandomUtils.NextSingle()) * minInclusive;
-	}
-	public static Direction Random(Direction coneCentre, Angle coneAngleMax) => Random(coneCentre, coneAngleMax, Angle.Zero);
-	public static Direction Random(Direction coneCentre, Angle coneAngleMax, Angle coneAngleMin) {
-		if (coneCentre == None) return Random();
-
-		var offset = coneCentre * (coneCentre >> coneCentre.AnyOrthogonal()).WithAngle(Angle.Random(coneAngleMin.ClampZeroToHalfCircle(), coneAngleMax.ClampZeroToHalfCircle()));
-		return offset * new Rotation(Angle.Random(Angle.Zero, Angle.FullCircle), coneCentre);
-	}
-	public static Direction Random(Plane plane) => Random(plane, plane.Normal.AnyOrthogonal(), Angle.FullCircle);
-	public static Direction Random(Plane plane, Direction arcCentre, Angle arcAngle) {
-		if (arcCentre.ParallelizedWith(plane) == null) arcCentre = plane.Normal.AnyOrthogonal();
-		var halfAngle = arcAngle * 0.5f;
-		return FromPlaneAndPolarAngle(plane, arcCentre, Angle.Random(-halfAngle, halfAngle)); 
-	}
-
-	public static int GetIndexOfNearestDirectionInSpan(Direction targetDir, ReadOnlySpan<Direction> span) {
-		var result = -1;
-		var resultAngle = Angle.FullCircle;
-		for (var i = 0; i < span.Length; ++i) {
-			var newAngle = span[i] ^ targetDir;
-			if (newAngle >= resultAngle) continue;
-
-			resultAngle = newAngle;
-			result = i;
-		}
-		return result;
-	}
-	static void GetNearestDirectionAndOrientation(Direction targetDir, ReadOnlySpan<Direction> span, out Orientation3D orientation, out Direction direction) {
-		orientation = Orientation3D.None;
-		direction = None;
-		if (targetDir == None) {
-			return;
-		}
-
-		var dirAngle = Angle.FullCircle;
-		for (var i = 0; i < span.Length; ++i) {
-			var testDir = span[i];
-			if (targetDir.X != 0f && Single.Sign(testDir.X) == -Single.Sign(targetDir.X)) continue;
-			if (targetDir.Y != 0f && Single.Sign(testDir.Y) == -Single.Sign(targetDir.Y)) continue;
-			if (targetDir.Z != 0f && Single.Sign(testDir.Z) == -Single.Sign(targetDir.Z)) continue;
-
-			var newAngle = testDir ^ targetDir;
-			if (newAngle >= dirAngle) continue;
-
-			dirAngle = newAngle;
-			direction = testDir;
-		}
-
-		orientation = OrientationUtils.CreateOrientationFromValueSigns(direction.X, direction.Y, direction.Z);
-	}
+	#endregion
 }

@@ -10,6 +10,7 @@ namespace Egodystonic.TinyFFR;
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Vector4
 public readonly partial struct Location : IVect<Location> {
 	internal const float WValue = 1f;
+	internal const float DefaultRandomRange = 100f;
 	public static readonly Location Origin = new(0f, 0f, 0f);
 
 	internal readonly Vector4 AsVector4;
@@ -32,6 +33,15 @@ public readonly partial struct Location : IVect<Location> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		init => AsVector4.Z = value;
 	}
+
+	public float this[Axis axis] => axis switch {
+		Axis.X => X,
+		Axis.Y => Y,
+		Axis.Z => Z,
+		_ => throw new ArgumentOutOfRangeException(nameof(axis), axis, $"{nameof(Axis)} must not be anything except {nameof(Axis.X)}, {nameof(Axis.Y)} or {nameof(Axis.Z)}.")
+	};
+	public XYPair<float> this[Axis first, Axis second] => new(this[first], this[second]);
+	public Location this[Axis first, Axis second, Axis third] => new(this[first], this[second], this[third]);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location() : this(0f, 0f, 0f) { } 
@@ -58,6 +68,19 @@ public readonly partial struct Location : IVect<Location> {
 	public static explicit operator Location(Direction directionOperand) => new(directionOperand.AsVector4 with { W = WValue });
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static explicit operator Location(Vect vectOperand) => new(vectOperand.AsVector4 with { W = WValue });
+	#endregion
+
+	#region Random
+	public static Location Random() {
+		return FromVector3(new Vector3(
+			RandomUtils.NextSingleNegOneToOneInclusive(),
+			RandomUtils.NextSingleNegOneToOneInclusive(),
+			RandomUtils.NextSingleNegOneToOneInclusive()
+		) * DefaultRandomRange);
+	}
+	public static Location Random(Location minInclusive, Location maxExclusive) {
+		return minInclusive + ((minInclusive >> maxExclusive) * RandomUtils.NextSingle());
+	}
 	#endregion
 
 	#region Span Conversion

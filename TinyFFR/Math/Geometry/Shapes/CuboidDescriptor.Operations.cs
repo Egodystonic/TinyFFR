@@ -8,26 +8,7 @@ using System.Diagnostics.Metrics;
 namespace Egodystonic.TinyFFR;
 
 partial struct CuboidDescriptor {
-	public unsafe OneToManyEnumerator<CuboidDescriptor, Location> Corners => new(this, &GetCornerCountForEnumerator, &GetCornerForEnumerator);
-	static int GetCornerCountForEnumerator(CuboidDescriptor _) => 8;
-	static Location GetCornerForEnumerator(CuboidDescriptor @this, int index) => @this.CornerAt(OrientationUtils.AllDiagonals[index]);
-
-	public unsafe OneToManyEnumerator<CuboidDescriptor, BoundedRay> Edges => new(this, &GetEdgeCountForEnumerator, &GetEdgeForEnumerator);
-	static int GetEdgeCountForEnumerator(CuboidDescriptor _) => 12;
-	static BoundedRay GetEdgeForEnumerator(CuboidDescriptor @this, int index) => @this.EdgeAt(OrientationUtils.AllIntercardinals[index]);
-
-	public unsafe OneToManyEnumerator<CuboidDescriptor, Plane> Sides => new(this, &GetSideCountForEnumerator, &GetSideForEnumerator);
-	static int GetSideCountForEnumerator(CuboidDescriptor _) => 6;
-	static Plane GetSideForEnumerator(CuboidDescriptor @this, int index) => @this.SideAt(OrientationUtils.AllCardinals[index]);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static CuboidDescriptor operator *(CuboidDescriptor descriptor, float scalar) => descriptor.ScaledBy(scalar);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static CuboidDescriptor operator /(CuboidDescriptor descriptor, float scalar) => descriptor.ScaledBy(1f / scalar);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static CuboidDescriptor operator *(float scalar, CuboidDescriptor descriptor) => descriptor.ScaledBy(scalar);
-
-	public CuboidDescriptor ScaledBy(float scalar) => FromHalfDimensions(HalfWidth * scalar, HalfHeight * scalar, HalfDepth * scalar);
+	#region With Methods
 	public CuboidDescriptor WithVolume(float newVolume) {
 		var diffCubeRoot = MathF.Cbrt(newVolume / Volume);
 		return FromHalfDimensions(HalfWidth * diffCubeRoot, HalfHeight * diffCubeRoot, HalfDepth * diffCubeRoot);
@@ -36,33 +17,20 @@ partial struct CuboidDescriptor {
 		var diffSquareRoot = MathF.Sqrt(newSurfaceArea / SurfaceArea);
 		return FromHalfDimensions(HalfWidth * diffSquareRoot, HalfHeight * diffSquareRoot, HalfDepth * diffSquareRoot);
 	}
+	#endregion
 
-	public Location CornerAt(DiagonalOrientation3D corner) {
-		if (corner == DiagonalOrientation3D.None || !Enum.IsDefined(corner)) throw new ArgumentOutOfRangeException(nameof(corner), corner, $"Can not be '{nameof(DiagonalOrientation3D.None)}' or non-defined value.");
+	#region Scaling
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static CuboidDescriptor operator *(CuboidDescriptor descriptor, float scalar) => descriptor.ScaledBy(scalar);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static CuboidDescriptor operator /(CuboidDescriptor descriptor, float scalar) => descriptor.ScaledBy(1f / scalar);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static CuboidDescriptor operator *(float scalar, CuboidDescriptor descriptor) => descriptor.ScaledBy(scalar);
 
-		return new(
-			corner.GetAxisSign(Axis.X) * HalfWidth,
-			corner.GetAxisSign(Axis.Y) * HalfHeight,
-			corner.GetAxisSign(Axis.Z) * HalfDepth
-		);
-	}
+	public CuboidDescriptor ScaledBy(float scalar) => FromHalfDimensions(HalfWidth * scalar, HalfHeight * scalar, HalfDepth * scalar);
+	#endregion
 
-	public Plane SideAt(CardinalOrientation3D side) { // TODO xmldoc that the planes' normals point away from the cuboid centre, e.g. side.ToDirection()
-		if (side == CardinalOrientation3D.None || !Enum.IsDefined(side)) throw new ArgumentOutOfRangeException(nameof(side), side, $"Can not be '{nameof(CardinalOrientation3D.None)}' or non-defined value.");
-
-		return new(side.ToDirection(), GetHalfExtent(side.GetAxis()));
-	}
-
-	public BoundedRay EdgeAt(IntercardinalOrientation3D edge) {
-		if (edge == IntercardinalOrientation3D.None || !Enum.IsDefined(edge)) throw new ArgumentOutOfRangeException(nameof(edge), edge, $"Can not be '{nameof(IntercardinalOrientation3D.None)}' or non-defined value.");
-
-		var unspecifiedAxis = edge.GetUnspecifiedAxis();
-		return new(
-			CornerAt((DiagonalOrientation3D) edge.AsGeneralOrientation().WithAxisSign(unspecifiedAxis, -1)),
-			CornerAt((DiagonalOrientation3D) edge.AsGeneralOrientation().WithAxisSign(unspecifiedAxis, 1))
-		);
-	}
-
+	#region Distance From / Containment (Location & Line-Like)
 	public float DistanceFrom(Location location) => MathF.Sqrt(DistanceSquaredFrom(location));
 	public float DistanceSquaredFrom(Location location) {
 		var xDist = MathF.Max(0f, MathF.Abs(location.X) - HalfWidth);
@@ -85,9 +53,47 @@ partial struct CuboidDescriptor {
 	public float SurfaceDistanceSquaredFrom(Location location) { var sqrt = SurfaceDistanceFrom(location); return sqrt * sqrt; }
 
 	public bool Contains(Location location) => MathF.Abs(location.X) <= HalfWidth && MathF.Abs(location.Y) <= HalfHeight && MathF.Abs(location.Z) <= HalfDepth;
-
 	public bool Contains(BoundedRay ray) => Contains(ray.StartPoint) && Contains(ray.EndPoint);
 
+	float DistanceFromLineLike<TLine>(TLine line) where TLine : ILineLike {
+		if (Contains(line.StartPoint)) return 0f;
+		else return SurfaceDistanceFromLineLike(line);
+	}
+	float DistanceSquaredFromLineLike<TLine>(TLine line) where TLine : ILineLike {
+		if (Contains(line.StartPoint)) return 0f;
+		else return SurfaceDistanceSquaredFromLineLike(line);
+	}
+	float SurfaceDistanceFromLineLike<TLine>(TLine line) where TLine : ILineLike => SurfaceDistanceFrom(ClosestPointToSurfaceOnLineLike(line));
+	float SurfaceDistanceSquaredFromLineLike<TLine>(TLine line) where TLine : ILineLike => SurfaceDistanceSquaredFrom(ClosestPointToSurfaceOnLineLike(line));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(Line line) => DistanceFromLineLike(line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(Line line) => DistanceSquaredFromLineLike(line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(Ray ray) => DistanceFromLineLike(ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(Ray ray) => DistanceSquaredFromLineLike(ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(BoundedRay ray) => DistanceFromLineLike(ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceSquaredFrom(BoundedRay ray) => DistanceSquaredFromLineLike(ray);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float SurfaceDistanceFrom(Line line) => SurfaceDistanceFromLineLike(line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float SurfaceDistanceSquaredFrom(Line line) => SurfaceDistanceSquaredFromLineLike(line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float SurfaceDistanceFrom(Ray ray) => SurfaceDistanceFromLineLike(ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float SurfaceDistanceSquaredFrom(Ray ray) => SurfaceDistanceSquaredFromLineLike(ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float SurfaceDistanceFrom(BoundedRay ray) => SurfaceDistanceFromLineLike(ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float SurfaceDistanceSquaredFrom(BoundedRay ray) => SurfaceDistanceSquaredFromLineLike(ray);
+	#endregion
+
+	#region Closest Point (Location & Line-Like)
 	public Location PointClosestTo(Location location) {
 		return new(
 			Single.Clamp(location.X, -HalfWidth, HalfWidth),
@@ -110,6 +116,34 @@ partial struct CuboidDescriptor {
 		else return location with { Z = HalfDepth * (location.Z < 0f ? -1f : 1f) };
 	}
 
+	Location PointClosestToLineLike<TLine>(TLine line) where TLine : ILineLike => PointClosestTo(ClosestPointOnLineLike(line));
+	Location ClosestPointOnLineLike<TLine>(TLine line) where TLine : ILineLike {
+		if (Contains(line.StartPoint)) return line.StartPoint;
+		else return ClosestPointToSurfaceOnLineLike(line);
+	}
+	Location SurfacePointClosestToLineLike<TLine>(TLine line) where TLine : ILineLike => SurfacePointClosestTo(ClosestPointToSurfaceOnLineLike(line));
+	Location ClosestPointToSurfaceOnLineLike<TLine>(TLine line) where TLine : ILineLike {
+		return line switch {
+			Line l => ClosestPointToSurfaceOn(l),
+			Ray r => ClosestPointToSurfaceOn(r),
+			BoundedRay b => ClosestPointToSurfaceOn(b),
+			_ => line.IsUnboundedInBothDirections ? ClosestPointToSurfaceOn(line.CoerceToLine()) : (line.IsFiniteLength ? ClosestPointToSurfaceOn(line.CoerceToBoundedRay(line.Length.Value)) : ClosestPointToSurfaceOn(line.CoerceToRay()))
+		};
+	}
+	Location GetClosestPointToSurfaceOnNonIntersectingLine<TLine>(TLine line) where TLine : ILineLike {
+		var answerDistance = Single.PositiveInfinity;
+		var answer = Location.Origin;
+		foreach (var edge in Edges) {
+			var closestPointToEdge = line.PointClosestTo(edge);
+			var distanceToEdge = edge.DistanceFrom(closestPointToEdge);
+			if (distanceToEdge < answerDistance) {
+				answerDistance = distanceToEdge;
+				answer = closestPointToEdge;
+			}
+		}
+		return answer;
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointOn(Line line) => ClosestPointOnLineLike(line);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -129,20 +163,6 @@ partial struct CuboidDescriptor {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location SurfacePointClosestTo(BoundedRay ray) => SurfacePointClosestToLineLike(ray);
 
-	Location PointClosestToLineLike<TLine>(TLine line) where TLine : ILineLike => PointClosestTo(ClosestPointOnLineLike(line));
-	Location ClosestPointOnLineLike<TLine>(TLine line) where TLine : ILineLike {
-		if (Contains(line.StartPoint)) return line.StartPoint;
-		else return ClosestPointToSurfaceOnLineLike(line);
-	}
-	Location SurfacePointClosestToLineLike<TLine>(TLine line) where TLine : ILineLike => SurfacePointClosestTo(ClosestPointToSurfaceOnLineLike(line));
-	Location ClosestPointToSurfaceOnLineLike<TLine>(TLine line) where TLine : ILineLike {
-		return line switch {
-			Line l => ClosestPointToSurfaceOn(l),
-			Ray r => ClosestPointToSurfaceOn(r),
-			BoundedRay b => ClosestPointToSurfaceOn(b),
-			_ => line.IsUnboundedInBothDirections ? ClosestPointToSurfaceOn(line.CoerceToLine()) : (line.IsFiniteLength ? ClosestPointToSurfaceOn(line.CoerceToBoundedRay(line.Length.Value)) : ClosestPointToSurfaceOn(line.CoerceToRay()))
-		};
-	}
 	public Location ClosestPointToSurfaceOn(Line line) {
 		var intersections = GetUnboundedLineIntersectionDistances(new Ray(line.PointOnLine, line.Direction));
 		if (intersections != null) return line.LocationAtDistance(intersections.Value.First);
@@ -167,124 +187,17 @@ partial struct CuboidDescriptor {
 			_ => GetClosestPointToSurfaceOnNonIntersectingLine(ray)
 		};
 	}
-	Location GetClosestPointToSurfaceOnNonIntersectingLine<TLine>(TLine line) where TLine : ILineLike {
-		var answerDistance = Single.PositiveInfinity;
-		var answer = Location.Origin;
-		foreach (var edge in Edges) {
-			var closestPointToEdge = line.PointClosestTo(edge);
-			var distanceToEdge = edge.DistanceFrom(closestPointToEdge);
-			if (distanceToEdge < answerDistance) {
-				answerDistance = distanceToEdge;
-				answer = closestPointToEdge;
-			}
-		}
-		return answer;
+	#endregion
+
+	#region Intersection (Line-Like)
+	// Returns an Infinity when line is parallel to plane -- but still with correct sign depending on which side of the face the start point is
+	float SignedLineDistanceToPositiveSurfacePlane(Location lineStartPoint, Direction lineDirection, Axis axis) {
+		return (GetHalfExtent(axis) - lineStartPoint[axis]) / lineDirection[axis];
 	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceFrom(Line line) => DistanceFromLineLike(line);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceSquaredFrom(Line line) => DistanceSquaredFromLineLike(line);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceFrom(Ray ray) => DistanceFromLineLike(ray);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceSquaredFrom(Ray ray) => DistanceSquaredFromLineLike(ray);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceFrom(BoundedRay ray) => DistanceFromLineLike(ray);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceSquaredFrom(BoundedRay ray) => DistanceSquaredFromLineLike(ray);
-
-	float DistanceFromLineLike<TLine>(TLine line) where TLine : ILineLike {
-		if (Contains(line.StartPoint)) return 0f;
-		else return SurfaceDistanceFromLineLike(line);
+	// Returns an Infinity when line is parallel to plane -- but still with correct sign depending on which side of the face the start point is
+	float SignedLineDistanceToNegativeSurfacePlane(Location lineStartPoint, Direction lineDirection, Axis axis) {
+		return (-GetHalfExtent(axis) - lineStartPoint[axis]) / lineDirection[axis];
 	}
-	float DistanceSquaredFromLineLike<TLine>(TLine line) where TLine : ILineLike {
-		if (Contains(line.StartPoint)) return 0f;
-		else return SurfaceDistanceSquaredFromLineLike(line);
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float SurfaceDistanceFrom(Line line) => SurfaceDistanceFromLineLike(line);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float SurfaceDistanceSquaredFrom(Line line) => SurfaceDistanceSquaredFromLineLike(line);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float SurfaceDistanceFrom(Ray ray) => SurfaceDistanceFromLineLike(ray);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float SurfaceDistanceSquaredFrom(Ray ray) => SurfaceDistanceSquaredFromLineLike(ray);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float SurfaceDistanceFrom(BoundedRay ray) => SurfaceDistanceFromLineLike(ray);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float SurfaceDistanceSquaredFrom(BoundedRay ray) => SurfaceDistanceSquaredFromLineLike(ray);
-
-	float SurfaceDistanceFromLineLike<TLine>(TLine line) where TLine : ILineLike => SurfaceDistanceFrom(ClosestPointToSurfaceOnLineLike(line));
-	float SurfaceDistanceSquaredFromLineLike<TLine>(TLine line) where TLine : ILineLike => SurfaceDistanceSquaredFrom(ClosestPointToSurfaceOnLineLike(line));
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsIntersectedBy(Line line) => IsIntersectedByLineLike(line);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsIntersectedBy(Ray ray) => IsIntersectedByLineLike(ray);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsIntersectedBy(BoundedRay ray) => IsIntersectedByLineLike(ray);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection? IntersectionWith(Line line) => IntersectionWithLineLike(line);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection? IntersectionWith(Ray ray) => IntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection? IntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection FastIntersectionWith(Line line) => FastIntersectionWithLineLike(line);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection FastIntersectionWith(Ray ray) => FastIntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ConvexShapeLineIntersection FastIntersectionWith(BoundedRay ray) => FastIntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
-
-	public Ray? ReflectionOf(Ray ray) {
-		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
-		var reflection = tuple?.Side.ReflectionOf(ray.Direction);
-		if (reflection == null) return null;
-
-		return new Ray(tuple.Value.HitPoint, reflection.Value);
-	}
-	public BoundedRay? ReflectionOf(BoundedRay ray) {
-		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
-		var reflection = tuple?.Side.ReflectionOf(ray.Direction);
-		if (reflection == null) return null;
-
-		return BoundedRay.FromStartPointAndVect(tuple.Value.HitPoint, reflection.Value * (ray.Length - tuple.Value.HitDistance));
-	}
-	public Ray FastReflectionOf(Ray ray) {
-		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
-		return new Ray(tuple.Value.HitPoint, tuple.Value.Side.FastReflectionOf(ray.Direction));
-	}
-	public BoundedRay FastReflectionOf(BoundedRay ray) {
-		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
-		return BoundedRay.FromStartPointAndVect(tuple.Value.HitPoint, tuple.Value.Side.FastReflectionOf(ray.Direction) * (ray.Length - tuple.Value.HitDistance));
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle? IncidentAngleWith(Ray ray) => GetIncidentAngleOfLineLike(ray);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle? IncidentAngleWith(BoundedRay ray) => GetIncidentAngleOfLineLike(ray);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle FastIncidentAngleWith(Ray ray) => FastGetIncidentAngleOfLineLike(ray);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle FastIncidentAngleWith(BoundedRay ray) => FastGetIncidentAngleOfLineLike(ray);
-
-	bool IsIntersectedByLineLike<TLine>(TLine line) where TLine : ILineLike {
-		var distanceTuple = GetUnboundedLineIntersectionDistances(line);
-		if (distanceTuple == null) return false;
-		return line.DistanceIsWithinLineBounds(distanceTuple.Value.First) || line.DistanceIsWithinLineBounds(distanceTuple.Value.Second);
-	}
-	ConvexShapeLineIntersection? IntersectionWithLineLike<TLine>(TLine line) where TLine : ILineLike {
-		var unboundedDistances = GetUnboundedLineIntersectionDistances(line);
-		if (unboundedDistances == null) return null;
-		return ConvexShapeLineIntersection.FromTwoPotentiallyNullArgs(line.LocationAtDistanceOrNull(unboundedDistances.Value.First), line.LocationAtDistanceOrNull(unboundedDistances.Value.Second));
-	}
-	ConvexShapeLineIntersection FastIntersectionWithLineLike<TLine>(TLine line) where TLine : ILineLike {
-		var unboundedDistances = FastGetUnboundedLineIntersectionDistances(line);
-		return ConvexShapeLineIntersection.FromTwoPotentiallyNullArgs(line.LocationAtDistanceOrNull(unboundedDistances.First), line.LocationAtDistanceOrNull(unboundedDistances.Second))!.Value;
-	}
-
 	(float First, float Second)? GetUnboundedLineIntersectionDistances<TLine>(TLine line) where TLine : ILineLike {
 		var x1 = SignedLineDistanceToPositiveSurfacePlane(line.StartPoint, line.Direction, Axis.X);
 		var x2 = SignedLineDistanceToNegativeSurfacePlane(line.StartPoint, line.Direction, Axis.X);
@@ -324,17 +237,45 @@ partial struct CuboidDescriptor {
 
 		var startDist = MathF.Max(MathF.Max(minX, minY), minZ);
 		var endDist = MathF.Min(MathF.Min(maxX, maxY), maxZ);
-		
+
 		return (startDist, endDist);
 	}
-
-	Angle? GetIncidentAngleOfLineLike<TLine>(TLine line) where TLine : ILineLike {
-		return GetHitPointAndSidePlaneOfLineLike(line)?.Side.IncidentAngleWith(line.Direction);
+	bool IsIntersectedByLineLike<TLine>(TLine line) where TLine : ILineLike {
+		var distanceTuple = GetUnboundedLineIntersectionDistances(line);
+		if (distanceTuple == null) return false;
+		return line.DistanceIsWithinLineBounds(distanceTuple.Value.First) || line.DistanceIsWithinLineBounds(distanceTuple.Value.Second);
 	}
-	Angle FastGetIncidentAngleOfLineLike<TLine>(TLine line) where TLine : ILineLike {
-		return FastGetHitPointAndSidePlaneOfLineLike(line).Side.FastIncidentAngleWith(line.Direction);
+	ConvexShapeLineIntersection? IntersectionWithLineLike<TLine>(TLine line) where TLine : ILineLike {
+		var unboundedDistances = GetUnboundedLineIntersectionDistances(line);
+		if (unboundedDistances == null) return null;
+		return ConvexShapeLineIntersection.FromTwoPotentiallyNullArgs(line.LocationAtDistanceOrNull(unboundedDistances.Value.First), line.LocationAtDistanceOrNull(unboundedDistances.Value.Second));
+	}
+	ConvexShapeLineIntersection FastIntersectionWithLineLike<TLine>(TLine line) where TLine : ILineLike {
+		var unboundedDistances = FastGetUnboundedLineIntersectionDistances(line);
+		return ConvexShapeLineIntersection.FromTwoPotentiallyNullArgs(line.LocationAtDistanceOrNull(unboundedDistances.First), line.LocationAtDistanceOrNull(unboundedDistances.Second))!.Value;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(Line line) => IsIntersectedByLineLike(line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(Ray ray) => IsIntersectedByLineLike(ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(BoundedRay ray) => IsIntersectedByLineLike(ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ConvexShapeLineIntersection? IntersectionWith(Line line) => IntersectionWithLineLike(line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ConvexShapeLineIntersection? IntersectionWith(Ray ray) => IntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ConvexShapeLineIntersection? IntersectionWith(BoundedRay ray) => IntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ConvexShapeLineIntersection FastIntersectionWith(Line line) => FastIntersectionWithLineLike(line);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ConvexShapeLineIntersection FastIntersectionWith(Ray ray) => FastIntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ConvexShapeLineIntersection FastIntersectionWith(BoundedRay ray) => FastIntersectionWithLineLike(ray); // TODO xmldoc that the first intersection is always the one nearest the start point
+	#endregion
+
+	#region Incident Angle Measurement / Reflection (Line-Like)
 	(float HitDistance, Location HitPoint, Plane Side)? GetHitPointAndSidePlaneOfLineLike<TLine>(TLine line) where TLine : ILineLike {
 		var intersectionDistances = GetUnboundedLineIntersectionDistances(line);
 		if (intersectionDistances == null) return null;
@@ -430,22 +371,54 @@ partial struct CuboidDescriptor {
 		}
 	}
 
-	// Returns an Infinity when line is parallel to plane -- but still with correct sign depending on which side of the face the start point is
-	float SignedLineDistanceToPositiveSurfacePlane(Location lineStartPoint, Direction lineDirection, Axis axis) {
-		return (GetHalfExtent(axis) - lineStartPoint[axis]) / lineDirection[axis];
+	Angle? GetIncidentAngleOfLineLike<TLine>(TLine line) where TLine : ILineLike {
+		return GetHitPointAndSidePlaneOfLineLike(line)?.Side.IncidentAngleWith(line.Direction);
 	}
-	// Returns an Infinity when line is parallel to plane -- but still with correct sign depending on which side of the face the start point is
-	float SignedLineDistanceToNegativeSurfacePlane(Location lineStartPoint, Direction lineDirection, Axis axis) {
-		return (-GetHalfExtent(axis) - lineStartPoint[axis]) / lineDirection[axis];
+	Angle FastGetIncidentAngleOfLineLike<TLine>(TLine line) where TLine : ILineLike {
+		return FastGetHitPointAndSidePlaneOfLineLike(line).Side.FastIncidentAngleWith(line.Direction);
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle? IncidentAngleWith(Ray ray) => GetIncidentAngleOfLineLike(ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle? IncidentAngleWith(BoundedRay ray) => GetIncidentAngleOfLineLike(ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle FastIncidentAngleWith(Ray ray) => FastGetIncidentAngleOfLineLike(ray);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle FastIncidentAngleWith(BoundedRay ray) => FastGetIncidentAngleOfLineLike(ray);
+
+	public Ray? ReflectionOf(Ray ray) {
+		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
+		var reflection = tuple?.Side.ReflectionOf(ray.Direction);
+		if (reflection == null) return null;
+
+		return new Ray(tuple.Value.HitPoint, reflection.Value);
+	}
+	public BoundedRay? ReflectionOf(BoundedRay ray) {
+		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
+		var reflection = tuple?.Side.ReflectionOf(ray.Direction);
+		if (reflection == null) return null;
+
+		return BoundedRay.FromStartPointAndVect(tuple.Value.HitPoint, reflection.Value * (ray.Length - tuple.Value.HitDistance));
+	}
+	public Ray FastReflectionOf(Ray ray) {
+		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
+		return new Ray(tuple.Value.HitPoint, tuple.Value.Side.FastReflectionOf(ray.Direction));
+	}
+	public BoundedRay FastReflectionOf(BoundedRay ray) {
+		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
+		return BoundedRay.FromStartPointAndVect(tuple.Value.HitPoint, tuple.Value.Side.FastReflectionOf(ray.Direction) * (ray.Length - tuple.Value.HitDistance));
+	}
+	#endregion
+
+	#region Distance From / Closest Point / Intersection (Plane)
 	bool QuickPlaneCuboidIntersectionTest(Plane plane) { // https://gdbooks.gitbooks.io/3dcollisions/content/Chapter2/static_aabb_plane.html
 		var halfDiagonalProjection = Width * MathF.Abs(plane.Normal.X) + Height * MathF.Abs(plane.Normal.Y) + Depth * MathF.Abs(plane.Normal.Z);
 		return plane.DistanceFromOrigin() <= halfDiagonalProjection;
 	}
 
 	const int MaxPlaneIntersectionPoints = 6;
-	int GetPlaneIntersectionPoints(Plane plane, Span<Location> pointSpan) { 
+	int GetPlaneIntersectionPoints(Plane plane, Span<Location> pointSpan) {
 		var intersectionCount = 0;
 		foreach (var edge in Edges) {
 			var edgeIntersection = edge.IntersectionWith(plane);
@@ -490,7 +463,7 @@ partial struct CuboidDescriptor {
 		if (QuickPlaneCuboidIntersectionTest(plane)) return PlaneObjectRelationship.PlaneIntersectsObject;
 		return plane.FacesTowardsOrigin(planeThickness: 0f) ? PlaneObjectRelationship.PlaneFacesTowardsObject : PlaneObjectRelationship.PlaneFacesAwayFromObject;
 	}
-	
+
 	public Location SurfacePointClosestTo(Plane plane) {
 		if (QuickPlaneCuboidIntersectionTest(plane)) return GetAnyPlaneIntersectionPoint(plane)!.Value;
 		var resultDistance = Single.PositiveInfinity;
@@ -508,29 +481,9 @@ partial struct CuboidDescriptor {
 
 	float IConvexShape.SurfaceDistanceFrom(Plane plane) => DistanceFrom(plane);
 	float IConvexShape.SurfaceDistanceSquaredFrom(Plane plane) { var sqrt = DistanceFrom(plane); return sqrt * sqrt; }
+	#endregion
 
-	public float GetExtent(Axis axis) => axis switch {
-		Axis.X => Width,
-		Axis.Y => Height,
-		Axis.Z => Depth,
-		_ => throw new ArgumentOutOfRangeException($"{nameof(Axis)} can not be {nameof(Axis.None)} or non-defined value.", axis, nameof(axis))
-	};
-	public float GetHalfExtent(Axis axis) => axis switch {
-		Axis.X => HalfWidth,
-		Axis.Y => HalfHeight,
-		Axis.Z => HalfDepth,
-		_ => throw new ArgumentOutOfRangeException($"{nameof(Axis)} can not be {nameof(Axis.None)} or non-defined value.", axis, nameof(axis))
-	};
-
-	public float GetSideSurfaceArea(CardinalOrientation3D side) {
-		return side.GetAxis() switch {
-			Axis.X => HalfHeight * HalfDepth * 4f,
-			Axis.Y => HalfDepth * HalfWidth * 4f,
-			Axis.Z => HalfWidth * HalfHeight * 4f,
-			_ => throw new ArgumentOutOfRangeException($"{nameof(CardinalOrientation3D)} can not be {nameof(CardinalOrientation3D.None)} or non-defined value.", side, nameof(side))
-		};
-	}
-
+	#region Clamping and Interpolation
 	public static CuboidDescriptor Interpolate(CuboidDescriptor start, CuboidDescriptor end, float distance) {
 		return FromHalfDimensions(
 			Single.Lerp(start.HalfWidth, end.HalfWidth, distance),
@@ -538,19 +491,5 @@ partial struct CuboidDescriptor {
 			Single.Lerp(start.HalfDepth, end.HalfDepth, distance)
 		);
 	}
-
-	public static CuboidDescriptor Random() {
-		return FromHalfDimensions(
-			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax),
-			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax),
-			RandomUtils.NextSingle(DefaultRandomMin, DefaultRandomMax)
-		);
-	}
-	public static CuboidDescriptor Random(CuboidDescriptor minInclusive, CuboidDescriptor maxExclusive) {
-		return FromHalfDimensions(
-			RandomUtils.NextSingle(minInclusive.HalfWidth, maxExclusive.HalfWidth),
-			RandomUtils.NextSingle(minInclusive.HalfHeight, maxExclusive.HalfHeight),
-			RandomUtils.NextSingle(minInclusive.HalfDepth, maxExclusive.HalfDepth)
-		);
-	}
+	#endregion
 }

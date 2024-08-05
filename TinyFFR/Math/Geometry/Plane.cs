@@ -50,6 +50,11 @@ public readonly partial struct Plane : IMathPrimitive<Plane>, IDescriptiveString
 	}
 	#endregion
 
+	#region Random
+	public static Plane Random() => new(Direction.Random(), Location.Random());
+	public static Plane Random(Plane minInclusive, Plane maxExclusive) => new(Direction.Random(minInclusive.Normal, maxExclusive.Normal), Location.Random(minInclusive.PointClosestToOrigin, maxExclusive.PointClosestToOrigin));
+	#endregion
+
 	#region Span Conversions
 	public static int SerializationByteSpanLength { get; } = Direction.SerializationByteSpanLength + Location.SerializationByteSpanLength;
 

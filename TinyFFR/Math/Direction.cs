@@ -79,6 +79,15 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 		get => AsVector4.Z;
 	}
 
+	public float this[Axis axis] => axis switch {
+		Axis.X => X,
+		Axis.Y => Y,
+		Axis.Z => Z,
+		_ => throw new ArgumentOutOfRangeException(nameof(axis), axis, $"{nameof(Axis)} must not be anything except {nameof(Axis.X)}, {nameof(Axis.Y)} or {nameof(Axis.Z)}.")
+	};
+	public XYPair<float> this[Axis first, Axis second] => new(this[first], this[second]);
+	public Direction this[Axis first, Axis second, Axis third] => new(this[first], this[second], this[third]);
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction() : this(0f, 0f, 0f) { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -130,6 +139,36 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 		z = Z;
 	}
 	public static implicit operator Direction((float X, float Y, float Z) tuple) => new(tuple.X, tuple.Y, tuple.Z);
+	#endregion
+
+	#region Random
+	public static Direction Random() {
+		Direction result;
+		do {
+			result = new(
+				RandomUtils.NextSingleNegOneToOneInclusive(),
+				RandomUtils.NextSingleNegOneToOneInclusive(),
+				RandomUtils.NextSingleNegOneToOneInclusive()
+			);
+		} while (result == None);
+		return result;
+	}
+	public static Direction Random(Direction minInclusive, Direction maxExclusive) {
+		return (minInclusive >> maxExclusive).ScaledBy(RandomUtils.NextSingle()) * minInclusive;
+	}
+	public static Direction Random(Direction coneCentre, Angle coneAngleMax) => Random(coneCentre, coneAngleMax, Angle.Zero);
+	public static Direction Random(Direction coneCentre, Angle coneAngleMax, Angle coneAngleMin) {
+		if (coneCentre == None) return Random();
+
+		var offset = coneCentre * (coneCentre >> coneCentre.AnyOrthogonal()).WithAngle(Angle.Random(coneAngleMin.ClampZeroToHalfCircle(), coneAngleMax.ClampZeroToHalfCircle()));
+		return offset * new Rotation(Angle.Random(Angle.Zero, Angle.FullCircle), coneCentre);
+	}
+	public static Direction Random(Plane plane) => Random(plane, plane.Normal.AnyOrthogonal(), Angle.FullCircle);
+	public static Direction Random(Plane plane, Direction arcCentre, Angle arcAngle) {
+		if (arcCentre.ParallelizedWith(plane) == null) arcCentre = plane.Normal.AnyOrthogonal();
+		var halfAngle = arcAngle * 0.5f;
+		return FromPlaneAndPolarAngle(plane, arcCentre, Angle.Random(-halfAngle, halfAngle));
+	}
 	#endregion
 
 	#region Span Conversion

@@ -71,6 +71,21 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 	public static implicit operator Rotation((Direction Axis, Angle Angle) operand) => new(operand.Angle, operand.Axis);
 	#endregion
 
+	#region Random
+	public static Rotation Random() {
+		return FromQuaternion(new(
+			RandomUtils.NextSingleNegOneToOneInclusive(),
+			RandomUtils.NextSingleNegOneToOneInclusive(),
+			RandomUtils.NextSingleNegOneToOneInclusive(),
+			RandomUtils.NextSingleNegOneToOneInclusive()
+		));
+	}
+	public static Rotation Random(Rotation minInclusive, Rotation maxExclusive) {
+		var difference = minInclusive.Minus(maxExclusive);
+		return minInclusive + difference.ScaledBy(RandomUtils.NextSingle());
+	}
+	#endregion
+
 	#region Span Conversions
 	public static int SerializationByteSpanLength { get; } = sizeof(float) * 4;
 

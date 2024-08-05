@@ -63,6 +63,11 @@ public readonly partial struct BoundedRay : ILineLike<BoundedRay, BoundedRay, Bo
 	public static BoundedRay FromStartPointAndVect(Location startPoint, Vect startToEndVect) => new(startPoint, startToEndVect);
 	#endregion
 
+	#region Random
+	public static BoundedRay Random() => new(Location.Random(), Location.Random());
+	public static BoundedRay Random(BoundedRay minInclusive, BoundedRay maxExclusive) => new(Location.Random(minInclusive.StartPoint, maxExclusive.StartPoint), Location.Random(minInclusive.EndPoint, maxExclusive.EndPoint));
+	#endregion
+
 	#region Span Conversions
 	public static int SerializationByteSpanLength { get; } = Location.SerializationByteSpanLength * 2;
 
