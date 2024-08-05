@@ -387,6 +387,7 @@ partial struct CuboidDescriptor {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle FastIncidentAngleWith(BoundedRay ray) => FastGetIncidentAngleOfLineLike(ray);
 
+#pragma warning disable CS8629 // "Nullable value type may be null" -- seems like a compiler bug? It thinks 'tuple' could be null
 	public Ray? ReflectionOf(Ray ray) {
 		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
 		var reflection = tuple?.Side.ReflectionOf(ray.Direction);
@@ -409,6 +410,7 @@ partial struct CuboidDescriptor {
 		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
 		return BoundedRay.FromStartPointAndVect(tuple.Value.HitPoint, tuple.Value.Side.FastReflectionOf(ray.Direction) * (ray.Length - tuple.Value.HitDistance));
 	}
+#pragma warning restore CS8629 // "Nullable value type may be null"
 	#endregion
 
 	#region Distance From / Closest Point / Intersection (Plane)

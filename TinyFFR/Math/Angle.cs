@@ -100,7 +100,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 		Orientation2D.DownLeft => 225f,
 		Orientation2D.Down => 270f,
 		Orientation2D.DownRight => 315f,
-		_ => throw new ArgumentOutOfRangeException($"Undefined {nameof(Orientation2D)}.", orientation, nameof(orientation))
+		_ => throw new ArgumentOutOfRangeException(nameof(orientation), orientation, "Orientation must be defined.")
 	};
 
 	/* I thought long and hard about whether this conversion should even exist and what it should assume the operand is.

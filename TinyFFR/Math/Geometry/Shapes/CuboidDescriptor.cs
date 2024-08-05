@@ -78,13 +78,13 @@ public readonly partial struct CuboidDescriptor : IConvexShape<CuboidDescriptor>
 		Axis.X => Width,
 		Axis.Y => Height,
 		Axis.Z => Depth,
-		_ => throw new ArgumentOutOfRangeException($"{nameof(Axis)} can not be {nameof(Axis.None)} or non-defined value.", axis, nameof(axis))
+		_ => throw new ArgumentOutOfRangeException(nameof(axis), axis, $"{nameof(Axis)} can not be {nameof(Axis.None)} or non-defined value.")
 	};
 	public float GetHalfExtent(Axis axis) => axis switch {
 		Axis.X => HalfWidth,
 		Axis.Y => HalfHeight,
 		Axis.Z => HalfDepth,
-		_ => throw new ArgumentOutOfRangeException($"{nameof(Axis)} can not be {nameof(Axis.None)} or non-defined value.", axis, nameof(axis))
+		_ => throw new ArgumentOutOfRangeException(nameof(axis), axis, $"{nameof(Axis)} can not be {nameof(Axis.None)} or non-defined value.")
 	};
 
 	public float GetSideSurfaceArea(CardinalOrientation3D side) {
@@ -92,7 +92,7 @@ public readonly partial struct CuboidDescriptor : IConvexShape<CuboidDescriptor>
 			Axis.X => HalfHeight * HalfDepth * 4f,
 			Axis.Y => HalfDepth * HalfWidth * 4f,
 			Axis.Z => HalfWidth * HalfHeight * 4f,
-			_ => throw new ArgumentOutOfRangeException($"{nameof(CardinalOrientation3D)} can not be {nameof(CardinalOrientation3D.None)} or non-defined value.", side, nameof(side))
+			_ => throw new ArgumentOutOfRangeException(nameof(side), side, $"{nameof(CardinalOrientation3D)} can not be {nameof(CardinalOrientation3D.None)} or non-defined value.")
 		};
 	}
 

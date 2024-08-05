@@ -242,63 +242,27 @@ partial struct Plane :
 
 	#region Dimension Conversion
 	// TODO xmldoc that this converter only works for the plane it was generated for
-	public readonly struct DimensionConverter {
-		public Direction XBasis { get; }
-		public Direction YBasis { get; }
-		public Direction PlaneNormal { get; }
-		public Location Origin { get; }
-
-		public DimensionConverter(Direction xBasis, Direction yBasis, Direction planeNormal, Location origin) {
-			XBasis = xBasis;
-			YBasis = yBasis;
-			PlaneNormal = planeNormal;
-			Origin = origin;
-		}
-
-		public XYPair<float> Convert(Location location3D) {
-			location3D -= (Vect) Origin;
-			return new(XBasis.Dot((Vect) location3D), YBasis.Dot((Vect) location3D));
-		}
-
-		public Location Convert(XYPair<float> location2D) {
-			return (XBasis * location2D.X + YBasis * location2D.Y) + Origin;
-		}
-		public Location Convert(XYPair<float> location2D, float zAxisDimension) {
-			return Convert(location2D) + PlaneNormal * zAxisDimension;
-		}
-
-		public XYPair<float> ConvertDisregardingOrigin(Location location3D) {
-			return new(XBasis.Dot((Vect) location3D), YBasis.Dot((Vect) location3D));
-		}
-
-		public Location ConvertDisregardingOrigin(XYPair<float> location2D) {
-			return (Location) (XBasis * location2D.X + YBasis * location2D.Y);
-		}
-		public Location ConvertDisregardingOrigin(XYPair<float> location2D, float zAxisDimension) {
-			return ConvertDisregardingOrigin(location2D) + PlaneNormal * zAxisDimension;
-		}
-	}
-	public DimensionConverter CreateDimensionConverter() {
+	public PlaneDimensionConverter CreateDimensionConverter() {
 		var xBasis = Normal.AnyOrthogonal();
 		var yBasis = Direction.FromOrthogonal(Normal, xBasis);
 		var origin = PointClosestToOrigin;
 		return new(xBasis, yBasis, Normal, origin);
 	}
-	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin) {
+	public PlaneDimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin) {
 		var xBasis = Normal.AnyOrthogonal();
 		var yBasis = Direction.FromOrthogonal(Normal, xBasis);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}
 	// TODO xmldoc what happens if axis is ortho to plane and also that people who want to skip all the checks or create a skewed basis etc can create their own converter directly with the ctor
-	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis) {
+	public PlaneDimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis) {
 		var xBasis = ParallelizationOf(twoDimensionalCoordinateXAxis) ?? Normal.AnyOrthogonal();
 		var yBasis = Direction.FromOrthogonal(Normal, xBasis);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}
 	// TODO xmldoc what happens if either axis is ortho to plane or parallel to each other and also that people who want to skip all the checks or create a skewed basis etc can create their own converter directly with the ctor
-	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis, Direction twoDimensionalCoordinateYAxis) {
+	public PlaneDimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis, Direction twoDimensionalCoordinateYAxis) {
 		var xBasis = ParallelizationOf(twoDimensionalCoordinateXAxis) ?? Normal.AnyOrthogonal();
 		var yBasis = ParallelizationOf(twoDimensionalCoordinateYAxis)?.OrthogonalizedAgainst(xBasis) ?? Direction.FromOrthogonal(xBasis, Normal);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
@@ -309,4 +273,53 @@ partial struct Plane :
 	public Location HolographTo3DOf(XYPair<float> xyPair) => CreateDimensionConverter().Convert(xyPair);
 	public Location HolographTo3DOf(XYPair<float> xyPair, float zDimension) => CreateDimensionConverter().Convert(xyPair, zDimension);
 	#endregion
+}
+
+public readonly struct PlaneDimensionConverter : IEquatable<PlaneDimensionConverter> {
+	public Direction XBasis { get; }
+	public Direction YBasis { get; }
+	public Direction PlaneNormal { get; }
+	public Location Origin { get; }
+
+	public PlaneDimensionConverter(Direction xBasis, Direction yBasis, Direction planeNormal, Location origin) {
+		XBasis = xBasis;
+		YBasis = yBasis;
+		PlaneNormal = planeNormal;
+		Origin = origin;
+	}
+
+	public XYPair<float> Convert(Location location3D) {
+		location3D -= (Vect) Origin;
+		return new(XBasis.Dot((Vect) location3D), YBasis.Dot((Vect) location3D));
+	}
+
+	public Location Convert(XYPair<float> location2D) {
+		return (XBasis * location2D.X + YBasis * location2D.Y) + Origin;
+	}
+	public Location Convert(XYPair<float> location2D, float zAxisDimension) {
+		return Convert(location2D) + PlaneNormal * zAxisDimension;
+	}
+
+	public XYPair<float> ConvertDisregardingOrigin(Location location3D) {
+		return new(XBasis.Dot((Vect) location3D), YBasis.Dot((Vect) location3D));
+	}
+
+	public Location ConvertDisregardingOrigin(XYPair<float> location2D) {
+		return (Location) (XBasis * location2D.X + YBasis * location2D.Y);
+	}
+	public Location ConvertDisregardingOrigin(XYPair<float> location2D, float zAxisDimension) {
+		return ConvertDisregardingOrigin(location2D) + PlaneNormal * zAxisDimension;
+	}
+
+	public bool Equals(PlaneDimensionConverter other) {
+		return XBasis.Equals(other.XBasis) 
+			&& YBasis.Equals(other.YBasis)
+			&& PlaneNormal.Equals(other.PlaneNormal)
+			&& Origin.Equals(other.Origin);
+	}
+	public override bool Equals(object? obj) => obj is PlaneDimensionConverter other && Equals(other);
+	public override int GetHashCode() => HashCode.Combine(XBasis, YBasis, PlaneNormal, Origin);
+
+	public static bool operator ==(PlaneDimensionConverter left, PlaneDimensionConverter right) => left.Equals(right);
+	public static bool operator !=(PlaneDimensionConverter left, PlaneDimensionConverter right) => !left.Equals(right);
 }

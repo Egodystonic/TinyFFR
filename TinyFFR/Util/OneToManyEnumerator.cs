@@ -3,6 +3,7 @@
 
 namespace Egodystonic.TinyFFR;
 
+#pragma warning disable CA1815 // "Should implement IEquatable" -- It's not recommended to compare function pointers, so there's no real way to provide equality for this type (plus it's not particularly useful anyway)
 // Represents an enumerator that takes a copy of TIn and uses a pointer to a static indexer and count method to avoid accidental garbage generation
 public readonly unsafe struct OneToManyEnumerator<TIn, TOut> : IEnumerable<TOut> {
 	public struct Enumerator : IEnumerator<TOut> {
