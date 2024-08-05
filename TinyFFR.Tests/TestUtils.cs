@@ -61,4 +61,102 @@ static class TestUtils {
 		var stackValue = default(T);
 		Assert.AreEqual(expectedSize, MemoryMarshal.AsBytes(new ReadOnlySpan<T>(in stackValue)).Length);
 	}
+
+	public static void AssertMirrorMethod<TSelf, TOther>(Func<TSelf, TOther, object?> a, Func<TOther, TSelf, object?> b) where TSelf : IRandomizable<TSelf> where TOther : IRandomizable<TOther> {
+		const int NumIterations = 100;
+		for (var i = 0; i < NumIterations; ++i) {
+			var self = TSelf.Random();
+			var other = TOther.Random();
+			try {
+				try {
+					Assert.AreEqual(a(self, other), b(other, self));
+				}
+				catch (Exception e) when (e is not AssertionException) {
+					Exception? aException = null;
+					try {
+						a(self, other);
+					}
+					catch (Exception aE) {
+						aException = aE;
+					}
+
+					Exception? bException = null;
+					try {
+						b(other, self);
+					}
+					catch (Exception bE) {
+						bException = bE;
+					}
+
+					if (aException == null || bException == null) throw;
+					if (aException.GetType() != bException.GetType()) throw;
+				}
+			}
+			catch {
+				Console.WriteLine($"Self: {self}");
+				Console.WriteLine($"Other: {other}");
+				throw;
+			}
+		}
+	}
+
+	public static void AssertMirrorMethod<TSelf, TOther, TSelfInterface, TOtherInterface>(Func<TSelfInterface, TOther, object?> a, Func<TOtherInterface, TSelf, object?> b) where TSelf : TSelfInterface, IRandomizable<TSelf> where TOther : TOtherInterface, IRandomizable<TOther> {
+		AssertMirrorMethod<TSelf, TOther>((s, o) => a(s, o), (o, s) => b(o, s));
+	}
+
+	public static void AssertMirrorMethod<TSelf, TOther>(Func<dynamic, dynamic, object?> func) where TSelf : IRandomizable<TSelf> where TOther : IRandomizable<TOther> {
+		AssertMirrorMethod<TSelf, TOther>((s, o) => func(s, o), (o, s) => func(o, s));
+	}
+
+	public static void AssertMirrorMethodWithTolerance<TSelf, TOther>(Func<TSelf, TOther, object?> a, Func<TOther, TSelf, object?> b, float tolerance) where TSelf : IRandomizable<TSelf> where TOther : IRandomizable<TOther> {
+		const int NumIterations = 100;
+		for (var i = 0; i < NumIterations; ++i) {
+			var self = TSelf.Random();
+			var other = TOther.Random();
+			try {
+				try {
+					var aResult = a(self, other);
+					var bResult = b(other, self);
+					Assert.AreEqual(aResult?.GetType(), bResult?.GetType());
+					if (aResult == null && bResult == null) continue;
+					else if (aResult is float aFloat && bResult is float bFloat) Assert.AreEqual(aFloat, bFloat, tolerance);
+					else if (aResult is double aDouble && bResult is double bDouble) Assert.AreEqual(aDouble, bDouble, tolerance);
+					else AssertToleranceEquals((dynamic?) aResult, (dynamic?) bResult, tolerance); 
+				}
+				catch (Exception e) when (e is not AssertionException) {
+					Exception? aException = null;
+					try {
+						a(self, other);
+					}
+					catch (Exception aE) {
+						aException = aE;
+					}
+
+					Exception? bException = null;
+					try {
+						b(other, self);
+					}
+					catch (Exception bE) {
+						bException = bE;
+					}
+
+					if (aException == null || bException == null) throw;
+					if (aException.GetType() != bException.GetType()) throw;
+				}
+			}
+			catch {
+				Console.WriteLine($"Self: {self}");
+				Console.WriteLine($"Other: {other}");
+				throw;
+			}
+		}
+	}
+
+	public static void AssertMirrorMethodWithTolerance<TSelf, TOther, TSelfInterface, TOtherInterface>(Func<TSelfInterface, TOther, object?> a, Func<TOtherInterface, TSelf, object?> b, float tolerance) where TSelf : TSelfInterface, IRandomizable<TSelf> where TOther : TOtherInterface, IRandomizable<TOther> {
+		AssertMirrorMethodWithTolerance<TSelf, TOther>((s, o) => a(s, o), (o, s) => b(o, s), tolerance);
+	}
+
+	public static void AssertMirrorMethodWithTolerance<TSelf, TOther>(Func<dynamic, dynamic, object?> func, float tolerance) where TSelf : IRandomizable<TSelf> where TOther : IRandomizable<TOther> {
+		AssertMirrorMethodWithTolerance<TSelf, TOther>((s, o) => func(s, o), (o, s) => func(o, s), tolerance);
+	}
 }

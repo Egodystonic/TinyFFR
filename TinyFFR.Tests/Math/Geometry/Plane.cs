@@ -1189,4 +1189,55 @@ class PlaneTest {
 			}
 		}
 	}
+
+	[Test]
+	public void ShouldCorrectlyImplementMirrorMethods() {
+		AssertMirrorMethod<Plane, Location>((a, b) => a.DistanceFrom(b));
+		AssertMirrorMethod<Plane, Location, IDistanceMeasurable<Location>, IDistanceMeasurable<Plane>>((p, l) => p.DistanceSquaredFrom(l), (l, p) => l.DistanceSquaredFrom(p));
+		AssertMirrorMethod<Plane, Location>((a, b) => a.SignedDistanceFrom(b));
+		AssertMirrorMethod<Plane, Location>((p, l) => p.Contains(l), (l, p) => l.IsContainedWithin(p));
+		AssertMirrorMethod<Plane, Location>((p, l) => p.Contains(l, 10f), (l, p) => l.IsContainedWithin(p, 10f));
+		AssertMirrorMethod<Plane, Location>((p, l) => p.PointClosestTo(l), (l, p) => l.ClosestPointOn(p));
+		AssertMirrorMethod<Plane, Location>((p, l) => p.ProjectionTo2DOf(l), (l, p) => l.ProjectedTo2DOn(p));
+
+		AssertMirrorMethod<Plane, Direction>((a, b) => a.AngleTo(b));
+		AssertMirrorMethod<Plane, Direction>((a, b) => a.SignedAngleTo(b));
+		AssertMirrorMethod<Plane, Direction>((a, b) => a.IncidentAngleWith(b));
+		AssertMirrorMethod<Plane, Direction>((a, b) => a.FastIncidentAngleWith(b));
+		AssertMirrorMethod<Plane, Direction>((p, d) => p.ReflectionOf(d), (d, p) => d.ReflectedBy(p));
+		AssertMirrorMethod<Plane, Direction>((p, d) => p.FastReflectionOf(d), (d, p) => d.FastReflectedBy(p));
+		AssertMirrorMethod<Plane, Direction>((p, d) => p.ParallelizationOf(d), (d, p) => d.ParallelizedWith(p));
+		AssertMirrorMethod<Plane, Direction>((p, d) => p.FastParallelizationOf(d), (d, p) => d.FastParallelizedWith(p));
+		AssertMirrorMethod<Plane, Direction>((p, d) => p.OrthogonalizationOf(d), (d, p) => d.OrthogonalizedAgainst(p));
+		AssertMirrorMethod<Plane, Direction>((p, d) => p.FastOrthogonalizationOf(d), (d, p) => d.FastOrthogonalizedAgainst(p));
+		AssertMirrorMethod<Plane, Direction>((a, b) => a.IsParallelTo(b));
+		AssertMirrorMethod<Plane, Direction>((a, b) => a.IsApproximatelyParallelTo(b));
+		AssertMirrorMethod<Plane, Direction>((a, b) => a.IsApproximatelyParallelTo(b, new Angle(10f)));
+		AssertMirrorMethod<Plane, Direction>((a, b) => a.IsOrthogonalTo(b));
+		AssertMirrorMethod<Plane, Direction>((a, b) => a.IsApproximatelyOrthogonalTo(b));
+		AssertMirrorMethod<Plane, Direction>((a, b) => a.IsApproximatelyOrthogonalTo(b, new Angle(10f)));
+
+		AssertMirrorMethod<Plane, Vect>((a, b) => a.AngleTo(b));
+		AssertMirrorMethod<Plane, Vect>((a, b) => a.SignedAngleTo(b));
+		AssertMirrorMethod<Plane, Vect>((a, b) => a.IncidentAngleWith(b));
+		AssertMirrorMethod<Plane, Vect>((a, b) => a.FastIncidentAngleWith(b));
+		AssertMirrorMethod<Plane, Vect>((p, v) => p.ReflectionOf(v), (v, p) => v.ReflectedBy(p));
+		AssertMirrorMethod<Plane, Vect>((p, v) => p.FastReflectionOf(v), (v, p) => v.FastReflectedBy(p));
+		AssertMirrorMethod<Plane, Vect>((p, v) => p.ParallelizationOf(v), (v, p) => v.ParallelizedWith(p));
+		AssertMirrorMethod<Plane, Vect>((p, v) => p.FastParallelizationOf(v), (v, p) => v.FastParallelizedWith(p));
+		AssertMirrorMethod<Plane, Vect>((p, v) => p.OrthogonalizationOf(v), (v, p) => v.OrthogonalizedAgainst(p));
+		AssertMirrorMethod<Plane, Vect>((p, v) => p.FastOrthogonalizationOf(v), (v, p) => v.FastOrthogonalizedAgainst(p));
+		AssertMirrorMethod<Plane, Vect>((p, v) => p.ProjectionOf(v), (v, p) => v.ProjectedOnTo(p));
+		AssertMirrorMethod<Plane, Vect, IProjectionTarget<Vect>, IProjectable<Vect, Plane>>((p, v) => p.FastProjectionOf(v), (v, p) => v.FastProjectedOnTo(p));
+		AssertMirrorMethod<Plane, Vect, IProjectionTarget<Vect>, IProjectable<Vect, Plane>>((p, v) => p.ProjectionOf(v), (v, p) => v.ProjectedOnTo(p));
+		AssertMirrorMethod<Plane, Vect>((a, b) => a.IsParallelTo(b));
+		AssertMirrorMethod<Plane, Vect>((a, b) => a.IsApproximatelyParallelTo(b));
+		AssertMirrorMethod<Plane, Vect>((a, b) => a.IsApproximatelyParallelTo(b, new Angle(10f)));
+		AssertMirrorMethod<Plane, Vect>((a, b) => a.IsOrthogonalTo(b));
+		AssertMirrorMethod<Plane, Vect>((a, b) => a.IsApproximatelyOrthogonalTo(b));
+		AssertMirrorMethod<Plane, Vect>((a, b) => a.IsApproximatelyOrthogonalTo(b, new Angle(10f)));
+
+		AssertMirrorMethod<Plane, XYPair<float>>((p, xy) => p.HolographTo3DOf(xy), (xy, p) => xy.HolographedTo3DOn(p));
+		AssertMirrorMethod<Plane, XYPair<float>>((p, xy) => p.HolographTo3DOf(xy, 100f), (xy, p) => xy.HolographedTo3DOn(p, 100f));
+	}
 }

@@ -197,17 +197,17 @@ partial struct Line {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay FastParallelizationOf(BoundedRay ray) => ray.FastParallelizedWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line? OrthogonalizationOf(Line line) => line.ParallelizedWith(this);
+	public Line? OrthogonalizationOf(Line line) => line.OrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray? OrthogonalizationOf(Ray ray) => ray.ParallelizedWith(this);
+	public Ray? OrthogonalizationOf(Ray ray) => ray.OrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedRay? OrthogonalizationOf(BoundedRay ray) => ray.ParallelizedWith(this);
+	public BoundedRay? OrthogonalizationOf(BoundedRay ray) => ray.OrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line FastOrthogonalizationOf(Line line) => line.FastParallelizedWith(this);
+	public Line FastOrthogonalizationOf(Line line) => line.FastOrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray FastOrthogonalizationOf(Ray ray) => ray.FastParallelizedWith(this);
+	public Ray FastOrthogonalizationOf(Ray ray) => ray.FastOrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedRay FastOrthogonalizationOf(BoundedRay ray) => ray.FastParallelizedWith(this);
+	public BoundedRay FastOrthogonalizationOf(BoundedRay ray) => ray.FastOrthogonalizedAgainst(this);
 }
 partial struct Ray {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -401,17 +401,17 @@ partial struct Ray {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay FastParallelizationOf(BoundedRay ray) => ray.FastParallelizedWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line? OrthogonalizationOf(Line line) => line.ParallelizedWith(this);
+	public Line? OrthogonalizationOf(Line line) => line.OrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray? OrthogonalizationOf(Ray ray) => ray.ParallelizedWith(this);
+	public Ray? OrthogonalizationOf(Ray ray) => ray.OrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedRay? OrthogonalizationOf(BoundedRay ray) => ray.ParallelizedWith(this);
+	public BoundedRay? OrthogonalizationOf(BoundedRay ray) => ray.OrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line FastOrthogonalizationOf(Line line) => line.FastParallelizedWith(this);
+	public Line FastOrthogonalizationOf(Line line) => line.FastOrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray FastOrthogonalizationOf(Ray ray) => ray.FastParallelizedWith(this);
+	public Ray FastOrthogonalizationOf(Ray ray) => ray.FastOrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedRay FastOrthogonalizationOf(BoundedRay ray) => ray.FastParallelizedWith(this);
+	public BoundedRay FastOrthogonalizationOf(BoundedRay ray) => ray.FastOrthogonalizedAgainst(this);
 }
 partial struct BoundedRay {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -605,17 +605,17 @@ partial struct BoundedRay {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay FastParallelizationOf(BoundedRay ray) => ray.FastParallelizedWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line? OrthogonalizationOf(Line line) => line.ParallelizedWith(this);
+	public Line? OrthogonalizationOf(Line line) => line.OrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray? OrthogonalizationOf(Ray ray) => ray.ParallelizedWith(this);
+	public Ray? OrthogonalizationOf(Ray ray) => ray.OrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedRay? OrthogonalizationOf(BoundedRay ray) => ray.ParallelizedWith(this);
+	public BoundedRay? OrthogonalizationOf(BoundedRay ray) => ray.OrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line FastOrthogonalizationOf(Line line) => line.FastParallelizedWith(this);
+	public Line FastOrthogonalizationOf(Line line) => line.FastOrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray FastOrthogonalizationOf(Ray ray) => ray.FastParallelizedWith(this);
+	public Ray FastOrthogonalizationOf(Ray ray) => ray.FastOrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedRay FastOrthogonalizationOf(BoundedRay ray) => ray.FastParallelizedWith(this);
+	public BoundedRay FastOrthogonalizationOf(BoundedRay ray) => ray.FastOrthogonalizedAgainst(this);
 }
 
 partial struct Location : ILineDistanceMeasurable, ILineClosestExogenousPointDiscoverable, ILineContainable {
@@ -694,17 +694,17 @@ partial struct Direction : ILineOrthogonalizationTarget, ILineParallelizationTar
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay FastOrthogonalizationOf(BoundedRay ray) => ray.FastOrthogonalizedAgainst(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line? ParallelizationOf(Line line) => line.OrthogonalizedAgainst(this);
+	public Line? ParallelizationOf(Line line) => line.ParallelizedWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray? ParallelizationOf(Ray ray) => ray.OrthogonalizedAgainst(this);
+	public Ray? ParallelizationOf(Ray ray) => ray.ParallelizedWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedRay? ParallelizationOf(BoundedRay ray) => ray.OrthogonalizedAgainst(this);
+	public BoundedRay? ParallelizationOf(BoundedRay ray) => ray.ParallelizedWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Line FastParallelizationOf(Line line) => line.FastOrthogonalizedAgainst(this);
+	public Line FastParallelizationOf(Line line) => line.FastParallelizedWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Ray FastParallelizationOf(Ray ray) => ray.FastOrthogonalizedAgainst(this);
+	public Ray FastParallelizationOf(Ray ray) => ray.FastParallelizedWith(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedRay FastParallelizationOf(BoundedRay ray) => ray.FastOrthogonalizedAgainst(this);
+	public BoundedRay FastParallelizationOf(BoundedRay ray) => ray.FastParallelizedWith(this);
 }
 partial struct Plane : 
 	ILineProjectionTarget, 
@@ -717,7 +717,15 @@ partial struct Plane :
 	ILineRelatable<PlaneObjectRelationship>,
 	IIntersectionDeterminable<Plane, Line, Location>,
 	IIntersectionDeterminable<Plane, Ray, Location>,
-	IIntersectionDeterminable<Plane, BoundedRay, Location> {
+	IIntersectionDeterminable<Plane, BoundedRay, Location>,
+	ILineAngleMeasurable {
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(Line line) => line.AngleTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(Ray ray) => ray.AngleTo(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle AngleTo(BoundedRay ray) => ray.AngleTo(this);
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line? ProjectionOf(Line line) => line.ProjectedOnTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
