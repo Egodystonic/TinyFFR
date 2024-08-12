@@ -1,14 +1,16 @@
 ﻿// Created on 2024-01-29 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-namespace Egodystonic.TinyFFR.Environment.Input;
+using System;
+
+namespace Egodystonic.TinyFFR.Environment.Input.Local;
 
 [StructLayout(LayoutKind.Explicit, Pack = 1, Size = 16)]
-readonly struct RawGameControllerButtonEvent {
+readonly struct RawLocalGameControllerButtonEvent {
 	[FieldOffset(0)]
 	public readonly GameControllerHandle Handle;
 	[FieldOffset(8)]
-	public readonly RawGameControllerEventType Type;
+	public readonly RawLocalGameControllerEventType Type;
 	[FieldOffset(14)]
 	public readonly short NewValue;
 
@@ -17,7 +19,7 @@ readonly struct RawGameControllerButtonEvent {
 	}
 }
 
-enum RawGameControllerEventType {
+enum RawLocalGameControllerEventType {
 	A = 0,
 	B = 1,
 	X = 2,

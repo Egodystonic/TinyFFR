@@ -1,18 +1,13 @@
 ﻿// Created on 2024-01-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection.Metadata;
-using System.Security;
-using System.Threading;
-using Egodystonic.TinyFFR.Environment.Desktop;
+using System;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
 
-namespace Egodystonic.TinyFFR.Environment.Input;
+namespace Egodystonic.TinyFFR.Environment.Input.Local;
 
-sealed class NativeGameControllerState : IGameControllerInputTracker, IDisposable {
+sealed class LocalGameControllerState : IGameControllerInputTracker, IDisposable {
 	const int MaxControllerNameLength = 500;
 	public InteropStringBuffer NameBuffer { get; }
 	public GameControllerHandle Handle { get; }
@@ -62,7 +57,7 @@ sealed class NativeGameControllerState : IGameControllerInputTracker, IDisposabl
 		}
 	}
 
-	public NativeGameControllerState(GameControllerHandle handle) {
+	public LocalGameControllerState(GameControllerHandle handle) {
 		Handle = handle;
 		NameBuffer = new(MaxControllerNameLength, true);
 	}
@@ -108,42 +103,42 @@ sealed class NativeGameControllerState : IGameControllerInputTracker, IDisposabl
 		CurrentlyPressedButtons.ClearWithoutZeroingMemory();
 	}
 
-	public void ApplyEvent(RawGameControllerButtonEvent rawEvent) {
+	public void ApplyEvent(RawLocalGameControllerButtonEvent rawEvent) {
 		ThrowIfThisIsDisposed();
 		switch (rawEvent.Type) {
-			case RawGameControllerEventType.LeftStickAxisX:
+			case RawLocalGameControllerEventType.LeftStickAxisX:
 				LeftStickPosition = LeftStickPosition with { RawDisplacementHorizontal = rawEvent.NewValue };
 				break;
-			case RawGameControllerEventType.LeftStickAxisY:
+			case RawLocalGameControllerEventType.LeftStickAxisY:
 				LeftStickPosition = LeftStickPosition with { RawDisplacementVertical = rawEvent.NewValue != Int16.MinValue ? ((short) -rawEvent.NewValue) : Int16.MaxValue };
 				break;
-			case RawGameControllerEventType.RightStickAxisX:
+			case RawLocalGameControllerEventType.RightStickAxisX:
 				RightStickPosition = RightStickPosition with { RawDisplacementHorizontal = rawEvent.NewValue };
 				break;
-			case RawGameControllerEventType.RightStickAxisY:
+			case RawLocalGameControllerEventType.RightStickAxisY:
 				RightStickPosition = RightStickPosition with { RawDisplacementVertical = rawEvent.NewValue != Int16.MinValue ? ((short) -rawEvent.NewValue) : Int16.MaxValue };
 				break;
-			case RawGameControllerEventType.LeftTrigger: {
+			case RawLocalGameControllerEventType.LeftTrigger: {
 				var prevDisplacementLevel = LeftTriggerPosition.DisplacementLevel;
 				LeftTriggerPosition = new(rawEvent.NewValue);
 				var newDisplacementLevel = LeftTriggerPosition.DisplacementLevel;
 				if (prevDisplacementLevel == AnalogDisplacementLevel.None && newDisplacementLevel != AnalogDisplacementLevel.None) {
-					PushButtonEvent(RawGameControllerEventType.LeftTrigger, true);
+					PushButtonEvent(RawLocalGameControllerEventType.LeftTrigger, true);
 				}
 				else if (prevDisplacementLevel != AnalogDisplacementLevel.None && newDisplacementLevel == AnalogDisplacementLevel.None) {
-					PushButtonEvent(RawGameControllerEventType.LeftTrigger, false);
+					PushButtonEvent(RawLocalGameControllerEventType.LeftTrigger, false);
 				}
 				break;
 			}
-			case RawGameControllerEventType.RightTrigger: {
+			case RawLocalGameControllerEventType.RightTrigger: {
 				var prevDisplacementLevel = RightTriggerPosition.DisplacementLevel;
 				RightTriggerPosition = new(rawEvent.NewValue);
 				var newDisplacementLevel = RightTriggerPosition.DisplacementLevel;
 				if (prevDisplacementLevel == AnalogDisplacementLevel.None && newDisplacementLevel != AnalogDisplacementLevel.None) {
-					PushButtonEvent(RawGameControllerEventType.RightTrigger, true);
+					PushButtonEvent(RawLocalGameControllerEventType.RightTrigger, true);
 				}
 				else if (prevDisplacementLevel != AnalogDisplacementLevel.None && newDisplacementLevel == AnalogDisplacementLevel.None) {
-					PushButtonEvent(RawGameControllerEventType.RightTrigger, false);
+					PushButtonEvent(RawLocalGameControllerEventType.RightTrigger, false);
 				}
 				break;
 			}
@@ -153,7 +148,7 @@ sealed class NativeGameControllerState : IGameControllerInputTracker, IDisposabl
 		}
 	}
 
-	void PushButtonEvent(RawGameControllerEventType type, bool down) {
+	void PushButtonEvent(RawLocalGameControllerEventType type, bool down) {
 		var nonRawButton = (GameControllerButton) (int) (type + 1);
 		NewButtonEvents.Add(new GameControllerButtonEvent(nonRawButton, down));
 		if (down) {

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Factory;
+using Egodystonic.TinyFFR.Factory.Local;
 
 namespace Egodystonic.TinyFFR;
 
@@ -18,7 +19,7 @@ class NativeLoopTimingTest {
 	[Test]
 	// No assertions around timing because it leads to flaky tests, but manual check of output in console is still useful
 	public void Execute() {
-		using var factory = new TffrFactory();
+		using var factory = new LocalRendererFactory();
 
 		var loopBuilder = factory.GetApplicationLoopBuilder();
 		var loop = loopBuilder.BuildLoop(new() { FrameRateCapHz = 30 });

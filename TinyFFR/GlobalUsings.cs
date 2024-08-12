@@ -13,3 +13,4 @@ global using System.Runtime.InteropServices;
 global using DisplayHandle = System.Int32;
 global using unsafe WindowHandle = void*;
 global using ApplicationLoopHandle = System.Int32;
+global using unsafe AssetHandle = void*;

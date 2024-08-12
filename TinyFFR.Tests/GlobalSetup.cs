@@ -4,6 +4,7 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Egodystonic.TinyFFR.Factory;
+using Egodystonic.TinyFFR.Factory.Local;
 using NUnit.Framework.Constraints;
 using NUnit.Framework.Internal;
 
@@ -17,7 +18,7 @@ sealed class GlobalSetup {
 	public void TestSetup() {
 		TestExecutionContext.CurrentContext.AddFormatter(_ => obj => (obj as IDescriptiveStringProvider)?.ToStringDescriptive() ?? obj.ToString()!);
 		NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
-			typeof(TffrFactory).Assembly,
+			typeof(LocalRendererFactory).Assembly,
 			(libName, assy, searchPath) => {
 				var curDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 

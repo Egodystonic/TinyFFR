@@ -1,19 +1,14 @@
 ﻿// Created on 2024-01-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Security;
-using System.Threading;
-using Egodystonic.TinyFFR.Environment.Desktop;
-using Egodystonic.TinyFFR.Interop;
+using System;
 using Egodystonic.TinyFFR.Resources.Memory;
 
-namespace Egodystonic.TinyFFR.Environment.Input;
+namespace Egodystonic.TinyFFR.Environment.Input.Local;
 
-sealed class NativeKeyboardAndMouseInputState : IKeyboardAndMouseInputTracker, IDisposable {
-	public readonly UnmanagedBuffer<KeyboardOrMouseKeyEvent> EventBuffer = new(NativeInputTracker.InitialEventBufferLength);
-	public readonly UnmanagedBuffer<MouseClickEvent> ClickBuffer = new(NativeInputTracker.InitialEventBufferLength);
+sealed class LocalKeyboardAndMouseInputState : IKeyboardAndMouseInputTracker, IDisposable {
+	public readonly UnmanagedBuffer<KeyboardOrMouseKeyEvent> EventBuffer = new(LocalInputTracker.InitialEventBufferLength);
+	public readonly UnmanagedBuffer<MouseClickEvent> ClickBuffer = new(LocalInputTracker.InitialEventBufferLength);
 	readonly ArrayPoolBackedVector<KeyboardOrMouseKey> _currentlyPressedKeys = new();
 	readonly ArrayPoolBackedVector<KeyboardOrMouseKey> _keyDownEventBuffer = new();
 	readonly ArrayPoolBackedVector<KeyboardOrMouseKey> _keyUpEventBuffer = new();

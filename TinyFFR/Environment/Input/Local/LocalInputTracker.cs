@@ -1,26 +1,23 @@
 ﻿// Created on 2024-01-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+using System;
 using System.Security;
-using System.Threading;
-using Egodystonic.TinyFFR.Environment.Desktop;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
 
-namespace Egodystonic.TinyFFR.Environment.Input;
+namespace Egodystonic.TinyFFR.Environment.Input.Local;
 
-// This class and NativeKeyboardAndInputState + NativeGameControllerState are all a bit overly-incestuous but it's fine for an MVP build
+// This class and NativeKeyboardAndInputState + LocalGameControllerState are all a bit overly-incestuous but it's fine for an MVP build
 [SuppressUnmanagedCodeSecurity]
-sealed class NativeInputTracker : IInputTracker, IDisposable {
+sealed class LocalInputTracker : IInputTracker, IDisposable {
 	internal const int InitialEventBufferLength = 50;
-	static NativeInputTracker? _liveInstance = null;
-	readonly NativeKeyboardAndMouseInputState _kbmStateObject;
-	readonly UnmanagedBuffer<RawGameControllerButtonEvent> _controllerEventBuffer = new(InitialEventBufferLength);
+	static LocalInputTracker? _liveInstance = null;
+	readonly LocalKeyboardAndMouseInputState _kbmStateObject;
+	readonly UnmanagedBuffer<RawLocalGameControllerButtonEvent> _controllerEventBuffer = new(InitialEventBufferLength);
 	readonly ArrayPoolBackedVector<IGameControllerInputTracker> _detectedControllerStateObjectVector = new();
-	readonly ArrayPoolBackedMap<GameControllerHandle, NativeGameControllerState> _detectedControllerStateObjectMap = new();
-	readonly NativeGameControllerState _combinedControllerState;
+	readonly ArrayPoolBackedMap<GameControllerHandle, LocalGameControllerState> _detectedControllerStateObjectMap = new();
+	readonly LocalGameControllerState _combinedControllerState;
 	bool _isDisposed = false;
 
 	public bool UserQuitRequested { get; private set; } = false;
@@ -28,11 +25,11 @@ sealed class NativeInputTracker : IInputTracker, IDisposable {
 	public ReadOnlySpan<IGameControllerInputTracker> GameControllers => _detectedControllerStateObjectVector.AsSpan;
 	public IGameControllerInputTracker GameControllersCombined => _combinedControllerState;
 
-	public unsafe NativeInputTracker() {
-		if (_liveInstance != null) throw new InvalidOperationException($"Only one {nameof(NativeInputTracker)} may be active at any time.");
+	public unsafe LocalInputTracker() {
+		if (_liveInstance != null) throw new InvalidOperationException($"Only one {nameof(LocalInputTracker)} may be active at any time.");
 		_liveInstance = this;
-		_kbmStateObject = new NativeKeyboardAndMouseInputState();
-		_combinedControllerState = new NativeGameControllerState(GameControllerHandle.Combined);
+		_kbmStateObject = new LocalKeyboardAndMouseInputState();
+		_combinedControllerState = new LocalGameControllerState(GameControllerHandle.Combined);
 		SetEventPollDelegates(
 			&FilterAndTranslateKeycode,
 			&ResizeCurrentPollInstanceKbmEventBuffer,
@@ -94,7 +91,7 @@ sealed class NativeInputTracker : IInputTracker, IDisposable {
 	static extern unsafe InteropResult SetEventPollDelegates(
 		delegate* unmanaged<int*, InteropBool> filterTranslateKeycapValueDelegate,
 		delegate* unmanaged<KeyboardOrMouseKeyEvent*> doubleKbmEventBufferDelegate,
-		delegate* unmanaged<RawGameControllerButtonEvent*> doubleControllerEventBufferDelegate,
+		delegate* unmanaged<RawLocalGameControllerButtonEvent*> doubleControllerEventBufferDelegate,
 		delegate* unmanaged<MouseClickEvent*> doubleClickEventBufferDelegate,
 		delegate* unmanaged<GameControllerHandle, byte*, int, void> handleNewControllerDelegate
 	);
@@ -102,7 +99,7 @@ sealed class NativeInputTracker : IInputTracker, IDisposable {
 	static extern unsafe InteropResult SetEventPollBufferPointers(
 		KeyboardOrMouseKeyEvent* kbmEventBufferPtr,
 		int kbmEventBufferLen,
-		RawGameControllerButtonEvent* controllerEventBufferPtr,
+		RawLocalGameControllerButtonEvent* controllerEventBufferPtr,
 		int controllerEventBufferLen,
 		MouseClickEvent* clickEventBufferPtr,
 		int clickEventBufferLen
@@ -114,7 +111,7 @@ sealed class NativeInputTracker : IInputTracker, IDisposable {
 		return _liveInstance._kbmStateObject.EventBuffer.BufferPointer;
 	}
 	[UnmanagedCallersOnly]
-	static unsafe RawGameControllerButtonEvent* ResizeCurrentPollInstanceControllerEventBuffer() {
+	static unsafe RawLocalGameControllerButtonEvent* ResizeCurrentPollInstanceControllerEventBuffer() {
 		if (_liveInstance == null || _liveInstance._isDisposed) throw new InvalidOperationException("Live instance was null or disposed.");
 		_liveInstance._controllerEventBuffer.DoubleSize();
 		return _liveInstance._controllerEventBuffer.BufferPointer;
@@ -152,7 +149,7 @@ sealed class NativeInputTracker : IInputTracker, IDisposable {
 			if (kvp.Value.Handle == handle) return;
 		}
 
-		var state = new NativeGameControllerState(handle);
+		var state = new LocalGameControllerState(handle);
 		var nameSpan = new ReadOnlySpan<byte>(utf8NamePtr, utf8NameLen);
 		if (nameSpan.Length > state.NameBuffer.AsSpan.Length) nameSpan = nameSpan[..state.NameBuffer.AsSpan.Length];
 		nameSpan.CopyTo(state.NameBuffer.AsSpan);

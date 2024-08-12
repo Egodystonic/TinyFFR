@@ -2,9 +2,8 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
-using Egodystonic.TinyFFR.Factory;
 
-namespace Egodystonic.TinyFFR.Environment.Desktop;
+namespace Egodystonic.TinyFFR.Environment.Local;
 
 public sealed record WindowBuilderConfig {
 	readonly int _maxWindowTitleLength = 200;

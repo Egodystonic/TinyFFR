@@ -5,9 +5,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Egodystonic.TinyFFR.Environment;
-using Egodystonic.TinyFFR.Environment.Desktop;
 using Egodystonic.TinyFFR.Environment.Input;
+using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
+using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR;
@@ -22,7 +23,7 @@ class NativeInputTest {
 
 	[Test]
 	public void Execute() {
-		using var factory = new TffrFactory();
+		using var factory = new LocalRendererFactory();
 
 		var displayDiscoverer = factory.GetDisplayDiscoverer();
 		var windowBuilder = factory.GetWindowBuilder();

@@ -1,9 +1,9 @@
 ﻿// Created on 2024-01-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-using Egodystonic.TinyFFR.Interop;
+using System;
 
-namespace Egodystonic.TinyFFR.Environment.Desktop;
+namespace Egodystonic.TinyFFR.Environment.Local;
 
 public interface IDisplayDiscoverer {
 	ReadOnlySpan<Display> All { get; }

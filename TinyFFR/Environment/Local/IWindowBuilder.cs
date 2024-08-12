@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Egodystonic.TinyFFR.Environment.Desktop;
+namespace Egodystonic.TinyFFR.Environment.Local;
 
 public interface IWindowBuilder {
 	Window Build(Display display, WindowFullscreenStyle fullscreenStyle);

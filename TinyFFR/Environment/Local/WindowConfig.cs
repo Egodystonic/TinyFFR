@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Egodystonic.TinyFFR.Environment.Desktop;
+namespace Egodystonic.TinyFFR.Environment.Local;
 
 public readonly record struct WindowConfig {
 	public required Display Display { get; init; }

@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using Egodystonic.TinyFFR.Factory;
+using Egodystonic.TinyFFR.Factory.Local;
 
 namespace Egodystonic.TinyFFR;
 
@@ -15,7 +16,7 @@ class NativeWindowTest {
 
 	[Test]
 	public void Execute() {
-		using var factory = new TffrFactory();
+		using var factory = new LocalRendererFactory();
 		
 		var displayDiscoverer = factory.GetDisplayDiscoverer();
 		foreach (var display in displayDiscoverer.All) {
