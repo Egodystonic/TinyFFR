@@ -14,4 +14,19 @@
 
 #include "sdl/SDL.h"
 
+#include "filament/filament/Engine.h"
+#include "filament/math/half.h"
+#include "filament/math/mat2.h"
+#include "filament/math/mat3.h"
+#include "filament/math/mat4.h"
+#include "filament/math/norm.h"
+#include "filament/math/quat.h"
+#include "filament/math/scalar.h"
+#include "filament/math/TMatHelpers.h"
+#include "filament/math/TQuatHelpers.h"
+#include "filament/math/TVecHelpers.h"
+#include "filament/math/vec2.h"
+#include "filament/math/vec3.h"
+#include "filament/math/vec4.h"
+
 #endif //PCH_H

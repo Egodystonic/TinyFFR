@@ -21,7 +21,7 @@ readonly ref struct AssetGroup {
 	public static int GetGroupLengthBytes(int meshCount) {
 		return HeaderLengthBytes + meshCount * UIntPtr.Size;
 	}
-	public static void WriteGroup(Span<byte> dest, ReadOnlySpan<MeshAsset> meshes) {
+	public static void WriteGroup(Span<byte> dest, ReadOnlySpan<ModelAsset> meshes) {
 		static byte GetSpanLengthOrThrowIfOutOfRange<T>(ReadOnlySpan<T> span) {
 			if (span.Length > Byte.MaxValue) {
 				throw new InvalidOperationException($"It is not currently possible to create or load assets with more than {Byte.MaxValue} {typeof(T).Name}s (actual count is {span.Length}).");

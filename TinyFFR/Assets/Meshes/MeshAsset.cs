@@ -1,19 +1,14 @@
 ﻿// Created on 2024-08-07 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-using static Egodystonic.TinyFFR.Assets.Asset;
+using System;
 
-namespace Egodystonic.TinyFFR.Assets;
+namespace Egodystonic.TinyFFR.Assets.Meshes;
 
-public readonly unsafe struct MeshAsset : IEquatable<MeshAsset>, IDisposable {
-	internal readonly AssetHandle Handle;
+public readonly struct MeshAsset : IEquatable<MeshAsset>, IDisposable {
+	internal readonly 
 
-	internal UIntPtr HandleAsPtr {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => (UIntPtr) Handle;
-	}
-
-	internal MeshAsset(AssetHandle handle) => Handle = handle;
+	
 
 	internal void ThrowIfInvalid() => InvalidObjectException.ThrowIfDefault(this);
 }

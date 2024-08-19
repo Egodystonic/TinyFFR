@@ -1,7 +1,8 @@
 ﻿// Created on 2024-01-16 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-namespace Egodystonic.TinyFFR.Assets;
+using System;
 
-[StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 3 * 3, Pack = 1)]
-public readonly record struct MeshTriangle(MeshVertex VertexOne, MeshVertex VertexTwo, MeshVertex VertexThree);
+namespace Egodystonic.TinyFFR.Assets.Meshes;
+
+public readonly record struct MeshTriangle(int VertexIndexA, int VertexIndexB, int VertexIndexC);
