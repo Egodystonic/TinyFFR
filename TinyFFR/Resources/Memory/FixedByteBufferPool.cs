@@ -8,7 +8,19 @@ namespace Egodystonic.TinyFFR.Resources.Memory;
 sealed unsafe class FixedByteBufferPool : IDisposable {
 	const int NumBlocksPerSpace = 40;
 
-	public readonly record struct FixedByteBuffer(UIntPtr StartPtr, int SizeBytes) {
+	public readonly record struct FixedByteBuffer {
+		public UIntPtr StartPtr { get; }
+		public int SizeBytes { get; }
+		internal int SpaceIndex { get; }
+		internal int BlockIndex { get; }
+
+		internal FixedByteBuffer(UIntPtr startPtr, int sizeBytes, int spaceIndex, int blockIndex) {
+			StartPtr = startPtr;
+			SizeBytes = sizeBytes;
+			SpaceIndex = spaceIndex;
+			BlockIndex = blockIndex;
+		}
+
 		public Span<T> AsSpan<T>(int numElements) where T : unmanaged {
 			if (numElements < 0 || numElements * sizeof(T) > SizeBytes) {
 				throw new ArgumentException($"This buffer's size is {SizeBytes} bytes, allocating a span for {numElements} {typeof(T).Name} elements would require at least {numElements * sizeof(T)} bytes.", nameof(numElements));
@@ -19,6 +31,10 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 
 		public Span<T> AsSpan<T>() where T : unmanaged => AsSpan<T>(SizeBytes / sizeof(T));
 		public ReadOnlySpan<T> AsReadOnlySpan<T>() where T : unmanaged => AsSpan<T>();
+
+		internal void ThrowIfInvalid() {
+			if (StartPtr == UIntPtr.Zero) throw InvalidObjectException.InvalidDefault<FixedByteBuffer>();
+		}
 	}
 	[InlineArray(NumBlocksPerSpace)]
 	struct BlockLedger { bool _; }
@@ -26,18 +42,21 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 		public readonly byte* StartPtr;
 		public int LargestContiguousMemoryBlockStartIndex;
 		public int LargestContiguousMemoryBlockCount;
-		public BlockLedger Ledger;
+		public BlockLedger RentedBlocksLedger;
 
 		public AllocatedSpace(byte* startPtr, int largestContiguousMemoryBlockStartIndex, int largestContiguousMemoryBlockCount, BlockLedger ledger) {
 			StartPtr = startPtr;
 			LargestContiguousMemoryBlockStartIndex = largestContiguousMemoryBlockStartIndex;
 			LargestContiguousMemoryBlockCount = largestContiguousMemoryBlockCount;
-			Ledger = ledger;
+			RentedBlocksLedger = ledger;
 		}
 	}
 
+	public int MaxBufferSizeBytes => _blockSize * NumBlocksPerSpace;
+
 	readonly int _blockSize;
 	readonly int _blockSizeLessOne;
+	bool _isDisposed = false;
 	AllocatedSpace* _allocatedSpaces;
 	int _numAllocatedSpaces;
 
@@ -52,10 +71,12 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 
 	public FixedByteBuffer Rent<T>(int numElementsMinimum) where T : unmanaged => Rent(sizeof(T) * numElementsMinimum);
 	public FixedByteBuffer Rent(int numBytesMinimum) {
+		ThrowIfThisIsDisposed();
 		var numBlocksRequired = (numBytesMinimum + _blockSizeLessOne) / _blockSize;
 		for (var i = 0; i < _numAllocatedSpaces; ++i) {
-			if (_allocatedSpaces[i].LargestContiguousMemoryBlockCount >= numBlocksRequired)
+			if (_allocatedSpaces[i].LargestContiguousMemoryBlockCount >= numBlocksRequired) return RentBlocksFromSpace(i, numBlocksRequired);
 		}
+
 		if (numBlocksRequired > NumBlocksPerSpace) throw new ArgumentOutOfRangeException(nameof(numBytesMinimum), numBytesMinimum, "Required size in bytes is larger than the given largest required buffer size (as specified in the constructor).");
 		IncreaseSpaceListSize();
 		AllocateNewSpaceAtEndOfList();
@@ -63,7 +84,27 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 	}
 
 	public void Return(FixedByteBuffer buffer) {
+		ThrowIfThisIsDisposed();
+		buffer.ThrowIfInvalid();
+		var numBlocks = buffer.SizeBytes / _blockSize;
+		if (buffer.SpaceIndex < 0 || buffer.SpaceIndex >= _numAllocatedSpaces || buffer.BlockIndex < 0 || numBlocks + buffer.BlockIndex > NumBlocksPerSpace) {
+			throw new ArgumentException(nameof(buffer));
+		}
+		var spacePtr = _allocatedSpaces + buffer.SpaceIndex;
+		WriteBlocksAndRecalculateLargestContiguousSpace(spacePtr, buffer.BlockIndex, numBlocks, false);
+	}
 
+	public void Dispose() {
+		if (_isDisposed) return;
+		try {
+			for (var i = 0; i < _numAllocatedSpaces; ++i) {
+				NativeMemory.Free((_allocatedSpaces + i)->StartPtr);
+			}
+			NativeMemory.Free(_allocatedSpaces);
+		}
+		finally {
+			_isDisposed = true;
+		}
 	}
 
 	void IncreaseSpaceListSize() {
@@ -83,15 +124,24 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 		if (spaceIndex < 0 || spaceIndex >= _numAllocatedSpaces) throw new ArgumentOutOfRangeException(nameof(spaceIndex));
 		var spacePtr = _allocatedSpaces + spaceIndex;
 		if (spacePtr->LargestContiguousMemoryBlockCount < numBlocks) throw new ArgumentOutOfRangeException(nameof(numBlocks));
-		var result = new FixedByteBuffer(
-		for (var i = spacePtr->LargestContiguousMemoryBlockStartIndex; i < spacePtr->LargestContiguousMemoryBlockStartIndex + numBlocks; ++i) {
-			spacePtr->Ledger[i] = true;
+		WriteBlocksAndRecalculateLargestContiguousSpace(spacePtr, spacePtr->LargestContiguousMemoryBlockStartIndex, numBlocks, true);
+		return new FixedByteBuffer(
+			(UIntPtr) (spacePtr->StartPtr + (spacePtr->LargestContiguousMemoryBlockStartIndex * _blockSize)), 
+			numBlocks * _blockSize, 
+			spaceIndex, 
+			spacePtr->LargestContiguousMemoryBlockStartIndex
+		);
+	}
+
+	void WriteBlocksAndRecalculateLargestContiguousSpace(AllocatedSpace* spacePtr, int firstBlockIndex, int numBlocks, bool value) {
+		for (var i = firstBlockIndex; i < firstBlockIndex + numBlocks; ++i) {
+			spacePtr->RentedBlocksLedger[i] = value;
 		}
 		var largestContiguousBlockStartIndex = -1;
 		var largestContiguousBlockSize = 0;
 		var currentBlockSize = 0;
 		for (var i = 0; i < NumBlocksPerSpace; ++i) {
-			if (spacePtr->Ledger[i]) {
+			if (spacePtr->RentedBlocksLedger[i]) {
 				if (currentBlockSize > largestContiguousBlockSize) {
 					largestContiguousBlockSize = currentBlockSize;
 					largestContiguousBlockStartIndex = i - (currentBlockSize - 1);
@@ -108,5 +158,9 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 		}
 		spacePtr->LargestContiguousMemoryBlockStartIndex = largestContiguousBlockStartIndex;
 		spacePtr->LargestContiguousMemoryBlockCount = largestContiguousBlockSize;
+	}
+
+	void ThrowIfThisIsDisposed() {
+		if (_isDisposed) throw new ObjectDisposedException("Buffer is disposed.");
 	}
 }

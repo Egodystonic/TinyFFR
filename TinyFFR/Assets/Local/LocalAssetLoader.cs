@@ -1,0 +1,85 @@
+﻿// Created on 2024-08-19 by Ben Bowen
+// (c) Egodystonic / TinyFFR 2024
+
+using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Meshes.Local;
+using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Resources.Memory;
+
+namespace Egodystonic.TinyFFR.Assets.Local;
+
+sealed unsafe class LocalAssetLoader : IAssetLoader, ITemporaryAssetLoadSpaceProvider, IDisposable {
+	static readonly ArrayPoolBackedMap<nuint, (LocalAssetLoader Loader, FixedByteBufferPool.FixedByteBuffer Buffer)> _activelyRentedBuffers = new();
+	static nuint _nextBufferId = 0;
+	readonly FixedByteBufferPool _temporaryCpuBufferPool;
+	readonly LocalMeshBuilder _meshBuilder;
+	bool _isDisposed = false;
+
+	public IMeshBuilder MeshBuilder => _meshBuilder;
+
+	static LocalAssetLoader() {
+		SetBufferDeallocationDelegate(&DeallocateRentedBuffer).ThrowIfFailure();
+	}
+
+	public LocalAssetLoader(LocalAssetLoaderConfig config) {
+		_temporaryCpuBufferPool = new FixedByteBufferPool(config.MaxAssetSizeBytes);
+		_meshBuilder = new LocalMeshBuilder(this);
+	}
+
+	[UnmanagedCallersOnly]
+	static void DeallocateRentedBuffer(nuint bufferId) {
+		if (!_activelyRentedBuffers.ContainsKey(bufferId)) throw new InvalidOperationException($"Buffer '{bufferId}' has already been deallocated.");
+		var tuple = _activelyRentedBuffers[bufferId];
+		_activelyRentedBuffers.Remove(bufferId);
+		var loader = tuple.Loader;
+		loader._temporaryCpuBufferPool.Return(tuple.Buffer);
+
+		if (loader._isDisposed) {
+			foreach (var kvp in _activelyRentedBuffers) {
+				if (kvp.Value.Loader == loader) return;
+			}
+
+			loader._temporaryCpuBufferPool.Dispose();
+		}
+	}
+
+	public (nuint BufferIdentity, UIntPtr DataPtr, int DataLengthBytes) CreateTemporaryAssetLoadSpace<T>(ReadOnlySpan<T> data) where T : unmanaged {
+		ThrowIfThisIsDisposed();
+		var sizeBytes = sizeof(T) * data.Length;
+		if (sizeBytes > _temporaryCpuBufferPool.MaxBufferSizeBytes) {
+			throw new InvalidOperationException($"Can not load asset because its in-memory size is {sizeBytes} bytes (" +
+												$"the maximum asset size configured is {_temporaryCpuBufferPool.MaxBufferSizeBytes} bytes; " +
+												$"the limit can be raised by setting the {nameof(LocalAssetLoaderConfig.MaxAssetSizeBytes)} value in " +
+												$"the {nameof(LocalAssetLoaderConfig)} passed to the {nameof(LocalRendererFactory)} constructor).");
+		}
+		var bufferId = _nextBufferId++;
+		var buffer = _temporaryCpuBufferPool.Rent<T>(data.Length);
+		_activelyRentedBuffers.Add(bufferId, (this, buffer));
+		data.CopyTo(buffer.AsSpan<T>(data.Length));
+		return (bufferId, buffer.StartPtr, sizeBytes);
+	}
+
+	#region Native Methods
+	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_buffer_deallocation_delegate")]
+	static extern InteropResult SetBufferDeallocationDelegate(
+		delegate* unmanaged<nuint, void> bufferDeallocDelegate
+	);
+	#endregion
+
+	#region Disposal
+	public void Dispose() {
+		if (_isDisposed) return;
+		try {
+
+		}
+		finally {
+			_isDisposed = true;
+		}
+	}
+
+	void ThrowIfThisIsDisposed() {
+		if (_isDisposed) throw new ObjectDisposedException(nameof(LocalAssetLoader));
+	}
+	#endregion
+}

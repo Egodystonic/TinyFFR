@@ -3,6 +3,7 @@
 
 using System;
 using System.Security;
+using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Input.Local;
 using Egodystonic.TinyFFR.Interop;
@@ -11,17 +12,23 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed class LocalMeshBuilder : IMeshBuilder, IDisposable {
-	
+sealed unsafe class LocalMeshBuilder : IMeshBuilder, IDisposable {
+	readonly ITemporaryAssetLoadSpaceProvider _loadSpaceProvider;
+
+	public LocalMeshBuilder(ITemporaryAssetLoadSpaceProvider assetLoadSpaceProvider) {
+		ArgumentNullException.ThrowIfNull(assetLoadSpaceProvider);
+		_loadSpaceProvider = assetLoadSpaceProvider;
+	}
+
+
 
 	#region Native Methods
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_event_poll_delegates")]
-	static extern unsafe InteropResult SetEventPollDelegates(
-		delegate* unmanaged<int*, InteropBool> filterTranslateKeycapValueDelegate,
-		delegate* unmanaged<KeyboardOrMouseKeyEvent*> doubleKbmEventBufferDelegate,
-		delegate* unmanaged<RawLocalGameControllerButtonEvent*> doubleControllerEventBufferDelegate,
-		delegate* unmanaged<MouseClickEvent*> doubleClickEventBufferDelegate,
-		delegate* unmanaged<GameControllerHandle, byte*, int, void> handleNewControllerDelegate
+	[DllImport(NativeUtils.NativeLibName, EntryPoint = "allocate_vertex_buffer")]
+	static extern InteropResult AllocateVertexBuffer(
+		nuint bufferId,
+		UIntPtr verticesPtr,
+		int numVertices,
+		out AssetHandle outAssetHandle
 	);
 	#endregion
 

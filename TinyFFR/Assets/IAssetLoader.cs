@@ -5,6 +5,6 @@ using Egodystonic.TinyFFR.Assets.Meshes;
 
 namespace Egodystonic.TinyFFR.Assets;
 
-public interface IAssetFactory {
+public interface IAssetLoader {
 	IMeshBuilder MeshBuilder { get; }
 }

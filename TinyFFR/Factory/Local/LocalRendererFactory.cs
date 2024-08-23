@@ -2,6 +2,8 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Assets;
+using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Interop;
@@ -12,15 +14,17 @@ public sealed class LocalRendererFactory : ITinyFfrFactory {
 	public IDisplayDiscoverer DisplayDiscoverer { get; }
 	public IWindowBuilder WindowBuilder { get; }
 	public ILocalApplicationLoopBuilder ApplicationLoopBuilder { get; }
+	public IAssetLoader AssetLoader { get; }
 
 	IApplicationLoopBuilder ITinyFfrFactory.ApplicationLoopBuilder => ApplicationLoopBuilder;
 
-	public LocalRendererFactory(WindowBuilderConfig? windowBuilderConfig = null, LocalApplicationLoopBuilderConfig? applicationLoopBuilderConfig = null) {
+	public LocalRendererFactory(WindowBuilderConfig? windowBuilderConfig = null, LocalApplicationLoopBuilderConfig? applicationLoopBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null) {
 		NativeUtils.InitializeNativeLibIfNecessary();
 
 		DisplayDiscoverer = new DisplayDiscoverer();
 		WindowBuilder = new WindowBuilder(windowBuilderConfig ?? new());
 		ApplicationLoopBuilder = new LocalApplicationLoopBuilder(applicationLoopBuilderConfig ?? new());
+		AssetLoader = new LocalAssetLoader(assetLoaderConfig ?? new());
 	}
 
 	public override string ToString() => IsDisposed ? "TinyFFR Local Renderer Factory [Disposed]" : "TinyFFR Local Renderer Factory";
