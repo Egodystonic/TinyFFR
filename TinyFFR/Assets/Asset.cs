@@ -32,7 +32,7 @@ public readonly unsafe struct Asset : IEquatable<Asset>, IDisposable {
 
 				break;
 			case AssetType.Mesh:
-				((MeshAsset) this).Dispose();
+				((Mesh) this).Dispose();
 				break;
 		}
 	}
@@ -53,8 +53,8 @@ public readonly unsafe struct Asset : IEquatable<Asset>, IDisposable {
 		if (!Enum.IsDefined(Type) || Type == AssetType.Undefined) throw InvalidObjectException.InvalidDefault<Asset>();
 	}
 
-	public static implicit operator Asset(MeshAsset meshAsset) { meshAsset.ThrowIfInvalid(); return new Asset(AssetType.Mesh, meshAsset.Handle); }
-	public static explicit operator MeshAsset(Asset asset) => asset.Downcast(AssetType.Mesh, new MeshAsset(asset.Handle));
+	public static implicit operator Asset(Mesh mesh) { mesh.ThrowIfInvalid(); return new Asset(AssetType.Mesh, mesh.Handle); }
+	public static explicit operator Mesh(Asset asset) => asset.Downcast(AssetType.Mesh, new Mesh(asset.Handle));
 
 	T Downcast<T>(AssetType requiredType, T potentialResult) {
 		ThrowIfInvalid();

@@ -6,10 +6,10 @@ using System;
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 public interface IMeshBuilder {
-	MeshAsset CreateMesh(CuboidDescriptor cuboidDesc);
-	MeshAsset CreateMesh(CuboidDescriptor cuboidDesc, in MeshCreationConfig config);
-	// MeshAsset CreateMesh(SphereDescriptor sphereDesc, int extrapolationLevel = 3);
-	// MeshAsset CreateMesh(SphereDescriptor sphereDesc, int extrapolationLevel, scoped in MeshCreationConfig config);
-	MeshAsset CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<MeshTriangle> triangles);
-	MeshAsset CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<MeshTriangle> triangles, scoped in MeshCreationConfig config);
+	Mesh CreateMesh(CuboidDescriptor cuboidDesc);
+	Mesh CreateMesh(CuboidDescriptor cuboidDesc, in MeshCreationConfig config);
+	// Mesh CreateMesh(SphereDescriptor sphereDesc, int extrapolationLevel = 3);
+	// Mesh CreateMesh(SphereDescriptor sphereDesc, int extrapolationLevel, scoped in MeshCreationConfig config);
+	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<MeshTriangle> triangles);
+	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<MeshTriangle> triangles, scoped in MeshCreationConfig config);
 }

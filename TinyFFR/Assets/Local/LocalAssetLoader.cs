@@ -9,10 +9,11 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
-sealed unsafe class LocalAssetLoader : IAssetLoader, ITemporaryAssetLoadSpaceProvider, IDisposable {
+sealed unsafe class LocalAssetLoader : IAssetLoader, IAssetResourcePoolProvider, IDisposable {
 	static readonly ArrayPoolBackedMap<nuint, (LocalAssetLoader Loader, FixedByteBufferPool.FixedByteBuffer Buffer)> _activelyRentedBuffers = new();
 	static nuint _nextBufferId = 0;
 	readonly FixedByteBufferPool _temporaryCpuBufferPool;
+	readonly FixedByteBufferPool _assetNamePool;
 	readonly LocalMeshBuilder _meshBuilder;
 	bool _isDisposed = false;
 
@@ -24,6 +25,7 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, ITemporaryAssetLoadSpacePro
 
 	public LocalAssetLoader(LocalAssetLoaderConfig config) {
 		_temporaryCpuBufferPool = new FixedByteBufferPool(config.MaxAssetSizeBytes);
+		_assetNamePool = new FixedByteBufferPool(config.MaxAssetNameLength * sizeof(char));
 		_meshBuilder = new LocalMeshBuilder(this);
 	}
 
@@ -35,16 +37,10 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, ITemporaryAssetLoadSpacePro
 		var loader = tuple.Loader;
 		loader._temporaryCpuBufferPool.Return(tuple.Buffer);
 
-		if (loader._isDisposed) {
-			foreach (var kvp in _activelyRentedBuffers) {
-				if (kvp.Value.Loader == loader) return;
-			}
-
-			loader._temporaryCpuBufferPool.Dispose();
-		}
+		if (loader._isDisposed) loader.DisposeCpuBufferPoolIfSafe();
 	}
 
-	public (nuint BufferIdentity, UIntPtr DataPtr, int DataLengthBytes) CreateTemporaryAssetLoadSpace<T>(ReadOnlySpan<T> data) where T : unmanaged {
+	IAssetResourcePoolProvider.TemporaryLoadSpaceBuffer IAssetResourcePoolProvider.CopySpanToTemporaryAssetLoadSpace<T>(ReadOnlySpan<T> data) {
 		ThrowIfThisIsDisposed();
 		var sizeBytes = sizeof(T) * data.Length;
 		if (sizeBytes > _temporaryCpuBufferPool.MaxBufferSizeBytes) {
@@ -57,7 +53,19 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, ITemporaryAssetLoadSpacePro
 		var buffer = _temporaryCpuBufferPool.Rent<T>(data.Length);
 		_activelyRentedBuffers.Add(bufferId, (this, buffer));
 		data.CopyTo(buffer.AsSpan<T>(data.Length));
-		return (bufferId, buffer.StartPtr, sizeBytes);
+		return new(bufferId, buffer.StartPtr, sizeBytes);
+	}
+
+	IAssetResourcePoolProvider.AssetNameBuffer IAssetResourcePoolProvider.CopyAssetNameToFixedBuffer(ReadOnlySpan<char> data) {
+		ThrowIfThisIsDisposed();
+		var characterCount = Math.Min(data.Length, _assetNamePool.GetMaxBufferSize<char>());
+		var result = new IAssetResourcePoolProvider.AssetNameBuffer(_assetNamePool.Rent<char>(characterCount), characterCount);
+		data.CopyTo(result.AsSpan);
+		return result;
+	}
+
+	void IAssetResourcePoolProvider.DeallocateNameBuffer(IAssetResourcePoolProvider.AssetNameBuffer buffer) {
+		_assetNamePool.Return(buffer.Buffer);
 	}
 
 	#region Native Methods
@@ -71,11 +79,21 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, ITemporaryAssetLoadSpacePro
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
-
+			_meshBuilder.Dispose();
+			_assetNamePool.Dispose();
+			DisposeCpuBufferPoolIfSafe();
 		}
 		finally {
 			_isDisposed = true;
 		}
+	}
+
+	void DisposeCpuBufferPoolIfSafe() {
+		foreach (var kvp in _activelyRentedBuffers) {
+			if (ReferenceEquals(kvp.Value.Loader, this)) return;
+		}
+
+		_temporaryCpuBufferPool.Dispose();
 	}
 
 	void ThrowIfThisIsDisposed() {

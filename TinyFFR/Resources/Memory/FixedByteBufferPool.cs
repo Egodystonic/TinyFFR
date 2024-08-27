@@ -69,6 +69,8 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 		AllocateNewSpaceAtEndOfList();
 	}
 
+	public int GetMaxBufferSize<T>() where T : unmanaged => MaxBufferSizeBytes / sizeof(T);
+
 	public FixedByteBuffer Rent<T>(int numElementsMinimum) where T : unmanaged => Rent(sizeof(T) * numElementsMinimum);
 	public FixedByteBuffer Rent(int numBytesMinimum) {
 		ThrowIfThisIsDisposed();

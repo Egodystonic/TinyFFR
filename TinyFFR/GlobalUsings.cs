@@ -8,9 +8,3 @@ global using System.Linq;
 global using System.Numerics;
 global using System.Runtime.CompilerServices;
 global using System.Runtime.InteropServices;
-
-// typedefs
-global using DisplayHandle = System.Int32;
-global using unsafe WindowHandle = void*;
-global using ApplicationLoopHandle = System.Int32;
-global using unsafe AssetHandle = void*;
