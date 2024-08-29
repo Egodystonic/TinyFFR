@@ -26,6 +26,11 @@ public readonly struct MeshVertex : IEquatable<MeshVertex> {
 		}
 	}
 
+	public MeshVertex(Location location, XYPair<float> textureCoords) {
+		Location = location;
+		TextureCoords = textureCoords;
+	}
+
 	public override string ToString() => $"{nameof(MeshVertex)}: {nameof(Location)} {Location}; {nameof(TextureCoords)} {TextureCoords}";
 
 	public bool Equals(MeshVertex other) {

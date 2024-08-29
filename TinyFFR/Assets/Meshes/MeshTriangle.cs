@@ -8,4 +8,10 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly struct MeshTriangle {
 	public readonly int IndexA, IndexB, IndexC;
+
+	public MeshTriangle(int indexA, int indexB, int indexC) {
+		IndexA = indexA;
+		IndexB = indexB;
+		IndexC = indexC;
+	}
 }
