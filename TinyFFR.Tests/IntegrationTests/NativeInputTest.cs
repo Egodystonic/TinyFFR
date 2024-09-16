@@ -25,8 +25,8 @@ class NativeInputTest {
 	public void Execute() {
 		using var factory = new LocalRendererFactory();
 
-		var displayDiscoverer = factory.GetDisplayDiscoverer();
-		var windowBuilder = factory.GetWindowBuilder();
+		var displayDiscoverer = factory.DisplayDiscoverer;
+		var windowBuilder = factory.WindowBuilder;
 
 		using var window = windowBuilder.Build(new() {
 			Display = displayDiscoverer.Primary!.Value,
@@ -34,8 +34,9 @@ class NativeInputTest {
 			Position = displayDiscoverer.Primary!.Value.CurrentResolution / 2 - (200, 200),
 			Size = (400, 400)
 		});
+		window.Title = "Close me to end test";
 
-		var loopBuilder = factory.GetApplicationLoopBuilder();
+		var loopBuilder = factory.ApplicationLoopBuilder;
 		using var loop = loopBuilder.BuildLoop(new() { FrameRateCapHz = 60 });
 
 		_numControllers = 0;
@@ -52,7 +53,7 @@ class NativeInputTest {
 	void HandleInput(IInputTracker input) {
 		if (input.GameControllers.Length != _numControllers) {
 			for (var i = input.GameControllers.Length; i > _numControllers; --i) {
-				Console.WriteLine($"Controller: {input.GameControllers[i - 1]}");
+				Console.WriteLine($"Controller: {input.GameControllers[i - 1].ControllerName}");
 			}
 			_numControllers = input.GameControllers.Length;
 		}

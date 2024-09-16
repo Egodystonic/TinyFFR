@@ -1,6 +1,7 @@
 ﻿// Created on 2024-01-22 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
 
@@ -16,13 +17,13 @@ class NativeWindowTest {
 
 	[Test]
 	public void Execute() {
-		using var factory = new LocalRendererFactory();
-		
-		var displayDiscoverer = factory.GetDisplayDiscoverer();
+		using var factory = new LocalRendererFactory(new WindowBuilderConfig { MaxWindowTitleLength = 10 });
+
+		var displayDiscoverer = factory.DisplayDiscoverer;
 		foreach (var display in displayDiscoverer.All) {
 			Console.WriteLine(display);
-			Console.WriteLine($"\tHighest resolution mode: {display.HighestSupportedResolution}");
-			Console.WriteLine($"\tHighest refresh rate mode: {display.HighestSupportedRefreshRate}");
+			Console.WriteLine($"\tHighest resolution mode: {display.HighestSupportedResolutionMode}");
+			Console.WriteLine($"\tHighest refresh rate mode: {display.HighestSupportedRefreshRateMode}");
 			Console.WriteLine($"\tAll modes:");
 			foreach (var refreshRate in display.SupportedDisplayModes) {
 				Console.WriteLine($"\t\t{refreshRate}");
@@ -30,17 +31,15 @@ class NativeWindowTest {
 
 			Assert.AreEqual(
 				display.SupportedDisplayModes.ToArray().OrderByDescending(mode => mode.Resolution.ToVector2().LengthSquared()).ThenByDescending(mode => mode.RefreshRateHz).First(),
-				display.HighestSupportedResolution
+				display.HighestSupportedResolutionMode
 			);
 			Assert.AreEqual(
 				display.SupportedDisplayModes.ToArray().OrderByDescending(mode => mode.RefreshRateHz).ThenByDescending(mode => mode.Resolution.ToVector2().LengthSquared()).First(),
-				display.HighestSupportedRefreshRate
+				display.HighestSupportedRefreshRateMode
 			);
 		}
 
-		var windowBuilder = factory.GetWindowBuilder(new() {
-			MaxWindowTitleLength = 10
-		});
+		var windowBuilder = factory.WindowBuilder;
 		using var window = windowBuilder.Build(new() {
 			Display = displayDiscoverer.Primary!.Value,
 			Size = (500, 300),

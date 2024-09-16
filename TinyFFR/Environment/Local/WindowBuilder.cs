@@ -41,9 +41,9 @@ sealed unsafe class WindowBuilder : IWindowBuilder, IWindowImplProvider, IDispos
 			globalPosition.Y
 		).ThrowIfFailure();
 		var result = new Window(outHandle, this);
-		result.FullscreenStyle = config.FullscreenStyle;
 		_activeWindows.Add((UIntPtr) outHandle);
 		_displayMap.Add((UIntPtr) outHandle, config.Display);
+		result.FullscreenStyle = config.FullscreenStyle;
 		return result;
 	}
 

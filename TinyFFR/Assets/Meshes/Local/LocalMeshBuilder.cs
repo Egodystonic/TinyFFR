@@ -53,6 +53,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshAssetImplProvider, IDi
 		IndexBufferHandle bufferHandle
 	);
 	#endregion
+
 	public Mesh CreateMesh(CuboidDescriptor cuboidDesc) => CreateMesh(cuboidDesc, new());
 	public Mesh CreateMesh(CuboidDescriptor cuboidDesc, in MeshCreationConfig config) {
 		Span<MeshVertex> vertices = stackalloc MeshVertex[8];

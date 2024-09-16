@@ -21,7 +21,7 @@ class NativeLoopTimingTest {
 	public void Execute() {
 		using var factory = new LocalRendererFactory();
 
-		var loopBuilder = factory.GetApplicationLoopBuilder();
+		var loopBuilder = factory.ApplicationLoopBuilder;
 		var loop = loopBuilder.BuildLoop(new() { FrameRateCapHz = 30 });
 
 		var reportedTimesList = new List<TimeSpan>();
