@@ -3,6 +3,7 @@
 
 using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Environment;
+using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Factory;
 
@@ -10,4 +11,5 @@ namespace Egodystonic.TinyFFR.Factory;
 public interface ITinyFfrFactory : IDisposable {
 	IApplicationLoopBuilder ApplicationLoopBuilder { get; }
 	IAssetLoader AssetLoader { get; }
+	ICameraBuilder CameraBuilder { get; }
 }

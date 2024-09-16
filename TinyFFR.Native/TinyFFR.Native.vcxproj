@@ -112,6 +112,7 @@ xcopy /y "$(ProjectDir)third_party\binaries\sdl\*.*" "$(SolutionDir)build_output
     <ClInclude Include="tffr\headers\interop_result.h" />
     <ClInclude Include="tffr\headers\interop_utils.h" />
     <ClInclude Include="tffr\headers\native_impl_init.h" />
+    <ClInclude Include="tffr\headers\scene\native_impl_camera.h" />
     <ClInclude Include="tffr\headers\utils_and_constants.h" />
   </ItemGroup>
   <ItemGroup>
@@ -126,6 +127,7 @@ xcopy /y "$(ProjectDir)third_party\binaries\sdl\*.*" "$(SolutionDir)build_output
     <ClCompile Include="tffr\impl\interop_result.cpp" />
     <ClCompile Include="tffr\impl\interop_utils.cpp" />
     <ClCompile Include="tffr\impl\native_impl_init.cpp" />
+    <ClCompile Include="tffr\impl\scene\native_impl_camera.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="third_party\third_party_installation_instructions.txt" />

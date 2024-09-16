@@ -5,7 +5,6 @@
 #include "utils_and_constants.h"
 
 #include "filament/filament/MaterialEnums.h"
-#include <vector>
 
 deallocate_asset_buffer_delegate native_impl_render_assets::deallocation_delegate;
 

@@ -161,7 +161,7 @@ sealed class LocalGameControllerState : IGameControllerInputTracker, IDisposable
 		}
 	}
 
-	public override string ToString() => $"TinyFFR Native Input Tracker [Game Controller '{ControllerName}']{(_isDisposed ? " [Disposed]" : "")}";
+	public override string ToString() => $"TinyFFR Local Input Tracker [Game Controller '{ControllerName}']{(_isDisposed ? " [Disposed]" : "")}";
 
 	#region Disposal
 	public void Dispose() {

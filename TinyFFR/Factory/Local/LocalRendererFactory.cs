@@ -7,6 +7,7 @@ using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
 
@@ -15,6 +16,7 @@ public sealed class LocalRendererFactory : ITinyFfrFactory {
 	public IWindowBuilder WindowBuilder { get; }
 	public ILocalApplicationLoopBuilder ApplicationLoopBuilder { get; }
 	public IAssetLoader AssetLoader { get; }
+	public ICameraBuilder CameraBuilder { get; }
 
 	IApplicationLoopBuilder ITinyFfrFactory.ApplicationLoopBuilder => ApplicationLoopBuilder;
 
@@ -25,6 +27,7 @@ public sealed class LocalRendererFactory : ITinyFfrFactory {
 		WindowBuilder = new WindowBuilder(windowBuilderConfig ?? new());
 		ApplicationLoopBuilder = new LocalApplicationLoopBuilder(applicationLoopBuilderConfig ?? new());
 		AssetLoader = new LocalAssetLoader(assetLoaderConfig ?? new());
+		CameraBuilder = new LocalCameraBuilder();
 	}
 
 	public override string ToString() => IsDisposed ? "TinyFFR Local Renderer Factory [Disposed]" : "TinyFFR Local Renderer Factory";
@@ -33,11 +36,22 @@ public sealed class LocalRendererFactory : ITinyFfrFactory {
 	bool IsDisposed { get; set; }
 
 	public void Dispose() {
+		// Maintainer's note: This is not simply accepting IDisposable because we want the flexibility
+		// to make the factory objects disposable in future without forgetting to dispose them here.
+		// In other words, even if 'o' isn't IDisposable today, it can be made IDisposable tomorrow and we
+		// don't have to remember to add a dispose call in this function.
+		static void DisposeFactoryObjectIfDisposable(object o) {
+			(o as IDisposable)?.Dispose();
+		}
+
 		if (IsDisposed) return;
 		try {
-			(DisplayDiscoverer as IDisposable)?.Dispose();
-			(WindowBuilder as IDisposable)?.Dispose();
-			(ApplicationLoopBuilder as IDisposable)?.Dispose();
+			// Maintainer's note: These are disposed in reverse order (e.g. opposite order compared to the order they're constructed in in the ctor above)
+			DisposeFactoryObjectIfDisposable(CameraBuilder);
+			DisposeFactoryObjectIfDisposable(AssetLoader);
+			DisposeFactoryObjectIfDisposable(ApplicationLoopBuilder);
+			DisposeFactoryObjectIfDisposable(WindowBuilder);
+			DisposeFactoryObjectIfDisposable(DisplayDiscoverer);
 		}
 		finally {
 			IsDisposed = true;
