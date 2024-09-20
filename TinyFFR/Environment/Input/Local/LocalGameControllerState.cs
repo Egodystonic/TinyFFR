@@ -4,6 +4,7 @@
 using System;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Environment.Input.Local;
 
@@ -179,7 +180,7 @@ sealed class LocalGameControllerState : IGameControllerInputTracker, IDisposable
 	}
 
 	void ThrowIfThisIsDisposed() {
-		ObjectDisposedException.ThrowIf(_isDisposed, this);
+		ObjectDisposedException.ThrowIf(_isDisposed, typeof(IGameControllerInputTracker));
 	}
 	#endregion
 }

@@ -1,6 +1,7 @@
 ﻿// Created on 2024-01-15 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Scene;
 using System.Buffers;
 
 namespace Egodystonic.TinyFFR.Resources.Memory;
@@ -163,6 +164,6 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 	}
 
 	void ThrowIfThisIsDisposed() {
-		if (_isDisposed) throw new ObjectDisposedException("Buffer is disposed.");
+		ObjectDisposedException.ThrowIf(_isDisposed, typeof(FixedByteBufferPool));
 	}
 }

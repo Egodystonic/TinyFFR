@@ -66,6 +66,11 @@ sealed class ArrayPoolBackedVector<T> : IList<T>, IDisposable {
 		Count = 0;
 	}
 
+	public ref T GetValueByRef(int index) {
+		if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be >= 0 and < Count.");
+		return ref _backingArray[index];
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ClearWithoutZeroingMemory() => Count = 0;
 

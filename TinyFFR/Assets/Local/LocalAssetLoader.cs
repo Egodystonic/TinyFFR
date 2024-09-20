@@ -6,6 +6,7 @@ using Egodystonic.TinyFFR.Assets.Meshes.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
@@ -97,7 +98,7 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IAssetResourcePoolProvider,
 	}
 
 	void ThrowIfThisIsDisposed() {
-		if (_isDisposed) throw new ObjectDisposedException(nameof(LocalAssetLoader));
+		ObjectDisposedException.ThrowIf(_isDisposed, typeof(IAssetLoader));
 	}
 	#endregion
 }

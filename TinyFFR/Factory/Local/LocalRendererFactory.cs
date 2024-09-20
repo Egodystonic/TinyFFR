@@ -59,7 +59,7 @@ public sealed class LocalRendererFactory : ITinyFfrFactory {
 	}
 
 	void ThrowIfThisIsDisposed() {
-		ObjectDisposedException.ThrowIf(IsDisposed, this);
+		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ITinyFfrFactory));
 	}
 	#endregion
 

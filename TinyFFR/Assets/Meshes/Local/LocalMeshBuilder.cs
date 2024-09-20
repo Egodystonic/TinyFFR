@@ -167,7 +167,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshAssetImplProvider, IDi
 	}
 
 	#region Disposal
-	public bool IsDisposed(MeshAssetHandle handle) => !_activeMeshes.ContainsKey(handle);
+	public bool IsDisposed(MeshAssetHandle handle) => _isDisposed || !_activeMeshes.ContainsKey(handle);
 
 	public void Dispose(MeshAssetHandle handle) => Dispose(handle, removeFromMap: true);
 	void Dispose(MeshAssetHandle handle, bool removeFromMap) {

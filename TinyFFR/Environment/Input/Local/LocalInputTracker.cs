@@ -5,6 +5,7 @@ using System;
 using System.Security;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Environment.Input.Local;
 
@@ -177,7 +178,7 @@ sealed class LocalInputTracker : IInputTracker, IDisposable {
 	}
 
 	void ThrowIfThisIsDisposed() {
-		ObjectDisposedException.ThrowIf(_isDisposed, this);
+		ObjectDisposedException.ThrowIf(_isDisposed, typeof(IInputTracker));
 	}
 	#endregion
 }

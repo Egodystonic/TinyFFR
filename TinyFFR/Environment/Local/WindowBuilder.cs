@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
@@ -200,7 +201,7 @@ sealed unsafe class WindowBuilder : IWindowBuilder, IWindowImplProvider, IDispos
 		}
 	}
 
-	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
+	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, typeof(IWindowBuilder));
 	void ThrowIfThisOrHandleIsDisposed(WindowHandle handle) {
 		ThrowIfThisIsDisposed();
 		ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Window));

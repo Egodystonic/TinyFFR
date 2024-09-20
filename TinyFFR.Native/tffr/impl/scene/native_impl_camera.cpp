@@ -20,14 +20,44 @@ StartExportedFunc(allocate_camera, CameraHandle* outCamera) {
 	EndExportedFunc
 }
 
-void native_impl_camera::get_camera_fov(CameraHandle camera, float_t* outFovDegrees) {
-	ThrowIfNull(camera, "Camera handle was null.");
-	*outFovDegrees = camera->getFieldOfViewInDegrees(Camera::Fov::VERTICAL);
+
+
+void native_impl_camera::set_camera_projection_matrix(CameraHandle camera, mat4f* newMatrixPtr, float_t nearPlaneDist, float_t farPlaneDist) {
+	camera->setCustomProjection(static_cast<mat4>(*newMatrixPtr), static_cast<double>(nearPlaneDist), static_cast<double>(farPlaneDist));
 }
-StartExportedFunc(get_camera_fov, CameraHandle camera, float_t* outFovDegrees) {
-	native_impl_camera::get_camera_fov(camera, outFovDegrees);
+StartExportedFunc(set_camera_projection_matrix, CameraHandle camera, mat4f* newMatrixPtr, float_t nearPlaneDist, float_t farPlaneDist) {
+	native_impl_camera::set_camera_projection_matrix(camera, newMatrixPtr, nearPlaneDist, farPlaneDist);
 	EndExportedFunc
 }
+
+void native_impl_camera::get_camera_projection_matrix(CameraHandle camera, mat4f* outMatrix, float_t* outNearPlaneDist, float_t* outFarPlaneDist) {
+	*outMatrix = static_cast<mat4f>(camera->getProjectionMatrix());
+	*outNearPlaneDist = static_cast<float_t>(camera->getNear());
+	*outFarPlaneDist = static_cast<float_t>(camera->getCullingFar());
+}
+StartExportedFunc(get_camera_projection_matrix, CameraHandle camera, mat4f* outMatrix, float_t* outNearPlaneDist, float_t* outFarPlaneDist) {
+	native_impl_camera::get_camera_projection_matrix(camera, outMatrix, outNearPlaneDist, outFarPlaneDist);
+	EndExportedFunc
+}
+
+
+
+void native_impl_camera::set_camera_view_matrix(CameraHandle camera, mat4f* newMatrixPtr) {
+	camera->setModelMatrix(inverse(*newMatrixPtr));
+}
+StartExportedFunc(set_camera_view_matrix, CameraHandle camera, mat4f* newMatrixPtr) {
+	native_impl_camera::set_camera_view_matrix(camera, newMatrixPtr);
+	EndExportedFunc
+}
+
+void native_impl_camera::get_camera_view_matrix(CameraHandle camera, mat4f* outMatrix) {
+	*outMatrix = static_cast<mat4f>(camera->getViewMatrix());
+}
+StartExportedFunc(get_camera_view_matrix, CameraHandle camera, mat4f* outMatrix) {
+	native_impl_camera::get_camera_view_matrix(camera, outMatrix);
+	EndExportedFunc
+}
+
 
 void native_impl_camera::dispose_camera(CameraHandle camera) {
 	ThrowIfNull(camera, "Camera handle was null.");

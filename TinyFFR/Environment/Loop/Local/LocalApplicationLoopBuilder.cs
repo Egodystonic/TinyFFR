@@ -10,6 +10,7 @@ using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Input.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
@@ -134,7 +135,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		}
 	}
 
-	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
+	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, typeof(IApplicationLoopBuilder));
 	void ThrowIfThisOrHandleIsDisposed(ApplicationLoopHandle handle) {
 		ThrowIfThisIsDisposed();
 		ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(ApplicationLoop));

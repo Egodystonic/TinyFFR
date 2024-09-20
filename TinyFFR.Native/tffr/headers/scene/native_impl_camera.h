@@ -11,11 +11,9 @@ typedef Camera* CameraHandle;
 class native_impl_camera {
 public:
 	static void allocate_camera(CameraHandle* outCamera);
-	static void set_camera_fov(CameraHandle camera, float_t newFovDegrees);
-	static void get_camera_fov(CameraHandle camera, float_t* outFovDegrees);
-	static void set_camera_location(CameraHandle camera, float3 newLocation);
-	static void get_camera_location(CameraHandle camera, float3* outLocation);
-	static void set_camera_direction(CameraHandle camera, float3 newForwardDir, float3 newUpDir);
-	static void get_camera_direction(CameraHandle camera, float3* outForwardDir, float3* outUpDir);
+	static void set_camera_projection_matrix(CameraHandle camera, mat4f* newMatrixPtr, float_t nearPlaneDist, float_t farPlaneDist);
+	static void get_camera_projection_matrix(CameraHandle camera, mat4f* outMatrix, float_t* outNearPlaneDist, float_t* outFarPlaneDist);
+	static void set_camera_view_matrix(CameraHandle camera, mat4f* newMatrixPtr);
+	static void get_camera_view_matrix(CameraHandle camera, mat4f* outMatrix);
 	static void dispose_camera(CameraHandle camera);
 };
