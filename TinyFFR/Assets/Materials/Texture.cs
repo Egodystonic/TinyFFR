@@ -3,21 +3,21 @@
 
 using System;
 
-namespace Egodystonic.TinyFFR.Assets.Meshes;
+namespace Egodystonic.TinyFFR.Assets.Materials;
 
-public readonly struct Mesh : IEquatable<Mesh>, IDisposable {
-	readonly MeshHandle _handle;
-	readonly IMeshAssetImplProvider _impl;
+public readonly struct Texture : IEquatable<Texture>, IDisposable {
+	readonly TextureHandle _handle;
+	readonly ITextureAssetImplProvider _impl;
 
-	internal IMeshAssetImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Mesh>();
-	internal MeshHandle Handle => _handle;
+	internal ITextureAssetImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Texture>();
+	internal TextureHandle Handle => _handle;
 
 	public string Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(_handle);
 	}
 
-	internal Mesh(MeshHandle handle, IMeshAssetImplProvider impl) {
+	internal Texture(TextureHandle handle, ITextureAssetImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
 	}
@@ -37,11 +37,11 @@ public readonly struct Mesh : IEquatable<Mesh>, IDisposable {
 	}
 	#endregion
 
-	public override string ToString() => $"Mesh {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
+	public override string ToString() => $"Texture {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
 
-	public bool Equals(Mesh other) => _handle == other._handle && _impl.Equals(other._impl);
-	public override bool Equals(object? obj) => obj is Mesh other && Equals(other);
+	public bool Equals(Texture other) => _handle == other._handle && _impl.Equals(other._impl);
+	public override bool Equals(object? obj) => obj is Texture other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(_handle, _impl);
-	public static bool operator ==(Mesh left, Mesh right) => left.Equals(right);
-	public static bool operator !=(Mesh left, Mesh right) => !left.Equals(right);
+	public static bool operator ==(Texture left, Texture right) => left.Equals(right);
+	public static bool operator !=(Texture left, Texture right) => !left.Equals(right);
 }

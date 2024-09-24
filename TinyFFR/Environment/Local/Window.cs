@@ -11,7 +11,8 @@ public readonly unsafe struct Window : IEquatable<Window>, IDisposable {
 	readonly WindowHandle _handle;
 	readonly IWindowImplProvider _impl;
 
-	IWindowImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Window>();
+	internal IWindowImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Window>();
+	internal WindowHandle Handle => _handle;
 
 	public string Title {
 		get => Implementation.GetTitle(_handle);

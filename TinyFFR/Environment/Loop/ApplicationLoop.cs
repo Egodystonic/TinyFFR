@@ -11,7 +11,8 @@ public readonly struct ApplicationLoop : IEquatable<ApplicationLoop>, IDisposabl
 	readonly ApplicationLoopHandle _handle;
 	readonly IApplicationLoopImplProvider _impl;
 
-	IApplicationLoopImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<ApplicationLoop>();
+	internal IApplicationLoopImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<ApplicationLoop>();
+	internal ApplicationLoopHandle Handle => _handle;
 
 	public IInputTracker Input {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

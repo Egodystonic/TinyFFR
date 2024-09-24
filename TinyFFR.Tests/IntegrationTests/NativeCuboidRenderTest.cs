@@ -6,6 +6,7 @@ using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR;
 
@@ -21,8 +22,12 @@ class NativeCuboidRenderTest {
 	public void Execute() {
 		using var factory = new LocalRendererFactory();
 
-		var meshBuilder = factory.AssetLoader.MeshBuilder;
-		using var mesh = meshBuilder.CreateMesh(new CuboidDescriptor(10f, 7f, 2f), new MeshCreationConfig { Name = "Clive the Cuboid" });
-		Console.WriteLine(mesh);
+		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(10f, 7f, 2f), new MeshCreationConfig { Name = "Clive the Cuboid" });
+		using var camera = factory.CameraBuilder.CreateCamera(new CameraCreationConfig {
+			Position = (Direction.Backward * 1f).AsLocation(),
+			ViewDirection = Direction.Forward,
+			UpDirection = Direction.Up
+		});
+		Console.WriteLine(camera);
 	}
 }

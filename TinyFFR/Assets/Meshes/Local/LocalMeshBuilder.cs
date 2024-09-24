@@ -14,12 +14,12 @@ namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshAssetImplProvider, IDisposable {
 	const string DefaultMeshName = "Unnamed Mesh";
-	readonly ArrayPoolBackedMap<MeshAssetHandle, (UIntPtr VertexBufferRef, UIntPtr IndexBufferRef, IAssetResourcePoolProvider.AssetNameBuffer? NameBuffer)> _activeMeshes = new();
+	readonly ArrayPoolBackedMap<MeshHandle, (UIntPtr VertexBufferRef, UIntPtr IndexBufferRef, IAssetResourcePoolProvider.AssetNameBuffer? NameBuffer)> _activeMeshes = new();
 	readonly ArrayPoolBackedMap<UIntPtr, int> _vertexBufferRefCounts = new();
 	readonly ArrayPoolBackedMap<UIntPtr, int> _indexBufferRefCounts = new();
 	readonly IAssetResourcePoolProvider _resourcePoolProvider;
 	bool _isDisposed = false;
-	MeshAssetHandle _nextAssetHandleId = 0UL;
+	MeshHandle _nextHandleId = 0UL;
 
 	public LocalMeshBuilder(IAssetResourcePoolProvider assetResourcePoolProvider) {
 		ArgumentNullException.ThrowIfNull(assetResourcePoolProvider);
@@ -136,18 +136,18 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshAssetImplProvider, IDi
 
 		_vertexBufferRefCounts.Add((UIntPtr) vbHandle, 1);
 		_indexBufferRefCounts.Add((UIntPtr) ibHandle, 1);
-		_nextAssetHandleId++;
-		_activeMeshes.Add(_nextAssetHandleId, ((UIntPtr) vbHandle, (UIntPtr) ibHandle, assetNameBuffer));
-		return new Mesh(_nextAssetHandleId, this);
+		_nextHandleId++;
+		_activeMeshes.Add(_nextHandleId, ((UIntPtr) vbHandle, (UIntPtr) ibHandle, assetNameBuffer));
+		return new Mesh(_nextHandleId, this);
 	}
 
-	public string GetName(MeshAssetHandle handle) {
+	public string GetName(MeshHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var buf = _activeMeshes[handle].NameBuffer;
 		if (buf == null) return DefaultMeshName;
 		else return new(buf.Value.AsSpan);
 	}
-	public int GetNameUsingSpan(MeshAssetHandle handle, Span<char> dest) {
+	public int GetNameUsingSpan(MeshHandle handle, Span<char> dest) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var buf = _activeMeshes[handle].NameBuffer;
 		if (buf == null) {
@@ -159,7 +159,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshAssetImplProvider, IDi
 			return buf.Value.AsSpan.Length;
 		}
 	}
-	public int GetNameSpanMaxLength(MeshAssetHandle handle) {
+	public int GetNameSpanMaxLength(MeshHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var buf = _activeMeshes[handle].NameBuffer;
 		if (buf == null) return DefaultMeshName.Length;
@@ -167,10 +167,10 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshAssetImplProvider, IDi
 	}
 
 	#region Disposal
-	public bool IsDisposed(MeshAssetHandle handle) => _isDisposed || !_activeMeshes.ContainsKey(handle);
+	public bool IsDisposed(MeshHandle handle) => _isDisposed || !_activeMeshes.ContainsKey(handle);
 
-	public void Dispose(MeshAssetHandle handle) => Dispose(handle, removeFromMap: true);
-	void Dispose(MeshAssetHandle handle, bool removeFromMap) {
+	public void Dispose(MeshHandle handle) => Dispose(handle, removeFromMap: true);
+	void Dispose(MeshHandle handle, bool removeFromMap) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var tuple = _activeMeshes[handle];
 		var curVbRefCount = _vertexBufferRefCounts[tuple.VertexBufferRef];
@@ -208,7 +208,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshAssetImplProvider, IDi
 		}
 	}
 
-	void ThrowIfThisOrHandleIsDisposed(MeshAssetHandle handle) {
+	void ThrowIfThisOrHandleIsDisposed(MeshHandle handle) {
 		ThrowIfThisIsDisposed();
 		ObjectDisposedException.ThrowIf(!_activeMeshes.ContainsKey(handle), typeof(Mesh));
 	}

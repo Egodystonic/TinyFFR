@@ -6,11 +6,6 @@ using System;
 namespace Egodystonic.TinyFFR.Scene;
 
 public unsafe interface ICameraAssetImplProvider {
-	public void GetProjectionMatrix(CameraHandle handle, out Matrix4x4 outMatrix);
-	public void SetProjectionMatrix(CameraHandle handle, in Matrix4x4 newMatrix);
-	public void GetViewMatrix(CameraHandle handle, out Matrix4x4 outMatrix);
-	public void SetViewMatrix(CameraHandle handle, in Matrix4x4 newMatrix);
-
 	public Location GetPosition(CameraHandle handle);
 	public void SetPosition(CameraHandle handle, Location newPosition);
 	public Direction GetViewDirection(CameraHandle handle);
@@ -27,6 +22,11 @@ public unsafe interface ICameraAssetImplProvider {
 	public void SetNearPlaneDistance(CameraHandle handle, float newDistance);
 	public float GetFarPlaneDistance(CameraHandle handle);
 	public void SetFarPlaneDistance(CameraHandle handle, float newDistance);
+
+	public void GetProjectionMatrix(CameraHandle handle, out Matrix4x4 outMatrix);
+	public void SetProjectionMatrix(CameraHandle handle, in Matrix4x4 newMatrix);
+	public void GetViewMatrix(CameraHandle handle, out Matrix4x4 outMatrix);
+	public void SetViewMatrix(CameraHandle handle, in Matrix4x4 newMatrix);
 
 	public void Dispose(CameraHandle handle);
 	public bool IsDisposed(CameraHandle handle);

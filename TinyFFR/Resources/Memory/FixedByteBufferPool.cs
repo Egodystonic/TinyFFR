@@ -15,6 +15,9 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 		internal int SpaceIndex { get; }
 		internal int BlockIndex { get; }
 
+		public Span<byte> AsByteSpan => new((void*) StartPtr, SizeBytes);
+		public ReadOnlySpan<byte> AsReadOnlyByteSpan => new((void*) StartPtr, SizeBytes);
+
 		internal FixedByteBuffer(UIntPtr startPtr, int sizeBytes, int spaceIndex, int blockIndex) {
 			StartPtr = startPtr;
 			SizeBytes = sizeBytes;

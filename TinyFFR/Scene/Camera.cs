@@ -14,7 +14,8 @@ public readonly unsafe struct Camera : IEquatable<Camera>, IDisposable {
 	readonly CameraHandle _handle;
 	readonly ICameraAssetImplProvider _impl;
 
-	ICameraAssetImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Camera>();
+	internal ICameraAssetImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Camera>();
+	internal CameraHandle Handle => _handle;
 
 	public Location Position {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -90,7 +91,7 @@ public readonly unsafe struct Camera : IEquatable<Camera>, IDisposable {
 	}
 	#endregion
 
-	public override string ToString() => $"Camera {(IsDisposed ? "(Disposed)" : "")}";
+	public override string ToString() => $"Camera {(IsDisposed ? "(Disposed)" : $"(Position {Position}, View Direction {ViewDirection.ToStringDescriptive()})")}";
 
 	public bool Equals(Camera other) => _handle == other._handle && _impl.Equals(other._impl);
 	public override bool Equals(object? obj) => obj is Camera other && Equals(other);

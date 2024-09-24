@@ -10,7 +10,8 @@ public readonly struct Display : IEquatable<Display> {
 	readonly DisplayHandle _handle;
 	readonly IDisplayImplProvider _impl;
 
-	IDisplayImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Display>();
+	internal IDisplayImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Display>();
+	internal DisplayHandle Handle => _handle;
 
 	public bool IsPrimary => Implementation.GetIsPrimary(_handle);
 	public bool IsRecommended => Implementation.GetIsRecommended(_handle);

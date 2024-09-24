@@ -8,7 +8,7 @@
 // public readonly unsafe struct Asset : IEquatable<Asset>, IDisposable {
 // 	internal enum AssetType {
 // 		Undefined,
-// 		AssetGroup,
+// 		ResourceGroup,
 // 		Mesh
 // 	}
 //
@@ -28,7 +28,7 @@
 // 	public void Dispose() {
 // 		ThrowIfInvalid();
 // 		switch (Type) {
-// 			case AssetType.AssetGroup:
+// 			case AssetType.ResourceGroup:
 //
 // 				break;
 // 			case AssetType.Mesh:
