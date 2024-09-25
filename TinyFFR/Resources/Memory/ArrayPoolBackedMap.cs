@@ -36,7 +36,7 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IDictionary<TKey, TValue>, IDisp
 	readonly ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>[] _buckets;
 	
 	public ArrayPoolBackedMap() {
-		_buckets = ArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Rent(HashMask + 1);
+		_buckets = ArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Rent(NumBuckets);
 		for (var i = 0; i < NumBuckets; ++i) _buckets[i] = new ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>();
 	}
 
