@@ -2,19 +2,25 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System.Buffers.Binary;
-using Egodystonic.TinyFFR.Assets;
+using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Resources;
 
 public interface IResourceImplProvider {
-	internal void DisposeViaRawHandle(nuint handle);
+	internal bool RawHandleIsDisposed(nuint handle);
+	internal void RawHandleDispose(nuint handle);
+	internal string RawHandleGetName(nuint handle);
+	internal int RawHandleGetNameUsingSpan(nuint handle, Span<char> dest);
+	internal int RawHandleGetNameSpanLength(nuint handle);
 }
 
-public unsafe interface IHandleImplPairResource : IDisposable {
+public unsafe interface IHandleImplPairResource : IStringSpanNameEnabled, IDisposable {
+	internal readonly record struct ResourceIdent(nint TypeHandle, nuint RawResourceHandle);
 	internal static readonly int SerializedLengthBytes = sizeof(GCHandle) + sizeof(nuint);
 
 	internal nuint Handle { get; }
 	internal IResourceImplProvider Implementation { get; }
+	internal ResourceIdent Ident { get; }
 
 	internal void AllocateGcHandleAndSerializeResource(Span<byte> dest) {
 		var gcHandle = GCHandle.Alloc(Implementation, GCHandleType.Normal);

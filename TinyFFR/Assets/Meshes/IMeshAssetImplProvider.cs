@@ -8,5 +8,5 @@ public interface IMeshAssetImplProvider {
 	void Dispose(MeshHandle handle);
 	string GetName(MeshHandle handle);
 	int GetNameUsingSpan(MeshHandle handle, Span<char> dest);
-	int GetNameSpanMaxLength(MeshHandle handle);
+	int GetNameSpanLength(MeshHandle handle);
 }

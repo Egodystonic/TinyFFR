@@ -14,7 +14,7 @@ namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshAssetImplProvider, IDisposable {
 	const string DefaultMeshName = "Unnamed Mesh";
-	readonly ArrayPoolBackedMap<MeshHandle, (UIntPtr VertexBufferRef, UIntPtr IndexBufferRef, IAssetResourcePoolProvider.AssetNameBuffer? NameBuffer)> _activeMeshes = new();
+	readonly ArrayPoolBackedMap<MeshHandle, (UIntPtr VertexBufferRef, UIntPtr IndexBufferRef, Utf16StringBufferPool.Utf16PoolStringHandle? NameHandle)> _activeMeshes = new();
 	readonly ArrayPoolBackedMap<UIntPtr, int> _vertexBufferRefCounts = new();
 	readonly ArrayPoolBackedMap<UIntPtr, int> _indexBufferRefCounts = new();
 	readonly IAssetResourcePoolProvider _resourcePoolProvider;
@@ -126,9 +126,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshAssetImplProvider, IDi
 			}
 		}
 
-		IAssetResourcePoolProvider.AssetNameBuffer? assetNameBuffer = null;
+		Utf16StringBufferPool.Utf16PoolStringHandle? assetNameBuffer = null;
 		if (config.NameAsSpan.Length > 0) {
-			assetNameBuffer = _resourcePoolProvider.CopyAssetNameToFixedBuffer(config.NameAsSpan);
+			assetNameBuffer = Utf16StringBufferPool.RentAndCopy(config.NameAsSpan);
 		}
 
 		AllocateVertexBuffer(tempVertexBuffer.BufferIdentity, (MeshVertex*) tempVertexBuffer.DataPtr, vertices.Length, out var vbHandle).ThrowIfFailure();
@@ -143,13 +143,13 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshAssetImplProvider, IDi
 
 	public string GetName(MeshHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var buf = _activeMeshes[handle].NameBuffer;
+		var buf = _activeMeshes[handle].NameHandle;
 		if (buf == null) return DefaultMeshName;
 		else return new(buf.Value.AsSpan);
 	}
 	public int GetNameUsingSpan(MeshHandle handle, Span<char> dest) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var buf = _activeMeshes[handle].NameBuffer;
+		var buf = _activeMeshes[handle].NameHandle;
 		if (buf == null) {
 			DefaultMeshName.CopyTo(dest);
 			return DefaultMeshName.Length;
@@ -161,9 +161,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshAssetImplProvider, IDi
 	}
 	public int GetNameSpanMaxLength(MeshHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var buf = _activeMeshes[handle].NameBuffer;
+		var buf = _activeMeshes[handle].NameHandle;
 		if (buf == null) return DefaultMeshName.Length;
-		else return buf.Value.CharacterCount;
+		else return buf.Value.Length;
 	}
 
 	#region Disposal

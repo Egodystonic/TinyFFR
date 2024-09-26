@@ -14,7 +14,6 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IAssetResourcePoolProvider,
 	static readonly ArrayPoolBackedMap<nuint, (LocalAssetLoader Loader, FixedByteBufferPool.FixedByteBuffer Buffer)> _activelyRentedBuffers = new();
 	static nuint _nextBufferId = 0;
 	readonly FixedByteBufferPool _temporaryCpuBufferPool;
-	readonly FixedByteBufferPool _assetNamePool;
 	readonly LocalMeshBuilder _meshBuilder;
 	bool _isDisposed = false;
 
@@ -26,7 +25,6 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IAssetResourcePoolProvider,
 
 	public LocalAssetLoader(LocalAssetLoaderConfig config) {
 		_temporaryCpuBufferPool = new FixedByteBufferPool(config.MaxAssetSizeBytes);
-		_assetNamePool = new FixedByteBufferPool(config.MaxAssetNameLength * sizeof(char));
 		_meshBuilder = new LocalMeshBuilder(this);
 	}
 
@@ -57,18 +55,6 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IAssetResourcePoolProvider,
 		return new(bufferId, buffer.StartPtr, sizeBytes);
 	}
 
-	IAssetResourcePoolProvider.AssetNameBuffer IAssetResourcePoolProvider.CopyAssetNameToFixedBuffer(ReadOnlySpan<char> data) {
-		ThrowIfThisIsDisposed();
-		var characterCount = Math.Min(data.Length, _assetNamePool.GetMaxBufferSize<char>());
-		var result = new IAssetResourcePoolProvider.AssetNameBuffer(_assetNamePool.Rent<char>(characterCount), characterCount);
-		data.CopyTo(result.AsSpan);
-		return result;
-	}
-
-	void IAssetResourcePoolProvider.DeallocateNameBuffer(IAssetResourcePoolProvider.AssetNameBuffer buffer) {
-		_assetNamePool.Return(buffer.Buffer);
-	}
-
 	#region Native Methods
 	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_buffer_deallocation_delegate")]
 	static extern InteropResult SetBufferDeallocationDelegate(
@@ -81,7 +67,6 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IAssetResourcePoolProvider,
 		if (_isDisposed) return;
 		try {
 			_meshBuilder.Dispose();
-			_assetNamePool.Dispose();
 			DisposeCpuBufferPoolIfSafe();
 		}
 		finally {
