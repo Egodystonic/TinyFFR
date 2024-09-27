@@ -13,6 +13,7 @@ namespace Egodystonic.TinyFFR.Assets.Local;
 sealed unsafe class LocalAssetLoader : IAssetLoader, IAssetResourcePoolProvider, IDisposable {
 	static readonly ArrayPoolBackedMap<nuint, (LocalAssetLoader Loader, FixedByteBufferPool.FixedByteBuffer Buffer)> _activelyRentedBuffers = new();
 	static nuint _nextBufferId = 0;
+	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly FixedByteBufferPool _temporaryCpuBufferPool;
 	readonly LocalMeshBuilder _meshBuilder;
 	bool _isDisposed = false;
@@ -23,7 +24,11 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IAssetResourcePoolProvider,
 		SetBufferDeallocationDelegate(&DeallocateRentedBuffer).ThrowIfFailure();
 	}
 
-	public LocalAssetLoader(LocalAssetLoaderConfig config) {
+	public LocalAssetLoader(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config) {
+		ArgumentNullException.ThrowIfNull(globals);
+		ArgumentNullException.ThrowIfNull(config);
+
+		_globals = globals;
 		_temporaryCpuBufferPool = new FixedByteBufferPool(config.MaxAssetSizeBytes);
 		_meshBuilder = new LocalMeshBuilder(this);
 	}

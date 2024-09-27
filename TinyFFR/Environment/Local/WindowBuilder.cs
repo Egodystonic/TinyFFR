@@ -5,6 +5,7 @@ using System;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Security;
+using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.Scene;
@@ -13,12 +14,17 @@ namespace Egodystonic.TinyFFR.Environment.Local;
 
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class WindowBuilder : IWindowBuilder, IWindowImplProvider, IDisposable {
+	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly InteropStringBuffer _windowTitleBuffer;
 	readonly ArrayPoolBackedVector<UIntPtr> _activeWindows = new();
 	readonly ArrayPoolBackedMap<UIntPtr, Display> _displayMap = new();
 	bool _isDisposed = false;
 
-	public WindowBuilder(WindowBuilderConfig config) {
+	public WindowBuilder(LocalFactoryGlobalObjectGroup globals, WindowBuilderConfig config) {
+		ArgumentNullException.ThrowIfNull(globals);
+		ArgumentNullException.ThrowIfNull(config);
+
+		_globals = globals;
 		_windowTitleBuffer = new InteropStringBuffer(config.MaxWindowTitleLength, addOneForNullTerminator: true);
 	}
 

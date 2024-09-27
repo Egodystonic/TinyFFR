@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
 
@@ -11,11 +12,14 @@ sealed unsafe class LocalCameraBuilder : ICameraBuilder, ICameraAssetImplProvide
 	readonly record struct CameraParameters(Location Position, Direction ViewDirection, Direction UpDirection, float VerticalFovRadians, float AspectRatio, float NearPlaneDistance, float FarPlaneDistance);
 
 	const float DefaultAspectRatio = 16f / 9f;
+	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPoolBackedMap<UIntPtr, CameraParameters> _activeCameras = new();
 	bool _isDisposed = false;
 
-	public LocalCameraBuilder() {
-		
+	public LocalCameraBuilder(LocalFactoryGlobalObjectGroup globals) {
+		ArgumentNullException.ThrowIfNull(globals);
+
+		_globals = globals;
 	}
 
 	public Camera CreateCamera() => CreateCamera(new CameraCreationConfig());

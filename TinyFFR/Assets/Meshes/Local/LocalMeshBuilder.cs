@@ -14,7 +14,7 @@ namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshAssetImplProvider, IDisposable {
 	const string DefaultMeshName = "Unnamed Mesh";
-	readonly ArrayPoolBackedMap<MeshHandle, (UIntPtr VertexBufferRef, UIntPtr IndexBufferRef, Utf16StringBufferPool.Utf16PoolStringHandle? NameHandle)> _activeMeshes = new();
+	readonly ArrayPoolBackedMap<MeshHandle, (UIntPtr VertexBufferRef, UIntPtr IndexBufferRef, ManagedStringPool.RentedStringHandle? NameHandle)> _activeMeshes = new();
 	readonly ArrayPoolBackedMap<UIntPtr, int> _vertexBufferRefCounts = new();
 	readonly ArrayPoolBackedMap<UIntPtr, int> _indexBufferRefCounts = new();
 	readonly IAssetResourcePoolProvider _resourcePoolProvider;
@@ -126,9 +126,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshAssetImplProvider, IDi
 			}
 		}
 
-		Utf16StringBufferPool.Utf16PoolStringHandle? assetNameBuffer = null;
+		ManagedStringPool.RentedStringHandle? assetNameBuffer = null;
 		if (config.NameAsSpan.Length > 0) {
-			assetNameBuffer = Utf16StringBufferPool.RentAndCopy(config.NameAsSpan);
+			assetNameBuffer = ManagedStringPool.RentAndCopy(config.NameAsSpan);
 		}
 
 		AllocateVertexBuffer(tempVertexBuffer.BufferIdentity, (MeshVertex*) tempVertexBuffer.DataPtr, vertices.Length, out var vbHandle).ThrowIfFailure();

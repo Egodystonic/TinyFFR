@@ -3,6 +3,7 @@
 
 using System;
 using System.Security;
+using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using DisplayModeArray = Egodystonic.TinyFFR.Environment.Local.DisplayMode[];
 
@@ -12,6 +13,7 @@ namespace Egodystonic.TinyFFR.Environment.Local;
 sealed class DisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider {
 	const int MaxDisplayNameLength = 200; // Should be low enough to be stackalloc'able (or rewrite ctor)
 	const int MaxDisplayCount = 1_000_000;
+	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly DisplayModeArray[] _displayModes;
 	readonly string[] _displayNames;
 	readonly Display[] _displays;
@@ -22,7 +24,11 @@ sealed class DisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider {
 	public Display? Recommended => _recommendedHandle != null ? new Display(_recommendedHandle.Value, this) : null;
 	public Display? Primary => _primaryHandle != null ? new Display(_primaryHandle.Value, this) : null;
 
-	public DisplayDiscoverer() {
+	public DisplayDiscoverer(LocalFactoryGlobalObjectGroup globals) {
+		ArgumentNullException.ThrowIfNull(globals);
+		
+		_globals = globals;
+
 		GetDisplayCount(out var numDisplays).ThrowIfFailure();
 		if (numDisplays is > MaxDisplayCount or < 0) throw new InvalidOperationException($"Display discoverer found {numDisplays} displays (too low/too high).");
 		_displays = new Display[numDisplays];

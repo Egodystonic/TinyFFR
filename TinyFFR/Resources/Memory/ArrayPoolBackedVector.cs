@@ -105,6 +105,27 @@ sealed class ArrayPoolBackedVector<T> : IList<T>, IDisposable {
 		_backingArray[Count] = default!;
 	}
 
+	public T RemoveLast() {
+		if (Count == 0) throw new InvalidOperationException("Vector is empty.");
+
+		Count--;
+		var result = _backingArray[Count];
+		_backingArray[Count] = default!;
+		return result;
+	}
+
+	public bool TryRemoveLast(out T result) {
+		if (Count == 0) {
+			result = default!;
+			return false;
+		}
+
+		Count--;
+		result = _backingArray[Count];
+		_backingArray[Count] = default!;
+		return true;
+	}
+
 	public void CopyTo(T[] array, int arrayIndex) => AsSpan.CopyTo(array.AsSpan(arrayIndex));
 
 	public Enumerator GetEnumerator() => new(this);

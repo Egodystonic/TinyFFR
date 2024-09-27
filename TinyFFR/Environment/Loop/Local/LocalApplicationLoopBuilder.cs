@@ -18,14 +18,18 @@ namespace Egodystonic.TinyFFR.Environment.Local;
 sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplicationLoopImplProvider, IDisposable {
 	readonly record struct HandleTrackingData(LocalApplicationLoopConfig Config, long PreviousIterationStartTimestamp, long PreviousIterationReturnTimestamp, TimeSpan TotalIteratedTime);
 
+	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPoolBackedMap<ApplicationLoopHandle, HandleTrackingData> _handleDataMap = new();
 	readonly LocalInputTracker _inputTracker = new();
 	readonly LocalApplicationLoopBuilderConfig _config;
 	ApplicationLoopHandle _nextLoopHandleIndex = 1;
 	bool _isDisposed = false;
 
-	public LocalApplicationLoopBuilder(LocalApplicationLoopBuilderConfig config) {
+	public LocalApplicationLoopBuilder(LocalFactoryGlobalObjectGroup globals, LocalApplicationLoopBuilderConfig config) {
+		ArgumentNullException.ThrowIfNull(globals);
 		ArgumentNullException.ThrowIfNull(config);
+
+		_globals = globals;
 		_config = config;
 	}
 
