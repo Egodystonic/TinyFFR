@@ -3,6 +3,7 @@
 
 using System;
 using System.Security;
+using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.Scene;
@@ -13,11 +14,12 @@ namespace Egodystonic.TinyFFR.Environment.Input.Local;
 [SuppressUnmanagedCodeSecurity]
 sealed class LocalInputTracker : IInputTracker, IDisposable {
 	internal const int InitialEventBufferLength = 50;
+	static readonly UIntPtr CombinedGameControllerHandle = UIntPtr.Zero;
 	static LocalInputTracker? _liveInstance = null;
 	readonly LocalKeyboardAndMouseInputState _kbmStateObject;
 	readonly UnmanagedBuffer<RawLocalGameControllerButtonEvent> _controllerEventBuffer = new(InitialEventBufferLength);
 	readonly ArrayPoolBackedVector<IGameControllerInputTracker> _detectedControllerStateObjectVector = new();
-	readonly ArrayPoolBackedMap<GameControllerHandle, LocalGameControllerState> _detectedControllerStateObjectMap = new();
+	readonly ArrayPoolBackedMap<UIntPtr, LocalGameControllerState> _detectedControllerStateObjectMap = new();
 	readonly LocalGameControllerState _combinedControllerState;
 	bool _isDisposed = false;
 
@@ -30,7 +32,7 @@ sealed class LocalInputTracker : IInputTracker, IDisposable {
 		if (_liveInstance != null) throw new InvalidOperationException($"Only one {nameof(LocalInputTracker)} may be active at any time.");
 		_liveInstance = this;
 		_kbmStateObject = new LocalKeyboardAndMouseInputState();
-		_combinedControllerState = new LocalGameControllerState(GameControllerHandle.Combined);
+		_combinedControllerState = new LocalGameControllerState(CombinedGameControllerHandle);
 		SetEventPollDelegates(
 			&FilterAndTranslateKeycode,
 			&ResizeCurrentPollInstanceKbmEventBuffer,
@@ -88,15 +90,15 @@ sealed class LocalInputTracker : IInputTracker, IDisposable {
 	public override string ToString() => "TinyFFR Native Input Tracker";
 
 	#region Native Methods
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_event_poll_delegates")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_event_poll_delegates")]
 	static extern unsafe InteropResult SetEventPollDelegates(
 		delegate* unmanaged<int*, InteropBool> filterTranslateKeycapValueDelegate,
 		delegate* unmanaged<KeyboardOrMouseKeyEvent*> doubleKbmEventBufferDelegate,
 		delegate* unmanaged<RawLocalGameControllerButtonEvent*> doubleControllerEventBufferDelegate,
 		delegate* unmanaged<MouseClickEvent*> doubleClickEventBufferDelegate,
-		delegate* unmanaged<GameControllerHandle, byte*, int, void> handleNewControllerDelegate
+		delegate* unmanaged<UIntPtr, byte*, int, void> handleNewControllerDelegate
 	);
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_event_poll_buffer_pointers")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_event_poll_buffer_pointers")]
 	static extern unsafe InteropResult SetEventPollBufferPointers(
 		KeyboardOrMouseKeyEvent* kbmEventBufferPtr,
 		int kbmEventBufferLen,
@@ -129,9 +131,9 @@ sealed class LocalInputTracker : IInputTracker, IDisposable {
 		return Enum.IsDefined((KeyboardOrMouseKey) (*keycode));
 	}
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "detect_controllers")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "detect_controllers")]
 	static extern InteropResult DetectControllers();
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "iterate_events")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "iterate_events")]
 	static extern InteropResult IterateEvents(
 		out int numKbmEventsWritten,
 		out int numControllerEventsWritten,
@@ -144,7 +146,7 @@ sealed class LocalInputTracker : IInputTracker, IDisposable {
 	);
 
 	[UnmanagedCallersOnly]
-	static unsafe void HandlePotentialNewController(GameControllerHandle handle, byte* utf8NamePtr, int utf8NameLen) {
+	static unsafe void HandlePotentialNewController(UIntPtr handle, byte* utf8NamePtr, int utf8NameLen) {
 		if (_liveInstance == null || _liveInstance._isDisposed) throw new InvalidOperationException("Live instance was null or disposed.");
 		foreach (var kvp in _liveInstance._detectedControllerStateObjectMap) {
 			if (kvp.Value.Handle == handle) return;

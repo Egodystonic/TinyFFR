@@ -8,12 +8,13 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Scene;
 
-sealed unsafe class LocalCameraBuilder : ICameraBuilder, ICameraAssetImplProvider, IDisposable {
+sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposable {
 	readonly record struct CameraParameters(Location Position, Direction ViewDirection, Direction UpDirection, float VerticalFovRadians, float AspectRatio, float NearPlaneDistance, float FarPlaneDistance);
 
+	const string DefaultCameraName = "Unnamed Camera";
 	const float DefaultAspectRatio = 16f / 9f;
 	readonly LocalFactoryGlobalObjectGroup _globals;
-	readonly ArrayPoolBackedMap<UIntPtr, CameraParameters> _activeCameras = new();
+	readonly ArrayPoolBackedMap<CameraHandle, CameraParameters> _activeCameras = new();
 	bool _isDisposed = false;
 
 	public LocalCameraBuilder(LocalFactoryGlobalObjectGroup globals) {
@@ -44,7 +45,8 @@ sealed unsafe class LocalCameraBuilder : ICameraBuilder, ICameraAssetImplProvide
 			config.FarPlaneDistance
 		);
 
-		_activeCameras.Add((UIntPtr) newCameraHandle, parameters);
+		_activeCameras.Add(newCameraHandle, parameters);
+		if (config.NameAsSpan != default) _globals.StoreResourceName(((CameraHandle) newCameraHandle).Ident, config.NameAsSpan);
 		return new(newCameraHandle, this);
 	}
 
@@ -60,45 +62,45 @@ sealed unsafe class LocalCameraBuilder : ICameraBuilder, ICameraAssetImplProvide
 
 	public Location GetPosition(CameraHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _activeCameras[(UIntPtr) handle].Position;
+		return _activeCameras[handle].Position;
 	}
 	public void SetPosition(CameraHandle handle, Location newPosition) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		_activeCameras[(UIntPtr) handle] = _activeCameras[(UIntPtr) handle] with { Position = newPosition };
+		_activeCameras[handle] = _activeCameras[handle] with { Position = newPosition };
 		UpdateViewMatrixFromParameters(handle);
 	}
 
 	public Direction GetViewDirection(CameraHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _activeCameras[(UIntPtr) handle].ViewDirection;
+		return _activeCameras[handle].ViewDirection;
 	}
 	public void SetViewDirection(CameraHandle handle, Direction newDirection) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (newDirection == Direction.None) throw new ArgumentException($"View direction can not be '{nameof(Direction.None)}'.", nameof(newDirection));
-		_activeCameras[(UIntPtr) handle] = _activeCameras[(UIntPtr) handle] with {
+		_activeCameras[handle] = _activeCameras[handle] with {
 			ViewDirection = newDirection, 
-			UpDirection = GetReorthogonalizedUpOrViewDirection(_activeCameras[(UIntPtr) handle].UpDirection, newDirection)
+			UpDirection = GetReorthogonalizedUpOrViewDirection(_activeCameras[handle].UpDirection, newDirection)
 		};
 		UpdateViewMatrixFromParameters(handle);
 	}
 
 	public Direction GetUpDirection(CameraHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _activeCameras[(UIntPtr) handle].UpDirection;
+		return _activeCameras[handle].UpDirection;
 	}
 	public void SetUpDirection(CameraHandle handle, Direction newDirection) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (newDirection == Direction.None) throw new ArgumentException($"Up direction can not be '{nameof(Direction.None)}'.", nameof(newDirection));
-		_activeCameras[(UIntPtr) handle] = _activeCameras[(UIntPtr) handle] with {
+		_activeCameras[handle] = _activeCameras[handle] with {
 			UpDirection = newDirection,
-			ViewDirection = GetReorthogonalizedUpOrViewDirection(_activeCameras[(UIntPtr) handle].ViewDirection, newDirection)
+			ViewDirection = GetReorthogonalizedUpOrViewDirection(_activeCameras[handle].ViewDirection, newDirection)
 		};
 		UpdateViewMatrixFromParameters(handle);
 	}
 
 	public Angle GetVerticalFieldOfView(CameraHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return Angle.FromRadians(_activeCameras[(UIntPtr) handle].VerticalFovRadians);
+		return Angle.FromRadians(_activeCameras[handle].VerticalFovRadians);
 	}
 	public void SetVerticalFieldOfView(CameraHandle handle, Angle newFov) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -108,22 +110,22 @@ sealed unsafe class LocalCameraBuilder : ICameraBuilder, ICameraAssetImplProvide
 				nameof(newFov)
 			);
 		}
-		_activeCameras[(UIntPtr) handle] = _activeCameras[(UIntPtr) handle] with { VerticalFovRadians = newFov.AsRadians };
+		_activeCameras[handle] = _activeCameras[handle] with { VerticalFovRadians = newFov.AsRadians };
 		UpdateProjectionMatrixFromParameters(handle);
 	}
 
 	public Angle GetHorizontalFieldOfView(CameraHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return Angle.FromRadians(ConvertVerticalFovToHorizontal(_activeCameras[(UIntPtr) handle].VerticalFovRadians, _activeCameras[(UIntPtr) handle].AspectRatio));
+		return Angle.FromRadians(ConvertVerticalFovToHorizontal(_activeCameras[handle].VerticalFovRadians, _activeCameras[handle].AspectRatio));
 	}
 	public void SetHorizontalFieldOfView(CameraHandle handle, Angle newFov) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		SetVerticalFieldOfView(handle, Angle.FromRadians(ConvertHorizontalFovToVertical(newFov.AsRadians, _activeCameras[(UIntPtr) handle].AspectRatio)));
+		SetVerticalFieldOfView(handle, Angle.FromRadians(ConvertHorizontalFovToVertical(newFov.AsRadians, _activeCameras[handle].AspectRatio)));
 	}
 
 	public float GetNearPlaneDistance(CameraHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _activeCameras[(UIntPtr) handle].NearPlaneDistance;
+		return _activeCameras[handle].NearPlaneDistance;
 	}
 	public void SetNearPlaneDistance(CameraHandle handle, float newDistance) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -134,7 +136,7 @@ sealed unsafe class LocalCameraBuilder : ICameraBuilder, ICameraAssetImplProvide
 			);
 		}
 
-		var farDist = _activeCameras[(UIntPtr) handle].FarPlaneDistance;
+		var farDist = _activeCameras[handle].FarPlaneDistance;
 		if (newDistance >= farDist) {
 			throw new ArgumentException(
 				$"Near-plane distance must be less than far-plane distance (currently {farDist}).",
@@ -142,7 +144,7 @@ sealed unsafe class LocalCameraBuilder : ICameraBuilder, ICameraAssetImplProvide
 			);
 		}
 
-		_activeCameras[(UIntPtr) handle] = _activeCameras[(UIntPtr) handle] with {
+		_activeCameras[handle] = _activeCameras[handle] with {
 			NearPlaneDistance = newDistance,
 			FarPlaneDistance = MathF.Min(farDist, newDistance * Camera.NearFarPlaneDistanceRatioMax)
 		};
@@ -151,7 +153,7 @@ sealed unsafe class LocalCameraBuilder : ICameraBuilder, ICameraAssetImplProvide
 	}
 	public float GetFarPlaneDistance(CameraHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _activeCameras[(UIntPtr) handle].FarPlaneDistance;
+		return _activeCameras[handle].FarPlaneDistance;
 	}
 	public void SetFarPlaneDistance(CameraHandle handle, float newDistance) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -162,7 +164,7 @@ sealed unsafe class LocalCameraBuilder : ICameraBuilder, ICameraAssetImplProvide
 			);
 		}
 
-		var nearDist = _activeCameras[(UIntPtr) handle].NearPlaneDistance;
+		var nearDist = _activeCameras[handle].NearPlaneDistance;
 		if (newDistance <= nearDist) {
 			throw new ArgumentException(
 				$"Far-plane distance must be greater than near-plane distance (currently {nearDist}).",
@@ -170,7 +172,7 @@ sealed unsafe class LocalCameraBuilder : ICameraBuilder, ICameraAssetImplProvide
 			);
 		}
 
-		_activeCameras[(UIntPtr) handle] = _activeCameras[(UIntPtr) handle] with {
+		_activeCameras[handle] = _activeCameras[handle] with {
 			FarPlaneDistance = newDistance,
 			NearPlaneDistance = MathF.Max(nearDist, newDistance / Camera.NearFarPlaneDistanceRatioMax)
 		};
@@ -185,7 +187,7 @@ sealed unsafe class LocalCameraBuilder : ICameraBuilder, ICameraAssetImplProvide
 
 	public void SetProjectionMatrix(CameraHandle handle, in Matrix4x4 newMatrix) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		SetCameraProjectionMatrix(handle, in newMatrix, _activeCameras[(UIntPtr) handle].NearPlaneDistance, _activeCameras[(UIntPtr) handle].FarPlaneDistance)
+		SetCameraProjectionMatrix(handle, in newMatrix, _activeCameras[handle].NearPlaneDistance, _activeCameras[handle].FarPlaneDistance)
 			.ThrowIfFailure();
 	}
 
@@ -201,7 +203,7 @@ sealed unsafe class LocalCameraBuilder : ICameraBuilder, ICameraAssetImplProvide
 	}
 
 	void UpdateProjectionMatrixFromParameters(CameraHandle handle) {
-		var parameters = _activeCameras[(UIntPtr) handle];
+		var parameters = _activeCameras[handle];
 
 		var a = parameters.AspectRatio;
 		var v = parameters.VerticalFovRadians;
@@ -236,7 +238,7 @@ sealed unsafe class LocalCameraBuilder : ICameraBuilder, ICameraAssetImplProvide
 	}
 
 	void UpdateViewMatrixFromParameters(CameraHandle handle) {
-		var parameters = _activeCameras[(UIntPtr) handle];
+		var parameters = _activeCameras[handle];
 
 		var p = parameters.Position.ToVector3();
 		var o = parameters.ViewDirection.ToVector3();
@@ -260,43 +262,56 @@ sealed unsafe class LocalCameraBuilder : ICameraBuilder, ICameraAssetImplProvide
 		).ThrowIfFailure();
 	}
 
+	public string GetName(CameraHandle handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceNameAsNewStringObject(handle.Ident, DefaultCameraName);
+	}
+	public int GetNameUsingSpan(CameraHandle handle, Span<char> dest) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.CopyResourceName(handle.Ident, DefaultCameraName, dest);
+	}
+	public int GetNameSpanLength(CameraHandle handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceNameLength(handle.Ident, DefaultCameraName);
+	}
+
 	#region Native Methods
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "allocate_camera")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_camera")]
 	static extern InteropResult AllocateCamera(
-		out CameraHandle outCameraHandle
+		out UIntPtr outCameraHandle
 	);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_camera_projection_matrix")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_camera_projection_matrix")]
 	static extern InteropResult SetCameraProjectionMatrix(
-		CameraHandle cameraHandle,
+		UIntPtr cameraHandle,
 		in Matrix4x4 newMatrix,
 		float nearPlaneDistance,
 		float farPlaneDistance
 	);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_camera_projection_matrix")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_camera_projection_matrix")]
 	static extern InteropResult GetCameraProjectionMatrix(
-		CameraHandle cameraHandle,
+		UIntPtr cameraHandle,
 		out Matrix4x4 outMatrix,
 		out float outNearPlaneDist,
 		out float outFarPlaneDist
 	);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_camera_view_matrix")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_camera_view_matrix")]
 	static extern InteropResult SetCameraViewMatrix(
-		CameraHandle cameraHandle,
+		UIntPtr cameraHandle,
 		in Matrix4x4 newMatrix
 	);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_camera_view_matrix")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_camera_view_matrix")]
 	static extern InteropResult GetCameraViewMatrix(
-		CameraHandle cameraHandle,
+		UIntPtr cameraHandle,
 		out Matrix4x4 outMatrix
 	);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "dispose_camera")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_camera")]
 	static extern InteropResult DisposeCamera(
-		CameraHandle cameraHandle
+		UIntPtr cameraHandle
 	);
 	#endregion
 
@@ -311,18 +326,18 @@ sealed unsafe class LocalCameraBuilder : ICameraBuilder, ICameraAssetImplProvide
 		}
 	}
 
-	public bool IsDisposed(CameraHandle handle) => _isDisposed || !_activeCameras.ContainsKey((UIntPtr) handle);
+	public bool IsDisposed(CameraHandle handle) => _isDisposed || !_activeCameras.ContainsKey(handle);
 
 	public void Dispose(CameraHandle handle) => Dispose(handle, removeFromMap: true);
 	void Dispose(CameraHandle handle, bool removeFromMap) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		DisposeCamera(handle).ThrowIfFailure();
-		if (removeFromMap) _activeCameras.Remove((UIntPtr) handle);
+		if (removeFromMap) _activeCameras.Remove(handle);
 	}
 
 	void ThrowIfThisOrHandleIsDisposed(CameraHandle handle) {
 		ThrowIfThisIsDisposed();
-		ObjectDisposedException.ThrowIf(!_activeCameras.ContainsKey((UIntPtr) handle), typeof(Camera));
+		ObjectDisposedException.ThrowIf(!_activeCameras.ContainsKey(handle), typeof(Camera));
 	}
 
 	void ThrowIfThisIsDisposed() {

@@ -3,7 +3,7 @@
 
 using System.Buffers;
 using Egodystonic.TinyFFR.Resources.Memory;
-using static Egodystonic.TinyFFR.Resources.IHandleImplPairResource;
+using static Egodystonic.TinyFFR.Resources.IResource;
 
 namespace Egodystonic.TinyFFR.Resources;
 
@@ -28,7 +28,7 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker {
 	readonly ObjectPool<ArrayPoolBackedVector<DependentResourceData>> _dependentsVectorPool = new(&CreateNewDependentsVector);
 	readonly ArrayPoolBackedMap<ResourceIdent, ArrayPoolBackedVector<DependentResourceData>> _dependencyMap = new();
 
-	public void RegisterDependency<TDependent, TTarget>(TDependent dependent, TTarget target) where TDependent : IHandleImplPairResource where TTarget : IHandleImplPairResource {
+	public void RegisterDependency<TDependent, TTarget>(TDependent dependent, TTarget target) where TDependent : IResource where TTarget : IResource {
 		var dependentData = new DependentResourceData(dependent.Ident, dependent.Implementation);
 		var targetIdent = target.Ident;
 		if (!_dependencyMap.TryGetValue(targetIdent, out var dependents)) {
@@ -39,7 +39,7 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker {
 		dependents.Add(dependentData);
 	}
 
-	public void DeregisterDependency<TDependent, TTarget>(TDependent dependent, TTarget target) where TDependent : IHandleImplPairResource where TTarget : IHandleImplPairResource {
+	public void DeregisterDependency<TDependent, TTarget>(TDependent dependent, TTarget target) where TDependent : IResource where TTarget : IResource {
 		var dependentData = new DependentResourceData(dependent.Ident, dependent.Implementation);
 		var targetIdent = target.Ident;
 		if (!_dependencyMap.TryGetValue(targetIdent, out var dependents)) return;
@@ -50,7 +50,7 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker {
 		}
 	}
 
-	public void ThrowForPrematureDisposalIfTargetHasDependents<TTarget>(TTarget target) where TTarget : IHandleImplPairResource {
+	public void ThrowForPrematureDisposalIfTargetHasDependents<TTarget>(TTarget target) where TTarget : IResource {
 		if (!_dependencyMap.TryGetValue(target.Ident, out var dependents)) return;
 		throw ResourceDependencyException.CreateForPrematureDisposal(
 			target.GetType().Name,

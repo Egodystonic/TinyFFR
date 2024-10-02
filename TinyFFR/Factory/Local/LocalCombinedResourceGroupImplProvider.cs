@@ -16,7 +16,7 @@ sealed unsafe class LocalCombinedResourceGroupImplProvider : ICombinedResourceGr
 	const int DisposalFlagSizeBytes = 1;
 	const byte DisposalFlagEnabledValue = Byte.MaxValue;
 	const byte DisposalFlagDisabledValue = Byte.MinValue;
-	static readonly int SingleResourceSerializedLength = IntPtr.Size + IHandleImplPairResource.SerializedLengthBytes;
+	static readonly int SingleResourceSerializedLength = IntPtr.Size + IResource.SerializedLengthBytes;
 
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPool<byte> _bufferPool = ArrayPool<byte>.Shared;
@@ -63,7 +63,7 @@ sealed unsafe class LocalCombinedResourceGroupImplProvider : ICombinedResourceGr
 
 	public int GetResourceCapacity(CombinedResourceGroupHandle handle) => (GetSpanForHandleOrThrow(handle).Length - DisposalFlagSizeBytes) / SingleResourceSerializedLength;
 
-	public void AddResource<TResource>(CombinedResourceGroupHandle handle, TResource resource) where TResource : IHandleImplPairResource {
+	public void AddResource<TResource>(CombinedResourceGroupHandle handle, TResource resource) where TResource : IResource {
 		var span = GetSpanForHandleOrThrow(handle)[DisposalFlagSizeBytes..];
 
 		_globals.DependencyTracker.RegisterDependency(new CombinedResourceGroup(handle, this), resource);
@@ -79,7 +79,7 @@ sealed unsafe class LocalCombinedResourceGroupImplProvider : ICombinedResourceGr
 		resource.AllocateGcHandleAndSerializeResource(span[sizeof(IntPtr)..]);
 	}
 
-	public OneToManyEnumerator<EnumerationArg, TResource> GetAllResourcesOfType<TResource>(CombinedResourceGroupHandle handle) where TResource : IHandleImplPairResource<TResource> {
+	public OneToManyEnumerator<EnumerationArg, TResource> GetAllResourcesOfType<TResource>(CombinedResourceGroupHandle handle) where TResource : IResource<TResource> {
 		ThrowIfHandleIsDisposed(handle);
 
 		return new OneToManyEnumerator<EnumerationArg, TResource>(
@@ -102,7 +102,7 @@ sealed unsafe class LocalCombinedResourceGroupImplProvider : ICombinedResourceGr
 		}
 		return result;
 	}
-	static TResource GetEnumeratorResourceAtIndex<TResource>(EnumerationArg arg, int index) where TResource : IHandleImplPairResource<TResource> {
+	static TResource GetEnumeratorResourceAtIndex<TResource>(EnumerationArg arg, int index) where TResource : IResource<TResource> {
 		var implProvider = (arg.Impl as LocalCombinedResourceGroupImplProvider) ?? throw new InvalidOperationException($"Expected impl provider to be of type {nameof(LocalCombinedResourceGroupImplProvider)}.");
 		var span = implProvider.GetSpanForHandleOrThrow(arg.Handle)[DisposalFlagSizeBytes..];
 
@@ -115,8 +115,8 @@ sealed unsafe class LocalCombinedResourceGroupImplProvider : ICombinedResourceGr
 				if (count == index) {
 					span = span[sizeof(IntPtr)..];
 					return TResource.RecreateFromRawHandleAndImpl(
-						IHandleImplPairResource.ReadHandleFromSerializedResource(span),
-						(IHandleImplPairResource.ReadGcHandleFromSerializedResource(span).Target as IResourceImplProvider) ?? throw new InvalidOperationException("Unexpected null impl provider.")
+						IResource.ReadHandleFromSerializedResource(span),
+						(IResource.ReadGcHandleFromSerializedResource(span).Target as IResourceImplProvider) ?? throw new InvalidOperationException("Unexpected null impl provider.")
 					);
 				}
 				count++;
@@ -167,10 +167,10 @@ sealed unsafe class LocalCombinedResourceGroupImplProvider : ICombinedResourceGr
 
 		nint typeHandle;
 		while ((typeHandle = BinaryPrimitives.ReadIntPtrLittleEndian(span)) != IntPtr.Zero) {
-			var gcHandle = IHandleImplPairResource.ReadGcHandleFromSerializedResource(span[sizeof(IntPtr)..]);
-			var rawHandle = IHandleImplPairResource.ReadHandleFromSerializedResource(span[sizeof(IntPtr)..]);
+			var gcHandle = IResource.ReadGcHandleFromSerializedResource(span[sizeof(IntPtr)..]);
+			var rawHandle = IResource.ReadHandleFromSerializedResource(span[sizeof(IntPtr)..]);
 			var impl = (gcHandle.Target as IResourceImplProvider) ?? throw new InvalidOperationException("Unexpected null impl provider.");
-			var stub = IHandleImplPairResource.RecreateFromRawHandleAndImpl(rawHandle, impl, typeHandle);
+			var stub = IResource.RecreateFromRawHandleAndImpl(rawHandle, impl, typeHandle);
 
 			_globals.DependencyTracker.DeregisterDependency(new CombinedResourceGroup(handle, this), stub);
 			if (disposeContainedResources) stub.Dispose();

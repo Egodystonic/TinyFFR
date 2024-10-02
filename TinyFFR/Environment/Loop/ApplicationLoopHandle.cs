@@ -8,6 +8,8 @@ namespace Egodystonic.TinyFFR.Environment;
 public readonly unsafe struct ApplicationLoopHandle : IResourceHandle<ApplicationLoopHandle> {
 	public nuint AsInteger { get; }
 	public void* AsPointer => (void*) AsInteger;
+	internal ResourceIdent Ident => new(typeof(ApplicationLoop).TypeHandle.Value, AsInteger);
+	ResourceIdent IResourceHandle.Ident => Ident;
 
 	public ApplicationLoopHandle(nuint integer) => AsInteger = integer;
 	public ApplicationLoopHandle(void* pointer) : this((nuint) pointer) { }

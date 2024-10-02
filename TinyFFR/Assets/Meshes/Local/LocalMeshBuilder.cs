@@ -4,53 +4,55 @@
 using System;
 using System.Security;
 using Egodystonic.TinyFFR.Assets.Local;
+using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Input.Local;
+using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshAssetImplProvider, IDisposable {
+sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposable {
 	const string DefaultMeshName = "Unnamed Mesh";
-	readonly ArrayPoolBackedMap<MeshHandle, (UIntPtr VertexBufferRef, UIntPtr IndexBufferRef, ManagedStringPool.RentedStringHandle? NameHandle)> _activeMeshes = new();
-	readonly ArrayPoolBackedMap<UIntPtr, int> _vertexBufferRefCounts = new();
-	readonly ArrayPoolBackedMap<UIntPtr, int> _indexBufferRefCounts = new();
-	readonly IAssetResourcePoolProvider _resourcePoolProvider;
+	readonly ArrayPoolBackedMap<MeshHandle, (VertexBufferHandle VertexBufferRef, IndexBufferHandle IndexBufferRef)> _activeMeshes = new();
+	readonly ArrayPoolBackedMap<VertexBufferHandle, int> _vertexBufferRefCounts = new();
+	readonly ArrayPoolBackedMap<IndexBufferHandle, int> _indexBufferRefCounts = new();
+	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
-	MeshHandle _nextHandleId = 0UL;
+	nuint _nextHandleId = 0;
 
-	public LocalMeshBuilder(IAssetResourcePoolProvider assetResourcePoolProvider) {
-		ArgumentNullException.ThrowIfNull(assetResourcePoolProvider);
-		_resourcePoolProvider = assetResourcePoolProvider;
+	public LocalMeshBuilder(LocalFactoryGlobalObjectGroup globals) {
+		ArgumentNullException.ThrowIfNull(globals);
+		_globals = globals;
 	}
 	
 	#region Native Methods
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "allocate_vertex_buffer")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_vertex_buffer")]
 	static extern InteropResult AllocateVertexBuffer(
 		nuint bufferId,
 		MeshVertex* verticesPtr,
 		int numVertices,
-		out VertexBufferHandle outBufferHandle
+		out UIntPtr outBufferHandle
 	);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "dispose_vertex_buffer")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_vertex_buffer")]
 	static extern InteropResult DisposeVertexBuffer(
-		VertexBufferHandle bufferHandle
+		UIntPtr bufferHandle
 	);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "allocate_index_buffer")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_index_buffer")]
 	static extern InteropResult AllocateIndexBuffer(
 		nuint bufferId,
 		MeshTriangle* indicesPtr,
 		int numIndices,
-		out IndexBufferHandle outBufferHandle
+		out UIntPtr outBufferHandle
 	);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "dispose_index_buffer")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_index_buffer")]
 	static extern InteropResult DisposeIndexBuffer(
-		IndexBufferHandle bufferHandle
+		UIntPtr bufferHandle
 	);
 	#endregion
 
@@ -113,8 +115,8 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshAssetImplProvider, IDi
 			CheckTriangleIndex('C', i, triangles[i].IndexC, vertices.Length);
 		}
 
-		var tempVertexBuffer = _resourcePoolProvider.CopySpanToTemporaryAssetLoadSpace(vertices);
-		var tempIndexBuffer = _resourcePoolProvider.CopySpanToTemporaryAssetLoadSpace(triangles);
+		var tempVertexBuffer = _globals.CopySpanToTemporaryCpuBuffer(vertices);
+		var tempIndexBuffer = _globals.CopySpanToTemporaryCpuBuffer(triangles);
 		
 		if (config.FlipTriangles) {
 			var intSpan = tempIndexBuffer.AsSpan<int>();
@@ -126,44 +128,31 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshAssetImplProvider, IDi
 			}
 		}
 
-		ManagedStringPool.RentedStringHandle? assetNameBuffer = null;
-		if (config.NameAsSpan.Length > 0) {
-			assetNameBuffer = ManagedStringPool.RentAndCopy(config.NameAsSpan);
-		}
-
 		AllocateVertexBuffer(tempVertexBuffer.BufferIdentity, (MeshVertex*) tempVertexBuffer.DataPtr, vertices.Length, out var vbHandle).ThrowIfFailure();
 		AllocateIndexBuffer(tempIndexBuffer.BufferIdentity, (MeshTriangle*) tempIndexBuffer.DataPtr, triangles.Length * 3, out var ibHandle).ThrowIfFailure();
 
-		_vertexBufferRefCounts.Add((UIntPtr) vbHandle, 1);
-		_indexBufferRefCounts.Add((UIntPtr) ibHandle, 1);
+		_vertexBufferRefCounts.Add(vbHandle, 1);
+		_indexBufferRefCounts.Add(ibHandle, 1);
 		_nextHandleId++;
-		_activeMeshes.Add(_nextHandleId, ((UIntPtr) vbHandle, (UIntPtr) ibHandle, assetNameBuffer));
-		return new Mesh(_nextHandleId, this);
+		var handle = new MeshHandle(_nextHandleId);
+		_activeMeshes.Add(handle, (vbHandle, ibHandle));
+		if (config.NameAsSpan.Length > 0) _globals.StoreResourceName(handle.Ident, config.NameAsSpan);
+		return new Mesh(handle, this);
 	}
 
 	public string GetName(MeshHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var buf = _activeMeshes[handle].NameHandle;
-		if (buf == null) return DefaultMeshName;
-		else return new(buf.Value.AsSpan);
+		return _globals.GetResourceNameAsNewStringObject(handle.Ident, DefaultMeshName);
 	}
+
 	public int GetNameUsingSpan(MeshHandle handle, Span<char> dest) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var buf = _activeMeshes[handle].NameHandle;
-		if (buf == null) {
-			DefaultMeshName.CopyTo(dest);
-			return DefaultMeshName.Length;
-		}
-		else {
-			buf.Value.AsSpan.CopyTo(dest);
-			return buf.Value.AsSpan.Length;
-		}
+		return _globals.CopyResourceName(handle.Ident, DefaultMeshName, dest);
 	}
-	public int GetNameSpanMaxLength(MeshHandle handle) {
+
+	public int GetNameSpanLength(MeshHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var buf = _activeMeshes[handle].NameHandle;
-		if (buf == null) return DefaultMeshName.Length;
-		else return buf.Value.Length;
+		return _globals.GetResourceNameLength(handle.Ident, DefaultMeshName);
 	}
 
 	#region Disposal
@@ -183,7 +172,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshAssetImplProvider, IDi
 			_indexBufferRefCounts.Remove(tuple.IndexBufferRef);
 			DisposeIndexBuffer((IndexBufferHandle) tuple.IndexBufferRef).ThrowIfFailure();
 		}
-		if (tuple.NameBuffer != null) _resourcePoolProvider.DeallocateNameBuffer(tuple.NameBuffer.Value);
+		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromMap) _activeMeshes.Remove(handle);
 	}
 

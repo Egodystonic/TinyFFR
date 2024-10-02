@@ -8,6 +8,8 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 public readonly unsafe struct MeshHandle : IResourceHandle<MeshHandle> {
 	public nuint AsInteger { get; }
 	public void* AsPointer => (void*) AsInteger;
+	internal ResourceIdent Ident => new(typeof(Mesh).TypeHandle.Value, AsInteger);
+	ResourceIdent IResourceHandle.Ident => Ident;
 
 	public MeshHandle(nuint integer) => AsInteger = integer;
 	public MeshHandle(void* pointer) : this((nuint) pointer) { }

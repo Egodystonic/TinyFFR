@@ -2,17 +2,27 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
+using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Environment;
 
-public readonly struct ApplicationLoop : IEquatable<ApplicationLoop>, IDisposable {
+public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, ApplicationLoopHandle, IApplicationLoopImplProvider> {
 	readonly ApplicationLoopHandle _handle;
 	readonly IApplicationLoopImplProvider _impl;
 
 	internal IApplicationLoopImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<ApplicationLoop>();
 	internal ApplicationLoopHandle Handle => _handle;
+
+	IApplicationLoopImplProvider IResource<ApplicationLoopHandle, IApplicationLoopImplProvider>.Implementation => Implementation;
+	ApplicationLoopHandle IResource<ApplicationLoopHandle, IApplicationLoopImplProvider>.Handle => Handle;
+
+	public string Name {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetName(_handle);
+	}
 
 	public IInputTracker Input {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -23,6 +33,10 @@ public readonly struct ApplicationLoop : IEquatable<ApplicationLoop>, IDisposabl
 		ArgumentNullException.ThrowIfNull(impl);
 		_handle = handle;
 		_impl = impl;
+	}
+
+	static ApplicationLoop IResource<ApplicationLoop>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
+		return new ApplicationLoop(rawHandle, impl as IApplicationLoopImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 
 	public TimeSpan TotalIteratedTime {
@@ -41,13 +55,18 @@ public readonly struct ApplicationLoop : IEquatable<ApplicationLoop>, IDisposabl
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool TryIterateOnce(out TimeSpan outDeltaTime) => Implementation.TryIterateOnce(_handle, out outDeltaTime);
 
-	public override string ToString() => $"Application Loop #{_handle}{(IsDisposed ? " (Disposed)" : "")}";
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameUsingSpan(Span<char> dest) => Implementation.GetNameUsingSpan(_handle, dest);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameSpanLength() => Implementation.GetNameSpanLength(_handle);
+
+	public override string ToString() => $"Application Loop {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Implementation.Dispose(_handle);
 
-	bool IsDisposed {
+	public bool IsDisposed {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.IsDisposed(_handle);
 	}

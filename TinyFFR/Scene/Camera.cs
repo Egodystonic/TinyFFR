@@ -1,21 +1,31 @@
 ﻿// Created on 2024-08-07 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Resources;
 using System;
 
 namespace Egodystonic.TinyFFR.Scene;
 
-public readonly unsafe struct Camera : IEquatable<Camera>, IDisposable {
+public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICameraImplProvider> {
 	public static readonly Angle FieldOfViewMin = Angle.Zero;
 	public static readonly Angle FieldOfViewMax = Angle.FullCircle;
 	public static readonly float NearPlaneDistanceMin = 1E-5f;
 	public static readonly float NearFarPlaneDistanceRatioMax = 1E6f;
 
 	readonly CameraHandle _handle;
-	readonly ICameraAssetImplProvider _impl;
+	readonly ICameraImplProvider _impl;
 
-	internal ICameraAssetImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Camera>();
+	internal ICameraImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Camera>();
 	internal CameraHandle Handle => _handle;
+
+	ICameraImplProvider IResource<CameraHandle, ICameraImplProvider>.Implementation => Implementation;
+	CameraHandle IResource<CameraHandle, ICameraImplProvider>.Handle => Handle;
+
+	public string Name {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetName(_handle);
+	}
 
 	public Location Position {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -66,10 +76,19 @@ public readonly unsafe struct Camera : IEquatable<Camera>, IDisposable {
 		set => Implementation.SetFarPlaneDistance(_handle, value);
 	}
 
-	internal Camera(CameraHandle handle, ICameraAssetImplProvider impl) {
+	internal Camera(CameraHandle handle, ICameraImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
 	}
+
+	static Camera IResource<Camera>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
+		return new Camera(rawHandle, impl as ICameraImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameUsingSpan(Span<char> dest) => Implementation.GetNameUsingSpan(_handle, dest);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameSpanLength() => Implementation.GetNameSpanLength(_handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void GetProjectionMatrix(out Matrix4x4 outProjectionMatrix) => Implementation.GetProjectionMatrix(_handle, out outProjectionMatrix);
@@ -91,11 +110,13 @@ public readonly unsafe struct Camera : IEquatable<Camera>, IDisposable {
 	}
 	#endregion
 
-	public override string ToString() => $"Camera {(IsDisposed ? "(Disposed)" : $"(Position {Position}, View Direction {ViewDirection.ToStringDescriptive()})")}";
+	public override string ToString() => $"Camera {(IsDisposed ? "(Disposed)" : $"\"{Name}\" (Position {Position}, View Direction {ViewDirection.ToStringDescriptive()})")}";
 
+	#region Equality
 	public bool Equals(Camera other) => _handle == other._handle && _impl.Equals(other._impl);
 	public override bool Equals(object? obj) => obj is Camera other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine((UIntPtr) _handle, _impl);
 	public static bool operator ==(Camera left, Camera right) => left.Equals(right);
 	public static bool operator !=(Camera left, Camera right) => !left.Equals(right);
+	#endregion
 }

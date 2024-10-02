@@ -1,5 +1,6 @@
 #pragma once
 
+#include "native_impl_init.h"
 #include "utils_and_constants.h"
 #include "filament/filament/IndexBuffer.h"
 #include "filament/filament/VertexBuffer.h"
@@ -9,9 +10,6 @@ using namespace filament::math;
 
 typedef VertexBuffer* VertexBufferHandle;
 typedef IndexBuffer* IndexBufferHandle;
-typedef void* BufferIdentity;
-
-typedef void(*deallocate_asset_buffer_delegate)(BufferIdentity bufferIdentity);
 
 class native_impl_render_assets {
 public:
@@ -23,9 +21,6 @@ public:
 	PopSafeStructPacking
 	static_assert(sizeof(MeshVertex) == 20);
 
-	static deallocate_asset_buffer_delegate deallocation_delegate;
-
-	static void set_buffer_deallocation_delegate(deallocate_asset_buffer_delegate deallocationDelegate);
 	static void allocate_vertex_buffer(BufferIdentity bufferIdentity, MeshVertex* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer);
 	static void allocate_index_buffer(BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer);
 	static void dispose_vertex_buffer(VertexBufferHandle buffer);

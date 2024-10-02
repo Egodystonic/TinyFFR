@@ -1,15 +1,20 @@
 ﻿// Created on 2024-08-12 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Resources;
+
 namespace Egodystonic.TinyFFR.Environment.Local;
 
-public unsafe interface IWindowImplProvider {
+public interface IWindowImplProvider : IDisposableResourceImplProvider<WindowHandle> {
 	string GetTitle(WindowHandle handle);
+	string IResourceImplProvider<WindowHandle>.GetName(WindowHandle handle) => GetTitle(handle);
 	void SetTitle(WindowHandle handle, string newTitle);
 
 	int GetTitleUsingSpan(WindowHandle handle, Span<char> dest);
+	int IResourceImplProvider<WindowHandle>.GetNameUsingSpan(WindowHandle handle, Span<char> dest) => GetTitleUsingSpan(handle, dest);
 	void SetTitleUsingSpan(WindowHandle handle, ReadOnlySpan<char> src);
-	int GetTitleSpanMaxLength(WindowHandle handle);
+	int GetTitleSpanLength(WindowHandle handle);
+	int IResourceImplProvider<WindowHandle>.GetNameSpanLength(WindowHandle handle) => GetTitleSpanLength(handle);
 
 	Display GetDisplay(WindowHandle handle);
 	void SetDisplay(WindowHandle handle, Display newDisplay);
@@ -25,7 +30,4 @@ public unsafe interface IWindowImplProvider {
 
 	bool GetCursorLock(WindowHandle handle);
 	void SetCursorLock(WindowHandle handle, bool newLockSetting);
-
-	bool IsDisposed(WindowHandle handle);
-	void Dispose(WindowHandle handle);
 }

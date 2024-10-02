@@ -8,7 +8,7 @@ namespace Egodystonic.TinyFFR.Environment.Input.Local;
 [StructLayout(LayoutKind.Explicit, Pack = 1, Size = 16)]
 readonly struct RawLocalGameControllerButtonEvent {
 	[FieldOffset(0)]
-	public readonly GameControllerHandle Handle;
+	public readonly UIntPtr Handle;
 	[FieldOffset(8)]
 	public readonly RawLocalGameControllerEventType Type;
 	[FieldOffset(14)]

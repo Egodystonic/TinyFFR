@@ -5,7 +5,7 @@ using System;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
-public readonly record struct LocalApplicationLoopConfig {
+public readonly ref struct LocalApplicationLoopConfig {
 	internal readonly TimeSpan MaxCpuBusyWaitTime = TimeSpan.FromMilliseconds(1d);
 
 	public ApplicationLoopConfig BaseConfig { get; private init; }

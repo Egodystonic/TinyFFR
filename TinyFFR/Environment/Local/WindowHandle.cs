@@ -8,6 +8,8 @@ namespace Egodystonic.TinyFFR.Environment.Local;
 public readonly unsafe struct WindowHandle : IResourceHandle<WindowHandle> {
 	public nuint AsInteger { get; }
 	public void* AsPointer => (void*) AsInteger;
+	internal ResourceIdent Ident => new(typeof(Window).TypeHandle.Value, AsInteger);
+	ResourceIdent IResourceHandle.Ident => Ident;
 
 	public WindowHandle(nuint integer) => AsInteger = integer;
 	public WindowHandle(void* pointer) : this((nuint) pointer) { }

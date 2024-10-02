@@ -2,43 +2,59 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
-using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
-public readonly unsafe struct Window : IEquatable<Window>, IDisposable {
+public readonly struct Window : IDisposableResource<Window, WindowHandle, IWindowImplProvider> {
 	readonly WindowHandle _handle;
 	readonly IWindowImplProvider _impl;
 
 	internal IWindowImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Window>();
 	internal WindowHandle Handle => _handle;
 
+	IWindowImplProvider IResource<WindowHandle, IWindowImplProvider>.Implementation => Implementation;
+	WindowHandle IResource<WindowHandle, IWindowImplProvider>.Handle => Handle;
+
 	public string Title {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetTitle(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetTitle(_handle, value);
 	}
+	string IStringSpanNameEnabled.Name => Title;
 
 	public Display Display {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetDisplay(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetDisplay(_handle, value);
 	}
 	public XYPair<int> Size {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetSize(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetSize(_handle, value);
 	}
 	public XYPair<int> Position { // TODO explain in XMLDoc that this is relative positioning on the selected Display
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetPosition(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetPosition(_handle, value);
 	}
 
 	public WindowFullscreenStyle FullscreenStyle {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetFullscreenStyle(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetFullscreenStyle(_handle, value);
 	}
 
 	public bool LockCursor {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetCursorLock(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetCursorLock(_handle, value);
 	}
 
@@ -48,18 +64,27 @@ public readonly unsafe struct Window : IEquatable<Window>, IDisposable {
 		_impl = impl;
 	}
 
-	public void SetTitleUsingSpan(ReadOnlySpan<char> src) => Implementation.SetTitleUsingSpan(_handle, src);
-	public int GetTitleUsingSpan(Span<char> dest) => Implementation.GetTitleUsingSpan(_handle, dest);
-	public int GetTitleSpanMaxLength() => Implementation.GetTitleSpanMaxLength(_handle);
+	static Window IResource<Window>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
+		return new Window(rawHandle, impl as IWindowImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
+	}
 
-	public override string ToString() => IsDisposed ? $"{nameof(Window)} (Disposed)" : $"{nameof(Window)} \"{Title}\"";
+	public int GetTitleUsingSpan(Span<char> dest) => Implementation.GetTitleUsingSpan(_handle, dest);
+	int IStringSpanNameEnabled.GetNameUsingSpan(Span<char> dest) => GetTitleUsingSpan(dest);
+	public void SetTitleUsingSpan(ReadOnlySpan<char> src) => Implementation.SetTitleUsingSpan(_handle, src);
+	public int GetTitleSpanLength() => Implementation.GetTitleSpanLength(_handle);
+	int IStringSpanNameEnabled.GetNameSpanLength() => GetTitleSpanLength();
 
 	#region Disposal
-	bool IsDisposed => Implementation.IsDisposed(_handle);
-	public void Dispose() => Implementation.Dispose(_handle);
+	public bool IsDisposed {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.IsDisposed(_handle);
+	}
 
-	internal void ThrowIfInvalid() => InvalidObjectException.ThrowIfDefault(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Dispose() => Implementation.Dispose(_handle);
 	#endregion
+
+	public override string ToString() => IsDisposed ? $"{nameof(Window)} (Disposed)" : $"{nameof(Window)} \"{Title}\"";
 
 	#region Equality
 	public bool Equals(Window other) => _handle == other._handle && _impl == other._impl;

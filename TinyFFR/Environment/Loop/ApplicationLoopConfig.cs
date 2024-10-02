@@ -5,7 +5,7 @@ using System;
 
 namespace Egodystonic.TinyFFR.Environment;
 
-public readonly record struct ApplicationLoopConfig {
+public readonly ref struct ApplicationLoopConfig {
 	internal readonly TimeSpan FrameInterval = TimeSpan.Zero;
 
 	public int? FrameRateCapHz {
@@ -18,6 +18,12 @@ public readonly record struct ApplicationLoopConfig {
 			}
 			FrameInterval = value != null ? (TimeSpan.FromSeconds(1d) / value.Value) : TimeSpan.Zero;
 		}
+	}
+
+	public ReadOnlySpan<char> NameAsSpan { get; init; }
+	public string Name {
+		get => new(NameAsSpan);
+		init => NameAsSpan = value.AsSpan();
 	}
 
 	public ApplicationLoopConfig() { }

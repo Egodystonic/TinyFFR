@@ -2,30 +2,38 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
-public readonly struct Material : IEquatable<Material>, IDisposable {
+public readonly struct Material : IDisposableResource<Material, MaterialHandle, IMaterialImplProvider> {
 	readonly MaterialHandle _handle;
-	readonly IMaterialAssetImplProvider _impl;
+	readonly IMaterialImplProvider _impl;
 
-	internal IMaterialAssetImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Material>();
 	internal MaterialHandle Handle => _handle;
+	internal IMaterialImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Material>();
+
+	IMaterialImplProvider IResource<MaterialHandle, IMaterialImplProvider>.Implementation => Implementation;
+	MaterialHandle IResource<MaterialHandle, IMaterialImplProvider>.Handle => Handle;
 
 	public string Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(_handle);
 	}
 
-	internal Material(MaterialHandle handle, IMaterialAssetImplProvider impl) {
+	internal Material(MaterialHandle handle, IMaterialImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
+	}
+
+	static Material IResource<Material>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
+		return new Material(rawHandle, impl as IMaterialImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int GetNameUsingSpan(Span<char> dest) => Implementation.GetNameUsingSpan(_handle, dest);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetNameSpanMaxLength() => Implementation.GetNameSpanMaxLength(_handle);
+	public int GetNameSpanLength() => Implementation.GetNameSpanLength(_handle);
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -39,9 +47,11 @@ public readonly struct Material : IEquatable<Material>, IDisposable {
 
 	public override string ToString() => $"Material {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
 
+	#region Equality
 	public bool Equals(Material other) => _handle == other._handle && _impl.Equals(other._impl);
 	public override bool Equals(object? obj) => obj is Material other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(_handle, _impl);
 	public static bool operator ==(Material left, Material right) => left.Equals(right);
 	public static bool operator !=(Material left, Material right) => !left.Equals(right);
+	#endregion
 }

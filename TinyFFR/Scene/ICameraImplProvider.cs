@@ -1,11 +1,13 @@
 ﻿// Created on 2024-08-07 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Resources;
 using System;
 
 namespace Egodystonic.TinyFFR.Scene;
 
-public unsafe interface ICameraAssetImplProvider {
+public interface ICameraImplProvider : IDisposableResourceImplProvider<CameraHandle> {
 	public Location GetPosition(CameraHandle handle);
 	public void SetPosition(CameraHandle handle, Location newPosition);
 	public Direction GetViewDirection(CameraHandle handle);
@@ -27,7 +29,4 @@ public unsafe interface ICameraAssetImplProvider {
 	public void SetProjectionMatrix(CameraHandle handle, in Matrix4x4 newMatrix);
 	public void GetViewMatrix(CameraHandle handle, out Matrix4x4 outMatrix);
 	public void SetViewMatrix(CameraHandle handle, in Matrix4x4 newMatrix);
-
-	public void Dispose(CameraHandle handle);
-	public bool IsDisposed(CameraHandle handle);
 }

@@ -11,7 +11,7 @@ namespace Egodystonic.TinyFFR.Environment.Input.Local;
 sealed class LocalGameControllerState : IGameControllerInputTracker, IDisposable {
 	const int MaxControllerNameLength = 500;
 	public InteropStringBuffer NameBuffer { get; }
-	public GameControllerHandle Handle { get; }
+	public UIntPtr Handle { get; }
 	public ArrayPoolBackedVector<GameControllerButtonEvent> NewButtonEvents { get; } = new();
 	public ArrayPoolBackedVector<GameControllerButton> NewButtonDownEvents { get; } = new();
 	public ArrayPoolBackedVector<GameControllerButton> NewButtonUpEvents { get; } = new();
@@ -58,7 +58,7 @@ sealed class LocalGameControllerState : IGameControllerInputTracker, IDisposable
 		}
 	}
 
-	public LocalGameControllerState(GameControllerHandle handle) {
+	public LocalGameControllerState(UIntPtr handle) {
 		Handle = handle;
 		NameBuffer = new(MaxControllerNameLength, true);
 	}

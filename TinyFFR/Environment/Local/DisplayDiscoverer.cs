@@ -46,7 +46,7 @@ sealed class DisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider {
 		using var nameBuffer = new InteropStringBuffer(MaxDisplayNameLength, true);
 		Span<char> nameBufferUtf16 = stackalloc char[MaxDisplayNameLength];
 
-		for (var handle = 0; handle < numDisplays; ++handle) {
+		for (var handle = (nuint) 0; handle < (nuint) numDisplays; ++handle) {
 			GetDisplayModeCount(handle, out var numDisplayModes).ThrowIfFailure();
 			if (numDisplayModes < 1) continue;
 			var modes = new DisplayMode[numDisplayModes];
@@ -120,7 +120,7 @@ sealed class DisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider {
 		_displayNames[handle].CopyTo(dest);
 		return _displayNames[handle].Length;
 	}
-	public int GetNameSpanMaxLength(DisplayHandle handle) {
+	public int GetNameSpanLength(DisplayHandle handle) {
 		ThrowIfUnrecognizedDisplay(handle);
 		return _displayNames[handle].Length;
 	}
@@ -148,34 +148,34 @@ sealed class DisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider {
 	}
 
 	void ThrowIfUnrecognizedDisplay(DisplayHandle handle) {
-		if (handle < 0 || handle >= _displays.Length) throw new InvalidOperationException("Given display was not created by this display discoverer.");
+		if (handle >= (nuint) _displays.Length) throw new InvalidOperationException("Given display was not created by this display discoverer.");
 	}
 
 	public override string ToString() => "TinyFFR Display Discoverer";
 
 	#region Native Methods
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_recommended_display")]
-	static extern InteropResult GetRecommendedDisplay(out DisplayHandle outResult);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_recommended_display")]
+	static extern InteropResult GetRecommendedDisplay(out nuint outResult);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_primary_display")]
-	static extern InteropResult GetPrimaryDisplay(out DisplayHandle outResult);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_primary_display")]
+	static extern InteropResult GetPrimaryDisplay(out nuint outResult);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_count")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_display_count")]
 	static extern InteropResult GetDisplayCount(out int outResult);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_name")]
-	static extern InteropResult GetDisplayName(DisplayHandle handle, ref byte utf8BufferPtr, int bufferLength);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_display_name")]
+	static extern InteropResult GetDisplayName(nuint handle, ref byte utf8BufferPtr, int bufferLength);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_mode_count")]
-	static extern InteropResult GetDisplayModeCount(DisplayHandle handle, out int outNumDisplayModes);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_display_mode_count")]
+	static extern InteropResult GetDisplayModeCount(nuint handle, out int outNumDisplayModes);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_mode")]
-	static extern InteropResult GetDisplayMode(DisplayHandle handle, int displayModeIndex, out int outWidth, out int outHeight, out int outRefreshRateHz);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_display_mode")]
+	static extern InteropResult GetDisplayMode(nuint handle, int displayModeIndex, out int outWidth, out int outHeight, out int outRefreshRateHz);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_resolution")]
-	static extern InteropResult GetDisplayResolution(DisplayHandle handle, out int outWidth, out int outHeight);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_display_resolution")]
+	static extern InteropResult GetDisplayResolution(nuint handle, out int outWidth, out int outHeight);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_display_positional_offset")]
-	static extern InteropResult GetDisplayPositionalOffset(DisplayHandle handle, out int outXOffset, out int outYOffset);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_display_positional_offset")]
+	static extern InteropResult GetDisplayPositionalOffset(nuint handle, out int outXOffset, out int outYOffset);
 	#endregion
 }

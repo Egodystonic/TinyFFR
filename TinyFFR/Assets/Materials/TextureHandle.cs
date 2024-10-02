@@ -8,6 +8,8 @@ namespace Egodystonic.TinyFFR.Assets.Materials;
 public readonly unsafe struct TextureHandle : IResourceHandle<TextureHandle> {
 	public nuint AsInteger { get; }
 	public void* AsPointer => (void*) AsInteger;
+	internal ResourceIdent Ident => new(typeof(Texture).TypeHandle.Value, AsInteger);
+	ResourceIdent IResourceHandle.Ident => Ident;
 
 	public TextureHandle(nuint integer) => AsInteger = integer;
 	public TextureHandle(void* pointer) : this((nuint) pointer) { }

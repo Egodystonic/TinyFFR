@@ -62,6 +62,12 @@ sealed unsafe class InteropStringBuffer : IDisposable {
 		return Encoding.UTF8.GetChars(AsSpan[..firstZero], dest);
 	}
 
+	public int GetUtf16Length() {
+		var firstZero = AsSpan.IndexOf((byte) 0);
+		if (firstZero < 0) firstZero = BufferLength;
+		return Encoding.UTF8.GetCharCount(BufferPtr, firstZero);
+	}
+
 	public override string ToString() {
 		var span = new char[BufferLength];
 		ConvertToUtf16(span);

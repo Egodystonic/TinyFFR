@@ -6,18 +6,8 @@
 
 #include "filament/filament/MaterialEnums.h"
 
-deallocate_asset_buffer_delegate native_impl_render_assets::deallocation_delegate;
-
 void handle_filament_buffer_copy_callback(void* _, size_t __, BufferIdentity identity) {
-	native_impl_render_assets::deallocation_delegate(identity);
-}
-
-void native_impl_render_assets::set_buffer_deallocation_delegate(deallocate_asset_buffer_delegate deallocationDelegate) {
-	deallocation_delegate = deallocationDelegate;
-}
-StartExportedFunc(set_buffer_deallocation_delegate, deallocate_asset_buffer_delegate deallocationDelegate) {
-	native_impl_render_assets::set_buffer_deallocation_delegate(deallocationDelegate);
-	EndExportedFunc
+	native_impl_init::deallocation_delegate(identity);
 }
 
 void native_impl_render_assets::allocate_vertex_buffer(BufferIdentity bufferIdentity, MeshVertex* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer) {

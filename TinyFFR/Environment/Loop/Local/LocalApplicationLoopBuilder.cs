@@ -16,13 +16,20 @@ namespace Egodystonic.TinyFFR.Environment.Local;
 
 [SuppressUnmanagedCodeSecurity]
 sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplicationLoopImplProvider, IDisposable {
-	readonly record struct HandleTrackingData(LocalApplicationLoopConfig Config, long PreviousIterationStartTimestamp, long PreviousIterationReturnTimestamp, TimeSpan TotalIteratedTime);
+	readonly record struct HandleTrackingData(
+		TimeSpan MaxCpuBusyWaitTime, 
+		TimeSpan FrameInterval, 
+		long PreviousIterationStartTimestamp, 
+		long PreviousIterationReturnTimestamp, 
+		TimeSpan TotalIteratedTime
+	);
 
+	const string DefaultLoopName = "Unnamed Loop";
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPoolBackedMap<ApplicationLoopHandle, HandleTrackingData> _handleDataMap = new();
 	readonly LocalInputTracker _inputTracker = new();
 	readonly LocalApplicationLoopBuilderConfig _config;
-	ApplicationLoopHandle _nextLoopHandleIndex = 1;
+	nuint _nextLoopHandleIndex = 1;
 	bool _isDisposed = false;
 
 	public LocalApplicationLoopBuilder(LocalFactoryGlobalObjectGroup globals, LocalApplicationLoopBuilderConfig config) {
@@ -49,8 +56,11 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		config.ThrowIfInvalid();
 
 		var curTime = Stopwatch.GetTimestamp();
-		_handleDataMap.Add(_nextLoopHandleIndex, new(config, curTime, curTime, TimeSpan.Zero));
-		return new(_nextLoopHandleIndex++, this);
+		var handle = (ApplicationLoopHandle) _nextLoopHandleIndex;
+		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero));
+		if (config.BaseConfig.NameAsSpan != default) _globals.StoreResourceName(handle.Ident, config.BaseConfig.NameAsSpan);
+		_nextLoopHandleIndex++;
+		return new(handle, this);
 	}
 
 	public IInputTracker GetInputTracker(ApplicationLoopHandle handle) {
@@ -60,7 +70,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 
 	TimeSpan GetWaitTimeUntilNextFrameStart(ApplicationLoopHandle handle) {
 		var timeSinceLastIteration = Stopwatch.GetElapsedTime(_handleDataMap[handle].PreviousIterationStartTimestamp);
-		var result = _handleDataMap[handle].Config.BaseConfig.FrameInterval - timeSinceLastIteration;
+		var result = _handleDataMap[handle].FrameInterval - timeSinceLastIteration;
 		return result > TimeSpan.Zero ? result : TimeSpan.Zero;
 	}
 	void ExecuteIteration() {
@@ -71,7 +81,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var waitTime = GetWaitTimeUntilNextFrameStart(handle);
-		var maxCpuBusyWaitTime = _handleDataMap[handle].Config.MaxCpuBusyWaitTime;
+		var maxCpuBusyWaitTime = _handleDataMap[handle].MaxCpuBusyWaitTime;
 		if (waitTime > maxCpuBusyWaitTime) {
 			Thread.Sleep(waitTime - maxCpuBusyWaitTime);
 		}
@@ -116,11 +126,27 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		return _handleDataMap[handle].TotalIteratedTime;
 	}
 
+	public string GetName(ApplicationLoopHandle handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceNameAsNewStringObject(handle.Ident, DefaultLoopName);
+	}
+
+	public int GetNameUsingSpan(ApplicationLoopHandle handle, Span<char> dest) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.CopyResourceName(handle.Ident, DefaultLoopName, dest);
+	}
+
+	public int GetNameSpanLength(ApplicationLoopHandle handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceNameLength(handle.Ident, DefaultLoopName);
+	}
+
 	public override string ToString() => _isDisposed ? "TinyFFR Local Application Loop Builder [Disposed]" : "TinyFFR Local Application Loop Builder";
 
 	#region Disposal
 	public void Dispose(ApplicationLoopHandle handle) {
 		if (IsDisposed(handle)) return;
+		_globals.DisposeResourceNameIfExists(handle.Ident);
 		_handleDataMap.Remove(handle);
 	}
 	public bool IsDisposed(ApplicationLoopHandle handle) {

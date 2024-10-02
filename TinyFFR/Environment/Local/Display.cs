@@ -2,25 +2,54 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
-public readonly struct Display : IEquatable<Display> {
+public readonly struct Display : IResource<Display, DisplayHandle, IDisplayImplProvider> {
 	readonly DisplayHandle _handle;
 	readonly IDisplayImplProvider _impl;
 
-	internal IDisplayImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Display>();
 	internal DisplayHandle Handle => _handle;
+	internal IDisplayImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Display>();
 
-	public bool IsPrimary => Implementation.GetIsPrimary(_handle);
-	public bool IsRecommended => Implementation.GetIsRecommended(_handle);
-	public string Name => Implementation.GetName(_handle);
-	public ReadOnlySpan<DisplayMode> SupportedDisplayModes => Implementation.GetSupportedDisplayModes(_handle);
-	public DisplayMode HighestSupportedResolutionMode => Implementation.GetHighestSupportedResolutionMode(_handle);
-	public DisplayMode HighestSupportedRefreshRateMode => Implementation.GetHighestSupportedRefreshRateMode(_handle);
-	public XYPair<int> CurrentResolution => Implementation.GetCurrentResolution(_handle);
-	internal XYPair<int> GlobalPositionOffset => Implementation.GetGlobalPositionOffset(_handle);
+	IDisplayImplProvider IResource<DisplayHandle, IDisplayImplProvider>.Implementation => Implementation;
+	DisplayHandle IResource<DisplayHandle, IDisplayImplProvider>.Handle => Handle;
+
+	public bool IsPrimary {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetIsPrimary(_handle);
+	}
+	public bool IsRecommended {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetIsRecommended(_handle);
+	}
+	public string Name {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetName(_handle);
+	}
+	public ReadOnlySpan<DisplayMode> SupportedDisplayModes {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetSupportedDisplayModes(_handle);
+	}
+	public DisplayMode HighestSupportedResolutionMode {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetHighestSupportedResolutionMode(_handle);
+	}
+	public DisplayMode HighestSupportedRefreshRateMode {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetHighestSupportedRefreshRateMode(_handle);
+	}
+	public XYPair<int> CurrentResolution {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCurrentResolution(_handle);
+	}
+	internal XYPair<int> GlobalPositionOffset {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetGlobalPositionOffset(_handle);
+	}
 
 	internal Display(DisplayHandle handle, IDisplayImplProvider impl) {
 		ArgumentNullException.ThrowIfNull(impl);
@@ -28,8 +57,14 @@ public readonly struct Display : IEquatable<Display> {
 		_impl = impl;
 	}
 
+	static Display IResource<Display>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
+		return new Display(rawHandle, impl as IDisplayImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int GetNameUsingSpan(Span<char> dest) => Implementation.GetNameUsingSpan(_handle, dest);
-	public int GetNameSpanMaxLength() => Implementation.GetNameSpanMaxLength(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameSpanLength() => Implementation.GetNameSpanLength(_handle);
 
 	internal XYPair<int> TranslateDisplayLocalWindowPositionToGlobal(XYPair<int> displayLocalPosition) => displayLocalPosition + GlobalPositionOffset;
 	internal XYPair<int> TranslateGlobalWindowPositionToDisplayLocal(XYPair<int> globalPosition) => globalPosition - GlobalPositionOffset;

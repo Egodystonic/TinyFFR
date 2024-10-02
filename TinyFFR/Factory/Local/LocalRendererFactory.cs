@@ -24,13 +24,18 @@ public sealed class LocalRendererFactory : ITinyFfrFactory {
 	public IAssetLoader AssetLoader { get; }
 	public ICameraBuilder CameraBuilder { get; }
 
+	internal FixedByteBufferPool TemporaryCpuBufferPool { get; }
+
 	IApplicationLoopBuilder ITinyFfrFactory.ApplicationLoopBuilder => ApplicationLoopBuilder;
 
-	public LocalRendererFactory(WindowBuilderConfig? windowBuilderConfig = null, LocalApplicationLoopBuilderConfig? applicationLoopBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null) {
-		NativeUtils.InitializeNativeLibIfNecessary();
+	public LocalRendererFactory(LocalRendererFactoryConfig? factoryConfig = null, WindowBuilderConfig? windowBuilderConfig = null, LocalApplicationLoopBuilderConfig? applicationLoopBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null) {
+		LocalNativeUtils.InitializeNativeLibIfNecessary();
+		factoryConfig ??= new LocalRendererFactoryConfig();
 
 		var resourceGroupProviderRef = new DeferredRef<LocalCombinedResourceGroupImplProvider>();
+		TemporaryCpuBufferPool = new FixedByteBufferPool(factoryConfig.MaxAssetSizeBytes);
 		var globals = new LocalFactoryGlobalObjectGroup(
+			this,
 			_dependencyTracker,
 			_stringPool,
 			resourceGroupProviderRef
@@ -56,7 +61,7 @@ public sealed class LocalRendererFactory : ITinyFfrFactory {
 	public override string ToString() => IsDisposed ? "TinyFFR Local Renderer Factory [Disposed]" : "TinyFFR Local Renderer Factory";
 
 	#region Disposal
-	bool IsDisposed { get; set; }
+	public bool IsDisposed { get; private set; }
 
 	public void Dispose() {
 		// Maintainer's note: This is not simply accepting IDisposable because we want the flexibility
@@ -77,13 +82,14 @@ public sealed class LocalRendererFactory : ITinyFfrFactory {
 			DisposeObjectIfDisposable(DisplayDiscoverer);
 			DisposeObjectIfDisposable(_stringPool);
 			DisposeObjectIfDisposable(_dependencyTracker);
+			LocalNativeUtils.DisposeTemporaryCpuBufferPoolIfSafe(this);
 		}
 		finally {
 			IsDisposed = true;
 		}
 	}
 
-	void ThrowIfThisIsDisposed() {
+	internal void ThrowIfThisIsDisposed() {
 		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ITinyFfrFactory));
 	}
 	#endregion

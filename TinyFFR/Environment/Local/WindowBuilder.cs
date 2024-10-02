@@ -16,8 +16,8 @@ namespace Egodystonic.TinyFFR.Environment.Local;
 sealed unsafe class WindowBuilder : IWindowBuilder, IWindowImplProvider, IDisposable {
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly InteropStringBuffer _windowTitleBuffer;
-	readonly ArrayPoolBackedVector<UIntPtr> _activeWindows = new();
-	readonly ArrayPoolBackedMap<UIntPtr, Display> _displayMap = new();
+	readonly ArrayPoolBackedVector<WindowHandle> _activeWindows = new();
+	readonly ArrayPoolBackedMap<WindowHandle, Display> _displayMap = new();
 	bool _isDisposed = false;
 
 	public WindowBuilder(LocalFactoryGlobalObjectGroup globals, WindowBuilderConfig config) {
@@ -48,8 +48,8 @@ sealed unsafe class WindowBuilder : IWindowBuilder, IWindowImplProvider, IDispos
 			globalPosition.Y
 		).ThrowIfFailure();
 		var result = new Window(outHandle, this);
-		_activeWindows.Add((UIntPtr) outHandle);
-		_displayMap.Add((UIntPtr) outHandle, config.Display);
+		_activeWindows.Add(outHandle);
+		_displayMap.Add(outHandle, config.Display);
 		result.FullscreenStyle = config.FullscreenStyle;
 		return result;
 	}
@@ -81,19 +81,25 @@ sealed unsafe class WindowBuilder : IWindowBuilder, IWindowImplProvider, IDispos
 			ref _windowTitleBuffer.BufferRef
 		).ThrowIfFailure();
 	}
-	public int GetTitleSpanMaxLength(WindowHandle handle) {
+	public int GetTitleSpanLength(WindowHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _windowTitleBuffer.BufferLength;
+		GetWindowTitle(
+			handle,
+			ref _windowTitleBuffer.BufferRef,
+			_windowTitleBuffer.BufferLength
+		).ThrowIfFailure();
+		return _windowTitleBuffer.GetUtf16Length();
 	}
+	int GetTitleSpanMaxLength(WindowHandle handle) => _windowTitleBuffer.BufferLength;
 
 	public Display GetDisplay(WindowHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _displayMap[(UIntPtr) handle];
+		return _displayMap[handle];
 	}
 	public void SetDisplay(WindowHandle handle, Display newDisplay) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var localPos = GetPosition(handle);
-		_displayMap[(UIntPtr) handle] = newDisplay;
+		_displayMap[handle] = newDisplay;
 		SetPosition(handle, localPos);
 	}
 
@@ -126,11 +132,11 @@ sealed unsafe class WindowBuilder : IWindowBuilder, IWindowImplProvider, IDispos
 			out var x,
 			out var y
 		).ThrowIfFailure();
-		return _displayMap[(UIntPtr) handle].TranslateGlobalWindowPositionToDisplayLocal(new(x, y));
+		return _displayMap[handle].TranslateGlobalWindowPositionToDisplayLocal(new(x, y));
 	}
 	public void SetPosition(WindowHandle handle, XYPair<int> newPosition) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var translatedPosition = _displayMap[(UIntPtr) handle].TranslateDisplayLocalWindowPositionToGlobal(newPosition);
+		var translatedPosition = _displayMap[handle].TranslateDisplayLocalWindowPositionToGlobal(newPosition);
 		SetWindowPosition(
 			handle,
 			translatedPosition.X,
@@ -186,18 +192,18 @@ sealed unsafe class WindowBuilder : IWindowBuilder, IWindowImplProvider, IDispos
 			DisposeWindow(handle).ThrowIfFailure();
 		}
 		finally {
-			_displayMap.Remove((UIntPtr) handle);
-			_activeWindows.Remove((UIntPtr) handle);
+			_displayMap.Remove(handle);
+			_activeWindows.Remove(handle);
 		}
 	}
 	public bool IsDisposed(WindowHandle handle) {
-		return _isDisposed || !_activeWindows.Contains((UIntPtr) handle);
+		return _isDisposed || !_activeWindows.Contains(handle);
 	}
 
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
-			foreach (var handle in _activeWindows) DisposeWindow((void*) handle).ThrowIfFailure();
+			foreach (var handle in _activeWindows) DisposeWindow(handle).ThrowIfFailure();
 			_activeWindows.Dispose();
 			_displayMap.Dispose();
 			_windowTitleBuffer.Dispose();
@@ -215,40 +221,40 @@ sealed unsafe class WindowBuilder : IWindowBuilder, IWindowImplProvider, IDispos
 	#endregion
 
 	#region Native Methods
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "create_window")]
-	static extern InteropResult CreateWindow(out WindowHandle outHandle, int width, int height, int xPos, int yPos);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "create_window")]
+	static extern InteropResult CreateWindow(out UIntPtr outHandle, int width, int height, int xPos, int yPos);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_window_size")]
-	static extern InteropResult GetWindowSize(WindowHandle handle, out int outWidth, out int outHeight);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_window_size")]
+	static extern InteropResult GetWindowSize(UIntPtr handle, out int outWidth, out int outHeight);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_window_size")]
-	static extern InteropResult SetWindowSize(WindowHandle handle, int newWidth, int newHeight);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_window_size")]
+	static extern InteropResult SetWindowSize(UIntPtr handle, int newWidth, int newHeight);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_window_position")]
-	static extern InteropResult GetWindowPosition(WindowHandle handle, out int outX, out int outY);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_window_position")]
+	static extern InteropResult GetWindowPosition(UIntPtr handle, out int outX, out int outY);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_window_position")]
-	static extern InteropResult SetWindowPosition(WindowHandle handle, int newX, int newY);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_window_position")]
+	static extern InteropResult SetWindowPosition(UIntPtr handle, int newX, int newY);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_window_fullscreen_state")]
-	static extern InteropResult SetWindowFullscreenState(WindowHandle handle, InteropBool fullscreen, InteropBool borderless);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_window_fullscreen_state")]
+	static extern InteropResult SetWindowFullscreenState(UIntPtr handle, InteropBool fullscreen, InteropBool borderless);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_window_fullscreen_state")]
-	static extern InteropResult GetWindowFullscreenState(WindowHandle handle, out InteropBool fullscreen, out InteropBool borderless);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_window_fullscreen_state")]
+	static extern InteropResult GetWindowFullscreenState(UIntPtr handle, out InteropBool fullscreen, out InteropBool borderless);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_window_cursor_lock_state")]
-	static extern InteropResult GetWindowCursorLockState(WindowHandle handle, out InteropBool outLockState);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_window_cursor_lock_state")]
+	static extern InteropResult GetWindowCursorLockState(UIntPtr handle, out InteropBool outLockState);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_window_cursor_lock_state")]
-	static extern InteropResult SetWindowCursorLockState(WindowHandle handle, InteropBool lockState);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_window_cursor_lock_state")]
+	static extern InteropResult SetWindowCursorLockState(UIntPtr handle, InteropBool lockState);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "get_window_title")]
-	static extern InteropResult GetWindowTitle(WindowHandle handle, ref byte utf8BufferPtr, int bufferLength);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_window_title")]
+	static extern InteropResult GetWindowTitle(UIntPtr handle, ref byte utf8BufferPtr, int bufferLength);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "set_window_title")]
-	static extern InteropResult SetWindowTitle(WindowHandle handle, ref readonly byte utf8BufferPtr);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_window_title")]
+	static extern InteropResult SetWindowTitle(UIntPtr handle, ref readonly byte utf8BufferPtr);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "dispose_window")]
-	static extern InteropResult DisposeWindow(WindowHandle handle);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_window")]
+	static extern InteropResult DisposeWindow(UIntPtr handle);
 	#endregion
 }

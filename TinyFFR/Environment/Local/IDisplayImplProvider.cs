@@ -1,9 +1,11 @@
 ﻿// Created on 2024-08-12 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Resources;
+
 namespace Egodystonic.TinyFFR.Environment.Local;
 
-public interface IDisplayImplProvider {
+public interface IDisplayImplProvider : IResourceImplProvider<DisplayHandle> {
 	bool GetIsPrimary(DisplayHandle handle);
 	bool GetIsRecommended(DisplayHandle handle);
 	ReadOnlySpan<DisplayMode> GetSupportedDisplayModes(DisplayHandle handle);
@@ -11,7 +13,4 @@ public interface IDisplayImplProvider {
 	DisplayMode GetHighestSupportedRefreshRateMode(DisplayHandle handle);
 	XYPair<int> GetCurrentResolution(DisplayHandle handle);
 	XYPair<int> GetGlobalPositionOffset(DisplayHandle handle);
-	string GetName(DisplayHandle handle);
-	int GetNameUsingSpan(DisplayHandle handle, Span<char> dest);
-	int GetNameSpanMaxLength(DisplayHandle handle);
 }

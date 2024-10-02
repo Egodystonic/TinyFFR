@@ -5,7 +5,7 @@ using System;
 
 namespace Egodystonic.TinyFFR.Scene;
 
-public readonly struct CameraCreationConfig {
+public readonly ref struct CameraCreationConfig {
 	public static readonly Location DefaultPosition = Location.Origin;
 	public static readonly Direction DefaultViewDirection = Direction.Forward;
 	public static readonly Direction DefaultUpDirection = Direction.Up;
@@ -21,6 +21,12 @@ public readonly struct CameraCreationConfig {
 	public bool FieldOfViewIsVertical { get; init; } = DefaultFieldOfViewVerticalFlag;
 	public float NearPlaneDistance { get; init; } = DefaultNearPlaneDistance;
 	public float FarPlaneDistance { get; init; } = DefaultFarPlaneDistance;
+
+	public ReadOnlySpan<char> NameAsSpan { get; init; }
+	public string Name {
+		get => new(NameAsSpan);
+		init => NameAsSpan = value.AsSpan();
+	}
 
 	public CameraCreationConfig() { }
 

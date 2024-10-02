@@ -1,6 +1,8 @@
 ﻿// Created on 2024-01-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Factory.Local;
+
 namespace Egodystonic.TinyFFR.Interop;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = sizeof(byte))]
@@ -13,7 +15,7 @@ readonly struct InteropResult : IEquatable<InteropResult> {
 
 	public void ThrowIfFailure() {
 		if (this) return;
-		throw new InvalidOperationException(NativeUtils.GetLastError());
+		throw new InvalidOperationException(LocalNativeUtils.GetLastError());
 	}
 
 	public bool Equals(InteropResult other) => _asByte == other._asByte;

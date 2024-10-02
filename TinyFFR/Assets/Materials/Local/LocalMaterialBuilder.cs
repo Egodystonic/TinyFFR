@@ -4,50 +4,52 @@
 using System;
 using System.Security;
 using Egodystonic.TinyFFR.Assets.Local;
+using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Input.Local;
+using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialAssetImplProvider, IDisposable {
+sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IDisposable {
 	const string DefaultMaterialName = "Unnamed Material";
 	readonly ArrayPoolBackedMap<UIntPtr, (AssetGroup Group, IAssetResourcePoolProvider.AssetNameBuffer? NameBuffer)> _activeMaterialMap = new();
-	readonly IAssetResourcePoolProvider _resourcePoolProvider;
+	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
 
-	public LocalMaterialBuilder(IAssetResourcePoolProvider assetResourcePoolProvider) {
-		ArgumentNullException.ThrowIfNull(assetResourcePoolProvider);
-		_resourcePoolProvider = assetResourcePoolProvider;
+	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals) {
+		ArgumentNullException.ThrowIfNull(globals);
+		_globals = globals;
 	}
 	
 	#region Native Methods
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "allocate_vertex_buffer")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_vertex_buffer")]
 	static extern InteropResult AllocateVertexBuffer(
 		nuint bufferId,
 		MeshVertex* verticesPtr,
 		int numVertices,
-		out VertexBufferHandle outBufferHandle
+		out UIntPtr outBufferHandle
 	);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "dispose_vertex_buffer")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_vertex_buffer")]
 	static extern InteropResult DisposeVertexBuffer(
-		VertexBufferHandle bufferHandle
+		UIntPtr bufferHandle
 	);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "allocate_index_buffer")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_index_buffer")]
 	static extern InteropResult AllocateIndexBuffer(
 		nuint bufferId,
 		MeshTriangle* indicesPtr,
 		int numIndices,
-		out IndexBufferHandle outBufferHandle
+		out UIntPtr outBufferHandle
 	);
 
-	[DllImport(NativeUtils.NativeLibName, EntryPoint = "dispose_index_buffer")]
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_index_buffer")]
 	static extern InteropResult DisposeIndexBuffer(
-		IndexBufferHandle bufferHandle
+		UIntPtr bufferHandle
 	);
 	#endregion
 

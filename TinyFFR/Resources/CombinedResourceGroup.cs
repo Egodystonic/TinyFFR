@@ -1,27 +1,19 @@
 ﻿// Created on 2024-08-07 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-using System;
-using System.Buffers;
-using System.Buffers.Binary;
-using System.Text.RegularExpressions;
-using Egodystonic.TinyFFR.Environment.Local;
-using Egodystonic.TinyFFR.Resources.Memory;
 using static Egodystonic.TinyFFR.Resources.ICombinedResourceGroupImplProvider;
 
 namespace Egodystonic.TinyFFR.Resources;
 
-public readonly struct CombinedResourceGroup : IHandleImplPairResource<CombinedResourceGroup, CombinedResourceGroupHandle, ICombinedResourceGroupImplProvider> {
+public readonly struct CombinedResourceGroup : IDisposableResource<CombinedResourceGroup, CombinedResourceGroupHandle, ICombinedResourceGroupImplProvider> {
 	readonly CombinedResourceGroupHandle _handle;
 	readonly ICombinedResourceGroupImplProvider _impl;
 
-	public CombinedResourceGroupHandle Handle => _handle;
-	public ICombinedResourceGroupImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<CombinedResourceGroup>();
-	IHandleImplPairResource.ResourceIdent IHandleImplPairResource.Ident => new(typeof(CombinedResourceGroup).TypeHandle.Value, Handle);
+	internal CombinedResourceGroupHandle Handle => _handle;
+	internal ICombinedResourceGroupImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<CombinedResourceGroupHandle>();
 
-	static CombinedResourceGroup IHandleImplPairResource<CombinedResourceGroup>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
-		return new(rawHandle, impl as ICombinedResourceGroupImplProvider ?? throw new ArgumentException($"Impl was '{impl}'.", nameof(impl)));
-	}
+	ICombinedResourceGroupImplProvider IResource<CombinedResourceGroupHandle, ICombinedResourceGroupImplProvider>.Implementation => Implementation;
+	CombinedResourceGroupHandle IResource<CombinedResourceGroupHandle, ICombinedResourceGroupImplProvider>.Handle => Handle;
 
 	public int ResourceCount {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -44,11 +36,15 @@ public readonly struct CombinedResourceGroup : IHandleImplPairResource<CombinedR
 		_impl = impl;
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AddResource<TResource>(TResource resource) where TResource : IHandleImplPairResource => Implementation.AddResource(Handle, resource);
+	static CombinedResourceGroup IResource<CombinedResourceGroup>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
+		return new(rawHandle, impl as ICombinedResourceGroupImplProvider ?? throw new ArgumentException($"Impl was '{impl}'.", nameof(impl)));
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public OneToManyEnumerator<EnumerationArg, TResource> GetAllResourcesOfType<TResource>() where TResource : IHandleImplPairResource<TResource> {
+	public void AddResource<TResource>(TResource resource) where TResource : IResource => Implementation.AddResource(Handle, resource);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public OneToManyEnumerator<EnumerationArg, TResource> GetAllResourcesOfType<TResource>() where TResource : IResource<TResource> {
 		return Implementation.GetAllResourcesOfType<TResource>(Handle);
 	}
 
@@ -57,14 +53,17 @@ public readonly struct CombinedResourceGroup : IHandleImplPairResource<CombinedR
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int GetNameSpanLength() => Implementation.GetNameSpanLength(_handle);
 
-	public override string ToString() => IsDisposed ? $"{nameof(CombinedResourceGroup)} (Disposed)" : $"{nameof(CombinedResourceGroup)} \"{Name}\"";
-
 	#region Disposal
-	bool IsDisposed => Implementation.IsDisposed(_handle);
-	public void Dispose() => Implementation.Dispose(_handle);
+	public bool IsDisposed {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.IsDisposed(_handle);
+	}
 
-	internal void ThrowIfInvalid() => InvalidObjectException.ThrowIfDefault(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Dispose() => Implementation.Dispose(_handle);
 	#endregion
+
+	public override string ToString() => IsDisposed ? $"{nameof(CombinedResourceGroup)} (Disposed)" : $"{nameof(CombinedResourceGroup)} \"{Name}\"";
 
 	#region Equality
 	public bool Equals(CombinedResourceGroup other) => _handle == other._handle && _impl == other._impl;
