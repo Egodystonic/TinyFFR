@@ -46,30 +46,41 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 
 	public Angle Hue {
 		get {
-
+			ToHueSaturationLightness(out var result, out _, out _);
+			return result;
 		}
 	}
 
 	public float Saturation {
 		get {
-
+			ToHueSaturationLightness(out _, out var result, out _);
+			return result;
 		}
 	}
 
 	public float Lightness {
 		get {
-
+			ToHueSaturationLightness(out _, out _, out var result);
+			return result;
 		}
 	}
 
-	public float this[Axis axis] => axis switch {
-		Axis.X => Red,
-		Axis.Y => Green,
-		Axis.Z => Blue,
-		_ => throw new ArgumentOutOfRangeException(nameof(axis), axis, $"{nameof(Axis)} must not be anything except {nameof(Axis.X)}, {nameof(Axis.Y)} or {nameof(Axis.Z)}.")
+	public float this[ColorChannel channel] => channel switch {
+		ColorChannel.R => Red,
+		ColorChannel.G => Green,
+		ColorChannel.B => Blue,
+		_ => Alpha
 	};
-	public XYPair<float> this[Axis first, Axis second] => new(this[first], this[second]);
-	public ColorVect this[Axis first, Axis second, Axis third] => new(this[first], this[second], this[third]);
+	public XYPair<float> this[ColorChannel first, ColorChannel second] => new(this[first], this[second]);
+	public ColorVect this[ColorChannel first, ColorChannel second, ColorChannel third] => new(this[first], this[second], this[third]);
+	public ColorVect this[ColorChannel first, ColorChannel second, ColorChannel third, ColorChannel fourth] => new(this[first], this[second], this[third], this[fourth]);
+
+	float IVect.X => Red;
+	float IVect.Y => Green;
+	float IVect.Z => Blue;
+	float IVect.this[Axis axis] => this[(ColorChannel) axis];
+	XYPair<float> IVect.this[Axis first, Axis second] => new(this[(ColorChannel) first], this[(ColorChannel) second]);
+	ColorVect IVect<ColorVect>.this[Axis first, Axis second, Axis third] => new(this[(ColorChannel) first], this[(ColorChannel) second], this[(ColorChannel) third]);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ColorVect() : this(0f, 0f, 0f) { }
@@ -81,35 +92,94 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 	internal ColorVect(Vector4 v) { AsVector4 = v; }
 
 	#region Factories and Conversions
-	public static ColorVect From32BitArgb(uint argb) {
-		const float ByteMaxReciprocalAsFloat = 1f / Byte.MaxValue;
-		return new ColorVect(
-			((0xFF0000 & argb) >> 16) * ByteMaxReciprocalAsFloat,
-			((0xFF00 & argb) >> 8) * ByteMaxReciprocalAsFloat,
-			(0xFF & argb) * ByteMaxReciprocalAsFloat,
-			((0xFF000000 & argb) >> 24) * ByteMaxReciprocalAsFloat
+	public static ColorVect PremultiplyAlpha(ColorVect nonpremultipliedInput) {
+		return new(
+			nonpremultipliedInput.Red * nonpremultipliedInput.Alpha,
+			nonpremultipliedInput.Green * nonpremultipliedInput.Alpha,
+			nonpremultipliedInput.Blue * nonpremultipliedInput.Alpha,
+			nonpremultipliedInput.Alpha
 		);
+	}
+
+	public static ColorVect From32BitArgb(uint argb) {
+		const float Multiplicand = 1f / Byte.MaxValue;
+		return new(new Vector4(
+			(0xFF0000 & argb) >> 16,
+			(0xFF00 & argb) >> 8,
+			0xFF & argb,
+			(0xFF000000 & argb) >> 24
+		) * Multiplicand);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ColorVect From32BitArgb(int argb) => From32BitArgb((uint) argb);
 
+	public static ColorVect From32BitArgb(byte a, byte r, byte g, byte b) {
+		const float Multiplicand = 1f / Byte.MaxValue;
+		return new(new Vector4(r, g, b, a) * Multiplicand);
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ColorVect FromHueSaturationLightness(Angle hue, float saturation, float lightness) => FromHueSaturationLightness(hue, saturation, lightness, 1f);
 	public static ColorVect FromHueSaturationLightness(Angle hue, float saturation, float lightness, float alpha) {
+		const float SixthCircleRads = MathF.Tau / 6f;
+
 		hue = hue.Normalized;
-		var hueDegrees = hue.AsDegrees;
+		var hueRads = hue.AsRadians;
 		saturation = Single.Clamp(saturation, 0f, 1f);
 		lightness = Single.Clamp(lightness, 0f, 1f);
 		alpha = Single.Clamp(alpha, 0f, 1f);
 
 		var c = (1f - MathF.Abs(2f * lightness - 1f)) * saturation;
-		var x = c * (1f - MathF.Abs(MathUtils.TrueModulus(hueDegrees / Angle.SixthCircle.AsDegrees, 2f) - 1f));
+		var x = c * (1f - MathF.Abs(MathUtils.TrueModulus(hueRads / SixthCircleRads, 2f) - 1f));
 		var m = lightness - c * 0.5f;
 
-		return hueDegrees switch {
-			< 60f => new(c + m, x + m, 0f, alpha),
+		return hueRads switch {
+			< 1f * SixthCircleRads => new(m + c, m + x, m, alpha),
+			< 2f * SixthCircleRads => new(m + x, m + c, m, alpha),
+			< 3f * SixthCircleRads => new(m, m + c, m + x, alpha),
+			< 4f * SixthCircleRads => new(m, m + x, m + c, alpha),
+			< 5f * SixthCircleRads => new(m + x, m, m + c, alpha),
+			_ => new(m + c, m, m + x, alpha)
 		};
+	}
+
+	public void ToHueSaturationLightness(out Angle outHue, out float outSaturation, out float outLightness) {
+		const float SixthCircleRads = MathF.Tau / 6f;
+
+		var cMax = MathF.Max(Red, MathF.Max(Green, Blue));
+		var cMin = MathF.Min(Red, MathF.Min(Green, Blue));
+		var delta = cMax - cMin;
+
+		// ReSharper disable CompareOfFloatsByEqualityOperator Direct comparison is correct here as we're comparing with the returned value of MathF.Max which should return exactly one of its inputs
+		if (delta == 0f) outHue = Angle.Zero;
+		else if (cMax == Red) {
+			outHue = Angle.FromRadians(SixthCircleRads * MathUtils.TrueModulus((Green - Blue) / delta, 6f));
+		}
+		else if (cMax == Green) {
+			outHue = Angle.FromRadians(SixthCircleRads * ((Blue - Red) / delta + 2f));
+		}
+		else {
+			outHue = Angle.FromRadians(SixthCircleRads * ((Red - Green) / delta + 4f));
+		}
+		// ReSharper restore CompareOfFloatsByEqualityOperator
+
+		outLightness = (cMax + cMin) * 0.5f;
+		outSaturation = delta / (1f - MathF.Abs(cMax + cMin - 1f));
+	}
+
+	public uint To32BitArgb() {
+		To32BitArgb(out var a, out var r, out var g, out var b);
+		return (uint) ((a << 24) + (r << 16) + (g << 8) + b);
+	}
+	public void To32BitArgb(out byte a, out byte r, out byte g, out byte b) {
+		const float Multiplicand = Byte.MaxValue;
+
+		var v = AsVector4 * Multiplicand;
+		r = (byte) Single.Clamp(v.X, Byte.MinValue, Byte.MaxValue);
+		g = (byte) Single.Clamp(v.Y, Byte.MinValue, Byte.MaxValue);
+		b = (byte) Single.Clamp(v.Z, Byte.MinValue, Byte.MaxValue);
+		a = (byte) Single.Clamp(v.W, Byte.MinValue, Byte.MaxValue);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -161,6 +231,14 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 			RandomUtils.NextSingleZeroToOneInclusive(),
 			RandomUtils.NextSingleZeroToOneInclusive(),
 			RandomUtils.NextSingleZeroToOneInclusive()
+		);
+	}
+	public static ColorVect Random(ColorVect minInclusive, ColorVect maxExclusive) {
+		return new(
+			RandomUtils.NextSingle(minInclusive.Red, maxExclusive.Red),
+			RandomUtils.NextSingle(minInclusive.Green, maxExclusive.Green),
+			RandomUtils.NextSingle(minInclusive.Blue, maxExclusive.Blue),
+			RandomUtils.NextSingle(minInclusive.Alpha, maxExclusive.Alpha)
 		);
 	}
 	#endregion
