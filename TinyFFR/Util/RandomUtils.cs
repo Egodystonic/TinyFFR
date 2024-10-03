@@ -9,6 +9,7 @@ static class RandomUtils {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static float NextSingle() => GlobalRng.NextSingle();
 	public static float NextSingle(float minInclusive, float maxExclusive) => (maxExclusive - minInclusive) * GlobalRng.NextSingle() + minInclusive;
+	public static float NextSingleInclusive(float minInclusive, float maxInclusive) => (float) (NextSingle(minInclusive, maxInclusive) * IntegerScalar);
 	
 	// Change to this algorithm requires change to RandomUtilsTest.NextSingleInclusiveAlgorithmShouldWorkAsExpected()
 	public static float NextSingleZeroToOneInclusive() => (float) (GlobalRng.Next() * IntegerScalar);

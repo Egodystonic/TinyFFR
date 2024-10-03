@@ -9,14 +9,15 @@ using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Input.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IDisposable {
+sealed class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IDisposable {
 	const string DefaultMaterialName = "Unnamed Material";
-	readonly ArrayPoolBackedMap<UIntPtr, (AssetGroup Group, IAssetResourcePoolProvider.AssetNameBuffer? NameBuffer)> _activeMaterialMap = new();
+	readonly ArrayPoolBackedMap<MaterialHandle, CombinedResourceGroup> _activeMaterialMap = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
 
@@ -26,34 +27,8 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	}
 	
 	#region Native Methods
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_vertex_buffer")]
-	static extern InteropResult AllocateVertexBuffer(
-		nuint bufferId,
-		MeshVertex* verticesPtr,
-		int numVertices,
-		out UIntPtr outBufferHandle
-	);
-
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_vertex_buffer")]
-	static extern InteropResult DisposeVertexBuffer(
-		UIntPtr bufferHandle
-	);
-
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_index_buffer")]
-	static extern InteropResult AllocateIndexBuffer(
-		nuint bufferId,
-		MeshTriangle* indicesPtr,
-		int numIndices,
-		out UIntPtr outBufferHandle
-	);
-
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_index_buffer")]
-	static extern InteropResult DisposeIndexBuffer(
-		UIntPtr bufferHandle
-	);
-	#endregion
-
 	
+	#endregion
 
 	public string GetName(MeshAssetHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);

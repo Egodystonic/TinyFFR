@@ -25,6 +25,10 @@ class RandomUtilsTest {
 			Assert.GreaterOrEqual(val, -100f);
 			Assert.Less(val, 100f + TestTolerance);
 
+			val = RandomUtils.NextSingleInclusive(-100f, 100f);
+			Assert.GreaterOrEqual(val, -100f);
+			Assert.LessOrEqual(val, 100f + TestTolerance);
+
 			val = RandomUtils.NextSingleZeroToOneInclusive();
 			Assert.GreaterOrEqual(val, 0f);
 			Assert.LessOrEqual(val, 1f);

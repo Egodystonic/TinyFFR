@@ -6,5 +6,5 @@ using System;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public interface IMaterialBuilder {
-	Texture CreateTextureSolidColor(float red, float green, float blue);
+	Material CreateBasicSolidColorMat()
 }
