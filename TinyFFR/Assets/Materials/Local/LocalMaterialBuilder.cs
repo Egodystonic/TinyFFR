@@ -15,9 +15,9 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IDisposable {
+sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IDisposable {
 	const string DefaultMaterialName = "Unnamed Material";
-	readonly ArrayPoolBackedMap<MaterialHandle, CombinedResourceGroup> _activeMaterialMap = new();
+	readonly ArrayPoolBackedMap<MaterialHandle, CombinedResourceGroup> _activeMaterials = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
 
@@ -25,81 +25,67 @@ sealed class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IDi
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
 	}
-	
+
 	#region Native Methods
-	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "create_material")]
+	static extern InteropResult CreateMaterial(
+		MaterialType type, 
+		byte* argumentsBuffer, 
+		int argumentsBufferLengthBytes, 
+		out UIntPtr outMaterialHandle
+	);
 	#endregion
 
-	public string GetName(MeshAssetHandle handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		var buf = _activeMeshes[handle].NameBuffer;
-		if (buf == null) return DefaultMeshName;
-		else return new(buf.Value.AsSpan);
+	public Material CreateBasicSolidColorMat(ColorVect color) => CreateBasicSolidColorMat(color, new());
+	public Material CreateBasicSolidColorMat(ColorVect color, in MaterialCreationConfig config) {
+		CreateMaterial(
+			MaterialType.BasicSolidColor,
+			null,
+			0,
+			out var handle
+		).ThrowIfFailure();
+
+		_activeMaterials.Add(handle, _globals.ResourceGroupProvider.CreateGroup(0, false));
+		return new(handle, this);
 	}
-	public int GetNameUsingSpan(MeshAssetHandle handle, Span<char> dest) {
+
+	public string GetName(MaterialHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var buf = _activeMeshes[handle].NameBuffer;
-		if (buf == null) {
-			DefaultMeshName.CopyTo(dest);
-			return DefaultMeshName.Length;
-		}
-		else {
-			buf.Value.AsSpan.CopyTo(dest);
-			return buf.Value.AsSpan.Length;
-		}
+		return _globals.GetResourceNameAsNewStringObject(handle.Ident, DefaultMaterialName);
 	}
-	public int GetNameSpanMaxLength(MeshAssetHandle handle) {
+	public int GetNameUsingSpan(MaterialHandle handle, Span<char> dest) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var buf = _activeMeshes[handle].NameBuffer;
-		if (buf == null) return DefaultMeshName.Length;
-		else return buf.Value.CharacterCount;
+		return _globals.CopyResourceName(handle.Ident, DefaultMaterialName, dest);
+	}
+	public int GetNameSpanLength(MaterialHandle handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceNameLength(handle.Ident, DefaultMaterialName);
 	}
 
 	#region Disposal
-	public bool IsDisposed(MeshAssetHandle handle) => _isDisposed || !_activeMeshes.ContainsKey(handle);
+	public bool IsDisposed(MaterialHandle handle) => _isDisposed || !_activeMaterials.ContainsKey(handle);
 
-	public void Dispose(MeshAssetHandle handle) => Dispose(handle, removeFromMap: true);
-	void Dispose(MeshAssetHandle handle, bool removeFromMap) {
+	public void Dispose(MaterialHandle handle) => Dispose(handle, removeFromMap: true);
+	void Dispose(MaterialHandle handle, bool removeFromMap) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var tuple = _activeMeshes[handle];
-		var curVbRefCount = _vertexBufferRefCounts[tuple.VertexBufferRef];
-		var curIbRefCount = _indexBufferRefCounts[tuple.IndexBufferRef];
-		if (curVbRefCount <= 1) {
-			_vertexBufferRefCounts.Remove(tuple.VertexBufferRef);
-			DisposeVertexBuffer((VertexBufferHandle) tuple.VertexBufferRef).ThrowIfFailure();
-		}
-		if (curIbRefCount <= 1) {
-			_indexBufferRefCounts.Remove(tuple.IndexBufferRef);
-			DisposeIndexBuffer((IndexBufferHandle) tuple.IndexBufferRef).ThrowIfFailure();
-		}
-		if (tuple.NameBuffer != null) _resourcePoolProvider.DeallocateNameBuffer(tuple.NameBuffer.Value);
-		if (removeFromMap) _activeMeshes.Remove(handle);
+		_activeMaterials[handle].Dispose();
+		if (removeFromMap) _activeMaterials.Remove(handle);
 	}
 
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
-			foreach (var kvp in _activeMeshes) Dispose(kvp.Key, removeFromMap: false);
-			_activeMeshes.Dispose();
-
-			// In theory, both ref-count maps should be empty at this point. But we'll do this anyway.
-			foreach (var kvp in _vertexBufferRefCounts) {
-				DisposeVertexBuffer((VertexBufferHandle) kvp.Key).ThrowIfFailure();
-			}
-			foreach (var kvp in _indexBufferRefCounts) {
-				DisposeIndexBuffer((IndexBufferHandle) kvp.Key).ThrowIfFailure();
-			}
-			_vertexBufferRefCounts.Dispose();
-			_indexBufferRefCounts.Dispose();
+			foreach (var kvp in _activeMaterials) Dispose(kvp.Key, removeFromMap: false);
+			_activeMaterials.Dispose();
 		}
 		finally {
 			_isDisposed = true;
 		}
 	}
 
-	void ThrowIfThisOrHandleIsDisposed(MeshAssetHandle handle) {
+	void ThrowIfThisOrHandleIsDisposed(MaterialHandle handle) {
 		ThrowIfThisIsDisposed();
-		ObjectDisposedException.ThrowIf(!_activeMeshes.ContainsKey(handle), typeof(Mesh));
+		ObjectDisposedException.ThrowIf(!_activeMaterials.ContainsKey(handle), typeof(Material));
 	}
 
 	void ThrowIfThisIsDisposed() {

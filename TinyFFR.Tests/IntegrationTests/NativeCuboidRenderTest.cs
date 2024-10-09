@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using Egodystonic.TinyFFR.Assets.Local;
+using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
@@ -28,6 +29,8 @@ class NativeCuboidRenderTest {
 			ViewDirection = Direction.Forward,
 			UpDirection = Direction.Up
 		});
+		using var mat = factory.AssetLoader.MaterialBuilder.CreateBasicSolidColorMat(0x00FF00, new MaterialCreationConfig { Name = "Matthew the Material " });
 		Console.WriteLine(camera);
+		Console.WriteLine(mat);
 	}
 }

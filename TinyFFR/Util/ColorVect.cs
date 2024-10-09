@@ -8,6 +8,7 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR;
 
 // Maintainer's note: I mostly named this "ColorVect" rather than "Color" simply to differentiate it from all the other "Color" structs in various common libraries.
+// But it does also make it clearer immediately that this is stored in 4-float format.
 [StructLayout(LayoutKind.Sequential, Size = sizeof(float) * 4, Pack = 1)] // TODO in xmldoc, note that this can safely be pointer-aliased to/from Vector4
 public readonly partial struct ColorVect : IVect<ColorVect> {
 	public static readonly Angle RedHueAngle = 0f;
@@ -101,23 +102,31 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 		);
 	}
 
-	public static ColorVect From32BitArgb(uint argb) {
+	public static ColorVect FromRgba32(uint rgba) {
 		const float Multiplicand = 1f / Byte.MaxValue;
 		return new(new Vector4(
-			(0xFF0000 & argb) >> 16,
-			(0xFF00 & argb) >> 8,
-			0xFF & argb,
-			(0xFF000000 & argb) >> 24
+			(0xFF000000 & rgba) >> 24,
+			(0xFF0000 & rgba) >> 16,
+			(0xFF00 & rgba) >> 8,
+			0xFF & rgba
 		) * Multiplicand);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ColorVect From32BitArgb(int argb) => From32BitArgb((uint) argb);
+	public static ColorVect FromRgba32(int rgba) => FromRgba32((uint) rgba);
 
-	public static ColorVect From32BitArgb(byte a, byte r, byte g, byte b) {
+	public static ColorVect FromRgba32(byte r, byte g, byte b, byte a) {
 		const float Multiplicand = 1f / Byte.MaxValue;
 		return new(new Vector4(r, g, b, a) * Multiplicand);
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static ColorVect FromRgb24(uint rgb) => FromRgba32((rgb << 8) & Byte.MaxValue);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static ColorVect FromRgb24(int rgb) => FromRgb24((uint) rgb);
+
+	public static ColorVect FromRgb24(byte r, byte g, byte b) => FromRgba32(r, g, b, Byte.MaxValue);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ColorVect FromHueSaturationLightness(Angle hue, float saturation, float lightness) => FromHueSaturationLightness(hue, saturation, lightness, 1f);
@@ -168,11 +177,11 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 		outSaturation = delta / (1f - MathF.Abs(cMax + cMin - 1f));
 	}
 
-	public uint To32BitArgb() {
-		To32BitArgb(out var a, out var r, out var g, out var b);
-		return (uint) ((a << 24) + (r << 16) + (g << 8) + b);
+	public uint ToRgba32() {
+		ToRgba32(out var r, out var g, out var b, out var a);
+		return (uint) ((r << 24) + (g << 16) + (b << 8) + a);
 	}
-	public void To32BitArgb(out byte a, out byte r, out byte g, out byte b) {
+	public void ToRgba32(out byte r, out byte g, out byte b, out byte a) {
 		const float Multiplicand = Byte.MaxValue;
 
 		var v = AsVector4 * Multiplicand;
@@ -180,6 +189,19 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 		g = (byte) Single.Clamp(v.Y, Byte.MinValue, Byte.MaxValue);
 		b = (byte) Single.Clamp(v.Z, Byte.MinValue, Byte.MaxValue);
 		a = (byte) Single.Clamp(v.W, Byte.MinValue, Byte.MaxValue);
+	}
+
+	public uint ToRgb24() {
+		ToRgb24(out var r, out var g, out var b);
+		return (uint) ((r << 16) + (g << 8) + b);
+	}
+	public void ToRgb24(out byte r, out byte g, out byte b) {
+		const float Multiplicand = Byte.MaxValue;
+
+		var v = AsVector4 * Multiplicand;
+		r = (byte) Single.Clamp(v.X, Byte.MinValue, Byte.MaxValue);
+		g = (byte) Single.Clamp(v.Y, Byte.MinValue, Byte.MaxValue);
+		b = (byte) Single.Clamp(v.Z, Byte.MinValue, Byte.MaxValue);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -210,8 +232,12 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 	}
 	public static implicit operator ColorVect((float Red, float Green, float Blue, float Alpha) tuple) => new(tuple.Red, tuple.Green, tuple.Blue, tuple.Alpha);
 
-	public static implicit operator ColorVect(int rgba) => From32BitArgb(rgba);
-	public static implicit operator ColorVect(uint rgba) => From32BitArgb(rgba);
+	public static implicit operator ColorVect((uint Rgb, float Alpha) tuple) => FromRgb24(tuple.Rgb) with { Alpha = tuple.Alpha };
+	public static implicit operator ColorVect((int Rgb, float Alpha) tuple) => FromRgb24(tuple.Rgb) with { Alpha = tuple.Alpha };
+	public static implicit operator ColorVect((uint Rgb, uint Alpha) tuple) => FromRgba32((tuple.Rgb << 8) & (byte) tuple.Alpha);
+	public static implicit operator ColorVect((int Rgb, int Alpha) tuple) => FromRgba32((tuple.Rgb << 8) & (byte) tuple.Alpha);
+	public static implicit operator ColorVect(int rgb) => FromRgb24(rgb);
+	public static implicit operator ColorVect(uint rgb) => FromRgb24(rgb);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Vect IVect.AsVect() => Vect.FromVector3(ToVector3());

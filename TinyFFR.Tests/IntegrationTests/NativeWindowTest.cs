@@ -17,7 +17,7 @@ class NativeWindowTest {
 
 	[Test]
 	public void Execute() {
-		using var factory = new LocalRendererFactory(new WindowBuilderConfig { MaxWindowTitleLength = 10 });
+		using var factory = new LocalRendererFactory(windowBuilderConfig: new WindowBuilderConfig { MaxWindowTitleLength = 10 });
 
 		var displayDiscoverer = factory.DisplayDiscoverer;
 		foreach (var display in displayDiscoverer.All) {

@@ -54,7 +54,9 @@ partial struct ColorVect :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ColorVect operator *(float left, ColorVect right) => right.ScaledBy(left);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ColorVect ScaledBy(float scalar) => new ColorVect(AsVector4 * scalar).ClampToNormalizedRange();
+	public ColorVect ScaledBy(float scalar) => ScaledByWithoutNormalization(scalar).ClampToNormalizedRange();
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ColorVect ScaledByWithoutNormalization(float scalar) => new(AsVector4 * scalar);
 
 	#region Clamping and Interpolation
 	public ColorVect Clamp(ColorVect min, ColorVect max) {

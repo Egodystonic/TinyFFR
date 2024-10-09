@@ -5,6 +5,9 @@
 #include "utils_and_constants.h"
 
 #include "filament/filament/MaterialEnums.h"
+#include "filamat/MaterialBuilder.h"
+
+#include "filament/Engine.h"
 
 void handle_filament_buffer_copy_callback(void* _, size_t __, BufferIdentity identity) {
 	native_impl_init::deallocation_delegate(identity);
@@ -55,4 +58,66 @@ StartExportedFunc(dispose_index_buffer, IndexBufferHandle buffer) {
 	native_impl_render_assets::dispose_index_buffer(buffer);
 	EndExportedFunc
 }
+
+
+filamat::Package native_impl_render_assets::BasicSolidColorShaderPackage = filamat::Package::invalidPackage();
+
+filamat::Package& GetPackage(MaterialType type) {
+	switch (type) {
+		case MaterialType::BasicSolidColor:
+			if (!native_impl_render_assets::BasicSolidColorShaderPackage.isValid()) {
+				filamat::MaterialBuilder builder;
+				auto newMat = builder
+					.name("Basic Solid Color")
+					.require(VertexAttribute::COLOR)
+					.blending(BlendingMode::OPAQUE)
+					.shading(Shading::LIT)
+					.culling(backend::CullingMode::BACK)
+					.platform(filamat::MaterialBuilderBase::Platform::DESKTOP)
+					.targetApi(filamat::MaterialBuilderBase::TargetApi::OPENGL)
+					.parameter(
+						"flatColor",
+						backend::UniformType::FLOAT4
+					)
+					.material(
+						"void material(inout MaterialInputs material) {"
+						"	prepareMaterial(material);"
+						"	material.baseColor = materialParams.flatColor;"
+						"}"
+					)
+					.build(native_impl_init::filament_engine_ptr->getJobSystem());
+
+
+				native_impl_render_assets::BasicSolidColorShaderPackage = std::move(newMat);
+				if (!native_impl_render_assets::BasicSolidColorShaderPackage.isValid()) Throw("Could not create package.");
+			}
+
+			return native_impl_render_assets::BasicSolidColorShaderPackage;
+		default:
+			Throw("Unrecognized material type.");
+	}
+}
+
+void native_impl_render_assets::create_material(MaterialType type, void* argumentsBuffer, int32_t argumentsBufferLengthBytes, MaterialHandle* outMaterial) {
+	auto& package = GetPackage(type);
+	auto builder = Material::Builder()
+		.package(package.getData(), package.getSize());
+
+	switch (type) {
+		case MaterialType::BasicSolidColor:{
+			auto mat = builder.build(*native_impl_init::filament_engine_ptr);
+			mat->setDefaultParameter("flatColor", float4{ 1.0, 0.0, 0.0, 1.0 });
+			*outMaterial = mat;
+			break;
+		}
+		default:{
+			Throw("Unrecognized material type.");
+		}
+	}
+}
+StartExportedFunc(create_material, MaterialType type, void* argumentsBuffer, int32_t argumentsBufferLengthBytes, MaterialHandle* outMaterial) {
+	native_impl_render_assets::create_material(type, argumentsBuffer, argumentsBufferLengthBytes, outMaterial);
+	EndExportedFunc
+}
+
 

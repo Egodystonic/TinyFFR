@@ -31,8 +31,8 @@ sealed unsafe class LocalCombinedResourceGroupImplProvider : ICombinedResourceGr
 	}
 
 	public CombinedResourceGroup CreateGroup(int minCapacity, bool disposeContainedResourcesWhenDisposed) {
-		if (minCapacity <= 0) {
-			throw new ArgumentOutOfRangeException(nameof(minCapacity), minCapacity, $"Value must be greater than 0.");
+		if (minCapacity < 0) {
+			throw new ArgumentOutOfRangeException(nameof(minCapacity), minCapacity, $"Value must be non-negative.");
 		}
 
 		var dataLengthRequired = DisposalFlagSizeBytes + SingleResourceSerializedLength * minCapacity;

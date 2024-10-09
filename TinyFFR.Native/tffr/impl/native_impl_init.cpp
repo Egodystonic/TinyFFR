@@ -4,6 +4,7 @@
 #include "utils_and_constants.h"
 #include "sdl/SDL.h"
 #include "filament/utils/Log.h"
+#include "filamat/MaterialBuilder.h"
 
 filament::Engine* native_impl_init::filament_engine_ptr;
 deallocate_asset_buffer_delegate native_impl_init::deallocation_delegate;
@@ -13,9 +14,11 @@ void native_impl_init::initialize_all() {
 	ThrowIfNotZero(sdlInitResult, "Could not initialize SDL: ", SDL_GetError());
 
 	filament_engine_ptr = filament::Engine::Builder()
-						  .backend(filament::Engine::Backend::VULKAN)
+						  .backend(filament::Engine::Backend::OPENGL)
 						  .build();
 	ThrowIfNull(filament_engine_ptr, "Could not initialize filament renderer.");
+
+	filamat::MaterialBuilder::init();
 }
 StartExportedFunc(initialize_all) {
 	native_impl_init::initialize_all();

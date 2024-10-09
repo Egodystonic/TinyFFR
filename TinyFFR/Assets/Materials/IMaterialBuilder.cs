@@ -6,5 +6,6 @@ using System;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public interface IMaterialBuilder {
+	Material CreateBasicSolidColorMat(ColorVect color);
 	Material CreateBasicSolidColorMat(ColorVect color, in MaterialCreationConfig config);
 }
