@@ -13,7 +13,7 @@ using namespace filament::math;
 typedef VertexBuffer* VertexBufferHandle;
 typedef IndexBuffer* IndexBufferHandle;
 
-typedef Material* MaterialHandle;
+typedef MaterialInstance* MaterialHandle;
 
 enum MaterialType : int32_t {
 	Undefined = 0,
@@ -36,6 +36,7 @@ public:
 	static void dispose_index_buffer(IndexBufferHandle buffer);
 
 	static filamat::Package BasicSolidColorShaderPackage;
+	static Material* BasicSolidColorShaderMaterial;
 
 	static void create_material(MaterialType type, void* argumentsBuffer, int32_t argumentsBufferLengthBytes, MaterialHandle* outMaterial);
 };

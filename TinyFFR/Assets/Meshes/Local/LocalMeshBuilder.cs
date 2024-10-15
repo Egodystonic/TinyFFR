@@ -160,17 +160,17 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 
 	public void Dispose(MeshHandle handle) => Dispose(handle, removeFromMap: true);
 	void Dispose(MeshHandle handle, bool removeFromMap) {
-		ThrowIfThisOrHandleIsDisposed(handle);
+		if (IsDisposed(handle)) return;
 		var tuple = _activeMeshes[handle];
 		var curVbRefCount = _vertexBufferRefCounts[tuple.VertexBufferRef];
 		var curIbRefCount = _indexBufferRefCounts[tuple.IndexBufferRef];
 		if (curVbRefCount <= 1) {
 			_vertexBufferRefCounts.Remove(tuple.VertexBufferRef);
-			DisposeVertexBuffer((VertexBufferHandle) tuple.VertexBufferRef).ThrowIfFailure();
+			DisposeVertexBuffer(tuple.VertexBufferRef).ThrowIfFailure();
 		}
 		if (curIbRefCount <= 1) {
 			_indexBufferRefCounts.Remove(tuple.IndexBufferRef);
-			DisposeIndexBuffer((IndexBufferHandle) tuple.IndexBufferRef).ThrowIfFailure();
+			DisposeIndexBuffer(tuple.IndexBufferRef).ThrowIfFailure();
 		}
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromMap) _activeMeshes.Remove(handle);
@@ -184,10 +184,10 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 
 			// In theory, both ref-count maps should be empty at this point. But we'll do this anyway.
 			foreach (var kvp in _vertexBufferRefCounts) {
-				DisposeVertexBuffer((VertexBufferHandle) kvp.Key).ThrowIfFailure();
+				DisposeVertexBuffer(kvp.Key).ThrowIfFailure();
 			}
 			foreach (var kvp in _indexBufferRefCounts) {
-				DisposeIndexBuffer((IndexBufferHandle) kvp.Key).ThrowIfFailure();
+				DisposeIndexBuffer(kvp.Key).ThrowIfFailure();
 			}
 			_vertexBufferRefCounts.Dispose();
 			_indexBufferRefCounts.Dispose();

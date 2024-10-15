@@ -12,7 +12,7 @@ namespace Egodystonic.TinyFFR.Factory;
 public interface ITinyFfrFactory : ITrackedDisposable {
 	IApplicationLoopBuilder ApplicationLoopBuilder { get; }
 	IAssetLoader AssetLoader { get; }
-	ICameraBuilder CameraBuilder { get; }
+	ISceneCameraBuilder SceneCameraBuilder { get; }
 
 	CombinedResourceGroup CreateResourceGroup(int capacity, bool disposeContainedResourcesWhenDisposed);
 	CombinedResourceGroup CreateResourceGroup(int capacity, bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name);

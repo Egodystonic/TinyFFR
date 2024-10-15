@@ -42,7 +42,7 @@
     <ClInclude Include="tffr\headers\assets\native_impl_render_assets.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="tffr\headers\scene\native_impl_camera.h">
+    <ClInclude Include="tffr\headers\scene\camera\native_impl_camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -71,7 +71,7 @@
     <ClCompile Include="tffr\impl\assets\native_impl_render_assets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tffr\impl\scene\native_impl_camera.cpp">
+    <ClCompile Include="tffr\impl\scene\camera\native_impl_camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

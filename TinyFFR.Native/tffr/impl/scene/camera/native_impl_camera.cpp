@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "scene/native_impl_camera.h"
+#include "scene/camera/native_impl_camera.h"
 
 #include "native_impl_init.h"
 #include "utils_and_constants.h"

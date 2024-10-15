@@ -67,7 +67,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 	public void Dispose(MaterialHandle handle) => Dispose(handle, removeFromMap: true);
 	void Dispose(MaterialHandle handle, bool removeFromMap) {
-		ThrowIfThisOrHandleIsDisposed(handle);
+		if (IsDisposed(handle)) return;
 		_activeMaterials[handle].Dispose();
 		if (removeFromMap) _activeMaterials.Remove(handle);
 	}

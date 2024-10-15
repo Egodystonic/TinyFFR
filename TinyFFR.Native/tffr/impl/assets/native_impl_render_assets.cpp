@@ -61,10 +61,11 @@ StartExportedFunc(dispose_index_buffer, IndexBufferHandle buffer) {
 
 
 filamat::Package native_impl_render_assets::BasicSolidColorShaderPackage = filamat::Package::invalidPackage();
+Material* native_impl_render_assets::BasicSolidColorShaderMaterial = nullptr;
 
-filamat::Package& GetPackage(MaterialType type) {
+Material* GetMaterial(MaterialType type) {
 	switch (type) {
-		case MaterialType::BasicSolidColor:
+	case MaterialType::BasicSolidColor:
 			if (!native_impl_render_assets::BasicSolidColorShaderPackage.isValid()) {
 				filamat::MaterialBuilder builder;
 				auto newMat = builder
@@ -87,27 +88,32 @@ filamat::Package& GetPackage(MaterialType type) {
 					)
 					.build(native_impl_init::filament_engine_ptr->getJobSystem());
 
-
 				native_impl_render_assets::BasicSolidColorShaderPackage = std::move(newMat);
 				if (!native_impl_render_assets::BasicSolidColorShaderPackage.isValid()) Throw("Could not create package.");
 			}
 
-			return native_impl_render_assets::BasicSolidColorShaderPackage;
+			if (native_impl_render_assets::BasicSolidColorShaderMaterial == nullptr) {
+				native_impl_render_assets::BasicSolidColorShaderMaterial = Material::Builder().package(
+					native_impl_render_assets::BasicSolidColorShaderPackage.getData(), 
+					native_impl_render_assets::BasicSolidColorShaderPackage.getSize()
+				).build(*native_impl_init::filament_engine_ptr);
+				ThrowIfNull(native_impl_render_assets::BasicSolidColorShaderMaterial, "Could not create material.");
+			}
+
+			return native_impl_render_assets::BasicSolidColorShaderMaterial;
 		default:
 			Throw("Unrecognized material type.");
 	}
 }
 
 void native_impl_render_assets::create_material(MaterialType type, void* argumentsBuffer, int32_t argumentsBufferLengthBytes, MaterialHandle* outMaterial) {
-	auto& package = GetPackage(type);
-	auto builder = Material::Builder()
-		.package(package.getData(), package.getSize());
+	auto mat = GetMaterial(type);
 
 	switch (type) {
 		case MaterialType::BasicSolidColor:{
-			auto mat = builder.build(*native_impl_init::filament_engine_ptr);
-			mat->setDefaultParameter("flatColor", float4{ 1.0, 0.0, 0.0, 1.0 });
-			*outMaterial = mat;
+			auto i = mat->createInstance();
+			i->setParameter("flatColor", float4{ 1.0, 0.0, 0.0, 1.0 });
+			*outMaterial = i;
 			break;
 		}
 		default:{

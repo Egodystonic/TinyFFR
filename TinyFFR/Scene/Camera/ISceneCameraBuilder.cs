@@ -3,7 +3,7 @@
 
 namespace Egodystonic.TinyFFR.Scene;
 
-public interface ICameraBuilder {
+public interface ISceneCameraBuilder {
 	Camera CreateCamera();
 	Camera CreateCamera(Location initialPosition, Direction initialViewDirection);
 	Camera CreateCamera(in CameraCreationConfig config);

@@ -8,16 +8,16 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Scene;
 
-sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposable {
+sealed class LocalSceneCameraBuilder : ISceneCameraBuilder, ICameraImplProvider, IDisposable {
 	readonly record struct CameraParameters(Location Position, Direction ViewDirection, Direction UpDirection, float VerticalFovRadians, float AspectRatio, float NearPlaneDistance, float FarPlaneDistance);
 
 	const string DefaultCameraName = "Unnamed Camera";
 	const float DefaultAspectRatio = 16f / 9f;
-	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPoolBackedMap<CameraHandle, CameraParameters> _activeCameras = new();
+	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
 
-	public LocalCameraBuilder(LocalFactoryGlobalObjectGroup globals) {
+	public LocalSceneCameraBuilder(LocalFactoryGlobalObjectGroup globals) {
 		ArgumentNullException.ThrowIfNull(globals);
 
 		_globals = globals;
@@ -319,7 +319,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
-			foreach (var kvp in _activeCameras) Dispose((CameraHandle) kvp.Key, removeFromMap: false);
+			foreach (var kvp in _activeCameras) Dispose(kvp.Key, removeFromMap: false);
 		}
 		finally {
 			_isDisposed = true;
@@ -330,7 +330,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 
 	public void Dispose(CameraHandle handle) => Dispose(handle, removeFromMap: true);
 	void Dispose(CameraHandle handle, bool removeFromMap) {
-		ThrowIfThisOrHandleIsDisposed(handle);
+		if (IsDisposed(handle)) return;
 		DisposeCamera(handle).ThrowIfFailure();
 		if (removeFromMap) _activeCameras.Remove(handle);
 	}
@@ -341,7 +341,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 	}
 
 	void ThrowIfThisIsDisposed() {
-		ObjectDisposedException.ThrowIf(_isDisposed, typeof(ICameraBuilder));
+		ObjectDisposedException.ThrowIf(_isDisposed, typeof(ISceneCameraBuilder));
 	}
 	#endregion
 }
