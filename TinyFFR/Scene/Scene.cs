@@ -17,19 +17,14 @@ public readonly struct Scene : IDisposableResource<Scene, SceneHandle, ISceneImp
 	ISceneImplProvider IResource<SceneHandle, ISceneImplProvider>.Implementation => Implementation;
 	SceneHandle IResource<SceneHandle, ISceneImplProvider>.Handle => Handle;
 
+	public OneToManyEnumerator<SceneHandle, Camera> Cameras {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCameras(_handle);
+	}
+
 	public string Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(_handle);
-	}
-
-	public ISceneCameraBuilder CameraBuilder {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetCameraBuilder(_handle);
-	}
-
-	public ISceneObjectBuilder ObjectBuilder {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetObjectBuilder(_handle);
 	}
 
 	internal Scene(SceneHandle handle, ISceneImplProvider impl) {
@@ -42,16 +37,14 @@ public readonly struct Scene : IDisposableResource<Scene, SceneHandle, ISceneImp
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Camera CreateCamera() => CameraBuilder.CreateCamera();
+	public void AddCamera(Camera camera) => Implementation.AddCamera(_handle, camera);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Camera CreateCamera(Location initialPosition, Direction initialViewDirection) => CameraBuilder.CreateCamera(initialPosition, initialViewDirection);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Camera CreateCamera(in CameraCreationConfig config) => CameraBuilder.CreateCamera(in config);
+	public void RemoveCamera(Camera camera) => Implementation.RemoveCamera(_handle, camera);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ModelInstance CreateModelInstance() => ObjectBuilder.CreateModelInstance();
+	public ModelInstance AddModelInstance() => ObjectBuilder.AddModelInstance();
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ModelInstance CreateModelInstance(in ModelInstanceCreationConfig config) => ObjectBuilder.CreateModelInstance(in config);
+	public ModelInstance AddModelInstance(in ModelInstanceCreationConfig config) => ObjectBuilder.AddModelInstance(in config);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int GetNameUsingSpan(Span<char> dest) => Implementation.GetNameUsingSpan(_handle, dest);

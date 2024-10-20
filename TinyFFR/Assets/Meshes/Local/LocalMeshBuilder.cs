@@ -16,7 +16,7 @@ namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposable {
 	const string DefaultMeshName = "Unnamed Mesh";
-	readonly ArrayPoolBackedMap<MeshHandle, (VertexBufferHandle VertexBufferRef, IndexBufferHandle IndexBufferRef)> _activeMeshes = new();
+	readonly ArrayPoolBackedMap<MeshHandle, MeshBufferData> _activeMeshes = new();
 	readonly ArrayPoolBackedMap<VertexBufferHandle, int> _vertexBufferRefCounts = new();
 	readonly ArrayPoolBackedMap<IndexBufferHandle, int> _indexBufferRefCounts = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
@@ -138,6 +138,11 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		_activeMeshes.Add(handle, (vbHandle, ibHandle));
 		if (config.NameAsSpan.Length > 0) _globals.StoreResourceName(handle.Ident, config.NameAsSpan);
 		return new Mesh(handle, this);
+	}
+
+	public MeshBufferData GetBufferData(MeshHandle handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeMeshes[handle];
 	}
 
 	public string GetName(MeshHandle handle) {

@@ -22,7 +22,7 @@ public sealed class LocalRendererFactory : ITinyFfrFactory {
 	public IWindowBuilder WindowBuilder { get; }
 	public ILocalApplicationLoopBuilder ApplicationLoopBuilder { get; }
 	public IAssetLoader AssetLoader { get; }
-	public ISceneCameraBuilder SceneCameraBuilder { get; }
+	public ICameraBuilder CameraBuilder { get; }
 
 	internal FixedByteBufferPool TemporaryCpuBufferPool { get; }
 
@@ -47,7 +47,7 @@ public sealed class LocalRendererFactory : ITinyFfrFactory {
 		WindowBuilder = new WindowBuilder(globals, windowBuilderConfig ?? new());
 		ApplicationLoopBuilder = new LocalApplicationLoopBuilder(globals, applicationLoopBuilderConfig ?? new());
 		AssetLoader = new LocalAssetLoader(globals, assetLoaderConfig ?? new());
-		SceneCameraBuilder = new LocalSceneCameraBuilder(globals);
+		CameraBuilder = new LocalCameraBuilder(globals);
 	}
 
 	public CombinedResourceGroup CreateResourceGroup(int capacity, bool disposeContainedResourcesWhenDisposed) {
@@ -75,7 +75,7 @@ public sealed class LocalRendererFactory : ITinyFfrFactory {
 		if (IsDisposed) return;
 		try {
 			// Maintainer's note: These are disposed in reverse order (e.g. opposite order compared to the order they're constructed in in the ctor above)
-			DisposeObjectIfDisposable(SceneCameraBuilder);
+			DisposeObjectIfDisposable(CameraBuilder);
 			DisposeObjectIfDisposable(AssetLoader);
 			DisposeObjectIfDisposable(ApplicationLoopBuilder);
 			DisposeObjectIfDisposable(WindowBuilder);

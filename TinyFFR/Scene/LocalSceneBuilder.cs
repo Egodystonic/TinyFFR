@@ -8,22 +8,26 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Scene;
 
-sealed class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisposable {
+sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisposable {
+	readonly record struct SceneBuilderObjectGroup(LocalCameraBuilder CameraBuilder, LocalObjectBuilder ObjectBuilder);
 	const string DefaultSceneName = "Unnamed Scene";
 
-	readonly ArrayPoolBackedVector<SceneHandle> _activeScenes = new();
+	readonly ArrayPoolBackedMap<SceneHandle, SceneBuilderObjectGroup> _activeSceneMap = new();
+	readonly ObjectPool<LocalCameraBuilder, LocalSceneBuilder> _cameraBuilderPool;
+	readonly ObjectPool<LocalObjectBuilder, LocalSceneBuilder> _objectBuilderPool;
 	readonly LocalFactoryGlobalObjectGroup _globals;
-	readonly LocalSceneCameraBuilder _cameraBuilder;
-	readonly LocalSceneObjectBuilder _objectBuilder;
 	bool _isDisposed = false;
 
 	public LocalSceneBuilder(LocalFactoryGlobalObjectGroup globals) {
 		ArgumentNullException.ThrowIfNull(globals);
 
 		_globals = globals;
-		_cameraBuilder = new(globals);
-		_objectBuilder = new(globals);
+		_cameraBuilderPool = new(&CreateCameraBuilder, this);
+		_objectBuilderPool = new(&CreateObjectBuilder, this);
 	}
+
+	static LocalCameraBuilder CreateCameraBuilder(LocalSceneBuilder owningSceneBuilder) => new(owningSceneBuilder._globals);
+	static LocalObjectBuilder CreateObjectBuilder(LocalSceneBuilder owningSceneBuilder) => new(owningSceneBuilder._globals);
 
 	public Scene CreateScene() {
 
@@ -32,8 +36,8 @@ sealed class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisposable 
 
 	}
 
-	public ISceneCameraBuilder GetCameraBuilder(SceneHandle handle) => this;
-	public ISceneObjectBuilder GetObjectBuilder(SceneHandle handle) => this;
+	public ICameraBuilder GetCameraBuilder(SceneHandle handle) => this;
+	public IObjectBuilder GetObjectBuilder(SceneHandle handle) => this;
 
 	public string GetName(SceneHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -70,20 +74,20 @@ sealed class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisposable 
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
-			foreach (var scene in _activeScenes) Dispose(scene, removeFromVector: false);
+			foreach (var kvp in _activeSceneMap) Dispose(kvp.Key, removeFromMap: false);
 		}
 		finally {
 			_isDisposed = true;
 		}
 	}
 
-	public bool IsDisposed(SceneHandle handle) => _isDisposed || !_activeScenes.Contains(handle);
+	public bool IsDisposed(SceneHandle handle) => _isDisposed || !_activeSceneMap.ContainsKey(handle);
 
-	public void Dispose(SceneHandle handle) => Dispose(handle, removeFromVector: true);
-	void Dispose(SceneHandle handle, bool removeFromVector) {
+	public void Dispose(SceneHandle handle) => Dispose(handle, removeFromMap: true);
+	void Dispose(SceneHandle handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
 		DisposeScene(handle).ThrowIfFailure();
-		if (removeFromVector) _activeScenes.Remove(handle);
+		if (removeFromMap) _activeScenes.Remove(handle);
 	}
 
 	void ThrowIfThisOrHandleIsDisposed(SceneHandle handle) {
@@ -92,7 +96,7 @@ sealed class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisposable 
 	}
 
 	void ThrowIfThisIsDisposed() {
-		ObjectDisposedException.ThrowIf(_isDisposed, typeof(ISceneCameraBuilder));
+		ObjectDisposedException.ThrowIf(_isDisposed, typeof(ICameraBuilder));
 	}
 	#endregion
 }

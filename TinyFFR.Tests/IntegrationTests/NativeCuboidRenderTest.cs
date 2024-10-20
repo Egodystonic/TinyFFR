@@ -24,7 +24,7 @@ class NativeCuboidRenderTest {
 		using var factory = new LocalRendererFactory();
 
 		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(10f, 7f, 2f), new MeshCreationConfig { Name = "Clive the Cuboid" });
-		using var camera = factory.SceneCameraBuilder.CreateCamera(new CameraCreationConfig {
+		using var camera = factory.CameraBuilder.CreateCamera(new CameraCreationConfig {
 			Position = (Direction.Backward * 1f).AsLocation(),
 			ViewDirection = Direction.Forward,
 			UpDirection = Direction.Up

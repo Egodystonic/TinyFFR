@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Scene;
 
-sealed class LocalSceneCameraBuilder : ISceneCameraBuilder, ICameraImplProvider, IDisposable {
+sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposable {
 	readonly record struct CameraParameters(Location Position, Direction ViewDirection, Direction UpDirection, float VerticalFovRadians, float AspectRatio, float NearPlaneDistance, float FarPlaneDistance);
 
 	const string DefaultCameraName = "Unnamed Camera";
@@ -17,7 +17,7 @@ sealed class LocalSceneCameraBuilder : ISceneCameraBuilder, ICameraImplProvider,
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
 
-	public LocalSceneCameraBuilder(LocalFactoryGlobalObjectGroup globals) {
+	public LocalCameraBuilder(LocalFactoryGlobalObjectGroup globals) {
 		ArgumentNullException.ThrowIfNull(globals);
 
 		_globals = globals;
@@ -341,7 +341,7 @@ sealed class LocalSceneCameraBuilder : ISceneCameraBuilder, ICameraImplProvider,
 	}
 
 	void ThrowIfThisIsDisposed() {
-		ObjectDisposedException.ThrowIf(_isDisposed, typeof(ISceneCameraBuilder));
+		ObjectDisposedException.ThrowIf(_isDisposed, typeof(ICameraBuilder));
 	}
 	#endregion
 }

@@ -4,6 +4,7 @@
 using System.Buffers;
 using Egodystonic.TinyFFR.Resources.Memory;
 using static Egodystonic.TinyFFR.Resources.IResource;
+using static Egodystonic.TinyFFR.Resources.IResourceDependencyTracker;
 
 namespace Egodystonic.TinyFFR.Resources;
 
@@ -57,6 +58,22 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker {
 			target.Name,
 			dependents.Select(drd => drd.ImplProvider.RawHandleGetName(drd.Ident.RawResourceHandle)).ToArray()
 		);
+	}
+
+	public OneToManyEnumerator<EnumerationInput, TDependent> EnumerateDependentsOfGivenType<TTarget, TDependent>(TTarget target) where TTarget : IResource where TDependent : IResource {
+		return new OneToManyEnumerator<EnumerationInput, TDependent>(
+			new(this, target.Ident),
+			
+		);
+	}
+	static int GetEnumerationCount<TDependent, THandle, TImpl>(EnumerationInput input) where TDependent : IResource<TDependent> {
+		var @this = (input.Tracker as ResourceDependencyTracker);
+		if (@this == null) return 0;
+		if (!@this._dependencyMap.TryGetValue(input.TargetIdent, out var dependents)) return 0;
+		var result = 0;
+		foreach (var d in dependents) {
+			if (d.Ident.TypeHandle == )
+		}
 	}
 
 	public void Dispose() {

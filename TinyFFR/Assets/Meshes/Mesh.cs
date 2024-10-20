@@ -21,6 +21,11 @@ public readonly struct Mesh : IDisposableResource<Mesh, MeshHandle, IMeshImplPro
 		get => Implementation.GetName(_handle);
 	}
 
+	public MeshBufferData BufferData {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetBufferData(_handle);
+	}
+
 	internal Mesh(MeshHandle handle, IMeshImplProvider impl) {
 		_handle = handle;
 		_impl = impl;

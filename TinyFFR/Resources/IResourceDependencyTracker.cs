@@ -4,6 +4,7 @@
 namespace Egodystonic.TinyFFR.Resources;
 
 interface IResourceDependencyTracker {
+	public readonly record struct EnumerationInput(IResourceDependencyTracker Tracker, ResourceIdent TargetIdent);
 	void DeregisterDependency<TDependent, TTarget>(TDependent dependent, TTarget target) where TDependent : IResource where TTarget : IResource;
 	void RegisterDependency<TDependent, TTarget>(TDependent dependent, TTarget target) where TDependent : IResource where TTarget : IResource;
 	void ThrowForPrematureDisposalIfTargetHasDependents<TTarget>(TTarget target) where TTarget : IResource;
