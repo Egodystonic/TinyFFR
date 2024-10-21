@@ -8,7 +8,9 @@ namespace Egodystonic.TinyFFR.Environment.Local;
 public readonly unsafe struct DisplayHandle : IResourceHandle<DisplayHandle> {
 	public nuint AsInteger { get; }
 	public void* AsPointer => (void*) AsInteger;
-	internal ResourceIdent Ident => new(typeof(Display).TypeHandle.Value, AsInteger);
+	internal static IntPtr TypeHandle { get; } = typeof(DisplayHandle).TypeHandle.Value;
+	static IntPtr IResourceHandle.TypeHandle => TypeHandle;
+	internal ResourceIdent Ident => new(TypeHandle, AsInteger);
 	ResourceIdent IResourceHandle.Ident => Ident;
 
 	public DisplayHandle(nuint integer) => AsInteger = integer;

@@ -60,20 +60,47 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker {
 		);
 	}
 
-	public OneToManyEnumerator<EnumerationInput, TDependent> EnumerateDependentsOfGivenType<TTarget, TDependent>(TTarget target) where TTarget : IResource where TDependent : IResource {
+	public OneToManyEnumerator<EnumerationInput, TDependent> EnumerateDependentsOfGivenType<TTarget, TDependent, THandle, TImpl>(TTarget target) 
+		where TTarget : IResource
+		where TDependent : IResource<TDependent, THandle, TImpl>
+		where THandle : unmanaged, IResourceHandle<THandle>
+		where TImpl : class, IResourceImplProvider {
 		return new OneToManyEnumerator<EnumerationInput, TDependent>(
 			new(this, target.Ident),
-			
+			&GetEnumerationCount<TDependent, THandle, TImpl>,
+			&GetEnumerationItem<TDependent, THandle, TImpl>
 		);
 	}
-	static int GetEnumerationCount<TDependent, THandle, TImpl>(EnumerationInput input) where TDependent : IResource<TDependent> {
-		var @this = (input.Tracker as ResourceDependencyTracker);
+	static int GetEnumerationCount<TDependent, THandle, TImpl>(EnumerationInput input) 
+		where TDependent : IResource<TDependent, THandle, TImpl> 
+		where THandle : unmanaged, IResourceHandle<THandle> 
+		where TImpl : class, IResourceImplProvider {
+		var @this = input.Tracker as ResourceDependencyTracker;
 		if (@this == null) return 0;
 		if (!@this._dependencyMap.TryGetValue(input.TargetIdent, out var dependents)) return 0;
 		var result = 0;
 		foreach (var d in dependents) {
-			if (d.Ident.TypeHandle == )
+			if (d.Ident.TypeHandle == THandle.TypeHandle) result++;
 		}
+		return result;
+	}
+	static TDependent GetEnumerationItem<TDependent, THandle, TImpl>(EnumerationInput input, int index)
+		where TDependent : IResource<TDependent, THandle, TImpl>
+		where THandle : unmanaged, IResourceHandle<THandle>
+		where TImpl : class, IResourceImplProvider {
+		const string InvalidEnumerationErrorMsg = "Invalid enumeration state. Tracked resource was probably modified.";
+
+		var @this = (input.Tracker as ResourceDependencyTracker) ?? throw new InvalidOperationException(InvalidEnumerationErrorMsg);
+		if (!@this._dependencyMap.TryGetValue(input.TargetIdent, out var dependents)) {
+			throw new InvalidOperationException(InvalidEnumerationErrorMsg);
+		}
+		var count = 0;
+		foreach (var d in dependents) {
+			if (d.Ident.TypeHandle != THandle.TypeHandle) continue;
+			if (count == index) return TDependent.RecreateFromRawHandleAndImpl(d.Ident.RawResourceHandle, d.ImplProvider);
+			else count++;
+		}
+		throw new InvalidOperationException(InvalidEnumerationErrorMsg);
 	}
 
 	public void Dispose() {
