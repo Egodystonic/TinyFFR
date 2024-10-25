@@ -165,10 +165,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		}
 	}
 
-	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, typeof(IApplicationLoopBuilder));
-	void ThrowIfThisOrHandleIsDisposed(ApplicationLoopHandle handle) {
-		ThrowIfThisIsDisposed();
-		ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(ApplicationLoop));
-	}
+	void ThrowIfThisOrHandleIsDisposed(ApplicationLoopHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(ApplicationLoop));
+	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion
 }

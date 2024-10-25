@@ -9,7 +9,7 @@ public readonly struct CombinedResourceGroup : IDisposableResource<CombinedResou
 	readonly CombinedResourceGroupHandle _handle;
 	readonly ICombinedResourceGroupImplProvider _impl;
 
-	internal CombinedResourceGroupHandle Handle => _handle;
+	internal CombinedResourceGroupHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(CombinedResourceGroup)) : _handle;
 	internal ICombinedResourceGroupImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<CombinedResourceGroupHandle>();
 
 	ICombinedResourceGroupImplProvider IResource<CombinedResourceGroupHandle, ICombinedResourceGroupImplProvider>.Implementation => Implementation;

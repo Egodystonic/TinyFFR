@@ -268,7 +268,7 @@ partial struct Plane :
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}
-	// TODO xmldoc that these methods are slower than using a converter
+	// TODO xmldoc that these methods are slower than using a converter unless doing it literally only once
 	public XYPair<float> ProjectionTo2DOf(Location location) => CreateDimensionConverter().Convert(location);
 	public Location HolographTo3DOf(XYPair<float> xyPair) => CreateDimensionConverter().Convert(xyPair);
 	public Location HolographTo3DOf(XYPair<float> xyPair, float zDimension) => CreateDimensionConverter().Convert(xyPair, zDimension);

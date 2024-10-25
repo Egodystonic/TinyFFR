@@ -1,115 +1,200 @@
 ﻿// Created on 2024-09-24 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-using System.Buffers;
 using Egodystonic.TinyFFR.Resources.Memory;
-using static Egodystonic.TinyFFR.Resources.IResource;
 using static Egodystonic.TinyFFR.Resources.IResourceDependencyTracker;
+using StubMap = Egodystonic.TinyFFR.Resources.Memory.ArrayPoolBackedMap<Egodystonic.TinyFFR.Resources.ResourceIdent, Egodystonic.TinyFFR.Resources.Memory.ArrayPoolBackedVector<Egodystonic.TinyFFR.Resources.ResourceStub>>;
+using VectPool = Egodystonic.TinyFFR.Resources.Memory.ObjectPool<Egodystonic.TinyFFR.Resources.Memory.ArrayPoolBackedVector<Egodystonic.TinyFFR.Resources.ResourceStub>>;
 
 namespace Egodystonic.TinyFFR.Resources;
 
 sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker {
-	readonly struct DependentResourceData : IEquatable<DependentResourceData> {
-		public readonly ResourceIdent Ident;
-		public readonly IResourceImplProvider ImplProvider;
-
-		public DependentResourceData(ResourceIdent ident, IResourceImplProvider implProvider) {
-			Ident = ident;
-			ImplProvider = implProvider;
-		}
-
-		public bool Equals(DependentResourceData other) => Ident.Equals(other.Ident);
-		public override bool Equals(object? obj) => obj is DependentResourceData other && Equals(other);
-		public override int GetHashCode() => Ident.GetHashCode();
-		public static bool operator ==(DependentResourceData left, DependentResourceData right) => left.Equals(right);
-		public static bool operator !=(DependentResourceData left, DependentResourceData right) => !left.Equals(right);
-	}
-
 	const int InitialDependentsArrayLength = 4;
-	readonly ObjectPool<ArrayPoolBackedVector<DependentResourceData>> _dependentsVectorPool = new(&CreateNewDependentsVector);
-	readonly ArrayPoolBackedMap<ResourceIdent, ArrayPoolBackedVector<DependentResourceData>> _dependencyMap = new();
+	readonly VectPool _vectorPool = new(&CreateNewVector);
+	readonly StubMap _targetsToDependentsMap = new();
+	readonly StubMap _dependentsToTargetsMap = new();
 
-	public void RegisterDependency<TDependent, TTarget>(TDependent dependent, TTarget target) where TDependent : IResource where TTarget : IResource {
-		var dependentData = new DependentResourceData(dependent.Ident, dependent.Implementation);
-		var targetIdent = target.Ident;
-		if (!_dependencyMap.TryGetValue(targetIdent, out var dependents)) {
-			dependents = _dependentsVectorPool.Rent();
-			_dependencyMap.Add(targetIdent, dependents);
+	public void RegisterDependency<TDependent, TTarget>(TDependent dependent, TTarget targetNowInUse) where TDependent : IResource where TTarget : IResource {
+		static void AddStubToMap(VectPool vectorPool, StubMap map, ResourceIdent key, ResourceStub value) {
+			if (!map.TryGetValue(key, out var values)) {
+				values = vectorPool.Rent();
+				map.Add(key, values);
+			}
+			else if (values.Contains(value)) return;
+			values.Add(value);
 		}
-		if (dependents.Contains(dependentData)) return;
-		dependents.Add(dependentData);
+		
+		var dependentStub = new ResourceStub(dependent.Ident, dependent.Implementation);
+		var targetStub = new ResourceStub(targetNowInUse.Ident, targetNowInUse.Implementation);
+		AddStubToMap(_vectorPool, _targetsToDependentsMap, targetStub.Ident, dependentStub);
+		AddStubToMap(_vectorPool, _dependentsToTargetsMap, dependentStub.Ident, targetStub);
 	}
 
-	public void DeregisterDependency<TDependent, TTarget>(TDependent dependent, TTarget target) where TDependent : IResource where TTarget : IResource {
-		var dependentData = new DependentResourceData(dependent.Ident, dependent.Implementation);
-		var targetIdent = target.Ident;
-		if (!_dependencyMap.TryGetValue(targetIdent, out var dependents)) return;
-		dependents.Remove(dependentData);
-		if (dependents.Count == 0) {
-			_dependencyMap.Remove(targetIdent);
-			_dependentsVectorPool.Return(dependents);
+	public void DeregisterDependency<TDependent, TTarget>(TDependent dependent, TTarget targetNoLongerInUse) where TDependent : IResource where TTarget : IResource {
+		static void RemoveStubFromMap(VectPool vectorPool, StubMap map, ResourceIdent key, ResourceStub value) {
+			if (!map.TryGetValue(key, out var values)) return; // TODO emit a warning here
+			if (!values.Remove(value)) return; // TODO emit a warning here
+			if (values.Count != 0) return;
+			map.Remove(key);
+			vectorPool.Return(values);
 		}
+
+		var dependentStub = new ResourceStub(dependent.Ident, dependent.Implementation);
+		var targetStub = new ResourceStub(targetNoLongerInUse.Ident, targetNoLongerInUse.Implementation);
+		RemoveStubFromMap(_vectorPool, _targetsToDependentsMap, targetStub.Ident, dependentStub);
+		RemoveStubFromMap(_vectorPool, _dependentsToTargetsMap, dependentStub.Ident, targetStub);
 	}
 
-	public void ThrowForPrematureDisposalIfTargetHasDependents<TTarget>(TTarget target) where TTarget : IResource {
-		if (!_dependencyMap.TryGetValue(target.Ident, out var dependents)) return;
+	public void ThrowForPrematureDisposalIfTargetHasDependents<TTarget>(TTarget targetPotentiallyInUse) where TTarget : IResource {
+		if (!_targetsToDependentsMap.TryGetValue(targetPotentiallyInUse.Ident, out var dependents)) return;
 		throw ResourceDependencyException.CreateForPrematureDisposal(
-			target.GetType().Name,
-			target.Name,
-			dependents.Select(drd => drd.ImplProvider.RawHandleGetName(drd.Ident.RawResourceHandle)).ToArray()
+			targetPotentiallyInUse.GetType().Name,
+			targetPotentiallyInUse.Name,
+			dependents.Select(sr => sr.Implementation.RawHandleGetName(sr.Ident.RawResourceHandle)).ToArray()
 		);
 	}
 
-	public OneToManyEnumerator<EnumerationInput, TDependent> EnumerateDependentsOfGivenType<TTarget, TDependent, THandle, TImpl>(TTarget target) 
+	public OneToManyEnumerator<EnumerationInput, ResourceStub> EnumerateDependents<TTarget>(TTarget targetPotentiallyInUse) where TTarget : IResource {
+		return new OneToManyEnumerator<EnumerationInput, ResourceStub>(
+			new(this, targetPotentiallyInUse.Ident),
+			&GetDependentsEnumerationCount,
+			&GetDependentsEnumerationItem
+		);
+	}
+	static int GetDependentsEnumerationCount(EnumerationInput input) {
+		return GetMapEnumerationCount((input.Tracker as ResourceDependencyTracker)!._targetsToDependentsMap, input.ArgumentIdent);
+	}
+	static ResourceStub GetDependentsEnumerationItem(EnumerationInput input, int index) {
+		return GetMapEnumerationItem((input.Tracker as ResourceDependencyTracker)!._targetsToDependentsMap, input.ArgumentIdent, index);
+	}
+	public OneToManyEnumerator<EnumerationInput, ResourceStub> EnumerateTargets<TDependent>(TDependent dependent) where TDependent : IResource {
+		return new OneToManyEnumerator<EnumerationInput, ResourceStub>(
+			new(this, dependent.Ident),
+			&GetTargetsEnumerationCount,
+			&GetTargetsEnumerationItem
+		);
+	}
+	static int GetTargetsEnumerationCount(EnumerationInput input) {
+		return GetMapEnumerationCount((input.Tracker as ResourceDependencyTracker)!._dependentsToTargetsMap, input.ArgumentIdent);
+	}
+	static ResourceStub GetTargetsEnumerationItem(EnumerationInput input, int index) {
+		return GetMapEnumerationItem((input.Tracker as ResourceDependencyTracker)!._dependentsToTargetsMap, input.ArgumentIdent, index);
+	}
+
+	public OneToManyEnumerator<EnumerationInput, TDependent> EnumerateDependentsOfGivenType<TTarget, TDependent, THandle, TImpl>(TTarget targetPotentiallyInUse) 
 		where TTarget : IResource
 		where TDependent : IResource<TDependent, THandle, TImpl>
 		where THandle : unmanaged, IResourceHandle<THandle>
 		where TImpl : class, IResourceImplProvider {
 		return new OneToManyEnumerator<EnumerationInput, TDependent>(
-			new(this, target.Ident),
-			&GetEnumerationCount<TDependent, THandle, TImpl>,
-			&GetEnumerationItem<TDependent, THandle, TImpl>
+			new(this, targetPotentiallyInUse.Ident),
+			&GetDependentsEnumerationCount<TDependent, THandle, TImpl>,
+			&GetDependentsEnumerationItem<TDependent, THandle, TImpl>
 		);
 	}
-	static int GetEnumerationCount<TDependent, THandle, TImpl>(EnumerationInput input) 
+	public TDependent GetNthDependentOfGivenType<TTarget, TDependent, THandle, TImpl>(TTarget targetPotentiallyInUse, int index) 
+		where TTarget : IResource 
 		where TDependent : IResource<TDependent, THandle, TImpl> 
-		where THandle : unmanaged, IResourceHandle<THandle> 
-		where TImpl : class, IResourceImplProvider {
-		var @this = input.Tracker as ResourceDependencyTracker;
-		if (@this == null) return 0;
-		if (!@this._dependencyMap.TryGetValue(input.TargetIdent, out var dependents)) return 0;
-		var result = 0;
-		foreach (var d in dependents) {
-			if (d.Ident.TypeHandle == THandle.TypeHandle) result++;
-		}
-		return result;
+		where THandle : unmanaged, IResourceHandle<THandle> where TImpl : class, IResourceImplProvider {
+		return GetDependentsEnumerationItem<TDependent, THandle, TImpl>(new(this, targetPotentiallyInUse.Ident), index);
 	}
-	static TDependent GetEnumerationItem<TDependent, THandle, TImpl>(EnumerationInput input, int index)
+	static int GetDependentsEnumerationCount<TDependent, THandle, TImpl>(EnumerationInput input)
 		where TDependent : IResource<TDependent, THandle, TImpl>
 		where THandle : unmanaged, IResourceHandle<THandle>
 		where TImpl : class, IResourceImplProvider {
-		const string InvalidEnumerationErrorMsg = "Invalid enumeration state. Tracked resource was probably modified.";
+		return GetMapEnumerationCount<THandle>((input.Tracker as ResourceDependencyTracker)!._targetsToDependentsMap, input.ArgumentIdent);
+	}
+	static TDependent GetDependentsEnumerationItem<TDependent, THandle, TImpl>(EnumerationInput input, int index)
+		where TDependent : IResource<TDependent, THandle, TImpl>
+		where THandle : unmanaged, IResourceHandle<THandle>
+		where TImpl : class, IResourceImplProvider {
+		return IResource<TDependent, THandle, TImpl>.RecreateFromResourceStub(GetMapEnumerationItem((input.Tracker as ResourceDependencyTracker)!._targetsToDependentsMap, input.ArgumentIdent, index));
+	}
+	public OneToManyEnumerator<EnumerationInput, TTarget> EnumerateTargetsOfGivenType<TDependent, TTarget, THandle, TImpl>(TDependent dependent)
+		where TDependent : IResource
+		where TTarget : IResource<TTarget, THandle, TImpl>
+		where THandle : unmanaged, IResourceHandle<THandle>
+		where TImpl : class, IResourceImplProvider {
+		return new OneToManyEnumerator<EnumerationInput, TTarget>(
+			new(this, dependent.Ident),
+			&GetTargetsEnumerationCount<TTarget, THandle, TImpl>,
+			&GetTargetsEnumerationItem<TTarget, THandle, TImpl>
+		);
+	}
+	public TTarget GetNthTargetOfGivenType<TDependent, TTarget, THandle, TImpl>(TDependent dependent, int index)
+		where TDependent : IResource
+		where TTarget : IResource<TTarget, THandle, TImpl>
+		where THandle : unmanaged, IResourceHandle<THandle> where TImpl : class, IResourceImplProvider {
+		return GetTargetsEnumerationItem<TTarget, THandle, TImpl>(new(this, dependent.Ident), index);
+	}
+	static int GetTargetsEnumerationCount<TTarget, THandle, TImpl>(EnumerationInput input)
+		where TTarget : IResource<TTarget, THandle, TImpl>
+		where THandle : unmanaged, IResourceHandle<THandle>
+		where TImpl : class, IResourceImplProvider {
+		return GetMapEnumerationCount<THandle>((input.Tracker as ResourceDependencyTracker)!._dependentsToTargetsMap, input.ArgumentIdent);
+	}
+	static TTarget GetTargetsEnumerationItem<TTarget, THandle, TImpl>(EnumerationInput input, int index)
+		where TTarget : IResource<TTarget, THandle, TImpl>
+		where THandle : unmanaged, IResourceHandle<THandle>
+		where TImpl : class, IResourceImplProvider {
+		return IResource<TTarget, THandle, TImpl>.RecreateFromResourceStub(GetMapEnumerationItem((input.Tracker as ResourceDependencyTracker)!._dependentsToTargetsMap, input.ArgumentIdent, index));
+	}
 
-		var @this = (input.Tracker as ResourceDependencyTracker) ?? throw new InvalidOperationException(InvalidEnumerationErrorMsg);
-		if (!@this._dependencyMap.TryGetValue(input.TargetIdent, out var dependents)) {
-			throw new InvalidOperationException(InvalidEnumerationErrorMsg);
+	static int GetMapEnumerationCount(StubMap map, ResourceIdent key) => map.TryGetValue(key, out var values) ? values.Count : 0;
+	static int GetMapEnumerationCount<THandle>(StubMap map, ResourceIdent key) where THandle : IResourceHandle<THandle> {
+		if (!map.TryGetValue(key, out var values)) return 0;
+		var result = 0;
+		for (var i = 0; i < values.Count; ++i) {
+			if (values[i].TypeHandle == THandle.TypeHandle) ++result;
 		}
-		var count = 0;
-		foreach (var d in dependents) {
-			if (d.Ident.TypeHandle != THandle.TypeHandle) continue;
-			if (count == index) return TDependent.RecreateFromRawHandleAndImpl(d.Ident.RawResourceHandle, d.ImplProvider);
-			else count++;
+		return result;
+	}
+	static ResourceStub GetMapEnumerationItem(StubMap map, ResourceIdent key, int index) {
+		InvalidOperationException CreateException() {
+			return new InvalidOperationException(
+				"Invalid enumeration state. Tracked resource was probably modified while enumeration was ongoing. " +
+				"If you see this error it may indicate a concurrency issue or a bug in TinyFFR. Debug information: " +
+				$"Key = {key}; Index = {index}; map.ContainsKey(key) = {map.ContainsKey(key)}" +
+				$"{(map.TryGetValue(key, out var v) ? $"; map[key].Count = {v.Count}" : "")}."
+			);
 		}
-		throw new InvalidOperationException(InvalidEnumerationErrorMsg);
+
+		if (!map.TryGetValue(key, out var values) || values.Count <= index) throw CreateException();
+		return values[index];
+	}
+	static ResourceStub GetMapEnumerationItem<THandle>(StubMap map, ResourceIdent key, int index) where THandle : IResourceHandle<THandle> {
+		InvalidOperationException CreateException() {
+			return new InvalidOperationException(
+				"Invalid enumeration state. Tracked resource was probably modified while enumeration was ongoing. " +
+				"If you see this error it may indicate a concurrency issue or a bug in TinyFFR. Debug information: " +
+				$"Key = {key}; Index = {index}; map.ContainsKey(key) = {map.ContainsKey(key)}; THandle = {typeof(THandle).Name}" +
+				$"{(map.TryGetValue(key, out var v) ? $"; map[key].Count = {v.Count}; map[key].Count(r => r.TypeHandle == THandle.TypeHandle) = {v.Count(r => r.TypeHandle == THandle.TypeHandle)}" : "")}."
+			);
+		}
+
+		if (!map.TryGetValue(key, out var values)) throw CreateException();
+		var curIndex = 0;
+		foreach (var value in values) {
+			if (value.TypeHandle != THandle.TypeHandle) continue;
+			if (curIndex == index) return value;
+			++curIndex;
+		}
+		throw CreateException();
 	}
 
 	public void Dispose() {
-		foreach (var kvp in _dependencyMap) {
+		foreach (var kvp in _targetsToDependentsMap) {
 			kvp.Value.Clear();
-			_dependentsVectorPool.Return(kvp.Value);
+			_vectorPool.Return(kvp.Value);
 		}
-		_dependencyMap.Clear();
+		_targetsToDependentsMap.Dispose();
+
+		foreach (var kvp in _dependentsToTargetsMap) {
+			kvp.Value.Clear();
+			_vectorPool.Return(kvp.Value);
+		}
+		_dependentsToTargetsMap.Dispose();
 	}
 
-	static ArrayPoolBackedVector<DependentResourceData> CreateNewDependentsVector() => new();
+	static ArrayPoolBackedVector<ResourceStub> CreateNewVector() => new();
 }

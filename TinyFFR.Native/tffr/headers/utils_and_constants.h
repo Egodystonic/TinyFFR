@@ -63,6 +63,12 @@ typedef uint8_t interop_bool;
 	throw std::exception{ interop_utils::err_msg_concat_space }; \
 	} \
 
+#define ThrowIf(expr, ...)	\
+	if (expr) { \
+		interop_utils::combine_in_concat_space(__VA_ARGS__); \
+		throw std::exception{ interop_utils::err_msg_concat_space }; \
+	} \
+
 #define ThrowIfNull(ptr, ...)	\
 	if ((ptr) == nullptr) { \
 		interop_utils::combine_in_concat_space(__VA_ARGS__); \
@@ -83,6 +89,12 @@ typedef uint8_t interop_bool;
 
 #define ThrowIfNotZero(val, ...) \
 	if ((val) != 0) { \
+		interop_utils::combine_in_concat_space(__VA_ARGS__); \
+		throw std::exception{ interop_utils::err_msg_concat_space }; \
+	} \
+
+#define ThrowIfZero(val, ...) \
+	if ((val) == 0) { \
 		interop_utils::combine_in_concat_space(__VA_ARGS__); \
 		throw std::exception{ interop_utils::err_msg_concat_space }; \
 	} \

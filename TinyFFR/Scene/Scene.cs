@@ -12,7 +12,7 @@ public readonly struct Scene : IDisposableResource<Scene, SceneHandle, ISceneImp
 	readonly ISceneImplProvider _impl;
 
 	internal ISceneImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Scene>();
-	internal SceneHandle Handle => _handle;
+	internal SceneHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Scene)) : _handle;
 
 	ISceneImplProvider IResource<SceneHandle, ISceneImplProvider>.Implementation => Implementation;
 	SceneHandle IResource<SceneHandle, ISceneImplProvider>.Handle => Handle;

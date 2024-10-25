@@ -12,7 +12,7 @@ public readonly struct Window : IDisposableResource<Window, WindowHandle, IWindo
 	readonly IWindowImplProvider _impl;
 
 	internal IWindowImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Window>();
-	internal WindowHandle Handle => _handle;
+	internal WindowHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Window)) : _handle;
 
 	IWindowImplProvider IResource<WindowHandle, IWindowImplProvider>.Implementation => Implementation;
 	WindowHandle IResource<WindowHandle, IWindowImplProvider>.Handle => Handle;

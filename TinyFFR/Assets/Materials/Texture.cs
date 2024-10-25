@@ -10,7 +10,7 @@ public readonly struct Texture : IDisposableResource<Texture, TextureHandle, ITe
 	readonly TextureHandle _handle;
 	readonly ITextureImplProvider _impl;
 
-	internal TextureHandle Handle => _handle;
+	internal TextureHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Texture)) : _handle;
 	internal ITextureImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Texture>();
 
 	ITextureImplProvider IResource<TextureHandle, ITextureImplProvider>.Implementation => Implementation;

@@ -10,7 +10,7 @@ public readonly struct Material : IDisposableResource<Material, MaterialHandle, 
 	readonly MaterialHandle _handle;
 	readonly IMaterialImplProvider _impl;
 
-	internal MaterialHandle Handle => _handle;
+	internal MaterialHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Material)) : _handle;
 	internal IMaterialImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Material>();
 
 	IMaterialImplProvider IResource<MaterialHandle, IMaterialImplProvider>.Implementation => Implementation;

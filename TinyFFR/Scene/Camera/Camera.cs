@@ -17,7 +17,7 @@ public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICamer
 	readonly ICameraImplProvider _impl;
 
 	internal ICameraImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Camera>();
-	internal CameraHandle Handle => _handle;
+	internal CameraHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Camera)) : _handle;
 
 	ICameraImplProvider IResource<CameraHandle, ICameraImplProvider>.Implementation => Implementation;
 	CameraHandle IResource<CameraHandle, ICameraImplProvider>.Handle => Handle;

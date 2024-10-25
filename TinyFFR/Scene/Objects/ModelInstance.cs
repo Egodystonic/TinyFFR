@@ -13,7 +13,7 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, ModelI
 	readonly IModelInstanceImplProvider _impl;
 
 	internal IModelInstanceImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<ModelInstance>();
-	internal ModelInstanceHandle Handle => _handle;
+	internal ModelInstanceHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(ModelInstance)) : _handle;
 
 	IModelInstanceImplProvider IResource<ModelInstanceHandle, IModelInstanceImplProvider>.Implementation => Implementation;
 	ModelInstanceHandle IResource<ModelInstanceHandle, IModelInstanceImplProvider>.Handle => Handle;

@@ -11,6 +11,7 @@ using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
@@ -83,13 +84,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		}
 	}
 
-	void ThrowIfThisOrHandleIsDisposed(MaterialHandle handle) {
-		ThrowIfThisIsDisposed();
-		ObjectDisposedException.ThrowIf(!_activeMaterials.ContainsKey(handle), typeof(Material));
-	}
-
-	void ThrowIfThisIsDisposed() {
-		ObjectDisposedException.ThrowIf(_isDisposed, this);
-	}
+	void ThrowIfThisOrHandleIsDisposed(MaterialHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Material));
+	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion
 }

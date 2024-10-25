@@ -14,7 +14,7 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, Ap
 	readonly IApplicationLoopImplProvider _impl;
 
 	internal IApplicationLoopImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<ApplicationLoop>();
-	internal ApplicationLoopHandle Handle => _handle;
+	internal ApplicationLoopHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(ApplicationLoop)) : _handle;
 
 	IApplicationLoopImplProvider IResource<ApplicationLoopHandle, IApplicationLoopImplProvider>.Implementation => Implementation;
 	ApplicationLoopHandle IResource<ApplicationLoopHandle, IApplicationLoopImplProvider>.Handle => Handle;

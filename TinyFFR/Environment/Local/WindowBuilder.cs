@@ -213,11 +213,8 @@ sealed unsafe class WindowBuilder : IWindowBuilder, IWindowImplProvider, IDispos
 		}
 	}
 
-	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, typeof(IWindowBuilder));
-	void ThrowIfThisOrHandleIsDisposed(WindowHandle handle) {
-		ThrowIfThisIsDisposed();
-		ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Window));
-	}
+	void ThrowIfThisOrHandleIsDisposed(WindowHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Window));
+	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion
 
 	#region Native Methods

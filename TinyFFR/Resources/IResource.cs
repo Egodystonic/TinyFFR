@@ -8,13 +8,14 @@ using static Egodystonic.TinyFFR.Resources.IResource;
 namespace Egodystonic.TinyFFR.Resources;
 
 readonly record struct ResourceIdent(nint TypeHandle, nuint RawResourceHandle);
-readonly record struct StubResource(ResourceIdent Ident, IResourceImplProvider Implementation) : IDisposableResource {
+readonly record struct ResourceStub(ResourceIdent Ident, IResourceImplProvider Implementation) : IDisposableResource {
 	public string Name => Implementation.RawHandleGetName(Ident.RawResourceHandle);
 	public bool IsDisposed => (Implementation as IDisposableResourceImplProvider)?.RawHandleIsDisposed(Ident.RawResourceHandle) ?? false;
 	public int GetNameUsingSpan(Span<char> dest) => Implementation.RawHandleGetNameUsingSpan(Ident.RawResourceHandle, dest);
 	public int GetNameSpanLength() => Implementation.RawHandleGetNameSpanLength(Ident.RawResourceHandle);
 	public void Dispose() => (Implementation as IDisposableResourceImplProvider)?.RawHandleDispose(Ident.RawResourceHandle);
 	public nuint Handle => Ident.RawResourceHandle;
+	public nint TypeHandle => Ident.TypeHandle;
 }
 
 public unsafe interface IResource : IStringSpanNameEnabled {
@@ -34,8 +35,6 @@ public unsafe interface IResource : IStringSpanNameEnabled {
 	internal static GCHandle ReadGcHandleFromSerializedResource(ReadOnlySpan<byte> src) => MemoryMarshal.Read<GCHandle>(src);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static nuint ReadHandleFromSerializedResource(ReadOnlySpan<byte> src) => BinaryPrimitives.ReadUIntPtrLittleEndian(src[sizeof(GCHandle)..]);
-
-	internal static StubResource RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl, nint typeHandle) => new(new(typeHandle, rawHandle), impl);
 }
 public interface IResource<TSelf> : IResource, IEquatable<TSelf> where TSelf : IResource<TSelf> {
 	internal static abstract TSelf RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl);
@@ -58,7 +57,14 @@ public interface IResource<TSelf, out THandle, out TImpl>
 	: IResource<TSelf>, IResource<THandle, TImpl> 
 	where TSelf : IResource<TSelf> 
 	where THandle : unmanaged, IResourceHandle<THandle> 
-	where TImpl : class, IResourceImplProvider;
+	where TImpl : class, IResourceImplProvider {
+	internal static TSelf RecreateFromResourceStub(ResourceStub stub) {
+		if (stub.TypeHandle != THandle.TypeHandle) {
+			throw new InvalidOperationException($"Type handles do not match. Target type = {typeof(THandle).Name}; target type handle = {THandle.TypeHandle}; given type handle = {stub.TypeHandle}.");
+		}
+		return TSelf.RecreateFromRawHandleAndImpl(stub.Handle, stub.Implementation);
+	}
+}
 
 
 

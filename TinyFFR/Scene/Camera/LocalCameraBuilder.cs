@@ -5,6 +5,7 @@ using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
+using System.Reflection.Metadata;
 
 namespace Egodystonic.TinyFFR.Scene;
 
@@ -335,13 +336,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 		if (removeFromMap) _activeCameras.Remove(handle);
 	}
 
-	void ThrowIfThisOrHandleIsDisposed(CameraHandle handle) {
-		ThrowIfThisIsDisposed();
-		ObjectDisposedException.ThrowIf(!_activeCameras.ContainsKey(handle), typeof(Camera));
-	}
-
-	void ThrowIfThisIsDisposed() {
-		ObjectDisposedException.ThrowIf(_isDisposed, typeof(ICameraBuilder));
-	}
+	void ThrowIfThisOrHandleIsDisposed(CameraHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Camera));
+	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion
 }

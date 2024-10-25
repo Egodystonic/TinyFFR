@@ -13,7 +13,7 @@ using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
 
-public sealed class LocalRendererFactory : ITinyFfrFactory {
+public sealed class LocalRendererFactory : ILocalRendererFactory {
 	readonly ResourceDependencyTracker _dependencyTracker = new();
 	readonly ManagedStringPool _stringPool = new();
 	readonly LocalCombinedResourceGroupImplProvider _resourceGroupProvider;
@@ -23,6 +23,7 @@ public sealed class LocalRendererFactory : ITinyFfrFactory {
 	public ILocalApplicationLoopBuilder ApplicationLoopBuilder { get; }
 	public IAssetLoader AssetLoader { get; }
 	public ICameraBuilder CameraBuilder { get; }
+	public IObjectBuilder ObjectBuilder { get; }
 
 	internal FixedByteBufferPool TemporaryCpuBufferPool { get; }
 
@@ -48,6 +49,7 @@ public sealed class LocalRendererFactory : ITinyFfrFactory {
 		ApplicationLoopBuilder = new LocalApplicationLoopBuilder(globals, applicationLoopBuilderConfig ?? new());
 		AssetLoader = new LocalAssetLoader(globals, assetLoaderConfig ?? new());
 		CameraBuilder = new LocalCameraBuilder(globals);
+		ObjectBuilder = new LocalObjectBuilder(globals);
 	}
 
 	public CombinedResourceGroup CreateResourceGroup(int capacity, bool disposeContainedResourcesWhenDisposed) {
@@ -75,6 +77,7 @@ public sealed class LocalRendererFactory : ITinyFfrFactory {
 		if (IsDisposed) return;
 		try {
 			// Maintainer's note: These are disposed in reverse order (e.g. opposite order compared to the order they're constructed in in the ctor above)
+			DisposeObjectIfDisposable(ObjectBuilder);
 			DisposeObjectIfDisposable(CameraBuilder);
 			DisposeObjectIfDisposable(AssetLoader);
 			DisposeObjectIfDisposable(ApplicationLoopBuilder);

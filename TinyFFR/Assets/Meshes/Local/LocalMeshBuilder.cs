@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using System.Reflection.Metadata;
 using System.Security;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Environment;
@@ -202,13 +203,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		}
 	}
 
-	void ThrowIfThisOrHandleIsDisposed(MeshHandle handle) {
-		ThrowIfThisIsDisposed();
-		ObjectDisposedException.ThrowIf(!_activeMeshes.ContainsKey(handle), typeof(Mesh));
-	}
-
-	void ThrowIfThisIsDisposed() {
-		ObjectDisposedException.ThrowIf(_isDisposed, this);
-	}
+	void ThrowIfThisOrHandleIsDisposed(MeshHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Mesh));
+	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion
 }

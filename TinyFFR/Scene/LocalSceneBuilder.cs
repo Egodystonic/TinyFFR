@@ -5,6 +5,7 @@ using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
+using System.Reflection.Metadata;
 
 namespace Egodystonic.TinyFFR.Scene;
 
@@ -90,14 +91,8 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		if (removeFromMap) _activeScenes.Remove(handle);
 	}
 
-	void ThrowIfThisOrHandleIsDisposed(SceneHandle handle) {
-		ThrowIfThisIsDisposed();
-		ObjectDisposedException.ThrowIf(!_activeScenes.Contains(handle), typeof(Scene));
-	}
-
-	void ThrowIfThisIsDisposed() {
-		ObjectDisposedException.ThrowIf(_isDisposed, typeof(ICameraBuilder));
-	}
+	void ThrowIfThisOrHandleIsDisposed(SceneHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Scene));
+	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion
 }
 

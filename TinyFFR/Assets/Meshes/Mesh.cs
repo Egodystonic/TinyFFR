@@ -10,7 +10,7 @@ public readonly struct Mesh : IDisposableResource<Mesh, MeshHandle, IMeshImplPro
 	readonly MeshHandle _handle;
 	readonly IMeshImplProvider _impl;
 
-	internal MeshHandle Handle => _handle;
+	internal MeshHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Mesh)) : _handle;
 	internal IMeshImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Mesh>();
 
 	IMeshImplProvider IResource<MeshHandle, IMeshImplProvider>.Implementation => Implementation;
