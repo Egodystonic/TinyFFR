@@ -40,6 +40,10 @@ class VectTest {
 
 		Assert.AreEqual(new Vect(new Vector4(0.1f, 0.2f, 0.3f, Vect.WValue)), new Vect(0.1f, 0.2f, 0.3f));
 		Assert.AreEqual(Vect.WValue, new Vect(0.1f, 0.2f, 0.3f).AsVector4.W);
+
+		Assert.AreEqual(Vect.Zero, new Vect(0f));
+		Assert.AreEqual(Vect.One, new Vect(1f));
+		Assert.AreEqual(-Vect.One, new Vect(-1f));
 	}
 
 	[Test]

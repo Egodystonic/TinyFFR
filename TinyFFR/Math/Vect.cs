@@ -50,6 +50,8 @@ public readonly partial struct Vect : IVect<Vect>, IDescriptiveStringProvider {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect() : this(0f, 0f, 0f) { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect(float xyz) : this(xyz, xyz, xyz) { }
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect(float x, float y, float z) : this(new Vector4(x, y, z, WValue)) { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal Vect(Vector4 v) { AsVector4 = v; }

@@ -9,14 +9,14 @@ namespace Egodystonic.TinyFFR;
 
 [DebuggerDisplay("{ToStringDescriptive()}")]
 public readonly partial struct Transform : IMathPrimitive<Transform>, IDescriptiveStringProvider {
-	public static Transform None = new();
+	public static readonly Transform None = new();
 
 	public Vect Translation { get; init; }
 	public Rotation Rotation { get; init; }
 	public Vect Scaling { get; init; }
 
-	public Transform() : this(Vect.Zero) { }
-	public Transform(float translationX, float translationY, float translationZ) : this(new Vect(translationX, translationY, translationZ)) { }
+	public Transform() : this(Vect.Zero, Rotation.None, Vect.One) { }
+	public Transform(float translationX, float translationY, float translationZ) : this(new Vect(translationX, translationY, translationZ), Rotation.None, Vect.One) { }
 	public Transform(Vect? translation = null, Rotation? rotation = null, Vect? scaling = null) : this(translation ?? Vect.Zero, rotation ?? Rotation.None, scaling ?? Vect.One) { }
 	public Transform(Vect translation, Rotation rotation, Vect scaling) {
 		Translation = translation;
