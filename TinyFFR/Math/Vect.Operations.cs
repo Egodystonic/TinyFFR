@@ -8,8 +8,7 @@ namespace Egodystonic.TinyFFR;
 
 partial struct Vect :
 	IAlgebraicRing<Vect>,
-	IScalable<Vect>,
-	IRotatable<Vect>,
+	ITransformable<Vect>,
 	IInnerProductSpace<Vect>,
 	IVectorProductSpace<Vect>,
 	ILengthAdjustable<Vect>,
@@ -49,12 +48,12 @@ partial struct Vect :
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator -(Vect operand) => operand.Flipped;
-	public Vect Flipped {
+	public static Vect operator -(Vect operand) => operand.Reversed;
+	public Vect Reversed {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(-AsVector4);
 	}
-	Vect IInvertible<Vect>.Inverted => Flipped;
+	Vect IInvertible<Vect>.Inverted => Reversed;
 
 	public Vect? Reciprocal {
 		get {
@@ -93,21 +92,31 @@ partial struct Vect :
 	public static Vect operator -(Vect lhs, Vect rhs) => lhs.Minus(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect Minus(Vect other) => new(AsVector4 - other.AsVector4);
+	Vect ITranslatable<Vect>.MovedBy(Vect v) => Plus(v);
 
 	public static Vect operator *(Vect left, Vect right) => left.MultipliedBy(right);
-	public static Vect operator /(Vect left, Vect right) => right.MultipliedBy(left);
+	public static Vect operator /(Vect left, Vect right) => left.DividedBy(right);
 	public Vect MultipliedBy(Vect other) => new(AsVector4 * other.AsVector4);
-	public Vect DividedBy(Vect other) => new(AsVector4 / other.AsVector4);
-	static Vect IMultiplicativeIdentity<Vect, Vect>.MultiplicativeIdentity => new(1f, 1f, 1f);
+	public Vect DividedBy(Vect other) {
+		var v3 = ToVector3() / other.ToVector3();
+		if (Single.IsNaN(v3.X) || Single.IsNaN(v3.Y) || Single.IsNaN(v3.Z)) return Zero;
+		else return FromVector3(v3);
+	}
+	static Vect IMultiplicativeIdentity<Vect, Vect>.MultiplicativeIdentity => One;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator *(Vect vectOperand, float scalarOperand) => vectOperand.ScaledBy(scalarOperand);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator *(float scalarOperand, Vect vectOperand) => vectOperand.ScaledBy(scalarOperand);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator /(Vect vectOperand, float scalarOperand) => vectOperand.ScaledBy(1f / scalarOperand);
+	public static Vect operator /(Vect vectOperand, float scalarOperand) {
+		var reciprocal = 1f / scalarOperand;
+		return Single.IsNaN(reciprocal) ? Zero : vectOperand.ScaledBy(reciprocal);
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect ScaledBy(float scalar) => new(Multiply(AsVector4, scalar));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect ScaledBy(Vect vect) => MultipliedBy(vect);
 	#endregion
 
 	#region Interactions w/ Direction
@@ -204,6 +213,14 @@ partial struct Vect :
 	public static Vect operator *(Rotation r, Vect d) => r.Rotate(d);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect RotatedBy(Rotation rotation) => rotation.Rotate(this);
+	#endregion
+
+	#region Transformation
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vect operator *(Vect v, Transform transform) => v.TransformedBy(transform);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vect operator *(Transform transform, Vect v) => v.TransformedBy(transform);
+	public Vect TransformedBy(Transform transform) => ScaledBy(transform.Scaling).RotatedBy(transform.Rotation).Plus(transform.Translation);
 	#endregion
 
 	#region Clamping and Interpolation

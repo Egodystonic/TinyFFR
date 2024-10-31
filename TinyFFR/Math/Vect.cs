@@ -15,6 +15,7 @@ public readonly partial struct Vect : IVect<Vect>, IDescriptiveStringProvider {
 	internal const float WValue = 0f;
 	internal const float DefaultRandomRange = 100f;
 	public static readonly Vect Zero = new(0f, 0f, 0f);
+	public static readonly Vect One = new(1f, 1f, 1f);
 
 	internal readonly Vector4 AsVector4;
 

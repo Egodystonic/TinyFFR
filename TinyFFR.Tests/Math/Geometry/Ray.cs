@@ -248,11 +248,11 @@ class RayTest {
 	[Test]
 	public void ShouldCorrectlyRotateAroundPoints() {
 		void AssertCombination(Ray expectation, Ray input, Location pivotPoint, Rotation rotation) {
-			AssertToleranceEquals(expectation, input.RotatedAroundPoint(rotation, pivotPoint), TestTolerance);
-			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), input * (pivotPoint, rotation));
-			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), input * (rotation, pivotPoint));
-			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), (pivotPoint, rotation) * input);
-			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), (rotation, pivotPoint) * input);
+			AssertToleranceEquals(expectation, input.RotatedBy(rotation, pivotPoint), TestTolerance);
+			Assert.AreEqual(input.RotatedBy(rotation, pivotPoint), input * (pivotPoint, rotation));
+			Assert.AreEqual(input.RotatedBy(rotation, pivotPoint), input * (rotation, pivotPoint));
+			Assert.AreEqual(input.RotatedBy(rotation, pivotPoint), (pivotPoint, rotation) * input);
+			Assert.AreEqual(input.RotatedBy(rotation, pivotPoint), (rotation, pivotPoint) * input);
 		}
 
 		AssertCombination(new Ray((0f, 0f, 10f), Direction.Backward), new Ray(Location.Origin, Direction.Forward), (0f, 0f, 5f), Direction.Down % 180f);

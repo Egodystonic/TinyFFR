@@ -53,17 +53,18 @@ public readonly partial struct Ray {
 	public Ray RotatedBy(Rotation rotation) => new(StartPoint, Direction.RotatedBy(rotation));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Ray operator *(Ray ray, (Rotation Rotation, Location Pivot) pivotRotationTuple) => ray.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public static Ray operator *(Ray ray, (Rotation Rotation, Location Pivot) pivotRotationTuple) => ray.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Ray operator *(Ray ray, (Location Pivot, Rotation Rotation) pivotRotationTuple) => ray.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public static Ray operator *(Ray ray, (Location Pivot, Rotation Rotation) pivotRotationTuple) => ray.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Ray operator *((Rotation Rotation, Location Pivot) pivotRotationTuple, Ray ray) => ray.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public static Ray operator *((Rotation Rotation, Location Pivot) pivotRotationTuple, Ray ray) => ray.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Ray operator *((Location Pivot, Rotation Rotation) pivotRotationTuple, Ray ray) => ray.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
-	public Ray RotatedAroundPoint(Rotation rot, Location pivot) {
+	public static Ray operator *((Location Pivot, Rotation Rotation) pivotRotationTuple, Ray ray) => ray.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public Ray RotatedBy(Rotation rotation, float signedPivotDistance) => RotatedBy(rotation, UnboundedLocationAtDistance(signedPivotDistance));
+	public Ray RotatedBy(Rotation rotation, Location pivot) {
 		var boundedRay = new BoundedRay(StartPoint, UnboundedLocationAtDistance(UnboundedDistanceAtPointClosestTo(pivot)));
-		var rotatedRay = boundedRay.RotatedAroundPoint(rot, pivot);
-		return new Ray(rotatedRay.StartPoint, Direction * rot);
+		var rotatedRay = boundedRay.RotatedBy(rotation, pivot);
+		return new Ray(rotatedRay.StartPoint, Direction * rotation);
 	}
 	#endregion
 

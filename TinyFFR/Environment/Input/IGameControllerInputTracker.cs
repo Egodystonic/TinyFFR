@@ -19,7 +19,7 @@ public interface IGameControllerInputTracker {
 	public ReadOnlySpan<GameControllerButton> CurrentlyPressedButtons { get; }
 
 	public int GetControllerNameUsingSpan(Span<char> dest);
-	public int GetControllerNameSpanMaxLength();
+	public int GetControllerNameSpanMaxLength(); // TODO make this just report the actual length, not max
 	public bool ButtonIsCurrentlyDown(GameControllerButton button);
 	public bool ButtonWasPressedThisIteration(GameControllerButton button);
 	public bool ButtonWasReleasedThisIteration(GameControllerButton button);

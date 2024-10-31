@@ -136,7 +136,9 @@ public interface ILineLike<TSelf> : ILineLike,
 	IOrthogonalizable<TSelf, Line>,
 	IOrthogonalizable<TSelf, Ray>,
 	IOrthogonalizable<TSelf, BoundedRay>
-	where TSelf : struct, ILineLike<TSelf>;
+	where TSelf : struct, ILineLike<TSelf> {
+	TSelf RotatedBy(Rotation rotation, float signedPivotDistance);
+}
 public interface ILineLike<TSelf, TSplitFirst, TSplitSecond> : ILineLike<TSelf> where TSelf : struct, ILineLike<TSelf> {
 	Pair<TSplitFirst, TSplitSecond>? SplitBy(Plane plane);
 	Pair<TSplitFirst, TSplitSecond> FastSplitBy(Plane plane);

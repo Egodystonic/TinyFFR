@@ -44,6 +44,10 @@ public readonly partial struct BoundedRay : ILineLike<BoundedRay, BoundedRay, Bo
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		init => _vect = value - _startPoint;
 	}
+	public Location MiddlePoint {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _startPoint + _vect * 0.5f;
+	}
 	bool ILineLike.IsUnboundedInBothDirections => false;
 	bool ILineLike.IsFiniteLength => true;
 	float? ILineLike.Length => Length;

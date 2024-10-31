@@ -387,6 +387,7 @@ class RotationTest {
 
 		Assert.IsTrue(NinetyAroundDown.EqualsForDirection(90f % Right + 90f % Forward, Forward, TestTolerance));
 		Assert.IsTrue((45f % Up).Plus(180f % Forward).EqualsForDirection(-45f % Up, Forward, TestTolerance));
+		Assert.IsTrue((45f % Up).FollowedBy(180f % Forward).EqualsForDirection(-45f % Up, Forward, TestTolerance));
 	}
 
 	[Test]
@@ -394,6 +395,8 @@ class RotationTest {
 		void AssertPair(Angle a1, Direction d1, Angle a2, Direction d2, Rotation expectation) {
 			AssertToleranceEquals(expectation, (a1 % d1).Minus(a2 % d2), TestTolerance);
 			AssertToleranceEquals(-expectation, (a2 % d2).Minus(a1 % d1), TestTolerance);
+			AssertToleranceEquals(expectation, (a1 % d1).DifferenceTo(a2 % d2), TestTolerance);
+			AssertToleranceEquals(-expectation, (a2 % d2).DifferenceTo(a1 % d1), TestTolerance);
 		}
 
 		AssertPair(90f, Up, 70f, Up, -20f % Up);

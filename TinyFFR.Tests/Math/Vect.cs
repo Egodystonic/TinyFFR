@@ -17,6 +17,7 @@ class VectTest {
 	[Test]
 	public void ShouldCorrectlyInitializeStaticReadonlyMembers() {
 		Assert.AreEqual(new Vect(0f, 0f, 0f), Vect.Zero);
+		Assert.AreEqual(new Vect(1f, 1f, 1f), Vect.One);
 	}
 
 	[Test]
@@ -271,7 +272,7 @@ class VectTest {
 	public void ShouldCorrectlyReverse() {
 		Assert.AreEqual(Vect.Zero, -Vect.Zero);
 		Assert.AreEqual(new Vect(-1f, -2f, 3f), -OneTwoNegThree);
-		Assert.AreEqual(new Vect(-1f, -1f, -1f), new Vect(1f, 1f, 1f).Flipped);
+		Assert.AreEqual(new Vect(-1f, -1f, -1f), new Vect(1f, 1f, 1f).Reversed);
 	}
 
 	[Test]
@@ -291,6 +292,106 @@ class VectTest {
 		Assert.AreEqual(Vect.Zero, OneTwoNegThree - OneTwoNegThree);
 		Assert.AreEqual(new Vect(2f, 4f, 6f), new Vect(-1f, -2f, -3f) + new Vect(3f, 6f, 9f));
 		Assert.AreEqual(new Vect(-4f, -8f, 12f), new Vect(-1f, -2f, 9f) - new Vect(3f, 6f, -3f));
+	}
+
+	[Test]
+	public void ShouldCorrectlyMultiplyAndDivide() {
+		Assert.AreEqual(Vect.WValue, (OneTwoNegThree / 1f).AsVector4.W);
+		Assert.AreEqual(Vect.WValue, (OneTwoNegThree / -1f).AsVector4.W);
+		Assert.AreEqual(Vect.WValue, (OneTwoNegThree / 0f).AsVector4.W);
+		Assert.AreEqual(Vect.WValue, (OneTwoNegThree * 1f).AsVector4.W);
+		Assert.AreEqual(Vect.WValue, (OneTwoNegThree * -1f).AsVector4.W);
+		Assert.AreEqual(Vect.WValue, (OneTwoNegThree * 0f).AsVector4.W);
+
+		Assert.AreEqual(Vect.WValue, (OneTwoNegThree * Vect.Zero).AsVector4.W);
+		Assert.AreEqual(Vect.WValue, (OneTwoNegThree * OneTwoNegThree).AsVector4.W);
+		Assert.AreEqual(Vect.WValue, (OneTwoNegThree * -OneTwoNegThree).AsVector4.W);
+		Assert.AreEqual(Vect.WValue, (OneTwoNegThree / Vect.Zero).AsVector4.W);
+		Assert.AreEqual(Vect.WValue, (OneTwoNegThree / OneTwoNegThree).AsVector4.W);
+		Assert.AreEqual(Vect.WValue, (OneTwoNegThree / -OneTwoNegThree).AsVector4.W);
+
+		AssertToleranceEquals(
+			OneTwoNegThree,
+			OneTwoNegThree * 1f,
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			OneTwoNegThree,
+			OneTwoNegThree / 1f,
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			Vect.Zero,
+			OneTwoNegThree * 0f,
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			Vect.Zero,
+			OneTwoNegThree / 0f,
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			-OneTwoNegThree,
+			OneTwoNegThree * -1f,
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			-OneTwoNegThree,
+			OneTwoNegThree / -1f,
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			OneTwoNegThree,
+			OneTwoNegThree * new Vect(1f, 1f, 1f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			-OneTwoNegThree,
+			OneTwoNegThree * new Vect(-1f, -1f, -1f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			OneTwoNegThree,
+			OneTwoNegThree / new Vect(1f, 1f, 1f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			-OneTwoNegThree,
+			OneTwoNegThree / new Vect(-1f, -1f, -1f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			Vect.Zero,
+			OneTwoNegThree * Vect.Zero,
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			Vect.Zero,
+			OneTwoNegThree / Vect.Zero,
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			new Vect(1f, 4f, 9f),
+			OneTwoNegThree * OneTwoNegThree,
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(1f, 1f, 1f),
+			OneTwoNegThree / OneTwoNegThree,
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(-1f, -4f, -9f),
+			OneTwoNegThree * -OneTwoNegThree,
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Vect(-1f, -1f, -1f),
+			OneTwoNegThree / -OneTwoNegThree,
+			TestTolerance
+		);
 	}
 
 	[Test]
@@ -510,7 +611,7 @@ class VectTest {
 		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f), OneTwoNegThree.WithLengthOne(), TestTolerance);
 		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * 2f, OneTwoNegThree.WithLength(2f), TestTolerance);
 		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * -1f, OneTwoNegThree.WithLength(-1f), TestTolerance);
-		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * -1f, OneTwoNegThree.WithLengthOne().Flipped, TestTolerance);
+		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * -1f, OneTwoNegThree.WithLengthOne().Reversed, TestTolerance);
 		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * -2f, OneTwoNegThree.WithLength(-2f), TestTolerance);
 		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * 0.5f, OneTwoNegThree.WithLength(0.5f), TestTolerance);
 		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * -0.5f, OneTwoNegThree.WithLength(-0.5f), TestTolerance);
@@ -534,6 +635,8 @@ class VectTest {
 
 					Assert.AreEqual(v * x, x * v);
 					Assert.AreEqual(v * (1f / x), v / x);
+
+					AssertToleranceEquals(new Vect(x, 2f * y, -3f * z), OneTwoNegThree.ScaledBy(v), TestTolerance);
 				}
 			}
 		}

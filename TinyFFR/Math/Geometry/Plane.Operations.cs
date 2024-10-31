@@ -33,14 +33,14 @@ partial struct Plane :
 
 	#region Rotation
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Plane operator *(Plane plane, (Location Pivot, Rotation Rotation) rotTuple) => plane.RotatedAroundPoint(rotTuple.Rotation, rotTuple.Pivot);
+	public static Plane operator *(Plane plane, (Location Pivot, Rotation Rotation) rotTuple) => plane.RotatedBy(rotTuple.Rotation, rotTuple.Pivot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Plane operator *((Location Pivot, Rotation Rotation) rotTuple, Plane plane) => plane.RotatedAroundPoint(rotTuple.Rotation, rotTuple.Pivot);
+	public static Plane operator *((Location Pivot, Rotation Rotation) rotTuple, Plane plane) => plane.RotatedBy(rotTuple.Rotation, rotTuple.Pivot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Plane operator *(Plane plane, (Rotation Rotation, Location Pivot) rotTuple) => plane.RotatedAroundPoint(rotTuple.Rotation, rotTuple.Pivot);
+	public static Plane operator *(Plane plane, (Rotation Rotation, Location Pivot) rotTuple) => plane.RotatedBy(rotTuple.Rotation, rotTuple.Pivot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Plane operator *((Rotation Rotation, Location Pivot) rotTuple, Plane plane) => plane.RotatedAroundPoint(rotTuple.Rotation, rotTuple.Pivot);
-	public Plane RotatedAroundPoint(Rotation rot, Location pivotPoint) => new(Normal * rot, PointClosestTo(pivotPoint) * (pivotPoint, rot));
+	public static Plane operator *((Rotation Rotation, Location Pivot) rotTuple, Plane plane) => plane.RotatedBy(rotTuple.Rotation, rotTuple.Pivot);
+	public Plane RotatedBy(Rotation rot, Location pivotPoint) => new(Normal * rot, PointClosestTo(pivotPoint) * (pivotPoint, rot));
 	#endregion
 
 	#region Angle Measurement

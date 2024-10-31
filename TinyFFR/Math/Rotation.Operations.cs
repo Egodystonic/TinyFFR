@@ -36,8 +36,11 @@ partial struct Rotation :
 	public static Rotation operator -(Rotation lhs, Rotation rhs) => lhs.Minus(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Rotation Plus(Rotation other) => FromQuaternion(other.AsQuaternion * AsQuaternion);
-	// Was previously known as "DifferenceTo()" because this method is trying to mimic the standard - function for Reals/Integers (e.g. 7 - 3 = 4, 4 is the difference of 7 to 3).
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Rotation FollowedBy(Rotation other) => Plus(other);
 	public Rotation Minus(Rotation other) => FromQuaternion(Reversed.AsQuaternion * other.AsQuaternion);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Rotation DifferenceTo(Rotation other) => Minus(other);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator *(Rotation rotation, float scalar) => rotation.ScaledBy(scalar);

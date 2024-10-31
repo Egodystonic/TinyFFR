@@ -27,6 +27,7 @@ class BoundedRayTest {
 		Assert.AreEqual(4f + 16f + 36f, TestRay.LengthSquared, TestTolerance);
 		Assert.AreEqual(new Vect(-2f, -4f, 6f), TestRay.StartToEndVect);
 		Assert.AreEqual(new Location(-1f, -2f, 3f), TestRay.EndPoint);
+		Assert.AreEqual(new Location(0f, 0f, 0f), TestRay.MiddlePoint);
 		Assert.AreEqual(false, ((ILineLike) TestRay).IsUnboundedInBothDirections);
 		Assert.AreEqual(TestRay.Length, ((ILineLike) TestRay).Length);
 		Assert.AreEqual(TestRay.LengthSquared, ((ILineLike) TestRay).LengthSquared);
@@ -205,32 +206,32 @@ class BoundedRayTest {
 
 		AssertToleranceEquals(
 			new BoundedRay(new Location(-7.5f, -7.5f, -7.5f), new Location(12.5f, 12.5f, 12.5f)),
-			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledAroundPivotDistanceBy(2f, 0.75f * MathF.Sqrt(300f)),
+			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledBy(2f, 0.75f * MathF.Sqrt(300f)),
 			TestTolerance
 		);
 		AssertToleranceEquals(
 			new BoundedRay(new Location(22.5f, 22.5f, 22.5f), new Location(2.5f, 2.5f, 2.5f)),
-			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledAroundPivotDistanceBy(-2f, 0.75f * MathF.Sqrt(300f)),
+			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledBy(-2f, 0.75f * MathF.Sqrt(300f)),
 			TestTolerance
 		);
 		AssertToleranceEquals(
 			new BoundedRay(new Location(7.5f, 7.5f, 7.5f), new Location(27.5f, 27.5f, 27.5f)),
-			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledAroundPivotDistanceBy(2f, -0.75f * MathF.Sqrt(300f)),
+			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledBy(2f, -0.75f * MathF.Sqrt(300f)),
 			TestTolerance
 		);
 		AssertToleranceEquals(
 			new BoundedRay(new Location(-22.5f, -22.5f, -22.5f), new Location(-7.5f + 17.5f * -2f, -7.5f + 17.5f * -2f, -7.5f + 17.5f * -2f)),
-			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledAroundPivotDistanceBy(-2f, -0.75f * MathF.Sqrt(300f)),
+			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledBy(-2f, -0.75f * MathF.Sqrt(300f)),
 			TestTolerance
 		);
 		AssertToleranceEquals(
 			new BoundedRay(new Location(-15f, -15f, -15f), new Location(5f, 5f, 5f)),
-			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledAroundPivotDistanceBy(2f, 1.5f * MathF.Sqrt(300f)),
+			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledBy(2f, 1.5f * MathF.Sqrt(300f)),
 			TestTolerance
 		);
 		AssertToleranceEquals(
 			new BoundedRay(new Location(45f, 45f, 45f), new Location(25f, 25f, 25f)),
-			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledAroundPivotDistanceBy(-2f, 1.5f * MathF.Sqrt(300f)),
+			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledBy(-2f, 1.5f * MathF.Sqrt(300f)),
 			TestTolerance
 		);
 	}
@@ -262,17 +263,17 @@ class BoundedRayTest {
 		);
 		AssertToleranceEquals(
 			new BoundedRay(new Location(3f, 0f, 6f), new Location(-3f, 0f, 0f)),
-			xzLine.RotatedAroundPoint(rotation, xzLine.UnboundedLocationAtDistance(xzLine.Length * 0.75f)),
+			xzLine.RotatedBy(rotation, xzLine.UnboundedLocationAtDistance(xzLine.Length * 0.75f)),
 			TestTolerance
 		);
 		AssertToleranceEquals(
 			new BoundedRay(new Location(3f, 0f, 0f), new Location(-3f, 0f, -6f)),
-			xzLine.RotatedAroundPoint(rotation, xzLine.UnboundedLocationAtDistance(xzLine.Length * 0.25f)),
+			xzLine.RotatedBy(rotation, xzLine.UnboundedLocationAtDistance(xzLine.Length * 0.25f)),
 			TestTolerance
 		);
 		AssertToleranceEquals(
 			new BoundedRay(new Location(-3f, 0f, 3f), new Location(-9f, 0f, -3f)),
-			xzLine.RotatedAroundPoint(rotation, (-3f, 0f, -3f)),
+			xzLine.RotatedBy(rotation, (-3f, 0f, -3f)),
 			TestTolerance
 		);
 	}
@@ -280,11 +281,11 @@ class BoundedRayTest {
 	[Test]
 	public void ShouldCorrectlyRotateAroundPoints() {
 		void AssertCombination(BoundedRay expectation, BoundedRay input, Location pivotPoint, Rotation rotation) {
-			AssertToleranceEquals(expectation, input.RotatedAroundPoint(rotation, pivotPoint), TestTolerance);
-			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), input * (pivotPoint, rotation));
-			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), input * (rotation, pivotPoint));
-			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), (pivotPoint, rotation) * input);
-			Assert.AreEqual(input.RotatedAroundPoint(rotation, pivotPoint), (rotation, pivotPoint) * input);
+			AssertToleranceEquals(expectation, input.RotatedBy(rotation, pivotPoint), TestTolerance);
+			Assert.AreEqual(input.RotatedBy(rotation, pivotPoint), input * (pivotPoint, rotation));
+			Assert.AreEqual(input.RotatedBy(rotation, pivotPoint), input * (rotation, pivotPoint));
+			Assert.AreEqual(input.RotatedBy(rotation, pivotPoint), (pivotPoint, rotation) * input);
+			Assert.AreEqual(input.RotatedBy(rotation, pivotPoint), (rotation, pivotPoint) * input);
 		}
 
 		AssertCombination(new BoundedRay((0f, 0f, 10f), Location.Origin), new BoundedRay(Location.Origin, (0f, 0f, 10f)), (0f, 0f, 5f), Direction.Down % 180f);
@@ -2875,23 +2876,23 @@ class BoundedRayTest {
 					AssertToleranceEquals(ray, ray.ParallelizedAroundStartWith(targetDir), TestTolerance);
 					AssertToleranceEquals(ray, ray.ParallelizedAroundMiddleWith(targetDir), TestTolerance);
 					AssertToleranceEquals(ray, ray.ParallelizedAroundEndWith(targetDir), TestTolerance);
-					AssertToleranceEquals(ray, ray.ParallelizedAroundPivotDistanceWith(targetDir, TestPivotDistance), TestTolerance);
+					AssertToleranceEquals(ray, ray.ParallelizedWith(targetDir, TestPivotDistance), TestTolerance);
 					AssertToleranceEquals(ray, ray.OrthogonalizedAgainst(targetDir), TestTolerance);
 					AssertToleranceEquals(ray, ray.OrthogonalizedAroundStartAgainst(targetDir), TestTolerance);
 					AssertToleranceEquals(ray, ray.OrthogonalizedAroundMiddleAgainst(targetDir), TestTolerance);
 					AssertToleranceEquals(ray, ray.OrthogonalizedAroundEndAgainst(targetDir), TestTolerance);
-					AssertToleranceEquals(ray, ray.OrthogonalizedAroundPivotDistanceAgainst(targetDir, TestPivotDistance), TestTolerance);
+					AssertToleranceEquals(ray, ray.OrthogonalizedAgainst(targetDir, TestPivotDistance), TestTolerance);
 
 					AssertToleranceEquals(ray, ray.ParallelizedWith(targetRayBounded), TestTolerance);
 					AssertToleranceEquals(ray, ray.ParallelizedAroundStartWith(targetRayBounded), TestTolerance);
 					AssertToleranceEquals(ray, ray.ParallelizedAroundMiddleWith(targetRayBounded), TestTolerance);
 					AssertToleranceEquals(ray, ray.ParallelizedAroundEndWith(targetRayBounded), TestTolerance);
-					AssertToleranceEquals(ray, ray.ParallelizedAroundPivotDistanceWith(targetRayBounded, TestPivotDistance), TestTolerance);
+					AssertToleranceEquals(ray, ray.ParallelizedWith(targetRayBounded, TestPivotDistance), TestTolerance);
 					AssertToleranceEquals(ray, ray.OrthogonalizedAgainst(targetRayBounded), TestTolerance);
 					AssertToleranceEquals(ray, ray.OrthogonalizedAroundStartAgainst(targetRayBounded), TestTolerance);
 					AssertToleranceEquals(ray, ray.OrthogonalizedAroundMiddleAgainst(targetRayBounded), TestTolerance);
 					AssertToleranceEquals(ray, ray.OrthogonalizedAroundEndAgainst(targetRayBounded), TestTolerance);
-					AssertToleranceEquals(ray, ray.OrthogonalizedAroundPivotDistanceAgainst(targetRayBounded, TestPivotDistance), TestTolerance);
+					AssertToleranceEquals(ray, ray.OrthogonalizedAgainst(targetRayBounded, TestPivotDistance), TestTolerance);
 					continue;
 				}
 
@@ -2944,14 +2945,14 @@ class BoundedRayTest {
 							if (includeStartFuncs) TestMethod(nameof(BoundedRay.ParallelizedAroundStartWith), target);
 							if (includeMiddleFuncs) TestMethod(nameof(BoundedRay.ParallelizedAroundMiddleWith), target);
 							if (includeEndFuncs) TestMethod(nameof(BoundedRay.ParallelizedAroundEndWith), target);
-							if (includePivotFuncs) TestMethod(nameof(BoundedRay.ParallelizedAroundPivotDistanceWith), target, TestPivotDistance);
+							if (includePivotFuncs) TestMethod(nameof(BoundedRay.ParallelizedWith), target, TestPivotDistance);
 						}
 						if (includeOrthogonalizations) {
 							if (includeStandardFuncs) TestMethod(nameof(BoundedRay.OrthogonalizedAgainst), target);
 							if (includeStartFuncs) TestMethod(nameof(BoundedRay.OrthogonalizedAroundStartAgainst), target);
 							if (includeMiddleFuncs) TestMethod(nameof(BoundedRay.OrthogonalizedAroundMiddleAgainst), target);
 							if (includeEndFuncs) TestMethod(nameof(BoundedRay.OrthogonalizedAroundEndAgainst), target);
-							if (includePivotFuncs) TestMethod(nameof(BoundedRay.OrthogonalizedAroundPivotDistanceAgainst), target, TestPivotDistance);
+							if (includePivotFuncs) TestMethod(nameof(BoundedRay.OrthogonalizedAgainst), target, TestPivotDistance);
 						}
 					}
 				}

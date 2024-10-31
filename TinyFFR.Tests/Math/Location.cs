@@ -251,11 +251,11 @@ class LocationTest {
 	[Test]
 	public void ShouldCorrectlyRotateAroundPoints() {
 		void AssertCombination(Location expectation, Location startPoint, Location pivotPoint, Rotation rotation) {
-			AssertToleranceEquals(expectation, startPoint.RotatedAroundPoint(rotation, pivotPoint), TestTolerance);
-			Assert.AreEqual(startPoint.RotatedAroundPoint(rotation, pivotPoint), startPoint * (pivotPoint, rotation));
-			Assert.AreEqual(startPoint.RotatedAroundPoint(rotation, pivotPoint), startPoint * (rotation, pivotPoint));
-			Assert.AreEqual(startPoint.RotatedAroundPoint(rotation, pivotPoint), (pivotPoint, rotation) * startPoint);
-			Assert.AreEqual(startPoint.RotatedAroundPoint(rotation, pivotPoint), (rotation, pivotPoint) * startPoint);
+			AssertToleranceEquals(expectation, startPoint.RotatedBy(rotation, pivotPoint), TestTolerance);
+			Assert.AreEqual(startPoint.RotatedBy(rotation, pivotPoint), startPoint * (pivotPoint, rotation));
+			Assert.AreEqual(startPoint.RotatedBy(rotation, pivotPoint), startPoint * (rotation, pivotPoint));
+			Assert.AreEqual(startPoint.RotatedBy(rotation, pivotPoint), (pivotPoint, rotation) * startPoint);
+			Assert.AreEqual(startPoint.RotatedBy(rotation, pivotPoint), (rotation, pivotPoint) * startPoint);
 		}
 
 		AssertCombination((0f, 0f, 10f), (0f, 0f, 0f), (0f, 0f, 5f), Direction.Down % 180f);

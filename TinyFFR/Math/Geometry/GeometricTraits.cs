@@ -5,7 +5,7 @@
 
 namespace Egodystonic.TinyFFR;
 
-#region Scale/Rotate/Translate
+#region Scale/Rotate/Translate & Transform
 public interface IScalable<TSelf> :
 	IMultiplicative<TSelf, float, TSelf>
 	where TSelf : IScalable<TSelf> {
@@ -13,30 +13,20 @@ public interface IScalable<TSelf> :
 	TSelf IMultiplicative<TSelf, float, TSelf>.DividedBy(float scalar) => ScaledBy(1f / scalar);
 	TSelf ScaledBy(float scalar);
 }
-
-public interface ILengthAdjustable<out TSelf> where TSelf : ILengthAdjustable<TSelf> {
-	TSelf WithLength(float newLength);
-	TSelf ShortenedBy(float lengthDecrease);
-	TSelf LengthenedBy(float lengthIncrease);
-	TSelf WithMaxLength(float maxLength);
-	TSelf WithMinLength(float minLength);
+public interface IPointScalable<TSelf> :
+	IScalable<TSelf> where TSelf : IPointScalable<TSelf>, IScalable<TSelf> {
+	TSelf ScaledBy(float scalar, Location scalingOrigin);
 }
 
 public interface IIndependentAxisScalable<TSelf> :
-	IScalable<TSelf>,
-	IMultiplicative<TSelf, Vect, TSelf>
+	IScalable<TSelf>
 	where TSelf : IIndependentAxisScalable<TSelf> {
-	TSelf IMultiplicative<TSelf, Vect, TSelf>.MultipliedBy(Vect vect) => ScaledBy(vect);
-	TSelf IMultiplicative<TSelf, Vect, TSelf>.DividedBy(Vect vect) => ScaledBy(vect.Reciprocal ?? Vect.Zero);
 	TSelf ScaledBy(Vect vect);
 }
-
-public interface ITranslatable<TSelf> :
-	IAdditive<TSelf, Vect, TSelf>
-	where TSelf : ITranslatable<TSelf> {
-	TSelf IAdditive<TSelf, Vect, TSelf>.Plus(Vect v) => MovedBy(v);
-	TSelf IAdditive<TSelf, Vect, TSelf>.Minus(Vect v) => MovedBy(-v);
-	TSelf MovedBy(Vect v);
+public interface IPointIndependentAxisScalable<TSelf> :
+	IIndependentAxisScalable<TSelf> 
+	where TSelf : IPointIndependentAxisScalable<TSelf>, IIndependentAxisScalable<TSelf> {
+	TSelf ScaledBy(Vect vect, Location scalingOrigin);
 }
 
 public interface IRotatable<TSelf> :
@@ -52,7 +42,31 @@ public interface IPointRotatable<TSelf> :
 	where TSelf : IPointRotatable<TSelf> {
 	static abstract TSelf operator *((Rotation Rotation, Location Pivot) left, TSelf right);
 	static abstract TSelf operator *((Location Pivot, Rotation Rotation) left, TSelf right);
-	TSelf RotatedAroundPoint(Rotation rot, Location pivot);
+	TSelf RotatedBy(Rotation rot, Location pivot);
+}
+
+public interface ITranslatable<TSelf> :
+	IAdditive<TSelf, Vect, TSelf>
+	where TSelf : ITranslatable<TSelf> {
+	TSelf IAdditive<TSelf, Vect, TSelf>.Plus(Vect v) => MovedBy(v);
+	TSelf IAdditive<TSelf, Vect, TSelf>.Minus(Vect v) => MovedBy(-v);
+	TSelf MovedBy(Vect v);
+}
+
+public interface ITransformable<TSelf> :
+	IIndependentAxisScalable<TSelf>,
+	IRotatable<TSelf>,
+	ITranslatable<TSelf>,
+	IMultiplyOperators<TSelf, Transform, TSelf>
+	where TSelf : ITransformable<TSelf>, IIndependentAxisScalable<TSelf>, IRotatable<TSelf>, ITranslatable<TSelf> {
+	TSelf TransformedBy(Transform transform);
+	static abstract TSelf operator *(Transform left, TSelf right);
+}
+
+public interface IPointTransformable<TSelf> :
+	ITransformable<TSelf>, IPointIndependentAxisScalable<TSelf>, IPointRotatable<TSelf>
+	where TSelf : IPointTransformable<TSelf>, ITransformable<TSelf>, IPointIndependentAxisScalable<TSelf>, IPointRotatable<TSelf> {
+	TSelf TransformedBy(Transform transform, Location transformationOrigin);
 }
 #endregion
 
@@ -210,5 +224,15 @@ interface IRelatable<in TSelf, in TOther, out TRelationship> : IRelatable<TOther
 public interface IConvexShapeIntersectable<TIntersection> where TIntersection : struct {
 	TIntersection? IntersectionWith<TShape>(TShape shape) where TShape : IConvexShape<TShape>;
 	TIntersection FastIntersectionWith<TShape>(TShape shape) where TShape : IConvexShape<TShape>;
+}
+#endregion
+
+#region Dimensionality / Extents
+public interface ILengthAdjustable<out TSelf> where TSelf : ILengthAdjustable<TSelf> {
+	TSelf WithLength(float newLength);
+	TSelf ShortenedBy(float lengthDecrease);
+	TSelf LengthenedBy(float lengthIncrease);
+	TSelf WithMaxLength(float maxLength);
+	TSelf WithMinLength(float minLength);
 }
 #endregion

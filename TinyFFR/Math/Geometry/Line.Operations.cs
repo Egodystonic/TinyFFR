@@ -55,15 +55,16 @@ public readonly partial struct Line {
 	public Line RotatedBy(Rotation rotation) => new(PointOnLine, Direction.RotatedBy(rotation));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Line operator *(Line line, (Rotation Rotation, Location Pivot) pivotRotationTuple) => line.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public static Line operator *(Line line, (Rotation Rotation, Location Pivot) pivotRotationTuple) => line.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Line operator *(Line line, (Location Pivot, Rotation Rotation) pivotRotationTuple) => line.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public static Line operator *(Line line, (Location Pivot, Rotation Rotation) pivotRotationTuple) => line.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Line operator *((Rotation Rotation, Location Pivot) pivotRotationTuple, Line line) => line.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public static Line operator *((Rotation Rotation, Location Pivot) pivotRotationTuple, Line line) => line.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Line operator *((Location Pivot, Rotation Rotation) pivotRotationTuple, Line line) => line.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
-	public Line RotatedAroundPoint(Rotation rot, Location pivot) {
-		return new(pivot + (pivot >> PointClosestTo(pivot)) * rot, Direction * rot);
+	public static Line operator *((Location Pivot, Rotation Rotation) pivotRotationTuple, Line line) => line.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public Line RotatedBy(Rotation rotation, float signedPivotDistance) => RotatedBy(rotation, LocationAtDistance(signedPivotDistance));
+	public Line RotatedBy(Rotation rotation, Location pivot) {
+		return new(pivot + (pivot >> PointClosestTo(pivot)) * rotation, Direction * rotation);
 	}
 	#endregion
 

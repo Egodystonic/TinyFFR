@@ -7,10 +7,9 @@ using static System.Numerics.Vector4;
 namespace Egodystonic.TinyFFR;
 
 partial struct Location : 
-	ITranslatable<Location>,
 	ITransitionRepresentable<Location, Vect>,
 	ISubtractionOperators<Location, Location, Vect>,
-	IPointRotatable<Location>,
+	IPointTransformable<Location>,
 	IDistanceMeasurable<Location, Location> {
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -54,11 +53,33 @@ partial struct Location :
 	#endregion
 
 	#region Rotation
-	public static Location operator *(Location locationToRotate, (Location Pivot, Rotation Rotation) pivotRotationTuple) => locationToRotate.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
-	public static Location operator *((Location Pivot, Rotation Rotation) pivotRotationTuple, Location locationToRotate) => locationToRotate.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
-	public static Location operator *(Location locationToRotate, (Rotation Rotation, Location Pivot) pivotRotationTuple) => locationToRotate.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
-	public static Location operator *((Rotation Rotation, Location Pivot) pivotRotationTuple, Location locationToRotate) => locationToRotate.RotatedAroundPoint(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
-	public Location RotatedAroundPoint(Rotation rotation, Location pivot) => pivot + VectFrom(pivot) * rotation;
+	static Location IMultiplyOperators<Location, Rotation, Location>.operator *(Location left, Rotation right) => left.RotatedAroundOriginBy(right);
+	static Location IRotatable<Location>.operator *(Rotation left, Location right) => right.RotatedAroundOriginBy(left);
+	Location IRotatable<Location>.RotatedBy(Rotation rot) => RotatedAroundOriginBy(rot);
+	public Location RotatedAroundOriginBy(Rotation rotation) => (AsVect() * rotation).AsLocation();
+
+	public static Location operator *(Location locationToRotate, (Location Pivot, Rotation Rotation) pivotRotationTuple) => locationToRotate.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public static Location operator *((Location Pivot, Rotation Rotation) pivotRotationTuple, Location locationToRotate) => locationToRotate.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public static Location operator *(Location locationToRotate, (Rotation Rotation, Location Pivot) pivotRotationTuple) => locationToRotate.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public static Location operator *((Rotation Rotation, Location Pivot) pivotRotationTuple, Location locationToRotate) => locationToRotate.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
+	public Location RotatedBy(Rotation rotation, Location pivot) => pivot + VectFrom(pivot) * rotation;
+	#endregion
+
+	#region Transformation and Scaling
+	static Location IMultiplyOperators<Location, float, Location>.operator *(Location left, float right) => left.ScaledFromOriginBy(right);
+	static Location IDivisionOperators<Location, float, Location>.operator /(Location left, float right) => left.ScaledFromOriginBy(1f / right);
+	static Location IMultiplicative<Location, float, Location>.operator *(float left, Location right) => right.ScaledFromOriginBy(left);
+	Location IScalable<Location>.ScaledBy(float scalar) => ScaledFromOriginBy(scalar);
+	Location IIndependentAxisScalable<Location>.ScaledBy(Vect vect) => ScaledFromOriginBy(vect);
+	Location IPointIndependentAxisScalable<Location>.ScaledBy(Vect vect, Location scalingOrigin) => TransformedBy(new(scaling: vect), scalingOrigin);
+	public Location ScaledFromOriginBy(float scalar) => FromVector3(ToVector3() * scalar);
+	public Location ScaledFromOriginBy(Vect vect) => FromVector3(ToVector3() * vect.ToVector3());
+
+	static Location IMultiplyOperators<Location, Transform, Location>.operator *(Location location, Transform transform) => location.TransformedAroundOriginBy(transform);
+	static Location ITransformable<Location>.operator *(Transform left, Location right) => right.TransformedAroundOriginBy(left);
+	Location ITransformable<Location>.TransformedBy(Transform transform) => TransformedAroundOriginBy(transform);
+	public Location TransformedAroundOriginBy(Transform transform) => AsVect().TransformedBy(transform).AsLocation();
+	public Location TransformedBy(Transform transform, Location transformationOrigin) => transformationOrigin + (transformationOrigin >> this).TransformedBy(transform);
 	#endregion
 
 	#region Clamping and Interpolation
