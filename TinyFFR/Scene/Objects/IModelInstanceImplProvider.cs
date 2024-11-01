@@ -9,9 +9,26 @@ using Egodystonic.TinyFFR.Assets.Meshes;
 namespace Egodystonic.TinyFFR.Scene;
 
 public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<ModelInstanceHandle> {
+	Transform GetTransform(ModelInstanceHandle handle);
+	void SetTransform(ModelInstanceHandle handle, Transform newTransform);
+	
+	Location GetPosition(ModelInstanceHandle handle);
+	void SetPosition(ModelInstanceHandle handle, Location newPosition);
+
+	Rotation GetRotation(ModelInstanceHandle handle);
+	void SetRotation(ModelInstanceHandle handle, Rotation newRotation);
+
+	Vect GetScaling(ModelInstanceHandle handle);
+	void SetScaling(ModelInstanceHandle handle, Vect newScaling);
+
 	Material GetMaterial(ModelInstanceHandle handle);
 	void SetMaterial(ModelInstanceHandle handle, Material newMaterial);
 
 	Mesh GetMesh(ModelInstanceHandle handle);
 	void SetMesh(ModelInstanceHandle handle, Mesh newMesh);
+
+	void Scale(ModelInstanceHandle handle, float scalar);
+	void Scale(ModelInstanceHandle handle, Vect vect);
+	void Rotate(ModelInstanceHandle handle, Rotation rotation);
+	void Translate(ModelInstanceHandle handle, Vect translation);
 }

@@ -12,6 +12,8 @@ public readonly ref struct ModelInstanceCreationConfig {
 		init => NameAsSpan = value.AsSpan();
 	}
 
+	public Transform InitialTransform { get; init; } = Transform.None;
+
 	public ModelInstanceCreationConfig() { }
 
 	internal void ThrowIfInvalid() {
