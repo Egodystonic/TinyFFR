@@ -170,7 +170,7 @@ sealed unsafe class LocalCombinedResourceGroupImplProvider : ICombinedResourceGr
 			var gcHandle = IResource.ReadGcHandleFromSerializedResource(span[sizeof(IntPtr)..]);
 			var rawHandle = IResource.ReadHandleFromSerializedResource(span[sizeof(IntPtr)..]);
 			var impl = (gcHandle.Target as IResourceImplProvider) ?? throw new InvalidOperationException("Unexpected null impl provider.");
-			var stub = IResource.RecreateFromRawHandleAndImpl(rawHandle, impl, typeHandle);
+			var stub = new ResourceStub(new(typeHandle, rawHandle), impl);
 
 			_globals.DependencyTracker.DeregisterDependency(new CombinedResourceGroup(handle, this), stub);
 			if (disposeContainedResources) stub.Dispose();

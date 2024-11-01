@@ -129,14 +129,19 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 			}
 		}
 
+		int indexBufferCount;
+		checked {
+			indexBufferCount = triangles.Length * 3;
+		}
+
 		AllocateVertexBuffer(tempVertexBuffer.BufferIdentity, (MeshVertex*) tempVertexBuffer.DataPtr, vertices.Length, out var vbHandle).ThrowIfFailure();
-		AllocateIndexBuffer(tempIndexBuffer.BufferIdentity, (MeshTriangle*) tempIndexBuffer.DataPtr, triangles.Length * 3, out var ibHandle).ThrowIfFailure();
+		AllocateIndexBuffer(tempIndexBuffer.BufferIdentity, (MeshTriangle*) tempIndexBuffer.DataPtr, indexBufferCount, out var ibHandle).ThrowIfFailure();
 
 		_vertexBufferRefCounts.Add(vbHandle, 1);
 		_indexBufferRefCounts.Add(ibHandle, 1);
 		_nextHandleId++;
 		var handle = new MeshHandle(_nextHandleId);
-		_activeMeshes.Add(handle, (vbHandle, ibHandle));
+		_activeMeshes.Add(handle, new(vbHandle, ibHandle, 0, indexBufferCount));
 		if (config.NameAsSpan.Length > 0) _globals.StoreResourceName(handle.Ident, config.NameAsSpan);
 		return new Mesh(handle, this);
 	}
@@ -167,16 +172,16 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 	public void Dispose(MeshHandle handle) => Dispose(handle, removeFromMap: true);
 	void Dispose(MeshHandle handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
-		var tuple = _activeMeshes[handle];
-		var curVbRefCount = _vertexBufferRefCounts[tuple.VertexBufferRef];
-		var curIbRefCount = _indexBufferRefCounts[tuple.IndexBufferRef];
+		var bufferData = _activeMeshes[handle];
+		var curVbRefCount = _vertexBufferRefCounts[bufferData.VertexBufferHandle];
+		var curIbRefCount = _indexBufferRefCounts[bufferData.IndexBufferHandle];
 		if (curVbRefCount <= 1) {
-			_vertexBufferRefCounts.Remove(tuple.VertexBufferRef);
-			DisposeVertexBuffer(tuple.VertexBufferRef).ThrowIfFailure();
+			_vertexBufferRefCounts.Remove(bufferData.VertexBufferHandle);
+			DisposeVertexBuffer(bufferData.VertexBufferHandle).ThrowIfFailure();
 		}
 		if (curIbRefCount <= 1) {
-			_indexBufferRefCounts.Remove(tuple.IndexBufferRef);
-			DisposeIndexBuffer(tuple.IndexBufferRef).ThrowIfFailure();
+			_indexBufferRefCounts.Remove(bufferData.IndexBufferHandle);
+			DisposeIndexBuffer(bufferData.IndexBufferHandle).ThrowIfFailure();
 		}
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromMap) _activeMeshes.Remove(handle);

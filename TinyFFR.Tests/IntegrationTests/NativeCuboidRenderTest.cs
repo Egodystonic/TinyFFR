@@ -31,7 +31,7 @@ class NativeCuboidRenderTest {
 		});
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateBasicSolidColorMat(0x00FF00, new MaterialCreationConfig { Name = "Matthew the Material" });
 		using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat);
-		
+
 		Console.WriteLine(camera);
 		Console.WriteLine(mesh);
 		Console.WriteLine(mat);

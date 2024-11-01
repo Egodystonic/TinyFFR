@@ -13,14 +13,14 @@ using Egodystonic.TinyFFR.Scene;
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class WindowBuilder : IWindowBuilder, IWindowImplProvider, IDisposable {
+sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IDisposable {
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly InteropStringBuffer _windowTitleBuffer;
 	readonly ArrayPoolBackedVector<WindowHandle> _activeWindows = new();
 	readonly ArrayPoolBackedMap<WindowHandle, Display> _displayMap = new();
 	bool _isDisposed = false;
 
-	public WindowBuilder(LocalFactoryGlobalObjectGroup globals, WindowBuilderConfig config) {
+	public LocalWindowBuilder(LocalFactoryGlobalObjectGroup globals, WindowBuilderConfig config) {
 		ArgumentNullException.ThrowIfNull(globals);
 		ArgumentNullException.ThrowIfNull(config);
 

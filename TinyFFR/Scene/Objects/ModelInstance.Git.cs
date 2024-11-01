@@ -77,10 +77,10 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, ModelI
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int GetNameSpanLength() => Implementation.GetNameSpanLength(_handle);
 
-	public void ScaleBy(float scalar) => Implementation.Scale(_handle, scalar);
-	public void ScaleBy(Vect vect) => Implementation.Scale(_handle, vect);
-	public void RotateBy(Rotation rotation) => Implementation.Rotate(_handle, rotation);
-	public void MoveBy(Vect translation) => Implementation.Translate(_handle, translation);
+	public void Scale(float scalar) => Implementation.Scale(_handle, scalar);
+	public void Scale(Vect vect) => Implementation.Scale(_handle, vect);
+	public void Rotate(Rotation rotation) => Implementation.Rotate(_handle, rotation);
+	public void Move(Vect translation) => Implementation.Translate(_handle, translation);
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

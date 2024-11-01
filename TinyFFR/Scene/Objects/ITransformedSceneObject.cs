@@ -9,8 +9,8 @@ public interface ITransformedSceneObject {
 	Rotation Rotation { get; set; }
 	Vect Scaling { get; set; }
 
-	void ScaleBy(float scalar);
-	void ScaleBy(Vect vect);
-	void RotateBy(Rotation rotation);
-	void MoveBy(Vect translation);
+	void Scale(float scalar);
+	void Scale(Vect vect);
+	void Rotate(Rotation rotation);
+	void Move(Vect translation);
 }

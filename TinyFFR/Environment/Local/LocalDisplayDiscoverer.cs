@@ -10,7 +10,7 @@ using DisplayModeArray = Egodystonic.TinyFFR.Environment.Local.DisplayMode[];
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed class DisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider {
+sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider {
 	const int MaxDisplayNameLength = 200; // Should be low enough to be stackalloc'able (or rewrite ctor)
 	const int MaxDisplayCount = 1_000_000;
 	readonly LocalFactoryGlobalObjectGroup _globals;
@@ -24,7 +24,7 @@ sealed class DisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider {
 	public Display? Recommended => _recommendedHandle != null ? new Display(_recommendedHandle.Value, this) : null;
 	public Display? Primary => _primaryHandle != null ? new Display(_primaryHandle.Value, this) : null;
 
-	public DisplayDiscoverer(LocalFactoryGlobalObjectGroup globals) {
+	public LocalDisplayDiscoverer(LocalFactoryGlobalObjectGroup globals) {
 		ArgumentNullException.ThrowIfNull(globals);
 		
 		_globals = globals;

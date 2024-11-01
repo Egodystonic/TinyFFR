@@ -10,35 +10,32 @@ using System.Reflection.Metadata;
 namespace Egodystonic.TinyFFR.Scene;
 
 sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisposable {
-	readonly record struct SceneBuilderObjectGroup(LocalCameraBuilder CameraBuilder, LocalObjectBuilder ObjectBuilder);
 	const string DefaultSceneName = "Unnamed Scene";
 
-	readonly ArrayPoolBackedMap<SceneHandle, SceneBuilderObjectGroup> _activeSceneMap = new();
-	readonly ObjectPool<LocalCameraBuilder, LocalSceneBuilder> _cameraBuilderPool;
-	readonly ObjectPool<LocalObjectBuilder, LocalSceneBuilder> _objectBuilderPool;
 	readonly LocalFactoryGlobalObjectGroup _globals;
+	readonly ObjectPool<ArrayPoolBackedVector<ModelInstance>> _modelInstanceVectorPool;
+	readonly ArrayPoolBackedMap<SceneHandle, ArrayPoolBackedVector<ModelInstance>> _modelInstanceMap = new();
 	bool _isDisposed = false;
 
 	public LocalSceneBuilder(LocalFactoryGlobalObjectGroup globals) {
+		static ArrayPoolBackedVector<ModelInstance> CreateModelInstanceVector() => new();
+
 		ArgumentNullException.ThrowIfNull(globals);
 
 		_globals = globals;
-		_cameraBuilderPool = new(&CreateCameraBuilder, this);
-		_objectBuilderPool = new(&CreateObjectBuilder, this);
+		_modelInstanceVectorPool = new(&CreateModelInstanceVector);
 	}
 
-	static LocalCameraBuilder CreateCameraBuilder(LocalSceneBuilder owningSceneBuilder) => new(owningSceneBuilder._globals);
-	static LocalObjectBuilder CreateObjectBuilder(LocalSceneBuilder owningSceneBuilder) => new(owningSceneBuilder._globals);
-
-	public Scene CreateScene() {
-
-	}
+	public Scene CreateScene() => CreateScene(new());
 	public Scene CreateScene(in SceneCreationConfig config) {
-
+		ThrowIfThisIsDisposed();
+		AllocateScene(
+			out var handle
+		).ThrowIfFailure();
+		var result = HandleToInstance(handle);
+		_modelInstanceMap.Add(handle, _modelInstanceVectorPool.Rent());
+		return result;
 	}
-
-	public ICameraBuilder GetCameraBuilder(SceneHandle handle) => this;
-	public IObjectBuilder GetObjectBuilder(SceneHandle handle) => this;
 
 	public string GetName(SceneHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -53,54 +50,94 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		return _globals.GetResourceNameLength(handle.Ident, DefaultSceneName);
 	}
 
-	#region Camera Delegation
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	Camera RegisterCamera(Camera input) {
-		AddCameraToScene( input.Handle)
-		return input;
+	Scene HandleToInstance(SceneHandle h) => new(h, this);
+
+	#region Model Instance
+	public void Add(SceneHandle handle, ModelInstance modelInstance) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var instanceVector = _modelInstanceMap[handle];
+		if (instanceVector.Contains(modelInstance)) {
+			throw new InvalidOperationException($"{modelInstance} has already been added to {HandleToInstance(handle)}.");
+		}
+
+		AddModelInstanceToScene(
+			handle,
+			modelInstance.Handle
+		).ThrowIfFailure();
+
+		instanceVector.Add(modelInstance);
+		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), modelInstance);
 	}
 
-	public Camera CreateCamera() {
-		_cameraBuilder.CreateCamera();
+	public void Remove(SceneHandle handle, ModelInstance modelInstance) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var instanceVector = _modelInstanceMap[handle];
+		if (!instanceVector.Remove(modelInstance)) {
+			throw new InvalidOperationException($"{modelInstance} is not currently added to {HandleToInstance(handle)}.");
+		}
+
+		RemoveModelInstanceFromScene(
+			handle,
+			modelInstance.Handle
+		).ThrowIfFailure();
+
+		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), modelInstance);
 	}
-	public Camera CreateCamera(Location initialPosition, Direction initialViewDirection) { throw new NotImplementedException(); }
-	public Camera CreateCamera(in CameraCreationConfig config) { throw new NotImplementedException(); }
 	#endregion
 
 	#region Native Methods
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_scene")]
+	static extern InteropResult AllocateScene(
+		out UIntPtr outSceneHandle
+	);
 
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "add_model_instance_to_scene")]
+	static extern InteropResult AddModelInstanceToScene(
+		UIntPtr sceneHandle,
+		UIntPtr modelInstanceHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "remove_model_instance_from_scene")]
+	static extern InteropResult RemoveModelInstanceFromScene(
+		UIntPtr sceneHandle,
+		UIntPtr modelInstanceHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_scene")]
+	static extern InteropResult DisposeScene(
+		UIntPtr sceneHandle
+	);
 	#endregion
 
 	#region Disposal
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
-			foreach (var kvp in _activeSceneMap) Dispose(kvp.Key, removeFromMap: false);
+			foreach (var kvp in _modelInstanceMap) {
+				Dispose(kvp.Key, removeFromMaps: false);
+				_modelInstanceVectorPool.Return(kvp.Value);
+			}
+			_modelInstanceMap.Dispose();
 		}
 		finally {
 			_isDisposed = true;
 		}
 	}
 
-	public bool IsDisposed(SceneHandle handle) => _isDisposed || !_activeSceneMap.ContainsKey(handle);
+	public bool IsDisposed(SceneHandle handle) => _isDisposed || !_modelInstanceMap.ContainsKey(handle);
 
-	public void Dispose(SceneHandle handle) => Dispose(handle, removeFromMap: true);
-	void Dispose(SceneHandle handle, bool removeFromMap) {
+	public void Dispose(SceneHandle handle) => Dispose(handle, removeFromMaps: true);
+	void Dispose(SceneHandle handle, bool removeFromMaps) {
 		if (IsDisposed(handle)) return;
 		DisposeScene(handle).ThrowIfFailure();
-		if (removeFromMap) _activeScenes.Remove(handle);
+		if (!removeFromMaps) return;
+
+		_modelInstanceVectorPool.Return(_modelInstanceMap[handle]);
+		_modelInstanceMap.Remove(handle);
 	}
 
 	void ThrowIfThisOrHandleIsDisposed(SceneHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Scene));
 	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion
 }
-
-
-
-
-
-
-
-
-// TODO I need to find a way to pass the camera builder and object builder per-scene without creating garbage when they're disposed.

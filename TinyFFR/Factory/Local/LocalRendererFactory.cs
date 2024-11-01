@@ -24,6 +24,7 @@ public sealed class LocalRendererFactory : ILocalRendererFactory {
 	public IAssetLoader AssetLoader { get; }
 	public ICameraBuilder CameraBuilder { get; }
 	public IObjectBuilder ObjectBuilder { get; }
+	public ISceneBuilder SceneBuilder { get; }
 
 	internal FixedByteBufferPool TemporaryCpuBufferPool { get; }
 
@@ -44,12 +45,13 @@ public sealed class LocalRendererFactory : ILocalRendererFactory {
 		_resourceGroupProvider = new(globals);
 		resourceGroupProviderRef.Resolve(_resourceGroupProvider);
 
-		DisplayDiscoverer = new DisplayDiscoverer(globals);
-		WindowBuilder = new WindowBuilder(globals, windowBuilderConfig ?? new());
+		DisplayDiscoverer = new LocalDisplayDiscoverer(globals);
+		WindowBuilder = new LocalWindowBuilder(globals, windowBuilderConfig ?? new());
 		ApplicationLoopBuilder = new LocalApplicationLoopBuilder(globals, applicationLoopBuilderConfig ?? new());
 		AssetLoader = new LocalAssetLoader(globals, assetLoaderConfig ?? new());
 		CameraBuilder = new LocalCameraBuilder(globals);
 		ObjectBuilder = new LocalObjectBuilder(globals);
+		SceneBuilder = new LocalSceneBuilder(globals);
 	}
 
 	public CombinedResourceGroup CreateResourceGroup(int capacity, bool disposeContainedResourcesWhenDisposed) {
@@ -77,6 +79,7 @@ public sealed class LocalRendererFactory : ILocalRendererFactory {
 		if (IsDisposed) return;
 		try {
 			// Maintainer's note: These are disposed in reverse order (e.g. opposite order compared to the order they're constructed in in the ctor above)
+			DisposeObjectIfDisposable(SceneBuilder);
 			DisposeObjectIfDisposable(ObjectBuilder);
 			DisposeObjectIfDisposable(CameraBuilder);
 			DisposeObjectIfDisposable(AssetLoader);

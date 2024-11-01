@@ -10,6 +10,7 @@ namespace Egodystonic.TinyFFR;
 partial struct Transform : 
 	IInterpolatable<Transform>,
 	ITransformable<Transform> {
+
 	#region Scaling
 	static Transform IMultiplyOperators<Transform, float, Transform>.operator *(Transform left, float right) => left.WithScalingMultipliedBy(right);
 	static Transform IDivisionOperators<Transform, float, Transform>.operator /(Transform left, float right) => left.WithScalingMultipliedBy(1f / right);

@@ -8,6 +8,6 @@ using System;
 namespace Egodystonic.TinyFFR.Scene;
 
 public interface ISceneImplProvider : IDisposableResourceImplProvider<SceneHandle> {
-	ICameraBuilder GetCameraBuilder(SceneHandle handle);
-	IObjectBuilder GetObjectBuilder(SceneHandle handle);
+	void Add(SceneHandle handle, ModelInstance modelInstance);
+	void Remove(SceneHandle handle, ModelInstance modelInstance);
 }
