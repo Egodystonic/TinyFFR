@@ -55,7 +55,7 @@ partial struct Rotation :
 		var cosNewHalfAngle = MathF.Cos(newHalfAngleRadians);
 
 		var normalizedVectorComponent = Vector3.Normalize(new(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z));
-		if (Single.IsNaN(normalizedVectorComponent.X)) return None;
+		if (!Single.IsFinite(normalizedVectorComponent.X)) return None;
 
 		return FromQuaternion(new(
 			normalizedVectorComponent * sinNewHalfAngle,

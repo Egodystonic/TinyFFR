@@ -8,11 +8,11 @@ static class MathUtils {
 
 	public static Vector4 NormalizeOrZero(Vector4 v) {
 		var norm = Vector4.Normalize(v);
-		return Single.IsNaN(norm.X) ? Vector4.Zero : norm;
+		return Single.IsFinite(norm.X) ? norm : Vector4.Zero;
 	}
 
 	public static Quaternion NormalizeOrIdentity(Quaternion q) {
 		var norm = Quaternion.Normalize(q);
-		return Single.IsNaN(norm.X) ? Quaternion.Identity : norm;
+		return Single.IsFinite(norm.X) ? norm : Quaternion.Identity;
 	}
 }

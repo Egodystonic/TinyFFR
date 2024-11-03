@@ -638,7 +638,7 @@ class VectTest {
 					var v = new Vect(x, y, z);
 
 					Assert.AreEqual(v * x, x * v);
-					Assert.AreEqual(v * (1f / x), v / x);
+					Assert.AreEqual(x == 0f ? Vect.Zero : v * (1f / x), v / x);
 
 					AssertToleranceEquals(new Vect(x, 2f * y, -3f * z), OneTwoNegThree.ScaledBy(v), TestTolerance);
 				}

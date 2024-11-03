@@ -99,7 +99,7 @@ partial struct Vect :
 	public Vect MultipliedBy(Vect other) => new(AsVector4 * other.AsVector4);
 	public Vect DividedBy(Vect other) {
 		var v3 = ToVector3() / other.ToVector3();
-		if (Single.IsNaN(v3.X) || Single.IsNaN(v3.Y) || Single.IsNaN(v3.Z)) return Zero;
+		if (!Single.IsFinite(v3.X) || !Single.IsFinite(v3.Y) || !Single.IsFinite(v3.Z)) return Zero;
 		else return FromVector3(v3);
 	}
 	static Vect IMultiplicativeIdentity<Vect, Vect>.MultiplicativeIdentity => One;
@@ -110,7 +110,7 @@ partial struct Vect :
 	public static Vect operator *(float scalarOperand, Vect vectOperand) => vectOperand.ScaledBy(scalarOperand);
 	public static Vect operator /(Vect vectOperand, float scalarOperand) {
 		var reciprocal = 1f / scalarOperand;
-		return Single.IsNaN(reciprocal) ? Zero : vectOperand.ScaledBy(reciprocal);
+		return Single.IsFinite(reciprocal) ? vectOperand.ScaledBy(reciprocal) : Zero;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

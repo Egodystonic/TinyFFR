@@ -184,12 +184,12 @@ class BoundedRayTest {
 
 		AssertToleranceEquals(
 			new BoundedRay(new Location(-5f, -5f, -5f), new Location(15f, 15f, 15f)),
-			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)) * 2f,
+			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledFromMiddleBy(2f),
 			TestTolerance
 		);
 		AssertToleranceEquals(
 			new BoundedRay(new Location(-5f, -5f, -5f), new Location(15f, 15f, 15f)).Flipped,
-			-2f * new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)),
+			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledFromMiddleBy(-2f),
 			TestTolerance
 		);
 
