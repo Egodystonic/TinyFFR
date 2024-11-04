@@ -142,7 +142,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		_nextHandleId++;
 		var handle = new MeshHandle(_nextHandleId);
 		_activeMeshes.Add(handle, new(vbHandle, ibHandle, 0, indexBufferCount));
-		if (config.NameAsSpan.Length > 0) _globals.StoreResourceName(handle.Ident, config.NameAsSpan);
+		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.NameAsSpan);
 		return new Mesh(handle, this);
 	}
 

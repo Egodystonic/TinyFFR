@@ -28,5 +28,6 @@
 #include "filament/math/vec2.h"
 #include "filament/math/vec3.h"
 #include "filament/math/vec4.h"
+#include "utils/Panic.h"
 
 #endif //PCH_H

@@ -58,7 +58,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		var curTime = Stopwatch.GetTimestamp();
 		var handle = (ApplicationLoopHandle) _nextLoopHandleIndex;
 		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero));
-		if (config.BaseConfig.NameAsSpan != default) _globals.StoreResourceName(handle.Ident, config.BaseConfig.NameAsSpan);
+		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.BaseConfig.NameAsSpan);
 		_nextLoopHandleIndex++;
 		return new(handle, this);
 	}

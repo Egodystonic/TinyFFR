@@ -23,14 +23,14 @@ class NativeCuboidRenderTest {
 	public void Execute() {
 		using var factory = (ILocalRendererFactory) new LocalRendererFactory();
 
-		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(10f, 7f, 2f), new MeshCreationConfig { Name = "Clive the Cuboid" });
-		using var camera = factory.CameraBuilder.CreateCamera(new CameraCreationConfig {
+		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(10f, 7f, 2f), new() { Name = "Clive the Cuboid" });
+		using var camera = factory.CameraBuilder.CreateCamera(new() {
 			Position = (Direction.Backward * 1f).AsLocation(),
 			ViewDirection = Direction.Forward,
 			UpDirection = Direction.Up
 		});
-		using var mat = factory.AssetLoader.MaterialBuilder.CreateBasicSolidColorMat(0x00FF00, new MaterialCreationConfig { Name = "Matthew the Material" });
-		using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat);
+		using var mat = factory.AssetLoader.MaterialBuilder.CreateBasicSolidColorMat(0x00FF00, new() { Name = "Matthew the Material" });
+		using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, new() { Name = "Iain the Instance" });
 
 		Console.WriteLine(camera);
 		Console.WriteLine(mesh);

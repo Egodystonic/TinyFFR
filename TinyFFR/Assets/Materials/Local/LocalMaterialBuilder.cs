@@ -37,6 +37,9 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	);
 	#endregion
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	Material HandleToInstance(MaterialHandle h) => new(h, this);
+
 	public Material CreateBasicSolidColorMat(ColorVect color) => CreateBasicSolidColorMat(color, new());
 	public Material CreateBasicSolidColorMat(ColorVect color, in MaterialCreationConfig config) {
 		CreateMaterial(
@@ -47,6 +50,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		).ThrowIfFailure();
 
 		_activeMaterials.Add(handle, _globals.ResourceGroupProvider.CreateGroup(0, false));
+		_globals.StoreResourceNameIfNotDefault(new MaterialHandle(handle).Ident, config.NameAsSpan);
 		return new(handle, this);
 	}
 
@@ -70,6 +74,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	void Dispose(MaterialHandle handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
 		_activeMaterials[handle].Dispose();
+		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromMap) _activeMaterials.Remove(handle);
 	}
 

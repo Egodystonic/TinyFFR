@@ -47,7 +47,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 		);
 
 		_activeCameras.Add(newCameraHandle, parameters);
-		if (config.NameAsSpan != default) _globals.StoreResourceName(((CameraHandle) newCameraHandle).Ident, config.NameAsSpan);
+		_globals.StoreResourceNameIfNotDefault(((CameraHandle) newCameraHandle).Ident, config.NameAsSpan);
 		return new(newCameraHandle, this);
 	}
 
@@ -333,6 +333,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 	void Dispose(CameraHandle handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
 		DisposeCamera(handle).ThrowIfFailure();
+		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromMap) _activeCameras.Remove(handle);
 	}
 

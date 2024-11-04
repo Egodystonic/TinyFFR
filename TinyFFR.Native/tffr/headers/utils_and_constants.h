@@ -48,6 +48,9 @@ typedef uint8_t interop_bool;
 	catch (std::exception& e) {							\
 		ExportFuncFail(e.what());						\
 	}													\
+	catch (utils::PreconditionPanic& p) {				\
+		ExportFuncFail(p.what());						\
+	}													\
 	catch (...) {										\
 		ExportFuncFail("Unknown exception occurred.");	\
 	}													\

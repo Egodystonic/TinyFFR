@@ -29,7 +29,10 @@ sealed class LocalFactoryGlobalObjectGroup {
 		_resourceGroupProvider = resourceGroupProviderRef;
 	}
 
-	public void StoreResourceName(ResourceIdent ident, ReadOnlySpan<char> name) => _resourceNameMap.Add(ident, StringPool.RentAndCopy(name));
+	public void StoreResourceNameIfNotDefault(ResourceIdent ident, ReadOnlySpan<char> name) {
+		if (name == default) return;
+		_resourceNameMap.Add(ident, StringPool.RentAndCopy(name));
+	}
 
 	public int CopyResourceName(ResourceIdent ident, ReadOnlySpan<char> fallback, Span<char> dest) {
 		var span = _resourceNameMap.TryGetValue(ident, out var handle) ? handle.AsSpan : fallback;
