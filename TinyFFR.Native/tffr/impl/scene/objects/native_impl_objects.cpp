@@ -58,6 +58,10 @@ void native_impl_objects::set_model_instance_world_mat(ModelInstanceHandle model
 	auto& manager = filament_engine->getTransformManager();
 	manager.setTransform(manager.getInstance(entity), *worldMatPtr);
 }
+StartExportedFunc(set_model_instance_world_mat, ModelInstanceHandle modelInstance, mat4f* worldMatPtr) {
+	native_impl_objects::set_model_instance_world_mat(modelInstance, worldMatPtr);
+	EndExportedFunc
+}
 
 
 void native_impl_objects::dispose_model_instance(ModelInstanceHandle modelInstance) {

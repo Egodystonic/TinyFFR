@@ -3,14 +3,19 @@
 
 namespace Egodystonic.TinyFFR.Scene;
 
-public interface ITransformedSceneObject {
-	Transform Transform { get; set; }
+public interface IPositionedSceneObject {
 	Location Position { get; set; }
+	void Move(Vect translation);
+}
+public interface IOrientedSceneObject {
 	Rotation Rotation { get; set; }
+	void Rotate(Rotation rotation);
+}
+public interface IScaledSceneObject {
 	Vect Scaling { get; set; }
-
 	void Scale(float scalar);
 	void Scale(Vect vect);
-	void Rotate(Rotation rotation);
-	void Move(Vect translation);
+}
+public interface ITransformedSceneObject : IPositionedSceneObject, IOrientedSceneObject, IScaledSceneObject {
+	Transform Transform { get; set; }
 }

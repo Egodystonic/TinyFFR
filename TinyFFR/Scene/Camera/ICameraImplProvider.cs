@@ -29,4 +29,7 @@ public interface ICameraImplProvider : IDisposableResourceImplProvider<CameraHan
 	public void SetProjectionMatrix(CameraHandle handle, in Matrix4x4 newMatrix);
 	public void GetViewMatrix(CameraHandle handle, out Matrix4x4 outMatrix);
 	public void SetViewMatrix(CameraHandle handle, in Matrix4x4 newMatrix);
+
+	void Translate(CameraHandle handle, Vect translation);
+	void Rotate(CameraHandle handle, Rotation rotation);
 }

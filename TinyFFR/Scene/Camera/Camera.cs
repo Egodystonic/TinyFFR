@@ -7,7 +7,7 @@ using System;
 
 namespace Egodystonic.TinyFFR.Scene;
 
-public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICameraImplProvider> {
+public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICameraImplProvider>, IPositionedSceneObject, IOrientedSceneObject {
 	public static readonly Angle FieldOfViewMin = Angle.Zero;
 	public static readonly Angle FieldOfViewMax = Angle.FullCircle;
 	public static readonly float NearPlaneDistanceMin = 1E-5f;
@@ -76,6 +76,11 @@ public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICamer
 		set => Implementation.SetFarPlaneDistance(_handle, value);
 	}
 
+	Rotation IOrientedSceneObject.Rotation {
+		get => Rotation.FromStartAndEndDirection(Direction.Forward, ViewDirection);
+		set => ViewDirection = Direction.Forward * value;
+	}
+
 	internal Camera(CameraHandle handle, ICameraImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
@@ -99,6 +104,11 @@ public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICamer
 	public void GetViewMatrix(out Matrix4x4 outViewMatrix) => Implementation.GetViewMatrix(_handle, out outViewMatrix);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetViewMatrix(in Matrix4x4 newViewMatrix) => Implementation.SetViewMatrix(_handle, newViewMatrix);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Move(Vect translation) => Implementation.Translate(_handle, translation);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Rotate(Rotation rotation) => Implementation.Rotate(_handle, rotation);
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

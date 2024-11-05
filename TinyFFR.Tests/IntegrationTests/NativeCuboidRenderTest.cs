@@ -53,6 +53,8 @@ class NativeCuboidRenderTest {
 		while (!loop.Input.UserQuitRequested) {
 			_ = loop.IterateOnce();
 			scene.Render(camera, window);
+			camera.Rotate(new Rotation(3f, Direction.Up));
+			instance.Rotate(new Rotation(7f, Direction.Up));
 		}
 	}
 }

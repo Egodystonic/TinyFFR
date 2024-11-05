@@ -6,6 +6,7 @@ using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
 using System.Reflection.Metadata;
+using System.Transactions;
 
 namespace Egodystonic.TinyFFR.Scene;
 
@@ -201,6 +202,17 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 		ThrowIfThisOrHandleIsDisposed(handle);
 		SetCameraViewMatrix(handle, in newMatrix)
 			.ThrowIfFailure();
+	}
+
+	public void Translate(CameraHandle handle, Vect translation) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var curParams = _activeCameras[handle];
+		_activeCameras[handle] = curParams with { Position = curParams.Position + translation };
+		UpdateViewMatrixFromParameters(handle);
+	}
+	public void Rotate(CameraHandle handle, Rotation rotation) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		SetViewDirection(handle, _activeCameras[handle].ViewDirection * rotation);
 	}
 
 	void UpdateProjectionMatrixFromParameters(CameraHandle handle) {

@@ -34,6 +34,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		).ThrowIfFailure();
 		var result = HandleToInstance(handle);
 		_modelInstanceMap.Add(handle, _modelInstanceVectorPool.Rent());
+		_globals.StoreResourceNameIfNotDefault(new SceneHandle(handle).Ident, config.NameAsSpan);
 		return result;
 	}
 
@@ -112,6 +113,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 
 	#region Render
 	public void Render<TRenderTarget>(SceneHandle handle, Camera camera, TRenderTarget renderTarget) where TRenderTarget : IRenderTarget {
+		ThrowIfThisOrHandleIsDisposed(handle);
 		_renderer.Render(HandleToInstance(handle), camera, renderTarget);
 	}
 	#endregion
