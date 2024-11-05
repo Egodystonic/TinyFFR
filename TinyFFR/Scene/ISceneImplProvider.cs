@@ -10,4 +10,6 @@ namespace Egodystonic.TinyFFR.Scene;
 public interface ISceneImplProvider : IDisposableResourceImplProvider<SceneHandle> {
 	void Add(SceneHandle handle, ModelInstance modelInstance);
 	void Remove(SceneHandle handle, ModelInstance modelInstance);
+
+	void Render<TRenderTarget>(SceneHandle handle, Camera camera, TRenderTarget renderTarget) where TRenderTarget : IRenderTarget;
 }

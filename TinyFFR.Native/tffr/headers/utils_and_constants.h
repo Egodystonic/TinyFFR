@@ -48,9 +48,6 @@ typedef uint8_t interop_bool;
 	catch (std::exception& e) {							\
 		ExportFuncFail(e.what());						\
 	}													\
-	catch (utils::PreconditionPanic& p) {				\
-		ExportFuncFail(p.what());						\
-	}													\
 	catch (...) {										\
 		ExportFuncFail("Unknown exception occurred.");	\
 	}													\
@@ -107,5 +104,11 @@ typedef uint8_t interop_bool;
 	interop_utils::combine_in_concat_space(__VA_ARGS__); \
 	throw std::exception{ interop_utils::err_msg_concat_space }; \
 	} \
+
+#pragma endregion
+
+#pragma region Filament
+
+#define filament_engine (native_impl_init::filament_engine_ptr)
 
 #pragma endregion

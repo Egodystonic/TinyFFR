@@ -19,8 +19,8 @@ void native_impl_render_assets::allocate_vertex_buffer(BufferIdentity bufferIden
 		.bufferCount(1)
 		.attribute(VertexAttribute::POSITION, 0, VertexBuffer::AttributeType::FLOAT3, 0, sizeof(MeshVertex))
 		.attribute(VertexAttribute::UV0, 0, VertexBuffer::AttributeType::FLOAT2, 12, sizeof(MeshVertex))
-		.build(*native_impl_init::filament_engine_ptr);
-	(*outBuffer)->setBufferAt(*native_impl_init::filament_engine_ptr, 0, backend::BufferDescriptor{ vertices, vertexCount * sizeof(MeshVertex), &handle_filament_buffer_copy_callback, bufferIdentity });
+		.build(*filament_engine);
+	(*outBuffer)->setBufferAt(*filament_engine, 0, backend::BufferDescriptor{ vertices, vertexCount * sizeof(MeshVertex), &handle_filament_buffer_copy_callback, bufferIdentity });
 }
 StartExportedFunc(allocate_vertex_buffer, BufferIdentity bufferIdentity, native_impl_render_assets::MeshVertex* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer) {
 	native_impl_render_assets::allocate_vertex_buffer(bufferIdentity, vertices, vertexCount, outBuffer);
@@ -31,8 +31,8 @@ void native_impl_render_assets::allocate_index_buffer(BufferIdentity bufferIdent
 	*outBuffer = IndexBuffer::Builder()
 		.indexCount(indexCount)
 		.bufferType(IndexBuffer::IndexType::UINT)
-		.build(*native_impl_init::filament_engine_ptr);
-	(*outBuffer)->setBuffer(*native_impl_init::filament_engine_ptr, IndexBuffer::BufferDescriptor{ indices, indexCount * sizeof(int32_t), &handle_filament_buffer_copy_callback, bufferIdentity });
+		.build(*filament_engine);
+	(*outBuffer)->setBuffer(*filament_engine, IndexBuffer::BufferDescriptor{ indices, indexCount * sizeof(int32_t), &handle_filament_buffer_copy_callback, bufferIdentity });
 }
 StartExportedFunc(allocate_index_buffer, BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer) {
 	native_impl_render_assets::allocate_index_buffer(bufferIdentity, indices, indexCount, outBuffer);
@@ -40,7 +40,7 @@ StartExportedFunc(allocate_index_buffer, BufferIdentity bufferIdentity, int32_t*
 }
 
 void native_impl_render_assets::dispose_vertex_buffer(VertexBufferHandle buffer) {
-	if (!native_impl_init::filament_engine_ptr->destroy(buffer)) {
+	if (!filament_engine->destroy(buffer)) {
 		Throw("Could not dispose vertex buffer.");
 	}
 }
@@ -50,7 +50,7 @@ StartExportedFunc(dispose_vertex_buffer, VertexBufferHandle buffer) {
 }
 
 void native_impl_render_assets::dispose_index_buffer(IndexBufferHandle buffer) {
-	if (!native_impl_init::filament_engine_ptr->destroy(buffer)) {
+	if (!filament_engine->destroy(buffer)) {
 		Throw("Could not dispose index buffer.");
 	}
 }
@@ -86,7 +86,7 @@ Material* GetMaterial(MaterialType type) {
 						"	material.baseColor = materialParams.flatColor;"
 						"}"
 					)
-					.build(native_impl_init::filament_engine_ptr->getJobSystem());
+					.build(filament_engine->getJobSystem());
 
 				native_impl_render_assets::BasicSolidColorShaderPackage = std::move(newMat);
 				if (!native_impl_render_assets::BasicSolidColorShaderPackage.isValid()) Throw("Could not create package.");
@@ -96,7 +96,7 @@ Material* GetMaterial(MaterialType type) {
 				native_impl_render_assets::BasicSolidColorShaderMaterial = Material::Builder().package(
 					native_impl_render_assets::BasicSolidColorShaderPackage.getData(), 
 					native_impl_render_assets::BasicSolidColorShaderPackage.getSize()
-				).build(*native_impl_init::filament_engine_ptr);
+				).build(*filament_engine);
 				ThrowIfNull(native_impl_render_assets::BasicSolidColorShaderMaterial, "Could not create material.");
 			}
 

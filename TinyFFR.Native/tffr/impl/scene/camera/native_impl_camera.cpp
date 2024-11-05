@@ -10,8 +10,8 @@
 using namespace utils;
 
 void native_impl_camera::allocate_camera(CameraHandle* outCamera) {
-	auto entity = native_impl_init::filament_engine_ptr->getEntityManager().create();
-	*outCamera = native_impl_init::filament_engine_ptr->createCamera(entity);
+	auto entity = filament_engine->getEntityManager().create();
+	*outCamera = filament_engine->createCamera(entity);
 
 	ThrowIfNull(*outCamera, "Could not create camera.");
 }
@@ -62,8 +62,8 @@ StartExportedFunc(get_camera_view_matrix, CameraHandle camera, mat4f* outMatrix)
 void native_impl_camera::dispose_camera(CameraHandle camera) {
 	ThrowIfNull(camera, "Camera handle was null.");
 	auto entity = camera->getEntity();
-	native_impl_init::filament_engine_ptr->destroyCameraComponent(entity);
-	native_impl_init::filament_engine_ptr->getEntityManager().destroy(entity);
+	filament_engine->destroyCameraComponent(entity);
+	filament_engine->getEntityManager().destroy(entity);
 }
 StartExportedFunc(dispose_camera, CameraHandle camera) {
 	native_impl_camera::dispose_camera(camera);

@@ -4,6 +4,7 @@
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Resources;
 using System;
+using Egodystonic.TinyFFR.Environment.Local;
 
 namespace Egodystonic.TinyFFR.Scene;
 
@@ -35,6 +36,11 @@ public readonly struct Scene : IDisposableResource<Scene, SceneHandle, ISceneImp
 	public void Add(ModelInstance modelInstance) => Implementation.Add(_handle, modelInstance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove(ModelInstance modelInstance) => Implementation.Remove(_handle, modelInstance);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Render(Camera camera, Window window) => Implementation.Render(_handle, camera, window);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Render<TRenderTarget>(Camera camera, TRenderTarget renderTarget) where TRenderTarget : IRenderTarget => Implementation.Render(_handle, camera, renderTarget);
 
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

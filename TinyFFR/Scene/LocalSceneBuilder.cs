@@ -1,20 +1,19 @@
 ﻿// Created on 2024-08-19 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
-using System.Reflection.Metadata;
 
 namespace Egodystonic.TinyFFR.Scene;
 
 sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisposable {
 	const string DefaultSceneName = "Unnamed Scene";
 
-	readonly LocalFactoryGlobalObjectGroup _globals;
-	readonly ObjectPool<ArrayPoolBackedVector<ModelInstance>> _modelInstanceVectorPool;
 	readonly ArrayPoolBackedMap<SceneHandle, ArrayPoolBackedVector<ModelInstance>> _modelInstanceMap = new();
+	readonly ObjectPool<ArrayPoolBackedVector<ModelInstance>> _modelInstanceVectorPool;
+	readonly LocalFactoryGlobalObjectGroup _globals;
+	readonly LocalSceneRenderer _renderer;
 	bool _isDisposed = false;
 
 	public LocalSceneBuilder(LocalFactoryGlobalObjectGroup globals) {
@@ -24,6 +23,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 
 		_globals = globals;
 		_modelInstanceVectorPool = new(&CreateModelInstanceVector);
+		_renderer = new(globals);
 	}
 
 	public Scene CreateScene() => CreateScene(new());
@@ -110,10 +110,17 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	);
 	#endregion
 
+	#region Render
+	public void Render<TRenderTarget>(SceneHandle handle, Camera camera, TRenderTarget renderTarget) where TRenderTarget : IRenderTarget {
+		_renderer.Render(HandleToInstance(handle), camera, renderTarget);
+	}
+	#endregion
+
 	#region Disposal
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
+			_renderer.Dispose();
 			foreach (var kvp in _modelInstanceMap) {
 				Dispose(kvp.Key, removeFromMaps: false);
 				_modelInstanceVectorPool.Return(kvp.Value);

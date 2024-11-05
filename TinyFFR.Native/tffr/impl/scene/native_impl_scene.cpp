@@ -10,7 +10,7 @@
 using namespace utils;
 
 void native_impl_scene::allocate_scene(SceneHandle* outScene) {
-	*outScene = native_impl_init::filament_engine_ptr->createScene();
+	*outScene = filament_engine->createScene();
 	ThrowIfNull(*outScene, "Could not create scene.");
 }
 StartExportedFunc(allocate_scene, SceneHandle* outScene) {
@@ -35,7 +35,7 @@ StartExportedFunc(remove_model_instance_from_scene, SceneHandle scene, ModelInst
 }
 
 void native_impl_scene::dispose_scene(SceneHandle scene) {
-	ThrowIf(!native_impl_init::filament_engine_ptr->destroy(scene), "Could not dispose scene.");
+	ThrowIf(!filament_engine->destroy(scene), "Could not dispose scene.");
 }
 StartExportedFunc(dispose_scene, SceneHandle scene) {
 	native_impl_scene::dispose_scene(scene);

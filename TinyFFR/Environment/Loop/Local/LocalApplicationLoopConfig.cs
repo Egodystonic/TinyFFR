@@ -28,6 +28,15 @@ public readonly ref struct LocalApplicationLoopConfig {
 		}
 	}
 
+	public ReadOnlySpan<char> NameAsSpan {
+		get => BaseConfig.NameAsSpan;
+		init => BaseConfig = BaseConfig with { NameAsSpan = value };
+	}
+	public string Name {
+		get => BaseConfig.Name;
+		init => BaseConfig = BaseConfig with { Name = value };
+	}
+
 	public LocalApplicationLoopConfig() { }
 	public LocalApplicationLoopConfig(ApplicationLoopConfig baseConfig) => BaseConfig = baseConfig;
 

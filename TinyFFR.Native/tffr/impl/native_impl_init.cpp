@@ -6,7 +6,7 @@
 #include "filament/utils/Log.h"
 #include "filamat/MaterialBuilder.h"
 
-filament::Engine* native_impl_init::filament_engine_ptr;
+filament::Engine* filament_engine;
 deallocate_asset_buffer_delegate native_impl_init::deallocation_delegate;
 
 void native_impl_init::initialize_all() {
@@ -21,6 +21,7 @@ void native_impl_init::initialize_all() {
 	filamat::MaterialBuilder::init();
 }
 StartExportedFunc(initialize_all) {
+	
 	native_impl_init::initialize_all();
 	EndExportedFunc
 }

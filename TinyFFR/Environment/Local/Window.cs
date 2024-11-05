@@ -4,10 +4,11 @@
 using System;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
-public readonly struct Window : IDisposableResource<Window, WindowHandle, IWindowImplProvider> {
+public readonly struct Window : IDisposableResource<Window, WindowHandle, IWindowImplProvider>, IRenderTarget {
 	readonly WindowHandle _handle;
 	readonly IWindowImplProvider _impl;
 
@@ -57,6 +58,9 @@ public readonly struct Window : IDisposableResource<Window, WindowHandle, IWindo
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetCursorLock(_handle, value);
 	}
+
+	XYPair<int> IRenderTarget.ViewportOffset => XYPair<int>.Zero;
+	XYPair<uint> IRenderTarget.ViewportDimensions => Size.Cast<uint>();
 
 	internal Window(WindowHandle handle, IWindowImplProvider impl) {
 		ArgumentNullException.ThrowIfNull(impl);

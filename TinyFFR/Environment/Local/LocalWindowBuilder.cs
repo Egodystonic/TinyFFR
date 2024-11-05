@@ -32,7 +32,8 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		return Build(new() {
 			Display = display,
 			FullscreenStyle = fullscreenStyle,
-			Size = fullscreenStyle == WindowFullscreenStyle.NotFullscreen ? display.CurrentResolution * 0.66f : display.CurrentResolution
+			Size = fullscreenStyle == WindowFullscreenStyle.NotFullscreen ? display.CurrentResolution * 0.66f : display.CurrentResolution,
+			Position = display.CurrentResolution * (0.33f / 2f)
 		});
 	}
 
