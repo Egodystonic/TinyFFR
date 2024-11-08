@@ -96,10 +96,20 @@ public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICamer
 	public int GetNameSpanLength() => Implementation.GetNameSpanLength(_handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Matrix4x4 GetProjectionMatrix() {
+		Implementation.GetProjectionMatrix(_handle, out var result);
+		return result;
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void GetProjectionMatrix(out Matrix4x4 outProjectionMatrix) => Implementation.GetProjectionMatrix(_handle, out outProjectionMatrix);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetProjectionMatrix(in Matrix4x4 newProjectionMatrix) => Implementation.SetProjectionMatrix(_handle, newProjectionMatrix);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Matrix4x4 GetViewMatrix() {
+		Implementation.GetViewMatrix(_handle, out var result);
+		return result;
+	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void GetViewMatrix(out Matrix4x4 outViewMatrix) => Implementation.GetViewMatrix(_handle, out outViewMatrix);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

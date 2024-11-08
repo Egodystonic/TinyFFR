@@ -9,6 +9,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TinyFFR.Tests", "TinyFFR.Te
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TinyFFR.Native", "TinyFFR.Native\TinyFFR.Native.vcxproj", "{AC530F90-8CB3-4E18-9BF2-89079FB171EB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestProject", "TestProject\TestProject.csproj", "{F3E96A13-5527-4849-9B75-75C3BA3C43FC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3A08F4EC-595C-499E-A2B4-95B471BB8670} = {3A08F4EC-595C-499E-A2B4-95B471BB8670}
+		{AC530F90-8CB3-4E18-9BF2-89079FB171EB} = {AC530F90-8CB3-4E18-9BF2-89079FB171EB}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -34,6 +40,12 @@ Global
 		{AC530F90-8CB3-4E18-9BF2-89079FB171EB}.Optimized|x64.Build.0 = Release|x64
 		{AC530F90-8CB3-4E18-9BF2-89079FB171EB}.Release|x64.ActiveCfg = Release|x64
 		{AC530F90-8CB3-4E18-9BF2-89079FB171EB}.Release|x64.Build.0 = Release|x64
+		{F3E96A13-5527-4849-9B75-75C3BA3C43FC}.Debug|x64.ActiveCfg = Debug|x64
+		{F3E96A13-5527-4849-9B75-75C3BA3C43FC}.Debug|x64.Build.0 = Debug|x64
+		{F3E96A13-5527-4849-9B75-75C3BA3C43FC}.Optimized|x64.ActiveCfg = Optimized|x64
+		{F3E96A13-5527-4849-9B75-75C3BA3C43FC}.Optimized|x64.Build.0 = Optimized|x64
+		{F3E96A13-5527-4849-9B75-75C3BA3C43FC}.Release|x64.ActiveCfg = Release|x64
+		{F3E96A13-5527-4849-9B75-75C3BA3C43FC}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

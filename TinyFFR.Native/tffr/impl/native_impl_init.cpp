@@ -21,7 +21,6 @@ void native_impl_init::initialize_all() {
 	filamat::MaterialBuilder::init();
 }
 StartExportedFunc(initialize_all) {
-	
 	native_impl_init::initialize_all();
 	EndExportedFunc
 }

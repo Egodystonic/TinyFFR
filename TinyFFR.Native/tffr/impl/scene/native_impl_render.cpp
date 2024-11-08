@@ -7,10 +7,17 @@
 #include "filament/View.h"
 #include "filament/Viewport.h"
 
+#include "sdl/SDL_syswm.h"
+
 using namespace utils;
 
 void native_impl_render::allocate_renderer_and_swap_chain(WindowHandle window, RendererHandle* outRenderer, SwapChainHandle* outSwapChain) {
-	*outSwapChain = filament_engine->createSwapChain(window, 0UL);
+	SDL_SysWMinfo wmInfo;
+	SDL_VERSION(&wmInfo.version);
+	SDL_GetWindowWMInfo(window, &wmInfo);
+	HWND hwnd = wmInfo.info.win.window;
+
+	*outSwapChain = filament_engine->createSwapChain(hwnd, 0UL);
 	*outRenderer = filament_engine->createRenderer();
 	ThrowIfNull(*outSwapChain, "Could not create swap chain.");
 	ThrowIfNull(*outRenderer, "Could not create renderer.");

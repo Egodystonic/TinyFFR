@@ -6,6 +6,7 @@
 
 #include "filament/utils/Entity.h"
 #include "filament/Scene.h"
+#include "scene/native_impl_render.h"
 
 using namespace utils;
 

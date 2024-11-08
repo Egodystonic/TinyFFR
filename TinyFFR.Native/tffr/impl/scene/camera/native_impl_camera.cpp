@@ -23,7 +23,8 @@ StartExportedFunc(allocate_camera, CameraHandle* outCamera) {
 
 
 void native_impl_camera::set_camera_projection_matrix(CameraHandle camera, mat4f* newMatrixPtr, float_t nearPlaneDist, float_t farPlaneDist) {
-	camera->setCustomProjection(static_cast<mat4>(*newMatrixPtr), static_cast<double>(nearPlaneDist), static_cast<double>(farPlaneDist));
+	//camera->setCustomProjection(static_cast<mat4>(*newMatrixPtr), static_cast<double>(nearPlaneDist), static_cast<double>(farPlaneDist));
+	camera->setProjection(90.0, 1.777, 0.001, 1000);
 }
 StartExportedFunc(set_camera_projection_matrix, CameraHandle camera, mat4f* newMatrixPtr, float_t nearPlaneDist, float_t farPlaneDist) {
 	native_impl_camera::set_camera_projection_matrix(camera, newMatrixPtr, nearPlaneDist, farPlaneDist);
@@ -43,7 +44,8 @@ StartExportedFunc(get_camera_projection_matrix, CameraHandle camera, mat4f* outM
 
 
 void native_impl_camera::set_camera_view_matrix(CameraHandle camera, mat4f* newMatrixPtr) {
-	camera->setModelMatrix(inverse(*newMatrixPtr));
+	camera->lookAt({ 0.0, 0.0, -100.0 }, { 0.0, 0.0, 1.0 }, { 0.0, 1.0, 0.0 });
+	//camera->setModelMatrix(inverse(*newMatrixPtr));
 }
 StartExportedFunc(set_camera_view_matrix, CameraHandle camera, mat4f* newMatrixPtr) {
 	native_impl_camera::set_camera_view_matrix(camera, newMatrixPtr);

@@ -72,7 +72,7 @@ Material* GetMaterial(MaterialType type) {
 					.name("Basic Solid Color")
 					.require(VertexAttribute::COLOR)
 					.blending(BlendingMode::OPAQUE)
-					.shading(Shading::LIT)
+					.shading(Shading::UNLIT)
 					.culling(backend::CullingMode::BACK)
 					.platform(filamat::MaterialBuilderBase::Platform::DESKTOP)
 					.targetApi(filamat::MaterialBuilderBase::TargetApi::OPENGL)
@@ -112,7 +112,7 @@ void native_impl_render_assets::create_material(MaterialType type, void* argumen
 	switch (type) {
 		case MaterialType::BasicSolidColor:{
 			auto i = mat->createInstance();
-			i->setParameter("flatColor", float4{ 1.0, 0.0, 0.0, 1.0 });
+			i->setParameter("flatColor", float4{ 0.0, 1.0, 0.0, 1.0 });
 			*outMaterial = i;
 			break;
 		}
