@@ -8,6 +8,7 @@
 
 filament::Engine* filament_engine;
 deallocate_asset_buffer_delegate native_impl_init::deallocation_delegate;
+log_notify_delegate native_impl_init::log_delegate;
 
 void native_impl_init::initialize_all() {
 	auto sdlInitResult = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
@@ -32,4 +33,17 @@ void native_impl_init::set_buffer_deallocation_delegate(deallocate_asset_buffer_
 StartExportedFunc(set_buffer_deallocation_delegate, deallocate_asset_buffer_delegate deallocationDelegate) {
 	native_impl_init::set_buffer_deallocation_delegate(deallocationDelegate);
 	EndExportedFunc
+}
+
+void native_impl_init::set_log_notify_delegate(log_notify_delegate logNotifyDelegate) {
+	log_delegate = logNotifyDelegate;
+}
+StartExportedFunc(set_log_notify_delegate, log_notify_delegate logNotifyDelegate) {
+	native_impl_init::set_log_notify_delegate(logNotifyDelegate);
+	EndExportedFunc
+}
+
+void native_impl_init::notify_of_log_msg() {
+	if (log_delegate == nullptr) return;
+	log_delegate();
 }

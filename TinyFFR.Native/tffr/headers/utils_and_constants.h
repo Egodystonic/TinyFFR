@@ -112,3 +112,33 @@ typedef uint8_t interop_bool;
 #define filament_engine (native_impl_init::filament_engine_ptr)
 
 #pragma endregion
+
+#pragma region Logging
+
+#define Log(...) \
+	{ \
+		interop_utils::combine_in_concat_space(__VA_ARGS__); \
+		interop_utils::copy_concat_space_to_err_buffer(); \
+		native_impl_init::notify_of_log_msg(); \
+	} \
+
+
+
+#ifdef _DEBUG
+
+#define DebugLog(...) \
+	{ \
+		interop_utils::combine_in_concat_space(__VA_ARGS__); \
+		interop_utils::copy_concat_space_to_err_buffer(); \
+		native_impl_init::notify_of_log_msg(); \
+	} \
+
+#else
+
+#define DebugLog(...)
+
+#endif
+
+
+
+#pragma endregion

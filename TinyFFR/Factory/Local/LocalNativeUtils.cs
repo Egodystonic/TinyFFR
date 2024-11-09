@@ -34,6 +34,7 @@ static unsafe class LocalNativeUtils {
 
 	public static void InitializeNativeLibIfNecessary() {
 		if (_nativeLibInitialized) return;
+		SetLogNotifyDelegate(&HandleLogMessage);
 		InitializeAll().ThrowIfFailure();
 		SetBufferDeallocationDelegate(&DeallocateRentedBuffer).ThrowIfFailure();
 		_nativeLibInitialized = true;
@@ -42,6 +43,11 @@ static unsafe class LocalNativeUtils {
 	[DllImport(NativeLibName, EntryPoint = "set_buffer_deallocation_delegate")]
 	static extern InteropResult SetBufferDeallocationDelegate(
 		delegate* unmanaged<nuint, void> bufferDeallocDelegate
+	);
+
+	[DllImport(NativeLibName, EntryPoint = "set_log_notify_delegate")]
+	static extern InteropResult SetLogNotifyDelegate(
+		delegate* unmanaged<void> logNotifyDelegate
 	);
 
 	[UnmanagedCallersOnly]
@@ -53,6 +59,11 @@ static unsafe class LocalNativeUtils {
 		factory.TemporaryCpuBufferPool.Return(tuple.Buffer);
 
 		if (factory.IsDisposed) DisposeTemporaryCpuBufferPoolIfSafe(factory);
+	}
+
+	[UnmanagedCallersOnly]
+	static void HandleLogMessage() {
+		Console.WriteLine(GetLastError());
 	}
 
 	internal static void DisposeTemporaryCpuBufferPoolIfSafe(LocalRendererFactory factory) {
