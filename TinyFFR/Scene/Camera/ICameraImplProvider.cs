@@ -27,6 +27,8 @@ public interface ICameraImplProvider : IDisposableResourceImplProvider<CameraHan
 
 	public void GetProjectionMatrix(CameraHandle handle, out Matrix4x4 outMatrix);
 	public void SetProjectionMatrix(CameraHandle handle, in Matrix4x4 newMatrix);
+	public void GetModelMatrix(CameraHandle handle, out Matrix4x4 outMatrix);
+	public void SetModelMatrix(CameraHandle handle, in Matrix4x4 newMatrix);
 	public void GetViewMatrix(CameraHandle handle, out Matrix4x4 outMatrix);
 	public void SetViewMatrix(CameraHandle handle, in Matrix4x4 newMatrix);
 

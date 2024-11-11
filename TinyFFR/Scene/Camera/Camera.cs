@@ -106,6 +106,16 @@ public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICamer
 	public void SetProjectionMatrix(in Matrix4x4 newProjectionMatrix) => Implementation.SetProjectionMatrix(_handle, newProjectionMatrix);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Matrix4x4 GetModelMatrix() {
+		Implementation.GetModelMatrix(_handle, out var result);
+		return result;
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void GetModelMatrix(out Matrix4x4 outModelMatrix) => Implementation.GetModelMatrix(_handle, out outModelMatrix);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetModelMatrix(in Matrix4x4 newModelMatrix) => Implementation.SetModelMatrix(_handle, newModelMatrix);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Matrix4x4 GetViewMatrix() {
 		Implementation.GetViewMatrix(_handle, out var result);
 		return result;

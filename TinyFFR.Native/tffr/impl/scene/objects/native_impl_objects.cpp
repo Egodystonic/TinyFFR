@@ -23,7 +23,7 @@ void native_impl_objects::allocate_model_instance(mat4f* initialTransformPtr, Ve
 
 	if (result != RenderableManager::Builder::Success) Throw("Could not create entity.");
 
-	//filament_engine->getTransformManager().create(entity, TransformManager::Instance{}, *initialTransformPtr);
+	filament_engine->getTransformManager().create(entity, TransformManager::Instance{}, *initialTransformPtr);
 	filament_engine->getTransformManager().create(entity, TransformManager::Instance{});
 	*outModelInstance = Entity::smuggle(entity);
 }
@@ -55,9 +55,9 @@ StartExportedFunc(set_model_instance_material, ModelInstanceHandle modelInstance
 }
 
 void native_impl_objects::set_model_instance_world_mat(ModelInstanceHandle modelInstance, mat4f* worldMatPtr) {
-	// auto entity = Entity::import(modelInstance);
-	// auto& manager = filament_engine->getTransformManager();
-	// manager.setTransform(manager.getInstance(entity), *worldMatPtr);
+	auto entity = Entity::import(modelInstance);
+	auto& manager = filament_engine->getTransformManager();
+	manager.setTransform(manager.getInstance(entity), *worldMatPtr);
 }
 StartExportedFunc(set_model_instance_world_mat, ModelInstanceHandle modelInstance, mat4f* worldMatPtr) {
 	native_impl_objects::set_model_instance_world_mat(modelInstance, worldMatPtr);

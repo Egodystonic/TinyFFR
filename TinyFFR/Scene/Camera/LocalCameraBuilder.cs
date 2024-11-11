@@ -50,7 +50,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 		_activeCameras.Add(newCameraHandle, parameters);
 		_globals.StoreResourceNameIfNotDefault(((CameraHandle) newCameraHandle).Ident, config.NameAsSpan);
 		UpdateProjectionMatrixFromParameters(newCameraHandle);
-		UpdateViewMatrixFromParameters(newCameraHandle);
+		UpdateModelMatrixFromParameters(newCameraHandle);
 		return new(newCameraHandle, this);
 	}
 
@@ -71,7 +71,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 	public void SetPosition(CameraHandle handle, Location newPosition) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_activeCameras[handle] = _activeCameras[handle] with { Position = newPosition };
-		UpdateViewMatrixFromParameters(handle);
+		UpdateModelMatrixFromParameters(handle);
 	}
 
 	public Direction GetViewDirection(CameraHandle handle) {
@@ -85,7 +85,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 			ViewDirection = newDirection, 
 			UpDirection = GetReorthogonalizedUpOrViewDirection(_activeCameras[handle].UpDirection, newDirection)
 		};
-		UpdateViewMatrixFromParameters(handle);
+		UpdateModelMatrixFromParameters(handle);
 	}
 
 	public Direction GetUpDirection(CameraHandle handle) {
@@ -99,7 +99,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 			UpDirection = newDirection,
 			ViewDirection = GetReorthogonalizedUpOrViewDirection(_activeCameras[handle].ViewDirection, newDirection)
 		};
-		UpdateViewMatrixFromParameters(handle);
+		UpdateModelMatrixFromParameters(handle);
 	}
 
 	public Angle GetVerticalFieldOfView(CameraHandle handle) {
@@ -195,6 +195,17 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 			.ThrowIfFailure();
 	}
 
+	public void GetModelMatrix(CameraHandle handle, out Matrix4x4 outMatrix) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		GetCameraModelMatrix(handle, out outMatrix).ThrowIfFailure();
+	}
+
+	public void SetModelMatrix(CameraHandle handle, in Matrix4x4 newMatrix) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		SetCameraModelMatrix(handle, in newMatrix)
+			.ThrowIfFailure();
+	}
+
 	public void GetViewMatrix(CameraHandle handle, out Matrix4x4 outMatrix) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetCameraViewMatrix(handle, out outMatrix).ThrowIfFailure();
@@ -210,7 +221,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var curParams = _activeCameras[handle];
 		_activeCameras[handle] = curParams with { Position = curParams.Position + translation };
-		UpdateViewMatrixFromParameters(handle);
+		UpdateModelMatrixFromParameters(handle);
 	}
 	public void Rotate(CameraHandle handle, Rotation rotation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -220,55 +231,48 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 	void UpdateProjectionMatrixFromParameters(CameraHandle handle) {
 		var parameters = _activeCameras[handle];
 
-		var a = parameters.AspectRatio;
-		var v = parameters.VerticalFovRadians;
-		var t = MathF.Tan(v * 0.5f);
-		var f = parameters.FarPlaneDistance;
-		var n = parameters.NearPlaneDistance;
+		var near = parameters.NearPlaneDistance;
+		var far = parameters.FarPlaneDistance;
+
+		var h = MathF.Tan(parameters.VerticalFovRadians * 0.5f) * near;
+		var w = h * parameters.AspectRatio;
+
+		var left = -w;
+		var right = w;
+		var bottom = -h;
+		var top = h;
 
 		SetCameraProjectionMatrix(
 			handle,
 			new Matrix4x4(
-				m11: 1f / (a * t),
-				m22: 1f / t,
-				m33: f / (f - n),
-				m34: 1f,
-				m43: (-n * f) / (f - n),
-
-				m12: 0f,
-				m13: 0f,
-				m14: 0f,
-				m21: 0f,
-				m23: 0f,
-				m24: 0f,
-				m31: 0f,
-				m32: 0f,
-				m41: 0f,
-				m42: 0f,
-				m44: 0f
+				(near * 2f) / (right - left),			0f,										0f,										0f,
+				0f,										(near * 2f) / (top - bottom),			0f,										0f,
+				(right + left) / (right - left),		(top + bottom) / (top - bottom),		-(far + near) / (far - near),			-1f,
+				0f,										0f,										-(2f * far * near) / (far - near),		0f
 			),
-			n,
-			f
+			parameters.NearPlaneDistance,
+			parameters.FarPlaneDistance
 		).ThrowIfFailure();
 	}
 
-	void UpdateViewMatrixFromParameters(CameraHandle handle) {
+	void UpdateModelMatrixFromParameters(CameraHandle handle) {
 		var parameters = _activeCameras[handle];
 
 		var p = parameters.Position.ToVector3();
-		var o = parameters.ViewDirection.ToVector3();
-		var u = Vector3.Cross(parameters.UpDirection.ToVector3(), o);
-		var v = Vector3.Cross(o, u);
+		var z = parameters.ViewDirection.ToVector3();
+		var x = Vector3.Cross(z, parameters.UpDirection.ToVector3());
+		var y = Vector3.Cross(x, z);
+		z = -z;
 
-		SetCameraViewMatrix(
+		SetCameraModelMatrix(
 			handle,
 			new Matrix4x4(
-				m11: u.X, m21: u.Y, m31: u.Z,
-				m12: v.X, m22: v.Y, m32: v.Z,
-				m13: o.X, m23: o.Y, m33: o.Z,
-				m41: Vector3.Dot(p, -u),
-				m42: Vector3.Dot(p, -v),
-				m43: Vector3.Dot(p, -o),
+				m11: x.X, m12: x.Y, m13: x.Z,
+				m21: y.X, m22: y.Y, m23: y.Z,
+				m31: z.X, m32: z.Y, m33: z.Z,
+				m41: p.X,
+				m42: p.Y,
+				m43: p.Z,
 				m14: 0f,
 				m24: 0f,
 				m34: 0f,
@@ -310,6 +314,18 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 		out Matrix4x4 outMatrix,
 		out float outNearPlaneDist,
 		out float outFarPlaneDist
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_camera_model_matrix")]
+	static extern InteropResult SetCameraModelMatrix(
+		UIntPtr cameraHandle,
+		in Matrix4x4 newMatrix
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_camera_model_matrix")]
+	static extern InteropResult GetCameraModelMatrix(
+		UIntPtr cameraHandle,
+		out Matrix4x4 outMatrix
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_camera_view_matrix")]

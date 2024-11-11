@@ -24,7 +24,11 @@ StartExportedFunc(allocate_camera, CameraHandle* outCamera) {
 
 void native_impl_camera::set_camera_projection_matrix(CameraHandle camera, mat4f* newMatrixPtr, float_t nearPlaneDist, float_t farPlaneDist) {
 	//camera->setCustomProjection(static_cast<mat4>(*newMatrixPtr), static_cast<double>(nearPlaneDist), static_cast<double>(farPlaneDist));
-	camera->setProjection(90.0, 1.777, 0.001, 1000);
+	// camera->setProjection(60.0, 1.7777778, 0.3, 30000);
+	// auto m = camera->getProjectionMatrix();
+	camera->setCustomProjection(static_cast<mat4>(*newMatrixPtr), static_cast<double>(nearPlaneDist), static_cast<double>(farPlaneDist));
+	// m = camera->getProjectionMatrix();
+	// Log("");
 }
 StartExportedFunc(set_camera_projection_matrix, CameraHandle camera, mat4f* newMatrixPtr, float_t nearPlaneDist, float_t farPlaneDist) {
 	native_impl_camera::set_camera_projection_matrix(camera, newMatrixPtr, nearPlaneDist, farPlaneDist);
@@ -42,10 +46,25 @@ StartExportedFunc(get_camera_projection_matrix, CameraHandle camera, mat4f* outM
 }
 
 
+void native_impl_camera::set_camera_model_matrix(CameraHandle camera, mat4f* newMatrixPtr) {
+	camera->setModelMatrix(*newMatrixPtr);
+}
+StartExportedFunc(set_camera_model_matrix, CameraHandle camera, mat4f* newMatrixPtr) {
+	native_impl_camera::set_camera_model_matrix(camera, newMatrixPtr);
+	EndExportedFunc
+}
+
+void native_impl_camera::get_camera_model_matrix(CameraHandle camera, mat4f* outMatrix) {
+	*outMatrix = static_cast<mat4f>(camera->getModelMatrix());
+}
+StartExportedFunc(get_camera_model_matrix, CameraHandle camera, mat4f* outMatrix) {
+	native_impl_camera::get_camera_model_matrix(camera, outMatrix);
+	EndExportedFunc
+}
+
 
 void native_impl_camera::set_camera_view_matrix(CameraHandle camera, mat4f* newMatrixPtr) {
-	camera->lookAt({ 0.0, 0.0, -100.0 }, { 0.0, 0.0, 1.0 }, { 0.0, 1.0, 0.0 });
-	//camera->setModelMatrix(inverse(*newMatrixPtr));
+	camera->setModelMatrix(inverse(*newMatrixPtr));
 }
 StartExportedFunc(set_camera_view_matrix, CameraHandle camera, mat4f* newMatrixPtr) {
 	native_impl_camera::set_camera_view_matrix(camera, newMatrixPtr);

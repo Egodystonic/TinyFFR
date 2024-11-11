@@ -37,10 +37,10 @@ using var factory = (ILocalRendererFactory) new LocalRendererFactory();
 
 var display = factory.DisplayDiscoverer.Recommended ?? throw new ApplicationException("This test requires at least one connected display.");
 using var window = factory.WindowBuilder.Build(display, WindowFullscreenStyle.NotFullscreen);
-using var loop = factory.ApplicationLoopBuilder.BuildLoop(new LocalApplicationLoopConfig { FrameRateCapHz = 30, Name = "Larry the Loop" });
+using var loop = factory.ApplicationLoopBuilder.BuildLoop(new LocalApplicationLoopConfig { FrameRateCapHz = 60, Name = "Larry the Loop" });
 
 using var camera = factory.CameraBuilder.CreateCamera(new() {
-	Position = (Direction.Backward * 1f).AsLocation(),
+	Position = (Direction.Backward * 100f).AsLocation(),
 	ViewDirection = Direction.Forward,
 	UpDirection = Direction.Up,
 	Name = "Carl the Camera"
@@ -65,12 +65,15 @@ Console.WriteLine(scene);
 while (!loop.Input.UserQuitRequested) {
 	_ = loop.IterateOnce();
 	scene.Render(camera, window);
-	var m = camera.GetProjectionMatrix();
-	Console.WriteLine($"====================================");
-	Console.WriteLine($"{m.M11,5}{m.M12,5}{m.M13,5}{m.M14,5}");
-	Console.WriteLine($"{m.M21,5}{m.M22,5}{m.M23,5}{m.M24,5}");
-	Console.WriteLine($"{m.M31,5}{m.M32,5}{m.M33,5}{m.M34,5}");
-	Console.WriteLine($"{m.M41,5}{m.M42,5}{m.M43,5}{m.M44,5}");
-	camera.Rotate(new Rotation(3f, Direction.Up));
-	instance.Rotate(new Rotation(7f, Direction.Up));
+	// var m = camera.GetProjectionMatrix();
+	// Console.WriteLine($"====================================");
+	// Console.WriteLine($"{m.M11,5}{m.M12,5}{m.M13,5}{m.M14,5}");
+	// Console.WriteLine($"{m.M21,5}{m.M22,5}{m.M23,5}{m.M24,5}");
+	// Console.WriteLine($"{m.M31,5}{m.M32,5}{m.M33,5}{m.M34,5}");
+	// Console.WriteLine($"{m.M41,5}{m.M42,5}{m.M43,5}{m.M44,5}");
+	camera.Rotate(new Rotation(3f, Direction.Down));
+	// camera.Move((0f, 0f, 1f));
+	// Console.WriteLine(camera.Position);
+	// Console.WriteLine(camera.ViewDirection);
+	//instance.Scale(1.05f);
 }

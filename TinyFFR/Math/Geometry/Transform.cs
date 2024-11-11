@@ -49,9 +49,9 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 		) * Scaling.Z;
 
 		return new Matrix4x4(
-			rowA.X, rowA.Y, rowA.Z, rowA.Z,
-			rowB.X, rowB.Y, rowB.Z, rowB.Z,
-			rowC.X, rowC.Y, rowC.Z, rowC.Z,
+			rowA.X, rowA.Y, rowA.Z, rowA.W,
+			rowB.X, rowB.Y, rowB.Z, rowB.W,
+			rowC.X, rowC.Y, rowC.Z, rowC.W,
 			Translation.X, Translation.Y, Translation.Z, 1f
 		);
 	}
