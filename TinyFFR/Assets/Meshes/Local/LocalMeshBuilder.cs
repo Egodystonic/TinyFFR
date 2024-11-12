@@ -57,7 +57,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 	);
 	#endregion
 
-	public Mesh CreateMesh(CuboidDescriptor cuboidDesc) => CreateMesh(cuboidDesc, new());
+	public Mesh CreateMesh(CuboidDescriptor cuboidDesc, ReadOnlySpan<char> name = default) => CreateMesh(cuboidDesc, new MeshCreationConfig { Name = name });
 	public Mesh CreateMesh(CuboidDescriptor cuboidDesc, in MeshCreationConfig config) {
 		Span<MeshVertex> vertices = stackalloc MeshVertex[8];
 		Span<MeshTriangle> triangles = stackalloc MeshTriangle[12];
@@ -98,8 +98,8 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		return CreateMesh(vertices, triangles, config);
 	}
 
-	public Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<MeshTriangle> triangles) => CreateMesh(vertices, triangles, new());
-	public Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<MeshTriangle> triangles, scoped in MeshCreationConfig config) {
+	public Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<MeshTriangle> triangles, ReadOnlySpan<char> name = default) => CreateMesh(vertices, triangles, new MeshCreationConfig { Name = name });
+	public Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<MeshTriangle> triangles, in MeshCreationConfig config) {
 		static void CheckTriangleIndex(char indexChar, int triangleIndex, int value, int numVertices) {
 			if (value < 0 || value >= numVertices) {
 				throw new ArgumentException($"Index '{indexChar}' in triangle #{triangleIndex} (0-indexed) is \"{value}\"; " +
@@ -142,7 +142,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		_nextHandleId++;
 		var handle = new MeshHandle(_nextHandleId);
 		_activeMeshes.Add(handle, new(vbHandle, ibHandle, 0, indexBufferCount));
-		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.NameAsSpan);
+		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.Name);
 		return new Mesh(handle, this);
 	}
 
@@ -151,19 +151,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		return _activeMeshes[handle];
 	}
 
-	public string GetName(MeshHandle handle) {
+	public ReadOnlySpan<char> GetName(MeshHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceNameAsNewStringObject(handle.Ident, DefaultMeshName);
-	}
-
-	public int GetNameUsingSpan(MeshHandle handle, Span<char> dest) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.CopyResourceName(handle.Ident, DefaultMeshName, dest);
-	}
-
-	public int GetNameSpanLength(MeshHandle handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceNameLength(handle.Ident, DefaultMeshName);
+		return _globals.GetResourceName(handle.Ident, DefaultMeshName);
 	}
 
 	#region Disposal

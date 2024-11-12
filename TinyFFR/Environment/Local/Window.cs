@@ -18,13 +18,13 @@ public readonly struct Window : IDisposableResource<Window, WindowHandle, IWindo
 	IWindowImplProvider IResource<WindowHandle, IWindowImplProvider>.Implementation => Implementation;
 	WindowHandle IResource<WindowHandle, IWindowImplProvider>.Handle => Handle;
 
-	public string Title {
+	public ReadOnlySpan<char> Title {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetTitle(_handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetTitle(_handle, value);
 	}
-	string IStringSpanNameEnabled.Name => Title;
+	ReadOnlySpan<char> IStringSpanNameEnabled.Name => Title;
 
 	public Display Display {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -71,12 +71,6 @@ public readonly struct Window : IDisposableResource<Window, WindowHandle, IWindo
 	static Window IResource<Window>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
 		return new Window(rawHandle, impl as IWindowImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
-
-	public int GetTitleUsingSpan(Span<char> dest) => Implementation.GetTitleUsingSpan(_handle, dest);
-	int IStringSpanNameEnabled.GetNameUsingSpan(Span<char> dest) => GetTitleUsingSpan(dest);
-	public void SetTitleUsingSpan(ReadOnlySpan<char> src) => Implementation.SetTitleUsingSpan(_handle, src);
-	public int GetTitleSpanLength() => Implementation.GetTitleSpanLength(_handle);
-	int IStringSpanNameEnabled.GetNameSpanLength() => GetTitleSpanLength();
 
 	#region Disposal
 	public bool IsDisposed {

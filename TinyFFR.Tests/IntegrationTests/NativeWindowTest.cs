@@ -40,29 +40,23 @@ class NativeWindowTest {
 		}
 
 		var windowBuilder = factory.WindowBuilder;
-		using var window = windowBuilder.Build(new() {
+		using var window = windowBuilder.CreateWindow(new() {
 			Display = displayDiscoverer.Primary!.Value,
 			Size = (500, 300),
 			Position = (100, 100)
 		});
 		window.Title = "Test 456";
 
-		Assert.AreEqual("Test 456", window.Title);
+		Assert.AreEqual("Test 456", window.Title.ToString());
 		window.Title = "Test 123";
-		Assert.AreEqual("Test 123", window.Title);
+		Assert.AreEqual("Test 123", window.Title.ToString());
 		window.Title = "1234567890";
-		Assert.AreEqual("1234567890", window.Title);
+		Assert.AreEqual("1234567890", window.Title.ToString());
 		window.Title = "12345678901";
-		Assert.AreEqual("1234567890", window.Title);
+		Assert.AreEqual("1234567890", window.Title.ToString());
 		window.Title = "1234567890123";
-		Assert.AreEqual("1234567890", window.Title);
-		Span<char> tooSmallSpan = stackalloc char[5];
-		Assert.AreEqual(5, window.GetTitleUsingSpan(tooSmallSpan));
-		Assert.AreEqual("12345", new String(tooSmallSpan));
-		Span<char> oversizeSpan = stackalloc char[15];
-		Assert.AreEqual(10, window.GetTitleUsingSpan(oversizeSpan));
-		Assert.AreEqual("1234567890", new String(oversizeSpan[..10]));
-
+		Assert.AreEqual("1234567890", window.Title.ToString());
+		
 		Assert.AreEqual(new XYPair<int>(500, 300), window.Size);
 		Assert.AreEqual(new XYPair<int>(100, 100), window.Position);
 		 

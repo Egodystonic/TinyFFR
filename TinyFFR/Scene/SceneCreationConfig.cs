@@ -6,11 +6,7 @@ using System;
 namespace Egodystonic.TinyFFR.Scene;
 
 public readonly ref struct SceneCreationConfig {
-	public ReadOnlySpan<char> NameAsSpan { get; init; }
-	public string Name {
-		get => new(NameAsSpan);
-		init => NameAsSpan = value.AsSpan();
-	}
+	public ReadOnlySpan<char> Name { get; init; }
 
 	public SceneCreationConfig() { }
 

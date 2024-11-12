@@ -16,7 +16,7 @@ public readonly struct Texture : IDisposableResource<Texture, TextureHandle, ITe
 	ITextureImplProvider IResource<TextureHandle, ITextureImplProvider>.Implementation => Implementation;
 	TextureHandle IResource<TextureHandle, ITextureImplProvider>.Handle => Handle;
 
-	public string Name {
+	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(_handle);
 	}
@@ -29,11 +29,6 @@ public readonly struct Texture : IDisposableResource<Texture, TextureHandle, ITe
 	static Texture IResource<Texture>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
 		return new Texture(rawHandle, impl as ITextureImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetNameUsingSpan(Span<char> dest) => Implementation.GetNameUsingSpan(_handle, dest);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetNameSpanLength() => Implementation.GetNameSpanLength(_handle);
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

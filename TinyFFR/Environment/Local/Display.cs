@@ -26,7 +26,7 @@ public readonly struct Display : IResource<Display, DisplayHandle, IDisplayImplP
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetIsRecommended(_handle);
 	}
-	public string Name {
+	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(_handle);
 	}
@@ -60,11 +60,6 @@ public readonly struct Display : IResource<Display, DisplayHandle, IDisplayImplP
 	static Display IResource<Display>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
 		return new Display(rawHandle, impl as IDisplayImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetNameUsingSpan(Span<char> dest) => Implementation.GetNameUsingSpan(_handle, dest);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetNameSpanLength() => Implementation.GetNameSpanLength(_handle);
 
 	internal XYPair<int> TranslateDisplayLocalWindowPositionToGlobal(XYPair<int> displayLocalPosition) => displayLocalPosition + GlobalPositionOffset;
 	internal XYPair<int> TranslateGlobalWindowPositionToDisplayLocal(XYPair<int> globalPosition) => globalPosition - GlobalPositionOffset;

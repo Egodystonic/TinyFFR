@@ -22,7 +22,7 @@ public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICamer
 	ICameraImplProvider IResource<CameraHandle, ICameraImplProvider>.Implementation => Implementation;
 	CameraHandle IResource<CameraHandle, ICameraImplProvider>.Handle => Handle;
 
-	public string Name {
+	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(_handle);
 	}
@@ -91,11 +91,6 @@ public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICamer
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetNameUsingSpan(Span<char> dest) => Implementation.GetNameUsingSpan(_handle, dest);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetNameSpanLength() => Implementation.GetNameSpanLength(_handle);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Matrix4x4 GetProjectionMatrix() {
 		Implementation.GetProjectionMatrix(_handle, out var result);
 		return result;
@@ -126,9 +121,9 @@ public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICamer
 	public void SetViewMatrix(in Matrix4x4 newViewMatrix) => Implementation.SetViewMatrix(_handle, newViewMatrix);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Move(Vect translation) => Implementation.Translate(_handle, translation);
+	public void MoveBy(Vect translation) => Implementation.Translate(_handle, translation);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Rotate(Rotation rotation) => Implementation.Rotate(_handle, rotation);
+	public void RotateBy(Rotation rotation) => Implementation.Rotate(_handle, rotation);
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

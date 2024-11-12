@@ -128,29 +128,11 @@ sealed unsafe class LocalCombinedResourceGroupImplProvider : ICombinedResourceGr
 		throw new IndexOutOfRangeException($"Index '{index}' is out of range for resources of type '{typeof(TResource).Name}' in this resource group (actual count = {count}).");
 	}
 
-	public string GetName(CombinedResourceGroupHandle handle) {
+	public ReadOnlySpan<char> GetName(CombinedResourceGroupHandle handle) {
 		ThrowIfHandleIsDisposed(handle);
 
 		if (!_nameMap.TryGetValue(handle, out var nameHandle)) return DefaultGroupName;
-		else return nameHandle.AsNewStringObject;
-	}
-	public int GetNameUsingSpan(CombinedResourceGroupHandle handle, Span<char> dest) {
-		ThrowIfHandleIsDisposed(handle);
-
-		if (!_nameMap.TryGetValue(handle, out var nameHandle)) {
-			DefaultGroupName.CopyTo(dest);
-			return DefaultGroupName.Length;
-		}
-		else {
-			nameHandle.AsSpan.CopyTo(dest);
-			return nameHandle.Length;
-		}
-	}
-	public int GetNameSpanLength(CombinedResourceGroupHandle handle) {
-		ThrowIfHandleIsDisposed(handle);
-
-		if (!_nameMap.TryGetValue(handle, out var nameHandle)) return DefaultGroupName.Length;
-		else return nameHandle.Length;
+		else return nameHandle.AsSpan;
 	}
 
 	public bool IsDisposed(CombinedResourceGroupHandle handle) => !_bufferMap.ContainsKey(handle.AsInteger);

@@ -18,7 +18,7 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, ModelI
 	IModelInstanceImplProvider IResource<ModelInstanceHandle, IModelInstanceImplProvider>.Implementation => Implementation;
 	ModelInstanceHandle IResource<ModelInstanceHandle, IModelInstanceImplProvider>.Handle => Handle;
 
-	public string Name {
+	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(_handle);
 	}
@@ -72,15 +72,12 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, ModelI
 		return new ModelInstance(rawHandle, impl as IModelInstanceImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetNameUsingSpan(Span<char> dest) => Implementation.GetNameUsingSpan(_handle, dest);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetNameSpanLength() => Implementation.GetNameSpanLength(_handle);
-
-	public void Scale(float scalar) => Implementation.Scale(_handle, scalar);
-	public void Scale(Vect vect) => Implementation.Scale(_handle, vect);
-	public void Rotate(Rotation rotation) => Implementation.Rotate(_handle, rotation);
-	public void Move(Vect translation) => Implementation.Translate(_handle, translation);
+	public void MoveBy(Vect translation) => Implementation.TranslateBy(_handle, translation);
+	public void RotateBy(Rotation rotation) => Implementation.RotateBy(_handle, rotation);
+	public void ScaleBy(float scalar) => Implementation.ScaleBy(_handle, scalar);
+	public void ScaleBy(Vect vect) => Implementation.ScaleBy(_handle, vect);
+	public void AdjustScaleBy(float scalar) => Implementation.AdjustScaleBy(_handle, scalar);
+	public void AdjustScaleBy(Vect vect) => Implementation.AdjustScaleBy(_handle, vect);
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

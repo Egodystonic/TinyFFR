@@ -19,7 +19,7 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, Ap
 	IApplicationLoopImplProvider IResource<ApplicationLoopHandle, IApplicationLoopImplProvider>.Implementation => Implementation;
 	ApplicationLoopHandle IResource<ApplicationLoopHandle, IApplicationLoopImplProvider>.Handle => Handle;
 
-	public string Name {
+	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(_handle);
 	}
@@ -54,11 +54,6 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, Ap
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool TryIterateOnce(out TimeSpan outDeltaTime) => Implementation.TryIterateOnce(_handle, out outDeltaTime);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetNameUsingSpan(Span<char> dest) => Implementation.GetNameUsingSpan(_handle, dest);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetNameSpanLength() => Implementation.GetNameSpanLength(_handle);
 
 	public override string ToString() => $"Application Loop {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
 

@@ -27,8 +27,10 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	Mesh GetMesh(ModelInstanceHandle handle);
 	void SetMesh(ModelInstanceHandle handle, Mesh newMesh);
 
-	void Scale(ModelInstanceHandle handle, float scalar);
-	void Scale(ModelInstanceHandle handle, Vect vect);
-	void Rotate(ModelInstanceHandle handle, Rotation rotation);
-	void Translate(ModelInstanceHandle handle, Vect translation);
+	void TranslateBy(ModelInstanceHandle handle, Vect translation);
+	void RotateBy(ModelInstanceHandle handle, Rotation rotation);
+	void ScaleBy(ModelInstanceHandle handle, float scalar);
+	void ScaleBy(ModelInstanceHandle handle, Vect vect);
+	void AdjustScaleBy(ModelInstanceHandle handle, float scalar);
+	void AdjustScaleBy(ModelInstanceHandle handle, Vect vect);
 }

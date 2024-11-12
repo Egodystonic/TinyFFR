@@ -6,6 +6,6 @@ using System;
 namespace Egodystonic.TinyFFR.Environment;
 
 public interface IApplicationLoopBuilder {
-	ApplicationLoop BuildLoop();
-	ApplicationLoop BuildLoop(in ApplicationLoopConfig config);
+	ApplicationLoop CreateLoop(int? frameRateCapHz = null, ReadOnlySpan<char> name = default);
+	ApplicationLoop CreateLoop(in ApplicationLoopConfig config);
 }

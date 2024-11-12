@@ -25,11 +25,11 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 		_globals = globals;
 	}
 
-	public Camera CreateCamera() => CreateCamera(new CameraCreationConfig());
-	public Camera CreateCamera(Location initialPosition, Direction initialViewDirection) {
-		return CreateCamera(new CameraCreationConfig() {
-			Position = initialPosition,
-			ViewDirection = initialViewDirection
+	public Camera CreateCamera(Location? initialPosition = null, Direction? initialViewDirection = null, ReadOnlySpan<char> name = default) {
+		return CreateCamera(new CameraCreationConfig {
+			Position = initialPosition ?? CameraCreationConfig.DefaultPosition,
+			ViewDirection = initialViewDirection ?? CameraCreationConfig.DefaultViewDirection,
+			Name = name
 		});
 	}
 	public Camera CreateCamera(in CameraCreationConfig config) {
@@ -48,7 +48,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 		);
 
 		_activeCameras.Add(newCameraHandle, parameters);
-		_globals.StoreResourceNameIfNotDefault(((CameraHandle) newCameraHandle).Ident, config.NameAsSpan);
+		_globals.StoreResourceNameIfNotDefault(((CameraHandle) newCameraHandle).Ident, config.Name);
 		UpdateProjectionMatrixFromParameters(newCameraHandle);
 		UpdateModelMatrixFromParameters(newCameraHandle);
 		return new(newCameraHandle, this);
@@ -281,17 +281,9 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 		).ThrowIfFailure();
 	}
 
-	public string GetName(CameraHandle handle) {
+	public ReadOnlySpan<char> GetName(CameraHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceNameAsNewStringObject(handle.Ident, DefaultCameraName);
-	}
-	public int GetNameUsingSpan(CameraHandle handle, Span<char> dest) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.CopyResourceName(handle.Ident, DefaultCameraName, dest);
-	}
-	public int GetNameSpanLength(CameraHandle handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceNameLength(handle.Ident, DefaultCameraName);
+		return _globals.GetResourceName(handle.Ident, DefaultCameraName);
 	}
 
 	#region Native Methods

@@ -5,8 +5,10 @@ using System;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
-public readonly record struct WindowConfig {
+public readonly ref struct WindowConfig {
 	public required Display Display { get; init; }
+
+	public ReadOnlySpan<char> Title { get; init; }
 
 	public XYPair<int> Position { get; init; } = (0, 0); // TODO explain in XMLDoc that this is relative positioning on the selected Display
 

@@ -28,16 +28,17 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		_windowTitleBuffer = new InteropStringBuffer(config.MaxWindowTitleLength, addOneForNullTerminator: true);
 	}
 
-	public Window Build(Display display, WindowFullscreenStyle fullscreenStyle) {
-		return Build(new() {
+	public Window CreateWindow(Display display, WindowFullscreenStyle? fullscreenStyle = null, XYPair<int>? size = null, XYPair<int>? position = null, ReadOnlySpan<char> title = default) {
+		return CreateWindow(new() {
 			Display = display,
-			FullscreenStyle = fullscreenStyle,
-			Size = fullscreenStyle == WindowFullscreenStyle.NotFullscreen ? display.CurrentResolution * 0.66f : display.CurrentResolution,
-			Position = display.CurrentResolution * (0.33f / 2f)
+			FullscreenStyle = fullscreenStyle ?? WindowFullscreenStyle.NotFullscreen,
+			Size = size ?? (fullscreenStyle == WindowFullscreenStyle.Fullscreen ? display.CurrentResolution : display.CurrentResolution * 0.66f),
+			Position = position ?? (display.CurrentResolution * (0.33f / 2f)),
+			Title = title
 		});
 	}
 
-	public Window Build(in WindowConfig config) {
+	public Window CreateWindow(in WindowConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 		var globalPosition = config.Display.TranslateDisplayLocalWindowPositionToGlobal(config.Position);
@@ -52,20 +53,24 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		_activeWindows.Add(outHandle);
 		_displayMap.Add(outHandle, config.Display);
 		result.FullscreenStyle = config.FullscreenStyle;
+		if (config.Title != default) SetTitleOnWindow(result.Handle, config.Title);
 		return result;
 	}
 
-	public string GetTitle(WindowHandle handle) {
+	public ReadOnlySpan<char> GetTitle(WindowHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var maxSpanLength = GetTitleSpanMaxLength(handle);
+		var maxSpanLength = _windowTitleBuffer.BufferLength;
 		var dest = maxSpanLength <= 1000 ? stackalloc char[maxSpanLength] : new char[maxSpanLength];
 
-		var numCharsWritten = GetTitleUsingSpan(handle, dest);
-		return new(dest[..numCharsWritten]);
+		var numCharsWritten = ReadTitleFromWindow(handle, dest);
+		_globals.ReplaceResourceName(handle.Ident, dest[..numCharsWritten]);
+		return _globals.GetResourceName(handle.Ident, default);
 	}
-	public void SetTitle(WindowHandle handle, string newTitle) => SetTitleUsingSpan(handle, newTitle);
-
-	public int GetTitleUsingSpan(WindowHandle handle, Span<char> dest) {
+	public void SetTitle(WindowHandle handle, ReadOnlySpan<char> newTitle) {
+		SetTitleOnWindow(handle, newTitle);
+		_globals.ReplaceResourceName(handle.Ident, newTitle);
+	}
+	public int ReadTitleFromWindow(WindowHandle handle, Span<char> dest) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetWindowTitle(
 			handle,
@@ -74,7 +79,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		).ThrowIfFailure();
 		return _windowTitleBuffer.ConvertToUtf16(dest);
 	}
-	public void SetTitleUsingSpan(WindowHandle handle, ReadOnlySpan<char> src) {
+	public void SetTitleOnWindow(WindowHandle handle, ReadOnlySpan<char> src) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_windowTitleBuffer.ConvertFromUtf16(src);
 		SetWindowTitle(
@@ -82,16 +87,6 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 			ref _windowTitleBuffer.BufferRef
 		).ThrowIfFailure();
 	}
-	public int GetTitleSpanLength(WindowHandle handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		GetWindowTitle(
-			handle,
-			ref _windowTitleBuffer.BufferRef,
-			_windowTitleBuffer.BufferLength
-		).ThrowIfFailure();
-		return _windowTitleBuffer.GetUtf16Length();
-	}
-	int GetTitleSpanMaxLength(WindowHandle handle) => _windowTitleBuffer.BufferLength;
 
 	public Display GetDisplay(WindowHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);

@@ -20,11 +20,7 @@ public readonly ref struct ApplicationLoopConfig {
 		}
 	}
 
-	public ReadOnlySpan<char> NameAsSpan { get; init; }
-	public string Name {
-		get => new(NameAsSpan);
-		init => NameAsSpan = value.AsSpan();
-	}
+	public ReadOnlySpan<char> Name { get; init; }
 
 	public ApplicationLoopConfig() { }
 

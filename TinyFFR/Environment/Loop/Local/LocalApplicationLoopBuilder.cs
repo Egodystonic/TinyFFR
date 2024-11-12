@@ -40,9 +40,16 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		_config = config;
 	}
 
-	public ApplicationLoop BuildLoop() => BuildLoop(new LocalApplicationLoopConfig());
-	public ApplicationLoop BuildLoop(in ApplicationLoopConfig config) => BuildLoop(new LocalApplicationLoopConfig(config));
-	public ApplicationLoop BuildLoop(in LocalApplicationLoopConfig config) {
+	public ApplicationLoop CreateLoop(int? frameRateCapHz = null, ReadOnlySpan<char> name = default) => CreateLoop(frameRateCapHz, null, name);
+	public ApplicationLoop CreateLoop(int? frameRateCapHz = null, bool? waitForVsync = null, ReadOnlySpan<char> name = default) {
+		return CreateLoop(new LocalApplicationLoopConfig {
+			Name = name,
+			FrameRateCapHz = frameRateCapHz,
+			WaitForVSync = waitForVsync ?? LocalApplicationLoopConfig.DefaultWaitForVSync
+		});
+	}
+	public ApplicationLoop CreateLoop(in ApplicationLoopConfig config) => CreateLoop(new LocalApplicationLoopConfig(config));
+	public ApplicationLoop CreateLoop(in LocalApplicationLoopConfig config) {
 		ThrowIfThisIsDisposed();
 		if (!_config.AllowMultipleSimultaneousLoops && _handleDataMap.Count > 0) {
 			throw new InvalidOperationException(
@@ -58,7 +65,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		var curTime = Stopwatch.GetTimestamp();
 		var handle = (ApplicationLoopHandle) _nextLoopHandleIndex;
 		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero));
-		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.BaseConfig.NameAsSpan);
+		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.BaseConfig.Name);
 		_nextLoopHandleIndex++;
 		return new(handle, this);
 	}
@@ -126,19 +133,9 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		return _handleDataMap[handle].TotalIteratedTime;
 	}
 
-	public string GetName(ApplicationLoopHandle handle) {
+	public ReadOnlySpan<char> GetName(ApplicationLoopHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceNameAsNewStringObject(handle.Ident, DefaultLoopName);
-	}
-
-	public int GetNameUsingSpan(ApplicationLoopHandle handle, Span<char> dest) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.CopyResourceName(handle.Ident, DefaultLoopName, dest);
-	}
-
-	public int GetNameSpanLength(ApplicationLoopHandle handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceNameLength(handle.Ident, DefaultLoopName);
+		return _globals.GetResourceName(handle.Ident, DefaultLoopName);
 	}
 
 	public override string ToString() => _isDisposed ? "TinyFFR Local Application Loop Builder [Disposed]" : "TinyFFR Local Application Loop Builder";

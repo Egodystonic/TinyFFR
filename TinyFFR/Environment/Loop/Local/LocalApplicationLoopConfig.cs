@@ -6,6 +6,7 @@ using System;
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 public readonly ref struct LocalApplicationLoopConfig {
+	public const bool DefaultWaitForVSync = false;
 	internal readonly TimeSpan MaxCpuBusyWaitTime = TimeSpan.FromMilliseconds(1d);
 
 	public ApplicationLoopConfig BaseConfig { get; private init; }
@@ -14,7 +15,7 @@ public readonly ref struct LocalApplicationLoopConfig {
 		init => BaseConfig = BaseConfig with { FrameRateCapHz = value };
 	} 
 	
-	public bool WaitForVSync { get; init; } = false;
+	public bool WaitForVSync { get; init; } = DefaultWaitForVSync;
 
 	public TimeSpan FrameTimingPrecisionBusyWaitTime {
 		get {
@@ -28,11 +29,7 @@ public readonly ref struct LocalApplicationLoopConfig {
 		}
 	}
 
-	public ReadOnlySpan<char> NameAsSpan {
-		get => BaseConfig.NameAsSpan;
-		init => BaseConfig = BaseConfig with { NameAsSpan = value };
-	}
-	public string Name {
+	public ReadOnlySpan<char> Name {
 		get => BaseConfig.Name;
 		init => BaseConfig = BaseConfig with { Name = value };
 	}

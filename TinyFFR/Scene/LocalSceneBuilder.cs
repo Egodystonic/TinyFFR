@@ -26,7 +26,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		_renderer = new(globals);
 	}
 
-	public Scene CreateScene() => CreateScene(new());
+	public Scene CreateScene(ReadOnlySpan<char> name = default) => CreateScene(new SceneCreationConfig { Name = name });
 	public Scene CreateScene(in SceneCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		AllocateScene(
@@ -34,21 +34,13 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		).ThrowIfFailure();
 		var result = HandleToInstance(handle);
 		_modelInstanceMap.Add(handle, _modelInstanceVectorPool.Rent());
-		_globals.StoreResourceNameIfNotDefault(new SceneHandle(handle).Ident, config.NameAsSpan);
+		_globals.StoreResourceNameIfNotDefault(new SceneHandle(handle).Ident, config.Name);
 		return result;
 	}
 
-	public string GetName(SceneHandle handle) {
+	public ReadOnlySpan<char> GetName(SceneHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceNameAsNewStringObject(handle.Ident, DefaultSceneName);
-	}
-	public int GetNameUsingSpan(SceneHandle handle, Span<char> dest) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.CopyResourceName(handle.Ident, DefaultSceneName, dest);
-	}
-	public int GetNameSpanLength(SceneHandle handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceNameLength(handle.Ident, DefaultSceneName);
+		return _globals.GetResourceName(handle.Ident, DefaultSceneName);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

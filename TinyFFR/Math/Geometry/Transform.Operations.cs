@@ -19,6 +19,11 @@ partial struct Transform :
 	Transform IIndependentAxisScalable<Transform>.ScaledBy(Vect vect) => WithScalingMultipliedBy(vect);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Transform WithScalingAdjustedBy(float scalar) => this with { Scaling = Scaling + new Vect(scalar) };
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Transform WithScalingAdjustedBy(Vect vect) => this with { Scaling = Scaling + vect };
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Transform WithScalingMultipliedBy(float scalar) => this with { Scaling = Scaling * scalar };
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Transform WithScalingMultipliedBy(Vect vect) => this with { Scaling = Scaling * vect };

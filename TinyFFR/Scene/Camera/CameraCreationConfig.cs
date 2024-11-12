@@ -22,11 +22,7 @@ public readonly ref struct CameraCreationConfig {
 	public float NearPlaneDistance { get; init; } = DefaultNearPlaneDistance;
 	public float FarPlaneDistance { get; init; } = DefaultFarPlaneDistance;
 
-	public ReadOnlySpan<char> NameAsSpan { get; init; }
-	public string Name {
-		get => new(NameAsSpan);
-		init => NameAsSpan = value.AsSpan();
-	}
+	public ReadOnlySpan<char> Name { get; init; }
 
 	public CameraCreationConfig() { }
 

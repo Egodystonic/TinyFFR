@@ -40,7 +40,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Material HandleToInstance(MaterialHandle h) => new(h, this);
 
-	public Material CreateBasicSolidColorMat(ColorVect color) => CreateBasicSolidColorMat(color, new());
+	public Material CreateBasicSolidColorMat(ColorVect color, ReadOnlySpan<char> name = default) => CreateBasicSolidColorMat(color, new MaterialCreationConfig { Name = name });
 	public Material CreateBasicSolidColorMat(ColorVect color, in MaterialCreationConfig config) {
 		CreateMaterial(
 			MaterialType.BasicSolidColor,
@@ -50,21 +50,13 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		).ThrowIfFailure();
 
 		_activeMaterials.Add(handle, _globals.ResourceGroupProvider.CreateGroup(0, false));
-		_globals.StoreResourceNameIfNotDefault(new MaterialHandle(handle).Ident, config.NameAsSpan);
+		_globals.StoreResourceNameIfNotDefault(new MaterialHandle(handle).Ident, config.Name);
 		return new(handle, this);
 	}
 
-	public string GetName(MaterialHandle handle) {
+	public ReadOnlySpan<char> GetName(MaterialHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceNameAsNewStringObject(handle.Ident, DefaultMaterialName);
-	}
-	public int GetNameUsingSpan(MaterialHandle handle, Span<char> dest) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.CopyResourceName(handle.Ident, DefaultMaterialName, dest);
-	}
-	public int GetNameSpanLength(MaterialHandle handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceNameLength(handle.Ident, DefaultMaterialName);
+		return _globals.GetResourceName(handle.Ident, DefaultMaterialName);
 	}
 
 	#region Disposal

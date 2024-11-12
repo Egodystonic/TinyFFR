@@ -6,13 +6,11 @@ using System;
 namespace Egodystonic.TinyFFR.Scene;
 
 public readonly ref struct ModelInstanceCreationConfig {
-	public ReadOnlySpan<char> NameAsSpan { get; init; }
-	public string Name {
-		get => new(NameAsSpan);
-		init => NameAsSpan = value.AsSpan();
-	}
+	public static readonly Transform DefaultInitialTransform = Transform.None;
 
-	public Transform InitialTransform { get; init; } = Transform.None;
+	public ReadOnlySpan<char> Name { get; init; }
+
+	public Transform InitialTransform { get; init; } = DefaultInitialTransform;
 
 	public ModelInstanceCreationConfig() { }
 

@@ -111,18 +111,9 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider {
 		return handle == _recommendedHandle;
 	}
 
-	public string GetName(DisplayHandle handle) {
+	public ReadOnlySpan<char> GetName(DisplayHandle handle) {
 		ThrowIfUnrecognizedDisplay(handle);
 		return _displayNames[handle];
-	}
-	public int GetNameUsingSpan(DisplayHandle handle, Span<char> dest) {
-		ThrowIfUnrecognizedDisplay(handle);
-		_displayNames[handle].CopyTo(dest);
-		return _displayNames[handle].Length;
-	}
-	public int GetNameSpanLength(DisplayHandle handle) {
-		ThrowIfUnrecognizedDisplay(handle);
-		return _displayNames[handle].Length;
 	}
 	public ReadOnlySpan<DisplayMode> GetSupportedDisplayModes(DisplayHandle handle) {
 		ThrowIfUnrecognizedDisplay(handle);

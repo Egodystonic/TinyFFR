@@ -20,7 +20,28 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 		_globals = globals;
 	}
 
-	public ModelInstance CreateModelInstance(Mesh mesh, Material material) => CreateModelInstance(mesh, material, new());
+	public ModelInstance CreateModelInstance(Mesh mesh, Material material, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, ReadOnlySpan<char> name = default) {
+		return CreateModelInstance(
+			mesh, 
+			material, 
+			new Transform(
+				translation: initialPosition?.AsVect() ?? ModelInstanceCreationConfig.DefaultInitialTransform.Translation,
+				rotation: initialRotation ?? ModelInstanceCreationConfig.DefaultInitialTransform.Rotation,
+				scaling: initialScaling ?? ModelInstanceCreationConfig.DefaultInitialTransform.Scaling
+			),
+			name
+		);
+	}
+	public ModelInstance CreateModelInstance(Mesh mesh, Material material, Transform initialTransform, ReadOnlySpan<char> name = default) {
+		return CreateModelInstance(
+			mesh,
+			material,
+			new ModelInstanceCreationConfig {
+				InitialTransform = initialTransform,
+				Name = name
+			}
+		);
+	}
 	public ModelInstance CreateModelInstance(Mesh mesh, Material material, in ModelInstanceCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		var meshBufferData = mesh.BufferData;
@@ -35,7 +56,7 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 		).ThrowIfFailure();
 		var result = HandleToInstance(handle);
 		_activeInstanceMap.Add(handle, config.InitialTransform);
-		_globals.StoreResourceNameIfNotDefault(new ModelInstanceHandle(handle).Ident, config.NameAsSpan);
+		_globals.StoreResourceNameIfNotDefault(new ModelInstanceHandle(handle).Ident, config.Name);
 		_globals.DependencyTracker.RegisterDependency(result, mesh);
 		_globals.DependencyTracker.RegisterDependency(result, material);
 		return result;
@@ -81,21 +102,29 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle] with { Scaling = newScaling });
 	}
 
-	public void Scale(ModelInstanceHandle handle, float scalar) {
+	public void TranslateBy(ModelInstanceHandle handle, Vect translation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithScalingMultipliedBy(scalar));
+		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithAdditionalTranslation(translation));
 	}
-	public void Scale(ModelInstanceHandle handle, Vect vect) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithScalingMultipliedBy(vect));
-	}
-	public void Rotate(ModelInstanceHandle handle, Rotation rotation) {
+	public void RotateBy(ModelInstanceHandle handle, Rotation rotation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithAdditionalRotation(rotation));
 	}
-	public void Translate(ModelInstanceHandle handle, Vect translation) {
+	public void ScaleBy(ModelInstanceHandle handle, float scalar) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithAdditionalTranslation(translation));
+		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithScalingMultipliedBy(scalar));
+	}
+	public void ScaleBy(ModelInstanceHandle handle, Vect vect) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithScalingMultipliedBy(vect));
+	}
+	public void AdjustScaleBy(ModelInstanceHandle handle, float scalar) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithScalingAdjustedBy(scalar));
+	}
+	public void AdjustScaleBy(ModelInstanceHandle handle, Vect vect) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithScalingAdjustedBy(vect));
 	}
 
 	public Mesh GetMesh(ModelInstanceHandle handle) {
@@ -130,19 +159,9 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMaterial);
 	}
 
-	public string GetName(ModelInstanceHandle handle) {
+	public ReadOnlySpan<char> GetName(ModelInstanceHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceNameAsNewStringObject(handle.Ident, DefaultModelInstanceName);
-	}
-
-	public int GetNameUsingSpan(ModelInstanceHandle handle, Span<char> dest) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.CopyResourceName(handle.Ident, DefaultModelInstanceName, dest);
-	}
-
-	public int GetNameSpanLength(ModelInstanceHandle handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceNameLength(handle.Ident, DefaultModelInstanceName);
+		return _globals.GetResourceName(handle.Ident, DefaultModelInstanceName);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

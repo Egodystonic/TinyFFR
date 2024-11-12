@@ -22,7 +22,7 @@ class NativeLoopTimingTest {
 		using var factory = new LocalRendererFactory();
 
 		var loopBuilder = factory.ApplicationLoopBuilder;
-		var loop = loopBuilder.BuildLoop(new() { FrameRateCapHz = 30 });
+		var loop = loopBuilder.CreateLoop(new() { FrameRateCapHz = 30 });
 
 		var reportedTimesList = new List<TimeSpan>();
 		var measuredTimesList = new List<TimeSpan>();
@@ -44,7 +44,7 @@ class NativeLoopTimingTest {
 		Console.WriteLine("===========================================================================================================================");
 
 		loop.Dispose();
-		loop = loopBuilder.BuildLoop(new() { FrameRateCapHz = 30 });
+		loop = loopBuilder.CreateLoop(new() { FrameRateCapHz = 30 });
 		reportedTimesList = new List<TimeSpan>();
 		measuredTimesList = new List<TimeSpan>();
 		stopwatch = Stopwatch.StartNew();

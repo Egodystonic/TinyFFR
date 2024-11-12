@@ -9,10 +9,8 @@ namespace Egodystonic.TinyFFR.Resources;
 
 readonly record struct ResourceIdent(nint TypeHandle, nuint RawResourceHandle);
 readonly record struct ResourceStub(ResourceIdent Ident, IResourceImplProvider Implementation) : IDisposableResource {
-	public string Name => Implementation.RawHandleGetName(Ident.RawResourceHandle);
+	public ReadOnlySpan<char> Name => Implementation.RawHandleGetName(Ident.RawResourceHandle);
 	public bool IsDisposed => (Implementation as IDisposableResourceImplProvider)?.RawHandleIsDisposed(Ident.RawResourceHandle) ?? false;
-	public int GetNameUsingSpan(Span<char> dest) => Implementation.RawHandleGetNameUsingSpan(Ident.RawResourceHandle, dest);
-	public int GetNameSpanLength() => Implementation.RawHandleGetNameSpanLength(Ident.RawResourceHandle);
 	public void Dispose() => (Implementation as IDisposableResourceImplProvider)?.RawHandleDispose(Ident.RawResourceHandle);
 	public nuint Handle => Ident.RawResourceHandle;
 	public nint TypeHandle => Ident.TypeHandle;

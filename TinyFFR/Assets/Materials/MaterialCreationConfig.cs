@@ -8,11 +8,7 @@ namespace Egodystonic.TinyFFR.Assets.Materials;
 public readonly ref struct MaterialCreationConfig {
 	public bool IgnoresLighting { get; init; } = false;
 
-	public ReadOnlySpan<char> NameAsSpan { get; init; }
-	public string Name {
-		get => new(NameAsSpan);
-		init => NameAsSpan = value.AsSpan();
-	}
+	public ReadOnlySpan<char> Name { get; init; }
 
 	public MaterialCreationConfig() { }
 

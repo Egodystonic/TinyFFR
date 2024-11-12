@@ -18,7 +18,7 @@ public readonly struct Scene : IDisposableResource<Scene, SceneHandle, ISceneImp
 	ISceneImplProvider IResource<SceneHandle, ISceneImplProvider>.Implementation => Implementation;
 	SceneHandle IResource<SceneHandle, ISceneImplProvider>.Handle => Handle;
 
-	public string Name {
+	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(_handle);
 	}
@@ -41,12 +41,6 @@ public readonly struct Scene : IDisposableResource<Scene, SceneHandle, ISceneImp
 	public void Render(Camera camera, Window window) => Implementation.Render(_handle, camera, window);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Render<TRenderTarget>(Camera camera, TRenderTarget renderTarget) where TRenderTarget : IRenderTarget => Implementation.Render(_handle, camera, renderTarget);
-
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetNameUsingSpan(Span<char> dest) => Implementation.GetNameUsingSpan(_handle, dest);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetNameSpanLength() => Implementation.GetNameSpanLength(_handle);
 
 	public override string ToString() => $"Scene {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
 

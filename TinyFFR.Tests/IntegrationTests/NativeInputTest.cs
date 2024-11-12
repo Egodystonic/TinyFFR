@@ -28,7 +28,7 @@ class NativeInputTest {
 		var displayDiscoverer = factory.DisplayDiscoverer;
 		var windowBuilder = factory.WindowBuilder;
 
-		using var window = windowBuilder.Build(new() {
+		using var window = windowBuilder.CreateWindow(new() {
 			Display = displayDiscoverer.Primary!.Value,
 			FullscreenStyle = WindowFullscreenStyle.NotFullscreen,
 			Position = displayDiscoverer.Primary!.Value.CurrentResolution / 2 - (200, 200),
@@ -37,7 +37,7 @@ class NativeInputTest {
 		window.Title = "Close me to end test";
 
 		var loopBuilder = factory.ApplicationLoopBuilder;
-		using var loop = loopBuilder.BuildLoop(new() { FrameRateCapHz = 60 });
+		using var loop = loopBuilder.CreateLoop(new() { FrameRateCapHz = 60 });
 
 		_numControllers = 0;
 		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(20d)) {

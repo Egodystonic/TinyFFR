@@ -3,18 +3,12 @@
 namespace Egodystonic.TinyFFR.Resources;
 
 public interface IResourceImplProvider {
-	internal string RawHandleGetName(nuint handle);
-	internal int RawHandleGetNameUsingSpan(nuint handle, Span<char> dest);
-	internal int RawHandleGetNameSpanLength(nuint handle);
+	internal ReadOnlySpan<char> RawHandleGetName(nuint handle);
 }
 public interface IResourceImplProvider<in THandle> : IResourceImplProvider where THandle : IResourceHandle<THandle> {
-	string GetName(THandle handle);
-	int GetNameUsingSpan(THandle handle, Span<char> dest);
-	int GetNameSpanLength(THandle handle);
+	ReadOnlySpan<char> GetName(THandle handle);
 
-	string IResourceImplProvider.RawHandleGetName(nuint handle) => GetName(THandle.CreateFromInteger(handle));
-	int IResourceImplProvider.RawHandleGetNameUsingSpan(nuint handle, Span<char> dest) => GetNameUsingSpan(THandle.CreateFromInteger(handle), dest);
-	int IResourceImplProvider.RawHandleGetNameSpanLength(nuint handle) => GetNameSpanLength(THandle.CreateFromInteger(handle));
+	ReadOnlySpan<char> IResourceImplProvider.RawHandleGetName(nuint handle) => GetName(THandle.CreateFromInteger(handle));
 }
 
 

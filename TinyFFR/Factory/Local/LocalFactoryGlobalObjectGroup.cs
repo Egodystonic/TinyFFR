@@ -34,8 +34,12 @@ sealed class LocalFactoryGlobalObjectGroup {
 		_resourceNameMap.Add(ident, StringPool.RentAndCopy(name));
 	}
 
+	public ReadOnlySpan<char> GetResourceName(ResourceIdent ident, ReadOnlySpan<char> fallback) {
+		return _resourceNameMap.TryGetValue(ident, out var handle) ? handle.AsSpan : fallback;
+	}
+
 	public int CopyResourceName(ResourceIdent ident, ReadOnlySpan<char> fallback, Span<char> dest) {
-		var span = _resourceNameMap.TryGetValue(ident, out var handle) ? handle.AsSpan : fallback;
+		var span = GetResourceName(ident, fallback);
 		span.CopyTo(dest);
 		return span.Length;
 	}
@@ -44,11 +48,12 @@ sealed class LocalFactoryGlobalObjectGroup {
 		return _resourceNameMap.TryGetValue(ident, out var handle) ? handle.Length : fallback.Length;
 	}
 
-	public string GetResourceNameAsNewStringObject(ResourceIdent ident, string fallback) {
-		return _resourceNameMap.TryGetValue(ident, out var handle) ? handle.AsNewStringObject : fallback;
-	}
-
 	public void DisposeResourceNameIfExists(ResourceIdent ident) => _resourceNameMap.Remove(ident);
+
+	public void ReplaceResourceName(ResourceIdent ident, ReadOnlySpan<char> newName) {
+		DisposeResourceNameIfExists(ident);
+		StoreResourceNameIfNotDefault(ident, newName);
+	}
 
 	public TemporaryLoadSpaceBuffer CopySpanToTemporaryCpuBuffer<T>(ReadOnlySpan<T> data) where T : unmanaged => LocalNativeUtils.CopySpanToTemporaryCpuBuffer(_factory, data);
 }

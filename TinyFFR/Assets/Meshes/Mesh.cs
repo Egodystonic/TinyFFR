@@ -16,7 +16,7 @@ public readonly struct Mesh : IDisposableResource<Mesh, MeshHandle, IMeshImplPro
 	IMeshImplProvider IResource<MeshHandle, IMeshImplProvider>.Implementation => Implementation;
 	MeshHandle IResource<MeshHandle, IMeshImplProvider>.Handle => Handle;
 
-	public string Name {
+	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(_handle);
 	}
@@ -34,11 +34,6 @@ public readonly struct Mesh : IDisposableResource<Mesh, MeshHandle, IMeshImplPro
 	static Mesh IResource<Mesh>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
 		return new Mesh(rawHandle, impl as IMeshImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetNameUsingSpan(Span<char> dest) => Implementation.GetNameUsingSpan(_handle, dest);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetNameSpanLength() => Implementation.GetNameSpanLength(_handle);
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

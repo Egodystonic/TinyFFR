@@ -3,8 +3,9 @@ using Egodystonic.TinyFFR;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using System.Runtime.InteropServices;
+using Egodystonic.TinyFFR.Assets.Meshes;
 
-
+// TODO make this a little better. Maybe make it a little framework and ignore the actual "meat" file
 NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
 		typeof(LocalRendererFactory).Assembly,
 		(libName, assy, searchPath) => {
@@ -33,24 +34,16 @@ NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
 	);
 
 
-using var factory = (ILocalRendererFactory) new LocalRendererFactory();
-
+using var factory = new LocalRendererFactory();
 var display = factory.DisplayDiscoverer.Recommended ?? throw new ApplicationException("This test requires at least one connected display.");
-using var window = factory.WindowBuilder.Build(display, WindowFullscreenStyle.NotFullscreen);
-using var loop = factory.ApplicationLoopBuilder.BuildLoop(new LocalApplicationLoopConfig { FrameRateCapHz = 60, Name = "Larry the Loop" });
+using var window = factory.WindowBuilder.CreateWindow(display, title: "William the Window");
+using var loop = factory.ApplicationLoopBuilder.CreateLoop(60, name: "Larry the Loop");
+using var scene = factory.SceneBuilder.CreateScene(name: "Sean the Scene");
+using var camera = factory.CameraBuilder.CreateCamera((0f, 0f, -100f), name: "Carl the Camera");
+using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(10f, 7f, 2f), name: "Clive the Cuboid");
+using var mat = factory.AssetLoader.MaterialBuilder.CreateBasicSolidColorMat(0x00FF00, name: "Matthew the Material");
+using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: "Iain the Instance");
 
-using var camera = factory.CameraBuilder.CreateCamera(new() {
-	Position = (Direction.Backward * 100f).AsLocation(),
-	ViewDirection = Direction.Forward,
-	UpDirection = Direction.Up,
-	Name = "Carl the Camera"
-});
-
-using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(10f, 7f, 2f), new() { Name = "Clive the Cuboid" });
-using var mat = factory.AssetLoader.MaterialBuilder.CreateBasicSolidColorMat(0x00FF00, new() { Name = "Matthew the Material" });
-using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, new() { Name = "Iain the Instance" });
-
-using var scene = factory.SceneBuilder.CreateScene(new() { Name = "Sean the Scene" });
 scene.Add(instance);
 
 Console.WriteLine(display);
@@ -65,15 +58,6 @@ Console.WriteLine(scene);
 while (!loop.Input.UserQuitRequested) {
 	_ = loop.IterateOnce();
 	scene.Render(camera, window);
-	// var m = camera.GetProjectionMatrix();
-	// Console.WriteLine($"====================================");
-	// Console.WriteLine($"{m.M11,5}{m.M12,5}{m.M13,5}{m.M14,5}");
-	// Console.WriteLine($"{m.M21,5}{m.M22,5}{m.M23,5}{m.M24,5}");
-	// Console.WriteLine($"{m.M31,5}{m.M32,5}{m.M33,5}{m.M34,5}");
-	// Console.WriteLine($"{m.M41,5}{m.M42,5}{m.M43,5}{m.M44,5}");
-	camera.Rotate(new Rotation(3f, Direction.Down));
-	// camera.Move((0f, 0f, 1f));
-	// Console.WriteLine(camera.Position);
-	// Console.WriteLine(camera.ViewDirection);
-	//instance.Scale(1.05f);
+	instance.RotateBy(new Rotation(3f, Direction.Down));
+	instance.AdjustScaleBy(0.001f);
 }

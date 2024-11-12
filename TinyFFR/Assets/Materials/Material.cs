@@ -16,7 +16,7 @@ public readonly struct Material : IDisposableResource<Material, MaterialHandle, 
 	IMaterialImplProvider IResource<MaterialHandle, IMaterialImplProvider>.Implementation => Implementation;
 	MaterialHandle IResource<MaterialHandle, IMaterialImplProvider>.Handle => Handle;
 
-	public string Name {
+	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(_handle);
 	}
@@ -29,11 +29,6 @@ public readonly struct Material : IDisposableResource<Material, MaterialHandle, 
 	static Material IResource<Material>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
 		return new Material(rawHandle, impl as IMaterialImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetNameUsingSpan(Span<char> dest) => Implementation.GetNameUsingSpan(_handle, dest);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetNameSpanLength() => Implementation.GetNameSpanLength(_handle);
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

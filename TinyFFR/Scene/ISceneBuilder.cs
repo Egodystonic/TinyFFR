@@ -4,6 +4,6 @@
 namespace Egodystonic.TinyFFR.Scene;
 
 public interface ISceneBuilder {
-	Scene CreateScene();
+	Scene CreateScene(ReadOnlySpan<char> name = default);
 	Scene CreateScene(in SceneCreationConfig config);
 }
