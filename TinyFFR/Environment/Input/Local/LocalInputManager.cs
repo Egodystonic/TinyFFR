@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Security;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
@@ -10,26 +11,30 @@ using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Environment.Input.Local;
 
-// This class and NativeKeyboardAndInputState + LocalGameControllerState are all a bit overly-incestuous but it's fine for an MVP build
 [SuppressUnmanagedCodeSecurity]
-sealed class LocalInputTracker : IInputTracker, IDisposable {
-	internal const int InitialEventBufferLength = 50;
-	static readonly UIntPtr CombinedGameControllerHandle = UIntPtr.Zero;
-	readonly LocalKeyboardAndMouseInputState _kbmStateObject;
-	readonly UnmanagedBuffer<RawLocalGameControllerButtonEvent> _controllerEventBuffer = new(InitialEventBufferLength);
-	readonly ArrayPoolBackedVector<IGameControllerInputTracker> _detectedControllerStateObjectVector = new();
-	readonly ArrayPoolBackedMap<UIntPtr, LocalGameControllerState> _detectedControllerStateObjectMap = new();
-	readonly LocalGameControllerState _combinedControllerState;
-	bool _isDisposed = false;
+static unsafe class LocalInputManager {
+	sealed class BufferGroup : IDisposable {
+		public UnmanagedBuffer<RawLocalGameControllerButtonEvent> ControllerEventBuffer { get; } = new(InitialEventBufferLength);
+		public UnmanagedBuffer<KeyboardOrMouseKeyEvent> KbmEventBuffer { get; } = new(InitialEventBufferLength);
+		public UnmanagedBuffer<MouseClickEvent> MouseClickBuffer { get; } = new(InitialEventBufferLength);
 
-	public bool UserQuitRequested { get; private set; } = false;
-	public IKeyboardAndMouseInputTracker KeyboardAndMouse => _kbmStateObject;
-	public ReadOnlySpan<IGameControllerInputTracker> GameControllers => _detectedControllerStateObjectVector.AsSpan;
-	public IGameControllerInputTracker GameControllersCombined => _combinedControllerState;
+		public void Dispose() {
+			ControllerEventBuffer.Dispose();
+			KbmEventBuffer.Dispose();
+			MouseClickBuffer.Dispose();
+		}
+	}
 
-	public unsafe LocalInputTracker() {
-		_kbmStateObject = new LocalKeyboardAndMouseInputState();
-		_combinedControllerState = new LocalGameControllerState(CombinedGameControllerHandle);
+	public const int InitialEventBufferLength = 50;
+	public static readonly UIntPtr CombinedGameControllerHandle = UIntPtr.Zero;
+	static BufferGroup? _buffers;
+
+	static BufferGroup Buffers => _buffers ?? throw CreateAccessBeforeInitException();
+
+	public static void InitializeIfNecessary() {
+		if (_buffers != null) return;
+		_buffers = new();
+
 		SetEventPollDelegates(
 			&FilterAndTranslateKeycode,
 			&ResizeCurrentPollInstanceKbmEventBuffer,
@@ -37,19 +42,26 @@ sealed class LocalInputTracker : IInputTracker, IDisposable {
 			&ResizeCurrentPollInstanceClickEventBuffer,
 			&HandlePotentialNewController
 		).ThrowIfFailure();
+
 		SetEventPollBufferPointers(
-			_kbmStateObject.EventBuffer.BufferPointer,
-			_kbmStateObject.EventBuffer.Length,
-			_controllerEventBuffer.BufferPointer,
-			_controllerEventBuffer.Length,
-			_kbmStateObject.ClickBuffer.BufferPointer,
-			_kbmStateObject.ClickBuffer.Length
+			Buffers.KbmEventBuffer.BufferPointer,
+			Buffers.KbmEventBuffer.Length,
+			Buffers.ControllerEventBuffer.BufferPointer,
+			Buffers.ControllerEventBuffer.Length,
+			Buffers.MouseClickBuffer.BufferPointer,
+			Buffers.MouseClickBuffer.Length
 		).ThrowIfFailure();
-		DetectControllers();
+
+		DetectControllers().ThrowIfFailure();
 	}
 
-	public void ExecuteIteration() {
-		ThrowIfThisIsDisposed();
+	public static void DisposeIfNecessary() {
+		_buffers?.Dispose();
+		_buffers = null;
+	}
+
+	public static void IterateLocalInput() {
+		ThrowIfNotInitialized();
 
 		IterateEvents(
 			out var numKbmEvents,
@@ -84,8 +96,6 @@ sealed class LocalInputTracker : IInputTracker, IDisposable {
 		}
 	}
 
-	public override string ToString() => "TinyFFR Native Input Tracker";
-
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_event_poll_delegates")]
 	static extern unsafe InteropResult SetEventPollDelegates(
@@ -106,19 +116,19 @@ sealed class LocalInputTracker : IInputTracker, IDisposable {
 	);
 	[UnmanagedCallersOnly]
 	static unsafe KeyboardOrMouseKeyEvent* ResizeCurrentPollInstanceKbmEventBuffer() {
-		if (_liveInstance == null || _liveInstance._isDisposed) throw new InvalidOperationException("Live instance was null or disposed.");
+		ThrowIfNotInitialized();
 		_liveInstance._kbmStateObject.EventBuffer.DoubleSize();
 		return _liveInstance._kbmStateObject.EventBuffer.BufferPointer;
 	}
 	[UnmanagedCallersOnly]
 	static unsafe RawLocalGameControllerButtonEvent* ResizeCurrentPollInstanceControllerEventBuffer() {
-		if (_liveInstance == null || _liveInstance._isDisposed) throw new InvalidOperationException("Live instance was null or disposed.");
+		ThrowIfNotInitialized();
 		_liveInstance._controllerEventBuffer.DoubleSize();
 		return _liveInstance._controllerEventBuffer.BufferPointer;
 	}
 	[UnmanagedCallersOnly]
 	static unsafe MouseClickEvent* ResizeCurrentPollInstanceClickEventBuffer() {
-		if (_liveInstance == null || _liveInstance._isDisposed) throw new InvalidOperationException("Live instance was null or disposed.");
+		ThrowIfNotInitialized();
 		_liveInstance._kbmStateObject.ClickBuffer.DoubleSize();
 		return _liveInstance._kbmStateObject.ClickBuffer.BufferPointer;
 	}
@@ -144,7 +154,7 @@ sealed class LocalInputTracker : IInputTracker, IDisposable {
 
 	[UnmanagedCallersOnly]
 	static unsafe void HandlePotentialNewController(UIntPtr handle, byte* utf8NamePtr, int utf8NameLen) {
-		if (_liveInstance == null || _liveInstance._isDisposed) throw new InvalidOperationException("Live instance was null or disposed.");
+		ThrowIfNotInitialized();
 		foreach (var kvp in _liveInstance._detectedControllerStateObjectMap) {
 			if (kvp.Value.Handle == handle) return;
 		}
@@ -158,7 +168,6 @@ sealed class LocalInputTracker : IInputTracker, IDisposable {
 	}
 	#endregion
 
-	#region Disposal
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
@@ -176,8 +185,11 @@ sealed class LocalInputTracker : IInputTracker, IDisposable {
 		}
 	}
 
-	void ThrowIfThisIsDisposed() {
-		ObjectDisposedException.ThrowIf(_isDisposed, typeof(IInputTracker));
+	static void ThrowIfNotInitialized() {
+		if (_buffers == null) throw CreateAccessBeforeInitException();
 	}
-	#endregion
+
+	static InvalidOperationException CreateAccessBeforeInitException() {
+		return new InvalidOperationException("Can not access input manager before initialization.");
+	}
 }
