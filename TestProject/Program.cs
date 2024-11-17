@@ -7,31 +7,31 @@ using Egodystonic.TinyFFR.Assets.Meshes;
 
 // TODO make this a little better. Maybe make it a little framework and ignore the actual "meat" file
 NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
-		typeof(LocalRendererFactory).Assembly,
-		(libName, assy, searchPath) => {
-			var curDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+	typeof(LocalRendererFactory).Assembly,
+	(libName, assy, searchPath) => {
+		var curDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-			while (curDir != null) {
-				var containedDirectories = Directory.GetDirectories(curDir);
-				if (containedDirectories.Any(d => Path.GetFileName(d)?.Equals("build_output", StringComparison.OrdinalIgnoreCase) ?? false)) {
+		while (curDir != null) {
+			var containedDirectories = Directory.GetDirectories(curDir);
+			if (containedDirectories.Any(d => Path.GetFileName(d)?.Equals("build_output", StringComparison.OrdinalIgnoreCase) ?? false)) {
 #if DEBUG
-					const string BuildConfig = "Debug";
+				const string BuildConfig = "Debug";
 #else
-					const string BuildConfig = "Release";
+				const string BuildConfig = "Release";
 #endif
-					var expectedFilePath = Path.Combine(curDir, "build_output", BuildConfig, libName);
-					foreach (var possibleFilePath in new string[] { ".dll", ".lib", ".so" }.Concat([""]).Select(ext => expectedFilePath + ext)) {
-						if (File.Exists(possibleFilePath)) return NativeLibrary.Load(possibleFilePath, assy, searchPath);
-					}
-
-					return IntPtr.Zero;
+				var expectedFilePath = Path.Combine(curDir, "build_output", BuildConfig, libName);
+				foreach (var possibleFilePath in new string[] { ".dll", ".lib", ".so" }.Concat([""]).Select(ext => expectedFilePath + ext)) {
+					if (File.Exists(possibleFilePath)) return NativeLibrary.Load(possibleFilePath, assy, searchPath);
 				}
 
-				curDir = Directory.GetParent(curDir)?.FullName;
+				return IntPtr.Zero;
 			}
-			return IntPtr.Zero;
+
+			curDir = Directory.GetParent(curDir)?.FullName;
 		}
-	);
+		return IntPtr.Zero;
+	}
+);
 
 
 using var factory = new LocalRendererFactory();
