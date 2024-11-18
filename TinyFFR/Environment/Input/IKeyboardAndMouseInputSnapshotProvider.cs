@@ -3,7 +3,7 @@
 
 namespace Egodystonic.TinyFFR.Environment.Input;
 
-public interface IKeyboardAndMouseInputTracker {
+public interface IKeyboardAndMouseInputSnapshotProvider {
 	ReadOnlySpan<KeyboardOrMouseKeyEvent> NewKeyEvents { get; }
 	ReadOnlySpan<KeyboardOrMouseKey> NewKeyDownEvents { get; }
 	ReadOnlySpan<KeyboardOrMouseKey> NewKeyUpEvents { get; }

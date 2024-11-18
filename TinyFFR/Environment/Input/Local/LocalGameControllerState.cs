@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Environment.Input.Local;
 
-sealed class LocalGameControllerState : IGameControllerInputTracker, IDisposable {
+sealed class LocalGameControllerState : IGameControllerInputSnapshotProvider, IDisposable {
 	const int MaxControllerNameLength = 500;
 	public InteropStringBuffer NameBuffer { get; }
 	public UIntPtr Handle { get; }
@@ -33,25 +33,25 @@ sealed class LocalGameControllerState : IGameControllerInputTracker, IDisposable
 		}
 	}
 
-	ReadOnlySpan<GameControllerButtonEvent> IGameControllerInputTracker.NewButtonEvents {
+	ReadOnlySpan<GameControllerButtonEvent> IGameControllerInputSnapshotProvider.NewButtonEvents {
 		get {
 			ThrowIfThisIsDisposed();
 			return NewButtonEvents.AsSpan;
 		}
 	}
-	ReadOnlySpan<GameControllerButton> IGameControllerInputTracker.NewButtonDownEvents {
+	ReadOnlySpan<GameControllerButton> IGameControllerInputSnapshotProvider.NewButtonDownEvents {
 		get {
 			ThrowIfThisIsDisposed();
 			return NewButtonDownEvents.AsSpan;
 		}
 	}
-	ReadOnlySpan<GameControllerButton> IGameControllerInputTracker.NewButtonUpEvents {
+	ReadOnlySpan<GameControllerButton> IGameControllerInputSnapshotProvider.NewButtonUpEvents {
 		get {
 			ThrowIfThisIsDisposed();
 			return NewButtonUpEvents.AsSpan;
 		}
 	}
-	ReadOnlySpan<GameControllerButton> IGameControllerInputTracker.CurrentlyPressedButtons {
+	ReadOnlySpan<GameControllerButton> IGameControllerInputSnapshotProvider.CurrentlyPressedButtons {
 		get {
 			ThrowIfThisIsDisposed();
 			return CurrentlyPressedButtons.AsSpan;
@@ -162,7 +162,7 @@ sealed class LocalGameControllerState : IGameControllerInputTracker, IDisposable
 		}
 	}
 
-	public override string ToString() => $"TinyFFR Local Input Tracker [Game Controller '{ControllerName}']{(_isDisposed ? " [Disposed]" : "")}";
+	public override string ToString() => $"TinyFFR Local Input Snapshot Provider [Game Controller '{ControllerName}']{(_isDisposed ? " [Disposed]" : "")}";
 
 	#region Disposal
 	public void Dispose() {
@@ -180,7 +180,7 @@ sealed class LocalGameControllerState : IGameControllerInputTracker, IDisposable
 	}
 
 	void ThrowIfThisIsDisposed() {
-		ObjectDisposedException.ThrowIf(_isDisposed, typeof(IGameControllerInputTracker));
+		ObjectDisposedException.ThrowIf(_isDisposed, typeof(IGameControllerInputSnapshotProvider));
 	}
 	#endregion
 }

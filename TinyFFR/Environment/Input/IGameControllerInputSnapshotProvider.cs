@@ -5,7 +5,7 @@ using System.Reflection.Metadata;
 
 namespace Egodystonic.TinyFFR.Environment.Input;
 
-public interface IGameControllerInputTracker {
+public interface IGameControllerInputSnapshotProvider {
 	public string ControllerName { get; }
 
 	public GameControllerStickPosition LeftStickPosition { get; }

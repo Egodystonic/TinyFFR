@@ -50,7 +50,7 @@ class NativeInputTest {
 	}
 
 	int _numControllers;
-	void HandleInput(IInputTracker input) {
+	void HandleInput(IInputSnapshotProvider input) {
 		if (input.GameControllers.Length != _numControllers) {
 			for (var i = input.GameControllers.Length; i > _numControllers; --i) {
 				Console.WriteLine($"Controller: {input.GameControllers[i - 1].ControllerName}");

@@ -21,13 +21,14 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		TimeSpan FrameInterval, 
 		long PreviousIterationStartTimestamp, 
 		long PreviousIterationReturnTimestamp, 
-		TimeSpan TotalIteratedTime
+		TimeSpan TotalIteratedTime,
+		bool ShouldIterateInput
 	);
 
 	const string DefaultLoopName = "Unnamed Loop";
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPoolBackedMap<ApplicationLoopHandle, HandleTrackingData> _handleDataMap = new();
-	readonly LocalInputTracker _inputTracker = new();
+	readonly LocalInputSnapshotProvider _inputSnapshotProvider;
 	readonly LocalApplicationLoopBuilderConfig _config;
 	nuint _nextLoopHandleIndex = 1;
 	bool _isDisposed = false;
@@ -38,6 +39,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 
 		_globals = globals;
 		_config = config;
+		_inputSnapshotProvider = LocalInputManager.IncrementRefCountAndGetProvider();
 	}
 
 	public ApplicationLoop CreateLoop(int? frameRateCapHz = null, ReadOnlySpan<char> name = default) => CreateLoop(frameRateCapHz, null, name);
@@ -64,15 +66,15 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 
 		var curTime = Stopwatch.GetTimestamp();
 		var handle = (ApplicationLoopHandle) _nextLoopHandleIndex;
-		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero));
+		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, config.IterationShouldRefreshGlobalInputSnapshots));
 		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.BaseConfig.Name);
 		_nextLoopHandleIndex++;
 		return new(handle, this);
 	}
 
-	public IInputTracker GetInputTracker(ApplicationLoopHandle handle) {
+	public IInputSnapshotProvider GetInputSnapshotProvider(ApplicationLoopHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _inputTracker;
+		return _inputSnapshotProvider;
 	}
 
 	TimeSpan GetWaitTimeUntilNextFrameStart(ApplicationLoopHandle handle) {
@@ -80,8 +82,8 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		var result = _handleDataMap[handle].FrameInterval - timeSinceLastIteration;
 		return result > TimeSpan.Zero ? result : TimeSpan.Zero;
 	}
-	void ExecuteIteration() {
-		_inputTracker.ExecuteIteration();
+	void ExecuteIteration(bool shouldIterateInput) {
+		if (shouldIterateInput) _inputSnapshotProvider.IterateSystemWideInput();
 	}
 
 	public TimeSpan IterateOnce(ApplicationLoopHandle handle) {
@@ -95,7 +97,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		while (GetWaitTimeUntilNextFrameStart(handle) > TimeSpan.Zero) { }
 
 		_handleDataMap[handle] = _handleDataMap[handle] with { PreviousIterationStartTimestamp = Stopwatch.GetTimestamp() };
-		ExecuteIteration();
+		ExecuteIteration(_handleDataMap[handle].ShouldIterateInput);
 
 		var dt = Stopwatch.GetElapsedTime(_handleDataMap[handle].PreviousIterationReturnTimestamp);
 		_handleDataMap[handle] = _handleDataMap[handle] with {
@@ -113,7 +115,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		}
 
 		_handleDataMap[handle] = _handleDataMap[handle] with { PreviousIterationStartTimestamp = Stopwatch.GetTimestamp() };
-		ExecuteIteration();
+		ExecuteIteration(_handleDataMap[handle].ShouldIterateInput);
 
 		var dt = Stopwatch.GetElapsedTime(_handleDataMap[handle].PreviousIterationReturnTimestamp);
 		_handleDataMap[handle] = _handleDataMap[handle] with {
@@ -155,7 +157,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		try {
 			foreach (var kvp in _handleDataMap) Dispose(kvp.Key);
 			_handleDataMap.Dispose();
-			_inputTracker.Dispose();
+			LocalInputManager.DecrementRefCount();
 		}
 		finally {
 			_isDisposed = true;

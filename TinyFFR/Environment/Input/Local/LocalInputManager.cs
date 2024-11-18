@@ -13,27 +13,12 @@ namespace Egodystonic.TinyFFR.Environment.Input.Local;
 
 [SuppressUnmanagedCodeSecurity]
 static unsafe class LocalInputManager {
-	sealed class BufferGroup : IDisposable {
-		public UnmanagedBuffer<RawLocalGameControllerButtonEvent> ControllerEventBuffer { get; } = new(InitialEventBufferLength);
-		public UnmanagedBuffer<KeyboardOrMouseKeyEvent> KbmEventBuffer { get; } = new(InitialEventBufferLength);
-		public UnmanagedBuffer<MouseClickEvent> MouseClickBuffer { get; } = new(InitialEventBufferLength);
+	static LocalInputSnapshotProvider? _liveInstance = null;
+	static int _instanceRefCount = 0;
 
-		public void Dispose() {
-			ControllerEventBuffer.Dispose();
-			KbmEventBuffer.Dispose();
-			MouseClickBuffer.Dispose();
-		}
-	}
-
-	public const int InitialEventBufferLength = 50;
-	public static readonly UIntPtr CombinedGameControllerHandle = UIntPtr.Zero;
-	static BufferGroup? _buffers;
-
-	static BufferGroup Buffers => _buffers ?? throw CreateAccessBeforeInitException();
-
-	public static void InitializeIfNecessary() {
-		if (_buffers != null) return;
-		_buffers = new();
+	public static LocalInputSnapshotProvider IncrementRefCountAndGetProvider() {
+		_instanceRefCount++;
+		if (_liveInstance != null) return _liveInstance;
 
 		SetEventPollDelegates(
 			&FilterAndTranslateKeycode,
@@ -43,62 +28,38 @@ static unsafe class LocalInputManager {
 			&HandlePotentialNewController
 		).ThrowIfFailure();
 
+		_liveInstance = new LocalInputSnapshotProvider();
+		_liveInstance.GetEventBufferPointers(
+			out var kbmEventBufferPtr,
+			out var kbmEventBufferLen,
+			out var controllerEventBufferPtr,
+			out var controllerEventBufferLen,
+			out var clickEventBufferPtr,
+			out var clickEventBufferLen
+		);
+
 		SetEventPollBufferPointers(
-			Buffers.KbmEventBuffer.BufferPointer,
-			Buffers.KbmEventBuffer.Length,
-			Buffers.ControllerEventBuffer.BufferPointer,
-			Buffers.ControllerEventBuffer.Length,
-			Buffers.MouseClickBuffer.BufferPointer,
-			Buffers.MouseClickBuffer.Length
-		).ThrowIfFailure();
+			kbmEventBufferPtr, 
+			kbmEventBufferLen, 
+			controllerEventBufferPtr, 
+			controllerEventBufferLen, 
+			clickEventBufferPtr, 
+			clickEventBufferLen
+		);
 
-		DetectControllers().ThrowIfFailure();
+		_liveInstance.Initialize();
+		return _liveInstance;
 	}
 
-	public static void DisposeIfNecessary() {
-		_buffers?.Dispose();
-		_buffers = null;
-	}
-
-	public static void IterateLocalInput() {
-		ThrowIfNotInitialized();
-
-		IterateEvents(
-			out var numKbmEvents,
-			out var numControllerEvents,
-			out var numClickEvents,
-			out var mousePosX,
-			out var mousePosY,
-			out var mouseDeltaX,
-			out var mouseDeltaY,
-			out var quitRequested
-		).ThrowIfFailure();
-
-		UpdateControllerStates(numControllerEvents);
-		_kbmStateObject.UpdateCurrentlyPressedKeys(numKbmEvents, numClickEvents);
-		_kbmStateObject.MouseCursorPosition = (mousePosX == Int32.MinValue ? _kbmStateObject.MouseCursorPosition.X : mousePosX, mousePosY == Int32.MinValue ? _kbmStateObject.MouseCursorPosition.Y : mousePosY);
-		_kbmStateObject.MouseCursorDelta = (mouseDeltaX, mouseDeltaY);
-		UserQuitRequested = quitRequested;
-	}
-
-	void UpdateControllerStates(int numNewEvents) {
-		_combinedControllerState.ClearForNextIteration();
-		foreach (var kvp in _detectedControllerStateObjectMap) {
-			kvp.Value.ClearForNextIteration();
-		}
-
-		for (var i = 0; i < numNewEvents; ++i) {
-			var rawEvent = _controllerEventBuffer.AsSpan[i];
-			_combinedControllerState.ApplyEvent(rawEvent);
-			var handle = rawEvent.Handle;
-			if (!_detectedControllerStateObjectMap.TryGetValue(handle, out var state)) continue;
-			state.ApplyEvent(rawEvent);
-		}
+	public static void DecrementRefCount() {
+		_instanceRefCount--;
+		if (_instanceRefCount < 0) throw new InvalidOperationException("Erroneous live instance ref count decrement in input manager.");
+		else if (_instanceRefCount == 0) _liveInstance!.Dispose();
 	}
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_event_poll_delegates")]
-	static extern unsafe InteropResult SetEventPollDelegates(
+	static extern InteropResult SetEventPollDelegates(
 		delegate* unmanaged<int*, InteropBool> filterTranslateKeycapValueDelegate,
 		delegate* unmanaged<KeyboardOrMouseKeyEvent*> doubleKbmEventBufferDelegate,
 		delegate* unmanaged<RawLocalGameControllerButtonEvent*> doubleControllerEventBufferDelegate,
@@ -106,7 +67,7 @@ static unsafe class LocalInputManager {
 		delegate* unmanaged<UIntPtr, byte*, int, void> handleNewControllerDelegate
 	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_event_poll_buffer_pointers")]
-	static extern unsafe InteropResult SetEventPollBufferPointers(
+	static extern InteropResult SetEventPollBufferPointers(
 		KeyboardOrMouseKeyEvent* kbmEventBufferPtr,
 		int kbmEventBufferLen,
 		RawLocalGameControllerButtonEvent* controllerEventBufferPtr,
@@ -115,81 +76,35 @@ static unsafe class LocalInputManager {
 		int clickEventBufferLen
 	);
 	[UnmanagedCallersOnly]
-	static unsafe KeyboardOrMouseKeyEvent* ResizeCurrentPollInstanceKbmEventBuffer() {
-		ThrowIfNotInitialized();
-		_liveInstance._kbmStateObject.EventBuffer.DoubleSize();
-		return _liveInstance._kbmStateObject.EventBuffer.BufferPointer;
+	static KeyboardOrMouseKeyEvent* ResizeCurrentPollInstanceKbmEventBuffer() {
+		ThrowIfNoLiveInstance();
+		return _liveInstance.DoubleKbmEventBufferSize();
 	}
 	[UnmanagedCallersOnly]
-	static unsafe RawLocalGameControllerButtonEvent* ResizeCurrentPollInstanceControllerEventBuffer() {
-		ThrowIfNotInitialized();
-		_liveInstance._controllerEventBuffer.DoubleSize();
-		return _liveInstance._controllerEventBuffer.BufferPointer;
+	static RawLocalGameControllerButtonEvent* ResizeCurrentPollInstanceControllerEventBuffer() {
+		ThrowIfNoLiveInstance();
+		return _liveInstance.DoubleControllerEventBufferSize();
 	}
 	[UnmanagedCallersOnly]
-	static unsafe MouseClickEvent* ResizeCurrentPollInstanceClickEventBuffer() {
-		ThrowIfNotInitialized();
-		_liveInstance._kbmStateObject.ClickBuffer.DoubleSize();
-		return _liveInstance._kbmStateObject.ClickBuffer.BufferPointer;
+	static MouseClickEvent* ResizeCurrentPollInstanceClickEventBuffer() {
+		ThrowIfNoLiveInstance();
+		return _liveInstance.DoubleClickEventBufferSize();
 	}
 	[UnmanagedCallersOnly]
-	static unsafe InteropBool FilterAndTranslateKeycode(int* keycode) {
+	static InteropBool FilterAndTranslateKeycode(int* keycode) {
 		*keycode |= (~*keycode & KeyboardOrMouseKeyExtensions.SdlScancodeToKeycodeBit) >> KeyboardOrMouseKeyExtensions.CharBasedValueBitDistanceToScancodeBit;
 		return Enum.IsDefined((KeyboardOrMouseKey) (*keycode));
 	}
 
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "detect_controllers")]
-	static extern InteropResult DetectControllers();
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "iterate_events")]
-	static extern InteropResult IterateEvents(
-		out int numKbmEventsWritten,
-		out int numControllerEventsWritten,
-		out int numClickEventsWritten,
-		out int mousePosX,
-		out int mousePosY,
-		out int mouseDeltaX,
-		out int mouseDeltaY,
-		out InteropBool quitRequested
-	);
-
 	[UnmanagedCallersOnly]
-	static unsafe void HandlePotentialNewController(UIntPtr handle, byte* utf8NamePtr, int utf8NameLen) {
-		ThrowIfNotInitialized();
-		foreach (var kvp in _liveInstance._detectedControllerStateObjectMap) {
-			if (kvp.Value.Handle == handle) return;
-		}
-
-		var state = new LocalGameControllerState(handle);
-		var nameSpan = new ReadOnlySpan<byte>(utf8NamePtr, utf8NameLen);
-		if (nameSpan.Length > state.NameBuffer.AsSpan.Length) nameSpan = nameSpan[..state.NameBuffer.AsSpan.Length];
-		nameSpan.CopyTo(state.NameBuffer.AsSpan);
-		_liveInstance._detectedControllerStateObjectVector.Add(state);
-		_liveInstance._detectedControllerStateObjectMap.Add(handle, state);
+	static void HandlePotentialNewController(UIntPtr handle, byte* utf8NamePtr, int utf8NameLen) {
+		ThrowIfNoLiveInstance();
+		_liveInstance.HandlePotentialNewController(handle, utf8NamePtr, utf8NameLen);
 	}
 	#endregion
 
-	public void Dispose() {
-		if (_isDisposed) return;
-		try {
-			_liveInstance = null;
-			foreach (var kvp in _detectedControllerStateObjectMap) kvp.Value.Dispose();
-
-			_controllerEventBuffer.Dispose();
-			_detectedControllerStateObjectVector.Dispose();
-			_detectedControllerStateObjectMap.Dispose();
-			_combinedControllerState.Dispose();
-			_kbmStateObject.Dispose();
-		}
-		finally {
-			_isDisposed = true;
-		}
-	}
-
-	static void ThrowIfNotInitialized() {
-		if (_buffers == null) throw CreateAccessBeforeInitException();
-	}
-
-	static InvalidOperationException CreateAccessBeforeInitException() {
-		return new InvalidOperationException("Can not access input manager before initialization.");
+	[MemberNotNull(nameof(_liveInstance))]
+	static void ThrowIfNoLiveInstance() {
+		if (_liveInstance == null) throw new InvalidOperationException("No live instance registered in input manager.");
 	}
 }
