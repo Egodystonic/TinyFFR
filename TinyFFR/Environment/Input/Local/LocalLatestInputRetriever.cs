@@ -10,22 +10,22 @@ using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Environment.Input.Local;
 
-// This class and NativeKeyboardAndInputState + LocalGameControllerState are all a bit overly-incestuous but it's fine for an MVP build
+// This class and NativeKeyboardAndInputState + LocalLatestGameControllerState are all a bit overly-incestuous but it's fine for an MVP build
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalInputSnapshotProvider : IInputSnapshotProvider, IDisposable {
+sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposable {
 	internal const int InitialEventBufferLength = 50;
 	static readonly UIntPtr CombinedGameControllerHandle = UIntPtr.Zero;
-	readonly LocalKeyboardAndMouseInputSnapshotProvider _kbmSnapshot = new();
+	readonly LocalLatestKeyboardAndMouseInputRetriever _kbmState = new();
 	readonly UnmanagedBuffer<RawLocalGameControllerButtonEvent> _controllerEventBuffer = new(InitialEventBufferLength);
-	readonly ArrayPoolBackedVector<IGameControllerInputSnapshotProvider> _detectedControllerSnapshotVector = new();
-	readonly ArrayPoolBackedMap<UIntPtr, LocalGameControllerState> _detectedControllerSnapshotMap = new();
-	readonly LocalGameControllerState _combinedControllerState = new(CombinedGameControllerHandle);
+	readonly ArrayPoolBackedVector<ILatestGameControllerInputStateRetriever> _detectedControllerStateVector = new();
+	readonly ArrayPoolBackedMap<UIntPtr, LocalLatestGameControllerState> _detectedControllerStateMap = new();
+	readonly LocalLatestGameControllerState _combinedControllerState = new(CombinedGameControllerHandle);
 	bool _isDisposed = false;
 
 	public bool UserQuitRequested { get; private set; } = false;
-	public IKeyboardAndMouseInputSnapshotProvider KeyboardAndMouse => _kbmSnapshot;
-	public ReadOnlySpan<IGameControllerInputSnapshotProvider> GameControllers => _detectedControllerSnapshotVector.AsSpan;
-	public IGameControllerInputSnapshotProvider GameControllersCombined => _combinedControllerState;
+	public ILatestKeyboardAndMouseInputRetriever KeyboardAndMouse => _kbmState;
+	public ReadOnlySpan<ILatestGameControllerInputStateRetriever> GameControllers => _detectedControllerStateVector.AsSpan;
+	public ILatestGameControllerInputStateRetriever GameControllersCombined => _combinedControllerState;
 
 	public void Initialize() {
 		DetectControllers();
@@ -46,37 +46,37 @@ sealed unsafe class LocalInputSnapshotProvider : IInputSnapshotProvider, IDispos
 		).ThrowIfFailure();
 
 		UpdateControllerStates(numControllerEvents);
-		_kbmSnapshot.UpdateCurrentlyPressedKeys(numKbmEvents, numClickEvents);
-		_kbmSnapshot.MouseCursorPosition = (mousePosX == Int32.MinValue ? _kbmSnapshot.MouseCursorPosition.X : mousePosX, mousePosY == Int32.MinValue ? _kbmSnapshot.MouseCursorPosition.Y : mousePosY);
-		_kbmSnapshot.MouseCursorDelta = (mouseDeltaX, mouseDeltaY);
+		_kbmState.UpdateCurrentlyPressedKeys(numKbmEvents, numClickEvents);
+		_kbmState.MouseCursorPosition = (mousePosX == Int32.MinValue ? _kbmState.MouseCursorPosition.X : mousePosX, mousePosY == Int32.MinValue ? _kbmState.MouseCursorPosition.Y : mousePosY);
+		_kbmState.MouseCursorDelta = (mouseDeltaX, mouseDeltaY);
 		UserQuitRequested = quitRequested;
 	}
 
 	internal void GetEventBufferPointers(out KeyboardOrMouseKeyEvent* kbmEventBufferPtr, out int kbmEventBufferLen, out RawLocalGameControllerButtonEvent* controllerEventBufferPtr, out int controllerEventBufferLen, out MouseClickEvent* clickEventBufferPtr, out int clickEventBufferLen) {
-		kbmEventBufferPtr = _kbmSnapshot.EventBuffer.BufferPointer;
-		kbmEventBufferLen = _kbmSnapshot.EventBuffer.Length;
+		kbmEventBufferPtr = _kbmState.EventBuffer.BufferPointer;
+		kbmEventBufferLen = _kbmState.EventBuffer.Length;
 		controllerEventBufferPtr = _controllerEventBuffer.BufferPointer;
 		controllerEventBufferLen = _controllerEventBuffer.Length;
-		clickEventBufferPtr = _kbmSnapshot.ClickBuffer.BufferPointer;
-		clickEventBufferLen = _kbmSnapshot.ClickBuffer.Length;
+		clickEventBufferPtr = _kbmState.ClickBuffer.BufferPointer;
+		clickEventBufferLen = _kbmState.ClickBuffer.Length;
 	}
 
 	internal void HandlePotentialNewController(UIntPtr handle, byte* utf8NamePtr, int utf8NameLen) {
-		foreach (var kvp in _detectedControllerSnapshotMap) {
+		foreach (var kvp in _detectedControllerStateMap) {
 			if (kvp.Value.Handle == handle) return;
 		}
 
-		var state = new LocalGameControllerState(handle);
+		var state = new LocalLatestGameControllerState(handle);
 		var nameSpan = new ReadOnlySpan<byte>(utf8NamePtr, utf8NameLen);
 		if (nameSpan.Length > state.NameBuffer.AsSpan.Length) nameSpan = nameSpan[..state.NameBuffer.AsSpan.Length];
 		nameSpan.CopyTo(state.NameBuffer.AsSpan);
-		_detectedControllerSnapshotVector.Add(state);
-		_detectedControllerSnapshotMap.Add(handle, state);
+		_detectedControllerStateVector.Add(state);
+		_detectedControllerStateMap.Add(handle, state);
 	}
 
 	internal KeyboardOrMouseKeyEvent* DoubleKbmEventBufferSize() {
-		_kbmSnapshot.EventBuffer.DoubleSize();
-		return _kbmSnapshot.EventBuffer.BufferPointer;
+		_kbmState.EventBuffer.DoubleSize();
+		return _kbmState.EventBuffer.BufferPointer;
 	}
 
 	internal RawLocalGameControllerButtonEvent* DoubleControllerEventBufferSize() {
@@ -85,13 +85,13 @@ sealed unsafe class LocalInputSnapshotProvider : IInputSnapshotProvider, IDispos
 	}
 
 	internal MouseClickEvent* DoubleClickEventBufferSize() {
-		_kbmSnapshot.ClickBuffer.DoubleSize();
-		return _kbmSnapshot.ClickBuffer.BufferPointer;
+		_kbmState.ClickBuffer.DoubleSize();
+		return _kbmState.ClickBuffer.BufferPointer;
 	}
 
 	void UpdateControllerStates(int numNewEvents) {
 		_combinedControllerState.ClearForNextIteration();
-		foreach (var kvp in _detectedControllerSnapshotMap) {
+		foreach (var kvp in _detectedControllerStateMap) {
 			kvp.Value.ClearForNextIteration();
 		}
 
@@ -99,12 +99,12 @@ sealed unsafe class LocalInputSnapshotProvider : IInputSnapshotProvider, IDispos
 			var rawEvent = _controllerEventBuffer.AsSpan[i];
 			_combinedControllerState.ApplyEvent(rawEvent);
 			var handle = rawEvent.Handle;
-			if (!_detectedControllerSnapshotMap.TryGetValue(handle, out var state)) continue;
+			if (!_detectedControllerStateMap.TryGetValue(handle, out var state)) continue;
 			state.ApplyEvent(rawEvent);
 		}
 	}
 
-	public override string ToString() => "TinyFFR Native Input Snapshot Provider";
+	public override string ToString() => "TinyFFR Native Input State Provider";
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "detect_controllers")]
@@ -126,13 +126,13 @@ sealed unsafe class LocalInputSnapshotProvider : IInputSnapshotProvider, IDispos
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
-			foreach (var kvp in _detectedControllerSnapshotMap) kvp.Value.Dispose();
+			foreach (var kvp in _detectedControllerStateMap) kvp.Value.Dispose();
 
 			_controllerEventBuffer.Dispose();
-			_detectedControllerSnapshotVector.Dispose();
-			_detectedControllerSnapshotMap.Dispose();
+			_detectedControllerStateVector.Dispose();
+			_detectedControllerStateMap.Dispose();
 			_combinedControllerState.Dispose();
-			_kbmSnapshot.Dispose();
+			_kbmState.Dispose();
 		}
 		finally {
 			_isDisposed = true;
@@ -140,7 +140,7 @@ sealed unsafe class LocalInputSnapshotProvider : IInputSnapshotProvider, IDispos
 	}
 
 	void ThrowIfThisIsDisposed() {
-		ObjectDisposedException.ThrowIf(_isDisposed, typeof(IInputSnapshotProvider));
+		ObjectDisposedException.ThrowIf(_isDisposed, typeof(ILatestInputRetriever));
 	}
 	#endregion
 }

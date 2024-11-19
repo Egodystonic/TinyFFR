@@ -28,7 +28,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 	const string DefaultLoopName = "Unnamed Loop";
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPoolBackedMap<ApplicationLoopHandle, HandleTrackingData> _handleDataMap = new();
-	readonly LocalInputSnapshotProvider _inputSnapshotProvider;
+	readonly LocalLatestInputRetriever _latestInputRetriever;
 	readonly LocalApplicationLoopBuilderConfig _config;
 	nuint _nextLoopHandleIndex = 1;
 	bool _isDisposed = false;
@@ -39,7 +39,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 
 		_globals = globals;
 		_config = config;
-		_inputSnapshotProvider = LocalInputManager.IncrementRefCountAndGetProvider();
+		_latestInputRetriever = LocalInputManager.IncrementRefCountAndGetRetriever();
 	}
 
 	public ApplicationLoop CreateLoop(int? frameRateCapHz = null, ReadOnlySpan<char> name = default) => CreateLoop(frameRateCapHz, null, name);
@@ -53,28 +53,19 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 	public ApplicationLoop CreateLoop(in ApplicationLoopConfig config) => CreateLoop(new LocalApplicationLoopConfig(config));
 	public ApplicationLoop CreateLoop(in LocalApplicationLoopConfig config) {
 		ThrowIfThisIsDisposed();
-		if (!_config.AllowMultipleSimultaneousLoops && _handleDataMap.Count > 0) {
-			throw new InvalidOperationException(
-				"This loop builder is not configured to allow multiple simultaneous loops. In most applications, having more than one loop active " +
-				"is an error and will lead to buggy behaviour. If you intend to replace the previously-created loop with a new one, dispose the previous " +
-				"loop first before building the subsequent one. If you actually wish to have multiple loops active simultaneously, set " +
-				nameof(LocalApplicationLoopBuilderConfig.AllowMultipleSimultaneousLoops) + " to 'true' in the " + nameof(LocalApplicationLoopBuilderConfig) + " " +
-				"that is provided to the " + nameof(LocalRendererFactory) + " constructor."
-			);
-		}
 		config.ThrowIfInvalid();
 
 		var curTime = Stopwatch.GetTimestamp();
 		var handle = (ApplicationLoopHandle) _nextLoopHandleIndex;
-		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, config.IterationShouldRefreshGlobalInputSnapshots));
+		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, config.IterationShouldRefreshGlobalInputStates));
 		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.BaseConfig.Name);
 		_nextLoopHandleIndex++;
 		return new(handle, this);
 	}
 
-	public IInputSnapshotProvider GetInputSnapshotProvider(ApplicationLoopHandle handle) {
+	public ILatestInputRetriever GetInputStateProvider(ApplicationLoopHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _inputSnapshotProvider;
+		return _latestInputRetriever;
 	}
 
 	TimeSpan GetWaitTimeUntilNextFrameStart(ApplicationLoopHandle handle) {
@@ -83,7 +74,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		return result > TimeSpan.Zero ? result : TimeSpan.Zero;
 	}
 	void ExecuteIteration(bool shouldIterateInput) {
-		if (shouldIterateInput) _inputSnapshotProvider.IterateSystemWideInput();
+		if (shouldIterateInput) _latestInputRetriever.IterateSystemWideInput();
 	}
 
 	public TimeSpan IterateOnce(ApplicationLoopHandle handle) {

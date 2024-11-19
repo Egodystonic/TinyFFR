@@ -37,20 +37,26 @@ class NativeInputTest {
 		window.Title = "Close me to end test";
 
 		var loopBuilder = factory.ApplicationLoopBuilder;
+		using var beforeLoop = loopBuilder.CreateLoop(new() { IterationShouldRefreshGlobalInputStates = false });
 		using var loop = loopBuilder.CreateLoop(new() { FrameRateCapHz = 60 });
+		using var afterLoop = loopBuilder.CreateLoop(new() { IterationShouldRefreshGlobalInputStates = false });
 
 		_numControllers = 0;
 		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(20d)) {
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) window.LockCursor = !window.LockCursor;
 			HandleInput(loop.Input);
+			AssertInputStatesAreEqual(loop.Input, beforeLoop.Input);
+			AssertInputStatesAreEqual(loop.Input, afterLoop.Input);
+			beforeLoop.IterateOnce();
 			loop.IterateOnce();
+			afterLoop.IterateOnce();
 		}
 		HandleInput(loop.Input);
 		Console.WriteLine($"Quit requested: {loop.Input.UserQuitRequested}");
 	}
 
 	int _numControllers;
-	void HandleInput(IInputSnapshotProvider input) {
+	void HandleInput(ILatestInputRetriever input) {
 		if (input.GameControllers.Length != _numControllers) {
 			for (var i = input.GameControllers.Length; i > _numControllers; --i) {
 				Console.WriteLine($"Controller: {input.GameControllers[i - 1].ControllerName}");
@@ -96,6 +102,35 @@ class NativeInputTest {
 		}
 		foreach (var newUpKey in kbm.NewKeyUpEvents) {
 			Assert.AreEqual(true, kbm.KeyWasReleasedThisIteration(newUpKey));
+		}
+	}
+
+	void AssertInputStatesAreEqual(ILatestInputRetriever expected, ILatestInputRetriever actual) {
+		void AssertControllerStates(ILatestGameControllerInputStateRetriever e, ILatestGameControllerInputStateRetriever a) {
+			Assert.AreEqual(e.ControllerName, a.ControllerName);
+			Assert.IsTrue(e.CurrentlyPressedButtons.SequenceEqual(a.CurrentlyPressedButtons));
+			Assert.AreEqual(e.LeftStickPosition, a.LeftStickPosition);
+			Assert.AreEqual(e.LeftTriggerPosition, a.LeftTriggerPosition);
+			Assert.AreEqual(e.RightStickPosition, a.RightStickPosition);
+			Assert.AreEqual(e.RightTriggerPosition, a.RightTriggerPosition);
+		}
+
+		Assert.AreEqual(expected.UserQuitRequested, actual.UserQuitRequested);
+
+		var expectedKbm = expected.KeyboardAndMouse;
+		var actualKbm = actual.KeyboardAndMouse;
+		Assert.AreEqual(expectedKbm.MouseCursorDelta, actualKbm.MouseCursorDelta);
+		Assert.AreEqual(expectedKbm.MouseCursorPosition, actualKbm.MouseCursorPosition);
+		Assert.AreEqual(expectedKbm.MouseScrollWheelDelta, actualKbm.MouseScrollWheelDelta);
+		Assert.IsTrue(expectedKbm.NewKeyDownEvents.SequenceEqual(actualKbm.NewKeyDownEvents));
+		Assert.IsTrue(expectedKbm.NewKeyEvents.SequenceEqual(actualKbm.NewKeyEvents));
+		Assert.IsTrue(expectedKbm.NewKeyUpEvents.SequenceEqual(actualKbm.NewKeyUpEvents));
+		Assert.IsTrue(expectedKbm.NewMouseClicks.SequenceEqual(actualKbm.NewMouseClicks));
+
+		AssertControllerStates(expected.GameControllersCombined, actual.GameControllersCombined);
+		Assert.AreEqual(expected.GameControllers.Length, actual.GameControllers.Length);
+		for (var i = 0; i < expected.GameControllers.Length; ++i) {
+			AssertControllerStates(expected.GameControllers[i], actual.GameControllers[i]);
 		}
 	}
 } 

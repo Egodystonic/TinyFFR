@@ -13,10 +13,10 @@ namespace Egodystonic.TinyFFR.Environment.Input.Local;
 
 [SuppressUnmanagedCodeSecurity]
 static unsafe class LocalInputManager {
-	static LocalInputSnapshotProvider? _liveInstance = null;
+	static LocalLatestInputRetriever? _liveInstance = null;
 	static int _instanceRefCount = 0;
 
-	public static LocalInputSnapshotProvider IncrementRefCountAndGetProvider() {
+	public static LocalLatestInputRetriever IncrementRefCountAndGetRetriever() {
 		_instanceRefCount++;
 		if (_liveInstance != null) return _liveInstance;
 
@@ -28,7 +28,7 @@ static unsafe class LocalInputManager {
 			&HandlePotentialNewController
 		).ThrowIfFailure();
 
-		_liveInstance = new LocalInputSnapshotProvider();
+		_liveInstance = new LocalLatestInputRetriever();
 		_liveInstance.GetEventBufferPointers(
 			out var kbmEventBufferPtr,
 			out var kbmEventBufferLen,

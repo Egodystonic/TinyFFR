@@ -7,9 +7,9 @@ using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Environment.Input.Local;
 
-sealed class LocalKeyboardAndMouseInputSnapshotProvider : IKeyboardAndMouseInputSnapshotProvider, IDisposable {
-	public readonly UnmanagedBuffer<KeyboardOrMouseKeyEvent> EventBuffer = new(LocalInputSnapshotProvider.InitialEventBufferLength);
-	public readonly UnmanagedBuffer<MouseClickEvent> ClickBuffer = new(LocalInputSnapshotProvider.InitialEventBufferLength);
+sealed class LocalLatestKeyboardAndMouseInputRetriever : ILatestKeyboardAndMouseInputRetriever, IDisposable {
+	public readonly UnmanagedBuffer<KeyboardOrMouseKeyEvent> EventBuffer = new(LocalLatestInputRetriever.InitialEventBufferLength);
+	public readonly UnmanagedBuffer<MouseClickEvent> ClickBuffer = new(LocalLatestInputRetriever.InitialEventBufferLength);
 	readonly ArrayPoolBackedVector<KeyboardOrMouseKey> _currentlyPressedKeys = new();
 	readonly ArrayPoolBackedVector<KeyboardOrMouseKey> _keyDownEventBuffer = new();
 	readonly ArrayPoolBackedVector<KeyboardOrMouseKey> _keyUpEventBuffer = new();
@@ -84,7 +84,7 @@ sealed class LocalKeyboardAndMouseInputSnapshotProvider : IKeyboardAndMouseInput
 		return false;
 	}
 
-	public override string ToString() => _isDisposed ? "TinyFFR Native Input Snapshot Provider [Keyboard/Mouse] [Disposed]" : "TinyFFR Native Input Snapshot Provider [Keyboard/Mouse]";
+	public override string ToString() => _isDisposed ? "TinyFFR Native Input State Provider [Keyboard/Mouse] [Disposed]" : "TinyFFR Native Input State Provider [Keyboard/Mouse]";
 
 	#region Disposal
 	public void Dispose() {
@@ -102,7 +102,7 @@ sealed class LocalKeyboardAndMouseInputSnapshotProvider : IKeyboardAndMouseInput
 	}
 
 	void ThrowIfThisIsDisposed() {
-		ObjectDisposedException.ThrowIf(_isDisposed, typeof(IKeyboardAndMouseInputSnapshotProvider));
+		ObjectDisposedException.ThrowIf(_isDisposed, typeof(ILatestKeyboardAndMouseInputRetriever));
 	}
 	#endregion
 }

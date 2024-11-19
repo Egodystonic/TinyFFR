@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Environment.Input.Local;
 
-sealed class LocalGameControllerState : IGameControllerInputSnapshotProvider, IDisposable {
+sealed class LocalLatestGameControllerState : ILatestGameControllerInputStateRetriever, IDisposable {
 	const int MaxControllerNameLength = 500;
 	public InteropStringBuffer NameBuffer { get; }
 	public UIntPtr Handle { get; }
@@ -33,32 +33,32 @@ sealed class LocalGameControllerState : IGameControllerInputSnapshotProvider, ID
 		}
 	}
 
-	ReadOnlySpan<GameControllerButtonEvent> IGameControllerInputSnapshotProvider.NewButtonEvents {
+	ReadOnlySpan<GameControllerButtonEvent> ILatestGameControllerInputStateRetriever.NewButtonEvents {
 		get {
 			ThrowIfThisIsDisposed();
 			return NewButtonEvents.AsSpan;
 		}
 	}
-	ReadOnlySpan<GameControllerButton> IGameControllerInputSnapshotProvider.NewButtonDownEvents {
+	ReadOnlySpan<GameControllerButton> ILatestGameControllerInputStateRetriever.NewButtonDownEvents {
 		get {
 			ThrowIfThisIsDisposed();
 			return NewButtonDownEvents.AsSpan;
 		}
 	}
-	ReadOnlySpan<GameControllerButton> IGameControllerInputSnapshotProvider.NewButtonUpEvents {
+	ReadOnlySpan<GameControllerButton> ILatestGameControllerInputStateRetriever.NewButtonUpEvents {
 		get {
 			ThrowIfThisIsDisposed();
 			return NewButtonUpEvents.AsSpan;
 		}
 	}
-	ReadOnlySpan<GameControllerButton> IGameControllerInputSnapshotProvider.CurrentlyPressedButtons {
+	ReadOnlySpan<GameControllerButton> ILatestGameControllerInputStateRetriever.CurrentlyPressedButtons {
 		get {
 			ThrowIfThisIsDisposed();
 			return CurrentlyPressedButtons.AsSpan;
 		}
 	}
 
-	public LocalGameControllerState(UIntPtr handle) {
+	public LocalLatestGameControllerState(UIntPtr handle) {
 		Handle = handle;
 		NameBuffer = new(MaxControllerNameLength, true);
 	}
@@ -162,7 +162,7 @@ sealed class LocalGameControllerState : IGameControllerInputSnapshotProvider, ID
 		}
 	}
 
-	public override string ToString() => $"TinyFFR Local Input Snapshot Provider [Game Controller '{ControllerName}']{(_isDisposed ? " [Disposed]" : "")}";
+	public override string ToString() => $"TinyFFR Local Input State Provider [Game Controller '{ControllerName}']{(_isDisposed ? " [Disposed]" : "")}";
 
 	#region Disposal
 	public void Dispose() {
@@ -180,7 +180,7 @@ sealed class LocalGameControllerState : IGameControllerInputSnapshotProvider, ID
 	}
 
 	void ThrowIfThisIsDisposed() {
-		ObjectDisposedException.ThrowIf(_isDisposed, typeof(IGameControllerInputSnapshotProvider));
+		ObjectDisposedException.ThrowIf(_isDisposed, typeof(ILatestGameControllerInputStateRetriever));
 	}
 	#endregion
 }

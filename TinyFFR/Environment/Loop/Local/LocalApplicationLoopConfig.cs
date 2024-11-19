@@ -34,7 +34,7 @@ public readonly ref struct LocalApplicationLoopConfig {
 		init => BaseConfig = BaseConfig with { Name = value };
 	}
 
-	public bool IterationShouldRefreshGlobalInputSnapshots { get; init; } = true;
+	public bool IterationShouldRefreshGlobalInputStates { get; init; } = true;
 
 	public LocalApplicationLoopConfig() { }
 	public LocalApplicationLoopConfig(ApplicationLoopConfig baseConfig) => BaseConfig = baseConfig;

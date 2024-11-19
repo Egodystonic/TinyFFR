@@ -6,5 +6,5 @@ using System;
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 public sealed record LocalApplicationLoopBuilderConfig {
-	public bool AllowMultipleSimultaneousLoops { get; init; } = false;
+	
 }

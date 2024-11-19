@@ -24,9 +24,9 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, Ap
 		get => Implementation.GetName(_handle);
 	}
 
-	public IInputSnapshotProvider Input {
+	public ILatestInputRetriever Input {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetInputSnapshotProvider(_handle);
+		get => Implementation.GetInputStateProvider(_handle);
 	}
 
 	internal ApplicationLoop(ApplicationLoopHandle handle, IApplicationLoopImplProvider impl) {
