@@ -70,7 +70,6 @@ Material* GetMaterial(MaterialType type) {
 				filamat::MaterialBuilder builder;
 				auto newMat = builder
 					.name("Basic Solid Color")
-					.require(VertexAttribute::COLOR)
 					.blending(BlendingMode::OPAQUE)
 					.shading(Shading::UNLIT)
 					.culling(backend::CullingMode::BACK)

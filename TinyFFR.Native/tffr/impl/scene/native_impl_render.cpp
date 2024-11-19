@@ -19,6 +19,7 @@ void native_impl_render::allocate_renderer_and_swap_chain(WindowHandle window, R
 
 	*outSwapChain = filament_engine->createSwapChain(hwnd, 0UL);
 	*outRenderer = filament_engine->createRenderer();
+	(*outRenderer)->setClearOptions({ { 0.0, 0.0, 0.0, 0.0 }, 0U, true, true });
 	ThrowIfNull(*outSwapChain, "Could not create swap chain.");
 	ThrowIfNull(*outRenderer, "Could not create renderer.");
 }
