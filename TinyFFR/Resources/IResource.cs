@@ -22,6 +22,7 @@ public unsafe interface IResource : IStringSpanNameEnabled {
 	internal nuint Handle { get; }
 	internal IResourceImplProvider Implementation { get; }
 	internal ResourceIdent Ident { get; }
+	internal ResourceStub AsStub => new(Ident, Implementation);
 
 	internal void AllocateGcHandleAndSerializeResource(Span<byte> dest) {
 		var gcHandle = GCHandle.Alloc(Implementation, GCHandleType.Normal);
@@ -36,6 +37,7 @@ public unsafe interface IResource : IStringSpanNameEnabled {
 }
 public interface IResource<TSelf> : IResource, IEquatable<TSelf> where TSelf : IResource<TSelf> {
 	internal static abstract TSelf RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl);
+	internal static virtual TSelf RecreateFromStub(ResourceStub stub) => TSelf.RecreateFromRawHandleAndImpl(stub.Handle, stub.Implementation);
 }
 public interface IResource<out THandle, out TImpl> : IResource where THandle : unmanaged, IResourceHandle<THandle> where TImpl : class, IResourceImplProvider {
 	internal new THandle Handle { get; }

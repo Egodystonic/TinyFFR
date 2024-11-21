@@ -20,14 +20,24 @@ public readonly struct CombinedResourceGroup : IDisposableResource<CombinedResou
 		get => Implementation.GetResourceCount(Handle);
 	}
 
-	public int ResourceCapacity {
+	public bool IsSealed {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetResourceCapacity(Handle);
+		get => Implementation.IsSealed(Handle);
+	}
+
+	public bool DisposedContainedResourcesByDefaultWhenDisposed {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.DisposedContainedResourcesByDefaultWhenDisposed(Handle);
 	}
 
 	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(Handle);
+	}
+
+	internal ReadOnlySpan<ResourceStub> Resources {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetResources(Handle);
 	}
 
 	internal CombinedResourceGroup(CombinedResourceGroupHandle handle, ICombinedResourceGroupImplProvider impl) {
@@ -44,8 +54,16 @@ public readonly struct CombinedResourceGroup : IDisposableResource<CombinedResou
 	public void AddResource<TResource>(TResource resource) where TResource : IResource => Implementation.AddResource(Handle, resource);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Seal() => Implementation.Seal(Handle);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public OneToManyEnumerator<EnumerationArg, TResource> GetAllResourcesOfType<TResource>() where TResource : IResource<TResource> {
 		return Implementation.GetAllResourcesOfType<TResource>(Handle);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public TResource GetNthResourceOfType<TResource>(int index) where TResource : IResource<TResource> {
+		return Implementation.GetNthResourceOfType<TResource>(Handle, index);
 	}
 
 	#region Disposal
@@ -56,6 +74,9 @@ public readonly struct CombinedResourceGroup : IDisposableResource<CombinedResou
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Implementation.Dispose(_handle);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Dispose(bool disposeContainedResources) => Implementation.Dispose(_handle, disposeContainedResources);
 	#endregion
 
 	public override string ToString() => IsDisposed ? $"{nameof(CombinedResourceGroup)} (Disposed)" : $"{nameof(CombinedResourceGroup)} \"{Name}\"";

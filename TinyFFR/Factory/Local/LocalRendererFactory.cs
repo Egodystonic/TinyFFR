@@ -86,6 +86,7 @@ public sealed class LocalRendererFactory : ILocalRendererFactory {
 			DisposeObjectIfDisposable(ApplicationLoopBuilder);
 			DisposeObjectIfDisposable(WindowBuilder);
 			DisposeObjectIfDisposable(DisplayDiscoverer);
+			DisposeObjectIfDisposable(_resourceGroupProvider);
 			DisposeObjectIfDisposable(_stringPool);
 			DisposeObjectIfDisposable(_dependencyTracker);
 			LocalNativeUtils.DisposeTemporaryCpuBufferPoolIfSafe(this);
