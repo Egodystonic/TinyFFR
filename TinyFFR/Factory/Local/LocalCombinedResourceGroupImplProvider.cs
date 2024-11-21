@@ -18,7 +18,7 @@ sealed unsafe class LocalCombinedResourceGroupImplProvider : ICombinedResourceGr
 		}
 	}
 
-	public const int MinStartingCapacity = 4;
+	public const int DefaultInitialCapacity = 4;
 	const string DefaultGroupName = "Unnamed Resource Group";
 
 	readonly LocalFactoryGlobalObjectGroup _globals;
@@ -33,18 +33,18 @@ sealed unsafe class LocalCombinedResourceGroupImplProvider : ICombinedResourceGr
 		_globals = globals;
 	}
 
-	public CombinedResourceGroup CreateGroup(bool disposeContainedResourcesWhenDisposed, int minCapacity = MinStartingCapacity) {
-		if (minCapacity < MinStartingCapacity) minCapacity = MinStartingCapacity;
+	public CombinedResourceGroup CreateGroup(bool disposeContainedResourcesWhenDisposed, int initialCapacity = DefaultInitialCapacity) {
+		if (initialCapacity <= 0) throw new ArgumentOutOfRangeException(nameof(initialCapacity), initialCapacity, "Must be positive value.");
 
-		var stubArray = _stubArrayPool.Rent(minCapacity);
+		var stubArray = _stubArrayPool.Rent(initialCapacity);
 		var handle = new CombinedResourceGroupHandle(++_previousGroupId);
 		_dataMap.Add(handle, new(stubArray, 0, disposeContainedResourcesWhenDisposed, false));
 
 		return HandleToInstance(handle);
 	}
 
-	public CombinedResourceGroup CreateGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name, int minCapacity = MinStartingCapacity) {
-		var result = CreateGroup(disposeContainedResourcesWhenDisposed, minCapacity);
+	public CombinedResourceGroup CreateGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name, int initialCapacity = DefaultInitialCapacity) {
+		var result = CreateGroup(disposeContainedResourcesWhenDisposed, initialCapacity);
 		_globals.StoreResourceNameIfNotDefault(result.Handle.Ident, name);
 		return result;
 	}

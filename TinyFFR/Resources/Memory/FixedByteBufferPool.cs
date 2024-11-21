@@ -130,13 +130,14 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 		if (spaceIndex < 0 || spaceIndex >= _numAllocatedSpaces) throw new ArgumentOutOfRangeException(nameof(spaceIndex));
 		var spacePtr = _allocatedSpaces + spaceIndex;
 		if (spacePtr->LargestContiguousMemoryBlockCount < numBlocks) throw new ArgumentOutOfRangeException(nameof(numBlocks));
-		WriteBlocksAndRecalculateLargestContiguousSpace(spacePtr, spacePtr->LargestContiguousMemoryBlockStartIndex, numBlocks, true);
-		return new FixedByteBuffer(
+		var result = new FixedByteBuffer(
 			(UIntPtr) (spacePtr->StartPtr + (spacePtr->LargestContiguousMemoryBlockStartIndex * _blockSize)), 
 			numBlocks * _blockSize, 
 			spaceIndex, 
 			spacePtr->LargestContiguousMemoryBlockStartIndex
 		);
+		WriteBlocksAndRecalculateLargestContiguousSpace(spacePtr, spacePtr->LargestContiguousMemoryBlockStartIndex, numBlocks, true);
+		return result;
 	}
 
 	void WriteBlocksAndRecalculateLargestContiguousSpace(AllocatedSpace* spacePtr, int firstBlockIndex, int numBlocks, bool value) {
@@ -150,7 +151,7 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 			if (spacePtr->RentedBlocksLedger[i]) {
 				if (currentBlockSize > largestContiguousBlockSize) {
 					largestContiguousBlockSize = currentBlockSize;
-					largestContiguousBlockStartIndex = i - (currentBlockSize - 1);
+					largestContiguousBlockStartIndex = i - currentBlockSize;
 				}
 				currentBlockSize = 0;
 			}
@@ -160,7 +161,7 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 		}
 		if (currentBlockSize > largestContiguousBlockSize) {
 			largestContiguousBlockSize = currentBlockSize;
-			largestContiguousBlockStartIndex = NumBlocksPerSpace - (currentBlockSize - 1);
+			largestContiguousBlockStartIndex = NumBlocksPerSpace - currentBlockSize;
 		}
 		spacePtr->LargestContiguousMemoryBlockStartIndex = largestContiguousBlockStartIndex;
 		spacePtr->LargestContiguousMemoryBlockCount = largestContiguousBlockSize;

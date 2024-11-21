@@ -54,13 +54,20 @@ public sealed class LocalRendererFactory : ILocalRendererFactory {
 		SceneBuilder = new LocalSceneBuilder(globals);
 	}
 
-	public CombinedResourceGroup CreateResourceGroup(int capacity, bool disposeContainedResourcesWhenDisposed) {
-		return _resourceGroupProvider.CreateGroup(capacity, disposeContainedResourcesWhenDisposed);
+	#region Resource Group Creation
+	public CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed) {
+		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed);
 	}
-
-	public CombinedResourceGroup CreateResourceGroup(int capacity, bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name) {
-		return _resourceGroupProvider.CreateGroup(capacity, disposeContainedResourcesWhenDisposed, name);
+	public CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name) {
+		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed, name);
 	}
+	public CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, int initialCapacity) {
+		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed, initialCapacity);
+	}
+	public CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name, int initialCapacity) {
+		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed, name, initialCapacity);
+	}
+	#endregion
 
 	public override string ToString() => IsDisposed ? "TinyFFR Local Renderer Factory [Disposed]" : "TinyFFR Local Renderer Factory";
 

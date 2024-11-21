@@ -18,6 +18,8 @@ public interface ITinyFfrFactory : ITrackedDisposable {
 	IObjectBuilder ObjectBuilder { get; }
 	ISceneBuilder SceneBuilder { get; }
 
-	CombinedResourceGroup CreateResourceGroup(int capacity, bool disposeContainedResourcesWhenDisposed);
-	CombinedResourceGroup CreateResourceGroup(int capacity, bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name);
+	CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed);
+	CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, int initialCapacity);
+	CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name);
+	CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name, int initialCapacity);
 }

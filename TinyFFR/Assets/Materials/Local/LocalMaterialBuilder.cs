@@ -49,7 +49,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			out var handle
 		).ThrowIfFailure();
 
-		_activeMaterials.Add(handle, _globals.ResourceGroupProvider.CreateGroup(0, false));
+		_activeMaterials.Add(handle, _globals.ResourceGroupProvider.CreateGroup(false, 1));
 		_globals.StoreResourceNameIfNotDefault(new MaterialHandle(handle).Ident, config.Name);
 		return new(handle, this);
 	}
