@@ -8,7 +8,7 @@ namespace Egodystonic.TinyFFR.Scene;
 public readonly unsafe struct ModelInstanceHandle : IResourceHandle<ModelInstanceHandle> {
 	public nuint AsInteger { get; }
 	public void* AsPointer => (void*) AsInteger;
-	internal static IntPtr TypeHandle { get; } = typeof(ModelInstanceHandle).TypeHandle.Value;
+	internal static IntPtr TypeHandle { get; } = typeof(ModelInstance).TypeHandle.Value;
 	static IntPtr IResourceHandle.TypeHandle => TypeHandle;
 	internal ResourceIdent Ident => new(TypeHandle, AsInteger);
 	ResourceIdent IResourceHandle.Ident => Ident;

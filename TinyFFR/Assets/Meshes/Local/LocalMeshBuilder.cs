@@ -156,6 +156,8 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		return _globals.GetResourceName(handle.Ident, DefaultMeshName);
 	}
 
+
+
 	#region Disposal
 	public bool IsDisposed(MeshHandle handle) => _isDisposed || !_activeMeshes.ContainsKey(handle);
 

@@ -8,7 +8,7 @@ namespace Egodystonic.TinyFFR.Assets.Materials;
 public readonly unsafe struct MaterialHandle : IResourceHandle<MaterialHandle> {
 	public nuint AsInteger { get; }
 	public void* AsPointer => (void*) AsInteger;
-	internal static IntPtr TypeHandle { get; } = typeof(MaterialHandle).TypeHandle.Value;
+	internal static IntPtr TypeHandle { get; } = typeof(Material).TypeHandle.Value;
 	static IntPtr IResourceHandle.TypeHandle => TypeHandle;
 	internal ResourceIdent Ident => new(TypeHandle, AsInteger);
 	ResourceIdent IResourceHandle.Ident => Ident;

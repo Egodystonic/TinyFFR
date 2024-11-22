@@ -9,7 +9,7 @@ using Egodystonic.TinyFFR.Factory.Local;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
-class NativeLoopTimingTest {
+class LocalLoopTimingTest {
 	[SetUp]
 	public void SetUpTest() { }
 

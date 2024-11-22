@@ -12,7 +12,7 @@ using Egodystonic.TinyFFR.Scene;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
-class NativeCuboidRenderTest {
+class LocalCuboidRenderTest {
 	[SetUp]
 	public void SetUpTest() { }
 

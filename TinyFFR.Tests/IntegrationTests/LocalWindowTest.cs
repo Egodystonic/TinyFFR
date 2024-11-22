@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.Factory.Local;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
-class NativeWindowTest {
+class LocalWindowTest {
 	[SetUp]
 	public void SetUpTest() { }
 

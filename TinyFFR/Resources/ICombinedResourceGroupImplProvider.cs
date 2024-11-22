@@ -15,5 +15,5 @@ public interface ICombinedResourceGroupImplProvider : IDisposableResourceImplPro
 	TResource GetNthResourceOfType<TResource>(CombinedResourceGroupHandle handle, int index) where TResource : IResource<TResource>;
 
 	void Dispose(CombinedResourceGroupHandle handle, bool disposeContainedResources);
-	bool DisposedContainedResourcesByDefaultWhenDisposed(CombinedResourceGroupHandle handle);
+	bool GetDisposesContainedResourcesByDefaultWhenDisposed(CombinedResourceGroupHandle handle);
 }

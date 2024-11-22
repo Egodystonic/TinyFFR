@@ -25,9 +25,9 @@ public readonly struct CombinedResourceGroup : IDisposableResource<CombinedResou
 		get => Implementation.IsSealed(Handle);
 	}
 
-	public bool DisposedContainedResourcesByDefaultWhenDisposed {
+	public bool DisposesContainedResourcesByDefaultWhenDisposed {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.DisposedContainedResourcesByDefaultWhenDisposed(Handle);
+		get => Implementation.GetDisposesContainedResourcesByDefaultWhenDisposed(Handle);
 	}
 
 	public ReadOnlySpan<char> Name {

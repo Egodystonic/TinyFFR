@@ -6,7 +6,7 @@ namespace Egodystonic.TinyFFR.Resources;
 public readonly unsafe struct CombinedResourceGroupHandle : IResourceHandle<CombinedResourceGroupHandle> {
 	public nuint AsInteger { get; }
 	public void* AsPointer => (void*) AsInteger;
-	internal static IntPtr TypeHandle { get; } = typeof(CombinedResourceGroupHandle).TypeHandle.Value;
+	internal static IntPtr TypeHandle { get; } = typeof(CombinedResourceGroup).TypeHandle.Value;
 	static IntPtr IResourceHandle.TypeHandle => TypeHandle;
 	internal ResourceIdent Ident => new(TypeHandle, AsInteger);
 	ResourceIdent IResourceHandle.Ident => Ident;

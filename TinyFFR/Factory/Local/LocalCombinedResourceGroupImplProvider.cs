@@ -144,7 +144,7 @@ sealed unsafe class LocalCombinedResourceGroupImplProvider : ICombinedResourceGr
 		_dataMap.Remove(handle);
 		_stubArrayPool.Return(stubArray);
 	}
-	public bool DisposedContainedResourcesByDefaultWhenDisposed(CombinedResourceGroupHandle handle) => GetDataForHandleOrThrow(handle).DisposeContainedResourcesWhenDisposed;
+	public bool GetDisposesContainedResourcesByDefaultWhenDisposed(CombinedResourceGroupHandle handle) => GetDataForHandleOrThrow(handle).DisposeContainedResourcesWhenDisposed;
 	public void Dispose() {
 		if (_isDisposed) return;
 		_dataMap.Dispose();

@@ -14,7 +14,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
-class NativeInputTest {
+class LocalInputTest {
 	[SetUp]
 	public void SetUpTest() { }
 
