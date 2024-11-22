@@ -1,6 +1,8 @@
 ﻿// Created on 2024-08-07 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Meshes;
 using static Egodystonic.TinyFFR.Resources.ICombinedResourceGroupImplProvider;
 
 namespace Egodystonic.TinyFFR.Resources;
@@ -34,6 +36,12 @@ public readonly struct CombinedResourceGroup : IDisposableResource<CombinedResou
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(Handle);
 	}
+
+	#region Specific Resource Enumeration Properties
+	public OneToManyEnumerator<EnumerationArg, Material> Materials => GetAllResourcesOfType<Material>();
+	public OneToManyEnumerator<EnumerationArg, Texture> Textures => GetAllResourcesOfType<Texture>();
+	public OneToManyEnumerator<EnumerationArg, Mesh> Meshes => GetAllResourcesOfType<Mesh>();
+	#endregion
 
 	internal ReadOnlySpan<ResourceStub> Resources {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
