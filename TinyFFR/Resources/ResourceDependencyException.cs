@@ -16,8 +16,8 @@ public class ResourceDependencyException : ApplicationException {
 		if (dependentResourceNames.Count > MaxResourcesToDisplay) joinedDependentResourceNames += ", ...";
 
 		return new ResourceDependencyException(
-			$"Can not dispose of {targetResourceType} resource '{targetResourceName}' because it is still in use by {dependentResourceNames.Count} other resource(s) " +
-			$"({joinedDependentResourceNames}). Dispose those resources first before disposing of the parent {targetResourceType}."
+			$"Can not dispose {targetResourceType} '{targetResourceName}' because it is still in use by {dependentResourceNames.Count} other resource(s) " +
+			$"({joinedDependentResourceNames}). Dispose those resources first before disposing '{targetResourceName}'."
 		);
 	}
 }
