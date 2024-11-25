@@ -32,8 +32,8 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker {
 
 	public void DeregisterDependency<TDependent, TTarget>(TDependent dependent, TTarget targetNoLongerInUse) where TDependent : IResource where TTarget : IResource {
 		static void RemoveStubFromMap(VectPool vectorPool, StubMap map, ResourceIdent key, ResourceStub value) {
-			if (!map.TryGetValue(key, out var values)) return; // TODO emit a warning here
-			if (!values.Remove(value)) return; // TODO emit a warning here
+			if (!map.TryGetValue(key, out var values)) return;
+			if (!values.Remove(value)) return;
 			if (values.Count != 0) return;
 			map.Remove(key);
 			vectorPool.Return(values);
@@ -108,7 +108,7 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker {
 		where TDependent : IResource<TDependent, THandle, TImpl>
 		where THandle : unmanaged, IResourceHandle<THandle>
 		where TImpl : class, IResourceImplProvider {
-		return IResource<TDependent, THandle, TImpl>.RecreateFromResourceStub(GetMapEnumerationItem((input.Tracker as ResourceDependencyTracker)!._targetsToDependentsMap, input.ArgumentIdent, index));
+		return IResource<TDependent, THandle, TImpl>.RecreateFromResourceStub(GetMapEnumerationItem<THandle>((input.Tracker as ResourceDependencyTracker)!._targetsToDependentsMap, input.ArgumentIdent, index));
 	}
 	public OneToManyEnumerator<EnumerationInput, TTarget> EnumerateTargetsOfGivenType<TDependent, TTarget, THandle, TImpl>(TDependent dependent)
 		where TDependent : IResource
@@ -137,7 +137,7 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker {
 		where TTarget : IResource<TTarget, THandle, TImpl>
 		where THandle : unmanaged, IResourceHandle<THandle>
 		where TImpl : class, IResourceImplProvider {
-		return IResource<TTarget, THandle, TImpl>.RecreateFromResourceStub(GetMapEnumerationItem((input.Tracker as ResourceDependencyTracker)!._dependentsToTargetsMap, input.ArgumentIdent, index));
+		return IResource<TTarget, THandle, TImpl>.RecreateFromResourceStub(GetMapEnumerationItem<THandle>((input.Tracker as ResourceDependencyTracker)!._dependentsToTargetsMap, input.ArgumentIdent, index));
 	}
 
 	static int GetMapEnumerationCount(StubMap map, ResourceIdent key) => map.TryGetValue(key, out var values) ? values.Count : 0;
