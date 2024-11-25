@@ -3,7 +3,7 @@
 
 namespace Egodystonic.TinyFFR;
 
-public enum StandardColor : uint { // ARGB 32-bit format
+public enum StandardColor : uint { // RGBA 32-bit format
 	// Dielectrics, Format RealWorld<Name>
 
 	// Conductors, Format RealWorld<Name>

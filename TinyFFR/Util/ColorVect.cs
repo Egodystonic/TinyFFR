@@ -121,7 +121,7 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static ColorVect FromRgb24(uint rgb) => FromRgba32((rgb << 8) & Byte.MaxValue);
+	public static ColorVect FromRgb24(uint rgb) => FromRgba32((rgb << 8) | Byte.MaxValue);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ColorVect FromRgb24(int rgb) => FromRgb24((uint) rgb);
