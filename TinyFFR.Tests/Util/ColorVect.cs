@@ -791,4 +791,24 @@ class ColorVectTest {
 			TestTolerance
 		);
 	}
+
+	[Test]
+	public void ShouldCorrectlyConvertFromStandardColor() {
+		void AssertColor(StandardColor c, ColorVect expectation) {
+			AssertToleranceEquals(expectation, ColorVect.FromStandardColor(c), 0.01f);
+
+			Assert.AreEqual(ColorVect.FromStandardColor(c), (ColorVect) c);
+			Assert.AreEqual(ColorVect.FromStandardColor(c), new ColorVect(c));
+			Assert.AreEqual(ColorVect.FromStandardColor(c), c.ToColorVect());
+		}
+
+		AssertColor(StandardColor.Black, new(0f, 0f, 0f, 1f));
+		AssertColor(StandardColor.White, new(1f, 1f, 1f, 1f));
+		AssertColor(StandardColor.Red, new(1f, 0f, 0f, 1f));
+		AssertColor(StandardColor.Lime, new(0f, 1f, 0f, 1f));
+		AssertColor(StandardColor.Blue, new(0f, 0f, 1f, 1f));
+		AssertColor(StandardColor.Olive, new(0.5f, 0.5f, 0f, 1f));
+		AssertColor(StandardColor.Teal, new(0f, 0.5f, 0.5f, 1f));
+		AssertColor(StandardColor.Purple, new(0.5f, 0f, 0.5f, 1f));
+	}
 }

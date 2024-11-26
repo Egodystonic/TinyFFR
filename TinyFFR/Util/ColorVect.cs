@@ -91,6 +91,8 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 	public ColorVect(float red, float green, float blue, float alpha) : this(new Vector4(red, green, blue, alpha)) { }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal ColorVect(Vector4 v) { AsVector4 = v; }
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ColorVect(StandardColor c) { this = FromStandardColor(c); }
 
 	#region Factories and Conversions
 	public static ColorVect PremultiplyAlpha(ColorVect nonpremultipliedInput) {
@@ -127,6 +129,9 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 	public static ColorVect FromRgb24(int rgb) => FromRgb24((uint) rgb);
 
 	public static ColorVect FromRgb24(byte r, byte g, byte b) => FromRgba32(r, g, b, Byte.MaxValue);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static ColorVect FromStandardColor(StandardColor c) => FromRgb24((uint) c);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ColorVect FromHueSaturationLightness(Angle hue, float saturation, float lightness) => FromHueSaturationLightness(hue, saturation, lightness, 1f);
@@ -238,6 +243,7 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 
 	public static implicit operator ColorVect(int rgb) => FromRgba32(rgb);
 	public static implicit operator ColorVect(uint rgb) => FromRgba32(rgb);
+	public static implicit operator ColorVect(StandardColor c) => FromStandardColor(c);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Vect IVect.AsVect() => Vect.FromVector3(ToVector3());
