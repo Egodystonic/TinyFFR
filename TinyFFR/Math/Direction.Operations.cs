@@ -293,7 +293,7 @@ partial struct Direction :
 		var difference = target ^ this;
 		if (difference <= maxDifference) return this;
 
-		return (target >> this).ScaledBy(maxDifference.AsRadians / difference.AsRadians) * target;
+		return (target >> this).ScaledBy(maxDifference.Radians / difference.Radians) * target;
 	}
 
 	// TODO xmldoc: Clamps on to a given arc (arcCentre + maxDiff) around a plane (plane); either leaving this direction directly clamped on to the plane or still with the 3D component (retainEtc). Also mention that the plane's location is not used, only its normal

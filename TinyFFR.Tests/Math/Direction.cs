@@ -787,15 +787,15 @@ class DirectionTest {
 			var angle = Angle.Random(0f, 180f);
 
 			var result = Direction.Random(centre, angle);
-			Assert.LessOrEqual((result ^ centre).AsRadians, angle.AsRadians + TestTolerance);
+			Assert.LessOrEqual((result ^ centre).Radians, angle.Radians + TestTolerance);
 		}
 
 		for (var i = 0; i < NumIterations; ++i) {
 			var centre = Direction.Random();
 
 			var result = Direction.Random(centre, 180f, 90f);
-			Assert.LessOrEqual((result ^ centre).AsRadians, Angle.HalfCircle.AsRadians + TestTolerance);
-			Assert.GreaterOrEqual((result ^ centre).AsRadians, Angle.QuarterCircle.AsRadians - TestTolerance);
+			Assert.LessOrEqual((result ^ centre).Radians, Angle.HalfCircle.Radians + TestTolerance);
+			Assert.GreaterOrEqual((result ^ centre).Radians, Angle.QuarterCircle.Radians - TestTolerance);
 		}
 
 		for (var i = 0; i < NumIterations; ++i) {
@@ -815,8 +815,8 @@ class DirectionTest {
 
 				var result = Direction.Random(plane, centre, a);
 				try {
-					Assert.LessOrEqual(plane.AngleTo(result).AsDegrees, 1f);
-					Assert.LessOrEqual((result ^ centre.ParallelizedWith(plane)!.Value).AsDegrees, a + 1f);
+					Assert.LessOrEqual(plane.AngleTo(result).Degrees, 1f);
+					Assert.LessOrEqual((result ^ centre.ParallelizedWith(plane)!.Value).Degrees, a + 1f);
 				}
 				catch {
 					Console.WriteLine(new Angle(a).ToString());
@@ -1054,7 +1054,7 @@ class DirectionTest {
 				if (target == Direction.None) continue;
 				for (var angle = 0f; angle <= 180f; angle += 15f) {
 					var clampedInput = input.Clamp(target, angle);
-					Assert.LessOrEqual((clampedInput ^ target).AsDegrees, angle + TestTolerance);
+					Assert.LessOrEqual((clampedInput ^ target).Degrees, angle + TestTolerance);
 				}
 			}
 		}

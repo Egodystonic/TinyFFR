@@ -37,7 +37,7 @@ class RotationTest {
 					cosHalfAngle
 				));
 
-				Assert.AreEqual(r, rot.Angle.AsRadians, TestTolerance);
+				Assert.AreEqual(r, rot.Angle.Radians, TestTolerance);
 				var expectedAxis = r == 0f ? None : cardinal;
 				AssertToleranceEquals(expectedAxis, rot.Axis, TestTolerance);
 
@@ -53,10 +53,10 @@ class RotationTest {
 				var anyPerp = cardinal.AnyOrthogonal();
 				rot = rot.WithAxis(anyPerp);
 				AssertToleranceEquals(anyPerp, rot.Axis, TestTolerance);
-				Assert.AreEqual(r, rot.Angle.AsRadians, TestTolerance);
+				Assert.AreEqual(r, rot.Angle.Radians, TestTolerance);
 				rot = rot.WithAngle(Angle.FromRadians(r * 0.5f));
 				AssertToleranceEquals(anyPerp, rot.Axis, TestTolerance);
-				Assert.AreEqual(r * 0.5f, rot.Angle.AsRadians, TestTolerance);
+				Assert.AreEqual(r * 0.5f, rot.Angle.Radians, TestTolerance);
 			}
 		}
 
@@ -165,7 +165,7 @@ class RotationTest {
 
 				var (angle, axis) = rot;
 
-				Assert.AreEqual(r, angle.AsRadians, TestTolerance);
+				Assert.AreEqual(r, angle.Radians, TestTolerance);
 				var expectedAxis = r == 0f ? None : cardinal;
 				AssertToleranceEquals(expectedAxis, axis, TestTolerance);
 			}
@@ -339,7 +339,7 @@ class RotationTest {
 	public void ShouldCorrectlyRotateDirectionsAndVects() {
 		for (var f = 0f; f <= 360f; f += 18f) {
 			var angle = Angle.FromDegrees(f);
-			var expected = new Direction(MathF.Sin(angle.AsRadians), 0f, MathF.Cos(angle.AsRadians));
+			var expected = new Direction(MathF.Sin(angle.Radians), 0f, MathF.Cos(angle.Radians));
 			AssertToleranceEquals(expected, angle % Up * Forward, TestTolerance);
 		}
 

@@ -21,37 +21,37 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	public static readonly Angle ThreeQuarterCircle = FromRadians(Tau * 0.75f);
 	public static readonly Angle FullCircle = FromRadians(Tau * 1f);
 
-	readonly float _asRadians;
+	readonly float _radians;
 
-	public float AsRadians {
+	public float Radians {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => _asRadians;
+		get => _radians;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private init => _asRadians = value;
+		private init => _radians = value;
 	}
-	public float AsDegrees {
+	public float Degrees {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => AsRadians * RadiansToDegreesRatio;
+		get => Radians * RadiansToDegreesRatio;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private init => AsRadians = value * DegreesToRadiansRatio;
+		private init => Radians = value * DegreesToRadiansRatio;
 	}
-	public float AsFullCircleFraction {
+	public float FullCircleFraction {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => AsRadians * TauReciprocal;
+		get => Radians * TauReciprocal;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private init => AsRadians = Tau * value;
+		private init => Radians = Tau * value;
 	}
 
 	// Chose degrees rather than radians to keep consistency with implicit conversion. See notes above implicit operator for more reasoning.
-	public Angle(float degrees) => AsDegrees = degrees;
+	public Angle(float degrees) => Degrees = degrees;
 
 	#region Factories and Conversions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle FromRadians(float radians) => new() { AsRadians = radians };
+	public static Angle FromRadians(float radians) => new() { Radians = radians };
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle FromDegrees(float degrees) => new() { AsDegrees = degrees };
+	public static Angle FromDegrees(float degrees) => new() { Degrees = degrees };
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle FromFullCircleFraction(float fullCircleFraction) => new() { AsFullCircleFraction = fullCircleFraction };
+	public static Angle FromFullCircleFraction(float fullCircleFraction) => new() { FullCircleFraction = fullCircleFraction };
 	
 	public static Angle FromSine(float sine) {
 		sine = Single.Clamp(sine, -1f, 1f);
@@ -143,9 +143,9 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	 *		See below.
 	 *
 	 * Another note: I probably won't include the opposite implicit conversion (e.g. Angle->float) because I think it's
-	 * probably just error prone AF and I don't think specifying .AsDegrees is very onerous anyway. I actually don't think there's
+	 * probably just error prone AF and I don't think specifying .Degrees is very onerous anyway. I actually don't think there's
 	 * actually much use-case for it too: When you wanna convert to string, use ToString(), and when dealing with third-party
-	 * APIs (e.g. math libs) you'll actually more likely want .AsRadians. And within this API/lib I will be using Angle
+	 * APIs (e.g. math libs) you'll actually more likely want .Radians. And within this API/lib I will be using Angle
 	 * everywhere so there shouldn't be much need to get a float value back out at all. The implicit conversion from
 	 * float->Angle is just something to help quickly specify Angle "literals"-- not a declaration that there is a pure
 	 * natural link between float and Angle. Angle to float makes a lot less sense for these reasons IMO.
@@ -169,7 +169,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	#region Random
 	public static Angle Random() => Random(Zero, FullCircle);
 	public static Angle Random(Angle minInclusive, Angle maxExclusive) {
-		return FromRadians(RandomUtils.NextSingle(minInclusive.AsRadians, maxExclusive.AsRadians));
+		return FromRadians(RandomUtils.NextSingle(minInclusive.Radians, maxExclusive.Radians));
 	}
 	#endregion
 
@@ -177,7 +177,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	public static int SerializationByteSpanLength { get; } = sizeof(float);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void SerializeToBytes(Span<byte> dest, Angle src) => BinaryPrimitives.WriteSingleLittleEndian(dest, src.AsRadians);
+	public static void SerializeToBytes(Span<byte> dest, Angle src) => BinaryPrimitives.WriteSingleLittleEndian(dest, src.Radians);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle DeserializeFromBytes(ReadOnlySpan<byte> src) => FromRadians(BinaryPrimitives.ReadSingleLittleEndian(src));
@@ -186,7 +186,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	#region String Conversion
 	public override string ToString() => ToString(null, null);
 
-	public string ToString(string? format, IFormatProvider? formatProvider) => $"{AsDegrees.ToString(format, formatProvider)}{ToStringSuffix}";
+	public string ToString(string? format, IFormatProvider? formatProvider) => $"{Degrees.ToString(format, formatProvider)}{ToStringSuffix}";
 
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
 		charsWritten = 0;
@@ -195,7 +195,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 		// ReSharper disable once JoinDeclarationAndInitializer This is neater
 		bool writeSuccess;
 
-		writeSuccess = AsDegrees.TryFormat(destination, out tryWriteCharsWrittenOutVar, format, provider);
+		writeSuccess = Degrees.TryFormat(destination, out tryWriteCharsWrittenOutVar, format, provider);
 		charsWritten += tryWriteCharsWrittenOutVar;
 		if (!writeSuccess) return false;
 		destination = destination[tryWriteCharsWrittenOutVar..];
@@ -234,30 +234,30 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 
 	#region Equality
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool Equals(Angle other, Angle tolerance) => Equals(other, tolerance.AsDegrees);
+	public bool Equals(Angle other, Angle tolerance) => Equals(other, tolerance.Degrees);
 	public bool Equals(Angle other, float toleranceDegrees) {
-		// Using AsDegrees rather than AsRadians because the implicit conversion from float to Angle
+		// Using Degrees rather than Radians because the implicit conversion from float to Angle
 		// assumes degrees and therefore I feel like the tolerance value here should also be degrees
-		return MathF.Abs(AsDegrees - other.AsDegrees) <= toleranceDegrees;
+		return MathF.Abs(Degrees - other.Degrees) <= toleranceDegrees;
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool EqualsWithinCircle(Angle other) => Equals(other, Zero);
-	public bool EqualsWithinCircle(Angle other, Angle tolerance) => Equals(other, tolerance.AsDegrees);
+	public bool EqualsWithinCircle(Angle other, Angle tolerance) => Equals(other, tolerance.Degrees);
 	public bool EqualsWithinCircle(Angle other, float toleranceDegrees) {
-		var absDiff = MathF.Abs(Normalized.AsDegrees - other.Normalized.AsDegrees);
+		var absDiff = MathF.Abs(Normalized.Degrees - other.Normalized.Degrees);
 		if (absDiff <= toleranceDegrees) return true;
 
 		// This is to accomodate for cases where the normalized value is close but opposite sides of the 0/360 degree boundary;
 		// e.g. this normalized is 0.1 deg and other normalized is 359.9 deg
-		absDiff = MathF.Abs((this + HalfCircle).Normalized.AsDegrees - (other + HalfCircle).Normalized.AsDegrees);
+		absDiff = MathF.Abs((this + HalfCircle).Normalized.Degrees - (other + HalfCircle).Normalized.Degrees);
 		return absDiff <= toleranceDegrees;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool Equals(Angle other) => AsRadians.Equals(other.AsRadians);
+	public bool Equals(Angle other) => Radians.Equals(other.Radians);
 	public override bool Equals(object? obj) => obj is Angle other && Equals(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public override int GetHashCode() => Normalized.AsRadians.GetHashCode();
+	public override int GetHashCode() => Normalized.Radians.GetHashCode();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator ==(Angle left, Angle right) => left.Equals(right);

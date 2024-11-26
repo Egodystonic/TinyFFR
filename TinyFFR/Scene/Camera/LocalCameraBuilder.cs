@@ -41,7 +41,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 			config.Position,
 			config.ViewDirection,
 			GetReorthogonalizedUpOrViewDirection(config.UpDirection, config.ViewDirection),
-			config.FieldOfViewIsVertical ? config.FieldOfView.AsRadians : ConvertHorizontalFovToVertical(config.FieldOfView.AsRadians, DefaultAspectRatio),
+			config.FieldOfViewIsVertical ? config.FieldOfView.Radians : ConvertHorizontalFovToVertical(config.FieldOfView.Radians, DefaultAspectRatio),
 			DefaultAspectRatio,
 			config.NearPlaneDistance,
 			config.FarPlaneDistance
@@ -114,7 +114,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 				nameof(newFov)
 			);
 		}
-		_activeCameras[handle] = _activeCameras[handle] with { VerticalFovRadians = newFov.AsRadians };
+		_activeCameras[handle] = _activeCameras[handle] with { VerticalFovRadians = newFov.Radians };
 		UpdateProjectionMatrixFromParameters(handle);
 	}
 
@@ -124,7 +124,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 	}
 	public void SetHorizontalFieldOfView(CameraHandle handle, Angle newFov) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		SetVerticalFieldOfView(handle, Angle.FromRadians(ConvertHorizontalFovToVertical(newFov.AsRadians, _activeCameras[handle].AspectRatio)));
+		SetVerticalFieldOfView(handle, Angle.FromRadians(ConvertHorizontalFovToVertical(newFov.Radians, _activeCameras[handle].AspectRatio)));
 	}
 
 	public float GetNearPlaneDistance(CameraHandle handle) {

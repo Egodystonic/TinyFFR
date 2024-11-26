@@ -54,17 +54,25 @@ partial struct ColorVect :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static ColorVect operator *(float left, ColorVect right) => right.ScaledBy(left);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ColorVect ScaledBy(float scalar) => ScaledByWithoutNormalization(scalar).ClampToNormalizedRange();
+	public ColorVect ScaledBy(float scalar) => ScaledBy(scalar, includeAlpha: false);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ColorVect ScaledByWithoutNormalization(float scalar) => new(AsVector4 * scalar);
+	public ColorVect ScaledWithoutNormalizationBy(float scalar) => ScaledWithoutNormalizationBy(scalar, includeAlpha: false);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ColorVect ScaledBy(float scalar, bool includeAlpha) => ScaledWithoutNormalizationBy(scalar, includeAlpha).ClampToNormalizedRange(includeAlpha);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ColorVect ScaledWithoutNormalizationBy(float scalar, bool includeAlpha) {
+		var result = new ColorVect(AsVector4 * scalar);
+		if (!includeAlpha) result = result with { Alpha = Alpha };
+		return result;
+	}
 
 	#region Clamping and Interpolation
 	public ColorVect Clamp(ColorVect min, ColorVect max) {
 		return new(
-			Single.Clamp(Red, min.Red, max.Red),
-			Single.Clamp(Green, min.Green, max.Green),
-			Single.Clamp(Blue, min.Blue, max.Blue),
-			Single.Clamp(Alpha, min.Alpha, max.Alpha)
+			max.Red < min.Red ? Single.Clamp(Red, max.Red, min.Red) : Single.Clamp(Red, min.Red, max.Red),
+			max.Green < min.Green ? Single.Clamp(Green, max.Green, min.Green) : Single.Clamp(Green, min.Green, max.Green),
+			max.Blue < min.Blue ? Single.Clamp(Blue, max.Blue, min.Blue) : Single.Clamp(Blue, min.Blue, max.Blue),
+			max.Alpha < min.Alpha ? Single.Clamp(Alpha, max.Alpha, min.Alpha) : Single.Clamp(Alpha, min.Alpha, max.Alpha)
 		);
 	}
 	public ColorVect ClampToNormalizedRange() {
@@ -73,6 +81,15 @@ partial struct ColorVect :
 			Single.Clamp(Green, 0f, 1f),
 			Single.Clamp(Blue, 0f, 1f),
 			Single.Clamp(Alpha, 0f, 1f)
+		);
+	}
+	public ColorVect ClampToNormalizedRange(bool includeAlpha) {
+		if (includeAlpha) return ClampToNormalizedRange();
+		return new(
+			Single.Clamp(Red, 0f, 1f),
+			Single.Clamp(Green, 0f, 1f),
+			Single.Clamp(Blue, 0f, 1f),
+			Alpha
 		);
 	}
 

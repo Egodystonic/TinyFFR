@@ -134,7 +134,7 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 		const float SixthCircleRads = MathF.Tau / 6f;
 
 		hue = hue.Normalized;
-		var hueRads = hue.AsRadians;
+		var hueRads = hue.Radians;
 		saturation = Single.Clamp(saturation, 0f, 1f);
 		lightness = Single.Clamp(lightness, 0f, 1f);
 		alpha = Single.Clamp(alpha, 0f, 1f);
@@ -160,9 +160,16 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 		var cMin = MathF.Min(Red, MathF.Min(Green, Blue));
 		var delta = cMax - cMin;
 
+		outLightness = (cMax + cMin) * 0.5f;
+
 		// ReSharper disable CompareOfFloatsByEqualityOperator Direct comparison is correct here as we're comparing with the returned value of MathF.Max which should return exactly one of its inputs
-		if (delta == 0f) outHue = Angle.Zero;
-		else if (cMax == Red) {
+		if (delta == 0f) {
+			outHue = Angle.Zero;
+			outSaturation = 0f;
+			return;
+		}
+
+		if (cMax == Red) {
 			outHue = Angle.FromRadians(SixthCircleRads * MathUtils.TrueModulus((Green - Blue) / delta, 6f));
 		}
 		else if (cMax == Green) {
@@ -171,10 +178,8 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 		else {
 			outHue = Angle.FromRadians(SixthCircleRads * ((Red - Green) / delta + 4f));
 		}
-		// ReSharper restore CompareOfFloatsByEqualityOperator
-
-		outLightness = (cMax + cMin) * 0.5f;
 		outSaturation = delta / (1f - MathF.Abs(cMax + cMin - 1f));
+		// ReSharper restore CompareOfFloatsByEqualityOperator
 	}
 
 	public uint ToRgba32() {
@@ -223,21 +228,16 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 	}
 	public static implicit operator ColorVect((float Red, float Green, float Blue) tuple) => new(tuple.Red, tuple.Green, tuple.Blue);
 	static implicit IVect<ColorVect>.operator ColorVect((float X, float Y, float Z) tuple) => new(tuple.X, tuple.Y, tuple.Z);
-
+	public static implicit operator ColorVect((float Red, float Green, float Blue, float Alpha) tuple) => new(tuple.Red, tuple.Green, tuple.Blue, tuple.Alpha);
 	public void Deconstruct(out float red, out float green, out float blue, out float alpha) {
 		red = Red;
 		green = Green;
 		blue = Blue;
 		alpha = Alpha;
 	}
-	public static implicit operator ColorVect((float Red, float Green, float Blue, float Alpha) tuple) => new(tuple.Red, tuple.Green, tuple.Blue, tuple.Alpha);
 
-	public static implicit operator ColorVect((uint Rgb, float Alpha) tuple) => FromRgb24(tuple.Rgb) with { Alpha = tuple.Alpha };
-	public static implicit operator ColorVect((int Rgb, float Alpha) tuple) => FromRgb24(tuple.Rgb) with { Alpha = tuple.Alpha };
-	public static implicit operator ColorVect((uint Rgb, uint Alpha) tuple) => FromRgba32((tuple.Rgb << 8) & (byte) tuple.Alpha);
-	public static implicit operator ColorVect((int Rgb, int Alpha) tuple) => FromRgba32((tuple.Rgb << 8) & (byte) tuple.Alpha);
-	public static implicit operator ColorVect(int rgb) => FromRgb24(rgb);
-	public static implicit operator ColorVect(uint rgb) => FromRgb24(rgb);
+	public static implicit operator ColorVect(int rgb) => FromRgba32(rgb);
+	public static implicit operator ColorVect(uint rgb) => FromRgba32(rgb);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Vect IVect.AsVect() => Vect.FromVector3(ToVector3());
@@ -313,7 +313,7 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 		// ReSharper disable once JoinDeclarationAndInitializer This is neater
 		bool writeSuccess;
 
-		// [
+		// <
 		if (destination.Length == 0) return false;
 		destination[0] = IVect.VectorStringPrefixChar;
 		charsWritten++;
@@ -322,13 +322,14 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 
 
 		// R
-		if (destination.Length == 0) return false;
+		if (destination.Length < 2) return false;
 		destination[0] = RedChar;
-		charsWritten++;
-		destination = destination[1..];
+		destination[1] = ' ';
+		charsWritten += 2;
+		destination = destination[2..];
 
 		// Red
-		writeSuccess = Red.TryFormat(destination, out tryWriteCharsWrittenOutVar, format, provider);
+		writeSuccess = PercentageUtils.TryFormatFractionToPercentageString(Red, destination, out tryWriteCharsWrittenOutVar, format, provider);
 		charsWritten += tryWriteCharsWrittenOutVar;
 		if (!writeSuccess) return false;
 		destination = destination[tryWriteCharsWrittenOutVar..];
@@ -342,13 +343,14 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 
 
 		// G
-		if (destination.Length == 0) return false;
+		if (destination.Length < 2) return false;
 		destination[0] = GreenChar;
-		charsWritten++;
-		destination = destination[1..];
+		destination[1] = ' ';
+		charsWritten += 2;
+		destination = destination[2..];
 
 		// Green
-		writeSuccess = Green.TryFormat(destination, out tryWriteCharsWrittenOutVar, format, provider);
+		writeSuccess = PercentageUtils.TryFormatFractionToPercentageString(Green, destination, out tryWriteCharsWrittenOutVar, format, provider);
 		charsWritten += tryWriteCharsWrittenOutVar;
 		if (!writeSuccess) return false;
 		destination = destination[tryWriteCharsWrittenOutVar..];
@@ -362,13 +364,14 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 
 
 		// B
-		if (destination.Length == 0) return false;
+		if (destination.Length < 2) return false;
 		destination[0] = BlueChar;
-		charsWritten++;
-		destination = destination[1..];
+		destination[1] = ' ';
+		charsWritten += 2;
+		destination = destination[2..];
 
 		// Blue
-		writeSuccess = Blue.TryFormat(destination, out tryWriteCharsWrittenOutVar, format, provider);
+		writeSuccess = PercentageUtils.TryFormatFractionToPercentageString(Blue, destination, out tryWriteCharsWrittenOutVar, format, provider);
 		charsWritten += tryWriteCharsWrittenOutVar;
 		if (!writeSuccess) return false;
 		destination = destination[tryWriteCharsWrittenOutVar..];
@@ -382,20 +385,21 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 
 
 		// A
-		if (destination.Length == 0) return false;
+		if (destination.Length < 2) return false;
 		destination[0] = AlphaChar;
-		charsWritten++;
-		destination = destination[1..];
+		destination[1] = ' ';
+		charsWritten += 2;
+		destination = destination[2..];
 
 		// Alpha
-		writeSuccess = Alpha.TryFormat(destination, out tryWriteCharsWrittenOutVar, format, provider);
+		writeSuccess = PercentageUtils.TryFormatFractionToPercentageString(Alpha, destination, out tryWriteCharsWrittenOutVar, format, provider);
 		charsWritten += tryWriteCharsWrittenOutVar;
 		if (!writeSuccess) return false;
 		destination = destination[tryWriteCharsWrittenOutVar..];
 
 
 
-		// [
+		// >
 		if (destination.Length == 0) return false;
 		destination[0] = IVect.VectorStringSuffixChar;
 		charsWritten++;
@@ -446,16 +450,22 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 		if (indexOfSeparator < 2 || s[0] != RedChar || s[1] != ' ') return false;
 		if (!PercentageUtils.TryParsePercentageStringToFraction(s[2..indexOfSeparator], provider, out var red)) return false;
 		s = s[(indexOfSeparator + numberFormatter.NumberGroupSeparator.Length)..];
+		if (s.Length == 0 || s[0] != ' ') return false;
+		s = s[1..];
 
 		indexOfSeparator = s.IndexOf(numberFormatter.NumberGroupSeparator);
 		if (indexOfSeparator < 2 || s[0] != GreenChar || s[1] != ' ') return false;
 		if (!PercentageUtils.TryParsePercentageStringToFraction(s[2..indexOfSeparator], provider, out var green)) return false;
 		s = s[(indexOfSeparator + numberFormatter.NumberGroupSeparator.Length)..];
+		if (s.Length == 0 || s[0] != ' ') return false;
+		s = s[1..];
 
 		indexOfSeparator = s.IndexOf(numberFormatter.NumberGroupSeparator);
 		if (indexOfSeparator < 2 || s[0] != BlueChar || s[1] != ' ') return false;
 		if (!PercentageUtils.TryParsePercentageStringToFraction(s[2..indexOfSeparator], provider, out var blue)) return false;
 		s = s[(indexOfSeparator + numberFormatter.NumberGroupSeparator.Length)..];
+		if (s.Length == 0 || s[0] != ' ') return false;
+		s = s[1..];
 
 		if (s.Length < 4 || s[0] != AlphaChar || s[1] != ' ') return false;
 		if (!PercentageUtils.TryParsePercentageStringToFraction(s[2..^1], provider, out var alpha)) return false;

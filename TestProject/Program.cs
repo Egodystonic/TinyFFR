@@ -41,7 +41,7 @@ using var loop = factory.ApplicationLoopBuilder.CreateLoop(60, name: "Larry the 
 using var scene = factory.SceneBuilder.CreateScene(name: "Sean the Scene");
 using var camera = factory.CameraBuilder.CreateCamera((0f, 0f, -100f), name: "Carl the Camera");
 using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(10f, 7f, 2f), name: "Clive the Cuboid");
-using var mat = factory.AssetLoader.MaterialBuilder.CreateBasicSolidColorMat(0x00FF00, name: "Matthew the Material");
+using var mat = factory.AssetLoader.MaterialBuilder.CreateBasicSolidColorMat(0x00FF00FF, name: "Matthew the Material");
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: "Iain the Instance");
 
 scene.Add(instance);
