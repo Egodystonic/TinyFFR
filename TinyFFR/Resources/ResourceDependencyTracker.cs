@@ -194,6 +194,8 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker {
 			_vectorPool.Return(kvp.Value);
 		}
 		_dependentsToTargetsMap.Dispose();
+
+		_vectorPool.Dispose();
 	}
 
 	static ArrayPoolBackedVector<ResourceStub> CreateNewVector() => new(InitialDependentsArrayLength);

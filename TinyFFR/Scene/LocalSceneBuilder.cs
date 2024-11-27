@@ -120,6 +120,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 				_modelInstanceVectorPool.Return(kvp.Value);
 			}
 			_modelInstanceMap.Dispose();
+			_modelInstanceVectorPool.Dispose();
 		}
 		finally {
 			_isDisposed = true;

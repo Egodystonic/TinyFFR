@@ -3,7 +3,7 @@
 
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
-sealed unsafe class ObjectPool<T> {
+sealed unsafe class ObjectPool<T> : IDisposable {
 	readonly delegate* managed<T> _newItemCreationFunc;
 	readonly ArrayPoolBackedVector<T> _pool;
 
@@ -20,9 +20,11 @@ sealed unsafe class ObjectPool<T> {
 	}
 
 	public void Return(T item) => _pool.Add(item);
+
+	public void Dispose() => _pool.Dispose();
 }
 
-sealed unsafe class ObjectPool<T, TArg> {
+sealed unsafe class ObjectPool<T, TArg> : IDisposable {
 	readonly delegate* managed<TArg, T> _newItemCreationFunc;
 	readonly TArg _arg;
 	readonly ArrayPoolBackedVector<T> _pool;
@@ -41,4 +43,6 @@ sealed unsafe class ObjectPool<T, TArg> {
 	}
 
 	public void Return(T item) => _pool.Add(item);
+
+	public void Dispose() => _pool.Dispose();
 }

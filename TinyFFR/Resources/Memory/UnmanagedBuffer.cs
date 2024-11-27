@@ -56,6 +56,9 @@ sealed unsafe class UnmanagedBuffer<T> : IDisposable, IEnumerable<T> where T : u
 	}
 
 	public UnmanagedBuffer(int initialLength, int? alignment = null) {
+		if (initialLength <= 0) throw new ArgumentOutOfRangeException(nameof(initialLength), initialLength, $"Must be positive.");
+		if (alignment <= 0) throw new ArgumentOutOfRangeException(nameof(alignment), alignment, "Must be positive.");
+
 		Length = initialLength;
 		_alignment = alignment;
 
@@ -87,7 +90,7 @@ sealed unsafe class UnmanagedBuffer<T> : IDisposable, IEnumerable<T> where T : u
 	public void DoubleSize() => Resize(Length * 2);
 
 	public void Resize(int numElements) {
-		if (numElements < 0) throw new ArgumentOutOfRangeException(nameof(numElements), numElements, $"Must be positive or zero.");
+		if (numElements <= 0) throw new ArgumentOutOfRangeException(nameof(numElements), numElements, $"Must be positive.");
 		if (IsDisposed) ObjectDisposedException.ThrowIf(IsDisposed, this);
 
 		Length = numElements;

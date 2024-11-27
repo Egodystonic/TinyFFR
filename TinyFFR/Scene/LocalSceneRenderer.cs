@@ -123,6 +123,7 @@ sealed unsafe class LocalSceneRenderer : IDisposable {
 				).ThrowIfFailure();
 			}
 			_windowRendererMap.Dispose();
+			_viewDescriptorCameraMapPool.Dispose();
 		}
 		finally {
 			_isDisposed = true;
