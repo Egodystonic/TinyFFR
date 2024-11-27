@@ -9,7 +9,7 @@ class ArrayPoolBackedVectorTest {
 
 	[SetUp]
 	public void SetUpTest() {
-		_vector = new() {
+		_vector = new(1) {
 			"hello",
 			"i",
 			"am",
@@ -169,5 +169,14 @@ class ArrayPoolBackedVectorTest {
 		Assert.AreEqual("a", bigEnough[4]);
 		Assert.AreEqual("test", bigEnough[5]);
 		Assert.AreEqual("vector", bigEnough[6]);
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineContains() {
+		Assert.AreEqual(true, _vector.Contains("hello"));
+		Assert.AreEqual(true, _vector.Contains("i"));
+		Assert.AreEqual(true, _vector.Contains("vector"));
+		Assert.AreEqual(false, _vector.Contains("vector1"));
+		Assert.AreEqual(false, _vector.Contains(null!));
 	}
 }
