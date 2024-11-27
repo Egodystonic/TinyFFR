@@ -31,6 +31,62 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IDictionary<TKey, TValue>, IDisp
 		public void Dispose() { /* no op */ }
 	}
 
+	public struct KeyEnumerator : IEnumerator<TKey>, IEnumerable<TKey> {
+		readonly ArrayPoolBackedMap<TKey, TValue> _owner;
+		int _curIndex;
+
+		public TKey Current {
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			get => _owner.GetPairAtIndex(_curIndex).Key;
+		}
+		object IEnumerator.Current => Current!;
+
+		public KeyEnumerator(ArrayPoolBackedMap<TKey, TValue> owner) {
+			_owner = owner;
+			Reset();
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public bool MoveNext() => ++_curIndex < _owner.Count;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public void Reset() => _curIndex = -1;
+
+		public void Dispose() { /* no op */ }
+
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+		IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() => this;
+		public KeyEnumerator GetEnumerator() => this;
+	}
+
+	public struct ValueEnumerator : IEnumerator<TValue>, IEnumerable<TValue> {
+		readonly ArrayPoolBackedMap<TKey, TValue> _owner;
+		int _curIndex;
+
+		public TValue Current {
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			get => _owner.GetPairAtIndex(_curIndex).Value;
+		}
+		object IEnumerator.Current => Current!;
+
+		public ValueEnumerator(ArrayPoolBackedMap<TKey, TValue> owner) {
+			_owner = owner;
+			Reset();
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public bool MoveNext() => ++_curIndex < _owner.Count;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public void Reset() => _curIndex = -1;
+
+		public void Dispose() { /* no op */ }
+
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+		IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() => this;
+		public ValueEnumerator GetEnumerator() => this;
+	}
+
 	const int HashMask = 0b11_1111;
 	const int NumBuckets = HashMask + 1;
 	readonly ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>[] _buckets;
@@ -57,9 +113,24 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IDictionary<TKey, TValue>, IDisp
 			else bucket.Add(new(key, value));
 		}
 	}
-	ICollection<TKey> IDictionary<TKey, TValue>.Keys => throw new NotSupportedException();
-	ICollection<TValue> IDictionary<TKey, TValue>.Values => throw new NotSupportedException();
+	ICollection<TKey> IDictionary<TKey, TValue>.Keys {
+		get {
+			var result = new TKey[Count];
+			CopyKeysTo(result);
+			return result;
+		}
+	}
+	ICollection<TValue> IDictionary<TKey, TValue>.Values {
+		get {
+			var result = new TValue[Count];
+			CopyValuesTo(result);
+			return result;
+		}
+	}
 	bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly { get; } = false;
+
+	public KeyEnumerator Keys => new(this);
+	public ValueEnumerator Values => new(this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Add(TKey key, TValue value) => Add(new(key, value));
