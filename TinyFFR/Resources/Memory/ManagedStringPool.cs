@@ -7,19 +7,16 @@ namespace Egodystonic.TinyFFR.Resources.Memory;
 
 sealed class ManagedStringPool {
 	public readonly record struct RentedStringHandle(char[] BorrowedArray, int Length) {
-		public Span<char> AsSpan => BorrowedArray.AsSpan(0, Length);
+		public ReadOnlySpan<char> AsSpan => BorrowedArray.AsSpan(0, Length);
 		public string AsNewStringObject => new(AsSpan);
 	}
 
 	readonly ArrayPool<char> _charPool = ArrayPool<char>.Shared;
 
 	public RentedStringHandle RentAndCopy(ReadOnlySpan<char> src) {
-		var result = Rent(src.Length);
-		src.CopyTo(result.AsSpan);
+		var result = new RentedStringHandle(_charPool.Rent(src.Length), src.Length);
+		src.CopyTo(result.BorrowedArray.AsSpan());
 		return result;
-	}
-	public RentedStringHandle Rent(int stringLength) {
-		return new(_charPool.Rent(stringLength), stringLength);
 	}
 
 	public void Return(RentedStringHandle handle) {
