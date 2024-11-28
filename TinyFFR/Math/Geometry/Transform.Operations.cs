@@ -9,7 +9,13 @@ namespace Egodystonic.TinyFFR;
 
 partial struct Transform : 
 	IInterpolatable<Transform>,
-	ITransformable<Transform> {
+	ITransformable<Transform>,
+	IMultiplicativeInvertible<Transform>,
+	IMultiplicativeIdentity<Transform, Transform> {
+	
+	Transform? IMultiplicativeInvertible<Transform>.Reciprocal => Inverse;
+	public Transform Inverse => new(-Translation, -Rotation, Scaling.Reciprocal ?? Vect.Zero);
+	static Transform IMultiplicativeIdentity<Transform, Transform>.MultiplicativeIdentity => None;
 
 	#region Scaling
 	static Transform IMultiplyOperators<Transform, float, Transform>.operator *(Transform left, float right) => left.WithScalingMultipliedBy(right);
