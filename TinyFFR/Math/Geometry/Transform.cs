@@ -56,7 +56,7 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 		);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ToMatrix(ref Matrix4x4 dest) => dest = ToMatrix();
+	public void ToMatrix(out Matrix4x4 dest) => dest = ToMatrix();
 
 	public void Deconstruct(out Vect translation, out Rotation rotation, out Vect scaling) {
 		translation = Translation;

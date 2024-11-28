@@ -1,6 +1,7 @@
 ﻿// Created on 2023-10-01 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -48,6 +49,98 @@ static class TestUtils {
 		if (expected.HasValue && !expected.Value.Equals(actual!.Value, tolerance)) return;
 		var expectedString = expected.HasValue ? ((expected.Value as IDescriptiveStringProvider)?.ToStringDescriptive() ?? expected.Value.ToString()) : "<null>";
 		var actualString = actual.HasValue ? ((actual.Value as IDescriptiveStringProvider)?.ToStringDescriptive() ?? actual.Value.ToString()) : "<null>";
+		Assert.Fail(
+			$"Expected and actual value were equal within tolerance of {tolerance}" + System.Environment.NewLine +
+			$"\tExpected value: {expectedString}" + System.Environment.NewLine +
+			$"\tActual value: {actualString}"
+		);
+	}
+
+	public static void AssertToleranceEquals(Vector3 expected, Vector3 actual, float tolerance) {
+		bool Compare(float e, float a) => MathF.Abs(e - a) <= tolerance;
+
+		if (Compare(expected.X, actual.X) && Compare(expected.Y, actual.Y) && Compare(expected.Z, actual.Z)) return;
+
+		var expectedString = expected.ToString();
+		var actualString = actual.ToString();
+		Assert.Fail(
+			$"Expected and actual value were not within tolerance of {tolerance}" + System.Environment.NewLine +
+			$"\tExpected value: {expectedString}" + System.Environment.NewLine +
+			$"\tActual value: {actualString}"
+		);
+	}
+
+	public static void AssertToleranceNotEquals(Vector3 expected, Vector3 actual, float tolerance) {
+		bool Compare(float e, float a) => MathF.Abs(e - a) > tolerance;
+
+		if (Compare(expected.X, actual.X) && Compare(expected.Y, actual.Y) && Compare(expected.Z, actual.Z)) return;
+
+		var expectedString = expected.ToString();
+		var actualString = actual.ToString();
+		Assert.Fail(
+			$"Expected and actual value were equal within tolerance of {tolerance}" + System.Environment.NewLine +
+			$"\tExpected value: {expectedString}" + System.Environment.NewLine +
+			$"\tActual value: {actualString}"
+		);
+	}
+
+	public static void AssertToleranceEquals(Vector4 expected, Vector4 actual, float tolerance) {
+		bool Compare(float e, float a) => MathF.Abs(e - a) <= tolerance;
+
+		if (Compare(expected.X, actual.X) && Compare(expected.Y, actual.Y) && Compare(expected.Z, actual.Z) && Compare(expected.W, actual.W)) return;
+
+		var expectedString = expected.ToString();
+		var actualString = actual.ToString();
+		Assert.Fail(
+			$"Expected and actual value were not within tolerance of {tolerance}" + System.Environment.NewLine +
+			$"\tExpected value: {expectedString}" + System.Environment.NewLine +
+			$"\tActual value: {actualString}"
+		);
+	}
+
+	public static void AssertToleranceNotEquals(Vector4 expected, Vector4 actual, float tolerance) {
+		bool Compare(float e, float a) => MathF.Abs(e - a) > tolerance;
+
+		if (Compare(expected.X, actual.X) && Compare(expected.Y, actual.Y) && Compare(expected.Z, actual.Z) && Compare(expected.W, actual.W)) return;
+
+		var expectedString = expected.ToString();
+		var actualString = actual.ToString();
+		Assert.Fail(
+			$"Expected and actual value were equal within tolerance of {tolerance}" + System.Environment.NewLine +
+			$"\tExpected value: {expectedString}" + System.Environment.NewLine +
+			$"\tActual value: {actualString}"
+		);
+	}
+
+	public static void AssertToleranceEquals(Matrix4x4 expected, Matrix4x4 actual, float tolerance) {
+		for (var r = 0; r < 4; ++r) {
+			for (var c = 0; c < 4; ++c) {
+				if (MathF.Abs(expected[r, c] - actual[r, c]) > tolerance) goto fail;
+			}
+		}
+		return;
+
+		fail:
+		var expectedString = expected.ToString();
+		var actualString = actual.ToString();
+		Assert.Fail(
+			$"Expected and actual value were not within tolerance of {tolerance}" + System.Environment.NewLine +
+			$"\tExpected value: {expectedString}" + System.Environment.NewLine +
+			$"\tActual value: {actualString}"
+		);
+	}
+
+	public static void AssertToleranceNotEquals(Matrix4x4 expected, Matrix4x4 actual, float tolerance) {
+		for (var r = 0; r < 4; ++r) {
+			for (var c = 0; c < 4; ++c) {
+				if (MathF.Abs(expected[r, c] - actual[r, c]) <= tolerance) goto fail;
+			}
+		}
+		return;
+
+		fail:
+		var expectedString = expected.ToString();
+		var actualString = actual.ToString();
 		Assert.Fail(
 			$"Expected and actual value were equal within tolerance of {tolerance}" + System.Environment.NewLine +
 			$"\tExpected value: {expectedString}" + System.Environment.NewLine +
