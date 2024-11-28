@@ -74,7 +74,7 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 		return new(
 			Vect.Random(),
 			Rotation.Random(),
-			Vect.Random()
+			Vect.Random(-Vect.One, Vect.One)
 		);
 	}
 
