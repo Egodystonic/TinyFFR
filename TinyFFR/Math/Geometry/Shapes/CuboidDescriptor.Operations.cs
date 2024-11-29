@@ -7,7 +7,7 @@ using System.Diagnostics.Metrics;
 
 namespace Egodystonic.TinyFFR;
 
-partial struct CuboidDescriptor {
+partial struct CuboidDescriptor : IIndependentAxisScalable<CuboidDescriptor> {
 	#region With Methods
 	public CuboidDescriptor WithVolume(float newVolume) {
 		var diffCubeRoot = MathF.Cbrt(newVolume / Volume);
@@ -28,6 +28,7 @@ partial struct CuboidDescriptor {
 	public static CuboidDescriptor operator *(float scalar, CuboidDescriptor descriptor) => descriptor.ScaledBy(scalar);
 
 	public CuboidDescriptor ScaledBy(float scalar) => FromHalfDimensions(HalfWidth * scalar, HalfHeight * scalar, HalfDepth * scalar);
+	public CuboidDescriptor ScaledBy(Vect vect) => FromHalfDimensions(HalfWidth * vect.X, HalfHeight * vect.Y, HalfDepth * vect.Z);
 	#endregion
 
 	#region Distance From / Containment (Location & Line-Like)

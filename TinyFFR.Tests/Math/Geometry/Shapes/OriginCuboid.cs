@@ -179,6 +179,12 @@ class CuboidDescriptorTest {
 			TestCuboid.ScaledBy(3f),
 			TestTolerance
 		);
+
+		AssertToleranceEquals(
+			new CuboidDescriptor(width: 7.2f * -1f, height: 13.6f * 0.5f, depth: 1.4f * 2f),
+			TestCuboid.ScaledBy((-1f, 0.5f, 2f)),
+			TestTolerance
+		);
 	}
 
 	[Test]
