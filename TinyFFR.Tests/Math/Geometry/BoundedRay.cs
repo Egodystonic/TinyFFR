@@ -170,6 +170,11 @@ class BoundedRayTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyResize() {
+		
+	}
+
+	[Test]
 	public void ShouldCorrectlyScale() {
 		AssertToleranceEquals(
 			BoundedRay.FromStartPointAndVect(TestRay.StartPoint, TestRay.StartToEndVect * 2f),
@@ -204,34 +209,66 @@ class BoundedRayTest {
 			TestTolerance
 		);
 
+		var zeroToTenRay = new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f));
 		AssertToleranceEquals(
 			new BoundedRay(new Location(-7.5f, -7.5f, -7.5f), new Location(12.5f, 12.5f, 12.5f)),
-			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledBy(2f, 0.75f * MathF.Sqrt(300f)),
+			zeroToTenRay.ScaledBy(2f, 0.75f * MathF.Sqrt(300f)),
 			TestTolerance
 		);
 		AssertToleranceEquals(
 			new BoundedRay(new Location(22.5f, 22.5f, 22.5f), new Location(2.5f, 2.5f, 2.5f)),
-			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledBy(-2f, 0.75f * MathF.Sqrt(300f)),
+			zeroToTenRay.ScaledBy(-2f, 0.75f * MathF.Sqrt(300f)),
 			TestTolerance
 		);
 		AssertToleranceEquals(
 			new BoundedRay(new Location(7.5f, 7.5f, 7.5f), new Location(27.5f, 27.5f, 27.5f)),
-			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledBy(2f, -0.75f * MathF.Sqrt(300f)),
+			zeroToTenRay.ScaledBy(2f, -0.75f * MathF.Sqrt(300f)),
 			TestTolerance
 		);
 		AssertToleranceEquals(
 			new BoundedRay(new Location(-22.5f, -22.5f, -22.5f), new Location(-7.5f + 17.5f * -2f, -7.5f + 17.5f * -2f, -7.5f + 17.5f * -2f)),
-			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledBy(-2f, -0.75f * MathF.Sqrt(300f)),
+			zeroToTenRay.ScaledBy(-2f, -0.75f * MathF.Sqrt(300f)),
 			TestTolerance
 		);
 		AssertToleranceEquals(
 			new BoundedRay(new Location(-15f, -15f, -15f), new Location(5f, 5f, 5f)),
-			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledBy(2f, 1.5f * MathF.Sqrt(300f)),
+			zeroToTenRay.ScaledBy(2f, 1.5f * MathF.Sqrt(300f)),
 			TestTolerance
 		);
 		AssertToleranceEquals(
 			new BoundedRay(new Location(45f, 45f, 45f), new Location(25f, 25f, 25f)),
-			new BoundedRay(new Location(0f, 0f, 0f), new Location(10f, 10f, 10f)).ScaledBy(-2f, 1.5f * MathF.Sqrt(300f)),
+			zeroToTenRay.ScaledBy(-2f, 1.5f * MathF.Sqrt(300f)),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			new BoundedRay(new Location(-7.5f, -7.5f, -7.5f), new Location(12.5f, 12.5f, 12.5f)),
+			zeroToTenRay.ScaledBy(2f, new Location(7.5f, 7.5f, 7.5f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay(new Location(22.5f, 22.5f, 22.5f), new Location(2.5f, 2.5f, 2.5f)),
+			zeroToTenRay.ScaledBy(-2f, new Location(7.5f, 7.5f, 7.5f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay(new Location(7.5f, 7.5f, 7.5f), new Location(27.5f, 27.5f, 27.5f)),
+			zeroToTenRay.ScaledBy(2f, new Location(-7.5f, -7.5f, -7.5f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay(new Location(-22.5f, -22.5f, -22.5f), new Location(-7.5f + 17.5f * -2f, -7.5f + 17.5f * -2f, -7.5f + 17.5f * -2f)),
+			zeroToTenRay.ScaledBy(-2f, new Location(-7.5f, -7.5f, -7.5f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay(new Location(-15f, -15f, -15f), new Location(5f, 5f, 5f)),
+			zeroToTenRay.ScaledBy(2f, new Location(15f, 15f, 15f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay(new Location(45f, 45f, 45f), new Location(25f, 25f, 25f)),
+			zeroToTenRay.ScaledBy(-2f, new Location(15f, 15f, 15f)),
 			TestTolerance
 		);
 	}
@@ -290,6 +327,27 @@ class BoundedRayTest {
 
 		AssertCombination(new BoundedRay((0f, 0f, 10f), Location.Origin), new BoundedRay(Location.Origin, (0f, 0f, 10f)), (0f, 0f, 5f), Direction.Down % 180f);
 		AssertCombination(new BoundedRay((-30f, 30f, 0f), (-30f, 10f, 0f)), new BoundedRay((10f, 10f, 0f), (-10f, 10f, 0f)), (-20f, 0f, 0f), Direction.Forward % 90f);
+
+		AssertToleranceEquals(
+			new BoundedRay(Location.Origin, new(-5f, 0f, 0f)),
+			new BoundedRay(Location.Origin, new(0f, 5f, 0f)).RotatedBy(90f % Direction.Forward, 0f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay(new(5f, 5f, 0f), new(0f, 5f, 0f)),
+			new BoundedRay(Location.Origin, new(0f, 5f, 0f)).RotatedBy(90f % Direction.Forward, 5f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((-5f, -5f, 0f), new(-10f, -5f, 0f)),
+			new BoundedRay(Location.Origin, new(0f, 5f, 0f)).RotatedBy(90f % Direction.Forward, -5f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay(new(10f, 10f, 0f), new(5f, 10f, 0f)),
+			new BoundedRay(Location.Origin, new(0f, 5f, 0f)).RotatedBy(90f % Direction.Forward, 10f),
+			TestTolerance
+		);
 	}
 
 	[Test]

@@ -260,6 +260,27 @@ class LineTest {
 		AssertCombination(new Line(Location.Origin, Direction.Forward), new Line(Location.Origin, Direction.Forward), (0f, 0f, 5f), Direction.Down % 180f);
 		AssertCombination(new Line((0f, 0f, 10f), Direction.Right), new Line(Location.Origin, Direction.Right), (0f, 0f, 5f), Direction.Down % 180f);
 		AssertCombination(new Line((0f, 10f, 0f), Direction.Right), new Line((0f, 10f, 0f), Direction.Down), (0f, 10f, 0f), Direction.Forward % 90f);
+
+		AssertToleranceEquals(
+			new Line(Location.Origin, Direction.Right),
+			new Line(Location.Origin, Direction.Up).RotatedBy(90f % Direction.Forward, 0f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Line(new(5f, 5f, 0f), Direction.Right),
+			new Line(Location.Origin, Direction.Up).RotatedBy(90f % Direction.Forward, 5f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Line((-5f, -5f, 0f), Direction.Right),
+			new Line(Location.Origin, Direction.Up).RotatedBy(90f % Direction.Forward, -5f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Line(new(10f, 10f, 0f), Direction.Right),
+			new Line(Location.Origin, Direction.Up).RotatedBy(90f % Direction.Forward, 10f),
+			TestTolerance
+		);
 	}
 
 	[Test]

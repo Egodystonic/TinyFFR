@@ -257,6 +257,27 @@ class RayTest {
 
 		AssertCombination(new Ray((0f, 0f, 10f), Direction.Backward), new Ray(Location.Origin, Direction.Forward), (0f, 0f, 5f), Direction.Down % 180f);
 		AssertCombination(new Ray(Location.Origin, Direction.Forward), new Ray(Location.Origin, Direction.Forward), (0f, 0f, 5f), Direction.Forward % 180f);
+
+		AssertToleranceEquals(
+			new Ray(Location.Origin, Direction.Right),
+			new Ray(Location.Origin, Direction.Up).RotatedBy(90f % Direction.Forward, 0f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Ray(new(5f, 5f, 0f), Direction.Right),
+			new Ray(Location.Origin, Direction.Up).RotatedBy(90f % Direction.Forward, 5f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Ray((-5f, -5f, 0f), Direction.Right),
+			new Ray(Location.Origin, Direction.Up).RotatedBy(90f % Direction.Forward, -5f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Ray(new(10f, 10f, 0f), Direction.Right),
+			new Ray(Location.Origin, Direction.Up).RotatedBy(90f % Direction.Forward, 10f),
+			TestTolerance
+		);
 	}
 
 	[Test]
