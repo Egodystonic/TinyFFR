@@ -474,6 +474,151 @@ class BoundedRayTest {
 			zeroToTenRay.ScaledBy(-2f, new Location(15f, 15f, 15f)),
 			TestTolerance
 		);
+
+
+
+
+		var oneRay = new BoundedRay((0f, 0f, 0f), (1f, 1f, 1f));
+		AssertToleranceEquals(
+			oneRay,
+			oneRay.ScaledFromStartBy((1f, 1f, 1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((0f, 0f, 0f), (2f, 1f, 1f)),
+			oneRay.ScaledFromStartBy((2f, 1f, 1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((0f, 0f, 0f), (1f, 2f, 1f)),
+			oneRay.ScaledFromStartBy((1f, 2f, 1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((0f, 0f, 0f), (1f, 1f, 2f)),
+			oneRay.ScaledFromStartBy((1f, 1f, 2f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			oneRay,
+			oneRay.ScaledFromEndBy((1f, 1f, 1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((-1f, 0f, 0f), (1f, 1f, 1f)),
+			oneRay.ScaledFromEndBy((2f, 1f, 1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((0f, -1f, 0f), (1f, 1f, 1f)),
+			oneRay.ScaledFromEndBy((1f, 2f, 1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((0f, 0f, -1f), (1f, 1f, 1f)),
+			oneRay.ScaledFromEndBy((1f, 1f, 2f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			oneRay,
+			oneRay.ScaledFromMiddleBy((1f, 1f, 1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((-0.5f, 0f, 0f), (1.5f, 1f, 1f)),
+			oneRay.ScaledFromMiddleBy((2f, 1f, 1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((0f, -0.5f, 0f), (1f, 1.5f, 1f)),
+			oneRay.ScaledFromMiddleBy((1f, 2f, 1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((0f, 0f, -0.5f), (1f, 1f, 1.5f)),
+			oneRay.ScaledFromMiddleBy((1f, 1f, 2f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			oneRay,
+			oneRay.ScaledBy((1f, 1f, 1f), -1f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((1f, 0f, 0f), (3f, 1f, 1f)),
+			oneRay.ScaledBy((2f, 1f, 1f), -MathF.Sqrt(3f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((0f, 1f, 0f), (1f, 3f, 1f)),
+			oneRay.ScaledBy((1f, 2f, 1f), -MathF.Sqrt(3f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((0f, 0f, 1f), (1f, 1f, 3f)),
+			oneRay.ScaledBy((1f, 1f, 2f), -MathF.Sqrt(3f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			oneRay,
+			oneRay.ScaledBy((1f, 1f, 1f), 2f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((-2f, 0f, 0f), (0f, 1f, 1f)),
+			oneRay.ScaledBy((2f, 1f, 1f), 2f * MathF.Sqrt(3f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((0f, -2f, 0f), (1f, 0f, 1f)),
+			oneRay.ScaledBy((1f, 2f, 1f), 2f * MathF.Sqrt(3f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((0f, 0f, -2f), (1f, 1f, 0f)),
+			oneRay.ScaledBy((1f, 1f, 2f), 2f * MathF.Sqrt(3f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			oneRay,
+			oneRay.ScaledBy((1f, 1f, 1f), (-1f, -1f, -1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((1f, 0f, 0f), (3f, 1f, 1f)),
+			oneRay.ScaledBy((2f, 1f, 1f), (-1f, -1f, -1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((0f, 1f, 0f), (1f, 3f, 1f)),
+			oneRay.ScaledBy((1f, 2f, 1f), (-1f, -1f, -1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((0f, 0f, 1f), (1f, 1f, 3f)),
+			oneRay.ScaledBy((1f, 1f, 2f), (-1f, -1f, -1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			oneRay,
+			oneRay.ScaledBy((1f, 1f, 1f), (2f, 2f, 2f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((-2f, 0f, 0f), (0f, 1f, 1f)),
+			oneRay.ScaledBy((2f, 1f, 1f), (2f, 2f, 2f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((0f, -2f, 0f), (1f, 0f, 1f)),
+			oneRay.ScaledBy((1f, 2f, 1f), (2f, 2f, 2f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new BoundedRay((0f, 0f, -2f), (1f, 1f, 0f)),
+			oneRay.ScaledBy((1f, 1f, 2f), (2f, 2f, 2f)),
+			TestTolerance
+		);
 	}
 
 	[Test]
