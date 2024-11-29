@@ -620,6 +620,9 @@ class VectTest {
 		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * 0.5f, OneTwoNegThree.WithLength(0.5f), TestTolerance);
 		AssertToleranceEquals(new Vect(0.267f, 0.535f, -0.802f) * -0.5f, OneTwoNegThree.WithLength(-0.5f), TestTolerance);
 		Assert.AreEqual(Vect.Zero, OneTwoNegThree.WithLength(0f));
+
+		Assert.Catch<ArgumentOutOfRangeException>(() => _ = OneTwoNegThree.WithMaxLength(-1f));
+		Assert.Catch<ArgumentOutOfRangeException>(() => _ = OneTwoNegThree.WithMinLength(-1f));
 	}
 
 	[Test]

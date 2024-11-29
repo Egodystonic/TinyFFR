@@ -171,7 +171,210 @@ class BoundedRayTest {
 
 	[Test]
 	public void ShouldCorrectlyResize() {
-		
+		var initialRay = new BoundedRay((10f, 0f, 0f), (-10f, 0f, 0f));
+		var start = initialRay.StartPoint;
+		var end = initialRay.EndPoint;
+		var mid = initialRay.MiddlePoint;
+
+		void AssertResize(float startX, float endX, BoundedRay resizedRay) {
+			AssertToleranceEquals(
+				new BoundedRay((startX, 0f, 0f), (endX, 0f, 0f)),
+				resizedRay,
+				TestTolerance
+			);
+		}
+
+		AssertResize(10f, 0f, initialRay.WithLength(10f));
+		AssertResize(10f, 10f, initialRay.WithLength(0f));
+		AssertResize(10f, 20f, initialRay.WithLength(-10f));
+
+		AssertResize(10f, 0f, initialRay.ShortenedBy(10f));
+		AssertResize(10f, -10f, initialRay.ShortenedBy(0f));
+		AssertResize(10f, -20f, initialRay.ShortenedBy(-10f));
+
+		AssertResize(10f, -20f, initialRay.LengthenedBy(10f));
+		AssertResize(10f, -10f, initialRay.LengthenedBy(0f));
+		AssertResize(10f, 0f, initialRay.LengthenedBy(-10f));
+
+		AssertResize(10f, -10f, initialRay.WithMaxLength(30f));
+		AssertResize(10f, -10f, initialRay.WithMaxLength(20f));
+		AssertResize(10f, 0f, initialRay.WithMaxLength(10f));
+		AssertResize(10f, 10f, initialRay.WithMaxLength(0f));
+		Assert.Catch<ArgumentOutOfRangeException>(() => _ = initialRay.WithMaxLength(-10f));
+
+		AssertResize(10f, -20f, initialRay.WithMinLength(30f));
+		AssertResize(10f, -10f, initialRay.WithMinLength(20f));
+		AssertResize(10f, -10f, initialRay.WithMinLength(10f));
+		AssertResize(10f, -10f, initialRay.WithMinLength(0f));
+		Assert.Catch<ArgumentOutOfRangeException>(() => _ = initialRay.WithMinLength(-10f));
+
+
+
+
+
+		AssertResize(10f, 0f, initialRay.WithLength(10f, 0f));
+		AssertResize(10f, 10f, initialRay.WithLength(0f, 0f));
+		AssertResize(10f, 20f, initialRay.WithLength(-10f, 0f));
+
+		AssertResize(10f, 0f, initialRay.ShortenedBy(10f, 0f));
+		AssertResize(10f, -10f, initialRay.ShortenedBy(0f, 0f));
+		AssertResize(10f, -20f, initialRay.ShortenedBy(-10f, 0f));
+
+		AssertResize(10f, -20f, initialRay.LengthenedBy(10f, 0f));
+		AssertResize(10f, -10f, initialRay.LengthenedBy(0f, 0f));
+		AssertResize(10f, 0f, initialRay.LengthenedBy(-10f, 0f));
+
+		AssertResize(10f, -10f, initialRay.WithMaxLength(30f, 0f));
+		AssertResize(10f, -10f, initialRay.WithMaxLength(20f, 0f));
+		AssertResize(10f, 0f, initialRay.WithMaxLength(10f, 0f));
+		AssertResize(10f, 10f, initialRay.WithMaxLength(0f, 0f));
+		Assert.Catch<ArgumentOutOfRangeException>(() => _ = initialRay.WithMaxLength(-10f, 0f));
+
+		AssertResize(10f, -20f, initialRay.WithMinLength(30f, 0f));
+		AssertResize(10f, -10f, initialRay.WithMinLength(20f, 0f));
+		AssertResize(10f, -10f, initialRay.WithMinLength(10f, 0f));
+		AssertResize(10f, -10f, initialRay.WithMinLength(0f, 0f));
+		Assert.Catch<ArgumentOutOfRangeException>(() => _ = initialRay.WithMinLength(-10f, 0f));
+
+
+		AssertResize(10f, 0f, initialRay.WithLength(10f, start));
+		AssertResize(10f, 10f, initialRay.WithLength(0f, start));
+		AssertResize(10f, 20f, initialRay.WithLength(-10f, start));
+
+		AssertResize(10f, 0f, initialRay.ShortenedBy(10f, start));
+		AssertResize(10f, -10f, initialRay.ShortenedBy(0f, start));
+		AssertResize(10f, -20f, initialRay.ShortenedBy(-10f, start));
+
+		AssertResize(10f, -20f, initialRay.LengthenedBy(10f, start));
+		AssertResize(10f, -10f, initialRay.LengthenedBy(0f, start));
+		AssertResize(10f, 0f, initialRay.LengthenedBy(-10f, start));
+
+		AssertResize(10f, -10f, initialRay.WithMaxLength(30f, start));
+		AssertResize(10f, -10f, initialRay.WithMaxLength(20f, start));
+		AssertResize(10f, 0f, initialRay.WithMaxLength(10f, start));
+		AssertResize(10f, 10f, initialRay.WithMaxLength(0f, start));
+		Assert.Catch<ArgumentOutOfRangeException>(() => _ = initialRay.WithMaxLength(-10f, start));
+
+		AssertResize(10f, -20f, initialRay.WithMinLength(30f, start));
+		AssertResize(10f, -10f, initialRay.WithMinLength(20f, start));
+		AssertResize(10f, -10f, initialRay.WithMinLength(10f, start));
+		AssertResize(10f, -10f, initialRay.WithMinLength(0f, start));
+		Assert.Catch<ArgumentOutOfRangeException>(() => _ = initialRay.WithMinLength(-10f, start));
+
+
+
+
+
+		AssertResize(5f, -5f, initialRay.WithLength(10f, 10f));
+		AssertResize(0f, 0f, initialRay.WithLength(0f, 10f));
+		AssertResize(-5f, 5f, initialRay.WithLength(-10f, 10f));
+
+		AssertResize(5f, -5f, initialRay.ShortenedBy(10f, 10f));
+		AssertResize(10f, -10f, initialRay.ShortenedBy(0f, 10f));
+		AssertResize(15f, -15f, initialRay.ShortenedBy(-10f, 10f));
+
+		AssertResize(15f, -15f, initialRay.LengthenedBy(10f, 10f));
+		AssertResize(10f, -10f, initialRay.LengthenedBy(0f, 10f));
+		AssertResize(5f, -5f, initialRay.LengthenedBy(-10f, 10f));
+
+		AssertResize(10f, -10f, initialRay.WithMaxLength(30f, 10f));
+		AssertResize(10f, -10f, initialRay.WithMaxLength(20f, 10f));
+		AssertResize(5f, -5f, initialRay.WithMaxLength(10f, 10f));
+		AssertResize(0f, 0f, initialRay.WithMaxLength(0f, 10f));
+		Assert.Catch<ArgumentOutOfRangeException>(() => _ = initialRay.WithMaxLength(-10f, 10f));
+
+		AssertResize(15f, -15f, initialRay.WithMinLength(30f, 10f));
+		AssertResize(10f, -10f, initialRay.WithMinLength(20f, 10f));
+		AssertResize(10f, -10f, initialRay.WithMinLength(10f, 10f));
+		AssertResize(10f, -10f, initialRay.WithMinLength(0f, 10f));
+		Assert.Catch<ArgumentOutOfRangeException>(() => _ = initialRay.WithMinLength(-10f, 10f));
+
+
+		AssertResize(5f, -5f, initialRay.WithLength(10f, mid));
+		AssertResize(0f, 0f, initialRay.WithLength(0f, mid));
+		AssertResize(-5f, 5f, initialRay.WithLength(-10f, mid));
+
+		AssertResize(5f, -5f, initialRay.ShortenedBy(10f, mid));
+		AssertResize(10f, -10f, initialRay.ShortenedBy(0f, mid));
+		AssertResize(15f, -15f, initialRay.ShortenedBy(-10f, mid));
+
+		AssertResize(15f, -15f, initialRay.LengthenedBy(10f, mid));
+		AssertResize(10f, -10f, initialRay.LengthenedBy(0f, mid));
+		AssertResize(5f, -5f, initialRay.LengthenedBy(-10f, mid));
+
+		AssertResize(10f, -10f, initialRay.WithMaxLength(30f, mid));
+		AssertResize(10f, -10f, initialRay.WithMaxLength(20f, mid));
+		AssertResize(5f, -5f, initialRay.WithMaxLength(10f, mid));
+		AssertResize(0f, 0f, initialRay.WithMaxLength(0f, mid));
+		Assert.Catch<ArgumentOutOfRangeException>(() => _ = initialRay.WithMaxLength(-10f, mid));
+
+		AssertResize(15f, -15f, initialRay.WithMinLength(30f, mid));
+		AssertResize(10f, -10f, initialRay.WithMinLength(20f, mid));
+		AssertResize(10f, -10f, initialRay.WithMinLength(10f, mid));
+		AssertResize(10f, -10f, initialRay.WithMinLength(0f, mid));
+		Assert.Catch<ArgumentOutOfRangeException>(() => _ = initialRay.WithMinLength(-10f, mid));
+
+
+
+
+
+		AssertResize(0f, -10f, initialRay.WithLength(10f, 20f));
+		AssertResize(-10f, -10f, initialRay.WithLength(0f, 20f));
+		AssertResize(-20f, -10f, initialRay.WithLength(-10f, 20f));
+
+		AssertResize(0f, -10f, initialRay.ShortenedBy(10f, 20f));
+		AssertResize(10f, -10f, initialRay.ShortenedBy(0f, 20f));
+		AssertResize(20f, -10f, initialRay.ShortenedBy(-10f, 20f));
+
+		AssertResize(20f, -10f, initialRay.LengthenedBy(10f, 20f));
+		AssertResize(10f, -10f, initialRay.LengthenedBy(0f, 20f));
+		AssertResize(0f, -10f, initialRay.LengthenedBy(-10f, 20f));
+
+		AssertResize(10f, -10f, initialRay.WithMaxLength(30f, 20f));
+		AssertResize(10f, -10f, initialRay.WithMaxLength(20f, 20f));
+		AssertResize(0f, -10f, initialRay.WithMaxLength(10f, 20f));
+		AssertResize(-10f, -10f, initialRay.WithMaxLength(0f, 20f));
+		Assert.Catch<ArgumentOutOfRangeException>(() => _ = initialRay.WithMaxLength(-10f, 20f));
+
+		AssertResize(20f, -10f, initialRay.WithMinLength(30f, 20f));
+		AssertResize(10f, -10f, initialRay.WithMinLength(20f, 20f));
+		AssertResize(10f, -10f, initialRay.WithMinLength(10f, 20f));
+		AssertResize(10f, -10f, initialRay.WithMinLength(0f, 20f));
+		Assert.Catch<ArgumentOutOfRangeException>(() => _ = initialRay.WithMinLength(-10f, 20f));
+
+
+		AssertResize(0f, -10f, initialRay.WithLength(10f, end));
+		AssertResize(-10f, -10f, initialRay.WithLength(0f, end));
+		AssertResize(-20f, -10f, initialRay.WithLength(-10f, end));
+
+		AssertResize(0f, -10f, initialRay.ShortenedBy(10f, end));
+		AssertResize(10f, -10f, initialRay.ShortenedBy(0f, end));
+		AssertResize(20f, -10f, initialRay.ShortenedBy(-10f, end));
+
+		AssertResize(20f, -10f, initialRay.LengthenedBy(10f, end));
+		AssertResize(10f, -10f, initialRay.LengthenedBy(0f, end));
+		AssertResize(0f, -10f, initialRay.LengthenedBy(-10f, end));
+
+		AssertResize(10f, -10f, initialRay.WithMaxLength(30f, end));
+		AssertResize(10f, -10f, initialRay.WithMaxLength(20f, end));
+		AssertResize(0f, -10f, initialRay.WithMaxLength(10f, end));
+		AssertResize(-10f, -10f, initialRay.WithMaxLength(0f, end));
+		Assert.Catch<ArgumentOutOfRangeException>(() => _ = initialRay.WithMaxLength(-10f, end));
+
+		AssertResize(20f, -10f, initialRay.WithMinLength(30f, end));
+		AssertResize(10f, -10f, initialRay.WithMinLength(20f, end));
+		AssertResize(10f, -10f, initialRay.WithMinLength(10f, end));
+		AssertResize(10f, -10f, initialRay.WithMinLength(0f, end));
+		Assert.Catch<ArgumentOutOfRangeException>(() => _ = initialRay.WithMinLength(-10f, end));
+
+
+
+
+
+		AssertResize(0f, -40f, initialRay.WithLength(40f, -10f));
+		AssertResize(40f, 0f, initialRay.WithLength(40f, 30f));
+		AssertResize(0f, -40f, initialRay.WithLength(40f, new Location(20f, 0f, 0f)));
+		AssertResize(40f, 0f, initialRay.WithLength(40f, new Location(-20f, 0f, 0f)));
 	}
 
 	[Test]

@@ -75,9 +75,9 @@ partial struct Vect :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect LengthenedBy(float lengthIncrease) => WithLength(Length + lengthIncrease);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect WithMaxLength(float maxLength) => WithLength(MathF.Min(Length, maxLength));
+	public Vect WithMaxLength(float maxLength) => WithLength(MathF.Min(Length, maxLength >= 0f ? maxLength : throw new ArgumentOutOfRangeException(nameof(maxLength), maxLength, "Must be non-negative.")));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect WithMinLength(float minLength) => WithLength(MathF.Max(Length, minLength));
+	public Vect WithMinLength(float minLength) => WithLength(MathF.Max(Length, minLength >= 0f ? minLength : throw new ArgumentOutOfRangeException(nameof(minLength), minLength, "Must be non-negative.")));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect WithDirection(Direction newDirection) => newDirection * Length;
