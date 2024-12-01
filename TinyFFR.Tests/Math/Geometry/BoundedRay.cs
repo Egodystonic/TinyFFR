@@ -619,6 +619,22 @@ class BoundedRayTest {
 			oneRay.ScaledBy((1f, 1f, 2f), (2f, 2f, 2f)),
 			TestTolerance
 		);
+
+		AssertToleranceEquals(
+			TestRay.ScaledBy(2f, Location.Origin),
+			TestRay.ScaledFromOriginBy(2f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			TestRay.ScaledBy(-0.5f, Location.Origin),
+			TestRay.ScaledFromOriginBy(-0.5f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			TestRay.ScaledBy((0.5f, 3f, -2f), Location.Origin),
+			TestRay.ScaledFromOriginBy((0.5f, 3f, -2f)),
+			TestTolerance
+		);
 	}
 
 	[Test]
@@ -696,6 +712,24 @@ class BoundedRayTest {
 			new BoundedRay(Location.Origin, new(0f, 5f, 0f)).RotatedBy(90f % Direction.Forward, 10f),
 			TestTolerance
 		);
+
+		var testRot = 30f % Direction.Down;
+		Assert.AreEqual(
+			TestRay.RotatedBy(testRot, TestRay.StartPoint),
+			TestRay.RotatedAroundStartBy(testRot)
+		);
+		Assert.AreEqual(
+			TestRay.RotatedBy(testRot, TestRay.MiddlePoint),
+			TestRay.RotatedAroundMiddleBy(testRot)
+		);
+		Assert.AreEqual(
+			TestRay.RotatedBy(testRot, TestRay.EndPoint),
+			TestRay.RotatedAroundEndBy(testRot)
+		);
+		Assert.AreEqual(
+			TestRay.RotatedBy(testRot, Location.Origin),
+			TestRay.RotatedAroundOriginBy(testRot)
+		);
 	}
 
 	[Test]
@@ -725,6 +759,42 @@ class BoundedRayTest {
 		Assert.AreEqual(
 			TestRay.LengthSquared,
 			(vect + TestRay).LengthSquared,
+			TestTolerance
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyTransform() {
+		var transform = new Transform(
+			(1f, 2f, 3f),
+			40f % Direction.Right,
+			(0.5f, 1.1f, -0.3f)
+		);
+
+		AssertToleranceEquals(
+			TestRay.ScaledFromStartBy(transform.Scaling).RotatedAroundStartBy(transform.Rotation).MovedBy(transform.Translation),
+			TestRay.TransformedAroundStartBy(transform),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			TestRay.ScaledFromEndBy(transform.Scaling).RotatedAroundEndBy(transform.Rotation).MovedBy(transform.Translation),
+			TestRay.TransformedAroundEndBy(transform),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			TestRay.ScaledFromMiddleBy(transform.Scaling).RotatedAroundMiddleBy(transform.Rotation).MovedBy(transform.Translation),
+			TestRay.TransformedAroundMiddleBy(transform),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			TestRay.ScaledFromOriginBy(transform.Scaling).RotatedAroundOriginBy(transform.Rotation).MovedBy(transform.Translation),
+			TestRay.TransformedAroundOriginBy(transform),
+			TestTolerance
+		);
+		var arbitraryPoint = new Location(5f, -0.5f, 0f);
+		AssertToleranceEquals(
+			TestRay.ScaledBy(transform.Scaling, arbitraryPoint).RotatedBy(transform.Rotation, arbitraryPoint).MovedBy(transform.Translation),
+			TestRay.TransformedBy(transform, arbitraryPoint),
 			TestTolerance
 		);
 	}

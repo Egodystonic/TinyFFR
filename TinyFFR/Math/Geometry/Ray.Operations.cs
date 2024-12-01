@@ -52,6 +52,8 @@ public readonly partial struct Ray {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray RotatedBy(Rotation rotation) => new(StartPoint, Direction.RotatedBy(rotation));
 
+	public Ray RotatedAroundOriginBy(Rotation rot) => new(StartPoint.AsVect().RotatedBy(rot).AsLocation(), Direction.RotatedBy(rot));
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Ray operator *(Ray ray, (Rotation Rotation, Location Pivot) pivotRotationTuple) => ray.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

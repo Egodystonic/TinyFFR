@@ -278,6 +278,17 @@ class RayTest {
 			new Ray(Location.Origin, Direction.Up).RotatedBy(90f % Direction.Forward, 10f),
 			TestTolerance
 		);
+
+		AssertToleranceEquals(
+			TestRay.RotatedBy(15f % Direction.Down, Location.Origin),
+			TestRay.RotatedAroundOriginBy(15f % Direction.Down),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			TestRay.RotatedBy(-87f % Direction.Right, Location.Origin),
+			TestRay.RotatedAroundOriginBy(-87f % Direction.Right),
+			TestTolerance
+		);
 	}
 
 	[Test]

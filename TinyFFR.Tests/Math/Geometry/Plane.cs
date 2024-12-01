@@ -169,6 +169,16 @@ class PlaneTest {
 		AssertToleranceEquals(new Plane(Direction.Down, (0f, -3f, 0f)), TestPlane * (180f % Direction.Left, (0f, -2f, 0f)), TestTolerance);
 
 		AssertToleranceEquals(TestPlane, TestPlane * (90f % Direction.Up, (43f, -123f, 0.9f)), TestTolerance);
+		AssertToleranceEquals(
+			TestPlane.RotatedBy(100f % new Direction(1f, 2f, 3f), Location.Origin),
+			TestPlane.RotatedAroundOriginBy(100f % new Direction(1f, 2f, 3f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			TestPlane.RotatedBy(-19f % new Direction(-3f, -2f, -1f), Location.Origin),
+			TestPlane.RotatedAroundOriginBy(-19f % new Direction(-3f, -2f, -1f)),
+			TestTolerance
+		);
 	}
 
 	[Test]

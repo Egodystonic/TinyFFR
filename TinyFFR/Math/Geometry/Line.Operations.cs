@@ -54,6 +54,8 @@ public readonly partial struct Line {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line RotatedBy(Rotation rotation) => new(PointOnLine, Direction.RotatedBy(rotation));
 
+	public Line RotatedAroundOriginBy(Rotation rot) => new(PointOnLine.AsVect().RotatedBy(rot).AsLocation(), Direction.RotatedBy(rot));
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Line operator *(Line line, (Rotation Rotation, Location Pivot) pivotRotationTuple) => line.RotatedBy(pivotRotationTuple.Rotation, pivotRotationTuple.Pivot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

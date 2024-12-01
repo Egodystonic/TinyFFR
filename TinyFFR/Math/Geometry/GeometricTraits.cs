@@ -16,6 +16,7 @@ public interface IScalable<TSelf> :
 public interface IPointScalable<TSelf> :
 	IScalable<TSelf> where TSelf : IPointScalable<TSelf>, IScalable<TSelf> {
 	TSelf ScaledBy(float scalar, Location scalingOrigin);
+	TSelf ScaledFromOriginBy(float scalar);
 }
 
 public interface IIndependentAxisScalable<TSelf> :
@@ -27,6 +28,7 @@ public interface IPointIndependentAxisScalable<TSelf> :
 	IIndependentAxisScalable<TSelf> 
 	where TSelf : IPointIndependentAxisScalable<TSelf>, IIndependentAxisScalable<TSelf> {
 	TSelf ScaledBy(Vect vect, Location scalingOrigin);
+	TSelf ScaledFromOriginBy(Vect vect);
 }
 
 public interface IRotatable<TSelf> :
@@ -43,6 +45,7 @@ public interface IPointRotatable<TSelf> :
 	static abstract TSelf operator *((Rotation Rotation, Location Pivot) left, TSelf right);
 	static abstract TSelf operator *((Location Pivot, Rotation Rotation) left, TSelf right);
 	TSelf RotatedBy(Rotation rot, Location pivot);
+	TSelf RotatedAroundOriginBy(Rotation rot);
 }
 
 public interface ITranslatable<TSelf> :
@@ -67,6 +70,7 @@ public interface IPointTransformable<TSelf> :
 	ITransformable<TSelf>, IPointIndependentAxisScalable<TSelf>, IPointRotatable<TSelf>
 	where TSelf : IPointTransformable<TSelf>, ITransformable<TSelf>, IPointIndependentAxisScalable<TSelf>, IPointRotatable<TSelf> {
 	TSelf TransformedBy(Transform transform, Location transformationOrigin);
+	TSelf TransformedAroundOriginBy(Transform transform);
 }
 #endregion
 

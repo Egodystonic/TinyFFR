@@ -281,6 +281,17 @@ class LineTest {
 			new Line(Location.Origin, Direction.Up).RotatedBy(90f % Direction.Forward, 10f),
 			TestTolerance
 		);
+
+		AssertToleranceEquals(
+			TestLine.RotatedBy(30f % Direction.Up, Location.Origin),
+			TestLine.RotatedAroundOriginBy(30f % Direction.Up),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			TestLine.RotatedBy(-15f % Direction.Left, Location.Origin),
+			TestLine.RotatedAroundOriginBy(-15f % Direction.Left),
+			TestTolerance
+		);
 	}
 
 	[Test]

@@ -103,6 +103,13 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 		var newStartPoint = _startPoint + ((_vect * 0.5f) - (newVect * 0.5f));
 		return new(newStartPoint, newVect);
 	}
+
+	public BoundedRay RotatedAroundOriginBy(Rotation rot) {
+		return new BoundedRay(
+			StartPoint.AsVect().RotatedBy(rot).AsLocation(),
+			EndPoint.AsVect().RotatedBy(rot).AsLocation()
+		);
+	}
 	BoundedRay IRotatable<BoundedRay>.RotatedBy(Rotation rot) => RotatedAroundStartBy(rot); // We choose AroundStart as the "default" rotation because it keeps thing consistent with Ray
 	public BoundedRay RotatedBy(Rotation rotation, float signedPivotDistance) => RotatedBy(rotation, UnboundedLocationAtDistance(signedPivotDistance));
 	public BoundedRay RotatedBy(Rotation rotation, Location pivot) {
@@ -112,13 +119,13 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 
 	#region Scaling
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	static BoundedRay IMultiplyOperators<BoundedRay, float, BoundedRay>.operator *(BoundedRay ray, float scalar) => ray.ScaledFromMiddleBy(scalar);
+	static BoundedRay IMultiplyOperators<BoundedRay, float, BoundedRay>.operator *(BoundedRay ray, float scalar) => ray.ScaledFromStartBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	static BoundedRay IMultiplicative<BoundedRay, float, BoundedRay>.operator *(float scalar, BoundedRay ray) => ray.ScaledFromMiddleBy(scalar);
+	static BoundedRay IMultiplicative<BoundedRay, float, BoundedRay>.operator *(float scalar, BoundedRay ray) => ray.ScaledFromStartBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	static BoundedRay IDivisionOperators<BoundedRay, float, BoundedRay>.operator /(BoundedRay ray, float scalar) => ray.ScaledFromMiddleBy(1f / scalar);
+	static BoundedRay IDivisionOperators<BoundedRay, float, BoundedRay>.operator /(BoundedRay ray, float scalar) => ray.ScaledFromStartBy(1f / scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	BoundedRay IScalable<BoundedRay>.ScaledBy(float scalar) => ScaledFromMiddleBy(scalar);
+	BoundedRay IScalable<BoundedRay>.ScaledBy(float scalar) => ScaledFromStartBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay ScaledFromStartBy(float scalar) => new(_startPoint, _vect.ScaledBy(scalar));
 	public BoundedRay ScaledFromMiddleBy(float scalar) {
@@ -132,6 +139,12 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 		var scaledVect = _vect.ScaledBy(scalar);
 		var newStart = (_startPoint + _vect) - scaledVect;
 		return new BoundedRay(newStart, scaledVect);
+	}
+	public BoundedRay ScaledFromOriginBy(float scalar) {
+		return new BoundedRay(
+			StartPoint.AsVect().ScaledBy(scalar).AsLocation(),
+			EndPoint.AsVect().ScaledBy(scalar).AsLocation()
+		);
 	}
 	public BoundedRay ScaledBy(float scalar, float scalingOriginSignedDistance) {
 		var pivotPoint = UnboundedLocationAtDistance(scalingOriginSignedDistance);
@@ -155,6 +168,12 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 		var newStart = (_startPoint + _vect) - scaledVect;
 		return new BoundedRay(newStart, scaledVect);
 	}
+	public BoundedRay ScaledFromOriginBy(Vect vect) {
+		return new BoundedRay(
+			StartPoint.AsVect().ScaledBy(vect).AsLocation(),
+			EndPoint.AsVect().ScaledBy(vect).AsLocation()
+		);
+	}
 	public BoundedRay ScaledBy(Vect vect, float scalingOriginSignedDistance) {
 		var pivotPoint = UnboundedLocationAtDistance(scalingOriginSignedDistance);
 		var pivotToStartVect = -_vect.WithLength(scalingOriginSignedDistance);
@@ -165,17 +184,15 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 	#endregion
 
 	#region Transformation
-	public static BoundedRay operator *(BoundedRay ray, Transform transform) => ray.TransformedFromMiddleBy(transform);
-	public static BoundedRay operator *(Transform transform, BoundedRay ray) => ray.TransformedFromMiddleBy(transform);
-	BoundedRay ITransformable<BoundedRay>.TransformedBy(Transform transform) => TransformedFromMiddleBy(transform);
-	public BoundedRay TransformedFromStartBy(Transform transform) => new(_startPoint, _vect * transform);
-	public BoundedRay TransformedFromMiddleBy(Transform transform) => TransformedBy(transform, MiddlePoint);
-	public BoundedRay TransformedFromEndBy(Transform transform) {
-		var endPoint = EndPoint;
-		return new BoundedRay(endPoint + _vect.Reversed.TransformedBy(transform), endPoint);
-	}
+	public static BoundedRay operator *(BoundedRay ray, Transform transform) => ray.TransformedAroundStartBy(transform);
+	public static BoundedRay operator *(Transform transform, BoundedRay ray) => ray.TransformedAroundStartBy(transform);
+	BoundedRay ITransformable<BoundedRay>.TransformedBy(Transform transform) => TransformedAroundStartBy(transform);
+	public BoundedRay TransformedAroundStartBy(Transform transform) => TransformedBy(transform, StartPoint);
+	public BoundedRay TransformedAroundMiddleBy(Transform transform) => TransformedBy(transform, MiddlePoint);
+	public BoundedRay TransformedAroundEndBy(Transform transform) => TransformedBy(transform, EndPoint);
+	public BoundedRay TransformedAroundOriginBy(Transform transform) => ScaledFromOriginBy(transform.Scaling).RotatedAroundOriginBy(transform.Rotation).MovedBy(transform.Translation);
 	public BoundedRay TransformedBy(Transform transform, float transformationOriginSignedDistance) => TransformedBy(transform, UnboundedLocationAtDistance(transformationOriginSignedDistance));
-	public BoundedRay TransformedBy(Transform transform, Location transformationOrigin) => new(StartPoint.TransformedBy(transform, transformationOrigin), EndPoint.TransformedBy(transform, transformationOrigin));
+	public BoundedRay TransformedBy(Transform transform, Location transformationOrigin) => ScaledBy(transform.Scaling, transformationOrigin).RotatedBy(transform.Rotation, transformationOrigin).MovedBy(transform.Translation);
 	#endregion
 
 	#region Distance / Closest Point / Containment

@@ -32,6 +32,8 @@ partial struct Plane :
 	#endregion
 
 	#region Rotation
+	public Plane RotatedAroundOriginBy(Rotation rot) => new(Normal * rot, PointClosestToOrigin.AsVect().RotatedBy(rot).AsLocation());
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Plane operator *(Plane plane, (Location Pivot, Rotation Rotation) rotTuple) => plane.RotatedBy(rotTuple.Rotation, rotTuple.Pivot);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
