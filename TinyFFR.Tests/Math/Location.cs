@@ -260,6 +260,69 @@ class LocationTest {
 
 		AssertCombination((0f, 0f, 10f), (0f, 0f, 0f), (0f, 0f, 5f), Direction.Down % 180f);
 		AssertCombination((-10f, 0f, 0f), (0f, 10f, 0f), (0f, 0f, -10f), Direction.Forward % 90f);
+
+		AssertToleranceEquals(
+			OneTwoNegThree.RotatedBy(16f % Direction.Right, Location.Origin),
+			OneTwoNegThree.RotatedAroundOriginBy(16f % Direction.Right),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			OneTwoNegThree.RotatedBy(-37f % Direction.Up, Location.Origin),
+			OneTwoNegThree.RotatedAroundOriginBy(-37f % Direction.Up),
+			TestTolerance
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyScale() {
+		AssertToleranceEquals(
+			new Location(2f, 4f, -6f),
+			OneTwoNegThree.ScaledFromOriginBy(2f),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Location(-0.5f, -1f, 1.5f),
+			OneTwoNegThree.ScaledFromOriginBy(-0.5f),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			new Location(2f, -1f, -3f),
+			OneTwoNegThree.ScaledFromOriginBy((2f, -0.5f, 1f)),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Location(-1f, 4f, -1.5f),
+			OneTwoNegThree.ScaledFromOriginBy((-1f, 2f, 0.5f)),
+			TestTolerance
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyTransform() {
+		var transform = new Transform(
+			(1f, 2f, 3f),
+			40f % Direction.Right,
+			(0.5f, 1.1f, -0.3f)
+		);
+
+		AssertToleranceEquals(
+			OneTwoNegThree.ScaledFromOriginBy(transform.Scaling).RotatedAroundOriginBy(transform.Rotation) + transform.Translation,
+			OneTwoNegThree.TransformedAroundOriginBy(transform),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			OneTwoNegThree.TransformedAroundOriginBy(transform),
+			OneTwoNegThree.TransformedBy(transform, Location.Origin),
+			TestTolerance
+		);
+
+		var transformOrigin = new Location(-1f, 0f, 2f);
+		AssertToleranceEquals(
+			((transformOrigin >> OneTwoNegThree).ScaledBy(transform.Scaling) + transformOrigin).RotatedBy(transform.Rotation, transformOrigin) + transform.Translation,
+			OneTwoNegThree.TransformedBy(transform, transformOrigin),
+			TestTolerance
+		);
 	}
 
 	[Test]
