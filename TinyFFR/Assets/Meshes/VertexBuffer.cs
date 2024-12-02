@@ -34,7 +34,7 @@ public readonly struct VertexBuffer : IDisposableResource<VertexBuffer, VertexBu
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Implementation.Dispose(_handle);
 
-	public bool IsDisposed {
+	internal bool IsDisposed {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.IsDisposed(_handle);
 	}

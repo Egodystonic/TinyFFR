@@ -39,7 +39,7 @@ public readonly struct Mesh : IDisposableResource<Mesh, MeshHandle, IMeshImplPro
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Implementation.Dispose(_handle);
 
-	public bool IsDisposed {
+	internal bool IsDisposed {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.IsDisposed(_handle);
 	}

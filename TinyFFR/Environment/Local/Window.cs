@@ -73,7 +73,7 @@ public readonly struct Window : IDisposableResource<Window, WindowHandle, IWindo
 	}
 
 	#region Disposal
-	public bool IsDisposed {
+	internal bool IsDisposed {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.IsDisposed(_handle);
 	}

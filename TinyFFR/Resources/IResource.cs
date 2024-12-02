@@ -70,7 +70,7 @@ public interface IResource<TSelf, out THandle, out TImpl>
 
 
 
-public interface IDisposableResource : IResource, ITrackedDisposable;
+public interface IDisposableResource : IResource, IDisposable;
 public interface IDisposableResource<TSelf> : IDisposableResource, IResource<TSelf> where TSelf : IDisposableResource<TSelf>;
 public interface IDisposableResource<out THandle, out TImpl> : IDisposableResource, IResource<THandle, TImpl> where THandle : unmanaged, IResourceHandle<THandle> where TImpl : class, IDisposableResourceImplProvider;
 public interface IDisposableResource<TSelf, out THandle, out TImpl>: IDisposableResource<TSelf>, IDisposableResource<THandle, TImpl>, IResource<TSelf, THandle, TImpl>

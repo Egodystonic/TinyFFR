@@ -10,7 +10,7 @@ using Egodystonic.TinyFFR.Scene;
 namespace Egodystonic.TinyFFR.Factory;
 
 // Represents the common "factory" interface for all possible factory types
-public interface ITinyFfrFactory : ITrackedDisposable {
+public interface ITinyFfrFactory : IDisposable {
 	IDisplayDiscoverer DisplayDiscoverer { get; }
 	IApplicationLoopBuilder ApplicationLoopBuilder { get; }
 	IAssetLoader AssetLoader { get; }

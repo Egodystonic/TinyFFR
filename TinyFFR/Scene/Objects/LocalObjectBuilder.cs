@@ -194,6 +194,7 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 		UIntPtr materialHandle
 	);
 
+	[SuppressGCTransition]
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_model_instance_world_mat")]
 	static extern InteropResult SetModelInstanceWorldMatrix(
 		UIntPtr modelInstanceHandle,

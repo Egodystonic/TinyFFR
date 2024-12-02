@@ -18,7 +18,7 @@ public interface IDisposableResourceImplProvider : IResourceImplProvider {
 	internal void RawHandleDispose(nuint handle);
 }
 public interface IDisposableResourceImplProvider<in THandle> : IDisposableResourceImplProvider, IResourceImplProvider<THandle> where THandle : IResourceHandle<THandle> {
-	bool IsDisposed(THandle handle);
+	internal bool IsDisposed(THandle handle);
 	void Dispose(THandle handle);
 
 	bool IDisposableResourceImplProvider.RawHandleIsDisposed(nuint handle) => IsDisposed(THandle.CreateFromInteger(handle));

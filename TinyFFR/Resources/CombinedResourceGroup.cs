@@ -75,7 +75,7 @@ public readonly struct CombinedResourceGroup : IDisposableResource<CombinedResou
 	}
 
 	#region Disposal
-	public bool IsDisposed {
+	internal bool IsDisposed {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.IsDisposed(_handle);
 	}

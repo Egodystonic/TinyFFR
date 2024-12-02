@@ -72,7 +72,7 @@ public sealed class LocalRendererFactory : ILocalRendererFactory {
 	public override string ToString() => IsDisposed ? "TinyFFR Local Renderer Factory [Disposed]" : "TinyFFR Local Renderer Factory";
 
 	#region Disposal
-	public bool IsDisposed { get; private set; }
+	internal bool IsDisposed { get; private set; }
 
 	public void Dispose() {
 		// Maintainer's note: This is not simply accepting IDisposable because we want the flexibility
