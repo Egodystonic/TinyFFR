@@ -665,6 +665,23 @@ class VectTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyTransform() {
+		var transform = new Transform(
+			(1f, 2f, 3f),
+			40f % Direction.Right,
+			(0.5f, 1.1f, -0.3f)
+		);
+
+		AssertToleranceEquals(
+			OneTwoNegThree.ScaledBy(transform.Scaling).RotatedBy(transform.Rotation) + transform.Translation,
+			OneTwoNegThree.TransformedBy(transform),
+			TestTolerance
+		);
+		Assert.AreEqual(OneTwoNegThree.TransformedBy(transform), OneTwoNegThree * transform);
+		Assert.AreEqual(OneTwoNegThree.TransformedBy(transform), transform * OneTwoNegThree);
+	}
+
+	[Test]
 	public void ShouldCorrectlyInterpolate() {
 		AssertToleranceEquals(OneTwoNegThree, Vect.Interpolate(OneTwoNegThree, Vect.Zero, 0f), TestTolerance);
 		AssertToleranceEquals(Vect.Zero, Vect.Interpolate(OneTwoNegThree, Vect.Zero, 1f), TestTolerance);
