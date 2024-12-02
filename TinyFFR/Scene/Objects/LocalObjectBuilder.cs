@@ -213,6 +213,8 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 
 	void Dispose(ModelInstanceHandle handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		DisposeModelInstance(handle).ThrowIfFailure();
 		if (removeFromMap) _activeInstanceMap.Remove(handle);
 	}

@@ -133,9 +133,13 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 
 	public override string ToString() => _isDisposed ? "TinyFFR Local Application Loop Builder [Disposed]" : "TinyFFR Local Application Loop Builder";
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	ApplicationLoop HandleToInstance(ApplicationLoopHandle h) => new(h, this);
+
 	#region Disposal
 	public void Dispose(ApplicationLoopHandle handle) {
 		if (IsDisposed(handle)) return;
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		_handleDataMap.Remove(handle);
 	}

@@ -1,6 +1,7 @@
 ﻿// Created on 2024-08-19 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
@@ -338,6 +339,9 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 	);
 	#endregion
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	Camera HandleToInstance(CameraHandle h) => new(h, this);
+
 	#region Disposal
 	public void Dispose() {
 		if (_isDisposed) return;
@@ -354,6 +358,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 	public void Dispose(CameraHandle handle) => Dispose(handle, removeFromMap: true);
 	void Dispose(CameraHandle handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		DisposeCamera(handle).ThrowIfFailure();
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromMap) _activeCameras.Remove(handle);

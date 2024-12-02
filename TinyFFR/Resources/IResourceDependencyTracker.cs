@@ -7,6 +7,7 @@ interface IResourceDependencyTracker {
 	public readonly record struct EnumerationInput(IResourceDependencyTracker Tracker, ResourceIdent ArgumentIdent);
 	void RegisterDependency<TDependent, TTarget>(TDependent dependent, TTarget targetNowInUse) where TDependent : IResource where TTarget : IResource;
 	void DeregisterDependency<TDependent, TTarget>(TDependent dependent, TTarget targetNoLongerInUse) where TDependent : IResource where TTarget : IResource;
+	void DeregisterAllDependencies<TDependent>(TDependent dependent) where TDependent : IResource;
 	void ThrowForPrematureDisposalIfTargetHasDependents<TTarget>(TTarget targetPotentiallyInUse) where TTarget : IResource;
 	OneToManyEnumerator<EnumerationInput, ResourceStub> EnumerateDependents<TTarget>(TTarget targetPotentiallyInUse) where TTarget : IResource;
 	OneToManyEnumerator<EnumerationInput, ResourceStub> EnumerateTargets<TDependent>(TDependent dependent) where TDependent : IResource;

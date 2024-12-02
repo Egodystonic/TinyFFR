@@ -156,7 +156,8 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		return _globals.GetResourceName(handle.Ident, DefaultMeshName);
 	}
 
-
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	Mesh HandleToInstance(MeshHandle h) => new(h, this);
 
 	#region Disposal
 	public bool IsDisposed(MeshHandle handle) => _isDisposed || !_activeMeshes.ContainsKey(handle);
@@ -164,6 +165,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 	public void Dispose(MeshHandle handle) => Dispose(handle, removeFromMap: true);
 	void Dispose(MeshHandle handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		var bufferData = _activeMeshes[handle];
 		var curVbRefCount = _vertexBufferRefCounts[bufferData.VertexBufferHandle];
 		var curIbRefCount = _indexBufferRefCounts[bufferData.IndexBufferHandle];

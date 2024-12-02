@@ -132,6 +132,8 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	public void Dispose(SceneHandle handle) => Dispose(handle, removeFromMaps: true);
 	void Dispose(SceneHandle handle, bool removeFromMaps) {
 		if (IsDisposed(handle)) return;
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		DisposeScene(handle).ThrowIfFailure();
 		if (!removeFromMaps) return;
 

@@ -134,6 +134,7 @@ sealed unsafe class LocalCombinedResourceGroupImplProvider : ICombinedResourceGr
 		Dispose(handle, data.StubArray, data.Count, disposeContainedResources);
 	}
 	void Dispose(CombinedResourceGroupHandle handle, ResourceStub[] stubArray, int count, bool disposeContainedResources) {
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		for (var i = 0; i < count; ++i) {
 			var resource = stubArray[i];
 			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), resource);

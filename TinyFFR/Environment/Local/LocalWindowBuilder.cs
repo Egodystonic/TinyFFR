@@ -181,9 +181,13 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 
 	public override string ToString() => _isDisposed ? "TinyFFR Window Builder [Disposed]" : "TinyFFR Window Builder";
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	Window HandleToInstance(WindowHandle h) => new(h, this);
+
 	#region Disposal
 	public void Dispose(WindowHandle handle) {
 		if (IsDisposed(handle)) return;
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		try {
 			DisposeWindow(handle).ThrowIfFailure();
 		}

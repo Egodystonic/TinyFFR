@@ -45,6 +45,23 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker {
 		RemoveStubFromMap(_vectorPool, _dependentsToTargetsMap, dependentStub.Ident, targetStub);
 	}
 
+	public void DeregisterAllDependencies<TDependent>(TDependent dependent) where TDependent : IResource {
+		if (!_dependentsToTargetsMap.TryGetValue(dependent.Ident, out var targets)) return;
+		var dependentStub = new ResourceStub(dependent.Ident, dependent.Implementation);
+		
+		foreach (var target in targets) {
+			if (!_targetsToDependentsMap.TryGetValue(target.Ident, out var dependents)) continue;
+			if (!dependents.Remove(dependentStub)) continue;
+			if (dependents.Count != 0) continue;
+			_targetsToDependentsMap.Remove(target.Ident);
+			_vectorPool.Return(dependents);
+		}
+
+		_dependentsToTargetsMap.Remove(dependentStub.Ident);
+		targets.Clear();
+		_vectorPool.Return(targets);
+	}
+
 	public void ThrowForPrematureDisposalIfTargetHasDependents<TTarget>(TTarget targetPotentiallyInUse) where TTarget : IResource {
 		if (!_targetsToDependentsMap.TryGetValue(targetPotentiallyInUse.Ident, out var dependents)) return;
 		throw ResourceDependencyException.CreateForPrematureDisposal(

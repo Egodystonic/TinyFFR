@@ -37,9 +37,6 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	);
 	#endregion
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	Material HandleToInstance(MaterialHandle h) => new(h, this);
-
 	public Material CreateBasicSolidColorMat(ColorVect color, ReadOnlySpan<char> name = default) => CreateBasicSolidColorMat(color, new MaterialCreationConfig { Name = name });
 	public Material CreateBasicSolidColorMat(ColorVect color, in MaterialCreationConfig config) {
 		CreateMaterial(
@@ -59,12 +56,16 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		return _globals.GetResourceName(handle.Ident, DefaultMaterialName);
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	Material HandleToInstance(MaterialHandle h) => new(h, this);
+
 	#region Disposal
 	public bool IsDisposed(MaterialHandle handle) => _isDisposed || !_activeMaterials.ContainsKey(handle);
 
 	public void Dispose(MaterialHandle handle) => Dispose(handle, removeFromMap: true);
 	void Dispose(MaterialHandle handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_activeMaterials[handle].Dispose();
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromMap) _activeMaterials.Remove(handle);

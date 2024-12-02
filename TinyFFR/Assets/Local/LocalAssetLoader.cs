@@ -12,7 +12,7 @@ using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
-sealed class LocalAssetLoader : IAssetLoader, IDisposable { // TODO remove this resource pool provider interface and put it in the globals; then move all name allocations to globals too
+sealed class LocalAssetLoader : IAssetLoader, IDisposable {
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly LocalMeshBuilder _meshBuilder;
 	readonly LocalMaterialBuilder _materialBuilder;
