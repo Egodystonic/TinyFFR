@@ -17,6 +17,7 @@ WindowHandle native_impl_window::create_window(int32_t width, int32_t height, in
 	return result;
 }
 StartExportedFunc(create_window, WindowHandle* outResult, int32_t width, int32_t height, int32_t xPos, int32_t yPos) {
+	ThrowIfNull(outResult, "Window out result pointer was null.");
 	auto result = native_impl_window::create_window(width, height, xPos, yPos);
 	*outResult = result;
 	EndExportedFunc
@@ -25,6 +26,8 @@ StartExportedFunc(create_window, WindowHandle* outResult, int32_t width, int32_t
 
 
 void native_impl_window::set_window_title(WindowHandle handle, const char* newTitle) {
+	ThrowIfNull(handle, "Window was null.");
+	ThrowIfNull(newTitle, "Title was null.");
 	SDL_SetWindowTitle(handle, newTitle);
 }
 StartExportedFunc(set_window_title, WindowHandle ptr, const char* newTitle) {
@@ -32,6 +35,9 @@ StartExportedFunc(set_window_title, WindowHandle ptr, const char* newTitle) {
 	EndExportedFunc
 }
 void native_impl_window::get_window_title(WindowHandle handle, char* resultBuffer, int32_t bufferLen) {
+	ThrowIfNull(handle, "Window was null.");
+	ThrowIfNull(resultBuffer, "Result buffer was null.");
+	ThrowIfNegative(bufferLen, "Buffer length was negative.");
 	auto title = SDL_GetWindowTitle(handle);
 	strcpy_s(resultBuffer, bufferLen, title);
 }
@@ -43,6 +49,7 @@ StartExportedFunc(get_window_title, WindowHandle ptr, char* resultBuffer, int32_
 
 
 void native_impl_window::set_window_size(WindowHandle handle, int32_t newWidth, int32_t newHeight) {
+	ThrowIfNull(handle, "Window was null.");
 	SDL_SetWindowSize(handle, newWidth, newHeight);
 }
 StartExportedFunc(set_window_size, WindowHandle ptr, int32_t newWidth, int32_t newHeight) {
@@ -50,6 +57,9 @@ StartExportedFunc(set_window_size, WindowHandle ptr, int32_t newWidth, int32_t n
 	EndExportedFunc
 }
 void native_impl_window::get_window_size(WindowHandle handle, int32_t* outWidth, int32_t* outHeight) {
+	ThrowIfNull(handle, "Window was null.");
+	ThrowIfNull(outWidth, "Width out pointer was null.");
+	ThrowIfNull(outHeight, "Height out pointer was null.");
 	SDL_GetWindowSize(handle, outWidth, outHeight);
 }
 StartExportedFunc(get_window_size, WindowHandle ptr, int32_t* outWidth, int32_t* outHeight) {
@@ -60,6 +70,7 @@ StartExportedFunc(get_window_size, WindowHandle ptr, int32_t* outWidth, int32_t*
 
 
 void native_impl_window::set_window_position(WindowHandle handle, int32_t newX, int32_t newY) {
+	ThrowIfNull(handle, "Window was null.");
 	SDL_SetWindowPosition(handle, newX, newY);
 }
 StartExportedFunc(set_window_position, WindowHandle ptr, int32_t newX, int32_t newY) {
@@ -67,6 +78,9 @@ StartExportedFunc(set_window_position, WindowHandle ptr, int32_t newX, int32_t n
 	EndExportedFunc
 }
 void native_impl_window::get_window_position(WindowHandle handle, int32_t* outX, int32_t* outY) {
+	ThrowIfNull(handle, "Window was null.");
+	ThrowIfNull(outX, "OutX pointer was null.");
+	ThrowIfNull(outY, "OutY pointer was null.");
 	SDL_GetWindowPosition(handle, outX, outY);
 }
 StartExportedFunc(get_window_position, WindowHandle ptr, int32_t* outX, int32_t* outY) {
@@ -77,6 +91,7 @@ StartExportedFunc(get_window_position, WindowHandle ptr, int32_t* outX, int32_t*
 
 
 void native_impl_window::set_window_fullscreen_state(WindowHandle handle, interop_bool fullscreen, interop_bool borderless) {
+	ThrowIfNull(handle, "Window was null.");
 	auto fsSetResult = SDL_SetWindowFullscreen(handle, fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
 	ThrowIfNotZero(fsSetResult, "Could not set fullscreen state of window: ", SDL_GetError());
 	SDL_SetWindowBordered(handle, borderless && fullscreen ? SDL_FALSE : SDL_TRUE);
@@ -87,6 +102,9 @@ StartExportedFunc(set_window_fullscreen_state, WindowHandle ptr, interop_bool fu
 	EndExportedFunc
 }
 void native_impl_window::get_window_fullscreen_state(WindowHandle handle, interop_bool* outFullscreen, interop_bool* outBorderless) {
+	ThrowIfNull(handle, "Window was null.");
+	ThrowIfNull(outFullscreen, "Out fullscreen pointer was null.");
+	ThrowIfNull(outBorderless, "Out borderless pointer was null.");
 	auto flags = SDL_GetWindowFlags(handle);
 	*outFullscreen = (flags & SDL_WINDOW_FULLSCREEN) > 0 ? interop_bool_true : interop_bool_false;
 	*outBorderless = (flags & SDL_WINDOW_BORDERLESS) > 0 ? interop_bool_true : interop_bool_false;
@@ -99,6 +117,7 @@ StartExportedFunc(get_window_fullscreen_state, WindowHandle ptr, interop_bool* o
 
 
 void native_impl_window::set_window_cursor_lock_state(WindowHandle handle, interop_bool lockState) {
+	ThrowIfNull(handle, "Window was null.");
 	auto setModeResult = SDL_SetRelativeMouseMode(lockState == interop_bool_true ? SDL_TRUE : SDL_FALSE);
 	ThrowIfNotZero(setModeResult, "Could not set relative mouse mode: ", SDL_GetError());
 }
@@ -107,6 +126,8 @@ StartExportedFunc(set_window_cursor_lock_state, WindowHandle handle, interop_boo
 	EndExportedFunc
 }
 void native_impl_window::get_window_cursor_lock_state(WindowHandle handle, interop_bool* outLockState) {
+	ThrowIfNull(handle, "Window was null.");
+	ThrowIfNull(outLockState, "Out lock state pointer was null.");
 	*outLockState = SDL_GetRelativeMouseMode() == SDL_TRUE ? interop_bool_true : interop_bool_false;
 }
 StartExportedFunc(get_window_cursor_lock_state, WindowHandle handle, interop_bool* outLockState) {
@@ -117,6 +138,7 @@ StartExportedFunc(get_window_cursor_lock_state, WindowHandle handle, interop_boo
 
 
 void native_impl_window::dispose_window(WindowHandle handle) {
+	ThrowIfNull(handle, "Window was null.");
 	SDL_DestroyWindow(handle);
 }
 StartExportedFunc(dispose_window, WindowHandle handle) {

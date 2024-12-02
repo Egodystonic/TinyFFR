@@ -14,6 +14,9 @@ void handle_filament_buffer_copy_callback(void* _, size_t __, BufferIdentity ide
 }
 
 void native_impl_render_assets::allocate_vertex_buffer(BufferIdentity bufferIdentity, MeshVertex* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer) {
+	ThrowIfNull(vertices, "Vertices pointer was null.");
+	ThrowIfNegative(vertexCount, "Vertex count was negative.");
+	ThrowIfNull(outBuffer, "Out buffer pointer was null.");
 	*outBuffer = VertexBuffer::Builder()
 		.vertexCount(vertexCount)
 		.bufferCount(1)
@@ -28,6 +31,9 @@ StartExportedFunc(allocate_vertex_buffer, BufferIdentity bufferIdentity, native_
 }
 
 void native_impl_render_assets::allocate_index_buffer(BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer) {
+	ThrowIfNull(indices, "Indices pointer was null.");
+	ThrowIfNegative(indexCount, "Index count was negative.");
+	ThrowIfNull(outBuffer, "Out buffer pointer was null.");
 	*outBuffer = IndexBuffer::Builder()
 		.indexCount(indexCount)
 		.bufferType(IndexBuffer::IndexType::UINT)
@@ -40,6 +46,7 @@ StartExportedFunc(allocate_index_buffer, BufferIdentity bufferIdentity, int32_t*
 }
 
 void native_impl_render_assets::dispose_vertex_buffer(VertexBufferHandle buffer) {
+	ThrowIfNull(buffer, "Buffer was null.");
 	if (!filament_engine->destroy(buffer)) {
 		Throw("Could not dispose vertex buffer.");
 	}
@@ -50,6 +57,7 @@ StartExportedFunc(dispose_vertex_buffer, VertexBufferHandle buffer) {
 }
 
 void native_impl_render_assets::dispose_index_buffer(IndexBufferHandle buffer) {
+	ThrowIfNull(buffer, "Buffer was null.");
 	if (!filament_engine->destroy(buffer)) {
 		Throw("Could not dispose index buffer.");
 	}

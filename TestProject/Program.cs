@@ -58,6 +58,7 @@ Console.WriteLine(scene);
 while (!loop.Input.UserQuitRequested) {
 	_ = loop.IterateOnce();
 	scene.Render(camera, window);
-	instance.RotateBy(new Rotation(3f, Direction.Down));
-	instance.AdjustScaleBy(0.001f);
+	//instance.MoveBy(Direction.Left * 0.01f);
+	camera.ViewDirection = Direction.Forward;
+	camera.MoveBy(Direction.Right * 0.01f);
 }

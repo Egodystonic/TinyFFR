@@ -12,6 +12,10 @@
 using namespace utils;
 
 void native_impl_render::allocate_renderer_and_swap_chain(WindowHandle window, RendererHandle* outRenderer, SwapChainHandle* outSwapChain) {
+	ThrowIfNull(window, "Window was null.");
+	ThrowIfNull(outRenderer, "Renderer out pointer was null.");
+	ThrowIfNull(outSwapChain, "Swap chain out pointer was null.");
+
 	SDL_SysWMinfo wmInfo;
 	SDL_VERSION(&wmInfo.version);
 	SDL_GetWindowWMInfo(window, &wmInfo);
@@ -29,6 +33,10 @@ StartExportedFunc(allocate_renderer_and_swap_chain, WindowHandle window, Rendere
 }
 
 void native_impl_render::allocate_view_descriptor(SceneHandle scene, CameraHandle camera, ViewDescriptorHandle* outViewDescriptor) {
+	ThrowIfNull(scene, "Scene was null.");
+	ThrowIfNull(camera, "Camera was null.");
+	ThrowIfNull(outViewDescriptor, "View descriptor out pointer was null.");
+
 	*outViewDescriptor = filament_engine->createView();
 	ThrowIfNull(*outViewDescriptor, "Could not create view descriptor.");
 	(*outViewDescriptor)->setCamera(camera);
@@ -40,6 +48,7 @@ StartExportedFunc(allocate_view_descriptor, SceneHandle scene, CameraHandle came
 }
 
 void native_impl_render::dispose_view_descriptor(ViewDescriptorHandle viewDescriptor) {
+	ThrowIfNull(viewDescriptor, "View was null.");
 	ThrowIf(!filament_engine->destroy(viewDescriptor), "Could not destroy view descriptor.");
 }
 StartExportedFunc(dispose_view_descriptor, ViewDescriptorHandle viewDescriptor) {
@@ -48,6 +57,9 @@ StartExportedFunc(dispose_view_descriptor, ViewDescriptorHandle viewDescriptor) 
 }
 
 void native_impl_render::dispose_renderer_and_swap_chain(RendererHandle renderer, SwapChainHandle swapChain) {
+	ThrowIfNull(renderer, "Renderer was null.");
+	ThrowIfNull(swapChain, "Swap chain was null.");
+
 	ThrowIf(!filament_engine->destroy(renderer), "Could not destroy renderer.");
 	ThrowIf(!filament_engine->destroy(swapChain), "Could not destroy swap chain.");
 }
@@ -57,6 +69,7 @@ StartExportedFunc(dispose_renderer_and_swap_chain, RendererHandle renderer, Swap
 }
 
 void native_impl_render::set_view_descriptor_size(ViewDescriptorHandle viewDescriptor, uint32_t width, uint32_t height) {
+	ThrowIfNull(viewDescriptor, "View was null.");
 	viewDescriptor->setViewport({ 0, 0, width, height });
 }
 StartExportedFunc(set_view_descriptor_size, ViewDescriptorHandle viewDescriptor, uint32_t width, uint32_t height) {
@@ -66,6 +79,10 @@ StartExportedFunc(set_view_descriptor_size, ViewDescriptorHandle viewDescriptor,
 
 
 void native_impl_render::render_scene(RendererHandle renderer, SwapChainHandle swapChain, ViewDescriptorHandle viewDescriptor) {
+	ThrowIfNull(renderer, "Renderer was null.");
+	ThrowIfNull(swapChain, "Swap chain was null.");
+	ThrowIfNull(viewDescriptor, "View was null.");
+
 	if (!renderer->beginFrame(swapChain)) return;
 	renderer->render(viewDescriptor);
 	renderer->endFrame();

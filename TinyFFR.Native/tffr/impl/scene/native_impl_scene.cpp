@@ -11,6 +11,7 @@
 using namespace utils;
 
 void native_impl_scene::allocate_scene(SceneHandle* outScene) {
+	ThrowIfNull(outScene, "Scene out pointer was null.");
 	*outScene = filament_engine->createScene();
 	ThrowIfNull(*outScene, "Could not create scene.");
 }
@@ -20,6 +21,7 @@ StartExportedFunc(allocate_scene, SceneHandle* outScene) {
 }
 
 void native_impl_scene::add_model_instance_to_scene(SceneHandle scene, ModelInstanceHandle modelInstance) {
+	ThrowIfNull(scene, "Scene was null.");
 	scene->addEntity(Entity::import(modelInstance));
 }
 StartExportedFunc(add_model_instance_to_scene, SceneHandle scene, ModelInstanceHandle modelInstance) {
@@ -28,6 +30,7 @@ StartExportedFunc(add_model_instance_to_scene, SceneHandle scene, ModelInstanceH
 }
 
 void native_impl_scene::remove_model_instance_from_scene(SceneHandle scene, ModelInstanceHandle modelInstance) {
+	ThrowIfNull(scene, "Scene was null.");
 	scene->remove(Entity::import(modelInstance));
 }
 StartExportedFunc(remove_model_instance_from_scene, SceneHandle scene, ModelInstanceHandle modelInstance) {
@@ -36,6 +39,7 @@ StartExportedFunc(remove_model_instance_from_scene, SceneHandle scene, ModelInst
 }
 
 void native_impl_scene::dispose_scene(SceneHandle scene) {
+	ThrowIfNull(scene, "Scene was null.");
 	ThrowIf(!filament_engine->destroy(scene), "Could not dispose scene.");
 }
 StartExportedFunc(dispose_scene, SceneHandle scene) {

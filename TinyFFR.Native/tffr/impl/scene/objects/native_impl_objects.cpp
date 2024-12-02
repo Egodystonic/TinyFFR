@@ -12,6 +12,12 @@
 using namespace utils;
 
 void native_impl_objects::allocate_model_instance(mat4f* initialTransformPtr, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount, MaterialHandle material, ModelInstanceHandle* outModelInstance) {
+	ThrowIfNull(initialTransformPtr, "Transform was null.");
+	ThrowIfNull(vb, "VB was null.");
+	ThrowIfNull(ib, "IB was null.");
+	ThrowIfNull(material, "Material was null.");
+	ThrowIfNull(outModelInstance, "Model instance out pointer was null.");
+
 	auto entity = filament_engine->getEntityManager().create();
 
 	auto result = RenderableManager::Builder(1)
@@ -33,6 +39,9 @@ StartExportedFunc(allocate_model_instance, mat4f* initialTransformPtr, VertexBuf
 }
 
 void native_impl_objects::set_model_instance_mesh(ModelInstanceHandle modelInstance, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount) {
+	ThrowIfNull(vb, "VB was null.");
+	ThrowIfNull(ib, "IB was null.");
+
 	auto& manager = filament_engine->getRenderableManager();
 	auto instance = manager.getInstance(Entity::import(modelInstance));
 	ThrowIf(!instance.isValid(), "Given entity instance was not associated with any renderable.");
@@ -44,6 +53,8 @@ StartExportedFunc(set_model_instance_mesh, ModelInstanceHandle modelInstance, Ve
 }
 
 void native_impl_objects::set_model_instance_material(ModelInstanceHandle modelInstance, MaterialHandle material) {
+	ThrowIfNull(material, "Material was null.");
+
 	auto& manager = filament_engine->getRenderableManager();
 	auto instance = manager.getInstance(Entity::import(modelInstance));
 	ThrowIf(!instance.isValid(), "Given entity instance was not associated with any renderable.");
@@ -55,6 +66,8 @@ StartExportedFunc(set_model_instance_material, ModelInstanceHandle modelInstance
 }
 
 void native_impl_objects::set_model_instance_world_mat(ModelInstanceHandle modelInstance, mat4f* worldMatPtr) {
+	ThrowIfNull(worldMatPtr, "World matrix was null.");
+
 	auto entity = Entity::import(modelInstance);
 	auto& manager = filament_engine->getTransformManager();
 	manager.setTransform(manager.getInstance(entity), *worldMatPtr);

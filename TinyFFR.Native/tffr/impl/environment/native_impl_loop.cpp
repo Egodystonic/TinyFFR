@@ -20,6 +20,12 @@ MouseClickEvent* native_impl_loop::click_event_buffer;
 int32_t native_impl_loop::click_event_buffer_length;
 
 void native_impl_loop::set_event_poll_delegates(sdl_keycode_filter_translate_delegate keycodeFilterFuncPtr, kbm_event_buffer_size_double_delegate kbmBufferDoubleDelegate, controller_event_buffer_size_double_delegate controllerBufferDoubleDelegate, click_event_buffer_size_double_delegate clickBufferDoubleDelegate, handle_new_controller_delegate handleControllerDelegate) {
+	ThrowIfNull(keycodeFilterFuncPtr, "Keycode filter delegate was null.");
+	ThrowIfNull(kbmBufferDoubleDelegate, "Kbm buffer double delegate was null.");
+	ThrowIfNull(controllerBufferDoubleDelegate, "Controller buffer double delegate was null.");
+	ThrowIfNull(clickBufferDoubleDelegate, "Click buffer double delegate was null.");
+	ThrowIfNull(handleControllerDelegate, "Handle controller delegate was null.");
+
 	keycode_filter_translate_delegate = keycodeFilterFuncPtr;
 	kbm_event_buffer_double_delegate = kbmBufferDoubleDelegate;
 	controller_event_buffer_double_delegate = controllerBufferDoubleDelegate;
@@ -31,6 +37,13 @@ StartExportedFunc(set_event_poll_delegates, sdl_keycode_filter_translate_delegat
 	EndExportedFunc
 }
 void native_impl_loop::set_event_poll_buffer_pointers(KeyboardOrMouseKeyEvent* kbmEventBuffer, int32_t kbmEventBufferLength, RawGameControllerButtonEvent* controllerEventBuffer, int32_t controllerEventBufferLength, MouseClickEvent* clickEventBuffer, int32_t clickEventBufferLength) {
+	ThrowIfNull(kbmEventBuffer, "Kbm event buffer was null.");
+	ThrowIfNegative(kbmEventBufferLength, "Kbm event buffer length was negative.");
+	ThrowIfNull(controllerEventBuffer, "Controller event buffer was null.");
+	ThrowIfNegative(controllerEventBufferLength, "Controller event buffer length was negative.");
+	ThrowIfNull(clickEventBuffer, "Click event buffer was null.");
+	ThrowIfNegative(clickEventBufferLength, "Click event buffer length was negative.");
+
 	kbm_event_buffer = kbmEventBuffer;
 	kbm_event_buffer_length = kbmEventBufferLength;
 	controller_event_buffer = controllerEventBuffer;
@@ -111,6 +124,15 @@ void append_click_event(int32_t numEventsWrittenSoFar, int32_t x, int32_t y, int
 	native_impl_loop::click_event_buffer[numEventsWrittenSoFar].ClickCount = clickCount;
 }
 void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* outNumControllerEventsWritten, int32_t* outNumClickEventsWritten, int32_t* outMousePosX, int32_t* outMousePosY, int32_t* outMouseDeltaX, int32_t* outMouseDeltaY, interop_bool* outQuitRequested) {
+	ThrowIfNull(outNumKbmEventsWritten, "Num kbm events out pointer was null.");
+	ThrowIfNull(outNumControllerEventsWritten, "Num controller events out pointer was null.");
+	ThrowIfNull(outNumClickEventsWritten, "Num click events out pointer was null.");
+	ThrowIfNull(outMousePosX, "MouseX out pointer was null.");
+	ThrowIfNull(outMousePosY, "MouseY out pointer was null.");
+	ThrowIfNull(outMouseDeltaX, "MouseX delta out pointer was null.");
+	ThrowIfNull(outMouseDeltaY, "MouseY delta out pointer was null.");
+	ThrowIfNull(outQuitRequested, "Quit request out pointer was null.");
+
 	static constexpr int32_t NonSdlKeyStartValue = 380;
 	static constexpr int32_t RawGameControllerAxisEventStartValue = 200;
 	int32_t numKbmEventsWritten = 0;

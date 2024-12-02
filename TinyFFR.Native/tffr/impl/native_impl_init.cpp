@@ -28,6 +28,7 @@ StartExportedFunc(initialize_all) {
 
 
 void native_impl_init::set_buffer_deallocation_delegate(deallocate_asset_buffer_delegate deallocationDelegate) {
+	ThrowIfNull(deallocationDelegate, "Deallocation delegate was null.");
 	deallocation_delegate = deallocationDelegate;
 }
 StartExportedFunc(set_buffer_deallocation_delegate, deallocate_asset_buffer_delegate deallocationDelegate) {
@@ -36,6 +37,7 @@ StartExportedFunc(set_buffer_deallocation_delegate, deallocate_asset_buffer_dele
 }
 
 void native_impl_init::set_log_notify_delegate(log_notify_delegate logNotifyDelegate) {
+	ThrowIfNull(logNotifyDelegate, "Log notify delegate was null.");
 	log_delegate = logNotifyDelegate;
 }
 StartExportedFunc(set_log_notify_delegate, log_notify_delegate logNotifyDelegate) {
