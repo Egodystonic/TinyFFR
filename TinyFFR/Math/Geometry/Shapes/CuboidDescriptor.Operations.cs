@@ -401,7 +401,7 @@ partial struct CuboidDescriptor : IIndependentAxisScalable<CuboidDescriptor> {
 		var reflection = tuple?.Side.ReflectionOf(ray.Direction);
 		if (reflection == null) return null;
 
-		return BoundedRay.FromStartPointAndVect(tuple.Value.HitPoint, reflection.Value * (ray.Length - tuple.Value.HitDistance));
+		return new(tuple.Value.HitPoint, reflection.Value * (ray.Length - tuple.Value.HitDistance));
 	}
 	public Ray FastReflectionOf(Ray ray) {
 		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
@@ -409,7 +409,7 @@ partial struct CuboidDescriptor : IIndependentAxisScalable<CuboidDescriptor> {
 	}
 	public BoundedRay FastReflectionOf(BoundedRay ray) {
 		var tuple = GetHitPointAndSidePlaneOfLineLike(ray);
-		return BoundedRay.FromStartPointAndVect(tuple.Value.HitPoint, tuple.Value.Side.FastReflectionOf(ray.Direction) * (ray.Length - tuple.Value.HitDistance));
+		return new(tuple.Value.HitPoint, tuple.Value.Side.FastReflectionOf(ray.Direction) * (ray.Length - tuple.Value.HitDistance));
 	}
 #pragma warning restore CS8629 // "Nullable value type may be null"
 	#endregion

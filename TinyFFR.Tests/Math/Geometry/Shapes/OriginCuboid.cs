@@ -562,86 +562,86 @@ class CuboidDescriptorTest {
 
 
 		// BoundedRay
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f));
 		AssertToleranceEquals((3.6f, 0f, 0f), intersection!.Value.First, TestTolerance);
 		AssertToleranceEquals((-3.6f, 0f, 0f), intersection!.Value.Second, TestTolerance);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f));
 		AssertToleranceEquals((-3.6f, 0f, 0f), intersection!.Value.First, TestTolerance);
 		AssertToleranceEquals((3.6f, 0f, 0f), intersection!.Value.Second, TestTolerance);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f));
 		Assert.IsNull(intersection);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f));
 		Assert.IsNull(intersection);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 10f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 10f));
 		Assert.IsNull(intersection);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 10f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 10f));
 		Assert.IsNull(intersection);
 
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f));
 		AssertToleranceEquals((0f, 6.8f, 0f), intersection!.Value.First, TestTolerance);
 		AssertToleranceEquals((0f, -6.8f, 0f), intersection!.Value.Second, TestTolerance);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f));
 		AssertToleranceEquals((0f, -6.8f, 0f), intersection!.Value.First, TestTolerance);
 		AssertToleranceEquals((0f, 6.8f, 0f), intersection!.Value.Second, TestTolerance);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, 1f, 0f) * 1000f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, 1f, 0f) * 1000f));
 		Assert.IsNull(intersection);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, -1f, 0f) * 1000f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, -1f, 0f) * 1000f));
 		Assert.IsNull(intersection);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 10f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 10f));
 		Assert.IsNull(intersection);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 10f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 10f));
 		Assert.IsNull(intersection);
 
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f));
 		AssertToleranceEquals((0f, 0f, 0.7f), intersection!.Value.First, TestTolerance);
 		AssertToleranceEquals((0f, 0f, -0.7f), intersection!.Value.Second, TestTolerance);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f));
 		AssertToleranceEquals((0f, 0f, -0.7f), intersection!.Value.First, TestTolerance);
 		AssertToleranceEquals((0f, 0f, 0.7f), intersection!.Value.Second, TestTolerance);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, 1f) * 1000f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, 1f) * 1000f));
 		Assert.IsNull(intersection);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, -1f) * 1000f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, -1f) * 1000f));
 		Assert.IsNull(intersection);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 10f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 10f));
 		Assert.IsNull(intersection);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 10f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 10f));
 		Assert.IsNull(intersection);
 
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(100f, 100f, 100f), new Direction(-1f, -1f, -1f) * 1000f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(100f, 100f, 100f), new Direction(-1f, -1f, -1f) * 1000f));
 		AssertToleranceEquals((0.7f, 0.7f, 0.7f), intersection!.Value.First, TestTolerance);
 		AssertToleranceEquals((-0.7f, -0.7f, -0.7f), intersection!.Value.Second, TestTolerance);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(100f, 100f, 100f), new Direction(-1f, -1f, -1f) * 10f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(100f, 100f, 100f), new Direction(-1f, -1f, -1f) * 10f));
 		Assert.IsNull(intersection);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(100f, 100f, 100f), new Direction(1f, 1f, 1f) * 1000f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(100f, 100f, 100f), new Direction(1f, 1f, 1f) * 1000f));
 		Assert.IsNull(intersection);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(100f, 20f, 0f), new Direction(-1f, 0f, 0f) * 1000f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(100f, 20f, 0f), new Direction(-1f, 0f, 0f) * 1000f));
 		Assert.IsNull(intersection);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(20f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(20f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f));
 		Assert.IsNull(intersection);
 
-		intersection = TestCuboid.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 20f, 100f), new Direction(0f, 0f, -1f) * 1000f));
+		intersection = TestCuboid.IntersectionWith(new BoundedRay(new Location(0f, 20f, 100f), new Direction(0f, 0f, -1f) * 1000f));
 		Assert.IsNull(intersection);
 
 
@@ -748,39 +748,39 @@ class CuboidDescriptorTest {
 
 
 		// BoundedRay, Fast
-		intersection = TestCuboid.FastIntersectionWith(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f));
+		intersection = TestCuboid.FastIntersectionWith(new BoundedRay(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f));
 		AssertToleranceEquals((3.6f, 0f, 0f), intersection.Value.First, TestTolerance);
 		AssertToleranceEquals((-3.6f, 0f, 0f), intersection.Value.Second, TestTolerance);
 
-		intersection = TestCuboid.FastIntersectionWith(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f));
+		intersection = TestCuboid.FastIntersectionWith(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f));
 		AssertToleranceEquals((-3.6f, 0f, 0f), intersection.Value.First, TestTolerance);
 		AssertToleranceEquals((3.6f, 0f, 0f), intersection.Value.Second, TestTolerance);
 
 
 
-		intersection = TestCuboid.FastIntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f));
+		intersection = TestCuboid.FastIntersectionWith(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f));
 		AssertToleranceEquals((0f, 6.8f, 0f), intersection.Value.First, TestTolerance);
 		AssertToleranceEquals((0f, -6.8f, 0f), intersection.Value.Second, TestTolerance);
 
-		intersection = TestCuboid.FastIntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f));
+		intersection = TestCuboid.FastIntersectionWith(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f));
 		AssertToleranceEquals((0f, -6.8f, 0f), intersection.Value.First, TestTolerance);
 		AssertToleranceEquals((0f, 6.8f, 0f), intersection.Value.Second, TestTolerance);
 
 
 
 
-		intersection = TestCuboid.FastIntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f));
+		intersection = TestCuboid.FastIntersectionWith(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f));
 		AssertToleranceEquals((0f, 0f, 0.7f), intersection.Value.First, TestTolerance);
 		AssertToleranceEquals((0f, 0f, -0.7f), intersection.Value.Second, TestTolerance);
 
-		intersection = TestCuboid.FastIntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f));
+		intersection = TestCuboid.FastIntersectionWith(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f));
 		AssertToleranceEquals((0f, 0f, -0.7f), intersection.Value.First, TestTolerance);
 		AssertToleranceEquals((0f, 0f, 0.7f), intersection.Value.Second, TestTolerance);
 
 
 
 
-		intersection = TestCuboid.FastIntersectionWith(BoundedRay.FromStartPointAndVect(new Location(100f, 100f, 100f), new Direction(-1f, -1f, -1f) * 1000f));
+		intersection = TestCuboid.FastIntersectionWith(new BoundedRay(new Location(100f, 100f, 100f), new Direction(-1f, -1f, -1f) * 1000f));
 		AssertToleranceEquals((0.7f, 0.7f, 0.7f), intersection.Value.First, TestTolerance);
 		AssertToleranceEquals((-0.7f, -0.7f, -0.7f), intersection.Value.Second, TestTolerance);
 	}
@@ -828,30 +828,30 @@ class CuboidDescriptorTest {
 
 
 		// BoundedRay
-		Assert.True(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)));
-		Assert.True(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)));
-		Assert.False(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)));
-		Assert.False(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)));
-		Assert.False(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 10f)));
-		Assert.False(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 10f)));
-		Assert.True(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)));
-		Assert.True(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)));
-		Assert.False(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, 1f, 0f) * 1000f)));
-		Assert.False(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, -1f, 0f) * 1000f)));
-		Assert.False(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 10f)));
-		Assert.False(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 10f)));
-		Assert.True(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)));
-		Assert.True(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)));
-		Assert.False(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, 1f) * 1000f)));
-		Assert.False(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, -1f) * 1000f)));
-		Assert.False(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 10f)));
-		Assert.False(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 10f)));
-		Assert.True(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(100f, 100f, 100f), new Direction(-1f, -1f, -1f) * 1000f)));
-		Assert.False(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(100f, 100f, 100f), new Direction(-1f, -1f, -1f) * 10f)));
-		Assert.False(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(100f, 100f, 100f), new Direction(1f, 1f, 1f) * 1000f)));
-		Assert.False(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(100f, 20f, 0f), new Direction(-1f, 0f, 0f) * 1000f)));
-		Assert.False(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(20f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)));
-		Assert.False(TestCuboid.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(0f, 20f, 100f), new Direction(0f, 0f, -1f) * 1000f)));
+		Assert.True(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)));
+		Assert.True(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)));
+		Assert.False(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)));
+		Assert.False(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)));
+		Assert.False(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 10f)));
+		Assert.False(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 10f)));
+		Assert.True(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)));
+		Assert.True(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)));
+		Assert.False(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, 1f, 0f) * 1000f)));
+		Assert.False(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, -1f, 0f) * 1000f)));
+		Assert.False(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 10f)));
+		Assert.False(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 10f)));
+		Assert.True(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)));
+		Assert.True(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)));
+		Assert.False(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, 1f) * 1000f)));
+		Assert.False(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, -1f) * 1000f)));
+		Assert.False(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 10f)));
+		Assert.False(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 10f)));
+		Assert.True(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(100f, 100f, 100f), new Direction(-1f, -1f, -1f) * 1000f)));
+		Assert.False(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(100f, 100f, 100f), new Direction(-1f, -1f, -1f) * 10f)));
+		Assert.False(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(100f, 100f, 100f), new Direction(1f, 1f, 1f) * 1000f)));
+		Assert.False(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(100f, 20f, 0f), new Direction(-1f, 0f, 0f) * 1000f)));
+		Assert.False(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(20f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)));
+		Assert.False(TestCuboid.IsIntersectedBy(new BoundedRay(new Location(0f, 20f, 100f), new Direction(0f, 0f, -1f) * 1000f)));
 	}
 
 	[Test]
@@ -921,88 +921,88 @@ class CuboidDescriptorTest {
 		Assert.AreEqual(TestCuboid.HalfDepth, TestCuboid.PointClosestTo(new Ray(new Location(0f, 0f, 100f), new Direction(0f, 0f, 1f))).Z, TestTolerance);
 
 		// BoundedRay
-		AssertToleranceEquals((3.6f, -6.8f, 0f), TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f) * 1000f)), TestTolerance);
-		AssertToleranceEquals((0f, 6.8f, -0.7f), TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f) * 1000f)), TestTolerance);
-		AssertToleranceEquals((-3.6f, 0f, 0.7f), TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f) * 1000f)), TestTolerance);
-		AssertToleranceEquals((-3.6f, 0f, 0.7f), TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((3.6f, -6.8f, 0f), TestCuboid.PointClosestTo(new BoundedRay(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((0f, 6.8f, -0.7f), TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((-3.6f, 0f, 0.7f), TestCuboid.PointClosestTo(new BoundedRay(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((-3.6f, 0f, 0.7f), TestCuboid.PointClosestTo(new BoundedRay(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f) * 1000f)), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).Y);
-		Assert.AreEqual(0f, TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)).Z);
-		Assert.AreEqual(0f, TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).X);
-		Assert.AreEqual(0f, TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)).Z);
-		Assert.AreEqual(0f, TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).X);
-		Assert.AreEqual(0f, TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)).Y);
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X, -TestCuboid.GetHalfExtent(Axis.X));
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X, TestCuboid.GetHalfExtent(Axis.X));
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y, -TestCuboid.GetHalfExtent(Axis.Y));
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y, TestCuboid.GetHalfExtent(Axis.Y));
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z, -TestCuboid.GetHalfExtent(Axis.Z));
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z, TestCuboid.GetHalfExtent(Axis.Z));
+		Assert.AreEqual(0f, TestCuboid.PointClosestTo(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).Y);
+		Assert.AreEqual(0f, TestCuboid.PointClosestTo(new BoundedRay(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)).Z);
+		Assert.AreEqual(0f, TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).X);
+		Assert.AreEqual(0f, TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)).Z);
+		Assert.AreEqual(0f, TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).X);
+		Assert.AreEqual(0f, TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)).Y);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X, -TestCuboid.GetHalfExtent(Axis.X));
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X, TestCuboid.GetHalfExtent(Axis.X));
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y, -TestCuboid.GetHalfExtent(Axis.Y));
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y, TestCuboid.GetHalfExtent(Axis.Y));
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z, -TestCuboid.GetHalfExtent(Axis.Z));
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z, TestCuboid.GetHalfExtent(Axis.Z));
 
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).X, 0f);
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).X, TestCuboid.GetHalfExtent(Axis.X));
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Y, 0f);
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Y, TestCuboid.GetHalfExtent(Axis.Y));
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Z, 0f);
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Z, TestCuboid.GetHalfExtent(Axis.Z));
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).X, 0f);
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).X, -TestCuboid.GetHalfExtent(Axis.X));
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Y, 0f);
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Y, -TestCuboid.GetHalfExtent(Axis.Y));
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Z, 0f);
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Z, -TestCuboid.GetHalfExtent(Axis.Z));
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).X, 0f);
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).X, TestCuboid.GetHalfExtent(Axis.X));
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Y, 0f);
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Y, TestCuboid.GetHalfExtent(Axis.Y));
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Z, 0f);
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Z, TestCuboid.GetHalfExtent(Axis.Z));
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).X, 0f);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).X, -TestCuboid.GetHalfExtent(Axis.X));
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Y, 0f);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Y, -TestCuboid.GetHalfExtent(Axis.Y));
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Z, 0f);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Z, -TestCuboid.GetHalfExtent(Axis.Z));
 
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).X, 0f);
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).X, TestCuboid.GetHalfExtent(Axis.X));
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Y, 0f);
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Y, TestCuboid.GetHalfExtent(Axis.Y));
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Z, 0f);
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Z, TestCuboid.GetHalfExtent(Axis.Z));
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).X, 0f);
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).X, -TestCuboid.GetHalfExtent(Axis.X));
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Y, 0f);
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Y, -TestCuboid.GetHalfExtent(Axis.Y));
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Z, 0f);
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Z, -TestCuboid.GetHalfExtent(Axis.Z));
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).X, 0f);
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).X, TestCuboid.GetHalfExtent(Axis.X));
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Y, 0f);
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Y, TestCuboid.GetHalfExtent(Axis.Y));
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Z, 0f);
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Z, TestCuboid.GetHalfExtent(Axis.Z));
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).X, 0f);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).X, -TestCuboid.GetHalfExtent(Axis.X));
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Y, 0f);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Y, -TestCuboid.GetHalfExtent(Axis.Y));
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Z, 0f);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Z, -TestCuboid.GetHalfExtent(Axis.Z));
 
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).X, 0f);
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).X, 0.5f);
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).Y, 0f);
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).Y, 0.5f);
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).Z, 0f);
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).Z, 0.5f);
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).X, 0f);
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).X, -0.5f);
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).Y, 0f);
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).Y, -0.5f);
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).Z, 0f);
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).Z, -0.5f);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).X, 0f);
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).X, 0.5f);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).Y, 0f);
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).Y, 0.5f);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).Z, 0f);
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).Z, 0.5f);
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).X, 0f);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).X, -0.5f);
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).Y, 0f);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).Y, -0.5f);
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).Z, 0f);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).Z, -0.5f);
 
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).X, 0f);
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).X, 0.5f);
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).Y, 0f);
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).Y, 0.5f);
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).Z, 0f);
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).Z, 0.5f);
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).X, 0f);
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).X, -0.5f);
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).Y, 0f);
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).Y, -0.5f);
-		Assert.LessOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).Z, 0f);
-		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).Z, -0.5f);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).X, 0f);
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).X, 0.5f);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).Y, 0f);
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).Y, 0.5f);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).Z, 0f);
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).Z, 0.5f);
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).X, 0f);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).X, -0.5f);
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).Y, 0f);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).Y, -0.5f);
+		Assert.LessOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).Z, 0f);
+		Assert.GreaterOrEqual(TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).Z, -0.5f);
 
-		Assert.AreEqual(0f, TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))).Y);
-		Assert.AreEqual(0f, TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))).Z);
-		Assert.AreEqual(0f, TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))).X);
-		Assert.AreEqual(0f, TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))).Z);
-		Assert.AreEqual(0f, TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))).X);
-		Assert.AreEqual(0f, TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))).Y);
-		Assert.AreEqual(-TestCuboid.HalfWidth, TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))).X, TestTolerance);
-		Assert.AreEqual(TestCuboid.HalfWidth, TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))).X, TestTolerance);
-		Assert.AreEqual(-TestCuboid.HalfHeight, TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))).Y, TestTolerance);
-		Assert.AreEqual(TestCuboid.HalfHeight, TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))).Y, TestTolerance);
-		Assert.AreEqual(-TestCuboid.HalfDepth, TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))).Z, TestTolerance);
-		Assert.AreEqual(TestCuboid.HalfDepth, TestCuboid.PointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))).Z, TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.PointClosestTo(new BoundedRay(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))).Y);
+		Assert.AreEqual(0f, TestCuboid.PointClosestTo(new BoundedRay(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))).Z);
+		Assert.AreEqual(0f, TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))).X);
+		Assert.AreEqual(0f, TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))).Z);
+		Assert.AreEqual(0f, TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))).X);
+		Assert.AreEqual(0f, TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))).Y);
+		Assert.AreEqual(-TestCuboid.HalfWidth, TestCuboid.PointClosestTo(new BoundedRay(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))).X, TestTolerance);
+		Assert.AreEqual(TestCuboid.HalfWidth, TestCuboid.PointClosestTo(new BoundedRay(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))).X, TestTolerance);
+		Assert.AreEqual(-TestCuboid.HalfHeight, TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))).Y, TestTolerance);
+		Assert.AreEqual(TestCuboid.HalfHeight, TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))).Y, TestTolerance);
+		Assert.AreEqual(-TestCuboid.HalfDepth, TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))).Z, TestTolerance);
+		Assert.AreEqual(TestCuboid.HalfDepth, TestCuboid.PointClosestTo(new BoundedRay(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))).Z, TestTolerance);
 	}
 
 	[Test]
@@ -1072,88 +1072,88 @@ class CuboidDescriptorTest {
 		Assert.AreEqual(100f, TestCuboid.ClosestPointOn(new Ray(new Location(0f, 0f, 100f), new Direction(0f, 0f, 1f))).Z, TestTolerance);
 
 		// BoundedRay
-		AssertToleranceEquals((48.9f, -52.1f, 0f), TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f) * 1000f)), TestTolerance);
-		AssertToleranceEquals((0f, 43.05f, -36.95f), TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f) * 1000f)), TestTolerance);
-		AssertToleranceEquals((-111.45f, 0, 108.55f), TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f) * 1000f)), TestTolerance);
-		AssertToleranceEquals((-100f, 0f, 120f), TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((48.9f, -52.1f, 0f), TestCuboid.ClosestPointOn(new BoundedRay(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((0f, 43.05f, -36.95f), TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((-111.45f, 0, 108.55f), TestCuboid.ClosestPointOn(new BoundedRay(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((-100f, 0f, 120f), TestCuboid.ClosestPointOn(new BoundedRay(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f) * 1000f)), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).Y);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)).Z);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).X);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)).Z);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).X);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)).Y);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X, -TestCuboid.GetHalfExtent(Axis.X) - TestTolerance);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X, TestCuboid.GetHalfExtent(Axis.X) + TestTolerance);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y, -TestCuboid.GetHalfExtent(Axis.Y) - TestTolerance);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y, TestCuboid.GetHalfExtent(Axis.Y) + TestTolerance);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z, -TestCuboid.GetHalfExtent(Axis.Z) - TestTolerance);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z, TestCuboid.GetHalfExtent(Axis.Z) + TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).Y);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new BoundedRay(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)).Z);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).X);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)).Z);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).X);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)).Y);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X, -TestCuboid.GetHalfExtent(Axis.X) - TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X, TestCuboid.GetHalfExtent(Axis.X) + TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y, -TestCuboid.GetHalfExtent(Axis.Y) - TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y, TestCuboid.GetHalfExtent(Axis.Y) + TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z, -TestCuboid.GetHalfExtent(Axis.Z) - TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z, TestCuboid.GetHalfExtent(Axis.Z) + TestTolerance);
 
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).X, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).X, TestCuboid.GetHalfExtent(Axis.X) + TestTolerance);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Y, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Y, TestCuboid.GetHalfExtent(Axis.Y) + TestTolerance);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Z, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Z, TestCuboid.GetHalfExtent(Axis.Z) + TestTolerance);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).X, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).X, -TestCuboid.GetHalfExtent(Axis.X) - TestTolerance);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Y, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Y, -TestCuboid.GetHalfExtent(Axis.Y) - TestTolerance);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Z, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Z, -TestCuboid.GetHalfExtent(Axis.Z) - TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).X, 0f);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).X, TestCuboid.GetHalfExtent(Axis.X) + TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Y, 0f);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Y, TestCuboid.GetHalfExtent(Axis.Y) + TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Z, 0f);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)).Z, TestCuboid.GetHalfExtent(Axis.Z) + TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).X, 0f);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).X, -TestCuboid.GetHalfExtent(Axis.X) - TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Y, 0f);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Y, -TestCuboid.GetHalfExtent(Axis.Y) - TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Z, 0f);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)).Z, -TestCuboid.GetHalfExtent(Axis.Z) - TestTolerance);
 
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).X, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).X, TestCuboid.GetHalfExtent(Axis.X) + TestTolerance);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Y, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Y, TestCuboid.GetHalfExtent(Axis.Y) + TestTolerance);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Z, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Z, TestCuboid.GetHalfExtent(Axis.Z) + TestTolerance);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).X, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).X, -TestCuboid.GetHalfExtent(Axis.X) - TestTolerance);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Y, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Y, -TestCuboid.GetHalfExtent(Axis.Y) - TestTolerance);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Z, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Z, -TestCuboid.GetHalfExtent(Axis.Z) - TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).X, 0f);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).X, TestCuboid.GetHalfExtent(Axis.X) + TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Y, 0f);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Y, TestCuboid.GetHalfExtent(Axis.Y) + TestTolerance);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Z, 0f);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f).Flipped).Z, TestCuboid.GetHalfExtent(Axis.Z) + TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).X, 0f);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).X, -TestCuboid.GetHalfExtent(Axis.X) - TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Y, 0f);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Y, -TestCuboid.GetHalfExtent(Axis.Y) - TestTolerance);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Z, 0f);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f).Flipped).Z, -TestCuboid.GetHalfExtent(Axis.Z) - TestTolerance);
 
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).X, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).X, 0.5f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).Y, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).Y, 0.5f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).Z, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).Z, 0.5f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).X, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).X, -0.5f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).Y, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).Y, -0.5f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).Z, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).Z, -0.5f);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).X, 0f);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).X, 0.5f);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).Y, 0f);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).Y, 0.5f);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).Z, 0f);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)).Z, 0.5f);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).X, 0f);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).X, -0.5f);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).Y, 0f);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).Y, -0.5f);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).Z, 0f);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)).Z, -0.5f);
 
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).X, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).X, 0.5f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).Y, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).Y, 0.5f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).Z, 0f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).Z, 0.5f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).X, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).X, -0.5f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).Y, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).Y, -0.5f);
-		Assert.LessOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).Z, 0f);
-		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).Z, -0.5f);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).X, 0f);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).X, 0.5f);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).Y, 0f);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).Y, 0.5f);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).Z, 0f);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped).Z, 0.5f);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).X, 0f);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).X, -0.5f);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).Y, 0f);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).Y, -0.5f);
+		Assert.LessOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).Z, 0f);
+		Assert.GreaterOrEqual(TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped).Z, -0.5f);
 
-		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))).Y);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))).Z);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))).X);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))).Z);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))).X);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))).Y);
-		Assert.AreEqual(-100f, TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))).X, TestTolerance);
-		Assert.AreEqual(100f, TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))).X, TestTolerance);
-		Assert.AreEqual(-100f, TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))).Y, TestTolerance);
-		Assert.AreEqual(100f, TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))).Y, TestTolerance);
-		Assert.AreEqual(-100f, TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))).Z, TestTolerance);
-		Assert.AreEqual(100f, TestCuboid.ClosestPointOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))).Z, TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new BoundedRay(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))).Y);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new BoundedRay(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))).Z);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))).X);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))).Z);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))).X);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))).Y);
+		Assert.AreEqual(-100f, TestCuboid.ClosestPointOn(new BoundedRay(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))).X, TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.ClosestPointOn(new BoundedRay(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))).X, TestTolerance);
+		Assert.AreEqual(-100f, TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))).Y, TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))).Y, TestTolerance);
+		Assert.AreEqual(-100f, TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))).Z, TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.ClosestPointOn(new BoundedRay(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))).Z, TestTolerance);
 	}
 
 	[Test]
@@ -1209,53 +1209,53 @@ class CuboidDescriptorTest {
 		Assert.AreEqual(10f, TestCuboid.DistanceFrom(new Ray(new Location(0f, 0f, -10.7f), Direction.Right)), TestTolerance);
 
 		// BoundedRay
-		Assert.AreEqual(64.0638f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(51.2652f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f) * 1000f)), TestTolerance);
-		Assert.AreEqual(152.5229f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f) * 1000f)), TestTolerance);
-		Assert.AreEqual(153.3801f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(64.0638f, TestCuboid.DistanceFrom(new BoundedRay(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(51.2652f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(152.5229f, TestCuboid.DistanceFrom(new BoundedRay(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(153.3801f, TestCuboid.DistanceFrom(new BoundedRay(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f) * 1000f)), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceFrom(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceFrom(new BoundedRay(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceFrom(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceFrom(new BoundedRay(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f).Flipped), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped), TestTolerance);
 
-		Assert.AreEqual(100f - TestCuboid.HalfWidth, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))));
-		Assert.AreEqual(100f - TestCuboid.HalfWidth, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))));
-		Assert.AreEqual(100f - TestCuboid.HalfHeight, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))));
-		Assert.AreEqual(100f - TestCuboid.HalfHeight, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))));
-		Assert.AreEqual(100f - TestCuboid.HalfDepth, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))));
-		Assert.AreEqual(100f - TestCuboid.HalfDepth, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))));
-		Assert.AreEqual(100f - TestCuboid.HalfWidth, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f)).Flipped));
-		Assert.AreEqual(100f - TestCuboid.HalfWidth, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f)).Flipped));
-		Assert.AreEqual(100f - TestCuboid.HalfHeight, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f)).Flipped));
-		Assert.AreEqual(100f - TestCuboid.HalfHeight, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f)).Flipped));
-		Assert.AreEqual(100f - TestCuboid.HalfDepth, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f)).Flipped));
-		Assert.AreEqual(100f - TestCuboid.HalfDepth, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f)).Flipped));
+		Assert.AreEqual(100f - TestCuboid.HalfWidth, TestCuboid.DistanceFrom(new BoundedRay(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))));
+		Assert.AreEqual(100f - TestCuboid.HalfWidth, TestCuboid.DistanceFrom(new BoundedRay(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))));
+		Assert.AreEqual(100f - TestCuboid.HalfHeight, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))));
+		Assert.AreEqual(100f - TestCuboid.HalfHeight, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))));
+		Assert.AreEqual(100f - TestCuboid.HalfDepth, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))));
+		Assert.AreEqual(100f - TestCuboid.HalfDepth, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))));
+		Assert.AreEqual(100f - TestCuboid.HalfWidth, TestCuboid.DistanceFrom(new BoundedRay(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f)).Flipped));
+		Assert.AreEqual(100f - TestCuboid.HalfWidth, TestCuboid.DistanceFrom(new BoundedRay(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f)).Flipped));
+		Assert.AreEqual(100f - TestCuboid.HalfHeight, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f)).Flipped));
+		Assert.AreEqual(100f - TestCuboid.HalfHeight, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f)).Flipped));
+		Assert.AreEqual(100f - TestCuboid.HalfDepth, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f)).Flipped));
+		Assert.AreEqual(100f - TestCuboid.HalfDepth, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f)).Flipped));
 
-		Assert.AreEqual(10f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(13.6f, 0f, 0f), Direction.Up * 1000f)), TestTolerance);
-		Assert.AreEqual(10f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 16.8f, 0f), Direction.Forward * 1000f)), TestTolerance);
-		Assert.AreEqual(10f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 10.7f), Direction.Left * 1000f)), TestTolerance);
-		Assert.AreEqual(10f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(-13.6f, 0f, 0f), Direction.Down * 1000f)), TestTolerance);
-		Assert.AreEqual(10f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -16.8f, 0f), Direction.Backward * 1000f)), TestTolerance);
-		Assert.AreEqual(10f, TestCuboid.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -10.7f), Direction.Right * 1000f)), TestTolerance);
+		Assert.AreEqual(10f, TestCuboid.DistanceFrom(new BoundedRay(new Location(13.6f, 0f, 0f), Direction.Up * 1000f)), TestTolerance);
+		Assert.AreEqual(10f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 16.8f, 0f), Direction.Forward * 1000f)), TestTolerance);
+		Assert.AreEqual(10f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 0f, 10.7f), Direction.Left * 1000f)), TestTolerance);
+		Assert.AreEqual(10f, TestCuboid.DistanceFrom(new BoundedRay(new Location(-13.6f, 0f, 0f), Direction.Down * 1000f)), TestTolerance);
+		Assert.AreEqual(10f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, -16.8f, 0f), Direction.Backward * 1000f)), TestTolerance);
+		Assert.AreEqual(10f, TestCuboid.DistanceFrom(new BoundedRay(new Location(0f, 0f, -10.7f), Direction.Right * 1000f)), TestTolerance);
 
 
 
@@ -1312,53 +1312,53 @@ class CuboidDescriptorTest {
 		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new Ray(new Location(0f, 0f, -10.7f), Direction.Right)), TestTolerance);
 
 		// BoundedRay Squared
-		Assert.AreEqual(64.0638f * 64.0638f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(51.2652f * 51.2652f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f) * 1000f)), TestTolerance);
-		Assert.AreEqual(152.5229f * 152.5229f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f) * 1000f)), TestTolerance);
-		Assert.AreEqual(153.3801f * 153.3801f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(64.0638f * 64.0638f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(51.2652f * 51.2652f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(152.5229f * 152.5229f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(153.3801f * 153.3801f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f) * 1000f)), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f).Flipped), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped), TestTolerance);
 
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f)).Flipped));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f)).Flipped));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f)).Flipped));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f)).Flipped));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f)).Flipped));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f)).Flipped));
 
-		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(13.6f, 0f, 0f), Direction.Up * 1000f)), TestTolerance);
-		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 16.8f, 0f), Direction.Forward * 1000f)), TestTolerance);
-		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 10.7f), Direction.Left * 1000f)), TestTolerance);
-		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-13.6f, 0f, 0f), Direction.Down * 1000f)), TestTolerance);
-		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -16.8f, 0f), Direction.Backward * 1000f)), TestTolerance);
-		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -10.7f), Direction.Right * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(13.6f, 0f, 0f), Direction.Up * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 16.8f, 0f), Direction.Forward * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 10.7f), Direction.Left * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(-13.6f, 0f, 0f), Direction.Down * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, -16.8f, 0f), Direction.Backward * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.DistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, -10.7f), Direction.Right * 1000f)), TestTolerance);
 	}
 
 	[Test]
@@ -1412,43 +1412,43 @@ class CuboidDescriptorTest {
 		Assert.AreEqual(TestCuboid.HalfDepth, TestCuboid.SurfacePointClosestTo(new Ray(new Location(0f, 0f, 100f), new Direction(0f, 0f, 1f))).Z, TestTolerance);
 
 		// BoundedRay
-		AssertToleranceEquals((3.6f, -6.8f, 0f), TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f) * 1000f)), TestTolerance);
-		AssertToleranceEquals((0f, 6.8f, -0.7f), TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f) * 1000f)), TestTolerance);
-		AssertToleranceEquals((-3.6f, 0f, 0.7f), TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f) * 1000f)), TestTolerance);
-		AssertToleranceEquals((-3.6f, 0f, 0.7f), TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((3.6f, -6.8f, 0f), TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((0f, 6.8f, -0.7f), TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((-3.6f, 0f, 0.7f), TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((-3.6f, 0f, 0.7f), TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f) * 1000f)), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).Y);
-		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)).Z);
-		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).X);
-		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)).Z);
-		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).X);
-		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)).Y);
-		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.X), MathF.Abs(TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X), TestTolerance);
-		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Y), MathF.Abs(TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y), TestTolerance);
-		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Z), MathF.Abs(TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).Y);
+		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)).Z);
+		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).X);
+		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)).Z);
+		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).X);
+		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)).Y);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.X), MathF.Abs(TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Y), MathF.Abs(TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Z), MathF.Abs(TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z), TestTolerance);
 
-		AssertToleranceEquals((0.7f, 0.7f, 0.7f), TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 1000f)), TestTolerance);
-		AssertToleranceEquals((-0.7f, -0.7f, -0.7f), TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 1000f)), TestTolerance);
-		AssertToleranceEquals((0.7f, 0.7f, 0.7f), TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 1000f).Flipped), TestTolerance);
-		AssertToleranceEquals((-0.7f, -0.7f, -0.7f), TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 1000f).Flipped), TestTolerance);
+		AssertToleranceEquals((0.7f, 0.7f, 0.7f), TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((-0.7f, -0.7f, -0.7f), TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((0.7f, 0.7f, 0.7f), TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 1000f).Flipped), TestTolerance);
+		AssertToleranceEquals((-0.7f, -0.7f, -0.7f), TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 1000f).Flipped), TestTolerance);
 
-		AssertToleranceEquals((0.2887f, 0.2887f, 0.7f), TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)), TestTolerance);
-		AssertToleranceEquals((-0.2887f, -0.2887f, -0.7f), TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)), TestTolerance);
-		AssertToleranceEquals((0.2887f, 0.2887f, 0.7f), TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped), TestTolerance);
-		AssertToleranceEquals((-0.2887f, -0.2887f, -0.7f), TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped), TestTolerance);
+		AssertToleranceEquals((0.2887f, 0.2887f, 0.7f), TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)), TestTolerance);
+		AssertToleranceEquals((-0.2887f, -0.2887f, -0.7f), TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)), TestTolerance);
+		AssertToleranceEquals((0.2887f, 0.2887f, 0.7f), TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped), TestTolerance);
+		AssertToleranceEquals((-0.2887f, -0.2887f, -0.7f), TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))).Y);
-		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))).Z);
-		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))).X);
-		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))).Z);
-		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))).X);
-		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))).Y);
-		Assert.AreEqual(-TestCuboid.HalfWidth, TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))).X, TestTolerance);
-		Assert.AreEqual(TestCuboid.HalfWidth, TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))).X, TestTolerance);
-		Assert.AreEqual(-TestCuboid.HalfHeight, TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))).Y, TestTolerance);
-		Assert.AreEqual(TestCuboid.HalfHeight, TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))).Y, TestTolerance);
-		Assert.AreEqual(-TestCuboid.HalfDepth, TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))).Z, TestTolerance);
-		Assert.AreEqual(TestCuboid.HalfDepth, TestCuboid.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))).Z, TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))).Y);
+		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))).Z);
+		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))).X);
+		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))).Z);
+		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))).X);
+		Assert.AreEqual(0f, TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))).Y);
+		Assert.AreEqual(-TestCuboid.HalfWidth, TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))).X, TestTolerance);
+		Assert.AreEqual(TestCuboid.HalfWidth, TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))).X, TestTolerance);
+		Assert.AreEqual(-TestCuboid.HalfHeight, TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))).Y, TestTolerance);
+		Assert.AreEqual(TestCuboid.HalfHeight, TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))).Y, TestTolerance);
+		Assert.AreEqual(-TestCuboid.HalfDepth, TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))).Z, TestTolerance);
+		Assert.AreEqual(TestCuboid.HalfDepth, TestCuboid.SurfacePointClosestTo(new BoundedRay(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))).Z, TestTolerance);
 	}
 
 	[Test]
@@ -1502,49 +1502,49 @@ class CuboidDescriptorTest {
 		Assert.AreEqual(100f, TestCuboid.ClosestPointToSurfaceOn(new Ray(new Location(0f, 0f, 100f), new Direction(0f, 0f, 1f))).Z, TestTolerance);
 
 		// BoundedRay
-		AssertToleranceEquals((48.9f, -52.1f, 0f), TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f) * 1000f)), TestTolerance);
-		AssertToleranceEquals((0f, 43.05f, -36.95f), TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f) * 1000f)), TestTolerance);
-		AssertToleranceEquals((-111.45f, 0, 108.55f), TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f) * 1000f)), TestTolerance);
-		AssertToleranceEquals((-100f, 0f, 120f), TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((48.9f, -52.1f, 0f), TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((0f, 43.05f, -36.95f), TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((-111.45f, 0, 108.55f), TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((-100f, 0f, 120f), TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f) * 1000f)), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).Y);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)).Z);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).X);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)).Z);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).X);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)).Y);
-		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.X), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X), TestTolerance);
-		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Y), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y), TestTolerance);
-		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Z), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).Y);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)).Z);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).X);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)).Z);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).X);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)).Y);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.X), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)).X), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Y), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)).Y), TestTolerance);
+		Assert.AreEqual(TestCuboid.GetHalfExtent(Axis.Z), MathF.Abs(TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)).Z), TestTolerance);
 
-		AssertToleranceEquals((0.7f, 0.7f, 0.7f), TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 1000f)), TestTolerance);
-		AssertToleranceEquals((-0.7f, -0.7f, -0.7f), TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 1000f)), TestTolerance);
-		AssertToleranceEquals((0.7f, 0.7f, 0.7f), TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 1000f).Flipped), TestTolerance);
-		AssertToleranceEquals((-0.7f, -0.7f, -0.7f), TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 1000f).Flipped), TestTolerance);
+		AssertToleranceEquals((0.7f, 0.7f, 0.7f), TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((-0.7f, -0.7f, -0.7f), TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 1000f)), TestTolerance);
+		AssertToleranceEquals((0.7f, 0.7f, 0.7f), TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 1000f).Flipped), TestTolerance);
+		AssertToleranceEquals((-0.7f, -0.7f, -0.7f), TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 1000f).Flipped), TestTolerance);
 
-		AssertToleranceEquals(Location.Origin + new Direction(1f, 1f, 1f) * 0.5f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)), TestTolerance);
-		AssertToleranceEquals(Location.Origin + new Direction(1f, 1f, 1f) * -0.5f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)), TestTolerance);
-		AssertToleranceEquals(Location.Origin + new Direction(1f, 1f, 1f) * 0.5f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped), TestTolerance);
-		AssertToleranceEquals(Location.Origin + new Direction(1f, 1f, 1f) * -0.5f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped), TestTolerance);
+		AssertToleranceEquals(Location.Origin + new Direction(1f, 1f, 1f) * 0.5f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)), TestTolerance);
+		AssertToleranceEquals(Location.Origin + new Direction(1f, 1f, 1f) * -0.5f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)), TestTolerance);
+		AssertToleranceEquals(Location.Origin + new Direction(1f, 1f, 1f) * 0.5f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped), TestTolerance);
+		AssertToleranceEquals(Location.Origin + new Direction(1f, 1f, 1f) * -0.5f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))).Y);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))).Z);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))).X);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))).Z);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))).X);
-		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))).Y);
-		Assert.AreEqual(-100f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))).X, TestTolerance);
-		Assert.AreEqual(100f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))).X, TestTolerance);
-		Assert.AreEqual(-100f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))).Y, TestTolerance);
-		Assert.AreEqual(100f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))).Y, TestTolerance);
-		Assert.AreEqual(-100f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))).Z, TestTolerance);
-		Assert.AreEqual(100f, TestCuboid.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))).Z, TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))).Y);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))).Z);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))).X);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))).Z);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))).X);
+		Assert.AreEqual(0f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))).Y);
+		Assert.AreEqual(-100f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))).X, TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))).X, TestTolerance);
+		Assert.AreEqual(-100f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))).Y, TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))).Y, TestTolerance);
+		Assert.AreEqual(-100f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))).Z, TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.ClosestPointToSurfaceOn(new BoundedRay(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))).Z, TestTolerance);
 
 		var longCuboid = new CuboidDescriptor(1000f, 10f, 1f);
-		var line = BoundedRay.FromStartPointAndVect(new Location(-485f, -4f, 0f), new Vect(980f, -0.9f, 0f));
+		var line = new BoundedRay(new Location(-485f, -4f, 0f), new Vect(980f, -0.9f, 0f));
 		AssertToleranceEquals(line.EndPoint, longCuboid.ClosestPointToSurfaceOn(line), TestTolerance);
 		AssertToleranceEquals(line.EndPoint, longCuboid.ClosestPointToSurfaceOn(line.Flipped), TestTolerance);
-		line = BoundedRay.FromStartPointAndVect(new Location(-495f, -4f, 0f), new Vect(980f, -0.9f, 0f));
+		line = new BoundedRay(new Location(-495f, -4f, 0f), new Vect(980f, -0.9f, 0f));
 		AssertToleranceEquals(line.EndPoint, longCuboid.ClosestPointToSurfaceOn(line), TestTolerance);
 		AssertToleranceEquals(line.EndPoint, longCuboid.ClosestPointToSurfaceOn(line.Flipped), TestTolerance);
 	}
@@ -1602,53 +1602,53 @@ class CuboidDescriptorTest {
 		Assert.AreEqual(10f, TestCuboid.SurfaceDistanceFrom(new Ray(new Location(0f, 0f, -10.7f), Direction.Right)), TestTolerance);
 
 		// BoundedRay
-		Assert.AreEqual(64.0638f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(51.2652f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f) * 1000f)), TestTolerance);
-		Assert.AreEqual(152.5229f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f) * 1000f)), TestTolerance);
-		Assert.AreEqual(153.3801f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(64.0638f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(51.2652f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(152.5229f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(153.3801f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f) * 1000f)), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f).Flipped), TestTolerance);
 
-		Assert.AreEqual(0.7f - 0.2887f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)), TestTolerance);
-		Assert.AreEqual(0.7f - 0.2887f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)), TestTolerance);
+		Assert.AreEqual(0.7f - 0.2887f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)), TestTolerance);
+		Assert.AreEqual(0.7f - 0.2887f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)), TestTolerance);
 
-		Assert.AreEqual(0.7f - 0.2887f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped), TestTolerance);
-		Assert.AreEqual(0.7f - 0.2887f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped), TestTolerance);
+		Assert.AreEqual(0.7f - 0.2887f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped), TestTolerance);
+		Assert.AreEqual(0.7f - 0.2887f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped), TestTolerance);
 
-		Assert.AreEqual(100f - TestCuboid.HalfWidth, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))));
-		Assert.AreEqual(100f - TestCuboid.HalfWidth, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))));
-		Assert.AreEqual(100f - TestCuboid.HalfHeight, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))));
-		Assert.AreEqual(100f - TestCuboid.HalfHeight, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))));
-		Assert.AreEqual(100f - TestCuboid.HalfDepth, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))));
-		Assert.AreEqual(100f - TestCuboid.HalfDepth, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))));
-		Assert.AreEqual(100f - TestCuboid.HalfWidth, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f)).Flipped));
-		Assert.AreEqual(100f - TestCuboid.HalfWidth, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f)).Flipped));
-		Assert.AreEqual(100f - TestCuboid.HalfHeight, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f)).Flipped));
-		Assert.AreEqual(100f - TestCuboid.HalfHeight, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f)).Flipped));
-		Assert.AreEqual(100f - TestCuboid.HalfDepth, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f)).Flipped));
-		Assert.AreEqual(100f - TestCuboid.HalfDepth, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f)).Flipped));
+		Assert.AreEqual(100f - TestCuboid.HalfWidth, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))));
+		Assert.AreEqual(100f - TestCuboid.HalfWidth, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))));
+		Assert.AreEqual(100f - TestCuboid.HalfHeight, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))));
+		Assert.AreEqual(100f - TestCuboid.HalfHeight, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))));
+		Assert.AreEqual(100f - TestCuboid.HalfDepth, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))));
+		Assert.AreEqual(100f - TestCuboid.HalfDepth, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))));
+		Assert.AreEqual(100f - TestCuboid.HalfWidth, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f)).Flipped));
+		Assert.AreEqual(100f - TestCuboid.HalfWidth, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f)).Flipped));
+		Assert.AreEqual(100f - TestCuboid.HalfHeight, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f)).Flipped));
+		Assert.AreEqual(100f - TestCuboid.HalfHeight, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f)).Flipped));
+		Assert.AreEqual(100f - TestCuboid.HalfDepth, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f)).Flipped));
+		Assert.AreEqual(100f - TestCuboid.HalfDepth, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f)).Flipped));
 
-		Assert.AreEqual(10f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(13.6f, 0f, 0f), Direction.Up * 1000f)), TestTolerance);
-		Assert.AreEqual(10f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 16.8f, 0f), Direction.Forward * 1000f)), TestTolerance);
-		Assert.AreEqual(10f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 10.7f), Direction.Left * 1000f)), TestTolerance);
-		Assert.AreEqual(10f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(-13.6f, 0f, 0f), Direction.Down * 1000f)), TestTolerance);
-		Assert.AreEqual(10f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -16.8f, 0f), Direction.Backward * 1000f)), TestTolerance);
-		Assert.AreEqual(10f, TestCuboid.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -10.7f), Direction.Right * 1000f)), TestTolerance);
+		Assert.AreEqual(10f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(13.6f, 0f, 0f), Direction.Up * 1000f)), TestTolerance);
+		Assert.AreEqual(10f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 16.8f, 0f), Direction.Forward * 1000f)), TestTolerance);
+		Assert.AreEqual(10f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 0f, 10.7f), Direction.Left * 1000f)), TestTolerance);
+		Assert.AreEqual(10f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(-13.6f, 0f, 0f), Direction.Down * 1000f)), TestTolerance);
+		Assert.AreEqual(10f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, -16.8f, 0f), Direction.Backward * 1000f)), TestTolerance);
+		Assert.AreEqual(10f, TestCuboid.SurfaceDistanceFrom(new BoundedRay(new Location(0f, 0f, -10.7f), Direction.Right * 1000f)), TestTolerance);
 
 
 		// Line Squared
@@ -1702,61 +1702,61 @@ class CuboidDescriptorTest {
 		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new Ray(new Location(0f, 0f, -10.7f), Direction.Right)), TestTolerance);
 
 		// BoundedRay Squared
-		Assert.AreEqual(64.0638f * 64.0638f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(51.2652f * 51.2652f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f) * 1000f)), TestTolerance);
-		Assert.AreEqual(152.5229f * 152.5229f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f) * 1000f)), TestTolerance);
-		Assert.AreEqual(153.3801f * 153.3801f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(64.0638f * 64.0638f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(1f, -100f, 0f), new Direction(1f, 1f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(51.2652f * 51.2652f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 100f, 20f), new Direction(0f, -1f, -1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(152.5229f * 152.5229f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, -1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(153.3801f * 153.3801f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(-100f, 0f, 120f), new Direction(-1f, 0f, 1f) * 1000f)), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f)), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 100f)), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 100f)), TestTolerance);
 
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f).Flipped), TestTolerance);
-		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(100f, 0f, 0f), new Direction(-1f, 0f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 100f, 0f), new Direction(0f, -1f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, -100f, 0f), new Direction(0f, 1f, 0f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, -100f), new Direction(0f, 0f, 1f) * 1000f).Flipped), TestTolerance);
+		Assert.AreEqual(0f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 100f), new Direction(0f, 0f, -1f) * 1000f).Flipped), TestTolerance);
 
-		Assert.AreEqual(MathF.Pow(0.7f - 0.2887f, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)), TestTolerance);
-		Assert.AreEqual(MathF.Pow(0.7f - 0.2887f, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)), TestTolerance);
+		Assert.AreEqual(MathF.Pow(0.7f - 0.2887f, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f)), TestTolerance);
+		Assert.AreEqual(MathF.Pow(0.7f - 0.2887f, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f)), TestTolerance);
 
-		Assert.AreEqual(MathF.Pow(0.7f - 0.2887f, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped), TestTolerance);
-		Assert.AreEqual(MathF.Pow(0.7f - 0.2887f, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped), TestTolerance);
+		Assert.AreEqual(MathF.Pow(0.7f - 0.2887f, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(1f, 1f, 1f) * 0.5f).Flipped), TestTolerance);
+		Assert.AreEqual(MathF.Pow(0.7f - 0.2887f, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 0f), new Direction(-1f, -1f, -1f) * 0.5f).Flipped), TestTolerance);
 
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f)).Flipped));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f)).Flipped));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f)).Flipped));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f)).Flipped));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f)).Flipped));
-		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f))));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(-100f, 0f, 0f), new Vect(-1f, 0f, 0f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfWidth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(100f, 0f, 0f), new Vect(1f, 0f, 0f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 100f, 0f), new Vect(0f, 1f, 0f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfHeight, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, -100f, 0f), new Vect(0f, -1f, 0f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, -100f), new Vect(0f, 0f, -1f)).Flipped));
+		Assert.AreEqual(MathF.Pow(100f - TestCuboid.HalfDepth, 2f), TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 100f), new Vect(0f, 0f, 1f)).Flipped));
 
-		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(13.6f, 0f, 0f), Direction.Up * 1000f)), TestTolerance);
-		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 16.8f, 0f), Direction.Forward * 1000f)), TestTolerance);
-		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, 10.7f), Direction.Left * 1000f)), TestTolerance);
-		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(-13.6f, 0f, 0f), Direction.Down * 1000f)), TestTolerance);
-		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, -16.8f, 0f), Direction.Backward * 1000f)), TestTolerance);
-		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(0f, 0f, -10.7f), Direction.Right * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(13.6f, 0f, 0f), Direction.Up * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 16.8f, 0f), Direction.Forward * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, 10.7f), Direction.Left * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(-13.6f, 0f, 0f), Direction.Down * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, -16.8f, 0f), Direction.Backward * 1000f)), TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.SurfaceDistanceSquaredFrom(new BoundedRay(new Location(0f, 0f, -10.7f), Direction.Right * 1000f)), TestTolerance);
 
 		var longCuboid = new CuboidDescriptor(1000f, 10f, 1f);
-		var line = BoundedRay.FromStartPointAndVect(new Location(-485f, -4f, 0f), new Vect(980f, -0.9f, 0f));
+		var line = new BoundedRay(new Location(-485f, -4f, 0f), new Vect(980f, -0.9f, 0f));
 		Assert.AreEqual(0.1f, longCuboid.SurfaceDistanceFrom(line), TestTolerance);
 		Assert.AreEqual(0.1f, longCuboid.SurfaceDistanceFrom(line.Flipped), TestTolerance);
 		Assert.AreEqual(0.01f, longCuboid.SurfaceDistanceSquaredFrom(line), TestTolerance);
 		Assert.AreEqual(0.01f, longCuboid.SurfaceDistanceSquaredFrom(line.Flipped), TestTolerance);
-		line = BoundedRay.FromStartPointAndVect(new Location(-495f, -4f, 0f), new Vect(980f, -0.9f, 0f));
+		line = new BoundedRay(new Location(-495f, -4f, 0f), new Vect(980f, -0.9f, 0f));
 		Assert.AreEqual(0.1f, longCuboid.SurfaceDistanceFrom(line), TestTolerance);
 		Assert.AreEqual(0.1f, longCuboid.SurfaceDistanceFrom(line.Flipped), TestTolerance);
 		Assert.AreEqual(0.01f, longCuboid.SurfaceDistanceSquaredFrom(line), TestTolerance);
@@ -2024,7 +2024,7 @@ class CuboidDescriptorTest {
 	[Test]
 	public void ShouldCorrectlyDetermineIncidentAngleWithLines() {
 		void AssertAngle(Angle? expectation, Ray ray) {
-			var boundedRay = BoundedRay.FromStartPointAndVect(ray.StartPoint, ray.Direction * (ray.StartPoint.DistanceFromOrigin() * 2f));
+			var boundedRay = new BoundedRay(ray.StartPoint, ray.Direction * (ray.StartPoint.DistanceFromOrigin() * 2f));
 
 			AssertToleranceEquals(expectation, TestCuboid.IncidentAngleWith(ray), TestTolerance);
 			AssertToleranceEquals(expectation, TestCuboid.IncidentAngleWith(boundedRay), TestTolerance);
@@ -2068,31 +2068,31 @@ class CuboidDescriptorTest {
 		AssertToleranceEquals(Angle.Zero, TestCuboid.FastIncidentAngleWith(new Ray((0f, 0f, 0f), (0f, 0f, 1f))), TestTolerance);
 		AssertToleranceEquals(Angle.Zero, TestCuboid.FastIncidentAngleWith(new Ray((0f, 0f, 0f), (0f, 0f, -1f))), TestTolerance);
 
-		Assert.IsNull(TestCuboid.IncidentAngleWith(new BoundedRay((-TestCuboid.HalfWidth + TestTolerance, 0f, 0f), (TestCuboid.HalfWidth - TestTolerance, 0f, 0f))));
-		Assert.IsNull(TestCuboid.IncidentAngleWith(new BoundedRay((0f, -TestCuboid.HalfHeight + TestTolerance, 0f), (0f, TestCuboid.HalfHeight - TestTolerance, 0f))));
-		Assert.IsNull(TestCuboid.IncidentAngleWith(new BoundedRay((0f, 0f, -TestCuboid.HalfDepth + TestTolerance), (0f, 0f, TestCuboid.HalfDepth - TestTolerance))));
-		Assert.IsNull(TestCuboid.IncidentAngleWith(new BoundedRay((-TestCuboid.HalfWidth + TestTolerance, 0f, 0f), (TestCuboid.HalfWidth - TestTolerance, 0f, 0f)).Flipped));
-		Assert.IsNull(TestCuboid.IncidentAngleWith(new BoundedRay((0f, -TestCuboid.HalfHeight + TestTolerance, 0f), (0f, TestCuboid.HalfHeight - TestTolerance, 0f)).Flipped));
-		Assert.IsNull(TestCuboid.IncidentAngleWith(new BoundedRay((0f, 0f, -TestCuboid.HalfDepth + TestTolerance), (0f, 0f, TestCuboid.HalfDepth - TestTolerance)).Flipped));
+		Assert.IsNull(TestCuboid.IncidentAngleWith(new BoundedRay(new Location(-TestCuboid.HalfWidth + TestTolerance, 0f, 0f), new Location(TestCuboid.HalfWidth - TestTolerance, 0f, 0f))));
+		Assert.IsNull(TestCuboid.IncidentAngleWith(new BoundedRay(new Location(0f, -TestCuboid.HalfHeight + TestTolerance, 0f), new Location(0f, TestCuboid.HalfHeight - TestTolerance, 0f))));
+		Assert.IsNull(TestCuboid.IncidentAngleWith(new BoundedRay(new Location(0f, 0f, -TestCuboid.HalfDepth + TestTolerance), new Location(0f, 0f, TestCuboid.HalfDepth - TestTolerance))));
+		Assert.IsNull(TestCuboid.IncidentAngleWith(new BoundedRay(new Location(-TestCuboid.HalfWidth + TestTolerance, 0f, 0f), new Location(TestCuboid.HalfWidth - TestTolerance, 0f, 0f)).Flipped));
+		Assert.IsNull(TestCuboid.IncidentAngleWith(new BoundedRay(new Location(0f, -TestCuboid.HalfHeight + TestTolerance, 0f), new Location(0f, TestCuboid.HalfHeight - TestTolerance, 0f)).Flipped));
+		Assert.IsNull(TestCuboid.IncidentAngleWith(new BoundedRay(new Location(0f, 0f, -TestCuboid.HalfDepth + TestTolerance), new Location(0f, 0f, TestCuboid.HalfDepth - TestTolerance)).Flipped));
 
-		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.IncidentAngleWith(new BoundedRay((TestCuboid.HalfWidth - 1f, 1f, 0f), (TestCuboid.HalfWidth + 1f, -1f, 0f))), TestTolerance);
-		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.FastIncidentAngleWith(new BoundedRay((TestCuboid.HalfWidth - 1f, 1f, 0f), (TestCuboid.HalfWidth + 1f, -1f, 0f))), TestTolerance);
-		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.IncidentAngleWith(new BoundedRay((TestCuboid.HalfWidth - 1f, 1f, 0f), (TestCuboid.HalfWidth + 1f, -1f, 0f)).Flipped), TestTolerance);
-		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.FastIncidentAngleWith(new BoundedRay((TestCuboid.HalfWidth - 1f, 1f, 0f), (TestCuboid.HalfWidth + 1f, -1f, 0f)).Flipped), TestTolerance);
-		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.IncidentAngleWith(new BoundedRay((0f, TestCuboid.HalfHeight - 1f, 1f), (0f, TestCuboid.HalfHeight + 1f, -1f))), TestTolerance);
-		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.FastIncidentAngleWith(new BoundedRay((0f, TestCuboid.HalfHeight - 1f, 1f), (0f, TestCuboid.HalfHeight + 1f, -1f))), TestTolerance);
-		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.IncidentAngleWith(new BoundedRay((0f, TestCuboid.HalfHeight - 1f, 1f), (0f, TestCuboid.HalfHeight + 1f, -1f)).Flipped), TestTolerance);
-		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.FastIncidentAngleWith(new BoundedRay((0f, TestCuboid.HalfHeight - 1f, 1f), (0f, TestCuboid.HalfHeight + 1f, -1f)).Flipped), TestTolerance);
-		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.IncidentAngleWith(new BoundedRay((1f, 0f, TestCuboid.HalfDepth - 1f), (-1f, 0f, TestCuboid.HalfDepth + 1f))), TestTolerance);
-		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.FastIncidentAngleWith(new BoundedRay((1f, 0f, TestCuboid.HalfDepth - 1f), (-1f, 0f, TestCuboid.HalfDepth + 1f))), TestTolerance);
-		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.IncidentAngleWith(new BoundedRay((1f, 0f, TestCuboid.HalfDepth - 1f), (-1f, 0f, TestCuboid.HalfDepth + 1f)).Flipped), TestTolerance);
-		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.FastIncidentAngleWith(new BoundedRay((1f, 0f, TestCuboid.HalfDepth - 1f), (-1f, 0f, TestCuboid.HalfDepth + 1f)).Flipped), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.IncidentAngleWith(new BoundedRay(new Location(TestCuboid.HalfWidth - 1f, 1f, 0f), new Location(TestCuboid.HalfWidth + 1f, -1f, 0f))), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.FastIncidentAngleWith(new BoundedRay(new Location(TestCuboid.HalfWidth - 1f, 1f, 0f), new Location(TestCuboid.HalfWidth + 1f, -1f, 0f))), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.IncidentAngleWith(new BoundedRay(new Location(TestCuboid.HalfWidth - 1f, 1f, 0f), new Location(TestCuboid.HalfWidth + 1f, -1f, 0f)).Flipped), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.FastIncidentAngleWith(new BoundedRay(new Location(TestCuboid.HalfWidth - 1f, 1f, 0f), new Location(TestCuboid.HalfWidth + 1f, -1f, 0f)).Flipped), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.IncidentAngleWith(new BoundedRay(new Location(0f, TestCuboid.HalfHeight - 1f, 1f), new Location(0f, TestCuboid.HalfHeight + 1f, -1f))), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.FastIncidentAngleWith(new BoundedRay(new Location(0f, TestCuboid.HalfHeight - 1f, 1f), new Location(0f, TestCuboid.HalfHeight + 1f, -1f))), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.IncidentAngleWith(new BoundedRay(new Location(0f, TestCuboid.HalfHeight - 1f, 1f), new Location(0f, TestCuboid.HalfHeight + 1f, -1f)).Flipped), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.FastIncidentAngleWith(new BoundedRay(new Location(0f, TestCuboid.HalfHeight - 1f, 1f), new Location(0f, TestCuboid.HalfHeight + 1f, -1f)).Flipped), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.IncidentAngleWith(new BoundedRay(new Location(1f, 0f, TestCuboid.HalfDepth - 1f), new Location(-1f, 0f, TestCuboid.HalfDepth + 1f))), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.FastIncidentAngleWith(new BoundedRay(new Location(1f, 0f, TestCuboid.HalfDepth - 1f), new Location(-1f, 0f, TestCuboid.HalfDepth + 1f))), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.IncidentAngleWith(new BoundedRay(new Location(1f, 0f, TestCuboid.HalfDepth - 1f), new Location(-1f, 0f, TestCuboid.HalfDepth + 1f)).Flipped), TestTolerance);
+		AssertToleranceEquals(Angle.EighthCircle, TestCuboid.FastIncidentAngleWith(new BoundedRay(new Location(1f, 0f, TestCuboid.HalfDepth - 1f), new Location(-1f, 0f, TestCuboid.HalfDepth + 1f)).Flipped), TestTolerance);
 	}
 
 	[Test]
 	public void ShouldCorrectlyReflectLines() {
 		void AssertReflection(Ray? expectation, Ray ray) {
-			var boundedRay = BoundedRay.FromStartPointAndVect(ray.StartPoint, ray.Direction * 1000f);
+			var boundedRay = new BoundedRay(ray.StartPoint, ray.Direction * 1000f);
 
 			AssertToleranceEquals(expectation, TestCuboid.ReflectionOf(ray), TestTolerance);
 			AssertToleranceEquals(expectation?.ToBoundedRay(1000f - ray.StartPoint.DistanceFrom(expectation!.Value.StartPoint)), TestCuboid.ReflectionOf(boundedRay), TestTolerance);
@@ -2136,24 +2136,24 @@ class CuboidDescriptorTest {
 		AssertToleranceEquals(new Ray((0f, 0f, TestCuboid.HalfDepth), (0f, 0f, -1f)), TestCuboid.FastReflectionOf(new Ray((0f, 0f, 0f), (0f, 0f, 1f))), TestTolerance);
 		AssertToleranceEquals(new Ray((0f, 0f, -TestCuboid.HalfDepth), (0f, 0f, 1f)), TestCuboid.FastReflectionOf(new Ray((0f, 0f, 0f), (0f, 0f, -1f))), TestTolerance);
 
-		Assert.IsNull(TestCuboid.ReflectionOf(new BoundedRay((-TestCuboid.HalfWidth + TestTolerance, 0f, 0f), (TestCuboid.HalfWidth - TestTolerance, 0f, 0f))));
-		Assert.IsNull(TestCuboid.ReflectionOf(new BoundedRay((0f, -TestCuboid.HalfHeight + TestTolerance, 0f), (0f, TestCuboid.HalfHeight - TestTolerance, 0f))));
-		Assert.IsNull(TestCuboid.ReflectionOf(new BoundedRay((0f, 0f, -TestCuboid.HalfDepth + TestTolerance), (0f, 0f, TestCuboid.HalfDepth - TestTolerance))));
-		Assert.IsNull(TestCuboid.ReflectionOf(new BoundedRay((-TestCuboid.HalfWidth + TestTolerance, 0f, 0f), (TestCuboid.HalfWidth - TestTolerance, 0f, 0f)).Flipped));
-		Assert.IsNull(TestCuboid.ReflectionOf(new BoundedRay((0f, -TestCuboid.HalfHeight + TestTolerance, 0f), (0f, TestCuboid.HalfHeight - TestTolerance, 0f)).Flipped));
-		Assert.IsNull(TestCuboid.ReflectionOf(new BoundedRay((0f, 0f, -TestCuboid.HalfDepth + TestTolerance), (0f, 0f, TestCuboid.HalfDepth - TestTolerance)).Flipped));
+		Assert.IsNull(TestCuboid.ReflectionOf(new BoundedRay(new Location(-TestCuboid.HalfWidth + TestTolerance, 0f, 0f), new Location(TestCuboid.HalfWidth - TestTolerance, 0f, 0f))));
+		Assert.IsNull(TestCuboid.ReflectionOf(new BoundedRay(new Location(0f, -TestCuboid.HalfHeight + TestTolerance, 0f), new Location(0f, TestCuboid.HalfHeight - TestTolerance, 0f))));
+		Assert.IsNull(TestCuboid.ReflectionOf(new BoundedRay(new Location(0f, 0f, -TestCuboid.HalfDepth + TestTolerance), new Location(0f, 0f, TestCuboid.HalfDepth - TestTolerance))));
+		Assert.IsNull(TestCuboid.ReflectionOf(new BoundedRay(new Location(-TestCuboid.HalfWidth + TestTolerance, 0f, 0f), new Location(TestCuboid.HalfWidth - TestTolerance, 0f, 0f)).Flipped));
+		Assert.IsNull(TestCuboid.ReflectionOf(new BoundedRay(new Location(0f, -TestCuboid.HalfHeight + TestTolerance, 0f), new Location(0f, TestCuboid.HalfHeight - TestTolerance, 0f)).Flipped));
+		Assert.IsNull(TestCuboid.ReflectionOf(new BoundedRay(new Location(0f, 0f, -TestCuboid.HalfDepth + TestTolerance), new Location(0f, 0f, TestCuboid.HalfDepth - TestTolerance)).Flipped));
 
-		AssertToleranceEquals(new BoundedRay((TestCuboid.HalfWidth, 0f, 0f), (TestCuboid.HalfWidth - 1f, -1f, 0f)), TestCuboid.ReflectionOf(new BoundedRay((TestCuboid.HalfWidth - 1f, 1f, 0f), (TestCuboid.HalfWidth + 1f, -1f, 0f))), TestTolerance);
-		AssertToleranceEquals(new BoundedRay((TestCuboid.HalfWidth, 0f, 0f), (TestCuboid.HalfWidth - 1f, -1f, 0f)), TestCuboid.FastReflectionOf(new BoundedRay((TestCuboid.HalfWidth - 1f, 1f, 0f), (TestCuboid.HalfWidth + 1f, -1f, 0f))), TestTolerance);
-		AssertToleranceEquals(new BoundedRay((TestCuboid.HalfWidth, 0f, 0f), (TestCuboid.HalfWidth + 1f, 1f, 0f)), TestCuboid.ReflectionOf(new BoundedRay((TestCuboid.HalfWidth - 1f, 1f, 0f), (TestCuboid.HalfWidth + 1f, -1f, 0f)).Flipped), TestTolerance);
-		AssertToleranceEquals(new BoundedRay((TestCuboid.HalfWidth, 0f, 0f), (TestCuboid.HalfWidth + 1f, 1f, 0f)), TestCuboid.FastReflectionOf(new BoundedRay((TestCuboid.HalfWidth - 1f, 1f, 0f), (TestCuboid.HalfWidth + 1f, -1f, 0f)).Flipped), TestTolerance);
-		AssertToleranceEquals(new BoundedRay((0f, TestCuboid.HalfHeight, 0f), (0f, TestCuboid.HalfHeight - 0.3f, -0.3f)), TestCuboid.ReflectionOf(new BoundedRay((0f, TestCuboid.HalfHeight - 0.3f, 0.3f), (0f, TestCuboid.HalfHeight + 0.3f, -0.3f))), TestTolerance);
-		AssertToleranceEquals(new BoundedRay((0f, TestCuboid.HalfHeight, 0f), (0f, TestCuboid.HalfHeight - 0.3f, -0.3f)), TestCuboid.FastReflectionOf(new BoundedRay((0f, TestCuboid.HalfHeight - 0.3f, 0.3f), (0f, TestCuboid.HalfHeight + 0.3f, -0.3f))), TestTolerance);
-		AssertToleranceEquals(new BoundedRay((0f, TestCuboid.HalfHeight, 0f), (0f, TestCuboid.HalfHeight + 0.3f, 0.3f)), TestCuboid.ReflectionOf(new BoundedRay((0f, TestCuboid.HalfHeight - 0.3f, 0.3f), (0f, TestCuboid.HalfHeight + 0.3f, -0.3f)).Flipped), TestTolerance);
-		AssertToleranceEquals(new BoundedRay((0f, TestCuboid.HalfHeight, 0f), (0f, TestCuboid.HalfHeight + 0.3f, 0.3f)), TestCuboid.FastReflectionOf(new BoundedRay((0f, TestCuboid.HalfHeight - 0.3f, 0.3f), (0f, TestCuboid.HalfHeight + 0.3f, -0.3f)).Flipped), TestTolerance);
-		AssertToleranceEquals(new BoundedRay((0f, 0f, TestCuboid.HalfDepth), (-0.3f, 0f, TestCuboid.HalfDepth - 0.3f)), TestCuboid.ReflectionOf(new BoundedRay((0.3f, 0f, TestCuboid.HalfDepth - 0.3f), (-0.3f, 0f, TestCuboid.HalfDepth + 0.3f))), TestTolerance);
-		AssertToleranceEquals(new BoundedRay((0f, 0f, TestCuboid.HalfDepth), (-0.3f, 0f, TestCuboid.HalfDepth - 0.3f)), TestCuboid.FastReflectionOf(new BoundedRay((0.3f, 0f, TestCuboid.HalfDepth - 0.3f), (-0.3f, 0f, TestCuboid.HalfDepth + 0.3f))), TestTolerance);
-		AssertToleranceEquals(new BoundedRay((0f, 0f, TestCuboid.HalfDepth), (0.3f, 0f, TestCuboid.HalfDepth + 0.3f)), TestCuboid.ReflectionOf(new BoundedRay((0.3f, 0f, TestCuboid.HalfDepth - 0.3f), (-0.3f, 0f, TestCuboid.HalfDepth + 0.3f)).Flipped), TestTolerance);
-		AssertToleranceEquals(new BoundedRay((0f, 0f, TestCuboid.HalfDepth), (0.3f, 0f, TestCuboid.HalfDepth + 0.3f)), TestCuboid.FastReflectionOf(new BoundedRay((0.3f, 0f, TestCuboid.HalfDepth - 0.3f), (-0.3f, 0f, TestCuboid.HalfDepth + 0.3f)).Flipped), TestTolerance);
+		AssertToleranceEquals(new BoundedRay(new Location(TestCuboid.HalfWidth, 0f, 0f), new Location(TestCuboid.HalfWidth - 1f, -1f, 0f)), TestCuboid.ReflectionOf(new BoundedRay(new Location(TestCuboid.HalfWidth - 1f, 1f, 0f), new Location(TestCuboid.HalfWidth + 1f, -1f, 0f))), TestTolerance);
+		AssertToleranceEquals(new BoundedRay(new Location(TestCuboid.HalfWidth, 0f, 0f), new Location(TestCuboid.HalfWidth - 1f, -1f, 0f)), TestCuboid.FastReflectionOf(new BoundedRay(new Location(TestCuboid.HalfWidth - 1f, 1f, 0f), new Location(TestCuboid.HalfWidth + 1f, -1f, 0f))), TestTolerance);
+		AssertToleranceEquals(new BoundedRay(new Location(TestCuboid.HalfWidth, 0f, 0f), new Location(TestCuboid.HalfWidth + 1f, 1f, 0f)), TestCuboid.ReflectionOf(new BoundedRay(new Location(TestCuboid.HalfWidth - 1f, 1f, 0f), new Location(TestCuboid.HalfWidth + 1f, -1f, 0f)).Flipped), TestTolerance);
+		AssertToleranceEquals(new BoundedRay(new Location(TestCuboid.HalfWidth, 0f, 0f), new Location(TestCuboid.HalfWidth + 1f, 1f, 0f)), TestCuboid.FastReflectionOf(new BoundedRay(new Location(TestCuboid.HalfWidth - 1f, 1f, 0f), new Location(TestCuboid.HalfWidth + 1f, -1f, 0f)).Flipped), TestTolerance);
+		AssertToleranceEquals(new BoundedRay(new Location(0f, TestCuboid.HalfHeight, 0f), new Location(0f, TestCuboid.HalfHeight - 0.3f, -0.3f)), TestCuboid.ReflectionOf(new BoundedRay(new Location(0f, TestCuboid.HalfHeight - 0.3f, 0.3f), new Location(0f, TestCuboid.HalfHeight + 0.3f, -0.3f))), TestTolerance);
+		AssertToleranceEquals(new BoundedRay(new Location(0f, TestCuboid.HalfHeight, 0f), new Location(0f, TestCuboid.HalfHeight - 0.3f, -0.3f)), TestCuboid.FastReflectionOf(new BoundedRay(new Location(0f, TestCuboid.HalfHeight - 0.3f, 0.3f), new Location(0f, TestCuboid.HalfHeight + 0.3f, -0.3f))), TestTolerance);
+		AssertToleranceEquals(new BoundedRay(new Location(0f, TestCuboid.HalfHeight, 0f), new Location(0f, TestCuboid.HalfHeight + 0.3f, 0.3f)), TestCuboid.ReflectionOf(new BoundedRay(new Location(0f, TestCuboid.HalfHeight - 0.3f, 0.3f), new Location(0f, TestCuboid.HalfHeight + 0.3f, -0.3f)).Flipped), TestTolerance);
+		AssertToleranceEquals(new BoundedRay(new Location(0f, TestCuboid.HalfHeight, 0f), new Location(0f, TestCuboid.HalfHeight + 0.3f, 0.3f)), TestCuboid.FastReflectionOf(new BoundedRay(new Location(0f, TestCuboid.HalfHeight - 0.3f, 0.3f), new Location(0f, TestCuboid.HalfHeight + 0.3f, -0.3f)).Flipped), TestTolerance);
+		AssertToleranceEquals(new BoundedRay(new Location(0f, 0f, TestCuboid.HalfDepth), new Location(-0.3f, 0f, TestCuboid.HalfDepth - 0.3f)), TestCuboid.ReflectionOf(new BoundedRay(new Location(0.3f, 0f, TestCuboid.HalfDepth - 0.3f), new Location(-0.3f, 0f, TestCuboid.HalfDepth + 0.3f))), TestTolerance);
+		AssertToleranceEquals(new BoundedRay(new Location(0f, 0f, TestCuboid.HalfDepth), new Location(-0.3f, 0f, TestCuboid.HalfDepth - 0.3f)), TestCuboid.FastReflectionOf(new BoundedRay(new Location(0.3f, 0f, TestCuboid.HalfDepth - 0.3f), new Location(-0.3f, 0f, TestCuboid.HalfDepth + 0.3f))), TestTolerance);
+		AssertToleranceEquals(new BoundedRay(new Location(0f, 0f, TestCuboid.HalfDepth), new Location(0.3f, 0f, TestCuboid.HalfDepth + 0.3f)), TestCuboid.ReflectionOf(new BoundedRay(new Location(0.3f, 0f, TestCuboid.HalfDepth - 0.3f), new Location(-0.3f, 0f, TestCuboid.HalfDepth + 0.3f)).Flipped), TestTolerance);
+		AssertToleranceEquals(new BoundedRay(new Location(0f, 0f, TestCuboid.HalfDepth), new Location(0.3f, 0f, TestCuboid.HalfDepth + 0.3f)), TestCuboid.FastReflectionOf(new BoundedRay(new Location(0.3f, 0f, TestCuboid.HalfDepth - 0.3f), new Location(-0.3f, 0f, TestCuboid.HalfDepth + 0.3f)).Flipped), TestTolerance);
 	}
 }

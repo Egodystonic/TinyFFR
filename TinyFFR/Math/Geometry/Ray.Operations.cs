@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR;
 
 public readonly partial struct Ray {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedRay ToBoundedRay(float signedDistanceToEndPoint) => BoundedRay.FromStartPointAndVect(StartPoint, Direction * signedDistanceToEndPoint);
+	public BoundedRay ToBoundedRay(float signedDistanceToEndPoint) => new(StartPoint, Direction * signedDistanceToEndPoint);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Line ToLine() => new(StartPoint, Direction);
 

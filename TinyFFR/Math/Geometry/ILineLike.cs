@@ -62,7 +62,7 @@ public partial interface ILineLike :
 
 	sealed Line CoerceToLine() => new(StartPoint, Direction);
 	sealed Ray CoerceToRay() => new(StartPoint, Direction);
-	sealed BoundedRay CoerceToBoundedRay(float length) => BoundedRay.FromStartPointAndVect(StartPoint, Direction * length);
+	sealed BoundedRay CoerceToBoundedRay(float length) => new(StartPoint, Direction * length);
 
 	bool IsExactlyColinearWith(Line line, float lineThickness);
 	bool IsExactlyColinearWith(Ray ray, float lineThickness);

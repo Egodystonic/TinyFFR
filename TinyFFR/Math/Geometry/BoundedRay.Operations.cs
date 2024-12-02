@@ -332,7 +332,7 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 
 	public BoundedRay? ParallelizedAroundStartWith(Direction direction) {
 		var newVect = StartToEndVect.ParallelizedWith(direction);
-		return newVect == null ? null : FromStartPointAndVect(StartPoint, newVect.Value);
+		return newVect == null ? null : new(StartPoint, newVect.Value);
 	}
 	public BoundedRay? ParallelizedAroundMiddleWith(Direction direction) {
 		var newDir = Direction.ParallelizedWith(direction);
@@ -341,18 +341,18 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 	}
 	public BoundedRay? ParallelizedAroundEndWith(Direction direction) {
 		var newVect = StartToEndVect.ParallelizedWith(direction);
-		return newVect == null ? null : FromStartPointAndVect(EndPoint - newVect.Value, newVect.Value);
+		return newVect == null ? null : new(EndPoint - newVect.Value, newVect.Value);
 	}
 	public BoundedRay? ParallelizedWith(Direction direction, float signedPivotDistance) {
 		var newDir = Direction.ParallelizedWith(direction);
 		if (newDir == null) return null;
 		return RotatedBy(Direction >> newDir.Value, UnboundedLocationAtDistance(signedPivotDistance));
 	}
-	public BoundedRay FastParallelizedAroundStartWith(Direction direction) => FromStartPointAndVect(StartPoint, StartToEndVect.FastParallelizedWith(direction));
+	public BoundedRay FastParallelizedAroundStartWith(Direction direction) => new(StartPoint, StartToEndVect.FastParallelizedWith(direction));
 	public BoundedRay FastParallelizedAroundMiddleWith(Direction direction) => RotatedAroundMiddleBy(Direction >> Direction.FastParallelizedWith(direction));
 	public BoundedRay FastParallelizedAroundEndWith(Direction direction) {
 		var newVect = StartToEndVect.FastParallelizedWith(direction);
-		return FromStartPointAndVect(EndPoint - newVect, newVect);
+		return new(EndPoint - newVect, newVect);
 	}
 	public BoundedRay FastParallelizedWith(Direction direction, float signedPivotDistance) => RotatedBy(Direction >> Direction.FastParallelizedWith(direction), UnboundedLocationAtDistance(signedPivotDistance));
 
@@ -361,7 +361,7 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 
 	public BoundedRay? OrthogonalizedAroundStartAgainst(Direction direction) {
 		var newVect = StartToEndVect.OrthogonalizedAgainst(direction);
-		return newVect == null ? null : FromStartPointAndVect(StartPoint, newVect.Value);
+		return newVect == null ? null : new(StartPoint, newVect.Value);
 	}
 	public BoundedRay? OrthogonalizedAroundMiddleAgainst(Direction direction) {
 		var newDir = Direction.OrthogonalizedAgainst(direction);
@@ -370,18 +370,18 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 	}
 	public BoundedRay? OrthogonalizedAroundEndAgainst(Direction direction) {
 		var newVect = StartToEndVect.OrthogonalizedAgainst(direction);
-		return newVect == null ? null : FromStartPointAndVect(EndPoint - newVect.Value, newVect.Value);
+		return newVect == null ? null : new(EndPoint - newVect.Value, newVect.Value);
 	}
 	public BoundedRay? OrthogonalizedAgainst(Direction direction, float signedPivotDistance) {
 		var newDir = Direction.OrthogonalizedAgainst(direction);
 		if (newDir == null) return null;
 		return RotatedBy(Direction >> newDir.Value, UnboundedLocationAtDistance(signedPivotDistance));
 	}
-	public BoundedRay FastOrthogonalizedAroundStartAgainst(Direction direction) => FromStartPointAndVect(StartPoint, StartToEndVect.FastOrthogonalizedAgainst(direction));
+	public BoundedRay FastOrthogonalizedAroundStartAgainst(Direction direction) => new(StartPoint, StartToEndVect.FastOrthogonalizedAgainst(direction));
 	public BoundedRay FastOrthogonalizedAroundMiddleAgainst(Direction direction) => RotatedAroundMiddleBy(Direction >> Direction.FastOrthogonalizedAgainst(direction));
 	public BoundedRay FastOrthogonalizedAroundEndAgainst(Direction direction) {
 		var newVect = StartToEndVect.FastOrthogonalizedAgainst(direction);
-		return FromStartPointAndVect(EndPoint - newVect, newVect);
+		return new(EndPoint - newVect, newVect);
 	}
 	public BoundedRay FastOrthogonalizedAgainst(Direction direction, float signedPivotDistance) => RotatedBy(Direction >> Direction.FastOrthogonalizedAgainst(direction), UnboundedLocationAtDistance(signedPivotDistance));
 

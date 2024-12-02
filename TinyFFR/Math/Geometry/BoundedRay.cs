@@ -56,16 +56,10 @@ public readonly partial struct BoundedRay : ILineLike<BoundedRay, BoundedRay, Bo
 	Location? ILineLike.EndPoint => EndPoint;
 
 	public BoundedRay(Location startPoint, Location endPoint) : this(startPoint, endPoint - startPoint) { }
-	
-	BoundedRay(Location startPoint, Vect startToEndVect) {
+	public BoundedRay(Location startPoint, Vect startToEndVect) {
 		_startPoint = startPoint;
 		_vect = startToEndVect;
 	}
-
-	#region Factories and Conversions
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static BoundedRay FromStartPointAndVect(Location startPoint, Vect startToEndVect) => new(startPoint, startToEndVect);
-	#endregion
 
 	#region Random
 	public static BoundedRay Random() => new(Location.Random(), Location.Random());

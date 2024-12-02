@@ -567,7 +567,7 @@ class LineTest {
 		);
 		Assert.AreEqual(
 			17.34369f,
-			TestLine.DistanceFrom(BoundedRay.FromStartPointAndVect(new Location(15f, -3f, 12f), new Direction(-2f, 0f, 14f) * -4f)),
+			TestLine.DistanceFrom(new BoundedRay(new Location(15f, -3f, 12f), new Direction(-2f, 0f, 14f) * -4f)),
 			TestTolerance
 		);
 
@@ -600,7 +600,7 @@ class LineTest {
 		);
 		Assert.AreEqual(
 			17.34369f * 17.34369f,
-			TestLine.DistanceSquaredFrom(BoundedRay.FromStartPointAndVect(new Location(15f, -3f, 12f), new Direction(-2f, 0f, 14f) * -4f)),
+			TestLine.DistanceSquaredFrom(new BoundedRay(new Location(15f, -3f, 12f), new Direction(-2f, 0f, 14f) * -4f)),
 			TestTolerance
 		);
 
@@ -710,46 +710,46 @@ class LineTest {
 		// BoundedRay
 		Assert.Null(
 			new Line(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
-				BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Left * 1f),
+				new BoundedRay(new Location(0f, 2f, 0f), Direction.Left * 1f),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.NotNull(
 			new Line(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
-				BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Left * 1f),
+				new BoundedRay(new Location(0f, 2f, 0f), Direction.Left * 1f),
 				lineThickness: 1.01f
 			)
 		);
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
 			new Line(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
-				BoundedRay.FromStartPointAndVect(new Location(100f, 2f, 0f), Direction.Down * 4f),
+				new BoundedRay(new Location(100f, 2f, 0f), Direction.Down * 4f),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.Null(
 			new Line(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
-				BoundedRay.FromStartPointAndVect(new Location(100f, 2f, 0f), Direction.Up * 4f),
+				new BoundedRay(new Location(100f, 2f, 0f), Direction.Up * 4f),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.AreEqual(
 			new Location(100f, 2f, 0f),
 			new Line(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
-				BoundedRay.FromStartPointAndVect(new Location(100f, 2f, 0f), Direction.Up * 4f),
+				new BoundedRay(new Location(100f, 2f, 0f), Direction.Up * 4f),
 				lineThickness: 1.01f
 			)
 		);
 		Assert.Null(
 			new Line(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
-				BoundedRay.FromStartPointAndVect(new Location(100f, 6f, 0f), Direction.Down * 4f),
+				new BoundedRay(new Location(100f, 6f, 0f), Direction.Down * 4f),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.AreEqual(
 			new Location(100f, 2f, 0f),
 			new Line(new Location(0f, 1f, 0f), Direction.Left).IntersectionWith(
-				BoundedRay.FromStartPointAndVect(new Location(100f, 6f, 0f), Direction.Down * 4f),
+				new BoundedRay(new Location(100f, 6f, 0f), Direction.Down * 4f),
 				lineThickness: 1.01f
 			)
 		);
@@ -785,21 +785,21 @@ class LineTest {
 		Assert.AreEqual(
 			new Location(100f, 1f, 0f),
 			new Line(new Location(0f, 1f, 0f), Direction.Left).FastIntersectionWith(
-				BoundedRay.FromStartPointAndVect(new Location(100f, 2f, 0f), Direction.Down * 4f),
+				new BoundedRay(new Location(100f, 2f, 0f), Direction.Down * 4f),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.AreEqual(
 			new Location(100f, 2f, 0f),
 			new Line(new Location(0f, 1f, 0f), Direction.Left).FastIntersectionWith(
-				BoundedRay.FromStartPointAndVect(new Location(100f, 2f, 0f), Direction.Up * 4f),
+				new BoundedRay(new Location(100f, 2f, 0f), Direction.Up * 4f),
 				lineThickness: 1.01f
 			)
 		);
 		Assert.AreEqual(
 			new Location(100f, 2f, 0f),
 			new Line(new Location(0f, 1f, 0f), Direction.Left).FastIntersectionWith(
-				BoundedRay.FromStartPointAndVect(new Location(100f, 6f, 0f), Direction.Down * 4f),
+				new BoundedRay(new Location(100f, 6f, 0f), Direction.Down * 4f),
 				lineThickness: 1.01f
 			)
 		);
@@ -862,43 +862,43 @@ class LineTest {
 		// BoundedRay
 		Assert.False(
 			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
-				BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Left * 1f),
+				new BoundedRay(new Location(0f, 2f, 0f), Direction.Left * 1f),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.True(
 			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
-				BoundedRay.FromStartPointAndVect(new Location(0f, 2f, 0f), Direction.Left * 1f),
+				new BoundedRay(new Location(0f, 2f, 0f), Direction.Left * 1f),
 				lineThickness: 1.01f
 			)
 		);
 		Assert.True(
 			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
-				BoundedRay.FromStartPointAndVect(new Location(100f, 2f, 0f), Direction.Down * 4f),
+				new BoundedRay(new Location(100f, 2f, 0f), Direction.Down * 4f),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.False(
 			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
-				BoundedRay.FromStartPointAndVect(new Location(100f, 2f, 0f), Direction.Up * 4f),
+				new BoundedRay(new Location(100f, 2f, 0f), Direction.Up * 4f),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.True(
 			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
-				BoundedRay.FromStartPointAndVect(new Location(100f, 2f, 0f), Direction.Up * 4f),
+				new BoundedRay(new Location(100f, 2f, 0f), Direction.Up * 4f),
 				lineThickness: 1.01f
 			)
 		);
 		Assert.False(
 			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
-				BoundedRay.FromStartPointAndVect(new Location(100f, 6f, 0f), Direction.Down * 4f),
+				new BoundedRay(new Location(100f, 6f, 0f), Direction.Down * 4f),
 				lineThickness: 0.01f
 			)
 		);
 		Assert.True(
 			new Line(new Location(0f, 1f, 0f), Direction.Left).IsIntersectedBy(
-				BoundedRay.FromStartPointAndVect(new Location(100f, 6f, 0f), Direction.Down * 4f),
+				new BoundedRay(new Location(100f, 6f, 0f), Direction.Down * 4f),
 				lineThickness: 1.01f
 			)
 		);
@@ -1884,7 +1884,7 @@ class LineTest {
 			var plane = new Plane(dir.AnyOrthogonal(), Location.Origin);
 			var dirLine = new Line(Location.Origin, dir);
 			var dirRay = new Ray(Location.Origin, dir);
-			var dirRayBounded = BoundedRay.FromStartPointAndVect(Location.Origin, dir * 10f);
+			var dirRayBounded = new BoundedRay(Location.Origin, dir * 10f);
 
 			if (tolerance == null) {
 				Assert.AreEqual(expectation, line.IsApproximatelyParallelTo(dir));
@@ -1984,7 +1984,7 @@ class LineTest {
 			var plane = new Plane(dir.AnyOrthogonal(), Location.Origin);
 			var dirLine = new Line(Location.Origin, dir);
 			var dirRay = new Ray(Location.Origin, dir);
-			var dirRayBounded = BoundedRay.FromStartPointAndVect(Location.Origin, dir * 10f);
+			var dirRayBounded = new BoundedRay(Location.Origin, dir * 10f);
 
 			if (tolerance == null) {
 				Assert.AreEqual(expectation, line.IsApproximatelyOrthogonalTo(dir));
@@ -2083,13 +2083,13 @@ class LineTest {
 			Assert.AreEqual(expectation, input.ParallelizedWith(Direction.Left));
 			Assert.AreEqual(expectation, input.ParallelizedWith(new Line(Location.Origin, Direction.Left)));
 			Assert.AreEqual(expectation, input.ParallelizedWith(new Ray(Location.Origin, Direction.Left)));
-			Assert.AreEqual(expectation, input.ParallelizedWith(new BoundedRay(Location.Origin, (1f, 0f, 0f))));
+			Assert.AreEqual(expectation, input.ParallelizedWith(new BoundedRay(Location.Origin, new Location(1f, 0f, 0f))));
 		}
 		void AssertFastAgainstLeft(Line expectation, Line input) {
 			Assert.AreEqual(expectation, input.FastParallelizedWith(Direction.Left));
 			Assert.AreEqual(expectation, input.FastParallelizedWith(new Line(Location.Origin, Direction.Left)));
 			Assert.AreEqual(expectation, input.FastParallelizedWith(new Ray(Location.Origin, Direction.Left)));
-			Assert.AreEqual(expectation, input.FastParallelizedWith(new BoundedRay(Location.Origin, (1f, 0f, 0f))));
+			Assert.AreEqual(expectation, input.FastParallelizedWith(new BoundedRay(Location.Origin, new Location(1f, 0f, 0f))));
 		}
 
 		// Various parallelizations from behind the plane
@@ -2217,13 +2217,13 @@ class LineTest {
 			Assert.AreEqual(expectation, input.OrthogonalizedAgainst(Direction.Left));
 			Assert.AreEqual(expectation, input.OrthogonalizedAgainst(new Line(Location.Origin, Direction.Left)));
 			Assert.AreEqual(expectation, input.OrthogonalizedAgainst(new Ray(Location.Origin, Direction.Left)));
-			Assert.AreEqual(expectation, input.OrthogonalizedAgainst(new BoundedRay(Location.Origin, (1f, 0f, 0f))));
+			Assert.AreEqual(expectation, input.OrthogonalizedAgainst(new BoundedRay(Location.Origin, new Location(1f, 0f, 0f))));
 		}
 		void AssertFastAgainstLeft(Line expectation, Line input) {
 			Assert.AreEqual(expectation, input.FastOrthogonalizedAgainst(Direction.Left));
 			Assert.AreEqual(expectation, input.FastOrthogonalizedAgainst(new Line(Location.Origin, Direction.Left)));
 			Assert.AreEqual(expectation, input.FastOrthogonalizedAgainst(new Ray(Location.Origin, Direction.Left)));
-			Assert.AreEqual(expectation, input.FastOrthogonalizedAgainst(new BoundedRay(Location.Origin, (1f, 0f, 0f))));
+			Assert.AreEqual(expectation, input.FastOrthogonalizedAgainst(new BoundedRay(Location.Origin, new Location(1f, 0f, 0f))));
 		}
 
 		// Various orthogonalizations from behind the plane
@@ -2335,13 +2335,13 @@ class LineTest {
 			AssertToleranceEquals(expectation, input.ParallelizedWith(Direction.Left, pivotPointDistance), TestTolerance);
 			AssertToleranceEquals(expectation, input.ParallelizedWith(new Line(Location.Origin, Direction.Left), pivotPointDistance), TestTolerance);
 			AssertToleranceEquals(expectation, input.ParallelizedWith(new Ray(Location.Origin, Direction.Left), pivotPointDistance), TestTolerance);
-			AssertToleranceEquals(expectation, input.ParallelizedWith(new BoundedRay(Location.Origin, (1f, 0f, 0f)), pivotPointDistance), TestTolerance);
+			AssertToleranceEquals(expectation, input.ParallelizedWith(new BoundedRay(Location.Origin, new Location(1f, 0f, 0f)), pivotPointDistance), TestTolerance);
 		}
 		void AssertFastAgainstLeft(Line expectation, Line input, float pivotPointDistance) {
 			AssertToleranceEquals(expectation, input.FastParallelizedWith(Direction.Left, pivotPointDistance), TestTolerance);
 			AssertToleranceEquals(expectation, input.FastParallelizedWith(new Line(Location.Origin, Direction.Left), pivotPointDistance), TestTolerance);
 			AssertToleranceEquals(expectation, input.FastParallelizedWith(new Ray(Location.Origin, Direction.Left), pivotPointDistance), TestTolerance);
-			AssertToleranceEquals(expectation, input.FastParallelizedWith(new BoundedRay(Location.Origin, (1f, 0f, 0f)), pivotPointDistance), TestTolerance);
+			AssertToleranceEquals(expectation, input.FastParallelizedWith(new BoundedRay(Location.Origin, new Location(1f, 0f, 0f)), pivotPointDistance), TestTolerance);
 		}
 
 		// Various parallelizations from behind the plane
@@ -2437,13 +2437,13 @@ class LineTest {
 			AssertToleranceEquals(expectation, input.OrthogonalizedAgainst(Direction.Left, pivotPointDistance), TestTolerance);
 			AssertToleranceEquals(expectation, input.OrthogonalizedAgainst(new Line(Location.Origin, Direction.Left), pivotPointDistance), TestTolerance);
 			AssertToleranceEquals(expectation, input.OrthogonalizedAgainst(new Ray(Location.Origin, Direction.Left), pivotPointDistance), TestTolerance);
-			AssertToleranceEquals(expectation, input.OrthogonalizedAgainst(new BoundedRay(Location.Origin, (1f, 0f, 0f)), pivotPointDistance), TestTolerance);
+			AssertToleranceEquals(expectation, input.OrthogonalizedAgainst(new BoundedRay(Location.Origin, new Location(1f, 0f, 0f)), pivotPointDistance), TestTolerance);
 		}
 		void AssertFastAgainstLeft(Line expectation, Line input, float pivotPointDistance) {
 			AssertToleranceEquals(expectation, input.FastOrthogonalizedAgainst(Direction.Left, pivotPointDistance), TestTolerance);
 			AssertToleranceEquals(expectation, input.FastOrthogonalizedAgainst(new Line(Location.Origin, Direction.Left), pivotPointDistance), TestTolerance);
 			AssertToleranceEquals(expectation, input.FastOrthogonalizedAgainst(new Ray(Location.Origin, Direction.Left), pivotPointDistance), TestTolerance);
-			AssertToleranceEquals(expectation, input.FastOrthogonalizedAgainst(new BoundedRay(Location.Origin, (1f, 0f, 0f)), pivotPointDistance), TestTolerance);
+			AssertToleranceEquals(expectation, input.FastOrthogonalizedAgainst(new BoundedRay(Location.Origin, new Location(1f, 0f, 0f)), pivotPointDistance), TestTolerance);
 		}
 
 		// Various orthogonalizations from behind the plane

@@ -143,17 +143,17 @@ class SphereDescriptorTest {
 		Assert.AreEqual(10f, TestSphere.DistanceFrom(new Ray((0f, 17.4f, 0f), Direction.Up)));
 		Assert.AreEqual(10f, TestSphere.DistanceFrom(new Ray((0f, -17.4f, 0f), Direction.Down)));
 
-		Assert.AreEqual(0f, TestSphere.DistanceFrom(BoundedRay.FromStartPointAndVect((0f, 0f, 0f), Direction.Down * 100f)));
-		Assert.AreEqual(0f, TestSphere.DistanceFrom(BoundedRay.FromStartPointAndVect((0f, 7.4f, 0f), Direction.Down * 100f)));
-		Assert.AreEqual(0f, TestSphere.DistanceFrom(BoundedRay.FromStartPointAndVect((0f, -7.4f, 0f), Direction.Up * 100f)));
-		Assert.AreEqual(0f, TestSphere.DistanceFrom(BoundedRay.FromStartPointAndVect((0f, 17.4f, 0f), Direction.Down * 100f)));
-		Assert.AreEqual(0f, TestSphere.DistanceFrom(BoundedRay.FromStartPointAndVect((0f, -17.4f, 0f), Direction.Up * 100f)));
-		Assert.AreEqual(0f, TestSphere.DistanceFrom(BoundedRay.FromStartPointAndVect((0f, 7.4f, 0f), Direction.Up * 100f)));
-		Assert.AreEqual(0f, TestSphere.DistanceFrom(BoundedRay.FromStartPointAndVect((0f, -7.4f, 0f), Direction.Down * 100f)));
-		Assert.AreEqual(10f, TestSphere.DistanceFrom(BoundedRay.FromStartPointAndVect((0f, 17.4f, 0f), Direction.Up * 100f)));
-		Assert.AreEqual(10f, TestSphere.DistanceFrom(BoundedRay.FromStartPointAndVect((0f, -17.4f, 0f), Direction.Down * 100f)));
-		Assert.AreEqual(11f, TestSphere.DistanceFrom(BoundedRay.FromStartPointAndVect((0f, 27.4f, 0f), Direction.Down * 9f)));
-		Assert.AreEqual(9f, TestSphere.DistanceFrom(BoundedRay.FromStartPointAndVect((0f, 27.4f, 0f), Direction.Down * 11f)));
+		Assert.AreEqual(0f, TestSphere.DistanceFrom(new BoundedRay((0f, 0f, 0f), Direction.Down * 100f)));
+		Assert.AreEqual(0f, TestSphere.DistanceFrom(new BoundedRay((0f, 7.4f, 0f), Direction.Down * 100f)));
+		Assert.AreEqual(0f, TestSphere.DistanceFrom(new BoundedRay((0f, -7.4f, 0f), Direction.Up * 100f)));
+		Assert.AreEqual(0f, TestSphere.DistanceFrom(new BoundedRay((0f, 17.4f, 0f), Direction.Down * 100f)));
+		Assert.AreEqual(0f, TestSphere.DistanceFrom(new BoundedRay((0f, -17.4f, 0f), Direction.Up * 100f)));
+		Assert.AreEqual(0f, TestSphere.DistanceFrom(new BoundedRay((0f, 7.4f, 0f), Direction.Up * 100f)));
+		Assert.AreEqual(0f, TestSphere.DistanceFrom(new BoundedRay((0f, -7.4f, 0f), Direction.Down * 100f)));
+		Assert.AreEqual(10f, TestSphere.DistanceFrom(new BoundedRay((0f, 17.4f, 0f), Direction.Up * 100f)));
+		Assert.AreEqual(10f, TestSphere.DistanceFrom(new BoundedRay((0f, -17.4f, 0f), Direction.Down * 100f)));
+		Assert.AreEqual(11f, TestSphere.DistanceFrom(new BoundedRay((0f, 27.4f, 0f), Direction.Down * 9f)));
+		Assert.AreEqual(9f, TestSphere.DistanceFrom(new BoundedRay((0f, 27.4f, 0f), Direction.Down * 11f)));
 
 		Assert.AreEqual(0f, TestSphere.DistanceFrom(new BoundedRay(new Location(-1f, 0f, 0f), new Location(1f, 0f, 0f))));
 	}
@@ -176,17 +176,17 @@ class SphereDescriptorTest {
 		Assert.AreEqual(10f, TestSphere.SurfaceDistanceFrom(new Ray((0f, 17.4f, 0f), Direction.Up)), TestTolerance);
 		Assert.AreEqual(10f, TestSphere.SurfaceDistanceFrom(new Ray((0f, -17.4f, 0f), Direction.Down)), TestTolerance);
 
-		Assert.AreEqual(0f, TestSphere.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect((0f, 0f, 0f), Direction.Down * 100f)), TestTolerance);
-		Assert.AreEqual(0f, TestSphere.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect((0f, 7.4f, 0f), Direction.Down * 100f)), TestTolerance);
-		Assert.AreEqual(0f, TestSphere.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect((0f, -7.4f, 0f), Direction.Up * 100f)), TestTolerance);
-		Assert.AreEqual(0f, TestSphere.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect((0f, 17.4f, 0f), Direction.Down * 100f)), TestTolerance);
-		Assert.AreEqual(0f, TestSphere.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect((0f, -17.4f, 0f), Direction.Up * 100f)), TestTolerance);
-		Assert.AreEqual(0f, TestSphere.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect((0f, 7.4f, 0f), Direction.Up * 100f)), TestTolerance);
-		Assert.AreEqual(0f, TestSphere.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect((0f, -7.4f, 0f), Direction.Down * 100f)), TestTolerance);
-		Assert.AreEqual(10f, TestSphere.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect((0f, 17.4f, 0f), Direction.Up * 100f)), TestTolerance);
-		Assert.AreEqual(10f, TestSphere.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect((0f, -17.4f, 0f), Direction.Down * 100f)), TestTolerance);
-		Assert.AreEqual(11f, TestSphere.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect((0f, 27.4f, 0f), Direction.Down * 9f)), TestTolerance);
-		Assert.AreEqual(9f, TestSphere.SurfaceDistanceFrom(BoundedRay.FromStartPointAndVect((0f, 27.4f, 0f), Direction.Down * 11f)), TestTolerance);
+		Assert.AreEqual(0f, TestSphere.SurfaceDistanceFrom(new BoundedRay((0f, 0f, 0f), Direction.Down * 100f)), TestTolerance);
+		Assert.AreEqual(0f, TestSphere.SurfaceDistanceFrom(new BoundedRay((0f, 7.4f, 0f), Direction.Down * 100f)), TestTolerance);
+		Assert.AreEqual(0f, TestSphere.SurfaceDistanceFrom(new BoundedRay((0f, -7.4f, 0f), Direction.Up * 100f)), TestTolerance);
+		Assert.AreEqual(0f, TestSphere.SurfaceDistanceFrom(new BoundedRay((0f, 17.4f, 0f), Direction.Down * 100f)), TestTolerance);
+		Assert.AreEqual(0f, TestSphere.SurfaceDistanceFrom(new BoundedRay((0f, -17.4f, 0f), Direction.Up * 100f)), TestTolerance);
+		Assert.AreEqual(0f, TestSphere.SurfaceDistanceFrom(new BoundedRay((0f, 7.4f, 0f), Direction.Up * 100f)), TestTolerance);
+		Assert.AreEqual(0f, TestSphere.SurfaceDistanceFrom(new BoundedRay((0f, -7.4f, 0f), Direction.Down * 100f)), TestTolerance);
+		Assert.AreEqual(10f, TestSphere.SurfaceDistanceFrom(new BoundedRay((0f, 17.4f, 0f), Direction.Up * 100f)), TestTolerance);
+		Assert.AreEqual(10f, TestSphere.SurfaceDistanceFrom(new BoundedRay((0f, -17.4f, 0f), Direction.Down * 100f)), TestTolerance);
+		Assert.AreEqual(11f, TestSphere.SurfaceDistanceFrom(new BoundedRay((0f, 27.4f, 0f), Direction.Down * 9f)), TestTolerance);
+		Assert.AreEqual(9f, TestSphere.SurfaceDistanceFrom(new BoundedRay((0f, 27.4f, 0f), Direction.Down * 11f)), TestTolerance);
 
 		Assert.AreEqual(6.4f, TestSphere.SurfaceDistanceFrom(new BoundedRay(new Location(-1f, 0f, 0f), new Location(1f, 0f, 0f))), TestTolerance);
 	}
@@ -242,16 +242,16 @@ class SphereDescriptorTest {
 		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.PointClosestTo(new Ray((0f, 17.4f, 0f), Direction.Up)), TestTolerance);
 		AssertToleranceEquals((0f, -7.4f, 0f), TestSphere.PointClosestTo(new Ray((0f, -17.4f, 0f), Direction.Down)), TestTolerance);
 
-		AssertToleranceEquals((0f, 0f, 0f), TestSphere.PointClosestTo(BoundedRay.FromStartPointAndVect((0f, 0f, 0f), Direction.Down * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, 0f, 0f), TestSphere.PointClosestTo(BoundedRay.FromStartPointAndVect((0f, 7.4f, 0f), Direction.Down * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, 0f, 0f), TestSphere.PointClosestTo(BoundedRay.FromStartPointAndVect((0f, -7.4f, 0f), Direction.Up * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, 0f, 0f), TestSphere.PointClosestTo(BoundedRay.FromStartPointAndVect((0f, 17.4f, 0f), Direction.Down * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, 0f, 0f), TestSphere.PointClosestTo(BoundedRay.FromStartPointAndVect((0f, -17.4f, 0f), Direction.Up * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.PointClosestTo(BoundedRay.FromStartPointAndVect((0f, 7.4f, 0f), Direction.Up * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, -7.4f, 0f), TestSphere.PointClosestTo(BoundedRay.FromStartPointAndVect((0f, -7.4f, 0f), Direction.Down * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.PointClosestTo(BoundedRay.FromStartPointAndVect((0f, 17.4f, 0f), Direction.Up * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, -7.4f, 0f), TestSphere.PointClosestTo(BoundedRay.FromStartPointAndVect((0f, -17.4f, 0f), Direction.Down * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.PointClosestTo(BoundedRay.FromStartPointAndVect((0f, 27.4f, 0f), Direction.Down * 9f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0f), TestSphere.PointClosestTo(new BoundedRay((0f, 0f, 0f), Direction.Down * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0f), TestSphere.PointClosestTo(new BoundedRay((0f, 7.4f, 0f), Direction.Down * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0f), TestSphere.PointClosestTo(new BoundedRay((0f, -7.4f, 0f), Direction.Up * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0f), TestSphere.PointClosestTo(new BoundedRay((0f, 17.4f, 0f), Direction.Down * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0f), TestSphere.PointClosestTo(new BoundedRay((0f, -17.4f, 0f), Direction.Up * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.PointClosestTo(new BoundedRay((0f, 7.4f, 0f), Direction.Up * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, -7.4f, 0f), TestSphere.PointClosestTo(new BoundedRay((0f, -7.4f, 0f), Direction.Down * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.PointClosestTo(new BoundedRay((0f, 17.4f, 0f), Direction.Up * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, -7.4f, 0f), TestSphere.PointClosestTo(new BoundedRay((0f, -17.4f, 0f), Direction.Down * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.PointClosestTo(new BoundedRay((0f, 27.4f, 0f), Direction.Down * 9f)), TestTolerance);
 
 		AssertToleranceEquals((0f, 0f, 0f), TestSphere.PointClosestTo(new BoundedRay(new Location(-1f, 0f, 0f), new Location(1f, 0f, 0f))), TestTolerance);
 		AssertToleranceEquals((-2f, 0f, 0f), TestSphere.PointClosestTo(new BoundedRay(new Location(-5f, 0f, 0f), new Location(-2f, 0f, 0f))), TestTolerance);
@@ -280,16 +280,16 @@ class SphereDescriptorTest {
 		AssertToleranceEquals((0f, 17.4f, 0f), TestSphere.ClosestPointOn(new Ray((0f, 17.4f, 0f), Direction.Up)), TestTolerance);
 		AssertToleranceEquals((0f, -17.4f, 0f), TestSphere.ClosestPointOn(new Ray((0f, -17.4f, 0f), Direction.Down)), TestTolerance);
 
-		AssertToleranceEquals((0f, 0f, 0f), TestSphere.ClosestPointOn(BoundedRay.FromStartPointAndVect((0f, 0f, 0f), Direction.Down * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, 0f, 0f), TestSphere.ClosestPointOn(BoundedRay.FromStartPointAndVect((0f, 7.4f, 0f), Direction.Down * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, 0f, 0f), TestSphere.ClosestPointOn(BoundedRay.FromStartPointAndVect((0f, -7.4f, 0f), Direction.Up * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, 0f, 0f), TestSphere.ClosestPointOn(BoundedRay.FromStartPointAndVect((0f, 17.4f, 0f), Direction.Down * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, 0f, 0f), TestSphere.ClosestPointOn(BoundedRay.FromStartPointAndVect((0f, -17.4f, 0f), Direction.Up * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.ClosestPointOn(BoundedRay.FromStartPointAndVect((0f, 7.4f, 0f), Direction.Up * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, -7.4f, 0f), TestSphere.ClosestPointOn(BoundedRay.FromStartPointAndVect((0f, -7.4f, 0f), Direction.Down * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, 17.4f, 0f), TestSphere.ClosestPointOn(BoundedRay.FromStartPointAndVect((0f, 17.4f, 0f), Direction.Up * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, -17.4f, 0f), TestSphere.ClosestPointOn(BoundedRay.FromStartPointAndVect((0f, -17.4f, 0f), Direction.Down * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, 18.4f, 0f), TestSphere.ClosestPointOn(BoundedRay.FromStartPointAndVect((0f, 27.4f, 0f), Direction.Down * 9f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0f), TestSphere.ClosestPointOn(new BoundedRay((0f, 0f, 0f), Direction.Down * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0f), TestSphere.ClosestPointOn(new BoundedRay((0f, 7.4f, 0f), Direction.Down * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0f), TestSphere.ClosestPointOn(new BoundedRay((0f, -7.4f, 0f), Direction.Up * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0f), TestSphere.ClosestPointOn(new BoundedRay((0f, 17.4f, 0f), Direction.Down * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f, 0f), TestSphere.ClosestPointOn(new BoundedRay((0f, -17.4f, 0f), Direction.Up * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.ClosestPointOn(new BoundedRay((0f, 7.4f, 0f), Direction.Up * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, -7.4f, 0f), TestSphere.ClosestPointOn(new BoundedRay((0f, -7.4f, 0f), Direction.Down * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, 17.4f, 0f), TestSphere.ClosestPointOn(new BoundedRay((0f, 17.4f, 0f), Direction.Up * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, -17.4f, 0f), TestSphere.ClosestPointOn(new BoundedRay((0f, -17.4f, 0f), Direction.Down * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, 18.4f, 0f), TestSphere.ClosestPointOn(new BoundedRay((0f, 27.4f, 0f), Direction.Down * 9f)), TestTolerance);
 
 		AssertToleranceEquals((0f, 0f, 0f), TestSphere.ClosestPointOn(new BoundedRay(new Location(-1f, 0f, 0f), new Location(1f, 0f, 0f))), TestTolerance);
 		AssertToleranceEquals((-2f, 0f, 0f), TestSphere.ClosestPointOn(new BoundedRay(new Location(-5f, 0f, 0f), new Location(-2f, 0f, 0f))), TestTolerance);
@@ -318,16 +318,16 @@ class SphereDescriptorTest {
 		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.SurfacePointClosestTo(new Ray((0f, 17.4f, 0f), Direction.Up)), TestTolerance);
 		AssertToleranceEquals((0f, -7.4f, 0f), TestSphere.SurfacePointClosestTo(new Ray((0f, -17.4f, 0f), Direction.Down)), TestTolerance);
 
-		Assert.AreEqual(7.4f, TestSphere.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect((0f, 0f, 0f), Direction.Down * 100f)).DistanceFromOrigin(), TestTolerance);
-		Assert.AreEqual(7.4f, TestSphere.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect((0f, 7.4f, 0f), Direction.Down * 100f)).DistanceFromOrigin(), TestTolerance);
-		Assert.AreEqual(7.4f, TestSphere.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect((0f, -7.4f, 0f), Direction.Up * 100f)).DistanceFromOrigin(), TestTolerance);
-		Assert.AreEqual(7.4f, TestSphere.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect((0f, 17.4f, 0f), Direction.Down * 100f)).DistanceFromOrigin(), TestTolerance);
-		Assert.AreEqual(7.4f, TestSphere.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect((0f, -17.4f, 0f), Direction.Up * 100f)).DistanceFromOrigin(), TestTolerance);
-		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect((0f, 7.4f, 0f), Direction.Up * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, -7.4f, 0f), TestSphere.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect((0f, -7.4f, 0f), Direction.Down * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect((0f, 17.4f, 0f), Direction.Up * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, -7.4f, 0f), TestSphere.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect((0f, -17.4f, 0f), Direction.Down * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.SurfacePointClosestTo(BoundedRay.FromStartPointAndVect((0f, 27.4f, 0f), Direction.Down * 9f)), TestTolerance);
+		Assert.AreEqual(7.4f, TestSphere.SurfacePointClosestTo(new BoundedRay((0f, 0f, 0f), Direction.Down * 100f)).DistanceFromOrigin(), TestTolerance);
+		Assert.AreEqual(7.4f, TestSphere.SurfacePointClosestTo(new BoundedRay((0f, 7.4f, 0f), Direction.Down * 100f)).DistanceFromOrigin(), TestTolerance);
+		Assert.AreEqual(7.4f, TestSphere.SurfacePointClosestTo(new BoundedRay((0f, -7.4f, 0f), Direction.Up * 100f)).DistanceFromOrigin(), TestTolerance);
+		Assert.AreEqual(7.4f, TestSphere.SurfacePointClosestTo(new BoundedRay((0f, 17.4f, 0f), Direction.Down * 100f)).DistanceFromOrigin(), TestTolerance);
+		Assert.AreEqual(7.4f, TestSphere.SurfacePointClosestTo(new BoundedRay((0f, -17.4f, 0f), Direction.Up * 100f)).DistanceFromOrigin(), TestTolerance);
+		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.SurfacePointClosestTo(new BoundedRay((0f, 7.4f, 0f), Direction.Up * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, -7.4f, 0f), TestSphere.SurfacePointClosestTo(new BoundedRay((0f, -7.4f, 0f), Direction.Down * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.SurfacePointClosestTo(new BoundedRay((0f, 17.4f, 0f), Direction.Up * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, -7.4f, 0f), TestSphere.SurfacePointClosestTo(new BoundedRay((0f, -17.4f, 0f), Direction.Down * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.SurfacePointClosestTo(new BoundedRay((0f, 27.4f, 0f), Direction.Down * 9f)), TestTolerance);
 
 		Assert.AreEqual(7.4f, TestSphere.SurfacePointClosestTo(new BoundedRay(new Location(-1f, 0f, 0f), new Location(1f, 0f, 0f))).DistanceFromOrigin(), TestTolerance);
 		AssertToleranceEquals((-7.4f, 0f, 0f), TestSphere.SurfacePointClosestTo(new BoundedRay(new Location(-5f, 0f, 0f), new Location(-2f, 0f, 0f))), TestTolerance);
@@ -356,16 +356,16 @@ class SphereDescriptorTest {
 		AssertToleranceEquals((0f, 17.4f, 0f), TestSphere.ClosestPointToSurfaceOn(new Ray((0f, 17.4f, 0f), Direction.Up)), TestTolerance);
 		AssertToleranceEquals((0f, -17.4f, 0f), TestSphere.ClosestPointToSurfaceOn(new Ray((0f, -17.4f, 0f), Direction.Down)), TestTolerance);
 
-		Assert.AreEqual(7.4f, TestSphere.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect((0f, 0f, 0f), Direction.Down * 100f)).DistanceFromOrigin(), TestTolerance);
-		Assert.AreEqual(7.4f, TestSphere.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect((0f, 7.4f, 0f), Direction.Down * 100f)).DistanceFromOrigin(), TestTolerance);
-		Assert.AreEqual(7.4f, TestSphere.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect((0f, -7.4f, 0f), Direction.Up * 100f)).DistanceFromOrigin(), TestTolerance);
-		Assert.AreEqual(7.4f, TestSphere.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect((0f, 17.4f, 0f), Direction.Down * 100f)).DistanceFromOrigin(), TestTolerance);
-		Assert.AreEqual(7.4f, TestSphere.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect((0f, -17.4f, 0f), Direction.Up * 100f)).DistanceFromOrigin(), TestTolerance);
-		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect((0f, 7.4f, 0f), Direction.Up * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, -7.4f, 0f), TestSphere.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect((0f, -7.4f, 0f), Direction.Down * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, 17.4f, 0f), TestSphere.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect((0f, 17.4f, 0f), Direction.Up * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, -17.4f, 0f), TestSphere.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect((0f, -17.4f, 0f), Direction.Down * 100f)), TestTolerance);
-		AssertToleranceEquals((0f, 18.4f, 0f), TestSphere.ClosestPointToSurfaceOn(BoundedRay.FromStartPointAndVect((0f, 27.4f, 0f), Direction.Down * 9f)), TestTolerance);
+		Assert.AreEqual(7.4f, TestSphere.ClosestPointToSurfaceOn(new BoundedRay((0f, 0f, 0f), Direction.Down * 100f)).DistanceFromOrigin(), TestTolerance);
+		Assert.AreEqual(7.4f, TestSphere.ClosestPointToSurfaceOn(new BoundedRay((0f, 7.4f, 0f), Direction.Down * 100f)).DistanceFromOrigin(), TestTolerance);
+		Assert.AreEqual(7.4f, TestSphere.ClosestPointToSurfaceOn(new BoundedRay((0f, -7.4f, 0f), Direction.Up * 100f)).DistanceFromOrigin(), TestTolerance);
+		Assert.AreEqual(7.4f, TestSphere.ClosestPointToSurfaceOn(new BoundedRay((0f, 17.4f, 0f), Direction.Down * 100f)).DistanceFromOrigin(), TestTolerance);
+		Assert.AreEqual(7.4f, TestSphere.ClosestPointToSurfaceOn(new BoundedRay((0f, -17.4f, 0f), Direction.Up * 100f)).DistanceFromOrigin(), TestTolerance);
+		AssertToleranceEquals((0f, 7.4f, 0f), TestSphere.ClosestPointToSurfaceOn(new BoundedRay((0f, 7.4f, 0f), Direction.Up * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, -7.4f, 0f), TestSphere.ClosestPointToSurfaceOn(new BoundedRay((0f, -7.4f, 0f), Direction.Down * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, 17.4f, 0f), TestSphere.ClosestPointToSurfaceOn(new BoundedRay((0f, 17.4f, 0f), Direction.Up * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, -17.4f, 0f), TestSphere.ClosestPointToSurfaceOn(new BoundedRay((0f, -17.4f, 0f), Direction.Down * 100f)), TestTolerance);
+		AssertToleranceEquals((0f, 18.4f, 0f), TestSphere.ClosestPointToSurfaceOn(new BoundedRay((0f, 27.4f, 0f), Direction.Down * 9f)), TestTolerance);
 
 		Assert.AreEqual(1f, TestSphere.ClosestPointToSurfaceOn(new BoundedRay(new Location(-1f, 0f, 0f), new Location(1f, 0f, 0f))).DistanceFromOrigin(), TestTolerance);
 		AssertToleranceEquals((-5f, 0f, 0f), TestSphere.ClosestPointToSurfaceOn(new BoundedRay(new Location(-5f, 0f, 0f), new Location(-2f, 0f, 0f))), TestTolerance);
@@ -423,38 +423,38 @@ class SphereDescriptorTest {
 
 
 		// BoundedRay
-		Assert.AreEqual(null, TestSphere.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 10f, 0f), Direction.Right * 100f)));
-		Assert.AreEqual(null, TestSphere.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(10f, 10f, 0f), Direction.Right * 100f)));
-		Assert.AreEqual(null, TestSphere.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(-10f, 0f, 0f), Direction.Right * 100f)));
-		Assert.AreEqual(null, TestSphere.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(-10f, 0f, 0f), Direction.Left * 2.5f)));
+		Assert.AreEqual(null, TestSphere.IntersectionWith(new BoundedRay(new Location(0f, 10f, 0f), Direction.Right * 100f)));
+		Assert.AreEqual(null, TestSphere.IntersectionWith(new BoundedRay(new Location(10f, 10f, 0f), Direction.Right * 100f)));
+		Assert.AreEqual(null, TestSphere.IntersectionWith(new BoundedRay(new Location(-10f, 0f, 0f), Direction.Right * 100f)));
+		Assert.AreEqual(null, TestSphere.IntersectionWith(new BoundedRay(new Location(-10f, 0f, 0f), Direction.Left * 2.5f)));
 
-		intersection = TestSphere.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(10f, 6f, 0f), Direction.Right * 100f))!.Value;
+		intersection = TestSphere.IntersectionWith(new BoundedRay(new Location(10f, 6f, 0f), Direction.Right * 100f))!.Value;
 		Assert.AreEqual(7.4f, intersection.First.DistanceFromOrigin(), TestTolerance);
 		Assert.AreEqual(6f, intersection.First.Y, TestTolerance);
 		Assert.AreEqual(7.4f, intersection.Second!.Value.DistanceFromOrigin(), TestTolerance);
 		Assert.AreEqual(6f, intersection.Second!.Value.Y, TestTolerance);
 		Assert.AreEqual(-intersection.First.X, intersection.Second!.Value.X, TestTolerance);
 		Assert.Less(
-			BoundedRay.FromStartPointAndVect(new Location(10f, 6f, 0f), Direction.Right * 100f).UnboundedDistanceAtPointClosestTo(intersection.First),
-			BoundedRay.FromStartPointAndVect(new Location(10f, 6f, 0f), Direction.Right * 100f).UnboundedDistanceAtPointClosestTo(intersection.Second!.Value)
+			new BoundedRay(new Location(10f, 6f, 0f), Direction.Right * 100f).UnboundedDistanceAtPointClosestTo(intersection.First),
+			new BoundedRay(new Location(10f, 6f, 0f), Direction.Right * 100f).UnboundedDistanceAtPointClosestTo(intersection.Second!.Value)
 		);
-		intersection = TestSphere.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(-10f, 6f, 0f), Direction.Left * 100f))!.Value;
+		intersection = TestSphere.IntersectionWith(new BoundedRay(new Location(-10f, 6f, 0f), Direction.Left * 100f))!.Value;
 		Assert.Less(
-			BoundedRay.FromStartPointAndVect(new Location(-10f, 6f, 0f), Direction.Left * 100f).UnboundedDistanceAtPointClosestTo(intersection.First),
-			BoundedRay.FromStartPointAndVect(new Location(-10f, 6f, 0f), Direction.Left * 100f).UnboundedDistanceAtPointClosestTo(intersection.Second!.Value)
+			new BoundedRay(new Location(-10f, 6f, 0f), Direction.Left * 100f).UnboundedDistanceAtPointClosestTo(intersection.First),
+			new BoundedRay(new Location(-10f, 6f, 0f), Direction.Left * 100f).UnboundedDistanceAtPointClosestTo(intersection.Second!.Value)
 		);
 
-		intersection = TestSphere.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 0f), Direction.Right * 100f))!.Value;
+		intersection = TestSphere.IntersectionWith(new BoundedRay(new Location(0f, 6f, 0f), Direction.Right * 100f))!.Value;
 		Assert.AreEqual(7.4f, intersection.First.DistanceFromOrigin(), TestTolerance);
 		Assert.AreEqual(6f, intersection.First.Y, TestTolerance);
 		Assert.AreEqual(false, intersection.Second.HasValue);
 
-		intersection = TestSphere.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(10f, 6f, 0f), Direction.Right * 10f))!.Value;
+		intersection = TestSphere.IntersectionWith(new BoundedRay(new Location(10f, 6f, 0f), Direction.Right * 10f))!.Value;
 		Assert.AreEqual(7.4f, intersection.First.DistanceFromOrigin(), TestTolerance);
 		Assert.AreEqual(6f, intersection.First.Y, TestTolerance);
 		Assert.AreEqual(false, intersection.Second.HasValue);
 
-		intersection = TestSphere.IntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 7.4f, 0f), Direction.Right * 100f))!.Value;
+		intersection = TestSphere.IntersectionWith(new BoundedRay(new Location(0f, 7.4f, 0f), Direction.Right * 100f))!.Value;
 		AssertToleranceEquals((0f, 7.4f, 0f), intersection.First, TestTolerance);
 		Assert.IsFalse(intersection.Second.HasValue);
 
@@ -493,24 +493,24 @@ class SphereDescriptorTest {
 
 
 		// BoundedRay, Fast
-		intersection = TestSphere.FastIntersectionWith(BoundedRay.FromStartPointAndVect(new Location(10f, 6f, 0f), Direction.Right * 100f));
+		intersection = TestSphere.FastIntersectionWith(new BoundedRay(new Location(10f, 6f, 0f), Direction.Right * 100f));
 		Assert.AreEqual(7.4f, intersection.First.DistanceFromOrigin(), TestTolerance);
 		Assert.AreEqual(6f, intersection.First.Y, TestTolerance);
 		Assert.AreEqual(7.4f, intersection.Second!.Value.DistanceFromOrigin(), TestTolerance);
 		Assert.AreEqual(6f, intersection.Second!.Value.Y, TestTolerance);
 		Assert.AreEqual(-intersection.First.X, intersection.Second!.Value.X, TestTolerance);
 
-		intersection = TestSphere.FastIntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 0f), Direction.Right * 100f));
+		intersection = TestSphere.FastIntersectionWith(new BoundedRay(new Location(0f, 6f, 0f), Direction.Right * 100f));
 		Assert.AreEqual(7.4f, intersection.First.DistanceFromOrigin(), TestTolerance);
 		Assert.AreEqual(6f, intersection.First.Y, TestTolerance);
 		Assert.AreEqual(false, intersection.Second.HasValue);
 
-		intersection = TestSphere.FastIntersectionWith(BoundedRay.FromStartPointAndVect(new Location(10f, 6f, 0f), Direction.Right * 10f));
+		intersection = TestSphere.FastIntersectionWith(new BoundedRay(new Location(10f, 6f, 0f), Direction.Right * 10f));
 		Assert.AreEqual(7.4f, intersection.First.DistanceFromOrigin(), TestTolerance);
 		Assert.AreEqual(6f, intersection.First.Y, TestTolerance);
 		Assert.AreEqual(false, intersection.Second.HasValue);
 
-		intersection = TestSphere.FastIntersectionWith(BoundedRay.FromStartPointAndVect(new Location(0f, 7.4f, 0f), Direction.Right * 100f));
+		intersection = TestSphere.FastIntersectionWith(new BoundedRay(new Location(0f, 7.4f, 0f), Direction.Right * 100f));
 		AssertToleranceEquals((0f, 7.4f, 0f), intersection.First, TestTolerance);
 		Assert.IsFalse(intersection.Second.HasValue);
 	}
@@ -533,14 +533,14 @@ class SphereDescriptorTest {
 
 
 		// BoundedRay
-		Assert.False(TestSphere.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(0f, 10f, 0f), Direction.Right * 100f)));
-		Assert.False(TestSphere.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(10f, 10f, 0f), Direction.Right * 100f)));
-		Assert.False(TestSphere.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(-10f, 0f, 0f), Direction.Right * 100f)));
-		Assert.False(TestSphere.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(-10f, 0f, 0f), Direction.Left * 2.5f)));
-		Assert.True(TestSphere.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(10f, 6f, 0f), Direction.Right * 100f)));
-		Assert.True(TestSphere.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(0f, 6f, 0f), Direction.Right * 100f)));
-		Assert.True(TestSphere.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(10f, 6f, 0f), Direction.Right * 10f)));
-		Assert.True(TestSphere.IsIntersectedBy(BoundedRay.FromStartPointAndVect(new Location(0f, 7.4f, 0f), Direction.Right * 100f)));
+		Assert.False(TestSphere.IsIntersectedBy(new BoundedRay(new Location(0f, 10f, 0f), Direction.Right * 100f)));
+		Assert.False(TestSphere.IsIntersectedBy(new BoundedRay(new Location(10f, 10f, 0f), Direction.Right * 100f)));
+		Assert.False(TestSphere.IsIntersectedBy(new BoundedRay(new Location(-10f, 0f, 0f), Direction.Right * 100f)));
+		Assert.False(TestSphere.IsIntersectedBy(new BoundedRay(new Location(-10f, 0f, 0f), Direction.Left * 2.5f)));
+		Assert.True(TestSphere.IsIntersectedBy(new BoundedRay(new Location(10f, 6f, 0f), Direction.Right * 100f)));
+		Assert.True(TestSphere.IsIntersectedBy(new BoundedRay(new Location(0f, 6f, 0f), Direction.Right * 100f)));
+		Assert.True(TestSphere.IsIntersectedBy(new BoundedRay(new Location(10f, 6f, 0f), Direction.Right * 10f)));
+		Assert.True(TestSphere.IsIntersectedBy(new BoundedRay(new Location(0f, 7.4f, 0f), Direction.Right * 100f)));
 	}
 
 	[Test]
@@ -695,20 +695,20 @@ class SphereDescriptorTest {
 		AssertToleranceEquals(0f, TestSphere.FastIncidentAngleWith(new Ray((0f, TestSphere.Radius - LocalTestTolerance, 0f), Direction.Up)), LocalTestTolerance);
 		AssertToleranceEquals(0f, TestSphere.FastIncidentAngleWith(new Ray((0f, TestSphere.Radius + LocalTestTolerance, 0f), Direction.Down)), LocalTestTolerance);
 
-		Assert.IsNull(TestSphere.IncidentAngleWith(new BoundedRay((0f, 100f, 0f), (0f, TestSphere.Radius + LocalTestTolerance, 0f))));
-		Assert.IsNull(TestSphere.IncidentAngleWith(new BoundedRay((0f, -(TestSphere.Radius - LocalTestTolerance), 0f), (0f, TestSphere.Radius - LocalTestTolerance, 0f))));
-		AssertToleranceEquals(0f, TestSphere.IncidentAngleWith(new BoundedRay((0f, 100f, 0f), (0f, TestSphere.Radius - LocalTestTolerance, 0f))), LocalTestTolerance);
-		AssertToleranceEquals(0f, TestSphere.IncidentAngleWith(new BoundedRay((0f, 100f, 0f), (0f, TestSphere.Radius - LocalTestTolerance, 0f)).Flipped), LocalTestTolerance);
-		AssertToleranceEquals(0f, TestSphere.IncidentAngleWith(new BoundedRay((0f, -100f, 0f), (0f, -(TestSphere.Radius - LocalTestTolerance), 0f))), LocalTestTolerance);
-		AssertToleranceEquals(0f, TestSphere.IncidentAngleWith(new BoundedRay((0f, -100f, 0f), (0f, -(TestSphere.Radius - LocalTestTolerance), 0f)).Flipped), LocalTestTolerance);
-		AssertToleranceEquals(30f, TestSphere.IncidentAngleWith(new BoundedRay((-100f, TestSphere.Radius * 0.5f, 0f), (100f, TestSphere.Radius * 0.5f, 0f))), LocalTestTolerance);
-		AssertToleranceEquals(30f, TestSphere.IncidentAngleWith(new BoundedRay((-100f, TestSphere.Radius * 0.5f, 0f), (100f, TestSphere.Radius * 0.5f, 0f)).Flipped), LocalTestTolerance);
-		AssertToleranceEquals(0f, TestSphere.FastIncidentAngleWith(new BoundedRay((0f, 100f, 0f), (0f, TestSphere.Radius - LocalTestTolerance, 0f))), LocalTestTolerance);
-		AssertToleranceEquals(0f, TestSphere.FastIncidentAngleWith(new BoundedRay((0f, 100f, 0f), (0f, TestSphere.Radius - LocalTestTolerance, 0f)).Flipped), LocalTestTolerance);
-		AssertToleranceEquals(0f, TestSphere.FastIncidentAngleWith(new BoundedRay((0f, -100f, 0f), (0f, -(TestSphere.Radius - LocalTestTolerance), 0f))), LocalTestTolerance);
-		AssertToleranceEquals(0f, TestSphere.FastIncidentAngleWith(new BoundedRay((0f, -100f, 0f), (0f, -(TestSphere.Radius - LocalTestTolerance), 0f)).Flipped), LocalTestTolerance);
-		AssertToleranceEquals(30f, TestSphere.FastIncidentAngleWith(new BoundedRay((-100f, TestSphere.Radius * 0.5f, 0f), (100f, TestSphere.Radius * 0.5f, 0f))), LocalTestTolerance);
-		AssertToleranceEquals(30f, TestSphere.FastIncidentAngleWith(new BoundedRay((-100f, TestSphere.Radius * 0.5f, 0f), (100f, TestSphere.Radius * 0.5f, 0f)).Flipped), LocalTestTolerance);
+		Assert.IsNull(TestSphere.IncidentAngleWith(new BoundedRay(new Location(0f, 100f, 0f), new Location(0f, TestSphere.Radius + LocalTestTolerance, 0f))));
+		Assert.IsNull(TestSphere.IncidentAngleWith(new BoundedRay(new Location(0f, -(TestSphere.Radius - LocalTestTolerance), 0f), new Location(0f, TestSphere.Radius - LocalTestTolerance, 0f))));
+		AssertToleranceEquals(0f, TestSphere.IncidentAngleWith(new BoundedRay(new Location(0f, 100f, 0f), new Location(0f, TestSphere.Radius - LocalTestTolerance, 0f))), LocalTestTolerance);
+		AssertToleranceEquals(0f, TestSphere.IncidentAngleWith(new BoundedRay(new Location(0f, 100f, 0f), new Location(0f, TestSphere.Radius - LocalTestTolerance, 0f)).Flipped), LocalTestTolerance);
+		AssertToleranceEquals(0f, TestSphere.IncidentAngleWith(new BoundedRay(new Location(0f, -100f, 0f), new Location(0f, -(TestSphere.Radius - LocalTestTolerance), 0f))), LocalTestTolerance);
+		AssertToleranceEquals(0f, TestSphere.IncidentAngleWith(new BoundedRay(new Location(0f, -100f, 0f), new Location(0f, -(TestSphere.Radius - LocalTestTolerance), 0f)).Flipped), LocalTestTolerance);
+		AssertToleranceEquals(30f, TestSphere.IncidentAngleWith(new BoundedRay(new Location(-100f, TestSphere.Radius * 0.5f, 0f), new Location(100f, TestSphere.Radius * 0.5f, 0f))), LocalTestTolerance);
+		AssertToleranceEquals(30f, TestSphere.IncidentAngleWith(new BoundedRay(new Location(-100f, TestSphere.Radius * 0.5f, 0f), new Location(100f, TestSphere.Radius * 0.5f, 0f)).Flipped), LocalTestTolerance);
+		AssertToleranceEquals(0f, TestSphere.FastIncidentAngleWith(new BoundedRay(new Location(0f, 100f, 0f), new Location(0f, TestSphere.Radius - LocalTestTolerance, 0f))), LocalTestTolerance);
+		AssertToleranceEquals(0f, TestSphere.FastIncidentAngleWith(new BoundedRay(new Location(0f, 100f, 0f), new Location(0f, TestSphere.Radius - LocalTestTolerance, 0f)).Flipped), LocalTestTolerance);
+		AssertToleranceEquals(0f, TestSphere.FastIncidentAngleWith(new BoundedRay(new Location(0f, -100f, 0f), new Location(0f, -(TestSphere.Radius - LocalTestTolerance), 0f))), LocalTestTolerance);
+		AssertToleranceEquals(0f, TestSphere.FastIncidentAngleWith(new BoundedRay(new Location(0f, -100f, 0f), new Location(0f, -(TestSphere.Radius - LocalTestTolerance), 0f)).Flipped), LocalTestTolerance);
+		AssertToleranceEquals(30f, TestSphere.FastIncidentAngleWith(new BoundedRay(new Location(-100f, TestSphere.Radius * 0.5f, 0f), new Location(100f, TestSphere.Radius * 0.5f, 0f))), LocalTestTolerance);
+		AssertToleranceEquals(30f, TestSphere.FastIncidentAngleWith(new BoundedRay(new Location(-100f, TestSphere.Radius * 0.5f, 0f), new Location(100f, TestSphere.Radius * 0.5f, 0f)).Flipped), LocalTestTolerance);
 	}
 
 	[Test]
@@ -754,11 +754,11 @@ class SphereDescriptorTest {
 		AssertToleranceEquals(new Ray((0f, TestSphere.Radius, 0f), Direction.Down), TestSphere.FastReflectionOf(new Ray((0f, TestSphere.Radius - LocalTestTolerance, 0f), Direction.Up)), LocalTestTolerance);
 		AssertToleranceEquals(new Ray((0f, TestSphere.Radius, 0f), Direction.Up), TestSphere.FastReflectionOf(new Ray((0f, TestSphere.Radius + LocalTestTolerance, 0f), Direction.Down)), LocalTestTolerance);
 
-		Assert.IsNull(TestSphere.ReflectionOf(new BoundedRay((0f, 100f, 0f), (0f, TestSphere.Radius + LocalTestTolerance, 0f))));
-		Assert.IsNull(TestSphere.ReflectionOf(new BoundedRay((0f, -(TestSphere.Radius - LocalTestTolerance), 0f), (0f, TestSphere.Radius - LocalTestTolerance, 0f))));
-		AssertToleranceEquals(new BoundedRay((0f, TestSphere.Radius, 0f), (0f, TestSphere.Radius + 1f, 0f)), TestSphere.ReflectionOf(new BoundedRay((0f, 100f, 0f), (0f, TestSphere.Radius - 1f, 0f))), LocalTestTolerance);
-		AssertToleranceEquals(new BoundedRay((0f, TestSphere.Radius, 0f), (0f, TestSphere.Radius - (100f - (TestSphere.Radius - 1f) - 1f), 0f)), TestSphere.ReflectionOf(new BoundedRay((0f, 100f, 0f), (0f, TestSphere.Radius - 1f, 0f)).Flipped), LocalTestTolerance);
-		AssertToleranceEquals(new BoundedRay((0f, TestSphere.Radius, 0f), (0f, TestSphere.Radius + 1f, 0f)), TestSphere.FastReflectionOf(new BoundedRay((0f, 100f, 0f), (0f, TestSphere.Radius - 1f, 0f))), LocalTestTolerance);
-		AssertToleranceEquals(new BoundedRay((0f, TestSphere.Radius, 0f), (0f, TestSphere.Radius - (100f - (TestSphere.Radius - 1f) - 1f), 0f)), TestSphere.FastReflectionOf(new BoundedRay((0f, 100f, 0f), (0f, TestSphere.Radius - 1f, 0f)).Flipped), LocalTestTolerance);
+		Assert.IsNull(TestSphere.ReflectionOf(new BoundedRay(new Location(0f, 100f, 0f), new Location(0f, TestSphere.Radius + LocalTestTolerance, 0f))));
+		Assert.IsNull(TestSphere.ReflectionOf(new BoundedRay(new Location(0f, -(TestSphere.Radius - LocalTestTolerance), 0f), new Location(0f, TestSphere.Radius - LocalTestTolerance, 0f))));
+		AssertToleranceEquals(new BoundedRay(new Location(0f, TestSphere.Radius, 0f), new Location(0f, TestSphere.Radius + 1f, 0f)), TestSphere.ReflectionOf(new BoundedRay(new Location(0f, 100f, 0f), new Location(0f, TestSphere.Radius - 1f, 0f))), LocalTestTolerance);
+		AssertToleranceEquals(new BoundedRay(new Location(0f, TestSphere.Radius, 0f), new Location(0f, TestSphere.Radius - (100f - (TestSphere.Radius - 1f) - 1f), 0f)), TestSphere.ReflectionOf(new BoundedRay(new Location(0f, 100f, 0f), new Location(0f, TestSphere.Radius - 1f, 0f)).Flipped), LocalTestTolerance);
+		AssertToleranceEquals(new BoundedRay(new Location(0f, TestSphere.Radius, 0f), new Location(0f, TestSphere.Radius + 1f, 0f)), TestSphere.FastReflectionOf(new BoundedRay(new Location(0f, 100f, 0f), new Location(0f, TestSphere.Radius - 1f, 0f))), LocalTestTolerance);
+		AssertToleranceEquals(new BoundedRay(new Location(0f, TestSphere.Radius, 0f), new Location(0f, TestSphere.Radius - (100f - (TestSphere.Radius - 1f) - 1f), 0f)), TestSphere.FastReflectionOf(new BoundedRay(new Location(0f, 100f, 0f), new Location(0f, TestSphere.Radius - 1f, 0f)).Flipped), LocalTestTolerance);
 	}
 }
