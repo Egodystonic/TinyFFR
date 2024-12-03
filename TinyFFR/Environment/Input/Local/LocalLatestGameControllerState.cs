@@ -20,16 +20,15 @@ sealed class LocalLatestGameControllerState : ILatestGameControllerInputStateRet
 	public GameControllerStickPosition RightStickPosition { get; set; } = default;
 	public GameControllerTriggerPosition LeftTriggerPosition { get; set; } = default;
 	public GameControllerTriggerPosition RightTriggerPosition { get; set; } = default;
+	readonly UnmanagedBuffer<char> _utf16NameBuffer = new(16);
 	bool _isDisposed = false;
 
-	public string ControllerName {
+	public ReadOnlySpan<char> Name {
 		get {
-			ThrowIfThisIsDisposed();
-			var maxSpanLength = GetControllerNameSpanMaxLength();
-			var dest = maxSpanLength <= 1000 ? stackalloc char[maxSpanLength] : new char[maxSpanLength];
-
-			var numCharsWritten = GetControllerNameUsingSpan(dest);
-			return new(dest[..numCharsWritten]);
+			var minLengthRequired = NameBuffer.GetUtf16Length();
+			if (minLengthRequired > _utf16NameBuffer.Length) _utf16NameBuffer.Resize(minLengthRequired);
+			NameBuffer.ConvertToUtf16(_utf16NameBuffer.AsSpan);
+			return _utf16NameBuffer.AsSpan;
 		}
 	}
 
@@ -63,14 +62,6 @@ sealed class LocalLatestGameControllerState : ILatestGameControllerInputStateRet
 		NameBuffer = new(MaxControllerNameLength, true);
 	}
 
-	public int GetControllerNameUsingSpan(Span<char> dest) {
-		ThrowIfThisIsDisposed();
-		return NameBuffer.ConvertToUtf16(dest);
-	}
-	public int GetControllerNameSpanMaxLength() {
-		ThrowIfThisIsDisposed();
-		return NameBuffer.BufferLength;
-	}
 	public bool ButtonIsCurrentlyDown(GameControllerButton button) {
 		ThrowIfThisIsDisposed();
 		var curButtons = CurrentlyPressedButtons;
@@ -162,7 +153,7 @@ sealed class LocalLatestGameControllerState : ILatestGameControllerInputStateRet
 		}
 	}
 
-	public override string ToString() => $"TinyFFR Local Input State Provider [Game Controller '{ControllerName}']{(_isDisposed ? " [Disposed]" : "")}";
+	public override string ToString() => $"TinyFFR Local Input State Provider [Game Controller '{Name}']{(_isDisposed ? " [Disposed]" : "")}";
 
 	#region Disposal
 	public void Dispose() {
@@ -173,6 +164,7 @@ sealed class LocalLatestGameControllerState : ILatestGameControllerInputStateRet
 			NewButtonUpEvents.Dispose();
 			CurrentlyPressedButtons.Dispose();
 			NameBuffer.Dispose();
+			_utf16NameBuffer.Dispose();
 		}
 		finally {
 			_isDisposed = true;

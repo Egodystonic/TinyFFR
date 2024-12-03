@@ -2,12 +2,11 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System.Reflection.Metadata;
+using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Environment.Input;
 
-public interface ILatestGameControllerInputStateRetriever {
-	public string ControllerName { get; }
-
+public interface ILatestGameControllerInputStateRetriever : IStringSpanNameEnabled {
 	public GameControllerStickPosition LeftStickPosition { get; }
 	public GameControllerStickPosition RightStickPosition { get; }
 	public GameControllerTriggerPosition LeftTriggerPosition { get; }
@@ -18,8 +17,6 @@ public interface ILatestGameControllerInputStateRetriever {
 	public ReadOnlySpan<GameControllerButton> NewButtonUpEvents { get; }
 	public ReadOnlySpan<GameControllerButton> CurrentlyPressedButtons { get; }
 
-	public int GetControllerNameUsingSpan(Span<char> dest);
-	public int GetControllerNameSpanMaxLength(); // TODO make this just report the actual length, not max
 	public bool ButtonIsCurrentlyDown(GameControllerButton button);
 	public bool ButtonWasPressedThisIteration(GameControllerButton button);
 	public bool ButtonWasReleasedThisIteration(GameControllerButton button);

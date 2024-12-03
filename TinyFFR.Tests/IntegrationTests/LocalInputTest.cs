@@ -59,7 +59,7 @@ class LocalInputTest {
 	void HandleInput(ILatestInputRetriever input) {
 		if (input.GameControllers.Length != _numControllers) {
 			for (var i = input.GameControllers.Length; i > _numControllers; --i) {
-				Console.WriteLine($"Controller: {input.GameControllers[i - 1].ControllerName}");
+				Console.WriteLine($"Controller: {input.GameControllers[i - 1].Name}");
 			}
 			_numControllers = input.GameControllers.Length;
 		}
@@ -107,7 +107,7 @@ class LocalInputTest {
 
 	void AssertInputStatesAreEqual(ILatestInputRetriever expected, ILatestInputRetriever actual) {
 		void AssertControllerStates(ILatestGameControllerInputStateRetriever e, ILatestGameControllerInputStateRetriever a) {
-			Assert.AreEqual(e.ControllerName, a.ControllerName);
+			Assert.IsTrue(e.Name.SequenceEqual(a.Name));
 			Assert.IsTrue(e.CurrentlyPressedButtons.SequenceEqual(a.CurrentlyPressedButtons));
 			Assert.AreEqual(e.LeftStickPosition, a.LeftStickPosition);
 			Assert.AreEqual(e.LeftTriggerPosition, a.LeftTriggerPosition);
