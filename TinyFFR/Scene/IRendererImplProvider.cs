@@ -7,7 +7,6 @@ using System;
 
 namespace Egodystonic.TinyFFR.Scene;
 
-public interface ISceneImplProvider : IDisposableResourceImplProvider<SceneHandle> {
-	void Add(SceneHandle handle, ModelInstance modelInstance);
-	void Remove(SceneHandle handle, ModelInstance modelInstance);
+public interface IRendererImplProvider : IDisposableResourceImplProvider<RendererHandle> {
+	void Render(RendererHandle handle);
 }

@@ -13,7 +13,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	readonly ArrayPoolBackedMap<SceneHandle, ArrayPoolBackedVector<ModelInstance>> _modelInstanceMap = new();
 	readonly ObjectPool<ArrayPoolBackedVector<ModelInstance>> _modelInstanceVectorPool;
 	readonly LocalFactoryGlobalObjectGroup _globals;
-	readonly LocalSceneRenderer _renderer;
+	readonly LocalRenderer _renderer;
 	bool _isDisposed = false;
 
 	public LocalSceneBuilder(LocalFactoryGlobalObjectGroup globals) {

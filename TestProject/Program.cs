@@ -43,6 +43,7 @@ using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor
 using var mat = factory.AssetLoader.MaterialBuilder.CreateBasicSolidColorMat(0x00FF00FF, name: "Matthew the Material");
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: "Iain the Instance");
 using var scene = factory.SceneBuilder.CreateScene(name: "Sean the Scene");
+using var renderer = scene.CreateRenderer(camera, window);
 
 scene.Add(instance);
 

@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Scene;
 
-sealed unsafe class LocalSceneRenderer : IDisposable {
+sealed unsafe class LocalRenderer : IRendererImplProvider, IDisposable {
 	readonly ArrayPoolBackedMap<Window, (UIntPtr RendererPtr, UIntPtr SwapChainPtr)> _windowRendererMap = new();
 	readonly ArrayPoolBackedMap<Scene, ArrayPoolBackedMap<Camera, UIntPtr>> _sceneViewMap = new();
 	readonly ArrayPoolBackedMap<UIntPtr, XYPair<uint>> _viewSizeMap = new();
@@ -16,7 +16,7 @@ sealed unsafe class LocalSceneRenderer : IDisposable {
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
 
-	public LocalSceneRenderer(LocalFactoryGlobalObjectGroup globals) {
+	public LocalRenderer(LocalFactoryGlobalObjectGroup globals) {
 		static ArrayPoolBackedMap<Camera, UIntPtr> AllocateNewViewDescriptorCameraMapPool() => new();
 
 		ArgumentNullException.ThrowIfNull(globals);

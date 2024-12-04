@@ -37,11 +37,6 @@ public readonly struct Scene : IDisposableResource<Scene, SceneHandle, ISceneImp
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove(ModelInstance modelInstance) => Implementation.Remove(_handle, modelInstance);
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Render(Camera camera, Window window) => Implementation.Render(_handle, camera, window);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Render<TRenderTarget>(Camera camera, TRenderTarget renderTarget) where TRenderTarget : IRenderTarget => Implementation.Render(_handle, camera, renderTarget);
-
 	public override string ToString() => $"Scene {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
 
 	#region Disposal

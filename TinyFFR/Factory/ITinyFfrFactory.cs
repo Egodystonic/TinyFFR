@@ -17,6 +17,7 @@ public interface ITinyFfrFactory : IDisposable {
 	ICameraBuilder CameraBuilder { get; }
 	IObjectBuilder ObjectBuilder { get; }
 	ISceneBuilder SceneBuilder { get; }
+	IRendererBuilder RendererBuilder { get; }
 
 	CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed);
 	CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, int initialCapacity);
