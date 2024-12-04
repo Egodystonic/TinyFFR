@@ -13,7 +13,6 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	readonly ArrayPoolBackedMap<SceneHandle, ArrayPoolBackedVector<ModelInstance>> _modelInstanceMap = new();
 	readonly ObjectPool<ArrayPoolBackedVector<ModelInstance>> _modelInstanceVectorPool;
 	readonly LocalFactoryGlobalObjectGroup _globals;
-	readonly LocalRenderer _renderer;
 	bool _isDisposed = false;
 
 	public LocalSceneBuilder(LocalFactoryGlobalObjectGroup globals) {
@@ -23,7 +22,6 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 
 		_globals = globals;
 		_modelInstanceVectorPool = new(&CreateModelInstanceVector);
-		_renderer = new(globals);
 	}
 
 	public Scene CreateScene(ReadOnlySpan<char> name = default) => CreateScene(new SceneCreationConfig { Name = name });
@@ -103,18 +101,10 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	);
 	#endregion
 
-	#region Render
-	public void Render<TRenderTarget>(SceneHandle handle, Camera camera, TRenderTarget renderTarget) where TRenderTarget : IRenderTarget {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		_renderer.Render(HandleToInstance(handle), camera, renderTarget);
-	}
-	#endregion
-
 	#region Disposal
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
-			_renderer.Dispose();
 			foreach (var kvp in _modelInstanceMap) {
 				Dispose(kvp.Key, removeFromMaps: false);
 				_modelInstanceVectorPool.Return(kvp.Value);

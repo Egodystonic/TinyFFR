@@ -5,41 +5,42 @@ using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace Egodystonic.TinyFFR.Scene;
 
-sealed unsafe class LocalRenderer : IRendererImplProvider, IDisposable {
-	readonly ArrayPoolBackedMap<Window, (UIntPtr RendererPtr, UIntPtr SwapChainPtr)> _windowRendererMap = new();
-	readonly ArrayPoolBackedMap<Scene, ArrayPoolBackedMap<Camera, UIntPtr>> _sceneViewMap = new();
-	readonly ArrayPoolBackedMap<UIntPtr, XYPair<uint>> _viewSizeMap = new();
-	readonly ObjectPool<ArrayPoolBackedMap<Camera, UIntPtr>> _viewDescriptorCameraMapPool;
+sealed unsafe class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDisposable {
+	readonly record struct RendererArgs(RendererHandle Handle, Scene Scene, Camera Camera, Window Window, RendererCreationConfig Conmfig);
+	readonly record struct WindowArgs(Window Window, UIntPtr RendererPtr, UIntPtr SwapChainPtr);
+	readonly record struct ViewArgs(Scene Scene, Camera Camera, UIntPtr View, XYPair<uint> CurrentSize);
+
+	readonly ArrayPoolBackedMap<Window, WindowArgs> _loadedWindows = new();
+	readonly ArrayPoolBackedMap<(Scene Scene, Camera Camera), ViewArgs> _loadedViews = new();
+	readonly ArrayPoolBackedMap<RendererHandle, RendererArgs> _loadedRenderers = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
 
-	public LocalRenderer(LocalFactoryGlobalObjectGroup globals) {
-		static ArrayPoolBackedMap<Camera, UIntPtr> AllocateNewViewDescriptorCameraMapPool() => new();
-
+	public LocalRendererBuilder(LocalFactoryGlobalObjectGroup globals) {
 		ArgumentNullException.ThrowIfNull(globals);
 
 		_globals = globals;
-		_viewDescriptorCameraMapPool = new(&AllocateNewViewDescriptorCameraMapPool);
 	}
 
-	public void Render<TRenderTarget>(Scene scene, Camera camera, TRenderTarget renderTarget) where TRenderTarget : IRenderTarget {
+	public Renderer CreateRenderer<TRenderTarget>(Scene scene, Camera camera, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget {
 		if (renderTarget is not Window window) throw new NotImplementedException();
-		if (!_windowRendererMap.TryGetValue(window, out var windowRendererTuple)) {
+		if (!_loadedWindowData.TryGetValue(window, out var windowRendererTuple)) {
 			AllocateRendererAndSwapChain(
 				window.Handle,
 				out var rendererHandle,
 				out var swapChainHandle
 			).ThrowIfFailure();
 			windowRendererTuple = (rendererHandle, swapChainHandle);
-			_windowRendererMap.Add(window, windowRendererTuple);
+			_loadedWindowData.Add(window, windowRendererTuple);
 		}
 
-		if (!_sceneViewMap.TryGetValue(scene, out var cameraToViewMap)) {
+		if (!_sceneCameraViewMap.TryGetValue(scene, out var cameraToViewMap)) {
 			cameraToViewMap = _viewDescriptorCameraMapPool.Rent();
-			_sceneViewMap.Add(scene, cameraToViewMap);
+			_sceneCameraViewMap.Add(scene, cameraToViewMap);
 		}
 		if (!cameraToViewMap.TryGetValue(camera, out var viewDescriptorHandle)) {
 			AllocateViewDescriptor(
@@ -56,14 +57,15 @@ sealed unsafe class LocalRenderer : IRendererImplProvider, IDisposable {
 			SetViewDescriptorSize(viewDescriptorHandle, curViewSize.X, curViewSize.Y).ThrowIfFailure();
 		}
 
+		
+	}
+
+	public void Render(RendererHandle handle) {
 		RenderScene(
 			windowRendererTuple.RendererPtr, 
 			windowRendererTuple.SwapChainPtr, 
 			viewDescriptorHandle
 		).ThrowIfFailure();
-
-		// TODO track disposal of scene/camera, maybe via the dependency tracker. And I guess remove IsDisposed at that time
-		// TODO I guess window too?
 	}
 
 
@@ -110,19 +112,19 @@ sealed unsafe class LocalRenderer : IRendererImplProvider, IDisposable {
 		try {
 			_viewSizeMap.Dispose();
 
-			foreach (var kvp in _sceneViewMap) {
+			foreach (var kvp in _sceneCameraViewMap) {
 				foreach (var kvp2 in kvp.Value) {
 					DisposeViewDescriptor(kvp2.Value).ThrowIfFailure();
 				}
 			}
 
-			foreach (var kvp in _windowRendererMap) {
+			foreach (var kvp in _loadedWindowData) {
 				DisposeRendererAndSwapChain(
 					kvp.Value.RendererPtr, 
 					kvp.Value.SwapChainPtr
 				).ThrowIfFailure();
 			}
-			_windowRendererMap.Dispose();
+			_loadedWindowData.Dispose();
 			_viewDescriptorCameraMapPool.Dispose();
 		}
 		finally {

@@ -6,6 +6,9 @@ using Egodystonic.TinyFFR.Environment.Local;
 namespace Egodystonic.TinyFFR.Scene;
 
 public interface IRendererBuilder {
-	public Renderer CreateRenderer(Camera camera, Window window) => CreateRenderer<Window>(camera, window);
-	public Renderer CreateRenderer<TRenderTarget>(Camera camera, TRenderTarget renderTarget) where TRenderTarget : IRenderTarget;
+	public Renderer CreateRenderer(Scene scene, Camera camera, Window window, ReadOnlySpan<char> name = default) => CreateRenderer<Window>(scene, camera, window, name);
+	public Renderer CreateRenderer<TRenderTarget>(Scene scene, Camera camera, TRenderTarget renderTarget, ReadOnlySpan<char> name = default) where TRenderTarget : IRenderTarget {
+		return CreateRenderer(scene, camera, renderTarget, new RendererCreationConfig { Name = name });
+	}
+	public Renderer CreateRenderer<TRenderTarget>(Scene scene, Camera camera, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget;
 }
