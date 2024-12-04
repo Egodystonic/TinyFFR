@@ -25,6 +25,7 @@ public sealed class LocalRendererFactory : ILocalRendererFactory {
 	public ICameraBuilder CameraBuilder { get; }
 	public IObjectBuilder ObjectBuilder { get; }
 	public ISceneBuilder SceneBuilder { get; }
+	public IRendererBuilder RendererBuilder { get; }
 
 	internal FixedByteBufferPool TemporaryCpuBufferPool { get; }
 
@@ -52,6 +53,7 @@ public sealed class LocalRendererFactory : ILocalRendererFactory {
 		CameraBuilder = new LocalCameraBuilder(globals);
 		ObjectBuilder = new LocalObjectBuilder(globals);
 		SceneBuilder = new LocalSceneBuilder(globals);
+		RendererBuilder = new LocalRendererBuilder(globals);
 	}
 
 	#region Resource Group Creation
@@ -86,6 +88,7 @@ public sealed class LocalRendererFactory : ILocalRendererFactory {
 		if (IsDisposed) return;
 		try {
 			// Maintainer's note: These are disposed in reverse order (e.g. opposite order compared to the order they're constructed in in the ctor above)
+			DisposeObjectIfDisposable(RendererBuilder);
 			DisposeObjectIfDisposable(SceneBuilder);
 			DisposeObjectIfDisposable(ObjectBuilder);
 			DisposeObjectIfDisposable(CameraBuilder);

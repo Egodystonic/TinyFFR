@@ -9,15 +9,45 @@ using static System.Formats.Asn1.AsnWriter;
 
 namespace Egodystonic.TinyFFR.Scene;
 
-sealed unsafe class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDisposable {
-	readonly record struct RendererArgs(RendererHandle Handle, Scene Scene, Camera Camera, Window Window, RendererCreationConfig Conmfig);
-	readonly record struct WindowArgs(Window Window, UIntPtr RendererPtr, UIntPtr SwapChainPtr);
-	readonly record struct ViewArgs(Scene Scene, Camera Camera, UIntPtr View, XYPair<uint> CurrentSize);
+sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDisposable {
+	[StructLayout(LayoutKind.Explicit)]
+	readonly struct RenderTargetUnion : IRenderTarget {
+		[FieldOffset(0)]
+		public readonly IntPtr TypeHandle;
+		[FieldOffset(8)]
+		public readonly Window AsWindow;
 
-	readonly ArrayPoolBackedMap<Window, WindowArgs> _loadedWindows = new();
-	readonly ArrayPoolBackedMap<(Scene Scene, Camera Camera), ViewArgs> _loadedViews = new();
-	readonly ArrayPoolBackedMap<RendererHandle, RendererArgs> _loadedRenderers = new();
+		public bool IsWindow => TypeHandle == WindowHandle.TypeHandle;
+
+		public XYPair<int> ViewportOffset {
+			get {
+				if (IsWindow) return ((IRenderTarget) AsWindow).ViewportOffset;
+				throw new InvalidOperationException();
+			}
+		}
+		public XYPair<uint> ViewportDimensions {
+			get {
+				if (IsWindow) return ((IRenderTarget) AsWindow).ViewportDimensions;
+				throw new InvalidOperationException();
+			}
+		}
+
+		public RenderTargetUnion(Window window) {
+			TypeHandle = WindowHandle.TypeHandle;
+			AsWindow = window;
+		}
+	}
+	
+	readonly record struct WindowData(Window Window, UIntPtr RendererPtr, UIntPtr SwapChainPtr);
+	readonly record struct ViewportData(UIntPtr Handle, XYPair<uint> CurrentSize);
+	readonly record struct RendererData(RendererHandle Handle, Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport);
+
+	const string DefaultRendererName = "Unnamed Renderer";
+
+	readonly ArrayPoolBackedMap<Window, WindowData> _loadedWindows = new();
+	readonly ArrayPoolBackedMap<RendererHandle, RendererData> _loadedRenderers = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
+	nuint _previousHandleId = 0U;
 	bool _isDisposed = false;
 
 	public LocalRendererBuilder(LocalFactoryGlobalObjectGroup globals) {
@@ -28,46 +58,56 @@ sealed unsafe class LocalRendererBuilder : IRendererBuilder, IRendererImplProvid
 
 	public Renderer CreateRenderer<TRenderTarget>(Scene scene, Camera camera, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget {
 		if (renderTarget is not Window window) throw new NotImplementedException();
-		if (!_loadedWindowData.TryGetValue(window, out var windowRendererTuple)) {
+
+		if (!_loadedWindows.ContainsKey(window)) {
 			AllocateRendererAndSwapChain(
 				window.Handle,
 				out var rendererHandle,
 				out var swapChainHandle
 			).ThrowIfFailure();
-			windowRendererTuple = (rendererHandle, swapChainHandle);
-			_loadedWindowData.Add(window, windowRendererTuple);
+			_loadedWindows.Add(window, new(window, rendererHandle, swapChainHandle));
 		}
 
-		if (!_sceneCameraViewMap.TryGetValue(scene, out var cameraToViewMap)) {
-			cameraToViewMap = _viewDescriptorCameraMapPool.Rent();
-			_sceneCameraViewMap.Add(scene, cameraToViewMap);
-		}
-		if (!cameraToViewMap.TryGetValue(camera, out var viewDescriptorHandle)) {
-			AllocateViewDescriptor(
-				scene.Handle,
-				camera.Handle,
-				out viewDescriptorHandle
-			).ThrowIfFailure();
-			cameraToViewMap.Add(camera, viewDescriptorHandle);
-		}
+		AllocateViewDescriptor(
+			scene.Handle,
+			camera.Handle,
+			out var viewDescriptorHandle
+		).ThrowIfFailure();
+		var viewportData = new ViewportData(viewDescriptorHandle, XYPair<uint>.Zero);
 
-		if (!_viewSizeMap.TryGetValue(viewDescriptorHandle, out var curViewSize) || curViewSize != renderTarget.ViewportDimensions) {
-			curViewSize = renderTarget.ViewportDimensions;
-			_viewSizeMap[viewDescriptorHandle] = curViewSize;
-			SetViewDescriptorSize(viewDescriptorHandle, curViewSize.X, curViewSize.Y).ThrowIfFailure();
-		}
+		_previousHandleId++;
+		var handle = new RendererHandle(_previousHandleId);
+		_loadedRenderers.Add(handle, new(handle, scene, camera, new(window), viewportData));
 
-		
+		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.Name);
+		return HandleToInstance(handle);
 	}
 
 	public void Render(RendererHandle handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		
+		var viewportData = _loadedRenderers[handle].Viewport;
+		var curViewportSize = viewportData.CurrentSize;
+		var curTargetSize = _loadedRenderers[handle].RenderTarget.ViewportDimensions;
+		if (curViewportSize != curTargetSize) {
+			_loadedRenderers[handle] = _loadedRenderers[handle] with { Viewport = viewportData with { CurrentSize = curTargetSize } };
+			SetViewDescriptorSize(viewportData.Handle, curTargetSize.X, curTargetSize.Y).ThrowIfFailure();
+
+		}
+
+		if (!_loadedRenderers[handle].RenderTarget.IsWindow) return;
+		var windowData = _loadedWindows[_loadedRenderers[handle].RenderTarget.AsWindow];
 		RenderScene(
-			windowRendererTuple.RendererPtr, 
-			windowRendererTuple.SwapChainPtr, 
-			viewDescriptorHandle
+			windowData.RendererPtr,
+			windowData.SwapChainPtr,
+			_loadedRenderers[handle].Viewport.Handle
 		).ThrowIfFailure();
 	}
 
+	public ReadOnlySpan<char> GetName(RendererHandle handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceName(handle.Ident, DefaultRendererName);
+	}
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_renderer_and_swap_chain")]
@@ -106,32 +146,52 @@ sealed unsafe class LocalRendererBuilder : IRendererBuilder, IRendererImplProvid
 	);
 	#endregion
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	Renderer HandleToInstance(RendererHandle h) => new(h, this);
+
 	#region Disposal
+	public bool IsDisposed(RendererHandle handle) => _isDisposed || !_loadedRenderers.ContainsKey(handle);
+	public void Dispose(RendererHandle handle) {
+		if (IsDisposed(handle)) return;
+
+		var data = _loadedRenderers[handle];
+
+		DisposeViewDescriptor(
+			data.Viewport.Handle
+		).ThrowIfFailure();
+
+		_loadedRenderers.Remove(handle);
+
+		if (!data.RenderTarget.IsWindow) return;
+		var window = data.RenderTarget.AsWindow;
+		foreach (var rendererData in _loadedRenderers.Values) {
+			if (rendererData.RenderTarget.IsWindow && rendererData.RenderTarget.AsWindow == window) return;
+		}
+
+		var windowData = _loadedWindows[window];
+		DisposeRendererAndSwapChain(
+			windowData.RendererPtr,
+			windowData.SwapChainPtr
+		).ThrowIfFailure();
+		_loadedWindows.Remove(window);
+	}
+
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
-			_viewSizeMap.Dispose();
-
-			foreach (var kvp in _sceneCameraViewMap) {
-				foreach (var kvp2 in kvp.Value) {
-					DisposeViewDescriptor(kvp2.Value).ThrowIfFailure();
-				}
+			while (_loadedRenderers.Count > 0) {
+				Dispose(_loadedRenderers.GetPairAtIndex(0).Key);
 			}
 
-			foreach (var kvp in _loadedWindowData) {
-				DisposeRendererAndSwapChain(
-					kvp.Value.RendererPtr, 
-					kvp.Value.SwapChainPtr
-				).ThrowIfFailure();
-			}
-			_loadedWindowData.Dispose();
-			_viewDescriptorCameraMapPool.Dispose();
+			_loadedRenderers.Dispose();
+			_loadedWindows.Dispose();
 		}
 		finally {
 			_isDisposed = true;
 		}
 	}
 
+	void ThrowIfThisOrHandleIsDisposed(RendererHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Renderer));
 	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion
 }

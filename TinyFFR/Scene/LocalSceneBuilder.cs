@@ -41,9 +41,6 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		return _globals.GetResourceName(handle.Ident, DefaultSceneName);
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	Scene HandleToInstance(SceneHandle h) => new(h, this);
-
 	#region Model Instance
 	public void Add(SceneHandle handle, ModelInstance modelInstance) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -100,6 +97,9 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		UIntPtr sceneHandle
 	);
 	#endregion
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	Scene HandleToInstance(SceneHandle h) => new(h, this);
 
 	#region Disposal
 	public void Dispose() {

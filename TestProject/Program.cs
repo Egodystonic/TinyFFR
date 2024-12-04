@@ -43,7 +43,7 @@ using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor
 using var mat = factory.AssetLoader.MaterialBuilder.CreateBasicSolidColorMat(0x00FF00FF, name: "Matthew the Material");
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: "Iain the Instance");
 using var scene = factory.SceneBuilder.CreateScene(name: "Sean the Scene");
-using var renderer = scene.CreateRenderer(camera, window);
+using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window, name: "Ryan the Renderer");
 
 scene.Add(instance);
 
@@ -55,10 +55,11 @@ Console.WriteLine(mesh);
 Console.WriteLine(mat);
 Console.WriteLine(instance);
 Console.WriteLine(scene);
+Console.WriteLine(renderer);
 
 while (!loop.Input.UserQuitRequested) {
 	_ = loop.IterateOnce();
-	scene.Render(camera, window);
+	renderer.Render();
 	//instance.MoveBy(Direction.Left * 0.01f);
 	camera.ViewDirection = Direction.Forward;
 	camera.MoveBy(Direction.Right * 0.01f);
