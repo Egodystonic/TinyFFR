@@ -20,28 +20,6 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 		_globals = globals;
 	}
 
-	public ModelInstance CreateModelInstance(Mesh mesh, Material material, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, ReadOnlySpan<char> name = default) {
-		return CreateModelInstance(
-			mesh, 
-			material, 
-			new Transform(
-				translation: initialPosition?.AsVect() ?? ModelInstanceCreationConfig.DefaultInitialTransform.Translation,
-				rotation: initialRotation ?? ModelInstanceCreationConfig.DefaultInitialTransform.Rotation,
-				scaling: initialScaling ?? ModelInstanceCreationConfig.DefaultInitialTransform.Scaling
-			),
-			name
-		);
-	}
-	public ModelInstance CreateModelInstance(Mesh mesh, Material material, Transform initialTransform, ReadOnlySpan<char> name = default) {
-		return CreateModelInstance(
-			mesh,
-			material,
-			new ModelInstanceCreationConfig {
-				InitialTransform = initialTransform,
-				Name = name
-			}
-		);
-	}
 	public ModelInstance CreateModelInstance(Mesh mesh, Material material, in ModelInstanceCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		var meshBufferData = mesh.BufferData;

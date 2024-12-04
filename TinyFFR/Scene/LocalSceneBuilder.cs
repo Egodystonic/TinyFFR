@@ -24,7 +24,6 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		_modelInstanceVectorPool = new(&CreateModelInstanceVector);
 	}
 
-	public Scene CreateScene(ReadOnlySpan<char> name = default) => CreateScene(new SceneCreationConfig { Name = name });
 	public Scene CreateScene(in SceneCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		AllocateScene(

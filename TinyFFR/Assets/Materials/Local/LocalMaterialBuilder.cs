@@ -27,17 +27,6 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		_globals = globals;
 	}
 
-	#region Native Methods
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "create_material")]
-	static extern InteropResult CreateMaterial(
-		MaterialType type, 
-		byte* argumentsBuffer, 
-		int argumentsBufferLengthBytes, 
-		out UIntPtr outMaterialHandle
-	);
-	#endregion
-
-	public Material CreateBasicSolidColorMat(ColorVect color, ReadOnlySpan<char> name = default) => CreateBasicSolidColorMat(color, new MaterialCreationConfig { Name = name });
 	public Material CreateBasicSolidColorMat(ColorVect color, in MaterialCreationConfig config) {
 		CreateMaterial(
 			MaterialType.BasicSolidColor,
@@ -55,6 +44,16 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _globals.GetResourceName(handle.Ident, DefaultMaterialName);
 	}
+
+	#region Native Methods
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "create_material")]
+	static extern InteropResult CreateMaterial(
+		MaterialType type,
+		byte* argumentsBuffer,
+		int argumentsBufferLengthBytes,
+		out UIntPtr outMaterialHandle
+	);
+	#endregion
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Material HandleToInstance(MaterialHandle h) => new(h, this);

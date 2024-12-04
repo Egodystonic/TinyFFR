@@ -4,6 +4,14 @@
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 public interface ILocalApplicationLoopBuilder : IApplicationLoopBuilder {
-	ApplicationLoop CreateLoop(int? frameRateCapHz = null, bool? waitForVsync = null, ReadOnlySpan<char> name = default);
+	ApplicationLoop IApplicationLoopBuilder.CreateLoop(in ApplicationLoopConfig config) => CreateLoop(new LocalApplicationLoopConfig(config));
+
+	ApplicationLoop CreateLoop(int? frameRateCapHz = null, bool? waitForVsync = null, ReadOnlySpan<char> name = default) {
+		return CreateLoop(new LocalApplicationLoopConfig {
+			FrameRateCapHz = frameRateCapHz, 
+			WaitForVSync = waitForVsync ?? LocalApplicationLoopConfig.DefaultWaitForVSync, 
+			Name = name
+		});
+	}
 	ApplicationLoop CreateLoop(in LocalApplicationLoopConfig config);
 }

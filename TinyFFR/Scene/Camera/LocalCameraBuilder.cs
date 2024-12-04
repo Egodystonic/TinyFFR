@@ -26,13 +26,6 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 		_globals = globals;
 	}
 
-	public Camera CreateCamera(Location? initialPosition = null, Direction? initialViewDirection = null, ReadOnlySpan<char> name = default) {
-		return CreateCamera(new CameraCreationConfig {
-			Position = initialPosition ?? CameraCreationConfig.DefaultPosition,
-			ViewDirection = initialViewDirection ?? CameraCreationConfig.DefaultViewDirection,
-			Name = name
-		});
-	}
 	public Camera CreateCamera(in CameraCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();

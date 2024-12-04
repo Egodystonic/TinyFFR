@@ -57,8 +57,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 	);
 	#endregion
 
-	public Mesh CreateMesh(CuboidDescriptor cuboidDesc, ReadOnlySpan<char> name = default) => CreateMesh(cuboidDesc, new MeshCreationConfig { Name = name });
-	public Mesh CreateMesh(CuboidDescriptor cuboidDesc, in MeshCreationConfig config) {
+	public Mesh CreateMesh(CuboidDescriptor cuboidDesc, scoped in MeshCreationConfig config) {
 		Span<MeshVertex> vertices = stackalloc MeshVertex[8];
 		Span<MeshTriangle> triangles = stackalloc MeshTriangle[12];
 
@@ -98,8 +97,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		return CreateMesh(vertices, triangles, config);
 	}
 
-	public Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<MeshTriangle> triangles, ReadOnlySpan<char> name = default) => CreateMesh(vertices, triangles, new MeshCreationConfig { Name = name });
-	public Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<MeshTriangle> triangles, in MeshCreationConfig config) {
+	public Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<MeshTriangle> triangles, scoped in MeshCreationConfig config) {
 		static void CheckTriangleIndex(char indexChar, int triangleIndex, int value, int numVertices) {
 			if (value < 0 || value >= numVertices) {
 				throw new ArgumentException($"Index '{indexChar}' in triangle #{triangleIndex} (0-indexed) is \"{value}\"; " +

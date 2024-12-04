@@ -4,6 +4,12 @@
 namespace Egodystonic.TinyFFR.Scene;
 
 public interface ICameraBuilder {
-	Camera CreateCamera(Location? initialPosition = null, Direction? initialViewDirection = null, ReadOnlySpan<char> name = default);
+	Camera CreateCamera(Location? initialPosition = null, Direction? initialViewDirection = null, ReadOnlySpan<char> name = default) {
+		return CreateCamera(new CameraCreationConfig {
+			Position = initialPosition ?? CameraCreationConfig.DefaultPosition,
+			ViewDirection = initialViewDirection ?? CameraCreationConfig.DefaultViewDirection,
+			Name = name
+		});
+	}
 	Camera CreateCamera(in CameraCreationConfig config);
 }

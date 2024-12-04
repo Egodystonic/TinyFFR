@@ -42,15 +42,6 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		_latestInputRetriever = LocalInputManager.IncrementRefCountAndGetRetriever();
 	}
 
-	public ApplicationLoop CreateLoop(int? frameRateCapHz = null, ReadOnlySpan<char> name = default) => CreateLoop(frameRateCapHz, null, name);
-	public ApplicationLoop CreateLoop(int? frameRateCapHz = null, bool? waitForVsync = null, ReadOnlySpan<char> name = default) {
-		return CreateLoop(new LocalApplicationLoopConfig {
-			Name = name,
-			FrameRateCapHz = frameRateCapHz,
-			WaitForVSync = waitForVsync ?? LocalApplicationLoopConfig.DefaultWaitForVSync
-		});
-	}
-	public ApplicationLoop CreateLoop(in ApplicationLoopConfig config) => CreateLoop(new LocalApplicationLoopConfig(config));
 	public ApplicationLoop CreateLoop(in LocalApplicationLoopConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
