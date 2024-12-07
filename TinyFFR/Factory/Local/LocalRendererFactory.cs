@@ -18,14 +18,23 @@ public sealed class LocalRendererFactory : ILocalRendererFactory {
 	readonly ManagedStringPool _stringPool = new();
 	readonly LocalCombinedResourceGroupImplProvider _resourceGroupProvider;
 
-	public IDisplayDiscoverer DisplayDiscoverer { get; }
-	public IWindowBuilder WindowBuilder { get; }
-	public ILocalApplicationLoopBuilder ApplicationLoopBuilder { get; }
-	public IAssetLoader AssetLoader { get; }
-	public ICameraBuilder CameraBuilder { get; }
-	public IObjectBuilder ObjectBuilder { get; }
-	public ISceneBuilder SceneBuilder { get; }
-	public IRendererBuilder RendererBuilder { get; }
+	readonly IDisplayDiscoverer _displayDiscoverer;
+	readonly IWindowBuilder _windowBuilder;
+	readonly ILocalApplicationLoopBuilder _applicationLoopBuilder;
+	readonly IAssetLoader _assetLoader;
+	readonly ICameraBuilder _cameraBuilder;
+	readonly IObjectBuilder _objectBuilder;
+	readonly ISceneBuilder _sceneBuilder;
+	readonly IRendererBuilder _rendererBuilder;
+
+	public IDisplayDiscoverer DisplayDiscoverer => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalRendererFactory)) : _displayDiscoverer;
+	public IWindowBuilder WindowBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalRendererFactory)) : _windowBuilder;
+	public ILocalApplicationLoopBuilder ApplicationLoopBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalRendererFactory)) : _applicationLoopBuilder;
+	public IAssetLoader AssetLoader => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalRendererFactory)) : _assetLoader;
+	public ICameraBuilder CameraBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalRendererFactory)) : _cameraBuilder;
+	public IObjectBuilder ObjectBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalRendererFactory)) : _objectBuilder;
+	public ISceneBuilder SceneBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalRendererFactory)) : _sceneBuilder;
+	public IRendererBuilder RendererBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalRendererFactory)) : _rendererBuilder;
 
 	internal FixedByteBufferPool TemporaryCpuBufferPool { get; }
 
@@ -46,27 +55,31 @@ public sealed class LocalRendererFactory : ILocalRendererFactory {
 		_resourceGroupProvider = new(globals);
 		resourceGroupProviderRef.Resolve(_resourceGroupProvider);
 
-		DisplayDiscoverer = new LocalDisplayDiscoverer(globals);
-		WindowBuilder = new LocalWindowBuilder(globals, windowBuilderConfig ?? new());
-		ApplicationLoopBuilder = new LocalApplicationLoopBuilder(globals, applicationLoopBuilderConfig ?? new());
-		AssetLoader = new LocalAssetLoader(globals, assetLoaderConfig ?? new());
-		CameraBuilder = new LocalCameraBuilder(globals);
-		ObjectBuilder = new LocalObjectBuilder(globals);
-		SceneBuilder = new LocalSceneBuilder(globals);
-		RendererBuilder = new LocalRendererBuilder(globals);
+		_displayDiscoverer = new LocalDisplayDiscoverer(globals);
+		_windowBuilder = new LocalWindowBuilder(globals, windowBuilderConfig ?? new());
+		_applicationLoopBuilder = new LocalApplicationLoopBuilder(globals, applicationLoopBuilderConfig ?? new());
+		_assetLoader = new LocalAssetLoader(globals, assetLoaderConfig ?? new());
+		_cameraBuilder = new LocalCameraBuilder(globals);
+		_objectBuilder = new LocalObjectBuilder(globals);
+		_sceneBuilder = new LocalSceneBuilder(globals);
+		_rendererBuilder = new LocalRendererBuilder(globals);
 	}
 
 	#region Resource Group Creation
 	public CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed) {
+		if (IsDisposed) throw new ObjectDisposedException(nameof(ILocalRendererFactory));
 		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed);
 	}
 	public CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name) {
+		if (IsDisposed) throw new ObjectDisposedException(nameof(ILocalRendererFactory));
 		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed, name);
 	}
 	public CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, int initialCapacity) {
+		if (IsDisposed) throw new ObjectDisposedException(nameof(ILocalRendererFactory));
 		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed, initialCapacity);
 	}
 	public CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name, int initialCapacity) {
+		if (IsDisposed) throw new ObjectDisposedException(nameof(ILocalRendererFactory));
 		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed, name, initialCapacity);
 	}
 	#endregion
@@ -88,14 +101,14 @@ public sealed class LocalRendererFactory : ILocalRendererFactory {
 		if (IsDisposed) return;
 		try {
 			// Maintainer's note: These are disposed in reverse order (e.g. opposite order compared to the order they're constructed in in the ctor above)
-			DisposeObjectIfDisposable(RendererBuilder);
-			DisposeObjectIfDisposable(SceneBuilder);
-			DisposeObjectIfDisposable(ObjectBuilder);
-			DisposeObjectIfDisposable(CameraBuilder);
-			DisposeObjectIfDisposable(AssetLoader);
-			DisposeObjectIfDisposable(ApplicationLoopBuilder);
-			DisposeObjectIfDisposable(WindowBuilder);
-			DisposeObjectIfDisposable(DisplayDiscoverer);
+			DisposeObjectIfDisposable(_rendererBuilder);
+			DisposeObjectIfDisposable(_sceneBuilder);
+			DisposeObjectIfDisposable(_objectBuilder);
+			DisposeObjectIfDisposable(_cameraBuilder);
+			DisposeObjectIfDisposable(_assetLoader);
+			DisposeObjectIfDisposable(_applicationLoopBuilder);
+			DisposeObjectIfDisposable(_windowBuilder);
+			DisposeObjectIfDisposable(_displayDiscoverer);
 			DisposeObjectIfDisposable(_resourceGroupProvider);
 			DisposeObjectIfDisposable(_stringPool);
 			DisposeObjectIfDisposable(_dependencyTracker);

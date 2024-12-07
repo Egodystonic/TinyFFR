@@ -57,6 +57,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	}
 
 	public Renderer CreateRenderer<TRenderTarget>(Scene scene, Camera camera, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget {
+		ThrowIfThisIsDisposed();
 		if (renderTarget is not Window window) throw new NotImplementedException();
 
 		if (!_loadedWindows.ContainsKey(window)) {

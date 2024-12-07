@@ -28,6 +28,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	}
 
 	public Material CreateBasicSolidColorMat(ColorVect color, in MaterialCreationConfig config) {
+		ThrowIfThisIsDisposed();
 		CreateMaterial(
 			MaterialType.BasicSolidColor,
 			null,
@@ -57,6 +58,8 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Material HandleToInstance(MaterialHandle h) => new(h, this);
+
+	public override string ToString() => _isDisposed ? "TinyFFR Local Material Builder [Disposed]" : "TinyFFR Local Material Builder";
 
 	#region Disposal
 	public bool IsDisposed(MaterialHandle handle) => _isDisposed || !_activeMaterials.ContainsKey(handle);

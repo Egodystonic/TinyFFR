@@ -10,7 +10,7 @@ using DisplayModeArray = Egodystonic.TinyFFR.Environment.Local.DisplayMode[];
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider {
+sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, IDisposable {
 	const int MaxDisplayNameLength = 200; // Should be low enough to be stackalloc'able (or rewrite ctor)
 	const int MaxDisplayCount = 1_000_000;
 	readonly LocalFactoryGlobalObjectGroup _globals;
@@ -19,10 +19,11 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider {
 	readonly Display[] _displays;
 	readonly DisplayHandle? _recommendedHandle;
 	readonly DisplayHandle? _primaryHandle;
+	bool _isDisposed = false;
 
-	public ReadOnlySpan<Display> All => _displays.AsSpan();
-	public Display? Recommended => _recommendedHandle != null ? new Display(_recommendedHandle.Value, this) : null;
-	public Display? Primary => _primaryHandle != null ? new Display(_primaryHandle.Value, this) : null;
+	public ReadOnlySpan<Display> All => _isDisposed ? throw new ObjectDisposedException(nameof(IDisplayDiscoverer)) : _displays.AsSpan();
+	public Display? Recommended => _isDisposed ? throw new ObjectDisposedException(nameof(IDisplayDiscoverer)) : (_recommendedHandle != null ? new Display(_recommendedHandle.Value, this) : null);
+	public Display? Primary => _isDisposed ? throw new ObjectDisposedException(nameof(IDisplayDiscoverer)) : (_primaryHandle != null ? new Display(_primaryHandle.Value, this) : null);
 
 	public LocalDisplayDiscoverer(LocalFactoryGlobalObjectGroup globals) {
 		ArgumentNullException.ThrowIfNull(globals);
@@ -74,7 +75,7 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider {
 	}
 
 	public DisplayMode GetHighestSupportedResolutionMode(DisplayHandle handle) {
-		ThrowIfUnrecognizedDisplay(handle);
+		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		var modes = _displayModes[handle];
 		var result = modes[0];
 		foreach (var displayMode in modes[1..]) {
@@ -88,7 +89,7 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider {
 		return result;
 	}
 	public DisplayMode GetHighestSupportedRefreshRateMode(DisplayHandle handle) {
-		ThrowIfUnrecognizedDisplay(handle);
+		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		var modes = _displayModes[handle];
 		var result = modes[0];
 		foreach (var displayMode in modes[1..]) {
@@ -103,24 +104,24 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider {
 	}
 
 	public bool GetIsPrimary(DisplayHandle handle) {
-		ThrowIfUnrecognizedDisplay(handle);
+		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		return handle == _primaryHandle;
 	}
 	public bool GetIsRecommended(DisplayHandle handle) {
-		ThrowIfUnrecognizedDisplay(handle);
+		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		return handle == _recommendedHandle;
 	}
 
 	public ReadOnlySpan<char> GetName(DisplayHandle handle) {
-		ThrowIfUnrecognizedDisplay(handle);
+		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		return _displayNames[handle];
 	}
 	public ReadOnlySpan<DisplayMode> GetSupportedDisplayModes(DisplayHandle handle) {
-		ThrowIfUnrecognizedDisplay(handle);
+		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		return _displayModes[handle];
 	}
 	public XYPair<int> GetCurrentResolution(DisplayHandle handle) {
-		ThrowIfUnrecognizedDisplay(handle);
+		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		GetDisplayResolution(
 			handle,
 			out var outWidth,
@@ -129,7 +130,7 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider {
 		return (outWidth, outHeight);
 	}
 	public XYPair<int> GetGlobalPositionOffset(DisplayHandle handle) {
-		ThrowIfUnrecognizedDisplay(handle);
+		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		GetDisplayPositionalOffset(
 			handle,
 			out var outXOffset,
@@ -138,11 +139,7 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider {
 		return (outXOffset, outYOffset);
 	}
 
-	void ThrowIfUnrecognizedDisplay(DisplayHandle handle) {
-		if (handle >= (nuint) _displays.Length) throw new InvalidOperationException("Given display was not created by this display discoverer.");
-	}
-
-	public override string ToString() => "TinyFFR Display Discoverer";
+	public override string ToString() => _isDisposed ? "TinyFFR Display Discoverer [Disposed]" : "TinyFFR Display Discoverer";
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_recommended_display")]
@@ -168,5 +165,18 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider {
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_display_positional_offset")]
 	static extern InteropResult GetDisplayPositionalOffset(nuint handle, out int outXOffset, out int outYOffset);
+	#endregion
+
+	#region Disposal
+	void ThrowIfDisposedOrUnrecognizedDisplay(DisplayHandle handle) {
+		ObjectDisposedException.ThrowIf(_isDisposed, typeof(Display));
+		if (handle >= (nuint) _displays.Length) throw new InvalidOperationException("Given display was not created by this display discoverer.");
+	}
+
+	public void Dispose() {
+		_isDisposed = true;
+	}
+
+	public bool IsValid(DisplayHandle handle) => !_isDisposed && handle < (nuint) _displays.Length;
 	#endregion
 }

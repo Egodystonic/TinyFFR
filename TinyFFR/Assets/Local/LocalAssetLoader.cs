@@ -18,8 +18,8 @@ sealed class LocalAssetLoader : IAssetLoader, IDisposable {
 	readonly LocalMaterialBuilder _materialBuilder;
 	bool _isDisposed = false;
 
-	public IMeshBuilder MeshBuilder => _meshBuilder;
-	public IMaterialBuilder MaterialBuilder => _materialBuilder;
+	public IMeshBuilder MeshBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IAssetLoader)) : _meshBuilder;
+	public IMaterialBuilder MaterialBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IAssetLoader)) : _materialBuilder;
 
 	public LocalAssetLoader(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config) {
 		ArgumentNullException.ThrowIfNull(globals);
@@ -29,6 +29,8 @@ sealed class LocalAssetLoader : IAssetLoader, IDisposable {
 		_meshBuilder = new LocalMeshBuilder(globals);
 		_materialBuilder = new LocalMaterialBuilder(globals);
 	}
+
+	public override string ToString() => _isDisposed ? "TinyFFR Local Asset Loader [Disposed]" : "TinyFFR Local Asset Loader";
 
 	#region Disposal
 	public void Dispose() {

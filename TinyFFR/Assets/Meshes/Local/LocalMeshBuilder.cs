@@ -58,6 +58,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 	#endregion
 
 	public Mesh CreateMesh(CuboidDescriptor cuboidDesc, scoped in MeshCreationConfig config) {
+		ThrowIfThisIsDisposed();
 		Span<MeshVertex> vertices = stackalloc MeshVertex[8];
 		Span<MeshTriangle> triangles = stackalloc MeshTriangle[12];
 
@@ -98,6 +99,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 	}
 
 	public Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<MeshTriangle> triangles, scoped in MeshCreationConfig config) {
+		ThrowIfThisIsDisposed();
 		static void CheckTriangleIndex(char indexChar, int triangleIndex, int value, int numVertices) {
 			if (value < 0 || value >= numVertices) {
 				throw new ArgumentException($"Index '{indexChar}' in triangle #{triangleIndex} (0-indexed) is \"{value}\"; " +
@@ -156,6 +158,8 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Mesh HandleToInstance(MeshHandle h) => new(h, this);
+
+	public override string ToString() => _isDisposed ? "TinyFFR Local Mesh Builder [Disposed]" : "TinyFFR Local Mesh Builder";
 
 	#region Disposal
 	public bool IsDisposed(MeshHandle handle) => _isDisposed || !_activeMeshes.ContainsKey(handle);

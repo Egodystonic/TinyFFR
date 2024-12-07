@@ -13,4 +13,5 @@ public interface IDisplayImplProvider : IResourceImplProvider<DisplayHandle> {
 	DisplayMode GetHighestSupportedRefreshRateMode(DisplayHandle handle);
 	XYPair<int> GetCurrentResolution(DisplayHandle handle);
 	XYPair<int> GetGlobalPositionOffset(DisplayHandle handle);
+	bool IsValid(DisplayHandle handle);
 }

@@ -12,7 +12,7 @@ public readonly struct Display : IResource<Display, DisplayHandle, IDisplayImplP
 	readonly DisplayHandle _handle;
 	readonly IDisplayImplProvider _impl;
 
-	internal DisplayHandle Handle => _handle;
+	internal DisplayHandle Handle => Implementation.IsValid(_handle) ? _handle : throw new ObjectDisposedException(nameof(Display));
 	internal IDisplayImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Display>();
 
 	IDisplayImplProvider IResource<DisplayHandle, IDisplayImplProvider>.Implementation => Implementation;
@@ -64,7 +64,11 @@ public readonly struct Display : IResource<Display, DisplayHandle, IDisplayImplP
 	internal XYPair<int> TranslateDisplayLocalWindowPositionToGlobal(XYPair<int> displayLocalPosition) => displayLocalPosition + GlobalPositionOffset;
 	internal XYPair<int> TranslateGlobalWindowPositionToDisplayLocal(XYPair<int> globalPosition) => globalPosition - GlobalPositionOffset;
 
-	public override string ToString() => $"{nameof(Display)} \"{Name}\" ({CurrentResolution.X:#} x {CurrentResolution.Y:#}){(IsPrimary ? " (Primary)" : "")}{(IsRecommended ? " (Recommended)" : "")}";
+	public override string ToString() {
+		return Implementation.IsValid(_handle) 
+			? $"{nameof(Display)} \"{Name}\" ({CurrentResolution.X:#} x {CurrentResolution.Y:#}){(IsPrimary ? " (Primary)" : "")}{(IsRecommended ? " (Recommended)" : "")}"
+			: $"{nameof(Display)} [Invalid]";
+	}
 
 	#region Equality
 	public bool Equals(Display other) => _handle == other._handle && _impl == other._impl;

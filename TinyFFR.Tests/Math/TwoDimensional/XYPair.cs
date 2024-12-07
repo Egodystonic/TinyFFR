@@ -18,6 +18,14 @@ class XYPairTest {
 	public void TearDownTest() { }
 
 	[Test]
+	public void ShouldCorrectlyInstantiateStaticMembers() {
+		Assert.AreEqual(0, XYPair<int>.Zero.X);
+		Assert.AreEqual(0, XYPair<int>.Zero.Y);
+		Assert.AreEqual(1, XYPair<int>.One.X);
+		Assert.AreEqual(1, XYPair<int>.One.Y);
+	}
+
+	[Test]
 	public void ShouldCorrectlyAssignConstructorParameters() {
 		Assert.AreEqual(3f, ThreeFourFloat.X);
 		Assert.AreEqual(4f, ThreeFourFloat.Y);

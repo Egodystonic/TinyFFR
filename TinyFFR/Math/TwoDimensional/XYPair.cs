@@ -10,6 +10,7 @@ namespace Egodystonic.TinyFFR;
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>> where T : unmanaged, INumber<T> {
 	public static readonly XYPair<T> Zero = new(T.Zero, T.Zero);
+	public static readonly XYPair<T> One = new(T.One, T.One);
 	internal const int DefaultRandomRange = 100;
 	static readonly int _marshalledElementSizeBytes = MemoryMarshal.AsBytes(new ReadOnlySpan<T>(in Zero._x)).Length;
 
