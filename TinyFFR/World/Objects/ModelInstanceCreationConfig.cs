@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Egodystonic.TinyFFR.Scene;
+namespace Egodystonic.TinyFFR.World;
 
 public readonly ref struct ModelInstanceCreationConfig {
 	public static readonly Transform DefaultInitialTransform = Transform.None;

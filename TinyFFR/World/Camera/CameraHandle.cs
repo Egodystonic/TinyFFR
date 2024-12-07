@@ -1,9 +1,10 @@
 ﻿// Created on 2024-09-24 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System;
 using Egodystonic.TinyFFR.Resources;
 
-namespace Egodystonic.TinyFFR.Scene;
+namespace Egodystonic.TinyFFR.World;
 
 public readonly unsafe struct CameraHandle : IResourceHandle<CameraHandle> {
 	public nuint AsInteger { get; }

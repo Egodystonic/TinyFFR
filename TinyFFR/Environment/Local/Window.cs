@@ -2,9 +2,10 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
-using Egodystonic.TinyFFR.Scene;
+using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 

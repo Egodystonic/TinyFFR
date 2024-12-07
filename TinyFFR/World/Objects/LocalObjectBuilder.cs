@@ -1,13 +1,14 @@
 ﻿// Created on 2024-10-15 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
 
-namespace Egodystonic.TinyFFR.Scene;
+namespace Egodystonic.TinyFFR.World;
 
 sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IDisposable {
 	const string DefaultModelInstanceName = "Unnamed Model Instance";

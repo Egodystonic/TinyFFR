@@ -8,7 +8,6 @@ using Egodystonic.TinyFFR.Assets.Meshes.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
-using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 

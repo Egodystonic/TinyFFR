@@ -1,7 +1,9 @@
 ﻿// Created on 2024-10-31 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-namespace Egodystonic.TinyFFR.Scene;
+using System;
+
+namespace Egodystonic.TinyFFR.World;
 
 public interface IPositionedSceneObject {
 	Location Position { get; set; }

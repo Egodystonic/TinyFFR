@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Egodystonic.TinyFFR.Scene;
+namespace Egodystonic.TinyFFR.Rendering;
 
 public readonly ref struct RendererCreationConfig {
 	public ReadOnlySpan<char> Name { get; init; }

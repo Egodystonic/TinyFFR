@@ -4,7 +4,6 @@
 using System;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
-using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Environment.Input.Local;
 

@@ -1,11 +1,12 @@
 ﻿// Created on 2024-08-19 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
 
-namespace Egodystonic.TinyFFR.Scene;
+namespace Egodystonic.TinyFFR.World;
 
 sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisposable {
 	const string DefaultSceneName = "Unnamed Scene";

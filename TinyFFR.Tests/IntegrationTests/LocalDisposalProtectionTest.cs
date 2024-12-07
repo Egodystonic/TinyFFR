@@ -12,9 +12,10 @@ using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
-using Egodystonic.TinyFFR.Scene;
+using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR;
 
@@ -137,7 +138,7 @@ class LocalDisposalProtectionTest {
 		AssertUseAfterDisposalThrowsException(objectBuilder.CreateModelInstance(mesh, material), objectIsAlreadyDisposed: false, modelInstanceActions);
 		var sceneBuilder = factory.SceneBuilder;
 		var scene = sceneBuilder.CreateScene();
-		var sceneActions = new Action<Scene.Scene>[] {
+		var sceneActions = new Action<Scene>[] {
 			v => _ = v.Handle,
 			v => _ = v.Name,
 			v => v.Add(modelInstance),

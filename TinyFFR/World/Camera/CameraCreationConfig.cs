@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Egodystonic.TinyFFR.Scene;
+namespace Egodystonic.TinyFFR.World;
 
 public readonly ref struct CameraCreationConfig {
 	public static readonly Location DefaultPosition = Location.Origin;

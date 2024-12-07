@@ -1,13 +1,14 @@
 ﻿// Created on 2024-11-05 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
-using static System.Formats.Asn1.AsnWriter;
+using Egodystonic.TinyFFR.World;
 
-namespace Egodystonic.TinyFFR.Scene;
+namespace Egodystonic.TinyFFR.Rendering;
 
 sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDisposable {
 	[StructLayout(LayoutKind.Explicit)]

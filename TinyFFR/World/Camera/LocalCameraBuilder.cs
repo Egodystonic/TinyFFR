@@ -1,15 +1,12 @@
 ﻿// Created on 2024-08-19 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-using Egodystonic.TinyFFR.Assets.Materials;
-using Egodystonic.TinyFFR.Assets.Meshes;
+using System;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
-using System.Reflection.Metadata;
-using System.Transactions;
 
-namespace Egodystonic.TinyFFR.Scene;
+namespace Egodystonic.TinyFFR.World;
 
 sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposable {
 	readonly record struct CameraParameters(Location Position, Direction ViewDirection, Direction UpDirection, float VerticalFovRadians, float AspectRatio, float NearPlaneDistance, float FarPlaneDistance);

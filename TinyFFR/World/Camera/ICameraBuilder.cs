@@ -1,7 +1,9 @@
 ﻿// Created on 2024-08-07 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-namespace Egodystonic.TinyFFR.Scene;
+using System;
+
+namespace Egodystonic.TinyFFR.World;
 
 public interface ICameraBuilder {
 	Camera CreateCamera(Location? initialPosition = null, Direction? initialViewDirection = null, ReadOnlySpan<char> name = default) {

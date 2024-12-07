@@ -7,9 +7,10 @@ using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
-using Egodystonic.TinyFFR.Scene;
+using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
 

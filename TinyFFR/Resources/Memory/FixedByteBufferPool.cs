@@ -1,7 +1,6 @@
 ﻿// Created on 2024-01-15 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-using Egodystonic.TinyFFR.Scene;
 using System.Buffers;
 
 namespace Egodystonic.TinyFFR.Resources.Memory;

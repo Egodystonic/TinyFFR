@@ -4,8 +4,9 @@
 using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Local;
+using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
-using Egodystonic.TinyFFR.Scene;
+using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Factory;
 

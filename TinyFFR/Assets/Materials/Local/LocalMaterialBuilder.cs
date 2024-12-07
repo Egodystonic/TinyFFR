@@ -11,7 +11,6 @@ using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
-using Egodystonic.TinyFFR.Scene;
 
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 

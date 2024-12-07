@@ -1,11 +1,10 @@
 ﻿// Created on 2024-08-07 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-using Egodystonic.TinyFFR.Assets.Materials;
-using Egodystonic.TinyFFR.Resources;
 using System;
+using Egodystonic.TinyFFR.Resources;
 
-namespace Egodystonic.TinyFFR.Scene;
+namespace Egodystonic.TinyFFR.World;
 
 public interface ICameraImplProvider : IDisposableResourceImplProvider<CameraHandle> {
 	public Location GetPosition(CameraHandle handle);
