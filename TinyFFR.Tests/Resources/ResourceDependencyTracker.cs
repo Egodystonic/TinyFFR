@@ -1,6 +1,7 @@
 ﻿// Created on 2024-02-15 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Linq;
 using Alpha = Egodystonic.TinyFFR.Resources.MockResourceAlpha;
 using AlphaHandle = Egodystonic.TinyFFR.Resources.MockHandleAlpha;
 using Bravo = Egodystonic.TinyFFR.Resources.MockResourceBravo;
@@ -58,10 +59,10 @@ class ResourceDependencyTrackerTest {
 			Assert.DoesNotThrow(() => _tracker.RegisterDependency(dependent, target)); // Check that add/remove is idempotent
 
 			Assert.AreEqual(1,
-				_tracker.EnumerateDependents(target).Count(s => s.Handle == dependent.Handle && s.Implementation.Equals(dependent.Implementation))
+				_tracker.GetDependents(target).Count(s => s.Handle == dependent.Handle && s.Implementation.Equals(dependent.Implementation))
 			);
 			Assert.AreEqual(1,
-				_tracker.EnumerateTargets(dependent).Count(s => s.Handle == target.Handle && s.Implementation.Equals(target.Implementation))
+				_tracker.GetTargets(dependent).Count(s => s.Handle == target.Handle && s.Implementation.Equals(target.Implementation))
 			);
 		}
 		void RemoveDependencyAndAssert<TDependent, TTarget>(TDependent dependent, TTarget target) where TDependent : IResource where TTarget : IResource {
@@ -71,10 +72,10 @@ class ResourceDependencyTrackerTest {
 			Assert.DoesNotThrow(() => _tracker.DeregisterDependency(dependent, target)); // Check that add/remove is idempotent
 
 			Assert.AreEqual(0,
-				_tracker.EnumerateDependents(target).Count(s => s.Handle == dependent.Handle && s.Implementation.Equals(dependent.Implementation))
+				_tracker.GetDependents(target).Count(s => s.Handle == dependent.Handle && s.Implementation.Equals(dependent.Implementation))
 			);
 			Assert.AreEqual(0,
-				_tracker.EnumerateTargets(dependent).Count(s => s.Handle == target.Handle && s.Implementation.Equals(target.Implementation))
+				_tracker.GetTargets(dependent).Count(s => s.Handle == target.Handle && s.Implementation.Equals(target.Implementation))
 			);
 		}
 
@@ -106,39 +107,39 @@ class ResourceDependencyTrackerTest {
 		Assert.AreEqual(_alphaResources[0], _tracker.GetNthTargetOfGivenType<Bravo, Alpha, AlphaHandle, Impl>(_bravoResources[2], 0));
 		Assert.AreEqual(_alphaResources[1], _tracker.GetNthTargetOfGivenType<Bravo, Alpha, AlphaHandle, Impl>(_bravoResources[2], 1));
 
-		Assert.AreEqual(3, _tracker.EnumerateDependents(_alphaResources[0]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateDependents(_alphaResources[1]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateDependents(_alphaResources[2]).Count);
-		Assert.AreEqual(2, _tracker.EnumerateDependents(_bravoResources[0]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateDependents(_bravoResources[1]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateDependents(_bravoResources[2]).Count);
+		Assert.AreEqual(3, _tracker.GetDependents(_alphaResources[0]).Count);
+		Assert.AreEqual(1, _tracker.GetDependents(_alphaResources[1]).Count);
+		Assert.AreEqual(0, _tracker.GetDependents(_alphaResources[2]).Count);
+		Assert.AreEqual(2, _tracker.GetDependents(_bravoResources[0]).Count);
+		Assert.AreEqual(0, _tracker.GetDependents(_bravoResources[1]).Count);
+		Assert.AreEqual(0, _tracker.GetDependents(_bravoResources[2]).Count);
 
-		Assert.AreEqual(1, _tracker.EnumerateTargets(_alphaResources[0]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateTargets(_alphaResources[1]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateTargets(_alphaResources[2]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateTargets(_bravoResources[0]).Count);
-		Assert.AreEqual(2, _tracker.EnumerateTargets(_bravoResources[1]).Count);
-		Assert.AreEqual(2, _tracker.EnumerateTargets(_bravoResources[2]).Count);
+		Assert.AreEqual(1, _tracker.GetTargets(_alphaResources[0]).Count);
+		Assert.AreEqual(0, _tracker.GetTargets(_alphaResources[1]).Count);
+		Assert.AreEqual(0, _tracker.GetTargets(_alphaResources[2]).Count);
+		Assert.AreEqual(1, _tracker.GetTargets(_bravoResources[0]).Count);
+		Assert.AreEqual(2, _tracker.GetTargets(_bravoResources[1]).Count);
+		Assert.AreEqual(2, _tracker.GetTargets(_bravoResources[2]).Count);
 
-		Assert.AreEqual(3, _tracker.EnumerateDependentsOfGivenType<Alpha, Bravo, BravoHandle, Impl>(_alphaResources[0]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateDependentsOfGivenType<Alpha, Bravo, BravoHandle, Impl>(_alphaResources[1]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateDependentsOfGivenType<Alpha, Bravo, BravoHandle, Impl>(_alphaResources[2]).Count);
+		Assert.AreEqual(3, _tracker.GetDependentsOfGivenType<Alpha, Bravo, BravoHandle, Impl>(_alphaResources[0]).Count);
+		Assert.AreEqual(1, _tracker.GetDependentsOfGivenType<Alpha, Bravo, BravoHandle, Impl>(_alphaResources[1]).Count);
+		Assert.AreEqual(0, _tracker.GetDependentsOfGivenType<Alpha, Bravo, BravoHandle, Impl>(_alphaResources[2]).Count);
 
-		Assert.AreEqual(1, _tracker.EnumerateDependentsOfGivenType<Bravo, Alpha, AlphaHandle, Impl>(_bravoResources[0]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateDependentsOfGivenType<Bravo, Bravo, BravoHandle, Impl>(_bravoResources[0]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateDependentsOfGivenType<Bravo, Alpha, AlphaHandle, Impl>(_bravoResources[1]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateDependentsOfGivenType<Bravo, Alpha, AlphaHandle, Impl>(_bravoResources[2]).Count);
+		Assert.AreEqual(1, _tracker.GetDependentsOfGivenType<Bravo, Alpha, AlphaHandle, Impl>(_bravoResources[0]).Count);
+		Assert.AreEqual(1, _tracker.GetDependentsOfGivenType<Bravo, Bravo, BravoHandle, Impl>(_bravoResources[0]).Count);
+		Assert.AreEqual(0, _tracker.GetDependentsOfGivenType<Bravo, Alpha, AlphaHandle, Impl>(_bravoResources[1]).Count);
+		Assert.AreEqual(0, _tracker.GetDependentsOfGivenType<Bravo, Alpha, AlphaHandle, Impl>(_bravoResources[2]).Count);
 
-		Assert.AreEqual(1, _tracker.EnumerateTargetsOfGivenType<Alpha, Bravo, BravoHandle, Impl>(_alphaResources[0]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateTargetsOfGivenType<Alpha, Bravo, BravoHandle, Impl>(_alphaResources[1]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateTargetsOfGivenType<Alpha, Alpha, AlphaHandle, Impl>(_alphaResources[0]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateTargetsOfGivenType<Bravo, Alpha, AlphaHandle, Impl>(_bravoResources[0]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateTargetsOfGivenType<Bravo, Alpha, AlphaHandle, Impl>(_bravoResources[1]).Count);
-		Assert.AreEqual(2, _tracker.EnumerateTargetsOfGivenType<Bravo, Alpha, AlphaHandle, Impl>(_bravoResources[2]).Count);
+		Assert.AreEqual(1, _tracker.GetTargetsOfGivenType<Alpha, Bravo, BravoHandle, Impl>(_alphaResources[0]).Count);
+		Assert.AreEqual(0, _tracker.GetTargetsOfGivenType<Alpha, Bravo, BravoHandle, Impl>(_alphaResources[1]).Count);
+		Assert.AreEqual(0, _tracker.GetTargetsOfGivenType<Alpha, Alpha, AlphaHandle, Impl>(_alphaResources[0]).Count);
+		Assert.AreEqual(1, _tracker.GetTargetsOfGivenType<Bravo, Alpha, AlphaHandle, Impl>(_bravoResources[0]).Count);
+		Assert.AreEqual(1, _tracker.GetTargetsOfGivenType<Bravo, Alpha, AlphaHandle, Impl>(_bravoResources[1]).Count);
+		Assert.AreEqual(2, _tracker.GetTargetsOfGivenType<Bravo, Alpha, AlphaHandle, Impl>(_bravoResources[2]).Count);
 
 		RemoveDependencyAndAssert(_bravoResources[1], _alphaResources[0]);
-		Assert.AreEqual(1, _tracker.EnumerateTargets(_bravoResources[1]).Count);
-		Assert.AreEqual(2, _tracker.EnumerateDependents(_alphaResources[0]).Count);
+		Assert.AreEqual(1, _tracker.GetTargets(_bravoResources[1]).Count);
+		Assert.AreEqual(2, _tracker.GetDependents(_alphaResources[0]).Count);
 		Assert.AreEqual(_bravoResources[0], _tracker.GetNthTargetOfGivenType<Bravo, Bravo, BravoHandle, Impl>(_bravoResources[1], 0));
 		Assert.AreEqual(_bravoResources[0], _tracker.GetNthDependentOfGivenType<Alpha, Bravo, BravoHandle, Impl>(_alphaResources[0], 0));
 		Assert.AreEqual(_bravoResources[2], _tracker.GetNthDependentOfGivenType<Alpha, Bravo, BravoHandle, Impl>(_alphaResources[0], 1));
@@ -158,48 +159,93 @@ class ResourceDependencyTrackerTest {
 		_tracker.RegisterDependency(_alphaResources[1], _bravoResources[3]);
 		_tracker.RegisterDependency(_alphaResources[1], _bravoResources[4]);
 
-		Assert.AreEqual(4, _tracker.EnumerateTargets(_alphaResources[0]).Count);
-		Assert.AreEqual(2, _tracker.EnumerateTargets(_alphaResources[1]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateDependents(_bravoResources[0]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateDependents(_bravoResources[1]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateDependents(_bravoResources[2]).Count);
-		Assert.AreEqual(2, _tracker.EnumerateDependents(_bravoResources[3]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateDependents(_bravoResources[4]).Count);
+		Assert.AreEqual(4, _tracker.GetTargets(_alphaResources[0]).Count);
+		Assert.AreEqual(2, _tracker.GetTargets(_alphaResources[1]).Count);
+		Assert.AreEqual(1, _tracker.GetDependents(_bravoResources[0]).Count);
+		Assert.AreEqual(1, _tracker.GetDependents(_bravoResources[1]).Count);
+		Assert.AreEqual(1, _tracker.GetDependents(_bravoResources[2]).Count);
+		Assert.AreEqual(2, _tracker.GetDependents(_bravoResources[3]).Count);
+		Assert.AreEqual(1, _tracker.GetDependents(_bravoResources[4]).Count);
 		_tracker.DeregisterAllDependencies(_alphaResources[0]);
-		Assert.AreEqual(0, _tracker.EnumerateTargets(_alphaResources[0]).Count);
-		Assert.AreEqual(2, _tracker.EnumerateTargets(_alphaResources[1]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateDependents(_bravoResources[0]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateDependents(_bravoResources[1]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateDependents(_bravoResources[2]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateDependents(_bravoResources[3]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateDependents(_bravoResources[4]).Count);
+		Assert.AreEqual(0, _tracker.GetTargets(_alphaResources[0]).Count);
+		Assert.AreEqual(2, _tracker.GetTargets(_alphaResources[1]).Count);
+		Assert.AreEqual(0, _tracker.GetDependents(_bravoResources[0]).Count);
+		Assert.AreEqual(0, _tracker.GetDependents(_bravoResources[1]).Count);
+		Assert.AreEqual(0, _tracker.GetDependents(_bravoResources[2]).Count);
+		Assert.AreEqual(1, _tracker.GetDependents(_bravoResources[3]).Count);
+		Assert.AreEqual(1, _tracker.GetDependents(_bravoResources[4]).Count);
 		_tracker.DeregisterAllDependencies(_alphaResources[0]);
-		Assert.AreEqual(0, _tracker.EnumerateTargets(_alphaResources[0]).Count);
-		Assert.AreEqual(2, _tracker.EnumerateTargets(_alphaResources[1]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateDependents(_bravoResources[0]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateDependents(_bravoResources[1]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateDependents(_bravoResources[2]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateDependents(_bravoResources[3]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateDependents(_bravoResources[4]).Count);
+		Assert.AreEqual(0, _tracker.GetTargets(_alphaResources[0]).Count);
+		Assert.AreEqual(2, _tracker.GetTargets(_alphaResources[1]).Count);
+		Assert.AreEqual(0, _tracker.GetDependents(_bravoResources[0]).Count);
+		Assert.AreEqual(0, _tracker.GetDependents(_bravoResources[1]).Count);
+		Assert.AreEqual(0, _tracker.GetDependents(_bravoResources[2]).Count);
+		Assert.AreEqual(1, _tracker.GetDependents(_bravoResources[3]).Count);
+		Assert.AreEqual(1, _tracker.GetDependents(_bravoResources[4]).Count);
 
 		_tracker.RegisterDependency(_alphaResources[0], _bravoResources[0]);
 		_tracker.RegisterDependency(_alphaResources[0], _bravoResources[1]);
 		_tracker.RegisterDependency(_alphaResources[0], _bravoResources[2]);
 		_tracker.RegisterDependency(_alphaResources[0], _bravoResources[3]);
-		Assert.AreEqual(4, _tracker.EnumerateTargets(_alphaResources[0]).Count);
-		Assert.AreEqual(2, _tracker.EnumerateTargets(_alphaResources[1]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateDependents(_bravoResources[0]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateDependents(_bravoResources[1]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateDependents(_bravoResources[2]).Count);
-		Assert.AreEqual(2, _tracker.EnumerateDependents(_bravoResources[3]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateDependents(_bravoResources[4]).Count);
+		Assert.AreEqual(4, _tracker.GetTargets(_alphaResources[0]).Count);
+		Assert.AreEqual(2, _tracker.GetTargets(_alphaResources[1]).Count);
+		Assert.AreEqual(1, _tracker.GetDependents(_bravoResources[0]).Count);
+		Assert.AreEqual(1, _tracker.GetDependents(_bravoResources[1]).Count);
+		Assert.AreEqual(1, _tracker.GetDependents(_bravoResources[2]).Count);
+		Assert.AreEqual(2, _tracker.GetDependents(_bravoResources[3]).Count);
+		Assert.AreEqual(1, _tracker.GetDependents(_bravoResources[4]).Count);
 		_tracker.DeregisterAllDependencies(_alphaResources[0]);
-		Assert.AreEqual(0, _tracker.EnumerateTargets(_alphaResources[0]).Count);
-		Assert.AreEqual(2, _tracker.EnumerateTargets(_alphaResources[1]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateDependents(_bravoResources[0]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateDependents(_bravoResources[1]).Count);
-		Assert.AreEqual(0, _tracker.EnumerateDependents(_bravoResources[2]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateDependents(_bravoResources[3]).Count);
-		Assert.AreEqual(1, _tracker.EnumerateDependents(_bravoResources[4]).Count);
+		Assert.AreEqual(0, _tracker.GetTargets(_alphaResources[0]).Count);
+		Assert.AreEqual(2, _tracker.GetTargets(_alphaResources[1]).Count);
+		Assert.AreEqual(0, _tracker.GetDependents(_bravoResources[0]).Count);
+		Assert.AreEqual(0, _tracker.GetDependents(_bravoResources[1]).Count);
+		Assert.AreEqual(0, _tracker.GetDependents(_bravoResources[2]).Count);
+		Assert.AreEqual(1, _tracker.GetDependents(_bravoResources[3]).Count);
+		Assert.AreEqual(1, _tracker.GetDependents(_bravoResources[4]).Count);
+	}
+
+	[Test]
+	public void ShouldCorrectlyInvalidateIteratorsAfterStateChanges() {
+		void AssertIteratorValid<T>(TypedReferentIterator<IResourceDependencyTracker.EnumerationInput, T> iterator) {
+			Assert.DoesNotThrow(() => iterator.CopyTo(new T[100]));
+			Assert.DoesNotThrow(() => _ = iterator.TryCopyTo(new T[1000]));
+			Assert.DoesNotThrow(() => _ = iterator.Count);
+			Assert.DoesNotThrow(() => iterator.ElementAt(0));
+			Assert.DoesNotThrow(() => _ = iterator.Count());
+			Assert.DoesNotThrow(() => _ = iterator[0]);
+		}
+		void AssertIteratorInvalid<T>(TypedReferentIterator<IResourceDependencyTracker.EnumerationInput, T> iterator) {
+			Assert.Catch<InvalidOperationException>(() => iterator.CopyTo(new T[100]));
+			Assert.Catch<InvalidOperationException>(() => _ = iterator.TryCopyTo(new T[1000]));
+			Assert.Catch<InvalidOperationException>(() => _ = iterator.Count);
+			Assert.Catch<InvalidOperationException>(() => iterator.ElementAt(0));
+			Assert.Catch<InvalidOperationException>(() => _ = iterator.Count());
+			Assert.Catch<InvalidOperationException>(() => _ = iterator[0]);
+		}
+
+		_tracker.RegisterDependency(_bravoResources[0], _alphaResources[0]);
+
+		var iterator = _tracker.GetDependents(_alphaResources[0]);
+		AssertIteratorValid(iterator);
+		_tracker.DeregisterDependency(_bravoResources[0], _alphaResources[0]);
+		AssertIteratorInvalid(iterator);
+
+		_tracker.RegisterDependency(_bravoResources[0], _alphaResources[0]);
+		var iterator2 = _tracker.GetDependentsOfGivenType<Alpha, Bravo, BravoHandle, Impl>(_alphaResources[0]);
+		AssertIteratorValid(iterator2);
+		_tracker.DeregisterDependency(_bravoResources[0], _alphaResources[0]);
+		AssertIteratorInvalid(iterator2);
+
+		_tracker.RegisterDependency(_bravoResources[0], _alphaResources[0]);
+		var iterator3 = _tracker.GetTargets(_bravoResources[0]);
+		AssertIteratorValid(iterator3);
+		_tracker.DeregisterDependency(_bravoResources[0], _alphaResources[0]);
+		AssertIteratorInvalid(iterator3);
+
+		_tracker.RegisterDependency(_bravoResources[0], _alphaResources[0]);
+		var iterator4 = _tracker.GetTargetsOfGivenType<Bravo, Alpha, AlphaHandle, Impl>(_bravoResources[0]);
+		AssertIteratorValid(iterator4);
+		_tracker.DeregisterDependency(_bravoResources[0], _alphaResources[0]);
+		AssertIteratorInvalid(iterator4);
 	}
 }

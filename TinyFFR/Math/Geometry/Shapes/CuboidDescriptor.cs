@@ -10,6 +10,7 @@ public readonly partial struct CuboidDescriptor : IConvexShape<CuboidDescriptor>
 	internal const float DefaultRandomMin = 0.5f;
 	internal const float DefaultRandomMax = 1.5f;
 	public static readonly CuboidDescriptor UnitCube = new(1f, 1f, 1f);
+	const int IteratorVersionNumber = 0;
 
 	readonly float _halfWidth;
 	readonly float _halfHeight;
@@ -56,17 +57,19 @@ public readonly partial struct CuboidDescriptor : IConvexShape<CuboidDescriptor>
 	public float Volume => HalfWidth * HalfHeight * HalfDepth * 8f;
 	public float SurfaceArea => (Width * Height + Height * Depth + Depth * Width) * 2f;
 
-	public unsafe TypedReferentIterator<CuboidDescriptor, Location> Corners => new(this, &GetCornerCountForEnumerator, &GetCornerForEnumerator);
+	public unsafe TypedReferentIterator<CuboidDescriptor, Location> Corners => new(this, IteratorVersionNumber, &GetCornerCountForEnumerator, &GetIteratorVersion, &GetCornerForEnumerator);
 	static int GetCornerCountForEnumerator(CuboidDescriptor _) => 8;
 	static Location GetCornerForEnumerator(CuboidDescriptor @this, int index) => @this.CornerAt(OrientationUtils.AllDiagonals[index]);
 
-	public unsafe TypedReferentIterator<CuboidDescriptor, BoundedRay> Edges => new(this, &GetEdgeCountForEnumerator, &GetEdgeForEnumerator);
+	public unsafe TypedReferentIterator<CuboidDescriptor, BoundedRay> Edges => new(this, IteratorVersionNumber, &GetEdgeCountForEnumerator, &GetIteratorVersion, &GetEdgeForEnumerator);
 	static int GetEdgeCountForEnumerator(CuboidDescriptor _) => 12;
 	static BoundedRay GetEdgeForEnumerator(CuboidDescriptor @this, int index) => @this.EdgeAt(OrientationUtils.AllIntercardinals[index]);
 
-	public unsafe TypedReferentIterator<CuboidDescriptor, Plane> Sides => new(this, &GetSideCountForEnumerator, &GetSideForEnumerator);
+	public unsafe TypedReferentIterator<CuboidDescriptor, Plane> Sides => new(this, IteratorVersionNumber, &GetSideCountForEnumerator, &GetIteratorVersion, &GetSideForEnumerator);
 	static int GetSideCountForEnumerator(CuboidDescriptor _) => 6;
 	static Plane GetSideForEnumerator(CuboidDescriptor @this, int index) => @this.SideAt(OrientationUtils.AllCardinals[index]);
+
+	static int GetIteratorVersion(CuboidDescriptor _) => IteratorVersionNumber;
 
 	public CuboidDescriptor(float width, float height, float depth) {
 		_halfWidth = width * 0.5f;

@@ -17,7 +17,7 @@ namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IDisposable {
 	const string DefaultMaterialName = "Unnamed Material";
-	readonly ArrayPoolBackedMap<MaterialHandle, CombinedResourceGroup> _activeMaterials = new();
+	readonly ArrayPoolBackedMap<MaterialHandle, ResourceGroup> _activeMaterials = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
 

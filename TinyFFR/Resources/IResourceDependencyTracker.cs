@@ -9,14 +9,14 @@ interface IResourceDependencyTracker {
 	void DeregisterDependency<TDependent, TTarget>(TDependent dependent, TTarget targetNoLongerInUse) where TDependent : IResource where TTarget : IResource;
 	void DeregisterAllDependencies<TDependent>(TDependent dependent) where TDependent : IResource;
 	void ThrowForPrematureDisposalIfTargetHasDependents<TTarget>(TTarget targetPotentiallyInUse) where TTarget : IResource;
-	TypedReferentIterator<EnumerationInput, ResourceStub> EnumerateDependents<TTarget>(TTarget targetPotentiallyInUse) where TTarget : IResource;
-	TypedReferentIterator<EnumerationInput, ResourceStub> EnumerateTargets<TDependent>(TDependent dependent) where TDependent : IResource;
-	TypedReferentIterator<EnumerationInput, TDependent> EnumerateDependentsOfGivenType<TTarget, TDependent, THandle, TImpl>(TTarget targetPotentiallyInUse)
+	TypedReferentIterator<EnumerationInput, ResourceStub> GetDependents<TTarget>(TTarget targetPotentiallyInUse) where TTarget : IResource;
+	TypedReferentIterator<EnumerationInput, ResourceStub> GetTargets<TDependent>(TDependent dependent) where TDependent : IResource;
+	TypedReferentIterator<EnumerationInput, TDependent> GetDependentsOfGivenType<TTarget, TDependent, THandle, TImpl>(TTarget targetPotentiallyInUse)
 		where TTarget : IResource
 		where TDependent : IResource<TDependent, THandle, TImpl>
 		where THandle : unmanaged, IResourceHandle<THandle>
 		where TImpl : class, IResourceImplProvider;
-	TypedReferentIterator<EnumerationInput, TTarget> EnumerateTargetsOfGivenType<TDependent, TTarget, THandle, TImpl>(TDependent dependent)
+	TypedReferentIterator<EnumerationInput, TTarget> GetTargetsOfGivenType<TDependent, TTarget, THandle, TImpl>(TDependent dependent)
 		where TDependent : IResource
 		where TTarget : IResource<TTarget, THandle, TImpl>
 		where THandle : unmanaged, IResourceHandle<THandle>

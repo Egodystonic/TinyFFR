@@ -9,17 +9,26 @@ public readonly unsafe struct TypedReferentIterator<TIn, TOut> : IEnumerable<TOu
 	public struct Enumerator : IEnumerator<TOut> {
 		readonly TIn _input;
 		readonly int _count;
+		readonly int _inputVersion;
+		readonly delegate*<TIn, int> _getVersionFunc;
 		readonly delegate* managed<TIn, int, TOut> _getItemFunc;
 		int _curIndex;
 
-		internal Enumerator(TIn input, int count, delegate* managed<TIn, int, TOut> getItemFunc) {
+		internal Enumerator(TIn input, int inputVersion, int count, delegate* managed<TIn, int, TOut> getItemFunc, delegate*<TIn, int> getVersionFunc) {
 			_input = input;
+			_inputVersion = inputVersion;
 			_count = count;
 			_getItemFunc = getItemFunc;
+			_getVersionFunc = getVersionFunc;
 			Reset();
 		}
 
-		public TOut Current => _getItemFunc(_input, _curIndex);
+		public TOut Current {
+			get {
+				ThrowIfInvalid();
+				return _getItemFunc(_input, _curIndex);
+			}
+		}
 		object IEnumerator.Current => Current!;
 
 		public bool MoveNext() {
@@ -28,10 +37,17 @@ public readonly unsafe struct TypedReferentIterator<TIn, TOut> : IEnumerable<TOu
 		}
 		public void Reset() => _curIndex = -1;
 		public void Dispose() { /* no op */ }
+
+		void ThrowIfInvalid() {
+			if (_getVersionFunc == null || _getItemFunc == null) throw InvalidObjectException.InvalidDefault(typeof(Enumerator));
+			if (_getVersionFunc(_input) != _inputVersion) throw new InvalidOperationException($"{_input} was modified, this {nameof(TypedReferentIterator<TIn, TOut>)} is no longer valid.");
+		}
 	}
 
 	readonly TIn _input;
+	readonly int _inputVersion;
 	readonly delegate* managed<TIn, int> _getCountFunc;
+	readonly delegate* managed<TIn, int> _getVersionFunc;
 	readonly delegate* managed<TIn, int, TOut> _getItemFunc;
 
 	public int Count {
@@ -45,11 +61,14 @@ public readonly unsafe struct TypedReferentIterator<TIn, TOut> : IEnumerable<TOu
 		get => ElementAt(index);
 	}
 
-	public TypedReferentIterator(TIn input, delegate*<TIn, int> getCountFunc, delegate*<TIn, int, TOut> getItemFunc) {
+	public TypedReferentIterator(TIn input, int inputVersion, delegate*<TIn, int> getCountFunc, delegate*<TIn, int> getVersionFunc, delegate*<TIn, int, TOut> getItemFunc) {
 		ArgumentNullException.ThrowIfNull(getCountFunc);
+		ArgumentNullException.ThrowIfNull(getVersionFunc);
 		ArgumentNullException.ThrowIfNull(getItemFunc);
 
 		_input = input;
+		_inputVersion = inputVersion;
+		_getVersionFunc = getVersionFunc;
 		_getCountFunc = getCountFunc;
 		_getItemFunc = getItemFunc;
 	}
@@ -75,12 +94,13 @@ public readonly unsafe struct TypedReferentIterator<TIn, TOut> : IEnumerable<TOu
 
 	public Enumerator GetEnumerator() {
 		ThrowIfInvalid();
-		return new Enumerator(_input, Count, _getItemFunc);
+		return new Enumerator(_input, _inputVersion, Count, _getItemFunc, _getVersionFunc);
 	}
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	IEnumerator<TOut> IEnumerable<TOut>.GetEnumerator() => GetEnumerator();
 
 	internal void ThrowIfInvalid() {
 		if (_getCountFunc == null || _getItemFunc == null) throw InvalidObjectException.InvalidDefault(typeof(TypedReferentIterator<TIn, TOut>));
+		if (_getVersionFunc(_input) != _inputVersion) throw new InvalidOperationException($"{_input} was modified, this {nameof(TypedReferentIterator<TIn, TOut>)} is no longer valid.");
 	}
 }

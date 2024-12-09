@@ -29,11 +29,14 @@ class LocalResourceGroupTest {
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 
-		var meshes = new Mesh[4];
+		var meshes = new Mesh[6];
 		for (var i = 0; i < meshes.Length; ++i) meshes[i] = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(1f * i, 2f * i, 3f * i));
 
 		var cameras = new Camera[4];
 		for (var i = 0; i < cameras.Length; ++i) cameras[i] = factory.CameraBuilder.CreateCamera(new Location(i, i, i));
+
+		var materials = new Material[2];
+		for (var i = 0; i < materials.Length; ++i) materials[i] = factory.AssetLoader.MaterialBuilder.CreateBasicSolidColorMat(StandardColor.Blue);
 
 		using (var group = factory.CreateResourceGroup(true)) {
 			Assert.AreEqual(true, group.DisposesContainedResourcesByDefaultWhenDisposed);
@@ -129,6 +132,45 @@ class LocalResourceGroupTest {
 
 		Assert.DoesNotThrow(() => Console.WriteLine(cameras[2].Name.ToString()));
 		Assert.DoesNotThrow(() => Console.WriteLine(cameras[3].Name.ToString()));
+
+
+
+		void AssertIteratorValid<T>(TypedReferentIterator<IResourceGroupImplProvider.EnumerationInput, T> iterator) {
+			Assert.DoesNotThrow(() => iterator.CopyTo(new T[100]));
+			Assert.DoesNotThrow(() => _ = iterator.TryCopyTo(new T[1000]));
+			Assert.DoesNotThrow(() => _ = iterator.Count);
+			Assert.DoesNotThrow(() => iterator.ElementAt(0));
+			Assert.DoesNotThrow(() => _ = iterator.Count());
+			Assert.DoesNotThrow(() => _ = iterator[0]);
+		}
+		void AssertIteratorInvalid<T>(TypedReferentIterator<IResourceGroupImplProvider.EnumerationInput, T> iterator) {
+			Assert.Catch<InvalidOperationException>(() => iterator.CopyTo(new T[100]));
+			Assert.Catch<InvalidOperationException>(() => _ = iterator.TryCopyTo(new T[1000]));
+			Assert.Catch<InvalidOperationException>(() => _ = iterator.Count);
+			Assert.Catch<InvalidOperationException>(() => iterator.ElementAt(0));
+			Assert.Catch<InvalidOperationException>(() => _ = iterator.Count());
+			Assert.Catch<InvalidOperationException>(() => _ = iterator[0]);
+		}
+
+		g = factory.CreateResourceGroup(false);
+		g.AddResource(meshes[4]);
+		g.AddResource(materials[0]);
+		var i1 = g.GetAllResourcesOfType<Mesh>();
+		var i2 = g.Materials;
+		var i3 = g.Meshes;
+		AssertIteratorValid(i1);
+		AssertIteratorValid(i2);
+		AssertIteratorValid(i3);
+		g.AddResource(meshes[5]);
+		g.AddResource(materials[1]);
+		AssertIteratorInvalid(i1);
+		AssertIteratorInvalid(i2);
+		AssertIteratorInvalid(i3);
+		g.Dispose();
+
+		foreach (var mesh in meshes) mesh.Dispose();
+		foreach (var mat in materials) mat.Dispose();
+		foreach (var cam in cameras) cam.Dispose();
 	}
 
 	ResourceStub ToStub<TResource>(TResource r) where TResource : IResource => r.AsStub;

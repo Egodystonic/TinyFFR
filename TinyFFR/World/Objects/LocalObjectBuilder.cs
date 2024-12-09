@@ -126,7 +126,7 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 
 	public Material GetMaterial(ModelInstanceHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.DependencyTracker.EnumerateTargetsOfGivenType<ModelInstance, Material, MaterialHandle, IMaterialImplProvider>(HandleToInstance(handle))[0];
+		return _globals.DependencyTracker.GetTargetsOfGivenType<ModelInstance, Material, MaterialHandle, IMaterialImplProvider>(HandleToInstance(handle))[0];
 	}
 	public void SetMaterial(ModelInstanceHandle handle, Material newMaterial) {
 		ThrowIfThisOrHandleIsDisposed(handle);

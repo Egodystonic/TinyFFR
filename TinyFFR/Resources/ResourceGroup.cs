@@ -3,19 +3,19 @@
 
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
-using static Egodystonic.TinyFFR.Resources.ICombinedResourceGroupImplProvider;
+using static Egodystonic.TinyFFR.Resources.IResourceGroupImplProvider;
 
 namespace Egodystonic.TinyFFR.Resources;
 
-public readonly struct CombinedResourceGroup : IDisposableResource<CombinedResourceGroup, CombinedResourceGroupHandle, ICombinedResourceGroupImplProvider> {
-	readonly CombinedResourceGroupHandle _handle;
-	readonly ICombinedResourceGroupImplProvider _impl;
+public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, ResourceGroupHandle, IResourceGroupImplProvider> {
+	readonly ResourceGroupHandle _handle;
+	readonly IResourceGroupImplProvider _impl;
 
-	internal CombinedResourceGroupHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(CombinedResourceGroup)) : _handle;
-	internal ICombinedResourceGroupImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<CombinedResourceGroupHandle>();
+	internal ResourceGroupHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(ResourceGroup)) : _handle;
+	internal IResourceGroupImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<ResourceGroupHandle>();
 
-	ICombinedResourceGroupImplProvider IResource<CombinedResourceGroupHandle, ICombinedResourceGroupImplProvider>.Implementation => Implementation;
-	CombinedResourceGroupHandle IResource<CombinedResourceGroupHandle, ICombinedResourceGroupImplProvider>.Handle => Handle;
+	IResourceGroupImplProvider IResource<ResourceGroupHandle, IResourceGroupImplProvider>.Implementation => Implementation;
+	ResourceGroupHandle IResource<ResourceGroupHandle, IResourceGroupImplProvider>.Handle => Handle;
 
 	public int ResourceCount {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -38,9 +38,9 @@ public readonly struct CombinedResourceGroup : IDisposableResource<CombinedResou
 	}
 
 	#region Specific Resource Enumeration Properties
-	public TypedReferentIterator<EnumerationArg, Material> Materials => GetAllResourcesOfType<Material>();
-	public TypedReferentIterator<EnumerationArg, Texture> Textures => GetAllResourcesOfType<Texture>();
-	public TypedReferentIterator<EnumerationArg, Mesh> Meshes => GetAllResourcesOfType<Mesh>();
+	public TypedReferentIterator<EnumerationInput, Material> Materials => GetAllResourcesOfType<Material>();
+	public TypedReferentIterator<EnumerationInput, Texture> Textures => GetAllResourcesOfType<Texture>();
+	public TypedReferentIterator<EnumerationInput, Mesh> Meshes => GetAllResourcesOfType<Mesh>();
 	#endregion
 
 	internal ReadOnlySpan<ResourceStub> Resources {
@@ -48,14 +48,14 @@ public readonly struct CombinedResourceGroup : IDisposableResource<CombinedResou
 		get => Implementation.GetResources(Handle);
 	}
 
-	internal CombinedResourceGroup(CombinedResourceGroupHandle handle, ICombinedResourceGroupImplProvider impl) {
+	internal ResourceGroup(ResourceGroupHandle handle, IResourceGroupImplProvider impl) {
 		ArgumentNullException.ThrowIfNull(impl);
 		_handle = handle;
 		_impl = impl;
 	}
 
-	static CombinedResourceGroup IResource<CombinedResourceGroup>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
-		return new(rawHandle, impl as ICombinedResourceGroupImplProvider ?? throw new ArgumentException($"Impl was '{impl}'.", nameof(impl)));
+	static ResourceGroup IResource<ResourceGroup>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
+		return new(rawHandle, impl as IResourceGroupImplProvider ?? throw new ArgumentException($"Impl was '{impl}'.", nameof(impl)));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -65,7 +65,7 @@ public readonly struct CombinedResourceGroup : IDisposableResource<CombinedResou
 	public void Seal() => Implementation.Seal(Handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public TypedReferentIterator<EnumerationArg, TResource> GetAllResourcesOfType<TResource>() where TResource : IResource<TResource> {
+	public TypedReferentIterator<EnumerationInput, TResource> GetAllResourcesOfType<TResource>() where TResource : IResource<TResource> {
 		return Implementation.GetAllResourcesOfType<TResource>(Handle);
 	}
 
@@ -87,13 +87,13 @@ public readonly struct CombinedResourceGroup : IDisposableResource<CombinedResou
 	public void Dispose(bool disposeContainedResources) => Implementation.Dispose(_handle, disposeContainedResources);
 	#endregion
 
-	public override string ToString() => IsDisposed ? $"{nameof(CombinedResourceGroup)} (Disposed)" : $"{nameof(CombinedResourceGroup)} \"{Name}\"";
+	public override string ToString() => IsDisposed ? $"{nameof(ResourceGroup)} (Disposed)" : $"{nameof(ResourceGroup)} \"{Name}\"";
 
 	#region Equality
-	public bool Equals(CombinedResourceGroup other) => _handle == other._handle && _impl == other._impl;
-	public override bool Equals(object? obj) => obj is CombinedResourceGroup other && Equals(other);
+	public bool Equals(ResourceGroup other) => _handle == other._handle && _impl == other._impl;
+	public override bool Equals(object? obj) => obj is ResourceGroup other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(_handle, _impl);
-	public static bool operator ==(CombinedResourceGroup left, CombinedResourceGroup right) => left.Equals(right);
-	public static bool operator !=(CombinedResourceGroup left, CombinedResourceGroup right) => !left.Equals(right);
+	public static bool operator ==(ResourceGroup left, ResourceGroup right) => left.Equals(right);
+	public static bool operator !=(ResourceGroup left, ResourceGroup right) => !left.Equals(right);
 	#endregion
 }
