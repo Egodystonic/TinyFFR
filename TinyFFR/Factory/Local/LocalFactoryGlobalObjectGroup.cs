@@ -11,13 +11,13 @@ namespace Egodystonic.TinyFFR.Factory.Local;
 sealed class LocalFactoryGlobalObjectGroup {
 	readonly ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> _resourceNameMap;
 	readonly DeferredRef<LocalCombinedResourceGroupImplProvider> _resourceGroupProvider;
-	readonly LocalRendererFactory _factory;
+	readonly LocalTinyFfrFactory _factory;
 
 	public IResourceDependencyTracker DependencyTracker { get; }
 	public ManagedStringPool StringPool { get; }
 	public LocalCombinedResourceGroupImplProvider ResourceGroupProvider => _resourceGroupProvider;
 
-	public LocalFactoryGlobalObjectGroup(LocalRendererFactory factory, ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> resourceNameMap, IResourceDependencyTracker dependencyTracker, ManagedStringPool stringPool, DeferredRef<LocalCombinedResourceGroupImplProvider> resourceGroupProviderRef) {
+	public LocalFactoryGlobalObjectGroup(LocalTinyFfrFactory factory, ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> resourceNameMap, IResourceDependencyTracker dependencyTracker, ManagedStringPool stringPool, DeferredRef<LocalCombinedResourceGroupImplProvider> resourceGroupProviderRef) {
 		ArgumentNullException.ThrowIfNull(factory);
 		ArgumentNullException.ThrowIfNull(resourceNameMap);
 		ArgumentNullException.ThrowIfNull(dependencyTracker);

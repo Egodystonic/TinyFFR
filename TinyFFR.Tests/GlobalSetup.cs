@@ -18,7 +18,7 @@ sealed class GlobalSetup {
 	public void TestSetup() {
 		TestExecutionContext.CurrentContext.AddFormatter(_ => obj => (obj as IDescriptiveStringProvider)?.ToStringDescriptive() ?? obj.ToString()!);
 		NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
-			typeof(LocalRendererFactory).Assembly,
+			typeof(LocalTinyFfrFactory).Assembly,
 			(libName, assy, searchPath) => {
 				var curDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 

@@ -1,12 +1,12 @@
 ﻿// Created on 2024-08-01 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-using StrEnumerator = Egodystonic.TinyFFR.ReferentEnumerator<string, char>;
+using StrEnumerator = Egodystonic.TinyFFR.TypedReferentIterator<string, char>;
 
 namespace Egodystonic.TinyFFR;
 
 [TestFixture]
-unsafe class ReferentEnumeratorTest {
+unsafe class TypedReferentIteratorTest {
 	[SetUp]
 	public void SetUpTest() { }
 

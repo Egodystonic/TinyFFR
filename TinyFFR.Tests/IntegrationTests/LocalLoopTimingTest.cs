@@ -19,7 +19,7 @@ class LocalLoopTimingTest {
 	[Test]
 	// No assertions around timing because it leads to flaky tests, but manual check of output in console is still useful
 	public void Execute() {
-		using var factory = new LocalRendererFactory();
+		using var factory = new LocalTinyFfrFactory();
 
 		var loopBuilder = factory.ApplicationLoopBuilder;
 		var loop = loopBuilder.CreateLoop(new() { FrameRateCapHz = 30 });

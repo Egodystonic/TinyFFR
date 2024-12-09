@@ -29,7 +29,7 @@ class LocalDisposalProtectionTest {
 
 	[Test]
 	public void Execute() {
-		var factory = new LocalRendererFactory();
+		var factory = new LocalTinyFfrFactory();
 
 		var displayDiscoverer = factory.DisplayDiscoverer;
 		var recommendedDisplay = displayDiscoverer.Recommended!.Value;

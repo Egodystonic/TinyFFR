@@ -7,7 +7,7 @@ using Egodystonic.TinyFFR.Environment.Local;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
 
-public interface ILocalRendererFactory : ITinyFfrFactory {
+public interface ILocalTinyFfrFactory : ITinyFfrFactory {
 	IWindowBuilder WindowBuilder { get; }
 	new ILocalApplicationLoopBuilder ApplicationLoopBuilder { get; }
 	IApplicationLoopBuilder ITinyFfrFactory.ApplicationLoopBuilder => ApplicationLoopBuilder;

@@ -82,10 +82,10 @@ sealed unsafe class LocalCombinedResourceGroupImplProvider : ICombinedResourceGr
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), resource);
 	}
 
-	public ReferentEnumerator<EnumerationArg, TResource> GetAllResourcesOfType<TResource>(CombinedResourceGroupHandle handle) where TResource : IResource<TResource> {
+	public TypedReferentIterator<EnumerationArg, TResource> GetAllResourcesOfType<TResource>(CombinedResourceGroupHandle handle) where TResource : IResource<TResource> {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
-		return new ReferentEnumerator<EnumerationArg, TResource>(
+		return new TypedReferentIterator<EnumerationArg, TResource>(
 			new(this, handle, typeof(TResource).TypeHandle.Value),
 			&GetEnumeratorResourceCount,
 			&GetEnumeratorResourceAtIndex<TResource>

@@ -13,7 +13,7 @@ public readonly unsafe record struct TemporaryLoadSpaceBuffer(nuint BufferIdenti
 }
 
 static unsafe class LocalNativeUtils {
-	static readonly ArrayPoolBackedMap<nuint, (LocalRendererFactory Factory, FixedByteBufferPool.FixedByteBuffer Buffer)> _activeTemporaryBuffers = new();
+	static readonly ArrayPoolBackedMap<nuint, (LocalTinyFfrFactory Factory, FixedByteBufferPool.FixedByteBuffer Buffer)> _activeTemporaryBuffers = new();
 
 	public const string NativeLibName = "TinyFFR.Native";
 	const int NativeErrorBufferLength = 1001;
@@ -65,7 +65,7 @@ static unsafe class LocalNativeUtils {
 		Console.WriteLine(GetLastError());
 	}
 
-	internal static void DisposeTemporaryCpuBufferPoolIfSafe(LocalRendererFactory factory) {
+	internal static void DisposeTemporaryCpuBufferPoolIfSafe(LocalTinyFfrFactory factory) {
 		foreach (var kvp in _activeTemporaryBuffers) {
 			if (ReferenceEquals(kvp.Value.Factory, factory)) return;
 		}
@@ -73,14 +73,14 @@ static unsafe class LocalNativeUtils {
 		factory.TemporaryCpuBufferPool.Dispose();
 	}
 
-	internal static TemporaryLoadSpaceBuffer CopySpanToTemporaryCpuBuffer<T>(LocalRendererFactory factory, ReadOnlySpan<T> data) where T : unmanaged {
+	internal static TemporaryLoadSpaceBuffer CopySpanToTemporaryCpuBuffer<T>(LocalTinyFfrFactory factory, ReadOnlySpan<T> data) where T : unmanaged {
 		factory.ThrowIfThisIsDisposed();
 		var sizeBytes = sizeof(T) * data.Length;
 		if (sizeBytes > factory.TemporaryCpuBufferPool.MaxBufferSizeBytes) {
 			throw new InvalidOperationException($"Can not load asset because its in-memory size is {sizeBytes} bytes (" +
 												$"the maximum asset size configured is {factory.TemporaryCpuBufferPool.MaxBufferSizeBytes} bytes; " +
 												$"the limit can be raised by setting the {nameof(LocalRendererFactoryConfig.MaxAssetSizeBytes)} value in " +
-												$"the {nameof(LocalRendererFactoryConfig)} passed to the {nameof(LocalRendererFactory)} constructor).");
+												$"the {nameof(LocalRendererFactoryConfig)} passed to the {nameof(LocalTinyFfrFactory)} constructor).");
 		}
 		var bufferId = _nextTemporaryBufferId++;
 		var buffer = factory.TemporaryCpuBufferPool.Rent<T>(data.Length);

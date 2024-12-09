@@ -14,7 +14,9 @@ using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
 
-public sealed class LocalRendererFactory : ILocalRendererFactory {
+public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory {
+	static LocalTinyFfrFactory? _instance = null;
+
 	readonly ResourceDependencyTracker _dependencyTracker = new();
 	readonly ManagedStringPool _stringPool = new();
 	readonly ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> _resourceNameMap = new();
@@ -29,20 +31,22 @@ public sealed class LocalRendererFactory : ILocalRendererFactory {
 	readonly ISceneBuilder _sceneBuilder;
 	readonly IRendererBuilder _rendererBuilder;
 
-	public IDisplayDiscoverer DisplayDiscoverer => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalRendererFactory)) : _displayDiscoverer;
-	public IWindowBuilder WindowBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalRendererFactory)) : _windowBuilder;
-	public ILocalApplicationLoopBuilder ApplicationLoopBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalRendererFactory)) : _applicationLoopBuilder;
-	public IAssetLoader AssetLoader => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalRendererFactory)) : _assetLoader;
-	public ICameraBuilder CameraBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalRendererFactory)) : _cameraBuilder;
-	public IObjectBuilder ObjectBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalRendererFactory)) : _objectBuilder;
-	public ISceneBuilder SceneBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalRendererFactory)) : _sceneBuilder;
-	public IRendererBuilder RendererBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalRendererFactory)) : _rendererBuilder;
+	public IDisplayDiscoverer DisplayDiscoverer => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _displayDiscoverer;
+	public IWindowBuilder WindowBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _windowBuilder;
+	public ILocalApplicationLoopBuilder ApplicationLoopBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _applicationLoopBuilder;
+	public IAssetLoader AssetLoader => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _assetLoader;
+	public ICameraBuilder CameraBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _cameraBuilder;
+	public IObjectBuilder ObjectBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _objectBuilder;
+	public ISceneBuilder SceneBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _sceneBuilder;
+	public IRendererBuilder RendererBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _rendererBuilder;
 
 	internal FixedByteBufferPool TemporaryCpuBufferPool { get; }
 
 	IApplicationLoopBuilder ITinyFfrFactory.ApplicationLoopBuilder => ApplicationLoopBuilder;
 
-	public LocalRendererFactory(LocalRendererFactoryConfig? factoryConfig = null, WindowBuilderConfig? windowBuilderConfig = null, LocalApplicationLoopBuilderConfig? applicationLoopBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null) {
+	public LocalTinyFfrFactory(LocalRendererFactoryConfig? factoryConfig = null, WindowBuilderConfig? windowBuilderConfig = null, LocalApplicationLoopBuilderConfig? applicationLoopBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null) {
+		if (_instance != null) throw new InvalidOperationException($"Only one {nameof(LocalTinyFfrFactory)} may be live at any given time. Dispose the previous instance before creating another one.");
+
 		LocalNativeUtils.InitializeNativeLibIfNecessary();
 		factoryConfig ??= new LocalRendererFactoryConfig();
 
@@ -66,23 +70,25 @@ public sealed class LocalRendererFactory : ILocalRendererFactory {
 		_objectBuilder = new LocalObjectBuilder(globals);
 		_sceneBuilder = new LocalSceneBuilder(globals);
 		_rendererBuilder = new LocalRendererBuilder(globals);
+
+		_instance = this;
 	}
 
 	#region Resource Group Creation
 	public CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed) {
-		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ILocalRendererFactory));
+		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ILocalTinyFfrFactory));
 		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed);
 	}
 	public CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name) {
-		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ILocalRendererFactory));
+		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ILocalTinyFfrFactory));
 		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed, name);
 	}
 	public CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, int initialCapacity) {
-		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ILocalRendererFactory));
+		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ILocalTinyFfrFactory));
 		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed, initialCapacity);
 	}
 	public CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name, int initialCapacity) {
-		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ILocalRendererFactory));
+		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ILocalTinyFfrFactory));
 		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed, name, initialCapacity);
 	}
 	#endregion
@@ -120,6 +126,7 @@ public sealed class LocalRendererFactory : ILocalRendererFactory {
 		}
 		finally {
 			IsDisposed = true;
+			_instance = null;
 		}
 	}
 

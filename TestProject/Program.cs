@@ -7,7 +7,7 @@ using Egodystonic.TinyFFR.Assets.Meshes;
 
 // TODO make this a little better. Maybe make it a little framework and ignore the actual "meat" file
 NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
-	typeof(LocalRendererFactory).Assembly,
+	typeof(LocalTinyFfrFactory).Assembly,
 	(libName, assy, searchPath) => {
 		var curDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
@@ -34,7 +34,7 @@ NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
 );
 
 
-using var factory = new LocalRendererFactory();
+using var factory = new LocalTinyFfrFactory();
 var display = factory.DisplayDiscoverer.Recommended ?? throw new ApplicationException("This test requires at least one connected display.");
 using var window = factory.WindowBuilder.CreateWindow(display, title: "William the Window");
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60, name: "Larry the Loop");

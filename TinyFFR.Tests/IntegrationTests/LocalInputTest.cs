@@ -23,7 +23,7 @@ class LocalInputTest {
 
 	[Test]
 	public void Execute() {
-		using var factory = new LocalRendererFactory();
+		using var factory = new LocalTinyFfrFactory();
 
 		var displayDiscoverer = factory.DisplayDiscoverer;
 		var windowBuilder = factory.WindowBuilder;
@@ -34,7 +34,7 @@ class LocalInputTest {
 			Position = displayDiscoverer.Primary!.Value.CurrentResolution / 2 - (200, 200),
 			Size = (400, 400)
 		});
-		window.Title = "Close me to end test";
+		window.Title = "Close me to end test early";
 
 		var loopBuilder = factory.ApplicationLoopBuilder;
 		using var beforeLoop = loopBuilder.CreateLoop(new() { IterationShouldRefreshGlobalInputStates = false });
@@ -42,7 +42,7 @@ class LocalInputTest {
 		using var afterLoop = loopBuilder.CreateLoop(new() { IterationShouldRefreshGlobalInputStates = false });
 
 		_numControllers = 0;
-		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(20d)) {
+		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(10d)) {
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) window.LockCursor = !window.LockCursor;
 			HandleInput(loop.Input);
 			AssertInputStatesAreEqual(loop.Input, beforeLoop.Input);

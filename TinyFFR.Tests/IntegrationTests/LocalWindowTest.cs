@@ -17,7 +17,7 @@ class LocalWindowTest {
 
 	[Test]
 	public void Execute() {
-		using var factory = new LocalRendererFactory(windowBuilderConfig: new WindowBuilderConfig { MaxWindowTitleLength = 10 });
+		using var factory = new LocalTinyFfrFactory(windowBuilderConfig: new WindowBuilderConfig { MaxWindowTitleLength = 10 });
 
 		var displayDiscoverer = factory.DisplayDiscoverer;
 		foreach (var display in displayDiscoverer.All) {

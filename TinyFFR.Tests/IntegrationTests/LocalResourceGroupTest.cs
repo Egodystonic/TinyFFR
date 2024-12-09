@@ -27,7 +27,7 @@ class LocalResourceGroupTest {
 
 	[Test]
 	public void Execute() {
-		using var factory = new LocalRendererFactory();
+		using var factory = new LocalTinyFfrFactory();
 
 		var meshes = new Mesh[4];
 		for (var i = 0; i < meshes.Length; ++i) meshes[i] = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(1f * i, 2f * i, 3f * i));

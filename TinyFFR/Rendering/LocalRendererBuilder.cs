@@ -7,6 +7,7 @@ using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.World;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace Egodystonic.TinyFFR.Rendering;
 
@@ -82,7 +83,13 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		_loadedRenderers.Add(handle, new(handle, scene, camera, new(window), viewportData));
 
 		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.Name);
-		return HandleToInstance(handle);
+
+		var result = HandleToInstance(handle);
+		_globals.DependencyTracker.RegisterDependency(result, scene);
+		_globals.DependencyTracker.RegisterDependency(result, camera);
+		_globals.DependencyTracker.RegisterDependency(result, window);
+
+		return result;
 	}
 
 	public void Render(RendererHandle handle) {
@@ -156,26 +163,32 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	public void Dispose(RendererHandle handle) {
 		if (IsDisposed(handle)) return;
 
-		var data = _loadedRenderers[handle];
+		static void DisposeWindowData(LocalRendererBuilder @this, RendererHandle handle, Window window) {
+			@this._globals.DependencyTracker.DeregisterDependency(@this.HandleToInstance(handle), window);
+			foreach (var rendererData in @this._loadedRenderers.Values) {
+				if (rendererData.RenderTarget.IsWindow && rendererData.RenderTarget.AsWindow == window) return;
+			}
 
+			var windowData = @this._loadedWindows[window];
+			DisposeRendererAndSwapChain(
+				windowData.RendererPtr,
+				windowData.SwapChainPtr
+			).ThrowIfFailure();
+			@this._loadedWindows.Remove(window);
+		}
+
+		var data = _loadedRenderers[handle];
+		
+		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.Camera);
+		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.Scene);
+		
 		DisposeViewDescriptor(
 			data.Viewport.Handle
 		).ThrowIfFailure();
 
+		if (data.RenderTarget.IsWindow) DisposeWindowData(this, handle, data.RenderTarget.AsWindow);
+
 		_loadedRenderers.Remove(handle);
-
-		if (!data.RenderTarget.IsWindow) return;
-		var window = data.RenderTarget.AsWindow;
-		foreach (var rendererData in _loadedRenderers.Values) {
-			if (rendererData.RenderTarget.IsWindow && rendererData.RenderTarget.AsWindow == window) return;
-		}
-
-		var windowData = _loadedWindows[window];
-		DisposeRendererAndSwapChain(
-			windowData.RendererPtr,
-			windowData.SwapChainPtr
-		).ThrowIfFailure();
-		_loadedWindows.Remove(window);
 	}
 
 	public void Dispose() {

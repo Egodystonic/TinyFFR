@@ -13,7 +13,7 @@ public interface ICombinedResourceGroupImplProvider : IDisposableResourceImplPro
 	bool IsSealed(CombinedResourceGroupHandle handle);
 	void Seal(CombinedResourceGroupHandle handle);
 	void AddResource<TResource>(CombinedResourceGroupHandle handle, TResource resource) where TResource : IResource;
-	ReferentEnumerator<EnumerationArg, TResource> GetAllResourcesOfType<TResource>(CombinedResourceGroupHandle handle) where TResource : IResource<TResource>;
+	TypedReferentIterator<EnumerationArg, TResource> GetAllResourcesOfType<TResource>(CombinedResourceGroupHandle handle) where TResource : IResource<TResource>;
 	TResource GetNthResourceOfType<TResource>(CombinedResourceGroupHandle handle, int index) where TResource : IResource<TResource>;
 
 	void Dispose(CombinedResourceGroupHandle handle, bool disposeContainedResources);
