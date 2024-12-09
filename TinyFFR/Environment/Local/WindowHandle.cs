@@ -13,16 +13,16 @@ public readonly unsafe struct WindowHandle : IResourceHandle<WindowHandle> {
 	internal ResourceIdent Ident => new(TypeHandle, AsInteger);
 	ResourceIdent IResourceHandle.Ident => Ident;
 
-	public WindowHandle(nuint integer) => AsInteger = integer;
-	public WindowHandle(void* pointer) : this((nuint) pointer) { }
+	public WindowHandle(nuint val) => AsInteger = val;
+	public WindowHandle(void* val) : this((nuint) val) { }
 
 	public static implicit operator nuint(WindowHandle handle) => handle.AsInteger;
-	public static implicit operator WindowHandle(nuint integer) => new(integer);
+	public static implicit operator WindowHandle(nuint val) => new(val);
 	public static implicit operator void*(WindowHandle handle) => handle.AsPointer;
-	public static implicit operator WindowHandle(void* pointer) => new(pointer);
+	public static implicit operator WindowHandle(void* val) => new(val);
 
-	static WindowHandle IResourceHandle<WindowHandle>.CreateFromInteger(nuint integer) => new(integer);
-	static WindowHandle IResourceHandle<WindowHandle>.CreateFromPointer(void* pointer) => new(pointer);
+	static WindowHandle IResourceHandle<WindowHandle>.CreateFromInteger(nuint val) => new(val);
+	static WindowHandle IResourceHandle<WindowHandle>.CreateFromPointer(void* val) => new(val);
 
 	public bool Equals(WindowHandle other) => AsInteger == other.AsInteger;
 	public override bool Equals(object? obj) => obj is WindowHandle other && Equals(other);

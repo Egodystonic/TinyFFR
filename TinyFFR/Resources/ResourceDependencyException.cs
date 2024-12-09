@@ -5,7 +5,7 @@ using System.Runtime.Serialization;
 
 namespace Egodystonic.TinyFFR.Resources;
 
-public class ResourceDependencyException : ApplicationException {
+public class ResourceDependencyException : Exception {
 	public ResourceDependencyException() { }
 	public ResourceDependencyException(string? message) : base(message) { }
 	public ResourceDependencyException(string? message, Exception? innerException) : base(message, innerException) { }

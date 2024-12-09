@@ -14,16 +14,16 @@ public readonly unsafe struct SceneHandle : IResourceHandle<SceneHandle> {
 	internal ResourceIdent Ident => new(TypeHandle, AsInteger);
 	ResourceIdent IResourceHandle.Ident => Ident;
 
-	public SceneHandle(nuint integer) => AsInteger = integer;
-	public SceneHandle(void* pointer) : this((nuint) pointer) { }
+	public SceneHandle(nuint val) => AsInteger = val;
+	public SceneHandle(void* val) : this((nuint) val) { }
 
 	public static implicit operator nuint(SceneHandle handle) => handle.AsInteger;
-	public static implicit operator SceneHandle(nuint integer) => new(integer);
+	public static implicit operator SceneHandle(nuint val) => new(val);
 	public static implicit operator void*(SceneHandle handle) => handle.AsPointer;
-	public static implicit operator SceneHandle(void* pointer) => new(pointer);
+	public static implicit operator SceneHandle(void* val) => new(val);
 
-	static SceneHandle IResourceHandle<SceneHandle>.CreateFromInteger(nuint integer) => new(integer);
-	static SceneHandle IResourceHandle<SceneHandle>.CreateFromPointer(void* pointer) => new(pointer);
+	static SceneHandle IResourceHandle<SceneHandle>.CreateFromInteger(nuint val) => new(val);
+	static SceneHandle IResourceHandle<SceneHandle>.CreateFromPointer(void* val) => new(val);
 
 	public bool Equals(SceneHandle other) => AsInteger == other.AsInteger;
 	public override bool Equals(object? obj) => obj is SceneHandle other && Equals(other);

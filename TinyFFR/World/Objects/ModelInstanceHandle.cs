@@ -14,16 +14,16 @@ public readonly unsafe struct ModelInstanceHandle : IResourceHandle<ModelInstanc
 	internal ResourceIdent Ident => new(TypeHandle, AsInteger);
 	ResourceIdent IResourceHandle.Ident => Ident;
 
-	public ModelInstanceHandle(nuint integer) => AsInteger = integer;
-	public ModelInstanceHandle(void* pointer) : this((nuint) pointer) { }
+	public ModelInstanceHandle(nuint val) => AsInteger = val;
+	public ModelInstanceHandle(void* val) : this((nuint) val) { }
 
 	public static implicit operator nuint(ModelInstanceHandle handle) => handle.AsInteger;
-	public static implicit operator ModelInstanceHandle(nuint integer) => new(integer);
+	public static implicit operator ModelInstanceHandle(nuint val) => new(val);
 	public static implicit operator void*(ModelInstanceHandle handle) => handle.AsPointer;
-	public static implicit operator ModelInstanceHandle(void* pointer) => new(pointer);
+	public static implicit operator ModelInstanceHandle(void* val) => new(val);
 
-	static ModelInstanceHandle IResourceHandle<ModelInstanceHandle>.CreateFromInteger(nuint integer) => new(integer);
-	static ModelInstanceHandle IResourceHandle<ModelInstanceHandle>.CreateFromPointer(void* pointer) => new(pointer);
+	static ModelInstanceHandle IResourceHandle<ModelInstanceHandle>.CreateFromInteger(nuint val) => new(val);
+	static ModelInstanceHandle IResourceHandle<ModelInstanceHandle>.CreateFromPointer(void* val) => new(val);
 
 	public bool Equals(ModelInstanceHandle other) => AsInteger == other.AsInteger;
 	public override bool Equals(object? obj) => obj is ModelInstanceHandle other && Equals(other);

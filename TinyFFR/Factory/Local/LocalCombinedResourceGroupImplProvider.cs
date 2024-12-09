@@ -82,10 +82,10 @@ sealed unsafe class LocalCombinedResourceGroupImplProvider : ICombinedResourceGr
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), resource);
 	}
 
-	public OneToManyEnumerator<EnumerationArg, TResource> GetAllResourcesOfType<TResource>(CombinedResourceGroupHandle handle) where TResource : IResource<TResource> {
+	public ReferentEnumerator<EnumerationArg, TResource> GetAllResourcesOfType<TResource>(CombinedResourceGroupHandle handle) where TResource : IResource<TResource> {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
-		return new OneToManyEnumerator<EnumerationArg, TResource>(
+		return new ReferentEnumerator<EnumerationArg, TResource>(
 			new(this, handle, typeof(TResource).TypeHandle.Value),
 			&GetEnumeratorResourceCount,
 			&GetEnumeratorResourceAtIndex<TResource>
@@ -113,7 +113,7 @@ sealed unsafe class LocalCombinedResourceGroupImplProvider : ICombinedResourceGr
 			++count;
 		}
 
-		throw new IndexOutOfRangeException($"Index '{index}' is out of range for resources of type '{typeof(TResource).Name}' in this resource group (actual count = {count}).");
+		throw new ArgumentOutOfRangeException(nameof(index), $"Index '{index}' is out of range for resources of type '{typeof(TResource).Name}' in this resource group (actual count = {count}).");
 	}
 	public TResource GetNthResourceOfType<TResource>(CombinedResourceGroupHandle handle, int index) where TResource : IResource<TResource> {
 		return GetEnumeratorResourceAtIndex<TResource>(new EnumerationArg(this, handle, typeof(TResource).TypeHandle.Value), index);

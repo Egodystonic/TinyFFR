@@ -93,7 +93,14 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 		buffer.ThrowIfInvalid();
 		var numBlocks = buffer.SizeBytes / _blockSize;
 		if (buffer.SpaceIndex < 0 || buffer.SpaceIndex >= _numAllocatedSpaces || buffer.BlockIndex < 0 || numBlocks + buffer.BlockIndex > NumBlocksPerSpace) {
-			throw new ArgumentException(nameof(buffer));
+			throw new ArgumentException(
+				$"Given buffer has invalid state. " +
+				$"Buffer: {buffer} | " +
+				$"{nameof(_numAllocatedSpaces)}: {_numAllocatedSpaces} | " +
+				$"{nameof(_blockSize)}: {_blockSize} | " +
+				$"{nameof(NumBlocksPerSpace)}: {NumBlocksPerSpace}", 
+				nameof(buffer)
+			);
 		}
 		var spacePtr = _allocatedSpaces + buffer.SpaceIndex;
 		WriteBlocksAndRecalculateLargestContiguousSpace(spacePtr, buffer.BlockIndex, numBlocks, false);
@@ -126,9 +133,10 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 	}
 
 	FixedByteBuffer RentBlocksFromSpace(int spaceIndex, int numBlocks) {
-		if (spaceIndex < 0 || spaceIndex >= _numAllocatedSpaces) throw new ArgumentOutOfRangeException(nameof(spaceIndex));
+		ArgumentOutOfRangeException.ThrowIfLessThan(spaceIndex, 0, nameof(spaceIndex));
+		ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(spaceIndex, _numAllocatedSpaces, nameof(spaceIndex));
 		var spacePtr = _allocatedSpaces + spaceIndex;
-		if (spacePtr->LargestContiguousMemoryBlockCount < numBlocks) throw new ArgumentOutOfRangeException(nameof(numBlocks));
+		ArgumentOutOfRangeException.ThrowIfLessThan(spacePtr->LargestContiguousMemoryBlockCount, numBlocks, nameof(numBlocks));
 		var result = new FixedByteBuffer(
 			(UIntPtr) (spacePtr->StartPtr + (spacePtr->LargestContiguousMemoryBlockStartIndex * _blockSize)), 
 			numBlocks * _blockSize, 

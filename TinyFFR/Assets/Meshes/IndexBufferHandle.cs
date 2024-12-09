@@ -13,16 +13,16 @@ public readonly unsafe struct IndexBufferHandle : IResourceHandle<IndexBufferHan
 	internal ResourceIdent Ident => new(TypeHandle, AsInteger);
 	ResourceIdent IResourceHandle.Ident => Ident;
 
-	public IndexBufferHandle(nuint integer) => AsInteger = integer;
-	public IndexBufferHandle(void* pointer) : this((nuint) pointer) { }
+	public IndexBufferHandle(nuint val) => AsInteger = val;
+	public IndexBufferHandle(void* val) : this((nuint) val) { }
 
 	public static implicit operator nuint(IndexBufferHandle handle) => handle.AsInteger;
-	public static implicit operator IndexBufferHandle(nuint integer) => new(integer);
+	public static implicit operator IndexBufferHandle(nuint val) => new(val);
 	public static implicit operator void*(IndexBufferHandle handle) => handle.AsPointer;
-	public static implicit operator IndexBufferHandle(void* pointer) => new(pointer);
+	public static implicit operator IndexBufferHandle(void* val) => new(val);
 
-	static IndexBufferHandle IResourceHandle<IndexBufferHandle>.CreateFromInteger(nuint integer) => new(integer);
-	static IndexBufferHandle IResourceHandle<IndexBufferHandle>.CreateFromPointer(void* pointer) => new(pointer);
+	static IndexBufferHandle IResourceHandle<IndexBufferHandle>.CreateFromInteger(nuint val) => new(val);
+	static IndexBufferHandle IResourceHandle<IndexBufferHandle>.CreateFromPointer(void* val) => new(val);
 
 	public bool Equals(IndexBufferHandle other) => AsInteger == other.AsInteger;
 	public override bool Equals(object? obj) => obj is IndexBufferHandle other && Equals(other);

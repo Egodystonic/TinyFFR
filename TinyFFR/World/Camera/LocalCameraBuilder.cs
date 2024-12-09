@@ -337,6 +337,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 		if (_isDisposed) return;
 		try {
 			foreach (var kvp in _activeCameras) Dispose(kvp.Key, removeFromMap: false);
+			_activeCameras.Dispose();
 		}
 		finally {
 			_isDisposed = true;

@@ -14,16 +14,16 @@ public readonly unsafe struct RendererHandle : IResourceHandle<RendererHandle> {
 	internal ResourceIdent Ident => new(TypeHandle, AsInteger);
 	ResourceIdent IResourceHandle.Ident => Ident;
 
-	public RendererHandle(nuint integer) => AsInteger = integer;
-	public RendererHandle(void* pointer) : this((nuint) pointer) { }
+	public RendererHandle(nuint val) => AsInteger = val;
+	public RendererHandle(void* val) : this((nuint) val) { }
 
 	public static implicit operator nuint(RendererHandle handle) => handle.AsInteger;
-	public static implicit operator RendererHandle(nuint integer) => new(integer);
+	public static implicit operator RendererHandle(nuint val) => new(val);
 	public static implicit operator void*(RendererHandle handle) => handle.AsPointer;
-	public static implicit operator RendererHandle(void* pointer) => new(pointer);
+	public static implicit operator RendererHandle(void* val) => new(val);
 
-	static RendererHandle IResourceHandle<RendererHandle>.CreateFromInteger(nuint integer) => new(integer);
-	static RendererHandle IResourceHandle<RendererHandle>.CreateFromPointer(void* pointer) => new(pointer);
+	static RendererHandle IResourceHandle<RendererHandle>.CreateFromInteger(nuint val) => new(val);
+	static RendererHandle IResourceHandle<RendererHandle>.CreateFromPointer(void* val) => new(val);
 
 	public bool Equals(RendererHandle other) => AsInteger == other.AsInteger;
 	public override bool Equals(object? obj) => obj is RendererHandle other && Equals(other);

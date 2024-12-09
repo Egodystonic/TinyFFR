@@ -13,16 +13,16 @@ public readonly unsafe struct MaterialHandle : IResourceHandle<MaterialHandle> {
 	internal ResourceIdent Ident => new(TypeHandle, AsInteger);
 	ResourceIdent IResourceHandle.Ident => Ident;
 
-	public MaterialHandle(nuint integer) => AsInteger = integer;
-	public MaterialHandle(void* pointer) : this((nuint) pointer) { }
+	public MaterialHandle(nuint val) => AsInteger = val;
+	public MaterialHandle(void* val) : this((nuint) val) { }
 
 	public static implicit operator nuint(MaterialHandle handle) => handle.AsInteger;
-	public static implicit operator MaterialHandle(nuint integer) => new(integer);
+	public static implicit operator MaterialHandle(nuint val) => new(val);
 	public static implicit operator void*(MaterialHandle handle) => handle.AsPointer;
-	public static implicit operator MaterialHandle(void* pointer) => new(pointer);
+	public static implicit operator MaterialHandle(void* val) => new(val);
 
-	static MaterialHandle IResourceHandle<MaterialHandle>.CreateFromInteger(nuint integer) => new(integer);
-	static MaterialHandle IResourceHandle<MaterialHandle>.CreateFromPointer(void* pointer) => new(pointer);
+	static MaterialHandle IResourceHandle<MaterialHandle>.CreateFromInteger(nuint val) => new(val);
+	static MaterialHandle IResourceHandle<MaterialHandle>.CreateFromPointer(void* val) => new(val);
 
 	public bool Equals(MaterialHandle other) => AsInteger == other.AsInteger;
 	public override bool Equals(object? obj) => obj is MaterialHandle other && Equals(other);

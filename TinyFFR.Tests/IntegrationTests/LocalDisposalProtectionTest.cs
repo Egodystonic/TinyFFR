@@ -262,9 +262,11 @@ class LocalDisposalProtectionTest {
 		if (disposable is IDisposable d) Assert.DoesNotThrow(d.Dispose);
 
 		try {
+#pragma warning disable CS8602 // Dereference of a possibly null reference -- seems like a compiler error?
 			Assert.DoesNotThrow(() => _ = disposable.ToString());
 			// ReSharper disable once EqualExpressionComparison
 			Assert.IsTrue(disposable.Equals(disposable));
+#pragma warning restore CS8602
 		}
 		catch {
 			Console.WriteLine($"Unexpected exception when invoking ToString() or Equals() for disposed object of type {typeof(T).Name}.");

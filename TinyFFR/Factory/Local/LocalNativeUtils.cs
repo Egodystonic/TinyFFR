@@ -52,12 +52,11 @@ static unsafe class LocalNativeUtils {
 
 	[UnmanagedCallersOnly]
 	static void DeallocateRentedBuffer(nuint bufferId) {
-		if (!_activeTemporaryBuffers.ContainsKey(bufferId)) throw new InvalidOperationException($"Buffer '{bufferId}' has already been deallocated.");
-		var tuple = _activeTemporaryBuffers[bufferId];
-		_activeTemporaryBuffers.Remove(bufferId);
+		if (!_activeTemporaryBuffers.Remove(bufferId, out var tuple)) {
+			throw new InvalidOperationException($"Buffer '{bufferId}' has already been deallocated.");
+		}
 		var factory = tuple.Factory;
 		factory.TemporaryCpuBufferPool.Return(tuple.Buffer);
-
 		if (factory.IsDisposed) DisposeTemporaryCpuBufferPoolIfSafe(factory);
 	}
 

@@ -56,15 +56,15 @@ public readonly partial struct CuboidDescriptor : IConvexShape<CuboidDescriptor>
 	public float Volume => HalfWidth * HalfHeight * HalfDepth * 8f;
 	public float SurfaceArea => (Width * Height + Height * Depth + Depth * Width) * 2f;
 
-	public unsafe OneToManyEnumerator<CuboidDescriptor, Location> Corners => new(this, &GetCornerCountForEnumerator, &GetCornerForEnumerator);
+	public unsafe ReferentEnumerator<CuboidDescriptor, Location> Corners => new(this, &GetCornerCountForEnumerator, &GetCornerForEnumerator);
 	static int GetCornerCountForEnumerator(CuboidDescriptor _) => 8;
 	static Location GetCornerForEnumerator(CuboidDescriptor @this, int index) => @this.CornerAt(OrientationUtils.AllDiagonals[index]);
 
-	public unsafe OneToManyEnumerator<CuboidDescriptor, BoundedRay> Edges => new(this, &GetEdgeCountForEnumerator, &GetEdgeForEnumerator);
+	public unsafe ReferentEnumerator<CuboidDescriptor, BoundedRay> Edges => new(this, &GetEdgeCountForEnumerator, &GetEdgeForEnumerator);
 	static int GetEdgeCountForEnumerator(CuboidDescriptor _) => 12;
 	static BoundedRay GetEdgeForEnumerator(CuboidDescriptor @this, int index) => @this.EdgeAt(OrientationUtils.AllIntercardinals[index]);
 
-	public unsafe OneToManyEnumerator<CuboidDescriptor, Plane> Sides => new(this, &GetSideCountForEnumerator, &GetSideForEnumerator);
+	public unsafe ReferentEnumerator<CuboidDescriptor, Plane> Sides => new(this, &GetSideCountForEnumerator, &GetSideForEnumerator);
 	static int GetSideCountForEnumerator(CuboidDescriptor _) => 6;
 	static Plane GetSideForEnumerator(CuboidDescriptor @this, int index) => @this.SideAt(OrientationUtils.AllCardinals[index]);
 

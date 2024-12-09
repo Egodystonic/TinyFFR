@@ -8,7 +8,7 @@ using VectPool = Egodystonic.TinyFFR.Resources.Memory.ObjectPool<Egodystonic.Tin
 
 namespace Egodystonic.TinyFFR.Resources;
 
-sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker {
+sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDisposable {
 	const int InitialDependentsArrayLength = 4;
 	readonly VectPool _vectorPool = new(&CreateNewVector);
 	readonly StubMap _targetsToDependentsMap = new();
@@ -71,8 +71,8 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker {
 		);
 	}
 
-	public OneToManyEnumerator<EnumerationInput, ResourceStub> EnumerateDependents<TTarget>(TTarget targetPotentiallyInUse) where TTarget : IResource {
-		return new OneToManyEnumerator<EnumerationInput, ResourceStub>(
+	public ReferentEnumerator<EnumerationInput, ResourceStub> EnumerateDependents<TTarget>(TTarget targetPotentiallyInUse) where TTarget : IResource {
+		return new ReferentEnumerator<EnumerationInput, ResourceStub>(
 			new(this, targetPotentiallyInUse.Ident),
 			&GetDependentsEnumerationCount,
 			&GetDependentsEnumerationItem
@@ -84,8 +84,8 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker {
 	static ResourceStub GetDependentsEnumerationItem(EnumerationInput input, int index) {
 		return GetMapEnumerationItem((input.Tracker as ResourceDependencyTracker)!._targetsToDependentsMap, input.ArgumentIdent, index);
 	}
-	public OneToManyEnumerator<EnumerationInput, ResourceStub> EnumerateTargets<TDependent>(TDependent dependent) where TDependent : IResource {
-		return new OneToManyEnumerator<EnumerationInput, ResourceStub>(
+	public ReferentEnumerator<EnumerationInput, ResourceStub> EnumerateTargets<TDependent>(TDependent dependent) where TDependent : IResource {
+		return new ReferentEnumerator<EnumerationInput, ResourceStub>(
 			new(this, dependent.Ident),
 			&GetTargetsEnumerationCount,
 			&GetTargetsEnumerationItem
@@ -98,12 +98,12 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker {
 		return GetMapEnumerationItem((input.Tracker as ResourceDependencyTracker)!._dependentsToTargetsMap, input.ArgumentIdent, index);
 	}
 
-	public OneToManyEnumerator<EnumerationInput, TDependent> EnumerateDependentsOfGivenType<TTarget, TDependent, THandle, TImpl>(TTarget targetPotentiallyInUse) 
+	public ReferentEnumerator<EnumerationInput, TDependent> EnumerateDependentsOfGivenType<TTarget, TDependent, THandle, TImpl>(TTarget targetPotentiallyInUse) 
 		where TTarget : IResource
 		where TDependent : IResource<TDependent, THandle, TImpl>
 		where THandle : unmanaged, IResourceHandle<THandle>
 		where TImpl : class, IResourceImplProvider {
-		return new OneToManyEnumerator<EnumerationInput, TDependent>(
+		return new ReferentEnumerator<EnumerationInput, TDependent>(
 			new(this, targetPotentiallyInUse.Ident),
 			&GetDependentsEnumerationCount<TDependent, THandle, TImpl>,
 			&GetDependentsEnumerationItem<TDependent, THandle, TImpl>
@@ -127,12 +127,12 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker {
 		where TImpl : class, IResourceImplProvider {
 		return IResource<TDependent, THandle, TImpl>.RecreateFromResourceStub(GetMapEnumerationItem<THandle>((input.Tracker as ResourceDependencyTracker)!._targetsToDependentsMap, input.ArgumentIdent, index));
 	}
-	public OneToManyEnumerator<EnumerationInput, TTarget> EnumerateTargetsOfGivenType<TDependent, TTarget, THandle, TImpl>(TDependent dependent)
+	public ReferentEnumerator<EnumerationInput, TTarget> EnumerateTargetsOfGivenType<TDependent, TTarget, THandle, TImpl>(TDependent dependent)
 		where TDependent : IResource
 		where TTarget : IResource<TTarget, THandle, TImpl>
 		where THandle : unmanaged, IResourceHandle<THandle>
 		where TImpl : class, IResourceImplProvider {
-		return new OneToManyEnumerator<EnumerationInput, TTarget>(
+		return new ReferentEnumerator<EnumerationInput, TTarget>(
 			new(this, dependent.Ident),
 			&GetTargetsEnumerationCount<TTarget, THandle, TImpl>,
 			&GetTargetsEnumerationItem<TTarget, THandle, TImpl>

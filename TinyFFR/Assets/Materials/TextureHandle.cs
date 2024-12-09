@@ -13,16 +13,16 @@ public readonly unsafe struct TextureHandle : IResourceHandle<TextureHandle> {
 	internal ResourceIdent Ident => new(TypeHandle, AsInteger);
 	ResourceIdent IResourceHandle.Ident => Ident;
 
-	public TextureHandle(nuint integer) => AsInteger = integer;
-	public TextureHandle(void* pointer) : this((nuint) pointer) { }
+	public TextureHandle(nuint val) => AsInteger = val;
+	public TextureHandle(void* val) : this((nuint) val) { }
 
 	public static implicit operator nuint(TextureHandle handle) => handle.AsInteger;
-	public static implicit operator TextureHandle(nuint integer) => new(integer);
+	public static implicit operator TextureHandle(nuint val) => new(val);
 	public static implicit operator void*(TextureHandle handle) => handle.AsPointer;
-	public static implicit operator TextureHandle(void* pointer) => new(pointer);
+	public static implicit operator TextureHandle(void* val) => new(val);
 
-	static TextureHandle IResourceHandle<TextureHandle>.CreateFromInteger(nuint integer) => new(integer);
-	static TextureHandle IResourceHandle<TextureHandle>.CreateFromPointer(void* pointer) => new(pointer);
+	static TextureHandle IResourceHandle<TextureHandle>.CreateFromInteger(nuint val) => new(val);
+	static TextureHandle IResourceHandle<TextureHandle>.CreateFromPointer(void* val) => new(val);
 
 	public bool Equals(TextureHandle other) => AsInteger == other.AsInteger;
 	public override bool Equals(object? obj) => obj is TextureHandle other && Equals(other);

@@ -14,16 +14,16 @@ public readonly unsafe struct CameraHandle : IResourceHandle<CameraHandle> {
 	internal ResourceIdent Ident => new(TypeHandle, AsInteger);
 	ResourceIdent IResourceHandle.Ident => Ident;
 
-	public CameraHandle(nuint integer) => AsInteger = integer;
-	public CameraHandle(void* pointer) : this((nuint) pointer) { }
+	public CameraHandle(nuint val) => AsInteger = val;
+	public CameraHandle(void* val) : this((nuint) val) { }
 
 	public static implicit operator nuint(CameraHandle handle) => handle.AsInteger;
-	public static implicit operator CameraHandle(nuint integer) => new(integer);
+	public static implicit operator CameraHandle(nuint val) => new(val);
 	public static implicit operator void*(CameraHandle handle) => handle.AsPointer;
-	public static implicit operator CameraHandle(void* pointer) => new(pointer);
+	public static implicit operator CameraHandle(void* val) => new(val);
 
-	static CameraHandle IResourceHandle<CameraHandle>.CreateFromInteger(nuint integer) => new(integer);
-	static CameraHandle IResourceHandle<CameraHandle>.CreateFromPointer(void* pointer) => new(pointer);
+	static CameraHandle IResourceHandle<CameraHandle>.CreateFromInteger(nuint val) => new(val);
+	static CameraHandle IResourceHandle<CameraHandle>.CreateFromPointer(void* val) => new(val);
 
 	public bool Equals(CameraHandle other) => AsInteger == other.AsInteger;
 	public override bool Equals(object? obj) => obj is CameraHandle other && Equals(other);

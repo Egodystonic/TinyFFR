@@ -17,6 +17,7 @@ namespace Egodystonic.TinyFFR.Factory.Local;
 public sealed class LocalRendererFactory : ILocalRendererFactory {
 	readonly ResourceDependencyTracker _dependencyTracker = new();
 	readonly ManagedStringPool _stringPool = new();
+	readonly ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> _resourceNameMap = new();
 	readonly LocalCombinedResourceGroupImplProvider _resourceGroupProvider;
 
 	readonly IDisplayDiscoverer _displayDiscoverer;
@@ -49,6 +50,7 @@ public sealed class LocalRendererFactory : ILocalRendererFactory {
 		TemporaryCpuBufferPool = new FixedByteBufferPool(factoryConfig.MaxAssetSizeBytes);
 		var globals = new LocalFactoryGlobalObjectGroup(
 			this,
+			_resourceNameMap,
 			_dependencyTracker,
 			_stringPool,
 			resourceGroupProviderRef
@@ -68,19 +70,19 @@ public sealed class LocalRendererFactory : ILocalRendererFactory {
 
 	#region Resource Group Creation
 	public CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed) {
-		if (IsDisposed) throw new ObjectDisposedException(nameof(ILocalRendererFactory));
+		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ILocalRendererFactory));
 		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed);
 	}
 	public CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name) {
-		if (IsDisposed) throw new ObjectDisposedException(nameof(ILocalRendererFactory));
+		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ILocalRendererFactory));
 		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed, name);
 	}
 	public CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, int initialCapacity) {
-		if (IsDisposed) throw new ObjectDisposedException(nameof(ILocalRendererFactory));
+		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ILocalRendererFactory));
 		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed, initialCapacity);
 	}
 	public CombinedResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name, int initialCapacity) {
-		if (IsDisposed) throw new ObjectDisposedException(nameof(ILocalRendererFactory));
+		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ILocalRendererFactory));
 		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed, name, initialCapacity);
 	}
 	#endregion
@@ -111,6 +113,7 @@ public sealed class LocalRendererFactory : ILocalRendererFactory {
 			DisposeObjectIfDisposable(_windowBuilder);
 			DisposeObjectIfDisposable(_displayDiscoverer);
 			DisposeObjectIfDisposable(_resourceGroupProvider);
+			DisposeObjectIfDisposable(_resourceNameMap);
 			DisposeObjectIfDisposable(_stringPool);
 			DisposeObjectIfDisposable(_dependencyTracker);
 			LocalNativeUtils.DisposeTemporaryCpuBufferPoolIfSafe(this);

@@ -13,16 +13,16 @@ public readonly unsafe struct ApplicationLoopHandle : IResourceHandle<Applicatio
 	internal ResourceIdent Ident => new(TypeHandle, AsInteger);
 	ResourceIdent IResourceHandle.Ident => Ident;
 
-	public ApplicationLoopHandle(nuint integer) => AsInteger = integer;
-	public ApplicationLoopHandle(void* pointer) : this((nuint) pointer) { }
+	public ApplicationLoopHandle(nuint val) => AsInteger = val;
+	public ApplicationLoopHandle(void* val) : this((nuint) val) { }
 
 	public static implicit operator nuint(ApplicationLoopHandle handle) => handle.AsInteger;
-	public static implicit operator ApplicationLoopHandle(nuint integer) => new(integer);
+	public static implicit operator ApplicationLoopHandle(nuint val) => new(val);
 	public static implicit operator void*(ApplicationLoopHandle handle) => handle.AsPointer;
-	public static implicit operator ApplicationLoopHandle(void* pointer) => new(pointer);
+	public static implicit operator ApplicationLoopHandle(void* val) => new(val);
 
-	static ApplicationLoopHandle IResourceHandle<ApplicationLoopHandle>.CreateFromInteger(nuint integer) => new(integer);
-	static ApplicationLoopHandle IResourceHandle<ApplicationLoopHandle>.CreateFromPointer(void* pointer) => new(pointer);
+	static ApplicationLoopHandle IResourceHandle<ApplicationLoopHandle>.CreateFromInteger(nuint val) => new(val);
+	static ApplicationLoopHandle IResourceHandle<ApplicationLoopHandle>.CreateFromPointer(void* val) => new(val);
 
 	public bool Equals(ApplicationLoopHandle other) => AsInteger == other.AsInteger;
 	public override bool Equals(object? obj) => obj is ApplicationLoopHandle other && Equals(other);

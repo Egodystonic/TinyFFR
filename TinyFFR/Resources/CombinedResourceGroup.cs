@@ -38,9 +38,9 @@ public readonly struct CombinedResourceGroup : IDisposableResource<CombinedResou
 	}
 
 	#region Specific Resource Enumeration Properties
-	public OneToManyEnumerator<EnumerationArg, Material> Materials => GetAllResourcesOfType<Material>();
-	public OneToManyEnumerator<EnumerationArg, Texture> Textures => GetAllResourcesOfType<Texture>();
-	public OneToManyEnumerator<EnumerationArg, Mesh> Meshes => GetAllResourcesOfType<Mesh>();
+	public ReferentEnumerator<EnumerationArg, Material> Materials => GetAllResourcesOfType<Material>();
+	public ReferentEnumerator<EnumerationArg, Texture> Textures => GetAllResourcesOfType<Texture>();
+	public ReferentEnumerator<EnumerationArg, Mesh> Meshes => GetAllResourcesOfType<Mesh>();
 	#endregion
 
 	internal ReadOnlySpan<ResourceStub> Resources {
@@ -65,7 +65,7 @@ public readonly struct CombinedResourceGroup : IDisposableResource<CombinedResou
 	public void Seal() => Implementation.Seal(Handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public OneToManyEnumerator<EnumerationArg, TResource> GetAllResourcesOfType<TResource>() where TResource : IResource<TResource> {
+	public ReferentEnumerator<EnumerationArg, TResource> GetAllResourcesOfType<TResource>() where TResource : IResource<TResource> {
 		return Implementation.GetAllResourcesOfType<TResource>(Handle);
 	}
 

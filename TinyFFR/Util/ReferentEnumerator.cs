@@ -5,7 +5,7 @@ namespace Egodystonic.TinyFFR;
 
 #pragma warning disable CA1815 // "Should implement IEquatable" -- It's not recommended to compare function pointers, so there's no real way to provide equality for this type (plus it's not particularly useful anyway)
 // Represents an enumerator that takes a copy of TIn and uses a pointer to a static indexer and count method to avoid accidental garbage generation
-public readonly unsafe struct OneToManyEnumerator<TIn, TOut> : IEnumerable<TOut> {
+public readonly unsafe struct ReferentEnumerator<TIn, TOut> : IEnumerable<TOut> {
 	public struct Enumerator : IEnumerator<TOut> {
 		readonly TIn _input;
 		readonly int _count;
@@ -45,7 +45,7 @@ public readonly unsafe struct OneToManyEnumerator<TIn, TOut> : IEnumerable<TOut>
 		get => ElementAt(index);
 	}
 
-	public OneToManyEnumerator(TIn input, delegate*<TIn, int> getCountFunc, delegate*<TIn, int, TOut> getItemFunc) {
+	public ReferentEnumerator(TIn input, delegate*<TIn, int> getCountFunc, delegate*<TIn, int, TOut> getItemFunc) {
 		ArgumentNullException.ThrowIfNull(getCountFunc);
 		ArgumentNullException.ThrowIfNull(getItemFunc);
 
@@ -81,6 +81,6 @@ public readonly unsafe struct OneToManyEnumerator<TIn, TOut> : IEnumerable<TOut>
 	IEnumerator<TOut> IEnumerable<TOut>.GetEnumerator() => GetEnumerator();
 
 	internal void ThrowIfInvalid() {
-		if (_getCountFunc == null || _getItemFunc == null) throw InvalidObjectException.InvalidDefault(typeof(OneToManyEnumerator<TIn, TOut>));
+		if (_getCountFunc == null || _getItemFunc == null) throw InvalidObjectException.InvalidDefault(typeof(ReferentEnumerator<TIn, TOut>));
 	}
 }

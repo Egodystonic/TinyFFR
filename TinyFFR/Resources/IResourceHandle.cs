@@ -10,6 +10,6 @@ public unsafe interface IResourceHandle {
 	public static abstract nint TypeHandle { get; }
 }
 public unsafe interface IResourceHandle<TSelf> : IResourceHandle, IEquatable<TSelf> where TSelf : IResourceHandle<TSelf> {
-	public static abstract TSelf CreateFromInteger(nuint integer);
-	public static abstract TSelf CreateFromPointer(void* pointer);
+	public static abstract TSelf CreateFromInteger(nuint val);
+	public static abstract TSelf CreateFromPointer(void* val);
 }

@@ -112,15 +112,15 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	public string ToStringDescriptive() {
 		// ReSharper disable CompareOfFloatsByEqualityOperator Explicit comparison with a representable-in-FP default is fine
 		string scalingString;
-		if (Scaling == None.Scaling) scalingString = PercentageUtils.ConvertFractionToPercentageString(1f);
-		else if (Scaling.X == Scaling.Y && Scaling.Y == Scaling.Z) scalingString = PercentageUtils.ConvertFractionToPercentageString(Scaling.X);
+		if (Scaling == None.Scaling) scalingString = PercentageUtils.ConvertFractionToPercentageString(1f, "N0", CultureInfo.CurrentCulture);
+		else if (Scaling.X == Scaling.Y && Scaling.Y == Scaling.Z) scalingString = PercentageUtils.ConvertFractionToPercentageString(Scaling.X, "N0", CultureInfo.CurrentCulture);
 		else {
 			scalingString = $"{IVect.VectorStringPrefixChar}" +
-							$"{PercentageUtils.ConvertFractionToPercentageString(Scaling.X)}" +
+							$"{PercentageUtils.ConvertFractionToPercentageString(Scaling.X, "N0", CultureInfo.CurrentCulture)}" +
 							$"{NumberFormatInfo.CurrentInfo.NumberGroupSeparator}" +
-							$"{PercentageUtils.ConvertFractionToPercentageString(Scaling.Y)}" +
+							$"{PercentageUtils.ConvertFractionToPercentageString(Scaling.Y, "N0", CultureInfo.CurrentCulture)}" +
 							$"{NumberFormatInfo.CurrentInfo.NumberGroupSeparator}" +
-							$"{PercentageUtils.ConvertFractionToPercentageString(Scaling.Z)}" +
+							$"{PercentageUtils.ConvertFractionToPercentageString(Scaling.Z, "N0", CultureInfo.CurrentCulture)}" +
 							$"{IVect.VectorStringSuffixChar}";
 		}
 		// ReSharper restore CompareOfFloatsByEqualityOperator

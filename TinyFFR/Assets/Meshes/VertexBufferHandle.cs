@@ -13,16 +13,16 @@ public readonly unsafe struct VertexBufferHandle : IResourceHandle<VertexBufferH
 	internal ResourceIdent Ident => new(TypeHandle, AsInteger);
 	ResourceIdent IResourceHandle.Ident => Ident;
 
-	public VertexBufferHandle(nuint integer) => AsInteger = integer;
-	public VertexBufferHandle(void* pointer) : this((nuint) pointer) { }
+	public VertexBufferHandle(nuint val) => AsInteger = val;
+	public VertexBufferHandle(void* val) : this((nuint) val) { }
 
 	public static implicit operator nuint(VertexBufferHandle handle) => handle.AsInteger;
-	public static implicit operator VertexBufferHandle(nuint integer) => new(integer);
+	public static implicit operator VertexBufferHandle(nuint val) => new(val);
 	public static implicit operator void*(VertexBufferHandle handle) => handle.AsPointer;
-	public static implicit operator VertexBufferHandle(void* pointer) => new(pointer);
+	public static implicit operator VertexBufferHandle(void* val) => new(val);
 
-	static VertexBufferHandle IResourceHandle<VertexBufferHandle>.CreateFromInteger(nuint integer) => new(integer);
-	static VertexBufferHandle IResourceHandle<VertexBufferHandle>.CreateFromPointer(void* pointer) => new(pointer);
+	static VertexBufferHandle IResourceHandle<VertexBufferHandle>.CreateFromInteger(nuint val) => new(val);
+	static VertexBufferHandle IResourceHandle<VertexBufferHandle>.CreateFromPointer(void* val) => new(val);
 
 	public bool Equals(VertexBufferHandle other) => AsInteger == other.AsInteger;
 	public override bool Equals(object? obj) => obj is VertexBufferHandle other && Equals(other);

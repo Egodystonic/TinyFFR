@@ -13,16 +13,16 @@ public readonly unsafe struct DisplayHandle : IResourceHandle<DisplayHandle> {
 	internal ResourceIdent Ident => new(TypeHandle, AsInteger);
 	ResourceIdent IResourceHandle.Ident => Ident;
 
-	public DisplayHandle(nuint integer) => AsInteger = integer;
-	public DisplayHandle(void* pointer) : this((nuint) pointer) { }
+	public DisplayHandle(nuint val) => AsInteger = val;
+	public DisplayHandle(void* val) : this((nuint) val) { }
 
 	public static implicit operator nuint(DisplayHandle handle) => handle.AsInteger;
-	public static implicit operator DisplayHandle(nuint integer) => new(integer);
+	public static implicit operator DisplayHandle(nuint val) => new(val);
 	public static implicit operator void*(DisplayHandle handle) => handle.AsPointer;
-	public static implicit operator DisplayHandle(void* pointer) => new(pointer);
+	public static implicit operator DisplayHandle(void* val) => new(val);
 
-	static DisplayHandle IResourceHandle<DisplayHandle>.CreateFromInteger(nuint integer) => new(integer);
-	static DisplayHandle IResourceHandle<DisplayHandle>.CreateFromPointer(void* pointer) => new(pointer);
+	static DisplayHandle IResourceHandle<DisplayHandle>.CreateFromInteger(nuint val) => new(val);
+	static DisplayHandle IResourceHandle<DisplayHandle>.CreateFromPointer(void* val) => new(val);
 
 	public bool Equals(DisplayHandle other) => AsInteger == other.AsInteger;
 	public override bool Equals(object? obj) => obj is DisplayHandle other && Equals(other);

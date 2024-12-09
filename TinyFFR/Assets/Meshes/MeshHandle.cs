@@ -13,16 +13,16 @@ public readonly unsafe struct MeshHandle : IResourceHandle<MeshHandle> {
 	internal ResourceIdent Ident => new(TypeHandle, AsInteger);
 	ResourceIdent IResourceHandle.Ident => Ident;
 
-	public MeshHandle(nuint integer) => AsInteger = integer;
-	public MeshHandle(void* pointer) : this((nuint) pointer) { }
+	public MeshHandle(nuint val) => AsInteger = val;
+	public MeshHandle(void* val) : this((nuint) val) { }
 
 	public static implicit operator nuint(MeshHandle handle) => handle.AsInteger;
-	public static implicit operator MeshHandle(nuint integer) => new(integer);
+	public static implicit operator MeshHandle(nuint val) => new(val);
 	public static implicit operator void*(MeshHandle handle) => handle.AsPointer;
-	public static implicit operator MeshHandle(void* pointer) => new(pointer);
+	public static implicit operator MeshHandle(void* val) => new(val);
 
-	static MeshHandle IResourceHandle<MeshHandle>.CreateFromInteger(nuint integer) => new(integer);
-	static MeshHandle IResourceHandle<MeshHandle>.CreateFromPointer(void* pointer) => new(pointer);
+	static MeshHandle IResourceHandle<MeshHandle>.CreateFromInteger(nuint val) => new(val);
+	static MeshHandle IResourceHandle<MeshHandle>.CreateFromPointer(void* val) => new(val);
 
 	public bool Equals(MeshHandle other) => AsInteger == other.AsInteger;
 	public override bool Equals(object? obj) => obj is MeshHandle other && Equals(other);
