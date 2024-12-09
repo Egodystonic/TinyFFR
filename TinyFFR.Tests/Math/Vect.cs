@@ -12,7 +12,7 @@ class VectTest {
 	static readonly Vect OneTwoNegThree = new(1f, 2f, -3f);
 
 	[Test]
-	public void ShouldBeCorrectStructSize() => AssertStructLayout<Vect>();
+	public void ShouldBeCorrectStructSize() => AssertStructLayout<Vect>(16);
 
 	[Test]
 	public void ShouldCorrectlyInitializeStaticReadonlyMembers() {

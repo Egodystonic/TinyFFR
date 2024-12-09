@@ -17,7 +17,7 @@ class RayTest {
 	public void TearDownTest() { }
 
 	[Test]
-	public void ShouldBeCorrectStructSize() => AssertStructLayout<Ray>();
+	public void ShouldBeCorrectStructSize() => AssertStructLayout<Ray>(32);
 
 	[Test]
 	public void ShouldCorrectlyCalculateProperties() {

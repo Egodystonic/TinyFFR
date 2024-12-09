@@ -14,9 +14,10 @@ namespace Egodystonic.TinyFFR.Rendering;
 sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDisposable {
 	[StructLayout(LayoutKind.Explicit)]
 	readonly struct RenderTargetUnion : IRenderTarget {
+		const int UnionRenderTargetOffset = 8;
 		[FieldOffset(0)]
 		public readonly IntPtr TypeHandle;
-		[FieldOffset(8)]
+		[FieldOffset(UnionRenderTargetOffset)]
 		public readonly Window AsWindow;
 
 		public bool IsWindow => TypeHandle == WindowHandle.TypeHandle;

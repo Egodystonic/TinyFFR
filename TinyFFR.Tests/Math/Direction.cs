@@ -13,7 +13,7 @@ class DirectionTest {
 	static readonly Vector3 NormalizedV3 = Vector3.Normalize(new(1f, 2f, -3f));
 
 	[Test]
-	public void ShouldBeCorrectStructSize() => AssertStructLayout<Direction>();
+	public void ShouldBeCorrectStructSize() => AssertStructLayout<Direction>(16);
 
 	[Test]
 	public void ShouldCorrectlyInitializeStaticReadonlyMembers() {

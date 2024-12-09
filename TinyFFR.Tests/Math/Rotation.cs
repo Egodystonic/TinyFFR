@@ -17,7 +17,7 @@ class RotationTest {
 	static readonly Rotation NegativeNinetyAroundUp = -90f % Up;
 
 	[Test]
-	public void ShouldBeCorrectStructSize() => AssertStructLayout<Rotation>();
+	public void ShouldBeCorrectStructSize() => AssertStructLayout<Rotation>(16);
 
 	[Test]
 	public void ShouldCorrectlyInitializeStaticMembers() {

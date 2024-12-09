@@ -148,8 +148,8 @@ static class TestUtils {
 		);
 	}
 
-	public static unsafe void AssertStructLayout<T>() where T : unmanaged {
-		var expectedSize = typeof(T).StructLayoutAttribute!.Size;
+	public static unsafe void AssertStructLayout<T>(int expectedSize) where T : unmanaged {
+		Assert.AreEqual(expectedSize, typeof(T).StructLayoutAttribute!.Size);
 		Assert.AreEqual(expectedSize, sizeof(T));
 		var stackValue = default(T);
 		Assert.AreEqual(expectedSize, MemoryMarshal.AsBytes(new ReadOnlySpan<T>(in stackValue)).Length);

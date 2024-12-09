@@ -5,7 +5,7 @@ using System;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
+[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 20)]
 public readonly struct MeshVertex : IEquatable<MeshVertex> {
 	readonly float _locX, _locY, _locZ;
 	readonly float _texU, _texV;

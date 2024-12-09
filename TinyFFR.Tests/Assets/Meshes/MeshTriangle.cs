@@ -4,7 +4,7 @@
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 [TestFixture]
-class RandomUtilsTest {
+class MeshTriangleTest {
 	[SetUp]
 	public void SetUpTest() { }
 
@@ -13,7 +13,7 @@ class RandomUtilsTest {
 
 	[Test]
 	public unsafe void ShouldCorrectlyLayOutStruct() {
-		AssertStructLayout<MeshTriangle>();
+		AssertStructLayout<MeshTriangle>(12);
 		var valSpan = stackalloc MeshTriangle[] { new(11, 22, 33), new(44, 55, 66) };
 		var valPtr = (int*) valSpan;
 		Assert.AreEqual(11, valPtr[0]);

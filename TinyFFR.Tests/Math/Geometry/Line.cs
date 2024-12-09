@@ -18,7 +18,7 @@ class LineTest {
 	public void TearDownTest() { }
 
 	[Test]
-	public void ShouldBeCorrectStructSize() => AssertStructLayout<Line>();
+	public void ShouldBeCorrectStructSize() => AssertStructLayout<Line>(32);
 
 	[Test]
 	public void ShouldCorrectlyCalculateProperties() {

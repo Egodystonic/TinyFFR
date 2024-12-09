@@ -76,6 +76,9 @@ class ColorVectTest {
 	}
 
 	[Test]
+	public void ShouldBeCorrectStructSize() => AssertStructLayout<ColorVect>(16);
+
+	[Test]
 	public void ShouldCorrectlyAssignStaticMembers() {
 		AssertToleranceEquals(new ColorVect(1f, 0f, 0f), ColorVect.FromHueSaturationLightness(ColorVect.RedHueAngle, 1f, 0.5f), TestTolerance);
 		AssertToleranceEquals(new ColorVect(0f, 1f, 0f), ColorVect.FromHueSaturationLightness(ColorVect.GreenHueAngle, 1f, 0.5f), TestTolerance);

@@ -103,42 +103,33 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory {
 		// to make the factory objects disposable in future without forgetting to dispose them here.
 		// In other words, even if 'o' isn't IDisposable today, it can be made IDisposable tomorrow and we
 		// don't have to remember to add a dispose call in this function.
-		static void DisposeObjectIfDisposable(List<Exception> collectedExceptions, object o) {
-			try {
-				(o as IDisposable)?.Dispose();
-			}
-			catch (Exception e) {
-				collectedExceptions.Add(e);
-			}
+		static void DisposeObjectIfDisposable(object o) {
+			(o as IDisposable)?.Dispose();
 		}
 
 		if (IsDisposed) return;
-		var collectedExceptions = new List<Exception>();
 		try {
 			_dependencyTracker.EraseAllDependencies();
 
 			// Maintainer's note: These are disposed in reverse order (e.g. opposite order compared to the order they're constructed in in the ctor above)
 			// However, by erasing all dependencies (above) we also try to avoid nasty dependency-related exceptions getting thrown which are ultimately not that useful as we're disposing everything anyway.
-			DisposeObjectIfDisposable(collectedExceptions, _rendererBuilder);
-			DisposeObjectIfDisposable(collectedExceptions, _sceneBuilder);
-			DisposeObjectIfDisposable(collectedExceptions, _objectBuilder);
-			DisposeObjectIfDisposable(collectedExceptions, _cameraBuilder);
-			DisposeObjectIfDisposable(collectedExceptions, _assetLoader);
-			DisposeObjectIfDisposable(collectedExceptions, _applicationLoopBuilder);
-			DisposeObjectIfDisposable(collectedExceptions, _windowBuilder);
-			DisposeObjectIfDisposable(collectedExceptions, _displayDiscoverer);
-			DisposeObjectIfDisposable(collectedExceptions, _resourceGroupProvider);
-			DisposeObjectIfDisposable(collectedExceptions, _resourceNameMap);
-			DisposeObjectIfDisposable(collectedExceptions, _stringPool);
-			DisposeObjectIfDisposable(collectedExceptions, _dependencyTracker);
+			DisposeObjectIfDisposable(_rendererBuilder);
+			DisposeObjectIfDisposable(_sceneBuilder);
+			DisposeObjectIfDisposable(_objectBuilder);
+			DisposeObjectIfDisposable(_cameraBuilder);
+			DisposeObjectIfDisposable(_assetLoader);
+			DisposeObjectIfDisposable(_applicationLoopBuilder);
+			DisposeObjectIfDisposable(_windowBuilder);
+			DisposeObjectIfDisposable(_displayDiscoverer);
+			DisposeObjectIfDisposable(_resourceGroupProvider);
+			DisposeObjectIfDisposable(_resourceNameMap);
+			DisposeObjectIfDisposable(_stringPool);
+			DisposeObjectIfDisposable(_dependencyTracker);
 			LocalNativeUtils.DisposeTemporaryCpuBufferPoolIfSafe(this);
 		}
 		finally {
 			IsDisposed = true;
 			_instance = null;
-		}
-		if (collectedExceptions.Count > 0) {
-			throw new AggregateException("One or more errors occured when disposing the factory.", collectedExceptions);
 		}
 	}
 

@@ -12,7 +12,7 @@ class LocationTest {
 	static readonly Location OneTwoNegThree = new(1f, 2f, -3f);
 
 	[Test]
-	public void ShouldBeCorrectStructSize() => AssertStructLayout<Location>();
+	public void ShouldBeCorrectStructSize() => AssertStructLayout<Location>(16);
 
 	[Test]
 	public void ShouldCorrectlyInitializeStaticReadonlyMembers() {

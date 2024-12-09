@@ -17,7 +17,7 @@ class BoundedRayTest {
 	public void TearDownTest() { }
 
 	[Test]
-	public void ShouldBeCorrectStructSize() => AssertStructLayout<BoundedRay>();
+	public void ShouldBeCorrectStructSize() => AssertStructLayout<BoundedRay>(32);
 
 	[Test]
 	public void ShouldCorrectlyCalculateProperties() {

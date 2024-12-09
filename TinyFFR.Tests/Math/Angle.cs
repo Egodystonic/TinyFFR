@@ -11,7 +11,7 @@ class AngleTest {
 	const float TestTolerance = 0.1f;
 
 	[Test]
-	public void ShouldBeCorrectStructSize() => AssertStructLayout<Angle>();
+	public void ShouldBeCorrectStructSize() => AssertStructLayout<Angle>(4);
 
 	[Test]
 	public void StaticReadonlyMembersShouldBeCorrectlyInitialized() {
