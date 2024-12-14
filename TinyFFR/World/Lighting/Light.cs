@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.World;
 
-public readonly struct Light : IDisposableResource<Light, LightHandle, ILightImplProvider>, IPositionedSceneObject, IOrientedSceneObject {
+public readonly struct Light : IDisposableResource<Light, LightHandle, ILightImplProvider>, IPositionedSceneObject {
 	readonly LightHandle _handle;
 	readonly ILightImplProvider _impl;
 
@@ -29,12 +29,6 @@ public readonly struct Light : IDisposableResource<Light, LightHandle, ILightImp
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetPosition(_handle, value);
 	}
-	public Rotation Rotation {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetRotation(_handle);
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Implementation.SetRotation(_handle, value);
-	}
 
 	public ColorVect Color {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -53,7 +47,6 @@ public readonly struct Light : IDisposableResource<Light, LightHandle, ILightImp
 	}
 
 	public void MoveBy(Vect translation) => Implementation.TranslateBy(_handle, translation);
-	public void RotateBy(Rotation rotation) => Implementation.RotateBy(_handle, rotation);
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -68,10 +61,10 @@ public readonly struct Light : IDisposableResource<Light, LightHandle, ILightImp
 	public override string ToString() => $"Light {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
 
 	#region Equality
-	public bool Equals(ModelInstance other) => _handle == other._handle && _impl.Equals(other._impl);
-	public override bool Equals(object? obj) => obj is ModelInstance other && Equals(other);
+	public bool Equals(Light other) => _handle == other._handle && _impl.Equals(other._impl);
+	public override bool Equals(object? obj) => obj is Light other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine((UIntPtr) _handle, _impl);
-	public static bool operator ==(ModelInstance left, ModelInstance right) => left.Equals(right);
-	public static bool operator !=(ModelInstance left, ModelInstance right) => !left.Equals(right);
+	public static bool operator ==(Light left, Light right) => left.Equals(right);
+	public static bool operator !=(Light left, Light right) => !left.Equals(right);
 	#endregion
 }
