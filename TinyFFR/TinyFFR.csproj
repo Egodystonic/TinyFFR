@@ -27,6 +27,7 @@
       CA1822; <!-- Instance method could be static: Not necessarily a bad note all the time, but I often leave members that *could* be static right now as instance because that's what makes sense in an abstract sense for the object API, even if that method doesn't actually touch instance state right now -->
       CA1711; <!-- Strange rule around variable naming suffixes. Doesn't make much sense IMO -->
       CA1028; <!-- Warning prompting to make enums backed by int32 only: Seems mostly there to deter people making enums backed by e.g. byte under a misguided assumption of some sort of performance gain. Not useful for us -->
+      CA1716; <!-- Rule regarding not using same name for identifiers as some built-in types: Not a concern for us currently, rule is a bit sledgehammery -->
       IDE0028; <!-- Prompt to use collection initializers: Sometimes I don't want them -->
       IDE0040; <!-- Always include access modifiers (even when it would be the default): Just plain don't like this style -->
       IDE1006; <!-- Underscore for private const fields: Yuck -->

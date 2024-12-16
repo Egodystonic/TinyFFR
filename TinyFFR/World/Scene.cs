@@ -35,6 +35,11 @@ public readonly struct Scene : IDisposableResource<Scene, SceneHandle, ISceneImp
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove(ModelInstance modelInstance) => Implementation.Remove(_handle, modelInstance);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Add(Light light) => Implementation.Add(_handle, light);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Remove(Light light) => Implementation.Remove(_handle, light);
+
 	public override string ToString() => $"Scene {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
 
 	#region Disposal

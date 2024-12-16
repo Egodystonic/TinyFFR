@@ -25,6 +25,8 @@ public readonly struct Window : IDisposableResource<Window, WindowHandle, IWindo
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetTitle(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetTile(ReadOnlySpan<char> title) => Title = title;
 	ReadOnlySpan<char> IStringSpanNameEnabled.Name => Title;
 
 	public Display Display {
@@ -33,18 +35,26 @@ public readonly struct Window : IDisposableResource<Window, WindowHandle, IWindo
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetDisplay(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetDisplay(Display display) => Display = display;
+
 	public XYPair<int> Size {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetSize(_handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetSize(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetSize(XYPair<int> size) => Size = size;
+
 	public XYPair<int> Position { // TODO explain in XMLDoc that this is relative positioning on the selected Display
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetPosition(_handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetPosition(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetPosition(XYPair<int> position) => Position = position;
 
 	public WindowFullscreenStyle FullscreenStyle {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -52,6 +62,8 @@ public readonly struct Window : IDisposableResource<Window, WindowHandle, IWindo
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetFullscreenStyle(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetFullscreenStyle(WindowFullscreenStyle style) => FullscreenStyle = style;
 
 	public bool LockCursor {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -59,6 +71,8 @@ public readonly struct Window : IDisposableResource<Window, WindowHandle, IWindo
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetCursorLock(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetLockCursor(bool lockCursor) => LockCursor = lockCursor;
 
 	XYPair<int> IRenderTarget.ViewportOffset => XYPair<int>.Zero;
 	XYPair<uint> IRenderTarget.ViewportDimensions => Size.Cast<uint>();

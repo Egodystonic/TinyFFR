@@ -9,6 +9,8 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.World;
 
 public interface ILightImplProvider : IDisposableResourceImplProvider<LightHandle> {
+	LightType GetType(LightHandle handle);
+
 	Location GetPosition(LightHandle handle);
 	void SetPosition(LightHandle handle, Location newPosition);
 

@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.World;
 
-public readonly struct Light : IDisposableResource<Light, LightHandle, ILightImplProvider>, IPositionedSceneObject {
+public readonly struct Light : ILight, IDisposableResource<Light, LightHandle, ILightImplProvider> {
 	readonly LightHandle _handle;
 	readonly ILightImplProvider _impl;
 
@@ -17,6 +17,11 @@ public readonly struct Light : IDisposableResource<Light, LightHandle, ILightImp
 
 	ILightImplProvider IResource<LightHandle, ILightImplProvider>.Implementation => Implementation;
 	LightHandle IResource<LightHandle, ILightImplProvider>.Handle => Handle;
+
+	public LightType Type {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetType(_handle);
+	}
 
 	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -29,6 +34,8 @@ public readonly struct Light : IDisposableResource<Light, LightHandle, ILightImp
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetPosition(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetPosition(Location position) => Position = position;
 
 	public ColorVect Color {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -36,6 +43,8 @@ public readonly struct Light : IDisposableResource<Light, LightHandle, ILightImp
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetColor(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetColor(ColorVect color) => Color = color;
 
 	internal Light(LightHandle handle, ILightImplProvider impl) {
 		_handle = handle;
@@ -59,6 +68,18 @@ public readonly struct Light : IDisposableResource<Light, LightHandle, ILightImp
 	#endregion
 
 	public override string ToString() => $"Light {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
+
+	#region Conversions
+	static void AssertTypeBeforeCast(LightType expectedType, Light operand) {
+		if (operand.Type == expectedType) return;
+		throw new InvalidCastException($"Can not cast {operand} to {expectedType}: Actual type is {operand.Type}.");
+	}
+
+	public static explicit operator PointLight(Light operand) {
+		AssertTypeBeforeCast(LightType.PointLight, operand);
+		return new(operand);
+	}
+	#endregion
 
 	#region Equality
 	public bool Equals(Light other) => _handle == other._handle && _impl.Equals(other._impl);

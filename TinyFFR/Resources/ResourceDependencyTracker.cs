@@ -142,11 +142,11 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 			&GetDependentsEnumerationItem<TDependent, THandle, TImpl>
 		);
 	}
-	public TDependent GetNthDependentOfGivenType<TTarget, TDependent, THandle, TImpl>(TTarget targetPotentiallyInUse, int index) 
+	public TDependent GetNthDependentOfGivenType<TTarget, TDependent, THandle, TImpl>(TTarget target, int index) 
 		where TTarget : IResource 
 		where TDependent : IResource<TDependent, THandle, TImpl> 
 		where THandle : unmanaged, IResourceHandle<THandle> where TImpl : class, IResourceImplProvider {
-		return GetDependentsEnumerationItem<TDependent, THandle, TImpl>(new(this, targetPotentiallyInUse.Ident), index);
+		return GetDependentsEnumerationItem<TDependent, THandle, TImpl>(new(this, target.Ident), index);
 	}
 	static int GetDependentsEnumerationCount<TDependent, THandle, TImpl>(EnumerationInput input)
 		where TDependent : IResource<TDependent, THandle, TImpl>

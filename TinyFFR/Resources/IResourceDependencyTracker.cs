@@ -21,7 +21,7 @@ interface IResourceDependencyTracker {
 		where TTarget : IResource<TTarget, THandle, TImpl>
 		where THandle : unmanaged, IResourceHandle<THandle>
 		where TImpl : class, IResourceImplProvider;
-	TDependent GetNthDependentOfGivenType<TTarget, TDependent, THandle, TImpl>(TTarget targetPotentiallyInUse, int index)
+	TDependent GetNthDependentOfGivenType<TTarget, TDependent, THandle, TImpl>(TTarget target, int index)
 		where TTarget : IResource
 		where TDependent : IResource<TDependent, THandle, TImpl>
 		where THandle : unmanaged, IResourceHandle<THandle>

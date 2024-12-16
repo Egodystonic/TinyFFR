@@ -3,6 +3,7 @@
 
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.World;
 using static Egodystonic.TinyFFR.Resources.IResourceGroupImplProvider;
 
 namespace Egodystonic.TinyFFR.Resources;
@@ -38,9 +39,13 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, Resour
 	}
 
 	#region Specific Resource Enumeration Properties
+	// Maintainer's note: We don't provide one of these for every resource type, only those that we feel are likely to be grouped.
+	// Users can still use GetAllResourcesOfType for any resource type. These are just a convenience shortcut.
 	public TypedReferentIterator<EnumerationInput, Material> Materials => GetAllResourcesOfType<Material>();
 	public TypedReferentIterator<EnumerationInput, Texture> Textures => GetAllResourcesOfType<Texture>();
 	public TypedReferentIterator<EnumerationInput, Mesh> Meshes => GetAllResourcesOfType<Mesh>();
+	public TypedReferentIterator<EnumerationInput, Light> Lights => GetAllResourcesOfType<Light>();
+	public TypedReferentIterator<EnumerationInput, ModelInstance> ModelInstances => GetAllResourcesOfType<ModelInstance>();
 	#endregion
 
 	internal ReadOnlySpan<ResourceStub> Resources {

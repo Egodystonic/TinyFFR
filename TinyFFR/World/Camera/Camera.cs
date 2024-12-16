@@ -32,6 +32,8 @@ public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICamer
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetPosition(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetPosition(Location position) => Position = position;
 
 	public Direction ViewDirection {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -39,6 +41,8 @@ public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICamer
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetViewDirection(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetViewDirection(Direction direction) => ViewDirection = direction;
 
 	public Direction UpDirection {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -46,6 +50,8 @@ public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICamer
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetUpDirection(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetUpDirection(Direction direction) => UpDirection = direction;
 
 	public Angle HorizontalFieldOfView {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -53,6 +59,8 @@ public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICamer
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetHorizontalFieldOfView(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetHorizontalFieldOfView(Angle fov) => HorizontalFieldOfView = fov;
 
 	public Angle VerticalFieldOfView {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -60,6 +68,8 @@ public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICamer
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetVerticalFieldOfView(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetVerticalFieldOfView(Angle fov) => VerticalFieldOfView = fov;
 
 	public float NearPlaneDistance {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -67,6 +77,8 @@ public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICamer
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetNearPlaneDistance(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetNearPlaneDistance(float distance) => NearPlaneDistance = distance;
 
 	public float FarPlaneDistance {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -74,6 +86,8 @@ public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICamer
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetFarPlaneDistance(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetFarPlaneDistance(float distance) => FarPlaneDistance = distance;
 
 	Rotation IOrientedSceneObject.Rotation {
 		get => Rotation.FromStartAndEndDirection(Direction.Forward, ViewDirection);

@@ -29,6 +29,8 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, ModelI
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetTransform(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetTransform(Transform transform) => Transform = transform;
 
 	public Location Position {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -36,18 +38,26 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, ModelI
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetPosition(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetPosition(Location position) => Position = position;
+
 	public Rotation Rotation {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetRotation(_handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetRotation(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetRotation(Rotation rotation) => Rotation = rotation;
+
 	public Vect Scaling {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetScaling(_handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetScaling(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetScaling(Vect scaling) => Scaling = scaling;
 
 	public Material Material {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -55,6 +65,8 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, ModelI
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetMaterial(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetMaterial(Material material) => Material = material;
 
 	public Mesh Mesh {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -62,6 +74,8 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, ModelI
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetMesh(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetMesh(Mesh mesh) => Mesh = mesh;
 
 	internal ModelInstance(ModelInstanceHandle handle, IModelInstanceImplProvider impl) {
 		_handle = handle;

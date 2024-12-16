@@ -38,6 +38,24 @@ StartExportedFunc(remove_model_instance_from_scene, SceneHandle scene, ModelInst
 	EndExportedFunc
 }
 
+void native_impl_scene::add_light_to_scene(SceneHandle scene, LightHandle light) {
+	ThrowIfNull(scene, "Scene was null.");
+	scene->addEntity(Entity::import(light));
+}
+StartExportedFunc(add_light_to_scene, SceneHandle scene, LightHandle light) {
+	native_impl_scene::add_light_to_scene(scene, light);
+	EndExportedFunc
+}
+
+void native_impl_scene::remove_light_from_scene(SceneHandle scene, LightHandle light) {
+	ThrowIfNull(scene, "Scene was null.");
+	scene->remove(Entity::import(light));
+}
+StartExportedFunc(remove_light_from_scene, SceneHandle scene, LightHandle light) {
+	native_impl_scene::remove_light_from_scene(scene, light);
+	EndExportedFunc
+}
+
 void native_impl_scene::dispose_scene(SceneHandle scene) {
 	ThrowIfNull(scene, "Scene was null.");
 	ThrowIf(!filament_engine->destroy(scene), "Could not dispose scene.");

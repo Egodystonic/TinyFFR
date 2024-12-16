@@ -1,0 +1,61 @@
+﻿// Created on 2024-08-07 by Ben Bowen
+// (c) Egodystonic / TinyFFR 2024
+
+using System;
+using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Resources;
+
+namespace Egodystonic.TinyFFR.World;
+
+public readonly struct PointLight : ILight<PointLight>, IEquatable<PointLight> {
+	#region Base Light Impl
+	readonly Light _base;
+	internal Light Base => _base == default ? throw InvalidObjectException.InvalidDefault<PointLight>() : _base;
+	internal ILightImplProvider Implementation {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Base.Implementation;
+	}
+	internal LightHandle Handle {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Base.Handle;
+	}
+	ILightImplProvider IResource<LightHandle, ILightImplProvider>.Implementation => Implementation;
+	LightHandle IResource<LightHandle, ILightImplProvider>.Handle => Handle;
+	internal PointLight(Light @base) => _base = @base;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Dispose() => Base.Dispose();
+	public static implicit operator Light(PointLight operand) => operand.Base;
+	static PointLight ILight<PointLight>.FromBaseLight(Light l) => (PointLight) l;
+	public override string ToString() => $"Point{Base}";
+	#endregion
+
+	#region Equality
+	public bool Equals(PointLight other) => _base.Equals(other._base);
+	public override bool Equals(object? obj) => obj is PointLight other && Equals(other);
+	public override int GetHashCode() => _base.GetHashCode();
+	public static bool operator ==(PointLight left, PointLight right) => left.Equals(right);
+	public static bool operator !=(PointLight left, PointLight right) => !left.Equals(right);
+	#endregion
+
+	public ReadOnlySpan<char> Name {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Base.Name;
+	}
+
+	public Location Position {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Base.Position;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Base.SetPosition(value);
+	}
+	public ColorVect Color {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Base.Color;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Base.SetColor(value);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void MoveBy(Vect translation) => Base.MoveBy(translation);
+}
