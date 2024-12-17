@@ -24,6 +24,15 @@ public enum StandardColor : uint { // RGB 24-bit format
 	RealWorldSpecularBrass = 0xF9E596,
 	RealWorldSpecularCopper = 0xF7BC9E,
 
+	// Lights, Format Lighting<Name>
+	LightingCandle = 0xFF8701,
+	LightingIncandescentBulb = 0xFFC180,
+	LightingSunRiseSet = 0xFFA64C,
+	LightingSunMidday = 0xFFE9D7,
+	LightingAmbientDaylight = 0xFFF3F1,
+	LightingAmbientOvercast = 0xFAF6FF,
+	LightingAmbientShaded = 0xEBECFF,
+
 	// Html 4.01 Colours, Format <Name>
 	White = 0xFFFFFF,
 	Silver = 0xC0C0C0,
