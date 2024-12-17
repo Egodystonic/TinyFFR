@@ -21,3 +21,36 @@ public readonly ref struct LightCreationConfig {
 		
 	}
 }
+
+public readonly ref struct PointLightCreationConfig {
+	public static readonly float DefaultInitialLumens = 1000f;
+	public static readonly float DefaultInitialFalloffRange = 10f;
+
+	public float InitialLumens { get; init; } = DefaultInitialLumens;
+	
+	public float InitialFalloffRange { get; init; } = DefaultInitialFalloffRange;
+
+	public LightCreationConfig BaseConfig { get; private init; } = new();
+
+	public Location InitialPosition {
+		get => BaseConfig.InitialPosition;
+		init => BaseConfig = BaseConfig with { InitialPosition = value };
+	}
+
+	public ColorVect InitialColor {
+		get => BaseConfig.InitialColor;
+		init => BaseConfig = BaseConfig with { InitialColor = value };
+	}
+
+	public ReadOnlySpan<char> Name {
+		get => BaseConfig.Name;
+		init => BaseConfig = BaseConfig with { Name = value };
+	}
+
+	public PointLightCreationConfig() { }
+	public PointLightCreationConfig(LightCreationConfig baseConfig) => BaseConfig = baseConfig;
+
+	internal void ThrowIfInvalid() {
+		BaseConfig.ThrowIfInvalid();
+	}
+}

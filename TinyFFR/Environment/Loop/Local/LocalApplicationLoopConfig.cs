@@ -9,7 +9,7 @@ public readonly ref struct LocalApplicationLoopConfig {
 	public const bool DefaultWaitForVSync = false;
 	internal readonly TimeSpan MaxCpuBusyWaitTime = TimeSpan.FromMilliseconds(1d);
 
-	public ApplicationLoopConfig BaseConfig { get; private init; }
+	public ApplicationLoopConfig BaseConfig { get; private init; } = new();
 	public int? FrameRateCapHz {
 		get => BaseConfig.FrameRateCapHz;
 		init => BaseConfig = BaseConfig with { FrameRateCapHz = value };

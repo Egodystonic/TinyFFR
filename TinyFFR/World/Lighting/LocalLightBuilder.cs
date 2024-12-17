@@ -22,7 +22,7 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 		_globals = globals;
 	}
 
-	public PointLight CreatePointLight(in LightCreationConfig config) {
+	public PointLight CreatePointLight(in PointLightCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 
