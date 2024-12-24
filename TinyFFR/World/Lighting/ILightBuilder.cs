@@ -11,7 +11,7 @@ public interface ILightBuilder {
 			InitialPosition = position, 
 			InitialColor = color ?? LightCreationConfig.DefaultInitialColor,
 			InitialLumens = lumens ?? PointLightCreationConfig.DefaultInitialLumens,
-			InitialFalloffRange = falloffRange ?? PointLightCreationConfig.DefaultInitialFalloffRange,
+			InitialMaxIlluminationRadius = falloffRange ?? PointLightCreationConfig.DefaultInitialMaxIlluminationRadius,
 			Name = name
 		});
 	}

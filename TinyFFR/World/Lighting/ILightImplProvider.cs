@@ -17,5 +17,11 @@ public interface ILightImplProvider : IDisposableResourceImplProvider<LightHandl
 	ColorVect GetColor(LightHandle handle);
 	void SetColor(LightHandle handle, ColorVect newColor);
 
+	float GetPointLightLumens(LightHandle handle);
+	void SetPointLightLumens(LightHandle handle, float newLumens);
+
+	float GetPointLightMaxIlluminationRadius(LightHandle handle);
+	void SetPointLightMaxIlluminationRadius(LightHandle handle, float newRadius);
+
 	void TranslateBy(LightHandle handle, Vect translation);
 }

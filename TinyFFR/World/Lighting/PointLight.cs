@@ -70,14 +70,14 @@ public readonly struct PointLight : ILight<PointLight>, IEquatable<PointLight> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetLumens(float lumens) => Lumens = lumens;
 
-	public float FalloffRange {
+	public float MaxIlluminationRadius {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetPointLightFalloffRange(Handle);
+		get => Implementation.GetPointLightMaxIlluminationRadius(Handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Implementation.SetPointLightFalloffRange(Handle, value);
+		set => Implementation.SetPointLightMaxIlluminationRadius(Handle, value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetFalloffRange(float range) => FalloffRange = range;
+	public void SetFalloffRange(float range) => MaxIlluminationRadius = range;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void MoveBy(Vect translation) => Base.MoveBy(translation);

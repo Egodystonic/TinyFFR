@@ -42,6 +42,7 @@ using var camera = factory.CameraBuilder.CreateCamera((0f, 0f, -100f), name: "Ca
 using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(10f, 7f, 2f), name: "Clive the Cuboid");
 using var mat = factory.AssetLoader.MaterialBuilder.CreateBasicSolidColorMat(0x00FF00FF, name: "Matthew the Material");
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: "Iain the Instance");
+using var light = factory.LightBuilder.CreatePointLight((0f, 0f, -10f), StandardColor.Red, name: "Lars the Light");
 using var scene = factory.SceneBuilder.CreateScene(name: "Sean the Scene");
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window, name: "Ryan the Renderer");
 
@@ -53,6 +54,7 @@ Console.WriteLine(loop);
 Console.WriteLine(camera);
 Console.WriteLine(mesh);
 Console.WriteLine(mat);
+Console.WriteLine(light);
 Console.WriteLine(instance);
 Console.WriteLine(scene);
 Console.WriteLine(renderer);

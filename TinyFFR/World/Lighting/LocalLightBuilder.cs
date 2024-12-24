@@ -64,6 +64,26 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 		SetLightColor(handle, newColor.ToVector3()).ThrowIfFailure();
 	}
 
+	public float GetPointLightLumens(LightHandle handle) {
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.PointLight);
+		GetPointLightLumens(handle, out var result).ThrowIfFailure();
+		return result;
+	}
+	public void SetPointLightLumens(LightHandle handle, float newLumens) {
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.PointLight);
+		LocalLightBuilder.SetPointLightLumens(handle, newLumens).ThrowIfFailure();
+	}
+
+	public float GetPointLightMaxIlluminationRadius(LightHandle handle) {
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.PointLight);
+		GetPointLightMaxIlluminationRadius(handle, out var result).ThrowIfFailure();
+		return result;
+	}
+	public void SetPointLightMaxIlluminationRadius(LightHandle handle, float newRadius) {
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.PointLight);
+		LocalLightBuilder.SetPointLightMaxIlluminationRadius(handle, newRadius).ThrowIfFailure();
+	}
+
 	public ReadOnlySpan<char> GetName(LightHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _globals.GetResourceName(handle.Ident, DefaultModelInstanceName);
@@ -105,6 +125,30 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 		Vector3 newColor
 	);
 
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_point_light_lumens")]
+	static extern InteropResult GetPointLightLumens(
+		UIntPtr lightHandle,
+		out float outLumens
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_point_light_lumens")]
+	static extern InteropResult SetPointLightLumens(
+		UIntPtr lightHandle,
+		float newLumens
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_point_light_max_illumination_radius")]
+	static extern InteropResult GetPointLightMaxIlluminationRadius(
+		UIntPtr lightHandle,
+		out float outRadius
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_point_light_max_illumination_radius")]
+	static extern InteropResult SetPointLightMaxIlluminationRadius(
+		UIntPtr lightHandle,
+		float newRadius
+	);
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_light")]
 	static extern InteropResult DisposeLight(
 		UIntPtr lightHandle
@@ -133,6 +177,13 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 		}
 	}
 
+	void ThrowIfThisOrHandleIsDisposedOrIncorrectType(LightHandle handle, LightType type) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var actualType = _activeLightMap[handle].Type;
+		if (actualType == type) return;
+
+		throw new InvalidOperationException($"{handle} is valid but expected it to be a {type}; it was instead a {actualType}.");
+	}
 	void ThrowIfThisOrHandleIsDisposed(LightHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Light));
 	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion

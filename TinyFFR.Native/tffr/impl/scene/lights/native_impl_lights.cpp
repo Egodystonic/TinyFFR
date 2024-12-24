@@ -71,6 +71,52 @@ StartExportedFunc(set_light_position, LightHandle light, float3 newPosition) {
 	EndExportedFunc
 }
 
+void native_impl_lights::get_point_light_lumens(LightHandle light, float* outLumens) {
+	ThrowIfNull(outLumens, "Out lumens pointer was null.");
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	*outLumens = manager.getIntensity(instance);
+}
+StartExportedFunc(get_point_light_lumens, LightHandle light, float* outLumens) {
+	native_impl_lights::get_point_light_lumens(light, outLumens);
+	EndExportedFunc
+}
+
+void native_impl_lights::set_point_light_lumens(LightHandle light, float newLumens) {
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	manager.setIntensity(instance, newLumens);
+}
+StartExportedFunc(set_point_light_lumens, LightHandle light, float newLumens) {
+	native_impl_lights::set_point_light_lumens(light, newLumens);
+	EndExportedFunc
+}
+
+void native_impl_lights::get_point_light_max_illumination_radius(LightHandle light, float* outRadius) {
+	ThrowIfNull(outRadius, "Out radius pointer was null.");
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	*outRadius = manager.getFalloff(instance);
+}
+StartExportedFunc(get_point_light_max_illumination_radius, LightHandle light, float* outRadius) {
+	native_impl_lights::get_point_light_lumens(light, outRadius);
+	EndExportedFunc
+}
+
+void native_impl_lights::set_point_light_max_illumination_radius(LightHandle light, float newRadius) {
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	manager.setFalloff(instance, newRadius);
+}
+StartExportedFunc(set_point_light_max_illumination_radius, LightHandle light, float newRadius) {
+	native_impl_lights::set_point_light_max_illumination_radius(light, newRadius);
+	EndExportedFunc
+}
+
 void native_impl_lights::dispose_light(LightHandle light) {
 	auto entity = Entity::import(light);
 	filament_engine->getLightManager().destroy(entity);

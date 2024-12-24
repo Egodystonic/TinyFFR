@@ -27,6 +27,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory {
 	readonly ILocalApplicationLoopBuilder _applicationLoopBuilder;
 	readonly IAssetLoader _assetLoader;
 	readonly ICameraBuilder _cameraBuilder;
+	readonly ILightBuilder _lightBuilder;
 	readonly IObjectBuilder _objectBuilder;
 	readonly ISceneBuilder _sceneBuilder;
 	readonly IRendererBuilder _rendererBuilder;
@@ -36,6 +37,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory {
 	public ILocalApplicationLoopBuilder ApplicationLoopBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _applicationLoopBuilder;
 	public IAssetLoader AssetLoader => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _assetLoader;
 	public ICameraBuilder CameraBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _cameraBuilder;
+	public ILightBuilder LightBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _lightBuilder;
 	public IObjectBuilder ObjectBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _objectBuilder;
 	public ISceneBuilder SceneBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _sceneBuilder;
 	public IRendererBuilder RendererBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _rendererBuilder;
@@ -67,6 +69,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory {
 		_applicationLoopBuilder = new LocalApplicationLoopBuilder(globals, applicationLoopBuilderConfig ?? new());
 		_assetLoader = new LocalAssetLoader(globals, assetLoaderConfig ?? new());
 		_cameraBuilder = new LocalCameraBuilder(globals);
+		_lightBuilder = new LocalLightBuilder(globals);
 		_objectBuilder = new LocalObjectBuilder(globals);
 		_sceneBuilder = new LocalSceneBuilder(globals);
 		_rendererBuilder = new LocalRendererBuilder(globals);
@@ -111,11 +114,12 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory {
 		try {
 			_dependencyTracker.EraseAllDependencies();
 
-			// Maintainer's note: These are disposed in reverse order (e.g. opposite order compared to the order they're constructed in in the ctor above)
+			// Maintainer's note: These are disposed in reverse order (e.g. opposite order compared to the order they're constructed in the ctor above)
 			// However, by erasing all dependencies (above) we also try to avoid nasty dependency-related exceptions getting thrown which are ultimately not that useful as we're disposing everything anyway.
 			DisposeObjectIfDisposable(_rendererBuilder);
 			DisposeObjectIfDisposable(_sceneBuilder);
 			DisposeObjectIfDisposable(_objectBuilder);
+			DisposeObjectIfDisposable(_lightBuilder);
 			DisposeObjectIfDisposable(_cameraBuilder);
 			DisposeObjectIfDisposable(_assetLoader);
 			DisposeObjectIfDisposable(_applicationLoopBuilder);

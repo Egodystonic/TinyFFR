@@ -24,11 +24,11 @@ public readonly ref struct LightCreationConfig {
 
 public readonly ref struct PointLightCreationConfig {
 	public static readonly float DefaultInitialLumens = 1000f;
-	public static readonly float DefaultInitialFalloffRange = 10f;
+	public static readonly float DefaultInitialMaxIlluminationRadius = 5f;
 
 	public float InitialLumens { get; init; } = DefaultInitialLumens;
 	
-	public float InitialFalloffRange { get; init; } = DefaultInitialFalloffRange;
+	public float InitialMaxIlluminationRadius { get; init; } = DefaultInitialMaxIlluminationRadius;
 
 	public LightCreationConfig BaseConfig { get; private init; } = new();
 

@@ -15,5 +15,9 @@ public:
 	static void set_light_position(LightHandle light, float3 newPosition);
 	static void get_light_color(LightHandle light, float3* outColor);
 	static void set_light_color(LightHandle light, float3 newColor);
+	static void get_point_light_lumens(LightHandle light, float* outLumens);
+	static void set_point_light_lumens(LightHandle light, float newLumens);
+	static void get_point_light_max_illumination_radius(LightHandle light, float* outRadius);
+	static void set_point_light_max_illumination_radius(LightHandle light, float newRadius);
 	static void dispose_light(LightHandle light);
 };
