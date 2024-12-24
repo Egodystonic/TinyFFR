@@ -9,6 +9,14 @@
 
 #include "sdl/SDL_syswm.h"
 
+#ifdef WIN32
+#include <windows.h>
+extern "C" {
+	__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+#endif
+
 using namespace utils;
 
 void native_impl_render::allocate_renderer_and_swap_chain(WindowHandle window, RendererHandle* outRenderer, SwapChainHandle* outSwapChain) {
@@ -19,9 +27,14 @@ void native_impl_render::allocate_renderer_and_swap_chain(WindowHandle window, R
 	SDL_SysWMinfo wmInfo;
 	SDL_VERSION(&wmInfo.version);
 	SDL_GetWindowWMInfo(window, &wmInfo);
-	HWND hwnd = wmInfo.info.win.window;
+	void* hwnd = wmInfo.info.win.window;
 
-	*outSwapChain = filament_engine->createSwapChain(hwnd, 0UL);
+	// // We use the createSwapChain overload that does not take a window handle as it creates a "headless" swap chain
+	// // See here for more info: https://github.com/google/filament/issues/1921#issuecomment-638165840
+	// int32_t windowWidth, windowHeight;
+	// native_impl_window::get_window_size(window, &windowWidth, &windowHeight);
+	// *outSwapChain = filament_engine->createSwapChain(windowWidth, windowHeight, 0UL);
+	*outSwapChain = filament_engine->createSwapChain(hwnd, 0U);
 	*outRenderer = filament_engine->createRenderer();
 	(*outRenderer)->setClearOptions({ { 0.0, 0.0, 0.0, 0.0 }, 0U, true, true });
 	ThrowIfNull(*outSwapChain, "Could not create swap chain.");

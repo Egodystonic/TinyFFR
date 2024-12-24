@@ -10,17 +10,20 @@ Can't add binaries to repo because files are too big. Here's instructions on how
 				release/
 			sdl/
 
-	Download Filament 1.47.0 https://github.com/google/filament/releases/tag/v1.47.0
+	Download Filament 1.47.0 https://github.com/google/filament/releases/tag/v1.47.0 (windows build for now)
 		Copy the libs from /lib/x86_64/mt/ to binaries/filament/release/
 		Copy the libs from /lib/x86_64/mtd/ to binaries/filament/debug/
 	
-	Download Assimp 5.3.1 https://github.com/assimp/assimp/releases/tag/v5.3.1
-		Run following in commandline in root dir after unzipping:
+	Download Assimp 5.3.1 https://github.com/assimp/assimp/releases/tag/v5.3.1 (source code)
+		Extract the downloaded source somewhere (not in the TinyFFR repo, we'll copy the resultant libs after)
+		Make sure cmake is installed (https://cmake.org/download/)
+		After extraction, open a command prompt in the root directory of the extracted zip:
 			cmake CMakeLists.txt -DASSIMP_BUILD_TESTS=OFF -DASSIMP_BUILD_ASSIMP_VIEW=OFF
 			cmake --build .
 			cmake --build . --config Release
-		Copy from bin/Debug and lib/Debug to binaries/assimp/debug/
-		Copy from bin/Release and lib/Release to binaries/assimp/release/
+		This will have created the libraries inside the extracted source folder:
+		Copy from bin/Debug and lib/Debug in the extracted folder to binaries/assimp/debug/
+		Copy from bin/Release and lib/Release in the extracted folder to binaries/assimp/release/
 	
 	Download SDL 2.28.5 https://github.com/libsdl-org/SDL/releases/tag/release-2.28.5 (get the devel VC zip)
 		Copy SDL2.lib and SDL2.dll from /lib/x64/ to binaries/sdl/

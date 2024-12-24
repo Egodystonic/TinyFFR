@@ -38,11 +38,11 @@ using var factory = new LocalTinyFfrFactory();
 var display = factory.DisplayDiscoverer.Recommended ?? throw new ApplicationException("This test requires at least one connected display.");
 using var window = factory.WindowBuilder.CreateWindow(display, title: "William the Window");
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60, name: "Larry the Loop");
-using var camera = factory.CameraBuilder.CreateCamera((0f, 0f, -100f), name: "Carl the Camera");
+using var camera = factory.CameraBuilder.CreateCamera((0f, 0f, -30f), name: "Carl the Camera");
 using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(10f, 7f, 2f), name: "Clive the Cuboid");
 using var mat = factory.AssetLoader.MaterialBuilder.CreateBasicSolidColorMat(0x00FF00FF, name: "Matthew the Material");
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: "Iain the Instance");
-using var light = factory.LightBuilder.CreatePointLight((0f, 0f, -10f), StandardColor.Red, name: "Lars the Light");
+using var light = factory.LightBuilder.CreatePointLight((0f, 0f, -20f), StandardColor.Red, name: "Lars the Light");
 using var scene = factory.SceneBuilder.CreateScene(name: "Sean the Scene");
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window, name: "Ryan the Renderer");
 
