@@ -79,7 +79,7 @@ Material* GetMaterial(MaterialType type) {
 				auto newMat = builder
 					.name("Basic Solid Color")
 					.blending(BlendingMode::OPAQUE)
-					.shading(Shading::UNLIT)
+					.shading(Shading::LIT)
 					.culling(backend::CullingMode::BACK)
 					.platform(filamat::MaterialBuilderBase::Platform::DESKTOP)
 					.targetApi(filamat::MaterialBuilderBase::TargetApi::OPENGL)
