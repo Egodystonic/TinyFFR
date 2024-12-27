@@ -28,34 +28,6 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
 	}
-	
-	#region Native Methods
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_vertex_buffer")]
-	static extern InteropResult AllocateVertexBuffer(
-		nuint bufferId,
-		MeshVertex* verticesPtr,
-		int numVertices,
-		out UIntPtr outBufferHandle
-	);
-
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_vertex_buffer")]
-	static extern InteropResult DisposeVertexBuffer(
-		UIntPtr bufferHandle
-	);
-
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_index_buffer")]
-	static extern InteropResult AllocateIndexBuffer(
-		nuint bufferId,
-		MeshTriangle* indicesPtr,
-		int numIndices,
-		out UIntPtr outBufferHandle
-	);
-
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_index_buffer")]
-	static extern InteropResult DisposeIndexBuffer(
-		UIntPtr bufferHandle
-	);
-	#endregion
 
 	public Mesh CreateMesh(CuboidDescriptor cuboidDesc, scoped in MeshCreationConfig config) {
 		ThrowIfThisIsDisposed();
@@ -158,6 +130,34 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Mesh HandleToInstance(MeshHandle h) => new(h, this);
+
+	#region Native Methods
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_vertex_buffer")]
+	static extern InteropResult AllocateVertexBuffer(
+		nuint bufferId,
+		MeshVertex* verticesPtr,
+		int numVertices,
+		out UIntPtr outBufferHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_vertex_buffer")]
+	static extern InteropResult DisposeVertexBuffer(
+		UIntPtr bufferHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_index_buffer")]
+	static extern InteropResult AllocateIndexBuffer(
+		nuint bufferId,
+		MeshTriangle* indicesPtr,
+		int numIndices,
+		out UIntPtr outBufferHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_index_buffer")]
+	static extern InteropResult DisposeIndexBuffer(
+		UIntPtr bufferHandle
+	);
+	#endregion
 
 	public override string ToString() => _isDisposed ? "TinyFFR Local Mesh Builder [Disposed]" : "TinyFFR Local Mesh Builder";
 

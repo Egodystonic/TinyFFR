@@ -6,10 +6,14 @@ using Egodystonic.TinyFFR.Assets.Materials.Textures;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
-public readonly ref struct MaterialCreationConfig {
+public readonly ref struct TextureCreationConfig {
+	public required int Width { get; init; }
+	public required int Height { get; init; }
+	public bool GenerateMipMaps { get; init; } = true;
+
 	public ReadOnlySpan<char> Name { get; init; }
 
-	public MaterialCreationConfig() { }
+	public TextureCreationConfig() { }
 
 #pragma warning disable CA1822 // "Could be static" -- Placeholder method for future
 	internal void ThrowIfInvalid() {

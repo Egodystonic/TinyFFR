@@ -8,6 +8,7 @@
 #include "filamat/MaterialBuilder.h"
 
 #include "filament/Engine.h"
+#include "filament/TextureSampler.h"
 
 void handle_filament_buffer_copy_callback(void* _, size_t __, BufferIdentity identity) {
 	native_impl_init::deallocation_delegate(identity);
@@ -67,70 +68,139 @@ StartExportedFunc(dispose_index_buffer, IndexBufferHandle buffer) {
 	EndExportedFunc
 }
 
+void native_impl_render_assets::load_texture_rgb_24(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, TextureHandle* outTexture) {
+	ThrowIfNull(dataPtr, "Data pointer was null.");
+	ThrowIfNegative(dataLen, "Data length was negative.");
+	ThrowIfNull(outTexture, "Out texture pointer was null.");
 
-filamat::Package native_impl_render_assets::BasicSolidColorShaderPackage = filamat::Package::invalidPackage();
-Material* native_impl_render_assets::BasicSolidColorShaderMaterial = nullptr;
+	Texture::PixelBufferDescriptor imageBuffer {
+		dataPtr,
+		static_cast<size_t>(dataLen),
+		backend::PixelDataFormat::RGB_INTEGER,
+		backend::PixelDataType::UBYTE,
+		1, 0, 0, 0,
+		&handle_filament_buffer_copy_callback,
+		bufferIdentity
+	};
 
-Material* GetMaterial(MaterialType type) {
-	switch (type) {
-	case MaterialType::BasicSolidColor:
-			if (!native_impl_render_assets::BasicSolidColorShaderPackage.isValid()) {
-				filamat::MaterialBuilder builder;
-				auto newMat = builder
-					.name("Basic Solid Color")
-					.blending(BlendingMode::OPAQUE)
-					.shading(Shading::LIT)
-					.culling(backend::CullingMode::BACK)
-					.platform(filamat::MaterialBuilderBase::Platform::DESKTOP)
-					.targetApi(filamat::MaterialBuilderBase::TargetApi::OPENGL)
-					.parameter(
-						"flatColor",
-						backend::UniformType::FLOAT4
-					)
-					.material(
-						"void material(inout MaterialInputs material) {"
-						"	prepareMaterial(material);"
-						"	material.baseColor = materialParams.flatColor;"
-						"}"
-					)
-					.build(filament_engine->getJobSystem());
+	*outTexture = Texture::Builder()
+		.depth(1)
+		.format(backend::TextureFormat::RGB8)
+		.height(height)
+		.levels(generateMipMaps ? 1 : 0xFF)
+		.sampler(Texture::Sampler::SAMPLER_2D)
+		.usage(Texture::Usage::DEFAULT)
+		.width(width)
+		.build(*filament_engine);
+	ThrowIfNull(*outTexture, "Could not load tetxure.");
 
-				native_impl_render_assets::BasicSolidColorShaderPackage = std::move(newMat);
-				if (!native_impl_render_assets::BasicSolidColorShaderPackage.isValid()) Throw("Could not create package.");
-			}
-
-			if (native_impl_render_assets::BasicSolidColorShaderMaterial == nullptr) {
-				native_impl_render_assets::BasicSolidColorShaderMaterial = Material::Builder().package(
-					native_impl_render_assets::BasicSolidColorShaderPackage.getData(), 
-					native_impl_render_assets::BasicSolidColorShaderPackage.getSize()
-				).build(*filament_engine);
-				ThrowIfNull(native_impl_render_assets::BasicSolidColorShaderMaterial, "Could not create material.");
-			}
-
-			return native_impl_render_assets::BasicSolidColorShaderMaterial;
-		default:
-			Throw("Unrecognized material type.");
-	}
+	(*outTexture)->setImage(*filament_engine, 0, std::move(imageBuffer));
+	if (!generateMipMaps) return;
+	(*outTexture)->generateMipmaps(*filament_engine);
 }
-
-void native_impl_render_assets::create_material(MaterialType type, void* argumentsBuffer, int32_t argumentsBufferLengthBytes, MaterialHandle* outMaterial) {
-	auto mat = GetMaterial(type);
-
-	switch (type) {
-		case MaterialType::BasicSolidColor:{
-			auto i = mat->createInstance();
-			i->setParameter("flatColor", float4{ 1.0, 1.0, 0.0, 1.0 });
-			*outMaterial = i;
-			break;
-		}
-		default:{
-			Throw("Unrecognized material type.");
-		}
-	}
-}
-StartExportedFunc(create_material, MaterialType type, void* argumentsBuffer, int32_t argumentsBufferLengthBytes, MaterialHandle* outMaterial) {
-	native_impl_render_assets::create_material(type, argumentsBuffer, argumentsBufferLengthBytes, outMaterial);
+StartExportedFunc(load_texture_rgb_24, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, TextureHandle* outTexture) {
+	native_impl_render_assets::load_texture_rgb_24(bufferIdentity, dataPtr, dataLen, width, height, generateMipMaps, outTexture);
 	EndExportedFunc
 }
 
+void native_impl_render_assets::load_texture_rgba_32(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, TextureHandle* outTexture) {
+	ThrowIfNull(dataPtr, "Data pointer was null.");
+	ThrowIfNegative(dataLen, "Data length was negative.");
+	ThrowIfNull(outTexture, "Out texture pointer was null.");
 
+	Texture::PixelBufferDescriptor imageBuffer{
+		dataPtr,
+		static_cast<size_t>(dataLen),
+		backend::PixelDataFormat::RGBA_INTEGER,
+		backend::PixelDataType::UBYTE,
+		1, 0, 0, 0,
+		&handle_filament_buffer_copy_callback,
+		bufferIdentity
+	};
+
+	*outTexture = Texture::Builder()
+		.depth(1)
+		.format(backend::TextureFormat::RGBA8)
+		.height(height)
+		.levels(generateMipMaps ? 1 : 0xFF)
+		.sampler(Texture::Sampler::SAMPLER_2D)
+		.usage(Texture::Usage::DEFAULT)
+		.width(width)
+		.build(*filament_engine);
+	ThrowIfNull(*outTexture, "Could not load tetxure.");
+
+	(*outTexture)->setImage(*filament_engine, 0, std::move(imageBuffer));
+	if (!generateMipMaps) return;
+	(*outTexture)->generateMipmaps(*filament_engine);
+}
+StartExportedFunc(load_texture_rgba_32, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, TextureHandle* outTexture) {
+	native_impl_render_assets::load_texture_rgba_32(bufferIdentity, dataPtr, dataLen, width, height, generateMipMaps, outTexture);
+	EndExportedFunc
+}
+
+void native_impl_render_assets::dispose_texture(TextureHandle texture) {
+	ThrowIfNull(texture, "Texture was null.");
+	filament_engine->destroy(texture);
+}
+StartExportedFunc(dispose_texture, TextureHandle texture) {
+	native_impl_render_assets::dispose_texture(texture);
+	EndExportedFunc
+}
+
+void native_impl_render_assets::load_shader_package(void* dataPtr, int32_t dataLen, PackageHandle* outHandle) {
+	ThrowIfNull(dataPtr, "Data pointer was null");
+	ThrowIfNegative(dataLen, "Data length was negative.");
+	ThrowIfNull(outHandle, "Out handle pointer was null.");
+	*outHandle = Material::Builder().package(dataPtr, static_cast<size_t>(dataLen)).build(*filament_engine);
+	ThrowIfNull(*outHandle, "Could not create material package.");
+}
+StartExportedFunc(load_shader_package, void* dataPtr, int32_t dataLen, PackageHandle* outHandle) {
+	native_impl_render_assets::load_shader_package(dataPtr, dataLen, outHandle);
+	EndExportedFunc
+}
+
+void native_impl_render_assets::create_material(PackageHandle package, MaterialHandle* outMaterial) {
+	ThrowIfNull(package, "Package handle was null.");
+	ThrowIfNull(outMaterial, "Out material pointer was null.");
+	*outMaterial = package->createInstance();
+	ThrowIfNull(*outMaterial, "Could not create material.");
+}
+StartExportedFunc(create_material, PackageHandle package, MaterialHandle* outMaterial) {
+	native_impl_render_assets::create_material(package, outMaterial);
+	EndExportedFunc
+}
+
+void native_impl_render_assets::set_material_parameter_texture(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture) {
+	ThrowIfNull(material, "Material was null.");
+	ThrowIfNull(parameterName, "Parameter name was null.");
+	ThrowIfNegative(parameterNameLength, "Parameter name length was negative.");
+	ThrowIfNull(texture, "Texture was null.");
+
+	TextureSampler sampler {
+		backend::SamplerMagFilter::LINEAR,
+		backend::SamplerWrapMode::REPEAT
+	};
+	sampler.setAnisotropy(4.0f);
+	material->setParameter(parameterName, static_cast<size_t>(parameterNameLength), texture, sampler);
+}
+StartExportedFunc(set_material_parameter_texture, MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture) {
+	native_impl_render_assets::set_material_parameter_texture(material, parameterName, parameterNameLength, texture);
+	EndExportedFunc
+}
+
+void native_impl_render_assets::dispose_material(MaterialHandle material) {
+	ThrowIfNull(material, "Material was null.");
+	filament_engine->destroy(material);
+}
+StartExportedFunc(dispose_material, MaterialHandle material) {
+	native_impl_render_assets::dispose_material(material);
+	EndExportedFunc
+}
+
+void native_impl_render_assets::dispose_shader_package(PackageHandle handle) {
+	filament_engine->destroy(handle);
+}
+StartExportedFunc(dispose_shader_package, PackageHandle handle) {
+	native_impl_render_assets::dispose_shader_package(handle);
+	EndExportedFunc
+}

@@ -2,10 +2,11 @@
 
 #include "native_impl_init.h"
 #include "utils_and_constants.h"
-#include "filament/filament/IndexBuffer.h"
-#include "filament/filament/VertexBuffer.h"
+#include "filament/IndexBuffer.h"
+#include "filament/VertexBuffer.h"
 #include "filamat/Package.h"
 #include "filament/Material.h"
+#include "filament/Texture.h"
 
 using namespace filament;
 using namespace filament::math;
@@ -13,12 +14,9 @@ using namespace filament::math;
 typedef VertexBuffer* VertexBufferHandle;
 typedef IndexBuffer* IndexBufferHandle;
 
+typedef Texture* TextureHandle;
+typedef Material* PackageHandle;
 typedef MaterialInstance* MaterialHandle;
-
-enum MaterialType : int32_t {
-	Undefined = 0,
-	BasicSolidColor
-};
 
 class native_impl_render_assets {
 public:
@@ -35,8 +33,13 @@ public:
 	static void dispose_vertex_buffer(VertexBufferHandle buffer);
 	static void dispose_index_buffer(IndexBufferHandle buffer);
 
-	static filamat::Package BasicSolidColorShaderPackage;
-	static Material* BasicSolidColorShaderMaterial;
+	static void load_texture_rgb_24(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, TextureHandle* outTexture);
+	static void load_texture_rgba_32(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, TextureHandle* outTexture);
+	static void dispose_texture(TextureHandle texture);
 
-	static void create_material(MaterialType type, void* argumentsBuffer, int32_t argumentsBufferLengthBytes, MaterialHandle* outMaterial);
+	static void load_shader_package(void* dataPtr, int32_t dataLen, PackageHandle* outHandle);
+	static void create_material(PackageHandle package, MaterialHandle* outMaterial);
+	static void set_material_parameter_texture(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture);
+	static void dispose_material(MaterialHandle material);
+	static void dispose_shader_package(PackageHandle handle);
 };

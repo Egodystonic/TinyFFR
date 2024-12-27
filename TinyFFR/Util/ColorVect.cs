@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Globalization;
+using Egodystonic.TinyFFR.Assets.Materials;
 
 namespace Egodystonic.TinyFFR;
 
