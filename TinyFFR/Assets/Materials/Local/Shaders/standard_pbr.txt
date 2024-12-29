@@ -1,0 +1,20 @@
+﻿material {
+    name : StandardPbr,
+    parameters : [
+        {
+            type : sampler2d,
+            name : albedo
+        }
+    ],
+    requires : [
+        uv0
+    ],
+    shadingModel : lit,
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        material.baseColor.rgb = texture(materialParams_albedo, getUV0()).rgb;
+    }
+}

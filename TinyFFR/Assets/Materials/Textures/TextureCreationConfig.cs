@@ -1,8 +1,8 @@
 ﻿// Created on 2024-08-14 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.World;
 using System;
-using Egodystonic.TinyFFR.Assets.Materials.Textures;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
@@ -15,9 +15,16 @@ public readonly ref struct TextureCreationConfig {
 
 	public TextureCreationConfig() { }
 
-#pragma warning disable CA1822 // "Could be static" -- Placeholder method for future
 	internal void ThrowIfInvalid() {
-		/* no op */
+		static void ThrowArgException(object erroneousArg, string message, [CallerArgumentExpression(nameof(erroneousArg))] string? argName = null) {
+			throw new ArgumentException($"{nameof(CameraCreationConfig)}.{argName} {message} Value was {erroneousArg}.", argName);
+		}
+
+		if (Width < 1) {
+			ThrowArgException(Width, "Width and height must both be positive values.");
+		}
+		if (Height < 1) {
+			ThrowArgException(Height, "Width and height must both be positive values.");
+		}
 	}
-#pragma warning restore CA1822
 }

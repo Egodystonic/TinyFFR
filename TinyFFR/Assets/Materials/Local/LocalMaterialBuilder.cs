@@ -6,7 +6,6 @@ using System.Globalization;
 using System.Resources;
 using System.Security;
 using Egodystonic.TinyFFR.Assets.Local;
-using Egodystonic.TinyFFR.Assets.Materials.Textures;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Input.Local;
@@ -19,8 +18,10 @@ using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConsta
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, ITextureImplProvider, IDisposable {
+sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IDisposable {
 	const string DefaultMaterialName = "Unnamed Material";
+	const string DefaultTextureName = "Unnamed Texture";
+	readonly TextureImplProvider _textureImplProvider;
 	readonly ArrayPoolBackedVector<TextureHandle> _loadedTextures = new();
 	readonly ArrayPoolBackedMap<string, UIntPtr> _loadedShaderPackages = new();
 	readonly ArrayPoolBackedVector<MaterialHandle> _activeMaterials = new();
@@ -28,20 +29,35 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	readonly ResourceManager _shaderResourceManager;
 	bool _isDisposed = false;
 
+	// This is a private embedded 'delegating' object to help provide distinction between some default interface methods
+	// on both IMaterialImplProvider and ITextureImplProvider. 
+	sealed class TextureImplProvider : ITextureImplProvider {
+		readonly LocalMaterialBuilder _owner;
+
+		public TextureImplProvider(LocalMaterialBuilder owner) => _owner = owner;
+
+		public ReadOnlySpan<char> GetName(TextureHandle handle) => _owner.GetName(handle);
+		public bool IsDisposed(TextureHandle handle) => _owner.IsDisposed(handle);
+		public void Dispose(TextureHandle handle) => _owner.Dispose(handle);
+		public override string ToString() => _owner.ToString();
+	}
+
 	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals) {
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
 		_shaderResourceManager = new ResourceManager(typeof(LocalMaterialBuilder));
+		_textureImplProvider = new(this);
 	}
 
 	public Texture CreateTexture<TTexel>(ReadOnlySpan<TTexel> texels, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
 		ThrowIfThisIsDisposed();
 
+		config.ThrowIfInvalid();
 		var width = config.Width;
 		var height = config.Height;
 
-		if (width < 1) throw new ArgumentOutOfRangeException(nameof(width), width, $"Width and height must be at least 1.");
-		if (height < 1) throw new ArgumentOutOfRangeException(nameof(height), height, $"Width and height must be at least 1.");
+		if (width < 1) width = 1;
+		if (height < 1) height = 1;
 
 		var texelCount = width * height;
 		if (texelCount > texels.Length) {
@@ -82,10 +98,10 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 				throw new InvalidOperationException($"Unknown or unsupported texel type '{typeof(TTexel)}'.");
 		}
 
-		var result = HandleToInstance((TextureHandle) outHandle);
-		_globals.StoreResourceNameIfNotDefault(result.Handle.Ident, config.Name);
-		_loadedTextures.Add(result.Handle);
-		return result;
+		var handle = (TextureHandle) outHandle;
+		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.Name);
+		_loadedTextures.Add(handle);
+		return HandleToInstance(handle);
 	}
 
 	public Material CreateStandardMaterial(in StandardMaterialCreationConfig config) {
@@ -97,16 +113,17 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		CreateMaterial(
 			shaderPackageHandle,
-			out var handle
+			out var outHandle
 		).ThrowIfFailure();
 
-		var result = HandleToInstance((MaterialHandle) handle);
-		_globals.StoreResourceNameIfNotDefault(result.Handle.Ident, config.Name);
-		_activeMaterials.Add(result.Handle);
+		var handle = (MaterialHandle) outHandle;
+		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.Name);
+		_activeMaterials.Add(handle);
+		var result = HandleToInstance(handle);
 
 		if (config.Albedo != null) {
 			SetMaterialParameterTexture(
-				result.Handle,
+				handle,
 				in ParamRef(shaderConstants.ParamAlbedo),
 				ParamLen(shaderConstants.ParamAlbedo),
 				config.Albedo.Value.Handle
@@ -117,11 +134,11 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		return result;
 	}
 
-	public ReadOnlySpan<char> GetName(MaterialHandle handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceName(handle.Ident, DefaultMaterialName);
-	}
 	public ReadOnlySpan<char> GetName(TextureHandle handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceName(handle.Ident, DefaultTextureName);
+	}
+	public ReadOnlySpan<char> GetName(MaterialHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _globals.GetResourceName(handle.Ident, DefaultMaterialName);
 	}
@@ -201,7 +218,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	#endregion
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	Texture HandleToInstance(TextureHandle h) => new(h, this);
+	Texture HandleToInstance(TextureHandle h) => new(h, _textureImplProvider);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Material HandleToInstance(MaterialHandle h) => new(h, this);

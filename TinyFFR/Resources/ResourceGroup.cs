@@ -2,7 +2,6 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using Egodystonic.TinyFFR.Assets.Materials;
-using Egodystonic.TinyFFR.Assets.Materials.Textures;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.World;
 using static Egodystonic.TinyFFR.Resources.IResourceGroupImplProvider;

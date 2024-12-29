@@ -2,7 +2,6 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
-using Egodystonic.TinyFFR.Assets.Materials.Textures;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 

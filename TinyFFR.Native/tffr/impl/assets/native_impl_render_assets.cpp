@@ -85,7 +85,7 @@ void native_impl_render_assets::load_texture_rgb_24(BufferIdentity bufferIdentit
 
 	*outTexture = Texture::Builder()
 		.depth(1)
-		.format(backend::TextureFormat::RGB8)
+		.format(Texture::InternalFormat::RGB8UI)
 		.height(height)
 		.levels(generateMipMaps ? 1 : 0xFF)
 		.sampler(Texture::Sampler::SAMPLER_2D)
@@ -120,7 +120,7 @@ void native_impl_render_assets::load_texture_rgba_32(BufferIdentity bufferIdenti
 
 	*outTexture = Texture::Builder()
 		.depth(1)
-		.format(backend::TextureFormat::RGBA8)
+		.format(Texture::InternalFormat::RGBA8UI)
 		.height(height)
 		.levels(generateMipMaps ? 1 : 0xFF)
 		.sampler(Texture::Sampler::SAMPLER_2D)

@@ -420,7 +420,6 @@ partial struct CuboidDescriptor : IIndependentAxisScalable<CuboidDescriptor> {
 		return plane.DistanceFromOrigin() <= halfDiagonalProjection;
 	}
 
-	const int MaxPlaneIntersectionPoints = 6;
 	int GetPlaneIntersectionPoints(Plane plane, Span<Location> pointSpan) {
 		var intersectionCount = 0;
 		foreach (var edge in Edges) {
