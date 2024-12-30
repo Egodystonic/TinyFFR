@@ -21,12 +21,13 @@ namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 static class LocalShaderPackageConstants {
 	const string ResourceNamespace = "Egodystonic.TinyFFR.Assets.Materials.Local.Shaders.";
 
-	public static FixedByteBufferPool.FixedByteBuffer OpenResource(FixedByteBufferPool pool, string resourceName)	{
+	public static (FixedByteBufferPool.FixedByteBuffer Buffer, int SizeBytes) OpenResource(FixedByteBufferPool pool, string resourceName)	{
 		using var stream = typeof(LocalShaderPackageConstants).Assembly.GetManifestResourceStream(resourceName)
 						?? throw new InvalidOperationException($"Resource '{resourceName}' not found in assembly.");
 
-		var result = pool.Rent(checked((int) stream.Length));
-		stream.ReadExactly(result.AsByteSpan[..(int) stream.Length]);
+		var sizeBytes = checked((int) stream.Length);
+		var result = (Buffer: pool.Rent(sizeBytes), SizeBytes: sizeBytes);
+		stream.ReadExactly(result.Buffer.AsByteSpan[..result.SizeBytes]);
 		return result;
 	}
 	public static ref readonly byte ParamRef(ReadOnlySpan<byte> param) => ref MemoryMarshal.GetReference(param);

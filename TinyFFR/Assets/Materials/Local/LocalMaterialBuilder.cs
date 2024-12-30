@@ -147,18 +147,18 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	UIntPtr GetOrLoadShaderPackageHandle(string resourceName) {
 		if (_loadedShaderPackages.TryGetValue(resourceName, out var result)) return result;
 
-		var resourceBuffer = OpenResource(_shaderResourceBufferPool, resourceName);
+		var (buffer, sizeBytes) = OpenResource(_shaderResourceBufferPool, resourceName);
 		try {
 			LoadShaderPackage(
-				(byte*) resourceBuffer.StartPtr,
-				resourceBuffer.SizeBytes,
+				(byte*) buffer.StartPtr,
+				sizeBytes,
 				out var newHandle
 			).ThrowIfFailure();
 			_loadedShaderPackages.Add(resourceName, newHandle);
 			return newHandle;
 		}
 		finally {
-			_shaderResourceBufferPool.Return(resourceBuffer);
+			_shaderResourceBufferPool.Return(buffer);
 		}
 	}
 
