@@ -26,7 +26,7 @@ sealed class LocalAssetLoader : IAssetLoader, IDisposable {
 
 		_globals = globals;
 		_meshBuilder = new LocalMeshBuilder(globals);
-		_materialBuilder = new LocalMaterialBuilder(globals);
+		_materialBuilder = new LocalMaterialBuilder(globals, config);
 	}
 
 	public override string ToString() => _isDisposed ? "TinyFFR Local Asset Loader [Disposed]" : "TinyFFR Local Asset Loader";

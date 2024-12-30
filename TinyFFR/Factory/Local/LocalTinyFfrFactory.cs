@@ -19,6 +19,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory {
 
 	readonly ResourceDependencyTracker _dependencyTracker = new();
 	readonly ManagedStringPool _stringPool = new();
+	readonly HeapPool _heapPool = new();
 	readonly ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> _resourceNameMap = new();
 	readonly LocalResourceGroupImplProvider _resourceGroupProvider;
 
@@ -46,19 +47,20 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory {
 
 	IApplicationLoopBuilder ITinyFfrFactory.ApplicationLoopBuilder => ApplicationLoopBuilder;
 
-	public LocalTinyFfrFactory(LocalRendererFactoryConfig? factoryConfig = null, WindowBuilderConfig? windowBuilderConfig = null, LocalApplicationLoopBuilderConfig? applicationLoopBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null) {
+	public LocalTinyFfrFactory(LocalTinyFfrFactoryConfig? factoryConfig = null, WindowBuilderConfig? windowBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null) {
 		if (_instance != null) throw new InvalidOperationException($"Only one {nameof(LocalTinyFfrFactory)} may be live at any given time. Dispose the previous instance before creating another one.");
 
 		LocalNativeUtils.InitializeNativeLibIfNecessary();
-		factoryConfig ??= new LocalRendererFactoryConfig();
+		factoryConfig ??= new LocalTinyFfrFactoryConfig();
 
 		var resourceGroupProviderRef = new DeferredRef<LocalResourceGroupImplProvider>();
-		TemporaryCpuBufferPool = new FixedByteBufferPool(factoryConfig.MaxAssetSizeBytes);
+		TemporaryCpuBufferPool = new FixedByteBufferPool(factoryConfig.MaxCpuToGpuAssetTransferSizeBytes);
 		var globals = new LocalFactoryGlobalObjectGroup(
 			this,
 			_resourceNameMap,
 			_dependencyTracker,
 			_stringPool,
+			_heapPool,
 			resourceGroupProviderRef
 		);
 		_resourceGroupProvider = new(globals);
@@ -66,7 +68,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory {
 
 		_displayDiscoverer = new LocalDisplayDiscoverer(globals);
 		_windowBuilder = new LocalWindowBuilder(globals, windowBuilderConfig ?? new());
-		_applicationLoopBuilder = new LocalApplicationLoopBuilder(globals, applicationLoopBuilderConfig ?? new());
+		_applicationLoopBuilder = new LocalApplicationLoopBuilder(globals);
 		_assetLoader = new LocalAssetLoader(globals, assetLoaderConfig ?? new());
 		_cameraBuilder = new LocalCameraBuilder(globals);
 		_lightBuilder = new LocalLightBuilder(globals);
@@ -127,6 +129,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory {
 			DisposeObjectIfDisposable(_displayDiscoverer);
 			DisposeObjectIfDisposable(_resourceGroupProvider);
 			DisposeObjectIfDisposable(_resourceNameMap);
+			DisposeObjectIfDisposable(_heapPool);
 			DisposeObjectIfDisposable(_stringPool);
 			DisposeObjectIfDisposable(_dependencyTracker);
 			LocalNativeUtils.DisposeTemporaryCpuBufferPoolIfSafe(this);

@@ -79,8 +79,8 @@ static unsafe class LocalNativeUtils {
 		if (sizeBytes > factory.TemporaryCpuBufferPool.MaxBufferSizeBytes) {
 			throw new InvalidOperationException($"Can not load asset because its in-memory size is {sizeBytes} bytes (" +
 												$"the maximum asset size configured is {factory.TemporaryCpuBufferPool.MaxBufferSizeBytes} bytes; " +
-												$"the limit can be raised by setting the {nameof(LocalRendererFactoryConfig.MaxAssetSizeBytes)} value in " +
-												$"the {nameof(LocalRendererFactoryConfig)} passed to the {nameof(LocalTinyFfrFactory)} constructor).");
+												$"the limit can be raised by setting the {nameof(LocalTinyFfrFactoryConfig.MaxCpuToGpuAssetTransferSizeBytes)} value in " +
+												$"the {nameof(LocalTinyFfrFactoryConfig)} passed to the {nameof(LocalTinyFfrFactory)} constructor).");
 		}
 		var bufferId = _nextTemporaryBufferId++;
 		var buffer = factory.TemporaryCpuBufferPool.Rent<T>(data.Length);

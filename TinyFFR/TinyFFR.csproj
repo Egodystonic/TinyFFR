@@ -64,4 +64,12 @@
     <OutputPath>..\build_output\Release</OutputPath>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Remove="Assets\Materials\Local\Shaders\standard_pbr.filamat" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\Materials\Local\Shaders\standard_pbr.filamat" />
+  </ItemGroup>
+
 </Project>

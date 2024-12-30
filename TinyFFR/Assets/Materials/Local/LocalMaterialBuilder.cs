@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using System.Reflection;
 using System.Resources;
 using System.Security;
 using Egodystonic.TinyFFR.Assets.Local;
@@ -25,8 +26,8 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	readonly ArrayPoolBackedVector<TextureHandle> _loadedTextures = new();
 	readonly ArrayPoolBackedMap<string, UIntPtr> _loadedShaderPackages = new();
 	readonly ArrayPoolBackedVector<MaterialHandle> _activeMaterials = new();
+	readonly FixedByteBufferPool _shaderResourceBufferPool;
 	readonly LocalFactoryGlobalObjectGroup _globals;
-	readonly ResourceManager _shaderResourceManager;
 	bool _isDisposed = false;
 
 	// This is a private embedded 'delegating' object to help provide distinction between some default interface methods
@@ -42,10 +43,10 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		public override string ToString() => _owner.ToString();
 	}
 
-	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals) {
+	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config) {
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
-		_shaderResourceManager = new ResourceManager(typeof(LocalMaterialBuilder));
+		_shaderResourceBufferPool = new FixedByteBufferPool(config.MaxShaderBufferSizeBytes);
 		_textureImplProvider = new(this);
 	}
 
@@ -146,15 +147,19 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	UIntPtr GetOrLoadShaderPackageHandle(string resourceName) {
 		if (_loadedShaderPackages.TryGetValue(resourceName, out var result)) return result;
 
-		using var resourceStream = _shaderResourceManager.GetStream(resourceName, CultureInfo.InvariantCulture);
-		if (resourceStream == null) throw new InvalidOperationException($"Could not load shader resource '{resourceName}'.");
-		LoadShaderPackage(
-			resourceStream.PositionPointer,
-			checked((int) resourceStream.Length),
-			out var newHandle
-		).ThrowIfFailure();
-		_loadedShaderPackages.Add(resourceName, newHandle);
-		return newHandle;
+		var resourceBuffer = OpenResource(_shaderResourceBufferPool, resourceName);
+		try {
+			LoadShaderPackage(
+				(byte*) resourceBuffer.StartPtr,
+				resourceBuffer.SizeBytes,
+				out var newHandle
+			).ThrowIfFailure();
+			_loadedShaderPackages.Add(resourceName, newHandle);
+			return newHandle;
+		}
+		finally {
+			_shaderResourceBufferPool.Return(resourceBuffer);
+		}
 	}
 
 	#region Native Methods
@@ -258,6 +263,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			_activeMaterials.Dispose();
 			_loadedTextures.Dispose();
 			_loadedShaderPackages.Dispose();
+			_shaderResourceBufferPool.Dispose();
 		}
 		finally {
 			_isDisposed = true;

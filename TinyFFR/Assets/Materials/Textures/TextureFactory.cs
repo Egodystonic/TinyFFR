@@ -2,39 +2,15 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System.Buffers;
+using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 static class TextureFactory {
-	public readonly struct TemporaryTextureWriteSpace<TTexel> : IDisposable, IEquatable<TemporaryTextureWriteSpace<TTexel>> where TTexel : unmanaged, ITexel<TTexel> {
-		readonly byte[] _borrowedPool;
-		readonly int _sizeBytes;
-
-		public Span<TTexel> Buffer => MemoryMarshal.Cast<byte, TTexel>(_borrowedPool.AsSpan(0, _sizeBytes));
-
-		internal TemporaryTextureWriteSpace(byte[] borrowedPool, int sizeBytes) {
-			_borrowedPool = borrowedPool;
-			_sizeBytes = sizeBytes;
-		}
-
-		public void Dispose() => _bytePool.Return(_borrowedPool);
-
-		public bool Equals(TemporaryTextureWriteSpace<TTexel> other) {
-			return _borrowedPool.Equals(other._borrowedPool) && _sizeBytes == other._sizeBytes;
-		}
-		public override bool Equals(object? obj) => obj is TemporaryTextureWriteSpace<TTexel> other && Equals(other);
-		public override int GetHashCode() => HashCode.Combine(_borrowedPool, _sizeBytes);
-		public static bool operator ==(TemporaryTextureWriteSpace<TTexel> left, TemporaryTextureWriteSpace<TTexel> right) => left.Equals(right);
-		public static bool operator !=(TemporaryTextureWriteSpace<TTexel> left, TemporaryTextureWriteSpace<TTexel> right) => !left.Equals(right);
-	}
-
-	static readonly ArrayPool<byte> _bytePool = ArrayPool<byte>.Shared;
-
-	public static TemporaryTextureWriteSpace<TTexel> AllocateTemporaryTexelBuffer<TTexel>(int width, int height) where TTexel : unmanaged, ITexel<TTexel> {
+	public static PooledHeapMemory<TTexel> AllocateTemporaryTexelBuffer<TTexel>(HeapPool pool, int width, int height) where TTexel : unmanaged, ITexel<TTexel> {
 		if (width < 1) throw new ArgumentOutOfRangeException(nameof(width), width, $"Width must be positive.");
 		if (height < 1) throw new ArgumentOutOfRangeException(nameof(height), height, $"Height must be positive.");
-		var numBytesRequired = TTexel.SerializationByteSpanLength * width * height;
-		return new(_bytePool.Rent(numBytesRequired), numBytesRequired);
+		return pool.Borrow<TTexel>(width * height, TTexel.SerializationByteSpanLength);
 	}
 
 	public static Texture GenerateSolidColorTexture(IMaterialBuilder builder, ColorVect color, ReadOnlySpan<char> name = default) {

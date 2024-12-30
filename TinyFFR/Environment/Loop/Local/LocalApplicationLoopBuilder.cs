@@ -30,16 +30,13 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 #pragma warning disable CA2213 // Wants us to dispose _latestInputRetriever, but this is taken care of by the LocalInputManager
 	readonly LocalLatestInputRetriever _latestInputRetriever;
 #pragma warning restore CA2213
-	readonly LocalApplicationLoopBuilderConfig _config;
 	nuint _nextLoopHandleIndex = 1;
 	bool _isDisposed = false;
 
-	public LocalApplicationLoopBuilder(LocalFactoryGlobalObjectGroup globals, LocalApplicationLoopBuilderConfig config) {
+	public LocalApplicationLoopBuilder(LocalFactoryGlobalObjectGroup globals) {
 		ArgumentNullException.ThrowIfNull(globals);
-		ArgumentNullException.ThrowIfNull(config);
 
 		_globals = globals;
-		_config = config;
 		_latestInputRetriever = LocalInputManager.IncrementRefCountAndGetRetriever();
 	}
 

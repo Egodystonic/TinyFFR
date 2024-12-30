@@ -2,9 +2,11 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using Egodystonic.TinyFFR.Assets.Local;
+using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using System;
+using System.Buffers;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
 
@@ -15,19 +17,22 @@ sealed class LocalFactoryGlobalObjectGroup {
 
 	public IResourceDependencyTracker DependencyTracker { get; }
 	public ManagedStringPool StringPool { get; }
+	public HeapPool HeapPool { get; }
 	public LocalResourceGroupImplProvider ResourceGroupProvider => _resourceGroupProvider;
 
-	public LocalFactoryGlobalObjectGroup(LocalTinyFfrFactory factory, ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> resourceNameMap, IResourceDependencyTracker dependencyTracker, ManagedStringPool stringPool, DeferredRef<LocalResourceGroupImplProvider> resourceGroupProviderRef) {
+	public LocalFactoryGlobalObjectGroup(LocalTinyFfrFactory factory, ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> resourceNameMap, IResourceDependencyTracker dependencyTracker, ManagedStringPool stringPool, HeapPool heapPool, DeferredRef<LocalResourceGroupImplProvider> resourceGroupProviderRef) {
 		ArgumentNullException.ThrowIfNull(factory);
 		ArgumentNullException.ThrowIfNull(resourceNameMap);
 		ArgumentNullException.ThrowIfNull(dependencyTracker);
 		ArgumentNullException.ThrowIfNull(stringPool);
+		ArgumentNullException.ThrowIfNull(heapPool);
 		ArgumentNullException.ThrowIfNull(resourceGroupProviderRef);
 
 		_factory = factory;
 		_resourceNameMap = resourceNameMap;
 		DependencyTracker = dependencyTracker;
 		StringPool = stringPool;
+		HeapPool = heapPool;
 		_resourceGroupProvider = resourceGroupProviderRef;
 	}
 
