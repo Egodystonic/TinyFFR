@@ -71,10 +71,10 @@ class FixedByteBufferPoolTest {
 		using var pool = new FixedByteBufferPool(100);
 
 		for (var i = 0; i < 10; ++i) {
-			Assert.GreaterOrEqual(pool.Rent<byte>(i).AllocatedSizeBytes, i);
-			Assert.GreaterOrEqual(pool.Rent<short>(i).AllocatedSizeBytes, i * sizeof(short));
-			Assert.GreaterOrEqual(pool.Rent<float>(i).AllocatedSizeBytes, i * sizeof(float));
-			Assert.GreaterOrEqual(pool.Rent<double>(i).AllocatedSizeBytes, i * sizeof(double));
+			Assert.GreaterOrEqual(pool.Rent<byte>(i).SizeBytes, i);
+			Assert.GreaterOrEqual(pool.Rent<short>(i).SizeBytes, i * sizeof(short));
+			Assert.GreaterOrEqual(pool.Rent<float>(i).SizeBytes, i * sizeof(float));
+			Assert.GreaterOrEqual(pool.Rent<double>(i).SizeBytes, i * sizeof(double));
 		}
 	}
 }

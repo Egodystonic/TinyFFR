@@ -35,38 +35,37 @@ class LocalDependencyTest {
 			var group = factory.CreateResourceGroup(false);
 			var loop = factory.ApplicationLoopBuilder.CreateLoop();
 			group.AddResource(loop);
-
 			AssertDependency(loop, group);
-			
-			var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor());
-			var mat = factory.AssetLoader.MaterialBuilder.CreateBasicSolidColorMat(StandardColor.Green);
-			var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat);
 
+			var tex = factory.AssetLoader.MaterialBuilder.CreateSolidColorTexture(StandardColor.White);
+			var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex);
+			AssertDependency(tex, mat);
+
+			tex = factory.AssetLoader.MaterialBuilder.CreateSolidColorTexture(StandardColor.White);
+			mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex);
+			var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor());
+			var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat);
 			AssertDependency(mesh, instance);
 			
 			mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor());
 			instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat);
-
 			AssertDependency(mat, instance);
 			mesh.Dispose();
+			tex.Dispose();
 
 			var camera = factory.CameraBuilder.CreateCamera();
 			var scene = factory.SceneBuilder.CreateScene();
 			var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Recommended!.Value);
 			var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
-
 			AssertDependency(camera, renderer);
 
 			camera = factory.CameraBuilder.CreateCamera();
 			renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
-
 			AssertDependency(scene, renderer);
 
 			scene = factory.SceneBuilder.CreateScene();
 			renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
-
 			AssertDependency(window, renderer);
-
 			scene.Dispose();
 			camera.Dispose();
 		}
