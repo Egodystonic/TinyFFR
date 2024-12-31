@@ -64,7 +64,7 @@ Console.WriteLine(renderer);
 while (!loop.Input.UserQuitRequested) {
 	_ = loop.IterateOnce();
 	renderer.Render();
-	//instance.MoveBy(Direction.Left * 0.01f);
+	instance.MoveBy(Direction.Left * 0.01f);
 	camera.ViewDirection = Direction.Forward;
 	camera.MoveBy(Direction.Right * 0.01f);
 }

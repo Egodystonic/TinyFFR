@@ -30,7 +30,6 @@ void native_impl_objects::allocate_model_instance(mat4f* initialTransformPtr, Ve
 	if (result != RenderableManager::Builder::Success) Throw("Could not create entity.");
 
 	filament_engine->getTransformManager().create(entity, TransformManager::Instance{}, *initialTransformPtr);
-	filament_engine->getTransformManager().create(entity, TransformManager::Instance{});
 	*outModelInstance = Entity::smuggle(entity);
 }
 StartExportedFunc(allocate_model_instance, mat4f* initialTransformPtr, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount, MaterialHandle material, ModelInstanceHandle* outModelInstance) {

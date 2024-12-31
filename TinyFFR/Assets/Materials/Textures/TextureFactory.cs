@@ -22,7 +22,7 @@ static class TextureFactory {
 			Height = 1,
 			Name = name
 		};
-
+		
 		// ReSharper disable once CompareOfFloatsByEqualityOperator In this case we want an explicit comparison
 		if (color.Alpha == 1f) {
 			var texel = (TexelRgb24) color;
@@ -32,5 +32,16 @@ static class TextureFactory {
 			var texel = (TexelRgba32) color;
 			return builder.CreateTexture(new ReadOnlySpan<TexelRgba32>(in texel), config);
 		}
+
+		// var config = new TextureCreationConfig {
+		// 	GenerateMipMaps = true,
+		// 	Width = 32,
+		// 	Height = 32,
+		// 	Name = name
+		// };
+		//
+		// Span<TexelRgb24> texels = stackalloc TexelRgb24[32 * 32];
+		// texels.Fill(new(StandardColor.Red));
+		// return builder.CreateTexture(texels, config);
 	}
 }

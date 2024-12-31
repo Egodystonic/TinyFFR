@@ -76,7 +76,7 @@ void native_impl_render_assets::load_texture_rgb_24(BufferIdentity bufferIdentit
 	Texture::PixelBufferDescriptor imageBuffer {
 		dataPtr,
 		static_cast<size_t>(dataLen),
-		backend::PixelDataFormat::RGB_INTEGER,
+		backend::PixelDataFormat::RGB,
 		backend::PixelDataType::UBYTE,
 		1, 0, 0, 0,
 		&handle_filament_buffer_copy_callback,
@@ -85,7 +85,7 @@ void native_impl_render_assets::load_texture_rgb_24(BufferIdentity bufferIdentit
 
 	*outTexture = Texture::Builder()
 		.depth(1)
-		.format(Texture::InternalFormat::RGB8UI)
+		.format(Texture::InternalFormat::RGB8)
 		.height(height)
 		.levels(generateMipMaps ? 1 : 0xFF)
 		.sampler(Texture::Sampler::SAMPLER_2D)
@@ -111,7 +111,7 @@ void native_impl_render_assets::load_texture_rgba_32(BufferIdentity bufferIdenti
 	Texture::PixelBufferDescriptor imageBuffer{
 		dataPtr,
 		static_cast<size_t>(dataLen),
-		backend::PixelDataFormat::RGBA_INTEGER,
+		backend::PixelDataFormat::RGBA,
 		backend::PixelDataType::UBYTE,
 		1, 0, 0, 0,
 		&handle_filament_buffer_copy_callback,
@@ -120,7 +120,7 @@ void native_impl_render_assets::load_texture_rgba_32(BufferIdentity bufferIdenti
 
 	*outTexture = Texture::Builder()
 		.depth(1)
-		.format(Texture::InternalFormat::RGBA8UI)
+		.format(Texture::InternalFormat::RGBA8)
 		.height(height)
 		.levels(generateMipMaps ? 1 : 0xFF)
 		.sampler(Texture::Sampler::SAMPLER_2D)

@@ -9,12 +9,15 @@
     requires : [
         uv0
     ],
-    shadingModel : lit,
+    shadingModel : unlit,
 }
 
 fragment {
     void material(inout MaterialInputs material) {
         prepareMaterial(material);
         material.baseColor.rgb = texture(materialParams_albedo, getUV0()).rgb;
+        //material.baseColor.rgb = float3(1.0) - texture(materialParams_albedo, getUV0()).rgb;
+        //material.baseColor.rgb = float3(getUV0(), 0.0);
+        //material.baseColor.rgb = float3(0.6);
     }
 }
