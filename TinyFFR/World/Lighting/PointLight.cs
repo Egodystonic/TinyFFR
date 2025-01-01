@@ -61,14 +61,14 @@ public readonly struct PointLight : ILight<PointLight>, IEquatable<PointLight> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetColor(ColorVect color) => Color = color;
 
-	public float Lumens {
+	public float Brightness {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetPointLightLumens(Handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetPointLightLumens(Handle, value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetLumens(float lumens) => Lumens = lumens;
+	public void SetBrightness(float lumens) => Brightness = lumens;
 
 	public float MaxIlluminationRadius {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

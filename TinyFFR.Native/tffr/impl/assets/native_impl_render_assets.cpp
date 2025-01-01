@@ -76,8 +76,8 @@ void native_impl_render_assets::load_texture_rgb_24(BufferIdentity bufferIdentit
 	Texture::PixelBufferDescriptor imageBuffer {
 		dataPtr,
 		static_cast<size_t>(dataLen),
-		backend::PixelDataFormat::RGB,
-		backend::PixelDataType::UBYTE,
+		backend::PixelDataFormat::RGB, // Specifies how the texels will "appear" to the shader
+		backend::PixelDataType::UBYTE, // Specifies how the texels are stored in the dataPtr
 		1, 0, 0, 0,
 		&handle_filament_buffer_copy_callback,
 		bufferIdentity
@@ -85,7 +85,7 @@ void native_impl_render_assets::load_texture_rgb_24(BufferIdentity bufferIdentit
 
 	*outTexture = Texture::Builder()
 		.depth(1)
-		.format(Texture::InternalFormat::RGB8)
+		.format(Texture::InternalFormat::RGB8) // Specifies the format the data is stored as internally on the GPU
 		.height(height)
 		.levels(generateMipMaps ? 1 : 0xFF)
 		.sampler(Texture::Sampler::SAMPLER_2D)
