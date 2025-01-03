@@ -16,6 +16,11 @@ public readonly struct Texture : IDisposableResource<Texture, TextureHandle, ITe
 	ITextureImplProvider IResource<TextureHandle, ITextureImplProvider>.Implementation => Implementation;
 	TextureHandle IResource<TextureHandle, ITextureImplProvider>.Handle => Handle;
 
+	public XYPair<uint> Dimensions {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetDimensions(_handle);
+	}
+
 	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(_handle);

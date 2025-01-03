@@ -2,6 +2,6 @@
 
 Commandline should look as follows:
 
-matc.exe -p desktop -a opengl -o Path\To\TinyFFR\Assets\Materials\Local\Shaders\standard_pbr.filamat Path\To\TinyFFR\Assets\Materials\Local\Shaders\standard_pbr.txt
+matc.exe -p desktop -a opengl -o Path\To\TinyFFR\Assets\Materials\Local\Shaders\shader_name.filamat Path\To\TinyFFR\Assets\Materials\Local\Shaders\shader_name.txt
 
 Don't include matc.exe in the repo as I'm not sure about redistribution rights and we also don't want to mix matc versions up if/when we upgrade the filament version.

@@ -26,6 +26,10 @@ public readonly struct PointLight : ILight<PointLight>, IEquatable<PointLight> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Base.Dispose();
 	public static implicit operator Light(PointLight operand) => operand.Base;
+	public static explicit operator PointLight(Light operand) {
+		Light.ThrowIfInvalidType(operand, LightType.PointLight);
+		return new(operand);
+	}
 	static PointLight ILight<PointLight>.FromBaseLight(Light l) => (PointLight) l;
 	public override string ToString() => $"Point{Base}";
 	#endregion

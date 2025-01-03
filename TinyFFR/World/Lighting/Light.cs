@@ -69,17 +69,10 @@ public readonly struct Light : ILight, IDisposableResource<Light, LightHandle, I
 
 	public override string ToString() => $"Light {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
 
-	#region Conversions
-	static void AssertTypeBeforeCast(LightType expectedType, Light operand) {
-		if (operand.Type == expectedType) return;
-		throw new InvalidCastException($"Can not cast {operand} to {expectedType}: Actual type is {operand.Type}.");
+	internal static void ThrowIfInvalidType(Light input, LightType requiredType) {
+		if (input.Type == requiredType) return;
+		throw TypeUtils.InvalidCast(input, requiredType, input.Type);
 	}
-
-	public static explicit operator PointLight(Light operand) {
-		AssertTypeBeforeCast(LightType.PointLight, operand);
-		return new(operand);
-	}
-	#endregion
 
 	#region Equality
 	public bool Equals(Light other) => _handle == other._handle && _impl.Equals(other._impl);
