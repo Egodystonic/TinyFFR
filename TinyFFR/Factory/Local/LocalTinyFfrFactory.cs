@@ -14,7 +14,7 @@ using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
 
-public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory {
+public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, IResourceAllocator {
 	static LocalTinyFfrFactory? _instance = null;
 
 	readonly ResourceDependencyTracker _dependencyTracker = new();
@@ -42,6 +42,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory {
 	public IObjectBuilder ObjectBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _objectBuilder;
 	public ISceneBuilder SceneBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _sceneBuilder;
 	public IRendererBuilder RendererBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _rendererBuilder;
+	public IResourceAllocator ResourceAllocator => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : this;
 
 	internal FixedByteBufferPool TemporaryCpuBufferPool { get; }
 
@@ -79,7 +80,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory {
 		_instance = this;
 	}
 
-	#region Resource Group Creation
+	#region Resource Allocator
 	public ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed) {
 		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ILocalTinyFfrFactory));
 		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed);

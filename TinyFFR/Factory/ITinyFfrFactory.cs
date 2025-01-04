@@ -20,9 +20,5 @@ public interface ITinyFfrFactory : IDisposable {
 	IObjectBuilder ObjectBuilder { get; }
 	ISceneBuilder SceneBuilder { get; }
 	IRendererBuilder RendererBuilder { get; }
-
-	ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed);
-	ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, int initialCapacity);
-	ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name);
-	ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name, int initialCapacity);
+	IResourceAllocator ResourceAllocator { get; }
 }

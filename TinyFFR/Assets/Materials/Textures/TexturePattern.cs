@@ -8,7 +8,7 @@ using System.Globalization;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
-public static unsafe class TexturePattern {
+public static unsafe partial class TexturePattern {
 	internal const int MaxDimensionWidth = 4096;
 	internal const int MaxDimensionHeight = 4096;
 
@@ -21,13 +21,19 @@ public static unsafe class TexturePattern {
 		}
 	}
 
-	public static TexturePattern<T> PlainFill<T>(T fillValue) where T : unmanaged {
-		static T Generate(ReadOnlySpan<byte> args, XYPair<int> xy) {
-			return MemoryMarshal.AsRef<T>(args);
-		}
-
-		var argData = new TexturePatternArgData();
-		return new TexturePattern<T>((1, 1), &Generate, 
+	static Span<byte> WriteFirstArg<T>(this ref TexturePatternArgData argData, T arg) where T : unmanaged {
+		return ((Span<byte>) argData).AndThen(arg);
+	}
+	static Span<byte> AndThen<T>(this Span<byte> argData, T arg) where T : unmanaged {
+		MemoryMarshal.Write(argData, arg);
+		return argData[sizeof(T)..];
+	}
+	static ReadOnlySpan<byte> ReadFirstArg<T>(this ReadOnlySpan<byte> args, out T outValue) where T : unmanaged {
+		return AndThen(args, out outValue);
+	}
+	static ReadOnlySpan<byte> AndThen<T>(this ReadOnlySpan<byte> args, out T outValue) where T : unmanaged {
+		outValue = MemoryMarshal.Read<T>(args);
+		return args[sizeof(T)..];
 	}
 }
 

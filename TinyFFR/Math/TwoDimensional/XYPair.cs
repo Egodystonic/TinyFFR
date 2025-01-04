@@ -87,8 +87,8 @@ public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>> where T : u
 
 	public static XYPair<T> DeserializeFromBytes(ReadOnlySpan<byte> src) {
 		return new(
-			MemoryMarshal.AsRef<T>(src),
-			MemoryMarshal.AsRef<T>(src[_marshalledElementSizeBytes..])
+			MemoryMarshal.Read<T>(src),
+			MemoryMarshal.Read<T>(src[_marshalledElementSizeBytes..])
 		);
 	}
 	#endregion
