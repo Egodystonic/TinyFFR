@@ -8,7 +8,7 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = TexelSizeBytes)]
-public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : ITexel<TexelRgba32> {
+public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : IConversionSupplyingTexel<TexelRgba32, ColorVect> {
 	const int TexelSizeBytes = 4;
 	public static int SerializationByteSpanLength { get; } = TexelSizeBytes;
 	public static TexelType Type { get; } = TexelType.Rgba32;
@@ -44,4 +44,6 @@ public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : ITex
 	public static explicit operator TexelRgba32(ColorVect color) => new(color);
 	public static explicit operator ColorVect(TexelRgba32 texel) => texel.AsColorVect;
 	public static explicit operator TexelRgba32(TexelRgb24 texel) => texel.AsRgba32;
+	
+	public static TexelRgba32 ConvertFrom(ColorVect v) => new(v);
 }

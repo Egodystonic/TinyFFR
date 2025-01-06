@@ -17,3 +17,6 @@ public interface ITexel {
 	static abstract TexelType Type { get; }
 }
 public interface ITexel<TSelf> : ITexel, IByteSpanSerializable<TSelf> where TSelf : unmanaged, ITexel<TSelf>;
+public interface IConversionSupplyingTexel<TSelf, in TOther> : ITexel<TSelf> where TSelf : unmanaged, IConversionSupplyingTexel<TSelf, TOther> {
+	public static abstract TSelf ConvertFrom(TOther o);
+}

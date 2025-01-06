@@ -20,4 +20,11 @@ public class InvalidObjectException : InvalidOperationException {
 			$"Given object of type {t.Name} is not valid (the 'default' value of this type is not valid)."
 		);
 	}
+
+	internal static InvalidObjectException InvalidDefault<T>(string objectName) => InvalidDefault(typeof(T), objectName);
+	internal static InvalidObjectException InvalidDefault(Type t, string objectName) {
+		return new InvalidObjectException(
+			$"Given object '{objectName}' of type {t.Name} is not valid (the 'default' value of this type is not valid in this context)."
+		);
+	}
 }

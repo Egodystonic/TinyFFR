@@ -16,6 +16,6 @@ public interface IResourceAllocator {
 	ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name);
 	ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name, int initialCapacity);
 
-	Span<T> CreatePooledMemoryBuffer<T>(int numElements);
-	void ReturnPooledMemoryBuffer<T>(Span<T> buffer);
+	Memory<T> CreatePooledMemoryBuffer<T>(int numElements);
+	void ReturnPooledMemoryBuffer<T>(Memory<T> buffer);
 }

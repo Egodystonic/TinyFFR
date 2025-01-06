@@ -20,14 +20,21 @@ namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IDisposable {
+	readonly record struct TextureData(XYPair<uint> Dimensions);
 	const string DefaultMaterialName = "Unnamed Material";
 	const string DefaultTextureName = "Unnamed Texture";
+	const string DefaultColorMapName = "Default Color Map";
+	const string DefaultNormalMapName = "Default Normal Map";
+	const string DefaultOrmMapName = "Default Orm Map";
 	readonly TextureImplProvider _textureImplProvider;
-	readonly ArrayPoolBackedVector<TextureHandle> _loadedTextures = new();
+	readonly ArrayPoolBackedMap<TextureHandle, TextureData> _loadedTextures = new();
 	readonly ArrayPoolBackedMap<string, UIntPtr> _loadedShaderPackages = new();
 	readonly ArrayPoolBackedVector<MaterialHandle> _activeMaterials = new();
 	readonly FixedByteBufferPool _shaderResourceBufferPool;
 	readonly LocalFactoryGlobalObjectGroup _globals;
+	readonly Lazy<Texture> _defaultColorMap;
+	readonly Lazy<Texture> _defaultNormalMap;
+	readonly Lazy<Texture> _defaultOrmMap;
 	bool _isDisposed = false;
 
 	// This is a private embedded 'delegating' object to help provide distinction between some default interface methods
@@ -37,17 +44,35 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		public TextureImplProvider(LocalMaterialBuilder owner) => _owner = owner;
 
+		public XYPair<uint> GetDimensions(TextureHandle handle) => _owner.GetDimensions(handle);
 		public ReadOnlySpan<char> GetName(TextureHandle handle) => _owner.GetName(handle);
 		public bool IsDisposed(TextureHandle handle) => _owner.IsDisposed(handle);
 		public void Dispose(TextureHandle handle) => _owner.Dispose(handle);
 		public override string ToString() => _owner.ToString();
 	}
 
+	public Texture DefaultColorMap => _defaultColorMap.Value;
+	public Texture DefaultNormalMap => _defaultNormalMap.Value;
+	public Texture DefaultOrmMap => _defaultOrmMap.Value;
+
 	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config) {
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
 		_shaderResourceBufferPool = new FixedByteBufferPool(config.MaxShaderBufferSizeBytes);
 		_textureImplProvider = new(this);
+
+		_defaultColorMap = new(() => (this as IMaterialBuilder).CreateColorMap(
+			TexturePattern.PlainFill(new ColorVect(StandardColor.White)), name: DefaultColorMapName
+		));
+		_defaultNormalMap = new(() => (this as IMaterialBuilder).CreateNormalMap(
+			TexturePattern.PlainFill(Direction.Up), name: DefaultNormalMapName
+		));
+		_defaultOrmMap = new(() => (this as IMaterialBuilder).CreateOrmMap(
+			TexturePattern.PlainFill(1f), 
+			TexturePattern.PlainFill(0.4f), 
+			TexturePattern.PlainFill(0f), 
+			name: DefaultOrmMapName
+		));
 	}
 
 	public Texture CreateTexture<TTexel>(ReadOnlySpan<TTexel> texels, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
@@ -101,38 +126,41 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		var handle = (TextureHandle) outHandle;
 		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.Name);
-		_loadedTextures.Add(handle);
+		_loadedTextures.Add(handle, new(((uint) width, (uint) height)));
 		return HandleToInstance(handle);
 	}
 
-	public Material CreateStandardMaterial(in StandardMaterialCreationConfig config) {
+	public Material CreateOpaqueMaterial(in OpaqueMaterialCreationConfig config) {
 		ThrowIfThisIsDisposed();
 
 		var shaderConstants = StandardPbrShader;
-
 		var shaderPackageHandle = GetOrLoadShaderPackageHandle(shaderConstants.ResourceName);
-
 		CreateMaterial(
 			shaderPackageHandle,
 			out var outHandle
 		).ThrowIfFailure();
-
 		var handle = (MaterialHandle) outHandle;
+
 		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.Name);
 		_activeMaterials.Add(handle);
 		var result = HandleToInstance(handle);
 
-		if (config.Albedo != null) {
+		if (config.ColorMap != null) {
 			SetMaterialParameterTexture(
 				handle,
 				in ParamRef(shaderConstants.ParamAlbedo),
 				ParamLen(shaderConstants.ParamAlbedo),
-				config.Albedo.Value.Handle
+				config.ColorMap.Value.Handle
 			).ThrowIfFailure();
-			_globals.DependencyTracker.RegisterDependency(result, config.Albedo.Value);
+			_globals.DependencyTracker.RegisterDependency(result, config.ColorMap.Value);
 		} 
 
 		return result;
+	}
+
+	public XYPair<uint> GetDimensions(TextureHandle handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _loadedTextures[handle].Dimensions;
 	}
 
 	public ReadOnlySpan<char> GetName(TextureHandle handle) {
@@ -231,33 +259,33 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	public override string ToString() => _isDisposed ? "TinyFFR Local Material Builder [Disposed]" : "TinyFFR Local Material Builder";
 
 	#region Disposal
-	public bool IsDisposed(TextureHandle handle) => _isDisposed || !_loadedTextures.Contains(handle);
+	public bool IsDisposed(TextureHandle handle) => _isDisposed || !_loadedTextures.ContainsKey(handle);
 	public bool IsDisposed(MaterialHandle handle) => _isDisposed || !_activeMaterials.Contains(handle);
 
-	public void Dispose(TextureHandle handle) => Dispose(handle, removeFromVect: true);
-	void Dispose(TextureHandle handle, bool removeFromVect) {
+	public void Dispose(TextureHandle handle) => Dispose(handle, removeFromCollection: true);
+	void Dispose(TextureHandle handle, bool removeFromCollection) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		DisposeTexture(handle).ThrowIfFailure();
 		_globals.DisposeResourceNameIfExists(handle.Ident);
-		if (removeFromVect) _loadedTextures.Remove(handle);
+		if (removeFromCollection) _loadedTextures.Remove(handle);
 	}
 
-	public void Dispose(MaterialHandle handle) => Dispose(handle, removeFromVect: true);
-	void Dispose(MaterialHandle handle, bool removeFromVect) {
+	public void Dispose(MaterialHandle handle) => Dispose(handle, removeFromCollection: true);
+	void Dispose(MaterialHandle handle, bool removeFromCollection) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		DisposeMaterial(handle).ThrowIfFailure();
 		_globals.DisposeResourceNameIfExists(handle.Ident);
-		if (removeFromVect) _activeMaterials.Remove(handle);
+		if (removeFromCollection) _activeMaterials.Remove(handle);
 	}
 
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
-			foreach (var mat in _activeMaterials) Dispose(mat, removeFromVect: false);
-			foreach (var tex in _loadedTextures) Dispose(tex, removeFromVect: false);
+			foreach (var mat in _activeMaterials) Dispose(mat, removeFromCollection: false);
+			foreach (var tex in _loadedTextures.Keys) Dispose(tex, removeFromCollection: false);
 			foreach (var packageHandle in _loadedShaderPackages.Values) DisposeShaderPackage(packageHandle).ThrowIfFailure();
 			
 			_activeMaterials.Dispose();

@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2023
 
 using System.Globalization;
+using Egodystonic.TinyFFR.Assets.Materials;
 
 namespace Egodystonic.TinyFFR;
 

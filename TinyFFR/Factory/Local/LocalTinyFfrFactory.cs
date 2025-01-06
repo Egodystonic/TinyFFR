@@ -14,7 +14,7 @@ using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
 
-public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, IResourceAllocator {
+public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory {
 	static LocalTinyFfrFactory? _instance = null;
 
 	readonly ResourceDependencyTracker _dependencyTracker = new();
@@ -32,6 +32,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, IResourceAllocat
 	readonly IObjectBuilder _objectBuilder;
 	readonly ISceneBuilder _sceneBuilder;
 	readonly IRendererBuilder _rendererBuilder;
+	readonly IResourceAllocator _resourceAllocator;
 
 	public IDisplayDiscoverer DisplayDiscoverer => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _displayDiscoverer;
 	public IWindowBuilder WindowBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _windowBuilder;
@@ -42,7 +43,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, IResourceAllocat
 	public IObjectBuilder ObjectBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _objectBuilder;
 	public ISceneBuilder SceneBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _sceneBuilder;
 	public IRendererBuilder RendererBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _rendererBuilder;
-	public IResourceAllocator ResourceAllocator => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : this;
+	public IResourceAllocator ResourceAllocator => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _resourceAllocator;
 
 	internal FixedByteBufferPool TemporaryCpuBufferPool { get; }
 
@@ -76,28 +77,10 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, IResourceAllocat
 		_objectBuilder = new LocalObjectBuilder(globals);
 		_sceneBuilder = new LocalSceneBuilder(globals);
 		_rendererBuilder = new LocalRendererBuilder(globals);
+		_resourceAllocator = new LocalResourceAllocator(globals);
 
 		_instance = this;
 	}
-
-	#region Resource Allocator
-	public ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed) {
-		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ILocalTinyFfrFactory));
-		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed);
-	}
-	public ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name) {
-		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ILocalTinyFfrFactory));
-		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed, name);
-	}
-	public ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, int initialCapacity) {
-		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ILocalTinyFfrFactory));
-		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed, initialCapacity);
-	}
-	public ResourceGroup CreateResourceGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name, int initialCapacity) {
-		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ILocalTinyFfrFactory));
-		return _resourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed, name, initialCapacity);
-	}
-	#endregion
 
 	public override string ToString() => IsDisposed ? "TinyFFR Local Renderer Factory [Disposed]" : "TinyFFR Local Renderer Factory";
 
@@ -119,6 +102,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, IResourceAllocat
 
 			// Maintainer's note: These are disposed in reverse order (e.g. opposite order compared to the order they're constructed in the ctor above)
 			// However, by erasing all dependencies (above) we also try to avoid nasty dependency-related exceptions getting thrown which are ultimately not that useful as we're disposing everything anyway.
+			DisposeObjectIfDisposable(_resourceAllocator);
 			DisposeObjectIfDisposable(_rendererBuilder);
 			DisposeObjectIfDisposable(_sceneBuilder);
 			DisposeObjectIfDisposable(_objectBuilder);
