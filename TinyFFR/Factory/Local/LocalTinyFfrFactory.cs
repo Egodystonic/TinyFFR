@@ -14,7 +14,7 @@ using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
 
-public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory {
+public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHoldingBufferAllocator {
 	static LocalTinyFfrFactory? _instance = null;
 
 	readonly ResourceDependencyTracker _dependencyTracker = new();
@@ -22,6 +22,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory {
 	readonly HeapPool _heapPool = new();
 	readonly ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> _resourceNameMap = new();
 	readonly LocalResourceGroupImplProvider _resourceGroupProvider;
+	readonly FixedByteBufferPool _gpuHoldingBufferPool;
 
 	readonly IDisplayDiscoverer _displayDiscoverer;
 	readonly IWindowBuilder _windowBuilder;
@@ -44,8 +45,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory {
 	public ISceneBuilder SceneBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _sceneBuilder;
 	public IRendererBuilder RendererBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _rendererBuilder;
 	public IResourceAllocator ResourceAllocator => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _resourceAllocator;
-
-	internal FixedByteBufferPool TemporaryCpuBufferPool { get; }
+	FixedByteBufferPool ILocalGpuHoldingBufferAllocator.GpuHoldingBufferPool => _gpuHoldingBufferPool;
 
 	IApplicationLoopBuilder ITinyFfrFactory.ApplicationLoopBuilder => ApplicationLoopBuilder;
 
@@ -56,7 +56,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory {
 		factoryConfig ??= new LocalTinyFfrFactoryConfig();
 
 		var resourceGroupProviderRef = new DeferredRef<LocalResourceGroupImplProvider>();
-		TemporaryCpuBufferPool = new FixedByteBufferPool(factoryConfig.MaxCpuToGpuAssetTransferSizeBytes);
+		_gpuHoldingBufferPool = new FixedByteBufferPool(factoryConfig.MaxCpuToGpuAssetTransferSizeBytes);
 		var globals = new LocalFactoryGlobalObjectGroup(
 			this,
 			_resourceNameMap,

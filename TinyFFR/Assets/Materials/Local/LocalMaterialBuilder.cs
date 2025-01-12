@@ -75,10 +75,55 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		));
 	}
 
+	Texture IMaterialBuilder.CreateTextureUsingPreallocatedBuffer<TTexel>(IMaterialBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureCreationConfig config) => CreateTextureUsingPreallocatedBuffer(preallocatedBuffer, in config);
+	Texture CreateTextureUsingPreallocatedBuffer<TTexel>(IMaterialBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
+		var dataPointer = Unsafe.AsPointer(ref MemoryMarshal.GetReference(preallocatedBuffer.Buffer));
+		var dataLength = preallocatedBuffer.Buffer.Length * sizeof(TTexel);
+
+		UIntPtr outHandle;
+		switch (TTexel.Type) {
+			case TexelType.Rgb24:
+				LoadTextureRgb24(
+					preallocatedBuffer.BufferId,
+					(TexelRgb24*) dataPointer,
+					dataLength,
+					(uint) config.Width,
+					(uint) config.Height,
+					config.GenerateMipMaps,
+					out outHandle
+				).ThrowIfFailure();
+				break;
+			case TexelType.Rgba32:
+				LoadTextureRgba32(
+					preallocatedBuffer.BufferId,
+					(TexelRgba32*) dataPointer,
+					dataLength,
+					(uint) config.Width,
+					(uint) config.Height,
+					config.GenerateMipMaps,
+					out outHandle
+				).ThrowIfFailure();
+				break;
+			default:
+				throw new InvalidOperationException($"Unknown or unsupported texel type '{typeof(TTexel)}' (Type property '{TTexel.Type}').");
+		}
+
+		var handle = (TextureHandle) outHandle;
+		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.Name);
+		_loadedTextures.Add(handle, new(((uint) config.Width, (uint) config.Height)));
+		return HandleToInstance(handle);
+	}
+
+	IMaterialBuilder.PreallocatedBuffer<TTexel> IMaterialBuilder.PreallocateBuffer<TTexel>(int texelCount) => PreallocateBuffer<TTexel>(texelCount);
+	IMaterialBuilder.PreallocatedBuffer<TTexel> PreallocateBuffer<TTexel>(int texelCount) where TTexel : unmanaged, ITexel<TTexel> {
+		var buffer = _globals.CreateGpuHoldingBuffer<TTexel>(texelCount);
+		return new(buffer.BufferIdentity, buffer.AsSpan<TTexel>());
+	}
+
 	public Texture CreateTexture<TTexel>(ReadOnlySpan<TTexel> texels, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
 		ThrowIfThisIsDisposed();
-
 		config.ThrowIfInvalid();
+
 		var width = config.Width;
 		var height = config.Height;
 
@@ -95,43 +140,14 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		}
 		texels = texels[..texelCount];
 
-		var buffer = _globals.CopySpanToTemporaryCpuBuffer(texels);
-		UIntPtr outHandle;
-		switch (TTexel.Type) {
-			case TexelType.Rgb24:
-				LoadTextureRgb24(
-					buffer.BufferIdentity,
-					(TexelRgb24*) buffer.DataPtr,
-					buffer.DataLengthBytes,
-					(uint) width,
-					(uint) height,
-					config.GenerateMipMaps,
-					out outHandle
-				).ThrowIfFailure();
-				break;
-			case TexelType.Rgba32:
-				LoadTextureRgba32(
-					buffer.BufferIdentity,
-					(TexelRgba32*) buffer.DataPtr,
-					buffer.DataLengthBytes,
-					(uint) width,
-					(uint) height,
-					config.GenerateMipMaps,
-					out outHandle
-				).ThrowIfFailure();
-				break;
-			default:
-				throw new InvalidOperationException($"Unknown or unsupported texel type '{typeof(TTexel)}'.");
-		}
-
-		var handle = (TextureHandle) outHandle;
-		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.Name);
-		_loadedTextures.Add(handle, new(((uint) width, (uint) height)));
-		return HandleToInstance(handle);
+		var buffer = PreallocateBuffer<TTexel>(texelCount);
+		texels.CopyTo(buffer.Buffer);
+		return CreateTextureUsingPreallocatedBuffer(buffer, in config);
 	}
 
 	public Material CreateOpaqueMaterial(in OpaqueMaterialCreationConfig config) {
 		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
 
 		var shaderConstants = StandardPbrShader;
 		var shaderPackageHandle = GetOrLoadShaderPackageHandle(shaderConstants.ResourceName);

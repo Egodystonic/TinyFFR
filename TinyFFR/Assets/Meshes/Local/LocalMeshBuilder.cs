@@ -88,8 +88,8 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 			CheckTriangleIndex('C', i, triangles[i].IndexC, vertices.Length);
 		}
 
-		var tempVertexBuffer = _globals.CopySpanToTemporaryCpuBuffer(vertices);
-		var tempIndexBuffer = _globals.CopySpanToTemporaryCpuBuffer(triangles);
+		var tempVertexBuffer = _globals.CreateAndCopyToGpuHoldingBuffer(vertices);
+		var tempIndexBuffer = _globals.CreateAndCopyToGpuHoldingBuffer(triangles);
 		
 		if (config.FlipTriangles) {
 			var intSpan = tempIndexBuffer.AsSpan<int>();

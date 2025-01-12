@@ -7,6 +7,15 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public interface IMaterialBuilder {
+	protected readonly ref struct PreallocatedBuffer<TTexel> where TTexel : unmanaged, ITexel<TTexel> {
+		public nuint BufferId { get; }
+		public Span<TTexel> Buffer { get; }
+		public PreallocatedBuffer(UIntPtr bufferId, Span<TTexel> buffer) {
+			BufferId = bufferId;
+			Buffer = buffer;
+		}
+	}
+
 	Texture DefaultColorMap { get; }
 	Texture DefaultNormalMap { get; }
 	Texture DefaultOrmMap { get; }
@@ -14,15 +23,15 @@ public interface IMaterialBuilder {
 	Texture CreateTexture<TTexel>(Span<TTexel> texels, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> => CreateTexture((ReadOnlySpan<TTexel>) texels, config);
 	Texture CreateTexture<TTexel>(ReadOnlySpan<TTexel> texels, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel>;
 
-	protected Texture CreateTextureUsingPreallocatedBuffer<TTexel>(Span<TTexel> preallocatedBuffer, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel>;
-	protected Span<TTexel> PreallocateBuffer<TTexel>(int size) where TTexel : unmanaged, ITexel<TTexel>;
-	private Span<TTexel> FillPreallocatedBuffer<T, TTexel>(TexturePattern<T> pattern) where T : unmanaged where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, T> {
+	protected Texture CreateTextureUsingPreallocatedBuffer<TTexel>(PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel>;
+	protected PreallocatedBuffer<TTexel> PreallocateBuffer<TTexel>(int texelCount) where TTexel : unmanaged, ITexel<TTexel>;
+	private PreallocatedBuffer<TTexel> FillPreallocatedBuffer<T, TTexel>(TexturePattern<T> pattern) where T : unmanaged where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, T> {
 		var dimensions = pattern.Dimensions;
 		var buffer = PreallocateBuffer<TTexel>(dimensions.X * dimensions.Y);
 		var texelIndex = 0;
 		for (var y = 0; y < dimensions.Y; ++y) {
 			for (var x = 0; x < dimensions.X; ++x) {
-				buffer[texelIndex++] = TTexel.ConvertFrom(pattern[x, y]);
+				buffer.Buffer[texelIndex++] = TTexel.ConvertFrom(pattern[x, y]);
 			}
 		}
 		return buffer;
@@ -85,7 +94,7 @@ public interface IMaterialBuilder {
 			var texelIndex = 0;
 			for (var y = 0; y < dimensions.Y; ++y) {
 				for (var x = 0; x < dimensions.X; ++x) {
-					buffer[texelIndex++] = new(
+					buffer.Buffer[texelIndex++] = new(
 						FloatToByte(occlusionPattern[x, y]),
 						FloatToByte(roughnessPattern[x, y]),
 						FloatToByte(metallicPattern[x, y])
@@ -97,7 +106,7 @@ public interface IMaterialBuilder {
 			var texelIndex = 0;
 			for (var y = 0; y < dimensions.Y; ++y) {
 				for (var x = 0; x < dimensions.X; ++x) {
-					buffer[texelIndex++] = new(
+					buffer.Buffer[texelIndex++] = new(
 						FloatToByte(occlusionPattern[x % occlusionPattern.Dimensions.X, y % occlusionPattern.Dimensions.Y]),
 						FloatToByte(roughnessPattern[x % roughnessPattern.Dimensions.X, y % roughnessPattern.Dimensions.Y]),
 						FloatToByte(metallicPattern[x % metallicPattern.Dimensions.X, y % metallicPattern.Dimensions.Y])

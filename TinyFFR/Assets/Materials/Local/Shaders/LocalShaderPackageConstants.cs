@@ -33,10 +33,14 @@ static class LocalShaderPackageConstants {
 	public static ref readonly byte ParamRef(ReadOnlySpan<byte> param) => ref MemoryMarshal.GetReference(param);
 	public static int ParamLen(ReadOnlySpan<byte> param) => param.Length;
 
-	public static StandardPbrShaderConstants StandardPbrShader { get; } = new();
-	public sealed class StandardPbrShaderConstants {
-		public string ResourceName { get; } = ResourceNamespace + "standard_pbr.filamat";
+	#region Opaque Material
+	public static OpaqueMaterialShaderConstants OpaqueMaterialShader { get; } = new();
+	public sealed class OpaqueMaterialShaderConstants {
+		public string ResourceName { get; } = ResourceNamespace + "opaque.filamat";
 
-		public ReadOnlySpan<byte> ParamAlbedo => "albedo"u8;
+		public ReadOnlySpan<byte> ParamColorMap => "color_map"u8;
+		public ReadOnlySpan<byte> ParamNormalMap => "normal_map"u8;
+		public ReadOnlySpan<byte> ParamOrmMap => "orm_map"u8;
 	}
+	#endregion
 }

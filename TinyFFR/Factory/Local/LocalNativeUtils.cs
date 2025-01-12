@@ -5,6 +5,7 @@ using System;
 using System.Text;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources.Memory;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
 
@@ -13,7 +14,7 @@ readonly unsafe record struct TemporaryLoadSpaceBuffer(nuint BufferIdentity, UIn
 }
 
 static unsafe class LocalNativeUtils {
-	static readonly ArrayPoolBackedMap<nuint, (LocalTinyFfrFactory Factory, FixedByteBufferPool.FixedByteBuffer Buffer)> _activeTemporaryBuffers = new();
+	static readonly ArrayPoolBackedMap<nuint, (ILocalGpuHoldingBufferAllocator Allocator, FixedByteBufferPool.FixedByteBuffer Buffer)> _activeTemporaryBuffers = new();
 
 	public const string NativeLibName = "TinyFFR.Native";
 	const int NativeErrorBufferLength = 1001;
@@ -55,9 +56,9 @@ static unsafe class LocalNativeUtils {
 		if (!_activeTemporaryBuffers.Remove(bufferId, out var tuple)) {
 			throw new InvalidOperationException($"Buffer '{bufferId}' has already been deallocated.");
 		}
-		var factory = tuple.Factory;
-		factory.TemporaryCpuBufferPool.Return(tuple.Buffer);
-		if (factory.IsDisposed) DisposeTemporaryCpuBufferPoolIfSafe(factory);
+		var allocator = tuple.Allocator;
+		allocator.GpuHoldingBufferPool.Return(tuple.Buffer);
+		if (allocator.IsDisposed) DisposeTemporaryCpuBufferPoolIfSafe(allocator);
 	}
 
 	[UnmanagedCallersOnly]
@@ -65,27 +66,36 @@ static unsafe class LocalNativeUtils {
 		Console.WriteLine(GetLastError());
 	}
 
-	internal static void DisposeTemporaryCpuBufferPoolIfSafe(LocalTinyFfrFactory factory) {
+	internal static void DisposeTemporaryCpuBufferPoolIfSafe(ILocalGpuHoldingBufferAllocator allocator) {
 		foreach (var kvp in _activeTemporaryBuffers) {
-			if (ReferenceEquals(kvp.Value.Factory, factory)) return;
+			if (ReferenceEquals(kvp.Value.Allocator, allocator)) return;
 		}
 
-		factory.TemporaryCpuBufferPool.Dispose();
+		allocator.GpuHoldingBufferPool.Dispose();
 	}
 
-	internal static TemporaryLoadSpaceBuffer CopySpanToTemporaryCpuBuffer<T>(LocalTinyFfrFactory factory, ReadOnlySpan<T> data) where T : unmanaged {
-		factory.ThrowIfThisIsDisposed();
-		var sizeBytes = sizeof(T) * data.Length;
-		if (sizeBytes > factory.TemporaryCpuBufferPool.MaxBufferSizeBytes) {
+	internal static TemporaryLoadSpaceBuffer CreateAndCopyToGpuHoldingBuffer<T>(ILocalGpuHoldingBufferAllocator allocator, ReadOnlySpan<T> data) where T : unmanaged {
+		var buffer = CreateGpuHoldingBuffer<T>(allocator, data.Length);
+		data.CopyTo(buffer.AsSpan<T>());
+		return buffer;
+	}
+
+	internal static TemporaryLoadSpaceBuffer CreateGpuHoldingBuffer<T>(ILocalGpuHoldingBufferAllocator allocator, int numElements) where T : unmanaged {
+		var sizeBytes = sizeof(T) * numElements;
+		return CreateGpuHoldingBuffer(allocator, sizeBytes);
+	}
+
+	internal static TemporaryLoadSpaceBuffer CreateGpuHoldingBuffer(ILocalGpuHoldingBufferAllocator allocator, int sizeBytes) {
+		ObjectDisposedException.ThrowIf(allocator.IsDisposed, allocator);
+		if (sizeBytes > allocator.GpuHoldingBufferPool.MaxBufferSizeBytes) {
 			throw new InvalidOperationException($"Can not load asset because its in-memory size is {sizeBytes} bytes (" +
-												$"the maximum asset size configured is {factory.TemporaryCpuBufferPool.MaxBufferSizeBytes} bytes; " +
+												$"the maximum asset size configured is {allocator.GpuHoldingBufferPool.MaxBufferSizeBytes} bytes; " +
 												$"the limit can be raised by setting the {nameof(LocalTinyFfrFactoryConfig.MaxCpuToGpuAssetTransferSizeBytes)} value in " +
 												$"the {nameof(LocalTinyFfrFactoryConfig)} passed to the {nameof(LocalTinyFfrFactory)} constructor).");
 		}
 		var bufferId = _nextTemporaryBufferId++;
-		var buffer = factory.TemporaryCpuBufferPool.Rent<T>(data.Length);
-		_activeTemporaryBuffers.Add(bufferId, (factory, buffer));
-		data.CopyTo(buffer.AsSpan<T>(data.Length));
+		var buffer = allocator.GpuHoldingBufferPool.Rent(sizeBytes);
+		_activeTemporaryBuffers.Add(bufferId, (allocator, buffer));
 		return new(bufferId, buffer.StartPtr, sizeBytes);
 	}
 }
