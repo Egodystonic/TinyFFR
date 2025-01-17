@@ -5,10 +5,11 @@ using System;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
-[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 20)]
-public readonly struct MeshVertex : IEquatable<MeshVertex> {
+[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 36)]
+public readonly record struct MeshVertex {
 	readonly float _locX, _locY, _locZ;
 	readonly float _texU, _texV;
+	readonly float _tanX, _tanY, _tanZ, _tanW;
 
 	public Location Location {
 		get => new(_locX, _locY, _locZ);
@@ -25,26 +26,23 @@ public readonly struct MeshVertex : IEquatable<MeshVertex> {
 			_texV = value.Y;
 		}
 	}
+	public Direction Tangent {
+		get => new(_tanX, _tanY, _tanZ);
+		init {
+			_tanX = value.X;
+			_tanY = value.Y;
+			_tanZ = value.Z;
+		}
+	}
+	public float TangentHandedness {
+		get => _tanW;
+		init => _tanW = value;
+	}
 
-	public MeshVertex(Location location, XYPair<float> textureCoords) {
+	public MeshVertex(Location location, XYPair<float> textureCoords, Direction tangent, float tangentHandedness) {
 		Location = location;
 		TextureCoords = textureCoords;
+		Tangent = tangent;
+		TangentHandedness = tangentHandedness;
 	}
-
-	public override string ToString() => $"{nameof(MeshVertex)}: {nameof(Location)} {Location}; {nameof(TextureCoords)} {TextureCoords}";
-
-	public bool Equals(MeshVertex other) {
-		return _locX.Equals(other._locX) && _locY.Equals(other._locY) && _locZ.Equals(other._locZ) && _texU.Equals(other._texU) && _texV.Equals(other._texV);
-	}
-
-	public override bool Equals(object? obj) {
-		return obj is MeshVertex other && Equals(other);
-	}
-
-	public override int GetHashCode() {
-		return HashCode.Combine(_locX, _locY, _locZ, _texU, _texV);
-	}
-
-	public static bool operator ==(MeshVertex left, MeshVertex right) { return left.Equals(right); }
-	public static bool operator !=(MeshVertex left, MeshVertex right) { return !left.Equals(right); }
 }

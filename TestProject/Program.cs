@@ -3,6 +3,7 @@ using Egodystonic.TinyFFR;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using System.Runtime.InteropServices;
+using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 
 // TODO make this a little better. Maybe make it a little framework and ignore the actual "meat" file
@@ -40,8 +41,8 @@ using var window = factory.WindowBuilder.CreateWindow(display, title: "William t
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60, name: "Larry the Loop");
 using var camera = factory.CameraBuilder.CreateCamera((0f, 0f, -30f), name: "Carl the Camera");
 using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(10f, 7f, 2f), name: "Clive the Cuboid");
-using var tex = factory.AssetLoader.MaterialBuilder.CreateSolidColorTexture(StandardColor.White, name: "Terry the Texture");
-using var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex, name: "Matthew the Material");
+using var tex = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.White, name: "Terry the Texture");
+using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(tex, name: "Matthew the Material");
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: "Iain the Instance");
 using var light = factory.LightBuilder.CreatePointLight((0f, 0f, -20f), StandardColor.Red, falloffRange: 100f, name: "Lars the Light");
 using var scene = factory.SceneBuilder.CreateScene(name: "Sean the Scene");

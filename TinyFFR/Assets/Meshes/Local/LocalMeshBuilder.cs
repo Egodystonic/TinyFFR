@@ -34,7 +34,11 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		Span<MeshVertex> vertices = stackalloc MeshVertex[8];
 		Span<MeshTriangle> triangles = stackalloc MeshTriangle[12];
 
-		vertices[0] = new MeshVertex(cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpForward), new(0f, 0f));
+		vertices[0] = new MeshVertex(
+			cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpForward), 
+			new(0f, 0f),
+
+		);
 		vertices[1] = new MeshVertex(cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpForward), new(1f, 0f));
 		vertices[2] = new MeshVertex(cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpBackward), new(0f, 1f));
 		vertices[3] = new MeshVertex(cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpBackward), new(1f, 1f));

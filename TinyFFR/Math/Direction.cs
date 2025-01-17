@@ -118,7 +118,7 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	public static Direction FromPlaneAndPolarAngle(Plane plane, Direction zeroDegreesDirection, Angle polarAngle) {
 		if (zeroDegreesDirection.ParallelizedWith(plane) == null) zeroDegreesDirection = plane.Normal.AnyOrthogonal();
 		var converter = plane.CreateDimensionConverter(Location.Origin, zeroDegreesDirection);
-		return FromVector3(converter.ConvertDisregardingOrigin(XYPair<float>.FromPolarAngle(polarAngle)).ToVector3());
+		return FromVector3(converter.ConvertVect(XYPair<float>.FromPolarAngle(polarAngle)).ToVector3());
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

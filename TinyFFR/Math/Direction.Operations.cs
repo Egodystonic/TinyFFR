@@ -278,10 +278,10 @@ partial struct Direction :
 		// Finally, if this direction was projected down to <0, 0> it is exactly perpendicular to the plane, and therefore perpendicular
 		// to the arc. "ThisAngle" will be null, and the if check will result in 'false', and we'll fall through to the final
 		// check below, returning 'min'. This is fine, as anywhere on the arc is equally valid here.
-		var maxProjection = converter.Convert(maxLoc);
-		var thisProjection = converter.Convert(thisLoc);
+		var maxProjection = converter.ConvertLocation(maxLoc);
+		var thisProjection = converter.ConvertLocation(thisLoc);
 		var thisAngle = thisProjection.PolarAngle;
-		if (thisAngle < maxProjection.PolarAngle) return FromVector3(converter.Convert(thisProjection).ToVector3());
+		if (thisAngle < maxProjection.PolarAngle) return FromVector3(converter.ConvertLocation(thisProjection).ToVector3());
 		var midpoint = (Angle.FullCircle - maxProjection.PolarAngle) * 0.5f + maxProjection.PolarAngle;
 		return (thisAngle < midpoint) ? max : min;
 	}
@@ -303,7 +303,7 @@ partial struct Direction :
 		if (arcCentre.ParallelizedWith(plane) == null) return this;
 		var halfArc = maxArcCentreDifference.ClampZeroToFullCircle() * 0.5f;
 		var converter = plane.CreateDimensionConverter(Location.Origin, arcCentre);
-		var resultOnPlane = converter.ConvertDisregardingOrigin((Location) this);
+		var resultOnPlane = converter.ConvertVect((Vect) this);
 		var polarAngle = (resultOnPlane with { Y = -resultOnPlane.Y }).PolarAngle; // We have to flip Y because the co-ordinate system after 2D conversion has inverted coordinates
 		if (polarAngle == null) return this;
 
@@ -312,7 +312,7 @@ partial struct Direction :
 			resultOnPlane = XYPair<float>.FromPolarAngleAndLength(polarAngle > Angle.HalfCircle ? halfArc : -halfArc, resultOnPlane.ToVector2().Length());
 		}
 
-		var result = FromVector3(converter.ConvertDisregardingOrigin(resultOnPlane).ToVector3());
+		var result = FromVector3(converter.ConvertVect(resultOnPlane).ToVector3());
 		if (!retainOrthogonalDimension) return result;
 
 		var angleToPlane = SignedAngleTo(plane);

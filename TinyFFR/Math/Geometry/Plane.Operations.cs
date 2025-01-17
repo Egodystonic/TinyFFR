@@ -271,9 +271,9 @@ partial struct Plane :
 		return new(xBasis, yBasis, Normal, origin);
 	}
 	// TODO xmldoc that these methods are slower than using a converter unless doing it literally only once
-	public XYPair<float> ProjectionTo2DOf(Location location) => CreateDimensionConverter().Convert(location);
-	public Location HolographTo3DOf(XYPair<float> xyPair) => CreateDimensionConverter().Convert(xyPair);
-	public Location HolographTo3DOf(XYPair<float> xyPair, float zDimension) => CreateDimensionConverter().Convert(xyPair, zDimension);
+	public XYPair<float> ProjectionTo2DOf(Location location) => CreateDimensionConverter().ConvertLocation(location);
+	public Location HolographTo3DOf(XYPair<float> xyPair) => CreateDimensionConverter().ConvertLocation(xyPair);
+	public Location HolographTo3DOf(XYPair<float> xyPair, float zDimension) => CreateDimensionConverter().ConvertLocation(xyPair, zDimension);
 	#endregion
 }
 
@@ -283,6 +283,13 @@ public readonly struct PlaneDimensionConverter : IEquatable<PlaneDimensionConver
 	public Direction PlaneNormal { get; }
 	public Location Origin { get; }
 
+	public PlaneDimensionConverter(Direction planeNormal) {
+		XBasis = planeNormal.AnyOrthogonal();
+		YBasis = Direction.FromOrthogonal(planeNormal, XBasis);
+		PlaneNormal = planeNormal;
+		Origin = Location.Origin;
+	}
+
 	public PlaneDimensionConverter(Direction xBasis, Direction yBasis, Direction planeNormal, Location origin) {
 		XBasis = xBasis;
 		YBasis = yBasis;
@@ -290,27 +297,25 @@ public readonly struct PlaneDimensionConverter : IEquatable<PlaneDimensionConver
 		Origin = origin;
 	}
 
-	public XYPair<float> Convert(Location location3D) {
+	public XYPair<float> ConvertLocation(Location location3D) {
 		location3D -= (Vect) Origin;
 		return new(XBasis.Dot((Vect) location3D), YBasis.Dot((Vect) location3D));
 	}
-
-	public Location Convert(XYPair<float> location2D) {
+	public Location ConvertLocation(XYPair<float> location2D) {
 		return (XBasis * location2D.X + YBasis * location2D.Y) + Origin;
 	}
-	public Location Convert(XYPair<float> location2D, float zAxisDimension) {
-		return Convert(location2D) + PlaneNormal * zAxisDimension;
+	public Location ConvertLocation(XYPair<float> location2D, float zAxisDimension) {
+		return ConvertLocation(location2D) + PlaneNormal * zAxisDimension;
 	}
 
-	public XYPair<float> ConvertDisregardingOrigin(Location location3D) {
-		return new(XBasis.Dot((Vect) location3D), YBasis.Dot((Vect) location3D));
+	public XYPair<float> ConvertVect(Vect v) {
+		return new(XBasis.Dot(v), YBasis.Dot(v));
 	}
-
-	public Location ConvertDisregardingOrigin(XYPair<float> location2D) {
-		return (Location) (XBasis * location2D.X + YBasis * location2D.Y);
+	public Vect ConvertVect(XYPair<float> location2D) {
+		return XBasis * location2D.X + YBasis * location2D.Y;
 	}
-	public Location ConvertDisregardingOrigin(XYPair<float> location2D, float zAxisDimension) {
-		return ConvertDisregardingOrigin(location2D) + PlaneNormal * zAxisDimension;
+	public Vect ConvertVect(XYPair<float> location2D, float zAxisDimension) {
+		return ConvertVect(location2D) + PlaneNormal * zAxisDimension;
 	}
 
 	public bool Equals(PlaneDimensionConverter other) {

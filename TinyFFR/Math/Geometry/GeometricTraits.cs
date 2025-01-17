@@ -74,6 +74,68 @@ public interface IPointTransformable<TSelf> :
 }
 #endregion
 
+#region 2D Scale/Rotate/Translate & Transform
+public interface IPointScalable2D<TSelf> :
+	IScalable<TSelf> where TSelf : IPointScalable2D<TSelf>, IScalable<TSelf> {
+	TSelf ScaledBy(float scalar, XYPair<float> scalingOrigin);
+	TSelf ScaledFromOriginBy(float scalar);
+}
+
+public interface IIndependentAxisScalable2D<TSelf> :
+	IScalable<TSelf>
+	where TSelf : IIndependentAxisScalable2D<TSelf> {
+	TSelf ScaledBy(XYPair<float> vect);
+}
+public interface IPointIndependentAxisScalable2D<TSelf> :
+	IIndependentAxisScalable2D<TSelf>
+	where TSelf : IPointIndependentAxisScalable2D<TSelf>, IIndependentAxisScalable2D<TSelf> {
+	TSelf ScaledBy(XYPair<float> vect, XYPair<float> scalingOrigin);
+	TSelf ScaledFromOriginBy(XYPair<float> vect);
+}
+
+public interface IRotatable2D<TSelf> :
+	IMultiplyOperators<TSelf, Angle, TSelf>
+	where TSelf : IRotatable2D<TSelf> {
+	static abstract TSelf operator *(Angle left, TSelf right);
+	TSelf RotatedBy(Angle rot);
+}
+
+public interface IPointRotatable2D<TSelf> :
+	IMultiplyOperators<TSelf, (Angle Rotation, XYPair<float> Pivot), TSelf>,
+	IMultiplyOperators<TSelf, (XYPair<float> Pivot, Angle Rotation), TSelf>
+	where TSelf : IPointRotatable2D<TSelf> {
+	static abstract TSelf operator *((Angle Rotation, XYPair<float> Pivot) left, TSelf right);
+	static abstract TSelf operator *((XYPair<float> Pivot, Angle Rotation) left, TSelf right);
+	TSelf RotatedBy(Angle rot, XYPair<float> pivot);
+	TSelf RotatedAroundOriginBy(Angle rot);
+}
+
+public interface ITranslatable2D<TSelf> :
+	IAdditive<TSelf, XYPair<float>, TSelf>
+	where TSelf : ITranslatable2D<TSelf> {
+	TSelf IAdditive<TSelf, XYPair<float>, TSelf>.Plus(XYPair<float> v) => MovedBy(v);
+	TSelf IAdditive<TSelf, XYPair<float>, TSelf>.Minus(XYPair<float> v) => MovedBy(-v);
+	TSelf MovedBy(XYPair<float> v);
+}
+
+public interface ITransformable2D<TSelf> :
+	IIndependentAxisScalable2D<TSelf>,
+	IRotatable2D<TSelf>,
+	ITranslatable2D<TSelf>,
+	IMultiplyOperators<TSelf, Transform2D, TSelf>
+	where TSelf : ITransformable2D<TSelf>, IIndependentAxisScalable2D<TSelf>, IRotatable2D<TSelf>, ITranslatable2D<TSelf> {
+	TSelf TransformedBy(Transform2D transform);
+	static abstract TSelf operator *(Transform2D left, TSelf right);
+}
+
+public interface IPointTransformable2D<TSelf> :
+	ITransformable2D<TSelf>, IPointIndependentAxisScalable2D<TSelf>, IPointRotatable2D<TSelf>
+	where TSelf : IPointTransformable2D<TSelf>, ITransformable2D<TSelf>, IPointIndependentAxisScalable2D<TSelf>, IPointRotatable2D<TSelf> {
+	TSelf TransformedBy(Transform2D transform, XYPair<float> transformationOrigin);
+	TSelf TransformedAroundOriginBy(Transform2D transform);
+}
+#endregion
+
 #region Angle/reflection/projection/parallelization/orthogonalization
 public interface IAngleMeasurable<in TOther> {
 	Angle AngleTo(TOther other);

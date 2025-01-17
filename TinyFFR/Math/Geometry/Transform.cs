@@ -58,6 +58,15 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ToMatrix(out Matrix4x4 dest) => dest = ToMatrix();
 
+	public Transform2D To2DTransform() => To2DTransform(new(Direction.Forward));
+	public Transform2D To2DTransform(PlaneDimensionConverter dimensionConverter) {
+		return new(
+			dimensionConverter.ConvertVect(Translation),
+			Rotation.AngleAroundAxis(dimensionConverter.PlaneNormal),
+			dimensionConverter.ConvertVect(Scaling)
+		);
+	}
+
 	public void Deconstruct(out Vect translation, out Rotation rotation, out Vect scaling) {
 		translation = Translation;
 		rotation = Rotation;
@@ -126,7 +135,7 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 		// ReSharper restore CompareOfFloatsByEqualityOperator
 
 		return $"{nameof(Transform)}{GeometryUtils.ParameterStartToken}" +
-			   $"{nameof(Translation)}{GeometryUtils.ParameterKeyValueSeparatorToken}{Translation.ToString()}" +
+			   $"{nameof(Translation)}{GeometryUtils.ParameterKeyValueSeparatorToken}{Translation}" +
 			   $"{GeometryUtils.ParameterSeparatorToken}" +
 			   $"{nameof(Rotation)}{GeometryUtils.ParameterKeyValueSeparatorToken}{Rotation.ToStringDescriptive()}" +
 			   $"{GeometryUtils.ParameterSeparatorToken}" +

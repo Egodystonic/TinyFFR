@@ -105,18 +105,18 @@ class LocalDisposalProtectionTest {
 		};
 		AssertUseAfterDisposalThrowsException(meshBuilder.CreateMesh(new CuboidDescriptor()), objectIsAlreadyDisposed: false, meshActions);
 		var materialBuilder = assetLoader.MaterialBuilder;
-		var texture = materialBuilder.CreateSolidColorTexture(StandardColor.RealWorldBrick);
+		var texture = materialBuilder.CreateColorMap(StandardColor.RealWorldBrick);
 		var textureActions = new Action<Texture>[] {
 			v => _ = v.Handle,
 			v => _ = v.Name
 		};
-		AssertUseAfterDisposalThrowsException(materialBuilder.CreateSolidColorTexture(StandardColor.RealWorldBrick), objectIsAlreadyDisposed: false, textureActions);
-		var material = materialBuilder.CreateStandardMaterial(texture);
+		AssertUseAfterDisposalThrowsException(materialBuilder.CreateColorMap(StandardColor.RealWorldBrick), objectIsAlreadyDisposed: false, textureActions);
+		var material = materialBuilder.CreateOpaqueMaterial(texture);
 		var materialActions = new Action<Material>[] {
 			v => _ = v.Handle,
 			v => _ = v.Name
 		};
-		AssertUseAfterDisposalThrowsException(materialBuilder.CreateStandardMaterial(texture), objectIsAlreadyDisposed: false, materialActions);
+		AssertUseAfterDisposalThrowsException(materialBuilder.CreateOpaqueMaterial(texture), objectIsAlreadyDisposed: false, materialActions);
 		var objectBuilder = factory.ObjectBuilder;
 		var modelInstance = objectBuilder.CreateModelInstance(mesh, material);
 		var modelInstanceActions = new Action<ModelInstance>[] {
@@ -173,10 +173,10 @@ class LocalDisposalProtectionTest {
 			v => _ = v.RendererBuilder,
 			v => _ = v.SceneBuilder,
 			v => _ = v.WindowBuilder,
-			v => _ = v.CreateResourceGroup(true),
-			v => _ = v.CreateResourceGroup(true, "test"),
-			v => _ = v.CreateResourceGroup(true, "test", 3),
-			v => _ = v.CreateResourceGroup(true, 3)
+			v => _ = v.ResourceAllocator.CreateResourceGroup(true),
+			v => _ = v.ResourceAllocator.CreateResourceGroup(true, "test"),
+			v => _ = v.ResourceAllocator.CreateResourceGroup(true, "test", 3),
+			v => _ = v.ResourceAllocator.CreateResourceGroup(true, 3)
 		);
 
 		// === Now check everything we created above has been auto-disposed
@@ -233,7 +233,7 @@ class LocalDisposalProtectionTest {
 		);
 		AssertUseAfterDisposalThrowsException(
 			materialBuilder, objectIsAlreadyDisposed: true,
-			v => _ = v.CreateSolidColorTexture(StandardColor.RealWorldBrick)
+			v => _ = v.CreateColorMap(StandardColor.RealWorldBrick)
 		);
 		AssertUseAfterDisposalThrowsException(
 			objectBuilder, objectIsAlreadyDisposed: true,

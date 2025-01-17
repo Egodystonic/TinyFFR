@@ -36,6 +36,9 @@ public interface IMaterialBuilder {
 		}
 		return buffer;
 	}
+	Texture CreateColorMap(ColorVect plainFillColor, bool includeAlphaChannel = false, ReadOnlySpan<char> name = default) {
+		return CreateColorMap(TexturePattern.PlainFill(plainFillColor), includeAlphaChannel, name);
+	}
 	Texture CreateColorMap(TexturePattern<ColorVect> pattern, bool includeAlphaChannel = false, ReadOnlySpan<char> name = default) {
 		var dimensions = pattern.Dimensions;
 		TexturePattern.AssertDimensions(dimensions);

@@ -32,17 +32,17 @@ class LocalDependencyTest {
 		using (var factory = new LocalTinyFfrFactory()) {
 			Assert.Catch<InvalidOperationException>(() => _ = new LocalTinyFfrFactory());
 
-			var group = factory.CreateResourceGroup(false);
+			var group = factory.ResourceAllocator.CreateResourceGroup(false);
 			var loop = factory.ApplicationLoopBuilder.CreateLoop();
 			group.AddResource(loop);
 			AssertDependency(loop, group);
 
-			var tex = factory.AssetLoader.MaterialBuilder.CreateSolidColorTexture(StandardColor.White);
-			var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex);
+			var tex = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.White);
+			var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(tex);
 			AssertDependency(tex, mat);
 
-			tex = factory.AssetLoader.MaterialBuilder.CreateSolidColorTexture(StandardColor.White);
-			mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex);
+			tex = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.White);
+			mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(tex);
 			var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor());
 			var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat);
 			AssertDependency(mesh, instance);

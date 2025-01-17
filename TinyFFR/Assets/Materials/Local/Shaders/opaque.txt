@@ -1,0 +1,37 @@
+﻿material {
+    name : Opqaue,
+    parameters : [
+        {
+            type : sampler2d,
+            name : color_map
+        },
+        {
+            type : sampler2d,
+            name : normal_map
+        },
+        {
+            type : sampler2d,
+            name : orm_map
+        }
+    ],
+    requires : [
+        uv0
+    ],
+    shadingModel : lit,
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        vec2 uv0 = getUV0();
+        
+        material.baseColor.rgb = texture(materialParams_color_map, uv0).rgb;
+        
+        material.normal = texture(materialParams_normal_map, uv0).xyz * 2.0 - 1.0;
+        material.normal.y *= -1.0;
+
+        material.ambientOcclusion = texture(materialParams_orm_map, uv0).r;
+        material.roughness = texture(materialParams_orm_map, uv0).g;
+        material.metallic = texture(materialParams_orm_map, uv0).b;
+    }
+}

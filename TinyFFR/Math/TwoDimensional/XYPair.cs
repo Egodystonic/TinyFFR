@@ -30,7 +30,8 @@ public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>> where T : u
 		init => _y = value;
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public XYPair(T xy) : this(xy, xy) { }
+
 	public XYPair(T x, T y) {
 		_x = x;
 		_y = y;

@@ -6,10 +6,12 @@ using System;
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 public interface IMeshBuilder {
-	Mesh CreateMesh(CuboidDescriptor cuboidDesc, ReadOnlySpan<char> name = default) => CreateMesh(cuboidDesc, new MeshCreationConfig { Name = name });
-	Mesh CreateMesh(CuboidDescriptor cuboidDesc, scoped in MeshCreationConfig config);
-	// Mesh CreateMesh(SphereDescriptor sphereDesc, int extrapolationLevel = 3);
-	// Mesh CreateMesh(SphereDescriptor sphereDesc, int extrapolationLevel, scoped in MeshCreationConfig config);
+	Mesh CreateMesh(BoundedPlane surface, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) => CreateMesh(surface, textureTransform ?? Transform2D.None, new MeshCreationConfig { Name = name });
+	Mesh CreateMesh(BoundedPlane surface, Transform2D textureTransform, scoped in MeshCreationConfig config) {
+		
+	}
+	Mesh CreateMesh(CuboidDescriptor cuboidDesc, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) => CreateMesh(cuboidDesc, textureTransform ?? Transform2D.None, new MeshCreationConfig { Name = name });
+	Mesh CreateMesh(CuboidDescriptor cuboidDesc, Transform2D textureTransform, scoped in MeshCreationConfig config);
 	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<MeshTriangle> triangles, ReadOnlySpan<char> name = default) => CreateMesh(vertices, triangles, new MeshCreationConfig { Name = name });
 	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<MeshTriangle> triangles, scoped in MeshCreationConfig config);
 }

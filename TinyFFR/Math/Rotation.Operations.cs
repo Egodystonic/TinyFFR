@@ -90,6 +90,11 @@ partial struct Rotation :
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect Rotate(Vect v) => new(Rotate(AsQuaternion, v.AsVector4));
+
+	public Angle AngleAroundAxis(Direction axis) {
+		var orthogonalVect = axis.AnyOrthogonal();
+		return orthogonalVect.AngleTo(orthogonalVect * this);
+	}
 	#endregion
 
 	#region Clamping and Interpolation

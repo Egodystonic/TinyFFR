@@ -77,6 +77,9 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 	Texture IMaterialBuilder.CreateTextureUsingPreallocatedBuffer<TTexel>(IMaterialBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureCreationConfig config) => CreateTextureUsingPreallocatedBuffer(preallocatedBuffer, in config);
 	Texture CreateTextureUsingPreallocatedBuffer<TTexel>(IMaterialBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
+		config.ThrowIfInvalid();
+		if (preallocatedBuffer.Buffer == default) throw InvalidObjectException.InvalidDefault(typeof(IMaterialBuilder.PreallocatedBuffer<TTexel>));
+
 		var dataPointer = Unsafe.AsPointer(ref MemoryMarshal.GetReference(preallocatedBuffer.Buffer));
 		var dataLength = preallocatedBuffer.Buffer.Length * sizeof(TTexel);
 
@@ -127,9 +130,6 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		var width = config.Width;
 		var height = config.Height;
 
-		if (width < 1) width = 1;
-		if (height < 1) height = 1;
-
 		var texelCount = width * height;
 		if (texelCount > texels.Length) {
 			throw new ArgumentException(
@@ -149,7 +149,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 
-		var shaderConstants = StandardPbrShader;
+		var shaderConstants = OpaqueMaterialShader;
 		var shaderPackageHandle = GetOrLoadShaderPackageHandle(shaderConstants.ResourceName);
 		CreateMaterial(
 			shaderPackageHandle,
@@ -161,15 +161,29 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		_activeMaterials.Add(handle);
 		var result = HandleToInstance(handle);
 
-		if (config.ColorMap != null) {
-			SetMaterialParameterTexture(
-				handle,
-				in ParamRef(shaderConstants.ParamAlbedo),
-				ParamLen(shaderConstants.ParamAlbedo),
-				config.ColorMap.Value.Handle
-			).ThrowIfFailure();
-			_globals.DependencyTracker.RegisterDependency(result, config.ColorMap.Value);
-		} 
+		SetMaterialParameterTexture(
+			handle,
+			in ParamRef(shaderConstants.ParamColorMap),
+			ParamLen(shaderConstants.ParamColorMap),
+			config.ColorMap.Handle
+		).ThrowIfFailure();
+		_globals.DependencyTracker.RegisterDependency(result, config.ColorMap);
+
+		SetMaterialParameterTexture(
+			handle,
+			in ParamRef(shaderConstants.ParamNormalMap),
+			ParamLen(shaderConstants.ParamNormalMap),
+			config.NormalMap.Handle
+		).ThrowIfFailure();
+		_globals.DependencyTracker.RegisterDependency(result, config.NormalMap);
+
+		SetMaterialParameterTexture(
+			handle,
+			in ParamRef(shaderConstants.ParamOrmMap),
+			ParamLen(shaderConstants.ParamOrmMap),
+			config.OrmMap.Handle
+		).ThrowIfFailure();
+		_globals.DependencyTracker.RegisterDependency(result, config.OrmMap);
 
 		return result;
 	}
@@ -303,7 +317,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			foreach (var mat in _activeMaterials) Dispose(mat, removeFromCollection: false);
 			foreach (var tex in _loadedTextures.Keys) Dispose(tex, removeFromCollection: false);
 			foreach (var packageHandle in _loadedShaderPackages.Values) DisposeShaderPackage(packageHandle).ThrowIfFailure();
-			
+
 			_activeMaterials.Dispose();
 			_loadedTextures.Dispose();
 			_loadedShaderPackages.Dispose();

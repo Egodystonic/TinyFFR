@@ -22,7 +22,9 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	readonly HeapPool _heapPool = new();
 	readonly ArrayPoolBackedMap<ResourceIdent, ManagedStringPool.RentedStringHandle> _resourceNameMap = new();
 	readonly LocalResourceGroupImplProvider _resourceGroupProvider;
+#pragma warning disable CA2213 // We don't dispose this pool here because it needs to be disposed only when the native lib is done with the memory. This might be after disposal of this factory.
 	readonly FixedByteBufferPool _gpuHoldingBufferPool;
+#pragma warning restore CA2213
 
 	readonly IDisplayDiscoverer _displayDiscoverer;
 	readonly IWindowBuilder _windowBuilder;
@@ -85,7 +87,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	public override string ToString() => IsDisposed ? "TinyFFR Local Renderer Factory [Disposed]" : "TinyFFR Local Renderer Factory";
 
 	#region Disposal
-	internal bool IsDisposed { get; private set; }
+	public bool IsDisposed { get; private set; }
 
 	public void Dispose() {
 		// Maintainer's note: This is not simply accepting IDisposable because we want the flexibility

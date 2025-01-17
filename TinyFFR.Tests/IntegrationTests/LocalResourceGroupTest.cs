@@ -35,11 +35,11 @@ class LocalResourceGroupTest {
 		var cameras = new Camera[4];
 		for (var i = 0; i < cameras.Length; ++i) cameras[i] = factory.CameraBuilder.CreateCamera(new Location(i, i, i));
 
-		using var tex = factory.AssetLoader.MaterialBuilder.CreateSolidColorTexture(StandardColor.RealWorldBrick);
+		using var tex = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.RealWorldBrick);
 		var materials = new Material[2];
-		for (var i = 0; i < materials.Length; ++i) materials[i] = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex);
+		for (var i = 0; i < materials.Length; ++i) materials[i] = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(tex);
 
-		using (var group = factory.CreateResourceGroup(true)) {
+		using (var group = factory.ResourceAllocator.CreateResourceGroup(true)) {
 			Assert.AreEqual(true, group.DisposesContainedResourcesByDefaultWhenDisposed);
 			Assert.AreEqual(false, group.IsSealed);
 
@@ -84,7 +84,7 @@ class LocalResourceGroupTest {
 		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(cameras[0].Name.ToString()));
 		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(cameras[1].Name.ToString()));
 
-		using (var group = factory.CreateResourceGroup(false)) {
+		using (var group = factory.ResourceAllocator.CreateResourceGroup(false)) {
 			Assert.AreEqual(false, group.DisposesContainedResourcesByDefaultWhenDisposed);
 			Assert.AreEqual(false, group.IsSealed);
 
@@ -118,7 +118,7 @@ class LocalResourceGroupTest {
 		Assert.DoesNotThrow(() => Console.WriteLine(meshes[2].Name.ToString()));
 		Assert.DoesNotThrow(() => Console.WriteLine(meshes[3].Name.ToString()));
 
-		var g = factory.CreateResourceGroup(false);
+		var g = factory.ResourceAllocator.CreateResourceGroup(false);
 		g.AddResource(meshes[2]);
 		g.AddResource(meshes[3]);
 		g.Dispose(disposeContainedResources: true);
@@ -126,7 +126,7 @@ class LocalResourceGroupTest {
 		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(meshes[2].Name.ToString()));
 		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(meshes[3].Name.ToString()));
 
-		g = factory.CreateResourceGroup(true);
+		g = factory.ResourceAllocator.CreateResourceGroup(true);
 		g.AddResource(cameras[2]);
 		g.AddResource(cameras[3]);
 		g.Dispose(disposeContainedResources: false);
@@ -153,7 +153,7 @@ class LocalResourceGroupTest {
 			Assert.Catch<InvalidOperationException>(() => _ = iterator[0]);
 		}
 
-		g = factory.CreateResourceGroup(false);
+		g = factory.ResourceAllocator.CreateResourceGroup(false);
 		g.AddResource(meshes[4]);
 		g.AddResource(materials[0]);
 		var i1 = g.GetAllResourcesOfType<Mesh>();

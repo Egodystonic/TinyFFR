@@ -65,11 +65,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Assets\Materials\Local\Shaders\standard_pbr.filamat" />
+    <None Remove="Assets\Materials\Local\Shaders\opaque.filamat" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Assets\Materials\Local\Shaders\standard_pbr.filamat" />
+    <EmbeddedResource Include="Assets\Materials\Local\Shaders\opaque.filamat" />
   </ItemGroup>
 
 </Project>
