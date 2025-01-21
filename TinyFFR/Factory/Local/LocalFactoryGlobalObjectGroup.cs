@@ -62,7 +62,7 @@ sealed class LocalFactoryGlobalObjectGroup {
 		StoreResourceNameIfNotDefault(ident, newName);
 	}
 
-	public TemporaryLoadSpaceBuffer CreateAndCopyToGpuHoldingBuffer<T>(ReadOnlySpan<T> data) where T : unmanaged => LocalNativeUtils.CreateAndCopyToGpuHoldingBuffer(_factory, data);
+	public TemporaryLoadSpaceBuffer CreateGpuHoldingBufferAndCopyData<T>(ReadOnlySpan<T> data) where T : unmanaged => LocalNativeUtils.CreateGpuHoldingBufferAndCopyData(_factory, data);
 	public TemporaryLoadSpaceBuffer CreateGpuHoldingBuffer<T>(int numElements) where T : unmanaged => LocalNativeUtils.CreateGpuHoldingBuffer<T>(_factory, numElements);
 	public TemporaryLoadSpaceBuffer CreateGpuHoldingBuffer(int sizeBytes) => LocalNativeUtils.CreateGpuHoldingBuffer(_factory, sizeBytes);
 }

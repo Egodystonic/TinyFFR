@@ -74,7 +74,7 @@ static unsafe class LocalNativeUtils {
 		allocator.GpuHoldingBufferPool.Dispose();
 	}
 
-	internal static TemporaryLoadSpaceBuffer CreateAndCopyToGpuHoldingBuffer<T>(ILocalGpuHoldingBufferAllocator allocator, ReadOnlySpan<T> data) where T : unmanaged {
+	internal static TemporaryLoadSpaceBuffer CreateGpuHoldingBufferAndCopyData<T>(ILocalGpuHoldingBufferAllocator allocator, ReadOnlySpan<T> data) where T : unmanaged {
 		var buffer = CreateGpuHoldingBuffer<T>(allocator, data.Length);
 		data.CopyTo(buffer.AsSpan<T>());
 		return buffer;

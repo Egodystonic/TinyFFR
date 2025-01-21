@@ -7,6 +7,7 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 public readonly ref struct MeshCreationConfig {
 	public bool FlipTriangles { get; init; } = false;
+	public Transform Transform { get; init; } = Transform.None;
 	public ReadOnlySpan<char> Name { get; init; }
 
 	public MeshCreationConfig() { }
