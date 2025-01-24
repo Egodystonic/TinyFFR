@@ -22,6 +22,7 @@ public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 		2 => 1,
 		_ => VertexCount
 	};
+	public int TriangleCount => Int32.Max(0, VertexCount - 2);
 
 	public Polygon2D(ReadOnlySpan<Vertex> vertices) : this(vertices, skipPrecalculations: false) { }
 
@@ -29,7 +30,7 @@ public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 	// TODO They should be specified in order they appear around the polygon, with the last and first comprising the final edge that closes the polygon.
 	// TODO Does not need to be convex, but no edges may intersect.
 	// TODO Officially this is called a simple polygon
-	Polygon2D(ReadOnlySpan<Vertex> vertices, bool skipPrecalculations) {
+	internal Polygon2D(ReadOnlySpan<Vertex> vertices, bool skipPrecalculations) {
 		Vertices = vertices;
 
 		if (skipPrecalculations) {

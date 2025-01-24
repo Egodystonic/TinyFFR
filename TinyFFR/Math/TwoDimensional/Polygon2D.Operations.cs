@@ -21,6 +21,17 @@ partial struct Polygon2D :
 
 	// TODO region-ify
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Polygon ToPolygon(Span<Location> vertexDest, Direction normal) => ToPolygon(vertexDest, new DimensionConverter(normal));
+	public Polygon ToPolygon(Span<Location> vertexDest, DimensionConverter dimensionConverter) {
+		if (vertexDest.Length < VertexCount) {
+			throw new ArgumentException($"Destination span for converted vertices must be at least as large as '{nameof(VertexCount)}' ({VertexCount}).", nameof(vertexDest));
+		}
+
+		for (var i = 0; i < VertexCount; ++i) vertexDest[i] = dimensionConverter.ConvertLocation(Vertices[i]);
+		return new(vertexDest, dimensionConverter.PlaneNormal, Single.IsPositiveInfinity(_containmentRadius));
+	}
+
 	public static Vertex? GetEdgeIntersection(Edge e1, Edge e2) {
 		// Implementation from https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
 		var qMinusP = e2.First - e1.First;
@@ -146,16 +157,85 @@ partial struct Polygon2D :
 	Vertex IIntersectionDeterminable<Edge, Vertex>.FastIntersectionWith(Edge edge) => IntersectionWith(edge) ?? default;
 
 	static readonly ThreadLocal<ArrayPoolBackedVector<int>> _threadStaticIndexList = new(() => new());
-	public void Triangulate(Span<VertexTriangle> dest, bool isClockwise) {
-		static bool MatchesSign(Vertex centreVertex, Vertex previousVertex, Vertex nextVertex, bool pos) {
+	public void Triangulate(Span<VertexTriangle> dest, bool verticesWoundClockwise) {
+		static bool CrossMatchesSign(Vertex centreVertex, Vertex previousVertex, Vertex nextVertex, int sign) {
+			var prevToCentre = centreVertex - previousVertex;
+			var centreToNext = nextVertex - centreVertex;
+			return MathF.Sign(prevToCentre.Cross(centreToNext)) == sign;
+		}
+		static int GetNthNonClippedIndex(ArrayPoolBackedVector<int> clippedIndices, int n) {
+			foreach (var clippedIndex in clippedIndices) {
+				if (clippedIndex > n) break;
+				n++;
+			}
+			return n;
+		}
+		static bool PointIsInsideTriangle(Vertex point, Vertex a, Vertex b, Vertex c) {
+			var s1 = MathF.Sign((point - a).Cross(b - a));
+			var s2 = MathF.Sign((point - b).Cross(c - b));
+			var s3 = MathF.Sign((point - c).Cross(a - c));
 
+			return s1 == s2 && s2 == s3;
+		}
+
+		var vertexCount = VertexCount;
+		var triangleCount = TriangleCount;
+		if (triangleCount < 1) return;
+		if (dest.Length < triangleCount) {
+			throw new ArgumentException($"Destination span is not large enough for this polygon. Required size = {TriangleCount}, actual size = {dest.Length}", nameof(dest));
 		}
 
 		var clippedIndices = _threadStaticIndexList.Value!;
 		clippedIndices.ClearWithoutZeroingMemory();
-		
-		while (clippedIndices.Count < VertexCount) {
 
+		var desiredEarSign = verticesWoundClockwise ? -1 : 1;
+
+		var numVerticesRemaining = vertexCount;
+		while (numVerticesRemaining > 3) {
+			var foundAnEar = false;
+			for (var i = 0; i < numVerticesRemaining; ++i) {
+				var n = i;
+				var nMinusOne = (i > 0 ? i : numVerticesRemaining) - 1;
+				var nPlusOne = i < (numVerticesRemaining - 1) ? i + 1 : 0;
+
+				var centreIndex = GetNthNonClippedIndex(clippedIndices, n);
+				var prevIndex = GetNthNonClippedIndex(clippedIndices, nMinusOne);
+				var nextIndex = GetNthNonClippedIndex(clippedIndices, nPlusOne);
+				var a = Vertices[prevIndex];
+				var b = Vertices[centreIndex];
+				var c = Vertices[nextIndex];
+				
+				if (!CrossMatchesSign(b, a, c, desiredEarSign)) continue;
+
+				var containsOtherVertices = false;
+				for (var j = 0; j < numVerticesRemaining; ++j) {
+					if (j == n || j == nMinusOne || j == nPlusOne) continue;
+					if (PointIsInsideTriangle(Vertices[GetNthNonClippedIndex(clippedIndices, j)], a, b, c)) {
+						containsOtherVertices = true;
+						break;
+					}
+				}
+				if (containsOtherVertices) continue;
+
+				clippedIndices.Add(centreIndex);
+				dest[vertexCount - numVerticesRemaining] = new(prevIndex, centreIndex, nextIndex);
+				foundAnEar = true;
+				break;
+			}
+
+			if (!foundAnEar) {
+				throw new ArgumentException(
+					"Could not triangulate the polygon, " +
+					"it's possible the incorrect chirality (winding order) was supplied or the polygon is degenerate.", 
+					nameof(verticesWoundClockwise)
+				);
+			}
+			--numVerticesRemaining;
 		}
+
+		var x = GetNthNonClippedIndex(clippedIndices, 0);
+		var y = GetNthNonClippedIndex(clippedIndices, 1);
+		var z = GetNthNonClippedIndex(clippedIndices, 2);
+		dest[triangleCount - 1] = CrossMatchesSign(Vertices[y], Vertices[x], Vertices[z], desiredEarSign) ? new(x, y, z) : new(z, y, x);
 	}
 }

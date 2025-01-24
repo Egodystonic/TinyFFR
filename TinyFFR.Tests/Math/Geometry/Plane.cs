@@ -981,7 +981,7 @@ class PlaneTest {
 		}
 
 		// This section checks that the dimension converters are always constructed with perpendicular basis directions even if we pass the most degenerate possible arguments
-		void AssertOrthogonality(PlaneDimensionConverter dc) {
+		void AssertOrthogonality(DimensionConverter dc) {
 			Assert.IsTrue(dc.XBasis.IsOrthogonalTo(dc.PlaneNormal));
 			Assert.IsTrue(dc.YBasis.IsOrthogonalTo(dc.PlaneNormal));
 			Assert.IsTrue(dc.XBasis.IsOrthogonalTo(dc.YBasis));

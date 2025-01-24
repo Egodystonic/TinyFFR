@@ -26,7 +26,7 @@ public readonly partial struct Transform2D : IMathPrimitive<Transform2D>, IDescr
 
 	#region Factories and Conversions
 	public Transform To3DTransform() => To3DTransform(new(Direction.Forward));
-	public Transform To3DTransform(PlaneDimensionConverter dimensionConverter) {
+	public Transform To3DTransform(DimensionConverter dimensionConverter) {
 		return new(
 			dimensionConverter.ConvertVect(Translation),
 			dimensionConverter.PlaneNormal % Rotation,

@@ -244,27 +244,27 @@ partial struct Plane :
 
 	#region Dimension Conversion
 	// TODO xmldoc that this converter only works for the plane it was generated for
-	public PlaneDimensionConverter CreateDimensionConverter() {
+	public DimensionConverter CreateDimensionConverter() {
 		var xBasis = Normal.AnyOrthogonal();
 		var yBasis = Direction.FromOrthogonal(Normal, xBasis);
 		var origin = PointClosestToOrigin;
 		return new(xBasis, yBasis, Normal, origin);
 	}
-	public PlaneDimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin) {
+	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin) {
 		var xBasis = Normal.AnyOrthogonal();
 		var yBasis = Direction.FromOrthogonal(Normal, xBasis);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}
 	// TODO xmldoc what happens if axis is ortho to plane and also that people who want to skip all the checks or create a skewed basis etc can create their own converter directly with the ctor
-	public PlaneDimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis) {
+	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis) {
 		var xBasis = ParallelizationOf(twoDimensionalCoordinateXAxis) ?? Normal.AnyOrthogonal();
 		var yBasis = Direction.FromOrthogonal(Normal, xBasis);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}
 	// TODO xmldoc what happens if either axis is ortho to plane or parallel to each other and also that people who want to skip all the checks or create a skewed basis etc can create their own converter directly with the ctor
-	public PlaneDimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis, Direction twoDimensionalCoordinateYAxis) {
+	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis, Direction twoDimensionalCoordinateYAxis) {
 		var xBasis = ParallelizationOf(twoDimensionalCoordinateXAxis) ?? Normal.AnyOrthogonal();
 		var yBasis = ParallelizationOf(twoDimensionalCoordinateYAxis)?.OrthogonalizedAgainst(xBasis) ?? Direction.FromOrthogonal(xBasis, Normal);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
@@ -277,20 +277,20 @@ partial struct Plane :
 	#endregion
 }
 
-public readonly struct PlaneDimensionConverter : IEquatable<PlaneDimensionConverter> {
+public readonly struct DimensionConverter : IEquatable<DimensionConverter> {
 	public Direction XBasis { get; }
 	public Direction YBasis { get; }
 	public Direction PlaneNormal { get; }
 	public Location Origin { get; }
 
-	public PlaneDimensionConverter(Direction planeNormal) {
+	public DimensionConverter(Direction planeNormal) {
 		XBasis = planeNormal.AnyOrthogonal();
 		YBasis = Direction.FromOrthogonal(planeNormal, XBasis);
 		PlaneNormal = planeNormal;
 		Origin = Location.Origin;
 	}
 
-	public PlaneDimensionConverter(Direction xBasis, Direction yBasis, Direction planeNormal, Location origin) {
+	public DimensionConverter(Direction xBasis, Direction yBasis, Direction planeNormal, Location origin) {
 		XBasis = xBasis;
 		YBasis = yBasis;
 		PlaneNormal = planeNormal;
@@ -318,15 +318,15 @@ public readonly struct PlaneDimensionConverter : IEquatable<PlaneDimensionConver
 		return ConvertVect(location2D) + PlaneNormal * zAxisDimension;
 	}
 
-	public bool Equals(PlaneDimensionConverter other) {
+	public bool Equals(DimensionConverter other) {
 		return XBasis.Equals(other.XBasis) 
 			&& YBasis.Equals(other.YBasis)
 			&& PlaneNormal.Equals(other.PlaneNormal)
 			&& Origin.Equals(other.Origin);
 	}
-	public override bool Equals(object? obj) => obj is PlaneDimensionConverter other && Equals(other);
+	public override bool Equals(object? obj) => obj is DimensionConverter other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(XBasis, YBasis, PlaneNormal, Origin);
 
-	public static bool operator ==(PlaneDimensionConverter left, PlaneDimensionConverter right) => left.Equals(right);
-	public static bool operator !=(PlaneDimensionConverter left, PlaneDimensionConverter right) => !left.Equals(right);
+	public static bool operator ==(DimensionConverter left, DimensionConverter right) => left.Equals(right);
+	public static bool operator !=(DimensionConverter left, DimensionConverter right) => !left.Equals(right);
 }

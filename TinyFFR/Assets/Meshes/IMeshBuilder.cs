@@ -6,14 +6,13 @@ using System;
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 public interface IMeshBuilder {
-	void CreateMeshVertices(BoundedPlane surface, Transform2D textureTransform, Span<MeshVertex> verticesDest, Span<VertexTriangle> trianglesDest) {
+	void CreateMeshVertices(Polygon surface, Transform2D textureTransform, Span<MeshVertex> verticesDest, Span<VertexTriangle> trianglesDest) {
 
 	}
 
-	// TODO before starting BoundedPlane, create a Polygon type that represents a chain of XYPair<float>s
-	// TODO maybe both these types should be ref structs so we can store spans and make things easy, but then provide a simple wrapper type for each e.g. HeapBoundedPlane ... Or should we just expect people to store the memory themselves?
-	Mesh CreateMesh(BoundedPlane surface, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) => CreateMesh(surface, textureTransform ?? Transform2D.None, new MeshCreationConfig { Name = name });
-	Mesh CreateMesh(BoundedPlane surface, Transform2D textureTransform, scoped in MeshCreationConfig config) {
+	// TODO actually let's make this take a params span of MeshPolygons -- these are Polygon + Tangent
+	Mesh CreateMesh(Polygon surface, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) => CreateMesh(surface, textureTransform ?? Transform2D.None, new MeshCreationConfig { Name = name });
+	Mesh CreateMesh(Polygon surface, Transform2D textureTransform, scoped in MeshCreationConfig config) {
 		
 	}
 
