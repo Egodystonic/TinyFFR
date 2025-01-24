@@ -3,6 +3,6 @@
 
 namespace Egodystonic.TinyFFR;
 
-public interface IToleranceEquatable<T> : IEquatable<T> {
+public interface IToleranceEquatable<T> : IEquatable<T> where T : allows ref struct {
 	bool Equals(T? other, float tolerance);
 }

@@ -4,7 +4,7 @@
 namespace Egodystonic.TinyFFR;
 
 public interface IMathPrimitive : ISpanFormattable {
-	
+
 }
 
 public interface IMathPrimitive<TSelf> : IMathPrimitive, 

@@ -68,7 +68,7 @@ public interface IAlgebraicRing<TSelf> :
 }
 
 public interface IInnerProductSpace<in TSelf>
-	where TSelf : IInnerProductSpace<TSelf> {
+	where TSelf : IInnerProductSpace<TSelf>, allows ref struct {
 	float Dot(TSelf other);
 }
 public interface IVectorProductSpace<TSelf>
@@ -76,7 +76,7 @@ public interface IVectorProductSpace<TSelf>
 	TSelf Cross(TSelf other);
 }
 
-public interface ITransitionRepresentable<in TSelf, out T> where TSelf : ITransitionRepresentable<TSelf, T> {
+public interface ITransitionRepresentable<in TSelf, out T> where TSelf : ITransitionRepresentable<TSelf, T>, allows ref struct {
 	static abstract T operator >>(TSelf start, TSelf end);
 	static abstract T operator <<(TSelf end, TSelf start);
 }

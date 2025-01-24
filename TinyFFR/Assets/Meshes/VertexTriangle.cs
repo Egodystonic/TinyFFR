@@ -6,4 +6,4 @@ using System;
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = sizeof(int) * 3)]
-public readonly record struct MeshTriangle(int IndexA, int IndexB, int IndexC);
+public readonly record struct VertexTriangle(int IndexA, int IndexB, int IndexC);

@@ -32,7 +32,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 	public Mesh CreateMesh(CuboidDescriptor cuboidDesc, scoped in MeshCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		Span<MeshVertex> vertices = stackalloc MeshVertex[8];
-		Span<MeshTriangle> triangles = stackalloc MeshTriangle[12];
+		Span<VertexTriangle> triangles = stackalloc VertexTriangle[12];
 
 		vertices[0] = new MeshVertex(
 			cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpForward), 
@@ -48,33 +48,33 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		vertices[7] = new MeshVertex(cuboidDesc.CornerAt(DiagonalOrientation3D.RightDownBackward), new(1f, 1f));
 
 		// Top
-		triangles[00] = new MeshTriangle(0, 1, 2);
-		triangles[01] = new MeshTriangle(0, 3, 2);
+		triangles[00] = new VertexTriangle(0, 1, 2);
+		triangles[01] = new VertexTriangle(0, 3, 2);
 
 		// Bottom
-		triangles[02] = new MeshTriangle(4, 6, 5);
-		triangles[03] = new MeshTriangle(4, 6, 7);
+		triangles[02] = new VertexTriangle(4, 6, 5);
+		triangles[03] = new VertexTriangle(4, 6, 7);
 
 		// Left
-		triangles[04] = new MeshTriangle(0, 2, 6);
-		triangles[05] = new MeshTriangle(6, 4, 0);
+		triangles[04] = new VertexTriangle(0, 2, 6);
+		triangles[05] = new VertexTriangle(6, 4, 0);
 
 		// Right
-		triangles[06] = new MeshTriangle(1, 5, 7);
-		triangles[07] = new MeshTriangle(1, 7, 3);
+		triangles[06] = new VertexTriangle(1, 5, 7);
+		triangles[07] = new VertexTriangle(1, 7, 3);
 
 		// Forward
-		triangles[08] = new MeshTriangle(0, 4, 1);
-		triangles[09] = new MeshTriangle(1, 4, 5);
+		triangles[08] = new VertexTriangle(0, 4, 1);
+		triangles[09] = new VertexTriangle(1, 4, 5);
 
 		// Backward
-		triangles[10] = new MeshTriangle(2, 3, 6);
-		triangles[11] = new MeshTriangle(3, 7, 6);
+		triangles[10] = new VertexTriangle(2, 3, 6);
+		triangles[11] = new VertexTriangle(3, 7, 6);
 
 		return CreateMesh(vertices, triangles, config);
 	}
 
-	public Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<MeshTriangle> triangles, scoped in MeshCreationConfig config) {
+	public Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, scoped in MeshCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		static void CheckTriangleIndex(char indexChar, int triangleIndex, int value, int numVertices) {
 			if (value < 0 || value >= numVertices) {
@@ -114,7 +114,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		}
 
 		AllocateVertexBuffer(tempVertexBuffer.BufferIdentity, (MeshVertex*) tempVertexBuffer.DataPtr, vertices.Length, out var vbHandle).ThrowIfFailure();
-		AllocateIndexBuffer(tempIndexBuffer.BufferIdentity, (MeshTriangle*) tempIndexBuffer.DataPtr, indexBufferCount, out var ibHandle).ThrowIfFailure();
+		AllocateIndexBuffer(tempIndexBuffer.BufferIdentity, (VertexTriangle*) tempIndexBuffer.DataPtr, indexBufferCount, out var ibHandle).ThrowIfFailure();
 
 		_vertexBufferRefCounts.Add(vbHandle, 1);
 		_indexBufferRefCounts.Add(ibHandle, 1);
@@ -155,7 +155,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_index_buffer")]
 	static extern InteropResult AllocateIndexBuffer(
 		nuint bufferId,
-		MeshTriangle* indicesPtr,
+		VertexTriangle* indicesPtr,
 		int numIndices,
 		out UIntPtr outBufferHandle
 	);
