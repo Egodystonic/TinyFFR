@@ -917,30 +917,30 @@ class PlaneTest {
 	[Test]
 	public void ShouldCorrectlyConstructDimensionConverters() {
 		var converter = TestPlane.CreateDimensionConverter();
-		Assert.AreEqual(TestPlane.PointClosestToOrigin, converter.Origin);
-		Assert.AreEqual(TestPlane.Normal, converter.PlaneNormal);
+		Assert.AreEqual(TestPlane.PointClosestToOrigin, converter.Origin3D);
+		Assert.AreEqual(TestPlane.Normal, converter.ZBasis);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ converter.YBasis, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ TestPlane.Normal, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.YBasis ^ TestPlane.Normal, TestTolerance);
 
 		converter = TestPlane.CreateDimensionConverter(new Location(-100f, 1000f, 33f));
-		Assert.AreEqual(new Location(-100f, -1f, 33f), converter.Origin);
-		Assert.AreEqual(TestPlane.Normal, converter.PlaneNormal);
+		Assert.AreEqual(new Location(-100f, -1f, 33f), converter.Origin3D);
+		Assert.AreEqual(TestPlane.Normal, converter.ZBasis);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ converter.YBasis, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ TestPlane.Normal, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.YBasis ^ TestPlane.Normal, TestTolerance);
 
 		converter = TestPlane.CreateDimensionConverter(new Location(-100f, 1000f, 33f), new Direction(1f, 1f, -1f));
-		Assert.AreEqual(new Location(-100f, -1f, 33f), converter.Origin);
-		Assert.AreEqual(TestPlane.Normal, converter.PlaneNormal);
+		Assert.AreEqual(new Location(-100f, -1f, 33f), converter.Origin3D);
+		Assert.AreEqual(TestPlane.Normal, converter.ZBasis);
 		AssertToleranceEquals(new Direction(1f, 0f, -1f), converter.XBasis, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ converter.YBasis, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ TestPlane.Normal, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.YBasis ^ TestPlane.Normal, TestTolerance);
 
 		converter = TestPlane.CreateDimensionConverter(new Location(-100f, 1000f, 33f), new Direction(1f, 1f, -1f), new Direction(1f, -1f, 0.8f));
-		Assert.AreEqual(new Location(-100f, -1f, 33f), converter.Origin);
-		Assert.AreEqual(TestPlane.Normal, converter.PlaneNormal);
+		Assert.AreEqual(new Location(-100f, -1f, 33f), converter.Origin3D);
+		Assert.AreEqual(TestPlane.Normal, converter.ZBasis);
 		AssertToleranceEquals(new Direction(1f, 0f, -1f), converter.XBasis, TestTolerance);
 		AssertToleranceEquals(new Direction(1f, 0f, 1f), converter.YBasis, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ converter.YBasis, TestTolerance);
@@ -982,8 +982,8 @@ class PlaneTest {
 
 		// This section checks that the dimension converters are always constructed with perpendicular basis directions even if we pass the most degenerate possible arguments
 		void AssertOrthogonality(DimensionConverter dc) {
-			Assert.IsTrue(dc.XBasis.IsOrthogonalTo(dc.PlaneNormal));
-			Assert.IsTrue(dc.YBasis.IsOrthogonalTo(dc.PlaneNormal));
+			Assert.IsTrue(dc.XBasis.IsOrthogonalTo(dc.ZBasis));
+			Assert.IsTrue(dc.YBasis.IsOrthogonalTo(dc.ZBasis));
 			Assert.IsTrue(dc.XBasis.IsOrthogonalTo(dc.YBasis));
 		}
 

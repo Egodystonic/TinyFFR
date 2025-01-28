@@ -13,6 +13,7 @@ namespace Egodystonic.TinyFFR;
 public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 	readonly float _containmentRadius;
 	readonly float _containmentRadiusSquared;
+	readonly bool _isWoundClockwise;
 	
 	public ReadOnlySpan<Vertex> Vertices { get; }
 
@@ -24,14 +25,16 @@ public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 	};
 	public int TriangleCount => Int32.Max(0, VertexCount - 2);
 
-	public Polygon2D(ReadOnlySpan<Vertex> vertices) : this(vertices, skipPrecalculations: false) { }
+	public Polygon2D(ReadOnlySpan<Vertex> vertices) : this(vertices, isWoundClockwise: true) { }
+	public Polygon2D(ReadOnlySpan<Vertex> vertices, bool isWoundClockwise) : this(vertices, isWoundClockwise, skipPrecalculations: true) { }
 
 	// TODO xmldoc that the vertices are expected to form a complete enclosed polygon.
 	// TODO They should be specified in order they appear around the polygon, with the last and first comprising the final edge that closes the polygon.
 	// TODO Does not need to be convex, but no edges may intersect.
 	// TODO Officially this is called a simple polygon
-	internal Polygon2D(ReadOnlySpan<Vertex> vertices, bool skipPrecalculations) {
+	internal Polygon2D(ReadOnlySpan<Vertex> vertices, bool isWoundClockwise, bool skipPrecalculations) {
 		Vertices = vertices;
+		_isWoundClockwise = isWoundClockwise;
 
 		if (skipPrecalculations) {
 			_containmentRadius = _containmentRadiusSquared = Single.PositiveInfinity;
@@ -42,7 +45,8 @@ public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 	}
 
 	#region Factories and Conversions
-	public static Polygon2D FromVerticesSkipPrecalculations(ReadOnlySpan<Vertex> vertices) => new(vertices, skipPrecalculations: true);
+	public static Polygon2D FromVerticesWithGeometricPrecalculations(ReadOnlySpan<Vertex> vertices) => FromVerticesWithGeometricPrecalculations(vertices, isWoundClockwise: true);
+	public static Polygon2D FromVerticesWithGeometricPrecalculations(ReadOnlySpan<Vertex> vertices, bool isWoundClockwise) => new(vertices, isWoundClockwise, skipPrecalculations: false);
 	#endregion
 
 	#region Equality

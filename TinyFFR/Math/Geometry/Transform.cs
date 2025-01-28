@@ -62,7 +62,7 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	public Transform2D ToTransform2D(DimensionConverter dimensionConverter) {
 		return new(
 			dimensionConverter.ConvertVect(Translation),
-			Rotation.AngleAroundAxis(dimensionConverter.PlaneNormal),
+			Rotation.AngleAroundAxis(dimensionConverter.ZBasis),
 			dimensionConverter.ConvertVect(Scaling)
 		);
 	}

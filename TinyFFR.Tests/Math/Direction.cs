@@ -420,7 +420,7 @@ class DirectionTest {
 
 	[Test]
 	public void ShouldCorrectlyFindOrthogonalDirectionWithAdditionalConstrainingDirection() {
-		Assert.AreEqual(Direction.Left, Direction.FromOrthogonal(Direction.Up, Direction.Forward));
+		Assert.AreEqual(Direction.Left, Direction.FromDualOrthogonal(Direction.Up, Direction.Forward));
 
 		var testList = new List<Direction>();
 		for (var x = -5f; x <= 5f; x += 1f) {
@@ -438,15 +438,15 @@ class DirectionTest {
 				var dirB = testList[j];
 
 				if (dirA == Direction.None || dirB == Direction.None) {
-					Assert.AreEqual(Direction.None, Direction.FromOrthogonal(dirA, dirB));
+					Assert.AreEqual(Direction.None, Direction.FromDualOrthogonal(dirA, dirB));
 					continue;
 				}
 
-				var thirdOrthogonal = Direction.FromOrthogonal(dirA, dirB);
+				var thirdOrthogonal = Direction.FromDualOrthogonal(dirA, dirB);
 				AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, 2f);
 				AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, 2f);
 				Assert.IsTrue(thirdOrthogonal.IsUnitLength);
-				thirdOrthogonal = Direction.FromOrthogonal(dirB, dirA);
+				thirdOrthogonal = Direction.FromDualOrthogonal(dirB, dirA);
 				AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, 2f);
 				AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, 2f);
 				Assert.IsTrue(thirdOrthogonal.IsUnitLength);
@@ -458,7 +458,7 @@ class DirectionTest {
 	public void ShouldCorrectlyOrthogonalizeAgainstAnotherDir() {
 		foreach (var cardinal in Direction.AllCardinals) {
 			var perp = cardinal.AnyOrthogonal();
-			var thirdPerp = Direction.FromOrthogonal(cardinal, perp);
+			var thirdPerp = Direction.FromDualOrthogonal(cardinal, perp);
 			Assert.AreEqual(cardinal, (20f % perp * cardinal).OrthogonalizedAgainst(thirdPerp));
 			Assert.AreEqual(cardinal, (-20f % perp * cardinal).OrthogonalizedAgainst(thirdPerp));
 			Assert.AreEqual(cardinal, (20f % thirdPerp * cardinal).OrthogonalizedAgainst(perp));
@@ -552,7 +552,7 @@ class DirectionTest {
 	public void ShouldCorrectlyParallelizeWithAnotherDir() {
 		foreach (var cardinal in Direction.AllCardinals) {
 			var perp = cardinal.AnyOrthogonal();
-			var thirdPerp = Direction.FromOrthogonal(cardinal, perp);
+			var thirdPerp = Direction.FromDualOrthogonal(cardinal, perp);
 			Assert.AreEqual(cardinal, (20f % perp * cardinal).ParallelizedWith(cardinal));
 			Assert.AreEqual(cardinal, (-20f % perp * cardinal).ParallelizedWith(cardinal));
 			Assert.AreEqual(cardinal, (20f % thirdPerp * cardinal).ParallelizedWith(cardinal));
@@ -648,7 +648,7 @@ class DirectionTest {
 			if (dir == Direction.None) continue;
 
 			var perp = dir.AnyOrthogonal();
-			var thirdPerp = Direction.FromOrthogonal(dir, perp);
+			var thirdPerp = Direction.FromDualOrthogonal(dir, perp);
 			var parallelTarget = perp;
 			var angleToTestWith = Angle.Zero;
 			while ((dir ^ parallelTarget).Equals(Angle.QuarterCircle, MinPermissibleAngleDegrees)) {

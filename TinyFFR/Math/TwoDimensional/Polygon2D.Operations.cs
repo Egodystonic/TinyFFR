@@ -29,7 +29,7 @@ partial struct Polygon2D :
 		}
 
 		for (var i = 0; i < VertexCount; ++i) vertexDest[i] = dimensionConverter.ConvertLocation(Vertices[i]);
-		return new(vertexDest, dimensionConverter.PlaneNormal, Single.IsPositiveInfinity(_containmentRadius));
+		return new(vertexDest, dimensionConverter.ZBasis, Single.IsPositiveInfinity(_containmentRadius));
 	}
 
 	public static Vertex? GetEdgeIntersection(Edge e1, Edge e2) {
@@ -157,7 +157,7 @@ partial struct Polygon2D :
 	Vertex IIntersectionDeterminable<Edge, Vertex>.FastIntersectionWith(Edge edge) => IntersectionWith(edge) ?? default;
 
 	static readonly ThreadLocal<ArrayPoolBackedVector<int>> _threadStaticIndexList = new(() => new());
-	public void Triangulate(Span<VertexTriangle> dest, bool verticesWoundClockwise) {
+	public void Triangulate(Span<VertexTriangle> dest) {
 		static bool CrossMatchesSign(Vertex centreVertex, Vertex previousVertex, Vertex nextVertex, int sign) {
 			var prevToCentre = centreVertex - previousVertex;
 			var centreToNext = nextVertex - centreVertex;
@@ -188,7 +188,7 @@ partial struct Polygon2D :
 		var clippedIndices = _threadStaticIndexList.Value!;
 		clippedIndices.ClearWithoutZeroingMemory();
 
-		var desiredEarSign = verticesWoundClockwise ? -1 : 1;
+		var desiredEarSign = _isWoundClockwise ? -1 : 1;
 
 		var numVerticesRemaining = vertexCount;
 		while (numVerticesRemaining > 3) {
@@ -224,10 +224,9 @@ partial struct Polygon2D :
 			}
 
 			if (!foundAnEar) {
-				throw new ArgumentException(
+				throw new InvalidOperationException(
 					"Could not triangulate the polygon, " +
-					"it's possible the incorrect chirality (winding order) was supplied or the polygon is degenerate.", 
-					nameof(verticesWoundClockwise)
+					"it's possible the incorrect chirality (winding order) was supplied or the polygon is degenerate."
 				);
 			}
 			--numVerticesRemaining;

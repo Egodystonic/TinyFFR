@@ -29,7 +29,7 @@ public readonly partial struct Transform2D : IMathPrimitive<Transform2D>, IDescr
 	public Transform To3DTransform(DimensionConverter dimensionConverter) {
 		return new(
 			dimensionConverter.ConvertVect(Translation),
-			dimensionConverter.PlaneNormal % Rotation,
+			dimensionConverter.ZBasis % Rotation,
 			dimensionConverter.ConvertVect(Scaling)
 		);
 	}

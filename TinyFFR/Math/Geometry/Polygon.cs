@@ -8,8 +8,12 @@ using System.Numerics;
 
 namespace Egodystonic.TinyFFR;
 
+// TODO xmldoc that the vertices are expected to form a complete enclosed polygon.
+// TODO They should be specified in order they appear around the polygon, with the last and first comprising the final edge that closes the polygon.
+// TODO Does not need to be convex, but no edges may intersect.
+// TODO Officially this is called a simple polygon
 public readonly ref partial struct Polygon : IToleranceEquatable<Polygon> {
-	readonly bool _skipPrecalculations;
+	readonly bool _isWoundClockwise;
 
 	public ReadOnlySpan<Location> Vertices { get; }
 	public Direction Normal { get; }
@@ -21,18 +25,13 @@ public readonly ref partial struct Polygon : IToleranceEquatable<Polygon> {
 		_ => VertexCount
 	};
 	public int TriangleCount => Int32.Max(0, VertexCount - 2);
-
+	
 	public Polygon(ReadOnlySpan<Location> vertices) : this(vertices, CalculateMostLikelyNormal(vertices)) { }
-	public Polygon(ReadOnlySpan<Location> vertices, Direction normal) : this(vertices, normal, skipPrecalculations: false) { }
-
-	// TODO xmldoc that the vertices are expected to form a complete enclosed polygon.
-	// TODO They should be specified in order they appear around the polygon, with the last and first comprising the final edge that closes the polygon.
-	// TODO Does not need to be convex, but no edges may intersect.
-	// TODO Officially this is called a simple polygon
-	internal Polygon(ReadOnlySpan<Location> vertices, Direction normal, bool skipPrecalculations) {
+	public Polygon(ReadOnlySpan<Location> vertices, Direction normal) : this(vertices, normal, isWoundClockwise: true) { }
+	public Polygon(ReadOnlySpan<Location> vertices, Direction normal, bool isWoundClockwise) {
 		Vertices = vertices;
 		Normal = normal;
-		_skipPrecalculations = skipPrecalculations;
+		_isWoundClockwise = isWoundClockwise;
 	}
 
 	public static Direction CalculateMostLikelyNormal(ReadOnlySpan<Location> vertices) {
@@ -60,11 +59,6 @@ public readonly ref partial struct Polygon : IToleranceEquatable<Polygon> {
 
 		return firstCandidateCount > secondCandidateCount ? firstCandidate : secondCandidate;
 	}
-
-	#region Factories and Conversions
-	public static Polygon FromVerticesSkipPrecalculations(ReadOnlySpan<Location> vertices) => FromVerticesSkipPrecalculations(vertices, CalculateMostLikelyNormal(vertices));
-	public static Polygon FromVerticesSkipPrecalculations(ReadOnlySpan<Location> vertices, Direction normal) => new(vertices, normal, skipPrecalculations: true);
-	#endregion
 
 	#region Equality
 	public bool Equals(Polygon other) => Normal.Equals(other.Normal) && Vertices.SequenceEqual(other.Vertices);

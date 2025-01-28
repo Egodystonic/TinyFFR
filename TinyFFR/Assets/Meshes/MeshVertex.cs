@@ -39,6 +39,8 @@ public readonly record struct MeshVertex {
 		init => _tanW = value;
 	}
 
+	public MeshVertex(Location location, XYPair<float> textureCoords, Direction tangent, Direction bitangent, Direction normal)
+		: this(location, textureCoords, tangent, MathF.Sign(normal.Cross(tangent).Dot(bitangent))) { }
 	public MeshVertex(Location location, XYPair<float> textureCoords, Direction tangent, float tangentHandedness) {
 		Location = location;
 		TextureCoords = textureCoords;

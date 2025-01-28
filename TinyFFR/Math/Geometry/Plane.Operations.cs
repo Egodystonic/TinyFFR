@@ -246,27 +246,27 @@ partial struct Plane :
 	// TODO xmldoc that this converter only works for the plane it was generated for
 	public DimensionConverter CreateDimensionConverter() {
 		var xBasis = Normal.AnyOrthogonal();
-		var yBasis = Direction.FromOrthogonal(Normal, xBasis);
+		var yBasis = Direction.FromDualOrthogonal(Normal, xBasis);
 		var origin = PointClosestToOrigin;
 		return new(xBasis, yBasis, Normal, origin);
 	}
 	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin) {
 		var xBasis = Normal.AnyOrthogonal();
-		var yBasis = Direction.FromOrthogonal(Normal, xBasis);
+		var yBasis = Direction.FromDualOrthogonal(Normal, xBasis);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}
 	// TODO xmldoc what happens if axis is ortho to plane and also that people who want to skip all the checks or create a skewed basis etc can create their own converter directly with the ctor
 	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis) {
 		var xBasis = ParallelizationOf(twoDimensionalCoordinateXAxis) ?? Normal.AnyOrthogonal();
-		var yBasis = Direction.FromOrthogonal(Normal, xBasis);
+		var yBasis = Direction.FromDualOrthogonal(Normal, xBasis);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}
 	// TODO xmldoc what happens if either axis is ortho to plane or parallel to each other and also that people who want to skip all the checks or create a skewed basis etc can create their own converter directly with the ctor
 	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis, Direction twoDimensionalCoordinateYAxis) {
 		var xBasis = ParallelizationOf(twoDimensionalCoordinateXAxis) ?? Normal.AnyOrthogonal();
-		var yBasis = ParallelizationOf(twoDimensionalCoordinateYAxis)?.OrthogonalizedAgainst(xBasis) ?? Direction.FromOrthogonal(xBasis, Normal);
+		var yBasis = ParallelizationOf(twoDimensionalCoordinateYAxis)?.OrthogonalizedAgainst(xBasis) ?? Direction.FromDualOrthogonal(xBasis, Normal);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}
@@ -275,58 +275,4 @@ partial struct Plane :
 	public Location HolographTo3DOf(XYPair<float> xyPair) => CreateDimensionConverter().ConvertLocation(xyPair);
 	public Location HolographTo3DOf(XYPair<float> xyPair, float zDimension) => CreateDimensionConverter().ConvertLocation(xyPair, zDimension);
 	#endregion
-}
-
-public readonly struct DimensionConverter : IEquatable<DimensionConverter> {
-	public Direction XBasis { get; }
-	public Direction YBasis { get; }
-	public Direction PlaneNormal { get; }
-	public Location Origin { get; }
-
-	public DimensionConverter(Direction planeNormal) {
-		XBasis = planeNormal.AnyOrthogonal();
-		YBasis = Direction.FromOrthogonal(planeNormal, XBasis);
-		PlaneNormal = planeNormal;
-		Origin = Location.Origin;
-	}
-
-	public DimensionConverter(Direction xBasis, Direction yBasis, Direction planeNormal, Location origin) {
-		XBasis = xBasis;
-		YBasis = yBasis;
-		PlaneNormal = planeNormal;
-		Origin = origin;
-	}
-
-	public XYPair<float> ConvertLocation(Location location3D) {
-		location3D -= (Vect) Origin;
-		return new(XBasis.Dot((Vect) location3D), YBasis.Dot((Vect) location3D));
-	}
-	public Location ConvertLocation(XYPair<float> location2D) {
-		return (XBasis * location2D.X + YBasis * location2D.Y) + Origin;
-	}
-	public Location ConvertLocation(XYPair<float> location2D, float zAxisDimension) {
-		return ConvertLocation(location2D) + PlaneNormal * zAxisDimension;
-	}
-
-	public XYPair<float> ConvertVect(Vect v) {
-		return new(XBasis.Dot(v), YBasis.Dot(v));
-	}
-	public Vect ConvertVect(XYPair<float> location2D) {
-		return XBasis * location2D.X + YBasis * location2D.Y;
-	}
-	public Vect ConvertVect(XYPair<float> location2D, float zAxisDimension) {
-		return ConvertVect(location2D) + PlaneNormal * zAxisDimension;
-	}
-
-	public bool Equals(DimensionConverter other) {
-		return XBasis.Equals(other.XBasis) 
-			&& YBasis.Equals(other.YBasis)
-			&& PlaneNormal.Equals(other.PlaneNormal)
-			&& Origin.Equals(other.Origin);
-	}
-	public override bool Equals(object? obj) => obj is DimensionConverter other && Equals(other);
-	public override int GetHashCode() => HashCode.Combine(XBasis, YBasis, PlaneNormal, Origin);
-
-	public static bool operator ==(DimensionConverter left, DimensionConverter right) => left.Equals(right);
-	public static bool operator !=(DimensionConverter left, DimensionConverter right) => !left.Equals(right);
 }
