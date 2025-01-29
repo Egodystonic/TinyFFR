@@ -18,14 +18,14 @@ public interface IMeshPolygonGroup : IDisposable {
 
 	Polygon GetPolygonAtIndex(int index, out Direction textureU, out Direction textureV, out Location textureOrigin);
 	
-	protected internal Span<XYPair<float>> GetTriangulationBufferForCurrentCount();
-	protected internal Span<MeshVertex> GetVertexBufferForCurrentCount();
-	protected internal Span<VertexTriangle> GetTriangleBufferForCurrentCount();
+	protected internal Span<XYPair<float>> ReallocateTriangulationBufferForCurrentCount();
+	protected internal Span<MeshVertex> ReallocateVertexBufferForCurrentCount();
+	protected internal Span<VertexTriangle> ReallocateTriangleBufferForCurrentCount();
 
 	internal void Triangulate(Transform2D textureTransform, out ReadOnlySpan<MeshVertex> outVertexBuffer, out ReadOnlySpan<VertexTriangle> outTriangleBuffer) {
-		var triangulationBuffer = GetTriangulationBufferForCurrentCount();
-		var vertexBuffer = GetVertexBufferForCurrentCount();
-		var triangleBuffer = GetTriangleBufferForCurrentCount();
+		var triangulationBuffer = ReallocateTriangulationBufferForCurrentCount();
+		var vertexBuffer = ReallocateVertexBufferForCurrentCount();
+		var triangleBuffer = ReallocateTriangleBufferForCurrentCount();
 
 		outVertexBuffer = vertexBuffer;
 		outTriangleBuffer = triangleBuffer;

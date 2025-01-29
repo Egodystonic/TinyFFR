@@ -20,6 +20,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 	readonly ArrayPoolBackedMap<MeshHandle, MeshBufferData> _activeMeshes = new();
 	readonly ArrayPoolBackedMap<VertexBufferHandle, int> _vertexBufferRefCounts = new();
 	readonly ArrayPoolBackedMap<IndexBufferHandle, int> _indexBufferRefCounts = new();
+	readonly ObjectPool<LocalMeshPolygonGroup, LocalMeshBuilder> _meshPolyGroupPool;
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
 	nuint _nextHandleId = 0;
@@ -27,51 +28,30 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 	public LocalMeshBuilder(LocalFactoryGlobalObjectGroup globals) {
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
+		_meshPolyGroupPool = new(&CreateNewPolyGroupInstance, this);
 	}
 
-	public Mesh CreateMesh(CuboidDescriptor cuboidDesc, scoped in MeshCreationConfig config) {
+	static LocalMeshPolygonGroup CreateNewPolyGroupInstance(LocalMeshBuilder arg) => new(arg, &PolyGroupHeapPoolAccessorFunc, &ReturnPolyGroup);
+
+	static HeapPool PolyGroupHeapPoolAccessorFunc(LocalMeshBuilder builder) {
+		if (builder._isDisposed) {
+			throw new ObjectDisposedException(
+				nameof(IMeshBuilder), 
+				$"The mesh builder that allocated the given {nameof(IMeshPolygonGroup)} has been disposed, " +
+				$"therefore this polygon group is no longer valid."
+			);
+		}
+		return builder._globals.HeapPool;
+	}
+
+	static void ReturnPolyGroup(LocalMeshBuilder builder, LocalMeshPolygonGroup group) {
+		if (builder._isDisposed) return;
+		builder._meshPolyGroupPool.Return(group);
+	}
+
+	public IMeshPolygonGroup AllocateNewPolygonGroup() {
 		ThrowIfThisIsDisposed();
-		Span<MeshVertex> vertices = stackalloc MeshVertex[8];
-		Span<VertexTriangle> triangles = stackalloc VertexTriangle[12];
-
-		vertices[0] = new MeshVertex(
-			cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpForward), 
-			new(0f, 0f),
-
-		);
-		vertices[1] = new MeshVertex(cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpForward), new(1f, 0f));
-		vertices[2] = new MeshVertex(cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpBackward), new(0f, 1f));
-		vertices[3] = new MeshVertex(cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpBackward), new(1f, 1f));
-		vertices[4] = new MeshVertex(cuboidDesc.CornerAt(DiagonalOrientation3D.LeftDownForward), new(0f, 0f));
-		vertices[5] = new MeshVertex(cuboidDesc.CornerAt(DiagonalOrientation3D.RightDownForward), new(1f, 0f));
-		vertices[6] = new MeshVertex(cuboidDesc.CornerAt(DiagonalOrientation3D.LeftDownBackward), new(0f, 1f));
-		vertices[7] = new MeshVertex(cuboidDesc.CornerAt(DiagonalOrientation3D.RightDownBackward), new(1f, 1f));
-
-		// Top
-		triangles[00] = new VertexTriangle(0, 1, 2);
-		triangles[01] = new VertexTriangle(0, 3, 2);
-
-		// Bottom
-		triangles[02] = new VertexTriangle(4, 6, 5);
-		triangles[03] = new VertexTriangle(4, 6, 7);
-
-		// Left
-		triangles[04] = new VertexTriangle(0, 2, 6);
-		triangles[05] = new VertexTriangle(6, 4, 0);
-
-		// Right
-		triangles[06] = new VertexTriangle(1, 5, 7);
-		triangles[07] = new VertexTriangle(1, 7, 3);
-
-		// Forward
-		triangles[08] = new VertexTriangle(0, 4, 1);
-		triangles[09] = new VertexTriangle(1, 4, 5);
-
-		// Backward
-		triangles[10] = new VertexTriangle(2, 3, 6);
-		triangles[11] = new VertexTriangle(3, 7, 6);
-
-		return CreateMesh(vertices, triangles, config);
+		return _meshPolyGroupPool.Rent();
 	}
 
 	public Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, scoped in MeshCreationConfig config) {
@@ -205,6 +185,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 			}
 			_vertexBufferRefCounts.Dispose();
 			_indexBufferRefCounts.Dispose();
+			_meshPolyGroupPool.Dispose();
 		}
 		finally {
 			_isDisposed = true;

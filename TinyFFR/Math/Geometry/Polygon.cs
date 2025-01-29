@@ -34,7 +34,7 @@ public readonly ref partial struct Polygon : IToleranceEquatable<Polygon> {
 		_isWoundClockwise = isWoundClockwise;
 	}
 
-	public static Direction CalculateMostLikelyNormal(ReadOnlySpan<Location> vertices) {
+	public static Direction CalculateMostLikelyNormal(ReadOnlySpan<Location> vertices) { // TODO in the unit test we need to make sure this always gives us an answer with clockwise winding wrt the normal (e.g. the normal faces out of the clockwise-wound polygon)
 		if (vertices.Length < 3) throw new ArgumentException("Can not calculate most-likely normal for polygon with fewer than 3 vertices.", nameof(vertices));
 
 		var firstCandidate = Direction.None;
