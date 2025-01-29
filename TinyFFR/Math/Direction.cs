@@ -104,7 +104,7 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromOrientation(Orientation3D orientation) => new(orientation.GetAxisSign(Axis.X), orientation.GetAxisSign(Axis.Y), orientation.GetAxisSign(Axis.Z));
 
-	public static Direction FromDualOrthogonal(Direction dirA, Direction dirB) {
+	public static Direction FromDualOrthogonalization(Direction dirA, Direction dirB) {
 		var cross = Vector3.Cross(dirA.ToVector3(), dirB.ToVector3());
 		var crossLengthSquared = cross.LengthSquared();
 

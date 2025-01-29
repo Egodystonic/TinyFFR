@@ -21,6 +21,16 @@ partial struct Polygon2D :
 
 	// TODO region-ify
 
+	public Vertex Centroid {
+		get {
+			var result = XYPair<float>.Zero;
+			foreach (var vertex in Vertices) {
+				result += vertex;
+			}
+			return result / VertexCount;
+		}
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Polygon ToPolygon(Span<Location> vertexDest, Direction normal) => ToPolygon(vertexDest, new DimensionConverter(normal));
 	public Polygon ToPolygon(Span<Location> vertexDest, DimensionConverter dimensionConverter) {

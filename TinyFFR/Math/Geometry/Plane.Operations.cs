@@ -246,27 +246,27 @@ partial struct Plane :
 	// TODO xmldoc that this converter only works for the plane it was generated for
 	public DimensionConverter CreateDimensionConverter() {
 		var xBasis = Normal.AnyOrthogonal();
-		var yBasis = Direction.FromDualOrthogonal(Normal, xBasis);
+		var yBasis = Direction.FromDualOrthogonalization(Normal, xBasis);
 		var origin = PointClosestToOrigin;
 		return new(xBasis, yBasis, Normal, origin);
 	}
 	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin) {
 		var xBasis = Normal.AnyOrthogonal();
-		var yBasis = Direction.FromDualOrthogonal(Normal, xBasis);
+		var yBasis = Direction.FromDualOrthogonalization(Normal, xBasis);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}
 	// TODO xmldoc what happens if axis is ortho to plane and also that people who want to skip all the checks or create a skewed basis etc can create their own converter directly with the ctor
 	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis) {
 		var xBasis = ParallelizationOf(twoDimensionalCoordinateXAxis) ?? Normal.AnyOrthogonal();
-		var yBasis = Direction.FromDualOrthogonal(Normal, xBasis);
+		var yBasis = Direction.FromDualOrthogonalization(Normal, xBasis);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}
 	// TODO xmldoc what happens if either axis is ortho to plane or parallel to each other and also that people who want to skip all the checks or create a skewed basis etc can create their own converter directly with the ctor
 	public DimensionConverter CreateDimensionConverter(Location twoDimensionalCoordinateOrigin, Direction twoDimensionalCoordinateXAxis, Direction twoDimensionalCoordinateYAxis) {
 		var xBasis = ParallelizationOf(twoDimensionalCoordinateXAxis) ?? Normal.AnyOrthogonal();
-		var yBasis = ParallelizationOf(twoDimensionalCoordinateYAxis)?.OrthogonalizedAgainst(xBasis) ?? Direction.FromDualOrthogonal(xBasis, Normal);
+		var yBasis = ParallelizationOf(twoDimensionalCoordinateYAxis)?.OrthogonalizedAgainst(xBasis) ?? Direction.FromDualOrthogonalization(xBasis, Normal);
 		var origin = PointClosestTo(twoDimensionalCoordinateOrigin);
 		return new(xBasis, yBasis, Normal, origin);
 	}

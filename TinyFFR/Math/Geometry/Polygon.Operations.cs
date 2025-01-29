@@ -12,6 +12,16 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR;
 
 partial struct Polygon {
+	public Location Centroid {
+		get {
+			var result = Vect.Zero;
+			foreach (var vertex in Vertices) {
+				result += (Vect) vertex;
+			}
+			return (Location) (result / VertexCount);
+		}
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Polygon2D ToPolygon2D(Span<XYPair<float>> vertexDest) => ToPolygon2D(vertexDest, Location.Origin);
 	public Polygon2D ToPolygon2D(Span<XYPair<float>> vertexDest, Location originPoint) => ToPolygon2D(vertexDest, TODO needs to respect winding order);
@@ -21,6 +31,6 @@ partial struct Polygon {
 		}
 
 		for (var i = 0; i < VertexCount; ++i) vertexDest[i] = dimensionConverter.ConvertLocation(Vertices[i]);
-		return new(vertexDest, _isWoundClockwise);
+		return new(vertexDest[..VertexCount], _isWoundClockwise);
 	}
 }

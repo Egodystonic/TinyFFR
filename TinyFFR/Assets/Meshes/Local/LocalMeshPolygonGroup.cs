@@ -3,6 +3,6 @@
 
 namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
-sealed class LocalMeshPolygonList {
+sealed class LocalMeshPolygonGroup : IMeshPolygonGroup {
 	
 }

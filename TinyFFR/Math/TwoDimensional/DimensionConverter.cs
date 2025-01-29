@@ -10,14 +10,14 @@ public readonly struct DimensionConverter : IEquatable<DimensionConverter> {
 
 	public DimensionConverter(Direction zBasis) {
 		XBasis = zBasis.AnyOrthogonal();
-		YBasis = Direction.FromDualOrthogonal(zBasis, XBasis);
+		YBasis = Direction.FromDualOrthogonalization(zBasis, XBasis);
 		ZBasis = zBasis;
 		Origin3D = Location.Origin;
 	}
 
 	public DimensionConverter(Direction zBasis, Location origin3D) {
 		XBasis = zBasis.AnyOrthogonal();
-		YBasis = Direction.FromDualOrthogonal(zBasis, XBasis);
+		YBasis = Direction.FromDualOrthogonalization(zBasis, XBasis);
 		ZBasis = zBasis;
 		Origin3D = origin3D;
 	}
@@ -36,7 +36,7 @@ public readonly struct DimensionConverter : IEquatable<DimensionConverter> {
 			if (tertiary.IsOrthogonalTo(target) && tertiary.IsOrthogonalTo(secondary)) return;
 
 			var newTertiary = tertiary.OrthogonalizedAgainst(target);
-			if (newTertiary == null || !newTertiary.Value.IsOrthogonalTo(secondary)) newTertiary = Direction.FromDualOrthogonal(target, secondary);
+			if (newTertiary == null || !newTertiary.Value.IsOrthogonalTo(secondary)) newTertiary = Direction.FromDualOrthogonalization(target, secondary);
 			tertiary = newTertiary.Value;
 		}
 
