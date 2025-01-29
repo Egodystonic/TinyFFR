@@ -75,8 +75,10 @@ partial struct Location :
 	public Location ScaledFromOriginBy(float scalar) => FromVector3(ToVector3() * scalar);
 	public Location ScaledFromOriginBy(Vect vect) => FromVector3(ToVector3() * vect.ToVector3());
 
-	static Location IMultiplyOperators<Location, Transform, Location>.operator *(Location location, Transform transform) => location.TransformedAroundOriginBy(transform);
-	static Location ITransformable<Location>.operator *(Transform left, Location right) => right.TransformedAroundOriginBy(left);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location operator *(Location location, Transform transform) => location.TransformedAroundOriginBy(transform);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location operator *(Transform transform, Location location) => location.TransformedAroundOriginBy(transform);
 	Location ITransformable<Location>.TransformedBy(Transform transform) => TransformedAroundOriginBy(transform);
 	public Location TransformedAroundOriginBy(Transform transform) => AsVect().TransformedBy(transform).AsLocation();
 	public Location TransformedBy(Transform transform, Location transformationOrigin) => transformationOrigin + (transformationOrigin >> this).TransformedBy(transform);
