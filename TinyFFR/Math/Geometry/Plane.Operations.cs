@@ -3,6 +3,12 @@
 
 namespace Egodystonic.TinyFFR;
 
+public enum PlaneObjectRelationship {
+	PlaneIntersectsObject,
+	PlaneFacesTowardsObject,
+	PlaneFacesAwayFromObject
+}
+
 partial struct Plane : 
 	IInvertible<Plane>,
 	ITranslatable<Plane>,

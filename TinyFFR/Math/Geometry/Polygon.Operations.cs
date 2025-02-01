@@ -24,7 +24,13 @@ partial struct Polygon {
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Polygon2D ToPolygon2D(Span<XYPair<float>> vertexDest) => ToPolygon2D(vertexDest, Location.Origin);
-	public Polygon2D ToPolygon2D(Span<XYPair<float>> vertexDest, Location originPoint) => ToPolygon2D(vertexDest, TODO needs to respect winding order);
+	public Polygon2D ToPolygon2D(Span<XYPair<float>> vertexDest, Location originPoint) {
+		var zBasis = -Normal;
+		var xBasis = zBasis.AnyOrthogonal();
+		var yBasis = ((_isWoundClockwise ? 90f : -90f) % zBasis) * xBasis;
+		var converter = new DimensionConverter(xBasis, yBasis, zBasis, originPoint);
+		return ToPolygon2D(vertexDest, converter);
+	}
 	public Polygon2D ToPolygon2D(Span<XYPair<float>> vertexDest, DimensionConverter dimensionConverter) {
 		if (vertexDest.Length < VertexCount) {
 			throw new ArgumentException($"Destination span for converted vertices must be at least as large as '{nameof(VertexCount)}' ({VertexCount}).", nameof(vertexDest));

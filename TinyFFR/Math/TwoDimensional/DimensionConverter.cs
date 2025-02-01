@@ -69,11 +69,20 @@ public readonly struct DimensionConverter : IEquatable<DimensionConverter> {
 	public XYPair<float> ConvertVect(Vect v) {
 		return new(XBasis.Dot(v), YBasis.Dot(v));
 	}
-	public Vect ConvertVect(XYPair<float> location2D) {
-		return XBasis * location2D.X + YBasis * location2D.Y;
+	public Vect ConvertVect(XYPair<float> vect2D) {
+		return XBasis * vect2D.X + YBasis * vect2D.Y;
 	}
-	public Vect ConvertVect(XYPair<float> location2D, float zAxisDimension) {
-		return ConvertVect(location2D) + ZBasis * zAxisDimension;
+	public Vect ConvertVect(XYPair<float> vect2D, float zAxisDimension) {
+		return ConvertVect(vect2D) + ZBasis * zAxisDimension;
+	}
+
+	public XYPair<float>? ConvertDirection(Direction d) {
+		var result = ConvertVect(d.AsVect()).WithLengthOne();
+		return result.LengthSquared > 0f ? result : null;
+	}
+	public Direction? ConvertDirection(XYPair<float> direction2D) {
+		var result = ConvertVect(direction2D).Direction;
+		return result != Direction.None ? result : null;
 	}
 
 	public bool Equals(DimensionConverter other) {

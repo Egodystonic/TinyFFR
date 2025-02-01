@@ -5,6 +5,12 @@ using System.Numerics;
 
 namespace Egodystonic.TinyFFR;
 
+public enum XyPairClockOrientation {
+	Colinear = 0,
+	Clockwise = -1,
+	Anticlockwise = 1,
+}
+
 partial struct XYPair<T> :
 	IAlgebraicRing<XYPair<T>>,
 	IInterpolatable<XYPair<T>>,
@@ -12,7 +18,8 @@ partial struct XYPair<T> :
 	IAngleMeasurable<XYPair<T>, XYPair<T>>,
 	IPointTransformable2D<XYPair<T>>,
 	ILengthAdjustable<XYPair<T>>,
-	IInnerProductSpace<XYPair<T>> {
+	IInnerProductSpace<XYPair<T>>,
+	IRelatable<XYPair<T>, XYPair<T>, XyPairClockOrientation>  {
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static XYPair<T> operator -(XYPair<T> operand) => operand.Negated;
@@ -80,6 +87,9 @@ partial struct XYPair<T> :
 		var w = other.ToVector2();
 		return v.X * w.Y - v.Y * w.X;
 	}
+
+	public XyPairClockOrientation AngleOrientationTo(XYPair<T> target) => (XyPairClockOrientation) MathF.Sign(Cross(target));
+	XyPairClockOrientation IRelatable<XYPair<T>, XyPairClockOrientation>.RelationshipTo(XYPair<T> other) => AngleOrientationTo(other);
 	#endregion
 
 	#region Interactions w/ XYPair
