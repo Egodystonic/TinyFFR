@@ -75,6 +75,16 @@ public interface IPointTransformable<TSelf> :
 #endregion
 
 #region 2D Scale/Rotate/Translate & Transform
+/*
+ * Maintainer's note:
+ * Some interface inheritances are commented out below, mostly ones that import operator overloads.
+ * The reason for this is the prevalence of CS0695 errors occurring when types try to import those operators
+ * for generic type arguments that unify (e.g. XYPair<T> + XYPair<T> must be implemented as well as XYPair<T> + XYPair<float>).
+ * The current C# compiler does not give us a way to resolve those overloads when e.g. T = float. If it does one day, we can
+ * re-activate these interfaces.
+ */
+
+
 public interface IPointScalable2D<TSelf> :
 	IScalable<TSelf> where TSelf : IPointScalable2D<TSelf>, IScalable<TSelf> {
 	TSelf ScaledBy(float scalar, XYPair<float> scalingOrigin);
@@ -93,28 +103,28 @@ public interface IPointIndependentAxisScalable2D<TSelf> :
 	TSelf ScaledFromOriginBy(XYPair<float> vect);
 }
 
-public interface IRotatable2D<TSelf> :
-	IMultiplyOperators<TSelf, Angle, TSelf>
+public interface IRotatable2D<TSelf> /*:
+	IMultiplyOperators<TSelf, Angle, TSelf>*/
 	where TSelf : IRotatable2D<TSelf> {
-	static abstract TSelf operator *(Angle left, TSelf right);
+	//static abstract TSelf operator *(Angle left, TSelf right);
 	TSelf RotatedBy(Angle rot);
 }
 
-public interface IPointRotatable2D<TSelf> :
+public interface IPointRotatable2D<TSelf> /*:
 	IMultiplyOperators<TSelf, (Angle Rotation, XYPair<float> Pivot), TSelf>,
-	IMultiplyOperators<TSelf, (XYPair<float> Pivot, Angle Rotation), TSelf>
+	IMultiplyOperators<TSelf, (XYPair<float> Pivot, Angle Rotation), TSelf>*/
 	where TSelf : IPointRotatable2D<TSelf> {
-	static abstract TSelf operator *((Angle Rotation, XYPair<float> Pivot) left, TSelf right);
-	static abstract TSelf operator *((XYPair<float> Pivot, Angle Rotation) left, TSelf right);
+	//static abstract TSelf operator *((Angle Rotation, XYPair<float> Pivot) left, TSelf right);
+	//static abstract TSelf operator *((XYPair<float> Pivot, Angle Rotation) left, TSelf right);
 	TSelf RotatedBy(Angle rot, XYPair<float> pivot);
 	TSelf RotatedAroundOriginBy(Angle rot);
 }
 
-public interface ITranslatable2D<TSelf> :
-	IAdditive<TSelf, XYPair<float>, TSelf>
+public interface ITranslatable2D<TSelf> /*:
+	IAdditive<TSelf, XYPair<float>, TSelf>*/
 	where TSelf : ITranslatable2D<TSelf> {
-	TSelf IAdditive<TSelf, XYPair<float>, TSelf>.Plus(XYPair<float> v) => MovedBy(v);
-	TSelf IAdditive<TSelf, XYPair<float>, TSelf>.Minus(XYPair<float> v) => MovedBy(-v);
+	//TSelf IAdditive<TSelf, XYPair<float>, TSelf>.Plus(XYPair<float> v) => MovedBy(v);
+	//TSelf IAdditive<TSelf, XYPair<float>, TSelf>.Minus(XYPair<float> v) => MovedBy(-v);
 	TSelf MovedBy(XYPair<float> v);
 }
 
