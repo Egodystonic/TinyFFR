@@ -83,7 +83,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		var handle = new RendererHandle(_previousHandleId);
 		_loadedRenderers.Add(handle, new(handle, scene, camera, new(window), viewportData));
 
-		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.Name);
+		_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
 
 		var result = HandleToInstance(handle);
 		_globals.DependencyTracker.RegisterDependency(result, scene);

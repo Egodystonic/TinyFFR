@@ -78,7 +78,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	Texture IMaterialBuilder.CreateTextureUsingPreallocatedBuffer<TTexel>(IMaterialBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureCreationConfig config) => CreateTextureUsingPreallocatedBuffer(preallocatedBuffer, in config);
 	Texture CreateTextureUsingPreallocatedBuffer<TTexel>(IMaterialBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
 		config.ThrowIfInvalid();
-		if (preallocatedBuffer.Buffer == default) throw InvalidObjectException.InvalidDefault(typeof(IMaterialBuilder.PreallocatedBuffer<TTexel>));
+		if (preallocatedBuffer.Buffer.IsEmpty) throw InvalidObjectException.InvalidDefault(typeof(IMaterialBuilder.PreallocatedBuffer<TTexel>));
 
 		var dataPointer = Unsafe.AsPointer(ref MemoryMarshal.GetReference(preallocatedBuffer.Buffer));
 		var dataLength = preallocatedBuffer.Buffer.Length * sizeof(TTexel);
@@ -112,7 +112,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		}
 
 		var handle = (TextureHandle) outHandle;
-		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.Name);
+		_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
 		_loadedTextures.Add(handle, new(((uint) config.Width, (uint) config.Height)));
 		return HandleToInstance(handle);
 	}
@@ -157,7 +157,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		).ThrowIfFailure();
 		var handle = (MaterialHandle) outHandle;
 
-		_globals.StoreResourceNameIfNotDefault(handle.Ident, config.Name);
+		_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
 		_activeMaterials.Add(handle);
 		var result = HandleToInstance(handle);
 

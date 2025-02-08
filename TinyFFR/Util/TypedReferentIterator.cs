@@ -39,7 +39,7 @@ public readonly unsafe struct TypedReferentIterator<TIn, TOut> : IEnumerable<TOu
 		public void Dispose() { /* no op */ }
 
 		void ThrowIfInvalid() {
-			if (_getVersionFunc == null || _getItemFunc == null) throw InvalidObjectException.InvalidDefault(typeof(Enumerator));
+			if (_getVersionFunc == null || _getItemFunc == null) throw InvalidObjectException.InvalidDefault<Enumerator>();
 			if (_getVersionFunc(_input) != _inputVersion) throw new InvalidOperationException($"{_input} was modified, this {nameof(TypedReferentIterator<TIn, TOut>)} is no longer valid.");
 		}
 	}
@@ -100,7 +100,7 @@ public readonly unsafe struct TypedReferentIterator<TIn, TOut> : IEnumerable<TOu
 	IEnumerator<TOut> IEnumerable<TOut>.GetEnumerator() => GetEnumerator();
 
 	internal void ThrowIfInvalid() {
-		if (_getCountFunc == null || _getItemFunc == null) throw InvalidObjectException.InvalidDefault(typeof(TypedReferentIterator<TIn, TOut>));
+		if (_getCountFunc == null || _getItemFunc == null) throw InvalidObjectException.InvalidDefault<TypedReferentIterator<TIn, TOut>>();
 		if (_getVersionFunc(_input) != _inputVersion) throw new InvalidOperationException($"{_input} was modified, this {nameof(TypedReferentIterator<TIn, TOut>)} is no longer valid.");
 	}
 }

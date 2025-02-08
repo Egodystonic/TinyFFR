@@ -36,8 +36,8 @@ sealed class LocalFactoryGlobalObjectGroup {
 		_resourceGroupProvider = resourceGroupProviderRef;
 	}
 
-	public void StoreResourceNameIfNotDefault(ResourceIdent ident, ReadOnlySpan<char> name) {
-		if (name == default) return;
+	public void StoreResourceNameIfNotEmpty(ResourceIdent ident, ReadOnlySpan<char> name) {
+		if (name.IsEmpty) return;
 		_resourceNameMap.Add(ident, StringPool.RentAndCopy(name));
 	}
 
@@ -59,7 +59,7 @@ sealed class LocalFactoryGlobalObjectGroup {
 
 	public void ReplaceResourceName(ResourceIdent ident, ReadOnlySpan<char> newName) {
 		DisposeResourceNameIfExists(ident);
-		StoreResourceNameIfNotDefault(ident, newName);
+		StoreResourceNameIfNotEmpty(ident, newName);
 	}
 
 	public TemporaryLoadSpaceBuffer CreateGpuHoldingBufferAndCopyData<T>(ReadOnlySpan<T> data) where T : unmanaged => LocalNativeUtils.CreateGpuHoldingBufferAndCopyData(_factory, data);

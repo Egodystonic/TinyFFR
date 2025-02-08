@@ -40,7 +40,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		_modelInstanceMap.Add(handle, _modelInstanceVectorPool.Rent());
 		_lightMap.Add(handle, _lightVectorPool.Rent());
 		
-		_globals.StoreResourceNameIfNotDefault(new SceneHandle(handle).Ident, config.Name);
+		_globals.StoreResourceNameIfNotEmpty(new SceneHandle(handle).Ident, config.Name);
 		
 		return HandleToInstance(handle);
 	}

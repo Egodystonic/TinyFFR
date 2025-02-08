@@ -45,7 +45,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 
 	public ResourceGroup CreateGroup(bool disposeContainedResourcesWhenDisposed, ReadOnlySpan<char> name, int initialCapacity = DefaultInitialCapacity) {
 		var result = CreateGroup(disposeContainedResourcesWhenDisposed, initialCapacity);
-		_globals.StoreResourceNameIfNotDefault(result.Handle.Ident, name);
+		_globals.StoreResourceNameIfNotEmpty(result.Handle.Ident, name);
 		return result;
 	}
 

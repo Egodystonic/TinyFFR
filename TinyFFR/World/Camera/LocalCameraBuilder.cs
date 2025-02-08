@@ -39,7 +39,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 		);
 
 		_activeCameras.Add(newCameraHandle, parameters);
-		_globals.StoreResourceNameIfNotDefault(((CameraHandle) newCameraHandle).Ident, config.Name);
+		_globals.StoreResourceNameIfNotEmpty(((CameraHandle) newCameraHandle).Ident, config.Name);
 		UpdateProjectionMatrixFromParameters(newCameraHandle);
 		UpdateModelMatrixFromParameters(newCameraHandle);
 		return new(newCameraHandle, this);

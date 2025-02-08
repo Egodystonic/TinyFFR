@@ -50,7 +50,7 @@ public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>> where T : u
 	}
 
 	public static XYPair<T> FromPolarAngle(Angle angle) => new(T.CreateSaturating(MathF.Cos(angle.Radians)), T.CreateSaturating(MathF.Sin(angle.Radians)));
-	public static XYPair<T> FromPolarAngleAndLength(Angle angle, float length) => FromPolarAngle(angle) * length;
+	public static XYPair<T> FromPolarAngleAndLength(Angle angle, float length) => FromPolarAngle(angle).WithLength(length);
 
 	public void Deconstruct(out T x, out T y) {
 		x = X;

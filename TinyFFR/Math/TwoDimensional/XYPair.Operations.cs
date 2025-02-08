@@ -106,15 +106,11 @@ partial struct XYPair<T> :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static XYPair<T> operator *(T scalar, XYPair<T> pair) => pair.ScaledBy(scalar);
 	public XYPair<T> ScaledBy(T scalar) => new(X * scalar, Y * scalar);
-
-	[OverloadResolutionPriority(-1)]
-	public static XYPair<T> operator *(XYPair<T> pair, float scalar) => pair.ScaledBy(scalar);
-	[OverloadResolutionPriority(-1)]
-	public static XYPair<T> operator /(XYPair<T> pair, float scalar) => pair.ScaledBy(1f / scalar);
-	[OverloadResolutionPriority(-1)]
-	public static XYPair<T> operator *(float scalar, XYPair<T> pair) => pair.ScaledBy(scalar);
-	[OverloadResolutionPriority(-1)]
-	public XYPair<T> ScaledBy(float scalar) => Cast<float>().ScaledBy(scalar).Cast<T>();
+	public XYPair<T> ScaledByReal(float scalar) => Cast<float>().ScaledBy(scalar).Cast<T>();
+	static XYPair<T> IMultiplyOperators<XYPair<T>, float, XYPair<T>>.operator *(XYPair<T> pair, float scalar) => ((IScalable<XYPair<T>>) pair).ScaledBy(scalar);
+	static XYPair<T> IDivisionOperators<XYPair<T>, float, XYPair<T>>.operator /(XYPair<T> pair, float scalar) => ((IScalable<XYPair<T>>) pair).ScaledBy(1f / scalar);
+	static XYPair<T> IMultiplicative<XYPair<T>, float, XYPair<T>>.operator *(float scalar, XYPair<T> pair) => ((IScalable<XYPair<T>>) pair).ScaledBy(scalar);
+	XYPair<T> IScalable<XYPair<T>>.ScaledBy(float scalar) => ScaledByReal(scalar);
 
 	public XYPair<T> MultipliedBy(XYPair<T> other) => new(X * other.X, Y * other.Y);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -122,50 +118,27 @@ partial struct XYPair<T> :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static XYPair<T> operator *(XYPair<T> left, XYPair<T> right) => left.ScaledBy(right);
 	public static XYPair<T> operator /(XYPair<T> left, XYPair<T> right) => new(left.X / right.X, left.Y / right.Y);
+	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public XYPair<T> ScaledBy(XYPair<T> vect) => ScaledFromOriginBy(vect);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public XYPair<T> ScaledFromOriginBy(XYPair<T> vect) => MultipliedBy(vect);
 	public XYPair<T> ScaledBy(XYPair<T> vect, XYPair<T> scalingOrigin) => scalingOrigin + ((this - scalingOrigin) * vect);
-	
-	[OverloadResolutionPriority(-1)]
-	public XYPair<T> ScaledBy(XYPair<float> vect) => Cast<float>().ScaledBy(vect).Cast<T>();
-	[OverloadResolutionPriority(-1)]
-	public XYPair<T> ScaledFromOriginBy(XYPair<float> vect) => Cast<float>().ScaledFromOriginBy(vect).Cast<T>();
-	[OverloadResolutionPriority(-1)]
-	public XYPair<T> ScaledBy(XYPair<float> vect, XYPair<float> scalingOrigin) => Cast<float>().ScaledBy(vect, scalingOrigin).Cast<T>();
+	XYPair<T> IIndependentAxisScalable2D<XYPair<T>>.ScaledBy(XYPair<float> vect) => Cast<float>().ScaledBy(vect).Cast<T>();
+	XYPair<T> IPointIndependentAxisScalable2D<XYPair<T>>.ScaledFromOriginBy(XYPair<float> vect) => Cast<float>().ScaledFromOriginBy(vect).Cast<T>();
+	XYPair<T> IPointIndependentAxisScalable2D<XYPair<T>>.ScaledBy(XYPair<float> vect, XYPair<float> scalingOrigin) => Cast<float>().ScaledBy(vect, scalingOrigin).Cast<T>();
 	#endregion
 
 	#region Rotation
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair<T> operator *(XYPair<T> left, Angle right) => left.RotatedAroundOriginBy(right);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair<T> operator *(Angle left, XYPair<T> right) => right.RotatedAroundOriginBy(left);
+	/* Maintainer's note: I do not specify the usual multiply operator here for Angle rotations (e.g. XYPair<T> * Angle)
+	 * because it's too easy to do something like (myXyPairOfInts * someFloat) expecting a scaling operation and instead
+	 * getting the implicit conversion to Angle.
+	 */
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public XYPair<T> RotatedBy(Angle rot) => RotatedAroundOriginBy(rot);
 	public XYPair<T> RotatedAroundOriginBy(Angle rot) => PolarAngle is { } a ? FromPolarAngleAndLength(a + rot, Length) : Zero;
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair<T> operator *(XYPair<T> left, (Angle Rotation, XYPair<T> Pivot) right) => left.RotatedBy(right.Rotation, right.Pivot);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair<T> operator *(XYPair<T> left, (XYPair<T> Pivot, Angle Rotation) right) => left.RotatedBy(right.Rotation, right.Pivot);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair<T> operator *((Angle Rotation, XYPair<T> Pivot) left, XYPair<T> right) => right.RotatedBy(left.Rotation, left.Pivot);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair<T> operator *((XYPair<T> Pivot, Angle Rotation) left, XYPair<T> right) => right.RotatedBy(left.Rotation, left.Pivot);
 	public XYPair<T> RotatedBy(Angle rot, XYPair<T> pivot) => pivot + (this - pivot).RotatedAroundOriginBy(rot);
-
-	[OverloadResolutionPriority(-1)]
-	public static XYPair<T> operator *(XYPair<T> left, (Angle Rotation, XYPair<float> Pivot) right) => left.RotatedBy(right.Rotation, right.Pivot);
-	[OverloadResolutionPriority(-1)]
-	public static XYPair<T> operator *(XYPair<T> left, (XYPair<float> Pivot, Angle Rotation) right) => left.RotatedBy(right.Rotation, right.Pivot);
-	[OverloadResolutionPriority(-1)]
-	public static XYPair<T> operator *((Angle Rotation, XYPair<float> Pivot) left, XYPair<T> right) => right.RotatedBy(left.Rotation, left.Pivot);
-	[OverloadResolutionPriority(-1)]
-	public static XYPair<T> operator *((XYPair<float> Pivot, Angle Rotation) left, XYPair<T> right) => right.RotatedBy(left.Rotation, left.Pivot);
-	[OverloadResolutionPriority(-1)]
-	public XYPair<T> RotatedBy(Angle rot, XYPair<float> pivot) => Cast<float>().RotatedBy(rot, pivot).Cast<T>();
-
+	XYPair<T> IPointRotatable2D<XYPair<T>>.RotatedBy(Angle rot, XYPair<float> pivot) => Cast<float>().RotatedBy(rot, pivot).Cast<T>();
 	#endregion
 
 	#region Translation
@@ -177,16 +150,7 @@ partial struct XYPair<T> :
 	public XYPair<T> Minus(XYPair<T> other) => new(X - other.X, Y - other.Y);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public XYPair<T> MovedBy(XYPair<T> other) => Plus(other);
-
-	[OverloadResolutionPriority(-1)]
-	public static XYPair<T> operator +(XYPair<T> left, XYPair<float> right) => left.MovedBy(right);
-	[OverloadResolutionPriority(-1)]
-	public static XYPair<T> operator -(XYPair<T> left, XYPair<float> right) => left.MovedBy(-right);
-	[OverloadResolutionPriority(-1)]
-	public static XYPair<T> operator +(XYPair<float> left, XYPair<T> right) => right.MovedBy(left);
-
-	[OverloadResolutionPriority(-1)]
-	public XYPair<T> MovedBy(XYPair<float> v) => Cast<float>().MovedBy(v).Cast<T>();
+	XYPair<T> ITranslatable2D<XYPair<T>>.MovedBy(XYPair<float> v) => Cast<float>().MovedBy(v).Cast<T>();
 	#endregion
 
 	#region Transformation
@@ -216,7 +180,7 @@ partial struct XYPair<T> :
 
 	#region Clamping and Interpolation
 	public static XYPair<T> Interpolate(XYPair<T> start, XYPair<T> end, float distance) {
-		return start + (end - start).ScaledBy(distance);
+		return start + (end - start).Cast<float>().ScaledBy(distance).Cast<T>();
 	}
 	public XYPair<T> Clamp(XYPair<T> min, XYPair<T> max) {
 		var minX = min.X;

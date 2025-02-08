@@ -31,8 +31,8 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		return CreateWindow(new() {
 			Display = display,
 			FullscreenStyle = fullscreenStyle ?? WindowFullscreenStyle.NotFullscreen,
-			Size = size ?? (fullscreenStyle == WindowFullscreenStyle.Fullscreen ? display.CurrentResolution : display.CurrentResolution * 0.66f),
-			Position = position ?? (display.CurrentResolution * (0.33f / 2f)),
+			Size = size ?? (fullscreenStyle == WindowFullscreenStyle.Fullscreen ? display.CurrentResolution : display.CurrentResolution.ScaledByReal(0.66f)),
+			Position = position ?? (display.CurrentResolution.ScaledByReal(0.33f / 2f)),
 			Title = title
 		});
 	}
@@ -52,7 +52,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		_activeWindows.Add(outHandle);
 		_displayMap.Add(outHandle, config.Display);
 		result.FullscreenStyle = config.FullscreenStyle;
-		if (config.Title != default) SetTitleOnWindow(result.Handle, config.Title);
+		if (!config.Title.IsEmpty) SetTitleOnWindow(result.Handle, config.Title);
 		return result;
 	}
 

@@ -28,7 +28,7 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 
 		AllocatePointLight(out var handle).ThrowIfFailure();
 		_activeLightMap.Add(handle, new(LightType.PointLight));
-		_globals.StoreResourceNameIfNotDefault(new LightHandle(handle).Ident, config.Name);
+		_globals.StoreResourceNameIfNotEmpty(new LightHandle(handle).Ident, config.Name);
 		SetLightPosition(handle, config.InitialPosition.ToVector3());
 		SetLightColor(handle, config.InitialColor.ToVector3());
 		return HandleToInstance<PointLight>(handle);

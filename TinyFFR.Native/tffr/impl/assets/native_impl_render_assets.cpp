@@ -23,6 +23,7 @@ void native_impl_render_assets::allocate_vertex_buffer(BufferIdentity bufferIden
 		.bufferCount(1)
 		.attribute(VertexAttribute::POSITION, 0, VertexBuffer::AttributeType::FLOAT3, 0, sizeof(MeshVertex))
 		.attribute(VertexAttribute::UV0, 0, VertexBuffer::AttributeType::FLOAT2, 12, sizeof(MeshVertex))
+		.attribute(VertexAttribute::TANGENTS, 0, VertexBuffer::AttributeType::FLOAT4, 20, sizeof(MeshVertex))
 		.build(*filament_engine);
 	(*outBuffer)->setBufferAt(*filament_engine, 0, backend::BufferDescriptor{ vertices, vertexCount * sizeof(MeshVertex), &handle_filament_buffer_copy_callback, bufferIdentity });
 }

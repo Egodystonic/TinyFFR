@@ -9,6 +9,7 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 	public const float RecommendedDeadzoneSize = ((float) AnalogDisplacementLevel.Slight / Int16.MaxValue) + 0.01f; // Just slightly over the raw trigger level for 'slight'
 
 	public static readonly GameControllerStickPosition Centered = new(0, 0);
+#pragma warning disable CA1859 // "Read-only dictionary is slower than just Dictionary" -- True, but not a big performance hit and the intent implied by making this readonly is more important
 	static readonly IReadOnlyDictionary<Orientation2D, GameControllerStickPosition> _orientationMap = new Dictionary<Orientation2D, GameControllerStickPosition> {
 		[Orientation2D.None] = Centered,
 		[Orientation2D.Right] = new(Int16.MaxValue, 0),
@@ -20,6 +21,7 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 		[Orientation2D.Down] = new(0, Int16.MinValue),
 		[Orientation2D.DownRight] = new(Int16.MaxValue, Int16.MinValue),
 	};
+#pragma warning restore CA1859
 
 	internal short RawDisplacementHorizontal { get; init; }
 	internal short RawDisplacementVertical { get; init; }
