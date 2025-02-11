@@ -23,6 +23,8 @@ public interface IMeshPolygonGroup : IDisposable {
 	protected internal Span<VertexTriangle> ReallocateTriangleBufferForCurrentCount();
 
 	internal void Triangulate(Transform2D textureTransform, out ReadOnlySpan<MeshVertex> outVertexBuffer, out ReadOnlySpan<VertexTriangle> outTriangleBuffer) {
+		textureTransform = textureTransform with { Scaling = textureTransform.Scaling.Reciprocal ?? XYPair<float>.Zero };
+		
 		var triangulationBuffer = ReallocateTriangulationBufferForCurrentCount();
 		var vertexBuffer = ReallocateVertexBufferForCurrentCount();
 		var triangleBuffer = ReallocateTriangleBufferForCurrentCount();

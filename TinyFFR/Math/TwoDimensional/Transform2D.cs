@@ -25,6 +25,15 @@ public readonly partial struct Transform2D : IMathPrimitive<Transform2D>, IDescr
 	}
 
 	#region Factories and Conversions
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Transform2D FromScalingOnly(XYPair<float> scaling) => new(scaling: scaling);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Transform2D FromRotationOnly(Angle rotation) => new(rotation: rotation);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Transform2D FromTranslationOnly(XYPair<float> translation) => new(translation: translation);
+
 	public Transform To3DTransform() => To3DTransform(new(Direction.Forward));
 	public Transform To3DTransform(DimensionConverter dimensionConverter) {
 		return new(

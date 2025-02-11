@@ -40,11 +40,13 @@ var display = factory.DisplayDiscoverer.Recommended ?? throw new ApplicationExce
 using var window = factory.WindowBuilder.CreateWindow(display, title: "William the Window");
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60, name: "Larry the Loop");
 using var camera = factory.CameraBuilder.CreateCamera(Location.Origin, name: "Carl the Camera");
-using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(1f, 1f, 1f), name: "Clive the Cuboid");
-using var tex = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.White, name: "Terry the Texture");
+var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(2f, 2f, 2f), name: "Clive the Cuboid");
+//using var tex = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.White, name: "Terry the Texture");
+var texPattern = TexturePattern.Chequerboard(new ColorVect(1f, 0f, 0f), new ColorVect(0f, 1f, 0f), new ColorVect(0f, 0f, 1f), new ColorVect(0.5f, 0.5f, 0.5f));
+using var tex = factory.AssetLoader.MaterialBuilder.CreateColorMap(texPattern, name: "Terry the Texture");
 using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(tex, name: "Matthew the Material");
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: "Iain the Instance");
-using var light = factory.LightBuilder.CreatePointLight(camera.Position, StandardColor.Red, falloffRange: 10000f, brightness: 10000000f, name: "Lars the Light");
+using var light = factory.LightBuilder.CreatePointLight(camera.Position, StandardColor.Red, brightness: 5000000f, name: "Lars the Light"); // TODO why so bright?
 using var scene = factory.SceneBuilder.CreateScene(name: "Sean the Scene");
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window, name: "Ryan the Renderer");
 
@@ -63,13 +65,17 @@ Console.WriteLine(instance);
 Console.WriteLine(scene);
 Console.WriteLine(renderer);
 
-instance.SetPosition(camera.Position + Direction.Forward * 3f);
+instance.SetPosition(camera.Position + Direction.Forward * 2.2f);
 Console.WriteLine(camera.Position);
 Console.WriteLine(light.Position);
 Console.WriteLine(instance.Position);
 while (!loop.Input.UserQuitRequested) {
 	_ = loop.IterateOnce();
 	renderer.Render();
+	var newMesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(2f, 2f, 2f), Transform2D.FromRotationOnly((float) loop.TotalIteratedTime.TotalSeconds * 30f), name: "Clive the Cuboid");
+	instance.Mesh = newMesh;
+	mesh.Dispose();
+	mesh = newMesh;
 	instance.RotateBy(0.5f * 1f % Direction.Up);
 	instance.RotateBy(0.5f * 0.66f % Direction.Right);
 	//light.MoveBy(Direction.Backward * 0.1f);

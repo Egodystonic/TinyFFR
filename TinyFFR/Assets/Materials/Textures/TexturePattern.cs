@@ -38,7 +38,7 @@ public static unsafe partial class TexturePattern {
 }
 
 [InlineArray(ArgsLengthMax)]
-struct TexturePatternArgData { public const int ArgsLengthMax = 48; byte _; }
+struct TexturePatternArgData { public const int ArgsLengthMax = 128; byte _; }
 public readonly unsafe ref struct TexturePattern<T> where T : unmanaged {
 	readonly XYPair<int> _dimensions;
 	readonly delegate* managed<ReadOnlySpan<byte>, XYPair<int>, T> _generationFunc;

@@ -84,16 +84,15 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 				intSpan[i * 3 + 1] = a;
 			}
 		}
-		if (config.Transform != Transform.None) {
-			var vertexSpan = tempVertexBuffer.AsSpan<MeshVertex>();
-			for (var i = 0; i < vertices.Length; ++i) {
-				var preTransformVertex = vertexSpan[i];
-				vertexSpan[i] = new(
-					preTransformVertex.Location * config.Transform,
-					preTransformVertex.TextureCoords,
-					//preTransformVertex.Tangent.AsVect().ScaledBy(config.Transform.Scaling).Direction.RotatedBy(config.Transform.Rotation),
-					preTransformVertex.TangentRotation // TODO
-				);
+		if (config.InvertTextureU || config.InvertTextureV) {
+			var vBufferSpan = tempVertexBuffer.AsSpan<MeshVertex>();
+			for (var v = 0; v < vBufferSpan.Length; ++v) {
+				vBufferSpan[v] = vBufferSpan[v] with {
+					TextureCoords = (
+						config.InvertTextureU ? 1f - vBufferSpan[v].TextureCoords.X : vBufferSpan[v].TextureCoords.X,
+						config.InvertTextureV ? 1f - vBufferSpan[v].TextureCoords.Y : vBufferSpan[v].TextureCoords.Y
+					)
+				};
 			}
 		}
 

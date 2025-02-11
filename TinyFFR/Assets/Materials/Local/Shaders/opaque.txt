@@ -17,8 +17,7 @@
     requires : [
         uv0
     ],
-    shadingModel : lit,
-    postLightingBlending : opaque
+    shadingModel : lit
 }
 
 fragment {

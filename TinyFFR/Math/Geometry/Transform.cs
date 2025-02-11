@@ -25,6 +25,15 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	}
 
 	#region Factories and Conversions
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Transform FromScalingOnly(Vect scaling) => new(scaling: scaling);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Transform FromRotationOnly(Rotation rotation) => new(rotation: rotation);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Transform FromTranslationOnly(Vect translation) => new(translation: translation);
+
 	public Matrix4x4 ToMatrix() {
 		var rotVect = Rotation.AsVector4;
 		var rotVectSquared = rotVect * rotVect;
