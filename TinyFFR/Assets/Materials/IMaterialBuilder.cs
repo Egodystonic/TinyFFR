@@ -19,6 +19,7 @@ public interface IMaterialBuilder {
 	Texture DefaultColorMap { get; }
 	Texture DefaultNormalMap { get; }
 	Texture DefaultOrmMap { get; }
+	// TODO Material TestMaterial { get; } -- A material that has a chequerboard r/g/b/grey with varying normals and orm
 
 	Texture CreateTexture<TTexel>(Span<TTexel> texels, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> => CreateTexture((ReadOnlySpan<TTexel>) texels, config);
 	Texture CreateTexture<TTexel>(ReadOnlySpan<TTexel> texels, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel>;

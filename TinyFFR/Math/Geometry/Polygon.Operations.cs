@@ -36,12 +36,8 @@ partial struct Polygon {
 			throw new ArgumentException($"Destination span for converted vertices must be at least as large as '{nameof(VertexCount)}' ({VertexCount}).", nameof(vertexDest));
 		}
 
-		Console.WriteLine($"Begin triangulation: {Normal.NearestOrientation.AsEnum}");
 		for (var i = 0; i < VertexCount; ++i) {
 			vertexDest[i] = dimensionConverter.ConvertLocation(Vertices[i]);
-			var signVertex3d = new Location(MathF.Sign(Vertices[i].X), MathF.Sign(Vertices[i].Y), MathF.Sign(Vertices[i].Z));
-			var signVertex2d = new XYPair<float>(MathF.Sign(vertexDest[i].X), MathF.Sign(vertexDest[i].Y));
-			Console.WriteLine($"\t{Vertices[i]} to {vertexDest[i]} || {signVertex3d} to {signVertex2d}");
 		}
 		return new(vertexDest[..VertexCount], IsWoundClockwise);
 	}

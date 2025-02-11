@@ -40,13 +40,19 @@ var display = factory.DisplayDiscoverer.Recommended ?? throw new ApplicationExce
 using var window = factory.WindowBuilder.CreateWindow(display, title: "William the Window");
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60, name: "Larry the Loop");
 using var camera = factory.CameraBuilder.CreateCamera(Location.Origin, name: "Carl the Camera");
-var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(2f, 2f, 2f), name: "Clive the Cuboid");
+var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(1f), name: "Clive the Cuboid");
 //using var tex = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.White, name: "Terry the Texture");
-var texPattern = TexturePattern.Chequerboard(new ColorVect(1f, 0f, 0f), new ColorVect(0f, 1f, 0f), new ColorVect(0f, 0f, 1f), new ColorVect(0.5f, 0.5f, 0.5f));
-using var tex = factory.AssetLoader.MaterialBuilder.CreateColorMap(texPattern, name: "Terry the Texture");
-using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(tex, name: "Matthew the Material");
+var colorPattern = TexturePattern.Chequerboard(new ColorVect(1f, 0f, 0f), new ColorVect(0f, 1f, 0f), new ColorVect(0f, 0f, 1f), new ColorVect(0.5f, 0.5f, 0.5f), (4, 4));
+var normalPattern = TexturePattern.Chequerboard(new Direction(-0.3f, 0f, 1f), new Direction(0f, 0f, 1f), new Direction(0f, -0.3f, 1f), (4, 4));
+var occlusionPattern = TexturePattern.Chequerboard(0.5f, 1f, 0.8f, (27, 27));
+var roughnessPattern = TexturePattern.Chequerboard(0.8f, 0.4f, 1f, (27, 27));
+var metallicPattern = TexturePattern.Chequerboard(1f, 0f, (27, 27));
+using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(colorPattern, name: "Terry the Texture");
+using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap(normalPattern);
+using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(occlusionPattern, roughnessPattern, metallicPattern);
+using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap, /*normalMap,*/ ormMap: ormMap, name: "Matthew the Material");
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: "Iain the Instance");
-using var light = factory.LightBuilder.CreatePointLight(camera.Position, StandardColor.Red, brightness: 5000000f, name: "Lars the Light"); // TODO why so bright?
+using var light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f), falloffRange: 10f, brightness: 5000000f, name: "Lars the Light"); // TODO why so bright?
 using var scene = factory.SceneBuilder.CreateScene(name: "Sean the Scene");
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window, name: "Ryan the Renderer");
 
@@ -58,7 +64,7 @@ Console.WriteLine(window);
 Console.WriteLine(loop);
 Console.WriteLine(camera);
 Console.WriteLine(mesh);
-Console.WriteLine(tex);
+Console.WriteLine(colorMap);
 Console.WriteLine(mat);
 Console.WriteLine(light);
 Console.WriteLine(instance);
@@ -72,13 +78,16 @@ Console.WriteLine(instance.Position);
 while (!loop.Input.UserQuitRequested) {
 	_ = loop.IterateOnce();
 	renderer.Render();
-	var newMesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(2f, 2f, 2f), Transform2D.FromRotationOnly((float) loop.TotalIteratedTime.TotalSeconds * 30f), name: "Clive the Cuboid");
+
+	var newMesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(1f), new(rotation: (float) loop.TotalIteratedTime.TotalSeconds * -47f), true, name: "Clive the Cuboid");
 	instance.Mesh = newMesh;
 	mesh.Dispose();
 	mesh = newMesh;
+
 	instance.RotateBy(0.5f * 1f % Direction.Up);
 	instance.RotateBy(0.5f * 0.66f % Direction.Right);
-	//light.MoveBy(Direction.Backward * 0.1f);
-	//Console.WriteLine(instance.Position >> light.Position);
+	
 	light.Color = light.Color.WithHueAdjustedBy(1f);
+	light.Position = instance.Position + (((instance.Position >> camera.Position) * 1.2f) * ((MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 5f) * 15f) % Direction.Down));
+	light.Position += Direction.Up * MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 8f) * 0.5f;
 }

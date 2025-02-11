@@ -69,8 +69,13 @@ public readonly partial struct CuboidDescriptor : IConvexShape<CuboidDescriptor>
 	static int GetSideCountForEnumerator(CuboidDescriptor _) => 6;
 	static Plane GetSideForEnumerator(CuboidDescriptor @this, int index) => @this.SideAt(OrientationUtils.AllCardinals[index]);
 
+	public unsafe TypedReferentIterator<CuboidDescriptor, Location> Centroids => new(this, IteratorVersionNumber, &GetCentroidCountForEnumerator, &GetIteratorVersion, &GetCentroidForEnumerator);
+	static int GetCentroidCountForEnumerator(CuboidDescriptor _) => 6;
+	static Location GetCentroidForEnumerator(CuboidDescriptor @this, int index) => @this.CentroidAt(OrientationUtils.AllCardinals[index]);
+
 	static int GetIteratorVersion(CuboidDescriptor _) => IteratorVersionNumber;
 
+	public CuboidDescriptor(float widthHeightDepth) : this(widthHeightDepth, widthHeightDepth, widthHeightDepth) { }
 	public CuboidDescriptor(float width, float height, float depth) {
 		_halfWidth = width * 0.5f;
 		_halfHeight = height * 0.5f;
@@ -97,6 +102,12 @@ public readonly partial struct CuboidDescriptor : IConvexShape<CuboidDescriptor>
 			Axis.Z => HalfWidth * HalfHeight * 4f,
 			_ => throw new ArgumentOutOfRangeException(nameof(side), side, $"{nameof(CardinalOrientation3D)} can not be {nameof(CardinalOrientation3D.None)} or non-defined value.")
 		};
+	}
+
+	public Location CentroidAt(CardinalOrientation3D side) {
+		if (side == CardinalOrientation3D.None || !Enum.IsDefined(side)) throw new ArgumentOutOfRangeException(nameof(side), side, $"Can not be '{nameof(CardinalOrientation3D.None)}' or non-defined value.");
+
+		return (GetHalfExtent(side.GetAxis()) * side.GetAxisSign() * side.ToDirection()).AsLocation();
 	}
 
 	public Location CornerAt(DiagonalOrientation3D corner) {

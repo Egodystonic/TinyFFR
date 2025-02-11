@@ -13,11 +13,11 @@ public static unsafe partial class TexturePattern {
 	internal static readonly XYPair<int> ChequerboardDefaultSquareSize = (64, 64);
 
 	public static TexturePattern<T> Chequerboard<T>(T firstValue, T secondValue, XYPair<int>? repetitionCount = null, XYPair<int>? squareSize = null) where T : unmanaged {
-		return Chequerboard(firstValue, secondValue, firstValue, secondValue, ChequerboardDefaultRepetitionCount, ChequerboardDefaultSquareSize);
+		return Chequerboard(firstValue, secondValue, firstValue, secondValue, repetitionCount, squareSize);
 	}
 
 	public static TexturePattern<T> Chequerboard<T>(T firstValue, T secondValue, T thirdValue, XYPair<int>? repetitionCount = null, XYPair<int>? squareSize = null) where T : unmanaged {
-		return Chequerboard(firstValue, secondValue, thirdValue, secondValue, ChequerboardDefaultRepetitionCount, ChequerboardDefaultSquareSize);
+		return Chequerboard(firstValue, secondValue, thirdValue, secondValue, repetitionCount, squareSize);
 	}
 
 	public static TexturePattern<T> Chequerboard<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, XYPair<int>? repetitionCount = null, XYPair<int>? squareSize = null) where T : unmanaged {
