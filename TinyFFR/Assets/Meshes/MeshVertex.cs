@@ -1,6 +1,8 @@
 ﻿// Created on 2024-01-16 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Interop;
 using System;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
@@ -26,12 +28,14 @@ public readonly record struct MeshVertex {
 			_texV = value.Y;
 		}
 	}
-	public Direction Tangent {
-		get => new(_tanX, _tanY, _tanZ);
+	public Rotation TangentRotation {
+		get => Rotation.FromQuaternionPreNormalized(new(_tanX, _tanY, _tanZ, _tanW));
 		init {
-			_tanX = value.X;
-			_tanY = value.Y;
-			_tanZ = value.Z;
+			var quat = value.AsQuaternion;
+			_tanX = quat.X;
+			_tanY = quat.Y;
+			_tanZ = quat.Z;
+			_tanW = quat.W;
 		}
 	}
 	public float TangentHandedness {
@@ -40,11 +44,32 @@ public readonly record struct MeshVertex {
 	}
 
 	public MeshVertex(Location location, XYPair<float> textureCoords, Direction tangent, Direction bitangent, Direction normal)
-		: this(location, textureCoords, tangent, MathF.Sign(normal.Cross(tangent).Dot(bitangent))) { }
-	public MeshVertex(Location location, XYPair<float> textureCoords, Direction tangent, float tangentHandedness) {
+		: this(location, textureCoords, CalculateTangentRotation(tangent, bitangent, normal)) { }
+	public MeshVertex(Location location, XYPair<float> textureCoords, Rotation tangentRotation) {
 		Location = location;
 		TextureCoords = textureCoords;
-		Tangent = tangent;
-		TangentHandedness = tangentHandedness;
+		TangentRotation = tangentRotation;
+		// _tanX = 0f;
+		// _tanY = 1f;
+		// _tanZ = 0f;
+		// _tanW = 3.05185094e-05f;
 	}
+
+	public static Rotation CalculateTangentRotation(Direction tangent, Direction bitangent, Direction normal) {
+		CalculateTangentRotation(
+			tangent.ToVector3(), 
+			bitangent.ToVector3(), 
+			normal.ToVector3(), 
+			out var resultQuat
+		).ThrowIfFailure();
+		return Rotation.FromQuaternionPreNormalized(resultQuat);
+	}
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "calculate_tangent_rotation")]
+	static extern InteropResult CalculateTangentRotation(
+		Vector3 tangent,
+		Vector3 bitangent,
+		Vector3 normal,
+		out Quaternion outRot
+	);
 }

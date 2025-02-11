@@ -171,6 +171,7 @@ partial struct Polygon2D :
 		static bool CrossMatchesSign(Vertex centreVertex, Vertex previousVertex, Vertex nextVertex, int sign) {
 			var prevToCentre = centreVertex - previousVertex;
 			var centreToNext = nextVertex - centreVertex;
+			Console.WriteLine("\t\t\t" + MathF.Sign(prevToCentre.Cross(centreToNext)) + " .. " + sign);
 			return MathF.Sign(prevToCentre.Cross(centreToNext)) == sign;
 		}
 		static int GetNthNonClippedIndex(ArrayPoolBackedVector<int> clippedIndices, int n) {
@@ -198,7 +199,7 @@ partial struct Polygon2D :
 		var clippedIndices = _threadStaticIndexList.Value!;
 		clippedIndices.ClearWithoutZeroingMemory();
 
-		var desiredEarSign = _isWoundClockwise ? -1 : 1;
+		var desiredEarSign = IsWoundClockwise ? -1 : 1;
 
 		var numVerticesRemaining = vertexCount;
 		while (numVerticesRemaining > 3) {
@@ -229,6 +230,7 @@ partial struct Polygon2D :
 
 				clippedIndices.Add(centreIndex);
 				dest[vertexCount - numVerticesRemaining] = new(prevIndex, centreIndex, nextIndex);
+				Console.WriteLine("\t\t" + dest[vertexCount - numVerticesRemaining]);
 				foundAnEar = true;
 				break;
 			}
@@ -236,7 +238,7 @@ partial struct Polygon2D :
 			if (!foundAnEar) {
 				throw new InvalidOperationException(
 					"Could not triangulate the polygon, " +
-					"it's possible the incorrect chirality (winding order) was supplied or the polygon is degenerate."
+					"it's possible the incorrect winding order was supplied or the polygon is degenerate."
 				);
 			}
 			--numVerticesRemaining;
@@ -246,5 +248,6 @@ partial struct Polygon2D :
 		var y = GetNthNonClippedIndex(clippedIndices, 1);
 		var z = GetNthNonClippedIndex(clippedIndices, 2);
 		dest[triangleCount - 1] = CrossMatchesSign(Vertices[y], Vertices[x], Vertices[z], desiredEarSign) ? new(x, y, z) : new(z, y, x);
+		Console.WriteLine("\t\t" + dest[triangleCount - 1]);
 	}
 }

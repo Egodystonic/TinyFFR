@@ -91,8 +91,8 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 				vertexSpan[i] = new(
 					preTransformVertex.Location * config.Transform,
 					preTransformVertex.TextureCoords,
-					preTransformVertex.Tangent.AsVect().ScaledBy(config.Transform.Scaling).Direction.RotatedBy(config.Transform.Rotation),
-					preTransformVertex.TangentHandedness
+					//preTransformVertex.Tangent.AsVect().ScaledBy(config.Transform.Scaling).Direction.RotatedBy(config.Transform.Rotation),
+					preTransformVertex.TangentRotation // TODO
 				);
 			}
 		}

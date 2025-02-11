@@ -65,7 +65,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			TexturePattern.PlainFill(new ColorVect(StandardColor.White)), name: DefaultColorMapName
 		));
 		_defaultNormalMap = new(() => (this as IMaterialBuilder).CreateNormalMap(
-			TexturePattern.PlainFill(Direction.Up), name: DefaultNormalMapName
+			TexturePattern.PlainFill(Direction.Forward), name: DefaultNormalMapName
 		));
 		_defaultOrmMap = new(() => (this as IMaterialBuilder).CreateOrmMap(
 			TexturePattern.PlainFill(1f), 

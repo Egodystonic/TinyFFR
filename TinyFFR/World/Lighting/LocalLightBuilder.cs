@@ -31,6 +31,8 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 		_globals.StoreResourceNameIfNotEmpty(new LightHandle(handle).Ident, config.Name);
 		SetLightPosition(handle, config.InitialPosition.ToVector3());
 		SetLightColor(handle, config.InitialColor.ToVector3());
+		SetPointLightLumens(handle, config.InitialBrightness);
+		SetPointLightMaxIlluminationRadius(handle, config.InitialMaxIlluminationRadius);
 		return HandleToInstance<PointLight>(handle);
 	}
 

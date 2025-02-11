@@ -69,6 +69,15 @@ StartExportedFunc(dispose_index_buffer, IndexBufferHandle buffer) {
 	EndExportedFunc
 }
 
+void native_impl_render_assets::calculate_tangent_rotation(float3 tangent, float3 bitangent, float3 normal, float4* outRotation) {
+	ThrowIfNull(outRotation, "Out rotation pointer was null.");
+	*outRotation = mat3f::packTangentFrame({ tangent, bitangent, normal }).xyzw;
+}
+StartExportedFunc(calculate_tangent_rotation, float3 tangent, float3 bitangent, float3 normal, float4* outRotation) {
+	native_impl_render_assets::calculate_tangent_rotation(tangent, bitangent, normal, outRotation);
+	EndExportedFunc
+}
+
 void native_impl_render_assets::load_texture_rgb_24(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, TextureHandle* outTexture) {
 	ThrowIfNull(dataPtr, "Data pointer was null.");
 	ThrowIfNegative(dataLen, "Data length was negative.");

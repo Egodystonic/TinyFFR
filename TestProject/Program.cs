@@ -39,16 +39,17 @@ using var factory = new LocalTinyFfrFactory();
 var display = factory.DisplayDiscoverer.Recommended ?? throw new ApplicationException("This test requires at least one connected display.");
 using var window = factory.WindowBuilder.CreateWindow(display, title: "William the Window");
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60, name: "Larry the Loop");
-using var camera = factory.CameraBuilder.CreateCamera((0f, 0f, -30f), name: "Carl the Camera");
-using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(10f, 7f, 2f), name: "Clive the Cuboid");
+using var camera = factory.CameraBuilder.CreateCamera(Location.Origin, name: "Carl the Camera");
+using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(1f, 1f, 1f), name: "Clive the Cuboid");
 using var tex = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.White, name: "Terry the Texture");
 using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(tex, name: "Matthew the Material");
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: "Iain the Instance");
-using var light = factory.LightBuilder.CreatePointLight((0f, 0f, -20f), StandardColor.Red, falloffRange: 100f, name: "Lars the Light");
+using var light = factory.LightBuilder.CreatePointLight(camera.Position, StandardColor.Red, falloffRange: 10000f, brightness: 10000000f, name: "Lars the Light");
 using var scene = factory.SceneBuilder.CreateScene(name: "Sean the Scene");
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window, name: "Ryan the Renderer");
 
 scene.Add(instance);
+scene.Add(light);
 
 Console.WriteLine(display);
 Console.WriteLine(window);
@@ -62,10 +63,16 @@ Console.WriteLine(instance);
 Console.WriteLine(scene);
 Console.WriteLine(renderer);
 
+instance.SetPosition(camera.Position + Direction.Forward * 3f);
+Console.WriteLine(camera.Position);
+Console.WriteLine(light.Position);
+Console.WriteLine(instance.Position);
 while (!loop.Input.UserQuitRequested) {
 	_ = loop.IterateOnce();
 	renderer.Render();
-	instance.MoveBy(Direction.Left * 0.01f);
-	camera.ViewDirection = Direction.Forward;
-	camera.MoveBy(Direction.Right * 0.01f);
+	instance.RotateBy(0.5f * 1f % Direction.Up);
+	instance.RotateBy(0.5f * 0.66f % Direction.Right);
+	//light.MoveBy(Direction.Backward * 0.1f);
+	//Console.WriteLine(instance.Position >> light.Position);
+	light.Color = light.Color.WithHueAdjustedBy(1f);
 }

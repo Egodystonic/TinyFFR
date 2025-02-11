@@ -4,6 +4,7 @@
 using Egodystonic.TinyFFR.Resources.Memory;
 using System;
 using System.Buffers;
+using System.Globalization;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
@@ -17,45 +18,45 @@ public interface IMeshBuilder {
 
 		// Back
 		polyVertexSpan[0] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpBackward);
-		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpBackward);
+		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftDownBackward);
 		polyVertexSpan[2] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightDownBackward);
-		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftDownBackward);
+		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpBackward);
 		polyGroup.Add(new(polyVertexSpan, Direction.Backward), Direction.Right, Direction.Down, polyVertexSpan[0]);
 
 		// Front
 		polyVertexSpan[0] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpForward);
-		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpForward);
+		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightDownForward);
 		polyVertexSpan[2] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftDownForward);
-		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightDownForward);
+		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpForward);
 		polyGroup.Add(new(polyVertexSpan, Direction.Forward), Direction.Left, Direction.Down, polyVertexSpan[0]);
 
 		// Right
 		polyVertexSpan[0] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpBackward);
-		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpForward);
+		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightDownBackward);
 		polyVertexSpan[2] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightDownForward);
-		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightDownBackward);
+		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpForward);
 		polyGroup.Add(new(polyVertexSpan, Direction.Right), Direction.Forward, Direction.Down, polyVertexSpan[0]);
 
 		// Left
 		polyVertexSpan[0] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpForward);
-		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpBackward);
+		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftDownForward);
 		polyVertexSpan[2] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftDownBackward);
-		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftDownForward);
+		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpBackward);
 		polyGroup.Add(new(polyVertexSpan, Direction.Left), Direction.Backward, Direction.Down, polyVertexSpan[0]);
 
 		// Top
 		polyVertexSpan[0] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpForward);
-		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpForward);
+		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpBackward);
 		polyVertexSpan[2] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpBackward);
-		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpBackward);
+		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpForward);
 		polyGroup.Add(new(polyVertexSpan, Direction.Up), Direction.Right, Direction.Backward, polyVertexSpan[0]);
 
 		// Bottom
 		polyVertexSpan[0] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightDownBackward);
-		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightDownForward);
+		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftDownBackward);
 		polyVertexSpan[2] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftDownForward);
-		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftDownBackward);
-		polyGroup.Add(new(polyVertexSpan, Direction.Down), Direction.Left, Direction.Up, polyVertexSpan[0]);
+		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightDownForward);
+		polyGroup.Add(new(polyVertexSpan, Direction.Down), Direction.Left, Direction.Forward, polyVertexSpan[0]);
 
 		return CreateMesh(polyGroup, textureTransform, in config);
 	}
@@ -79,7 +80,31 @@ public interface IMeshBuilder {
 
 	Mesh CreateMesh(IMeshPolygonGroup polygons, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) => CreateMesh(polygons, textureTransform ?? Transform2D.None, new MeshCreationConfig { Name = name });
 	Mesh CreateMesh(IMeshPolygonGroup polygons, Transform2D textureTransform, scoped in MeshCreationConfig config) {
+
+		Console.WriteLine();
+		for (var i = 0; i < polygons.TotalPolygonCount; ++i) {
+			var polygon = polygons.GetPolygonAtIndex(i, out var texU, out var texV, out var texO);
+			Console.WriteLine($"FACE {polygon.Normal.NearestOrientation.AsEnum} (tex U x V = {texU.NearestOrientation.AsEnum} x {texV.NearestOrientation.AsEnum}) (texO = {texO})");
+			for (var v = 0; v < polygon.VertexCount; ++v) {
+				Console.WriteLine($"\t {polygon.Vertices[v]}");
+			}
+		}
+
 		polygons.Triangulate(textureTransform, out var vertices, out var triangles);
+
+
+		Console.WriteLine();
+		var vert = 0;
+		for (var i = 0; i < polygons.TotalPolygonCount; ++i) {
+			var polygon = polygons.GetPolygonAtIndex(i, out _, out _, out _);
+			Console.WriteLine("\t" + polygon.Normal.NearestOrientation.AsEnum);
+			for (var pv = 0; pv < polygon.VertexCount; ++pv) {
+				Console.WriteLine("\t\t" + vertices[vert]);
+				vert++;
+			}
+			Console.WriteLine();
+		}
+
 		return CreateMesh(vertices, triangles, config);
 	}
 

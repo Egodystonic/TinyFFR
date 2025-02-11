@@ -13,10 +13,11 @@ namespace Egodystonic.TinyFFR;
 // TODO Does not need to be convex, but no edges may intersect.
 // TODO Officially this is called a simple polygon
 public readonly ref partial struct Polygon : IToleranceEquatable<Polygon> {
-	readonly bool _isWoundClockwise;
+	public const bool IsWoundClockwiseByDefault = false;
 
 	public ReadOnlySpan<Location> Vertices { get; }
 	public Direction Normal { get; }
+	public bool IsWoundClockwise { get; }
 
 	public int VertexCount => Vertices.Length;
 	public int EdgeCount => VertexCount switch {
@@ -27,11 +28,11 @@ public readonly ref partial struct Polygon : IToleranceEquatable<Polygon> {
 	public int TriangleCount => Int32.Max(0, VertexCount - 2);
 	
 	public Polygon(ReadOnlySpan<Location> vertices) : this(vertices, CalculateMostLikelyNormal(vertices)) { }
-	public Polygon(ReadOnlySpan<Location> vertices, Direction normal) : this(vertices, normal, isWoundClockwise: true) { }
+	public Polygon(ReadOnlySpan<Location> vertices, Direction normal) : this(vertices, normal, isWoundClockwise: IsWoundClockwiseByDefault) { }
 	public Polygon(ReadOnlySpan<Location> vertices, Direction normal, bool isWoundClockwise) {
 		Vertices = vertices;
 		Normal = normal;
-		_isWoundClockwise = isWoundClockwise;
+		IsWoundClockwise = isWoundClockwise;
 	}
 
 	public static Direction CalculateMostLikelyNormal(ReadOnlySpan<Location> vertices) { // TODO in the unit test we need to make sure this always gives us an answer with clockwise winding wrt the normal (e.g. the normal faces out of the clockwise-wound polygon)

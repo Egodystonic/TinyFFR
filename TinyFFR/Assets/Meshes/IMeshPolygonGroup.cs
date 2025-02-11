@@ -29,6 +29,8 @@ public interface IMeshPolygonGroup : IDisposable {
 
 		outVertexBuffer = vertexBuffer;
 		outTriangleBuffer = triangleBuffer;
+
+		var cumulativeVertexCount = 0;
 		
 		for (var p = 0; p < TotalPolygonCount; ++p) {
 			var polygon = GetPolygonAtIndex(p, out var texU, out var texV, out var texOrigin);
@@ -46,7 +48,12 @@ public interface IMeshPolygonGroup : IDisposable {
 			}
 
 			polygon.ToPolygon2D(triangulationBuffer).Triangulate(triangleBuffer);
+			
+			for (var t = 0; t < polygon.TriangleCount; ++t) {
+				triangleBuffer[t] = triangleBuffer[t].ShiftedBy(cumulativeVertexCount);
+			}
 
+			cumulativeVertexCount += polygon.VertexCount;
 			vertexBuffer = vertexBuffer[polygon.VertexCount..];
 			triangleBuffer = triangleBuffer[polygon.TriangleCount..];
 		}

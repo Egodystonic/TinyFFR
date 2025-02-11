@@ -4,7 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Resources.Memory;
-using MetadataEntry = (int Index, int Count, Egodystonic.TinyFFR.Direction TexU, Egodystonic.TinyFFR.Direction TexV, Egodystonic.TinyFFR.Location TexOrigin);
+using MetadataEntry = (int VertexListStart, int VertexListCount, Egodystonic.TinyFFR.Direction Normal, bool IsClockwise, Egodystonic.TinyFFR.Direction TexU, Egodystonic.TinyFFR.Direction TexV, Egodystonic.TinyFFR.Location TexOrigin);
 
 namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
@@ -50,7 +50,7 @@ sealed unsafe class LocalMeshPolygonGroup : IMeshPolygonGroup {
 		var metadataDest = _metadataList.Value.Buffer[TotalPolygonCount..];
 
 		p.Vertices.CopyTo(vertexDest);
-		metadataDest[0] = (TotalPolygonCount, p.VertexCount, textureUDirection, textureVDirection, textureOrigin);
+		metadataDest[0] = (TotalVertexCount, p.VertexCount, p.Normal, p.IsWoundClockwise, textureUDirection, textureVDirection, textureOrigin);
 
 		TotalPolygonCount += 1;
 		TotalVertexCount += p.VertexCount;
@@ -84,7 +84,7 @@ sealed unsafe class LocalMeshPolygonGroup : IMeshPolygonGroup {
 		textureU = metadata.TexU;
 		textureV = metadata.TexV;
 		textureOrigin = metadata.TexOrigin;
-		return new(_vertexList!.Value.Buffer.Slice(metadata.Index, metadata.Count));
+		return new(_vertexList!.Value.Buffer.Slice(metadata.VertexListStart, metadata.VertexListCount), metadata.Normal, metadata.IsClockwise);
 	}
 
 	public void Clear() {

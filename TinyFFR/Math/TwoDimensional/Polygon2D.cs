@@ -13,9 +13,9 @@ namespace Egodystonic.TinyFFR;
 public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 	readonly float _containmentRadius;
 	readonly float _containmentRadiusSquared;
-	readonly bool _isWoundClockwise;
 	
 	public ReadOnlySpan<Vertex> Vertices { get; }
+	public bool IsWoundClockwise { get; }
 
 	public int VertexCount => Vertices.Length;
 	public int EdgeCount => VertexCount switch {
@@ -25,7 +25,7 @@ public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 	};
 	public int TriangleCount => Int32.Max(0, VertexCount - 2);
 
-	public Polygon2D(ReadOnlySpan<Vertex> vertices) : this(vertices, isWoundClockwise: true) { }
+	public Polygon2D(ReadOnlySpan<Vertex> vertices) : this(vertices, isWoundClockwise: Polygon.IsWoundClockwiseByDefault) { }
 	public Polygon2D(ReadOnlySpan<Vertex> vertices, bool isWoundClockwise) : this(vertices, isWoundClockwise, skipPrecalculations: true) { }
 
 	// TODO xmldoc that the vertices are expected to form a complete enclosed polygon.
@@ -34,7 +34,7 @@ public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 	// TODO Officially this is called a simple polygon
 	internal Polygon2D(ReadOnlySpan<Vertex> vertices, bool isWoundClockwise, bool skipPrecalculations) {
 		Vertices = vertices;
-		_isWoundClockwise = isWoundClockwise;
+		IsWoundClockwise = isWoundClockwise;
 
 		if (skipPrecalculations) {
 			_containmentRadius = _containmentRadiusSquared = Single.PositiveInfinity;
@@ -45,7 +45,7 @@ public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 	}
 
 	#region Factories and Conversions
-	public static Polygon2D FromVerticesWithGeometricPrecalculations(ReadOnlySpan<Vertex> vertices) => FromVerticesWithGeometricPrecalculations(vertices, isWoundClockwise: true);
+	public static Polygon2D FromVerticesWithGeometricPrecalculations(ReadOnlySpan<Vertex> vertices) => FromVerticesWithGeometricPrecalculations(vertices, isWoundClockwise: Polygon.IsWoundClockwiseByDefault);
 	public static Polygon2D FromVerticesWithGeometricPrecalculations(ReadOnlySpan<Vertex> vertices, bool isWoundClockwise) => new(vertices, isWoundClockwise, skipPrecalculations: false);
 	#endregion
 

@@ -33,6 +33,7 @@ public:
 	static void allocate_index_buffer(BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer);
 	static void dispose_vertex_buffer(VertexBufferHandle buffer);
 	static void dispose_index_buffer(IndexBufferHandle buffer);
+	static void calculate_tangent_rotation(float3 tangent, float3 bitangent, float3 normal, float4* outRotation);
 
 	static void load_texture_rgb_24(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, TextureHandle* outTexture);
 	static void load_texture_rgba_32(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, TextureHandle* outTexture);

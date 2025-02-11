@@ -96,6 +96,7 @@ void native_impl_render::render_scene(RendererHandle renderer, SwapChainHandle s
 	ThrowIfNull(swapChain, "Swap chain was null.");
 	ThrowIfNull(viewDescriptor, "View was null.");
 
+	//renderer->setClearOptions({ { 1.0f, 0.0f, 0.0f, 1.0f }, 0, true, true });
 	if (!renderer->beginFrame(swapChain)) return;
 	renderer->render(viewDescriptor);
 	renderer->endFrame();
