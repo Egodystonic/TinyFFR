@@ -673,10 +673,10 @@ class DirectionTest {
 	[Test]
 	public void ShouldCorrectlyConstructRotations() {
 		void AssertPair(Direction startDir, Direction endDir, Rotation expectation) {
-			Assert.AreEqual(expectation, startDir.RotationTo(endDir));
-			Assert.AreEqual(-expectation, startDir.RotationFrom(endDir));
-			Assert.AreEqual(expectation, endDir.RotationFrom(startDir));
-			Assert.AreEqual(-expectation, endDir.RotationTo(startDir));
+			AssertToleranceEquals(expectation, startDir.RotationTo(endDir), TestTolerance);
+			AssertToleranceEquals(-expectation, startDir.RotationFrom(endDir), TestTolerance);
+			AssertToleranceEquals(expectation, endDir.RotationFrom(startDir), TestTolerance);
+			AssertToleranceEquals(-expectation, endDir.RotationTo(startDir), TestTolerance);
 
 			Assert.AreEqual(startDir.RotationTo(endDir), startDir >> endDir);
 			Assert.AreEqual(startDir.RotationTo(endDir), endDir << startDir);

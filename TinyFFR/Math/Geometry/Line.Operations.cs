@@ -7,7 +7,7 @@ using System.Numerics;
 
 namespace Egodystonic.TinyFFR;
 
-public readonly partial struct Line {
+public readonly partial struct Line : IPhysicalValidityDeterminable {
 	public Ray ToRay(float signedDistanceAlongLine, bool flipDirection) => new(LocationAtDistance(signedDistanceAlongLine), flipDirection ? Direction.Flipped : Direction);
 	public BoundedRay ToBoundedRay(float startSignedDistanceAlongLine, float endSignedDistanceAlongLine) {
 		return new(LocationAtDistance(startSignedDistanceAlongLine), LocationAtDistance(endSignedDistanceAlongLine));
@@ -15,6 +15,8 @@ public readonly partial struct Line {
 
 	Line IInvertible<Line>.Inverted => new(PointOnLine, -Direction);
 	static Line IUnaryNegationOperators<Line, Line>.operator -(Line line) => new Line(line.PointOnLine, -line.Direction);
+
+	public bool IsPhysicallyValid => _direction != Direction.None;
 
 	#region Line-Like Methods
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

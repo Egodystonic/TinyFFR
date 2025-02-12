@@ -43,11 +43,11 @@ class LocalDependencyTest {
 
 			tex = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.White);
 			mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(tex);
-			var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor());
+			var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(CuboidDescriptor.UnitCube);
 			var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat);
 			AssertDependency(mesh, instance);
 			
-			mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor());
+			mesh = factory.AssetLoader.MeshBuilder.CreateMesh(CuboidDescriptor.UnitCube);
 			instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat);
 			AssertDependency(mat, instance);
 			mesh.Dispose();

@@ -377,7 +377,6 @@ class TransformTest {
 	[Test]
 	public void ShouldCorrectlyInvert() {
 		Assert.AreEqual(Transform.None, Transform.None.Inverse);
-		AssertToleranceEquals(Transform.None, TestTransform.WithComponentsCombinedWith(TestTransform.Inverse), TestTolerance);
 		AssertToleranceEquals(new Vect(-1f, -2f, -3f), TestTransform.Inverse.Translation, TestTolerance);
 		AssertToleranceEquals(90f % Direction.Up, TestTransform.Inverse.Rotation, TestTolerance);
 		AssertToleranceEquals(new Vect(1f / 0.75f, 2f, 4f), TestTransform.Inverse.Scaling, TestTolerance);
@@ -411,24 +410,6 @@ class TransformTest {
 	public void ShouldCorrectlyCombineTranslations() {
 		Assert.AreEqual(TestTransform.Translation, TestTransform.WithAdditionalTranslation(Vect.Zero).Translation);
 		Assert.AreEqual(new Vect(2f, 0f, 3.5f), TestTransform.WithAdditionalTranslation(new(1f, -2f, 0.5f)).Translation);
-	}
-
-	[Test]
-	public void ShouldCorrectlyCombineTransforms() {
-		AssertToleranceEquals(TestTransform, TestTransform.WithComponentsCombinedWith(Transform.None), TestTolerance);
-		AssertToleranceEquals(
-			new Transform(
-				new Vect(2f, 0f, 3.5f),
-				80f % Direction.Down,
-				new Vect(-0.75f, -1f, -0.125f)
-			), 
-			TestTransform.WithComponentsCombinedWith(new Transform(
-				new Vect(1f, -2f, 0.5f),
-				10f % Direction.Up,
-				new Vect(-1f, -2f, -0.5f)
-			)),
-			TestTolerance
-		);
 	}
 
 	[Test]

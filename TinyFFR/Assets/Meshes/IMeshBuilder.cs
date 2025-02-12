@@ -13,6 +13,10 @@ public interface IMeshBuilder {
 
 	Mesh CreateMesh(CuboidDescriptor cuboidDesc, Transform2D? textureTransform = null, bool centreTextureOrigin = false, ReadOnlySpan<char> name = default) => CreateMesh(cuboidDesc, textureTransform ?? Transform2D.None, centreTextureOrigin, new MeshCreationConfig { Name = name });
 	Mesh CreateMesh(CuboidDescriptor cuboidDesc, Transform2D textureTransform, bool centreTextureOrigin, scoped in MeshCreationConfig config) {
+		if (!cuboidDesc.IsPhysicallyValid) {
+			throw new ArgumentException("Given cuboid must be physically valid (all extents should be positive).", nameof(cuboidDesc));
+		}
+		
 		var polyVertexSpan = (Span<Location>) stackalloc Location[4];
 		using var polyGroup = AllocateNewPolygonGroup();
 

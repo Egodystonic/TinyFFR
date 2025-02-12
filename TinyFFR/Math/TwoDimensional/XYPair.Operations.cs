@@ -102,7 +102,7 @@ partial struct XYPair<T> :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static XYPair<T> operator *(XYPair<T> pair, T scalar) => pair.ScaledBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static XYPair<T> operator /(XYPair<T> pair, T divisor) => pair.ScaledBy(T.One / divisor);
+	public static XYPair<T> operator /(XYPair<T> pair, T divisor) => new(pair.X / divisor, pair.Y / divisor);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static XYPair<T> operator *(T scalar, XYPair<T> pair) => pair.ScaledBy(scalar);
 	public XYPair<T> ScaledBy(T scalar) => new(X * scalar, Y * scalar);

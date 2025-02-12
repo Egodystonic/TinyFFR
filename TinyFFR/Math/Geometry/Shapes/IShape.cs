@@ -18,7 +18,7 @@ public readonly record struct ConvexShapeLineIntersection(Location First, Locati
 	}
 }
 
-public interface IShape : IMathPrimitive;
+public interface IShape : IMathPrimitive, IPhysicalValidityDeterminable;
 public interface IShape<TSelf> :
 	IShape,
 	IMathPrimitive<TSelf>,

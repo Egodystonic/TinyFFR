@@ -7,7 +7,7 @@ using System.Net;
 
 namespace Egodystonic.TinyFFR;
 
-public readonly partial struct Ray {
+public readonly partial struct Ray : IPhysicalValidityDeterminable {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay ToBoundedRay(float signedDistanceToEndPoint) => new(StartPoint, Direction * signedDistanceToEndPoint);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -20,6 +20,8 @@ public readonly partial struct Ray {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Ray operator -(Ray operand) => operand.Flipped;
 	Ray IInvertible<Ray>.Inverted => Flipped;
+
+	public bool IsPhysicallyValid => _direction != Direction.None;
 
 	#region Line-Like Methods
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

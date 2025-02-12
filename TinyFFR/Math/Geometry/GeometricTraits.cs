@@ -311,4 +311,8 @@ public interface ILengthAdjustable<out TSelf> where TSelf : ILengthAdjustable<TS
 	TSelf WithMaxLength(float maxLength);
 	TSelf WithMinLength(float minLength);
 }
+
+public interface IPhysicalValidityDeterminable {
+	bool IsPhysicallyValid { get; }
+}
 #endregion

@@ -274,21 +274,22 @@ class XYPairTest {
 	[Test]
 	public void ShouldCorrectlyScale() {
 		void AssertForType<T>() where T : unmanaged, INumber<T> {
-			Assert.AreEqual(XYPair<T>.Zero, XYPair<T>.Zero * -10f);
-			Assert.AreEqual(XYPair<T>.Zero, XYPair<T>.Zero * 0f);
-			Assert.AreEqual(XYPair<T>.Zero, XYPair<T>.Zero * 10f);
-			Assert.AreEqual(XYPair<T>.Zero, new XYPair<T>(T.CreateChecked(1), T.CreateChecked(2)) * 0f);
-			AssertToleranceEquals(new XYPair<T>(T.CreateChecked(2), T.CreateChecked(4)), new XYPair<T>(T.CreateChecked(1), T.CreateChecked(2)) * 2f, TestTolerance);
-			AssertToleranceEquals(new XYPair<T>(T.CreateChecked(-2), T.CreateChecked(-4)), new XYPair<T>(T.CreateChecked(1), T.CreateChecked(2)) * -2f, TestTolerance);
+			Assert.AreEqual(XYPair<T>.Zero, XYPair<T>.Zero.ScaledByReal(-10f));
+			Assert.AreEqual(XYPair<T>.Zero, XYPair<T>.Zero.ScaledByReal(0f));
+			Assert.AreEqual(XYPair<T>.Zero, XYPair<T>.Zero.ScaledByReal(10f));
+			Assert.AreEqual(XYPair<T>.Zero, new XYPair<T>(T.CreateChecked(1), T.CreateChecked(2)).ScaledByReal(0f));
+			AssertToleranceEquals(new XYPair<T>(T.CreateChecked(2), T.CreateChecked(4)), new XYPair<T>(T.CreateChecked(1), T.CreateChecked(2)).ScaledByReal(2f), TestTolerance);
+			AssertToleranceEquals(new XYPair<T>(T.CreateChecked(-2), T.CreateChecked(-4)), new XYPair<T>(T.CreateChecked(1), T.CreateChecked(2)).ScaledByReal(-2f), TestTolerance);
 
 			for (var x = -5; x <= 5; x += 1) {
 				for (var y = -5; y <= 5; y += 1) {
 					var v = new XYPair<T>(T.CreateChecked(x), T.CreateChecked(y));
 
-					AssertToleranceEquals(v * x, x * v, TestTolerance);
+					AssertToleranceEquals((v.Cast<float>() * x).Cast<T>(), v.ScaledByReal(x), TestTolerance);
 
 					if (x == 0) continue;
-					AssertToleranceEquals(v * (1f / x), v / x, TestTolerance);
+					AssertToleranceEquals(new XYPair<T>(v.X / T.CreateChecked(x), v.Y / T.CreateChecked(x)), v / T.CreateChecked(x), TestTolerance);
+					AssertToleranceEquals((v.Cast<float>() / x).Cast<T>(), v.ScaledByReal(1f / x), TestTolerance);
 				}
 			}
 		}
@@ -399,12 +400,12 @@ class XYPairTest {
 	[Test]
 	public void ShouldCorrectlyCalculateDistance() {
 		Assert.AreEqual(10f, ThreeFourFloat.DistanceFrom(-ThreeFourFloat), TestTolerance);
-		Assert.AreEqual(5f, ThreeFourFloat.DistanceFrom(default), TestTolerance);
-		Assert.AreEqual(5f, ThreeFourFloat.Negated.DistanceFrom(default), TestTolerance);
+		Assert.AreEqual(5f, ThreeFourFloat.DistanceFrom(default(XYPair<float>)), TestTolerance);
+		Assert.AreEqual(5f, ThreeFourFloat.Negated.DistanceFrom(default(XYPair<float>)), TestTolerance);
 
 		Assert.AreEqual(100f, ThreeFourFloat.DistanceSquaredFrom(-ThreeFourFloat), TestTolerance);
-		Assert.AreEqual(25f, ThreeFourFloat.DistanceSquaredFrom(default), TestTolerance);
-		Assert.AreEqual(25f, ThreeFourFloat.Negated.DistanceSquaredFrom(default), TestTolerance);
+		Assert.AreEqual(25f, ThreeFourFloat.DistanceSquaredFrom(default(XYPair<float>)), TestTolerance);
+		Assert.AreEqual(25f, ThreeFourFloat.Negated.DistanceSquaredFrom(default(XYPair<float>)), TestTolerance);
 	}
 
 	[Test]

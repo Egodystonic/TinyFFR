@@ -106,9 +106,10 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 
 	public static Direction FromDualOrthogonalization(Direction dirA, Direction dirB) {
 		var cross = Vector3.Cross(dirA.ToVector3(), dirB.ToVector3());
-		var crossLengthSquared = cross.LengthSquared();
+		var crossLength = cross.LengthSquared();
 
-		if (crossLengthSquared > 0f) return FromVector3(cross);
+		if (MathF.Abs(crossLength - 1f) <= 0.001f) return FromVector3PreNormalized(cross);
+		else if (crossLength >= 0.001f) return FromVector3(cross);
 		else if (dirA == None || dirB == None) return None;
 		else return dirA.AnyOrthogonal();
 	}

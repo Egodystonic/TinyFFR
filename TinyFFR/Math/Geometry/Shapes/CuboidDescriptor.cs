@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR;
 public readonly partial struct CuboidDescriptor : IConvexShape<CuboidDescriptor> {
 	internal const float DefaultRandomMin = 0.5f;
 	internal const float DefaultRandomMax = 1.5f;
-	public static readonly CuboidDescriptor UnitCube = new(1f, 1f, 1f);
+	public static readonly CuboidDescriptor UnitCube = new(1f);
 	const int IteratorVersionNumber = 0;
 
 	readonly float _halfWidth;

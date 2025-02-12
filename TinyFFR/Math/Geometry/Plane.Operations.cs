@@ -17,7 +17,8 @@ partial struct Plane :
 	ISignedDistanceMeasurable<Plane, Location>, IContainer<Plane, Location>, IClosestEndogenousPointDiscoverable<Plane, Location>,
 	IAngleMeasurable<Plane, Direction>, IReflectionTarget<Plane, Direction, Direction>, IParallelizationTarget<Plane, Direction>, IOrthogonalizationTarget<Plane, Direction>,
 	IAngleMeasurable<Plane, Vect>, IReflectionTarget<Plane, Vect, Vect>, IProjectionTarget<Plane, Vect>, IParallelizationTarget<Plane, Vect>, IOrthogonalizationTarget<Plane, Vect>,
-	IPrecomputationInterpolatable<Plane, Rotation> {
+	IPrecomputationInterpolatable<Plane, Rotation>,
+	IPhysicalValidityDeterminable {
 	public const float DefaultParallelOrthogonalTestApproximationDegrees = Direction.DefaultParallelOrthogonalTestApproximationDegrees;
 
 	public Plane Flipped {
@@ -26,6 +27,8 @@ partial struct Plane :
 	Plane IInvertible<Plane>.Inverted => Flipped;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Plane operator -(Plane operand) => operand.Flipped;
+
+	public bool IsPhysicallyValid => Normal != Direction.None;
 
 	#region Translation
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
