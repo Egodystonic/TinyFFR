@@ -9,31 +9,52 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public static unsafe partial class TexturePattern {
-	internal static readonly XYPair<int> ChequerboardDefaultRepetitionCount = (8, 8);
-	internal static readonly XYPair<int> ChequerboardDefaultSquareSize = (64, 64);
+	public static readonly XYPair<int> ChequerboardDefaultRepetitionCount = (8, 8);
+	public const int ChequerboardDefaultCellResolution = 64;
 
-	public static TexturePattern<T> Chequerboard<T>(T firstValue, T secondValue, XYPair<int>? repetitionCount = null, XYPair<int>? squareSize = null) where T : unmanaged {
-		return Chequerboard(firstValue, secondValue, firstValue, secondValue, repetitionCount, squareSize);
+	public static TexturePattern<T> Chequerboard<T>(T firstValue, T secondValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution) where T : unmanaged {
+		return Chequerboard(firstValue, secondValue, firstValue, secondValue, repetitionCount, cellResolution);
 	}
 
-	public static TexturePattern<T> Chequerboard<T>(T firstValue, T secondValue, T thirdValue, XYPair<int>? repetitionCount = null, XYPair<int>? squareSize = null) where T : unmanaged {
-		return Chequerboard(firstValue, secondValue, thirdValue, secondValue, repetitionCount, squareSize);
+	public static TexturePattern<T> Chequerboard<T>(T firstValue, T secondValue, T thirdValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution) where T : unmanaged {
+		return Chequerboard(firstValue, secondValue, thirdValue, secondValue, repetitionCount, cellResolution);
 	}
 
-	public static TexturePattern<T> Chequerboard<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, XYPair<int>? repetitionCount = null, XYPair<int>? squareSize = null) where T : unmanaged {
-		static XYPair<int> GetTextureSize(XYPair<int> repetitionCount, XYPair<int> squareSize) => squareSize * repetitionCount;
+	public static TexturePattern<T> Chequerboard<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution) where T : unmanaged {
+		return ChequerboardBordered(firstValue, 0, firstValue, secondValue, thirdValue, fourthValue, repetitionCount, cellResolution);
+	}
 
-		static T GetTexel(ReadOnlySpan<byte> args, XYPair<int> xy) {
+	public static TexturePattern<T> ChequerboardBordered<T>(T borderValue, int borderWidth, T firstValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution) where T : unmanaged {
+		return ChequerboardBordered(borderValue, borderWidth, firstValue, firstValue, firstValue, firstValue, repetitionCount, cellResolution);
+	}
+
+	public static TexturePattern<T> ChequerboardBordered<T>(T borderValue, int borderWidth, T firstValue, T secondValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution) where T : unmanaged {
+		return ChequerboardBordered(borderValue, borderWidth, firstValue, secondValue, firstValue, secondValue, repetitionCount, cellResolution);
+	}
+
+	public static TexturePattern<T> ChequerboardBordered<T>(T borderValue, int borderWidth, T firstValue, T secondValue, T thirdValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution) where T : unmanaged {
+		return ChequerboardBordered(borderValue, borderWidth, firstValue, secondValue, thirdValue, secondValue, repetitionCount, cellResolution);
+	}
+
+	public static TexturePattern<T> ChequerboardBordered<T>(T borderValue, int borderWidth, T firstValue, T secondValue, T thirdValue, T fourthValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution) where T : unmanaged {
+		static XYPair<int> GetTextureSize(XYPair<int> repetitionCount, int cellResolution) => cellResolution * repetitionCount;
+
+		static T GetTexel(ReadOnlySpan<byte> args, XYPair<int> dimensions, XYPair<int> xy) {
 			args
-				.ReadFirstArg(out XYPair<int> repetitionCount)
-				.AndThen(out XYPair<int> squareSize)
+				.ReadFirstArg(out int cellResolution)
 				.AndThen(out T firstValue)
 				.AndThen(out T secondValue)
 				.AndThen(out T thirdValue)
-				.AndThen(out T fourthValue);
+				.AndThen(out T fourthValue)
+				.AndThen(out T borderValue)
+				.AndThen(out int borderWidth);
 
-			var rowColumnIndices = xy / squareSize;
-
+			FlipY(dimensions, ref xy);
+			var xyModCellRes = new XYPair<int>(xy.X % cellResolution, xy.Y % cellResolution);
+			var distanceToSquareEdge = Int32.Min(Int32.Min(xyModCellRes.X, cellResolution - xyModCellRes.X), Int32.Min(xyModCellRes.Y, cellResolution - xyModCellRes.Y));
+			if (distanceToSquareEdge < borderWidth) return borderValue;
+			
+			var rowColumnIndices = xy / cellResolution;
 			return ((rowColumnIndices.X + rowColumnIndices.Y) & 0b11) switch {
 				3 => fourthValue,
 				2 => thirdValue,
@@ -42,17 +63,17 @@ public static unsafe partial class TexturePattern {
 			};
 		}
 
-		var textureSize = GetTextureSize(repetitionCount ?? ChequerboardDefaultRepetitionCount, squareSize ?? ChequerboardDefaultSquareSize);
-		if (textureSize.X < 1 || textureSize.Y < 1) throw new ArgumentException("Repetition count and square size must have positive components.");
-		
+		var textureSize = GetTextureSize(repetitionCount ?? ChequerboardDefaultRepetitionCount, cellResolution);
+
 		var argData = new TexturePatternArgData();
 		argData
-			.WriteFirstArg(repetitionCount ?? ChequerboardDefaultRepetitionCount)
-			.AndThen(squareSize ?? ChequerboardDefaultSquareSize)
+			.WriteFirstArg(cellResolution)
 			.AndThen(firstValue)
 			.AndThen(secondValue)
 			.AndThen(thirdValue)
-			.AndThen(fourthValue);
+			.AndThen(fourthValue)
+			.AndThen(borderValue)
+			.AndThen(borderWidth);
 		return new TexturePattern<T>(textureSize, &GetTexel, argData);
 	}
 }

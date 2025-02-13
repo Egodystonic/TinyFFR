@@ -27,6 +27,7 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	#region Factories and Conversions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Transform FromScalingOnly(Vect scaling) => new(scaling: scaling);
+	public static Transform FromScalingOnly(float scalar) => FromScalingOnly(new Vect(scalar));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Transform FromRotationOnly(Rotation rotation) => new(rotation: rotation);

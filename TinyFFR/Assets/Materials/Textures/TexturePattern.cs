@@ -25,6 +25,11 @@ public static unsafe partial class TexturePattern {
 		return ((Span<byte>) argData).AndThen(arg);
 	}
 	static Span<byte> AndThen<T>(this Span<byte> argData, T arg) where T : unmanaged {
+		if (argData.Length < sizeof(T)) {
+			throw new InvalidOperationException($"The given texture pattern can not be used with arguments of " +
+												$"type '{typeof(T).Name}' because they are too large to fit in internal " +
+												$"argument data on the stack.");
+		}
 		MemoryMarshal.Write(argData, arg);
 		return argData[sizeof(T)..];
 	}
@@ -35,13 +40,16 @@ public static unsafe partial class TexturePattern {
 		outValue = MemoryMarshal.Read<T>(args);
 		return args[sizeof(T)..];
 	}
+
+	static void FlipX(XYPair<int> dimensions, ref XYPair<int> xy) => xy = xy with { X = dimensions.X - (xy.X + 1) };
+	static void FlipY(XYPair<int> dimensions, ref XYPair<int> xy) => xy = xy with { Y = dimensions.Y - (xy.Y + 1) };
 }
 
 [InlineArray(ArgsLengthMax)]
-struct TexturePatternArgData { public const int ArgsLengthMax = 128; byte _; }
-public readonly unsafe ref struct TexturePattern<T> where T : unmanaged {
+struct TexturePatternArgData { public const int ArgsLengthMax = 256; byte _; }
+public readonly unsafe struct TexturePattern<T> where T : unmanaged {
 	readonly XYPair<int> _dimensions;
-	readonly delegate* managed<ReadOnlySpan<byte>, XYPair<int>, T> _generationFunc;
+	readonly delegate* managed<ReadOnlySpan<byte>, XYPair<int>, XYPair<int>, T> _generationFunc;
 	readonly TexturePatternArgData _argsBuffer;
 
 	internal XYPair<int> Dimensions => _dimensions;
@@ -51,7 +59,7 @@ public readonly unsafe ref struct TexturePattern<T> where T : unmanaged {
 			if (_generationFunc == null) throw InvalidObjectException.InvalidDefault(typeof(TexturePattern<T>));
 			if (x < 0 || x >= _dimensions.X) throw new ArgumentOutOfRangeException(nameof(x));
 			if (y < 0 || y >= _dimensions.Y) throw new ArgumentOutOfRangeException(nameof(y));
-			return _generationFunc(_argsBuffer, new(x, y));
+			return _generationFunc(_argsBuffer, _dimensions, new(x, y));
 		}
 	}
 
@@ -59,7 +67,7 @@ public readonly unsafe ref struct TexturePattern<T> where T : unmanaged {
 		this = TexturePattern.PlainFill<T>(default);
 	}
 
-	internal TexturePattern(XYPair<int> dimensions, delegate*<ReadOnlySpan<byte>, XYPair<int>, T> generationFunc, TexturePatternArgData argsBuffer) {
+	internal TexturePattern(XYPair<int> dimensions, delegate*<ReadOnlySpan<byte>, XYPair<int>, XYPair<int>, T> generationFunc, TexturePatternArgData argsBuffer) {
 		TexturePattern.AssertDimensions(dimensions);
 		ArgumentNullException.ThrowIfNull(generationFunc);
 

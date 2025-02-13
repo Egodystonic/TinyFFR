@@ -38,10 +38,6 @@ public readonly record struct MeshVertex {
 			_tanW = quat.W;
 		}
 	}
-	public float TangentHandedness {
-		get => _tanW;
-		init => _tanW = value;
-	}
 
 	public MeshVertex(Location location, XYPair<float> textureCoords, Direction tangent, Direction bitangent, Direction normal)
 		: this(location, textureCoords, CalculateTangentRotation(tangent, bitangent, normal)) { }

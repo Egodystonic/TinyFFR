@@ -61,18 +61,9 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		_shaderResourceBufferPool = new FixedByteBufferPool(config.MaxShaderBufferSizeBytes);
 		_textureImplProvider = new(this);
 
-		_defaultColorMap = new(() => (this as IMaterialBuilder).CreateColorMap(
-			TexturePattern.PlainFill(new ColorVect(StandardColor.White)), name: DefaultColorMapName
-		));
-		_defaultNormalMap = new(() => (this as IMaterialBuilder).CreateNormalMap(
-			TexturePattern.PlainFill(Direction.Forward), name: DefaultNormalMapName
-		));
-		_defaultOrmMap = new(() => (this as IMaterialBuilder).CreateOrmMap(
-			TexturePattern.PlainFill(1f), 
-			TexturePattern.PlainFill(0.4f), 
-			TexturePattern.PlainFill(0f), 
-			name: DefaultOrmMapName
-		));
+		_defaultColorMap = new(() => (this as IMaterialBuilder).CreateColorMap(name: DefaultColorMapName));
+		_defaultNormalMap = new(() => (this as IMaterialBuilder).CreateNormalMap(name: DefaultNormalMapName));
+		_defaultOrmMap = new(() => (this as IMaterialBuilder).CreateOrmMap(name: DefaultOrmMapName));
 	}
 
 	Texture IMaterialBuilder.CreateTextureUsingPreallocatedBuffer<TTexel>(IMaterialBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureCreationConfig config) => CreateTextureUsingPreallocatedBuffer(preallocatedBuffer, in config);

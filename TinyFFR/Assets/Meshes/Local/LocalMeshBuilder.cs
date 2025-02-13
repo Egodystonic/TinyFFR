@@ -74,6 +74,8 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 
 		var tempVertexBuffer = _globals.CreateGpuHoldingBufferAndCopyData(vertices);
 		var tempIndexBuffer = _globals.CreateGpuHoldingBufferAndCopyData(triangles);
+
+		foreach (var vertex in vertices) Console.WriteLine(vertex);
 		
 		if (config.FlipTriangles) {
 			var intSpan = tempIndexBuffer.AsSpan<int>();

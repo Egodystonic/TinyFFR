@@ -10,7 +10,7 @@ namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public static unsafe partial class TexturePattern {
 	public static TexturePattern<T> PlainFill<T>(T fillValue) where T : unmanaged {
-		static T GetTexel(ReadOnlySpan<byte> args, XYPair<int> xy) {
+		static T GetTexel(ReadOnlySpan<byte> args, XYPair<int> dimensions, XYPair<int> xy) {
 			args.ReadFirstArg(out T result);
 			return result;
 		}

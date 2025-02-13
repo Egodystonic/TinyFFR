@@ -42,15 +42,43 @@ using var loop = factory.ApplicationLoopBuilder.CreateLoop(60, name: "Larry the 
 using var camera = factory.CameraBuilder.CreateCamera(Location.Origin, name: "Carl the Camera");
 var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(1f), name: "Clive the Cuboid");
 //using var tex = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.White, name: "Terry the Texture");
-var colorPattern = TexturePattern.Chequerboard(new ColorVect(1f, 0f, 0f), new ColorVect(0f, 1f, 0f), new ColorVect(0f, 0f, 1f), new ColorVect(0.5f, 0.5f, 0.5f), (4, 4));
-var normalPattern = TexturePattern.Chequerboard(new Direction(-0.3f, 0f, 1f), new Direction(0f, 0f, 1f), new Direction(0f, -0.3f, 1f), (4, 4));
-var occlusionPattern = TexturePattern.Chequerboard(0.5f, 1f, 0.8f, (27, 27));
-var roughnessPattern = TexturePattern.Chequerboard(0.8f, 0.4f, 1f, (27, 27));
-var metallicPattern = TexturePattern.Chequerboard(1f, 0f, (27, 27));
+//var colorPattern = TexturePattern.ChequerboardBordered(new ColorVect(1f, 1f, 1f), 4, new ColorVect(1f, 0f, 0f), new ColorVect(0f, 1f, 0f), new ColorVect(0f, 0f, 1f), new ColorVect(0.5f, 0.5f, 0.5f), (4, 4));
+//var colorPattern = TexturePattern.GradientRadial(new ColorVect(0.5f, 0.5f, 0.5f), new ColorVect(0f, 0f, 0f), innerOuterRatio: 0.4f);
+//var colorPattern = TexturePattern.PlainFill(new ColorVect(1f, 1f, 1f));
+// var colorPattern = TexturePattern.Rectangles(
+// 	interiorSize:			(96, 96),
+// 	borderSize:				(15, 15),
+// 	paddingSize:				(30, 30),
+// 	interiorValue:			new ColorVect(1f, 1f, 1f),
+// 	borderRightValue:		new ColorVect(1f, 0f, 0f),
+// 	borderTopValue:			new ColorVect(0f, 1f, 0f),
+// 	borderLeftValue:			new ColorVect(0f, 0f, 1f),
+// 	borderBottomValue:		new ColorVect(1f, 1f, 0f),
+// 	paddingValue:			new ColorVect(0.5f, 0.5f, 0.5f),
+// 	repetitions:				(4, 4)
+// );
+var colorPattern = TexturePattern.Rectangles(
+	new ColorVect(1f, 0f, 0f),
+	new ColorVect(0f, 0f, 1f)
+);
+var metallicPattern = TexturePattern.ChequerboardBordered(0f, 25, 1f, (4, 4));
+// var normalPattern = TexturePattern.Rectangles(
+// 	interiorSize:			(96, 96),
+// 	borderSize:				(15, 15),
+// 	paddingSize:				(30, 30),
+// 	interiorValue:			Direction.Forward,
+// 	borderRightValue:		new Direction(1f, 0f, 1f),
+// 	borderTopValue:			new Direction(0f, 1f, 1f),
+// 	borderLeftValue:			new Direction(-1f, 0f, 1f),
+// 	borderBottomValue:		new Direction(0f, -1f, 1f),
+// 	paddingValue:			Direction.Forward, 
+// 	repetitions:				(4, 4)
+// );
+
 using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(colorPattern, name: "Terry the Texture");
-using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap(normalPattern);
-using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(occlusionPattern, roughnessPattern, metallicPattern);
-using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap, /*normalMap,*/ ormMap: ormMap, name: "Matthew the Material");
+using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap();
+using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(metallicPattern: metallicPattern);
+using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap, normalMap, ormMap: ormMap, name: "Matthew the Material");
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: "Iain the Instance");
 using var light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f), falloffRange: 10f, brightness: 5000000f, name: "Lars the Light"); // TODO why so bright?
 using var scene = factory.SceneBuilder.CreateScene(name: "Sean the Scene");
@@ -79,15 +107,15 @@ while (!loop.Input.UserQuitRequested) {
 	_ = loop.IterateOnce();
 	renderer.Render();
 
-	var newMesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(1f), new(rotation: (float) loop.TotalIteratedTime.TotalSeconds * -47f), true, name: "Clive the Cuboid");
-	instance.Mesh = newMesh;
-	mesh.Dispose();
-	mesh = newMesh;
+	// var newMesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(1f), new(rotation: (float) loop.TotalIteratedTime.TotalSeconds * -47f), true, name: "Clive the Cuboid");
+	// instance.Mesh = newMesh;
+	// mesh.Dispose();
+	// mesh = newMesh;
 
 	instance.RotateBy(0.5f * 1f % Direction.Up);
 	instance.RotateBy(0.5f * 0.66f % Direction.Right);
 	
-	light.Color = light.Color.WithHueAdjustedBy(1f);
-	light.Position = instance.Position + (((instance.Position >> camera.Position) * 1.2f) * ((MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 5f) * 15f) % Direction.Down));
-	light.Position += Direction.Up * MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 8f) * 0.5f;
+	light.Color = light.Color.WithHueAdjustedBy(0.5f);
+	light.Position = instance.Position + (((instance.Position >> camera.Position) * 1.2f) * ((MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 0.8f) * 45f) % Direction.Down));
+	light.Position += Direction.Up * MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 1f) * 3.5f;
 }

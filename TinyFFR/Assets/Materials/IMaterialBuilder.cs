@@ -16,6 +16,12 @@ public interface IMaterialBuilder {
 		}
 	}
 
+	static ColorVect DefaultTexelColor { get; } = StandardColor.White;
+	static Direction DefaultTexelNormal { get; } = Direction.Forward;
+	static float DefaultTexelOcclusion { get; } = 1f;
+	static float DefaultTexelRoughness { get; } = 0.4f;
+	static float DefaultTexelMetallic { get; } = 0f;
+
 	Texture DefaultColorMap { get; }
 	Texture DefaultNormalMap { get; }
 	Texture DefaultOrmMap { get; }
@@ -40,8 +46,9 @@ public interface IMaterialBuilder {
 	Texture CreateColorMap(ColorVect plainFillColor, bool includeAlphaChannel = false, ReadOnlySpan<char> name = default) {
 		return CreateColorMap(TexturePattern.PlainFill(plainFillColor), includeAlphaChannel, name);
 	}
-	Texture CreateColorMap(TexturePattern<ColorVect> pattern, bool includeAlphaChannel = false, ReadOnlySpan<char> name = default) {
-		var dimensions = pattern.Dimensions;
+	Texture CreateColorMap(TexturePattern<ColorVect>? pattern = null, bool includeAlphaChannel = false, ReadOnlySpan<char> name = default) {
+		pattern ??= TexturePattern.PlainFill(DefaultTexelColor);
+		var dimensions = pattern.Value.Dimensions;
 		TexturePattern.AssertDimensions(dimensions);
 
 		var config = new TextureCreationConfig {
@@ -52,12 +59,13 @@ public interface IMaterialBuilder {
 		};
 
 		if (includeAlphaChannel) {
-			return CreateTextureUsingPreallocatedBuffer(FillPreallocatedBuffer<ColorVect, TexelRgba32>(pattern), config);
+			return CreateTextureUsingPreallocatedBuffer(FillPreallocatedBuffer<ColorVect, TexelRgba32>(pattern.Value), config);
 		}
-		return CreateTextureUsingPreallocatedBuffer(FillPreallocatedBuffer<ColorVect, TexelRgb24>(pattern), config);
+		return CreateTextureUsingPreallocatedBuffer(FillPreallocatedBuffer<ColorVect, TexelRgb24>(pattern.Value), config);
 	}
-	Texture CreateNormalMap(TexturePattern<Direction> pattern, ReadOnlySpan<char> name = default) {
-		var dimensions = pattern.Dimensions;
+	Texture CreateNormalMap(TexturePattern<Direction>? pattern = null, ReadOnlySpan<char> name = default) {
+		pattern ??= TexturePattern.PlainFill(DefaultTexelNormal);
+		var dimensions = pattern.Value.Dimensions;
 		TexturePattern.AssertDimensions(dimensions);
 
 		var config = new TextureCreationConfig {
@@ -67,9 +75,17 @@ public interface IMaterialBuilder {
 			Name = name
 		};
 
-		return CreateTextureUsingPreallocatedBuffer(FillPreallocatedBuffer<Direction, TexelRgb24>(pattern), config);
+		return CreateTextureUsingPreallocatedBuffer(FillPreallocatedBuffer<Direction, TexelRgb24>(pattern.Value), config);
 	}
-	Texture CreateOrmMap(TexturePattern<float> occlusionPattern, TexturePattern<float> roughnessPattern, TexturePattern<float> metallicPattern, ReadOnlySpan<char> name = default) {
+	Texture CreateOrmMap(TexturePattern<float>? occlusionPattern = null, TexturePattern<float>? roughnessPattern = null, TexturePattern<float>? metallicPattern = null, ReadOnlySpan<char> name = default) {
+		return CreateOrmMap(
+			occlusionPattern ?? TexturePattern.PlainFill(DefaultTexelOcclusion),
+			roughnessPattern ?? TexturePattern.PlainFill(DefaultTexelRoughness),
+			metallicPattern ?? TexturePattern.PlainFill(DefaultTexelMetallic),
+			name
+		);
+	}
+	private Texture CreateOrmMap(TexturePattern<float> occlusionPattern, TexturePattern<float> roughnessPattern, TexturePattern<float> metallicPattern, ReadOnlySpan<char> name = default) {
 		static byte FloatToByte(float f) => (byte) (f * Byte.MaxValue);
 		
 		XYPair<int> dimensions;
