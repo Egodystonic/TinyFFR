@@ -42,7 +42,7 @@ using var loop = factory.ApplicationLoopBuilder.CreateLoop(60, name: "Larry the 
 using var camera = factory.CameraBuilder.CreateCamera(Location.Origin, name: "Carl the Camera");
 var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(1f), name: "Clive the Cuboid");
 //using var tex = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.White, name: "Terry the Texture");
-//var colorPattern = TexturePattern.ChequerboardBordered(new ColorVect(1f, 1f, 1f), 4, new ColorVect(1f, 0f, 0f), new ColorVect(0f, 1f, 0f), new ColorVect(0f, 0f, 1f), new ColorVect(0.5f, 0.5f, 0.5f), (4, 4));
+var colorPattern = TexturePattern.ChequerboardBordered(new ColorVect(1f, 1f, 1f), 4, new ColorVect(1f, 0f, 0f), new ColorVect(0f, 1f, 0f), new ColorVect(0f, 0f, 1f), new ColorVect(0.5f, 0.5f, 0.5f), (4, 4));
 //var colorPattern = TexturePattern.GradientRadial(new ColorVect(0.5f, 0.5f, 0.5f), new ColorVect(0f, 0f, 0f), innerOuterRatio: 0.4f);
 //var colorPattern = TexturePattern.PlainFill(new ColorVect(1f, 1f, 1f));
 // var colorPattern = TexturePattern.Rectangles(
@@ -57,10 +57,40 @@ var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(1f), 
 // 	paddingValue:			new ColorVect(0.5f, 0.5f, 0.5f),
 // 	repetitions:				(4, 4)
 // );
-var colorPattern = TexturePattern.Rectangles(
-	new ColorVect(1f, 0f, 0f),
-	new ColorVect(0f, 0f, 1f)
-);
+// var colorPattern = TexturePattern.Rectangles(
+// 	new ColorVect(1f, 0f, 0f),
+// 	new ColorVect(0f, 0f, 1f)
+// );
+// var colorPattern = TexturePattern.Lines(
+// 	new ColorVect(1f, 0f, 0f).WithHueAdjustedBy(36f * 0f), 
+// 	new ColorVect(1f, 0f, 0f).WithHueAdjustedBy(36f * 1f), 
+// 	new ColorVect(1f, 0f, 0f).WithHueAdjustedBy(36f * 2f), 
+// 	new ColorVect(1f, 0f, 0f).WithHueAdjustedBy(36f * 3f), 
+// 	new ColorVect(1f, 0f, 0f).WithHueAdjustedBy(36f * 4f), 
+// 	new ColorVect(1f, 0f, 0f).WithHueAdjustedBy(36f * 5f), 
+// 	new ColorVect(1f, 0f, 0f).WithHueAdjustedBy(36f * 6f), 
+// 	new ColorVect(1f, 0f, 0f).WithHueAdjustedBy(36f * 7f), 
+// 	new ColorVect(1f, 0f, 0f).WithHueAdjustedBy(36f * 8f), 
+// 	new ColorVect(1f, 0f, 0f).WithHueAdjustedBy(36f * 9f), 
+// 	true, 
+// 	perturbationMagnitude: 0.1f
+// );
+// var colorPattern = TexturePattern.Circles(
+// 	new ColorVect(0.6f, 0.6f, 0.6f),
+// 	new ColorVect(1f, 0f, 0f),
+// 	new ColorVect(0.3f, 0.3f, 0.3f)
+// );
+// var colorPattern = TexturePattern.Circles(
+// 	new ColorVect(0.5f, 0f, 0f).WithHue(0f),
+// 	new ColorVect(0.5f, 0f, 0f).WithHue(90f),
+// 	new ColorVect(0.5f, 0f, 0f).WithHue(180f),
+// 	new ColorVect(0.5f, 0f, 0f).WithHue(270f),
+// 	new ColorVect(1f, 0f, 0f).WithHue(0f),
+// 	new ColorVect(1f, 0f, 0f).WithHue(90f),
+// 	new ColorVect(1f, 0f, 0f).WithHue(180f),
+// 	new ColorVect(1f, 0f, 0f).WithHue(270f),
+// 	new ColorVect(0.3f, 0.3f, 0.3f)
+// );
 var metallicPattern = TexturePattern.ChequerboardBordered(0f, 25, 1f, (4, 4));
 // var normalPattern = TexturePattern.Rectangles(
 // 	interiorSize:			(96, 96),
@@ -74,9 +104,17 @@ var metallicPattern = TexturePattern.ChequerboardBordered(0f, 25, 1f, (4, 4));
 // 	paddingValue:			Direction.Forward, 
 // 	repetitions:				(4, 4)
 // );
+var normalPattern = TexturePattern.Circles(
+	Direction.Forward,
+	new Direction(1f, 0f, 1f),
+	new Direction(0f, 1f, 1f),
+	new Direction(-1f, 0f, 1f),
+	new Direction(0f, -1f, 1f),
+	Direction.Forward
+);
 
 using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(colorPattern, name: "Terry the Texture");
-using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap();
+using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap(normalPattern);
 using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(metallicPattern: metallicPattern);
 using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap, normalMap, ormMap: ormMap, name: "Matthew the Material");
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: "Iain the Instance");
@@ -104,7 +142,7 @@ Console.WriteLine(camera.Position);
 Console.WriteLine(light.Position);
 Console.WriteLine(instance.Position);
 while (!loop.Input.UserQuitRequested) {
-	_ = loop.IterateOnce();
+	window.Title = (1000d / loop.IterateOnce().TotalMilliseconds).ToString("N0") + " FPS";
 	renderer.Render();
 
 	// var newMesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(1f), new(rotation: (float) loop.TotalIteratedTime.TotalSeconds * -47f), true, name: "Clive the Cuboid");

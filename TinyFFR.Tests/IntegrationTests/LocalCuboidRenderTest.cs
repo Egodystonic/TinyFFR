@@ -12,8 +12,27 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalCuboidRenderTest {
+	TexturePattern<ColorVect> _colorPattern;
+	TexturePattern<Direction> _normalPattern;
+	TexturePattern<float> _occlusionPattern;
+	TexturePattern<float> _roughnessPattern;
+	TexturePattern<float> _metallicPattern;
+
 	[SetUp]
-	public void SetUpTest() { }
+	public void SetUpTest() {
+		_colorPattern = TexturePattern.ChequerboardBordered(new ColorVect(1f, 1f, 1f), 2, new ColorVect(1f, 0f, 0f), new ColorVect(0f, 1f, 0f), new ColorVect(0f, 0f, 1f), new ColorVect(0.5f, 0.5f, 0.5f), (4, 4));
+		_normalPattern = TexturePattern.Circles(
+			Direction.Forward,
+			new Direction(1f, 0f, 1f),
+			new Direction(0f, 1f, 1f),
+			new Direction(-1f, 0f, 1f),
+			new Direction(0f, -1f, 1f),
+			Direction.Forward
+		);
+		_occlusionPattern = TexturePattern.Chequerboard(0.5f, 1f, 0.8f, (27, 27));
+		_roughnessPattern = TexturePattern.Chequerboard(0.8f, 0.4f, 1f, (27, 27));
+		_metallicPattern = TexturePattern.Chequerboard(1f, 0f, (27, 27));
+	}
 
 	[TearDown]
 	public void TearDownTest() { }
@@ -23,28 +42,11 @@ class LocalCuboidRenderTest {
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Recommended!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Cuboid Render Test");
-		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(CuboidDescriptor.UnitCube);
-		var colorPattern = TexturePattern.ChequerboardBordered(new ColorVect(1f, 1f, 1f), 2, new ColorVect(1f, 0f, 0f), new ColorVect(0f, 1f, 0f), new ColorVect(0f, 0f, 1f), new ColorVect(0.5f, 0.5f, 0.5f), (4, 4));
-		var normalPattern = TexturePattern.Rectangles(
-			interiorSize: (96, 96),
-			borderSize: (15, 15),
-			paddingSize: (20, 20),
-			interiorValue: Direction.Forward,
-			borderRightValue: new Direction(1f, 0f, 1f),
-			borderTopValue: new Direction(0f, 1f, 1f),
-			borderLeftValue: new Direction(-1f, 0f, 1f),
-			borderBottomValue: new Direction(0f, -1f, 1f),
-			paddingValue: Direction.Forward,
-			repetitions: (4, 4)
-		);
-		var occlusionPattern = TexturePattern.Chequerboard(0.5f, 1f, 0.8f, (27, 27));
-		var roughnessPattern = TexturePattern.Chequerboard(0.8f, 0.4f, 1f, (27, 27));
-		var metallicPattern = TexturePattern.Chequerboard(1f, 0f, (27, 27));
-		using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(colorPattern);
-		using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap(normalPattern);
-		using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(occlusionPattern, roughnessPattern, metallicPattern);
+		using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(_colorPattern);
+		using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap(_normalPattern);
+		using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(_occlusionPattern, _roughnessPattern, _metallicPattern);
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap, normalMap, ormMap: ormMap);
 		using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 2.2f);
 		using var light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f), falloffRange: 10f, brightness: 5000000f);
@@ -54,7 +56,8 @@ class LocalCuboidRenderTest {
 		scene.Add(instance);
 		scene.Add(light);
 
-		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(10.3d)) {
+		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
+		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(8d)) {
 			_ = loop.IterateOnce();
 			renderer.Render();
 

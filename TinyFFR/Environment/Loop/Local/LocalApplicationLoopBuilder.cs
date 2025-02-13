@@ -114,6 +114,10 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _handleDataMap[handle].TotalIteratedTime;
 	}
+	public void SetTotalIteratedTime(ApplicationLoopHandle handle, TimeSpan newValue) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_handleDataMap[handle] = _handleDataMap[handle] with { TotalIteratedTime = newValue };
+	}
 
 	public ReadOnlySpan<char> GetName(ApplicationLoopHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);

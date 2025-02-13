@@ -42,7 +42,11 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, Ap
 	public TimeSpan TotalIteratedTime {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetTotalIteratedTime(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetTotalIteratedTime(_handle, value);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetTotalIteratedTime(TimeSpan newValue) => TotalIteratedTime = newValue;
 
 	public TimeSpan TimeUntilNextIteration {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -54,6 +58,9 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, Ap
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool TryIterateOnce(out TimeSpan outDeltaTime) => Implementation.TryIterateOnce(_handle, out outDeltaTime);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void ResetTotalIteratedTime() => TotalIteratedTime = TimeSpan.Zero;
 
 	public override string ToString() => $"Application Loop {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
 

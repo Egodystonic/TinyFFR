@@ -12,4 +12,5 @@ public interface IApplicationLoopImplProvider : IDisposableResourceImplProvider<
 	bool TryIterateOnce(ApplicationLoopHandle handle, out TimeSpan outDeltaTime);
 	TimeSpan GetTimeUntilNextIteration(ApplicationLoopHandle handle);
 	TimeSpan GetTotalIteratedTime(ApplicationLoopHandle handle);
+	void SetTotalIteratedTime(ApplicationLoopHandle handle, TimeSpan newValue);
 }
