@@ -30,6 +30,8 @@ public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>> where T : u
 		init => _y = value;
 	}
 
+	internal static bool IsFloatingPoint { get; } = typeof(T).GetInterface("IFloatingPoint`1") != null;
+
 	public XYPair(T xy) : this(xy, xy) { }
 
 	public XYPair(T x, T y) {

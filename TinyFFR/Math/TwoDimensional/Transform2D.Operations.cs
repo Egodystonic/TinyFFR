@@ -16,6 +16,9 @@ partial struct Transform2D :
 	public Transform2D Inverse => new(-Translation, -Rotation, Scaling.Reciprocal ?? XYPair<float>.Zero);
 	static Transform2D IMultiplicativeIdentity<Transform2D, Transform2D>.MultiplicativeIdentity => None;
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public T TransformValue<T>(T transformable) where T : ITransformable2D<T> => transformable.TransformedBy(this);
+
 	#region Scaling
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Transform2D WithScalingAdjustedBy(float scalar) => this with { Scaling = Scaling + new XYPair<float>(scalar) };

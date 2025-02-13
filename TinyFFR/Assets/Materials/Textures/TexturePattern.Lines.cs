@@ -14,7 +14,7 @@ public static unsafe partial class TexturePattern {
 	public const float LineDefaultPerturbationMagnitude = 0f;
 	public const float LineDefaultPerturbationFrequency = 1f;
 
-	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null) where T : unmanaged {
+	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null, Transform2D? transform = null) where T : unmanaged {
 		const int NumValues = 2;
 		return Lines(
 			firstValue,
@@ -26,10 +26,11 @@ public static unsafe partial class TexturePattern {
 			numRepeats,
 			perturbationMagnitude,
 			perturbationFrequency,
-			colinearSize
+			colinearSize,
+			transform
 		);
 	}
-	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, T thirdValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null) where T : unmanaged {
+	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, T thirdValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null, Transform2D? transform = null) where T : unmanaged {
 		const int NumValues = 3;
 		return Lines(
 			firstValue,
@@ -42,10 +43,11 @@ public static unsafe partial class TexturePattern {
 			numRepeats,
 			perturbationMagnitude,
 			perturbationFrequency,
-			colinearSize
+			colinearSize,
+			transform
 		);
 	}
-	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null) where T : unmanaged {
+	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null, Transform2D? transform = null) where T : unmanaged {
 		const int NumValues = 4;
 		return Lines(
 			firstValue,
@@ -59,10 +61,11 @@ public static unsafe partial class TexturePattern {
 			numRepeats,
 			perturbationMagnitude,
 			perturbationFrequency,
-			colinearSize
+			colinearSize,
+			transform
 		);
 	}
-	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, T fifthValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null) where T : unmanaged {
+	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, T fifthValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null, Transform2D? transform = null) where T : unmanaged {
 		const int NumValues = 5;
 		return Lines(
 			firstValue,
@@ -77,10 +80,11 @@ public static unsafe partial class TexturePattern {
 			numRepeats,
 			perturbationMagnitude,
 			perturbationFrequency,
-			colinearSize
+			colinearSize,
+			transform
 		);
 	}
-	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, T fifthValue, T sixthValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null) where T : unmanaged {
+	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, T fifthValue, T sixthValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null, Transform2D? transform = null) where T : unmanaged {
 		const int NumValues = 6;
 		return Lines(
 			firstValue,
@@ -96,10 +100,11 @@ public static unsafe partial class TexturePattern {
 			numRepeats,
 			perturbationMagnitude,
 			perturbationFrequency,
-			colinearSize
+			colinearSize,
+			transform
 		);
 	}
-	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, T fifthValue, T sixthValue, T seventhValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null) where T : unmanaged {
+	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, T fifthValue, T sixthValue, T seventhValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null, Transform2D? transform = null) where T : unmanaged {
 		const int NumValues = 7;
 		return Lines(
 			firstValue,
@@ -116,10 +121,11 @@ public static unsafe partial class TexturePattern {
 			numRepeats,
 			perturbationMagnitude,
 			perturbationFrequency,
-			colinearSize
+			colinearSize,
+			transform
 		);
 	}
-	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, T fifthValue, T sixthValue, T seventhValue, T eighthValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null) where T : unmanaged {
+	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, T fifthValue, T sixthValue, T seventhValue, T eighthValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null, Transform2D? transform = null) where T : unmanaged {
 		const int NumValues = 8;
 		return Lines(
 			firstValue,
@@ -137,10 +143,11 @@ public static unsafe partial class TexturePattern {
 			numRepeats,
 			perturbationMagnitude,
 			perturbationFrequency,
-			colinearSize
+			colinearSize,
+			transform
 		);
 	}
-	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, T fifthValue, T sixthValue, T seventhValue, T eighthValue, T ninthValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null) where T : unmanaged {
+	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, T fifthValue, T sixthValue, T seventhValue, T eighthValue, T ninthValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null, Transform2D? transform = null) where T : unmanaged {
 		const int NumValues = 9;
 		return Lines(
 			firstValue,
@@ -159,10 +166,11 @@ public static unsafe partial class TexturePattern {
 			numRepeats,
 			perturbationMagnitude,
 			perturbationFrequency,
-			colinearSize
+			colinearSize,
+			transform
 		);
 	}
-	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, T fifthValue, T sixthValue, T seventhValue, T eighthValue, T ninthValue, T tenthValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null) where T : unmanaged {
+	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, T fifthValue, T sixthValue, T seventhValue, T eighthValue, T ninthValue, T tenthValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null, Transform2D? transform = null) where T : unmanaged {
 		const int NumValues = 10;
 		return Lines(
 			firstValue,
@@ -181,11 +189,12 @@ public static unsafe partial class TexturePattern {
 			numRepeats,
 			perturbationMagnitude,
 			perturbationFrequency,
-			colinearSize
+			colinearSize,
+			transform
 		);
 	}
 
-	static TexturePattern<T> Lines<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, T fifthValue, T sixthValue, T seventhValue, T eighthValue, T ninthValue, T tenthValue, int numValues, bool horizontal, int lineThickness, int numRepeats, float perturbationMagnitude, float perturbationFrequency, int? colinearSize = null) where T : unmanaged {
+	static TexturePattern<T> Lines<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, T fifthValue, T sixthValue, T seventhValue, T eighthValue, T ninthValue, T tenthValue, int numValues, bool horizontal, int lineThickness, int numRepeats, float perturbationMagnitude, float perturbationFrequency, int? colinearSize, Transform2D? transform) where T : unmanaged {
 		static T GetTexel(ReadOnlySpan<byte> args, XYPair<int> dimensions, XYPair<int> xy) {
 			args
 				.ReadFirstArg(out int numValues)
@@ -262,6 +271,6 @@ public static unsafe partial class TexturePattern {
 			.AndThen(eighthValue)
 			.AndThen(ninthValue)
 			.AndThen(tenthValue);
-		return new TexturePattern<T>(horizontal ? (colinearExtent, orthogonalExtent) : (orthogonalExtent, colinearExtent), &GetTexel, argData);
+		return new TexturePattern<T>(horizontal ? (colinearExtent, orthogonalExtent) : (orthogonalExtent, colinearExtent), &GetTexel, argData, transform);
 	}
 }

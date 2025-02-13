@@ -66,9 +66,6 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 		angle = Angle;
 		axis = Axis;
 	}
-
-	public static implicit operator Rotation((Angle Angle, Direction Axis) operand) => new(operand.Angle, operand.Axis);
-	public static implicit operator Rotation((Direction Axis, Angle Angle) operand) => new(operand.Angle, operand.Axis);
 	#endregion
 
 	#region Random

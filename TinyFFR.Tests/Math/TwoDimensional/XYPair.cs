@@ -289,7 +289,7 @@ class XYPairTest {
 
 					if (x == 0) continue;
 					AssertToleranceEquals(new XYPair<T>(v.X / T.CreateChecked(x), v.Y / T.CreateChecked(x)), v / T.CreateChecked(x), TestTolerance);
-					AssertToleranceEquals((v.Cast<float>() / x).Cast<T>(), v.ScaledByReal(1f / x), TestTolerance);
+					AssertToleranceEquals((v.Cast<float>() / x).CastWithRoundingIfNecessary<float, T>(), v.ScaledByReal(1f / x), TestTolerance);
 				}
 			}
 		}

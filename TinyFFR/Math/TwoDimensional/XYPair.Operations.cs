@@ -1,6 +1,7 @@
 ﻿// Created on 2024-01-16 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System;
 using System.Numerics;
 
 namespace Egodystonic.TinyFFR;
@@ -57,11 +58,17 @@ partial struct XYPair<T> :
 	}
 
 	#region Length Modifiers
-	public XYPair<T> WithLength(float newLength) => Cast<float>().WithLengthOne().ScaledBy(newLength).Cast<T>();
-	public XYPair<T> ShortenedBy(float lengthDecrease) => WithLength(Length - lengthDecrease);
-	public XYPair<T> LengthenedBy(float lengthIncrease) => WithLength(Length + lengthIncrease);
-	public XYPair<T> WithMaxLength(float maxLength) => WithLength(MathF.Min(Length, maxLength >= 0f ? maxLength : throw new ArgumentOutOfRangeException(nameof(maxLength), maxLength, "Must be non-negative.")));
-	public XYPair<T> WithMinLength(float minLength) => WithLength(MathF.Max(Length, minLength >= 0f ? minLength : throw new ArgumentOutOfRangeException(nameof(minLength), minLength, "Must be non-negative.")));
+	XYPair<T> ILengthAdjustable<XYPair<T>>.WithLength(float newLength) => WithLength(newLength);
+	XYPair<T> ILengthAdjustable<XYPair<T>>.ShortenedBy(float lengthDecrease) => ShortenedBy(lengthDecrease);
+	XYPair<T> ILengthAdjustable<XYPair<T>>.LengthenedBy(float lengthIncrease) => LengthenedBy(lengthIncrease);
+	XYPair<T> ILengthAdjustable<XYPair<T>>.WithMaxLength(float maxLength) => WithMaxLength(maxLength);
+	XYPair<T> ILengthAdjustable<XYPair<T>>.WithMinLength(float minLength) => WithMinLength(minLength);
+
+	public XYPair<T> WithLength(float newLength, int roundingDigits = 0, MidpointRounding midpointRounding = MidpointRounding.ToEven) => Cast<float>().WithLengthOne().ScaledBy(newLength).CastWithRoundingIfNecessary<float, T>(roundingDigits, midpointRounding);
+	public XYPair<T> ShortenedBy(float lengthDecrease, int roundingDigits = 0, MidpointRounding midpointRounding = MidpointRounding.ToEven) => WithLength(Length - lengthDecrease, roundingDigits, midpointRounding);
+	public XYPair<T> LengthenedBy(float lengthIncrease, int roundingDigits = 0, MidpointRounding midpointRounding = MidpointRounding.ToEven) => WithLength(Length + lengthIncrease, roundingDigits, midpointRounding);
+	public XYPair<T> WithMaxLength(float maxLength, int roundingDigits = 0, MidpointRounding midpointRounding = MidpointRounding.ToEven) => WithLength(MathF.Min(Length, maxLength >= 0f ? maxLength : throw new ArgumentOutOfRangeException(nameof(maxLength), maxLength, "Must be non-negative.")), roundingDigits, midpointRounding);
+	public XYPair<T> WithMinLength(float minLength, int roundingDigits = 0, MidpointRounding midpointRounding = MidpointRounding.ToEven) => WithLength(MathF.Max(Length, minLength >= 0f ? minLength : throw new ArgumentOutOfRangeException(nameof(minLength), minLength, "Must be non-negative.")), roundingDigits, midpointRounding);
 	#endregion
 
 	#region Trigonometry
@@ -106,7 +113,9 @@ partial struct XYPair<T> :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static XYPair<T> operator *(T scalar, XYPair<T> pair) => pair.ScaledBy(scalar);
 	public XYPair<T> ScaledBy(T scalar) => new(X * scalar, Y * scalar);
-	public XYPair<T> ScaledByReal(float scalar) => Cast<float>().ScaledBy(scalar).Cast<T>();
+	public XYPair<T> ScaledByReal(float scalar, int roundingDigits = 0, MidpointRounding midpointRounding = MidpointRounding.ToEven) => Cast<float>().ScaledBy(scalar).CastWithRoundingIfNecessary<float, T>(roundingDigits, midpointRounding);
+	public XYPair<T> ScaledByReal(XYPair<float> pair, int roundingDigits = 0, MidpointRounding midpointRounding = MidpointRounding.ToEven) => Cast<float>().ScaledBy(pair).CastWithRoundingIfNecessary<float, T>(roundingDigits, midpointRounding);
+	public XYPair<T> ScaledByReal(XYPair<float> pair, XYPair<float> scalingOrigin, int roundingDigits = 0, MidpointRounding midpointRounding = MidpointRounding.ToEven) => Cast<float>().ScaledBy(pair, scalingOrigin).CastWithRoundingIfNecessary<float, T>(roundingDigits, midpointRounding);
 	static XYPair<T> IMultiplyOperators<XYPair<T>, float, XYPair<T>>.operator *(XYPair<T> pair, float scalar) => ((IScalable<XYPair<T>>) pair).ScaledBy(scalar);
 	static XYPair<T> IDivisionOperators<XYPair<T>, float, XYPair<T>>.operator /(XYPair<T> pair, float scalar) => ((IScalable<XYPair<T>>) pair).ScaledBy(1f / scalar);
 	static XYPair<T> IMultiplicative<XYPair<T>, float, XYPair<T>>.operator *(float scalar, XYPair<T> pair) => ((IScalable<XYPair<T>>) pair).ScaledBy(scalar);
@@ -124,9 +133,9 @@ partial struct XYPair<T> :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public XYPair<T> ScaledFromOriginBy(XYPair<T> vect) => MultipliedBy(vect);
 	public XYPair<T> ScaledBy(XYPair<T> vect, XYPair<T> scalingOrigin) => scalingOrigin + ((this - scalingOrigin) * vect);
-	XYPair<T> IIndependentAxisScalable2D<XYPair<T>>.ScaledBy(XYPair<float> vect) => Cast<float>().ScaledBy(vect).Cast<T>();
-	XYPair<T> IPointIndependentAxisScalable2D<XYPair<T>>.ScaledFromOriginBy(XYPair<float> vect) => Cast<float>().ScaledFromOriginBy(vect).Cast<T>();
-	XYPair<T> IPointIndependentAxisScalable2D<XYPair<T>>.ScaledBy(XYPair<float> vect, XYPair<float> scalingOrigin) => Cast<float>().ScaledBy(vect, scalingOrigin).Cast<T>();
+	XYPair<T> IIndependentAxisScalable2D<XYPair<T>>.ScaledBy(XYPair<float> vect) => ScaledByReal(vect);
+	XYPair<T> IPointIndependentAxisScalable2D<XYPair<T>>.ScaledFromOriginBy(XYPair<float> vect) => ScaledByReal(vect);
+	XYPair<T> IPointIndependentAxisScalable2D<XYPair<T>>.ScaledBy(XYPair<float> vect, XYPair<float> scalingOrigin) => ScaledByReal(vect, scalingOrigin);
 	#endregion
 
 	#region Rotation
@@ -138,7 +147,7 @@ partial struct XYPair<T> :
 	public XYPair<T> RotatedBy(Angle rot) => RotatedAroundOriginBy(rot);
 	public XYPair<T> RotatedAroundOriginBy(Angle rot) => PolarAngle is { } a ? FromPolarAngleAndLength(a + rot, Length) : Zero;
 	public XYPair<T> RotatedBy(Angle rot, XYPair<T> pivot) => pivot + (this - pivot).RotatedAroundOriginBy(rot);
-	XYPair<T> IPointRotatable2D<XYPair<T>>.RotatedBy(Angle rot, XYPair<float> pivot) => Cast<float>().RotatedBy(rot, pivot).Cast<T>();
+	XYPair<T> IPointRotatable2D<XYPair<T>>.RotatedBy(Angle rot, XYPair<float> pivot) => Cast<float>().RotatedBy(rot, pivot).CastWithRoundingIfNecessary<float, T>();
 	#endregion
 
 	#region Translation
@@ -150,7 +159,7 @@ partial struct XYPair<T> :
 	public XYPair<T> Minus(XYPair<T> other) => new(X - other.X, Y - other.Y);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public XYPair<T> MovedBy(XYPair<T> other) => Plus(other);
-	XYPair<T> ITranslatable2D<XYPair<T>>.MovedBy(XYPair<float> v) => Cast<float>().MovedBy(v).Cast<T>();
+	XYPair<T> ITranslatable2D<XYPair<T>>.MovedBy(XYPair<float> v) => Cast<float>().MovedBy(v).CastWithRoundingIfNecessary<float, T>();
 	#endregion
 
 	#region Transformation
@@ -158,29 +167,36 @@ partial struct XYPair<T> :
 	public static XYPair<T> operator *(XYPair<T> left, Transform2D right) => left.TransformedBy(right);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static XYPair<T> operator *(Transform2D left, XYPair<T> right) => right.TransformedBy(left);
+
+	XYPair<T> ITransformable2D<XYPair<T>>.TransformedBy(Transform2D transform) => TransformedBy(transform);
+	XYPair<T> IPointTransformable2D<XYPair<T>>.TransformedBy(Transform2D transform, XYPair<float> transformationOrigin) => TransformedBy(transform, transformationOrigin);
+	XYPair<T> IPointTransformable2D<XYPair<T>>.TransformedAroundOriginBy(Transform2D transform) => TransformedAroundOriginBy(transform);
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public XYPair<T> TransformedBy(Transform2D transform) => TransformedAroundOriginBy(transform);
+	public XYPair<T> TransformedBy(Transform2D transform, int digits = 0, MidpointRounding midpointRounding = MidpointRounding.ToEven) => TransformedAroundOriginBy(transform, digits, midpointRounding);
 	
-	public XYPair<T> TransformedAroundOriginBy(Transform2D transform) {
+	public XYPair<T> TransformedAroundOriginBy(Transform2D transform, int digits = 0, MidpointRounding midpointRounding = MidpointRounding.ToEven) {
 		return Cast<float>()
 			.ScaledBy(transform.Scaling)
 			.RotatedBy(transform.Rotation)
 			.MovedBy(transform.Translation)
-			.Cast<T>();
+			.CastWithRoundingIfNecessary<float, T>(digits, midpointRounding);
 	}
 
-	public XYPair<T> TransformedBy(Transform2D transform, XYPair<float> transformationOrigin) {
+	public XYPair<T> TransformedBy(Transform2D transform, XYPair<float> transformationOrigin, int digits = 0, MidpointRounding midpointRounding = MidpointRounding.ToEven) {
 		return Cast<float>()
 			.ScaledBy(transform.Scaling, transformationOrigin)
 			.RotatedBy(transform.Rotation, transformationOrigin)
 			.MovedBy(transform.Translation)
-			.Cast<T>();
+			.CastWithRoundingIfNecessary<float, T>(digits, midpointRounding);
 	}
 	#endregion
 
 	#region Clamping and Interpolation
-	public static XYPair<T> Interpolate(XYPair<T> start, XYPair<T> end, float distance) {
-		return start + (end - start).Cast<float>().ScaledBy(distance).Cast<T>();
+	static XYPair<T> IInterpolatable<XYPair<T>>.Interpolate(XYPair<T> start, XYPair<T> end, float distance) => Interpolate(start, end, distance);
+
+	public static XYPair<T> Interpolate(XYPair<T> start, XYPair<T> end, float distance, int digits = 0, MidpointRounding midpointRounding = MidpointRounding.ToEven) {
+		return start + (end - start).Cast<float>().ScaledBy(distance).CastWithRoundingIfNecessary<float, T>(digits, midpointRounding);
 	}
 	public XYPair<T> Clamp(XYPair<T> min, XYPair<T> max) {
 		var minX = min.X;

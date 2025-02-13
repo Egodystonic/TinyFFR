@@ -14,11 +14,11 @@ public static unsafe partial class TexturePattern {
 	public static readonly XYPair<int> RectanglesDefaultPaddingSize = (128, 64);
 	public static readonly XYPair<int> RectanglesDefaultRepetitions = (4, 8);
 
-	public static TexturePattern<T> Rectangles<T>(T interiorValue, T paddingValue, XYPair<int>? interiorSize = null, XYPair<int>? paddingSize = null, XYPair<int>? repetitions = null) where T : unmanaged {
-		return Rectangles(interiorValue, paddingValue, default, interiorSize, paddingSize, (0, 0), repetitions);
+	public static TexturePattern<T> Rectangles<T>(T interiorValue, T paddingValue, XYPair<int>? interiorSize = null, XYPair<int>? paddingSize = null, XYPair<int>? repetitions = null, Transform2D? transform = null) where T : unmanaged {
+		return Rectangles(interiorValue, paddingValue, default, interiorSize, paddingSize, (0, 0), repetitions, transform);
 	}
 
-	public static TexturePattern<T> Rectangles<T>(T interiorValue, T paddingValue, T borderValue, XYPair<int>? interiorSize = null, XYPair<int>? paddingSize = null, XYPair<int>? borderSize = null, XYPair<int>? repetitions = null) where T : unmanaged {
+	public static TexturePattern<T> Rectangles<T>(T interiorValue, T paddingValue, T borderValue, XYPair<int>? interiorSize = null, XYPair<int>? paddingSize = null, XYPair<int>? borderSize = null, XYPair<int>? repetitions = null, Transform2D? transform = null) where T : unmanaged {
 		return Rectangles(
 			interiorSize ?? RectanglesDefaultInteriorSize,
 			borderSize ?? RectanglesDefaultBorderSize,
@@ -29,11 +29,12 @@ public static unsafe partial class TexturePattern {
 			borderValue,
 			borderValue,
 			paddingValue,
-			repetitions ?? RectanglesDefaultRepetitions
+			repetitions ?? RectanglesDefaultRepetitions,
+			transform
 		);
 	}
 
-	public static TexturePattern<T> Rectangles<T>(XYPair<int> interiorSize, XYPair<int> borderSize, XYPair<int> paddingSize, T interiorValue, T borderRightValue, T borderTopValue, T borderLeftValue, T borderBottomValue, T paddingValue, XYPair<int> repetitions) where T : unmanaged {
+	public static TexturePattern<T> Rectangles<T>(XYPair<int> interiorSize, XYPair<int> borderSize, XYPair<int> paddingSize, T interiorValue, T borderRightValue, T borderTopValue, T borderLeftValue, T borderBottomValue, T paddingValue, XYPair<int> repetitions, Transform2D? transform = null) where T : unmanaged {
 		static T GetTexel(ReadOnlySpan<byte> args, XYPair<int> dimensions, XYPair<int> xy) {
 			args
 				.ReadFirstArg(out XYPair<int> rectSize)
@@ -79,6 +80,6 @@ public static unsafe partial class TexturePattern {
 				.AndThen(borderLeftValue)
 				.AndThen(borderBottomValue)
 				.AndThen(paddingValue);
-		return new TexturePattern<T>((interiorSize + borderSize + paddingSize) * repetitions, &GetTexel, argData);
+		return new TexturePattern<T>((interiorSize + borderSize + paddingSize) * repetitions, &GetTexel, argData, transform);
 	}
 }

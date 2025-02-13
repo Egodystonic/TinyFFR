@@ -9,15 +9,15 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public static unsafe partial class TexturePattern {
-	internal const int MaxDimensionWidth = 4096;
-	internal const int MaxDimensionHeight = 4096;
+	internal const int MaxDimensionWidth = 16_384;
+	internal const int MaxDimensionHeight = MaxDimensionWidth;
 
 	internal static void AssertDimensions(XYPair<int> dimensions) {
 		if (dimensions.X < 1 || dimensions.X > MaxDimensionWidth) {
-			throw new ArgumentOutOfRangeException(nameof(dimensions), dimensions, $"Width out of range (1 to {MaxDimensionWidth}).");
+			throw new ArgumentOutOfRangeException(nameof(dimensions), dimensions, $"Given pattern's resultant dimensions would result in a width that is either non-positive or too large (max {MaxDimensionWidth}).");
 		}
 		if (dimensions.Y < 1 || dimensions.Y > MaxDimensionHeight) {
-			throw new ArgumentOutOfRangeException(nameof(dimensions), dimensions, $"Height out of range (1 to {MaxDimensionHeight}).");
+			throw new ArgumentOutOfRangeException(nameof(dimensions), dimensions, $"Given pattern's resultant dimensions would result in a height that is either non-positive or too large (max {MaxDimensionHeight}).");
 		}
 	}
 
@@ -51,6 +51,7 @@ public readonly unsafe struct TexturePattern<T> where T : unmanaged {
 	readonly XYPair<int> _dimensions;
 	readonly delegate* managed<ReadOnlySpan<byte>, XYPair<int>, XYPair<int>, T> _generationFunc;
 	readonly TexturePatternArgData _argsBuffer;
+	readonly Transform2D? _transform;
 
 	internal XYPair<int> Dimensions => _dimensions;
 
@@ -59,7 +60,11 @@ public readonly unsafe struct TexturePattern<T> where T : unmanaged {
 			if (_generationFunc == null) throw InvalidObjectException.InvalidDefault(typeof(TexturePattern<T>));
 			if (x < 0 || x >= _dimensions.X) throw new ArgumentOutOfRangeException(nameof(x));
 			if (y < 0 || y >= _dimensions.Y) throw new ArgumentOutOfRangeException(nameof(y));
-			return _generationFunc(_argsBuffer, _dimensions, new(x, y));
+			if (_transform == null) return _generationFunc(_argsBuffer, _dimensions, new(x, y));
+
+			var transformedXy = _transform.Value.TransformValue(new XYPair<int>(x, y));
+			transformedXy = new(MathUtils.TrueModulus(transformedXy.X, _dimensions.X), MathUtils.TrueModulus(transformedXy.Y, _dimensions.Y));
+			return _generationFunc(_argsBuffer, _dimensions, transformedXy);
 		}
 	}
 
@@ -67,12 +72,20 @@ public readonly unsafe struct TexturePattern<T> where T : unmanaged {
 		this = TexturePattern.PlainFill<T>(default);
 	}
 
-	internal TexturePattern(XYPair<int> dimensions, delegate*<ReadOnlySpan<byte>, XYPair<int>, XYPair<int>, T> generationFunc, TexturePatternArgData argsBuffer) {
+	internal TexturePattern(XYPair<int> dimensions, delegate*<ReadOnlySpan<byte>, XYPair<int>, XYPair<int>, T> generationFunc, TexturePatternArgData argsBuffer, Transform2D? transform) {
 		TexturePattern.AssertDimensions(dimensions);
 		ArgumentNullException.ThrowIfNull(generationFunc);
+
+		if (transform != null) {
+			transform = transform.Value with {
+				Scaling = transform.Value.Scaling.Reciprocal ?? XYPair<float>.Zero,
+				Translation = transform.Value.Translation * dimensions.Cast<float>()
+			};
+		}
 
 		_dimensions = dimensions;
 		_generationFunc = generationFunc;
 		_argsBuffer = argsBuffer;
+		_transform = transform;
 	}
 }

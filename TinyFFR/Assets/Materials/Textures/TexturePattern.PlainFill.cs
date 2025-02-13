@@ -17,6 +17,6 @@ public static unsafe partial class TexturePattern {
 
 		var argData = new TexturePatternArgData();
 		argData.WriteFirstArg(fillValue);
-		return new TexturePattern<T>((1, 1), &GetTexel, argData);
+		return new TexturePattern<T>((1, 1), &GetTexel, argData, null);
 	}
 }

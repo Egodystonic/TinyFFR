@@ -11,7 +11,7 @@ namespace Egodystonic.TinyFFR.Assets.Materials;
 public static unsafe partial class TexturePattern {
 	public static readonly XYPair<int> GradientDefaultResolution = (512, 512);
 
-	public static TexturePattern<T> GradientHorizontal<T>(T left, T right, T? centre = null, XYPair<int>? resolution = null) where T : unmanaged, IInterpolatable<T> {
+	public static TexturePattern<T> GradientHorizontal<T>(T left, T right, T? centre = null, XYPair<int>? resolution = null, Transform2D? transform = null) where T : unmanaged, IInterpolatable<T> {
 		centre ??= T.Interpolate(left, right, 0.5f);
 
 		return Gradient(
@@ -24,11 +24,12 @@ public static unsafe partial class TexturePattern {
 			bottom: centre.Value,
 			bottomRight: right,
 			centre: centre.Value,
-			resolution
+			resolution,
+			transform
 		);
 	}
 
-	public static TexturePattern<T> GradientVertical<T>(T top, T bottom, T? centre = null, XYPair<int>? resolution = null) where T : unmanaged, IInterpolatable<T> {
+	public static TexturePattern<T> GradientVertical<T>(T top, T bottom, T? centre = null, XYPair<int>? resolution = null, Transform2D? transform = null) where T : unmanaged, IInterpolatable<T> {
 		centre ??= T.Interpolate(top, bottom, 0.5f);
 
 		return Gradient(
@@ -41,11 +42,12 @@ public static unsafe partial class TexturePattern {
 			bottom: bottom,
 			bottomRight: bottom,
 			centre: centre.Value,
-			resolution
+			resolution,
+			transform
 		);
 	}
 	
-	public static TexturePattern<T> Gradient<T>(T right, T topRight, T top, T topLeft, T left, T bottomLeft, T bottom, T bottomRight, T centre, XYPair<int>? resolution = null) where T : unmanaged, IInterpolatable<T> {
+	public static TexturePattern<T> Gradient<T>(T right, T topRight, T top, T topLeft, T left, T bottomLeft, T bottom, T bottomRight, T centre, XYPair<int>? resolution = null, Transform2D? transform = null) where T : unmanaged, IInterpolatable<T> {
 		static T GetTexel(ReadOnlySpan<byte> args, XYPair<int> dimensions, XYPair<int> xy) {
 			args
 				.ReadFirstArg(out XYPair<int> halfResolution)
@@ -104,10 +106,10 @@ public static unsafe partial class TexturePattern {
 			.AndThen(bottom)
 			.AndThen(bottomRight)
 			.AndThen(centre);
-		return new TexturePattern<T>(resolution.Value, &GetTexel, argData);
+		return new TexturePattern<T>(resolution.Value, &GetTexel, argData, transform);
 	}
 
-	public static TexturePattern<T> GradientRadial<T>(T inner, T outer, bool fringeCorners = true, float innerOuterRatio = 3f, XYPair<int>? resolution = null) where T : unmanaged, IInterpolatable<T> {
+	public static TexturePattern<T> GradientRadial<T>(T inner, T outer, bool fringeCorners = true, float innerOuterRatio = 3f, XYPair<int>? resolution = null, Transform2D? transform = null) where T : unmanaged, IInterpolatable<T> {
 		static T GetTexel(ReadOnlySpan<byte> args, XYPair<int> dimensions, XYPair<int> xy) {
 			args
 				.ReadFirstArg(out XYPair<int> centrePoint)
@@ -130,6 +132,6 @@ public static unsafe partial class TexturePattern {
 			.AndThen(outer)
 			.AndThen(fringeCorners)
 			.AndThen(innerOuterRatio);
-		return new TexturePattern<T>(resolution.Value, &GetTexel, argData);
+		return new TexturePattern<T>(resolution.Value, &GetTexel, argData, transform);
 	}
 }

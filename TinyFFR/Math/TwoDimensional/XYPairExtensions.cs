@@ -21,4 +21,16 @@ public static class XYPairExtensions {
 
 		return MathF.Min((@this - startPointOf2DBoundedRay).Dot(direction), maxDistance) * direction + startPointOf2DBoundedRay;
 	}
+
+	#region Rounding
+	public static XYPair<TNew> Round<T, TNew>(this XYPair<T> @this, int roundingDigits = 0, MidpointRounding midpointRounding = MidpointRounding.ToEven) where T : unmanaged, IFloatingPoint<T> where TNew : unmanaged, IBinaryInteger<TNew> {
+		return new(TNew.CreateSaturating(T.Round(@this.X, roundingDigits, midpointRounding)), TNew.CreateSaturating(T.Round(@this.Y, roundingDigits, midpointRounding)));
+	}
+
+	public static XYPair<TNew> CastWithRoundingIfNecessary<T, TNew>(this XYPair<T> @this, int roundingDigits = 0, MidpointRounding midpointRounding = MidpointRounding.ToEven) where T : unmanaged, IFloatingPoint<T> where TNew : unmanaged, INumber<TNew> {
+		return XYPair<TNew>.IsFloatingPoint 
+			? @this.Cast<TNew>() 
+			: new(TNew.CreateSaturating(T.Round(@this.X, roundingDigits, midpointRounding)), TNew.CreateSaturating(T.Round(@this.Y, roundingDigits, midpointRounding)));
+	}
+	#endregion
 }

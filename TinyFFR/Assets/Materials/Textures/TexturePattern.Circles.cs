@@ -14,7 +14,7 @@ public static unsafe partial class TexturePattern {
 	public static readonly XYPair<int> CirclesDefaultPaddingSize = new(96);
 	public static readonly XYPair<int> CirclesDefaultRepetitions = new(3);
 
-	public static TexturePattern<T> Circles<T>(T interiorValue, T borderValue, T paddingValue, int interiorRadius = CirclesDefaultInteriorRadius, int borderSize = CirclesDefaultBorderSize, XYPair<int>? paddingSize = null, XYPair<int>? repetitions = null) where T : unmanaged {
+	public static TexturePattern<T> Circles<T>(T interiorValue, T borderValue, T paddingValue, int interiorRadius = CirclesDefaultInteriorRadius, int borderSize = CirclesDefaultBorderSize, XYPair<int>? paddingSize = null, XYPair<int>? repetitions = null, Transform2D? transform = null) where T : unmanaged {
 		static T GetTexel(ReadOnlySpan<byte> args, XYPair<int> dimensions, XYPair<int> xy) {
 			args
 				.ReadFirstArg(out int interiorRadius)
@@ -44,10 +44,10 @@ public static unsafe partial class TexturePattern {
 				.AndThen(interiorValue)
 				.AndThen(borderValue)
 				.AndThen(paddingValue);
-		return new TexturePattern<T>((new XYPair<int>(interiorRadius) + new XYPair<int>(borderSize) + paddingSize.Value) * 2 * repetitions.Value, &GetTexel, argData);
+		return new TexturePattern<T>((new XYPair<int>(interiorRadius) + new XYPair<int>(borderSize) + paddingSize.Value) * 2 * repetitions.Value, &GetTexel, argData, transform);
 	}
 
-	public static TexturePattern<T> Circles<T>(T interiorValue, T borderValueRight, T borderValueTop, T borderValueLeft, T borderValueBottom, T paddingValue, int interiorRadius = CirclesDefaultInteriorRadius, int borderSize = CirclesDefaultBorderSize, XYPair<int>? paddingSize = null, XYPair<int>? repetitions = null) where T : unmanaged, IInterpolatable<T> {
+	public static TexturePattern<T> Circles<T>(T interiorValue, T borderValueRight, T borderValueTop, T borderValueLeft, T borderValueBottom, T paddingValue, int interiorRadius = CirclesDefaultInteriorRadius, int borderSize = CirclesDefaultBorderSize, XYPair<int>? paddingSize = null, XYPair<int>? repetitions = null, Transform2D? transform = null) where T : unmanaged, IInterpolatable<T> {
 		return Circles(
 			interiorValue, 
 			interiorValue, 
@@ -61,11 +61,12 @@ public static unsafe partial class TexturePattern {
 			interiorRadius, 
 			borderSize, 
 			paddingSize, 
-			repetitions
+			repetitions,
+			transform
 		);
 	}
 
-	public static TexturePattern<T> Circles<T>(T interiorValueRight, T interiorValueTop, T interiorValueLeft, T interiorValueBottom, T borderValueRight, T borderValueTop, T borderValueLeft, T borderValueBottom, T paddingValue, int interiorRadius = CirclesDefaultInteriorRadius, int borderSize = CirclesDefaultBorderSize, XYPair<int>? paddingSize = null, XYPair<int>? repetitions = null) where T : unmanaged, IInterpolatable<T> {
+	public static TexturePattern<T> Circles<T>(T interiorValueRight, T interiorValueTop, T interiorValueLeft, T interiorValueBottom, T borderValueRight, T borderValueTop, T borderValueLeft, T borderValueBottom, T paddingValue, int interiorRadius = CirclesDefaultInteriorRadius, int borderSize = CirclesDefaultBorderSize, XYPair<int>? paddingSize = null, XYPair<int>? repetitions = null, Transform2D? transform = null) where T : unmanaged, IInterpolatable<T> {
 		static T GetTexel(ReadOnlySpan<byte> args, XYPair<int> dimensions, XYPair<int> xy) {
 			args
 				.ReadFirstArg(out int interiorRadius)
@@ -121,6 +122,6 @@ public static unsafe partial class TexturePattern {
 				.AndThen(borderValueLeft)
 				.AndThen(borderValueBottom)
 				.AndThen(paddingValue);
-		return new TexturePattern<T>((new XYPair<int>(interiorRadius) + new XYPair<int>(borderSize) + paddingSize.Value) * 2 * repetitions.Value, &GetTexel, argData);
+		return new TexturePattern<T>((new XYPair<int>(interiorRadius) + new XYPair<int>(borderSize) + paddingSize.Value) * 2 * repetitions.Value, &GetTexel, argData, transform);
 	}
 }

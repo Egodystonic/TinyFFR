@@ -12,31 +12,31 @@ public static unsafe partial class TexturePattern {
 	public static readonly XYPair<int> ChequerboardDefaultRepetitionCount = (8, 8);
 	public const int ChequerboardDefaultCellResolution = 64;
 
-	public static TexturePattern<T> Chequerboard<T>(T firstValue, T secondValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution) where T : unmanaged {
-		return Chequerboard(firstValue, secondValue, firstValue, secondValue, repetitionCount, cellResolution);
+	public static TexturePattern<T> Chequerboard<T>(T firstValue, T secondValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution, Transform2D? transform = null) where T : unmanaged {
+		return Chequerboard(firstValue, secondValue, firstValue, secondValue, repetitionCount, cellResolution, transform);
 	}
 
-	public static TexturePattern<T> Chequerboard<T>(T firstValue, T secondValue, T thirdValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution) where T : unmanaged {
-		return Chequerboard(firstValue, secondValue, thirdValue, secondValue, repetitionCount, cellResolution);
+	public static TexturePattern<T> Chequerboard<T>(T firstValue, T secondValue, T thirdValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution, Transform2D? transform = null) where T : unmanaged {
+		return Chequerboard(firstValue, secondValue, thirdValue, secondValue, repetitionCount, cellResolution, transform);
 	}
 
-	public static TexturePattern<T> Chequerboard<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution) where T : unmanaged {
-		return ChequerboardBordered(firstValue, 0, firstValue, secondValue, thirdValue, fourthValue, repetitionCount, cellResolution);
+	public static TexturePattern<T> Chequerboard<T>(T firstValue, T secondValue, T thirdValue, T fourthValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution, Transform2D? transform = null) where T : unmanaged {
+		return ChequerboardBordered(firstValue, 0, firstValue, secondValue, thirdValue, fourthValue, repetitionCount, cellResolution, transform);
 	}
 
-	public static TexturePattern<T> ChequerboardBordered<T>(T borderValue, int borderWidth, T firstValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution) where T : unmanaged {
-		return ChequerboardBordered(borderValue, borderWidth, firstValue, firstValue, firstValue, firstValue, repetitionCount, cellResolution);
+	public static TexturePattern<T> ChequerboardBordered<T>(T borderValue, int borderWidth, T firstValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution, Transform2D? transform = null) where T : unmanaged {
+		return ChequerboardBordered(borderValue, borderWidth, firstValue, firstValue, firstValue, firstValue, repetitionCount, cellResolution, transform);
 	}
 
-	public static TexturePattern<T> ChequerboardBordered<T>(T borderValue, int borderWidth, T firstValue, T secondValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution) where T : unmanaged {
-		return ChequerboardBordered(borderValue, borderWidth, firstValue, secondValue, firstValue, secondValue, repetitionCount, cellResolution);
+	public static TexturePattern<T> ChequerboardBordered<T>(T borderValue, int borderWidth, T firstValue, T secondValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution, Transform2D? transform = null) where T : unmanaged {
+		return ChequerboardBordered(borderValue, borderWidth, firstValue, secondValue, firstValue, secondValue, repetitionCount, cellResolution, transform);
 	}
 
-	public static TexturePattern<T> ChequerboardBordered<T>(T borderValue, int borderWidth, T firstValue, T secondValue, T thirdValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution) where T : unmanaged {
-		return ChequerboardBordered(borderValue, borderWidth, firstValue, secondValue, thirdValue, secondValue, repetitionCount, cellResolution);
+	public static TexturePattern<T> ChequerboardBordered<T>(T borderValue, int borderWidth, T firstValue, T secondValue, T thirdValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution, Transform2D? transform = null) where T : unmanaged {
+		return ChequerboardBordered(borderValue, borderWidth, firstValue, secondValue, thirdValue, secondValue, repetitionCount, cellResolution, transform);
 	}
 
-	public static TexturePattern<T> ChequerboardBordered<T>(T borderValue, int borderWidth, T firstValue, T secondValue, T thirdValue, T fourthValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution) where T : unmanaged {
+	public static TexturePattern<T> ChequerboardBordered<T>(T borderValue, int borderWidth, T firstValue, T secondValue, T thirdValue, T fourthValue, XYPair<int>? repetitionCount = null, int cellResolution = ChequerboardDefaultCellResolution, Transform2D? transform = null) where T : unmanaged {
 		static XYPair<int> GetTextureSize(XYPair<int> repetitionCount, int cellResolution) => cellResolution * repetitionCount;
 
 		static T GetTexel(ReadOnlySpan<byte> args, XYPair<int> dimensions, XYPair<int> xy) {
@@ -74,6 +74,6 @@ public static unsafe partial class TexturePattern {
 			.AndThen(fourthValue)
 			.AndThen(borderValue)
 			.AndThen(borderWidth);
-		return new TexturePattern<T>(textureSize, &GetTexel, argData);
+		return new TexturePattern<T>(textureSize, &GetTexel, argData, transform);
 	}
 }

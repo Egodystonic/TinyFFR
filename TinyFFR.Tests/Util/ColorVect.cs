@@ -337,7 +337,6 @@ class ColorVectTest {
 			var b = (byte) ((rgba & 0xFF00) >> 8);
 			var a = (byte) (rgba & 0xFF);
 
-			AssertToleranceEquals(v, (ColorVect) rgba, TestTolerance);
 			AssertToleranceEquals(v, ColorVect.FromRgba32(rgba), TestTolerance);
 			AssertToleranceEquals(v, ColorVect.FromRgba32((int) rgba), TestTolerance);
 			AssertToleranceEquals(v, ColorVect.FromRgba32(r, g, b, a), TestTolerance);

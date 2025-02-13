@@ -169,16 +169,12 @@ class TransformTest {
 	}
 
 	[Test]
-	public void ShouldCorrectlyConvertToAndFromTuple() {
+	public void ShouldCorrectlyConvertToTuple() {
 		var (t, r, s) = TestTransform;
 
 		Assert.AreEqual(new Vect(1f, 2f, 3f), t);
 		Assert.AreEqual(90f % Direction.Down, r);
 		Assert.AreEqual(new Vect(0.75f, 0.5f, 0.25f), s);
-
-		Assert.AreEqual(new Transform(t), (Transform) t);
-		Assert.AreEqual(new Transform(t, r), (Transform) (t, r));
-		Assert.AreEqual(TestTransform, (Transform) (t, r, s));
 	}
 
 	[Test]
@@ -215,8 +211,8 @@ class TransformTest {
 
 		for (var i = 0; i < NumIterations; ++i) {
 			AssertTranslationAndScaling(
-				(new Vect(-Vect.DefaultRandomRange), Rotation.None, new Vect(-1f)),
-				(new Vect(Vect.DefaultRandomRange), Rotation.None, new Vect(1f)),
+				new(new Vect(-Vect.DefaultRandomRange), Rotation.None, new Vect(-1f)),
+				new(new Vect(Vect.DefaultRandomRange), Rotation.None, new Vect(1f)),
 				Transform.Random()
 			);
 			AssertTranslationAndScaling(

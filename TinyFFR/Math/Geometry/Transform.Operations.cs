@@ -16,6 +16,9 @@ partial struct Transform :
 	public Transform Inverse => new(-Translation, -Rotation, Scaling.Reciprocal ?? Vect.Zero);
 	static Transform IMultiplicativeIdentity<Transform, Transform>.MultiplicativeIdentity => None;
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public T TransformValue<T>(T transformable) where T : ITransformable<T> => transformable.TransformedBy(this);
+
 	#region Scaling
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Transform WithScalingAdjustedBy(float scalar) => this with { Scaling = Scaling + new Vect(scalar) };

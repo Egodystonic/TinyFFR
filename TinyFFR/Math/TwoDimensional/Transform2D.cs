@@ -49,10 +49,6 @@ public readonly partial struct Transform2D : IMathPrimitive<Transform2D>, IDescr
 		rotation = Rotation;
 		scaling = Scaling;
 	}
-
-	public static implicit operator Transform2D(XYPair<float> translation) => new(translation);
-	public static implicit operator Transform2D((XYPair<float> Translation, Angle Rotation) tuple) => new(tuple.Translation, tuple.Rotation);
-	public static implicit operator Transform2D((XYPair<float> Translation, Angle Rotation, XYPair<float> Scaling) tuple) => new(tuple.Translation, tuple.Rotation, tuple.Scaling);
 	#endregion
 
 	#region Random

@@ -42,7 +42,16 @@ using var loop = factory.ApplicationLoopBuilder.CreateLoop(60, name: "Larry the 
 using var camera = factory.CameraBuilder.CreateCamera(Location.Origin, name: "Carl the Camera");
 var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(1f), name: "Clive the Cuboid");
 //using var tex = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.White, name: "Terry the Texture");
-var colorPattern = TexturePattern.ChequerboardBordered(new ColorVect(1f, 1f, 1f), 4, new ColorVect(1f, 0f, 0f), new ColorVect(0f, 1f, 0f), new ColorVect(0f, 0f, 1f), new ColorVect(0.5f, 0.5f, 0.5f), (4, 4));
+var colorPattern = TexturePattern.ChequerboardBordered(
+	new ColorVect(1f, 1f, 1f), 
+	4, 
+	new ColorVect(1f, 0f, 0f), 
+	new ColorVect(0f, 1f, 0f), 
+	new ColorVect(0f, 0f, 1f), 
+	new ColorVect(0.5f, 0.5f, 0.5f), 
+	(4, 4),
+	transform: Transform2D.FromRotationOnly(45f)
+);
 //var colorPattern = TexturePattern.GradientRadial(new ColorVect(0.5f, 0.5f, 0.5f), new ColorVect(0f, 0f, 0f), innerOuterRatio: 0.4f);
 //var colorPattern = TexturePattern.PlainFill(new ColorVect(1f, 1f, 1f));
 // var colorPattern = TexturePattern.Rectangles(

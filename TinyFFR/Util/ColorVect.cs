@@ -242,8 +242,6 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 		alpha = Alpha;
 	}
 
-	public static implicit operator ColorVect(int rgb) => FromRgba32(rgb);
-	public static implicit operator ColorVect(uint rgb) => FromRgba32(rgb);
 	public static implicit operator ColorVect(StandardColor c) => FromStandardColor(c);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
