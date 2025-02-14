@@ -146,13 +146,13 @@ class DirectionTest {
 			}
 		}
 
-		Assert.AreEqual(Direction.None, Orientation3D.None.ToDirection());
-		Assert.AreEqual(Direction.Left, Orientation3D.Left.ToDirection());
-		Assert.AreEqual(Direction.Right, Orientation3D.Right.ToDirection());
-		Assert.AreEqual(Direction.Up, Orientation3D.Up.ToDirection());
-		Assert.AreEqual(Direction.Down, Orientation3D.Down.ToDirection());
-		Assert.AreEqual(Direction.Forward, Orientation3D.Forward.ToDirection());
-		Assert.AreEqual(Direction.Backward, Orientation3D.Backward.ToDirection());
+		Assert.AreEqual(Direction.None, Orientation.None.ToDirection());
+		Assert.AreEqual(Direction.Left, Orientation.Left.ToDirection());
+		Assert.AreEqual(Direction.Right, Orientation.Right.ToDirection());
+		Assert.AreEqual(Direction.Up, Orientation.Up.ToDirection());
+		Assert.AreEqual(Direction.Down, Orientation.Down.ToDirection());
+		Assert.AreEqual(Direction.Forward, Orientation.Forward.ToDirection());
+		Assert.AreEqual(Direction.Backward, Orientation.Backward.ToDirection());
 	}
 
 	[Test]
@@ -856,28 +856,28 @@ class DirectionTest {
 
 	[Test]
 	public void ShouldCorrectlyGetNearestOrientations() {
-		void AssertCardinal(Direction input, Direction expectedDirection, CardinalOrientation3D? expectedOrientation = null) {
+		void AssertCardinal(Direction input, Direction expectedDirection, CardinalOrientation? expectedOrientation = null) {
 			expectedOrientation ??= OrientationUtils.AllCardinals.ToArray().Single(c => c.ToDirection() == expectedDirection);
 			var (actualOrientation, actualDirection) = input.NearestOrientationCardinal;
 			Assert.AreEqual(expectedOrientation, actualOrientation);
 			Assert.AreEqual(expectedDirection, actualDirection);
 		}
-		void AssertDiagonal(Direction input, Direction expectedDirection, DiagonalOrientation3D? expectedOrientation = null) {
+		void AssertDiagonal(Direction input, Direction expectedDirection, DiagonalOrientation? expectedOrientation = null) {
 			expectedOrientation ??= OrientationUtils.AllDiagonals.ToArray().Single(c => c.ToDirection() == expectedDirection);
 			var (actualOrientation, actualDirection) = input.NearestOrientationDiagonal;
 			Assert.AreEqual(expectedOrientation, actualOrientation);
 			Assert.AreEqual(expectedDirection, actualDirection);
 		}
-		void AssertOrientation(Direction input, Direction expectedDirection, Orientation3D? expectedOrientation = null) {
+		void AssertOrientation(Direction input, Direction expectedDirection, Orientation? expectedOrientation = null) {
 			expectedOrientation ??= OrientationUtils.All3DOrientations.ToArray().Single(c => c.ToDirection() == expectedDirection);
 			var (actualOrientation, actualDirection) = input.NearestOrientation;
 			Assert.AreEqual(expectedOrientation, actualOrientation);
 			Assert.AreEqual(expectedDirection, actualDirection);
 		}
 
-		AssertCardinal(Direction.None, Direction.None, CardinalOrientation3D.None);
-		AssertDiagonal(Direction.None, Direction.None, DiagonalOrientation3D.None);
-		AssertOrientation(Direction.None, Direction.None, Orientation3D.None);
+		AssertCardinal(Direction.None, Direction.None, CardinalOrientation.None);
+		AssertDiagonal(Direction.None, Direction.None, DiagonalOrientation.None);
+		AssertOrientation(Direction.None, Direction.None, Orientation.None);
 		foreach (var d in Direction.AllCardinals) {
 			AssertCardinal(d, d);
 		}
@@ -899,9 +899,9 @@ class DirectionTest {
 		foreach (var item in testList) {
 			//Console.WriteLine(item.ToStringDescriptive());
 			if (item == Direction.None) {
-				AssertCardinal(item, Direction.None, CardinalOrientation3D.None);
-				AssertDiagonal(item, Direction.None, DiagonalOrientation3D.None);
-				AssertOrientation(item, Direction.None, Orientation3D.None);
+				AssertCardinal(item, Direction.None, CardinalOrientation.None);
+				AssertDiagonal(item, Direction.None, DiagonalOrientation.None);
+				AssertOrientation(item, Direction.None, Orientation.None);
 				continue;
 			}
 

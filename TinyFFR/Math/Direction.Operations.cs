@@ -45,25 +45,25 @@ partial struct Direction :
 	}
 	Direction IInvertible<Direction>.Inverted => Flipped;
 
-	public NearestOrientationResult<CardinalOrientation3D> NearestOrientationCardinal {
+	public NearestOrientationResult<CardinalOrientation> NearestOrientationCardinal {
 		get {
 			GetNearestDirectionAndOrientation(this, AllCardinals, out var e, out var d);
-			return new((CardinalOrientation3D) e, d);
+			return new((CardinalOrientation) e, d);
 		}
 	}
-	public NearestOrientationResult<IntercardinalOrientation3D> NearestOrientationIntercardinal {
+	public NearestOrientationResult<IntercardinalOrientation> NearestOrientationIntercardinal {
 		get {
 			GetNearestDirectionAndOrientation(this, AllIntercardinals, out var e, out var d);
-			return new((IntercardinalOrientation3D) e, d);
+			return new((IntercardinalOrientation) e, d);
 		}
 	}
-	public NearestOrientationResult<DiagonalOrientation3D> NearestOrientationDiagonal {
+	public NearestOrientationResult<DiagonalOrientation> NearestOrientationDiagonal {
 		get {
 			GetNearestDirectionAndOrientation(this, AllDiagonals, out var e, out var d);
-			return new((DiagonalOrientation3D) e, d);
+			return new((DiagonalOrientation) e, d);
 		}
 	}
-	public NearestOrientationResult<Orientation3D> NearestOrientation {
+	public NearestOrientationResult<Orientation> NearestOrientation {
 		get {
 			GetNearestDirectionAndOrientation(this, AllOrientations, out var e, out var d);
 			return new(e, d);
@@ -87,8 +87,8 @@ partial struct Direction :
 		}
 		return result;
 	}
-	static void GetNearestDirectionAndOrientation(Direction targetDir, ReadOnlySpan<Direction> span, out Orientation3D orientation, out Direction direction) {
-		orientation = Orientation3D.None;
+	static void GetNearestDirectionAndOrientation(Direction targetDir, ReadOnlySpan<Direction> span, out Orientation orientation, out Direction direction) {
+		orientation = Orientation.None;
 		direction = None;
 		if (targetDir == None) {
 			return;

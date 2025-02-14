@@ -95,23 +95,23 @@ public readonly partial struct CuboidDescriptor : IConvexShape<CuboidDescriptor>
 		_ => throw new ArgumentOutOfRangeException(nameof(axis), axis, $"{nameof(Axis)} can not be {nameof(Axis.None)} or non-defined value.")
 	};
 
-	public float GetSideSurfaceArea(CardinalOrientation3D side) {
+	public float GetSideSurfaceArea(CardinalOrientation side) {
 		return side.GetAxis() switch {
 			Axis.X => HalfHeight * HalfDepth * 4f,
 			Axis.Y => HalfDepth * HalfWidth * 4f,
 			Axis.Z => HalfWidth * HalfHeight * 4f,
-			_ => throw new ArgumentOutOfRangeException(nameof(side), side, $"{nameof(CardinalOrientation3D)} can not be {nameof(CardinalOrientation3D.None)} or non-defined value.")
+			_ => throw new ArgumentOutOfRangeException(nameof(side), side, $"{nameof(CardinalOrientation)} can not be {nameof(CardinalOrientation.None)} or non-defined value.")
 		};
 	}
 
-	public Location CentroidAt(CardinalOrientation3D side) {
-		if (side == CardinalOrientation3D.None || !Enum.IsDefined(side)) throw new ArgumentOutOfRangeException(nameof(side), side, $"Can not be '{nameof(CardinalOrientation3D.None)}' or non-defined value.");
+	public Location CentroidAt(CardinalOrientation side) {
+		if (side == CardinalOrientation.None || !Enum.IsDefined(side)) throw new ArgumentOutOfRangeException(nameof(side), side, $"Can not be '{nameof(CardinalOrientation.None)}' or non-defined value.");
 
 		return (GetHalfExtent(side.GetAxis()) * side.GetAxisSign() * side.ToDirection()).AsLocation();
 	}
 
-	public Location CornerAt(DiagonalOrientation3D corner) {
-		if (corner == DiagonalOrientation3D.None || !Enum.IsDefined(corner)) throw new ArgumentOutOfRangeException(nameof(corner), corner, $"Can not be '{nameof(DiagonalOrientation3D.None)}' or non-defined value.");
+	public Location CornerAt(DiagonalOrientation corner) {
+		if (corner == DiagonalOrientation.None || !Enum.IsDefined(corner)) throw new ArgumentOutOfRangeException(nameof(corner), corner, $"Can not be '{nameof(DiagonalOrientation.None)}' or non-defined value.");
 
 		return new(
 			corner.GetAxisSign(Axis.X) * HalfWidth,
@@ -120,19 +120,19 @@ public readonly partial struct CuboidDescriptor : IConvexShape<CuboidDescriptor>
 		);
 	}
 
-	public Plane SideAt(CardinalOrientation3D side) { // TODO xmldoc that the planes' normals point away from the cuboid centre, e.g. side.ToDirection()
-		if (side == CardinalOrientation3D.None || !Enum.IsDefined(side)) throw new ArgumentOutOfRangeException(nameof(side), side, $"Can not be '{nameof(CardinalOrientation3D.None)}' or non-defined value.");
+	public Plane SideAt(CardinalOrientation side) { // TODO xmldoc that the planes' normals point away from the cuboid centre, e.g. side.ToDirection()
+		if (side == CardinalOrientation.None || !Enum.IsDefined(side)) throw new ArgumentOutOfRangeException(nameof(side), side, $"Can not be '{nameof(CardinalOrientation.None)}' or non-defined value.");
 
 		return new(side.ToDirection(), GetHalfExtent(side.GetAxis()));
 	}
 
-	public BoundedRay EdgeAt(IntercardinalOrientation3D edge) {
-		if (edge == IntercardinalOrientation3D.None || !Enum.IsDefined(edge)) throw new ArgumentOutOfRangeException(nameof(edge), edge, $"Can not be '{nameof(IntercardinalOrientation3D.None)}' or non-defined value.");
+	public BoundedRay EdgeAt(IntercardinalOrientation edge) {
+		if (edge == IntercardinalOrientation.None || !Enum.IsDefined(edge)) throw new ArgumentOutOfRangeException(nameof(edge), edge, $"Can not be '{nameof(IntercardinalOrientation.None)}' or non-defined value.");
 
 		var unspecifiedAxis = edge.GetUnspecifiedAxis();
 		return new(
-			CornerAt((DiagonalOrientation3D) edge.AsGeneralOrientation().WithAxisSign(unspecifiedAxis, -1)),
-			CornerAt((DiagonalOrientation3D) edge.AsGeneralOrientation().WithAxisSign(unspecifiedAxis, 1))
+			CornerAt((DiagonalOrientation) edge.AsGeneralOrientation().WithAxisSign(unspecifiedAxis, -1)),
+			CornerAt((DiagonalOrientation) edge.AsGeneralOrientation().WithAxisSign(unspecifiedAxis, 1))
 		);
 	}
 

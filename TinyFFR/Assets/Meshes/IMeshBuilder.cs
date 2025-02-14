@@ -21,75 +21,75 @@ public interface IMeshBuilder {
 		using var polyGroup = AllocateNewPolygonGroup();
 
 		// Back
-		polyVertexSpan[0] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpBackward);
-		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftDownBackward);
-		polyVertexSpan[2] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightDownBackward);
-		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpBackward);
+		polyVertexSpan[0] = cuboidDesc.CornerAt(DiagonalOrientation.LeftUpBackward);
+		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation.LeftDownBackward);
+		polyVertexSpan[2] = cuboidDesc.CornerAt(DiagonalOrientation.RightDownBackward);
+		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation.RightUpBackward);
 		polyGroup.Add(
 			new(polyVertexSpan, Direction.Backward),
 			Direction.Right,
 			Direction.Up,
-			centreTextureOrigin ? cuboidDesc.CentroidAt(CardinalOrientation3D.Backward) : polyVertexSpan[1]
+			centreTextureOrigin ? cuboidDesc.CentroidAt(CardinalOrientation.Backward) : polyVertexSpan[1]
 		);
 
 		// Front
-		polyVertexSpan[0] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpForward);
-		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightDownForward);
-		polyVertexSpan[2] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftDownForward);
-		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpForward);
+		polyVertexSpan[0] = cuboidDesc.CornerAt(DiagonalOrientation.RightUpForward);
+		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation.RightDownForward);
+		polyVertexSpan[2] = cuboidDesc.CornerAt(DiagonalOrientation.LeftDownForward);
+		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation.LeftUpForward);
 		polyGroup.Add(
 			new(polyVertexSpan, Direction.Forward),
 			Direction.Left,
 			Direction.Up,
-			centreTextureOrigin ? cuboidDesc.CentroidAt(CardinalOrientation3D.Forward) : polyVertexSpan[1]
+			centreTextureOrigin ? cuboidDesc.CentroidAt(CardinalOrientation.Forward) : polyVertexSpan[1]
 		);
 
 		// Right
-		polyVertexSpan[0] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpBackward);
-		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightDownBackward);
-		polyVertexSpan[2] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightDownForward);
-		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpForward);
+		polyVertexSpan[0] = cuboidDesc.CornerAt(DiagonalOrientation.RightUpBackward);
+		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation.RightDownBackward);
+		polyVertexSpan[2] = cuboidDesc.CornerAt(DiagonalOrientation.RightDownForward);
+		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation.RightUpForward);
 		polyGroup.Add(
 			new(polyVertexSpan, Direction.Right),
 			Direction.Forward,
 			Direction.Up,
-			centreTextureOrigin ? cuboidDesc.CentroidAt(CardinalOrientation3D.Right) : polyVertexSpan[1]
+			centreTextureOrigin ? cuboidDesc.CentroidAt(CardinalOrientation.Right) : polyVertexSpan[1]
 		);
 
 		// Left
-		polyVertexSpan[0] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpForward);
-		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftDownForward);
-		polyVertexSpan[2] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftDownBackward);
-		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpBackward);
+		polyVertexSpan[0] = cuboidDesc.CornerAt(DiagonalOrientation.LeftUpForward);
+		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation.LeftDownForward);
+		polyVertexSpan[2] = cuboidDesc.CornerAt(DiagonalOrientation.LeftDownBackward);
+		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation.LeftUpBackward);
 		polyGroup.Add(
 			new(polyVertexSpan, Direction.Left),
 			Direction.Backward,
 			Direction.Up,
-			centreTextureOrigin ? cuboidDesc.CentroidAt(CardinalOrientation3D.Left) : polyVertexSpan[1]
+			centreTextureOrigin ? cuboidDesc.CentroidAt(CardinalOrientation.Left) : polyVertexSpan[1]
 		);
 
 		// Top
-		polyVertexSpan[0] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpForward);
-		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftUpBackward);
-		polyVertexSpan[2] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpBackward);
-		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightUpForward);
+		polyVertexSpan[0] = cuboidDesc.CornerAt(DiagonalOrientation.LeftUpForward);
+		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation.LeftUpBackward);
+		polyVertexSpan[2] = cuboidDesc.CornerAt(DiagonalOrientation.RightUpBackward);
+		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation.RightUpForward);
 		polyGroup.Add(
 			new(polyVertexSpan, Direction.Up),
 			Direction.Right,
 			Direction.Forward,
-			centreTextureOrigin ? cuboidDesc.CentroidAt(CardinalOrientation3D.Up) : polyVertexSpan[1]
+			centreTextureOrigin ? cuboidDesc.CentroidAt(CardinalOrientation.Up) : polyVertexSpan[1]
 		);
 
 		// Bottom
-		polyVertexSpan[0] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightDownBackward);
-		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftDownBackward);
-		polyVertexSpan[2] = cuboidDesc.CornerAt(DiagonalOrientation3D.LeftDownForward);
-		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation3D.RightDownForward);
+		polyVertexSpan[0] = cuboidDesc.CornerAt(DiagonalOrientation.RightDownBackward);
+		polyVertexSpan[1] = cuboidDesc.CornerAt(DiagonalOrientation.LeftDownBackward);
+		polyVertexSpan[2] = cuboidDesc.CornerAt(DiagonalOrientation.LeftDownForward);
+		polyVertexSpan[3] = cuboidDesc.CornerAt(DiagonalOrientation.RightDownForward);
 		polyGroup.Add(
 			new(polyVertexSpan, Direction.Down),
 			Direction.Left,
 			Direction.Backward,
-			centreTextureOrigin ? cuboidDesc.CentroidAt(CardinalOrientation3D.Down) : polyVertexSpan[3]
+			centreTextureOrigin ? cuboidDesc.CentroidAt(CardinalOrientation.Down) : polyVertexSpan[3]
 		);
 
 		return CreateMesh(polyGroup, textureTransform, in config);

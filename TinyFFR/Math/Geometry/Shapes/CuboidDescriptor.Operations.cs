@@ -300,14 +300,14 @@ partial struct CuboidDescriptor : IIndependentAxisScalable<CuboidDescriptor> {
 				return (
 					firstHitDistance,
 					hitLoc.Value,
-					SideAt((CardinalOrientation3D) OrientationUtils.CreateXAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.X)))
+					SideAt((CardinalOrientation) OrientationUtils.CreateXAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.X)))
 				);
 			}
 			else {
 				return (
 					firstHitDistance,
 					hitLoc.Value,
-					SideAt((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Z)))
+					SideAt((CardinalOrientation) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Z)))
 				);
 			}
 		}
@@ -315,14 +315,14 @@ partial struct CuboidDescriptor : IIndependentAxisScalable<CuboidDescriptor> {
 			return (
 				firstHitDistance,
 				hitLoc.Value,
-				SideAt((CardinalOrientation3D) OrientationUtils.CreateYAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Y)))
+				SideAt((CardinalOrientation) OrientationUtils.CreateYAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Y)))
 			);
 		}
 		else {
 			return (
 				firstHitDistance,
 				hitLoc.Value,
-				SideAt((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Z)))
+				SideAt((CardinalOrientation) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Value.Z)))
 			);
 		}
 	}
@@ -347,14 +347,14 @@ partial struct CuboidDescriptor : IIndependentAxisScalable<CuboidDescriptor> {
 				return (
 					firstHitDistance,
 					hitLoc,
-					SideAt((CardinalOrientation3D) OrientationUtils.CreateXAxisOrientationFromValueSign(MathF.Sign(hitLoc.X)))
+					SideAt((CardinalOrientation) OrientationUtils.CreateXAxisOrientationFromValueSign(MathF.Sign(hitLoc.X)))
 				);
 			}
 			else {
 				return (
 					firstHitDistance,
 					hitLoc,
-					SideAt((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Z)))
+					SideAt((CardinalOrientation) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Z)))
 				);
 			}
 		}
@@ -362,14 +362,14 @@ partial struct CuboidDescriptor : IIndependentAxisScalable<CuboidDescriptor> {
 			return (
 				firstHitDistance,
 				hitLoc,
-				SideAt((CardinalOrientation3D) OrientationUtils.CreateYAxisOrientationFromValueSign(MathF.Sign(hitLoc.Y)))
+				SideAt((CardinalOrientation) OrientationUtils.CreateYAxisOrientationFromValueSign(MathF.Sign(hitLoc.Y)))
 			);
 		}
 		else {
 			return (
 				firstHitDistance,
 				hitLoc,
-				SideAt((CardinalOrientation3D) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Z)))
+				SideAt((CardinalOrientation) OrientationUtils.CreateZAxisOrientationFromValueSign(MathF.Sign(hitLoc.Z)))
 			);
 		}
 	}
