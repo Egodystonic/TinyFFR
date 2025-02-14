@@ -27,10 +27,10 @@ public static class XYPairExtensions {
 		return new(TNew.CreateSaturating(T.Round(@this.X, roundingDigits, midpointRounding)), TNew.CreateSaturating(T.Round(@this.Y, roundingDigits, midpointRounding)));
 	}
 
-	public static XYPair<TNew> CastWithRoundingIfNecessary<T, TNew>(this XYPair<T> @this, int roundingDigits = 0, MidpointRounding midpointRounding = MidpointRounding.ToEven) where T : unmanaged, IFloatingPoint<T> where TNew : unmanaged, INumber<TNew> {
+	public static XYPair<TNew> CastWithRoundingIfNecessary<T, TNew>(this XYPair<T> @this, MidpointRounding midpointRounding = MidpointRounding.ToEven) where T : unmanaged, IFloatingPoint<T> where TNew : unmanaged, INumber<TNew> {
 		return XYPair<TNew>.IsFloatingPoint 
 			? @this.Cast<TNew>() 
-			: new(TNew.CreateSaturating(T.Round(@this.X, roundingDigits, midpointRounding)), TNew.CreateSaturating(T.Round(@this.Y, roundingDigits, midpointRounding)));
+			: new(TNew.CreateSaturating(T.Round(@this.X, midpointRounding)), TNew.CreateSaturating(T.Round(@this.Y, midpointRounding)));
 	}
 	#endregion
 }

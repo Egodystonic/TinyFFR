@@ -50,7 +50,7 @@ var colorPattern = TexturePattern.ChequerboardBordered(
 	new ColorVect(0f, 0f, 1f), 
 	new ColorVect(0.5f, 0.5f, 0.5f), 
 	(4, 4),
-	transform: Transform2D.FromRotationOnly(45f)
+	cellResolution: 256
 );
 //var colorPattern = TexturePattern.GradientRadial(new ColorVect(0.5f, 0.5f, 0.5f), new ColorVect(0f, 0f, 0f), innerOuterRatio: 0.4f);
 //var colorPattern = TexturePattern.PlainFill(new ColorVect(1f, 1f, 1f));

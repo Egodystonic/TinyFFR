@@ -76,12 +76,7 @@ public readonly unsafe struct TexturePattern<T> where T : unmanaged {
 		TexturePattern.AssertDimensions(dimensions);
 		ArgumentNullException.ThrowIfNull(generationFunc);
 
-		if (transform != null) {
-			transform = transform.Value with {
-				Scaling = transform.Value.Scaling.Reciprocal ?? XYPair<float>.Zero,
-				Translation = transform.Value.Translation * dimensions.Cast<float>()
-			};
-		}
+		transform = transform?.Inverse;
 
 		_dimensions = dimensions;
 		_generationFunc = generationFunc;
