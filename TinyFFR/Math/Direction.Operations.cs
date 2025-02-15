@@ -132,6 +132,41 @@ partial struct Direction :
 	public static Angle operator ^(Direction d1, Direction d2) => Angle.FromAngleBetweenDirections(d1, d2);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(Direction other) => Angle.FromAngleBetweenDirections(this, other);
+	// Maintainer's notes: We have the following constraints for this to help it feel consistent:
+	// 1) This method should never give a different answer to AngleTo excepting the sign.
+	// 2) When swapping this & other or reversing the direction of clockwiseAxis, the sign should always change, except in case (3) or (4):
+	// 3) When the non-signed angle between this & other is 180deg, this will always return positive 180deg; in other words the range of values for this function is [-179.99.., 180.00]
+	// 4) When clockwiseAxis is None, this method always returns the same answer to non-signed AngleTo()
+	// These cases are commented inline below.
+	public Angle SignedAngleTo(Direction other, Direction clockwiseAxis) {
+		const float FloatingPointErrorMargin = 1E-6f;
+
+		static int CalcArbitrarySign(Direction a, Direction b, Direction c) {
+			if (c == None) return 1; // (4)
+			
+			var aCrossB = a.Cross(b);
+
+			var s = aCrossB.Dot(Up);
+			if (MathF.Abs(s) < FloatingPointErrorMargin) s = aCrossB.Dot(Forward);
+			if (MathF.Abs(s) < FloatingPointErrorMargin) s = aCrossB.Dot(Right);
+			
+			var q = c.Dot(Up);
+			if (MathF.Abs(q) < FloatingPointErrorMargin) q = c.Dot(Forward);
+			if (MathF.Abs(q) < FloatingPointErrorMargin) q = c.Dot(Right);
+			
+			return MathF.Sign(s) * MathF.Sign(q);
+		}
+
+		var unsignedAngle = AngleTo(other);
+		if (unsignedAngle == Angle.HalfCircle) return unsignedAngle; // (3)
+		var dot = clockwiseAxis.Dot(Cross(other)); // (2)
+		var axisSign = dot switch {
+			> FloatingPointErrorMargin => 1,
+			< -FloatingPointErrorMargin => -1,
+			_ => CalcArbitrarySign(this, other, clockwiseAxis) // (2) -- outcome of this function is sensitive to orientations of a, b, and c
+		}; 
+		return unsignedAngle * axisSign; // (1)
+	}
 
 	public Direction AnyOrthogonal() {
 		return FromVector3(Vector3.Cross(

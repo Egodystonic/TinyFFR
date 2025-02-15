@@ -86,6 +86,7 @@ partial struct XYPair<T> :
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(XYPair<T> lhs, XYPair<T> rhs) => lhs.AngleTo(rhs);
+	public Angle SignedAngleTo(XYPair<T> other) => AngleTo(other) * ((int) AngleOrientationTo(other) | 0b1);
 
 	public float Dot(XYPair<T> other) => Vector2.Dot(ToVector2(), other.ToVector2());
 

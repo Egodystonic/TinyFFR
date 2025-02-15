@@ -17,7 +17,7 @@ partial struct Transform :
 	static Transform IMultiplicativeIdentity<Transform, Transform>.MultiplicativeIdentity => None;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public T TransformValue<T>(T transformable) where T : ITransformable<T> => transformable.TransformedBy(this);
+	public T AppliedTo<T>(T transformable) where T : ITransformable<T> => transformable.TransformedBy(this);
 
 	#region Scaling
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

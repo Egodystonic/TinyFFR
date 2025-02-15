@@ -14,6 +14,13 @@ partial struct Line {
 	public Angle AngleTo(BoundedRay ray) => ILineLike.AngleTo(this, ray);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle SignedAngleTo(Line line, Direction clockwiseAxis) => ILineLike.SignedAngleTo(this, line, clockwiseAxis);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle SignedAngleTo(Ray ray, Direction clockwiseAxis) => ILineLike.SignedAngleTo(this, ray, clockwiseAxis);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle SignedAngleTo(BoundedRay ray, Direction clockwiseAxis) => ILineLike.SignedAngleTo(this, ray, clockwiseAxis);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFrom(Line line) => DistanceSquaredFrom(ClosestPointOn(line));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFrom(Ray ray) => DistanceSquaredFrom(ClosestPointOn(ray));
@@ -218,6 +225,13 @@ partial struct Ray {
 	public Angle AngleTo(BoundedRay ray) => ILineLike.AngleTo(this, ray);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle SignedAngleTo(Line line, Direction clockwiseAxis) => ILineLike.SignedAngleTo(this, line, clockwiseAxis);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle SignedAngleTo(Ray ray, Direction clockwiseAxis) => ILineLike.SignedAngleTo(this, ray, clockwiseAxis);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle SignedAngleTo(BoundedRay ray, Direction clockwiseAxis) => ILineLike.SignedAngleTo(this, ray, clockwiseAxis);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFrom(Line line) => DistanceSquaredFrom(ClosestPointOn(line));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFrom(Ray ray) => DistanceSquaredFrom(ClosestPointOn(ray));
@@ -420,6 +434,13 @@ partial struct BoundedRay {
 	public Angle AngleTo(Ray ray) => ILineLike.AngleTo(this, ray);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle AngleTo(BoundedRay ray) => ILineLike.AngleTo(this, ray);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle SignedAngleTo(Line line, Direction clockwiseAxis) => ILineLike.SignedAngleTo(this, line, clockwiseAxis);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle SignedAngleTo(Ray ray, Direction clockwiseAxis) => ILineLike.SignedAngleTo(this, ray, clockwiseAxis);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle SignedAngleTo(BoundedRay ray, Direction clockwiseAxis) => ILineLike.SignedAngleTo(this, ray, clockwiseAxis);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFrom(Line line) => DistanceSquaredFrom(ClosestPointOn(line));

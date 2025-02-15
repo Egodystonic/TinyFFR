@@ -35,12 +35,12 @@ public readonly partial struct Transform2D : IMathPrimitive<Transform2D>, IDescr
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Transform2D FromTranslationOnly(XYPair<float> translation) => new(translation: translation);
 
-	public Transform To3DTransform() => To3DTransform(new(Direction.Forward));
-	public Transform To3DTransform(DimensionConverter dimensionConverter) {
+	public Transform To3D() => To3D(new(Direction.Forward));
+	public Transform To3D(DimensionConverter dimensionConverter) {
 		return new(
-			dimensionConverter.ConvertVect(Translation),
+			dimensionConverter.ConvertVect(Translation, 0f),
 			dimensionConverter.ZBasis % Rotation,
-			dimensionConverter.ConvertVect(Scaling)
+			dimensionConverter.ConvertVect(Scaling, 1f)
 		);
 	}
 

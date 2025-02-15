@@ -917,21 +917,21 @@ class PlaneTest {
 	[Test]
 	public void ShouldCorrectlyConstructDimensionConverters() {
 		var converter = TestPlane.CreateDimensionConverter();
-		Assert.AreEqual(TestPlane.PointClosestToOrigin, converter.Origin3D);
+		Assert.AreEqual(TestPlane.PointClosestToOrigin, converter.Origin);
 		Assert.AreEqual(TestPlane.Normal, converter.ZBasis);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ converter.YBasis, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ TestPlane.Normal, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.YBasis ^ TestPlane.Normal, TestTolerance);
 
 		converter = TestPlane.CreateDimensionConverter(new Location(-100f, 1000f, 33f));
-		Assert.AreEqual(new Location(-100f, -1f, 33f), converter.Origin3D);
+		Assert.AreEqual(new Location(-100f, -1f, 33f), converter.Origin);
 		Assert.AreEqual(TestPlane.Normal, converter.ZBasis);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ converter.YBasis, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ TestPlane.Normal, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.YBasis ^ TestPlane.Normal, TestTolerance);
 
 		converter = TestPlane.CreateDimensionConverter(new Location(-100f, 1000f, 33f), new Direction(1f, 1f, -1f));
-		Assert.AreEqual(new Location(-100f, -1f, 33f), converter.Origin3D);
+		Assert.AreEqual(new Location(-100f, -1f, 33f), converter.Origin);
 		Assert.AreEqual(TestPlane.Normal, converter.ZBasis);
 		AssertToleranceEquals(new Direction(1f, 0f, -1f), converter.XBasis, TestTolerance);
 		AssertToleranceEquals(new Angle(90f), converter.XBasis ^ converter.YBasis, TestTolerance);
@@ -939,7 +939,7 @@ class PlaneTest {
 		AssertToleranceEquals(new Angle(90f), converter.YBasis ^ TestPlane.Normal, TestTolerance);
 
 		converter = TestPlane.CreateDimensionConverter(new Location(-100f, 1000f, 33f), new Direction(1f, 1f, -1f), new Direction(1f, -1f, 0.8f));
-		Assert.AreEqual(new Location(-100f, -1f, 33f), converter.Origin3D);
+		Assert.AreEqual(new Location(-100f, -1f, 33f), converter.Origin);
 		Assert.AreEqual(TestPlane.Normal, converter.ZBasis);
 		AssertToleranceEquals(new Direction(1f, 0f, -1f), converter.XBasis, TestTolerance);
 		AssertToleranceEquals(new Direction(1f, 0f, 1f), converter.YBasis, TestTolerance);

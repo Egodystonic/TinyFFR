@@ -395,6 +395,97 @@ class DirectionTest {
 		Assert.AreEqual((Angle) 90f, Direction.Right ^ Direction.Up);
 		Assert.AreEqual((Angle) 90f, Direction.Right ^ Direction.Down);
 		Assert.AreEqual((Angle) 0f, Direction.Down ^ Direction.Down);
+
+		Assert.AreEqual((Angle) 90f, Direction.Forward.SignedAngleTo(Direction.Right, Direction.Down));
+		Assert.AreEqual(-(Angle) 90f, Direction.Forward.SignedAngleTo(Direction.Right, Direction.Up));
+		Assert.AreEqual((Angle) 90f, Direction.Right.SignedAngleTo(Direction.Forward, Direction.Up));
+		Assert.AreEqual(-(Angle) 90f, Direction.Right.SignedAngleTo(Direction.Forward, Direction.Down));
+
+		Assert.AreEqual((Angle) 0f, Direction.Up.SignedAngleTo(Direction.Up, Direction.Right));
+		Assert.AreEqual((Angle) 0f, Direction.Down.SignedAngleTo(Direction.Down, Direction.Right));
+		Assert.AreEqual((Angle) 0f, Direction.Down.SignedAngleTo(Direction.Down, Direction.Left));
+		Assert.AreEqual((Angle) 0f, Direction.Up.SignedAngleTo(Direction.Up, Direction.Left));
+		Assert.AreEqual((Angle) 180f, Direction.Up.SignedAngleTo(Direction.Down, Direction.Right));
+		Assert.AreEqual((Angle) 180f, Direction.Up.SignedAngleTo(Direction.Down, Direction.Left));
+		Assert.AreEqual((Angle) 180f, Direction.Down.SignedAngleTo(Direction.Up, Direction.Right));
+		Assert.AreEqual((Angle) 180f, Direction.Down.SignedAngleTo(Direction.Up, Direction.Left));
+
+		Assert.AreEqual((Angle) 0f, Direction.None.SignedAngleTo(Direction.None, Direction.None));
+		Assert.AreEqual((Angle) 0f, Direction.None.SignedAngleTo(Direction.None, Direction.Right));
+		Assert.AreEqual((Angle) 0f, Direction.None.SignedAngleTo(Direction.None, Direction.Left));
+		Assert.AreEqual((Angle) 90f, Direction.Forward.SignedAngleTo(Direction.Right, Direction.None));
+		Assert.AreEqual((Angle) 90f, Direction.Right.SignedAngleTo(Direction.Forward, Direction.None));
+
+		Assert.AreEqual(-Direction.Right.SignedAngleTo(Direction.Forward, Direction.Right), Direction.Forward.SignedAngleTo(Direction.Right, Direction.Right));
+		Assert.AreEqual(-Direction.Right.SignedAngleTo(Direction.Forward, Direction.Left), Direction.Forward.SignedAngleTo(Direction.Right, Direction.Left));
+
+		Assert.AreEqual(-Direction.Forward.SignedAngleTo(Direction.Right, Direction.Backward), Direction.Forward.SignedAngleTo(Direction.Right, Direction.Forward));
+		Assert.AreEqual(-Direction.Right.SignedAngleTo(Direction.Forward, Direction.Backward), Direction.Right.SignedAngleTo(Direction.Forward, Direction.Forward));
+
+		var dirList = new List<Direction>();
+		for (var x = -2f; x <= 2f; x += 1f) {
+			for (var y = -2f; y <= 2f; y += 1f) {
+				for (var z = -2f; z <= 2f; z += 1f) {
+					dirList.Add(new(x, y, z));
+				}
+			}
+		}
+
+		for (var i = 0; i < dirList.Count; ++i) {
+			for (var j = i; j < dirList.Count; ++j) {
+				for (var k = 0; k < dirList.Count; ++k) {
+					try {
+						Assert.IsTrue(
+							dirList[i].AngleTo(dirList[j]) == dirList[i].SignedAngleTo(dirList[j], dirList[k])
+							|| dirList[i].AngleTo(dirList[j]) == -dirList[i].SignedAngleTo(dirList[j], dirList[k])
+						);
+					
+						if (dirList[k] == Direction.None) {
+							Assert.AreEqual(
+								dirList[i].SignedAngleTo(dirList[j], dirList[k]),
+								dirList[j].SignedAngleTo(dirList[i], dirList[k])
+							);
+						}
+						else if (dirList[i].AngleTo(dirList[j]) == 180f) {
+							Assert.AreEqual(
+								dirList[i].SignedAngleTo(dirList[j], dirList[k]),
+								dirList[j].SignedAngleTo(dirList[i], dirList[k])
+							);
+							Assert.AreEqual(
+								dirList[i].SignedAngleTo(dirList[j], dirList[k]),
+								dirList[i].SignedAngleTo(dirList[j], -dirList[k])
+							);
+						}
+						else {
+							Assert.AreEqual(
+								dirList[i].SignedAngleTo(dirList[j], dirList[k]),
+								-dirList[j].SignedAngleTo(dirList[i], dirList[k])
+							);
+							Assert.AreEqual(
+								dirList[i].SignedAngleTo(dirList[j], dirList[k]),
+								-dirList[i].SignedAngleTo(dirList[j], -dirList[k])
+							);
+						}
+					}
+					catch {
+						Console.WriteLine("I: " + dirList[i]);
+						Console.WriteLine("J: " + dirList[j]);
+						Console.WriteLine("K: " + dirList[k]);
+						Console.WriteLine("I ^ J: " + (dirList[i] ^ dirList[j]));
+						Console.WriteLine("I ^ J [+/-]: " + dirList[i].SignedAngleTo(dirList[j], dirList[k]));
+						Console.WriteLine("I ^ K: " + (dirList[i] ^ dirList[k]));
+						Console.WriteLine("J ^ K: " + (dirList[j] ^ dirList[k]));
+						Console.WriteLine("I X J: " + dirList[i].Cross(dirList[j]));
+						Console.WriteLine("I X J dot Up: " + (dirList[i].Cross(dirList[j])).Dot(Direction.Up));
+						Console.WriteLine("I X J dot Forward: " + (dirList[i].Cross(dirList[j])).Dot(Direction.Forward));
+						Console.WriteLine("J X I dot Up: " + (dirList[j].Cross(dirList[i])).Dot(Direction.Up));
+						Console.WriteLine("J X I dot Forward: " + (dirList[j].Cross(dirList[i])).Dot(Direction.Forward));
+						Console.WriteLine("K dot I x J: " + dirList[k].Dot(dirList[i].Cross(dirList[j])));
+						throw;
+					}
+				}
+			}
+		}
 	}
 
 	[Test]

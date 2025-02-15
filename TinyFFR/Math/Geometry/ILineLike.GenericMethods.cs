@@ -8,6 +8,7 @@ namespace Egodystonic.TinyFFR;
 // Unless you're some super genius with this stuff and want to have a go... Free cookie for you!
 public partial interface ILineLike {
 	public static Angle AngleTo<TThis, TArg>(TThis @this, TArg arg) where TThis : ILineLike where TArg : ILineLike => @this.Direction.AngleTo(arg.Direction);
+	public static Angle SignedAngleTo<TThis, TArg>(TThis @this, TArg arg, Direction clockwiseAxis) where TThis : ILineLike where TArg : ILineLike => @this.Direction.SignedAngleTo(arg.Direction, clockwiseAxis);
 	
 	public static Location ClosestPointOn<TThis, TArg>(TThis @this, TArg arg) where TThis : ILineLike where TArg : ILineLike {
 		return arg switch {

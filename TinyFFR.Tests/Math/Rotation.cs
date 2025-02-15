@@ -624,4 +624,23 @@ class RotationTest {
 		Assert.AreEqual(NinetyAroundDown, NinetyAroundDown.Clamp(Rotation.None, NinetyAroundUp));
 		Assert.AreEqual(NinetyAroundDown, NinetyAroundDown.Clamp(NinetyAroundUp, Rotation.None));
 	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateAngleAroundAxis() {
+		AssertToleranceEquals(Angle.QuarterCircle, (90f % Down).AngleAroundAxis(Down), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, (0f % Down).AngleAroundAxis(Down), TestTolerance);
+		AssertToleranceEquals(-Angle.QuarterCircle, (-90f % Down).AngleAroundAxis(Down), TestTolerance);
+
+		AssertToleranceEquals(-Angle.QuarterCircle, (90f % Down).AngleAroundAxis(Up), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, (0f % Down).AngleAroundAxis(Up), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle, (-90f % Down).AngleAroundAxis(Up), TestTolerance);
+
+		AssertToleranceEquals(Angle.QuarterCircle, (90f % Up).AngleAroundAxis(Up), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, (0f % Up).AngleAroundAxis(Up), TestTolerance);
+		AssertToleranceEquals(-Angle.QuarterCircle, (-90f % Up).AngleAroundAxis(Up), TestTolerance);
+
+		AssertToleranceEquals(-Angle.QuarterCircle, (90f % Up).AngleAroundAxis(Down), TestTolerance);
+		AssertToleranceEquals(Angle.Zero, (0f % Down).AngleAroundAxis(Up), TestTolerance);
+		AssertToleranceEquals(Angle.QuarterCircle, (-90f % Up).AngleAroundAxis(Down), TestTolerance);
+	}
 }

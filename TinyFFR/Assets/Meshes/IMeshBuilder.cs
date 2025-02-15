@@ -12,7 +12,7 @@ public interface IMeshBuilder {
 	IMeshPolygonGroup AllocateNewPolygonGroup();
 
 	Mesh CreateMesh(CuboidDescriptor cuboidDesc, Transform2D? textureTransform = null, bool centreTextureOrigin = false, ReadOnlySpan<char> name = default) => CreateMesh(cuboidDesc, textureTransform ?? Transform2D.None, centreTextureOrigin, new MeshCreationConfig { Name = name });
-	Mesh CreateMesh(CuboidDescriptor cuboidDesc, Transform2D textureTransform, bool centreTextureOrigin, scoped in MeshCreationConfig config) {
+	Mesh CreateMesh(CuboidDescriptor cuboidDesc, Transform2D textureTransform, bool centreTextureOrigin, in MeshCreationConfig config) {
 		if (!cuboidDesc.IsPhysicallyValid) {
 			throw new ArgumentException("Given cuboid must be physically valid (all extents should be positive).", nameof(cuboidDesc));
 		}
@@ -106,18 +106,18 @@ public interface IMeshBuilder {
 			new MeshCreationConfig { Name = name }
 		);
 	}
-	Mesh CreateMesh(Polygon polygon, Direction textureUDirection, Direction textureVDirection, Location textureOrigin, Transform2D textureTransform, scoped in MeshCreationConfig config) {
+	Mesh CreateMesh(Polygon polygon, Direction textureUDirection, Direction textureVDirection, Location textureOrigin, Transform2D textureTransform, in MeshCreationConfig config) {
 		using var polyGroup = AllocateNewPolygonGroup();
 		polyGroup.Add(polygon, textureUDirection, textureVDirection, textureOrigin);
 		return CreateMesh(polyGroup, textureTransform, in config);
 	}
 
 	Mesh CreateMesh(IMeshPolygonGroup polygons, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) => CreateMesh(polygons, textureTransform ?? Transform2D.None, new MeshCreationConfig { Name = name });
-	Mesh CreateMesh(IMeshPolygonGroup polygons, Transform2D textureTransform, scoped in MeshCreationConfig config) {
+	Mesh CreateMesh(IMeshPolygonGroup polygons, Transform2D textureTransform, in MeshCreationConfig config) {
 		polygons.Triangulate(textureTransform, out var vertices, out var triangles);
 		return CreateMesh(vertices, triangles, config);
 	}
 
 	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<char> name = default) => CreateMesh(vertices, triangles, new MeshCreationConfig { Name = name });
-	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, scoped in MeshCreationConfig config);
+	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config);
 }

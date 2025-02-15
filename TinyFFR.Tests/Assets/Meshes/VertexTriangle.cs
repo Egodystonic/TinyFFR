@@ -23,4 +23,11 @@ class VertexTriangleTest {
 		Assert.AreEqual(55, valPtr[4]);
 		Assert.AreEqual(66, valPtr[5]);
 	}
+
+	[Test]
+	public void ShouldCorrectlyShiftIndices() {
+		Assert.AreEqual(new VertexTriangle(4, 5, 6), new VertexTriangle(1, 2, 3).ShiftedBy(3));
+		Assert.AreEqual(new VertexTriangle(-2, -1, 0), new VertexTriangle(1, 2, 3).ShiftedBy(-3));
+		Assert.AreEqual(new VertexTriangle(1, 2, 3), new VertexTriangle(1, 2, 3).ShiftedBy(0));
+	}
 }

@@ -62,7 +62,7 @@ public readonly unsafe struct TexturePattern<T> where T : unmanaged {
 			if (y < 0 || y >= _dimensions.Y) throw new ArgumentOutOfRangeException(nameof(y));
 			if (_transform == null) return _generationFunc(_argsBuffer, _dimensions, new(x, y));
 
-			var transformedXy = _transform.Value.TransformValue(new XYPair<int>(x, y));
+			var transformedXy = _transform.Value.AppliedTo(new XYPair<int>(x, y));
 			transformedXy = new(MathUtils.TrueModulus(transformedXy.X, _dimensions.X), MathUtils.TrueModulus(transformedXy.Y, _dimensions.Y));
 			return _generationFunc(_argsBuffer, _dimensions, transformedXy);
 		}

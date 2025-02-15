@@ -68,8 +68,8 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ToMatrix(out Matrix4x4 dest) => dest = ToMatrix();
 
-	public Transform2D ToTransform2D() => ToTransform2D(new(Direction.Forward));
-	public Transform2D ToTransform2D(DimensionConverter dimensionConverter) {
+	public Transform2D To2D() => To2D(new(Direction.Forward));
+	public Transform2D To2D(DimensionConverter dimensionConverter) {
 		return new(
 			dimensionConverter.ConvertVect(Translation),
 			Rotation.AngleAroundAxis(dimensionConverter.ZBasis),

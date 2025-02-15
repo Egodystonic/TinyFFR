@@ -93,7 +93,7 @@ partial struct Rotation :
 
 	public Angle AngleAroundAxis(Direction axis) {
 		var orthogonalVect = axis.AnyOrthogonal();
-		return orthogonalVect.AngleTo(orthogonalVect * this);
+		return orthogonalVect.SignedAngleTo(orthogonalVect * this, axis);
 	}
 	#endregion
 

@@ -17,7 +17,7 @@ partial struct Transform2D :
 	static Transform2D IMultiplicativeIdentity<Transform2D, Transform2D>.MultiplicativeIdentity => None;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public T TransformValue<T>(T transformable) where T : ITransformable2D<T> => transformable.TransformedBy(this);
+	public T AppliedTo<T>(T transformable) where T : ITransformable2D<T> => transformable.TransformedBy(this);
 
 	#region Scaling
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -490,4 +490,28 @@ class TransformTest {
 			Transform.Interpolate(min, max, 1.5f)
 		);
 	}
+
+	[Test]
+	public void ShouldCorrectlyConvertTo2DTransform() {
+		AssertToleranceEquals(
+			new Transform2D(
+				translation: (1f, 2f),
+				rotation: 90f,
+				scaling: (0.75f, 0.5f)
+			),
+			(TestTransform with { Rotation = 90f % Direction.Forward }).To2D(new DimensionConverter((1f, 0f, 0f), (0f, 1f, 0f), (0f, 0f, 1f), Location.Origin)),
+			TestTolerance
+		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyApply() {
+		for (var i = 0; i < 100; ++i) {
+			var v = Vect.Random();
+			Assert.AreEqual(
+				v.TransformedBy(TestTransform),
+				TestTransform.AppliedTo(v)
+			);
+		}
+	}
 }
