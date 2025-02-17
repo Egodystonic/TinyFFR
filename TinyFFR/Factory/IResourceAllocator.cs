@@ -6,6 +6,7 @@ using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Factory;
@@ -18,4 +19,7 @@ public interface IResourceAllocator {
 
 	Memory<T> CreatePooledMemoryBuffer<T>(int numElements);
 	void ReturnPooledMemoryBuffer<T>(Memory<T> buffer);
+
+	IArrayPoolBackedVector<T> CreateNewArrayPoolBackedVector<T>(int? initialCapacity = null);
+	IArrayPoolBackedMap<TKey, TValue> CreateNewArrayPoolBackedMap<TKey, TValue>();
 }

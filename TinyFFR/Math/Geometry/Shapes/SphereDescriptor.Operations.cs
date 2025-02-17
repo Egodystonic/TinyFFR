@@ -4,7 +4,7 @@
 namespace Egodystonic.TinyFFR;
 
 partial struct SphereDescriptor {
-	public bool IsPhysicallyValid => _radius > 0f;
+	public bool IsPhysicallyValid => _radius.IsPositiveAndFinite();
 
 	#region Scaling
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -47,7 +47,7 @@ class LocalCuboidRenderTest {
 		using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(_colorPattern);
 		using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap(_normalPattern);
 		using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(_occlusionPattern, _roughnessPattern, _metallicPattern);
-		using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap, normalMap, ormMap: ormMap);
+		using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap, normalMap, ormMap);
 		using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 2.2f);
 		using var light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f), falloffRange: 10f, brightness: 5000000f);
 		using var scene = factory.SceneBuilder.CreateScene();

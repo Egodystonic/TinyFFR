@@ -32,6 +32,12 @@ class RayTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyDeterminePhysicalValidity() {
+		Assert.AreEqual(true, new Ray(Location.Origin, Direction.Forward).IsPhysicallyValid);
+		Assert.AreEqual(false, new Ray(Location.Origin, Direction.None).IsPhysicallyValid);
+	}
+
+	[Test]
 	public void ShouldCorrectlyConvertToString() {
 		const string Expectation = "Ray[StartPoint <1.0, 2.0, -3.0> | Direction <-0.3, -0.5, 0.8>]";
 		Assert.AreEqual(Expectation, TestRay.ToString("N1", CultureInfo.InvariantCulture));
@@ -2465,5 +2471,27 @@ class RayTest {
 			new Ray(new Location(0f, 0f, 0f), Direction.Down),
 			new Ray(new Location(0f, 0f, 0f), Direction.Down)
 		);
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineAngleToOtherLines() {
+		void AssertAngle(float signedExpectedAngle, Direction clockwiseSignedDir, Direction thisDir, Direction otherDir) {
+			var a = new Ray(Location.Origin, thisDir);
+			var b = new Line(Location.Origin, otherDir);
+			var c = new Ray(Location.Origin, otherDir);
+			var d = new BoundedRay(Location.Origin, otherDir * 1f);
+			Assert.AreEqual(signedExpectedAngle, a.SignedAngleTo(b, clockwiseSignedDir).Degrees);
+			Assert.AreEqual(MathF.Abs(signedExpectedAngle), a.AngleTo(b).Degrees);
+			Assert.AreEqual(signedExpectedAngle, a.SignedAngleTo(c, clockwiseSignedDir).Degrees);
+			Assert.AreEqual(MathF.Abs(signedExpectedAngle), a.AngleTo(c).Degrees);
+			Assert.AreEqual(signedExpectedAngle, a.SignedAngleTo(d, clockwiseSignedDir).Degrees);
+			Assert.AreEqual(MathF.Abs(signedExpectedAngle), a.AngleTo(d).Degrees);
+		}
+
+		AssertAngle(90f, Direction.Down, Direction.Right, Direction.Backward);
+		AssertAngle(-90f, Direction.Up, Direction.Right, Direction.Backward);
+		AssertAngle(180f, Direction.Down, Direction.Right, Direction.Left);
+		AssertAngle(180f, Direction.Down, Direction.Left, Direction.Right);
+		AssertAngle(0f, Direction.Down, Direction.Left, Direction.Left);
 	}
 }

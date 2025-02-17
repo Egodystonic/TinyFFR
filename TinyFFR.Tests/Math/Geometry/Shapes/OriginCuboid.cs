@@ -8,7 +8,7 @@ namespace Egodystonic.TinyFFR;
 [TestFixture]
 class CuboidDescriptorTest {
 	const float TestTolerance = 0.01f;
-	// Half extents will be:							 3.6f		    6.8f		 0.7f
+	// Half extents will be:									 3.6f		   6.8f			 0.7f
 	static readonly CuboidDescriptor TestCuboid = new(width: 7.2f, height: 13.6f, depth: 1.4f);
 
 	[SetUp]
@@ -37,6 +37,7 @@ class CuboidDescriptorTest {
 			CuboidDescriptor.FromHalfDimensions(7.2f / 2f, 13.6f / 2f, 1.4f / 2f),
 			TestTolerance
 		);
+		Assert.AreEqual(new CuboidDescriptor(3f, 3f, 3f), new CuboidDescriptor(3f));
 	}
 
 	[Test]
@@ -53,6 +54,21 @@ class CuboidDescriptorTest {
 		AssertCuboid(startingValue with { HalfWidth = 10f }, 20f, startingValue.Height, startingValue.Depth);
 		AssertCuboid(startingValue with { HalfHeight = 10f }, startingValue.Width, 20f, startingValue.Depth);
 		AssertCuboid(startingValue with { HalfDepth = 10f }, startingValue.Width, startingValue.Height, 20f);
+	}
+
+	[Test]
+	public void ShouldCorrectlyDeterminePhysicalValidity() {
+		Assert.AreEqual(true, new CuboidDescriptor(1f, 1f, 1f).IsPhysicallyValid);
+		Assert.AreEqual(false, new CuboidDescriptor(-1f, 1f, 1f).IsPhysicallyValid);
+		Assert.AreEqual(false, new CuboidDescriptor(1f, -1f, 1f).IsPhysicallyValid);
+		Assert.AreEqual(false, new CuboidDescriptor(1f, 1f, -1f).IsPhysicallyValid);
+		Assert.AreEqual(false, new CuboidDescriptor(0f, 1f, 1f).IsPhysicallyValid);
+		Assert.AreEqual(false, new CuboidDescriptor(1f, 0f, 1f).IsPhysicallyValid);
+		Assert.AreEqual(false, new CuboidDescriptor(1f, 1f, 0f).IsPhysicallyValid);
+		Assert.AreEqual(false, new CuboidDescriptor(1f, 1f, Single.NaN).IsPhysicallyValid);
+		Assert.AreEqual(false, new CuboidDescriptor(1f, 1f, Single.NegativeZero).IsPhysicallyValid);
+		Assert.AreEqual(false, new CuboidDescriptor(1f, 1f, Single.PositiveInfinity).IsPhysicallyValid);
+		Assert.AreEqual(false, new CuboidDescriptor(1f, 1f, Single.NegativeInfinity).IsPhysicallyValid);
 	}
 
 	[Test]
@@ -173,6 +189,19 @@ class CuboidDescriptorTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyEnumerateCentroids() {
+		Assert.AreEqual(OrientationUtils.AllCardinals.Length, TestCuboid.Centroids.Count);
+
+		var count = 0;
+		foreach (var side in TestCuboid.Centroids) {
+			Assert.AreEqual(TestCuboid.CentroidAt(OrientationUtils.AllCardinals[count]), side);
+			++count;
+		}
+
+		Assert.AreEqual(6, count);
+	}
+
+	[Test]
 	public void ShouldCorrectlyScale() {
 		AssertToleranceEquals(
 			new CuboidDescriptor(width: 7.2f * 3f, height: 13.6f * 3f, depth: 1.4f * 3f),
@@ -211,6 +240,18 @@ class CuboidDescriptorTest {
 		AssertToleranceEquals(new Plane(Direction.Backward, (0f, 0f, -0.7f)), TestCuboid.SideAt(CardinalOrientation.Backward), TestTolerance);
 
 		Assert.Throws<ArgumentOutOfRangeException>(() => TestCuboid.SideAt(CardinalOrientation.None));
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateCentroids() {
+		AssertToleranceEquals(new Location(3.6f, 0f, 0f), TestCuboid.CentroidAt(CardinalOrientation.Left), TestTolerance);
+		AssertToleranceEquals(new Location(-3.6f, 0f, 0f), TestCuboid.CentroidAt(CardinalOrientation.Right), TestTolerance);
+		AssertToleranceEquals(new Location(0f, 6.8f, 0f), TestCuboid.CentroidAt(CardinalOrientation.Up), TestTolerance);
+		AssertToleranceEquals(new Location(0f, -6.8f, 0f), TestCuboid.CentroidAt(CardinalOrientation.Down), TestTolerance);
+		AssertToleranceEquals(new Location(0f, 0f, 0.7f), TestCuboid.CentroidAt(CardinalOrientation.Forward), TestTolerance);
+		AssertToleranceEquals(new Location(0f, 0f, -0.7f), TestCuboid.CentroidAt(CardinalOrientation.Backward), TestTolerance);
+
+		Assert.Throws<ArgumentOutOfRangeException>(() => TestCuboid.CentroidAt(CardinalOrientation.None));
 	}
 
 	[Test]

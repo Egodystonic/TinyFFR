@@ -39,6 +39,17 @@ class SphereDescriptorTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyDeterminePhysicalValidity() {
+		Assert.AreEqual(true, new SphereDescriptor(1f).IsPhysicallyValid);
+		Assert.AreEqual(false, new SphereDescriptor(-1f).IsPhysicallyValid);
+		Assert.AreEqual(false, new SphereDescriptor(0f).IsPhysicallyValid);
+		Assert.AreEqual(false, new SphereDescriptor(Single.NaN).IsPhysicallyValid);
+		Assert.AreEqual(false, new SphereDescriptor(Single.PositiveInfinity).IsPhysicallyValid);
+		Assert.AreEqual(false, new SphereDescriptor(Single.NegativeInfinity).IsPhysicallyValid);
+		Assert.AreEqual(false, new SphereDescriptor(Single.NegativeZero).IsPhysicallyValid);
+	}
+
+	[Test]
 	public void ShouldCorrectlyConvertToString() {
 		const string Expectation = "SphereDescriptor[Radius 7.4]";
 		Assert.AreEqual(Expectation, TestSphere.ToString("N1", CultureInfo.InvariantCulture));

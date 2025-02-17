@@ -42,6 +42,12 @@ class PlaneTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyDeterminePhysicalValidity() {
+		Assert.AreEqual(true, new Plane(Direction.Forward, 0f).IsPhysicallyValid);
+		Assert.AreEqual(false, new Plane(Direction.None, 0f).IsPhysicallyValid);
+	}
+
+	[Test]
 	public void ShouldCorrectlyConvertToString() {
 		const string Expectation = "Plane[Normal <0.0, 1.0, 0.0> | PointClosestToOrigin <-0.0, -1.0, -0.0>]"; // Negative zero can be removed at a later date if we expunge it from formatting
 		Assert.AreEqual(Expectation, TestPlane.ToString("N1", CultureInfo.InvariantCulture));

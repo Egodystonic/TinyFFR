@@ -40,4 +40,15 @@ class MathUtilsTest {
 		Assert.AreEqual(Quaternion.Normalize(new Quaternion(1f, 2f, 3f, 4f)), NormalizeOrIdentity(new Quaternion(1f, 2f, 3f, 4f)));
 		Assert.AreEqual(Quaternion.Identity, NormalizeOrIdentity(new Quaternion(0f, 0f, 0f, 0f)));
 	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineFloatPositivityAndFiniteness() {
+		Assert.AreEqual(true, 1f.IsPositiveAndFinite());
+		Assert.AreEqual(false, 0f.IsPositiveAndFinite());
+		Assert.AreEqual(false, (-1f).IsPositiveAndFinite());
+		Assert.AreEqual(false, Single.PositiveInfinity.IsPositiveAndFinite());
+		Assert.AreEqual(false, Single.NegativeInfinity.IsPositiveAndFinite());
+		Assert.AreEqual(false, Single.NegativeZero.IsPositiveAndFinite());
+		Assert.AreEqual(false, Single.NaN.IsPositiveAndFinite());
+	}
 }

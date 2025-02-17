@@ -18,9 +18,9 @@ public interface IMeshPolygonGroup : IDisposable {
 
 	Polygon GetPolygonAtIndex(int index, out Direction textureU, out Direction textureV, out Location textureOrigin);
 	
-	protected internal Span<XYPair<float>> ReallocateTriangulationBufferForCurrentCount();
-	protected internal Span<MeshVertex> ReallocateVertexBufferForCurrentCount();
-	protected internal Span<VertexTriangle> ReallocateTriangleBufferForCurrentCount();
+	protected Span<XYPair<float>> ReallocateTriangulationBufferForCurrentCount();
+	protected Span<MeshVertex> ReallocateVertexBufferForCurrentCount();
+	protected Span<VertexTriangle> ReallocateTriangleBufferForCurrentCount();
 
 	internal void Triangulate(Transform2D textureTransform, out ReadOnlySpan<MeshVertex> outVertexBuffer, out ReadOnlySpan<VertexTriangle> outTriangleBuffer) {
 		textureTransform = textureTransform with { Scaling = textureTransform.Scaling.Reciprocal ?? XYPair<float>.Zero };

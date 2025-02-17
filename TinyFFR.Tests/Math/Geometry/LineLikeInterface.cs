@@ -206,9 +206,90 @@ class LineLikeInterfaceTest {
 		AssertMirrorMethod<Line, Line>((a, b) => a.ParallelizationOf(b), (b, a) => b.ParallelizedWith(a));
 		AssertMirrorMethod<Line, Ray>((a, b) => a.ParallelizationOf(b), (b, a) => b.ParallelizedWith(a));
 		AssertMirrorMethod<Line, BoundedRay>((a, b) => a.ParallelizationOf(b), (b, a) => b.ParallelizedWith(a));
+		AssertMirrorMethod<Ray, Line>((a, b) => a.ParallelizationOf(b), (b, a) => b.ParallelizedWith(a));
+		AssertMirrorMethod<Ray, Ray>((a, b) => a.ParallelizationOf(b), (b, a) => b.ParallelizedWith(a));
+		AssertMirrorMethod<Ray, BoundedRay>((a, b) => a.ParallelizationOf(b), (b, a) => b.ParallelizedWith(a));
+		AssertMirrorMethod<BoundedRay, Line>((a, b) => a.ParallelizationOf(b), (b, a) => b.ParallelizedWith(a));
+		AssertMirrorMethod<BoundedRay, Ray>((a, b) => a.ParallelizationOf(b), (b, a) => b.ParallelizedWith(a));
+		AssertMirrorMethod<BoundedRay, BoundedRay>((a, b) => a.ParallelizationOf(b), (b, a) => b.ParallelizedWith(a));
 		AssertMirrorMethod<Line, Line>((a, b) => a.OrthogonalizationOf(b), (b, a) => b.OrthogonalizedAgainst(a));
 		AssertMirrorMethod<Line, Ray>((a, b) => a.OrthogonalizationOf(b), (b, a) => b.OrthogonalizedAgainst(a));
 		AssertMirrorMethod<Line, BoundedRay>((a, b) => a.OrthogonalizationOf(b), (b, a) => b.OrthogonalizedAgainst(a));
+		AssertMirrorMethod<Ray, Line>((a, b) => a.OrthogonalizationOf(b), (b, a) => b.OrthogonalizedAgainst(a));
+		AssertMirrorMethod<Ray, Ray>((a, b) => a.OrthogonalizationOf(b), (b, a) => b.OrthogonalizedAgainst(a));
+		AssertMirrorMethod<Ray, BoundedRay>((a, b) => a.OrthogonalizationOf(b), (b, a) => b.OrthogonalizedAgainst(a));
+		AssertMirrorMethod<BoundedRay, Line>((a, b) => a.OrthogonalizationOf(b), (b, a) => b.OrthogonalizedAgainst(a));
+		AssertMirrorMethod<BoundedRay, Ray>((a, b) => a.OrthogonalizationOf(b), (b, a) => b.OrthogonalizedAgainst(a));
+		AssertMirrorMethod<BoundedRay, BoundedRay>((a, b) => a.OrthogonalizationOf(b), (b, a) => b.OrthogonalizedAgainst(a));
+
+		for (var i = 0; i < 100; ++i) {
+			var d = Direction.Random();
+			AssertMirrorMethod<Line, Line>((a, b) => a.SignedAngleTo(b, d), (b, a) => {
+				var s = a.SignedAngleTo(b, d);
+				return s.Radians switch {
+					MathF.PI => b.SignedAngleTo(a, d),
+					_ => -b.SignedAngleTo(a, d)
+				};
+			});
+			AssertMirrorMethod<Line, Ray>((a, b) => a.SignedAngleTo(b, d), (b, a) => {
+				var s = a.SignedAngleTo(b, d);
+				return s.Radians switch {
+					MathF.PI => b.SignedAngleTo(a, d),
+					_ => -b.SignedAngleTo(a, d)
+				};
+			});
+			AssertMirrorMethod<Line, BoundedRay>((a, b) => a.SignedAngleTo(b, d), (b, a) => {
+				var s = a.SignedAngleTo(b, d);
+				return s.Radians switch {
+					MathF.PI => b.SignedAngleTo(a, d),
+					_ => -b.SignedAngleTo(a, d)
+				};
+			});
+
+			AssertMirrorMethod<Ray, Line>((a, b) => a.SignedAngleTo(b, d), (b, a) => {
+				var s = a.SignedAngleTo(b, d);
+				return s.Radians switch {
+					MathF.PI => b.SignedAngleTo(a, d),
+					_ => -b.SignedAngleTo(a, d)
+				};
+			});
+			AssertMirrorMethod<Ray, Ray>((a, b) => a.SignedAngleTo(b, d), (b, a) => {
+				var s = a.SignedAngleTo(b, d);
+				return s.Radians switch {
+					MathF.PI => b.SignedAngleTo(a, d),
+					_ => -b.SignedAngleTo(a, d)
+				};
+			});
+			AssertMirrorMethod<Ray, BoundedRay>((a, b) => a.SignedAngleTo(b, d), (b, a) => {
+				var s = a.SignedAngleTo(b, d);
+				return s.Radians switch {
+					MathF.PI => b.SignedAngleTo(a, d),
+					_ => -b.SignedAngleTo(a, d)
+				};
+			});
+
+			AssertMirrorMethod<BoundedRay, Line>((a, b) => a.SignedAngleTo(b, d), (b, a) => {
+				var s = a.SignedAngleTo(b, d);
+				return s.Radians switch {
+					MathF.PI => b.SignedAngleTo(a, d),
+					_ => -b.SignedAngleTo(a, d)
+				};
+			});
+			AssertMirrorMethod<BoundedRay, Ray>((a, b) => a.SignedAngleTo(b, d), (b, a) => {
+				var s = a.SignedAngleTo(b, d);
+				return s.Radians switch {
+					MathF.PI => b.SignedAngleTo(a, d),
+					_ => -b.SignedAngleTo(a, d)
+				};
+			});
+			AssertMirrorMethod<BoundedRay, BoundedRay>((a, b) => a.SignedAngleTo(b, d), (b, a) => {
+				var s = a.SignedAngleTo(b, d);
+				return s.Radians switch {
+					MathF.PI => b.SignedAngleTo(a, d),
+					_ => -b.SignedAngleTo(a, d)
+				};
+			});
+		}
 	}
 
 	[Test]

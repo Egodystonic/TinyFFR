@@ -15,4 +15,6 @@ static class MathUtils {
 		var norm = Quaternion.Normalize(q);
 		return Single.IsFinite(norm.X) ? norm : Quaternion.Identity;
 	}
+
+	public static bool IsPositiveAndFinite(this float @this) => Single.IsFinite(@this) && @this > 0f;
 }

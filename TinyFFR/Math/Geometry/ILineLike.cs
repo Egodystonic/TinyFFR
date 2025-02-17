@@ -15,7 +15,7 @@ public partial interface ILineLike :
 	ILineIntersectionDeterminable<Location>,
 	ILineParallelizationTarget,
 	ILineOrthogonalizationTarget,
-	
+
 	IDistanceMeasurable<Location>,
 	IClosestEndogenousPointDiscoverable<Location>,
 	IContainer<Location>,

@@ -3486,4 +3486,26 @@ class BoundedRayTest {
 			}
 		}
 	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineAngleToOtherLines() {
+		void AssertAngle(float signedExpectedAngle, Direction clockwiseSignedDir, Direction thisDir, Direction otherDir) {
+			var a = new BoundedRay(Location.Origin, thisDir * 1f);
+			var b = new Line(Location.Origin, otherDir);
+			var c = new Ray(Location.Origin, otherDir);
+			var d = new BoundedRay(Location.Origin, otherDir * 1f);
+			Assert.AreEqual(signedExpectedAngle, a.SignedAngleTo(b, clockwiseSignedDir).Degrees);
+			Assert.AreEqual(MathF.Abs(signedExpectedAngle), a.AngleTo(b).Degrees);
+			Assert.AreEqual(signedExpectedAngle, a.SignedAngleTo(c, clockwiseSignedDir).Degrees);
+			Assert.AreEqual(MathF.Abs(signedExpectedAngle), a.AngleTo(c).Degrees);
+			Assert.AreEqual(signedExpectedAngle, a.SignedAngleTo(d, clockwiseSignedDir).Degrees);
+			Assert.AreEqual(MathF.Abs(signedExpectedAngle), a.AngleTo(d).Degrees);
+		}
+
+		AssertAngle(90f, Direction.Down, Direction.Right, Direction.Backward);
+		AssertAngle(-90f, Direction.Up, Direction.Right, Direction.Backward);
+		AssertAngle(180f, Direction.Down, Direction.Right, Direction.Left);
+		AssertAngle(180f, Direction.Down, Direction.Left, Direction.Right);
+		AssertAngle(0f, Direction.Down, Direction.Left, Direction.Left);
+	}
 }

@@ -6,7 +6,7 @@ using System.Buffers;
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
 // Not aiming to be anywhere near as fast or optimised or clever as I'm sure .NET's Dictionary is for now-- can improve perf in future if necessary. Just trying to avoid garbage generation.
-sealed class ArrayPoolBackedMap<TKey, TValue> : IDictionary<TKey, TValue>, IDisposable {
+sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedMap<TKey, TValue> {
 	public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>> {
 		readonly ArrayPoolBackedMap<TKey, TValue> _owner;
 		int _curIndex;

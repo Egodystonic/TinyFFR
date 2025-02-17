@@ -107,7 +107,7 @@ public readonly partial struct CuboidDescriptor : IConvexShape<CuboidDescriptor>
 	public Location CentroidAt(CardinalOrientation side) {
 		if (side == CardinalOrientation.None || !Enum.IsDefined(side)) throw new ArgumentOutOfRangeException(nameof(side), side, $"Can not be '{nameof(CardinalOrientation.None)}' or non-defined value.");
 
-		return (GetHalfExtent(side.GetAxis()) * side.GetAxisSign() * side.ToDirection()).AsLocation();
+		return (GetHalfExtent(side.GetAxis()) * side.ToDirection()).AsLocation();
 	}
 
 	public Location CornerAt(DiagonalOrientation corner) {

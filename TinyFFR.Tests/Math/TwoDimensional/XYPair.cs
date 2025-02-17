@@ -427,4 +427,49 @@ class XYPairTest {
 		Assert.AreEqual(new XYPair<float>(2f, 5f), new XYPair<float>(1f, 6f).Clamp((4f, 3f), (2f, 5f)));
 		Assert.AreEqual(new XYPair<float>(4f, 3f), new XYPair<float>(5f, 2f).Clamp((4f, 3f), (2f, 5f)));
 	}
+
+	[Test]
+	public void ShouldCorrectlyNormalize() {
+		Assert.AreEqual(1f, ThreeFourFloat.WithLengthOne().Length, TestTolerance);
+		Assert.AreEqual(1f, (-ThreeFourFloat).WithLengthOne().Length, TestTolerance);
+		Assert.AreEqual(XYPair<float>.Zero, XYPair<float>.Zero.WithLengthOne());
+	}
+
+	[Test]
+	public void ShouldCorrectlyImplementLineGeometry() {
+		AssertToleranceEquals((1f, 0f), new XYPair<float>(0f, 0f).ClosestPointOn2DLine((1f, 0f), (0f, 1f)), TestTolerance);
+		AssertToleranceEquals((-1f, 0f), new XYPair<float>(0f, 0f).ClosestPointOn2DLine((-1f, 0f), (0f, 1f)), TestTolerance);
+		AssertToleranceEquals((1f, 9f), new XYPair<float>(-10f, 9f).ClosestPointOn2DLine((1f, 0f), (0f, 1f)), TestTolerance);
+
+		AssertToleranceEquals((1f, 0f), new XYPair<float>(0f, 0f).ClosestPointOn2DBoundedRay((1f, -100f), (1f, 100f)), TestTolerance);
+		AssertToleranceEquals((-1f, 0f), new XYPair<float>(0f, 0f).ClosestPointOn2DBoundedRay((-1f, 100f), (-1f, -100f)), TestTolerance);
+		AssertToleranceEquals((1f, 9f), new XYPair<float>(-10f, 9f).ClosestPointOn2DBoundedRay((1f, -100f), (1f, 100f)), TestTolerance);
+		
+		AssertToleranceEquals((1f, -50f), new XYPair<float>(0f, 0f).ClosestPointOn2DBoundedRay((1f, -100f), (1f, -50f)), TestTolerance);
+		AssertToleranceEquals((-1f, 50f), new XYPair<float>(0f, 0f).ClosestPointOn2DBoundedRay((-1f, 100f), (-1f, 50f)), TestTolerance);
+		AssertToleranceEquals((0f, 0f), new XYPair<float>(0f, 0f).ClosestPointOn2DBoundedRay((-1f, -1f), (1f, 1f)), TestTolerance);
+	}
+
+	[Test]
+	public void ShouldCorrectlyRound() {
+		Assert.AreEqual(new XYPair<float>(2f, 0f), new XYPair<float>(1.5f, -0.5f).Round<float, float>());
+		Assert.AreEqual(new XYPair<float>(2f, 0f), new XYPair<float>(1.5f, -0.5f).Round<float, float>(0, MidpointRounding.ToEven));
+		Assert.AreEqual(new XYPair<float>(2f, -1f), new XYPair<float>(1.5f, -0.5f).Round<float, float>(0, MidpointRounding.AwayFromZero));
+		Assert.AreEqual(new XYPair<float>(1.5f, -0.5f), new XYPair<float>(1.5f, -0.5f).Round<float, float>(1));
+		Assert.AreEqual(new XYPair<float>(1.2f, -0.7f), new XYPair<float>(1.234f, -0.678f).Round<float, float>(1));
+		Assert.AreEqual(new XYPair<float>(1.23f, -0.68f), new XYPair<float>(1.234f, -0.678f).Round<float, float>(2));
+		Assert.AreEqual(new XYPair<float>(1.2f, -0.0f), new XYPair<float>(1.15f, -0.05f).Round<float, float>(1, MidpointRounding.ToEven));
+		Assert.AreEqual(new XYPair<float>(1.2f, -0.1f), new XYPair<float>(1.15f, -0.05f).Round<float, float>(1, MidpointRounding.AwayFromZero));
+
+		Assert.AreEqual(new XYPair<int>(2, 0), new XYPair<float>(1.5f, -0.5f).Round<float, int>());
+		Assert.AreEqual(new XYPair<int>(2, 0), new XYPair<float>(1.5f, -0.5f).Round<float, int>(MidpointRounding.ToEven));
+		Assert.AreEqual(new XYPair<int>(2, -1), new XYPair<float>(1.5f, -0.5f).Round<float, int>(MidpointRounding.AwayFromZero));
+
+		Assert.AreEqual(new XYPair<int>(2, 0), new XYPair<float>(1.5f, -0.5f).CastWithRoundingIfNecessary<float, int>());
+		Assert.AreEqual(new XYPair<int>(2, 0), new XYPair<float>(1.5f, -0.5f).CastWithRoundingIfNecessary<float, int>(MidpointRounding.ToEven));
+		Assert.AreEqual(new XYPair<int>(2, -1), new XYPair<float>(1.5f, -0.5f).CastWithRoundingIfNecessary<float, int>(MidpointRounding.AwayFromZero));
+		Assert.AreEqual(new XYPair<float>(1.5f, -0.5f), new XYPair<float>(1.5f, -0.5f).CastWithRoundingIfNecessary<float, float>());
+		Assert.AreEqual(new XYPair<float>(1.5f, -0.5f), new XYPair<float>(1.5f, -0.5f).CastWithRoundingIfNecessary<float, float>(MidpointRounding.ToEven));
+		Assert.AreEqual(new XYPair<float>(1.5f, -0.5f), new XYPair<float>(1.5f, -0.5f).CastWithRoundingIfNecessary<float, float>(MidpointRounding.AwayFromZero));
+	}
 }

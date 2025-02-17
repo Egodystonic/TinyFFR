@@ -7,7 +7,10 @@ using System.Diagnostics.CodeAnalysis;
 namespace Egodystonic.TinyFFR;
 
 // This is mostly a wrapper for float that implements some interfaces, meaning we can use floats in some APIs that work with those interfaces.
+// This could go away with a 'shapes' or 'extension everything' implementation in C#
 public readonly record struct Real(float AsFloat) : IMathPrimitive<Real>, IAlgebraicRing<Real>, IOrdinal<Real> {
+	public static readonly Real Zero = 0f;
+
 	public static implicit operator Real(float f) => new(f);
 	public static implicit operator float(Real r) => r.AsFloat;
 	public bool Equals(Real other, float tolerance) => MathF.Abs(AsFloat - other.AsFloat) <= tolerance;
@@ -53,6 +56,15 @@ public readonly record struct Real(float AsFloat) : IMathPrimitive<Real>, IAlgeb
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Real Random(Real minInclusive, Real maxExclusive) => RandomUtils.NextSingle(minInclusive, maxExclusive);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Real RandomInclusive(Real minInclusive, Real maxInclusive) => RandomUtils.NextSingleInclusive(minInclusive, maxInclusive);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Real RandomZeroToOneInclusive() => RandomUtils.NextSingleZeroToOneInclusive();
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Real RandomNegOneToOneInclusive() => RandomUtils.NextSingleNegOneToOneInclusive();
+
 	public static Real Interpolate(Real start, Real end, float distance) => start + (end - start) * distance;
 
 	public Real Clamp(Real min, Real max) => max < min ? Single.Clamp(this, max, min) : Single.Clamp(this, min, max);
@@ -61,7 +73,8 @@ public readonly record struct Real(float AsFloat) : IMathPrimitive<Real>, IAlgeb
 	#region Arithmetic
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Real operator -(Real value) => new(-value.AsFloat);
-	public Real Inverted => -this;
+	Real IInvertible<Real>.Inverted => Negated;
+	public Real Negated => -this;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Real operator +(Real left, Real right) => left.AsFloat + right.AsFloat;
@@ -102,8 +115,4 @@ public readonly record struct Real(float AsFloat) : IMathPrimitive<Real>, IAlgeb
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator <=(Real left, Real right) => left.AsFloat <= right.AsFloat;
 	#endregion
-}
-
-public static class RealExtensions {
-	public static Real AsReal(this float f) => f;
 }

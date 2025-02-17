@@ -8,7 +8,7 @@ using System.Diagnostics.Metrics;
 namespace Egodystonic.TinyFFR;
 
 partial struct CuboidDescriptor : IIndependentAxisScalable<CuboidDescriptor> {
-	public bool IsPhysicallyValid => _halfWidth > 0f && _halfHeight > 0f && _halfDepth > 0f;
+	public bool IsPhysicallyValid => _halfWidth.IsPositiveAndFinite() && _halfHeight.IsPositiveAndFinite() && _halfDepth.IsPositiveAndFinite();
 
 	#region With Methods
 	public CuboidDescriptor WithVolume(float newVolume) {
