@@ -59,14 +59,14 @@ partial struct XYPair<T> :
 
 	#region Length Modifiers
 	XYPair<T> ILengthAdjustable<XYPair<T>>.WithLength(float newLength) => WithLength(newLength);
-	XYPair<T> ILengthAdjustable<XYPair<T>>.ShortenedBy(float lengthDecrease) => ShortenedBy(lengthDecrease);
-	XYPair<T> ILengthAdjustable<XYPair<T>>.LengthenedBy(float lengthIncrease) => LengthenedBy(lengthIncrease);
+	XYPair<T> ILengthAdjustable<XYPair<T>>.WithLengthDecreasedBy(float lengthDecrease) => WithLengthDecreasedBy(lengthDecrease);
+	XYPair<T> ILengthAdjustable<XYPair<T>>.WithLengthIncreasedBy(float lengthIncrease) => WithLengthIncreasedBy(lengthIncrease);
 	XYPair<T> ILengthAdjustable<XYPair<T>>.WithMaxLength(float maxLength) => WithMaxLength(maxLength);
 	XYPair<T> ILengthAdjustable<XYPair<T>>.WithMinLength(float minLength) => WithMinLength(minLength);
 
 	public XYPair<T> WithLength(float newLength, MidpointRounding midpointRounding = MidpointRounding.ToEven) => Cast<float>().WithLengthOne().ScaledBy(newLength).CastWithRoundingIfNecessary<float, T>(midpointRounding);
-	public XYPair<T> ShortenedBy(float lengthDecrease, MidpointRounding midpointRounding = MidpointRounding.ToEven) => WithLength(Length - lengthDecrease, midpointRounding);
-	public XYPair<T> LengthenedBy(float lengthIncrease, MidpointRounding midpointRounding = MidpointRounding.ToEven) => WithLength(Length + lengthIncrease, midpointRounding);
+	public XYPair<T> WithLengthDecreasedBy(float lengthDecrease, MidpointRounding midpointRounding = MidpointRounding.ToEven) => WithLength(Length - lengthDecrease, midpointRounding);
+	public XYPair<T> WithLengthIncreasedBy(float lengthIncrease, MidpointRounding midpointRounding = MidpointRounding.ToEven) => WithLength(Length + lengthIncrease, midpointRounding);
 	public XYPair<T> WithMaxLength(float maxLength, MidpointRounding midpointRounding = MidpointRounding.ToEven) => WithLength(MathF.Min(Length, maxLength >= 0f ? maxLength : throw new ArgumentOutOfRangeException(nameof(maxLength), maxLength, "Must be non-negative.")), midpointRounding);
 	public XYPair<T> WithMinLength(float minLength, MidpointRounding midpointRounding = MidpointRounding.ToEven) => WithLength(MathF.Max(Length, minLength >= 0f ? minLength : throw new ArgumentOutOfRangeException(nameof(minLength), minLength, "Must be non-negative.")), midpointRounding);
 	#endregion

@@ -26,6 +26,20 @@ class XYPairTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyDetermineIfTypeParamIsFloatingPoint() {
+		Assert.AreEqual(false, XYPair<int>.IsFloatingPoint);
+		Assert.AreEqual(false, XYPair<byte>.IsFloatingPoint);
+		Assert.AreEqual(false, XYPair<long>.IsFloatingPoint);
+		Assert.AreEqual(false, XYPair<uint>.IsFloatingPoint);
+		Assert.AreEqual(false, XYPair<nint>.IsFloatingPoint);
+		Assert.AreEqual(false, XYPair<nuint>.IsFloatingPoint);
+		Assert.AreEqual(true, XYPair<float>.IsFloatingPoint);
+		Assert.AreEqual(true, XYPair<double>.IsFloatingPoint);
+		Assert.AreEqual(true, XYPair<Half>.IsFloatingPoint);
+		Assert.AreEqual(true, XYPair<decimal>.IsFloatingPoint);
+	}
+
+	[Test]
 	public void ShouldCorrectlyAssignConstructorParameters() {
 		Assert.AreEqual(3f, ThreeFourFloat.X);
 		Assert.AreEqual(4f, ThreeFourFloat.Y);
@@ -239,27 +253,28 @@ class XYPairTest {
 
 	[Test]
 	public void ShouldCorrectlyDetermineAngleBetweenPairs() {
-		void AssertPair(Angle expectation, Angle leftAngle, Angle rightAngle) {
+		void AssertPair(Angle signedExpectation, Angle leftAngle, Angle rightAngle) {
 			var left = XYPair<float>.FromPolarAngle(leftAngle);
 			var right = XYPair<float>.FromPolarAngle(rightAngle);
-			AssertToleranceEquals(expectation, left.AngleTo(right), TestTolerance);
-			AssertToleranceEquals(expectation, left ^ right, TestTolerance);
-			AssertToleranceEquals(expectation, right.AngleTo(left), TestTolerance);
-			AssertToleranceEquals(expectation, right ^ left, TestTolerance);
+			AssertToleranceEquals(signedExpectation, left.SignedAngleTo(right), TestTolerance);
+			AssertToleranceEquals(signedExpectation.Absolute, left.AngleTo(right), TestTolerance);
+			AssertToleranceEquals(signedExpectation.Absolute, left ^ right, TestTolerance);
+			AssertToleranceEquals(signedExpectation.Absolute, right.AngleTo(left), TestTolerance);
+			AssertToleranceEquals(signedExpectation.Absolute, right ^ left, TestTolerance);
 		}
 
 		AssertPair(0f, 0f, 0f);
 		AssertPair(0f, 90f, 90f);
 		AssertPair(0f, -90f, -90f);
 		AssertPair(90f, 0f, 90f);
-		AssertPair(90f, 0f, -90f);
+		AssertPair(-90f, 0f, -90f);
 		AssertPair(90f, 180f, 270f);
-		AssertPair(90f, 270f, 180f);
-		AssertPair(90f, -180f, -270f);
+		AssertPair(-90f, 270f, 180f);
+		AssertPair(-90f, -180f, -270f);
 		AssertPair(90f, -270f, -180f);
-		AssertPair(10f, 0f, 350f);
-		AssertPair(10f, -350f, 0f);
-		AssertPair(20f, -350f, 350f);
+		AssertPair(-10f, 0f, 350f);
+		AssertPair(-10f, -350f, 0f);
+		AssertPair(-20f, -350f, 350f);
 	}
 
 	[Test]
@@ -298,6 +313,19 @@ class XYPairTest {
 		AssertForType<float>();
 		AssertForType<long>();
 		AssertForType<double>();
+
+		Assert.AreEqual(new XYPair<int>(3, 3), XYPair<int>.One.ScaledBy(3));
+		Assert.AreEqual(new XYPair<int>(3, 5), XYPair<int>.One.ScaledBy((3, 5)));
+		Assert.AreEqual(new XYPair<int>(5, -3), XYPair<int>.One.ScaledBy((3, -1), (-1, -1)));
+		Assert.AreEqual(new XYPair<int>(3, 5), XYPair<int>.One.ScaledFromOriginBy((3, 5)));
+
+		Assert.AreEqual(new XYPair<float>(3f, 3f), XYPair<float>.One.ScaledBy(3f));
+		Assert.AreEqual(new XYPair<float>(3f, 5f), XYPair<float>.One.ScaledBy((3f, 5f)));
+		Assert.AreEqual(new XYPair<float>(5f, -3f), XYPair<float>.One.ScaledBy((3f, -1f), (-1f, -1f)));
+		Assert.AreEqual(new XYPair<float>(3f, 5f), XYPair<float>.One.ScaledFromOriginBy((3f, 5f)));
+		Assert.AreEqual(new XYPair<float>(3.5f, 3.5f), XYPair<float>.One.ScaledBy(3.5f));
+		Assert.AreEqual(new XYPair<float>(3.5f, 5.5f), XYPair<float>.One.ScaledBy((3.5f, 5.5f)));
+		Assert.AreEqual(new XYPair<float>(2f, 3.25f), XYPair<float>.One.ScaledBy((1.5f, 2f), (-1f, -1.25f)));
 	}
 
 	[Test]
@@ -414,6 +442,8 @@ class XYPairTest {
 		Assert.AreEqual(4, ThreeFourFloat.Cast<int>().Y);
 		Assert.AreEqual(3f, new XYPair<int>(3, 4).Cast<float>().X);
 		Assert.AreEqual(4f, new XYPair<int>(3, 4).Cast<float>().Y);
+		Assert.AreEqual(new XYPair<int>(3, 4), new XYPair<int>(3, 4).Cast<int>());
+		Assert.AreEqual(new XYPair<float>(3f, 4f), new XYPair<float>(3f, 4f).Cast<float>());
 	}
 
 	[Test]
@@ -435,6 +465,111 @@ class XYPairTest {
 		Assert.AreEqual(XYPair<float>.Zero, XYPair<float>.Zero.WithLengthOne());
 	}
 
+	[Test]
+	public void ShouldCorrectlyAlterLength() {
+		Assert.AreEqual(new XYPair<float>(3.5f, 0f), new XYPair<float>(6f, 0f).WithLength(3.5f));
+		Assert.AreEqual(new XYPair<float>(-3.5f, 0f), new XYPair<float>(6f, 0f).WithLength(-3.5f));
+		Assert.AreEqual(new XYPair<float>(2.5f, 0f), new XYPair<float>(6f, 0f).WithMaxLength(2.5f));
+		Assert.AreEqual(new XYPair<float>(6f, 0f), new XYPair<float>(6f, 0f).WithMaxLength(7.5f));
+		Assert.AreEqual(new XYPair<float>(6f, 0f), new XYPair<float>(6f, 0f).WithMinLength(2.5f));
+		Assert.AreEqual(new XYPair<float>(7.5f, 0f), new XYPair<float>(6f, 0f).WithMinLength(7.5f));
+		Assert.AreEqual(new XYPair<float>(11.5f, 0f), new XYPair<float>(6f, 0f).WithLengthIncreasedBy(5.5f));
+		Assert.AreEqual(new XYPair<float>(-1.5f, 0f), new XYPair<float>(6f, 0f).WithLengthDecreasedBy(7.5f));
+		Assert.AreEqual(new XYPair<float>(-1.5f, 0f), new XYPair<float>(6f, 0f).WithLengthIncreasedBy(-7.5f));
+		Assert.AreEqual(new XYPair<float>(11.5f, 0f), new XYPair<float>(6f, 0f).WithLengthDecreasedBy(-5.5f));
+
+		Assert.AreEqual(new XYPair<float>(0f, 3.5f), new XYPair<float>(0f, 6f).WithLength(3.5f));
+		Assert.AreEqual(new XYPair<float>(0f, -3.5f), new XYPair<float>(0f, 6f).WithLength(-3.5f));
+		Assert.AreEqual(new XYPair<float>(0f, 2.5f), new XYPair<float>(0f, 6f).WithMaxLength(2.5f));
+		Assert.AreEqual(new XYPair<float>(0f, 6f), new XYPair<float>(0f, 6f).WithMaxLength(7.5f));
+		Assert.AreEqual(new XYPair<float>(0f, 6f), new XYPair<float>(0f, 6f).WithMinLength(2.5f));
+		Assert.AreEqual(new XYPair<float>(0f, 7.5f), new XYPair<float>(0f, 6f).WithMinLength(7.5f));
+		Assert.AreEqual(new XYPair<float>(0f, 11.5f), new XYPair<float>(0f, 6f).WithLengthIncreasedBy(5.5f));
+		Assert.AreEqual(new XYPair<float>(0f, -1.5f), new XYPair<float>(0f, 6f).WithLengthDecreasedBy(7.5f));
+		Assert.AreEqual(new XYPair<float>(0f, -1.5f), new XYPair<float>(0f, 6f).WithLengthIncreasedBy(-7.5f));
+		Assert.AreEqual(new XYPair<float>(0f, 11.5f), new XYPair<float>(0f, 6f).WithLengthDecreasedBy(-5.5f));
+
+		Assert.AreEqual(new XYPair<int>(4, 0), new XYPair<int>(6, 0).WithLength(3.5f));
+		Assert.AreEqual(new XYPair<int>(-4, 0), new XYPair<int>(6, 0).WithLength(-3.5f));
+		Assert.AreEqual(new XYPair<int>(2, 0), new XYPair<int>(6, 0).WithMaxLength(2.5f));
+		Assert.AreEqual(new XYPair<int>(6, 0), new XYPair<int>(6, 0).WithMaxLength(7.5f));
+		Assert.AreEqual(new XYPair<int>(6, 0), new XYPair<int>(6, 0).WithMinLength(2.5f));
+		Assert.AreEqual(new XYPair<int>(8, 0), new XYPair<int>(6, 0).WithMinLength(7.5f));
+		Assert.AreEqual(new XYPair<int>(12, 0), new XYPair<int>(6, 0).WithLengthIncreasedBy(5.5f));
+		Assert.AreEqual(new XYPair<int>(-2, 0), new XYPair<int>(6, 0).WithLengthDecreasedBy(7.5f));
+		Assert.AreEqual(new XYPair<int>(-2, 0), new XYPair<int>(6, 0).WithLengthIncreasedBy(-7.5f));
+		Assert.AreEqual(new XYPair<int>(12, 0), new XYPair<int>(6, 0).WithLengthDecreasedBy(-5.5f));
+
+		Assert.AreEqual(new XYPair<int>(0, 4), new XYPair<int>(0, 6).WithLength(3.5f));
+		Assert.AreEqual(new XYPair<int>(0, -4), new XYPair<int>(0, 6).WithLength(-3.5f));
+		Assert.AreEqual(new XYPair<int>(0, 2), new XYPair<int>(0, 6).WithMaxLength(2.5f));
+		Assert.AreEqual(new XYPair<int>(0, 6), new XYPair<int>(0, 6).WithMaxLength(7.5f));
+		Assert.AreEqual(new XYPair<int>(0, 6), new XYPair<int>(0, 6).WithMinLength(2.5f));
+		Assert.AreEqual(new XYPair<int>(0, 8), new XYPair<int>(0, 6).WithMinLength(7.5f));
+		Assert.AreEqual(new XYPair<int>(0, 12), new XYPair<int>(0, 6).WithLengthIncreasedBy(5.5f));
+		Assert.AreEqual(new XYPair<int>(0, -2), new XYPair<int>(0, 6).WithLengthDecreasedBy(7.5f));
+		Assert.AreEqual(new XYPair<int>(0, -2), new XYPair<int>(0, 6).WithLengthIncreasedBy(-7.5f));
+		Assert.AreEqual(new XYPair<int>(0, 12), new XYPair<int>(0, 6).WithLengthDecreasedBy(-5.5f));
+
+		Assert.AreEqual(new XYPair<int>(3, 0), new XYPair<int>(6, 0).WithLength(3.5f, MidpointRounding.ToZero));
+		Assert.AreEqual(new XYPair<int>(-3, 0), new XYPair<int>(6, 0).WithLength(-3.5f, MidpointRounding.ToZero));
+		Assert.AreEqual(new XYPair<int>(2, 0), new XYPair<int>(6, 0).WithMaxLength(2.5f, MidpointRounding.ToZero));
+		Assert.AreEqual(new XYPair<int>(6, 0), new XYPair<int>(6, 0).WithMaxLength(7.5f, MidpointRounding.ToZero));
+		Assert.AreEqual(new XYPair<int>(6, 0), new XYPair<int>(6, 0).WithMinLength(2.5f, MidpointRounding.ToZero));
+		Assert.AreEqual(new XYPair<int>(7, 0), new XYPair<int>(6, 0).WithMinLength(7.5f, MidpointRounding.ToZero));
+		Assert.AreEqual(new XYPair<int>(11, 0), new XYPair<int>(6, 0).WithLengthIncreasedBy(5.5f, MidpointRounding.ToZero));
+		Assert.AreEqual(new XYPair<int>(-1, 0), new XYPair<int>(6, 0).WithLengthDecreasedBy(7.5f, MidpointRounding.ToZero));
+		Assert.AreEqual(new XYPair<int>(-1, 0), new XYPair<int>(6, 0).WithLengthIncreasedBy(-7.5f, MidpointRounding.ToZero));
+		Assert.AreEqual(new XYPair<int>(11, 0), new XYPair<int>(6, 0).WithLengthDecreasedBy(-5.5f, MidpointRounding.ToZero));
+
+		Assert.AreEqual(new XYPair<int>(0, 3), new XYPair<int>(0, 6).WithLength(3.5f, MidpointRounding.ToZero));
+		Assert.AreEqual(new XYPair<int>(0, -3), new XYPair<int>(0, 6).WithLength(-3.5f, MidpointRounding.ToZero));
+		Assert.AreEqual(new XYPair<int>(0, 2), new XYPair<int>(0, 6).WithMaxLength(2.5f, MidpointRounding.ToZero));
+		Assert.AreEqual(new XYPair<int>(0, 6), new XYPair<int>(0, 6).WithMaxLength(7.5f, MidpointRounding.ToZero));
+		Assert.AreEqual(new XYPair<int>(0, 6), new XYPair<int>(0, 6).WithMinLength(2.5f, MidpointRounding.ToZero));
+		Assert.AreEqual(new XYPair<int>(0, 7), new XYPair<int>(0, 6).WithMinLength(7.5f, MidpointRounding.ToZero));
+		Assert.AreEqual(new XYPair<int>(0, 11), new XYPair<int>(0, 6).WithLengthIncreasedBy(5.5f, MidpointRounding.ToZero));
+		Assert.AreEqual(new XYPair<int>(0, -1), new XYPair<int>(0, 6).WithLengthDecreasedBy(7.5f, MidpointRounding.ToZero));
+		Assert.AreEqual(new XYPair<int>(0, -1), new XYPair<int>(0, 6).WithLengthIncreasedBy(-7.5f, MidpointRounding.ToZero));
+		Assert.AreEqual(new XYPair<int>(0, 11), new XYPair<int>(0, 6).WithLengthDecreasedBy(-5.5f, MidpointRounding.ToZero));
+	}
+
+	[Test]
+	public void ShouldCorrectlyImplementDot() {
+		Assert.AreEqual(0f, new XYPair<float>(1f, 0f).Dot((0f, 1f)));
+		Assert.AreEqual(1f, new XYPair<float>(1f, 0f).Dot((1f, 0f)));
+		Assert.AreEqual(-1f, new XYPair<float>(1f, 0f).Dot((-1f, 0f)));
+
+		Assert.AreEqual(0f, new XYPair<int>(1, 0).Dot((0, 1)));
+		Assert.AreEqual(1f, new XYPair<int>(1, 0).Dot((1, 0)));
+		Assert.AreEqual(-1f, new XYPair<int>(1, 0).Dot((-1, 0)));
+	}
+
+	[Test]
+	public void ShouldCorrectlyImplementCross() {
+		// https://www.wolframalpha.com/input?i=cross+product+calculator&assumption=%7B%22F%22%2C+%22CrossProduct%22%2C+%22crossVector1%22%7D+-%3E%22%7B1%2C+3%7D%22&assumption=%7B%22F%22%2C+%22CrossProduct%22%2C+%22crossVector2%22%7D+-%3E%22%7B7%2C+-2%7D%22
+		Assert.AreEqual(-23f, new XYPair<float>(1f, 3f).Cross((7f, -2f)));
+		Assert.AreEqual(-23f, new XYPair<int>(1, 3).Cross((7, -2)));
+
+		// https://www.wolframalpha.com/input?i=cross+product+calculator&assumption=%7B%22F%22%2C+%22CrossProduct%22%2C+%22crossVector1%22%7D+-%3E%22%7B0%2C+0%7D%22&assumption=%7B%22F%22%2C+%22CrossProduct%22%2C+%22crossVector2%22%7D+-%3E%22%7B0%2C+0%7D%22
+		Assert.AreEqual(0f, new XYPair<float>(0f, 0f).Cross((0f, 0f)));
+		Assert.AreEqual(0f, new XYPair<int>(0, 0).Cross((0, 0)));
+
+		// https://www.wolframalpha.com/input?i=cross+product+calculator&assumption=%7B%22F%22%2C+%22CrossProduct%22%2C+%22crossVector1%22%7D+-%3E%22%7B-4%2C+0%7D%22&assumption=%7B%22F%22%2C+%22CrossProduct%22%2C+%22crossVector2%22%7D+-%3E%22%7B-2%2C+1.8%7D%22
+		Assert.AreEqual(-7.2f, new XYPair<float>(-4f, 0f).Cross((-2f, 1.8f)));
+	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineAngleOrientationTo() {
+		Assert.AreEqual(XyPairClockOrientation.Colinear, XYPair<int>.FromPolarAngle(0f).AngleOrientationTo(XYPair<int>.FromPolarAngle(0f)));
+		Assert.AreEqual(XyPairClockOrientation.Anticlockwise, XYPair<int>.FromPolarAngle(0f).AngleOrientationTo(XYPair<int>.FromPolarAngle(90f)));
+		Assert.AreEqual(XyPairClockOrientation.Colinear, XYPair<int>.FromPolarAngle(0f).AngleOrientationTo(XYPair<int>.FromPolarAngle(180f)));
+		Assert.AreEqual(XyPairClockOrientation.Clockwise, XYPair<int>.FromPolarAngle(0f).AngleOrientationTo(XYPair<int>.FromPolarAngle(270f)));
+		Assert.AreEqual(XyPairClockOrientation.Anticlockwise, XYPair<int>.FromPolarAngle(270f).AngleOrientationTo(XYPair<int>.FromPolarAngle(0f)));
+		Assert.AreEqual(XyPairClockOrientation.Colinear, XYPair<int>.FromPolarAngle(180f).AngleOrientationTo(XYPair<int>.FromPolarAngle(0f)));
+		Assert.AreEqual(XyPairClockOrientation.Clockwise, XYPair<int>.FromPolarAngle(90f).AngleOrientationTo(XYPair<int>.FromPolarAngle(0f)));
+	}
+	
 	[Test]
 	public void ShouldCorrectlyImplementLineGeometry() {
 		AssertToleranceEquals((1f, 0f), new XYPair<float>(0f, 0f).ClosestPointOn2DLine((1f, 0f), (0f, 1f)), TestTolerance);
@@ -471,5 +606,49 @@ class XYPairTest {
 		Assert.AreEqual(new XYPair<float>(1.5f, -0.5f), new XYPair<float>(1.5f, -0.5f).CastWithRoundingIfNecessary<float, float>());
 		Assert.AreEqual(new XYPair<float>(1.5f, -0.5f), new XYPair<float>(1.5f, -0.5f).CastWithRoundingIfNecessary<float, float>(MidpointRounding.ToEven));
 		Assert.AreEqual(new XYPair<float>(1.5f, -0.5f), new XYPair<float>(1.5f, -0.5f).CastWithRoundingIfNecessary<float, float>(MidpointRounding.AwayFromZero));
+	}
+
+	[Test]
+	public void ShouldCorrectlyTransform() {
+		void AssertTransform<T>(XYPair<T> expectation, XYPair<T> input, Transform2D transform) where T : unmanaged, INumber<T> {
+			AssertToleranceEquals(expectation, input * transform, TestTolerance);
+			Assert.AreEqual(input * transform, transform * input);
+			Assert.AreEqual(input * transform, input.TransformedBy(transform));
+			Assert.AreEqual(input * transform, input.TransformedAroundOriginBy(transform));
+		}
+		void AssertRoundedTransform<T>(XYPair<T> expectation, XYPair<T> input, Transform2D transform, MidpointRounding rounding) where T : unmanaged, INumber<T> {
+			AssertToleranceEquals(expectation, input.TransformedBy(transform, rounding), TestTolerance);
+			Assert.AreEqual(input.TransformedBy(transform, rounding), input.TransformedAroundOriginBy(transform, rounding));
+		}
+		void AssertRoundedOriginTransform<T>(XYPair<T> expectation, XYPair<T> input, Transform2D transform, XYPair<float> origin, MidpointRounding rounding) where T : unmanaged, INumber<T> {
+			AssertToleranceEquals(expectation, input.TransformedBy(transform, origin, rounding), TestTolerance);
+		}
+
+		AssertTransform(new XYPair<float>(3f, 4f), (3f, 4f), Transform2D.None);
+		AssertTransform(new XYPair<float>(-3f, -4f), (3f, 4f), Transform2D.FromRotationOnly(180f));
+		AssertTransform(new XYPair<float>(-4f, 3f), (3f, 4f), Transform2D.FromRotationOnly(90f));
+		AssertTransform(new XYPair<float>(4f, -3f), (3f, 4f), Transform2D.FromRotationOnly(-90f));
+		AssertTransform(new XYPair<float>(6f, 8f), (3f, 4f), Transform2D.FromScalingOnly(2f));
+		AssertTransform(new XYPair<float>(1.5f, 2f), (3f, 4f), Transform2D.FromScalingOnly(0.5f));
+		AssertTransform(new XYPair<float>(4f, 6f), (3f, 4f), Transform2D.FromTranslationOnly((1f, 2f)));
+		AssertTransform(new XYPair<float>(2f, 2f), (3f, 4f), Transform2D.FromTranslationOnly((-1f, -2f)));
+		AssertTransform(new XYPair<float>(-3f, 0f), (3f, 4f), new(scaling: (2f, -1f), rotation: 180f, translation: (3f, -4f)));
+		AssertRoundedTransform(new XYPair<float>(1.5f, 2f), (3f, 4f), Transform2D.FromScalingOnly(0.5f), MidpointRounding.ToEven); 
+		AssertRoundedOriginTransform(new XYPair<float>(-6f, 0f), (3f, 4f), new(scaling: (2f, -1f), rotation: 180f, translation: (3f, -4f)), (-1f, -1f), MidpointRounding.ToEven); 
+		AssertRoundedOriginTransform(new XYPair<float>(1f, 1.5f), (3f, 4f), Transform2D.FromScalingOnly(0.5f), (-1f, -1f), MidpointRounding.ToEven); // Making sure we only round where necessary
+
+		AssertTransform(new XYPair<int>(3, 4), (3, 4), Transform2D.None);
+		AssertTransform(new XYPair<int>(-3, -4), (3, 4), Transform2D.FromRotationOnly(180f));
+		AssertTransform(new XYPair<int>(-4, 3), (3, 4), Transform2D.FromRotationOnly(90f));
+		AssertTransform(new XYPair<int>(4, -3), (3, 4), Transform2D.FromRotationOnly(-90f));
+		AssertTransform(new XYPair<int>(6, 8), (3, 4), Transform2D.FromScalingOnly(2f));
+		AssertTransform(new XYPair<int>(2, 2), (3, 4), Transform2D.FromScalingOnly(0.5f));
+		AssertTransform(new XYPair<int>(4, 6), (3, 4), Transform2D.FromTranslationOnly((1f, 2f)));
+		AssertTransform(new XYPair<int>(2, 2), (3, 4), Transform2D.FromTranslationOnly((-1f, -2f)));
+		AssertTransform(new XYPair<int>(-3, 0), (3, 4), new(scaling: (2f, -1f), rotation: 180f, translation: (3f, -4f)));
+		AssertRoundedTransform(new XYPair<int>(2, 2), (3, 4), Transform2D.FromScalingOnly(0.5f), MidpointRounding.ToEven);
+		AssertRoundedTransform(new XYPair<int>(1, 2), (3, 4), Transform2D.FromScalingOnly(0.5f), MidpointRounding.ToZero);
+		AssertRoundedOriginTransform(new XYPair<int>(-6, 0), (3, 4), new(scaling: (2f, -1f), rotation: 180f, translation: (3.5f, -4f)), (-1f, -1f), MidpointRounding.ToEven);
+		AssertRoundedOriginTransform(new XYPair<int>(-5, 0), (3, 4), new(scaling: (2f, -1f), rotation: 180f, translation: (3.5f, -4f)), (-1f, -1f), MidpointRounding.ToZero);
 	}
 }

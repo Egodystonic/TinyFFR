@@ -70,7 +70,7 @@ partial struct SphereDescriptor {
 	public Location PointClosestTo(Location location) {
 		var vectFromLocToCentre = (Vect) location;
 		if (vectFromLocToCentre.LengthSquared <= RadiusSquared) return location;
-		else return location - vectFromLocToCentre.ShortenedBy(Radius);
+		else return location - vectFromLocToCentre.WithLengthDecreasedBy(Radius);
 	}
 	public Location SurfacePointClosestTo(Location location) {
 		var vectFromLocToCentre = (Vect) location;

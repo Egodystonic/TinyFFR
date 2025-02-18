@@ -651,17 +651,17 @@ class VectTest {
 
 	[Test]
 	public void ShouldCorrectlyShortenAndLengthen() {
-		Assert.AreEqual(Vect.Zero, Vect.Zero.LengthenedBy(10f));
-		Assert.AreEqual(Vect.Zero, Vect.Zero.LengthenedBy(0f));
-		Assert.AreEqual(Vect.Zero, Vect.Zero.ShortenedBy(10f));
-		Assert.AreEqual(Vect.Zero, Vect.Zero.ShortenedBy(0f));
+		Assert.AreEqual(Vect.Zero, Vect.Zero.WithLengthIncreasedBy(10f));
+		Assert.AreEqual(Vect.Zero, Vect.Zero.WithLengthIncreasedBy(0f));
+		Assert.AreEqual(Vect.Zero, Vect.Zero.WithLengthDecreasedBy(10f));
+		Assert.AreEqual(Vect.Zero, Vect.Zero.WithLengthDecreasedBy(0f));
 
-		AssertToleranceEquals(OneTwoNegThree.WithLength(10f), OneTwoNegThree.WithLength(7f).LengthenedBy(3f), TestTolerance);
-		AssertToleranceEquals(OneTwoNegThree.WithLength(-10f), OneTwoNegThree.WithLength(7f).LengthenedBy(-17f), TestTolerance);
-		AssertToleranceEquals(OneTwoNegThree.WithLength(-10f), OneTwoNegThree.WithLength(-7f).LengthenedBy(3f), TestTolerance);
-		AssertToleranceEquals(OneTwoNegThree.WithLength(10f), OneTwoNegThree.WithLength(-7f).LengthenedBy(-17f), TestTolerance);
-		AssertToleranceEquals(Vect.Zero, OneTwoNegThree.WithLength(7f).LengthenedBy(-7f), TestTolerance);
-		AssertToleranceEquals(Vect.Zero, OneTwoNegThree.WithLength(-7f).LengthenedBy(-7f), TestTolerance);
+		AssertToleranceEquals(OneTwoNegThree.WithLength(10f), OneTwoNegThree.WithLength(7f).WithLengthIncreasedBy(3f), TestTolerance);
+		AssertToleranceEquals(OneTwoNegThree.WithLength(-10f), OneTwoNegThree.WithLength(7f).WithLengthIncreasedBy(-17f), TestTolerance);
+		AssertToleranceEquals(OneTwoNegThree.WithLength(-10f), OneTwoNegThree.WithLength(-7f).WithLengthIncreasedBy(3f), TestTolerance);
+		AssertToleranceEquals(OneTwoNegThree.WithLength(10f), OneTwoNegThree.WithLength(-7f).WithLengthIncreasedBy(-17f), TestTolerance);
+		AssertToleranceEquals(Vect.Zero, OneTwoNegThree.WithLength(7f).WithLengthIncreasedBy(-7f), TestTolerance);
+		AssertToleranceEquals(Vect.Zero, OneTwoNegThree.WithLength(-7f).WithLengthIncreasedBy(-7f), TestTolerance);
 	}
 
 	[Test]

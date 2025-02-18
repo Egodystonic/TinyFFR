@@ -306,8 +306,8 @@ public interface IConvexShapeIntersectable<TIntersection> where TIntersection : 
 #region Dimensionality / Extents
 public interface ILengthAdjustable<out TSelf> where TSelf : ILengthAdjustable<TSelf> {
 	TSelf WithLength(float newLength);
-	TSelf ShortenedBy(float lengthDecrease);
-	TSelf LengthenedBy(float lengthIncrease);
+	TSelf WithLengthDecreasedBy(float lengthDecrease);
+	TSelf WithLengthIncreasedBy(float lengthIncrease);
 	TSelf WithMaxLength(float maxLength);
 	TSelf WithMinLength(float minLength);
 }
