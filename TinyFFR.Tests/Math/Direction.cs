@@ -512,6 +512,8 @@ class DirectionTest {
 	[Test]
 	public void ShouldCorrectlyFindOrthogonalDirectionWithAdditionalConstrainingDirection() {
 		Assert.AreEqual(Direction.Left, Direction.FromDualOrthogonalization(Direction.Up, Direction.Forward));
+		Assert.AreEqual(Direction.Left, Direction.FromDualOrthogonalization(Direction.Up, Direction.Forward, rightHanded: true));
+		Assert.AreEqual(Direction.Right, Direction.FromDualOrthogonalization(Direction.Up, Direction.Forward, rightHanded: false));
 
 		var testList = new List<Direction>();
 		for (var x = -5f; x <= 5f; x += 1f) {
@@ -530,6 +532,8 @@ class DirectionTest {
 
 				if (dirA == Direction.None || dirB == Direction.None) {
 					Assert.AreEqual(Direction.None, Direction.FromDualOrthogonalization(dirA, dirB));
+					Assert.AreEqual(Direction.None, Direction.FromDualOrthogonalization(dirA, dirB, true));
+					Assert.AreEqual(Direction.None, Direction.FromDualOrthogonalization(dirA, dirB, false));
 					continue;
 				}
 
@@ -541,6 +545,9 @@ class DirectionTest {
 				AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, 2f);
 				AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, 2f);
 				Assert.IsTrue(thirdOrthogonal.IsUnitLength);
+
+				if (dirA.IsApproximatelyParallelTo(dirB, 4f)) continue;
+				AssertToleranceEquals(180f, Direction.FromDualOrthogonalization(dirA, dirB, true) ^ Direction.FromDualOrthogonalization(dirA, dirB, false), 4f);
 			}
 		}
 	}

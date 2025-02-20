@@ -25,6 +25,8 @@ class PlaneTest {
 	[Test]
 	public void ConstructorShouldCorrectlyCalculateProperties() {
 		Assert.AreEqual(TestPlane, new Plane(Direction.Up, (100f, -1f, 0f)));
+		Assert.AreEqual(Direction.Down, new Plane(Direction.Down).Normal);
+		Assert.AreEqual(Location.Origin, new Plane(Direction.Down).PointClosestToOrigin);
 	}
 
 	[Test]
@@ -892,35 +894,6 @@ class PlaneTest {
 	}
 
 	[Test]
-	public void ConvenienceMethodsShouldCorrectlyConvertBetween2DAnd3D() {
-		Assert.AreEqual(MathF.Sqrt(200f), new Location(10f, 10f, 10f).ProjectedTo2DOn(TestPlane).ToVector2().Length(), TestTolerance);
-		Assert.AreEqual(MathF.Sqrt(200f), new Location(-10f, -10f, -10f).ProjectedTo2DOn(TestPlane).ToVector2().Length(), TestTolerance);
-		Assert.AreEqual(new Location(10f, 10f, 10f).ProjectedTo2DOn(TestPlane).X, -new Location(-10f, -10f, -10f).ProjectedTo2DOn(TestPlane).X, TestTolerance);
-		Assert.AreEqual(new Location(10f, 10f, 10f).ProjectedTo2DOn(TestPlane).Y, -new Location(-10f, -10f, -10f).ProjectedTo2DOn(TestPlane).Y, TestTolerance);
-
-		AssertToleranceEquals(
-			new Location(10f, -1f, 10f),
-			new Location(10f, 10f, 10f).ProjectedTo2DOn(TestPlane).HolographedTo3DOn(TestPlane),
-			TestTolerance
-		);
-		AssertToleranceEquals(
-			new Location(-10f, -1f, -10f),
-			new Location(-10f, -10f, -10f).ProjectedTo2DOn(TestPlane).HolographedTo3DOn(TestPlane),
-			TestTolerance
-		);
-		AssertToleranceEquals(
-			new Location(10f, 10f, 10f),
-			new Location(10f, 10f, 10f).ProjectedTo2DOn(TestPlane).HolographedTo3DOn(TestPlane, 11f),
-			TestTolerance
-		);
-		AssertToleranceEquals(
-			new Location(-10f, -10f, -10f),
-			new Location(-10f, -10f, -10f).ProjectedTo2DOn(TestPlane).HolographedTo3DOn(TestPlane, -9f),
-			TestTolerance
-		);
-	}
-
-	[Test]
 	public void ShouldCorrectlyConstructDimensionConverters() {
 		var converter = TestPlane.CreateDimensionConverter();
 		Assert.AreEqual(TestPlane.PointClosestToOrigin, converter.Origin);
@@ -1214,7 +1187,6 @@ class PlaneTest {
 		AssertMirrorMethod<Plane, Location>((p, l) => p.Contains(l), (l, p) => l.IsContainedWithin(p));
 		AssertMirrorMethod<Plane, Location>((p, l) => p.Contains(l, 10f), (l, p) => l.IsContainedWithin(p, 10f));
 		AssertMirrorMethod<Plane, Location>((p, l) => p.PointClosestTo(l), (l, p) => l.ClosestPointOn(p));
-		AssertMirrorMethod<Plane, Location>((p, l) => p.ProjectionTo2DOf(l), (l, p) => l.ProjectedTo2DOn(p));
 
 		AssertMirrorMethod<Plane, Direction>((a, b) => a.AngleTo(b));
 		AssertMirrorMethod<Plane, Direction>((a, b) => a.SignedAngleTo(b));
@@ -1252,8 +1224,5 @@ class PlaneTest {
 		AssertMirrorMethod<Plane, Vect>((a, b) => a.IsOrthogonalTo(b));
 		AssertMirrorMethod<Plane, Vect>((a, b) => a.IsApproximatelyOrthogonalTo(b));
 		AssertMirrorMethod<Plane, Vect>((a, b) => a.IsApproximatelyOrthogonalTo(b, new Angle(10f)));
-
-		AssertMirrorMethod<Plane, XYPair<float>>((p, xy) => p.HolographTo3DOf(xy), (xy, p) => xy.HolographedTo3DOn(p));
-		AssertMirrorMethod<Plane, XYPair<float>>((p, xy) => p.HolographTo3DOf(xy, 100f), (xy, p) => xy.HolographedTo3DOn(p, 100f));
 	}
 }

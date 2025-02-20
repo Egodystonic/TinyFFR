@@ -13,7 +13,7 @@ namespace Egodystonic.TinyFFR;
 // TODO Does not need to be convex, but no edges may intersect.
 // TODO Officially this is called a simple polygon
 public readonly ref partial struct Polygon : IToleranceEquatable<Polygon> {
-	public const bool IsWoundClockwiseByDefault = false;
+	public const bool DefaultClockwiseExpectation = false;
 
 	public ReadOnlySpan<Location> Vertices { get; }
 	public Direction Normal { get; }
@@ -27,15 +27,17 @@ public readonly ref partial struct Polygon : IToleranceEquatable<Polygon> {
 	};
 	public int TriangleCount => Int32.Max(0, VertexCount - 2);
 	
-	public Polygon(ReadOnlySpan<Location> vertices) : this(vertices, CalculateMostLikelyNormal(vertices)) { }
-	public Polygon(ReadOnlySpan<Location> vertices, Direction normal) : this(vertices, normal, isWoundClockwise: IsWoundClockwiseByDefault) { }
+	public Polygon(ReadOnlySpan<Location> vertices) : this(vertices, CalculateNormalForAnticlockwiseCoplanarVertices(vertices)) { }
+	public Polygon(ReadOnlySpan<Location> vertices, Direction normal) : this(vertices, normal, isWoundClockwise: DefaultClockwiseExpectation) { }
 	public Polygon(ReadOnlySpan<Location> vertices, Direction normal, bool isWoundClockwise) {
 		Vertices = vertices;
 		Normal = normal;
 		IsWoundClockwise = isWoundClockwise;
 	}
 
-	public static Direction CalculateMostLikelyNormal(ReadOnlySpan<Location> vertices) { // TODO in the unit test we need to make sure this always gives us an answer with clockwise winding wrt the normal (e.g. the normal faces out of the clockwise-wound polygon)
+	// TODO xmldoc that this expects the vertices to be coplanar (if they're not then this whole thing is meaningless anyway); and assumes an anticlockwise winding order.
+	// In future we could possibly upgrade this or offer an overload that finds the average normal to help smooth out "noisy" vertices, but that's probably beyond the scope of this lib
+	public static Direction CalculateNormalForAnticlockwiseCoplanarVertices(ReadOnlySpan<Location> vertices) {
 		if (vertices.Length < 3) throw new ArgumentException("Can not calculate most-likely normal for polygon with fewer than 3 vertices.", nameof(vertices));
 
 		var firstCandidate = Direction.None;
@@ -62,9 +64,10 @@ public readonly ref partial struct Polygon : IToleranceEquatable<Polygon> {
 	}
 
 	#region Equality
-	public bool Equals(Polygon other) => Normal.Equals(other.Normal) && Vertices.SequenceEqual(other.Vertices);
+	public bool Equals(Polygon other) => Normal.Equals(other.Normal) && IsWoundClockwise.Equals(other.IsWoundClockwise) && Vertices.SequenceEqual(other.Vertices);
 
 	public bool Equals(Polygon other, float tolerance) {
+		if (IsWoundClockwise != other.IsWoundClockwise) return false;
 		if (!Normal.Equals(other.Normal, tolerance)) return false;
 		
 		var thisVertices = Vertices;
@@ -88,7 +91,10 @@ public readonly ref partial struct Polygon : IToleranceEquatable<Polygon> {
 		var result = new HashCode();
 		foreach (var vertex in Vertices) result.Add(vertex.GetHashCode());
 		result.Add(Normal.GetHashCode());
+		result.Add(IsWoundClockwise.GetHashCode());
 		return result.ToHashCode();
 	}
 	#endregion
+
+	public override string ToString() => $"Polygon ({VertexCount} vertices)";
 }

@@ -18,8 +18,6 @@ partial struct Location : ISignedDistanceMeasurable<Location, Plane>, IContainab
 	public bool IsContainedWithin(Plane plane, float planeThickness) => plane.Contains(this, planeThickness);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Location ClosestPointOn(Plane plane) => plane.PointClosestTo(this);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public XYPair<float> ProjectedTo2DOn(Plane plane) => plane.ProjectionTo2DOf(this);
 }
 partial struct Direction : IAngleMeasurable<Plane>, IReflectable<Plane, Direction>, IParallelizable<Direction, Plane>, IOrthogonalizable<Direction, Plane> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -92,8 +90,4 @@ partial struct Vect : IAngleMeasurable<Plane>, IReflectable<Plane, Vect>, IProje
 	public bool IsApproximatelyOrthogonalTo(Plane plane) => plane.IsApproximatelyOrthogonalTo(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsApproximatelyOrthogonalTo(Plane plane, Angle tolerance) => plane.IsApproximatelyOrthogonalTo(this, tolerance);
-}
-partial struct XYPair<T> {
-	public Location HolographedTo3DOn(Plane plane) => plane.HolographTo3DOf(Cast<float>());
-	public Location HolographedTo3DOn(Plane plane, float zDimension) => plane.HolographTo3DOf(Cast<float>(), zDimension);
 }

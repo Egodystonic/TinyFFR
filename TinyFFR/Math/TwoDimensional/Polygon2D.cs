@@ -25,7 +25,7 @@ public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 	};
 	public int TriangleCount => Int32.Max(0, VertexCount - 2);
 
-	public Polygon2D(ReadOnlySpan<Vertex> vertices) : this(vertices, isWoundClockwise: Polygon.IsWoundClockwiseByDefault) { }
+	public Polygon2D(ReadOnlySpan<Vertex> vertices) : this(vertices, isWoundClockwise: Polygon.DefaultClockwiseExpectation) { }
 	public Polygon2D(ReadOnlySpan<Vertex> vertices, bool isWoundClockwise) : this(vertices, isWoundClockwise, skipPrecalculations: true) { }
 
 	// TODO xmldoc that the vertices are expected to form a complete enclosed polygon.
@@ -45,14 +45,15 @@ public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 	}
 
 	#region Factories and Conversions
-	public static Polygon2D FromVerticesWithGeometricPrecalculations(ReadOnlySpan<Vertex> vertices) => FromVerticesWithGeometricPrecalculations(vertices, isWoundClockwise: Polygon.IsWoundClockwiseByDefault);
+	public static Polygon2D FromVerticesWithGeometricPrecalculations(ReadOnlySpan<Vertex> vertices) => FromVerticesWithGeometricPrecalculations(vertices, isWoundClockwise: Polygon.DefaultClockwiseExpectation);
 	public static Polygon2D FromVerticesWithGeometricPrecalculations(ReadOnlySpan<Vertex> vertices, bool isWoundClockwise) => new(vertices, isWoundClockwise, skipPrecalculations: false);
 	#endregion
 
 	#region Equality
-	public bool Equals(Polygon2D other) => Vertices.SequenceEqual(other.Vertices);
+	public bool Equals(Polygon2D other) => IsWoundClockwise == other.IsWoundClockwise && Vertices.SequenceEqual(other.Vertices);
 
 	public bool Equals(Polygon2D other, float tolerance) {
+		if (IsWoundClockwise != other.IsWoundClockwise) return false;
 		var thisVertices = Vertices;
 		var otherVertices = other.Vertices;
 
@@ -76,4 +77,6 @@ public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 		return result.ToHashCode();
 	}
 	#endregion
+
+	public override string ToString() => $"Polygon2D ({VertexCount} vertices)";
 }

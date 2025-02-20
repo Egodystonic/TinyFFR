@@ -25,9 +25,9 @@ partial struct Polygon {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Polygon2D ToPolygon2D(Span<XYPair<float>> vertexDest) => ToPolygon2D(vertexDest, Centroid);
 	public Polygon2D ToPolygon2D(Span<XYPair<float>> vertexDest, Location originPoint) {
-		var zBasis = -Normal;
+		var zBasis = Normal;
 		var xBasis = zBasis.AnyOrthogonal();
-		var yBasis = ((IsWoundClockwise ? 90f : -90f) % zBasis) * xBasis;
+		var yBasis = Direction.FromDualOrthogonalization(zBasis, xBasis);
 		var converter = new DimensionConverter(xBasis, yBasis, zBasis, originPoint);
 		return ToPolygon2D(vertexDest, converter);
 	}

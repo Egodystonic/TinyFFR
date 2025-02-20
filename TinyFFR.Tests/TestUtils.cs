@@ -56,6 +56,43 @@ static class TestUtils {
 		);
 	}
 
+	public static unsafe void AssertToleranceEquals<T>(T expected, T actual, float tolerance, delegate* managed<T, string> toStringMethodPtr) where T : IToleranceEquatable<T>, allows ref struct {
+		// This was originally an Assert.IsTrue but the cost of creating the string for each invocation regardless of whether or not we should fail was too much
+		if (expected.Equals(actual, tolerance)) return;
+		Assert.Fail(
+			$"Expected and actual value were not within tolerance of {tolerance}" + System.Environment.NewLine +
+			$"\tExpected value: {toStringMethodPtr(expected)}" + System.Environment.NewLine +
+			$"\tActual value: {toStringMethodPtr(actual)}"
+		);
+	}
+
+	public static unsafe void AssertToleranceNotEquals<T>(T expected, T actual, float tolerance, delegate* managed<T, string> toStringMethodPtr) where T : IToleranceEquatable<T>, allows ref struct {
+		if (!expected.Equals(actual, tolerance)) return;
+		Assert.Fail(
+			$"Expected and actual value were equal within tolerance of {tolerance}" + System.Environment.NewLine +
+			$"\tExpected value: {toStringMethodPtr(expected)}" + System.Environment.NewLine +
+			$"\tActual value: {toStringMethodPtr(actual)}"
+		);
+	}
+
+	public static void AssertToleranceEquals(float expected, float actual, float tolerance) {
+		if (MathF.Abs(expected - actual) <= tolerance) return;
+		Assert.Fail(
+			$"Expected and actual value were not within tolerance of {tolerance}" + System.Environment.NewLine +
+			$"\tExpected value: {expected}" + System.Environment.NewLine +
+			$"\tActual value: {actual}"
+		);
+	}
+
+	public static void AssertToleranceNotEquals(float expected, float actual, float tolerance) {
+		if (MathF.Abs(expected - actual) > tolerance) return;
+		Assert.Fail(
+			$"Expected and actual value were equal within tolerance of {tolerance}" + System.Environment.NewLine +
+			$"\tExpected value: {expected}" + System.Environment.NewLine +
+			$"\tActual value: {actual}"
+		);
+	}
+
 	public static void AssertToleranceEquals(Vector3 expected, Vector3 actual, float tolerance) {
 		bool Compare(float e, float a) => MathF.Abs(e - a) <= tolerance;
 

@@ -140,12 +140,12 @@ partial struct XYPair<T> :
 	#endregion
 
 	#region Rotation
-	/* Maintainer's note: I do not specify the usual multiply operator here for Angle rotations (e.g. XYPair<T> * Angle)
+	/* Maintainer's note: I do not specify the multiply operator here for Angle rotations (e.g. XYPair<T> * Angle)
 	 * because it's too easy to do something like (myXyPairOfInts * someFloat) expecting a scaling operation and instead
-	 * getting the implicit conversion to Angle.
+	 * getting the implicit conversion to Angle. For the 3D vector types the rotation operand is Rotation, not Angle,
+	 * and they have no type parameterization; both of these facts make it much harder to make such a mistake.
 	 */
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public XYPair<T> RotatedBy(Angle rot) => RotatedAroundOriginBy(rot);
+	XYPair<T> IRotatable2D<XYPair<T>>.RotatedBy(Angle rot) => RotatedAroundOriginBy(rot);
 	public XYPair<T> RotatedAroundOriginBy(Angle rot) => PolarAngle is { } a ? FromPolarAngleAndLength(a + rot, Length) : Zero;
 	public XYPair<T> RotatedBy(Angle rot, XYPair<T> pivot) => pivot + (this - pivot).RotatedAroundOriginBy(rot);
 	XYPair<T> IPointRotatable2D<XYPair<T>>.RotatedBy(Angle rot, XYPair<float> pivot) => Cast<float>().RotatedBy(rot, pivot).CastWithRoundingIfNecessary<float, T>();
@@ -179,7 +179,7 @@ partial struct XYPair<T> :
 	public XYPair<T> TransformedAroundOriginBy(Transform2D transform, MidpointRounding midpointRounding = MidpointRounding.ToEven) {
 		return Cast<float>()
 			.ScaledBy(transform.Scaling)
-			.RotatedBy(transform.Rotation)
+			.RotatedAroundOriginBy(transform.Rotation)
 			.MovedBy(transform.Translation)
 			.CastWithRoundingIfNecessary<float, T>(midpointRounding);
 	}

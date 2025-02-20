@@ -113,6 +113,9 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 		else if (dirA == None || dirB == None) return None;
 		else return dirA.AnyOrthogonal();
 	}
+	public static Direction FromDualOrthogonalization(Direction dirA, Direction dirB, bool rightHanded) {
+		return rightHanded ? FromDualOrthogonalization(dirA, dirB) : FromDualOrthogonalization(dirB, dirA);
+	}
 
 	// TODO xmldoc: Imagine a plane, and imagine one direction along the plane is set as "zero". This factory method lets you specify directions as a polar angle offset from the zero direction on the plane
 	// TODO xmldoc: Angle is clockwise looking along the plane normal (much like rotations)

@@ -22,6 +22,7 @@ public readonly partial struct Plane : IMathPrimitive<Plane>, IDescriptiveString
 		get => Location.FromVector3(_normal * _smallestDistanceFromOriginAlongNormal);
 	}
 
+	public Plane(Direction normal) : this(normal, 0f) { }
 	public Plane(Direction normal, Location anyPointOnPlane) : this(normal, Vector3.Dot(normal.ToVector3(), anyPointOnPlane.ToVector3())) { }
 	// TODO in xmldoc note that this is the minimum distance from the origin to the plane along the normal, e.g. positive means the normal points away from the origin
 	public Plane(Direction normal, float coefficientOfNormalFromOrigin) {
@@ -37,6 +38,7 @@ public readonly partial struct Plane : IMathPrimitive<Plane>, IDescriptiveString
 		return new(normalFacesOrigin ? direction.Flipped : direction, vectFromOriginToClosestPoint.Length * (normalFacesOrigin ? -1f : 1f));
 	}
 
+	// TODO xmldoc that the normal will point "out" of the front-facing direction for the triangle (a, b, c) assuming an anticlockwise winding order
 	public static Plane? FromTriangleOnSurface(Location a, Location b, Location c) {
 		var normal = Direction.FromVector3(Vector3.Cross(b.ToVector3() - a.ToVector3(), c.ToVector3() - a.ToVector3()));
 		if (normal == Direction.None) return null;
