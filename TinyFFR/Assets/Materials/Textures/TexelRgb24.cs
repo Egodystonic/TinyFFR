@@ -50,4 +50,13 @@ public readonly record struct TexelRgb24(byte R, byte G, byte B) : IConversionSu
 		var v = (d.ToVector3() + Vector3.One) * Multiplicand;
 		return new((byte) v.X, (byte) v.Y, (byte) v.Z);
 	}
+
+	public TexelRgb24 WithInvertedChannelIfPresent(int channelIndex) {
+		return channelIndex switch {
+			0 => this with { R = (byte) (Byte.MaxValue - R) },
+			1 => this with { G = (byte) (Byte.MaxValue - G) },
+			2 => this with { B = (byte) (Byte.MaxValue - B) },
+			_ => this
+		};
+	}
 }

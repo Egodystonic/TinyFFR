@@ -10,6 +10,12 @@ public readonly ref struct TextureCreationConfig {
 	public required int Width { get; init; }
 	public required int Height { get; init; }
 	public bool GenerateMipMaps { get; init; } = true;
+	public bool FlipX { get; init; } = false;
+	public bool FlipY { get; init; } = false;
+	public bool InvertXRedChannel { get; init; } = false;
+	public bool InvertYGreenChannel { get; init; } = false;
+	public bool InvertZBlueChannel { get; init; } = false;
+	public bool InvertWAlphaChannel { get; init; } = false;
 
 	public ReadOnlySpan<char> Name { get; init; }
 

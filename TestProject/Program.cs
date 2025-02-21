@@ -123,7 +123,66 @@ var normalPattern = TexturePattern.Circles(
 );
 
 using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(colorPattern, name: "Terry the Texture");
+// using var colorMap = factory.AssetLoader.MaterialBuilder.CreateTexture(
+// 	stackalloc TexelRgb24[] {
+// 		TexelRgb24.ConvertFrom(StandardColor.Red),
+// 		TexelRgb24.ConvertFrom(StandardColor.Yellow),
+// 		TexelRgb24.ConvertFrom(StandardColor.Green),
+// 		TexelRgb24.ConvertFrom(StandardColor.Blue),
+// 		TexelRgb24.ConvertFrom(StandardColor.Purple),
+// 		TexelRgb24.ConvertFrom(StandardColor.Olive),
+// 		TexelRgb24.ConvertFrom(StandardColor.White),
+// 		TexelRgb24.ConvertFrom(StandardColor.White),
+// 		TexelRgb24.ConvertFrom(StandardColor.White),
+// 		TexelRgb24.ConvertFrom(StandardColor.White),
+// 		TexelRgb24.ConvertFrom(StandardColor.White),
+// 		TexelRgb24.ConvertFrom(StandardColor.White),
+// 		TexelRgb24.ConvertFrom(StandardColor.Red),
+// 		TexelRgb24.ConvertFrom(StandardColor.Yellow),
+// 		TexelRgb24.ConvertFrom(StandardColor.Green),
+// 		TexelRgb24.ConvertFrom(StandardColor.Blue),
+// 		TexelRgb24.ConvertFrom(StandardColor.Purple),
+// 		TexelRgb24.ConvertFrom(StandardColor.Olive),
+// 		TexelRgb24.ConvertFrom(StandardColor.Red),
+// 		TexelRgb24.ConvertFrom(StandardColor.Yellow),
+// 		TexelRgb24.ConvertFrom(StandardColor.Green),
+// 		TexelRgb24.ConvertFrom(StandardColor.Blue),
+// 		TexelRgb24.ConvertFrom(StandardColor.Purple),
+// 		TexelRgb24.ConvertFrom(StandardColor.Olive),
+// 		TexelRgb24.ConvertFrom(StandardColor.Red),
+// 		TexelRgb24.ConvertFrom(StandardColor.Yellow),
+// 		TexelRgb24.ConvertFrom(StandardColor.Green),
+// 		TexelRgb24.ConvertFrom(StandardColor.Blue),
+// 		TexelRgb24.ConvertFrom(StandardColor.Purple),
+// 		TexelRgb24.ConvertFrom(StandardColor.Olive),
+// 		TexelRgb24.ConvertFrom(StandardColor.Red),
+// 		TexelRgb24.ConvertFrom(StandardColor.Yellow),
+// 		TexelRgb24.ConvertFrom(StandardColor.Green),
+// 		TexelRgb24.ConvertFrom(StandardColor.Blue),
+// 		TexelRgb24.ConvertFrom(StandardColor.Purple),
+// 		TexelRgb24.ConvertFrom(StandardColor.Olive),
+// 	},
+// 	new() {
+// 		FlipX = true,
+// 		FlipY = true,
+// 		GenerateMipMaps = false,
+// 		Width = 6,
+// 		Height = 6,
+// 		InvertZBlueChannel = true
+// 	}
+// );
 using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap(normalPattern);
+// using var normalMap = factory.AssetLoader.MaterialBuilder.CreateTexture(
+// 	stackalloc TexelRgb24[] {
+//  		TexelRgb24.ConvertFrom(Direction.Backward)
+// 	},
+// 	new() {
+//  		Width = 1,
+//  		Height = 1,
+//  		InvertZBlueChannel = true
+// 	}
+// );
+//using var normalMap = factory.AssetLoader.MaterialBuilder.DefaultNormalMap;
 using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(metallicPattern: metallicPattern);
 using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap, normalMap, ormMap: ormMap, name: "Matthew the Material");
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: "Iain the Instance");

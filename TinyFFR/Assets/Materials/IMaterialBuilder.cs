@@ -30,7 +30,7 @@ public interface IMaterialBuilder {
 	Texture CreateTexture<TTexel>(Span<TTexel> texels, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> => CreateTexture((ReadOnlySpan<TTexel>) texels, config);
 	Texture CreateTexture<TTexel>(ReadOnlySpan<TTexel> texels, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel>;
 
-	protected Texture CreateTextureUsingPreallocatedBuffer<TTexel>(PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel>;
+	protected Texture CreateTextureAndDisposePreallocatedBuffer<TTexel>(PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel>;
 	protected PreallocatedBuffer<TTexel> PreallocateBuffer<TTexel>(int texelCount) where TTexel : unmanaged, ITexel<TTexel>;
 	private PreallocatedBuffer<TTexel> FillPreallocatedBuffer<T, TTexel>(TexturePattern<T> pattern) where T : unmanaged where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, T> {
 		var dimensions = pattern.Dimensions;
@@ -59,9 +59,9 @@ public interface IMaterialBuilder {
 		};
 
 		if (includeAlphaChannel) {
-			return CreateTextureUsingPreallocatedBuffer(FillPreallocatedBuffer<ColorVect, TexelRgba32>(pattern.Value), config);
+			return CreateTextureAndDisposePreallocatedBuffer(FillPreallocatedBuffer<ColorVect, TexelRgba32>(pattern.Value), config);
 		}
-		return CreateTextureUsingPreallocatedBuffer(FillPreallocatedBuffer<ColorVect, TexelRgb24>(pattern.Value), config);
+		return CreateTextureAndDisposePreallocatedBuffer(FillPreallocatedBuffer<ColorVect, TexelRgb24>(pattern.Value), config);
 	}
 	Texture CreateNormalMap(TexturePattern<Direction>? pattern = null, ReadOnlySpan<char> name = default) {
 		pattern ??= TexturePattern.PlainFill(DefaultTexelNormal);
@@ -75,7 +75,7 @@ public interface IMaterialBuilder {
 			Name = name
 		};
 
-		return CreateTextureUsingPreallocatedBuffer(FillPreallocatedBuffer<Direction, TexelRgb24>(pattern.Value), config);
+		return CreateTextureAndDisposePreallocatedBuffer(FillPreallocatedBuffer<Direction, TexelRgb24>(pattern.Value), config);
 	}
 	Texture CreateOrmMap(TexturePattern<float>? occlusionPattern = null, TexturePattern<float>? roughnessPattern = null, TexturePattern<float>? metallicPattern = null, ReadOnlySpan<char> name = default) {
 		return CreateOrmMap(
@@ -135,7 +135,7 @@ public interface IMaterialBuilder {
 			}
 		}
 		
-		return CreateTextureUsingPreallocatedBuffer(buffer, config);
+		return CreateTextureAndDisposePreallocatedBuffer(buffer, config);
 	}
 
 	Material CreateOpaqueMaterial(Texture? colorMap = null, Texture? normalMap = null, Texture? ormMap = null, ReadOnlySpan<char> name = default) {

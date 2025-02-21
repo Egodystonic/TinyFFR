@@ -66,14 +66,56 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		_defaultOrmMap = new(() => (this as IMaterialBuilder).CreateOrmMap(name: DefaultOrmMapName));
 	}
 
-	Texture IMaterialBuilder.CreateTextureUsingPreallocatedBuffer<TTexel>(IMaterialBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureCreationConfig config) => CreateTextureUsingPreallocatedBuffer(preallocatedBuffer, in config);
-	Texture CreateTextureUsingPreallocatedBuffer<TTexel>(IMaterialBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
+	void ApplyConfig<TTexel>(Span<TTexel> buffer, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
+		const int MaxTextureWidthForStackRowSwap = 65_536;
+
+		var texelCount = config.Width * config.Height;
+
+		if (config.FlipX) {
+			for (var y = 0; y < config.Height; ++y) {
+				var row = buffer[(y * config.Width)..((y + 1) * config.Width)];
+				for (var x = 0; x < config.Width / 2; ++x) {
+					(row[x], row[^(x + 1)]) = (row[^(x + 1)], row[x]);
+				}
+			}
+		}
+		if (config.FlipY) {
+			var rowSwapSpace = config.Width > MaxTextureWidthForStackRowSwap ? new TTexel[config.Width] : stackalloc TTexel[config.Width];
+			for (var y = 0; y < config.Height / 2; ++y) {
+				var lowerRow = buffer[(y * config.Width)..((y + 1) * config.Width)];
+				var upperRow = buffer[((config.Height - (y + 1)) * config.Width)..((config.Height - y) * config.Width)];
+				lowerRow.CopyTo(rowSwapSpace);
+				upperRow.CopyTo(lowerRow);
+				rowSwapSpace.CopyTo(upperRow);
+			}
+		}
+		if (config.InvertXRedChannel || config.InvertYGreenChannel || config.InvertZBlueChannel || config.InvertWAlphaChannel) {
+			for (var i = 0; i < texelCount; ++i) {
+				if (config.InvertXRedChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(0);
+				if (config.InvertYGreenChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(1);
+				if (config.InvertZBlueChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(2);
+				if (config.InvertWAlphaChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(3);
+			}
+		}
+	}
+
+	// Maintainer's note: The buffer is disposed on the native side when it's asynchronously loaded on to the GPU
+	Texture IMaterialBuilder.CreateTextureAndDisposePreallocatedBuffer<TTexel>(IMaterialBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureCreationConfig config) => CreateTextureAndDisposePreallocatedBuffer(preallocatedBuffer, in config);
+	Texture CreateTextureAndDisposePreallocatedBuffer<TTexel>(IMaterialBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
 		config.ThrowIfInvalid();
 		if (preallocatedBuffer.Buffer.IsEmpty) throw InvalidObjectException.InvalidDefault(typeof(IMaterialBuilder.PreallocatedBuffer<TTexel>));
+		if (config.Width * config.Height > preallocatedBuffer.Buffer.Length) {
+			throw new ArgumentException(
+				$"Given config width/height require a buffer of {config.Width}x{config.Height}={(config.Width * config.Height)} texels, " +
+				$"but supplied texel buffer only has {preallocatedBuffer.Buffer.Length} texels.", 
+				nameof(config)
+			);
+		}
+		ApplyConfig(preallocatedBuffer.Buffer, in config);
 
 		var dataPointer = Unsafe.AsPointer(ref MemoryMarshal.GetReference(preallocatedBuffer.Buffer));
 		var dataLength = preallocatedBuffer.Buffer.Length * sizeof(TTexel);
-
+		
 		UIntPtr outHandle;
 		switch (TTexel.Type) {
 			case TexelType.Rgb24:
@@ -133,7 +175,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		var buffer = PreallocateBuffer<TTexel>(texelCount);
 		texels.CopyTo(buffer.Buffer);
-		return CreateTextureUsingPreallocatedBuffer(buffer, in config);
+		return CreateTextureAndDisposePreallocatedBuffer(buffer, in config);
 	}
 
 	public Material CreateOpaqueMaterial(in OpaqueMaterialCreationConfig config) {

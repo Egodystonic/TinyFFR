@@ -46,4 +46,14 @@ public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : ICon
 	public static explicit operator TexelRgba32(TexelRgb24 texel) => texel.AsRgba32;
 	
 	public static TexelRgba32 ConvertFrom(ColorVect v) => new(v);
+
+	public TexelRgba32 WithInvertedChannelIfPresent(int channelIndex) {
+		return channelIndex switch {
+			0 => this with { R = (byte) (Byte.MaxValue - R) },
+			1 => this with { G = (byte) (Byte.MaxValue - G) },
+			2 => this with { B = (byte) (Byte.MaxValue - B) },
+			3 => this with { A = (byte) (Byte.MaxValue - A) },
+			_ => this
+		};
+	}
 }
