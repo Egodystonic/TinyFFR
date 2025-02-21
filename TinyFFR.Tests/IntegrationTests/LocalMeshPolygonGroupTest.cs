@@ -31,7 +31,7 @@ class LocalMeshPolygonGroupTest {
 		using var factory = new LocalTinyFfrFactory();
 		var vertexList = new List<Location>();
 
-		var polyGroup = factory.AssetLoader.MeshBuilder.AllocateNewPolygonGroup();
+		using var polyGroup = factory.AssetLoader.MeshBuilder.AllocateNewPolygonGroup();
 		AssertGroupProps(polyGroup, 0, 0, 0, 0, 0);
 		polyGroup.Add(CreatePolygon(vertexList, 5, false, out var p1D), Direction.Forward, Direction.Up, Location.Origin);
 		AssertGroupProps(polyGroup, 1, 5, 3, 5, 3);

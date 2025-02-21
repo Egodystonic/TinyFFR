@@ -11,8 +11,8 @@ using Edge = Egodystonic.TinyFFR.Pair<Egodystonic.TinyFFR.XYPair<float>, Egodyst
 namespace Egodystonic.TinyFFR;
 
 public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
-	readonly float _containmentRadius;
-	readonly float _containmentRadiusSquared;
+	// readonly float _containmentRadius;
+	// readonly float _containmentRadiusSquared;
 	
 	public ReadOnlySpan<Vertex> Vertices { get; }
 	public bool IsWoundClockwise { get; }
@@ -36,17 +36,17 @@ public readonly ref partial struct Polygon2D : IToleranceEquatable<Polygon2D> {
 		Vertices = vertices;
 		IsWoundClockwise = isWoundClockwise;
 
-		if (skipPrecalculations) {
-			_containmentRadius = _containmentRadiusSquared = Single.PositiveInfinity;
-			return;
-		}
-		foreach (var vertex in vertices) _containmentRadiusSquared = MathF.Max(_containmentRadiusSquared, vertex.LengthSquared);
-		_containmentRadius = MathF.Sqrt(_containmentRadiusSquared);
+		// if (skipPrecalculations) {
+		// 	_containmentRadius = _containmentRadiusSquared = Single.PositiveInfinity;
+		// 	return;
+		// }
+		// foreach (var vertex in vertices) _containmentRadiusSquared = MathF.Max(_containmentRadiusSquared, vertex.LengthSquared);
+		// _containmentRadius = MathF.Sqrt(_containmentRadiusSquared);
 	}
 
 	#region Factories and Conversions
-	public static Polygon2D FromVerticesWithGeometricPrecalculations(ReadOnlySpan<Vertex> vertices) => FromVerticesWithGeometricPrecalculations(vertices, isWoundClockwise: Polygon.DefaultClockwiseExpectation);
-	public static Polygon2D FromVerticesWithGeometricPrecalculations(ReadOnlySpan<Vertex> vertices, bool isWoundClockwise) => new(vertices, isWoundClockwise, skipPrecalculations: false);
+	// public static Polygon2D FromVerticesWithGeometricPrecalculations(ReadOnlySpan<Vertex> vertices) => FromVerticesWithGeometricPrecalculations(vertices, isWoundClockwise: Polygon.DefaultClockwiseExpectation);
+	// public static Polygon2D FromVerticesWithGeometricPrecalculations(ReadOnlySpan<Vertex> vertices, bool isWoundClockwise) => new(vertices, isWoundClockwise, skipPrecalculations: false);
 	#endregion
 
 	#region Equality

@@ -36,8 +36,8 @@ class PolygonTest {
 		}
 		
 		Assert.AreEqual(new Location(0f, 1f, 0f), AcwTri.Vertices[0]);
-		Assert.AreEqual(new Location(-1.5f, -0.5f, 0f), AcwTri.Vertices[1]);
-		Assert.AreEqual(new Location(1.5f, -0.5f, 0f), AcwTri.Vertices[2]);
+		Assert.AreEqual(new Location(1.5f, -0.5f, 0f), AcwTri.Vertices[1]);
+		Assert.AreEqual(new Location(-1.5f, -0.5f, 0f), AcwTri.Vertices[2]);
 
 		AssertPoly(AcwTri, 3, 3, 1, Direction.Backward, false);
 		AssertPoly(AcwSquare, 4, 4, 2, Direction.Backward, false);

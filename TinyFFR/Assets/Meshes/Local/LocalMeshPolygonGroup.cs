@@ -15,7 +15,7 @@ sealed unsafe class LocalMeshPolygonGroup : IMeshPolygonGroup {
 
 	PooledHeapMemory<Location>? _vertexList = null;
 	PooledHeapMemory<MetadataEntry>? _metadataList = null;
-	PooledHeapMemory<XYPair<float>>? _triangulationBuffer = null;
+	PooledHeapMemory<XYPair<float>>? _twoDimensionalBuffer = null;
 	PooledHeapMemory<MeshVertex>? _vertexBuffer = null;
 	PooledHeapMemory<VertexTriangle>? _triangleBuffer = null;
 
@@ -33,7 +33,7 @@ sealed unsafe class LocalMeshPolygonGroup : IMeshPolygonGroup {
 
 	public void Dispose() {
 		Clear();
-		_triangulationBuffer?.Dispose();
+		_twoDimensionalBuffer?.Dispose();
 		_vertexBuffer?.Dispose();
 		_triangleBuffer?.Dispose();
 		_disposalAction(_parentBuilder, this);
@@ -97,10 +97,10 @@ sealed unsafe class LocalMeshPolygonGroup : IMeshPolygonGroup {
 		_metadataList?.Dispose();
 	}
 
-	public Span<XYPair<float>> ReallocateTriangulationBufferForCurrentCount() {
-		_triangulationBuffer?.Dispose();
-		_triangulationBuffer = _poolAccessFunc(_parentBuilder).Borrow<XYPair<float>>(HighestIndividualVertexCount);
-		return _triangulationBuffer.Value.Buffer;
+	public Span<XYPair<float>> Reallocate2DBufferForCurrentCount() {
+		_twoDimensionalBuffer?.Dispose();
+		_twoDimensionalBuffer = _poolAccessFunc(_parentBuilder).Borrow<XYPair<float>>(HighestIndividualVertexCount);
+		return _twoDimensionalBuffer.Value.Buffer;
 	}
 	public Span<MeshVertex> ReallocateVertexBufferForCurrentCount() {
 		_vertexBuffer?.Dispose();

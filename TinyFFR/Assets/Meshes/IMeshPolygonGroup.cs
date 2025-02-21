@@ -18,14 +18,14 @@ public interface IMeshPolygonGroup : IDisposable {
 
 	Polygon GetPolygonAtIndex(int index, out Direction textureU, out Direction textureV, out Location textureOrigin);
 	
-	protected Span<XYPair<float>> ReallocateTriangulationBufferForCurrentCount();
+	protected Span<XYPair<float>> Reallocate2DBufferForCurrentCount();
 	protected Span<MeshVertex> ReallocateVertexBufferForCurrentCount();
 	protected Span<VertexTriangle> ReallocateTriangleBufferForCurrentCount();
 
 	internal void Triangulate(Transform2D textureTransform, out ReadOnlySpan<MeshVertex> outVertexBuffer, out ReadOnlySpan<VertexTriangle> outTriangleBuffer) {
 		textureTransform = textureTransform with { Scaling = textureTransform.Scaling.Reciprocal ?? XYPair<float>.Zero };
 		
-		var triangulationBuffer = ReallocateTriangulationBufferForCurrentCount();
+		var twoDimensionalBuffer = Reallocate2DBufferForCurrentCount();
 		var vertexBuffer = ReallocateVertexBufferForCurrentCount();
 		var triangleBuffer = ReallocateTriangleBufferForCurrentCount();
 
@@ -49,7 +49,7 @@ public interface IMeshPolygonGroup : IDisposable {
 				);
 			}
 
-			polygon.ToPolygon2D(triangulationBuffer).Triangulate(triangleBuffer);
+			polygon.ToPolygon2D(twoDimensionalBuffer).Triangulate(triangleBuffer);
 			
 			for (var t = 0; t < polygon.TriangleCount; ++t) {
 				triangleBuffer[t] = triangleBuffer[t].ShiftedBy(cumulativeVertexCount);
