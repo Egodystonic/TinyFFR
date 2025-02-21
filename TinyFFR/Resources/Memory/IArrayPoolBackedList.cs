@@ -3,4 +3,4 @@
 
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
-public interface IArrayPoolBackedMap<TKey, TValue> : IDictionary<TKey, TValue>, IDisposable;
+public interface IArrayPoolBackedList<T> : IList<T>, IDisposable;

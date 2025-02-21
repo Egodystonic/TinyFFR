@@ -3,17 +3,17 @@
 
 namespace Egodystonic.TinyFFR;
 
-partial struct SphereDescriptor {
+partial struct Sphere {
 	public bool IsPhysicallyValid => _radius.IsPositiveAndFinite();
 
 	#region Scaling
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static SphereDescriptor operator *(SphereDescriptor descriptor, float scalar) => descriptor.ScaledBy(scalar);
+	public static Sphere operator *(Sphere descriptor, float scalar) => descriptor.ScaledBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static SphereDescriptor operator /(SphereDescriptor descriptor, float scalar) => new(descriptor.Radius / scalar);
+	public static Sphere operator /(Sphere descriptor, float scalar) => new(descriptor.Radius / scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static SphereDescriptor operator *(float scalar, SphereDescriptor descriptor) => descriptor.ScaledBy(scalar);
-	public SphereDescriptor ScaledBy(float scalar) => new(Radius * scalar);
+	public static Sphere operator *(float scalar, Sphere descriptor) => descriptor.ScaledBy(scalar);
+	public Sphere ScaledBy(float scalar) => new(Radius * scalar);
 	#endregion
 
 	#region Distance From / Containment (Location & Line-Like)
@@ -326,6 +326,6 @@ partial struct SphereDescriptor {
 	#endregion
 
 	#region Clamping and Interpolation
-	public static SphereDescriptor Interpolate(SphereDescriptor start, SphereDescriptor end, float distance) => new(Single.Lerp(start.Radius, end.Radius, distance));
+	public static Sphere Interpolate(Sphere start, Sphere end, float distance) => new(Single.Lerp(start.Radius, end.Radius, distance));
 	#endregion
 }

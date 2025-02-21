@@ -7,15 +7,15 @@ using System.Diagnostics.Metrics;
 
 namespace Egodystonic.TinyFFR;
 
-partial struct CuboidDescriptor : IIndependentAxisScalable<CuboidDescriptor> {
+partial struct Cuboid : IIndependentAxisScalable<Cuboid> {
 	public bool IsPhysicallyValid => _halfWidth.IsPositiveAndFinite() && _halfHeight.IsPositiveAndFinite() && _halfDepth.IsPositiveAndFinite();
 
 	#region With Methods
-	public CuboidDescriptor WithVolume(float newVolume) {
+	public Cuboid WithVolume(float newVolume) {
 		var diffCubeRoot = MathF.Cbrt(newVolume / Volume);
 		return FromHalfDimensions(HalfWidth * diffCubeRoot, HalfHeight * diffCubeRoot, HalfDepth * diffCubeRoot);
 	}
-	public CuboidDescriptor WithSurfaceArea(float newSurfaceArea) {
+	public Cuboid WithSurfaceArea(float newSurfaceArea) {
 		var diffSquareRoot = MathF.Sqrt(newSurfaceArea / SurfaceArea);
 		return FromHalfDimensions(HalfWidth * diffSquareRoot, HalfHeight * diffSquareRoot, HalfDepth * diffSquareRoot);
 	}
@@ -23,14 +23,14 @@ partial struct CuboidDescriptor : IIndependentAxisScalable<CuboidDescriptor> {
 
 	#region Scaling
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static CuboidDescriptor operator *(CuboidDescriptor descriptor, float scalar) => descriptor.ScaledBy(scalar);
+	public static Cuboid operator *(Cuboid descriptor, float scalar) => descriptor.ScaledBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static CuboidDescriptor operator /(CuboidDescriptor descriptor, float scalar) => descriptor.ScaledBy(1f / scalar);
+	public static Cuboid operator /(Cuboid descriptor, float scalar) => descriptor.ScaledBy(1f / scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static CuboidDescriptor operator *(float scalar, CuboidDescriptor descriptor) => descriptor.ScaledBy(scalar);
+	public static Cuboid operator *(float scalar, Cuboid descriptor) => descriptor.ScaledBy(scalar);
 
-	public CuboidDescriptor ScaledBy(float scalar) => FromHalfDimensions(HalfWidth * scalar, HalfHeight * scalar, HalfDepth * scalar);
-	public CuboidDescriptor ScaledBy(Vect vect) => FromHalfDimensions(HalfWidth * vect.X, HalfHeight * vect.Y, HalfDepth * vect.Z);
+	public Cuboid ScaledBy(float scalar) => FromHalfDimensions(HalfWidth * scalar, HalfHeight * scalar, HalfDepth * scalar);
+	public Cuboid ScaledBy(Vect vect) => FromHalfDimensions(HalfWidth * vect.X, HalfHeight * vect.Y, HalfDepth * vect.Z);
 	#endregion
 
 	#region Distance From / Containment (Location & Line-Like)
@@ -488,7 +488,7 @@ partial struct CuboidDescriptor : IIndependentAxisScalable<CuboidDescriptor> {
 	#endregion
 
 	#region Clamping and Interpolation
-	public static CuboidDescriptor Interpolate(CuboidDescriptor start, CuboidDescriptor end, float distance) {
+	public static Cuboid Interpolate(Cuboid start, Cuboid end, float distance) {
 		return FromHalfDimensions(
 			Single.Lerp(start.HalfWidth, end.HalfWidth, distance),
 			Single.Lerp(start.HalfHeight, end.HalfHeight, distance),

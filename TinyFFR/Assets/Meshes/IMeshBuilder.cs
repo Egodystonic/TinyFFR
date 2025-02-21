@@ -11,8 +11,8 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 public interface IMeshBuilder {
 	IMeshPolygonGroup AllocateNewPolygonGroup();
 
-	Mesh CreateMesh(CuboidDescriptor cuboidDesc, Transform2D? textureTransform = null, bool centreTextureOrigin = false, ReadOnlySpan<char> name = default) => CreateMesh(cuboidDesc, textureTransform ?? Transform2D.None, centreTextureOrigin, new MeshCreationConfig { Name = name });
-	Mesh CreateMesh(CuboidDescriptor cuboidDesc, Transform2D textureTransform, bool centreTextureOrigin, in MeshCreationConfig config) {
+	Mesh CreateMesh(Cuboid cuboidDesc, Transform2D? textureTransform = null, bool centreTextureOrigin = false, ReadOnlySpan<char> name = default) => CreateMesh(cuboidDesc, textureTransform ?? Transform2D.None, centreTextureOrigin, new MeshCreationConfig { Name = name });
+	Mesh CreateMesh(Cuboid cuboidDesc, Transform2D textureTransform, bool centreTextureOrigin, in MeshCreationConfig config) {
 		if (!cuboidDesc.IsPhysicallyValid) {
 			throw new ArgumentException("Given cuboid must be physically valid (all extents should be positive).", nameof(cuboidDesc));
 		}

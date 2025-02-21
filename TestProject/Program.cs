@@ -40,7 +40,7 @@ var display = factory.DisplayDiscoverer.Recommended ?? throw new ApplicationExce
 using var window = factory.WindowBuilder.CreateWindow(display, title: "William the Window");
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60, name: "Larry the Loop");
 using var camera = factory.CameraBuilder.CreateCamera(Location.Origin, name: "Carl the Camera");
-var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(1f), name: "Clive the Cuboid");
+var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f), name: "Clive the Cuboid");
 //using var tex = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.White, name: "Terry the Texture");
 var colorPattern = TexturePattern.ChequerboardBordered(
 	new ColorVect(1f, 1f, 1f), 
@@ -213,7 +213,7 @@ while (!loop.Input.UserQuitRequested) {
 	window.Title = (1000d / loop.IterateOnce().TotalMilliseconds).ToString("N0") + " FPS";
 	renderer.Render();
 
-	// var newMesh = factory.AssetLoader.MeshBuilder.CreateMesh(new CuboidDescriptor(1f), new(rotation: (float) loop.TotalIteratedTime.TotalSeconds * -47f), true, name: "Clive the Cuboid");
+	// var newMesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f), new(rotation: (float) loop.TotalIteratedTime.TotalSeconds * -47f), true, name: "Clive the Cuboid");
 	// instance.Mesh = newMesh;
 	// mesh.Dispose();
 	// mesh = newMesh;

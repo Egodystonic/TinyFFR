@@ -170,10 +170,12 @@ class DimensionConverterTest {
 	[Test]
 	public void ShouldCorrectlyImplementEquality() {
 		Assert.AreEqual(TestConverter, TestConverter);
+#pragma warning disable CS1718
 		// ReSharper disable EqualExpressionComparison
 		Assert.IsTrue(TestConverter == TestConverter);
 		Assert.IsFalse(TestConverter != TestConverter);
 		// ReSharper restore EqualExpressionComparison
+#pragma warning restore CS1718
 
 		var c = new DimensionConverter(Direction.Right);
 		Assert.AreNotEqual(c, TestConverter);

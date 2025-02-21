@@ -45,6 +45,7 @@ public static unsafe partial class TexturePattern {
 	static void FlipY(XYPair<int> dimensions, ref XYPair<int> xy) => xy = xy with { Y = dimensions.Y - (xy.Y + 1) };
 }
 
+#pragma warning disable CA1815 // "TexturePattern<T> should implement equality members" -- There's no reasonable equality comparison for two instances, function pointers can not be compared
 [InlineArray(ArgsLengthMax)]
 struct TexturePatternArgData { public const int ArgsLengthMax = 256; byte _; }
 public readonly unsafe struct TexturePattern<T> where T : unmanaged {
@@ -57,7 +58,7 @@ public readonly unsafe struct TexturePattern<T> where T : unmanaged {
 
 	internal T this[int x, int y] {
 		get {
-			if (_generationFunc == null) throw InvalidObjectException.InvalidDefault(typeof(TexturePattern<T>));
+			if (_generationFunc == null) throw InvalidObjectException.InvalidDefault<TexturePattern<T>>();
 			if (x < 0 || x >= _dimensions.X) throw new ArgumentOutOfRangeException(nameof(x));
 			if (y < 0 || y >= _dimensions.Y) throw new ArgumentOutOfRangeException(nameof(y));
 			if (_transform == null) return _generationFunc(_argsBuffer, _dimensions, new(x, y));
@@ -84,3 +85,4 @@ public readonly unsafe struct TexturePattern<T> where T : unmanaged {
 		_transform = transform;
 	}
 }
+#pragma warning restore CA1815

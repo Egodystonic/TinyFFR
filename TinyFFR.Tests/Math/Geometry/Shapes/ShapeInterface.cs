@@ -72,7 +72,7 @@ class ShapeInterfaceTest {
 			AssertMirrorMethod<TShape, BoundedRay>((a, b) => a.FastIntersectionWith(b));
 		}
 
-		AssertForConvexShape<SphereDescriptor>();
-		AssertForConvexShape<CuboidDescriptor>();
+		AssertForConvexShape<Sphere>();
+		AssertForConvexShape<Cuboid>();
 	}
 }

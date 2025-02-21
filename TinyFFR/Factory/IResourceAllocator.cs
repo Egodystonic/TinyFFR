@@ -20,6 +20,6 @@ public interface IResourceAllocator {
 	Memory<T> CreatePooledMemoryBuffer<T>(int numElements);
 	void ReturnPooledMemoryBuffer<T>(Memory<T> buffer);
 
-	IArrayPoolBackedVector<T> CreateNewArrayPoolBackedVector<T>(int? initialCapacity = null);
-	IArrayPoolBackedMap<TKey, TValue> CreateNewArrayPoolBackedMap<TKey, TValue>();
+	IArrayPoolBackedList<T> CreateNewArrayPoolBackedVector<T>(int? initialCapacity = null);
+	IArrayPoolBackedDictionary<TKey, TValue> CreateNewArrayPoolBackedMap<TKey, TValue>();
 }

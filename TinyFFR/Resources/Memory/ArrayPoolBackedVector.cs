@@ -5,7 +5,7 @@ using System.Buffers;
 
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
-sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedVector<T> {
+sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 	public struct Enumerator : IEnumerator<T> {
 		readonly ArrayPoolBackedVector<T> _owner;
 		int _curIndex;

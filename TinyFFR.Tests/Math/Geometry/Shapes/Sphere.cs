@@ -6,9 +6,9 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture]
-class SphereDescriptorTest {
+class SphereTest {
 	const float TestTolerance = 0.01f;
-	static readonly SphereDescriptor TestSphere = new(7.4f);
+	static readonly Sphere TestSphere = new(7.4f);
 
 	[SetUp]
 	public void SetUpTest() { }
@@ -31,27 +31,27 @@ class SphereDescriptorTest {
 	public void StaticFactoryMethodsShouldCorrectlyConstruct() {
 		// https://www.wolframalpha.com/input?i=volume%2C+surface+area%2C+circumference%2C+diameter+of+sphere+with+radius+7.4
 
-		AssertToleranceEquals(TestSphere, SphereDescriptor.FromDiameter(14.8f), TestTolerance);
-		AssertToleranceEquals(TestSphere, SphereDescriptor.FromCircumference(46.4956f), TestTolerance);
-		AssertToleranceEquals(TestSphere, SphereDescriptor.FromSurfaceArea(688.134f), TestTolerance);
-		AssertToleranceEquals(TestSphere, SphereDescriptor.FromVolume(1697.4f), TestTolerance);
-		AssertToleranceEquals(TestSphere, SphereDescriptor.FromRadiusSquared(7.4f * 7.4f), TestTolerance);
+		AssertToleranceEquals(TestSphere, Sphere.FromDiameter(14.8f), TestTolerance);
+		AssertToleranceEquals(TestSphere, Sphere.FromCircumference(46.4956f), TestTolerance);
+		AssertToleranceEquals(TestSphere, Sphere.FromSurfaceArea(688.134f), TestTolerance);
+		AssertToleranceEquals(TestSphere, Sphere.FromVolume(1697.4f), TestTolerance);
+		AssertToleranceEquals(TestSphere, Sphere.FromRadiusSquared(7.4f * 7.4f), TestTolerance);
 	}
 
 	[Test]
 	public void ShouldCorrectlyDeterminePhysicalValidity() {
-		Assert.AreEqual(true, new SphereDescriptor(1f).IsPhysicallyValid);
-		Assert.AreEqual(false, new SphereDescriptor(-1f).IsPhysicallyValid);
-		Assert.AreEqual(false, new SphereDescriptor(0f).IsPhysicallyValid);
-		Assert.AreEqual(false, new SphereDescriptor(Single.NaN).IsPhysicallyValid);
-		Assert.AreEqual(false, new SphereDescriptor(Single.PositiveInfinity).IsPhysicallyValid);
-		Assert.AreEqual(false, new SphereDescriptor(Single.NegativeInfinity).IsPhysicallyValid);
-		Assert.AreEqual(false, new SphereDescriptor(Single.NegativeZero).IsPhysicallyValid);
+		Assert.AreEqual(true, new Sphere(1f).IsPhysicallyValid);
+		Assert.AreEqual(false, new Sphere(-1f).IsPhysicallyValid);
+		Assert.AreEqual(false, new Sphere(0f).IsPhysicallyValid);
+		Assert.AreEqual(false, new Sphere(Single.NaN).IsPhysicallyValid);
+		Assert.AreEqual(false, new Sphere(Single.PositiveInfinity).IsPhysicallyValid);
+		Assert.AreEqual(false, new Sphere(Single.NegativeInfinity).IsPhysicallyValid);
+		Assert.AreEqual(false, new Sphere(Single.NegativeZero).IsPhysicallyValid);
 	}
 
 	[Test]
 	public void ShouldCorrectlyConvertToString() {
-		const string Expectation = "SphereDescriptor[Radius 7.4]";
+		const string Expectation = "Sphere[Radius 7.4]";
 		Assert.AreEqual(Expectation, TestSphere.ToString("N1", CultureInfo.InvariantCulture));
 		Span<char> dest = stackalloc char[Expectation.Length * 2];
 		TestSphere.TryFormat(dest, out var numCharsWritten, "N1", CultureInfo.InvariantCulture);
@@ -61,26 +61,26 @@ class SphereDescriptorTest {
 
 	[Test]
 	public void ShouldCorrectlyParse() {
-		const string Input = "SphereDescriptor[Radius 7.4]";
-		Assert.AreEqual(TestSphere, SphereDescriptor.Parse(Input, CultureInfo.InvariantCulture));
-		Assert.AreEqual(true, SphereDescriptor.TryParse(Input, CultureInfo.InvariantCulture, out var result));
+		const string Input = "Sphere[Radius 7.4]";
+		Assert.AreEqual(TestSphere, Sphere.Parse(Input, CultureInfo.InvariantCulture));
+		Assert.AreEqual(true, Sphere.TryParse(Input, CultureInfo.InvariantCulture, out var result));
 		Assert.AreEqual(TestSphere, result);
 	}
 
 	[Test]
 	public void ShouldCorrectlyConvertToAndFromSpan() {
-		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<SphereDescriptor>();
+		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<Sphere>();
 		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(TestSphere);
 		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestSphere, TestSphere.Radius);
 	}
 
 	[Test]
 	public void ShouldCorrectlyInterpolate() {
-		Assert.AreEqual(new SphereDescriptor(10f), SphereDescriptor.Interpolate(new(5f), new(15f), 0.5f));
-		Assert.AreEqual(new SphereDescriptor(5f), SphereDescriptor.Interpolate(new(5f), new(15f), 0f));
-		Assert.AreEqual(new SphereDescriptor(15f), SphereDescriptor.Interpolate(new(5f), new(15f), 1f));
-		Assert.AreEqual(new SphereDescriptor(20f), SphereDescriptor.Interpolate(new(5f), new(15f), 1.5f));
-		Assert.AreEqual(new SphereDescriptor(0f), SphereDescriptor.Interpolate(new(5f), new(15f), -0.5f));
+		Assert.AreEqual(new Sphere(10f), Sphere.Interpolate(new(5f), new(15f), 0.5f));
+		Assert.AreEqual(new Sphere(5f), Sphere.Interpolate(new(5f), new(15f), 0f));
+		Assert.AreEqual(new Sphere(15f), Sphere.Interpolate(new(5f), new(15f), 1f));
+		Assert.AreEqual(new Sphere(20f), Sphere.Interpolate(new(5f), new(15f), 1.5f));
+		Assert.AreEqual(new Sphere(0f), Sphere.Interpolate(new(5f), new(15f), -0.5f));
 	}
 
 	[Test]
@@ -88,19 +88,19 @@ class SphereDescriptorTest {
 		const int NumIterations = 10_000;
 		
 		for (var i = 0; i < NumIterations; ++i) {
-			var val = SphereDescriptor.Random(new SphereDescriptor(10f), new SphereDescriptor(20f));
+			var val = Sphere.Random(new Sphere(10f), new Sphere(20f));
 			Assert.GreaterOrEqual(val.Radius, 10f);
 			Assert.Less(val.Radius, 20f);
 
-			val = SphereDescriptor.Random();
-			Assert.GreaterOrEqual(val.Radius, SphereDescriptor.DefaultRandomMin);
-			Assert.Less(val.Radius, SphereDescriptor.DefaultRandomMax);
+			val = Sphere.Random();
+			Assert.GreaterOrEqual(val.Radius, Sphere.DefaultRandomMin);
+			Assert.Less(val.Radius, Sphere.DefaultRandomMax);
 		}
 	}
 
 	[Test]
 	public void ShouldCorrectlyScale() {
-		AssertToleranceEquals(new SphereDescriptor(7.4f * 3f), new SphereDescriptor(7.4f).ScaledBy(3f), TestTolerance);
+		AssertToleranceEquals(new Sphere(7.4f * 3f), new Sphere(7.4f).ScaledBy(3f), TestTolerance);
 	}
 
 	[Test]
@@ -110,8 +110,8 @@ class SphereDescriptorTest {
 		Assert.AreEqual(7.4f, TestSphere.GetCircleRadiusAtDistanceFromCenter(0f));
 		Assert.AreEqual(0f, TestSphere.GetCircleRadiusAtDistanceFromCenter(7.4f));
 		Assert.AreEqual(0f, TestSphere.GetCircleRadiusAtDistanceFromCenter(10f));
-		Assert.AreEqual(8.66025448f, new SphereDescriptor(10f).GetCircleRadiusAtDistanceFromCenter(5f), TestTolerance);
-		Assert.AreEqual(0.1410673f, new SphereDescriptor(1f).GetCircleRadiusAtDistanceFromCenter(0.99f), TestTolerance);
+		Assert.AreEqual(8.66025448f, new Sphere(10f).GetCircleRadiusAtDistanceFromCenter(5f), TestTolerance);
+		Assert.AreEqual(0.1410673f, new Sphere(1f).GetCircleRadiusAtDistanceFromCenter(0.99f), TestTolerance);
 	}
 
 	[Test]
@@ -611,7 +611,7 @@ class SphereDescriptorTest {
 	public void ShouldCorrectlyBeSplitByPlanes() {
 		Assert.AreEqual(false, TestSphere.TrySplit(new Plane(Direction.Up, (0f, 10f, 0f)), out _, out _));
 
-		Assert.AreEqual(true, new SphereDescriptor(10f).TrySplit(new Plane(Direction.Up, (0f, 5f, 0f)), out var circleCentrePoint, out var circleRadius));
+		Assert.AreEqual(true, new Sphere(10f).TrySplit(new Plane(Direction.Up, (0f, 5f, 0f)), out var circleCentrePoint, out var circleRadius));
 		Assert.AreEqual(8.66025448f, circleRadius, TestTolerance);
 		Assert.AreEqual(new Location(0f, 5f, 0f), circleCentrePoint);
 

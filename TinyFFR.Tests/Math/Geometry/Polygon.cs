@@ -163,7 +163,6 @@ class PolygonTest {
 	public unsafe void ShouldCorrectlyConvertTo2DPolygon() {
 		var buffer = new XYPair<float>[100];
 
-		static string PolyToString(Polygon p) => String.Join(", ", p.Vertices.ToArray().Select(v => v.ToString()));
 		static string Poly2DToString(Polygon2D p) => String.Join(", ", p.Vertices.ToArray().Select(v => v.ToString()));
 
 		// Because the conversion to 2D without a specific dimension converter has
