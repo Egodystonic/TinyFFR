@@ -5,6 +5,7 @@ using System;
 using System.Security;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Resources;
 using DisplayModeArray = Egodystonic.TinyFFR.Environment.Local.DisplayMode[];
 
 namespace Egodystonic.TinyFFR.Environment.Local;
@@ -17,8 +18,8 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 	readonly DisplayModeArray[] _displayModes;
 	readonly string[] _displayNames;
 	readonly Display[] _displays;
-	readonly DisplayHandle? _recommendedHandle;
-	readonly DisplayHandle? _primaryHandle;
+	readonly ResourceHandle<Display>? _recommendedHandle;
+	readonly ResourceHandle<Display>? _primaryHandle;
 	bool _isDisposed = false;
 
 	public ReadOnlySpan<Display> All => _isDisposed ? throw new ObjectDisposedException(nameof(IDisplayDiscoverer)) : _displays.AsSpan();
@@ -74,7 +75,7 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 		}
 	}
 
-	public DisplayMode GetHighestSupportedResolutionMode(DisplayHandle handle) {
+	public DisplayMode GetHighestSupportedResolutionMode(ResourceHandle<Display> handle) {
 		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		var modes = _displayModes[handle];
 		var result = modes[0];
@@ -88,7 +89,7 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 		}
 		return result;
 	}
-	public DisplayMode GetHighestSupportedRefreshRateMode(DisplayHandle handle) {
+	public DisplayMode GetHighestSupportedRefreshRateMode(ResourceHandle<Display> handle) {
 		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		var modes = _displayModes[handle];
 		var result = modes[0];
@@ -103,24 +104,24 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 		return result;
 	}
 
-	public bool GetIsPrimary(DisplayHandle handle) {
+	public bool GetIsPrimary(ResourceHandle<Display> handle) {
 		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		return handle == _primaryHandle;
 	}
-	public bool GetIsRecommended(DisplayHandle handle) {
+	public bool GetIsRecommended(ResourceHandle<Display> handle) {
 		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		return handle == _recommendedHandle;
 	}
 
-	public ReadOnlySpan<char> GetName(DisplayHandle handle) {
+	public ReadOnlySpan<char> GetName(ResourceHandle<Display> handle) {
 		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		return _displayNames[handle];
 	}
-	public ReadOnlySpan<DisplayMode> GetSupportedDisplayModes(DisplayHandle handle) {
+	public ReadOnlySpan<DisplayMode> GetSupportedDisplayModes(ResourceHandle<Display> handle) {
 		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		return _displayModes[handle];
 	}
-	public XYPair<int> GetCurrentResolution(DisplayHandle handle) {
+	public XYPair<int> GetCurrentResolution(ResourceHandle<Display> handle) {
 		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		GetDisplayResolution(
 			handle,
@@ -129,7 +130,7 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 		).ThrowIfFailure();
 		return (outWidth, outHeight);
 	}
-	public XYPair<int> GetGlobalPositionOffset(DisplayHandle handle) {
+	public XYPair<int> GetGlobalPositionOffset(ResourceHandle<Display> handle) {
 		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		GetDisplayPositionalOffset(
 			handle,
@@ -168,7 +169,7 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 	#endregion
 
 	#region Disposal
-	void ThrowIfDisposedOrUnrecognizedDisplay(DisplayHandle handle) {
+	void ThrowIfDisposedOrUnrecognizedDisplay(ResourceHandle<Display> handle) {
 		ObjectDisposedException.ThrowIf(_isDisposed, typeof(Display));
 		if (handle >= (nuint) _displays.Length) throw new InvalidOperationException("Given display was not created by this display discoverer.");
 	}
@@ -177,6 +178,6 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 		_isDisposed = true;
 	}
 
-	public bool IsValid(DisplayHandle handle) => !_isDisposed && handle < (nuint) _displays.Length;
+	public bool IsValid(ResourceHandle<Display> handle) => !_isDisposed && handle < (nuint) _displays.Length;
 	#endregion
 }

@@ -6,28 +6,28 @@ using System;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
-public readonly struct IndexBuffer : IDisposableResource<IndexBuffer, IndexBufferHandle, IIndexBufferImplProvider> {
-	readonly IndexBufferHandle _handle;
+public readonly struct IndexBuffer : IDisposableResource<IndexBuffer, IIndexBufferImplProvider> {
+	readonly ResourceHandle<IndexBuffer> _handle;
 	readonly IIndexBufferImplProvider _impl;
 
-	internal IndexBufferHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(IndexBuffer)) : _handle;
+	internal ResourceHandle<IndexBuffer> Handle => IsDisposed ? throw new ObjectDisposedException(nameof(IndexBuffer)) : _handle;
 	internal IIndexBufferImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<IndexBuffer>();
 
-	IIndexBufferImplProvider IResource<IndexBufferHandle, IIndexBufferImplProvider>.Implementation => Implementation;
-	IndexBufferHandle IResource<IndexBufferHandle, IIndexBufferImplProvider>.Handle => Handle;
+	IIndexBufferImplProvider IResource<IndexBuffer, IIndexBufferImplProvider>.Implementation => Implementation;
+	ResourceHandle<IndexBuffer> IResource<IndexBuffer>.Handle => Handle;
 
 	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(_handle);
 	}
 
-	internal IndexBuffer(IndexBufferHandle handle, IIndexBufferImplProvider impl) {
+	internal IndexBuffer(ResourceHandle<IndexBuffer> handle, IIndexBufferImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
 	}
 
-	static IndexBuffer IResource<IndexBuffer>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
-		return new IndexBuffer(rawHandle, impl as IIndexBufferImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
+	static IndexBuffer IResource<IndexBuffer>.CreateFromHandleAndImpl(ResourceHandle<IndexBuffer> handle, IResourceImplProvider impl) {
+		return new IndexBuffer(handle, impl as IIndexBufferImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 
 	#region Disposal

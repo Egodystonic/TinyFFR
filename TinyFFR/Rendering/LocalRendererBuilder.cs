@@ -5,6 +5,7 @@ using System;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.World;
 using static System.Formats.Asn1.AsnWriter;
@@ -20,7 +21,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		[FieldOffset(UnionRenderTargetOffset)]
 		public readonly Window AsWindow;
 
-		public bool IsWindow => TypeHandle == WindowHandle.TypeHandle;
+		public bool IsWindow => TypeHandle == ResourceHandle<Window>.TypeHandle;
 
 		public XYPair<int> ViewportOffset {
 			get {
@@ -36,19 +37,19 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		}
 
 		public RenderTargetUnion(Window window) {
-			TypeHandle = WindowHandle.TypeHandle;
+			TypeHandle = ResourceHandle<Window>.TypeHandle;
 			AsWindow = window;
 		}
 	}
 	
 	readonly record struct WindowData(Window Window, UIntPtr RendererPtr, UIntPtr SwapChainPtr);
 	readonly record struct ViewportData(UIntPtr Handle, XYPair<uint> CurrentSize);
-	readonly record struct RendererData(RendererHandle Handle, Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport);
+	readonly record struct RendererData(ResourceHandle<Renderer> Handle, Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport);
 
 	const string DefaultRendererName = "Unnamed Renderer";
 
 	readonly ArrayPoolBackedMap<Window, WindowData> _loadedWindows = new();
-	readonly ArrayPoolBackedMap<RendererHandle, RendererData> _loadedRenderers = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Renderer>, RendererData> _loadedRenderers = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	nuint _previousHandleId = 0U;
 	bool _isDisposed = false;
@@ -80,7 +81,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		var viewportData = new ViewportData(viewDescriptorHandle, XYPair<uint>.Zero);
 
 		_previousHandleId++;
-		var handle = new RendererHandle(_previousHandleId);
+		var handle = new ResourceHandle<Renderer>(_previousHandleId);
 		_loadedRenderers.Add(handle, new(handle, scene, camera, new(window), viewportData));
 
 		_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
@@ -93,7 +94,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		return result;
 	}
 
-	public void Render(RendererHandle handle) {
+	public void Render(ResourceHandle<Renderer> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		
 		var viewportData = _loadedRenderers[handle].Viewport;
@@ -114,7 +115,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		).ThrowIfFailure();
 	}
 
-	public ReadOnlySpan<char> GetName(RendererHandle handle) {
+	public ReadOnlySpan<char> GetName(ResourceHandle<Renderer> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _globals.GetResourceName(handle.Ident, DefaultRendererName);
 	}
@@ -157,14 +158,14 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	#endregion
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	Renderer HandleToInstance(RendererHandle h) => new(h, this);
+	Renderer HandleToInstance(ResourceHandle<Renderer> h) => new(h, this);
 
 	#region Disposal
-	public bool IsDisposed(RendererHandle handle) => _isDisposed || !_loadedRenderers.ContainsKey(handle);
-	public void Dispose(RendererHandle handle) {
+	public bool IsDisposed(ResourceHandle<Renderer> handle) => _isDisposed || !_loadedRenderers.ContainsKey(handle);
+	public void Dispose(ResourceHandle<Renderer> handle) {
 		if (IsDisposed(handle)) return;
 
-		static void DisposeWindowData(LocalRendererBuilder @this, RendererHandle handle, Window window) {
+		static void DisposeWindowData(LocalRendererBuilder @this, ResourceHandle<Renderer> handle, Window window) {
 			@this._globals.DependencyTracker.DeregisterDependency(@this.HandleToInstance(handle), window);
 			foreach (var rendererData in @this._loadedRenderers.Values) {
 				if (rendererData.RenderTarget.IsWindow && rendererData.RenderTarget.AsWindow == window) return;
@@ -207,7 +208,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		}
 	}
 
-	void ThrowIfThisOrHandleIsDisposed(RendererHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Renderer));
+	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<Renderer> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Renderer));
 	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion
 }

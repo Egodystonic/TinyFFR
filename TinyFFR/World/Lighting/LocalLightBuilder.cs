@@ -6,6 +6,7 @@ using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
@@ -14,7 +15,7 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 	readonly record struct LightData(LightType Type);
 	const string DefaultModelInstanceName = "Unnamed Light";
 	readonly LocalFactoryGlobalObjectGroup _globals;
-	readonly ArrayPoolBackedMap<LightHandle, LightData> _activeLightMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Light>, LightData> _activeLightMap = new();
 	bool _isDisposed = false;
 
 	public LocalLightBuilder(LocalFactoryGlobalObjectGroup globals) {
@@ -28,7 +29,7 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 
 		AllocatePointLight(out var handle).ThrowIfFailure();
 		_activeLightMap.Add(handle, new(LightType.PointLight));
-		_globals.StoreResourceNameIfNotEmpty(new LightHandle(handle).Ident, config.Name);
+		_globals.StoreResourceNameIfNotEmpty(new ResourceHandle<Light>(handle).Ident, config.Name);
 		SetLightPosition(handle, config.InitialPosition.ToVector3());
 		SetLightColor(handle, config.InitialColor.ToVector3());
 		SetPointLightLumens(handle, config.InitialBrightness);
@@ -36,66 +37,66 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 		return HandleToInstance<PointLight>(handle);
 	}
 
-	public LightType GetType(LightHandle handle) {
+	public LightType GetType(ResourceHandle<Light> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeLightMap[handle].Type;
 	}
 
-	public Location GetPosition(LightHandle handle) {
+	public Location GetPosition(ResourceHandle<Light> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetLightPosition(handle, out var result).ThrowIfFailure();
 		return Location.FromVector3(result);
 	}
-	public void SetPosition(LightHandle handle, Location newPosition) {
+	public void SetPosition(ResourceHandle<Light> handle, Location newPosition) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		SetLightPosition(handle, newPosition.ToVector3()).ThrowIfFailure();
 	}
-	public void TranslateBy(LightHandle handle, Vect translation) {
+	public void TranslateBy(ResourceHandle<Light> handle, Vect translation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetLightPosition(handle, out var result).ThrowIfFailure();
 		SetLightPosition(handle, result + translation.ToVector3()).ThrowIfFailure();
 	}
 
-	public ColorVect GetColor(LightHandle handle) {
+	public ColorVect GetColor(ResourceHandle<Light> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetLightColor(handle, out var result);
 		return ColorVect.FromVector3(result);
 	}
-	public void SetColor(LightHandle handle, ColorVect newColor) {
+	public void SetColor(ResourceHandle<Light> handle, ColorVect newColor) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		SetLightColor(handle, newColor.ToVector3()).ThrowIfFailure();
 	}
 
-	public float GetPointLightLumens(LightHandle handle) {
+	public float GetPointLightLumens(ResourceHandle<Light> handle) {
 		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.PointLight);
 		GetPointLightLumens(handle, out var result).ThrowIfFailure();
 		return result;
 	}
-	public void SetPointLightLumens(LightHandle handle, float newLumens) {
+	public void SetPointLightLumens(ResourceHandle<Light> handle, float newLumens) {
 		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.PointLight);
 		LocalLightBuilder.SetPointLightLumens(handle, newLumens).ThrowIfFailure();
 	}
 
-	public float GetPointLightMaxIlluminationRadius(LightHandle handle) {
+	public float GetPointLightMaxIlluminationRadius(ResourceHandle<Light> handle) {
 		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.PointLight);
 		GetPointLightMaxIlluminationRadius(handle, out var result).ThrowIfFailure();
 		return result;
 	}
-	public void SetPointLightMaxIlluminationRadius(LightHandle handle, float newRadius) {
+	public void SetPointLightMaxIlluminationRadius(ResourceHandle<Light> handle, float newRadius) {
 		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.PointLight);
 		LocalLightBuilder.SetPointLightMaxIlluminationRadius(handle, newRadius).ThrowIfFailure();
 	}
 
-	public ReadOnlySpan<char> GetName(LightHandle handle) {
+	public ReadOnlySpan<char> GetName(ResourceHandle<Light> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _globals.GetResourceName(handle.Ident, DefaultModelInstanceName);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	Light HandleToInstance(LightHandle h) => new(h, this);
+	Light HandleToInstance(ResourceHandle<Light> h) => new(h, this);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	T HandleToInstance<T>(LightHandle h) where T : ILight<T> => T.FromBaseLight(HandleToInstance(h));
+	T HandleToInstance<T>(ResourceHandle<Light> h) where T : ILight<T> => T.FromBaseLight(HandleToInstance(h));
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_point_light")]
@@ -158,10 +159,10 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 	#endregion
 
 	#region Disposal
-	public bool IsDisposed(LightHandle handle) => _isDisposed || !_activeLightMap.ContainsKey(handle);
-	public void Dispose(LightHandle handle) => Dispose(handle, removeFromMap: true);
+	public bool IsDisposed(ResourceHandle<Light> handle) => _isDisposed || !_activeLightMap.ContainsKey(handle);
+	public void Dispose(ResourceHandle<Light> handle) => Dispose(handle, removeFromMap: true);
 
-	void Dispose(LightHandle handle, bool removeFromMap) {
+	void Dispose(ResourceHandle<Light> handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		DisposeLight(handle).ThrowIfFailure();
@@ -179,14 +180,14 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 		}
 	}
 
-	void ThrowIfThisOrHandleIsDisposedOrIncorrectType(LightHandle handle, LightType type) {
+	void ThrowIfThisOrHandleIsDisposedOrIncorrectType(ResourceHandle<Light> handle, LightType type) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var actualType = _activeLightMap[handle].Type;
 		if (actualType == type) return;
 
 		throw new InvalidOperationException($"{handle} is valid but expected it to be a {type}; it was instead a {actualType}.");
 	}
-	void ThrowIfThisOrHandleIsDisposed(LightHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Light));
+	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<Light> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Light));
 	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion
 }

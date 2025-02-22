@@ -9,15 +9,15 @@ using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
-public readonly struct Window : IDisposableResource<Window, WindowHandle, IWindowImplProvider>, IRenderTarget {
-	readonly WindowHandle _handle;
+public readonly struct Window : IDisposableResource<Window, IWindowImplProvider>, IRenderTarget {
+	readonly ResourceHandle<Window> _handle;
 	readonly IWindowImplProvider _impl;
 
 	internal IWindowImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Window>();
-	internal WindowHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Window)) : _handle;
+	internal ResourceHandle<Window> Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Window)) : _handle;
 
-	IWindowImplProvider IResource<WindowHandle, IWindowImplProvider>.Implementation => Implementation;
-	WindowHandle IResource<WindowHandle, IWindowImplProvider>.Handle => Handle;
+	IWindowImplProvider IResource<Window, IWindowImplProvider>.Implementation => Implementation;
+	ResourceHandle<Window> IResource<Window>.Handle => Handle;
 
 	public ReadOnlySpan<char> Title {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -77,14 +77,14 @@ public readonly struct Window : IDisposableResource<Window, WindowHandle, IWindo
 	XYPair<int> IRenderTarget.ViewportOffset => XYPair<int>.Zero;
 	XYPair<uint> IRenderTarget.ViewportDimensions => Size.Cast<uint>();
 
-	internal Window(WindowHandle handle, IWindowImplProvider impl) {
+	internal Window(ResourceHandle<Window> handle, IWindowImplProvider impl) {
 		ArgumentNullException.ThrowIfNull(impl);
 		_handle = handle;
 		_impl = impl;
 	}
 
-	static Window IResource<Window>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
-		return new Window(rawHandle, impl as IWindowImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
+	static Window IResource<Window>.CreateFromHandleAndImpl(ResourceHandle<Window> handle, IResourceImplProvider impl) {
+		return new Window(handle, impl as IWindowImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 
 	#region Disposal

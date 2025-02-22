@@ -6,28 +6,28 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
-public readonly struct Material : IDisposableResource<Material, MaterialHandle, IMaterialImplProvider> {
-	readonly MaterialHandle _handle;
+public readonly struct Material : IDisposableResource<Material, IMaterialImplProvider> {
+	readonly ResourceHandle<Material> _handle;
 	readonly IMaterialImplProvider _impl;
 
-	internal MaterialHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Material)) : _handle;
+	internal ResourceHandle<Material> Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Material)) : _handle;
 	internal IMaterialImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Material>();
 
-	IMaterialImplProvider IResource<MaterialHandle, IMaterialImplProvider>.Implementation => Implementation;
-	MaterialHandle IResource<MaterialHandle, IMaterialImplProvider>.Handle => Handle;
+	IMaterialImplProvider IResource<Material, IMaterialImplProvider>.Implementation => Implementation;
+	ResourceHandle<Material> IResource<Material>.Handle => Handle;
 
 	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(_handle);
 	}
 
-	internal Material(MaterialHandle handle, IMaterialImplProvider impl) {
+	internal Material(ResourceHandle<Material> handle, IMaterialImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
 	}
 
-	static Material IResource<Material>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
-		return new Material(rawHandle, impl as IMaterialImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
+	static Material IResource<Material>.CreateFromHandleAndImpl(ResourceHandle<Material> handle, IResourceImplProvider impl) {
+		return new Material(handle, impl as IMaterialImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 
 	#region Disposal

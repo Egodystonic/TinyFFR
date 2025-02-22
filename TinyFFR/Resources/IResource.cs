@@ -9,17 +9,22 @@ namespace Egodystonic.TinyFFR.Resources;
 
 readonly record struct ResourceIdent(nint TypeHandle, nuint RawResourceHandle);
 readonly record struct ResourceStub(ResourceIdent Ident, IResourceImplProvider Implementation) : IDisposableResource {
-	public ReadOnlySpan<char> Name => Implementation.RawHandleGetName(Ident.RawResourceHandle);
-	public bool IsDisposed => (Implementation as IDisposableResourceImplProvider)?.RawHandleIsDisposed(Ident.RawResourceHandle) ?? false;
-	public void Dispose() => (Implementation as IDisposableResourceImplProvider)?.RawHandleDispose(Ident.RawResourceHandle);
-	public nuint Handle => Ident.RawResourceHandle;
+	public ReadOnlySpan<char> Name => Implementation.GetName(Ident.RawResourceHandle);
+	public bool IsDisposed => (Implementation as IDisposableResourceImplProvider)?.IsDisposed(Ident.RawResourceHandle) ?? false;
+	public void Dispose() => (Implementation as IDisposableResourceImplProvider)?.Dispose(Ident.RawResourceHandle);
+	public ResourceHandle Handle => Ident.RawResourceHandle;
 	public nint TypeHandle => Ident.TypeHandle;
+	public ResourceHandle<TResource> CreateTypedHandleWithTypeCheck<TResource>() where TResource : IResource<TResource> {
+		return ResourceHandle<TResource>.TypeHandle == TypeHandle 
+			? (ResourceHandle<TResource>) Handle
+			: throw new InvalidOperationException($"Resource was not of type {typeof(TResource).Name}.");
+	}
 }
 
 public unsafe interface IResource : IStringSpanNameEnabled {
 	internal static readonly int SerializedLengthBytes = sizeof(GCHandle) + sizeof(nuint);
 
-	internal nuint Handle { get; }
+	internal ResourceHandle Handle { get; }
 	internal IResourceImplProvider Implementation { get; }
 	internal ResourceIdent Ident { get; }
 	internal ResourceStub AsStub => new(Ident, Implementation);
@@ -36,33 +41,25 @@ public unsafe interface IResource : IStringSpanNameEnabled {
 	internal static nuint ReadHandleFromSerializedResource(ReadOnlySpan<byte> src) => BinaryPrimitives.ReadUIntPtrLittleEndian(src[sizeof(GCHandle)..]);
 }
 public interface IResource<TSelf> : IResource, IEquatable<TSelf> where TSelf : IResource<TSelf> {
-	internal static abstract TSelf RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl);
-	internal static virtual TSelf RecreateFromStub(ResourceStub stub) => TSelf.RecreateFromRawHandleAndImpl(stub.Handle, stub.Implementation);
-}
-public interface IResource<out THandle, out TImpl> : IResource where THandle : unmanaged, IResourceHandle<THandle> where TImpl : class, IResourceImplProvider {
-	internal new THandle Handle { get; }
-	internal new TImpl Implementation { get; }
-
-	nuint IResource.Handle => Handle.AsInteger;
-	IResourceImplProvider IResource.Implementation => Implementation;
+	internal new ResourceHandle<TSelf> Handle { get; }
+	ResourceHandle IResource.Handle => Handle;
 	ResourceIdent IResource.Ident => Handle.Ident;
 
-	internal static (THandle Handle, TImpl Implementation) ReadResource(ReadOnlySpan<byte> src) {
-		var impl = (ReadGcHandleFromSerializedResource(src).Target as TImpl) ?? throw new InvalidOperationException($"Unexpected null implementation.");
-		var handle = THandle.CreateFromInteger(ReadHandleFromSerializedResource(src));
-		return (handle, impl);
-	}
+	internal static abstract TSelf CreateFromHandleAndImpl(ResourceHandle<TSelf> handle, IResourceImplProvider impl);
+	internal static virtual TSelf CreateFromStub(ResourceStub stub) => TSelf.CreateFromHandleAndImpl(stub.CreateTypedHandleWithTypeCheck<TSelf>(), stub.Implementation);
 }
-public interface IResource<TSelf, out THandle, out TImpl>
-	: IResource<TSelf>, IResource<THandle, TImpl> 
+public interface IResource<TSelf, out TImpl> : IResource<TSelf>
 	where TSelf : IResource<TSelf> 
-	where THandle : unmanaged, IResourceHandle<THandle> 
 	where TImpl : class, IResourceImplProvider {
+
+	internal new TImpl Implementation { get; }
+	IResourceImplProvider IResource.Implementation => Implementation;
+
 	internal static TSelf RecreateFromResourceStub(ResourceStub stub) {
-		if (stub.TypeHandle != THandle.TypeHandle) {
-			throw new InvalidOperationException($"Type handles do not match. Target type = {typeof(THandle).Name}; target type handle = {THandle.TypeHandle}; given type handle = {stub.TypeHandle}.");
+		if (stub.TypeHandle != ResourceHandle<TSelf>.TypeHandle) {
+			throw new InvalidOperationException($"Type handles do not match. Target type = {typeof(TSelf).Name}; target type handle = {ResourceHandle<TSelf>.TypeHandle}; given type handle = {stub.TypeHandle}.");
 		}
-		return TSelf.RecreateFromRawHandleAndImpl(stub.Handle, stub.Implementation);
+		return TSelf.CreateFromHandleAndImpl(stub.CreateTypedHandleWithTypeCheck<TSelf>(), stub.Implementation);
 	}
 }
 
@@ -72,8 +69,4 @@ public interface IResource<TSelf, out THandle, out TImpl>
 
 public interface IDisposableResource : IResource, IDisposable;
 public interface IDisposableResource<TSelf> : IDisposableResource, IResource<TSelf> where TSelf : IDisposableResource<TSelf>;
-public interface IDisposableResource<out THandle, out TImpl> : IDisposableResource, IResource<THandle, TImpl> where THandle : unmanaged, IResourceHandle<THandle> where TImpl : class, IDisposableResourceImplProvider;
-public interface IDisposableResource<TSelf, out THandle, out TImpl>: IDisposableResource<TSelf>, IDisposableResource<THandle, TImpl>, IResource<TSelf, THandle, TImpl>
-	where TSelf : IDisposableResource<TSelf>
-	where THandle : unmanaged, IResourceHandle<THandle>
-	where TImpl : class, IDisposableResourceImplProvider;
+public interface IDisposableResource<TSelf, out TImpl>: IDisposableResource<TSelf>, IResource<TSelf, TImpl> where TSelf : IDisposableResource<TSelf> where TImpl : class, IDisposableResourceImplProvider;

@@ -6,10 +6,10 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.World;
 
-public interface ISceneImplProvider : IDisposableResourceImplProvider<SceneHandle> {
-	void Add(SceneHandle handle, ModelInstance modelInstance);
-	void Remove(SceneHandle handle, ModelInstance modelInstance);
+public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
+	void Add(ResourceHandle<Scene> handle, ModelInstance modelInstance);
+	void Remove(ResourceHandle<Scene> handle, ModelInstance modelInstance);
 
-	void Add(SceneHandle handle, Light light);
-	void Remove(SceneHandle handle, Light light);
+	void Add(ResourceHandle<Scene> handle, Light light);
+	void Remove(ResourceHandle<Scene> handle, Light light);
 }

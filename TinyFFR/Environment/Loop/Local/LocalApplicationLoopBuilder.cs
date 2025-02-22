@@ -9,6 +9,7 @@ using System.Threading;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Input.Local;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
@@ -26,7 +27,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 
 	const string DefaultLoopName = "Unnamed Loop";
 	readonly LocalFactoryGlobalObjectGroup _globals;
-	readonly ArrayPoolBackedMap<ApplicationLoopHandle, HandleTrackingData> _handleDataMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ApplicationLoop>, HandleTrackingData> _handleDataMap = new();
 #pragma warning disable CA2213 // Wants us to dispose _latestInputRetriever, but this is taken care of by the LocalInputManager
 	readonly LocalLatestInputRetriever _latestInputRetriever;
 #pragma warning restore CA2213
@@ -45,19 +46,19 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		config.ThrowIfInvalid();
 
 		var curTime = Stopwatch.GetTimestamp();
-		var handle = (ApplicationLoopHandle) _nextLoopHandleIndex;
+		var handle = (ResourceHandle<ApplicationLoop>) _nextLoopHandleIndex;
 		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, config.IterationShouldRefreshGlobalInputStates));
 		_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.BaseConfig.Name);
 		_nextLoopHandleIndex++;
 		return new(handle, this);
 	}
 
-	public ILatestInputRetriever GetInputStateProvider(ApplicationLoopHandle handle) {
+	public ILatestInputRetriever GetInputStateProvider(ResourceHandle<ApplicationLoop> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _latestInputRetriever;
 	}
 
-	TimeSpan GetWaitTimeUntilNextFrameStart(ApplicationLoopHandle handle) {
+	TimeSpan GetWaitTimeUntilNextFrameStart(ResourceHandle<ApplicationLoop> handle) {
 		var timeSinceLastIteration = Stopwatch.GetElapsedTime(_handleDataMap[handle].PreviousIterationStartTimestamp);
 		var result = _handleDataMap[handle].FrameInterval - timeSinceLastIteration;
 		return result > TimeSpan.Zero ? result : TimeSpan.Zero;
@@ -66,7 +67,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		if (shouldIterateInput) _latestInputRetriever.IterateSystemWideInput();
 	}
 
-	public TimeSpan IterateOnce(ApplicationLoopHandle handle) {
+	public TimeSpan IterateOnce(ResourceHandle<ApplicationLoop> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var waitTime = GetWaitTimeUntilNextFrameStart(handle);
@@ -86,7 +87,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		};
 		return dt;
 	}
-	public bool TryIterateOnce(ApplicationLoopHandle handle, out TimeSpan outDeltaTime) {
+	public bool TryIterateOnce(ResourceHandle<ApplicationLoop> handle, out TimeSpan outDeltaTime) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		if (GetWaitTimeUntilNextFrameStart(handle) > TimeSpan.Zero) {
@@ -106,20 +107,20 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		return true;
 	}
 
-	public TimeSpan GetTimeUntilNextIteration(ApplicationLoopHandle handle) {
+	public TimeSpan GetTimeUntilNextIteration(ResourceHandle<ApplicationLoop> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return GetWaitTimeUntilNextFrameStart(handle);
 	}
-	public TimeSpan GetTotalIteratedTime(ApplicationLoopHandle handle) {
+	public TimeSpan GetTotalIteratedTime(ResourceHandle<ApplicationLoop> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _handleDataMap[handle].TotalIteratedTime;
 	}
-	public void SetTotalIteratedTime(ApplicationLoopHandle handle, TimeSpan newValue) {
+	public void SetTotalIteratedTime(ResourceHandle<ApplicationLoop> handle, TimeSpan newValue) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_handleDataMap[handle] = _handleDataMap[handle] with { TotalIteratedTime = newValue };
 	}
 
-	public ReadOnlySpan<char> GetName(ApplicationLoopHandle handle) {
+	public ReadOnlySpan<char> GetName(ResourceHandle<ApplicationLoop> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _globals.GetResourceName(handle.Ident, DefaultLoopName);
 	}
@@ -127,16 +128,16 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 	public override string ToString() => _isDisposed ? "TinyFFR Local Application Loop Builder [Disposed]" : "TinyFFR Local Application Loop Builder";
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	ApplicationLoop HandleToInstance(ApplicationLoopHandle h) => new(h, this);
+	ApplicationLoop HandleToInstance(ResourceHandle<ApplicationLoop> h) => new(h, this);
 
 	#region Disposal
-	public void Dispose(ApplicationLoopHandle handle) {
+	public void Dispose(ResourceHandle<ApplicationLoop> handle) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		_handleDataMap.Remove(handle);
 	}
-	public bool IsDisposed(ApplicationLoopHandle handle) {
+	public bool IsDisposed(ResourceHandle<ApplicationLoop> handle) {
 		return _isDisposed || !_handleDataMap.ContainsKey(handle);
 	}
 
@@ -152,7 +153,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		}
 	}
 
-	void ThrowIfThisOrHandleIsDisposed(ApplicationLoopHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(ApplicationLoop));
+	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<ApplicationLoop> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(ApplicationLoop));
 	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion
 }

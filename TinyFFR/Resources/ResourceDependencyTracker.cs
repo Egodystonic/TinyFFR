@@ -80,7 +80,7 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 		throw ResourceDependencyException.CreateForPrematureDisposal(
 			targetPotentiallyInUse.GetType().Name,
 			targetPotentiallyInUse.Name.ToString(),
-			dependents.Select(sr => sr.Implementation.RawHandleGetName(sr.Ident.RawResourceHandle).ToString()).ToArray()
+			dependents.Select(sr => sr.Implementation.GetName(sr.Ident.RawResourceHandle).ToString()).ToArray()
 		);
 	}
 
@@ -127,87 +127,81 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 		return GetMapEnumerationItem(@this._dependentsToTargetsMap, input.ArgumentIdent, index);
 	}
 
-	public TypedReferentIterator<EnumerationInput, TDependent> GetDependentsOfGivenType<TTarget, TDependent, THandle, TImpl>(TTarget targetPotentiallyInUse) 
+	public TypedReferentIterator<EnumerationInput, TDependent> GetDependentsOfGivenType<TTarget, TDependent, TImpl>(TTarget targetPotentiallyInUse) 
 		where TTarget : IResource
-		where TDependent : IResource<TDependent, THandle, TImpl>
-		where THandle : unmanaged, IResourceHandle<THandle>
+		where TDependent : IResource<TDependent, TImpl>
 		where TImpl : class, IResourceImplProvider {
 		ThrowIfDisposed();
 
 		return new TypedReferentIterator<EnumerationInput, TDependent>(
 			new(this, targetPotentiallyInUse.Ident),
 			_stateVersion,
-			&GetDependentsEnumerationCount<TDependent, THandle, TImpl>,
+			&GetDependentsEnumerationCount<TDependent, TImpl>,
 			&GetStateVersion,
-			&GetDependentsEnumerationItem<TDependent, THandle, TImpl>
+			&GetDependentsEnumerationItem<TDependent, TImpl>
 		);
 	}
-	public TDependent GetNthDependentOfGivenType<TTarget, TDependent, THandle, TImpl>(TTarget target, int index) 
+	public TDependent GetNthDependentOfGivenType<TTarget, TDependent, TImpl>(TTarget target, int index) 
 		where TTarget : IResource 
-		where TDependent : IResource<TDependent, THandle, TImpl> 
-		where THandle : unmanaged, IResourceHandle<THandle> where TImpl : class, IResourceImplProvider {
-		return GetDependentsEnumerationItem<TDependent, THandle, TImpl>(new(this, target.Ident), index);
+		where TDependent : IResource<TDependent, TImpl> 
+		where TImpl : class, IResourceImplProvider {
+		return GetDependentsEnumerationItem<TDependent, TImpl>(new(this, target.Ident), index);
 	}
-	static int GetDependentsEnumerationCount<TDependent, THandle, TImpl>(EnumerationInput input)
-		where TDependent : IResource<TDependent, THandle, TImpl>
-		where THandle : unmanaged, IResourceHandle<THandle>
+	static int GetDependentsEnumerationCount<TDependent, TImpl>(EnumerationInput input)
+		where TDependent : IResource<TDependent, TImpl>
 		where TImpl : class, IResourceImplProvider {
 		var @this = (input.Tracker as ResourceDependencyTracker)!;
 		@this.ThrowIfDisposed();
-		return GetMapEnumerationCount<THandle>(@this._targetsToDependentsMap, input.ArgumentIdent);
+		return GetMapEnumerationCount<TDependent>(@this._targetsToDependentsMap, input.ArgumentIdent);
 	}
-	static TDependent GetDependentsEnumerationItem<TDependent, THandle, TImpl>(EnumerationInput input, int index)
-		where TDependent : IResource<TDependent, THandle, TImpl>
-		where THandle : unmanaged, IResourceHandle<THandle>
+	static TDependent GetDependentsEnumerationItem<TDependent, TImpl>(EnumerationInput input, int index)
+		where TDependent : IResource<TDependent, TImpl>
 		where TImpl : class, IResourceImplProvider {
 		var @this = (input.Tracker as ResourceDependencyTracker)!;
 		@this.ThrowIfDisposed();
-		return IResource<TDependent, THandle, TImpl>.RecreateFromResourceStub(GetMapEnumerationItem<THandle>(@this._targetsToDependentsMap, input.ArgumentIdent, index));
+		return IResource<TDependent, TImpl>.RecreateFromResourceStub(GetMapEnumerationItem<TDependent>(@this._targetsToDependentsMap, input.ArgumentIdent, index));
 	}
-	public TypedReferentIterator<EnumerationInput, TTarget> GetTargetsOfGivenType<TDependent, TTarget, THandle, TImpl>(TDependent dependent)
+	public TypedReferentIterator<EnumerationInput, TTarget> GetTargetsOfGivenType<TDependent, TTarget, TImpl>(TDependent dependent)
 		where TDependent : IResource
-		where TTarget : IResource<TTarget, THandle, TImpl>
-		where THandle : unmanaged, IResourceHandle<THandle>
+		where TTarget : IResource<TTarget, TImpl>
 		where TImpl : class, IResourceImplProvider {
 		ThrowIfDisposed();
 
 		return new TypedReferentIterator<EnumerationInput, TTarget>(
 			new(this, dependent.Ident),
 			_stateVersion,
-			&GetTargetsEnumerationCount<TTarget, THandle, TImpl>,
+			&GetTargetsEnumerationCount<TTarget, TImpl>,
 			&GetStateVersion,
-			&GetTargetsEnumerationItem<TTarget, THandle, TImpl>
+			&GetTargetsEnumerationItem<TTarget, TImpl>
 		);
 	}
-	public TTarget GetNthTargetOfGivenType<TDependent, TTarget, THandle, TImpl>(TDependent dependent, int index)
+	public TTarget GetNthTargetOfGivenType<TDependent, TTarget, TImpl>(TDependent dependent, int index)
 		where TDependent : IResource
-		where TTarget : IResource<TTarget, THandle, TImpl>
-		where THandle : unmanaged, IResourceHandle<THandle> where TImpl : class, IResourceImplProvider {
-		return GetTargetsEnumerationItem<TTarget, THandle, TImpl>(new(this, dependent.Ident), index);
+		where TTarget : IResource<TTarget, TImpl>
+		where TImpl : class, IResourceImplProvider {
+		return GetTargetsEnumerationItem<TTarget, TImpl>(new(this, dependent.Ident), index);
 	}
-	static int GetTargetsEnumerationCount<TTarget, THandle, TImpl>(EnumerationInput input)
-		where TTarget : IResource<TTarget, THandle, TImpl>
-		where THandle : unmanaged, IResourceHandle<THandle>
+	static int GetTargetsEnumerationCount<TTarget, TImpl>(EnumerationInput input)
+		where TTarget : IResource<TTarget, TImpl>
 		where TImpl : class, IResourceImplProvider {
 		var @this = (input.Tracker as ResourceDependencyTracker)!;
 		@this.ThrowIfDisposed();
-		return GetMapEnumerationCount<THandle>(@this._dependentsToTargetsMap, input.ArgumentIdent);
+		return GetMapEnumerationCount<TTarget>(@this._dependentsToTargetsMap, input.ArgumentIdent);
 	}
-	static TTarget GetTargetsEnumerationItem<TTarget, THandle, TImpl>(EnumerationInput input, int index)
-		where TTarget : IResource<TTarget, THandle, TImpl>
-		where THandle : unmanaged, IResourceHandle<THandle>
+	static TTarget GetTargetsEnumerationItem<TTarget, TImpl>(EnumerationInput input, int index)
+		where TTarget : IResource<TTarget, TImpl>
 		where TImpl : class, IResourceImplProvider {
 		var @this = (input.Tracker as ResourceDependencyTracker)!;
 		@this.ThrowIfDisposed();
-		return IResource<TTarget, THandle, TImpl>.RecreateFromResourceStub(GetMapEnumerationItem<THandle>(@this._dependentsToTargetsMap, input.ArgumentIdent, index));
+		return IResource<TTarget, TImpl>.RecreateFromResourceStub(GetMapEnumerationItem<TTarget>(@this._dependentsToTargetsMap, input.ArgumentIdent, index));
 	}
 
 	static int GetMapEnumerationCount(StubMap map, ResourceIdent key) => map.TryGetValue(key, out var values) ? values.Count : 0;
-	static int GetMapEnumerationCount<THandle>(StubMap map, ResourceIdent key) where THandle : IResourceHandle<THandle> {
+	static int GetMapEnumerationCount<TResource>(StubMap map, ResourceIdent key) where TResource : IResource<TResource> {
 		if (!map.TryGetValue(key, out var values)) return 0;
 		var result = 0;
 		for (var i = 0; i < values.Count; ++i) {
-			if (values[i].TypeHandle == THandle.TypeHandle) ++result;
+			if (values[i].TypeHandle == ResourceHandle<TResource>.TypeHandle) ++result;
 		}
 		return result;
 	}
@@ -224,20 +218,20 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 		if (!map.TryGetValue(key, out var values) || values.Count <= index) throw CreateException();
 		return values[index];
 	}
-	static ResourceStub GetMapEnumerationItem<THandle>(StubMap map, ResourceIdent key, int index) where THandle : IResourceHandle<THandle> {
+	static ResourceStub GetMapEnumerationItem<TResource>(StubMap map, ResourceIdent key, int index) where TResource : IResource<TResource> {
 		InvalidOperationException CreateException() {
 			return new InvalidOperationException(
 				"Invalid enumeration state. Tracked resource was probably modified while enumeration was ongoing. " +
 				"If you see this error it may indicate a concurrency issue or a bug in TinyFFR. Debug information: " +
-				$"Key = {key}; Index = {index}; map.ContainsKey(key) = {map.ContainsKey(key)}; THandle = {typeof(THandle).Name}" +
-				$"{(map.TryGetValue(key, out var v) ? $"; map[key].Count = {v.Count}; map[key].Count(r => r.TypeHandle == THandle.TypeHandle) = {v.Count(r => r.TypeHandle == THandle.TypeHandle)}" : "")}."
+				$"Key = {key}; Index = {index}; map.ContainsKey(key) = {map.ContainsKey(key)}; TResource = {typeof(TResource).Name}" +
+				$"{(map.TryGetValue(key, out var v) ? $"; map[key].Count = {v.Count}; map[key].Count(r => r.TypeHandle == THandle.TypeHandle) = {v.Count(r => r.TypeHandle == ResourceHandle<TResource>.TypeHandle)}" : "")}."
 			);
 		}
 
 		if (!map.TryGetValue(key, out var values)) throw CreateException();
 		var curIndex = 0;
 		foreach (var value in values) {
-			if (value.TypeHandle != THandle.TypeHandle) continue;
+			if (value.TypeHandle != ResourceHandle<TResource>.TypeHandle) continue;
 			if (curIndex == index) return value;
 			++curIndex;
 		}

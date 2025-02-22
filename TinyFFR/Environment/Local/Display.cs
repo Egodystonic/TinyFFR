@@ -8,15 +8,15 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
-public readonly struct Display : IResource<Display, DisplayHandle, IDisplayImplProvider> {
-	readonly DisplayHandle _handle;
+public readonly struct Display : IResource<Display, IDisplayImplProvider> {
+	readonly ResourceHandle<Display> _handle;
 	readonly IDisplayImplProvider _impl;
 
-	internal DisplayHandle Handle => Implementation.IsValid(_handle) ? _handle : throw new ObjectDisposedException(nameof(Display));
+	internal ResourceHandle<Display> Handle => Implementation.IsValid(_handle) ? _handle : throw new ObjectDisposedException(nameof(Display));
 	internal IDisplayImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Display>();
 
-	IDisplayImplProvider IResource<DisplayHandle, IDisplayImplProvider>.Implementation => Implementation;
-	DisplayHandle IResource<DisplayHandle, IDisplayImplProvider>.Handle => Handle;
+	IDisplayImplProvider IResource<Display, IDisplayImplProvider>.Implementation => Implementation;
+	ResourceHandle<Display> IResource<Display>.Handle => Handle;
 
 	public bool IsPrimary {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -51,14 +51,14 @@ public readonly struct Display : IResource<Display, DisplayHandle, IDisplayImplP
 		get => Implementation.GetGlobalPositionOffset(_handle);
 	}
 
-	internal Display(DisplayHandle handle, IDisplayImplProvider impl) {
+	internal Display(ResourceHandle<Display> handle, IDisplayImplProvider impl) {
 		ArgumentNullException.ThrowIfNull(impl);
 		_handle = handle;
 		_impl = impl;
 	}
 
-	static Display IResource<Display>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
-		return new Display(rawHandle, impl as IDisplayImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
+	static Display IResource<Display>.CreateFromHandleAndImpl(ResourceHandle<Display> handle, IResourceImplProvider impl) {
+		return new Display(handle, impl as IDisplayImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 
 	internal XYPair<int> TranslateDisplayLocalWindowPositionToGlobal(XYPair<int> displayLocalPosition) => displayLocalPosition + GlobalPositionOffset;

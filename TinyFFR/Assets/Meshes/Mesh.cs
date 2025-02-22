@@ -6,15 +6,15 @@ using System;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
-public readonly struct Mesh : IDisposableResource<Mesh, MeshHandle, IMeshImplProvider> {
-	readonly MeshHandle _handle;
+public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
+	readonly ResourceHandle<Mesh> _handle;
 	readonly IMeshImplProvider _impl;
 
-	internal MeshHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Mesh)) : _handle;
+	internal ResourceHandle<Mesh> Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Mesh)) : _handle;
 	internal IMeshImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Mesh>();
 
-	IMeshImplProvider IResource<MeshHandle, IMeshImplProvider>.Implementation => Implementation;
-	MeshHandle IResource<MeshHandle, IMeshImplProvider>.Handle => Handle;
+	IMeshImplProvider IResource<Mesh, IMeshImplProvider>.Implementation => Implementation;
+	ResourceHandle<Mesh> IResource<Mesh>.Handle => Handle;
 
 	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -26,13 +26,13 @@ public readonly struct Mesh : IDisposableResource<Mesh, MeshHandle, IMeshImplPro
 		get => Implementation.GetBufferData(_handle);
 	}
 
-	internal Mesh(MeshHandle handle, IMeshImplProvider impl) {
+	internal Mesh(ResourceHandle<Mesh> handle, IMeshImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
 	}
 
-	static Mesh IResource<Mesh>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
-		return new Mesh(rawHandle, impl as IMeshImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
+	static Mesh IResource<Mesh>.CreateFromHandleAndImpl(ResourceHandle<Mesh> handle, IResourceImplProvider impl) {
+		return new Mesh(handle, impl as IMeshImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 
 	#region Disposal

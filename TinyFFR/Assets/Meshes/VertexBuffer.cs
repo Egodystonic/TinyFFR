@@ -6,28 +6,28 @@ using System;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
-public readonly struct VertexBuffer : IDisposableResource<VertexBuffer, VertexBufferHandle, IVertexBufferImplProvider> {
-	readonly VertexBufferHandle _handle;
+public readonly struct VertexBuffer : IDisposableResource<VertexBuffer, IVertexBufferImplProvider> {
+	readonly ResourceHandle<VertexBuffer> _handle;
 	readonly IVertexBufferImplProvider _impl;
 
-	internal VertexBufferHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(VertexBuffer)) : _handle;
+	internal ResourceHandle<VertexBuffer> Handle => IsDisposed ? throw new ObjectDisposedException(nameof(VertexBuffer)) : _handle;
 	internal IVertexBufferImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<VertexBuffer>();
 
-	IVertexBufferImplProvider IResource<VertexBufferHandle, IVertexBufferImplProvider>.Implementation => Implementation;
-	VertexBufferHandle IResource<VertexBufferHandle, IVertexBufferImplProvider>.Handle => Handle;
+	IVertexBufferImplProvider IResource<VertexBuffer, IVertexBufferImplProvider>.Implementation => Implementation;
+	ResourceHandle<VertexBuffer> IResource<VertexBuffer>.Handle => Handle;
 
 	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(_handle);
 	}
 
-	internal VertexBuffer(VertexBufferHandle handle, IVertexBufferImplProvider impl) {
+	internal VertexBuffer(ResourceHandle<VertexBuffer> handle, IVertexBufferImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
 	}
 
-	static VertexBuffer IResource<VertexBuffer>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
-		return new VertexBuffer(rawHandle, impl as IVertexBufferImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
+	static VertexBuffer IResource<VertexBuffer>.CreateFromHandleAndImpl(ResourceHandle<VertexBuffer> handle, IResourceImplProvider impl) {
+		return new VertexBuffer(handle, impl as IVertexBufferImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 
 	#region Disposal

@@ -8,20 +8,20 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.World;
 
-public interface ILightImplProvider : IDisposableResourceImplProvider<LightHandle> {
-	LightType GetType(LightHandle handle);
+public interface ILightImplProvider : IDisposableResourceImplProvider<Light> {
+	LightType GetType(ResourceHandle<Light> handle);
 
-	Location GetPosition(LightHandle handle);
-	void SetPosition(LightHandle handle, Location newPosition);
+	Location GetPosition(ResourceHandle<Light> handle);
+	void SetPosition(ResourceHandle<Light> handle, Location newPosition);
 
-	ColorVect GetColor(LightHandle handle);
-	void SetColor(LightHandle handle, ColorVect newColor);
+	ColorVect GetColor(ResourceHandle<Light> handle);
+	void SetColor(ResourceHandle<Light> handle, ColorVect newColor);
 
-	float GetPointLightLumens(LightHandle handle);
-	void SetPointLightLumens(LightHandle handle, float newLumens);
+	float GetPointLightLumens(ResourceHandle<Light> handle);
+	void SetPointLightLumens(ResourceHandle<Light> handle, float newLumens);
 
-	float GetPointLightMaxIlluminationRadius(LightHandle handle);
-	void SetPointLightMaxIlluminationRadius(LightHandle handle, float newRadius);
+	float GetPointLightMaxIlluminationRadius(ResourceHandle<Light> handle);
+	void SetPointLightMaxIlluminationRadius(ResourceHandle<Light> handle, float newRadius);
 
-	void TranslateBy(LightHandle handle, Vect translation);
+	void TranslateBy(ResourceHandle<Light> handle, Vect translation);
 }

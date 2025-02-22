@@ -6,6 +6,7 @@ using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
@@ -13,7 +14,7 @@ namespace Egodystonic.TinyFFR.World;
 sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IDisposable {
 	const string DefaultModelInstanceName = "Unnamed Model Instance";
 	readonly LocalFactoryGlobalObjectGroup _globals;
-	readonly ArrayPoolBackedMap<ModelInstanceHandle, Transform> _activeInstanceMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, Transform> _activeInstanceMap = new();
 	bool _isDisposed = false;
 
 	public LocalObjectBuilder(LocalFactoryGlobalObjectGroup globals) {
@@ -35,82 +36,82 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 		).ThrowIfFailure();
 		var result = HandleToInstance(handle);
 		_activeInstanceMap.Add(handle, config.InitialTransform);
-		_globals.StoreResourceNameIfNotEmpty(new ModelInstanceHandle(handle).Ident, config.Name);
+		_globals.StoreResourceNameIfNotEmpty(new ResourceHandle<ModelInstance>(handle).Ident, config.Name);
 		_globals.DependencyTracker.RegisterDependency(result, mesh);
 		_globals.DependencyTracker.RegisterDependency(result, material);
 		return result;
 	}
 
-	void UpdateTransformAndMatrix(ModelInstanceHandle handle, Transform newTransform) {
+	void UpdateTransformAndMatrix(ResourceHandle<ModelInstance> handle, Transform newTransform) {
 		SetModelInstanceWorldMatrix(handle, newTransform.ToMatrix()).ThrowIfFailure();
 		_activeInstanceMap[handle] = newTransform;
 	}
-	public Transform GetTransform(ModelInstanceHandle handle) {
+	public Transform GetTransform(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeInstanceMap[handle];
 	}
-	public void SetTransform(ModelInstanceHandle handle, Transform newTransform) {
+	public void SetTransform(ResourceHandle<ModelInstance> handle, Transform newTransform) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		UpdateTransformAndMatrix(handle, newTransform);
 	}
 
-	public Location GetPosition(ModelInstanceHandle handle) {
+	public Location GetPosition(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeInstanceMap[handle].Translation.AsLocation();
 	}
-	public void SetPosition(ModelInstanceHandle handle, Location newPosition) {
+	public void SetPosition(ResourceHandle<ModelInstance> handle, Location newPosition) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle] with { Translation = newPosition.AsVect() });
 	}
 
-	public Rotation GetRotation(ModelInstanceHandle handle) {
+	public Rotation GetRotation(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeInstanceMap[handle].Rotation;
 	}
-	public void SetRotation(ModelInstanceHandle handle, Rotation newRotation) {
+	public void SetRotation(ResourceHandle<ModelInstance> handle, Rotation newRotation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle] with { Rotation = newRotation });
 	}
 
-	public Vect GetScaling(ModelInstanceHandle handle) {
+	public Vect GetScaling(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeInstanceMap[handle].Scaling;
 	}
-	public void SetScaling(ModelInstanceHandle handle, Vect newScaling) {
+	public void SetScaling(ResourceHandle<ModelInstance> handle, Vect newScaling) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle] with { Scaling = newScaling });
 	}
 
-	public void TranslateBy(ModelInstanceHandle handle, Vect translation) {
+	public void TranslateBy(ResourceHandle<ModelInstance> handle, Vect translation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithAdditionalTranslation(translation));
 	}
-	public void RotateBy(ModelInstanceHandle handle, Rotation rotation) {
+	public void RotateBy(ResourceHandle<ModelInstance> handle, Rotation rotation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithAdditionalRotation(rotation));
 	}
-	public void ScaleBy(ModelInstanceHandle handle, float scalar) {
+	public void ScaleBy(ResourceHandle<ModelInstance> handle, float scalar) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithScalingMultipliedBy(scalar));
 	}
-	public void ScaleBy(ModelInstanceHandle handle, Vect vect) {
+	public void ScaleBy(ResourceHandle<ModelInstance> handle, Vect vect) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithScalingMultipliedBy(vect));
 	}
-	public void AdjustScaleBy(ModelInstanceHandle handle, float scalar) {
+	public void AdjustScaleBy(ResourceHandle<ModelInstance> handle, float scalar) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithScalingAdjustedBy(scalar));
 	}
-	public void AdjustScaleBy(ModelInstanceHandle handle, Vect vect) {
+	public void AdjustScaleBy(ResourceHandle<ModelInstance> handle, Vect vect) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithScalingAdjustedBy(vect));
 	}
 
-	public Mesh GetMesh(ModelInstanceHandle handle) {
+	public Mesh GetMesh(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.DependencyTracker.GetNthTargetOfGivenType<ModelInstance, Mesh, MeshHandle, IMeshImplProvider>(HandleToInstance(handle), 0);
+		return _globals.DependencyTracker.GetNthTargetOfGivenType<ModelInstance, Mesh, IMeshImplProvider>(HandleToInstance(handle), 0);
 	}
-	public void SetMesh(ModelInstanceHandle handle, Mesh newMesh) {
+	public void SetMesh(ResourceHandle<ModelInstance> handle, Mesh newMesh) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var meshBufferData = newMesh.BufferData;
 		SetModelInstanceMesh(
@@ -124,11 +125,11 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMesh);
 	}
 
-	public Material GetMaterial(ModelInstanceHandle handle) {
+	public Material GetMaterial(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.DependencyTracker.GetTargetsOfGivenType<ModelInstance, Material, MaterialHandle, IMaterialImplProvider>(HandleToInstance(handle))[0];
+		return _globals.DependencyTracker.GetTargetsOfGivenType<ModelInstance, Material, IMaterialImplProvider>(HandleToInstance(handle))[0];
 	}
-	public void SetMaterial(ModelInstanceHandle handle, Material newMaterial) {
+	public void SetMaterial(ResourceHandle<ModelInstance> handle, Material newMaterial) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		SetModelInstanceMaterial(
 			handle,
@@ -138,13 +139,13 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMaterial);
 	}
 
-	public ReadOnlySpan<char> GetName(ModelInstanceHandle handle) {
+	public ReadOnlySpan<char> GetName(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _globals.GetResourceName(handle.Ident, DefaultModelInstanceName);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	ModelInstance HandleToInstance(ModelInstanceHandle h) => new(h, this);
+	ModelInstance HandleToInstance(ResourceHandle<ModelInstance> h) => new(h, this);
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_model_instance")]
@@ -187,10 +188,10 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 	#endregion
 
 	#region Disposal
-	public bool IsDisposed(ModelInstanceHandle handle) => _isDisposed || !_activeInstanceMap.ContainsKey(handle);
-	public void Dispose(ModelInstanceHandle handle) => Dispose(handle, removeFromMap: true);
+	public bool IsDisposed(ResourceHandle<ModelInstance> handle) => _isDisposed || !_activeInstanceMap.ContainsKey(handle);
+	public void Dispose(ResourceHandle<ModelInstance> handle) => Dispose(handle, removeFromMap: true);
 
-	void Dispose(ModelInstanceHandle handle, bool removeFromMap) {
+	void Dispose(ResourceHandle<ModelInstance> handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
@@ -209,7 +210,7 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 		}
 	}
 
-	void ThrowIfThisOrHandleIsDisposed(ModelInstanceHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(ModelInstance));
+	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<ModelInstance> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(ModelInstance));
 	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion
 }

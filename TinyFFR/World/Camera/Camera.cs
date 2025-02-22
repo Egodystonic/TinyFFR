@@ -6,20 +6,20 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.World;
 
-public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICameraImplProvider>, IPositionedSceneObject, IOrientedSceneObject {
+public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>, IPositionedSceneObject, IOrientedSceneObject {
 	public static readonly Angle FieldOfViewMin = Angle.Zero;
 	public static readonly Angle FieldOfViewMax = Angle.FullCircle;
 	public static readonly float NearPlaneDistanceMin = 1E-5f;
 	public static readonly float NearFarPlaneDistanceRatioMax = 1E6f;
 
-	readonly CameraHandle _handle;
+	readonly ResourceHandle<Camera> _handle;
 	readonly ICameraImplProvider _impl;
 
 	internal ICameraImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Camera>();
-	internal CameraHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Camera)) : _handle;
+	internal ResourceHandle<Camera> Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Camera)) : _handle;
 
-	ICameraImplProvider IResource<CameraHandle, ICameraImplProvider>.Implementation => Implementation;
-	CameraHandle IResource<CameraHandle, ICameraImplProvider>.Handle => Handle;
+	ICameraImplProvider IResource<Camera, ICameraImplProvider>.Implementation => Implementation;
+	ResourceHandle<Camera> IResource<Camera>.Handle => Handle;
 
 	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -94,13 +94,13 @@ public readonly struct Camera : IDisposableResource<Camera, CameraHandle, ICamer
 		set => ViewDirection = Direction.Forward * value;
 	}
 
-	internal Camera(CameraHandle handle, ICameraImplProvider impl) {
+	internal Camera(ResourceHandle<Camera> handle, ICameraImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
 	}
 
-	static Camera IResource<Camera>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
-		return new Camera(rawHandle, impl as ICameraImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
+	static Camera IResource<Camera>.CreateFromHandleAndImpl(ResourceHandle<Camera> handle, IResourceImplProvider impl) {
+		return new Camera(handle, impl as ICameraImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

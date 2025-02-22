@@ -5,6 +5,7 @@ using Egodystonic.TinyFFR.Factory.Local;
 using System.Runtime.InteropServices;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Environment.Input;
 
 // TODO make this a little better. Maybe make it a little framework and ignore the actual "meat" file
 NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
@@ -224,4 +225,6 @@ while (!loop.Input.UserQuitRequested) {
 	light.Color = light.Color.WithHueAdjustedBy(0.5f);
 	light.Position = instance.Position + (((instance.Position >> camera.Position) * 1.2f) * ((MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 0.8f) * 45f) % Direction.Down));
 	light.Position += Direction.Up * MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 1f) * 3.5f;
+
+	if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) window.Size += (100, 100);
 }

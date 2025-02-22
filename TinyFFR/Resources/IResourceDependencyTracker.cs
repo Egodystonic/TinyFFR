@@ -11,24 +11,20 @@ interface IResourceDependencyTracker {
 	void ThrowForPrematureDisposalIfTargetHasDependents<TTarget>(TTarget targetPotentiallyInUse) where TTarget : IResource;
 	TypedReferentIterator<EnumerationInput, ResourceStub> GetDependents<TTarget>(TTarget targetPotentiallyInUse) where TTarget : IResource;
 	TypedReferentIterator<EnumerationInput, ResourceStub> GetTargets<TDependent>(TDependent dependent) where TDependent : IResource;
-	TypedReferentIterator<EnumerationInput, TDependent> GetDependentsOfGivenType<TTarget, TDependent, THandle, TImpl>(TTarget targetPotentiallyInUse)
+	TypedReferentIterator<EnumerationInput, TDependent> GetDependentsOfGivenType<TTarget, TDependent, TImpl>(TTarget targetPotentiallyInUse)
 		where TTarget : IResource
-		where TDependent : IResource<TDependent, THandle, TImpl>
-		where THandle : unmanaged, IResourceHandle<THandle>
+		where TDependent : IResource<TDependent, TImpl>
 		where TImpl : class, IResourceImplProvider;
-	TypedReferentIterator<EnumerationInput, TTarget> GetTargetsOfGivenType<TDependent, TTarget, THandle, TImpl>(TDependent dependent)
+	TypedReferentIterator<EnumerationInput, TTarget> GetTargetsOfGivenType<TDependent, TTarget, TImpl>(TDependent dependent)
 		where TDependent : IResource
-		where TTarget : IResource<TTarget, THandle, TImpl>
-		where THandle : unmanaged, IResourceHandle<THandle>
+		where TTarget : IResource<TTarget, TImpl>
 		where TImpl : class, IResourceImplProvider;
-	TDependent GetNthDependentOfGivenType<TTarget, TDependent, THandle, TImpl>(TTarget target, int index)
+	TDependent GetNthDependentOfGivenType<TTarget, TDependent, TImpl>(TTarget target, int index)
 		where TTarget : IResource
-		where TDependent : IResource<TDependent, THandle, TImpl>
-		where THandle : unmanaged, IResourceHandle<THandle>
+		where TDependent : IResource<TDependent, TImpl>
 		where TImpl : class, IResourceImplProvider;
-	TTarget GetNthTargetOfGivenType<TDependent, TTarget, THandle, TImpl>(TDependent dependent, int index)
+	TTarget GetNthTargetOfGivenType<TDependent, TTarget, TImpl>(TDependent dependent, int index)
 		where TDependent : IResource
-		where TTarget : IResource<TTarget, THandle, TImpl>
-		where THandle : unmanaged, IResourceHandle<THandle>
+		where TTarget : IResource<TTarget, TImpl>
 		where TImpl : class, IResourceImplProvider;
 }

@@ -27,9 +27,9 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	const string DefaultNormalMapName = "Default Normal Map";
 	const string DefaultOrmMapName = "Default Orm Map";
 	readonly TextureImplProvider _textureImplProvider;
-	readonly ArrayPoolBackedMap<TextureHandle, TextureData> _loadedTextures = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Texture>, TextureData> _loadedTextures = new();
 	readonly ArrayPoolBackedMap<string, UIntPtr> _loadedShaderPackages = new();
-	readonly ArrayPoolBackedVector<MaterialHandle> _activeMaterials = new();
+	readonly ArrayPoolBackedVector<ResourceHandle<Material>> _activeMaterials = new();
 	readonly FixedByteBufferPool _shaderResourceBufferPool;
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly Lazy<Texture> _defaultColorMap;
@@ -44,10 +44,10 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		public TextureImplProvider(LocalMaterialBuilder owner) => _owner = owner;
 
-		public XYPair<uint> GetDimensions(TextureHandle handle) => _owner.GetDimensions(handle);
-		public ReadOnlySpan<char> GetName(TextureHandle handle) => _owner.GetName(handle);
-		public bool IsDisposed(TextureHandle handle) => _owner.IsDisposed(handle);
-		public void Dispose(TextureHandle handle) => _owner.Dispose(handle);
+		public XYPair<uint> GetDimensions(ResourceHandle<Texture> handle) => _owner.GetDimensions(handle);
+		public ReadOnlySpan<char> GetName(ResourceHandle<Texture> handle) => _owner.GetName(handle);
+		public bool IsDisposed(ResourceHandle<Texture> handle) => _owner.IsDisposed(handle);
+		public void Dispose(ResourceHandle<Texture> handle) => _owner.Dispose(handle);
 		public override string ToString() => _owner.ToString();
 	}
 
@@ -144,7 +144,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 				throw new InvalidOperationException($"Unknown or unsupported texel type '{typeof(TTexel)}' (Type property '{TTexel.Type}').");
 		}
 
-		var handle = (TextureHandle) outHandle;
+		var handle = (ResourceHandle<Texture>) outHandle;
 		_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
 		_loadedTextures.Add(handle, new(((uint) config.Width, (uint) config.Height)));
 		return HandleToInstance(handle);
@@ -188,7 +188,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			shaderPackageHandle,
 			out var outHandle
 		).ThrowIfFailure();
-		var handle = (MaterialHandle) outHandle;
+		var handle = (ResourceHandle<Material>) outHandle;
 
 		_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
 		_activeMaterials.Add(handle);
@@ -221,16 +221,16 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		return result;
 	}
 
-	public XYPair<uint> GetDimensions(TextureHandle handle) {
+	public XYPair<uint> GetDimensions(ResourceHandle<Texture> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _loadedTextures[handle].Dimensions;
 	}
 
-	public ReadOnlySpan<char> GetName(TextureHandle handle) {
+	public ReadOnlySpan<char> GetName(ResourceHandle<Texture> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _globals.GetResourceName(handle.Ident, DefaultTextureName);
 	}
-	public ReadOnlySpan<char> GetName(MaterialHandle handle) {
+	public ReadOnlySpan<char> GetName(ResourceHandle<Material> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _globals.GetResourceName(handle.Ident, DefaultMaterialName);
 	}
@@ -314,19 +314,19 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	#endregion
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	Texture HandleToInstance(TextureHandle h) => new(h, _textureImplProvider);
+	Texture HandleToInstance(ResourceHandle<Texture> h) => new(h, _textureImplProvider);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	Material HandleToInstance(MaterialHandle h) => new(h, this);
+	Material HandleToInstance(ResourceHandle<Material> h) => new(h, this);
 
 	public override string ToString() => _isDisposed ? "TinyFFR Local Material Builder [Disposed]" : "TinyFFR Local Material Builder";
 
 	#region Disposal
-	public bool IsDisposed(TextureHandle handle) => _isDisposed || !_loadedTextures.ContainsKey(handle);
-	public bool IsDisposed(MaterialHandle handle) => _isDisposed || !_activeMaterials.Contains(handle);
+	public bool IsDisposed(ResourceHandle<Texture> handle) => _isDisposed || !_loadedTextures.ContainsKey(handle);
+	public bool IsDisposed(ResourceHandle<Material> handle) => _isDisposed || !_activeMaterials.Contains(handle);
 
-	public void Dispose(TextureHandle handle) => Dispose(handle, removeFromCollection: true);
-	void Dispose(TextureHandle handle, bool removeFromCollection) {
+	public void Dispose(ResourceHandle<Texture> handle) => Dispose(handle, removeFromCollection: true);
+	void Dispose(ResourceHandle<Texture> handle, bool removeFromCollection) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		DisposeTexture(handle).ThrowIfFailure();
@@ -334,8 +334,8 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		if (removeFromCollection) _loadedTextures.Remove(handle);
 	}
 
-	public void Dispose(MaterialHandle handle) => Dispose(handle, removeFromCollection: true);
-	void Dispose(MaterialHandle handle, bool removeFromCollection) {
+	public void Dispose(ResourceHandle<Material> handle) => Dispose(handle, removeFromCollection: true);
+	void Dispose(ResourceHandle<Material> handle, bool removeFromCollection) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
@@ -361,8 +361,8 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		}
 	}
 
-	void ThrowIfThisOrHandleIsDisposed(TextureHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Texture));
-	void ThrowIfThisOrHandleIsDisposed(MaterialHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Material));
+	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<Texture> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Texture));
+	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<Material> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Material));
 	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion
 }

@@ -4,6 +4,7 @@
 using System;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
@@ -11,10 +12,10 @@ namespace Egodystonic.TinyFFR.World;
 sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisposable {
 	const string DefaultSceneName = "Unnamed Scene";
 
-	readonly ArrayPoolBackedVector<SceneHandle> _activeSceneHandles = new();
-	readonly ArrayPoolBackedMap<SceneHandle, ArrayPoolBackedVector<ModelInstance>> _modelInstanceMap = new();
+	readonly ArrayPoolBackedVector<ResourceHandle<Scene>> _activeSceneHandles = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedVector<ModelInstance>> _modelInstanceMap = new();
 	readonly ObjectPool<ArrayPoolBackedVector<ModelInstance>> _modelInstanceVectorPool;
-	readonly ArrayPoolBackedMap<SceneHandle, ArrayPoolBackedVector<Light>> _lightMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedVector<Light>> _lightMap = new();
 	readonly ObjectPool<ArrayPoolBackedVector<Light>> _lightVectorPool;
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
@@ -40,18 +41,18 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		_modelInstanceMap.Add(handle, _modelInstanceVectorPool.Rent());
 		_lightMap.Add(handle, _lightVectorPool.Rent());
 		
-		_globals.StoreResourceNameIfNotEmpty(new SceneHandle(handle).Ident, config.Name);
+		_globals.StoreResourceNameIfNotEmpty(new ResourceHandle<Scene>(handle).Ident, config.Name);
 		
 		return HandleToInstance(handle);
 	}
 
-	public ReadOnlySpan<char> GetName(SceneHandle handle) {
+	public ReadOnlySpan<char> GetName(ResourceHandle<Scene> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _globals.GetResourceName(handle.Ident, DefaultSceneName);
 	}
 
 	#region Model Instance
-	public void Add(SceneHandle handle, ModelInstance modelInstance) {
+	public void Add(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var instanceVector = _modelInstanceMap[handle];
 		if (instanceVector.Contains(modelInstance)) return;
@@ -65,7 +66,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), modelInstance);
 	}
 
-	public void Remove(SceneHandle handle, ModelInstance modelInstance) {
+	public void Remove(ResourceHandle<Scene> handle, ModelInstance modelInstance) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var instanceVector = _modelInstanceMap[handle];
 		if (!instanceVector.Remove(modelInstance)) return;
@@ -80,7 +81,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	#endregion
 
 	#region Light
-	public void Add(SceneHandle handle, Light light) {
+	public void Add(ResourceHandle<Scene> handle, Light light) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var instanceVector = _lightMap[handle];
 		if (instanceVector.Contains(light)) return;
@@ -94,7 +95,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), light);
 	}
 
-	public void Remove(SceneHandle handle, Light light) {
+	public void Remove(ResourceHandle<Scene> handle, Light light) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var instanceVector = _lightMap[handle];
 		if (!instanceVector.Remove(light)) return;
@@ -145,7 +146,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	#endregion
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	Scene HandleToInstance(SceneHandle h) => new(h, this);
+	Scene HandleToInstance(ResourceHandle<Scene> h) => new(h, this);
 
 	#region Disposal
 	public void Dispose() {
@@ -166,9 +167,9 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		}
 	}
 
-	public bool IsDisposed(SceneHandle handle) => _isDisposed || !_activeSceneHandles.Contains(handle);
+	public bool IsDisposed(ResourceHandle<Scene> handle) => _isDisposed || !_activeSceneHandles.Contains(handle);
 
-	public void Dispose(SceneHandle handle) {
+	public void Dispose(ResourceHandle<Scene> handle) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
@@ -183,7 +184,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		_activeSceneHandles.Remove(handle);
 	}
 
-	void ThrowIfThisOrHandleIsDisposed(SceneHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Scene));
+	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<Scene> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Scene));
 	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion
 }

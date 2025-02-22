@@ -6,11 +6,11 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Environment;
 
-public interface IApplicationLoopImplProvider : IDisposableResourceImplProvider<ApplicationLoopHandle> {
-	ILatestInputRetriever GetInputStateProvider(ApplicationLoopHandle handle);
-	TimeSpan IterateOnce(ApplicationLoopHandle handle);
-	bool TryIterateOnce(ApplicationLoopHandle handle, out TimeSpan outDeltaTime);
-	TimeSpan GetTimeUntilNextIteration(ApplicationLoopHandle handle);
-	TimeSpan GetTotalIteratedTime(ApplicationLoopHandle handle);
-	void SetTotalIteratedTime(ApplicationLoopHandle handle, TimeSpan newValue);
+public interface IApplicationLoopImplProvider : IDisposableResourceImplProvider<ApplicationLoop> {
+	ILatestInputRetriever GetInputStateProvider(ResourceHandle<ApplicationLoop> handle);
+	TimeSpan IterateOnce(ResourceHandle<ApplicationLoop> handle);
+	bool TryIterateOnce(ResourceHandle<ApplicationLoop> handle, out TimeSpan outDeltaTime);
+	TimeSpan GetTimeUntilNextIteration(ResourceHandle<ApplicationLoop> handle);
+	TimeSpan GetTotalIteratedTime(ResourceHandle<ApplicationLoop> handle);
+	void SetTotalIteratedTime(ResourceHandle<ApplicationLoop> handle, TimeSpan newValue);
 }

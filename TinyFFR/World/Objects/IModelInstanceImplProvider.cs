@@ -8,29 +8,29 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.World;
 
-public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<ModelInstanceHandle> {
-	Transform GetTransform(ModelInstanceHandle handle);
-	void SetTransform(ModelInstanceHandle handle, Transform newTransform);
+public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<ModelInstance> {
+	Transform GetTransform(ResourceHandle<ModelInstance> handle);
+	void SetTransform(ResourceHandle<ModelInstance> handle, Transform newTransform);
 	
-	Location GetPosition(ModelInstanceHandle handle);
-	void SetPosition(ModelInstanceHandle handle, Location newPosition);
+	Location GetPosition(ResourceHandle<ModelInstance> handle);
+	void SetPosition(ResourceHandle<ModelInstance> handle, Location newPosition);
 
-	Rotation GetRotation(ModelInstanceHandle handle);
-	void SetRotation(ModelInstanceHandle handle, Rotation newRotation);
+	Rotation GetRotation(ResourceHandle<ModelInstance> handle);
+	void SetRotation(ResourceHandle<ModelInstance> handle, Rotation newRotation);
 
-	Vect GetScaling(ModelInstanceHandle handle);
-	void SetScaling(ModelInstanceHandle handle, Vect newScaling);
+	Vect GetScaling(ResourceHandle<ModelInstance> handle);
+	void SetScaling(ResourceHandle<ModelInstance> handle, Vect newScaling);
 
-	Material GetMaterial(ModelInstanceHandle handle);
-	void SetMaterial(ModelInstanceHandle handle, Material newMaterial);
+	Material GetMaterial(ResourceHandle<ModelInstance> handle);
+	void SetMaterial(ResourceHandle<ModelInstance> handle, Material newMaterial);
 
-	Mesh GetMesh(ModelInstanceHandle handle);
-	void SetMesh(ModelInstanceHandle handle, Mesh newMesh);
+	Mesh GetMesh(ResourceHandle<ModelInstance> handle);
+	void SetMesh(ResourceHandle<ModelInstance> handle, Mesh newMesh);
 
-	void TranslateBy(ModelInstanceHandle handle, Vect translation);
-	void RotateBy(ModelInstanceHandle handle, Rotation rotation);
-	void ScaleBy(ModelInstanceHandle handle, float scalar);
-	void ScaleBy(ModelInstanceHandle handle, Vect vect);
-	void AdjustScaleBy(ModelInstanceHandle handle, float scalar);
-	void AdjustScaleBy(ModelInstanceHandle handle, Vect vect);
+	void TranslateBy(ResourceHandle<ModelInstance> handle, Vect translation);
+	void RotateBy(ResourceHandle<ModelInstance> handle, Rotation rotation);
+	void ScaleBy(ResourceHandle<ModelInstance> handle, float scalar);
+	void ScaleBy(ResourceHandle<ModelInstance> handle, Vect vect);
+	void AdjustScaleBy(ResourceHandle<ModelInstance> handle, float scalar);
+	void AdjustScaleBy(ResourceHandle<ModelInstance> handle, Vect vect);
 }

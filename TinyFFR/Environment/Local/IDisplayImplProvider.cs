@@ -5,13 +5,13 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
-public interface IDisplayImplProvider : IResourceImplProvider<DisplayHandle> {
-	bool GetIsPrimary(DisplayHandle handle);
-	bool GetIsRecommended(DisplayHandle handle);
-	ReadOnlySpan<DisplayMode> GetSupportedDisplayModes(DisplayHandle handle);
-	DisplayMode GetHighestSupportedResolutionMode(DisplayHandle handle);
-	DisplayMode GetHighestSupportedRefreshRateMode(DisplayHandle handle);
-	XYPair<int> GetCurrentResolution(DisplayHandle handle);
-	XYPair<int> GetGlobalPositionOffset(DisplayHandle handle);
-	bool IsValid(DisplayHandle handle);
+public interface IDisplayImplProvider : IResourceImplProvider<Display> {
+	bool GetIsPrimary(ResourceHandle<Display> handle);
+	bool GetIsRecommended(ResourceHandle<Display> handle);
+	ReadOnlySpan<DisplayMode> GetSupportedDisplayModes(ResourceHandle<Display> handle);
+	DisplayMode GetHighestSupportedResolutionMode(ResourceHandle<Display> handle);
+	DisplayMode GetHighestSupportedRefreshRateMode(ResourceHandle<Display> handle);
+	XYPair<int> GetCurrentResolution(ResourceHandle<Display> handle);
+	XYPair<int> GetGlobalPositionOffset(ResourceHandle<Display> handle);
+	bool IsValid(ResourceHandle<Display> handle);
 }

@@ -10,6 +10,7 @@ using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Input.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
@@ -17,9 +18,9 @@ namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposable {
 	const string DefaultMeshName = "Unnamed Mesh";
-	readonly ArrayPoolBackedMap<MeshHandle, MeshBufferData> _activeMeshes = new();
-	readonly ArrayPoolBackedMap<VertexBufferHandle, int> _vertexBufferRefCounts = new();
-	readonly ArrayPoolBackedMap<IndexBufferHandle, int> _indexBufferRefCounts = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, MeshBufferData> _activeMeshes = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<VertexBuffer>, int> _vertexBufferRefCounts = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<IndexBuffer>, int> _indexBufferRefCounts = new();
 	readonly ObjectPool<LocalMeshPolygonGroup, LocalMeshBuilder> _meshPolyGroupPool;
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
@@ -107,24 +108,24 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		_vertexBufferRefCounts.Add(vbHandle, 1);
 		_indexBufferRefCounts.Add(ibHandle, 1);
 		_nextHandleId++;
-		var handle = new MeshHandle(_nextHandleId);
+		var handle = new ResourceHandle<Mesh>(_nextHandleId);
 		_activeMeshes.Add(handle, new(vbHandle, ibHandle, 0, indexBufferCount));
 		_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
 		return new Mesh(handle, this);
 	}
 
-	public MeshBufferData GetBufferData(MeshHandle handle) {
+	public MeshBufferData GetBufferData(ResourceHandle<Mesh> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeMeshes[handle];
 	}
 
-	public ReadOnlySpan<char> GetName(MeshHandle handle) {
+	public ReadOnlySpan<char> GetName(ResourceHandle<Mesh> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _globals.GetResourceName(handle.Ident, DefaultMeshName);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	Mesh HandleToInstance(MeshHandle h) => new(h, this);
+	Mesh HandleToInstance(ResourceHandle<Mesh> h) => new(h, this);
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_vertex_buffer")]
@@ -157,10 +158,10 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 	public override string ToString() => _isDisposed ? "TinyFFR Local Mesh Builder [Disposed]" : "TinyFFR Local Mesh Builder";
 
 	#region Disposal
-	public bool IsDisposed(MeshHandle handle) => _isDisposed || !_activeMeshes.ContainsKey(handle);
+	public bool IsDisposed(ResourceHandle<Mesh> handle) => _isDisposed || !_activeMeshes.ContainsKey(handle);
 
-	public void Dispose(MeshHandle handle) => Dispose(handle, removeFromMap: true);
-	void Dispose(MeshHandle handle, bool removeFromMap) {
+	public void Dispose(ResourceHandle<Mesh> handle) => Dispose(handle, removeFromMap: true);
+	void Dispose(ResourceHandle<Mesh> handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		var bufferData = _activeMeshes[handle];
@@ -200,7 +201,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		}
 	}
 
-	void ThrowIfThisOrHandleIsDisposed(MeshHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Mesh));
+	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<Mesh> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Mesh));
 	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion
 }

@@ -5,6 +5,6 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
-public interface IMeshImplProvider : IDisposableResourceImplProvider<MeshHandle> {
-	MeshBufferData GetBufferData(MeshHandle handle);
+public interface IMeshImplProvider : IDisposableResourceImplProvider<Mesh> {
+	MeshBufferData GetBufferData(ResourceHandle<Mesh> handle);
 }

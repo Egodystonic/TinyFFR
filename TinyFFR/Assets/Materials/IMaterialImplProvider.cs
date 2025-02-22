@@ -5,4 +5,4 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
-public interface IMaterialImplProvider : IDisposableResourceImplProvider<MaterialHandle>;
+public interface IMaterialImplProvider : IDisposableResourceImplProvider<Material>;

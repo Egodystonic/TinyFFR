@@ -5,23 +5,23 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
-public interface IWindowImplProvider : IDisposableResourceImplProvider<WindowHandle> {
-	ReadOnlySpan<char> GetTitle(WindowHandle handle);
-	ReadOnlySpan<char> IResourceImplProvider<WindowHandle>.GetName(WindowHandle handle) => GetTitle(handle);
-	void SetTitle(WindowHandle handle, ReadOnlySpan<char> src);
+public interface IWindowImplProvider : IDisposableResourceImplProvider<Window> {
+	ReadOnlySpan<char> GetTitle(ResourceHandle<Window> handle);
+	ReadOnlySpan<char> IResourceImplProvider<Window>.GetName(ResourceHandle<Window> handle) => GetTitle(handle);
+	void SetTitle(ResourceHandle<Window> handle, ReadOnlySpan<char> src);
 
-	Display GetDisplay(WindowHandle handle);
-	void SetDisplay(WindowHandle handle, Display newDisplay);
+	Display GetDisplay(ResourceHandle<Window> handle);
+	void SetDisplay(ResourceHandle<Window> handle, Display newDisplay);
 
-	XYPair<int> GetSize(WindowHandle handle);
-	void SetSize(WindowHandle handle, XYPair<int> newSize);
+	XYPair<int> GetSize(ResourceHandle<Window> handle);
+	void SetSize(ResourceHandle<Window> handle, XYPair<int> newSize);
 
-	XYPair<int> GetPosition(WindowHandle handle);
-	void SetPosition(WindowHandle handle, XYPair<int> newPosition);
+	XYPair<int> GetPosition(ResourceHandle<Window> handle);
+	void SetPosition(ResourceHandle<Window> handle, XYPair<int> newPosition);
 
-	WindowFullscreenStyle GetFullscreenStyle(WindowHandle handle);
-	void SetFullscreenStyle(WindowHandle handle, WindowFullscreenStyle newStyle);
+	WindowFullscreenStyle GetFullscreenStyle(ResourceHandle<Window> handle);
+	void SetFullscreenStyle(ResourceHandle<Window> handle, WindowFullscreenStyle newStyle);
 
-	bool GetCursorLock(WindowHandle handle);
-	void SetCursorLock(WindowHandle handle, bool newLockSetting);
+	bool GetCursorLock(ResourceHandle<Window> handle);
+	void SetCursorLock(ResourceHandle<Window> handle, bool newLockSetting);
 }

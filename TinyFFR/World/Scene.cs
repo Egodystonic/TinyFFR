@@ -6,28 +6,28 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.World;
 
-public readonly struct Scene : IDisposableResource<Scene, SceneHandle, ISceneImplProvider> {
-	readonly SceneHandle _handle;
+public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
+	readonly ResourceHandle<Scene> _handle;
 	readonly ISceneImplProvider _impl;
 
 	internal ISceneImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Scene>();
-	internal SceneHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Scene)) : _handle;
+	internal ResourceHandle<Scene> Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Scene)) : _handle;
 
-	ISceneImplProvider IResource<SceneHandle, ISceneImplProvider>.Implementation => Implementation;
-	SceneHandle IResource<SceneHandle, ISceneImplProvider>.Handle => Handle;
+	ISceneImplProvider IResource<Scene, ISceneImplProvider>.Implementation => Implementation;
+	ResourceHandle<Scene> IResource<Scene>.Handle => Handle;
 
 	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(_handle);
 	}
 
-	internal Scene(SceneHandle handle, ISceneImplProvider impl) {
+	internal Scene(ResourceHandle<Scene> handle, ISceneImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
 	}
 
-	static Scene IResource<Scene>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
-		return new Scene(rawHandle, impl as ISceneImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
+	static Scene IResource<Scene>.CreateFromHandleAndImpl(ResourceHandle<Scene> handle, IResourceImplProvider impl) {
+		return new Scene(handle, impl as ISceneImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

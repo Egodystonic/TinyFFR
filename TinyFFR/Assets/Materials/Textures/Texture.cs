@@ -6,15 +6,15 @@ using System;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
-public readonly struct Texture : IDisposableResource<Texture, TextureHandle, ITextureImplProvider> {
-	readonly TextureHandle _handle;
+public readonly struct Texture : IDisposableResource<Texture, ITextureImplProvider> {
+	readonly ResourceHandle<Texture> _handle;
 	readonly ITextureImplProvider _impl;
 
-	internal TextureHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Texture)) : _handle;
+	internal ResourceHandle<Texture> Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Texture)) : _handle;
 	internal ITextureImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Texture>();
 
-	ITextureImplProvider IResource<TextureHandle, ITextureImplProvider>.Implementation => Implementation;
-	TextureHandle IResource<TextureHandle, ITextureImplProvider>.Handle => Handle;
+	ITextureImplProvider IResource<Texture, ITextureImplProvider>.Implementation => Implementation;
+	ResourceHandle<Texture> IResource<Texture>.Handle => Handle;
 
 	public XYPair<uint> Dimensions {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -26,13 +26,13 @@ public readonly struct Texture : IDisposableResource<Texture, TextureHandle, ITe
 		get => Implementation.GetName(_handle);
 	}
 
-	internal Texture(TextureHandle handle, ITextureImplProvider impl) {
+	internal Texture(ResourceHandle<Texture> handle, ITextureImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
 	}
 
-	static Texture IResource<Texture>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
-		return new Texture(rawHandle, impl as ITextureImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
+	static Texture IResource<Texture>.CreateFromHandleAndImpl(ResourceHandle<Texture> handle, IResourceImplProvider impl) {
+		return new Texture(handle, impl as ITextureImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 
 	#region Disposal

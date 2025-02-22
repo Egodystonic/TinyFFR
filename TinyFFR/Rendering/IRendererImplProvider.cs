@@ -6,6 +6,6 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Rendering;
 
-public interface IRendererImplProvider : IDisposableResourceImplProvider<RendererHandle> {
-	void Render(RendererHandle handle);
+public interface IRendererImplProvider : IDisposableResourceImplProvider<Renderer> {
+	void Render(ResourceHandle<Renderer> handle);
 }

@@ -8,15 +8,15 @@ using static Egodystonic.TinyFFR.Resources.IResourceGroupImplProvider;
 
 namespace Egodystonic.TinyFFR.Resources;
 
-public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, ResourceGroupHandle, IResourceGroupImplProvider> {
-	readonly ResourceGroupHandle _handle;
+public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResourceGroupImplProvider> {
+	readonly ResourceHandle<ResourceGroup> _handle;
 	readonly IResourceGroupImplProvider _impl;
 
-	internal ResourceGroupHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(ResourceGroup)) : _handle;
-	internal IResourceGroupImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<ResourceGroupHandle>();
+	internal ResourceHandle<ResourceGroup> Handle => IsDisposed ? throw new ObjectDisposedException(nameof(ResourceGroup)) : _handle;
+	internal IResourceGroupImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<ResourceGroup>();
 
-	IResourceGroupImplProvider IResource<ResourceGroupHandle, IResourceGroupImplProvider>.Implementation => Implementation;
-	ResourceGroupHandle IResource<ResourceGroupHandle, IResourceGroupImplProvider>.Handle => Handle;
+	IResourceGroupImplProvider IResource<ResourceGroup, IResourceGroupImplProvider>.Implementation => Implementation;
+	ResourceHandle<ResourceGroup> IResource<ResourceGroup>.Handle => Handle;
 
 	public int ResourceCount {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -53,14 +53,14 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, Resour
 		get => Implementation.GetResources(Handle);
 	}
 
-	internal ResourceGroup(ResourceGroupHandle handle, IResourceGroupImplProvider impl) {
+	internal ResourceGroup(ResourceHandle<ResourceGroup> handle, IResourceGroupImplProvider impl) {
 		ArgumentNullException.ThrowIfNull(impl);
 		_handle = handle;
 		_impl = impl;
 	}
 
-	static ResourceGroup IResource<ResourceGroup>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
-		return new(rawHandle, impl as IResourceGroupImplProvider ?? throw new ArgumentException($"Impl was '{impl}'.", nameof(impl)));
+	static ResourceGroup IResource<ResourceGroup>.CreateFromHandleAndImpl(ResourceHandle<ResourceGroup> handle, IResourceImplProvider impl) {
+		return new(handle, impl as IResourceGroupImplProvider ?? throw new ArgumentException($"Impl was '{impl}'.", nameof(impl)));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

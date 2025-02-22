@@ -3,24 +3,24 @@
 namespace Egodystonic.TinyFFR.Resources;
 
 public interface IResourceImplProvider {
-	internal ReadOnlySpan<char> RawHandleGetName(nuint handle);
+	internal ReadOnlySpan<char> GetName(ResourceHandle handle);
 }
-public interface IResourceImplProvider<in THandle> : IResourceImplProvider where THandle : IResourceHandle<THandle> {
-	ReadOnlySpan<char> GetName(THandle handle);
+public interface IResourceImplProvider<TResource> : IResourceImplProvider where TResource : IResource<TResource> {
+	ReadOnlySpan<char> GetName(ResourceHandle<TResource> handle);
 
-	ReadOnlySpan<char> IResourceImplProvider.RawHandleGetName(nuint handle) => GetName(THandle.CreateFromInteger(handle));
+	ReadOnlySpan<char> IResourceImplProvider.GetName(ResourceHandle handle) => GetName((ResourceHandle<TResource>) handle);
 }
 
 
 
 public interface IDisposableResourceImplProvider : IResourceImplProvider {
-	internal bool RawHandleIsDisposed(nuint handle);
-	internal void RawHandleDispose(nuint handle);
+	internal bool IsDisposed(ResourceHandle handle);
+	internal void Dispose(ResourceHandle handle);
 }
-public interface IDisposableResourceImplProvider<in THandle> : IDisposableResourceImplProvider, IResourceImplProvider<THandle> where THandle : IResourceHandle<THandle> {
-	internal bool IsDisposed(THandle handle);
-	void Dispose(THandle handle);
+public interface IDisposableResourceImplProvider<TResource> : IDisposableResourceImplProvider, IResourceImplProvider<TResource> where TResource : IResource<TResource> {
+	internal bool IsDisposed(ResourceHandle<TResource> handle);
+	void Dispose(ResourceHandle<TResource> handle);
 
-	bool IDisposableResourceImplProvider.RawHandleIsDisposed(nuint handle) => IsDisposed(THandle.CreateFromInteger(handle));
-	void IDisposableResourceImplProvider.RawHandleDispose(nuint handle) => Dispose(THandle.CreateFromInteger(handle));
+	bool IDisposableResourceImplProvider.IsDisposed(ResourceHandle handle) => IsDisposed((ResourceHandle<TResource>) handle);
+	void IDisposableResourceImplProvider.Dispose(ResourceHandle handle) => Dispose((ResourceHandle<TResource>) handle);
 }

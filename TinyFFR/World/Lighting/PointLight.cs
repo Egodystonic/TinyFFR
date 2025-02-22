@@ -16,12 +16,12 @@ public readonly struct PointLight : ILight<PointLight>, IEquatable<PointLight> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Base.Implementation;
 	}
-	internal LightHandle Handle {
+	internal ResourceHandle<Light> Handle {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Base.Handle;
 	}
-	ILightImplProvider IResource<LightHandle, ILightImplProvider>.Implementation => Implementation;
-	LightHandle IResource<LightHandle, ILightImplProvider>.Handle => Handle;
+	ILightImplProvider IResource<Light, ILightImplProvider>.Implementation => Implementation;
+	ResourceHandle<Light> IResource<Light>.Handle => Handle;
 	internal PointLight(Light @base) => _base = @base;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Base.Dispose();
@@ -31,10 +31,14 @@ public readonly struct PointLight : ILight<PointLight>, IEquatable<PointLight> {
 		return new(operand);
 	}
 	static PointLight ILight<PointLight>.FromBaseLight(Light l) => (PointLight) l;
+	static Light IResource<Light>.CreateFromHandleAndImpl(ResourceHandle<Light> handle, IResourceImplProvider impl) {
+		return new Light(handle, impl as ILightImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
+	}
 	public override string ToString() => $"Point{Base}";
 	#endregion
 
 	#region Equality
+	bool IEquatable<Light>.Equals(Light other) => _base.Equals(other);
 	public bool Equals(PointLight other) => _base.Equals(other._base);
 	public override bool Equals(object? obj) => obj is PointLight other && Equals(other);
 	public override int GetHashCode() => _base.GetHashCode();

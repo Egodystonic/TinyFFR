@@ -6,28 +6,28 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Rendering;
 
-public readonly struct Renderer : IDisposableResource<Renderer, RendererHandle, IRendererImplProvider> {
-	readonly RendererHandle _handle;
+public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplProvider> {
+	readonly ResourceHandle<Renderer> _handle;
 	readonly IRendererImplProvider _impl;
 
 	internal IRendererImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Renderer>();
-	internal RendererHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Renderer)) : _handle;
+	internal ResourceHandle<Renderer> Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Renderer)) : _handle;
 
-	IRendererImplProvider IResource<RendererHandle, IRendererImplProvider>.Implementation => Implementation;
-	RendererHandle IResource<RendererHandle, IRendererImplProvider>.Handle => Handle;
+	IRendererImplProvider IResource<Renderer, IRendererImplProvider>.Implementation => Implementation;
+	ResourceHandle<Renderer> IResource<Renderer>.Handle => Handle;
 
 	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(_handle);
 	}
 
-	internal Renderer(RendererHandle handle, IRendererImplProvider impl) {
+	internal Renderer(ResourceHandle<Renderer> handle, IRendererImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
 	}
 
-	static Renderer IResource<Renderer>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
-		return new Renderer(rawHandle, impl as IRendererImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
+	static Renderer IResource<Renderer>.CreateFromHandleAndImpl(ResourceHandle<Renderer> handle, IResourceImplProvider impl) {
+		return new Renderer(handle, impl as IRendererImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

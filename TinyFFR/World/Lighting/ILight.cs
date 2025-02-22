@@ -6,9 +6,9 @@ using System;
 
 namespace Egodystonic.TinyFFR.World;
 
-interface ILight : IDisposableResource<LightHandle, ILightImplProvider>, IPositionedSceneObject {
+interface ILight : IDisposableResource, IPositionedSceneObject {
 	ColorVect Color { get; set; }
 }
-interface ILight<out TSelf> : ILight where TSelf : ILight {
+interface ILight<out TSelf> : ILight, IDisposableResource<Light, ILightImplProvider> where TSelf : ILight {
 	static abstract TSelf FromBaseLight(Light l);
 }

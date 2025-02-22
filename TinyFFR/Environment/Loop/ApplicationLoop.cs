@@ -9,15 +9,15 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Environment;
 
-public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, ApplicationLoopHandle, IApplicationLoopImplProvider> {
-	readonly ApplicationLoopHandle _handle;
+public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IApplicationLoopImplProvider> {
+	readonly ResourceHandle<ApplicationLoop> _handle;
 	readonly IApplicationLoopImplProvider _impl;
 
 	internal IApplicationLoopImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<ApplicationLoop>();
-	internal ApplicationLoopHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(ApplicationLoop)) : _handle;
+	internal ResourceHandle<ApplicationLoop> Handle => IsDisposed ? throw new ObjectDisposedException(nameof(ApplicationLoop)) : _handle;
 
-	IApplicationLoopImplProvider IResource<ApplicationLoopHandle, IApplicationLoopImplProvider>.Implementation => Implementation;
-	ApplicationLoopHandle IResource<ApplicationLoopHandle, IApplicationLoopImplProvider>.Handle => Handle;
+	IApplicationLoopImplProvider IResource<ApplicationLoop, IApplicationLoopImplProvider>.Implementation => Implementation;
+	ResourceHandle<ApplicationLoop> IResource<ApplicationLoop>.Handle => Handle;
 
 	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -29,14 +29,14 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, Ap
 		get => Implementation.GetInputStateProvider(_handle);
 	}
 
-	internal ApplicationLoop(ApplicationLoopHandle handle, IApplicationLoopImplProvider impl) {
+	internal ApplicationLoop(ResourceHandle<ApplicationLoop> handle, IApplicationLoopImplProvider impl) {
 		ArgumentNullException.ThrowIfNull(impl);
 		_handle = handle;
 		_impl = impl;
 	}
 
-	static ApplicationLoop IResource<ApplicationLoop>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
-		return new ApplicationLoop(rawHandle, impl as IApplicationLoopImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
+	static ApplicationLoop IResource<ApplicationLoop>.CreateFromHandleAndImpl(ResourceHandle<ApplicationLoop> handle, IResourceImplProvider impl) {
+		return new ApplicationLoop(handle, impl as IApplicationLoopImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 
 	public TimeSpan TotalIteratedTime {

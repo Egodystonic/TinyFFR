@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
@@ -15,8 +16,8 @@ namespace Egodystonic.TinyFFR.Environment.Local;
 sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IDisposable {
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly InteropStringBuffer _windowTitleBuffer;
-	readonly ArrayPoolBackedVector<WindowHandle> _activeWindows = new();
-	readonly ArrayPoolBackedMap<WindowHandle, Display> _displayMap = new();
+	readonly ArrayPoolBackedVector<ResourceHandle<Window>> _activeWindows = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Window>, Display> _displayMap = new();
 	bool _isDisposed = false;
 
 	public LocalWindowBuilder(LocalFactoryGlobalObjectGroup globals, WindowBuilderConfig config) {
@@ -56,7 +57,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		return result;
 	}
 
-	public ReadOnlySpan<char> GetTitle(WindowHandle handle) {
+	public ReadOnlySpan<char> GetTitle(ResourceHandle<Window> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var maxSpanLength = _windowTitleBuffer.BufferLength;
 		var dest = maxSpanLength <= 1000 ? stackalloc char[maxSpanLength] : new char[maxSpanLength];
@@ -65,11 +66,11 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		_globals.ReplaceResourceName(handle.Ident, dest[..numCharsWritten]);
 		return _globals.GetResourceName(handle.Ident, default);
 	}
-	public void SetTitle(WindowHandle handle, ReadOnlySpan<char> newTitle) {
+	public void SetTitle(ResourceHandle<Window> handle, ReadOnlySpan<char> newTitle) {
 		SetTitleOnWindow(handle, newTitle);
 		_globals.ReplaceResourceName(handle.Ident, newTitle);
 	}
-	public int ReadTitleFromWindow(WindowHandle handle, Span<char> dest) {
+	public int ReadTitleFromWindow(ResourceHandle<Window> handle, Span<char> dest) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetWindowTitle(
 			handle,
@@ -78,7 +79,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		).ThrowIfFailure();
 		return _windowTitleBuffer.ConvertToUtf16(dest);
 	}
-	public void SetTitleOnWindow(WindowHandle handle, ReadOnlySpan<char> src) {
+	public void SetTitleOnWindow(ResourceHandle<Window> handle, ReadOnlySpan<char> src) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_windowTitleBuffer.ConvertFromUtf16(src);
 		SetWindowTitle(
@@ -87,18 +88,18 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		).ThrowIfFailure();
 	}
 
-	public Display GetDisplay(WindowHandle handle) {
+	public Display GetDisplay(ResourceHandle<Window> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _displayMap[handle];
 	}
-	public void SetDisplay(WindowHandle handle, Display newDisplay) {
+	public void SetDisplay(ResourceHandle<Window> handle, Display newDisplay) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var localPos = GetPosition(handle);
 		_displayMap[handle] = newDisplay;
 		SetPosition(handle, localPos);
 	}
 
-	public XYPair<int> GetSize(WindowHandle handle) {
+	public XYPair<int> GetSize(ResourceHandle<Window> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetWindowSize(
 			handle,
@@ -107,7 +108,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		).ThrowIfFailure();
 		return new(width, height);
 	}
-	public void SetSize(WindowHandle handle, XYPair<int> newSize) {
+	public void SetSize(ResourceHandle<Window> handle, XYPair<int> newSize) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		if (newSize.X < 0) throw new ArgumentOutOfRangeException(nameof(newSize), newSize, $"'{nameof(newSize.X)}' value must be positive or 0.");
@@ -120,7 +121,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		).ThrowIfFailure();
 	}
 
-	public XYPair<int> GetPosition(WindowHandle handle) {
+	public XYPair<int> GetPosition(ResourceHandle<Window> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetWindowPosition(
 			handle,
@@ -129,7 +130,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		).ThrowIfFailure();
 		return _displayMap[handle].TranslateGlobalWindowPositionToDisplayLocal(new(x, y));
 	}
-	public void SetPosition(WindowHandle handle, XYPair<int> newPosition) {
+	public void SetPosition(ResourceHandle<Window> handle, XYPair<int> newPosition) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var translatedPosition = _displayMap[handle].TranslateDisplayLocalWindowPositionToGlobal(newPosition);
 		SetWindowPosition(
@@ -139,7 +140,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		).ThrowIfFailure();
 	}
 
-	public WindowFullscreenStyle GetFullscreenStyle(WindowHandle handle) {
+	public WindowFullscreenStyle GetFullscreenStyle(ResourceHandle<Window> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetWindowFullscreenState(
 			handle,
@@ -153,7 +154,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 			_ => WindowFullscreenStyle.NotFullscreen
 		};
 	}
-	public void SetFullscreenStyle(WindowHandle handle, WindowFullscreenStyle newStyle) {
+	public void SetFullscreenStyle(ResourceHandle<Window> handle, WindowFullscreenStyle newStyle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		SetWindowFullscreenState(
 			handle,
@@ -162,7 +163,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		).ThrowIfFailure();
 	}
 
-	public bool GetCursorLock(WindowHandle handle) {
+	public bool GetCursorLock(ResourceHandle<Window> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetWindowCursorLockState(
 			handle,
@@ -170,7 +171,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		).ThrowIfFailure();
 		return result;
 	}
-	public void SetCursorLock(WindowHandle handle, bool newLockSetting) {
+	public void SetCursorLock(ResourceHandle<Window> handle, bool newLockSetting) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		SetWindowCursorLockState(
 			handle,
@@ -181,10 +182,10 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 	public override string ToString() => _isDisposed ? "TinyFFR Window Builder [Disposed]" : "TinyFFR Window Builder";
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	Window HandleToInstance(WindowHandle h) => new(h, this);
+	Window HandleToInstance(ResourceHandle<Window> h) => new(h, this);
 
 	#region Disposal
-	public void Dispose(WindowHandle handle) {
+	public void Dispose(ResourceHandle<Window> handle) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		try {
@@ -195,7 +196,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 			_activeWindows.Remove(handle);
 		}
 	}
-	public bool IsDisposed(WindowHandle handle) {
+	public bool IsDisposed(ResourceHandle<Window> handle) {
 		return _isDisposed || !_activeWindows.Contains(handle);
 	}
 
@@ -212,7 +213,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		}
 	}
 
-	void ThrowIfThisOrHandleIsDisposed(WindowHandle handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Window));
+	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<Window> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Window));
 	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion
 

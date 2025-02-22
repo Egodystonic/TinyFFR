@@ -8,15 +8,15 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.World;
 
-public readonly struct ModelInstance : IDisposableResource<ModelInstance, ModelInstanceHandle, IModelInstanceImplProvider>, ITransformedSceneObject {
-	readonly ModelInstanceHandle _handle;
+public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModelInstanceImplProvider>, ITransformedSceneObject {
+	readonly ResourceHandle<ModelInstance> _handle;
 	readonly IModelInstanceImplProvider _impl;
 
 	internal IModelInstanceImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<ModelInstance>();
-	internal ModelInstanceHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(ModelInstance)) : _handle;
+	internal ResourceHandle<ModelInstance> Handle => IsDisposed ? throw new ObjectDisposedException(nameof(ModelInstance)) : _handle;
 
-	IModelInstanceImplProvider IResource<ModelInstanceHandle, IModelInstanceImplProvider>.Implementation => Implementation;
-	ModelInstanceHandle IResource<ModelInstanceHandle, IModelInstanceImplProvider>.Handle => Handle;
+	IModelInstanceImplProvider IResource<ModelInstance, IModelInstanceImplProvider>.Implementation => Implementation;
+	ResourceHandle<ModelInstance> IResource<ModelInstance>.Handle => Handle;
 
 	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -77,13 +77,13 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, ModelI
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetMesh(Mesh mesh) => Mesh = mesh;
 
-	internal ModelInstance(ModelInstanceHandle handle, IModelInstanceImplProvider impl) {
+	internal ModelInstance(ResourceHandle<ModelInstance> handle, IModelInstanceImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
 	}
 
-	static ModelInstance IResource<ModelInstance>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
-		return new ModelInstance(rawHandle, impl as IModelInstanceImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
+	static ModelInstance IResource<ModelInstance>.CreateFromHandleAndImpl(ResourceHandle<ModelInstance> handle, IResourceImplProvider impl) {
+		return new ModelInstance(handle, impl as IModelInstanceImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 
 	public void MoveBy(Vect translation) => Implementation.TranslateBy(_handle, translation);

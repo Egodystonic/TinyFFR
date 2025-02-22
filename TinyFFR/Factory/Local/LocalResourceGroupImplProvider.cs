@@ -23,7 +23,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPool<ResourceStub> _stubArrayPool = ArrayPool<ResourceStub>.Shared;
-	readonly ArrayPoolBackedMap<ResourceGroupHandle, GroupData> _dataMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ResourceGroup>, GroupData> _dataMap = new();
 	nuint _previousGroupId = 0;
 	bool _isDisposed = false;
 
@@ -37,7 +37,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 		if (initialCapacity <= 0) throw new ArgumentOutOfRangeException(nameof(initialCapacity), initialCapacity, "Must be positive value.");
 
 		var stubArray = _stubArrayPool.Rent(initialCapacity);
-		var handle = new ResourceGroupHandle(++_previousGroupId);
+		var handle = new ResourceHandle<ResourceGroup>(++_previousGroupId);
 		_dataMap.Add(handle, new(stubArray, 0, disposeContainedResourcesWhenDisposed, false));
 
 		return HandleToInstance(handle);
@@ -49,25 +49,25 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 		return result;
 	}
 
-	public int GetResourceCount(ResourceGroupHandle handle) {
+	public int GetResourceCount(ResourceHandle<ResourceGroup> handle) {
 		return GetDataForHandleOrThrow(handle).Count;
 	}
 
-	public bool IsSealed(ResourceGroupHandle handle) {
+	public bool IsSealed(ResourceHandle<ResourceGroup> handle) {
 		return GetDataForHandleOrThrow(handle).IsSealed;
 	}
 
-	public void Seal(ResourceGroupHandle handle) {
+	public void Seal(ResourceHandle<ResourceGroup> handle) {
 		var data = GetDataForHandleOrThrow(handle);
 		_dataMap[handle] = data with { IsSealed = true };
 	}
 
-	public ReadOnlySpan<ResourceStub> GetResources(ResourceGroupHandle handle) {
+	public ReadOnlySpan<ResourceStub> GetResources(ResourceHandle<ResourceGroup> handle) {
 		var data = GetDataForHandleOrThrow(handle);
 		return data.StubArray.AsSpan(0, data.Count); 
 	}
 
-	public void AddResource<TResource>(ResourceGroupHandle handle, TResource resource) where TResource : IResource {
+	public void AddResource<TResource>(ResourceHandle<ResourceGroup> handle, TResource resource) where TResource : IResource {
 		var data = GetDataForHandleOrThrow(handle);
 		data.ThrowIfSealed(_globals.GetResourceName(handle.Ident, DefaultGroupName));
 
@@ -82,7 +82,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), resource);
 	}
 
-	public TypedReferentIterator<EnumerationInput, TResource> GetAllResourcesOfType<TResource>(ResourceGroupHandle handle) where TResource : IResource<TResource> {
+	public TypedReferentIterator<EnumerationInput, TResource> GetAllResourcesOfType<TResource>(ResourceHandle<ResourceGroup> handle) where TResource : IResource<TResource> {
 		return new TypedReferentIterator<EnumerationInput, TResource>(
 			new(this, handle, typeof(TResource).TypeHandle.Value),
 			GetDataForHandleOrThrow(handle).Count,
@@ -110,31 +110,31 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 		for (var i = 0; i < data.Count; ++i) {
 			var stub = data.StubArray[i];
 			if (stub.TypeHandle != input.ResourceTypeHandle) continue;
-			if (count == index) return TResource.RecreateFromStub(stub);
+			if (count == index) return TResource.CreateFromStub(stub);
 			++count;
 		}
 
 		throw new ArgumentOutOfRangeException(nameof(index), $"Index '{index}' is out of range for resources of type '{typeof(TResource).Name}' in this resource group (actual count = {count}).");
 	}
-	public TResource GetNthResourceOfType<TResource>(ResourceGroupHandle handle, int index) where TResource : IResource<TResource> {
+	public TResource GetNthResourceOfType<TResource>(ResourceHandle<ResourceGroup> handle, int index) where TResource : IResource<TResource> {
 		return GetEnumeratorResourceAtIndex<TResource>(new EnumerationInput(this, handle, typeof(TResource).TypeHandle.Value), index);
 	}
 
-	public ReadOnlySpan<char> GetName(ResourceGroupHandle handle) {
+	public ReadOnlySpan<char> GetName(ResourceHandle<ResourceGroup> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _globals.GetResourceName(handle.Ident, DefaultGroupName);
 	}
 
-	public bool IsDisposed(ResourceGroupHandle handle) => !_dataMap.ContainsKey(handle.AsInteger);
-	public void Dispose(ResourceGroupHandle handle) {
+	public bool IsDisposed(ResourceHandle<ResourceGroup> handle) => !_dataMap.ContainsKey(handle.AsInteger);
+	public void Dispose(ResourceHandle<ResourceGroup> handle) {
 		if (!_dataMap.TryGetValue(handle, out var data)) return;
 		Dispose(handle, data.StubArray, data.Count, data.DisposeContainedResourcesWhenDisposed);
 	}
-	public void Dispose(ResourceGroupHandle handle, bool disposeContainedResources) {
+	public void Dispose(ResourceHandle<ResourceGroup> handle, bool disposeContainedResources) {
 		if (!_dataMap.TryGetValue(handle, out var data)) return;
 		Dispose(handle, data.StubArray, data.Count, disposeContainedResources);
 	}
-	void Dispose(ResourceGroupHandle handle, ResourceStub[] stubArray, int count, bool disposeContainedResources) {
+	void Dispose(ResourceHandle<ResourceGroup> handle, ResourceStub[] stubArray, int count, bool disposeContainedResources) {
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		for (var i = 0; i < count; ++i) {
 			var resource = stubArray[i];
@@ -146,7 +146,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 		_dataMap.Remove(handle);
 		_stubArrayPool.Return(stubArray);
 	}
-	public bool GetDisposesContainedResourcesByDefaultWhenDisposed(ResourceGroupHandle handle) => GetDataForHandleOrThrow(handle).DisposeContainedResourcesWhenDisposed;
+	public bool GetDisposesContainedResourcesByDefaultWhenDisposed(ResourceHandle<ResourceGroup> handle) => GetDataForHandleOrThrow(handle).DisposeContainedResourcesWhenDisposed;
 	public void Dispose() {
 		if (_isDisposed) return;
 		_dataMap.Dispose();
@@ -154,9 +154,9 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	ResourceGroup HandleToInstance(ResourceGroupHandle handle) => new(handle, this);
+	ResourceGroup HandleToInstance(ResourceHandle<ResourceGroup> handle) => new(handle, this);
 
-	void ThrowIfThisOrHandleIsDisposed(ResourceGroupHandle handle) {
+	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<ResourceGroup> handle) {
 		ThrowIfThisIsDisposed();
 		if (_dataMap.ContainsKey(handle)) return;
 		
@@ -168,7 +168,7 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 		ObjectDisposedException.ThrowIf(_isDisposed, this);
 	}
 
-	GroupData GetDataForHandleOrThrow(ResourceGroupHandle handle) {
+	GroupData GetDataForHandleOrThrow(ResourceHandle<ResourceGroup> handle) {
 		ThrowIfThisIsDisposed();
 		if (_dataMap.TryGetValue(handle, out var result)) return result;
 

@@ -8,15 +8,15 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.World;
 
-public readonly struct Light : ILight, IDisposableResource<Light, LightHandle, ILightImplProvider> {
-	readonly LightHandle _handle;
+public readonly struct Light : ILight, IDisposableResource<Light, ILightImplProvider> {
+	readonly ResourceHandle<Light> _handle;
 	readonly ILightImplProvider _impl;
 
 	internal ILightImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Light>();
-	internal LightHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Light)) : _handle;
+	internal ResourceHandle<Light> Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Light)) : _handle;
 
-	ILightImplProvider IResource<LightHandle, ILightImplProvider>.Implementation => Implementation;
-	LightHandle IResource<LightHandle, ILightImplProvider>.Handle => Handle;
+	ILightImplProvider IResource<Light, ILightImplProvider>.Implementation => Implementation;
+	ResourceHandle<Light> IResource<Light>.Handle => Handle;
 
 	public LightType Type {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -46,13 +46,13 @@ public readonly struct Light : ILight, IDisposableResource<Light, LightHandle, I
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetColor(ColorVect color) => Color = color;
 
-	internal Light(LightHandle handle, ILightImplProvider impl) {
+	internal Light(ResourceHandle<Light> handle, ILightImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
 	}
 
-	static Light IResource<Light>.RecreateFromRawHandleAndImpl(nuint rawHandle, IResourceImplProvider impl) {
-		return new Light(rawHandle, impl as ILightImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
+	static Light IResource<Light>.CreateFromHandleAndImpl(ResourceHandle<Light> handle, IResourceImplProvider impl) {
+		return new Light(handle, impl as ILightImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
 
 	public void MoveBy(Vect translation) => Implementation.TranslateBy(_handle, translation);
