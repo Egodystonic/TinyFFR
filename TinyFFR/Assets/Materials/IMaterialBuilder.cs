@@ -25,7 +25,7 @@ public interface IMaterialBuilder {
 	Texture DefaultColorMap { get; }
 	Texture DefaultNormalMap { get; }
 	Texture DefaultOrmMap { get; }
-	// TODO Material TestMaterial { get; } -- A material that has a chequerboard r/g/b/grey with varying normals and orm
+	Material TestMaterial { get; }
 
 	Texture CreateTexture<TTexel>(Span<TTexel> texels, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> => CreateTexture((ReadOnlySpan<TTexel>) texels, config);
 	Texture CreateTexture<TTexel>(ReadOnlySpan<TTexel> texels, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel>;
@@ -77,15 +77,15 @@ public interface IMaterialBuilder {
 
 		return CreateTextureAndDisposePreallocatedBuffer(FillPreallocatedBuffer<Direction, TexelRgb24>(pattern.Value), config);
 	}
-	Texture CreateOrmMap(TexturePattern<float>? occlusionPattern = null, TexturePattern<float>? roughnessPattern = null, TexturePattern<float>? metallicPattern = null, ReadOnlySpan<char> name = default) {
+	Texture CreateOrmMap(TexturePattern<Real>? occlusionPattern = null, TexturePattern<Real>? roughnessPattern = null, TexturePattern<Real>? metallicPattern = null, ReadOnlySpan<char> name = default) {
 		return CreateOrmMap(
-			occlusionPattern ?? TexturePattern.PlainFill(DefaultTexelOcclusion),
-			roughnessPattern ?? TexturePattern.PlainFill(DefaultTexelRoughness),
-			metallicPattern ?? TexturePattern.PlainFill(DefaultTexelMetallic),
+			occlusionPattern ?? TexturePattern.PlainFill((Real) DefaultTexelOcclusion),
+			roughnessPattern ?? TexturePattern.PlainFill((Real) DefaultTexelRoughness),
+			metallicPattern ?? TexturePattern.PlainFill((Real) DefaultTexelMetallic),
 			name
 		);
 	}
-	private Texture CreateOrmMap(TexturePattern<float> occlusionPattern, TexturePattern<float> roughnessPattern, TexturePattern<float> metallicPattern, ReadOnlySpan<char> name = default) {
+	private Texture CreateOrmMap(TexturePattern<Real> occlusionPattern, TexturePattern<Real> roughnessPattern, TexturePattern<Real> metallicPattern, ReadOnlySpan<char> name = default) {
 		static byte FloatToByte(float f) => (byte) (f * Byte.MaxValue);
 		
 		XYPair<int> dimensions;

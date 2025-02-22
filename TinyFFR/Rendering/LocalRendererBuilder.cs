@@ -103,7 +103,6 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		if (curViewportSize != curTargetSize) {
 			_loadedRenderers[handle] = _loadedRenderers[handle] with { Viewport = viewportData with { CurrentSize = curTargetSize } };
 			SetViewDescriptorSize(viewportData.Handle, curTargetSize.X, curTargetSize.Y).ThrowIfFailure();
-
 		}
 
 		if (!_loadedRenderers[handle].RenderTarget.IsWindow) return;

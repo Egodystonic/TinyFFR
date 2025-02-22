@@ -101,7 +101,7 @@ var colorPattern = TexturePattern.ChequerboardBordered(
 // 	new ColorVect(1f, 0f, 0f).WithHue(270f),
 // 	new ColorVect(0.3f, 0.3f, 0.3f)
 // );
-var metallicPattern = TexturePattern.ChequerboardBordered(0f, 25, 1f, (4, 4));
+var metallicPattern = TexturePattern.ChequerboardBordered<Real>(0f, 25, 1f, (4, 4));
 // var normalPattern = TexturePattern.Rectangles(
 // 	interiorSize:			(96, 96),
 // 	borderSize:				(15, 15),
@@ -186,7 +186,7 @@ using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap(normal
 //using var normalMap = factory.AssetLoader.MaterialBuilder.DefaultNormalMap;
 using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(metallicPattern: metallicPattern);
 using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap, normalMap, ormMap: ormMap, name: "Matthew the Material");
-using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: "Iain the Instance");
+using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, factory.AssetLoader.MaterialBuilder.TestMaterial, name: "Iain the Instance");
 using var light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f), falloffRange: 10f, brightness: 5000000f, name: "Lars the Light"); // TODO why so bright?
 using var scene = factory.SceneBuilder.CreateScene(name: "Sean the Scene");
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window, name: "Ryan the Renderer");

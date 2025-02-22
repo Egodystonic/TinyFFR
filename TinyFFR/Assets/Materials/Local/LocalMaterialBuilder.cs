@@ -26,6 +26,10 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	const string DefaultColorMapName = "Default Color Map";
 	const string DefaultNormalMapName = "Default Normal Map";
 	const string DefaultOrmMapName = "Default Orm Map";
+	const string TestMaterialColorMapName = "Test Material Color Map";
+	const string TestMaterialNormalMapName = "Test Material Normal Map";
+	const string TestMaterialOrmMapName = "Test Material Orm Map";
+	const string TestMaterialName = "Test Material";
 	readonly TextureImplProvider _textureImplProvider;
 	readonly ArrayPoolBackedMap<ResourceHandle<Texture>, TextureData> _loadedTextures = new();
 	readonly ArrayPoolBackedMap<string, UIntPtr> _loadedShaderPackages = new();
@@ -35,6 +39,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	readonly Lazy<Texture> _defaultColorMap;
 	readonly Lazy<Texture> _defaultNormalMap;
 	readonly Lazy<Texture> _defaultOrmMap;
+	readonly Lazy<Material> _testMaterial;
 	bool _isDisposed = false;
 
 	// This is a private embedded 'delegating' object to help provide distinction between some default interface methods
@@ -54,6 +59,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	public Texture DefaultColorMap => _defaultColorMap.Value;
 	public Texture DefaultNormalMap => _defaultNormalMap.Value;
 	public Texture DefaultOrmMap => _defaultOrmMap.Value;
+	public Material TestMaterial => _testMaterial.Value;
 
 	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config) {
 		ArgumentNullException.ThrowIfNull(globals);
@@ -64,6 +70,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		_defaultColorMap = new(() => (this as IMaterialBuilder).CreateColorMap(name: DefaultColorMapName));
 		_defaultNormalMap = new(() => (this as IMaterialBuilder).CreateNormalMap(name: DefaultNormalMapName));
 		_defaultOrmMap = new(() => (this as IMaterialBuilder).CreateOrmMap(name: DefaultOrmMapName));
+		_testMaterial = new(CreateTestMaterial);
 	}
 
 	void ApplyConfig<TTexel>(Span<TTexel> buffer, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
@@ -251,6 +258,83 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		finally {
 			_shaderResourceBufferPool.Return(buffer);
 		}
+	}
+
+	Material CreateTestMaterial() {
+		var colorMap = (this as IMaterialBuilder).CreateColorMap(
+			TexturePattern.ChequerboardBordered(
+				new ColorVect(0.5f, 0.5f, 0.5f),
+				8,
+				new ColorVect(1f, 0f, 0f),
+				new ColorVect(0f, 1f, 0f),
+				new ColorVect(0f, 0f, 1f),
+				new ColorVect(1f, 1f, 1f),
+				repetitionCount: (8, 8),
+				cellResolution: 128
+			),
+			name: TestMaterialColorMapName
+		);
+		var normalMap = (this as IMaterialBuilder).CreateNormalMap(
+			// TexturePattern.Circles(
+			// 	Direction.Forward,
+			// 	new(1f, 0f, 1f),
+			// 	new(0f, -1f, 1f),
+			// 	new(-1f, 0f, 1f),
+			// 	new(0f, 1f, 1f),
+			// 	Direction.Forward,
+			// 	repetitions: (3, 3),
+			// 	interiorRadius: 128,
+			// 	borderSize: 12,
+			// 	paddingSize: (256, 256)
+			// ),
+			TexturePattern.Rectangles(
+				interiorSize: (128, 128),
+				borderSize: (8, 8),
+				paddingSize: (0, 0),
+				interiorValue: Direction.Forward,
+				borderRightValue: (-1f, 0f, 1f),
+				borderTopValue: (0f, 1f, 1f),
+				borderLeftValue: (1f, 0f, 1f),
+				borderBottomValue: (0f, -1f, 1f),
+				paddingValue: Direction.Forward,
+				repetitions: (8, 8)
+			),
+			name: TestMaterialNormalMapName
+		);
+		var ormMap = (this as IMaterialBuilder).CreateOrmMap(
+			TexturePattern.ChequerboardBordered<Real>(
+				1f,
+				4,
+				1f,
+				1f,
+				1f,
+				1f,
+				repetitionCount: (8, 8),
+				cellResolution: 64
+			),
+			TexturePattern.ChequerboardBordered<Real>(
+				0.4f,
+				4,
+				0.7f,
+				0.3f,
+				1f,
+				0f,
+				repetitionCount: (32, 32),
+				cellResolution: 64
+			),
+			TexturePattern.ChequerboardBordered<Real>(
+				0f,
+				4,
+				0.7f,
+				0.3f,
+				1f,
+				0f,
+				repetitionCount: (24, 24),
+				cellResolution: 64
+			),
+			name: TestMaterialOrmMapName
+		);
+		return (this as IMaterialBuilder).CreateOpaqueMaterial(colorMap, normalMap, ormMap, TestMaterialName);
 	}
 
 	#region Native Methods
