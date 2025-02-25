@@ -10,6 +10,7 @@ public readonly ref struct CameraCreationConfig {
 	public static readonly Direction DefaultViewDirection = Direction.Forward;
 	public static readonly Direction DefaultUpDirection = Direction.Up;
 	public static readonly Angle DefaultFieldOfView = 60f;
+	public static readonly float DefaultAspectRatio = 16f / 9f;
 	public static readonly bool DefaultFieldOfViewVerticalFlag = true;
 	public static readonly float DefaultNearPlaneDistance = 0.3f;
 	public static readonly float DefaultFarPlaneDistance = 30_000f;
@@ -18,6 +19,7 @@ public readonly ref struct CameraCreationConfig {
 	public Direction ViewDirection { get; init; } = DefaultViewDirection;
 	public Direction UpDirection { get; init; } = DefaultUpDirection;
 	public Angle FieldOfView { get; init; } = DefaultFieldOfView;
+	public float AspectRatio { get; init; } = DefaultAspectRatio;
 	public bool FieldOfViewIsVertical { get; init; } = DefaultFieldOfViewVerticalFlag;
 	public float NearPlaneDistance { get; init; } = DefaultNearPlaneDistance;
 	public float FarPlaneDistance { get; init; } = DefaultFarPlaneDistance;
@@ -41,6 +43,10 @@ public readonly ref struct CameraCreationConfig {
 
 		if (FieldOfView < Camera.FieldOfViewMin || FieldOfView > Camera.FieldOfViewMax) {
 			ThrowArgException(FieldOfView, $"must be between {nameof(Camera)}.{nameof(Camera.FieldOfViewMin)} ({Camera.FieldOfViewMin}) and {nameof(Camera)}.{nameof(Camera.FieldOfViewMax)} ({Camera.FieldOfViewMax}).");
+		}
+
+		if (!AspectRatio.IsPositiveAndFinite()) {
+			ThrowArgException(AspectRatio, $"must be a normal, positive floating-point value.");
 		}
 
 		if (!Single.IsNormal(NearPlaneDistance) || NearPlaneDistance < Camera.NearPlaneDistanceMin) {

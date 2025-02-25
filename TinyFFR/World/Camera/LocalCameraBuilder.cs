@@ -13,7 +13,6 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 	readonly record struct CameraParameters(Location Position, Direction ViewDirection, Direction UpDirection, float VerticalFovRadians, float AspectRatio, float NearPlaneDistance, float FarPlaneDistance);
 
 	const string DefaultCameraName = "Unnamed Camera";
-	const float DefaultAspectRatio = 16f / 9f;
 	readonly ArrayPoolBackedMap<ResourceHandle<Camera>, CameraParameters> _activeCameras = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
@@ -33,8 +32,8 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 			config.Position,
 			config.ViewDirection,
 			GetReorthogonalizedUpOrViewDirection(config.UpDirection, config.ViewDirection),
-			config.FieldOfViewIsVertical ? config.FieldOfView.Radians : ConvertHorizontalFovToVertical(config.FieldOfView.Radians, DefaultAspectRatio),
-			DefaultAspectRatio,
+			config.FieldOfViewIsVertical ? config.FieldOfView.Radians : ConvertHorizontalFovToVertical(config.FieldOfView.Radians, config.AspectRatio),
+			config.AspectRatio,
 			config.NearPlaneDistance,
 			config.FarPlaneDistance
 		);
@@ -117,6 +116,22 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 	public void SetHorizontalFieldOfView(ResourceHandle<Camera> handle, Angle newFov) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		SetVerticalFieldOfView(handle, Angle.FromRadians(ConvertHorizontalFovToVertical(newFov.Radians, _activeCameras[handle].AspectRatio)));
+	}
+
+	public float GetAspectRatio(ResourceHandle<Camera> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeCameras[handle].AspectRatio;
+	}
+	public void SetAspectRatio(ResourceHandle<Camera> handle, float newRatio) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (!newRatio.IsPositiveAndFinite()) {
+			throw new ArgumentException(
+				$"Aspect ratio must be a normal, positive floating-point value.",
+				nameof(newRatio)
+			);
+		}
+		_activeCameras[handle] = _activeCameras[handle] with { AspectRatio = newRatio };
+		UpdateProjectionMatrixFromParameters(handle);
 	}
 
 	public float GetNearPlaneDistance(ResourceHandle<Camera> handle) {

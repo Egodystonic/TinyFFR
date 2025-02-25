@@ -44,7 +44,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	
 	readonly record struct WindowData(Window Window, UIntPtr RendererPtr, UIntPtr SwapChainPtr);
 	readonly record struct ViewportData(UIntPtr Handle, XYPair<uint> CurrentSize);
-	readonly record struct RendererData(ResourceHandle<Renderer> Handle, Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport);
+	readonly record struct RendererData(ResourceHandle<Renderer> Handle, Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio);
 
 	const string DefaultRendererName = "Unnamed Renderer";
 
@@ -82,7 +82,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 
 		_previousHandleId++;
 		var handle = new ResourceHandle<Renderer>(_previousHandleId);
-		_loadedRenderers.Add(handle, new(handle, scene, camera, new(window), viewportData));
+		_loadedRenderers.Add(handle, new(handle, scene, camera, new(window), viewportData, config.AutoUpdateCameraAspectRatio));
 
 		_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
 
@@ -103,6 +103,9 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		if (curViewportSize != curTargetSize) {
 			_loadedRenderers[handle] = _loadedRenderers[handle] with { Viewport = viewportData with { CurrentSize = curTargetSize } };
 			SetViewDescriptorSize(viewportData.Handle, curTargetSize.X, curTargetSize.Y).ThrowIfFailure();
+			if (_loadedRenderers[handle].AutoUpdateCameraAspectRatio) {
+				_loadedRenderers[handle].Camera.SetAspectRatio(curTargetSize.Ratio ?? CameraCreationConfig.DefaultAspectRatio);
+			}
 		}
 
 		if (!_loadedRenderers[handle].RenderTarget.IsWindow) return;

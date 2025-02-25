@@ -14,9 +14,9 @@ namespace Egodystonic.TinyFFR;
 class LocalCuboidRenderTest {
 	TexturePattern<ColorVect> _colorPattern;
 	TexturePattern<Direction> _normalPattern;
-	TexturePattern<float> _occlusionPattern;
-	TexturePattern<float> _roughnessPattern;
-	TexturePattern<float> _metallicPattern;
+	TexturePattern<Real> _occlusionPattern;
+	TexturePattern<Real> _roughnessPattern;
+	TexturePattern<Real> _metallicPattern;
 
 	[SetUp]
 	public void SetUpTest() {
@@ -29,9 +29,9 @@ class LocalCuboidRenderTest {
 			new Direction(0f, -1f, 1f),
 			Direction.Forward
 		);
-		_occlusionPattern = TexturePattern.Chequerboard(0.5f, 1f, 0.8f, (27, 27));
-		_roughnessPattern = TexturePattern.Chequerboard(0.8f, 0.4f, 1f, (27, 27));
-		_metallicPattern = TexturePattern.Chequerboard(1f, 0f, (27, 27));
+		_occlusionPattern = TexturePattern.Chequerboard<Real>(0.5f, 1f, 0.8f, (27, 27));
+		_roughnessPattern = TexturePattern.Chequerboard<Real>(0.8f, 0.4f, 1f, (27, 27));
+		_metallicPattern = TexturePattern.Chequerboard<Real>(1f, 0f, (27, 27));
 	}
 
 	[TearDown]

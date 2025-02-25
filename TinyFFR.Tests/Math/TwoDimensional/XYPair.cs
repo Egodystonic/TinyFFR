@@ -243,6 +243,30 @@ class XYPairTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyCalculateArea() {
+		Assert.AreEqual(12f, ThreeFourFloat.Area);
+		Assert.AreEqual(12f, (-ThreeFourFloat).Area);
+		Assert.AreEqual(12f, new XYPair<float>(3f, -4f).Area);
+		Assert.AreEqual(12f, new XYPair<float>(-3f, 4f).Area);
+		Assert.AreEqual(0f, XYPair<float>.Zero.Area);
+
+		Assert.AreEqual(12UL, ThreeFourFloat.Cast<ulong>().Area);
+		Assert.AreEqual(0UL, XYPair<ulong>.Zero.Area);
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateRatio() {
+		Assert.AreEqual(3f / 4f, ThreeFourFloat.Ratio);
+		Assert.AreEqual(3f / 4f, (-ThreeFourFloat).Ratio);
+		Assert.AreEqual(-3f / 4f, new XYPair<float>(3f, -4f).Ratio);
+		Assert.AreEqual(-3f / 4f, new XYPair<float>(-3f, 4f).Ratio);
+		Assert.AreEqual(3f / 4f, ThreeFourFloat.Cast<ulong>().Ratio);
+		Assert.AreEqual(null, XYPair<float>.Zero.Ratio);
+		Assert.AreEqual(null, new XYPair<float>(3f, 0f).Ratio);
+		Assert.AreEqual(0f, new XYPair<float>(0f, 3f).Ratio);
+	}
+
+	[Test]
 	public void ShouldCorrectlyCalculatePolarAngle() {
 		for (var x = -1f; x <= 1.05f; x += 0.05f) {
 			for (var y = -1f; y <= 1.05f; y += 0.05f) {

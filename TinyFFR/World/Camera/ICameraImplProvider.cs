@@ -18,6 +18,8 @@ public interface ICameraImplProvider : IDisposableResourceImplProvider<Camera> {
 	public void SetHorizontalFieldOfView(ResourceHandle<Camera> handle, Angle newFov);
 	public Angle GetVerticalFieldOfView(ResourceHandle<Camera> handle);
 	public void SetVerticalFieldOfView(ResourceHandle<Camera> handle, Angle newFov);
+	public float GetAspectRatio(ResourceHandle<Camera> handle);
+	public void SetAspectRatio(ResourceHandle<Camera> handle, float newRatio);
 
 	public float GetNearPlaneDistance(ResourceHandle<Camera> handle);
 	public void SetNearPlaneDistance(ResourceHandle<Camera> handle, float newDistance);

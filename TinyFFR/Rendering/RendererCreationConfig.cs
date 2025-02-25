@@ -6,6 +6,7 @@ using System;
 namespace Egodystonic.TinyFFR.Rendering;
 
 public readonly ref struct RendererCreationConfig {
+	public bool AutoUpdateCameraAspectRatio { get; init; } = true;
 	public ReadOnlySpan<char> Name { get; init; }
 
 	public RendererCreationConfig() { }

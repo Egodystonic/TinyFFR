@@ -49,6 +49,18 @@ partial struct XYPair<T> :
 		get => ToVector2().LengthSquared();
 	}
 
+	public T Area {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => T.Abs(X * Y);
+	}
+	public float? Ratio {
+		get {
+			var v2 = ToVector2();
+			if (v2.Y == 0f) return null;
+			return v2.X / v2.Y;
+		}
+	}
+
 	static XYPair<T> IAdditiveIdentity<XYPair<T>, XYPair<T>>.AdditiveIdentity => new(T.Zero, T.Zero);
 	static XYPair<T> IMultiplicativeIdentity<XYPair<T>, XYPair<T>>.MultiplicativeIdentity => new(T.One, T.One);
 

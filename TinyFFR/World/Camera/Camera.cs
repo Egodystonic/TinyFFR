@@ -71,6 +71,15 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetVerticalFieldOfView(Angle fov) => VerticalFieldOfView = fov;
 
+	public float AspectRatio {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetAspectRatio(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetAspectRatio(_handle, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetAspectRatio(float ratio) => AspectRatio = ratio;
+
 	public float NearPlaneDistance {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetNearPlaneDistance(_handle);
