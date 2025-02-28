@@ -7,7 +7,9 @@ namespace Egodystonic.TinyFFR.Assets.Local;
 
 public sealed record LocalAssetLoaderConfig {
 	public const int MaxMaxShaderBufferSizeBytes = 1 << 29;
+	public const int MaxMaxAssetFilePathLengthChars = 1 << 29;
 	public const int DefaultMaxShaderBufferSizeBytes = 1024 * 1024 * 1; // 1 MB
+	public const int DefaultMaxAssetFilePathLengthChars = 2048;
 
 	readonly int _maxShaderBufferSizeBytes = DefaultMaxShaderBufferSizeBytes;
 	public int MaxShaderBufferSizeBytes {
@@ -17,6 +19,17 @@ public sealed record LocalAssetLoaderConfig {
 				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max shader buffer size must be between 1 and {MaxMaxShaderBufferSizeBytes} bytes.");
 			}
 			_maxShaderBufferSizeBytes = value;
+		}
+	}
+
+	readonly int _maxAssetFilePathLengthChars = DefaultMaxAssetFilePathLengthChars;
+	public int MaxAssetFilePathLengthChars {
+		get => _maxAssetFilePathLengthChars;
+		init {
+			if (value is <= 0 or > MaxMaxAssetFilePathLengthChars) {
+				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max asset file path length must be between 1 and {MaxMaxAssetFilePathLengthChars} chars.");
+			}
+			_maxAssetFilePathLengthChars = value;
 		}
 	}
 }

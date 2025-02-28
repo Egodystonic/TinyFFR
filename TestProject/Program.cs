@@ -123,7 +123,8 @@ var normalPattern = TexturePattern.Circles(
 	Direction.Forward
 );
 
-using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(colorPattern, name: "Terry the Texture");
+//using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(colorPattern, name: "Terry the Texture");
+using var colorMap = factory.AssetLoader.LoadTexture(@"C:\Users\ben\Pictures\ihavedep.png");
 // using var colorMap = factory.AssetLoader.MaterialBuilder.CreateTexture(
 // 	stackalloc TexelRgb24[] {
 // 		TexelRgb24.ConvertFrom(StandardColor.Red),
@@ -172,7 +173,8 @@ using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(colorPat
 // 		InvertZBlueChannel = true
 // 	}
 // );
-using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap(normalPattern);
+//using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap(normalPattern);
+using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap();
 // using var normalMap = factory.AssetLoader.MaterialBuilder.CreateTexture(
 // 	stackalloc TexelRgb24[] {
 //  		TexelRgb24.ConvertFrom(Direction.Backward)
@@ -184,10 +186,11 @@ using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap(normal
 // 	}
 // );
 //using var normalMap = factory.AssetLoader.MaterialBuilder.DefaultNormalMap;
-using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(metallicPattern: metallicPattern);
+//using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(metallicPattern: metallicPattern);
+using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(metallicPattern: TexturePattern.PlainFill<Real>(1f));
 using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap, normalMap, ormMap: ormMap, name: "Matthew the Material");
-using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, factory.AssetLoader.MaterialBuilder.TestMaterial, name: "Iain the Instance");
-using var light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f), falloffRange: 10f, brightness: 5000000f, name: "Lars the Light"); // TODO why so bright?
+using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: "Iain the Instance");
+using var light = factory.LightBuilder.CreatePointLight(camera.Position + Direction.Forward * 1f, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f), name: "Lars the Light"); // TODO why so bright?
 using var scene = factory.SceneBuilder.CreateScene(name: "Sean the Scene");
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window, name: "Ryan the Renderer");
 
@@ -210,6 +213,8 @@ instance.SetPosition(camera.Position + Direction.Forward * 2.2f);
 Console.WriteLine(camera.Position);
 Console.WriteLine(light.Position);
 Console.WriteLine(instance.Position);
+
+factory.AssetLoader.LoadMesh(@"C:\Users\ben\Documents\Egodystonic\EscapeLizards\EscapeLizardsInst\Models\LizardCoin.obj");
 while (!loop.Input.UserQuitRequested) {
 	window.Title = (1000d / loop.IterateOnce().TotalMilliseconds).ToString("N0") + " FPS";
 	renderer.Render();
@@ -223,7 +228,7 @@ while (!loop.Input.UserQuitRequested) {
 	instance.RotateBy(0.5f * 0.66f % Direction.Right);
 	
 	light.Color = light.Color.WithHueAdjustedBy(0.5f);
-	light.Position = instance.Position + (((instance.Position >> camera.Position) * 1.2f) * ((MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 0.8f) * 45f) % Direction.Down));
+	light.Position = instance.Position + (((instance.Position >> camera.Position) * 1f) * ((MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 0.8f) * 45f) % Direction.Down));
 	light.Position += Direction.Up * MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 1f) * 3.5f;
 
 	if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) window.Size += (100, 100);

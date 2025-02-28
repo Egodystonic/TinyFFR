@@ -23,8 +23,8 @@ public readonly ref struct LightCreationConfig {
 }
 
 public readonly ref struct PointLightCreationConfig {
-	public static readonly float DefaultInitialBrightness = 1000f;
-	public static readonly float DefaultInitialMaxIlluminationRadius = 5f;
+	public static readonly float DefaultInitialBrightness = 1_000f;
+	public static readonly float DefaultInitialMaxIlluminationRadius = 15f;
 
 	public float InitialBrightness { get; init; } = DefaultInitialBrightness;
 	

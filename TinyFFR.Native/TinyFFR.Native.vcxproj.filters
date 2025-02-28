@@ -57,6 +57,12 @@
     <ClInclude Include="tffr\headers\scene\lights\native_impl_lights.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="tffr\headers\assets\native_impl_asset_loader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\headers\stb\stb_imageh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -96,6 +102,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="tffr\impl\scene\lights\native_impl_lights.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tffr\impl\assets\native_impl_asset_loader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

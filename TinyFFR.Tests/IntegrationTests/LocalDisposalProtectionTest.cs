@@ -238,7 +238,7 @@ class LocalDisposalProtectionTest {
 		AssertUseAfterDisposalThrowsException(
 			objectBuilder, objectIsAlreadyDisposed: true,
 			v => _ = v.CreateModelInstance(mesh, material),
-			v => _ = v.CreateModelInstance(default, default)
+			v => _ = v.CreateModelInstance(default(Mesh), default(Material))
 		);
 		AssertUseAfterDisposalThrowsException(
 			sceneBuilder, objectIsAlreadyDisposed: true,
