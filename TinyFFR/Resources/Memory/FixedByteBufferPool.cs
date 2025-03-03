@@ -32,7 +32,8 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 		}
 		public ReadOnlySpan<T> AsReadOnlySpan<T>(int numElements) where T : unmanaged => AsSpan<T>(numElements);
 
-		public Span<T> AsSpan<T>() where T : unmanaged => AsSpan<T>(SizeBytes / sizeof(T));
+		public int Size<T>() where T : unmanaged => SizeBytes / sizeof(T);
+		public Span<T> AsSpan<T>() where T : unmanaged => AsSpan<T>(Size<T>());
 		public ReadOnlySpan<T> AsReadOnlySpan<T>() where T : unmanaged => AsSpan<T>();
 
 		internal void ThrowIfInvalid() {

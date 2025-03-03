@@ -13,7 +13,7 @@ class MeshVertexTest {
 
 	[Test]
 	public unsafe void ShouldCorrectlyLayOutStruct() {
-		AssertStructLayout<MeshVertex>(36);
+		AssertStructLayout<MeshVertex>(MeshVertex.ExpectedSerializedSize);
 		var valSpan = stackalloc MeshVertex[] {
 			new((1f, 2f, 3f), (4f, 5f), Rotation.FromQuaternionPreNormalized(new(0.1f, 0.2f, 0.3f, 0.4f))), 
 			new((6f, 7f, 8f), (9f, 10f), Rotation.FromQuaternionPreNormalized(new(0.5f, 0.6f, 0.7f, 0.8f)))

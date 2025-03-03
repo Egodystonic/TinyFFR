@@ -7,8 +7,9 @@ using System;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
-[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 36)]
+[StructLayout(LayoutKind.Sequential, Pack = 1, Size = ExpectedSerializedSize)]
 public readonly record struct MeshVertex {
+	internal const int ExpectedSerializedSize = 36;
 	readonly float _locX, _locY, _locZ;
 	readonly float _texU, _texV;
 	readonly float _tanX, _tanY, _tanZ, _tanW;

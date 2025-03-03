@@ -17,6 +17,7 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IDisposable {
 	readonly LocalMeshBuilder _meshBuilder;
 	readonly LocalMaterialBuilder _materialBuilder;
 	readonly InteropStringBuffer _assetFilePathBuffer;
+	readonly FixedByteBufferPool _vertexIndexBufferPool;
 	bool _isDisposed = false;
 
 	public IMeshBuilder MeshBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IAssetLoader)) : _meshBuilder;
@@ -30,6 +31,7 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IDisposable {
 		_meshBuilder = new LocalMeshBuilder(globals);
 		_materialBuilder = new LocalMaterialBuilder(globals, config);
 		_assetFilePathBuffer = new InteropStringBuffer(config.MaxAssetFilePathLengthChars, addOneForNullTerminator: true);
+		_vertexIndexBufferPool = new FixedByteBufferPool(config.MaxAssetVertexIndexBufferSizeBytes);
 	}
 
 	public Mesh LoadMesh(in MeshLoadConfig config) {
@@ -45,12 +47,39 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IDisposable {
 
 		try {
 			GetLoadedAssetMeshCount(assetHandle, out var meshCount).ThrowIfFailure();
-			GetLoadedAssetMaterialCount(assetHandle, out var matCount).ThrowIfFailure();
-			GetLoadedAssetTextureCount(assetHandle, out var texCount).ThrowIfFailure();
-			Console.WriteLine(meshCount);
-			Console.WriteLine(matCount);
-			Console.WriteLine(texCount);
-			throw new NotImplementedException();
+
+			checked {
+				var totalVertexCount = 0;
+				var totalTriangleCount = 0;
+			
+				for (var i = 0; i < meshCount; ++i) {
+					GetLoadedAssetMeshVertexCount(assetHandle, i, out var vCount).ThrowIfFailure();
+					GetLoadedAssetMeshTriangleCount(assetHandle, i, out var tCount).ThrowIfFailure();
+					totalVertexCount += vCount;
+					totalTriangleCount += tCount;
+				}
+
+				var vertexBuffer = _vertexIndexBufferPool.Rent<MeshVertex>(totalVertexCount);
+				var triangleBuffer = _vertexIndexBufferPool.Rent<VertexTriangle>(totalTriangleCount);
+
+				var vBufferPtr = (MeshVertex*) vertexBuffer.StartPtr;
+				var tBufferPtr = (VertexTriangle*) triangleBuffer.StartPtr;
+
+				for (var i = 0; i < meshCount; ++i) {
+					GetLoadedAssetMeshVertexCount(assetHandle, i, out var vCount).ThrowIfFailure();
+					GetLoadedAssetMeshTriangleCount(assetHandle, i, out var tCount).ThrowIfFailure();
+					CopyLoadedAssetMeshVertices(assetHandle, i, (int) (vertexBuffer.Size<MeshVertex>() - (vBufferPtr - (MeshVertex*) vertexBuffer.StartPtr)), vBufferPtr);
+					CopyLoadedAssetMeshTriangles(assetHandle, i, (int) (triangleBuffer.Size<VertexTriangle>() - (tBufferPtr - (VertexTriangle*) triangleBuffer.StartPtr)), tBufferPtr);
+					vBufferPtr += vCount;
+					tBufferPtr += tCount;
+				}
+
+				return _meshBuilder.CreateMesh(
+					vertexBuffer.AsReadOnlySpan<MeshVertex>(totalVertexCount),
+					triangleBuffer.AsReadOnlySpan<VertexTriangle>(totalTriangleCount),
+					MeshCreationConfig.FromLoadConfig(config)
+				);
+			}
 		}
 		finally {
 			UnloadAssetFileFromMemory(assetHandle).ThrowIfFailure();
@@ -118,6 +147,36 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IDisposable {
 		out int outTextureCount
 	);
 
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_vertex_count")]
+	static extern InteropResult GetLoadedAssetMeshVertexCount(
+		UIntPtr assetHandle,
+		int meshIndex,
+		out int outVertexCount
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_triangle_count")]
+	static extern InteropResult GetLoadedAssetMeshTriangleCount(
+		UIntPtr assetHandle,
+		int meshIndex,
+		out int outTriangleCount
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "copy_loaded_asset_mesh_vertices")]
+	static extern InteropResult CopyLoadedAssetMeshVertices(
+		UIntPtr assetHandle,
+		int meshIndex,
+		int bufferSizeVertices,
+		MeshVertex* vertexBufferPtr
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "copy_loaded_asset_mesh_triangles")]
+	static extern InteropResult CopyLoadedAssetMeshTriangles(
+		UIntPtr assetHandle,
+		int meshIndex,
+		int bufferSizeTriangles,
+		VertexTriangle* triangleBufferPtr
+	);
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "unload_asset_file_from_memory")]
 	static extern InteropResult UnloadAssetFileFromMemory(
 		UIntPtr assetHandle
@@ -144,6 +203,7 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IDisposable {
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
+			_vertexIndexBufferPool.Dispose();
 			_assetFilePathBuffer.Dispose();
 			_meshBuilder.Dispose();
 			_materialBuilder.Dispose();

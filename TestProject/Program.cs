@@ -123,8 +123,8 @@ var normalPattern = TexturePattern.Circles(
 	Direction.Forward
 );
 
-//using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(colorPattern, name: "Terry the Texture");
-using var colorMap = factory.AssetLoader.LoadTexture(@"C:\Users\ben\Pictures\ihavedep.png");
+using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(colorPattern, name: "Terry the Texture");
+//using var colorMap = factory.AssetLoader.LoadTexture(@"C:\Users\ben\Pictures\ihavedep.png");
 // using var colorMap = factory.AssetLoader.MaterialBuilder.CreateTexture(
 // 	stackalloc TexelRgb24[] {
 // 		TexelRgb24.ConvertFrom(StandardColor.Red),
@@ -189,7 +189,7 @@ using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap();
 //using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(metallicPattern: metallicPattern);
 using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(metallicPattern: TexturePattern.PlainFill<Real>(1f));
 using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap, normalMap, ormMap: ormMap, name: "Matthew the Material");
-using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: "Iain the Instance");
+using var instance = factory.ObjectBuilder.CreateModelInstance(factory.AssetLoader.LoadMesh(@"C:\Users\ben\Documents\Egodystonic\EscapeLizards\EscapeLizardsInst\Models\LizardCoin.obj"), mat, name: "Iain the Instance");
 using var light = factory.LightBuilder.CreatePointLight(camera.Position + Direction.Forward * 1f, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f), name: "Lars the Light"); // TODO why so bright?
 using var scene = factory.SceneBuilder.CreateScene(name: "Sean the Scene");
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window, name: "Ryan the Renderer");
@@ -214,7 +214,6 @@ Console.WriteLine(camera.Position);
 Console.WriteLine(light.Position);
 Console.WriteLine(instance.Position);
 
-factory.AssetLoader.LoadMesh(@"C:\Users\ben\Documents\Egodystonic\EscapeLizards\EscapeLizardsInst\Models\LizardCoin.obj");
 while (!loop.Input.UserQuitRequested) {
 	window.Title = (1000d / loop.IterateOnce().TotalMilliseconds).ToString("N0") + " FPS";
 	renderer.Render();

@@ -10,7 +10,7 @@
 void native_impl_asset_loader::load_asset_file_in_to_memory(const char* filePath, interop_bool fixCommonExporterErrors, interop_bool optimize, MemoryLoadedAssetHandle* outAssetHandle) {
 	ThrowIfNull(filePath, "File path pointer was null.");
 	ThrowIfNull(outAssetHandle, "Out asset handle pointer was null.");
-	unsigned int flags = aiProcess_CalcTangentSpace | aiProcess_GenNormals | aiProcess_GenBoundingBoxes | aiProcess_GenUVCoords | aiProcess_Triangulate;
+	unsigned int flags = aiProcess_CalcTangentSpace | aiProcess_GenNormals | aiProcess_GenBoundingBoxes | aiProcess_GenUVCoords | aiProcess_Triangulate | aiProcess_SortByPType;
 	if (fixCommonExporterErrors) flags |= aiProcess_FindDegenerates | aiProcess_FindInstances | aiProcess_FindInvalidData | aiProcess_FixInfacingNormals | aiProcess_GenNormals;
 	if (optimize) flags |= aiProcess_ImproveCacheLocality | aiProcess_JoinIdenticalVertices | aiProcess_OptimizeGraph | aiProcess_OptimizeMeshes;
 	*outAssetHandle = aiImportFile(filePath, flags);
@@ -51,7 +51,98 @@ StartExportedFunc(get_loaded_asset_texture_count, MemoryLoadedAssetHandle assetH
 	EndExportedFunc
 }
 
+void native_impl_asset_loader::get_loaded_asset_mesh_vertex_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outVertexCount) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIfNull(outVertexCount, "Out vertex count pointer was null.");
+	ThrowIf(meshIndex >= assetHandle->mNumMeshes, "Mesh index was out of bounds.");
 
+	*outVertexCount = static_cast<int32_t>(assetHandle->mMeshes[meshIndex]->mNumVertices);
+}
+StartExportedFunc(get_loaded_asset_mesh_vertex_count, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outVertexCount) {
+	native_impl_asset_loader::get_loaded_asset_mesh_vertex_count(assetHandle, meshIndex, outVertexCount);
+	EndExportedFunc
+}
+
+int32_t get_mesh_triangle_count(aiMesh* mesh) {
+	if (mesh->mPrimitiveTypes != aiPrimitiveType_TRIANGLE) return 0;
+	
+	auto result = static_cast<int32_t>(mesh->mNumFaces);
+	if (result < 0) return 0;
+
+	return result;
+}
+
+void native_impl_asset_loader::get_loaded_asset_mesh_triangle_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outTriangleCount) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIfNull(outTriangleCount, "Out index count pointer was null.");
+	ThrowIf(meshIndex >= assetHandle->mNumMeshes, "Mesh index was out of bounds.");
+
+	*outTriangleCount = get_mesh_triangle_count(assetHandle->mMeshes[meshIndex]);
+}
+StartExportedFunc(get_loaded_asset_mesh_triangle_count, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outTriangleCount) {
+	native_impl_asset_loader::get_loaded_asset_mesh_triangle_count(assetHandle, meshIndex, outTriangleCount);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::copy_loaded_asset_mesh_vertices(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertex* buffer) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIf(meshIndex >= assetHandle->mNumMeshes, "Mesh index was out of bounds.");
+
+	auto mesh = assetHandle->mMeshes[meshIndex];
+
+	ThrowIf(bufferSizeVertices < mesh->mNumVertices, "Given buffer was too small.")
+
+	auto hasUVs = mesh->HasTextureCoords(0);
+	auto hasTangents = mesh->HasTangentsAndBitangents() && mesh->HasNormals();
+
+	for (auto vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex) {
+		auto position = mesh->mVertices[vertexIndex];
+		auto uv = hasUVs ? mesh->mTextureCoords[0][vertexIndex] : aiVector3D{ 0.0f, 0.0f, 0.0f };
+		auto tangent = float4{ };
+		if (hasTangents) {
+			auto t = mesh->mTangents[vertexIndex];
+			auto b = mesh->mBitangents[vertexIndex];
+			auto n = mesh->mNormals[vertexIndex];
+			native_impl_render_assets::calculate_tangent_rotation(
+				float3{ t.x, t.y, t.z },
+				float3{ b.x, b.y, b.z },
+				float3{ n.x, n.y, n.z },
+				&tangent
+			);
+		}
+		buffer[vertexIndex] = {
+			.Position = { position.x, position.y, position.z },
+			.TextureUV = { uv.x, uv.y },
+			.Tangent = tangent
+		};
+	}
+}
+StartExportedFunc(copy_loaded_asset_mesh_vertices, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertex* buffer) {
+	native_impl_asset_loader::copy_loaded_asset_mesh_vertices(assetHandle, meshIndex, bufferSizeVertices, buffer);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::copy_loaded_asset_mesh_triangles(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeTriangles, int32_t* buffer) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIf(meshIndex >= assetHandle->mNumMeshes, "Mesh index was out of bounds.");
+
+	auto mesh = assetHandle->mMeshes[meshIndex];
+	auto triangleCount = get_mesh_triangle_count(mesh);
+
+	ThrowIf(bufferSizeTriangles < triangleCount, "Given buffer was too small.");
+
+	for (auto faceIndex = 0; faceIndex < triangleCount; ++faceIndex) {
+		auto face = mesh->mFaces[faceIndex];
+		if (face.mNumIndices != 3) continue;
+		buffer[(faceIndex * 3) + 0] = face.mIndices[0];
+		buffer[(faceIndex * 3) + 1] = face.mIndices[1];
+		buffer[(faceIndex * 3) + 2] = face.mIndices[2];
+	}
+}
+StartExportedFunc(copy_loaded_asset_mesh_triangles, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeTriangles, int32_t* buffer) {
+	native_impl_asset_loader::copy_loaded_asset_mesh_triangles(assetHandle, meshIndex, bufferSizeTriangles, buffer);
+	EndExportedFunc
+}
 
 void native_impl_asset_loader::unload_asset_file_from_memory(MemoryLoadedAssetHandle assetHandle) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
