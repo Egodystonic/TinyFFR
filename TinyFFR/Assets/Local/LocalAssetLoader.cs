@@ -17,7 +17,7 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IDisposable {
 	readonly LocalMeshBuilder _meshBuilder;
 	readonly LocalMaterialBuilder _materialBuilder;
 	readonly InteropStringBuffer _assetFilePathBuffer;
-	readonly FixedByteBufferPool _vertexIndexBufferPool;
+	readonly FixedByteBufferPool _vertexTriangleBufferPool;
 	bool _isDisposed = false;
 
 	public IMeshBuilder MeshBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IAssetLoader)) : _meshBuilder;
@@ -31,68 +31,19 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IDisposable {
 		_meshBuilder = new LocalMeshBuilder(globals);
 		_materialBuilder = new LocalMaterialBuilder(globals, config);
 		_assetFilePathBuffer = new InteropStringBuffer(config.MaxAssetFilePathLengthChars, addOneForNullTerminator: true);
-		_vertexIndexBufferPool = new FixedByteBufferPool(config.MaxAssetVertexIndexBufferSizeBytes);
+		_vertexTriangleBufferPool = new FixedByteBufferPool(config.MaxAssetVertexIndexBufferSizeBytes);
 	}
 
-	public Mesh LoadMesh(in MeshLoadConfig config) {
+	#region Textures
+	public Texture LoadTexture(in TextureReadConfig readConfig, in TextureCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		readConfig.ThrowIfInvalid();
 		config.ThrowIfInvalid();
 
-		_assetFilePathBuffer.ConvertFromUtf16(config.FilePath);
-		LoadAssetFileInToMemory(
-			in _assetFilePathBuffer.BufferRef,
-			config.FixCommonExportErrors,
-			config.OptimizeForGpu,
-			out var assetHandle
-		).ThrowIfFailure();
-
-		try {
-			GetLoadedAssetMeshCount(assetHandle, out var meshCount).ThrowIfFailure();
-
-			checked {
-				var totalVertexCount = 0;
-				var totalTriangleCount = 0;
-			
-				for (var i = 0; i < meshCount; ++i) {
-					GetLoadedAssetMeshVertexCount(assetHandle, i, out var vCount).ThrowIfFailure();
-					GetLoadedAssetMeshTriangleCount(assetHandle, i, out var tCount).ThrowIfFailure();
-					totalVertexCount += vCount;
-					totalTriangleCount += tCount;
-				}
-
-				var vertexBuffer = _vertexIndexBufferPool.Rent<MeshVertex>(totalVertexCount);
-				var triangleBuffer = _vertexIndexBufferPool.Rent<VertexTriangle>(totalTriangleCount);
-
-				var vBufferPtr = (MeshVertex*) vertexBuffer.StartPtr;
-				var tBufferPtr = (VertexTriangle*) triangleBuffer.StartPtr;
-
-				for (var i = 0; i < meshCount; ++i) {
-					GetLoadedAssetMeshVertexCount(assetHandle, i, out var vCount).ThrowIfFailure();
-					GetLoadedAssetMeshTriangleCount(assetHandle, i, out var tCount).ThrowIfFailure();
-					CopyLoadedAssetMeshVertices(assetHandle, i, (int) (vertexBuffer.Size<MeshVertex>() - (vBufferPtr - (MeshVertex*) vertexBuffer.StartPtr)), vBufferPtr);
-					CopyLoadedAssetMeshTriangles(assetHandle, i, (int) (triangleBuffer.Size<VertexTriangle>() - (tBufferPtr - (VertexTriangle*) triangleBuffer.StartPtr)), tBufferPtr);
-					vBufferPtr += vCount;
-					tBufferPtr += tCount;
-				}
-
-				return _meshBuilder.CreateMesh(
-					vertexBuffer.AsReadOnlySpan<MeshVertex>(totalVertexCount),
-					triangleBuffer.AsReadOnlySpan<VertexTriangle>(totalTriangleCount),
-					MeshCreationConfig.FromLoadConfig(config)
-				);
-			}
-		}
-		finally {
-			UnloadAssetFileFromMemory(assetHandle).ThrowIfFailure();
-		}
-	}
-
-	public Texture LoadTexture(in TextureLoadConfig config) {
-		config.ThrowIfInvalid();
-		
-		_assetFilePathBuffer.ConvertFromUtf16(config.FilePath);
+		_assetFilePathBuffer.ConvertFromUtf16(readConfig.FilePath);
 		LoadTextureFileInToMemory(
 			in _assetFilePathBuffer.BufferRef,
-			config.IncludeWAlphaChannel,
+			readConfig.IncludeWAlphaChannel,
 			out var width,
 			out var height,
 			out var texelBuffer
@@ -102,16 +53,18 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IDisposable {
 			if (width < 0 || height < 0) throw new InvalidOperationException($"Loaded texture had width/height of {width}/{height}.");
 			var texelCount = width * height;
 
-			if (config.IncludeWAlphaChannel) {
+			if (readConfig.IncludeWAlphaChannel) {
 				return _materialBuilder.CreateTexture(
 					new ReadOnlySpan<TexelRgba32>(texelBuffer, texelCount),
-					TextureCreationConfig.FromLoadConfig(config, width, height)
+					new() { Height = height, Width = width },
+					config
 				);
 			}
 			else {
 				return _materialBuilder.CreateTexture(
 					new ReadOnlySpan<TexelRgb24>(texelBuffer, texelCount),
-					TextureCreationConfig.FromLoadConfig(config, width, height)
+					new() { Height = height, Width = width },
+					config
 				);
 			}
 		}
@@ -119,6 +72,297 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IDisposable {
 			UnloadTextureFileFromMemory(texelBuffer).ThrowIfFailure();
 		}
 	}
+	public TextureReadMetadata ReadTextureMetadata(in TextureReadConfig readConfig) {
+		ThrowIfThisIsDisposed();
+
+		readConfig.ThrowIfInvalid();
+
+		_assetFilePathBuffer.ConvertFromUtf16(readConfig.FilePath);
+		LoadTextureFileInToMemory(
+			in _assetFilePathBuffer.BufferRef,
+			readConfig.IncludeWAlphaChannel,
+			out var width,
+			out var height,
+			out var texelBuffer
+		).ThrowIfFailure();
+
+		try {
+			return new(width, height);
+		}
+		finally {
+			UnloadTextureFileFromMemory(texelBuffer).ThrowIfFailure();
+		}
+	}
+	public void ReadTexture<TTexel>(Span<TTexel> destinationBuffer, in TextureReadConfig readConfig) where TTexel : unmanaged, ITexel<TTexel> {
+		ThrowIfThisIsDisposed();
+		readConfig.ThrowIfInvalid();
+
+		var includeWChannel = TTexel.BlitType switch {
+			TexelType.Rgb24 => false,
+			TexelType.Rgba32 => true,
+			_ => throw new ArgumentOutOfRangeException(nameof(TTexel), "Unknown texel blit type.")
+		};
+
+		_assetFilePathBuffer.ConvertFromUtf16(readConfig.FilePath);
+		LoadTextureFileInToMemory(
+			in _assetFilePathBuffer.BufferRef,
+			includeWChannel,
+			out var width,
+			out var height,
+			out var texelBuffer
+		).ThrowIfFailure();
+
+		try {
+			if (width < 0 || height < 0) throw new InvalidOperationException($"Loaded texture had width/height of {width}/{height}.");
+			var texelCount = width * height;
+
+			if (destinationBuffer.Length < texelCount) {
+				throw new ArgumentException($"Given destination buffer size ({destinationBuffer.Length}) is too small to accomodate texture data ({texelCount} texels).");
+			}
+
+			var destinationBufferAsBytes = MemoryMarshal.AsBytes(destinationBuffer);
+			if (includeWChannel) {
+				MemoryMarshal.AsBytes(new ReadOnlySpan<TexelRgba32>(texelBuffer, texelCount)).CopyTo(destinationBufferAsBytes);
+			}
+			else {
+				MemoryMarshal.AsBytes(new ReadOnlySpan<TexelRgb24>(texelBuffer, texelCount)).CopyTo(destinationBufferAsBytes);
+			}
+		}
+		finally {
+			UnloadTextureFileFromMemory(texelBuffer).ThrowIfFailure();
+		}
+	}
+
+	public Texture LoadAndCombineOrmTextures(in TextureReadConfig occlusionMapReadConfig = default, in TextureReadConfig roughnessMapReadConfig = default, in TextureReadConfig metallicMapReadConfig = default, in TextureCreationConfig config = default) {
+		var defaultOcclusion = occlusionMapReadConfig.FilePath.IsEmpty;
+		var defaultRoughness = roughnessMapReadConfig.FilePath.IsEmpty;
+		var defaultMetallic = metallicMapReadConfig.FilePath.IsEmpty;
+		
+		var dimensions = (XYPair<int>?) null;
+
+		if (!defaultOcclusion) {
+			var metadata = ReadTextureMetadata(occlusionMapReadConfig);
+			if (dimensions == null) dimensions = (metadata.Width, metadata.Height);
+			else if (dimensions.Value.X != metadata.Width || dimensions.Value.Y != metadata.Height) {
+				throw new InvalidOperationException("All given textures must have identical dimensions.");
+			}
+		}
+		if (!defaultRoughness) {
+			var metadata = ReadTextureMetadata(roughnessMapReadConfig);
+			if (dimensions == null) dimensions = (metadata.Width, metadata.Height);
+			else if (dimensions.Value.X != metadata.Width || dimensions.Value.Y != metadata.Height) {
+				throw new InvalidOperationException("All given textures must have identical dimensions.");
+			}
+		}
+		if (!defaultMetallic) {
+			var metadata = ReadTextureMetadata(metallicMapReadConfig);
+			if (dimensions == null) dimensions = (metadata.Width, metadata.Height);
+			else if (dimensions.Value.X != metadata.Width || dimensions.Value.Y != metadata.Height) {
+				throw new InvalidOperationException("All given textures must have identical dimensions.");
+			}
+		}
+
+		if (dimensions == null) return _materialBuilder.DefaultOrmMap;
+
+		var resultBuffer = _globals.HeapPool.Borrow<TexelRgb24>(dimensions.Value.Area);
+		var readBuffer = _globals.HeapPool.Borrow<TexelRgb24>(dimensions.Value.Area);
+
+		try {
+			IMaterialBuilder.DefaultTexelOrm.ToRgb24(out var o, out var r, out var m);
+			
+			if (defaultOcclusion) {
+				for (var i = 0; i < resultBuffer.Buffer.Length; ++i) resultBuffer.Buffer[i] = resultBuffer.Buffer[i] with { R = o };
+			}
+			else {
+				ReadTexture(readBuffer.Buffer, occlusionMapReadConfig);
+				for (var i = 0; i < resultBuffer.Buffer.Length; ++i) resultBuffer.Buffer[i] = resultBuffer.Buffer[i] with { R = readBuffer.Buffer[i].R };
+			}
+
+			if (defaultRoughness) {
+				for (var i = 0; i < resultBuffer.Buffer.Length; ++i) resultBuffer.Buffer[i] = resultBuffer.Buffer[i] with { G = r };
+			}
+			else {
+				ReadTexture(readBuffer.Buffer, roughnessMapReadConfig);
+				for (var i = 0; i < resultBuffer.Buffer.Length; ++i) resultBuffer.Buffer[i] = resultBuffer.Buffer[i] with { G = readBuffer.Buffer[i].R };
+			}
+
+			if (defaultMetallic) {
+				for (var i = 0; i < resultBuffer.Buffer.Length; ++i) resultBuffer.Buffer[i] = resultBuffer.Buffer[i] with { B = m };
+			}
+			else {
+				ReadTexture(readBuffer.Buffer, metallicMapReadConfig);
+				for (var i = 0; i < resultBuffer.Buffer.Length; ++i) resultBuffer.Buffer[i] = resultBuffer.Buffer[i] with { B = readBuffer.Buffer[i].R };
+			}
+
+			return _materialBuilder.CreateTexture(
+				(ReadOnlySpan<TexelRgb24>) resultBuffer.Buffer,
+				new TextureGenerationConfig { Height = dimensions.Value.X, Width = dimensions.Value.Y },
+				config
+			);
+		}
+		finally {
+			readBuffer.Dispose();
+			resultBuffer.Dispose();
+		}
+	}
+	#endregion
+
+	#region Meshes
+	public Mesh LoadMesh(in MeshReadConfig readConfig, in MeshCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		readConfig.ThrowIfInvalid();
+		config.ThrowIfInvalid();
+
+		_assetFilePathBuffer.ConvertFromUtf16(readConfig.FilePath);
+		LoadAssetFileInToMemory(
+			in _assetFilePathBuffer.BufferRef,
+			readConfig.FixCommonExportErrors,
+			readConfig.OptimizeForGpu,
+			out var assetHandle
+		).ThrowIfFailure();
+
+		try {
+			GetLoadedAssetMeshCount(assetHandle, out var meshCount).ThrowIfFailure();
+
+			checked {
+				var totalVertexCount = 0;
+				var totalTriangleCount = 0;
+
+				for (var i = 0; i < meshCount; ++i) {
+					GetLoadedAssetMeshVertexCount(assetHandle, i, out var vCount).ThrowIfFailure();
+					GetLoadedAssetMeshTriangleCount(assetHandle, i, out var tCount).ThrowIfFailure();
+					totalVertexCount += vCount;
+					totalTriangleCount += tCount;
+				}
+
+				var fixedVertexBuffer = _vertexTriangleBufferPool.Rent<MeshVertex>(totalVertexCount);
+				var fixedTriangleBuffer = _vertexTriangleBufferPool.Rent<VertexTriangle>(totalTriangleCount);
+
+				try {
+					var vBufferPtr = (MeshVertex*) fixedVertexBuffer.StartPtr;
+					var tBufferPtr = (VertexTriangle*) fixedTriangleBuffer.StartPtr;
+
+					for (var i = 0; i < meshCount; ++i) {
+						GetLoadedAssetMeshVertexCount(assetHandle, i, out var vCount).ThrowIfFailure();
+						GetLoadedAssetMeshTriangleCount(assetHandle, i, out var tCount).ThrowIfFailure();
+						CopyLoadedAssetMeshVertices(assetHandle, i, (int) (fixedVertexBuffer.Size<MeshVertex>() - (vBufferPtr - (MeshVertex*) fixedVertexBuffer.StartPtr)), vBufferPtr);
+						CopyLoadedAssetMeshTriangles(assetHandle, i, (int) (fixedTriangleBuffer.Size<VertexTriangle>() - (tBufferPtr - (VertexTriangle*) fixedTriangleBuffer.StartPtr)), tBufferPtr);
+						vBufferPtr += vCount;
+						tBufferPtr += tCount;
+					}
+
+					return _meshBuilder.CreateMesh(
+						fixedVertexBuffer.AsReadOnlySpan<MeshVertex>(totalVertexCount),
+						fixedTriangleBuffer.AsReadOnlySpan<VertexTriangle>(totalTriangleCount),
+						config
+					);
+				}
+				finally {
+					_vertexTriangleBufferPool.Return(fixedVertexBuffer);
+					_vertexTriangleBufferPool.Return(fixedTriangleBuffer);
+				}
+			}
+		}
+		finally {
+			UnloadAssetFileFromMemory(assetHandle).ThrowIfFailure();
+		}
+	}
+	public MeshReadMetadata ReadMeshMetadata(in MeshReadConfig readConfig) {
+		ThrowIfThisIsDisposed();
+		readConfig.ThrowIfInvalid();
+
+		_assetFilePathBuffer.ConvertFromUtf16(readConfig.FilePath);
+		LoadAssetFileInToMemory(
+			in _assetFilePathBuffer.BufferRef,
+			readConfig.FixCommonExportErrors,
+			readConfig.OptimizeForGpu,
+			out var assetHandle
+		).ThrowIfFailure();
+
+		try {
+			GetLoadedAssetMeshCount(assetHandle, out var meshCount).ThrowIfFailure();
+
+			checked {
+				var totalVertexCount = 0;
+				var totalTriangleCount = 0;
+
+				for (var i = 0; i < meshCount; ++i) {
+					GetLoadedAssetMeshVertexCount(assetHandle, i, out var vCount).ThrowIfFailure();
+					GetLoadedAssetMeshTriangleCount(assetHandle, i, out var tCount).ThrowIfFailure();
+					totalVertexCount += vCount;
+					totalTriangleCount += tCount;
+				}
+
+				return new(totalVertexCount, totalTriangleCount);
+			}
+		}
+		finally {
+			UnloadAssetFileFromMemory(assetHandle).ThrowIfFailure();
+		}
+	}
+	public void ReadMesh(Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer, in MeshReadConfig readConfig) {
+		ThrowIfThisIsDisposed();
+		readConfig.ThrowIfInvalid();
+
+		_assetFilePathBuffer.ConvertFromUtf16(readConfig.FilePath);
+		LoadAssetFileInToMemory(
+			in _assetFilePathBuffer.BufferRef,
+			readConfig.FixCommonExportErrors,
+			readConfig.OptimizeForGpu,
+			out var assetHandle
+		).ThrowIfFailure();
+
+		try {
+			GetLoadedAssetMeshCount(assetHandle, out var meshCount).ThrowIfFailure();
+
+			checked {
+				var totalVertexCount = 0;
+				var totalTriangleCount = 0;
+
+				for (var i = 0; i < meshCount; ++i) {
+					GetLoadedAssetMeshVertexCount(assetHandle, i, out var vCount).ThrowIfFailure();
+					GetLoadedAssetMeshTriangleCount(assetHandle, i, out var tCount).ThrowIfFailure();
+					totalVertexCount += vCount;
+					totalTriangleCount += tCount;
+				}
+
+				if (vertexBuffer.Length < totalVertexCount) {
+					throw new ArgumentException($"Given vertex buffer size ({vertexBuffer.Length}) is too small to accomodate mesh data ({totalVertexCount} vertices).");
+				}
+				if (triangleBuffer.Length < totalTriangleCount) {
+					throw new ArgumentException($"Given triangle buffer size ({triangleBuffer.Length}) is too small to accomodate mesh data ({totalTriangleCount} triangles).");
+				}
+
+				var fixedVertexBuffer = _vertexTriangleBufferPool.Rent<MeshVertex>(totalVertexCount);
+				var fixedTriangleBuffer = _vertexTriangleBufferPool.Rent<VertexTriangle>(totalTriangleCount);
+
+				try {
+					var vBufferPtr = (MeshVertex*) fixedVertexBuffer.StartPtr;
+					var tBufferPtr = (VertexTriangle*) fixedTriangleBuffer.StartPtr;
+
+					for (var i = 0; i < meshCount; ++i) {
+						GetLoadedAssetMeshVertexCount(assetHandle, i, out var vCount).ThrowIfFailure();
+						GetLoadedAssetMeshTriangleCount(assetHandle, i, out var tCount).ThrowIfFailure();
+						CopyLoadedAssetMeshVertices(assetHandle, i, (int) (fixedVertexBuffer.Size<MeshVertex>() - (vBufferPtr - (MeshVertex*) fixedVertexBuffer.StartPtr)), vBufferPtr);
+						CopyLoadedAssetMeshTriangles(assetHandle, i, (int) (fixedTriangleBuffer.Size<VertexTriangle>() - (tBufferPtr - (VertexTriangle*) fixedTriangleBuffer.StartPtr)), tBufferPtr);
+						vBufferPtr += vCount;
+						tBufferPtr += tCount;
+					}
+
+					fixedVertexBuffer.AsReadOnlySpan<MeshVertex>(totalVertexCount).CopyTo(vertexBuffer);
+					fixedTriangleBuffer.AsReadOnlySpan<VertexTriangle>(totalTriangleCount).CopyTo(triangleBuffer);
+				}
+				finally {
+					_vertexTriangleBufferPool.Return(fixedVertexBuffer);
+					_vertexTriangleBufferPool.Return(fixedTriangleBuffer);
+				}
+			}
+		}
+		finally {
+			UnloadAssetFileFromMemory(assetHandle).ThrowIfFailure();
+		}
+	}
+	#endregion
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "load_asset_file_in_to_memory")]
@@ -203,7 +447,7 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IDisposable {
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
-			_vertexIndexBufferPool.Dispose();
+			_vertexTriangleBufferPool.Dispose();
 			_assetFilePathBuffer.Dispose();
 			_meshBuilder.Dispose();
 			_materialBuilder.Dispose();

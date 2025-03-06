@@ -11,8 +11,8 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 public interface IMeshBuilder {
 	IMeshPolygonGroup AllocateNewPolygonGroup();
 
-	Mesh CreateMesh(Cuboid cuboidDesc, Transform2D? textureTransform = null, bool centreTextureOrigin = false, ReadOnlySpan<char> name = default) => CreateMesh(cuboidDesc, textureTransform ?? Transform2D.None, centreTextureOrigin, new MeshCreationConfig { Name = name });
-	Mesh CreateMesh(Cuboid cuboidDesc, Transform2D textureTransform, bool centreTextureOrigin, in MeshCreationConfig config) {
+	Mesh CreateMesh(Cuboid cuboidDesc, Transform2D? textureTransform = null, bool centreTextureOrigin = false, ReadOnlySpan<char> name = default) => CreateMesh(cuboidDesc, centreTextureOrigin, new MeshGenerationConfig { TextureTransform = textureTransform ?? Transform2D.None }, new MeshCreationConfig { Name = name });
+	Mesh CreateMesh(Cuboid cuboidDesc, bool centreTextureOrigin, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
 		if (!cuboidDesc.IsPhysicallyValid) {
 			throw new ArgumentException("Given cuboid must be physically valid (all extents should be positive).", nameof(cuboidDesc));
 		}
@@ -92,7 +92,7 @@ public interface IMeshBuilder {
 			centreTextureOrigin ? cuboidDesc.CentroidAt(CardinalOrientation.Down) : polyVertexSpan[3]
 		);
 
-		return CreateMesh(polyGroup, textureTransform, in config);
+		return CreateMesh(polyGroup, in generationConfig, in config);
 	}
 
 	Mesh CreateMesh(Polygon polygon, Direction? textureUDirection = null, Direction? textureVDirection = null, Location? textureOrigin = null, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) {
@@ -102,19 +102,19 @@ public interface IMeshBuilder {
 			textureUDirection.Value,
 			textureVDirection ?? Direction.FromDualOrthogonalization(polygon.Normal, textureUDirection.Value),
 			textureOrigin ?? polygon.Centroid,
-			textureTransform ?? Transform2D.None, 
+			new MeshGenerationConfig { TextureTransform = textureTransform ?? Transform2D.None }, 
 			new MeshCreationConfig { Name = name }
 		);
 	}
-	Mesh CreateMesh(Polygon polygon, Direction textureUDirection, Direction textureVDirection, Location textureOrigin, Transform2D textureTransform, in MeshCreationConfig config) {
+	Mesh CreateMesh(Polygon polygon, Direction textureUDirection, Direction textureVDirection, Location textureOrigin, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
 		using var polyGroup = AllocateNewPolygonGroup();
 		polyGroup.Add(polygon, textureUDirection, textureVDirection, textureOrigin);
-		return CreateMesh(polyGroup, textureTransform, in config);
+		return CreateMesh(polyGroup, in generationConfig, in config);
 	}
 
-	Mesh CreateMesh(IMeshPolygonGroup polygons, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) => CreateMesh(polygons, textureTransform ?? Transform2D.None, new MeshCreationConfig { Name = name });
-	Mesh CreateMesh(IMeshPolygonGroup polygons, Transform2D textureTransform, in MeshCreationConfig config) {
-		polygons.Triangulate(textureTransform, out var vertices, out var triangles);
+	Mesh CreateMesh(IMeshPolygonGroup polygons, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) => CreateMesh(polygons, new MeshGenerationConfig { TextureTransform = textureTransform ?? Transform2D.None }, new MeshCreationConfig { Name = name });
+	Mesh CreateMesh(IMeshPolygonGroup polygons, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
+		polygons.Triangulate(generationConfig.TextureTransform, out var vertices, out var triangles);
 		return CreateMesh(vertices, triangles, config);
 	}
 

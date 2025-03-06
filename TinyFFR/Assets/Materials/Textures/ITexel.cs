@@ -14,7 +14,7 @@ public enum TexelType {
 }
 
 public interface ITexel {
-	static abstract TexelType Type { get; }
+	static abstract TexelType BlitType { get; }
 }
 public interface ITexel<TSelf> : ITexel, IByteSpanSerializable<TSelf> where TSelf : unmanaged, ITexel<TSelf> {
 	public TSelf WithInvertedChannelIfPresent(int channelIndex);

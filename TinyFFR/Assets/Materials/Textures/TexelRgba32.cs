@@ -11,7 +11,7 @@ namespace Egodystonic.TinyFFR.Assets.Materials;
 public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : IConversionSupplyingTexel<TexelRgba32, ColorVect> {
 	const int TexelSizeBytes = 4;
 	public static int SerializationByteSpanLength { get; } = TexelSizeBytes;
-	public static TexelType Type { get; } = TexelType.Rgba32;
+	public static TexelType BlitType { get; } = TexelType.Rgba32;
 
 	public TexelRgb24 AsRgb24 => new(R, G, B);
 	public ColorVect AsColorVect => ColorVect.FromRgba32(R, G, B, A);

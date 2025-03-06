@@ -73,24 +73,24 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		_testMaterial = new(CreateTestMaterial);
 	}
 
-	void ApplyConfig<TTexel>(Span<TTexel> buffer, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
+	void ApplyConfig<TTexel>(Span<TTexel> buffer, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
 		const int MaxTextureWidthForStackRowSwap = 65_536;
 
-		var texelCount = config.Width * config.Height;
+		var texelCount = generationConfig.Width * generationConfig.Height;
 
 		if (config.FlipX) {
-			for (var y = 0; y < config.Height; ++y) {
-				var row = buffer[(y * config.Width)..((y + 1) * config.Width)];
-				for (var x = 0; x < config.Width / 2; ++x) {
+			for (var y = 0; y < generationConfig.Height; ++y) {
+				var row = buffer[(y * generationConfig.Width)..((y + 1) * generationConfig.Width)];
+				for (var x = 0; x < generationConfig.Width / 2; ++x) {
 					(row[x], row[^(x + 1)]) = (row[^(x + 1)], row[x]);
 				}
 			}
 		}
 		if (config.FlipY) {
-			var rowSwapSpace = config.Width > MaxTextureWidthForStackRowSwap ? new TTexel[config.Width] : stackalloc TTexel[config.Width];
-			for (var y = 0; y < config.Height / 2; ++y) {
-				var lowerRow = buffer[(y * config.Width)..((y + 1) * config.Width)];
-				var upperRow = buffer[((config.Height - (y + 1)) * config.Width)..((config.Height - y) * config.Width)];
+			var rowSwapSpace = generationConfig.Width > MaxTextureWidthForStackRowSwap ? new TTexel[generationConfig.Width] : stackalloc TTexel[generationConfig.Width];
+			for (var y = 0; y < generationConfig.Height / 2; ++y) {
+				var lowerRow = buffer[(y * generationConfig.Width)..((y + 1) * generationConfig.Width)];
+				var upperRow = buffer[((generationConfig.Height - (y + 1)) * generationConfig.Width)..((generationConfig.Height - y) * generationConfig.Width)];
 				lowerRow.CopyTo(rowSwapSpace);
 				upperRow.CopyTo(lowerRow);
 				rowSwapSpace.CopyTo(upperRow);
@@ -107,31 +107,31 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	}
 
 	// Maintainer's note: The buffer is disposed on the native side when it's asynchronously loaded on to the GPU
-	Texture IMaterialBuilder.CreateTextureAndDisposePreallocatedBuffer<TTexel>(IMaterialBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureCreationConfig config) => CreateTextureAndDisposePreallocatedBuffer(preallocatedBuffer, in config);
-	Texture CreateTextureAndDisposePreallocatedBuffer<TTexel>(IMaterialBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
+	Texture IMaterialBuilder.CreateTextureAndDisposePreallocatedBuffer<TTexel>(IMaterialBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) => CreateTextureAndDisposePreallocatedBuffer(preallocatedBuffer, in generationConfig, in config);
+	Texture CreateTextureAndDisposePreallocatedBuffer<TTexel>(IMaterialBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
 		config.ThrowIfInvalid();
 		if (preallocatedBuffer.Buffer.IsEmpty) throw InvalidObjectException.InvalidDefault(typeof(IMaterialBuilder.PreallocatedBuffer<TTexel>));
-		if (config.Width * config.Height > preallocatedBuffer.Buffer.Length) {
+		if (generationConfig.Width * generationConfig.Height > preallocatedBuffer.Buffer.Length) {
 			throw new ArgumentException(
-				$"Given config width/height require a buffer of {config.Width}x{config.Height}={(config.Width * config.Height)} texels, " +
+				$"Given config width/height require a buffer of {generationConfig.Width}x{generationConfig.Height}={(generationConfig.Width * generationConfig.Height)} texels, " +
 				$"but supplied texel buffer only has {preallocatedBuffer.Buffer.Length} texels.", 
 				nameof(config)
 			);
 		}
-		ApplyConfig(preallocatedBuffer.Buffer, in config);
+		ApplyConfig(preallocatedBuffer.Buffer, in generationConfig, in config);
 
 		var dataPointer = Unsafe.AsPointer(ref MemoryMarshal.GetReference(preallocatedBuffer.Buffer));
 		var dataLength = preallocatedBuffer.Buffer.Length * sizeof(TTexel);
 		
 		UIntPtr outHandle;
-		switch (TTexel.Type) {
+		switch (TTexel.BlitType) {
 			case TexelType.Rgb24:
 				LoadTextureRgb24(
 					preallocatedBuffer.BufferId,
 					(TexelRgb24*) dataPointer,
 					dataLength,
-					(uint) config.Width,
-					(uint) config.Height,
+					(uint) generationConfig.Width,
+					(uint) generationConfig.Height,
 					config.GenerateMipMaps,
 					out outHandle
 				).ThrowIfFailure();
@@ -141,19 +141,19 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 					preallocatedBuffer.BufferId,
 					(TexelRgba32*) dataPointer,
 					dataLength,
-					(uint) config.Width,
-					(uint) config.Height,
+					(uint) generationConfig.Width,
+					(uint) generationConfig.Height,
 					config.GenerateMipMaps,
 					out outHandle
 				).ThrowIfFailure();
 				break;
 			default:
-				throw new InvalidOperationException($"Unknown or unsupported texel type '{typeof(TTexel)}' (Type property '{TTexel.Type}').");
+				throw new InvalidOperationException($"Unknown or unsupported texel type '{typeof(TTexel)}' (BlitType property '{TTexel.BlitType}').");
 		}
 
 		var handle = (ResourceHandle<Texture>) outHandle;
 		_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
-		_loadedTextures.Add(handle, new(((uint) config.Width, (uint) config.Height)));
+		_loadedTextures.Add(handle, new(((uint) generationConfig.Width, (uint) generationConfig.Height)));
 		return HandleToInstance(handle);
 	}
 
@@ -163,12 +163,12 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		return new(buffer.BufferIdentity, buffer.AsSpan<TTexel>());
 	}
 
-	public Texture CreateTexture<TTexel>(ReadOnlySpan<TTexel> texels, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
+	public Texture CreateTexture<TTexel>(ReadOnlySpan<TTexel> texels, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 
-		var width = config.Width;
-		var height = config.Height;
+		var width = generationConfig.Width;
+		var height = generationConfig.Height;
 
 		var texelCount = width * height;
 		if (texelCount > texels.Length) {
@@ -182,7 +182,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		var buffer = PreallocateBuffer<TTexel>(texelCount);
 		texels.CopyTo(buffer.Buffer);
-		return CreateTextureAndDisposePreallocatedBuffer(buffer, in config);
+		return CreateTextureAndDisposePreallocatedBuffer(buffer, in generationConfig, in config);
 	}
 
 	public Material CreateOpaqueMaterial(in OpaqueMaterialCreationConfig config) {
