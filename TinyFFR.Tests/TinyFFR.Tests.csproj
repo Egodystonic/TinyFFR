@@ -36,4 +36,19 @@
     <Folder Include="Environment\Loop\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="IntegrationTests\ELCrate.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="IntegrationTests\ELCrate.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="IntegrationTests\ELCrate_Normal.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="IntegrationTests\ELCrate_Specular.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

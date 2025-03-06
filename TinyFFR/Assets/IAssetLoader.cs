@@ -25,9 +25,12 @@ public interface IAssetLoader {
 			}
 		);
 	}
+	Texture LoadTexture(ReadOnlySpan<char> filePath, in TextureCreationConfig config) => LoadTexture(new TextureReadConfig { FilePath = filePath }, config);
 	Texture LoadTexture(in TextureReadConfig readConfig, in TextureCreationConfig config);
+	TextureReadMetadata ReadTextureMetadata(ReadOnlySpan<char> filePath) => ReadTextureMetadata(new TextureReadConfig { FilePath = filePath });
 	TextureReadMetadata ReadTextureMetadata(in TextureReadConfig readConfig);
-	void ReadTexture<TTexel>(Span<TTexel> destinationBuffer, in TextureReadConfig readConfig) where TTexel : unmanaged, ITexel<TTexel>;
+	void ReadTexture<TTexel>(ReadOnlySpan<char> filePath, Span<TTexel> destinationBuffer) where TTexel : unmanaged, ITexel<TTexel> => ReadTexture(new TextureReadConfig { FilePath = filePath }, destinationBuffer);
+	void ReadTexture<TTexel>(in TextureReadConfig readConfig, Span<TTexel> destinationBuffer) where TTexel : unmanaged, ITexel<TTexel>;
 	Texture LoadAndCombineOrmTextures(ReadOnlySpan<char> occlusionMapFilePath = default, ReadOnlySpan<char> roughnessMapFilePath = default, ReadOnlySpan<char> metallicMapFilePath = default, in TextureCreationConfig config = default) {
 		return LoadAndCombineOrmTextures(
 			occlusionMapFilePath.IsEmpty ? default : new TextureReadConfig { FilePath = occlusionMapFilePath },
@@ -48,7 +51,10 @@ public interface IAssetLoader {
 			}
 		);
 	}
+	Mesh LoadMesh(ReadOnlySpan<char> filePath, in MeshCreationConfig config) => LoadMesh(new MeshReadConfig { FilePath = filePath }, config);
 	Mesh LoadMesh(in MeshReadConfig readConfig, in MeshCreationConfig config);
+	MeshReadMetadata ReadMeshMetadata(ReadOnlySpan<char> filePath) => ReadMeshMetadata(new MeshReadConfig { FilePath = filePath });
 	MeshReadMetadata ReadMeshMetadata(in MeshReadConfig readConfig);
-	void ReadMesh(Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer, in MeshReadConfig readConfig);
+	void ReadMesh(ReadOnlySpan<char> filePath, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer) => ReadMesh(new MeshReadConfig { FilePath = filePath }, vertexBuffer, triangleBuffer);
+	void ReadMesh(in MeshReadConfig readConfig, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer);
 }

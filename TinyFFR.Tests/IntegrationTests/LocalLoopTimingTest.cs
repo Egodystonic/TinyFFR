@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
@@ -10,6 +11,8 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalLoopTimingTest {
+	const double MaxJitterFraction = 0.03f;
+
 	[SetUp]
 	public void SetUpTest() { }
 
@@ -37,9 +40,18 @@ class LocalLoopTimingTest {
 			measuredTimesList.Add(measured);
 		}
 
-		Console.WriteLine($"Total time: {stopwatch.Elapsed.ToStringMs()} measured, {TimeSpan.FromTicks(reportedTimesList.Sum(ts => ts.Ticks)).ToStringMs()} reported sum-of-dt, {loop.TotalIteratedTime.ToStringMs()} reported");
+		var resultMeasured = stopwatch.Elapsed;
+		var resultSumOfDt = TimeSpan.FromTicks(reportedTimesList.Sum(ts => ts.Ticks));
+		var resultReported = loop.TotalIteratedTime;
+		Console.WriteLine($"Total time: {resultMeasured.ToStringMs()} measured, {resultSumOfDt.ToStringMs()} reported sum-of-dt, {resultReported.ToStringMs()} reported");
+		AssertWithinJitterTolerance(resultMeasured, resultSumOfDt);
+		AssertWithinJitterTolerance(resultSumOfDt, resultReported);
+
 		// Skip first 10% as JIT interferes with it
-		Console.WriteLine($"Average time: {TimeSpan.FromTicks((long) measuredTimesList.Skip(measuredTimesList.Count / 10).Average(dt => dt.Ticks)).ToStringMs()} measured, {TimeSpan.FromTicks((long) reportedTimesList.Skip(reportedTimesList.Count / 10).Average(dt => dt.Ticks)).ToStringMs()} reported");
+		resultMeasured = TimeSpan.FromTicks((long) measuredTimesList.Skip(measuredTimesList.Count / 10).Average(dt => dt.Ticks));
+		resultReported = TimeSpan.FromTicks((long) reportedTimesList.Skip(reportedTimesList.Count / 10).Average(dt => dt.Ticks));
+		Console.WriteLine($"Average time: {resultMeasured.ToStringMs()} measured, {resultReported.ToStringMs()} reported");
+		AssertWithinJitterTolerance(resultMeasured, resultReported);
 
 		Console.WriteLine("===========================================================================================================================");
 
@@ -62,9 +74,26 @@ class LocalLoopTimingTest {
 			measuredTimesList.Add(measured);
 		}
 
-		Console.WriteLine($"Total time: {stopwatch.Elapsed.ToStringMs()} measured, {TimeSpan.FromTicks(reportedTimesList.Sum(ts => ts.Ticks)).ToStringMs()} reported sum-of-dt, {loop.TotalIteratedTime.ToStringMs()} reported");
+		resultMeasured = stopwatch.Elapsed;
+		resultSumOfDt = TimeSpan.FromTicks(reportedTimesList.Sum(ts => ts.Ticks));
+		resultReported = loop.TotalIteratedTime;
+		Console.WriteLine($"Total time: {resultMeasured.ToStringMs()} measured, {resultSumOfDt.ToStringMs()} reported sum-of-dt, {resultReported.ToStringMs()} reported");
+		AssertWithinJitterTolerance(resultMeasured, resultSumOfDt);
+		AssertWithinJitterTolerance(resultSumOfDt, resultReported);
+
 		// Skip first 10% as JIT interferes with it
-		Console.WriteLine($"Average time: {TimeSpan.FromTicks((long) measuredTimesList.Skip(measuredTimesList.Count / 10).Average(dt => dt.Ticks)).ToStringMs()} measured, {TimeSpan.FromTicks((long) reportedTimesList.Skip(reportedTimesList.Count / 10).Average(dt => dt.Ticks)).ToStringMs()} reported");
+		resultMeasured = TimeSpan.FromTicks((long) measuredTimesList.Skip(measuredTimesList.Count / 10).Average(dt => dt.Ticks));
+		resultReported = TimeSpan.FromTicks((long) reportedTimesList.Skip(reportedTimesList.Count / 10).Average(dt => dt.Ticks));
+		Console.WriteLine($"Average time: {resultMeasured.ToStringMs()} measured, {resultReported.ToStringMs()} reported");
+		AssertWithinJitterTolerance(resultMeasured, resultReported);
+
 		loop.Dispose();
+	}
+
+	void AssertWithinJitterTolerance(TimeSpan a, TimeSpan b, [CallerArgumentExpression(nameof(a))] string? aArgName = null, [CallerArgumentExpression(nameof(b))] string? bArgName = null) {
+		var diff = Double.Abs(a.TotalMilliseconds - b.TotalMilliseconds);
+		if (diff > Double.Abs(Double.MaxMagnitude(a.TotalMilliseconds, b.TotalMilliseconds)) * MaxJitterFraction) {
+			Assert.Fail($"Discrepancy was high ({aArgName}:{a.ToStringMs()} vs {bArgName}:{b.ToStringMs()}). Check results, maybe retry test (could be jitter outlier).");
+		}
 	}
 } 

@@ -40,6 +40,8 @@ public readonly ref struct MeshCreationConfig {
 	public bool FlipTriangles { get; init; } = false;
 	public bool InvertTextureU { get; init; } = false;
 	public bool InvertTextureV { get; init; } = false;
+	public Vect OriginTranslation { get; init; } = Vect.Zero;
+	public float LinearRescalingFactor { get; init; } = 1f;
 	public ReadOnlySpan<char> Name { get; init; }
 
 	public MeshCreationConfig() { }
