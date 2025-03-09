@@ -6,6 +6,6 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public interface IEnvironmentCubemapImplProvider : IDisposableResourceImplProvider<EnvironmentCubemap> {
-	UIntPtr GetSkyboxHandle(ResourceHandle<EnvironmentCubemap> handle);
-	UIntPtr GetIndirectLightingHandle(ResourceHandle<EnvironmentCubemap> handle);
+	UIntPtr GetSkyboxTextureHandle(ResourceHandle<EnvironmentCubemap> handle);
+	UIntPtr GetIndirectLightingTextureHandle(ResourceHandle<EnvironmentCubemap> handle);
 }

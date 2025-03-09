@@ -185,67 +185,49 @@ StartExportedFunc(unload_texture_file_from_memory, MemoryLoadedTextureRgba32Data
 	EndExportedFunc
 }
 
-void native_impl_asset_loader::load_skybox_file_in_to_memory(uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle, SkyboxHandle* outSkyboxHandle) {
+void native_impl_asset_loader::load_skybox_file_in_to_memory(uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle) {
 	ThrowIfNull(textureData, "Texture data pointer was null.");
 	ThrowIf(textureDataLength < 0, "Texture data length was negative.");
 	ThrowIfNull(outTextureHandle, "Out texture handle pointer was null.");
-	ThrowIfNull(outSkyboxHandle, "Out skybox handle pointer was null.");
 
 	// As far as I can tell here https://github.com/google/filament/blob/ee68872a473989706ba1382aa67a318fb088e72f/libs/ktxreader/src/Ktx1Reader.cpp#L115
 	// this bundle will be deleted after the texture is loaded on to the GPU; so we don't need to delete it ourselves
 	auto* ktx1Bundle = new image::Ktx1Bundle{ textureData, static_cast<uint32_t>(textureDataLength) };
 	*outTextureHandle = ktxreader::Ktx1Reader::createTexture(filament_engine, ktx1Bundle, false);
 	ThrowIfNull(*outTextureHandle, "Could not create skybox texture with given KTX bundle.");
-
-	*outSkyboxHandle = Skybox::Builder()
-		.environment(*outTextureHandle)
-		//.intensity(3.0f)
-		.build(*filament_engine);
-	ThrowIfNull(*outSkyboxHandle, "Could not create skybox.");
 }
-StartExportedFunc(load_skybox_file_in_to_memory, uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle, SkyboxHandle* outSkyboxHandle) {
-	native_impl_asset_loader::load_skybox_file_in_to_memory(textureData, textureDataLength, outTextureHandle, outSkyboxHandle);
+StartExportedFunc(load_skybox_file_in_to_memory, uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle) {
+	native_impl_asset_loader::load_skybox_file_in_to_memory(textureData, textureDataLength, outTextureHandle);
 	EndExportedFunc
 }
-void native_impl_asset_loader::unload_skybox_file_from_memory(TextureHandle textureHandle, SkyboxHandle skyboxHandle) {
+void native_impl_asset_loader::unload_skybox_file_from_memory(TextureHandle textureHandle) {
 	ThrowIfNull(textureHandle, "Null texture handle.");
-	ThrowIfNull(skyboxHandle, "Null skybox handle.");
-	filament_engine->destroy(skyboxHandle);
 	filament_engine->destroy(textureHandle);
 }
-StartExportedFunc(unload_skybox_file_from_memory, TextureHandle textureHandle, SkyboxHandle skyboxHandle) {
-	native_impl_asset_loader::unload_skybox_file_from_memory(textureHandle, skyboxHandle);
+StartExportedFunc(unload_skybox_file_from_memory, TextureHandle textureHandle) {
+	native_impl_asset_loader::unload_skybox_file_from_memory(textureHandle);
 	EndExportedFunc
 }
-void native_impl_asset_loader::load_ibl_file_in_to_memory(uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle, IndirectLightHandle* outLightHandle) {
+void native_impl_asset_loader::load_ibl_file_in_to_memory(uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle) {
 	ThrowIfNull(textureData, "Texture data pointer was null.");
 	ThrowIf(textureDataLength < 0, "Texture data length was negative.");
 	ThrowIfNull(outTextureHandle, "Out texture handle pointer was null.");
-	ThrowIfNull(outLightHandle, "Out light handle pointer was null.");
 
 	// As far as I can tell here https://github.com/google/filament/blob/ee68872a473989706ba1382aa67a318fb088e72f/libs/ktxreader/src/Ktx1Reader.cpp#L115
 	// this bundle will be deleted after the texture is loaded on to the GPU; so we don't need to delete it ourselves
 	auto* ktx1Bundle = new image::Ktx1Bundle{ textureData, static_cast<uint32_t>(textureDataLength) };
 	*outTextureHandle = ktxreader::Ktx1Reader::createTexture(filament_engine, ktx1Bundle, false);
 	ThrowIfNull(*outTextureHandle, "Could not create IBL texture with given KTX bundle.");
-
-	*outLightHandle = IndirectLight::Builder()
-		.reflections(*outTextureHandle)
-		//.intensity(3.0f)
-		.build(*filament_engine);
-	ThrowIfNull(*outLightHandle, "Could not create indirect light.");
 }
-StartExportedFunc(load_ibl_file_in_to_memory, uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle, IndirectLightHandle* outLightHandle) {
-	native_impl_asset_loader::load_ibl_file_in_to_memory(textureData, textureDataLength, outTextureHandle, outLightHandle);
+StartExportedFunc(load_ibl_file_in_to_memory, uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle) {
+	native_impl_asset_loader::load_ibl_file_in_to_memory(textureData, textureDataLength, outTextureHandle);
 	EndExportedFunc
 }
-void native_impl_asset_loader::unload_ibl_file_from_memory(TextureHandle textureHandle, IndirectLightHandle lightHandle) {
+void native_impl_asset_loader::unload_ibl_file_from_memory(TextureHandle textureHandle) {
 	ThrowIfNull(textureHandle, "Null texture handle.");
-	ThrowIfNull(lightHandle, "Null light handle.");
-	filament_engine->destroy(lightHandle);
 	filament_engine->destroy(textureHandle);
 }
-StartExportedFunc(unload_ibl_file_from_memory, TextureHandle textureHandle, IndirectLightHandle lightHandle) {
-	native_impl_asset_loader::unload_ibl_file_from_memory(textureHandle, lightHandle);
+StartExportedFunc(unload_ibl_file_from_memory, TextureHandle textureHandle) {
+	native_impl_asset_loader::unload_ibl_file_from_memory(textureHandle);
 	EndExportedFunc
 }

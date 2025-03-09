@@ -21,13 +21,13 @@ public readonly struct EnvironmentCubemap : IDisposableResource<EnvironmentCubem
 		get => Implementation.GetName(_handle);
 	}
 
-	internal UIntPtr SkyboxHandle {
+	internal UIntPtr SkyboxTextureHandle {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetSkyboxHandle(_handle);
+		get => Implementation.GetSkyboxTextureHandle(_handle);
 	}
-	internal UIntPtr IndirectLightingHandle {
+	internal UIntPtr IndirectLightingTextureHandle {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetIndirectLightingHandle(_handle);
+		get => Implementation.GetIndirectLightingTextureHandle(_handle);
 	} 
 
 	internal EnvironmentCubemap(ResourceHandle<EnvironmentCubemap> handle, IEnvironmentCubemapImplProvider impl) {

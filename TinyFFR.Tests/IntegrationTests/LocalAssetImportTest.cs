@@ -5,6 +5,7 @@ using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
@@ -96,8 +97,8 @@ class LocalAssetImportTest {
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
 		scene.Add(instance);
-		scene.Backdrop = cubemap;
-
+		scene.SetBackdrop(cubemap, 30000f, 10000f);
+		
 		var instanceToCameraVect = instance.Position >> camera.Position;
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);

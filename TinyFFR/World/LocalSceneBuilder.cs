@@ -11,14 +11,17 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.World;
 
 sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisposable {
+	readonly record struct BackdropData(EnvironmentCubemap Cubemap, UIntPtr SkyboxHandle, UIntPtr IndirectLightHandle);
 	const string DefaultSceneName = "Unnamed Scene";
+	const float DefaultSkyboxBrightness = 30_000f;
+	const float DefaultIndirectLightingBrightness = 30_000f;
 
 	readonly ArrayPoolBackedVector<ResourceHandle<Scene>> _activeSceneHandles = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedVector<ModelInstance>> _modelInstanceMap = new();
 	readonly ObjectPool<ArrayPoolBackedVector<ModelInstance>> _modelInstanceVectorPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedVector<Light>> _lightMap = new();
 	readonly ObjectPool<ArrayPoolBackedVector<Light>> _lightVectorPool;
-	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, EnvironmentCubemap> _backdropMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, BackdropData> _backdropMap = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
 
@@ -112,26 +115,36 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	#endregion
 
 	#region Backdrop
-	public EnvironmentCubemap? GetBackdrop(ResourceHandle<Scene> handle) {
+	public void SetBackdrop(ResourceHandle<Scene> handle, EnvironmentCubemap cubemap, float? skyboxIntensity, float? indirectLightingIntensity) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _backdropMap.TryGetValue(handle, out var cubemap) ? cubemap : null;
+
+		RemoveBackdrop(handle);
+
+		CreateSceneBackdrop(
+			cubemap.SkyboxTextureHandle,
+			cubemap.IndirectLightingTextureHandle,
+			skyboxIntensity ?? DefaultSkyboxBrightness,
+			indirectLightingIntensity ?? DefaultIndirectLightingBrightness,
+			out var skyboxHandle,
+			out var indirectLightHandle
+		).ThrowIfFailure();
+
+		SetSceneBackdrop(
+			handle,
+			skyboxHandle,
+			indirectLightHandle
+		).ThrowIfFailure();
+
+		_backdropMap[handle] = new(cubemap, skyboxHandle, indirectLightHandle);
+		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), cubemap);
 	}
-	public void SetBackdrop(ResourceHandle<Scene> handle, EnvironmentCubemap? newBackdrop) {
+	public void RemoveBackdrop(ResourceHandle<Scene> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		if (!_backdropMap.Remove(handle, out var curBackdropData)) return;
 
-		if (_backdropMap.TryGetValue(handle, out var existingCubemap)) {
-			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), existingCubemap);
-		}
-
-		if (newBackdrop == null) {
-			_backdropMap.Remove(handle);
-			RemoveSceneBackdrop(handle).ThrowIfFailure();
-		}
-		else {
-			_backdropMap[handle] = newBackdrop.Value;
-			SetSceneBackdrop(handle, newBackdrop.Value.SkyboxHandle, newBackdrop.Value.IndirectLightingHandle).ThrowIfFailure();
-			_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newBackdrop.Value);
-		}
+		UnsetSceneBackdrop(handle).ThrowIfFailure();
+		DisposeSceneBackdrop(curBackdropData.SkyboxHandle, curBackdropData.IndirectLightHandle).ThrowIfFailure();
+		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), curBackdropData.Cubemap);
 	}
 	#endregion
 
@@ -165,6 +178,16 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		UIntPtr lightHandle
 	);
 
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "create_scene_backdrop")]
+	static extern InteropResult CreateSceneBackdrop(
+		UIntPtr skyboxTextureHandle,
+		UIntPtr iblTextureHandle,
+		float skyboxIntensity,
+		float iblIntensity,
+		out UIntPtr outSkyboxHandle,
+		out UIntPtr outIndirectLightHandle
+	);
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_scene_backdrop")]
 	static extern InteropResult SetSceneBackdrop(
 		UIntPtr sceneHandle,
@@ -172,9 +195,15 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		UIntPtr indirectLightHandle
 	);
 
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "remove_scene_backdrop")]
-	static extern InteropResult RemoveSceneBackdrop(
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "unset_scene_backdrop")]
+	static extern InteropResult UnsetSceneBackdrop(
 		UIntPtr sceneHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_scene_backdrop")]
+	static extern InteropResult DisposeSceneBackdrop(
+		UIntPtr skyboxHandle,
+		UIntPtr indirectLightHandle
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_scene")]

@@ -6,6 +6,8 @@
 
 #include "filament/utils/Entity.h"
 #include "filament/Scene.h"
+#include "filament/Skybox.h"
+#include "filament/IndirectLight.h"
 #include "scene/native_impl_render.h"
 
 using namespace utils;
@@ -56,27 +58,59 @@ StartExportedFunc(remove_light_from_scene, SceneHandle scene, LightHandle light)
 	EndExportedFunc
 }
 
-void native_impl_scene::set_scene_backdrop(SceneHandle scene, SkyboxHandle skyboxHandle, IndirectLightHandle indirectLightHandle) {
-	ThrowIfNull(scene, "Scene was null.");
-	ThrowIfNull(skyboxHandle, "Skybox was null.");
-	ThrowIfNull(indirectLightHandle, "Light was null.");
+void native_impl_scene::create_scene_backdrop(TextureHandle skyboxTexture, TextureHandle iblTexture, float skyboxIntensity, float iblIntensity, SkyboxHandle* outSkybox, IndirectLightHandle* outIndirectLight) {
+	ThrowIfNull(skyboxTexture, "Skybox texture was null.");
+	ThrowIfNull(iblTexture, "IBL texture was null.");
+	ThrowIfNull(outSkybox, "Out skybox pointer was null.");
+	ThrowIfNull(outIndirectLight, "Out indirect light pointer was null.");
 
-	scene->setSkybox(skyboxHandle);
-	scene->setIndirectLight(indirectLightHandle);
+	*outSkybox = Skybox::Builder()
+		.environment(skyboxTexture)
+		.intensity(skyboxIntensity)
+		.build(*filament_engine);
+	ThrowIfNull(*outSkybox, "Could not create skybox.");
+
+	*outIndirectLight = IndirectLight::Builder()
+		.reflections(iblTexture)
+		.intensity(iblIntensity)
+		.build(*filament_engine);
+	ThrowIfNull(*outIndirectLight, "Could not create indirect light.");
 }
-StartExportedFunc(set_scene_backdrop, SceneHandle scene, SkyboxHandle skyboxHandle, IndirectLightHandle indirectLightHandle) {
-	native_impl_scene::set_scene_backdrop(scene, skyboxHandle, indirectLightHandle);
+StartExportedFunc(create_scene_backdrop, TextureHandle skyboxTexture, TextureHandle iblTexture, float skyboxIntensity, float iblIntensity, SkyboxHandle* outSkybox, IndirectLightHandle* outIndirectLight) {
+	native_impl_scene::create_scene_backdrop(skyboxTexture, iblTexture, skyboxIntensity, iblIntensity, outSkybox, outIndirectLight);
 	EndExportedFunc
 }
+void native_impl_scene::set_scene_backdrop(SceneHandle scene, SkyboxHandle skybox, IndirectLightHandle indirectLight) {
+	ThrowIfNull(scene, "Scene was null.");
+	ThrowIfNull(skybox, "Skybox was null.");
+	ThrowIfNull(indirectLight, "Light was null.");
 
-void native_impl_scene::remove_scene_backdrop(SceneHandle scene) {
+	scene->setSkybox(skybox);
+	scene->setIndirectLight(indirectLight);
+}
+StartExportedFunc(set_scene_backdrop, SceneHandle scene, SkyboxHandle skybox, IndirectLightHandle indirectLight) {
+	native_impl_scene::set_scene_backdrop(scene, skybox, indirectLight);
+	EndExportedFunc
+}
+void native_impl_scene::unset_scene_backdrop(SceneHandle scene) {
 	ThrowIfNull(scene, "Scene was null.");
 
 	scene->setSkybox(nullptr);
 	scene->setIndirectLight(nullptr);
 }
-StartExportedFunc(remove_scene_backdrop, SceneHandle scene) {
-	native_impl_scene::remove_scene_backdrop(scene);
+StartExportedFunc(unset_scene_backdrop, SceneHandle scene) {
+	native_impl_scene::unset_scene_backdrop(scene);
+	EndExportedFunc
+}
+void native_impl_scene::dispose_scene_backdrop(SkyboxHandle skybox, IndirectLightHandle indirectLight) {
+	ThrowIfNull(skybox, "Skybox was null.");
+	ThrowIfNull(indirectLight, "Light was null.");
+
+	filament_engine->destroy(indirectLight);
+	filament_engine->destroy(skybox);
+}
+StartExportedFunc(dispose_scene_backdrop, SkyboxHandle skybox, IndirectLightHandle indirectLight) {
+	native_impl_scene::dispose_scene_backdrop(skybox, indirectLight);
 	EndExportedFunc
 }
 

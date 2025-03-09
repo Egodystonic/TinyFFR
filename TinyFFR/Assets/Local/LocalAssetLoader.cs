@@ -15,7 +15,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Assets.Local;
 
 sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImplProvider, IDisposable {
-	readonly record struct CubemapData(UIntPtr SkyboxTextureHandle, UIntPtr SkyboxHandle, UIntPtr IblTextureHandle, UIntPtr IndirectLightHandle);
+	readonly record struct CubemapData(UIntPtr SkyboxTextureHandle, UIntPtr IblTextureHandle);
 	const string DefaultEnvironmentCubemapName = "Unnamed Environment Cubemap";
 	const string HdrPreprocessorExeName = "Assets\\Local\\cmgen.exe";
 	const string HdrPreprocessedSkyboxFileSearch = "*_skybox.ktx";
@@ -478,8 +478,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 				LoadSkyboxFileInToMemory(
 						(byte*) skyboxFixedBuffer.StartPtr, 
 						skyboxFileLen, 
-						out var skyboxTextureHandle, 
-						out var skyboxHandle
+						out var skyboxTextureHandle
 				).ThrowIfFailure();
 				_ktxFileBufferPool.Return(skyboxFixedBuffer);
 
@@ -489,15 +488,14 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 				LoadIblFileInToMemory(
 					(byte*) iblFixedBuffer.StartPtr,
 					iblFileLen,
-					out var iblTextureHandle,
-					out var indirectLightHandle
+					out var iblTextureHandle
 				).ThrowIfFailure();
 				_ktxFileBufferPool.Return(iblFixedBuffer);
 
 				++_prevCubemapHandle;
 				var handle = (ResourceHandle<EnvironmentCubemap>) _prevCubemapHandle;
 				_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
-				_loadedCubemaps.Add(_prevCubemapHandle, new(skyboxTextureHandle, skyboxHandle, iblTextureHandle, indirectLightHandle));
+				_loadedCubemaps.Add(_prevCubemapHandle, new(skyboxTextureHandle, iblTextureHandle));
 				return HandleToInstance(handle);
 			}
 		}
@@ -508,13 +506,13 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		}
 	}
 
-	public UIntPtr GetSkyboxHandle(ResourceHandle<EnvironmentCubemap> handle) {
+	public UIntPtr GetSkyboxTextureHandle(ResourceHandle<EnvironmentCubemap> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _loadedCubemaps[handle].SkyboxHandle;
+		return _loadedCubemaps[handle].SkyboxTextureHandle;
 	}
-	public UIntPtr GetIndirectLightingHandle(ResourceHandle<EnvironmentCubemap> handle) {
+	public UIntPtr GetIndirectLightingTextureHandle(ResourceHandle<EnvironmentCubemap> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _loadedCubemaps[handle].IndirectLightHandle;
+		return _loadedCubemaps[handle].IblTextureHandle;
 	}
 
 	public ReadOnlySpan<char> GetName(ResourceHandle<EnvironmentCubemap> handle) {
@@ -603,25 +601,21 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 	static extern InteropResult LoadSkyboxFileInToMemory(
 		byte* dataPtr,
 		int dataLen,
-		out UIntPtr outTextureHandle,
-		out UIntPtr outSkyboxHandle
+		out UIntPtr outTextureHandle
 	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "unload_skybox_file_from_memory")]
 	static extern InteropResult UnloadSkyboxFileFromMemory(
-		UIntPtr textureHandle,
-		UIntPtr skyboxHandle
+		UIntPtr textureHandle
 	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "load_ibl_file_in_to_memory")]
 	static extern InteropResult LoadIblFileInToMemory(
 		byte* dataPtr,
 		int dataLen,
-		out UIntPtr outTextureHandle,
-		out UIntPtr outIndirectLightHandle
+		out UIntPtr outTextureHandle
 	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "unload_ibl_file_from_memory")]
 	static extern InteropResult UnloadIblFileFromMemory(
-		UIntPtr textureHandle,
-		UIntPtr indirectLightHandle
+		UIntPtr textureHandle
 	);
 	#endregion
 
@@ -638,8 +632,8 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		var data = _loadedCubemaps[handle];
-		UnloadIblFileFromMemory(data.IblTextureHandle, data.IndirectLightHandle).ThrowIfFailure();
-		UnloadSkyboxFileFromMemory(data.SkyboxTextureHandle, data.SkyboxHandle).ThrowIfFailure();
+		UnloadIblFileFromMemory(data.IblTextureHandle).ThrowIfFailure();
+		UnloadSkyboxFileFromMemory(data.SkyboxTextureHandle).ThrowIfFailure();
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromCollection) _loadedCubemaps.Remove(handle);
 	}

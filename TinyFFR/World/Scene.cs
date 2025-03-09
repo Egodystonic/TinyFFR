@@ -22,13 +22,6 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 		get => Implementation.GetName(_handle);
 	}
 
-	public EnvironmentCubemap? Backdrop {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetBackdrop(_handle);
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Implementation.SetBackdrop(_handle, value);
-	}
-
 	internal Scene(ResourceHandle<Scene> handle, ISceneImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
@@ -47,6 +40,11 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	public void Add(Light light) => Implementation.Add(_handle, light);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove(Light light) => Implementation.Remove(_handle, light);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetBackdrop(EnvironmentCubemap cubemap, float? backdropIntensity = null, float? indirectLightingIntensity = null) => Implementation.SetBackdrop(_handle, cubemap, backdropIntensity, indirectLightingIntensity);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void RemoveBackdrop() => Implementation.RemoveBackdrop(_handle);
 
 	public override string ToString() => $"Scene {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
 

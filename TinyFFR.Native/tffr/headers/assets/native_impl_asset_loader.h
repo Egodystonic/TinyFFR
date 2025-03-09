@@ -6,13 +6,9 @@
 #include "assimp/cimport.h"
 #include "assimp/scene.h"
 #include "assimp/postprocess.h"
-#include "filament/Skybox.h"
-#include "filament/IndirectLight.h"
 
 typedef const aiScene* MemoryLoadedAssetHandle;
 typedef const unsigned char* MemoryLoadedTextureRgba32DataPtr;
-typedef Skybox* SkyboxHandle;
-typedef IndirectLight* IndirectLightHandle;
 
 class native_impl_asset_loader {
 public:
@@ -29,8 +25,8 @@ public:
 	static void load_texture_file_in_to_memory(const char* filePath, interop_bool includeWAlphaChannel, int32_t* outWidth, int32_t* outHeight, MemoryLoadedTextureRgba32DataPtr* outTextureData);
 	static void unload_texture_file_from_memory(MemoryLoadedTextureRgba32DataPtr textureData);
 
-	static void load_skybox_file_in_to_memory(uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle, SkyboxHandle* outSkyboxHandle);
-	static void unload_skybox_file_from_memory(TextureHandle textureHandle, SkyboxHandle skyboxHandle);
-	static void load_ibl_file_in_to_memory(uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle, IndirectLightHandle* outLightHandle);
-	static void unload_ibl_file_from_memory(TextureHandle textureHandle, IndirectLightHandle lightHandle);
+	static void load_skybox_file_in_to_memory(uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle);
+	static void unload_skybox_file_from_memory(TextureHandle textureHandle);
+	static void load_ibl_file_in_to_memory(uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle);
+	static void unload_ibl_file_from_memory(TextureHandle textureHandle);
 };
