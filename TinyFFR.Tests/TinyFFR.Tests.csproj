@@ -49,6 +49,9 @@
     <None Update="IntegrationTests\ELCrate_Specular.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="IntegrationTests\kloofendal_48d_partly_cloudy_puresky_4k.hdr">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

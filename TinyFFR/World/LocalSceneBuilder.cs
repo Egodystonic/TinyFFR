@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources;
@@ -17,6 +18,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	readonly ObjectPool<ArrayPoolBackedVector<ModelInstance>> _modelInstanceVectorPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedVector<Light>> _lightMap = new();
 	readonly ObjectPool<ArrayPoolBackedVector<Light>> _lightVectorPool;
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, EnvironmentCubemap> _backdropMap = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
 
@@ -109,6 +111,30 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	}
 	#endregion
 
+	#region Backdrop
+	public EnvironmentCubemap? GetBackdrop(ResourceHandle<Scene> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _backdropMap.TryGetValue(handle, out var cubemap) ? cubemap : null;
+	}
+	public void SetBackdrop(ResourceHandle<Scene> handle, EnvironmentCubemap? newBackdrop) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+
+		if (_backdropMap.TryGetValue(handle, out var existingCubemap)) {
+			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), existingCubemap);
+		}
+
+		if (newBackdrop == null) {
+			_backdropMap.Remove(handle);
+			RemoveSceneBackdrop(handle).ThrowIfFailure();
+		}
+		else {
+			_backdropMap[handle] = newBackdrop.Value;
+			SetSceneBackdrop(handle, newBackdrop.Value.SkyboxHandle, newBackdrop.Value.IndirectLightingHandle).ThrowIfFailure();
+			_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newBackdrop.Value);
+		}
+	}
+	#endregion
+
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_scene")]
 	static extern InteropResult AllocateScene(
@@ -139,6 +165,18 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		UIntPtr lightHandle
 	);
 
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_scene_backdrop")]
+	static extern InteropResult SetSceneBackdrop(
+		UIntPtr sceneHandle,
+		UIntPtr skyboxHandle,
+		UIntPtr indirectLightHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "remove_scene_backdrop")]
+	static extern InteropResult RemoveSceneBackdrop(
+		UIntPtr sceneHandle
+	);
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_scene")]
 	static extern InteropResult DisposeScene(
 		UIntPtr sceneHandle
@@ -157,6 +195,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 			_modelInstanceMap.Dispose();
 			_modelInstanceVectorPool.Dispose();
 
+			_backdropMap.Dispose();
 			_lightMap.Dispose();
 			_lightVectorPool.Dispose();
 
@@ -175,12 +214,14 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		DisposeScene(handle).ThrowIfFailure();
 
+		_backdropMap.Remove(handle);
+
 		_modelInstanceVectorPool.Return(_modelInstanceMap[handle]);
 		_modelInstanceMap.Remove(handle);
 
 		_lightVectorPool.Return(_lightMap[handle]);
 		_lightMap.Remove(handle);
-
+		
 		_activeSceneHandles.Remove(handle);
 	}
 

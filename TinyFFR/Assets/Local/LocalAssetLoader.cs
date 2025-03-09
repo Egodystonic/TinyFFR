@@ -1,6 +1,7 @@
 ﻿// Created on 2024-08-19 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Diagnostics;
 using System.IO;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Materials.Local;
@@ -8,16 +9,26 @@ using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Meshes.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
-sealed unsafe class LocalAssetLoader : IAssetLoader, IDisposable {
+sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImplProvider, IDisposable {
+	readonly record struct CubemapData(UIntPtr SkyboxTextureHandle, UIntPtr SkyboxHandle, UIntPtr IblTextureHandle, UIntPtr IndirectLightHandle);
+	const string DefaultEnvironmentCubemapName = "Unnamed Environment Cubemap";
+	const string HdrPreprocessorExeName = "Assets\\Local\\cmgen.exe";
+	const string HdrPreprocessedSkyboxFileSearch = "*_skybox.ktx";
+	const string HdrPreprocessedIblFileSearch = "*_ibl.ktx";
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly LocalMeshBuilder _meshBuilder;
 	readonly LocalMaterialBuilder _materialBuilder;
 	readonly InteropStringBuffer _assetFilePathBuffer;
 	readonly FixedByteBufferPool _vertexTriangleBufferPool;
+	readonly FixedByteBufferPool _ktxFileBufferPool;
+	readonly TimeSpan _maxHdrProcessingTime;
+	readonly ArrayPoolBackedMap<ResourceHandle<EnvironmentCubemap>, CubemapData> _loadedCubemaps = new();
+	nuint _prevCubemapHandle = 0;
 	bool _isDisposed = false;
 
 	public IMeshBuilder MeshBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IAssetLoader)) : _meshBuilder;
@@ -32,6 +43,8 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IDisposable {
 		_materialBuilder = new LocalMaterialBuilder(globals, config);
 		_assetFilePathBuffer = new InteropStringBuffer(config.MaxAssetFilePathLengthChars, addOneForNullTerminator: true);
 		_vertexTriangleBufferPool = new FixedByteBufferPool(config.MaxAssetVertexIndexBufferSizeBytes);
+		_ktxFileBufferPool = new FixedByteBufferPool(config.MaxKtxFileBufferSizeBytes);
+		_maxHdrProcessingTime = config.MaxHdrProcessingTime;
 	}
 
 	#region Textures
@@ -399,6 +412,117 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IDisposable {
 	}
 	#endregion
 
+	#region Environment / Cubemap
+	public void PreprocessHdrTextureToEnvironmentCubemapDirectory(ReadOnlySpan<char> hdrFilePath, ReadOnlySpan<char> destinationDirectoryPath) {
+		ThrowIfThisIsDisposed();
+
+		var destDirString = destinationDirectoryPath.ToString();
+		var fileString = hdrFilePath.ToString();
+
+		if (!File.Exists(HdrPreprocessorExeName)) {
+			throw new InvalidOperationException($"Can not preprocess HDR textures as the preprocessor executable ({HdrPreprocessorExeName}) " +
+												$"is not present in the current working directory ({Directory.GetCurrentDirectory()}).");
+		}
+		if (!File.Exists(fileString)) {
+			throw new ArgumentException($"File '{fileString}' does not exist.", nameof(hdrFilePath));
+		}
+		
+		try {
+			var process = Process.Start(HdrPreprocessorExeName, "-q -f ktx -x \"" + destinationDirectoryPath.ToString() + "\" \"" + fileString + "\"");
+			if (!process.WaitForExit(_maxHdrProcessingTime)) {
+				try {
+					process.Kill(entireProcessTree: true);
+				}
+				catch { /* ignore */ }
+
+				throw new InvalidOperationException($"Aborting HDR preprocessing operation after timeout of {_maxHdrProcessingTime.ToStringMs()}. " +
+													$"This value can be altered by setting the {nameof(LocalAssetLoaderConfig.MaxHdrProcessingTime)} configuration " +
+													$"value on the {nameof(LocalAssetLoaderConfig)} instance passed in to the factory constructor.");
+			}
+
+			if (!Directory.Exists(destDirString) || Directory.GetFiles(destDirString, HdrPreprocessedSkyboxFileSearch).Length == 0 || Directory.GetFiles(destDirString, HdrPreprocessedIblFileSearch).Length == 0) {
+				throw new InvalidOperationException($"Error when processing texture. Check arguments and file formats.");
+			}
+		}
+		catch (Exception e) {
+			throw new InvalidOperationException("Can not preprocess HDR textures as there was an issue encountered when running the preprocessor executable.", e);
+		}
+	}
+	// TODO xmldoc that the directory should be empty other than the preprocessed hdr file contents
+	public EnvironmentCubemap LoadEnvironmentCubemapFromPreprocessedHdrDirectory(ReadOnlySpan<char> directoryPath, ReadOnlySpan<char> name = default) {
+		try {
+			var dirPathString = directoryPath.ToString();
+			var skyboxFile = Directory.GetFiles(dirPathString, HdrPreprocessedSkyboxFileSearch).FirstOrDefault();
+			var iblFile = Directory.GetFiles(dirPathString, HdrPreprocessedIblFileSearch).FirstOrDefault();
+
+			if (skyboxFile == null || iblFile == null) {
+				throw new InvalidOperationException($"Could not find skybox ({HdrPreprocessedSkyboxFileSearch}) and/or IBL ({HdrPreprocessedIblFileSearch}) file in given directory ({dirPathString}).");
+			}
+
+			return LoadEnvironmentCubemap(new() { IblKtxFilePath = iblFile, SkyboxKtxFilePath = skyboxFile, Name = name });
+		}
+		catch (Exception e) {
+			throw new InvalidOperationException("Could not load processed HDR directory.", e);
+		}
+	}
+	public EnvironmentCubemap LoadEnvironmentCubemap(in EnvironmentCubemapCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		try {
+			checked {
+				using var skyboxFs = new FileStream(config.SkyboxKtxFilePath.ToString(), FileMode.Open, FileAccess.Read, FileShare.Read);
+				using var iblFs = new FileStream(config.IblKtxFilePath.ToString(), FileMode.Open, FileAccess.Read, FileShare.Read);
+
+				var skyboxFileLen = (int) skyboxFs.Length;
+				var skyboxFixedBuffer = _ktxFileBufferPool.Rent(skyboxFileLen);
+				skyboxFs.ReadExactly(skyboxFixedBuffer.AsByteSpan[..skyboxFileLen]);
+				LoadSkyboxFileInToMemory(
+						(byte*) skyboxFixedBuffer.StartPtr, 
+						skyboxFileLen, 
+						out var skyboxTextureHandle, 
+						out var skyboxHandle
+				).ThrowIfFailure();
+				_ktxFileBufferPool.Return(skyboxFixedBuffer);
+
+				var iblFileLen = (int) iblFs.Length;
+				var iblFixedBuffer = _ktxFileBufferPool.Rent(iblFileLen);
+				iblFs.ReadExactly(iblFixedBuffer.AsByteSpan[..iblFileLen]);
+				LoadIblFileInToMemory(
+					(byte*) iblFixedBuffer.StartPtr,
+					iblFileLen,
+					out var iblTextureHandle,
+					out var indirectLightHandle
+				).ThrowIfFailure();
+				_ktxFileBufferPool.Return(iblFixedBuffer);
+
+				++_prevCubemapHandle;
+				var handle = (ResourceHandle<EnvironmentCubemap>) _prevCubemapHandle;
+				_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
+				_loadedCubemaps.Add(_prevCubemapHandle, new(skyboxTextureHandle, skyboxHandle, iblTextureHandle, indirectLightHandle));
+				return HandleToInstance(handle);
+			}
+		}
+		catch (Exception e) {
+			if (!File.Exists(config.SkyboxKtxFilePath.ToString())) throw new InvalidOperationException($"File '{config.SkyboxKtxFilePath}' does not exist.", e);
+			if (!File.Exists(config.IblKtxFilePath.ToString())) throw new InvalidOperationException($"File '{config.IblKtxFilePath}' does not exist.", e);
+			throw new InvalidOperationException("Error occured when reading and/or loading skybox or IBL file.", e);
+		}
+	}
+
+	public UIntPtr GetSkyboxHandle(ResourceHandle<EnvironmentCubemap> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _loadedCubemaps[handle].SkyboxHandle;
+	}
+	public UIntPtr GetIndirectLightingHandle(ResourceHandle<EnvironmentCubemap> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _loadedCubemaps[handle].IndirectLightHandle;
+	}
+
+	public ReadOnlySpan<char> GetName(ResourceHandle<EnvironmentCubemap> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceName(handle.Ident, DefaultEnvironmentCubemapName);
+	}
+	#endregion
+
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "load_asset_file_in_to_memory")]
 	static extern InteropResult LoadAssetFileInToMemory(
@@ -474,18 +598,62 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IDisposable {
 	static extern InteropResult UnloadTextureFileFromMemory(
 		void* texelBufferPtr
 	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "load_skybox_file_in_to_memory")]
+	static extern InteropResult LoadSkyboxFileInToMemory(
+		byte* dataPtr,
+		int dataLen,
+		out UIntPtr outTextureHandle,
+		out UIntPtr outSkyboxHandle
+	);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "unload_skybox_file_from_memory")]
+	static extern InteropResult UnloadSkyboxFileFromMemory(
+		UIntPtr textureHandle,
+		UIntPtr skyboxHandle
+	);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "load_ibl_file_in_to_memory")]
+	static extern InteropResult LoadIblFileInToMemory(
+		byte* dataPtr,
+		int dataLen,
+		out UIntPtr outTextureHandle,
+		out UIntPtr outIndirectLightHandle
+	);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "unload_ibl_file_from_memory")]
+	static extern InteropResult UnloadIblFileFromMemory(
+		UIntPtr textureHandle,
+		UIntPtr indirectLightHandle
+	);
 	#endregion
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	EnvironmentCubemap HandleToInstance(ResourceHandle<EnvironmentCubemap> h) => new(h, this);
 
 	public override string ToString() => _isDisposed ? "TinyFFR Local Asset Loader [Disposed]" : "TinyFFR Local Asset Loader";
 
 	#region Disposal
+	public bool IsDisposed(ResourceHandle<EnvironmentCubemap> handle) => _isDisposed || !_loadedCubemaps.ContainsKey(handle);
+
+	public void Dispose(ResourceHandle<EnvironmentCubemap> handle) => Dispose(handle, removeFromCollection: true);
+	void Dispose(ResourceHandle<EnvironmentCubemap> handle, bool removeFromCollection) {
+		if (IsDisposed(handle)) return;
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		var data = _loadedCubemaps[handle];
+		UnloadIblFileFromMemory(data.IblTextureHandle, data.IndirectLightHandle).ThrowIfFailure();
+		UnloadSkyboxFileFromMemory(data.SkyboxTextureHandle, data.SkyboxHandle).ThrowIfFailure();
+		_globals.DisposeResourceNameIfExists(handle.Ident);
+		if (removeFromCollection) _loadedCubemaps.Remove(handle);
+	}
+
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
+			foreach (var cubemap in _loadedCubemaps.Keys) Dispose(cubemap, removeFromCollection: false);
+			_ktxFileBufferPool.Dispose();
 			_vertexTriangleBufferPool.Dispose();
 			_assetFilePathBuffer.Dispose();
 			_meshBuilder.Dispose();
 			_materialBuilder.Dispose();
+			_loadedCubemaps.Dispose();
 		}
 		finally {
 			_isDisposed = true;
@@ -495,5 +663,6 @@ sealed unsafe class LocalAssetLoader : IAssetLoader, IDisposable {
 	void ThrowIfThisIsDisposed() {
 		ObjectDisposedException.ThrowIf(_isDisposed, typeof(IAssetLoader));
 	}
+	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<EnvironmentCubemap> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(EnvironmentCubemap));
 	#endregion
 }

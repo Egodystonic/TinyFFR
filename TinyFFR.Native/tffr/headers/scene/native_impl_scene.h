@@ -2,6 +2,7 @@
 
 #include "utils_and_constants.h"
 #include "assets/native_impl_render_assets.h"
+#include "assets/native_impl_asset_loader.h"
 #include "objects/native_impl_objects.h"
 #include "lights/native_impl_lights.h"
 
@@ -17,5 +18,7 @@ public:
 	static void remove_model_instance_from_scene(SceneHandle scene, ModelInstanceHandle modelInstance);
 	static void add_light_to_scene(SceneHandle scene, LightHandle light);
 	static void remove_light_from_scene(SceneHandle scene, LightHandle light);
+	static void set_scene_backdrop(SceneHandle scene, SkyboxHandle skyboxHandle, IndirectLightHandle indirectLightHandle);
+	static void remove_scene_backdrop(SceneHandle scene);
 	static void dispose_scene(SceneHandle scene);
 };

@@ -16,7 +16,6 @@ void native_impl_camera::allocate_camera(CameraHandle* outCamera) {
 	*outCamera = filament_engine->createCamera(entity);
 
 	ThrowIfNull(*outCamera, "Could not create camera.");
-	(*outCamera)->setExposure(Exposure::exposure(-5.0f));
 }
 StartExportedFunc(allocate_camera, CameraHandle* outCamera) {
 	native_impl_camera::allocate_camera(outCamera);

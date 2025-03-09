@@ -275,18 +275,6 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			name: TestMaterialColorMapName
 		);
 		var normalMap = (this as IMaterialBuilder).CreateNormalMap(
-			// TexturePattern.Circles(
-			// 	Direction.Forward,
-			// 	new(1f, 0f, 1f),
-			// 	new(0f, -1f, 1f),
-			// 	new(-1f, 0f, 1f),
-			// 	new(0f, 1f, 1f),
-			// 	Direction.Forward,
-			// 	repetitions: (3, 3),
-			// 	interiorRadius: 128,
-			// 	borderSize: 12,
-			// 	paddingSize: (256, 256)
-			// ),
 			TexturePattern.Rectangles(
 				interiorSize: (128, 128),
 				borderSize: (8, 8),

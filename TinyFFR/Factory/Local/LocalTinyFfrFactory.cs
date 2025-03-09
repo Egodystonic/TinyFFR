@@ -29,7 +29,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	readonly IDisplayDiscoverer _displayDiscoverer;
 	readonly IWindowBuilder _windowBuilder;
 	readonly ILocalApplicationLoopBuilder _applicationLoopBuilder;
-	readonly IAssetLoader _assetLoader;
+	readonly ILocalAssetLoader _assetLoader;
 	readonly ICameraBuilder _cameraBuilder;
 	readonly ILightBuilder _lightBuilder;
 	readonly IObjectBuilder _objectBuilder;
@@ -40,7 +40,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	public IDisplayDiscoverer DisplayDiscoverer => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _displayDiscoverer;
 	public IWindowBuilder WindowBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _windowBuilder;
 	public ILocalApplicationLoopBuilder ApplicationLoopBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _applicationLoopBuilder;
-	public IAssetLoader AssetLoader => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _assetLoader;
+	public ILocalAssetLoader AssetLoader => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _assetLoader;
 	public ICameraBuilder CameraBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _cameraBuilder;
 	public ILightBuilder LightBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _lightBuilder;
 	public IObjectBuilder ObjectBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _objectBuilder;

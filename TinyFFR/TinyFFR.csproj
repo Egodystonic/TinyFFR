@@ -72,4 +72,10 @@
     <EmbeddedResource Include="Assets\Materials\Local\Shaders\opaque.filamat" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Assets\Local\cmgen.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

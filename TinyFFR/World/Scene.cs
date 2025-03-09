@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.World;
@@ -19,6 +20,13 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetName(_handle);
+	}
+
+	public EnvironmentCubemap? Backdrop {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetBackdrop(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetBackdrop(_handle, value);
 	}
 
 	internal Scene(ResourceHandle<Scene> handle, ISceneImplProvider impl) {

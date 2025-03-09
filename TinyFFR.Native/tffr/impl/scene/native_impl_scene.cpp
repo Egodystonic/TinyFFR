@@ -56,6 +56,30 @@ StartExportedFunc(remove_light_from_scene, SceneHandle scene, LightHandle light)
 	EndExportedFunc
 }
 
+void native_impl_scene::set_scene_backdrop(SceneHandle scene, SkyboxHandle skyboxHandle, IndirectLightHandle indirectLightHandle) {
+	ThrowIfNull(scene, "Scene was null.");
+	ThrowIfNull(skyboxHandle, "Skybox was null.");
+	ThrowIfNull(indirectLightHandle, "Light was null.");
+
+	scene->setSkybox(skyboxHandle);
+	scene->setIndirectLight(indirectLightHandle);
+}
+StartExportedFunc(set_scene_backdrop, SceneHandle scene, SkyboxHandle skyboxHandle, IndirectLightHandle indirectLightHandle) {
+	native_impl_scene::set_scene_backdrop(scene, skyboxHandle, indirectLightHandle);
+	EndExportedFunc
+}
+
+void native_impl_scene::remove_scene_backdrop(SceneHandle scene) {
+	ThrowIfNull(scene, "Scene was null.");
+
+	scene->setSkybox(nullptr);
+	scene->setIndirectLight(nullptr);
+}
+StartExportedFunc(remove_scene_backdrop, SceneHandle scene) {
+	native_impl_scene::remove_scene_backdrop(scene);
+	EndExportedFunc
+}
+
 void native_impl_scene::dispose_scene(SceneHandle scene) {
 	ThrowIfNull(scene, "Scene was null.");
 	ThrowIf(!filament_engine->destroy(scene), "Could not dispose scene.");

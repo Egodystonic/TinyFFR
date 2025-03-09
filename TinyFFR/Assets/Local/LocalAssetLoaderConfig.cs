@@ -10,9 +10,12 @@ public sealed record LocalAssetLoaderConfig {
 	public const int MaxMaxShaderBufferSizeBytes = 1 << 29;
 	public const int MaxMaxAssetFilePathLengthChars = 1 << 29;
 	public const int MaxMaxAssetVertexIndexBufferSizeBytes = 1 << 29;
+	public const int MaxMaxKtxFileBufferSizeBytes = 1 << 29;
 	public const int DefaultMaxShaderBufferSizeBytes = 1024 * 1024 * 1; // 1 MB
 	public const int DefaultMaxAssetFilePathLengthChars = 2048;
 	public const int DefaultMaxAssetVertexIndexBufferSizeBytes = 100_000 * MeshVertex.ExpectedSerializedSize; // 100k vertex mesh
+	public const int DefaultMaxKtxFileBufferSizeBytes = 100 * 1024 * 1024; // 100 MB
+	public static readonly TimeSpan DefaultMaxHdrProcessingTime = TimeSpan.FromMinutes(2d);
 
 	readonly int _maxShaderBufferSizeBytes = DefaultMaxShaderBufferSizeBytes;
 	public int MaxShaderBufferSizeBytes {
@@ -41,9 +44,31 @@ public sealed record LocalAssetLoaderConfig {
 		get => _maxAssetVertexIndexBufferSizeBytes;
 		init {
 			if (value is <= 0 or > MaxMaxAssetVertexIndexBufferSizeBytes) {
-				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max asset file path length must be between 1 and {MaxMaxAssetVertexIndexBufferSizeBytes} chars.");
+				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max asset vertex/index buffer size must be between 1 and {MaxMaxAssetVertexIndexBufferSizeBytes} chars.");
 			}
 			_maxAssetVertexIndexBufferSizeBytes = value;
+		}
+	}
+
+	readonly int _maxKtxFileBufferSizeBytes = DefaultMaxKtxFileBufferSizeBytes;
+	public int MaxKtxFileBufferSizeBytes {
+		get => _maxKtxFileBufferSizeBytes;
+		init {
+			if (value is <= 0 or > MaxMaxKtxFileBufferSizeBytes) {
+				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max KTX file buffer size must be between 1 and {MaxMaxKtxFileBufferSizeBytes} chars.");
+			}
+			_maxKtxFileBufferSizeBytes = value;
+		}
+	}
+
+	readonly TimeSpan _maxHdrProcessingTime = DefaultMaxHdrProcessingTime;
+	public TimeSpan MaxHdrProcessingTime {
+		get => _maxHdrProcessingTime;
+		init {
+			if (value < TimeSpan.Zero) {
+				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max HDR processing time must be positive or zero.");
+			}
+			_maxHdrProcessingTime = value;
 		}
 	}
 }

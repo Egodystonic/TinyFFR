@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using Egodystonic.TinyFFR.Assets;
+using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Local;
 
@@ -11,4 +12,6 @@ public interface ILocalTinyFfrFactory : ITinyFfrFactory {
 	IWindowBuilder WindowBuilder { get; }
 	new ILocalApplicationLoopBuilder ApplicationLoopBuilder { get; }
 	IApplicationLoopBuilder ITinyFfrFactory.ApplicationLoopBuilder => ApplicationLoopBuilder;
+	new ILocalAssetLoader AssetLoader { get; }
+	IAssetLoader ITinyFfrFactory.AssetLoader => AssetLoader;
 }

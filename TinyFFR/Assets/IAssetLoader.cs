@@ -57,4 +57,9 @@ public interface IAssetLoader {
 	MeshReadMetadata ReadMeshMetadata(in MeshReadConfig readConfig);
 	void ReadMesh(ReadOnlySpan<char> filePath, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer) => ReadMesh(new MeshReadConfig { FilePath = filePath }, vertexBuffer, triangleBuffer);
 	void ReadMesh(in MeshReadConfig readConfig, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer);
+
+	EnvironmentCubemap LoadEnvironmentCubemap(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath) {
+		return LoadEnvironmentCubemap(new EnvironmentCubemapCreationConfig { IblKtxFilePath = iblKtxFilePath, SkyboxKtxFilePath = skyboxKtxFilePath });
+	}
+	EnvironmentCubemap LoadEnvironmentCubemap(in EnvironmentCubemapCreationConfig config);
 }

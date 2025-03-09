@@ -17,6 +17,7 @@ class LocalAssetImportTest {
 	const string NormalFile = "IntegrationTests\\ELCrate_Normal.png";
 	const string SpecularFile = "IntegrationTests\\ELCrate_Specular.png";
 	const string MeshFile = "IntegrationTests\\ELCrate.obj";
+	const string SkyboxFile = "IntegrationTests\\kloofendal_48d_partly_cloudy_puresky_4k.hdr";
 	// These values were sampled/taken from an external paint program
 	static readonly Dictionary<int, TexelRgb24> _expectedSampledAlbedoPixelValues = new() {
 		[1024 * 0000 + 0000] = new(0, 0, 0),
@@ -90,21 +91,23 @@ class LocalAssetImportTest {
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(albedo, normal, orm);
 		using var mesh = factory.AssetLoader.LoadMesh(MeshFile, new MeshCreationConfig { LinearRescalingFactor = 0.03f, OriginTranslation = calculatedOrigin.AsVect() });
 		using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 1.3f);
-		using var light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.White, brightness: 800f);
+		using var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(SkyboxFile);
 		using var scene = factory.SceneBuilder.CreateScene();
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
 		scene.Add(instance);
-		scene.Add(light);
+		scene.Backdrop = cubemap;
+
+		var instanceToCameraVect = instance.Position >> camera.Position;
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(8d)) {
 			_ = loop.IterateOnce();
 			renderer.Render();
 
-			instance.RotateBy(1.3f % Direction.Up);
-
-			light.Color = light.Color.WithHueAdjustedBy(1f);
+			instanceToCameraVect = instanceToCameraVect.RotatedBy(2.3f % Direction.Up);
+			camera.Position = instance.Position + instanceToCameraVect + (Direction.Up * MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 1.67f));
+			camera.ViewDirection = (camera.Position >> instance.Position).Direction;
 		}
 	}
 }
