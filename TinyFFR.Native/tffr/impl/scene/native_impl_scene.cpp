@@ -58,7 +58,28 @@ StartExportedFunc(remove_light_from_scene, SceneHandle scene, LightHandle light)
 	EndExportedFunc
 }
 
-void native_impl_scene::create_scene_backdrop(TextureHandle skyboxTexture, TextureHandle iblTexture, float skyboxIntensity, float iblIntensity, SkyboxHandle* outSkybox, IndirectLightHandle* outIndirectLight) {
+void native_impl_scene::create_scene_backdrop_color(float3 color, float indirectLightingIntensity, SkyboxHandle* outSkybox, IndirectLightHandle* outIndirectLight) {
+	ThrowIfNull(outSkybox, "Out skybox pointer was null.");
+	ThrowIfNull(outIndirectLight, "Out indirect light pointer was null.");
+
+	*outSkybox = Skybox::Builder()
+		.color(float4{ color, 1.0f })
+		.intensity(indirectLightingIntensity)
+		.build(*filament_engine);
+	ThrowIfNull(*outSkybox, "Could not create skybox.");
+
+	*outIndirectLight = IndirectLight::Builder()
+		.irradiance(1, &color)
+		.intensity(indirectLightingIntensity)
+		.build(*filament_engine);
+	ThrowIfNull(*outIndirectLight, "Could not create indirect light.");
+}
+StartExportedFunc(create_scene_backdrop_color, float3 color, float indirectLightingIntensity, SkyboxHandle* outSkybox, IndirectLightHandle* outIndirectLight) {
+	native_impl_scene::create_scene_backdrop_color(color, indirectLightingIntensity, outSkybox, outIndirectLight);
+	EndExportedFunc
+}
+
+void native_impl_scene::create_scene_backdrop_texture(TextureHandle skyboxTexture, TextureHandle iblTexture, float indirectLightingIntensity, SkyboxHandle* outSkybox, IndirectLightHandle* outIndirectLight) {
 	ThrowIfNull(skyboxTexture, "Skybox texture was null.");
 	ThrowIfNull(iblTexture, "IBL texture was null.");
 	ThrowIfNull(outSkybox, "Out skybox pointer was null.");
@@ -66,18 +87,18 @@ void native_impl_scene::create_scene_backdrop(TextureHandle skyboxTexture, Textu
 
 	*outSkybox = Skybox::Builder()
 		.environment(skyboxTexture)
-		.intensity(skyboxIntensity)
+		.intensity(indirectLightingIntensity)
 		.build(*filament_engine);
 	ThrowIfNull(*outSkybox, "Could not create skybox.");
 
 	*outIndirectLight = IndirectLight::Builder()
 		.reflections(iblTexture)
-		.intensity(iblIntensity)
+		.intensity(indirectLightingIntensity)
 		.build(*filament_engine);
 	ThrowIfNull(*outIndirectLight, "Could not create indirect light.");
 }
-StartExportedFunc(create_scene_backdrop, TextureHandle skyboxTexture, TextureHandle iblTexture, float skyboxIntensity, float iblIntensity, SkyboxHandle* outSkybox, IndirectLightHandle* outIndirectLight) {
-	native_impl_scene::create_scene_backdrop(skyboxTexture, iblTexture, skyboxIntensity, iblIntensity, outSkybox, outIndirectLight);
+StartExportedFunc(create_scene_backdrop_texture, TextureHandle skyboxTexture, TextureHandle iblTexture, float indirectLightingIntensity, SkyboxHandle* outSkybox, IndirectLightHandle* outIndirectLight) {
+	native_impl_scene::create_scene_backdrop_texture(skyboxTexture, iblTexture, indirectLightingIntensity, outSkybox, outIndirectLight);
 	EndExportedFunc
 }
 void native_impl_scene::set_scene_backdrop(SceneHandle scene, SkyboxHandle skybox, IndirectLightHandle indirectLight) {

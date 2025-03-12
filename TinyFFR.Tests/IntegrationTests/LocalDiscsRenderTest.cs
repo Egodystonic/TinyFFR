@@ -48,8 +48,8 @@ class LocalDiscsRenderTest {
 		using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap();
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap, normalMap, ormMap);
 		using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 5.2f);
-		using var light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f), falloffRange: 10f, brightness: 200f);
-		using var scene = factory.SceneBuilder.CreateScene();
+		using var light = factory.LightBuilder.CreatePointLight(instance.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f));
+		using var scene = factory.SceneBuilder.CreateScene(includeBackdrop: false);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
 		scene.Add(instance);
@@ -60,9 +60,10 @@ class LocalDiscsRenderTest {
 			_ = loop.IterateOnce();
 			renderer.Render();
 
-			instance.MoveBy(Direction.Backward * 0.008f);
-			instance.RotateBy(1.3f % Direction.Up);
-			instance.RotateBy(-0.8f % Direction.Right);
+			instance.MoveBy(Direction.Backward * 0.007f);
+			instance.RotateBy(1.9f % Direction.Up);
+			instance.RotateBy(-1.4f % Direction.Right);
+			light.Position = instance.Position + Direction.Backward * 0.6f;
 
 			light.Color = light.Color.WithHueAdjustedBy(1f);
 		}

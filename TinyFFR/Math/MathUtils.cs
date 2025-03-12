@@ -17,4 +17,5 @@ static class MathUtils {
 	}
 
 	public static bool IsPositiveAndFinite(this float @this) => Single.IsFinite(@this) && @this > 0f;
+	public static bool IsNonNegativeAndFinite(this float @this) => Single.IsFinite(@this) && @this >= 0f;
 }

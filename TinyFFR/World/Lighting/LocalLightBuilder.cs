@@ -12,7 +12,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.World;
 
 sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable {
-	readonly record struct LightData(LightType Type);
+	readonly record struct LightData(LightType Type, float Brightness);
 	const string DefaultModelInstanceName = "Unnamed Light";
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPoolBackedMap<ResourceHandle<Light>, LightData> _activeLightMap = new();
@@ -28,11 +28,11 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 		config.ThrowIfInvalid();
 
 		AllocatePointLight(out var handle).ThrowIfFailure();
-		_activeLightMap.Add(handle, new(LightType.PointLight));
+		_activeLightMap.Add(handle, new(LightType.PointLight, config.InitialBrightness));
 		_globals.StoreResourceNameIfNotEmpty(new ResourceHandle<Light>(handle).Ident, config.Name);
 		SetLightPosition(handle, config.InitialPosition.ToVector3());
 		SetLightColor(handle, config.InitialColor.ToVector3());
-		SetPointLightLumens(handle, config.InitialBrightness);
+		SetPointLightLumens(handle, PointLight.BrightnessToLumens(config.InitialBrightness));
 		SetPointLightMaxIlluminationRadius(handle, config.InitialMaxIlluminationRadius);
 		return HandleToInstance<PointLight>(handle);
 	}
@@ -67,14 +67,29 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 		SetLightColor(handle, newColor.ToVector3()).ThrowIfFailure();
 	}
 
-	public float GetPointLightLumens(ResourceHandle<Light> handle) {
-		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.PointLight);
-		GetPointLightLumens(handle, out var result).ThrowIfFailure();
-		return result;
+	public float GetUniversalBrightness(ResourceHandle<Light> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeLightMap[handle].Brightness;
 	}
-	public void SetPointLightLumens(ResourceHandle<Light> handle, float newLumens) {
-		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.PointLight);
-		LocalLightBuilder.SetPointLightLumens(handle, newLumens).ThrowIfFailure();
+	public void SetUniversalBrightness(ResourceHandle<Light> handle, float newBrightness) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		switch (HandleToInstance(handle).Type) {
+			case LightType.PointLight:
+				newBrightness = PointLight.ClampBrightnessToValidRange(newBrightness);
+				var pointLightLumens = PointLight.BrightnessToLumensNoClamp(newBrightness);
+				SetPointLightLumens(handle, pointLightLumens).ThrowIfFailure();
+				break;
+		}
+		_activeLightMap[handle] = _activeLightMap[handle] with { Brightness = newBrightness };
+	}
+
+	public void AdjustBrightnessBy(ResourceHandle<Light> handle, float adjustment) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		SetUniversalBrightness(handle, _activeLightMap[handle].Brightness + adjustment);
+	}
+	public void ScaleBrightnessBy(ResourceHandle<Light> handle, float scalar) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		SetUniversalBrightness(handle, _activeLightMap[handle].Brightness * scalar);
 	}
 
 	public float GetPointLightMaxIlluminationRadius(ResourceHandle<Light> handle) {

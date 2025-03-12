@@ -9,7 +9,10 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.World;
 
 public readonly struct PointLight : ILight<PointLight>, IEquatable<PointLight> {
-	#region Base Light Impl
+	public const float MaxBrightness = 1E+15f;
+	public const float DefaultLumens = 1_250_000f;
+
+	#region ILight Impl
 	readonly Light _base;
 	internal Light Base => _base == default ? throw InvalidObjectException.InvalidDefault<PointLight>() : _base;
 	internal ILightImplProvider Implementation {
@@ -37,15 +40,7 @@ public readonly struct PointLight : ILight<PointLight>, IEquatable<PointLight> {
 	public override string ToString() => $"Point{Base}";
 	#endregion
 
-	#region Equality
-	bool IEquatable<Light>.Equals(Light other) => _base.Equals(other);
-	public bool Equals(PointLight other) => _base.Equals(other._base);
-	public override bool Equals(object? obj) => obj is PointLight other && Equals(other);
-	public override int GetHashCode() => _base.GetHashCode();
-	public static bool operator ==(PointLight left, PointLight right) => left.Equals(right);
-	public static bool operator !=(PointLight left, PointLight right) => !left.Equals(right);
-	#endregion
-
+	#region Base Light Deferring Members
 	public ReadOnlySpan<char> Name {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Base.Name;
@@ -58,7 +53,7 @@ public readonly struct PointLight : ILight<PointLight>, IEquatable<PointLight> {
 		set => Base.SetPosition(value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetPosition(Location position) => Position = position;
+	public void SetPosition(Location position) => Base.SetPosition(position);
 
 	public ColorVect Color {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -67,16 +62,66 @@ public readonly struct PointLight : ILight<PointLight>, IEquatable<PointLight> {
 		set => Base.SetColor(value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetColor(ColorVect color) => Color = color;
+	public void SetColor(ColorVect color) => Base.SetColor(color);
 
 	public float Brightness {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetPointLightLumens(Handle);
+		get => Base.Brightness;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Implementation.SetPointLightLumens(Handle, value);
+		set => Base.SetBrightness(value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetBrightness(float lumens) => Brightness = lumens;
+	public void SetBrightness(float brightness) => Base.SetBrightness(brightness);
+
+	public Angle ColorHue {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Base.ColorHue;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Base.SetColorHue(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetColorHue(Angle hue) => Base.SetColorHue(hue);
+
+	public float ColorSaturation {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Base.ColorSaturation;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Base.SetColorSaturation(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetColorSaturation(float saturation) => Base.SetColorSaturation(saturation);
+
+	public float ColorLightness {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Base.ColorLightness;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Base.SetColorLightness(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetColorLightness(float lightness) => Base.SetColorLightness(lightness);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void MoveBy(Vect translation) => Base.MoveBy(translation);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void AdjustColorHueBy(Angle adjustment) => Base.AdjustColorHueBy(adjustment);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void AdjustColorSaturationBy(float adjustment) => Base.AdjustColorSaturationBy(adjustment);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void AdjustColorLightnessBy(float adjustment) => Base.AdjustColorLightnessBy(adjustment);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void AdjustBrightnessBy(float adjustment) => Base.AdjustBrightnessBy(adjustment);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void ScaleBrightnessBy(float scalar) => Base.ScaleBrightnessBy(scalar);
+	#endregion
+
+	#region Equality
+	bool IEquatable<Light>.Equals(Light other) => _base.Equals(other);
+	public bool Equals(PointLight other) => _base.Equals(other._base);
+	public override bool Equals(object? obj) => obj is PointLight other && Equals(other);
+	public override int GetHashCode() => _base.GetHashCode();
+	public static bool operator ==(PointLight left, PointLight right) => left.Equals(right);
+	public static bool operator !=(PointLight left, PointLight right) => !left.Equals(right);
+	#endregion
 
 	public float MaxIlluminationRadius {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -87,6 +132,21 @@ public readonly struct PointLight : ILight<PointLight>, IEquatable<PointLight> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetFalloffRange(float range) => MaxIlluminationRadius = range;
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void MoveBy(Vect translation) => Base.MoveBy(translation);
+	public static float LumensToBrightness(float lumens) {
+		if (!lumens.IsNonNegativeAndFinite()) return 0f;
+		return Single.Min(MathF.Sqrt(lumens / DefaultLumens), MaxBrightness);
+	}
+
+	public static float BrightnessToLumens(float brightness) {
+		return BrightnessToLumensNoClamp(ClampBrightnessToValidRange(brightness));
+	}
+
+	internal static float BrightnessToLumensNoClamp(float brightness) {
+		return DefaultLumens * brightness * brightness;
+	}
+
+	internal static float ClampBrightnessToValidRange(float input) {
+		if (!input.IsNonNegativeAndFinite()) return 0f;
+		return Single.Min(input, MaxBrightness);
+	}
 }

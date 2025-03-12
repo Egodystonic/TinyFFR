@@ -6,6 +6,7 @@ using System;
 namespace Egodystonic.TinyFFR.World;
 
 public readonly ref struct LightCreationConfig {
+	public static readonly float DefaultInitialBrightness = 1f;
 	public static readonly Location DefaultInitialPosition = Location.Origin;
 	public static readonly ColorVect DefaultInitialColor = StandardColor.White;
 
@@ -15,6 +16,8 @@ public readonly ref struct LightCreationConfig {
 
 	public ColorVect InitialColor { get; init; } = DefaultInitialColor;
 
+	public float InitialBrightness { get; init; } = DefaultInitialBrightness;
+
 	public LightCreationConfig() { }
 
 	internal void ThrowIfInvalid() {
@@ -23,10 +26,8 @@ public readonly ref struct LightCreationConfig {
 }
 
 public readonly ref struct PointLightCreationConfig {
-	public static readonly float DefaultInitialBrightness = 1_000f;
 	public static readonly float DefaultInitialMaxIlluminationRadius = 15f;
 
-	public float InitialBrightness { get; init; } = DefaultInitialBrightness;
 	
 	public float InitialMaxIlluminationRadius { get; init; } = DefaultInitialMaxIlluminationRadius;
 
@@ -40,6 +41,11 @@ public readonly ref struct PointLightCreationConfig {
 	public ColorVect InitialColor {
 		get => BaseConfig.InitialColor;
 		init => BaseConfig = BaseConfig with { InitialColor = value };
+	}
+
+	public float InitialBrightness {
+		get => BaseConfig.InitialBrightness;
+		init => BaseConfig = BaseConfig with { InitialBrightness = value };
 	}
 
 	public ReadOnlySpan<char> Name {

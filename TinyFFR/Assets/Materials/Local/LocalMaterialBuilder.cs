@@ -305,8 +305,8 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 				4,
 				0.7f,
 				0.3f,
+				0.5f,
 				1f,
-				0f,
 				repetitionCount: (32, 32),
 				cellResolution: 64
 			),

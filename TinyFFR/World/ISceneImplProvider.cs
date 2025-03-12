@@ -14,6 +14,7 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	void Add(ResourceHandle<Scene> handle, Light light);
 	void Remove(ResourceHandle<Scene> handle, Light light);
 
-	void SetBackdrop(ResourceHandle<Scene> handle, EnvironmentCubemap cubemap, float? skyboxIntensity, float? indirectLightingIntensity);
+	void SetBackdrop(ResourceHandle<Scene> handle, EnvironmentCubemap cubemap, float indirectLightingIntensity);
+	void SetBackdrop(ResourceHandle<Scene> handle, ColorVect color, float indirectLightingIntensity);
 	void RemoveBackdrop(ResourceHandle<Scene> handle);
 }

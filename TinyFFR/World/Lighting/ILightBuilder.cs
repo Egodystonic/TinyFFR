@@ -10,7 +10,7 @@ public interface ILightBuilder {
 		return CreatePointLight(new PointLightCreationConfig {
 			InitialPosition = position, 
 			InitialColor = color ?? LightCreationConfig.DefaultInitialColor,
-			InitialBrightness = brightness ?? PointLightCreationConfig.DefaultInitialBrightness,
+			InitialBrightness = brightness ?? LightCreationConfig.DefaultInitialBrightness,
 			InitialMaxIlluminationRadius = falloffRange ?? PointLightCreationConfig.DefaultInitialMaxIlluminationRadius,
 			Name = name
 		});

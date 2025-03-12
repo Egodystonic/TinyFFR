@@ -51,4 +51,15 @@ class MathUtilsTest {
 		Assert.AreEqual(false, Single.NegativeZero.IsPositiveAndFinite());
 		Assert.AreEqual(false, Single.NaN.IsPositiveAndFinite());
 	}
+
+	[Test]
+	public void ShouldCorrectlyDetermineFloatNonNegativityAndFiniteness() {
+		Assert.AreEqual(true, 1f.IsNonNegativeAndFinite());
+		Assert.AreEqual(true, 0f.IsNonNegativeAndFinite());
+		Assert.AreEqual(false, (-1f).IsNonNegativeAndFinite());
+		Assert.AreEqual(false, Single.PositiveInfinity.IsNonNegativeAndFinite());
+		Assert.AreEqual(false, Single.NegativeInfinity.IsNonNegativeAndFinite());
+		Assert.AreEqual(true, Single.NegativeZero.IsNonNegativeAndFinite());
+		Assert.AreEqual(false, Single.NaN.IsNonNegativeAndFinite());
+	}
 }

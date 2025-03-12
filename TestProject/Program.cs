@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment.Input;
+using Egodystonic.TinyFFR.World;
 
 // TODO make this a little better. Maybe make it a little framework and ignore the actual "meat" file
 NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
@@ -41,25 +42,16 @@ var display = factory.DisplayDiscoverer.Recommended ?? throw new ApplicationExce
 using var window = factory.WindowBuilder.CreateWindow(display, title: "William the Window");
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60, name: "Larry the Loop");
 using var camera = factory.CameraBuilder.CreateCamera(Location.Origin, name: "Carl the Camera");
-using var albedo = factory.AssetLoader.LoadTexture(@"C:\Users\ben\Documents\Egodystonic\EscapeLizards\EscapeLizardsInst\Materials\WorkshopCrate_bake.png");
-using var normals = factory.AssetLoader.LoadTexture(@"C:\Users\ben\Documents\Egodystonic\EscapeLizards\EscapeLizardsInst\Materials\WorkshopCrate_bake_n.png");
-using var orm = factory.AssetLoader.LoadAndCombineOrmTextures(
-	roughnessMapFilePath: @"C:\Users\ben\Documents\Egodystonic\EscapeLizards\EscapeLizardsInst\Materials\WorkshopCrate_bake_s.png",
-	metallicMapFilePath: @"C:\Users\ben\Documents\Egodystonic\EscapeLizards\EscapeLizardsInst\Materials\WorkshopCrate_bake_s.png",
-	config: new TextureCreationConfig { InvertYGreenChannel = true }
-);
-using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(albedo, normals, orm, name: "Matthew the Material");
-using var mesh = factory.AssetLoader.LoadMesh(@"C:\Users\ben\Documents\Egodystonic\EscapeLizards\EscapeLizardsInst\Models\WorkshopCrate.obj");
-using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: "Iain the Instance");
-using var light = factory.LightBuilder.CreatePointLight(camera.Position + Direction.Forward * 1f, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f), name: "Lars the Light"); // TODO why so bright?
-using var scene = factory.SceneBuilder.CreateScene(name: "Sean the Scene");
+using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f));
+using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, factory.AssetLoader.MaterialBuilder.TestMaterial, name: "Iain the Instance");
+using var light = factory.LightBuilder.CreatePointLight(camera.Position + Direction.Forward * 1f, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f), name: "Lars the Light");
+using var scene = factory.SceneBuilder.CreateScene(includeBackdrop: false, name: "Sean the Scene");
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window, name: "Ryan the Renderer");
 
 scene.Add(instance);
 scene.Add(light);
 
 instance.SetPosition(camera.Position + Direction.Forward * 2.2f);
-instance.ScaleBy(0.05f);
 
 while (!loop.Input.UserQuitRequested) {
 	window.Title = (1000d / loop.IterateOnce().TotalMilliseconds).ToString("N0") + " FPS";
@@ -73,9 +65,14 @@ while (!loop.Input.UserQuitRequested) {
 	instance.RotateBy(0.5f * 1f % Direction.Up);
 	instance.RotateBy(0.5f * 0.66f % Direction.Right);
 	
-	light.Color = light.Color.WithHueAdjustedBy(0.5f);
-	light.Position = instance.Position + (((instance.Position >> camera.Position) * 1f) * ((MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 0.8f) * 45f) % Direction.Down));
+	light.AdjustColorHueBy(0.5f);
+	light.Position = instance.Position + (((instance.Position >> camera.Position) * 2.2f) * ((MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 0.8f) * 45f) % Direction.Down));
 	light.Position += Direction.Up * MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 1f) * 3.5f;
 
-	if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) window.Size += (100, 100);
+	if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Space)) {
+		light.AdjustBrightnessBy(0.05f);
+	}
+	if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Backspace)) {
+		light.AdjustBrightnessBy(-0.05f);
+	}
 }

@@ -6,6 +6,8 @@ using System;
 namespace Egodystonic.TinyFFR.World;
 
 public interface ISceneBuilder {
-	Scene CreateScene(ReadOnlySpan<char> name = default) => CreateScene(new SceneCreationConfig { Name = name });
+	Scene CreateScene(bool includeBackdrop = true, ColorVect? backdropColor = null, ReadOnlySpan<char> name = default) {
+		return CreateScene(new SceneCreationConfig { InitialBackdropColor = includeBackdrop ? (backdropColor ?? SceneCreationConfig.DefaultInitialBackdropColor) : null, Name = name});
+	}
 	Scene CreateScene(in SceneCreationConfig config);
 }

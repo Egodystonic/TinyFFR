@@ -97,18 +97,21 @@ class LocalAssetImportTest {
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
 		scene.Add(instance);
-		scene.SetBackdrop(cubemap, 30000f, 10000f);
+		scene.SetBackdrop(cubemap, 0f);
 		
 		var instanceToCameraVect = instance.Position >> camera.Position;
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
-		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(8d)) {
+		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(8.9d)) {
 			_ = loop.IterateOnce();
 			renderer.Render();
 
 			instanceToCameraVect = instanceToCameraVect.RotatedBy(2.3f % Direction.Up);
 			camera.Position = instance.Position + instanceToCameraVect + (Direction.Up * MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 1.67f));
 			camera.ViewDirection = (camera.Position >> instance.Position).Direction;
+			var cbBrightness = (float) Math.Floor(loop.TotalIteratedTime.TotalSeconds) * 0.25f;
+			scene.SetBackdrop(cubemap, cbBrightness);
+			window.Title = "Backdrop brightness level " + PercentageUtils.ConvertFractionToPercentageString(cbBrightness);
 		}
 	}
 }

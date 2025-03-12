@@ -46,6 +46,42 @@ public readonly struct Light : ILight, IDisposableResource<Light, ILightImplProv
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetColor(ColorVect color) => Color = color;
 
+	public Angle ColorHue {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Color.Hue;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Color = Color.WithHue(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetColorHue(Angle hue) => ColorHue = hue;
+
+	public float ColorSaturation {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Color.Saturation;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Color = Color.WithSaturation(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetColorSaturation(float saturation) => ColorSaturation = saturation;
+
+	public float ColorLightness {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Color.Lightness;
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Color = Color.WithLightness(value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetColorLightness(float lightness) => ColorLightness = lightness;
+
+	public float Brightness {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetUniversalBrightness(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetUniversalBrightness(_handle, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetBrightness(float brightness) => Brightness = brightness;
+
 	internal Light(ResourceHandle<Light> handle, ILightImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
@@ -56,6 +92,11 @@ public readonly struct Light : ILight, IDisposableResource<Light, ILightImplProv
 	}
 
 	public void MoveBy(Vect translation) => Implementation.TranslateBy(_handle, translation);
+	public void AdjustColorHueBy(Angle adjustment) => Color = Color.WithHueAdjustedBy(adjustment);
+	public void AdjustColorSaturationBy(float adjustment) => Color = Color.WithSaturationAdjustedBy(adjustment);
+	public void AdjustColorLightnessBy(float adjustment) => Color = Color.WithLightnessAdjustedBy(adjustment);
+	public void AdjustBrightnessBy(float adjustment) => Implementation.AdjustBrightnessBy(_handle, adjustment);
+	public void ScaleBrightnessBy(float scalar) => Implementation.ScaleBrightnessBy(_handle, scalar);
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

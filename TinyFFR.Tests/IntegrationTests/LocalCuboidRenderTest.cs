@@ -4,6 +4,7 @@
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
@@ -31,7 +32,7 @@ class LocalCuboidRenderTest {
 		);
 		_occlusionPattern = TexturePattern.Chequerboard<Real>(0.5f, 1f, 0.8f, (27, 27));
 		_roughnessPattern = TexturePattern.Chequerboard<Real>(0.8f, 0.4f, 1f, (27, 27));
-		_metallicPattern = TexturePattern.Chequerboard<Real>(1f, 0f, (27, 27));
+		_metallicPattern = TexturePattern.Chequerboard<Real>(0.4f, 0f, (27, 27));
 	}
 
 	[TearDown]
@@ -49,8 +50,9 @@ class LocalCuboidRenderTest {
 		using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(_occlusionPattern, _roughnessPattern, _metallicPattern);
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap, normalMap, ormMap);
 		using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 2.2f);
-		using var light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f), falloffRange: 10f, brightness: 2000f);
-		using var scene = factory.SceneBuilder.CreateScene();
+		using var light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f));
+		var backdropColor = new ColorVect(0f, 1f, 0.7f);
+		using var scene = factory.SceneBuilder.CreateScene(backdropColor: backdropColor);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
 		scene.Add(instance);
@@ -65,8 +67,11 @@ class LocalCuboidRenderTest {
 			instance.RotateBy(0.8f % Direction.Right);
 
 			light.Color = light.Color.WithHueAdjustedBy(1f);
-			light.Position = instance.Position + (((instance.Position >> camera.Position) * 1.2f) * ((MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 5f) * 15f) % Direction.Down));
-			light.Position += Direction.Up * MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 8f) * 0.5f;
+			light.Position = instance.Position + (((instance.Position >> camera.Position) * 0.44f) * ((MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 5f) * 15f) % Direction.Down));
+			light.Position += Direction.Up * MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 4f) * 0.5f;
+
+			backdropColor = backdropColor.WithHueAdjustedBy(-1f);
+			scene.SetBackdrop(backdropColor);
 		}
 	}
 }

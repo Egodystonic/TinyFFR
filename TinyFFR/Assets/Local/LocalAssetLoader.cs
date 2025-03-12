@@ -172,10 +172,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 
 		if (!defaultOcclusion) {
 			var metadata = ReadTextureMetadata(occlusionMapReadConfig);
-			if (dimensions == null) dimensions = (metadata.Width, metadata.Height);
-			else if (dimensions.Value.X != metadata.Width || dimensions.Value.Y != metadata.Height) {
-				throw new InvalidOperationException("All given textures must have identical dimensions.");
-			}
+			dimensions = (metadata.Width, metadata.Height);
 		}
 		if (!defaultRoughness) {
 			var metadata = ReadTextureMetadata(roughnessMapReadConfig);
@@ -433,7 +430,9 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 				try {
 					process.Kill(entireProcessTree: true);
 				}
-				catch { /* ignore */ }
+#pragma warning disable CA1031 // "Don't catch & swallow exceptions" -- In this case we don't care if we couldn't kill the process, we're going to throw an exception anyway
+				catch { /* no op */ }
+#pragma warning restore CA1031
 
 				throw new InvalidOperationException($"Aborting HDR preprocessing operation after timeout of {_maxHdrProcessingTime.ToStringMs()}. " +
 													$"This value can be altered by setting the {nameof(LocalAssetLoaderConfig.MaxHdrProcessingTime)} configuration " +

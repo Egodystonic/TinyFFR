@@ -21,6 +21,8 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalDisposalProtectionTest {
+	const string SkyboxFile = "IntegrationTests\\kloofendal_48d_partly_cloudy_puresky_4k.hdr";
+
 	[SetUp]
 	public void SetUpTest() { }
 
@@ -151,6 +153,14 @@ class LocalDisposalProtectionTest {
 			v => v.Remove(modelInstance)
 		};
 		AssertUseAfterDisposalThrowsException(sceneBuilder.CreateScene(), objectIsAlreadyDisposed: false, sceneActions);
+		var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(SkyboxFile);
+		var cubemapActions = new Action<EnvironmentCubemap>[] {
+			v => _ = v.Handle,
+			v => _ = v.Name,
+			v => _ = v.SkyboxTextureHandle,
+			v => _ = v.IndirectLightingTextureHandle,
+		};
+		AssertUseAfterDisposalThrowsException(factory.AssetLoader.LoadEnvironmentCubemap(SkyboxFile), objectIsAlreadyDisposed: false, cubemapActions);
 		var rendererBuilder = factory.RendererBuilder;
 		var renderer = rendererBuilder.CreateRenderer(scene, camera, window);
 		var rendererActions = new Action<Renderer>[] {
@@ -188,6 +198,7 @@ class LocalDisposalProtectionTest {
 		AssertUseAfterDisposalThrowsException(material, objectIsAlreadyDisposed: true, materialActions);
 		AssertUseAfterDisposalThrowsException(modelInstance, objectIsAlreadyDisposed: true, modelInstanceActions);
 		AssertUseAfterDisposalThrowsException(scene, objectIsAlreadyDisposed: true, sceneActions);
+		AssertUseAfterDisposalThrowsException(cubemap, objectIsAlreadyDisposed: true, cubemapActions);
 		AssertUseAfterDisposalThrowsException(renderer, objectIsAlreadyDisposed: true, rendererActions);
 
 		AssertUseAfterDisposalThrowsException(

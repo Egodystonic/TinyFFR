@@ -11,6 +11,10 @@
 
 using namespace utils;
 
+float candela_to_lumens(float candela) {
+	return candela * 4.0f * math::f::PI;
+}
+
 void native_impl_lights::allocate_point_light(LightHandle* outLight) {
 	ThrowIfNull(outLight, "Light out pointer was null.");
 
@@ -76,7 +80,7 @@ void native_impl_lights::get_point_light_lumens(LightHandle light, float* outLum
 	auto entity = Entity::import(light);
 	auto& manager = filament_engine->getLightManager();
 	auto instance = manager.getInstance(entity);
-	*outLumens = manager.getIntensity(instance);
+	*outLumens = candela_to_lumens(manager.getIntensity(instance));
 }
 StartExportedFunc(get_point_light_lumens, LightHandle light, float* outLumens) {
 	native_impl_lights::get_point_light_lumens(light, outLumens);

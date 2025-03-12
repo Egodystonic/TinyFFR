@@ -19,7 +19,8 @@ public:
 	static void remove_model_instance_from_scene(SceneHandle scene, ModelInstanceHandle modelInstance);
 	static void add_light_to_scene(SceneHandle scene, LightHandle light);
 	static void remove_light_from_scene(SceneHandle scene, LightHandle light);
-	static void create_scene_backdrop(TextureHandle skyboxTexture, TextureHandle iblTexture, float skyboxIntensity, float iblIntensity, SkyboxHandle* outSkybox, IndirectLightHandle* outIndirectLight);
+	static void create_scene_backdrop_texture(TextureHandle skyboxTexture, TextureHandle iblTexture, float indirectLightingIntensity, SkyboxHandle* outSkybox, IndirectLightHandle* outIndirectLight);
+	static void create_scene_backdrop_color(float3 color, float indirectLightingIntensity, SkyboxHandle* outSkybox, IndirectLightHandle* outIndirectLight);
 	static void set_scene_backdrop(SceneHandle scene, SkyboxHandle skybox, IndirectLightHandle indirectLight);
 	static void unset_scene_backdrop(SceneHandle scene);
 	static void dispose_scene_backdrop(SkyboxHandle skybox, IndirectLightHandle indirectLight);

@@ -17,11 +17,13 @@ public interface ILightImplProvider : IDisposableResourceImplProvider<Light> {
 	ColorVect GetColor(ResourceHandle<Light> handle);
 	void SetColor(ResourceHandle<Light> handle, ColorVect newColor);
 
-	float GetPointLightLumens(ResourceHandle<Light> handle);
-	void SetPointLightLumens(ResourceHandle<Light> handle, float newLumens);
+	void SetUniversalBrightness(ResourceHandle<Light> handle, float newBrightness);
+	float GetUniversalBrightness(ResourceHandle<Light> handle);
 
 	float GetPointLightMaxIlluminationRadius(ResourceHandle<Light> handle);
 	void SetPointLightMaxIlluminationRadius(ResourceHandle<Light> handle, float newRadius);
 
 	void TranslateBy(ResourceHandle<Light> handle, Vect translation);
+	void AdjustBrightnessBy(ResourceHandle<Light> handle, float adjustment);
+	void ScaleBrightnessBy(ResourceHandle<Light> handle, float scalar);
 }
