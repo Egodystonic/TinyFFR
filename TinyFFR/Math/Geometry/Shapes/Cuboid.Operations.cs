@@ -488,6 +488,14 @@ partial struct Cuboid : IIndependentAxisScalable<Cuboid> {
 	#endregion
 
 	#region Clamping and Interpolation
+	public Cuboid Clamp(Cuboid min, Cuboid max) {
+		return FromHalfDimensions(
+			_halfWidth.AsReal().Clamp(min._halfWidth, max._halfWidth),
+			_halfHeight.AsReal().Clamp(min._halfHeight, max._halfHeight),
+			_halfDepth.AsReal().Clamp(min._halfDepth, max._halfDepth)
+		);
+	}
+
 	public static Cuboid Interpolate(Cuboid start, Cuboid end, float distance) {
 		return FromHalfDimensions(
 			Single.Lerp(start.HalfWidth, end.HalfWidth, distance),

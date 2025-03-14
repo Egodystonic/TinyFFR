@@ -22,7 +22,8 @@ public interface IShape : IMathPrimitive, IPhysicalValidityDeterminable;
 public interface IShape<TSelf> :
 	IShape,
 	IMathPrimitive<TSelf>,
-	IScalable<TSelf>
+	IScalable<TSelf>,
+	IInterpolatable<TSelf>
 	where TSelf : IShape<TSelf>;
 public interface IConvexShape : IShape,
 	IClosestEndogenousPointDiscoverable<Location>,

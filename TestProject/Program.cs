@@ -45,7 +45,7 @@ using var camera = factory.CameraBuilder.CreateCamera(Location.Origin, name: "Ca
 using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f));
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, factory.AssetLoader.MaterialBuilder.TestMaterial, name: "Iain the Instance");
 using var light = factory.LightBuilder.CreatePointLight(camera.Position + Direction.Forward * 1f, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f), name: "Lars the Light");
-using var scene = factory.SceneBuilder.CreateScene(includeBackdrop: false, name: "Sean the Scene");
+using var scene = factory.SceneBuilder.CreateScene(name: "Sean the Scene");
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window, name: "Ryan the Renderer");
 
 scene.Add(instance);

@@ -84,6 +84,16 @@ class SphereTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyClamp() {
+		Assert.AreEqual(new Sphere(10f), new Sphere(10f).Clamp(new(5f), new(15f)));
+		Assert.AreEqual(new Sphere(10f), new Sphere(10f).Clamp(new(15f), new(5f)));
+		Assert.AreEqual(new Sphere(15f), new Sphere(20f).Clamp(new(5f), new(15f)));
+		Assert.AreEqual(new Sphere(15f), new Sphere(20f).Clamp(new(15f), new(5f)));
+		Assert.AreEqual(new Sphere(5f), new Sphere(0f).Clamp(new(5f), new(15f)));
+		Assert.AreEqual(new Sphere(5f), new Sphere(0f).Clamp(new(15f), new(5f)));
+	}
+
+	[Test]
 	public void ShouldCorrectlyCreateRandomObjects() {
 		const int NumIterations = 10_000;
 		

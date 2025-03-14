@@ -115,15 +115,31 @@ class CuboidTest {
 	
 	[Test]
 	public void ShouldCorrectlyInterpolate() {
-		var a = new Cuboid(5f, 10f, 20f);
-		var b = new Cuboid(15f, 30f, 60f);
-		Assert.AreEqual(new Cuboid(10f, 20f, 40f), Cuboid.Interpolate(a, b, 0.5f));
-		Assert.AreEqual(new Cuboid(5f, 10f, 20f), Cuboid.Interpolate(a, b, 0f));
-		Assert.AreEqual(new Cuboid(15f, 30f, 60f), Cuboid.Interpolate(a, b, 1f));
-		Assert.AreEqual(new Cuboid(20f, 40f, 80f), Cuboid.Interpolate(a, b, 1.5f));
+		var a = new Cuboid(-5f, 10f, 20f);
+		var b = new Cuboid(-15f, 30f, 60f);
+		Assert.AreEqual(new Cuboid(-10f, 20f, 40f), Cuboid.Interpolate(a, b, 0.5f));
+		Assert.AreEqual(new Cuboid(-5f, 10f, 20f), Cuboid.Interpolate(a, b, 0f));
+		Assert.AreEqual(new Cuboid(-15f, 30f, 60f), Cuboid.Interpolate(a, b, 1f));
+		Assert.AreEqual(new Cuboid(-20f, 40f, 80f), Cuboid.Interpolate(a, b, 1.5f));
 		Assert.AreEqual(new Cuboid(0f, 0f, 0f), Cuboid.Interpolate(a, b, -0.5f));
 	}
-	
+
+	[Test]
+	public void ShouldCorrectlyClamp() {
+		var a = new Cuboid(-5f, 10f, 20f);
+		var b = new Cuboid(-15f, 30f, 60f);
+		Assert.AreEqual(new Cuboid(-10f, 20f, 40f), Cuboid.Interpolate(a, b, 0.5f).Clamp(a, b));
+		Assert.AreEqual(new Cuboid(-5f, 10f, 20f), Cuboid.Interpolate(a, b, 0f).Clamp(a, b));
+		Assert.AreEqual(new Cuboid(-15f, 30f, 60f), Cuboid.Interpolate(a, b, 1f).Clamp(a, b));
+		Assert.AreEqual(b, Cuboid.Interpolate(a, b, 1.5f).Clamp(a, b));
+		Assert.AreEqual(a, Cuboid.Interpolate(a, b, -0.5f).Clamp(a, b));
+		Assert.AreEqual(new Cuboid(-10f, 20f, 40f), Cuboid.Interpolate(a, b, 0.5f).Clamp(b, a));
+		Assert.AreEqual(new Cuboid(-5f, 10f, 20f), Cuboid.Interpolate(a, b, 0f).Clamp(b, a));
+		Assert.AreEqual(new Cuboid(-15f, 30f, 60f), Cuboid.Interpolate(a, b, 1f).Clamp(b, a));
+		Assert.AreEqual(b, Cuboid.Interpolate(a, b, 1.5f).Clamp(b, a));
+		Assert.AreEqual(a, Cuboid.Interpolate(a, b, -0.5f).Clamp(b, a));
+	}
+
 	[Test]
 	public void ShouldCorrectlyCreateRandomObjects() {
 		const int NumIterations = 10_000;

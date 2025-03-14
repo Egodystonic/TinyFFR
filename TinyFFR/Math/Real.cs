@@ -116,3 +116,6 @@ public readonly record struct Real(float AsFloat) : IMathPrimitive<Real>, IAlgeb
 	public static bool operator <=(Real left, Real right) => left.AsFloat <= right.AsFloat;
 	#endregion
 }
+public static class RealExtensions {
+	public static Real AsReal(this float @this) => new(@this);
+}

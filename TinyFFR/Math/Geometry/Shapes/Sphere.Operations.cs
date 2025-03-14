@@ -326,6 +326,7 @@ partial struct Sphere {
 	#endregion
 
 	#region Clamping and Interpolation
+	public Sphere Clamp(Sphere min, Sphere max) => new(Radius.AsReal().Clamp(min.Radius, max.Radius));
 	public static Sphere Interpolate(Sphere start, Sphere end, float distance) => new(Single.Lerp(start.Radius, end.Radius, distance));
 	#endregion
 }

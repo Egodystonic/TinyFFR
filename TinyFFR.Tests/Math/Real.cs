@@ -17,6 +17,7 @@ class RealTest {
 	[Test]
 	public void ShouldCorrectlyConvert() {
 		Assert.AreEqual(123f, (float) (Real) 123f);
+		Assert.AreEqual(123f, (float) 123f.AsReal());
 	}
 
 	[Test]
