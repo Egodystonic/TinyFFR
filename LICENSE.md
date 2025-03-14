@@ -1,3 +1,16 @@
+# Summary
+
+> [!NOTE]
+> This license is intended to allow all commercial and non-commercial uses of TinyFFR and its source code except those that may directly compete with TinyFFR (in either a commercial or non-commercial context). It is permitted to use TinyFFR in any commercial or non-commercial context otherwise without restriction.
+
+> [!NOTE]
+> Two years after any specific release or commit is publicly visible, its license changes to MIT.
+
+> [!TIP]
+> The intention of this license is to encourage users (and specifically large organizations) to centralize their improvements and efforts back in to this repository rather than fracturing it and/or creating competing forks.
+
+License questions are welcome in the 'issues' section of the github repository. The license proper begins on the line below.
+
 # Functional Source License, Version 1.1, MIT Future License (Modified)
 
 ## Abbreviation
@@ -40,17 +53,17 @@ service that:
 
 3. offers the same or substantially similar functionality as the Software; or
 
-4. maintains or makes publicly available a repository, fork, or codebase that
-   is derived from or incorporates the Software (or its source code).
+4. makes publicly available a repository, fork, or codebase that
+   is derived from the Software (and its source code) and aims to compete with or substitute the Software (and its source code).
    
 
 Permitted Purposes specifically include using the Software:
 
-1. for your internal use and access;
+1. for your internal use and access (including forks and code derivations);
 
-2. for non-commercial education;
+2. for commercial and non-commercial education;
 
-3. for non-commercial research; and
+3. for commercial and non-commercial research; and
 
 4. in connection with professional services that you provide to a licensee
    using the Software in accordance with these Terms and Conditions.

@@ -38,41 +38,26 @@ NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
 
 
 using var factory = new LocalTinyFfrFactory();
-var display = factory.DisplayDiscoverer.Recommended ?? throw new ApplicationException("This test requires at least one connected display.");
-using var window = factory.WindowBuilder.CreateWindow(display, title: "William the Window");
-using var loop = factory.ApplicationLoopBuilder.CreateLoop(60, name: "Larry the Loop");
-using var camera = factory.CameraBuilder.CreateCamera(Location.Origin, name: "Carl the Camera");
-using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f));
-using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, factory.AssetLoader.MaterialBuilder.TestMaterial, name: "Iain the Instance");
-using var light = factory.LightBuilder.CreatePointLight(camera.Position + Direction.Forward * 1f, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f), name: "Lars the Light");
-using var scene = factory.SceneBuilder.CreateScene(name: "Sean the Scene");
-using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window, name: "Ryan the Renderer");
+using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
+using var loop = factory.ApplicationLoopBuilder.CreateLoop(60); // 60hz Loop
+using var camera = factory.CameraBuilder.CreateCamera();
+using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f)); // 1m cube
+var material = factory.AssetLoader.MaterialBuilder.TestMaterial;
+using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, material);
+using var light = factory.LightBuilder.CreatePointLight(Location.Origin);
+using var scene = factory.SceneBuilder.CreateScene();
+using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
 scene.Add(instance);
 scene.Add(light);
 
-instance.SetPosition(camera.Position + Direction.Forward * 2.2f);
+instance.SetPosition(new Location(0f, 0f, 2f));
 
 while (!loop.Input.UserQuitRequested) {
-	window.Title = (1000d / loop.IterateOnce().TotalMilliseconds).ToString("N0") + " FPS";
+	var dt = (float) loop.IterateOnce().TotalSeconds;
 	renderer.Render();
 
-	// var newMesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f), new(rotation: (float) loop.TotalIteratedTime.TotalSeconds * -47f), true, name: "Clive the Cuboid");
-	// instance.Mesh = newMesh;
-	// mesh.Dispose();
-	// mesh = newMesh;
-
-	instance.RotateBy(0.5f * 1f % Direction.Up);
-	instance.RotateBy(0.5f * 0.66f % Direction.Right);
-	
-	light.AdjustColorHueBy(0.5f);
-	light.Position = instance.Position + (((instance.Position >> camera.Position) * 2.2f) * ((MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 0.8f) * 45f) % Direction.Down));
-	light.Position += Direction.Up * MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 1f) * 3.5f;
-
 	if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Space)) {
-		light.AdjustBrightnessBy(0.05f);
-	}
-	if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Backspace)) {
-		light.AdjustBrightnessBy(-0.05f);
+		instance.RotateBy(new Rotation(angle: 90f, axis: Direction.Down) * dt);
 	}
 }
