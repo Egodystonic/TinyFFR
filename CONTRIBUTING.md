@@ -9,12 +9,17 @@ Please follow the following steps to submit code to this repository:
 
 # Code & Design Guidelines
 
+The following guidelines are not meant to dissuade anyone from contributing. If you wish, simply scan through and read the "Important" bubbles for a quick starting point.
+
 ## Design Philosophy, Target Users
 
+> [!IMPORTANT]
 > Make your public API as braindead-simple to use as possible.
 
+> [!IMPORTANT]
 > Convention over configuration.
 
+> [!IMPORTANT]
 > Plain-English over mathematical or rendering jargon.
 
 TinyFFR stands for "Tiny Fixed Function Renderer". It is not designed as a full-fat graphics API. It is not attempting to replace game engines or facilitate complex novel shading techniques.
@@ -25,6 +30,7 @@ We try not to assume any 3D math or linear algebra experience on the user's beha
 
 ## Performance and Garbage
 
+> [!IMPORTANT]
 > Performance is important, but can be secondary to API design. That being said, write code so that the "default API path" will not pressure the GC.
 
 We try to minimize garbage as it helps keep "jitter" or "frame stuttering" very low, which is important for many realtime graphics applications. In general, we try to avoid generating garbage (GC pressure) at all in all APIs. The only exceptions are:
@@ -38,6 +44,7 @@ Therefore we consider it acceptable to sacrifice some performance for the sake o
 
 ## Testing
 
+> [!IMPORTANT]
 > Please make sure your code is thoroughly tested.
 
 Most code in TinyFFR is covered either by a unit test or an "integration test" (functionally a larger unit test, marked as `[Explicit]`). Tests help prove new algorithms and implementations' correctness, but perhaps more importantly allow us to prevent regressions when editing existing code.
@@ -47,6 +54,7 @@ Most code in TinyFFR is covered either by a unit test or an "integration test" (
 
 ## Mutability
 
+> [!IMPORTANT]
 > Make everything immutable by default. Only create mutable objects when provably worthwhile. 
 
 TinyFFR uses an "immutable by default" design philosophy. Mutable objects are generally considered more error-prone and harder to reason about. Immutable types also lend themselves more readily to performance optimisations. 
@@ -57,6 +65,7 @@ Of course, eventually, there *must* be mutation in any real application or libra
 
 ### Modifier functions
 
+> [!IMPORTANT]
 > "Modifier" functions on immutable objects should use past-participle.
 
 ```csharp
@@ -74,6 +83,7 @@ The vernacular used for functions that return "modified" instances of their immu
 
 ### With...() vs with { ... }
 
+> [!IMPORTANT]
 > Use `With...()` methods when ordering of mutations matters. Use `init` property setters when it does not.
 
 ```csharp
@@ -87,6 +97,7 @@ When this is not the case, we prefer `With()` methods that force the developer t
 
 ### To vs As
 
+> [!IMPORTANT]
 > Use a "ToXyz()" function/property when any sort of transformation occurs or is implied. Use an "AsXyz()" function/property when the conversion is more of a simple reinterpretation.
 
 ```csharp
@@ -101,8 +112,10 @@ The lines here get very blurry, but in general:
 
 ### Language
 
+> [!IMPORTANT]
 > US English as default.
 
+> [!IMPORTANT]
 > "Orthogonal" preferred over "Perpendicular".
 
 US English is the lingua-Franca of the programming world; so that is what we use. 
@@ -115,6 +128,7 @@ Note 2: I had a mix of "perpendicular" and "orthogonal" for a while in the API, 
 
 ### Object Construction
 
+> [!IMPORTANT]
 > Use constructors for the most "intrinsic" construction of an object. Use static factory methods for anything that helps build those intrinsic parameters.
 
 ```csharp
@@ -130,6 +144,7 @@ These are only rough guidelines and do not universally apply.
 
 ### Handling Degenerate Inputs
 
+> [!IMPORTANT]
 > Handle degenerate/invalid inputs as gracefully as possible. Use exceptions only when the inputs can only come about from invalid API usage.
 
 ```csharp
@@ -152,6 +167,7 @@ In the case that an input should *never* be passed to a method it's acceptable t
 
 ### Handling Floating Point
 
+> [!IMPORTANT]
 > Check for and correct floating point inaccuracies as standard. Try to shield users from FP-inaccuracy-related issues in the API design and implementation.
 
 ```csharp
@@ -168,12 +184,14 @@ Additionally, validate FP-based inputs and outputs where appropriate (even if it
 
 ## C# Code Conventions
 
+> [!IMPORTANT]
 > Generally, we ask that contributors copy the convention/style of the repository as it exists today. 
 
 Please browse the source code to get an understanding of the style we're using. We do not expect 100% accuracy as every developer has their own idiosyncrasies, however please kindly be prepared to make any convention corrections in the PR process.
 
 ## C++ Code Conventions
 
+> [!IMPORTANT]
 > Any convention or style is technically permitted as long as it can be justified. The current "style" is mostly "raw C++", or even something akin to "raw C". 
 
 Migration to a more modern C++ style may be desirable, but RAII/smart pointers probably won't mix well with the lifetime of most objects actually being controlled on the managed side.
