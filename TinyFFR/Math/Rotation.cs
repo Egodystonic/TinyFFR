@@ -33,7 +33,7 @@ public readonly partial struct Rotation : IMathPrimitive<Rotation>, IDescriptive
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Rotation() => AsQuaternion = Identity;
 
-	public Rotation(Angle angle, Direction axis) { // TODO make it clear that the resultant Rotation Angle/Axis will be auto-normalized by the nature of Quaternion math (e.g. negative angle results in positive angle with flipped axis)
+	public Rotation(Angle angle, Direction axis) { // TODO make it clear that the resultant Rotation Angle/Axis will be auto-normalized by the nature of Quaternion math (e.g. negative angle results in positive angle with flipped axis). Angles outside the range [0,179.99] will not behave as expected
 		if (angle == Angle.Zero || axis == Direction.None) AsQuaternion = Identity;
 		else AsQuaternion = CreateFromAxisAngle(axis.ToVector3(), angle.Radians);
 	} 
