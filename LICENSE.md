@@ -6,7 +6,7 @@ FSL-1.1-MIT (Modified)
 
 ## Notice
 
-Copyright ${year} ${licensor name}
+Copyright 2025 Egodystonic Studios / Ben Bowen
 
 ## Terms and Conditions
 
