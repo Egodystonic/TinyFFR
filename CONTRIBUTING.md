@@ -123,9 +123,6 @@ The lines here get very blurry, but in general:
 > [!IMPORTANT]
 > US English as default.
 
-> [!IMPORTANT]
-> "Orthogonal" preferred over "Perpendicular".
-
 US English is the lingua-Franca of the programming world; so that is what we use. 
 
 Note: I (Ben) am Welsh/British, there may be some places British English has slipped in, feel free to correct these if you see them.
