@@ -59,7 +59,7 @@ service that:
 
 Permitted Purposes specifically include using the Software:
 
-1. for your internal use and access (including forks and code derivations);
+1. for your internal/private use and access (including forks and code derivations);
 
 2. for commercial and non-commercial education;
 
