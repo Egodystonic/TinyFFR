@@ -1,7 +1,7 @@
 # Summary
 
 > [!NOTE]
-> This license is intended to allow all commercial and non-commercial uses of TinyFFR and its source code except those that may directly compete with TinyFFR (in either a commercial or non-commercial context). It is permitted to use TinyFFR in any commercial or non-commercial context otherwise without restriction.
+> This license is intended to allow all commercial and non-commercial uses of TinyFFR and its source code except those that may directly compete with TinyFFR (in either a commercial or non-commercial context). It is permitted to otherwise use TinyFFR in any commercial or non-commercial context without restriction.
 
 > [!NOTE]
 > Two years after any specific release or commit is publicly visible, its license changes to MIT.
@@ -20,6 +20,11 @@ FSL-1.1-MIT (Modified)
 ## Notice
 
 Copyright 2025 Egodystonic Studios / Ben Bowen
+
+## Third-Party Code
+
+This project includes third-party software licensed under different terms. 
+See `THIRD_PARTY_NOTICES.md` for details.
 
 ## Terms and Conditions
 
