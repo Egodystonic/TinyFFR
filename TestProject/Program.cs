@@ -37,39 +37,76 @@ NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
 );
 
 
-// The factory object is used to create all other resources
 using var factory = new LocalTinyFfrFactory();
 
-// Create a cuboid mesh and load an instance of it in to the world with a test material
 using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f)); // 1m cube
-var material = factory.AssetLoader.MaterialBuilder.TestMaterial;
+
+// using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(TexturePattern.Gradient(
+// 	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.Right)!.Value, 1f, 0.5f),
+// 	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.UpRight)!.Value, 1f, 0.5f),
+// 	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.Up)!.Value, 1f, 0.5f),
+// 	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.UpLeft)!.Value, 1f, 0.5f),
+// 	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.Left)!.Value, 1f, 0.5f),
+// 	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.DownLeft)!.Value, 1f, 0.5f),
+// 	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.Down)!.Value, 1f, 0.5f),
+// 	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.DownRight)!.Value, 1f, 0.5f),
+// 	ColorVect.White
+// ));
+using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(TexturePattern.ChequerboardBordered(
+	ColorVect.RandomOpaque(), 5, ColorVect.RandomOpaque()
+));
+// using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(TexturePattern.Lines(
+// 	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.Right)!.Value, 1f, 0.5f),
+// 	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.UpRight)!.Value, 1f, 0.5f),
+// 	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.Up)!.Value, 1f, 0.5f),
+// 	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.UpLeft)!.Value, 1f, 0.5f),
+// 	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.Left)!.Value, 1f, 0.5f),
+// 	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.DownLeft)!.Value, 1f, 0.5f),
+// 	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.Down)!.Value, 1f, 0.5f),
+// 	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.DownRight)!.Value, 1f, 0.5f),
+// 	horizontal: true,
+// 	perturbationMagnitude: 0.2f,
+// 	numRepeats: 1
+// ));
+
+using var material = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap);
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, material);
 
-// Create a light to illuminate the cube
-using var light = factory.LightBuilder.CreatePointLight(Location.Origin);
+using var light = factory.LightBuilder.CreatePointLight(new Location(0f, 0f, 0f), new ColorVect(1f, 1f, 1f));
+using var rLight = factory.LightBuilder.CreatePointLight(new Location(1.6f, 2.6f, 1.6f), new ColorVect(0f, 1f, 0f));
+using var lLight = factory.LightBuilder.CreatePointLight(new Location(-1.6f, 2.6f, 1.6f), new ColorVect(1f, 0f, 0f));
+using var bLight = factory.LightBuilder.CreatePointLight(new Location(0f, 2.6f, 3.6f), new ColorVect(0f, 0f, 1f));
 
-// Create a window to render to, a scene to render, a camera to capture the scene, and a renderer to render it all
 using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
-using var scene = factory.SceneBuilder.CreateScene();
+using var scene = factory.SceneBuilder.CreateScene(includeBackdrop: false);
 using var camera = factory.CameraBuilder.CreateCamera();
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
-
-// Add the cube instance and light to the scene
 scene.Add(instance);
 scene.Add(light);
+// scene.Add(rLight);
+// scene.Add(lLight);
+// scene.Add(bLight);
 
-// Put the cube 2m in front of the camera
-instance.SetPosition(new Location(0f, 0f, 2f));
+instance.SetPosition(new Location(0f, 0.05f, 1.6f));
+instance.RotateBy(45f % Direction.Down);
+instance.RotateBy(45f % Direction.Right);
 
-// Keep rendering at 60Hz until the user closes the window
-// If we're holding space down, rotate the cube
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 while (!loop.Input.UserQuitRequested) {
 	var dt = (float) loop.IterateOnce().TotalSeconds;
 
-	if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Space)) {
-		instance.RotateBy(new Rotation(angle: 90f, axis: Direction.Down) * dt);
+	if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
+		var newColorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(TexturePattern.ChequerboardBordered(
+			ColorVect.RandomOpaque(), 3, 
+			ColorVect.RandomOpaque(),
+			ColorVect.RandomOpaque(),
+			ColorVect.RandomOpaque(),
+			ColorVect.RandomOpaque(),
+			repetitionCount: (4, 4)
+		));
+		var newMaterial = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(newColorMap);
+		instance.Material = newMaterial;
 	}
 
 	renderer.Render();

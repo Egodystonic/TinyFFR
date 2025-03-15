@@ -1,4 +1,4 @@
-# TinyFFR
+# ![TinyFFR logo](logo_32.png) TinyFFR
 
 A **Tiny** **F**ixed **F**unction **R**enderer library for C#/.NET 9.
 
@@ -32,8 +32,7 @@ using var factory = new LocalTinyFfrFactory();
 
 // Create a cuboid mesh and load an instance of it in to the world with a test material
 using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f)); // 1m cube
-var material = factory.AssetLoader.MaterialBuilder.TestMaterial;
-using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, material);
+using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, factory.AssetLoader.MaterialBuilder.TestMaterial);
 
 // Create a light to illuminate the cube
 using var light = factory.LightBuilder.CreatePointLight(Location.Origin);
