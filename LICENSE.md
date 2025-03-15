@@ -24,7 +24,7 @@ Copyright 2025 Egodystonic Studios / Ben Bowen
 ## Third-Party Code
 
 This project includes third-party software licensed under different terms. 
-See `THIRD_PARTY_NOTICES.md` for details.
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for details.
 
 ## Terms and Conditions
 
