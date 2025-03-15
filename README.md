@@ -1,4 +1,4 @@
-# ![TinyFFR logo](logo_32.png) TinyFFR
+# ![TinyFFR logo](logo_48.png) TinyFFR
 
 A **Tiny** **F**ixed **F**unction **R**enderer library for C#/.NET 9.
 
