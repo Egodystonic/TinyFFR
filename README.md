@@ -21,27 +21,38 @@ Manual is available at [tinyffr.dev](https://tinyffr.dev).
 
 ### Hello Cube
 
-This is a complete example; the code shown is all that is required to render the given image (and rotate it when holding space):
+This is a complete example; the code shown below is all that is required to render the given image (and rotate it when holding space):
 
 ![Image of rendered cube](hello_cube.jpg)
 
 ```csharp
+// The factory object is used to create all other resources
 using var factory = new LocalTinyFfrFactory();
-using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
-using var loop = factory.ApplicationLoopBuilder.CreateLoop(60); // 60hz Loop
-using var camera = factory.CameraBuilder.CreateCamera();
+
+// Create a cuboid mesh and load an instance of it in to the world with a test material
 using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f)); // 1m cube
 var material = factory.AssetLoader.MaterialBuilder.TestMaterial;
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, material);
+
+// Create a light to illuminate the cube
 using var light = factory.LightBuilder.CreatePointLight(Location.Origin);
+
+// Create a window to render to, a scene to render, a camera to capture the scene, and a renderer to render it all
+using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
 using var scene = factory.SceneBuilder.CreateScene();
+using var camera = factory.CameraBuilder.CreateCamera();
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
+// Add the cube instance and light to the scene
 scene.Add(instance);
 scene.Add(light);
 
+// Put the cube 2m in front of the camera
 instance.SetPosition(new Location(0f, 0f, 2f));
 
+// Keep rendering at 60Hz until the user closes the window
+// If we're holding space down, rotate the cube
+using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 while (!loop.Input.UserQuitRequested) {
 	var dt = (float) loop.IterateOnce().TotalSeconds;
 

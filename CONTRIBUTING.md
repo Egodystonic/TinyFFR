@@ -7,6 +7,14 @@ Please follow the following steps to submit code to this repository:
 3. Once the design is agreed-upon and you are given the go-ahead, fork the repository and develop the changeset in your fork. Use the guidelines below to guide your implementation.
 4. When ready, submit a PR (Pull Request).
 
+# What to Contribute
+
+All contributions are welcome, even if you're fixing an issue that only applies to your usage.
+
+If you don't have a specific issue you wish to address, and instead are just looking to help out, the issues labeled as "[good first issue](https://github.com/Egodystonic/TinyFFR/labels/%E2%9D%87%EF%B8%8F%20good%20first%20issue%20%E2%9D%87%EF%B8%8F)" are a great place to start. 
+
+Feel free to comment on any issue asking for more direction and help if you need!
+
 # Code & Design Guidelines
 
 The following guidelines are not meant to dissuade anyone from contributing. If you wish, simply scan through and read the "Important" bubbles for a quick starting point.
