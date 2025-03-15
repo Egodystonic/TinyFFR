@@ -9,7 +9,7 @@
 > [!TIP]
 > The intention of this license is to encourage users (and specifically large organizations) to centralize their improvements and efforts back in to this repository rather than fracturing it and/or creating competing forks.
 
-License questions are welcome in the 'issues' section of the github repository. The license proper begins on the line below.
+License questions are welcome in the 'discussion section of the github repository. The license proper begins on the line below.
 
 # Functional Source License, Version 1.1, MIT Future License (Modified)
 
