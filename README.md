@@ -21,7 +21,7 @@ Manual is available at [tinyffr.dev](https://tinyffr.dev).
 
 ### Hello Cube
 
-This is a complete example; the code shown below is all that is required to render the given image (and rotate it when holding space):
+This is a complete example; the code shown below is all that is required to render the given image (and rotate it when holding the spacebar):
 
 ![Image of rendered cube](hello_cube.jpg)
 
