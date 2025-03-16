@@ -74,6 +74,9 @@ public readonly struct Window : IDisposableResource<Window, IWindowImplProvider>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetLockCursor(bool lockCursor) => LockCursor = lockCursor;
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetIcon(ReadOnlySpan<char> iconFilePath) => Implementation.SetIcon(_handle, iconFilePath);
+
 	XYPair<int> IRenderTarget.ViewportOffset => XYPair<int>.Zero;
 	XYPair<uint> IRenderTarget.ViewportDimensions => Size.Cast<uint>();
 

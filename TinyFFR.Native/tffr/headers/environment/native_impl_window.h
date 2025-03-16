@@ -12,6 +12,8 @@ public:
 	static void set_window_title(WindowHandle handle, const char* newTitle);
 	static void get_window_title(WindowHandle handle, char* resultBuffer, int32_t bufferLen);
 
+	static void set_window_icon(WindowHandle handle, const char* iconFilePath);
+
 	static void set_window_size(WindowHandle handle, int32_t newWidth, int32_t newHeight);
 	static void get_window_size(WindowHandle handle, int32_t* outWidth, int32_t* outHeight);
 

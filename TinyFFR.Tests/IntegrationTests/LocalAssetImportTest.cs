@@ -19,6 +19,7 @@ class LocalAssetImportTest {
 	const string SpecularFile = "IntegrationTests\\ELCrate_Specular.png";
 	const string MeshFile = "IntegrationTests\\ELCrate.obj";
 	const string SkyboxFile = "IntegrationTests\\kloofendal_48d_partly_cloudy_puresky_4k.hdr";
+	const string LogoFile = "IntegrationTests\\egdLogo.png";
 	// These values were sampled/taken from an external paint program
 	static readonly Dictionary<int, TexelRgb24> _expectedSampledAlbedoPixelValues = new() {
 		[1024 * 0000 + 0000] = new(0, 0, 0),
@@ -85,6 +86,7 @@ class LocalAssetImportTest {
 
 		var display = factory.DisplayDiscoverer.Recommended!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Asset Import Test");
+		window.SetIcon(LogoFile);
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var albedo = factory.AssetLoader.LoadTexture(AlbedoFile);
 		using var normal = factory.AssetLoader.LoadTexture(NormalFile);

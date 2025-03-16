@@ -10,6 +10,8 @@ public interface IWindowImplProvider : IDisposableResourceImplProvider<Window> {
 	ReadOnlySpan<char> IResourceImplProvider<Window>.GetName(ResourceHandle<Window> handle) => GetTitle(handle);
 	void SetTitle(ResourceHandle<Window> handle, ReadOnlySpan<char> src);
 
+	void SetIcon(ResourceHandle<Window> handle, ReadOnlySpan<char> filePath);
+
 	Display GetDisplay(ResourceHandle<Window> handle);
 	void SetDisplay(ResourceHandle<Window> handle, Display newDisplay);
 

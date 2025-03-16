@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "environment/native_impl_window.h"
 
+#define STBI_FAILURE_USERMSG
+#include "stb/stb_imageh.h"
+
 #include "utils_and_constants.h"
 
 WindowHandle native_impl_window::create_window(int32_t width, int32_t height, int32_t xPos, int32_t yPos) {
@@ -23,6 +26,29 @@ StartExportedFunc(create_window, WindowHandle* outResult, int32_t width, int32_t
 	EndExportedFunc
 }
 
+void native_impl_window::set_window_icon(WindowHandle handle, const char* iconFilePath) {
+	ThrowIfNull(handle, "Window was null.");
+	ThrowIfNull(iconFilePath, "File path pointer was null.");
+
+	int width, height, channelCount;
+	stbi_set_flip_vertically_on_load(false);
+	auto imageData = stbi_load(iconFilePath, &width, &height, &channelCount, 4);
+	ThrowIfNull(imageData, "Could not load icon '", iconFilePath, "': ", stbi_failure_reason());
+
+	auto sdlSurface = SDL_CreateRGBSurfaceFrom(imageData, width, height, 32, width * 4, 0xFFU, 0xFF00U, 0xFF0000U, 0xFF000000U);
+	if (sdlSurface == nullptr) {
+		stbi_image_free(imageData);
+		Throw("Could not load icon '", iconFilePath, "': ", SDL_GetError());
+	}
+
+	SDL_SetWindowIcon(handle, sdlSurface);
+	SDL_FreeSurface(sdlSurface);
+	stbi_image_free(imageData);
+}
+StartExportedFunc(set_window_icon, WindowHandle handle, const char* iconFilePath) {
+	native_impl_window::set_window_icon(handle, iconFilePath);
+	EndExportedFunc
+}
 
 
 void native_impl_window::set_window_title(WindowHandle handle, const char* newTitle) {

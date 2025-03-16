@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using System.IO;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -16,6 +17,7 @@ namespace Egodystonic.TinyFFR.Environment.Local;
 sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IDisposable {
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly InteropStringBuffer _windowTitleBuffer;
+	readonly InteropStringBuffer _iconFilePathBuffer;
 	readonly ArrayPoolBackedVector<ResourceHandle<Window>> _activeWindows = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Window>, Display> _displayMap = new();
 	bool _isDisposed = false;
@@ -26,6 +28,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 
 		_globals = globals;
 		_windowTitleBuffer = new InteropStringBuffer(config.MaxWindowTitleLength, addOneForNullTerminator: true);
+		_iconFilePathBuffer = new InteropStringBuffer(config.MaxIconFilePathLengthChars, addOneForNullTerminator: true);
 	}
 
 	public Window CreateWindow(Display display, WindowFullscreenStyle? fullscreenStyle = null, XYPair<int>? size = null, XYPair<int>? position = null, ReadOnlySpan<char> title = default) {
@@ -54,6 +57,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		_displayMap.Add(outHandle, config.Display);
 		result.FullscreenStyle = config.FullscreenStyle;
 		if (!config.Title.IsEmpty) SetTitleOnWindow(result.Handle, config.Title);
+		SetIcon(outHandle, @"Environment\Local\logo_128.png");
 		return result;
 	}
 
@@ -86,6 +90,21 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 			handle,
 			ref _windowTitleBuffer.BufferRef
 		).ThrowIfFailure();
+	}
+
+	public void SetIcon(ResourceHandle<Window> handle, ReadOnlySpan<char> newIconFilePath) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_iconFilePathBuffer.ConvertFromUtf16(newIconFilePath);
+		try {
+			SetWindowIcon(
+				handle,
+				ref _iconFilePathBuffer.BufferRef
+			).ThrowIfFailure();
+		}
+		catch (Exception e) {
+			if (!File.Exists(newIconFilePath.ToString())) throw new InvalidOperationException($"File '{newIconFilePath}' does not exist.", e);
+			throw;
+		}
 	}
 
 	public Display GetDisplay(ResourceHandle<Window> handle) {
@@ -206,6 +225,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 			foreach (var handle in _activeWindows) DisposeWindow(handle).ThrowIfFailure();
 			_activeWindows.Dispose();
 			_displayMap.Dispose();
+			_iconFilePathBuffer.Dispose();
 			_windowTitleBuffer.Dispose();
 		}
 		finally {
@@ -250,6 +270,9 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_window_title")]
 	static extern InteropResult SetWindowTitle(UIntPtr handle, ref readonly byte utf8BufferPtr);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_window_icon")]
+	static extern InteropResult SetWindowIcon(UIntPtr handle, ref readonly byte iconFilePathBufferPtr);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_window")]
 	static extern InteropResult DisposeWindow(UIntPtr handle);
