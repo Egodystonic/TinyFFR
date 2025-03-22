@@ -113,8 +113,8 @@ public readonly partial struct BoundedRay : ILineLike<BoundedRay, BoundedRay, Bo
 	#region Equality
 	public bool Equals(BoundedRay other) => _startPoint.Equals(other._startPoint) && _vect.Equals(other._vect);
 	public bool Equals(BoundedRay other, float tolerance) => StartPoint.Equals(other.StartPoint, tolerance) && EndPoint.Equals(other.EndPoint, tolerance);
-	public bool EqualsDisregardingDirection(BoundedRay other) => Equals(other) || Equals(other.Flipped);
-	public bool EqualsDisregardingDirection(BoundedRay other, float tolerance) => Equals(other, tolerance) || Equals(other.Flipped, tolerance);
+	public bool IsEquivalentDisregardingDirection(BoundedRay other) => Equals(other) || Equals(other.Flipped);
+	public bool IsEquivalentDisregardingDirection(BoundedRay other, float tolerance) => Equals(other, tolerance) || Equals(other.Flipped, tolerance);
 	public override bool Equals(object? obj) => obj is BoundedRay other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(_startPoint, _vect);
 	public static bool operator ==(BoundedRay left, BoundedRay right) => left.Equals(right);

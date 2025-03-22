@@ -188,11 +188,11 @@ class LocationTest {
 
 	[Test]
 	public void ShouldCorrectlyImplementEqualityWithDistanceTolerance() {
-		Assert.AreEqual(true, OneTwoNegThree.EqualsWithinDistance(OneTwoNegThree, 0f));
-		Assert.AreEqual(true, OneTwoNegThree.EqualsWithinDistance(new(1f, 2f, -2f), 1f + TestTolerance));
-		Assert.AreEqual(false, OneTwoNegThree.EqualsWithinDistance(new(1f, 2f, -1.5f), 1f + TestTolerance));
-		Assert.AreEqual(true, Location.Origin.EqualsWithinDistance(new(1f, 1f, 0f), 1.42f));
-		Assert.AreEqual(false, Location.Origin.EqualsWithinDistance(new(1f, 1f, 0f), 1.40f));
+		Assert.AreEqual(true, OneTwoNegThree.IsWithinDistanceOf(OneTwoNegThree, 0f));
+		Assert.AreEqual(true, OneTwoNegThree.IsWithinDistanceOf(new(1f, 2f, -2f), 1f + TestTolerance));
+		Assert.AreEqual(false, OneTwoNegThree.IsWithinDistanceOf(new(1f, 2f, -1.5f), 1f + TestTolerance));
+		Assert.AreEqual(true, Location.Origin.IsWithinDistanceOf(new(1f, 1f, 0f), 1.42f));
+		Assert.AreEqual(false, Location.Origin.IsWithinDistanceOf(new(1f, 1f, 0f), 1.40f));
 	}
 
 	[Test]
@@ -381,8 +381,8 @@ class LocationTest {
 			var startToVal = start >> val;
 			var valToEnd = val >> end;
 
-			Assert.IsTrue(startToEnd.Direction.EqualsWithinAngle(startToVal.Direction, 5f));
-			Assert.IsTrue(startToEnd.Direction.EqualsWithinAngle(valToEnd.Direction, 5f));
+			Assert.IsTrue(startToEnd.Direction.IsWithinAngleTo(startToVal.Direction, 5f));
+			Assert.IsTrue(startToEnd.Direction.IsWithinAngleTo(valToEnd.Direction, 5f));
 			Assert.LessOrEqual(startToVal.LengthSquared, startToEnd.LengthSquared);
 			Assert.LessOrEqual(valToEnd.LengthSquared, startToEnd.LengthSquared);
 		}

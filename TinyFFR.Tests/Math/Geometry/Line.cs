@@ -180,42 +180,42 @@ class LineTest {
 		);
 
 		Assert.IsTrue(
-			new Line(new Location(100f, 0f, 0f), Direction.Right).EqualsWithinDistanceAndAngle(
+			new Line(new Location(100f, 0f, 0f), Direction.Right).IsWithinDistanceAndAngleTo(
 				new Line(new Location(-100f, 0f, 0f), Direction.Left),
 				0f,
 				Angle.Zero
 			)
 		);
 		Assert.IsFalse(
-			new Line(new Location(100f, 0f, 0f), Direction.Right).EqualsWithinDistanceAndAngle(
+			new Line(new Location(100f, 0f, 0f), Direction.Right).IsWithinDistanceAndAngleTo(
 				new Line(new Location(-100f, 0f, 0.1f), Direction.Left),
 				0f,
 				Angle.Zero
 			)
 		);
 		Assert.IsTrue(
-			new Line(new Location(100f, 0f, 0f), Direction.Right).EqualsWithinDistanceAndAngle(
+			new Line(new Location(100f, 0f, 0f), Direction.Right).IsWithinDistanceAndAngleTo(
 				new Line(new Location(-100f, 0f, 0.1f), Direction.Left),
 				0.2f,
 				Angle.Zero
 			)
 		);
 		Assert.IsFalse(
-			new Line(new Location(100f, 0f, 0f), Direction.Right).EqualsWithinDistanceAndAngle(
+			new Line(new Location(100f, 0f, 0f), Direction.Right).IsWithinDistanceAndAngleTo(
 				new Line(new Location(-100f, 0f, 0.1f), Direction.Left),
 				0.05f,
 				Angle.Zero
 			)
 		);
 		Assert.IsTrue(
-			new Line(new Location(100f, 0f, 0f), Direction.Right).EqualsWithinDistanceAndAngle(
+			new Line(new Location(100f, 0f, 0f), Direction.Right).IsWithinDistanceAndAngleTo(
 				new Line(new Location(-100f, 0f, 0.1f), new Direction(1f, 0f, 0.1f)),
 				0.2f,
 				(Direction.Left ^ new Direction(1f, 0f, 0.1f)) * 1.1f
 			)
 		);
 		Assert.IsFalse(
-			new Line(new Location(100f, 0f, 0f), Direction.Right).EqualsWithinDistanceAndAngle(
+			new Line(new Location(100f, 0f, 0f), Direction.Right).IsWithinDistanceAndAngleTo(
 				new Line(new Location(-100f, 0f, 0f), new Direction(1f, 0f, 0.1f)),
 				0f,
 				(Direction.Left ^ new Direction(1f, 0f, 0.1f)) * 0.9f

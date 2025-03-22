@@ -133,19 +133,19 @@ class BoundedRayTest {
 
 		Assert.AreEqual(
 			true,
-			TestRay.EqualsDisregardingDirection(new BoundedRay(TestRay.EndPoint, TestRay.StartPoint))
+			TestRay.IsEquivalentDisregardingDirection(new BoundedRay(TestRay.EndPoint, TestRay.StartPoint))
 		);
 		Assert.AreEqual(
 			false,
-			TestRay.EqualsDisregardingDirection(new BoundedRay(TestRay.EndPoint + (0.1f, 0f, 0f), TestRay.StartPoint + (-0.1f, 0f, 0f)))
+			TestRay.IsEquivalentDisregardingDirection(new BoundedRay(TestRay.EndPoint + (0.1f, 0f, 0f), TestRay.StartPoint + (-0.1f, 0f, 0f)))
 		);
 		Assert.AreEqual(
 			true,
-			TestRay.EqualsDisregardingDirection(new BoundedRay(TestRay.EndPoint + (0.1f, 0f, 0f), TestRay.StartPoint + (-0.1f, 0f, 0f)), 0.2f)
+			TestRay.IsEquivalentDisregardingDirection(new BoundedRay(TestRay.EndPoint + (0.1f, 0f, 0f), TestRay.StartPoint + (-0.1f, 0f, 0f)), 0.2f)
 		);
 		Assert.AreEqual(
 			false,
-			TestRay.EqualsDisregardingDirection(new BoundedRay(TestRay.EndPoint + (0.1f, 0f, 0f), TestRay.StartPoint + (-0.1f, 0f, 0f)), 0.05f)
+			TestRay.IsEquivalentDisregardingDirection(new BoundedRay(TestRay.EndPoint + (0.1f, 0f, 0f), TestRay.StartPoint + (-0.1f, 0f, 0f)), 0.05f)
 		);
 	}
 

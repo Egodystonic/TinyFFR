@@ -50,6 +50,9 @@ partial struct Location :
 	public float DistanceFromOrigin() => ((Vect) this).Length;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFromOrigin() => ((Vect) this).LengthSquared;
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsWithinDistanceOf(Location other, float distance) => (this - other).LengthSquared <= distance * distance;
 	#endregion
 
 	#region Rotation

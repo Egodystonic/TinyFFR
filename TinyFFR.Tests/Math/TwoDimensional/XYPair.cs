@@ -80,7 +80,7 @@ class XYPairTest {
 					Assert.AreEqual(0, result.ToVector2().Length());
 				}
 				else {
-					Assert.IsTrue(Angle.FromDegrees(f).EqualsWithinCircle(result.PolarAngle!.Value, toleranceDegrees: TestTolerance));
+					Assert.IsTrue(Angle.FromDegrees(f).IsEquivalentWithinCircleTo(result.PolarAngle!.Value, toleranceDegrees: TestTolerance));
 					Assert.AreEqual(l, result.ToVector2().Length(), TestTolerance);
 				}
 			}
@@ -94,7 +94,7 @@ class XYPairTest {
 					Assert.AreEqual(0, result.ToVector2().Length());
 				}
 				else {
-					Assert.IsTrue(orientation.ToPolarAngle()!.Value.EqualsWithinCircle(result.PolarAngle!.Value, toleranceDegrees: TestTolerance));
+					Assert.IsTrue(orientation.ToPolarAngle()!.Value.IsEquivalentWithinCircleTo(result.PolarAngle!.Value, toleranceDegrees: TestTolerance));
 					Assert.AreEqual(l, result.ToVector2().Length(), TestTolerance);
 				}
 			}

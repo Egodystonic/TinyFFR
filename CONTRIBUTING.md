@@ -118,6 +118,21 @@ The lines here get very blurry, but in general:
 * We try to use the "As" vernacular for conversions that are *ostensibly* "reinterpret casts" from the user's POV (even if they're actually not); 
 * We try to use the "To" vernacular for things that are *ostensibly* conversions to another related but different type/object.
 
+### Equality vs Equivalence
+
+> [!IMPORTANT]
+> Use `Equals()` when defining functions that compare two objects for structural equality. Use `IsEquivalent[...]To()` for functions that compare two objects for equivalence in some mathematical context.
+
+```csharp
+var isFalse = new Angle(180f).Equals(new Angle(540f));
+var isTrue = new Angle(180f).IsEquivalentWithinCircleTo(new Angle(540f));
+```
+
+* We try to save equality checks (`Equals()`, `==`) to structural equality. These should be used by users when they want to determine whether two objects are strictly the same down to the bit-level (or within a defined tolerance for `Equals()` overloads that accept tolerance values).
+* Conversely, we define more verbose `IsEquivalent...To()` methods that help users determine whether two objects have the same outcome when applied in a specific context. The '...' in an equivalence method name should define that context.
+
+Finally, some methods straddle this distinction (e.g. `Direction.IsWithinAngleTo(Direction other, Angle angle)`). In these cases, we generally avoid using either Equals-like *or* Equivalence-like verbiage as it's not actually checking for structural equality *or* any kind of equivalence in any meaningful context.
+
 ### Language
 
 > [!IMPORTANT]

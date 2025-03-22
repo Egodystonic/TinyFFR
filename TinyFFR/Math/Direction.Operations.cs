@@ -215,6 +215,9 @@ partial struct Direction :
 		var angle = AngleTo(other);
 		return angle.Equals(Angle.Zero, tolerance) || angle.Equals(Angle.HalfCircle, tolerance);
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsWithinAngleTo(Direction other, Angle angle) => (this ^ other) <= angle;
 	#endregion
 
 	#region Interactions w/ Vect

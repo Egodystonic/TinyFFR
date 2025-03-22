@@ -241,9 +241,9 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 		return MathF.Abs(Degrees - other.Degrees) <= toleranceDegrees;
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool EqualsWithinCircle(Angle other) => Equals(other, Zero);
-	public bool EqualsWithinCircle(Angle other, Angle tolerance) => Equals(other, tolerance.Degrees);
-	public bool EqualsWithinCircle(Angle other, float toleranceDegrees) {
+	public bool IsEquivalentWithinCircleTo(Angle other) => IsEquivalentWithinCircleTo(other, Zero);
+	public bool IsEquivalentWithinCircleTo(Angle other, Angle tolerance) => IsEquivalentWithinCircleTo(other, tolerance.Degrees);
+	public bool IsEquivalentWithinCircleTo(Angle other, float toleranceDegrees) {
 		var absDiff = MathF.Abs(Normalized.Degrees - other.Normalized.Degrees);
 		if (absDiff <= toleranceDegrees) return true;
 

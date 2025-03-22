@@ -82,9 +82,6 @@ public readonly partial struct Ray : ILineLike<Ray, BoundedRay, Ray>, IPrecomput
 	#region Equality
 	public bool Equals(Ray other) => _startPoint.Equals(other._startPoint) && _direction.Equals(other._direction);
 	public bool Equals(Ray other, float tolerance) => StartPoint.Equals(other.StartPoint, tolerance) && Direction.Equals(other.Direction, tolerance);
-	public bool EqualsWithinDistanceAndAngle(Ray other, float distance, Angle angle) {
-		return StartPoint.DistanceSquaredFrom(other.StartPoint) <= distance * distance && Direction.EqualsWithinAngle(other.Direction, angle);
-	}
 	public override bool Equals(object? obj) => obj is Ray other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(_startPoint, _direction);
 	public static bool operator ==(Ray left, Ray right) => left.Equals(right);

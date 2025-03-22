@@ -255,8 +255,5 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	public override bool Equals(object? obj) => obj is Direction other && Equals(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override int GetHashCode() => AsVector4.GetHashCode();
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool EqualsWithinAngle(Direction other, Angle angle) => (this ^ other) <= angle;
 	#endregion
 }

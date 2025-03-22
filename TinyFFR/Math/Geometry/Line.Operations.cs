@@ -112,6 +112,10 @@ public readonly partial struct Line : IPhysicalValidityDeterminable {
 	public float DistanceFromOrigin() => ((Vect) PointClosestToOrigin()).Length;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFromOrigin() => ((Vect) PointClosestToOrigin()).LengthSquared;
+
+	public bool IsWithinDistanceAndAngleTo(Line other, float distance, Angle angle) {
+		return DistanceFrom(other) <= distance && (Direction.IsWithinAngleTo(other.Direction, angle) || Direction.IsWithinAngleTo(-other.Direction, angle));
+	}
 	#endregion
 
 	#region Plane Intersection / Split / Incident Angle / Reflection / Distance / Closest Point

@@ -59,7 +59,10 @@ service that:
 3. offers the same or substantially similar functionality as the Software; or
 
 4. makes publicly available a repository, fork, or codebase that
-   is derived from the Software (and its source code) and aims to compete with or substitute the Software (and its source code).
+   is derived from the Software (and its source code) and competes with the Software (and its source code) (deliberately or incidentally).
+
+5. makes publicly available a repository, fork, or codebase that
+   is derived from the Software (and its source code) and substitutes wholly or partly for the software (including-but-not-limited-to making available features or integrations not otherwise provided by the software) (deliberately or incidentally).
    
 
 Permitted Purposes specifically include using the Software:

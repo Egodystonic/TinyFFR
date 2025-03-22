@@ -171,42 +171,42 @@ class RayTest {
 		);
 
 		Assert.IsTrue(
-			new Ray(new Location(100f, 0f, 0f), Direction.Right).EqualsWithinDistanceAndAngle(
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).IsWithinDistanceAndAngleTo(
 				new Ray(new Location(100f, 0f, 0f), Direction.Right),
 				0f,
 				Angle.Zero
 			)
 		);
 		Assert.IsFalse(
-			new Ray(new Location(100f, 0f, 0f), Direction.Right).EqualsWithinDistanceAndAngle(
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).IsWithinDistanceAndAngleTo(
 				new Ray(new Location(100f, 0f, 0.1f), Direction.Right),
 				0f,
 				Angle.Zero
 			)
 		);
 		Assert.IsTrue(
-			new Ray(new Location(100f, 0f, 0f), Direction.Right).EqualsWithinDistanceAndAngle(
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).IsWithinDistanceAndAngleTo(
 				new Ray(new Location(100f, 0f, 0.1f), Direction.Right),
 				0.2f,
 				Angle.Zero
 			)
 		);
 		Assert.IsFalse(
-			new Ray(new Location(100f, 0f, 0f), Direction.Right).EqualsWithinDistanceAndAngle(
+			new Ray(new Location(100f, 0f, 0f), Direction.Right).IsWithinDistanceAndAngleTo(
 				new Ray(new Location(100f, 0f, 0.1f), Direction.Right),
 				0.05f,
 				Angle.Zero
 			)
 		);
 		Assert.IsTrue(
-			new Ray(new Location(100f, 0f, 0f), Direction.Left).EqualsWithinDistanceAndAngle(
+			new Ray(new Location(100f, 0f, 0f), Direction.Left).IsWithinDistanceAndAngleTo(
 				new Ray(new Location(100f, 0f, 0.1f), new Direction(1f, 0f, 0.1f)),
 				0.2f,
 				(Direction.Left ^ new Direction(1f, 0f, 0.1f)) * 1.1f
 			)
 		);
 		Assert.IsFalse(
-			new Ray(new Location(100f, 0f, 0f), Direction.Left).EqualsWithinDistanceAndAngle(
+			new Ray(new Location(100f, 0f, 0f), Direction.Left).IsWithinDistanceAndAngleTo(
 				new Ray(new Location(100f, 0f, 0f), new Direction(1f, 0f, 0.1f)),
 				0f,
 				(Direction.Left ^ new Direction(1f, 0f, 0.1f)) * 0.9f

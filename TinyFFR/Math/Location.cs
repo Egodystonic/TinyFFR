@@ -149,8 +149,5 @@ public readonly partial struct Location : IVect<Location> {
 	public override bool Equals(object? obj) => obj is Location other && Equals(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override int GetHashCode() => AsVector4.GetHashCode();
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool EqualsWithinDistance(Location other, float distance) => (this - other).LengthSquared <= distance * distance;
 	#endregion
 }

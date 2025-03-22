@@ -278,7 +278,7 @@ class CuboidTest {
 		var cuboid = new Cuboid(W * 2f, H * 2f, D * 2f);
 
 		void AssertOrientation(IntercardinalOrientation orientation, Location expectedLinePointA, Location expectedLinePointB) {
-			Assert.IsTrue(cuboid.EdgeAt(orientation).EqualsDisregardingDirection(new(expectedLinePointA, expectedLinePointB), TestTolerance));
+			Assert.IsTrue(cuboid.EdgeAt(orientation).IsEquivalentDisregardingDirection(new(expectedLinePointA, expectedLinePointB), TestTolerance));
 		}
 
 		AssertOrientation(IntercardinalOrientation.UpForward, new(W, H, D), new(-W, H, D));

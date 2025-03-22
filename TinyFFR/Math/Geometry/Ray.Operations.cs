@@ -116,6 +116,10 @@ public readonly partial struct Ray : IPhysicalValidityDeterminable {
 		else if (!boundedRay.DistanceIsWithinLineBounds(intersectionDistances.Value.OtherDistance)) return PointClosestTo(boundedRay.EndPoint);
 		else return BoundedLocationAtDistance(intersectionDistances.Value.ThisDistance);
 	}
+
+	public bool IsWithinDistanceAndAngleTo(Ray other, float distance, Angle angle) {
+		return StartPoint.DistanceSquaredFrom(other.StartPoint) <= distance * distance && Direction.IsWithinAngleTo(other.Direction, angle);
+	}
 	#endregion
 
 	#region Plane Intersection / Split / Incident Angle / Reflection / Distance / Closest Point

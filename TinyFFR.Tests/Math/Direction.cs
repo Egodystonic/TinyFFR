@@ -295,9 +295,9 @@ class DirectionTest {
 	public void ShouldCorrectlyImplementEqualityWithAngleTolerance() {
 		var perpVec = OneTwoNegThree.AnyOrthogonal();
 
-		Assert.AreEqual(true, OneTwoNegThree.EqualsWithinAngle(OneTwoNegThree, 0f));
-		Assert.AreEqual(true, OneTwoNegThree.EqualsWithinAngle(30f % perpVec * OneTwoNegThree, 30f + TestTolerance));
-		Assert.AreEqual(false, OneTwoNegThree.EqualsWithinAngle(30f % perpVec * OneTwoNegThree, 28f));
+		Assert.AreEqual(true, OneTwoNegThree.IsWithinAngleTo(OneTwoNegThree, 0f));
+		Assert.AreEqual(true, OneTwoNegThree.IsWithinAngleTo(30f % perpVec * OneTwoNegThree, 30f + TestTolerance));
+		Assert.AreEqual(false, OneTwoNegThree.IsWithinAngleTo(30f % perpVec * OneTwoNegThree, 28f));
 
 		var testList = new List<Direction>();
 		for (var x = -5f; x <= 6f; x += 1.1f) {
@@ -315,8 +315,8 @@ class DirectionTest {
 				var dirB = testList[j];
 				var angle = dirA ^ dirB;
 
-				Assert.IsFalse(dirA.EqualsWithinAngle(dirB, angle - TestTolerance));
-				Assert.IsTrue(dirA.EqualsWithinAngle(dirB, angle + TestTolerance));
+				Assert.IsFalse(dirA.IsWithinAngleTo(dirB, angle - TestTolerance));
+				Assert.IsTrue(dirA.IsWithinAngleTo(dirB, angle + TestTolerance));
 			}
 		}
 	}

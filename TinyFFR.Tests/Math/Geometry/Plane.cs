@@ -127,32 +127,32 @@ class PlaneTest {
 		);
 
 		Assert.IsTrue(
-			TestPlane.EqualsWithinDistanceAndAngle(
+			TestPlane.IsWithinDistanceAndAngleTo(
 				new Plane(Direction.Up * ((Direction.Up >> Direction.Forward) * 0.1f), TestPlane.PointClosestToOrigin),
 				Single.MaxValue, 10f)
 		);
 		Assert.IsFalse(
-			TestPlane.EqualsWithinDistanceAndAngle(
+			TestPlane.IsWithinDistanceAndAngleTo(
 				new Plane(Direction.Up * ((Direction.Up >> Direction.Forward) * 0.1f), TestPlane.PointClosestToOrigin),
 				Single.MaxValue, 8f)
 		);
 		Assert.IsTrue(
-			TestPlane.EqualsWithinDistanceAndAngle(
+			TestPlane.IsWithinDistanceAndAngleTo(
 				new Plane(Direction.Up, (0f, -1.1f, 0f)),
 				0.15f, 0f)
 		);
 		Assert.IsFalse(
-			TestPlane.EqualsWithinDistanceAndAngle(
+			TestPlane.IsWithinDistanceAndAngleTo(
 				new Plane(Direction.Up, (0f, -1.1f, 0f)),
 				0.05f, 0f)
 		);
 		Assert.IsFalse(
-			TestPlane.EqualsWithinDistanceAndAngle(
+			TestPlane.IsWithinDistanceAndAngleTo(
 				new Plane(Direction.Up, (0f, 1f, 0f)),
 				1f, 0f)
 		);
 		Assert.IsTrue(
-			TestPlane.EqualsWithinDistanceAndAngle(
+			TestPlane.IsWithinDistanceAndAngleTo(
 				new Plane(Direction.Down, (0f, -1f, 0f)),
 				0f, Angle.FullCircle)
 		);

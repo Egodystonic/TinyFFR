@@ -131,7 +131,7 @@ class ColorVectTest {
 		AssertAllHslRgbPairs(
 			(hsl, rgb) => {
 				var v = rgb.Vect;
-				Assert.IsTrue(hsl.Hue.EqualsWithinCircle(v.Hue, TestToleranceHueDegrees));
+				Assert.IsTrue(hsl.Hue.IsEquivalentWithinCircleTo(v.Hue, TestToleranceHueDegrees));
 				Assert.AreEqual(hsl.Sat, v.Saturation, TestTolerance);
 				Assert.AreEqual(hsl.Light, v.Lightness, TestTolerance);
 			}
@@ -310,7 +310,7 @@ class ColorVectTest {
 		AssertAllHslRgbPairs((hsl, rgb) => {
 			AssertToleranceEquals(hsl.Vect, rgb.Vect, TestTolerance);
 			rgb.Vect.ToHueSaturationLightness(out var hue, out var sat, out var light);
-			Assert.IsTrue(hsl.Hue.EqualsWithinCircle(hue, TestToleranceHueDegrees));
+			Assert.IsTrue(hsl.Hue.IsEquivalentWithinCircleTo(hue, TestToleranceHueDegrees));
 			Assert.AreEqual(hsl.Sat, sat, TestTolerance);
 			Assert.AreEqual(hsl.Light, light, TestTolerance);
 		});
@@ -589,9 +589,9 @@ class ColorVectTest {
 		Assert.AreEqual(0.8f, ThreeSixNineHalf.WithLightness(0.8f).Lightness, TestTolerance);
 
 		var testVect = ColorVect.FromHueSaturationLightness(Angle.QuarterCircle, 0.3f, 0.7f, 0.5f);
-		Assert.IsTrue(Angle.HalfCircle.EqualsWithinCircle(testVect.WithHueAdjustedBy(Angle.QuarterCircle).Hue, TestTolerance));
-		Assert.IsTrue(Angle.Zero.EqualsWithinCircle(testVect.WithHueAdjustedBy(-Angle.QuarterCircle).Hue, TestTolerance));
-		Assert.IsTrue((-Angle.QuarterCircle).EqualsWithinCircle(testVect.WithHueAdjustedBy(-Angle.HalfCircle).Hue, TestTolerance));
+		Assert.IsTrue(Angle.HalfCircle.IsEquivalentWithinCircleTo(testVect.WithHueAdjustedBy(Angle.QuarterCircle).Hue, TestTolerance));
+		Assert.IsTrue(Angle.Zero.IsEquivalentWithinCircleTo(testVect.WithHueAdjustedBy(-Angle.QuarterCircle).Hue, TestTolerance));
+		Assert.IsTrue((-Angle.QuarterCircle).IsEquivalentWithinCircleTo(testVect.WithHueAdjustedBy(-Angle.HalfCircle).Hue, TestTolerance));
 
 		Assert.AreEqual(0.5f, testVect.WithSaturationAdjustedBy(0.2f).Saturation, TestTolerance);
 		Assert.AreEqual(0.1f, testVect.WithSaturationAdjustedBy(-0.2f).Saturation, TestTolerance);

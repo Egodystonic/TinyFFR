@@ -161,6 +161,8 @@ partial struct Plane :
 	// TODO xmldoc make it clear that these will almost always be 0
 	public float DistanceFrom(Plane other) => Normal.IsParallelTo(other.Normal) ? PointClosestToOrigin.DistanceFrom(other.PointClosestToOrigin) : 0f;
 	public float DistanceSquaredFrom(Plane other) => Normal.IsParallelTo(other.Normal) ? PointClosestToOrigin.DistanceSquaredFrom(other.PointClosestToOrigin) : 0f;
+
+	public bool IsWithinDistanceAndAngleTo(Plane other, float distance, Angle angle) => Normal.IsWithinAngleTo(other.Normal, angle) && PointClosestToOrigin.IsWithinDistanceOf(other.PointClosestToOrigin, distance);
 	#endregion
 
 	#region Relationship / Containment

@@ -89,9 +89,6 @@ public readonly partial struct Line : ILineLike<Line, Ray, Ray>, IPrecomputation
 	#region Equality
 	public bool Equals(Line other) => DistanceFrom(other) == 0f && (Direction.Equals(other.Direction) || Direction.Equals(-other.Direction));
 	public bool Equals(Line other, float tolerance) => DistanceFrom(other) <= tolerance && (Direction.Equals(other.Direction, tolerance) || Direction.Equals(-other.Direction, tolerance));
-	public bool EqualsWithinDistanceAndAngle(Line other, float distance, Angle angle) {
-		return DistanceFrom(other) <= distance && (Direction.EqualsWithinAngle(other.Direction, angle) || Direction.EqualsWithinAngle(-other.Direction, angle));
-	}
 	public override bool Equals(object? obj) => obj is Line other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(_pointOnLine, _direction);
 	public static bool operator ==(Line left, Line right) => left.Equals(right);

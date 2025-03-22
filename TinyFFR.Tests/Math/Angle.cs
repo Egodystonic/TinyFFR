@@ -299,29 +299,31 @@ class AngleTest {
 
 	[Test]
 	public void ShouldConsiderEquivalentAnglesEqualWhenEqualWithinCircle() {
+		Assert.IsTrue(Angle.FullCircle.IsEquivalentWithinCircleTo(Angle.Zero));
+
 		for (var f = -720f; f < 720f + 36f; f += 36f) {
-			Assert.IsTrue(new Angle(360f + f).EqualsWithinCircle(new Angle(f), TestTolerance));
-			Assert.IsTrue(new Angle(720f + f).EqualsWithinCircle(new Angle(f), TestTolerance));
-			Assert.IsTrue(new Angle(-360f + f).EqualsWithinCircle(new Angle(f), TestTolerance));
-			Assert.IsTrue(new Angle(-720f + f).EqualsWithinCircle(new Angle(f), TestTolerance));
+			Assert.IsTrue(new Angle(360f + f).IsEquivalentWithinCircleTo(new Angle(f), TestTolerance));
+			Assert.IsTrue(new Angle(720f + f).IsEquivalentWithinCircleTo(new Angle(f), (Angle) TestTolerance));
+			Assert.IsTrue(new Angle(-360f + f).IsEquivalentWithinCircleTo(new Angle(f), TestTolerance));
+			Assert.IsTrue(new Angle(-720f + f).IsEquivalentWithinCircleTo(new Angle(f), (Angle) TestTolerance));
 
-			Assert.IsFalse(new Angle(360f + f).EqualsWithinCircle(new Angle(f + 1f), TestTolerance));
-			Assert.IsFalse(new Angle(720f + f).EqualsWithinCircle(new Angle(f + 1f), TestTolerance));
-			Assert.IsFalse(new Angle(-360f + f).EqualsWithinCircle(new Angle(f + 1f), TestTolerance));
-			Assert.IsFalse(new Angle(-720f + f).EqualsWithinCircle(new Angle(f + 1f), TestTolerance));
-			Assert.IsFalse(new Angle(360f + f).EqualsWithinCircle(new Angle(f - 1f), TestTolerance));
-			Assert.IsFalse(new Angle(720f + f).EqualsWithinCircle(new Angle(f - 1f), TestTolerance));
-			Assert.IsFalse(new Angle(-360f + f).EqualsWithinCircle(new Angle(f - 1f), TestTolerance));
-			Assert.IsFalse(new Angle(-720f + f).EqualsWithinCircle(new Angle(f - 1f), TestTolerance));
+			Assert.IsFalse(new Angle(360f + f).IsEquivalentWithinCircleTo(new Angle(f + 1f), TestTolerance));
+			Assert.IsFalse(new Angle(720f + f).IsEquivalentWithinCircleTo(new Angle(f + 1f), (Angle) TestTolerance));
+			Assert.IsFalse(new Angle(-360f + f).IsEquivalentWithinCircleTo(new Angle(f + 1f), TestTolerance));
+			Assert.IsFalse(new Angle(-720f + f).IsEquivalentWithinCircleTo(new Angle(f + 1f), (Angle) TestTolerance));
+			Assert.IsFalse(new Angle(360f + f).IsEquivalentWithinCircleTo(new Angle(f - 1f), TestTolerance));
+			Assert.IsFalse(new Angle(720f + f).IsEquivalentWithinCircleTo(new Angle(f - 1f), (Angle) TestTolerance));
+			Assert.IsFalse(new Angle(-360f + f).IsEquivalentWithinCircleTo(new Angle(f - 1f), TestTolerance));
+			Assert.IsFalse(new Angle(-720f + f).IsEquivalentWithinCircleTo(new Angle(f - 1f), (Angle) TestTolerance));
 
-			Assert.IsFalse(new Angle(360f + f).EqualsWithinCircle(new Angle(f + 180f), TestTolerance));
-			Assert.IsFalse(new Angle(720f + f).EqualsWithinCircle(new Angle(f + 180f), TestTolerance));
-			Assert.IsFalse(new Angle(-360f + f).EqualsWithinCircle(new Angle(f + 180f), TestTolerance));
-			Assert.IsFalse(new Angle(-720f + f).EqualsWithinCircle(new Angle(f + 180f), TestTolerance));
-			Assert.IsFalse(new Angle(360f + f).EqualsWithinCircle(new Angle(f - 180f), TestTolerance));
-			Assert.IsFalse(new Angle(720f + f).EqualsWithinCircle(new Angle(f - 180f), TestTolerance));
-			Assert.IsFalse(new Angle(-360f + f).EqualsWithinCircle(new Angle(f - 180f), TestTolerance));
-			Assert.IsFalse(new Angle(-720f + f).EqualsWithinCircle(new Angle(f - 180f), TestTolerance));
+			Assert.IsFalse(new Angle(360f + f).IsEquivalentWithinCircleTo(new Angle(f + 180f), TestTolerance));
+			Assert.IsFalse(new Angle(720f + f).IsEquivalentWithinCircleTo(new Angle(f + 180f), (Angle) TestTolerance));
+			Assert.IsFalse(new Angle(-360f + f).IsEquivalentWithinCircleTo(new Angle(f + 180f), TestTolerance));
+			Assert.IsFalse(new Angle(-720f + f).IsEquivalentWithinCircleTo(new Angle(f + 180f), (Angle) TestTolerance));
+			Assert.IsFalse(new Angle(360f + f).IsEquivalentWithinCircleTo(new Angle(f - 180f), TestTolerance));
+			Assert.IsFalse(new Angle(720f + f).IsEquivalentWithinCircleTo(new Angle(f - 180f), (Angle) TestTolerance));
+			Assert.IsFalse(new Angle(-360f + f).IsEquivalentWithinCircleTo(new Angle(f - 180f), TestTolerance));
+			Assert.IsFalse(new Angle(-720f + f).IsEquivalentWithinCircleTo(new Angle(f - 180f), (Angle) TestTolerance));
 		}
 	}
 
