@@ -107,7 +107,7 @@ class TransformTest {
 			new Transform(translation: new(1f, 2f, 3f))
 		);
 
-		var rotVect = (90f % Direction.Down).AsVector4;
+		var rotVect = (90f % Direction.Down).ToQuaternion().AsVector4();
 		var rotVectSquared = rotVect * rotVect;
 		AssertMat(
 			new Matrix4x4(
@@ -232,8 +232,8 @@ class TransformTest {
 	public void ShouldCorrectlyConvertToAndFromSpan() {
 		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<Transform>();
 		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(Transform.None, TestTransform);
-		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(Transform.None, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 1f, 1f);
-		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestTransform, 1f, 2f, 3f, 0f, -0.70710677f, 0f, 0.70710677f, 0.75f, 0.5f, 0.25f);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(Transform.None, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 1f);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestTransform, 1f, 2f, 3f, 0f, -1f, 0f, Angle.FromDegrees(90f).Radians, 0.75f, 0.5f, 0.25f);
 	}
 
 	[Test]
@@ -374,7 +374,7 @@ class TransformTest {
 	public void ShouldCorrectlyInvert() {
 		Assert.AreEqual(Transform.None, Transform.None.Inverse);
 		AssertToleranceEquals(new Vect(-1f, -2f, -3f), TestTransform.Inverse.Translation, TestTolerance);
-		AssertToleranceEquals(90f % Direction.Up, TestTransform.Inverse.Rotation, TestTolerance);
+		AssertToleranceEquals(90f % Direction.Up, TestTransform.Inverse.Rotation.Normalized, TestTolerance);
 		AssertToleranceEquals(new Vect(1f / 0.75f, 2f, 4f), TestTransform.Inverse.Scaling, TestTolerance);
 	}
 

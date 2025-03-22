@@ -753,12 +753,12 @@ class SphereTest {
 		AssertReflection(new(Location.Origin + new Direction(-1f, -1f, -1f) * TestSphere.Radius, (-1f, -1f, -1f)), (1f, 1f, 1f), Location.Origin);
 
 		AssertReflection(
-			new(TestSphere.FastIntersectionWith(new Ray((0f, 10f, TestSphere.Radius * 0.5f), Direction.Down)).First, Direction.Up * (Direction.Up >> Direction.Forward).WithAngle(60f)),
+			new(TestSphere.FastIntersectionWith(new Ray((0f, 10f, TestSphere.Radius * 0.5f), Direction.Down)).First, Direction.Up * (Direction.Up >> Direction.Forward) with { Angle = 60f }),
 			Direction.Down,
 			(0f, 0f, TestSphere.Radius * 0.5f)
 		);
 		AssertReflection(
-			new(TestSphere.FastIntersectionWith(new Ray((0f, -10f, TestSphere.Radius * 0.5f), Direction.Up)).First, Direction.Down * (Direction.Down >> Direction.Forward).WithAngle(60f)),
+			new(TestSphere.FastIntersectionWith(new Ray((0f, -10f, TestSphere.Radius * 0.5f), Direction.Up)).First, Direction.Down * (Direction.Down >> Direction.Forward) with { Angle = 60f }),
 			Direction.Up,
 			(0f, 0f, TestSphere.Radius * 0.5f)
 		);

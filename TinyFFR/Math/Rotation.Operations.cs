@@ -10,37 +10,41 @@ partial struct Rotation :
 	IAlgebraicGroup<Rotation>,
 	IAngleMeasurable<Rotation, Rotation>,
 	IScalable<Rotation>,
-	IInterpolatable<Rotation> {
+	IPrecomputationInterpolatable<Rotation, Pair<Quaternion, Quaternion>> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator -(Rotation operand) => operand.Reversed;
-	public Rotation Reversed {
-		get => new(new(-AsQuaternion.X, -AsQuaternion.Y, -AsQuaternion.Z, AsQuaternion.W));
-	}
+	public Rotation Reversed => new(-Angle, Axis);
 	Rotation IInvertible<Rotation>.Inverted => Reversed;
 	static Rotation IAdditiveIdentity<Rotation, Rotation>.AdditiveIdentity => None;
 
-	#region With Methods
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Rotation WithAngle(Angle angle) => new(angle, Axis);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Rotation WithAxis(Direction axis) => new(Angle, axis);
-	#endregion
+	// TODO xmldoc that this returns a rotation whose angle will always be in the range [0..<180], but that is equivalent for all directions to this rotation
+	// TODO xmldoc In the range [180..<360] it flips the axis and then [360..<540] the axis stays the same, and so on
+	public Rotation Normalized {
+		get {
+			var normalizedAngle = Angle.Normalized;
+			return normalizedAngle < Angle.HalfCircle
+				? new Rotation(normalizedAngle, Axis)
+				: new Rotation(Angle.FullCircle - normalizedAngle, -Axis);
+		}
+	}
 
 	#region Scaling and Addition/Subtraction
-	// We provide this as a probably more intuitive way of adding rotations, even if it's not the arithmetic operation used to combine quaternions.
-	// Ultimately this type is meant to be an abstraction of a Rotation, not a Quaternion, which is a type I don't want users to have to care about or even know about if they don't want to.
-	// Notice, for example, that (lhs + rhs) is the OPPOSITE of (lhs.AsQuaternion * rhs.AsQuaternion) (see how we multiply other.AsQuaternion by this.AsQuaternion in Plus())
+	static Rotation IAdditive<Rotation, Rotation, Rotation>.operator +(Rotation lhs, Rotation rhs) => lhs.CombinedAndNormalizedWith(rhs);
+	static Rotation IAdditionOperators<Rotation, Rotation, Rotation>.operator +(Rotation lhs, Rotation rhs) => lhs.CombinedAndNormalizedWith(rhs);
+	static Rotation ISubtractionOperators<Rotation, Rotation, Rotation>.operator -(Rotation lhs, Rotation rhs) => lhs.NormalizedDifferenceTo(rhs);
+	Rotation IAdditive<Rotation, Rotation, Rotation>.Plus(Rotation other) => CombinedAndNormalizedWith(other);
+	Rotation IAdditive<Rotation, Rotation, Rotation>.Minus(Rotation other) => NormalizedDifferenceTo(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation operator +(Rotation lhs, Rotation rhs) => lhs.Plus(rhs);
+	public Rotation NormalizedDifferenceTo(Rotation other) => CombineAndNormalize(other, Reversed);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Rotation operator -(Rotation lhs, Rotation rhs) => lhs.Minus(rhs);
+	public Rotation CombinedAndNormalizedWith(Rotation other) => CombineAndNormalize(this, other);
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Rotation Plus(Rotation other) => FromQuaternion(other.AsQuaternion * AsQuaternion);
+	public static Rotation CombineAndNormalize(Rotation initial, Rotation following) => FromQuaternionPreNormalized(CombineAndNormalize(initial.ToQuaternion(), following.ToQuaternion()));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Rotation FollowedBy(Rotation other) => Plus(other);
-	public Rotation Minus(Rotation other) => FromQuaternion(Reversed.AsQuaternion * other.AsQuaternion);
+	public static Quaternion CombineAndNormalize(Quaternion initial, Quaternion following) => NormalizeOrIdentity(following * initial);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Rotation DifferenceTo(Rotation other) => Minus(other);
+	public static Quaternion Combine(Quaternion initial, Quaternion following) => following * initial;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator *(Rotation rotation, float scalar) => rotation.ScaledBy(scalar);
@@ -48,16 +52,19 @@ partial struct Rotation :
 	public static Rotation operator *(float scalar, Rotation rotation) => rotation.ScaledBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Rotation operator /(Rotation rotation, float scalar) => rotation.ScaledBy(1f / scalar);
-	public Rotation ScaledBy(float scalar) { // Quaternion exponentiation
-		var halfAngleRadians = MathF.Acos(AsQuaternion.W);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Rotation ScaledBy(float scalar) => new(Angle * scalar, Axis);
+
+	public static Quaternion ScaleQuaternion(Quaternion q, float scalar) {
+		// Quaternion exponentiation
+		var halfAngleRadians = MathF.Acos(q.W);
 		var newHalfAngleRadians = halfAngleRadians * scalar;
-		var sinNewHalfAngle = MathF.Sin(newHalfAngleRadians);
-		var cosNewHalfAngle = MathF.Cos(newHalfAngleRadians);
-
-		var normalizedVectorComponent = Vector3.Normalize(new(AsQuaternion.X, AsQuaternion.Y, AsQuaternion.Z));
-		if (!Single.IsFinite(normalizedVectorComponent.X)) return None;
-
-		return FromQuaternion(new(
+		var (sinNewHalfAngle, cosNewHalfAngle) = MathF.SinCos(newHalfAngleRadians);
+		
+		var normalizedVectorComponent = Vector3.Normalize(new(q.X, q.Y, q.Z));
+		if (!Single.IsFinite(normalizedVectorComponent.X)) return Identity;
+		
+		return NormalizeOrIdentity(new(
 			normalizedVectorComponent * sinNewHalfAngle,
 			cosNewHalfAngle
 		));
@@ -65,10 +72,10 @@ partial struct Rotation :
 	#endregion
 
 	#region Interactions w/ Rotation
+	public static Angle operator ^(Rotation left, Rotation right) => left.NormalizedAngleTo(right);
+	Angle IAngleMeasurable<Rotation>.AngleTo(Rotation other) => NormalizedDifferenceTo(other).Angle;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Angle operator ^(Rotation left, Rotation right) => left.AngleTo(right);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Angle AngleTo(Rotation other) => Minus(other).Angle;
+	public Angle NormalizedAngleTo(Rotation other) => NormalizedDifferenceTo(other).Angle;
 	#endregion
 
 	#region Rotation
@@ -86,10 +93,10 @@ partial struct Rotation :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Direction Rotate(Direction d) => Direction.Renormalize(RotateWithoutRenormalizing(d));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction RotateWithoutRenormalizing(Direction d) => new(Rotate(AsQuaternion, d.AsVector4));
+	public Direction RotateWithoutRenormalizing(Direction d) => new(Rotate(ToQuaternion(), d.AsVector4));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect Rotate(Vect v) => new(Rotate(AsQuaternion, v.AsVector4));
+	public Vect Rotate(Vect v) => new(Rotate(ToQuaternion(), v.AsVector4));
 
 	public Angle AngleAroundAxis(Direction axis) {
 		var orthogonalVect = axis.AnyOrthogonal();
@@ -98,18 +105,30 @@ partial struct Rotation :
 	#endregion
 
 	#region Clamping and Interpolation
-	public static Rotation Interpolate(Rotation start, Rotation end, float distance) {
+	public static Rotation Interpolate(Rotation start, Rotation end, float distance) => FromQuaternion(Interpolate(start.ToQuaternion(), end.ToQuaternion(), distance));
+	public static Quaternion Interpolate(Quaternion start, Quaternion end, float distance) {
 		const float CosPhiMinForLinearRenormalization = 1f - 1E-3f;
-		return MathF.Abs(Dot(start.AsQuaternion, end.AsQuaternion)) > CosPhiMinForLinearRenormalization
+		return MathF.Abs(Dot(start, end)) > CosPhiMinForLinearRenormalization
 			? ApproximatelyInterpolate(start, end, distance)
 			: AccuratelyInterpolate(start, end, distance);
 	}
-	public static Rotation AccuratelyInterpolate(Rotation start, Rotation end, float distance) { // Quaternion slerp
-		return FromQuaternionPreNormalized(Slerp(start.AsQuaternion, end.AsQuaternion, distance));
+
+	public static Rotation AccuratelyInterpolate(Rotation start, Rotation end, float distance) => FromQuaternion(AccuratelyInterpolate(start.ToQuaternion(), end.ToQuaternion(), distance));
+	public static Quaternion AccuratelyInterpolate(Quaternion start, Quaternion end, float distance) { // Quaternion slerp
+		return Slerp(start, end, distance);
 	}
-	public static Rotation ApproximatelyInterpolate(Rotation start, Rotation end, float distance) { // Vector lerp
-		return FromQuaternion(start.AsQuaternion + (end.AsQuaternion - start.AsQuaternion) * distance);
+
+	public static Rotation ApproximatelyInterpolate(Rotation start, Rotation end, float distance) => FromQuaternion(ApproximatelyInterpolate(start.ToQuaternion(), end.ToQuaternion(), distance));
+	public static Quaternion ApproximatelyInterpolate(Quaternion start, Quaternion end, float distance) { // Vector lerp
+		return start + (end - start) * distance;
 	}
+
+	public static Pair<Quaternion, Quaternion> CreateInterpolationPrecomputation(Rotation start, Rotation end) => new(start.ToQuaternion(), end.ToQuaternion());
+
+	public static Rotation InterpolateUsingPrecomputation(Rotation start, Rotation end, Pair<Quaternion, Quaternion> precomputation, float distance) {
+		return FromQuaternion(Interpolate(precomputation.First, precomputation.Second, distance));
+	}
+
 	public static Rotation Interpolate(Angle startAngle, Angle endAngle, Direction axis, float distance) {
 		return new(Angle.Interpolate(startAngle, endAngle, distance), axis);
 	}
@@ -118,6 +137,9 @@ partial struct Rotation :
 	// TODO in xmldoc explain that this function breaks the rotation in to its constituent parts (angle + axis) and clamps on those separately
 	public Rotation Clamp(Rotation min, Rotation max) {
 		if (this == None || min == None || max == None) return this;
+
+		min = min.Normalized;
+		max = max.Normalized;
 
 		var (minAngle, minAxis) = min;
 		var (maxAngle, maxAxis) = max;

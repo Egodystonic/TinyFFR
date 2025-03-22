@@ -351,7 +351,7 @@ partial struct Direction :
 		if (!retainOrthogonalDimension) return result;
 
 		var angleToPlane = SignedAngleTo(plane);
-		return (result >> plane.Normal).WithAngle(angleToPlane) * result;
+		return (result >> plane.Normal) with { Angle = angleToPlane } * result;
 	}
 	#endregion
 }

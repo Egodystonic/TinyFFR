@@ -2857,12 +2857,12 @@ class BoundedRayTest {
 		AssertPair(true, TestRay, TestRay.ToRayFromStart(), null, null);
 		AssertPair(false, TestRay.MovedBy(TestRay.Direction.AnyOrthogonal() * 1f), TestRay.ToRayFromStart(), 0.45f, null);
 		AssertPair(true, TestRay.MovedBy(TestRay.Direction.AnyOrthogonal() * 1f), TestRay.ToRayFromStart(), 0.55f, null);
-		AssertPair(false, TestRay.RotatedAroundStartBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()).WithAngle(1f)), TestRay.ToRayFromStart(), null, 0.9f);
-		AssertPair(true, TestRay.RotatedAroundStartBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()).WithAngle(1f)), TestRay.ToRayFromStart(), null, 1.1f);
-		AssertPair(false, TestRay.MovedBy(TestRay.Direction.AnyOrthogonal() * 1f).RotatedAroundStartBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()).WithAngle(1f)), TestRay.ToRayFromStart(), 0.45f, 0.9f);
-		AssertPair(true, TestRay.MovedBy(TestRay.Direction.AnyOrthogonal() * 1f).RotatedAroundStartBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()).WithAngle(1f)), TestRay.ToRayFromStart(), 0.55f, 1.1f);
-		AssertPair(false, TestRay.RotatedAroundStartBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()).WithAngle(1f)).MovedBy(TestRay.Direction.AnyOrthogonal() * 1f), TestRay.ToRayFromStart(), 0.45f, 0.9f);
-		AssertPair(true, TestRay.RotatedAroundStartBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()).WithAngle(1f)).MovedBy(TestRay.Direction.AnyOrthogonal() * 1f), TestRay.ToRayFromStart(), 0.55f, 1.1f);
+		AssertPair(false, TestRay.RotatedAroundStartBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()) with { Angle = 1f }), TestRay.ToRayFromStart(), null, 0.9f);
+		AssertPair(true, TestRay.RotatedAroundStartBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()) with { Angle = 1f }), TestRay.ToRayFromStart(), null, 1.1f);
+		AssertPair(false, TestRay.MovedBy(TestRay.Direction.AnyOrthogonal() * 1f).RotatedAroundStartBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()) with { Angle = 1f }), TestRay.ToRayFromStart(), 0.45f, 0.9f);
+		AssertPair(true, TestRay.MovedBy(TestRay.Direction.AnyOrthogonal() * 1f).RotatedAroundStartBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()) with { Angle = 1f }), TestRay.ToRayFromStart(), 0.55f, 1.1f);
+		AssertPair(false, TestRay.RotatedAroundStartBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()) with { Angle = 1f }).MovedBy(TestRay.Direction.AnyOrthogonal() * 1f), TestRay.ToRayFromStart(), 0.45f, 0.9f);
+		AssertPair(true, TestRay.RotatedAroundStartBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()) with { Angle = 1f }).MovedBy(TestRay.Direction.AnyOrthogonal() * 1f), TestRay.ToRayFromStart(), 0.55f, 1.1f);
 	}
 
 	[Test]
@@ -3404,7 +3404,7 @@ class BoundedRayTest {
 						catch {
 							Console.WriteLine($"Failure details:");
 							Console.WriteLine("\tInput: " + ray.ToStringDescriptive());
-							Console.WriteLine("\tFunc: " + nonFastMethodName);
+							Console.WriteLine("\tFunc: " + nonFastMethodName + "(" + String.Join(", ", args.Select(a => a.ToString())) + ")");
 							Console.WriteLine("\tTarget: " + args[0]);
 							Console.WriteLine("\tResult: " + (result?.ToStringDescriptive() ?? "<null>"));
 							Console.WriteLine("\tRay dir: " + rayDir);

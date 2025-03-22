@@ -33,7 +33,7 @@ partial struct Transform :
 
 	#region Rotation
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Transform WithAdditionalRotation(Rotation rotation) => this with { Rotation = Rotation + rotation };
+	public Transform WithAdditionalRotation(Rotation rotation) => this with { Rotation = Rotation.CombinedAndNormalizedWith(rotation) };
 	#endregion
 
 	#region Translation

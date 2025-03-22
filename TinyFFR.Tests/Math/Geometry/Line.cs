@@ -1875,12 +1875,12 @@ class LineTest {
 		AssertPair(true, TestLine, TestLine.ToRay(0f, false), null, null);
 		AssertPair(false, TestLine.MovedBy(TestLine.Direction.AnyOrthogonal() * 1f), TestLine.ToRay(0f, false), 0.45f, null);
 		AssertPair(true, TestLine.MovedBy(TestLine.Direction.AnyOrthogonal() * 1f), TestLine.ToRay(0f, false), 0.55f, null);
-		AssertPair(false, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyOrthogonal()).WithAngle(1f)), TestLine.ToRay(0f, false), null, 0.9f);
-		AssertPair(true, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyOrthogonal()).WithAngle(1f)), TestLine.ToRay(0f, false), null, 1.1f);
-		AssertPair(false, TestLine.MovedBy(TestLine.Direction.AnyOrthogonal() * 1f).RotatedBy((TestLine.Direction >> TestLine.Direction.AnyOrthogonal()).WithAngle(1f)), TestLine.ToRay(0f, false), 0.45f, 0.9f);
-		AssertPair(true, TestLine.MovedBy(TestLine.Direction.AnyOrthogonal() * 1f).RotatedBy((TestLine.Direction >> TestLine.Direction.AnyOrthogonal()).WithAngle(1f)), TestLine.ToRay(0f, false), 0.55f, 1.1f);
-		AssertPair(false, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyOrthogonal()).WithAngle(1f)).MovedBy(TestLine.Direction.AnyOrthogonal() * 1f), TestLine.ToRay(0f, false), 0.45f, 0.9f);
-		AssertPair(true, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyOrthogonal()).WithAngle(1f)).MovedBy(TestLine.Direction.AnyOrthogonal() * 1f), TestLine.ToRay(0f, false), 0.55f, 1.1f);
+		AssertPair(false, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyOrthogonal()) with { Angle = 1f }), TestLine.ToRay(0f, false), null, 0.9f);
+		AssertPair(true, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyOrthogonal()) with { Angle = 1f }), TestLine.ToRay(0f, false), null, 1.1f);
+		AssertPair(false, TestLine.MovedBy(TestLine.Direction.AnyOrthogonal() * 1f).RotatedBy((TestLine.Direction >> TestLine.Direction.AnyOrthogonal()) with { Angle = 1f }), TestLine.ToRay(0f, false), 0.45f, 0.9f);
+		AssertPair(true, TestLine.MovedBy(TestLine.Direction.AnyOrthogonal() * 1f).RotatedBy((TestLine.Direction >> TestLine.Direction.AnyOrthogonal()) with { Angle = 1f }), TestLine.ToRay(0f, false), 0.55f, 1.1f);
+		AssertPair(false, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyOrthogonal()) with { Angle = 1f }).MovedBy(TestLine.Direction.AnyOrthogonal() * 1f), TestLine.ToRay(0f, false), 0.45f, 0.9f);
+		AssertPair(true, TestLine.RotatedBy((TestLine.Direction >> TestLine.Direction.AnyOrthogonal()) with { Angle = 1f }).MovedBy(TestLine.Direction.AnyOrthogonal() * 1f), TestLine.ToRay(0f, false), 0.55f, 1.1f);
 	}
 
 	[Test]

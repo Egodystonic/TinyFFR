@@ -149,6 +149,34 @@ static class TestUtils {
 		);
 	}
 
+	public static void AssertToleranceEquals(Quaternion expected, Quaternion actual, float tolerance) {
+		bool Compare(float e, float a) => MathF.Abs(e - a) <= tolerance;
+
+		if (Compare(expected.X, actual.X) && Compare(expected.Y, actual.Y) && Compare(expected.Z, actual.Z) && Compare(expected.W, actual.W)) return;
+
+		var expectedString = expected.ToString();
+		var actualString = actual.ToString();
+		Assert.Fail(
+			$"Expected and actual value were not within tolerance of {tolerance}" + System.Environment.NewLine +
+			$"\tExpected value: {expectedString}" + System.Environment.NewLine +
+			$"\tActual value: {actualString}"
+		);
+	}
+
+	public static void AssertToleranceNotEquals(Quaternion expected, Quaternion actual, float tolerance) {
+		bool Compare(float e, float a) => MathF.Abs(e - a) > tolerance;
+
+		if (Compare(expected.X, actual.X) && Compare(expected.Y, actual.Y) && Compare(expected.Z, actual.Z) && Compare(expected.W, actual.W)) return;
+
+		var expectedString = expected.ToString();
+		var actualString = actual.ToString();
+		Assert.Fail(
+			$"Expected and actual value were equal within tolerance of {tolerance}" + System.Environment.NewLine +
+			$"\tExpected value: {expectedString}" + System.Environment.NewLine +
+			$"\tActual value: {actualString}"
+		);
+	}
+
 	public static void AssertToleranceEquals(Matrix4x4 expected, Matrix4x4 actual, float tolerance) {
 		for (var r = 0; r < 4; ++r) {
 			for (var c = 0; c < 4; ++c) {

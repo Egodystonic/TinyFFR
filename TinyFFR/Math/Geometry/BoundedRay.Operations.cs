@@ -496,7 +496,7 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 	public BoundedRay FastOrthogonalizedAroundStartAgainst(Plane plane) => new(StartPoint, StartToEndVect.FastOrthogonalizedAgainst(plane));
 	public BoundedRay FastOrthogonalizedAroundMiddleAgainst(Plane plane) => RotatedAroundMiddleBy(Direction >> Direction.FastOrthogonalizedAgainst(plane));
 	public BoundedRay FastOrthogonalizedAroundEndAgainst(Plane plane) => new(EndPoint - StartToEndVect.FastOrthogonalizedAgainst(plane), EndPoint);
-	public BoundedRay FastOrthogonalizedAgainst(Plane plane, float signedPivotDistance) => RotatedBy(Direction >> Direction.FastParallelizedWith(plane), UnboundedLocationAtDistance(signedPivotDistance));
+	public BoundedRay FastOrthogonalizedAgainst(Plane plane, float signedPivotDistance) => RotatedBy(Direction >> Direction.FastOrthogonalizedAgainst(plane), UnboundedLocationAtDistance(signedPivotDistance));
 
 	// Note: Projection treats this like two points (start/end), whereas parallelize/orthogonalize treat it as a start-point + vect; hence the ostensible discrepancy
 	// That being said, I feel like projection vs parallelization/orthogonalization are subtly different things even if they're thought of in a similar vein; hence why I chose it this way

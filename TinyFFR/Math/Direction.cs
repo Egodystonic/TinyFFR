@@ -164,7 +164,9 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	public static Direction Random(Direction coneCentre, Angle coneAngleMax, Angle coneAngleMin) {
 		if (coneCentre == None) return Random();
 
-		var offset = coneCentre * (coneCentre >> coneCentre.AnyOrthogonal()).WithAngle(Angle.Random(coneAngleMin.ClampZeroToHalfCircle(), coneAngleMax.ClampZeroToHalfCircle()));
+		var offset = coneCentre * (coneCentre >> coneCentre.AnyOrthogonal()) with {
+			Angle = Angle.Random(coneAngleMin.ClampZeroToHalfCircle(), coneAngleMax.ClampZeroToHalfCircle())
+		};
 		return offset * new Rotation(Angle.Random(Angle.Zero, Angle.FullCircle), coneCentre);
 	}
 	public static Direction Random(Plane plane) => Random(plane, plane.Normal.AnyOrthogonal(), Angle.FullCircle);
@@ -255,6 +257,6 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	public override int GetHashCode() => AsVector4.GetHashCode();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool EqualsWithinAngle(Direction other, Angle angle) => (this ^ other) <= angle; // TODO make it clear that this will throw exception if this or other are None
+	public bool EqualsWithinAngle(Direction other, Angle angle) => (this ^ other) <= angle;
 	#endregion
 }

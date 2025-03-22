@@ -29,20 +29,19 @@ public readonly record struct MeshVertex {
 			_texV = value.Y;
 		}
 	}
-	public Rotation TangentRotation {
-		get => Rotation.FromQuaternionPreNormalized(new(_tanX, _tanY, _tanZ, _tanW));
+	public Quaternion TangentRotation {
+		get => new(_tanX, _tanY, _tanZ, _tanW);
 		init {
-			var quat = value.AsQuaternion;
-			_tanX = quat.X;
-			_tanY = quat.Y;
-			_tanZ = quat.Z;
-			_tanW = quat.W;
+			_tanX = value.X;
+			_tanY = value.Y;
+			_tanZ = value.Z;
+			_tanW = value.W;
 		}
 	}
 
 	public MeshVertex(Location location, XYPair<float> textureCoords, Direction tangent, Direction bitangent, Direction normal)
 		: this(location, textureCoords, CalculateTangentRotation(tangent, bitangent, normal)) { }
-	public MeshVertex(Location location, XYPair<float> textureCoords, Rotation tangentRotation) {
+	public MeshVertex(Location location, XYPair<float> textureCoords, Quaternion tangentRotation) {
 		Location = location;
 		TextureCoords = textureCoords;
 		TangentRotation = tangentRotation;
@@ -52,14 +51,14 @@ public readonly record struct MeshVertex {
 		// _tanW = 3.05185094e-05f;
 	}
 
-	public static Rotation CalculateTangentRotation(Direction tangent, Direction bitangent, Direction normal) {
+	public static Quaternion CalculateTangentRotation(Direction tangent, Direction bitangent, Direction normal) {
 		CalculateTangentRotation(
 			tangent.ToVector3(), 
 			bitangent.ToVector3(), 
 			normal.ToVector3(), 
 			out var resultQuat
 		).ThrowIfFailure();
-		return Rotation.FromQuaternionPreNormalized(resultQuat);
+		return resultQuat;
 	}
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "calculate_tangent_rotation")]

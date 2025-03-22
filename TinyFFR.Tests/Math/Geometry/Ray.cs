@@ -2013,12 +2013,12 @@ class RayTest {
 		AssertPair(true, TestRay, TestRay, null, null);
 		AssertPair(false, TestRay.MovedBy(TestRay.Direction.AnyOrthogonal() * 1f), TestRay, 0.45f, null);
 		AssertPair(true, TestRay.MovedBy(TestRay.Direction.AnyOrthogonal() * 1f), TestRay, 0.55f, null);
-		AssertPair(false, TestRay.RotatedBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()).WithAngle(1f)), TestRay, null, 0.9f);
-		AssertPair(true, TestRay.RotatedBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()).WithAngle(1f)), TestRay, null, 1.1f);
-		AssertPair(false, TestRay.MovedBy(TestRay.Direction.AnyOrthogonal() * 1f).RotatedBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()).WithAngle(1f)), TestRay, 0.45f, 0.9f);
-		AssertPair(true, TestRay.MovedBy(TestRay.Direction.AnyOrthogonal() * 1f).RotatedBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()).WithAngle(1f)), TestRay, 0.55f, 1.1f);
-		AssertPair(false, TestRay.RotatedBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()).WithAngle(1f)).MovedBy(TestRay.Direction.AnyOrthogonal() * 1f), TestRay, 0.45f, 0.9f);
-		AssertPair(true, TestRay.RotatedBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()).WithAngle(1f)).MovedBy(TestRay.Direction.AnyOrthogonal() * 1f), TestRay, 0.55f, 1.1f);
+		AssertPair(false, TestRay.RotatedBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()) with { Angle = 1f }), TestRay, null, 0.9f);
+		AssertPair(true, TestRay.RotatedBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()) with { Angle = 1f }), TestRay, null, 1.1f);
+		AssertPair(false, TestRay.MovedBy(TestRay.Direction.AnyOrthogonal() * 1f).RotatedBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()) with { Angle = 1f }), TestRay, 0.45f, 0.9f);
+		AssertPair(true, TestRay.MovedBy(TestRay.Direction.AnyOrthogonal() * 1f).RotatedBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()) with { Angle = 1f }), TestRay, 0.55f, 1.1f);
+		AssertPair(false, TestRay.RotatedBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()) with { Angle = 1f }).MovedBy(TestRay.Direction.AnyOrthogonal() * 1f), TestRay, 0.45f, 0.9f);
+		AssertPair(true, TestRay.RotatedBy((TestRay.Direction >> TestRay.Direction.AnyOrthogonal()) with { Angle = 1f }).MovedBy(TestRay.Direction.AnyOrthogonal() * 1f), TestRay, 0.55f, 1.1f);
 	}
 
 	[Test]

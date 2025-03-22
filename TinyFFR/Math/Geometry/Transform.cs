@@ -36,7 +36,7 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	public static Transform FromTranslationOnly(Vect translation) => new(translation: translation);
 
 	public Matrix4x4 ToMatrix() {
-		var rotVect = Rotation.AsVector4;
+		var rotVect = Rotation.ToQuaternion().AsVector4();
 		var rotVectSquared = rotVect * rotVect;
 
 		var rowA = new Vector4(
