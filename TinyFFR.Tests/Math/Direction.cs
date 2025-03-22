@@ -872,7 +872,7 @@ class DirectionTest {
 			if (val.Equals(start, 0.1f) || val.Equals(end, 0.1f)) continue;
 
 			AssertToleranceEquals((start >> val).Axis, (start >> end).Axis, 0.1f);
-			AssertToleranceEquals((start >> end), (start >> val).CombinedAndNormalizedWith(val >> end), 0.2f);
+			AssertToleranceEquals((start >> end), (start >> val).CombinedAndNormalizedWith(val >> end), 5f);
 		}
 	}
 

@@ -47,7 +47,8 @@ class TransformTest {
 		};
 
 		Assert.AreEqual(new Vect(2f, 3f, 4f), transform.Translation);
-		Assert.AreEqual(new Rotation(30f, Direction.Left), transform.Rotation);
+		Assert.IsTrue(new Rotation(30f, Direction.Left).IsEquivalentForAllDirectionsTo(transform.Rotation, TestTolerance));
+		Assert.AreEqual(new Rotation(30f, Direction.Left).ToQuaternion(), transform.RotationQuaternion);
 		Assert.AreEqual(new Vect(0.75f, 0.5f, 0.25f), transform.Scaling);
 
 		transform = transform with {
@@ -55,7 +56,8 @@ class TransformTest {
 		};
 
 		Assert.AreEqual(new Vect(2f, 3f, 4f), transform.Translation);
-		Assert.AreEqual(new Rotation(30f, Direction.Left), transform.Rotation);
+		Assert.IsTrue(new Rotation(30f, Direction.Left).IsEquivalentForAllDirectionsTo(transform.Rotation, TestTolerance));
+		Assert.AreEqual(new Rotation(30f, Direction.Left).ToQuaternion(), transform.RotationQuaternion);
 		Assert.AreEqual(new Vect(1.1f, 1.2f, 1.3f), transform.Scaling);
 	}
 
@@ -232,8 +234,8 @@ class TransformTest {
 	public void ShouldCorrectlyConvertToAndFromSpan() {
 		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<Transform>();
 		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(Transform.None, TestTransform);
-		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(Transform.None, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 1f);
-		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestTransform, 1f, 2f, 3f, 0f, -1f, 0f, Angle.FromDegrees(90f).Radians, 0.75f, 0.5f, 0.25f);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(Transform.None, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 1f, 1f);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestTransform, 1f, 2f, 3f, 0f, -0.70710677f, 0f, 0.70710677f, 0.75f, 0.5f, 0.25f);
 	}
 
 	[Test]

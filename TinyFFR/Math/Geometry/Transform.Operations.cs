@@ -33,7 +33,8 @@ partial struct Transform :
 
 	#region Rotation
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Transform WithAdditionalRotation(Rotation rotation) => this with { Rotation = Rotation.CombinedAndNormalizedWith(rotation) };
+	public Transform WithAdditionalRotation(Rotation rotation) => WithAdditionalRotation(rotation.ToQuaternion());
+	public Transform WithAdditionalRotation(Quaternion rotationQuaternion) => this with { RotationQuaternion = Rotation.CombineAndNormalize(RotationQuaternion, rotationQuaternion) };
 	#endregion
 
 	#region Translation
@@ -45,7 +46,7 @@ partial struct Transform :
 	public static Transform Interpolate(Transform start, Transform end, float distance) {
 		return new(
 			Vect.Interpolate(start.Translation, end.Translation, distance),
-			Rotation.Interpolate(start.Rotation, end.Rotation, distance),
+			Rotation.Interpolate(start.RotationQuaternion, end.RotationQuaternion, distance),
 			Vect.Interpolate(start.Scaling, end.Scaling, distance)
 		);
 	}

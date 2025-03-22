@@ -1,6 +1,7 @@
 ﻿// Created on 2024-10-25 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
@@ -12,15 +13,20 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	public static readonly Transform None = new();
 
 	public Vect Translation { get; init; }
-	public Rotation Rotation { get; init; }
+	public Quaternion RotationQuaternion { get; init; }
+	public Rotation Rotation {
+		get => Rotation.FromQuaternionPreNormalized(RotationQuaternion);
+		init => RotationQuaternion = value.ToQuaternion();
+	}
 	public Vect Scaling { get; init; }
 
-	public Transform() : this(Vect.Zero, Rotation.None, Vect.One) { }
-	public Transform(float translationX, float translationY, float translationZ) : this(new Vect(translationX, translationY, translationZ), Rotation.None, Vect.One) { }
-	public Transform(Vect? translation = null, Rotation? rotation = null, Vect? scaling = null) : this(translation ?? Vect.Zero, rotation ?? Rotation.None, scaling ?? Vect.One) { }
-	public Transform(Vect translation, Rotation rotation, Vect scaling) {
+	public Transform() : this(Vect.Zero, Quaternion.Identity, Vect.One) { }
+	public Transform(float translationX, float translationY, float translationZ) : this(new Vect(translationX, translationY, translationZ), Quaternion.Identity, Vect.One) { }
+	public Transform(Vect? translation = null, Rotation? rotation = null, Vect? scaling = null) : this(translation ?? Vect.Zero, rotation?.ToQuaternion() ?? Quaternion.Identity, scaling ?? Vect.One) { }
+	public Transform(Vect translation, Rotation rotation, Vect scaling) : this(translation, rotation.ToQuaternion(), scaling) { }
+	public Transform(Vect translation, Quaternion rotationQuaternion, Vect scaling) {
 		Translation = translation;
-		Rotation = rotation;
+		RotationQuaternion = rotationQuaternion;
 		Scaling = scaling;
 	}
 
@@ -33,10 +39,13 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	public static Transform FromRotationOnly(Rotation rotation) => new(rotation: rotation);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Transform FromRotationOnly(Quaternion rotationQuaternion) => new(Vect.Zero, rotationQuaternion, Vect.One);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Transform FromTranslationOnly(Vect translation) => new(translation: translation);
 
 	public Matrix4x4 ToMatrix() {
-		var rotVect = Rotation.ToQuaternion().AsVector4();
+		var rotVect = RotationQuaternion.AsVector4();
 		var rotVectSquared = rotVect * rotVect;
 
 		var rowA = new Vector4(
@@ -103,23 +112,30 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	#endregion
 
 	#region Span Conversion
-	public static int SerializationByteSpanLength { get; } = Vect.SerializationByteSpanLength + Rotation.SerializationByteSpanLength + Vect.SerializationByteSpanLength;
+	public static int SerializationByteSpanLength { get; } = Vect.SerializationByteSpanLength + sizeof(float) * 4 + Vect.SerializationByteSpanLength;
 
 	public static void SerializeToBytes(Span<byte> dest, Transform src) {
 		Vect.SerializeToBytes(dest, src.Translation);
 		dest = dest[Vect.SerializationByteSpanLength..];
-		Rotation.SerializeToBytes(dest, src.Rotation);
-		dest = dest[Rotation.SerializationByteSpanLength..];
+		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 0)..(sizeof(float) * 1)], src.RotationQuaternion.X);
+		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 1)..(sizeof(float) * 2)], src.RotationQuaternion.Y);
+		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 2)..(sizeof(float) * 3)], src.RotationQuaternion.Z);
+		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 3)..(sizeof(float) * 4)], src.RotationQuaternion.W);
+		dest = dest[(sizeof(float) * 4)..];
 		Vect.SerializeToBytes(dest, src.Scaling);
 	}
 
 	public static Transform DeserializeFromBytes(ReadOnlySpan<byte> src) {
 		var location = Vect.DeserializeFromBytes(src);
 		src = src[Vect.SerializationByteSpanLength..];
-		var rotation = Rotation.DeserializeFromBytes(src);
-		src = src[Rotation.SerializationByteSpanLength..];
+		var x = BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 0)..(sizeof(float) * 1)]);
+		var y = BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 1)..(sizeof(float) * 2)]);
+		var z = BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 2)..(sizeof(float) * 3)]);
+		var w = BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 3)..(sizeof(float) * 4)]);
+		var rotationQuat = new Quaternion(x, y, z, w);
+		src = src[(sizeof(float) * 4)..];
 		var scaling = Vect.DeserializeFromBytes(src);
-		return new(location, rotation, scaling);
+		return new(location, rotationQuat, scaling);
 	}
 	#endregion
 
@@ -175,8 +191,20 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 
 	#region Equality
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool Equals(Transform other) => Translation.Equals(other.Translation) && Rotation.Equals(other.Rotation) && Scaling.Equals(other.Scaling);
-	public bool Equals(Transform other, float tolerance) => Translation.Equals(other.Translation, tolerance) && Rotation.Equals(other.Rotation, tolerance) && Scaling.Equals(other.Scaling, tolerance);
+	public bool Equals(Transform other) => Translation.Equals(other.Translation) && (RotationQuaternion.Equals(other.RotationQuaternion) || RotationQuaternion.Equals(-other.RotationQuaternion)) && Scaling.Equals(other.Scaling);
+	public bool Equals(Transform other, float tolerance) {
+		static bool CompareQuats(Quaternion a, Quaternion b, float t) {
+			return MathF.Abs(a.X - b.X) <= t
+				&& MathF.Abs(a.Y - b.Y) <= t
+				&& MathF.Abs(a.Z - b.Z) <= t
+				&& MathF.Abs(a.W - b.W) <= t;
+		}
+
+		return Translation.Equals(other.Translation, tolerance) 
+			   && (CompareQuats(RotationQuaternion, other.RotationQuaternion, tolerance) || CompareQuats(RotationQuaternion, -other.RotationQuaternion, tolerance)) 
+			   && Scaling.Equals(other.Scaling, tolerance);
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator ==(Transform left, Transform right) => left.Equals(right);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -442,12 +442,21 @@ class RotationTest {
 	public void ShouldCorrectlyRotateDirectionsAndVects() {
 		for (var f = 0f; f <= 360f; f += 18f) {
 			var angle = Angle.FromDegrees(f);
-			var expected = new Direction(MathF.Sin(angle.Radians), 0f, MathF.Cos(angle.Radians));
-			AssertToleranceEquals(expected, angle % Up * Forward, TestTolerance);
+			var expectedDir = new Direction(MathF.Sin(angle.Radians), 0f, MathF.Cos(angle.Radians));
+			AssertToleranceEquals(expectedDir, angle % Up * Forward, TestTolerance);
+			AssertToleranceEquals(expectedDir, (angle % Up).Rotate(Forward), TestTolerance);
+			AssertToleranceEquals(expectedDir, (angle % Up).RotateWithoutRenormalizing(Forward), TestTolerance);
+			var expectedVect = expectedDir * 3f;
+			AssertToleranceEquals(expectedVect, angle % Up * (Forward * 3f), TestTolerance);
+			AssertToleranceEquals(expectedVect, (angle % Up).Rotate(Forward * 3f), TestTolerance);
+			AssertToleranceEquals(expectedVect, (angle % Up).RotateWithoutCorrectingLength(Forward * 3f), TestTolerance);
 		}
 
 		Assert.AreEqual(Up, Up * Rotation.None);
 		Assert.AreEqual(new Direction(14f, -15f, -0.2f), Rotation.None.RotateWithoutRenormalizing(new Direction(14f, -15f, -0.2f)));
+		Assert.AreEqual(FromVector3PreNormalized(14f, -15f, -0.2f), Rotation.None.RotateWithoutRenormalizing(FromVector3PreNormalized(14f, -15f, -0.2f)));
+		Assert.AreEqual(FromVector3PreNormalized(14f, -15f, -0.2f).ToVector3().Length(), NinetyAroundDown.RotateWithoutRenormalizing(FromVector3PreNormalized(14f, -15f, -0.2f)).ToVector3().Length(), TestTolerance);
+		Assert.AreEqual(new Vect(14f, -15f, -0.2f), Rotation.None.RotateWithoutCorrectingLength(new Vect(14f, -15f, -0.2f)));
 
 		// https://www.wolframalpha.com/input?i=rotate+%280.801784%2C+-0.534522%2C+0.267261%29+around+axis+%280.840799%2C+0.0300285%2C+-0.540514%29+by+171+degrees
 		AssertToleranceEquals(

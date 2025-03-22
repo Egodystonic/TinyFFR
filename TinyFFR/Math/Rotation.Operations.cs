@@ -91,12 +91,18 @@ partial struct Rotation :
 
 	// Renormalize because we can accrue a lot of error here and we're doing a heavy operation anyway. Offer RotateWithoutRenormalizing for perf sensitive cases
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction Rotate(Direction d) => Direction.Renormalize(RotateWithoutRenormalizing(d));
+	public Direction Rotate(Direction d) => Rotate(d, ToQuaternion());
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Direction RotateWithoutRenormalizing(Direction d) => new(Rotate(ToQuaternion(), d.AsVector4));
+	public Direction RotateWithoutRenormalizing(Direction d) => RotateWithoutRenormalizing(d, ToQuaternion());
+	public static Direction Rotate(Direction d, Quaternion q) => Direction.Renormalize(RotateWithoutRenormalizing(d, q));
+	public static Direction RotateWithoutRenormalizing(Direction d, Quaternion q) => new(Rotate(q, d.AsVector4));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public Vect Rotate(Vect v) => new(Rotate(ToQuaternion(), v.AsVector4));
+	public Vect Rotate(Vect v) => Rotate(v, ToQuaternion());
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Vect RotateWithoutCorrectingLength(Vect v) => RotateWithoutCorrectingLength(v, ToQuaternion());
+	public static Vect Rotate(Vect v, Quaternion q) => RotateWithoutCorrectingLength(v, q).WithLength(v.Length);
+	public static Vect RotateWithoutCorrectingLength(Vect v, Quaternion q) => new(Rotate(q, v.AsVector4));
 
 	public Angle AngleAroundAxis(Direction axis) {
 		var orthogonalVect = axis.AnyOrthogonal();
