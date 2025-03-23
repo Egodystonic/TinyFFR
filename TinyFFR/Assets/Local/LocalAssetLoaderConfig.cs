@@ -7,26 +7,13 @@ using Egodystonic.TinyFFR.Assets.Meshes;
 namespace Egodystonic.TinyFFR.Assets.Local;
 
 public sealed record LocalAssetLoaderConfig {
-	public const int MaxMaxShaderBufferSizeBytes = 1 << 29;
 	public const int MaxMaxAssetFilePathLengthChars = 1 << 29;
 	public const int MaxMaxAssetVertexIndexBufferSizeBytes = 1 << 29;
 	public const int MaxMaxKtxFileBufferSizeBytes = 1 << 29;
-	public const int DefaultMaxShaderBufferSizeBytes = 1024 * 1024 * 1; // 1 MB
 	public const int DefaultMaxAssetFilePathLengthChars = 2048;
 	public const int DefaultMaxAssetVertexIndexBufferSizeBytes = 100_000 * MeshVertex.ExpectedSerializedSize; // 100k vertex mesh
 	public const int DefaultMaxKtxFileBufferSizeBytes = 100 * 1024 * 1024; // 100 MB
 	public static readonly TimeSpan DefaultMaxHdrProcessingTime = TimeSpan.FromMinutes(2d);
-
-	readonly int _maxShaderBufferSizeBytes = DefaultMaxShaderBufferSizeBytes;
-	public int MaxShaderBufferSizeBytes {
-		get => _maxShaderBufferSizeBytes;
-		init {
-			if (value is <= 0 or > MaxMaxShaderBufferSizeBytes) {
-				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max shader buffer size must be between 1 and {MaxMaxShaderBufferSizeBytes} bytes.");
-			}
-			_maxShaderBufferSizeBytes = value;
-		}
-	}
 
 	readonly int _maxAssetFilePathLengthChars = DefaultMaxAssetFilePathLengthChars;
 	public int MaxAssetFilePathLengthChars {

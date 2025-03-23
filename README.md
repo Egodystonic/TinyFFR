@@ -1,8 +1,8 @@
 # ![TinyFFR logo](logo_48.png) TinyFFR
 
-A **Tiny** **F**ixed **F**unction **R**enderer library for C#/.NET 9.
+A **Tiny** **F**ixed **F**unction **R**endering library for C#/.NET 9.
 
-* Distributed via NuGet
+* Distributed via NuGet (.NET 9)
 * Free for commercial and non-commercial use (see license)
 * Features:
   * Physically-based rendering (via [filament](https://github.com/google/filament))

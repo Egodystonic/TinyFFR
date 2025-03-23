@@ -9,6 +9,7 @@ using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR;
 

@@ -40,6 +40,43 @@
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
   </PropertyGroup>
 
+  <!-- 
+  Package publish steps (for now):
+    Update package version below, add -rc1 for testing and increment rc version for each test
+    Put in Release configuration
+    Rebuild whole solution, then build this project one more time because it doesn't include the built DLL/LIBs from the first build (this needs to be improved)
+    Copy the built nupkg (from the build_output/Release folder) to local package source
+    Reference the nuget package from the Nupkg testing project as a nuget and test
+    Once all looks good, do not clean or rebuild or change anything except taking the -rc out from the package version and building JUST THIS PROJECT once more
+    Repeat the test with the local source just in case
+    If it looks good, upload the nupkg without -rc to nuget.org
+  -->
+  <PropertyGroup>
+    <PackageId>Egodystonic.TinyFFR</PackageId>
+    <PackageVersion>0.1.0</PackageVersion> 
+    <Authors>Ben Bowen</Authors>
+    <Company>Egodystonic Studios</Company>
+    <Description>A Tiny Fixed Function Rendering library for C#.</Description>
+    <PackageTags>rendering;tinyffr;3d;pbr</PackageTags>
+    <RepositoryUrl>https://github.com/Egodystonic/TinyFFR</RepositoryUrl>
+    <PackageIcon>logo_128.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\LICENSE.md" Pack="true" PackagePath="\" />
+    <EmbeddedResource Include="Assets\Local\cmgen.exe" />
+    <EmbeddedResource Include="logo_128.png" Pack="true" PackagePath="\" />
+    <EmbeddedResource Include="Assets\Materials\Local\Shaders\opaque.filamat" />
+    <None Include="..\build_output\$(Configuration)\*.dll" Pack="true" PackagePath="\runtimes\win-x64\native\" />
+    <None Include="..\build_output\$(Configuration)\*.lib" Pack="true" PackagePath="\runtimes\win-x64\native\" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
     <GenerateDocumentationFile>False</GenerateDocumentationFile>
@@ -55,7 +92,8 @@
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
-    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <!-- We will generate documentation for v1.0+ -->
+    <GenerateDocumentationFile>False</GenerateDocumentationFile>
     <OutputPath>..\build_output\Release</OutputPath>
   </PropertyGroup>
 
@@ -65,20 +103,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Assets\Local\cmgen.exe" />
     <None Remove="Assets\Materials\Local\Shaders\opaque.filamat" />
   </ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="Assets\Materials\Local\Shaders\opaque.filamat" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="Assets\Local\cmgen.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Environment\Local\logo_128.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
 
 </Project>

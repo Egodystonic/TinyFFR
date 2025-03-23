@@ -34,7 +34,6 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	readonly ArrayPoolBackedMap<ResourceHandle<Texture>, TextureData> _loadedTextures = new();
 	readonly ArrayPoolBackedMap<string, UIntPtr> _loadedShaderPackages = new();
 	readonly ArrayPoolBackedVector<ResourceHandle<Material>> _activeMaterials = new();
-	readonly FixedByteBufferPool _shaderResourceBufferPool;
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly Lazy<Texture> _defaultColorMap;
 	readonly Lazy<Texture> _defaultNormalMap;
@@ -64,7 +63,6 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config) {
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
-		_shaderResourceBufferPool = new FixedByteBufferPool(config.MaxShaderBufferSizeBytes);
 		_textureImplProvider = new(this);
 
 		_defaultColorMap = new(() => (this as IMaterialBuilder).CreateColorMap(name: DefaultColorMapName));
@@ -245,19 +243,14 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	UIntPtr GetOrLoadShaderPackageHandle(string resourceName) {
 		if (_loadedShaderPackages.TryGetValue(resourceName, out var result)) return result;
 
-		var (buffer, sizeBytes) = OpenResource(_shaderResourceBufferPool, resourceName);
-		try {
-			LoadShaderPackage(
-				(byte*) buffer.StartPtr,
+		var (bufferPtr, sizeBytes) = EmbeddedResourceResolver.GetResource(resourceName);
+		LoadShaderPackage(
+				(byte*) bufferPtr,
 				sizeBytes,
 				out var newHandle
 			).ThrowIfFailure();
-			_loadedShaderPackages.Add(resourceName, newHandle);
-			return newHandle;
-		}
-		finally {
-			_shaderResourceBufferPool.Return(buffer);
-		}
+		_loadedShaderPackages.Add(resourceName, newHandle);
+		return newHandle;
 	}
 
 	Material CreateTestMaterial() {
@@ -426,7 +419,6 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			_activeMaterials.Dispose();
 			_loadedTextures.Dispose();
 			_loadedShaderPackages.Dispose();
-			_shaderResourceBufferPool.Dispose();
 		}
 		finally {
 			_isDisposed = true;

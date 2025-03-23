@@ -114,6 +114,7 @@ public interface IMeshBuilder {
 
 	Mesh CreateMesh(IMeshPolygonGroup polygons, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) => CreateMesh(polygons, new MeshGenerationConfig { TextureTransform = textureTransform ?? Transform2D.None }, new MeshCreationConfig { Name = name });
 	Mesh CreateMesh(IMeshPolygonGroup polygons, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
+		ArgumentNullException.ThrowIfNull(polygons);
 		polygons.Triangulate(generationConfig.TextureTransform, out var vertices, out var triangles);
 		return CreateMesh(vertices, triangles, config);
 	}

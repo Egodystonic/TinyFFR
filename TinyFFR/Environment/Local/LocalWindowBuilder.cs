@@ -15,6 +15,7 @@ namespace Egodystonic.TinyFFR.Environment.Local;
 
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IDisposable {
+	const string LogoResourceName = "logo_128.png";
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly InteropStringBuffer _windowTitleBuffer;
 	readonly InteropStringBuffer _iconFilePathBuffer;
@@ -57,8 +58,26 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		_displayMap.Add(outHandle, config.Display);
 		result.FullscreenStyle = config.FullscreenStyle;
 		if (!config.Title.IsEmpty) SetTitleOnWindow(result.Handle, config.Title);
-		SetIcon(outHandle, @"Environment\Local\logo_128.png");
+		TrySetDefaultIcon(result.Handle);
 		return result;
+	}
+
+	void TrySetDefaultIcon(ResourceHandle<Window> handle) {
+		try {
+			var iconData = EmbeddedResourceResolver.GetResource(LogoResourceName);
+			SetWindowIconFromMemory(
+				handle,
+				iconData.DataPtr,
+				iconData.DataLenBytes
+			).ThrowIfFailure();
+		}
+#if DEBUG
+		catch { throw; }
+#else
+#pragma warning disable CA1031 // "Don't swallow all exceptions" -- it's fine for this
+		catch { /* do nothing, none of this is important enough to crash the app */ }
+#pragma warning restore CA1031
+#endif
 	}
 
 	public ReadOnlySpan<char> GetTitle(ResourceHandle<Window> handle) {
@@ -273,6 +292,9 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_window_icon")]
 	static extern InteropResult SetWindowIcon(UIntPtr handle, ref readonly byte iconFilePathBufferPtr);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_window_icon_from_memory")]
+	static extern InteropResult SetWindowIconFromMemory(UIntPtr handle, UIntPtr iconDataPtr, int iconDataLengthBytes);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_window")]
 	static extern InteropResult DisposeWindow(UIntPtr handle);

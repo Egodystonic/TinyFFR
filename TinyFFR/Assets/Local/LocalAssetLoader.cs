@@ -17,9 +17,11 @@ namespace Egodystonic.TinyFFR.Assets.Local;
 sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImplProvider, IDisposable {
 	readonly record struct CubemapData(UIntPtr SkyboxTextureHandle, UIntPtr IblTextureHandle);
 	const string DefaultEnvironmentCubemapName = "Unnamed Environment Cubemap";
-	const string HdrPreprocessorExeName = "Assets\\Local\\cmgen.exe";
+	const string HdrPreprocessorExeName = "cmgen.exe";
+	const string HdrPreprocessorResourceName = "Assets.Local." + HdrPreprocessorExeName;
 	const string HdrPreprocessedSkyboxFileSearch = "*_skybox.ktx";
 	const string HdrPreprocessedIblFileSearch = "*_ibl.ktx";
+	readonly string _hdrPreprocessorFilePath = Path.Combine(LocalFileSystemUtils.ApplicationDataDirectoryPath, HdrPreprocessorExeName);
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly LocalMeshBuilder _meshBuilder;
 	readonly LocalMaterialBuilder _materialBuilder;
@@ -30,6 +32,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 	readonly ArrayPoolBackedMap<ResourceHandle<EnvironmentCubemap>, CubemapData> _loadedCubemaps = new();
 	nuint _prevCubemapHandle = 0;
 	bool _isDisposed = false;
+	bool _hdrPreprocessorHasBeenExtracted = false;
 
 	public IMeshBuilder MeshBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IAssetLoader)) : _meshBuilder;
 	public IMaterialBuilder MaterialBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IAssetLoader)) : _materialBuilder;
@@ -410,22 +413,39 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 	#endregion
 
 	#region Environment / Cubemap
+	void ExtractHdrPreprocessorIfNecessary() {
+		if (_hdrPreprocessorHasBeenExtracted) return;
+
+		try {
+			var data = EmbeddedResourceResolver.GetResource(HdrPreprocessorResourceName);
+			File.WriteAllBytes(_hdrPreprocessorFilePath, data.AsSpan);
+		}
+		catch (Exception e) {
+			throw new InvalidOperationException($"Could not extract HDR preprocessor executable ({HdrPreprocessorExeName}) " +
+												$"to target directory ({LocalFileSystemUtils.ApplicationDataDirectoryPath}).", e);
+		}
+
+		_hdrPreprocessorHasBeenExtracted = true;
+	}
+
 	public void PreprocessHdrTextureToEnvironmentCubemapDirectory(ReadOnlySpan<char> hdrFilePath, ReadOnlySpan<char> destinationDirectoryPath) {
 		ThrowIfThisIsDisposed();
 
 		var destDirString = destinationDirectoryPath.ToString();
 		var fileString = hdrFilePath.ToString();
 
-		if (!File.Exists(HdrPreprocessorExeName)) {
+		ExtractHdrPreprocessorIfNecessary();
+
+		if (!File.Exists(_hdrPreprocessorFilePath)) {
 			throw new InvalidOperationException($"Can not preprocess HDR textures as the preprocessor executable ({HdrPreprocessorExeName}) " +
-												$"is not present in the current working directory ({Directory.GetCurrentDirectory()}).");
+												$"is not present at the expected location ({_hdrPreprocessorFilePath}).");
 		}
 		if (!File.Exists(fileString)) {
 			throw new ArgumentException($"File '{fileString}' does not exist.", nameof(hdrFilePath));
 		}
 		
 		try {
-			var process = Process.Start(HdrPreprocessorExeName, "-q -f ktx -x \"" + destinationDirectoryPath.ToString() + "\" \"" + fileString + "\"");
+			var process = Process.Start(_hdrPreprocessorFilePath, "-q -f ktx -x \"" + destinationDirectoryPath.ToString() + "\" \"" + fileString + "\"");
 			if (!process.WaitForExit(_maxHdrProcessingTime)) {
 				try {
 					process.Kill(entireProcessTree: true);

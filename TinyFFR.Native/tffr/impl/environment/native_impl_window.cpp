@@ -50,6 +50,27 @@ StartExportedFunc(set_window_icon, WindowHandle handle, const char* iconFilePath
 	EndExportedFunc
 }
 
+StartExportedFunc(set_window_icon_from_memory, WindowHandle handle, stbi_uc* data, int sizeBytes) {
+	ThrowIfNull(handle, "Window was null.");
+	ThrowIfNull(data, "Data pointer was null.");
+
+	int width, height, channelCount;
+	stbi_set_flip_vertically_on_load(false);
+	auto imageData = stbi_load_from_memory(data, sizeBytes, &width, &height, &channelCount, 4);
+	ThrowIfNull(imageData, "Could not load icon: ", stbi_failure_reason());
+
+	auto sdlSurface = SDL_CreateRGBSurfaceFrom(imageData, width, height, 32, width * 4, 0xFFU, 0xFF00U, 0xFF0000U, 0xFF000000U);
+	if (sdlSurface == nullptr) {
+		stbi_image_free(imageData);
+		Throw("Could not load icon: ", SDL_GetError());
+	}
+
+	SDL_SetWindowIcon(handle, sdlSurface);
+	SDL_FreeSurface(sdlSurface);
+	stbi_image_free(imageData);
+	EndExportedFunc
+}
+
 
 void native_impl_window::set_window_title(WindowHandle handle, const char* newTitle) {
 	ThrowIfNull(handle, "Window was null.");
