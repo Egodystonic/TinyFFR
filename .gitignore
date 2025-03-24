@@ -408,3 +408,6 @@ TinyFFR.Native/third_party/binaries/**
 
 # TinyFFR - ignore build output
 build_output/**
+
+# TinyFFR - ignore generated documentation 
+Documentation/public_html/**
