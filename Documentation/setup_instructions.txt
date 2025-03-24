@@ -1,0 +1,7 @@
+Need latest version of python installed (ideally installed on PATH)
+
+Run:
+
+pip install mkdocs
+pip install mkdocs-material
+pip install mike

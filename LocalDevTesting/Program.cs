@@ -70,6 +70,7 @@ using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(TextureP
 // ));
 
 using var material = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap);
+var s = factory.ObjectBuilder.CreateModelInstance(mesh, material, initialPosition: new Location(0f, 0.05f, 1.6f) + Vect.Random(new(-0.1f), new(0.1f)));
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, material);
 
 using var light = factory.LightBuilder.CreatePointLight(new Location(0f, 0f, 0f), new ColorVect(1f, 1f, 1f));
@@ -78,11 +79,13 @@ using var lLight = factory.LightBuilder.CreatePointLight(new Location(-1.6f, 2.6
 using var bLight = factory.LightBuilder.CreatePointLight(new Location(0f, 2.6f, 3.6f), new ColorVect(0f, 0f, 1f));
 
 using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
-using var scene = factory.SceneBuilder.CreateScene(includeBackdrop: false);
+using var scene = factory.SceneBuilder.CreateScene(includeBackdrop: true);
+scene.Add(s);
+s.SetPosition(instance.Position + Vect.Random());
 using var camera = factory.CameraBuilder.CreateCamera();
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
-scene.Add(instance);
+//scene.Add(instance);
 scene.Add(light);
 // scene.Add(rLight);
 // scene.Add(lLight);
@@ -91,6 +94,12 @@ scene.Add(light);
 instance.SetPosition(new Location(0f, 0.05f, 1.6f));
 instance.RotateBy(45f % Direction.Down);
 instance.RotateBy(45f % Direction.Right);
+
+for (var i = 0; i < 6000; ++i) {
+	var q = factory.ObjectBuilder.CreateModelInstance(mesh, material, initialPosition: instance.Position + Vect.Random());
+	scene.Add(q);
+	q.SetPosition(instance.Position + Vect.Random());
+}
 
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 while (!loop.Input.UserQuitRequested) {
@@ -108,6 +117,9 @@ while (!loop.Input.UserQuitRequested) {
 		var newMaterial = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(newColorMap);
 		instance.Material = newMaterial;
 	}
+
+	camera.RotateBy((90f % Direction.Down) * dt);
+	camera.RotateBy((90f % Direction.Right) * dt);
 
 	renderer.Render();
 }
