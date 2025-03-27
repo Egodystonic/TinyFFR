@@ -4,4 +4,8 @@ Run:
 
 pip install mkdocs
 pip install mkdocs-material
-pip install mike
+
+In the Documentation folder, run `mkdocs serve` to get an auto-refreshing development test version while editing
+When done, in the same folder, run `mkdocs build` to render everything 
+
+The .meta.yml file sets tags/metadata for every file in its directory (and subdirectories).

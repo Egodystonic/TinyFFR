@@ -37,6 +37,11 @@ NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
 );
 
 
+for (var a = 0f; a < 360f; a += 60f) {
+	var angle = new Angle(a);
+	Console.WriteLine(PercentageUtils.ConvertFractionToPercentageString(angle.FullCircleFraction) + " = " + ColorVect.FromHueSaturationLightness(angle, 1f, 0.5f));
+}
+
 using var factory = new LocalTinyFfrFactory();
 
 using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f)); // 1m cube

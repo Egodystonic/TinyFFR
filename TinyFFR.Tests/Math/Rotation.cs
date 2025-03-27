@@ -771,4 +771,13 @@ class RotationTest {
 		var rotation = 360f % Down;
 		AssertToleranceEquals(Backward, rotation * 0.5f * Forward, TestTolerance);
 	}
+
+	[Test]
+	public void ShouldCorrectlyScaleQuaternions() {
+		AssertEquivalence(NinetyAroundDown * 0.5f, Rotation.FromQuaternionPreNormalized(Rotation.ScaleQuaternion(NinetyAroundDown.ToQuaternion(), 0.5f)), TestTolerance);
+		AssertEquivalence(NinetyAroundDown * -0.5f, Rotation.FromQuaternionPreNormalized(Rotation.ScaleQuaternion(NinetyAroundDown.ToQuaternion(), -0.5f)), TestTolerance);
+		AssertEquivalence(NinetyAroundDown * 1.5f, Rotation.FromQuaternionPreNormalized(Rotation.ScaleQuaternion(NinetyAroundDown.ToQuaternion(), 1.5f)), TestTolerance);
+		AssertEquivalence(NinetyAroundDown * 2.5f, Rotation.FromQuaternionPreNormalized(Rotation.ScaleQuaternion(NinetyAroundDown.ToQuaternion(), 2.5f)), TestTolerance);
+		AssertEquivalence(NinetyAroundDown * 0f, Rotation.FromQuaternionPreNormalized(Rotation.ScaleQuaternion(NinetyAroundDown.ToQuaternion(), 0f)), TestTolerance);
+	}
 }

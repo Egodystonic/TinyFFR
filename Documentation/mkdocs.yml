@@ -1,18 +1,106 @@
-site_name: TinyFFR
+docs_dir: source
+site_name: TinyFFR Manual
 site_url: https://tinyffr.dev
-site_dir: public_html
+site_dir: output
+repo_url: https://github.com/Egodystonic/TinyFFR
+edit_uri: Documentation/source/
+site_description: "Manual & Instructions for TinyFFR (Tiny Fixed Function Renderer C# .NET Library)"
+site_author: "Egodystonic / Ben Bowen"
+copyright: "(c) 2025 Egodystonic / Ben Bowen"
+extra_css:
+  - stylesheets/additional_styles.css
+watch:
+  - includes
+  - theme_overrides
+
+markdown_extensions:
+  - abbr
+  - attr_list
+  - admonition
+  - footnotes
+  - md_in_html
+  - tables
+  - pymdownx.betterem
+  - pymdownx.blocks.caption
+  - pymdownx.caret:
+      smart_insert: false
+  - pymdownx.details
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.highlight:
+      use_pygments: true
+      pygments_lang_class: true
+      linenums_style: pymdownx-inline
+      anchor_linenums: true
+      line_spans: __span
+  - pymdownx.inlinehilite
+  - pymdownx.superfences 
+  - pymdownx.snippets:
+      auto_append:
+        - includes/acronym_definitions.md
+      check_paths: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: 🔗
+      title: Page Contents
+      toc_depth: 2
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Egodystonic/TinyFFR
+      name: Repository
+    - icon: fontawesome/solid/comments
+      link: https://github.com/Egodystonic/TinyFFR/discussions
+      name: Discussions
+
 theme:
   name: material
-extra:
-  version:
-    provider: mike
+  logo: logo_128.png
+  favicon: logo_128.png
+  custom_dir: theme_overrides
+  icon:
+    annotation: material/chat-question
+  features:
+    - navigation.instant
+    - navigation.sections
+    - navigation.path
+    - navigation.indexes
+    - navigation.tabs
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.tooltips
+    - content.code.annotate
+
+
+  font:
+    code: Source Code Pro
+
+  palette:
+    - scheme: slate
+      primary: custom
+      toggle:
+        icon: material/lightbulb-outline
+        name: Switch to light mode
+
+    - scheme: default
+      primary: custom
+      toggle:
+        icon: material/lightbulb
+        name: Switch to dark mode
+
 plugins:
-  - mike:
-      # These fields are all optional; the defaults are as below...
-      alias_type: symlink
-      redirect_template: null
-      deploy_prefix: ''
-      canonical_version: latest
-      version_selector: true
-      css_dir: css
-      javascript_dir: js
+  - search
+  - meta
+
+validation:
+  omitted_files: warn
+  absolute_links: relative_to_docs
+  unrecognized_links: warn
+  anchors: warn
+strict: true
+
+nav:
+  - "index.md"

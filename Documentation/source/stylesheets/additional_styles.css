@@ -1,0 +1,25 @@
+.md-banner {
+	background-color: #be2e2e;
+}
+
+[data-md-color-scheme="default"] .md-header {
+	background: linear-gradient(90deg, rgb(133, 0, 0) 0%, rgb(107, 107, 0) 16.666%, rgb(0, 107, 0) 33.333%, rgb(0, 100, 100) 50%, rgb(0, 0, 102) 66.666%, rgb(102, 0, 102) 83.333%);
+}
+[data-md-color-scheme="slate"] .md-header {
+	background: linear-gradient(90deg, rgba(100,70,70,1) 0%, rgba(100,100,70,1) 16.666%, rgba(70,100,70,1) 33.333%, rgba(70,100,100,1) 50%, rgba(70,70,100,1) 66.666%, rgba(100,70,100,1) 83.333%);
+}
+[data-md-color-scheme="default"] .md-tabs {
+	background: linear-gradient(90deg, rgb(71, 10, 10) 0%, rgb(77, 77, 25) 16.666%, rgb(38, 71, 38) 33.333%, rgb(37, 81, 81) 50%, rgb(46, 46, 73) 66.666%, rgb(64, 35, 64) 83.333%);
+}
+[data-md-color-scheme="slate"] .md-tabs {
+	background: linear-gradient(90deg, rgba(100,70,70,0.3) 0%, rgba(100,100,70,0.3) 16.666%, rgba(70,100,70,0.3) 33.333%, rgba(70,100,100,0.3) 50%, rgba(70,70,100,0.3) 66.666%, rgba(100,70,100,0.3) 83.333%);
+}
+
+[data-md-color-scheme="default"] {
+	--md-primary-fg-color:        #0a951a;
+	--md-accent-fg-color:        #064c0e;
+}
+[data-md-color-scheme="slate"] {
+	--md-primary-fg-color:        #9a5d81;
+	--md-accent-fg-color:        #c6a0b6;
+}
