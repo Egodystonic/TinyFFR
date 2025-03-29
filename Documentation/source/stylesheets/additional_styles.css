@@ -16,10 +16,32 @@
 }
 
 [data-md-color-scheme="default"] {
-	--md-primary-fg-color:        #0a951a;
-	--md-accent-fg-color:        #064c0e;
+	--md-primary-fg-color:        #1b6593;
+	--md-accent-fg-color:        #008ce9;
 }
 [data-md-color-scheme="slate"] {
-	--md-primary-fg-color:        #9a5d81;
-	--md-accent-fg-color:        #c6a0b6;
+	--md-primary-fg-color:        #cd99b7;
+	--md-accent-fg-color:        #a56c8d;
+}
+
+[data-md-color-scheme="default"] .md-annotation__index::after {
+	background-color: #008ce9;
+}
+[data-md-color-scheme="default"] .md-annotation__index:hover::after {
+	background-color: #005eff;
+}
+[data-md-color-scheme="default"] .md-tooltip--active + .md-annotation__index::after {
+    transform: scale(1.15);
+	background-color: #005eff
+}
+
+[data-md-color-scheme="slate"] .md-annotation__index::after {
+	background-color: rgb(226, 98, 147);
+}
+[data-md-color-scheme="slate"] .md-annotation__index:hover::after {
+	background-color: rgb(220, 70, 127);
+}
+[data-md-color-scheme="slate"] .md-tooltip--active + .md-annotation__index::after {
+    transform: scale(1.15);
+	background-color: rgb(220, 70, 127);
 }
