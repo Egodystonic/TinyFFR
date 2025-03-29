@@ -3,7 +3,7 @@
 }
 
 [data-md-color-scheme="default"] .md-header {
-	background: linear-gradient(90deg, rgb(133, 0, 0) 0%, rgb(107, 107, 0) 16.666%, rgb(0, 107, 0) 33.333%, rgb(0, 100, 100) 50%, rgb(0, 0, 102) 66.666%, rgb(102, 0, 102) 83.333%);
+	background: linear-gradient(90deg, rgba(100,70,70,1) 0%, rgba(100,100,70,1) 16.666%, rgba(70,100,70,1) 33.333%, rgba(70,100,100,1) 50%, rgba(70,70,100,1) 66.666%, rgba(100,70,100,1) 83.333%);
 }
 [data-md-color-scheme="slate"] .md-header {
 	background: linear-gradient(90deg, rgba(100,70,70,1) 0%, rgba(100,100,70,1) 16.666%, rgba(70,100,70,1) 33.333%, rgba(70,100,100,1) 50%, rgba(70,70,100,1) 66.666%, rgba(100,70,100,1) 83.333%);

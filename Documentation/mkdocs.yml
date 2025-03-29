@@ -71,7 +71,6 @@ theme:
     - navigation.sections
     - navigation.path
     - navigation.indexes
-    - navigation.tabs
     - navigation.footer
     - search.suggest
     - search.highlight
@@ -83,13 +82,15 @@ theme:
     code: Source Code Pro
 
   palette:
-    - scheme: slate
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
       primary: custom
       toggle:
         icon: material/lightbulb-outline
         name: Switch to light mode
 
-    - scheme: default
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
       primary: custom
       toggle:
         icon: material/lightbulb
@@ -105,3 +106,6 @@ validation:
   unrecognized_links: warn
   anchors: warn
 strict: true
+
+nav:
+  - index.md
