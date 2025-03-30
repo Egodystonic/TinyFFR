@@ -213,7 +213,7 @@ Cards
 
 <div class="grid cards" markdown>
 
--   :material-clock-fast:{ .lg .middle } __Title__
+-   :material-clock-fast:{ .lg .middle : style="margin-right:0.3em" } __Title__
 
     ---
 
@@ -221,7 +221,7 @@ Cards
 
     [:octicons-arrow-right-24: Link](/url/)
 
--   :material-clock-fast:{ .lg .middle } __Title__
+-   :material-clock-fast:{ .lg .middle : style="margin-right:0.3em" } __Title__
 
     ---
 
