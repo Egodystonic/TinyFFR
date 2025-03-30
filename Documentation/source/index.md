@@ -1,7 +1,7 @@
 ---
 title: Homepage
 description: This is the homepage/manual for Tiny FFR (C# Tiny Fixed Function Rendering Library).
-icon: fontawesome/solid/house
+icon: material/home
 ---
 
 # 3D Rendering in C\# Made Easy
@@ -60,20 +60,59 @@ TinyFFR (*Tiny* *F*ixed *F*unction *R*enderer) is a C# .NET9 library designed to
 
 </div>  
 
-## Is TinyFFR For Me?
+## When to use TinyFFR
 
-* __:fontawesome-solid-info: TinyFFR is just a renderer.__
-    * <span class="tffr-affirmative">:octicons-check-16:</span> Consider TinyFFR if you don't need "game engine" features such as physics, audio, and level editing or you wish to add your own implementations for those functionalities yourself. 
-    * <span class="tffr-negative">:octicons-x-12:</span> TinyFFR may not be for you if you need everything a modern game engine provides and you're not willing or able to add those features using other libraries.
+__:fontawesome-solid-info: TinyFFR is just a renderer.__
 
-* __:fontawesome-solid-info: TinyFFR is currently in very early prerelease.__ 
-    * <span class="tffr-affirmative">:octicons-check-16:</span> Consider TinyFFR if you're okay with using a library that may be missing key features or have performance issues and bugs at this early stage. 
-    * <span class="tffr-negative">:octicons-x-12:</span> TinyFFR may not be for you if you need a mature, battle-tested offering.
+<span class="tffr-affirmative">:octicons-check-16:</span> Consider TinyFFR if you don't need "game engine" features such as physics, audio, and level editing, or you wish to add your own implementations for those functionalities on top of TinyFFR.
+{ : style="margin-left:1em" }
 
-* The "FFR" in TinyFFR stands for *F*ixed *F*unction *R*enderer. TinyFFR doe
+<span class="tffr-negative">:octicons-x-12:</span> TinyFFR may not be for you if you need everything a modern game engine provides and you're not willing or able to add those features another way.
+{ : style="margin-left:1em" }
 
-# Where to Start
+---
 
-* Learn by Example
-* Concepts
-* Reference Documentation
+__:fontawesome-solid-info: TinyFFR is fixed-function.__
+
+<span class="tffr-affirmative">:octicons-check-16:</span> Consider TinyFFR if you don't want to write shaders and just want to quickly render scenes using a fixed selection of material types for your objects.
+{ : style="margin-left:1em" }
+
+<span class="tffr-negative">:octicons-x-12:</span> TinyFFR may not be for you if you want more flexibility in defining materials and their shading.
+{ : style="margin-left:1em" }
+
+---
+
+__:fontawesome-solid-info: TinyFFR is currently in very early prerelease.__ 
+
+<span class="tffr-affirmative">:octicons-check-16:</span> Consider TinyFFR if you're okay with using a library that may be missing key features or 
+have performance issues and bugs at this early stage. 
+{ : style="margin-left:1em" }
+
+<span class="tffr-negative">:octicons-x-12:</span> TinyFFR may not be for you if you need a mature option.
+{ : style="margin-left:1em" }
+
+## Where to Start
+
+### :material-cogs: Learn by Example
+
+If you want to just get stuck in and writing code with TinyFFR, head to the examples section:
+{ : style="margin-left:1em" }
+
+[:octicons-arrow-right-24: Examples](/examples/index.md)
+{ : style="margin-left:1em" }
+
+### :material-lightbulb: Understand the Concepts
+
+If you want to understand the concepts and design of TinyFFR's API, head to the concepts section:
+{ : style="margin-left:1em" }
+
+[:octicons-arrow-right-24: Concepts](/concepts/index.md)
+{ : style="margin-left:1em" }
+
+### :fontawesome-solid-book: Read the Reference Documentation
+
+When you're ready to dive deep in to TinyFFR, head to the reference documentation:
+{ : style="margin-left:1em" }
+
+[:octicons-arrow-right-24: Reference Docs](/reference/index.md)
+{ : style="margin-left:1em" }

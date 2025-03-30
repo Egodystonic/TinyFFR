@@ -48,7 +48,7 @@ markdown_extensions:
   - toc:
       permalink: 🔗
       title: Page Contents
-      toc_depth: 2
+      toc_depth: 3
 
 extra:
   social:
@@ -65,7 +65,7 @@ theme:
   favicon: logo_128.png
   custom_dir: theme_overrides
   icon:
-    annotation: material/chat-question
+    annotation: material/message-question
   features:
     - navigation.instant
     - navigation.sections
@@ -76,6 +76,7 @@ theme:
     - search.highlight
     - content.tooltips
     - content.code.annotate
+    - content.code.copy
 
 
   font:
@@ -109,3 +110,16 @@ strict: true
 
 nav:
   - index.md
+  - Examples: 
+    - examples/index.md
+    - examples/installing.md
+    - examples/hello_cube.md
+  - Concepts:
+    - concepts/index.md
+    - concepts/factory.md
+    - concepts/displays_and_windows.md
+    - concepts/meshes.md
+    - concepts/materials.md
+    - concepts/lighting.md
+  - Reference Docs:
+    - reference/index.md

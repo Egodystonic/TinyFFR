@@ -1,15 +1,18 @@
-﻿// The factory object is used to create all other resources
-using Egodystonic.TinyFFR.Factory.Local;
+﻿using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR;
 using Egodystonic.TinyFFR.Environment.Input;
 
+// The factory object is used to create all other resources
 using var factory = new LocalTinyFfrFactory();
 
 // Create a cuboid mesh and load an instance of it in to the world with a test material
 using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f)); // 1m cube
+
+using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.Maroon);
+using var material = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap);
 using var instance = factory.ObjectBuilder.CreateModelInstance(
   mesh,
-  factory.AssetLoader.MaterialBuilder.TestMaterial
+  material
 );
 
 // Create a light to illuminate the cube
@@ -20,7 +23,7 @@ using var light = factory.LightBuilder.CreatePointLight(Location.Origin);
 // a camera to capture the scene, 
 // and a renderer to render it all
 using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
-using var scene = factory.SceneBuilder.CreateScene();
+using var scene = factory.SceneBuilder.CreateScene(backdropColor: ColorVect.FromRgb24(0xFF0000));
 using var camera = factory.CameraBuilder.CreateCamera();
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
