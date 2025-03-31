@@ -121,5 +121,9 @@ nav:
     - concepts/meshes.md
     - concepts/materials.md
     - concepts/lighting.md
+    - concepts/scenes.md
+    - concepts/input.md
+    - concepts/math_and_geometry.md
+    - concepts/conventions.md
   - Reference Docs:
     - reference/index.md

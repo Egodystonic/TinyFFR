@@ -4,6 +4,8 @@ description: This is the starting page for examples of using TinyFFR.
 icon: material/cogs
 ---
 
+## Getting Started
+
 <div class="grid cards" markdown>
 
 -   __Installing TinyFFR__
@@ -18,8 +20,10 @@ icon: material/cogs
 
     ---
 
-    Get a simple cube rendering and understand the basics of the library.
+    Get a simple cube rendering and understand the fundamentals of the library.
 
     [:octicons-arrow-right-24: Hello Cube](hello_cube.md)
 
 </div>
+
+## Snippets
