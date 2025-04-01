@@ -114,6 +114,8 @@ nav:
     - examples/index.md
     - examples/installing.md
     - examples/hello_cube.md
+    - examples/texture_patterns.md
+    - examples/loading_assets.md
   - Concepts:
     - concepts/index.md
     - concepts/factory.md
@@ -124,6 +126,7 @@ nav:
     - concepts/scenes.md
     - concepts/input.md
     - concepts/math_and_geometry.md
+    - concepts/resources.md
     - concepts/conventions.md
   - Reference Docs:
     - reference/index.md

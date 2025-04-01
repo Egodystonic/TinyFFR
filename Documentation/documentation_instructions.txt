@@ -145,6 +145,7 @@ Callouts ("Admonitions")
 ////////
 
 Replace "!!!" with "???" to make the callout collapsed by default. Replace with "???+" to make it collapsible but expanded by default.
+Add 'annotate' after the callout type (before the title) to enable annotations in the callout.
 Supported callout types:
 
 note

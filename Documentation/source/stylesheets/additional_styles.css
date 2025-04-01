@@ -18,11 +18,13 @@
 [data-md-color-scheme="default"] {
 	--md-primary-fg-color:        #1b6593;
 	--md-accent-fg-color:        #008ce9;
+	--md-footer-bg-color:		#454545;
 }
 [data-md-color-scheme="slate"] {
 	--md-primary-fg-color:        #cd99b7;
 	--md-accent-fg-color:        #a56c8d;
 	--md-default-bg-color:	#181a21;		
+	--md-footer-bg-color:		#2a2c33;
 }
 
 [data-md-color-scheme="default"] .tffr-affirmative {

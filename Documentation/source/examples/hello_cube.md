@@ -28,7 +28,7 @@ All namespaces in the library start with `Egodystonic.TinyFFR`.
 
 ### Creating the Factory
 
-The next thing we need to do is create the *factory object*. This is the object that must be used to create all other rendering resources in TinyFFR:
+The next thing we need to do is create the *factory object*. This is the "root" object that we will use to create all other resources in TinyFFR:
 
 ```csharp
 using var factory = new LocalTinyFfrFactory();
@@ -40,12 +40,17 @@ For more information about the factory object, see: [:octicons-arrow-right-24: T
 
 ### Creating the Cube Mesh
 
-Every object that is eventually rendered to the screen in a 3D scene is made up of a *mesh* of polygons. You do not need to understand how these meshes are formed or even what a polygon is; all you need to know is that in order to create a cube for our scene we firstly need a cube *mesh*.
+Every object that is eventually rendered to the screen in a 3D scene is made up of a *mesh* of polygons. You do not need to understand how these meshes are formed; all you need to know is that in order to create a cube for our scene we firstly need a cube *mesh*.
 
-??? question "What is a mesh?"
-	A mesh specifies to the renderer firstly (and most fundamentally) how an object's polygons are laid out in space. The mesh builder that we will use below can help create a list of polygons laid out in a cube/cuboid shape. 
+??? question "What is a polygon? What is a mesh?"
+	In a nutshell:
 
-	As well as each polygon's position, a mesh specifies some geometric properties such as the direction each vertex (corner) faces, and how to lay out textures on the object's surface. The mesh builder will also specify these properties for us behind-the-scenes.
+	* A __polygon__ is a set of points (vertices) that describe a 2D shape, usually a triangle.
+	* A __mesh__ is a grouping of multiple polygons that together describe the surfaces of a 3D shape.
+
+	As well as each polygon's position, a mesh specifies some geometric properties such as the direction each vertex (corner) faces, and how to lay out textures on the object's surface.
+
+	The mesh builder that we will use below can help create a list of polygons laid out in a cube/cuboid shape with all of these properties set correctly.
 
 We can use the factory's *mesh builder* to build such a mesh:
 
@@ -57,13 +62,13 @@ using var cubeMesh = meshBuilder.CreateMesh(cubeDesc); // (3)!
 ```
 
 1. A mesh is a type of *asset*; assets are basically anything we store on the GPU's memory (i.e. VRAM). Because all assets are ultimately loaded on to the GPU by a single *asset loader*, the mesh builder is a property of the factory's `AssetLoader`.
-2. 	This line creates a 1m x 1m x 1m cube. All scalar (e.g. floating-point) values in TinyFFR are generally specified in meters.
-	
-	The constructor for Cuboid can take three parameters instead of one if you prefer a separate width, depth, and height.
-	
-3. `CreateMesh` can take a variety of different parameters, for now we just want to supply a description of a cuboid to generate a polygon mesh in that shape.
+2. 	`cubeDesc` is just a description of a 1m x 1m x 1m cube. It is not a mesh itself, just a 'cuboid' struct. 
 
-Because the resultant `mesh` is a disposable resource, we once again use the `using` pattern to make sure it's disposed when we're done.
+	All scalar (e.g. floating-point) values in TinyFFR are generally specified in meters. The constructor for Cuboid can take three parameters instead of one if you prefer a separate width, depth, and height.
+	
+3. `CreateMesh` can take a variety of different parameters, for now we just supply a description of a cuboid to generate a polygon mesh of that shape.
+
+Because the resultant `cubeMesh` is a disposable resource, we once again use the `using` pattern to make sure it's disposed when we're done.
 
 For more information about the mesh builder, see: [:octicons-arrow-right-24: Meshes](/concepts/meshes.md)
 
@@ -92,7 +97,9 @@ using var material = materialBuilder.CreateOpaqueMaterial(colorMap); // (3)!
 ??? question "Color Map vs Material"
 	You might wonder why there's a two-step process to creating a material: We create a "color map" first, and then use that to create an "opaque material". 
 
-	In actuality, a material is more than just the colour of something; objects generally have an array of parameters used to describe their surface such as roughness, metallicness, and distortions on their surface. `CreateOpaqueMaterial()` can take more parameters to specify these values with more texture maps. However, for this initial example, we only care to specify a colour, so we just supply a `colorMap`.
+	In actuality, a material is more than just the colour of something; objects generally have an array of parameters used to describe their surface such as roughness, metallicness, and distortions ('normals') on their surface. 
+	
+	`CreateOpaqueMaterial()` can take more parameters to specify such values with more texture maps, but for this initial example we only care to specify a colour, so we just supply a `colorMap`.
 
 Finally, the `colorMap` and `material` are both disposable resources, so again we use the `using` pattern to make sure they get disposed.
 
@@ -108,7 +115,12 @@ var objectBuilder = factory.ObjectBuilder;
 using var cube = objectBuilder.CreateModelInstance(cubeMesh, material);
 ```
 
-The *object builder* is another interface exposed via our factory object that helps us build 'objects' to put in our scene. `CreateModelInstance()` allows us to pass in a mesh and a material and returns one "model instance" that uses them both together.
+The *object builder* is another interface exposed via our factory object that helps us build 'objects' to put in our scene. 
+
+We pass in our `cubeMesh` and our `material` to `CreateModelInstance()`, and it returns one "model instance" that combines them together to create one instance of a complete maroon-coloured cube model(1).
+{ .annotate }
+
+1. A "model" is a mesh + material pair (and sometimes more, but always at least a mesh & material).
 
 The returned `cube` instance is, of course, a disposable resource again (hopefully you're spotting a pattern by now!).
 
@@ -229,7 +241,7 @@ using var renderer = rendererBuilder.CreateRenderer(scene, camera, window);
 
 2. 	We can also specify any `Direction` we want the camera to look in, but for now we just pick the "forward" direction-- in geometric terms this is equivalent to saying the camera is looking along the positive Z-axis.
 
-	In the next line we will move our cube instance in front of the camera by placing it further along that same axis.
+	On the next line we will move our cube instance in front of the camera by placing it further along that same axis.
 
 3.	On this line we're setting the cube's position 2m in front of the camera. 
 
@@ -239,7 +251,7 @@ using var renderer = rendererBuilder.CreateRenderer(scene, camera, window);
 
 	Because the camera is looking forward, this will place the cube right in front of it.
 
-The `camera` can be set up with various properties such as its position, field-of-view, look direction, etc. For now we're happy with most of the defaults, so we just want to set its position to be at the origin of our world and make sure it's looking forward.
+The `camera` can be set up with various properties such as its position, field-of-view, up direction, etc. For now we're happy with most of the defaults, so we just want to set its position to be at the origin of our world and make sure it's looking forward.
 
 ??? question "Why 'Forward'?" 	
 	There's nothing "special" about the `Forward` direction (or any other direction). It's a [convention](/concepts/conventions.md) in TinyFFR that "Forward" points along the positive Z-axis, but in a scene ("world space") there's nothing particularly important about any axis in particular. 
@@ -277,9 +289,9 @@ while (!loop.Input.UserQuitRequested) { // (3)!
 }
 ```
 
-1. 	This line creates a "rotation" that we'll use to rotate our cube on the next line when the user is pressing the space bar.
+1. 	This line creates a "rotation" that we'll use to rotate our cube on the next line.
 
-	Rotations in TinyFFR are stored as an *angle* in degrees and an *axis*. In this line, we're creating a rotation that is represented as "90° around the down direction".
+	Rotations in TinyFFR are stored as an *angle* in degrees and an *axis*. In this line, we're creating a rotation that is represented as "__90°__ around the __down__ axis".
 	
 	To get a good understanding of this, imagine holding a pencil in your hand and pointing it directly at the floor (that's your `Down` axis). Now, imagine one side of the pencil has some writing on it facing away from your body, and then imagine turning the pencil so that the writing is now facing to your right: You just made a 90° rotation around the down axis!
 
@@ -290,16 +302,18 @@ while (!loop.Input.UserQuitRequested) { // (3)!
 
 	In most cases, this will be when the user tries to close the window with the :fontawesome-solid-square-xmark: button.
 
-4. 	`loop.IterateOnce()` will block the current thread until it's time to render the next frame (i.e. after 16.666ms at a rate of 60 frames per second). When `loop.IterateOnce()` returns, it's time for the next frame.
+4. 	`loop.IterateOnce()` will block the current thread until it's time to render the next frame (i.e. after 16.666ms if we're rendering at 60 frames per second). When `loop.IterateOnce()` returns, it's time for the next frame.
 
-	The return value of `loop.IterateOnce()` will be a [TimeSpan](https://learn.microsoft.com/en-us/dotnet/api/system.timespan?view=net-9.0) that tells you how long has elapsed since the last frame. At a 60Hz framerate, this will ideally be 16.666ms, but due to various factors it may vary. We can use this value to extract a `deltaTime` in seconds.
+	The return value of `loop.IterateOnce()` will be a [TimeSpan](https://learn.microsoft.com/en-us/dotnet/api/system.timespan?view=net-9.0) that tells you how long has elapsed since the last frame. At a 60Hz framerate, this will ideally be 16.666ms, but due to various factors it may vary. 
+	
+	We use this value to extract a `deltaTime` in seconds.
 
 5. This line checks if, for the current frame, the user is currently holding down the space bar. Remember, this loop is iterating 60 times per second.
 6. 	This applies the rotation we created above to the cube. 
 
 	`cube.RotateBy()` does as its name implies: It rotates our `cube` instance in the scene.
 
-	The argument to `RotateBy()` is the rotation we wish to apply to the cube. In this example, we're supplying our `cubeRotationSpeedPerSec` (which is 90° around `Down`) scaled by `deltaTime` (i.e. we're multiplying the rotation speed by the fraction of a second that has elapsed since the last frame).
+	The argument to `RotateBy()` is the rotation we wish to apply to the cube. In this example, we're supplying our `cubeRotationSpeedPerSec` (which is `90° around Down`) scaled by `deltaTime` (i.e. we're multiplying the rotation speed by the fraction of a second that has elapsed since the last frame).
 
 	If we change our framerate, `deltaTime` will change to reflect the larger or smaller timespan between frames. Multiplying the rotation by `deltaTime` therefore ensures that the animation rate stays the same no matter what framerate we're running at.
 	
@@ -441,12 +455,12 @@ using var camera = factory.CameraBuilder.CreateCamera(initialPosition: Location.
 
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
+var input = loop.Input;
+var kbm = input.KeyboardAndMouse;
 
-while (!loop.Input.UserQuitRequested) {
+while (!input.UserQuitRequested) {
 	var deltaTime = (float) loop.IterateOnce().TotalSeconds;
-
-	if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Space)) cube.RotateBy(90f % Direction.Down * deltaTime);
-
+	if (kbm.KeyIsCurrentlyDown(KeyboardOrMouseKey.Space)) cube.RotateBy(90f % Direction.Down * deltaTime);
 	renderer.Render();
 }
 ```
