@@ -3,7 +3,7 @@ title: Texture Patterns
 description: Examples of how to use texture patterns to make color, normal, and ORM maps.
 ---
 
-When creating a color map, normal map, or ORM map you can use the built-in pattern generators to make interesting textures.
+You can use the built-in texture pattern generators to create interesting color maps, normal maps, and ORM maps.
 
 ??? example "Continuing "Hello Cube""
 	In the "Hello Cube" example we created a simple color map with a maroon colour:
@@ -239,38 +239,105 @@ The following examples will show you how to create texture patterns:
 
 ## Circle or Rectangle Normal Maps
 
-=== "Rectangular Normal Pattern"
+=== "Rectangular Studs"
 
-	![Cube with squares bordered with different colours](texture_patterns_bordered_squares.png){ style="height:200px;width:200px;border-radius:12px"}
+	![Cube with flat colour map and rectangular 'stud' normals](texture_patterns_normal_studs.png){ style="height:200px;width:200px;border-radius:12px"}
 	/// caption
-	Four squares each with multi-coloured borders
+	This cube has a flat color map but the normal map gives it the impression of having 'studs' on its surface
 	///
 
-	Normal maps in TinyFFR are specified as textures of `Direction`s. Just like with `ColorVect`, we can use the texture pattern generator to create `Direction` patterns in the exact same way.
+	Normal maps in TinyFFR are specified as 2D textures of `Direction`s. Just like with `ColorVect`s, we can use the texture pattern generator to create `Direction` patterns.
 
-	??? question "What does the 'Direction' of a pixel mean?"
-		agadgad
+	??? question "What does the 'Direction' of a pixel mean in a normal map?"
+		Normal maps are textures, but instead of the pixels representing colours (RGB) they represent directions (XYZ).
 
-	By [convention](/concepts/conventions.md), `Direction.Forward` is the "default" direction for a surface
+		In the real world, most surfaces aren't perfectly flat but actually have slight grooves and imperfections. Normal maps attempt to model those imperfections and patterns by specifying the *direction* each pixel of the surface is facing (relative to the overall surface plane) and are used when calculating lighting reflections to provide a more realistic-looking material.
+
+	??? question "Why are they called 'normal' maps?"
+		You might be confused if you've never come across this terminology before, and be wondering if there's such a thing as an "abnormal" map or a "weird" map. But be assured, no such thing exists.
+		
+		In math/geometry, a [normal vector](https://en.wikipedia.org/wiki/Normal_(geometry)) is the name given to the vector (e.g. arrow) that points exactly perpendicularly out from a surface. This represents exactly what we're trying to model with a normal map: We want a texture that describes how our surface/material is deformed on the per-pixel level, for more realistic lighting.
+
+		The term "normal" ultimately comes from Latin; a "norma" was a carpenter's tool for making right-angles.
+
+	By [convention](/concepts/conventions.md), `Direction.Forward` is the "default" direction for a surface's pixel. Any pixel whose direction is set to `new Direction(x: 0f, y: 0f, z: 1f)` (which is the same as `Direction.Forward`) will be rendered as perfectly straight/plumb with respect to the surface.
+
+	That means we can make "interesting" normal maps by specifying some pixels that don't face perfectly forward.
+
+	??? question "What about when my cube surface isn't actually facing forward?"
+		You might be wondering why we're specifying everything as facing 'forward' by default when in a real 3D scene it's unlikely most surfaces will be facing exactly forward.
+		
+		Everything in a normal map is a direction specified *relative* to a conventional 'flat' direction (the convention in TinyFFR is `Direction.Forward` being the 'flat' direction).
+
+		When your surface itself isn't *actually* facing forward in the world/scene, it doesn't matter. The normals are specified *in relation to* whichever direction the surface is *actually* facing-- that direction is considered "forward" in the context of the normal map lighting calculations. The renderer translates your normal directions on a per-frame basis depending on the actual direction the material surface is facing.
+
+	??? warning "Normals should never face inward"
+		It generally doesn't make sense to have normals with a negative Z component. In a physical sense, this would imply the surface for that pixel faces inward. 
+		
+		Materials with inward-facing normals will not react in any sensible way with lighting. They will appear to only be lit from behind, and the reflections will be reversed. Note also that this behaviour is not even guaranteed-- it is undefined and may change in future.
+
+	For this first example, we will create a normal map that gives the impression of rectangular 'studs' sticking out of our surface by using the `Rectangles` texture pattern:
 
 	```csharp
-	using var colorMap = materialBuilder.CreateColorMap(
-		TexturePattern.Rectangles(
-			interiorSize: (64, 64),
-			borderSize: (8, 8),
-			paddingSize: (32, 32),
-			interiorValue: new ColorVect(1f, 1f, 1f),
-			borderRightValue: new ColorVect(1f, 1f, 0f),
-			borderTopValue: new ColorVect(1f, 0f, 0f),
-			borderLeftValue: new ColorVect(0f, 1f, 0f),
-			borderBottomValue: new ColorVect(0f, 0f, 1f),
-			paddingValue: new ColorVect(0f, 0f, 0f),
-			repetitions: (2, 2)
-		)
-	);
+	using var normalMap = materialBuilder.CreateNormalMap(TexturePattern.Rectangles(
+		interiorSize: (64, 64),
+		borderSize: (8, 8),
+		paddingSize: (32, 32),
+		interiorValue: new Direction(0f, 0f, 1f),
+		borderRightValue: new Direction(1f, 0f, 1f),
+		borderTopValue: new Direction(0f, 1f, 1f),
+		borderLeftValue: new Direction(-1f, 0f, 1f),
+		borderBottomValue: new Direction(0f, -1f, 1f),
+		paddingValue: new Direction(0f, 0f, 1f),
+		repetitions: (6, 6)
+	));
 	```
 
+	By the way, the `normalMap` is supplied to `CreateOpaqueMaterial()` alongside your `colorMap`:
+
+	```csharp
+
+	```
+
+=== "Circular Indents"
+
+	TODO fill this example out when changing the way normal maps are created
+
 ## Line ORM Maps
+
+=== "Metallic Strips"
+
+=== "Perturbed Metallic and Roughness"
+
+	![Image showing cube with various metallic and roughness perturbations](texture_patterns_orm_perturbations.png){ style="height:200px;width:200px;border-radius:12px"}
+	/// caption
+	The lines of metallic/non-metallic and roughness overlap. All the lines are perturbed (they're not straight).
+	///
+
+	```csharp
+	var roughnessPattern = TexturePattern.Lines<Real>(
+		firstValue: 0f,
+		secondValue: 0.7f,
+		thirdValue: 0.3f,
+		fourthValue: 1f,
+		horizontal: false,
+		numRepeats: 3,
+		perturbationMagnitude: 0.1f,
+		perturbationFrequency: 2f
+	);
+	var metallicPattern = TexturePattern.Lines<Real>(
+		firstValue: 0f,
+		secondValue: 1f,
+		horizontal: true,
+		numRepeats: 1,
+		perturbationMagnitude: 0.3f
+	);
+
+	using var ormMap = materialBuilder.CreateOrmMap(
+		roughnessPattern: roughnessPattern, 
+		metallicPattern: metallicPattern
+	);
+	```
 
 ## Gradients
 

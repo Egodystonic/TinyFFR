@@ -36,103 +36,70 @@ NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
 	}
 );
 
+
 using var factory = new LocalTinyFfrFactory();
+using var cubeMesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f));
+var materialBuilder = factory.AssetLoader.MaterialBuilder;
 
-using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(TexturePattern.Gradient(
-	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.Right)!.Value, 1f, 0.5f),
-	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.UpRight)!.Value, 1f, 0.5f),
-	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.Up)!.Value, 1f, 0.5f),
-	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.UpLeft)!.Value, 1f, 0.5f),
-	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.Left)!.Value, 1f, 0.5f),
-	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.DownLeft)!.Value, 1f, 0.5f),
-	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.Down)!.Value, 1f, 0.5f),
-	ColorVect.FromHueSaturationLightness(Angle.From2DPolarAngle(Orientation2D.DownRight)!.Value, 1f, 0.5f),
-	ColorVect.White
-));
-// using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(TexturePattern.ChequerboardBordered(
-// 	ColorVect.RandomOpaque(), 5, ColorVect.RandomOpaque()
+using var colorMap = materialBuilder.CreateColorMap(StandardColor.Maroon);
+// using var normalMap = materialBuilder.CreateNormalMap(TexturePattern.Rectangles(
+// 	interiorSize: (64, 64),
+// 	borderSize: (8, 8),
+// 	paddingSize: (32, 32),
+// 	interiorValue: new Direction(0f, 0f, 1f),
+// 	borderRightValue: new Direction(-1f, 0f, 1f),
+// 	borderTopValue: new Direction(0f, 1f, 1f),
+// 	borderLeftValue: new Direction(1f, 0f, 1f),
+// 	borderBottomValue: new Direction(0f, -1f, 1f),
+// 	paddingValue: new Direction(0f, 0f, 1f),
+// 	repetitions: (6, 6)
 // ));
-// using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(TexturePattern.ChequerboardBordered(
-// 	ColorVect.RandomOpaque().WithLightness(0.5f),
-// 	16,
-// 	ColorVect.RandomOpaque().WithSaturation(0.85f),
-// 	ColorVect.RandomOpaque().WithSaturation(0.85f),
-// 	ColorVect.RandomOpaque().WithSaturation(0.85f),
-// 	ColorVect.RandomOpaque().WithSaturation(0.85f),
-// 	cellResolution: 256
-// ));
-using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap(TexturePattern.Rectangles(
-	(256, 256),
-	(16, 16),
-	(0, 0),
-	Direction.Forward,
-	new Direction(-1f, 0f, 1f),
-	new Direction(0f, 1f, 1f),
-	new Direction(1f, 0f, 1f),
-	new Direction(0f, -1f, 1f),
-	Direction.Forward, 
-	(8, 8)
-));
-var ormPattern = TexturePattern.Rectangles<Real>(
-	(256, 256),
-	(16, 16),
-	(0, 0),
-	0f,
-	1f,
-	0.4f,
-	0f,
-	0.4f,
-	1f,
-	(8, 8)
-);
-using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(ormPattern, ormPattern, ormPattern);
+// using var normalMap = factory.AssetLoader.LoadTexture(
+// 	@"C:\Users\ben\Documents\Egodystonic\EscapeLizards\EscapeLizardsInst\Materials\LevelTexture_BigPavingRoad_n.bmp", 
+// 	new TextureCreationConfig {
+// 		//InvertYGreenChannel = true
+// 	}
+// );
 
-// Create a cuboid mesh and load an instance of it in to the world with a test material
-using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f)); // 1m cube
-using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(
-	colorMap,
-	normalMap,
-	ormMap
+var roughnessPattern = TexturePattern.Lines<Real>(
+	firstValue: 0f,
+	secondValue: 0.7f,
+	thirdValue: 0.3f,
+	fourthValue: 1f,
+	horizontal: false,
+	numRepeats: 3,
+	perturbationMagnitude: 0.1f,
+	perturbationFrequency: 2f
 );
-using var instance = factory.ObjectBuilder.CreateModelInstance(
-  mesh,
-  mat
+var metallicPattern = TexturePattern.Lines<Real>(
+	firstValue: 0f,
+	secondValue: 1f,
+	horizontal: true,
+	numRepeats: 1,
+	perturbationMagnitude: 0.3f
 );
 
-// Create a light to illuminate the cube
+using var ormMap = materialBuilder.CreateOrmMap(roughnessPattern: roughnessPattern, metallicPattern: metallicPattern);
+
+using var material = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap, ormMap);
+using var cube = factory.ObjectBuilder.CreateModelInstance(cubeMesh, material, initialPosition: (0f, 0f, 2f));
 using var light = factory.LightBuilder.CreatePointLight(Location.Origin);
-
-// Create a window to render to, 
-// a scene to render, 
-// a camera to capture the scene, 
-// and a renderer to render it all
-using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value, size: (800, 800));
 using var scene = factory.SceneBuilder.CreateScene();
-using var camera = factory.CameraBuilder.CreateCamera();
-using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
-using var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(@"C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\TinyFFR.Tests\IntegrationTests\kloofendal_48d_partly_cloudy_puresky_4k.hdr");
-scene.SetBackdrop(cubemap);
-
-// Add the cube instance and light to the scene
-scene.Add(instance);
+scene.Add(cube);
 scene.Add(light);
 
-// Put the cube 2m in front of the camera
-instance.SetPosition(new Location(0f, 0f, 2f));
+using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
+using var camera = factory.CameraBuilder.CreateCamera(initialPosition: Location.Origin, initialViewDirection: Direction.Forward);
 
-// Keep rendering at 60Hz until the user closes the window
+using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
-while (!loop.Input.UserQuitRequested) {
-	var dt = (float) loop.IterateOnce().TotalSeconds;
+var input = loop.Input;
+var kbm = input.KeyboardAndMouse;
 
-	// If we're holding space down, rotate the cube
-	if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Space)) {
-		camera.RotateBy(new Rotation(angle: 90f, axis: Direction.Down) * dt);
-		camera.Position = instance.Position - camera.ViewDirection * 2f;
-		light.Position = camera.Position + (Direction.Up * MathF.Sin(3f * (float) loop.TotalIteratedTime.TotalSeconds));
-		//instance.RotateBy(new Rotation(angle: 90f, axis: Direction.Down) * dt);
-	}
-
+while (!input.UserQuitRequested) {
+	var deltaTime = (float) loop.IterateOnce().TotalSeconds;
+	if (kbm.KeyIsCurrentlyDown(KeyboardOrMouseKey.Space)) cube.RotateBy(90f % Direction.Down * deltaTime);
+	if (kbm.KeyIsCurrentlyDown(KeyboardOrMouseKey.Return)) cube.RotateBy(90f % Direction.Right * deltaTime);
 	renderer.Render();
 }

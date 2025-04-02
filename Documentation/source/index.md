@@ -26,7 +26,7 @@ TinyFFR (*Tiny* *F*ixed *F*unction *R*enderer) is a C# .NET9 library designed to
 
     ---
 
-    TinyFFR is primarily designed for C#/.NET programmers that want to render 3D scenes or objects without needing to integrate a game engine or write against a raw graphics API.
+    TinyFFR is primarily designed for C#/.NET programmers that want to render 3D scenes or objects without needing to integrate a game engine or write against a raw graphics API (it's tiny!).
 
 -   :material-shape-polygon-plus:{ .lg .middle : style="margin-right:0.3em" } __Integrated Asset Loading__
 
@@ -46,11 +46,11 @@ TinyFFR (*Tiny* *F*ixed *F*unction *R*enderer) is a C# .NET9 library designed to
 
     TinyFFR provides ways to quickly organise and build 3D scenes (including lights, objects, and backdrops) all with a few lines of code. The library does not require writing shader code or even understanding modern material models. 
 
--   :material-vector-polygon:{ .lg .middle : style="margin-right:0.3em" } __No Math Required__
+-   :material-vector-polygon:{ .lg .middle : style="margin-right:0.3em" } __Minimal Math Required__
 
     ---
 
-    TinyFFR comes integrated with an abstracted math API that uses plain-English terminology. No prior knowledge of 3D rendering or linear algebra is required.
+    TinyFFR comes integrated with an abstracted math API that uses plain-English terminology. No prior knowledge of 3D rendering or linear algebra is required. You don't need to know what a quaternion is.
 
 -   :fontawesome-solid-stopwatch-20:{ .lg .middle : style="margin-right:0.3em" } __Zero-GC Design__
 
@@ -64,7 +64,7 @@ TinyFFR (*Tiny* *F*ixed *F*unction *R*enderer) is a C# .NET9 library designed to
 
 __:fontawesome-solid-info: TinyFFR is just a renderer.__
 
-<span class="tffr-affirmative">:octicons-check-16:</span> Consider TinyFFR if you don't need "game engine" features such as physics, audio, and level editing, or you wish to add your own implementations for those functionalities on top of TinyFFR.
+<span class="tffr-affirmative">:octicons-check-16:</span> Consider TinyFFR if you don't need "game engine" features such as physics, audio, or environment editing (or you want to add your own implementations for those on top).
 { : style="margin-left:1em" }
 
 <span class="tffr-negative">:octicons-x-12:</span> TinyFFR may not be for you if you need everything a modern game engine provides and you're not willing or able to add those features another way.
@@ -74,7 +74,7 @@ __:fontawesome-solid-info: TinyFFR is just a renderer.__
 
 __:fontawesome-solid-info: TinyFFR is fixed-function.__
 
-<span class="tffr-affirmative">:octicons-check-16:</span> Consider TinyFFR if you don't want to write shaders and just want to quickly render scenes using a fixed selection of material types for your objects.
+<span class="tffr-affirmative">:octicons-check-16:</span> Consider TinyFFR if you don't want to write shaders or design materials and just want to quickly render scenes using a fixed selection of material types for your objects.
 { : style="margin-left:1em" }
 
 <span class="tffr-negative">:octicons-x-12:</span> TinyFFR may not be for you if you want more flexibility in defining materials and their shading.
@@ -88,7 +88,7 @@ __:fontawesome-solid-info: TinyFFR is currently in very early prerelease.__
 have performance issues and bugs at this early stage. 
 { : style="margin-left:1em" }
 
-<span class="tffr-negative">:octicons-x-12:</span> TinyFFR may not be for you if you need a mature option.
+<span class="tffr-negative">:octicons-x-12:</span> TinyFFR may not be for you if you need a mature option at this point in time, [although the source is available!](https://github.com/Egodystonic/TinyFFR)
 { : style="margin-left:1em" }
 
 ## Where to Start

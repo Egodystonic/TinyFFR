@@ -7,6 +7,7 @@
 #include "filament/ktxreader/Ktx1Reader.h"
 
 #define STBI_FAILURE_USERMSG
+#define STB_IMAGE_IMPLEMENTATION // This should only be defined in one file ever, it imports the entire implementation for stb_image in as a definition file
 #include "stb/stb_imageh.h"
 
 void native_impl_asset_loader::load_asset_file_in_to_memory(const char* filePath, interop_bool fixCommonExporterErrors, interop_bool optimize, MemoryLoadedAssetHandle* outAssetHandle) {

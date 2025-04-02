@@ -26,7 +26,7 @@ icon: material/cogs
 
 </div>
 
-## Basic Customizations
+## Basic Features
 
 <div class="grid cards" markdown>
 
