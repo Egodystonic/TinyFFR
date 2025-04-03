@@ -3,7 +3,7 @@ title: Texture Patterns
 description: Examples of how to use texture patterns to make color, normal, and ORM maps.
 ---
 
-You can use the built-in texture pattern generators to create interesting color maps, normal maps, and ORM maps.
+You can use the built-in texture pattern generators to create interesting color maps, normal maps, and ORM maps for your materials.
 
 ??? example "Continuing "Hello Cube""
 	In the "Hello Cube" example we created a simple color map with a maroon colour:
@@ -293,29 +293,117 @@ The following examples will show you how to create texture patterns:
 	));
 	```
 
-	By the way, the `normalMap` is supplied to `CreateOpaqueMaterial()` alongside your `colorMap`:
+	To use it, the `normalMap` is supplied to `CreateOpaqueMaterial()` alongside your `colorMap`:
 
 	```csharp
-
+	using var material = materialBuilder.CreateOpaqueMaterial(
+		colorMap: colorMap, 
+		normalMap: normalMap
+	);
 	```
 
 === "Circular Indents"
 
 	TODO fill this example out when changing the way normal maps are created
 
-## Line ORM Maps
+## Line & Circle ORM Maps
 
 === "Metallic Strips"
+
+	![Image showing cube with metallic strips](texture_patterns_metallic_strips.png){ style="height:200px;width:200px;border-radius:12px"}
+	/// caption
+	The lines along this surface alternate between metallic and non-metallic strips.
+	///
+
+	In this first example for ORM maps, we will specify just a metallic pattern. Specifically, we will use the `Lines` pattern to create metallic 'bands'/'strips' horizontally across our material surface:
+
+	```csharp
+	var metallicPattern = TexturePattern.Lines<Real>( // (1)!
+		firstValue: 0f, // (2)!
+		secondValue: 1f, // (3)!
+		horizontal: true, // (4)!
+		numRepeats: 5 // (5)!
+	);
+
+	using var ormMap = materialBuilder.CreateOrmMap(metallicPattern: metallicPattern); // (6)!
+
+	using var material = materialBuilder.CreateOpaqueMaterial( // (7)!
+		colorMap: colorMap, 
+		ormMap: ormMap
+	);
+	```
+
+	1. 	We must specify that this is a pattern of `Real` values (which is the type of value used to create metallic, roughness, or occlusion patterns).
+
+		??? abstract "Why Real instead of just float?"
+			`Real` is a TinyFFR type that thinly wraps floating point values with implicit conversions to and from `float`. Its name comes from the mathematical terminology for a [real number](https://en.wikipedia.org/wiki/Real_number) (which is what floating point values represent).
+			
+			`Real` implements our interpolatable interface (`IInterpolatable<>`) which means we can use it in patterns that interpolate (like the [interpolated circle example](#__tabbed_2_2) above).
+
+			Eventually, when C# gets a way to implement interfaces on pre-existing types (i.e. via a 'shapes' or 'extension everything' proposal), we may be able to do away with `Real` entirely.
+
+			You could also rely on type inference instead of specifying the type parameter explicitly if you specify your values (e.g. `firstValue`, `secondValue`, etc.) as `Real` rather than `float`; but the approach shown in the example tends to be cleaner.
+
+	2.	A value of `0f` indicates that the first line in our pattern will be non-metallic.
+	3.	A value of `1f` indicates that the second line in our pattern will be metallic. 
+	
+		Remember, metallic-map values should generally always only consist of 0f and 1f. Interim values are valid and defined behaviour, but are only really useful for special effects and transitions. A material can't really be "half-metallic" in the real world, and in a rendering context it tends to look odd.
+
+	4.	This makes our lines horizontal. If you specify `false` for this parameter, the lines will be vertical instead.
+	5.	This indicates how many times we'd like the pattern to repeat (i.e. how many times we want our `firstValue` and `secondValue` to band across the texture).
+
+		Because we wrote `5`, we will see 10 bands in total (5 of `firstValue`/non-metallic and 5 of `secondValue`/metallic).
+
+	6.	When creating an ORM map there are three optional parameters; one each for occlusion, roughness, and metallicness.
+
+		If you just want to specify a metallic pattern like we're doing here, you can explicitly name the `metallicPattern` argument. The library will fill in sensible defaults for you for the roughness and occlusion.
+
+	7.	Finally we pass our `ormMap` to `CreateOpaqueMaterial()` just like we did with the `colorMap` and `normalMap`. 
+	
+		If you're not passing in a `normalMap` make sure you explicitly name the arguments to the method like we're doing here to make sure you don't accidentally pass your `ormMap` as a `normalMap`.
 
 === "Perturbed Metallic and Roughness"
 
 	![Image showing cube with various metallic and roughness perturbations](texture_patterns_orm_perturbations.png){ style="height:200px;width:200px;border-radius:12px"}
 	/// caption
-	The lines of metallic/non-metallic and roughness overlap. All the lines are perturbed (they're not straight).
+	The larger lines are metallic and non-metallic bands. The thinner lines vary in their roughness value.
+
+	Example is shown on a cube that is slightly rotated to best show off lighting at an oblique angle.
 	///
 
+	In this next example we will:
+	
+	1. Create a *metallic* pattern with curved lines,
+	2. Create a *roughness* pattern with wavy lines,
+	3. Overlay them over each other in to one ORM map.
+
+	??? tip "Reminder: Flat Colouring"
+		For this example, we have specified a simple flat colour map ("maroon"). 
+		
+		All the striations and banding effects shown in this example are just a result of defining differing values for the roughness and metallicness of our material. The underlying colour is all just maroon (dark red).
+
+	Perturbation is an optional parameter to the `Lines` texture pattern that applies a sinusoidal (wave-like) distortion to the lines. There are two parameters to the texture pattern that affect perturbation:
+
+	<span class="def-icon">:material-code-json:</span> `perturbationMagnitude`
+	
+	:	Defines how 'deep' the curves/waves are.
+	
+		A value of `0f` means no perturbation (this is the default). Generally speaking, values between `0f` and `0.5f` will look the best, but any value is permitted. 
+		
+		Higher values can start to simulate other materials like wood grains. 
+		
+		Negative values have all the same properties as positive values but reverse the direction of the waves.
+
+	<span class="def-icon">:material-code-json:</span> `perturbationFrequency`
+	
+	:	Defines how many times the waves/curves will repeat.
+	
+		Any value is permitted. Values above `1f` make wave patterns, values below `1f` simply distort the lines in to a curve shape. 
+	
+		Negative values have all the same properties as positive values but reverse the direction of the curves.
+
 	```csharp
-	var roughnessPattern = TexturePattern.Lines<Real>(
+	var roughnessPattern = TexturePattern.Lines<Real>( // (1)!
 		firstValue: 0f,
 		secondValue: 0.7f,
 		thirdValue: 0.3f,
@@ -330,17 +418,181 @@ The following examples will show you how to create texture patterns:
 		secondValue: 1f,
 		horizontal: true,
 		numRepeats: 1,
-		perturbationMagnitude: 0.3f
+		perturbationMagnitude: 2f,
+		perturbationFrequency: -0.3f
 	);
 
-	using var ormMap = materialBuilder.CreateOrmMap(
+	using var ormMap = materialBuilder.CreateOrmMap( // (2)!
 		roughnessPattern: roughnessPattern, 
 		metallicPattern: metallicPattern
 	);
 	```
 
-## Gradients
+	1. 	This line pattern uses four values to specify four roughness bands (`0f` is perfectly smooth, `1f` is maximally rough).
 
-## Plain Fills
+		`Line` patterns can have up to ten values.
+
+	2.	In this example we're passing in a roughness and metallic map to `CreateOrmMap()`. Make sure you name the arguments to avoid accidentally specifying the wrong type of pattern or map.
+
+=== "Occluded Circular Divots"
+
+	TODO when we change normal patterns, idea is normal'd divots in the surface with some occlusion around the ring interior
+
+## Plain Fills & Gradients
+
+=== "Roughness Gradient over Plain Metal"
+
+	![Cube with metallic surface and varying smoothness](texture_patterns_gradient_roughness.png){ style="height:200px;width:200px;border-radius:12px"}
+	/// caption
+	A single light is shining against this dark-red metal cube.
+
+	The metal is shiniest at the top and rougher at the bottom.
+	///
+
+	The last two types of pattern currently supported are `PlainFill`s and `Gradient`s.
+
+	In this example we will use a `PlainFill` to create a fully metallic surface, and then use a `GradientVertical` to vary the roughness from top-to-bottom:
+
+	```csharp
+	using var ormMap = materialBuilder.CreateOrmMap(
+		roughnessPattern: TexturePattern.GradientVertical<Real>(0f, 1f), // (1)!
+		metallicPattern: TexturePattern.PlainFill<Real>(1f) // (2)!
+	);
+
+	using var material = materialBuilder.CreateOpaqueMaterial(
+		colorMap: colorMap, 
+		ormMap: ormMap
+	);
+	```
+
+	1. This creates a vertical gradient from 0 (smooth) to 1 (rough) for the `roughnessPattern`.
+	2. This sets a plain fill of 1 (metal) for the whole `metallicPattern`.
+
+=== "Rainbow Square"
+
+	![Cube with rainbow gradient](texture_patterns_rainbow.png){ style="height:200px;width:200px;border-radius:12px"}
+	/// caption
+	Rainbow color map created with a gradient texture pattern.
+	///
+	
+	This example shows how to use the `Gradient()` pattern to create a rainbow color map. We're adjusting the hue angle for each colour by 45 degrees as we go around the 'circle' of the gradient:
+
+	```csharp
+	using var colorMap = materialBuilder.CreateColorMap(
+		TexturePattern.Gradient(
+			right:			ColorVect.FromHueSaturationLightness(0f, 1f, 0.5f),
+			topRight:		ColorVect.FromHueSaturationLightness(45f, 1f, 0.5f),
+			top:			ColorVect.FromHueSaturationLightness(90f, 1f, 0.5f),
+			topLeft:		ColorVect.FromHueSaturationLightness(135f, 1f, 0.5f),
+			left:			ColorVect.FromHueSaturationLightness(180f, 1f, 0.5f),
+			bottomLeft:		ColorVect.FromHueSaturationLightness(225f, 1f, 0.5f),
+			bottom:			ColorVect.FromHueSaturationLightness(270f, 1f, 0.5f),
+			bottomRight:	ColorVect.FromHueSaturationLightness(315f, 1f, 0.5f),
+			centre:			ColorVect.White
+		)
+	);
+	using var material = materialBuilder.CreateOpaqueMaterial(colorMap);
+	```
+
+??? info "Gradient and Plain Fill Pattern Types"
+	<span class="def-icon">:material-code-block-parentheses:</span> `PlainFill()`
+
+	:   The plain fill pattern does as its name implies. It takes a single argument that is the value for the full color, normal, occlusion, roughness, or metallic map.
+
+		In the first example we're using it to create a metallic map that makes our material fully metallic all over.
+
+	<span class="def-icon">:material-code-block-parentheses:</span> `GradientVertical()`
+
+	:   This pattern interpolates between a `top` and `bottom` value and produces a vertical gradient.
+	
+		It can also take an optional `centre` value if you wish for a skewed/non-linear gradient.
+
+	<span class="def-icon">:material-code-block-parentheses:</span> `GradientHorizontal()`
+
+	:   This pattern interpolates between a `left` and `right` value and produces a horizontal gradient.
+	
+		It can also take an optional `centre` value if you wish for a skewed/non-linear gradient.
+
+	<span class="def-icon">:material-code-block-parentheses:</span> `GradientRadial()`
+
+	:   This pattern interpolates between an `inner` and `outer` gradient and produces a radial (circular) gradient.
+	
+		You can also specify whether to `fringeCorners`, i.e. whether the corners of the resultant map texture should go a little past the `outer` value. If `true` the corners of the map will 'fringe' past `outer`. If `false` the corners will be clamped to the `outer` value.
+
+	<span class="def-icon">:material-code-block-parentheses:</span> `Gradient()`
+
+	:   Finally, this more general purpose gradient pattern lets you specify a value at nine different points (the four corners, the four sides, and the centre).
+	
+		The pattern will interpolate between all nine values across the map texture.
+
+
 
 ## Transforms
+
+Finally, every texture pattern (except `PlainFill`) takes a `Transform2D` parameter named `transform` that can be used to apply a rescaling, rotation, or shifting/movement(1) to the final texture pattern.
+
+* A `scaling` will take the pattern and shrink or expand it.
+* A `rotation` will take the pattern and rotate it.
+* A `translation` will take the pattern and shift/move it.
+* You can supply any one of these "transformations", or all three, or anything in between(1).
+ { .annotate }
+
+	1. When supplying more than one type of transformation, they will always applied in a specific order:
+
+		1. Scaling first,
+		2. Then rotation,
+		3. Then translation.
+
+The three examples below show each transform (scaling, rotation, translation) being applied separately to this color map:
+
+![Example color map](texture_pattern_transform_none.png){ style="height:200px;width:200px;border-radius:12px"}
+/// caption
+This color map has a transform of `None` applied, i.e. no transformation is made
+///
+
+```csharp
+using var colorMap = materialBuilder.CreateColorMap(
+	TexturePattern.ChequerboardBordered<ColorVect>(
+		borderValue: StandardColor.Black,
+		firstValue: StandardColor.Red,
+		secondValue: StandardColor.Green,
+		thirdValue: StandardColor.Blue,
+		fourthValue: StandardColor.Purple,
+		borderWidth: 8,
+		transform: Transform2D.None // (1)!
+	)
+);
+```
+
+1. 	Only this line will change in the following three examples.
+
+	(Supplying `Transform.None` to the `transform` argument is the same as supplying no argument at all.)
+
+The only parameter that will change in the three examples below will be the `transform`:
+
+=== "Scaling"
+
+	![Transformation scaling example](texture_pattern_transform_scaling.png){ style="height:200px;width:200px;border-radius:12px"}
+	/// caption
+	Scaling transform applied to the original color map. 
+	///
+
+	In this example we apply a scaling transformation of 50% in the horizontal direction and 200% in the vertical direction. 
+	
+	Note that, somewhat counterintuitively, this gives us twice as many columns and only half as many rows. This is because we have squished the pattern horizontally and stretched it vertically.
+
+	```csharp
+	using var colorMap = materialBuilder.CreateColorMap(
+		TexturePattern.ChequerboardBordered<ColorVect>(
+			borderValue: StandardColor.Black,
+			firstValue: StandardColor.Red,
+			secondValue: StandardColor.Green,
+			thirdValue: StandardColor.Blue,
+			fourthValue: StandardColor.Purple,
+			borderWidth: 8,
+			transform: new Transform2D(scaling: (0.5f, 2f)) // (1)!
+		)
+	);
+	```
+
+	1. This transform is now applying a 0.5x scaling in the X (horizontal) direction and a 2.0x scaling in the Y (vertical) direction.

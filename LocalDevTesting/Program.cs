@@ -41,25 +41,17 @@ using var factory = new LocalTinyFfrFactory();
 using var cubeMesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f));
 var materialBuilder = factory.AssetLoader.MaterialBuilder;
 
-using var colorMap = materialBuilder.CreateColorMap(StandardColor.Maroon);
-// using var normalMap = materialBuilder.CreateNormalMap(TexturePattern.Rectangles(
-// 	interiorSize: (64, 64),
-// 	borderSize: (8, 8),
-// 	paddingSize: (32, 32),
-// 	interiorValue: new Direction(0f, 0f, 1f),
-// 	borderRightValue: new Direction(-1f, 0f, 1f),
-// 	borderTopValue: new Direction(0f, 1f, 1f),
-// 	borderLeftValue: new Direction(1f, 0f, 1f),
-// 	borderBottomValue: new Direction(0f, -1f, 1f),
-// 	paddingValue: new Direction(0f, 0f, 1f),
-// 	repetitions: (6, 6)
-// ));
-// using var normalMap = factory.AssetLoader.LoadTexture(
-// 	@"C:\Users\ben\Documents\Egodystonic\EscapeLizards\EscapeLizardsInst\Materials\LevelTexture_BigPavingRoad_n.bmp", 
-// 	new TextureCreationConfig {
-// 		//InvertYGreenChannel = true
-// 	}
-// );
+using var colorMap = materialBuilder.CreateColorMap(
+	TexturePattern.ChequerboardBordered<ColorVect>(
+		borderValue: StandardColor.Black,
+		firstValue: StandardColor.Red,
+		secondValue: StandardColor.Green,
+		thirdValue: StandardColor.Blue,
+		fourthValue: StandardColor.Purple,
+		borderWidth: 8,
+		transform: new Transform2D(scaling: (0.5f, 2f))
+	)
+);
 
 var roughnessPattern = TexturePattern.Lines<Real>(
 	firstValue: 0f,
@@ -69,19 +61,26 @@ var roughnessPattern = TexturePattern.Lines<Real>(
 	horizontal: false,
 	numRepeats: 3,
 	perturbationMagnitude: 0.1f,
-	perturbationFrequency: 2f
+	perturbationFrequency: 2f,
+	transform: Transform2D.FromScalingOnly((1.3f, 0.2f))
 );
 var metallicPattern = TexturePattern.Lines<Real>(
 	firstValue: 0f,
 	secondValue: 1f,
 	horizontal: true,
 	numRepeats: 1,
-	perturbationMagnitude: 0.3f
+	perturbationMagnitude: 2f,
+	perturbationFrequency: -0.3f,
+	transform: Transform2D.FromScalingOnly(0.6f)
 );
 
-using var ormMap = materialBuilder.CreateOrmMap(roughnessPattern: roughnessPattern, metallicPattern: metallicPattern);
+using var ormMap = materialBuilder.CreateOrmMap(
+	roughnessPattern: roughnessPattern,
+	metallicPattern: metallicPattern
+);
 
-using var material = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap, ormMap);
+using var material = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap);
+
 using var cube = factory.ObjectBuilder.CreateModelInstance(cubeMesh, material, initialPosition: (0f, 0f, 2f));
 using var light = factory.LightBuilder.CreatePointLight(Location.Origin);
 using var scene = factory.SceneBuilder.CreateScene();

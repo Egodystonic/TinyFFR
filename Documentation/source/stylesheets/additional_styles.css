@@ -27,6 +27,30 @@
 	--md-footer-bg-color:		#2a2c33;
 }
 
+.def-icon {
+	position:relative;
+	top:1px;
+	color:var(--md-code-fg-color);
+	font-size: .9em;
+}
+
+[data-md-color-scheme="default"] .md-typeset dd {
+	border-left-color: var(--md-code-bg-color);
+  	border-left-style: solid;
+  	padding-left: 1em;
+	margin-left: 0.5em;
+	position: relative;
+	top: -0.3em;
+}
+[data-md-color-scheme="slate"] .md-typeset dd {
+	border-left-color: var(--md-code-bg-color);
+  	border-left-style: solid;
+  	padding-left: 1em;
+	margin-left: 0.5em;
+	position: relative;
+	top: -0.3em;
+}
+
 [data-md-color-scheme="default"] .tffr-affirmative {
 	color: #538153;
 }

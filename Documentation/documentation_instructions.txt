@@ -187,19 +187,29 @@ Definition lists
 
 ////////
 
-`Definition one`
+<span class="def-icon">:material-code-json:</span> `argument`
 
 :   Text
 
-`#!csharp DefinitionTwo()`
+	More  text
+
+<span class="def-icon">:material-code-block-parentheses:</span> `Method()`
 
 :   Text
 
-    Multiple paragraphs like this
+	More  text
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `Property`
+
+:   Text
+
+	More  text
 
 ////////
 
-Nice alternative to tables for defining multiple variants of something.
+Nice alternative to tables for defining fields/methods etc.
+
+Can be nested.
 
 
 

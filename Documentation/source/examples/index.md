@@ -46,4 +46,12 @@ icon: material/cogs
 
     [:octicons-arrow-right-24: Loading Assets](loading_assets.md)
 
+-   __Handling Input__
+
+    ---
+
+    Learn different ways to manage keyboard, mouse, and gamepad interactions.
+
+    [:octicons-arrow-right-24: Handling Input](handling_input.md)
+
 </div>

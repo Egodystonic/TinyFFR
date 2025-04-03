@@ -116,6 +116,7 @@ nav:
     - examples/hello_cube.md
     - examples/texture_patterns.md
     - examples/loading_assets.md
+    - examples/handling_input.md
   - Concepts:
     - concepts/index.md
     - concepts/factory.md
