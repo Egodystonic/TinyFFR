@@ -239,6 +239,13 @@ The following examples will show you how to create texture patterns:
 
 ## Circle or Rectangle Normal Maps
 
+???+ failure "Subject to Change"
+	[The way normal patterns are generated will be changed in v0.3](https://github.com/Egodystonic/TinyFFR/issues/90).
+
+	`TexturePattern`s will still be used, but instead of specifying `Direction`s you will a different custom type that's easier to work with.
+
+	You can still create normal patterns now with `Directions`, but be aware that you will have to change your code eventually.
+
 === "Rectangular Studs"
 
 	![Cube with flat colour map and rectangular 'stud' normals](texture_patterns_normal_studs.png){ style="height:200px;width:200px;border-radius:12px"}
@@ -304,7 +311,8 @@ The following examples will show you how to create texture patterns:
 
 === "Circular Indents"
 
-	TODO fill this example out when changing the way normal maps are created
+	???+ failure "Pending Changes"
+		This example will be written once [the planned changes to normal map patterns](https://github.com/Egodystonic/TinyFFR/issues/90) have been completed.
 
 ## Line & Circle ORM Maps
 
@@ -436,7 +444,8 @@ The following examples will show you how to create texture patterns:
 
 === "Occluded Circular Divots"
 
-	TODO when we change normal patterns, idea is normal'd divots in the surface with some occlusion around the ring interior
+	???+ failure "Pending Changes"
+		This example will be written once [the planned changes to normal map patterns](https://github.com/Egodystonic/TinyFFR/issues/90) have been completed.
 
 ## Plain Fills & Gradients
 
@@ -495,6 +504,8 @@ The following examples will show you how to create texture patterns:
 	```
 
 ??? info "Gradient and Plain Fill Pattern Types"
+	There are multiple variants of `Gradient`/fill patterns available:
+	
 	<span class="def-icon">:material-code-block-parentheses:</span> `PlainFill()`
 
 	:   The plain fill pattern does as its name implies. It takes a single argument that is the value for the full color, normal, occlusion, roughness, or metallic map.
@@ -529,7 +540,7 @@ The following examples will show you how to create texture patterns:
 
 ## Transforms
 
-Finally, every texture pattern (except `PlainFill`) takes a `Transform2D` parameter named `transform` that can be used to apply a rescaling, rotation, or shifting/movement(1) to the final texture pattern.
+Finally, every texture pattern (except `PlainFill`) takes a `Transform2D` parameter named `transform` that can be used to apply a rescaling, rotation, and shifting/movement to the final texture pattern.
 
 * A `scaling` will take the pattern and shrink or expand it.
 * A `rotation` will take the pattern and rotate it.
@@ -537,18 +548,13 @@ Finally, every texture pattern (except `PlainFill`) takes a `Transform2D` parame
 * You can supply any one of these "transformations", or all three, or anything in between(1).
  { .annotate }
 
-	1. When supplying more than one type of transformation, they will always applied in a specific order:
+	1. When supplying more than one type of transformation, they will always be applied in a specific order:
 
 		1. Scaling first,
 		2. Then rotation,
 		3. Then translation.
 
-The three examples below show each transform (scaling, rotation, translation) being applied separately to this color map:
-
-![Example color map](texture_pattern_transform_none.png){ style="height:200px;width:200px;border-radius:12px"}
-/// caption
-This color map has a transform of `None` applied, i.e. no transformation is made
-///
+We will start off with this untransformed color map:
 
 ```csharp
 using var colorMap = materialBuilder.CreateColorMap(
@@ -568,7 +574,12 @@ using var colorMap = materialBuilder.CreateColorMap(
 
 	(Supplying `Transform.None` to the `transform` argument is the same as supplying no argument at all.)
 
-The only parameter that will change in the three examples below will be the `transform`:
+![Example color map](texture_pattern_transform_none.png){ style="height:200px;width:200px;border-radius:12px"}
+/// caption
+This color map has a transform of `None` applied, i.e. no transformation is made.
+
+The  tabs below show the three different transformation types being applied to it:
+///
 
 === "Scaling"
 
@@ -577,10 +588,8 @@ The only parameter that will change in the three examples below will be the `tra
 	Scaling transform applied to the original color map. 
 	///
 
-	In this example we apply a scaling transformation of 50% in the horizontal direction and 200% in the vertical direction. 
+	In this example we apply a scaling transformation of 50% in the horizontal direction and 200% in the vertical direction:
 	
-	Note that, somewhat counterintuitively, this gives us twice as many columns and only half as many rows. This is because we have squished the pattern horizontally and stretched it vertically.
-
 	```csharp
 	using var colorMap = materialBuilder.CreateColorMap(
 		TexturePattern.ChequerboardBordered<ColorVect>(
@@ -595,4 +604,58 @@ The only parameter that will change in the three examples below will be the `tra
 	);
 	```
 
-	1. This transform is now applying a 0.5x scaling in the X (horizontal) direction and a 2.0x scaling in the Y (vertical) direction.
+	1. This transform is specifying a 0.5x scaling in the X (horizontal) direction and a 2.0x scaling in the Y (vertical) direction.
+
+	??? question "Why does scaling down the horizontal size *increase* the number of columns etc.?"
+		This may or may not confuse you depending on your perception of the scaled image, but if it *does* confuse you, here's the explanation:
+		
+		Somewhat counterintuitively, *decreasing* the horizontal (X-axis) scaling of the pattern to 50% has __doubled__ the number of columns we see. Similarly, *increasing* the vertical (Y-axis) scaling to 200% has __halved__ the number of rows.
+
+		Nonetheless, this is correct. Here's the explanation of what a scaling transform is doing: 
+		
+		* Imagine a scaling factor less than `1.0f` as like a vice grip 'squashing' the image. In this example we've 'squashed' the pattern along its X-axis to half its original width. The squashed pattern then simply repeats over and over left-to-right.
+		* Imagine a scaling factor greater than `1.0f` like a pinch-and-zoom-in effect on the image. In this example we've 'expanded' the pattern along its Y-axis to double its original height. The bottom half of the expanded pattern is then lost past the bottom of our image.
+
+		Another way to think of it is simply consider the size of each original square in the original, unscaled chequerboard pattern. Now look at what's happened to the size of each square post-scaling: Each square has become 50% as wide but 200% as tall.
+
+	???+ note "Negative scaling factors"
+		You can also flip the outcome (i.e. mirror the image vertically or horizontally) by supplying a negative scaling factor.
+
+=== "Rotation"
+
+	![Transformation rotation example](texture_pattern_transform_rotation.png){ style="height:200px;width:200px;border-radius:12px"}
+	/// caption
+	Rotation transform applied to the original color map. 
+	///
+
+	In this example we apply an anticlockwise rotation transform of 10°:
+	
+	```csharp
+	using var colorMap = materialBuilder.CreateColorMap(
+		TexturePattern.ChequerboardBordered<ColorVect>(
+			borderValue: StandardColor.Black,
+			firstValue: StandardColor.Red,
+			secondValue: StandardColor.Green,
+			thirdValue: StandardColor.Blue,
+			fourthValue: StandardColor.Purple,
+			borderWidth: 8,
+			transform: new Transform2D(rotation: 10f) // (1)!
+		)
+	);
+	```
+
+	1. This transform is specifying a 10 degree rotation in the anticlockwise direction.
+
+	???+ note "Clockwise Rotations"
+		You can rotate clockwise by supplying a negative value for `rotation` in your `transform`.
+
+		The reason positive values result in an anticlockwise rotation in TinyFFR is just a [convention](/concepts/conventions.md), although it's worth noting this is ultimately just trying to conform to a [general convention in trigonometry](https://math.stackexchange.com/questions/1749279/why-are-the-trig-functions-defined-by-the-counterclockwise-path-of-a-circle).
+
+=== "Translation"
+
+	???+ failure "Pending Changes"
+		This example will be written once [the planned changes to texture pattern translations](https://github.com/Egodystonic/TinyFFR/issues/94) have been completed.
+
+
+
+		

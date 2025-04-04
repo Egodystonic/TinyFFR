@@ -49,7 +49,7 @@ using var colorMap = materialBuilder.CreateColorMap(
 		thirdValue: StandardColor.Blue,
 		fourthValue: StandardColor.Purple,
 		borderWidth: 8,
-		transform: new Transform2D(scaling: (0.5f, 2f))
+		transform: new Transform2D(translation: (100f, 10f))
 	)
 );
 
