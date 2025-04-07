@@ -187,7 +187,7 @@ assLoad.ReadMesh(@"Path\To\mesh.gltf", vertexBuffer.Span, triangleBuffer.Span); 
 // Do stuff with vertexBuffer and triangleBuffer 
 
 // Optional: Create a mesh and load it on to the GPU with the MeshBuilder:
-using var mesh = assLoad.MeshBuilder.CreateMesh(vertexBuffer.Span, triangleBuffer.Span);
+using var mesh = assLoad.MeshBuilder.CreateMesh(vertexBuffer.Span, triangleBuffer.Span, new MeshCreationConfig());
 
 // Don't forget to return the rented buffers
 factory.ResourceAllocator.ReturnPooledMemoryBuffer(triangleBuffer);
