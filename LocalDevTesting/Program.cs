@@ -40,8 +40,25 @@ NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
 using var factory = new LocalTinyFfrFactory();
 var assLoad = factory.AssetLoader;
 
+var textureMetadata = assLoad.ReadTextureMetadata(@"C:\Users\ben\Documents\Temp\treasure_chest\textures\treasure_chest_diff_4k.jpg");
+var texelBuffer = factory.ResourceAllocator
+	.CreatePooledMemoryBuffer<TexelRgb24>(textureMetadata.Width * textureMetadata.Height);
+
+assLoad.ReadTexture(@"C:\Users\ben\Documents\Temp\treasure_chest\textures\treasure_chest_diff_4k.jpg", texelBuffer.Span);
+
+// Do stuff with texelBuffer here
+
+// Optional: Load the texture on to the GPU with the material builder
+using var colorMap = assLoad.MaterialBuilder.CreateTexture(
+	texelBuffer.Span, 
+	new TextureGenerationConfig { Height = textureMetadata.Height, Width = textureMetadata.Width}, 
+	new TextureCreationConfig()
+);
+
+factory.ResourceAllocator.ReturnPooledMemoryBuffer(texelBuffer);
+
 using var mesh = assLoad.LoadMesh(@"C:\Users\ben\Documents\Temp\treasure_chest\treasure_chest_4k.gltf");
-using var colorMap = assLoad.LoadTexture(@"C:\Users\ben\Documents\Temp\treasure_chest\textures\treasure_chest_diff_4k.jpg");
+//using var colorMap = assLoad.LoadTexture(@"C:\Users\ben\Documents\Temp\treasure_chest\textures\treasure_chest_diff_4k.jpg");
 using var normalMap = assLoad.LoadTexture(@"C:\Users\ben\Documents\Temp\treasure_chest\textures\treasure_chest_nor_gl_4k.jpg");
 using var ormMap = assLoad.LoadTexture(@"C:\Users\ben\Documents\Temp\treasure_chest\textures\treasure_chest_arm_4k.jpg");
 using var material = assLoad.MaterialBuilder.CreateOpaqueMaterial(colorMap, normalMap, ormMap);

@@ -162,13 +162,40 @@ using var mesh = factory.AssetLoader.LoadMesh(
 
 		If you want to non-uniformly rescale *model instances* after importing the *mesh*, that is fine and can be done later. This parameter is instead concerned with applying a universal rescale to the imported polygon data.
 
-5.	`OriginTranslation` can be used to move the local-origin point of the mesh (by default that is the point `(0, 0, 0)` in the mesh data).
+5.	`OriginTranslation` can be used to move the local-origin point of the mesh (by default that is the point `(0, 0, 0)` in the mesh data). Often you will want the origin point of a mesh to be its centre (technically ["centroid"](https://en.wikipedia.org/wiki/Centroid)) or somewhere at its base.
 
-	When rotating and scaling model instances, the underlying mesh's origin point will be used as the default point around which that model will be transformed. For example, pick up anything around you right now and imagine rotating it in 3D space: You must select a point in or around that object to rotate it *around* (even if that's simply the centre of that object).
+	When placing a model instance in a scene, the mesh's origin point indicates the exact point on that mesh that be positioned at the requested spot in the scene/world.
+	
+	When rotating and scaling model instances, the underlying mesh's origin point will also be used as the default point around which that model will be transformed. For example, pick up anything around you right now and imagine rotating it in 3D space: You must select a point in or around that object to rotate it *around* (even if that's simply the centre of that object).
 
-	Most of the time you will want that origin point of a mesh to be its centre (technically ["centroid"](https://en.wikipedia.org/wiki/Centroid)), but not always. Additionally the modelling program used to create the mesh may not have set its centroid as its origin point and you may wish to offset it here.
+	A value of `Vect.Zero` (e.g. `(0f, 0f, 0f)`) makes no adjustment to the mesh's origin point. Otherwise, the specified value moves the origin point in the mesh by the given amount, e.g. `(1f, 2f, 3f)` moves the origin point by 1 in the X direction, 2 in the Y direction, and 3 in the Z direction.
 
-	A value of `Vect.Zero` (e.g. `(0f, 0f, 0f)`) makes no adjustment to the mesh's origin point. Otherwise, the specified value moves the origin point by the given amount, e.g. `(1f, 2f, 3f)` moves the origin point by 1 in the X direction, 2 in the Y direction, and 3 in the Z direction.
+### Reading Mesh Data
+
+You can also read mesh data in to C# rather than loading it directly on to the GPU:
+
+```csharp
+var assLoad = factory.AssetLoader;
+
+var meshMetadata = assLoad.ReadMeshMetadata(@"Path\To\mesh.gltf"); // (1)!
+var vertexBuffer = factory.ResourceAllocator
+	.CreatePooledMemoryBuffer<MeshVertex>(meshMetadata.VertexCount);
+var triangleBuffer = factory.ResourceAllocator
+	.CreatePooledMemoryBuffer<VertexTriangle>(meshMetadata.TriangleCount);
+assLoad.ReadMesh(@"Path\To\mesh.gltf", vertexBuffer.Span, triangleBuffer.Span); // (2)!
+
+// Do stuff with vertexBuffer and triangleBuffer 
+
+// Optional: Create a mesh and load it on to the GPU with the MeshBuilder:
+using var mesh = assLoad.MeshBuilder.CreateMesh(vertexBuffer.Span, triangleBuffer.Span);
+
+// Don't forget to return the rented buffers
+factory.ResourceAllocator.ReturnPooledMemoryBuffer(triangleBuffer);
+factory.ResourceAllocator.ReturnPooledMemoryBuffer(vertexBuffer);
+```
+
+1. `ReadMeshMetadata()` will tell you how many vertices and triangles the mesh comprises of. You can then use this data to allocate vertex/triangle buffers.
+2. `ReadMesh()` will read a mesh's vertices and triangles in to preallocated buffers.
 
 ## Texture Loading
 
@@ -298,9 +325,38 @@ Then, we can set that cubemap/HDR as the backdrop to our scene:
 scene.SetBackdrop(hdr, 1f); // (1)!
 ```
 
-1. 	The second parameter here is optional, and sets the intensity of indirect light emitted by the backdrop on to all objects in the scene. `1f` is the default and represents "100%" brightness (an arbitrarily chosen default that tries to work well for most images). `0.5f` represents 50%, `2f` represents 200%, etc.
+1. 	The second parameter here is optional, and sets the intensity of indirect light emitted by the backdrop on to all objects in the scene. `1f` is the default and represents "100%" brightness (an arbitrarily chosen default that tries to work well for most images). `0.5f` represents 50%, `2f` represents 200%, etc. `0f` will disable indirect lighting.
 
 	If you prefer to work with physical units (e.g. Lux) you can use the static method on `Scene` named `LuxToBrightness()` which will allow you to convert a lux value in to a brightness parameter.
+
+### Reading Texture Data
+
+Just like with mesh data, it's possible to read texture data in to C# rather than loading it straight on to the GPU:
+
+```csharp
+var assLoad = factory.AssetLoader;
+
+var textureMetadata = assLoad.ReadTextureMetadata(@"Path\To\tex.jpg"); // (1)!
+var texelBuffer = factory.ResourceAllocator
+	.CreatePooledMemoryBuffer<TexelRgb24>(textureMetadata.Width * textureMetadata.Height);
+
+assLoad.ReadTexture(@"Path\To\tex.jpg", texelBuffer.Span); // (2)!
+
+// Do stuff with texelBuffer here
+
+// Optional: Load the texture on to the GPU with the material builder
+using var colorMap = assLoad.MaterialBuilder.CreateTexture(
+	texelBuffer.Span, 
+	new TextureGenerationConfig { Height = textureMetadata.Height, Width = textureMetadata.Width}, 
+	new TextureCreationConfig()
+);
+
+// Don't forget to return the rented buffer
+factory.ResourceAllocator.ReturnPooledMemoryBuffer(texelBuffer);
+```
+
+1. `ReadTextureMetadata()` will tell you the width and height of the texture in texels. You can then use this data to allocate a texel buffer.
+2. `ReadTexture()` will read a texture's texel data in to a preallocated buffer.
 
 ## Complete Example: "Treasure Chest" + "Belfast Sunset"
 
@@ -325,10 +381,18 @@ In this example code we load the treasure chest and the sky and then automate th
 using var factory = new LocalTinyFfrFactory();
 var assLoad = factory.AssetLoader;
 
-using var mesh = assLoad.LoadMesh(@"treasure_chest_4k.gltf"); // (1)!
-using var colorMap = assLoad.LoadTexture(@"textures\treasure_chest_diff_4k.jpg"); // (2)!
-using var normalMap = assLoad.LoadTexture(@"textures\treasure_chest_nor_gl_4k.jpg"); // (3)!
-using var ormMap = assLoad.LoadTexture(@"textures\treasure_chest_arm_4k.jpg"); // (4)!
+using var mesh = assLoad.LoadMesh(
+	@"treasure_chest_4k.gltf" // (1)!
+); 
+using var colorMap = assLoad.LoadTexture(
+	@"textures\treasure_chest_diff_4k.jpg" // (2)!
+); 
+using var normalMap = assLoad.LoadTexture(
+	@"textures\treasure_chest_nor_gl_4k.jpg" // (3)!
+); 
+using var ormMap = assLoad.LoadTexture(
+	@"textures\treasure_chest_arm_4k.jpg" // (4)!
+); 
 using var material = assLoad.MaterialBuilder.CreateOpaqueMaterial(
 	colorMap,
 	normalMap,
@@ -358,13 +422,18 @@ using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 
-var cameraRotationPerSec = (90f % Direction.Down); // (11)!
+var cameraRotationPerSec = 90f % Direction.Down; // (11)!
 while (!loop.Input.UserQuitRequested) {
 	_ = loop.IterateOnce().TotalSeconds;
 
-	var currentRotation = cameraRotationPerSec * (float) loop.TotalIteratedTime.TotalSeconds; // (12)!
-	camera.Position = Location.Origin + chestToCameraStartVect * currentRotation; // (13)!
-	camera.ViewDirection = (camera.Position >> Location.Origin).Direction; // (14)!
+	var currentRotation = 
+		cameraRotationPerSec * (float) loop.TotalIteratedTime.TotalSeconds; // (12)!
+	
+	camera.Position = 
+		Location.Origin + chestToCameraStartVect * currentRotation; // (13)!
+
+	camera.ViewDirection = 
+		(camera.Position >> Location.Origin).Direction; // (14)!
 
 	renderer.Render();
 }
@@ -376,4 +445,54 @@ while (!loop.Input.UserQuitRequested) {
 
 2.	In this step we load the "diff", or *diffuse* texture as our colour map. A material's *diffuse* (or sometimes *albedo*) map is usually what you'll want to load as its color map.
 
-3.	Here we load the normal map. Make sure 
+3.	Here we load the normal map. Make sure you're using the "GL"/OpenGL format, and not the "DX"/DirectX format.
+
+4.	This is loading the ORM map for the treasure chest. 
+
+	Note that in this model the map is labelled as an "ARM" map, this is the same as an ORM map (__A__ = Ambient Occlusion, __O__ = Occlusion; both refer to the same thing).
+
+5.	We set the initial position of our model instance slightly below the world origin (by 30cm). This is because the chest mesh's origin point is at its base, not at its centroid; so it will appear slightly above the camera without readjusting it downward slightly.
+	
+	We could also alternatively shift its origin point upwards at the point we load the mesh, but generally speaking it makes sense for its origin point to be at its base (because it makes placing it on "floor" surfaces easier).
+
+	(In TinyFFR by default the Y-axis is the up/down axis, and a negative value indicates 'down').
+
+6.	Here we set our loaded HDR image as the scene's backdrop. 
+
+	We also set the indirect lighting brightness of the backdrop to 70%. This is completely an aesthetic choice, but as the cloud scene is a sunset one it can make sense to reduce the indirect lighting brightness a little.
+
+7. 	On this line we're defining how far we want the camera to be from the treasure chest as it orbits it. For this example, we've chosen 1.3 metres.
+
+8. 	Here we're creating a `Vect` that represents the starting displacement from the treasure chest (at the world's origin) to the camera.
+
+	We do this by multiplying `Direction.Backward` by our selected `cameraDistance`.
+
+	We will then rotate this `Vect` over time in our application loop below and use it to continuously reposition our camera in an orbiting motion around the treasure chest.
+
+	For more information on `Vect`s, see: [Math & Geometry](/concepts/math_and_geometry.md).
+
+9.	We set the initial location of the camera to the world's origin *plus* the `chestToCameraStartVect` (i.e. backwards by 1.3m).
+
+	This means the camera starts 1.3m behind the treasure chest (the camera is at `(0, 0, -1.3)`, and the treasure chest is at `(0, -0.3, 0)`).
+
+10.	We set the initial view direction (i.e. the direction the camera is pointing) as `Forward`.
+
+	The camera is positioned 1.3m behind the treasure chest and will be facing forward; therefore it will be looking at the chest.
+
+11. Here we set a rotation/orbit speed for the camera as __90 degrees per second__ around the __Down__ axis.
+
+	For more information about rotations, see: [Math & Geometry](/concepts/math_and_geometry.md).
+
+12. We work out the current rotation around the treasure chest by multiplying the `cameraRotationPerSec` by the number of seconds that have elapsed so far.
+
+	For example, when `TotalSeconds` is `1`, our `currentRotation` will be __90° around Down__. When `TotalSeconds` is `2`, it will be __180° around Down__, and so on.
+
+13. We reposition the camera each frame according to the `currentRotation`. 
+
+	We simply rotate the original `chestToCameraStartVect` by the `currentRotation` and add the resultant `Vect` on to `Location.Origin` to calculate the new camera position.
+
+14. Finally, we turn the camera each frame to make sure it's always facing the treasure chest.
+
+	We work out which way the camera should be facing by taking the `Vect` from its position to the world origin (`camera.Position >> Location.Origin`) and then determining the `Direction` of that `Vect` (`.Direction`).
+
+	Again, if you need more help with the built-in math API, see: [Math & Geometry](/concepts/math_and_geometry.md).

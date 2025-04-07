@@ -161,7 +161,8 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 			}
 		}
 		catch (Exception e) {
-			if (!File.Exists(readConfig.FilePath.ToString())) throw new InvalidOperationException($"File '{readConfig.FilePath}' does not exist.", e);
+			var filePathAsStr = readConfig.FilePath.ToString();
+			if (!File.Exists(filePathAsStr)) throw new InvalidOperationException($"File '{readConfig.FilePath}' does not exist (full path \"{Path.GetFullPath(filePathAsStr)}\").", e);
 			else throw;
 		}
 	}

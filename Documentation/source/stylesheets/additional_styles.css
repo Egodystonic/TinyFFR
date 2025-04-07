@@ -51,6 +51,13 @@
 	top: -0.3em;
 }
 
+[data-md-color-scheme="default"] .md-typeset pre > code {
+	font-size: .8em;
+}
+[data-md-color-scheme="slate"] .md-typeset pre > code {
+	font-size: .8em;
+}
+
 [data-md-color-scheme="default"] .tffr-affirmative {
 	color: #538153;
 }
