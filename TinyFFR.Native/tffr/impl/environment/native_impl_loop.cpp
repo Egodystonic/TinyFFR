@@ -155,13 +155,13 @@ void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* 
 				mouseDeltaY += motionEvent.yrel;
 				break;
 			}
-
+		
 			case SDL_EventType::SDL_CONTROLLERAXISMOTION:{
 				auto axisEvent = event.caxis;
 				append_controller_event(numControllerEventsWritten++, axisEvent.which, RawGameControllerAxisEventStartValue + axisEvent.axis, axisEvent.value);
 				break;
 			}
-
+		
 			case SDL_EventType::SDL_KEYDOWN:
 			case SDL_EventType::SDL_KEYUP: {
 				auto keyEvent = event.key;
@@ -170,8 +170,8 @@ void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* 
 				append_kbm_event(numKbmEventsWritten++, keyVal, keyEvent.type == SDL_EventType::SDL_KEYDOWN);
 				break;
 			}
-
-
+		
+		
 			case SDL_EventType::SDL_MOUSEBUTTONDOWN:
 			case SDL_EventType::SDL_MOUSEBUTTONUP: {
 				auto mouseEvent = event.button;
@@ -181,14 +181,14 @@ void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* 
 				}
 				break;
 			}
-
+		
 			case SDL_EventType::SDL_CONTROLLERBUTTONDOWN:
 			case SDL_EventType::SDL_CONTROLLERBUTTONUP:{
 				auto buttonEvent = event.cbutton;
 				append_controller_event(numControllerEventsWritten++, buttonEvent.which, buttonEvent.button, buttonEvent.type == SDL_EventType::SDL_CONTROLLERBUTTONDOWN ? INT16_MAX : 0);
 				break;
 			}
-
+		
 			case SDL_EventType::SDL_MOUSEWHEEL: {
 				auto wheelEvent = event.wheel;
 				auto keyCode = (NonSdlKeyStartValue + 5) + ((wheelEvent.y * (wheelEvent.direction == SDL_MOUSEWHEEL_FLIPPED ? -1 : 1)) > 0 ? 0 : 1);
@@ -198,7 +198,7 @@ void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* 
 				}
 				break;
 			}
-
+		
 			case SDL_EventType::SDL_CONTROLLERDEVICEADDED: {
 				auto deviceEvent = event.cdevice;
 				auto handle = SDL_GameControllerOpen(deviceEvent.which);
@@ -206,7 +206,7 @@ void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* 
 				push_new_controller(handle);
 				break;
 			}
-
+		
 			case SDL_EventType::SDL_QUIT: {
 				quitRequested = interop_bool_true;
 				break;
