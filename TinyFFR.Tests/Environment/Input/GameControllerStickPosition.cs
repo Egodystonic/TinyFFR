@@ -24,43 +24,58 @@ class GameControllerStickPositionTest {
 
 	[Test]
 	public void ShouldCorrectlyNormalizeOffset() {
-		Assert.AreEqual(0f, new GameControllerStickPosition(0, 0).NormalizedDisplacementHorizontal);
-		Assert.AreEqual(0f, new GameControllerStickPosition(0, 0).NormalizedDisplacementVertical);
+		Assert.AreEqual(0f, new GameControllerStickPosition(0, 0).DisplacementHorizontal);
+		Assert.AreEqual(0f, new GameControllerStickPosition(0, 0).DisplacementVertical);
 
-		Assert.AreEqual(-1f, new GameControllerStickPosition(Int16.MinValue, Int16.MinValue).NormalizedDisplacementHorizontal);
-		Assert.AreEqual(-1f, new GameControllerStickPosition(Int16.MinValue, Int16.MinValue).NormalizedDisplacementVertical);
-		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MaxValue, Int16.MaxValue).NormalizedDisplacementHorizontal);
-		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MaxValue, Int16.MaxValue).NormalizedDisplacementVertical);
+		Assert.AreEqual(-1f, new GameControllerStickPosition(Int16.MinValue, Int16.MinValue).DisplacementHorizontal);
+		Assert.AreEqual(-1f, new GameControllerStickPosition(Int16.MinValue, Int16.MinValue).DisplacementVertical);
+		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MaxValue, Int16.MaxValue).DisplacementHorizontal);
+		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MaxValue, Int16.MaxValue).DisplacementVertical);
 
-		Assert.AreEqual(-0.66f, new GameControllerStickPosition((short) (Int16.MinValue * 0.66f), (short) (Int16.MinValue * 0.66f)).NormalizedDisplacementHorizontal, 0.001f);
-		Assert.AreEqual(-0.66f, new GameControllerStickPosition((short) (Int16.MinValue * 0.66f), (short) (Int16.MinValue * 0.66f)).NormalizedDisplacementVertical, 0.001f);
-		Assert.AreEqual(0.66f, new GameControllerStickPosition((short) (Int16.MaxValue * 0.66f), (short) (Int16.MaxValue * 0.66f)).NormalizedDisplacementHorizontal, 0.001f);
-		Assert.AreEqual(0.66f, new GameControllerStickPosition((short) (Int16.MaxValue * 0.66f), (short) (Int16.MaxValue * 0.66f)).NormalizedDisplacementVertical, 0.001f);
+		Assert.AreEqual(-0.66f, new GameControllerStickPosition((short) (Int16.MinValue * 0.66f), (short) (Int16.MinValue * 0.66f)).DisplacementHorizontal, 0.001f);
+		Assert.AreEqual(-0.66f, new GameControllerStickPosition((short) (Int16.MinValue * 0.66f), (short) (Int16.MinValue * 0.66f)).DisplacementVertical, 0.001f);
+		Assert.AreEqual(0.66f, new GameControllerStickPosition((short) (Int16.MaxValue * 0.66f), (short) (Int16.MaxValue * 0.66f)).DisplacementHorizontal, 0.001f);
+		Assert.AreEqual(0.66f, new GameControllerStickPosition((short) (Int16.MaxValue * 0.66f), (short) (Int16.MaxValue * 0.66f)).DisplacementVertical, 0.001f);
 
-		Assert.AreEqual(-0.33f, new GameControllerStickPosition((short) (Int16.MinValue * 0.33f), (short) (Int16.MinValue * 0.33f)).NormalizedDisplacementHorizontal, 0.001f);
-		Assert.AreEqual(-0.33f, new GameControllerStickPosition((short) (Int16.MinValue * 0.33f), (short) (Int16.MinValue * 0.33f)).NormalizedDisplacementVertical, 0.001f);
-		Assert.AreEqual(0.33f, new GameControllerStickPosition((short) (Int16.MaxValue * 0.33f), (short) (Int16.MaxValue * 0.33f)).NormalizedDisplacementHorizontal, 0.001f);
-		Assert.AreEqual(0.33f, new GameControllerStickPosition((short) (Int16.MaxValue * 0.33f), (short) (Int16.MaxValue * 0.33f)).NormalizedDisplacementVertical, 0.001f);
+		Assert.AreEqual(-0.33f, new GameControllerStickPosition((short) (Int16.MinValue * 0.33f), (short) (Int16.MinValue * 0.33f)).DisplacementHorizontal, 0.001f);
+		Assert.AreEqual(-0.33f, new GameControllerStickPosition((short) (Int16.MinValue * 0.33f), (short) (Int16.MinValue * 0.33f)).DisplacementVertical, 0.001f);
+		Assert.AreEqual(0.33f, new GameControllerStickPosition((short) (Int16.MaxValue * 0.33f), (short) (Int16.MaxValue * 0.33f)).DisplacementHorizontal, 0.001f);
+		Assert.AreEqual(0.33f, new GameControllerStickPosition((short) (Int16.MaxValue * 0.33f), (short) (Int16.MaxValue * 0.33f)).DisplacementVertical, 0.001f);
 	}
 
 	[Test]
 	public void ShouldCorrectlyNormalizeDisplacement() {
-		Assert.AreEqual(0f, new GameControllerStickPosition(0, 0).NormalizedDisplacement);
+		Assert.AreEqual(0f, new GameControllerStickPosition(0, 0).Displacement);
 
-		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MinValue, Int16.MinValue).NormalizedDisplacement);
-		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MinValue, 0).NormalizedDisplacement);
-		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MaxValue, Int16.MaxValue).NormalizedDisplacement);
-		Assert.AreEqual(1f, new GameControllerStickPosition(0, Int16.MaxValue).NormalizedDisplacement);
+		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MinValue, Int16.MinValue).Displacement);
+		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MinValue, 0).Displacement);
+		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MaxValue, Int16.MaxValue).Displacement);
+		Assert.AreEqual(1f, new GameControllerStickPosition(0, Int16.MaxValue).Displacement);
 
-		Assert.AreEqual(MathF.Sqrt(0.66f * 0.66f * 2f), new GameControllerStickPosition((short) (Int16.MinValue * 0.66f), (short) (Int16.MinValue * 0.66f)).NormalizedDisplacement, 0.001f);
-		Assert.AreEqual(MathF.Sqrt(0.66f * 0.66f + 0.33f * 0.33f), new GameControllerStickPosition((short) (Int16.MinValue * 0.66f), (short) (Int16.MinValue * 0.33f)).NormalizedDisplacement, 0.001f);
-		Assert.AreEqual(MathF.Sqrt(0.66f * 0.66f * 2f), new GameControllerStickPosition((short) (Int16.MaxValue * 0.66f), (short) (Int16.MaxValue * 0.66f)).NormalizedDisplacement, 0.001f);
-		Assert.AreEqual(MathF.Sqrt(0.66f * 0.66f + 0.33f * 0.33f), new GameControllerStickPosition((short) (Int16.MaxValue * 0.33f), (short) (Int16.MaxValue * 0.66f)).NormalizedDisplacement, 0.001f);
+		Assert.AreEqual(MathF.Sqrt(0.66f * 0.66f * 2f), new GameControllerStickPosition((short) (Int16.MinValue * 0.66f), (short) (Int16.MinValue * 0.66f)).Displacement, 0.001f);
+		Assert.AreEqual(MathF.Sqrt(0.66f * 0.66f + 0.33f * 0.33f), new GameControllerStickPosition((short) (Int16.MinValue * 0.66f), (short) (Int16.MinValue * 0.33f)).Displacement, 0.001f);
+		Assert.AreEqual(MathF.Sqrt(0.66f * 0.66f * 2f), new GameControllerStickPosition((short) (Int16.MaxValue * 0.66f), (short) (Int16.MaxValue * 0.66f)).Displacement, 0.001f);
+		Assert.AreEqual(MathF.Sqrt(0.66f * 0.66f + 0.33f * 0.33f), new GameControllerStickPosition((short) (Int16.MaxValue * 0.33f), (short) (Int16.MaxValue * 0.66f)).Displacement, 0.001f);
 
-		Assert.AreEqual(MathF.Sqrt(0.33f * 0.33f * 2f), new GameControllerStickPosition((short) (Int16.MinValue * 0.33f), (short) (Int16.MinValue * 0.33f)).NormalizedDisplacement, 0.001f);
-		Assert.AreEqual(MathF.Sqrt(0.33f * 0.33f * 2f), new GameControllerStickPosition((short) (Int16.MinValue * 0.33f), (short) (Int16.MinValue * -0.33f)).NormalizedDisplacement, 0.001f);
-		Assert.AreEqual(MathF.Sqrt(0.33f * 0.33f * 2f), new GameControllerStickPosition((short) (Int16.MaxValue * 0.33f), (short) (Int16.MaxValue * 0.33f)).NormalizedDisplacement, 0.001f);
-		Assert.AreEqual(MathF.Sqrt(0.33f * 0.33f * 2f), new GameControllerStickPosition((short) (Int16.MaxValue * -0.33f), (short) (Int16.MaxValue * 0.33f)).NormalizedDisplacement, 0.001f);
+		Assert.AreEqual(MathF.Sqrt(0.33f * 0.33f * 2f), new GameControllerStickPosition((short) (Int16.MinValue * 0.33f), (short) (Int16.MinValue * 0.33f)).Displacement, 0.001f);
+		Assert.AreEqual(MathF.Sqrt(0.33f * 0.33f * 2f), new GameControllerStickPosition((short) (Int16.MinValue * 0.33f), (short) (Int16.MinValue * -0.33f)).Displacement, 0.001f);
+		Assert.AreEqual(MathF.Sqrt(0.33f * 0.33f * 2f), new GameControllerStickPosition((short) (Int16.MaxValue * 0.33f), (short) (Int16.MaxValue * 0.33f)).Displacement, 0.001f);
+		Assert.AreEqual(MathF.Sqrt(0.33f * 0.33f * 2f), new GameControllerStickPosition((short) (Int16.MaxValue * -0.33f), (short) (Int16.MaxValue * 0.33f)).Displacement, 0.001f);
+	}
+
+	[Test]
+	public void ShouldCorrectlyIncorporateDeadzoneInToNormalizedDisplacement() {
+		Assert.AreEqual(0f, new GameControllerStickPosition((short) AnalogDisplacementLevel.Slight, (short) AnalogDisplacementLevel.Slight).DisplacementHorizontalWithDeadzone);
+		Assert.AreEqual(0f, new GameControllerStickPosition((short) AnalogDisplacementLevel.Slight, (short) AnalogDisplacementLevel.Slight).DisplacementVerticalWithDeadzone);
+		Assert.AreEqual(0f, new GameControllerStickPosition((short) AnalogDisplacementLevel.Slight, (short) AnalogDisplacementLevel.Slight).DisplacementWithDeadzone);
+
+		Assert.AreNotEqual(0f, new GameControllerStickPosition((short) AnalogDisplacementLevel.Slight + 1, (short) AnalogDisplacementLevel.Slight + 1).DisplacementHorizontalWithDeadzone);
+		Assert.AreNotEqual(0f, new GameControllerStickPosition((short) AnalogDisplacementLevel.Slight + 1, (short) AnalogDisplacementLevel.Slight + 1).DisplacementVerticalWithDeadzone);
+		Assert.AreNotEqual(0f, new GameControllerStickPosition((short) AnalogDisplacementLevel.Slight + 1, (short) AnalogDisplacementLevel.Slight + 1).DisplacementWithDeadzone);
+
+		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MaxValue, Int16.MaxValue).DisplacementHorizontalWithDeadzone);
+		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MaxValue, Int16.MaxValue).DisplacementVerticalWithDeadzone);
+		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MaxValue, Int16.MaxValue).DisplacementWithDeadzone);
 	}
 
 	[Test]
@@ -86,11 +101,11 @@ class GameControllerStickPositionTest {
 	public void ShouldCorrectlyConvertToXYPair() {
 		foreach (var directional in GetProportionalDirectionals(1f).Values) {
 			var actual = directional.AsXYPair(0.5f);
-			Assert.AreEqual(new XYPair<float>(directional.NormalizedDisplacementHorizontal, directional.NormalizedDisplacementVertical), actual);
+			Assert.AreEqual(new XYPair<float>(directional.DisplacementHorizontal, directional.DisplacementVertical), actual);
 		}
 		foreach (var directional in GetProportionalDirectionals(0.6f).Values) {
 			var actual = directional.AsXYPair(0.5f);
-			Assert.AreEqual(new XYPair<float>(directional.NormalizedDisplacementHorizontal, directional.NormalizedDisplacementVertical), actual);
+			Assert.AreEqual(new XYPair<float>(directional.DisplacementHorizontal, directional.DisplacementVertical), actual);
 		}
 		foreach (var directional in GetProportionalDirectionals(0.4f).Values) {
 			var actual = directional.AsXYPair(0.5f);
@@ -152,8 +167,8 @@ class GameControllerStickPositionTest {
 	public void ShouldCorrectlyDetermineDeadzoneCondition() {
 		foreach (var kvp in GetProportionalDirectionals(1f)) {
 			Assert.AreEqual(kvp.Key != Orientation2D.None, kvp.Value.IsOutsideDeadzone(0.5f));
-			Assert.AreEqual(MathF.Abs(kvp.Value.NormalizedDisplacementHorizontal) > 0.5f, kvp.Value.IsHorizontalOffsetOutsideDeadzone(0.5f));
-			Assert.AreEqual(MathF.Abs(kvp.Value.NormalizedDisplacementVertical) > 0.5f, kvp.Value.IsVerticalOffsetOutsideDeadzone(0.5f));
+			Assert.AreEqual(MathF.Abs(kvp.Value.DisplacementHorizontal) > 0.5f, kvp.Value.IsHorizontalOffsetOutsideDeadzone(0.5f));
+			Assert.AreEqual(MathF.Abs(kvp.Value.DisplacementVertical) > 0.5f, kvp.Value.IsVerticalOffsetOutsideDeadzone(0.5f));
 		}
 
 		foreach (var kvp in GetProportionalDirectionals(0.4f)) {

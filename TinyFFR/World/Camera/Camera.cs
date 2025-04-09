@@ -113,6 +113,11 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetViewAndUpDirection(Direction newViewDirection, Direction newUpDirection, bool enforceOrthogonality = true) {
+		Implementation.SetViewAndUpDirection(_handle, newViewDirection, newUpDirection, enforceOrthogonality);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Matrix4x4 GetProjectionMatrix() {
 		Implementation.GetProjectionMatrix(_handle, out var result);
 		return result;

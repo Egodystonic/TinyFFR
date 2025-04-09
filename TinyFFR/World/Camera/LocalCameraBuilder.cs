@@ -93,6 +93,20 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 		UpdateModelMatrixFromParameters(handle);
 	}
 
+	public void SetViewAndUpDirection(ResourceHandle<Camera> handle, Direction newViewDirection, Direction newUpDirection, bool enforceOrthogonality) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (newViewDirection == Direction.None) throw new ArgumentException($"View direction can not be '{nameof(Direction.None)}'.", nameof(newViewDirection));
+		if (newUpDirection == Direction.None) throw new ArgumentException($"Up direction can not be '{nameof(Direction.None)}'.", nameof(newUpDirection));
+
+		if (enforceOrthogonality) newUpDirection = GetReorthogonalizedUpOrViewDirection(newUpDirection, newViewDirection);
+
+		_activeCameras[handle] = _activeCameras[handle] with {
+			ViewDirection = newViewDirection,
+			UpDirection = newUpDirection
+		};
+		UpdateModelMatrixFromParameters(handle);
+	}
+
 	public Angle GetVerticalFieldOfView(ResourceHandle<Camera> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return Angle.FromRadians(_activeCameras[handle].VerticalFovRadians);

@@ -65,67 +65,119 @@ using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 
-GC.RegisterForFullGCNotification(10, 10);
-
-Task.Run(() => {
-	while (true) {
-		var status = GC.WaitForFullGCApproach();
-		if (status == GCNotificationStatus.Succeeded) {
-			Console.WriteLine("GC is about to happen");
-		}
-
-		status = GC.WaitForFullGCComplete();
-		if (status == GCNotificationStatus.Succeeded) {
-			Console.WriteLine("GC completed");
-		}
-	}
-});
-
 window.LockCursor = true;
+
 while (!loop.Input.UserQuitRequested) {
 	var sw = Stopwatch.StartNew();
 	var deltaTime = (float) loop.IterateOnce().TotalSeconds;
 
-	HandleInputForCamera(loop.Input, camera, deltaTime);
+	CameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, camera, deltaTime);
+	CameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, camera, deltaTime);
 
 	renderer.Render();
 	if (sw.ElapsedMilliseconds > 20) Console.WriteLine("EM: " + sw.ElapsedMilliseconds + "; " + "Dt: " + deltaTime);
 }
 
-static void HandleInputForCamera(ILatestInputRetriever input, Camera camera, float deltaTime) {
+static class CameraInputHandler {
 	const float CameraMovementSpeed = 1f;
-	const float MouseSensitivity = 5f;
-	var kbm = input.KeyboardAndMouse;
+	static Angle _currentHorizontalAngle = Angle.Zero;
+	static Angle _currentVerticalAngle = Angle.Zero;
+	static Direction _currentHorizontalPlaneDir = Direction.Forward;
 
-	// === Adjust camera look ===
-	var cameraOrthoAxis = Direction.FromDualOrthogonalization(camera.ViewDirection, Direction.Down);
-	var mouseDelta = kbm.MouseCursorDelta;
-	var mouseSensDeltaTime = MouseSensitivity * deltaTime;
-	var cameraRotation = (Direction.Down % (mouseSensDeltaTime * mouseDelta.X)).CombinedAndNormalizedWith(cameraOrthoAxis % (mouseSensDeltaTime * mouseDelta.Y));
-	camera.RotateBy(cameraRotation);
-	camera.UpDirection = Direction.Up;
-
-	// === Adjust camera position ===
-	var cameraMovementModifiers = XYPair<float>.Zero;
-	foreach (var currentKey in kbm.CurrentlyPressedKeys) {
-		switch (currentKey) {
-			case KeyboardOrMouseKey.ArrowLeft:
-				cameraMovementModifiers += (1f, 0f);
-				break;
-			case KeyboardOrMouseKey.ArrowRight:
-				cameraMovementModifiers += (-1f, 0f);
-				break;
-			case KeyboardOrMouseKey.ArrowUp:
-				cameraMovementModifiers += (0f, 1f);
-				break;
-			case KeyboardOrMouseKey.ArrowDown:
-				cameraMovementModifiers += (0f, -1f);
-				break;
-		}
+	public static void TickKbm(ILatestKeyboardAndMouseInputRetriever input, Camera camera, float deltaTime) {
+		AdjustCameraViewDirection(input, camera, deltaTime);
+		AdjustCameraPosition(input, camera, deltaTime);
 	}
 
-	var positiveYDir = camera.ViewDirection;
-	var positiveXDir = Direction.FromDualOrthogonalization(camera.UpDirection, positiveYDir);
-	var cameraMovementVect = ((positiveXDir * cameraMovementModifiers.X) + (positiveYDir * cameraMovementModifiers.Y)).WithLength(CameraMovementSpeed * deltaTime);
-	camera.MoveBy(cameraMovementVect);
+	static void AdjustCameraViewDirection(ILatestKeyboardAndMouseInputRetriever input, Camera camera, float deltaTime) {
+		const float MouseSensitivity = 3f;
+
+		var cursorDelta = input.MouseCursorDelta.Cast<float>() * MouseSensitivity * deltaTime;
+		_currentHorizontalAngle += cursorDelta.X;
+		_currentVerticalAngle += cursorDelta.Y;
+
+		_currentHorizontalAngle = _currentHorizontalAngle.Normalized;
+		_currentVerticalAngle = _currentVerticalAngle.Clamp(-Angle.QuarterCircle, Angle.QuarterCircle);
+
+		_currentHorizontalPlaneDir = Direction.Forward * (_currentHorizontalAngle % Direction.Down);
+		var verticalTiltRot = _currentVerticalAngle % Direction.FromDualOrthogonalization(Direction.Up, _currentHorizontalPlaneDir);
+
+		camera.SetViewAndUpDirection(_currentHorizontalPlaneDir * verticalTiltRot, Direction.Up * verticalTiltRot);
+	}
+
+	static void AdjustCameraPosition(ILatestKeyboardAndMouseInputRetriever input, Camera camera, float deltaTime) {
+		var positiveHorizontalYDir = camera.ViewDirection;
+		var positiveHorizontalXDir = Direction.FromDualOrthogonalization(Direction.Up, _currentHorizontalPlaneDir);
+
+		var horizontalMovement = XYPair<float>.Zero;
+		var verticalMovement = 0f;
+		foreach (var currentKey in input.CurrentlyPressedKeys) {
+			switch (currentKey) {
+				case KeyboardOrMouseKey.ArrowLeft:
+					horizontalMovement += (1f, 0f);
+					break;
+				case KeyboardOrMouseKey.ArrowRight:
+					horizontalMovement += (-1f, 0f);
+					break;
+				case KeyboardOrMouseKey.ArrowUp:
+					horizontalMovement += (0f, 1f);
+					break;
+				case KeyboardOrMouseKey.ArrowDown:
+					horizontalMovement += (0f, -1f);
+					break;
+				case KeyboardOrMouseKey.RightControl:
+					verticalMovement -= 1f;
+					break;
+				case KeyboardOrMouseKey.RightShift:
+					verticalMovement += 1f;
+					break;
+			}
+		}
+
+		var horizontalMovementVect = (positiveHorizontalXDir * horizontalMovement.X) + (positiveHorizontalYDir * horizontalMovement.Y);
+		var verticalMovementVect = Direction.Up * verticalMovement;
+		var sumMovementVect = (horizontalMovementVect + verticalMovementVect).WithLength(CameraMovementSpeed * deltaTime);
+		camera.MoveBy(sumMovementVect);
+	}
+
+	public static void TickGamepad(ILatestGameControllerInputStateRetriever input, Camera camera, float deltaTime) {
+		AdjustCameraViewDirection(input, camera, deltaTime);
+		AdjustCameraPosition(input, camera, deltaTime);
+	}
+
+	static void AdjustCameraViewDirection(ILatestGameControllerInputStateRetriever input, Camera camera, float deltaTime) {
+		const float StickSensitivity = 100f;
+
+		var horizontalRotationStrength = input.RightStickPosition.DisplacementHorizontalWithDeadzone;
+		var verticalRotationStrength = input.RightStickPosition.DisplacementVerticalWithDeadzone;
+
+		_currentHorizontalAngle += StickSensitivity * horizontalRotationStrength * deltaTime;
+		_currentHorizontalAngle = _currentHorizontalAngle.Normalized;
+
+		_currentVerticalAngle -= StickSensitivity * verticalRotationStrength * deltaTime;
+		_currentVerticalAngle = _currentVerticalAngle.Clamp(-Angle.QuarterCircle, Angle.QuarterCircle);
+
+		_currentHorizontalPlaneDir = Direction.Forward * (_currentHorizontalAngle % Direction.Down);
+		var verticalTiltRot = _currentVerticalAngle % Direction.FromDualOrthogonalization(Direction.Up, _currentHorizontalPlaneDir);
+
+		camera.SetViewAndUpDirection(_currentHorizontalPlaneDir * verticalTiltRot, Direction.Up * verticalTiltRot);
+	}
+
+	static void AdjustCameraPosition(ILatestGameControllerInputStateRetriever input, Camera camera, float deltaTime) {
+		var verticalMovementMultiplier = input.RightTriggerPosition.DisplacementWithDeadzone - input.LeftTriggerPosition.DisplacementWithDeadzone;
+		var verticalMovementVect = verticalMovementMultiplier * CameraMovementSpeed * deltaTime * Direction.Up;
+
+		var horizontalMovementVect = Vect.Zero;
+		var stickDisplacement = input.LeftStickPosition.Displacement;
+		var stickAngle = input.LeftStickPosition.GetPolarAngle();
+
+		if (stickAngle is { } horizontalMovementAngle) {
+			var horizontalMovementDir = _currentHorizontalPlaneDir * (Direction.Up % (horizontalMovementAngle - Angle.QuarterCircle));
+			horizontalMovementVect = horizontalMovementDir * stickDisplacement * CameraMovementSpeed * deltaTime;
+		}
+
+
+		var sumMovementVect = horizontalMovementVect + verticalMovementVect;
+		camera.MoveBy(sumMovementVect);
+	}
 }

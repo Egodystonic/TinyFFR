@@ -13,18 +13,24 @@ namespace Egodystonic.TinyFFR.Environment.Input.Local;
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposable {
 	internal const int InitialEventBufferLength = 50;
+	const string CombinedGameControllerName = "<Combined>";
 	static readonly UIntPtr CombinedGameControllerHandle = UIntPtr.Zero;
 	readonly LocalLatestKeyboardAndMouseInputRetriever _kbmState = new();
 	readonly UnmanagedBuffer<RawLocalGameControllerButtonEvent> _controllerEventBuffer = new(InitialEventBufferLength);
 	readonly ArrayPoolBackedVector<ILatestGameControllerInputStateRetriever> _detectedControllerStateVector = new();
 	readonly ArrayPoolBackedMap<UIntPtr, LocalLatestGameControllerState> _detectedControllerStateMap = new();
-	readonly LocalLatestGameControllerState _combinedControllerState = new(CombinedGameControllerHandle);
+	readonly LocalLatestGameControllerState _combinedControllerState;
 	bool _isDisposed = false;
 
 	public bool UserQuitRequested { get; private set; } = false;
 	public ILatestKeyboardAndMouseInputRetriever KeyboardAndMouse => _kbmState;
 	public ReadOnlySpan<ILatestGameControllerInputStateRetriever> GameControllers => _detectedControllerStateVector.AsSpan;
 	public ILatestGameControllerInputStateRetriever GameControllersCombined => _combinedControllerState;
+
+	public LocalLatestInputRetriever() {
+		_combinedControllerState = new(CombinedGameControllerHandle);
+		_combinedControllerState.NameBuffer.ConvertFromUtf16(CombinedGameControllerName);
+	}
 
 	public void Initialize() {
 		DetectControllers();
@@ -103,7 +109,7 @@ sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposab
 		}
 	}
 
-	public override string ToString() => "TinyFFR Native Input State Provider";
+	public override string ToString() => $"TinyFFR Local Input State Provider{(_isDisposed ? " [Disposed]" : "")}";
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "detect_controllers")]

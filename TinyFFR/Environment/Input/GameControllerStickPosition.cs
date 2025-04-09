@@ -6,7 +6,7 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR.Environment.Input;
 
 public readonly struct GameControllerStickPosition : IEquatable<GameControllerStickPosition> {
-	public const float RecommendedDeadzoneSize = ((float) AnalogDisplacementLevel.Slight / Int16.MaxValue) + 0.01f; // Just slightly over the raw trigger level for 'slight'
+	public const float RecommendedDeadzoneSize = ((float) AnalogDisplacementLevel.Slight / Int16.MaxValue) + 1E-5f; // Just slightly over the raw trigger level for 'slight'
 
 	public static readonly GameControllerStickPosition Centered = new(0, 0);
 #pragma warning disable CA1859 // "Read-only dictionary is slower than just Dictionary" -- True, but not a big performance hit and the intent implied by making this readonly is more important
@@ -29,9 +29,9 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 	// This approach treats a positive and negative value the same (i.e. -10000 and +10000 give the same value with the sign flipped),
 	// but essentially means that Int16.MinValue is the same as Int16.MinValue + 1. This is a deliberate choice/tradeoff.
 	// TODO document that positive = right, negative = left
-	public float NormalizedDisplacementHorizontal => Single.Clamp(RawDisplacementHorizontal / (float) Int16.MaxValue, -1f, 1f);
+	public float DisplacementHorizontal => Single.Clamp(RawDisplacementHorizontal / (float) Int16.MaxValue, -1f, 1f);
 	// TODO document that positive = up, negative = down
-	public float NormalizedDisplacementVertical => Single.Clamp(RawDisplacementVertical / (float) Int16.MaxValue, -1f, 1f);
+	public float DisplacementVertical => Single.Clamp(RawDisplacementVertical / (float) Int16.MaxValue, -1f, 1f);
 
 	// TODO document that this is a 0f to 1f scalar that indicates how far from the centre the stick is being pushed.
 	// This calculation is pretty tricky because I've found in practice that pushing a stick to a diagonal doesn't quite give
@@ -39,11 +39,32 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 	// However, it's not (1/sqrt(2) * 32768) in each direction either when pushed to the diagonal, so we're not getting a unit vector.
 	// The best I could find is to take the vector length anyway as I'm doing here but force it to never exceed 1f. This probably means we're
 	// losing some resolution but as controllers vary anyway it might not be possible to have a one-size-fits-all approach? Not sure.
-	public float NormalizedDisplacement => Single.Min(MathF.Sqrt(NormalizedDisplacementHorizontal * NormalizedDisplacementHorizontal + NormalizedDisplacementVertical * NormalizedDisplacementVertical), 1f);
+	static float GetNormalizedDisplacement(float normalizedHorizontal, float normalizedVertical) => Single.Min(MathF.Sqrt(normalizedHorizontal * normalizedHorizontal + normalizedVertical * normalizedVertical), 1f);
+	public float Displacement => GetNormalizedDisplacement(DisplacementHorizontal, DisplacementVertical);
+
+	public float DisplacementHorizontalWithDeadzone {
+		get {
+			var d = DisplacementHorizontal;
+			return MathF.Abs(d) > RecommendedDeadzoneSize ? d : 0f;
+		}
+	}
+	public float DisplacementVerticalWithDeadzone {
+		get {
+			var d = DisplacementVertical;
+			return MathF.Abs(d) > RecommendedDeadzoneSize ? d : 0f;
+		}
+	}
+	public float DisplacementWithDeadzone {
+		get {
+			var h = DisplacementHorizontal;
+			var v = DisplacementVertical;
+			return MathF.Abs(h) > RecommendedDeadzoneSize || MathF.Abs(v) > RecommendedDeadzoneSize ? GetNormalizedDisplacement(h, v) : 0f;
+		}
+	}
 
 	public AnalogDisplacementLevel DisplacementLevel {
 		get {
-			return (int) (Int16.MaxValue * NormalizedDisplacement) switch {
+			return (int) (Int16.MaxValue * Displacement) switch {
 				>= (int) AnalogDisplacementLevel.Full => AnalogDisplacementLevel.Full,
 				>= (int) AnalogDisplacementLevel.Moderate => AnalogDisplacementLevel.Moderate,
 				>= (int) AnalogDisplacementLevel.Slight => AnalogDisplacementLevel.Slight,
@@ -61,8 +82,8 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 
 	public XYPair<float> AsXYPair(float deadzoneSize = RecommendedDeadzoneSize) {
 		if (deadzoneSize is < 0f or > 1f) throw new ArgumentOutOfRangeException(nameof(deadzoneSize), deadzoneSize, $"Deadzone must be between 0 and 1 (inclusive).");
-		var x = NormalizedDisplacementHorizontal;
-		var y = NormalizedDisplacementVertical;
+		var x = DisplacementHorizontal;
+		var y = DisplacementVertical;
 		return new(
 			MathF.Abs(x) <= deadzoneSize ? 0f : x,
 			MathF.Abs(y) <= deadzoneSize ? 0f : y
@@ -75,11 +96,11 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 
 	public bool IsHorizontalOffsetOutsideDeadzone(float deadzoneSize = RecommendedDeadzoneSize) {
 		if (deadzoneSize is < 0f or > 1f) throw new ArgumentOutOfRangeException(nameof(deadzoneSize), deadzoneSize, $"Deadzone must be between 0 and 1 (inclusive).");
-		return MathF.Abs(NormalizedDisplacementHorizontal) > deadzoneSize;
+		return MathF.Abs(DisplacementHorizontal) > deadzoneSize;
 	}
 	public bool IsVerticalOffsetOutsideDeadzone(float deadzoneSize = RecommendedDeadzoneSize) {
 		if (deadzoneSize is < 0f or > 1f) throw new ArgumentOutOfRangeException(nameof(deadzoneSize), deadzoneSize, $"Deadzone must be between 0 and 1 (inclusive).");
-		return MathF.Abs(NormalizedDisplacementVertical) > deadzoneSize;
+		return MathF.Abs(DisplacementVertical) > deadzoneSize;
 	}
 	public bool IsOutsideDeadzone(float deadzoneSize = RecommendedDeadzoneSize) {
 		if (deadzoneSize is < 0f or > 1f) throw new ArgumentOutOfRangeException(nameof(deadzoneSize), deadzoneSize, $"Deadzone must be between 0 and 1 (inclusive).");
@@ -101,8 +122,8 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 		var orientation = GetOrientation();
 		var orString = orientation == Orientation2D.None ? "No orientation" : $"{DisplacementLevel} {orientation}";
 		var angle = GetPolarAngle();
-		var angleString = angle == null ? "Within deadzone" : $"{GetPolarAngle():N0} with {PercentageUtils.ConvertFractionToPercentageString(NormalizedDisplacement, "N0", CultureInfo.CurrentCulture)} displacement";
-		return $"X:{PercentageUtils.ConvertFractionToPercentageString(NormalizedDisplacementHorizontal, "N0", CultureInfo.CurrentCulture)} Y:{PercentageUtils.ConvertFractionToPercentageString(NormalizedDisplacementVertical, "N0", CultureInfo.CurrentCulture)} " +
+		var angleString = angle == null ? "Within deadzone" : $"{GetPolarAngle():N0} with {PercentageUtils.ConvertFractionToPercentageString(Displacement, "N0", CultureInfo.CurrentCulture)} displacement";
+		return $"X:{PercentageUtils.ConvertFractionToPercentageString(DisplacementHorizontal, "N0", CultureInfo.CurrentCulture)} Y:{PercentageUtils.ConvertFractionToPercentageString(DisplacementVertical, "N0", CultureInfo.CurrentCulture)} " +
 			   $"({angleString}, {orString})";
 	}
 

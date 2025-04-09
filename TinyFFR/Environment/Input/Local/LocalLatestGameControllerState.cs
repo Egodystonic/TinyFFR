@@ -27,7 +27,7 @@ sealed class LocalLatestGameControllerState : ILatestGameControllerInputStateRet
 			var minLengthRequired = NameBuffer.GetUtf16Length();
 			if (minLengthRequired > _utf16NameBuffer.Length) _utf16NameBuffer.Resize(minLengthRequired);
 			NameBuffer.ConvertToUtf16(_utf16NameBuffer.AsSpan);
-			return _utf16NameBuffer.AsSpan;
+			return _utf16NameBuffer.AsSpan[..minLengthRequired];
 		}
 	}
 
@@ -152,7 +152,7 @@ sealed class LocalLatestGameControllerState : ILatestGameControllerInputStateRet
 		}
 	}
 
-	public override string ToString() => $"TinyFFR Local Input State Provider [Game Controller '{Name}']{(_isDisposed ? " [Disposed]" : "")}";
+	public override string ToString() => $"TinyFFR Local Input State Provider {(_isDisposed ? "[Game Controller] [Disposed]" : $"[Game Controller '{Name}']")}";
 
 	#region Disposal
 	public void Dispose() {

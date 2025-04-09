@@ -12,7 +12,9 @@ public readonly struct GameControllerTriggerPosition : IEquatable<GameController
 	internal short DisplacementRaw { get; init; }
 
 	// Make sure displacement can never be negative
-	public float NormalizedDisplacement => Int16.Max(DisplacementRaw, 0) / (float) Int16.MaxValue;
+	public float Displacement => Int16.Max(DisplacementRaw, 0) / (float) Int16.MaxValue;
+
+	public float DisplacementWithDeadzone => DisplacementRaw < (int) AnalogDisplacementLevel.Slight ? 0f : Displacement;
 
 	public AnalogDisplacementLevel DisplacementLevel {
 		get {
@@ -28,14 +30,14 @@ public readonly struct GameControllerTriggerPosition : IEquatable<GameController
 	public GameControllerTriggerPosition(short displacementRaw) => DisplacementRaw = displacementRaw;
 
 #pragma warning disable CA1024 // "Use properties" -  Why is this a method and we don't just make DisplacementRaw public? Because
-	//	a) It makes it slightly less discoverable than "NormalizedDisplacement" (which is good, we want people to use that property instead) and
+	//	a) It makes it slightly less discoverable than "Displacement" (which is good, we want people to use that property instead) and
 	//	b) It's also the choice we made for raw values in the stick position struct
 	// TODO explain this is for performance or custom implementations only if necessary
 	public short GetRawDisplacement() => DisplacementRaw;
 #pragma warning restore CA1024
 
 	public override string ToString() {
-		return $"{(DisplacementLevel == AnalogDisplacementLevel.None ? "No" : DisplacementLevel.ToString())} displacement ({PercentageUtils.ConvertFractionToPercentageString(NormalizedDisplacement, "N0", CultureInfo.CurrentCulture)})";
+		return $"{(DisplacementLevel == AnalogDisplacementLevel.None ? "No" : DisplacementLevel.ToString())} displacement ({PercentageUtils.ConvertFractionToPercentageString(Displacement, "N0", CultureInfo.CurrentCulture)})";
 	}
 
 	public bool Equals(GameControllerTriggerPosition other) => DisplacementRaw == other.DisplacementRaw;

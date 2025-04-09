@@ -13,6 +13,7 @@ public interface ICameraImplProvider : IDisposableResourceImplProvider<Camera> {
 	public void SetViewDirection(ResourceHandle<Camera> handle, Direction newDirection);
 	public Direction GetUpDirection(ResourceHandle<Camera> handle);
 	public void SetUpDirection(ResourceHandle<Camera> handle, Direction newDirection);
+	public void SetViewAndUpDirection(ResourceHandle<Camera> handle, Direction newViewDirection, Direction newUpDirection, bool enforceOrthogonality);
 
 	public Angle GetHorizontalFieldOfView(ResourceHandle<Camera> handle);
 	public void SetHorizontalFieldOfView(ResourceHandle<Camera> handle, Angle newFov);

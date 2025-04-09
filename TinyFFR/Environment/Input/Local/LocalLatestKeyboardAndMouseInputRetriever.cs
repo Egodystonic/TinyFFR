@@ -83,7 +83,7 @@ sealed class LocalLatestKeyboardAndMouseInputRetriever : ILatestKeyboardAndMouse
 		return false;
 	}
 
-	public override string ToString() => _isDisposed ? "TinyFFR Native Input State Provider [Keyboard/Mouse] [Disposed]" : "TinyFFR Native Input State Provider [Keyboard/Mouse]";
+	public override string ToString() => _isDisposed ? "TinyFFR Local Input State Provider [Keyboard/Mouse] [Disposed]" : "TinyFFR Local Input State Provider [Keyboard/Mouse]";
 
 	#region Disposal
 	public void Dispose() {
