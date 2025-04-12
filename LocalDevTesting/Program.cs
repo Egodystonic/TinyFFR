@@ -37,7 +37,7 @@ NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
 	}
 );
 
-
+Console.WriteLine(Direction.FromDualOrthogonalization(Direction.Left, Direction.Up));
 using var factory = new LocalTinyFfrFactory();
 var assLoad = factory.AssetLoader;
 
@@ -85,16 +85,21 @@ static class CameraInputHandler {
 	static Direction _currentHorizontalPlaneDir = Direction.Forward;
 
 	public static void TickKbm(ILatestKeyboardAndMouseInputRetriever input, Camera camera, float deltaTime) {
-		AdjustCameraViewDirection(input, camera, deltaTime);
-		AdjustCameraPosition(input, camera, deltaTime);
+		AdjustCameraViewDirectionKbm(input, camera, deltaTime);
+		AdjustCameraPositionKbm(input, camera, deltaTime);
 	}
 
-	static void AdjustCameraViewDirection(ILatestKeyboardAndMouseInputRetriever input, Camera camera, float deltaTime) {
-		const float MouseSensitivity = 3f;
+	public static void TickGamepad(ILatestGameControllerInputStateRetriever input, Camera camera, float deltaTime) {
+		AdjustCameraViewDirectionGamepad(input, camera, deltaTime);
+		AdjustCameraPositionGamepad(input, camera, deltaTime);
+	}
 
-		var cursorDelta = input.MouseCursorDelta.Cast<float>() * MouseSensitivity * deltaTime;
-		_currentHorizontalAngle += cursorDelta.X;
-		_currentVerticalAngle += cursorDelta.Y;
+	static void AdjustCameraViewDirectionKbm(ILatestKeyboardAndMouseInputRetriever input, Camera camera, float deltaTime) {
+		const float MouseSensitivity = 0.05f;
+
+		var cursorDelta = input.MouseCursorDelta;
+		_currentHorizontalAngle += cursorDelta.X * MouseSensitivity;
+		_currentVerticalAngle += cursorDelta.Y * MouseSensitivity;
 
 		_currentHorizontalAngle = _currentHorizontalAngle.Normalized;
 		_currentVerticalAngle = _currentVerticalAngle.Clamp(-Angle.QuarterCircle, Angle.QuarterCircle);
@@ -105,7 +110,7 @@ static class CameraInputHandler {
 		camera.SetViewAndUpDirection(_currentHorizontalPlaneDir * verticalTiltRot, Direction.Up * verticalTiltRot);
 	}
 
-	static void AdjustCameraPosition(ILatestKeyboardAndMouseInputRetriever input, Camera camera, float deltaTime) {
+	static void AdjustCameraPositionKbm(ILatestKeyboardAndMouseInputRetriever input, Camera camera, float deltaTime) {
 		var positiveHorizontalYDir = camera.ViewDirection;
 		var positiveHorizontalXDir = Direction.FromDualOrthogonalization(Direction.Up, _currentHorizontalPlaneDir);
 
@@ -140,12 +145,7 @@ static class CameraInputHandler {
 		camera.MoveBy(sumMovementVect);
 	}
 
-	public static void TickGamepad(ILatestGameControllerInputStateRetriever input, Camera camera, float deltaTime) {
-		AdjustCameraViewDirection(input, camera, deltaTime);
-		AdjustCameraPosition(input, camera, deltaTime);
-	}
-
-	static void AdjustCameraViewDirection(ILatestGameControllerInputStateRetriever input, Camera camera, float deltaTime) {
+	static void AdjustCameraViewDirectionGamepad(ILatestGameControllerInputStateRetriever input, Camera camera, float deltaTime) {
 		const float StickSensitivity = 100f;
 
 		var horizontalRotationStrength = input.RightStickPosition.DisplacementHorizontalWithDeadzone;
@@ -163,9 +163,9 @@ static class CameraInputHandler {
 		camera.SetViewAndUpDirection(_currentHorizontalPlaneDir * verticalTiltRot, Direction.Up * verticalTiltRot);
 	}
 
-	static void AdjustCameraPosition(ILatestGameControllerInputStateRetriever input, Camera camera, float deltaTime) {
+	static void AdjustCameraPositionGamepad(ILatestGameControllerInputStateRetriever input, Camera camera, float deltaTime) {
 		var verticalMovementMultiplier = input.RightTriggerPosition.DisplacementWithDeadzone - input.LeftTriggerPosition.DisplacementWithDeadzone;
-		var verticalMovementVect = verticalMovementMultiplier * CameraMovementSpeed * deltaTime * Direction.Up;
+		var verticalMovementVect = verticalMovementMultiplier * Direction.Up;
 
 		var horizontalMovementVect = Vect.Zero;
 		var stickDisplacement = input.LeftStickPosition.Displacement;
@@ -173,11 +173,11 @@ static class CameraInputHandler {
 
 		if (stickAngle is { } horizontalMovementAngle) {
 			var horizontalMovementDir = _currentHorizontalPlaneDir * (Direction.Up % (horizontalMovementAngle - Angle.QuarterCircle));
-			horizontalMovementVect = horizontalMovementDir * stickDisplacement * CameraMovementSpeed * deltaTime;
+			horizontalMovementVect = horizontalMovementDir * stickDisplacement;
 		}
 
 
-		var sumMovementVect = horizontalMovementVect + verticalMovementVect;
+		var sumMovementVect = (horizontalMovementVect + verticalMovementVect).WithLength(CameraMovementSpeed * deltaTime);
 		camera.MoveBy(sumMovementVect);
 	}
 }

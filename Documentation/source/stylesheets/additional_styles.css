@@ -52,10 +52,10 @@
 }
 
 [data-md-color-scheme="default"] .md-typeset pre > code {
-	font-size: .8em;
+	font-size: .75em;
 }
 [data-md-color-scheme="slate"] .md-typeset pre > code {
-	font-size: .8em;
+	font-size: .75em;
 }
 
 [data-md-color-scheme="default"] .tffr-affirmative {
