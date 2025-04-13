@@ -11,11 +11,11 @@ TinyFFR comes with a built-in API for reacting to user input via keyboard, mouse
 	If you wish you can integrate these camera controls directly with the hello cube example and/or the treasure chest example from the previous page, just replace/remove any pre-existing camera manipulation code.
 
 ???+ warning "Math Ahead"
-	The examples on this page necessitate a little more usage of the in-built math API than previous pages. It might be worth checking out the [Math & Geometry](/concepts/math_and_geometry.md) page first for a primer (but only if you want to).
+	The examples on this page necessitate a little more usage of the in-built math API than previous pages. It might be worth checking out the [Math & Geometry](/concepts/math_and_geometry.md) page first for a primer, depending on how confident you are already with 3D math.
 
-	If you're feeling confident however go ahead and jump right in: Every line of math below is annotated with explanations.
+	If you learn best by example however go ahead and jump right in: Every line of math below is annotated with explanations.
 
-	Also, don't forget you can use the debugger to inspect what's going on in each frame, or even print things out to console!
+	Also, don't forget you can use the debugger to inspect what's going on in each frame, or even print things out to console! Try commenting out certain lines or just experimenting with changing values to get a feel for what's going on.
 
 ## Initial Setup
 
@@ -249,6 +249,106 @@ public static void TickKbm(ILatestKeyboardAndMouseInputRetriever input, Camera c
 	AdjustCameraViewDirectionKbm(input, camera, deltaTime);
 }
 ```
+
+## Keyboard: Camera Movement
+
+Now let's make it so we can use the keyboard to move the camera around in our scene. Add another method, `AdjustCameraPositionKbm()`:
+
+```csharp
+static void AdjustCameraPositionKbm(ILatestKeyboardAndMouseInputRetriever input, Camera camera, float deltaTime) {
+	var positiveHorizontalYDir = camera.ViewDirection; // (1)!
+	var positiveHorizontalXDir = Direction.FromDualOrthogonalization( // (2)!
+		Direction.Up, 
+		_currentHorizontalPlaneDir
+	);
+
+	var horizontalMovement = XYPair<float>.Zero; // (3)!
+	var verticalMovement = 0f; // (4)!
+	foreach (var currentKey in input.CurrentlyPressedKeys) { // (5)!
+		switch (currentKey) {
+			case KeyboardOrMouseKey.ArrowLeft:
+				horizontalMovement += (1f, 0f);
+				break;
+			case KeyboardOrMouseKey.ArrowRight:
+				horizontalMovement += (-1f, 0f);
+				break;
+			case KeyboardOrMouseKey.ArrowUp:
+				horizontalMovement += (0f, 1f);
+				break;
+			case KeyboardOrMouseKey.ArrowDown:
+				horizontalMovement += (0f, -1f);
+				break;
+			case KeyboardOrMouseKey.RightControl:
+				verticalMovement -= 1f;
+				break;
+			case KeyboardOrMouseKey.RightShift:
+				verticalMovement += 1f;
+				break;
+		}
+	}
+
+	var horizontalMovementVect = // (6)!
+		(positiveHorizontalXDir * horizontalMovement.X) 
+		+ (positiveHorizontalYDir * horizontalMovement.Y);
+
+	var verticalMovementVect = Direction.Up * verticalMovement; // (7)!
+
+	var sumMovementVect = // (8)!
+		(horizontalMovementVect + verticalMovementVect)
+		.WithLength(CameraMovementSpeed * deltaTime);
+
+	camera.MoveBy(sumMovementVect); // (9)!
+}
+```
+
+1. 	Overall, we're setting up controls for three directions, `positiveHorizontalYDir`, `positiveHorizontalXDir`, and `Direction.Up`. The horizontal directions are the two directions we will move the camera around when the user is holding any of the arrow keys. The vertical direction is just `Up`.
+
+	On this line we're setting which way we want the camera to move when we're holding the forward/up arrow key. When the user holds the up arrow key we want the camera to move in the direction it's looking, so we simply set `positiveHorizontalYDir` to `camera.ViewDirection`.
+
+2.	On this line we set the other horizontal direction, which we want to be to the camera's left side.
+
+	We calculate that left-side direction using our friend `Direction.FromDualOrthogonalization()` again, to find the direction that is orthogonal to both `Up` and our `positiveHorizontalYDir` that we set in the previous line to the camera's view direction.
+
+	Incidentally: We don't create a `positiveVerticalDir` anywhere because it's just `Direction.Up`.
+
+3. 	Here we define an `XYPair<float>` called `horizontalMovement` and initialize it to zero. 
+
+	Further below we will set `X` and `Y` to one of `-1f`, `0f`, or `1f` depending on which arrow keys are currently held down.
+
+4.	And here we set a `verticalMovement` value as just a `float` and also initialize it to zero.
+
+	Much like the `horizontalMovement` properties we will set this value to one of `-1f`, `0f`, or `1f` depending on which keys are held down.
+
+5.	This foreach loop is iterating through every keyboard and mouse key that the user is currently holding down in this frame.
+
+	We then switch over each key (`switch (currentKey) { ... }`) and add or remove `1f` to/from `horizontalMovement.X`, `horizontalMovement.Y`, or `verticalMovement` depending on which key is being held down.
+
+	For example, if the user is holding the `ArrowUp` key, we add `1f` to `horizontalMovement.Y`. Conversely, if the user is holding the `ArrowDown` key, we subtract `1f` from that same property. When the loop finishes we will know which directions through space the user wishes to move the camera.
+
+	One nice thing about this approach also is that "opposing" movement keys automatically cancel each other out. If the user is holding both `ArrowUp` and `ArrowDown` the resultant value for `horizontalMovement.Y` will be `0f`.
+
+6.	Here we create a `Vect` that is just multiplying `X` and `Y` of `horizontalMovement` by `positiveHorizontalXDir` and `positiveHorizontalYDir` respectively. 
+
+	Because we know that `X`/`Y` will only ever be `-1f,` `0f`, or `1f`, we know that this will only ever be either adding or removing 1 meter of `positiveHorizontalXDir` and `positiveHorizontalYDir` (or nothing at all).
+
+	In other words, `horizontalMovementVect` will end up being a vect pointing in the direction we want the camera to move in its horizontal plane.
+
+7.	Here we create a `Vect` indicating which way we want the camera to move in the `Up`/`Down` axis by simply multiplying `verticalMovement` by `Direction.Up`.
+
+	Because `verticalMovement` is going to be either `-1f`, `0f`, or `1f`, 
+
+And like before, don't forget to actually call this method from inside `TickKbm()`:
+
+```csharp
+public static void TickKbm(ILatestKeyboardAndMouseInputRetriever input, Camera camera, float deltaTime) {
+	AdjustCameraViewDirectionKbm(input, camera, deltaTime);
+	AdjustCameraPositionKbm(input, camera, deltaTime); // (1)!
+}
+```
+
+1. 	Note that we invoke this *after* `AdjustCameraViewDirectionKbm()`.
+
+	This is important if you don't want your left/right/forward/back camera movement to always be one frame "out of sync" with which way the camera is looking.
 
 ## Complete Example
 
