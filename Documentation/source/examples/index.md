@@ -6,52 +6,29 @@ icon: material/cogs
 
 ## Getting Started
 
-<div class="grid cards" markdown>
+[:material-arrow-right-bold:{ .lg } :material-package-down:{ .lg : style="margin-right:0.3em" } __Installing TinyFFR__{ : style="font-size:1.3em;" }](installing.md)
 
--   __Installing TinyFFR__
+Learn how to install TinyFFR via NuGet.
+{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
 
-    ---
+[:material-arrow-right-bold:{ .lg } :material-cube:{ .lg : style="margin-right:0.3em" } __Hello Cube__{ : style="font-size:1.3em;" }](hello_cube.md)
 
-    Learn how to install TinyFFR via NuGet.
-
-    [:octicons-arrow-right-24: Installing TinyFFR](installing.md)
-
--   __Hello Cube__
-
-    ---
-
-    Get a simple cube rendering and understand the fundamentals of the library.
-
-    [:octicons-arrow-right-24: Hello Cube](hello_cube.md)
-
-</div>
+Get a simple cube rendering and understand the fundamentals of the library.
+{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
 
 ## Basic Features
 
-<div class="grid cards" markdown>
+[:material-arrow-right-bold:{ .lg } :material-texture:{ .lg : style="margin-right:0.3em" } __Texture Patterns__{ : style="font-size:1.3em;" }](texture_patterns.md)
 
--   __Texture Patterns__
+Learn how to use built-in texture pattern generators to create interesting color, normal, and ORM maps.
+{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
 
-    ---
+[:material-arrow-right-bold:{ .lg } :fontawesome-solid-draw-polygon:{ .lg : style="margin-right:0.3em" } __Loading Assets__{ : style="font-size:1.3em;" }](loading_assets.md)
 
-    Learn how to use built-in texture pattern generators to create interesting color, normal, and ORM maps.
+Learn how to load texture files, 3D models, and sky environments from storage in to your scenes.
+{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
 
-    [:octicons-arrow-right-24: Texture Patterns](texture_patterns.md)
+[:material-arrow-right-bold:{ .lg } :material-keyboard:{ .lg : style="margin-right:0.3em" } __Handling Input__{ : style="font-size:1.3em;" }](handling_input.md)
 
--   __Loading Assets__
-
-    ---
-
-    Learn how to load texture files, 3D models, and sky environments from storage in to your scenes.
-
-    [:octicons-arrow-right-24: Loading Assets](loading_assets.md)
-
--   __Handling Input__
-
-    ---
-
-    Learn different ways to manage keyboard, mouse, and gamepad interactions.
-
-    [:octicons-arrow-right-24: Handling Input](handling_input.md)
-
-</div>
+Learn different ways to manage keyboard, mouse, and gamepad interactions.
+{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
