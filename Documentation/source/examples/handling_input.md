@@ -250,7 +250,7 @@ public static void TickKbm(ILatestKeyboardAndMouseInputRetriever input, Camera c
 }
 ```
 
-## Keyboard: Camera Movement
+## Keyboard Camera Movement
 
 Now let's make it so we can use the keyboard to move the camera around in our scene. Add another method, `AdjustCameraPositionKbm()`:
 
@@ -287,11 +287,12 @@ static void AdjustCameraPositionKbm(ILatestKeyboardAndMouseInputRetriever input,
 		}
 	}
 
-	var horizontalMovementVect = // (6)!
+	var verticalMovementVect = Direction.Up * verticalMovement; // (6)!
+
+	var horizontalMovementVect = // (7)!
 		(positiveHorizontalXDir * horizontalMovement.X) 
 		+ (positiveHorizontalYDir * horizontalMovement.Y);
 
-	var verticalMovementVect = Direction.Up * verticalMovement; // (7)!
 
 	var sumMovementVect = // (8)!
 		(horizontalMovementVect + verticalMovementVect)
@@ -301,23 +302,27 @@ static void AdjustCameraPositionKbm(ILatestKeyboardAndMouseInputRetriever input,
 }
 ```
 
-1. 	Overall, we're setting up controls for three directions, `positiveHorizontalYDir`, `positiveHorizontalXDir`, and `Direction.Up`. The horizontal directions are the two directions we will move the camera around when the user is holding any of the arrow keys. The vertical direction is just `Up`.
+1. 	Overall, we're setting up controls to move our camera in a sum of three directions: `positiveHorizontalYDir`, `positiveHorizontalXDir`, and `Direction.Up`. 
 
-	On this line we're setting which way we want the camera to move when we're holding the forward/up arrow key. When the user holds the up arrow key we want the camera to move in the direction it's looking, so we simply set `positiveHorizontalYDir` to `camera.ViewDirection`.
+	The horizontal directions are the two directions we will move the camera around when the user is holding any of the arrow keys: Camera forward and camera left. The vertical direction is just `Up`. 
+	
+	If we want to move the camera backwards/right/down we will just use a negative value for any of these directions.
 
-2.	On this line we set the other horizontal direction, which we want to be to the camera's left side.
+	On this line we're setting which way we want the camera to move when the user is holding the *up* arrow key. When the user holds the up arrow key we want the camera to move in the direction it's looking (i.e. 'camera forward'), so we simply set `positiveHorizontalYDir` to `camera.ViewDirection`.
 
-	We calculate that left-side direction using our friend `Direction.FromDualOrthogonalization()` again, to find the direction that is orthogonal to both `Up` and our `positiveHorizontalYDir` that we set in the previous line to the camera's view direction.
+2.	On the first line we set the first horizontal direction (e.g. 'camera forward').
+	
+	On this line we set the *other* horizontal direction, which we want to be to the camera's left side (e.g. 'camera left'),
 
-	Incidentally: We don't create a `positiveVerticalDir` anywhere because it's just `Direction.Up`.
+	We calculate that left-side direction using our friend `Direction.FromDualOrthogonalization()` again, to find the direction that is orthogonal to both `Up` and `positiveHorizontalYDir` ('camera forward').
 
-3. 	Here we define an `XYPair<float>` called `horizontalMovement` and initialize it to zero. 
+	Incidentally: We don't declare a `positiveVerticalDir` var anywhere because it's just `Direction.Up`.
 
-	Further below we will set `X` and `Y` to one of `-1f`, `0f`, or `1f` depending on which arrow keys are currently held down.
+3. 	Here we define an `XYPair<float>` called `horizontalMovement` and initialize it to zero. We will use this pair to store/calculate how far the camera should move in each of the `positiveHorizontal...Dir` directions according to the currently-held keyboard keys.
 
-4.	And here we set a `verticalMovement` value as just a `float` and also initialize it to zero.
+	After the foreach loop below completes, the pair's `X` and `Y` properties will be `1f`, `-1f`, or `0f` indicating a positive, negative, or zero movement in each horizontal direction.
 
-	Much like the `horizontalMovement` properties we will set this value to one of `-1f`, `0f`, or `1f` depending on which keys are held down.
+4.	And here we define a `verticalMovement` value as just a `float` and also initialize it to zero. Again, we will set it to `1f,` `-1f`, or `0f` in the foreach loop to indicate whether we want the camera to move up, down, or not move at all vertically.
 
 5.	This foreach loop is iterating through every keyboard and mouse key that the user is currently holding down in this frame.
 
@@ -325,17 +330,30 @@ static void AdjustCameraPositionKbm(ILatestKeyboardAndMouseInputRetriever input,
 
 	For example, if the user is holding the `ArrowUp` key, we add `1f` to `horizontalMovement.Y`. Conversely, if the user is holding the `ArrowDown` key, we subtract `1f` from that same property. When the loop finishes we will know which directions through space the user wishes to move the camera.
 
-	One nice thing about this approach also is that "opposing" movement keys automatically cancel each other out. If the user is holding both `ArrowUp` and `ArrowDown` the resultant value for `horizontalMovement.Y` will be `0f`.
+	One nice thing about this approach is that "opposing" movement keys automatically cancel each other out. If the user is holding both `ArrowUp` and `ArrowDown` the resultant value for `horizontalMovement.Y` will be `0f`.
 
-6.	Here we create a `Vect` that is just multiplying `X` and `Y` of `horizontalMovement` by `positiveHorizontalXDir` and `positiveHorizontalYDir` respectively. 
+6.	Here we create a `Vect` indicating which way we want the camera to move in the `Up`/`Down` axis by simply multiplying `verticalMovement` by `Direction.Up`.
 
-	Because we know that `X`/`Y` will only ever be `-1f,` `0f`, or `1f`, we know that this will only ever be either adding or removing 1 meter of `positiveHorizontalXDir` and `positiveHorizontalYDir` (or nothing at all).
+	Because `verticalMovement` is going to be either `-1f`, `0f`, or `1f`, `verticalMovementVect` will be 1 meter up (`Direction.Up * 1f`), 1 meter down (`Direction.Up * -1f`), or `Vect.Zero` (`Direction.Up * 0f`).
 
-	In other words, `horizontalMovementVect` will end up being a vect pointing in the direction we want the camera to move in its horizontal plane.
+7.	Here we create a `Vect` that is just multiplying `X` and `Y` of `horizontalMovement` by `positiveHorizontalXDir` and `positiveHorizontalYDir` respectively. 
 
-7.	Here we create a `Vect` indicating which way we want the camera to move in the `Up`/`Down` axis by simply multiplying `verticalMovement` by `Direction.Up`.
+	Because we know that `X` and `Y` will only ever be `-1f,` `0f`, or `1f`, we know that this will only ever be either adding or removing 1 meter of `positiveHorizontalXDir` and `positiveHorizontalYDir` (or nothing at all).
 
-	Because `verticalMovement` is going to be either `-1f`, `0f`, or `1f`, 
+	By keeping all our multiplicands as ones or zeroes, we make sure our movement vector has equal proportions in every direction.
+
+8.	Here we add `verticalMovementVect` and `horizontalMovementVect` together and then make sure the resultant vect has a length of `CameraMovementSpeed * deltaTime`.
+
+	By multiplying `CameraMovementSpeed` by `deltaTime` we make sure the camera's movement is the same regardless of the framerate our application runs at. It also has the effect of making the `CameraMovementSpeed`'s unit easy to understand: It is now implicitly a value in meters/second.
+
+	??? question "What happens if we call `WithLength()` on a zero-length `Vect`?"
+		When dealing with "raw" vector math, normalizing or resizing a zero-length vector is an undefined operation.
+
+		However, `Vect` accounts for this and has a well-defined behaviour: Calling `WithLength()` on `Vect.Zero` simply returns `Vect.Zero`.
+		
+		Therefore, in the case that `verticalMovementVect` and `horizontalMovementVect` were both `Vect.Zero` (i.e. the user is not pressing any movement keys this frame), the call to `.WithLength()` will just return the same vector back (`Vect.Zero`).
+
+9.	And finally here we move the camera with the `sumMovementVect`. `MoveBy()` does as its name implies and moves the camera in the world by the given amount.
 
 And like before, don't forget to actually call this method from inside `TickKbm()`:
 
@@ -349,6 +367,189 @@ public static void TickKbm(ILatestKeyboardAndMouseInputRetriever input, Camera c
 1. 	Note that we invoke this *after* `AdjustCameraViewDirectionKbm()`.
 
 	This is important if you don't want your left/right/forward/back camera movement to always be one frame "out of sync" with which way the camera is looking.
+
+## Gamepad Camera Panning
+
+Next let's make it possible to move the camera using the right stick on a game controller. Let's create another static method, this time named `AdjustCameraViewDirectionGamepad()`:
+
+```csharp
+static void AdjustCameraViewDirectionGamepad(ILatestGameControllerInputStateRetriever input, Camera camera, float deltaTime) {
+	const float StickSensitivity = 100f; // (1)!
+
+	var horizontalRotationStrength = 
+		input.RightStickPosition.DisplacementHorizontalWithDeadzone; // (2)!
+	var verticalRotationStrength = 
+		input.RightStickPosition.DisplacementVerticalWithDeadzone; // (3)!
+
+	_currentHorizontalAngle += 
+		StickSensitivity * horizontalRotationStrength * deltaTime; // (4)!
+	_currentHorizontalAngle = 
+		_currentHorizontalAngle.Normalized; // (5)!
+
+	_currentVerticalAngle -= 
+		StickSensitivity * verticalRotationStrength * deltaTime; // (6)!
+	_currentVerticalAngle = 
+		_currentVerticalAngle.Clamp(-Angle.QuarterCircle, Angle.QuarterCircle); // (7)!
+
+	_currentHorizontalPlaneDir =
+		 Direction.Forward * (_currentHorizontalAngle % Direction.Down); // (8)!
+
+	var verticalTiltRot = _currentVerticalAngle // (9)!
+		% Direction.FromDualOrthogonalization(
+			Direction.Up, 
+			_currentHorizontalPlaneDir
+		);
+
+	camera.SetViewAndUpDirection( // (10)!
+		_currentHorizontalPlaneDir * verticalTiltRot, 
+		Direction.Up * verticalTiltRot
+	);
+}
+```
+
+1.	This is just setting the maximum rotation speed of the camera, in degrees per second. Adjust to taste.
+2.	Here we store the value of `input.RightStickPosition.DisplacementHorizontalWithDeadzone` as `horizontalRotationStrength`.
+
+	`input.RightStickPosition.DisplacementHorizontal` gives us a normalized (`1f` to `-1f`) value indicating how far to the right the stick has been pushed. A value of `1f` indicates fully to the right, a value of `-1f` indicates fully to the left, a value of `0f` indicates no displacement.
+
+	`input.RightStickPosition.DisplacementHorizontalWithDeadzone` gives us the same value but with a built-in [deadzone](https://www.howtogeek.com/826612/what-is-a-controller-dead-zone/), meaning the value will stay at `0f` a little longer until the user has pushed the control stick a little further away from the central position.
+
+	The reason for using a deadzone is to eliminate so-called 'stick drift' where the centred position of a controller stick actually registers a small, slight value. Without using a deadzone, if your controller is less than perfect, it will constantly rotate the camera by a small amount.
+
+3.	This is the same as the line above, except we're storing the vertical (up/down) stick displacement instead of the horizontal (left/right).
+
+	A value of `1f` indicates the stick is fully up, `-1f` indicates fully down, and `0f` indicates it is centred vertically (or within the deadzone).
+
+4.	Here we add to `_currentHorizontalAngle`. The amount we add, in degrees, is equal to `StickSensitivity * deltaTime` (giving us an angle/second), multiplied by the `horizontalRotationStrength` (i.e. how far the user is moving the stick in the left/right axis).
+
+	For example: If the stick is held fully to the right, we will add `StickSensitivity` degrees to the current horizontal angle per second. If it's held fully to the left, we will *subtract* that amount instead. 
+
+5.	Here we *normalize* `_currentHorizontalAngle` for the same reasons as before in the mouse example (eliminating floating-point error).
+
+6.	On this line we're adjusting the `_currentVerticalAngle` in the exact same we we did as for the horizontal angle above.
+
+	Note that in this case we *subtact* rather than *add* the multiplied value, because `DisplacementVerticalWithDeadzone` returns a positive value for upward motion on the stick (and we decided that a positive vertical angle should indicate looking *down*). 
+	
+	That being said, if you prefer an inverted camera control you could simply replace the `-=` here with a `+=`.
+
+7.	And here we clamp `_currentVerticalAngle` for the same reason again as in the mouse example.
+
+8.	This line is simply calculating the `_currentHorizontalPlaneDir` using the new `_currentHorizontalAngle`.
+
+	This code is exactly the same as in our mouse example.
+
+9.	This line is calculating a vertical tilt rotation.
+
+	This code is exactly the same as in our mouse example.
+
+10.	And finally, this line is setting the camera's view and up directions with the new values.
+
+	This code is exactly the same as in our mouse example.
+
+And again, make sure to add this to `TickGamepad()`:
+
+```csharp
+public static void TickGamepad(ILatestGameControllerInputStateRetriever input, Camera camera, float deltaTime) {
+	AdjustCameraViewDirectionGamepad(input, camera, deltaTime);
+}
+```
+
+## Gamepad Camera Movement
+
+Finally, let's add a method `AdjustCameraPositionGamepad()` to allow us to move the camera using the gamepad's left stick and the two triggers:
+
+```csharp
+static void AdjustCameraPositionGamepad(ILatestGameControllerInputStateRetriever input, Camera camera, float deltaTime) {
+	var verticalMovementMultiplier = // (1)!
+		input.RightTriggerPosition.DisplacementWithDeadzone 
+		- input.LeftTriggerPosition.DisplacementWithDeadzone;
+
+	var verticalMovementVect = verticalMovementMultiplier * Direction.Up; // (2)!
+
+	var horizontalMovementVect = Vect.Zero; // (3)!
+	var stickDisplacement = input.LeftStickPosition.DisplacementWithDeadzone; // (4)!
+	var stickAngle = input.LeftStickPosition.GetPolarAngle(); // (5)!
+
+	if (stickAngle is { } horizontalMovementAngle) { // (6)!
+		var horizontalMovementDir = // (7)!
+			_currentHorizontalPlaneDir 
+			* (Direction.Up % (horizontalMovementAngle - Angle.QuarterCircle));
+
+		horizontalMovementVect = horizontalMovementDir * stickDisplacement; // (8)!
+	}
+
+
+	var sumMovementVect = // (9)!
+		(horizontalMovementVect + verticalMovementVect)
+		.WithLength(CameraMovementSpeed * deltaTime);
+
+	camera.MoveBy(sumMovementVect); // (10)!
+}
+```
+
+1. 	Here we calculate how much to move the camera in the vertical (up/down) direction.
+
+	`input.RightTriggerPosition.DisplacementWithDeadzone` tells us how deeply the right trigger has been depressed, where `0f` is not at all and `1f` is completely depressed.
+	
+	`input.LeftTriggerPosition.DisplacementWithDeadzone` gives us the same value but for the left trigger.
+
+	As the name implies, each property incorporates a small deadzone so small values will return as `0f`, to account for controller hardware issues.
+
+	Our resultant `verticalMovementMultiplier` will be the right trigger displacement value *minus* the left trigger displacement value. 
+	
+	Therefore, if only the right trigger is fully depressed, `verticalMovementMultiplier` will be `1f`; if only the left trigger is fully depressed, it will be `-1f`.
+
+2.	Here we just create a 1 meter vect indicating the desired vertical movement of the camera by multiplying `Up` by the `verticalMovementMultiplier` from above.
+
+3.	We've already created the `verticalMovementVect`; and in the next few lines we will define our `horizontalMovementVect`.
+
+	Firstly, on this line, we'll define the `horizontalMovementVect` variable and initialize it to `Vect.Zero`.
+
+4.	Here we capture the normalized displacement of the left stick (with a deadzone) in to `stickDisplacement`.
+
+	Unlike previously with the right stick, we're not capturing the *horizontal* or *vertical* displacement, just the displacement in any direction. This equates to `1f` if the stick is fully displaced in any direction (right, left, up, down, or anywhere in between); and `0f` if the stick is fully in the centre position. In other words, this property returns how far from the center position the stick is being pushed, regardless of direction.
+	
+	We don't care about displacement direction here because we're going to use the stick's angle in the next step.
+
+5.	`GetPolarAngle()` returns an `Angle?` that indicates the angle the stick is being pushed towards (or `null` if it's not being pushed in any direction, i.e. it's in the centre position).
+
+	An angle of 0° indicates the stick is being pushed exactly to the right, 90° exactly up, 180° exactly left, and 270° exactly down.
+
+	This [convention](/concepts/conventions.md) comes from [polar co-ordinate systems](https://en.wikipedia.org/wiki/Polar_coordinate_system#Conventions), hence why the method is named `GetPolarAngle()`.
+
+6.	Here we use a C# null-checking pattern to check that `stickAngle` is not `null`, and if is not, we assign the non-null value to an inline variable `horizontalMovementAngle`.
+
+	If `stickAngle` *is* `null`, we'll skip the next steps and leave `horizontalMovementVect` as `Vect.Zero`.
+
+7.	If we've reached this line, `stickAngle` was not `null` which means the user is moving the left stick. We will use `horizontalMovementAngle` to calculate the movement direction the user wishes to move the camera towards.
+
+	We calculate it by taking the `_currentHorizontalPlaneDir` (remember, that's the direction the camera is facing on the horizontal plane) and rotating that around the `Up` axis by `horizontalMovementAngle - 90°` (that's the angle the stick is being pushed towards).
+
+	(The reason we subtract 90° is because `GetPolarAngle()` returns a value of 90° for the stick pointing straight up. If the stick is pointing straight up, we don't want to rotate our desired movement direction at all with respect to the camera's forward direction.)
+
+8.	On the line above we worked out which *direction* the user wants to move the camera according to the left stick's polar angle.
+
+	On *this* line, we multiply that direction by the `stickDisplacement` to create a horizontal movement vect. Remember, `stickDisplacement` tells us, on a scale of `0f` to `1f`, how far away from the center position the user has pushed the stick.
+
+	Therefore, the further away from the center position the user moves the stick, the larger this vect will be.
+
+9.	Here we sum our `horizontalMovementVect` and `verticalMovementVect` and make sure our resultant vect has a length of `CameraMovementSpeed * deltaTime`.
+
+	This code is exactly the same as in our keyboard example.
+
+10.	And finally here we move the camera according to our summed movement vect.
+
+	This code is exactly the same as in our keyboard example.
+
+
+And of course, make sure you call this method from `TickGamepad()`:
+
+```csharp
+public static void TickGamepad(ILatestGameControllerInputStateRetriever input, Camera camera, float deltaTime) {
+	AdjustCameraViewDirectionGamepad(input, camera, deltaTime);
+	AdjustCameraPositionGamepad(input, camera, deltaTime);
+}
+```
 
 ## Complete Example
 
@@ -456,7 +657,7 @@ static class CameraInputHandler {
 		var verticalMovementVect = verticalMovementMultiplier * Direction.Up;
 
 		var horizontalMovementVect = Vect.Zero;
-		var stickDisplacement = input.LeftStickPosition.Displacement;
+		var stickDisplacement = input.LeftStickPosition.DisplacementWithDeadzone;
 		var stickAngle = input.LeftStickPosition.GetPolarAngle();
 
 		if (stickAngle is { } horizontalMovementAngle) {
