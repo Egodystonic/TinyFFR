@@ -2,6 +2,8 @@
 title: TinyFFR Examples
 description: This is the starting page for examples of using TinyFFR.
 icon: material/cogs
+search:
+  exclude: true
 ---
 
 ## Getting Started

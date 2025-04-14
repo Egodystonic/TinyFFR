@@ -2,6 +2,8 @@
 title: Homepage
 description: This is the homepage/manual for Tiny FFR (C# Tiny Fixed Function Rendering Library).
 icon: material/home
+search:
+  exclude: true
 ---
 
 # 3D Rendering in C\# Made Easy

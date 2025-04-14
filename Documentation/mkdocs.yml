@@ -120,14 +120,14 @@ nav:
   - Concepts:
     - concepts/index.md
     - concepts/factory.md
+    - concepts/resources.md
     - concepts/displays_and_windows.md
+    - concepts/scenes.md
+    - concepts/math_and_geometry.md
+    - concepts/input.md
     - concepts/meshes.md
     - concepts/materials.md
     - concepts/lighting.md
-    - concepts/scenes.md
-    - concepts/input.md
-    - concepts/math_and_geometry.md
-    - concepts/resources.md
     - concepts/conventions.md
   - Reference Docs:
     - reference/index.md

@@ -151,8 +151,6 @@ static class CameraInputHandler {
 		var horizontalRotationStrength = input.RightStickPosition.DisplacementHorizontalWithDeadzone;
 		var verticalRotationStrength = input.RightStickPosition.DisplacementVerticalWithDeadzone;
 
-		Console.WriteLine(verticalRotationStrength);
-
 		_currentHorizontalAngle += StickSensitivity * horizontalRotationStrength * deltaTime;
 		_currentHorizontalAngle = _currentHorizontalAngle.Normalized;
 

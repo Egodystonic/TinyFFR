@@ -32,16 +32,6 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		_iconFilePathBuffer = new InteropStringBuffer(config.MaxIconFilePathLengthChars, addOneForNullTerminator: true);
 	}
 
-	public Window CreateWindow(Display display, WindowFullscreenStyle? fullscreenStyle = null, XYPair<int>? size = null, XYPair<int>? position = null, ReadOnlySpan<char> title = default) {
-		return CreateWindow(new() {
-			Display = display,
-			FullscreenStyle = fullscreenStyle ?? WindowFullscreenStyle.NotFullscreen,
-			Size = size ?? (fullscreenStyle == WindowFullscreenStyle.Fullscreen ? display.CurrentResolution : display.CurrentResolution.ScaledByReal(0.66f)),
-			Position = position ?? (display.CurrentResolution.ScaledByReal(0.33f / 2f)),
-			Title = title
-		});
-	}
-
 	public Window CreateWindow(in WindowConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
