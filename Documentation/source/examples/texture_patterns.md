@@ -15,11 +15,11 @@ You can use the built-in texture pattern generators to create interesting color 
 	If you're feeling adventurous you can also experiment with adding a `normalMap` and even an `ormMap` to the cube's material too.
 
 ??? question "What are Color, Normal, and ORM Maps?"
-	A 'map' is ultimately just 2D texture/bitmap, and all three map types work together to form a single material:
+	A 'map' is ultimately just 2D texture/bitmap, and all three map types (color, normal, ORM) work together to form a single material.
 	
-	:material-palette: A __color__ map is the texture that provides the surface colors (also known as 'albedo') for the material.
+	:material-palette: A __color__ map is the texture that provides the surface colors (sometimes known as the 'albedo' or 'diffuse') for the material.
 
-	:material-axis-arrow: A __normal__ map is the texture that affects how lighting bounces off the material surface by defining which direction each pixel "faces" relative to the flat surface. Normal maps can be used to give the illusion of surface 'texture' or detail without actually having to modify the polygon mesh.
+	:material-axis-arrow: A __normal__ map is the texture that affects how lighting bounces off the material surface by defining which direction each pixel "faces" relative to the flat surface. Normal maps can be used to give the illusion of surface 'texture' or detail without actually having to modify the polygon mesh (a huge performance improvement).
 
 	:material-texture: An __ORM__ map is actually three values baked in to one texture, and is used to add additional information about the nature of the material surface:
 
@@ -27,7 +27,7 @@ You can use the built-in texture pattern generators to create interesting color 
 
 	* :material-alpha-r-box-outline: The __Roughness__ channel is stored in the Green pixel data of the texture and defines on a scale of 0.0 to 1.0 how 'rough' the material is at each pixel of its surface. This value is used to determine how 'shiny' the light reflections are on each part of the surface.
 	
-	* :material-alpha-m-box-outline: The __Metallic__ channel is stored in the Blue pixel data of the texture and defines on a scale of 0.0 to 1.0 how 'metallic' the material is at each pixel of its surface. In reality, most materials' surfaces' texel data should always be 0.0 (non-metallic) or 1.0 (metallic).
+	* :material-alpha-m-box-outline: The __Metallic__ channel is stored in the Blue pixel data of the texture and defines on a scale of 0.0 to 1.0 how 'metallic' the material is at each pixel of its surface. In reality, most materials' surfaces' texel data should always be 0.0 (non-metallic) or 1.0 (metallic). This value is used to determine how reflections and lighting interacts with the surface.
 
 	For more information, see: [:octicons-arrow-right-24: Materials](/concepts/materials.md)
 
@@ -649,7 +649,7 @@ The  tabs below show the three different transformation types being applied to i
 	???+ note "Clockwise Rotations"
 		You can rotate clockwise by supplying a negative value for `rotation` in your `transform`.
 
-		The reason positive values result in an anticlockwise rotation in TinyFFR is just a [convention](/concepts/conventions.md), although it's worth noting this is ultimately just trying to conform to a [general convention in trigonometry](https://math.stackexchange.com/questions/1749279/why-are-the-trig-functions-defined-by-the-counterclockwise-path-of-a-circle).
+		The reason positive values result in an anticlockwise rotation in TinyFFR is just a [convention](/concepts/conventions.md), although it's worth noting this is ultimately just conforming to a [general convention in trigonometry](https://math.stackexchange.com/questions/1749279/why-are-the-trig-functions-defined-by-the-counterclockwise-path-of-a-circle).
 
 === "Translation"
 

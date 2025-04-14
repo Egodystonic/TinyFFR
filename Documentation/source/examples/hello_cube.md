@@ -36,8 +36,6 @@ using var factory = new LocalTinyFfrFactory();
 
 Most resources in TinyFFR implement the `IDisposable` interface, and they must be disposed by the user (you) when no longer needed. The factory object is no exception to this. For this example, we will use [C#'s `using` syntax](https://learn.microsoft.com/en-us/dotnet/fundamentals/runtime-libraries/system-idisposable#the-c-f-and-visual-basic-using-statement) to automatically dispose the factory at the end of the example. You may wish to manually dispose the factory yourself instead, depending on your application's architecture.
 
-For more information about the factory object, see: [:octicons-arrow-right-24: The Factory](/concepts/factory.md)
-
 ### Creating the Cube Mesh
 
 Every object that is eventually rendered to the screen in a 3D scene is made up of a *mesh* of polygons. You do not need to understand how these meshes are formed; all you need to know is that in order to create a cube for our scene we firstly need a cube *mesh*.
@@ -45,7 +43,7 @@ Every object that is eventually rendered to the screen in a 3D scene is made up 
 ??? question "What is a polygon? What is a mesh?"
 	In a nutshell:
 
-	* A __polygon__ is a set of points (vertices) that describe a 2D shape, usually a triangle.
+	* A __polygon__ is a set of points (vertices) that describe a flat surface, usually a triangle.
 	* A __mesh__ is a grouping of multiple polygons that together describe the surfaces of a 3D shape.
 
 	As well as each polygon's position, a mesh specifies some geometric properties such as the direction each vertex (corner) faces, and how to lay out textures on the object's surface.
@@ -62,15 +60,15 @@ using var cubeMesh = meshBuilder.CreateMesh(cubeDesc); // (3)!
 ```
 
 1. A mesh is a type of *asset*; assets are basically anything we store on the GPU's memory (i.e. VRAM). Because all assets are ultimately loaded on to the GPU by a single *asset loader*, the mesh builder is a property of the factory's `AssetLoader`.
-2. 	`cubeDesc` is just a description of a 1m x 1m x 1m cube. It is not a mesh itself, just a 'cuboid' struct. 
+2. 	`cubeDesc` is just a description of a 1m x 1m x 1m cube. It is not a mesh itself, just an instance of a `Cuboid` (which is a struct simply used to describe a cuboid's shape/dimensions).
 
-	All scalar (e.g. floating-point) values in TinyFFR are generally specified in meters. The constructor for Cuboid can take three parameters instead of one if you prefer a separate width, depth, and height.
+	Most floating-point values (technically *scalars*) in TinyFFR are generally assumed to be in meters; but you can choose any 'base unit' you like depending on your application.
 	
-3. `CreateMesh` can take a variety of different parameters, for now we just supply a description of a cuboid to generate a polygon mesh of that shape.
+	The constructor for `Cuboid` can take three parameters instead of one if you prefer a separate width, depth, and height. In this example though we are specifying that our `Cuboid` should just be 1 meter in every dimension.
+	
+3. `CreateMesh` can take a variety of different parameters, for now we just supply our description of a cuboid to generate a polygon mesh of that shape.
 
 Because the resultant `cubeMesh` is a disposable resource, we once again use the `using` pattern to make sure it's disposed when we're done.
-
-For more information about the mesh builder, see: [:octicons-arrow-right-24: Meshes](/concepts/meshes.md)
 
 ### Creating a Material for the Cube
 
@@ -102,8 +100,6 @@ using var material = materialBuilder.CreateOpaqueMaterial(colorMap); // (3)!
 	`CreateOpaqueMaterial()` can take more parameters to specify such values with more texture maps, but for this initial example we only care to specify a colour, so we just supply a `colorMap`.
 
 Finally, the `colorMap` and `material` are both disposable resources, so again we use the `using` pattern to make sure they get disposed.
-
-For more information about the material builder, see: [:octicons-arrow-right-24: Materials](/concepts/materials.md)
 
 ### Creating a Cube Instance
 
@@ -149,8 +145,6 @@ As always, the `light` is disposable.
 	By default, all scenes also have an amount of indirect ambient illumination that is emitted by the scene backdrop. Therefore, it's not actually necessary to add a light at all to see the cube.
 
 	However, ambient scene-wide illumination tends to be very flat and uninteresting, and you'll usually want at least one dynamic light source to provide a convincing 3D effect.
-
-For more information about lights, see: [:octicons-arrow-right-24: Lighting](/concepts/lighting.md)
 
 ### Putting Together a Scene
 
@@ -210,8 +204,6 @@ Unlike other resources, the `primaryDisplay` is not disposable as you can not 'd
 
 The `window`, of course, *is* disposable so we instantiate it with the `using` pattern as usual.
 
-For more information about displays and windows, see: [:octicons-arrow-right-24: Displays & Windows](/concepts/displays_and_windows.md)
-
 ### Creating a Camera and Renderer
 
 We now have:
@@ -237,7 +229,9 @@ using var renderer = rendererBuilder.CreateRenderer(scene, camera, window);
 
 1. 	We can specify any `Location` in the world we like for the camera's position, but for now we'll place it at the very centre of our 3D world (otherwise known as the world's `Origin`). This is the same position we placed the point-light in.
 
-	If you're worried that the camera might somehow "obscure" or "block" the point-light, don't worry. The camera is a purely abstract concept and does not have any actual physical presence or interaction with anything in our scene.
+	If you're worried that the camera might somehow "obscure" or "block" the point-light, don't worry. The camera is a purely abstract concept and does not have any actual physical presence or interaction with anything in our scene. 
+	
+	In fact, the camera is not actually part of the scene at all. We don't even add it to the scene, it's only used to *capture* the scene. To that end, the same camera can be used to capture multiple scenes if desired.
 
 2. 	We can also specify any `Direction` we want the camera to look in, but for now we just pick the "forward" direction-- in geometric terms this is equivalent to saying the camera is looking along the positive Z-axis.
 
@@ -260,11 +254,9 @@ The `camera` can be set up with various properties such as its position, field-o
 	
 	Ultimately we need to pick *some* direction to set up our scene in, and picking the `Forward` direction feels the most natural so that's why we make the camera face `Forward`. In general, sticking to the conventions set up in TinyFFR should help you keep your scenes oriented as things get more complex, but it's not a necessity.
 
-Unlike the `cube` instance and the `light`, the camera is not 'added' to the scene as it is not technically part of the scene; it is only used as a parameter to the `renderer`.
+Unlike the `cube` instance and the `light`, the camera is __not__ added to the scene as it is not *part* of the scene; it is only used to *capture* the scene for the `renderer`.
 
 The `renderer` is like the final bit of glue that takes a scene, a camera, and a window and puts them all together to produce an output. Another way to think of a renderer is as something that takes two inputs (a camera and a scene) and uses them to take a "snapshot" each frame to be shown on the output (the window).
-
-For more information about scenes, cameras, and renderers, see: [:octicons-arrow-right-24: Scenes](/concepts/scenes.md)
 
 ### Rendering at 60Hz, Handling Input
 
@@ -322,10 +314,6 @@ while (!loop.Input.UserQuitRequested) { // (3)!
 7. 	Finally, this call to `Render()` updates the `window` with the latest `scene` as captured by our `camera`. 
 
 	Remember, `renderer.Render()` is being called 60 times per second- thereby giving the illusion of a moving image!
-
-For more information about input handling, see: [:octicons-arrow-right-24: Input](/concepts/input.md)
-
-For more information about rotations, see: [:octicons-arrow-right-24: Math & Geometry](/concepts/math_and_geometry.md)
 
 ### Complete Example
 
