@@ -43,10 +43,10 @@ class LocalResourceGroupTest {
 			Assert.AreEqual(true, group.DisposesContainedResourcesByDefaultWhenDisposed);
 			Assert.AreEqual(false, group.IsSealed);
 
-			group.AddResource(meshes[0]);
-			group.AddResource(meshes[1]);
-			group.AddResource(cameras[0]);
-			group.AddResource(cameras[1]);
+			group.Add(meshes[0]);
+			group.Add(meshes[1]);
+			group.Add(cameras[0]);
+			group.Add(cameras[1]);
 
 			Assert.AreEqual(4, group.ResourceCount);
 			Assert.AreEqual(4, group.Resources.Length);
@@ -76,7 +76,7 @@ class LocalResourceGroupTest {
 
 			group.Seal();
 			Assert.AreEqual(true, group.IsSealed);
-			Assert.Catch(() => group.AddResource(cameras[2]));
+			Assert.Catch(() => group.Add(cameras[2]));
 		}
 
 		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(meshes[0].Name.ToString()));
@@ -88,8 +88,8 @@ class LocalResourceGroupTest {
 			Assert.AreEqual(false, group.DisposesContainedResourcesByDefaultWhenDisposed);
 			Assert.AreEqual(false, group.IsSealed);
 
-			group.AddResource(meshes[2]);
-			group.AddResource(meshes[3]);
+			group.Add(meshes[2]);
+			group.Add(meshes[3]);
 
 			Assert.AreEqual(2, group.ResourceCount);
 			Assert.AreEqual(2, group.Resources.Length);
@@ -112,23 +112,23 @@ class LocalResourceGroupTest {
 
 			group.Seal();
 			Assert.AreEqual(true, group.IsSealed);
-			Assert.Catch(() => group.AddResource(cameras[2]));
+			Assert.Catch(() => group.Add(cameras[2]));
 		}
 
 		Assert.DoesNotThrow(() => Console.WriteLine(meshes[2].Name.ToString()));
 		Assert.DoesNotThrow(() => Console.WriteLine(meshes[3].Name.ToString()));
 
 		var g = factory.ResourceAllocator.CreateResourceGroup(false);
-		g.AddResource(meshes[2]);
-		g.AddResource(meshes[3]);
+		g.Add(meshes[2]);
+		g.Add(meshes[3]);
 		g.Dispose(disposeContainedResources: true);
 
 		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(meshes[2].Name.ToString()));
 		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(meshes[3].Name.ToString()));
 
 		g = factory.ResourceAllocator.CreateResourceGroup(true);
-		g.AddResource(cameras[2]);
-		g.AddResource(cameras[3]);
+		g.Add(cameras[2]);
+		g.Add(cameras[3]);
 		g.Dispose(disposeContainedResources: false);
 
 		Assert.DoesNotThrow(() => Console.WriteLine(cameras[2].Name.ToString()));
@@ -154,16 +154,16 @@ class LocalResourceGroupTest {
 		}
 
 		g = factory.ResourceAllocator.CreateResourceGroup(false);
-		g.AddResource(meshes[4]);
-		g.AddResource(materials[0]);
+		g.Add(meshes[4]);
+		g.Add(materials[0]);
 		var i1 = g.GetAllResourcesOfType<Mesh>();
 		var i2 = g.Materials;
 		var i3 = g.Meshes;
 		AssertIteratorValid(i1);
 		AssertIteratorValid(i2);
 		AssertIteratorValid(i3);
-		g.AddResource(meshes[5]);
-		g.AddResource(materials[1]);
+		g.Add(meshes[5]);
+		g.Add(materials[1]);
 		AssertIteratorInvalid(i1);
 		AssertIteratorInvalid(i2);
 		AssertIteratorInvalid(i3);

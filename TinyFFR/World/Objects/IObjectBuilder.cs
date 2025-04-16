@@ -9,7 +9,7 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.World;
 
 public interface IObjectBuilder {
-	private void GetMeshAndMaterialFromGroup(ResourceGroup meshAndMaterialGroup, out Mesh outMesh, out Material outMaterial) {
+	private static void GetMeshAndMaterialFromGroup(ResourceGroup meshAndMaterialGroup, out Mesh outMesh, out Material outMaterial) {
 		if (meshAndMaterialGroup.Meshes.Count < 1) throw new ArgumentException($"Given {nameof(ResourceGroup)} does not contain any {nameof(Mesh)} instances.", nameof(meshAndMaterialGroup));
 		if (meshAndMaterialGroup.Materials.Count < 1) throw new ArgumentException($"Given {nameof(ResourceGroup)} does not contain any {nameof(Material)} instances.", nameof(meshAndMaterialGroup));
 

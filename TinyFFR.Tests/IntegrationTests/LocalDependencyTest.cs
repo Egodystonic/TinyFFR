@@ -36,7 +36,7 @@ class LocalDependencyTest {
 
 			var group = factory.ResourceAllocator.CreateResourceGroup(false);
 			var loop = factory.ApplicationLoopBuilder.CreateLoop();
-			group.AddResource(loop);
+			group.Add(loop);
 			AssertDependency(loop, group);
 
 			var tex = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.White);

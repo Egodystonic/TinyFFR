@@ -37,7 +37,6 @@ NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
 	}
 );
 
-Console.WriteLine(Direction.FromDualOrthogonalization(Direction.Left, Direction.Up));
 using var factory = new LocalTinyFfrFactory();
 var assLoad = factory.AssetLoader;
 

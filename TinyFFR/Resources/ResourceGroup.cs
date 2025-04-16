@@ -64,7 +64,7 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AddResource<TResource>(TResource resource) where TResource : IResource => Implementation.AddResource(Handle, resource);
+	public void Add<TResource>(TResource resource) where TResource : IResource => Implementation.AddResource(Handle, resource);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Seal() => Implementation.Seal(Handle);
