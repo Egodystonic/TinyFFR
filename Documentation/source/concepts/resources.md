@@ -47,6 +47,8 @@ In other words, resource types contain just two fields internally:
 
 	`Implementation` is the wrapped implementation reference; and it is passed the camera `_handle` along with the new `value` you wish to set. That implementation then does whatever is necessary to affect the change on the camera data.
 
+	Neither `Implementation` nor `_handle` are mutable; therefore the resource instance itself is readonly. But it ostensibly *behaves* like a mutable reference type.
+
 ??? warning "C# compiler inconsistency"
 	Unfortunately, when working with resource types in TinyFFR you may encounter a "CS1612" error when attempting to set properties via secondary structs.
 
@@ -76,13 +78,12 @@ In other words, resource types contain just two fields internally:
 
 	There are also various discussions on github: [https://github.com/dotnet/roslyn/issues/45284](https://github.com/dotnet/roslyn/issues/45284), [https://github.com/dotnet/csharplang/discussions/2068](https://github.com/dotnet/csharplang/discussions/2068), [https://github.com/dotnet/csharplang/discussions/8364](https://github.com/dotnet/csharplang/discussions/8364).
 
-### What is not a Resource?
+??? question "What is *not* a resource?"
+	The short answer is: Anything that doesn't implement `IResource`.
 
-The short answer is: Anything that doesn't implement `IResource`.
+	More generally, things that aren't resources are most the math/geometry types, but not always. These types can be used freely at any time, even before the factory has been created (or after it has been disposed).
 
-More generally, things that aren't resources are generally the math/geometry types, but not always. These types can be used freely at any time, even before the factory has been created (or after it has been disposed).
-
-Builders (e.g. `ICameraBuilder`) are also technically not resources, but these can not be used without their parent factory still being 'valid'. The factory itself is also not a resource.
+	Builders (e.g. `ICameraBuilder`) are also technically not resources, but these can not be used without their parent factory still being 'valid'. The factory itself is also not a resource.
 
 ## Lifetimes
 
@@ -177,9 +178,13 @@ resourceGroup.Dispose(disposeContainedResources: true); // (6)!
 
 	If you just call `Dispose()` (with no arguments), the default behaviour supplied at construction will be used.
 
-The `ResourceGroup` is itself a resource and can be added to another resource group. Like all other resources it is just a handle + implementation reference and is cheap to copy/pass around.
+The `ResourceGroup` is *itself* a resource and can be added to another resource group. Like all other resources it is just a handle + implementation reference and is cheap to copy/pass around.
 
-Resource groups are meant for when you wish to group/relate small bundles of strongly-associated resources (e.g. a mesh and material that make up a model). They are not designed for storing large lists of resources and you may suffer performance penalties when using them this way. If you need this functionality you could instead consider array-pool-backed collections:
+Resource groups are meant for when you wish to group/relate small bundles of strongly-associated resources (e.g. a mesh and material that make up a model). They are not designed for storing large lists of resources and you may suffer performance penalties when using them this way. 
+
+Also, remember: Resource groups create dependencies on the resources added to them, meaning you can not dispose a resource that's part of a group before firstly disposing the group. This is by design and makes sense when using groups for their intended purpose to "collate" or "tightly-group" related assets.
+
+If you need broader "collection-like" functionality you could instead consider *array-pool-backed collections*:
 
 ## Array-Pool-Backed Collections
 
@@ -216,7 +221,7 @@ var texelData = factory.ResourceAllocator
 factory.ResourceAllocator.ReturnPooledMemoryBuffer(texelData); // (2)!
 ```
 
-1. This returns a `Memory<TexelRgb24>` that will be reserved for your use until returned. The memory is reserved from an internal pool but is guaranteed to be zeroed when rented.
+1. This returns a `Memory<TexelRgb24>` of length `1024 * 1024` that will be reserved for your use until returned. The memory is reserved from an internal pool but is guaranteed to be zeroed when rented.
 2. The rented memory is returned to the pool to be used again. The buffer is cleared/zeroed on return.
 
 You should consider renting buffers like this when you need a 'space' to temporarily work with large amounts of data. Allocating standard collections or arrays results in high GC pressure if and when they are no longer in use; but using rented memory buffers avoids this problem.
