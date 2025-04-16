@@ -47,6 +47,35 @@ In other words, resource types contain just two fields internally:
 
 	`Implementation` is the wrapped implementation reference; and it is passed the camera `_handle` along with the new `value` you wish to set. That implementation then does whatever is necessary to affect the change on the camera data.
 
+??? warning "C# compiler inconsistency"
+	Unfortunately, when working with resource types in TinyFFR you may encounter a "CS1612" error when attempting to set properties via secondary structs.
+
+	For example, the following code will not compile:
+
+	```csharp
+	readonly struct MyStruct {
+		public Camera MainCamera { get; }
+	}
+
+	var s = new MyStruct();
+	s.MainCamera.Position = Location.Origin; // CS1612 error here
+	```
+
+	You can fix this by using the `Set...()` methods supplied on each resource type; paired with each settable property:
+
+	```csharp
+	readonly struct MyStruct {
+		public Camera MainCamera { get; }
+	}
+
+	var s = new MyStruct();
+	s.MainCamera.SetPosition(Location.Origin); // No more error, works as intended
+	```
+
+	There is an open proposal to fix this inconsistency: [https://github.com/dotnet/csharplang/issues/9174](https://github.com/dotnet/csharplang/issues/9174)
+
+	There are also various discussions on github: [https://github.com/dotnet/roslyn/issues/45284](https://github.com/dotnet/roslyn/issues/45284), [https://github.com/dotnet/csharplang/discussions/2068](https://github.com/dotnet/csharplang/discussions/2068), [https://github.com/dotnet/csharplang/discussions/8364](https://github.com/dotnet/csharplang/discussions/8364).
+
 ### What is not a Resource?
 
 The short answer is: Anything that doesn't implement `IResource`.
@@ -146,6 +175,50 @@ resourceGroup.Dispose(disposeContainedResources: true); // (6)!
 
 6.	When disposing a `ResourceGroup` you can override whether or not you wish to dispose all contained resources.
 
-	If you just call `Dispose()` (with no arguments), the default supplied at construction will be used.
+	If you just call `Dispose()` (with no arguments), the default behaviour supplied at construction will be used.
 
 The `ResourceGroup` is itself a resource and can be added to another resource group. Like all other resources it is just a handle + implementation reference and is cheap to copy/pass around.
+
+Resource groups are meant for when you wish to group/relate small bundles of strongly-associated resources (e.g. a mesh and material that make up a model). They are not designed for storing large lists of resources and you may suffer performance penalties when using them this way. If you need this functionality you could instead consider array-pool-backed collections:
+
+## Array-Pool-Backed Collections
+
+The factory's `ResourceAllocator` offers two methods for creating a list or dictionary that is backed by memory-pooled arrays:
+
+```csharp
+using var factory = new LocalTinyFfrFactory();
+
+var materials = factory.ResourceAllocator.CreateNewArrayPoolBackedList<Material>(); // (1)!
+var ints = factory.ResourceAllocator.CreateNewArrayPoolBackedList<int>();  // (2)!
+var dict = factory.ResourceAllocator.CreateNewArrayPoolBackedDictionary<int, Material>();  // (3)!
+```
+
+1. This creates a list of `Material`s. The returned list implements `IList<T>` and can therefore do most things any regular list can do.
+2. Array-pool-backed collections do not need to contain resource types only, here we create a list of `int`s. There is no restriction in the collection type.
+3. This creates a dictionary whose keys are `int`s and whose values are `Material`s. The returned type implements `IDictionary<TKey, TValue>`.
+
+Array-pool-backed collections rent and return internal storage buffers from a shared memory pool. This means that as the array/dictionary grows over time the internal memory storage will not become GC-rootless, meaning there is no pressure on the garbage collector.
+
+The disadvantage is that these collections are less well-optimised in some cases when compared to built-in .NET collections.
+
+These collections must also be `Disposed()` when you are done with them.
+
+If you can, pre-allocate collections at initialization time and dispose them after your application finishes, to reduce the garbage pressure even more (i.e. the list/dictionary itself will still be garbage collected ultimately). However this is not a hard requirement and using array-pool-backed collections will still offer great improvements to GC pressure even if you create/dispose them dynamically.
+
+## Pooled Memory Buffers
+
+You can also access pooled memory directly using the `ResourceAllocator`'s `CreatePooledMemoryBuffer()` method:
+
+```csharp
+var texelData = factory.ResourceAllocator
+	.CreatePooledMemoryBuffer<TexelRgb24>(1024 * 1024); // (1)!
+// Do stuff with texelData
+factory.ResourceAllocator.ReturnPooledMemoryBuffer(texelData); // (2)!
+```
+
+1. This returns a `Memory<TexelRgb24>` that will be reserved for your use until returned. The memory is reserved from an internal pool but is guaranteed to be zeroed when rented.
+2. The rented memory is returned to the pool to be used again. The buffer is cleared/zeroed on return.
+
+You should consider renting buffers like this when you need a 'space' to temporarily work with large amounts of data. Allocating standard collections or arrays results in high GC pressure if and when they are no longer in use; but using rented memory buffers avoids this problem.
+
+You must remember to always return any rented memory or else you will cause a memory leak.
