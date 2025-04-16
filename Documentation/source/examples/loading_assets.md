@@ -459,7 +459,7 @@ while (!loop.Input.UserQuitRequested) {
 
 6.	Here we set our loaded HDR image as the scene's backdrop. 
 
-	We also set the indirect lighting brightness of the backdrop to 70%. This is completely an aesthetic choice, but as the cloud scene is a sunset one it can make sense to reduce the indirect lighting brightness a little.
+	We also set the intensity of the backdrop to 70%. This is completely an aesthetic choice, but as the cloud scene is a sunset one it can make sense to reduce the brightness a little.
 
 7. 	On this line we're defining how far we want the camera to be from the treasure chest as it orbits it. For this example, we've chosen 1.3 metres.
 

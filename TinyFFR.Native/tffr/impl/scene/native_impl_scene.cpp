@@ -104,7 +104,6 @@ StartExportedFunc(create_scene_backdrop_texture, TextureHandle skyboxTexture, Te
 void native_impl_scene::set_scene_backdrop(SceneHandle scene, SkyboxHandle skybox, IndirectLightHandle indirectLight) {
 	ThrowIfNull(scene, "Scene was null.");
 	ThrowIfNull(skybox, "Skybox was null.");
-	ThrowIfNull(indirectLight, "Light was null.");
 
 	scene->setSkybox(skybox);
 	scene->setIndirectLight(indirectLight);

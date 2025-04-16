@@ -45,9 +45,13 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	public void Remove(Light light) => Implementation.Remove(_handle, light);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetBackdrop(EnvironmentCubemap cubemap, float indirectLightingIntensity = 1f) => Implementation.SetBackdrop(_handle, cubemap, indirectLightingIntensity);
+	public void SetBackdrop(EnvironmentCubemap cubemap, float backdropIntensity = 1f) => Implementation.SetBackdrop(_handle, cubemap, backdropIntensity);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBackdrop(ColorVect color, float indirectLightingIntensity = 1f) => Implementation.SetBackdrop(_handle, color, indirectLightingIntensity);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetBackdropWithoutIndirectLighting(EnvironmentCubemap cubemap, float backdropIntensity = 1f) => Implementation.SetBackdropWithoutIndirectLighting(_handle, cubemap, backdropIntensity);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetBackdropWithoutIndirectLighting(ColorVect color) => Implementation.SetBackdropWithoutIndirectLighting(_handle, color);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RemoveBackdrop() => Implementation.RemoveBackdrop(_handle);
 

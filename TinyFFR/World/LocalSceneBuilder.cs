@@ -156,6 +156,48 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 
 		_backdropMap[handle] = new(null, skyboxHandle, indirectLightHandle);
 	}
+	public void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, EnvironmentCubemap cubemap, float backdropIntensity) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+
+		RemoveBackdrop(handle);
+
+		CreateSceneBackdrop(
+			cubemap.SkyboxTextureHandle,
+			cubemap.IndirectLightingTextureHandle,
+			Scene.BrightnessToLux(backdropIntensity),
+			out var skyboxHandle,
+			out var indirectLightHandle
+		).ThrowIfFailure();
+
+		SetSceneBackdrop(
+			handle,
+			skyboxHandle,
+			UIntPtr.Zero
+		).ThrowIfFailure();
+
+		_backdropMap[handle] = new(cubemap, skyboxHandle, indirectLightHandle);
+		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), cubemap);
+	}
+	public void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, ColorVect color) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+
+		RemoveBackdrop(handle);
+
+		CreateSceneBackdrop(
+			color.AsVector4,
+			0f,
+			out var skyboxHandle,
+			out var indirectLightHandle
+		).ThrowIfFailure();
+
+		SetSceneBackdrop(
+			handle,
+			skyboxHandle,
+			UIntPtr.Zero
+		).ThrowIfFailure();
+
+		_backdropMap[handle] = new(null, skyboxHandle, indirectLightHandle);
+	}
 	public void RemoveBackdrop(ResourceHandle<Scene> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (!_backdropMap.Remove(handle, out var curBackdropData)) return;
