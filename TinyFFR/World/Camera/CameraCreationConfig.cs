@@ -12,8 +12,8 @@ public readonly ref struct CameraCreationConfig {
 	public static readonly Angle DefaultFieldOfView = 60f;
 	public static readonly float DefaultAspectRatio = 16f / 9f;
 	public static readonly bool DefaultFieldOfViewVerticalFlag = true;
-	public static readonly float DefaultNearPlaneDistance = 0.1f;
-	public static readonly float DefaultFarPlaneDistance = 3_000f;
+	public static readonly float DefaultNearPlaneDistance = 0.15f;
+	public static readonly float DefaultFarPlaneDistance = 5_000f;
 
 	public Location Position { get; init; } = DefaultPosition;
 	public Direction ViewDirection { get; init; } = DefaultViewDirection;

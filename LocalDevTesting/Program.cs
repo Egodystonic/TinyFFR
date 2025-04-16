@@ -52,8 +52,10 @@ using var scene = factory.SceneBuilder.CreateScene();
 
 scene.Add(modelInstance);
 scene.SetBackdrop(hdr, 0.7f);
+modelInstance.SetScaling(new(1000f));
+scene.Add(factory.ObjectBuilder.CreateModelInstance(mesh, material, initialPosition: (0, -0.3f, -1f)));
 
-var cameraDistance = 1.3f;
+var cameraDistance = 5000f;
 var chestToCameraStartVect = Direction.Backward * cameraDistance;
 using var camera = factory.CameraBuilder.CreateCamera(
 	initialPosition: Location.Origin + chestToCameraStartVect, 
@@ -78,7 +80,7 @@ while (!loop.Input.UserQuitRequested) {
 }
 
 static class CameraInputHandler {
-	const float CameraMovementSpeed = 1f;
+	const float CameraMovementSpeed = 100f;
 	static Angle _currentHorizontalAngle = Angle.Zero;
 	static Angle _currentVerticalAngle = Angle.Zero;
 	static Direction _currentHorizontalPlaneDir = Direction.Forward;

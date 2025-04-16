@@ -127,7 +127,7 @@ Cameras offer the following controls:
 
 	In general you should try to keep the `FarPlaneDistance` no more than 5 orders of magnitude more than `NearPlaneDistance`, 6 at an absolute max. TinyFFR will automatically adjust the `FarPlaneDistance` to make sure it is never more than 1E6 times higher than `NearPlaneDistance`.
 
-	The default value is `CameraCreationConfig.DefaultNearPlaneDistance` (0.1m). This can not be 0 due to [perspective divide](https://stackoverflow.com/questions/17269686/why-do-we-need-perspective-division); the lowest permitted value is `Camera.NearPlaneDistanceMin` (1E-5m).
+	The default value is `CameraCreationConfig.DefaultNearPlaneDistance` (0.15m). This can not be 0 due to [perspective divide](https://stackoverflow.com/questions/17269686/why-do-we-need-perspective-division); the lowest permitted value is `Camera.NearPlaneDistanceMin` (1E-5m).
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `FarPlaneDistance`
 
@@ -137,7 +137,7 @@ Cameras offer the following controls:
 
 	In general you should try to keep the `FarPlaneDistance` no more than 5 orders of magnitude more than `NearPlaneDistance`, 6 at an absolute max. TinyFFR will automatically adjust the `FarPlaneDistance` to make sure it is never more than 1E6 times higher than `NearPlaneDistance`.
 
-	The default value is `CameraCreationConfig.DefaultFarPlaneDistance` (3000m). This can not be lower than or equal to `NearPlaneDistance`.
+	The default value is `CameraCreationConfig.DefaultFarPlaneDistance` (5000m). This can not be lower than or equal to `NearPlaneDistance`.
 
 <span class="def-icon">:material-code-block-parentheses:</span> `SetViewAndUpDirection(Direction newViewDirection, Direction newUpDirection, bool enforceOrthogonality = true)`
 
