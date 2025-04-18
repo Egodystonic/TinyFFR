@@ -42,26 +42,6 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 	static float GetNormalizedDisplacement(float normalizedHorizontal, float normalizedVertical) => Single.Min(MathF.Sqrt(normalizedHorizontal * normalizedHorizontal + normalizedVertical * normalizedVertical), 1f);
 	public float Displacement => GetNormalizedDisplacement(DisplacementHorizontal, DisplacementVertical);
 
-	public float DisplacementHorizontalWithDeadzone {
-		get {
-			var d = DisplacementHorizontal;
-			return MathF.Abs(d) > RecommendedDeadzoneSize ? d : 0f;
-		}
-	}
-	public float DisplacementVerticalWithDeadzone {
-		get {
-			var d = DisplacementVertical;
-			return MathF.Abs(d) > RecommendedDeadzoneSize ? d : 0f;
-		}
-	}
-	public float DisplacementWithDeadzone {
-		get {
-			var h = DisplacementHorizontal;
-			var v = DisplacementVertical;
-			return MathF.Abs(h) > RecommendedDeadzoneSize || MathF.Abs(v) > RecommendedDeadzoneSize ? GetNormalizedDisplacement(h, v) : 0f;
-		}
-	}
-
 	public AnalogDisplacementLevel DisplacementLevel {
 		get {
 			return (int) (Int16.MaxValue * Displacement) switch {
@@ -81,7 +61,6 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 	public static GameControllerStickPosition FromMaxOrientation(Orientation2D orientation) => _orientationMap[orientation];
 
 	public XYPair<float> AsXYPair(float deadzoneSize = RecommendedDeadzoneSize) {
-		if (deadzoneSize is < 0f or > 1f) throw new ArgumentOutOfRangeException(nameof(deadzoneSize), deadzoneSize, $"Deadzone must be between 0 and 1 (inclusive).");
 		var x = DisplacementHorizontal;
 		var y = DisplacementVertical;
 		return new(
@@ -93,20 +72,31 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 	// TODO clarify this is the four-quadrant inverse tangent
 	public Angle? GetPolarAngle(float deadzoneSize = RecommendedDeadzoneSize) => Angle.From2DPolarAngle(AsXYPair(deadzoneSize));
 
-
 	public bool IsHorizontalOffsetOutsideDeadzone(float deadzoneSize = RecommendedDeadzoneSize) {
-		if (deadzoneSize is < 0f or > 1f) throw new ArgumentOutOfRangeException(nameof(deadzoneSize), deadzoneSize, $"Deadzone must be between 0 and 1 (inclusive).");
 		return MathF.Abs(DisplacementHorizontal) > deadzoneSize;
 	}
 	public bool IsVerticalOffsetOutsideDeadzone(float deadzoneSize = RecommendedDeadzoneSize) {
-		if (deadzoneSize is < 0f or > 1f) throw new ArgumentOutOfRangeException(nameof(deadzoneSize), deadzoneSize, $"Deadzone must be between 0 and 1 (inclusive).");
 		return MathF.Abs(DisplacementVertical) > deadzoneSize;
 	}
 	public bool IsOutsideDeadzone(float deadzoneSize = RecommendedDeadzoneSize) {
-		if (deadzoneSize is < 0f or > 1f) throw new ArgumentOutOfRangeException(nameof(deadzoneSize), deadzoneSize, $"Deadzone must be between 0 and 1 (inclusive).");
-		return IsHorizontalOffsetOutsideDeadzone(deadzoneSize) || IsVerticalOffsetOutsideDeadzone(deadzoneSize);
+		return MathF.Abs(Displacement) > deadzoneSize;
 	}
 
+	static float AccountForAndRenormalizeDisplacementWithDeadzone(float displacement, float deadzone) {
+		var displacementLessDeadzone = displacement - Single.CopySign(deadzone, displacement);
+		if (Math.Sign(displacement) != Math.Sign(displacementLessDeadzone)) return 0f;
+
+		return displacementLessDeadzone / (1f - deadzone);
+	}
+	public float GetDisplacementHorizontalWithDeadzone(float deadzoneSize = RecommendedDeadzoneSize) {
+		return AccountForAndRenormalizeDisplacementWithDeadzone(DisplacementHorizontal, deadzoneSize);
+	}
+	public float GetDisplacementVerticalWithDeadzone(float deadzoneSize = RecommendedDeadzoneSize) {
+		return AccountForAndRenormalizeDisplacementWithDeadzone(DisplacementVertical, deadzoneSize);
+	}
+	public float GetDisplacementWithDeadzone(float deadzoneSize = RecommendedDeadzoneSize) {
+		return AccountForAndRenormalizeDisplacementWithDeadzone(Displacement, deadzoneSize);
+	}
 
 	public HorizontalOrientation2D GetHorizontalOrientation(float deadzoneSize = RecommendedDeadzoneSize) => GetOrientation(deadzoneSize).GetHorizontalComponent();
 	public VerticalOrientation2D GetVerticalOrientation(float deadzoneSize = RecommendedDeadzoneSize) => GetOrientation(deadzoneSize).GetVerticalComponent();

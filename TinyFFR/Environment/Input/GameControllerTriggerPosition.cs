@@ -6,6 +6,7 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR.Environment.Input;
 
 public readonly struct GameControllerTriggerPosition : IEquatable<GameControllerTriggerPosition> {
+	public const float RecommendedDeadzoneSize = ((float) AnalogDisplacementLevel.Slight / Int16.MaxValue) + 1E-5f; // Just slightly over the raw trigger level for 'slight'
 	public static readonly GameControllerTriggerPosition Zero = new(0);
 	public static readonly GameControllerTriggerPosition Max = new(Int16.MaxValue);
 
@@ -13,9 +14,7 @@ public readonly struct GameControllerTriggerPosition : IEquatable<GameController
 
 	// Make sure displacement can never be negative
 	public float Displacement => Int16.Max(DisplacementRaw, 0) / (float) Int16.MaxValue;
-
-	public float DisplacementWithDeadzone => DisplacementRaw < (int) AnalogDisplacementLevel.Slight ? 0f : Displacement;
-
+	
 	public AnalogDisplacementLevel DisplacementLevel {
 		get {
 			return DisplacementRaw switch {
@@ -25,6 +24,14 @@ public readonly struct GameControllerTriggerPosition : IEquatable<GameController
 				_ => AnalogDisplacementLevel.None
 			};
 		}
+	}
+
+	public float GetDisplacementWithDeadzone(float deadzoneSize = RecommendedDeadzoneSize) {
+		var displacement = Displacement;
+		var displacementLessDeadzone = displacement - deadzoneSize;
+		if (Math.Sign(displacement) != Math.Sign(displacementLessDeadzone)) return 0f;
+
+		return displacementLessDeadzone / (1f - deadzoneSize);
 	}
 
 	public GameControllerTriggerPosition(short displacementRaw) => DisplacementRaw = displacementRaw;

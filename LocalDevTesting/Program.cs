@@ -52,10 +52,8 @@ using var scene = factory.SceneBuilder.CreateScene();
 
 scene.Add(modelInstance);
 scene.SetBackdrop(hdr, 0.7f);
-modelInstance.SetScaling(new(1000f));
-scene.Add(factory.ObjectBuilder.CreateModelInstance(mesh, material, initialPosition: (0, -0.3f, -1f)));
 
-var cameraDistance = 5000f;
+var cameraDistance = 3f;
 var chestToCameraStartVect = Direction.Backward * cameraDistance;
 using var camera = factory.CameraBuilder.CreateCamera(
 	initialPosition: Location.Origin + chestToCameraStartVect, 
@@ -80,7 +78,7 @@ while (!loop.Input.UserQuitRequested) {
 }
 
 static class CameraInputHandler {
-	const float CameraMovementSpeed = 100f;
+	const float CameraMovementSpeed = 1f;
 	static Angle _currentHorizontalAngle = Angle.Zero;
 	static Angle _currentVerticalAngle = Angle.Zero;
 	static Direction _currentHorizontalPlaneDir = Direction.Forward;
@@ -149,8 +147,8 @@ static class CameraInputHandler {
 	static void AdjustCameraViewDirectionGamepad(ILatestGameControllerInputStateRetriever input, Camera camera, float deltaTime) {
 		const float StickSensitivity = 100f;
 
-		var horizontalRotationStrength = input.RightStickPosition.DisplacementHorizontalWithDeadzone;
-		var verticalRotationStrength = input.RightStickPosition.DisplacementVerticalWithDeadzone;
+		var horizontalRotationStrength = input.RightStickPosition.GetDisplacementHorizontalWithDeadzone();
+		var verticalRotationStrength = input.RightStickPosition.GetDisplacementVerticalWithDeadzone();
 
 		_currentHorizontalAngle += StickSensitivity * horizontalRotationStrength * deltaTime;
 		_currentHorizontalAngle = _currentHorizontalAngle.Normalized;
@@ -165,11 +163,11 @@ static class CameraInputHandler {
 	}
 
 	static void AdjustCameraPositionGamepad(ILatestGameControllerInputStateRetriever input, Camera camera, float deltaTime) {
-		var verticalMovementMultiplier = input.RightTriggerPosition.DisplacementWithDeadzone - input.LeftTriggerPosition.DisplacementWithDeadzone;
+		var verticalMovementMultiplier = input.RightTriggerPosition.GetDisplacementWithDeadzone() - input.LeftTriggerPosition.GetDisplacementWithDeadzone();
 		var verticalMovementVect = verticalMovementMultiplier * Direction.Up;
 
 		var horizontalMovementVect = Vect.Zero;
-		var stickDisplacement = input.LeftStickPosition.DisplacementWithDeadzone;
+		var stickDisplacement = input.LeftStickPosition.GetDisplacementWithDeadzone();
 		var stickAngle = input.LeftStickPosition.GetPolarAngle();
 
 		if (stickAngle is { } horizontalMovementAngle) {
@@ -178,7 +176,7 @@ static class CameraInputHandler {
 		}
 
 
-		var sumMovementVect = (horizontalMovementVect + verticalMovementVect).WithLength(CameraMovementSpeed * deltaTime);
+		var sumMovementVect = (horizontalMovementVect + verticalMovementVect).WithMaxLength(1f) * CameraMovementSpeed * deltaTime;
 		camera.MoveBy(sumMovementVect);
 	}
 }

@@ -65,17 +65,55 @@ class GameControllerStickPositionTest {
 
 	[Test]
 	public void ShouldCorrectlyIncorporateDeadzoneInToNormalizedDisplacement() {
-		Assert.AreEqual(0f, new GameControllerStickPosition((short) AnalogDisplacementLevel.Slight, (short) AnalogDisplacementLevel.Slight).DisplacementHorizontalWithDeadzone);
-		Assert.AreEqual(0f, new GameControllerStickPosition((short) AnalogDisplacementLevel.Slight, (short) AnalogDisplacementLevel.Slight).DisplacementVerticalWithDeadzone);
-		Assert.AreEqual(0f, new GameControllerStickPosition((short) AnalogDisplacementLevel.Slight, (short) AnalogDisplacementLevel.Slight).DisplacementWithDeadzone);
+		short ConvertNormalizedDisplacement(float normalizedValue) => (short) (Int16.MaxValue * normalizedValue);
+		// This method is trying to create a short value to put in to horizontal/vertical displacement that
+		// will result in the given normalizedValue for Displacement (i.e. not the horizontal/vertical one).
+		// Does not take in to account the Min()
+		short GetNonCardinalToCardinalDisplacementRaw(float normalizedValue, bool negate = false) => (short) (ConvertNormalizedDisplacement(MathF.Sqrt((normalizedValue * normalizedValue) / 2f)) * (negate ? -1 : 1));
 
-		Assert.AreNotEqual(0f, new GameControllerStickPosition((short) AnalogDisplacementLevel.Slight + 1, (short) AnalogDisplacementLevel.Slight + 1).DisplacementHorizontalWithDeadzone);
-		Assert.AreNotEqual(0f, new GameControllerStickPosition((short) AnalogDisplacementLevel.Slight + 1, (short) AnalogDisplacementLevel.Slight + 1).DisplacementVerticalWithDeadzone);
-		Assert.AreNotEqual(0f, new GameControllerStickPosition((short) AnalogDisplacementLevel.Slight + 1, (short) AnalogDisplacementLevel.Slight + 1).DisplacementWithDeadzone);
+		Assert.AreEqual(0f, new GameControllerStickPosition((short) AnalogDisplacementLevel.Slight, (short) AnalogDisplacementLevel.Slight).GetDisplacementHorizontalWithDeadzone());
+		Assert.AreEqual(0f, new GameControllerStickPosition((short) AnalogDisplacementLevel.Slight, (short) AnalogDisplacementLevel.Slight).GetDisplacementVerticalWithDeadzone());
+		Assert.AreEqual(0f, new GameControllerStickPosition(GetNonCardinalToCardinalDisplacementRaw(0.15f), GetNonCardinalToCardinalDisplacementRaw(0.15f)).GetDisplacementWithDeadzone());
 
-		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MaxValue, Int16.MaxValue).DisplacementHorizontalWithDeadzone);
-		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MaxValue, Int16.MaxValue).DisplacementVerticalWithDeadzone);
-		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MaxValue, Int16.MaxValue).DisplacementWithDeadzone);
+		Assert.AreEqual(0f, new GameControllerStickPosition(-(short) AnalogDisplacementLevel.Slight, -(short) AnalogDisplacementLevel.Slight).GetDisplacementHorizontalWithDeadzone());
+		Assert.AreEqual(0f, new GameControllerStickPosition(-(short) AnalogDisplacementLevel.Slight, -(short) AnalogDisplacementLevel.Slight).GetDisplacementVerticalWithDeadzone());
+		Assert.AreEqual(0f, new GameControllerStickPosition(GetNonCardinalToCardinalDisplacementRaw(0.15f, true), GetNonCardinalToCardinalDisplacementRaw(0.15f, true)).GetDisplacementWithDeadzone());
+
+		Assert.AreNotEqual(0f, new GameControllerStickPosition((short) AnalogDisplacementLevel.Slight + 1, (short) AnalogDisplacementLevel.Slight + 1).GetDisplacementHorizontalWithDeadzone());
+		Assert.AreNotEqual(0f, new GameControllerStickPosition((short) AnalogDisplacementLevel.Slight + 1, (short) AnalogDisplacementLevel.Slight + 1).GetDisplacementVerticalWithDeadzone());
+		Assert.AreNotEqual(0f, new GameControllerStickPosition((short) (GetNonCardinalToCardinalDisplacementRaw(0.15f) + 1), (short) (GetNonCardinalToCardinalDisplacementRaw(0.15f) + 1)).GetDisplacementWithDeadzone());
+
+		Assert.AreNotEqual(0f, new GameControllerStickPosition(-((short) AnalogDisplacementLevel.Slight + 1), -((short) AnalogDisplacementLevel.Slight + 1)).GetDisplacementHorizontalWithDeadzone());
+		Assert.AreNotEqual(0f, new GameControllerStickPosition(-((short) AnalogDisplacementLevel.Slight + 1), -((short) AnalogDisplacementLevel.Slight + 1)).GetDisplacementVerticalWithDeadzone());
+		Assert.AreNotEqual(0f, new GameControllerStickPosition((short) (GetNonCardinalToCardinalDisplacementRaw(0.15f, true) - 1), (short) (GetNonCardinalToCardinalDisplacementRaw(0.15f, true) - 1)).GetDisplacementWithDeadzone());
+
+		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MaxValue, Int16.MaxValue).GetDisplacementHorizontalWithDeadzone());
+		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MaxValue, Int16.MaxValue).GetDisplacementVerticalWithDeadzone());
+		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MaxValue, Int16.MaxValue).GetDisplacementWithDeadzone());
+
+		Assert.AreEqual(-1f, new GameControllerStickPosition(Int16.MinValue, Int16.MinValue).GetDisplacementHorizontalWithDeadzone());
+		Assert.AreEqual(-1f, new GameControllerStickPosition(Int16.MinValue, Int16.MinValue).GetDisplacementVerticalWithDeadzone());
+		Assert.AreEqual(1f, new GameControllerStickPosition(Int16.MinValue, Int16.MinValue).GetDisplacementWithDeadzone());
+
+		void TestAllThreeDisplacementTypes(float expectation, float normalizedDisplacement, float deadzone) {
+			Assert.AreEqual(expectation, new GameControllerStickPosition(ConvertNormalizedDisplacement(normalizedDisplacement), 0).GetDisplacementHorizontalWithDeadzone(deadzone), 1E-3f);
+			Assert.AreEqual(expectation, new GameControllerStickPosition(0, ConvertNormalizedDisplacement(normalizedDisplacement)).GetDisplacementVerticalWithDeadzone(deadzone), 1E-3f);
+			Assert.AreEqual(Math.Abs(expectation), new GameControllerStickPosition(GetNonCardinalToCardinalDisplacementRaw(normalizedDisplacement), GetNonCardinalToCardinalDisplacementRaw(normalizedDisplacement)).GetDisplacementWithDeadzone(deadzone), 1E-3f);
+		}
+
+		TestAllThreeDisplacementTypes(0f, 0.4f, 0.5f);
+		TestAllThreeDisplacementTypes(1f / 6f, 0.5f, 0.4f);
+		TestAllThreeDisplacementTypes(0.6666f, 0.8f, 0.4f);
+		TestAllThreeDisplacementTypes(0.5f, 0.5f, 0f);
+		TestAllThreeDisplacementTypes(1f, 1f, 0f);
+		TestAllThreeDisplacementTypes(1f, 1f, 0.9f);
+
+		TestAllThreeDisplacementTypes(0f, -0.4f, 0.5f);
+		TestAllThreeDisplacementTypes(-1f / 6f, -0.5f, 0.4f);
+		TestAllThreeDisplacementTypes(-0.6666f, -0.8f, 0.4f);
+		TestAllThreeDisplacementTypes(-0.5f, -0.5f, 0f);
+		TestAllThreeDisplacementTypes(-1f, -1f, 0f);
+		TestAllThreeDisplacementTypes(-1f, -1f, 0.9f);
 	}
 
 	[Test]
@@ -172,7 +210,7 @@ class GameControllerStickPositionTest {
 		}
 
 		foreach (var kvp in GetProportionalDirectionals(0.4f)) {
-			Assert.AreEqual(false, kvp.Value.IsOutsideDeadzone(0.5f));
+			Assert.AreEqual(false, kvp.Value.IsOutsideDeadzone(MathF.Sqrt(0.32f) + 0.01f));
 			Assert.AreEqual(false, kvp.Value.IsHorizontalOffsetOutsideDeadzone(0.5f));
 			Assert.AreEqual(false, kvp.Value.IsVerticalOffsetOutsideDeadzone(0.5f));
 		}

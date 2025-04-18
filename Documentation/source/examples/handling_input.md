@@ -377,9 +377,9 @@ static void AdjustCameraViewDirectionGamepad(ILatestGameControllerInputStateRetr
 	const float StickSensitivity = 100f; // (1)!
 
 	var horizontalRotationStrength = 
-		input.RightStickPosition.DisplacementHorizontalWithDeadzone; // (2)!
+		input.RightStickPosition.GetDisplacementHorizontalWithDeadzone(); // (2)!
 	var verticalRotationStrength = 
-		input.RightStickPosition.DisplacementVerticalWithDeadzone; // (3)!
+		input.RightStickPosition.GetDisplacementVerticalWithDeadzone(); // (3)!
 
 	_currentHorizontalAngle += 
 		StickSensitivity * horizontalRotationStrength * deltaTime; // (4)!
@@ -408,11 +408,11 @@ static void AdjustCameraViewDirectionGamepad(ILatestGameControllerInputStateRetr
 ```
 
 1.	This is just setting the maximum rotation speed of the camera, in degrees per second. Adjust to taste.
-2.	Here we store the value of `input.RightStickPosition.DisplacementHorizontalWithDeadzone` as `horizontalRotationStrength`.
+2.	Here we store the value of `input.RightStickPosition.GetDisplacementHorizontalWithDeadzone()` as `horizontalRotationStrength`.
 
 	`input.RightStickPosition.DisplacementHorizontal` gives us a normalized (`1f` to `-1f`) value indicating how far to the right the stick has been pushed. A value of `1f` indicates fully to the right, a value of `-1f` indicates fully to the left, a value of `0f` indicates no displacement.
 
-	`input.RightStickPosition.DisplacementHorizontalWithDeadzone` gives us the same value but with a built-in [deadzone](https://www.howtogeek.com/826612/what-is-a-controller-dead-zone/), meaning the value will stay at `0f` a little longer until the user has pushed the control stick a little further away from the central position.
+	`input.RightStickPosition.GetDisplacementHorizontalWithDeadzone()` gives us the same value but with a built-in [deadzone](https://www.howtogeek.com/826612/what-is-a-controller-dead-zone/), meaning the value will stay at `0f` a little longer until the user has pushed the control stick a little further away from the central position.
 
 	The reason for using a deadzone is to eliminate so-called 'stick drift' where the centred position of a controller stick actually registers a small, slight value. Without using a deadzone, if your controller is less than perfect, it will constantly rotate the camera by a small amount.
 
@@ -428,7 +428,7 @@ static void AdjustCameraViewDirectionGamepad(ILatestGameControllerInputStateRetr
 
 6.	On this line we're adjusting the `_currentVerticalAngle` in the exact same we we did as for the horizontal angle above.
 
-	Note that in this case we *subtact* rather than *add* the multiplied value, because `DisplacementVerticalWithDeadzone` returns a positive value for upward motion on the stick (and we decided that a positive vertical angle should indicate looking *down*). 
+	Note that in this case we *subtact* rather than *add* the multiplied value, because `GetDisplacementVerticalWithDeadzone()` returns a positive value for upward motion on the stick (and we decided that a positive vertical angle should indicate looking *down*). 
 	
 	That being said, if you prefer an inverted camera control you could simply replace the `-=` here with a `+=`.
 
@@ -461,13 +461,13 @@ Finally, let's add a method `AdjustCameraPositionGamepad()` to allow us to move 
 ```csharp
 static void AdjustCameraPositionGamepad(ILatestGameControllerInputStateRetriever input, Camera camera, float deltaTime) {
 	var verticalMovementMultiplier = // (1)!
-		input.RightTriggerPosition.DisplacementWithDeadzone 
-		- input.LeftTriggerPosition.DisplacementWithDeadzone;
+		input.RightTriggerPosition.GetDisplacementWithDeadzone() 
+		- input.LeftTriggerPosition.GetDisplacementWithDeadzone();
 
 	var verticalMovementVect = verticalMovementMultiplier * Direction.Up; // (2)!
 
 	var horizontalMovementVect = Vect.Zero; // (3)!
-	var stickDisplacement = input.LeftStickPosition.DisplacementWithDeadzone; // (4)!
+	var stickDisplacement = input.LeftStickPosition.GetDisplacementWithDeadzone(); // (4)!
 	var stickAngle = input.LeftStickPosition.GetPolarAngle(); // (5)!
 
 	if (stickAngle is { } horizontalMovementAngle) { // (6)!
@@ -489,9 +489,9 @@ static void AdjustCameraPositionGamepad(ILatestGameControllerInputStateRetriever
 
 1. 	Here we calculate how much to move the camera in the vertical (up/down) direction.
 
-	`input.RightTriggerPosition.DisplacementWithDeadzone` tells us how deeply the right trigger has been depressed, where `0f` is not at all and `1f` is completely depressed.
+	`input.RightTriggerPosition.GetDisplacementWithDeadzone()` tells us how deeply the right trigger has been depressed, where `0f` is not at all and `1f` is completely depressed.
 	
-	`input.LeftTriggerPosition.DisplacementWithDeadzone` gives us the same value but for the left trigger.
+	`input.LeftTriggerPosition.GetDisplacementWithDeadzone()` gives us the same value but for the left trigger.
 
 	As the name implies, each property incorporates a small deadzone so small values will return as `0f`, to account for controller hardware issues.
 
@@ -637,8 +637,8 @@ static class CameraInputHandler {
 	static void AdjustCameraViewDirectionGamepad(ILatestGameControllerInputStateRetriever input, Camera camera, float deltaTime) {
 		const float StickSensitivity = 100f;
 
-		var horizontalRotationStrength = input.RightStickPosition.DisplacementHorizontalWithDeadzone;
-		var verticalRotationStrength = input.RightStickPosition.DisplacementVerticalWithDeadzone;
+		var horizontalRotationStrength = input.RightStickPosition.GetDisplacementHorizontalWithDeadzone();
+		var verticalRotationStrength = input.RightStickPosition.GetDisplacementVerticalWithDeadzone();
 
 		_currentHorizontalAngle += StickSensitivity * horizontalRotationStrength * deltaTime;
 		_currentHorizontalAngle = _currentHorizontalAngle.Normalized;
@@ -653,11 +653,11 @@ static class CameraInputHandler {
 	}
 
 	static void AdjustCameraPositionGamepad(ILatestGameControllerInputStateRetriever input, Camera camera, float deltaTime) {
-		var verticalMovementMultiplier = input.RightTriggerPosition.DisplacementWithDeadzone - input.LeftTriggerPosition.DisplacementWithDeadzone;
+		var verticalMovementMultiplier = input.RightTriggerPosition.GetDisplacementWithDeadzone() - input.LeftTriggerPosition.GetDisplacementWithDeadzone();
 		var verticalMovementVect = verticalMovementMultiplier * Direction.Up;
 
 		var horizontalMovementVect = Vect.Zero;
-		var stickDisplacement = input.LeftStickPosition.DisplacementWithDeadzone;
+		var stickDisplacement = input.LeftStickPosition.GetDisplacementWithDeadzone();
 		var stickAngle = input.LeftStickPosition.GetPolarAngle();
 
 		if (stickAngle is { } horizontalMovementAngle) {

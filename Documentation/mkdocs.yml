@@ -46,7 +46,7 @@ markdown_extensions:
   - pymdownx.tabbed:
       alternate_style: true
   - toc:
-      permalink: 🔗
+      permalink: "#"
       title: Page Contents
       toc_depth: 3
 

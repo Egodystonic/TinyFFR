@@ -28,10 +28,17 @@ class GameControllerTriggerPositionTest {
 
 	[Test]
 	public void ShouldCorrectlyIncorporateDeadzoneInToNormalizedDisplacement() {
-		Assert.AreEqual(0f, new GameControllerTriggerPosition((short) (AnalogDisplacementLevel.Slight - 1)).DisplacementWithDeadzone);
-		Assert.AreNotEqual(0f, new GameControllerTriggerPosition((short) AnalogDisplacementLevel.Slight).DisplacementWithDeadzone);
-		Assert.AreNotEqual(0f, new GameControllerTriggerPosition((short) AnalogDisplacementLevel.Full).DisplacementWithDeadzone);
-		Assert.AreEqual(1f, new GameControllerTriggerPosition(Int16.MaxValue).DisplacementWithDeadzone);
+		short ConvertNormalizedDisplacement(float normalizedValue) => (short) (Int16.MaxValue * normalizedValue);
+
+		Assert.AreEqual(0f, new GameControllerTriggerPosition((short) (AnalogDisplacementLevel.Slight)).GetDisplacementWithDeadzone());
+		Assert.AreNotEqual(0f, new GameControllerTriggerPosition((short) AnalogDisplacementLevel.Slight + 1).GetDisplacementWithDeadzone());
+		Assert.AreNotEqual(0f, new GameControllerTriggerPosition((short) AnalogDisplacementLevel.Full).GetDisplacementWithDeadzone());
+		Assert.AreEqual(1f, new GameControllerTriggerPosition(Int16.MaxValue).GetDisplacementWithDeadzone());
+
+		Assert.AreEqual(0.3f, new GameControllerTriggerPosition(ConvertNormalizedDisplacement(0.3f)).GetDisplacementWithDeadzone(0f), 1E-3f);
+		Assert.AreEqual(1f / 8f, new GameControllerTriggerPosition(ConvertNormalizedDisplacement(0.3f)).GetDisplacementWithDeadzone(0.2f), 1E-3f);
+		Assert.AreEqual(1f, new GameControllerTriggerPosition(ConvertNormalizedDisplacement(1f)).GetDisplacementWithDeadzone(0.2f), 1E-3f);
+		Assert.AreEqual(1f / 5f, new GameControllerTriggerPosition(ConvertNormalizedDisplacement(0.6f)).GetDisplacementWithDeadzone(0.5f), 1E-3f);
 	}
 
 	[Test]
