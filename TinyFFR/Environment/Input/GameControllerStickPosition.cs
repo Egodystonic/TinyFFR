@@ -52,6 +52,8 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 			};
 		}
 	}
+	public AnalogDisplacementLevel DisplacementLevelHorizontal => AnalogDisplacementLevelExtensions.FromRawDisplacementMagnitude(MathUtils.SafeAbs(RawDisplacementHorizontal));
+	public AnalogDisplacementLevel DisplacementLevelVertical => AnalogDisplacementLevelExtensions.FromRawDisplacementMagnitude(MathUtils.SafeAbs(RawDisplacementVertical));
 
 	public GameControllerStickPosition(short rawDisplacementHorizontal, short rawDisplacementVertical) {
 		RawDisplacementHorizontal = rawDisplacementHorizontal;

@@ -62,4 +62,19 @@ class MathUtilsTest {
 		Assert.AreEqual(true, Single.NegativeZero.IsNonNegativeAndFinite());
 		Assert.AreEqual(false, Single.NaN.IsNonNegativeAndFinite());
 	}
+
+	[Test]
+	public void ShouldCorrectlyImplementSafeAbs() {
+		Assert.AreEqual(0, SafeAbs(0));
+		Assert.AreEqual(1, SafeAbs(-1));
+		Assert.AreEqual(1, SafeAbs(1));
+		Assert.AreEqual(Int32.MaxValue, SafeAbs(Int32.MaxValue));
+		Assert.AreEqual(Int32.MaxValue, SafeAbs(Int32.MinValue));
+
+		Assert.AreEqual(0L, SafeAbs(0L));
+		Assert.AreEqual(1L, SafeAbs(-1L));
+		Assert.AreEqual(1L, SafeAbs(1L));
+		Assert.AreEqual(Int64.MaxValue, SafeAbs(Int64.MaxValue));
+		Assert.AreEqual(Int64.MaxValue, SafeAbs(Int64.MinValue));
+	}
 }

@@ -18,4 +18,8 @@ static class MathUtils {
 
 	public static bool IsPositiveAndFinite(this float @this) => Single.IsFinite(@this) && @this > 0f;
 	public static bool IsNonNegativeAndFinite(this float @this) => Single.IsFinite(@this) && @this >= 0f;
+
+	public static T SafeAbs<T>(T num) where T : IMinMaxValue<T>, ISignedNumber<T>, IBinaryInteger<T> {
+		return num == T.MinValue ? T.MaxValue : T.Abs(num);
+	}
 }

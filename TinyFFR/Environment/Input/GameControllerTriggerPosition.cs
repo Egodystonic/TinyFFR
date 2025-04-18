@@ -14,17 +14,8 @@ public readonly struct GameControllerTriggerPosition : IEquatable<GameController
 
 	// Make sure displacement can never be negative
 	public float Displacement => Int16.Max(DisplacementRaw, 0) / (float) Int16.MaxValue;
-	
-	public AnalogDisplacementLevel DisplacementLevel {
-		get {
-			return DisplacementRaw switch {
-				>= (int) AnalogDisplacementLevel.Full => AnalogDisplacementLevel.Full,
-				>= (int) AnalogDisplacementLevel.Moderate => AnalogDisplacementLevel.Moderate,
-				>= (int) AnalogDisplacementLevel.Slight => AnalogDisplacementLevel.Slight,
-				_ => AnalogDisplacementLevel.None
-			};
-		}
-	}
+
+	public AnalogDisplacementLevel DisplacementLevel => AnalogDisplacementLevelExtensions.FromRawDisplacementMagnitude(Int16.Max(DisplacementRaw, 0));
 
 	public float GetDisplacementWithDeadzone(float deadzoneSize = RecommendedDeadzoneSize) {
 		var displacement = Displacement;

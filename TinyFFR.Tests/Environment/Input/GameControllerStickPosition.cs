@@ -126,6 +126,15 @@ class GameControllerStickPositionTest {
 
 			Assert.AreEqual(prevLevel, new GameControllerStickPosition((short) (((short) level) - 1), 0).DisplacementLevel);
 			Assert.AreEqual(prevLevel, new GameControllerStickPosition(0, (short) (((short) level) - 1)).DisplacementLevel);
+
+
+			Assert.AreEqual(level, new GameControllerStickPosition((short) level, 0).DisplacementLevelHorizontal);
+			Assert.AreEqual(level, new GameControllerStickPosition(0, (short) level).DisplacementLevelVertical);
+			Assert.AreEqual(level, new GameControllerStickPosition((short) -(short) level, 0).DisplacementLevelHorizontal);
+			Assert.AreEqual(level, new GameControllerStickPosition(0, (short) -(short) level).DisplacementLevelVertical);
+
+			Assert.AreEqual(prevLevel, new GameControllerStickPosition((short) (((short) level) - 1), 0).DisplacementLevelHorizontal);
+			Assert.AreEqual(prevLevel, new GameControllerStickPosition(0, (short) (((short) level) - 1)).DisplacementLevelVertical);
 		}
 
 		Assert.AreEqual(AnalogDisplacementLevel.None, new GameControllerStickPosition(0, 0).DisplacementLevel);
