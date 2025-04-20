@@ -39,8 +39,34 @@ NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
 
 using var factory = new LocalTinyFfrFactory();
 var assLoad = factory.AssetLoader;
+var meshBuilder = factory.AssetLoader.MeshBuilder;
 
-using var mesh = assLoad.LoadMesh(@"C:\Users\ben\Documents\Temp\treasure_chest\treasure_chest_4k.gltf");
+var polyGroup = meshBuilder.AllocateNewPolygonGroup();
+
+var pointsMemory = factory.ResourceAllocator.CreatePooledMemoryBuffer<Location>(4);
+var points = pointsMemory.Span;
+
+points[0] = new Location(0.5f, -0.5f, 0f);
+points[1] = new Location(-0.5f, -0.5f, 0f);
+points[2] = new Location(-0.5f, 0.5f, 0f);
+points[3] = new Location(0.5f, 0.5f, 0f);
+polyGroup.Add(new Polygon(points, normal: Direction.Backward), Direction.Right, Direction.Up, points[0]);
+
+points[0] = new Location(0.5f, -0.5f, 0f);
+points[1] = new Location(0.5f, 0.5f, 0f);
+points[2] = new Location(-0.5f, 0.5f, 0f);
+points[3] = new Location(-0.5f, -0.5f, 0f);
+polyGroup.Add(new Polygon(points, normal: Direction.Forward), Direction.Left, Direction.Up, points[3]);
+
+using var mesh = meshBuilder.CreateMesh(
+	polyGroup,
+	new MeshGenerationConfig { /* specify generation options here */ },
+	new MeshCreationConfig { /* specify creation options here */ }
+);
+polyGroup.Dispose();
+factory.ResourceAllocator.ReturnPooledMemoryBuffer(pointsMemory);
+
+//using var mesh = assLoad.LoadMesh(@"C:\Users\ben\Documents\Temp\treasure_chest\treasure_chest_4k.gltf");
 using var colorMap = assLoad.LoadTexture(@"C:\Users\ben\Documents\Temp\treasure_chest\textures\treasure_chest_diff_4k.jpg");
 using var normalMap = assLoad.LoadTexture(@"C:\Users\ben\Documents\Temp\treasure_chest\textures\treasure_chest_nor_gl_4k.jpg");
 using var ormMap = assLoad.LoadTexture(@"C:\Users\ben\Documents\Temp\treasure_chest\textures\treasure_chest_arm_4k.jpg");

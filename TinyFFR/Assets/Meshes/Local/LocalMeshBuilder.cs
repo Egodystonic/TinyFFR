@@ -89,10 +89,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		// ReSharper disable once CompareOfFloatsByEqualityOperator Direct comparison with 1f is correct and exact
 		if (config.InvertTextureU || config.InvertTextureV || config.OriginTranslation != Vect.Zero || config.LinearRescalingFactor != 1f) {
 			var vBufferSpan = tempVertexBuffer.AsSpan<MeshVertex>();
-			var reverseTranslation = -config.OriginTranslation;
 			for (var v = 0; v < vBufferSpan.Length; ++v) {
 				vBufferSpan[v] = vBufferSpan[v] with {
-					Location = (vBufferSpan[v].Location + reverseTranslation).ScaledFromOriginBy(config.LinearRescalingFactor),
+					Location = (vBufferSpan[v].Location - config.OriginTranslation).ScaledFromOriginBy(config.LinearRescalingFactor),
 					TextureCoords = (
 						config.InvertTextureU ? 1f - vBufferSpan[v].TextureCoords.X : vBufferSpan[v].TextureCoords.X,
 						config.InvertTextureV ? 1f - vBufferSpan[v].TextureCoords.Y : vBufferSpan[v].TextureCoords.Y

@@ -49,3 +49,28 @@ Only one factory instance may be "live" at any given time. Trying to create a se
 	When "nuking" resources this way, the dependency graph between them may be broken temporarily during the teardown. In the worst case, this may lead to exceptions being thrown in order to protect memory safety.
 
 	Always dispose resources properly when no longer in use. By the time you call `Dispose()` on the factory, every other resource should already have been disposed.
+
+## Common Builder Patterns
+
+Each builder will tend to offer various overloads of `Create[...]()` or `Load[...]()` methods; for example the `ILightBuilder` offers the following overloads of `CreatePointLight()`:
+
+```csharp
+// Abridged version of ILightBuilder for demonstration purposes
+public interface ILightBuilder {
+	PointLight CreatePointLight(
+		Location position, 
+		ColorVect? color = null, 
+		float? brightness = null, 
+		float? falloffRange = null, 
+		ReadOnlySpan<char> name = default
+	);
+	
+	PointLight CreatePointLight(in PointLightCreationConfig config);
+}
+```
+
+In actuality, the "root" or "true" interface for all builders is the method that takes a `[...]CreationConfig` object. All other overloads of a given method simply construct the `[...]CreationConfig` object for you and pass it to the "root" method.
+
+Generally speaking, these convenience overloads do not attempt to cover all arguments/properties of a given resource type's creation config object; they only attempt to offer a quicker API for the most common operations.
+
+It may be prudent to inspect the `[...]CreationConfig` type for any given builder/resource to know the full set of supported configuration options. The creation config objects often (but not always) contain more esoteric tweaks/properties for creating or loading resource of their corresponding type.

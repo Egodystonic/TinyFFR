@@ -62,22 +62,15 @@ public readonly struct GameControllerStickPosition : IEquatable<GameControllerSt
 
 	public static GameControllerStickPosition FromMaxOrientation(Orientation2D orientation) => _orientationMap[orientation];
 
-	public XYPair<float> AsXYPair(float deadzoneSize = RecommendedDeadzoneSize) {
-		var x = DisplacementHorizontal;
-		var y = DisplacementVertical;
-		return new(
-			MathF.Abs(x) <= deadzoneSize ? 0f : x,
-			MathF.Abs(y) <= deadzoneSize ? 0f : y
-		);
-	}
+	public XYPair<float> AsXYPair(float deadzoneSize = RecommendedDeadzoneSize) => new(GetDisplacementHorizontalWithDeadzone(deadzoneSize), GetDisplacementVerticalWithDeadzone(deadzoneSize));
 
 	// TODO clarify this is the four-quadrant inverse tangent
 	public Angle? GetPolarAngle(float deadzoneSize = RecommendedDeadzoneSize) => Angle.From2DPolarAngle(AsXYPair(deadzoneSize));
 
-	public bool IsHorizontalOffsetOutsideDeadzone(float deadzoneSize = RecommendedDeadzoneSize) {
+	public bool IsOutsideDeadzoneHorizontal(float deadzoneSize = RecommendedDeadzoneSize) {
 		return MathF.Abs(DisplacementHorizontal) > deadzoneSize;
 	}
-	public bool IsVerticalOffsetOutsideDeadzone(float deadzoneSize = RecommendedDeadzoneSize) {
+	public bool IsOutsideDeadzoneVertical(float deadzoneSize = RecommendedDeadzoneSize) {
 		return MathF.Abs(DisplacementVertical) > deadzoneSize;
 	}
 	public bool IsOutsideDeadzone(float deadzoneSize = RecommendedDeadzoneSize) {

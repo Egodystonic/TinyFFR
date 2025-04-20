@@ -31,7 +31,7 @@ public readonly struct GameControllerTriggerPosition : IEquatable<GameController
 	//	a) It makes it slightly less discoverable than "Displacement" (which is good, we want people to use that property instead) and
 	//	b) It's also the choice we made for raw values in the stick position struct
 	// TODO explain this is for performance or custom implementations only if necessary
-	public short GetRawDisplacement() => DisplacementRaw;
+	public short GetRawDisplacementValue() => DisplacementRaw;
 #pragma warning restore CA1024
 
 	public override string ToString() {

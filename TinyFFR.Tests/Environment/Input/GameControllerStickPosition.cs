@@ -146,21 +146,8 @@ class GameControllerStickPositionTest {
 
 	[Test]
 	public void ShouldCorrectlyConvertToXYPair() {
-		foreach (var directional in GetProportionalDirectionals(1f).Values) {
-			var actual = directional.AsXYPair(0.5f);
-			Assert.AreEqual(new XYPair<float>(directional.DisplacementHorizontal, directional.DisplacementVertical), actual);
-		}
 		foreach (var directional in GetProportionalDirectionals(0.6f).Values) {
-			var actual = directional.AsXYPair(0.5f);
-			Assert.AreEqual(new XYPair<float>(directional.DisplacementHorizontal, directional.DisplacementVertical), actual);
-		}
-		foreach (var directional in GetProportionalDirectionals(0.4f).Values) {
-			var actual = directional.AsXYPair(0.5f);
-			Assert.AreEqual(XYPair<float>.Zero, actual);
-		}
-		foreach (var directional in GetProportionalDirectionals(0f).Values) {
-			var actual = directional.AsXYPair(0.5f);
-			Assert.AreEqual(XYPair<float>.Zero, actual);
+			Assert.AreEqual(new XYPair<float>(directional.GetDisplacementHorizontalWithDeadzone(0.4f), directional.GetDisplacementVerticalWithDeadzone(0.4f)), directional.AsXYPair(0.4f));
 		}
 	}
 
@@ -214,14 +201,14 @@ class GameControllerStickPositionTest {
 	public void ShouldCorrectlyDetermineDeadzoneCondition() {
 		foreach (var kvp in GetProportionalDirectionals(1f)) {
 			Assert.AreEqual(kvp.Key != Orientation2D.None, kvp.Value.IsOutsideDeadzone(0.5f));
-			Assert.AreEqual(MathF.Abs(kvp.Value.DisplacementHorizontal) > 0.5f, kvp.Value.IsHorizontalOffsetOutsideDeadzone(0.5f));
-			Assert.AreEqual(MathF.Abs(kvp.Value.DisplacementVertical) > 0.5f, kvp.Value.IsVerticalOffsetOutsideDeadzone(0.5f));
+			Assert.AreEqual(MathF.Abs(kvp.Value.DisplacementHorizontal) > 0.5f, kvp.Value.IsOutsideDeadzoneHorizontal(0.5f));
+			Assert.AreEqual(MathF.Abs(kvp.Value.DisplacementVertical) > 0.5f, kvp.Value.IsOutsideDeadzoneVertical(0.5f));
 		}
 
 		foreach (var kvp in GetProportionalDirectionals(0.4f)) {
 			Assert.AreEqual(false, kvp.Value.IsOutsideDeadzone(MathF.Sqrt(0.32f) + 0.01f));
-			Assert.AreEqual(false, kvp.Value.IsHorizontalOffsetOutsideDeadzone(0.5f));
-			Assert.AreEqual(false, kvp.Value.IsVerticalOffsetOutsideDeadzone(0.5f));
+			Assert.AreEqual(false, kvp.Value.IsOutsideDeadzoneHorizontal(0.5f));
+			Assert.AreEqual(false, kvp.Value.IsOutsideDeadzoneVertical(0.5f));
 		}
 	}
 

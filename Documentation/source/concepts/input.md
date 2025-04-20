@@ -272,6 +272,12 @@ The `ILatestGameControllerInputStateRetriever` interface (accessed via the `Game
 
 When using the `LeftStickPosition` or `RightStickPosition` property on an `ILatestGameControllerInputStateRetriever` you will be returned a `GameControllerStickPosition` with the following members:
 
+<span class="def-icon">:material-card-bulleted-outline:</span> `Displacement`
+
+:   This returns a `float` in the range `0f` to `1f`, indicating how far the stick is currently moved away from its centre position in any direction.
+
+	A value of `1f` indicates fully moved away from the centre; a value of `0f` indicates the stick is centered (both vertically and horizontally).
+
 <span class="def-icon">:material-card-bulleted-outline:</span> `DisplacementHorizontal`
 
 :   This returns a `float` in the range `1f` to `-1f`, indicating how far the stick is currently moved horizontally.
@@ -292,14 +298,133 @@ When using the `LeftStickPosition` or `RightStickPosition` property on an `ILate
 
 	A value of `0f` indicates that there is no vertical displacement, but not necessarily that the stick is in its centre position- it may be pushed left or right.
 
-<span class="def-icon">:material-card-bulleted-outline:</span> `Displacement`
+<span class="def-icon">:material-card-bulleted-outline:</span> `DisplacementLevel`
 
-:   This returns a `float` in the range `0f` to `1f`, indicating how far the stick is currently moved away from its centre position.
+:   This returns an `AnalogDisplacementLevel` enum value that can be used to quickly determine the rough level of displacement. See below for the possible values.
 
-	A value of `1f` indicates fully moved away from the centre; a value of `0f` indicates the stick is centered (both vertically and horizontally).
+<span class="def-icon">:material-card-bulleted-outline:</span> `DisplacementLevelHorizontal`
+
+:   This returns an `AnalogDisplacementLevel` enum value that can be used to quickly determine the rough level of *horizontal* displacement. See below for the possible values.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `DisplacementLevelVertical`
+
+:   This returns an `AnalogDisplacementLevel` enum value that can be used to quickly determine the rough level of *vertical* displacement. See below for the possible values.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `IsOutsideDeadzone()`
+
+:   Returns `true` or `false` depending on whether the `Displacement` is outside a deadzone. 
+
+	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `IsOutsideDeadzoneVertical()`
+
+:   Returns `true` or `false` depending on whether the `DisplacementVertical` is outside a deadzone. 
+
+	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `IsOutsideDeadzoneHorizontal()`
+
+:   Returns `true` or `false` depending on whether the `DisplacementHorizontal` is outside a deadzone. 
+
+	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `GetDisplacementWithDeadzone()`
+
+:   Returns `Displacement` adjusted according to a deadzone.
+
+	If `Displacement` is below the deadzone value this method returns `0f`. Otherwise, it returns a value from `0f` to `1f` which is `Displacement` rescaled to the remaining non-deadzone area (e.g. if the deadzone is `0.2f` and `Displacement` is `0.6f`, this method will return `0.5f`, indicating the displacement is half way between the deadzone and the max value.)
+
+	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `GetDisplacementVerticalWithDeadzone()`
+
+:   Returns `DisplacementVertical` adjusted according to a deadzone.
+
+	If `DisplacementVertical` is below the deadzone value this method returns `0f`. Otherwise, it returns a value from `0f` to `1f` which is `DisplacementVertical` rescaled to the remaining non-deadzone area (e.g. if the deadzone is `0.2f` and `DisplacementVertical` is `0.6f`, this method will return `0.5f`, indicating the displacement is half way between the deadzone and the max value.)
+
+	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `GetDisplacementHorizontalWithDeadzone()`
+
+:   Returns `DisplacementHorizontal` adjusted according to a deadzone.
+
+	If `DisplacementHorizontal` is below the deadzone value this method returns `0f`. Otherwise, it returns a value from `0f` to `1f` which is `DisplacementHorizontal` rescaled to the remaining non-deadzone area (e.g. if the deadzone is `0.2f` and `DisplacementHorizontal` is `0.6f`, this method will return `0.5f`, indicating the displacement is half way between the deadzone and the max value.)
+
+	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `AsXYPair()`
+
+:   Returns an `XYPair<float>` containing `GetDisplacementHorizontalWithDeadzone()` as `X` and `GetDisplacementVerticalWithDeadzone()` as `Y`.
+
+	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `GetPolarAngle()`
+
+:   Returns an `Angle?` indicating which direction the stick is being pushed towards, or `null` if the stick is within the deadzone.
+
+	A value of `0°` indicates the stick is being pushed exactly to the right; `90°` to the top; `180°` to the left; `270°` to the bottom. This follows the [polar co-ordinate / unit circle convention](https://en.wikipedia.org/wiki/Polar_coordinate_system#Conventions).
+
+	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `GetOrientation()`
+
+:   Returns an `Orientation2D` enum value indicating which way the stick is being pushed.
+
+	If `Displacement` is within the deadzone, returns `Orientation2D.None`. See [Math & Geometry](math_and_geometry.md) for more information on the `Orientation2D` enum.
+
+	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `GetVerticalOrientation()`
+
+:   Returns a `VerticalOrientation2D` enum value indicating which way the stick is being pushed along the up/down axis.
+
+	If `DisplacementVertical` is within the deadzone, returns `VerticalOrientation2D.None`. See [Math & Geometry](math_and_geometry.md) for more information on the `VerticalOrientation2D` enum.
+
+	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `GetHorizontalOrientation()`
+
+:   Returns a `HorizontalOrientation2D` enum value indicating which way the stick is being pushed along the left/right axis.
+
+	If `DisplacementHorizontal` is within the deadzone, returns `HorizontalOrientation2D.None`. See [Math & Geometry](math_and_geometry.md) for more information on the `HorizontalOrientation2D` enum.
+
+	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `GetRawDisplacementValues(out short horizontal, out short vertical)`
+
+:   The raw input API used by TinyFFR emits controller data as two signed 16-bit values, one each for the horizontal and vertical axes.
+
+	If you wish to bypass TinyFFR's abstractions and use these values directly, this method allows you to do that.
+
+	These are the values reported by SDL, specifically [SDL_ControllerAxisEvent](https://wiki.libsdl.org/SDL2/SDL_ControllerAxisEvent).
 
 ### GameControllerTriggerPosition Struct
 
+<span class="def-icon">:material-card-bulleted-outline:</span> `Displacement`
+
+:   This returns a `float` in the range `0f` to `1f`, indicating how far the trigger has been pulled.
+
+	A value of `1f` indicates fully squeezed down; a value of `0f` indicates the trigger is in its default un-pulled state.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `DisplacementLevel`
+
+:   This returns an `AnalogDisplacementLevel` enum value that can be used to quickly determine the rough level of displacement. See below for the possible values.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `GetDisplacementWithDeadzone()`
+
+:   Returns `Displacement` adjusted according to a deadzone.
+
+	If `Displacement` is below the deadzone value this method returns `0f`. Otherwise, it returns a value from `0f` to `1f` which is `Displacement` rescaled to the remaining non-deadzone area (e.g. if the deadzone is `0.2f` and `Displacement` is `0.6f`, this method will return `0.5f`, indicating the displacement is half way between the deadzone and the max value.)
+
+	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `GetRawDisplacementValue()`
+
+:   The raw input API used by TinyFFR emits the trigger displacement value as a signed 16-bit integer.
+
+	If you wish to bypass TinyFFR's abstractions and use this value directly, this method allows you to do that.
+
+	This is the value reported by SDL, specifically [SDL_ControllerAxisEvent](https://wiki.libsdl.org/SDL2/SDL_ControllerAxisEvent).
 
 ### AnalogDisplacementLevel Enum
 

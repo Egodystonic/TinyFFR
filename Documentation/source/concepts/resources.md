@@ -132,7 +132,9 @@ That being said, the dependency type graph is enumerated for convenience below:
 	* Any *Light* added to it (until removed)
 	* Any *EnvironmentCubemap* added to it (until removed)
 
-## Groups
+## Memory Management
+
+### Groups
 
 The factory allows you to create a lightweight handle called a `ResourceGroup` that represents a grouped collection of arbitrary resources; without allocating any garbage-collected data:
 
@@ -186,7 +188,7 @@ Also, remember: Resource groups create dependencies on the resources added to th
 
 If you need broader "collection-like" functionality you could instead consider *array-pool-backed collections*:
 
-## Array-Pool-Backed Collections
+### Array-Pool-Backed Collections
 
 The factory's `ResourceAllocator` offers two methods for creating a list or dictionary that is backed by memory-pooled arrays:
 
@@ -210,7 +212,7 @@ These collections must also be `Disposed()` when you are done with them.
 
 If you can, pre-allocate collections at initialization time and dispose them after your application finishes, to reduce the garbage pressure even more (i.e. the list/dictionary itself will still be garbage collected ultimately). However this is not a hard requirement and using array-pool-backed collections will still offer great improvements to GC pressure even if you create/dispose them dynamically.
 
-## Pooled Memory Buffers
+### Pooled Memory Buffers
 
 You can also access pooled memory directly using the `ResourceAllocator`'s `CreatePooledMemoryBuffer()` method:
 
@@ -227,3 +229,27 @@ factory.ResourceAllocator.ReturnPooledMemoryBuffer(texelData); // (2)!
 You should consider renting buffers like this when you need a 'space' to temporarily work with large amounts of data. Allocating standard collections or arrays results in high GC pressure if and when they are no longer in use; but using rented memory buffers avoids this problem.
 
 You must remember to always return any rented memory or else you will cause a memory leak.
+
+## Names
+
+Every resource in TinyFFR has a `Name`. Anywhere you build a resource you will see an optional `ReadOnlySpan<char>` parameter you can use to set the name of the resource:
+
+```csharp
+// Both of these lines accomplish the same outcome:
+
+using var scene = factory.SceneBuilder.CreateScene(name: "Treasure Chest Scene"); // (1)!
+
+using var scene = factory.SceneBuilder.CreateScene(new SceneCreationConfig { // (2)!
+	Name = "Treasure Chest Scene"
+});
+```
+
+1. 	In C# you can specify a `string` anywhere that takes a `ReadOnlySpan<char>` due to an [implicit conversion](https://learn.microsoft.com/en-us/dotnet/api/system.string.op_implicit?view=net-9.0).
+
+	The point of taking a `ReadOnlySpan<char>` is that it's easier to allocate a span of `char`s in a way that does not put pressure on the GC. However, constant strings such as the one in this example are also GC-friendly.
+
+2.	When specifying a `[...]CreationConfig` for any resource type, the `Name` property can be set to specify the resource name.
+
+You can leave this parameter at its default value and TinyFFR will fill in a standard name string. There is no detrimental effect to not specifying a name; however, specifying a name can make it easier to identify resources in some circumstances.
+
+As well as making it easier to track resources in your own code, resource `Name`s are used when TinyFFR emits exceptions/errors, so it can be beneficial to name your resources to help track down issues.
