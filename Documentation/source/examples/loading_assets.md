@@ -360,7 +360,7 @@ factory.ResourceAllocator.ReturnPooledMemoryBuffer(texelBuffer);
 
 ## Complete Example: "Treasure Chest" + "Belfast Sunset"
 
-![Rotating treasure chest](loading_assets_chest.webp){ style="width:500px;border-radius:12px"}
+![Rotating treasure chest](loading_assets_chest.webp){ style="max-width:500px;border-radius:12px"}
 /// caption
 Camera rotating around a treasure chest with a sunset backdrop.
 

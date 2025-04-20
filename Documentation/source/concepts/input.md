@@ -65,6 +65,8 @@ This enum contains every keyboard key and mouse button supported by TinyFFR.
 
 	This choice was made in order to make it easier to swap/interoperate between bindings for both device types. For example, if you wish to let your users configure their control bindings, a user can now rebind a keyboard key to a mouse click and there's no difference for you in how that's handled in this API.
 
+	If you wish to differentiate between keyboard and mouse events you can use the `GetCategory()` extension method described below.
+
 There is also an extension method defined for this enum type named `GetCategory()` which returns a `KeyboardOrMouseKeyCategory` indicating the 'category' of the key:
 
 ### KeyboardOrMouseKeyCategory Enum

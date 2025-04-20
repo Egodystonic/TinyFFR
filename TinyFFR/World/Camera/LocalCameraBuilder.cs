@@ -268,11 +268,11 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 			new Matrix4x4(
 				(near * 2f) / (right - left),			0f,										0f,										0f,
 				0f,										(near * 2f) / (top - bottom),			0f,										0f,
-				(right + left) / (right - left),		(top + bottom) / (top - bottom),		-(far + near) / (far - near),			-1f,
+				(right + left) / (right - left),			(top + bottom) / (top - bottom),			-(far + near) / (far - near),			-1f,
 				0f,										0f,										-(2f * far * near) / (far - near),		0f
 			),
-			parameters.NearPlaneDistance,
-			parameters.FarPlaneDistance
+			near,
+			far
 		).ThrowIfFailure();
 	}
 

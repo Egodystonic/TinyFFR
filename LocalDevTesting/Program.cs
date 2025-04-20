@@ -37,6 +37,38 @@ NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
 	}
 );
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+var location1 = Location.Origin;
+var location2 = location1 with { X = 0f };
+
+Console.WriteLine(new Direction(1f, 2f, 3f) * MathF.Sqrt(14f));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 using var factory = new LocalTinyFfrFactory();
 var assLoad = factory.AssetLoader;
 var meshBuilder = factory.AssetLoader.MeshBuilder;

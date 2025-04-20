@@ -45,7 +45,7 @@ The following examples will show you how to create texture patterns:
 
 === "Bordered, 2 Colours"
 
-	![Cube with chequerboard color map applied](texture_patterns_chequerboard.png){ style="height:200px;width:200px;border-radius:12px"}
+	![Cube with chequerboard color map applied](texture_patterns_chequerboard.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
 	/// caption
 	Chequerboard texture pattern
 	///
@@ -85,7 +85,7 @@ The following examples will show you how to create texture patterns:
 
 	There are some overloads of `ChequerboardBordered` that can take a `thirdValue` and/or `fourthValue` too if you prefer. Here's another example using four colours and an uneven repetition count:
 
-	![Image of chequerboard cube with random colours](texture_patterns_chequerboard_random.png){ style="height:200px;width:200px;border-radius:12px"}
+	![Image of chequerboard cube with random colours](texture_patterns_chequerboard_random.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
 	/// caption
 	Four colours picked at random, uneven repetition count
 	///
@@ -109,7 +109,7 @@ The following examples will show you how to create texture patterns:
 
 	There is also a variant pattern called `Chequerboard` (instead of `ChequerboardBordered`) that does not include a border:
 
-	![Cube with non-bordered chequerboard pattern](texture_patterns_chequerboard_borderless.png){ style="height:200px;width:200px;border-radius:12px"}
+	![Cube with non-bordered chequerboard pattern](texture_patterns_chequerboard_borderless.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
 	/// caption
 	Red / yellow / green / blue, no border
 	///
@@ -131,7 +131,7 @@ The following examples will show you how to create texture patterns:
 
 === "3x3 Circles"
 
-	![Cube with bordered circles texture](texture_patterns_circles_simple.png){ style="height:200px;width:200px;border-radius:12px"}
+	![Cube with bordered circles texture](texture_patterns_circles_simple.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
 	/// caption
 	Nine bordered circles
 	///
@@ -154,7 +154,7 @@ The following examples will show you how to create texture patterns:
 
 === "Interpolated Circle"
 
-	![Circle with interpolated colouring](texture_patterns_circle_interpolated.png){ style="height:200px;width:200px;border-radius:12px"}
+	![Circle with interpolated colouring](texture_patterns_circle_interpolated.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
 	/// caption
 	A single bordered circle with interpolated colouring
 	///
@@ -195,7 +195,7 @@ The following examples will show you how to create texture patterns:
 
 === "Simple Rectangles"
 
-	![Cube with an array of rectangles displayed](texture_patterns_simple_rectangles.png){ style="height:200px;width:200px;border-radius:12px"}
+	![Cube with an array of rectangles displayed](texture_patterns_simple_rectangles.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
 	/// caption
 	A very simple repetition of red rectangles on a green background
 	///
@@ -213,7 +213,7 @@ The following examples will show you how to create texture patterns:
 
 === "Bordered Squares"
 
-	![Cube with squares bordered with different colours](texture_patterns_bordered_squares.png){ style="height:200px;width:200px;border-radius:12px"}
+	![Cube with squares bordered with different colours](texture_patterns_bordered_squares.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
 	/// caption
 	Four squares each with multi-coloured borders
 	///
@@ -248,7 +248,7 @@ The following examples will show you how to create texture patterns:
 
 === "Rectangular Studs"
 
-	![Cube with flat colour map and rectangular 'stud' normals](texture_patterns_normal_studs.png){ style="height:200px;width:200px;border-radius:12px"}
+	![Cube with flat colour map and rectangular 'stud' normals](texture_patterns_normal_studs.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
 	/// caption
 	This cube has a flat color map but the normal map gives it the impression of having 'studs' on its surface
 	///
@@ -318,7 +318,7 @@ The following examples will show you how to create texture patterns:
 
 === "Metallic Strips"
 
-	![Image showing cube with metallic strips](texture_patterns_metallic_strips.png){ style="height:200px;width:200px;border-radius:12px"}
+	![Image showing cube with metallic strips](texture_patterns_metallic_strips.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
 	/// caption
 	The lines along this surface alternate between metallic and non-metallic strips.
 	///
@@ -372,7 +372,7 @@ The following examples will show you how to create texture patterns:
 
 === "Perturbed Metallic and Roughness"
 
-	![Image showing cube with various metallic and roughness perturbations](texture_patterns_orm_perturbations.png){ style="height:200px;width:200px;border-radius:12px"}
+	![Image showing cube with various metallic and roughness perturbations](texture_patterns_orm_perturbations.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
 	/// caption
 	The larger lines are metallic and non-metallic bands. The thinner lines vary in their roughness value.
 
@@ -451,7 +451,7 @@ The following examples will show you how to create texture patterns:
 
 === "Roughness Gradient over Plain Metal"
 
-	![Cube with metallic surface and varying smoothness](texture_patterns_gradient_roughness.png){ style="height:200px;width:200px;border-radius:12px"}
+	![Cube with metallic surface and varying smoothness](texture_patterns_gradient_roughness.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
 	/// caption
 	A single light is shining against this dark-red metal cube.
 
@@ -479,7 +479,7 @@ The following examples will show you how to create texture patterns:
 
 === "Rainbow Square"
 
-	![Cube with rainbow gradient](texture_patterns_rainbow.png){ style="height:200px;width:200px;border-radius:12px"}
+	![Cube with rainbow gradient](texture_patterns_rainbow.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
 	/// caption
 	Rainbow color map created with a gradient texture pattern.
 	///
@@ -574,7 +574,7 @@ using var colorMap = materialBuilder.CreateColorMap(
 
 	(Supplying `Transform.None` to the `transform` argument is the same as supplying no argument at all.)
 
-![Example color map](texture_pattern_transform_none.png){ style="height:200px;width:200px;border-radius:12px"}
+![Example color map](texture_pattern_transform_none.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
 /// caption
 This color map has a transform of `None` applied, i.e. no transformation is made.
 
@@ -583,7 +583,7 @@ The  tabs below show the three different transformation types being applied to i
 
 === "Scaling"
 
-	![Transformation scaling example](texture_pattern_transform_scaling.png){ style="height:200px;width:200px;border-radius:12px"}
+	![Transformation scaling example](texture_pattern_transform_scaling.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
 	/// caption
 	Scaling transform applied to the original color map. 
 	///
@@ -623,7 +623,7 @@ The  tabs below show the three different transformation types being applied to i
 
 === "Rotation"
 
-	![Transformation rotation example](texture_pattern_transform_rotation.png){ style="height:200px;width:200px;border-radius:12px"}
+	![Transformation rotation example](texture_pattern_transform_rotation.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
 	/// caption
 	Rotation transform applied to the original color map. 
 	///
