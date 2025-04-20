@@ -54,7 +54,7 @@ For the highlighted vertex at the bottom left, we show the three directions requ
 
 * The __bitangent__ (green arrow) points along the positive-V axis (this is the direction pointing from bottom-to-top along any textures mapped to this surface).
 
-* The __normal__ (blue arrow) points out of the screen, towards you (this is the direction pointing directly "out", away from the front-face of the surface).
+* The __normal__ (blue arrow) points out of the screen, towards you (this is the direction pointing directly "out", away from the front-face of the surface) (this arrow is not pointing diagonally on the 2D surface, it is pointing up and straight out away from the surface).
 ///
 
 ### VertexTriangle
@@ -174,7 +174,7 @@ It is possible to create a mesh using one or more `Polygon`s.
 
 The `Polygon` struct has the following properties/arguments: 
 
-__Vertices__ :material-arrow-right: A `Span<Location>` which defines the polygon's points in 3D space.
+__Vertices__ :material-arrow-right: A `ReadOnlySpan<Location>` which defines the polygon's points in 3D space.
 
 * All vertices must be coplanar (defined on the same plane through space).
 * The vertices are expected to form a complete enclosed polygon. They define the polygon's edges implicitly by their ordering: Each vertex is assumed to form an edge with the next one in the span, and the final vertex is assumed to connect back to the first.
@@ -190,7 +190,7 @@ __IsWoundClockwise__ :material-arrow-right: A `bool` indicating whether or not t
 * This order is as-seen when looking at the polygon in the direction opposite to its normal; i.e. when looking directly at its front face.
 * By default this is `false`. You should specify anti-clockwise polygons when possible as this is the default TinyFFR works with.
 
-It is possible to construct a `Polygon` without specifying its `Normal`. The constructor will then use the static method `Polygon.CalculateNormalForAnticlockwiseCoplanarVertices()` to 'detect' the normal. In some cases this may be unavoidable (if generating polygons dynamically) but this method does not have a negligible performance cost.
+It is possible to construct a `Polygon` without specifying its `Normal`. The constructor will then use the static method `Polygon.CalculateNormalForAnticlockwiseCoplanarVertices()` to 'detect' the normal. In some cases using this method may be unavoidable (e.g. if generating polygons dynamically) but this method does have a non-negligible performance cost.
 
 `CalculateNormalForAnticlockwiseCoplanarVertices()` assumes:
 
@@ -198,7 +198,7 @@ It is possible to construct a `Polygon` without specifying its `Normal`. The con
 * The vertices are coplanar;
 * The vertices are specified in an anti-clockwise winding order.
 
-If your vertices do not meet these criteria you must specify the `Normal` yourself (or an exception will be thrown).
+If your vertices do not meet these criteria you must specify the `Normal` yourself or an exception will be thrown.
 
 #### Using a Single Polygon
 
@@ -218,6 +218,8 @@ factory.ResourceAllocator.ReturnPooledMemoryBuffer(pointsMemory); // (5)!
 
 1.	We want to create a mesh that is four vertices defining a square so firstly we rent a 4-length `Location` span using the factory's [Resource Allocator](resources.md#pooled-memory-buffers).
 
+	You could also [stackalloc](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/stackalloc) the data in this instance, but for larger polygons you may need heap memory, so we show that example here.
+
 2.	Next we define four points in a square formation. We want the square to "face" the forward direction so define them all in the XY plane (Z remains constant).
 
 	Note that their ordering is important: We specify them in an anti-clockwise order with respect to our front-face view direction.
@@ -236,8 +238,8 @@ using var mesh = meshBuilder.CreateMesh(
 	textureUDirection: Direction.Up, // (1)!
 	textureVDirection: Direction.Left, // (2)!
 	textureOrigin: points[0], // (3)!
-	new MeshGenerationConfig { /* specify generation options here */ },
-	new MeshCreationConfig { /* specify creation options here */ }
+	new MeshGenerationConfig { /* generation options here, e.g. texture transform */ },
+	new MeshCreationConfig { /* creation options here */ }
 );
 ```
 
@@ -260,11 +262,11 @@ Of course for most meshes you'll want to specify multiple polygons. For this pur
 	
 	This does mean however the memory footprint of a group can get quite large with complex meshes consisting of many vertices.
 
-	In order to eliminate GC pressure, the memory internal to a polygon group is pooled; however this means the group must be disposed when no longer needed.
+	In order to eliminate GC pressure, the memory internal to a polygon group is pooled; however this means the group must be disposed when no longer needed. Neglecting to dispose the group will cause your application to leak memory.
 
-	It is safe to dispose the group after it has been passed to `CreateMesh()` and you no longer need the data it contains.
+	It is safe to dispose the group after it has been passed to `CreateMesh()` and you no longer need the data it contains. You should not pass a disposed group to `CreateMesh()`.
 
-	Note that after disposal the buffers used by the group may be re-used by another group. Holding on to the reference of a group after it is disposed is not valid.
+	Note that after disposal the buffers used by the group may be re-used by another group. Holding on to the reference of a group or continuing to use it in any way after it is disposed is not permitted.
 
 The following example shows how to make a two-sided square:
 
@@ -279,10 +281,7 @@ points[1] = new Location(-0.5f, -0.5f, 0f);
 points[2] = new Location(-0.5f, 0.5f, 0f);
 points[3] = new Location(0.5f, 0.5f, 0f);
 polyGroup.Add( // (2)!
-	new Polygon(points, normal: Direction.Backward), 
-	Direction.Right, 
-	Direction.Up,
-	points[0]
+	new Polygon(points, normal: Direction.Backward)
 );
 
 points[0] = new Location(0.5f, -0.5f, 0f);
@@ -291,9 +290,9 @@ points[2] = new Location(-0.5f, 0.5f, 0f);
 points[3] = new Location(-0.5f, -0.5f, 0f);
 polyGroup.Add( // (3)!
 	new Polygon(points, normal: Direction.Forward), 
-	Direction.Left, 
-	Direction.Up, 
-	points[3]
+	textureUDirection: Direction.Left, 
+	textureVDirection: Direction.Up, 
+	textureOrigin: points[3]
 );
 
 using var mesh = meshBuilder.CreateMesh( // (4)!
@@ -312,6 +311,93 @@ factory.ResourceAllocator.ReturnPooledMemoryBuffer(pointsMemory);
 
 2.	Here, we add a polygon to the polygon group.
 
-	The `Add()` method requires the polygon to add, and then the texture U/V directions, and finally the texture origin.
+	One the polygon is added we can re-use its memory (the polygon group takes a copy).
 
-	You may recall these are the same as the optional parameters for defining a single polygon; they now become required for a polygon group.
+3.	Here we add the next polygon to the group.
+
+	The `Add()` method allows us to specify the texture U/V directions and the texture origin.
+
+	You may recall these are the same as the optional parameters for defining a single polygon; these arguments set the directions of positive U and positive V for the texture map, and where on the polygon the texture origin should be.
+
+4.	Here we pass the polygon group to `CreateMesh()`, which will triangulate the whole group and give us back a new `Mesh` resource.
+
+5.	Finally we must remember to dispose the polygon group as well as returning any rented memory buffers.
+
+### Using MeshVertex Spans
+
+Finally, it's possible to create a mesh directly using a `Span<MeshVertex>` and `Span<VertexTriangle>` if you want absolute control of vertex data and triangulation methods.
+
+The following example recreates the single-polygon example from above with "raw" vertices/triangles:
+
+```csharp
+var verticesMemory = factory.ResourceAllocator.CreatePooledMemoryBuffer<MeshVertex>(4);
+var trianglesMemory = factory.ResourceAllocator.CreatePooledMemoryBuffer<VertexTriangle>(2);
+var vertices = verticesMemory.Span;
+var triangles = trianglesMemory.Span;
+
+vertices[0] = new MeshVertex(
+	location: (0.5f, -0.5f, 0f),
+	textureCoords: (0f, 0f),
+	tangent: Direction.Right,
+	bitangent: Direction.Up,
+	normal: Direction.Backward
+);
+vertices[1] = new MeshVertex(
+	location: (-0.5f, -0.5f, 0f),
+	textureCoords: (1f, 0f),
+	tangent: Direction.Right,
+	bitangent: Direction.Up,
+	normal: Direction.Backward
+);
+vertices[2] = new MeshVertex(
+	location: (-0.5f, 0.5f, 0f),
+	textureCoords: (1f, 1f),
+	tangent: Direction.Right,
+	bitangent: Direction.Up,
+	normal: Direction.Backward
+);
+vertices[3] = new MeshVertex(
+	location: (0.5f, 0.5f, 0f),
+	textureCoords: (0f, 1f),
+	tangent: Direction.Right,
+	bitangent: Direction.Up,
+	normal: Direction.Backward
+);
+
+triangles[0] = new(0, 1, 2);
+triangles[1] = new(2, 3, 0);
+
+using var mesh = meshBuilder.CreateMesh(
+	vertices,
+	triangles,
+	new MeshCreationConfig { /* specify creation options here */ }
+);
+
+factory.ResourceAllocator.ReturnPooledMemoryBuffer(trianglesMemory);
+factory.ResourceAllocator.ReturnPooledMemoryBuffer(verticesMemory);
+```
+
+#### Reading & Modifying
+
+The factory's `AssetLoader` lets you read mesh data in to a vertex and triangle buffer. You can use this to modify a loaded mesh's data and then pass it to `CreateMesh()` in the same way:
+
+```csharp
+var assLoad = factory.AssetLoader;
+
+var meshMetadata = assLoad.ReadMeshMetadata(@"Path\To\mesh.gltf");
+var vertexBuffer = factory.ResourceAllocator
+	.CreatePooledMemoryBuffer<MeshVertex>(meshMetadata.VertexCount);
+var triangleBuffer = factory.ResourceAllocator
+	.CreatePooledMemoryBuffer<VertexTriangle>(meshMetadata.TriangleCount);
+assLoad.ReadMesh(@"Path\To\mesh.gltf", vertexBuffer.Span, triangleBuffer.Span);
+
+// Modify data in vertexBuffer and triangleBuffer here 
+
+using var mesh = assLoad.MeshBuilder.CreateMesh(
+	vertexBuffer.Span, 
+	triangleBuffer.Span, 
+	new MeshCreationConfig { }
+);
+factory.ResourceAllocator.ReturnPooledMemoryBuffer(triangleBuffer);
+factory.ResourceAllocator.ReturnPooledMemoryBuffer(vertexBuffer);
+```

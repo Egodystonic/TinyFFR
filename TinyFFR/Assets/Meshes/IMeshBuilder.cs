@@ -96,12 +96,12 @@ public interface IMeshBuilder {
 	}
 
 	Mesh CreateMesh(Polygon polygon, Direction? textureUDirection = null, Direction? textureVDirection = null, Location? textureOrigin = null, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) {
-		textureUDirection ??= polygon.Normal.AnyOrthogonal();
+		polygon.FillInMissingTriangulationParameters(ref textureUDirection, ref textureVDirection, ref textureOrigin);
 		return CreateMesh(
 			polygon,
 			textureUDirection.Value,
-			textureVDirection ?? Direction.FromDualOrthogonalization(polygon.Normal, textureUDirection.Value),
-			textureOrigin ?? polygon.Centroid,
+			textureVDirection.Value,
+			textureOrigin.Value,
 			new MeshGenerationConfig { TextureTransform = textureTransform ?? Transform2D.None }, 
 			new MeshCreationConfig { Name = name }
 		);

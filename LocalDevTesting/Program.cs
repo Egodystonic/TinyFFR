@@ -41,30 +41,52 @@ using var factory = new LocalTinyFfrFactory();
 var assLoad = factory.AssetLoader;
 var meshBuilder = factory.AssetLoader.MeshBuilder;
 
-var polyGroup = meshBuilder.AllocateNewPolygonGroup();
+var verticesMemory = factory.ResourceAllocator.CreatePooledMemoryBuffer<MeshVertex>(4);
+var trianglesMemory = factory.ResourceAllocator.CreatePooledMemoryBuffer<VertexTriangle>(2);
+var vertices = verticesMemory.Span;
+var triangles = trianglesMemory.Span;
 
-var pointsMemory = factory.ResourceAllocator.CreatePooledMemoryBuffer<Location>(4);
-var points = pointsMemory.Span;
+vertices[0] = new MeshVertex(
+	location: (0.5f, -0.5f, 0f),
+	textureCoords: (0f, 0f),
+	tangent: Direction.Right,
+	bitangent: Direction.Up,
+	normal: Direction.Backward
+);
+vertices[1] = new MeshVertex(
+	location: (-0.5f, -0.5f, 0f),
+	textureCoords: (1f, 0f),
+	tangent: Direction.Right,
+	bitangent: Direction.Up,
+	normal: Direction.Backward
+);
+vertices[2] = new MeshVertex(
+	location: (-0.5f, 0.5f, 0f),
+	textureCoords: (1f, 1f),
+	tangent: Direction.Right,
+	bitangent: Direction.Up,
+	normal: Direction.Backward
+);
+vertices[3] = new MeshVertex(
+	location: (0.5f, 0.5f, 0f),
+	textureCoords: (0f, 1f),
+	tangent: Direction.Right,
+	bitangent: Direction.Up,
+	normal: Direction.Backward
+);
 
-points[0] = new Location(0.5f, -0.5f, 0f);
-points[1] = new Location(-0.5f, -0.5f, 0f);
-points[2] = new Location(-0.5f, 0.5f, 0f);
-points[3] = new Location(0.5f, 0.5f, 0f);
-polyGroup.Add(new Polygon(points, normal: Direction.Backward), Direction.Right, Direction.Up, points[0]);
-
-points[0] = new Location(0.5f, -0.5f, 0f);
-points[1] = new Location(0.5f, 0.5f, 0f);
-points[2] = new Location(-0.5f, 0.5f, 0f);
-points[3] = new Location(-0.5f, -0.5f, 0f);
-polyGroup.Add(new Polygon(points, normal: Direction.Forward), Direction.Left, Direction.Up, points[3]);
+triangles[0] = new(0, 1, 2);
+triangles[1] = new(2, 3, 0);
 
 using var mesh = meshBuilder.CreateMesh(
-	polyGroup,
-	new MeshGenerationConfig { /* specify generation options here */ },
+	vertices,
+	triangles,
 	new MeshCreationConfig { /* specify creation options here */ }
 );
-polyGroup.Dispose();
-factory.ResourceAllocator.ReturnPooledMemoryBuffer(pointsMemory);
+
+factory.ResourceAllocator.ReturnPooledMemoryBuffer(trianglesMemory);
+factory.ResourceAllocator.ReturnPooledMemoryBuffer(verticesMemory);
+
 
 //using var mesh = assLoad.LoadMesh(@"C:\Users\ben\Documents\Temp\treasure_chest\treasure_chest_4k.gltf");
 using var colorMap = assLoad.LoadTexture(@"C:\Users\ben\Documents\Temp\treasure_chest\textures\treasure_chest_diff_4k.jpg");

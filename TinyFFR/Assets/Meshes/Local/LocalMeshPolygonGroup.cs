@@ -39,7 +39,9 @@ sealed unsafe class LocalMeshPolygonGroup : IMeshPolygonGroup {
 		_disposalAction(_parentBuilder, this);
 	}
 
-	public void Add(Polygon p, Direction textureUDirection, Direction textureVDirection, Location textureOrigin) {
+	public void Add(Polygon p, Direction? textureUDirection = null, Direction? textureVDirection = null, Location? textureOrigin = null) {
+		p.FillInMissingTriangulationParameters(ref textureUDirection, ref textureVDirection, ref textureOrigin);
+
 		var vertexListSpaceRemaining = (_vertexList?.Buffer.Length ?? 0) - TotalVertexCount;
 		if (_vertexList == null || vertexListSpaceRemaining < p.VertexCount) IncreaseVertexListSize(TotalVertexCount + p.VertexCount);
 
@@ -50,7 +52,7 @@ sealed unsafe class LocalMeshPolygonGroup : IMeshPolygonGroup {
 		var metadataDest = _metadataList.Value.Buffer[TotalPolygonCount..];
 
 		p.Vertices.CopyTo(vertexDest);
-		metadataDest[0] = (TotalVertexCount, p.VertexCount, p.Normal, p.IsWoundClockwise, textureUDirection, textureVDirection, textureOrigin);
+		metadataDest[0] = (TotalVertexCount, p.VertexCount, p.Normal, p.IsWoundClockwise, textureUDirection.Value, textureVDirection.Value, textureOrigin.Value);
 
 		TotalPolygonCount += 1;
 		TotalVertexCount += p.VertexCount;

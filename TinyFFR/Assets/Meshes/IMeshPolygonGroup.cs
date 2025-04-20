@@ -13,7 +13,7 @@ public interface IMeshPolygonGroup : IDisposable {
 	int HighestIndividualVertexCount { get; }
 	int HighestIndividualTriangleCount { get; }
 	
-	void Add(Polygon p, Direction textureUDirection, Direction textureVDirection, Location textureOrigin);
+	void Add(Polygon p, Direction? textureUDirection = null, Direction? textureVDirection = null, Location? textureOrigin = null);
 	void Clear();
 
 	Polygon GetPolygonAtIndex(int index, out Direction textureU, out Direction textureV, out Location textureOrigin);

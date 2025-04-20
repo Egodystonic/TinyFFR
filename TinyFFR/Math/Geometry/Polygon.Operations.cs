@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Threading;
@@ -40,5 +41,11 @@ partial struct Polygon {
 			vertexDest[i] = dimensionConverter.ConvertLocation(Vertices[i]);
 		}
 		return new(vertexDest[..VertexCount], IsWoundClockwise);
+	}
+
+	internal void FillInMissingTriangulationParameters([NotNull] ref Direction? textureUDirection, [NotNull] ref Direction? textureVDirection, [NotNull] ref Location? textureOrigin) {
+		textureUDirection ??= Normal.AnyOrthogonal();
+		textureVDirection ??= Direction.FromDualOrthogonalization(Normal, textureUDirection.Value);
+		textureOrigin ??= Centroid;
 	}
 }
