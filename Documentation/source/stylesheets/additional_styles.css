@@ -2,6 +2,10 @@
 	background-color: #be2e2e;
 }
 
+.md-grid {
+    max-width: initial;
+}
+
 [data-md-color-scheme="default"] .md-header {
 	background: linear-gradient(90deg, rgba(100,70,70,1) 0%, rgba(100,100,70,1) 16.666%, rgba(70,100,70,1) 33.333%, rgba(70,100,100,1) 50%, rgba(70,70,100,1) 66.666%, rgba(100,70,100,1) 83.333%);
 }
@@ -52,10 +56,17 @@
 }
 
 [data-md-color-scheme="default"] .md-typeset pre > code {
-	font-size: .75em;
+	font-size: .85em;
 }
 [data-md-color-scheme="slate"] .md-typeset pre > code {
-	font-size: .75em;
+	font-size: .85em;
+}
+
+.md-typeset details {
+	font-size: .8rem;
+}
+.md-typeset .admonition {
+	font-size: .8rem;
 }
 
 [data-md-color-scheme="default"] .tffr-affirmative {

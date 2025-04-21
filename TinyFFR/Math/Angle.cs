@@ -16,6 +16,7 @@ public readonly partial struct Angle : IMathPrimitive<Angle> {
 	public static readonly Angle Zero = FromRadians(0f);
 	public static readonly Angle EighthCircle = FromRadians(Tau * 0.125f);
 	public static readonly Angle SixthCircle = FromRadians(Tau / 6f);
+	public static readonly Angle ThirdCircle = FromRadians(Tau / 3f);
 	public static readonly Angle QuarterCircle = FromRadians(Tau * 0.25f);
 	public static readonly Angle HalfCircle = FromRadians(Tau * 0.5f);
 	public static readonly Angle ThreeQuarterCircle = FromRadians(Tau * 0.75f);
