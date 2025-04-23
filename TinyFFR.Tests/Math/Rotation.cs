@@ -97,6 +97,52 @@ class RotationTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyIncreaseOrDecreaseAngle() {
+		AssertToleranceEquals(new Rotation(110f, Down), NinetyAroundDown.WithAngleIncreasedBy(20f), TestTolerance);
+		AssertToleranceEquals(new Rotation(70f, Down), NinetyAroundDown.WithAngleDecreasedBy(20f), TestTolerance);
+		AssertToleranceEquals(new Rotation(-70f, Up), NegativeNinetyAroundUp.WithAngleIncreasedBy(20f), TestTolerance);
+		AssertToleranceEquals(new Rotation(-110f, Up), NegativeNinetyAroundUp.WithAngleDecreasedBy(20f), TestTolerance);
+
+		AssertToleranceEquals(new Rotation(20f, None), new Rotation().WithAngleIncreasedBy(20f), TestTolerance);
+		AssertToleranceEquals(new Rotation(-20f, None), new Rotation().WithAngleIncreasedBy(-20f), TestTolerance);
+	}
+
+	[Test]
+	public void ShouldCorrectlyRotateAxis() {
+		AssertToleranceEquals(
+			new Rotation(90f, Left), 
+			NinetyAroundDown.WithAxisRotatedBy(Forward % 90f),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			new Rotation(90f, Right),
+			NinetyAroundDown.WithAxisRotatedBy(Forward % -90f),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			new Rotation(-90f, Right),
+			NegativeNinetyAroundUp.WithAxisRotatedBy(Forward % 90f),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			new Rotation(-90f, Left),
+			NegativeNinetyAroundUp.WithAxisRotatedBy(Forward % -90f),
+			TestTolerance
+		);
+
+		Assert.AreEqual(Rotation.None, Rotation.None.WithAxisRotatedBy(90f % Forward));
+		Assert.AreEqual(Rotation.None, Rotation.None.WithAxisRotatedBy(Rotation.None));
+		AssertToleranceEquals(NinetyAroundUp, NinetyAroundUp.WithAxisRotatedBy(360f % Forward), TestTolerance);
+		AssertToleranceEquals(NinetyAroundUp, NinetyAroundUp.WithAxisRotatedBy(-360f % Forward), TestTolerance);
+		AssertToleranceEquals(NinetyAroundUp, NinetyAroundUp.WithAxisRotatedBy(0f % Forward), TestTolerance);
+		AssertToleranceEquals(NinetyAroundUp, NinetyAroundUp.WithAxisRotatedBy(Rotation.None), TestTolerance);
+		AssertToleranceEquals(NinetyAroundUp, NinetyAroundUp.WithAxisRotatedBy(90f % None), TestTolerance);
+	}
+
+	[Test]
 	public void ConstructorsShouldCorrectlyConstruct() { // Also, the floor should be made out of floor
 		Assert.AreEqual(Rotation.None, new Rotation());
 

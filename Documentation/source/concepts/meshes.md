@@ -63,7 +63,7 @@ With an ordered list (or span) of `MeshVertex` instances, you can specify the wa
 
 Accordingly, a `VertexTriangle` has only three properties: __IndexA__, __IndexB__, __IndexC__. Each index is an integer that indexes in to a `MeshVertex` list/span; together forming one triangle.
 
-The order the vertices are specified in within the triangle is important and define the triangle's *winding order*. When looking at the visible (front) face of the triangle, the vertices should be specified in an anti-clockwise order (it doesn't matter which one comes first, just the respective order). This is a [convention](conventions.md) in TinyFFR. If your vertices are specified with a *clockwise* winding order, the triangle not be rendered except when looking from the inside out or behind the mesh.
+The order the vertices are specified in within the triangle is important and define the triangle's *winding order*. When looking at the visible (front) face of the triangle, the vertices should be specified in an anti-clockwise order (it doesn't matter which one comes first, just the respective order). This is a [convention](conventions.md) in TinyFFR. If your vertices are specified with a *clockwise* winding order, the triangle will not be rendered except when looking from the inside out or behind the mesh.
 
 ## Creating Meshes
 

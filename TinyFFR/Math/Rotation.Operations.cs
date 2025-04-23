@@ -69,6 +69,12 @@ partial struct Rotation :
 			cosNewHalfAngle
 		));
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Rotation WithAngleIncreasedBy(Angle addition) => new(Angle + addition, Axis);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Rotation WithAngleDecreasedBy(Angle subtraction) => new(Angle - subtraction, Axis);
 	#endregion
 
 	#region Interactions w/ Rotation
@@ -76,6 +82,9 @@ partial struct Rotation :
 	Angle IAngleMeasurable<Rotation>.AngleTo(Rotation other) => NormalizedDifferenceTo(other).Angle;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle NormalizedAngleTo(Rotation other) => NormalizedDifferenceTo(other).Angle;
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Rotation WithAxisRotatedBy(Rotation rotation) => new(Angle, Axis * rotation);
 	#endregion
 
 	#region Rotation

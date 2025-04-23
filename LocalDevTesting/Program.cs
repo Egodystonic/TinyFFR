@@ -50,10 +50,18 @@ NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
 
 
 
-var location1 = Location.Origin;
-var location2 = location1 with { X = 0f };
+var dc = new DimensionConverter(
+	xBasis: Direction.Left,
+	yBasis: Direction.Up,
+	zBasis: Direction.Forward,
+	origin: Location.Origin
+);
 
-Console.WriteLine(new Direction(1f, 2f, 3f) * MathF.Sqrt(14f));
+var location3d = new Location(1f, 2f, 3f);
+Console.WriteLine(dc.ConvertLocation(location3d));
+
+var location2d = new XYPair<float>(1f, 2f);
+Console.WriteLine(dc.ConvertLocation(location2d, zAxisDimension: 3f));
 
 
 

@@ -66,6 +66,8 @@ partial struct Plane :
 	public static Angle operator ^(Plane plane, Vect v) => plane.AngleTo(v);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle operator ^(Vect v, Plane plane) => plane.AngleTo(v);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle operator ^(Plane p1, Plane p2) => p1.AngleTo(p2);
 	public Angle AngleTo(Plane other) => Angle.FromRadians(MathF.Acos(OrthogonalityWith(other.Normal)));
 	public Angle AngleTo(Direction direction) => direction != Direction.None ? Angle.FromRadians(MathF.Asin(OrthogonalityWith(direction))) : 0f;
 	public Angle AngleTo(Vect vect) => AngleTo(vect.Direction);

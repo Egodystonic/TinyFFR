@@ -364,7 +364,7 @@ When using the `LeftStickPosition` or `RightStickPosition` property on an `ILate
 
 :   Returns an `Angle?` indicating which direction the stick is being pushed towards, or `null` if the stick is within the deadzone.
 
-	A value of `0°` indicates the stick is being pushed exactly to the right; `90°` to the top; `180°` to the left; `270°` to the bottom. This follows the [polar co-ordinate / unit circle convention](https://en.wikipedia.org/wiki/Polar_coordinate_system#Conventions).
+	A value of `0°` indicates the stick is being pushed exactly to the right; `90°` to the top; `180°` to the left; `270°` to the bottom. This follows the [polar co-ordinate / unit circle convention](conventions.md#2d-handedness-orientation).
 
 	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
 
