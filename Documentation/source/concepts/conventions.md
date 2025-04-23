@@ -28,6 +28,7 @@ This page lists the various conventions TinyFFR uses (in no particular order):
 	
 	* 2D angles are always in polar form, e.g. right is 0°, up is 90°, left is 180°, down is 270°:
 		* ![Polar angle coordinates diagram](conventions_polar.png){ : style="max-width:200px;" }
+		{ : style="list-style: none;" }
 
 	??? info "Exception: Windows / Desktop Pixels"
 		* When dealing *specifically* with window and/or desktop pixel co-ordinates, the top-left corner is the `(0, 0)` origin point, therefore:

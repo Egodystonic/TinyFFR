@@ -372,7 +372,7 @@ When using the `LeftStickPosition` or `RightStickPosition` property on an `ILate
 
 :   Returns an `Orientation2D` enum value indicating which way the stick is being pushed.
 
-	If `Displacement` is within the deadzone, returns `Orientation2D.None`. See [Math & Geometry](math_and_geometry.md) for more information on the `Orientation2D` enum.
+	If `Displacement` is within the deadzone, returns `Orientation2D.None`.
 
 	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
 
@@ -380,7 +380,7 @@ When using the `LeftStickPosition` or `RightStickPosition` property on an `ILate
 
 :   Returns a `VerticalOrientation2D` enum value indicating which way the stick is being pushed along the up/down axis.
 
-	If `DisplacementVertical` is within the deadzone, returns `VerticalOrientation2D.None`. See [Math & Geometry](math_and_geometry.md) for more information on the `VerticalOrientation2D` enum.
+	If `DisplacementVertical` is within the deadzone, returns `VerticalOrientation2D.None`.
 
 	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
 
@@ -388,7 +388,7 @@ When using the `LeftStickPosition` or `RightStickPosition` property on an `ILate
 
 :   Returns a `HorizontalOrientation2D` enum value indicating which way the stick is being pushed along the left/right axis.
 
-	If `DisplacementHorizontal` is within the deadzone, returns `HorizontalOrientation2D.None`. See [Math & Geometry](math_and_geometry.md) for more information on the `HorizontalOrientation2D` enum.
+	If `DisplacementHorizontal` is within the deadzone, returns `HorizontalOrientation2D.None`.
 
 	This method takes an optional parameter allowing you to set the size of the deadzone from `0f` to `1f`. If not specified, the default recommended size will be used.
 

@@ -35,7 +35,11 @@ public static class OrientationUtils {
 		Orientation.LeftDownBackward,
 		Orientation.RightDownBackward
 	};
-	static readonly Axis[] _allAxes = { Axis.X, Axis.Y, Axis.Z };
+	static readonly Axis[] _allAxes = {
+		Axis.X, 
+		Axis.Y, 
+		Axis.Z
+	};
 	static readonly CardinalOrientation[] _allCardinals = {
 		CardinalOrientation.Left,
 		CardinalOrientation.Right,

@@ -686,9 +686,3 @@ var xyPair2 = xyPair1.TransformedBy(transform, transformationOriginPoint);
 // Get the opposite or "inverse" transform
 var transform2 = transform1.Inverse;
 ```
-
-## Orientation Enums
-
-There is a small group of "orientation" enums defined that each describe a set of common orientations in 3D or 2D:
-
-* `Orientation`: 

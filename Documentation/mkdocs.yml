@@ -52,6 +52,9 @@ markdown_extensions:
 
 extra:
   social:
+    - icon: octicons/history-16
+      link: https://tinyffr.dev/archive/
+      name: Archived Versions
     - icon: fontawesome/brands/github
       link: https://github.com/Egodystonic/TinyFFR
       name: Repository

@@ -12,11 +12,21 @@ TinyFFR is currently provided as a .NET9 NuGet package targeting Windows x64 pla
 
 With Visual Studio, the easiest way to add TinyFFR is via the NuGet package manager. 
 
-1. Right-click on the project you wish to add TinyFFR to and select "Manage NuGet Packages": ![Image showing "Manage NuGet Packages"](installing_rclick_nuget.png)
-2. In the package browser, make sure your package source is set to "Nuget" (or "All"): ![Image showing how to set nuget package manager source](installing_nuget_source.png)
-3. In the search box, type "TinyFFR", and you should see the TinyFFR package show up. The official name of the package is "Egodystonic.TinyFFR" by `EgodystonicStudios`: ![Image showing TinyFFR in the nuget package manager browser](installing_package_search.png)
-4. Select the package from the list and then on the right `Install` the latest stable version: ![Image showing the install button for TinyFFR](installing_package_install.png)
-5. You should now see TinyFFR in the `Installed` tab: ![Image showing TinyFFR in the installed tab](installing_installed.png)
+1. Right-click on the project you wish to add TinyFFR to and select "Manage NuGet Packages": 
+	- ![Image showing "Manage NuGet Packages"](installing_rclick_nuget.png)
+	{ : style="list-style: none;" }
+2. In the package browser, make sure your package source is set to "Nuget" (or "All"): 
+	- ![Image showing how to set nuget package manager source](installing_nuget_source.png)
+	{ : style="list-style: none;" }
+3. In the search box, type "TinyFFR", and you should see the TinyFFR package show up. The official name of the package is "Egodystonic.TinyFFR" by `EgodystonicStudios`: 
+	- ![Image showing TinyFFR in the nuget package manager browser](installing_package_search.png)
+	{ : style="list-style: none;" }
+4. Select the package from the list and then on the right `Install` the latest stable version: 
+	- ![Image showing the install button for TinyFFR](installing_package_install.png)
+	{ : style="list-style: none;" }
+5. You should now see TinyFFR in the `Installed` tab: 
+	- ![Image showing TinyFFR in the installed tab](installing_installed.png)
+	{ : style="list-style: none;" }
 
 For more assistance using NuGet in Visual Studio, consult [the official documentation](https://learn.microsoft.com/en-us/nuget/quickstart/install-and-use-a-package-in-visual-studio).
 
