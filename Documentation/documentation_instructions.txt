@@ -22,10 +22,12 @@ Directory structure:
 To publish:
 
 	Rename theme_overrides/main.html.disabled to main.html
+	In mkdocs.yml, add /archive/vM.m to the site URL (no forward slash on end)
 	In the Documentation folder, run `mkdocs build`
 	Upload the output to /archive/vM.m/
 	Delete output folder
 	Rename main.html back to main.html.disabled
+	Set site URL in mkdocs.yml back to just https://tinyffr.dev (no forward slash on end)
 	Run `mkdocs build` again
 	Upload the output to the public html root
 
