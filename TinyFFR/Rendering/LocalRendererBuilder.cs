@@ -83,7 +83,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 
 		_previousHandleId++;
 		var handle = new ResourceHandle<Renderer>(_previousHandleId);
-		_loadedRenderers.Add(handle, new(handle, scene, camera, new(window), viewportData, config.AutoUpdateCameraAspectRatio, config.GpuSynchronizationFrameBufferCount > 0));
+		_loadedRenderers.Add(handle, new(handle, scene, camera, new(window), viewportData, config.AutoUpdateCameraAspectRatio, config.GpuSynchronizationFrameBufferCount >= 0));
 
 		_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
 
@@ -92,7 +92,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		_globals.DependencyTracker.RegisterDependency(result, camera);
 		_globals.DependencyTracker.RegisterDependency(result, window);
 
-		if (config.GpuSynchronizationFrameBufferCount > 0) {
+		if (config.GpuSynchronizationFrameBufferCount >= 0) {
 			LocalFrameSynchronizationManager.RegisterRenderer(handle, config.GpuSynchronizationFrameBufferCount); 
 		}
 

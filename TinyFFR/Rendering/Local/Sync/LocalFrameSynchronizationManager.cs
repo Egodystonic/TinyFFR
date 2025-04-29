@@ -46,8 +46,8 @@ static unsafe class LocalFrameSynchronizationManager {
 	static ArrayPoolBackedVector<QueuedResourceCallback> _unassignedCallbacks = _callbackQueuePool.Rent();
 
 	public static void RegisterRenderer(ResourceHandle<Renderer> renderer, int bufferSize) {
-		if (bufferSize is < 1 or > MaxBufferSize) {
-			throw new ArgumentOutOfRangeException(nameof(bufferSize), bufferSize, $"Should be between 1 and {MaxBufferSize}.");
+		if (bufferSize is < 0 or > MaxBufferSize) {
+			throw new ArgumentOutOfRangeException(nameof(bufferSize), bufferSize, $"Should be between 0 and {MaxBufferSize}.");
 		}
 
 		_rendererMap.Add(renderer, new(new(), bufferSize));
@@ -70,13 +70,23 @@ static unsafe class LocalFrameSynchronizationManager {
 
 	public static void EmitFenceAndCycleBuffer(ResourceHandle<Renderer> renderer) {
 		if (!_rendererMap.TryGetValue(renderer, out var currentFenceData)) throw new InvalidOperationException($"Renderer '{renderer}' was not registered.");
+
+		// Special case handling for 0-buffer rendering
+		if (currentFenceData.BufferSize == 0) {
+			CreateGpuFence(out var immediateFenceHandle).ThrowIfFailure();
+			ExecuteFence(immediateFenceHandle);
+			
+			foreach (var callback in _unassignedCallbacks) callback.Invoke();
+			_unassignedCallbacks.Clear();
+
+			return;
+		}
 		
 		var fenceToExecute = currentFenceData.Buffer[currentFenceData.BufferSize - 1];
 		if (fenceToExecute != UIntPtr.Zero) ExecuteFence(fenceToExecute);
 
 		CreateGpuFence(out var newFenceHandle).ThrowIfFailure();
 		_rendererMap[renderer] = currentFenceData with { Buffer = currentFenceData.Buffer.Cycled(newFenceHandle) };
-		//Console.WriteLine($"Created fence. {_rendererMap[renderer]}");
 
 		if (_unassignedCallbacks.Count == 0) return;
 		_fenceCallbackMap[newFenceHandle] = _unassignedCallbacks;
@@ -92,18 +102,15 @@ static unsafe class LocalFrameSynchronizationManager {
 			return;
 		}
 
-		//Console.WriteLine($"Queueing disposal {handle}");
 		_unassignedCallbacks.Add(qrc);
 	}
 
 	static void ExecuteFence(UIntPtr fenceHandle) {
-		//Console.WriteLine($"Executing fence {fenceHandle}");
 		WaitForFence(fenceHandle).ThrowIfFailure();
 
 		if (!_fenceCallbackMap.Remove(fenceHandle, out var callbacks)) return;
 
 		foreach (var callback in callbacks) {
-			//Console.WriteLine($"Disposing {callback.Handle}");
 			callback.Invoke();
 		}
 

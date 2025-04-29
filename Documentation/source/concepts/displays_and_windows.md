@@ -70,4 +70,4 @@ You can also set the `Display` after the `Window` is created (i.e. `#!csharp win
 
 It is possible to operate multiple windows in one application. You can also operate independent `Scene`s and `Renderer`s (or render the same scene twice from different camera angles, etc).
 
-For more information, see [Scenes](scenes.md).
+For more information, see [Scenes & Rendering](scenes_and_rendering.md).

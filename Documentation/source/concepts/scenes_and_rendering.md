@@ -1,17 +1,21 @@
 ---
-title: Scenes
+title: Scenes & Rendering
 description: This page explains the concept of scenes, cameras, and renderers in TinyFFR.
 ---
 
-Scenes are essentially "containers" for model instances and lights. You can not add the same model instance or light to a scene more than once, but you can add them to multiple scenes.
+`Scenes` are essentially "containers" for model instances and lights. You can not add the same model instance or light to a scene more than once, but you can add them to multiple scenes.
 
-## Backdrops
+`Renderers` take a `Scene` and a `Camera` and *render* them to a target (e.g. a `Window`).
+
+## Scenes
+
+### Backdrops
 
 Scenes can include a backdrop; either a flat colour or an HDR image.
 
 Use `SetBackdrop()` to set the backdrop to either a colour or an `EnvironmentCubemap` containing a loaded HDR image. An `EnvironmentCubemap` is a resource and can be created with the factory's `AssetLoader`.
 
-### Indirect Lighting
+#### Indirect Lighting
 
 By default, all objects in the scene are globally lit by the backdrop. 
 
@@ -21,7 +25,7 @@ The ambient occlusion map used for any material is used to dim indirect lighting
 
 You can also set a backdrop with indirect lighting disabled, if desired (see below).
 
-### Backdrop Methods
+#### Backdrop Methods
 
 `Scene` has the following functions for controlling backdrops and indirect lighting:
 
@@ -67,7 +71,7 @@ You can also set a backdrop with indirect lighting disabled, if desired (see bel
 
 :   This static method reverses the conversion made in `LuxToBrightness()`.
 
-## Renderers & Cameras
+## Cameras
 
 Scenes are ultimately rendered to a render target (such as a window) by a `Renderer`, using a `Camera`. The `Camera` captures the scene from a specific direction and with specific parameters. The renderer takes that capture and turns it in to a texture/frame.
 
@@ -144,3 +148,40 @@ Cameras offer the following controls:
 :   Sets the `ViewDirection` and `UpDirection` together. This can be useful if you want to avoid the auto-orthogonalization calculations when setting them separately.
 
 	If `enforceOrthogonality` is `false`, TinyFFR will not orthogonalize the two directions at all. If they are not orthogonal this can lead to some unexpected or even confusing perspective distortions.
+
+## Renderers
+
+Renderers must be constructed with a scene to render, a camera to capture the scene with, and a render target to output to (e.g. a [Window](displays_and_windows.md)).
+
+When creating a `Renderer` you can supply an optional `RendererCreationConfig` that has the following options:
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `AutoUpdateCameraAspectRatio`
+
+:   If `true`, when the target surface (e.g. the `Window`)'s aspect ratio changes (i.e. its dimensions change), the renderer will automatically update the `AspectRatio` property of the `Camera` it was built with.
+
+	This is useful if the renderer is associated with one camera and one target/Window only; but may not be what you want in a multi-renderer setup. If you set this to `false` you will be responsible for setting the `AspectRatio` of the camera manually.
+
+	Defaults to `true`.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `GpuSynchronizationFrameBufferCount`
+
+:   This is an advanced option that controls how this renderer synchronizes the CPU with the GPU; it controls how many frames can be "in progress" on the GPU side before the CPU waits in order to not get too far ahead.
+
+	* Values between `1` and `5` set a maximum number of frames that can be "queued" or "in progress" before the call to `Render()` will block the calling thread. A higher value generally increases your average throughput/FPS, but can also increase input latency.
+
+	* A value of `0` completely stops all asynchronous rendering. This means every call to `Render()` will __always__ block the calling thread until the frame is fully rendered and displayed on the target/Window. Setting this value can drastically lower average throughput/FPS; a value of at least `1` is recommended in most scenarios.
+
+	* A value of `-1` disables synchronization entirely. This means `Render()` will __never__ block the calling thread; but over time commands submitted to the GPU may exceed the GPU's capability to keep up, resulting in stuttering or even errors. Setting this value is only recommended when using a multi-renderer setup (set all renderers except your last/"primary" renderer to `-1`).
+
+	Defaults to `3`.
+
+	???+ warning "Setting -1 also disables resource disposal protection"
+		Another reason to never set this value to `-1` for *all* your renderers is that resource disposal is no longer synchronized.
+
+		Behind the scenes, TinyFFR ensures that your resources are not deleted from GPU memory until scenes using them are fully rendered. This may be *after* you call `.Dispose()` on that resource; TinyFFR uses GPU synchronization [fences](https://en.wikipedia.org/wiki/Memory_barrier) to protect against use-after-dispose race conditions. When you have __no__ renderers with non-negative values for `GpuSynchronizationFrameBufferCount`, there is no longer any fence to synchronize on.
+
+		The only reason to set this value to `-1` is for additional `Renderer`s: It's okay (and even encouraged for performance) to disable synchronization on secondary/tertiary/etc `Renderer`s as long as at least one is still synchronizing commands on the GPU. 
+		
+		Make sure that one `Renderer` in your application (usually the "primary" one, i.e. the last one in the loop that renders __every__ frame) always has a non-negative value for `GpuSynchronizationFrameBufferCount`.
+
+		If you have no `Renderer` that is guaranteed to render every frame/iteration, you should not set `GpuSynchronizationFrameBufferCount` to `-1` on any `Renderer`.

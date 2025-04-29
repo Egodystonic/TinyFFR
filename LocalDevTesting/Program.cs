@@ -137,13 +137,13 @@ using var camera = factory.CameraBuilder.CreateCamera(
 );
 
 using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
-using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
+using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window, new RendererCreationConfig { GpuSynchronizationFrameBufferCount = 0 });
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(null);
 
 window.LockCursor = true;
 
-// using var window2 = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
-// using var renderer2 = factory.RendererBuilder.CreateRenderer(scene, camera, window2);
+//using var window2 = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value, position: (0, 0));
+//using var renderer2 = factory.RendererBuilder.CreateRenderer(scene, camera, window2, new RendererCreationConfig { GpuSynchronizationFrameBufferCount = -1 });
 
 var frameCount = 0;
 var startTime = Stopwatch.StartNew();

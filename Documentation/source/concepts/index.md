@@ -38,7 +38,7 @@ search:
 
 	Scenes, together with Cameras and Renderers, are the primary way to organise objects and get them on-screen.
 
-	[:octicons-arrow-right-24: Scenes](scenes.md)
+	[:octicons-arrow-right-24: Scenes](scenes_and_rendering.md)
 
 -   :material-math-integral:{ .lg : style="margin-right:0.3em" } __Math & Geometry__{ : style="font-size:1.2em;" }
 

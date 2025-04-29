@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR.Rendering;
 public readonly ref struct RendererCreationConfig {
 	public const bool DefaultAutoUpdateCameraAspectRatio = true;
 	public const int DefaultGpuSynchronizationFrameBufferCount = 3;
-	public const int MinGpuSynchronizationFrameBufferCount = 0;
+	public const int MinGpuSynchronizationFrameBufferCount = -1;
 	public const int MaxGpuSynchronizationFrameBufferCount = LocalFrameSynchronizationManager.MaxBufferSize;
 
 	readonly int _gpuSynchronizationFrameBufferCount = DefaultGpuSynchronizationFrameBufferCount;

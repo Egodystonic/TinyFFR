@@ -125,7 +125,7 @@ nav:
     - concepts/factory.md
     - concepts/resources.md
     - concepts/displays_and_windows.md
-    - concepts/scenes.md
+    - concepts/scenes_and_rendering.md
     - concepts/math_and_geometry.md
     - concepts/input.md
     - concepts/meshes.md
