@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "environment/native_impl_loop.h"
 
+#include "native_impl_init.h"
 #include "utils_and_constants.h"
 
 static const char* GameControllerNameFallbackValue = "Misc Game Controller";
@@ -248,6 +249,6 @@ void native_impl_loop::detect_controllers() {
 	}
 }
 StartExportedFunc(detect_controllers) {
+	native_impl_loop::detect_controllers();
 	EndExportedFunc
 }
-

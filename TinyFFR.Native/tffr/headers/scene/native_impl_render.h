@@ -11,6 +11,7 @@ using namespace filament;
 typedef Renderer* RendererHandle;
 typedef SwapChain* SwapChainHandle;
 typedef View* ViewDescriptorHandle;
+typedef filament::Fence* FenceHandle;
 
 class native_impl_render {
 public:
@@ -21,4 +22,7 @@ public:
 
 	static void set_view_descriptor_size(ViewDescriptorHandle viewDescriptor, uint32_t width, uint32_t height);
 	static void render_scene(RendererHandle renderer, SwapChainHandle swapChain, ViewDescriptorHandle viewDescriptor);
+
+	static void create_gpu_fence(FenceHandle* outFence);
+	static void wait_for_fence(FenceHandle fenceHandle);
 };

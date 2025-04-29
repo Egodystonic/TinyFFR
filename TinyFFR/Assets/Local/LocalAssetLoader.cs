@@ -9,6 +9,7 @@ using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Meshes.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Rendering.Local.Sync;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
@@ -652,11 +653,12 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		var data = _loadedCubemaps[handle];
-		UnloadIblFileFromMemory(data.IblTextureHandle).ThrowIfFailure();
-		UnloadSkyboxFileFromMemory(data.SkyboxTextureHandle).ThrowIfFailure();
+		LocalFrameSynchronizationManager.QueueResourceDisposal(data.IblTextureHandle, &UnloadIblFileFromMemory);
+		LocalFrameSynchronizationManager.QueueResourceDisposal(data.SkyboxTextureHandle, &UnloadSkyboxFileFromMemory);
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromCollection) _loadedCubemaps.Remove(handle);
 	}
+
 
 	public void Dispose() {
 		if (_isDisposed) return;

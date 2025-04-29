@@ -10,6 +10,7 @@ using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Input.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Rendering.Local.Sync;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
@@ -172,11 +173,11 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		var curIbRefCount = _indexBufferRefCounts[bufferData.IndexBufferHandle];
 		if (curVbRefCount <= 1) {
 			_vertexBufferRefCounts.Remove(bufferData.VertexBufferHandle);
-			DisposeVertexBuffer(bufferData.VertexBufferHandle).ThrowIfFailure();
+			LocalFrameSynchronizationManager.QueueResourceDisposal(bufferData.VertexBufferHandle, &DisposeVertexBuffer);
 		}
 		if (curIbRefCount <= 1) {
 			_indexBufferRefCounts.Remove(bufferData.IndexBufferHandle);
-			DisposeIndexBuffer(bufferData.IndexBufferHandle).ThrowIfFailure();
+			LocalFrameSynchronizationManager.QueueResourceDisposal(bufferData.IndexBufferHandle, &DisposeIndexBuffer);
 		}
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromMap) _activeMeshes.Remove(handle);

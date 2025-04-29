@@ -6,6 +6,7 @@
 #include "filament/SwapChain.h"
 #include "filament/View.h"
 #include "filament/Viewport.h"
+#include "filament/Fence.h"
 
 #include "sdl/SDL_syswm.h"
 
@@ -96,7 +97,6 @@ void native_impl_render::render_scene(RendererHandle renderer, SwapChainHandle s
 	ThrowIfNull(swapChain, "Swap chain was null.");
 	ThrowIfNull(viewDescriptor, "View was null.");
 
-	//renderer->setClearOptions({ { 1.0f, 0.0f, 0.0f, 1.0f }, 0, true, true });
 	if (!renderer->beginFrame(swapChain)) return;
 	renderer->render(viewDescriptor);
 	renderer->endFrame();
@@ -105,3 +105,21 @@ StartExportedFunc(render_scene, RendererHandle renderer, SwapChainHandle swapCha
 	native_impl_render::render_scene(renderer, swapChain, viewDescriptor);
 	EndExportedFunc
 }
+
+void native_impl_render::create_gpu_fence(FenceHandle* outFence) {
+	*outFence = filament_engine->createFence();
+	ThrowIfNull((*outFence), "Could not create engine fence.");
+}
+StartExportedFunc(create_gpu_fence, FenceHandle* outFence) {
+	native_impl_render::create_gpu_fence(outFence);
+	EndExportedFunc
+}
+
+void native_impl_render::wait_for_fence(FenceHandle fenceHandle) {
+	ThrowIf(filament::Fence::waitAndDestroy(fenceHandle) != filament::backend::FenceStatus::CONDITION_SATISFIED, "Fence did not complete without error.");
+}
+StartExportedFunc(wait_for_fence, FenceHandle fenceHandle) {
+	native_impl_render::wait_for_fence(fenceHandle);
+	EndExportedFunc
+}
+

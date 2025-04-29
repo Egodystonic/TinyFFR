@@ -12,6 +12,7 @@ using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Input.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Rendering.Local.Sync;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConstants;
@@ -394,7 +395,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	void Dispose(ResourceHandle<Texture> handle, bool removeFromCollection) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
-		DisposeTexture(handle).ThrowIfFailure();
+		LocalFrameSynchronizationManager.QueueResourceDisposal(handle, &DisposeTexture);
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromCollection) _loadedTextures.Remove(handle);
 	}
@@ -404,7 +405,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
-		DisposeMaterial(handle).ThrowIfFailure();
+		LocalFrameSynchronizationManager.QueueResourceDisposal(handle, &DisposeMaterial);
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromCollection) _activeMaterials.Remove(handle);
 	}

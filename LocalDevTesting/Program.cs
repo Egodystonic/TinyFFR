@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment.Input;
+using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.World;
 
 // TODO make this a little better. Maybe make it a little framework and ignore the actual "meat" file
@@ -49,19 +50,6 @@ NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
 
 
 
-
-var dc = new DimensionConverter(
-	xBasis: Direction.Left,
-	yBasis: Direction.Up,
-	zBasis: Direction.Forward,
-	origin: Location.Origin
-);
-
-var location3d = new Location(1f, 2f, 3f);
-Console.WriteLine(dc.ConvertLocation(location3d));
-
-var location2d = new XYPair<float>(1f, 2f);
-Console.WriteLine(dc.ConvertLocation(location2d, zAxisDimension: 3f));
 
 
 
@@ -150,20 +138,36 @@ using var camera = factory.CameraBuilder.CreateCamera(
 
 using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
-using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
+using var loop = factory.ApplicationLoopBuilder.CreateLoop(null);
 
 window.LockCursor = true;
 
-while (!loop.Input.UserQuitRequested) {
+// using var window2 = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
+// using var renderer2 = factory.RendererBuilder.CreateRenderer(scene, camera, window2);
+
+var frameCount = 0;
+var startTime = Stopwatch.StartNew();
+while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Escape)) {
 	var sw = Stopwatch.StartNew();
 	var deltaTime = (float) loop.IterateOnce().TotalSeconds;
 
 	CameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, camera, deltaTime);
 	CameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, camera, deltaTime);
 
+	using var testCubeMesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f));
+	using var testCubeMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.White);
+	using var testCubeMat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(testCubeMap);
+	using var testCube = factory.ObjectBuilder.CreateModelInstance(testCubeMesh, testCubeMat, initialPosition: camera.Position + camera.ViewDirection * 2f);
+	scene.Add(testCube);
+
+	//renderer2.Render();
 	renderer.Render();
+
+	scene.Remove(testCube);
 	if (sw.ElapsedMilliseconds > 20) Console.WriteLine("EM: " + sw.ElapsedMilliseconds + "; " + "Dt: " + deltaTime);
+	++frameCount;
 }
+Console.WriteLine("Avg FPS: " + (frameCount / startTime.Elapsed.TotalSeconds).ToString("N0") + " (" + frameCount + " frames over " + startTime.Elapsed.TotalSeconds.ToString("N1") + " seconds)");
 
 static class CameraInputHandler {
 	const float CameraMovementSpeed = 1f;

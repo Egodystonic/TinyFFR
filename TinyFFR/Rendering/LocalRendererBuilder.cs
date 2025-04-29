@@ -5,6 +5,7 @@ using System;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Rendering.Local.Sync;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.World;
@@ -44,7 +45,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	
 	readonly record struct WindowData(Window Window, UIntPtr RendererPtr, UIntPtr SwapChainPtr);
 	readonly record struct ViewportData(UIntPtr Handle, XYPair<uint> CurrentSize);
-	readonly record struct RendererData(ResourceHandle<Renderer> Handle, Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio);
+	readonly record struct RendererData(ResourceHandle<Renderer> Handle, Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, bool EmitFences);
 
 	const string DefaultRendererName = "Unnamed Renderer";
 
@@ -82,7 +83,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 
 		_previousHandleId++;
 		var handle = new ResourceHandle<Renderer>(_previousHandleId);
-		_loadedRenderers.Add(handle, new(handle, scene, camera, new(window), viewportData, config.AutoUpdateCameraAspectRatio));
+		_loadedRenderers.Add(handle, new(handle, scene, camera, new(window), viewportData, config.AutoUpdateCameraAspectRatio, config.GpuSynchronizationFrameBufferCount > 0));
 
 		_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
 
@@ -90,6 +91,10 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		_globals.DependencyTracker.RegisterDependency(result, scene);
 		_globals.DependencyTracker.RegisterDependency(result, camera);
 		_globals.DependencyTracker.RegisterDependency(result, window);
+
+		if (config.GpuSynchronizationFrameBufferCount > 0) {
+			LocalFrameSynchronizationManager.RegisterRenderer(handle, config.GpuSynchronizationFrameBufferCount); 
+		}
 
 		return result;
 	}
@@ -115,6 +120,10 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 			windowData.SwapChainPtr,
 			_loadedRenderers[handle].Viewport.Handle
 		).ThrowIfFailure();
+
+		if (_loadedRenderers[handle].EmitFences) {
+			LocalFrameSynchronizationManager.EmitFenceAndCycleBuffer(handle);
+		}
 	}
 
 	public ReadOnlySpan<char> GetName(ResourceHandle<Renderer> handle) {
@@ -182,7 +191,11 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		}
 
 		var data = _loadedRenderers[handle];
-		
+
+		if (data.EmitFences) {
+			LocalFrameSynchronizationManager.DeregisterRenderer(handle);
+		}
+
 		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.Camera);
 		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.Scene);
 		

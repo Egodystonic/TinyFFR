@@ -2,6 +2,7 @@
 
 #include "utils_and_constants.h"
 #include "sdl/SDL.h"
+#include "filament/Fence.h"
 
 typedef SDL_GameController* GameControllerHandle;
 
