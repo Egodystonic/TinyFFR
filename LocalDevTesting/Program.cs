@@ -69,54 +69,54 @@ using var factory = new LocalTinyFfrFactory();
 var assLoad = factory.AssetLoader;
 var meshBuilder = factory.AssetLoader.MeshBuilder;
 
-var verticesMemory = factory.ResourceAllocator.CreatePooledMemoryBuffer<MeshVertex>(4);
-var trianglesMemory = factory.ResourceAllocator.CreatePooledMemoryBuffer<VertexTriangle>(2);
-var vertices = verticesMemory.Span;
-var triangles = trianglesMemory.Span;
+// var verticesMemory = factory.ResourceAllocator.CreatePooledMemoryBuffer<MeshVertex>(4);
+// var trianglesMemory = factory.ResourceAllocator.CreatePooledMemoryBuffer<VertexTriangle>(2);
+// var vertices = verticesMemory.Span;
+// var triangles = trianglesMemory.Span;
+//
+// vertices[0] = new MeshVertex(
+// 	location: (0.5f, -0.5f, 0f),
+// 	textureCoords: (0f, 0f),
+// 	tangent: Direction.Right,
+// 	bitangent: Direction.Up,
+// 	normal: Direction.Backward
+// );
+// vertices[1] = new MeshVertex(
+// 	location: (-0.5f, -0.5f, 0f),
+// 	textureCoords: (1f, 0f),
+// 	tangent: Direction.Right,
+// 	bitangent: Direction.Up,
+// 	normal: Direction.Backward
+// );
+// vertices[2] = new MeshVertex(
+// 	location: (-0.5f, 0.5f, 0f),
+// 	textureCoords: (1f, 1f),
+// 	tangent: Direction.Right,
+// 	bitangent: Direction.Up,
+// 	normal: Direction.Backward
+// );
+// vertices[3] = new MeshVertex(
+// 	location: (0.5f, 0.5f, 0f),
+// 	textureCoords: (0f, 1f),
+// 	tangent: Direction.Right,
+// 	bitangent: Direction.Up,
+// 	normal: Direction.Backward
+// );
+//
+// triangles[0] = new(0, 1, 2);
+// triangles[1] = new(2, 3, 0);
+//
+// using var mesh = meshBuilder.CreateMesh(
+// 	vertices,
+// 	triangles,
+// 	new MeshCreationConfig { /* specify creation options here */ }
+// );
+//
+// factory.ResourceAllocator.ReturnPooledMemoryBuffer(trianglesMemory);
+// factory.ResourceAllocator.ReturnPooledMemoryBuffer(verticesMemory);
 
-vertices[0] = new MeshVertex(
-	location: (0.5f, -0.5f, 0f),
-	textureCoords: (0f, 0f),
-	tangent: Direction.Right,
-	bitangent: Direction.Up,
-	normal: Direction.Backward
-);
-vertices[1] = new MeshVertex(
-	location: (-0.5f, -0.5f, 0f),
-	textureCoords: (1f, 0f),
-	tangent: Direction.Right,
-	bitangent: Direction.Up,
-	normal: Direction.Backward
-);
-vertices[2] = new MeshVertex(
-	location: (-0.5f, 0.5f, 0f),
-	textureCoords: (1f, 1f),
-	tangent: Direction.Right,
-	bitangent: Direction.Up,
-	normal: Direction.Backward
-);
-vertices[3] = new MeshVertex(
-	location: (0.5f, 0.5f, 0f),
-	textureCoords: (0f, 1f),
-	tangent: Direction.Right,
-	bitangent: Direction.Up,
-	normal: Direction.Backward
-);
 
-triangles[0] = new(0, 1, 2);
-triangles[1] = new(2, 3, 0);
-
-using var mesh = meshBuilder.CreateMesh(
-	vertices,
-	triangles,
-	new MeshCreationConfig { /* specify creation options here */ }
-);
-
-factory.ResourceAllocator.ReturnPooledMemoryBuffer(trianglesMemory);
-factory.ResourceAllocator.ReturnPooledMemoryBuffer(verticesMemory);
-
-
-//using var mesh = assLoad.LoadMesh(@"C:\Users\ben\Documents\Temp\treasure_chest\treasure_chest_4k.gltf");
+using var mesh = assLoad.LoadMesh(@"C:\Users\ben\Documents\Temp\treasure_chest\treasure_chest_4k.gltf");
 using var colorMap = assLoad.LoadTexture(@"C:\Users\ben\Documents\Temp\treasure_chest\textures\treasure_chest_diff_4k.jpg");
 using var normalMap = assLoad.LoadTexture(@"C:\Users\ben\Documents\Temp\treasure_chest\textures\treasure_chest_nor_gl_4k.jpg");
 using var ormMap = assLoad.LoadTexture(@"C:\Users\ben\Documents\Temp\treasure_chest\textures\treasure_chest_arm_4k.jpg");
@@ -137,7 +137,7 @@ using var camera = factory.CameraBuilder.CreateCamera(
 );
 
 using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
-using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window, new RendererCreationConfig { GpuSynchronizationFrameBufferCount = 0 });
+using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(null);
 
 window.LockCursor = true;

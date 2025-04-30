@@ -55,6 +55,9 @@ extra:
     - icon: octicons/history-16
       link: https://tinyffr.dev/archive/
       name: Archived Versions
+    - icon: fontawesome/solid/arrow-up-right-dots
+      link: /reference/changelog/
+      name: Changelog
     - icon: fontawesome/brands/github
       link: https://github.com/Egodystonic/TinyFFR
       name: Repository
@@ -112,7 +115,8 @@ validation:
 strict: true
 
 nav:
-  - index.md
+  - Home:
+    - index.md
   - Examples: 
     - examples/index.md
     - examples/installing.md
@@ -134,3 +138,4 @@ nav:
     - concepts/conventions.md
   - Reference Docs:
     - reference/index.md
+    - reference/changelog.md

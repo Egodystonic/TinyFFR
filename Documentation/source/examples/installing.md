@@ -3,10 +3,28 @@ title: Installing TinyFFR
 description: This page documents how to install TinyFFR via NuGet.
 ---
 
-TinyFFR is currently provided as a .NET9 NuGet package targeting Windows x64 platforms only (1). If you already know how to use NuGet all you need to do is install `Egodystonic.TinyFFR` from the standard Nuget package source. Otherwise, follow one of guides below, depending on your preferred environment:
-{ .annotate }
+__If you already know how to use NuGet all you need to do is install `Egodystonic.TinyFFR` from the standard Nuget package source.__ 
+
+TinyFFR is currently provided as a .NET9 NuGet package targeting Windows x64 platforms only. (1)
+{ .annotate : style="margin-bottom:3em;" }
 
 1. Support for other platforms is planned for the future. See [github](https://github.com/Egodystonic/TinyFFR/issues/26).
+
+----
+
+Alternatively: If you're new to .NET/C# and/or NuGet, follow one of guides below depending on your preferred environment:
+
+## Commandline
+
+To install TinyFFR via commandline, use the .NET CLI. In your project's root directory, run the following command:
+
+```plaintext
+dotnet add package Egodystonic.TinyFFR
+```
+
+## Visual Studio Code
+
+TinyFFR can be installed via the command palette in VS Code, assuming you have the [C# Dev Kit](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit) installed. Follow [the official instructions on installing a NuGet package](https://code.visualstudio.com/docs/csharp/package-management), and in step __(3)__ search for `Egodystonic.TinyFFR`. Use the latest version of the package available.
 
 ## Visual Studio
 
@@ -30,10 +48,6 @@ With Visual Studio, the easiest way to add TinyFFR is via the NuGet package mana
 
 For more assistance using NuGet in Visual Studio, consult [the official documentation](https://learn.microsoft.com/en-us/nuget/quickstart/install-and-use-a-package-in-visual-studio).
 
-## Visual Studio Code
-
-TinyFFR can be installed via the command palette in VS Code, assuming you have the [C# Dev Kit](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit) installed. Follow [the official instructions on installing a NuGet package](https://code.visualstudio.com/docs/csharp/package-management) to add `Egodystonic.TinyFFR` to your project. 
-
 ## Editing the .csproj File Manually
 
 To add the TinyFFR package manually by editing the .csproj file, simply add a `<PackageReference>` to `Egodystonic.TinyFFR`:
@@ -44,15 +58,7 @@ To add the TinyFFR package manually by editing the .csproj file, simply add a `<
 </ItemGroup>
 ```
 
-1. Replace "`M.m.p`" with the actual version number of the package you'd like to install. See [the TinyFFR Github page](https://github.com/Egodystonic/TinyFFR/) for the latest versions.
-
-## Commandline
-
-To install TinyFFR via commandline, use the .NET CLI. In your project's root directory, run the following command:
-
-```plaintext
-dotnet add package Egodystonic.TinyFFR
-```
+1. Replace "`M.m.p`" with the actual version number of the package you'd like to install. See the [Changelog](/reference/changelog.md) for the latest version.
 
 ## Other Environments
 

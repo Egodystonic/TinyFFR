@@ -75,8 +75,6 @@ You can also set a backdrop with indirect lighting disabled, if desired (see bel
 
 Scenes are ultimately rendered to a render target (such as a window) by a `Renderer`, using a `Camera`. The `Camera` captures the scene from a specific direction and with specific parameters. The renderer takes that capture and turns it in to a texture/frame.
 
-### Camera Controls
-
 Cameras offer the following controls:
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `Position`

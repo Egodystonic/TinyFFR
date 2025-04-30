@@ -10,6 +10,9 @@
 #define STB_IMAGE_IMPLEMENTATION // This should only be defined in one file ever, it imports the entire implementation for stb_image in as a definition file
 #include "stb/stb_imageh.h"
 
+constexpr unsigned int MeshMaxCount = 1000000;
+constexpr unsigned int NoAnswerFoundGlobalIndex = MeshMaxCount + 1;
+
 void native_impl_asset_loader::load_asset_file_in_to_memory(const char* filePath, interop_bool fixCommonExporterErrors, interop_bool optimize, MemoryLoadedAssetHandle* outAssetHandle) {
 	ThrowIfNull(filePath, "File path pointer was null.");
 	ThrowIfNull(outAssetHandle, "Out asset handle pointer was null.");
@@ -24,10 +27,22 @@ StartExportedFunc(load_asset_file_in_to_memory, const char* filePath, interop_bo
 	EndExportedFunc
 }
 
+
+int32_t count_meshes_in_node_and_children(aiNode* node) {
+	auto result = static_cast<int32_t>(node->mNumMeshes);
+
+	for (unsigned int i = 0; i < node->mNumChildren; ++i) {
+		result += count_meshes_in_node_and_children(node->mChildren[i]);
+	}
+
+	ThrowIf(result > MeshMaxCount || result < 0, "Too many meshes.");
+	return result;
+}
 void native_impl_asset_loader::get_loaded_asset_mesh_count(MemoryLoadedAssetHandle assetHandle, int32_t* outMeshCount) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 	ThrowIfNull(outMeshCount, "Out mesh count pointer was null.");
-	*outMeshCount = static_cast<int32_t>(assetHandle->mNumMeshes);
+
+	*outMeshCount = count_meshes_in_node_and_children(assetHandle->mRootNode);
 }
 StartExportedFunc(get_loaded_asset_mesh_count, MemoryLoadedAssetHandle assetHandle, int32_t* outMeshCount) {
 	native_impl_asset_loader::get_loaded_asset_mesh_count(assetHandle, outMeshCount);
@@ -54,12 +69,44 @@ StartExportedFunc(get_loaded_asset_texture_count, MemoryLoadedAssetHandle assetH
 	EndExportedFunc
 }
 
+void walk_nodes_to_find_global_index_from_mesh_index(aiNode* node, int32_t& startingIndex, int32_t targetIndex, unsigned int& resultGlobalIndex, aiMatrix4x4& resultTransform) {
+	ThrowIf(node->mNumMeshes > MeshMaxCount, "Mesh count too high.");
+
+	resultTransform = node->mTransformation * resultTransform;
+
+	auto originalStartingIndex = startingIndex;
+	startingIndex += static_cast<int32_t>(node->mNumMeshes);
+	ThrowIf(startingIndex < 0, "Mesh count overflow.");
+	ThrowIf(startingIndex > static_cast<int32_t>(MeshMaxCount), "Mesh count too high.");
+	if (startingIndex > targetIndex) {
+		resultGlobalIndex = node->mMeshes[targetIndex - originalStartingIndex];
+		return;
+	}
+
+	auto originalTransform = resultTransform;
+	for (unsigned int i = 0U; i < node->mNumChildren; ++i) {
+		walk_nodes_to_find_global_index_from_mesh_index(node->mChildren[i], startingIndex, targetIndex, resultGlobalIndex, resultTransform);
+		if (resultGlobalIndex != NoAnswerFoundGlobalIndex) return;
+		resultTransform = originalTransform;
+	}
+
+	resultGlobalIndex = NoAnswerFoundGlobalIndex;
+
+}
+aiMesh* get_mesh_at_index(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, aiMatrix4x4& transform) {
+	unsigned int resultGlobalIndex = NoAnswerFoundGlobalIndex;
+	int32_t startingIndex = 0;
+	walk_nodes_to_find_global_index_from_mesh_index(assetHandle->mRootNode, startingIndex, meshIndex, resultGlobalIndex, transform);
+	ThrowIf(resultGlobalIndex >= assetHandle->mNumMeshes, "Mesh index out of bounds.");
+	return assetHandle->mMeshes[resultGlobalIndex];
+}
+
 void native_impl_asset_loader::get_loaded_asset_mesh_vertex_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outVertexCount) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 	ThrowIfNull(outVertexCount, "Out vertex count pointer was null.");
-	ThrowIf(static_cast<uint32_t>(meshIndex) >= assetHandle->mNumMeshes, "Mesh index was out of bounds.");
 
-	*outVertexCount = static_cast<int32_t>(assetHandle->mMeshes[meshIndex]->mNumVertices);
+	auto unused = aiMatrix4x4{};
+	*outVertexCount = static_cast<int32_t>(get_mesh_at_index(assetHandle, meshIndex, unused)->mNumVertices);
 }
 StartExportedFunc(get_loaded_asset_mesh_vertex_count, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outVertexCount) {
 	native_impl_asset_loader::get_loaded_asset_mesh_vertex_count(assetHandle, meshIndex, outVertexCount);
@@ -74,13 +121,12 @@ int32_t get_mesh_triangle_count(aiMesh* mesh) {
 
 	return result;
 }
-
 void native_impl_asset_loader::get_loaded_asset_mesh_triangle_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outTriangleCount) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 	ThrowIfNull(outTriangleCount, "Out index count pointer was null.");
-	ThrowIf(static_cast<uint32_t>(meshIndex) >= assetHandle->mNumMeshes, "Mesh index was out of bounds.");
 
-	*outTriangleCount = get_mesh_triangle_count(assetHandle->mMeshes[meshIndex]);
+	auto unused = aiMatrix4x4{};
+	*outTriangleCount = get_mesh_triangle_count(get_mesh_at_index(assetHandle, meshIndex, unused));
 }
 StartExportedFunc(get_loaded_asset_mesh_triangle_count, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outTriangleCount) {
 	native_impl_asset_loader::get_loaded_asset_mesh_triangle_count(assetHandle, meshIndex, outTriangleCount);
@@ -89,9 +135,9 @@ StartExportedFunc(get_loaded_asset_mesh_triangle_count, MemoryLoadedAssetHandle 
 
 void native_impl_asset_loader::copy_loaded_asset_mesh_vertices(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertex* buffer) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
-	ThrowIf(static_cast<uint32_t>(meshIndex) >= assetHandle->mNumMeshes, "Mesh index was out of bounds.");
 
-	auto mesh = assetHandle->mMeshes[meshIndex];
+	auto transform = aiMatrix4x4{};
+	auto mesh = get_mesh_at_index(assetHandle, meshIndex, transform);
 
 	ThrowIf(bufferSizeVertices < 0, "Invalid buffer size.");
 	ThrowIf(static_cast<uint32_t>(bufferSizeVertices) < mesh->mNumVertices, "Given buffer was too small.")
@@ -100,7 +146,7 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_vertices(MemoryLoadedAsset
 	auto hasTangents = mesh->HasTangentsAndBitangents() && mesh->HasNormals();
 
 	for (auto vertexIndex = 0U; vertexIndex < mesh->mNumVertices; ++vertexIndex) {
-		auto position = mesh->mVertices[vertexIndex];
+		auto position = transform * mesh->mVertices[vertexIndex];
 		auto uv = hasUVs ? mesh->mTextureCoords[0][vertexIndex] : aiVector3D{ 0.0f, 0.0f, 0.0f };
 		auto tangent = float4{ };
 		if (hasTangents) {
