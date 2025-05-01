@@ -146,3 +146,5 @@ This page lists the various conventions TinyFFR uses (in no particular order):
 		* `Vect` W value is 0f
 		* `Direction` W value is 0f
 		* `Location` W value is 1f
+
+	* `Direction.FromDualOrthogonalization()` follows the right-hand rule (first argument is index finger, second argument is middle finger, result is thumb).

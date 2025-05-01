@@ -10,14 +10,26 @@ typedef int32_t LightHandle;
 
 class native_impl_lights {
 public:
-	static void allocate_point_light(LightHandle* outLight);
 	static void get_light_position(LightHandle light, float3* outPosition);
 	static void set_light_position(LightHandle light, float3 newPosition);
 	static void get_light_color(LightHandle light, float3* outColor);
 	static void set_light_color(LightHandle light, float3 newColor);
+
+	static void allocate_point_light(LightHandle* outLight);
 	static void get_point_light_lumens(LightHandle light, float* outLumens);
 	static void set_point_light_lumens(LightHandle light, float newLumens);
 	static void get_point_light_max_illumination_radius(LightHandle light, float* outRadius);
 	static void set_point_light_max_illumination_radius(LightHandle light, float newRadius);
+
+	static void allocate_spot_light(interop_bool highAccuracy, LightHandle* outLight);
+	static void get_spot_light_lumens(LightHandle light, float* outLumens);
+	static void set_spot_light_lumens(LightHandle light, float newLumens);
+	static void get_spot_light_direction(LightHandle light, float3* outDir);
+	static void set_spot_light_direction(LightHandle light, float3 newDir);
+	static void get_spot_light_radius_inner(LightHandle light, float* outRadius);
+	static void set_spot_light_radius_inner(LightHandle light, float newRadius);
+	static void get_spot_light_radius_outer(LightHandle light, float* outRadius);
+	static void set_spot_light_radius_outer(LightHandle light, float newRadius);
+
 	static void dispose_light(LightHandle light);
 };

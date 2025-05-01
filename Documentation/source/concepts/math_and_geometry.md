@@ -37,11 +37,6 @@ var location = (Location) (1f, 2f, 3f);
 
 // Create a Location by modifying an existing one
 var location2 = location1 with { X = 0f };
-
-// Create a Location by adding/subtracting a Vect to an existing one
-// (Vects explained further below)
-var location2 = location1 + new Vect(7f, 8f, 9f);
-var location2 = location1 - new Vect(7f, 8f, 9f);
 ```
 
 #### Common Operations
@@ -49,23 +44,28 @@ var location2 = location1 - new Vect(7f, 8f, 9f);
 ```csharp
 // Calculate the distance between two Locations
 var distance = location1.DistanceFrom(location2);
+
+// "Move" a Location (Vects explained further below)
+// (these lines produce an identical result)
+var location2 = location1.MovedBy(new Vect(-1f, -2f, -3f));
+var location2 = location1 + new Vect(-1f, -2f, -3f);
+var location2 = location1 - new Vect(1f, 2f, 3f);
 ```
 
 ### Direction
 
 It's common to want to describe a *direction* in 3D. Examples of directions include "Left", "Down", or really any arbitrary way you can point in 3D space. The `Direction` struct allows us to describe exactly this.
 
-You can think of a `Direction` as an "arrow" pointing one specific way. The arrow does not have any defined position/location in space or any defined length, we just know which way it is pointing.
+You can think of a `Direction` as an "arrow" pointing one specific way. The arrow does not have any defined position/location in space or any specific length, we just know which way it is pointing.
 
-??? abstract "Direction Structure"
+??? abstract "Direction Internals"
 	Internally, a `Direction` *does* actually have a length and has `X`, `Y`, and `Z` properties just like a `Location`.
 
 	However, a `Direction`'s length is always either `1f` or `0f`. TinyFFR manages the `X`/`Y`/`Z` properties to enforce this. This is done to make sure the `Direction` is always "unit length"-- in other words, `Direction`s are secretly just specially-named [unit vectors](https://en.wikipedia.org/wiki/Unit_vector).
 
-	For most intents and purposes it's better to think of a `Direction` as a more abstract concept (e.g. the arrow pointing one specific way).
+	If you really want to use a `Direction` as a unit vector, the `ToVector3()` method will convert it to a `System.Numerics.Vector3` for you.
 
-	It's only in very niche scenarios that you should need to access or care about the `X`/`Y`/`Z` properties of a `Direction`. They can not be set with a `with` statement.
-
+	For most intents and purposes it's better to think of a `Direction` as a more abstract concept (e.g. the arrow pointing one specific way). Its length is irrelevant. It's only in very niche scenarios that you should even need to access or care about the `X`/`Y`/`Z` properties of a `Direction`. They can not be set with a `with` statement.
 	
 
 There is a special case `Direction` known as the "None" direction. As its name implies it denotes the *absence* of any direction.
@@ -114,18 +114,19 @@ var dir2 = dir1 * rotation;
 
 ### Vect
 
-A `Vect` is almost identical to a `Direction` but has one key difference: It has a specific length.
+A `Vect` is almost identical to a `Direction` but has one key difference: It *does* have a specific length.
 
 `Vect`s still do not have any defined position/location in the world, just a constituent `Direction` and `Length`.
 
 A `Vect` also has an `X`, `Y`, and `Z` property which indicate the length of the arrow along each axis.
 
 ??? question "Why 'Vect' instead of 'Vector'?"
-	`Vect` is short for [Vector](https://en.wikipedia.org/wiki/Euclidean_vector). However, we use `Vect` instead of `Vector` for three reasons:
+	TinyFFR uses `Vect` instead of `Vector` as its main vector type name for four reasons:
 
 	1. The in-built `System.Numerics` C# namespace already defines a similar data type named [Vector](https://learn.microsoft.com/en-us/dotnet/api/system.numerics.vector?view=net-9.0).
 	2. A "Vector" has an alternative meaning as a list/resizable array in some software contexts.
-	3. `Location` and `Direction` are actually vectors too, just specialized forms of vectors. `Vect` is specifically a vector that is not a `Location` or `Direction`. 
+	3. `Location` and `Direction` are actually vectors too, just specialized forms of vectors. `Vect` is specifically a vector that is not a `Location` or `Direction`.
+	4. It's not completely unexpected that someone may be using TinyFFR with other 3D/math libraries that also define their own "Vector" type.
 
 #### Creating Vects
 
@@ -206,7 +207,7 @@ var vect2 = vect1 * rotation;
 
 The `Angle` type represents any angle in 2D or 3D. The (ostensible) unit of any `Angle` is degrees.
 
-??? abstract "Angle Internal Units"
+??? abstract "Angle Internals"
 	Internally, angles are actually stored as values in [radians](https://en.wikipedia.org/wiki/Radian) for performance reasons, hence the 'ostensible' qualifier above.
 
 	However, every public method/property on `Angle` works to convert to/from degrees, unless otherwise specified. Therefore you can think of all `Angles` as being in degrees.
@@ -290,14 +291,14 @@ var rot2 = rot1 with { Angle = 100f };
 var rot2 = rot1 with { Axis = Direction.Forward };
 var rot2 = rot1.WithAngleIncreasedBy(10f);
 var rot2 = rot1.WithAngleDecreasedBy(10f);
-var rot3 = rot1.WithAxisRotatedBy(rot2);
+var rot3 = rot1.WithAxisRotatedBy(rot2); // More niche
 ```
 
 #### Common Operations
 
 ```csharp
 // Rotate a Direction or a Vect
-// (these lines produce an identical result)
+// (these lines produce an identical result for the given direction/vect)
 var dir2 = dir1 * rot;
 var vect2 = vect1 * rot;
 var dir2 = dir1.RotatedBy(rot);
@@ -458,8 +459,9 @@ var pair2 = pair1 with { X = 3f };
 var pair2 = pair1 with { Y = -3f };
 
 // From an angle and length
-// Creates a 2D vector "pointing up" with length 10
-// Angle is trigonometric/polar co-ordinate (1)
+// This example creates a 2D vector "pointing up" with length 10
+// Length argument is '10f'
+// Angle argument is '90f' and corresponds to trigonometric/polar co-ordinate (1)
 var pair = XYPair<float>.FromPolarAngleAndLength(90f, 10f);
 ```
 

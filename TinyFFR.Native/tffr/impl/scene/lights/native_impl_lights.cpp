@@ -15,19 +15,6 @@ float candela_to_lumens(float candela) {
 	return candela * 4.0f * math::f::PI;
 }
 
-void native_impl_lights::allocate_point_light(LightHandle* outLight) {
-	ThrowIfNull(outLight, "Light out pointer was null.");
-
-	auto entity = filament_engine->getEntityManager().create();
-
-	auto result = LightManager::Builder(LightManager::Type::POINT).build(*filament_engine, entity);
-	if (result != LightManager::Builder::Success) Throw("Could not create entity.");
-	*outLight = Entity::smuggle(entity);
-}
-StartExportedFunc(allocate_point_light, LightHandle* outLight) {
-	native_impl_lights::allocate_point_light(outLight);
-	EndExportedFunc
-}
 
 void native_impl_lights::get_light_color(LightHandle light, float3* outColor) {
 	ThrowIfNull(outColor, "Out color pointer was null.");
@@ -72,6 +59,31 @@ void native_impl_lights::set_light_position(LightHandle light, float3 newPositio
 }
 StartExportedFunc(set_light_position, LightHandle light, float3 newPosition) {
 	native_impl_lights::set_light_position(light, newPosition);
+	EndExportedFunc
+}
+
+
+
+
+
+
+
+
+
+
+
+
+void native_impl_lights::allocate_point_light(LightHandle* outLight) {
+	ThrowIfNull(outLight, "Light out pointer was null.");
+
+	auto entity = filament_engine->getEntityManager().create();
+
+	auto result = LightManager::Builder(LightManager::Type::POINT).build(*filament_engine, entity);
+	if (result != LightManager::Builder::Success) Throw("Could not create entity.");
+	*outLight = Entity::smuggle(entity);
+}
+StartExportedFunc(allocate_point_light, LightHandle* outLight) {
+	native_impl_lights::allocate_point_light(outLight);
 	EndExportedFunc
 }
 
@@ -120,6 +132,93 @@ StartExportedFunc(set_point_light_max_illumination_radius, LightHandle light, fl
 	native_impl_lights::set_point_light_max_illumination_radius(light, newRadius);
 	EndExportedFunc
 }
+
+
+
+void native_impl_lights::allocate_spot_light(interop_bool highAccuracy, LightHandle* outLight) {
+	ThrowIfNull(outLight, "Light out pointer was null.");
+
+	auto entity = filament_engine->getEntityManager().create();
+
+	auto result = LightManager::Builder(highAccuracy ? LightManager::Type::FOCUSED_SPOT : LightManager::Type::SPOT).build(*filament_engine, entity);
+	if (result != LightManager::Builder::Success) Throw("Could not create entity.");
+	*outLight = Entity::smuggle(entity);
+}
+StartExportedFunc(allocate_spot_light, interop_bool highAccuracy, LightHandle* outLight) {
+	native_impl_lights::allocate_spot_light(highAccuracy, outLight);
+	EndExportedFunc
+}
+void native_impl_lights::get_spot_light_lumens(LightHandle light, float* outLumens) {
+	ThrowIfNull(outLumens, "Out lumens pointer was null.");
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	*outLumens = candela_to_lumens(manager.getIntensity(instance));
+}
+StartExportedFunc(get_spot_light_lumens, LightHandle light, float* outLumens) {
+	native_impl_lights::get_spot_light_lumens(light, outLumens);
+	EndExportedFunc
+}
+void native_impl_lights::set_spot_light_lumens(LightHandle light, float newLumens) {
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	manager.setIntensity(instance, newLumens);
+}
+StartExportedFunc(set_spot_light_lumens, LightHandle light, float newLumens) {
+	native_impl_lights::set_spot_light_lumens(light, newLumens);
+	EndExportedFunc
+}
+void native_impl_lights::get_spot_light_direction(LightHandle light, float3* outDir) {
+	ThrowIfNull(outDir, "Out direction pointer was null.");
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	*outDir = manager.getDirection(instance);
+}
+StartExportedFunc(get_spot_light_direction, LightHandle light, float3* outDir) {
+	native_impl_lights::get_spot_light_direction(light, outDir);
+	EndExportedFunc
+}
+void native_impl_lights::set_spot_light_direction(LightHandle light, float3 newDir) {
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	manager.setDirection(instance, newDir);
+}
+StartExportedFunc(set_spot_light_direction, LightHandle light, float3 newDir) {
+	native_impl_lights::set_spot_light_direction(light, newDir);
+	EndExportedFunc
+}
+void native_impl_lights::get_spot_light_radius_inner(LightHandle light, float* outRadius) {
+	ThrowIfNull(outRadius, "Out radius pointer was null.");
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	*outRadius = manager.getSpotLightInnerCone(instance);
+}
+StartExportedFunc(get_spot_light_radius_inner, LightHandle light, float* outRadius) {
+	native_impl_lights::get_spot_light_radius_inner(light, outRadius);
+	EndExportedFunc
+}
+void native_impl_lights::get_spot_light_radius_outer(LightHandle light, float* outRadius) {
+	ThrowIfNull(outRadius, "Out radius pointer was null.");
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	*outRadius = manager.getSpotLightOuterCone(instance);
+}
+StartExportedFunc(get_spot_light_radius_outer, LightHandle light, float* outRadius) {
+	native_impl_lights::get_spot_light_radius_inner(light, outRadius);
+	EndExportedFunc
+}
+
+
+
+
+
+
+
 
 void native_impl_lights::dispose_light(LightHandle light) {
 	auto entity = Entity::import(light);

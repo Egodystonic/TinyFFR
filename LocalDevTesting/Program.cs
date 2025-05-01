@@ -62,9 +62,6 @@ NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
 
 
 
-
-
-
 using var factory = new LocalTinyFfrFactory();
 var assLoad = factory.AssetLoader;
 var meshBuilder = factory.AssetLoader.MeshBuilder;

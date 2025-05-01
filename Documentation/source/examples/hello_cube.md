@@ -3,14 +3,19 @@ title: Hello Cube
 description: An example on how to make a simple cube appear using TinyFFR.
 ---
 
+![Image showing a standard cube displayed on a window.](hello_cube_cube.png){ align=right : style="max-width:300px;" }
+
 This tutorial will show you how to get started with the basics of TinyFFR. In this example, we will:
 
-* Create a window
-* Create a cube and a light source
-* Create a camera
-* Create a 'scene' to hold the cube, light, and camera
-* Create a renderer to take the scene and render it through the camera to the window
-* Handle the user holding the space-bar to rotate the cube
+* Create a window;
+* Create a cube and a light source;
+* Create a camera;
+* Create a 'scene' to hold the cube, light, and camera;
+* Create a renderer to take the scene and render it through the camera to the window;
+* Handle the user holding the space-bar to rotate the cube.
+
+If you prefer to start with a complete example first and work your way through the code, jump to the [Complete Example](#complete-example) heading below. Otherwise, this page will take you step-by-step through creating a red cube as shown in the image above.
+{ : style="margin-top:3em;" }
 
 ## Code
 
@@ -34,7 +39,12 @@ The next thing we need to do is create the *factory object*. This is the "root" 
 using var factory = new LocalTinyFfrFactory();
 ```
 
+The `factory` is the "entry point" of the library, and exposes for us a set of builders that we can use to create meshes, materials, lights, windows, etc.
+
 Most resources in TinyFFR implement the `IDisposable` interface, and they must be disposed by the user (you) when no longer needed. The factory object is no exception to this. For this example, we will use [C#'s `using` syntax](https://learn.microsoft.com/en-us/dotnet/fundamentals/runtime-libraries/system-idisposable#the-c-f-and-visual-basic-using-statement) to automatically dispose the factory at the end of the example. You may wish to manually dispose the factory yourself instead, depending on your application's architecture.
+
+For deeper documentation on the factory, see: [:material-lightbulb: The Factory](/concepts/factory.md)
+{ : style="font-size:0.8em;" }
 
 ### Creating the Cube Mesh
 
@@ -70,6 +80,9 @@ using var cubeMesh = meshBuilder.CreateMesh(cubeDesc); // (3)!
 
 Because the resultant `cubeMesh` is a disposable resource, we once again use the `using` pattern to make sure it's disposed when we're done.
 
+For deeper documentation on meshes, see: [:material-lightbulb: Meshes](/concepts/meshes.md)
+{ : style="font-size:0.8em;" }
+
 ### Creating a Material for the Cube
 
 You may think that we've specified everything we need to put our cube in front of a camera, but hold on! All we've done so far is create a *mesh* for the cube, i.e. a description of a layout of polygons that defines the __shape__ of the cube. 
@@ -100,6 +113,9 @@ using var material = materialBuilder.CreateOpaqueMaterial(colorMap); // (3)!
 	`CreateOpaqueMaterial()` can take more parameters to specify such values with more texture maps, but for this initial example we only care to specify a colour, so we just supply a `colorMap`.
 
 Finally, the `colorMap` and `material` are both disposable resources, so again we use the `using` pattern to make sure they get disposed.
+
+For deeper documentation on materials, see: [:material-lightbulb: Materials](/concepts/materials.md)
+{ : style="font-size:0.8em;" }
 
 ### Creating a Cube Instance
 
@@ -135,7 +151,7 @@ var lightBuilder = factory.LightBuilder;
 using var light = lightBuilder.CreatePointLight(Location.Origin); // (1)!
 ```
 
-1. 	`CreatePointLight()` requires only one parameter by default: Where in the world to place the light. 
+1. 	We're passing only one argument to `CreatePointLight()`: Where in the world to place the light. 
 
 	We can specify any `Location` in the world we like, but for now we'll place the light at the very centre of our 3D world, otherwise known as the world's `Origin`.
 
@@ -145,6 +161,9 @@ As always, the `light` is disposable.
 	By default, all scenes also have an amount of indirect ambient illumination that is emitted by the scene backdrop. Therefore, it's not actually necessary to add a light at all to see the cube.
 
 	However, ambient scene-wide illumination tends to be very flat and uninteresting, and you'll usually want at least one dynamic light source to provide a convincing 3D effect.
+
+For deeper documentation on lighting, see: [:material-lightbulb: Lighting](/concepts/lighting.md)
+{ : style="font-size:0.8em;" }
 
 ### Putting Together a Scene
 
@@ -175,6 +194,9 @@ scene.Add(light); // (3)!
 
 Of course, the `scene` is a disposable resource, just like the other resources so far.
 
+For deeper documentation on scenes, see: [:material-lightbulb: Scenes & Rendering](/concepts/scenes_and_rendering.md)
+{ : style="font-size:0.8em;" }
+
 ### Creating a Window
 
 Before we can render anything, we need a window to render it all in to. Let's create the window now:
@@ -203,6 +225,9 @@ using var window = windowBuilder.CreateWindow(primaryDisplay); // (3)!
 Unlike other resources, the `primaryDisplay` is not disposable as you can not 'dispose' or otherwise destroy a display-- it's just a part of the application's environment. 
 
 The `window`, of course, *is* disposable so we instantiate it with the `using` pattern as usual.
+
+For deeper documentation on windows, see: [:material-lightbulb: Displays & Windows](/concepts/displays_and_windows.md)
+{ : style="font-size:0.8em;" }
 
 ### Creating a Camera and Renderer
 
@@ -257,6 +282,9 @@ The `camera` can be set up with various properties such as its position, field-o
 Unlike the `cube` instance and the `light`, the camera is __not__ added to the scene as it is not *part* of the scene; it is only used to *capture* the scene for the `renderer`.
 
 The `renderer` is like the final bit of glue that takes a scene, a camera, and a window and puts them all together to produce an output. Another way to think of a renderer is as something that takes two inputs (a camera and a scene) and uses them to take a "snapshot" each frame to be shown on the output (the window).
+
+For deeper documentation on cameras & renderers, see: [:material-lightbulb: Scenes & Rendering](/concepts/scenes_and_rendering.md)
+{ : style="font-size:0.8em;" }
 
 ### Rendering at 60Hz, Handling Input
 
@@ -314,6 +342,9 @@ while (!loop.Input.UserQuitRequested) { // (3)!
 7. 	Finally, this call to `Render()` updates the `window` with the latest `scene` as captured by our `camera`. 
 
 	Remember, `renderer.Render()` is being called 60 times per second- thereby giving the illusion of a moving image!
+
+For deeper documentation on input handling, see: [:material-lightbulb: Input](/concepts/input.md)
+{ : style="font-size:0.8em;" }
 
 ### Complete Example
 
@@ -432,14 +463,14 @@ using var cubeMesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f));
 using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.Maroon);
 using var material = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap);
 using var cube = factory.ObjectBuilder.CreateModelInstance(cubeMesh, material, initialPosition: (0f, 0f, 2f));
-using var light = factory.LightBuilder.CreatePointLight(Location.Origin);
+using var light = factory.LightBuilder.CreatePointLight();
 using var scene = factory.SceneBuilder.CreateScene();
 
 scene.Add(cube);
 scene.Add(light);
 
 using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
-using var camera = factory.CameraBuilder.CreateCamera(initialPosition: Location.Origin, initialViewDirection: Direction.Forward);
+using var camera = factory.CameraBuilder.CreateCamera();
 
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);

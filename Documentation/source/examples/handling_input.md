@@ -318,7 +318,7 @@ static void AdjustCameraPositionKbm(ILatestKeyboardAndMouseInputRetriever input,
 
 	Incidentally: We don't declare a `positiveVerticalDir` var anywhere because it's just `Direction.Up`.
 
-3. 	Here we define an `XYPair<float>` called `horizontalMovement` and initialize it to zero. We will use this pair to store/calculate how far the camera should move in each of the `positiveHorizontal...Dir` directions according to the currently-held keyboard keys.
+3. 	Here we define an `XYPair<float>` called `horizontalMovement` and initialize it to zero. We will use this pair to store/calculate how far the camera should move in both of the `positiveHorizontal...Dir` directions according to the currently-held keyboard keys.
 
 	After the foreach loop below completes, the pair's `X` and `Y` properties will be `1f`, `-1f`, or `0f` indicating a positive, negative, or zero movement in each horizontal direction.
 
@@ -414,7 +414,7 @@ static void AdjustCameraViewDirectionGamepad(ILatestGameControllerInputStateRetr
 
 	`input.RightStickPosition.GetDisplacementHorizontalWithDeadzone()` gives us the same value but with a built-in [deadzone](https://www.howtogeek.com/826612/what-is-a-controller-dead-zone/), meaning the value will stay at `0f` a little longer until the user has pushed the control stick a little further away from the central position.
 
-	The reason for using a deadzone is to eliminate so-called 'stick drift' where the centred position of a controller stick actually registers a small, slight value. Without using a deadzone, if your controller is less than perfect, it will constantly rotate the camera by a small amount.
+	The reason for using a deadzone is to eliminate so-called 'stick drift' where the centred position of a controller stick actually registers a small, slight value. Without using a deadzone, if your controller hardware is less than perfect, it will constantly rotate the camera by a small amount.
 
 3.	This is the same as the line above, except we're storing the vertical (up/down) stick displacement instead of the horizontal (left/right).
 
