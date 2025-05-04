@@ -8,13 +8,15 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.World;
 
-public readonly struct PointLight : ILight<PointLight>, IEquatable<PointLight> {
+public readonly struct SpotLight : ILight<SpotLight>, IEquatable<SpotLight> {
 	public const float MaxBrightness = 1E+15f;
 	public const float DefaultLumens = 1_250_000f;
+	public static readonly Angle MinConeAngle = 1f;
+	public static readonly Angle MaxConeAngle = 180f;
 
 	#region ILight Impl
 	readonly Light _base;
-	internal Light Base => _base == default ? throw InvalidObjectException.InvalidDefault<PointLight>() : _base;
+	internal Light Base => _base == default ? throw InvalidObjectException.InvalidDefault<SpotLight>() : _base;
 	internal ILightImplProvider Implementation {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Base.Implementation;
@@ -25,19 +27,19 @@ public readonly struct PointLight : ILight<PointLight>, IEquatable<PointLight> {
 	}
 	ILightImplProvider IResource<Light, ILightImplProvider>.Implementation => Implementation;
 	ResourceHandle<Light> IResource<Light>.Handle => Handle;
-	internal PointLight(Light @base) => _base = @base;
+	internal SpotLight(Light @base) => _base = @base;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Base.Dispose();
-	public static implicit operator Light(PointLight operand) => operand.Base;
-	public static explicit operator PointLight(Light operand) {
-		Light.ThrowIfInvalidType(operand, LightType.PointLight);
+	public static implicit operator Light(SpotLight operand) => operand.Base;
+	public static explicit operator SpotLight(Light operand) {
+		Light.ThrowIfInvalidType(operand, LightType.SpotLight);
 		return new(operand);
 	}
-	static PointLight ILight<PointLight>.FromBaseLight(Light l) => (PointLight) l;
+	static SpotLight ILight<SpotLight>.FromBaseLight(Light l) => (SpotLight) l;
 	static Light IResource<Light>.CreateFromHandleAndImpl(ResourceHandle<Light> handle, IResourceImplProvider impl) {
 		return new Light(handle, impl as ILightImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
-	public override string ToString() => $"Point{Base}";
+	public override string ToString() => $"Spot{Base}";
 	#endregion
 
 	#region Base Light Deferring Members
@@ -116,21 +118,48 @@ public readonly struct PointLight : ILight<PointLight>, IEquatable<PointLight> {
 
 	#region Equality
 	bool IEquatable<Light>.Equals(Light other) => _base.Equals(other);
-	public bool Equals(PointLight other) => _base.Equals(other._base);
-	public override bool Equals(object? obj) => obj is PointLight other && Equals(other);
+	public bool Equals(SpotLight other) => _base.Equals(other._base);
+	public override bool Equals(object? obj) => obj is SpotLight other && Equals(other);
 	public override int GetHashCode() => _base.GetHashCode();
-	public static bool operator ==(PointLight left, PointLight right) => left.Equals(right);
-	public static bool operator !=(PointLight left, PointLight right) => !left.Equals(right);
+	public static bool operator ==(SpotLight left, SpotLight right) => left.Equals(right);
+	public static bool operator !=(SpotLight left, SpotLight right) => !left.Equals(right);
 	#endregion
 
-	public float MaxIlluminationRadius {
+	public float MaxIlluminationDistance {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetPointLightMaxIlluminationRadius(Handle);
+		get => Implementation.GetSpotLightMaxIlluminationDistance(Handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Implementation.SetPointLightMaxIlluminationRadius(Handle, value);
+		set => Implementation.SetSpotLightMaxIlluminationDistance(Handle, value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetMaxIlluminationRange(float range) => MaxIlluminationRadius = range;
+	public void SetMaxIlluminationDistance(float distance) => MaxIlluminationDistance = distance;
+
+	public Direction ConeDirection {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetSpotLightConeDirection(Handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetSpotLightConeDirection(Handle, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetConeDirection(Direction direction) => ConeDirection = direction;
+
+	public Angle ConeAngle {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetSpotLightConeAngle(Handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetSpotLightConeAngle(Handle, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetConeAngle(Angle angle) => ConeAngle = angle;
+
+	public Angle IntenseBeamAngle {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetSpotLightIntenseBeamAngle(Handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetSpotLightIntenseBeamAngle(Handle, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetIntenseBeamAngle(Angle angle) => IntenseBeamAngle = angle;
 
 	public static float LumensToBrightness(float lumens) {
 		if (!lumens.IsNonNegativeAndFinite()) return 0f;

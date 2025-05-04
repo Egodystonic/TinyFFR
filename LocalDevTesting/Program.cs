@@ -124,7 +124,7 @@ using var hdr = assLoad.LoadEnvironmentCubemap(@"C:\Users\ben\Documents\Temp\tre
 using var scene = factory.SceneBuilder.CreateScene();
 
 scene.Add(modelInstance);
-scene.SetBackdrop(hdr, 0.7f);
+scene.SetBackdropWithoutIndirectLighting(hdr, 0.7f);
 
 var cameraDistance = 3f;
 var chestToCameraStartVect = Direction.Backward * cameraDistance;
@@ -142,6 +142,10 @@ window.LockCursor = true;
 //using var window2 = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value, position: (0, 0));
 //using var renderer2 = factory.RendererBuilder.CreateRenderer(scene, camera, window2, new RendererCreationConfig { GpuSynchronizationFrameBufferCount = -1 });
 
+var spotlight = factory.LightBuilder.CreateSpotLight(color: ColorVect.FromHueSaturationLightness(0f, 1f, 0.8f));
+scene.Add(spotlight);
+var parameter = 0;
+
 var frameCount = 0;
 var startTime = Stopwatch.StartNew();
 while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Escape)) {
@@ -151,16 +155,71 @@ while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurren
 	CameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, camera, deltaTime);
 	CameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, camera, deltaTime);
 
-	using var testCubeMesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f));
-	using var testCubeMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.White);
-	using var testCubeMat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(testCubeMap);
-	using var testCube = factory.ObjectBuilder.CreateModelInstance(testCubeMesh, testCubeMat, initialPosition: camera.Position + camera.ViewDirection * 2f);
-	scene.Add(testCube);
+	// using var testCubeMesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f));
+	// using var testCubeMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.White);
+	// using var testCubeMat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(testCubeMap);
+	// using var testCube = factory.ObjectBuilder.CreateModelInstance(testCubeMesh, testCubeMat, initialPosition: camera.Position + camera.ViewDirection * 2f);
+	// scene.Add(testCube);
 
 	//renderer2.Render();
+	spotlight.Position = camera.Position;
+	spotlight.ConeDirection = camera.ViewDirection;
 	renderer.Render();
 
-	scene.Remove(testCube);
+
+	var parameterBefore = parameter;
+	var delta = 0;
+	foreach (var key in loop.Input.KeyboardAndMouse.NewKeyDownEvents) {
+		parameter = key.GetNumericValue() ?? parameterBefore;
+		if (parameter < 0 || parameter > 4) parameter = parameterBefore;
+		if (key == KeyboardOrMouseKey.U) delta += 1;
+		if (key == KeyboardOrMouseKey.D) delta -= 1;
+	}
+	var parameterName = parameter switch {
+		0 => "Max Illumination Distance",
+		1 => "Cone Angle",
+		2 => "Beam Angle",
+		3 => "Color Hue",
+		4 => "Brightness"
+	};
+	if (parameter != parameterBefore) {
+		Console.WriteLine("Switch parameter to: " + parameterName);
+	}
+	if (delta != 0) {
+		var adjustmentValueStr = "";
+
+		switch (parameter) {
+			case 0:
+				spotlight.MaxIlluminationDistance += delta * 1f;
+				adjustmentValueStr = "1m = " + spotlight.MaxIlluminationDistance.ToString("N1") + "m";
+				break;
+			case 1:
+				spotlight.ConeAngle += delta * 10f;
+				adjustmentValueStr = "10° = " + spotlight.ConeAngle;
+				break;
+			case 2:
+				spotlight.IntenseBeamAngle += delta * 10f;
+				adjustmentValueStr = "10° = " + spotlight.IntenseBeamAngle;
+				break;
+			case 3:
+				spotlight.AdjustColorHueBy(delta * 30f);
+				adjustmentValueStr = "30° = " + spotlight.ColorHue;
+				break;
+			case 4:
+				spotlight.Brightness += delta * 0.5f;
+				adjustmentValueStr = "0.5 = " + spotlight.Brightness.ToString("N1");
+				break;
+		}
+
+		Console.WriteLine(parameterName + " " + (delta > 0 ? "+" : "-") + adjustmentValueStr);
+		Console.WriteLine(spotlight.ConeAngle + " > " + spotlight.IntenseBeamAngle);
+	}
+
+
+
+
+
+	//scene.Remove(testCube);
 	if (sw.ElapsedMilliseconds > 20) Console.WriteLine("EM: " + sw.ElapsedMilliseconds + "; " + "Dt: " + deltaTime);
 	++frameCount;
 }

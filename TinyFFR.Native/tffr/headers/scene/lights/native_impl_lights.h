@@ -26,10 +26,10 @@ public:
 	static void set_spot_light_lumens(LightHandle light, float newLumens);
 	static void get_spot_light_direction(LightHandle light, float3* outDir);
 	static void set_spot_light_direction(LightHandle light, float3 newDir);
-	static void get_spot_light_radius_inner(LightHandle light, float* outRadius);
-	static void set_spot_light_radius_inner(LightHandle light, float newRadius);
-	static void get_spot_light_radius_outer(LightHandle light, float* outRadius);
-	static void set_spot_light_radius_outer(LightHandle light, float newRadius);
+	static void get_spot_light_radii(LightHandle light, float* outInnerRadius, float* outOuterRadius);
+	static void set_spot_light_radii(LightHandle light, float newInnerRadius, float newOuterRadius);
+	static void get_spot_light_max_distance(LightHandle light, float* outDistance);
+	static void set_spot_light_max_distance(LightHandle light, float newDistance);
 
 	static void dispose_light(LightHandle light);
 };

@@ -12,7 +12,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.World;
 
 sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable {
-	readonly record struct LightData(LightType Type, float Brightness);
+	readonly record struct LightData(LightType Type, float Brightness, Angle SpotLightInner, Angle SpotLightOuter);
 	const string DefaultModelInstanceName = "Unnamed Light";
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPoolBackedMap<ResourceHandle<Light>, LightData> _activeLightMap = new();
@@ -28,13 +28,35 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 		config.ThrowIfInvalid();
 
 		AllocatePointLight(out var handle).ThrowIfFailure();
-		_activeLightMap.Add(handle, new(LightType.PointLight, config.InitialBrightness));
-		_globals.StoreResourceNameIfNotEmpty(new ResourceHandle<Light>(handle).Ident, config.Name);
+		var resHandle = new ResourceHandle<Light>(handle);
+		SetUpBaseLight(config.BaseConfig, resHandle, LightType.PointLight);
+		SetUniversalBrightness(resHandle, config.InitialBrightness);
+		SetPointLightMaxIlluminationRadius(resHandle, config.InitialMaxIlluminationRadius);
+		return HandleToInstance<PointLight>(handle);
+	}
+
+	public SpotLight CreateSpotLight(in SpotLightCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+
+		AllocateSpotLight(config.IsHighAccuracy, out var handle).ThrowIfFailure();
+		var resHandle = new ResourceHandle<Light>(handle);
+		var beamAngle = config.InitialIntenseBeamAngle;
+		var coneAngle = config.InitialConeAngle;
+		AdjustSpotlightAngles(ref coneAngle, ref beamAngle, adjustingCone: true);
+		SetUpBaseLight(config.BaseConfig, resHandle, LightType.SpotLight, beamAngle, coneAngle);
+		SetUniversalBrightness(resHandle, config.InitialBrightness);
+		SetSpotLightMaxIlluminationDistance(resHandle, config.InitialMaxIlluminationDistance);
+		SetSpotLightConeDirection(resHandle, config.InitialConeDirection);
+		SetSpotLightRadii(handle, ConvertSpotLightAngleToFilamentAngle(beamAngle), ConvertSpotLightAngleToFilamentAngle(coneAngle));
+		return HandleToInstance<SpotLight>(handle);
+	}
+
+	void SetUpBaseLight(in LightCreationConfig config, ResourceHandle<Light> handle, LightType lightType, Angle? spotLightInner = null, Angle? spotLightOuter = null) {
+		_activeLightMap.Add(handle, new(lightType, config.InitialBrightness, spotLightInner ?? Angle.Zero, spotLightOuter ?? Angle.Zero));
+		_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
 		SetLightPosition(handle, config.InitialPosition.ToVector3());
 		SetLightColor(handle, config.InitialColor.ToVector3());
-		SetPointLightLumens(handle, PointLight.BrightnessToLumens(config.InitialBrightness));
-		SetPointLightMaxIlluminationRadius(handle, config.InitialMaxIlluminationRadius);
-		return HandleToInstance<PointLight>(handle);
 	}
 
 	public LightType GetType(ResourceHandle<Light> handle) {
@@ -73,11 +95,17 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 	}
 	public void SetUniversalBrightness(ResourceHandle<Light> handle, float newBrightness) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+
 		switch (HandleToInstance(handle).Type) {
 			case LightType.PointLight:
 				newBrightness = PointLight.ClampBrightnessToValidRange(newBrightness);
 				var pointLightLumens = PointLight.BrightnessToLumensNoClamp(newBrightness);
 				SetPointLightLumens(handle, pointLightLumens).ThrowIfFailure();
+				break;
+			case LightType.SpotLight:
+				newBrightness = SpotLight.ClampBrightnessToValidRange(newBrightness);
+				var spotLightLumens = SpotLight.BrightnessToLumensNoClamp(newBrightness);
+				SetSpotLightLumens(handle, spotLightLumens).ThrowIfFailure();
 				break;
 		}
 		_activeLightMap[handle] = _activeLightMap[handle] with { Brightness = newBrightness };
@@ -99,8 +127,73 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 	}
 	public void SetPointLightMaxIlluminationRadius(ResourceHandle<Light> handle, float newRadius) {
 		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.PointLight);
+		if (!newRadius.IsNonNegativeAndFinite()) newRadius = 0f;
 		LocalLightBuilder.SetPointLightMaxIlluminationRadius(handle, newRadius).ThrowIfFailure();
 	}
+
+	public float GetSpotLightMaxIlluminationDistance(ResourceHandle<Light> handle) {
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.SpotLight);
+		GetSpotLightMaxDistance(handle, out var result).ThrowIfFailure();
+		return result;
+	}
+	public void SetSpotLightMaxIlluminationDistance(ResourceHandle<Light> handle, float newDistance) {
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.SpotLight);
+		if (!newDistance.IsNonNegativeAndFinite()) newDistance = 0f;
+		SetSpotLightMaxDistance(handle, newDistance).ThrowIfFailure();
+	}
+
+	public Direction GetSpotLightConeDirection(ResourceHandle<Light> handle) {
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.SpotLight);
+		GetSpotLightDirection(handle, out var result).ThrowIfFailure();
+		return Direction.FromVector3PreNormalized(result);
+	}
+	public void SetSpotLightConeDirection(ResourceHandle<Light> handle, Direction newDirection) {
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.SpotLight);
+		if (newDirection == Direction.None) newDirection = SpotLightCreationConfig.DefaultInitialConeDirection;
+		SetSpotLightDirection(handle, newDirection.ToVector3()).ThrowIfFailure();
+	}
+
+	public Angle GetSpotLightConeAngle(ResourceHandle<Light> handle) {
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.SpotLight);
+		return _activeLightMap[handle].SpotLightOuter;
+	}
+	public void SetSpotLightConeAngle(ResourceHandle<Light> handle, Angle coneAngle) {
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.SpotLight);
+		var curLightParams = _activeLightMap[handle];
+		var beamAngle = curLightParams.SpotLightInner;
+		AdjustSpotlightAngles(ref coneAngle, ref beamAngle, adjustingCone: true);
+		_activeLightMap[handle] = curLightParams with { SpotLightOuter = coneAngle, SpotLightInner = beamAngle };
+		
+		SetSpotLightRadii(handle, ConvertSpotLightAngleToFilamentAngle(beamAngle), ConvertSpotLightAngleToFilamentAngle(coneAngle)).ThrowIfFailure();
+	}
+
+	public Angle GetSpotLightIntenseBeamAngle(ResourceHandle<Light> handle) {
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.SpotLight);
+		return _activeLightMap[handle].SpotLightInner;
+	}
+	public void SetSpotLightIntenseBeamAngle(ResourceHandle<Light> handle, Angle beamAngle) {
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.SpotLight);
+		var curLightParams = _activeLightMap[handle];
+		var coneAngle = curLightParams.SpotLightOuter;
+		AdjustSpotlightAngles(ref coneAngle, ref beamAngle, adjustingCone: false);
+		_activeLightMap[handle] = curLightParams with { SpotLightOuter = coneAngle, SpotLightInner = beamAngle };
+
+		SetSpotLightRadii(handle, ConvertSpotLightAngleToFilamentAngle(beamAngle), ConvertSpotLightAngleToFilamentAngle(coneAngle)).ThrowIfFailure();
+	}
+
+	static void AdjustSpotlightAngles(ref Angle coneAngle, ref Angle beamAngle, bool adjustingCone) {
+		if (coneAngle < SpotLight.MinConeAngle) coneAngle = SpotLight.MinConeAngle;
+		else if (coneAngle > SpotLight.MaxConeAngle) coneAngle = SpotLight.MaxConeAngle;
+
+		if (beamAngle < SpotLight.MinConeAngle) beamAngle = SpotLight.MinConeAngle;
+		else if (beamAngle > SpotLight.MaxConeAngle) beamAngle = SpotLight.MaxConeAngle;
+
+		if (beamAngle > coneAngle) {
+			if (adjustingCone) beamAngle = coneAngle;
+			else coneAngle = beamAngle;
+		}
+	}
+	static float ConvertSpotLightAngleToFilamentAngle(Angle angle) => angle.Radians * 0.5f;
 
 	public ReadOnlySpan<char> GetName(ResourceHandle<Light> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -114,11 +207,6 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 	T HandleToInstance<T>(ResourceHandle<Light> h) where T : ILight<T> => T.FromBaseLight(HandleToInstance(h));
 
 	#region Native Methods
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_point_light")]
-	static extern InteropResult AllocatePointLight(
-		out UIntPtr outLightHandle
-	);
-
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_light_position")]
 	static extern InteropResult GetLightPosition(
 		UIntPtr lightHandle,
@@ -155,6 +243,13 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 		float newLumens
 	);
 
+
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_point_light")]
+	static extern InteropResult AllocatePointLight(
+		out UIntPtr outLightHandle
+	);
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_point_light_max_illumination_radius")]
 	static extern InteropResult GetPointLightMaxIlluminationRadius(
 		UIntPtr lightHandle,
@@ -166,6 +261,65 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 		UIntPtr lightHandle,
 		float newRadius
 	);
+
+
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_spot_light")]
+	static extern InteropResult AllocateSpotLight(
+		InteropBool highAccuracy,
+		out UIntPtr outLightHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_spot_light_lumens")]
+	static extern InteropResult GetSpotLightLumens(
+		UIntPtr lightHandle,
+		out float outLumens
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_spot_light_lumens")]
+	static extern InteropResult SetSpotLightLumens(
+		UIntPtr lightHandle,
+		float newLumens
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_spot_light_direction")]
+	static extern InteropResult GetSpotLightDirection(
+		UIntPtr lightHandle,
+		out Vector3 outDirection
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_spot_light_direction")]
+	static extern InteropResult SetSpotLightDirection(
+		UIntPtr lightHandle,
+		Vector3 newDirection
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_spot_light_radii")]
+	static extern InteropResult GetSpotLightRadii(
+		UIntPtr lightHandle,
+		out float outInnerRadius,
+		out float outOuterRadius
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_spot_light_radii")]
+	static extern InteropResult SetSpotLightRadii(
+		UIntPtr lightHandle,
+		float newInnerRadius,
+		float newOuterRadius
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_spot_light_max_distance")]
+	static extern InteropResult GetSpotLightMaxDistance(
+		UIntPtr lightHandle,
+		out float outDistance
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_spot_light_max_distance")]
+	static extern InteropResult SetSpotLightMaxDistance(
+		UIntPtr lightHandle,
+		float newDistance
+	);
+
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_light")]
 	static extern InteropResult DisposeLight(

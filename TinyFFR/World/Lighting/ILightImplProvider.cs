@@ -23,6 +23,18 @@ public interface ILightImplProvider : IDisposableResourceImplProvider<Light> {
 	float GetPointLightMaxIlluminationRadius(ResourceHandle<Light> handle);
 	void SetPointLightMaxIlluminationRadius(ResourceHandle<Light> handle, float newRadius);
 
+	float GetSpotLightMaxIlluminationDistance(ResourceHandle<Light> handle);
+	void SetSpotLightMaxIlluminationDistance(ResourceHandle<Light> handle, float newDistance);
+
+	Direction GetSpotLightConeDirection(ResourceHandle<Light> handle);
+	void SetSpotLightConeDirection(ResourceHandle<Light> handle, Direction newDirection);
+
+	Angle GetSpotLightConeAngle(ResourceHandle<Light> handle);
+	void SetSpotLightConeAngle(ResourceHandle<Light> handle, Angle newAngle);
+
+	Angle GetSpotLightIntenseBeamAngle(ResourceHandle<Light> handle);
+	void SetSpotLightIntenseBeamAngle(ResourceHandle<Light> handle, Angle newAngle);
+
 	void TranslateBy(ResourceHandle<Light> handle, Vect translation);
 	void AdjustBrightnessBy(ResourceHandle<Light> handle, float adjustment);
 	void ScaleBrightnessBy(ResourceHandle<Light> handle, float scalar);

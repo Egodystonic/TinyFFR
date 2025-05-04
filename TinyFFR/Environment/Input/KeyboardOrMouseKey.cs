@@ -334,5 +334,11 @@ public static class KeyboardOrMouseKeyExtensions {
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static int? GetNumericValue(this KeyboardOrMouseKey @this) => InputUtils.KeyToNumericValue(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static char? GetCharacterValue(this KeyboardOrMouseKey @this) => InputUtils.KeyToCharacterValue(@this);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static KeyboardOrMouseKey ToKeyboardOrMouseKey(this MouseKey @this) => (KeyboardOrMouseKey) @this;
 }

@@ -118,7 +118,7 @@ void native_impl_lights::get_point_light_max_illumination_radius(LightHandle lig
 	*outRadius = manager.getFalloff(instance);
 }
 StartExportedFunc(get_point_light_max_illumination_radius, LightHandle light, float* outRadius) {
-	native_impl_lights::get_point_light_lumens(light, outRadius);
+	native_impl_lights::get_point_light_max_illumination_radius(light, outRadius);
 	EndExportedFunc
 }
 
@@ -148,6 +148,7 @@ StartExportedFunc(allocate_spot_light, interop_bool highAccuracy, LightHandle* o
 	native_impl_lights::allocate_spot_light(highAccuracy, outLight);
 	EndExportedFunc
 }
+
 void native_impl_lights::get_spot_light_lumens(LightHandle light, float* outLumens) {
 	ThrowIfNull(outLumens, "Out lumens pointer was null.");
 	auto entity = Entity::import(light);
@@ -169,6 +170,7 @@ StartExportedFunc(set_spot_light_lumens, LightHandle light, float newLumens) {
 	native_impl_lights::set_spot_light_lumens(light, newLumens);
 	EndExportedFunc
 }
+
 void native_impl_lights::get_spot_light_direction(LightHandle light, float3* outDir) {
 	ThrowIfNull(outDir, "Out direction pointer was null.");
 	auto entity = Entity::import(light);
@@ -190,26 +192,51 @@ StartExportedFunc(set_spot_light_direction, LightHandle light, float3 newDir) {
 	native_impl_lights::set_spot_light_direction(light, newDir);
 	EndExportedFunc
 }
-void native_impl_lights::get_spot_light_radius_inner(LightHandle light, float* outRadius) {
-	ThrowIfNull(outRadius, "Out radius pointer was null.");
+
+void native_impl_lights::get_spot_light_radii(LightHandle light, float* outInnerRadius, float* outOuterRadius) {
+	ThrowIfNull(outInnerRadius, "Out inner radius pointer was null.");
+	ThrowIfNull(outOuterRadius, "Out outer radius pointer was null.");
 	auto entity = Entity::import(light);
 	auto& manager = filament_engine->getLightManager();
 	auto instance = manager.getInstance(entity);
-	*outRadius = manager.getSpotLightInnerCone(instance);
+	*outInnerRadius = manager.getSpotLightInnerCone(instance);
+	*outOuterRadius = manager.getSpotLightOuterCone(instance);
 }
-StartExportedFunc(get_spot_light_radius_inner, LightHandle light, float* outRadius) {
-	native_impl_lights::get_spot_light_radius_inner(light, outRadius);
+StartExportedFunc(get_spot_light_radii, LightHandle light, float* outInnerRadius, float* outOuterRadius) {
+	native_impl_lights::get_spot_light_radii(light, outInnerRadius, outOuterRadius);
 	EndExportedFunc
 }
-void native_impl_lights::get_spot_light_radius_outer(LightHandle light, float* outRadius) {
-	ThrowIfNull(outRadius, "Out radius pointer was null.");
+void native_impl_lights::set_spot_light_radii(LightHandle light, float newInnerRadius, float newOuterRadius) {
 	auto entity = Entity::import(light);
 	auto& manager = filament_engine->getLightManager();
 	auto instance = manager.getInstance(entity);
-	*outRadius = manager.getSpotLightOuterCone(instance);
+	manager.setSpotLightCone(instance, newInnerRadius, newOuterRadius);
 }
-StartExportedFunc(get_spot_light_radius_outer, LightHandle light, float* outRadius) {
-	native_impl_lights::get_spot_light_radius_inner(light, outRadius);
+StartExportedFunc(set_spot_light_radii, LightHandle light, float newInnerRadius, float newOuterRadius) {
+	native_impl_lights::set_spot_light_radii(light, newInnerRadius, newOuterRadius);
+	EndExportedFunc
+}
+
+
+void native_impl_lights::get_spot_light_max_distance(LightHandle light, float* outDistance) {
+	ThrowIfNull(outDistance, "Out distance pointer was null.");
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	*outDistance = manager.getFalloff(instance);
+}
+StartExportedFunc(get_spot_light_max_distance, LightHandle light, float* outDistance) {
+	native_impl_lights::get_spot_light_max_distance(light, outDistance);
+	EndExportedFunc
+}
+void native_impl_lights::set_spot_light_max_distance(LightHandle light, float newDistance) {
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	manager.setFalloff(instance, newDistance);
+}
+StartExportedFunc(set_spot_light_max_distance, LightHandle light, float newDistance) {
+	native_impl_lights::set_spot_light_max_distance(light, newDistance);
 	EndExportedFunc
 }
 
