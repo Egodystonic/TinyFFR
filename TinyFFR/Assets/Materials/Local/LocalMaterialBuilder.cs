@@ -50,7 +50,9 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		public TextureImplProvider(LocalMaterialBuilder owner) => _owner = owner;
 
 		public XYPair<uint> GetDimensions(ResourceHandle<Texture> handle) => _owner.GetDimensions(handle);
-		public ReadOnlySpan<char> GetName(ResourceHandle<Texture> handle) => _owner.GetName(handle);
+		public string GetNameAsNewStringObject(ResourceHandle<Texture> handle) => _owner.GetNameAsNewStringObject(handle);
+		public int GetNameLength(ResourceHandle<Texture> handle) => _owner.GetNameLength(handle);
+		public void CopyName(ResourceHandle<Texture> handle, Span<char> destinationBuffer) => _owner.CopyName(handle, destinationBuffer);
 		public bool IsDisposed(ResourceHandle<Texture> handle) => _owner.IsDisposed(handle);
 		public void Dispose(ResourceHandle<Texture> handle) => _owner.Dispose(handle);
 		public override string ToString() => _owner.ToString();
@@ -232,13 +234,29 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		return _loadedTextures[handle].Dimensions;
 	}
 
-	public ReadOnlySpan<char> GetName(ResourceHandle<Texture> handle) {
+	public string GetNameAsNewStringObject(ResourceHandle<Texture> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceName(handle.Ident, DefaultTextureName);
+		return new String(_globals.GetResourceName(handle.Ident, DefaultTextureName));
 	}
-	public ReadOnlySpan<char> GetName(ResourceHandle<Material> handle) {
+	public int GetNameLength(ResourceHandle<Texture> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceName(handle.Ident, DefaultMaterialName);
+		return _globals.GetResourceName(handle.Ident, DefaultTextureName).Length;
+	}
+	public void CopyName(ResourceHandle<Texture> handle, Span<char> destinationBuffer) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_globals.CopyResourceName(handle.Ident, DefaultTextureName, destinationBuffer);
+	}
+	public string GetNameAsNewStringObject(ResourceHandle<Material> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return new String(_globals.GetResourceName(handle.Ident, DefaultMaterialName));
+	}
+	public int GetNameLength(ResourceHandle<Material> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceName(handle.Ident, DefaultMaterialName).Length;
+	}
+	public void CopyName(ResourceHandle<Material> handle, Span<char> destinationBuffer) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_globals.CopyResourceName(handle.Ident, DefaultMaterialName, destinationBuffer);
 	}
 
 	UIntPtr GetOrLoadShaderPackageHandle(string resourceName) {

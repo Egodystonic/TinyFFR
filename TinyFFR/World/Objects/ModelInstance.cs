@@ -18,11 +18,6 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	IModelInstanceImplProvider IResource<ModelInstance, IModelInstanceImplProvider>.Implementation => Implementation;
 	ResourceHandle<ModelInstance> IResource<ModelInstance>.Handle => Handle;
 
-	public ReadOnlySpan<char> Name {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetName(_handle);
-	}
-
 	public Transform Transform {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetTransform(_handle);
@@ -82,6 +77,13 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 		_impl = impl;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameLength() => Implementation.GetNameLength(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
+
 	static ModelInstance IResource<ModelInstance>.CreateFromHandleAndImpl(ResourceHandle<ModelInstance> handle, IResourceImplProvider impl) {
 		return new ModelInstance(handle, impl as IModelInstanceImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
@@ -103,7 +105,7 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	}
 	#endregion
 
-	public override string ToString() => $"Model Instance {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
+	public override string ToString() => $"Model Instance {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Equality
 	public bool Equals(ModelInstance other) => _handle == other._handle && _impl.Equals(other._impl);

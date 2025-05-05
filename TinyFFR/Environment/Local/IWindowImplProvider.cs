@@ -6,9 +6,14 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 public interface IWindowImplProvider : IDisposableResourceImplProvider<Window> {
-	ReadOnlySpan<char> GetTitle(ResourceHandle<Window> handle);
-	ReadOnlySpan<char> IResourceImplProvider<Window>.GetName(ResourceHandle<Window> handle) => GetTitle(handle);
-	void SetTitle(ResourceHandle<Window> handle, ReadOnlySpan<char> src);
+	string GetTitleAsNewStringObject(ResourceHandle<Window> handle);
+	int GetTitleLength(ResourceHandle<Window> handle);
+	void CopyTitle(ResourceHandle<Window> handle, Span<char> destinationBuffer);
+	void SetTitle(ResourceHandle<Window> handle, ReadOnlySpan<char> newTitle);
+
+	string IResourceImplProvider<Window>.GetNameAsNewStringObject(ResourceHandle<Window> handle) => GetTitleAsNewStringObject(handle);
+	int IResourceImplProvider<Window>.GetNameLength(ResourceHandle<Window> handle) => GetTitleLength(handle);
+	void IResourceImplProvider<Window>.CopyName(ResourceHandle<Window> handle, Span<char> destinationBuffer) => CopyTitle(handle, destinationBuffer);
 
 	void SetIcon(ResourceHandle<Window> handle, ReadOnlySpan<char> filePath);
 

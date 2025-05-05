@@ -16,11 +16,6 @@ public readonly struct EnvironmentCubemap : IDisposableResource<EnvironmentCubem
 	IEnvironmentCubemapImplProvider IResource<EnvironmentCubemap, IEnvironmentCubemapImplProvider>.Implementation => Implementation;
 	ResourceHandle<EnvironmentCubemap> IResource<EnvironmentCubemap>.Handle => Handle;
 
-	public ReadOnlySpan<char> Name {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetName(_handle);
-	}
-
 	internal UIntPtr SkyboxTextureHandle {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetSkyboxTextureHandle(_handle);
@@ -34,6 +29,13 @@ public readonly struct EnvironmentCubemap : IDisposableResource<EnvironmentCubem
 		_handle = handle;
 		_impl = impl;
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameLength() => Implementation.GetNameLength(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
 
 	static EnvironmentCubemap IResource<EnvironmentCubemap>.CreateFromHandleAndImpl(ResourceHandle<EnvironmentCubemap> handle, IResourceImplProvider impl) {
 		return new EnvironmentCubemap(handle, impl as IEnvironmentCubemapImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
@@ -49,7 +51,7 @@ public readonly struct EnvironmentCubemap : IDisposableResource<EnvironmentCubem
 	}
 	#endregion
 
-	public override string ToString() => $"Environment Cubemap {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
+	public override string ToString() => $"Environment Cubemap {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Equality
 	public bool Equals(EnvironmentCubemap other) => _handle == other._handle && _impl.Equals(other._impl);

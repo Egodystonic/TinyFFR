@@ -13,7 +13,7 @@ namespace Egodystonic.TinyFFR.World;
 
 sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable {
 	readonly record struct LightData(LightType Type, float Brightness, Angle SpotLightInner, Angle SpotLightOuter);
-	const string DefaultModelInstanceName = "Unnamed Light";
+	const string DefaultLightName = "Unnamed Light";
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPoolBackedMap<ResourceHandle<Light>, LightData> _activeLightMap = new();
 	bool _isDisposed = false;
@@ -195,9 +195,17 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 	}
 	static float ConvertSpotLightAngleToFilamentAngle(Angle angle) => angle.Radians * 0.5f;
 
-	public ReadOnlySpan<char> GetName(ResourceHandle<Light> handle) {
+	public string GetNameAsNewStringObject(ResourceHandle<Light> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceName(handle.Ident, DefaultModelInstanceName);
+		return new String(_globals.GetResourceName(handle.Ident, DefaultLightName));
+	}
+	public int GetNameLength(ResourceHandle<Light> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceName(handle.Ident, DefaultLightName).Length;
+	}
+	public void CopyName(ResourceHandle<Light> handle, Span<char> destinationBuffer) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_globals.CopyResourceName(handle.Ident, DefaultLightName, destinationBuffer);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

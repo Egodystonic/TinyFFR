@@ -41,11 +41,6 @@ public readonly struct PointLight : ILight<PointLight>, IEquatable<PointLight> {
 	#endregion
 
 	#region Base Light Deferring Members
-	public ReadOnlySpan<char> Name {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Base.Name;
-	}
-
 	public Location Position {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Base.Position;
@@ -112,6 +107,13 @@ public readonly struct PointLight : ILight<PointLight>, IEquatable<PointLight> {
 	public void AdjustBrightnessBy(float adjustment) => Base.AdjustBrightnessBy(adjustment);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ScaleBrightnessBy(float scalar) => Base.ScaleBrightnessBy(scalar);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public string GetNameAsNewStringObject() => Base.GetNameAsNewStringObject();
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameLength() => Base.GetNameLength();
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void CopyName(Span<char> destinationBuffer) => Base.CopyName(destinationBuffer);
 	#endregion
 
 	#region Equality

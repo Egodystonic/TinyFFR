@@ -3,12 +3,18 @@
 namespace Egodystonic.TinyFFR.Resources;
 
 public interface IResourceImplProvider {
-	internal ReadOnlySpan<char> GetName(ResourceHandle handle);
+	string GetNameAsNewStringObject(ResourceHandle handle);
+	int GetNameLength(ResourceHandle handle);
+	void CopyName(ResourceHandle handle, Span<char> destinationBuffer);
 }
 public interface IResourceImplProvider<TResource> : IResourceImplProvider where TResource : IResource<TResource> {
-	ReadOnlySpan<char> GetName(ResourceHandle<TResource> handle);
+	string GetNameAsNewStringObject(ResourceHandle<TResource> handle);
+	int GetNameLength(ResourceHandle<TResource> handle);
+	void CopyName(ResourceHandle<TResource> handle, Span<char> destinationBuffer);
 
-	ReadOnlySpan<char> IResourceImplProvider.GetName(ResourceHandle handle) => GetName((ResourceHandle<TResource>) handle);
+	string IResourceImplProvider.GetNameAsNewStringObject(ResourceHandle handle) => GetNameAsNewStringObject((ResourceHandle<TResource>) handle);
+	int IResourceImplProvider.GetNameLength(ResourceHandle handle) => GetNameLength((ResourceHandle<TResource>) handle);
+	void IResourceImplProvider.CopyName(ResourceHandle handle, Span<char> destinationBuffer) => CopyName((ResourceHandle<TResource>) handle, destinationBuffer);
 }
 
 

@@ -51,10 +51,6 @@ sealed class LocalFactoryGlobalObjectGroup {
 		return span.Length;
 	}
 
-	public int GetResourceNameLength(ResourceIdent ident, ReadOnlySpan<char> fallback) {
-		return _resourceNameMap.TryGetValue(ident, out var handle) ? handle.Length : fallback.Length;
-	}
-
 	public void DisposeResourceNameIfExists(ResourceIdent ident) => _resourceNameMap.Remove(ident);
 
 	public void ReplaceResourceName(ResourceIdent ident, ReadOnlySpan<char> newName) {

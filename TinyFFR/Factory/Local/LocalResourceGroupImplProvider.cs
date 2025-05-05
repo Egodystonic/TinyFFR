@@ -120,9 +120,17 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 		return GetEnumeratorResourceAtIndex<TResource>(new EnumerationInput(this, handle, typeof(TResource).TypeHandle.Value), index);
 	}
 
-	public ReadOnlySpan<char> GetName(ResourceHandle<ResourceGroup> handle) {
+	public string GetNameAsNewStringObject(ResourceHandle<ResourceGroup> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceName(handle.Ident, DefaultGroupName);
+		return new String(_globals.GetResourceName(handle.Ident, DefaultGroupName));
+	}
+	public int GetNameLength(ResourceHandle<ResourceGroup> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceName(handle.Ident, DefaultGroupName).Length;
+	}
+	public void CopyName(ResourceHandle<ResourceGroup> handle, Span<char> destinationBuffer) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_globals.CopyResourceName(handle.Ident, DefaultGroupName, destinationBuffer);
 	}
 
 	public bool IsDisposed(ResourceHandle<ResourceGroup> handle) => !_dataMap.ContainsKey(handle.AsInteger);

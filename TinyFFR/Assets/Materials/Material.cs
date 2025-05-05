@@ -16,15 +16,17 @@ public readonly struct Material : IDisposableResource<Material, IMaterialImplPro
 	IMaterialImplProvider IResource<Material, IMaterialImplProvider>.Implementation => Implementation;
 	ResourceHandle<Material> IResource<Material>.Handle => Handle;
 
-	public ReadOnlySpan<char> Name {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetName(_handle);
-	}
-
 	internal Material(ResourceHandle<Material> handle, IMaterialImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameLength() => Implementation.GetNameLength(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
 
 	static Material IResource<Material>.CreateFromHandleAndImpl(ResourceHandle<Material> handle, IResourceImplProvider impl) {
 		return new Material(handle, impl as IMaterialImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
@@ -40,7 +42,7 @@ public readonly struct Material : IDisposableResource<Material, IMaterialImplPro
 	}
 	#endregion
 
-	public override string ToString() => $"Material {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
+	public override string ToString() => $"Material {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Equality
 	public bool Equals(Material other) => _handle == other._handle && _impl.Equals(other._impl);

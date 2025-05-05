@@ -536,9 +536,17 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		return _loadedCubemaps[handle].IblTextureHandle;
 	}
 
-	public ReadOnlySpan<char> GetName(ResourceHandle<EnvironmentCubemap> handle) {
+	public string GetNameAsNewStringObject(ResourceHandle<EnvironmentCubemap> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceName(handle.Ident, DefaultEnvironmentCubemapName);
+		return new String(_globals.GetResourceName(handle.Ident, DefaultEnvironmentCubemapName));
+	}
+	public int GetNameLength(ResourceHandle<EnvironmentCubemap> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceName(handle.Ident, DefaultEnvironmentCubemapName).Length;
+	}
+	public void CopyName(ResourceHandle<EnvironmentCubemap> handle, Span<char> destinationBuffer) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_globals.CopyResourceName(handle.Ident, DefaultEnvironmentCubemapName, destinationBuffer);
 	}
 	#endregion
 

@@ -22,15 +22,6 @@ sealed class LocalLatestGameControllerState : ILatestGameControllerInputStateRet
 	readonly UnmanagedBuffer<char> _utf16NameBuffer = new(16);
 	bool _isDisposed = false;
 
-	public ReadOnlySpan<char> Name {
-		get {
-			var minLengthRequired = NameBuffer.GetUtf16Length();
-			if (minLengthRequired > _utf16NameBuffer.Length) _utf16NameBuffer.Resize(minLengthRequired);
-			NameBuffer.ConvertToUtf16(_utf16NameBuffer.AsSpan);
-			return _utf16NameBuffer.AsSpan[..minLengthRequired];
-		}
-	}
-
 	ReadOnlySpan<GameControllerButtonEvent> ILatestGameControllerInputStateRetriever.NewButtonEvents {
 		get {
 			ThrowIfThisIsDisposed();
@@ -60,6 +51,17 @@ sealed class LocalLatestGameControllerState : ILatestGameControllerInputStateRet
 		Handle = handle;
 		NameBuffer = new(MaxControllerNameLength, true);
 	}
+
+	ReadOnlySpan<char> GetNameBufferSpan() {
+		ThrowIfThisIsDisposed();
+		var minLengthRequired = NameBuffer.GetUtf16Length();
+		if (minLengthRequired > _utf16NameBuffer.Length) _utf16NameBuffer.Resize(minLengthRequired);
+		NameBuffer.ConvertToUtf16(_utf16NameBuffer.AsSpan);
+		return _utf16NameBuffer.AsSpan[..minLengthRequired];
+	}
+	public string GetNameAsNewStringObject() => new String(GetNameBufferSpan());
+	public int GetNameLength() => GetNameBufferSpan().Length;
+	public void CopyName(Span<char> destinationBuffer) => GetNameBufferSpan().CopyTo(destinationBuffer);
 
 	public bool ButtonIsCurrentlyDown(GameControllerButton button) {
 		ThrowIfThisIsDisposed();
@@ -152,7 +154,7 @@ sealed class LocalLatestGameControllerState : ILatestGameControllerInputStateRet
 		}
 	}
 
-	public override string ToString() => $"TinyFFR Local Input State Provider {(_isDisposed ? "[Game Controller] [Disposed]" : $"[Game Controller '{Name}']")}";
+	public override string ToString() => $"TinyFFR Local Input State Provider {(_isDisposed ? "[Game Controller] [Disposed]" : $"[Game Controller '{GetNameAsNewStringObject()}']")}";
 
 	#region Disposal
 	public void Dispose() {

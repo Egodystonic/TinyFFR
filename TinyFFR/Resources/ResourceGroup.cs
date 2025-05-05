@@ -33,11 +33,6 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 		get => Implementation.GetDisposesContainedResourcesByDefaultWhenDisposed(Handle);
 	}
 
-	public ReadOnlySpan<char> Name {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetName(Handle);
-	}
-
 	#region Specific Resource Enumeration Properties
 	// Maintainer's note: We don't provide one of these for every resource type, only those that we feel are likely to be grouped.
 	// Users can still use GetAllResourcesOfType for any resource type. These are just a convenience shortcut.
@@ -58,6 +53,13 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 		_handle = handle;
 		_impl = impl;
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameLength() => Implementation.GetNameLength(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
 
 	static ResourceGroup IResource<ResourceGroup>.CreateFromHandleAndImpl(ResourceHandle<ResourceGroup> handle, IResourceImplProvider impl) {
 		return new(handle, impl as IResourceGroupImplProvider ?? throw new ArgumentException($"Impl was '{impl}'.", nameof(impl)));
@@ -92,7 +94,7 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	public void Dispose(bool disposeContainedResources) => Implementation.Dispose(_handle, disposeContainedResources);
 	#endregion
 
-	public override string ToString() => IsDisposed ? $"{nameof(ResourceGroup)} (Disposed)" : $"{nameof(ResourceGroup)} \"{Name}\"";
+	public override string ToString() => IsDisposed ? $"Resource Group (Disposed)" : $"Resource Group \"{GetNameAsNewStringObject()}\"";
 
 	#region Equality
 	public bool Equals(ResourceGroup other) => _handle == other._handle && _impl == other._impl;

@@ -20,15 +20,17 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	ISceneImplProvider IResource<Scene, ISceneImplProvider>.Implementation => Implementation;
 	ResourceHandle<Scene> IResource<Scene>.Handle => Handle;
 
-	public ReadOnlySpan<char> Name {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetName(_handle);
-	}
-
 	internal Scene(ResourceHandle<Scene> handle, ISceneImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameLength() => Implementation.GetNameLength(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
 
 	static Scene IResource<Scene>.CreateFromHandleAndImpl(ResourceHandle<Scene> handle, IResourceImplProvider impl) {
 		return new Scene(handle, impl as ISceneImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
@@ -66,7 +68,7 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 		return DefaultLux * brightness * brightness;
 	}
 
-	public override string ToString() => $"Scene {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
+	public override string ToString() => $"Scene {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

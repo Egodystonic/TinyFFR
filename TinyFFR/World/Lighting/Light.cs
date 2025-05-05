@@ -23,11 +23,6 @@ public readonly struct Light : ILight, IDisposableResource<Light, ILightImplProv
 		get => Implementation.GetType(_handle);
 	}
 
-	public ReadOnlySpan<char> Name {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetName(_handle);
-	}
-
 	public Location Position {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetPosition(_handle);
@@ -87,6 +82,13 @@ public readonly struct Light : ILight, IDisposableResource<Light, ILightImplProv
 		_impl = impl;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameLength() => Implementation.GetNameLength(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
+
 	static Light IResource<Light>.CreateFromHandleAndImpl(ResourceHandle<Light> handle, IResourceImplProvider impl) {
 		return new Light(handle, impl as ILightImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
@@ -108,7 +110,7 @@ public readonly struct Light : ILight, IDisposableResource<Light, ILightImplProv
 	}
 	#endregion
 
-	public override string ToString() => $"Light {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
+	public override string ToString() => $"Light {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	internal static void ThrowIfInvalidType(Light input, LightType requiredType) {
 		if (input.Type == requiredType) return;

@@ -26,10 +26,6 @@ public readonly struct Display : IResource<Display, IDisplayImplProvider> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetIsRecommended(_handle);
 	}
-	public ReadOnlySpan<char> Name {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetName(_handle);
-	}
 	public ReadOnlySpan<DisplayMode> SupportedDisplayModes {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetSupportedDisplayModes(_handle);
@@ -57,6 +53,13 @@ public readonly struct Display : IResource<Display, IDisplayImplProvider> {
 		_impl = impl;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameLength() => Implementation.GetNameLength(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
+
 	static Display IResource<Display>.CreateFromHandleAndImpl(ResourceHandle<Display> handle, IResourceImplProvider impl) {
 		return new Display(handle, impl as IDisplayImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
@@ -66,7 +69,7 @@ public readonly struct Display : IResource<Display, IDisplayImplProvider> {
 
 	public override string ToString() {
 		return Implementation.IsValid(_handle) 
-			? $"{nameof(Display)} \"{Name}\" ({CurrentResolution.X:#} x {CurrentResolution.Y:#}){(IsPrimary ? " (Primary)" : "")}{(IsRecommended ? " (Recommended)" : "")}"
+			? $"{nameof(Display)} \"{GetNameAsNewStringObject()}\" ({CurrentResolution.X:#} x {CurrentResolution.Y:#}){(IsPrimary ? " (Primary)" : "")}{(IsRecommended ? " (Recommended)" : "")}"
 			: $"{nameof(Display)} [Invalid]";
 	}
 

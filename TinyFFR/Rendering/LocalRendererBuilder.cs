@@ -126,9 +126,17 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		}
 	}
 
-	public ReadOnlySpan<char> GetName(ResourceHandle<Renderer> handle) {
+	public string GetNameAsNewStringObject(ResourceHandle<Renderer> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceName(handle.Ident, DefaultRendererName);
+		return new String(_globals.GetResourceName(handle.Ident, DefaultRendererName));
+	}
+	public int GetNameLength(ResourceHandle<Renderer> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceName(handle.Ident, DefaultRendererName).Length;
+	}
+	public void CopyName(ResourceHandle<Renderer> handle, Span<char> destinationBuffer) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_globals.CopyResourceName(handle.Ident, DefaultRendererName, destinationBuffer);
 	}
 
 	#region Native Methods

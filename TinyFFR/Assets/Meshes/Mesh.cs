@@ -16,11 +16,6 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 	IMeshImplProvider IResource<Mesh, IMeshImplProvider>.Implementation => Implementation;
 	ResourceHandle<Mesh> IResource<Mesh>.Handle => Handle;
 
-	public ReadOnlySpan<char> Name {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetName(_handle);
-	}
-
 	public MeshBufferData BufferData {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetBufferData(_handle);
@@ -30,6 +25,13 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 		_handle = handle;
 		_impl = impl;
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameLength() => Implementation.GetNameLength(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
 
 	static Mesh IResource<Mesh>.CreateFromHandleAndImpl(ResourceHandle<Mesh> handle, IResourceImplProvider impl) {
 		return new Mesh(handle, impl as IMeshImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
@@ -45,7 +47,7 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 	}
 	#endregion
 
-	public override string ToString() => $"Mesh {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
+	public override string ToString() => $"Mesh {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Equality
 	public bool Equals(Mesh other) => _handle == other._handle && _impl.Equals(other._impl);

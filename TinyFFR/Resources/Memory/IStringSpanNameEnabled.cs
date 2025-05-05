@@ -4,5 +4,7 @@
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
 public interface IStringSpanNameEnabled {
-	ReadOnlySpan<char> Name { get; }
+	string GetNameAsNewStringObject();
+	int GetNameLength();
+	void CopyName(Span<char> destinationBuffer);
 }

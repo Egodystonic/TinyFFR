@@ -21,11 +21,6 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	ICameraImplProvider IResource<Camera, ICameraImplProvider>.Implementation => Implementation;
 	ResourceHandle<Camera> IResource<Camera>.Handle => Handle;
 
-	public ReadOnlySpan<char> Name {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetName(_handle);
-	}
-
 	public Location Position {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetPosition(_handle);
@@ -108,6 +103,13 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 		_impl = impl;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameLength() => Implementation.GetNameLength(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
+
 	static Camera IResource<Camera>.CreateFromHandleAndImpl(ResourceHandle<Camera> handle, IResourceImplProvider impl) {
 		return new Camera(handle, impl as ICameraImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
@@ -162,7 +164,7 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	}
 	#endregion
 
-	public override string ToString() => $"Camera {(IsDisposed ? "(Disposed)" : $"\"{Name}\" (Position {Position}, View Direction {ViewDirection.ToStringDescriptive()})")}";
+	public override string ToString() => $"Camera {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Equality
 	public bool Equals(Camera other) => _handle == other._handle && _impl.Equals(other._impl);

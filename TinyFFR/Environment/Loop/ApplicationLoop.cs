@@ -19,11 +19,6 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IA
 	IApplicationLoopImplProvider IResource<ApplicationLoop, IApplicationLoopImplProvider>.Implementation => Implementation;
 	ResourceHandle<ApplicationLoop> IResource<ApplicationLoop>.Handle => Handle;
 
-	public ReadOnlySpan<char> Name {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetName(_handle);
-	}
-
 	public ILatestInputRetriever Input {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetInputStateProvider(_handle);
@@ -34,6 +29,13 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IA
 		_handle = handle;
 		_impl = impl;
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameLength() => Implementation.GetNameLength(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
 
 	static ApplicationLoop IResource<ApplicationLoop>.CreateFromHandleAndImpl(ResourceHandle<ApplicationLoop> handle, IResourceImplProvider impl) {
 		return new ApplicationLoop(handle, impl as IApplicationLoopImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
@@ -62,7 +64,7 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IA
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ResetTotalIteratedTime() => TotalIteratedTime = TimeSpan.Zero;
 
-	public override string ToString() => $"Application Loop {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
+	public override string ToString() => $"Application Loop {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

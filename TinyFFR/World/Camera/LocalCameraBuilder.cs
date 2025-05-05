@@ -302,9 +302,17 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 		).ThrowIfFailure();
 	}
 
-	public ReadOnlySpan<char> GetName(ResourceHandle<Camera> handle) {
+	public string GetNameAsNewStringObject(ResourceHandle<Camera> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceName(handle.Ident, DefaultCameraName);
+		return new String(_globals.GetResourceName(handle.Ident, DefaultCameraName));
+	}
+	public int GetNameLength(ResourceHandle<Camera> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceName(handle.Ident, DefaultCameraName).Length;
+	}
+	public void CopyName(ResourceHandle<Camera> handle, Span<char> destinationBuffer) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_globals.CopyResourceName(handle.Ident, DefaultCameraName, destinationBuffer);
 	}
 
 	#region Native Methods

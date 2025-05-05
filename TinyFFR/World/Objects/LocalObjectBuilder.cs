@@ -139,9 +139,17 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMaterial);
 	}
 
-	public ReadOnlySpan<char> GetName(ResourceHandle<ModelInstance> handle) {
+	public string GetNameAsNewStringObject(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceName(handle.Ident, DefaultModelInstanceName);
+		return new String(_globals.GetResourceName(handle.Ident, DefaultModelInstanceName));
+	}
+	public int GetNameLength(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceName(handle.Ident, DefaultModelInstanceName).Length;
+	}
+	public void CopyName(ResourceHandle<ModelInstance> handle, Span<char> destinationBuffer) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_globals.CopyResourceName(handle.Ident, DefaultModelInstanceName, destinationBuffer);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

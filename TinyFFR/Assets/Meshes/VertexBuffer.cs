@@ -16,15 +16,17 @@ public readonly struct VertexBuffer : IDisposableResource<VertexBuffer, IVertexB
 	IVertexBufferImplProvider IResource<VertexBuffer, IVertexBufferImplProvider>.Implementation => Implementation;
 	ResourceHandle<VertexBuffer> IResource<VertexBuffer>.Handle => Handle;
 
-	public ReadOnlySpan<char> Name {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetName(_handle);
-	}
-
 	internal VertexBuffer(ResourceHandle<VertexBuffer> handle, IVertexBufferImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameLength() => Implementation.GetNameLength(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
 
 	static VertexBuffer IResource<VertexBuffer>.CreateFromHandleAndImpl(ResourceHandle<VertexBuffer> handle, IResourceImplProvider impl) {
 		return new VertexBuffer(handle, impl as IVertexBufferImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
@@ -40,7 +42,7 @@ public readonly struct VertexBuffer : IDisposableResource<VertexBuffer, IVertexB
 	}
 	#endregion
 
-	public override string ToString() => $"Vertex Buffer {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
+	public override string ToString() => $"Vertex Buffer {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Equality
 	public bool Equals(VertexBuffer other) => _handle == other._handle && _impl.Equals(other._impl);

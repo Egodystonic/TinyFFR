@@ -16,15 +16,17 @@ public readonly struct IndexBuffer : IDisposableResource<IndexBuffer, IIndexBuff
 	IIndexBufferImplProvider IResource<IndexBuffer, IIndexBufferImplProvider>.Implementation => Implementation;
 	ResourceHandle<IndexBuffer> IResource<IndexBuffer>.Handle => Handle;
 
-	public ReadOnlySpan<char> Name {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetName(_handle);
-	}
-
 	internal IndexBuffer(ResourceHandle<IndexBuffer> handle, IIndexBufferImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameLength() => Implementation.GetNameLength(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
 
 	static IndexBuffer IResource<IndexBuffer>.CreateFromHandleAndImpl(ResourceHandle<IndexBuffer> handle, IResourceImplProvider impl) {
 		return new IndexBuffer(handle, impl as IIndexBufferImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
@@ -40,7 +42,7 @@ public readonly struct IndexBuffer : IDisposableResource<IndexBuffer, IIndexBuff
 	}
 	#endregion
 
-	public override string ToString() => $"Index Buffer {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
+	public override string ToString() => $"Index Buffer {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Equality
 	public bool Equals(IndexBuffer other) => _handle == other._handle && _impl.Equals(other._impl);

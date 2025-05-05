@@ -123,9 +123,17 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		return _activeMeshes[handle];
 	}
 
-	public ReadOnlySpan<char> GetName(ResourceHandle<Mesh> handle) {
+	public string GetNameAsNewStringObject(ResourceHandle<Mesh> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceName(handle.Ident, DefaultMeshName);
+		return new String(_globals.GetResourceName(handle.Ident, DefaultMeshName));
+	}
+	public int GetNameLength(ResourceHandle<Mesh> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceName(handle.Ident, DefaultMeshName).Length;
+	}
+	public void CopyName(ResourceHandle<Mesh> handle, Span<char> destinationBuffer) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_globals.CopyResourceName(handle.Ident, DefaultMeshName, destinationBuffer);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

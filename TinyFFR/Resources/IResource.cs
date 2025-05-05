@@ -9,9 +9,8 @@ namespace Egodystonic.TinyFFR.Resources;
 
 readonly record struct ResourceIdent(nint TypeHandle, nuint RawResourceHandle);
 readonly record struct ResourceStub(ResourceIdent Ident, IResourceImplProvider Implementation) : IDisposableResource {
-	public ReadOnlySpan<char> Name => Implementation.GetName(Ident.RawResourceHandle);
-	public bool IsDisposed => (Implementation as IDisposableResourceImplProvider)?.IsDisposed(Ident.RawResourceHandle) ?? false;
-	public void Dispose() => (Implementation as IDisposableResourceImplProvider)?.Dispose(Ident.RawResourceHandle);
+	public bool IsDisposed => (Implementation as IDisposableResourceImplProvider)?.IsDisposed(Handle) ?? false;
+	public void Dispose() => (Implementation as IDisposableResourceImplProvider)?.Dispose(Handle);
 	public ResourceHandle Handle => Ident.RawResourceHandle;
 	public nint TypeHandle => Ident.TypeHandle;
 	public ResourceHandle<TResource> CreateTypedHandleWithTypeCheck<TResource>() where TResource : IResource<TResource> {
@@ -19,6 +18,9 @@ readonly record struct ResourceStub(ResourceIdent Ident, IResourceImplProvider I
 			? (ResourceHandle<TResource>) Handle
 			: throw new InvalidOperationException($"Resource was not of type {typeof(TResource).Name}.");
 	}
+	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(Handle);
+	public int GetNameLength() => Implementation.GetNameLength(Handle);
+	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(Handle, destinationBuffer);
 }
 
 public unsafe interface IResource : IStringSpanNameEnabled {

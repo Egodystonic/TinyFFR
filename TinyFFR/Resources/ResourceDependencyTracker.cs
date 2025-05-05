@@ -79,8 +79,8 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 		if (!_targetsToDependentsMap.TryGetValue(targetPotentiallyInUse.Ident, out var dependents)) return;
 		throw ResourceDependencyException.CreateForPrematureDisposal(
 			targetPotentiallyInUse.GetType().Name,
-			targetPotentiallyInUse.Name.ToString(),
-			dependents.Select(sr => sr.Implementation.GetName(sr.Ident.RawResourceHandle).ToString()).ToArray()
+			targetPotentiallyInUse.GetNameAsNewStringObject(),
+			dependents.Select(sr => sr.Implementation.GetNameAsNewStringObject(sr.Ident.RawResourceHandle).ToString()).ToArray()
 		);
 	}
 

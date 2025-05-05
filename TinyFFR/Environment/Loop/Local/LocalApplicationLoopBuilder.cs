@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Security;
 using System.Threading;
+using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Input.Local;
 using Egodystonic.TinyFFR.Factory.Local;
@@ -120,9 +121,17 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		_handleDataMap[handle] = _handleDataMap[handle] with { TotalIteratedTime = newValue };
 	}
 
-	public ReadOnlySpan<char> GetName(ResourceHandle<ApplicationLoop> handle) {
+	public string GetNameAsNewStringObject(ResourceHandle<ApplicationLoop> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceName(handle.Ident, DefaultLoopName);
+		return new String(_globals.GetResourceName(handle.Ident, DefaultLoopName));
+	}
+	public int GetNameLength(ResourceHandle<ApplicationLoop> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceName(handle.Ident, DefaultLoopName).Length;
+	}
+	public void CopyName(ResourceHandle<ApplicationLoop> handle, Span<char> destinationBuffer) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_globals.CopyResourceName(handle.Ident, DefaultLoopName, destinationBuffer);
 	}
 
 	public override string ToString() => _isDisposed ? "TinyFFR Local Application Loop Builder [Disposed]" : "TinyFFR Local Application Loop Builder";

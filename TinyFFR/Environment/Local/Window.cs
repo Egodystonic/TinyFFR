@@ -19,16 +19,6 @@ public readonly struct Window : IDisposableResource<Window, IWindowImplProvider>
 	IWindowImplProvider IResource<Window, IWindowImplProvider>.Implementation => Implementation;
 	ResourceHandle<Window> IResource<Window>.Handle => Handle;
 
-	public ReadOnlySpan<char> Title {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetTitle(_handle);
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Implementation.SetTitle(_handle, value);
-	}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetTile(ReadOnlySpan<char> title) => Title = title;
-	ReadOnlySpan<char> IStringSpanNameEnabled.Name => Title;
-
 	public Display Display {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetDisplay(_handle);
@@ -86,6 +76,19 @@ public readonly struct Window : IDisposableResource<Window, IWindowImplProvider>
 		_impl = impl;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	string GetTitleAsNewStringObject() => Implementation.GetTitleAsNewStringObject(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	int GetTitleLength() => Implementation.GetTitleLength(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	void CopyTitle(Span<char> destinationBuffer) => Implementation.CopyTitle(_handle, destinationBuffer);
+
+	string IStringSpanNameEnabled.GetNameAsNewStringObject() => GetTitleAsNewStringObject();
+	int IStringSpanNameEnabled.GetNameLength() => GetTitleLength();
+	void IStringSpanNameEnabled.CopyName(Span<char> destinationBuffer) => CopyTitle(destinationBuffer);
+
+	void SetTitle(ReadOnlySpan<char> newTitle) => Implementation.SetTitle(_handle, newTitle);
+
 	static Window IResource<Window>.CreateFromHandleAndImpl(ResourceHandle<Window> handle, IResourceImplProvider impl) {
 		return new Window(handle, impl as IWindowImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
@@ -100,7 +103,7 @@ public readonly struct Window : IDisposableResource<Window, IWindowImplProvider>
 	public void Dispose() => Implementation.Dispose(_handle);
 	#endregion
 
-	public override string ToString() => IsDisposed ? $"{nameof(Window)} (Disposed)" : $"{nameof(Window)} \"{Title}\"";
+	public override string ToString() => IsDisposed ? $"{nameof(Window)} (Disposed)" : $"{nameof(Window)} \"{GetTitleAsNewStringObject()}\"";
 
 	#region Equality
 	public bool Equals(Window other) => _handle == other._handle && _impl == other._impl;

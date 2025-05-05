@@ -50,9 +50,17 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		return HandleToInstance(handle);
 	}
 
-	public ReadOnlySpan<char> GetName(ResourceHandle<Scene> handle) {
+	public string GetNameAsNewStringObject(ResourceHandle<Scene> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceName(handle.Ident, DefaultSceneName);
+		return new String(_globals.GetResourceName(handle.Ident, DefaultSceneName));
+	}
+	public int GetNameLength(ResourceHandle<Scene> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceName(handle.Ident, DefaultSceneName).Length;
+	}
+	public void CopyName(ResourceHandle<Scene> handle, Span<char> destinationBuffer) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_globals.CopyResourceName(handle.Ident, DefaultSceneName, destinationBuffer);
 	}
 
 	#region Model Instance

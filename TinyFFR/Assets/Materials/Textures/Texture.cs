@@ -21,15 +21,17 @@ public readonly struct Texture : IDisposableResource<Texture, ITextureImplProvid
 		get => Implementation.GetDimensions(_handle);
 	}
 
-	public ReadOnlySpan<char> Name {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetName(_handle);
-	}
-
 	internal Texture(ResourceHandle<Texture> handle, ITextureImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetNameLength() => Implementation.GetNameLength(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
 
 	static Texture IResource<Texture>.CreateFromHandleAndImpl(ResourceHandle<Texture> handle, IResourceImplProvider impl) {
 		return new Texture(handle, impl as ITextureImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
@@ -45,7 +47,7 @@ public readonly struct Texture : IDisposableResource<Texture, ITextureImplProvid
 	}
 	#endregion
 
-	public override string ToString() => $"Texture {(IsDisposed ? "(Disposed)" : $"\"{Name}\"")}";
+	public override string ToString() => $"Texture {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Equality
 	public bool Equals(Texture other) => _handle == other._handle && _impl.Equals(other._impl);

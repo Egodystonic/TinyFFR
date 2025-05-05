@@ -48,57 +48,58 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		_displayMap.Add(outHandle, config.Display);
 		result.FullscreenStyle = config.FullscreenStyle;
 		if (!config.Title.IsEmpty) SetTitleOnWindow(result.Handle, config.Title);
-		TrySetDefaultIcon(result.Handle);
+		SetDefaultIcon(result.Handle);
 		return result;
 	}
 
-	void TrySetDefaultIcon(ResourceHandle<Window> handle) {
-		try {
-			var iconData = EmbeddedResourceResolver.GetResource(LogoResourceName);
-			SetWindowIconFromMemory(
-				handle,
-				iconData.DataPtr,
-				iconData.DataLenBytes
-			).ThrowIfFailure();
-		}
-#if DEBUG
-		catch { throw; }
-#else
-#pragma warning disable CA1031 // "Don't swallow all exceptions" -- it's fine for this
-		catch { /* do nothing, none of this is important enough to crash the app */ }
-#pragma warning restore CA1031
-#endif
+	void SetDefaultIcon(ResourceHandle<Window> handle) {
+		var iconData = EmbeddedResourceResolver.GetResource(LogoResourceName);
+		SetWindowIconFromMemory(
+			handle,
+			iconData.DataPtr,
+			iconData.DataLenBytes
+		).ThrowIfFailure();
 	}
 
-	public ReadOnlySpan<char> GetTitle(ResourceHandle<Window> handle) {
+	void ReadTitleFromWindow(ResourceHandle<Window> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+
 		var maxSpanLength = _windowTitleBuffer.BufferLength;
 		var dest = maxSpanLength <= 1000 ? stackalloc char[maxSpanLength] : new char[maxSpanLength];
 
-		var numCharsWritten = ReadTitleFromWindow(handle, dest);
-		_globals.ReplaceResourceName(handle.Ident, dest[..numCharsWritten]);
-		return _globals.GetResourceName(handle.Ident, default);
-	}
-	public void SetTitle(ResourceHandle<Window> handle, ReadOnlySpan<char> newTitle) {
-		SetTitleOnWindow(handle, newTitle);
-		_globals.ReplaceResourceName(handle.Ident, newTitle);
-	}
-	public int ReadTitleFromWindow(ResourceHandle<Window> handle, Span<char> dest) {
-		ThrowIfThisOrHandleIsDisposed(handle);
 		GetWindowTitle(
 			handle,
 			ref _windowTitleBuffer.BufferRef,
 			_windowTitleBuffer.BufferLength
 		).ThrowIfFailure();
-		return _windowTitleBuffer.ConvertToUtf16(dest);
+
+		var numChars = _windowTitleBuffer.ConvertToUtf16(dest);
+		_globals.ReplaceResourceName(handle.Ident, dest[..numChars]);
 	}
-	public void SetTitleOnWindow(ResourceHandle<Window> handle, ReadOnlySpan<char> src) {
+	void SetTitleOnWindow(ResourceHandle<Window> handle, ReadOnlySpan<char> src) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		
 		_windowTitleBuffer.ConvertFromUtf16(src);
 		SetWindowTitle(
 			handle,
 			ref _windowTitleBuffer.BufferRef
 		).ThrowIfFailure();
+	}
+	public string GetTitleAsNewStringObject(ResourceHandle<Window> handle) {
+		ReadTitleFromWindow(handle);
+		return new String(_globals.GetResourceName(handle.Ident, default));
+	}
+	public int GetTitleLength(ResourceHandle<Window> handle) {
+		ReadTitleFromWindow(handle);
+		return _globals.GetResourceName(handle.Ident, default).Length;
+	}
+	public void CopyTitle(ResourceHandle<Window> handle, Span<char> destinationBuffer) {
+		ReadTitleFromWindow(handle);
+		_globals.CopyResourceName(handle.Ident, default, destinationBuffer);
+	}
+	public void SetTitle(ResourceHandle<Window> handle, ReadOnlySpan<char> newTitle) {
+		SetTitleOnWindow(handle, newTitle);
+		_globals.ReplaceResourceName(handle.Ident, newTitle);
 	}
 
 	public void SetIcon(ResourceHandle<Window> handle, ReadOnlySpan<char> newIconFilePath) {
