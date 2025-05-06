@@ -6,12 +6,11 @@ using System;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
-public readonly ref struct EnvironmentCubemapCreationConfig {
+public readonly ref struct EnvironmentCubemapReadConfig {
 	public required ReadOnlySpan<char> SkyboxKtxFilePath { get; init; }
 	public required ReadOnlySpan<char> IblKtxFilePath { get; init; }
-	public ReadOnlySpan<char> Name { get; init; }
 
-	public EnvironmentCubemapCreationConfig() { }
+	public EnvironmentCubemapReadConfig() { }
 
 	internal void ThrowIfInvalid() {
 		if (SkyboxKtxFilePath.IsEmpty) {
@@ -20,5 +19,15 @@ public readonly ref struct EnvironmentCubemapCreationConfig {
 		if (IblKtxFilePath.IsEmpty) {
 			throw new ArgumentException($"{nameof(EnvironmentCubemapCreationConfig)}.{nameof(IblKtxFilePath)} can not be empty.", nameof(IblKtxFilePath));
 		}
+	}
+}
+
+public readonly ref struct EnvironmentCubemapCreationConfig {
+	public ReadOnlySpan<char> Name { get; init; }
+
+	public EnvironmentCubemapCreationConfig() { }
+
+	internal void ThrowIfInvalid() {
+		
 	}
 }

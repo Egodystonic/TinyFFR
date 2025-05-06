@@ -166,6 +166,19 @@ while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurren
 	spotlight.ConeDirection = camera.ViewDirection;
 	renderer.Render();
 
+	if (loop.Input.GameControllersCombined.ButtonIsCurrentlyDown(GameControllerButton.A)) {
+		spotlight.AdjustColorHueBy(30f * deltaTime);
+	}
+	if (loop.Input.GameControllersCombined.ButtonIsCurrentlyDown(GameControllerButton.LeftBumper)) {
+		spotlight.ConeAngle += 10f * deltaTime;
+	}
+	if (loop.Input.GameControllersCombined.ButtonIsCurrentlyDown(GameControllerButton.RightBumper)) {
+		spotlight.ConeAngle -= 10f * deltaTime;
+	}
+	if (loop.Input.GameControllersCombined.ButtonIsCurrentlyDown(GameControllerButton.Y)) {
+		spotlight.IntenseBeamAngle = spotlight.ConeAngle * 0.5f;
+	}
+
 
 	var parameterBefore = parameter;
 	var delta = 0;

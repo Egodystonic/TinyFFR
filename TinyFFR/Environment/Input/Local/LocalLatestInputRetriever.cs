@@ -21,15 +21,29 @@ sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposab
 	readonly ArrayPoolBackedMap<UIntPtr, LocalLatestGameControllerState> _detectedControllerStateMap = new();
 	readonly LocalLatestGameControllerState _combinedControllerState;
 	bool _isDisposed = false;
+	int _iterationVersion = 0;
 
 	public bool UserQuitRequested { get; private set; } = false;
 	public ILatestKeyboardAndMouseInputRetriever KeyboardAndMouse => _kbmState;
-	public ReadOnlySpan<ILatestGameControllerInputStateRetriever> GameControllers => _detectedControllerStateVector.AsSpan;
+	public TypedReferentIterator<ILatestInputRetriever, ILatestGameControllerInputStateRetriever> GameControllers => new(
+		this, _iterationVersion, &GetGameControllersCount, &GetIterationVersion, &GetGameController
+	);
 	public ILatestGameControllerInputStateRetriever GameControllersCombined => _combinedControllerState;
 
 	public LocalLatestInputRetriever() {
 		_combinedControllerState = new(CombinedGameControllerHandle);
 		_combinedControllerState.NameBuffer.ConvertFromUtf16(CombinedGameControllerName);
+	}
+
+	static int GetGameControllersCount(ILatestInputRetriever input) {
+		var castInput = ((LocalLatestInputRetriever) input);
+		castInput.ThrowIfThisIsDisposed();
+		return castInput._detectedControllerStateVector.Count;
+	}
+	static ILatestGameControllerInputStateRetriever GetGameController(ILatestInputRetriever input, int index) {
+		var castInput = ((LocalLatestInputRetriever) input);
+		castInput.ThrowIfThisIsDisposed();
+		return castInput._detectedControllerStateVector[index];
 	}
 
 	public void Initialize() {
@@ -55,6 +69,11 @@ sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposab
 		_kbmState.MouseCursorPosition = (mousePosX == Int32.MinValue ? _kbmState.MouseCursorPosition.X : mousePosX, mousePosY == Int32.MinValue ? _kbmState.MouseCursorPosition.Y : mousePosY);
 		_kbmState.MouseCursorDelta = (mouseDeltaX, mouseDeltaY);
 		UserQuitRequested = quitRequested;
+
+		_iterationVersion++;
+		_kbmState.Iterate();
+		_combinedControllerState.Iterate();
+		foreach (var controller in _detectedControllerStateMap.Values) controller.Iterate();
 	}
 
 	internal void GetEventBufferPointers(out KeyboardOrMouseKeyEvent* kbmEventBufferPtr, out int kbmEventBufferLen, out RawLocalGameControllerButtonEvent* controllerEventBufferPtr, out int controllerEventBufferLen, out MouseClickEvent* clickEventBufferPtr, out int clickEventBufferLen) {
@@ -108,6 +127,8 @@ sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposab
 			state.ApplyEvent(rawEvent);
 		}
 	}
+
+	static int GetIterationVersion(ILatestInputRetriever input) => ((LocalLatestInputRetriever) input)._iterationVersion;
 
 	public override string ToString() => $"TinyFFR Local Input State Provider{(_isDisposed ? " [Disposed]" : "")}";
 

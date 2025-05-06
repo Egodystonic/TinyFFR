@@ -34,7 +34,7 @@ class LocalInputTest {
 			Position = displayDiscoverer.Primary!.Value.CurrentResolution / 2 - (200, 200),
 			Size = (400, 400)
 		});
-		window.Title = "Close me to end test early";
+		window.SetTitle("Close me to end test early");
 
 		var loopBuilder = factory.ApplicationLoopBuilder;
 		using var beforeLoop = loopBuilder.CreateLoop(new() { IterationShouldRefreshGlobalInputStates = false });
@@ -57,18 +57,18 @@ class LocalInputTest {
 
 	int _numControllers;
 	void HandleInput(ILatestInputRetriever input) {
-		if (input.GameControllers.Length != _numControllers) {
-			for (var i = input.GameControllers.Length; i > _numControllers; --i) {
-				Console.WriteLine($"Controller: {input.GameControllers[i - 1].Name}");
+		if (input.GameControllers.Count != _numControllers) {
+			for (var i = input.GameControllers.Count; i > _numControllers; --i) {
+				Console.WriteLine($"Controller: {input.GameControllers[i - 1].GetNameAsNewStringObject()}");
 			}
-			_numControllers = input.GameControllers.Length;
+			_numControllers = input.GameControllers.Count;
 		}
 
 		var amalgamatedController = input.GameControllersCombined;
-		if (amalgamatedController.NewButtonEvents.Length > 0) {
+		if (amalgamatedController.NewButtonEvents.Count > 0) {
 			Console.WriteLine("[" + String.Join(", ", amalgamatedController.CurrentlyPressedButtons.ToArray()) + "] " + String.Join(", ", amalgamatedController.NewButtonEvents.ToArray().Select(ke => $"{(ke.ButtonDown ? "+" : "-")}{ke.Button}")));
-			if (amalgamatedController.NewButtonDownEvents.Length > 0) Console.WriteLine("\t\t\t+" + String.Join(", ", amalgamatedController.NewButtonDownEvents.ToArray()));
-			if (amalgamatedController.NewButtonUpEvents.Length > 0) Console.WriteLine("\t\t\t-" + String.Join(", ", amalgamatedController.NewButtonUpEvents.ToArray()));
+			if (amalgamatedController.NewButtonDownEvents.Count > 0) Console.WriteLine("\t\t\t+" + String.Join(", ", amalgamatedController.NewButtonDownEvents.ToArray()));
+			if (amalgamatedController.NewButtonUpEvents.Count > 0) Console.WriteLine("\t\t\t-" + String.Join(", ", amalgamatedController.NewButtonUpEvents.ToArray()));
 			Console.WriteLine("\t\t\tLeft/Right Trigger: " + amalgamatedController.LeftTriggerPosition + " / " + amalgamatedController.RightTriggerPosition);
 			Console.WriteLine("\t\t\tLeft/Right Stick: " + amalgamatedController.LeftStickPosition + " / " + amalgamatedController.RightStickPosition);
 
@@ -81,16 +81,20 @@ class LocalInputTest {
 			foreach (var newUpButton in amalgamatedController.NewButtonUpEvents) {
 				Assert.AreEqual(true, amalgamatedController.ButtonWasReleasedThisIteration(newUpButton));
 			}
+
+			foreach (var controller in input.GameControllers) {
+				Console.WriteLine("\t\t\t" + controller.GetNameAsNewStringObject() + " -> " + controller.CurrentlyPressedButtons.Count + " buttons pressed");
+			}
 		}
 
 		var kbm = input.KeyboardAndMouse;
 
-		if (kbm.NewKeyEvents.Length == 0) return;
+		if (kbm.NewKeyEvents.Count == 0) return;
 		Console.WriteLine("[" + String.Join(", ", kbm.CurrentlyPressedKeys.ToArray()) + "] " + String.Join(", ", kbm.NewKeyEvents.ToArray().Select(ke => $"{(ke.KeyDown ? "+" : "-")}{ke.Key}")));
-		if (kbm.NewKeyDownEvents.Length > 0) Console.WriteLine("\t\t\t+" + String.Join(", ", kbm.NewKeyDownEvents.ToArray()));
-		if (kbm.NewKeyUpEvents.Length > 0) Console.WriteLine("\t\t\t-" + String.Join(", ", kbm.NewKeyUpEvents.ToArray()));
+		if (kbm.NewKeyDownEvents.Count > 0) Console.WriteLine("\t\t\t+" + String.Join(", ", kbm.NewKeyDownEvents.ToArray()));
+		if (kbm.NewKeyUpEvents.Count > 0) Console.WriteLine("\t\t\t-" + String.Join(", ", kbm.NewKeyUpEvents.ToArray()));
 		Console.WriteLine($"\t\t\tMouse: {kbm.MouseCursorPosition} (delta {kbm.MouseCursorDelta}); Wheel: {kbm.MouseScrollWheelDelta}");
-		for (var i = 0; i < kbm.NewMouseClicks.Length; ++i) {
+		for (var i = 0; i < kbm.NewMouseClicks.Count; ++i) {
 			Console.WriteLine($"\t\t\t\tClick: {kbm.NewMouseClicks[i]}");
 		}
 
@@ -107,7 +111,7 @@ class LocalInputTest {
 
 	void AssertInputStatesAreEqual(ILatestInputRetriever expected, ILatestInputRetriever actual) {
 		void AssertControllerStates(ILatestGameControllerInputStateRetriever e, ILatestGameControllerInputStateRetriever a) {
-			Assert.IsTrue(e.Name.SequenceEqual(a.Name));
+			Assert.IsTrue(e.GetNameAsNewStringObject().SequenceEqual(a.GetNameAsNewStringObject()));
 			Assert.IsTrue(e.CurrentlyPressedButtons.SequenceEqual(a.CurrentlyPressedButtons));
 			Assert.AreEqual(e.LeftStickPosition, a.LeftStickPosition);
 			Assert.AreEqual(e.LeftTriggerPosition, a.LeftTriggerPosition);
@@ -128,8 +132,8 @@ class LocalInputTest {
 		Assert.IsTrue(expectedKbm.NewMouseClicks.SequenceEqual(actualKbm.NewMouseClicks));
 
 		AssertControllerStates(expected.GameControllersCombined, actual.GameControllersCombined);
-		Assert.AreEqual(expected.GameControllers.Length, actual.GameControllers.Length);
-		for (var i = 0; i < expected.GameControllers.Length; ++i) {
+		Assert.AreEqual(expected.GameControllers.Count, actual.GameControllers.Count);
+		for (var i = 0; i < expected.GameControllers.Count; ++i) {
 			AssertControllerStates(expected.GameControllers[i], actual.GameControllers[i]);
 		}
 	}

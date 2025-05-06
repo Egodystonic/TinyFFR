@@ -10,6 +10,6 @@ public interface ILatestInputRetriever {
 
 	ILatestKeyboardAndMouseInputRetriever KeyboardAndMouse { get; }
 
-	ReadOnlySpan<ILatestGameControllerInputStateRetriever> GameControllers { get; }
+	TypedReferentIterator<ILatestInputRetriever, ILatestGameControllerInputStateRetriever> GameControllers { get; }
 	ILatestGameControllerInputStateRetriever GameControllersCombined { get; }
 }

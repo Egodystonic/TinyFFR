@@ -22,9 +22,12 @@ namespace Egodystonic.TinyFFR;
 [TestFixture, Explicit]
 class LocalDisposalProtectionTest {
 	const string SkyboxFile = "IntegrationTests\\kloofendal_48d_partly_cloudy_puresky_4k.hdr";
+	char[] _nameDestinationBuffer = null!;
 
 	[SetUp]
-	public void SetUpTest() { }
+	public void SetUpTest() {
+		_nameDestinationBuffer = new char[1000];
+	}
 
 	[TearDown]
 	public void TearDownTest() { }
@@ -39,7 +42,9 @@ class LocalDisposalProtectionTest {
 		var window = windowBuilder.CreateWindow(recommendedDisplay, size: XYPair<int>.One);
 		var windowActions = new Action<Window>[] {
 			v => _ = v.Handle,
-			v => _ = v.Title,
+			v => _ = v.GetTitleAsNewStringObject(),
+			v => _ = v.GetTitleLength(),
+			v => v.CopyTitle(_nameDestinationBuffer),
 			v => _ = v.Display,
 			v => _ = v.FullscreenStyle,
 			v => _ = v.LockCursor,
@@ -50,14 +55,16 @@ class LocalDisposalProtectionTest {
 			v => v.LockCursor = false,
 			v => v.Position = XYPair<int>.Zero,
 			v => v.Size = XYPair<int>.One,
-			v => v.Title = "test"
+			v => v.SetTitle("test")
 		};
 		AssertUseAfterDisposalThrowsException(windowBuilder.CreateWindow(recommendedDisplay, size: XYPair<int>.One), objectIsAlreadyDisposed: false, windowActions);
 		var loopBuilder = factory.ApplicationLoopBuilder;
 		var loop = loopBuilder.CreateLoop();
 		var loopActions = new Action<ApplicationLoop>[] {
 			v => _ = v.Handle,
-			v => _ = v.Name,
+			v => _ = v.GetNameAsNewStringObject(),
+			v => _ = v.GetNameLength(),
+			v => v.CopyName(_nameDestinationBuffer),
 			v => _ = v.Input,
 			v => _ = v.TimeUntilNextIteration,
 			v => _ = v.TotalIteratedTime,
@@ -69,7 +76,9 @@ class LocalDisposalProtectionTest {
 		var camera = cameraBuilder.CreateCamera();
 		var cameraActions = new Action<Camera>[] {
 			v => _ = v.Handle,
-			v => _ = v.Name,
+			v => _ = v.GetNameAsNewStringObject(),
+			v => _ = v.GetNameLength(),
+			v => v.CopyName(_nameDestinationBuffer),
 			v => _ = v.FarPlaneDistance,
 			v => _ = v.GetModelMatrix(),
 			v => v.GetModelMatrix(out _),
@@ -102,7 +111,9 @@ class LocalDisposalProtectionTest {
 		var mesh = meshBuilder.CreateMesh(new Cuboid(1f));
 		var meshActions = new Action<Mesh>[] {
 			v => _ = v.Handle,
-			v => _ = v.Name,
+			v => _ = v.GetNameAsNewStringObject(),
+			v => _ = v.GetNameLength(),
+			v => v.CopyName(_nameDestinationBuffer),
 			v => _ = v.BufferData
 		};
 		AssertUseAfterDisposalThrowsException(meshBuilder.CreateMesh(new Cuboid(1f)), objectIsAlreadyDisposed: false, meshActions);
@@ -110,20 +121,26 @@ class LocalDisposalProtectionTest {
 		var texture = materialBuilder.CreateColorMap(StandardColor.RealWorldBrick);
 		var textureActions = new Action<Texture>[] {
 			v => _ = v.Handle,
-			v => _ = v.Name
+			v => _ = v.GetNameAsNewStringObject(),
+			v => _ = v.GetNameLength(),
+			v => v.CopyName(_nameDestinationBuffer),
 		};
 		AssertUseAfterDisposalThrowsException(materialBuilder.CreateColorMap(StandardColor.RealWorldBrick), objectIsAlreadyDisposed: false, textureActions);
 		var material = materialBuilder.CreateOpaqueMaterial(texture);
 		var materialActions = new Action<Material>[] {
 			v => _ = v.Handle,
-			v => _ = v.Name
+			v => _ = v.GetNameAsNewStringObject(),
+			v => _ = v.GetNameLength(),
+			v => v.CopyName(_nameDestinationBuffer),
 		};
 		AssertUseAfterDisposalThrowsException(materialBuilder.CreateOpaqueMaterial(texture), objectIsAlreadyDisposed: false, materialActions);
 		var objectBuilder = factory.ObjectBuilder;
 		var modelInstance = objectBuilder.CreateModelInstance(mesh, material);
 		var modelInstanceActions = new Action<ModelInstance>[] {
 			v => _ = v.Handle,
-			v => _ = v.Name,
+			v => _ = v.GetNameAsNewStringObject(),
+			v => _ = v.GetNameLength(),
+			v => v.CopyName(_nameDestinationBuffer),
 			v => v.AdjustScaleBy(Vect.One),
 			v => v.AdjustScaleBy(1f),
 			v => _ = v.Material,
@@ -144,11 +161,74 @@ class LocalDisposalProtectionTest {
 			v => v.Transform = Transform.None
 		};
 		AssertUseAfterDisposalThrowsException(objectBuilder.CreateModelInstance(mesh, material), objectIsAlreadyDisposed: false, modelInstanceActions);
+		var lightBuilder = factory.LightBuilder;
+		var pointLight = lightBuilder.CreatePointLight();
+		var pointLightActions = new Action<PointLight>[] {
+			v => _ = v.Handle,
+			v => _ = v.GetNameAsNewStringObject(),
+			v => _ = v.GetNameLength(),
+			v => v.CopyName(_nameDestinationBuffer),
+			v => v.AdjustBrightnessBy(1f),
+			v => v.AdjustColorHueBy(1f),
+			v => v.AdjustColorLightnessBy(1f),
+			v => v.AdjustColorSaturationBy(1f),
+			v => _ = v.Brightness,
+			v => _ = v.Color,
+			v => _ = v.ColorHue,
+			v => _ = v.ColorLightness,
+			v => _ = v.ColorSaturation,
+			v => _ = v.MaxIlluminationRadius,
+			v => v.MoveBy(Vect.One),
+			v => _ = v.Position,
+			v => v.ScaleBrightnessBy(1f),
+			v => v.Brightness = 1f,
+			v => v.Color = ColorVect.White,
+			v => v.ColorHue = 1f,
+			v => v.ColorLightness = 1f,
+			v => v.ColorSaturation = 1f,
+			v => v.MaxIlluminationRadius = 1f,
+		};
+		AssertUseAfterDisposalThrowsException(lightBuilder.CreatePointLight(), objectIsAlreadyDisposed: false, pointLightActions);
+		var spotLight = lightBuilder.CreateSpotLight();
+		var spotLightActions = new Action<SpotLight>[] {
+			v => _ = v.Handle,
+			v => _ = v.GetNameAsNewStringObject(),
+			v => _ = v.GetNameLength(),
+			v => v.CopyName(_nameDestinationBuffer),
+			v => v.AdjustBrightnessBy(1f),
+			v => v.AdjustColorHueBy(1f),
+			v => v.AdjustColorLightnessBy(1f),
+			v => v.AdjustColorSaturationBy(1f),
+			v => _ = v.Brightness,
+			v => _ = v.Color,
+			v => _ = v.ColorHue,
+			v => _ = v.ColorLightness,
+			v => _ = v.ColorSaturation,
+			v => _ = v.ConeAngle,
+			v => _ = v.ConeDirection,
+			v => _ = v.IntenseBeamAngle,
+			v => _ = v.MaxIlluminationDistance,
+			v => v.MoveBy(Vect.One),
+			v => _ = v.Position,
+			v => v.ScaleBrightnessBy(1f),
+			v => v.Brightness = 1f,
+			v => v.Color = ColorVect.White,
+			v => v.ColorHue = 1f,
+			v => v.ColorLightness = 1f,
+			v => v.ColorSaturation = 1f,
+			v => _ = v.ConeAngle = 1f,
+			v => _ = v.ConeDirection = Direction.Forward,
+			v => _ = v.IntenseBeamAngle = 1f,
+			v => v.MaxIlluminationDistance = 1f,
+		};
+		AssertUseAfterDisposalThrowsException(lightBuilder.CreateSpotLight(), objectIsAlreadyDisposed: false, spotLightActions);
 		var sceneBuilder = factory.SceneBuilder;
 		var scene = sceneBuilder.CreateScene();
 		var sceneActions = new Action<Scene>[] {
 			v => _ = v.Handle,
-			v => _ = v.Name,
+			v => _ = v.GetNameAsNewStringObject(),
+			v => _ = v.GetNameLength(),
+			v => v.CopyName(_nameDestinationBuffer),
 			v => v.Add(modelInstance),
 			v => v.Remove(modelInstance)
 		};
@@ -156,7 +236,9 @@ class LocalDisposalProtectionTest {
 		var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(SkyboxFile);
 		var cubemapActions = new Action<EnvironmentCubemap>[] {
 			v => _ = v.Handle,
-			v => _ = v.Name,
+			v => _ = v.GetNameAsNewStringObject(),
+			v => _ = v.GetNameLength(),
+			v => v.CopyName(_nameDestinationBuffer),
 			v => _ = v.SkyboxTextureHandle,
 			v => _ = v.IndirectLightingTextureHandle,
 		};
@@ -165,7 +247,9 @@ class LocalDisposalProtectionTest {
 		var renderer = rendererBuilder.CreateRenderer(scene, camera, window);
 		var rendererActions = new Action<Renderer>[] {
 			v => _ = v.Handle,
-			v => _ = v.Name,
+			v => _ = v.GetNameAsNewStringObject(),
+			v => _ = v.GetNameLength(),
+			v => v.CopyName(_nameDestinationBuffer),
 			v => v.Render()
 		};
 		AssertUseAfterDisposalThrowsException(rendererBuilder.CreateRenderer(scene, camera, window), objectIsAlreadyDisposed: false, rendererActions);
@@ -197,6 +281,8 @@ class LocalDisposalProtectionTest {
 		AssertUseAfterDisposalThrowsException(texture, objectIsAlreadyDisposed: true, textureActions);
 		AssertUseAfterDisposalThrowsException(material, objectIsAlreadyDisposed: true, materialActions);
 		AssertUseAfterDisposalThrowsException(modelInstance, objectIsAlreadyDisposed: true, modelInstanceActions);
+		AssertUseAfterDisposalThrowsException(pointLight, objectIsAlreadyDisposed: true, pointLightActions);
+		AssertUseAfterDisposalThrowsException(spotLight, objectIsAlreadyDisposed: true, spotLightActions);
 		AssertUseAfterDisposalThrowsException(scene, objectIsAlreadyDisposed: true, sceneActions);
 		AssertUseAfterDisposalThrowsException(cubemap, objectIsAlreadyDisposed: true, cubemapActions);
 		AssertUseAfterDisposalThrowsException(renderer, objectIsAlreadyDisposed: true, rendererActions);
@@ -210,7 +296,9 @@ class LocalDisposalProtectionTest {
 		AssertUseAfterDisposalThrowsException(
 			recommendedDisplay, objectIsAlreadyDisposed: true,
 			v => _ = v.Handle,
-			v => _ = v.Name,
+			v => _ = v.GetNameAsNewStringObject(),
+			v => _ = v.GetNameLength(),
+			v => v.CopyName(_nameDestinationBuffer),
 			v => _ = v.CurrentResolution,
 			v => _ = v.GlobalPositionOffset,
 			v => _ = v.HighestSupportedRefreshRateMode,

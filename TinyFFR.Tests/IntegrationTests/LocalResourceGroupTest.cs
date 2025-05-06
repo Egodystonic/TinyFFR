@@ -79,10 +79,10 @@ class LocalResourceGroupTest {
 			Assert.Catch(() => group.Add(cameras[2]));
 		}
 
-		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(meshes[0].Name.ToString()));
-		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(meshes[1].Name.ToString()));
-		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(cameras[0].Name.ToString()));
-		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(cameras[1].Name.ToString()));
+		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(meshes[0].GetNameAsNewStringObject()));
+		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(meshes[1].GetNameAsNewStringObject()));
+		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(cameras[0].GetNameAsNewStringObject()));
+		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(cameras[1].GetNameAsNewStringObject()));
 
 		using (var group = factory.ResourceAllocator.CreateResourceGroup(false)) {
 			Assert.AreEqual(false, group.DisposesContainedResourcesByDefaultWhenDisposed);
@@ -115,24 +115,24 @@ class LocalResourceGroupTest {
 			Assert.Catch(() => group.Add(cameras[2]));
 		}
 
-		Assert.DoesNotThrow(() => Console.WriteLine(meshes[2].Name.ToString()));
-		Assert.DoesNotThrow(() => Console.WriteLine(meshes[3].Name.ToString()));
+		Assert.DoesNotThrow(() => Console.WriteLine(meshes[2].GetNameAsNewStringObject()));
+		Assert.DoesNotThrow(() => Console.WriteLine(meshes[3].GetNameAsNewStringObject()));
 
 		var g = factory.ResourceAllocator.CreateResourceGroup(false);
 		g.Add(meshes[2]);
 		g.Add(meshes[3]);
 		g.Dispose(disposeContainedResources: true);
 
-		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(meshes[2].Name.ToString()));
-		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(meshes[3].Name.ToString()));
+		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(meshes[2].GetNameAsNewStringObject()));
+		Assert.Throws<ObjectDisposedException>(() => Console.WriteLine(meshes[3].GetNameAsNewStringObject()));
 
 		g = factory.ResourceAllocator.CreateResourceGroup(true);
 		g.Add(cameras[2]);
 		g.Add(cameras[3]);
 		g.Dispose(disposeContainedResources: false);
 
-		Assert.DoesNotThrow(() => Console.WriteLine(cameras[2].Name.ToString()));
-		Assert.DoesNotThrow(() => Console.WriteLine(cameras[3].Name.ToString()));
+		Assert.DoesNotThrow(() => Console.WriteLine(cameras[2].GetNameAsNewStringObject()));
+		Assert.DoesNotThrow(() => Console.WriteLine(cameras[3].GetNameAsNewStringObject()));
 
 
 

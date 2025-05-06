@@ -45,17 +45,17 @@ class LocalWindowTest {
 			Size = (500, 300),
 			Position = (100, 100)
 		});
-		window.Title = "Test 456";
+		window.SetTitle("Test 456");
 
-		Assert.AreEqual("Test 456", window.Title.ToString());
-		window.Title = "Test 123";
-		Assert.AreEqual("Test 123", window.Title.ToString());
-		window.Title = "1234567890";
-		Assert.AreEqual("1234567890", window.Title.ToString());
-		window.Title = "12345678901";
-		Assert.AreEqual("1234567890", window.Title.ToString());
-		window.Title = "1234567890123";
-		Assert.AreEqual("1234567890", window.Title.ToString());
+		Assert.AreEqual("Test 456", window.GetTitleAsNewStringObject());
+		window.SetTitle("Test 123");
+		Assert.AreEqual("Test 123", window.GetTitleAsNewStringObject());
+		window.SetTitle("1234567890");
+		Assert.AreEqual("1234567890", window.GetTitleAsNewStringObject());
+		window.SetTitle("12345678901");
+		Assert.AreEqual("1234567890", window.GetTitleAsNewStringObject());
+		window.SetTitle("1234567890123");
+		Assert.AreEqual("1234567890", window.GetTitleAsNewStringObject());
 		
 		Assert.AreEqual(new XYPair<int>(500, 300), window.Size);
 		Assert.AreEqual(new XYPair<int>(100, 100), window.Position);

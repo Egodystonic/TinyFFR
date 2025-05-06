@@ -114,7 +114,7 @@ class LocalAssetImportTest {
 			camera.ViewDirection = (camera.Position >> instance.Position).Direction;
 			var cbBrightness = (float) Math.Floor(loop.TotalIteratedTime.TotalSeconds) * 0.25f;
 			scene.SetBackdrop(cubemap, cbBrightness);
-			window.Title = "Backdrop brightness level " + PercentageUtils.ConvertFractionToPercentageString(cbBrightness);
+			window.SetTitle("Backdrop brightness level " + PercentageUtils.ConvertFractionToPercentageString(cbBrightness));
 		}
 	}
 }

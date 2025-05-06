@@ -77,17 +77,17 @@ public readonly struct Window : IDisposableResource<Window, IWindowImplProvider>
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	string GetTitleAsNewStringObject() => Implementation.GetTitleAsNewStringObject(_handle);
+	public string GetTitleAsNewStringObject() => Implementation.GetTitleAsNewStringObject(_handle);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	int GetTitleLength() => Implementation.GetTitleLength(_handle);
+	public int GetTitleLength() => Implementation.GetTitleLength(_handle);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	void CopyTitle(Span<char> destinationBuffer) => Implementation.CopyTitle(_handle, destinationBuffer);
+	public void CopyTitle(Span<char> destinationBuffer) => Implementation.CopyTitle(_handle, destinationBuffer);
 
 	string IStringSpanNameEnabled.GetNameAsNewStringObject() => GetTitleAsNewStringObject();
 	int IStringSpanNameEnabled.GetNameLength() => GetTitleLength();
 	void IStringSpanNameEnabled.CopyName(Span<char> destinationBuffer) => CopyTitle(destinationBuffer);
 
-	void SetTitle(ReadOnlySpan<char> newTitle) => Implementation.SetTitle(_handle, newTitle);
+	public void SetTitle(ReadOnlySpan<char> newTitle) => Implementation.SetTitle(_handle, newTitle);
 
 	static Window IResource<Window>.CreateFromHandleAndImpl(ResourceHandle<Window> handle, IResourceImplProvider impl) {
 		return new Window(handle, impl as IWindowImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));

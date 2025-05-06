@@ -470,7 +470,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		}
 	}
 	// TODO xmldoc that the directory should be empty other than the preprocessed hdr file contents
-	public EnvironmentCubemap LoadEnvironmentCubemapFromPreprocessedHdrDirectory(ReadOnlySpan<char> directoryPath, ReadOnlySpan<char> name = default) {
+	public EnvironmentCubemap LoadEnvironmentCubemapFromPreprocessedHdrDirectory(ReadOnlySpan<char> directoryPath, in EnvironmentCubemapCreationConfig config) {
 		try {
 			var dirPathString = directoryPath.ToString();
 			var skyboxFile = Directory.GetFiles(dirPathString, HdrPreprocessedSkyboxFileSearch).FirstOrDefault();
@@ -480,18 +480,20 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 				throw new InvalidOperationException($"Could not find skybox ({HdrPreprocessedSkyboxFileSearch}) and/or IBL ({HdrPreprocessedIblFileSearch}) file in given directory ({dirPathString}).");
 			}
 
-			return LoadEnvironmentCubemap(new() { IblKtxFilePath = iblFile, SkyboxKtxFilePath = skyboxFile, Name = name });
+			return LoadEnvironmentCubemap(new() { IblKtxFilePath = iblFile, SkyboxKtxFilePath = skyboxFile }, config);
 		}
 		catch (Exception e) {
 			throw new InvalidOperationException("Could not load processed HDR directory.", e);
 		}
 	}
-	public EnvironmentCubemap LoadEnvironmentCubemap(in EnvironmentCubemapCreationConfig config) {
+	public EnvironmentCubemap LoadEnvironmentCubemap(in EnvironmentCubemapReadConfig readConfig, in EnvironmentCubemapCreationConfig config) {
 		ThrowIfThisIsDisposed();
+		readConfig.ThrowIfInvalid();
+		config.ThrowIfInvalid();
 		try {
 			checked {
-				using var skyboxFs = new FileStream(config.SkyboxKtxFilePath.ToString(), FileMode.Open, FileAccess.Read, FileShare.Read);
-				using var iblFs = new FileStream(config.IblKtxFilePath.ToString(), FileMode.Open, FileAccess.Read, FileShare.Read);
+				using var skyboxFs = new FileStream(readConfig.SkyboxKtxFilePath.ToString(), FileMode.Open, FileAccess.Read, FileShare.Read);
+				using var iblFs = new FileStream(readConfig.IblKtxFilePath.ToString(), FileMode.Open, FileAccess.Read, FileShare.Read);
 
 				var skyboxFileLen = (int) skyboxFs.Length;
 				var skyboxFixedBuffer = _ktxFileBufferPool.Rent(skyboxFileLen);
@@ -521,8 +523,8 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 			}
 		}
 		catch (Exception e) {
-			if (!File.Exists(config.SkyboxKtxFilePath.ToString())) throw new InvalidOperationException($"File '{config.SkyboxKtxFilePath}' does not exist.", e);
-			if (!File.Exists(config.IblKtxFilePath.ToString())) throw new InvalidOperationException($"File '{config.IblKtxFilePath}' does not exist.", e);
+			if (!File.Exists(readConfig.SkyboxKtxFilePath.ToString())) throw new InvalidOperationException($"File '{readConfig.SkyboxKtxFilePath}' does not exist.", e);
+			if (!File.Exists(readConfig.IblKtxFilePath.ToString())) throw new InvalidOperationException($"File '{readConfig.IblKtxFilePath}' does not exist.", e);
 			throw new InvalidOperationException("Error occured when reading and/or loading skybox or IBL file.", e);
 		}
 	}

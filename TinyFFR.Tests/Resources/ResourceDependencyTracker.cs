@@ -21,10 +21,10 @@ class ResourceDependencyTrackerTest {
     public void SetUpTest() {
 		_tracker = new ResourceDependencyTracker();
 		_alphaImplProvider = new() {
-			OnRawHandleGetName = n => "Alpha-" + n
+			OnGetNameAsNewStringObject = n => "Alpha-" + n
 		};
 		_bravoImplProvider = new() {
-			OnRawHandleGetName = n => "Bravo-" + n
+			OnGetNameAsNewStringObject = n => "Bravo-" + n
 		};
 		_alphaResources = new();
 		_bravoResources = new();
@@ -32,12 +32,12 @@ class ResourceDependencyTrackerTest {
 			_alphaResources.Add(new Alpha {
 				Handle = new((nuint) i),
 				Implementation = _alphaImplProvider,
-				Name = _alphaImplProvider.GetName((nuint) i)
+				Name = _alphaImplProvider.GetNameAsNewStringObject((nuint) i)
 			});
 			_bravoResources.Add(new Bravo {
 				Handle = new((nuint) i),
 				Implementation = _bravoImplProvider,
-				Name = _bravoImplProvider.GetName((nuint) i)
+				Name = _bravoImplProvider.GetNameAsNewStringObject((nuint) i)
 			});
 		}
 	}

@@ -7,7 +7,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Environment.Input.Local;
 
-sealed class LocalLatestGameControllerState : ILatestGameControllerInputStateRetriever, IDisposable {
+sealed unsafe class LocalLatestGameControllerState : ILatestGameControllerInputStateRetriever, IDisposable {
 	const int MaxControllerNameLength = 500;
 	public InteropStringBuffer NameBuffer { get; }
 	public UIntPtr Handle { get; }
@@ -21,35 +21,55 @@ sealed class LocalLatestGameControllerState : ILatestGameControllerInputStateRet
 	public GameControllerTriggerPosition RightTriggerPosition { get; set; } = default;
 	readonly UnmanagedBuffer<char> _utf16NameBuffer = new(16);
 	bool _isDisposed = false;
+	int _iterationVersion = 0;
 
-	ReadOnlySpan<GameControllerButtonEvent> ILatestGameControllerInputStateRetriever.NewButtonEvents {
-		get {
-			ThrowIfThisIsDisposed();
-			return NewButtonEvents.AsSpan;
-		}
-	}
-	ReadOnlySpan<GameControllerButton> ILatestGameControllerInputStateRetriever.NewButtonDownEvents {
-		get {
-			ThrowIfThisIsDisposed();
-			return NewButtonDownEvents.AsSpan;
-		}
-	}
-	ReadOnlySpan<GameControllerButton> ILatestGameControllerInputStateRetriever.NewButtonUpEvents {
-		get {
-			ThrowIfThisIsDisposed();
-			return NewButtonUpEvents.AsSpan;
-		}
-	}
-	ReadOnlySpan<GameControllerButton> ILatestGameControllerInputStateRetriever.CurrentlyPressedButtons {
-		get {
-			ThrowIfThisIsDisposed();
-			return CurrentlyPressedButtons.AsSpan;
-		}
-	}
+	TypedReferentIterator<ILatestGameControllerInputStateRetriever, GameControllerButtonEvent> ILatestGameControllerInputStateRetriever.NewButtonEvents => new(
+		this, _iterationVersion, &GetNewButtonEventsSpanLength, &GetIterationVersion, &GetNewButtonEvent 	
+	);
+	TypedReferentIterator<ILatestGameControllerInputStateRetriever, GameControllerButton> ILatestGameControllerInputStateRetriever.NewButtonDownEvents => new(
+		this, _iterationVersion, &GetNewButtonDownEventsSpanLength, &GetIterationVersion, &GetNewButtonDownEvent
+	);
+	TypedReferentIterator<ILatestGameControllerInputStateRetriever, GameControllerButton> ILatestGameControllerInputStateRetriever.NewButtonUpEvents => new(
+		this, _iterationVersion, &GetNewButtonUpEventsSpanLength, &GetIterationVersion, &GetNewButtonUpEvent
+	);
+	TypedReferentIterator<ILatestGameControllerInputStateRetriever, GameControllerButton> ILatestGameControllerInputStateRetriever.CurrentlyPressedButtons => new(
+		this, _iterationVersion, &GetCurrentlyPressedButtonsSpanLength, &GetIterationVersion, &GetCurrentlyPressedButton
+	);
 
 	public LocalLatestGameControllerState(UIntPtr handle) {
 		Handle = handle;
 		NameBuffer = new(MaxControllerNameLength, true);
+	}
+
+	static LocalLatestGameControllerState CastWithDisposeCheck(ILatestGameControllerInputStateRetriever input) {
+		var result = ((LocalLatestGameControllerState) input);
+		result.ThrowIfThisIsDisposed();
+		return result;
+	}
+
+	static int GetNewButtonEventsSpanLength(ILatestGameControllerInputStateRetriever input) {
+		return CastWithDisposeCheck(input).NewButtonEvents.Count;
+	}
+	static GameControllerButtonEvent GetNewButtonEvent(ILatestGameControllerInputStateRetriever input, int index) {
+		return CastWithDisposeCheck(input).NewButtonEvents[index];
+	}
+	static int GetNewButtonDownEventsSpanLength(ILatestGameControllerInputStateRetriever input) {
+		return CastWithDisposeCheck(input).NewButtonDownEvents.Count;
+	}
+	static GameControllerButton GetNewButtonDownEvent(ILatestGameControllerInputStateRetriever input, int index) {
+		return CastWithDisposeCheck(input).NewButtonDownEvents[index];
+	}
+	static int GetNewButtonUpEventsSpanLength(ILatestGameControllerInputStateRetriever input) {
+		return CastWithDisposeCheck(input).NewButtonUpEvents.Count;
+	}
+	static GameControllerButton GetNewButtonUpEvent(ILatestGameControllerInputStateRetriever input, int index) {
+		return CastWithDisposeCheck(input).NewButtonUpEvents[index];
+	}
+	static int GetCurrentlyPressedButtonsSpanLength(ILatestGameControllerInputStateRetriever input) {
+		return CastWithDisposeCheck(input).CurrentlyPressedButtons.Count;
+	}
+	static GameControllerButton GetCurrentlyPressedButton(ILatestGameControllerInputStateRetriever input, int index) {
+		return CastWithDisposeCheck(input).CurrentlyPressedButtons[index];
 	}
 
 	ReadOnlySpan<char> GetNameBufferSpan() {
@@ -93,7 +113,6 @@ sealed class LocalLatestGameControllerState : ILatestGameControllerInputStateRet
 		NewButtonEvents.ClearWithoutZeroingMemory();
 		NewButtonDownEvents.ClearWithoutZeroingMemory();
 		NewButtonUpEvents.ClearWithoutZeroingMemory();
-		CurrentlyPressedButtons.ClearWithoutZeroingMemory();
 	}
 
 	public void ApplyEvent(RawLocalGameControllerButtonEvent rawEvent) {
@@ -153,6 +172,11 @@ sealed class LocalLatestGameControllerState : ILatestGameControllerInputStateRet
 			CurrentlyPressedButtons.Remove(nonRawButton);
 		}
 	}
+
+	public void Iterate() {
+		_iterationVersion++;
+	}
+	static int GetIterationVersion(ILatestGameControllerInputStateRetriever input) => ((LocalLatestGameControllerState) input)._iterationVersion;
 
 	public override string ToString() => $"TinyFFR Local Input State Provider {(_isDisposed ? "[Game Controller] [Disposed]" : $"[Game Controller '{GetNameAsNewStringObject()}']")}";
 

@@ -11,16 +11,22 @@ public interface ILocalAssetLoader : IAssetLoader {
 	internal static string HdrToKtxWorkspaceDirectoryPath { get; } = Path.Combine(LocalFileSystemUtils.ApplicationDataDirectoryPath, "HdrToKtxWorkspace");
 
 	void PreprocessHdrTextureToEnvironmentCubemapDirectory(ReadOnlySpan<char> hdrFilePath, ReadOnlySpan<char> destinationDirectoryPath);
-	EnvironmentCubemap LoadEnvironmentCubemapFromPreprocessedHdrDirectory(ReadOnlySpan<char> directoryPath, ReadOnlySpan<char> name = default);
+	EnvironmentCubemap LoadEnvironmentCubemapFromPreprocessedHdrDirectory(ReadOnlySpan<char> directoryPath, ReadOnlySpan<char> name = default) {
+		return LoadEnvironmentCubemapFromPreprocessedHdrDirectory(directoryPath, new EnvironmentCubemapCreationConfig { Name = name });
+	}
+	EnvironmentCubemap LoadEnvironmentCubemapFromPreprocessedHdrDirectory(ReadOnlySpan<char> directoryPath, in EnvironmentCubemapCreationConfig config);
+	EnvironmentCubemap LoadEnvironmentCubemap(ReadOnlySpan<char> hdrFilePath, ReadOnlySpan<char> name = default) {
+		return LoadEnvironmentCubemap(hdrFilePath, new EnvironmentCubemapCreationConfig { Name = name });
+	}
 	// TODO xmldoc that this is really slow and generates a lot of garbage
-	EnvironmentCubemap LoadEnvironmentCubemap(ReadOnlySpan<char> hdrFilePath) {
+	EnvironmentCubemap LoadEnvironmentCubemap(ReadOnlySpan<char> hdrFilePath, in EnvironmentCubemapCreationConfig config) {
 		var targetDir = HdrToKtxWorkspaceDirectoryPath;
 		try {
 			Directory.CreateDirectory(targetDir);
 			foreach (var file in Directory.GetFiles(targetDir, "*.ktx")) File.Delete(file);
 			
 			PreprocessHdrTextureToEnvironmentCubemapDirectory(hdrFilePath, targetDir);
-			return LoadEnvironmentCubemapFromPreprocessedHdrDirectory(targetDir);
+			return LoadEnvironmentCubemapFromPreprocessedHdrDirectory(targetDir, config);
 		}
 		catch (Exception e) {
 			throw new InvalidOperationException("Can not generate and load HDR file: When attempting to preprocess " +
