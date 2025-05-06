@@ -51,7 +51,10 @@ sealed class LocalFactoryGlobalObjectGroup {
 		return span.Length;
 	}
 
-	public void DisposeResourceNameIfExists(ResourceIdent ident) => _resourceNameMap.Remove(ident);
+	public void DisposeResourceNameIfExists(ResourceIdent ident) {
+		if (!_resourceNameMap.Remove(ident, out var handle)) return;
+		StringPool.Return(handle);
+	}
 
 	public void ReplaceResourceName(ResourceIdent ident, ReadOnlySpan<char> newName) {
 		DisposeResourceNameIfExists(ident);
