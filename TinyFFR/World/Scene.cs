@@ -42,9 +42,9 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	public void Remove(ModelInstance modelInstance) => Implementation.Remove(_handle, modelInstance);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Add(Light light) => Implementation.Add(_handle, light);
+	public void Add<TLight>(TLight light) where TLight : ILight<TLight> => Implementation.Add(_handle, light);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Remove(Light light) => Implementation.Remove(_handle, light);
+	public void Remove<TLight>(TLight light) where TLight : ILight<TLight> => Implementation.Remove(_handle, light);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBackdrop(EnvironmentCubemap cubemap, float backdropIntensity = 1f) => Implementation.SetBackdrop(_handle, cubemap, backdropIntensity);

@@ -6,13 +6,16 @@ using System;
 
 namespace Egodystonic.TinyFFR.World;
 
-interface ILight : IDisposableResource, IPositionedSceneObject, IColoredSceneObject {
+public interface ILight : IPositionedSceneObject, IColoredSceneObject {
+	LightType Type { get; }
 	ColorVect Color { get; set; }
 	float Brightness { get; set; }
 
 	void AdjustBrightnessBy(float adjustment);
 	void ScaleBrightnessBy(float scalar);
+	Light AsBaseLight();
 }
-interface ILight<out TSelf> : ILight, IDisposableResource<Light, ILightImplProvider> where TSelf : ILight {
-	static abstract TSelf FromBaseLight(Light l);
+public interface ILight<TSelf> : ILight, IDisposableResource<TSelf, ILightImplProvider> where TSelf : ILight<TSelf> {
+	internal static abstract TSelf FromBaseLight(Light l);
+	internal static abstract LightType SelfType { get; }
 }

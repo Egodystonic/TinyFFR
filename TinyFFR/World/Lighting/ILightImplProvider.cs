@@ -8,34 +8,34 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.World;
 
-public interface ILightImplProvider : IDisposableResourceImplProvider<Light> {
-	LightType GetType(ResourceHandle<Light> handle);
+public interface ILightImplProvider : IDisposableResourceImplProvider {
+	LightType GetType(ResourceHandle handle);
 
-	Location GetPosition(ResourceHandle<Light> handle);
-	void SetPosition(ResourceHandle<Light> handle, Location newPosition);
+	Location GetPosition(ResourceHandle handle);
+	void SetPosition(ResourceHandle handle, Location newPosition);
 
-	ColorVect GetColor(ResourceHandle<Light> handle);
-	void SetColor(ResourceHandle<Light> handle, ColorVect newColor);
+	ColorVect GetColor(ResourceHandle handle);
+	void SetColor(ResourceHandle handle, ColorVect newColor);
 
-	void SetUniversalBrightness(ResourceHandle<Light> handle, float newBrightness);
-	float GetUniversalBrightness(ResourceHandle<Light> handle);
+	void SetUniversalBrightness(ResourceHandle handle, float newBrightness);
+	float GetUniversalBrightness(ResourceHandle handle);
 
-	float GetPointLightMaxIlluminationRadius(ResourceHandle<Light> handle);
-	void SetPointLightMaxIlluminationRadius(ResourceHandle<Light> handle, float newRadius);
+	float GetPointLightMaxIlluminationRadius(ResourceHandle<PointLight> handle);
+	void SetPointLightMaxIlluminationRadius(ResourceHandle<PointLight> handle, float newRadius);
 
-	float GetSpotLightMaxIlluminationDistance(ResourceHandle<Light> handle);
-	void SetSpotLightMaxIlluminationDistance(ResourceHandle<Light> handle, float newDistance);
+	float GetSpotLightMaxIlluminationDistance(ResourceHandle<SpotLight> handle);
+	void SetSpotLightMaxIlluminationDistance(ResourceHandle<SpotLight> handle, float newDistance);
 
-	Direction GetSpotLightConeDirection(ResourceHandle<Light> handle);
-	void SetSpotLightConeDirection(ResourceHandle<Light> handle, Direction newDirection);
+	Direction GetSpotLightConeDirection(ResourceHandle<SpotLight> handle);
+	void SetSpotLightConeDirection(ResourceHandle<SpotLight> handle, Direction newDirection);
 
-	Angle GetSpotLightConeAngle(ResourceHandle<Light> handle);
-	void SetSpotLightConeAngle(ResourceHandle<Light> handle, Angle newAngle);
+	Angle GetSpotLightConeAngle(ResourceHandle<SpotLight> handle);
+	void SetSpotLightConeAngle(ResourceHandle<SpotLight> handle, Angle newAngle);
 
-	Angle GetSpotLightIntenseBeamAngle(ResourceHandle<Light> handle);
-	void SetSpotLightIntenseBeamAngle(ResourceHandle<Light> handle, Angle newAngle);
+	Angle GetSpotLightIntenseBeamAngle(ResourceHandle<SpotLight> handle);
+	void SetSpotLightIntenseBeamAngle(ResourceHandle<SpotLight> handle, Angle newAngle);
 
-	void TranslateBy(ResourceHandle<Light> handle, Vect translation);
-	void AdjustBrightnessBy(ResourceHandle<Light> handle, float adjustment);
-	void ScaleBrightnessBy(ResourceHandle<Light> handle, float scalar);
+	void TranslateBy(ResourceHandle handle, Vect translation);
+	void AdjustBrightnessBy(ResourceHandle handle, float adjustment);
+	void ScaleBrightnessBy(ResourceHandle handle, float scalar);
 }

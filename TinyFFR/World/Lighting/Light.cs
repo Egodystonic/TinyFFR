@@ -5,18 +5,23 @@ using System;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
 
-public readonly struct Light : ILight, IDisposableResource<Light, ILightImplProvider> {
-	readonly ResourceHandle<Light> _handle;
+public readonly struct Light : ILight, IDisposable, IEquatable<Light>, IStringSpanNameEnabled {
+	readonly ResourceHandle _handle;
 	readonly ILightImplProvider _impl;
 
 	internal ILightImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<Light>();
-	internal ResourceHandle<Light> Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Light)) : _handle;
+	internal ResourceHandle Handle => IsDisposed ? throw new ObjectDisposedException(nameof(Light)) : _handle;
 
-	ILightImplProvider IResource<Light, ILightImplProvider>.Implementation => Implementation;
-	ResourceHandle<Light> IResource<Light>.Handle => Handle;
+	internal Light(ResourceHandle handle, ILightImplProvider impl) {
+		_handle = handle;
+		_impl = impl;
+	}
+
+	Light ILight.AsBaseLight() => this;
 
 	public LightType Type {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -77,21 +82,12 @@ public readonly struct Light : ILight, IDisposableResource<Light, ILightImplProv
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetBrightness(float brightness) => Brightness = brightness;
 
-	internal Light(ResourceHandle<Light> handle, ILightImplProvider impl) {
-		_handle = handle;
-		_impl = impl;
-	}
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int GetNameLength() => Implementation.GetNameLength(_handle);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
-
-	static Light IResource<Light>.CreateFromHandleAndImpl(ResourceHandle<Light> handle, IResourceImplProvider impl) {
-		return new Light(handle, impl as ILightImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
-	}
 
 	public void MoveBy(Vect translation) => Implementation.TranslateBy(_handle, translation);
 	public void AdjustColorHueBy(Angle adjustment) => Color = Color.WithHueAdjustedBy(adjustment);
@@ -110,7 +106,9 @@ public readonly struct Light : ILight, IDisposableResource<Light, ILightImplProv
 	}
 	#endregion
 
-	public override string ToString() => $"Light {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
+	public override string ToString() => $"{(IsDisposed ? "Light (Disposed)" : $"{Type} \"{GetNameAsNewStringObject()}\"")}";
+
+	public TLight As<TLight>() where TLight : ILight<TLight> => TLight.FromBaseLight(this);
 
 	internal static void ThrowIfInvalidType(Light input, LightType requiredType) {
 		if (input.Type == requiredType) return;
@@ -119,7 +117,8 @@ public readonly struct Light : ILight, IDisposableResource<Light, ILightImplProv
 
 	#region Equality
 	public bool Equals(Light other) => _handle == other._handle && _impl.Equals(other._impl);
-	public override bool Equals(object? obj) => obj is Light other && Equals(other);
+	public bool Equals<TLight>(TLight other) where TLight : ILight => Equals(other.AsBaseLight());
+	public override bool Equals(object? obj) => obj is ILight other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine((UIntPtr) _handle, _impl);
 	public static bool operator ==(Light left, Light right) => left.Equals(right);
 	public static bool operator !=(Light left, Light right) => !left.Equals(right);

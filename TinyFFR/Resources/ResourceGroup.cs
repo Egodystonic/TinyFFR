@@ -39,7 +39,6 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	public TypedReferentIterator<EnumerationInput, Material> Materials => GetAllResourcesOfType<Material>();
 	public TypedReferentIterator<EnumerationInput, Texture> Textures => GetAllResourcesOfType<Texture>();
 	public TypedReferentIterator<EnumerationInput, Mesh> Meshes => GetAllResourcesOfType<Mesh>();
-	public TypedReferentIterator<EnumerationInput, Light> Lights => GetAllResourcesOfType<Light>();
 	public TypedReferentIterator<EnumerationInput, ModelInstance> ModelInstances => GetAllResourcesOfType<ModelInstance>();
 	#endregion
 

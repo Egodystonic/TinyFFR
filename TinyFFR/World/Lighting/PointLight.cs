@@ -8,122 +8,116 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.World;
 
-public readonly struct PointLight : ILight<PointLight>, IEquatable<PointLight> {
+public readonly struct PointLight : ILight<PointLight> {
 	public const float MaxBrightness = 1E+15f;
 	public const float DefaultLumens = 1_250_000f;
 
-	#region ILight Impl
-	readonly Light _base;
-	internal Light Base => _base == default ? throw InvalidObjectException.InvalidDefault<PointLight>() : _base;
-	internal ILightImplProvider Implementation {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Base.Implementation;
+	readonly ResourceHandle<PointLight> _handle;
+	readonly ILightImplProvider _impl;
+
+	internal ResourceHandle<PointLight> Handle => IsDisposed ? throw new ObjectDisposedException(nameof(PointLight)) : _handle;
+	internal ILightImplProvider Implementation => _impl ?? throw InvalidObjectException.InvalidDefault<PointLight>();
+
+	ILightImplProvider IResource<PointLight, ILightImplProvider>.Implementation => Implementation;
+	ResourceHandle<PointLight> IResource<PointLight>.Handle => Handle;
+
+	internal PointLight(ResourceHandle<PointLight> handle, ILightImplProvider impl) {
+		_handle = handle;
+		_impl = impl;
 	}
-	internal ResourceHandle<Light> Handle {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Base.Handle;
+
+	static PointLight IResource<PointLight>.CreateFromHandleAndImpl(ResourceHandle<PointLight> handle, IResourceImplProvider impl) {
+		return new PointLight(handle, impl as ILightImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
-	ILightImplProvider IResource<Light, ILightImplProvider>.Implementation => Implementation;
-	ResourceHandle<Light> IResource<Light>.Handle => Handle;
-	internal PointLight(Light @base) => _base = @base;
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Dispose() => Base.Dispose();
-	public static implicit operator Light(PointLight operand) => operand.Base;
-	public static explicit operator PointLight(Light operand) {
-		Light.ThrowIfInvalidType(operand, LightType.PointLight);
-		return new(operand);
+
+	#region Light Type Casting
+	public Light AsBaseLight() => new(_handle, _impl);
+
+	public static implicit operator Light(PointLight operand) => operand.AsBaseLight();
+	public static explicit operator PointLight(Light operand) => operand.As<PointLight>();
+	static PointLight ILight<PointLight>.FromBaseLight(Light l) {
+		Light.ThrowIfInvalidType(l, LightType.PointLight);
+		return new((ResourceHandle<PointLight>) l.Handle, l.Implementation);
 	}
-	static PointLight ILight<PointLight>.FromBaseLight(Light l) => (PointLight) l;
-	static Light IResource<Light>.CreateFromHandleAndImpl(ResourceHandle<Light> handle, IResourceImplProvider impl) {
-		return new Light(handle, impl as ILightImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
-	}
-	public override string ToString() => $"Point{Base}";
+	public override string ToString() => AsBaseLight().ToString();
 	#endregion
 
-	#region Base Light Deferring Members
+	#region Common Light Members
 	public Location Position {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Base.Position;
+		get => Implementation.GetPosition(_handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Base.SetPosition(value);
+		set => Implementation.SetPosition(_handle, value);
 	}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetPosition(Location position) => Base.SetPosition(position);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetPosition(Location position) => Position = position;
 
 	public ColorVect Color {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Base.Color;
+		get => Implementation.GetColor(_handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Base.SetColor(value);
+		set => Implementation.SetColor(_handle, value);
 	}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetColor(ColorVect color) => Base.SetColor(color);
-
-	public float Brightness {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Base.Brightness;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Base.SetBrightness(value);
-	}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetBrightness(float brightness) => Base.SetBrightness(brightness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetColor(ColorVect color) => Color = color;
 
 	public Angle ColorHue {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Base.ColorHue;
+		get => Color.Hue;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Base.SetColorHue(value);
+		set => Color = Color.WithHue(value);
 	}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetColorHue(Angle hue) => Base.SetColorHue(hue);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetColorHue(Angle hue) => ColorHue = hue;
 
 	public float ColorSaturation {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Base.ColorSaturation;
+		get => Color.Saturation;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Base.SetColorSaturation(value);
+		set => Color = Color.WithSaturation(value);
 	}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetColorSaturation(float saturation) => Base.SetColorSaturation(saturation);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetColorSaturation(float saturation) => ColorSaturation = saturation;
 
 	public float ColorLightness {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Base.ColorLightness;
+		get => Color.Lightness;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Base.SetColorLightness(value);
+		set => Color = Color.WithLightness(value);
 	}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetColorLightness(float lightness) => Base.SetColorLightness(lightness);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetColorLightness(float lightness) => ColorLightness = lightness;
+
+	public float Brightness {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetUniversalBrightness(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetUniversalBrightness(_handle, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetBrightness(float brightness) => Brightness = brightness;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void MoveBy(Vect translation) => Base.MoveBy(translation);
+	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustColorHueBy(Angle adjustment) => Base.AdjustColorHueBy(adjustment);
+	public int GetNameLength() => Implementation.GetNameLength(_handle);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustColorSaturationBy(float adjustment) => Base.AdjustColorSaturationBy(adjustment);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustColorLightnessBy(float adjustment) => Base.AdjustColorLightnessBy(adjustment);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AdjustBrightnessBy(float adjustment) => Base.AdjustBrightnessBy(adjustment);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ScaleBrightnessBy(float scalar) => Base.ScaleBrightnessBy(scalar);
+	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public string GetNameAsNewStringObject() => Base.GetNameAsNewStringObject();
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public int GetNameLength() => Base.GetNameLength();
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void CopyName(Span<char> destinationBuffer) => Base.CopyName(destinationBuffer);
+	public void MoveBy(Vect translation) => Implementation.TranslateBy(_handle, translation);
+	public void AdjustColorHueBy(Angle adjustment) => Color = Color.WithHueAdjustedBy(adjustment);
+	public void AdjustColorSaturationBy(float adjustment) => Color = Color.WithSaturationAdjustedBy(adjustment);
+	public void AdjustColorLightnessBy(float adjustment) => Color = Color.WithLightnessAdjustedBy(adjustment);
+	public void AdjustBrightnessBy(float adjustment) => Implementation.AdjustBrightnessBy(_handle, adjustment);
+	public void ScaleBrightnessBy(float scalar) => Implementation.ScaleBrightnessBy(_handle, scalar);
 	#endregion
 
-	#region Equality
-	bool IEquatable<Light>.Equals(Light other) => _base.Equals(other);
-	public bool Equals(PointLight other) => _base.Equals(other._base);
-	public override bool Equals(object? obj) => obj is PointLight other && Equals(other);
-	public override int GetHashCode() => _base.GetHashCode();
-	public static bool operator ==(PointLight left, PointLight right) => left.Equals(right);
-	public static bool operator !=(PointLight left, PointLight right) => !left.Equals(right);
-	#endregion
+	#region PointLight Specific
+	public static LightType SelfType { get; } = LightType.PointLight;
+	public LightType Type {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => SelfType;
+	}
 
 	public float MaxIlluminationRadius {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -151,4 +145,28 @@ public readonly struct PointLight : ILight<PointLight>, IEquatable<PointLight> {
 		if (!input.IsNonNegativeAndFinite()) return 0f;
 		return Single.Min(input, MaxBrightness);
 	}
+	#endregion
+
+	#region Disposal
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Dispose() => Implementation.Dispose(_handle);
+
+	internal bool IsDisposed {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.IsDisposed(_handle);
+	}
+	#endregion
+
+	#region Equality
+	public bool Equals(Light other) => AsBaseLight().Equals(other);
+	public bool Equals(PointLight other) => _handle == other._handle && _impl.Equals(other._impl);
+	public override bool Equals(object? obj) => obj is ILight other && AsBaseLight().Equals(other.AsBaseLight());
+	public override int GetHashCode() => HashCode.Combine((UIntPtr) _handle, _impl);
+	public static bool operator ==(PointLight left, PointLight right) => left.Equals(right);
+	public static bool operator !=(PointLight left, PointLight right) => !left.Equals(right);
+	public static bool operator ==(Light left, PointLight right) => right.Equals(left);
+	public static bool operator !=(Light left, PointLight right) => !right.Equals(left);
+	public static bool operator ==(PointLight left, Light right) => left.Equals(right);
+	public static bool operator !=(PointLight left, Light right) => !left.Equals(right);
+	#endregion
 }

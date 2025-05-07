@@ -124,6 +124,10 @@ using var hdr = assLoad.LoadEnvironmentCubemap(@"C:\Users\ben\Documents\Temp\tre
 using var scene = factory.SceneBuilder.CreateScene();
 
 scene.Add(modelInstance);
+scene.Add(modelInstance);
+scene.Remove(modelInstance);
+scene.Remove(modelInstance);
+scene.Add(modelInstance);
 scene.SetBackdropWithoutIndirectLighting(hdr, 0.7f);
 
 var cameraDistance = 3f;
@@ -143,6 +147,10 @@ window.LockCursor = true;
 //using var renderer2 = factory.RendererBuilder.CreateRenderer(scene, camera, window2, new RendererCreationConfig { GpuSynchronizationFrameBufferCount = -1 });
 
 var spotlight = factory.LightBuilder.CreateSpotLight(color: ColorVect.FromHueSaturationLightness(0f, 1f, 0.8f));
+scene.Add(spotlight);
+scene.Add(spotlight);
+scene.Remove(spotlight);
+scene.Remove(spotlight);
 scene.Add(spotlight);
 var parameter = 0;
 

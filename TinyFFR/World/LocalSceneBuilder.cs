@@ -93,24 +93,24 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	#endregion
 
 	#region Light
-	public void Add(ResourceHandle<Scene> handle, Light light) {
+	public void Add<TLight>(ResourceHandle<Scene> handle, TLight light) where TLight : ILight<TLight> {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var instanceVector = _lightMap[handle];
-		if (instanceVector.Contains(light)) return;
+		if (instanceVector.Contains(light.AsBaseLight())) return;
 
 		AddLightToScene(
 			handle,
 			light.Handle
 		).ThrowIfFailure();
 
-		instanceVector.Add(light);
+		instanceVector.Add(light.AsBaseLight());
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), light);
 	}
 
-	public void Remove(ResourceHandle<Scene> handle, Light light) {
+	public void Remove<TLight>(ResourceHandle<Scene> handle, TLight light) where TLight : ILight<TLight> {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var instanceVector = _lightMap[handle];
-		if (!instanceVector.Remove(light)) return;
+		if (!instanceVector.Remove(light.AsBaseLight())) return;
 
 		RemoveLightFromScene(
 			handle,

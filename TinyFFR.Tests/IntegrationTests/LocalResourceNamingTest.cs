@@ -45,8 +45,8 @@ class LocalResourceNamingTest {
 		}
 		TestNameStorageAndRetrieval(n => factory.ResourceAllocator.CreateResourceGroup(false, name: n));
 		TestNameStorageAndRetrieval(n => factory.CameraBuilder.CreateCamera(name: n));
-		TestNameStorageAndRetrieval(n => (Light) factory.LightBuilder.CreatePointLight(name: n));
-		TestNameStorageAndRetrieval(n => (Light) factory.LightBuilder.CreateSpotLight(name: n));
+		TestNameStorageAndRetrieval(n => factory.LightBuilder.CreatePointLight(name: n));
+		TestNameStorageAndRetrieval(n => factory.LightBuilder.CreateSpotLight(name: n));
 		TestNameStorageAndRetrieval(n => factory.SceneBuilder.CreateScene(name: n));
 		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f));
 		TestNameStorageAndRetrieval(n => factory.ObjectBuilder.CreateModelInstance(mesh, factory.AssetLoader.MaterialBuilder.TestMaterial, name: n));
