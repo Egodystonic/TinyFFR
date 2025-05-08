@@ -186,11 +186,9 @@ scene.Add(light); // (3)!
 
 2. 	The cube instance we created earlier will not be shown until it's added to a scene (and then the scene must be rendered, more on that below). 
 	
-	The scene tracks which objects have been added to itself already; attempting to add the same object twice will result in an exception being thrown.
+	The scene tracks which objects have been added to itself already; adding or removing the same object to/from the same scene twice has no effect (it is an [idempotent](https://en.wikipedia.org/wiki/Idempotence) operation).
 
 3. 	Just like the cube, our light will have no effect until it's added to a rendered scene.
-
-	Although you can not add the same object or light to a scene more than once, you can add and remove each object/light to and from multiple scenes freely.
 
 Of course, the `scene` is a disposable resource, just like the other resources so far.
 

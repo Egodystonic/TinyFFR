@@ -34,7 +34,7 @@ The `Input` property on the `loop` returns an `ILatestInputRetriever`. As its na
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `GameControllers`
 
-:   Returns a `ReadOnlySpan<ILatestGameControllerInputStateRetriever>`. Each `ILatestGameControllerInputStateRetriever` can be used to access input updates for one connected game controller.
+:   Returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `ILatestGameControllerInputStateRetriever`s. Each `ILatestGameControllerInputStateRetriever` can be used to access input updates for one connected game controller.
 
 	See below for usage guide.
 
@@ -67,7 +67,29 @@ This enum contains every keyboard key and mouse button supported by TinyFFR.
 
 	If you wish to differentiate between keyboard and mouse events you can use the `GetCategory()` extension method described below.
 
-There is also an extension method defined for this enum type named `GetCategory()` which returns a `KeyboardOrMouseKeyCategory` indicating the 'category' of the key:
+#### Extension Methods
+
+There are some extension methods defined on `KeyboardOrMouseKey` as follows:
+
+<span class="def-icon">:material-code-block-parentheses:</span> `GetNumericValue()`
+
+:   Returns an `int?` indicating the numeric value of the key (e.g. `3` for the __NumberRow3__ or __Numpad3__ keys).
+
+	If the given key has no numeric representation, this method returns `null` instead.
+
+	You can also reverse this method (i.e. convert an `int` to a `KeyboardOrMouseKey`) using the static method `InputUtils.KeyFromNumericValue()`.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `GetCharacterValue()`
+
+:   Returns a `char?` indicating the character value of the key (e.g. `'A'` for the __A__ key, `' '` for __Space__, etc).
+
+	If the given key has no character representation, this method returns `null` instead.
+
+	You can also reverse this method (i.e. convert a `char` to a `KeyboardOrMouseKey`) using the static method `InputUtils.KeyFromCharacterValue()`.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `GetCategory()`
+
+:   Returns a `KeyboardOrMouseKeyCategory` indicating the 'category' of the key (see below for more information on the available categories).
 
 ### KeyboardOrMouseKeyCategory Enum
 
@@ -95,48 +117,48 @@ The `ILatestKeyboardAndMouseInputRetriever` interface (accessed via the `Keyboar
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `NewKeyEvents`
 
-:   This returns a `ReadOnlySpan<KeyboardOrMouseKeyEvent>` containing all the new mouse/keyboard events in this loop iteration.
+:   This returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `KeyboardOrMouseKeyEvent`s that enumerates all the new mouse/keyboard events in this loop iteration.
 
 	Each `KeyboardOrMouseKeyEvent` contains two properties:  
 
 	* A `KeyDown` bool indicating whether this event is for a key being pressed (`true`) or released (`false`);
 	* A `Key` which is the `KeyboardOrMouseKey` that is being pressed or released.
 
-	If there are no input updates this loop iteration, this span will have 0 length.
+	If there are no input updates this loop iteration, this iterator will be empty (0 `Count`).
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `NewKeyDownEvents`
 
-:   This returns a `ReadOnlySpan<KeyboardOrMouseKey>` containing every key that was *pressed* in this loop iteration.
+:   This returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `KeyboardOrMouseKey`s that enumerates every key that was *pressed* in this loop iteration.
 
 	If you only care about keys being pressed, not released, you can use this property to quickly iterate every new key press.
 
 	This property returns exactly the same set of keys as you'd get iterating through `NewKeyEvents` and filtering for events where `KeyDown` is `true`.
 
-	If no keys were pressed this loop iteration, this span will have 0 length.
+	If no keys were pressed this loop iteration, this iterator will be empty (0 `Count`).
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `NewKeyUpEvents`
 
-:   This returns a `ReadOnlySpan<KeyboardOrMouseKey>` containing every key that was *released* in this loop iteration.
+:   This returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `KeyboardOrMouseKey`s that enumerates every key that was *released* in this loop iteration.
 
 	If you only care about keys being released, not pressed, you can use this property to quickly iterate every new key release.
 
 	This property returns exactly the same set of keys as you'd get iterating through `NewKeyEvents` and filtering for events where `KeyDown` is `false`.
 
-	If no keys were released this loop iteration, this span will have 0 length.
+	If no keys were released this loop iteration, this iterator will be empty (0 `Count`).
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `CurrentlyPressedKeys`
 
-:   This returns a `ReadOnlySpan<KeyboardOrMouseKey>` containing every key that is currently being pressed/held-down by the user.
+:   This returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `KeyboardOrMouseKey`s that enumerates every key that is currently being pressed/held-down by the user.
 
-	Note that this is not the same as `NewKeyDownEvents` as this span contains keys that were pressed in previous loop iterations but are still being pressed/held-down in this iteration.
+	Note that this is not the same as `NewKeyDownEvents` as this iterator enumerates keys that were pressed in previous loop iterations but are still being pressed/held-down in this iteration.
 
-	If no keys are currently being pressed in this loop iteration, this span will have 0 length.
+	If no keys are currently being pressed in this loop iteration, this iterator will be empty (0 `Count`).
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `NewMouseClicks`
 
-:   This returns a `ReadOnlySpan<MouseClickEvent>` containing a list of events detailing every mouse 'click' since the last loop iteration.
+:   This returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `MouseClickEvent`s that enumerates a list of events detailing every mouse 'click' since the last loop iteration.
 
-	Mouse clicks are "duplicated" in all the other properties (i.e. they count as `CurrentlyPressedKeys` and they emit keyup/keydown events). However, this span provides additional mouse-specific details for each mouse click.
+	Mouse clicks are "duplicated" in all the other properties (i.e. they count as `CurrentlyPressedKeys` and they emit keyup/keydown events). However, this iterator provides additional mouse-specific details for each mouse click.
 
 	Each `MouseClickEvent` contains the following properties:
 
@@ -144,7 +166,7 @@ The `ILatestKeyboardAndMouseInputRetriever` interface (accessed via the `Keyboar
 	* __MouseKey__: Which key was clicked;
 	* __ConsecutiveClickCount__: The number of consecutive clicks made with this button. For example, if this value is '2', this click can be considered a "double-click" operation. The timing of what makes a click "consecutive" is defined by the operating system.
 
-	If no mouse buttons have been clicked in this loop iteration, this span will have 0 length.
+	If no mouse buttons have been clicked in this loop iteration, this iterator will be empty (0 `Count`).
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `MouseCursorPosition`
 
@@ -218,18 +240,18 @@ The `ILatestGameControllerInputStateRetriever` interface (accessed via the `Game
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `NewButtonEvents`
 
-:   This returns a `ReadOnlySpan<GameControllerButtonEvent>` containing all the new button events in this loop iteration.
+:   This returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `GameControllerButtonEvent`s that enumerates all the new button events in this loop iteration.
 
 	Each `GameControllerButtonEvent` contains two properties:  
 
 	* A `ButtonDown` bool indicating whether this event is for a button being pressed (`true`) or released (`false`);
 	* A `Button` which is the `GameControllerButton` that is being pressed or released.
 
-	If there are no input updates this loop iteration, this span will have 0 length.
+	If there are no input updates this loop iteration, this iterator will be empty (0 `Count`).
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `NewButtonDownEvents`
 
-:   This returns a `ReadOnlySpan<GameControllerButton>` containing every button that was *pressed* in this loop iteration.(1)
+:   This returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `GameControllerButton`s that enumerates every button that was *pressed* in this loop iteration.(1)
 	{ .annotate }
 
 	1. Unfortunately this property does *not* inform you about new formal-dress parties in your area.
@@ -238,25 +260,25 @@ The `ILatestGameControllerInputStateRetriever` interface (accessed via the `Game
 
 	This property returns exactly the same set of button as you'd get iterating through `NewButtonEvents` and filtering for events where `ButtonDown` is `true`.
 
-	If no buttons were pressed this loop iteration, this span will have 0 length.
+	If no buttons were pressed this loop iteration, this iterator will be empty (0 `Count`).
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `NewButtonUpEvents`
 
-:   This returns a `ReadOnlySpan<GameControllerButton>` containing every button that was *released* in this loop iteration.
+:   This returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `GameControllerButton`s that enumerates every button that was *released* in this loop iteration.
 
 	If you only care about buttons being released, not pressed, you can use this property to quickly iterate every new button release.
 
 	This property returns exactly the same set of buttons as you'd get iterating through `NewButtonEvents` and filtering for events where `ButtonDown` is `false`.
 
-	If no buttons were released this loop iteration, this span will have 0 length.
+	If no buttons were released this loop iteration, this iterator will be empty (0 `Count`).
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `CurrentlyPressedButtons`
 
-:   This returns a `ReadOnlySpan<GameControllerButton>` containing every button that is currently being pressed/held-down by the user.
+:   This returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `GameControllerButton`s that enumerates every button that is currently being pressed/held-down by the user.
 
-	Note that this is not the same as `NewButtonDownEvents` as this span contains buttons that were pressed in previous loop iterations but are still being pressed/held-down in this iteration.
+	Note that this is not the same as `NewButtonDownEvents` as this iterator enumerates buttons that were pressed in previous loop iterations but are still being pressed/held-down in this iteration.
 
-	If no buttons are currently being pressed in this loop iteration, this span will have 0 length.
+	If no buttons are currently being pressed in this loop iteration, this iterator will be empty (0 `Count`).
 
 <span class="def-icon">:material-code-block-parentheses:</span> `ButtonIsCurrentlyDown(GameControllerButton button)`
 

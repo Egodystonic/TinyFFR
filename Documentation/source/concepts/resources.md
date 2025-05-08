@@ -232,7 +232,7 @@ You must remember to always return any rented memory or else you will cause a me
 
 ## Names
 
-Every resource in TinyFFR has a `Name`. Anywhere you build a resource you will see an optional `ReadOnlySpan<char>` parameter you can use to set the name of the resource:
+Every resource in TinyFFR has a name. Anywhere you build a resource you will see an optional `ReadOnlySpan<char>` parameter you can use to set the name of the resource:
 
 ```csharp
 // Both of these lines accomplish the same outcome:
@@ -250,6 +250,27 @@ using var scene = factory.SceneBuilder.CreateScene(new SceneCreationConfig { // 
 
 2.	When specifying a `[...]CreationConfig` for any resource type, the `Name` property can be set to specify the resource name.
 
-You can leave this parameter at its default value and TinyFFR will fill in a standard name string. There is no detrimental effect to not specifying a name; however, specifying a name can make it easier to identify resources in some circumstances.
+You can leave this parameter at its default value and TinyFFR will fill in a standard name string. However, as well as making it easier to track resources in your own code, resource names are used when TinyFFR emits exceptions/errors, so it can be beneficial to name your resources to help track down issues. 
 
-As well as making it easier to track resources in your own code, resource `Name`s are used when TinyFFR emits exceptions/errors, so it can be beneficial to name your resources to help track down issues.
+You can access any non-disposed resource's name via three methods:
+
+<span class="def-icon">:material-code-block-parentheses:</span> `string GetNameAsNewStringObject()`
+
+:   This is the simplest method, it returns a `string` containing the name set on resource creation.
+
+	As the method name implies, it will create a new `string` instance which will eventually be garbage-collectable, so this method should not be used in highly-sensitive performance scenarios.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `void CopyName(Span<char> destinationBuffer)`
+
+:   This copies the name in to a `destinationBuffer` of characters. This invocation produces no garbage nor allocates any memory.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `int GetNameLength()`
+
+:   This method will tell you how large a given `destinationBuffer` will need to be when passed in to `CopyName()`.
+
+	Accordingly, it also tells you how many `char`s will be written to the buffer when invoking `CopyName()`.
+
+???+ warning "Resource name no longer exists after disposal"
+	Attempting to access a resource's name by any of the methods listed above will result in an `ObjectDisposedException` being thrown if the resource has already been disposed.
+
+	This is because the memory retained to hold the resource's name is relinquished once the resource is disposed.

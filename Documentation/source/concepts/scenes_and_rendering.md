@@ -3,11 +3,15 @@ title: Scenes & Rendering
 description: This page explains the concept of scenes, cameras, and renderers in TinyFFR.
 ---
 
-`Scenes` are essentially "containers" for model instances and lights. You can not add the same model instance or light to a scene more than once, but you can add them to multiple scenes.
+`Scenes` are essentially "containers" for model instances and lights. 
 
 `Renderers` take a `Scene` and a `Camera` and *render* them to a target (e.g. a `Window`).
 
 ## Scenes
+
+You can add the same objects to multiple scenes simultaneously and render them at different times according to some logic.
+
+Attempting to add an object already in a scene to that same scene again has no effect; it is an [idempotent](https://en.wikipedia.org/wiki/Idempotence) operation. The same applies to removing objects, even if they were never added to the scene in the first place.
 
 ### Backdrops
 

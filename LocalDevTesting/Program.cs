@@ -146,7 +146,10 @@ window.LockCursor = true;
 //using var window2 = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value, position: (0, 0));
 //using var renderer2 = factory.RendererBuilder.CreateRenderer(scene, camera, window2, new RendererCreationConfig { GpuSynchronizationFrameBufferCount = -1 });
 
-var spotlight = factory.LightBuilder.CreateSpotLight(color: ColorVect.FromHueSaturationLightness(0f, 1f, 0.8f));
+var spotlight = factory.LightBuilder.CreateSpotLight(new SpotLightCreationConfig {
+	InitialColor = ColorVect.FromHueSaturationLightness(0f, 1f, 0.8f),
+	IsHighAccuracy = false
+});
 scene.Add(spotlight);
 scene.Add(spotlight);
 scene.Remove(spotlight);

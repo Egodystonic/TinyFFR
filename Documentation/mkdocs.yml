@@ -139,3 +139,5 @@ nav:
   - Reference Docs:
     - reference/index.md
     - reference/changelog.md
+    - Utils:
+      - reference/typed_referent_iterator.md

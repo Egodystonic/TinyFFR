@@ -129,7 +129,7 @@ while (!loop.Input.UserQuitRequested) {
 
 	The main purpose of `GameControllersCombined` is to allow you to simply support anyone using your application to connect any controller and begin using it, without having to worry about configuring the "correct" controller.
 
-	If you prefer to work with specific controllers however, you can enumerate them with `loop.Input.GameControllers`-- this is a `ReadOnlySpan<>` containing every controller currently connected to the system.
+	If you prefer to work with specific controllers however, you can enumerate them with `loop.Input.GameControllers`-- you can use this property to inspect every controller currently connected to the system.
 
 ## Mouse Camera Panning
 
