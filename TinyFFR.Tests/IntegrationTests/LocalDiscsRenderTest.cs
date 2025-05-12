@@ -7,6 +7,7 @@ using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR;
 
@@ -42,28 +43,35 @@ class LocalDiscsRenderTest {
 		using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(
 			TexturePattern.Lines(ColorVect.FromStandardColor(StandardColor.White), ColorVect.FromStandardColor(StandardColor.Silver), true, perturbationMagnitude: 0.1f)
 		);
-		using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap(
-			TexturePattern.Lines(new Direction(0f, 1f, 1f), new Direction(0f, -1f, 1f), false, perturbationMagnitude: 0.1f)
+		using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap();
+		using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(
+			metallicPattern: TexturePattern.Lines<Real>(0f, 1f, false, perturbationMagnitude: 0.1f),
+			roughnessPattern: TexturePattern.Lines<Real>(1f, 0f, false, perturbationMagnitude: 0.1f)
 		);
-		using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap();
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap, normalMap, ormMap);
 		using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 5.2f);
-		using var light = factory.LightBuilder.CreatePointLight(instance.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f));
-		using var scene = factory.SceneBuilder.CreateScene(includeBackdrop: false);
+		using var light = factory.LightBuilder.CreateSpotLight(camera.Position, camera.ViewDirection, color: ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f), coneAngle: 25f, intenseBeamAngle: 10f, brightness: 0.4f, highQuality: true);
+		using var sunlight = factory.LightBuilder.CreateDirectionalLight(new Direction(0f, 0f, -1f), StandardColor.LightingSunRiseSet, showSunDisc: true, brightness: 1f);
+		using var scene = factory.SceneBuilder.CreateScene();
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
+		scene.SetBackdrop(StandardColor.Black);
 		scene.Add(instance);
 		scene.Add(light);
+		scene.Add(sunlight);
+		sunlight.SetSunDiscParameters(new() { Scaling = 10f, FringingScaling = 1.5f });
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
-		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(8d)) {
-			_ = loop.IterateOnce();
+		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(8.6d)) {
+			var dt = (float) loop.IterateOnce().TotalSeconds;
 			renderer.Render();
 
-			instance.MoveBy(Direction.Backward * 0.007f);
-			instance.RotateBy(1.9f % Direction.Up);
-			instance.RotateBy(-1.4f % Direction.Right);
-			light.Position = instance.Position + Direction.Backward * 0.6f;
+			instance.MoveBy(Direction.Backward * 0.01f);
+			instance.RotateBy(2f * 0.19f % Direction.Up);
+			instance.RotateBy(2f * -0.14f % Direction.Right);
+			light.Position = camera.Position;
+			light.ConeDirection = (light.Position >> instance.Position).Direction * new Rotation(10f * MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 2f), Direction.Down);
+			sunlight.RotateBy(new Rotation(200f * dt, Direction.Down));
 
 			light.Color = light.Color.WithHueAdjustedBy(1f);
 		}

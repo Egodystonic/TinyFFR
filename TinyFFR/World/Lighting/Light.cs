@@ -28,15 +28,6 @@ public readonly struct Light : ILight, IDisposable, IEquatable<Light>, IStringSp
 		get => Implementation.GetType(_handle);
 	}
 
-	public Location Position {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetPosition(_handle);
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		set => Implementation.SetPosition(_handle, value);
-	}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetPosition(Location position) => Position = position;
-
 	public ColorVect Color {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetColor(_handle);
@@ -89,7 +80,6 @@ public readonly struct Light : ILight, IDisposable, IEquatable<Light>, IStringSp
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
 
-	public void MoveBy(Vect translation) => Implementation.TranslateBy(_handle, translation);
 	public void AdjustColorHueBy(Angle adjustment) => Color = Color.WithHueAdjustedBy(adjustment);
 	public void AdjustColorSaturationBy(float adjustment) => Color = Color.WithSaturationAdjustedBy(adjustment);
 	public void AdjustColorLightnessBy(float adjustment) => Color = Color.WithLightnessAdjustedBy(adjustment);

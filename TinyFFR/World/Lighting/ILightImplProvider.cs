@@ -11,17 +11,22 @@ namespace Egodystonic.TinyFFR.World;
 public interface ILightImplProvider : IDisposableResourceImplProvider {
 	LightType GetType(ResourceHandle handle);
 
-	Location GetPosition(ResourceHandle handle);
-	void SetPosition(ResourceHandle handle, Location newPosition);
-
 	ColorVect GetColor(ResourceHandle handle);
 	void SetColor(ResourceHandle handle, ColorVect newColor);
 
 	void SetUniversalBrightness(ResourceHandle handle, float newBrightness);
 	float GetUniversalBrightness(ResourceHandle handle);
+	void AdjustBrightnessBy(ResourceHandle handle, float adjustment);
+	void ScaleBrightnessBy(ResourceHandle handle, float scalar);
+
+	Location GetPointLightPosition(ResourceHandle<PointLight> handle);
+	void SetPointLightPosition(ResourceHandle<PointLight> handle, Location newPosition);
 
 	float GetPointLightMaxIlluminationRadius(ResourceHandle<PointLight> handle);
 	void SetPointLightMaxIlluminationRadius(ResourceHandle<PointLight> handle, float newRadius);
+
+	Location GetSpotLightPosition(ResourceHandle<SpotLight> handle);
+	void SetSpotLightPosition(ResourceHandle<SpotLight> handle, Location newPosition);
 
 	float GetSpotLightMaxIlluminationDistance(ResourceHandle<SpotLight> handle);
 	void SetSpotLightMaxIlluminationDistance(ResourceHandle<SpotLight> handle, float newDistance);
@@ -35,7 +40,8 @@ public interface ILightImplProvider : IDisposableResourceImplProvider {
 	Angle GetSpotLightIntenseBeamAngle(ResourceHandle<SpotLight> handle);
 	void SetSpotLightIntenseBeamAngle(ResourceHandle<SpotLight> handle, Angle newAngle);
 
-	void TranslateBy(ResourceHandle handle, Vect translation);
-	void AdjustBrightnessBy(ResourceHandle handle, float adjustment);
-	void ScaleBrightnessBy(ResourceHandle handle, float scalar);
+	Direction GetDirectionalLightDirection(ResourceHandle<DirectionalLight> handle);
+	void SetDirectionalLightDirection(ResourceHandle<DirectionalLight> handle, Direction newDirection);
+
+	void SetDirectionalLightSunDiscParameters(ResourceHandle<DirectionalLight> handle, SunDiscConfig config);
 }

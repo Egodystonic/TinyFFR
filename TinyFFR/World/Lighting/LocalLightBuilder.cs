@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using System.Collections.Generic;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Factory.Local;
@@ -29,8 +30,9 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 
 		AllocatePointLight(out var handle).ThrowIfFailure();
 		var resHandle = new ResourceHandle<PointLight>(handle);
-		SetUpBaseLight(config.BaseConfig, resHandle.Ident, LightType.PointLight);
+		SetUpBaseLight(config.BaseConfig, resHandle.Ident, LightType.Point);
 		SetUniversalBrightness(resHandle, config.InitialBrightness);
+		SetPointLightPosition(resHandle, config.InitialPosition);
 		SetPointLightMaxIlluminationRadius(resHandle, config.InitialMaxIlluminationRadius);
 		return HandleToInstance(resHandle);
 	}
@@ -39,44 +41,41 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 
-		AllocateSpotLight(config.IsHighAccuracy, out var handle).ThrowIfFailure();
+		AllocateSpotLight(config.IsHighQuality, out var handle).ThrowIfFailure();
 		var resHandle = new ResourceHandle<SpotLight>(handle);
 		var beamAngle = config.InitialIntenseBeamAngle;
 		var coneAngle = config.InitialConeAngle;
 		AdjustSpotlightAngles(ref coneAngle, ref beamAngle, adjustingCone: true);
-		SetUpBaseLight(config.BaseConfig, resHandle.Ident, LightType.SpotLight, beamAngle, coneAngle);
+		SetUpBaseLight(config.BaseConfig, resHandle.Ident, LightType.Spot, beamAngle, coneAngle);
 		SetUniversalBrightness(resHandle, config.InitialBrightness);
+		SetSpotLightPosition(resHandle, config.InitialPosition);
 		SetSpotLightMaxIlluminationDistance(resHandle, config.InitialMaxIlluminationDistance);
 		SetSpotLightConeDirection(resHandle, config.InitialConeDirection);
 		SetSpotLightRadii(handle, ConvertSpotLightAngleToFilamentAngle(beamAngle), ConvertSpotLightAngleToFilamentAngle(coneAngle));
 		return HandleToInstance(resHandle);
 	}
 
+	public DirectionalLight CreateDirectionalLight(in DirectionalLightCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+
+		AllocateSunLight(config.ShowSunDisc, out var handle).ThrowIfFailure();
+		var resHandle = new ResourceHandle<DirectionalLight>(handle);
+		SetUpBaseLight(config.BaseConfig, resHandle.Ident, LightType.Directional);
+		SetUniversalBrightness(resHandle, config.InitialBrightness);
+		SetDirectionalLightDirection(resHandle, config.InitialDirection);
+		return HandleToInstance(resHandle);
+	}
+
 	void SetUpBaseLight(in LightCreationConfig config, ResourceIdent ident, LightType lightType, Angle? spotLightInner = null, Angle? spotLightOuter = null) {
 		_activeLightMap.Add(ident.RawResourceHandle, new(lightType, ident.TypeHandle, config.InitialBrightness, spotLightInner ?? Angle.Zero, spotLightOuter ?? Angle.Zero));
 		_globals.StoreResourceNameIfNotEmpty(ident, config.Name);
-		SetLightPosition(ident.RawResourceHandle, config.InitialPosition.ToVector3());
 		SetLightColor(ident.RawResourceHandle, config.InitialColor.ToVector3());
 	}
 
 	public LightType GetType(ResourceHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeLightMap[handle].Type;
-	}
-
-	public Location GetPosition(ResourceHandle handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		GetLightPosition(handle, out var result).ThrowIfFailure();
-		return Location.FromVector3(result);
-	}
-	public void SetPosition(ResourceHandle handle, Location newPosition) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		SetLightPosition(handle, newPosition.ToVector3()).ThrowIfFailure();
-	}
-	public void TranslateBy(ResourceHandle handle, Vect translation) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		GetLightPosition(handle, out var result).ThrowIfFailure();
-		SetLightPosition(handle, result + translation.ToVector3()).ThrowIfFailure();
 	}
 
 	public ColorVect GetColor(ResourceHandle handle) {
@@ -97,15 +96,20 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		switch (_activeLightMap[handle].Type) {
-			case LightType.PointLight:
+			case LightType.Point:
 				newBrightness = PointLight.ClampBrightnessToValidRange(newBrightness);
 				var pointLightLumens = PointLight.BrightnessToLumensNoClamp(newBrightness);
 				SetPointLightLumens(handle, pointLightLumens).ThrowIfFailure();
 				break;
-			case LightType.SpotLight:
+			case LightType.Spot:
 				newBrightness = SpotLight.ClampBrightnessToValidRange(newBrightness);
 				var spotLightLumens = SpotLight.BrightnessToLumensNoClamp(newBrightness);
 				SetSpotLightLumens(handle, spotLightLumens).ThrowIfFailure();
+				break;
+			case LightType.Directional:
+				newBrightness = DirectionalLight.ClampBrightnessToValidRange(newBrightness);
+				var directionalLightLumens = DirectionalLight.BrightnessToLuxNoClamp(newBrightness);
+				SetSunLightLux(handle, directionalLightLumens).ThrowIfFailure();
 				break;
 		}
 		_activeLightMap[handle] = _activeLightMap[handle] with { Brightness = newBrightness };
@@ -120,45 +124,65 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 		SetUniversalBrightness(handle, _activeLightMap[handle].Brightness * scalar);
 	}
 
+	public Location GetPointLightPosition(ResourceHandle<PointLight> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		GetLightPosition(handle, out var result).ThrowIfFailure();
+		return Location.FromVector3(result);
+	}
+	public void SetPointLightPosition(ResourceHandle<PointLight> handle, Location newPosition) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		SetLightPosition(handle, newPosition.ToVector3()).ThrowIfFailure();
+	}
+
 	public float GetPointLightMaxIlluminationRadius(ResourceHandle<PointLight> handle) {
-		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.PointLight);
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Point);
 		GetPointLightMaxIlluminationRadius(handle, out var result).ThrowIfFailure();
 		return result;
 	}
 	public void SetPointLightMaxIlluminationRadius(ResourceHandle<PointLight> handle, float newRadius) {
-		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.PointLight);
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Point);
 		if (!newRadius.IsNonNegativeAndFinite()) newRadius = 0f;
 		LocalLightBuilder.SetPointLightMaxIlluminationRadius(handle, newRadius).ThrowIfFailure();
 	}
 
+	public Location GetSpotLightPosition(ResourceHandle<SpotLight> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		GetLightPosition(handle, out var result).ThrowIfFailure();
+		return Location.FromVector3(result);
+	}
+	public void SetSpotLightPosition(ResourceHandle<SpotLight> handle, Location newPosition) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		SetLightPosition(handle, newPosition.ToVector3()).ThrowIfFailure();
+	}
+
 	public float GetSpotLightMaxIlluminationDistance(ResourceHandle<SpotLight> handle) {
-		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.SpotLight);
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Spot);
 		GetSpotLightMaxDistance(handle, out var result).ThrowIfFailure();
 		return result;
 	}
 	public void SetSpotLightMaxIlluminationDistance(ResourceHandle<SpotLight> handle, float newDistance) {
-		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.SpotLight);
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Spot);
 		if (!newDistance.IsNonNegativeAndFinite()) newDistance = 0f;
 		SetSpotLightMaxDistance(handle, newDistance).ThrowIfFailure();
 	}
 
 	public Direction GetSpotLightConeDirection(ResourceHandle<SpotLight> handle) {
-		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.SpotLight);
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Spot);
 		GetSpotLightDirection(handle, out var result).ThrowIfFailure();
 		return Direction.FromVector3PreNormalized(result);
 	}
 	public void SetSpotLightConeDirection(ResourceHandle<SpotLight> handle, Direction newDirection) {
-		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.SpotLight);
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Spot);
 		if (newDirection == Direction.None) newDirection = SpotLightCreationConfig.DefaultInitialConeDirection;
 		SetSpotLightDirection(handle, newDirection.ToVector3()).ThrowIfFailure();
 	}
 
 	public Angle GetSpotLightConeAngle(ResourceHandle<SpotLight> handle) {
-		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.SpotLight);
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Spot);
 		return _activeLightMap[handle].SpotLightOuter;
 	}
 	public void SetSpotLightConeAngle(ResourceHandle<SpotLight> handle, Angle coneAngle) {
-		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.SpotLight);
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Spot);
 		var curLightParams = _activeLightMap[handle];
 		var beamAngle = curLightParams.SpotLightInner;
 		AdjustSpotlightAngles(ref coneAngle, ref beamAngle, adjustingCone: true);
@@ -168,11 +192,11 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 	}
 
 	public Angle GetSpotLightIntenseBeamAngle(ResourceHandle<SpotLight> handle) {
-		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.SpotLight);
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Spot);
 		return _activeLightMap[handle].SpotLightInner;
 	}
 	public void SetSpotLightIntenseBeamAngle(ResourceHandle<SpotLight> handle, Angle beamAngle) {
-		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.SpotLight);
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Spot);
 		var curLightParams = _activeLightMap[handle];
 		var coneAngle = curLightParams.SpotLightOuter;
 		AdjustSpotlightAngles(ref coneAngle, ref beamAngle, adjustingCone: false);
@@ -195,6 +219,31 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 	}
 	static float ConvertSpotLightAngleToFilamentAngle(Angle angle) => angle.Radians * 0.5f;
 
+	public Direction GetDirectionalLightDirection(ResourceHandle<DirectionalLight> handle) {
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Directional);
+		GetSunLightDirection(handle, out var result).ThrowIfFailure();
+		return Direction.FromVector3PreNormalized(result);
+	}
+	public void SetDirectionalLightDirection(ResourceHandle<DirectionalLight> handle, Direction newDirection) {
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Directional);
+		SetSunLightDirection(handle, newDirection.ToVector3()).ThrowIfFailure();
+	}
+
+	public void SetDirectionalLightSunDiscParameters(ResourceHandle<DirectionalLight> handle, SunDiscConfig config) {
+		const float DefaultAngularSizeDegrees = 0.545f;
+		const float DefaultHaloCoefficient = 10f;
+		const float DefaultHaloFalloffExponent = 80f;
+		
+		ThrowIfThisOrHandleIsDisposedOrIncorrectType(handle, LightType.Directional);
+
+		SetSunParameters(
+			handle,
+			DefaultAngularSizeDegrees * Single.Clamp(config.Scaling, 0f, 36f),
+			DefaultHaloCoefficient * MathF.Sqrt(Single.Clamp(config.FringingScaling, 0.05f, 10f)),
+			DefaultHaloFalloffExponent / Single.Clamp(config.FringingOuterRadiusScaling, 0.05f, 10f)
+		).ThrowIfFailure();
+	}
+
 	public string GetNameAsNewStringObject(ResourceHandle handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return new String(_globals.GetResourceName(RawHandleToIdent(handle), DefaultLightName));
@@ -212,6 +261,8 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 	PointLight HandleToInstance(ResourceHandle<PointLight> h) => new(h, this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	SpotLight HandleToInstance(ResourceHandle<SpotLight> h) => new(h, this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	DirectionalLight HandleToInstance(ResourceHandle<DirectionalLight> h) => new(h, this);
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_light_position")]
@@ -328,6 +379,50 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 	);
 
 
+
+
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_sun_light")]
+	static extern InteropResult AllocateSunLight(
+		InteropBool includeSunDisc,
+		out UIntPtr outLightHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_sun_light_lux")]
+	static extern InteropResult GetSunLightLux(
+		UIntPtr lightHandle,
+		out float outLux
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_sun_light_lux")]
+	static extern InteropResult SetSunLightLux(
+		UIntPtr lightHandle,
+		float newLux
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_sun_light_direction")]
+	static extern InteropResult GetSunLightDirection(
+		UIntPtr lightHandle,
+		out Vector3 outDirection
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_sun_light_direction")]
+	static extern InteropResult SetSunLightDirection(
+		UIntPtr lightHandle,
+		Vector3 newDirection
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_sun_parameters")]
+	static extern InteropResult SetSunParameters(
+		UIntPtr lightHandle,
+		float angularSize,
+		float haloCoefficient,
+		float haloFalloffExponent
+	);
+
+
+
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_light")]
 	static extern InteropResult DisposeLight(
 		UIntPtr lightHandle
@@ -341,11 +436,14 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 	void Dispose(ResourceHandle handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
 		switch (_activeLightMap[handle].Type) {
-			case LightType.PointLight:
+			case LightType.Point:
 				_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance((ResourceHandle<PointLight>) handle));
 				break;
-			case LightType.SpotLight:
+			case LightType.Spot:
 				_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance((ResourceHandle<SpotLight>) handle));
+				break;
+			case LightType.Directional:
+				_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance((ResourceHandle<DirectionalLight>) handle));
 				break;
 			default:
 				throw new InvalidOperationException($"Unexpected light type '{_activeLightMap[handle].Type}'.");

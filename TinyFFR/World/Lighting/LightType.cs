@@ -5,6 +5,7 @@ namespace Egodystonic.TinyFFR.World;
 
 public enum LightType {
 	Other,
-	PointLight,
-	SpotLight
+	Point,
+	Spot,
+	Directional
 }

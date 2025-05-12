@@ -128,7 +128,7 @@ scene.Add(modelInstance);
 scene.Remove(modelInstance);
 scene.Remove(modelInstance);
 scene.Add(modelInstance);
-scene.SetBackdropWithoutIndirectLighting(hdr, 0.7f);
+scene.SetBackdrop(hdr);
 
 var cameraDistance = 3f;
 var chestToCameraStartVect = Direction.Backward * cameraDistance;
@@ -148,7 +148,8 @@ window.LockCursor = true;
 
 var spotlight = factory.LightBuilder.CreateSpotLight(new SpotLightCreationConfig {
 	InitialColor = ColorVect.FromHueSaturationLightness(0f, 1f, 0.8f),
-	IsHighAccuracy = false
+	InitialBrightness = 0.3f,
+	IsHighQuality = false
 });
 scene.Add(spotlight);
 scene.Add(spotlight);
@@ -156,6 +157,10 @@ scene.Remove(spotlight);
 scene.Remove(spotlight);
 scene.Add(spotlight);
 var parameter = 0;
+
+var sunlight = factory.LightBuilder.CreateDirectionalLight(color: StandardColor.LightingSunRiseSet, showSunDisc: true);
+scene.Add(sunlight);
+var sunlightDiscConfig = new SunDiscConfig();
 
 var frameCount = 0;
 var startTime = Stopwatch.StartNew();
@@ -198,6 +203,47 @@ while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurren
 		if (parameter < 0 || parameter > 4) parameter = parameterBefore;
 		if (key == KeyboardOrMouseKey.U) delta += 1;
 		if (key == KeyboardOrMouseKey.D) delta -= 1;
+
+		if (key == KeyboardOrMouseKey.Space) sunlight.Direction = camera.ViewDirection;
+		if (key == KeyboardOrMouseKey.N) {
+			sunlight.Brightness -= 0.25f;
+			Console.WriteLine(sunlight.Brightness);
+		}
+		if (key == KeyboardOrMouseKey.M) {
+			sunlight.Brightness += 0.25f;
+			Console.WriteLine(sunlight.Brightness);
+		}
+
+		if (key == KeyboardOrMouseKey.F2) {
+			sunlightDiscConfig = sunlightDiscConfig with { Scaling = sunlightDiscConfig.Scaling + 1f };
+			Console.WriteLine(sunlightDiscConfig);
+			sunlight.SetSunDiscParameters(sunlightDiscConfig);
+		}
+		if (key == KeyboardOrMouseKey.F1) {
+			sunlightDiscConfig = sunlightDiscConfig with { Scaling = sunlightDiscConfig.Scaling - 1f };
+			Console.WriteLine(sunlightDiscConfig);
+			sunlight.SetSunDiscParameters(sunlightDiscConfig);
+		}
+		if (key == KeyboardOrMouseKey.F4) {
+			sunlightDiscConfig = sunlightDiscConfig with { FringingScaling = sunlightDiscConfig.FringingScaling + 0.1f };
+			Console.WriteLine(sunlightDiscConfig);
+			sunlight.SetSunDiscParameters(sunlightDiscConfig);
+		}
+		if (key == KeyboardOrMouseKey.F3) {
+			sunlightDiscConfig = sunlightDiscConfig with { FringingScaling = sunlightDiscConfig.FringingScaling - 0.1f };
+			Console.WriteLine(sunlightDiscConfig);
+			sunlight.SetSunDiscParameters(sunlightDiscConfig);
+		}
+		if (key == KeyboardOrMouseKey.F6) {
+			sunlightDiscConfig = sunlightDiscConfig with { FringingOuterRadiusScaling = sunlightDiscConfig.FringingOuterRadiusScaling + 0.1f };
+			Console.WriteLine(sunlightDiscConfig);
+			sunlight.SetSunDiscParameters(sunlightDiscConfig);
+		}
+		if (key == KeyboardOrMouseKey.F5) {
+			sunlightDiscConfig = sunlightDiscConfig with { FringingOuterRadiusScaling = sunlightDiscConfig.FringingOuterRadiusScaling - 0.1f };
+			Console.WriteLine(sunlightDiscConfig);
+			sunlight.SetSunDiscParameters(sunlightDiscConfig);
+		}
 	}
 	var parameterName = parameter switch {
 		0 => "Max Illumination Distance",

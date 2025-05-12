@@ -239,10 +239,78 @@ StartExportedFunc(set_spot_light_max_distance, LightHandle light, float newDista
 	native_impl_lights::set_spot_light_max_distance(light, newDistance);
 	EndExportedFunc
 }
+void native_impl_lights::get_sun_light_direction(LightHandle light, float3* outDir) {
+	ThrowIfNull(outDir, "Out direction pointer was null.");
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	*outDir = manager.getDirection(instance);
+}
+StartExportedFunc(get_sun_light_direction, LightHandle light, float3* outDir) {
+	native_impl_lights::get_sun_light_direction(light, outDir);
+	EndExportedFunc
+}
+void native_impl_lights::set_sun_light_direction(LightHandle light, float3 newDir) {
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	manager.setDirection(instance, newDir);
+}
+StartExportedFunc(set_sun_light_direction, LightHandle light, float3 newDir) {
+	native_impl_lights::set_sun_light_direction(light, newDir);
+	EndExportedFunc
+}
 
 
 
 
+
+void native_impl_lights::allocate_sun_light(interop_bool includeSunDisc, LightHandle* outLight) {
+	ThrowIfNull(outLight, "Light out pointer was null.");
+
+	auto entity = filament_engine->getEntityManager().create();
+
+	auto result = LightManager::Builder(includeSunDisc ? LightManager::Type::SUN : LightManager::Type::DIRECTIONAL).build(*filament_engine, entity);
+	if (result != LightManager::Builder::Success) Throw("Could not create entity.");
+	*outLight = Entity::smuggle(entity);
+}
+StartExportedFunc(allocate_sun_light, interop_bool includeSunDisc, LightHandle* outLight) {
+	native_impl_lights::allocate_sun_light(includeSunDisc, outLight);
+	EndExportedFunc
+}
+void native_impl_lights::get_sun_light_lux(LightHandle light, float* outLux) {
+	ThrowIfNull(outLux, "Out lux pointer was null.");
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	*outLux = manager.getIntensity(instance);
+}
+StartExportedFunc(get_sun_light_lux, LightHandle light, float* outLux) {
+	native_impl_lights::get_sun_light_lux(light, outLux);
+	EndExportedFunc
+}
+void native_impl_lights::set_sun_light_lux(LightHandle light, float newLux) {
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	manager.setIntensity(instance, newLux);
+}
+StartExportedFunc(set_sun_light_lux, LightHandle light, float newLux) {
+	native_impl_lights::set_sun_light_lux(light, newLux);
+	EndExportedFunc
+}
+void native_impl_lights::set_sun_parameters(LightHandle light, float angularSize, float haloCoefficient, float haloFalloffExponent) {
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	manager.setSunAngularRadius(instance, angularSize);
+	manager.setSunHaloSize(instance, haloCoefficient);
+	manager.setSunHaloFalloff(instance, haloFalloffExponent);
+}
+StartExportedFunc(set_sun_parameters, LightHandle light, float angularSize, float haloCoefficient, float haloFalloffExponent) {
+	native_impl_lights::set_sun_parameters(light, angularSize, haloCoefficient, haloFalloffExponent);
+	EndExportedFunc
+}
 
 
 

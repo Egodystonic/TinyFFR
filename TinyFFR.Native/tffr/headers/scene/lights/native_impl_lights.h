@@ -31,5 +31,12 @@ public:
 	static void get_spot_light_max_distance(LightHandle light, float* outDistance);
 	static void set_spot_light_max_distance(LightHandle light, float newDistance);
 
+	static void allocate_sun_light(interop_bool includeSunDisc, LightHandle* outLight);
+	static void get_sun_light_lux(LightHandle light, float* outLux);
+	static void set_sun_light_lux(LightHandle light, float newLux);
+	static void get_sun_light_direction(LightHandle light, float3* outDirection);
+	static void set_sun_light_direction(LightHandle light, float3 newDirection);
+	static void set_sun_parameters(LightHandle light, float angularSize, float haloCoefficient, float haloFalloffExponent);
+
 	static void dispose_light(LightHandle light);
 };

@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.World;
 
 public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
-	public const float DefaultLux = 20_000f;
+	public const float DefaultLux = 10_000f;
 	public const float MaxBrightness = 1E15f;
 
 	readonly ResourceHandle<Scene> _handle;

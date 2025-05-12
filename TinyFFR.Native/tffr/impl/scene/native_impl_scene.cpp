@@ -65,6 +65,7 @@ void native_impl_scene::create_scene_backdrop_color(float3 color, float indirect
 	*outSkybox = Skybox::Builder()
 		.color(float4{ color, 1.0f })
 		.intensity(indirectLightingIntensity)
+		.showSun(true)
 		.build(*filament_engine);
 	ThrowIfNull(*outSkybox, "Could not create skybox.");
 
@@ -88,6 +89,7 @@ void native_impl_scene::create_scene_backdrop_texture(TextureHandle skyboxTextur
 	*outSkybox = Skybox::Builder()
 		.environment(skyboxTexture)
 		.intensity(indirectLightingIntensity)
+		.showSun(true)
 		.build(*filament_engine);
 	ThrowIfNull(*outSkybox, "Could not create skybox.");
 

@@ -6,7 +6,7 @@ using System;
 
 namespace Egodystonic.TinyFFR.World;
 
-public interface ILight : IPositionedSceneObject, IColoredSceneObject {
+public interface ILight : IColoredSceneObject {
 	LightType Type { get; }
 	ColorVect Color { get; set; }
 	float Brightness { get; set; }
