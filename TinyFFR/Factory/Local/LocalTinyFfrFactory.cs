@@ -4,6 +4,8 @@
 using System;
 using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Local;
+using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Interop;
@@ -41,6 +43,8 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	public IWindowBuilder WindowBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _windowBuilder;
 	public ILocalApplicationLoopBuilder ApplicationLoopBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _applicationLoopBuilder;
 	public ILocalAssetLoader AssetLoader => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _assetLoader;
+	public IMeshBuilder MeshBuilder => AssetLoader.MeshBuilder;
+	public IMaterialBuilder MaterialBuilder => AssetLoader.MaterialBuilder;
 	public ICameraBuilder CameraBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _cameraBuilder;
 	public ILightBuilder LightBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _lightBuilder;
 	public IObjectBuilder ObjectBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _objectBuilder;

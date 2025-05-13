@@ -154,6 +154,9 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void RotateBy(Rotation rotation) => Implementation.Rotate(_handle, rotation);
 
+	public void LookAt(Location target) => ViewDirection = Position.DirectionTo(target);
+	public void LookAt(Location target, Direction upDirection) => SetViewAndUpDirection(Position.DirectionTo(target), upDirection);
+
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Implementation.Dispose(_handle);

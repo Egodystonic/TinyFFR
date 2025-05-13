@@ -2,6 +2,8 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using Egodystonic.TinyFFR.Assets;
+using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Rendering;
@@ -15,6 +17,8 @@ public interface ITinyFfrFactory : IDisposable {
 	IDisplayDiscoverer DisplayDiscoverer { get; }
 	IApplicationLoopBuilder ApplicationLoopBuilder { get; }
 	IAssetLoader AssetLoader { get; }
+	IMeshBuilder MeshBuilder => AssetLoader.MeshBuilder;
+	IMaterialBuilder MaterialBuilder => AssetLoader.MaterialBuilder;
 	ICameraBuilder CameraBuilder { get; }
 	ILightBuilder LightBuilder { get; }
 	IObjectBuilder ObjectBuilder { get; }

@@ -306,6 +306,7 @@ void native_impl_lights::set_sun_parameters(LightHandle light, float angularSize
 	manager.setSunAngularRadius(instance, angularSize);
 	manager.setSunHaloSize(instance, haloCoefficient);
 	manager.setSunHaloFalloff(instance, haloFalloffExponent);
+	manager.setShadowCaster(instance, true);
 }
 StartExportedFunc(set_sun_parameters, LightHandle light, float angularSize, float haloCoefficient, float haloFalloffExponent) {
 	native_impl_lights::set_sun_parameters(light, angularSize, haloCoefficient, haloFalloffExponent);

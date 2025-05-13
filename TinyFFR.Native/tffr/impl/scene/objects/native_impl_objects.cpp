@@ -25,6 +25,8 @@ void native_impl_objects::allocate_model_instance(mat4f* initialTransformPtr, Ve
 		.geometry(0, RenderableManager::PrimitiveType::TRIANGLES, vb, ib, ibStartIndex, ibCount)
 		.material(0, material)
 		.boundingBox({ { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 } })
+		.castShadows(true)
+		.receiveShadows(true)
 		.build(*filament_engine, entity);
 
 	if (result != RenderableManager::Builder::Success) Throw("Could not create entity.");
