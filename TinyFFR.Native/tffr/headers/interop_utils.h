@@ -13,4 +13,6 @@ public:
 	static void combine_in_concat_space(const char* a, const char* b, const char* c, const char* d);
 	static void combine_in_concat_space(const char* a, const char* b, const char* c, const char* d, const char* e);
 	static void copy_concat_space_to_err_buffer();
+
+	static void int_str(char* inputArray, size_t inputArrayLen, int val);
 };

@@ -139,6 +139,8 @@ typedef uint8_t interop_bool;
 
 #endif
 
-
+#define IntStr(name, val) \
+	char name[50]; \
+	interop_utils::int_str(name, 50, val); \
 
 #pragma endregion

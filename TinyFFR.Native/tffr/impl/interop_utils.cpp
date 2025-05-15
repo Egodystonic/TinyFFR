@@ -33,6 +33,11 @@ void interop_utils::copy_concat_space_to_err_buffer() {
 	strcpy_s(interop_utils::error_msg_buffer, interop_utils::error_msg_buf_len, interop_utils::err_msg_concat_space);
 }
 
+void interop_utils::int_str(char* inputArray, size_t inputArrayLen, int val) {
+	snprintf(inputArray, inputArrayLen, "%d", val);
+}
+
+
 extern "C" __declspec(dllexport) char* get_err_buffer() {
 	return interop_utils::error_msg_buffer;
 }

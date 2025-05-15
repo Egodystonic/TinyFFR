@@ -72,7 +72,7 @@ class LocalShadowsTest {
 			subTest(factory.LightBuilder, scene, loop, renderer, camera);
 		}
 
-		ExecSubTest(PointInBoxes);
+		ExecSubTest(PointsInBoxes);
 		ExecSubTest(SpotlightRotating);
 		ExecSubTest(SpotlightsMoving);
 		ExecSubTest(DirectionalLongShadows);
@@ -181,7 +181,7 @@ class LocalShadowsTest {
 		scene.Remove(directionalLight);
 	}
 
-	void PointInBoxes(ILightBuilder lightBuilder, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
+	void PointsInBoxes(ILightBuilder lightBuilder, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
 		using var pointLightUpper = lightBuilder.CreatePointLight(
 			color: StandardColor.LightingSunRiseSet,
 			castsShadows: true,
@@ -222,7 +222,7 @@ class LocalShadowsTest {
 				pointLightUpper.AdjustColorHueBy(-30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(7.5d))) {
-				pointLightUpper.CastsShadows = false;
+				pointLightUpper.CastsShadows = false; // TODO clue here: Changing this affects the next test...
 			}
 
 			renderer.Render();
