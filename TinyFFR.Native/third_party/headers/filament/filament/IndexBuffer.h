@@ -26,7 +26,9 @@
 #include <backend/BufferDescriptor.h>
 
 #include <utils/compiler.h>
+#include <utils/StaticString.h>
 
+#include <stdint.h>
 #include <stddef.h>
 
 namespace filament {
@@ -58,7 +60,7 @@ public:
         UINT = uint8_t(backend::ElementType::UINT),      //!< 32-bit indices
     };
 
-    class Builder : public BuilderBase<BuilderDetails> {
+    class Builder : public BuilderBase<BuilderDetails>, public BuilderNameMixin<Builder> {
         friend struct BuilderDetails;
     public:
         Builder() noexcept;
@@ -83,13 +85,39 @@ public:
         Builder& bufferType(IndexType indexType) noexcept;
 
         /**
+         * Associate an optional name with this IndexBuffer for debugging purposes.
+         *
+         * name will show in error messages and should be kept as short as possible. The name is
+         * truncated to a maximum of 128 characters.
+         *
+         * The name string is copied during this method so clients may free its memory after
+         * the function returns.
+         *
+         * @param name A string to identify this IndexBuffer
+         * @param len Length of name, should be less than or equal to 128
+         * @return This Builder, for chaining calls.
+         * @deprecated Use name(utils::StaticString const&) instead.
+         */
+        UTILS_DEPRECATED
+        Builder& name(const char* UTILS_NONNULL name, size_t len) noexcept;
+
+        /**
+         * Associate an optional name with this IndexBuffer for debugging purposes.
+         *
+         * name will show in error messages and should be kept as short as possible.
+         *
+         * @param name A string literal to identify this IndexBuffer
+         * @return This Builder, for chaining calls.
+         */
+        Builder& name(utils::StaticString const& name) noexcept;
+
+        /**
          * Creates the IndexBuffer object and returns a pointer to it. After creation, the index
          * buffer is uninitialized. Use IndexBuffer::setBuffer() to initialize the IndexBuffer.
          *
          * @param engine Reference to the filament::Engine to associate this IndexBuffer with.
          *
-         * @return pointer to the newly created object or nullptr if exceptions are disabled and
-         *         an error occurred.
+         * @return pointer to the newly created object.
          *
          * @exception utils::PostConditionPanic if a runtime error occurred, such as running out of
          *            memory or other resources.
@@ -97,7 +125,7 @@ public:
          *
          * @see IndexBuffer::setBuffer
          */
-        IndexBuffer* build(Engine& engine);
+        IndexBuffer* UTILS_NONNULL build(Engine& engine);
     private:
         friend class FIndexBuffer;
     };

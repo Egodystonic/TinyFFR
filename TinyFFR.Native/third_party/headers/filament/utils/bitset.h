@@ -45,8 +45,8 @@ namespace utils {
  */
 
 template<typename T, size_t N = 1,
-        typename = typename std::enable_if<std::is_integral<T>::value &&
-                                           std::is_unsigned<T>::value>::type>
+        typename = std::enable_if_t<std::is_integral_v<T> &&
+                                           std::is_unsigned_v<T>>>
 class UTILS_PUBLIC bitset {
     T storage[N];
 
@@ -58,6 +58,11 @@ public:
 
     bitset() noexcept {
         std::fill(std::begin(storage), std::end(storage), 0);
+    }
+
+    template<typename U, typename = typename std::enable_if_t<N == 1, U>>
+    explicit bitset(U value) noexcept {
+        storage[0] = value;
     }
 
     T getBitsAt(size_t n) const noexcept {
@@ -94,6 +99,8 @@ public:
 
     size_t size() const noexcept { return N * BITS_PER_WORD; }
 
+    bool empty() const noexcept { return none(); }
+
     bool test(size_t bit) const noexcept { return operator[](bit); }
 
     void set(size_t b) noexcept {
@@ -117,9 +124,12 @@ public:
         storage[b / BITS_PER_WORD] ^= T(1) << (b % BITS_PER_WORD);
     }
 
-
     void reset() noexcept {
         std::fill(std::begin(storage), std::end(storage), 0);
+    }
+
+    void clear() noexcept {
+        reset();
     }
 
     bool operator[](size_t b) const noexcept {

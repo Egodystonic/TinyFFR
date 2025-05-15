@@ -18,10 +18,14 @@
 #define TNT_FILAMENT_INSTANCEBUFFER_H
 
 #include <filament/FilamentAPI.h>
-
 #include <filament/Engine.h>
 
+#include <utils/compiler.h>
+#include <utils/StaticString.h>
+
 #include <math/mathfwd.h>
+
+#include <stddef.h>
 
 namespace filament {
 
@@ -35,7 +39,7 @@ class UTILS_PUBLIC InstanceBuffer : public FilamentAPI {
     struct BuilderDetails;
 
 public:
-    class Builder : public BuilderBase<BuilderDetails> {
+    class Builder : public BuilderBase<BuilderDetails>, public BuilderNameMixin<Builder> {
         friend struct BuilderDetails;
 
     public:
@@ -45,7 +49,7 @@ public:
          *                      >= 1 and <= \c Engine::getMaxAutomaticInstances()
          * @see Engine::getMaxAutomaticInstances
          */
-        Builder(size_t instanceCount) noexcept;
+        explicit Builder(size_t instanceCount) noexcept;
 
         Builder(Builder const& rhs) noexcept;
         Builder(Builder&& rhs) noexcept;
@@ -65,12 +69,39 @@ public:
          * @param localTransforms an array of math::mat4f with length instanceCount, must remain
          *                        valid until after build() is called
          */
-        Builder& localTransforms(math::mat4f const* localTransforms) noexcept;
+        Builder& localTransforms(math::mat4f const* UTILS_NULLABLE localTransforms) noexcept;
+
+        /**
+         * Associate an optional name with this InstanceBuffer for debugging purposes.
+         *
+         * name will show in error messages and should be kept as short as possible. The name is
+         * truncated to a maximum of 128 characters.
+         *
+         * The name string is copied during this method so clients may free its memory after
+         * the function returns.
+         *
+         * @param name A string to identify this InstanceBuffer
+         * @param len Length of name, should be less than or equal to 128
+         * @return This Builder, for chaining calls.
+         * @deprecated Use name(utils::StaticString const&) instead.
+         */
+        UTILS_DEPRECATED
+        Builder& name(const char* UTILS_NONNULL name, size_t len) noexcept;
+
+        /**
+         * Associate an optional name with this InstanceBuffer for debugging purposes.
+         *
+         * name will show in error messages and should be kept as short as possible.
+         *
+         * @param name A string literal to identify this InstanceBuffer
+         * @return This Builder, for chaining calls.
+         */
+        Builder& name(utils::StaticString const& name) noexcept;
 
         /**
          * Creates the InstanceBuffer object and returns a pointer to it.
          */
-        InstanceBuffer* build(Engine& engine);
+        InstanceBuffer* UTILS_NONNULL build(Engine& engine);
 
     private:
         friend class FInstanceBuffer;
@@ -90,7 +121,8 @@ public:
      * @param count the number of local transforms
      * @param offset index of the first instance to set local transforms
      */
-    void setLocalTransforms(math::mat4f const* localTransforms, size_t count, size_t offset = 0);
+    void setLocalTransforms(math::mat4f const* UTILS_NONNULL localTransforms,
+            size_t count, size_t offset = 0);
 
 protected:
     // prevent heap allocation

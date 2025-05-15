@@ -24,7 +24,10 @@
 #include <backend/DriverEnums.h>
 #include <backend/TargetBufferInfo.h>
 
+#include <utils/compiler.h>
+
 #include <stddef.h>
+#include <stdint.h>
 
 namespace filament {
 
@@ -103,7 +106,7 @@ public:
          * @param texture The associated texture object.
          * @return A reference to this Builder for chaining calls.
          */
-        Builder& texture(AttachmentPoint attachment, Texture* texture) noexcept;
+        Builder& texture(AttachmentPoint attachment, Texture* UTILS_NULLABLE texture) noexcept;
 
         /**
          * Sets the mipmap level for a given attachment point.
@@ -115,7 +118,7 @@ public:
         Builder& mipLevel(AttachmentPoint attachment, uint8_t level) noexcept;
 
         /**
-         * Sets the cubemap face for a given attachment point.
+         * Sets the face for cubemap textures at the given attachment point.
          *
          * @param attachment The attachment point.
          * @param face The associated cubemap face.
@@ -124,7 +127,12 @@ public:
         Builder& face(AttachmentPoint attachment, CubemapFace face) noexcept;
 
         /**
-         * Sets the layer for a given attachment point (for 3D textures).
+         * Sets an index of a single layer for 2d array, cubemap array, and 3d textures at the given
+         * attachment point.
+         *
+         * For cubemap array textures, layer is translated into an array index and face according to
+         *  - index: layer / 6
+         *  - face: layer % 6
          *
          * @param attachment The attachment point.
          * @param layer The associated cubemap layer.
@@ -133,12 +141,24 @@ public:
         Builder& layer(AttachmentPoint attachment, uint32_t layer) noexcept;
 
         /**
+         * Sets the starting index of the 2d array textures for multiview at the given attachment
+         * point.
+         *
+         * This requires COLOR and DEPTH attachments (if set) to be of 2D array textures.
+         *
+         * @param attachment The attachment point.
+         * @param layerCount The number of layers used for multiview, starting from baseLayer.
+         * @param baseLayer The starting index of the 2d array texture.
+         * @return A reference to this Builder for chaining calls.
+         */
+        Builder& multiview(AttachmentPoint attachment, uint8_t layerCount, uint8_t baseLayer = 0) noexcept;
+
+        /**
          * Creates the RenderTarget object and returns a pointer to it.
          *
-         * @return pointer to the newly created object or nullptr if exceptions are disabled and
-         *         an error occurred.
+         * @return pointer to the newly created object.
          */
-        RenderTarget* build(Engine& engine);
+        RenderTarget* UTILS_NONNULL build(Engine& engine);
 
     private:
         friend class FRenderTarget;
@@ -149,7 +169,7 @@ public:
      * @param attachment Attachment point
      * @return A Texture object or nullptr if no texture is set for this attachment point
      */
-    Texture* getTexture(AttachmentPoint attachment) const noexcept;
+    Texture* UTILS_NULLABLE getTexture(AttachmentPoint attachment) const noexcept;
 
     /**
      * Returns the mipmap level set on the given attachment point

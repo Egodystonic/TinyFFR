@@ -28,6 +28,12 @@
 
 #include <math/mathfwd.h>
 
+#include <type_traits>
+
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
+
 namespace filament {
 
 class Material;
@@ -41,7 +47,7 @@ class UTILS_PUBLIC MaterialInstance : public FilamentAPI {
     using StringLiteralHelper = const char[N];
 
     struct StringLiteral {
-        const char* data;
+        const char* UTILS_NONNULL data;
         size_t size;
         template<size_t N>
         StringLiteral(StringLiteralHelper<N> const& s) noexcept // NOLINT(google-explicit-constructor)
@@ -50,35 +56,35 @@ class UTILS_PUBLIC MaterialInstance : public FilamentAPI {
     };
 
 public:
-    using CullingMode = filament::backend::CullingMode;
-    using TransparencyMode = filament::TransparencyMode;
-    using DepthFunc = filament::backend::SamplerCompareFunc;
-    using StencilCompareFunc = filament::backend::SamplerCompareFunc;
-    using StencilOperation = filament::backend::StencilOperation;
-    using StencilFace = filament::backend::StencilFace;
+    using CullingMode = backend::CullingMode;
+    using TransparencyMode = TransparencyMode;
+    using DepthFunc = backend::SamplerCompareFunc;
+    using StencilCompareFunc = backend::SamplerCompareFunc;
+    using StencilOperation = backend::StencilOperation;
+    using StencilFace = backend::StencilFace;
 
     template<typename T>
-    using is_supported_parameter_t = typename std::enable_if<
-            std::is_same<float, T>::value ||
-            std::is_same<int32_t, T>::value ||
-            std::is_same<uint32_t, T>::value ||
-            std::is_same<math::int2, T>::value ||
-            std::is_same<math::int3, T>::value ||
-            std::is_same<math::int4, T>::value ||
-            std::is_same<math::uint2, T>::value ||
-            std::is_same<math::uint3, T>::value ||
-            std::is_same<math::uint4, T>::value ||
-            std::is_same<math::float2, T>::value ||
-            std::is_same<math::float3, T>::value ||
-            std::is_same<math::float4, T>::value ||
-            std::is_same<math::mat4f, T>::value ||
+    using is_supported_parameter_t = std::enable_if_t<
+            std::is_same_v<float, T> ||
+            std::is_same_v<int32_t, T> ||
+            std::is_same_v<uint32_t, T> ||
+            std::is_same_v<math::int2, T> ||
+            std::is_same_v<math::int3, T> ||
+            std::is_same_v<math::int4, T> ||
+            std::is_same_v<math::uint2, T> ||
+            std::is_same_v<math::uint3, T> ||
+            std::is_same_v<math::uint4, T> ||
+            std::is_same_v<math::float2, T> ||
+            std::is_same_v<math::float3, T> ||
+            std::is_same_v<math::float4, T> ||
+            std::is_same_v<math::mat4f, T> ||
             // these types are slower as they need a layout conversion
-            std::is_same<bool, T>::value ||
-            std::is_same<math::bool2, T>::value ||
-            std::is_same<math::bool3, T>::value ||
-            std::is_same<math::bool4, T>::value ||
-            std::is_same<math::mat3f, T>::value
-    >::type;
+            std::is_same_v<bool, T> ||
+            std::is_same_v<math::bool2, T> ||
+            std::is_same_v<math::bool3, T> ||
+            std::is_same_v<math::bool4, T> ||
+            std::is_same_v<math::mat3f, T>
+    >;
 
     /**
      * Creates a new MaterialInstance using another MaterialInstance as a template for initialization.
@@ -89,17 +95,18 @@ public:
      * @param name  A name for the new MaterialInstance or nullptr to use the template's name
      * @return      A new MaterialInstance
      */
-    static MaterialInstance* duplicate(MaterialInstance const* other, const char* name = nullptr) noexcept;
+    static MaterialInstance* UTILS_NONNULL duplicate(MaterialInstance const* UTILS_NONNULL other,
+            const char* UTILS_NULLABLE name = nullptr) noexcept;
 
     /**
      * @return the Material associated with this instance
      */
-    Material const* getMaterial() const noexcept;
+    Material const* UTILS_NONNULL getMaterial() const noexcept;
 
     /**
      * @return the name associated with this instance
      */
-    const char* getName() const noexcept;
+    const char* UTILS_NONNULL getName() const noexcept;
 
     /**
      * Set a uniform by name
@@ -110,17 +117,17 @@ public:
      * @throws utils::PreConditionPanic if name doesn't exist or no-op if exceptions are disabled.
      */
     template<typename T, typename = is_supported_parameter_t<T>>
-    void setParameter(const char* name, size_t nameLength, T const& value);
+    void setParameter(const char* UTILS_NONNULL name, size_t nameLength, T const& value);
 
     /** inline helper to provide the name as a null-terminated string literal */
     template<typename T, typename = is_supported_parameter_t<T>>
-    inline void setParameter(StringLiteral name, T const& value) {
+    void setParameter(StringLiteral const name, T const& value) {
         setParameter<T>(name.data, name.size, value);
     }
 
     /** inline helper to provide the name as a null-terminated C string */
     template<typename T, typename = is_supported_parameter_t<T>>
-    inline void setParameter(const char* name, T const& value) {
+    void setParameter(const char* UTILS_NONNULL name, T const& value) {
         setParameter<T>(name, strlen(name), value);
     }
 
@@ -133,19 +140,22 @@ public:
      * @param values        Array of values to set to the named parameter array.
      * @param count         Size of the array to set.
      * @throws utils::PreConditionPanic if name doesn't exist or no-op if exceptions are disabled.
+     * @see Material::hasParameter
      */
     template<typename T, typename = is_supported_parameter_t<T>>
-    void setParameter(const char* name, size_t nameLength, const T* values, size_t count);
+    void setParameter(const char* UTILS_NONNULL name, size_t nameLength,
+            const T* UTILS_NONNULL values, size_t count);
 
     /** inline helper to provide the name as a null-terminated string literal */
     template<typename T, typename = is_supported_parameter_t<T>>
-    inline void setParameter(StringLiteral name, const T* values, size_t count) {
+    void setParameter(StringLiteral const name, const T* UTILS_NONNULL values, size_t const count) {
         setParameter<T>(name.data, name.size, values, count);
     }
 
     /** inline helper to provide the name as a null-terminated C string */
     template<typename T, typename = is_supported_parameter_t<T>>
-    inline void setParameter(const char* name, const T* values, size_t count) {
+    void setParameter(const char* UTILS_NONNULL name,
+                      const T* UTILS_NONNULL values, size_t const count) {
         setParameter<T>(name, strlen(name), values, count);
     }
 
@@ -162,18 +172,18 @@ public:
      * @param sampler       Sampler parameters.
      * @throws utils::PreConditionPanic if name doesn't exist or no-op if exceptions are disabled.
      */
-    void setParameter(const char* name, size_t nameLength,
-            Texture const* texture, TextureSampler const& sampler);
+    void setParameter(const char* UTILS_NONNULL name, size_t nameLength,
+            Texture const* UTILS_NULLABLE texture, TextureSampler const& sampler);
 
     /** inline helper to provide the name as a null-terminated string literal */
-    inline void setParameter(StringLiteral name,
-            Texture const* texture, TextureSampler const& sampler) {
+    void setParameter(StringLiteral const name,
+                      Texture const* UTILS_NULLABLE texture, TextureSampler const& sampler) {
         setParameter(name.data, name.size, texture, sampler);
     }
 
     /** inline helper to provide the name as a null-terminated C string */
-    inline void setParameter(const char* name,
-            Texture const* texture, TextureSampler const& sampler) {
+    void setParameter(const char* UTILS_NONNULL name,
+                      Texture const* UTILS_NULLABLE texture, TextureSampler const& sampler) {
         setParameter(name, strlen(name), texture, sampler);
     }
 
@@ -188,15 +198,16 @@ public:
      * @param color         Array of read, green, blue channels values.
      * @throws utils::PreConditionPanic if name doesn't exist or no-op if exceptions are disabled.
      */
-    void setParameter(const char* name, size_t nameLength, RgbType type, math::float3 color);
+    void setParameter(const char* UTILS_NONNULL name, size_t nameLength,
+            RgbType type, math::float3 color);
 
     /** inline helper to provide the name as a null-terminated string literal */
-    inline void setParameter(StringLiteral name, RgbType type, math::float3 color) {
+    void setParameter(StringLiteral const name, RgbType const type, math::float3 const color) {
         setParameter(name.data, name.size, type, color);
     }
 
     /** inline helper to provide the name as a null-terminated C string */
-    inline void setParameter(const char* name, RgbType type, math::float3 color) {
+    void setParameter(const char* UTILS_NONNULL name, RgbType const type, math::float3 const color) {
         setParameter(name, strlen(name), type, color);
     }
 
@@ -211,16 +222,43 @@ public:
      * @param color         Array of read, green, blue and alpha channels values.
      * @throws utils::PreConditionPanic if name doesn't exist or no-op if exceptions are disabled.
      */
-    void setParameter(const char* name, size_t nameLength, RgbaType type, math::float4 color);
+    void setParameter(const char* UTILS_NONNULL name, size_t nameLength,
+            RgbaType type, math::float4 color);
 
     /** inline helper to provide the name as a null-terminated string literal */
-    inline void setParameter(StringLiteral name, RgbaType type, math::float4 color) {
+    void setParameter(StringLiteral const name, RgbaType const type, math::float4 const color) {
         setParameter(name.data, name.size, type, color);
     }
 
     /** inline helper to provide the name as a null-terminated C string */
-    inline void setParameter(const char* name, RgbaType type, math::float4 color) {
+    void setParameter(const char* UTILS_NONNULL name, RgbaType const type, math::float4 const color) {
         setParameter(name, strlen(name), type, color);
+    }
+
+    /**
+     * Gets the value of a parameter by name.
+     * 
+     * Note: Only supports non-texture parameters such as numeric and math types.
+     * 
+     * @param name          Name of the parameter as defined by Material. Cannot be nullptr.
+     * @param nameLength    Length in `char` of the name parameter.
+     * @throws utils::PreConditionPanic if name doesn't exist or no-op if exceptions are disabled.
+     * 
+     * @see Material::hasParameter
+     */
+    template<typename T>
+    T getParameter(const char* UTILS_NONNULL name, size_t nameLength) const;
+
+    /** inline helper to provide the name as a null-terminated C string */
+    template<typename T, typename = is_supported_parameter_t<T>>
+    T getParameter(StringLiteral const name) const {
+        return getParameter<T>(name.data, name.size);
+    }
+
+    /** inline helper to provide the name as a null-terminated C string */
+    template<typename T, typename = is_supported_parameter_t<T>>
+    T getParameter(const char* UTILS_NONNULL name) const {
+        return getParameter<T>(name, strlen(name));
     }
 
     /**
@@ -339,9 +377,20 @@ public:
     void setCullingMode(CullingMode culling) noexcept;
 
     /**
+     * Overrides the default triangle culling state that was set on the material separately for the
+     * color and shadow passes
+     */
+    void setCullingMode(CullingMode colorPassCullingMode, CullingMode shadowPassCullingMode) noexcept;
+
+    /**
      * Returns the face culling mode.
      */
     CullingMode getCullingMode() const noexcept;
+
+    /**
+     * Returns the face culling mode for the shadow passes.
+     */
+    CullingMode getShadowCullingMode() const noexcept;
 
     /**
      * Overrides the default color-buffer write state that was set on the material.

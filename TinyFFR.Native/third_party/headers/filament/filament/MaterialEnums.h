@@ -28,7 +28,7 @@
 namespace filament {
 
 // update this when a new version of filament wouldn't work with older materials
-static constexpr size_t MATERIAL_VERSION = 47;
+static constexpr size_t MATERIAL_VERSION = 60;
 
 /**
  * Supported shading models
@@ -80,6 +80,8 @@ enum class BlendingMode : uint8_t {
     MULTIPLY,
     //! material brightens what's behind it
     SCREEN,
+    //! custom blending function
+    CUSTOM,
 };
 
 /**
@@ -201,7 +203,7 @@ enum class ReflectionMode : uint8_t {
 // can't really use std::underlying_type<AttributeIndex>::type because the driver takes a uint32_t
 using AttributeBitset = utils::bitset32;
 
-static constexpr size_t MATERIAL_PROPERTIES_COUNT = 26;
+static constexpr size_t MATERIAL_PROPERTIES_COUNT = 30;
 enum class Property : uint8_t {
     BASE_COLOR,              //!< float4, all shading models
     ROUGHNESS,               //!< float,  lit shading models only
@@ -223,12 +225,16 @@ enum class Property : uint8_t {
     EMISSIVE,                //!< float4, all shading models
     NORMAL,                  //!< float3, all shading models only, except unlit
     POST_LIGHTING_COLOR,     //!< float4, all shading models
+    POST_LIGHTING_MIX_FACTOR,//!< float, all shading models
     CLIP_SPACE_TRANSFORM,    //!< mat4,   vertex shader only
     ABSORPTION,              //!< float3, how much light is absorbed by the material
     TRANSMISSION,            //!< float,  how much light is refracted through the material
     IOR,                     //!< float,  material's index of refraction
     MICRO_THICKNESS,         //!< float, thickness of the thin layer
     BENT_NORMAL,             //!< float3, all shading models only, except unlit
+    SPECULAR_FACTOR,         //!< float, lit shading models only, except subsurface and cloth
+    SPECULAR_COLOR_FACTOR,   //!< float3, lit shading models only, except subsurface and cloth
+    SHADOW_STRENGTH,         //!< float, [0, 1] strength of shadows received by this material
 
     // when adding new Properties, make sure to update MATERIAL_PROPERTIES_COUNT
 };
@@ -250,6 +256,9 @@ enum class UserVariantFilterBit : UserVariantFilterMask {
 } // namespace filament
 
 template<> struct utils::EnableBitMaskOperators<filament::UserVariantFilterBit>
+        : public std::true_type {};
+
+template<> struct utils::EnableIntegerOperators<filament::UserVariantFilterBit>
         : public std::true_type {};
 
 #endif

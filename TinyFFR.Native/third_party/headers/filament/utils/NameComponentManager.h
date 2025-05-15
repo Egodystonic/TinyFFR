@@ -24,7 +24,6 @@
 #include <utils/SingleInstanceComponentManager.h>
 
 #include <stddef.h>
-#include <stdint.h>
 
 namespace utils {
 
@@ -48,7 +47,7 @@ class EntityManager;
  * printf("%s\n", names->getName(names->getInstance(myEntity));
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-class UTILS_PUBLIC NameComponentManager : private SingleInstanceComponentManager<utils::CString> {
+class UTILS_PUBLIC NameComponentManager : private SingleInstanceComponentManager<CString> {
 public:
     using Instance = EntityInstance<NameComponentManager>;
 
@@ -98,7 +97,7 @@ public:
     const char* getName(Instance instance) const noexcept;
 
     void gc(EntityManager& em) noexcept {
-        SingleInstanceComponentManager<utils::CString>::gc(em, [this](Entity e) {
+        SingleInstanceComponentManager<CString>::gc(em, [this](Entity e) {
             removeComponent(e);
         });
     }

@@ -10,9 +10,10 @@ Can't add binaries to repo because files are too big. Here's instructions on how
 				release/
 			sdl/
 
-	Download Filament 1.47.0 https://github.com/google/filament/releases/tag/v1.47.0 (windows build for now)
+	Download Filament 1.60.0 https://github.com/google/filament/releases/tag/v1.60.0 (windows build for now)
 		Copy the libs from /lib/x86_64/mt/ to binaries/filament/release/
 		Copy the libs from /lib/x86_64/mtd/ to binaries/filament/debug/
+		Copy the headers from /include/ to headers/filament/
 	
 	Download Assimp 5.3.1 https://github.com/assimp/assimp/releases/tag/v5.3.1 (source code)
 		Extract the downloaded source somewhere (not in the TinyFFR repo, we'll copy the resultant libs after)

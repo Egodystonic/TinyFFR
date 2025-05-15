@@ -17,9 +17,11 @@
 #ifndef TNT_FILAMENT_BACKEND_TARGETBUFFERINFO_H
 #define TNT_FILAMENT_BACKEND_TARGETBUFFERINFO_H
 
-#include <backend/DriverEnums.h>
 #include <backend/Handle.h>
 
+#include <utils/ostream.h>
+
+#include <stddef.h>
 #include <stdint.h>
 
 namespace filament::backend {
@@ -27,13 +29,33 @@ namespace filament::backend {
 //! \privatesection
 
 struct TargetBufferInfo {
+    // note: the parameters of this constructor are not in the order of this structure's fields
+    TargetBufferInfo(Handle<HwTexture> handle, uint8_t level, uint16_t layer) noexcept
+            : handle(handle), level(level), layer(layer) {
+    }
+
+    TargetBufferInfo(Handle<HwTexture> handle, uint8_t level) noexcept
+            : handle(handle), level(level) {
+    }
+
+    TargetBufferInfo(Handle<HwTexture> handle) noexcept // NOLINT(*-explicit-constructor)
+            : handle(handle) {
+    }
+
+    TargetBufferInfo() noexcept = default;
+
     // texture to be used as render target
     Handle<HwTexture> handle;
 
     // level to be used
     uint8_t level = 0;
 
-    // for cubemaps and 3D textures. See TextureCubemapFace for the face->layer mapping
+    // - For cubemap textures, this indicates the face of the cubemap. See TextureCubemapFace for
+    //   the face->layer mapping)
+    // - For 2d array, cubemap array, and 3d textures, this indicates an index of a single layer of
+    //   them.
+    // - For multiview textures (i.e., layerCount for the RenderTarget is greater than 1), this
+    //   indicates a starting layer index of the current 2d array texture for multiview.
     uint16_t layer = 0;
 };
 
@@ -58,7 +80,7 @@ public:
 
     MRT() noexcept = default;
 
-    MRT(TargetBufferInfo const& color) noexcept // NOLINT(hicpp-explicit-conversions)
+    MRT(TargetBufferInfo const& color) noexcept // NOLINT(hicpp-explicit-conversions, *-explicit-constructor)
             : mInfos{ color } {
     }
 

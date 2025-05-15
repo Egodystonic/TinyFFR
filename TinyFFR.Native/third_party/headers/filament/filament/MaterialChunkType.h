@@ -45,13 +45,16 @@ enum UTILS_PUBLIC ChunkType : uint64_t {
     MaterialEssl1 = charTo64bitNum("MAT_ESS1"),
     MaterialSpirv = charTo64bitNum("MAT_SPIR"),
     MaterialMetal = charTo64bitNum("MAT_METL"),
+    MaterialWgsl = charTo64bitNum("MAT_WGSL"),
+    MaterialMetalLibrary = charTo64bitNum("MAT_MLIB"),
     MaterialShaderModels = charTo64bitNum("MAT_SMDL"),
-    MaterialSamplerBindings = charTo64bitNum("MAT_SAMP"),
-    MaterialUniformBindings = charTo64bitNum("MAT_UNIF"),
     MaterialBindingUniformInfo = charTo64bitNum("MAT_UFRM"),
     MaterialAttributeInfo = charTo64bitNum("MAT_ATTR"),
+    MaterialDescriptorBindingsInfo = charTo64bitNum("MAT_DBDI"),
+    MaterialDescriptorSetLayoutInfo = charTo64bitNum("MAT_DSLI"),
     MaterialProperties = charTo64bitNum("MAT_PROP"),
     MaterialConstants = charTo64bitNum("MAT_CONS"),
+    MaterialPushConstants = charTo64bitNum("MAT_PCON"),
 
     MaterialName = charTo64bitNum("MAT_NAME"),
     MaterialVersion = charTo64bitNum("MAT_VERS"),
@@ -59,6 +62,7 @@ enum UTILS_PUBLIC ChunkType : uint64_t {
     MaterialFeatureLevel = charTo64bitNum("MAT_FEAT"),
     MaterialShading = charTo64bitNum("MAT_SHAD"),
     MaterialBlendingMode = charTo64bitNum("MAT_BLEN"),
+    MaterialBlendFunction = charTo64bitNum("MAT_BLFN"),
     MaterialTransparencyMode = charTo64bitNum("MAT_TRMD"),
     MaterialMaskThreshold = charTo64bitNum("MAT_THRS"),
     MaterialShadowMultiplier = charTo64bitNum("MAT_SHML"),
@@ -89,9 +93,11 @@ enum UTILS_PUBLIC ChunkType : uint64_t {
 
     MaterialVertexDomain = charTo64bitNum("MAT_VEDO"),
     MaterialInterpolation = charTo64bitNum("MAT_INTR"),
+    MaterialStereoscopicType = charTo64bitNum("MAT_STER"),
 
     DictionaryText = charTo64bitNum("DIC_TEXT"),
     DictionarySpirv = charTo64bitNum("DIC_SPIR"),
+    DictionaryMetalLibrary = charTo64bitNum("DIC_MLIB"),
 };
 
 } // namespace filamat

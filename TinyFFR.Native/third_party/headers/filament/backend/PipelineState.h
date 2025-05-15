@@ -20,7 +20,9 @@
 #include <backend/DriverEnums.h>
 #include <backend/Handle.h>
 
-#include <limits>
+#include <utils/ostream.h>
+
+#include <array>
 
 #include <stdint.h>
 
@@ -28,15 +30,20 @@ namespace filament::backend {
 
 //! \privatesection
 
+struct PipelineLayout {
+    using SetLayout = std::array<Handle<HwDescriptorSetLayout>, MAX_DESCRIPTOR_SET_COUNT>;
+    SetLayout setLayout;      // 16
+};
+
 struct PipelineState {
-    Handle<HwProgram> program;
-    RasterState rasterState;
-    StencilState stencilState;
-    PolygonOffset polygonOffset;
-    Viewport scissor{ 0, 0,
-                      (uint32_t)std::numeric_limits<int32_t>::max(),
-                      (uint32_t)std::numeric_limits<int32_t>::max()
-    };
+    Handle<HwProgram> program;                                              //  4
+    Handle<HwVertexBufferInfo> vertexBufferInfo;                            //  4
+    PipelineLayout pipelineLayout;                                          // 16
+    RasterState rasterState;                                                //  4
+    StencilState stencilState;                                              // 12
+    PolygonOffset polygonOffset;                                            //  8
+    PrimitiveType primitiveType = PrimitiveType::TRIANGLES;                 //  1
+    uint8_t padding[3] = {};                                                //  3
 };
 
 } // namespace filament::backend

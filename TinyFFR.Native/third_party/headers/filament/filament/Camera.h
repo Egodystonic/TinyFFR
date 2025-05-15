@@ -28,6 +28,11 @@
 #include <math/vec4.h>
 #include <math/mat4.h>
 
+#include <math.h>
+
+#include <stdint.h>
+#include <stddef.h>
+
 namespace utils {
 class Entity;
 } // namespace utils
@@ -56,7 +61,7 @@ namespace filament {
  *  filament::Camera* myCamera = engine->createCamera(myCameraEntity);
  *  myCamera->setProjection(45, 16.0/9.0, 0.1, 1.0);
  *  myCamera->lookAt({0, 1.60, 1}, {0, 0, 0});
- *  engine->destroyCameraComponent(myCamera);
+ *  engine->destroyCameraComponent(myCameraEntity);
  * ~~~~~~~~~~~
  *
  *
@@ -184,7 +189,7 @@ public:
      * @see Fov.
      */
     static math::mat4 projection(Fov direction, double fovInDegrees,
-            double aspect, double near, double far = std::numeric_limits<double>::infinity());
+            double aspect, double near, double far = INFINITY);
 
     /** Returns the projection matrix from the focal length.
      *
@@ -194,7 +199,7 @@ public:
      * @param far         distance in world units from the camera to the far plane. \p far > \p near.
      */
     static math::mat4 projection(double focalLengthInMillimeters,
-            double aspect, double near, double far = std::numeric_limits<double>::infinity());
+            double aspect, double near, double far = INFINITY);
 
 
     /** Sets the projection matrix from a frustum defined by six planes.
@@ -301,7 +306,7 @@ public:
      * @see setCustomProjection
      * @see Engine::Config::stereoscopicEyeCount
      */
-    void setCustomEyeProjection(math::mat4 const* projection, size_t count,
+    void setCustomEyeProjection(math::mat4 const* UTILS_NONNULL projection, size_t count,
             math::mat4 const& projectionForCulling, double near, double far);
 
     /** Sets an additional matrix that scales the projection matrix.
@@ -395,14 +400,14 @@ public:
      *          engine.getTransformManager().getInstance(camera->getEntity()), model);
      * ~~~~~~~~~~~
      *
-     * @param model The camera position and orientation provided as a rigid transform matrix.
+     * @param modelMatrix The camera position and orientation provided as a rigid transform matrix.
      *
      * @note The Camera "looks" towards its -z axis
      *
      * @warning \p model must be a rigid transform
      */
-    void setModelMatrix(const math::mat4& model) noexcept;
-    void setModelMatrix(const math::mat4f& model) noexcept; //!< @overload
+    void setModelMatrix(const math::mat4& modelMatrix) noexcept;
+    void setModelMatrix(const math::mat4f& modelMatrix) noexcept; //!< @overload
 
     /** Set the position of an eye relative to this Camera (head).
      *

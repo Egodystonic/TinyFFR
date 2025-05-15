@@ -26,6 +26,10 @@
 #include <backend/DriverEnums.h>
 
 #include <utils/compiler.h>
+#include <utils/StaticString.h>
+
+#include <stddef.h>
+#include <stdint.h>
 
 namespace filament {
 
@@ -58,7 +62,7 @@ public:
     using AttributeType = backend::ElementType;
     using BufferDescriptor = backend::BufferDescriptor;
 
-    class Builder : public BuilderBase<BuilderDetails> {
+    class Builder : public BuilderBase<BuilderDetails>, public BuilderNameMixin<Builder> {
         friend struct BuilderDetails;
     public:
         Builder() noexcept;
@@ -156,18 +160,44 @@ public:
         Builder& advancedSkinning(bool enabled) noexcept;
 
         /**
+         * Associate an optional name with this VertexBuffer for debugging purposes.
+         *
+         * name will show in error messages and should be kept as short as possible. The name is
+         * truncated to a maximum of 128 characters.
+         *
+         * The name string is copied during this method so clients may free its memory after
+         * the function returns.
+         *
+         * @param name A string to identify this VertexBuffer
+         * @param len Length of name, should be less than or equal to 128
+         * @return This Builder, for chaining calls.
+         * @deprecated Use name(utils::StaticString const&) instead.
+         */
+        UTILS_DEPRECATED
+        Builder& name(const char* UTILS_NONNULL name, size_t len) noexcept;
+
+        /**
+         * Associate an optional name with this VertexBuffer for debugging purposes.
+         *
+         * name will show in error messages and should be kept as short as possible.
+         *
+         * @param name A string literal to identify this VertexBuffer
+         * @return This Builder, for chaining calls.
+         */
+        Builder& name(utils::StaticString const& name) noexcept;
+
+        /**
          * Creates the VertexBuffer object and returns a pointer to it.
          *
          * @param engine Reference to the filament::Engine to associate this VertexBuffer with.
          *
-         * @return pointer to the newly created object or nullptr if exceptions are disabled and
-         *         an error occurred.
+         * @return pointer to the newly created object.
          *
          * @exception utils::PostConditionPanic if a runtime error occurred, such as running out of
          *            memory or other resources.
          * @exception utils::PreConditionPanic if a parameter to a builder function was invalid.
          */
-        VertexBuffer* build(Engine& engine);
+        VertexBuffer* UTILS_NONNULL build(Engine& engine);
 
     private:
         friend class FVertexBuffer;
@@ -206,7 +236,8 @@ public:
      *                    and Builder::bufferCount() - 1.
      * @param bufferObject The handle to the GPU data that will be used in this buffer slot.
      */
-    void setBufferObjectAt(Engine& engine, uint8_t bufferIndex, BufferObject const* bufferObject);
+    void setBufferObjectAt(Engine& engine, uint8_t bufferIndex,
+            BufferObject const*  UTILS_NONNULL bufferObject);
 
 protected:
     // prevent heap allocation

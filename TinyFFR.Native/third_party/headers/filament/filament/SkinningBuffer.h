@@ -22,11 +22,12 @@
 #include <filament/RenderableManager.h>
 
 #include <utils/compiler.h>
+#include <utils/StaticString.h>
 
 #include <math/mathfwd.h>
 
 #include <stddef.h>
-
+#include <stdint.h>
 
 namespace filament {
 
@@ -39,7 +40,7 @@ class UTILS_PUBLIC SkinningBuffer : public FilamentAPI {
     struct BuilderDetails;
 
 public:
-    class Builder : public BuilderBase<BuilderDetails> {
+    class Builder : public BuilderBase<BuilderDetails>, public BuilderNameMixin<Builder> {
         friend struct BuilderDetails;
     public:
         Builder() noexcept;
@@ -70,12 +71,38 @@ public:
         Builder& initialize(bool initialize = true) noexcept;
 
         /**
+         * Associate an optional name with this SkinningBuffer for debugging purposes.
+         *
+         * name will show in error messages and should be kept as short as possible. The name is
+         * truncated to a maximum of 128 characters.
+         *
+         * The name string is copied during this method so clients may free its memory after
+         * the function returns.
+         *
+         * @param name A string to identify this SkinningBuffer
+         * @param len Length of name, should be less than or equal to 128
+         * @return This Builder, for chaining calls.
+         * @deprecated Use name(utils::StaticString const&) instead.
+         */
+        UTILS_DEPRECATED
+        Builder& name(const char* UTILS_NONNULL name, size_t len) noexcept;
+
+        /**
+         * Associate an optional name with this SkinningBuffer for debugging purposes.
+         *
+         * name will show in error messages and should be kept as short as possible.
+         *
+         * @param name A string literal to identify this SkinningBuffer
+         * @return This Builder, for chaining calls.
+         */
+        Builder& name(utils::StaticString const& name) noexcept;
+
+        /**
          * Creates the SkinningBuffer object and returns a pointer to it.
          *
          * @param engine Reference to the filament::Engine to associate this SkinningBuffer with.
          *
-         * @return pointer to the newly created object or nullptr if exceptions are disabled and
-         *         an error occurred.
+         * @return pointer to the newly created object.
          *
          * @exception utils::PostConditionPanic if a runtime error occurred, such as running out of
          *            memory or other resources.
@@ -83,7 +110,7 @@ public:
          *
          * @see SkinningBuffer::setBones
          */
-        SkinningBuffer* build(Engine& engine);
+        SkinningBuffer* UTILS_NONNULL build(Engine& engine);
     private:
         friend class FSkinningBuffer;
     };
@@ -96,7 +123,7 @@ public:
      * @param offset offset in elements (not bytes) in the SkinningBuffer (not in transforms)
      * @see RenderableManager::setSkinningBuffer
      */
-    void setBones(Engine& engine, RenderableManager::Bone const* transforms,
+    void setBones(Engine& engine, RenderableManager::Bone const* UTILS_NONNULL transforms,
             size_t count, size_t offset = 0);
 
     /**
@@ -107,7 +134,7 @@ public:
      * @param offset offset in elements (not bytes) in the SkinningBuffer (not in transforms)
      * @see RenderableManager::setSkinningBuffer
      */
-    void setBones(Engine& engine, math::mat4f const* transforms,
+    void setBones(Engine& engine, math::mat4f const* UTILS_NONNULL transforms,
             size_t count, size_t offset = 0);
 
     /**

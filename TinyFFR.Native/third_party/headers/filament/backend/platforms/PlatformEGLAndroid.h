@@ -17,7 +17,18 @@
 #ifndef TNT_FILAMENT_BACKEND_OPENGL_OPENGL_PLATFORM_EGL_ANDROID_H
 #define TNT_FILAMENT_BACKEND_OPENGL_OPENGL_PLATFORM_EGL_ANDROID_H
 
+#include <backend/AcquiredImage.h>
+#include <backend/Platform.h>
+#include <backend/platforms/OpenGLPlatform.h>
 #include <backend/platforms/PlatformEGL.h>
+
+#include <utils/android/PerformanceHintManager.h>
+#include <utils/compiler.h>
+
+#include <chrono>
+
+#include <stddef.h>
+#include <stdint.h>
 
 namespace filament::backend {
 
@@ -33,8 +44,21 @@ public:
     PlatformEGLAndroid() noexcept;
     ~PlatformEGLAndroid() noexcept override;
 
-protected:
+    /**
+     * Creates an ExternalImage from a EGLImageKHR
+     */
+    ExternalImageHandle UTILS_PUBLIC createExternalImage(AHardwareBuffer const* buffer, bool sRGB) noexcept;
 
+    struct UTILS_PUBLIC ExternalImageDescAndroid {
+        uint32_t width;      // Texture width
+        uint32_t height;     // Texture height
+        TextureFormat format;// Texture format
+        TextureUsage usage;  // Texture usage flags
+    };
+
+    ExternalImageDescAndroid UTILS_PUBLIC getExternalImageDesc(ExternalImageHandle externalImage) noexcept;
+
+protected:
     // --------------------------------------------------------------------------------------------
     // Platform Interface
 
@@ -52,6 +76,13 @@ protected:
 
     void terminate() noexcept override;
 
+    void beginFrame(
+            int64_t monotonic_clock_ns,
+            int64_t refreshIntervalNs,
+            uint32_t frameId) noexcept override;
+
+    void preCommit() noexcept override;
+
     /**
      * Set the presentation time using `eglPresentationTimeANDROID`
      * @param presentationTimeInNanosecond
@@ -64,6 +95,7 @@ protected:
     void attach(Stream* stream, intptr_t tname) noexcept override;
     void detach(Stream* stream) noexcept override;
     void updateTexImage(Stream* stream, int64_t* timestamp) noexcept override;
+    math::mat3f getTransformMatrix(Stream* stream) noexcept override;
 
     /**
      * Converts a AHardwareBuffer to EGLImage
@@ -72,9 +104,48 @@ protected:
      */
     AcquiredImage transformAcquiredImage(AcquiredImage source) noexcept override;
 
+    OpenGLPlatform::ExternalTexture* createExternalImageTexture() noexcept override;
+    void destroyExternalImageTexture(ExternalTexture* texture) noexcept override;
+
+    struct ExternalImageEGLAndroid : public ExternalImageEGL {
+        AHardwareBuffer* aHardwareBuffer = nullptr;
+        uint32_t width;      // Texture width
+        uint32_t height;     // Texture height
+        TextureFormat format;// Texture format
+        TextureUsage usage;  // Texture usage flags
+        bool sRGB = false;
+
+    protected:
+        ~ExternalImageEGLAndroid() override;
+    };
+
+    bool setExternalImage(ExternalImageHandleRef externalImage,
+            ExternalTexture* texture) noexcept override;
+    bool setImage(ExternalImageEGLAndroid const* eglExternalImage,
+            ExternalTexture* texture) noexcept;
+
+protected:
+    bool makeCurrent(ContextType type,
+            SwapChain* drawSwapChain,
+            SwapChain* readSwapChain) noexcept override;
+
 private:
+    struct InitializeJvmForPerformanceManagerIfNeeded {
+        InitializeJvmForPerformanceManagerIfNeeded();
+    };
+
     int mOSVersion;
     ExternalStreamManagerAndroid& mExternalStreamManager;
+    InitializeJvmForPerformanceManagerIfNeeded const mInitializeJvmForPerformanceManagerIfNeeded;
+    utils::PerformanceHintManager mPerformanceHintManager;
+    utils::PerformanceHintManager::Session mPerformanceHintSession;
+
+    using clock = std::chrono::high_resolution_clock;
+    clock::time_point mStartTimeOfActualWork;
+
+    void* mNativeWindowLib = nullptr;
+    int32_t (*ANativeWindow_getBuffersDefaultDataSpace)(ANativeWindow* window) = nullptr;
+    bool mAssertNativeWindowIsValid = false;
 };
 
 } // namespace filament::backend

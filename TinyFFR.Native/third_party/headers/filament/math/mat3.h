@@ -17,14 +17,20 @@
 #ifndef TNT_MATH_MAT3_H
 #define TNT_MATH_MAT3_H
 
-#include <math/TMatHelpers.h>
 #include <math/compiler.h>
 #include <math/quat.h>
 #include <math/vec3.h>
+#include <math/TMatHelpers.h>
+#include <math/TVecHelpers.h>
 
 #include <limits.h>
 #include <stdint.h>
 #include <sys/types.h>
+
+#include <cmath>
+
+#include <assert.h>
+#include <stddef.h>
 
 namespace filament {
 namespace math {
@@ -250,7 +256,7 @@ public:
      */
     friend inline
     constexpr TMat33 orthogonalize(const TMat33& m) noexcept {
-        TMat33 ret(TMat33::NO_INIT);
+        TMat33 ret(NO_INIT);
         ret[0] = normalize(m[0]);
         ret[2] = normalize(cross(ret[0], m[1]));
         ret[1] = normalize(cross(ret[2], ret[0]));

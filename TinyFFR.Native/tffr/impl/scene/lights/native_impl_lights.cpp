@@ -79,10 +79,6 @@ void native_impl_lights::set_light_shadow_caster(LightHandle light, interop_bool
 	auto& manager = filament_engine->getLightManager();
 	auto instance = manager.getInstance(entity);
 	manager.setShadowCaster(instance, isShadowCaster);
-
-	IntStr(lightNum, light);
-	IntStr(onoff, isShadowCaster);
-	Log("Light ", lightNum, " = ", onoff);
 }
 StartExportedFunc(set_light_shadow_caster, LightHandle light, interop_bool isShadowCaster) {
 	native_impl_lights::set_light_shadow_caster(light, isShadowCaster);

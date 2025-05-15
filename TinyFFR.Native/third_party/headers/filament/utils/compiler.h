@@ -104,6 +104,19 @@
 #   define UTILS_UNLIKELY( exp )  (!!(exp))
 #endif
 
+#if __has_builtin(__builtin_expect_with_probability)
+#   ifdef __cplusplus
+#      define UTILS_VERY_LIKELY( exp )    (__builtin_expect_with_probability( !!(exp), true, 0.995 ))
+#      define UTILS_VERY_UNLIKELY( exp )  (__builtin_expect_with_probability( !!(exp), false, 0.995 ))
+#   else
+#      define UTILS_VERY_LIKELY( exp )    (__builtin_expect_with_probability( !!(exp), 1, 0.995 ))
+#      define UTILS_VERY_UNLIKELY( exp )  (__builtin_expect_with_probability( !!(exp), 0, 0.995 ))
+#   endif
+#else
+#   define UTILS_VERY_LIKELY( exp )    (!!(exp))
+#   define UTILS_VERY_UNLIKELY( exp )  (!!(exp))
+#endif
+
 #if __has_builtin(__builtin_prefetch)
 #   define UTILS_PREFETCH( exp ) (__builtin_prefetch(exp))
 #else
@@ -177,6 +190,14 @@
 #   define UTILS_HAS_FEATURE_CXX_THREAD_LOCAL 1
 #else
 #   define UTILS_HAS_FEATURE_CXX_THREAD_LOCAL 0
+#endif
+
+#if defined(__clang__)
+#define UTILS_NONNULL _Nonnull
+#define UTILS_NULLABLE _Nullable
+#else
+#define UTILS_NONNULL
+#define UTILS_NULLABLE
 #endif
 
 #if defined(_MSC_VER)
