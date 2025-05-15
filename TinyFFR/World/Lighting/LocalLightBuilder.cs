@@ -69,7 +69,7 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 
 	void SetUpBaseLight(in LightCreationConfig config, ResourceIdent ident, LightType lightType, Angle? spotLightInner = null, Angle? spotLightOuter = null) {
 		_activeLightMap.Add(ident.RawResourceHandle, new(lightType, ident.TypeHandle, config.InitialBrightness, spotLightInner ?? Angle.Zero, spotLightOuter ?? Angle.Zero));
-		_globals.StoreResourceNameIfNotEmpty(ident, config.Name);
+		_globals.StoreResourceNameOrDefaultIfEmpty(ident, config.Name, DefaultLightName);
 		SetLightColor(ident.RawResourceHandle, config.InitialColor.ToVector3());
 		SetLightShadowCaster(ident.RawResourceHandle, config.CastsShadows);
 	}

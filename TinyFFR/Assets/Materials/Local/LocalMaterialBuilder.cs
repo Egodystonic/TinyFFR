@@ -153,7 +153,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		}
 
 		var handle = (ResourceHandle<Texture>) outHandle;
-		_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
+		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultTextureName);
 		_loadedTextures.Add(handle, new(((uint) generationConfig.Width, (uint) generationConfig.Height)));
 		return HandleToInstance(handle);
 	}
@@ -198,7 +198,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		).ThrowIfFailure();
 		var handle = (ResourceHandle<Material>) outHandle;
 
-		_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
+		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultMaterialName);
 		_activeMaterials.Add(handle);
 		var result = HandleToInstance(handle);
 

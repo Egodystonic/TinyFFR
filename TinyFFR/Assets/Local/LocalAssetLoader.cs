@@ -517,7 +517,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 
 				++_prevCubemapHandle;
 				var handle = (ResourceHandle<EnvironmentCubemap>) _prevCubemapHandle;
-				_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
+				_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultEnvironmentCubemapName);
 				_loadedCubemaps.Add(_prevCubemapHandle, new(skyboxTextureHandle, iblTextureHandle));
 				return HandleToInstance(handle);
 			}

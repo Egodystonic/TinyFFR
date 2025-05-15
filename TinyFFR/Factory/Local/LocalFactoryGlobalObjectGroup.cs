@@ -37,26 +37,24 @@ sealed class LocalFactoryGlobalObjectGroup {
 		_resourceGroupProvider = resourceGroupProviderRef;
 	}
 
-	public void StoreResourceNameIfNotEmpty(ResourceIdent ident, ReadOnlySpan<char> name) {
-		const int DefaultOverrideNameStackBufferLength = 100;
+	public void StoreResourceNameOrDefaultIfEmpty(ResourceIdent ident, ReadOnlySpan<char> name, ReadOnlySpan<char> fallbackStart) {
+		const int DefaultOverrideNameStackBufferLengthAddition = 20;
 
 		if (!name.IsEmpty) {
 			_resourceNameMap.Add(ident, StringPool.RentAndCopy(name));		
 			return;
 		}
 
-		Span<char> tempNameSpace = stackalloc char[DefaultOverrideNameStackBufferLength];
-		var spaceTakenSoFar = 0;
-		if (!ident.TypeHandle.TryFormat(tempNameSpace, out var typeHandleCharCount, "X", CultureInfo.InvariantCulture)) return;
-		spaceTakenSoFar += typeHandleCharCount;
-		if (spaceTakenSoFar >= tempNameSpace.Length) return;
-		tempNameSpace[spaceTakenSoFar] = '/';
-		spaceTakenSoFar++;
+		Span<char> tempNameSpace = stackalloc char[fallbackStart.Length + DefaultOverrideNameStackBufferLengthAddition];
+		fallbackStart.CopyTo(tempNameSpace);
+		tempNameSpace[fallbackStart.Length] = ' ';
+		if (!ident.RawResourceHandle.TryFormat(tempNameSpace[(fallbackStart.Length + 1)..], out var resHandleCharCount, "X", CultureInfo.InvariantCulture)) return;
+		_resourceNameMap.Add(ident, StringPool.RentAndCopy(tempNameSpace[..(fallbackStart.Length + 1 + resHandleCharCount)]));
+	}
 
-		if (!ident.RawResourceHandle.TryFormat(tempNameSpace[spaceTakenSoFar..], out var resHandleCharCount, "0", CultureInfo.InvariantCulture)) return;
-		spaceTakenSoFar += resHandleCharCount;
-
-		_resourceNameMap.Add(ident, StringPool.RentAndCopy(tempNameSpace[..spaceTakenSoFar]));
+	public void StoreResourceNameIfNotEmpty(ResourceIdent ident, ReadOnlySpan<char> name) {
+		if (name.IsEmpty) return;
+		_resourceNameMap.Add(ident, StringPool.RentAndCopy(name));
 	}
 
 	public ReadOnlySpan<char> GetResourceName(ResourceIdent ident, ReadOnlySpan<char> fallback) {

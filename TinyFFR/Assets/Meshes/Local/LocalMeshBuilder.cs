@@ -114,7 +114,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		_nextHandleId++;
 		var handle = new ResourceHandle<Mesh>(_nextHandleId);
 		_activeMeshes.Add(handle, new(vbHandle, ibHandle, 0, indexBufferCount));
-		_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
+		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultMeshName);
 		return new Mesh(handle, this);
 	}
 

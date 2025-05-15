@@ -114,9 +114,6 @@ var meshBuilder = factory.AssetLoader.MeshBuilder;
 // factory.ResourceAllocator.ReturnPooledMemoryBuffer(trianglesMemory);
 // factory.ResourceAllocator.ReturnPooledMemoryBuffer(verticesMemory);
 
-Console.WriteLine(((nuint) 123).ToString("0", CultureInfo.InvariantCulture));
-
-
 using var mesh = assLoad.LoadMesh(@"C:\Users\ben\Documents\Temp\treasure_chest\treasure_chest_4k.gltf");
 using var colorMap = assLoad.LoadTexture(@"C:\Users\ben\Documents\Temp\treasure_chest\textures\treasure_chest_diff_4k.jpg");
 using var normalMap = assLoad.LoadTexture(@"C:\Users\ben\Documents\Temp\treasure_chest\textures\treasure_chest_nor_gl_4k.jpg");
@@ -165,7 +162,6 @@ var parameter = 0;
 var sunlight = factory.LightBuilder.CreateDirectionalLight(color: StandardColor.LightingSunRiseSet, showSunDisc: true);
 scene.Add(sunlight);
 var sunlightDiscConfig = new SunDiscConfig();
-scene.Add(factory.LightBuilder.CreateDirectionalLight());
 
 var frameCount = 0;
 var startTime = Stopwatch.StartNew();

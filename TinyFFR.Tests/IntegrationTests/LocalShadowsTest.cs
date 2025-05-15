@@ -64,12 +64,18 @@ class LocalShadowsTest {
 		
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 
-		void ExecSubTest(Action<ILightBuilder, Scene, ApplicationLoop, Renderer, Camera> subTest) {
-			camera.Position = new Location(HalfGridSize, HalfGridSize * 1.5f, -(GridSize + 1));
-			camera.HorizontalFieldOfView = 120f;
-			camera.LookAt(FloorPosition);
-			loop.ResetTotalIteratedTime();
-			subTest(factory.LightBuilder, scene, loop, renderer, camera);
+		void ExecSubTest(Action<ILocalTinyFfrFactory, Scene, ApplicationLoop, Renderer, Camera> subTest) {
+			try {
+				camera.Position = new Location(HalfGridSize, HalfGridSize * 1.5f, -(GridSize + 1));
+				camera.HorizontalFieldOfView = 120f;
+				camera.LookAt(FloorPosition, Direction.Up);
+				loop.ResetTotalIteratedTime();
+				subTest(factory, scene, loop, renderer, camera);
+			}
+			catch (Exception e) {
+				Console.WriteLine(e);
+				throw;
+			}
 		}
 
 		ExecSubTest(PointsInBoxes);
@@ -77,6 +83,7 @@ class LocalShadowsTest {
 		ExecSubTest(SpotlightsMoving);
 		ExecSubTest(DirectionalLongShadows);
 		ExecSubTest(DirectionalDynamic);
+		ExecSubTest(DoubleScene);
 
 		scene.Remove(floor);
 		foreach (var cube in cubeList) {
@@ -90,7 +97,8 @@ class LocalShadowsTest {
 		return totalTime.TotalSeconds >= timeFence.TotalSeconds && totalTime.TotalSeconds - deltaTime < timeFence.TotalSeconds;
 	}
 
-	void DirectionalLongShadows(ILightBuilder lightBuilder, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
+	void DirectionalLongShadows(ILocalTinyFfrFactory factory, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
+		var lightBuilder = factory.LightBuilder;
 		using var directionalLight = lightBuilder.CreateDirectionalLight(
 			direction: new Location(0f, CubeSize, GridSize).DirectionTo(Location.Origin),
 			color: StandardColor.LightingSunRiseSet,
@@ -134,7 +142,8 @@ class LocalShadowsTest {
 		scene.Remove(directionalLight);
 	}
 
-	void DirectionalDynamic(ILightBuilder lightBuilder, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
+	void DirectionalDynamic(ILocalTinyFfrFactory factory, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
+		var lightBuilder = factory.LightBuilder;
 		using var directionalLight = lightBuilder.CreateDirectionalLight(
 			direction: new Direction(0.3f, -1f, 0.3f),
 			color: StandardColor.Maroon,
@@ -181,7 +190,8 @@ class LocalShadowsTest {
 		scene.Remove(directionalLight);
 	}
 
-	void PointsInBoxes(ILightBuilder lightBuilder, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
+	void PointsInBoxes(ILocalTinyFfrFactory factory, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
+		var lightBuilder = factory.LightBuilder;
 		using var pointLightUpper = lightBuilder.CreatePointLight(
 			color: StandardColor.LightingSunRiseSet,
 			castsShadows: true,
@@ -222,7 +232,7 @@ class LocalShadowsTest {
 				pointLightUpper.AdjustColorHueBy(-30f);
 			}
 			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(7.5d))) {
-				pointLightUpper.CastsShadows = false; // TODO clue here: Changing this affects the next test...
+				pointLightUpper.CastsShadows = false;
 			}
 
 			renderer.Render();
@@ -232,7 +242,8 @@ class LocalShadowsTest {
 		scene.Remove(pointLightLower);
 	}
 
-	void SpotlightRotating(ILightBuilder lightBuilder, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
+	void SpotlightRotating(ILocalTinyFfrFactory factory, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
+		var lightBuilder = factory.LightBuilder;
 		using var spotlight = lightBuilder.CreateSpotLight(
 			color: StandardColor.LightingSunRiseSet,
 			castsShadows: true,
@@ -287,7 +298,8 @@ class LocalShadowsTest {
 		scene.Remove(spotlight);
 	}
 
-	void SpotlightsMoving(ILightBuilder lightBuilder, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
+	void SpotlightsMoving(ILocalTinyFfrFactory factory, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
+		var lightBuilder = factory.LightBuilder;
 		using var spotlightA = lightBuilder.CreateSpotLight(
 			color: StandardColor.LightingSunRiseSet,
 			castsShadows: true,
@@ -341,5 +353,51 @@ class LocalShadowsTest {
 
 		scene.Remove(spotlightA);
 		scene.Remove(spotlightB);
+	}
+
+	void DoubleScene(ILocalTinyFfrFactory factory, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
+		var lightBuilder = factory.LightBuilder;
+		using var directionalLight = lightBuilder.CreateDirectionalLight(
+			direction: new Location(0f, CubeSize, GridSize).DirectionTo(Location.Origin),
+			color: StandardColor.LightingSunRiseSet,
+			showSunDisc: true,
+			castsShadows: true
+		);
+		directionalLight.SetSunDiscParameters(new() { Scaling = 5f });
+
+		scene.Add(directionalLight);
+		renderer.SetQuality(new() { ShadowQuality = Quality.VeryLow });
+
+		using var window2 = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value, size: (200, 200));
+		using var scene2 = factory.SceneBuilder.CreateScene(backdropColor: ColorVect.Black);
+		using var renderer2 = factory.RendererBuilder.CreateRenderer(scene2, camera, window2, new RendererCreationConfig { AutoUpdateCameraAspectRatio = false, GpuSynchronizationFrameBufferCount = -1 });
+		renderer2.SetQuality(new() { ShadowQuality = Quality.VeryHigh });
+
+		using var directionalLight2 = lightBuilder.CreateDirectionalLight(
+			direction: new Location(0f, CubeSize, GridSize).DirectionTo(Location.Origin),
+			color: StandardColor.Maroon,
+			showSunDisc: true,
+			castsShadows: true
+		);
+		directionalLight2.SetSunDiscParameters(new() { Scaling = 5f, FringingScaling = 5f });
+		scene2.Add(directionalLight2);
+
+		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(4d)) {
+			var dt = (float) loop.IterateOnce().TotalSeconds;
+
+			directionalLight.RotateBy(8f % Direction.Down * dt);
+			directionalLight.Direction = (Location.Origin + directionalLight.Direction * -3f + Direction.Up * dt * 0.04f).DirectionTo(Location.Origin);
+
+			directionalLight2.RotateBy(8f % Direction.Down * dt);
+			directionalLight2.Direction = (Location.Origin + directionalLight.Direction * -3f + Direction.Up * dt * 0.04f).DirectionTo(Location.Origin);
+
+			camera.RotateBy(10f % Direction.Right * dt);
+
+			renderer.Render();
+			renderer2.Render();
+		}
+
+		scene.Remove(directionalLight);
+		scene2.Remove(directionalLight2);
 	}
 }

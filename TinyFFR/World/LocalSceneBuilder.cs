@@ -47,7 +47,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		_modelInstanceMap.Add(handle, _modelInstanceVectorPool.Rent());
 		_lightMap.Add(handle, _lightVectorPool.Rent());
 
-		_globals.StoreResourceNameIfNotEmpty(new ResourceHandle<Scene>(handle).Ident, config.Name);
+		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<Scene>(handle).Ident, config.Name, DefaultSceneName);
 
 		if (config.InitialBackdropColor is { } color) SetBackdrop(handle, color, 1f);
 		return HandleToInstance(handle);
@@ -148,7 +148,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 					light.SetShadowFidelity(directionalLightFidelity);
 					break;
 				default:
-					throw new ArgumentOutOfRangeException(nameof(light.Type), light.Type, "Unhandled light type");
+					throw new InvalidOperationException("Unhandled light type");
 			}
 		}
 

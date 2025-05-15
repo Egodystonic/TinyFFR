@@ -36,7 +36,7 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 		).ThrowIfFailure();
 		var result = HandleToInstance(handle);
 		_activeInstanceMap.Add(handle, config.InitialTransform);
-		_globals.StoreResourceNameIfNotEmpty(new ResourceHandle<ModelInstance>(handle).Ident, config.Name);
+		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<ModelInstance>(handle).Ident, config.Name, DefaultModelInstanceName);
 		_globals.DependencyTracker.RegisterDependency(result, mesh);
 		_globals.DependencyTracker.RegisterDependency(result, material);
 		return result;

@@ -49,7 +49,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		var curTime = Stopwatch.GetTimestamp();
 		var handle = (ResourceHandle<ApplicationLoop>) _nextLoopHandleIndex;
 		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, config.IterationShouldRefreshGlobalInputStates));
-		_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.BaseConfig.Name);
+		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.BaseConfig.Name, DefaultLoopName);
 		_nextLoopHandleIndex++;
 		return new(handle, this);
 	}
