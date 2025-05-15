@@ -14,6 +14,9 @@ public:
 	static void set_light_position(LightHandle light, float3 newPosition);
 	static void get_light_color(LightHandle light, float3* outColor);
 	static void set_light_color(LightHandle light, float3 newColor);
+	static void get_light_shadow_caster(LightHandle light, interop_bool* outIsShadowCaster);
+	static void set_light_shadow_caster(LightHandle light, interop_bool isShadowCaster);
+	static void set_light_shadow_fidelity(LightHandle light, uint32_t mapSize, uint8_t cascadeCount);
 
 	static void allocate_point_light(LightHandle* outLight);
 	static void get_point_light_lumens(LightHandle light, float* outLumens);

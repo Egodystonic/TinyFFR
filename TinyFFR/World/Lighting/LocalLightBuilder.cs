@@ -71,6 +71,7 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 		_activeLightMap.Add(ident.RawResourceHandle, new(lightType, ident.TypeHandle, config.InitialBrightness, spotLightInner ?? Angle.Zero, spotLightOuter ?? Angle.Zero));
 		_globals.StoreResourceNameIfNotEmpty(ident, config.Name);
 		SetLightColor(ident.RawResourceHandle, config.InitialColor.ToVector3());
+		SetLightShadowCaster(ident.RawResourceHandle, config.CastsShadows);
 	}
 
 	public LightType GetType(ResourceHandle handle) {
@@ -122,6 +123,21 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 	public void ScaleBrightnessBy(ResourceHandle handle, float scalar) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		SetUniversalBrightness(handle, _activeLightMap[handle].Brightness * scalar);
+	}
+
+	public bool GetIsShadowCaster(ResourceHandle handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		GetLightShadowCaster(handle, out var result).ThrowIfFailure();
+		return result;
+	}
+	public void SetIsShadowCaster(ResourceHandle handle, bool isShadowCaster) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		SetLightShadowCaster(handle, isShadowCaster).ThrowIfFailure();
+	}
+
+	public void SetShadowFidelity(ResourceHandle handle, LightShadowFidelityData fidelityArgs) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		SetLightShadowFidelity(handle, fidelityArgs.MapSize, fidelityArgs.CascadeCount).ThrowIfFailure();
 	}
 
 	public Location GetPointLightPosition(ResourceHandle<PointLight> handle) {
@@ -287,6 +303,25 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 	static extern InteropResult SetLightColor(
 		UIntPtr lightHandle,
 		Vector3 newColor
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_light_shadow_caster")]
+	static extern InteropResult GetLightShadowCaster(
+		UIntPtr lightHandle,
+		out InteropBool outIsShadowCaster
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_light_shadow_caster")]
+	static extern InteropResult SetLightShadowCaster(
+		UIntPtr lightHandle,
+		InteropBool isShadowCaster
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_light_shadow_fidelity")]
+	static extern InteropResult SetLightShadowFidelity(
+		UIntPtr lightHandle,
+		uint mapSize,
+		byte cascadeCount
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_point_light_lumens")]

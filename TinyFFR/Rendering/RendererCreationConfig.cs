@@ -11,10 +11,12 @@ public readonly ref struct RendererCreationConfig {
 	public const int DefaultGpuSynchronizationFrameBufferCount = 3;
 	public const int MinGpuSynchronizationFrameBufferCount = -1;
 	public const int MaxGpuSynchronizationFrameBufferCount = LocalFrameSynchronizationManager.MaxBufferSize;
+	public static readonly RenderQualityConfig DefaultQuality = new();
 
 	readonly int _gpuSynchronizationFrameBufferCount = DefaultGpuSynchronizationFrameBufferCount;
 
 	public bool AutoUpdateCameraAspectRatio { get; init; } = DefaultAutoUpdateCameraAspectRatio;
+	
 	public int GpuSynchronizationFrameBufferCount {
 		get => _gpuSynchronizationFrameBufferCount;
 		init {
@@ -29,6 +31,8 @@ public readonly ref struct RendererCreationConfig {
 			_gpuSynchronizationFrameBufferCount = value;
 		}
 	}
+
+	public RenderQualityConfig Quality { get; init; } = DefaultQuality;
 
 	public ReadOnlySpan<char> Name { get; init; }
 

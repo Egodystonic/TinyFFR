@@ -3,6 +3,7 @@
 
 using System;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.World;
@@ -66,6 +67,10 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 		if (!brightness.IsNonNegativeAndFinite()) return 0f;
 		brightness = Single.Min(brightness, MaxBrightness);
 		return DefaultLux * brightness * brightness;
+	}
+
+	internal void SetLightShadowFidelity(Quality qualityPreset, LightShadowFidelityData pointLightFidelity, LightShadowFidelityData spotLightFidelity, LightShadowFidelityData directionalLightFidelity) {
+		Implementation.SetLightShadowFidelity(_handle, qualityPreset, pointLightFidelity, spotLightFidelity, directionalLightFidelity);
 	}
 
 	public override string ToString() => $"Scene {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";

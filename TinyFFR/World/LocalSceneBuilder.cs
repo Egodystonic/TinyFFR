@@ -5,6 +5,7 @@ using System;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
@@ -18,9 +19,11 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedVector<ModelInstance>> _modelInstanceMap = new();
 	readonly ObjectPool<ArrayPoolBackedVector<ModelInstance>> _modelInstanceVectorPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedVector<Light>> _lightMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, Quality> _shadowQualityActivePresetMap = new();
 	readonly ObjectPool<ArrayPoolBackedVector<Light>> _lightVectorPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, BackdropData> _backdropMap = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
+	
 	bool _isDisposed = false;
 
 	public LocalSceneBuilder(LocalFactoryGlobalObjectGroup globals) {
@@ -43,7 +46,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		_activeSceneHandles.Add(handle);
 		_modelInstanceMap.Add(handle, _modelInstanceVectorPool.Rent());
 		_lightMap.Add(handle, _lightVectorPool.Rent());
-		
+
 		_globals.StoreResourceNameIfNotEmpty(new ResourceHandle<Scene>(handle).Ident, config.Name);
 
 		if (config.InitialBackdropColor is { } color) SetBackdrop(handle, color, 1f);
@@ -104,6 +107,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		).ThrowIfFailure();
 
 		instanceVector.Add(light.AsBaseLight());
+		_shadowQualityActivePresetMap.Remove(handle);
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), light);
 	}
 
@@ -118,6 +122,29 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		).ThrowIfFailure();
 
 		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), light);
+	}
+
+	public void SetLightShadowFidelity(ResourceHandle<Scene> handle, Quality qualityPreset, LightShadowFidelityData pointLightFidelity, LightShadowFidelityData spotLightFidelity, LightShadowFidelityData directionalLightFidelity) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (_shadowQualityActivePresetMap.TryGetValue(handle, out var activePreset) && activePreset == qualityPreset) return;
+
+		foreach (var light in _lightMap[handle]) {
+			switch (light.Type) {
+				case LightType.Point:
+					light.SetShadowFidelity(pointLightFidelity);
+					break;
+				case LightType.Spot:
+					light.SetShadowFidelity(spotLightFidelity);
+					break;
+				case LightType.Directional:
+					light.SetShadowFidelity(directionalLightFidelity);
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(light.Type), light.Type, "Unhandled light type");
+			}
+		}
+
+		_shadowQualityActivePresetMap[handle] = qualityPreset;
 	}
 	#endregion
 
@@ -302,6 +329,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 			_backdropMap.Dispose();
 			_lightMap.Dispose();
 			_lightVectorPool.Dispose();
+			_shadowQualityActivePresetMap.Dispose();
 
 			_activeSceneHandles.Dispose();
 		}
@@ -325,7 +353,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 
 		_lightVectorPool.Return(_lightMap[handle]);
 		_lightMap.Remove(handle);
-		
+
 		_activeSceneHandles.Remove(handle);
 	}
 

@@ -62,7 +62,42 @@ StartExportedFunc(set_light_position, LightHandle light, float3 newPosition) {
 	EndExportedFunc
 }
 
+void native_impl_lights::get_light_shadow_caster(LightHandle light, interop_bool* outIsShadowCaster) {
+	ThrowIfNull(outIsShadowCaster, "Out shadow caster pointer was null.");
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	*outIsShadowCaster = manager.isShadowCaster(instance);
+}
+StartExportedFunc(get_light_shadow_caster, LightHandle light, interop_bool* outIsShadowCaster) {
+	native_impl_lights::get_light_shadow_caster(light, outIsShadowCaster);
+	EndExportedFunc
+}
 
+void native_impl_lights::set_light_shadow_caster(LightHandle light, interop_bool isShadowCaster) {
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	manager.setShadowCaster(instance, isShadowCaster);
+}
+StartExportedFunc(set_light_shadow_caster, LightHandle light, interop_bool isShadowCaster) {
+	native_impl_lights::set_light_shadow_caster(light, isShadowCaster);
+	EndExportedFunc
+}
+
+void native_impl_lights::set_light_shadow_fidelity(LightHandle light, uint32_t mapSize, uint8_t cascadeCount) {
+	auto entity = Entity::import(light);
+	auto& manager = filament_engine->getLightManager();
+	auto instance = manager.getInstance(entity);
+	manager.setShadowOptions(instance, LightManager::ShadowOptions{
+		.mapSize = mapSize,
+		.shadowCascades = cascadeCount // This only affects directional/sunlights but we set it anyway
+	});
+}
+StartExportedFunc(set_light_shadow_fidelity, LightHandle light, uint32_t mapSize, uint8_t cascadeCount) {
+	native_impl_lights::set_light_shadow_fidelity(light, mapSize, cascadeCount);
+	EndExportedFunc
+}
 
 
 
@@ -306,7 +341,6 @@ void native_impl_lights::set_sun_parameters(LightHandle light, float angularSize
 	manager.setSunAngularRadius(instance, angularSize);
 	manager.setSunHaloSize(instance, haloCoefficient);
 	manager.setSunHaloFalloff(instance, haloFalloffExponent);
-	manager.setShadowCaster(instance, true);
 }
 StartExportedFunc(set_sun_parameters, LightHandle light, float angularSize, float haloCoefficient, float haloFalloffExponent) {
 	native_impl_lights::set_sun_parameters(light, angularSize, haloCoefficient, haloFalloffExponent);

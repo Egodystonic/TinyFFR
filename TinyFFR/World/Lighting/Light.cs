@@ -73,6 +73,15 @@ public readonly struct Light : ILight, IDisposable, IEquatable<Light>, IStringSp
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetBrightness(float brightness) => Brightness = brightness;
 
+	public bool CastsShadows {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetIsShadowCaster(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetIsShadowCaster(_handle, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetCastsShadows(bool castsShadows) => CastsShadows = castsShadows;
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -85,6 +94,9 @@ public readonly struct Light : ILight, IDisposable, IEquatable<Light>, IStringSp
 	public void AdjustColorLightnessBy(float adjustment) => Color = Color.WithLightnessAdjustedBy(adjustment);
 	public void AdjustBrightnessBy(float adjustment) => Implementation.AdjustBrightnessBy(_handle, adjustment);
 	public void ScaleBrightnessBy(float scalar) => Implementation.ScaleBrightnessBy(_handle, scalar);
+
+	void ILight.SetShadowFidelity(LightShadowFidelityData fidelityArgs) => SetShadowFidelity(fidelityArgs);
+	internal void SetShadowFidelity(LightShadowFidelityData fidelityArgs) => Implementation.SetShadowFidelity(_handle, fidelityArgs);
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

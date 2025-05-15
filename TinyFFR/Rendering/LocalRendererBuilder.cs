@@ -45,7 +45,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	
 	readonly record struct WindowData(Window Window, UIntPtr RendererPtr, UIntPtr SwapChainPtr);
 	readonly record struct ViewportData(UIntPtr Handle, XYPair<uint> CurrentSize);
-	readonly record struct RendererData(ResourceHandle<Renderer> Handle, Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, bool EmitFences);
+	readonly record struct RendererData(ResourceHandle<Renderer> Handle, Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, bool EmitFences, RenderQualityConfig Quality);
 
 	const string DefaultRendererName = "Unnamed Renderer";
 
@@ -83,7 +83,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 
 		_previousHandleId++;
 		var handle = new ResourceHandle<Renderer>(_previousHandleId);
-		_loadedRenderers.Add(handle, new(handle, scene, camera, new(window), viewportData, config.AutoUpdateCameraAspectRatio, config.GpuSynchronizationFrameBufferCount >= 0));
+		_loadedRenderers.Add(handle, new(handle, scene, camera, new(window), viewportData, config.AutoUpdateCameraAspectRatio, config.GpuSynchronizationFrameBufferCount >= 0, config.Quality));
 
 		_globals.StoreResourceNameIfNotEmpty(handle.Ident, config.Name);
 
@@ -96,11 +96,15 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 			LocalFrameSynchronizationManager.RegisterRenderer(handle, config.GpuSynchronizationFrameBufferCount); 
 		}
 
+		SetQualityConfig(handle, config.Quality);
+
 		return result;
 	}
 
 	public void Render(ResourceHandle<Renderer> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+
+		SetUpSceneShadowQuality(handle);
 		
 		var viewportData = _loadedRenderers[handle].Viewport;
 		var curViewportSize = viewportData.CurrentSize;
@@ -126,6 +130,12 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		}
 	}
 
+	public void SetQualityConfig(ResourceHandle<Renderer> handle, RenderQualityConfig newConfig) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_loadedRenderers[handle] = _loadedRenderers[handle] with { Quality = newConfig };
+		SetViewShadowFidelityLevel(_loadedRenderers[handle].Viewport.Handle, (int) newConfig.ShadowQuality).ThrowIfFailure();
+	}
+
 	public string GetNameAsNewStringObject(ResourceHandle<Renderer> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return new String(_globals.GetResourceName(handle.Ident, DefaultRendererName));
@@ -137,6 +147,55 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	public void CopyName(ResourceHandle<Renderer> handle, Span<char> destinationBuffer) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_globals.CopyResourceName(handle.Ident, DefaultRendererName, destinationBuffer);
+	}
+
+	void SetUpSceneShadowQuality(ResourceHandle<Renderer> handle) {
+		var scene = _loadedRenderers[handle].Scene;
+		var quality = _loadedRenderers[handle].Quality.ShadowQuality;
+
+		// Currently in filament the cascade count only really affects directional lights, but we set values anyway in case that changes one day
+		switch (quality) {
+			case Quality.VeryLow:
+				scene.SetLightShadowFidelity(
+					quality,
+					pointLightFidelity:			new(256, 1),
+					spotLightFidelity:			new(256, 1),
+					directionalLightFidelity:	new(1024, 1)
+				);
+				break;
+			case Quality.Low:
+				scene.SetLightShadowFidelity(
+					quality,
+					pointLightFidelity:			new(512, 1),
+					spotLightFidelity:			new(512, 1),
+					directionalLightFidelity:	new(2048, 2)
+				);
+				break;
+			case Quality.High:
+				scene.SetLightShadowFidelity(
+					quality,
+					pointLightFidelity:			new(1024, 2),
+					spotLightFidelity:			new(1024, 2),
+					directionalLightFidelity:	new(2048, 4)
+				);
+				break;
+			case Quality.VeryHigh:
+				scene.SetLightShadowFidelity(
+					quality,
+					pointLightFidelity:			new(2048, 4),
+					spotLightFidelity:			new(2048, 4),
+					directionalLightFidelity:	new(4096, 4)
+				);
+				break;
+			default:
+				scene.SetLightShadowFidelity(
+					quality,
+					pointLightFidelity:			new(1024, 1),
+					spotLightFidelity:			new(1024, 1),
+					directionalLightFidelity:	new(2048, 3)
+				);
+				break;
+		}
 	}
 
 	#region Native Methods
@@ -168,6 +227,12 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		uint width,
 		uint height
 	);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_shadow_fidelity_level")]
+	static extern InteropResult SetViewShadowFidelityLevel(
+		UIntPtr viewDescriptorHandle,
+		int level
+	);
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "render_scene")]
 	static extern InteropResult RenderScene(
 		UIntPtr rendererHandle,

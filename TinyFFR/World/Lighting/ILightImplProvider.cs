@@ -19,6 +19,10 @@ public interface ILightImplProvider : IDisposableResourceImplProvider {
 	void AdjustBrightnessBy(ResourceHandle handle, float adjustment);
 	void ScaleBrightnessBy(ResourceHandle handle, float scalar);
 
+	bool GetIsShadowCaster(ResourceHandle handle);
+	void SetIsShadowCaster(ResourceHandle handle, bool isShadowCaster);
+	internal void SetShadowFidelity(ResourceHandle handle, LightShadowFidelityData fidelityArgs);
+
 	Location GetPointLightPosition(ResourceHandle<PointLight> handle);
 	void SetPointLightPosition(ResourceHandle<PointLight> handle, Location newPosition);
 

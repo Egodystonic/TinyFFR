@@ -8,4 +8,5 @@ namespace Egodystonic.TinyFFR.Rendering;
 
 public interface IRendererImplProvider : IDisposableResourceImplProvider<Renderer> {
 	void Render(ResourceHandle<Renderer> handle);
+	void SetQualityConfig(ResourceHandle<Renderer> handle, RenderQualityConfig newConfig);
 }

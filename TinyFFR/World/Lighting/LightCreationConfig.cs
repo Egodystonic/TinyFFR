@@ -8,12 +8,15 @@ namespace Egodystonic.TinyFFR.World;
 public readonly ref struct LightCreationConfig {
 	public static readonly float DefaultInitialBrightness = 1f;
 	public static readonly ColorVect DefaultInitialColor = StandardColor.White;
+	public static readonly bool DefaultCastsShadows = false;
 
 	public ReadOnlySpan<char> Name { get; init; }
 
 	public ColorVect InitialColor { get; init; } = DefaultInitialColor;
 
 	public float InitialBrightness { get; init; } = DefaultInitialBrightness;
+
+	public bool CastsShadows { get; init; } = DefaultCastsShadows;
 
 	public LightCreationConfig() { }
 
@@ -32,6 +35,7 @@ public readonly ref struct PointLightCreationConfig {
 	#region Base Config
 	public static readonly float DefaultInitialBrightness = LightCreationConfig.DefaultInitialBrightness;
 	public static readonly ColorVect DefaultInitialColor = LightCreationConfig.DefaultInitialColor;
+	public static readonly bool DefaultCastsShadows = LightCreationConfig.DefaultCastsShadows;
 	public LightCreationConfig BaseConfig { get; private init; } = new();
 
 	public ColorVect InitialColor {
@@ -42,6 +46,11 @@ public readonly ref struct PointLightCreationConfig {
 	public float InitialBrightness {
 		get => BaseConfig.InitialBrightness;
 		init => BaseConfig = BaseConfig with { InitialBrightness = value };
+	}
+
+	public bool CastsShadows {
+		get => BaseConfig.CastsShadows;
+		init => BaseConfig = BaseConfig with { CastsShadows = value };
 	}
 
 	public ReadOnlySpan<char> Name {
@@ -76,6 +85,7 @@ public readonly ref struct SpotLightCreationConfig {
 	#region Base Config
 	public static readonly float DefaultInitialBrightness = LightCreationConfig.DefaultInitialBrightness;
 	public static readonly ColorVect DefaultInitialColor = LightCreationConfig.DefaultInitialColor;
+	public static readonly bool DefaultCastsShadows = LightCreationConfig.DefaultCastsShadows;
 	public LightCreationConfig BaseConfig { get; private init; } = new();
 
 	public ColorVect InitialColor {
@@ -86,6 +96,11 @@ public readonly ref struct SpotLightCreationConfig {
 	public float InitialBrightness {
 		get => BaseConfig.InitialBrightness;
 		init => BaseConfig = BaseConfig with { InitialBrightness = value };
+	}
+
+	public bool CastsShadows {
+		get => BaseConfig.CastsShadows;
+		init => BaseConfig = BaseConfig with { CastsShadows = value };
 	}
 
 	public ReadOnlySpan<char> Name {
@@ -112,6 +127,7 @@ public readonly ref struct DirectionalLightCreationConfig {
 	#region Base Config
 	public static readonly float DefaultInitialBrightness = LightCreationConfig.DefaultInitialBrightness;
 	public static readonly ColorVect DefaultInitialColor = LightCreationConfig.DefaultInitialColor;
+	public static readonly bool DefaultCastsShadows = LightCreationConfig.DefaultCastsShadows;
 	public LightCreationConfig BaseConfig { get; private init; } = new();
 
 	public ColorVect InitialColor {
@@ -122,6 +138,11 @@ public readonly ref struct DirectionalLightCreationConfig {
 	public float InitialBrightness {
 		get => BaseConfig.InitialBrightness;
 		init => BaseConfig = BaseConfig with { InitialBrightness = value };
+	}
+
+	public bool CastsShadows {
+		get => BaseConfig.CastsShadows;
+		init => BaseConfig = BaseConfig with { CastsShadows = value };
 	}
 
 	public ReadOnlySpan<char> Name {

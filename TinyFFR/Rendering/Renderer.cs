@@ -35,6 +35,9 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Render() => Implementation.Render(_handle);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetQuality(RenderQualityConfig newQualityConfig) => Implementation.SetQualityConfig(_handle, newQualityConfig);
+
 	public override string ToString() => $"Renderer {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Disposal

@@ -55,6 +55,7 @@ void native_impl_render::allocate_view_descriptor(SceneHandle scene, CameraHandl
 	ThrowIfNull(*outViewDescriptor, "Could not create view descriptor.");
 	(*outViewDescriptor)->setCamera(camera);
 	(*outViewDescriptor)->setScene(scene);
+	(*outViewDescriptor)->setShadowType(ShadowType::PCSS);
 }
 StartExportedFunc(allocate_view_descriptor, SceneHandle scene, CameraHandle camera, ViewDescriptorHandle* outViewDescriptor) {
 	native_impl_render::allocate_view_descriptor(scene, camera, outViewDescriptor);
@@ -88,6 +89,24 @@ void native_impl_render::set_view_descriptor_size(ViewDescriptorHandle viewDescr
 }
 StartExportedFunc(set_view_descriptor_size, ViewDescriptorHandle viewDescriptor, uint32_t width, uint32_t height) {
 	native_impl_render::set_view_descriptor_size(viewDescriptor, width, height);
+	EndExportedFunc
+}
+
+void native_impl_render::set_view_shadow_fidelity_level(ViewDescriptorHandle viewDescriptor, int32_t level) {
+	ThrowIfNull(viewDescriptor, "View was null.");
+	switch (level)
+	{
+		case 1:
+		case 2:
+			viewDescriptor->setShadowType(ShadowType::PCSS); // Looks "worse" (less smooth, more dithery) from some aspects but does not suffer from light bleeding which definitely looks "less bad" in the worst case
+			break;
+		default:
+			viewDescriptor->setShadowType(ShadowType::VSM);
+			break;
+	}
+}
+StartExportedFunc(set_view_shadow_fidelity_level, ViewDescriptorHandle viewDescriptor, int32_t level) {
+	native_impl_render::set_view_shadow_fidelity_level(viewDescriptor, level);
 	EndExportedFunc
 }
 

@@ -19,6 +19,7 @@ class LocalShadowsTest {
 	const int GridSize = 3;
 	const int HalfGridSize = GridSize / 2;
 	const float CubeSize = 0.35f;
+	static readonly Location FloorPosition = new(0f, -(HalfGridSize + CubeSize), 0f);
 
 	[SetUp]
 	public void SetUpTest() { }
@@ -63,8 +64,19 @@ class LocalShadowsTest {
 		
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 
-		ResetCameraAndLoop(loop, camera, floor.Position);
-		ExecuteDirectionalLightTest(factory.LightBuilder, scene, loop, renderer, camera);
+		void ExecSubTest(Action<ILightBuilder, Scene, ApplicationLoop, Renderer, Camera> subTest) {
+			camera.Position = new Location(HalfGridSize, HalfGridSize * 1.5f, -(GridSize + 1));
+			camera.HorizontalFieldOfView = 120f;
+			camera.LookAt(FloorPosition);
+			loop.ResetTotalIteratedTime();
+			subTest(factory.LightBuilder, scene, loop, renderer, camera);
+		}
+
+		ExecSubTest(PointInBoxes);
+		ExecSubTest(SpotlightRotating);
+		ExecSubTest(SpotlightsMoving);
+		ExecSubTest(DirectionalLongShadows);
+		ExecSubTest(DirectionalDynamic);
 
 		scene.Remove(floor);
 		foreach (var cube in cubeList) {
@@ -74,48 +86,260 @@ class LocalShadowsTest {
 		cubeList.Dispose();
 	}
 
-	void ResetCameraAndLoop(ApplicationLoop loop, Camera camera, Location lookAtPos) {
-		camera.Position = new Location(HalfGridSize, HalfGridSize * 1.5f, -(GridSize + 1));
-		camera.HorizontalFieldOfView = 120f;
-		camera.LookAt(lookAtPos);
-		loop.ResetTotalIteratedTime();
+	bool PassedTimeFence(float deltaTime, TimeSpan totalTime, TimeSpan timeFence) {
+		return totalTime.TotalSeconds >= timeFence.TotalSeconds && totalTime.TotalSeconds - deltaTime < timeFence.TotalSeconds;
 	}
 
-	void ExecuteDirectionalLightTest(ILightBuilder lightBuilder, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
+	void DirectionalLongShadows(ILightBuilder lightBuilder, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
 		using var directionalLight = lightBuilder.CreateDirectionalLight(
 			direction: new Location(0f, CubeSize, GridSize).DirectionTo(Location.Origin),
 			color: StandardColor.LightingSunRiseSet,
-			showSunDisc: true
+			showSunDisc: true,
+			castsShadows: true
 		);
 		directionalLight.SetSunDiscParameters(new() { Scaling = 5f });
 
 		scene.Add(directionalLight);
+		renderer.SetQuality(new() { ShadowQuality = Quality.VeryLow });
 
-		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(7d)) {
+		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(9d)) {
 			var dt = (float) loop.IterateOnce().TotalSeconds;
 
 			directionalLight.RotateBy(4f % Direction.Down * dt);
 			directionalLight.Direction = (Location.Origin + directionalLight.Direction * -3f + Direction.Up * dt * 0.02f).DirectionTo(Location.Origin);
 
-			renderer.Render();
-		}
-
-		directionalLight.Color = StandardColor.Maroon;
-		directionalLight.Direction = new Direction(0.3f, -1f, 0.3f);
-
-		loop.ResetTotalIteratedTime();
-		camera.Position = new Location(-HalfGridSize, HalfGridSize, -HalfGridSize);
-		camera.LookAt(Location.Origin);
-		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(11d)) {
-			var dt = (float) loop.IterateOnce().TotalSeconds;
-
-			directionalLight.RotateBy(40f % Direction.Forward * dt * (directionalLight.Direction.Y > 0f ? 10f : 1f));
-			camera.Position = camera.Position.RotatedAroundOriginBy(-48f % Direction.Down * dt);
-			camera.LookAt(Location.Origin, Direction.Up);
+			if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(1.5d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.Low });
+				directionalLight.AdjustColorHueBy(30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(3d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.Standard });
+				directionalLight.AdjustColorHueBy(-30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(4.5d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.High });
+				directionalLight.AdjustColorHueBy(30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(6d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.VeryHigh });
+				directionalLight.AdjustColorHueBy(-30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(7.5d))) {
+				directionalLight.CastsShadows = false;
+			}
 
 			renderer.Render();
 		}
 
 		scene.Remove(directionalLight);
+	}
+
+	void DirectionalDynamic(ILightBuilder lightBuilder, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
+		using var directionalLight = lightBuilder.CreateDirectionalLight(
+			direction: new Direction(0.3f, -1f, 0.3f),
+			color: StandardColor.Maroon,
+			showSunDisc: true,
+			castsShadows: true
+		);
+		directionalLight.SetSunDiscParameters(new() { Scaling = 5f });
+
+		scene.Add(directionalLight);
+		renderer.SetQuality(new() { ShadowQuality = Quality.VeryLow });
+
+		camera.Position = new Location(-HalfGridSize, HalfGridSize, -HalfGridSize);
+		camera.LookAt(Location.Origin);
+		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(13d)) {
+			var dt = (float) loop.IterateOnce().TotalSeconds;
+
+			directionalLight.RotateBy(50f % Direction.Forward * dt * (directionalLight.Direction.Y > 0f ? 10f : 1f));
+			camera.Position = camera.Position.RotatedAroundOriginBy(-42f % Direction.Down * dt);
+			camera.LookAt(Location.Origin, Direction.Up);
+
+			if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(2d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.Low });
+				directionalLight.AdjustColorHueBy(30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(4d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.Standard });
+				directionalLight.AdjustColorHueBy(-30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(6d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.High });
+				directionalLight.AdjustColorHueBy(30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(8d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.VeryHigh });
+				directionalLight.AdjustColorHueBy(-30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(10d))) {
+				directionalLight.CastsShadows = false;
+			}
+
+			renderer.Render();
+		}
+
+		scene.Remove(directionalLight);
+	}
+
+	void PointInBoxes(ILightBuilder lightBuilder, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
+		using var pointLightUpper = lightBuilder.CreatePointLight(
+			color: StandardColor.LightingSunRiseSet,
+			castsShadows: true,
+			position: new Location(0f, (HalfGridSize + 2) * CubeSize, HalfGridSize / 2f)
+		);
+		using var pointLightLower = lightBuilder.CreatePointLight(
+			color: StandardColor.White,
+			castsShadows: true,
+			position: new Location(0f, -(HalfGridSize + 2) * CubeSize, HalfGridSize / -2f)
+		);
+
+		scene.Add(pointLightUpper);
+		scene.Add(pointLightLower);
+		renderer.SetQuality(new() { ShadowQuality = Quality.VeryLow });
+
+		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(10d)) {
+			var dt = (float) loop.IterateOnce().TotalSeconds;
+
+			pointLightUpper.Position = pointLightUpper.Position.RotatedAroundOriginBy(90f % Direction.Down * dt);
+
+			camera.Position = camera.Position.RotatedAroundOriginBy(45f % Direction.Down * dt);
+			camera.LookAt(FloorPosition, Direction.Up);
+
+			if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(1.5d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.Low });
+				pointLightUpper.AdjustColorHueBy(30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(3d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.Standard });
+				pointLightUpper.AdjustColorHueBy(-30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(4.5d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.High });
+				pointLightUpper.AdjustColorHueBy(30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(6d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.VeryHigh });
+				pointLightUpper.AdjustColorHueBy(-30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(7.5d))) {
+				pointLightUpper.CastsShadows = false;
+			}
+
+			renderer.Render();
+		}
+
+		scene.Remove(pointLightUpper);
+		scene.Remove(pointLightLower);
+	}
+
+	void SpotlightRotating(ILightBuilder lightBuilder, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
+		using var spotlight = lightBuilder.CreateSpotLight(
+			color: StandardColor.LightingSunRiseSet,
+			castsShadows: true,
+			position: new Location(0f, (HalfGridSize + 2) * CubeSize, 0f),
+			coneDirection: new(0.3f, -1f, 0.3f),
+			coneAngle: 90f
+		);
+		using var overhead = lightBuilder.CreateSpotLight(
+			color: StandardColor.White,
+			castsShadows: false,
+			position: new Location(0f, (HalfGridSize + 2) * CubeSize, 0f),
+			coneDirection: Direction.Down,
+			coneAngle: 160f
+		);
+
+		scene.Add(spotlight);
+		scene.Add(overhead);
+		renderer.SetQuality(new() { ShadowQuality = Quality.VeryLow });
+
+		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(10d)) {
+			var dt = (float) loop.IterateOnce().TotalSeconds;
+
+			spotlight.RotateBy(90f % Direction.Down * dt);
+
+			camera.Position = camera.Position.RotatedAroundOriginBy(45f % Direction.Down * dt);
+			camera.LookAt(FloorPosition, Direction.Up);
+
+			if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(1.5d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.Low });
+				spotlight.AdjustColorHueBy(30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(3d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.Standard });
+				spotlight.AdjustColorHueBy(-30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(4.5d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.High });
+				spotlight.AdjustColorHueBy(30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(6d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.VeryHigh });
+				spotlight.AdjustColorHueBy(-30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(7.5d))) {
+				spotlight.CastsShadows = false;
+			}
+
+			renderer.Render();
+		}
+
+		scene.Remove(overhead);
+		scene.Remove(spotlight);
+	}
+
+	void SpotlightsMoving(ILightBuilder lightBuilder, Scene scene, ApplicationLoop loop, Renderer renderer, Camera camera) {
+		using var spotlightA = lightBuilder.CreateSpotLight(
+			color: StandardColor.LightingSunRiseSet,
+			castsShadows: true,
+			position: new Location(HalfGridSize * CubeSize, (GridSize + 2) * CubeSize, 0f),
+			coneDirection: Direction.Down,
+			coneAngle: 110f
+		);
+		using var spotlightB = lightBuilder.CreateSpotLight(
+			color: StandardColor.LightingSunRiseSet,
+			castsShadows: true,
+			position: new Location(HalfGridSize * -CubeSize, (GridSize + 2) * CubeSize, 0f),
+			coneDirection: Direction.Down,
+			coneAngle: 110f
+		);
+
+		scene.Add(spotlightA);
+		scene.Add(spotlightB);
+		renderer.SetQuality(new() { ShadowQuality = Quality.VeryLow });
+
+		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(10d)) {
+			var dt = (float) loop.IterateOnce().TotalSeconds;
+
+			spotlightA.Position = spotlightA.Position.RotatedAroundOriginBy(45f % Direction.Down * dt);
+			spotlightB.Position = spotlightB.Position.RotatedAroundOriginBy(45f % Direction.Down * dt);
+
+			camera.Position = camera.Position.RotatedAroundOriginBy(45f % Direction.Down * dt);
+			camera.LookAt(FloorPosition, Direction.Up);
+
+			if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(1.5d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.Low });
+				spotlightA.AdjustColorHueBy(30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(3d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.Standard });
+				spotlightA.AdjustColorHueBy(-30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(4.5d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.High });
+				spotlightA.AdjustColorHueBy(30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(6d))) {
+				renderer.SetQuality(new() { ShadowQuality = Quality.VeryHigh });
+				spotlightA.AdjustColorHueBy(-30f);
+			}
+			else if (PassedTimeFence(dt, loop.TotalIteratedTime, TimeSpan.FromSeconds(7.5d))) {
+				spotlightA.CastsShadows = false;
+			}
+
+			renderer.Render();
+		}
+
+		scene.Remove(spotlightA);
+		scene.Remove(spotlightB);
 	}
 }
