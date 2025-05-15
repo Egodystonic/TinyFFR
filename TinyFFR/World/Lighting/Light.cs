@@ -108,7 +108,7 @@ public readonly struct Light : ILight, IDisposable, IEquatable<Light>, IStringSp
 	}
 	#endregion
 
-	public override string ToString() => $"{(IsDisposed ? "Light (Disposed)" : $"{Type} \"{GetNameAsNewStringObject()}\"")}";
+	public override string ToString() => $"{(IsDisposed ? "Light (Disposed)" : $"{Type}Light \"{GetNameAsNewStringObject()}\"")}";
 
 	public TLight As<TLight>() where TLight : ILight<TLight> => TLight.FromBaseLight(this);
 

@@ -100,6 +100,14 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var instanceVector = _lightMap[handle];
 		if (instanceVector.Contains(light.AsBaseLight())) return;
+		if (light.Type == LightType.Directional) {
+			foreach (var otherLight in instanceVector) {
+				if (otherLight.Type == LightType.Directional) {
+					throw new InvalidOperationException($"Each scene may only have one {nameof(DirectionalLight)} added at any given time. " +
+														$"Remove {otherLight} first before attempting to add {light} to this scene.");
+				}
+			}
+		}
 
 		AddLightToScene(
 			handle,

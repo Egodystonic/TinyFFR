@@ -7,6 +7,7 @@ using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using System;
 using System.Buffers;
+using System.Globalization;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
 
@@ -37,8 +38,25 @@ sealed class LocalFactoryGlobalObjectGroup {
 	}
 
 	public void StoreResourceNameIfNotEmpty(ResourceIdent ident, ReadOnlySpan<char> name) {
-		if (name.IsEmpty) return;
-		_resourceNameMap.Add(ident, StringPool.RentAndCopy(name));
+		const int DefaultOverrideNameStackBufferLength = 100;
+
+		if (!name.IsEmpty) {
+			_resourceNameMap.Add(ident, StringPool.RentAndCopy(name));		
+			return;
+		}
+
+		Span<char> tempNameSpace = stackalloc char[DefaultOverrideNameStackBufferLength];
+		var spaceTakenSoFar = 0;
+		if (!ident.TypeHandle.TryFormat(tempNameSpace, out var typeHandleCharCount, "X", CultureInfo.InvariantCulture)) return;
+		spaceTakenSoFar += typeHandleCharCount;
+		if (spaceTakenSoFar >= tempNameSpace.Length) return;
+		tempNameSpace[spaceTakenSoFar] = '/';
+		spaceTakenSoFar++;
+
+		if (!ident.RawResourceHandle.TryFormat(tempNameSpace[spaceTakenSoFar..], out var resHandleCharCount, "0", CultureInfo.InvariantCulture)) return;
+		spaceTakenSoFar += resHandleCharCount;
+
+		_resourceNameMap.Add(ident, StringPool.RentAndCopy(tempNameSpace[..spaceTakenSoFar]));
 	}
 
 	public ReadOnlySpan<char> GetResourceName(ResourceIdent ident, ReadOnlySpan<char> fallback) {
