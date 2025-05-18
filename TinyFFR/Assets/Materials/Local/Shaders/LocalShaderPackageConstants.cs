@@ -34,4 +34,32 @@ static class LocalShaderPackageConstants {
 		public ReadOnlySpan<byte> ParamOrmMap => "orm_map"u8;
 	}
 	#endregion
+
+	#region Alpha-Aware [Mask] Material
+	public interface IAlphaAwareMaterialShader {
+		public string ResourceName { get; }
+
+		public ReadOnlySpan<byte> ParamColorMap { get; }
+		public ReadOnlySpan<byte> ParamNormalMap { get; }
+		public ReadOnlySpan<byte> ParamOrmMap { get; }
+	}
+
+	public static AlphaAwareMaterialShaderConstants AlphaAwareMaterialShader { get; } = new();
+	public sealed class AlphaAwareMaterialShaderConstants : IAlphaAwareMaterialShader {
+		public string ResourceName { get; } = ResourceNamespace + "alpha_aware.filamat";
+
+		public ReadOnlySpan<byte> ParamColorMap => "color_map"u8;
+		public ReadOnlySpan<byte> ParamNormalMap => "normal_map"u8;
+		public ReadOnlySpan<byte> ParamOrmMap => "orm_map"u8;
+	}
+
+	public static AlphaAwareMaskMaterialShaderConstants AlphaAwareMaskMaterialShader { get; } = new();
+	public sealed class AlphaAwareMaskMaterialShaderConstants : IAlphaAwareMaterialShader {
+		public string ResourceName { get; } = ResourceNamespace + "alpha_aware_mask.filamat";
+
+		public ReadOnlySpan<byte> ParamColorMap => "color_map"u8;
+		public ReadOnlySpan<byte> ParamNormalMap => "normal_map"u8;
+		public ReadOnlySpan<byte> ParamOrmMap => "orm_map"u8;
+	}
+	#endregion
 }

@@ -229,6 +229,52 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		return result;
 	}
 
+	public Material CreateAlphaAwareMaterial(in AlphaAwareMaterialCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+
+		IAlphaAwareMaterialShader shaderConstants = config.Type switch {
+			AlphaMaterialType.ShadowMask => AlphaAwareMaskMaterialShader,
+			_ => AlphaAwareMaterialShader
+		};
+		var shaderPackageHandle = GetOrLoadShaderPackageHandle(shaderConstants.ResourceName);
+		CreateMaterial(
+			shaderPackageHandle,
+			out var outHandle
+		).ThrowIfFailure();
+		var handle = (ResourceHandle<Material>) outHandle;
+
+		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultMaterialName);
+		_activeMaterials.Add(handle);
+		var result = HandleToInstance(handle);
+
+		SetMaterialParameterTexture(
+			handle,
+			in ParamRef(shaderConstants.ParamColorMap),
+			ParamLen(shaderConstants.ParamColorMap),
+			config.ColorMap.Handle
+		).ThrowIfFailure();
+		_globals.DependencyTracker.RegisterDependency(result, config.ColorMap);
+
+		SetMaterialParameterTexture(
+			handle,
+			in ParamRef(shaderConstants.ParamNormalMap),
+			ParamLen(shaderConstants.ParamNormalMap),
+			config.NormalMap.Handle
+		).ThrowIfFailure();
+		_globals.DependencyTracker.RegisterDependency(result, config.NormalMap);
+
+		SetMaterialParameterTexture(
+			handle,
+			in ParamRef(shaderConstants.ParamOrmMap),
+			ParamLen(shaderConstants.ParamOrmMap),
+			config.OrmMap.Handle
+		).ThrowIfFailure();
+		_globals.DependencyTracker.RegisterDependency(result, config.OrmMap);
+
+		return result;
+	}
+
 	public XYPair<uint> GetDimensions(ResourceHandle<Texture> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _loadedTextures[handle].Dimensions;

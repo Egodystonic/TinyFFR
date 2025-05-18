@@ -1,5 +1,5 @@
 ﻿material {
-	name : Opqaue,
+	name : AlphaAwareMask,
 	parameters : [
 		{
 			type : sampler2d,
@@ -19,7 +19,7 @@
 	],
 	shadingModel : lit,
 	flipUV : false,
-	blending : opaque
+	blending : masked
 }
 
 fragment {
@@ -30,7 +30,7 @@ fragment {
 		material.normal.y = -material.normal.y;
 		prepareMaterial(material);
 
-		material.baseColor.rgb = texture(materialParams_color_map, uv0).rgb;
+		material.baseColor.rgba = texture(materialParams_color_map, uv0).rgba;
 		material.ambientOcclusion = texture(materialParams_orm_map, uv0).r;
 		material.roughness = texture(materialParams_orm_map, uv0).g;
 		material.metallic = texture(materialParams_orm_map, uv0).b;

@@ -37,9 +37,16 @@ class LocalShadowsTest {
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
 		using var cubeMesh = factory.MeshBuilder.CreateMesh(new Cuboid(CubeSize));
-		using var cubeMat = factory.MaterialBuilder.CreateOpaqueMaterial(
-			colorMap: factory.MaterialBuilder.CreateColorMap(StandardColor.White)
+		using var cubeMat = factory.MaterialBuilder.CreateAlphaAwareMaterial(
+			colorMap: factory.MaterialBuilder.CreateColorMap(TexturePattern.Chequerboard(
+					new ColorVect(1f, 1f, 1f, 1f), 
+					new ColorVect(0f, 0f, 0f, 0f)
+				), 
+				includeAlphaChannel: true
+			),
+			type: AlphaMaterialType.ShadowMask
 		);
+		using var floorMat = factory.MaterialBuilder.CreateOpaqueMaterial(factory.MaterialBuilder.CreateColorMap(StandardColor.White));
 
 		var cubeList = factory.ResourceAllocator.CreateNewArrayPoolBackedList<ModelInstance>();
 		
@@ -55,9 +62,9 @@ class LocalShadowsTest {
 
 		using var floor = factory.ObjectBuilder.CreateModelInstance(
 			cubeMesh, 
-			cubeMat, 
+			floorMat, 
 			initialPosition: new(0f, -(HalfGridSize + CubeSize), 0f), 
-			initialScaling: new Vect((GridSize / CubeSize) * 2f, 1f, (GridSize / CubeSize) * 2f)
+			initialScaling: new Vect((GridSize / CubeSize) * 4f, 1f, (GridSize / CubeSize) * 4f)
 		);
 		scene.Add(floor);
 

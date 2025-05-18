@@ -154,4 +154,15 @@ public interface IMaterialBuilder {
 		});
 	}
 	Material CreateOpaqueMaterial(in OpaqueMaterialCreationConfig config);
+
+	Material CreateAlphaAwareMaterial(Texture? colorMap = null, Texture? normalMap = null, Texture? ormMap = null, AlphaMaterialType? type = null, ReadOnlySpan<char> name = default) {
+		return CreateAlphaAwareMaterial(new AlphaAwareMaterialCreationConfig {
+			ColorMap = colorMap ?? DefaultColorMap,
+			NormalMap = normalMap ?? DefaultNormalMap,
+			OrmMap = ormMap ?? DefaultOrmMap,
+			Type = type ?? AlphaAwareMaterialCreationConfig.DefaultType,
+			Name = name
+		});
+	}
+	Material CreateAlphaAwareMaterial(in AlphaAwareMaterialCreationConfig config);
 }

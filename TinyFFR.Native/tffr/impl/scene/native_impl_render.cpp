@@ -98,7 +98,8 @@ void native_impl_render::set_view_shadow_fidelity_level(ViewDescriptorHandle vie
 	{
 		case 1:
 		case 2:
-			viewDescriptor->setShadowType(ShadowType::PCSS); // Looks "worse" (less smooth, more dithery) from some aspects but does not suffer from light bleeding which definitely looks "less bad" in the worst case
+			// Looks "worse" (less smooth, more dithery) from some aspects but does not suffer from light bleeding which definitely looks "less bad" in the worst case
+			viewDescriptor->setShadowType(ShadowType::PCSS);
 			break;
 		default:
 			viewDescriptor->setShadowType(ShadowType::VSM);
