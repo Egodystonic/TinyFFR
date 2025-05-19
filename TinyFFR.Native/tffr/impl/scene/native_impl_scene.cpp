@@ -80,7 +80,7 @@ StartExportedFunc(create_scene_backdrop_color, float3 color, float indirectLight
 	EndExportedFunc
 }
 
-void native_impl_scene::create_scene_backdrop_texture(TextureHandle skyboxTexture, TextureHandle iblTexture, float indirectLightingIntensity, SkyboxHandle* outSkybox, IndirectLightHandle* outIndirectLight) {
+void native_impl_scene::create_scene_backdrop_texture(TextureHandle skyboxTexture, TextureHandle iblTexture, float indirectLightingIntensity, float rotAngleRadians, float3 rotAxis, SkyboxHandle* outSkybox, IndirectLightHandle* outIndirectLight) {
 	ThrowIfNull(skyboxTexture, "Skybox texture was null.");
 	ThrowIfNull(iblTexture, "IBL texture was null.");
 	ThrowIfNull(outSkybox, "Out skybox pointer was null.");
@@ -93,19 +93,23 @@ void native_impl_scene::create_scene_backdrop_texture(TextureHandle skyboxTextur
 		.build(*filament_engine);
 	ThrowIfNull(*outSkybox, "Could not create skybox.");
 
+	auto rotMat = (rotAxis == float3{ 0.0f, 0.0f, 0.0f }) ? mat3f::rotation(0.0f, float3{ 0.0f, 1.0f, 0.0f }) : mat3f::rotation(rotAngleRadians, rotAxis);
+
 	*outIndirectLight = IndirectLight::Builder()
 		.reflections(iblTexture)
 		.intensity(indirectLightingIntensity)
+		.rotation(rotMat)
 		.build(*filament_engine);
 	ThrowIfNull(*outIndirectLight, "Could not create indirect light.");
 }
-StartExportedFunc(create_scene_backdrop_texture, TextureHandle skyboxTexture, TextureHandle iblTexture, float indirectLightingIntensity, SkyboxHandle* outSkybox, IndirectLightHandle* outIndirectLight) {
-	native_impl_scene::create_scene_backdrop_texture(skyboxTexture, iblTexture, indirectLightingIntensity, outSkybox, outIndirectLight);
+StartExportedFunc(create_scene_backdrop_texture, TextureHandle skyboxTexture, TextureHandle iblTexture, float indirectLightingIntensity, float rotAngleRadians, float3 rotAxis, SkyboxHandle* outSkybox, IndirectLightHandle* outIndirectLight) {
+	native_impl_scene::create_scene_backdrop_texture(skyboxTexture, iblTexture, indirectLightingIntensity, rotAngleRadians, rotAxis, outSkybox, outIndirectLight);
 	EndExportedFunc
 }
 void native_impl_scene::set_scene_backdrop(SceneHandle scene, SkyboxHandle skybox, IndirectLightHandle indirectLight) {
 	ThrowIfNull(scene, "Scene was null.");
 	ThrowIfNull(skybox, "Skybox was null.");
+
 
 	scene->setSkybox(skybox);
 	scene->setIndirectLight(indirectLight);

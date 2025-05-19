@@ -48,11 +48,11 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	public void Remove<TLight>(TLight light) where TLight : ILight<TLight> => Implementation.Remove(_handle, light);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetBackdrop(EnvironmentCubemap cubemap, float backdropIntensity = 1f) => Implementation.SetBackdrop(_handle, cubemap, backdropIntensity);
+	public void SetBackdrop(EnvironmentCubemap cubemap, float backdropIntensity = 1f, Rotation? rotation = null) => Implementation.SetBackdrop(_handle, cubemap, backdropIntensity, rotation ?? Rotation.None);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBackdrop(ColorVect color, float indirectLightingIntensity = 1f) => Implementation.SetBackdrop(_handle, color, indirectLightingIntensity);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetBackdropWithoutIndirectLighting(EnvironmentCubemap cubemap, float backdropIntensity = 1f) => Implementation.SetBackdropWithoutIndirectLighting(_handle, cubemap, backdropIntensity);
+	public void SetBackdropWithoutIndirectLighting(EnvironmentCubemap cubemap, float backdropIntensity = 1f, Rotation? rotation = null) => Implementation.SetBackdropWithoutIndirectLighting(_handle, cubemap, backdropIntensity, rotation ?? Rotation.None);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBackdropWithoutIndirectLighting(ColorVect color) => Implementation.SetBackdropWithoutIndirectLighting(_handle, color);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

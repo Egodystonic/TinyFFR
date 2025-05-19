@@ -157,7 +157,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	#endregion
 
 	#region Backdrop
-	public void SetBackdrop(ResourceHandle<Scene> handle, EnvironmentCubemap cubemap, float indirectLightingIntensity) {
+	public void SetBackdrop(ResourceHandle<Scene> handle, EnvironmentCubemap cubemap, float indirectLightingIntensity, Rotation rotation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		RemoveBackdrop(handle);
@@ -166,6 +166,8 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 			cubemap.SkyboxTextureHandle,
 			cubemap.IndirectLightingTextureHandle,
 			Scene.BrightnessToLux(indirectLightingIntensity),
+			rotation.Angle.Radians,
+			rotation.Axis.ToVector3(),
 			out var skyboxHandle,
 			out var indirectLightHandle
 		).ThrowIfFailure();
@@ -199,7 +201,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 
 		_backdropMap[handle] = new(null, skyboxHandle, indirectLightHandle);
 	}
-	public void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, EnvironmentCubemap cubemap, float backdropIntensity) {
+	public void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, EnvironmentCubemap cubemap, float backdropIntensity, Rotation rotation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		RemoveBackdrop(handle);
@@ -208,6 +210,8 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 			cubemap.SkyboxTextureHandle,
 			cubemap.IndirectLightingTextureHandle,
 			Scene.BrightnessToLux(backdropIntensity),
+			rotation.Angle.Radians,
+			rotation.Axis.ToVector3(),
 			out var skyboxHandle,
 			out var indirectLightHandle
 		).ThrowIfFailure();
@@ -286,6 +290,8 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		UIntPtr skyboxTextureHandle,
 		UIntPtr iblTextureHandle,
 		float indirectLightingIntensity,
+		float rotAngleRadians,
+		Vector3 rotAxis,
 		out UIntPtr outSkyboxHandle,
 		out UIntPtr outIndirectLightHandle
 	);

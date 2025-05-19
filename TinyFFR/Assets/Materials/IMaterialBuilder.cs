@@ -44,10 +44,10 @@ public interface IMaterialBuilder {
 		}
 		return buffer;
 	}
-	Texture CreateColorMap(ColorVect plainFillColor, bool includeAlphaChannel = false, ReadOnlySpan<char> name = default) {
-		return CreateColorMap(TexturePattern.PlainFill(plainFillColor), includeAlphaChannel, name);
+	Texture CreateColorMap(ColorVect plainFillColor, ReadOnlySpan<char> name = default) {
+		return CreateColorMap(TexturePattern.PlainFill(plainFillColor), name);
 	}
-	Texture CreateColorMap(TexturePattern<ColorVect>? pattern = null, bool includeAlphaChannel = false, ReadOnlySpan<char> name = default) {
+	Texture CreateColorMap(TexturePattern<ColorVect>? pattern = null, ReadOnlySpan<char> name = default) {
 		pattern ??= TexturePattern.PlainFill(DefaultTexelColor);
 		var dimensions = pattern.Value.Dimensions;
 		TexturePattern.AssertDimensions(dimensions);
@@ -61,10 +61,26 @@ public interface IMaterialBuilder {
 			Width = dimensions.X,
 		};
 
-		if (includeAlphaChannel) {
-			return CreateTextureAndDisposePreallocatedBuffer(FillPreallocatedBuffer<ColorVect, TexelRgba32>(pattern.Value), genConfig, config);
-		}
 		return CreateTextureAndDisposePreallocatedBuffer(FillPreallocatedBuffer<ColorVect, TexelRgb24>(pattern.Value), genConfig, config);
+	}
+	Texture CreateColorMapWithAlpha(ColorVect plainFillColor, ReadOnlySpan<char> name = default) {
+		return CreateColorMapWithAlpha(TexturePattern.PlainFill(plainFillColor), name);
+	}
+	Texture CreateColorMapWithAlpha(TexturePattern<ColorVect>? pattern = null, ReadOnlySpan<char> name = default) {
+		pattern ??= TexturePattern.PlainFill(DefaultTexelColor);
+		var dimensions = pattern.Value.Dimensions;
+		TexturePattern.AssertDimensions(dimensions);
+
+		var config = new TextureCreationConfig {
+			GenerateMipMaps = dimensions.X > 1 || dimensions.Y > 1,
+			Name = name
+		};
+		var genConfig = new TextureGenerationConfig {
+			Height = dimensions.Y,
+			Width = dimensions.X,
+		};
+
+		return CreateTextureAndDisposePreallocatedBuffer(FillPreallocatedBuffer<ColorVect, TexelRgba32>(pattern.Value), genConfig, config);
 	}
 	Texture CreateNormalMap(TexturePattern<Direction>? pattern = null, ReadOnlySpan<char> name = default) {
 		pattern ??= TexturePattern.PlainFill(DefaultTexelNormal);

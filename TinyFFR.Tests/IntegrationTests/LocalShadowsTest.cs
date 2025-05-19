@@ -16,6 +16,7 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalShadowsTest {
+	const string SkyboxFile = "IntegrationTests\\kloofendal_48d_partly_cloudy_puresky_4k.hdr";
 	const int GridSize = 3;
 	const int HalfGridSize = GridSize / 2;
 	const float CubeSize = 0.35f;
@@ -33,20 +34,21 @@ class LocalShadowsTest {
 		var display = factory.DisplayDiscoverer.Recommended!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Shadows Test", size: (1920, 1080), position: (100, 100));
 		using var camera = factory.CameraBuilder.CreateCamera();
-		using var scene = factory.SceneBuilder.CreateScene(backdropColor: ColorVect.Black);
+		using var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(SkyboxFile);
+		using var scene = factory.SceneBuilder.CreateScene();
+		scene.SetBackdrop(cubemap, backdropIntensity: 1f, rotation: 180f % Direction.Forward);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
 		using var cubeMesh = factory.MeshBuilder.CreateMesh(new Cuboid(CubeSize));
 		using var cubeMat = factory.MaterialBuilder.CreateAlphaAwareMaterial(
-			colorMap: factory.MaterialBuilder.CreateColorMap(TexturePattern.Chequerboard(
+			colorMap: factory.MaterialBuilder.CreateColorMapWithAlpha(TexturePattern.Chequerboard(
 					new ColorVect(1f, 1f, 1f, 1f), 
 					new ColorVect(0f, 0f, 0f, 0f)
-				), 
-				includeAlphaChannel: true
+				)
 			),
 			type: AlphaMaterialType.ShadowMask
 		);
-		using var floorMat = factory.MaterialBuilder.CreateOpaqueMaterial(factory.MaterialBuilder.CreateColorMap(StandardColor.White));
+		using var floorMat = factory.MaterialBuilder.CreateAlphaAwareMaterial(factory.MaterialBuilder.CreateColorMapWithAlpha(new ColorVect(0.5f, 0.5f, 0.5f, 0.5f)));
 
 		var cubeList = factory.ResourceAllocator.CreateNewArrayPoolBackedList<ModelInstance>();
 		
@@ -398,7 +400,7 @@ class LocalShadowsTest {
 			directionalLight2.RotateBy(8f % Direction.Down * dt);
 			directionalLight2.Direction = (Location.Origin + directionalLight.Direction * -3f + Direction.Up * dt * 0.04f).DirectionTo(Location.Origin);
 
-			camera.RotateBy(10f % Direction.Right * dt);
+			camera.RotateBy(5f % Direction.Right * dt);
 
 			renderer.Render();
 			renderer2.Render();
