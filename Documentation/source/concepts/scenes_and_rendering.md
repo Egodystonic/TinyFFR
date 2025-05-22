@@ -39,11 +39,13 @@ You can also set a backdrop with indirect lighting disabled, if desired (see bel
 
 	You can also optionally set a value for `indirectLightingIntensity`, where `1f` is the default (meaning 100%). Setting this value will not affect the backdrop color.
 
-<span class="def-icon">:material-code-block-parentheses:</span> `SetBackdrop(EnvironmentCubemap cubemap, float backdropIntensity = 1f)`
+<span class="def-icon">:material-code-block-parentheses:</span> `SetBackdrop(EnvironmentCubemap cubemap, float backdropIntensity = 1f, Rotation? rotation = null)`
 
 :   Sets the backdrop of the scene to the given `cubemap`.
 
 	You can also optionally set a value for `backdropIntensity`, where `1f` is the default (meaning 100%). Setting this value changes the intensity of indirect lighting and also the brightness/intensity of the backdrop.
+
+	Finally, you can also set an optional `rotation` value which can be used to rotate the skybox texture/cubemap.
 
 <span class="def-icon">:material-code-block-parentheses:</span> `SetBackdropWithoutIndirectLighting(ColorVect color)`
 
@@ -51,13 +53,15 @@ You can also set a backdrop with indirect lighting disabled, if desired (see bel
 
 	This method will simply set a backdrop color but disables all indirect lighting. This means objects will appear to be pitch-black unless lit by another light source.
 
-<span class="def-icon">:material-code-block-parentheses:</span> `SetBackdropWithoutIndirectLighting(EnvironmentCubemap cubemap, float backdropIntensity = 1f)`
+<span class="def-icon">:material-code-block-parentheses:</span> `SetBackdropWithoutIndirectLighting(EnvironmentCubemap cubemap, float backdropIntensity = 1f, Rotation? rotation = null)`
 
 :   Sets the backdrop of the scene to the given `cubemap`.
 
 	This method will set the environment cubemap as the backdrop/sky, but will not use it to apply any indirect lighting. This means objects will appear to be pitch-black unless lit by another light source.
 
 	You can still set the intensity/brightness of the cubemap using the optional `backdropIntensity` value. This will only adjust the brightness of the sky.
+
+	Finally, you can also set an optional `rotation` value which can be used to rotate the skybox texture/cubemap.
 
 <span class="def-icon">:material-code-block-parentheses:</span> `RemoveBackdrop()`
 
@@ -150,6 +154,16 @@ Cameras offer the following controls:
 :   Sets the `ViewDirection` and `UpDirection` together. This can be useful if you want to avoid the auto-orthogonalization calculations when setting them separately.
 
 	If `enforceOrthogonality` is `false`, TinyFFR will not orthogonalize the two directions at all. If they are not orthogonal this can lead to some unexpected or even confusing perspective distortions.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `LookAt(Location target)`
+<span class="def-icon">:material-code-block-parentheses:</span> `LookAt(Location target, Direction upDirection)`
+
+:   Rotates the camera to look at the specified `target`. 
+
+	If you specify an `upDirection`, the camera will maintain that direction as its `UpDirection`, auto-orthogonalizing with the resultant `ViewDirection`. If you do *not* specify an `upDirection`, the camera will simply rotate its `ViewDirection` to face the `target` and auto-orthogonalize the existing `UpDirection` according to that rotation.
+
+	In most cases, you will probably want to specify an `upDirection`. Without an `upDirection` the camera will likely spin around over time.
+
 
 ## Renderers
 

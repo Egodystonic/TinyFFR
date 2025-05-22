@@ -67,7 +67,7 @@ The order the vertices are specified in within the triangle is important and def
 
 ## Creating Meshes
 
-Meshes can be loaded via the factory's `AssetLoader` (see [Loading Assets](/examples/loading_assets.md)) or created from triangles/vertices using the `IMeshBuilder` interface (found via the factory at `factory.AssetLoader.MeshBuilder`).
+Meshes can be loaded via the factory's `AssetLoader` (see [Loading Assets](/examples/loading_assets.md)) or created from triangles/vertices using the `IMeshBuilder` interface (found via the factory at `factory.MeshBuilder` or `factory.AssetLoader.MeshBuilder`).
 
 ### MeshCreationConfig
 

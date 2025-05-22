@@ -63,13 +63,14 @@ Every object that is eventually rendered to the screen in a 3D scene is made up 
 We can use the factory's *mesh builder* to build such a mesh:
 
 ```csharp
-var meshBuilder = factory.AssetLoader.MeshBuilder; // (1)!
+var meshBuilder = factory.MeshBuilder; // (1)!
 
 var cubeDesc = new Cuboid(1f); // (2)!
 using var cubeMesh = meshBuilder.CreateMesh(cubeDesc); // (3)!
 ```
 
-1. A mesh is a type of *asset*; assets are basically anything we store on the GPU's memory (i.e. VRAM). Because all assets are ultimately loaded on to the GPU by a single *asset loader*, the mesh builder is a property of the factory's `AssetLoader`.
+1.  The `MeshBuilder` is a factory interface that helps us build meshes, either via specifying polygons or shapes (in our case we will specify a cuboid shape).
+
 2. 	`cubeDesc` is just a description of a 1m x 1m x 1m cube. It is not a mesh itself, just an instance of a `Cuboid` (which is a struct simply used to describe a cuboid's shape/dimensions).
 
 	Most floating-point values (technically *scalars*) in TinyFFR are generally assumed to be in meters; but you can choose any 'base unit' you like depending on your application.
@@ -92,13 +93,13 @@ We will also need a *material* that describes the __surface__ of the cube. At th
 We can use the factory's *material builder* to build such a material:
 
 ```csharp
-var materialBuilder = factory.AssetLoader.MaterialBuilder; // (1)!
+var materialBuilder = factory.MaterialBuilder; // (1)!
 
 using var colorMap = materialBuilder.CreateColorMap(StandardColor.Maroon); // (2)!
 using var material = materialBuilder.CreateOpaqueMaterial(colorMap); // (3)!
 ```
 
-1. Just like with the mesh before, materials are also assets stored on the GPU's memory (i.e. VRAM). And just like with the mesh builder, this means the material builder is a property of the factory's `AssetLoader`.
+1. The material builder helps us create materials programmatically (rather than, say, loading them from texture files).
 2. 	A color map is basically a 2D texture (e.g. an image/bitmap) that will be applied to the surface of a mesh.
 
 	`CreateColorMap()` takes a variety of parameters, but in this example we're using an [implicit conversion](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/user-defined-conversion-operators) from `StandardColor` to `ColorVect` to specify a single uniform color. If you want to experiment, you can try providing a `ColorVect` directly instead, the type is fairly simple to use!
@@ -359,14 +360,14 @@ using var factory = new LocalTinyFfrFactory();
 
 
 // "Creating the Cube Mesh" (2)
-var meshBuilder = factory.AssetLoader.MeshBuilder;
+var meshBuilder = factory.MeshBuilder;
 
 var cubeDesc = new Cuboid(1f);
 using var cubeMesh = meshBuilder.CreateMesh(cubeDesc);
 
 
 // "Creating a Material for the Cube" (3)
-var materialBuilder = factory.AssetLoader.MaterialBuilder;
+var materialBuilder = factory.MaterialBuilder;
 
 using var colorMap = materialBuilder.CreateColorMap(StandardColor.Maroon);
 using var material = materialBuilder.CreateOpaqueMaterial(colorMap);
@@ -457,9 +458,9 @@ using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Environment.Input;
 
 using var factory = new LocalTinyFfrFactory();
-using var cubeMesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f));
-using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.Maroon);
-using var material = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap);
+using var cubeMesh = factory.MeshBuilder.CreateMesh(new Cuboid(1f));
+using var colorMap = factory.MaterialBuilder.CreateColorMap(StandardColor.Maroon);
+using var material = factory.MaterialBuilder.CreateOpaqueMaterial(colorMap);
 using var cube = factory.ObjectBuilder.CreateModelInstance(cubeMesh, material, initialPosition: (0f, 0f, 2f));
 using var light = factory.LightBuilder.CreatePointLight();
 using var scene = factory.SceneBuilder.CreateScene();

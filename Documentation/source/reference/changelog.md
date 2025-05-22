@@ -11,11 +11,11 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/issues?q=is%3Aissue%20
 
 ### Major Features
 
-* Added transparent material support
 * Added new lighting models:
 	* Spotlights
 	* Sunlight/directional lights
 	* Shadows
+* Added alpha channel support to materials
 
 ### Improvements
 
