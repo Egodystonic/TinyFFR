@@ -10,9 +10,11 @@ TinyFFR is currently provided as a .NET9 NuGet package targeting Windows x64 pla
 
 1. Support for other platforms is planned for the future. See [github](https://github.com/Egodystonic/TinyFFR/issues/26).
 
+Alternatively: If you're new to .NET/C# and/or NuGet, follow one of guides below depending on your preferred environment:
+
 ----
 
-Alternatively: If you're new to .NET/C# and/or NuGet, follow one of guides below depending on your preferred environment:
+----
 
 ## Commandline
 
