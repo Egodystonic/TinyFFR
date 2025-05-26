@@ -35,6 +35,13 @@ static unsafe class LocalNativeUtils {
 
 	public static void InitializeNativeLibIfNecessary() {
 		if (_nativeLibInitialized) return;
+
+		// This curious invocation tells the NVIDIA drivers (if they exist) to force this application to run
+		// on the dedicated GPU in systems where that isn't always the default (e.g. gaming laptops).
+		// We don't actually need the loaded library handle, and if the load attempt fails 
+		// we can just ignore the failure as it means this system probably isn't an NVIDIA one.
+		_ = NativeLibrary.TryLoad("nvapi64.dll", out _);
+
 		SetLogNotifyDelegate(&HandleLogMessage);
 		InitializeAll().ThrowIfFailure();
 		SetBufferDeallocationDelegate(&DeallocateRentedBuffer).ThrowIfFailure();
