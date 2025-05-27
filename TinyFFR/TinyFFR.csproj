@@ -42,9 +42,10 @@
 
   <!-- 
   Package publish steps (for now):
-    Update package version below, add -rc1 for testing and increment rc version for each test
+    Update package version below, add -rc001 for testing and increment rc version for each test
     Put in Release configuration
     Rebuild whole solution, then build this project one more time because it doesn't include the built DLL/LIBs from the first build (this needs to be improved)
+      (may need to make an edit to this file and undo it to trigger the build system to not skip the project)
     Copy the built nupkg (from the build_output/Release folder) to local package source
     Reference the nuget package from the Nupkg testing project as a nuget and test
     Once all looks good, do not clean or rebuild or change anything except taking the -rc out from the package version and building JUST THIS PROJECT once more
@@ -53,7 +54,7 @@
   -->
   <PropertyGroup>
     <PackageId>Egodystonic.TinyFFR</PackageId>
-    <PackageVersion>0.1.0</PackageVersion> 
+    <PackageVersion>0.2.0</PackageVersion> 
     <Authors>Ben Bowen</Authors>
     <Company>Egodystonic Studios</Company>
     <Description>A Tiny Fixed Function Rendering library for C#.</Description>
