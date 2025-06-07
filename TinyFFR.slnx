@@ -1,0 +1,29 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Optimized" />
+    <BuildType Name="Release" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/Testing/">
+    <Project Path="LocalDevTesting/LocalDevTesting.csproj">
+      <BuildDependency Project="TinyFFR.Native/TinyFFR.Native.vcxproj" />
+      <BuildDependency Project="TinyFFR/TinyFFR.csproj" />
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="NupkgTesting/NupkgTesting.csproj">
+      <BuildType Solution="Optimized|*" Project="Release" />
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="TinyFFR.Tests/TinyFFR.Tests.csproj">
+      <BuildType Solution="Optimized|*" Project="Release" />
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
+  <Project Path="TinyFFR.Native/TinyFFR.Native.vcxproj" Id="ac530f90-8cb3-4e18-9bf2-89079fb171eb">
+    <BuildType Solution="Optimized|*" Project="Release" />
+  </Project>
+  <Project Path="TinyFFR/TinyFFR.csproj">
+    <Platform Project="x64" />
+  </Project>
+</Solution>
