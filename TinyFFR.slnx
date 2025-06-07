@@ -6,16 +6,16 @@
     <Platform Name="x64" />
   </Configurations>
   <Folder Name="/Testing/">
-    <Project Path="LocalDevTesting/LocalDevTesting.csproj">
+    <Project Path="Testing/LocalDevTesting/LocalDevTesting.csproj">
       <BuildDependency Project="TinyFFR.Native/TinyFFR.Native.vcxproj" />
       <BuildDependency Project="TinyFFR/TinyFFR.csproj" />
       <Platform Project="x64" />
     </Project>
-    <Project Path="NupkgTesting/NupkgTesting.csproj">
+    <Project Path="Testing/NupkgTesting/NupkgTesting.csproj">
       <BuildType Solution="Optimized|*" Project="Release" />
       <Platform Project="x64" />
     </Project>
-    <Project Path="TinyFFR.Tests/TinyFFR.Tests.csproj">
+    <Project Path="Testing/TinyFFR.Tests/TinyFFR.Tests.csproj">
       <BuildType Solution="Optimized|*" Project="Release" />
       <Platform Project="x64" />
     </Project>
