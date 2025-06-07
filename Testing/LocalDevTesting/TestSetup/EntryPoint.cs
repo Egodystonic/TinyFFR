@@ -1,44 +1,7 @@
-﻿using System.Diagnostics;
-using System.Globalization;
-using System.Reflection;
-using Egodystonic.TinyFFR;
-using Egodystonic.TinyFFR.Environment.Local;
-using Egodystonic.TinyFFR.Factory.Local;
-using System.Runtime.InteropServices;
-using Egodystonic.TinyFFR.Assets.Materials;
-using Egodystonic.TinyFFR.Assets.Meshes;
-using Egodystonic.TinyFFR.Environment.Input;
-using Egodystonic.TinyFFR.Rendering;
-using Egodystonic.TinyFFR.World;
-using Egodystonic.TinyFFR.Environment;
+﻿using Egodystonic.TinyFFR.Testing.Local.TestSetup;
 
-// TODO make this a little better. Maybe make it a little framework and ignore the actual "meat" file
-NativeLibrary.SetDllImportResolver( // Yeah this is ugly af but it'll do for v1
-	typeof(LocalTinyFfrFactory).Assembly,
-	(libName, assy, searchPath) => {
-		var curDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+TestScaffold.SetUpNativeAssemblyResolution();
 
-		while (curDir != null) {
-			var containedDirectories = Directory.GetDirectories(curDir);
-			if (containedDirectories.Any(d => Path.GetFileName(d)?.Equals("build_output", StringComparison.OrdinalIgnoreCase) ?? false)) {
-#if DEBUG
-				const string BuildConfig = "Debug";
-#else
-				const string BuildConfig = "Release";
-#endif
-				var expectedFilePath = Path.Combine(curDir, "build_output", BuildConfig, libName);
-				foreach (var possibleFilePath in new string[] { ".dll", ".lib", ".so" }.Concat([""]).Select(ext => expectedFilePath + ext)) {
-					if (File.Exists(possibleFilePath)) return NativeLibrary.Load(possibleFilePath, assy, searchPath);
-				}
-
-				return IntPtr.Zero;
-			}
-
-			curDir = Directory.GetParent(curDir)?.FullName;
-		}
-		return IntPtr.Zero;
-	}
-);
 
 
 
