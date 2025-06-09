@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\TinyFFR.Native\TinyFFR.Native.vcxproj" />
     <ProjectReference Include="..\..\TinyFFR\TinyFFR.csproj" />
+    <ProjectReference Include="..\TestCommon\TestCommon.csproj" />
   </ItemGroup>
 
 </Project>

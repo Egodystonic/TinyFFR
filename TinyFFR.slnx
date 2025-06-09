@@ -15,6 +15,10 @@
       <BuildType Solution="Optimized|*" Project="Release" />
       <Platform Project="x64" />
     </Project>
+    <Project Path="Testing/TestCommon/TestCommon.csproj" Id="c5487859-95a3-4bf9-85dc-23f9d6e6fd3d">
+      <BuildType Solution="Optimized|*" Project="Release" />
+      <Platform Project="x64" />
+    </Project>
     <Project Path="Testing/TinyFFR.Tests/TinyFFR.Tests.csproj">
       <BuildType Solution="Optimized|*" Project="Release" />
       <Platform Project="x64" />

@@ -15,13 +15,13 @@ using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Testing;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalDisposalProtectionTest {
-	const string SkyboxFile = "IntegrationTests\\kloofendal_48d_partly_cloudy_puresky_4k.hdr";
 	char[] _nameDestinationBuffer = null!;
 
 	[SetUp]
@@ -233,7 +233,7 @@ class LocalDisposalProtectionTest {
 			v => v.Remove(modelInstance)
 		};
 		AssertUseAfterDisposalThrowsException(sceneBuilder.CreateScene(), objectIsAlreadyDisposed: false, sceneActions);
-		var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(SkyboxFile);
+		var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
 		var cubemapActions = new Action<EnvironmentCubemap>[] {
 			v => _ = v.Handle,
 			v => _ = v.GetNameAsNewStringObject(),
@@ -242,7 +242,7 @@ class LocalDisposalProtectionTest {
 			v => _ = v.SkyboxTextureHandle,
 			v => _ = v.IndirectLightingTextureHandle,
 		};
-		AssertUseAfterDisposalThrowsException(factory.AssetLoader.LoadEnvironmentCubemap(SkyboxFile), objectIsAlreadyDisposed: false, cubemapActions);
+		AssertUseAfterDisposalThrowsException(factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr)), objectIsAlreadyDisposed: false, cubemapActions);
 		var rendererBuilder = factory.RendererBuilder;
 		var renderer = rendererBuilder.CreateRenderer(scene, camera, window);
 		var rendererActions = new Action<Renderer>[] {
@@ -311,7 +311,7 @@ class LocalDisposalProtectionTest {
 		);
 		AssertUseAfterDisposalThrowsException(
 			windowBuilder, objectIsAlreadyDisposed: true,
-			v => _ = v.CreateWindow(new WindowConfig { Display = default })
+			v => _ = v.CreateWindow(new WindowCreationConfig { Display = default })
 		);
 		AssertUseAfterDisposalThrowsException(
 			loopBuilder, objectIsAlreadyDisposed: true,

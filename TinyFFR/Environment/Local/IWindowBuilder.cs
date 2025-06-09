@@ -15,5 +15,5 @@ public interface IWindowBuilder {
 			Title = title
 		});
 	}
-	Window CreateWindow(in WindowConfig config);
+	Window CreateWindow(in WindowCreationConfig config);
 }

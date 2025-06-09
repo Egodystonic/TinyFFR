@@ -4,26 +4,27 @@ using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Testing;
 using static NupkgTesting.AssetTestConstants;
 
 using var factory = new LocalTinyFfrFactory();
 
-if (new TextureReadMetadata(1024, 1024) != factory.AssetLoader.ReadTextureMetadata(AlbedoFile)) throw new InvalidOperationException("Test fail");
-if (new TextureReadMetadata(1024, 1024) != factory.AssetLoader.ReadTextureMetadata(NormalFile)) throw new InvalidOperationException("Test fail");
-if (new TextureReadMetadata(1024, 1024) != factory.AssetLoader.ReadTextureMetadata(SpecularFile)) throw new InvalidOperationException("Test fail");
+if (new TextureReadMetadata(1024, 1024) != factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex))) throw new InvalidOperationException("Test fail");
+if (new TextureReadMetadata(1024, 1024) != factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex))) throw new InvalidOperationException("Test fail");
+if (new TextureReadMetadata(1024, 1024) != factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex))) throw new InvalidOperationException("Test fail");
 
 var texBuffer = (new TexelRgb24[1024 * 1024]).AsSpan();
-factory.AssetLoader.ReadTexture(AlbedoFile, texBuffer);
+factory.AssetLoader.ReadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex), texBuffer);
 AssertTexelSamples(texBuffer, _expectedSampledAlbedoPixelValues);
-factory.AssetLoader.ReadTexture(NormalFile, texBuffer);
+factory.AssetLoader.ReadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex), texBuffer);
 AssertTexelSamples(texBuffer, _expectedSampledNormalPixelValues);
-factory.AssetLoader.ReadTexture(SpecularFile, texBuffer);
+factory.AssetLoader.ReadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex), texBuffer);
 AssertTexelSamples(texBuffer, _expectedSampledSpecularPixelValues);
 
-if (new MeshReadMetadata(662, 480) != factory.AssetLoader.ReadMeshMetadata(MeshFile)) throw new InvalidOperationException("Test fail");
+if (new MeshReadMetadata(662, 480) != factory.AssetLoader.ReadMeshMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateMesh))) throw new InvalidOperationException("Test fail");
 var meshVertexBuffer = new MeshVertex[662];
 var meshTriangleBuffer = new VertexTriangle[480];
-factory.AssetLoader.ReadMesh(MeshFile, meshVertexBuffer, meshTriangleBuffer);
+factory.AssetLoader.ReadMesh(CommonTestAssets.FindAsset(KnownTestAsset.CrateMesh), meshVertexBuffer, meshTriangleBuffer);
 var minLoc = new Location(Single.MaxValue, Single.MaxValue, Single.MaxValue);
 var maxLoc = new Location(Single.MinValue, Single.MinValue, Single.MinValue);
 foreach (var v in meshVertexBuffer) {
@@ -36,15 +37,19 @@ if (new Location(0f, 11.344924f, 1.9073486E-06f) != calculatedOrigin) throw new 
 
 var display = factory.DisplayDiscoverer.Recommended!.Value;
 using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Asset Import Test");
-window.SetIcon(LogoFile);
+window.SetIcon(CommonTestAssets.FindAsset(KnownTestAsset.EgodystonicLogo));
 using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
-using var albedo = factory.AssetLoader.LoadTexture(AlbedoFile);
-using var normal = factory.AssetLoader.LoadTexture(NormalFile);
-using var orm = factory.AssetLoader.LoadAndCombineOrmTextures(roughnessMapFilePath: SpecularFile, metallicMapFilePath: SpecularFile, config: new() { InvertYGreenChannel = true });
+using var albedo = factory.AssetLoader.LoadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex));
+using var normal = factory.AssetLoader.LoadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex));
+using var orm = factory.AssetLoader.LoadAndCombineOrmTextures(
+	roughnessMapFilePath: CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex), 
+	metallicMapFilePath: CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex), 
+	config: new() { InvertYGreenChannel = true }
+);
 using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(albedo, normal, orm);
-using var mesh = factory.AssetLoader.LoadMesh(MeshFile, new MeshCreationConfig { LinearRescalingFactor = 0.03f, OriginTranslation = calculatedOrigin.AsVect() });
+using var mesh = factory.AssetLoader.LoadMesh(CommonTestAssets.FindAsset(KnownTestAsset.CrateMesh), new MeshCreationConfig { LinearRescalingFactor = 0.03f, OriginTranslation = calculatedOrigin.AsVect() });
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 1.3f);
-using var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(SkyboxFile);
+using var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
 using var scene = factory.SceneBuilder.CreateScene();
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
@@ -65,3 +70,5 @@ while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSe
 	scene.SetBackdrop(cubemap, cbBrightness);
 	window.SetTitle("Backdrop brightness level " + PercentageUtils.ConvertFractionToPercentageString(cbBrightness));
 }
+
+Console.WriteLine("Test completed fine (assuming you saw the crate and the backdrop).");

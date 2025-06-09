@@ -15,14 +15,13 @@ using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Testing;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalDependencyTest {
-	const string SkyboxFile = "IntegrationTests\\kloofendal_48d_partly_cloudy_puresky_4k.hdr";
-
 	[SetUp]
 	public void SetUpTest() { }
 
@@ -61,7 +60,7 @@ class LocalDependencyTest {
 			var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 			AssertDependency(camera, renderer);
 
-			var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(SkyboxFile);
+			var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
 			scene.SetBackdrop(cubemap);
 			AssertDependency(cubemap, scene);
 			cubemap.Dispose();

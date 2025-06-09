@@ -11,12 +11,12 @@ using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.World;
 using System.Drawing;
+using Egodystonic.TinyFFR.Testing;
 
 namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalShadowsTest {
-	const string SkyboxFile = "IntegrationTests\\kloofendal_48d_partly_cloudy_puresky_4k.hdr";
 	const int GridSize = 3;
 	const int HalfGridSize = GridSize / 2;
 	const float CubeSize = 0.35f;
@@ -34,7 +34,7 @@ class LocalShadowsTest {
 		var display = factory.DisplayDiscoverer.Recommended!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Shadows Test", size: (1920, 1080), position: (100, 100));
 		using var camera = factory.CameraBuilder.CreateCamera();
-		using var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(SkyboxFile);
+		using var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
 		using var scene = factory.SceneBuilder.CreateScene();
 		scene.SetBackdrop(cubemap, backdropIntensity: 1f, rotation: 180f % Direction.Forward);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);

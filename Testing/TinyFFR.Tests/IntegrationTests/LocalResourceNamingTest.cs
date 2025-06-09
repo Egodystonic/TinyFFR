@@ -13,14 +13,14 @@ using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.Testing;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalResourceNamingTest {
-	const string SkyboxFile = "IntegrationTests\\kloofendal_48d_partly_cloudy_puresky_4k.hdr";
-	
+
 	[SetUp]
 	public void SetUpTest() { }
 
@@ -31,7 +31,7 @@ class LocalResourceNamingTest {
 	public void Execute() {
 		// ReSharper disable AccessToDisposedClosure Factory will be disposed only after closure is no longer in use
 		using var factory = new LocalTinyFfrFactory();
-		TestNameStorageAndRetrieval(n => factory.AssetLoader.LoadEnvironmentCubemap(SkyboxFile, name: n));
+		TestNameStorageAndRetrieval(n => factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr), name: n));
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(name: n));
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.MaterialBuilder.CreateColorMap(ColorVect.Black, name: n));
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f), name: n));

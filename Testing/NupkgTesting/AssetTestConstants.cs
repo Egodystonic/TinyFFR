@@ -6,12 +6,6 @@ using Egodystonic.TinyFFR.Assets.Materials;
 namespace NupkgTesting;
 
 public static class AssetTestConstants {
-	public const string AlbedoFile = "ELCrate.png";
-	public const string NormalFile = "ELCrate_Normal.png";
-	public const string SpecularFile = "ELCrate_Specular.png";
-	public const string MeshFile = "ELCrate.obj";
-	public const string SkyboxFile = "kloofendal_48d_partly_cloudy_puresky_4k.hdr";
-	public const string LogoFile = "egdLogo.png";
 	// These values were sampled/taken from an external paint program
 	public static readonly Dictionary<int, TexelRgb24> _expectedSampledAlbedoPixelValues = new() {
 		[1024 * 0000 + 0000] = new(0, 0, 0),

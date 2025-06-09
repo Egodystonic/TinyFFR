@@ -32,7 +32,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		_iconFilePathBuffer = new InteropStringBuffer(config.MaxIconFilePathLengthChars, addOneForNullTerminator: true);
 	}
 
-	public Window CreateWindow(in WindowConfig config) {
+	public Window CreateWindow(in WindowCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 		var globalPosition = config.Display.TranslateDisplayLocalWindowPositionToGlobal(config.Position);

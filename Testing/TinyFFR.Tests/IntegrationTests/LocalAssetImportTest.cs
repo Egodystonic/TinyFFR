@@ -10,17 +10,12 @@ using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.Testing;
 
 namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalAssetImportTest {
-	const string AlbedoFile = "IntegrationTests\\ELCrate.png";
-	const string NormalFile = "IntegrationTests\\ELCrate_Normal.png";
-	const string SpecularFile = "IntegrationTests\\ELCrate_Specular.png";
-	const string MeshFile = "IntegrationTests\\ELCrate.obj";
-	const string SkyboxFile = "IntegrationTests\\kloofendal_48d_partly_cloudy_puresky_4k.hdr";
-	const string LogoFile = "IntegrationTests\\egdLogo.png";
 	// These values were sampled/taken from an external paint program
 	static readonly Dictionary<int, TexelRgb24> _expectedSampledAlbedoPixelValues = new() {
 		[1024 * 0000 + 0000] = new(0, 0, 0),
@@ -59,22 +54,22 @@ class LocalAssetImportTest {
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 
-		Assert.AreEqual(new TextureReadMetadata(1024, 1024), factory.AssetLoader.ReadTextureMetadata(AlbedoFile));
-		Assert.AreEqual(new TextureReadMetadata(1024, 1024), factory.AssetLoader.ReadTextureMetadata(NormalFile));
-		Assert.AreEqual(new TextureReadMetadata(1024, 1024), factory.AssetLoader.ReadTextureMetadata(SpecularFile));
+		Assert.AreEqual(new TextureReadMetadata(1024, 1024), factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex)));
+		Assert.AreEqual(new TextureReadMetadata(1024, 1024), factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex)));
+		Assert.AreEqual(new TextureReadMetadata(1024, 1024), factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex)));
 
 		var texBuffer = (new TexelRgb24[1024 * 1024]).AsSpan();
-		factory.AssetLoader.ReadTexture(AlbedoFile, texBuffer);
+		factory.AssetLoader.ReadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex), texBuffer);
 		AssertTexelSamples(texBuffer, _expectedSampledAlbedoPixelValues);
-		factory.AssetLoader.ReadTexture(NormalFile, texBuffer);
+		factory.AssetLoader.ReadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex), texBuffer);
 		AssertTexelSamples(texBuffer, _expectedSampledNormalPixelValues);
-		factory.AssetLoader.ReadTexture(SpecularFile, texBuffer);
+		factory.AssetLoader.ReadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex), texBuffer);
 		AssertTexelSamples(texBuffer, _expectedSampledSpecularPixelValues);
 
-		Assert.AreEqual(new MeshReadMetadata(662, 480), factory.AssetLoader.ReadMeshMetadata(MeshFile));
+		Assert.AreEqual(new MeshReadMetadata(662, 480), factory.AssetLoader.ReadMeshMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateMesh)));
 		var meshVertexBuffer = new MeshVertex[662];
 		var meshTriangleBuffer = new VertexTriangle[480];
-		factory.AssetLoader.ReadMesh(MeshFile, meshVertexBuffer, meshTriangleBuffer);
+		factory.AssetLoader.ReadMesh(CommonTestAssets.FindAsset(KnownTestAsset.CrateMesh), meshVertexBuffer, meshTriangleBuffer);
 		var minLoc = new Location(Single.MaxValue, Single.MaxValue, Single.MaxValue);
 		var maxLoc = new Location(Single.MinValue, Single.MinValue, Single.MinValue);
 		foreach (var v in meshVertexBuffer) {
@@ -87,15 +82,22 @@ class LocalAssetImportTest {
 
 		var display = factory.DisplayDiscoverer.Recommended!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Asset Import Test");
-		window.SetIcon(LogoFile);
+		window.SetIcon(CommonTestAssets.FindAsset(KnownTestAsset.EgodystonicLogo));
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
-		using var albedo = factory.AssetLoader.LoadTexture(AlbedoFile);
-		using var normal = factory.AssetLoader.LoadTexture(NormalFile);
-		using var orm = factory.AssetLoader.LoadAndCombineOrmTextures(roughnessMapFilePath: SpecularFile, metallicMapFilePath: SpecularFile, config: new() { InvertYGreenChannel = true });
+		using var albedo = factory.AssetLoader.LoadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex));
+		using var normal = factory.AssetLoader.LoadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex));
+		using var orm = factory.AssetLoader.LoadAndCombineOrmTextures(
+			roughnessMapFilePath: CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex), 
+			metallicMapFilePath: CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex), 
+			config: new() { InvertYGreenChannel = true }
+		);
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(albedo, normal, orm);
-		using var mesh = factory.AssetLoader.LoadMesh(MeshFile, new MeshCreationConfig { LinearRescalingFactor = 0.03f, OriginTranslation = calculatedOrigin.AsVect() });
+		using var mesh = factory.AssetLoader.LoadMesh(
+			CommonTestAssets.FindAsset(KnownTestAsset.CrateMesh), 
+			new MeshCreationConfig { LinearRescalingFactor = 0.03f, OriginTranslation = calculatedOrigin.AsVect() }
+		);
 		using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 1.3f);
-		using var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(SkyboxFile);
+		using var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
 		using var scene = factory.SceneBuilder.CreateScene();
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
