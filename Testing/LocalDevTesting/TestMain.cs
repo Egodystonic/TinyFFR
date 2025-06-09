@@ -19,7 +19,7 @@ namespace Egodystonic.TinyFFR.Testing.Local;
 //	Because this is a test ground for each developer, ideally before editing this file
 //	you'd execute the following command in git to never push any changes up:
 //
-//	git update-index --assume-unchanged Testing/LocalDevTesting/TestMain.cs
+//	git update-index --skip-worktree Testing/LocalDevTesting/TestMain.cs
 //	
 //	After that you can modify this file as you wish.
 
