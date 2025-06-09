@@ -411,6 +411,3 @@ build_output/**
 
 # TinyFFR - ignore generated documentation 
 Documentation/output/**
-
-# TinyFFR - ignore TestMain.cs
-/Testing/LocalDevTesting/TestMain.cs
