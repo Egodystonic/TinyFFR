@@ -1,0 +1,35 @@
+{
+    "name": "presubmit",
+    "backends": ["opengl"],
+    "model_search_paths": ["third_party/models"],
+    "presets": [
+        {
+            "name": "base",
+            "models": ["lucy", "DamagedHelmet"],
+            "rendering": {
+                "viewer.cameraFocusDistance": 0,
+                "view.postProcessingEnabled": true,
+                "view.dithering": "NONE"
+            }
+        }
+    ],
+    "tests": [
+        {
+            "name": "BloomFlare",
+            "description": "Testing bloom and flare",
+            "apply_presets": ["base"],
+            "rendering": {
+                "view.bloom.enabled": true,
+                "view.bloom.lensFlare": true
+            }
+        },
+        {
+            "name": "MSAA",
+            "description": "Testing multisampling anti-aliasing",
+            "apply_presets": ["base"],
+            "rendering": {
+                "view.msaa.enabled": true
+            }
+        }
+    ]
+}

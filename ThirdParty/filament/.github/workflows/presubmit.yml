@@ -1,0 +1,175 @@
+name: Presubmit
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  build-desktop-mac:
+    name: build-mac
+    runs-on: macos-14-xlarge
+    steps:
+      - uses: actions/checkout@v4.1.6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/mac-prereq
+      - name: Run build script
+        run: |
+          cd build/mac && printf "y" | ./build.sh presubmit
+      - name: Test material parser
+        run: |
+          out/cmake-release/filament/test/test_material_parser
+
+  build-desktop-linux:
+    name: build-linux
+    runs-on: ubuntu-22.04-16core
+    steps:
+      - uses: actions/checkout@v4.1.6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/linux-prereq
+      - name: Run build script
+        run: |
+          cd build/linux && printf "y" | ./build.sh presubmit
+      - name: Test material parser
+        run: |
+          out/cmake-release/filament/test/test_material_parser
+
+  build-windows:
+    name: build-windows
+    runs-on: win-2019-16core
+
+    steps:
+      - uses: actions/checkout@v4.1.6
+        with:
+          fetch-depth: 0
+      - name: Run build script
+        run: |
+          build\windows\build-github.bat presubmit
+        shell: cmd
+
+  build-android:
+    name: build-android
+    runs-on: 'ubuntu-24.04-16core'
+
+    steps:
+      - uses: actions/checkout@v4.1.6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/linux-prereq
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Run build script
+        # Only build 1 64 bit target during presubmit to cut down build times during presubmit
+        # Continuous builds will build everything
+        run: |
+          cd build/android && printf "y" | ./build.sh presubmit arm64-v8a
+
+  build-ios:
+    name: build-iOS
+    runs-on: macos-14-xlarge
+
+    steps:
+      - uses: actions/checkout@v4.1.6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/mac-prereq
+      - name: Run build script
+        run: |
+          cd build/ios && printf "y" | ./build.sh presubmit
+      - name: Build iOS samples
+        run: |
+          cd build/ios && ./build-samples.sh presubmit
+
+  build-web:
+    name: build-web
+    runs-on: 'ubuntu-24.04-16core'
+
+    steps:
+      - uses: actions/checkout@v4.1.6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/linux-prereq
+      - uses: ./.github/actions/web-prereq
+      - name: Run build script
+        run: |
+          cd build/web && printf "y" | ./build.sh presubmit
+
+  validate-docs:
+    name: validate-docs
+    runs-on: 'ubuntu-24.04-4core'
+    steps:
+      - uses: actions/checkout@v4.1.6
+        with:
+          fetch-depth: 0
+      - name: Check for manual edits to /docs
+        run: |
+           echo "${{ github.event.pull_request.head.sha }} -- ${{ github.event.pull_request.head.sha }}"
+           # disable for now
+           # bash docs_src/build/presubmit_check.sh ${{ github.event.pull_request.head.sha }}
+
+  test-renderdiff:
+    name: test-renderdiff
+    runs-on: macos-14-xlarge
+    steps:
+      - uses: actions/checkout@v4.1.6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/mac-prereq
+      - name: Cache Mesa and deps
+        id: mesa-cache
+        uses: actions/cache@v4
+        with:
+          path: mesa
+          key: ${{ runner.os }}-mesa-deps-2-${{ vars.MESA_VERSION }}
+      - name: Prerequisites
+        id: prereqs
+        run: |
+          bash test/utils/get_mesa.sh
+          pip install tifffile numpy
+      - name: Run Test
+        run: bash test/renderdiff/test.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: presubmit-renderdiff-result
+          path: ./out/renderdiff_tests
+
+  validate-wgsl-webgpu:
+    name: validate-wgsl-webgpu
+    runs-on: 'ubuntu-24.04-8core'
+    steps:
+      - uses: actions/checkout@v4.1.6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/linux-prereq
+      - name: Run build script
+        run: ./build.sh -W debug test_filamat filament
+      - name: Run test
+        run: ./out/cmake-debug/libs/filamat/test_filamat --gtest_filter=MaterialCompiler.Wgsl*
+
+  code-correctness:
+    name: code-correctness
+    runs-on: 'macos-14-xlarge'
+    steps:
+      - uses: actions/checkout@v4.1.6
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/mac-prereq
+      - name: Install clang-tidy and deps
+        run: |
+          pip install pyyaml
+          brew install llvm@${GITHUB_LLVM_VERSION}
+          sudo ln -s "$(brew --prefix llvm)@${GITHUB_LLVM_VERSION}/bin/clang-tidy" "/usr/local/bin/clang-tidy"
+      - name: Run build script
+        # We need to build before clang-tidy can run analysis
+        run: |
+          # This will build for all three desktop backends on mac
+          ./build.sh -p desktop debug gltf_viewer
+      - name: Run test
+        run: bash test/code-correctness/test.sh
