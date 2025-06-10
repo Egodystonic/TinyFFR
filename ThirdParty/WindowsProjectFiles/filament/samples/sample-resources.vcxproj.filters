@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\samples\generated\resources\dummy.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\samples\generated\resources\resources.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\CMakeFiles\cd970c767f8c4d66eb168f05e7408282\dummy.c.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\aiDefaultMat.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\aoPreview.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\arrayTexture.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\bakedColor.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\bakedTexture.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\groundShadow.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\heightfield.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\image.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\mirror.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\overdraw.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\pointSprites.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\sandboxCloth.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\sandboxLit.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\sandboxLitFade.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\sandboxLitSolidRefraction.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\sandboxLitSolidRefractionSsr.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\sandboxLitThinRefraction.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\sandboxLitThinRefractionSsr.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\sandboxLitTransparent.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\sandboxSpecGloss.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\sandboxSubsurface.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\sandboxUnlit.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\materials\texturedLit.mat" />
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\CMakeFiles\cd970c767f8c4d66eb168f05e7408282\resources.bin.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\samples\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{BE59567A-439E-3D63-89B4-1A88ACB78E85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{32EEB8A7-351E-3E33-8AA7-D77C7208B8BB}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

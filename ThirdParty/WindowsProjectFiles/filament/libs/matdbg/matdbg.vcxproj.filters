@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\src\ApiHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\src\CommonWriter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\src\DebugServer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\src\JsonWriter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\src\ShaderReplacer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\src\ShaderExtractor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\src\ShaderInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\src\SourceFormatter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\src\TextWriter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\include\matdbg\DebugServer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\include\matdbg\JsonWriter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\include\matdbg\ShaderReplacer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\include\matdbg\ShaderExtractor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\include\matdbg\ShaderInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\include\matdbg\TextWriter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\src\ApiHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\src\CommonWriter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\src\SourceFormatter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tsl\robin_growth_policy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tsl\robin_hash.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tsl\robin_map.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tsl\robin_set.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\matdbg\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{BF667C38-1F1C-33DD-ADEA-BE8BBB44CC3C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{32EEB8A7-351E-3E33-8AA7-D77C7208B8BB}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

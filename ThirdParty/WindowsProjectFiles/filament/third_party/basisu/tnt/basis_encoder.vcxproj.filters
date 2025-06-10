@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\basisu\encoder\basisu_backend.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\basisu\encoder\basisu_basis_file.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\basisu\encoder\basisu_comp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\basisu\encoder\basisu_enc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\basisu\encoder\basisu_etc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\basisu\encoder\basisu_frontend.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\basisu\encoder\basisu_gpu_texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\basisu\encoder\basisu_pvrtc1_4.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\basisu\encoder\basisu_resampler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\basisu\encoder\basisu_resample_filters.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\basisu\encoder\basisu_ssim.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\basisu\encoder\basisu_uastc_enc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\basisu\encoder\basisu_bc7enc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\basisu\encoder\jpgd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\basisu\encoder\basisu_kernels_sse.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\basisu\encoder\basisu_opencl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\basisu\encoder\pvpngreader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\basisu\tnt\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{32EEB8A7-351E-3E33-8AA7-D77C7208B8BB}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

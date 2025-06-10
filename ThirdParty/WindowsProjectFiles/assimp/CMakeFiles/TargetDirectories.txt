@@ -1,0 +1,13 @@
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/assimp/CMakeFiles/uninstall.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/assimp/CMakeFiles/UpdateAssimpLibsDebugSymbolsAndDLLs.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/assimp/CMakeFiles/INSTALL.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/assimp/CMakeFiles/ALL_BUILD.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/assimp/CMakeFiles/ZERO_CHECK.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/assimp/contrib/zlib/CMakeFiles/zlibstatic.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/assimp/contrib/zlib/CMakeFiles/INSTALL.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/assimp/contrib/zlib/CMakeFiles/ALL_BUILD.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/assimp/code/CMakeFiles/assimp.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/assimp/code/CMakeFiles/INSTALL.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/assimp/test/CMakeFiles/unit.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/assimp/test/CMakeFiles/INSTALL.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/assimp/test/headercheck/CMakeFiles/INSTALL.dir

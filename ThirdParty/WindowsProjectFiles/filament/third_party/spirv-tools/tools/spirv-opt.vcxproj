@@ -1,0 +1,389 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{D515BFAB-A4B8-358B-AA53-E8BF5B8AEFF8}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>spirv-opt</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools\tools\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">spirv-opt.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">spirv-opt</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools\tools\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">spirv-opt.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">spirv-opt</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools\tools\MinSizeRel\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">spirv-opt.dir\MinSizeRel\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">spirv-opt</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools\tools\RelWithDebInfo\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">spirv-opt.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">spirv-opt</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-headers\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /Zc:__cplusplus</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4800;4819</DisableSpecificWarnings>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;_ITERATOR_DEBUG_LEVEL=0;SPIRV_CHECK_CONTEXT;_SCL_SECURE_NO_WARNINGS;FILAMENT_SUPPORTS_OPENGL;SPIRV_WINDOWS;SPIRV_COLOR_TERMINAL;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;_ITERATOR_DEBUG_LEVEL=0;SPIRV_CHECK_CONTEXT;_SCL_SECURE_NO_WARNINGS;FILAMENT_SUPPORTS_OPENGL;SPIRV_WINDOWS;SPIRV_COLOR_TERMINAL;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-headers\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <MASM>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;_ITERATOR_DEBUG_LEVEL=0;SPIRV_CHECK_CONTEXT;_SCL_SECURE_NO_WARNINGS;FILAMENT_SUPPORTS_OPENGL;SPIRV_WINDOWS;SPIRV_COLOR_TERMINAL;CMAKE_INTDIR="Debug";</PreprocessorDefinitions>
+      <IncludePaths>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-headers\include;%(IncludePaths)</IncludePaths>
+      <AdditionalOptions>%(AdditionalOptions) /MTd /wd4800 /wd4819 /EHs</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </MASM>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-headers\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>..\source\opt\Debug\SPIRV-Tools-opt.lib;..\source\Debug\SPIRV-Tools.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64 -Wl,--gc-sections</AdditionalOptions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/third_party/spirv-tools/tools/Debug/spirv-opt.lib</ImportLibrary>
+      <ProgramDataBaseFile>C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/third_party/spirv-tools/tools/Debug/spirv-opt.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-headers\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /Zc:__cplusplus</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4800;4819</DisableSpecificWarnings>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_SCL_SECURE_NO_WARNINGS;FILAMENT_SUPPORTS_OPENGL;SPIRV_WINDOWS;SPIRV_COLOR_TERMINAL;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_SCL_SECURE_NO_WARNINGS;FILAMENT_SUPPORTS_OPENGL;SPIRV_WINDOWS;SPIRV_COLOR_TERMINAL;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-headers\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <MASM>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_SCL_SECURE_NO_WARNINGS;FILAMENT_SUPPORTS_OPENGL;SPIRV_WINDOWS;SPIRV_COLOR_TERMINAL;CMAKE_INTDIR="Release";</PreprocessorDefinitions>
+      <IncludePaths>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-headers\include;%(IncludePaths)</IncludePaths>
+      <AdditionalOptions>%(AdditionalOptions) /MT /wd4800 /wd4819 /EHs</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </MASM>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-headers\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>..\source\opt\Release\SPIRV-Tools-opt.lib;..\source\Release\SPIRV-Tools.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64 -Wl,--gc-sections</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/third_party/spirv-tools/tools/Release/spirv-opt.lib</ImportLibrary>
+      <ProgramDataBaseFile>C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/third_party/spirv-tools/tools/Release/spirv-opt.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-headers\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /Zc:__cplusplus</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <DisableSpecificWarnings>4800;4819</DisableSpecificWarnings>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MinSpace</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_SCL_SECURE_NO_WARNINGS;FILAMENT_SUPPORTS_OPENGL;SPIRV_WINDOWS;SPIRV_COLOR_TERMINAL;CMAKE_INTDIR="MinSizeRel"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_SCL_SECURE_NO_WARNINGS;FILAMENT_SUPPORTS_OPENGL;SPIRV_WINDOWS;SPIRV_COLOR_TERMINAL;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-headers\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <MASM>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_SCL_SECURE_NO_WARNINGS;FILAMENT_SUPPORTS_OPENGL;SPIRV_WINDOWS;SPIRV_COLOR_TERMINAL;CMAKE_INTDIR="MinSizeRel";</PreprocessorDefinitions>
+      <IncludePaths>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-headers\include;%(IncludePaths)</IncludePaths>
+      <AdditionalOptions>%(AdditionalOptions) /wd4800 /wd4819 /EHs</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </MASM>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-headers\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>..\source\opt\MinSizeRel\SPIRV-Tools-opt.lib;..\source\MinSizeRel\SPIRV-Tools.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64 -Wl,--gc-sections</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/third_party/spirv-tools/tools/MinSizeRel/spirv-opt.lib</ImportLibrary>
+      <ProgramDataBaseFile>C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/third_party/spirv-tools/tools/MinSizeRel/spirv-opt.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-headers\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /Zc:__cplusplus</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4800;4819</DisableSpecificWarnings>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_SCL_SECURE_NO_WARNINGS;FILAMENT_SUPPORTS_OPENGL;SPIRV_WINDOWS;SPIRV_COLOR_TERMINAL;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_SCL_SECURE_NO_WARNINGS;FILAMENT_SUPPORTS_OPENGL;SPIRV_WINDOWS;SPIRV_COLOR_TERMINAL;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-headers\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <MASM>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;_SCL_SECURE_NO_WARNINGS;FILAMENT_SUPPORTS_OPENGL;SPIRV_WINDOWS;SPIRV_COLOR_TERMINAL;CMAKE_INTDIR="RelWithDebInfo";</PreprocessorDefinitions>
+      <IncludePaths>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-headers\include;%(IncludePaths)</IncludePaths>
+      <AdditionalOptions>%(AdditionalOptions) /wd4800 /wd4819 /EHs</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </MASM>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-headers\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>..\source\opt\RelWithDebInfo\SPIRV-Tools-opt.lib;..\source\RelWithDebInfo\SPIRV-Tools.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64 -Wl,--gc-sections</AdditionalOptions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/third_party/spirv-tools/tools/RelWithDebInfo/spirv-opt.lib</ImportLibrary>
+      <ProgramDataBaseFile>C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/third_party/spirv-tools/tools/RelWithDebInfo/spirv-opt.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\tools\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament/third_party/spirv-tools/tools/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament -BC:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament --check-stamp-file C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/third_party/spirv-tools/tools/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools\tools\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament/third_party/spirv-tools/tools/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament -BC:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament --check-stamp-file C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/third_party/spirv-tools/tools/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools\tools\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament/third_party/spirv-tools/tools/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament -BC:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament --check-stamp-file C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/third_party/spirv-tools/tools/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools\tools\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament/third_party/spirv-tools/tools/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament -BC:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament --check-stamp-file C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/third_party/spirv-tools/tools/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools\tools\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\tools\util\flags.cpp" />
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\tools\opt\opt.cpp" />
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\tools\util\cli_consumer.cpp" />
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\spirv-tools\tools\io.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\ZERO_CHECK.vcxproj">
+      <Project>{8CD24650-5723-3E74-B083-7ED4D4857D7C}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools\source\opt\SPIRV-Tools-opt.vcxproj">
+      <Project>{3D898E75-26A3-3AF0-B1D1-71005A9A6107}</Project>
+      <Name>SPIRV-Tools-opt</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\spirv-tools\source\SPIRV-Tools-static.vcxproj">
+      <Project>{D472B184-6921-327F-804D-7AC96BB601D6}</Project>
+      <Name>SPIRV-Tools-static</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
+  </ImportGroup>
+</Project>

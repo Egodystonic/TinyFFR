@@ -1,0 +1,12 @@
+# CMake generation dependency list for this directory.
+C:/Program Files/CMake/share/cmake-3.27/Modules/CMakeASMCompiler.cmake.in
+C:/Program Files/CMake/share/cmake-3.27/Modules/CMakeASMInformation.cmake
+C:/Program Files/CMake/share/cmake-3.27/Modules/CMakeCompilerIdDetection.cmake
+C:/Program Files/CMake/share/cmake-3.27/Modules/CMakeDetermineASMCompiler.cmake
+C:/Program Files/CMake/share/cmake-3.27/Modules/CMakeDetermineCompiler.cmake
+C:/Program Files/CMake/share/cmake-3.27/Modules/CMakeDetermineCompilerId.cmake
+C:/Program Files/CMake/share/cmake-3.27/Modules/CMakeFindBinUtils.cmake
+C:/Program Files/CMake/share/cmake-3.27/Modules/CMakeTestASMCompiler.cmake
+C:/Program Files/CMake/share/cmake-3.27/Modules/Compiler/MSVC-ASM.cmake
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/CMakeFiles/3.27.4/CMakeASMCompiler.cmake
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament/libs/filagui/CMakeLists.txt

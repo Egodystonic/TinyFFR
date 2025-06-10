@@ -1,0 +1,177 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\ArchiveCache.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\Animator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\AssetLoader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\DependencyGraph.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\DracoCache.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\FilamentAsset.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\FilamentInstance.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\Ktx2Provider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\MaterialProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\NodeManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\TrsTransformManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\ResourceLoader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\StbProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\TangentsJob.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\UbershaderProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\Utility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\Wireframe.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\extended\AssetLoaderExtended.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\extended\ResourceLoaderExtended.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\extended\TangentsJobExtended.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\extended\TangentSpaceMeshWrapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\include\gltfio\Animator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\include\gltfio\AssetLoader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\include\gltfio\FilamentAsset.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\include\gltfio\FilamentInstance.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\include\gltfio\MaterialProvider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\include\gltfio\NodeManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\include\gltfio\TrsTransformManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\include\gltfio\ResourceLoader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\include\gltfio\TextureProvider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\include\gltfio\math.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\ArchiveCache.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\DependencyGraph.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\DracoCache.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\FFilamentAsset.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\FFilamentInstance.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\FNodeManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\FTrsTransformManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\GltfEnums.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\TangentsJob.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\Utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\Wireframe.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\downcast.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\extended\AssetLoaderExtended.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\extended\ResourceLoaderExtended.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\extended\TangentsJobExtended.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\src\extended\TangentSpaceMeshWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tsl\robin_growth_policy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tsl\robin_hash.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tsl\robin_map.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tsl\robin_set.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\cgltf\cgltf_write.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\cgltf\cgltf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\gltfio\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{BF667C38-1F1C-33DD-ADEA-BE8BBB44CC3C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{32EEB8A7-351E-3E33-8AA7-D77C7208B8BB}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

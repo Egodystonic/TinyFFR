@@ -1,0 +1,9 @@
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/sdl/CMakeFiles/sdl_headers_copy.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/sdl/CMakeFiles/SDL2main.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/sdl/CMakeFiles/SDL2.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/sdl/CMakeFiles/SDL2-static.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/sdl/CMakeFiles/SDL2_test.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/sdl/CMakeFiles/uninstall.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/sdl/CMakeFiles/INSTALL.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/sdl/CMakeFiles/ALL_BUILD.dir
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/sdl/CMakeFiles/ZERO_CHECK.dir

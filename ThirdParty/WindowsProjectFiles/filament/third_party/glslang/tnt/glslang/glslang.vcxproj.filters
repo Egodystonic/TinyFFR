@@ -1,0 +1,218 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\glslang_tab.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\attribute.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\Constant.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\iomapper.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\InfoSink.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\Initialize.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\IntermTraverse.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\Intermediate.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\ParseContextBase.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\ParseHelper.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\PoolAlloc.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\RemoveTree.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\Scan.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\ShaderLang.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\SpirvIntrinsics.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\SymbolTable.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\Versions.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\intermOut.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\limits.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\linkValidate.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\parseConst.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\reflection.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\preprocessor\Pp.cpp">
+      <Filter>MachineIndependent\Preprocessor</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\preprocessor\PpAtom.cpp">
+      <Filter>MachineIndependent\Preprocessor</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\preprocessor\PpContext.cpp">
+      <Filter>MachineIndependent\Preprocessor</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\preprocessor\PpScanner.cpp">
+      <Filter>MachineIndependent\Preprocessor</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\preprocessor\PpTokens.cpp">
+      <Filter>MachineIndependent\Preprocessor</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\propagateNoContraction.cpp">
+      <Filter>..\MachineIndependent</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\GenericCodeGen\CodeGen.cpp">
+      <Filter>..\GenericCodeGen</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\GenericCodeGen\Link.cpp">
+      <Filter>..\GenericCodeGen</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\Public\ShaderLang.h">
+      <Filter>..\Public</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\Include\arrays.h">
+      <Filter>..\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\Include\BaseTypes.h">
+      <Filter>..\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\Include\Common.h">
+      <Filter>..\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\Include\ConstantUnion.h">
+      <Filter>..\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\Include\InfoSink.h">
+      <Filter>..\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\Include\InitializeGlobals.h">
+      <Filter>..\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\Include\intermediate.h">
+      <Filter>..\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\Include\PoolAlloc.h">
+      <Filter>..\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\Include\ResourceLimits.h">
+      <Filter>..\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\Include\ShHandle.h">
+      <Filter>..\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\Include\Types.h">
+      <Filter>..\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\attribute.h">
+      <Filter>..\MachineIndependent</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\glslang_tab.cpp.h">
+      <Filter>..\MachineIndependent</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\gl_types.h">
+      <Filter>..\MachineIndependent</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\Initialize.h">
+      <Filter>..\MachineIndependent</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\iomapper.h">
+      <Filter>..\MachineIndependent</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\LiveTraverser.h">
+      <Filter>..\MachineIndependent</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\localintermediate.h">
+      <Filter>..\MachineIndependent</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\ParseHelper.h">
+      <Filter>..\MachineIndependent</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\reflection.h">
+      <Filter>..\MachineIndependent</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\RemoveTree.h">
+      <Filter>..\MachineIndependent</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\Scan.h">
+      <Filter>..\MachineIndependent</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\ScanContext.h">
+      <Filter>..\MachineIndependent</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\SymbolTable.h">
+      <Filter>..\MachineIndependent</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\Versions.h">
+      <Filter>..\MachineIndependent</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\parseVersions.h">
+      <Filter>..\MachineIndependent</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\propagateNoContraction.h">
+      <Filter>..\MachineIndependent</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\preprocessor\PpContext.h">
+      <Filter>MachineIndependent\Preprocessor</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\preprocessor\PpTokens.h">
+      <Filter>MachineIndependent\Preprocessor</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\tnt\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\glslang\glslang\MachineIndependent\glslang.y">
+      <Filter>..\MachineIndependent</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="..">
+      <UniqueIdentifier>{93F75079-AA2E-389E-BE78-923244DD34C5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\GenericCodeGen">
+      <UniqueIdentifier>{5CC6F8D0-520D-3DBF-A5F5-FDF565C80575}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\Include">
+      <UniqueIdentifier>{E8A3142C-51D6-312F-A132-B43B37EF37CA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\MachineIndependent">
+      <UniqueIdentifier>{DCA6F20A-EC50-389E-87FD-6B844D50BD46}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\Public">
+      <UniqueIdentifier>{9F5E2438-8C9F-392F-99E0-571FAF859568}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MachineIndependent">
+      <UniqueIdentifier>{2A648BA3-728A-30A3-9CEB-856F87E26035}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MachineIndependent\Preprocessor">
+      <UniqueIdentifier>{20369191-7A87-3DAC-A2CC-4A45484B69AD}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

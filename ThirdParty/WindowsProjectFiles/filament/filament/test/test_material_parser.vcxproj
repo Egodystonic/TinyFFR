@@ -1,0 +1,522 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{2881D7E0-2B35-360D-89D6-D28A8F781B00}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>test_material_parser</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">test_material_parser.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">test_material_parser</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">test_material_parser.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">test_material_parser</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\MinSizeRel\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">test_material_parser.dir\MinSizeRel\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">test_material_parser</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\RelWithDebInfo\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">test_material_parser.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">test_material_parser</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\src;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\backend\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\math\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\utils\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tnt\..;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filaflat\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filabridge\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\ibl\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googletest\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googlemock\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /Zc:__cplusplus</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;_ITERATOR_DEBUG_LEVEL=0;FILAMENT_SUPPORTS_OPENGL;FILAMENT_ENABLE_FEATURE_LEVEL_0;SYSTRACE_TAG=2;FILAMENT_DFG_LUT_SIZE=128;FILAMENT_PER_RENDER_PASS_ARENA_SIZE_IN_MB=3;FILAMENT_PER_FRAME_COMMANDS_SIZE_IN_MB=2;FILAMENT_MIN_COMMAND_BUFFERS_SIZE_IN_MB=2;FILAMENT_OPENGL_HANDLE_ARENA_SIZE_IN_MB=4;FILAMENT_METAL_HANDLE_ARENA_SIZE_IN_MB=8;FILAMENT_ENABLE_FGVIEWER=0;FILAMENT_ENABLE_MATDBG=0;FILAMENT_IBL_LITE=1;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;_ITERATOR_DEBUG_LEVEL=0;FILAMENT_SUPPORTS_OPENGL;FILAMENT_ENABLE_FEATURE_LEVEL_0;SYSTRACE_TAG=2;FILAMENT_DFG_LUT_SIZE=128;FILAMENT_PER_RENDER_PASS_ARENA_SIZE_IN_MB=3;FILAMENT_PER_FRAME_COMMANDS_SIZE_IN_MB=2;FILAMENT_MIN_COMMAND_BUFFERS_SIZE_IN_MB=2;FILAMENT_OPENGL_HANDLE_ARENA_SIZE_IN_MB=4;FILAMENT_METAL_HANDLE_ARENA_SIZE_IN_MB=8;FILAMENT_ENABLE_FGVIEWER=0;FILAMENT_ENABLE_MATDBG=0;FILAMENT_IBL_LITE=1;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\src;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\backend\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\math\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\utils\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tnt\..;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filaflat\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filabridge\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\ibl\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googletest\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googlemock\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <MASM>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;_ITERATOR_DEBUG_LEVEL=0;FILAMENT_SUPPORTS_OPENGL;FILAMENT_ENABLE_FEATURE_LEVEL_0;SYSTRACE_TAG=2;FILAMENT_DFG_LUT_SIZE=128;FILAMENT_PER_RENDER_PASS_ARENA_SIZE_IN_MB=3;FILAMENT_PER_FRAME_COMMANDS_SIZE_IN_MB=2;FILAMENT_MIN_COMMAND_BUFFERS_SIZE_IN_MB=2;FILAMENT_OPENGL_HANDLE_ARENA_SIZE_IN_MB=4;FILAMENT_METAL_HANDLE_ARENA_SIZE_IN_MB=8;FILAMENT_ENABLE_FGVIEWER=0;FILAMENT_ENABLE_MATDBG=0;FILAMENT_IBL_LITE=1;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <IncludePaths>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\src;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\backend\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\math\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\utils\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tnt\..;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filaflat\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filabridge\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\ibl\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googletest\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googlemock\include;%(IncludePaths)</IncludePaths>
+      <AdditionalOptions>%(AdditionalOptions) /MTd</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </MASM>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\src;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\backend\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\math\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\utils\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tnt\..;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filaflat\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filabridge\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\ibl\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googletest\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googlemock\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>..\Debug\filament.lib;..\..\third_party\libgtest\tnt\Debug\gtest.lib;..\backend\Debug\backend.lib;..\..\libs\bluegl\Debug\bluegl.lib;opengl32.lib;gdi32.lib;..\..\libs\filaflat\Debug\filaflat.lib;..\..\libs\filabridge\Debug\filabridge.lib;..\..\libs\ibl\Debug\ibl-lite.lib;..\..\libs\math\Debug\math.lib;..\..\libs\utils\Debug\utils.lib;Shlwapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64 -Wl,--gc-sections</AdditionalOptions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/Debug/test_material_parser.lib</ImportLibrary>
+      <ProgramDataBaseFile>C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/Debug/test_material_parser.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\src;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\backend\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\math\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\utils\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tnt\..;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filaflat\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filabridge\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\ibl\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googletest\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googlemock\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /Zc:__cplusplus</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;FILAMENT_SUPPORTS_OPENGL;FILAMENT_ENABLE_FEATURE_LEVEL_0;SYSTRACE_TAG=2;FILAMENT_DFG_LUT_SIZE=128;FILAMENT_PER_RENDER_PASS_ARENA_SIZE_IN_MB=3;FILAMENT_PER_FRAME_COMMANDS_SIZE_IN_MB=2;FILAMENT_MIN_COMMAND_BUFFERS_SIZE_IN_MB=2;FILAMENT_OPENGL_HANDLE_ARENA_SIZE_IN_MB=4;FILAMENT_METAL_HANDLE_ARENA_SIZE_IN_MB=8;FILAMENT_ENABLE_FGVIEWER=0;FILAMENT_ENABLE_MATDBG=0;FILAMENT_IBL_LITE=1;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;FILAMENT_SUPPORTS_OPENGL;FILAMENT_ENABLE_FEATURE_LEVEL_0;SYSTRACE_TAG=2;FILAMENT_DFG_LUT_SIZE=128;FILAMENT_PER_RENDER_PASS_ARENA_SIZE_IN_MB=3;FILAMENT_PER_FRAME_COMMANDS_SIZE_IN_MB=2;FILAMENT_MIN_COMMAND_BUFFERS_SIZE_IN_MB=2;FILAMENT_OPENGL_HANDLE_ARENA_SIZE_IN_MB=4;FILAMENT_METAL_HANDLE_ARENA_SIZE_IN_MB=8;FILAMENT_ENABLE_FGVIEWER=0;FILAMENT_ENABLE_MATDBG=0;FILAMENT_IBL_LITE=1;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\src;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\backend\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\math\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\utils\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tnt\..;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filaflat\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filabridge\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\ibl\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googletest\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googlemock\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <MASM>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;FILAMENT_SUPPORTS_OPENGL;FILAMENT_ENABLE_FEATURE_LEVEL_0;SYSTRACE_TAG=2;FILAMENT_DFG_LUT_SIZE=128;FILAMENT_PER_RENDER_PASS_ARENA_SIZE_IN_MB=3;FILAMENT_PER_FRAME_COMMANDS_SIZE_IN_MB=2;FILAMENT_MIN_COMMAND_BUFFERS_SIZE_IN_MB=2;FILAMENT_OPENGL_HANDLE_ARENA_SIZE_IN_MB=4;FILAMENT_METAL_HANDLE_ARENA_SIZE_IN_MB=8;FILAMENT_ENABLE_FGVIEWER=0;FILAMENT_ENABLE_MATDBG=0;FILAMENT_IBL_LITE=1;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
+      <IncludePaths>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\src;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\backend\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\math\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\utils\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tnt\..;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filaflat\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filabridge\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\ibl\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googletest\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googlemock\include;%(IncludePaths)</IncludePaths>
+      <AdditionalOptions>%(AdditionalOptions) /MT</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </MASM>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\src;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\backend\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\math\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\utils\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tnt\..;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filaflat\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filabridge\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\ibl\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googletest\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googlemock\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>..\Release\filament.lib;..\..\third_party\libgtest\tnt\Release\gtest.lib;..\backend\Release\backend.lib;..\..\libs\bluegl\Release\bluegl.lib;opengl32.lib;gdi32.lib;..\..\libs\filaflat\Release\filaflat.lib;..\..\libs\filabridge\Release\filabridge.lib;..\..\libs\ibl\Release\ibl-lite.lib;..\..\libs\math\Release\math.lib;..\..\libs\utils\Release\utils.lib;Shlwapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64 -Wl,--gc-sections</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/Release/test_material_parser.lib</ImportLibrary>
+      <ProgramDataBaseFile>C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/Release/test_material_parser.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\src;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\backend\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\math\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\utils\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tnt\..;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filaflat\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filabridge\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\ibl\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googletest\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googlemock\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /Zc:__cplusplus</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MinSpace</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;FILAMENT_SUPPORTS_OPENGL;FILAMENT_ENABLE_FEATURE_LEVEL_0;SYSTRACE_TAG=2;FILAMENT_DFG_LUT_SIZE=128;FILAMENT_PER_RENDER_PASS_ARENA_SIZE_IN_MB=3;FILAMENT_PER_FRAME_COMMANDS_SIZE_IN_MB=2;FILAMENT_MIN_COMMAND_BUFFERS_SIZE_IN_MB=2;FILAMENT_OPENGL_HANDLE_ARENA_SIZE_IN_MB=4;FILAMENT_METAL_HANDLE_ARENA_SIZE_IN_MB=8;FILAMENT_ENABLE_FGVIEWER=0;FILAMENT_ENABLE_MATDBG=0;FILAMENT_IBL_LITE=1;CMAKE_INTDIR="MinSizeRel"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;FILAMENT_SUPPORTS_OPENGL;FILAMENT_ENABLE_FEATURE_LEVEL_0;SYSTRACE_TAG=2;FILAMENT_DFG_LUT_SIZE=128;FILAMENT_PER_RENDER_PASS_ARENA_SIZE_IN_MB=3;FILAMENT_PER_FRAME_COMMANDS_SIZE_IN_MB=2;FILAMENT_MIN_COMMAND_BUFFERS_SIZE_IN_MB=2;FILAMENT_OPENGL_HANDLE_ARENA_SIZE_IN_MB=4;FILAMENT_METAL_HANDLE_ARENA_SIZE_IN_MB=8;FILAMENT_ENABLE_FGVIEWER=0;FILAMENT_ENABLE_MATDBG=0;FILAMENT_IBL_LITE=1;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\src;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\backend\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\math\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\utils\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tnt\..;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filaflat\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filabridge\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\ibl\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googletest\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googlemock\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <MASM>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;FILAMENT_SUPPORTS_OPENGL;FILAMENT_ENABLE_FEATURE_LEVEL_0;SYSTRACE_TAG=2;FILAMENT_DFG_LUT_SIZE=128;FILAMENT_PER_RENDER_PASS_ARENA_SIZE_IN_MB=3;FILAMENT_PER_FRAME_COMMANDS_SIZE_IN_MB=2;FILAMENT_MIN_COMMAND_BUFFERS_SIZE_IN_MB=2;FILAMENT_OPENGL_HANDLE_ARENA_SIZE_IN_MB=4;FILAMENT_METAL_HANDLE_ARENA_SIZE_IN_MB=8;FILAMENT_ENABLE_FGVIEWER=0;FILAMENT_ENABLE_MATDBG=0;FILAMENT_IBL_LITE=1;CMAKE_INTDIR="MinSizeRel"</PreprocessorDefinitions>
+      <IncludePaths>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\src;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\backend\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\math\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\utils\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tnt\..;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filaflat\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filabridge\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\ibl\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googletest\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googlemock\include;%(IncludePaths)</IncludePaths>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </MASM>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\src;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\backend\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\math\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\utils\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tnt\..;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filaflat\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filabridge\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\ibl\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googletest\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googlemock\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>..\MinSizeRel\filament.lib;..\..\third_party\libgtest\tnt\MinSizeRel\gtest.lib;..\backend\MinSizeRel\backend.lib;..\..\libs\bluegl\MinSizeRel\bluegl.lib;opengl32.lib;gdi32.lib;..\..\libs\filaflat\MinSizeRel\filaflat.lib;..\..\libs\filabridge\MinSizeRel\filabridge.lib;..\..\libs\ibl\MinSizeRel\ibl-lite.lib;..\..\libs\math\MinSizeRel\math.lib;..\..\libs\utils\MinSizeRel\utils.lib;Shlwapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64 -Wl,--gc-sections</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/MinSizeRel/test_material_parser.lib</ImportLibrary>
+      <ProgramDataBaseFile>C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/MinSizeRel/test_material_parser.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\src;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\backend\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\math\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\utils\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tnt\..;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filaflat\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filabridge\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\ibl\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googletest\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googlemock\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /Zc:__cplusplus</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;FILAMENT_SUPPORTS_OPENGL;FILAMENT_ENABLE_FEATURE_LEVEL_0;SYSTRACE_TAG=2;FILAMENT_DFG_LUT_SIZE=128;FILAMENT_PER_RENDER_PASS_ARENA_SIZE_IN_MB=3;FILAMENT_PER_FRAME_COMMANDS_SIZE_IN_MB=2;FILAMENT_MIN_COMMAND_BUFFERS_SIZE_IN_MB=2;FILAMENT_OPENGL_HANDLE_ARENA_SIZE_IN_MB=4;FILAMENT_METAL_HANDLE_ARENA_SIZE_IN_MB=8;FILAMENT_ENABLE_FGVIEWER=0;FILAMENT_ENABLE_MATDBG=0;FILAMENT_IBL_LITE=1;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;FILAMENT_SUPPORTS_OPENGL;FILAMENT_ENABLE_FEATURE_LEVEL_0;SYSTRACE_TAG=2;FILAMENT_DFG_LUT_SIZE=128;FILAMENT_PER_RENDER_PASS_ARENA_SIZE_IN_MB=3;FILAMENT_PER_FRAME_COMMANDS_SIZE_IN_MB=2;FILAMENT_MIN_COMMAND_BUFFERS_SIZE_IN_MB=2;FILAMENT_OPENGL_HANDLE_ARENA_SIZE_IN_MB=4;FILAMENT_METAL_HANDLE_ARENA_SIZE_IN_MB=8;FILAMENT_ENABLE_FGVIEWER=0;FILAMENT_ENABLE_MATDBG=0;FILAMENT_IBL_LITE=1;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\src;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\backend\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\math\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\utils\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tnt\..;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filaflat\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filabridge\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\ibl\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googletest\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googlemock\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <MASM>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_USE_MATH_DEFINES=1;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;NDEBUG;FILAMENT_SUPPORTS_OPENGL;FILAMENT_ENABLE_FEATURE_LEVEL_0;SYSTRACE_TAG=2;FILAMENT_DFG_LUT_SIZE=128;FILAMENT_PER_RENDER_PASS_ARENA_SIZE_IN_MB=3;FILAMENT_PER_FRAME_COMMANDS_SIZE_IN_MB=2;FILAMENT_MIN_COMMAND_BUFFERS_SIZE_IN_MB=2;FILAMENT_OPENGL_HANDLE_ARENA_SIZE_IN_MB=4;FILAMENT_METAL_HANDLE_ARENA_SIZE_IN_MB=8;FILAMENT_ENABLE_FGVIEWER=0;FILAMENT_ENABLE_MATDBG=0;FILAMENT_IBL_LITE=1;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
+      <IncludePaths>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\src;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\backend\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\math\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\utils\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tnt\..;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filaflat\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filabridge\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\ibl\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googletest\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googlemock\include;%(IncludePaths)</IncludePaths>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </MASM>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\src;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\backend\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\math\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\utils\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tnt\..;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filaflat\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\filabridge\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\libs\ibl\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googletest\include;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\libgtest\tnt\..\googlemock\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>..\RelWithDebInfo\filament.lib;..\..\third_party\libgtest\tnt\RelWithDebInfo\gtest.lib;..\backend\RelWithDebInfo\backend.lib;..\..\libs\bluegl\RelWithDebInfo\bluegl.lib;opengl32.lib;gdi32.lib;..\..\libs\filaflat\RelWithDebInfo\filaflat.lib;..\..\libs\filabridge\RelWithDebInfo\filabridge.lib;..\..\libs\ibl\RelWithDebInfo\ibl-lite.lib;..\..\libs\math\RelWithDebInfo\math.lib;..\..\libs\utils\RelWithDebInfo\utils.lib;Shlwapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64 -Wl,--gc-sections</AdditionalOptions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/RelWithDebInfo/test_material_parser.lib</ImportLibrary>
+      <ProgramDataBaseFile>C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/RelWithDebInfo/test_material_parser.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\CMakeFiles\c80c69c7a6a00b8eb413efb50698fe45\filament_test_resources.bin.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Aggregating resources</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+..\..\tools\resgen\Debug\resgen.exe -qcx C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/resources -p filament_test_resources C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament/filament/test/test_material.filamat
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\tools\resgen\Debug\resgen.exe;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\test\test_material.filamat;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.bin;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.S;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.apple.S;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.h;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.c</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Aggregating resources</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+..\..\tools\resgen\Release\resgen.exe -qcx C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/resources -p filament_test_resources C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament/filament/test/test_material.filamat
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\tools\resgen\Release\resgen.exe;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\test\test_material.filamat;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.bin;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.S;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.apple.S;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.h;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.c</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Aggregating resources</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+..\..\tools\resgen\MinSizeRel\resgen.exe -qcx C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/resources -p filament_test_resources C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament/filament/test/test_material.filamat
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\tools\resgen\MinSizeRel\resgen.exe;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\test\test_material.filamat;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.bin;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.S;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.apple.S;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.h;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.c</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Aggregating resources</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+..\..\tools\resgen\RelWithDebInfo\resgen.exe -qcx C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/resources -p filament_test_resources C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament/filament/test/test_material.filamat
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\tools\resgen\RelWithDebInfo\resgen.exe;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\test\test_material.filamat;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.bin;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.S;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.apple.S;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.h;C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.c</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\CMakeFiles\c80c69c7a6a00b8eb413efb50698fe45\dummy.c.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Generating resources/dummy.c</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+echo // &gt; C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/resources/dummy.c
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\dummy.c</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Generating resources/dummy.c</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+echo // &gt; C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/resources/dummy.c
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\dummy.c</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Generating resources/dummy.c</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+echo // &gt; C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/resources/dummy.c
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\dummy.c</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Generating resources/dummy.c</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+echo // &gt; C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/resources/dummy.c
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\dummy.c</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\test\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament/filament/test/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament -BC:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament --check-stamp-file C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament/filament/test/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament -BC:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament --check-stamp-file C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament/filament/test/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament -BC:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament --check-stamp-file C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament/filament/test/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament -BC:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament --check-stamp-file C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/WindowsProjectFiles/filament/filament/test/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\filament\test\filament_test_material_parser.cpp" />
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\filament_test_resources.c" />
+    <ClCompile Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\test\resources\dummy.c" />
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tsl\robin_growth_policy.h" />
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tsl\robin_hash.h" />
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tsl\robin_map.h" />
+    <ClInclude Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\filament\third_party\robin-map\tsl\robin_set.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\ZERO_CHECK.vcxproj">
+      <Project>{8CD24650-5723-3E74-B083-7ED4D4857D7C}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\backend\backend.vcxproj">
+      <Project>{2F4AE1AF-8EA3-3BC4-8CE3-9FDE41042FAD}</Project>
+      <Name>backend</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\libs\bluegl\bluegl.vcxproj">
+      <Project>{1E4023C4-E606-3395-B9A1-582D749280E8}</Project>
+      <Name>bluegl</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\libs\filabridge\filabridge.vcxproj">
+      <Project>{240830E5-4446-3E12-A233-79A695A11F73}</Project>
+      <Name>filabridge</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\libs\filaflat\filaflat.vcxproj">
+      <Project>{F78C1BDB-BA05-3B55-93A9-FCF00D60786E}</Project>
+      <Name>filaflat</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\filament\filament.vcxproj">
+      <Project>{B6E8D393-3F42-3435-85ED-63D695436185}</Project>
+      <Name>filament</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\third_party\libgtest\tnt\gtest.vcxproj">
+      <Project>{C6621DF0-8F2C-3634-A50B-B72FEDBDEA5E}</Project>
+      <Name>gtest</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\libs\ibl\ibl-lite.vcxproj">
+      <Project>{9F34E1CD-93A0-3C0A-8868-709C9D0B4175}</Project>
+      <Name>ibl-lite</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\libs\math\math.vcxproj">
+      <Project>{3077FD42-B440-3F22-9DDB-4EE2C284AE1B}</Project>
+      <Name>math</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\tools\resgen\resgen.vcxproj">
+      <Project>{A72556CF-A960-3B0F-86D4-F24B696E86F2}</Project>
+      <Name>resgen</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\ben\Documents\Egodystonic\TinyFFR\Repository\ThirdParty\WindowsProjectFiles\filament\libs\utils\utils.vcxproj">
+      <Project>{CF6C4B84-6C8E-3CD5-A84B-39AABFDD0908}</Project>
+      <Name>utils</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
+  </ImportGroup>
+</Project>

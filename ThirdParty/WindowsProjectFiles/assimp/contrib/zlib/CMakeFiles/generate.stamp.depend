@@ -1,0 +1,10 @@
+# CMake generation dependency list for this directory.
+C:/Program Files/CMake/share/cmake-3.27/Modules/CheckCSourceCompiles.cmake
+C:/Program Files/CMake/share/cmake-3.27/Modules/CheckFunctionExists.cmake
+C:/Program Files/CMake/share/cmake-3.27/Modules/CheckIncludeFile.cmake
+C:/Program Files/CMake/share/cmake-3.27/Modules/CheckIncludeFileCXX.cmake
+C:/Program Files/CMake/share/cmake-3.27/Modules/CheckTypeSize.cmake
+C:/Program Files/CMake/share/cmake-3.27/Modules/Internal/CheckSourceCompiles.cmake
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/assimp/contrib/zlib/CMakeLists.txt
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/assimp/contrib/zlib/zconf.h.cmakein
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/assimp/contrib/zlib/zlib.pc.cmakein

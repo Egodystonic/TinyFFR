@@ -1,0 +1,10 @@
+# CMake generation dependency list for this directory.
+C:/Program Files/CMake/share/cmake-3.27/Modules/CTest.cmake
+C:/Program Files/CMake/share/cmake-3.27/Modules/CTestTargets.cmake
+C:/Program Files/CMake/share/cmake-3.27/Modules/CTestUseLaunchers.cmake
+C:/Program Files/CMake/share/cmake-3.27/Modules/DartConfiguration.tcl.in
+C:/Program Files/CMake/share/cmake-3.27/Modules/GNUInstallDirs.cmake
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament/third_party/glslang/CHANGES.md
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament/third_party/glslang/build_info.h.tmpl
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament/third_party/glslang/parse_version.cmake
+C:/Users/ben/Documents/Egodystonic/TinyFFR/Repository/ThirdParty/filament/third_party/glslang/tnt/CMakeLists.txt
