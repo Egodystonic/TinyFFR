@@ -25,11 +25,6 @@
     </Project>
   </Folder>
   <Folder Name="/ThirdParty/" />
-  <Folder Name="/ThirdParty/assimp/">
-    <Project Path="ThirdParty/WindowsProjectFiles/assimp/ALL_BUILD.vcxproj" Id="283a1f9e-c12f-37e9-b25a-d64aa2197f5c">
-      <BuildType Solution="Optimized|*" Project="RelWithDebInfo" />
-    </Project>
-  </Folder>
   <Project Path="TinyFFR.Native/TinyFFR.Native.vcxproj" Id="ac530f90-8cb3-4e18-9bf2-89079fb171eb">
     <BuildType Solution="Optimized|*" Project="Release" />
   </Project>

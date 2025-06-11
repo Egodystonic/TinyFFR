@@ -1,9 +1,0 @@
-libdir=C:/Program Files (x86)/Assimp/lib
-includedir=C:/Program Files (x86)/Assimp/include
-
-Name: Assimp
-Description: Import various well-known 3D model formats in an uniform manner.
-Version: 5.3.0
-Libs: -L${libdir} -lassimp
-Libs.private:  
-Cflags: -I${includedir}
