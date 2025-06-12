@@ -161,7 +161,7 @@ static class TestScaffold {
 		var loop = _testObjects.Loop!.Value;
 		var frameCount = 0;
 		var startTime = Stopwatch.StartNew();
-		while (!loop.Input.UserQuitRequested && !_exitTestCalled) {
+		while (!loop.Input.UserQuitRequested && !_exitTestCalled && !loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) {
 			var sw = Stopwatch.StartNew();
 			var deltaTime = loop.IterateOnce();
 			var dtSecs = (float) deltaTime.TotalSeconds;

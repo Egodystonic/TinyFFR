@@ -16,22 +16,24 @@ const string LibAssimp = "assimp";
 const string LibFilament = "filament";
 const string LibSdl = "sdl";
 
-const string ThirdPartyRepoRootDirToken = "%TPROOTDIR%";
+const string RepoRootDirToken = "%REPODIR%";
+const string BuildOutputDirToken = "%BUILDOUTDIR%";
+const string ConfigurationToken = "%CONFIG%";
 var cmakeInvocationsDict = new Dictionary<string, List<string>> {
 	[LibAssimp] = new() {
-		$"{ThirdPartyRepoRootDirToken}/CMakeLists.txt",
-		$"--build . --config Debug",
-		$"--build . --config Release",
+		$"-DCMAKE_INSTALL_PREFIX=install \"{RepoRootDirToken}/CMakeLists.txt\"",
+		$"--build . --config {ConfigurationToken}",
+		$"--build . --target install --config {ConfigurationToken}",
 	},
 	[LibFilament] = new() {
-		$"{ThirdPartyRepoRootDirToken}/CMakeLists.txt",
-		$"--build . --config Debug",
-		$"--build . --config Release",
+		$"\"{RepoRootDirToken}/CMakeLists.txt\"",
+		$"--build . --config {ConfigurationToken}",
+		$"--build . --target install --config {ConfigurationToken}",
 	},
 	[LibSdl] = new() {
-		$"{ThirdPartyRepoRootDirToken}/CMakeLists.txt",
-		$"--build . --config Debug",
-		$"--build . --config Release",
+		$"-DCMAKE_INSTALL_PREFIX=install \"{RepoRootDirToken}/CMakeLists.txt\"",
+		$"--build . --config {ConfigurationToken}",
+		$"--build . --target install --config {ConfigurationToken}",
 	}
 };
 
@@ -70,38 +72,40 @@ Console.WriteLine($"Script Dir: {scriptDir}");
 Console.WriteLine($"Interim Build Output Dir: {interimBuildOutputDir}");
 Console.WriteLine($"Third Party Native Dir: {thirdPartyNativeDir}");
 
-Directory.Delete(interimBuildOutputDir, true);
-Directory.CreateDirectory(interimBuildOutputDir);
-
-string GetBuildOutputDirForLib(string lib) {
-	return Path.Combine(interimBuildOutputDir, lib);
+string GetBuildOutputDirForLib(string lib, string configuration) {
+	return Path.Combine(interimBuildOutputDir, lib, configuration);
 }
 string GetThirdPartyRepoRootDirForLib(string lib) {
 	return Path.Combine(scriptDir, lib);
 }
 
-void InvokeCmakeForLib(string lib) {
+void InvokeCmakeForLib(string lib, string configuration) {
 	try {
 		Console.WriteLine();
 		Console.WriteLine($"===============================================");
-		Console.WriteLine($"{lib.ToUpperInvariant()}");
+		Console.WriteLine($"{lib.ToUpperInvariant()} | {configuration}");
 		Console.WriteLine($"===============================================");
 		Console.WriteLine($"Beginning cmake for {lib}...");
-		var buildOutputDir = GetBuildOutputDirForLib(lib);
+		var buildOutputDir = GetBuildOutputDirForLib(lib, configuration);
 		var thirdPartyRepoRootDir = GetThirdPartyRepoRootDirForLib(lib);
-		if (!Directory.Exists(buildOutputDir)) Directory.CreateDirectory(buildOutputDir);
+		if (Directory.Exists(buildOutputDir)) Directory.Delete(buildOutputDir, true);
+		Directory.CreateDirectory(buildOutputDir);
 		Directory.SetCurrentDirectory(buildOutputDir);
 		Console.WriteLine($"Build output directory: {buildOutputDir}");
 		Console.WriteLine($"Repository root directory: {thirdPartyRepoRootDir}");
 		Console.WriteLine();
 		
 		foreach (var invocation in cmakeInvocationsDict[lib]) {
-			var parsedInvocation = invocation.Replace(ThirdPartyRepoRootDirToken, thirdPartyRepoRootDir);
+			var parsedInvocation = invocation
+				.Replace(RepoRootDirToken, thirdPartyRepoRootDir)
+				.Replace(BuildOutputDirToken, buildOutputDir)
+				.Replace(ConfigurationToken, configuration);
+			
 			Console.WriteLine();
 			Console.WriteLine($"> cmake {parsedInvocation}");
 			var process = Process.Start("cmake", parsedInvocation);
 			process.WaitForExit();
-			if (process.ExitCode != 0) throw new InvalidOperationException($"Process exit code was 0x{process.ExitCode:X8}!");
+			if (process.ExitCode != 0) throw new InvalidOperationException($"Process exit code was 0x{process.ExitCode:X}!");
 			Console.WriteLine();
 		}
 
@@ -114,6 +118,15 @@ void InvokeCmakeForLib(string lib) {
 	}
 }
 
-InvokeCmakeForLib(LibAssimp);
-InvokeCmakeForLib(LibFilament);
-InvokeCmakeForLib(LibSdl);
+var commandLineLibArg = cmakeInvocationsDict.Keys.FirstOrDefault(k => Environment.GetCommandLineArgs().Any(a => a.Equals(k, StringComparison.OrdinalIgnoreCase)));
+
+foreach (var configuration in new[] { "Debug", "Release" }) {
+	if (commandLineLibArg != null) {
+		InvokeCmakeForLib(commandLineLibArg, configuration);
+	}
+	else {
+		InvokeCmakeForLib(LibAssimp, configuration);
+		InvokeCmakeForLib(LibFilament, configuration);
+		InvokeCmakeForLib(LibSdl, configuration);
+	}
+}
