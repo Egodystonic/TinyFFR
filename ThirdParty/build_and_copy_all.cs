@@ -8,6 +8,7 @@ using System.Linq;
 // Script constants
 // ===================================================================================================================================
 
+// Directory structures
 const string ScriptDirName = "ThirdParty";
 const string BuildOutputDirName = "build_output";
 const string InterimInstallDirName = "install";
@@ -17,10 +18,12 @@ const string ThirdPartyNativeHeadersDirName = "headers";
 var interimInstallBinaryFolderNames = new[] { "bin", "lib" };
 var interimInstallHeaderFolderNames = new[] { "include" };
 
+// Commandline args of each third-party dependency
 const string LibAssimp = "assimp";
 const string LibFilament = "filament";
 const string LibSdl = "sdl";
 
+// Cmake incantations for each lib
 const string RepoRootDirToken = "%REPODIR%";
 const string BuildOutputDirToken = "%BUILDOUTDIR%";
 const string ConfigurationToken = "%CONFIG%";
@@ -31,7 +34,7 @@ var cmakeInvocationsDict = new Dictionary<string, List<string>> {
 		$"--build . --target install --config {ConfigurationToken}",
 	},
 	[LibFilament] = new() {
-		$"-DCMAKE_INSTALL_PREFIX={InterimInstallDirName} \"{RepoRootDirToken}/CMakeLists.txt\"",
+		$"-DCMAKE_INSTALL_PREFIX={InterimInstallDirName} -DFILAMENT_SUPPORTS_OPENGL=ON -DFILAMENT_INSTALL_BACKEND_TEST=OFF -DFILAMENT_SKIP_SAMPLES=ON -DFILAMENT_SUPPORTS_METAL=ON -DFILAMENT_SUPPORTS_VULKAN=ON \"{RepoRootDirToken}/CMakeLists.txt\"",
 		$"--build . --config {ConfigurationToken}",
 		$"--build . --target install --config {ConfigurationToken}",
 	},
@@ -42,13 +45,37 @@ var cmakeInvocationsDict = new Dictionary<string, List<string>> {
 	}
 };
 
+// Commandline args + ordering of build configurations in this script
 const string DebugConfiguration = "Debug";
 const string ReleaseConfiguration = "Release";
 var configurations = new[] { DebugConfiguration, ReleaseConfiguration };
 
+// Commandline args + ordering of steps in this script
 const string BuildStep = "build";
 const string CopyStep = "copy";
 var stepNames = new[] { BuildStep, CopyStep };
+
+// Translates source file destination locations
+// Returning null indicates "skip this file"
+// Otherwise function is expected to return new relative path (fileData.RelativeDestination if untouched)
+// All path slashes are forward-slash, never backslash
+var installDirTranslations = new Dictionary<string, Func<TargetFileData, string?>> {
+	[LibAssimp] = fileData => {
+		if (fileData.RelativeSource.Contains("cmake/")) return null;
+
+		return fileData.RelativeDestination.Replace("assimp/", "");
+	},
+	[LibFilament] = fileData => {
+		if (fileData.RelativeSource.Contains("bin/")) return null;
+
+		return fileData.RelativeDestination
+			.Replace("pkgconfig/", "")
+			.Replace("x86_64/", "");
+	},
+	[LibSdl] = fileData => {
+		return fileData.RelativeDestination.Replace("SDL2/", "");
+	}
+};
 
 // ===================================================================================================================================
 // Script starts here
@@ -156,6 +183,8 @@ if (commandLineStepArg == null || commandLineStepArg == CopyStep) {
 	}
 }
 
+Console.WriteLine("Script completed successfully.");
+
 // 4 -- Local functions for each step
 void BuildLib(string lib, string configuration) {
 	try {
@@ -187,9 +216,13 @@ void BuildLib(string lib, string configuration) {
 			Console.WriteLine();
 		}
 
-		Console.WriteLine($"Finished cmake for {lib}:{configuration}.");
+		Console.WriteLine($"Finished {BuildStep} for {lib}:{configuration}.");
 		Console.WriteLine();
 		Console.WriteLine();
+	}
+	catch {
+		Console.WriteLine($"Error occurred during {BuildStep} for {lib}:{configuration}!");
+		throw;
 	}
 	finally {
 		Directory.SetCurrentDirectory(scriptDir);
@@ -197,60 +230,84 @@ void BuildLib(string lib, string configuration) {
 }
 
 void CopyLib(string lib, string configuration) {
-	Console.WriteLine();
-	Console.WriteLine($"===============================================");
-	Console.WriteLine($"COPY | {lib.ToUpperInvariant()} | {configuration}");
-	Console.WriteLine($"===============================================");
-	var interimInstallDir = GetInterimInstallDirPath(lib, configuration);
-	if (commandLineConfigArg != null || configuration == ReleaseConfiguration) {
-		var destinationHeadersDir = GetDestinationHeadersPath(lib);
-		Console.WriteLine($"Clearing contents from '{destinationHeadersDir}'...");
-		if (Directory.Exists(destinationHeadersDir)) Directory.Delete(destinationHeadersDir, true);
-		Directory.CreateDirectory(destinationHeadersDir);
-		Console.WriteLine($"Searching for headers...");
-		foreach (var h in interimInstallHeaderFolderNames) {
-			var interimHeaderDir = Path.Combine(interimInstallDir, h);
-			if (!Directory.Exists(interimHeaderDir)) {
-				Console.WriteLine($"\tNone found at '{interimHeaderDir}'.");
+	try {
+		Console.WriteLine();
+		Console.WriteLine($"===============================================");
+		Console.WriteLine($"COPY | {lib.ToUpperInvariant()} | {configuration}");
+		Console.WriteLine($"===============================================");
+		var interimInstallDir = GetInterimInstallDirPath(lib, configuration);
+		if (commandLineConfigArg != null || configuration == ReleaseConfiguration) {
+			var destinationHeadersDir = GetDestinationHeadersPath(lib);
+			Console.WriteLine($"Writing to '{destinationHeadersDir.Replace('\\', '/')}'...");
+			if (Directory.Exists(destinationHeadersDir)) Directory.Delete(destinationHeadersDir, true);
+			Directory.CreateDirectory(destinationHeadersDir);
+			foreach (var h in interimInstallHeaderFolderNames) {
+				var interimHeaderDir = Path.Combine(interimInstallDir, h);
+				if (!Directory.Exists(interimHeaderDir)) {
+					continue;
+				}
+
+				CopyDirectory(interimInstallDir, destinationHeadersDir, h, installDirTranslations[lib]);
+			}
+		}
+
+		var destinationBinariesDir = GetDestinationBinariesPath(lib, configuration);
+		Console.WriteLine($"Writing to '{destinationBinariesDir.Replace('\\', '/')}'...");
+		if (Directory.Exists(destinationBinariesDir)) Directory.Delete(destinationBinariesDir, true);
+		Directory.CreateDirectory(destinationBinariesDir);
+		foreach (var b in interimInstallBinaryFolderNames) {
+			var interimBinaryDir = Path.Combine(interimInstallDir, b);
+			if (!Directory.Exists(interimBinaryDir)) {
 				continue;
 			}
 
-			Console.WriteLine($"\tCopying everything from '{interimHeaderDir}'...");
-			CopyDirectory(interimHeaderDir, interimHeaderDir, destinationHeadersDir);
-		}
-	}
-
-	var destinationBinariesDir = GetDestinationBinariesPath(lib, configuration);
-	Console.WriteLine($"Clearing contents from '{destinationBinariesDir}'...");
-	if (Directory.Exists(destinationBinariesDir)) Directory.Delete(destinationBinariesDir, true);
-	Directory.CreateDirectory(destinationBinariesDir);
-	Console.WriteLine($"Searching for binaries...");
-	foreach (var b in interimInstallBinaryFolderNames) {
-		var interimBinaryDir = Path.Combine(interimInstallDir, b);
-		if (!Directory.Exists(interimBinaryDir)) {
-			Console.WriteLine($"\tNone found at '{interimBinaryDir}'.");
-			continue;
+			CopyDirectory(interimInstallDir, destinationBinariesDir, b, installDirTranslations[lib]);
 		}
 
-		Console.WriteLine($"\tCopying everything from '{interimBinaryDir}'...");
-		CopyDirectory(interimBinaryDir, interimBinaryDir, destinationBinariesDir);
+		Console.WriteLine($"Finished {CopyStep} for {lib}:{configuration}.");
+		Console.WriteLine();
+		Console.WriteLine();
 	}
-
-	Console.WriteLine($"Finished copy for {lib}:{configuration}.");
-	Console.WriteLine();
-	Console.WriteLine();
+	catch {
+		Console.WriteLine($"Error occurred during {CopyStep} for {lib}:{configuration}!");
+		throw;
+	}
 }
 
-static void CopyDirectory(string sourceDirOriginal, string sourceDir, string destinationDir) {
-	var sourceDirInfo = new DirectoryInfo(sourceDir);
-	Directory.CreateDirectory(destinationDir);
+void CopyDirectory(string interimInstallRootDir, string destinationRootDir, string curSubDir, Func<TargetFileData, string?> relativeFilePathMutator) {
+	var sourceDirInfo = new DirectoryInfo(Path.Combine(interimInstallRootDir, curSubDir));
 
 	foreach (var file in sourceDirInfo.GetFiles()) {
-		file.CopyTo(Path.Combine(destinationDir, file.Name));
-		Console.WriteLine(file.FullName[sourceDirOriginal.Length..]);
+		var relativeDestSplit = curSubDir.TrimStart(Path.DirectorySeparatorChar, '/', '\\')
+			.Split([Path.DirectorySeparatorChar, '/', '\\'], StringSplitOptions.RemoveEmptyEntries);
+		var relativeDest = Path.Combine(
+			String.Join(Path.DirectorySeparatorChar, relativeDestSplit[1..]),
+			file.Name
+		);
+
+		var fileData = new TargetFileData(
+			FullSource: file.FullName.Replace('\\', '/').Replace(Path.DirectorySeparatorChar, '/'),
+			RelativeSource: Path.GetRelativePath(interimInstallRootDir, file.FullName).Replace('\\', '/').Replace(Path.DirectorySeparatorChar, '/'),
+			FullDestination: Path.Combine(destinationRootDir, relativeDest).Replace('\\', '/').Replace(Path.DirectorySeparatorChar, '/'),
+			RelativeDestination: relativeDest.Replace('\\', '/').Replace(Path.DirectorySeparatorChar, '/')
+		);
+
+		var mutatedRelativeDest = relativeFilePathMutator(fileData);
+		if (mutatedRelativeDest == null) {
+			Console.WriteLine($"\t{fileData.RelativeSource}   ->   [skip]");
+		}
+		else {
+			Console.WriteLine($"\t{fileData.RelativeSource}   ->   {mutatedRelativeDest}");
+			var finalizedDest = Path.Combine(destinationRootDir, mutatedRelativeDest.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar));
+			var destDir = Path.GetDirectoryName(finalizedDest);
+			if (destDir != null && !Directory.Exists(destDir)) Directory.CreateDirectory(destDir);
+			file.CopyTo(finalizedDest);
+		}
 	}
 
 	foreach (var subDir in sourceDirInfo.GetDirectories()) {
-		CopyDirectory(sourceDirOriginal, subDir.FullName, Path.Combine(destinationDir, subDir.Name));
+		CopyDirectory(interimInstallRootDir, destinationRootDir, Path.GetRelativePath(interimInstallRootDir, subDir.FullName), relativeFilePathMutator);
 	}
 }
+
+sealed record TargetFileData(string FullSource, string RelativeSource, string FullDestination, string RelativeDestination);
