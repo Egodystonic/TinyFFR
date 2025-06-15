@@ -67,7 +67,7 @@
       <SubSystem>
       </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(ProjectDir)third_party\binaries\assimp\debug\assimp-vc143-mtd.lib;$(ProjectDir)third_party\binaries\sdl\SDL2.lib;$(ProjectDir)third_party\binaries\filament\debug\*.lib;gdi32.lib;user32.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(ProjectDir)third_party\binaries\assimp\debug\assimp-vc143-mtd.lib;$(ProjectDir)third_party\binaries\sdl\debug\SDL2d.lib;$(ProjectDir)third_party\binaries\filament\debug\*.lib;gdi32.lib;user32.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /y "$(ProjectDir)third_party\binaries\assimp\$(Configuration)\*.*" "$(SolutionDir)build_output\$(Configuration)\"
@@ -95,7 +95,7 @@ xcopy /y "$(ProjectDir)third_party\binaries\sdl\*.*" "$(SolutionDir)build_output
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(ProjectDir)third_party\binaries\assimp\release\assimp-vc143-mt.lib;$(ProjectDir)third_party\binaries\sdl\SDL2.lib;$(ProjectDir)third_party\binaries\filament\release\*.lib;gdi32.lib;user32.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(ProjectDir)third_party\binaries\assimp\release\assimp-vc143-mt.lib;$(ProjectDir)third_party\binaries\sdl\release\SDL2.lib;$(ProjectDir)third_party\binaries\filament\release\*.lib;gdi32.lib;user32.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /y "$(ProjectDir)third_party\binaries\assimp\$(Configuration)\*.*" "$(SolutionDir)build_output\$(Configuration)\"
