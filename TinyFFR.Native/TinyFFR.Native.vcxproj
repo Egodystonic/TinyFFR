@@ -62,6 +62,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir)tffr\headers\;$(ProjectDir)third_party\headers\;$(ProjectDir)third_party\headers\filament\</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalOptions>/D "_ITERATOR_DEBUG_LEVEL=0" %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -72,7 +73,7 @@
     <PostBuildEvent>
       <Command>xcopy /y "$(ProjectDir)third_party\binaries\assimp\$(Configuration)\*.*" "$(SolutionDir)build_output\$(Configuration)\"
 xcopy /y "$(ProjectDir)third_party\binaries\filament\$(Configuration)\*.*" "$(SolutionDir)build_output\$(Configuration)\"
-xcopy /y "$(ProjectDir)third_party\binaries\sdl\*.*" "$(SolutionDir)build_output\$(Configuration)\"</Command>
+xcopy /y "$(ProjectDir)third_party\binaries\sdl\$(Configuration)\*.*" "$(SolutionDir)build_output\$(Configuration)\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -100,7 +101,7 @@ xcopy /y "$(ProjectDir)third_party\binaries\sdl\*.*" "$(SolutionDir)build_output
     <PostBuildEvent>
       <Command>xcopy /y "$(ProjectDir)third_party\binaries\assimp\$(Configuration)\*.*" "$(SolutionDir)build_output\$(Configuration)\"
 xcopy /y "$(ProjectDir)third_party\binaries\filament\$(Configuration)\*.*" "$(SolutionDir)build_output\$(Configuration)\"
-xcopy /y "$(ProjectDir)third_party\binaries\sdl\*.*" "$(SolutionDir)build_output\$(Configuration)\"</Command>
+xcopy /y "$(ProjectDir)third_party\binaries\sdl\$(Configuration)\*.*" "$(SolutionDir)build_output\$(Configuration)\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

@@ -259,7 +259,7 @@ if (WIN32)
             # enable multi-processor compilation
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
             # disable run-time STL checks to improve tools (e.g. matc) performance
-            # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D_ITERATOR_DEBUG_LEVEL=0") DISABLED IN TINYFFR AS WE WANT TO COMPILE DEBUG BUILDS WITH THIS AT LEVEL 2
+            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D_ITERATOR_DEBUG_LEVEL=0")
         endif()
     endif()
 endif()
