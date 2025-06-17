@@ -412,3 +412,6 @@ ThirdParty/build_output/**
 
 # TinyFFR - ignore generated documentation 
 Documentation/output/**
+
+# TinyFFR - ignore native binaries in pack project
+Publishing/TinyFFR.NuGet/native_binaries/**
