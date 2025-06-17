@@ -5,6 +5,13 @@
     <BuildType Name="Release" />
     <Platform Name="x64" />
   </Configurations>
+  <Folder Name="/Publishing/">
+    <Project Path="Publishing/TinyFFR.NuGet/TinyFFR.NuGet.csproj" Id="1087b2c9-d4b1-4b1b-ad1a-72ce291aa3d5">
+      <BuildType Solution="Optimized|*" Project="Release" />
+      <Platform Project="x64" />
+      <Build Project="false" />
+    </Project>
+  </Folder>
   <Folder Name="/Testing/">
     <Project Path="Testing/LocalDevTesting/LocalDevTesting.csproj">
       <BuildDependency Project="TinyFFR.Native/TinyFFR.Native.vcxproj" />

@@ -52,32 +52,14 @@
     Repeat the test with the local source just in case
     If it looks good, upload the nupkg without -rc to nuget.org
   -->
-  <PropertyGroup>
-    <PackageId>Egodystonic.TinyFFR</PackageId>
-    <PackageVersion>0.2.0</PackageVersion> 
-    <Authors>Ben Bowen</Authors>
-    <Company>Egodystonic Studios</Company>
-    <Description>A Tiny Fixed Function Rendering library for C#.</Description>
-    <PackageTags>rendering;tinyffr;3d;pbr</PackageTags>
-    <RepositoryUrl>https://github.com/Egodystonic/TinyFFR</RepositoryUrl>
-    <PackageIcon>logo_128.png</PackageIcon>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)'=='Release'">
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-  </PropertyGroup>
+  
   <ItemGroup>
-    <None Include="..\README.md" Pack="true" PackagePath="\" />
-    <None Include="..\LICENSE.md" Pack="true" PackagePath="\" />
+
     <EmbeddedResource Include="Assets\Local\cmgen.exe" />
     <EmbeddedResource Include="Assets\Materials\Local\Shaders\alpha_aware.filamat" />
     <EmbeddedResource Include="Assets\Materials\Local\Shaders\alpha_aware_mask.filamat" />
-    <EmbeddedResource Include="logo_128.png" Pack="true" PackagePath="\" />
+    <EmbeddedResource Include="logo_128.png" />
     <EmbeddedResource Include="Assets\Materials\Local\Shaders\opaque.filamat" />
-    <None Include="..\build_output\$(Configuration)\*.dll" Pack="true" PackagePath="\runtimes\win-x64\native\" />
-    <None Include="..\build_output\$(Configuration)\*.lib" Pack="true" PackagePath="\runtimes\win-x64\native\" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">

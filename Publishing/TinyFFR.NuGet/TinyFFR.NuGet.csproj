@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageVersion>0.2.0</PackageVersion>
+
+    <RootNamespace>Egodystonic.TinyFFR</RootNamespace>
+    <PackageId>Egodystonic.TinyFFR</PackageId>
+    <Authors>Ben Bowen</Authors>
+    <Company>Egodystonic Studios</Company>
+    <Description>A Tiny Fixed Function Rendering library for C#.</Description>
+    <PackageTags>rendering;tinyffr;3d;pbr</PackageTags>
+    <RepositoryUrl>https://github.com/Egodystonic/TinyFFR</RepositoryUrl>
+    <PackageIcon>package_logo.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+
+    <PlatformTarget>x64</PlatformTarget>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifiers>win-x64;linux-x64;osx-arm64</RuntimeIdentifiers>
+
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\TinyFFR\TinyFFR.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\LICENSE.md" Pack="true" PackagePath="\" />
+    <None Include="..\package_logo.png" Pack="true" PackagePath="\" />
+    <None Include="native_binaries\win-x64\*.*" Pack="true" PackagePath="\runtimes\win-x64\native\" />
+    <None Include="native_binaries\linux-x64\*.*" Pack="true" PackagePath="\runtimes\linux-x64\native\" />
+    <None Include="native_binaries\osx-arm64\*.*" Pack="true" PackagePath="\runtimes\osx-arm64\native\" />
+  </ItemGroup>
+
+</Project>
