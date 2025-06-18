@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <PackageVersion>0.3.0-alpha1</PackageVersion>
+    <PackageVersion>0.3.0-rc001</PackageVersion>
     <TargetFramework>net9.0</TargetFramework>
 
     <RootNamespace>Egodystonic.TinyFFR</RootNamespace>
@@ -23,6 +23,7 @@
     <IsPackable>true</IsPackable>
     <OutputPath>build_output\</OutputPath>
     <BaseIntermediateOutputPath>build_output\intermediate\</BaseIntermediateOutputPath>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
   </PropertyGroup>
 
   <ItemGroup>
@@ -33,9 +34,10 @@
     <None Include="README.md" Pack="true" PackagePath="\" />
     <None Include="..\..\LICENSE.md" Pack="true" PackagePath="\" />
     <None Include="..\package_logo.png" Pack="true" PackagePath="\" />
-    <None Include="native_binaries\win-x64\*.*" Pack="true" PackagePath="\runtimes\win-x64\native\" />
-    <None Include="native_binaries\linux-x64\*.*" Pack="true" PackagePath="\runtimes\linux-x64\native\" />
-    <None Include="native_binaries\osx-arm64\*.*" Pack="true" PackagePath="\runtimes\osx-arm64\native\" />
+    <None Include="..\..\build_output\Release\TinyFFR.dll" Pack="true" PackagePath="lib\$(TargetFramework)\" />
+    <None Include="prebuilt_binaries\win-x64\*.*" Pack="true" PackagePath="\runtimes\win-x64\native\" />
+    <None Include="prebuilt_binaries\linux-x64\*.*" Pack="true" PackagePath="\runtimes\linux-x64\native\" />
+    <None Include="prebuilt_binaries\osx-arm64\*.*" Pack="true" PackagePath="\runtimes\osx-arm64\native\" />
   </ItemGroup>
 
 </Project>

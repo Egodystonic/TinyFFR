@@ -415,4 +415,4 @@ Publishing/TinyFFR.NuGet/build_output/**
 Documentation/output/**
 
 # TinyFFR - ignore native binaries in pack project
-Publishing/TinyFFR.NuGet/native_binaries/**
+Publishing/TinyFFR.NuGet/prebuilt_binaries/**
