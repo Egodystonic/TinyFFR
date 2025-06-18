@@ -39,22 +39,8 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
   </PropertyGroup>
-
-  <!-- 
-  Package publish steps (for now):
-    Update package version below, add -rc001 for testing and increment rc version for each test
-    Put in Release configuration
-    Rebuild whole solution, then build this project one more time because it doesn't include the built DLL/LIBs from the first build (this needs to be improved)
-      (may need to make an edit to this file and undo it to trigger the build system to not skip the project)
-    Copy the built nupkg (from the build_output/Release folder) to local package source
-    Reference the nuget package from the Nupkg testing project as a nuget and test
-    Once all looks good, do not clean or rebuild or change anything except taking the -rc out from the package version and building JUST THIS PROJECT once more
-    Repeat the test with the local source just in case
-    If it looks good, upload the nupkg without -rc to nuget.org
-  -->
   
   <ItemGroup>
-
     <EmbeddedResource Include="Assets\Local\cmgen.exe" />
     <EmbeddedResource Include="Assets\Materials\Local\Shaders\alpha_aware.filamat" />
     <EmbeddedResource Include="Assets\Materials\Local\Shaders\alpha_aware_mask.filamat" />

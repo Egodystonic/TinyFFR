@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <PackageVersion>0.2.0</PackageVersion>
+    <PackageVersion>0.3.0-alpha1</PackageVersion>
+    <TargetFramework>net9.0</TargetFramework>
 
     <RootNamespace>Egodystonic.TinyFFR</RootNamespace>
     <PackageId>Egodystonic.TinyFFR</PackageId>
@@ -20,6 +21,8 @@
 
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IsPackable>true</IsPackable>
+    <OutputPath>build_output\</OutputPath>
+    <BaseIntermediateOutputPath>build_output\intermediate\</BaseIntermediateOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
