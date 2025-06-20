@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Egodystonic.TinyFFR" Version="0.3.0-alpha1" />
+    <PackageReference Include="Egodystonic.TinyFFR" Version="0.3.0-rc001" />
   </ItemGroup>
 
   <ItemGroup>
