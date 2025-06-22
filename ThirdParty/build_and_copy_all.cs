@@ -22,28 +22,50 @@ var interimInstallHeaderFolderNames = new[] { "include" };
 const string LibAssimp = "assimp";
 const string LibFilament = "filament";
 const string LibSdl = "sdl";
+var libs = new[] { LibAssimp, LibFilament, LibSdl };
 
-// Cmake incantations for each lib
+// Build incantations for each lib
 const string RepoRootDirToken = "%REPODIR%";
 const string BuildOutputDirToken = "%BUILDOUTDIR%";
 const string ConfigurationToken = "%CONFIG%";
-var cmakeInvocationsDict = new Dictionary<string, List<string>> {
-	[LibAssimp] = new() {
-		$"-DCMAKE_INSTALL_PREFIX={InterimInstallDirName} -DASSIMP_INSTALL=OFF -DASSIMP_BUILD_TESTS=OFF \"{RepoRootDirToken}/CMakeLists.txt\"",
-		$"--build . --config {ConfigurationToken}",
-		$"--build . --target install --config {ConfigurationToken}",
-	},
-	[LibFilament] = new() {
-		$"-DCMAKE_INSTALL_PREFIX={InterimInstallDirName} -DFILAMENT_SUPPORTS_OPENGL=ON -DFILAMENT_INSTALL_BACKEND_TEST=OFF -DFILAMENT_SKIP_SAMPLES=ON -DFILAMENT_SUPPORTS_METAL=ON -DFILAMENT_SUPPORTS_VULKAN=ON \"{RepoRootDirToken}/CMakeLists.txt\"",
-		$"--build . --config {ConfigurationToken}",
-		$"--build . --target install --config {ConfigurationToken}",
-	},
-	[LibSdl] = new() {
-		$"-DCMAKE_INSTALL_PREFIX={InterimInstallDirName} \"{RepoRootDirToken}/CMakeLists.txt\"",
-		$"--build . --config {ConfigurationToken}",
-		$"--build . --target install --config {ConfigurationToken}",
-	}
-};
+var commandLists = new Dictionary<string, List<string>> { [LibAssimp] = new(), [LibFilament] = new(), [LibSdl] = new() };
+commandLists[LibAssimp].AddRange(
+	$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} -DASSIMP_INSTALL=OFF -DASSIMP_BUILD_TESTS=OFF \"{RepoRootDirToken}/CMakeLists.txt\"",
+	$"cmake --build . --config {ConfigurationToken}",
+	$"cmake --build . --target install --config {ConfigurationToken}"
+);
+commandLists[LibSdl].AddRange(
+	$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} \"{RepoRootDirToken}/CMakeLists.txt\"",
+	$"cmake --build . --config {ConfigurationToken}",
+	$"cmake --build . --target install --config {ConfigurationToken}"
+);
+
+if (OperatingSystem.IsWindows()) {
+	commandLists[LibFilament].AddRange(
+		$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} " +
+			$"-DFILAMENT_SUPPORTS_OPENGL=ON -DFILAMENT_INSTALL_BACKEND_TEST=OFF -DFILAMENT_SKIP_SAMPLES=ON -DFILAMENT_SUPPORTS_METAL=OFF -DFILAMENT_SUPPORTS_VULKAN=ON " +
+			$"\"{RepoRootDirToken}/CMakeLists.txt\"",
+		$"cmake --build . --config {ConfigurationToken}"
+	);
+}
+else if (OperatingSystem.IsLinux()) {
+	Environment.SetEnvironmentVariable("CC", "/usr/bin/clang");
+	Environment.SetEnvironmentVariable("CXX", "/usr/bin/clang++");
+	Environment.SetEnvironmentVariable("CXXFLAGS", "-stdlib=libc++");
+	commandLists[LibFilament].AddRange(
+		$"cmake -G Ninja -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} " +
+			$"-DFILAMENT_SUPPORTS_OPENGL=ON -DFILAMENT_INSTALL_BACKEND_TEST=OFF -DFILAMENT_SKIP_SAMPLES=ON -DFILAMENT_SUPPORTS_METAL=OFF -DFILAMENT_SUPPORTS_VULKAN=ON " +
+			$"\"{RepoRootDirToken}/CMakeLists.txt\"",
+		$"ninja"
+	);
+}
+else {
+	throw new InvalidOperationException($"Unsupported OS '{Environment.OSVersion}'.");
+}
+commandLists[LibFilament].AddRange(
+	$"cmake --build . --target install --config {ConfigurationToken}"
+);
+
 
 // Commandline args + ordering of build configurations in this script
 const string DebugConfiguration = "Debug";
@@ -127,7 +149,7 @@ string GetDestinationHeadersPath(string lib) {
 
 
 // 2 -- Parse command line args
-var commandLineLibArg = cmakeInvocationsDict.Keys.FirstOrDefault(k => Environment.GetCommandLineArgs().Any(a => a.Equals(k, StringComparison.OrdinalIgnoreCase)));
+var commandLineLibArg = libs.FirstOrDefault(l => Environment.GetCommandLineArgs().Any(a => a.Equals(l, StringComparison.OrdinalIgnoreCase)));
 var commandLineConfigArg = configurations.FirstOrDefault(c => Environment.GetCommandLineArgs().Any(a => a.Equals(c, StringComparison.OrdinalIgnoreCase)));
 var commandLineStepArg = stepNames.FirstOrDefault(s => Environment.GetCommandLineArgs().Any(a => a.Equals(s, StringComparison.OrdinalIgnoreCase)));
 
@@ -192,7 +214,7 @@ void BuildLib(string lib, string configuration) {
 		Console.WriteLine($"===============================================");
 		Console.WriteLine($"BUILD | {lib.ToUpperInvariant()} | {configuration}");
 		Console.WriteLine($"===============================================");
-		Console.WriteLine($"Beginning cmake for {lib}...");
+		Console.WriteLine($"Beginning build for {lib}...");
 		var buildOutputDir = GetBuildOutputPath(lib, configuration);
 		var thirdPartyRepoRootDir = GetThirdPartyRepoRootPath(lib);
 		if (Directory.Exists(buildOutputDir)) Directory.Delete(buildOutputDir, true);
@@ -202,15 +224,19 @@ void BuildLib(string lib, string configuration) {
 		Console.WriteLine($"Repository root directory: {thirdPartyRepoRootDir}");
 		Console.WriteLine();
 
-		foreach (var invocation in cmakeInvocationsDict[lib]) {
+		foreach (var invocation in commandLists[lib]) {
 			var parsedInvocation = invocation
 				.Replace(RepoRootDirToken, thirdPartyRepoRootDir)
 				.Replace(BuildOutputDirToken, buildOutputDir)
 				.Replace(ConfigurationToken, configuration);
 
+			var invocationSplit = parsedInvocation.Split(' ');
+			var commandletName = invocationSplit[0];
+			var args = String.Join(' ', invocationSplit[1..]);
+
 			Console.WriteLine();
-			Console.WriteLine($"> cmake {parsedInvocation}");
-			var process = Process.Start("cmake", parsedInvocation);
+			Console.WriteLine($"> {commandletName} {args}");
+			var process = Process.Start(commandletName, args);
 			process.WaitForExit();
 			if (process.ExitCode != 0) throw new InvalidOperationException($"Process exit code was 0x{process.ExitCode:X}!");
 			Console.WriteLine();
