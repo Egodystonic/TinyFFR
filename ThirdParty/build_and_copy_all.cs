@@ -29,17 +29,28 @@ const string RepoRootDirToken = "%REPODIR%";
 const string BuildOutputDirToken = "%BUILDOUTDIR%";
 const string ConfigurationToken = "%CONFIG%";
 var commandLists = new Dictionary<string, List<string>> { [LibAssimp] = new(), [LibFilament] = new(), [LibSdl] = new() };
+
+//		Use clang on Linux
+if (OperatingSystem.IsLinux()) {
+	Environment.SetEnvironmentVariable("CC", "/usr/bin/clang");
+	Environment.SetEnvironmentVariable("CXX", "/usr/bin/clang++");
+	Environment.SetEnvironmentVariable("CXXFLAGS", "-stdlib=libc++");
+}
+
+//		Assimp
 commandLists[LibAssimp].AddRange(
 	$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} -DASSIMP_INSTALL=OFF -DASSIMP_BUILD_TESTS=OFF \"{RepoRootDirToken}/CMakeLists.txt\"",
 	$"cmake --build . --config {ConfigurationToken}",
 	$"cmake --build . --target install --config {ConfigurationToken}"
 );
+//		SDL
 commandLists[LibSdl].AddRange(
 	$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} \"{RepoRootDirToken}/CMakeLists.txt\"",
 	$"cmake --build . --config {ConfigurationToken}",
 	$"cmake --build . --target install --config {ConfigurationToken}"
 );
 
+//		Filament
 if (OperatingSystem.IsWindows()) {
 	commandLists[LibFilament].AddRange(
 		$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} " +
@@ -49,9 +60,6 @@ if (OperatingSystem.IsWindows()) {
 	);
 }
 else if (OperatingSystem.IsLinux()) {
-	Environment.SetEnvironmentVariable("CC", "/usr/bin/clang");
-	Environment.SetEnvironmentVariable("CXX", "/usr/bin/clang++");
-	Environment.SetEnvironmentVariable("CXXFLAGS", "-stdlib=libc++");
 	commandLists[LibFilament].AddRange(
 		$"cmake -G Ninja -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} " +
 			$"-DFILAMENT_SUPPORTS_OPENGL=ON -DFILAMENT_INSTALL_BACKEND_TEST=OFF -DFILAMENT_SKIP_SAMPLES=ON -DFILAMENT_SUPPORTS_METAL=OFF -DFILAMENT_SUPPORTS_VULKAN=ON " +
