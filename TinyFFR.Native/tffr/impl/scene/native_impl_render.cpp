@@ -20,9 +20,19 @@ void native_impl_render::allocate_renderer_and_swap_chain(WindowHandle window, R
 	SDL_SysWMinfo wmInfo;
 	SDL_VERSION(&wmInfo.version);
 	SDL_GetWindowWMInfo(window, &wmInfo);
+#if defined(TFFR_WIN)
 	void* hwnd = wmInfo.info.win.window;
-
 	*outSwapChain = filament_engine->createSwapChain(hwnd, 0UL);
+#elif defined(TFFR_LINUX)
+	void* surface = static_cast<void*>(wmInfo.info.wl.surface);
+	*outSwapChain = filament_engine->createSwapChain(surface, 0UL);
+#elif defined(TFFR_MACOS)
+	void* window = static_cast<void*>(wmInfo.info.cocoa.window);
+	*outSwapChain = filament_engine->createSwapChain(window, 0UL);
+#else
+	Throw("TinyFFR was built with no platform identification directive.")
+#endif
+
 	*outRenderer = filament_engine->createRenderer();
 	(*outRenderer)->setClearOptions({ { 0.0, 0.0, 0.0, 0.0 }, 0U, true, true });
 	ThrowIfNull(*outSwapChain, "Could not create swap chain.");

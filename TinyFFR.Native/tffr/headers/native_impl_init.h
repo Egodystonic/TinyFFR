@@ -1,5 +1,9 @@
 #pragma once
 
+#if !defined(TFFR_WIN) && !defined(TFFR_LINUX) && !defined(TFFR_MACOS)
+#error "Require definition of at least one of TFFR_ platform specifier"
+#endif
+
 typedef void* BufferIdentity;
 typedef void(*deallocate_asset_buffer_delegate)(BufferIdentity bufferIdentity);
 typedef void(*log_notify_delegate)();
