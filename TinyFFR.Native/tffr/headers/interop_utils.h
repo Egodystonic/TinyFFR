@@ -1,5 +1,11 @@
 #pragma once
 
+#ifdef TFFR_WIN
+#define EXPORT_FUNC extern "C" __declspec(dllexport)
+#else
+#define EXPORT_FUNC extern "C"
+#endif
+
 class interop_utils {
 public:
 	static constexpr int error_msg_buf_len = 1001;

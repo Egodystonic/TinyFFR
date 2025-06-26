@@ -38,7 +38,7 @@ typedef uint8_t interop_bool;
 #define MacroStr(s) #s
 
 #define StartExportedFunc(funcName, ...)																			\
-	extern "C" __declspec(dllexport) uint8_t funcName(__VA_ARGS__) {					\
+	EXPORT_FUNC uint8_t funcName(__VA_ARGS__) {					\
 	static const char* func_name = MacroStr(funcName); \
 	try																												\
 
@@ -59,50 +59,50 @@ typedef uint8_t interop_bool;
 #define ReturnUnlessNull(ptr, ...)	\
 	{ \
 	if ((ptr) != nullptr) return (ptr); \
-	interop_utils::combine_in_concat_space(__VA_ARGS__); \
-	throw std::exception{ interop_utils::err_msg_concat_space }; \
+		interop_utils::combine_in_concat_space(__VA_ARGS__); \
+		throw std::runtime_error{ interop_utils::err_msg_concat_space }; \
 	} \
 
 #define ThrowIf(expr, ...)	\
 	if (expr) { \
 		interop_utils::combine_in_concat_space(__VA_ARGS__); \
-		throw std::exception{ interop_utils::err_msg_concat_space }; \
+		throw std::runtime_error{ interop_utils::err_msg_concat_space }; \
 	} \
 
 #define ThrowIfNull(ptr, ...)	\
 	if ((ptr) == nullptr) { \
 		interop_utils::combine_in_concat_space(__VA_ARGS__); \
-		throw std::exception{ interop_utils::err_msg_concat_space }; \
+		throw std::runtime_error{ interop_utils::err_msg_concat_space }; \
 	} \
 
 #define ThrowIfNegative(val, ...) \
 	if ((val) < 0) { \
 		interop_utils::combine_in_concat_space(__VA_ARGS__); \
-		throw std::exception{ interop_utils::err_msg_concat_space }; \
+		throw std::runtime_error{ interop_utils::err_msg_concat_space }; \
 	} \
 
 #define ThrowIfNotPositive(val, ...) \
 	if ((val) <= 0) { \
 		interop_utils::combine_in_concat_space(__VA_ARGS__); \
-		throw std::exception{ interop_utils::err_msg_concat_space }; \
+		throw std::runtime_error{ interop_utils::err_msg_concat_space }; \
 	} \
 
 #define ThrowIfNotZero(val, ...) \
 	if ((val) != 0) { \
 		interop_utils::combine_in_concat_space(__VA_ARGS__); \
-		throw std::exception{ interop_utils::err_msg_concat_space }; \
+		throw std::runtime_error{ interop_utils::err_msg_concat_space }; \
 	} \
 
 #define ThrowIfZero(val, ...) \
 	if ((val) == 0) { \
 		interop_utils::combine_in_concat_space(__VA_ARGS__); \
-		throw std::exception{ interop_utils::err_msg_concat_space }; \
+		throw std::runtime_error{ interop_utils::err_msg_concat_space }; \
 	} \
 
 #define Throw(...) \
 	{ \
 	interop_utils::combine_in_concat_space(__VA_ARGS__); \
-	throw std::exception{ interop_utils::err_msg_concat_space }; \
+	throw std::runtime_error{ interop_utils::err_msg_concat_space }; \
 	} \
 
 #pragma endregion

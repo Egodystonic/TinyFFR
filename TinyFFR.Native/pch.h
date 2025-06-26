@@ -11,6 +11,7 @@
 #include <string>
 #include <cstdint>
 #include <exception>
+#include <stdexcept>
 
 #include "sdl/SDL.h"
 
