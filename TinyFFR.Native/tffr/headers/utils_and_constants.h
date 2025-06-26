@@ -54,7 +54,7 @@ typedef uint8_t interop_bool;
 
 #pragma endregion
 
-#pragma region Misc
+#pragma region Parameter Validation
 
 #define ReturnUnlessNull(ptr, ...)	\
 	{ \

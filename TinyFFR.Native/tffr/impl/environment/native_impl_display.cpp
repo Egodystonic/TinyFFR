@@ -40,7 +40,7 @@ StartExportedFunc(get_display_positional_offset, DisplayHandle index, int32_t* x
 
 void native_impl_display::get_display_name(DisplayHandle handle, char* resultBuffer, int32_t bufferLen) {
 	auto name = SDL_GetDisplayName(handle);
-	strcpy_s(resultBuffer, bufferLen, name);
+	interop_utils::safe_copy_string(resultBuffer, bufferLen, name);
 }
 StartExportedFunc(get_display_name, DisplayHandle index, char* resultBuffer, int32_t bufferLen) {
 	native_impl_display::get_display_name(index, resultBuffer, bufferLen);

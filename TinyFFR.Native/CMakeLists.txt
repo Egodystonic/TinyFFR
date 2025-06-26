@@ -16,7 +16,9 @@ file(GLOB_RECURSE TFFR_SOURCES CONFIGURE_DEPENDS
 
 add_library(TinyFFRNative SHARED ${TFFR_SOURCES})
 
-target_precompile_headers(TinyFFRNative PRIVATE pch.h)
+if (WIN32)
+	target_precompile_headers(TinyFFRNative PRIVATE pch.h)
+endif()
 
 target_include_directories(TinyFFRNative
     PUBLIC

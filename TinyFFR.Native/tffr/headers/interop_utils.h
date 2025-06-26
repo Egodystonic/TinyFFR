@@ -20,5 +20,7 @@ public:
 	static void combine_in_concat_space(const char* a, const char* b, const char* c, const char* d, const char* e);
 	static void copy_concat_space_to_err_buffer();
 
+	static void safe_copy_string(char* dest, size_t destLenBytes, const char* src);
+
 	static void int_str(char* inputArray, size_t inputArrayLen, int val);
 };

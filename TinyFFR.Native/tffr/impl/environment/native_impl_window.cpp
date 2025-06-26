@@ -86,7 +86,7 @@ void native_impl_window::get_window_title(WindowHandle handle, char* resultBuffe
 	ThrowIfNull(resultBuffer, "Result buffer was null.");
 	ThrowIfNegative(bufferLen, "Buffer length was negative.");
 	auto title = SDL_GetWindowTitle(handle);
-	strcpy_s(resultBuffer, bufferLen, title);
+	interop_utils::safe_copy_string(resultBuffer, bufferLen, title);
 }
 StartExportedFunc(get_window_title, WindowHandle ptr, char* resultBuffer, int32_t bufferLen) {
 	native_impl_window::get_window_title(ptr, resultBuffer, bufferLen);
