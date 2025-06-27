@@ -10,8 +10,11 @@
     <RootNamespace>Egodystonic.TinyFFR.Testing.Local</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
     <ProjectReference Include="..\..\TinyFFR.Native\TinyFFR.Native.vcxproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\TinyFFR\TinyFFR.csproj" />
     <ProjectReference Include="..\TestCommon\TestCommon.csproj" />
   </ItemGroup>
