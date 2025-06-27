@@ -48,8 +48,8 @@ elseif(UNIX)
 	file(GLOB FILAMENT_LIBS "${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/*.a")
     target_link_libraries(TinyFFRNative 
 		PRIVATE 
-			${PROJECT_SOURCE_DIR}/third_party/binaries/assimp/release/libassimp
-			${PROJECT_SOURCE_DIR}/third_party/binaries/sdl/release/libsdl2
+			${PROJECT_SOURCE_DIR}/third_party/binaries/assimp/release/libassimp.so
+			${PROJECT_SOURCE_DIR}/third_party/binaries/sdl/release/libSDL2.so
 			${FILAMENT_LIBS}
 	)
 endif()
