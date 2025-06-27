@@ -4,7 +4,6 @@
 #include "utils_and_constants.h"
 #include "filament/IndexBuffer.h"
 #include "filament/VertexBuffer.h"
-#include "filamat/Package.h"
 #include "filament/Material.h"
 #include "filament/Texture.h"
 

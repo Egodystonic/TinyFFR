@@ -45,11 +45,22 @@ if(WIN32)
     )
 elseif(UNIX)
 	target_compile_definitions(TinyFFRNative PRIVATE TFFR_LINUX)
-	file(GLOB FILAMENT_LIBS "${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/*.a")
     target_link_libraries(TinyFFRNative 
 		PRIVATE 
 			${PROJECT_SOURCE_DIR}/third_party/binaries/assimp/release/libassimp.so
 			${PROJECT_SOURCE_DIR}/third_party/binaries/sdl/release/libSDL2.so
-			${FILAMENT_LIBS}
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libfilament.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libbackend.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libbluegl.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libbluevk.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libfilabridge.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libfilaflat.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libutils.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libgeometry.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libsmol-v.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libvkshaders.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libibl.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libabseil.a
+			
 	)
 endif()

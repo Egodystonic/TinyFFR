@@ -5,7 +5,6 @@
 #include "utils_and_constants.h"
 
 #include "filament/filament/MaterialEnums.h"
-#include "filamat/MaterialBuilder.h"
 
 #include "filament/Engine.h"
 #include "filament/TextureSampler.h"

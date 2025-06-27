@@ -11,7 +11,15 @@ public static class CommonTestSupportFunctions {
 #else
 	const string ConfiguredBuildDir = "Release";
 #endif
-	static readonly string[] PermittedNativeLibFileExtensions = [".dll", ".lib", ".so", ""];
+	static readonly Func<string, string>[] PossibleFileNameMutations = [
+		f => $"{f}.dll",
+		f => $"{f.Replace(".", "")}",
+		f => $"{f.Replace(".", "")}.so",
+		f => $"lib{f}",
+		f => $"lib{f}.so",
+		f => $"lib{f.Replace(".", "")}",
+		f => $"lib{f.Replace(".", "")}.so",
+	];
 
 	public static void ResolveNativeAssembliesFromBuildOutputDir() {
 		NativeLibrary.SetDllImportResolver(
@@ -22,8 +30,8 @@ public static class CommonTestSupportFunctions {
 				while (curDir != null) {
 					var containedDirectories = Directory.GetDirectories(curDir).Select(Path.GetFileName);
 					if (containedDirectories.Any(d => d != null && d.Equals(BuildOutputDir, StringComparison.OrdinalIgnoreCase))) {
-						var expectedFilePath = Path.Combine(curDir, "build_output", ConfiguredBuildDir, libName);
-						foreach (var possibleFilePath in PermittedNativeLibFileExtensions.Select(ext => expectedFilePath + ext)) {
+						var expectedFilePath = Path.Combine(curDir, "build_output", ConfiguredBuildDir);
+						foreach (var possibleFilePath in PossibleFileNameMutations.Select(f => Path.Combine(expectedFilePath, f(libName)))) {
 							if (File.Exists(possibleFilePath)) return NativeLibrary.Load(possibleFilePath, assy, searchPath);
 						}
 
