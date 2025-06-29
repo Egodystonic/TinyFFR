@@ -419,3 +419,6 @@ Documentation/output/**
 
 # TinyFFR - ignore native binaries in pack project
 Publishing/TinyFFR.NuGet/prebuilt_binaries/**
+
+# TinyFFR - never ignore any file in test assets folder
+!Testing/test_assets/**
