@@ -13,12 +13,9 @@ public static class CommonTestSupportFunctions {
 #endif
 	static readonly Func<string, string>[] PossibleFileNameMutations = [
 		f => $"{f}.dll",
-		f => $"{f.Replace(".", "")}",
-		f => $"{f.Replace(".", "")}.so",
-		f => $"lib{f}",
+		f => $"{f}.so",
 		f => $"lib{f}.so",
-		f => $"lib{f.Replace(".", "")}",
-		f => $"lib{f.Replace(".", "")}.so",
+		f => $"lib{f}",
 	];
 
 	public static void ResolveNativeAssembliesFromBuildOutputDir() {

@@ -20,7 +20,7 @@ var configurations = new[] { DebugConfiguration, ReleaseConfiguration };
 
 // Script actions
 void ExecuteLinux(string nativeProjDir, string config, List<string> thirdPartyBinaryFiles, string ultimateOutputDir) {
-	const string ExpectedBuiltLibraryFileName = "libTinyFFRNative.so";
+	const string ExpectedBuiltLibraryFileName = "libTinyFFR.Native.so";
 	Environment.SetEnvironmentVariable("CC", "/usr/bin/clang");
 	Environment.SetEnvironmentVariable("CXX", "/usr/bin/clang++");
 	Environment.SetEnvironmentVariable("CXXFLAGS", "-stdlib=libc++");
