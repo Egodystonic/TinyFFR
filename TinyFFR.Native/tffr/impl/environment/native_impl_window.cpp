@@ -35,6 +35,14 @@ void native_impl_window::set_window_icon(WindowHandle handle, const char* iconFi
 	auto imageData = stbi_load(iconFilePath, &width, &height, &channelCount, 4);
 	ThrowIfNull(imageData, "Could not load icon '", iconFilePath, "': ", stbi_failure_reason());
 
+	if (width > 128 || height > 128)
+	{
+		// Why? Because X11 can't handle larger files.
+		// We could check this only on Linux/X11 systems but then we have an inconsistency across platforms which I think is worse.
+		stbi_image_free(imageData);
+		Throw("Window icon file dimensions can not be larger than 128x128.");
+	}
+
 	auto sdlSurface = SDL_CreateRGBSurfaceFrom(imageData, width, height, 32, width * 4, 0xFFU, 0xFF00U, 0xFF0000U, 0xFF000000U);
 	if (sdlSurface == nullptr) {
 		stbi_image_free(imageData);
