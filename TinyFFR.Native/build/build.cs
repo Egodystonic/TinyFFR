@@ -83,7 +83,7 @@ if (repoRootFullPath == null) {
 }
 
 var interimBuildOutputDir = Path.Combine(
-	nativeProjDir.FullName, 
+	repoRootFullPath, 
 	BuildOutputDirName,
 	BuildSpaceDirName
 );
