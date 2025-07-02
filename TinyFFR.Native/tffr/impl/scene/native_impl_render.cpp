@@ -26,8 +26,8 @@ void native_impl_render::allocate_renderer_and_swap_chain(WindowHandle window, R
 #elif defined(TFFR_LINUX)
 	switch (wmInfo.subsystem) {
 	case SDL_SYSWM_X11:
-		void* surface = static_cast<void*>(wmInfo.info.x11.window);
-		*outSwapChain = filament_engine->createSwapChain(surface, 0UL);
+		void* windowHandle = static_cast<void*>(static_cast<uintptr_t>(wmInfo.info.x11.window));
+		*outSwapChain = filament_engine->createSwapChain(windowHandle, 0UL);
 		break;
 	case SDL_SYSWM_WAYLAND:
 		void* surface = static_cast<void*>(wmInfo.info.wl.surface);
