@@ -24,8 +24,19 @@ void native_impl_render::allocate_renderer_and_swap_chain(WindowHandle window, R
 	void* hwnd = wmInfo.info.win.window;
 	*outSwapChain = filament_engine->createSwapChain(hwnd, 0UL);
 #elif defined(TFFR_LINUX)
-	void* surface = static_cast<void*>(wmInfo.info.wl.surface);
-	*outSwapChain = filament_engine->createSwapChain(surface, 0UL);
+	switch (wmInfo.subsystem) {
+	case SDL_SYSWM_X11:
+		void* surface = static_cast<void*>(wmInfo.info.x11.window);
+		*outSwapChain = filament_engine->createSwapChain(surface, 0UL);
+		break;
+	case SDL_SYSWM_WAYLAND:
+		void* surface = static_cast<void*>(wmInfo.info.wl.surface);
+		*outSwapChain = filament_engine->createSwapChain(surface, 0UL);
+		break;
+	default:
+		Throw("Unknown window manager.");
+		break;
+	}
 #elif defined(TFFR_MACOS)
 	void* window = static_cast<void*>(wmInfo.info.cocoa.window);
 	*outSwapChain = filament_engine->createSwapChain(window, 0UL);
