@@ -61,11 +61,11 @@ class LocalWindowTest {
 		Assert.AreEqual(new XYPair<int>(100, 100), window.Position);
 		 
 		window.Size = (100, 800);
-		window.Position = (400, -50);
+		window.Position = (400, 70);
 		Assert.Throws<ArgumentOutOfRangeException>(() => window.Size = (-1, -1));
 		Assert.Throws<ArgumentOutOfRangeException>(() => window.Size = (-1, 100));
 		Assert.Throws<ArgumentOutOfRangeException>(() => window.Size = (100, -1));
 		Assert.AreEqual(new XYPair<int>(100, 800), window.Size);
-		Assert.AreEqual(new XYPair<int>(400, -50), window.Position);
+		Assert.AreEqual(new XYPair<int>(400, 70), window.Position);
 	}
 }
