@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Materials.Local;
@@ -437,8 +438,9 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 			File.WriteAllBytes(_hdrPreprocessorFilePath, data.AsSpan);
 			if (!OperatingSystem.IsWindows()) {
 				var chmodProc = Process.Start("chmod", $"+x {_hdrPreprocessorFilePath}");
-				if (!chmodProc.WaitForExit(15_000) || chmodProc.ExitCode != 0) {
-					throw new InvalidOperationException($"Could not set execution permission on extracted HDR preprocessor executable {(chmodProc.HasExited ? chmodProc.ExitCode.ToString() : "no code")}.");
+				if (!chmodProc.WaitForExit(_maxHdrProcessingTime) || chmodProc.ExitCode != 0) {
+					throw new InvalidOperationException($"Could not set execution permission on extracted HDR preprocessor executable (" +
+														$"{(chmodProc.HasExited ? $"0x{chmodProc.ExitCode.ToString("x", CultureInfo.InvariantCulture)}" : "timed out")}).");
 				}
 			}
 		}

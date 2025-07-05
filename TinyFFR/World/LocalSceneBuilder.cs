@@ -355,6 +355,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
+		_globals.DisposeResourceNameIfExists(handle.Ident);
 		DisposeScene(handle).ThrowIfFailure();
 
 		_backdropMap.Remove(handle);
