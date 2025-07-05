@@ -435,6 +435,12 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		try {
 			var data = EmbeddedResourceResolver.GetResource(_hdrPreprocessorResourceName);
 			File.WriteAllBytes(_hdrPreprocessorFilePath, data.AsSpan);
+			if (!OperatingSystem.IsWindows()) {
+				var chmodProc = Process.Start("chmod", $"+x {_hdrPreprocessorFilePath}");
+				if (!chmodProc.WaitForExit(15_000) || chmodProc.ExitCode != 0) {
+					throw new InvalidOperationException($"Could not set execution permission on extracted HDR preprocessor executable {(chmodProc.HasExited ? chmodProc.ExitCode.ToString() : "no code")}.");
+				}
+			}
 		}
 		catch (Exception e) {
 			throw new InvalidOperationException($"Could not extract HDR preprocessor executable ({_hdrPreprocessorResourceName}) " +

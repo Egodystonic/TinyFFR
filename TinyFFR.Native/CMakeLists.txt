@@ -73,5 +73,7 @@ elseif(UNIX)
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libvkshaders.a
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libibl.a
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libabseil.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libktxreader.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libimage.a
 	)
 endif()
