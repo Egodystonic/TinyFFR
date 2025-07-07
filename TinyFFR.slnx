@@ -3,12 +3,14 @@
     <BuildType Name="Debug" />
     <BuildType Name="Optimized" />
     <BuildType Name="Release" />
+    <Platform Name="ARM64" />
     <Platform Name="x64" />
   </Configurations>
   <Folder Name="/Publishing/">
     <Project Path="Publishing/TinyFFR.NuGet/TinyFFR.NuGet.csproj" Id="1087b2c9-d4b1-4b1b-ad1a-72ce291aa3d5">
       <BuildType Solution="Optimized|*" Project="Release" />
-      <Platform Project="x64" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
       <Build Project="false" />
     </Project>
   </Folder>
@@ -16,19 +18,23 @@
     <Project Path="Testing/LocalDevTesting/LocalDevTesting.csproj">
       <BuildDependency Project="TinyFFR.Native/TinyFFR.Native.vcxproj" />
       <BuildDependency Project="TinyFFR/TinyFFR.csproj" />
-      <Platform Project="x64" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="Testing/NupkgTesting/NupkgTesting.csproj">
       <BuildType Solution="Optimized|*" Project="Release" />
-      <Platform Project="x64" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="Testing/TestCommon/TestCommon.csproj" Id="c5487859-95a3-4bf9-85dc-23f9d6e6fd3d">
       <BuildType Solution="Optimized|*" Project="Release" />
-      <Platform Project="x64" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="Testing/TinyFFR.Tests/TinyFFR.Tests.csproj">
       <BuildType Solution="Optimized|*" Project="Release" />
-      <Platform Project="x64" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
     </Project>
   </Folder>
   <Folder Name="/ThirdParty/">
@@ -36,8 +42,11 @@
   </Folder>
   <Project Path="TinyFFR.Native/TinyFFR.Native.vcxproj" Id="ac530f90-8cb3-4e18-9bf2-89079fb171eb">
     <BuildType Solution="Optimized|*" Project="Release" />
+    <Platform Project="x64" />
+    <Build Solution="*|ARM64" Project="false" />
   </Project>
   <Project Path="TinyFFR/TinyFFR.csproj">
-    <Platform Project="x64" />
+    <Platform Solution="*|ARM64" Project="ARM64" />
+    <Platform Solution="*|x64" Project="x64" />
   </Project>
 </Solution>

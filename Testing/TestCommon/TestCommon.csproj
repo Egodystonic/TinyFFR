@@ -4,7 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Platforms>x64</Platforms>
+    <Platforms>x64;ARM64</Platforms>
     <RootNamespace>Egodystonic.TinyFFR.Testing</RootNamespace>
   </PropertyGroup>
 

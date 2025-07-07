@@ -7,7 +7,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <RootNamespace>Egodystonic.TinyFFR</RootNamespace>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <Platforms>x64</Platforms>
+    <Platforms>x64;ARM64</Platforms>
     <IncludeSymbols>False</IncludeSymbols>
     <RunAnalyzersDuringBuild>True</RunAnalyzersDuringBuild>
     <RunAnalyzersDuringLiveAnalysis>True</RunAnalyzersDuringLiveAnalysis>

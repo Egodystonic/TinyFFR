@@ -16,7 +16,7 @@
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 
     <PlatformTarget>x64</PlatformTarget>
-    <Platforms>x64</Platforms>
+    <Platforms>x64;ARM64</Platforms>
     <RuntimeIdentifiers>win-x64;linux-x64;osx-arm64</RuntimeIdentifiers>
 
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
