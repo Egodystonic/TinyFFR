@@ -15,6 +15,8 @@ public static class CommonTestSupportFunctions {
 		f => $"{f}.dll",
 		f => $"{f}.so",
 		f => $"lib{f}.so",
+		f => $"{f}.dylib",
+		f => $"lib{f}.dylib",
 		f => $"lib{f}",
 	];
 

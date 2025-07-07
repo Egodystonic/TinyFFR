@@ -42,7 +42,36 @@ void ExecuteLinux(string nativeProjDir, string config, List<string> thirdPartyBi
 	}
 
 	Console.WriteLine($"Copying {ExpectedBuiltLibraryFileName} to {ultimateOutputDir}");
-	
+
+	File.Copy(ExpectedBuiltLibraryFileName, Path.Combine(ultimateOutputDir, ExpectedBuiltLibraryFileName), overwrite: true);
+
+	foreach (var file in thirdPartyBinaryFiles) {
+		var fileName = Path.GetFileName(file);
+		Console.WriteLine($"Copying {fileName} to {ultimateOutputDir}");
+		File.Copy(file, Path.Combine(ultimateOutputDir, fileName), overwrite: true);
+	}
+}
+void ExecuteMacOS(string nativeProjDir, string config, List<string> thirdPartyBinaryFiles, string ultimateOutputDir) {
+	const string ExpectedBuiltLibraryFileName = "libTinyFFR.Native.dylib";
+
+	var createFilesArgs = $"\"{Path.Combine(nativeProjDir, "CMakeLists.txt")}\"";
+	Console.WriteLine($"> cmake {createFilesArgs}");
+	var cmakeCreateFiles = Process.Start("cmake", createFilesArgs);
+	cmakeCreateFiles.WaitForExit();
+	if (cmakeCreateFiles.ExitCode != 0) throw new InvalidOperationException($"CMAKE files creation process exit code was 0x{cmakeCreateFiles.ExitCode:X}!");
+
+	var buildArgs = $"--build . --config {config}";
+	Console.WriteLine($"> cmake {buildArgs}");
+	var cmakeBuild = Process.Start("cmake", buildArgs);
+	cmakeBuild.WaitForExit();
+	if (cmakeBuild.ExitCode != 0) throw new InvalidOperationException($"CMAKE build process exit code was 0x{cmakeCreateFiles.ExitCode:X}!");
+
+	if (!File.Exists(ExpectedBuiltLibraryFileName)) {
+		throw new InvalidOperationException($"Expected build script to create output file '{ExpectedBuiltLibraryFileName}' in {Environment.CurrentDirectory}; but no such file exists.");
+	}
+
+	Console.WriteLine($"Copying {ExpectedBuiltLibraryFileName} to {ultimateOutputDir}");
+
 	File.Copy(ExpectedBuiltLibraryFileName, Path.Combine(ultimateOutputDir, ExpectedBuiltLibraryFileName), overwrite: true);
 
 	foreach (var file in thirdPartyBinaryFiles) {
@@ -83,7 +112,7 @@ if (repoRootFullPath == null) {
 }
 
 var interimBuildOutputDir = Path.Combine(
-	repoRootFullPath, 
+	repoRootFullPath,
 	BuildOutputDirName,
 	BuildSpaceDirName
 );
@@ -130,6 +159,10 @@ foreach (var configuration in configurations) {
 	else if (OperatingSystem.IsLinux()) {
 		Console.WriteLine($"\tExecuting for Linux / {configuration}...");
 		ExecuteLinux(nativeProjDir.FullName, configuration, thirdPartyFilesList, ultimateOutputDir);
+	}
+	else if (OperatingSystem.IsMacOS()) {
+		Console.WriteLine($"\tExecuting for MacOS / {configuration}...");
+		ExecuteMacOS(nativeProjDir.FullName, configuration, thirdPartyFilesList, ultimateOutputDir);
 	}
 	else {
 		throw new InvalidOperationException($"Unsupported OS '{Environment.OSVersion}'.");

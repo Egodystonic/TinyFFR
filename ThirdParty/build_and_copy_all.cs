@@ -28,6 +28,7 @@ var libs = new[] { LibAssimp, LibFilament, LibSdl };
 const string RepoRootDirToken = "%REPODIR%";
 const string BuildOutputDirToken = "%BUILDOUTDIR%";
 const string ConfigurationToken = "%CONFIG%";
+const string ConfigurationToLowerToken = "%CONFIG_LOWER%";
 var commandLists = new Dictionary<string, List<string>> { [LibAssimp] = new(), [LibFilament] = new(), [LibSdl] = new() };
 
 //		Use clang on Linux
@@ -38,11 +39,21 @@ if (OperatingSystem.IsLinux()) {
 }
 
 //		Assimp
-commandLists[LibAssimp].AddRange(
-	$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} -DASSIMP_INSTALL=OFF -DASSIMP_BUILD_TESTS=OFF \"{RepoRootDirToken}/CMakeLists.txt\"",
-	$"cmake --build . --config {ConfigurationToken}",
-	$"cmake --build . --target install --config {ConfigurationToken}"
-);
+if (OperatingSystem.IsMacOS()) {
+	commandLists[LibAssimp].AddRange(
+		$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} -DASSIMP_BUILD_ZLIB=OFF -DASSIMP_INSTALL=OFF -DASSIMP_BUILD_TESTS=OFF \"{RepoRootDirToken}/CMakeLists.txt\"",
+		$"cmake --build . --config {ConfigurationToken}",
+		$"cmake --build . --target install --config {ConfigurationToken}"
+	);
+}
+else {
+	commandLists[LibAssimp].AddRange(
+		$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} -DASSIMP_INSTALL=OFF -DASSIMP_BUILD_TESTS=OFF \"{RepoRootDirToken}/CMakeLists.txt\"",
+		$"cmake --build . --config {ConfigurationToken}",
+		$"cmake --build . --target install --config {ConfigurationToken}"
+	);
+}
+
 //		SDL
 commandLists[LibSdl].AddRange(
 	$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} \"{RepoRootDirToken}/CMakeLists.txt\"",
@@ -51,28 +62,39 @@ commandLists[LibSdl].AddRange(
 );
 
 //		Filament
-if (OperatingSystem.IsWindows()) {
+if (OperatingSystem.IsMacOS()) {
 	commandLists[LibFilament].AddRange(
-		$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} " +
-			$"-DFILAMENT_SUPPORTS_OPENGL=ON -DFILAMENT_INSTALL_BACKEND_TEST=OFF -DFILAMENT_SKIP_SAMPLES=ON -DFILAMENT_SUPPORTS_METAL=OFF -DFILAMENT_SUPPORTS_VULKAN=ON " +
-			$"\"{RepoRootDirToken}/CMakeLists.txt\"",
-		$"cmake --build . --config {ConfigurationToken}"
-	);
-}
-else if (OperatingSystem.IsLinux()) {
-	commandLists[LibFilament].AddRange(
-		$"cmake -G Ninja -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} " +
-			$"-DFILAMENT_SUPPORTS_OPENGL=ON -DFILAMENT_INSTALL_BACKEND_TEST=OFF -DFILAMENT_SKIP_SAMPLES=ON -DFILAMENT_SUPPORTS_METAL=OFF -DFILAMENT_SUPPORTS_VULKAN=ON " +
-			$"\"{RepoRootDirToken}/CMakeLists.txt\"",
-		$"ninja"
+		$"/bin/bash \"{RepoRootDirToken}/build.sh\" -c -i {ConfigurationToken}",
+		$"/bin/bash -c \"rm -rf \\\"{InterimInstallDirName}\"\\\"",
+		$"/bin/bash -c \"mkdir -p \\\"{InterimInstallDirName}\"\\\"",
+		$"/bin/bash -c \"cp -R \\\"{RepoRootDirToken}/out/{ConfigurationToLowerToken}/filament/.\\\" \\\"{InterimInstallDirName}\\\"\""
 	);
 }
 else {
-	throw new InvalidOperationException($"Unsupported OS '{Environment.OSVersion}'.");
+	if (OperatingSystem.IsWindows()) {
+		commandLists[LibFilament].AddRange(
+			$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} " +
+				$"-DFILAMENT_SUPPORTS_OPENGL=ON -DFILAMENT_INSTALL_BACKEND_TEST=OFF -DFILAMENT_SKIP_SAMPLES=ON -DFILAMENT_SUPPORTS_METAL=OFF -DFILAMENT_SUPPORTS_VULKAN=ON " +
+				$"\"{RepoRootDirToken}/CMakeLists.txt\"",
+			$"cmake --build . --config {ConfigurationToken}"
+		);
+	}
+	else if (OperatingSystem.IsLinux()) {
+		commandLists[LibFilament].AddRange(
+			$"cmake -G Ninja -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} " +
+				$"-DFILAMENT_SUPPORTS_OPENGL=ON -DFILAMENT_INSTALL_BACKEND_TEST=OFF -DFILAMENT_SKIP_SAMPLES=ON -DFILAMENT_SUPPORTS_METAL=OFF -DFILAMENT_SUPPORTS_VULKAN=ON " +
+				$"\"{RepoRootDirToken}/CMakeLists.txt\"",
+			$"ninja"
+		);
+	}
+	else {
+		throw new InvalidOperationException($"Unsupported OS '{Environment.OSVersion}'.");
+	}
+	commandLists[LibFilament].AddRange(
+		$"cmake --build . --target install --config {ConfigurationToken}"
+	);
 }
-commandLists[LibFilament].AddRange(
-	$"cmake --build . --target install --config {ConfigurationToken}"
-);
+
 
 
 // Commandline args + ordering of build configurations in this script
@@ -100,7 +122,8 @@ var installDirTranslations = new Dictionary<string, Func<TargetFileData, string?
 
 		return fileData.RelativeDestination
 			.Replace("pkgconfig/", "")
-			.Replace("x86_64/", "");
+			.Replace("x86_64/", "")
+			.Replace("arm64/", "");
 	},
 	[LibSdl] = fileData => {
 		return fileData.RelativeDestination.Replace("SDL2/", "");
@@ -236,7 +259,8 @@ void BuildLib(string lib, string configuration) {
 			var parsedInvocation = invocation
 				.Replace(RepoRootDirToken, thirdPartyRepoRootDir)
 				.Replace(BuildOutputDirToken, buildOutputDir)
-				.Replace(ConfigurationToken, configuration);
+				.Replace(ConfigurationToken, configuration)
+				.Replace(ConfigurationToLowerToken, configuration.ToLowerInvariant());
 
 			var invocationSplit = parsedInvocation.Split(' ');
 			var commandletName = invocationSplit[0];

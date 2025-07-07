@@ -41,8 +41,8 @@ void native_impl_render::allocate_renderer_and_swap_chain(WindowHandle window, R
 		}
 	}
 #elif defined(TFFR_MACOS)
-	void* window = static_cast<void*>(wmInfo.info.cocoa.window);
-	*outSwapChain = filament_engine->createSwapChain(window, 0UL);
+	void* cocoaWindow = static_cast<void*>(wmInfo.info.cocoa.window);
+	*outSwapChain = filament_engine->createSwapChain(cocoaWindow, 0UL);
 #else
 	Throw("TinyFFR was built with no platform identification directive.")
 #endif

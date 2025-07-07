@@ -55,12 +55,39 @@ if(WIN32)
 	target_compile_options(TinyFFR.Native PRIVATE
         /permissive- /GS /W3 /Gy /Zc:wchar_t /Gm- /O2 /sdl /Zc:inline /fp:precise /WX- /Zc:forScope /Gd /Oi /MT /FC /EHsc /nologo /diagnostics:column 
     )
-elseif(UNIX)
+elseif(UNIX AND NOT APPLE)
 	target_compile_definitions(TinyFFR.Native PRIVATE TFFR_LINUX)
     target_link_libraries(TinyFFR.Native 
 		PRIVATE 
 			${PROJECT_SOURCE_DIR}/third_party/binaries/assimp/release/libassimp.so
 			${PROJECT_SOURCE_DIR}/third_party/binaries/sdl/release/libSDL2.so
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libfilament.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libbackend.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libbluegl.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libbluevk.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libfilabridge.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libfilaflat.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libutils.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libgeometry.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libsmol-v.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libvkshaders.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libibl.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libabseil.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libktxreader.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libimage.a
+	)
+elseif(APPLE)
+	target_compile_definitions(TinyFFR.Native PRIVATE TFFR_MACOS)
+    target_link_libraries(TinyFFR.Native 
+		PRIVATE
+			"-framework CoreFoundation"
+			"-framework CoreVideo"
+			"-framework CoreGraphics"
+			"-framework Metal"
+			"-framework QuartzCore"
+			"-framework Cocoa"  
+			${PROJECT_SOURCE_DIR}/third_party/binaries/assimp/release/libassimp.dylib
+			${PROJECT_SOURCE_DIR}/third_party/binaries/sdl/release/libSDL2.dylib
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libfilament.a
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libbackend.a
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libbluegl.a
