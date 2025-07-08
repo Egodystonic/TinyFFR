@@ -11,10 +11,17 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # disable compiler-specific extensions (we must be cross-plat compatible)
 set(CMAKE_CXX_EXTENSIONS OFF)
-# these two lines ensure that clang doesn't build the output .so with its ELF file set to look for the linked-in binaries hard-coded in their specific location they were during build (kind of insane that that's the default)
-# in other words, thanks to these two lines, the built .so will look for dependent libraries in its own folder rather than wherever they were when linked against
-set(CMAKE_INSTALL_RPATH "$ORIGIN")
-set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+
+if(UNIX AND NOT APPLE)
+	# these two lines ensure that clang doesn't build the output .so with its ELF file set to look for the linked-in binaries hard-coded in their specific location they were during build (kind of insane that that's the default)
+	# in other words, thanks to these two lines, the built .so will look for dependent libraries in its own folder rather than wherever they were when linked against
+	set(CMAKE_INSTALL_RPATH "$ORIGIN")
+	set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+elseif(APPLE)
+	# same as above but apple-flavoured
+	set(CMAKE_INSTALL_RPATH "@loader_path")
+	set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+endif()
 
 # this sets up TFFR_SOURCES which are all the .h and .cpp files in our lib
 file(GLOB_RECURSE TFFR_SOURCES CONFIGURE_DEPENDS
