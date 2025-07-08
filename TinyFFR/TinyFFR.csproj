@@ -41,11 +41,13 @@
   
   <ItemGroup>
     <EmbeddedResource Include="Assets\Local\cmgen.exe" />
+    <EmbeddedResource Include="Assets\Local\cmgen_mac" />
     <EmbeddedResource Include="Assets\Materials\Local\Shaders\alpha_aware.filamat" />
     <EmbeddedResource Include="Assets\Materials\Local\Shaders\alpha_aware_mask.filamat" />
     <EmbeddedResource Include="logo_128.png" />
     <EmbeddedResource Include="Assets\Materials\Local\Shaders\opaque.filamat" />
     <None Remove="Assets\Local\cmgen" />
+    <None Remove="Assets\Local\cmgen_mac" />
     <EmbeddedResource Include="Assets\Local\cmgen" />
   </ItemGroup>
 

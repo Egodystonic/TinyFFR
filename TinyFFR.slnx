@@ -40,7 +40,7 @@
   <Folder Name="/ThirdParty/">
     <File Path="ThirdParty/build_and_copy_all.cs" />
   </Folder>
-  <Project Path="TinyFFR.Native/TinyFFR.Native.vcxproj" Id="ac530f90-8cb3-4e18-9bf2-89079fb171eb" Condition="'$(OS)' == 'Windows_NT'">
+  <Project Path="TinyFFR.Native/TinyFFR.Native.vcxproj" Id="ac530f90-8cb3-4e18-9bf2-89079fb171eb">
     <BuildType Solution="Optimized|*" Project="Release" />
     <Platform Project="x64" />
     <Build Solution="*|ARM64" Project="false" />

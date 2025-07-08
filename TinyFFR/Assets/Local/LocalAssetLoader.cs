@@ -21,6 +21,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 	const string DefaultEnvironmentCubemapName = "Unnamed Environment Cubemap";
 	const string HdrPreprocessorNameWin = "cmgen.exe";
 	const string HdrPreprocessorNameLinux = "cmgen";
+	const string HdrPreprocessorNameMacos = "cmgen_mac";
 	const string HdrPreprocessorResourceNameStart = "Assets.Local.";
 	const string HdrPreprocessedSkyboxFileSearch = "*_skybox.ktx";
 	const string HdrPreprocessedIblFileSearch = "*_ibl.ktx";
@@ -58,7 +59,8 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 			_hdrPreprocessorResourceName = HdrPreprocessorResourceNameStart + HdrPreprocessorNameWin;
 		}
 		else if (OperatingSystem.IsMacOS()) {
-			throw new NotImplementedException();
+			_hdrPreprocessorFilePath = Path.Combine(LocalFileSystemUtils.ApplicationDataDirectoryPath, HdrPreprocessorNameMacos);
+			_hdrPreprocessorResourceName = HdrPreprocessorResourceNameStart + HdrPreprocessorNameMacos;
 		}
 		else {
 			_hdrPreprocessorFilePath = Path.Combine(LocalFileSystemUtils.ApplicationDataDirectoryPath, HdrPreprocessorNameLinux);
