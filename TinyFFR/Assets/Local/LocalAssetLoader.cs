@@ -439,7 +439,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 			var data = EmbeddedResourceResolver.GetResource(_hdrPreprocessorResourceName);
 			File.WriteAllBytes(_hdrPreprocessorFilePath, data.AsSpan);
 			if (!OperatingSystem.IsWindows()) {
-				var chmodProc = Process.Start("chmod", $"+x {_hdrPreprocessorFilePath}");
+				var chmodProc = Process.Start("chmod", $"+x \"{_hdrPreprocessorFilePath}\"");
 				if (!chmodProc.WaitForExit(_maxHdrProcessingTime) || chmodProc.ExitCode != 0) {
 					throw new InvalidOperationException($"Could not set execution permission on extracted HDR preprocessor executable (" +
 														$"{(chmodProc.HasExited ? $"0x{chmodProc.ExitCode.ToString("x", CultureInfo.InvariantCulture)}" : "timed out")}).");

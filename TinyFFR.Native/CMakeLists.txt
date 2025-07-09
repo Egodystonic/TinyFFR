@@ -29,6 +29,11 @@ file(GLOB_RECURSE TFFR_SOURCES CONFIGURE_DEPENDS
     ${PROJECT_SOURCE_DIR}/tffr/headers/*.h
 )
 
+# Add MacOS support functions (objective C)
+if(APPLE)
+    list(APPEND TFFR_SOURCES ${PROJECT_SOURCE_DIR}/tffr/impl/macos_functions.mm)
+endif()
+
 # this informs cmake that we want to build a library called "TinyFFR.Native"
 add_library(TinyFFR.Native SHARED ${TFFR_SOURCES})
 

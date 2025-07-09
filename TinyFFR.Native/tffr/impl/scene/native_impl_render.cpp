@@ -10,6 +10,12 @@
 
 #include "sdl/SDL_syswm.h"
 
+#if defined(TFFR_MACOS)
+
+extern "C" void* macos_get_cocoa_view(NSWindow* nsWindow);
+
+#endif
+
 using namespace utils;
 
 void native_impl_render::allocate_renderer_and_swap_chain(WindowHandle window, RendererHandle* outRenderer, SwapChainHandle* outSwapChain) {
@@ -41,8 +47,8 @@ void native_impl_render::allocate_renderer_and_swap_chain(WindowHandle window, R
 		}
 	}
 #elif defined(TFFR_MACOS)
-	void* cocoaWindow = static_cast<void*>(wmInfo.info.cocoa.window);
-	*outSwapChain = filament_engine->createSwapChain(cocoaWindow, 0UL);
+	NSWindow* cocoaWindow = static_cast<void*>(wmInfo.info.cocoa.window);
+	*outSwapChain = filament_engine->createSwapChain(get_cocoa_view(cocoaWindow), 0UL);
 #else
 	Throw("TinyFFR was built with no platform identification directive.")
 #endif
