@@ -31,29 +31,29 @@ void native_impl_render::allocate_renderer_and_swap_chain(WindowHandle window, R
 	*outSwapChain = filament_engine->createSwapChain(hwnd, 0UL);
 #elif defined(TFFR_LINUX)
 	switch (wmInfo.subsystem) {
-		case SDL_SYSWM_X11: {
-			void* windowHandle = reinterpret_cast<void*>(static_cast<uintptr_t>(wmInfo.info.x11.window));
-			*outSwapChain = filament_engine->createSwapChain(windowHandle, 0UL);
-			break;
-		}
-		case SDL_SYSWM_WAYLAND: {
-			void* surface = static_cast<void*>(wmInfo.info.wl.surface);
-			*outSwapChain = filament_engine->createSwapChain(surface, 0UL);
-			break;
-		}
-		default: {
-			Throw("Unknown window manager.");
-			break;
-		}
+	case SDL_SYSWM_X11: {
+		void* windowHandle = reinterpret_cast<void*>(static_cast<uintptr_t>(wmInfo.info.x11.window));
+		*outSwapChain = filament_engine->createSwapChain(windowHandle, 0UL);
+		break;
+	}
+	case SDL_SYSWM_WAYLAND: {
+		void* surface = static_cast<void*>(wmInfo.info.wl.surface);
+		*outSwapChain = filament_engine->createSwapChain(surface, 0UL);
+		break;
+	}
+	default: {
+		Throw("Unknown window manager.");
+		break;
+	}
 	}
 #elif defined(TFFR_MACOS)
-	NSWindow* cocoaWindow = static_cast<void*>(wmInfo.info.cocoa.window);
-	*outSwapChain = filament_engine->createSwapChain(get_cocoa_view(cocoaWindow), 0UL);
+	NSWindow* cocoaWindow = wmInfo.info.cocoa.window;
+	*outSwapChain = filament_engine->createSwapChain(macos_get_cocoa_view(cocoaWindow), 0UL);
 #else
 	Throw("TinyFFR was built with no platform identification directive.")
 #endif
 
-	*outRenderer = filament_engine->createRenderer();
+		* outRenderer = filament_engine->createRenderer();
 	(*outRenderer)->setClearOptions({ { 0.0, 0.0, 0.0, 0.0 }, 0U, true, true });
 	ThrowIfNull(*outSwapChain, "Could not create swap chain.");
 	ThrowIfNull(*outRenderer, "Could not create renderer.");
@@ -111,16 +111,15 @@ StartExportedFunc(set_view_descriptor_size, ViewDescriptorHandle viewDescriptor,
 
 void native_impl_render::set_view_shadow_fidelity_level(ViewDescriptorHandle viewDescriptor, int32_t level) {
 	ThrowIfNull(viewDescriptor, "View was null.");
-	switch (level)
-	{
-		case 1:
-		case 2:
-			// Looks "worse" (less smooth, more dithery) from some aspects but does not suffer from light bleeding which definitely looks "less bad" in the worst case
-			viewDescriptor->setShadowType(ShadowType::PCSS);
-			break;
-		default:
-			viewDescriptor->setShadowType(ShadowType::VSM);
-			break;
+	switch (level) {
+	case 1:
+	case 2:
+		// Looks "worse" (less smooth, more dithery) from some aspects but does not suffer from light bleeding which definitely looks "less bad" in the worst case
+		viewDescriptor->setShadowType(ShadowType::PCSS);
+		break;
+	default:
+		viewDescriptor->setShadowType(ShadowType::VSM);
+		break;
 	}
 }
 StartExportedFunc(set_view_shadow_fidelity_level, ViewDescriptorHandle viewDescriptor, int32_t level) {

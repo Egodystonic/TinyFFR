@@ -1,4 +1,6 @@
-extern "C" void* get_cocoa_view(NSWindow* nsWindow) {
+#import <Cocoa/Cocoa.h>
+
+extern "C" void* macos_get_cocoa_view(NSWindow* nsWindow) {
     NSView* view = [nsWindow contentView];
     return view;
 }
