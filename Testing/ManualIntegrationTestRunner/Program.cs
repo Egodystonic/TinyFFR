@@ -13,7 +13,7 @@ for (var i = 0; i < tests.Length; ++i) {
 	Console.WriteLine($"\t{i,7} {tests[i].Name}");
 }
 
-if (!Int32.TryParse(Console.ReadKey().KeyChar.ToString(), NumberStyles.Integer, CultureInfo.InstalledUICulture, out var index) || index < 0 || index >= tests.Length) return;
+if (!Int32.TryParse(Console.ReadLine(), NumberStyles.Integer, CultureInfo.InstalledUICulture, out var index) || index < 0 || index >= tests.Length) return;
 
 var testType = tests[index];
 
