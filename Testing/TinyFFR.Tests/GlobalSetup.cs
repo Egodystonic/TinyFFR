@@ -7,7 +7,10 @@ using Egodystonic.TinyFFR.Testing;
 using NUnit.Framework.Constraints;
 using NUnit.Framework.Internal;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
+[assembly: InternalsVisibleTo("ManualIntegrationTestRunner")]
 
 namespace Egodystonic.TinyFFR;
 

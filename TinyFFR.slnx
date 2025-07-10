@@ -21,6 +21,11 @@
       <Platform Solution="*|ARM64" Project="ARM64" />
       <Platform Solution="*|x64" Project="x64" />
     </Project>
+    <Project Path="Testing/ManualIntegrationTestRunner/ManualIntegrationTestRunner.csproj" Id="df2e4704-c5a6-4e8d-b074-677ad9804034">
+      <BuildType Solution="Optimized|*" Project="Release" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
     <Project Path="Testing/NupkgTesting/NupkgTesting.csproj">
       <BuildType Solution="Optimized|*" Project="Release" />
       <Platform Solution="*|ARM64" Project="ARM64" />
