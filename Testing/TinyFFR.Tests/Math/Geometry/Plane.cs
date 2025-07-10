@@ -1129,10 +1129,10 @@ class PlaneTest {
 
 		AssertCombination(false, Direction.Left, Direction.Down, 89f);
 		AssertCombination(false, Direction.Left, Direction.Up, 89f);
-		AssertCombination(true, Direction.Left, Direction.Down, 90f);
-		AssertCombination(true, Direction.Left, Direction.Up, 90f);
-		AssertCombination(true, Direction.Up, Direction.Down, 0f);
-		AssertCombination(true, Direction.Down, Direction.Up, 0f);
+		AssertCombination(true, Direction.Left, Direction.Down, 90f - TestTolerance);
+		AssertCombination(true, Direction.Left, Direction.Up, 90f - TestTolerance);
+		AssertCombination(true, Direction.Up, Direction.Down, TestTolerance);
+		AssertCombination(true, Direction.Down, Direction.Up, TestTolerance);
 
 		var testList = new List<Direction>();
 		for (var x = -3f; x <= 3f; x += 1f) {

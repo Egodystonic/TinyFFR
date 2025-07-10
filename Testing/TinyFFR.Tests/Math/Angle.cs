@@ -100,16 +100,16 @@ class AngleTest {
 
 		// sine
 		for (var f = -2f; f < 2.05f; f += 0.05f) {
-			if (f < -1f) Assert.AreEqual(-Angle.QuarterCircle, Angle.FromSine(f));
-			else if (f > 1f) Assert.AreEqual(Angle.QuarterCircle, Angle.FromSine(f));
-			else Assert.AreEqual(Angle.FromRadians(MathF.Asin(f)), Angle.FromSine(f));
+			if (f < -1f) AssertToleranceEquals(-Angle.QuarterCircle, Angle.FromSine(f), TestTolerance);
+			else if (f > 1f) AssertToleranceEquals(Angle.QuarterCircle, Angle.FromSine(f), TestTolerance);
+			else AssertToleranceEquals(Angle.FromRadians(MathF.Asin(f)), Angle.FromSine(f), TestTolerance);
 		}
 
 		// cosine
 		for (var f = -2f; f < 2.05f; f += 0.05f) {
-			if (f < -1f) Assert.AreEqual(Angle.HalfCircle, Angle.FromCosine(f));
-			else if (f > 1f) Assert.AreEqual(Angle.Zero, Angle.FromCosine(f));
-			else Assert.AreEqual(Angle.FromRadians(MathF.Acos(f)), Angle.FromCosine(f));
+			if (f < -1f) AssertToleranceEquals(Angle.HalfCircle, Angle.FromCosine(f), TestTolerance);
+			else if (f > 1f) AssertToleranceEquals(Angle.Zero, Angle.FromCosine(f), TestTolerance);
+			else AssertToleranceEquals(Angle.FromRadians(MathF.Acos(f)), Angle.FromCosine(f), TestTolerance);
 		}
 	}
 

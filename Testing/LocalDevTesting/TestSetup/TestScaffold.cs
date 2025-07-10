@@ -156,6 +156,7 @@ static class TestScaffold {
 
 	public static void RunTestLoop() {
 		if (_options == null || _testObjects == null) throw new InvalidOperationException($"Must invoke {nameof(SetUpStandardTestObjects)} first.");
+		TestMain.StartTest();
 		if (!ShouldRunDefaultLoop) return;
 
 		var loop = _testObjects.Loop!.Value;
