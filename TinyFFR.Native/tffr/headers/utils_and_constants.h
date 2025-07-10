@@ -37,13 +37,29 @@ typedef uint8_t interop_bool;
 
 #define MacroStr(s) #s
 
-#define StartExportedFunc(funcName, ...)																			\
+#ifdef _DEBUG
+
+#define StartExportedFunc(funcName, ...)							\
 	EXPORT_FUNC uint8_t funcName(__VA_ARGS__) {					\
-	static const char* func_name = MacroStr(funcName); \
-	try																												\
+	static const char* func_name = MacroStr(funcName);			\
+	try															\
 
 #define EndExportedFunc									\
-		return interop_result::success_int_val;					\
+		return interop_result::success_int_val;			\
+	}													\
+	catch (std::exception& e) {							\
+		ExportFuncFail(e.what());						\
+	}													\
+
+#else
+
+#define StartExportedFunc(funcName, ...)							\
+	EXPORT_FUNC uint8_t funcName(__VA_ARGS__) {					\
+	static const char* func_name = MacroStr(funcName);			\
+	try															\
+
+#define EndExportedFunc									\
+		return interop_result::success_int_val;			\
 	}													\
 	catch (std::exception& e) {							\
 		ExportFuncFail(e.what());						\
@@ -51,6 +67,8 @@ typedef uint8_t interop_bool;
 	catch (...) {										\
 		ExportFuncFail("Unknown exception occurred.");	\
 	}													\
+
+#endif
 
 #pragma endregion
 
