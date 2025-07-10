@@ -113,5 +113,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="tffr\impl\macos_functions.mm" />
+    <None Include="..\ThirdParty\build_and_copy_all_third_party.cs" />
   </ItemGroup>
 </Project>

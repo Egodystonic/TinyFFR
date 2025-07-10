@@ -145,6 +145,7 @@ xcopy /y "$(ProjectDir)third_party\binaries\sdl\$(Configuration)\*.*" "$(Solutio
     <Text Include="third_party\third_party_installation_instructions.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\ThirdParty\build_and_copy_all_third_party.cs" />
     <None Include="tffr\impl\macos_functions.mm" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
