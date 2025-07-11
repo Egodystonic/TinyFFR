@@ -1,0 +1,61 @@
+on:
+  workflow_dispatch:
+
+jobs:
+  build_linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            build-essential \
+            libglu1-mesa-dev \
+            ninja-build \
+            libc++-dev \
+            libc++abi-dev \
+            clang-18 \
+            libc++-18-dev \
+            libc++abi-18-dev \
+            mesa-common-dev \
+            libxi-dev \
+            libxxf86vm-dev \
+            libgl1-mesa-dev \
+            libgles2-mesa-dev \
+            libegl1-mesa-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            wayland-protocols \
+            libgl1-mesa-dev
+          sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-18 100
+
+      - name: Build Third Party Libraries
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+      - working-directory: ./ThirdParty/
+      - run: |
+          dotnet run build_and_copy_all_third_party.cs -- Release
+
+      - name: Build First Party Native Lib
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+      - working-directory: ./TinyFFR.Native/build/
+      - run: |
+          dotnet run build.cs
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: native_libs_linux
+          path: build_output/Release/
+ 
