@@ -81,12 +81,27 @@ void ExecuteMacOS(string nativeProjDir, string config, List<string> thirdPartyBi
 	}
 }
 void ExecuteWindows(string nativeProjDir, string config, List<string> thirdPartyBinaryFiles, string ultimateOutputDir) {
-	const string MsBuildLocation = @"%ProgramFiles%\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe";
-	var buildArgs = $"\"{nativeProjDir}TinyFFR.Native.vcxproj\" /property:Configuration={config} /property:Platform=x64";
+	const string MsBuildPathName = @"msbuild";
+	const string MsBuildEnterpriseLocation = @"%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe";
+	const string MsBuildCommunityLocation = @"%ProgramFiles%\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe";
+
+	var expandedEnterpriseLocation = Environment.ExpandEnvironmentVariables(MsBuildEnterpriseLocation);
+	var expandedCommunityLocation = Environment.ExpandEnvironmentVariables(MsBuildCommunityLocation);
+
+	string msBuildLocation;
+	var whereProc = Process.Start("where", MsBuildPathName);
+	whereProc.WaitForExit();
+	if (whereProc.ExitCode == 0) msBuildLocation = MsBuildPathName;
+	else if (File.Exists(expandedEnterpriseLocation)) msBuildLocation = expandedEnterpriseLocation;
+	else if (File.Exists(expandedCommunityLocation)) msBuildLocation = expandedCommunityLocation;
+	else throw new InvalidOperationException($"Can not locate MSBuild.exe; looked in: \"{expandedCommunityLocation}\", \"{expandedEnterpriseLocation}\", \"{MsBuildPathName}\" on path");
+
+	Console.WriteLine($"Using msbuild at '{msBuildLocation}'");
+	var buildArgs = $"\"{nativeProjDir}/TinyFFR.Native.vcxproj\" /property:Configuration={config} /property:Platform=x64";
 	Console.WriteLine($"> MSBuild.exe {buildArgs}");
-	var msBuild = Process.Start(MsBuildLocation, buildArgs);
+	var msBuild = Process.Start(msBuildLocation, buildArgs);
 	msBuild.WaitForExit();
-	if (msBuild.ExitCode != 0) throw new InvalidOperationException($"MSBUILD process exist code was 0x{msBuild.ExitCode:X}!");
+	if (msBuild.ExitCode != 0) throw new InvalidOperationException($"MSBUILD process exit code was 0x{msBuild.ExitCode:X}!");
 }
 
 // ===================================================================================================================================
@@ -126,14 +141,23 @@ var thirdPartyBinariesFullPath = Path.Combine(
 	ThirdPartyBinariesDirPath
 );
 
+var commandLineConfigArg = configurations.FirstOrDefault(c => Environment.GetCommandLineArgs().Any(a => a.Equals(c, StringComparison.OrdinalIgnoreCase)));
+
 Console.WriteLine($"\tScript Dir: {scriptDir}");
 Console.WriteLine($"\tNative Dir: {nativeProjDir.FullName}");
 Console.WriteLine($"\tRepo Root Dir: {repoRootFullPath}");
 Console.WriteLine($"\tInterim Build Dir: {interimBuildOutputDir}");
 Console.WriteLine($"\tOutput Dir: {ultimateOutputStartDir}");
 Console.WriteLine($"\tThird Party Binaries Dir: {thirdPartyBinariesFullPath}");
+if (commandLineConfigArg == null) {
+	Console.WriteLine($"\tExecuting for all configurations");
+}
+else {
+	Console.WriteLine($"\tExecuting for '{commandLineConfigArg}' configuration only");
+}
 
 foreach (var configuration in configurations) {
+	if (commandLineConfigArg != null && !configuration.Equals(commandLineConfigArg, StringComparison.OrdinalIgnoreCase)) continue;
 	Environment.CurrentDirectory = scriptDir;
 	if (Directory.Exists(interimBuildOutputDir)) Directory.Delete(interimBuildOutputDir, true);
 	Directory.CreateDirectory(interimBuildOutputDir);
