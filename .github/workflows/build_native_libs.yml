@@ -29,7 +29,7 @@ jobs:
       - name: Build First Party Native Lib
         run: |
           cd ./TinyFFR.Native/build/
-          dotnet run build.cs
+          dotnet run build.cs -- Release
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
@@ -86,7 +86,7 @@ jobs:
       - name: Build First Party Native Lib
         run: |
           cd ./TinyFFR.Native/build/
-          dotnet run build.cs
+          dotnet run build.cs -- Release
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
@@ -105,6 +105,11 @@ jobs:
             9.0.x
             10.0.x
 
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x64
+
       - name: Checkout
         uses: actions/checkout@v4
           
@@ -116,7 +121,7 @@ jobs:
       - name: Build First Party Native Lib
         run: |
           cd ./TinyFFR.Native/build/
-          dotnet run build.cs
+          dotnet run build.cs -- Release
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
