@@ -102,6 +102,14 @@ void ExecuteWindows(string nativeProjDir, string config, List<string> thirdParty
 	var msBuild = Process.Start(msBuildLocation, buildArgs);
 	msBuild.WaitForExit();
 	if (msBuild.ExitCode != 0) throw new InvalidOperationException($"MSBUILD process exit code was 0x{msBuild.ExitCode:X}!");
+
+	var buildArtifactsDir = Path.Combine(nativeProjDir, "build_output", config);
+	if (!Directory.Exists(buildArtifactsDir)) throw new InvalidOperationException($"Could not find expected build artifacts dir at '{buildArtifactsDir}'.");
+	foreach (var file in Directory.GetFiles(buildArtifactsDir)) {
+		var fileName = Path.GetFileName(file);
+		Console.WriteLine($"Copying {fileName} to {ultimateOutputDir}");
+		File.Copy(file, Path.Combine(ultimateOutputDir, fileName), overwrite: true);
+	}
 }
 
 // ===================================================================================================================================
