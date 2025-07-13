@@ -36,7 +36,7 @@ var calculatedOrigin = ((minLoc.AsVect() + maxLoc.AsVect()) * 0.5f).AsLocation()
 if (new Location(0f, 11.344924f, 1.9073486E-06f) != calculatedOrigin) throw new InvalidOperationException("Test fail");
 
 var display = factory.DisplayDiscoverer.Recommended!.Value;
-using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Asset Import Test");
+using var window = factory.WindowBuilder.CreateWindow(display, title: "Nupkg Test");
 window.SetIcon(CommonTestAssets.FindAsset(KnownTestAsset.EgodystonicLogo));
 using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 using var albedo = factory.AssetLoader.LoadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex));
@@ -60,7 +60,7 @@ var instanceToCameraVect = instance.Position >> camera.Position;
 
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(8.9d)) {
-	_ = loop.IterateOnce();
+	var deltaTime = (float) loop.IterateOnce().TotalSeconds;
 	renderer.Render();
 
 	instanceToCameraVect = instanceToCameraVect.RotatedBy(2.3f % Direction.Up);
@@ -69,6 +69,8 @@ while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSe
 	var cbBrightness = (float) Math.Floor(loop.TotalIteratedTime.TotalSeconds) * 0.25f;
 	scene.SetBackdrop(cubemap, cbBrightness);
 	window.SetTitle("Backdrop brightness level " + PercentageUtils.ConvertFractionToPercentageString(cbBrightness));
+
+	if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) instance.AdjustScaleBy(-0.1f);
 }
 
 Console.WriteLine("Test completed fine (assuming you saw the crate and the backdrop).");
