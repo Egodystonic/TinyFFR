@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <PackageVersion>0.3.0-rc003</PackageVersion>
+    <PackageVersion>0.3.0-rc004</PackageVersion>
     <TargetFramework>net9.0</TargetFramework>
 
     <RootNamespace>Egodystonic.TinyFFR</RootNamespace>

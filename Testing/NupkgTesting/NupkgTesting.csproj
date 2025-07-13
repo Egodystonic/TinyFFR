@@ -9,8 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Egodystonic.TinyFFR" Version="0.3.0-rc003" />
+    <PackageReference Include="Egodystonic.TinyFFR" Version="0.3.0-rc004" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <RestoreAdditionalProjectSources>./local_packages/</RestoreAdditionalProjectSources>
+  </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="..\TestCommon\**\*.cs" Exclude="..\TestCommon\obj\**" Link="TestCommonRef\%(RecursiveDir)%(Filename)%(Extension)" />
