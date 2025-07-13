@@ -36,6 +36,8 @@ static unsafe class LocalNativeUtils {
 	public static void InitializeNativeLibIfNecessary() {
 		if (_nativeLibInitialized) return;
 
+		if (UIntPtr.Size != 8) throw new InvalidOperationException("TinyFFR local factories are only supported on 64-bit platforms.");
+
 		// This curious invocation tells the NVIDIA drivers (if they exist) to force this application to run
 		// on the dedicated GPU in systems where that isn't always the default (e.g. gaming laptops).
 		// We don't actually need the loaded library handle, and if the load attempt fails 

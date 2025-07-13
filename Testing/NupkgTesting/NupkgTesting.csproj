@@ -9,11 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Egodystonic.TinyFFR" Version="0.3.0-rc001" />
+    <PackageReference Include="Egodystonic.TinyFFR" Version="0.3.0-rc002" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TestCommon\TestCommon.csproj" />
+    <Compile Include="..\TestCommon\**\*.cs" Exclude="..\TestCommon\obj\**" Link="TestCommonRef\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>
