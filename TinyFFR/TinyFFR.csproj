@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Egodystonic.TinyFFR</RootNamespace>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <Platforms>x64;ARM64</Platforms>
+    <Platforms>AnyCPU</Platforms>
     <IncludeSymbols>False</IncludeSymbols>
     <RunAnalyzersDuringBuild>True</RunAnalyzersDuringBuild>
     <RunAnalyzersDuringLiveAnalysis>True</RunAnalyzersDuringLiveAnalysis>

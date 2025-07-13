@@ -47,8 +47,5 @@
     <Platform Project="x64" />
     <Build Solution="*|ARM64" Project="false" />
   </Project>
-  <Project Path="TinyFFR/TinyFFR.csproj">
-    <Platform Solution="*|ARM64" Project="ARM64" />
-    <Platform Solution="*|x64" Project="x64" />
-  </Project>
+  <Project Path="TinyFFR/TinyFFR.csproj" />
 </Solution>
