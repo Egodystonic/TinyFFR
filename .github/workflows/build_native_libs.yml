@@ -35,7 +35,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native_libs_macos
-          path: build_output/Release/
+          path: | 
+            build_output/Release/libassimp*
+            build_output/Release/libSDL*
+            !build_output/Release/libSDL2_test*
+            build_output/Release/libTinyFFR*
         
 
       
@@ -92,7 +96,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native_libs_linux
-          path: build_output/Release/
+          path: | 
+            build_output/Release/libassimp*
+            build_output/Release/libSDL*
+            !build_output/Release/libSDL2_test*
+            build_output/Release/libTinyFFR*
 
 
   build_windows:
@@ -127,5 +135,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native_libs_windows
-          path: build_output/Release/
+          path: | 
+            build_output/Release/assimp*
+            build_output/Release/SDL2*
+            !build_output/Release/SDL2_test*
+            build_output/Release/TinyFFR*
  
