@@ -191,5 +191,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nuget_package
-          path: ./Publishing/TinyFFR.NuGet/*.nupkg
+          path: ./Publishing/TinyFFR.NuGet/build_output/*.nupkg
  
