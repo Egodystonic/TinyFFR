@@ -140,4 +140,56 @@ jobs:
             build_output/Release/SDL2*
             !build_output/Release/SDL2_test*
             build_output/Release/TinyFFR*
+
+  create_nupkg:
+    runs-on: windows-latest
+    needs:
+      - build_windows
+      - build_macos
+      - build_linux
+    steps:
+      - name: Install DotNet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            9.0.x
+
+      - name: Checkout
+        uses: actions/checkout@v4
+           
+      - name: Download MacOS Native Libs
+        uses: actions/download-artifact@v4
+        with:
+          name: native_libs_macos
+          path: ./Publishing/TinyFFR.NuGet/prebuilt_binaries/linux-x64/
+
+      - name: Download Linux Native Libs
+        uses: actions/download-artifact@v4
+        with:
+          name: native_libs_linux
+          path: ./Publishing/TinyFFR.NuGet/prebuilt_binaries/osx-arm64/
+
+      - name: Download Windows Native Libs
+        uses: actions/download-artifact@v4
+        with:
+          name: native_libs_windows
+          path: ./Publishing/TinyFFR.NuGet/prebuilt_binaries/win-x64/
+
+      - name: Build Lib
+        run: |
+          cd ./TinyFFR/
+          dotnet restore
+          dotnet build -c Release --no-restore
+
+      - name: Build Nuget Package
+        run: | 
+          cd ./Publishing/TinyFFR.NuGet/
+          dotnet restore
+          dotnet pack -c Release --no-build --no-restore
+
+      - name: Upload Nuget Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget_package
+          path: ./Publishing/TinyFFR.NuGet/*.nupkg
  
