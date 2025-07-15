@@ -17,6 +17,7 @@ TinyFFR (*Tiny* *F*ixed *F*unction *R*enderer) is a C# .NET9 library designed to
 * Physically-based rendering (via [filament](https://github.com/google/filament))
 * Asset loading (via [assimp](https://github.com/assimp/assimp) and [stb_image](https://github.com/nothings/stb))
 * Window management and input handling (via [SDL](https://github.com/libsdl-org/SDL))
+* Supports Windows, MacOS, Linux (Debian/Ubuntu)
 * Fully-abstracted math & geometry API - no pre-existing 3D or linear algebra knowledge required
 * Zero-GC design
 

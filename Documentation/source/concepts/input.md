@@ -98,8 +98,8 @@ There are some extension methods defined on `KeyboardOrMouseKey` as follows:
 * __Numpad__ :material-arrow-right: Represents all keyboard keys on the number pad (also known as the keypad), usually to the right of the main keyboard layout.
 * __PunctuationAndSymbols__ :material-arrow-right: Represents all keyboard keys that are symbols or punctuation (including space).
 * __Modifier__ :material-arrow-right: Represents control, alt, and shift (left and right) keyboard keys.
-* __Function__ :material-arrow-right: Represents the four arrow keyboard keys (left, right, up, down).
-* __Arrow__ :material-arrow-right: Represents the six text/page navigation/editing keyboard keys (insert, delete, home, end, page up, page down), usually found above the arrow keys.
+* __Function__ :material-arrow-right: Represents the F-row keys, typically located at the top of the keyboard.
+* __Arrow__ :material-arrow-right: Represents the four arrow keyboard keys (left, right, up, down).
 * __EditingAndNavigation__ :material-arrow-right: Represents the six text/page navigation/editing keyboard keys (insert, delete, home, end, page up, page down), usually found above the arrow keys.
 * __Control__ :material-arrow-right: Represents the common system/application control keyboard keys (such as escape, return, caps lock, tab, backspace, etc).
 * __Mouse__ :material-arrow-right: Represents all mouse buttons.
