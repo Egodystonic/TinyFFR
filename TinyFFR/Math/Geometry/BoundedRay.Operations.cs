@@ -35,8 +35,10 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 	public BoundedRay WithMaxLength(float maxLength) => WithLength(MathF.Min(Length, maxLength >= 0f ? maxLength : throw new ArgumentOutOfRangeException(nameof(maxLength), maxLength, "Must be non-negative.")));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay WithMinLength(float minLength) => WithLength(MathF.Max(Length, minLength >= 0f ? minLength : throw new ArgumentOutOfRangeException(nameof(minLength), minLength, "Must be non-negative.")));
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedRay WithLength(float newLength, float scalingOriginSignedDistance) => ScaledBy(newLength / Length, scalingOriginSignedDistance);
+	public BoundedRay WithLength(float newLength, float scalingOriginSignedDistance) {
+		var scalar = newLength / Length;
+		return Single.IsFinite(scalar) ? ScaledBy(scalar, scalingOriginSignedDistance) : this;
+	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay WithLengthDecreasedBy(float lengthDecrease, float scalingOriginSignedDistance) => WithLength(Length - lengthDecrease, scalingOriginSignedDistance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -45,8 +47,11 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 	public BoundedRay WithMaxLength(float maxLength, float scalingOriginSignedDistance) => WithLength(MathF.Min(Length, maxLength >= 0f ? maxLength : throw new ArgumentOutOfRangeException(nameof(maxLength), maxLength, "Must be non-negative.")), scalingOriginSignedDistance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay WithMinLength(float minLength, float scalingOriginSignedDistance) => WithLength(MathF.Max(Length, minLength >= 0f ? minLength : throw new ArgumentOutOfRangeException(nameof(minLength), minLength, "Must be non-negative.")), scalingOriginSignedDistance);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public BoundedRay WithLength(float newLength, Location scalingOrigin) => ScaledBy(newLength / Length, scalingOrigin);
+	public BoundedRay WithLength(float newLength, Location scalingOrigin) {
+		var scalar = newLength / Length;
+		return Single.IsFinite(scalar) ? ScaledBy(scalar, scalingOrigin) : this;
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay WithLengthDecreasedBy(float lengthDecrease, Location scalingOrigin) => WithLength(Length - lengthDecrease, scalingOrigin);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -201,7 +206,7 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 		return vectCoefficient switch {
 			<= 0f => _startPoint,
 			>= 1f => EndPoint,
-			_ => _startPoint + _vect * vectCoefficient
+			_ => Single.IsFinite(vectCoefficient) ? _startPoint + _vect * vectCoefficient : _startPoint
 		};
 	}
 	public Location PointClosestToOrigin() {
@@ -209,7 +214,7 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 		return vectCoefficient switch {
 			<= 0f => _startPoint,
 			>= 1f => EndPoint,
-			_ => _startPoint + _vect * vectCoefficient
+			_ => Single.IsFinite(vectCoefficient) ? _startPoint + _vect * vectCoefficient : _startPoint
 		};
 	}
 

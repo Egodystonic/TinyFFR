@@ -375,6 +375,13 @@ class BoundedRayTest {
 		AssertResize(40f, 0f, initialRay.WithLength(40f, 30f));
 		AssertResize(0f, -40f, initialRay.WithLength(40f, new Location(20f, 0f, 0f)));
 		AssertResize(40f, 0f, initialRay.WithLength(40f, new Location(-20f, 0f, 0f)));
+
+
+		// Check that div-by-zero does not occur when initial length is 0
+		Assert.AreEqual(new BoundedRay(Location.Origin, Location.Origin), new BoundedRay(Location.Origin, Location.Origin).WithLength(0f));
+		Assert.AreEqual(new BoundedRay(Location.Origin, Location.Origin), new BoundedRay(Location.Origin, Location.Origin).WithLength(10f));
+		Assert.AreEqual(new BoundedRay(Location.Origin, Location.Origin), new BoundedRay(Location.Origin, Location.Origin).WithLength(0f, 0f));
+		Assert.AreEqual(new BoundedRay(Location.Origin, Location.Origin), new BoundedRay(Location.Origin, Location.Origin).WithLength(10f, 0f));
 	}
 
 	[Test]
@@ -817,6 +824,12 @@ class BoundedRayTest {
 			new Location(0f, 0f, 0f),
 			new BoundedRay(new Location(0f, 0f, 0f), Direction.Left * 200f).PointClosestTo(new Location(-100f, 1f, 0f))
 		);
+
+		// Assert that this works okay when ray length is 0
+		Assert.AreEqual(
+			new Location(1f, 2f, 3f),
+			new BoundedRay(new Location(1f, 2f, 3f), new Location(1f, 2f, 3f)).PointClosestTo(new Location(-100f, 1f, 0f))
+		);
 	}
 
 	[Test]
@@ -836,6 +849,12 @@ class BoundedRayTest {
 		Assert.AreEqual(
 			new Location(100f, -1f, 0f),
 			new BoundedRay(new Location(100f, -1f, 0f), Direction.Left * 200f).PointClosestToOrigin()
+		);
+
+		// Assert that this works okay when ray length is 0
+		Assert.AreEqual(
+			new Location(1f, 2f, 3f),
+			new BoundedRay(new Location(1f, 2f, 3f), new Location(1f, 2f, 3f)).PointClosestToOrigin()
 		);
 	}
 
