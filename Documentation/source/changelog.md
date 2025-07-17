@@ -1,9 +1,27 @@
 ---
-title: Changelog
+title: What's New (Changelog)
 description: Abridged changelog for TinyFFR.
 search:
   exclude: true
 ---
+
+## 0.3
+
+__Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/2?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.3.0)__
+
+### Major Features
+
+* Added support for MacOS (ARM64 only); Linux (x64 Debian-based only)
+
+### Improvements
+
+* Made it possible to change window icon
+
+### Bug Fixes
+
+* Fixed a small bug with `BoundedRay` that could cause `NaN` or `Infinity` in resultant values when calculating closest point to zero-length ray (or when attempting to resize zero-length ray)
+
+----
 
 ## 0.2
 

@@ -7,6 +7,8 @@ Please follow the following steps to submit code to this repository:
 3. Once the design is agreed-upon and you are given the go-ahead, fork the repository and develop the changeset in your fork. Use the guidelines below to guide your implementation.
 4. When ready, submit a PR (Pull Request).
 
+For help setting up your development environment and/or building TinyFFR see **BUILDING.md**.
+
 # What to Contribute
 
 All contributions are welcome, even if you're fixing an issue that only applies to your usage.

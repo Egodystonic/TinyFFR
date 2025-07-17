@@ -5,7 +5,7 @@ description: This page documents how to install TinyFFR via NuGet.
 
 __If you already know how to use NuGet all you need to do is install `Egodystonic.TinyFFR` from the standard Nuget package source.__ 
 
-TinyFFR is currently provided as a .NET9 NuGet package targeting 64-bit desktop platforms (Windows, MacOS, Linux).
+TinyFFR is currently provided as a .NET9 NuGet package targeting 64-bit desktop platforms (Windows, MacOS on Apple Silicon, Linux on Debian-based systems).
 { style="margin-bottom:3em;" }
 
 Alternatively: If you're new to .NET/C# and/or NuGet, follow one of guides below depending on your preferred environment:
@@ -58,7 +58,7 @@ To add the TinyFFR package manually by editing the .csproj file, simply add a `<
 </ItemGroup>
 ```
 
-1. Replace "`M.m.p`" with the actual version number of the package you'd like to install. See the [Changelog](/reference/changelog.md) for the latest version.
+1. Replace "`M.m.p`" with the actual version number of the package you'd like to install. See the [Changelog](/changelog.md) for the latest version.
 
 ## Other Environments
 

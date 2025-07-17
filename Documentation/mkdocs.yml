@@ -117,6 +117,7 @@ strict: true
 nav:
   - Home:
     - index.md
+    - changelog.md
   - Examples: 
     - examples/index.md
     - examples/installing.md
@@ -138,6 +139,5 @@ nav:
     - concepts/conventions.md
   - Reference Docs:
     - reference/index.md
-    - reference/changelog.md
     - Utils:
       - reference/typed_referent_iterator.md

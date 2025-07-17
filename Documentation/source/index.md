@@ -13,11 +13,11 @@ search:
 TinyFFR (*Tiny* *F*ixed *F*unction *R*enderer) is a C# .NET9 library designed to help you render things in 3D:
 
 * Delivered via [NuGet](https://www.nuget.org/packages/Egodystonic.TinyFFR/)
+* Supports :fontawesome-brands-windows: Windows, :fontawesome-brands-apple: MacOS (Apple Silicon only), :fontawesome-brands-linux: Linux (Debian/Ubuntu)
 * Free for commercial and non-commercial use ([see license](https://github.com/Egodystonic/TinyFFR/blob/main/LICENSE.md))
 * Physically-based rendering (via [filament](https://github.com/google/filament))
 * Asset loading (via [assimp](https://github.com/assimp/assimp) and [stb_image](https://github.com/nothings/stb))
 * Window management and input handling (via [SDL](https://github.com/libsdl-org/SDL))
-* Supports Windows, MacOS, Linux (Debian/Ubuntu)
 * Fully-abstracted math & geometry API - no pre-existing 3D or linear algebra knowledge required
 * Zero-GC design
 
@@ -41,7 +41,7 @@ TinyFFR (*Tiny* *F*ixed *F*unction *R*enderer) is a C# .NET9 library designed to
 
     ---
 
-    TinyFFR helps you discover connected displays, create & manage windows, and capture/process user input with a rich API that supports keyboard, mouse, and gamepad.
+    TinyFFR helps you discover connected displays, create & manage windows, and capture/process user input with a rich API that supports keyboard, mouse, and gamepad on Windows, Wayland, X11 and MacOS.
 
 -   :octicons-device-camera-video-16:{ .lg .middle : style="margin-right:0.3em" } __Easy Scene Building__
 
