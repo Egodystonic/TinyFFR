@@ -29,6 +29,7 @@ To publish:
 	Rename main.html back to main.html.disabled
 	Set site URL in mkdocs.yml back to just https://tinyffr.dev (no forward slash on end)
 	Run `mkdocs build` again
+	Delete everything in public html root except /archive/ folder
 	Upload the output to the public html root
 
 

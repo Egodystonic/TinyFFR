@@ -56,7 +56,7 @@ extra:
       link: https://tinyffr.dev/archive/
       name: Archived Versions
     - icon: fontawesome/solid/arrow-up-right-dots
-      link: /reference/changelog/
+      link: /changelog/
       name: Changelog
     - icon: fontawesome/brands/github
       link: https://github.com/Egodystonic/TinyFFR

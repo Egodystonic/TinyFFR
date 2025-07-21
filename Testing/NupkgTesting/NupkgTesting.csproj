@@ -9,16 +9,16 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Egodystonic.TinyFFR" Version="0.3.0" />
-  </ItemGroup>
-
   <PropertyGroup>
     <RestoreAdditionalProjectSources>./local_packages/</RestoreAdditionalProjectSources>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="..\TestCommon\**\*.cs" Exclude="..\TestCommon\obj\**" Link="TestCommonRef\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Egodystonic.TinyFFR" Version="0.3.0" />
   </ItemGroup>
 
 </Project>
