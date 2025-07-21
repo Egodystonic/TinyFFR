@@ -6,6 +6,11 @@
     <Platform Name="ARM64" />
     <Platform Name="x64" />
   </Configurations>
+  <Folder Name="/Integrations/">
+    <Project Path="Integrations/TinyFFR.Avalonia/TinyFFR.Avalonia.csproj" Id="c766b289-b94d-4f56-a55f-77005c1098d5">
+      <BuildType Solution="Optimized|*" Project="Release" />
+    </Project>
+  </Folder>
   <Folder Name="/Publishing/">
     <Project Path="Publishing/TinyFFR.NuGet/TinyFFR.NuGet.csproj" Id="1087b2c9-d4b1-4b1b-ad1a-72ce291aa3d5">
       <BuildType Solution="Optimized|*" Project="Release" />
