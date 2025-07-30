@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Rendering;

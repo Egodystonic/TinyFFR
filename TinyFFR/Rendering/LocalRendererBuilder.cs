@@ -1,7 +1,8 @@
 ﻿// Created on 2024-11-05 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-using System;
+using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
@@ -9,6 +10,7 @@ using Egodystonic.TinyFFR.Rendering.Local.Sync;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.World;
+using System;
 using static System.Formats.Asn1.AsnWriter;
 
 namespace Egodystonic.TinyFFR.Rendering;
@@ -46,23 +48,72 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	readonly record struct WindowData(Window Window, UIntPtr RendererPtr, UIntPtr SwapChainPtr);
 	readonly record struct ViewportData(UIntPtr Handle, XYPair<uint> CurrentSize);
 	readonly record struct RendererData(ResourceHandle<Renderer> Handle, Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, bool EmitFences, RenderQualityConfig Quality);
+	readonly unsafe struct OutputBufferData {
+		public ResourceHandle<RenderOutputBuffer> Handle { get; }
+		public UIntPtr TextureHandle { get; }
+		public UIntPtr RenderTargetHandle { get; }
+		public XYPair<int> TextureDimensions { get; }
+		public delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> OutputChangeHandler { get; }
+		public Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? OutputChangeHandlerManaged { get; }
+		public bool HandleOnlyNextChange { get; }
+
+		public OutputBufferData(ResourceHandle<RenderOutputBuffer> handle, UIntPtr textureHandle, UIntPtr renderTargetHandle, XYPair<int> textureDimensions, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> outputChangeHandler, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? outputChangeHandlerManaged, bool handleOnlyNextChange) {
+			Handle = handle;
+			TextureHandle = textureHandle;
+			RenderTargetHandle = renderTargetHandle;
+			TextureDimensions = textureDimensions;
+			OutputChangeHandler = outputChangeHandler;
+			OutputChangeHandlerManaged = outputChangeHandlerManaged;
+			HandleOnlyNextChange = handleOnlyNextChange;
+		}
+
+		public OutputBufferData WithOutputChangeHandler(delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> newChangeHandler, bool handleOnlyNextChange) {
+			return new(Handle, TextureHandle, RenderTargetHandle, TextureDimensions, newChangeHandler, OutputChangeHandlerManaged, handleOnlyNextChange);
+		}
+		public OutputBufferData WithOutputChangeHandler(Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> newChangeHandler, bool handleOnlyNextChange) {
+			return new(Handle, TextureHandle, RenderTargetHandle, TextureDimensions, OutputChangeHandler, newChangeHandler, handleOnlyNextChange);
+		}
+	}
 
 	const string DefaultRendererName = "Unnamed Renderer";
+	const string DefaultRenderOutputBufferName = "Unnamed Render Output Buffer";
 
 	readonly ArrayPoolBackedMap<Window, WindowData> _loadedWindows = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Renderer>, RendererData> _loadedRenderers = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<RenderOutputBuffer>, OutputBufferData> _loadedBuffers = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
+	readonly RenderOutputBufferImplProvider _renderOutputBufferImplProvider;
 	nuint _previousHandleId = 0U;
 	bool _isDisposed = false;
+
+	// This is a private embedded 'delegating' object to help provide distinction between some default interface methods
+	// on both IRenderOutputBufferImplProvider and IRendererBuilder. 
+	sealed class RenderOutputBufferImplProvider : IRenderOutputBufferImplProvider {
+		readonly LocalRendererBuilder _owner;
+
+		public RenderOutputBufferImplProvider(LocalRendererBuilder owner) => _owner = owner;
+
+		public string GetNameAsNewStringObject(ResourceHandle<RenderOutputBuffer> handle) => _owner.GetNameAsNewStringObject(handle);
+		public int GetNameLength(ResourceHandle<RenderOutputBuffer> handle) => _owner.GetNameLength(handle);
+		public void CopyName(ResourceHandle<RenderOutputBuffer> handle, Span<char> destinationBuffer) => _owner.CopyName(handle, destinationBuffer);
+		public bool IsDisposed(ResourceHandle<RenderOutputBuffer> handle) => _owner.IsDisposed(handle);
+		public void Dispose(ResourceHandle<RenderOutputBuffer> handle) => _owner.Dispose(handle);
+		public XYPair<int> GetTextureDimensions(ResourceHandle<RenderOutputBuffer> handle) => _owner.GetTextureDimensions(handle);
+		public void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, handleOnlyNextChange);
+		public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, handleOnlyNextChange);
+		public override string ToString() => _owner.ToString();
+	}
 
 	public LocalRendererBuilder(LocalFactoryGlobalObjectGroup globals) {
 		ArgumentNullException.ThrowIfNull(globals);
 
 		_globals = globals;
+		_renderOutputBufferImplProvider = new(this);
 	}
 
 	public Renderer CreateRenderer<TRenderTarget>(Scene scene, Camera camera, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget {
 		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
 		if (renderTarget is not Window window) throw new NotImplementedException();
 
 		if (!_loadedWindows.ContainsKey(window)) {
@@ -101,6 +152,26 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		return result;
 	}
 
+	public unsafe RenderOutputBuffer CreateRenderOutputBuffer(in RenderOutputBufferCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+
+		AllocateRenderTarget(
+			config.TextureDimensions.X,
+			config.TextureDimensions.Y,
+			out var textureHandle,
+			out var renderTargetHandle
+		).ThrowIfFailure();
+
+		_previousHandleId++;
+		var handle = new ResourceHandle<RenderOutputBuffer>(_previousHandleId);
+		var bufferData = new OutputBufferData(handle, textureHandle, renderTargetHandle, config.TextureDimensions, null, null, false);
+		_loadedBuffers.Add(handle, bufferData);
+
+		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultRenderOutputBufferName);
+		return HandleToInstance(handle);
+	}
+
 	public void Render(ResourceHandle<Renderer> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
@@ -136,6 +207,19 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		SetViewShadowFidelityLevel(_loadedRenderers[handle].Viewport.Handle, (int) newConfig.ShadowQuality).ThrowIfFailure();
 	}
 
+	public XYPair<int> GetTextureDimensions(ResourceHandle<RenderOutputBuffer> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _loadedBuffers[handle].TextureDimensions;
+	}
+	public void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool handleOnlyNextChange) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_loadedBuffers[handle] = _loadedBuffers[handle].WithOutputChangeHandler(handler, handleOnlyNextChange);
+	}
+	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool handleOnlyNextChange) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_loadedBuffers[handle] = _loadedBuffers[handle].WithOutputChangeHandler(handler, handleOnlyNextChange);
+	}
+
 	public string GetNameAsNewStringObject(ResourceHandle<Renderer> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return new String(_globals.GetResourceName(handle.Ident, DefaultRendererName));
@@ -147,6 +231,18 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	public void CopyName(ResourceHandle<Renderer> handle, Span<char> destinationBuffer) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_globals.CopyResourceName(handle.Ident, DefaultRendererName, destinationBuffer);
+	}
+	public string GetNameAsNewStringObject(ResourceHandle<RenderOutputBuffer> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return new String(_globals.GetResourceName(handle.Ident, DefaultRenderOutputBufferName));
+	}
+	public int GetNameLength(ResourceHandle<RenderOutputBuffer> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceName(handle.Ident, DefaultRenderOutputBufferName).Length;
+	}
+	public void CopyName(ResourceHandle<RenderOutputBuffer> handle, Span<char> destinationBuffer) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_globals.CopyResourceName(handle.Ident, DefaultRenderOutputBufferName, destinationBuffer);
 	}
 
 	void SetUpSceneShadowQuality(ResourceHandle<Renderer> handle) {
@@ -239,15 +335,35 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		UIntPtr swapChainHandle,
 		UIntPtr viewDescriptorHandle
 	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_render_target")]
+	static extern InteropResult AllocateRenderTarget(
+		int width,
+		int height,
+		out UIntPtr textureHandle,
+		out UIntPtr renderTargetHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_render_target")]
+	static extern InteropResult DisposeRenderTarget(
+		UIntPtr textureHandle,
+		UIntPtr renderTargetHandle
+	);
 	#endregion
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Renderer HandleToInstance(ResourceHandle<Renderer> h) => new(h, this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	RenderOutputBuffer HandleToInstance(ResourceHandle<RenderOutputBuffer> h) => new(h, _renderOutputBufferImplProvider);
+
+	public override string ToString() => _isDisposed ? "TinyFFR Local Renderer Builder [Disposed]" : "TinyFFR Local Renderer Builder";
 
 	#region Disposal
 	public bool IsDisposed(ResourceHandle<Renderer> handle) => _isDisposed || !_loadedRenderers.ContainsKey(handle);
 	public void Dispose(ResourceHandle<Renderer> handle) {
 		if (IsDisposed(handle)) return;
+		var data = _loadedRenderers[handle];
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 
 		static void DisposeWindowData(LocalRendererBuilder @this, ResourceHandle<Renderer> handle, Window window) {
 			@this._globals.DependencyTracker.DeregisterDependency(@this.HandleToInstance(handle), window);
@@ -262,8 +378,6 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 			).ThrowIfFailure();
 			@this._loadedWindows.Remove(window);
 		}
-
-		var data = _loadedRenderers[handle];
 
 		if (data.EmitFences) {
 			LocalFrameSynchronizationManager.DeregisterRenderer(handle);
@@ -281,15 +395,34 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		_loadedRenderers.Remove(handle);
 	}
 
+	public bool IsDisposed(ResourceHandle<RenderOutputBuffer> handle) => _isDisposed || !_loadedBuffers.ContainsKey(handle);
+	public void Dispose(ResourceHandle<RenderOutputBuffer> handle) {
+		if (IsDisposed(handle)) return;
+
+		var data = _loadedBuffers[handle];
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+
+		DisposeRenderTarget(
+			data.TextureHandle,
+			data.RenderTargetHandle
+		).ThrowIfFailure();
+
+		_loadedBuffers.Remove(handle);
+	}
+
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
 			while (_loadedRenderers.Count > 0) {
 				Dispose(_loadedRenderers.GetPairAtIndex(0).Key);
 			}
+			while (_loadedBuffers.Count > 0) {
+				Dispose(_loadedBuffers.GetPairAtIndex(0).Key);
+			}
 
 			_loadedRenderers.Dispose();
 			_loadedWindows.Dispose();
+			_loadedBuffers.Dispose();
 		}
 		finally {
 			_isDisposed = true;
@@ -297,6 +430,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	}
 
 	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<Renderer> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Renderer));
+	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<RenderOutputBuffer> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(RenderOutputBuffer));
 	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion
 }

@@ -12,6 +12,7 @@ typedef Renderer* RendererHandle;
 typedef SwapChain* SwapChainHandle;
 typedef View* ViewDescriptorHandle;
 typedef filament::Fence* FenceHandle;
+typedef RenderTarget* RenderTargetHandle;
 
 class native_impl_render {
 public:
@@ -24,6 +25,9 @@ public:
 	static void render_scene(RendererHandle renderer, SwapChainHandle swapChain, ViewDescriptorHandle viewDescriptor);
 
 	static void set_view_shadow_fidelity_level(ViewDescriptorHandle viewDescriptor, int32_t level);
+
+	static void allocate_render_target(int32_t width, int32_t height, TextureHandle* outBuffer, RenderTargetHandle* outRenderTarget);
+	static void dispose_render_target(TextureHandle buffer, RenderTargetHandle renderTarget);
 
 	static void create_gpu_fence(FenceHandle* outFence);
 	static void wait_for_fence(FenceHandle fenceHandle);

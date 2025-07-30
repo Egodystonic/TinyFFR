@@ -75,6 +75,21 @@ class LocalDependencyTest {
 			AssertDependency(window, renderer);
 			scene.Dispose();
 			camera.Dispose();
+
+			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.ApplicationLoopBuilder.CreateLoop());
+			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.MaterialBuilder.CreateColorMap(StandardColor.White));
+			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.MaterialBuilder.CreateOpaqueMaterial(factory.MaterialBuilder.DefaultColorMap));
+			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.MeshBuilder.CreateMesh(Cuboid.UnitCube));
+			var tempMat = factory.MaterialBuilder.CreateOpaqueMaterial(factory.MaterialBuilder.DefaultColorMap);
+			var tempMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube);
+			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, tempMat, tempMesh, factory.ObjectBuilder.CreateModelInstance(tempMesh, tempMat));
+			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.CameraBuilder.CreateCamera());
+			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.SceneBuilder.CreateScene());
+			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Recommended!.Value));
+			var tempCamera = factory.CameraBuilder.CreateCamera();
+			var tempScene = factory.SceneBuilder.CreateScene();
+			var tempWindow = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Recommended!.Value);
+			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, tempCamera, tempScene, tempWindow, factory.RendererBuilder.CreateRenderer(tempScene, tempCamera, tempWindow));
 		}
 
 		Assert.DoesNotThrow(() => new LocalTinyFfrFactory().Dispose());
@@ -84,5 +99,13 @@ class LocalDependencyTest {
 		Assert.Catch<ResourceDependencyException>(target.Dispose);
 		Assert.DoesNotThrow(dependent.Dispose);
 		Assert.DoesNotThrow(target.Dispose);
+	}
+
+	void AssertCheckForDependentsBeforeDisposal(IResourceAllocator allocator, params IDisposableResource[] resources) {
+		var group = allocator.CreateResourceGroup(true, 1);
+		foreach (var resource in resources) group.Add(resource);
+		foreach (var resource in resources) Assert.Catch<ResourceDependencyException>(resource.Dispose);
+		Assert.DoesNotThrow(group.Dispose);
+		foreach (var resource in resources) Assert.DoesNotThrow(resource.Dispose); // target should already be disposed because group was disposed, but this checks that disposal is idempotent
 	}
 } 
