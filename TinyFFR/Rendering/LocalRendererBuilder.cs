@@ -23,18 +23,23 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		public readonly IntPtr TypeHandle;
 		[FieldOffset(UnionRenderTargetOffset)]
 		public readonly Window AsWindow;
+		[FieldOffset(UnionRenderTargetOffset)]
+		public readonly RenderOutputBuffer AsBuffer;
 
 		public bool IsWindow => TypeHandle == ResourceHandle<Window>.TypeHandle;
+		public bool IsBuffer => TypeHandle == ResourceHandle<RenderOutputBuffer>.TypeHandle;
 
 		public XYPair<int> ViewportOffset {
 			get {
 				if (IsWindow) return ((IRenderTarget) AsWindow).ViewportOffset;
+				if (IsBuffer) return ((IRenderTarget) AsBuffer).ViewportOffset;
 				throw new InvalidOperationException();
 			}
 		}
 		public XYPair<uint> ViewportDimensions {
 			get {
 				if (IsWindow) return ((IRenderTarget) AsWindow).ViewportDimensions;
+				if (IsBuffer) return ((IRenderTarget) AsBuffer).ViewportDimensions;
 				throw new InvalidOperationException();
 			}
 		}
@@ -42,6 +47,10 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		public RenderTargetUnion(Window window) {
 			TypeHandle = ResourceHandle<Window>.TypeHandle;
 			AsWindow = window;
+		}
+		public RenderTargetUnion(RenderOutputBuffer buffer) {
+			TypeHandle = ResourceHandle<RenderOutputBuffer>.TypeHandle;
+			AsBuffer = buffer;
 		}
 	}
 	
@@ -111,20 +120,32 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		_renderOutputBufferImplProvider = new(this);
 	}
 
-	public Renderer CreateRenderer<TRenderTarget>(Scene scene, Camera camera, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget {
+	public Renderer CreateRenderer<TRenderTarget>(Scene scene, Camera camera, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget, IResource<TRenderTarget> {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
-		if (renderTarget is not Window window) throw new NotImplementedException();
 
-		if (!_loadedWindows.ContainsKey(window)) {
+		static RenderTargetUnion SetUpWindowRenderer(LocalRendererBuilder @this, Window window) {
+			if (@this._loadedWindows.ContainsKey(window)) return new RenderTargetUnion(window);
+			
 			AllocateRendererAndSwapChain(
 				window.Handle,
 				out var rendererHandle,
 				out var swapChainHandle
 			).ThrowIfFailure();
-			_loadedWindows.Add(window, new(window, rendererHandle, swapChainHandle));
+			@this._loadedWindows.Add(window, new(window, rendererHandle, swapChainHandle));
+			
+			return new RenderTargetUnion(window);
+		}
+		static RenderTargetUnion SetUpBufferRenderer(LocalRendererBuilder @this, RenderOutputBuffer buffer) {
+			return new RenderTargetUnion(buffer);
 		}
 
+		var rtu = renderTarget switch {
+			Window w => SetUpWindowRenderer(this, w),
+			RenderOutputBuffer b => SetUpBufferRenderer(this, b),
+			_ => throw new InvalidOperationException($"{this} does not support render targets of type {typeof(TRenderTarget).Name}.")
+		};
+		
 		AllocateViewDescriptor(
 			scene.Handle,
 			camera.Handle,
@@ -134,14 +155,14 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 
 		_previousHandleId++;
 		var handle = new ResourceHandle<Renderer>(_previousHandleId);
-		_loadedRenderers.Add(handle, new(handle, scene, camera, new(window), viewportData, config.AutoUpdateCameraAspectRatio, config.GpuSynchronizationFrameBufferCount >= 0, config.Quality));
+		_loadedRenderers.Add(handle, new(handle, scene, camera, rtu, viewportData, config.AutoUpdateCameraAspectRatio, config.GpuSynchronizationFrameBufferCount >= 0, config.Quality));
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultRendererName);
 
 		var result = HandleToInstance(handle);
 		_globals.DependencyTracker.RegisterDependency(result, scene);
 		_globals.DependencyTracker.RegisterDependency(result, camera);
-		_globals.DependencyTracker.RegisterDependency(result, window);
+		_globals.DependencyTracker.RegisterDependency(result, renderTarget);
 
 		if (config.GpuSynchronizationFrameBufferCount >= 0) {
 			LocalFrameSynchronizationManager.RegisterRenderer(handle, config.GpuSynchronizationFrameBufferCount); 
@@ -402,6 +423,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		var data = _loadedBuffers[handle];
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 
+		TODO //we might need to queue this for disposal
 		DisposeRenderTarget(
 			data.TextureHandle,
 			data.RenderTargetHandle
