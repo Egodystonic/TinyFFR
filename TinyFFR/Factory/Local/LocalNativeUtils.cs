@@ -14,7 +14,18 @@ readonly unsafe record struct TemporaryLoadSpaceBuffer(nuint BufferIdentity, UIn
 }
 
 static unsafe class LocalNativeUtils {
-	static readonly ArrayPoolBackedMap<nuint, (ILocalGpuHoldingBufferAllocator Allocator, FixedByteBufferPool.FixedByteBuffer Buffer)> _activeTemporaryBuffers = new();
+	readonly struct ActiveBufferData {
+		public readonly ILocalGpuHoldingBufferAllocator Allocator;
+		public readonly FixedByteBufferPool.FixedByteBuffer Buffer;
+		public readonly delegate* managed<nuint, ReadOnlySpan<byte>, void> OptionalReadbackFunc;
+
+		public ActiveBufferData(ILocalGpuHoldingBufferAllocator allocator, FixedByteBufferPool.FixedByteBuffer buffer, delegate*<nuint, ReadOnlySpan<byte>, void> optionalReadbackFunc) {
+			Allocator = allocator;
+			Buffer = buffer;
+			OptionalReadbackFunc = optionalReadbackFunc;
+		}
+	}
+	static readonly ArrayPoolBackedMap<nuint, ActiveBufferData> _activeTemporaryBuffers = new();
 
 	public const string NativeLibName = "TinyFFR.Native";
 	const int NativeErrorBufferLength = 1001;
@@ -65,6 +76,7 @@ static unsafe class LocalNativeUtils {
 		if (!_activeTemporaryBuffers.Remove(bufferId, out var tuple)) {
 			throw new InvalidOperationException($"Buffer '{bufferId}' has already been deallocated.");
 		}
+		if (tuple.OptionalReadbackFunc != null) tuple.OptionalReadbackFunc(bufferId, tuple.Buffer.AsReadOnlyByteSpan);
 		var allocator = tuple.Allocator;
 		allocator.GpuHoldingBufferPool.Return(tuple.Buffer);
 		if (allocator.IsDisposed) DisposeTemporaryCpuBufferPoolIfSafe(allocator);
@@ -95,6 +107,10 @@ static unsafe class LocalNativeUtils {
 	}
 
 	internal static TemporaryLoadSpaceBuffer CreateGpuHoldingBuffer(ILocalGpuHoldingBufferAllocator allocator, int sizeBytes) {
+		return CreateGpuHoldingBuffer(allocator, sizeBytes, null);
+	}
+
+	internal static TemporaryLoadSpaceBuffer CreateGpuHoldingBuffer(ILocalGpuHoldingBufferAllocator allocator, int sizeBytes, delegate* managed<nuint, ReadOnlySpan<byte>, void> optionalReadbackFunc) {
 		ObjectDisposedException.ThrowIf(allocator.IsDisposed, allocator);
 		if (sizeBytes > allocator.GpuHoldingBufferPool.MaxBufferSizeBytes) {
 			throw new InvalidOperationException($"Can not load asset because its in-memory size is {sizeBytes} bytes (" +
@@ -104,7 +120,7 @@ static unsafe class LocalNativeUtils {
 		}
 		var bufferId = _nextTemporaryBufferId++;
 		var buffer = allocator.GpuHoldingBufferPool.Rent(sizeBytes);
-		_activeTemporaryBuffers.Add(bufferId, (allocator, buffer));
+		_activeTemporaryBuffers.Add(bufferId, new(allocator, buffer, optionalReadbackFunc));
 		return new(bufferId, buffer.StartPtr, sizeBytes);
 	}
 }

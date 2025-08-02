@@ -36,6 +36,8 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Render() => Implementation.Render(_handle);
 
+	public void RenderAndWait() => 
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetQuality(RenderQualityConfig newQualityConfig) => Implementation.SetQualityConfig(_handle, newQualityConfig);
 

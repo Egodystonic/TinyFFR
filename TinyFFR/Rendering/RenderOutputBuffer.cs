@@ -30,17 +30,17 @@ public readonly unsafe struct RenderOutputBuffer : IDisposableResource<RenderOut
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ReadNextFrame(Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: true);
+	public void ReadNextFrame(Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: true);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ReadNextFrame(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: true);
+	public void ReadNextFrame(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: true);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void StartReadingFrames(Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: false);
+	public void StartReadingFrames(Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: false);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void StartReadingFrames(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: false);
+	public void StartReadingFrames(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: false);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void StopReadingFrames() => Implementation.SetOutputChangeHandler(_handle, (delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void>) null, handleOnlyNextChange: false);
+	public void StopReadingFrames(bool cancelQueuedFrames) => Implementation.ClearOutputChangeHandlers(_handle, cancelQueuedFrames);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);

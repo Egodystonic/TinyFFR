@@ -9,7 +9,7 @@
 #include "filament/Engine.h"
 #include "filament/TextureSampler.h"
 
-void handle_filament_buffer_copy_callback(void* _, size_t __, BufferIdentity identity) {
+static void handle_filament_buffer_copy_callback(void* _, size_t __, BufferIdentity identity) {
 	native_impl_init::deallocation_delegate(identity);
 }
 

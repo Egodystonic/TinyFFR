@@ -80,4 +80,5 @@ sealed class LocalFactoryGlobalObjectGroup {
 	public TemporaryLoadSpaceBuffer CreateGpuHoldingBufferAndCopyData<T>(ReadOnlySpan<T> data) where T : unmanaged => LocalNativeUtils.CreateGpuHoldingBufferAndCopyData(_factory, data);
 	public TemporaryLoadSpaceBuffer CreateGpuHoldingBuffer<T>(int numElements) where T : unmanaged => LocalNativeUtils.CreateGpuHoldingBuffer<T>(_factory, numElements);
 	public TemporaryLoadSpaceBuffer CreateGpuHoldingBuffer(int sizeBytes) => LocalNativeUtils.CreateGpuHoldingBuffer(_factory, sizeBytes);
+	public unsafe TemporaryLoadSpaceBuffer CreateGpuHoldingBuffer(int sizeBytes, delegate* managed<nuint, ReadOnlySpan<byte>, void> readbackFunc) => LocalNativeUtils.CreateGpuHoldingBuffer(_factory, sizeBytes, readbackFunc);
 }

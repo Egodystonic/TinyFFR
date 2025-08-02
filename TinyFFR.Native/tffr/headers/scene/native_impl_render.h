@@ -17,12 +17,15 @@ typedef RenderTarget* RenderTargetHandle;
 class native_impl_render {
 public:
 	static void allocate_renderer_and_swap_chain(WindowHandle window, RendererHandle* outRenderer, SwapChainHandle* outSwapChain);
-	static void allocate_view_descriptor(SceneHandle scene, CameraHandle camera, ViewDescriptorHandle* outViewDescriptor);
+	static void allocate_renderer(RendererHandle* outRenderer);
+	static void allocate_view_descriptor(SceneHandle scene, CameraHandle camera, RenderTargetHandle optionalRenderTarget, ViewDescriptorHandle* outViewDescriptor);
 	static void dispose_view_descriptor(ViewDescriptorHandle viewDescriptor);
-	static void dispose_renderer_and_swap_chain(RendererHandle renderer, SwapChainHandle swapChain);
+	static void dispose_swap_chain(SwapChainHandle swapChain);
+	static void dispose_renderer(RendererHandle renderer);
 
 	static void set_view_descriptor_size(ViewDescriptorHandle viewDescriptor, uint32_t width, uint32_t height);
-	static void render_scene(RendererHandle renderer, SwapChainHandle swapChain, ViewDescriptorHandle viewDescriptor);
+	static void render_scene(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, SwapChainHandle swapChain);
+	static void render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity);
 
 	static void set_view_shadow_fidelity_level(ViewDescriptorHandle viewDescriptor, int32_t level);
 

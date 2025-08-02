@@ -20,6 +20,10 @@ extern "C" void* macos_get_cocoa_view(NSWindow* nsWindow);
 
 using namespace utils;
 
+static void handle_filament_buffer_ready_callback(void* _, size_t __, BufferIdentity identity) {
+	native_impl_init::deallocation_delegate(identity);
+}
+
 void native_impl_render::allocate_renderer_and_swap_chain(WindowHandle window, RendererHandle* outRenderer, SwapChainHandle* outSwapChain) {
 	ThrowIfNull(window, "Window was null.");
 	ThrowIfNull(outRenderer, "Renderer out pointer was null.");
@@ -55,17 +59,29 @@ void native_impl_render::allocate_renderer_and_swap_chain(WindowHandle window, R
 	Throw("TinyFFR was built with no platform identification directive.")
 #endif
 
+	ThrowIfNull(*outSwapChain, "Could not create swap chain.");
+
 	*outRenderer = filament_engine->createRenderer();
 	(*outRenderer)->setClearOptions({ { 0.0, 0.0, 0.0, 0.0 }, 0U, true, true });
-	ThrowIfNull(*outSwapChain, "Could not create swap chain.");
 	ThrowIfNull(*outRenderer, "Could not create renderer.");
 }
 StartExportedFunc(allocate_renderer_and_swap_chain, WindowHandle window, RendererHandle* outRenderer, SwapChainHandle* outSwapChain) {
 	native_impl_render::allocate_renderer_and_swap_chain(window, outRenderer, outSwapChain);
 	EndExportedFunc
 }
+void native_impl_render::allocate_renderer(RendererHandle* outRenderer) {
+	ThrowIfNull(outRenderer, "Renderer out pointer was null.");
 
-void native_impl_render::allocate_view_descriptor(SceneHandle scene, CameraHandle camera, ViewDescriptorHandle* outViewDescriptor) {
+	*outRenderer = filament_engine->createRenderer();
+	(*outRenderer)->setClearOptions({ { 0.0, 0.0, 0.0, 0.0 }, 0U, true, true });
+	ThrowIfNull(*outRenderer, "Could not create renderer.");
+}
+StartExportedFunc(allocate_renderer, RendererHandle* outRenderer) {
+	native_impl_render::allocate_renderer(outRenderer);
+	EndExportedFunc
+}
+
+void native_impl_render::allocate_view_descriptor(SceneHandle scene, CameraHandle camera, RenderTargetHandle optionalRenderTarget, ViewDescriptorHandle* outViewDescriptor) {
 	ThrowIfNull(scene, "Scene was null.");
 	ThrowIfNull(camera, "Camera was null.");
 	ThrowIfNull(outViewDescriptor, "View descriptor out pointer was null.");
@@ -75,9 +91,12 @@ void native_impl_render::allocate_view_descriptor(SceneHandle scene, CameraHandl
 	(*outViewDescriptor)->setCamera(camera);
 	(*outViewDescriptor)->setScene(scene);
 	(*outViewDescriptor)->setShadowType(ShadowType::PCSS);
+	if (optionalRenderTarget != nullptr) {
+		(*outViewDescriptor)->setRenderTarget(optionalRenderTarget);
+	}
 }
-StartExportedFunc(allocate_view_descriptor, SceneHandle scene, CameraHandle camera, ViewDescriptorHandle* outViewDescriptor) {
-	native_impl_render::allocate_view_descriptor(scene, camera, outViewDescriptor);
+StartExportedFunc(allocate_view_descriptor, SceneHandle scene, CameraHandle camera, RenderTargetHandle optionalRenderTarget, ViewDescriptorHandle* outViewDescriptor) {
+	native_impl_render::allocate_view_descriptor(scene, camera, optionalRenderTarget, outViewDescriptor);
 	EndExportedFunc
 }
 
@@ -90,15 +109,22 @@ StartExportedFunc(dispose_view_descriptor, ViewDescriptorHandle viewDescriptor) 
 	EndExportedFunc
 }
 
-void native_impl_render::dispose_renderer_and_swap_chain(RendererHandle renderer, SwapChainHandle swapChain) {
+void native_impl_render::dispose_renderer(RendererHandle renderer) {
 	ThrowIfNull(renderer, "Renderer was null.");
-	ThrowIfNull(swapChain, "Swap chain was null.");
 
 	ThrowIf(!filament_engine->destroy(renderer), "Could not destroy renderer.");
+}
+StartExportedFunc(dispose_renderer, RendererHandle renderer) {
+	native_impl_render::dispose_renderer(renderer);
+	EndExportedFunc
+}
+void native_impl_render::dispose_swap_chain(SwapChainHandle swapChain) {
+	ThrowIfNull(swapChain, "Swap chain was null.");
+
 	ThrowIf(!filament_engine->destroy(swapChain), "Could not destroy swap chain.");
 }
-StartExportedFunc(dispose_renderer_and_swap_chain, RendererHandle renderer, SwapChainHandle swapChain) {
-	native_impl_render::dispose_renderer_and_swap_chain(renderer, swapChain);
+StartExportedFunc(dispose_swap_chain, SwapChainHandle swapChain) {
+	native_impl_render::dispose_swap_chain(swapChain);
 	EndExportedFunc
 }
 
@@ -173,17 +199,46 @@ StartExportedFunc(dispose_render_target, TextureHandle buffer, RenderTargetHandl
 
 
 
-void native_impl_render::render_scene(RendererHandle renderer, SwapChainHandle swapChain, ViewDescriptorHandle viewDescriptor) {
+void native_impl_render::render_scene(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, SwapChainHandle swapChain) {
 	ThrowIfNull(renderer, "Renderer was null.");
-	ThrowIfNull(swapChain, "Swap chain was null.");
 	ThrowIfNull(viewDescriptor, "View was null.");
+	ThrowIfNull(swapChain, "Swap chain pointer was null.");
 
 	if (!renderer->beginFrame(swapChain)) return;
 	renderer->render(viewDescriptor);
 	renderer->endFrame();
 }
-StartExportedFunc(render_scene, RendererHandle renderer, SwapChainHandle swapChain, ViewDescriptorHandle viewDescriptor) {
-	native_impl_render::render_scene(renderer, swapChain, viewDescriptor);
+StartExportedFunc(render_scene, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, SwapChainHandle swapChain) {
+	native_impl_render::render_scene(renderer, viewDescriptor, swapChain);
+	EndExportedFunc
+}
+
+void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity) {
+	ThrowIfNull(renderer, "Renderer was null.");
+	ThrowIfNull(viewDescriptor, "View was null.");
+	ThrowIfNull(renderTarget, "Render target pointer was null.");
+
+	renderer->renderStandaloneView(viewDescriptor);
+	if (optionalReadbackBuffer == nullptr) return;
+
+	renderer->readPixels(
+		renderTarget,
+		0,
+		0,
+		readbackBufferWidth,
+		readbackBufferHeight,
+		backend::PixelBufferDescriptor {
+			optionalReadbackBuffer,
+			static_cast<size_t>(readbackBufferLenBytes),
+			backend::PixelDataFormat::RGBA_INTEGER,
+			backend::PixelDataType::UBYTE,
+			&handle_filament_buffer_ready_callback,
+			bufferIdentity
+		}
+	);
+}
+StartExportedFunc(render_scene, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity) {
+	native_impl_render::render_scene_standalone(renderer, viewDescriptor, renderTarget, optionalReadbackBuffer, readbackBufferLenBytes, readbackBufferWidth, readbackBufferHeight, bufferIdentity);
 	EndExportedFunc
 }
 
