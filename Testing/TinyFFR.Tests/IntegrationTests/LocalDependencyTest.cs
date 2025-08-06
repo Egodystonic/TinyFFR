@@ -76,6 +76,14 @@ class LocalDependencyTest {
 			scene.Dispose();
 			camera.Dispose();
 
+			var renderBuffer = factory.RendererBuilder.CreateRenderOutputBuffer();
+			scene = factory.SceneBuilder.CreateScene();
+			camera = factory.CameraBuilder.CreateCamera();
+			renderer = factory.RendererBuilder.CreateRenderer(scene, camera, renderBuffer);
+			AssertDependency(renderBuffer, renderer);
+			scene.Dispose();
+			camera.Dispose();
+
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.ApplicationLoopBuilder.CreateLoop());
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.MaterialBuilder.CreateColorMap(StandardColor.White));
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.MaterialBuilder.CreateOpaqueMaterial(factory.MaterialBuilder.DefaultColorMap));
@@ -90,6 +98,7 @@ class LocalDependencyTest {
 			var tempScene = factory.SceneBuilder.CreateScene();
 			var tempWindow = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Recommended!.Value);
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, tempCamera, tempScene, tempWindow, factory.RendererBuilder.CreateRenderer(tempScene, tempCamera, tempWindow));
+			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.RendererBuilder.CreateRenderOutputBuffer());
 		}
 
 		Assert.DoesNotThrow(() => new LocalTinyFfrFactory().Dispose());
@@ -102,7 +111,7 @@ class LocalDependencyTest {
 	}
 
 	void AssertCheckForDependentsBeforeDisposal(IResourceAllocator allocator, params IDisposableResource[] resources) {
-		var group = allocator.CreateResourceGroup(true, 1);
+		var group = allocator.CreateResourceGroup(true, resources.Length);
 		foreach (var resource in resources) group.Add(resource);
 		foreach (var resource in resources) Assert.Catch<ResourceDependencyException>(resource.Dispose);
 		Assert.DoesNotThrow(group.Dispose);

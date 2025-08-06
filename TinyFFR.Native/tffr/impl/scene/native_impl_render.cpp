@@ -185,14 +185,21 @@ StartExportedFunc(allocate_render_target, int32_t width, int32_t height, Texture
 	EndExportedFunc
 }
 
-void native_impl_render::dispose_render_target(TextureHandle buffer, RenderTargetHandle renderTarget) {
+void native_impl_render::dispose_render_target_buffer(TextureHandle buffer) {
 	ThrowIfNull(buffer, "Buffer was null.");
-	ThrowIfNull(renderTarget, "Render target was null.");
-	ThrowIf(!filament_engine->destroy(renderTarget), "Could not destroy render target.");
 	ThrowIf(!filament_engine->destroy(buffer), "Could not destroy buffer.");
 }
-StartExportedFunc(dispose_render_target, TextureHandle buffer, RenderTargetHandle renderTarget) {
-	native_impl_render::dispose_render_target(buffer, renderTarget);
+StartExportedFunc(dispose_render_target_buffer, TextureHandle buffer) {
+	native_impl_render::dispose_render_target_buffer(buffer);
+	EndExportedFunc
+}
+
+void native_impl_render::dispose_render_target(RenderTargetHandle renderTarget) {
+	ThrowIfNull(renderTarget, "Render target was null.");
+	ThrowIf(!filament_engine->destroy(renderTarget), "Could not destroy render target.");
+}
+StartExportedFunc(dispose_render_target, RenderTargetHandle renderTarget) {
+	native_impl_render::dispose_render_target(renderTarget);
 	EndExportedFunc
 }
 
@@ -230,14 +237,14 @@ void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDe
 		backend::PixelBufferDescriptor {
 			optionalReadbackBuffer,
 			static_cast<size_t>(readbackBufferLenBytes),
-			backend::PixelDataFormat::RGBA_INTEGER,
+			backend::PixelDataFormat::RGBA_INTEGER, // RGBA rather than RGB because it's guaranteed to be supported by all drivers/platforms/
 			backend::PixelDataType::UBYTE,
 			&handle_filament_buffer_ready_callback,
 			bufferIdentity
 		}
 	);
 }
-StartExportedFunc(render_scene, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity) {
+StartExportedFunc(render_scene_standalone, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity) {
 	native_impl_render::render_scene_standalone(renderer, viewDescriptor, renderTarget, optionalReadbackBuffer, readbackBufferLenBytes, readbackBufferWidth, readbackBufferHeight, bufferIdentity);
 	EndExportedFunc
 }

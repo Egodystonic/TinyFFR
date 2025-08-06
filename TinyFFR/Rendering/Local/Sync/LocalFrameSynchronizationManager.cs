@@ -93,6 +93,17 @@ static unsafe class LocalFrameSynchronizationManager {
 		_unassignedCallbacks = _callbackQueuePool.Rent();
 	}
 
+	public static void FlushAllPendingFences(ResourceHandle<Renderer> renderer) {
+		if (!_rendererMap.TryGetValue(renderer, out var fenceData)) throw new InvalidOperationException($"Renderer '{renderer}' was not registered.");
+
+		for (var i = 0; i < fenceData.BufferSize; ++i) {
+			var fenceHandle = fenceData.Buffer[i];
+			if (fenceHandle == UIntPtr.Zero) ExecuteFence(fenceHandle);
+		}
+
+		_rendererMap[renderer] = fenceData with { Buffer = new() };
+	}
+
 	public static void QueueResourceDisposal(UIntPtr handle, delegate*<UIntPtr, InteropResult> callback) {
 		var qrc = new QueuedResourceCallback(handle, callback);
 

@@ -36,7 +36,13 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Render() => Implementation.Render(_handle);
 
-	public void RenderAndWait() => 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void WaitForGpu() => Implementation.WaitForGpu(_handle);
+
+	public void RenderAndWaitForGpu() {
+		Render();
+		WaitForGpu();
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetQuality(RenderQualityConfig newQualityConfig) => Implementation.SetQualityConfig(_handle, newQualityConfig);

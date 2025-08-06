@@ -144,7 +144,9 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 	}
 	void Dispose(ResourceHandle<ResourceGroup> handle, ResourceStub[] stubArray, int count, bool disposeContainedResources) {
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
-		for (var i = 0; i < count; ++i) {
+		// Maintainer's note: Reverse order of disposal is important to help dispose items in the correct order according to their dependency chains
+		// This doesn't guarantee anything of course, but makes it more likely that thoughtless use of this type will work okay
+		for (var i = count - 1; i >= 0; --i) {
 			var resource = stubArray[i];
 			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), resource);
 			if (disposeContainedResources) resource.Dispose();

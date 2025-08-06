@@ -50,6 +50,7 @@ class LocalResourceNamingTest {
 		TestNameStorageAndRetrieval(n => factory.SceneBuilder.CreateScene(name: n));
 		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f));
 		TestNameStorageAndRetrieval(n => factory.ObjectBuilder.CreateModelInstance(mesh, factory.AssetLoader.MaterialBuilder.TestMaterial, name: n));
+		TestNameStorageAndRetrieval(n => factory.RendererBuilder.CreateRenderOutputBuffer(name: n));
 		// ReSharper restore AccessToDisposedClosure
 	}
 

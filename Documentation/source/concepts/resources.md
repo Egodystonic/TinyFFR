@@ -186,6 +186,13 @@ Resource groups are meant for when you wish to group/relate small bundles of str
 
 Also, remember: Resource groups create dependencies on the resources added to them, meaning you can not dispose a resource that's part of a group before firstly disposing the group. This is by design and makes sense when using groups for their intended purpose to "collate" or "tightly-group" related assets.
 
+???+ info "Disposal Ordering"
+	When you dispose a `ResourceGroup` and elect to dispose all its contained resources at the same time, the contained resources will be disposed in reverse order of their addition to the group.
+
+	For example, if you added resource `A` first, then `B`, and finally `C`; when disposing the group the disposal order will be `C` then `B` then `A`.
+
+	This is important if the resources contained within the group themselves have inter-dependencies.
+
 If you need broader "collection-like" functionality you could instead consider *array-pool-backed collections*:
 
 ### Array-Pool-Backed Collections

@@ -253,6 +253,18 @@ class LocalDisposalProtectionTest {
 			v => v.Render()
 		};
 		AssertUseAfterDisposalThrowsException(rendererBuilder.CreateRenderer(scene, camera, window), objectIsAlreadyDisposed: false, rendererActions);
+		var renderBuffer = rendererBuilder.CreateRenderOutputBuffer();
+		var renderBufferActions = new Action<RenderOutputBuffer>[] {
+			v => _ = v.Handle,
+			v => _ = v.GetNameAsNewStringObject(),
+			v => _ = v.GetNameLength(),
+			v => v.CopyName(_nameDestinationBuffer),
+			v => v.ReadNextFrame((_, _) => { }),
+			v => v.StartReadingFrames((_, _) => { }),
+			v => v.StopReadingFrames(true),
+			v => _ = v.TextureDimensions
+		};
+		AssertUseAfterDisposalThrowsException(rendererBuilder.CreateRenderOutputBuffer(), objectIsAlreadyDisposed: false, renderBufferActions);
 
 
 
@@ -286,6 +298,7 @@ class LocalDisposalProtectionTest {
 		AssertUseAfterDisposalThrowsException(scene, objectIsAlreadyDisposed: true, sceneActions);
 		AssertUseAfterDisposalThrowsException(cubemap, objectIsAlreadyDisposed: true, cubemapActions);
 		AssertUseAfterDisposalThrowsException(renderer, objectIsAlreadyDisposed: true, rendererActions);
+		AssertUseAfterDisposalThrowsException(renderBuffer, objectIsAlreadyDisposed: true, renderBufferActions);
 
 		AssertUseAfterDisposalThrowsException(
 			displayDiscoverer, objectIsAlreadyDisposed: true,
@@ -346,7 +359,7 @@ class LocalDisposalProtectionTest {
 		AssertUseAfterDisposalThrowsException(
 			rendererBuilder, objectIsAlreadyDisposed: true,
 			v => _ = v.CreateRenderer(scene, camera, window),
-			v => _ = v.CreateRenderer(default, default, default)
+			v => _ = v.CreateRenderer(default, default, default(Window))
 		);
 	}
 

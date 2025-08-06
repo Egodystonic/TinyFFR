@@ -244,8 +244,18 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 				).ThrowIfFailure();
 			}
 			else {
-				var requiredSize = bufferData.TextureDimensions.Area * 4;
-				var buffer = _globals.CreateGpuHoldingBuffer(requiredSize, );
+				var requiredSize = bufferData.TextureDimensions.Area * sizeof(TexelRgba32);
+				var buffer = _globals.CreateGpuHoldingBuffer(requiredSize, &HandleRenderTargetReadback);
+				RenderScene(
+					targetData.RendererPtr,
+					rendererData.Viewport.Handle,
+					bufferData.RenderTargetHandle,
+					(byte*) buffer.DataPtr,
+					(uint) buffer.DataLengthBytes,
+					(uint) bufferData.TextureDimensions.X,
+					(uint) bufferData.TextureDimensions.Y,
+					buffer.BufferIdentity
+				).ThrowIfFailure();
 			}
 		}
 
@@ -254,12 +264,28 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		}
 	}
 
+	public void WaitForGpu(ResourceHandle<Renderer> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+
+		var rendererData = _loadedRenderers[handle];
+		if (!rendererData.EmitFences) return;
+
+		LocalFrameSynchronizationManager.FlushAllPendingFences(handle);
+	}
+
 	static unsafe void HandleRenderTargetReadback(nuint bufferIdentity, ReadOnlySpan<byte> data) {
 		if (!_pendingRenderTargetReadbacks.Remove(bufferIdentity, out var tuple)) return; // Can happen if user has cancelled pending readbacks
 		if (tuple.Builder.IsDisposed(tuple.BufferHandle)) return; // Can happen if user has disposed target output buffer
 
 		var dimensions = tuple.Builder._loadedBuffers[tuple.BufferHandle].TextureDimensions;
-		if (tuple.Callbacks.OutputChangeHandler != null) tuple.Callbacks.OutputChangeHandler(dimensions, )
+		var requiredLength = dimensions.Area * sizeof(TexelRgba32);
+		if (data.Length < requiredLength) {
+			throw new InvalidOperationException($"Received render target readback for output buffer with dimensions {dimensions} " +
+												$"(requiring buffer size {requiredLength}), " +
+												$"but buffer size was {data.Length}.");
+		}
+		if (tuple.Callbacks.OutputChangeHandler != null) tuple.Callbacks.OutputChangeHandler(dimensions, MemoryMarshal.Cast<byte, TexelRgba32>(data[..requiredLength]));
+		else tuple.Callbacks.OutputChangeHandlerManaged?.Invoke(dimensions, MemoryMarshal.Cast<byte, TexelRgba32>(data[..requiredLength]));
 	}
 
 	public void SetQualityConfig(ResourceHandle<Renderer> handle, RenderQualityConfig newConfig) {
@@ -292,9 +318,9 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		if (!cancelQueuedFrames) return;
 
 		using var currentlyQueuedFrameIdentities = _globals.HeapPool.Borrow<nuint>(_pendingRenderTargetReadbacks.Count);
-		var i = 0;
+		var i = -1;
 		foreach (var key in _pendingRenderTargetReadbacks.Keys) {
-			currentlyQueuedFrameIdentities.Buffer[i++] = key;
+			currentlyQueuedFrameIdentities.Buffer[++i] = key;
 		}
 
 		for (; i >= 0; --i) {
@@ -449,8 +475,12 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_render_target")]
 	static extern InteropResult DisposeRenderTarget(
-		UIntPtr textureHandle,
 		UIntPtr renderTargetHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_render_target_buffer")]
+	static extern InteropResult DisposeRenderTargetBuffer(
+		UIntPtr textureHandle
 	);
 	#endregion
 
@@ -467,18 +497,20 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 
-		_loadedRenderers.Remove(handle, out var data);
+		var data = _loadedRenderers[handle];
 		if (data.EmitFences) LocalFrameSynchronizationManager.DeregisterRenderer(handle);
 
 		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.Camera);
 		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.Scene);
 		if (data.RenderTarget.IsWindow) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.RenderTarget.AsWindow);
 		if (data.RenderTarget.IsBuffer) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), data.RenderTarget.AsBuffer);
+		_globals.DisposeResourceNameIfExists(handle.Ident);
 
 		DisposeViewDescriptor(
 			data.Viewport.Handle
 		).ThrowIfFailure();
 
+		_loadedRenderers.Remove(handle);
 		foreach (var rendererData in _loadedRenderers.Values) {
 			if (rendererData.RenderTarget == data.RenderTarget) return;
 		}
@@ -494,17 +526,14 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	}
 
 	public bool IsDisposed(ResourceHandle<RenderOutputBuffer> handle) => _isDisposed || !_loadedBuffers.ContainsKey(handle);
-	public void Dispose(ResourceHandle<RenderOutputBuffer> handle) {
+	public unsafe void Dispose(ResourceHandle<RenderOutputBuffer> handle) {
 		if (IsDisposed(handle)) return;
 
 		var data = _loadedBuffers[handle];
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
-
-		TODO //we might need to queue this for disposal
-		DisposeRenderTarget(
-			data.TextureHandle,
-			data.RenderTargetHandle
-		).ThrowIfFailure();
+		LocalFrameSynchronizationManager.QueueResourceDisposal(data.TextureHandle, &DisposeRenderTargetBuffer);
+		LocalFrameSynchronizationManager.QueueResourceDisposal(data.RenderTargetHandle, &DisposeRenderTarget);
+		_globals.DisposeResourceNameIfExists(handle.Ident);
 
 		_loadedBuffers.Remove(handle);
 	}
