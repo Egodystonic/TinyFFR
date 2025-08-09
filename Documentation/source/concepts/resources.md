@@ -182,7 +182,7 @@ resourceGroup.Dispose(disposeContainedResources: true); // (6)!
 
 The `ResourceGroup` is *itself* a resource and can be added to another resource group. Like all other resources it is just a handle + implementation reference and is cheap to copy/pass around.
 
-Resource groups are meant for when you wish to group/relate small bundles of strongly-associated resources (e.g. a mesh and material that make up a model). They are not designed for storing large lists of resources and you may suffer performance penalties when using them this way. 
+Resource groups are meant for when you wish to group/relate small bundles of strongly-associated resources (e.g. a mesh and material that make up a model). They are not designed for storing large lists of resources and you may suffer performance penalties when using them this way. If you need broader "collection-like" functionality you could instead consider *array-pool-backed collections* (described below).
 
 Also, remember: Resource groups create dependencies on the resources added to them, meaning you can not dispose a resource that's part of a group before firstly disposing the group. This is by design and makes sense when using groups for their intended purpose to "collate" or "tightly-group" related assets.
 
@@ -192,8 +192,6 @@ Also, remember: Resource groups create dependencies on the resources added to th
 	For example, if you added resource `A` first, then `B`, and finally `C`; when disposing the group the disposal order will be `C` then `B` then `A`.
 
 	This is important if the resources contained within the group themselves have inter-dependencies.
-
-If you need broader "collection-like" functionality you could instead consider *array-pool-backed collections*:
 
 ### Array-Pool-Backed Collections
 
@@ -213,9 +211,7 @@ var dict = factory.ResourceAllocator.CreateNewArrayPoolBackedDictionary<int, Mat
 
 Array-pool-backed collections rent and return internal storage buffers from a shared memory pool. This means that as the array/dictionary grows over time the internal memory storage will not become GC-rootless, meaning there is no pressure on the garbage collector.
 
-The disadvantage is that these collections are less well-optimised in some cases when compared to built-in .NET collections.
-
-These collections must also be `Disposed()` when you are done with them.
+The disadvantage is that these collections are less well-optimised in some cases when compared to built-in .NET collections. These collections must also be `Disposed()` when you are done with them.
 
 If you can, pre-allocate collections at initialization time and dispose them after your application finishes, to reduce the garbage pressure even more (i.e. the list/dictionary itself will still be garbage collected ultimately). However this is not a hard requirement and using array-pool-backed collections will still offer great improvements to GC pressure even if you create/dispose them dynamically.
 

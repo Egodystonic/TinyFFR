@@ -24,6 +24,7 @@ public:
 
 	static void load_texture_file_in_to_memory(const char* filePath, interop_bool includeWAlphaChannel, int32_t* outWidth, int32_t* outHeight, MemoryLoadedTextureRgba32DataPtr* outTextureData);
 	static void unload_texture_file_from_memory(MemoryLoadedTextureRgba32DataPtr textureData);
+	static void write_texels_to_disk(const char* filePath, int32_t width, int32_t height, int32_t bytesPerPixel, const void* data);
 
 	static void load_skybox_file_in_to_memory(uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle);
 	static void unload_skybox_file_from_memory(TextureHandle textureHandle);

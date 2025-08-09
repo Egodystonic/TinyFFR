@@ -8,7 +8,9 @@
 
 #define STBI_FAILURE_USERMSG
 #define STB_IMAGE_IMPLEMENTATION // This should only be defined in one file ever, it imports the entire implementation for stb_image in as a definition file
-#include "stb/stb_imageh.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION // This should only be defined in one file ever, it imports the entire implementation for stb_image in as a definition file
+#include "stb/stb_image.h"
+#include "stb/stb_image_write.h"
 
 constexpr unsigned int MeshMaxCount = 1000000;
 constexpr unsigned int NoAnswerFoundGlobalIndex = MeshMaxCount + 1;
@@ -230,6 +232,21 @@ void native_impl_asset_loader::unload_texture_file_from_memory(MemoryLoadedTextu
 }
 StartExportedFunc(unload_texture_file_from_memory, MemoryLoadedTextureRgba32DataPtr textureData) {
 	native_impl_asset_loader::unload_texture_file_from_memory(textureData);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::write_texels_to_disk(const char* filePath, int32_t width, int32_t height, int32_t bytesPerPixel, const void* data) {
+	ThrowIfNull(filePath, "File path pointer was null.");
+	ThrowIfNotPositive(width, "Width was non-positive.");
+	ThrowIfNotPositive(height, "Height was non-positive.");
+	ThrowIf(bytesPerPixel != 3 && bytesPerPixel != 4, "BPP must be 3 or 4.");
+	ThrowIfNull(data, "Data pointer was null.");
+
+	auto writeResult = stbi_write_bmp(filePath, static_cast<int>(width), static_cast<int>(height), static_cast<int>(bytesPerPixel), data);
+	ThrowIf(writeResult == 0, "Could not write file, data may be invalid or file location permissions may not be set correctly.");
+}
+StartExportedFunc(write_texels_to_disk, const char* filePath, int32_t width, int32_t height, int32_t bytesPerPixel, const void* data) {
+	native_impl_asset_loader::write_texels_to_disk(filePath, width, height, bytesPerPixel, data);
 	EndExportedFunc
 }
 

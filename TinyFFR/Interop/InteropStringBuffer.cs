@@ -22,23 +22,35 @@ sealed unsafe class InteropStringBuffer : IDisposable {
 
 	public Span<byte> AsSpan => new(BufferPtr, BufferLength);
 
-	public void ConvertFromUtf16(ReadOnlySpan<char> src) {
+	// Returns number of bytes written including null terminator
+	public int ConvertFromUtf16(ReadOnlySpan<char> src) => ConvertFromUtf16(src, false, default);
+	public int ConvertFromUtf16OrThrowIfBufferTooSmall(ReadOnlySpan<char> src, ReadOnlySpan<char> exceptionMessage) => ConvertFromUtf16(src, true, exceptionMessage);
+	int ConvertFromUtf16(ReadOnlySpan<char> src, bool throwIfTruncated, ReadOnlySpan<char> exceptionMessage) {
 		var subStrLength = src.Length;
 		var lengthRequired = Encoding.UTF8.GetByteCount(src[..subStrLength]);
 		while (lengthRequired > BufferLength) {
+			if (throwIfTruncated) throw new InvalidOperationException(exceptionMessage.ToString());
 			var diff = lengthRequired - BufferLength;
 			if (diff > 0) subStrLength -= diff;
 			else subStrLength -= 1;
 
 			if (subStrLength <= 0) {
 				BufferPtr[0] = 0;
-				return;
+				return 1;
 			}
 
 			lengthRequired = Encoding.UTF8.GetByteCount(src[..subStrLength]);
 		}
 		var numBytesWritten = Encoding.UTF8.GetBytes(src[..subStrLength], AsSpan);
-		BufferPtr[numBytesWritten < BufferLength ? numBytesWritten : (BufferLength - 1)] = 0;
+		if (numBytesWritten < BufferLength) {
+			BufferPtr[numBytesWritten] = 0;
+			return numBytesWritten + 1;
+		}
+		else {
+			if (throwIfTruncated) throw new InvalidOperationException(exceptionMessage.ToString());
+			BufferPtr[BufferLength - 1] = 0;
+			return BufferLength;
+		}
 	}
 
 	public int ConvertToUtf16(Span<char> dest) {

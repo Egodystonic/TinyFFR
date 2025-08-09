@@ -60,7 +60,10 @@
     <ClInclude Include="tffr\headers\assets\native_impl_asset_loader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="third_party\headers\stb\stb_imageh.h">
+    <ClInclude Include="third_party\headers\stb\stb_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\headers\stb\stb_image_write.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
