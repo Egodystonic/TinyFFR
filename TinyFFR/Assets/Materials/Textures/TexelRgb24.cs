@@ -9,13 +9,18 @@ using System.Numerics;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = TexelSizeBytes)]
-public readonly record struct TexelRgb24(byte R, byte G, byte B) : IConversionSupplyingTexel<TexelRgb24, ColorVect>, IConversionSupplyingTexel<TexelRgb24, Direction> {
-	const int TexelSizeBytes = 3;
-	public static int SerializationByteSpanLength { get; } = TexelSizeBytes;
-	public static TexelType BlitType { get; } = TexelType.Rgb24;
+public readonly record struct TexelRgb24(byte R, byte G, byte B) : IThreeByteChannelTexel<TexelRgb24>, IConversionSupplyingTexel<TexelRgb24, ColorVect>, IConversionSupplyingTexel<TexelRgb24, Direction> {
+	public const int TexelSizeBytes = 3;
 
 	public TexelRgba32 AsRgba32 => new(R, G, B, Byte.MaxValue);
 	public ColorVect AsColorVect => ColorVect.FromRgb24(R, G, B);
+
+	public byte this[int index] => index switch {
+		0 => R,
+		1 => G,
+		2 => B,
+		_ => throw new ArgumentOutOfRangeException(nameof(index), index, "Index must be in range 0 - 2.")
+	};
 
 	public TexelRgb24(TexelRgba32 rgba) : this(rgba.R, rgba.G, rgba.B) { }
 	public TexelRgb24(ColorVect color) : this(0, 0, 0) {

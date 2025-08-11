@@ -8,13 +8,19 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = TexelSizeBytes)]
-public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : IConversionSupplyingTexel<TexelRgba32, ColorVect> {
-	const int TexelSizeBytes = 4;
-	public static int SerializationByteSpanLength { get; } = TexelSizeBytes;
-	public static TexelType BlitType { get; } = TexelType.Rgba32;
+public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : IFourByteChannelTexel<TexelRgba32>, IConversionSupplyingTexel<TexelRgba32, ColorVect> {
+	public const int TexelSizeBytes = 4;
 
 	public TexelRgb24 AsRgb24 => new(R, G, B);
 	public ColorVect AsColorVect => ColorVect.FromRgba32(R, G, B, A);
+
+	public byte this[int index] => index switch {
+		0 => R,
+		1 => G,
+		2 => B,
+		3 => A,
+		_ => throw new ArgumentOutOfRangeException(nameof(index), index, "Index must be in range 0 - 3.")
+	};
 
 	public TexelRgba32(TexelRgb24 rgb, byte a) : this(rgb.R, rgb.G, rgb.B, a) { }
 	public TexelRgba32(ColorVect color) : this(0, 0, 0, 0) {
