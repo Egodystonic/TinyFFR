@@ -3,6 +3,7 @@
 
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Egodystonic.TinyFFR;
@@ -316,5 +317,15 @@ static class TestUtils {
 
 	public static void AssertMirrorMethodWithTolerance<TSelf, TOther>(Func<dynamic, dynamic, object?> func, float tolerance) where TSelf : IRandomizable<TSelf> where TOther : IRandomizable<TOther> {
 		AssertMirrorMethodWithTolerance<TSelf, TOther>((s, o) => func(s, o), (o, s) => func(o, s), tolerance);
+	}
+
+	public static string SetUpCleanTestDir(string testName, [CallerFilePath] string? callerFileName = null) {
+		testName = new String(Path.GetFileNameWithoutExtension(callerFileName)?.Where(c => !Path.GetInvalidFileNameChars().Contains(c)).ToArray() ?? Array.Empty<char>()) + "_" + testName;
+		var result = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), "Egodystonic", "TinyFFR", "test_directories", testName);
+
+		if (Directory.Exists(result)) Directory.Delete(result, recursive: true);
+		Directory.CreateDirectory(result);
+
+		return result;
 	}
 }

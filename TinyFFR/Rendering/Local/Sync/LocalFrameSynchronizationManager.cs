@@ -98,7 +98,7 @@ static unsafe class LocalFrameSynchronizationManager {
 
 		for (var i = 0; i < fenceData.BufferSize; ++i) {
 			var fenceHandle = fenceData.Buffer[i];
-			if (fenceHandle == UIntPtr.Zero) ExecuteFence(fenceHandle);
+			if (fenceHandle != UIntPtr.Zero) ExecuteFence(fenceHandle);
 		}
 
 		_rendererMap[renderer] = fenceData with { Buffer = new() };

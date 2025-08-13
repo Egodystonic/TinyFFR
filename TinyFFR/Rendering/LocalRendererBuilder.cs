@@ -86,7 +86,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	const string DefaultRendererName = "Unnamed Renderer";
 	const string DefaultRenderOutputBufferName = "Unnamed Render Output Buffer";
 
-	static readonly unsafe ArrayPoolBackedMap<nuint, (LocalRendererBuilder Builder, ResourceHandle<RenderOutputBuffer> BufferHandle, OutputBufferCallbackData Callbacks)> _pendingRenderTargetReadbacks = new();
+	static readonly ArrayPoolBackedMap<nuint, (LocalRendererBuilder Builder, ResourceHandle<RenderOutputBuffer> BufferHandle, OutputBufferCallbackData Callbacks)> _pendingRenderTargetReadbacks = new();
 	readonly ArrayPoolBackedMap<RenderTargetUnion, TargetSpecificData> _loadedTargets = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<RenderOutputBuffer>, OutputBufferData> _loadedBuffers = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Renderer>, RendererData> _loadedRenderers = new();
@@ -246,6 +246,16 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 			else {
 				var requiredSize = bufferData.TextureDimensions.Area * sizeof(TexelRgba32);
 				var buffer = _globals.CreateGpuHoldingBuffer(requiredSize, &HandleRenderTargetReadback);
+				_pendingRenderTargetReadbacks.Add(
+					buffer.BufferIdentity,
+					(this, bufferData.Handle, bufferData.RenderCompletionHandlers)
+				);
+				if (bufferData.HandleOnlyNextChange) {
+					_loadedBuffers[bufferData.Handle] = _loadedBuffers[bufferData.Handle] with {
+						RenderCompletionHandlers = new(),
+						HandleOnlyNextChange = false
+					};
+				}
 				RenderScene(
 					targetData.RendererPtr,
 					rendererData.Viewport.Handle,

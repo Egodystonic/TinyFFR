@@ -164,9 +164,8 @@ void native_impl_render::allocate_render_target(int32_t width, int32_t height, T
 		.depth(1)
 		.format(Texture::InternalFormat::RGBA8)
 		.height(height)
-		.levels(1)
 		.sampler(Texture::Sampler::SAMPLER_2D)
-		.usage(Texture::Usage::COLOR_ATTACHMENT | Texture::Usage::SAMPLEABLE)
+		.usage(Texture::Usage::COLOR_ATTACHMENT | Texture::Usage::SAMPLEABLE | Texture::Usage::BLIT_SRC | Texture::Usage::BLIT_DST)
 		.width(width)
 		.build(*filament_engine);
 	ThrowIfNull(*outBuffer, "Could not create buffer tetxure.");
@@ -237,7 +236,7 @@ void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDe
 		backend::PixelBufferDescriptor {
 			optionalReadbackBuffer,
 			static_cast<size_t>(readbackBufferLenBytes),
-			backend::PixelDataFormat::RGBA_INTEGER, // RGBA rather than RGB because it's guaranteed to be supported by all drivers/platforms/
+			backend::PixelDataFormat::RGBA, // RGBA rather than RGB because it's guaranteed to be supported by all drivers/platforms/
 			backend::PixelDataType::UBYTE,
 			&handle_filament_buffer_ready_callback,
 			bufferIdentity
@@ -259,6 +258,7 @@ StartExportedFunc(create_gpu_fence, FenceHandle* outFence) {
 }
 
 void native_impl_render::wait_for_fence(FenceHandle fenceHandle) {
+	ThrowIfNull(fenceHandle, "Fence handle was null.");
 	ThrowIf(filament::Fence::waitAndDestroy(fenceHandle) != filament::backend::FenceStatus::CONDITION_SATISFIED, "Fence did not complete without error.");
 }
 StartExportedFunc(wait_for_fence, FenceHandle fenceHandle) {

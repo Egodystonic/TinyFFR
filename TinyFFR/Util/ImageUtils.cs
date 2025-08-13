@@ -14,9 +14,9 @@ namespace Egodystonic.TinyFFR;
 
 public static class ImageUtils {
 	const int MaxFilePathLength = 1024;
+	static readonly ThreadLocal<InteropStringBuffer> _threadLocalStringBuffer = new(() => new InteropStringBuffer(MaxFilePathLength, true), trackAllValues: false);
+	static readonly ArrayPool<byte> _dataBufferPool = ArrayPool<byte>.Shared;
 	static ReadOnlySpan<byte> DummyFileData => "tinyffr"u8;
-	static ThreadLocal<InteropStringBuffer> _threadLocalStringBuffer = new(() => new InteropStringBuffer(MaxFilePathLength, true), trackAllValues: false);
-	static ArrayPool<byte> _dataBufferPool = ArrayPool<byte>.Shared;
 
 	public readonly record struct BitmapSaveConfig(bool IncludeAlphaChannel, bool FlipVertical, bool FlipHorizontal);
 

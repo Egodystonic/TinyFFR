@@ -2,7 +2,7 @@
 #include "environment/native_impl_window.h"
 
 #define STBI_FAILURE_USERMSG
-#include "stb/stb_imageh.h"
+#include "stb/stb_image.h"
 
 #include "utils_and_constants.h"
 

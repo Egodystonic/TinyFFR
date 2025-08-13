@@ -352,21 +352,21 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	public bool IsDisposed(ResourceHandle<Scene> handle) => _isDisposed || !_activeSceneHandles.Contains(handle);
 
 	public void Dispose(ResourceHandle<Scene> handle) {
-		if (IsDisposed(handle)) return;
-		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
-		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
-		_globals.DisposeResourceNameIfExists(handle.Ident);
-		DisposeScene(handle).ThrowIfFailure();
-
-		_backdropMap.Remove(handle);
-
-		_modelInstanceVectorPool.Return(_modelInstanceMap[handle]);
-		_modelInstanceMap.Remove(handle);
-
-		_lightVectorPool.Return(_lightMap[handle]);
-		_lightMap.Remove(handle);
-
-		_activeSceneHandles.Remove(handle);
+		// if (IsDisposed(handle)) return;
+		// _globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		// _globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
+		// _globals.DisposeResourceNameIfExists(handle.Ident);
+		// DisposeScene(handle).ThrowIfFailure();
+		//
+		// _backdropMap.Remove(handle);
+		//
+		// _modelInstanceVectorPool.Return(_modelInstanceMap[handle]);
+		// _modelInstanceMap.Remove(handle);
+		//
+		// _lightVectorPool.Return(_lightMap[handle]);
+		// _lightMap.Remove(handle);
+		//
+		// _activeSceneHandles.Remove(handle);
 	}
 
 	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<Scene> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Scene));

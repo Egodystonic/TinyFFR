@@ -29,9 +29,8 @@ partial struct Rotation :
 	}
 
 	#region Scaling and Addition/Subtraction
-	static Rotation IAdditive<Rotation, Rotation, Rotation>.operator +(Rotation lhs, Rotation rhs) => lhs.CombinedAndNormalizedWith(rhs);
-	static Rotation IAdditionOperators<Rotation, Rotation, Rotation>.operator +(Rotation lhs, Rotation rhs) => lhs.CombinedAndNormalizedWith(rhs);
-	static Rotation ISubtractionOperators<Rotation, Rotation, Rotation>.operator -(Rotation lhs, Rotation rhs) => lhs.NormalizedDifferenceTo(rhs);
+	public static Rotation operator +(Rotation lhs, Rotation rhs) => lhs.CombinedAndNormalizedWith(rhs);
+	public static Rotation operator -(Rotation lhs, Rotation rhs) => lhs.NormalizedDifferenceTo(rhs);
 	Rotation IAdditive<Rotation, Rotation, Rotation>.Plus(Rotation other) => CombinedAndNormalizedWith(other);
 	Rotation IAdditive<Rotation, Rotation, Rotation>.Minus(Rotation other) => NormalizedDifferenceTo(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
