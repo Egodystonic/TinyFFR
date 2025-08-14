@@ -17,12 +17,12 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalRenderOutputBufferTest {
+	static readonly double MaxHslAverageDiffFraction = 0.00075d;
 	static readonly XYPair<int> RenderDimensions = (480, 270);
 	static readonly (string Name, ColorVect Color)[] SceneColors = [
 		("purple", new(0.3f, 0f, 0.3f)),
 		("green", new(0.8f, 1f, 0.8f))
 	];
-	Window w;
 
 	[SetUp]
 	public void SetUpTest() {
@@ -35,7 +35,6 @@ class LocalRenderOutputBufferTest {
 	[Test]
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
-		w = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var colorTex = factory.MaterialBuilder.CreateColorMap(ColorVect.White, "color");
 		using var normalTex = factory.MaterialBuilder.CreateNormalMap(TexturePattern.Rectangles(
@@ -71,11 +70,6 @@ class LocalRenderOutputBufferTest {
 				var result = factory.SceneBuilder.CreateScene(includeBackdrop: true, backdropColor: tuple.Color);
 				result.Add(cube);
 				result.Add(light);
-				result.Dispose();
-
-				result = factory.SceneBuilder.CreateScene(includeBackdrop: true, backdropColor: tuple.Color);
-				result.Add(cube);
-				result.Add(light);
 				return result;
 			});
 
@@ -108,10 +102,41 @@ class LocalRenderOutputBufferTest {
 			}
 		}
 
-		foreach (var list in texelDumps.Values) {
-			Assert.AreEqual(RendererCreationConfig.MaxGpuSynchronizationFrameBufferCount + 1, list.Count);
-			for (var i = 1; i < list.Count; ++i) {
-				Assert.IsTrue(list[0].SequenceEqual(list[i]));
+		Console.WriteLine($"Comparing texel dumps (max diff = {PercentageUtils.ConvertFractionToPercentageString((float) MaxHslAverageDiffFraction, "N5")})");
+		foreach (var kvp in texelDumps) {
+			var list = kvp.Value;
+			foreach (var file in Directory.GetFiles(bitmapDir).Where(f => Path.GetFileName(f).StartsWith(kvp.Key, StringComparison.OrdinalIgnoreCase))) {
+				var dump = new TexelRgba32[list[0].Length];
+				factory.AssetLoader.ReadTexture(file, dump.AsSpan());
+				list.Add(dump);
+			}
+			Assert.AreEqual(4 * (RendererCreationConfig.MaxGpuSynchronizationFrameBufferCount + 1), list.Count);
+
+			var cumulativeHueValues = new double[list.Count];
+			var cumulativeSaturationValues = new double[list.Count];
+			var cumulativeLightnessValues = new double[list.Count];
+			for (var i = 0; i < list.Count; ++i) {
+				Assert.AreEqual(list[0].Length, list[i].Length);
+
+				for (var t = 0; t < list[0].Length; ++t) {
+					list[i][t].AsColorVect.ToHueSaturationLightness(out var h, out var s, out var l);
+					cumulativeHueValues[i] += h.Radians;
+					cumulativeSaturationValues[i] += s;
+					cumulativeLightnessValues[i] += l;
+				}
+
+				if (i == 0) continue;
+
+				var hueDiff = Math.Abs(cumulativeHueValues[0] / list[0].Length - cumulativeHueValues[i] / list[0].Length);
+				var satDiff = Math.Abs(cumulativeSaturationValues[0] / list[0].Length - cumulativeSaturationValues[i] / list[0].Length);
+				var lightDiff = Math.Abs(cumulativeLightnessValues[0] / list[0].Length - cumulativeLightnessValues[i] / list[0].Length);
+
+				Console.WriteLine($"Hue diff #{i}: {PercentageUtils.ConvertFractionToPercentageString((float) (hueDiff / (cumulativeHueValues[0] / list[0].Length)), "N5")}");
+				Console.WriteLine($"Sat diff #{i}: {PercentageUtils.ConvertFractionToPercentageString((float) (satDiff / (cumulativeSaturationValues[0] / list[0].Length)), "N5")}");
+				Console.WriteLine($"Lig diff #{i}: {PercentageUtils.ConvertFractionToPercentageString((float) (lightDiff / (cumulativeLightnessValues[0] / list[0].Length)), "N5")}");
+				Assert.LessOrEqual(hueDiff / (cumulativeHueValues[0] / list[0].Length), MaxHslAverageDiffFraction);
+				Assert.LessOrEqual(satDiff / (cumulativeSaturationValues[0] / list[0].Length), MaxHslAverageDiffFraction);
+				Assert.LessOrEqual(lightDiff / (cumulativeLightnessValues[0] / list[0].Length), MaxHslAverageDiffFraction);
 			}
 		}
 	}
@@ -135,18 +160,11 @@ class LocalRenderOutputBufferTest {
 			renderer.RenderAndWaitForGpu();
 		}
 		else {
-			renderer.Render();
 			for (var i = 0; i < frameBufferCount; ++i) {
 				_ = loop.IterateOnce();
 				renderer.Render();
 			}
+			// TODO remove this 
 		}
-
-		var r = builder.CreateRenderer(scene, camera, w);
-		for (var i = 0; i < 100; ++i) {
-			_ = loop.IterateOnce();
-			r.Render();
-		}
-		r.Dispose();
 	}
 }

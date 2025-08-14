@@ -42,7 +42,7 @@ static unsafe class LocalFrameSynchronizationManager {
 	public const int MaxBufferSize = 5;
 	static readonly ArrayPoolBackedMap<ResourceHandle<Renderer>, FenceData> _rendererMap = new();
 	static readonly ArrayPoolBackedMap<UIntPtr, ArrayPoolBackedVector<QueuedResourceCallback>> _fenceCallbackMap = new();
-	static readonly ObjectPool<ArrayPoolBackedVector<QueuedResourceCallback>> _callbackQueuePool = new(&CreateCallbackQueuePool);
+	static readonly VectorPool<QueuedResourceCallback> _callbackQueuePool = new(zeroMemoryOnReturn: false);
 	static ArrayPoolBackedVector<QueuedResourceCallback> _unassignedCallbacks = _callbackQueuePool.Rent();
 
 	public static void RegisterRenderer(ResourceHandle<Renderer> renderer, int bufferSize) {
@@ -104,6 +104,12 @@ static unsafe class LocalFrameSynchronizationManager {
 		_rendererMap[renderer] = fenceData with { Buffer = new() };
 	}
 
+	public static void StallForPendingCallbacks(ResourceHandle<Renderer> renderer) {
+		if (!_rendererMap.ContainsKey(renderer)) throw new InvalidOperationException($"Renderer '{renderer}' was not registered.");
+
+		StallForPendingCallbacks();
+	}
+
 	public static void QueueResourceDisposal(UIntPtr handle, delegate*<UIntPtr, InteropResult> callback) {
 		var qrc = new QueuedResourceCallback(handle, callback);
 
@@ -125,11 +131,8 @@ static unsafe class LocalFrameSynchronizationManager {
 			callback.Invoke();
 		}
 
-		callbacks.Clear();
 		_callbackQueuePool.Return(callbacks);
 	}
-
-	static ArrayPoolBackedVector<QueuedResourceCallback> CreateCallbackQueuePool() => new();
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "create_gpu_fence")]
@@ -137,5 +140,8 @@ static unsafe class LocalFrameSynchronizationManager {
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "wait_for_fence")]
 	static extern InteropResult WaitForFence(UIntPtr fenceHandle);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "stall_for_pending_callbacks")]
+	static extern InteropResult StallForPendingCallbacks();
 	#endregion
 }

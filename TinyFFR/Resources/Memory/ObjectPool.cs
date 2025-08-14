@@ -46,3 +46,51 @@ sealed unsafe class ObjectPool<T, TArg> : IDisposable {
 
 	public void Dispose() => _pool.Dispose();
 }
+
+sealed unsafe class VectorPool<T> : IDisposable {
+	readonly bool _zeroMemoryOnReturn;
+	readonly ObjectPool<ArrayPoolBackedVector<T>> _objectPool;
+
+	public VectorPool(bool zeroMemoryOnReturn, int initialPoolCount = ArrayPoolBackedVector<VectorPool<T>>.DefaultInitialCapacity) : this(zeroMemoryOnReturn, &CreateNewVector, initialPoolCount) { }
+
+	public VectorPool(bool zeroMemoryOnReturn, delegate*<ArrayPoolBackedVector<T>> newItemCreationFunc, int initialPoolCount = ArrayPoolBackedVector<VectorPool<T>>.DefaultInitialCapacity) {
+		_zeroMemoryOnReturn = zeroMemoryOnReturn;
+		_objectPool = new(newItemCreationFunc, initialPoolCount);
+	}
+
+	static ArrayPoolBackedVector<T> CreateNewVector() => new();
+
+	public ArrayPoolBackedVector<T> Rent() => _objectPool.Rent();
+
+	public void Return(ArrayPoolBackedVector<T> item) {
+		if (_zeroMemoryOnReturn) item.Clear();
+		else item.ClearWithoutZeroingMemory();
+		_objectPool.Return(item);
+	}
+
+	public void Dispose() => _objectPool.Dispose();
+}
+
+sealed unsafe class MapPool<TKey, TValue> : IDisposable {
+	readonly bool _zeroMemoryOnReturn;
+	readonly ObjectPool<ArrayPoolBackedMap<TKey, TValue>> _objectPool;
+
+	public MapPool(bool zeroMemoryOnReturn, int initialPoolCount = ArrayPoolBackedVector<MapPool<TKey, TValue>>.DefaultInitialCapacity) : this(zeroMemoryOnReturn, &CreateNewMap, initialPoolCount) { }
+
+	public MapPool(bool zeroMemoryOnReturn, delegate*<ArrayPoolBackedMap<TKey, TValue>> newItemCreationFunc, int initialPoolCount = ArrayPoolBackedVector<MapPool<TKey, TValue>>.DefaultInitialCapacity) {
+		_zeroMemoryOnReturn = zeroMemoryOnReturn;
+		_objectPool = new(newItemCreationFunc, initialPoolCount);
+	}
+
+	static ArrayPoolBackedMap<TKey, TValue> CreateNewMap() => new();
+
+	public ArrayPoolBackedMap<TKey, TValue> Rent() => _objectPool.Rent();
+
+	public void Return(ArrayPoolBackedMap<TKey, TValue> item) {
+		if (_zeroMemoryOnReturn) item.Clear();
+		else item.ClearWithoutZeroingMemory();
+		_objectPool.Return(item);
+	}
+
+	public void Dispose() => _objectPool.Dispose();
+}

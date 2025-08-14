@@ -35,4 +35,5 @@ public:
 
 	static void create_gpu_fence(FenceHandle* outFence);
 	static void wait_for_fence(FenceHandle fenceHandle);
+	static void stall_for_pending_callbacks();
 };

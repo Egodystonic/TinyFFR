@@ -242,6 +242,7 @@ void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDe
 			bufferIdentity
 		}
 	);
+	filament_engine->flushAndWait(); // TODO remove this line when https://github.com/google/filament/issues/7995 is fixed
 }
 StartExportedFunc(render_scene_standalone, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity) {
 	native_impl_render::render_scene_standalone(renderer, viewDescriptor, renderTarget, optionalReadbackBuffer, readbackBufferLenBytes, readbackBufferWidth, readbackBufferHeight, bufferIdentity);
@@ -265,4 +266,13 @@ StartExportedFunc(wait_for_fence, FenceHandle fenceHandle) {
 	native_impl_render::wait_for_fence(fenceHandle);
 	EndExportedFunc
 }
+
+void native_impl_render::stall_for_pending_callbacks() {
+	filament_engine->flushAndWait();
+}
+StartExportedFunc(stall_for_pending_callbacks) {
+	native_impl_render::stall_for_pending_callbacks();
+	EndExportedFunc
+}
+
 

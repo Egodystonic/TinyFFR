@@ -4,13 +4,11 @@
 using Egodystonic.TinyFFR.Resources.Memory;
 using static Egodystonic.TinyFFR.Resources.IResourceDependencyTracker;
 using StubMap = Egodystonic.TinyFFR.Resources.Memory.ArrayPoolBackedMap<Egodystonic.TinyFFR.Resources.ResourceIdent, Egodystonic.TinyFFR.Resources.Memory.ArrayPoolBackedVector<Egodystonic.TinyFFR.Resources.ResourceStub>>;
-using VectPool = Egodystonic.TinyFFR.Resources.Memory.ObjectPool<Egodystonic.TinyFFR.Resources.Memory.ArrayPoolBackedVector<Egodystonic.TinyFFR.Resources.ResourceStub>>;
 
 namespace Egodystonic.TinyFFR.Resources;
 
 sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDisposable {
-	const int InitialDependentsArrayLength = 4;
-	readonly VectPool _vectorPool = new(&CreateNewVector);
+	readonly VectorPool<ResourceStub> _vectorPool = new(zeroMemoryOnReturn: false);
 	readonly StubMap _targetsToDependentsMap = new();
 	readonly StubMap _dependentsToTargetsMap = new();
 	bool _isDisposed = false;
@@ -19,7 +17,7 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 	public void RegisterDependency<TDependent, TTarget>(TDependent dependent, TTarget targetNowInUse) where TDependent : IResource where TTarget : IResource {
 		ThrowIfDisposed();
 
-		static void AddStubToMap(VectPool vectorPool, StubMap map, ResourceIdent key, ResourceStub value) {
+		static void AddStubToMap(VectorPool<ResourceStub> vectorPool, StubMap map, ResourceIdent key, ResourceStub value) {
 			if (!map.TryGetValue(key, out var values)) {
 				values = vectorPool.Rent();
 				map.Add(key, values);
@@ -38,7 +36,7 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 	public void DeregisterDependency<TDependent, TTarget>(TDependent dependent, TTarget targetNoLongerInUse) where TDependent : IResource where TTarget : IResource {
 		ThrowIfDisposed();
 
-		static void RemoveStubFromMap(VectPool vectorPool, StubMap map, ResourceIdent key, ResourceStub value) {
+		static void RemoveStubFromMap(VectorPool<ResourceStub> vectorPool, StubMap map, ResourceIdent key, ResourceStub value) {
 			if (!map.TryGetValue(key, out var values)) return;
 			if (!values.Remove(value)) return;
 			if (values.Count != 0) return;
@@ -68,7 +66,6 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 		}
 
 		_dependentsToTargetsMap.Remove(dependentStub.Ident);
-		targets.Clear();
 		_vectorPool.Return(targets);
 		_stateVersion++;
 	}
@@ -240,13 +237,11 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 
 	public void EraseAllDependencies() {
 		foreach (var kvp in _targetsToDependentsMap) {
-			kvp.Value.Clear();
 			_vectorPool.Return(kvp.Value);
 		}
 		_targetsToDependentsMap.Clear();
 
 		foreach (var kvp in _dependentsToTargetsMap) {
-			kvp.Value.Clear();
 			_vectorPool.Return(kvp.Value);
 		}
 		_dependentsToTargetsMap.Clear();
@@ -265,6 +260,4 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 	void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, typeof(IResourceDependencyTracker));
 
 	static int GetStateVersion(EnumerationInput input) => (input.Tracker as ResourceDependencyTracker)!._stateVersion;
-
-	static ArrayPoolBackedVector<ResourceStub> CreateNewVector() => new(InitialDependentsArrayLength);
 }

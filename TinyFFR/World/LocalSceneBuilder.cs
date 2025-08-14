@@ -17,24 +17,21 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	
 	readonly ArrayPoolBackedVector<ResourceHandle<Scene>> _activeSceneHandles = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedVector<ModelInstance>> _modelInstanceMap = new();
-	readonly ObjectPool<ArrayPoolBackedVector<ModelInstance>> _modelInstanceVectorPool;
+	readonly VectorPool<ModelInstance> _modelInstanceVectorPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedVector<Light>> _lightMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, Quality> _shadowQualityActivePresetMap = new();
-	readonly ObjectPool<ArrayPoolBackedVector<Light>> _lightVectorPool;
+	readonly VectorPool<Light> _lightVectorPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, BackdropData> _backdropMap = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	
 	bool _isDisposed = false;
 
 	public LocalSceneBuilder(LocalFactoryGlobalObjectGroup globals) {
-		static ArrayPoolBackedVector<ModelInstance> CreateModelInstanceVector() => new();
-		static ArrayPoolBackedVector<Light> CreateLightVector() => new();
-
 		ArgumentNullException.ThrowIfNull(globals);
 
 		_globals = globals;
-		_modelInstanceVectorPool = new(&CreateModelInstanceVector);
-		_lightVectorPool = new(&CreateLightVector);
+		_modelInstanceVectorPool = new(zeroMemoryOnReturn: false);
+		_lightVectorPool = new(zeroMemoryOnReturn: false);
 	}
 
 	public Scene CreateScene(in SceneCreationConfig config) {
@@ -352,21 +349,21 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	public bool IsDisposed(ResourceHandle<Scene> handle) => _isDisposed || !_activeSceneHandles.Contains(handle);
 
 	public void Dispose(ResourceHandle<Scene> handle) {
-		// if (IsDisposed(handle)) return;
-		// _globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
-		// _globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
-		// _globals.DisposeResourceNameIfExists(handle.Ident);
-		// DisposeScene(handle).ThrowIfFailure();
-		//
-		// _backdropMap.Remove(handle);
-		//
-		// _modelInstanceVectorPool.Return(_modelInstanceMap[handle]);
-		// _modelInstanceMap.Remove(handle);
-		//
-		// _lightVectorPool.Return(_lightMap[handle]);
-		// _lightMap.Remove(handle);
-		//
-		// _activeSceneHandles.Remove(handle);
+		if (IsDisposed(handle)) return;
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
+		_globals.DisposeResourceNameIfExists(handle.Ident);
+		DisposeScene(handle).ThrowIfFailure();
+		
+		_backdropMap.Remove(handle);
+
+		_modelInstanceVectorPool.Return(_modelInstanceMap[handle]);
+		_modelInstanceMap.Remove(handle);
+
+		_lightVectorPool.Return(_lightMap[handle]);
+		_lightMap.Remove(handle);
+		
+		_activeSceneHandles.Remove(handle);
 	}
 
 	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<Scene> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Scene));

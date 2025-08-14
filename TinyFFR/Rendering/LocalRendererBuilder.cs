@@ -278,9 +278,11 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var rendererData = _loadedRenderers[handle];
-		if (!rendererData.EmitFences) return;
+		if (rendererData.EmitFences) {
+			LocalFrameSynchronizationManager.FlushAllPendingFences(handle);
+		}
 
-		LocalFrameSynchronizationManager.FlushAllPendingFences(handle);
+		LocalFrameSynchronizationManager.StallForPendingCallbacks(handle);
 	}
 
 	static unsafe void HandleRenderTargetReadback(nuint bufferIdentity, ReadOnlySpan<byte> data) {

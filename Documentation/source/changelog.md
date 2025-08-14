@@ -5,6 +5,12 @@ search:
   exclude: true
 ---
 
+## 0.4
+
+### Bug Fixes
+
+* Fixed an issue where attempting to add model instances or light objects that were previously added to a now-disposed scene to a new scene would not actually add them.
+
 ## 0.3
 
 __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/2?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.3.0)__
