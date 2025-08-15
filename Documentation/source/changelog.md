@@ -7,6 +7,11 @@ search:
 
 ## 0.4
 
+### Major Features
+
+* Can now render directly to textures
+* Can now render to a callback, handle texel stream in C#, and optionally save directly to BMP format on disc
+
 ### Bug Fixes
 
 * Fixed an issue where attempting to add model instances or light objects that were previously added to a now-disposed scene to a new scene would not actually add them.

@@ -30,14 +30,14 @@ public readonly unsafe struct RenderOutputBuffer : IDisposableResource<RenderOut
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ReadNextFrame(Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: true);
+	public void ReadNextFrame(Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: true);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ReadNextFrame(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: true);
+	public void ReadNextFrame(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: true);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void StartReadingFrames(Action<XYPair<int>, ReadOnlySpan<TexelRgba32>> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: false);
+	public void StartReadingFrames(Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: false);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void StartReadingFrames(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgba32>, void> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: false);
+	public void StartReadingFrames(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: false);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void StopReadingFrames(bool cancelQueuedFrames) => Implementation.ClearOutputChangeHandlers(_handle, cancelQueuedFrames);
@@ -48,6 +48,9 @@ public readonly unsafe struct RenderOutputBuffer : IDisposableResource<RenderOut
 	public int GetNameLength() => Implementation.GetNameLength(_handle);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Texture CreateDynamicTexture() => Implementation.CreateDynamicTexture(_handle);
 
 	static RenderOutputBuffer IResource<RenderOutputBuffer>.CreateFromHandleAndImpl(ResourceHandle<RenderOutputBuffer> handle, IResourceImplProvider impl) {
 		return new RenderOutputBuffer(handle, impl as IRenderOutputBufferImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));

@@ -34,6 +34,69 @@ class LocalRenderOutputBufferTest {
 
 	[Test]
 	public void Execute() {
+		TestRenderTargetAsTexture();
+		TestReadbacksAndBitmapWriting();
+	}
+
+	void TestRenderTargetAsTexture() {
+		using var factory = new LocalTinyFfrFactory();
+		using var cubeMesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
+		using var loop = factory.ApplicationLoopBuilder.CreateLoop(null);
+
+		// RenderBuffer Scene
+		using var renderBufferCamera = factory.CameraBuilder.CreateCamera(Location.Origin);
+		using var renderBufferMatColorTex = factory.MaterialBuilder.CreateColorMap(ColorVect.White, "color");
+		using var renderBufferMatNormalTex = factory.MaterialBuilder.CreateNormalMap(TexturePattern.Rectangles(
+			interiorSize: (256, 256),
+			borderSize: (64, 64),
+			paddingSize: (0, 0),
+			interiorValue: Direction.Forward,
+			borderRightValue: (-1f, 0f, 1f),
+			borderTopValue: (0f, 1f, 1f),
+			borderLeftValue: (1f, 0f, 1f),
+			borderBottomValue: (0f, -1f, 1f),
+			paddingValue: Direction.Forward,
+			repetitions: (8, 8)
+		), "normal");
+		using var renderBufferMatOrmTex = factory.MaterialBuilder.CreateOrmMap(name: "orm");
+		using var renderBufferMat = factory.MaterialBuilder.CreateOpaqueMaterial(renderBufferMatColorTex, renderBufferMatNormalTex, renderBufferMatOrmTex, name: "mat");
+		using var renderBufferModel = factory.ObjectBuilder.CreateModelInstance(
+			cubeMesh,
+			renderBufferMat,
+			initialPosition: Location.Origin + Direction.Forward * 1.9f,
+			initialRotation: Direction.Up % 30f + Direction.Right % 14f
+		);
+		using var renderBuffer = factory.RendererBuilder.CreateRenderOutputBuffer((400, 400));
+		using var renderBufferScene = factory.SceneBuilder.CreateScene(includeBackdrop: true, backdropColor: StandardColor.Green);
+		renderBufferScene.Add(renderBufferModel);
+		using var renderBufferRenderer = factory.RendererBuilder.CreateRenderer(renderBufferScene, renderBufferCamera, renderBuffer);
+
+		// Window Scene
+		using var windowColorTex = renderBuffer.CreateDynamicTexture();
+		using var windowNormalTex = factory.MaterialBuilder.CreateNormalMap();
+		using var windowOrmTex = factory.MaterialBuilder.CreateOrmMap();
+		using var windowMat = factory.MaterialBuilder.CreateOpaqueMaterial(windowColorTex, windowNormalTex, windowOrmTex);
+		using var windowModel = factory.ObjectBuilder.CreateModelInstance(
+			cubeMesh,
+			windowMat,
+			initialPosition: Location.Origin + Direction.Forward * 1.5f
+		);
+		using var windowCamera = factory.CameraBuilder.CreateCamera(Location.Origin);
+		using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
+		using var windowScene = factory.SceneBuilder.CreateScene(includeBackdrop: true, backdropColor: ColorVect.White);
+		windowScene.Add(windowModel);
+		using var windowRenderer = factory.RendererBuilder.CreateRenderer(windowScene, windowCamera, window);
+
+		loop.ResetTotalIteratedTime();
+		while (loop.TotalIteratedTime < TimeSpan.FromSeconds(5d)) {
+			var dt = (float) loop.IterateOnce().TotalSeconds;
+			renderBufferModel.RotateBy(dt * (Direction.Down % 90f));
+			renderBufferRenderer.Render();
+			windowRenderer.Render();
+		}
+	}
+
+	void TestReadbacksAndBitmapWriting() {
 		using var factory = new LocalTinyFfrFactory();
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var colorTex = factory.MaterialBuilder.CreateColorMap(ColorVect.White, "color");
@@ -59,12 +122,11 @@ class LocalRenderOutputBufferTest {
 			Direction.Up % 30f + Direction.Right % 14f
 		);
 		using var light = factory.LightBuilder.CreatePointLight(camera.Position);
-
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(null);
 
 		var bitmapDir = SetUpCleanTestDir("bitmaps");
 		Console.WriteLine("Bitmaps being written to " + bitmapDir);
-		var texelDumps = SceneColors.ToDictionary(tuple => tuple.Name, _ => new List<TexelRgba32[]>());
+		var texelDumps = SceneColors.ToDictionary(tuple => tuple.Name, _ => new List<TexelRgb24[]>());
 		for (var frameBufferCount = 0; frameBufferCount <= RendererCreationConfig.MaxGpuSynchronizationFrameBufferCount; ++frameBufferCount) {
 			var scenes = SceneColors.ToDictionary(tuple => tuple.Name, tuple => {
 				var result = factory.SceneBuilder.CreateScene(includeBackdrop: true, backdropColor: tuple.Color);
@@ -106,7 +168,7 @@ class LocalRenderOutputBufferTest {
 		foreach (var kvp in texelDumps) {
 			var list = kvp.Value;
 			foreach (var file in Directory.GetFiles(bitmapDir).Where(f => Path.GetFileName(f).StartsWith(kvp.Key, StringComparison.OrdinalIgnoreCase))) {
-				var dump = new TexelRgba32[list[0].Length];
+				var dump = new TexelRgb24[list[0].Length];
 				factory.AssetLoader.ReadTexture(file, dump.AsSpan());
 				list.Add(dump);
 			}
@@ -141,7 +203,7 @@ class LocalRenderOutputBufferTest {
 		}
 	}
 
-	void RenderSceneToBitmapAndStoreTexels(IRendererBuilder builder, ApplicationLoop loop, Scene scene, Camera camera, List<TexelRgba32[]> renderDumpList, string bitmapFilePath, int frameBufferCount, bool waitExplicitly) {
+	void RenderSceneToBitmapAndStoreTexels(IRendererBuilder builder, ApplicationLoop loop, Scene scene, Camera camera, List<TexelRgb24[]> renderDumpList, string bitmapFilePath, int frameBufferCount, bool waitExplicitly) {
 		Console.WriteLine("..." + Path.GetFileNameWithoutExtension(bitmapFilePath));
 
 		using var buffer = builder.CreateRenderOutputBuffer(textureDimensions: RenderDimensions);
@@ -160,11 +222,10 @@ class LocalRenderOutputBufferTest {
 			renderer.RenderAndWaitForGpu();
 		}
 		else {
-			for (var i = 0; i < frameBufferCount; ++i) {
+			for (var i = 0; i < frameBufferCount + 1; ++i) {
 				_ = loop.IterateOnce();
 				renderer.Render();
 			}
-			// TODO remove this 
 		}
 	}
 }

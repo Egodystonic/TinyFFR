@@ -236,7 +236,7 @@ void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDe
 		backend::PixelBufferDescriptor {
 			optionalReadbackBuffer,
 			static_cast<size_t>(readbackBufferLenBytes),
-			backend::PixelDataFormat::RGBA, // RGBA rather than RGB because it's guaranteed to be supported by all drivers/platforms/
+			backend::PixelDataFormat::RGB,
 			backend::PixelDataType::UBYTE,
 			&handle_filament_buffer_ready_callback,
 			bufferIdentity
