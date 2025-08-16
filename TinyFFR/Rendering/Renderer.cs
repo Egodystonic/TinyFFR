@@ -47,6 +47,17 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetQuality(RenderQualityConfig newQualityConfig) => Implementation.SetQualityConfig(_handle, newQualityConfig);
 
+	// TODO make it clear that CaptureScreenshot incurs a framedrop penalty and that rendering to an output buffer is preferable for continuous CPU streaming
+	// TODO also make it clear that the bitmapFilePath overload can throw IOException
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void CaptureScreenshot(ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig = null) => Implementation.CaptureScreenshot(_handle, bitmapFilePath, saveConfig);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void CaptureScreenshot(Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) => Implementation.CaptureScreenshot(_handle, handler);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public unsafe void CaptureScreenshot(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler) => Implementation.CaptureScreenshot(_handle, handler);
+
 	public override string ToString() => $"Renderer {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Disposal

@@ -68,7 +68,7 @@ public readonly struct Window : IDisposableResource<Window, IWindowImplProvider>
 	public void SetIcon(ReadOnlySpan<char> iconFilePath) => Implementation.SetIcon(_handle, iconFilePath);
 
 	XYPair<int> IRenderTarget.ViewportOffset => XYPair<int>.Zero;
-	XYPair<uint> IRenderTarget.ViewportDimensions => Size.Cast<uint>();
+	XYPair<int> IRenderTarget.ViewportDimensions => Size;
 
 	internal Window(ResourceHandle<Window> handle, IWindowImplProvider impl) {
 		ArgumentNullException.ThrowIfNull(impl);

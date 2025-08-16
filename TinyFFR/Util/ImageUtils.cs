@@ -12,13 +12,12 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR;
 
+public readonly record struct BitmapSaveConfig(bool IncludeAlphaChannel, bool FlipVertical, bool FlipHorizontal);
 public static class ImageUtils {
 	const int MaxFilePathLength = 1024;
 	static readonly ThreadLocal<InteropStringBuffer> _threadLocalStringBuffer = new(() => new InteropStringBuffer(MaxFilePathLength, true), trackAllValues: false);
 	static readonly ArrayPool<byte> _dataBufferPool = ArrayPool<byte>.Shared;
 	static ReadOnlySpan<byte> DummyFileData => "tinyffr"u8;
-
-	public readonly record struct BitmapSaveConfig(bool IncludeAlphaChannel, bool FlipVertical, bool FlipHorizontal);
 
 	public static void SaveBitmap<TTexel>(ReadOnlySpan<char> filePath, XYPair<int> dimensions, ReadOnlySpan<TTexel> texels) where TTexel : unmanaged, ITexel<TTexel, byte> {
 		SaveBitmap(filePath, dimensions, texels, new(IncludeAlphaChannel: false, FlipVertical: false, FlipHorizontal: false));

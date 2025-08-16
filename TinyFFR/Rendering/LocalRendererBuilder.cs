@@ -11,6 +11,7 @@ using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.World;
 using System;
+using System.IO;
 using static System.Formats.Asn1.AsnWriter;
 
 namespace Egodystonic.TinyFFR.Rendering;
@@ -43,7 +44,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 				throw new InvalidOperationException();
 			}
 		}
-		public XYPair<uint> ViewportDimensions {
+		public XYPair<int> ViewportDimensions {
 			get {
 				if (IsWindow) return ((IRenderTarget) AsWindow).ViewportDimensions;
 				if (IsBuffer) return ((IRenderTarget) AsBuffer).ViewportDimensions;
@@ -68,7 +69,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	}
 	
 	readonly record struct TargetSpecificData(UIntPtr RendererPtr, UIntPtr? SwapChainPtr);
-	readonly record struct ViewportData(UIntPtr Handle, XYPair<uint> CurrentSize);
+	readonly record struct ViewportData(UIntPtr Handle, XYPair<int> CurrentSize);
 	readonly record struct RendererData(Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, bool EmitFences, RenderQualityConfig Quality);
 	readonly unsafe struct OutputBufferCallbackData {
 		public delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> OutputChangeHandler { get; }
@@ -85,6 +86,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 
 	const string DefaultRendererName = "Unnamed Renderer";
 	const string DefaultRenderOutputBufferName = "Unnamed Render Output Buffer";
+	const string SnapshotBufferName = "Snapshot Buffer";
+	const string SnapshotRendererName = "Snapshot Renderer";
 
 	static readonly ArrayPoolBackedMap<nuint, (LocalRendererBuilder Builder, ResourceHandle<RenderOutputBuffer> BufferHandle, OutputBufferCallbackData Callbacks)> _pendingRenderTargetReadbacks = new();
 	readonly ArrayPoolBackedMap<RenderTargetUnion, TargetSpecificData> _loadedTargets = new();
@@ -95,6 +98,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	readonly TextureImplProvider _textureImplProvider;
 	nuint _previousHandleId = 0U;
 	bool _isDisposed = false;
+	static BitmapSaveConfig? _nextScreenshotCaptureConfig = null;
+	static ManagedStringPool.RentedStringHandle? _nextScreenshotCaptureFilePath = null;
 
 	// This is a private embedded 'delegating' object to help provide distinction between some default interface methods
 	// on both IRenderOutputBufferImplProvider and IRendererBuilder. 
@@ -141,7 +146,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		}
 		public bool IsDisposed(ResourceHandle<Texture> handle) => TryGetOwningBuffer(handle) == null;
 		public void Dispose(ResourceHandle<Texture> handle) { /* no-op */ }
-		public XYPair<uint> GetDimensions(ResourceHandle<Texture> handle) => _owner._loadedBuffers[GetOwningBuffer(handle)].TextureDimensions.Cast<uint>();
+		public XYPair<int> GetDimensions(ResourceHandle<Texture> handle) => _owner._loadedBuffers[GetOwningBuffer(handle)].TextureDimensions.Cast<int>();
 	}
 
 	public LocalRendererBuilder(LocalFactoryGlobalObjectGroup globals) {
@@ -193,7 +198,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 			rtu.IsBuffer ? _loadedBuffers[rtu.AsBuffer.Handle].RenderTargetHandle : UIntPtr.Zero,
 			out var viewDescriptorHandle
 		).ThrowIfFailure();
-		var viewportData = new ViewportData(viewDescriptorHandle, XYPair<uint>.Zero);
+		var viewportData = new ViewportData(viewDescriptorHandle, XYPair<int>.Zero);
 
 		_previousHandleId++;
 		var handle = new ResourceHandle<Renderer>(_previousHandleId);
@@ -245,8 +250,10 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		var curViewportSize = viewportData.CurrentSize;
 		var curTargetSize = rendererData.RenderTarget.ViewportDimensions;
 		if (curViewportSize != curTargetSize) {
-			rendererData = rendererData with { Viewport = viewportData with { CurrentSize = curTargetSize } };
-			SetViewDescriptorSize(viewportData.Handle, curTargetSize.X, curTargetSize.Y).ThrowIfFailure();
+			viewportData = viewportData with { CurrentSize = curTargetSize };
+			rendererData = rendererData with { Viewport = viewportData };
+			_loadedRenderers[handle] = rendererData;
+			SetViewDescriptorSize(viewportData.Handle, (uint) curTargetSize.X, (uint) curTargetSize.Y).ThrowIfFailure();
 			if (rendererData.AutoUpdateCameraAspectRatio) {
 				rendererData.Camera.SetAspectRatio(curTargetSize.Ratio ?? CameraCreationConfig.DefaultAspectRatio);
 			}
@@ -347,6 +354,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		return _loadedBuffers[handle].TextureDimensions;
 	}
 	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool handleOnlyNextChange) {
+		ArgumentNullException.ThrowIfNull(handler);
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_loadedBuffers[handle] = _loadedBuffers[handle] with {
 			RenderCompletionHandlers = new(null, handler),
@@ -375,6 +383,77 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 			var bufferId = currentlyQueuedFrameIdentities.Buffer[i];
 			var tuple = _pendingRenderTargetReadbacks[bufferId];
 			if (tuple.Builder == this && tuple.BufferHandle == handle) _pendingRenderTargetReadbacks.Remove(bufferId);
+		}
+	}
+
+	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+
+		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle]);
+
+		try {
+			_nextScreenshotCaptureConfig = saveConfig;
+			_nextScreenshotCaptureFilePath = _globals.StringPool.RentAndCopy(bitmapFilePath);
+			buffer.ReadNextFrame(&SaveScreenshotToBitmap);
+			renderer.RenderAndWaitForGpu();
+		}
+		finally {
+			if (_nextScreenshotCaptureFilePath != null) _globals.StringPool.Return(_nextScreenshotCaptureFilePath.Value);
+			_nextScreenshotCaptureFilePath = null;
+			renderer.Dispose();
+			buffer.Dispose();
+		}
+	}
+	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) {
+		ArgumentNullException.ThrowIfNull(handler);
+		ThrowIfThisOrHandleIsDisposed(handle);
+
+		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle]);
+		
+		try {
+			buffer.ReadNextFrame(handler);
+			renderer.RenderAndWaitForGpu();
+		}
+		finally {
+			renderer.Dispose();
+			buffer.Dispose();
+		}
+	}
+	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+
+		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle]);
+
+		try {
+			buffer.ReadNextFrame(handler);
+			renderer.RenderAndWaitForGpu();
+		}
+		finally {
+			renderer.Dispose();
+			buffer.Dispose();
+		}
+	}
+	(RenderOutputBuffer Buffer, Renderer Renderer) SetUpScreenshotCapture(RendererData data) {
+		var buffer = CreateRenderOutputBuffer(new() {
+			Name = SnapshotBufferName,
+			TextureDimensions = data.Viewport.CurrentSize.Cast<int>()
+		});
+		var renderer = CreateRenderer(data.Scene, data.Camera, buffer, new() {
+			AutoUpdateCameraAspectRatio = false,
+			GpuSynchronizationFrameBufferCount = 0,
+			Name = SnapshotRendererName,
+			Quality = data.Quality
+		});
+		return (buffer, renderer);
+	}
+	static void SaveScreenshotToBitmap(XYPair<int> dimensions, ReadOnlySpan<TexelRgb24> texels) {
+		try {
+			if (_nextScreenshotCaptureFilePath == null) throw new InvalidOperationException("Out-of-order operation detected.");
+			if (_nextScreenshotCaptureConfig == null) ImageUtils.SaveBitmap(_nextScreenshotCaptureFilePath.Value.AsSpan, dimensions, texels);
+			else ImageUtils.SaveBitmap(_nextScreenshotCaptureFilePath.Value.AsSpan, dimensions, texels, _nextScreenshotCaptureConfig.Value);
+		}
+		catch (Exception e) {
+			throw new IOException($"Could not save {dimensions.X} x {dimensions.Y} bitmap to {_nextScreenshotCaptureFilePath?.AsNewStringObject ?? "<null>"}.", e);
 		}
 	}
 

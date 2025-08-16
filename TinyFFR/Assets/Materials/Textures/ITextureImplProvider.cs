@@ -6,5 +6,5 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public interface ITextureImplProvider : IDisposableResourceImplProvider<Texture> {
-	XYPair<uint> GetDimensions(ResourceHandle<Texture> handle);
+	XYPair<int> GetDimensions(ResourceHandle<Texture> handle);
 }

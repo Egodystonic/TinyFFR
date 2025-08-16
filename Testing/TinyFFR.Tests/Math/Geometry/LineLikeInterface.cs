@@ -28,12 +28,12 @@ class LineLikeInterfaceTest {
 			else {
 				Assert.AreEqual(
 					expectation.Value.First,
-					ILineLike.CalculateUnboundedIntersectionDistanceOnThisLine(thisLine, otherLine),
+					ILineLike.CalculateUnboundedIntersectionDistanceOnThisLine(thisLine, otherLine)!.Value,
 					TestTolerance
 				);
 				Assert.AreEqual(
 					expectation.Value.Second,
-					ILineLike.CalculateUnboundedIntersectionDistanceOnThisLine(otherLine, thisLine),
+					ILineLike.CalculateUnboundedIntersectionDistanceOnThisLine(otherLine, thisLine)!.Value,
 					TestTolerance
 				);
 				var bothActual = ILineLike.CalculateUnboundedIntersectionDistancesOnBothLines(thisLine, otherLine)!;

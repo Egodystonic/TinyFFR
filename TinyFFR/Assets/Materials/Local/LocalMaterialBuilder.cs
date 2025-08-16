@@ -21,7 +21,7 @@ namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IDisposable {
-	readonly record struct TextureData(XYPair<uint> Dimensions);
+	readonly record struct TextureData(XYPair<int> Dimensions);
 	const string DefaultMaterialName = "Unnamed Material";
 	const string DefaultTextureName = "Unnamed Texture";
 	const string DefaultColorMapName = "Default Color Map";
@@ -49,7 +49,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		public TextureImplProvider(LocalMaterialBuilder owner) => _owner = owner;
 
-		public XYPair<uint> GetDimensions(ResourceHandle<Texture> handle) => _owner.GetDimensions(handle);
+		public XYPair<int> GetDimensions(ResourceHandle<Texture> handle) => _owner.GetDimensions(handle);
 		public string GetNameAsNewStringObject(ResourceHandle<Texture> handle) => _owner.GetNameAsNewStringObject(handle);
 		public int GetNameLength(ResourceHandle<Texture> handle) => _owner.GetNameLength(handle);
 		public void CopyName(ResourceHandle<Texture> handle, Span<char> destinationBuffer) => _owner.CopyName(handle, destinationBuffer);
@@ -154,7 +154,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		var handle = (ResourceHandle<Texture>) outHandle;
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultTextureName);
-		_loadedTextures.Add(handle, new(((uint) generationConfig.Width, (uint) generationConfig.Height)));
+		_loadedTextures.Add(handle, new((generationConfig.Width, generationConfig.Height)));
 		return HandleToInstance(handle);
 	}
 
@@ -275,7 +275,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		return result;
 	}
 
-	public XYPair<uint> GetDimensions(ResourceHandle<Texture> handle) {
+	public XYPair<int> GetDimensions(ResourceHandle<Texture> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _loadedTextures[handle].Dimensions;
 	}

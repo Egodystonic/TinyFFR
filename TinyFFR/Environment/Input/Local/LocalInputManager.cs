@@ -53,7 +53,10 @@ static unsafe class LocalInputManager {
 	public static void DecrementRefCount() {
 		_instanceRefCount--;
 		if (_instanceRefCount < 0) throw new InvalidOperationException("Erroneous live instance ref count decrement in input manager.");
-		else if (_instanceRefCount == 0) _liveInstance!.Dispose();
+		else if (_instanceRefCount == 0) {
+			_liveInstance!.Dispose();
+			_liveInstance = null;
+		}
 	}
 
 	#region Native Methods

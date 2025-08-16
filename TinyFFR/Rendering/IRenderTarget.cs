@@ -7,5 +7,5 @@ namespace Egodystonic.TinyFFR.Rendering;
 
 public interface IRenderTarget {
 	XYPair<int> ViewportOffset { get; }
-	XYPair<uint> ViewportDimensions { get; }
+	XYPair<int> ViewportDimensions { get; }
 }

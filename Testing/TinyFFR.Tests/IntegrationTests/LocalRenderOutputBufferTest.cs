@@ -23,14 +23,23 @@ class LocalRenderOutputBufferTest {
 		("purple", new(0.3f, 0f, 0.3f)),
 		("green", new(0.8f, 1f, 0.8f))
 	];
+	static string _screenshotsDir = null!;
+	static string _bitmapsDir = null!;
 
 	[SetUp]
 	public void SetUpTest() {
-		
+		_screenshotsDir = SetUpCleanTestDir("screenshots");
+		Console.WriteLine("Screenshots being written to " + _screenshotsDir);
+
+		_bitmapsDir = SetUpCleanTestDir("bitmaps");
+		Console.WriteLine("Bitmaps being written to " + _bitmapsDir);
 	}
 
 	[TearDown]
-	public void TearDownTest() { }
+	public void TearDownTest() {
+		Console.WriteLine("Screenshots were written to " + _screenshotsDir);
+		Console.WriteLine("Bitmaps were written to " + _bitmapsDir);
+	}
 
 	[Test]
 	public void Execute() {
@@ -38,7 +47,7 @@ class LocalRenderOutputBufferTest {
 		TestReadbacksAndBitmapWriting();
 	}
 
-	void TestRenderTargetAsTexture() {
+	unsafe void TestRenderTargetAsTexture() {
 		using var factory = new LocalTinyFfrFactory();
 		using var cubeMesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(null);
@@ -63,10 +72,10 @@ class LocalRenderOutputBufferTest {
 		using var renderBufferModel = factory.ObjectBuilder.CreateModelInstance(
 			cubeMesh,
 			renderBufferMat,
-			initialPosition: Location.Origin + Direction.Forward * 1.9f,
+			initialPosition: Location.Origin + Direction.Forward * 1.5f,
 			initialRotation: Direction.Up % 30f + Direction.Right % 14f
 		);
-		using var renderBuffer = factory.RendererBuilder.CreateRenderOutputBuffer((400, 400));
+		using var renderBuffer = factory.RendererBuilder.CreateRenderOutputBuffer((1024, 1024));
 		using var renderBufferScene = factory.SceneBuilder.CreateScene(includeBackdrop: true, backdropColor: StandardColor.Green);
 		renderBufferScene.Add(renderBufferModel);
 		using var renderBufferRenderer = factory.RendererBuilder.CreateRenderer(renderBufferScene, renderBufferCamera, renderBuffer);
@@ -79,7 +88,7 @@ class LocalRenderOutputBufferTest {
 		using var windowModel = factory.ObjectBuilder.CreateModelInstance(
 			cubeMesh,
 			windowMat,
-			initialPosition: Location.Origin + Direction.Forward * 1.5f
+			initialPosition: Location.Origin + Direction.Forward * 1.35f
 		);
 		using var windowCamera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
@@ -88,12 +97,24 @@ class LocalRenderOutputBufferTest {
 		using var windowRenderer = factory.RendererBuilder.CreateRenderer(windowScene, windowCamera, window);
 
 		loop.ResetTotalIteratedTime();
-		while (loop.TotalIteratedTime < TimeSpan.FromSeconds(5d)) {
+		while (loop.TotalIteratedTime < TimeSpan.FromSeconds(10d)) {
 			var dt = (float) loop.IterateOnce().TotalSeconds;
 			renderBufferModel.RotateBy(dt * (Direction.Down % 90f));
+			windowModel.RotateBy(dt * (Direction.Forward % 15f + Direction.Up % 45f));
 			renderBufferRenderer.Render();
 			windowRenderer.Render();
 		}
+
+		static void WriteRbbFnPtr(XYPair<int> dim, ReadOnlySpan<TexelRgb24> tex) => ImageUtils.SaveBitmap(Path.Combine(_screenshotsDir, "rbb_fnptr.bmp"), dim, tex);
+		static void WriteWindowFnPtr(XYPair<int> dim, ReadOnlySpan<TexelRgb24> tex) => ImageUtils.SaveBitmap(Path.Combine(_screenshotsDir, "window_fnptr.bmp"), dim, tex);
+
+		renderBufferRenderer.CaptureScreenshot(Path.Combine(_screenshotsDir, "rbb_direct.bmp"));
+		renderBufferRenderer.CaptureScreenshot((dim, tex) => ImageUtils.SaveBitmap(Path.Combine(_screenshotsDir, "rbb_delegate.bmp"), dim, tex));
+		renderBufferRenderer.CaptureScreenshot(&WriteRbbFnPtr);
+
+		windowRenderer.CaptureScreenshot(Path.Combine(_screenshotsDir, "window_direct.bmp"));
+		windowRenderer.CaptureScreenshot((dim, tex) => ImageUtils.SaveBitmap(Path.Combine(_screenshotsDir, "window_delegate.bmp"), dim, tex));
+		windowRenderer.CaptureScreenshot(&WriteWindowFnPtr);
 	}
 
 	void TestReadbacksAndBitmapWriting() {
@@ -124,8 +145,6 @@ class LocalRenderOutputBufferTest {
 		using var light = factory.LightBuilder.CreatePointLight(camera.Position);
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(null);
 
-		var bitmapDir = SetUpCleanTestDir("bitmaps");
-		Console.WriteLine("Bitmaps being written to " + bitmapDir);
 		var texelDumps = SceneColors.ToDictionary(tuple => tuple.Name, _ => new List<TexelRgb24[]>());
 		for (var frameBufferCount = 0; frameBufferCount <= RendererCreationConfig.MaxGpuSynchronizationFrameBufferCount; ++frameBufferCount) {
 			var scenes = SceneColors.ToDictionary(tuple => tuple.Name, tuple => {
@@ -143,7 +162,7 @@ class LocalRenderOutputBufferTest {
 						kvp.Value,
 						camera,
 						texelDumps[kvp.Key],
-						Path.Combine(bitmapDir, kvp.Key + "_wait_" + frameBufferCount + ".bmp"),
+						Path.Combine(_bitmapsDir, kvp.Key + "_wait_" + frameBufferCount + ".bmp"),
 						frameBufferCount,
 						waitExplicitly: true
 					);
@@ -153,7 +172,7 @@ class LocalRenderOutputBufferTest {
 						kvp.Value,
 						camera,
 						texelDumps[kvp.Key],
-						Path.Combine(bitmapDir, kvp.Key + "_cycle_" + frameBufferCount + ".bmp"),
+						Path.Combine(_bitmapsDir, kvp.Key + "_cycle_" + frameBufferCount + ".bmp"),
 						frameBufferCount,
 						waitExplicitly: false
 					);
@@ -167,7 +186,7 @@ class LocalRenderOutputBufferTest {
 		Console.WriteLine($"Comparing texel dumps (max diff = {PercentageUtils.ConvertFractionToPercentageString((float) MaxHslAverageDiffFraction, "N5")})");
 		foreach (var kvp in texelDumps) {
 			var list = kvp.Value;
-			foreach (var file in Directory.GetFiles(bitmapDir).Where(f => Path.GetFileName(f).StartsWith(kvp.Key, StringComparison.OrdinalIgnoreCase))) {
+			foreach (var file in Directory.GetFiles(_bitmapsDir).Where(f => Path.GetFileName(f).StartsWith(kvp.Key, StringComparison.OrdinalIgnoreCase))) {
 				var dump = new TexelRgb24[list[0].Length];
 				factory.AssetLoader.ReadTexture(file, dump.AsSpan());
 				list.Add(dump);
