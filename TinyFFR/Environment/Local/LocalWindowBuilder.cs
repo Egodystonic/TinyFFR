@@ -64,13 +64,13 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 	void ReadTitleFromWindow(ResourceHandle<Window> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
-		var maxSpanLength = _windowTitleBuffer.BufferLength;
+		var maxSpanLength = _windowTitleBuffer.Length;
 		var dest = maxSpanLength <= 1000 ? stackalloc char[maxSpanLength] : new char[maxSpanLength];
 
 		GetWindowTitle(
 			handle,
-			ref _windowTitleBuffer.BufferRef,
-			_windowTitleBuffer.BufferLength
+			ref _windowTitleBuffer.AsRef,
+			_windowTitleBuffer.Length
 		).ThrowIfFailure();
 
 		var numChars = _windowTitleBuffer.ConvertToUtf16(dest);
@@ -82,7 +82,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		_windowTitleBuffer.ConvertFromUtf16(src);
 		SetWindowTitle(
 			handle,
-			ref _windowTitleBuffer.BufferRef
+			ref _windowTitleBuffer.AsRef
 		).ThrowIfFailure();
 	}
 	public string GetTitleAsNewStringObject(ResourceHandle<Window> handle) {
@@ -108,7 +108,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		try {
 			SetWindowIcon(
 				handle,
-				ref _iconFilePathBuffer.BufferRef
+				ref _iconFilePathBuffer.AsRef
 			).ThrowIfFailure();
 		}
 		catch (Exception e) {

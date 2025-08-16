@@ -9,11 +9,15 @@ unsafe class ObjectPoolTest {
 	const int ArgPoolArg = 5;
 	ObjectPool<List<string>> _simplePool = null!;
 	ObjectPool<List<string>, int> _argPool = null!;
+	VectorPool<string> _vectorPool = null!;
+	MapPool<string, string> _mapPool = null!;
 
 	[SetUp]
 	public void SetUpTest() {
 		_simplePool = new(&DefaultCreateNewListMethod, InitialPoolCount);
 		_argPool = new(&ArgCreateNewListMethod, ArgPoolArg, InitialPoolCount);
+		_vectorPool = new(true, &CreateNewVectorMethod);
+		_mapPool = new(true, &CreateNewMapMethod);
 	}
 
 	[TearDown]
@@ -28,6 +32,16 @@ unsafe class ObjectPoolTest {
 	static List<string> ArgCreateNewListMethod(int arg) {
 		var result = new List<string>();
 		for (var i = 0; i < arg; ++i) result.Add(new String('a', i));
+		return result;
+	}
+	static ArrayPoolBackedVector<string> CreateNewVectorMethod() {
+		var result = new ArrayPoolBackedVector<string>();
+		for (var i = 0; i < 10; ++i) result.Add(i.ToString());
+		return result;
+	}
+	static ArrayPoolBackedMap<string, string> CreateNewMapMethod() {
+		var result = new ArrayPoolBackedMap<string, string>();
+		for (var i = 0; i < 10; ++i) result.Add(i + "key", i + "val");
 		return result;
 	}
 
@@ -87,6 +101,42 @@ unsafe class ObjectPoolTest {
 				argList.Add("a");
 				rentedBuffersFromArgPool.Add(argList);
 			}
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyCreateAndClearVectors() {
+		var rentedObjects = new List<ArrayPoolBackedVector<string>>();
+
+		for (var i = 0; i < 100; ++i) {
+			var v = _vectorPool.Rent();
+			Assert.AreEqual(10, v.Count);
+			rentedObjects.Add(v);
+		}
+
+		foreach (var r in rentedObjects) _vectorPool.Return(r);
+
+		for (var i = 0; i < 100; ++i) {
+			var v = _vectorPool.Rent();
+			Assert.AreEqual(0, v.Count);
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyCreateAndClearMaps() {
+		var rentedObjects = new List<ArrayPoolBackedMap<string, string>>();
+
+		for (var i = 0; i < 100; ++i) {
+			var v = _mapPool.Rent();
+			Assert.AreEqual(10, v.Count);
+			rentedObjects.Add(v);
+		}
+
+		foreach (var r in rentedObjects) _mapPool.Return(r);
+
+		for (var i = 0; i < 100; ++i) {
+			var v = _mapPool.Rent();
+			Assert.AreEqual(0, v.Count);
 		}
 	}
 }

@@ -77,7 +77,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		try {
 			_assetFilePathBuffer.ConvertFromUtf16(readConfig.FilePath);
 			LoadTextureFileInToMemory(
-				in _assetFilePathBuffer.BufferRef,
+				in _assetFilePathBuffer.AsRef,
 				readConfig.IncludeWAlphaChannel,
 				out var width,
 				out var height,
@@ -119,7 +119,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		try {
 			_assetFilePathBuffer.ConvertFromUtf16(readConfig.FilePath);
 			LoadTextureFileInToMemory(
-				in _assetFilePathBuffer.BufferRef,
+				in _assetFilePathBuffer.AsRef,
 				readConfig.IncludeWAlphaChannel,
 				out var width,
 				out var height,
@@ -151,7 +151,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		try {
 			_assetFilePathBuffer.ConvertFromUtf16(readConfig.FilePath);
 			LoadTextureFileInToMemory(
-				in _assetFilePathBuffer.BufferRef,
+				in _assetFilePathBuffer.AsRef,
 				includeWChannel,
 				out var width,
 				out var height,
@@ -265,7 +265,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		try {
 			_assetFilePathBuffer.ConvertFromUtf16(readConfig.FilePath);
 			LoadAssetFileInToMemory(
-				in _assetFilePathBuffer.BufferRef,
+				in _assetFilePathBuffer.AsRef,
 				readConfig.FixCommonExportErrors,
 				readConfig.OptimizeForGpu,
 				out var assetHandle
@@ -329,7 +329,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		try {
 			_assetFilePathBuffer.ConvertFromUtf16(readConfig.FilePath);
 			LoadAssetFileInToMemory(
-				in _assetFilePathBuffer.BufferRef,
+				in _assetFilePathBuffer.AsRef,
 				readConfig.FixCommonExportErrors,
 				readConfig.OptimizeForGpu,
 				out var assetHandle
@@ -368,7 +368,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		try {
 			_assetFilePathBuffer.ConvertFromUtf16(readConfig.FilePath);
 			LoadAssetFileInToMemory(
-				in _assetFilePathBuffer.BufferRef,
+				in _assetFilePathBuffer.AsRef,
 				readConfig.FixCommonExportErrors,
 				readConfig.OptimizeForGpu,
 				out var assetHandle

@@ -46,7 +46,7 @@ public static class ImageUtils {
 			File.Delete(filePathStr);
 		}
 		catch (Exception e) {
-			throw new InvalidOperationException($"Could not access file at '{filePathStr}' due to an IO error.", e);
+			throw new IOException($"Could not access file at '{filePathStr}' due to an IO error.", e);
 		}
 
 		var interopStringBuffer = _threadLocalStringBuffer.Value!;
@@ -59,7 +59,7 @@ public static class ImageUtils {
 		if (dataContainsAlpha == config.IncludeAlphaChannel && !reverseVertical && !reverseHorizontal) {
 			fixed (TTexel* dataPtr = texels) {
 				WriteTexelsToDisk(
-					in interopStringBuffer.BufferRef,
+					in interopStringBuffer.AsRef,
 					dimensions.X,
 					dimensions.Y,
 					TTexel.SerializationByteSpanLength,
@@ -72,10 +72,9 @@ public static class ImageUtils {
 		// Otherwise we need to manipulate the data first before passing it
 		static void CopyAlreadyCorrectBlitType<T>(XYPair<int> size, ReadOnlySpan<T> src, Span<T> dest, bool reverseVertical, bool reverseHorizontal) {
 			switch ((reverseHorizontal, reverseVertical)) {
-				case (true, false): {
-					var ySizeLessOne = size.Y - 1;
+				case (false, true): {
 					for (var y = 0; y < size.Y; ++y) {
-						src[(y * size.X)..((y + 1) * size.X)].CopyTo(dest[((ySizeLessOne - (y + 1)) * size.X)..((ySizeLessOne - y) * size.X)]);
+						src[(y * size.X)..((y + 1) * size.X)].CopyTo(dest[((size.Y - (y + 1)) * size.X)..((size.Y - y) * size.X)]);
 					}
 					break;
 				}
@@ -91,7 +90,7 @@ public static class ImageUtils {
 					}
 					break;
 				}
-				case (false, true): {
+				case (true, false): {
 					var xSizeLessOne = size.X - 1;
 					for (var y = 0; y < size.Y; ++y) {
 						var rowStart = y * size.X;
@@ -158,7 +157,7 @@ public static class ImageUtils {
 
 			fixed (byte* dataPtr = dataBuffer.AsSpan()) {
 				WriteTexelsToDisk(
-					in interopStringBuffer.BufferRef,
+					in interopStringBuffer.AsRef,
 					dimensions.X,
 					dimensions.Y,
 					bytesPerTexel,

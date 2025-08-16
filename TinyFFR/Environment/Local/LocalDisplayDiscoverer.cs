@@ -62,8 +62,8 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 
 			GetDisplayName(
 				handle,
-				ref nameBuffer.BufferRef,
-				nameBuffer.BufferLength
+				ref nameBuffer.AsRef,
+				nameBuffer.Length
 			).ThrowIfFailure();
 			var nameLen = nameBuffer.ConvertToUtf16(nameBufferUtf16);
 			var name = new String(nameBufferUtf16[..nameLen]);
