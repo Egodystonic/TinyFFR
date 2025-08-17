@@ -34,8 +34,8 @@ public:
 	static void dispose_index_buffer(IndexBufferHandle buffer);
 	static void calculate_tangent_rotation(float3 tangent, float3 bitangent, float3 normal, float4* outRotation);
 
-	static void load_texture_rgb_24(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, TextureHandle* outTexture);
-	static void load_texture_rgba_32(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, TextureHandle* outTexture);
+	static void load_texture_rgb_24(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, interop_bool isLinearColorspace, TextureHandle* outTexture);
+	static void load_texture_rgba_32(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, interop_bool isLinearColorspace, TextureHandle* outTexture);
 	static void dispose_texture(TextureHandle texture);
 
 	static void load_shader_package(void* dataPtr, int32_t dataLen, PackageHandle* outHandle);

@@ -77,7 +77,7 @@ StartExportedFunc(calculate_tangent_rotation, float3 tangent, float3 bitangent, 
 	EndExportedFunc
 }
 
-void native_impl_render_assets::load_texture_rgb_24(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, TextureHandle* outTexture) {
+void native_impl_render_assets::load_texture_rgb_24(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, interop_bool isLinearColorspace, TextureHandle* outTexture) {
 	ThrowIfNull(dataPtr, "Data pointer was null.");
 	ThrowIfNegative(dataLen, "Data length was negative.");
 	ThrowIfNull(outTexture, "Out texture pointer was null.");
@@ -94,25 +94,25 @@ void native_impl_render_assets::load_texture_rgb_24(BufferIdentity bufferIdentit
 
 	*outTexture = Texture::Builder()
 		.depth(1)
-		.format(Texture::InternalFormat::RGB8) // Specifies the format the data is stored as internally on the GPU
+		.format(isLinearColorspace ? Texture::InternalFormat::RGB8 : Texture::InternalFormat::SRGB8) // Specifies the format the data is stored as internally on the GPU
 		.height(height)
-		.levels(generateMipMaps ? 1 : 0xFF)
+		.levels(generateMipMaps ? 0xFF : 1)
 		.sampler(Texture::Sampler::SAMPLER_2D)
 		.usage(Texture::Usage::DEFAULT)
 		.width(width)
 		.build(*filament_engine);
-	ThrowIfNull(*outTexture, "Could not load tetxure.");
+	ThrowIfNull(*outTexture, "Could not load texture.");
 
 	(*outTexture)->setImage(*filament_engine, 0, std::move(imageBuffer));
 	if (!generateMipMaps) return;
 	(*outTexture)->generateMipmaps(*filament_engine);
 }
-StartExportedFunc(load_texture_rgb_24, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, TextureHandle* outTexture) {
-	native_impl_render_assets::load_texture_rgb_24(bufferIdentity, dataPtr, dataLen, width, height, generateMipMaps, outTexture);
+StartExportedFunc(load_texture_rgb_24, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, interop_bool isLinearColorspace, TextureHandle* outTexture) {
+	native_impl_render_assets::load_texture_rgb_24(bufferIdentity, dataPtr, dataLen, width, height, generateMipMaps, isLinearColorspace, outTexture);
 	EndExportedFunc
 }
 
-void native_impl_render_assets::load_texture_rgba_32(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, TextureHandle* outTexture) {
+void native_impl_render_assets::load_texture_rgba_32(BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, interop_bool isLinearColorspace, TextureHandle* outTexture) {
 	ThrowIfNull(dataPtr, "Data pointer was null.");
 	ThrowIfNegative(dataLen, "Data length was negative.");
 	ThrowIfNull(outTexture, "Out texture pointer was null.");
@@ -129,21 +129,21 @@ void native_impl_render_assets::load_texture_rgba_32(BufferIdentity bufferIdenti
 
 	*outTexture = Texture::Builder()
 		.depth(1)
-		.format(Texture::InternalFormat::RGBA8)
+		.format(isLinearColorspace ? Texture::InternalFormat::RGBA8 : Texture::InternalFormat::SRGB8_A8)
 		.height(height)
-		.levels(generateMipMaps ? 1 : 0xFF)
+		.levels(generateMipMaps ? 0xFF : 1)
 		.sampler(Texture::Sampler::SAMPLER_2D)
 		.usage(Texture::Usage::DEFAULT)
 		.width(width)
 		.build(*filament_engine);
-	ThrowIfNull(*outTexture, "Could not load tetxure.");
+	ThrowIfNull(*outTexture, "Could not load texture.");
 
 	(*outTexture)->setImage(*filament_engine, 0, std::move(imageBuffer));
 	if (!generateMipMaps) return;
 	(*outTexture)->generateMipmaps(*filament_engine);
 }
-StartExportedFunc(load_texture_rgba_32, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, TextureHandle* outTexture) {
-	native_impl_render_assets::load_texture_rgba_32(bufferIdentity, dataPtr, dataLen, width, height, generateMipMaps, outTexture);
+StartExportedFunc(load_texture_rgba_32, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t width, uint32_t height, interop_bool generateMipMaps, interop_bool isLinearColorspace, TextureHandle* outTexture) {
+	native_impl_render_assets::load_texture_rgba_32(bufferIdentity, dataPtr, dataLen, width, height, generateMipMaps, isLinearColorspace, outTexture);
 	EndExportedFunc
 }
 

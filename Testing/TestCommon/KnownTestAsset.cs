@@ -9,7 +9,10 @@ public enum KnownTestAsset {
 	CrateAlbedoTex,
 	CrateNormalTex,
 	CrateSpecularTex,
-	CloudsHdr
+	CloudsHdr,
+	BrickAlbedoTex,
+	BrickNormalTex,
+	BrickOrmTex
 }
 
 public static class KnownTestAssetExtensions {
@@ -21,6 +24,9 @@ public static class KnownTestAssetExtensions {
 			KnownTestAsset.CrateNormalTex => "ELCrate_Normal.png",
 			KnownTestAsset.CrateSpecularTex => "ELCrate_Specular.png",
 			KnownTestAsset.CloudsHdr => "kloofendal_48d_partly_cloudy_puresky_4k.hdr",
+			KnownTestAsset.BrickAlbedoTex => "brickwalltextures/brick_wall_001_diffuse_2k.jpg",
+			KnownTestAsset.BrickNormalTex => "brickwalltextures/brick_wall_001_nor_gl_2k.jpg",
+			KnownTestAsset.BrickOrmTex => "brickwalltextures/brick_wall_001_arm_2k.jpg",
 			_ => throw new ArgumentOutOfRangeException(nameof(@this), @this, "Unknown test asset.")
 		};
 	}

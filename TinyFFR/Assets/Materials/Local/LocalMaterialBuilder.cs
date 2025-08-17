@@ -134,6 +134,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 					(uint) generationConfig.Width,
 					(uint) generationConfig.Height,
 					config.GenerateMipMaps,
+					config.IsLinearColorspace,
 					out outHandle
 				).ThrowIfFailure();
 				break;
@@ -145,6 +146,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 					(uint) generationConfig.Width,
 					(uint) generationConfig.Height,
 					config.GenerateMipMaps,
+					config.IsLinearColorspace,
 					out outHandle
 				).ThrowIfFailure();
 				break;
@@ -392,6 +394,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		uint width,
 		uint height,
 		InteropBool generateMipmaps,
+		InteropBool isLinearColorspace,
 		out UIntPtr outTextureHandle
 	);
 
@@ -403,6 +406,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		uint width,
 		uint height,
 		InteropBool generateMipmaps,
+		InteropBool isLinearColorspace,
 		out UIntPtr outTextureHandle
 	);
 

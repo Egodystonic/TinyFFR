@@ -14,14 +14,15 @@ public interface IAssetLoader {
 	IMeshBuilder MeshBuilder { get; }
 	IMaterialBuilder MaterialBuilder { get; }
 
-	Texture LoadTexture(ReadOnlySpan<char> filePath, bool includeWAlphaChannel = false, ReadOnlySpan<char> name = default) {
+	Texture LoadTexture(ReadOnlySpan<char> filePath, bool includeWAlphaChannel = false, bool isLinearColorspace = true, ReadOnlySpan<char> name = default) {
 		return LoadTexture(
 			new TextureReadConfig {
 				FilePath = filePath,
 				IncludeWAlphaChannel = includeWAlphaChannel
 			},
 			new TextureCreationConfig {
-				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
+				Name = name.IsEmpty ? Path.GetFileName(filePath) : name,
+				IsLinearColorspace = isLinearColorspace
 			}
 		);
 	}

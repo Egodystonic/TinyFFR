@@ -31,6 +31,7 @@ public readonly ref struct TextureCreationConfig {
 	public bool InvertYGreenChannel { get; init; } = false;
 	public bool InvertZBlueChannel { get; init; } = false;
 	public bool InvertWAlphaChannel { get; init; } = false;
+	public bool IsLinearColorspace { get; init; } = true;
 	public ReadOnlySpan<char> Name { get; init; }
 
 	public TextureCreationConfig() { }

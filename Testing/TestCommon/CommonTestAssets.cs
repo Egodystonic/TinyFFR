@@ -29,8 +29,8 @@ public static class CommonTestAssets {
 			if (_preFoundAssetFolder == null) throw new InvalidOperationException($"Could not find {AssetFolderName}.");
 
 			_preMappedAssetDict = new();
-			foreach (var file in Directory.GetFiles(_preFoundAssetFolder)) {
-				_preMappedAssetDict.Add(Path.GetFileName(file), file);
+			foreach (var file in Directory.GetFiles(_preFoundAssetFolder, "*.*", SearchOption.AllDirectories)) {
+				_preMappedAssetDict.Add(Path.GetRelativePath(_preFoundAssetFolder, file).Replace('\\', '/'), file);
 			}
 
 			return _preFoundAssetFolder;
@@ -38,6 +38,8 @@ public static class CommonTestAssets {
 	}
 
 	public static string FindAsset(string filename) {
+		filename = filename.Replace('\\', '/');
+
 		lock (_staticMutationLock) {
 			if (_preMappedAssetDict == null) _ = FindAssetFolder();
 
