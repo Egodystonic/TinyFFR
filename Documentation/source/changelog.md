@@ -19,6 +19,7 @@ search:
 ### Bug Fixes
 
 * Fixed an issue where attempting to add model instances or light objects that were previously added to a now-disposed scene to a new scene would not actually add them.
+* Fixed an issue where mipmaps were not being generated even when requested
 
 ## 0.3
 

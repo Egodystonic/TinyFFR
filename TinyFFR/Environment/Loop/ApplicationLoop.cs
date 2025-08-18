@@ -24,6 +24,11 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IA
 		get => Implementation.GetInputStateProvider(_handle);
 	}
 
+	public TimeSpan DesiredIterationInterval {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetDesiredIterationInterval(_handle);
+	}
+
 	internal ApplicationLoop(ResourceHandle<ApplicationLoop> handle, IApplicationLoopImplProvider impl) {
 		ArgumentNullException.ThrowIfNull(impl);
 		_handle = handle;
