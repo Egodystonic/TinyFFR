@@ -1,7 +1,7 @@
 ﻿// Created on 2025-08-17 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
-using System.Runtime.InteropServices;
+using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -13,54 +13,53 @@ using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.World;
 
-namespace TinyFFR.Avalonia;
+namespace Egodystonic.TinyFFR.Avalonia;
 
 public class TinyFfrSceneView : Control {
 	readonly IPen _noRenderPen = new Pen(new SolidColorBrush(new Color(255, 0, 0, 0), 1d));
-	readonly Func<bool> _iterateRendererFunc;
-	Action<TimeSpan>? _preFrameRender;
-	Action<TimeSpan>? _postFrameRender;
 	WriteableBitmap? _bitmap;
-	RenderOutputBuffer? _outputBuffer;
-	Renderer? _renderer;
-	IDisposable? _tickTimerDisposable;
 
-	public static readonly StyledProperty<ApplicationLoop?> LoopProperty = AvaloniaProperty.Register<TinyFfrSceneView, ApplicationLoop?>(nameof(Loop), null);
-	public static readonly StyledProperty<Scene?> SceneProperty = AvaloniaProperty.Register<TinyFfrSceneView, Scene?>(nameof(Scene), null);
-	public static readonly StyledProperty<Camera?> CameraProperty = AvaloniaProperty.Register<TinyFfrSceneView, Camera?>(nameof(Camera), null);
-	public static readonly StyledProperty<IRendererBuilder?> RendererBuilderProperty = AvaloniaProperty.Register<TinyFfrSceneView, IRendererBuilder?>(nameof(RendererBuilder), null);
+	public static readonly StyledProperty<Renderer?> RendererProperty = AvaloniaProperty.Register<TinyFfrSceneView, Renderer?>(nameof(Renderer), null); // TODO validation
 
-	public event Action<TimeSpan> PreFrameRender {
-		add => _preFrameRender += value;
-		remove => _preFrameRender -= value;
-	}
-	public event Action<TimeSpan> PostFrameRender {
-		add => _postFrameRender += value;
-		remove => _postFrameRender -= value;
-	}
-
-	public ApplicationLoop? Loop {
-		get => GetValue(LoopProperty);
-		set => SetValue(LoopProperty, value);
-	}
-
-	public Scene? Scene {
-		get => GetValue(SceneProperty);
-		set => SetValue(SceneProperty, value);
-	}
-
-	public Camera? Camera {
-		get => GetValue(CameraProperty);
-		set => SetValue(CameraProperty, value);
-	}
-
-	public IRendererBuilder? RendererBuilder {
-		get => GetValue(RendererBuilderProperty);
-		set => SetValue(RendererBuilderProperty, value);
+	public Renderer? Renderer {
+		get => GetValue(RendererProperty);
+		set => SetValue(RendererProperty, value);
 	}
 
 	public TinyFfrSceneView() {
 		_iterateRendererFunc = IterateRenderer;
+	}
+
+	public unsafe void WriteFrame(XYPair<int> dimensions, ReadOnlySpan<TexelRgb24> texels) {
+		if (_bitmap == null || _bitmap.PixelSize.Width != dimensions.X || _bitmap.PixelSize.Height != dimensions.Y) {
+			_bitmap?.Dispose();
+			_bitmap = new WriteableBitmap(
+				new PixelSize(dimensions.X, dimensions.Y),
+				new Vector(96d, 96d),
+				PixelFormats.Rgb24,
+				AlphaFormat.Opaque
+			);
+		}
+
+		using var lockedBuffer = _bitmap.Lock();
+		if (lockedBuffer.Format != PixelFormats.Rgb24
+			|| lockedBuffer.Size.Width != dimensions.X
+			|| lockedBuffer.Size.Height != dimensions.Y
+			|| lockedBuffer.RowBytes != dimensions.X * TexelRgb24.TexelSizeBytes) {
+			throw new InvalidOperationException("Write to locked buffer failed safety check.");
+		}
+		var destAsSpan = new Span<TexelRgb24>((void*) lockedBuffer.Address, dimensions.Area);
+		texels.CopyTo(destAsSpan);
+
+		InvalidateVisual();
+	}
+
+	public void RenderFrame(TimeSpan? deltaTime = null) {
+		if (_renderer is not { } renderer) return;
+
+		_preFrameRender?.Invoke(deltaTime);
+		renderer.Render();
+		_postFrameRender?.Invoke(deltaTime);
 	}
 
 	public override void Render(DrawingContext context) {
@@ -75,15 +74,8 @@ public class TinyFfrSceneView : Control {
 	}
 
 	bool IterateRenderer() {
-		if (Loop is not { } loop
-			|| _renderer is not { } renderer) {
-			return false;
-		}
-
-		if (!loop.TryIterateOnce(out var dt)) return true;
-		_preFrameRender?.Invoke(dt);
-		renderer.Render();
-		_postFrameRender?.Invoke(dt);
+		if (Loop is not { } loop) return false;
+		if (loop.TryIterateOnce(out var dt)) RenderFrame(dt);
 		return true;
 	}
 
@@ -142,6 +134,7 @@ public class TinyFfrSceneView : Control {
 
 	protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change) {
 		base.OnPropertyChanged(change);
+		// TODO handle renderer changed
 		if (change.Property != IsVisibleProperty) return;
 		RecreateRendererAccordingToProperties();
 	}

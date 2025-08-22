@@ -10,6 +10,9 @@
     <Project Path="Integrations/TinyFFR.Avalonia/TinyFFR.Avalonia.csproj" Id="c766b289-b94d-4f56-a55f-77005c1098d5">
       <BuildType Solution="Optimized|*" Project="Release" />
     </Project>
+    <Project Path="Integrations/TinyFFR.Integrations.Common/TinyFFR.Integrations.Common.csproj" Id="789fc824-141f-4b7a-8959-f389f704e7e1">
+      <BuildType Solution="Optimized|*" Project="Release" />
+    </Project>
   </Folder>
   <Folder Name="/Publishing/">
     <Project Path="Publishing/TinyFFR.NuGet/TinyFFR.NuGet.csproj" Id="1087b2c9-d4b1-4b1b-ad1a-72ce291aa3d5">

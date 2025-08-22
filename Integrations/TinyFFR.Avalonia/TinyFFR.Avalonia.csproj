@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>Egodystonic.TinyFFR.Avalonia</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,6 +14,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\TinyFFR\TinyFFR.csproj" />
+
+    <ProjectReference Include="..\TinyFFR.Integrations.Common\TinyFFR.Integrations.Common.csproj">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </ProjectReference>
   </ItemGroup>
 
 </Project>
