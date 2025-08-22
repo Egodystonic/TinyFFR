@@ -2,20 +2,21 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System.Buffers.Binary;
+using System.Reflection;
 
 namespace Egodystonic.TinyFFR;
 
 static class ByteSpanSerializationTestUtils {
 	public static void AssertSpanRoundTripConversion<T>(params T[] inputs) where T : IByteSpanSerializable<T> {
-		var span = new byte[T.SerializationByteSpanLength];
 		foreach (var input in inputs) {
+			var span = new byte[T.GetSerializationByteSpanLength(input)];
 			T.SerializeToBytes(span, input);
 			Assert.AreEqual(input, T.DeserializeFromBytes(span));
 		}
 	}
 
 	public static void AssertDeclaredSpanLength<T>(T sampleItem) where T : IByteSpanSerializable<T> {
-		var span = new byte[T.SerializationByteSpanLength];
+		var span = new byte[T.GetSerializationByteSpanLength(sampleItem)];
 		Assert.DoesNotThrow(() => T.SerializeToBytes(span, sampleItem));
 
 		var spanCopy = new byte[span.Length];
@@ -29,11 +30,14 @@ static class ByteSpanSerializationTestUtils {
 		Assert.AreEqual(sampleItem, T.DeserializeFromBytes(span));
 	}
 
-	public static void AssertDeclaredSpanLength<T>() where T : struct, IByteSpanSerializable<T> => AssertDeclaredSpanLength(default(T));
+	public static void AssertDeclaredSpanLength<T>() where T : struct, IFixedLengthByteSpanSerializable<T> {
+		AssertDeclaredSpanLength(default(T));
+		Assert.AreEqual(T.SerializationByteSpanLength, T.GetSerializationByteSpanLength(default));
+	}
 
 	public static void AssertBytes<T>(T sampleItem, params byte[] expectation) where T : IByteSpanSerializable<T> {
-		Assert.AreEqual(expectation.Length, T.SerializationByteSpanLength);
-		var span = new byte[T.SerializationByteSpanLength];
+		Assert.AreEqual(expectation.Length, T.GetSerializationByteSpanLength(sampleItem));
+		var span = new byte[T.GetSerializationByteSpanLength(sampleItem)];
 		T.SerializeToBytes(span, sampleItem);
 		Assert.IsTrue(span.SequenceEqual(expectation));
 		Assert.AreEqual(sampleItem, T.DeserializeFromBytes(expectation));

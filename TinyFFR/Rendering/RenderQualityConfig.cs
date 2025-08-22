@@ -11,6 +11,6 @@ public enum Quality {
 	VeryHigh = 2
 }
 
-public readonly record struct RenderQualityConfig {
+public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityConfig> {
 	public Quality ShadowQuality { get; init; }
 }

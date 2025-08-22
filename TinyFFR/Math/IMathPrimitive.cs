@@ -9,7 +9,7 @@ public interface IMathPrimitive : ISpanFormattable {
 
 public interface IMathPrimitive<TSelf> : IMathPrimitive, 
 	ISpanParsable<TSelf>, 
-	IByteSpanSerializable<TSelf>,
+	IFixedLengthByteSpanSerializable<TSelf>,
 	IToleranceEquatable<TSelf>, 
 	IEqualityOperators<TSelf, TSelf, bool>,
 	IRandomizable<TSelf>

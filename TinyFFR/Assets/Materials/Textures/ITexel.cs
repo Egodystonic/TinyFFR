@@ -17,7 +17,7 @@ public interface ITexel {
 	static abstract TexelType BlitType { get; }
 	static abstract int ChannelCount { get; }
 }
-public interface ITexel<TSelf> : ITexel, IByteSpanSerializable<TSelf> where TSelf : unmanaged, ITexel<TSelf> {
+public interface ITexel<TSelf> : ITexel, IFixedLengthByteSpanSerializable<TSelf> where TSelf : unmanaged, ITexel<TSelf> {
 	TSelf WithInvertedChannelIfPresent(int channelIndex);
 }
 public interface IConversionSupplyingTexel<TSelf, in TOther> : ITexel<TSelf> where TSelf : unmanaged, IConversionSupplyingTexel<TSelf, TOther> {
@@ -34,9 +34,9 @@ public interface IFourChannelTexel<TSelf, out TChannel> : ITexel<TSelf, TChannel
 }
 public interface IThreeByteChannelTexel<TSelf> : IThreeChannelTexel<TSelf, byte> where TSelf : unmanaged, IThreeByteChannelTexel<TSelf> {
 	static TexelType ITexel.BlitType => TexelType.Rgb24;
-	static int IByteSpanSerializable<TSelf>.SerializationByteSpanLength => 3;
+	static int IFixedLengthByteSpanSerializable<TSelf>.SerializationByteSpanLength => 3;
 }
 public interface IFourByteChannelTexel<TSelf> : IFourChannelTexel<TSelf, byte> where TSelf : unmanaged, IFourByteChannelTexel<TSelf> {
 	static TexelType ITexel.BlitType => TexelType.Rgba32;
-	static int IByteSpanSerializable<TSelf>.SerializationByteSpanLength => 4;
+	static int IFixedLengthByteSpanSerializable<TSelf>.SerializationByteSpanLength => 4;
 }
