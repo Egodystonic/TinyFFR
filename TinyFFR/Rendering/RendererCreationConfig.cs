@@ -56,7 +56,7 @@ public readonly ref struct RendererCreationConfig : IConfigStruct<RendererCreati
 		SerializationWrite(ref dest, src.Quality);
 		SerializationWrite(ref dest, src.Name);
 	}
-	public static RendererCreationConfig DeserializeFromBytes(ReadOnlySpan<byte> src) {
+	public static RendererCreationConfig ConvertFromHeapStorable(ReadOnlySpan<byte> src) {
 		return new() {
 			AutoUpdateCameraAspectRatio = SerializationReadBool(ref src),
 			GpuSynchronizationFrameBufferCount = SerializationReadInt(ref src),
