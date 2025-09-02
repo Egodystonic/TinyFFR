@@ -17,7 +17,7 @@ public interface IConfigStruct {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	protected static int SerializationSizeOf<T>(T _) where T : IFixedLengthByteSpanSerializable<T> => T.SerializationByteSpanLength;
 	protected static int SerializationSizeOf(ReadOnlySpan<char> v) => SerializationFieldCountSizeBytes + v.Length * sizeof(char);
-	protected static int SerializationSizeOf<T>(scoped in T v) where T : struct, IConfigStruct<T> => SerializationFieldCountSizeBytes + T.GetHeapStorableLength(v);
+	protected static int SerializationSizeOf<T>(scoped in T v) where T : struct, IConfigStruct<T> => SerializationFieldCountSizeBytes + T.GetHeapStorageFormattedLength(v);
 
 	protected static void SerializationWrite(scoped ref Span<byte> dest, float v) {
 		BinaryPrimitives.WriteSingleLittleEndian(dest, v);
@@ -42,9 +42,9 @@ public interface IConfigStruct {
 		dest = dest[(sizeof(int) + numBytesWritten)..];
 	}
 	protected static void SerializationWrite<T>(scoped ref Span<byte> dest, scoped in T v) where T : struct, IConfigStruct<T> {
-		var byteCount = T.GetHeapStorableLength(v);
+		var byteCount = T.GetHeapStorageFormattedLength(v);
 		BinaryPrimitives.WriteInt32LittleEndian(dest, byteCount);
-		T.ConvertToHeapStorable(dest[sizeof(int)..], v);
+		T.ConvertToHeapStorageFormat(dest[sizeof(int)..], v);
 		dest = dest[(sizeof(int) + byteCount)..];
 	}
 
@@ -78,13 +78,13 @@ public interface IConfigStruct {
 	protected static T SerializationReadSubConfig<T>(scoped ref ReadOnlySpan<byte> src) where T : struct, IConfigStruct<T> {
 		var byteCount = BinaryPrimitives.ReadInt32LittleEndian(src);
 		var cfgEnd = (sizeof(int) + byteCount);
-		var result = T.ConvertFromHeapStorable(src[sizeof(int)..cfgEnd]);
+		var result = T.ConvertFromHeapStorageFormat(src[sizeof(int)..cfgEnd]);
 		src = src[cfgEnd..];
 		return result;
 	}
 }
 public interface IConfigStruct<TSelf> : IConfigStruct where TSelf : struct, IConfigStruct<TSelf>, allows ref struct {
-	static abstract int GetHeapStorableLength(in TSelf src);
-	static abstract void ConvertToHeapStorable(Span<byte> dest, in TSelf src);
-	static abstract TSelf ConvertFromHeapStorable(ReadOnlySpan<byte> src);
+	static abstract int GetHeapStorageFormattedLength(in TSelf src);
+	static abstract void ConvertToHeapStorageFormat(Span<byte> dest, in TSelf src);
+	static abstract TSelf ConvertFromHeapStorageFormat(ReadOnlySpan<byte> src);
 }

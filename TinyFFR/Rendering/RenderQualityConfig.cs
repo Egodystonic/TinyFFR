@@ -15,13 +15,13 @@ public enum Quality {
 public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityConfig> {
 	public Quality ShadowQuality { get; init; }
 
-	public static int GetHeapStorableLength(in RenderQualityConfig src) {
+	public static int GetHeapStorageFormattedLength(in RenderQualityConfig src) {
 		return SerializationSizeOf((int) src.ShadowQuality);
 	}
-	public static void ConvertToHeapStorable(Span<byte> dest, in RenderQualityConfig src) {
+	public static void ConvertToHeapStorageFormat(Span<byte> dest, in RenderQualityConfig src) {
 		SerializationWrite(ref dest, (int) src.ShadowQuality);
 	}
-	public static RenderQualityConfig ConvertFromHeapStorable(ReadOnlySpan<byte> src) {
+	public static RenderQualityConfig ConvertFromHeapStorageFormat(ReadOnlySpan<byte> src) {
 		return new() {
 			ShadowQuality = (Quality) SerializationReadInt(ref src)
 		};
