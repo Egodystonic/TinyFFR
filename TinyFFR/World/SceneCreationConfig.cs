@@ -31,7 +31,7 @@ public readonly ref struct SceneCreationConfig : IConfigStruct<SceneCreationConf
 	public static SceneCreationConfig ConvertFromHeapStorageFormat(ReadOnlySpan<byte> src) {
 		return new SceneCreationConfig {
 			Name = SerializationReadString(ref src),
-			InitialBackdropColor = SerializationReadBool(ref src) ? SerializationRead<ColorVect>(ref src) : default
+			InitialBackdropColor = SerializationReadBool(ref src) ? SerializationRead<ColorVect>(ref src) : null
 		};
 	}
 }

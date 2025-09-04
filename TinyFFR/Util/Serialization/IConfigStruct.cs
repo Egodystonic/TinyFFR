@@ -17,7 +17,7 @@ public interface IConfigStruct {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	protected static int SerializationSizeOf<T>(T _) where T : IFixedLengthByteSpanSerializable<T> => T.SerializationByteSpanLength;
 	protected static int SerializationSizeOf(ReadOnlySpan<char> v) => SerializationFieldCountSizeBytes + v.Length * sizeof(char);
-	protected static int SerializationSizeOf<T>(scoped in T v) where T : struct, IConfigStruct<T> => SerializationFieldCountSizeBytes + T.GetHeapStorageFormattedLength(v);
+	protected static int SerializationSizeOf<T>(scoped in T v) where T : struct, IConfigStruct<T>, allows ref struct => SerializationFieldCountSizeBytes + T.GetHeapStorageFormattedLength(v);
 
 	protected static void SerializationWrite(scoped ref Span<byte> dest, float v) {
 		BinaryPrimitives.WriteSingleLittleEndian(dest, v);
@@ -32,8 +32,8 @@ public interface IConfigStruct {
 		dest = dest[1..];
 	}
 	protected static void SerializationWrite<T>(scoped ref Span<byte> dest, T v) where T : IFixedLengthByteSpanSerializable<T> {
-		T.SerializeToBytes(dest[sizeof(int)..], v);
-		dest = dest[(sizeof(int) + T.SerializationByteSpanLength)..];
+		T.SerializeToBytes(dest, v);
+		dest = dest[T.SerializationByteSpanLength..];
 	}
 	protected static void SerializationWrite(scoped ref Span<byte> dest, ReadOnlySpan<char> v) {
 		var numBytesWritten = v.Length * sizeof(char);
@@ -41,7 +41,7 @@ public interface IConfigStruct {
 		MemoryMarshal.AsBytes(v).CopyTo(dest[sizeof(int)..]);
 		dest = dest[(sizeof(int) + numBytesWritten)..];
 	}
-	protected static void SerializationWrite<T>(scoped ref Span<byte> dest, scoped in T v) where T : struct, IConfigStruct<T> {
+	protected static void SerializationWrite<T>(scoped ref Span<byte> dest, scoped in T v) where T : struct, IConfigStruct<T>, allows ref struct {
 		var byteCount = T.GetHeapStorageFormattedLength(v);
 		BinaryPrimitives.WriteInt32LittleEndian(dest, byteCount);
 		T.ConvertToHeapStorageFormat(dest[sizeof(int)..], v);
@@ -75,7 +75,7 @@ public interface IConfigStruct {
 		src = src[strEnd..];
 		return result;
 	}
-	protected static T SerializationReadSubConfig<T>(scoped ref ReadOnlySpan<byte> src) where T : struct, IConfigStruct<T> {
+	protected static T SerializationReadSubConfig<T>(scoped ref ReadOnlySpan<byte> src) where T : struct, IConfigStruct<T>, allows ref struct {
 		var byteCount = BinaryPrimitives.ReadInt32LittleEndian(src);
 		var cfgEnd = (sizeof(int) + byteCount);
 		var result = T.ConvertFromHeapStorageFormat(src[sizeof(int)..cfgEnd]);

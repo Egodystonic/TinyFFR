@@ -2,7 +2,7 @@
 // (c) Egodystonic / TinyFFR 2025
 
 namespace Egodystonic.TinyFFR.Rendering;
-using static Egodystonic.TinyFFR.IConfigStruct;
+using static IConfigStruct;
 
 public enum Quality {
 	VeryLow = -2,

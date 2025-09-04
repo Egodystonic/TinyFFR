@@ -1,6 +1,8 @@
 ﻿// Created on 2025-09-02 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
+using static Egodystonic.TinyFFR.ConfigStructTestUtils;
+
 namespace Egodystonic.TinyFFR.Rendering;
 
 [TestFixture]
@@ -16,7 +18,7 @@ class RendererCreationConfigTest {
 		var testConfigA = new RendererCreationConfig {
 			AutoUpdateCameraAspectRatio = true,
 			GpuSynchronizationFrameBufferCount = 3,
-			Name = "TestConfigA",
+			Name = "Aa Aa",
 			Quality = new() {
 				ShadowQuality = Quality.VeryHigh
 			}
@@ -24,7 +26,7 @@ class RendererCreationConfigTest {
 		var testConfigB = new RendererCreationConfig {
 			AutoUpdateCameraAspectRatio = false,
 			GpuSynchronizationFrameBufferCount = 1,
-			Name = "TestConfigB",
+			Name = "BBBbbb",
 			Quality = new() {
 				ShadowQuality = Quality.VeryLow
 			}
@@ -37,21 +39,28 @@ class RendererCreationConfigTest {
 			Assert.AreEqual(expected.Quality.ShadowQuality, actual.Quality.ShadowQuality);
 		}
 
-		ConfigStructTestUtils.AssertRoundTripHeapStorage(testConfigA, ComparisonFunc);
-		ConfigStructTestUtils.AssertRoundTripHeapStorage(testConfigB, ComparisonFunc);
+		AssertRoundTripHeapStorage(testConfigA, ComparisonFunc);
+		AssertRoundTripHeapStorage(testConfigB, ComparisonFunc);
 
-		ConfigStructTestUtils.AssertObjects<RendererCreationConfig>()
-			.With(true)
-			.With(3)
-			.With("TestConfigA")
-			.With(new RenderQualityConfig { ShadowQuality = Quality.VeryHigh })
+		AssertObjects<RendererCreationConfig>()
+			.Next(true)
+			.Next(3)
+			.Next(new RenderQualityConfig { ShadowQuality = Quality.VeryHigh })
+			.Next("Aa Aa")
 			.For(testConfigA);
 
-		ConfigStructTestUtils.AssertObjects<RendererCreationConfig>()
-			.With(false)
-			.With(1)
-			.With("TestConfigB")
-			.With(new RenderQualityConfig { ShadowQuality = Quality.VeryLow })
+		AssertObjects<RendererCreationConfig>()
+			.Next(false)
+			.Next(1)
+			.Next(new RenderQualityConfig { ShadowQuality = Quality.VeryLow })
+			.Next("BBBbbb")
 			.For(testConfigB);
+
+		AssertPropertiesAccountedFor<RendererCreationConfig>()
+			.Including(nameof(RendererCreationConfig.AutoUpdateCameraAspectRatio))
+			.Including(nameof(RendererCreationConfig.GpuSynchronizationFrameBufferCount))
+			.Including(nameof(RendererCreationConfig.Name))
+			.Including(nameof(RendererCreationConfig.Quality))
+			.End();
 	}
 }

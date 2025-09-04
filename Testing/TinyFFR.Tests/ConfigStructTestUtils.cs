@@ -12,35 +12,35 @@ static class ConfigStructTestUtils {
 	public readonly record struct ObjectAssertionBuilder<T>() where T : struct, IConfigStruct<T>, allows ref struct {
 		readonly List<byte> _data = new();
 
-		public ObjectAssertionBuilder<T> With(float f) {
+		public ObjectAssertionBuilder<T> Next(float f) {
 			Span<byte> buf = stackalloc byte[sizeof(float)];
 			BinaryPrimitives.WriteSingleLittleEndian(buf, f);
 			_data.AddRange(buf);
 			return this;
 		}
-		public ObjectAssertionBuilder<T> With(int i) {
+		public ObjectAssertionBuilder<T> Next(int i) {
 			Span<byte> buf = stackalloc byte[sizeof(int)];
 			BinaryPrimitives.WriteInt32LittleEndian(buf, i);
 			_data.AddRange(buf);
 			return this;
 		}
-		public ObjectAssertionBuilder<T> With(bool b) {
+		public ObjectAssertionBuilder<T> Next(bool b) {
 			_data.Add(b ? Byte.MaxValue : Byte.MinValue);
 			return this;
 		}
-		public ObjectAssertionBuilder<T> With<TValue>(TValue v) where TValue : IFixedLengthByteSpanSerializable<TValue> {
+		public ObjectAssertionBuilder<T> Next<TValue>(TValue v) where TValue : IFixedLengthByteSpanSerializable<TValue> {
 			var buf = new byte[TValue.SerializationByteSpanLength];
 			TValue.SerializeToBytes(buf, v);
 			_data.AddRange(buf);
 			return this;
 		}
-		public ObjectAssertionBuilder<T> With(ReadOnlySpan<char> s) {
-			_ = With(s.Length * sizeof(char));
+		public ObjectAssertionBuilder<T> Next(ReadOnlySpan<char> s) {
+			_ = Next(s.Length * sizeof(char));
 			_data.AddRange(MemoryMarshal.AsBytes(s));
 			return this;
 		}
-		public ObjectAssertionBuilder<T> With<TValue>(scoped in TValue v) where TValue : struct, IConfigStruct<TValue> {
-			_ = With(TValue.GetHeapStorageFormattedLength(v));
+		public ObjectAssertionBuilder<T> Next<TValue>(scoped in TValue v) where TValue : struct, IConfigStruct<TValue> {
+			_ = Next(TValue.GetHeapStorageFormattedLength(v));
 			var buf = new byte[TValue.GetHeapStorageFormattedLength(v)];
 			TValue.ConvertToHeapStorageFormat(buf, v);
 			_data.AddRange(buf);
@@ -69,6 +69,21 @@ static class ConfigStructTestUtils {
 		}
 	}
 
+	public readonly record struct ObjectPropertiesAsserter<T>() where T : struct, IConfigStruct<T>, allows ref struct {
+		readonly List<string> _properties = new();
+
+		public ObjectPropertiesAsserter<T> Including(string propName) {
+			_properties.Add(propName);
+			return this;
+		}
+
+		public void End() {
+			foreach (var propInfo in typeof(T).GetProperties(BindingFlags.Instance | BindingFlags.Public)) {
+				Assert.True(_properties.Contains(propInfo.Name, StringComparer.Ordinal), $"Property '{propInfo.Name}' is not accounted for.");
+			}
+		}
+	}
+
 	public static void AssertRoundTripHeapStorage<T>(scoped T input, Action<T, T> comparisonAssertionFunc) where T : struct, IConfigStruct<T>, allows ref struct {
 		var dest = new byte[T.GetHeapStorageFormattedLength(input)];
 		T.ConvertToHeapStorageFormat(dest, in input);
@@ -85,5 +100,9 @@ static class ConfigStructTestUtils {
 
 	public static ObjectAssertionBuilder<T> AssertObjects<T>() where T : struct, IConfigStruct<T>, allows ref struct {
 		return new ObjectAssertionBuilder<T>();
+	}
+
+	public static ObjectPropertiesAsserter<T> AssertPropertiesAccountedFor<T>() where T : struct, IConfigStruct<T>, allows ref struct {
+		return new ObjectPropertiesAsserter<T>();
 	}
 }
