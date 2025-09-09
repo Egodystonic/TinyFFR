@@ -2,10 +2,11 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using static Egodystonic.TinyFFR.IConfigStruct;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
-public readonly ref struct WindowCreationConfig {
+public readonly ref struct WindowCreationConfig : IConfigStruct<WindowCreationConfig> {
 	public required Display Display { get; init; }
 
 	public ReadOnlySpan<char> Title { get; init; }
@@ -32,4 +33,31 @@ public readonly ref struct WindowCreationConfig {
 		/* no op */
 	}
 #pragma warning restore CA1822
+
+	public static int GetHeapStorageFormattedLength(in WindowCreationConfig src) {
+		return	SerializationSizeOfResource() // Display
+			+	SerializationSizeOfString(src.Title) // Title
+			+	SerializationSizeOf<XYPair<int>>() // Position
+			+	SerializationSizeOf<XYPair<int>>() // Size
+			+	SerializationSizeOfInt(); // FullscreenStyle
+	}
+	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in WindowCreationConfig src) {
+		SerializationWriteResource(ref dest, src.Display);
+		SerializationWriteString(ref dest, src.Title);
+		SerializationWrite(ref dest, src.Position);
+		SerializationWrite(ref dest, src.Size);
+		SerializationWriteInt(ref dest, (int) src.FullscreenStyle);
+	}
+	public static WindowCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		return new WindowCreationConfig {
+			Display = SerializationReadResource<Display>(ref src),
+			Title = SerializationReadString(ref src),
+			Position = SerializationRead<XYPair<int>>(ref src),
+			Size = SerializationRead<XYPair<int>>(ref src),
+			FullscreenStyle = (WindowFullscreenStyle) SerializationReadInt(ref src)
+		};
+	}
+	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		SerializationDisposeResourceHandle(src);
+	}
 }

@@ -42,7 +42,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		_latestInputRetriever = LocalInputManager.IncrementRefCountAndGetRetriever();
 	}
 
-	public ApplicationLoop CreateLoop(in LocalApplicationLoopConfig config) {
+	public ApplicationLoop CreateLoop(in LocalApplicationLoopCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 

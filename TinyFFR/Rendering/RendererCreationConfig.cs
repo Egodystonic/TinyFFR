@@ -45,18 +45,18 @@ public readonly ref struct RendererCreationConfig : IConfigStruct<RendererCreati
 	}
 
 	public static int GetHeapStorageFormattedLength(in RendererCreationConfig src) {
-		return	SerializationSizeOf(src.AutoUpdateCameraAspectRatio)
-			+	SerializationSizeOf(src.GpuSynchronizationFrameBufferCount)
-			+	SerializationSizeOf(src.Quality)
-			+	SerializationSizeOf(src.Name);
+		return	SerializationSizeOfBool(src.AutoUpdateCameraAspectRatio)
+			+	SerializationSizeOfInt(src.GpuSynchronizationFrameBufferCount)
+			+	SerializationSizeOfSubConfig(src.Quality)
+			+	SerializationSizeOfString(src.Name);
 	}
-	public static void ConvertToHeapStorageFormat(Span<byte> dest, in RendererCreationConfig src) {
-		SerializationWrite(ref dest, src.AutoUpdateCameraAspectRatio);
-		SerializationWrite(ref dest, src.GpuSynchronizationFrameBufferCount);
-		SerializationWrite(ref dest, src.Quality);
-		SerializationWrite(ref dest, src.Name);
+	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in RendererCreationConfig src) {
+		SerializationWriteBool(ref dest, src.AutoUpdateCameraAspectRatio);
+		SerializationWriteInt(ref dest, src.GpuSynchronizationFrameBufferCount);
+		SerializationWriteSubConfig(ref dest, src.Quality);
+		SerializationWriteString(ref dest, src.Name);
 	}
-	public static RendererCreationConfig ConvertFromHeapStorageFormat(ReadOnlySpan<byte> src) {
+	public static RendererCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new() {
 			AutoUpdateCameraAspectRatio = SerializationReadBool(ref src),
 			GpuSynchronizationFrameBufferCount = SerializationReadInt(ref src),

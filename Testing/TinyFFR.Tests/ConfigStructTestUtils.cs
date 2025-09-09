@@ -24,6 +24,12 @@ static class ConfigStructTestUtils {
 			_data.AddRange(buf);
 			return this;
 		}
+		public ObjectAssertionBuilder<T> Next(long l) {
+			Span<byte> buf = stackalloc byte[sizeof(long)];
+			BinaryPrimitives.WriteInt64LittleEndian(buf, l);
+			_data.AddRange(buf);
+			return this;
+		}
 		public ObjectAssertionBuilder<T> Next(bool b) {
 			_data.Add(b ? Byte.MaxValue : Byte.MinValue);
 			return this;
@@ -39,22 +45,22 @@ static class ConfigStructTestUtils {
 			_data.AddRange(MemoryMarshal.AsBytes(s));
 			return this;
 		}
-		public ObjectAssertionBuilder<T> Next<TValue>(scoped in TValue v) where TValue : struct, IConfigStruct<TValue> {
+		public ObjectAssertionBuilder<T> Next<TValue>(scoped in TValue v) where TValue : struct, IConfigStruct<TValue>, allows ref struct {
 			_ = Next(TValue.GetHeapStorageFormattedLength(v));
 			var buf = new byte[TValue.GetHeapStorageFormattedLength(v)];
-			TValue.ConvertToHeapStorageFormat(buf, v);
+			TValue.AllocateAndConvertToHeapStorage(buf, v);
 			_data.AddRange(buf);
 			return this;
 		}
 
 		public ObjectAssertionBuilder<T> For(scoped T input) {
 			try {
-				AssertBytes(input, _data.ToArray());
+				AssertHeapSerializationWithBytes(input, _data.ToArray());
 				return this;
 			}
 			catch {
 				try {
-					var deserialized = T.ConvertFromHeapStorageFormat(_data.ToArray());
+					var deserialized = T.ConvertFromAllocatedHeapStorage(_data.ToArray());
 					Console.WriteLine("Run test with debugger attached to auto-break here and inspect values.");
 					if (Debugger.IsAttached) Debugger.Break(); // Got here? Inspect "input" and "deserialized" in debugger
 				}
@@ -86,19 +92,19 @@ static class ConfigStructTestUtils {
 
 	public static void AssertRoundTripHeapStorage<T>(scoped T input, Action<T, T> comparisonAssertionFunc) where T : struct, IConfigStruct<T>, allows ref struct {
 		var dest = new byte[T.GetHeapStorageFormattedLength(input)];
-		T.ConvertToHeapStorageFormat(dest, in input);
-		var roundTripConverted = T.ConvertFromHeapStorageFormat(dest);
+		T.AllocateAndConvertToHeapStorage(dest, in input);
+		var roundTripConverted = T.ConvertFromAllocatedHeapStorage(dest);
 		comparisonAssertionFunc(input, roundTripConverted);
 	}
 
-	public static void AssertBytes<T>(scoped T sampleItem, params byte[] expectation) where T : struct, IConfigStruct<T>, allows ref struct {
+	public static void AssertHeapSerializationWithBytes<T>(scoped T sampleItem, params byte[] expectation) where T : struct, IConfigStruct<T>, allows ref struct {
 		Assert.AreEqual(expectation.Length, T.GetHeapStorageFormattedLength(sampleItem));
 		var span = new byte[T.GetHeapStorageFormattedLength(sampleItem)];
-		T.ConvertToHeapStorageFormat(span, in sampleItem);
+		T.AllocateAndConvertToHeapStorage(span, in sampleItem);
 		Assert.IsTrue(span.SequenceEqual(expectation));
 	}
 
-	public static ObjectAssertionBuilder<T> AssertObjects<T>() where T : struct, IConfigStruct<T>, allows ref struct {
+	public static ObjectAssertionBuilder<T> AssertHeapSerializationWithObjects<T>() where T : struct, IConfigStruct<T>, allows ref struct {
 		return new ObjectAssertionBuilder<T>();
 	}
 

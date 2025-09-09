@@ -20,14 +20,14 @@ public readonly ref struct ModelInstanceCreationConfig : IConfigStruct<ModelInst
 	}
 
 	public static int GetHeapStorageFormattedLength(in ModelInstanceCreationConfig src) {
-		return	SerializationSizeOf(src.Name)
+		return	SerializationSizeOfString(src.Name)
 			+	SerializationSizeOf(src.InitialTransform);
 	}
-	public static void ConvertToHeapStorageFormat(Span<byte> dest, in ModelInstanceCreationConfig src) {
-		SerializationWrite(ref dest, src.Name);
+	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in ModelInstanceCreationConfig src) {
+		SerializationWriteString(ref dest, src.Name);
 		SerializationWrite(ref dest, src.InitialTransform);
 	}
-	public static ModelInstanceCreationConfig ConvertFromHeapStorageFormat(ReadOnlySpan<byte> src) {
+	public static ModelInstanceCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new() {
 			Name = SerializationReadString(ref src),
 			InitialTransform = SerializationRead<Transform>(ref src)

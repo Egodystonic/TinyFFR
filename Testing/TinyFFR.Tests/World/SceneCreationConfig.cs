@@ -32,13 +32,13 @@ class SceneCreationConfigTest {
 		AssertRoundTripHeapStorage(testConfigA, ComparisonFunc);
 		AssertRoundTripHeapStorage(testConfigB, ComparisonFunc);
 
-		AssertObjects<SceneCreationConfig>()
+		AssertHeapSerializationWithObjects<SceneCreationConfig>()
 			.Next("Aa Aa")
 			.Next(true)
 			.Next(new ColorVect(0.25f, 0.5f, 0.7f, 1f))
 			.For(testConfigA);
 
-		AssertObjects<SceneCreationConfig>()
+		AssertHeapSerializationWithObjects<SceneCreationConfig>()
 			.Next("BBBbbb")
 			.Next(false)
 			.Next(default(ColorVect))

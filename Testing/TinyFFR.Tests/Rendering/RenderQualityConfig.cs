@@ -29,11 +29,11 @@ class RenderQualityConfigTest {
 		AssertRoundTripHeapStorage(testConfigA, ComparisonFunc);
 		AssertRoundTripHeapStorage(testConfigB, ComparisonFunc);
 
-		AssertObjects<RenderQualityConfig>()
+		AssertHeapSerializationWithObjects<RenderQualityConfig>()
 			.Next((int) Quality.VeryLow)
 			.For(testConfigA);
 
-		AssertObjects<RenderQualityConfig>()
+		AssertHeapSerializationWithObjects<RenderQualityConfig>()
 			.Next((int) Quality.VeryHigh)
 			.For(testConfigB);
 

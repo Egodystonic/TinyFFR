@@ -2,10 +2,11 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using static Egodystonic.TinyFFR.IConfigStruct;
 
 namespace Egodystonic.TinyFFR.World;
 
-public readonly ref struct CameraCreationConfig {
+public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationConfig> {
 	public static readonly Location DefaultPosition = Location.Origin;
 	public static readonly Direction DefaultViewDirection = Direction.Forward;
 	public static readonly Direction DefaultUpDirection = Direction.Up;
@@ -56,5 +57,41 @@ public readonly ref struct CameraCreationConfig {
 		if (!Single.IsNormal(FarPlaneDistance) || FarPlaneDistance <= NearPlaneDistance || FarPlaneDistance / NearPlaneDistance > Camera.NearFarPlaneDistanceRatioMax) {
 			ThrowArgException(FarPlaneDistance, $"must be a normal floating-point value, larger than {nameof(NearPlaneDistance)}, and no greater than {nameof(Camera)}.{nameof(Camera.NearFarPlaneDistanceRatioMax)} ({Camera.NearFarPlaneDistanceRatioMax}) times the {nameof(NearPlaneDistance)}.");
 		}
+	}
+
+	public static int GetHeapStorageFormattedLength(in CameraCreationConfig src) {
+		return	SerializationSizeOf(src.Position)
+			+	SerializationSizeOf(src.ViewDirection)
+			+	SerializationSizeOf(src.UpDirection)
+			+	SerializationSizeOf(src.FieldOfView)
+			+	SerializationSizeOfFloat(src.AspectRatio)
+			+	SerializationSizeOfBool(src.FieldOfViewIsVertical)
+			+	SerializationSizeOfFloat(src.NearPlaneDistance)
+			+	SerializationSizeOfFloat(src.FarPlaneDistance)
+			+	SerializationSizeOfString(src.Name);
+	}
+	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in CameraCreationConfig src) {
+		SerializationWrite(ref dest, src.Position);
+		SerializationWrite(ref dest, src.ViewDirection);
+		SerializationWrite(ref dest, src.UpDirection);
+		SerializationWrite(ref dest, src.FieldOfView);
+		SerializationWriteFloat(ref dest, src.AspectRatio);
+		SerializationWriteBool(ref dest, src.FieldOfViewIsVertical);
+		SerializationWriteFloat(ref dest, src.NearPlaneDistance);
+		SerializationWriteFloat(ref dest, src.FarPlaneDistance);
+		SerializationWriteString(ref dest, src.Name);
+	}
+	public static CameraCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		return new() {
+			Position = SerializationRead<Location>(ref src),
+			ViewDirection = SerializationRead<Direction>(ref src),
+			UpDirection = SerializationRead<Direction>(ref src),
+			FieldOfView = SerializationRead<Angle>(ref src),
+			AspectRatio = SerializationReadFloat(ref src),
+			FieldOfViewIsVertical = SerializationReadBool(ref src),
+			NearPlaneDistance = SerializationReadFloat(ref src),
+			FarPlaneDistance = SerializationReadFloat(ref src),
+			Name = SerializationReadString(ref src),
+		};
 	}
 }

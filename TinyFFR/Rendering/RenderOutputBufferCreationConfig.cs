@@ -4,10 +4,11 @@
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Rendering.Local.Sync;
 using System;
+using static Egodystonic.TinyFFR.IConfigStruct;
 
 namespace Egodystonic.TinyFFR.Rendering;
 
-public readonly ref struct RenderOutputBufferCreationConfig {
+public readonly ref struct RenderOutputBufferCreationConfig : IConfigStruct<RenderOutputBufferCreationConfig> {
 	public static readonly XYPair<int> DefaultTextureDimensions = (2560, 1440);
 	public const int MaxTextureDimensionXY = 32_768;
 	public const int MinTextureDimensionXY = 1;
@@ -26,5 +27,20 @@ public readonly ref struct RenderOutputBufferCreationConfig {
 		if (TextureDimensions.Clamp(new(MinTextureDimensionXY), new(MaxTextureDimensionXY)) != TextureDimensions) {
 			ThrowArgException(TextureDimensions, $"must have both X and Y values between {MinTextureDimensionXY} and {MaxTextureDimensionXY}.");
 		}
+	}
+
+	public static int GetHeapStorageFormattedLength(in RenderOutputBufferCreationConfig src) {
+		return	SerializationSizeOf(src.TextureDimensions)
+			+	SerializationSizeOfString(src.Name);
+	}
+	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in RenderOutputBufferCreationConfig src) {
+		SerializationWrite(ref dest, src.TextureDimensions);
+		SerializationWriteString(ref dest, src.Name);
+	}
+	public static RenderOutputBufferCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		return new() {
+			TextureDimensions = SerializationRead<XYPair<int>>(ref src),
+			Name = SerializationReadString(ref src)
+		};
 	}
 }

@@ -16,12 +16,12 @@ public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityC
 	public Quality ShadowQuality { get; init; }
 
 	public static int GetHeapStorageFormattedLength(in RenderQualityConfig src) {
-		return SerializationSizeOf((int) src.ShadowQuality);
+		return SerializationSizeOfInt((int) src.ShadowQuality);
 	}
-	public static void ConvertToHeapStorageFormat(Span<byte> dest, in RenderQualityConfig src) {
-		SerializationWrite(ref dest, (int) src.ShadowQuality);
+	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in RenderQualityConfig src) {
+		SerializationWriteInt(ref dest, (int) src.ShadowQuality);
 	}
-	public static RenderQualityConfig ConvertFromHeapStorageFormat(ReadOnlySpan<byte> src) {
+	public static RenderQualityConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new() {
 			ShadowQuality = (Quality) SerializationReadInt(ref src)
 		};

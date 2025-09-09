@@ -32,12 +32,12 @@ class ModelInstanceCreationConfigTest {
 		AssertRoundTripHeapStorage(testConfigA, ComparisonFunc);
 		AssertRoundTripHeapStorage(testConfigB, ComparisonFunc);
 
-		AssertObjects<ModelInstanceCreationConfig>()
+		AssertHeapSerializationWithObjects<ModelInstanceCreationConfig>()
 			.Next("Aa Aa")
 			.Next(testConfigA.InitialTransform)
 			.For(testConfigA);
 
-		AssertObjects<ModelInstanceCreationConfig>()
+		AssertHeapSerializationWithObjects<ModelInstanceCreationConfig>()
 			.Next("BBBbbb")
 			.Next(testConfigB.InitialTransform)
 			.For(testConfigB);
