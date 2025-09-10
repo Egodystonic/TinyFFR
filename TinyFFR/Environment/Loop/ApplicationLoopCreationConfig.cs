@@ -32,13 +32,11 @@ public readonly ref struct ApplicationLoopCreationConfig : IConfigStruct<Applica
 #pragma warning restore CA1822
 
 	public static int GetHeapStorageFormattedLength(in ApplicationLoopCreationConfig src) {
-		return	SerializationSizeOfBool(src.FrameRateCapHz.HasValue)
-			+	SerializationSizeOfInt(src.FrameRateCapHz ?? 0)
-			+	SerializationSizeOfString(src.Name);
+		return	SerializationSizeOfNullableInt() // FrameRateCapHz
+			+	SerializationSizeOfString(src.Name); // Name
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in ApplicationLoopCreationConfig src) {
-		SerializationWriteBool(ref dest, src.FrameRateCapHz.HasValue);
-		SerializationWriteInt(ref dest, src.FrameRateCapHz ?? 0);
+		SerializationWriteNullableInt(ref dest, src.FrameRateCapHz);
 		SerializationWriteString(ref dest, src.Name);
 	}
 	public static ApplicationLoopCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
@@ -46,5 +44,8 @@ public readonly ref struct ApplicationLoopCreationConfig : IConfigStruct<Applica
 			FrameRateCapHz = SerializationReadNullableInt(ref src),
 			Name = SerializationReadString(ref src)
 		};
+	}
+	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		/* no-op */
 	}
 }

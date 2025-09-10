@@ -43,17 +43,17 @@ class RendererCreationConfigTest {
 		AssertRoundTripHeapStorage(testConfigB, ComparisonFunc);
 
 		AssertHeapSerializationWithObjects<RendererCreationConfig>()
-			.Next(true)
-			.Next(3)
-			.Next(new RenderQualityConfig { ShadowQuality = Quality.VeryHigh })
-			.Next("Aa Aa")
+			.Bool(true)
+			.Int(3)
+			.SubConfig(new RenderQualityConfig { ShadowQuality = Quality.VeryHigh })
+			.String("Aa Aa")
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<RendererCreationConfig>()
-			.Next(false)
-			.Next(1)
-			.Next(new RenderQualityConfig { ShadowQuality = Quality.VeryLow })
-			.Next("BBBbbb")
+			.Bool(false)
+			.Int(1)
+			.SubConfig(new RenderQualityConfig { ShadowQuality = Quality.VeryLow })
+			.String("BBBbbb")
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<RendererCreationConfig>()

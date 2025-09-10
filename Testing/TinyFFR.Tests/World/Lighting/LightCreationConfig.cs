@@ -39,17 +39,17 @@ class LightCreationConfigTest {
 		AssertRoundTripHeapStorage(testConfigB, CompareBaseConfigs);
 
 		AssertHeapSerializationWithObjects<LightCreationConfig>()
-			.Next("Aa Aa")
-			.Next(new ColorVect(0.2f, 0.4f, 0.6f, 0.8f))
-			.Next(123f)
-			.Next(false)
+			.String("Aa Aa")
+			.Obj(new ColorVect(0.2f, 0.4f, 0.6f, 0.8f))
+			.Float(123f)
+			.Bool(false)
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<LightCreationConfig>()
-			.Next("BBBbbb")
-			.Next(new ColorVect(0.8f, 0.6f, 0.4f, 0.2f))
-			.Next(-0.1f)
-			.Next(true)
+			.String("BBBbbb")
+			.Obj(new ColorVect(0.8f, 0.6f, 0.4f, 0.2f))
+			.Float(-0.1f)
+			.Bool(true)
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<LightCreationConfig>()
@@ -89,9 +89,9 @@ class LightCreationConfigTest {
 		AssertRoundTripHeapStorage(testConfigB, CompareConfigs);
 
 		AssertHeapSerializationWithObjects<PointLightCreationConfig>()
-			.Next(1.2f)
-			.Next(new Location(4f, -3f, 2f))
-			.Next(new LightCreationConfig {
+			.Float(1.2f)
+			.Obj(new Location(4f, -3f, 2f))
+			.SubConfig(new LightCreationConfig {
 				Name = "Aa Aa",
 				CastsShadows = false,
 				InitialBrightness = 123f,
@@ -100,9 +100,9 @@ class LightCreationConfigTest {
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<PointLightCreationConfig>()
-			.Next(-0.1f)
-			.Next(new Location(-0.4f, 0.3f, -0.2f))
-			.Next(new LightCreationConfig {
+			.Float(-0.1f)
+			.Obj(new Location(-0.4f, 0.3f, -0.2f))
+			.SubConfig(new LightCreationConfig {
 				Name = "BBBbbb",
 				CastsShadows = true,
 				InitialBrightness = -0.1f,
@@ -163,13 +163,13 @@ class LightCreationConfigTest {
 		AssertRoundTripHeapStorage(testConfigB, CompareConfigs);
 
 		AssertHeapSerializationWithObjects<SpotLightCreationConfig>()
-			.Next(new Location(4f, -3f, 2f))
-			.Next(1.2f)
-			.Next(true)
-			.Next(new Direction(1f, 2f, 3f))
-			.Next(new Angle(27f))
-			.Next(new Angle(8.4f))
-			.Next(new LightCreationConfig {
+			.Obj(new Location(4f, -3f, 2f))
+			.Float(1.2f)
+			.Bool(true)
+			.Obj(new Direction(1f, 2f, 3f))
+			.Obj(new Angle(27f))
+			.Obj(new Angle(8.4f))
+			.SubConfig(new LightCreationConfig {
 				Name = "Aa Aa",
 				CastsShadows = false,
 				InitialBrightness = 123f,
@@ -178,13 +178,13 @@ class LightCreationConfigTest {
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<SpotLightCreationConfig>()
-			.Next(new Location(-0.4f, 0.3f, -0.2f))
-			.Next(22f)
-			.Next(false)
-			.Next(new Direction(-2f, 0f, 4f))
-			.Next(new Angle(2.7f))
-			.Next(new Angle(1.4f))
-			.Next(new LightCreationConfig {
+			.Obj(new Location(-0.4f, 0.3f, -0.2f))
+			.Float(22f)
+			.Bool(false)
+			.Obj(new Direction(-2f, 0f, 4f))
+			.Obj(new Angle(2.7f))
+			.Obj(new Angle(1.4f))
+			.SubConfig(new LightCreationConfig {
 				Name = "BBBbbb",
 				CastsShadows = true,
 				InitialBrightness = -0.1f,
@@ -236,9 +236,9 @@ class LightCreationConfigTest {
 		AssertRoundTripHeapStorage(testConfigB, CompareConfigs);
 
 		AssertHeapSerializationWithObjects<DirectionalLightCreationConfig>()
-			.Next(true)
-			.Next(new Direction(4f, -3f, 2f))
-			.Next(new LightCreationConfig {
+			.Bool(true)
+			.Obj(new Direction(4f, -3f, 2f))
+			.SubConfig(new LightCreationConfig {
 				Name = "Aa Aa",
 				CastsShadows = false,
 				InitialBrightness = 123f,
@@ -247,9 +247,9 @@ class LightCreationConfigTest {
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<DirectionalLightCreationConfig>()
-			.Next(false)
-			.Next(new Direction(-0.4f, 0.3f, -0.2f))
-			.Next(new LightCreationConfig {
+			.Bool(false)
+			.Obj(new Direction(-0.4f, 0.3f, -0.2f))
+			.SubConfig(new LightCreationConfig {
 				Name = "BBBbbb",
 				CastsShadows = true,
 				InitialBrightness = -0.1f,

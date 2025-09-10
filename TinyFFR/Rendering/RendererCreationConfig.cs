@@ -45,10 +45,10 @@ public readonly ref struct RendererCreationConfig : IConfigStruct<RendererCreati
 	}
 
 	public static int GetHeapStorageFormattedLength(in RendererCreationConfig src) {
-		return	SerializationSizeOfBool(src.AutoUpdateCameraAspectRatio)
-			+	SerializationSizeOfInt(src.GpuSynchronizationFrameBufferCount)
-			+	SerializationSizeOfSubConfig(src.Quality)
-			+	SerializationSizeOfString(src.Name);
+		return	SerializationSizeOfBool() // AutoUpdateCameraAspectRatio
+			+	SerializationSizeOfInt() // GpuSynchronizationFrameBufferCount
+			+	SerializationSizeOfSubConfig(src.Quality) // Quality
+			+	SerializationSizeOfString(src.Name); // Name
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in RendererCreationConfig src) {
 		SerializationWriteBool(ref dest, src.AutoUpdateCameraAspectRatio);
@@ -63,5 +63,8 @@ public readonly ref struct RendererCreationConfig : IConfigStruct<RendererCreati
 			Quality = SerializationReadSubConfig<RenderQualityConfig>(ref src),
 			Name = SerializationReadString(ref src)
 		};
+	}
+	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		/* no-op */
 	}
 }

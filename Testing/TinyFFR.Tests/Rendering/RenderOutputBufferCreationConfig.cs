@@ -33,13 +33,13 @@ class RenderOutputBufferCreationConfigTest {
 		AssertRoundTripHeapStorage(testConfigB, ComparisonFunc);
 
 		AssertHeapSerializationWithObjects<RenderOutputBufferCreationConfig>()
-			.Next(new XYPair<int>(123, 456))
-			.Next("Aa Aa")
+			.Obj(new XYPair<int>(123, 456))
+			.String("Aa Aa")
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<RenderOutputBufferCreationConfig>()
-			.Next(new XYPair<int>(100, 200))
-			.Next("BBBbbb")
+			.Obj(new XYPair<int>(100, 200))
+			.String("BBBbbb")
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<RenderOutputBufferCreationConfig>()

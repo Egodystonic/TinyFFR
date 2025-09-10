@@ -19,19 +19,20 @@ public readonly ref struct SceneCreationConfig : IConfigStruct<SceneCreationConf
 	}
 
 	public static int GetHeapStorageFormattedLength(in SceneCreationConfig src) {
-		return	SerializationSizeOfString(src.Name)
-			+	SerializationSizeOfBool(src.InitialBackdropColor.HasValue)
-			+	SerializationSizeOf(src.InitialBackdropColor ?? default);
+		return	SerializationSizeOfString(src.Name) // Name
+			+	SerializationSizeOfNullable<ColorVect>(); // InitialBackdropColor
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in SceneCreationConfig src) {
 		SerializationWriteString(ref dest, src.Name);
-		SerializationWriteBool(ref dest, src.InitialBackdropColor.HasValue);
-		SerializationWrite(ref dest, src.InitialBackdropColor ?? default);
+		SerializationWriteNullable(ref dest, src.InitialBackdropColor);
 	}
 	public static SceneCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new SceneCreationConfig {
 			Name = SerializationReadString(ref src),
 			InitialBackdropColor = SerializationReadNullable<ColorVect>(ref src)
 		};
+	}
+	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		/* no-op */
 	}
 }

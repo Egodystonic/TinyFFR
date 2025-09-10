@@ -30,8 +30,8 @@ public readonly ref struct RenderOutputBufferCreationConfig : IConfigStruct<Rend
 	}
 
 	public static int GetHeapStorageFormattedLength(in RenderOutputBufferCreationConfig src) {
-		return	SerializationSizeOf(src.TextureDimensions)
-			+	SerializationSizeOfString(src.Name);
+		return	SerializationSizeOf<XYPair<int>>() // TextureDimensions
+			+	SerializationSizeOfString(src.Name); // Name
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in RenderOutputBufferCreationConfig src) {
 		SerializationWrite(ref dest, src.TextureDimensions);
@@ -42,5 +42,8 @@ public readonly ref struct RenderOutputBufferCreationConfig : IConfigStruct<Rend
 			TextureDimensions = SerializationRead<XYPair<int>>(ref src),
 			Name = SerializationReadString(ref src)
 		};
+	}
+	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		/* no-op */
 	}
 }

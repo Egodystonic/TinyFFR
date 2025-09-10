@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR;
 
@@ -12,43 +13,49 @@ static class ConfigStructTestUtils {
 	public readonly record struct ObjectAssertionBuilder<T>() where T : struct, IConfigStruct<T>, allows ref struct {
 		readonly List<byte> _data = new();
 
-		public ObjectAssertionBuilder<T> Next(float f) {
+		public ObjectAssertionBuilder<T> Float(float f) {
 			Span<byte> buf = stackalloc byte[sizeof(float)];
 			BinaryPrimitives.WriteSingleLittleEndian(buf, f);
 			_data.AddRange(buf);
 			return this;
 		}
-		public ObjectAssertionBuilder<T> Next(int i) {
+		public ObjectAssertionBuilder<T> Int(int i) {
 			Span<byte> buf = stackalloc byte[sizeof(int)];
 			BinaryPrimitives.WriteInt32LittleEndian(buf, i);
 			_data.AddRange(buf);
 			return this;
 		}
-		public ObjectAssertionBuilder<T> Next(long l) {
+		public ObjectAssertionBuilder<T> Long(long l) {
 			Span<byte> buf = stackalloc byte[sizeof(long)];
 			BinaryPrimitives.WriteInt64LittleEndian(buf, l);
 			_data.AddRange(buf);
 			return this;
 		}
-		public ObjectAssertionBuilder<T> Next(bool b) {
+		public ObjectAssertionBuilder<T> Bool(bool b) {
 			_data.Add(b ? Byte.MaxValue : Byte.MinValue);
 			return this;
 		}
-		public ObjectAssertionBuilder<T> Next<TValue>(TValue v) where TValue : IFixedLengthByteSpanSerializable<TValue> {
+		public ObjectAssertionBuilder<T> Obj<TValue>(TValue v) where TValue : IFixedLengthByteSpanSerializable<TValue> {
 			var buf = new byte[TValue.SerializationByteSpanLength];
 			TValue.SerializeToBytes(buf, v);
 			_data.AddRange(buf);
 			return this;
 		}
-		public ObjectAssertionBuilder<T> Next(ReadOnlySpan<char> s) {
-			_ = Next(s.Length * sizeof(char));
+		public ObjectAssertionBuilder<T> String(ReadOnlySpan<char> s) {
+			_ = Int(s.Length * sizeof(char));
 			_data.AddRange(MemoryMarshal.AsBytes(s));
 			return this;
 		}
-		public ObjectAssertionBuilder<T> Next<TValue>(scoped in TValue v) where TValue : struct, IConfigStruct<TValue>, allows ref struct {
-			_ = Next(TValue.GetHeapStorageFormattedLength(v));
+		public ObjectAssertionBuilder<T> SubConfig<TValue>(scoped in TValue v) where TValue : struct, IConfigStruct<TValue>, allows ref struct {
+			_ = Int(TValue.GetHeapStorageFormattedLength(v));
 			var buf = new byte[TValue.GetHeapStorageFormattedLength(v)];
 			TValue.AllocateAndConvertToHeapStorage(buf, v);
+			_data.AddRange(buf);
+			return this;
+		}
+		public ObjectAssertionBuilder<T> Resource<TValue>(TValue v) where TValue : IResource<TValue> {
+			var buf = new byte[Marshal.SizeOf<GCHandle>() + UIntPtr.Size];
+			v.AllocateGcHandleAndSerializeResource(buf);
 			_data.AddRange(buf);
 			return this;
 		}

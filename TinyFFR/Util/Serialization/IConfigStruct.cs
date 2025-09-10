@@ -22,6 +22,16 @@ public interface IConfigStruct {
 	protected static int SerializationSizeOfString(ReadOnlySpan<char> v) => SerializationFieldCountSizeBytes + v.Length * sizeof(char);
 	protected static int SerializationSizeOfSubConfig<T>(scoped in T v) where T : struct, IConfigStruct<T>, allows ref struct => SerializationFieldCountSizeBytes + T.GetHeapStorageFormattedLength(v);
 	protected static int SerializationSizeOfResource() => Marshal.SizeOf<GCHandle>() + UIntPtr.Size;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	protected static int SerializationSizeOfNullableFloat() => sizeof(bool) + sizeof(float);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	protected static int SerializationSizeOfNullableInt() => sizeof(bool) + sizeof(int);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	protected static int SerializationSizeOfNullableLong() => sizeof(bool) + sizeof(long);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	protected static int SerializationSizeOfNullableBool() => sizeof(bool) + sizeof(bool);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	protected static int SerializationSizeOfNullable<T>() where T : IFixedLengthByteSpanSerializable<T> => sizeof(bool) + T.SerializationByteSpanLength;
 
 	protected static void SerializationWriteFloat(scoped ref Span<byte> dest, float v) {
 		BinaryPrimitives.WriteSingleLittleEndian(dest, v);
@@ -58,6 +68,31 @@ public interface IConfigStruct {
 	protected static void SerializationWriteResource<T>(scoped ref Span<byte> dest, T v) where T : IResource<T> {
 		v.AllocateGcHandleAndSerializeResource(dest);
 		dest = dest[SerializationSizeOfResource()..];
+	}
+	protected static void SerializationWriteNullableFloat(scoped ref Span<byte> dest, float? v) {
+		SerializationWriteBool(ref dest, v.HasValue);
+		BinaryPrimitives.WriteSingleLittleEndian(dest, v ?? default);
+		dest = dest[sizeof(float)..];
+	}
+	protected static void SerializationWriteNullableInt(scoped ref Span<byte> dest, int? v) {
+		SerializationWriteBool(ref dest, v.HasValue);
+		BinaryPrimitives.WriteInt32LittleEndian(dest, v ?? default);
+		dest = dest[sizeof(int)..];
+	}
+	protected static void SerializationWriteNullableLong(scoped ref Span<byte> dest, long? v) {
+		SerializationWriteBool(ref dest, v.HasValue);
+		BinaryPrimitives.WriteInt64LittleEndian(dest, v ?? default);
+		dest = dest[sizeof(long)..];
+	}
+	protected static void SerializationWriteNullableBool(scoped ref Span<byte> dest, bool? v) {
+		SerializationWriteBool(ref dest, v.HasValue);
+		dest[0] = (v ?? default) ? Byte.MaxValue : Byte.MinValue;
+		dest = dest[1..];
+	}
+	protected static void SerializationWriteNullable<T>(scoped ref Span<byte> dest, T? v) where T : struct, IFixedLengthByteSpanSerializable<T> {
+		SerializationWriteBool(ref dest, v.HasValue);
+		T.SerializeToBytes(dest, v ?? default);
+		dest = dest[T.SerializationByteSpanLength..];
 	}
 
 	protected static float SerializationReadFloat(scoped ref ReadOnlySpan<byte> src) {

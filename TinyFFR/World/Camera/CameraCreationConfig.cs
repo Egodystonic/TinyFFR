@@ -60,15 +60,15 @@ public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationCo
 	}
 
 	public static int GetHeapStorageFormattedLength(in CameraCreationConfig src) {
-		return	SerializationSizeOf(src.Position)
-			+	SerializationSizeOf(src.ViewDirection)
-			+	SerializationSizeOf(src.UpDirection)
-			+	SerializationSizeOf(src.FieldOfView)
-			+	SerializationSizeOfFloat(src.AspectRatio)
-			+	SerializationSizeOfBool(src.FieldOfViewIsVertical)
-			+	SerializationSizeOfFloat(src.NearPlaneDistance)
-			+	SerializationSizeOfFloat(src.FarPlaneDistance)
-			+	SerializationSizeOfString(src.Name);
+		return	SerializationSizeOf<Location>() // Position
+			+	SerializationSizeOf<Direction>() // ViewDirection
+			+	SerializationSizeOf<Direction>() // UpDirection
+			+	SerializationSizeOf<Angle>() // FieldOfView
+			+	SerializationSizeOfFloat() // AspectRatio
+			+	SerializationSizeOfBool() // FieldOfViewIsVertical
+			+	SerializationSizeOfFloat() // NearPlaneDistance
+			+	SerializationSizeOfFloat() // FarPlaneDistance
+			+	SerializationSizeOfString(src.Name); // Name
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in CameraCreationConfig src) {
 		SerializationWrite(ref dest, src.Position);
@@ -93,5 +93,8 @@ public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationCo
 			FarPlaneDistance = SerializationReadFloat(ref src),
 			Name = SerializationReadString(ref src),
 		};
+	}
+	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		/* no-op */
 	}
 }

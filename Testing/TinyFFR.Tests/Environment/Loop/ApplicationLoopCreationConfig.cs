@@ -34,15 +34,15 @@ class ApplicationLoopCreationConfigTest {
 		AssertRoundTripHeapStorage(testConfigB, CompareBaseConfigs);
 
 		AssertHeapSerializationWithObjects<ApplicationLoopCreationConfig>()
-			.Next(true)
-			.Next(60)
-			.Next("Aa Aa")
+			.Bool(true)
+			.Int(60)
+			.String("Aa Aa")
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<ApplicationLoopCreationConfig>()
-			.Next(false)
-			.Next(0)
-			.Next("BBBbbb")
+			.Bool(false)
+			.Int(0)
+			.String("BBBbbb")
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<ApplicationLoopCreationConfig>()
@@ -79,23 +79,23 @@ class ApplicationLoopCreationConfigTest {
 		AssertRoundTripHeapStorage(testConfigB, ComparisonFunc);
 
 		AssertHeapSerializationWithObjects<LocalApplicationLoopCreationConfig>()
-			.Next(new ApplicationLoopCreationConfig {
+			.SubConfig(new ApplicationLoopCreationConfig {
 				FrameRateCapHz = 60,
 				Name = "Aa Aa"
 			})
-			.Next(true)
-			.Next(TimeSpan.FromSeconds(3d).Ticks)
-			.Next(true)
+			.Bool(true)
+			.Long(TimeSpan.FromSeconds(3d).Ticks)
+			.Bool(true)
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<LocalApplicationLoopCreationConfig>()
-			.Next(new ApplicationLoopCreationConfig {
+			.SubConfig(new ApplicationLoopCreationConfig {
 				FrameRateCapHz = null,
 				Name = "BBBbbb"
 			})
-			.Next(false)
-			.Next(TimeSpan.FromSeconds(13d).Ticks)
-			.Next(false)
+			.Bool(false)
+			.Long(TimeSpan.FromSeconds(13d).Ticks)
+			.Bool(false)
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<LocalApplicationLoopCreationConfig>()

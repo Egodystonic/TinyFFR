@@ -45,10 +45,10 @@ public readonly ref struct LocalApplicationLoopCreationConfig : IConfigStruct<Lo
 	}
 
 	public static int GetHeapStorageFormattedLength(in LocalApplicationLoopCreationConfig src) {
-		return	SerializationSizeOfSubConfig(src.BaseConfig)
-			+	SerializationSizeOfBool(src.WaitForVSync)
-			+	SerializationSizeOfLong(src.FrameTimingPrecisionBusyWaitTime.Ticks)
-			+	SerializationSizeOfBool(src.IterationShouldRefreshGlobalInputStates);
+		return	SerializationSizeOfSubConfig(src.BaseConfig) // BaseConfig
+			+	SerializationSizeOfBool() // WaitForVSync
+			+	SerializationSizeOfLong() // FrameTimingPrecisionBusyWaitTime
+			+	SerializationSizeOfBool(); // IterationShouldRefreshGlobalInputStates
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in LocalApplicationLoopCreationConfig src) {
 		SerializationWriteSubConfig(ref dest, src.BaseConfig);
@@ -63,5 +63,8 @@ public readonly ref struct LocalApplicationLoopCreationConfig : IConfigStruct<Lo
 			FrameTimingPrecisionBusyWaitTime = TimeSpan.FromTicks(SerializationReadLong(ref src)),
 			IterationShouldRefreshGlobalInputStates = SerializationReadBool(ref src)
 		};
+	}
+	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		/* no-op */
 	}
 }
