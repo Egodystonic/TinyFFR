@@ -12,6 +12,7 @@ namespace Egodystonic.TinyFFR;
 static class ConfigStructTestUtils {
 	public readonly record struct ObjectAssertionBuilder<T>() where T : struct, IConfigStruct<T>, allows ref struct {
 		readonly List<byte> _data = new();
+		readonly List<(IResource Resource, int DataIndex)> _resources = new();
 
 		public ObjectAssertionBuilder<T> Float(float f) {
 			Span<byte> buf = stackalloc byte[sizeof(float)];
@@ -54,15 +55,39 @@ static class ConfigStructTestUtils {
 			return this;
 		}
 		public ObjectAssertionBuilder<T> Resource<TValue>(TValue v) where TValue : IResource<TValue> {
-			var buf = new byte[Marshal.SizeOf<GCHandle>() + UIntPtr.Size];
+			var buf = new byte[IResource.SerializedLengthBytes];
 			v.AllocateGcHandleAndSerializeResource(buf);
+			_resources.Add((v, _data.Count));
 			_data.AddRange(buf);
 			return this;
 		}
 
 		public ObjectAssertionBuilder<T> For(scoped T input) {
 			try {
-				AssertHeapSerializationWithBytes(input, _data.ToArray());
+				if (_resources.Count > 0) {
+					var expectation = _data.ToArray();
+					Assert.AreEqual(expectation.Length, T.GetHeapStorageFormattedLength(input));
+					var actual = new byte[T.GetHeapStorageFormattedLength(input)];
+					T.AllocateAndConvertToHeapStorage(actual, in input);
+
+					foreach (var res in _resources) {
+						Assert.AreEqual(
+							IResource.ReadHandleFromSerializedResource(expectation[res.DataIndex..]), 
+							IResource.ReadHandleFromSerializedResource(actual[res.DataIndex..])
+						);
+						Assert.IsTrue(ReferenceEquals(
+							IResource.ReadGcHandleFromSerializedResource(expectation[res.DataIndex..]).Target, 
+							IResource.ReadGcHandleFromSerializedResource(actual[res.DataIndex..]).Target
+						));
+						actual.AsSpan()[res.DataIndex..(res.DataIndex + IResource.SerializedLengthBytes)].CopyTo(expectation.AsSpan()[res.DataIndex..]);
+					}
+
+					Assert.IsTrue(expectation.SequenceEqual(actual));
+				}
+				else {
+					AssertHeapSerializationWithBytes(input, _data.ToArray());
+				}
+
 				return this;
 			}
 			catch {

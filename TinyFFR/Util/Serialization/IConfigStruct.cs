@@ -21,7 +21,7 @@ public interface IConfigStruct {
 	protected static int SerializationSizeOf<T>() where T : IFixedLengthByteSpanSerializable<T> => T.SerializationByteSpanLength;
 	protected static int SerializationSizeOfString(ReadOnlySpan<char> v) => SerializationFieldCountSizeBytes + v.Length * sizeof(char);
 	protected static int SerializationSizeOfSubConfig<T>(scoped in T v) where T : struct, IConfigStruct<T>, allows ref struct => SerializationFieldCountSizeBytes + T.GetHeapStorageFormattedLength(v);
-	protected static int SerializationSizeOfResource() => Marshal.SizeOf<GCHandle>() + UIntPtr.Size;
+	protected static int SerializationSizeOfResource() => IResource.SerializedLengthBytes;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	protected static int SerializationSizeOfNullableFloat() => sizeof(bool) + sizeof(float);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -65,7 +65,7 @@ public interface IConfigStruct {
 		T.AllocateAndConvertToHeapStorage(dest[sizeof(int)..], v);
 		dest = dest[(sizeof(int) + byteCount)..];
 	}
-	protected static void SerializationWriteResource<T>(scoped ref Span<byte> dest, T v) where T : IResource<T> {
+	protected static void SerializationWriteAndAllocateResource<T>(scoped ref Span<byte> dest, T v) where T : IResource<T> {
 		v.AllocateGcHandleAndSerializeResource(dest);
 		dest = dest[SerializationSizeOfResource()..];
 	}

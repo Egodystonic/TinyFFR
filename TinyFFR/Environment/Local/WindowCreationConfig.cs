@@ -42,7 +42,7 @@ public readonly ref struct WindowCreationConfig : IConfigStruct<WindowCreationCo
 			+	SerializationSizeOfInt(); // FullscreenStyle
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in WindowCreationConfig src) {
-		SerializationWriteResource(ref dest, src.Display);
+		SerializationWriteAndAllocateResource(ref dest, src.Display);
 		SerializationWriteString(ref dest, src.Title);
 		SerializationWrite(ref dest, src.Position);
 		SerializationWrite(ref dest, src.Size);

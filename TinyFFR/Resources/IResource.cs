@@ -24,7 +24,7 @@ readonly record struct ResourceStub(ResourceIdent Ident, IResourceImplProvider I
 }
 
 public unsafe interface IResource : IStringSpanNameEnabled {
-	internal static readonly int SerializedLengthBytes = sizeof(GCHandle) + sizeof(nuint);
+	internal static readonly int SerializedLengthBytes = sizeof(IntPtr) + sizeof(nuint);
 
 	internal ResourceHandle Handle { get; }
 	internal IResourceImplProvider Implementation { get; }
@@ -33,14 +33,14 @@ public unsafe interface IResource : IStringSpanNameEnabled {
 
 	internal void AllocateGcHandleAndSerializeResource(Span<byte> dest) {
 		var gcHandle = GCHandle.Alloc(Implementation, GCHandleType.Normal);
-		MemoryMarshal.Write(dest, gcHandle);
-		BinaryPrimitives.TryWriteUIntPtrLittleEndian(dest[sizeof(GCHandle)..], Handle);
+		BinaryPrimitives.WriteIntPtrLittleEndian(dest, GCHandle.ToIntPtr(gcHandle));
+		BinaryPrimitives.WriteUIntPtrLittleEndian(dest[IntPtr.Size..], Handle);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static GCHandle ReadGcHandleFromSerializedResource(ReadOnlySpan<byte> src) => MemoryMarshal.Read<GCHandle>(src);
+	internal static GCHandle ReadGcHandleFromSerializedResource(ReadOnlySpan<byte> src) => GCHandle.FromIntPtr(BinaryPrimitives.ReadIntPtrLittleEndian(src));
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal static nuint ReadHandleFromSerializedResource(ReadOnlySpan<byte> src) => BinaryPrimitives.ReadUIntPtrLittleEndian(src[sizeof(GCHandle)..]);
+	internal static nuint ReadHandleFromSerializedResource(ReadOnlySpan<byte> src) => BinaryPrimitives.ReadUIntPtrLittleEndian(src[sizeof(IntPtr)..]);
 }
 public interface IResource<TSelf> : IResource, IEquatable<TSelf> where TSelf : IResource<TSelf> {
 	internal new ResourceHandle<TSelf> Handle { get; }
