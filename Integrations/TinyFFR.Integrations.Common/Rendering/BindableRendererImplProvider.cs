@@ -12,16 +12,24 @@ namespace Egodystonic.TinyFFR.Rendering;
 sealed class BindableRendererImplProvider : IRendererImplProvider {
 	const string DefaultRendererName = "Unnamed Bindable Renderer";
 	static nuint _previousHandleId = 0;
+	readonly IRendererBuilder _rendererBuilder;
 	readonly ResourceHandle<Renderer> _handle;
 	readonly string _name;
 	readonly ResourceGroup _sceneAndCamera;
-	readonly byte[] _serializedConfig;
-	Renderer? _actualRenderer = null;
-	RenderOutputBuffer? _actualRendererTarget = null;
+	byte[] _serializedConfig;
+	Renderer _actualRenderer;
+	RenderOutputBuffer _actualRendererTarget;
+	bool _isDisposed = false;
 
 	public Renderer BindableRendererInstance => new(_handle, this);
 
-	public BindableRendererImplProvider(IResourceAllocator allocator, Scene scene, Camera camera, in RendererCreationConfig config) {
+	public BindableRendererImplProvider(IRendererBuilder rendererBuilder, IResourceAllocator allocator, Scene scene, Camera camera, in BindableRendererCreationConfig config) {
+		ArgumentNullException.ThrowIfNull(rendererBuilder);
+		ArgumentNullException.ThrowIfNull(allocator);
+		config.ThrowIfInvalid();
+
+		_rendererBuilder = rendererBuilder;
+
 		_handle = ++_previousHandleId;
 
 		_name = config.Name == default ? $"{DefaultRendererName} {_handle.AsInteger:X}" : config.Name.ToString();
@@ -31,15 +39,111 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		_sceneAndCamera.Add(scene);
 		_sceneAndCamera.Add(camera);
 		_sceneAndCamera.Seal();
+
+		_serializedConfig = new byte[BindableRendererCreationConfig.GetHeapStorageFormattedLength(config)];
+		BindableRendererCreationConfig.AllocateAndConvertToHeapStorage(_serializedConfig, config);
+
+		CreateTargetBuffer(config.DefaultBufferSize, null);
 	}
 
 	public static bool IsBindableRenderer(Renderer r) => r.Implementation is BindableRendererImplProvider;
-	
-	public static void AllocateOrReallocateOutputBuffer(Renderer r, XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) {
 
+	static BindableRendererImplProvider GetBindableImplementationOrThrow(Renderer r) {
+		return r.Implementation as BindableRendererImplProvider ?? throw new InvalidOperationException($"Given {nameof(Renderer)} ({r}) is not a bindable renderer.");
 	}
 
-	public static void DisposeOutputBuffer(Renderer r) {
+	public static void SetTargetBufferSize(Renderer r, XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) {
+		GetBindableImplementationOrThrow(r).RecreateTargetBuffer(size, handler);
+	}
 
+	void RecreateTargetBuffer(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? handler) {
+		_actualRenderer.Dispose();
+		_actualRendererTarget.Dispose();
+		CreateTargetBuffer(size, handler);
+	}
+	
+	void CreateTargetBuffer(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? handler) {
+		_actualRendererTarget = _rendererBuilder.CreateRenderOutputBuffer(new RenderOutputBufferCreationConfig {
+			Name = $"{_name} output buffer",
+			TextureDimensions = size
+		});
+		if (handler != null) _actualRendererTarget.StartReadingFrames(handler);
+		_actualRenderer = _rendererBuilder.CreateRenderer(
+			_sceneAndCamera.GetNthResourceOfType<Scene>(0),
+			_sceneAndCamera.GetNthResourceOfType<Camera>(0),
+			_actualRendererTarget,
+			BindableRendererCreationConfig.ConvertFromAllocatedHeapStorage(_serializedConfig).BaseConfig
+		);
+	}
+
+	public bool IsDisposed(ResourceHandle<Renderer> handle) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		return _isDisposed;
+	}
+	public void Dispose(ResourceHandle<Renderer> handle) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		if (_isDisposed) return;
+		try {
+			_actualRenderer.Dispose();
+			_actualRendererTarget.Dispose();
+			_sceneAndCamera.Dispose();
+			BindableRendererCreationConfig.DisposeAllocatedHeapStorage(_serializedConfig);
+		}
+		finally {
+			_isDisposed = true;
+		}
+	}
+
+	void ThrowIfHandleDoesNotBelongToThisInstance(ResourceHandle<Renderer> handle) {
+		if (handle != _handle) {
+			throw new InvalidOperationException($"This {nameof(Renderer)} was not constructed or deserialized correctly (implementation object does not match handle).");
+		}
+	}
+
+
+	public string GetNameAsNewStringObject(ResourceHandle<Renderer> handle) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		return _name;
+	}
+	public int GetNameLength(ResourceHandle<Renderer> handle) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		return _name.Length;
+	}
+	public void CopyName(ResourceHandle<Renderer> handle, Span<char> destinationBuffer) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		_name.CopyTo(destinationBuffer);
+	}
+	public void Render(ResourceHandle<Renderer> handle) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		_actualRenderer.Render();
+	}
+	public void SetQualityConfig(ResourceHandle<Renderer> handle, RenderQualityConfig newConfig) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+
+		var config = BindableRendererCreationConfig.ConvertFromAllocatedHeapStorage(_serializedConfig);
+		config = config with { Quality = newConfig };
+		BindableRendererCreationConfig.DisposeAllocatedHeapStorage(_serializedConfig);
+		var newConfigSize = BindableRendererCreationConfig.GetHeapStorageFormattedLength(config);
+		if (newConfigSize != _serializedConfig.Length) Array.Resize(ref _serializedConfig, newConfigSize);
+		BindableRendererCreationConfig.AllocateAndConvertToHeapStorage(_serializedConfig, config);
+
+		_actualRenderer.SetQuality(newConfig);
+	}
+	public void WaitForGpu(ResourceHandle<Renderer> handle) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		_actualRenderer.WaitForGpu();
+	}
+
+	public void CaptureScreenshot(ResourceHandle<Renderer> handle, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		_actualRenderer.CaptureScreenshot(bitmapFilePath, saveConfig);
+	}
+	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		_actualRenderer.CaptureScreenshot(handler);
+	}
+	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		_actualRenderer.CaptureScreenshot(handler);
 	}
 }
