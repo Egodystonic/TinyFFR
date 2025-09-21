@@ -26,10 +26,6 @@ public class TinyFfrSceneView : Control {
 		set => SetValue(RendererProperty, value);
 	}
 
-	public TinyFfrSceneView() {
-		_iterateRendererFunc = IterateRenderer;
-	}
-
 	public unsafe void WriteFrame(XYPair<int> dimensions, ReadOnlySpan<TexelRgb24> texels) {
 		if (_bitmap == null || _bitmap.PixelSize.Width != dimensions.X || _bitmap.PixelSize.Height != dimensions.Y) {
 			_bitmap?.Dispose();
@@ -54,14 +50,6 @@ public class TinyFfrSceneView : Control {
 		InvalidateVisual();
 	}
 
-	public void RenderFrame(TimeSpan? deltaTime = null) {
-		if (_renderer is not { } renderer) return;
-
-		_preFrameRender?.Invoke(deltaTime);
-		renderer.Render();
-		_postFrameRender?.Invoke(deltaTime);
-	}
-
 	public override void Render(DrawingContext context) {
 		base.Render(context);
 
@@ -71,12 +59,6 @@ public class TinyFfrSceneView : Control {
 		}
 
 		context.DrawImage(_bitmap, new Rect(Bounds.Size));
-	}
-
-	bool IterateRenderer() {
-		if (Loop is not { } loop) return false;
-		if (loop.TryIterateOnce(out var dt)) RenderFrame(dt);
-		return true;
 	}
 
 	unsafe void RecreateRendererAccordingToProperties() {
@@ -138,4 +120,6 @@ public class TinyFfrSceneView : Control {
 		if (change.Property != IsVisibleProperty) return;
 		RecreateRendererAccordingToProperties();
 	}
+
+	// TODO handle equivalent of disposal (unload?) and dispose that bitmap. Need to set it to null there too (and repeat pattern on detachment?)
 }

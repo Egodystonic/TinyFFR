@@ -52,8 +52,12 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		return r.Implementation as BindableRendererImplProvider ?? throw new InvalidOperationException($"Given {nameof(Renderer)} ({r}) is not a bindable renderer.");
 	}
 
-	public static void SetTargetBufferSize(Renderer r, XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) {
+	public static void StartOrContinueHandlingFrames(Renderer r, XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) {
 		GetBindableImplementationOrThrow(r).RecreateTargetBuffer(size, handler);
+	}
+
+	public static void StopHandlingFrames(Renderer r) {
+		GetBindableImplementationOrThrow(r)._actualRendererTarget.StopReadingFrames(cancelQueuedFrames: true);
 	}
 
 	void RecreateTargetBuffer(XYPair<int> size, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? handler) {
