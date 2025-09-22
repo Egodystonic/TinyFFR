@@ -12,18 +12,17 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Avalonia;
 
 public static class TinyFfrAvaloniaExtensions {
-	public static Renderer CreateAvaloniaRenderer(this IRendererBuilder @this, Scene scene, Camera camera, ReadOnlySpan<char> name = default) {
-		return @this.CreateAvaloniaRenderer(scene, camera, new CameraCreationConfig { Name = name });
-	}
-	public static Renderer CreateAvaloniaRenderer(this IRendererBuilder @this, Scene scene, Camera camera, in CameraCreationConfig config) {
-
-	}
-	
 	public static XYPair<double> AsXyPair(this Size @this) => new(@this.Width, @this.Height);
 	public static Size AsSize<T>(this XYPair<T> @this) where T : unmanaged, INumber<T> => new(@this.ToVector2());
 
-	public static IDisposable BeginIteratingOnUiThread(this ApplicationLoop @this) {
-		
-		DispatcherTimer.Run // TODO
+	public static void BeginIteratingOnUiThread(this ApplicationLoop @this, Action<TimeSpan> tickAction, CancellationToken stopToken, DispatcherPriority priority = default) {
+		DispatcherTimer.Run(
+			action: () => {
+				if (@this.TryIterateOnce(out var dt)) tickAction(dt);
+				return !stopToken.IsCancellationRequested;
+			},
+			interval: @this.DesiredIterationInterval,
+			priority
+		);
 	}
 }
