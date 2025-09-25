@@ -81,7 +81,7 @@ class PolygonTest {
 		}
 
 		// Now repeat again but expecting the opposite order for opposite ordering
-		var cwVertsWithAcwTriangleEmbedded = acwVertsWithCwTriangleEmbedded.Reverse().ToArray();
+		var cwVertsWithAcwTriangleEmbedded = Enumerable.Reverse(acwVertsWithCwTriangleEmbedded).ToArray();
 		for (var i = 0; i < 5; ++i) {
 			Assert.AreEqual(Direction.Forward, Polygon.CalculateNormalForAnticlockwiseCoplanarVertices(cwVertsWithAcwTriangleEmbedded));
 			cwVertsWithAcwTriangleEmbedded = new[] {

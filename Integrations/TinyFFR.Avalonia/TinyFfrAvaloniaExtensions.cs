@@ -18,6 +18,7 @@ public static class TinyFfrAvaloniaExtensions {
 	public static void BeginIteratingOnUiThread(this ApplicationLoop @this, Action<TimeSpan> tickAction, CancellationToken stopToken, DispatcherPriority priority = default) {
 		DispatcherTimer.Run(
 			action: () => {
+				if (stopToken.IsCancellationRequested) return false;
 				if (@this.TryIterateOnce(out var dt)) tickAction(dt);
 				return !stopToken.IsCancellationRequested;
 			},

@@ -16,7 +16,7 @@ public readonly ref struct BindableRendererCreationConfig : IConfigStruct<Bindab
 	public static readonly RenderQualityConfig DefaultQuality = RendererCreationConfig.DefaultQuality;
 	public static readonly XYPair<int> DefaultDefaultBufferSize = (960, 540);
 
-	public XYPair<int> DefaultBufferSize { get; init; }
+	public XYPair<int> DefaultBufferSize { get; init; } = DefaultDefaultBufferSize;
 
 	public RendererCreationConfig BaseConfig { get; init; }
 
@@ -42,8 +42,8 @@ public readonly ref struct BindableRendererCreationConfig : IConfigStruct<Bindab
 
 	internal void ThrowIfInvalid() {
 		BaseConfig.ThrowIfInvalid();
-		if (DefaultBufferSize.X < 0 || DefaultBufferSize.Y < 0) {
-			throw new ArgumentOutOfRangeException(nameof(DefaultBufferSize), DefaultBufferSize, "Neither X nor Y component can be negative.");
+		if (DefaultBufferSize.X <= 0 || DefaultBufferSize.Y <= 0) {
+			throw new ArgumentOutOfRangeException(nameof(DefaultBufferSize), DefaultBufferSize, "Both X and Y component must be positive.");
 		}
 	}
 

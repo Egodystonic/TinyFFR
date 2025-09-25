@@ -16,6 +16,7 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 	readonly ResourceHandle<Renderer> _handle;
 	readonly string _name;
 	readonly ResourceGroup _sceneAndCamera;
+	bool _autoUpdateCameraAspectRatio;
 	byte[] _serializedConfig;
 	Renderer _actualRenderer;
 	RenderOutputBuffer _actualRendererTarget;
@@ -40,6 +41,7 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		_sceneAndCamera.Add(camera);
 		_sceneAndCamera.Seal();
 
+		_autoUpdateCameraAspectRatio = config.AutoUpdateCameraAspectRatio;
 		_serializedConfig = new byte[BindableRendererCreationConfig.GetHeapStorageFormattedLength(config)];
 		BindableRendererCreationConfig.AllocateAndConvertToHeapStorage(_serializedConfig, config);
 
@@ -72,12 +74,16 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 			TextureDimensions = size
 		});
 		if (handler != null) _actualRendererTarget.StartReadingFrames(handler);
+
+		var scene = _sceneAndCamera.GetNthResourceOfType<Scene>(0);
+		var camera = _sceneAndCamera.GetNthResourceOfType<Camera>(0);
 		_actualRenderer = _rendererBuilder.CreateRenderer(
-			_sceneAndCamera.GetNthResourceOfType<Scene>(0),
-			_sceneAndCamera.GetNthResourceOfType<Camera>(0),
+			scene,
+			camera,
 			_actualRendererTarget,
 			BindableRendererCreationConfig.ConvertFromAllocatedHeapStorage(_serializedConfig).BaseConfig
 		);
+		if (_autoUpdateCameraAspectRatio && size.Ratio is { } ratio) camera.SetAspectRatio(ratio);
 	}
 
 	public bool IsDisposed(ResourceHandle<Renderer> handle) {

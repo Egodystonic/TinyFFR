@@ -44,6 +44,12 @@
       <Platform Solution="*|ARM64" Project="ARM64" />
       <Platform Solution="*|x64" Project="x64" />
     </Project>
+    <Project Path="Testing/TinyFFR.Tests.Integrations.Avalonia.Desktop/TinyFFR.Tests.Integrations.Avalonia.Desktop.csproj">
+      <BuildType Solution="Optimized|*" Project="Release" />
+    </Project>
+    <Project Path="Testing/TinyFFR.Tests.Integrations.Avalonia/TinyFFR.Tests.Integrations.Avalonia.csproj">
+      <BuildType Solution="Optimized|*" Project="Release" />
+    </Project>
     <Project Path="Testing/TinyFFR.Tests/TinyFFR.Tests.csproj">
       <BuildType Solution="Optimized|*" Project="Release" />
       <Platform Solution="*|ARM64" Project="ARM64" />

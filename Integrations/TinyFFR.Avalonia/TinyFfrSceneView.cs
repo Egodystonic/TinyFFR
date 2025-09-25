@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2025
 
 using System;
+using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -17,7 +18,6 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Avalonia;
 
 public class TinyFfrSceneView : Control {
-	readonly IPen _noRenderPen = new Pen(new SolidColorBrush(new Color(255, 0, 0, 0), 1d));
 	WriteableBitmap? _bitmap;
 
 	public static readonly StyledProperty<Renderer?> RendererProperty = AvaloniaProperty.Register<TinyFfrSceneView, Renderer?>(
@@ -25,10 +25,18 @@ public class TinyFfrSceneView : Control {
 		null,
 		validate: newValue => newValue == null || BindableRendererImplProvider.IsBindableRenderer(newValue.Value)
 	);
+	public static readonly StyledProperty<IBrush> FallbackBrushProperty = AvaloniaProperty.Register<TinyFfrSceneView, IBrush>(
+		nameof(FallbackBrush),
+		new SolidColorBrush(new Color(255, 30, 22, 22))
+	);
 
 	public Renderer? Renderer {
 		get => GetValue(RendererProperty);
 		set => SetValue(RendererProperty, value);
+	}
+	public IBrush FallbackBrush {
+		get => GetValue(FallbackBrushProperty);
+		set => SetValue(FallbackBrushProperty, value);
 	}
 
 	public unsafe void WriteFrame(XYPair<int> dimensions, ReadOnlySpan<TexelRgb24> texels) {
@@ -42,15 +50,24 @@ public class TinyFfrSceneView : Control {
 			);
 		}
 
-		using var lockedBuffer = _bitmap.Lock();
-		if (lockedBuffer.Format != PixelFormats.Rgb24
-			|| lockedBuffer.Size.Width != dimensions.X
-			|| lockedBuffer.Size.Height != dimensions.Y
-			|| lockedBuffer.RowBytes != dimensions.X * TexelRgb24.TexelSizeBytes) {
-			throw new InvalidOperationException("Write to locked buffer failed safety check.");
+		using (var lockedBuffer = _bitmap.Lock()) {
+			if (lockedBuffer.Format != PixelFormats.Rgb24
+				|| lockedBuffer.Size.Width != dimensions.X
+				|| lockedBuffer.Size.Height != dimensions.Y
+				|| lockedBuffer.RowBytes < dimensions.X * sizeof(TexelRgb24)) {
+				throw new InvalidOperationException("Write to locked buffer failed safety check.");
+			}
+			if (lockedBuffer.RowBytes == dimensions.X * TexelRgb24.TexelSizeBytes) {
+				var destSpan = new Span<TexelRgb24>((void*) lockedBuffer.Address, texels.Length);
+				texels.CopyTo(destSpan);
+			}
+			else {
+				for (var r = 0; r < dimensions.Y; ++r) {
+					var destSpan = new Span<TexelRgb24>(((byte*) lockedBuffer.Address) + (r * lockedBuffer.RowBytes), dimensions.X);
+					texels[(r * dimensions.X)..((r + 1) * dimensions.X)].CopyTo(destSpan);
+				}
+			}
 		}
-		var destAsSpan = new Span<TexelRgb24>((void*) lockedBuffer.Address, dimensions.Area);
-		texels.CopyTo(destAsSpan);
 
 		InvalidateVisual();
 	}
@@ -59,7 +76,7 @@ public class TinyFfrSceneView : Control {
 		base.Render(context);
 
 		if (_bitmap == null) {
-			context.DrawRectangle(_noRenderPen, new Rect(Bounds.Size));
+			context.DrawRectangle(FallbackBrush, null, new Rect(new Point(0d, 0d), Bounds.Size));
 			return;
 		}
 
@@ -90,19 +107,25 @@ public class TinyFfrSceneView : Control {
 	}
 
 	void IdempotentlyUpdateRendererStateAccordingToControlState() {
+		var boundsAsSize = Bounds.Size.AsXyPair().Cast<int>();
+		var boundsArePermitted = 
+			(boundsAsSize.X is >= RenderOutputBufferCreationConfig.MinTextureDimensionXY and <= RenderOutputBufferCreationConfig.MaxTextureDimensionXY)
+			&& (boundsAsSize.Y is >= RenderOutputBufferCreationConfig.MinTextureDimensionXY and <= RenderOutputBufferCreationConfig.MaxTextureDimensionXY);
+
 		var rendererLocal = Renderer;
-		var shouldDisableFrameCapture = rendererLocal == null || !IsVisible || this.GetVisualRoot() == null;
+		var shouldDisableFrameCapture = rendererLocal == null || !IsVisible || this.GetVisualRoot() == null || !boundsArePermitted;
 		if (shouldDisableFrameCapture) {
 			_bitmap?.Dispose();
 			_bitmap = null;
 			if (rendererLocal != null) {
 				BindableRendererImplProvider.StopHandlingFrames(rendererLocal.Value);
 			}
+			InvalidateVisual();
 			return;
 		}
 		
 #pragma warning disable CS8629 // Nullable value type may be null: Nope, it's checked above
-		BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, Bounds.Size.AsXyPair().Cast<int>(), WriteFrame);
+		BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, boundsAsSize, WriteFrame);
 #pragma warning restore CS8629 
 	}
 }
