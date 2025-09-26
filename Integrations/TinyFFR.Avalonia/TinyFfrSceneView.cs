@@ -8,12 +8,14 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
+using Avalonia.Rendering;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.World;
+using static Egodystonic.TinyFFR.Rendering.RenderOutputBufferCreationConfig;
 
 namespace Egodystonic.TinyFFR.Avalonia;
 
@@ -29,6 +31,11 @@ public class TinyFfrSceneView : Control {
 		nameof(FallbackBrush),
 		new SolidColorBrush(new Color(255, 30, 22, 22))
 	);
+	public static readonly StyledProperty<Size?> InternalRenderResolutionProperty = AvaloniaProperty.Register<TinyFfrSceneView, Size?>(
+		nameof(InternalRenderResolution),
+		null,
+		validate: newValue => newValue is not { } size || size is { Width: >= MinTextureDimensionXY and <= MaxTextureDimensionXY, Height: >= MinTextureDimensionXY and <= MaxTextureDimensionXY }
+	);
 
 	public Renderer? Renderer {
 		get => GetValue(RendererProperty);
@@ -37,6 +44,10 @@ public class TinyFfrSceneView : Control {
 	public IBrush FallbackBrush {
 		get => GetValue(FallbackBrushProperty);
 		set => SetValue(FallbackBrushProperty, value);
+	}
+	public Size? InternalRenderResolution {
+		get => GetValue(InternalRenderResolutionProperty);
+		set => SetValue(InternalRenderResolutionProperty, value);
 	}
 
 	public unsafe void WriteFrame(XYPair<int> dimensions, ReadOnlySpan<TexelRgb24> texels) {
@@ -76,7 +87,7 @@ public class TinyFfrSceneView : Control {
 		base.Render(context);
 
 		if (_bitmap == null) {
-			context.DrawRectangle(FallbackBrush, null, new Rect(new Point(0d, 0d), Bounds.Size));
+			context.DrawRectangle(FallbackBrush, null, new Rect(Bounds.Size));
 			return;
 		}
 
@@ -95,7 +106,7 @@ public class TinyFfrSceneView : Control {
 
 	protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change) {
 		base.OnPropertyChanged(change);
-		if (change.Property == IsVisibleProperty || change.Property == BoundsProperty) {
+		if (change.Property == IsVisibleProperty || change.Property == BoundsProperty || change.Property == InternalRenderResolutionProperty) {
 			IdempotentlyUpdateRendererStateAccordingToControlState();
 		}
 		else if (change.Property == RendererProperty) {
@@ -107,13 +118,14 @@ public class TinyFfrSceneView : Control {
 	}
 
 	void IdempotentlyUpdateRendererStateAccordingToControlState() {
-		var boundsAsSize = Bounds.Size.AsXyPair().Cast<int>();
-		var boundsArePermitted = 
-			(boundsAsSize.X is >= RenderOutputBufferCreationConfig.MinTextureDimensionXY and <= RenderOutputBufferCreationConfig.MaxTextureDimensionXY)
-			&& (boundsAsSize.Y is >= RenderOutputBufferCreationConfig.MinTextureDimensionXY and <= RenderOutputBufferCreationConfig.MaxTextureDimensionXY);
+		var targetSize = (InternalRenderResolution ?? Bounds.Size).AsXyPair().Cast<int>();
+		
+		var targetSizeIsPermitted = 
+			(targetSize.X is >= MinTextureDimensionXY and <= MaxTextureDimensionXY)
+			&& (targetSize.Y is >= MinTextureDimensionXY and <= MaxTextureDimensionXY);
 
 		var rendererLocal = Renderer;
-		var shouldDisableFrameCapture = rendererLocal == null || !IsVisible || this.GetVisualRoot() == null || !boundsArePermitted;
+		var shouldDisableFrameCapture = rendererLocal == null || !IsVisible || this.GetVisualRoot() == null || !targetSizeIsPermitted;
 		if (shouldDisableFrameCapture) {
 			_bitmap?.Dispose();
 			_bitmap = null;
@@ -125,7 +137,7 @@ public class TinyFfrSceneView : Control {
 		}
 		
 #pragma warning disable CS8629 // Nullable value type may be null: Nope, it's checked above
-		BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, boundsAsSize, WriteFrame);
+		BindableRendererImplProvider.StartOrContinueHandlingFrames(rendererLocal.Value, targetSize, WriteFrame);
 #pragma warning restore CS8629 
 	}
 }

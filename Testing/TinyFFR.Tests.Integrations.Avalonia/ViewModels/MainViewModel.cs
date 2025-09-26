@@ -10,15 +10,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using Avalonia.Threading;
 using Egodystonic.TinyFFR.Avalonia;
 
 namespace TinyFFR.Tests.Integrations.Avalonia.ViewModels;
 
 public partial class MainViewModel : ViewModelBase {
 	List<IDisposable>? _disposables;
-	CancellationTokenSource? _tickStopCts;
 	ModelInstance _instance;
-	ApplicationLoop _loop;
 	PointLight _light;
 
 	[ObservableProperty]
@@ -60,12 +59,6 @@ public partial class MainViewModel : ViewModelBase {
 		scene.Add(_instance);
 		scene.Add(_light);
 
-		_loop = factory.ApplicationLoopBuilder.CreateLoop(60);
-
-		_tickStopCts = new CancellationTokenSource();
-
-		_loop.BeginIteratingOnUiThread(Tick, _tickStopCts.Token);
-
 		_disposables.Add(factory);
 		_disposables.Add(camera);
 		_disposables.Add(mesh);
@@ -74,15 +67,13 @@ public partial class MainViewModel : ViewModelBase {
 		_disposables.Add(_light);
 		_disposables.Add(scene);
 		_disposables.Add(Renderer);
-		_disposables.Add(_loop);
+		_disposables.Add(factory.ApplicationLoopBuilder.StartAvaloniaUiLoop(Tick));
 
 		Renderer.Value.Render();
 	}
 
 	void StopRendering() {
 		Renderer = null;
-		_tickStopCts!.Cancel();
-		_tickStopCts = null;
 		foreach (var d in Enumerable.Reverse(_disposables!)) {
 			d.Dispose();
 		}
@@ -92,11 +83,7 @@ public partial class MainViewModel : ViewModelBase {
 	void Tick(TimeSpan deltaTime) {
 		Renderer!.Value.Render();
 
-		_instance.RotateBy(1.3f % Direction.Up);
-		_instance.RotateBy(0.8f % Direction.Right);
-
-		foreach (var newEvent in _loop.Input.GameControllersCombined.NewButtonEvents) {
-			Debug.WriteLine(newEvent);
-		}
+		_instance.RotateBy((float) deltaTime.TotalSeconds * 130f % Direction.Up);
+		_instance.RotateBy((float) deltaTime.TotalSeconds * 80f % Direction.Right);
 	}
 }

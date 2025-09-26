@@ -6,4 +6,5 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 [assembly: InternalsVisibleTo("TinyFFR.Avalonia")]
+[assembly: InternalsVisibleTo("TinyFFR.Wpf")]
 [assembly: InternalsVisibleTo("TinyFFR.Tests")]

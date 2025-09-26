@@ -76,7 +76,10 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		if (waitTime > maxCpuBusyWaitTime) {
 			Thread.Sleep(waitTime - maxCpuBusyWaitTime);
 		}
-		while (GetWaitTimeUntilNextFrameStart(handle) > TimeSpan.Zero) { }
+		var spinWaiter = new SpinWait();
+		while (GetWaitTimeUntilNextFrameStart(handle) > TimeSpan.Zero) {
+			spinWaiter.SpinOnce();
+		}
 
 		_handleDataMap[handle] = _handleDataMap[handle] with { PreviousIterationStartTimestamp = Stopwatch.GetTimestamp() };
 		ExecuteIteration(_handleDataMap[handle].ShouldIterateInput);
