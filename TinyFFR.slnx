@@ -13,6 +13,9 @@
     <Project Path="Integrations/TinyFFR.Integrations.Common/TinyFFR.Integrations.Common.csproj" Id="789fc824-141f-4b7a-8959-f389f704e7e1">
       <BuildType Solution="Optimized|*" Project="Release" />
     </Project>
+    <Project Path="Integrations/TinyFFR.WinForms/TinyFFR.WinForms.csproj" Id="21e18e16-4a8a-471b-a53e-c49df4b51e55">
+      <BuildType Solution="Optimized|*" Project="Release" />
+    </Project>
     <Project Path="Integrations/TinyFFR.Wpf/TinyFFR.Wpf.csproj" Id="04a999dc-72a0-4946-8862-cd1e2e45355f">
       <BuildType Solution="Optimized|*" Project="Release" />
     </Project>
@@ -51,6 +54,9 @@
       <BuildType Solution="Optimized|*" Project="Release" />
     </Project>
     <Project Path="Testing/TinyFFR.Tests.Integrations.Avalonia/TinyFFR.Tests.Integrations.Avalonia.csproj">
+      <BuildType Solution="Optimized|*" Project="Release" />
+    </Project>
+    <Project Path="Testing/TinyFFR.Tests.Integrations.WinForms/TinyFFR.Tests.Integrations.WinForms.csproj" Id="ca7c90a7-5dc6-4007-8bb3-2126bff1e9d4">
       <BuildType Solution="Optimized|*" Project="Release" />
     </Project>
     <Project Path="Testing/TinyFFR.Tests.Integrations.Wpf/TinyFFR.Tests.Integrations.Wpf.csproj" Id="acc84590-659b-49c0-80f9-0607b7216b4c">
