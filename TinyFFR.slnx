@@ -47,8 +47,6 @@
     </Project>
     <Project Path="Testing/TestCommon/TestCommon.csproj" Id="c5487859-95a3-4bf9-85dc-23f9d6e6fd3d">
       <BuildType Solution="Optimized|*" Project="Release" />
-      <Platform Solution="*|ARM64" Project="ARM64" />
-      <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="Testing/TinyFFR.Tests.Integrations.Avalonia.Desktop/TinyFFR.Tests.Integrations.Avalonia.Desktop.csproj">
       <BuildType Solution="Optimized|*" Project="Release" />

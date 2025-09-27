@@ -16,7 +16,7 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 	readonly ResourceHandle<Renderer> _handle;
 	readonly string _name;
 	readonly ResourceGroup _sceneAndCamera;
-	bool _autoUpdateCameraAspectRatio;
+	readonly bool _autoUpdateCameraAspectRatio;
 	byte[] _serializedConfig;
 	Renderer _actualRenderer;
 	RenderOutputBuffer _actualRendererTarget;
@@ -33,7 +33,7 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 
 		_handle = ++_previousHandleId;
 
-		_name = config.Name == default ? $"{DefaultRendererName} {_handle.AsInteger:X}" : config.Name.ToString();
+		_name = config.Name.IsEmpty ? $"{DefaultRendererName} {_handle.AsInteger:X}" : config.Name.ToString();
 
 		// Adding these to a group adds a dependency meaning users can't dispose the camera or group before this renderer is disposed
 		_sceneAndCamera = allocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: false, name: config.Name, initialCapacity: 2);

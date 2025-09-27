@@ -6,6 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Platforms>x64;ARM64</Platforms>
+    <NoWarn>
+      CS7022; <!-- Fixes an error where MSTest generates an entry point in this library because we're referencing the unit test project -->
+    </NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
