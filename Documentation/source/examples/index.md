@@ -34,3 +34,20 @@ Learn how to load texture files, 3D models, and sky environments from storage in
 
 Learn different ways to manage keyboard, mouse, and gamepad interactions.
 { : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
+
+## UI Integration
+
+[:material-arrow-right-bold:{ .lg } :fontawesome-brands-windows:{ .lg : style="margin-right:0.3em" } __WPF Integration__{ : style="font-size:1.3em;" }](integrating_wpf.md)
+
+Learn how to integrate TinyFFR with WPF.
+{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
+
+[:material-arrow-right-bold:{ .lg } :material-alpha-a-box:{ .lg : style="margin-right:0.3em" } __Avalonia Integration__{ : style="font-size:1.3em;" }](integrating_avalonia.md)
+
+Learn how to integrate TinyFFR with Avalonia.
+{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
+
+[:material-arrow-right-bold:{ .lg } :material-microsoft-windows-classic:{ .lg : style="margin-right:0.3em" } __WinForms Integration__{ : style="font-size:1.3em;" }](integrating_winforms.md)
+
+Learn how to integrate TinyFFR with Windows Forms.
+{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }

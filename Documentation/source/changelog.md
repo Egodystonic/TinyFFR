@@ -7,14 +7,21 @@ search:
 
 ## 0.4
 
+__Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/4?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.4.0)__
+
 ### Major Features
 
-* Can now render directly to textures
-* Can now render to a callback, handle texel stream in C#, and optionally save directly to BMP format on disc
+* Integration added for popular .NET UI Frameworks:
+	* WPF
+	* WinForms
+	* Avalonia
+* Can now render directly to textures and/or capture screenshots on any Renderer
+	* Can also render to a callback function that handles texel streams
 
 ### Improvements
 
 * Support for sRGB colourspace added when loading textures
+* Added support for serializing ref-struct-based config objects to/from heap
 
 ### Bug Fixes
 

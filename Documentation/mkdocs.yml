@@ -125,6 +125,9 @@ nav:
     - examples/texture_patterns.md
     - examples/loading_assets.md
     - examples/handling_input.md
+    - examples/integrating_wpf.md
+    - examples/integrating_avalonia.md
+    - examples/integrating_winforms.md
   - Concepts:
     - concepts/index.md
     - concepts/factory.md
