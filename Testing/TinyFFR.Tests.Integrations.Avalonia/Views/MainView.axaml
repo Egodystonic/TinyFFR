@@ -19,6 +19,8 @@
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
             <Button Command="{Binding ToggleRenderingButtonPressed}" Content="Toggle Rendering" />
             <Button Command="{Binding ChangeLightColourButtonPressed}" Content="Change Light Colour" />
+            <CheckBox Content="Toggle Animated Rendering" IsChecked="{Binding Animate}" />
+            <Button Command="{Binding RenderOnce}" Content="Render Manually" />
         </StackPanel>
         <tffrAvalonia:TinyFfrSceneView
             FallbackBrush="LightGray"

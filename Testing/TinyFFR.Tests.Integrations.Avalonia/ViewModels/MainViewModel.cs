@@ -27,11 +27,18 @@ public partial class MainViewModel : ViewModelBase {
 	public partial RelayCommand ChangeLightColourButtonPressed { get; set; }
 
 	[ObservableProperty]
+	public partial bool Animate { get; set; } = true;
+
+	[ObservableProperty]
+	public partial RelayCommand RenderOnce { get; set; }
+
+	[ObservableProperty]
 	public partial Renderer? Renderer { get; set; }
 
 	public MainViewModel() {
 		ToggleRenderingButtonPressed = new(ToggleRendering);
 		ChangeLightColourButtonPressed = new(ChangeLightColour);
+		RenderOnce = new(() => Renderer?.Render());
 	}
 
 	void ToggleRendering() {
@@ -81,7 +88,7 @@ public partial class MainViewModel : ViewModelBase {
 	}
 
 	void Tick(TimeSpan deltaTime) {
-		Renderer!.Value.Render();
+		if (Animate) Renderer!.Value.Render();
 
 		_instance.RotateBy((float) deltaTime.TotalSeconds * 130f % Direction.Up);
 		_instance.RotateBy((float) deltaTime.TotalSeconds * 80f % Direction.Right);
