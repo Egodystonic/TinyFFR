@@ -414,12 +414,18 @@ TinyFFR.Native/third_party/headers/filament/**
 build_output/**
 ThirdParty/build_output/**
 Publishing/TinyFFR.NuGet/build_output/**
+Publishing/TinyFFR.Avalonia.NuGet/build_output/**
+Publishing/TinyFFR.Wpf.NuGet/build_output/**
+Publishing/TinyFFR.WinForms.NuGet/build_output/**
 
 # TinyFFR - ignore generated documentation 
 Documentation/output/**
 
-# TinyFFR - ignore native binaries in pack project
+# TinyFFR - ignore native binaries in pack projects
 Publishing/TinyFFR.NuGet/prebuilt_binaries/**
+Publishing/TinyFFR.Avalonia.NuGet/prebuilt_binaries/**
+Publishing/TinyFFR.Wpf.NuGet/prebuilt_binaries/**
+Publishing/TinyFFR.WinForms.NuGet/prebuilt_binaries/**
 
 # TinyFFR - never ignore any file in test assets folder
 !Testing/test_assets/**
