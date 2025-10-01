@@ -21,6 +21,7 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/4?closed=1) 
 ### Improvements
 
 * Support for sRGB colourspace added when loading textures
+* Added `ImageUtils` static class with methods to convert spans of texels to bitmaps
 * Added support for serializing ref-struct-based config objects to/from heap
 
 ### Bug Fixes

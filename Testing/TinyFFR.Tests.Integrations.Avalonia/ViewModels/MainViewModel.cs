@@ -18,7 +18,7 @@ namespace TinyFFR.Tests.Integrations.Avalonia.ViewModels;
 public partial class MainViewModel : ViewModelBase {
 	List<IDisposable>? _disposables;
 	ModelInstance _instance;
-	PointLight _light;
+	SpotLight _light;
 
 	[ObservableProperty]
 	public partial RelayCommand ToggleRenderingButtonPressed { get; set; }
@@ -59,8 +59,9 @@ public partial class MainViewModel : ViewModelBase {
 		var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
 		var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial();
 		_instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 2.2f);
-		_light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f));
+		_light = factory.LightBuilder.CreateSpotLight(_instance.Position + Direction.Up * 3f, Direction.Down, 60f, 20f, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f));
 		var scene = factory.SceneBuilder.CreateScene(backdropColor: StandardColor.LightingSunMidday);
+		scene.SetBackdrop(StandardColor.LightingSunMidday, indirectLightingIntensity: 0f);
 		Renderer = factory.RendererBuilder.CreateBindableRenderer(scene, camera, factory.ResourceAllocator);
 
 		scene.Add(_instance);

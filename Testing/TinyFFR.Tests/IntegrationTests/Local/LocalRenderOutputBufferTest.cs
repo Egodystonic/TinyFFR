@@ -72,7 +72,7 @@ class LocalRenderOutputBufferTest {
 		using var renderBufferModel = factory.ObjectBuilder.CreateModelInstance(
 			cubeMesh,
 			renderBufferMat,
-			initialPosition: Location.Origin + Direction.Forward * 1.5f,
+			initialPosition: Location.Origin + Direction.Forward * 1.5f + Direction.Up * 0.4f,
 			initialRotation: Direction.Up % 30f + Direction.Right % 14f
 		);
 		using var renderBuffer = factory.RendererBuilder.CreateRenderOutputBuffer((1024, 1024));
@@ -88,7 +88,7 @@ class LocalRenderOutputBufferTest {
 		using var windowModel = factory.ObjectBuilder.CreateModelInstance(
 			cubeMesh,
 			windowMat,
-			initialPosition: Location.Origin + Direction.Forward * 1.35f
+			initialPosition: Location.Origin + Direction.Forward * 1.35f + Direction.Up * 0.4f
 		);
 		using var windowCamera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
@@ -100,7 +100,6 @@ class LocalRenderOutputBufferTest {
 		while (loop.TotalIteratedTime < TimeSpan.FromSeconds(10d)) {
 			var dt = (float) loop.IterateOnce().TotalSeconds;
 			renderBufferModel.RotateBy(dt * (Direction.Down % 90f));
-			windowModel.RotateBy(dt * (Direction.Forward % 15f + Direction.Up % 45f));
 			renderBufferRenderer.Render();
 			windowRenderer.Render();
 		}
@@ -139,7 +138,7 @@ class LocalRenderOutputBufferTest {
 		using var cube = factory.ObjectBuilder.CreateModelInstance(
 			mesh,
 			mat,
-			Direction.Forward * 2.2f + Location.Origin,
+			Direction.Forward * 2.2f + Location.Origin + Direction.Up * 0.4f,
 			Direction.Up % 30f + Direction.Right % 14f
 		);
 		using var light = factory.LightBuilder.CreatePointLight(camera.Position);

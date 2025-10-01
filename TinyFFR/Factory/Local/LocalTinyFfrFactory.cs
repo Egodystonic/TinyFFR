@@ -10,6 +10,7 @@ using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Rendering;
+using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.World;
@@ -55,7 +56,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 
 	IApplicationLoopBuilder ITinyFfrFactory.ApplicationLoopBuilder => ApplicationLoopBuilder;
 
-	public LocalTinyFfrFactory(LocalTinyFfrFactoryConfig? factoryConfig = null, WindowBuilderConfig? windowBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null) {
+	public LocalTinyFfrFactory(LocalTinyFfrFactoryConfig? factoryConfig = null, WindowBuilderConfig? windowBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null, RendererBuilderConfig? rendererBuilderConfig = null) {
 		if (_instance != null) throw new InvalidOperationException($"Only one {nameof(LocalTinyFfrFactory)} may be live at any given time. Dispose the previous instance before creating another one.");
 
 		LocalNativeUtils.InitializeNativeLibIfNecessary();
@@ -82,7 +83,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		_lightBuilder = new LocalLightBuilder(globals);
 		_objectBuilder = new LocalObjectBuilder(globals);
 		_sceneBuilder = new LocalSceneBuilder(globals);
-		_rendererBuilder = new LocalRendererBuilder(globals);
+		_rendererBuilder = new LocalRendererBuilder(globals, rendererBuilderConfig ?? new());
 		_resourceAllocator = new LocalResourceAllocator(globals);
 
 		_instance = this;

@@ -30,14 +30,14 @@ public readonly unsafe struct RenderOutputBuffer : IDisposableResource<RenderOut
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ReadNextFrame(Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: true);
+	public void ReadNextFrame(Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool presentFrameTopToBottom = false) => Implementation.SetOutputChangeHandler(_handle, handler, presentFrameTopToBottom, handleOnlyNextChange: true);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ReadNextFrame(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: true);
+	public void ReadNextFrame(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool presentFrameTopToBottom = false) => Implementation.SetOutputChangeHandler(_handle, handler, presentFrameTopToBottom, handleOnlyNextChange: true);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void StartReadingFrames(Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: false);
+	public void StartReadingFrames(Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool presentFramesTopToBottom = false) => Implementation.SetOutputChangeHandler(_handle, handler, presentFramesTopToBottom, handleOnlyNextChange: false);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void StartReadingFrames(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler) => Implementation.SetOutputChangeHandler(_handle, handler, handleOnlyNextChange: false);
+	public void StartReadingFrames(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool presentFramesTopToBottom = false) => Implementation.SetOutputChangeHandler(_handle, handler, presentFramesTopToBottom, handleOnlyNextChange: false);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void StopReadingFrames(bool cancelQueuedFrames) => Implementation.ClearOutputChangeHandlers(_handle, cancelQueuedFrames);

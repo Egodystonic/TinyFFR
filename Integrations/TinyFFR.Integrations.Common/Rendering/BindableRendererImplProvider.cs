@@ -73,7 +73,7 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 			Name = $"{_name} output buffer",
 			TextureDimensions = size
 		});
-		if (handler != null) _actualRendererTarget.StartReadingFrames(handler);
+		if (handler != null) _actualRendererTarget.StartReadingFrames(handler, presentFramesTopToBottom: true);
 
 		var scene = _sceneAndCamera.GetNthResourceOfType<Scene>(0);
 		var camera = _sceneAndCamera.GetNthResourceOfType<Camera>(0);
@@ -144,16 +144,16 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		_actualRenderer.WaitForGpu();
 	}
 
-	public void CaptureScreenshot(ResourceHandle<Renderer> handle, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig) {
+	public void CaptureScreenshot(ResourceHandle<Renderer> handle, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig, bool lowestAddressesRepresentFrameTop) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
-		_actualRenderer.CaptureScreenshot(bitmapFilePath, saveConfig);
+		_actualRenderer.CaptureScreenshot(bitmapFilePath, saveConfig, lowestAddressesRepresentFrameTop);
 	}
-	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) {
+	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool lowestAddressesRepresentFrameTop) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
-		_actualRenderer.CaptureScreenshot(handler);
+		_actualRenderer.CaptureScreenshot(handler, lowestAddressesRepresentFrameTop);
 	}
-	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler) {
+	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool lowestAddressesRepresentFrameTop) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
-		_actualRenderer.CaptureScreenshot(handler);
+		_actualRenderer.CaptureScreenshot(handler, lowestAddressesRepresentFrameTop);
 	}
 }

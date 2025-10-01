@@ -50,13 +50,13 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	// TODO make it clear that CaptureScreenshot incurs a framedrop penalty and that rendering to an output buffer is preferable for continuous CPU streaming
 	// TODO also make it clear that the bitmapFilePath overload can throw IOException
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void CaptureScreenshot(ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig = null) => Implementation.CaptureScreenshot(_handle, bitmapFilePath, saveConfig);
+	public void CaptureScreenshot(ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig ? saveConfig = null, bool presentFrameTopToBottom = false) => Implementation.CaptureScreenshot(_handle, bitmapFilePath, saveConfig, presentFrameTopToBottom);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void CaptureScreenshot(Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) => Implementation.CaptureScreenshot(_handle, handler);
+	public void CaptureScreenshot(Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool presentFrameTopToBottom = false) => Implementation.CaptureScreenshot(_handle, handler, presentFrameTopToBottom);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public unsafe void CaptureScreenshot(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler) => Implementation.CaptureScreenshot(_handle, handler);
+	public unsafe void CaptureScreenshot(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool presentFrameTopToBottom = false) => Implementation.CaptureScreenshot(_handle, handler, presentFrameTopToBottom);
 
 	public override string ToString() => $"Renderer {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 

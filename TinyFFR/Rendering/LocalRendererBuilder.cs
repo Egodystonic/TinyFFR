@@ -12,6 +12,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.World;
 using System;
 using System.IO;
+using Egodystonic.TinyFFR.Rendering.Local;
 using static System.Formats.Asn1.AsnWriter;
 
 namespace Egodystonic.TinyFFR.Rendering;
@@ -72,12 +73,14 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	readonly record struct ViewportData(UIntPtr Handle, XYPair<int> CurrentSize);
 	readonly record struct RendererData(Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, bool EmitFences, RenderQualityConfig Quality);
 	readonly unsafe struct OutputBufferCallbackData {
+		public bool InvertRows { get; }
 		public delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> OutputChangeHandler { get; }
 		public Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? OutputChangeHandlerManaged { get; }
-
+		
 		public bool AnySet => OutputChangeHandler != null || OutputChangeHandlerManaged != null;
 
-		public OutputBufferCallbackData(delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> outputChangeHandler, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? outputChangeHandlerManaged) {
+		public OutputBufferCallbackData(bool invertRows, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> outputChangeHandler, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>? outputChangeHandlerManaged) {
+			InvertRows = invertRows;
 			OutputChangeHandler = outputChangeHandler;
 			OutputChangeHandlerManaged = outputChangeHandlerManaged;
 		}
@@ -94,6 +97,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	readonly ArrayPoolBackedMap<ResourceHandle<RenderOutputBuffer>, OutputBufferData> _loadedBuffers = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Renderer>, RendererData> _loadedRenderers = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
+	readonly RendererBuilderConfig _config;
 	readonly RenderOutputBufferImplProvider _renderOutputBufferImplProvider;
 	readonly TextureImplProvider _textureImplProvider;
 	nuint _previousHandleId = 0U;
@@ -115,8 +119,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		public void Dispose(ResourceHandle<RenderOutputBuffer> handle) => _owner.Dispose(handle);
 		public Texture CreateDynamicTexture(ResourceHandle<RenderOutputBuffer> handle) => _owner.CreateDynamicTexture(handle);
 		public XYPair<int> GetTextureDimensions(ResourceHandle<RenderOutputBuffer> handle) => _owner.GetTextureDimensions(handle);
-		public void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, handleOnlyNextChange);
-		public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, handleOnlyNextChange);
+		public void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, lowestAddressesRepresentFrameTop, handleOnlyNextChange);
+		public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) => _owner.SetOutputChangeHandler(handle, handler, lowestAddressesRepresentFrameTop, handleOnlyNextChange);
 		public void ClearOutputChangeHandlers(ResourceHandle<RenderOutputBuffer> handle, bool cancelQueuedFrames) => _owner.ClearOutputChangeHandlers(handle, cancelQueuedFrames);
 		public override string ToString() => _owner.ToString();
 	}
@@ -149,10 +153,11 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		public XYPair<int> GetDimensions(ResourceHandle<Texture> handle) => _owner._loadedBuffers[GetOwningBuffer(handle)].TextureDimensions.Cast<int>();
 	}
 
-	public LocalRendererBuilder(LocalFactoryGlobalObjectGroup globals) {
+	public LocalRendererBuilder(LocalFactoryGlobalObjectGroup globals, RendererBuilderConfig config) {
 		ArgumentNullException.ThrowIfNull(globals);
 
 		_globals = globals;
+		_config = config;
 		_renderOutputBufferImplProvider = new(this);
 		_textureImplProvider = new(this);
 	}
@@ -233,7 +238,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 
 		_previousHandleId++;
 		var handle = new ResourceHandle<RenderOutputBuffer>(_previousHandleId);
-		var bufferData = new OutputBufferData(handle, config.TextureDimensions, textureHandle, renderTargetHandle, new(null, null), false);
+		var bufferData = new OutputBufferData(handle, config.TextureDimensions, textureHandle, renderTargetHandle, new(false, null, null), false);
 		_loadedBuffers.Add(handle, bufferData);
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultRenderOutputBufferName);
@@ -323,7 +328,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		LocalFrameSynchronizationManager.StallForPendingCallbacks(handle);
 	}
 
-	static unsafe void HandleRenderTargetReadback(nuint bufferIdentity, ReadOnlySpan<byte> data) {
+	static unsafe void HandleRenderTargetReadback(nuint bufferIdentity, Span<byte> data) {
 		if (!_pendingRenderTargetReadbacks.Remove(bufferIdentity, out var tuple)) return; // Can happen if user has cancelled pending readbacks
 		if (tuple.Builder.IsDisposed(tuple.BufferHandle)) return; // Can happen if user has disposed target output buffer
 
@@ -334,8 +339,31 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 												$"(requiring buffer size {requiredLength}), " +
 												$"but buffer size was {data.Length}.");
 		}
-		if (tuple.Callbacks.OutputChangeHandler != null) tuple.Callbacks.OutputChangeHandler(dimensions, MemoryMarshal.Cast<byte, TexelRgb24>(data[..requiredLength]));
-		else tuple.Callbacks.OutputChangeHandlerManaged?.Invoke(dimensions, MemoryMarshal.Cast<byte, TexelRgb24>(data[..requiredLength]));
+
+		var texelData = MemoryMarshal.Cast<byte, TexelRgb24>(data[..requiredLength]);
+
+		if (tuple.Callbacks.InvertRows) { // Inverted because we actually get the data in screen/window order, so by default we want to flip the data to make it match texture convention
+			Span<TexelRgb24> stackSwapSpace = stackalloc TexelRgb24[dimensions.X];
+			for (var rowIndex = 0; rowIndex < dimensions.Y / 2; ++rowIndex) {
+				var lowerRow = texelData[
+					(rowIndex * dimensions.X)
+					..
+					((rowIndex + 1) * dimensions.X)
+				];
+				var upperRow = texelData[
+					((dimensions.Y - (rowIndex + 1)) * dimensions.X)
+					..
+					((dimensions.Y - rowIndex) * dimensions.X)
+				];
+
+				lowerRow.CopyTo(stackSwapSpace);
+				upperRow.CopyTo(lowerRow);
+				stackSwapSpace.CopyTo(upperRow);
+			}
+		}
+
+		if (tuple.Callbacks.OutputChangeHandler != null) tuple.Callbacks.OutputChangeHandler(dimensions, texelData);
+		else tuple.Callbacks.OutputChangeHandlerManaged?.Invoke(dimensions, texelData);
 	}
 
 	public void SetQualityConfig(ResourceHandle<Renderer> handle, RenderQualityConfig newConfig) {
@@ -353,24 +381,24 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _loadedBuffers[handle].TextureDimensions;
 	}
-	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool handleOnlyNextChange) {
+	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
 		ArgumentNullException.ThrowIfNull(handler);
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_loadedBuffers[handle] = _loadedBuffers[handle] with {
-			RenderCompletionHandlers = new(null, handler),
+			RenderCompletionHandlers = new(!lowestAddressesRepresentFrameTop, null, handler),
 			HandleOnlyNextChange = handleOnlyNextChange
 		};
 	}
-	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool handleOnlyNextChange) {
+	public unsafe void SetOutputChangeHandler(ResourceHandle<RenderOutputBuffer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool lowestAddressesRepresentFrameTop, bool handleOnlyNextChange) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_loadedBuffers[handle] = _loadedBuffers[handle] with {
-			RenderCompletionHandlers = new(handler, null),
+			RenderCompletionHandlers = new(!lowestAddressesRepresentFrameTop, handler, null),
 			HandleOnlyNextChange = handleOnlyNextChange
 		};
 	}
 	public unsafe void ClearOutputChangeHandlers(ResourceHandle<RenderOutputBuffer> handle, bool cancelQueuedFrames) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		_loadedBuffers[handle] = _loadedBuffers[handle] with { RenderCompletionHandlers = new(null, null) };
+		_loadedBuffers[handle] = _loadedBuffers[handle] with { RenderCompletionHandlers = new(false, null, null) };
 		if (!cancelQueuedFrames) return;
 
 		using var currentlyQueuedFrameIdentities = _globals.HeapPool.Borrow<nuint>(_pendingRenderTargetReadbacks.Count);
@@ -386,15 +414,29 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		}
 	}
 
-	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig) {
+	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig, bool lowestAddressesRepresentFrameTop) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle]);
 
 		try {
+			// This check is an optimisation where we can stop a double-flip:
+			//	When we read back the pixels from the frame, they come back in lowest-address-is-top format.
+			//	Therefore, unless "lowestAddressesRepresentFrameTop" is actually TRUE we have to invert the rows before passing the data to the handler.
+			//
+			//	On the other hand, bitmap format actually expects the lowest address to be the top, so usually when we pass data to ImageUtils internally
+			//	it flips the data, as it assumes we're passing it a texture in the TinyFFR convention (e.g. lowest-address-is-bottom).
+			//	
+			//	So by doing this we can avoid a double-swap and just pass straight through from the frame capture to the BMP.
+			if (saveConfig is not { FlipVertical: true } && !lowestAddressesRepresentFrameTop) {
+				saveConfig = (saveConfig ?? new BitmapSaveConfig()) with { FlipVertical = true };
+				lowestAddressesRepresentFrameTop = !lowestAddressesRepresentFrameTop;
+			}
+
 			_nextScreenshotCaptureConfig = saveConfig;
 			_nextScreenshotCaptureFilePath = _globals.StringPool.RentAndCopy(bitmapFilePath);
-			buffer.ReadNextFrame(&SaveScreenshotToBitmap);
+
+			buffer.ReadNextFrame(&SaveScreenshotToBitmap, presentFrameTopToBottom: lowestAddressesRepresentFrameTop);
 			renderer.RenderAndWaitForGpu();
 		}
 		finally {
@@ -404,14 +446,14 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 			buffer.Dispose();
 		}
 	}
-	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler) {
+	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool lowestAddressesRepresentFrameTop) {
 		ArgumentNullException.ThrowIfNull(handler);
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle]);
 		
 		try {
-			buffer.ReadNextFrame(handler);
+			buffer.ReadNextFrame(handler, presentFrameTopToBottom: lowestAddressesRepresentFrameTop);
 			renderer.RenderAndWaitForGpu();
 		}
 		finally {
@@ -419,13 +461,13 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 			buffer.Dispose();
 		}
 	}
-	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler) {
+	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool lowestAddressesRepresentFrameTop) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle]);
 
 		try {
-			buffer.ReadNextFrame(handler);
+			buffer.ReadNextFrame(handler, presentFrameTopToBottom: lowestAddressesRepresentFrameTop);
 			renderer.RenderAndWaitForGpu();
 		}
 		finally {

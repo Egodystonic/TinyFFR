@@ -41,6 +41,7 @@ This page lists the various conventions TinyFFR uses (in no particular order):
 	## Textures & Materials { : style="margin-top:0.5em" }
 
 	* Texture origins (`(0, 0)`) start at the bottom-left corner.
+		* This includes render output buffer readbacks *unless* they are specifically requested in inverted order
 	* Normal maps:
 		* +X points towards the positive mesh tangent direction
 		* +Y points towards the positive mesh bitangent direction
