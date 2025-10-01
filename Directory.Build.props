@@ -1,6 +1,40 @@
 <Project>
+
+
+  <!-- Build/Project properties -->
+  <PropertyGroup>
+    <TffrRootNamespace>Egodystonic.TinyFFR</TffrRootNamespace>
+    <TffrTargetFramework>net9.0</TffrTargetFramework> <!-- Note this does not affect publishing/nuget projects or the main TinyFFR project, they must be updated manually (due to technical difficulties) -->
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <TargetFramework>$(TffrTargetFramework)</TargetFramework>
+    <RootNamespace>$(TffrRootNamespace)</RootNamespace>
+  </PropertyGroup>
+
+
+
+  <!-- External dependency versions -->
   <PropertyGroup>
     <AvaloniaVersion>11.*</AvaloniaVersion>
     <CommunityToolkitVersion>8.*</CommunityToolkitVersion>
   </PropertyGroup>
+
+
+
+  <!-- Publishing properties -->
+  <PropertyGroup>
+    <TffrVersion>0.3.0</TffrVersion>
+    <TffrPackageId>Egodystonic.TinyFFR</TffrPackageId>
+    <TffrAuthors>Ben Bowen</TffrAuthors>
+    <TffrCompany>Egodystonic Studios</TffrCompany>
+    <TffrDescription>A Tiny Fixed Function Rendering library for C#.</TffrDescription>
+    <TffrPackageTags>rendering;tinyffr;3d;pbr</TffrPackageTags>
+    <TffrRepositoryUrl>https://github.com/Egodystonic/TinyFFR</TffrRepositoryUrl>
+  </PropertyGroup>
+
+
+
 </Project>

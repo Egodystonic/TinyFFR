@@ -1,19 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-
     <IsPackable>false</IsPackable>
-
-    <RootNamespace>Egodystonic.TinyFFR</RootNamespace>
 
     <Platforms>x64;ARM64</Platforms>
     <NoWarn>
       NUnit2006; <!-- Consider using the constraint model: I hate fluent APIs and I don't think mixing expected and actual params is the end of the world -->
     </NoWarn>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
     <LangVersion>preview</LangVersion>
   </PropertyGroup>
 

@@ -3,9 +3,6 @@
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <RootNamespace>Egodystonic.TinyFFR</RootNamespace>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Platforms>AnyCPU</Platforms>
     <IncludeSymbols>False</IncludeSymbols>
     <DebugType>embedded</DebugType>

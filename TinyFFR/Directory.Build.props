@@ -1,4 +1,5 @@
 <Project>
+	<Import Project="..\Directory.Build.props" />
   <!-- See https://aka.ms/dotnet/msbuild/customize for more details on customizing your build -->
   <PropertyGroup>
 

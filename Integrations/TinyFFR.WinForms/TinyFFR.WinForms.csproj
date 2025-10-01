@@ -1,12 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
+    <TargetFramework>$(TffrTargetFramework)-windows</TargetFramework>
+    <RootNamespace>$(TffrRootNamespace).WinForms</RootNamespace>
     <UseWindowsForms>true</UseWindowsForms>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <RootNamespace>Egodystonic.TinyFFR.WinForms</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

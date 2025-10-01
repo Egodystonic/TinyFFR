@@ -1,9 +1,10 @@
 ﻿// Created on 2025-05-27 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
+using System;
 using Egodystonic.TinyFFR.Assets.Materials;
 
-namespace NupkgTesting;
+namespace Egodystonic.TinyFFR.Testing.Nupkg;
 
 public static class AssetTestConstants {
 	// These values were sampled/taken from an external paint program

@@ -4,7 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <Platforms>x64;ARM64</Platforms>
     <RuntimeIdentifiers>win-x64;linux-x64;osx-arm64</RuntimeIdentifiers>
-    
+
     <PackageIcon>package_logo.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>

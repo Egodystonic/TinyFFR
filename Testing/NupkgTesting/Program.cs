@@ -5,7 +5,7 @@ using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Testing;
-using static NupkgTesting.AssetTestConstants;
+using static Egodystonic.TinyFFR.Testing.Nupkg.AssetTestConstants;
 
 using var factory = new LocalTinyFfrFactory();
 

@@ -21,12 +21,22 @@
     </Project>
   </Folder>
   <Folder Name="/Publishing/">
+    <Project Path="Publishing/TinyFFR.Avalonia.NuGet/TinyFFR.Avalonia.NuGet.csproj" Id="c951296c-96f7-4f80-a793-75b6db2d595f">
+      <BuildType Solution="Optimized|*" Project="Release" />
+	  <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Build Project="false" />
+    </Project>
     <Project Path="Publishing/TinyFFR.NuGet/TinyFFR.NuGet.csproj" Id="1087b2c9-d4b1-4b1b-ad1a-72ce291aa3d5">
       <BuildType Solution="Optimized|*" Project="Release" />
       <Platform Solution="*|ARM64" Project="ARM64" />
       <Platform Solution="*|x64" Project="x64" />
       <Build Project="false" />
     </Project>
+  </Folder>
+  <Folder Name="/Meta/">
+    <File Path="BUILDING.md" />
+    <File Path="Directory.Build.props" />
   </Folder>
   <Folder Name="/Testing/">
     <Project Path="Testing/LocalDevTesting/LocalDevTesting.csproj">
