@@ -4,6 +4,8 @@
     <TargetFramework>$(TffrTargetFramework)-windows</TargetFramework>
     <RootNamespace>$(TffrRootNamespace).Wpf</RootNamespace>
     <UseWPF>true</UseWPF>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
 
   <ItemGroup>

@@ -10,10 +10,10 @@
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 
     <PackageVersion>$(TffrVersion)</PackageVersion>
-    <PackageId>$(TffrPackageId)</PackageId>
+    <PackageId>$(TffrPackageId).Avalonia</PackageId>
     <Authors>$(TffrAuthors)</Authors>
     <Company>$(TffrCompany)</Company>
-    <Description>$(TffrDescription)</Description>
+    <Description>$(TffrDescription) Avalonia integration package.</Description>
     <PackageTags>$(TffrPackageTags)</PackageTags>
     <RepositoryUrl>$(TffrRepositoryUrl)</RepositoryUrl>
 
@@ -22,16 +22,20 @@
     <OutputPath>build_output\</OutputPath>
     <BaseIntermediateOutputPath>build_output\intermediate\</BaseIntermediateOutputPath>
     <IncludeBuildOutput>false</IncludeBuildOutput>
+    
+    <RestoreAdditionalProjectSources>..\TinyFFR.NuGet\build_output\</RestoreAdditionalProjectSources>
+    
+    <Configurations>Publish</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="..\README.md" Pack="true" PackagePath="\" />
     <None Include="..\..\LICENSE.md" Pack="true" PackagePath="\" />
     <None Include="..\package_logo.png" Pack="true" PackagePath="\" />
-    <None Include="..\..\build_output\Release\TinyFFR.dll" Pack="true" PackagePath="lib\$(TargetFramework)\" />
-    <None Include="prebuilt_binaries\win-x64\*.*" Pack="true" PackagePath="\runtimes\win-x64\native\" />
-    <None Include="prebuilt_binaries\linux-x64\*.*" Pack="true" PackagePath="\runtimes\linux-x64\native\" />
-    <None Include="prebuilt_binaries\osx-arm64\*.*" Pack="true" PackagePath="\runtimes\osx-arm64\native\" />
+    <None Include="..\..\Integrations\TinyFFR.Avalonia\bin\Release\TinyFFR.Avalonia.dll" Pack="true" PackagePath="lib\$(TargetFramework)\" />
+    <None Include="..\..\Integrations\TinyFFR.Integrations.Common\bin\Release\TinyFFR.Integrations.Common.dll" Pack="true" PackagePath="lib\$(TargetFramework)\" />
+    
+    <PackageReference Include="$(TffrPackageId)" Version="$(TffrVersion)" />
   </ItemGroup>
 
 </Project>

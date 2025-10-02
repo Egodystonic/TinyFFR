@@ -4,6 +4,8 @@
     <TargetFramework>$(TffrTargetFramework)-windows</TargetFramework>
     <RootNamespace>$(TffrRootNamespace).WinForms</RootNamespace>
     <UseWindowsForms>true</UseWindowsForms>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
 
   <ItemGroup>

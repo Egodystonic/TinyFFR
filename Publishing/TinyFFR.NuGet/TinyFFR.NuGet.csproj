@@ -22,6 +22,7 @@
     <OutputPath>build_output\</OutputPath>
     <BaseIntermediateOutputPath>build_output\intermediate\</BaseIntermediateOutputPath>
     <IncludeBuildOutput>false</IncludeBuildOutput>
+    <Configurations>Publish</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
