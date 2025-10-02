@@ -6,4 +6,3 @@ using System.Reflection;
 [assembly: InternalsVisibleTo("TinyFFR.Tests")]
 [assembly: InternalsVisibleTo("TinyFFR.Integrations.Common")]
 [assembly: DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-[assembly: AssemblyVersion("1.0.0")]

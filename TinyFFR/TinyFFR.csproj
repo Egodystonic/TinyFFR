@@ -25,6 +25,7 @@
       CA1711; <!-- Strange rule around variable naming suffixes. Doesn't make much sense IMO -->
       CA1028; <!-- Warning prompting to make enums backed by int32 only: Seems mostly there to deter people making enums backed by e.g. byte under a misguided assumption of some sort of performance gain. Not useful for us -->
       CA1716; <!-- Rule regarding not using same name for identifiers as some built-in types: Not a concern for us currently, rule is a bit sledgehammery -->
+      CA1016; <!-- Specify assembly version attribute: It's specified in this file instead -->
       IDE0028; <!-- Prompt to use collection initializers: Sometimes I don't want them -->
       IDE0040; <!-- Always include access modifiers (even when it would be the default): Just plain don't like this style -->
       IDE1006; <!-- Underscore for private const fields: Yuck -->
@@ -35,6 +36,9 @@
     <Configurations>Debug;Release;Optimized</Configurations>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <AssemblyVersion>0.4.0</AssemblyVersion>
+    <FileVersion>0.4.0</FileVersion>
+    <InformationalVersion>0.4.0</InformationalVersion>
   </PropertyGroup>
   
   <ItemGroup>

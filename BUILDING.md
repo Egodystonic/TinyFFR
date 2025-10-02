@@ -38,6 +38,10 @@
 
 # Repository Structure
 
+## /
+
+The root folder contains the `Directory.Build.props` file which sets some universal constants used by every project in the solution.
+
 ## /TinyFFR/
 
 This folder contains the primary C# library source.
@@ -51,6 +55,10 @@ This folder contains the first-party native (C++) code bundled alongside the C# 
 This folder contains some third-party dependencies that TinyFFR relies on; each constituent folder is integrated as a [git subtree](https://www.atlassian.com/git/tutorials/git-subtree).
 
 See above for build instructions.
+
+## /Integrations/
+
+This folder contains projects dedicated to providing integrations of TinyFFR with various third-party libraries/platforms.
 
 ## /Testing/
 
@@ -85,6 +93,10 @@ This project defines some common functionality used by all tests (e.g. location 
 
 This folder contains all of the unit and integration tests for TinyFFR.
 
+### /Testing/TinyFFR.Tests.Integrations.**/
+
+These folders contain specialized test projects for testing integrations with third-party libraries/platforms.
+
 ## /Documentation/
 
 This folder contains the source for [the online manual](https://tinyffr.dev). The documentation is built using [Material for MKDocs](https://squidfunk.github.io/mkdocs-material/).
@@ -106,3 +118,11 @@ This project builds the [.nupkg that is distributed on nuget.org](https://www.nu
 	* Linux binaries should be placed in **prebuilt_binaries/linux-x64/**
 	* MacOS binaries should be placed in **prebuilt_binaries/osx-arm64/**
 * The final .nupkg is placed in the **build_output** folder.
+
+### /Publishing/TinyFFR.**.NuGet/
+
+The other projects in the `Publishing` folder help publish integration packages (e.g. packages integrating TinyFFR with third-party libraries/platforms).
+
+They expect their corresponding integration projects (e.g. the corresponding project in /Integrations/) to be built first (in `Release` mode).
+
+They also expect `TinyFFR.NuGet` to be built first.

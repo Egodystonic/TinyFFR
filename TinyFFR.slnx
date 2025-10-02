@@ -26,7 +26,23 @@
     </Project>
   </Folder>
   <Folder Name="/Publishing/">
-    <Project Path="Publishing/TinyFFR.Avalonia.NuGet/TinyFFR.Avalonia.NuGet.csproj" Id="c951296c-96f7-4f80-a793-75b6db2d595f">
+  	<Project Path="Publishing/TinyFFR.Avalonia.NuGet/TinyFFR.Avalonia.NuGet.csproj" Id="c951296c-96f7-4f80-a793-75b6db2d595f">
+      <BuildType Project="Publish" />
+	  <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Build Solution="Debug|*" Project="false" />
+      <Build Solution="Optimized|*" Project="false" />
+      <Build Solution="Release|*" Project="false" />
+    </Project>
+  	<Project Path="Publishing/TinyFFR.Wpf.NuGet/TinyFFR.Wpf.NuGet.csproj" Id="58fe3ae7-d0d2-4dc8-9cc7-2e33d5cea02f">
+      <BuildType Project="Publish" />
+	  <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Build Solution="Debug|*" Project="false" />
+      <Build Solution="Optimized|*" Project="false" />
+      <Build Solution="Release|*" Project="false" />
+    </Project>
+    <Project Path="Publishing/TinyFFR.WinForms.NuGet/TinyFFR.WinForms.NuGet.csproj" Id="0d5f8103-ddb3-4c84-8ec6-dcafb9292cce">
       <BuildType Project="Publish" />
 	  <Platform Solution="*|ARM64" Project="ARM64" />
       <Platform Solution="*|x64" Project="x64" />
