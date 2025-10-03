@@ -34,8 +34,9 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <Configurations>Debug;Release;Optimized</Configurations>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <AssemblyVersion>$(TffrVersion).0</AssemblyVersion>
+    <FileVersion>$(TffrVersion)</FileVersion>
+    <InformationalVersion>$(TffrVersion)</InformationalVersion>
   </PropertyGroup>
   
   <ItemGroup>
