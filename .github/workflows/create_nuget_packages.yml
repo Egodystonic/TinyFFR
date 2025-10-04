@@ -141,7 +141,7 @@ jobs:
             !build_output/Release/SDL2_test*
             build_output/Release/TinyFFR*
 
-  create_nupkg:
+  create_nupkgs:
     runs-on: windows-latest
     needs:
       - build_windows
@@ -175,21 +175,75 @@ jobs:
           name: native_libs_windows
           path: ./Publishing/TinyFFR.NuGet/prebuilt_binaries/win-x64/
 
-      - name: Build Lib
+      - name: Build Main Lib
         run: |
           cd ./TinyFFR/
           dotnet restore
           dotnet build -c Release --no-restore
 
-      - name: Build Nuget Package
+      - name: Build Avalonia Lib
+        run: |
+          cd ./Integrations/TinyFFR.Avalonia/
+          dotnet restore
+          dotnet build -c Release --no-restore
+
+      - name: Build WPF Lib
+        run: |
+          cd ./Integrations/TinyFFR.Wpf/
+          dotnet restore
+          dotnet build -c Release --no-restore
+
+      - name: Build WinForms Lib
+        run: |
+          cd ./Integrations/TinyFFR.WinForms/
+          dotnet restore
+          dotnet build -c Release --no-restore
+
+      - name: Build Main Nuget Package
         run: | 
           cd ./Publishing/TinyFFR.NuGet/
           dotnet restore
           dotnet pack -c Release --no-build --no-restore
 
-      - name: Upload Nuget Package
+      - name: Build Avalonia Nuget Package
+        run: | 
+          cd ./Publishing/TinyFFR.Avalonia.NuGet/
+          dotnet restore
+          dotnet pack -c Release --no-build --no-restore
+
+      - name: Build WPF Nuget Package
+        run: | 
+          cd ./Publishing/TinyFFR.Wpf.NuGet/
+          dotnet restore
+          dotnet pack -c Release --no-build --no-restore
+
+      - name: Build WinForms Nuget Package
+        run: | 
+          cd ./Publishing/TinyFFR.WinForms.NuGet/
+          dotnet restore
+          dotnet pack -c Release --no-build --no-restore
+
+      - name: Upload Main Nuget Package
         uses: actions/upload-artifact@v4
         with:
           name: nuget_package
           path: ./Publishing/TinyFFR.NuGet/build_output/*.nupkg
+
+      - name: Upload Avalonia Nuget Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget_package
+          path: ./Publishing/TinyFFR.Avalonia.NuGet/build_output/*.nupkg
+
+      - name: Upload WPF Nuget Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget_package
+          path: ./Publishing/TinyFFR.WPF.NuGet/build_output/*.nupkg
+
+      - name: Upload WinForms Nuget Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget_package
+          path: ./Publishing/TinyFFR.WinForms.NuGet/build_output/*.nupkg
  
