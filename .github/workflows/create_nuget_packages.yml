@@ -226,24 +226,24 @@ jobs:
       - name: Upload Main Nuget Package
         uses: actions/upload-artifact@v4
         with:
-          name: nuget_package
+          name: nuget_main
           path: ./Publishing/TinyFFR.NuGet/build_output/*.nupkg
 
       - name: Upload Avalonia Nuget Package
         uses: actions/upload-artifact@v4
         with:
-          name: nuget_package
+          name: nuget_avalonia
           path: ./Publishing/TinyFFR.Avalonia.NuGet/build_output/*.nupkg
 
       - name: Upload WPF Nuget Package
         uses: actions/upload-artifact@v4
         with:
-          name: nuget_package
-          path: ./Publishing/TinyFFR.WPF.NuGet/build_output/*.nupkg
+          name: nuget_wpf
+          path: ./Publishing/TinyFFR.Wpf.NuGet/build_output/*.nupkg
 
       - name: Upload WinForms Nuget Package
         uses: actions/upload-artifact@v4
         with:
-          name: nuget_package
+          name: nuget_winforms
           path: ./Publishing/TinyFFR.WinForms.NuGet/build_output/*.nupkg
  

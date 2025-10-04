@@ -21,6 +21,12 @@
     </Project>
   </Folder>
   <Folder Name="/Publishing/">
+    <File Path=".github/workflows/create_nuget_packages.yml" />
+    <File Path="CONTRIBUTING.md" />
+    <File Path="LICENSE.md" />
+    <File Path="Publishing/README.md" />
+    <File Path="README.md" />
+    <File Path="THIRD_PARTY_NOTICES.md" />
   	<Project Path="Publishing/TinyFFR.Avalonia.NuGet/TinyFFR.Avalonia.NuGet.csproj" Id="c951296c-96f7-4f80-a793-75b6db2d595f">
       <BuildType Project="Release" />
 	  <Platform Solution="*|ARM64" Project="ARM64" />

@@ -5,6 +5,7 @@ A **Tiny** **F**ixed **F**unction **R**endering library for C#/.NET 9.
 * Distributed via NuGet (.NET 9)
 * Free for commercial and non-commercial use (see license)
 * Supports Windows, MacOS (Apple Silicon only), Linux (Debian/Ubuntu)
+* Integrations for Avalonia, WPF, WinForms
 * Features:
   * Physically-based rendering (via [filament](https://github.com/google/filament))
   * Asset loading (via [assimp](https://github.com/assimp/assimp) and [stb_image](https://github.com/nothings/stb))
