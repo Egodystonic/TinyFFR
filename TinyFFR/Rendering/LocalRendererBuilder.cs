@@ -414,10 +414,10 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		}
 	}
 
-	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig, bool lowestAddressesRepresentFrameTop) {
+	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig, XYPair<int>? captureResolution) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
-		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle]);
+		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle], captureResolution);
 
 		try {
 			// This check is an optimisation where we can stop a double-flip:
@@ -428,9 +428,10 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 			//	it flips the data, as it assumes we're passing it a texture in the TinyFFR convention (e.g. lowest-address-is-bottom).
 			//	
 			//	So by doing this we can avoid a double-swap and just pass straight through from the frame capture to the BMP.
-			if (saveConfig is not { FlipVertical: true } && !lowestAddressesRepresentFrameTop) {
+			var lowestAddressesRepresentFrameTop = false;
+			if (saveConfig is not { FlipVertical: true }) {
 				saveConfig = (saveConfig ?? new BitmapSaveConfig()) with { FlipVertical = true };
-				lowestAddressesRepresentFrameTop = !lowestAddressesRepresentFrameTop;
+				lowestAddressesRepresentFrameTop = true;
 			}
 
 			_nextScreenshotCaptureConfig = saveConfig;
@@ -446,11 +447,11 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 			buffer.Dispose();
 		}
 	}
-	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool lowestAddressesRepresentFrameTop) {
+	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) {
 		ArgumentNullException.ThrowIfNull(handler);
 		ThrowIfThisOrHandleIsDisposed(handle);
 
-		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle]);
+		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle], captureResolution);
 		
 		try {
 			buffer.ReadNextFrame(handler, presentFrameTopToBottom: lowestAddressesRepresentFrameTop);
@@ -461,10 +462,10 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 			buffer.Dispose();
 		}
 	}
-	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool lowestAddressesRepresentFrameTop) {
+	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
-		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle]);
+		var (buffer, renderer) = SetUpScreenshotCapture(_loadedRenderers[handle], captureResolution);
 
 		try {
 			buffer.ReadNextFrame(handler, presentFrameTopToBottom: lowestAddressesRepresentFrameTop);
@@ -475,10 +476,10 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 			buffer.Dispose();
 		}
 	}
-	(RenderOutputBuffer Buffer, Renderer Renderer) SetUpScreenshotCapture(RendererData data) {
+	(RenderOutputBuffer Buffer, Renderer Renderer) SetUpScreenshotCapture(RendererData data, XYPair<int>? captureResolution) {
 		var buffer = CreateRenderOutputBuffer(new() {
 			Name = SnapshotBufferName,
-			TextureDimensions = data.Viewport.CurrentSize.Cast<int>()
+			TextureDimensions = captureResolution ?? data.Viewport.CurrentSize.Cast<int>()
 		});
 		var renderer = CreateRenderer(data.Scene, data.Camera, buffer, new() {
 			AutoUpdateCameraAspectRatio = false,

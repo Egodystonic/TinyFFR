@@ -144,16 +144,16 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		_actualRenderer.WaitForGpu();
 	}
 
-	public void CaptureScreenshot(ResourceHandle<Renderer> handle, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig, bool lowestAddressesRepresentFrameTop) {
+	public void CaptureScreenshot(ResourceHandle<Renderer> handle, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig, XYPair<int>? captureResolution) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
-		_actualRenderer.CaptureScreenshot(bitmapFilePath, saveConfig, lowestAddressesRepresentFrameTop);
+		_actualRenderer.CaptureScreenshot(bitmapFilePath, saveConfig, captureResolution);
 	}
-	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, bool lowestAddressesRepresentFrameTop) {
+	public void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
-		_actualRenderer.CaptureScreenshot(handler, lowestAddressesRepresentFrameTop);
+		_actualRenderer.CaptureScreenshot(handler, captureResolution, lowestAddressesRepresentFrameTop);
 	}
-	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, bool lowestAddressesRepresentFrameTop) {
+	public unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate*<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
-		_actualRenderer.CaptureScreenshot(handler, lowestAddressesRepresentFrameTop);
+		_actualRenderer.CaptureScreenshot(handler, captureResolution, lowestAddressesRepresentFrameTop);
 	}
 }

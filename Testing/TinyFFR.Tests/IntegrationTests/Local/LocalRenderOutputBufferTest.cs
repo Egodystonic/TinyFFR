@@ -28,6 +28,8 @@ class LocalRenderOutputBufferTest {
 
 	[SetUp]
 	public void SetUpTest() {
+		Console.WriteLine("Screenshots should show cube at upper half of all captures");
+
 		_screenshotsDir = SetUpCleanTestDir("screenshots");
 		Console.WriteLine("Screenshots being written to " + _screenshotsDir);
 
@@ -109,11 +111,11 @@ class LocalRenderOutputBufferTest {
 
 		renderBufferRenderer.CaptureScreenshot(Path.Combine(_screenshotsDir, "rbb_direct.bmp"));
 		renderBufferRenderer.CaptureScreenshot((dim, tex) => ImageUtils.SaveBitmap(Path.Combine(_screenshotsDir, "rbb_delegate.bmp"), dim, tex));
-		renderBufferRenderer.CaptureScreenshot(&WriteRbbFnPtr);
+		renderBufferRenderer.CaptureScreenshot(&WriteRbbFnPtr, captureResolution: (800, 600));
 
 		windowRenderer.CaptureScreenshot(Path.Combine(_screenshotsDir, "window_direct.bmp"));
 		windowRenderer.CaptureScreenshot((dim, tex) => ImageUtils.SaveBitmap(Path.Combine(_screenshotsDir, "window_delegate.bmp"), dim, tex));
-		windowRenderer.CaptureScreenshot(&WriteWindowFnPtr);
+		windowRenderer.CaptureScreenshot(&WriteWindowFnPtr, captureResolution: (800, 600));
 	}
 
 	void TestReadbacksAndBitmapWriting() {

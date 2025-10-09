@@ -202,7 +202,7 @@ When creating a `Renderer` you can supply an optional `RendererCreationConfig` t
 
 		If you have no `Renderer` that is guaranteed to render every frame/iteration, you should not set `GpuSynchronizationFrameBufferCount` to `-1` on any `Renderer`.
 
-### Renderer Functionality
+### Renderer Members
 
 Every `Renderer` has the following members:
 
@@ -240,6 +240,10 @@ Every `Renderer` has the following members:
 
 	* When specifying a handler, see the documentation below for `RenderOutputBuffer.ReadNextFrame()` for more information on the arguments.
 
+	You may also optionally specify the capture resolution for the screenshot (`captureResolution`). Leaving this as `null` will mean the captured screenshot will use the same resolution as the configured render target (e.g. the `Window`).
+
+	The `presentFrameTopToBottom` parameter (only present when specifying a `handler`) is also optional (`false` by default). If `true`, the data passed to the `handler` will be arranged such that the first row in the data represents the top of the texture. If `false` (the default), the data will be arranged from bottom-to-top.
+
 	Note that this function re-renders the configured scene with the configured camera and then stalls the GPU pipeline until the output is received before immediately executing the bitmap file write or handler callback. This has two implications:
 	
 	* `CaptureScreenshot()` takes a significant toll on performance, similar to `WaitForGpu()` (but worse). If you want to continuously capture frames, it is preferable to use a `RenderOutputBuffer` (see below).
@@ -263,7 +267,7 @@ You can then pass a `RenderOutputBuffer` to `CreateRenderer()` (instead of a `Wi
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, buffer);
 ```
 
-### RenderOutputBuffer Functionality
+### RenderOutputBuffer Members
 
 When invoking `Render()` on the `renderer`, the scene captured with the camera will be rendered on to the buffer. You can use the following various members to access or use the buffer data:
 
