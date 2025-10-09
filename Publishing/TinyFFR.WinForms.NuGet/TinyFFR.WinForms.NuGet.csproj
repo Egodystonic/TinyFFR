@@ -6,7 +6,7 @@
     <RuntimeIdentifiers>win-x64;linux-x64;osx-arm64</RuntimeIdentifiers>
 
     <PackageIcon>package_logo.png</PackageIcon>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReadmeFile>PACKAGE_README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 
     <PackageVersion>$(TffrVersion)</PackageVersion>
@@ -29,7 +29,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\PACKAGE_README.md" Pack="true" PackagePath="\" />
     <None Include="..\..\LICENSE.md" Pack="true" PackagePath="\" />
     <None Include="..\package_logo.png" Pack="true" PackagePath="\" />
     <None Include="..\..\Integrations\TinyFFR.WinForms\bin\Release\TinyFFR.WinForms.dll" Pack="true" PackagePath="lib\$(TargetFramework)\" />

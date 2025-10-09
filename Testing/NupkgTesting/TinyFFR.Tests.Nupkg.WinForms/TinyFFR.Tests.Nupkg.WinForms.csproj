@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>$(TffrTargetFramework)-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+	<RestoreAdditionalProjectSources>../local_packages/</RestoreAdditionalProjectSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\TestCommon\**\*.cs" Exclude="..\..\TestCommon\obj\**" Link="TestCommonRef\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Egodystonic.TinyFFR.WinForms" Version="$(TffrVersion)" />
+  </ItemGroup>
+
+</Project>

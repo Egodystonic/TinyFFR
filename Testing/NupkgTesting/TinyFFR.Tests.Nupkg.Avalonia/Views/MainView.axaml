@@ -1,0 +1,30 @@
+<UserControl
+    x:Class="TinyFFR.Tests.Integrations.Avalonia.Views.MainView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:tffr="clr-namespace:Egodystonic.TinyFFR"
+    xmlns:tffrAvalonia="clr-namespace:Egodystonic.TinyFFR.Avalonia;assembly=TinyFFR.Avalonia"
+    xmlns:vm="clr-namespace:TinyFFR.Tests.Integrations.Avalonia.ViewModels"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    x:DataType="vm:MainViewModel"
+    mc:Ignorable="d">
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+    <DockPanel LastChildFill="True">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+            <Button Command="{Binding ToggleRenderingButtonPressed}" Content="Toggle Rendering" />
+            <Button Command="{Binding ChangeLightColourButtonPressed}" Content="Change Light Colour" />
+            <CheckBox Content="Toggle Animated Rendering" IsChecked="{Binding Animate}" />
+            <Button Command="{Binding RenderOnce}" Content="Render Manually" />
+        </StackPanel>
+        <tffrAvalonia:TinyFfrSceneView
+            FallbackBrush="LightGray"
+            InternalRenderResolution="300,150"
+            Renderer="{Binding Renderer}" />
+    </DockPanel>
+</UserControl>

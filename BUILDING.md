@@ -77,7 +77,9 @@ This folder contains a small project designed to run integration tests from **Ti
 
 ### /Testing/NupkgTesting/
 
-This is a C# project for integration testing `.nupkg` files. The project looks for NuGet packages in the usual sources (e.g. nuget.org) as well as in the **local_packages** folder.
+This folder contains projects specifically for verifying/testing a correct + complete NuGet .nupkg build just before publishing.
+
+Each project looks for NuGet packages in the usual sources (e.g. nuget.org) as well as in the **local_packages** folder.
 
 Additionally, the C# project imports the files from **/Testing/TestCommon/** as a reference under the virtual folder `TestCommonRef`. These are imported as file references rather than a project reference as the `TestCommon` project itself references the primary TinyFFR project (and the whole purpose of `NupkgTesting` is to import TinyFFR via NuGet package instead). Any edits to these files from within this project will change the files in **/Testing/TestCommon/** (and therefore alter the common test functions for all test projects).
 
@@ -93,7 +95,7 @@ This project defines some common functionality used by all tests (e.g. location 
 
 This folder contains all of the unit and integration tests for TinyFFR.
 
-### /Testing/TinyFFR.Tests.Integrations.**/
+### /Testing/Integrations/
 
 These folders contain specialized test projects for testing integrations with third-party libraries/platforms.
 

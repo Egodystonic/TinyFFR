@@ -5,15 +5,15 @@
     <TargetFramework>$(TffrTargetFramework)-windows</TargetFramework>
     <LangVersion>preview</LangVersion>
     <UseWPF>true</UseWPF>
+	<RestoreAdditionalProjectSources>../local_packages/</RestoreAdditionalProjectSources>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Integrations\TinyFFR.Wpf\TinyFFR.Wpf.csproj" />
-    <ProjectReference Include="..\..\Integrations\TinyFFR.Integrations.Common\TinyFFR.Integrations.Common.csproj" />
-    <ProjectReference Include="..\TestCommon\TestCommon.csproj" />
+    <Compile Include="..\..\TestCommon\**\*.cs" Exclude="..\..\TestCommon\obj\**" Link="TestCommonRef\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Egodystonic.TinyFFR.Wpf" Version="$(TffrVersion)" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="$(CommunityToolkitVersion)" />
   </ItemGroup>
 

@@ -1,0 +1,7 @@
+• Go through all documentation (not just the website but all our markdown docs in various places etc, like readmes etc)
+• Test everything in Release build
+• Build via github
+• Test the packages in the package test projects
+• Add tag, push it
+• Upload nugets
+• Make release on github

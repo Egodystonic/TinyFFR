@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <LangVersion>preview</LangVersion>
+	<RestoreAdditionalProjectSources>../local_packages/</RestoreAdditionalProjectSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\TestCommon\**\*.cs" Exclude="..\..\TestCommon\obj\**" Link="TestCommonRef\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TinyFFR.Tests.Nupkg.Avalonia\TinyFFR.Tests.Nupkg.Avalonia.csproj" />
+  </ItemGroup>
+</Project>

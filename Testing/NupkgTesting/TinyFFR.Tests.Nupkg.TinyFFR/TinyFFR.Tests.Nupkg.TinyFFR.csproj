@@ -5,18 +5,15 @@
     <Platforms>x64;ARM64</Platforms>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <RootNamespace>$(TffrRootNamespace).Testing.Nupkg</RootNamespace>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <RestoreAdditionalProjectSources>./local_packages/</RestoreAdditionalProjectSources>
+	<RestoreAdditionalProjectSources>../local_packages/</RestoreAdditionalProjectSources>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\TestCommon\**\*.cs" Exclude="..\TestCommon\obj\**" Link="TestCommonRef\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\TestCommon\**\*.cs" Exclude="..\..\TestCommon\obj\**" Link="TestCommonRef\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Egodystonic.TinyFFR" Version="0.3.0" />
+    <PackageReference Include="Egodystonic.TinyFFR" Version="$(TffrVersion)" />
   </ItemGroup>
 
 </Project>

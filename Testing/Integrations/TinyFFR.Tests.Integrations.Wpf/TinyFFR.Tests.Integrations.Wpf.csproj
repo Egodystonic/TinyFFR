@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>$(TffrTargetFramework)-windows</TargetFramework>
+    <LangVersion>preview</LangVersion>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Integrations\TinyFFR.Wpf\TinyFFR.Wpf.csproj" />
+    <ProjectReference Include="..\..\..\Integrations\TinyFFR.Integrations.Common\TinyFFR.Integrations.Common.csproj" />
+    <ProjectReference Include="..\..\TestCommon\TestCommon.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="$(CommunityToolkitVersion)" />
+  </ItemGroup>
+
+</Project>
