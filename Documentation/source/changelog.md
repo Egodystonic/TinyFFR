@@ -16,13 +16,13 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/4?closed=1) 
 	* WinForms
 	* Avalonia
 * Can now render directly to textures and/or capture screenshots on any Renderer
-	* Can also render to a callback function that handles texel streams
+	* Can also render to a callback function that handles the texel buffer arbitrarily
 
 ### Improvements
 
 * Support for sRGB colourspace added when loading textures
 * Added `ImageUtils` static class with methods to convert spans of texels to bitmaps
-* Added support for serializing ref-struct-based config objects to/from heap
+* Added support for marshalling ref-struct-based config objects to/from heap
 
 ### Bug Fixes
 

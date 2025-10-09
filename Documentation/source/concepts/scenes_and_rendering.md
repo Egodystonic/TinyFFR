@@ -201,3 +201,124 @@ When creating a `Renderer` you can supply an optional `RendererCreationConfig` t
 		Make sure that one `Renderer` in your application (usually the "primary" one, i.e. the last one in the loop that renders __every__ frame) always has a non-negative value for `GpuSynchronizationFrameBufferCount`.
 
 		If you have no `Renderer` that is guaranteed to render every frame/iteration, you should not set `GpuSynchronizationFrameBufferCount` to `-1` on any `Renderer`.
+
+### Renderer Functionality
+
+Every `Renderer` has the following members:
+
+<span class="def-icon">:material-code-block-parentheses:</span> `Render()`
+
+:   Renders the configured scene, captured using the configured camera, to the configured target output (e.g. a `Window`).
+
+<span class="def-icon">:material-code-block-parentheses:</span> `WaitForGpu()`
+
+:   As described above in the documentation for `GpuSynchronizationFrameBufferCount`, invoking `Render()` actually enqueues a command list on the GPU which will then be completed at a later time.
+
+	In some circumstances you may wish to pause the current application on the CPU side until the GPU has completed its execution and outputted all remaining frames. `WaitForGpu()` will stall the calling thread until this time.
+
+	In other words, by the time `WaitForGpu()` returns, all previous frames queued by a call to `Render()` will have completed. Any handlers attached to `RenderOutputBuffer`s (described below) will have executed.
+	
+	When running a render loop, `WaitForGpu()` causes a stall in the render pipeline, meaning your application will appear to stutter momentarily. Invoking `WaitForGpu()` frequently may drastically lower your maximum framerate.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `RenderAndWaitForGpu()`
+
+:   A convenience method that invokes `Render()` and then immediately invokes `WaitForGpu()`.
+
+	You can use this function in place of `Render()` when you want your scene render (and correlated callbacks) to be completed by the time the render function returns.
+
+	Just like `WaitForGpu()` this function has performance implications (see `WaitForGpu()` documentation above).
+
+<span class="def-icon">:material-code-block-parentheses:</span> `SetQuality()`
+
+:   Changes the render quality settings of this `Renderer`. All subsequent calls to `Render()` will use the new quality settings.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `CaptureScreenshot(...)`
+
+:   This function can either take an argument specifying the file path of a BMP file to be written with the captured screenshot, or a handler can be specified for more manual processing of captured frame data.
+
+	* When specifying a bitmap file path, be aware that this function may throw an `IOException` if the file path could not be written to.
+
+	* When specifying a handler, see the documentation below for `RenderOutputBuffer.ReadNextFrame()` for more information on the arguments.
+
+	Note that this function re-renders the configured scene with the configured camera and then stalls the GPU pipeline until the output is received before immediately executing the bitmap file write or handler callback. This has two implications:
+	
+	* `CaptureScreenshot()` takes a significant toll on performance, similar to `WaitForGpu()` (but worse). If you want to continuously capture frames, it is preferable to use a `RenderOutputBuffer` (see below).
+	* The current setup of the configured scene and camera is used at the time `CaptureScreenshot()` is invoked, meaning if the camera or scene have changed since the last `Render()` call, the captured screenshot will not match the last rendered output.
+
+## RenderOutputBuffers
+
+Instead of rendering directly to a window, you can also render to an internal texture buffer; optionally re-displaying this texture elsewhere on an in-scene surface or copying its data to memory/file. In TinyFFR, these buffers are referred to as `RenderOutputBuffer`s.
+
+Creating a `RenderOutputBuffer` is done via the renderer builder:
+
+```csharp
+using var buffer = factory.RendererBuilder.CreateRenderOutputBuffer(textureDimensions: (1024, 1024)); // (1)!
+```
+
+1. The texture dimensions of the buffer is the only required parameter. In this example we're creating a 1024x1024 texture.
+
+You can then pass a `RenderOutputBuffer` to `CreateRenderer()` (instead of a `Window`):
+
+```csharp
+using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, buffer);
+```
+
+### RenderOutputBuffer Functionality
+
+When invoking `Render()` on the `renderer`, the scene captured with the camera will be rendered on to the buffer. You can use the following various members to access or use the buffer data:
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `TextureDimensions`
+
+:   Returns the X/Y dimensions of the buffer.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `StartReadingFrames(handler, presentFrameTopToBottom)`
+<span class="def-icon">:material-code-block-parentheses:</span> `ReadNextFrame(handler, presentFrameTopToBottom)`
+
+:   `StartReadingFrames` instructs TinyFFR that you wish to begin continuously reading all frames rendered to this buffer from this point onwards, until stopped.
+
+	`ReadNextFrame` instructs TinyFFR that you wish to read back the *next* rendered scene from this buffer. All frames rendered after the next one will not be handled.
+
+	The `handler` should be either an `Action<XYPair<int>, ReadOnlySpan<TexelRgb24>>` or its [function pointer equivalent](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-9.0/function-pointers). 
+	
+	* The first parameter to the handler is the texture dimensions of the output buffer (`X` columns and `Y` rows). The total `Length` of the given span will be equal to the `Area` property of this `XYPair`.
+		
+	* The second is a span of texels containing the row-major(1) frame data arranged without gaps(2). The texel data is only valid for as long as the handler is executing.
+		{ .annotate }
+
+		1. 	The first `X` texels in the span will constitute the first row of texel data; the second `X` texels will constitute the second, etc; for a total of `Y` rows.
+
+			By default, the first row is considered to be the *bottom* of the texture data (as this matches the 2D texture [convention](/concepts/conventions.md#textures-materials) TinyFFR uses). However, this can be reversed with the "`presentFrameTopToBottom`" parameter described below.
+
+		2.	There is no "stride" or blank data at the end of rows; each row is packed without padding and the beginning of one row starts immediately after the end of the previous one in the data.
+
+	The `presentFrameTopToBottom` parameter is optional (`false` by default). If `true`, the data passed to the `handler` will be arranged such that the first row in the data represents the top of the texture. If `false` (the default), the data will be arranged from bottom-to-top.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `StopReadingFrames(cancelQueuedFrames)`
+
+:   This instructs TinyFFR that you wish to stop a previously-started continuous frame reading operation.
+
+	If `cancelQueuedFrames` is true, any previously-rendered frames that are currently still queued in the GPU command pipeline will not be passed to your `handler`. Otherwise, those remaining frames will still be passed to the `handler`. Any frames `Render()`ed after `StopReadingFrames()` is invoked will not be passed to the previously-set `handler` either way.
+
+???+ note "Single Handler Restriction"
+	Note that each `RenderOutputBuffer` can only have one readback handler set at any given time. 
+	
+	That means that *only* the most-recent handler passed to either `StartReadingFrames` or `ReadNextFrame` will be invoked. Calling `StartReadingFrames` or `ReadNextFrame` again will "erase" the previously-set handler.
+
+	If you wish to execute multiple actions for a `RenderOutputBuffer` frame, you should use a single `handler` and pass the received data to multiple further sub-functions.
+
+???+ warning "Asynchrony in GPU Command Pipeline"
+	When calling `Render()` for a `Renderer` created with a `RenderOutputBuffer` target with a handler set, the handler may not be invoked immediately or at all until more frames are rendered later on. This is because (by default) frames are queued to be rendered on the GPU, and the GPU asynchronously executes the commandlist. TinyFFR checks for previously-completed frames when `Render()` is called for subsequent frames.
+
+	If you require immediate readback for set handlers when calling `Render()`, consider using `RenderAndWaitForGpu()` instead. Note however that this will quite adversely affect framerate in a render loop. 
+	
+	You can also call `WaitForGpu()` at specific points after dispatching multiple `Render()` calls in order to force all dispatched frames to be handled at that point. This also adversely affects framerate in a render loop.
+
+	See also the documentation for `GpuSynchronizationFrameBufferCount` and `WaitForGpu()` above.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `CreateDynamicTexture()`
+
+:   This method can be used to create a `Texture` resource that always contains the last-rendered frame to this `RenderOutputBuffer` as its data.
+
+	You can pass this `Texture` to other parts of the library just as you would any other `Texture`; including setting it as the data for a color, normal, or ORM map on a `Material`.
+
+	Note that the lifetime of this `Texture` is forever intrinsically tied to its "parent" `RenderOutputBuffer`. You must dispose all `Texture`s created this way before disposing the parent `RenderOutputBuffer`.
