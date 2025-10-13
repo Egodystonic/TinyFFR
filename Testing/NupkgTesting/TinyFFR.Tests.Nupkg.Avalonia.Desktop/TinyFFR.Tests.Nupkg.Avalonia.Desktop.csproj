@@ -12,10 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\TestCommon\**\*.cs" Exclude="..\..\TestCommon\obj\**" Link="TestCommonRef\%(RecursiveDir)%(Filename)%(Extension)" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\TinyFFR.Tests.Nupkg.Avalonia\TinyFFR.Tests.Nupkg.Avalonia.csproj" />
   </ItemGroup>
 </Project>

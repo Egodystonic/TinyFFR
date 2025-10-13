@@ -226,7 +226,7 @@ jobs:
       - name: Upload Nuget Packages
         uses: actions/upload-artifact@v4
         with:
-          name: nuget_main
+          name: nuget_packages
           path: | 
             ./Publishing/TinyFFR.NuGet/build_output/*.nupkg
             ./Publishing/TinyFFR.Avalonia.NuGet/build_output/*.nupkg

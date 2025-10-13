@@ -429,3 +429,6 @@ Publishing/TinyFFR.WinForms.NuGet/prebuilt_binaries/**
 
 # TinyFFR - never ignore any file in test assets folder
 !Testing/test_assets/**
+
+# TinyFFR - ignore local packages
+Testing/local_packages/**

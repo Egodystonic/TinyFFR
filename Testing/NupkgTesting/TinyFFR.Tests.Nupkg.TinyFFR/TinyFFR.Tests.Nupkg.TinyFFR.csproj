@@ -5,7 +5,7 @@
     <Platforms>x64;ARM64</Platforms>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <RootNamespace>$(TffrRootNamespace).Testing.Nupkg</RootNamespace>
-	<RestoreAdditionalProjectSources>../local_packages/</RestoreAdditionalProjectSources>
+	  <RestoreAdditionalProjectSources>../local_packages/</RestoreAdditionalProjectSources>
   </PropertyGroup>
 
   <ItemGroup>

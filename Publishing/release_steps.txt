@@ -2,6 +2,8 @@
 • Test everything in Release build
 • Build via github
 • Test the packages in the package test projects
+	• Delete any cached packages from ~/.nuget/packages/ first
+	• The Nupkg projects must be built manually to run, so rebuild first then run
 • Add tag, push it
 • Upload nugets
 • Make release on github
