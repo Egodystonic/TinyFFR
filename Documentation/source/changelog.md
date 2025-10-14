@@ -5,6 +5,22 @@ search:
   exclude: true
 ---
 
+## 0.5
+
+__Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/5?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.5.0)__
+
+### Major Features
+
+
+
+### Improvements
+
+* Replaced the ambiguous "Recommended" display property on the display discoverer with separate "HighestResolution" and "HighestRefreshRate" properties
+
+### Bug Fixes
+
+
+
 ## 0.4
 
 __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/4?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.4.0)__

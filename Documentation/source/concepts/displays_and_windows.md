@@ -9,7 +9,16 @@ Displays connected to the host machine can be found using the `IDisplayDiscovere
 
 The `Primary` property returns the primary display or `null` if there are no displays connected. This property is guaranteed to not be null as long as one display is detected on the system.
 
-Otherwise, the `All` property returns a `ReadOnlySpan<Display>`. Use this property to iterate/discover all displays connected to the system. The span may be empty (0 length) if there are no displays connected, but can not be `null`.
+The `HighestResolution` and `HighestRefreshRate` properties return the display with the highest resolution or refresh rate respectively.(1)
+{ .annotate }
+
+1. 	In the case a of tie, the returned display will be the one that can support the highest resolution/refresh rate at the tied value.
+
+	If this is still tied, if any display is the `Primary` display, that one will be returned.
+
+	Otherwise, all else being equal, the display that will be returned is the one that first appears in the `All` span.
+
+Otherwise, the `All` property returns a `ReadOnlySpan<Display>`. Use this property to iterate/discover all displays connected to the system. The span may be empty (0 length) if there are no displays connected, but can not be `null`. The convenience property `AtLeastOneDisplayConnected` can be used to determine if any displays are connected.
 
 ### The Display Type
 
