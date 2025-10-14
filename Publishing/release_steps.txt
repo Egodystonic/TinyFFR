@@ -7,5 +7,5 @@
 • Add tag, push it
 	• git tag vM.m.p
 	• git push origin tag vM.m.p
-• Upload nugets
+• Upload nugets#
 • Update website (instructions in documentation dir)

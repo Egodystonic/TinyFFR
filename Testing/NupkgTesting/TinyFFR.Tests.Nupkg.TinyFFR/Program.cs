@@ -35,7 +35,7 @@ foreach (var v in meshVertexBuffer) {
 var calculatedOrigin = ((minLoc.AsVect() + maxLoc.AsVect()) * 0.5f).AsLocation();
 if (new Location(0f, 11.344924f, 1.9073486E-06f) != calculatedOrigin) throw new InvalidOperationException("Test fail");
 
-var display = factory.DisplayDiscoverer.Recommended!.Value;
+var display = factory.DisplayDiscoverer.Primary!.Value;
 using var window = factory.WindowBuilder.CreateWindow(display, title: "Nupkg Test");
 window.SetIcon(CommonTestAssets.FindAsset(KnownTestAsset.EgodystonicLogo));
 using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);

@@ -49,51 +49,6 @@ StartExportedFunc(get_display_name, DisplayHandle index, char* resultBuffer, int
 
 
 
-int get_fastest_display_rate(DisplayHandle h) {
-	auto bestSoFar = 0;
-	auto numDisplayModes = SDL_GetNumDisplayModes(h);
-	SDL_DisplayMode mode;
-	for (auto i = 0; i < numDisplayModes; ++i) {
-		ThrowIfNotZero(SDL_GetDisplayMode(h, i, &mode), "Could not get display mode: ", SDL_GetError());
-		if (mode.refresh_rate > bestSoFar) bestSoFar = mode.refresh_rate;
-	}
-	return bestSoFar;
-}
-int get_highest_resolution(DisplayHandle h) {
-	auto bestSoFar = 0;
-	auto numDisplayModes = SDL_GetNumDisplayModes(h);
-	SDL_DisplayMode mode;
-	for (auto i = 0; i < numDisplayModes; ++i) {
-		ThrowIfNotZero(SDL_GetDisplayMode(h, i, &mode), "Could not get display mode: ", SDL_GetError());
-		if (mode.w * mode.h > bestSoFar) bestSoFar = mode.w * mode.h;
-	}
-	return bestSoFar;
-}
-DisplayHandle native_impl_display::get_recommended_display() {
-	// start off with the primary display as the default
-	auto bestDisplay = get_primary_display();
-	auto bestDisplayRefreshRate = get_fastest_display_rate(bestDisplay);
-	auto bestDisplayResolution = get_highest_resolution(bestDisplay);
-
-	auto numDisplays = get_display_count();
-	for (auto i = 0; i < numDisplays; ++i) {
-		auto refreshRate = get_fastest_display_rate(i);
-		auto res = get_highest_resolution(i);
-
-		if (refreshRate > bestDisplayRefreshRate || (refreshRate == bestDisplayRefreshRate && res > bestDisplayResolution)) {
-			bestDisplay = i;
-			bestDisplayRefreshRate = refreshRate;
-			bestDisplayResolution = res;
-		}
-	}
-
-	return bestDisplay;
-}
-StartExportedFunc(get_recommended_display, DisplayHandle* outHandle) {
-	auto result = native_impl_display::get_recommended_display();
-	*outHandle = result;
-	EndExportedFunc
-}
 
 
 

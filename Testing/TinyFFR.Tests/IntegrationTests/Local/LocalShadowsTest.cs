@@ -31,7 +31,7 @@ class LocalShadowsTest {
 	[Test]
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
-		var display = factory.DisplayDiscoverer.Recommended!.Value;
+		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Shadows Test", size: (1920, 1080), position: (100, 100));
 		using var camera = factory.CameraBuilder.CreateCamera();
 		using var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));

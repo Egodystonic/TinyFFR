@@ -27,7 +27,7 @@ class LocalDiscsRenderTest {
 	[Test]
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
-		var display = factory.DisplayDiscoverer.Recommended!.Value;
+		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Disc Render Test");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var polyGroup = factory.AssetLoader.MeshBuilder.AllocateNewPolygonGroup();

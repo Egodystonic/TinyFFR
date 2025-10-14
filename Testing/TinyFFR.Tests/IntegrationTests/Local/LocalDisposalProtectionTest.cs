@@ -37,7 +37,7 @@ class LocalDisposalProtectionTest {
 		var factory = new LocalTinyFfrFactory();
 
 		var displayDiscoverer = factory.DisplayDiscoverer;
-		var recommendedDisplay = displayDiscoverer.Recommended!.Value;
+		var recommendedDisplay = displayDiscoverer.Primary!.Value;
 		var windowBuilder = factory.WindowBuilder;
 		var window = windowBuilder.CreateWindow(recommendedDisplay, size: XYPair<int>.One);
 		var windowActions = new Action<Window>[] {
@@ -50,7 +50,7 @@ class LocalDisposalProtectionTest {
 			v => _ = v.LockCursor,
 			v => _ = v.Position,
 			v => _ = v.Size,
-			v => v.Display = displayDiscoverer.Recommended!.Value,
+			v => v.Display = displayDiscoverer.Primary!.Value,
 			v => v.FullscreenStyle = WindowFullscreenStyle.NotFullscreen,
 			v => v.LockCursor = false,
 			v => v.Position = XYPair<int>.Zero,
@@ -304,7 +304,9 @@ class LocalDisposalProtectionTest {
 			displayDiscoverer, objectIsAlreadyDisposed: true,
 			v => _ = v.All,
 			v => _ = v.Primary,
-			v => _ = v.Recommended
+			v => _ = v.HighestResolution,
+			v => _ = v.HighestRefreshRate,
+			v => _ = v.AtLeastOneDisplayConnected
 		);
 		AssertUseAfterDisposalThrowsException(
 			recommendedDisplay, objectIsAlreadyDisposed: true,
@@ -317,7 +319,6 @@ class LocalDisposalProtectionTest {
 			v => _ = v.HighestSupportedRefreshRateMode,
 			v => _ = v.HighestSupportedResolutionMode,
 			v => _ = v.IsPrimary,
-			v => _ = v.IsRecommended,
 			v => _ = v.SupportedDisplayModes,
 			v => _ = v.TranslateDisplayLocalWindowPositionToGlobal(XYPair<int>.Zero),
 			v => _ = v.TranslateGlobalWindowPositionToDisplayLocal(XYPair<int>.Zero)

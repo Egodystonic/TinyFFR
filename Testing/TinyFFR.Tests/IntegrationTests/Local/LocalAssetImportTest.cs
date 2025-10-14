@@ -80,7 +80,7 @@ class LocalAssetImportTest {
 		var calculatedOrigin = ((minLoc.AsVect() + maxLoc.AsVect()) * 0.5f).AsLocation();
 		Assert.AreEqual(new Location(0f, 11.344924f, 1.9073486E-06f), calculatedOrigin);
 
-		var display = factory.DisplayDiscoverer.Recommended!.Value;
+		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Asset Import Test");
 		window.SetIcon(CommonTestAssets.FindAsset(KnownTestAsset.EgodystonicLogo));
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);

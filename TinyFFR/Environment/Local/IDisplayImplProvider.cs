@@ -7,7 +7,6 @@ namespace Egodystonic.TinyFFR.Environment.Local;
 
 public interface IDisplayImplProvider : IResourceImplProvider<Display> {
 	bool GetIsPrimary(ResourceHandle<Display> handle);
-	bool GetIsRecommended(ResourceHandle<Display> handle);
 	ReadOnlySpan<DisplayMode> GetSupportedDisplayModes(ResourceHandle<Display> handle);
 	DisplayMode GetHighestSupportedResolutionMode(ResourceHandle<Display> handle);
 	DisplayMode GetHighestSupportedRefreshRateMode(ResourceHandle<Display> handle);

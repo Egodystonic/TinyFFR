@@ -59,7 +59,7 @@ class LocalColorspaceTest {
 			"srgbwall"
 		);
 
-		var display = factory.DisplayDiscoverer.Recommended!.Value;
+		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Colorspace Test");
 		using var camera = factory.CameraBuilder.CreateCamera((0f, 2f, -2f));
 		using var mesh = factory.MeshBuilder.CreateMesh(new Cuboid(1f));

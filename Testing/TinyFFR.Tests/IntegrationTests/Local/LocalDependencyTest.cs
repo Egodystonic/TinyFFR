@@ -56,7 +56,7 @@ class LocalDependencyTest {
 
 			var camera = factory.CameraBuilder.CreateCamera();
 			var scene = factory.SceneBuilder.CreateScene();
-			var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Recommended!.Value);
+			var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
 			var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 			AssertDependency(camera, renderer);
 
@@ -93,10 +93,10 @@ class LocalDependencyTest {
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, tempMat, tempMesh, factory.ObjectBuilder.CreateModelInstance(tempMesh, tempMat));
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.CameraBuilder.CreateCamera());
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.SceneBuilder.CreateScene());
-			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Recommended!.Value));
+			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value));
 			var tempCamera = factory.CameraBuilder.CreateCamera();
 			var tempScene = factory.SceneBuilder.CreateScene();
-			var tempWindow = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Recommended!.Value);
+			var tempWindow = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, tempCamera, tempScene, tempWindow, factory.RendererBuilder.CreateRenderer(tempScene, tempCamera, tempWindow));
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.RendererBuilder.CreateRenderOutputBuffer());
 		}

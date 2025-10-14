@@ -22,10 +22,6 @@ public readonly struct Display : IResource<Display, IDisplayImplProvider> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetIsPrimary(_handle);
 	}
-	public bool IsRecommended {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetIsRecommended(_handle);
-	}
 	public ReadOnlySpan<DisplayMode> SupportedDisplayModes {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetSupportedDisplayModes(_handle);
@@ -69,7 +65,7 @@ public readonly struct Display : IResource<Display, IDisplayImplProvider> {
 
 	public override string ToString() {
 		return Implementation.IsValid(_handle) 
-			? $"{nameof(Display)} \"{GetNameAsNewStringObject()}\" ({CurrentResolution.X:#} x {CurrentResolution.Y:#}){(IsPrimary ? " (Primary)" : "")}{(IsRecommended ? " (Recommended)" : "")}"
+			? $"{nameof(Display)} \"{GetNameAsNewStringObject()}\" ({CurrentResolution.X:#} x {CurrentResolution.Y:#}){(IsPrimary ? " (Primary)" : "")}"
 			: $"{nameof(Display)} [Invalid]";
 	}
 

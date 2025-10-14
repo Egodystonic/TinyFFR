@@ -20,6 +20,10 @@ class LocalWindowTest {
 		using var factory = new LocalTinyFfrFactory(windowBuilderConfig: new WindowBuilderConfig { MaxWindowTitleLength = 10 });
 
 		var displayDiscoverer = factory.DisplayDiscoverer;
+		Assert.AreEqual(true, displayDiscoverer.Primary.HasValue); // Can't run this test without a display
+
+		var expectedHighestResolutionDisplay = displayDiscoverer.Primary!.Value;
+		var expectedHighestRefreshRateDisplay = displayDiscoverer.Primary!.Value;
 		foreach (var display in displayDiscoverer.All) {
 			Console.WriteLine(display);
 			Console.WriteLine($"\tHighest resolution mode: {display.HighestSupportedResolutionMode}");
@@ -37,7 +41,26 @@ class LocalWindowTest {
 				display.SupportedDisplayModes.ToArray().OrderByDescending(mode => mode.RefreshRateHz).ThenByDescending(mode => mode.Resolution.ToVector2().LengthSquared()).First(),
 				display.HighestSupportedRefreshRateMode
 			);
+
+			var isHighestResolution = 
+				display.HighestSupportedResolutionMode.Resolution.Area > expectedHighestResolutionDisplay.HighestSupportedResolutionMode.Resolution.Area
+				|| (display.HighestSupportedResolutionMode.Resolution.Area == expectedHighestResolutionDisplay.HighestSupportedResolutionMode.Resolution.Area && display.HighestSupportedResolutionMode.RefreshRateHz > expectedHighestResolutionDisplay.HighestSupportedResolutionMode.RefreshRateHz);
+
+			var isHighestRefreshRate =
+				display.HighestSupportedRefreshRateMode.RefreshRateHz > expectedHighestRefreshRateDisplay.HighestSupportedRefreshRateMode.RefreshRateHz
+				|| (display.HighestSupportedRefreshRateMode.RefreshRateHz == expectedHighestRefreshRateDisplay.HighestSupportedRefreshRateMode.RefreshRateHz && display.HighestSupportedRefreshRateMode.Resolution.Area > expectedHighestRefreshRateDisplay.HighestSupportedRefreshRateMode.Resolution.Area);
+
+			if (isHighestResolution) expectedHighestResolutionDisplay = display;
+			if (isHighestRefreshRate) expectedHighestRefreshRateDisplay = display;
 		}
+
+		Assert.AreEqual(expectedHighestResolutionDisplay, displayDiscoverer.HighestResolution!.Value);
+		Assert.AreEqual(expectedHighestRefreshRateDisplay, displayDiscoverer.HighestRefreshRate!.Value);
+		Assert.AreEqual(true, displayDiscoverer.AtLeastOneDisplayConnected);
+
+		Console.WriteLine($"At least one display connected: {displayDiscoverer.AtLeastOneDisplayConnected}");
+		Console.WriteLine($"Highest Resolution Display: {displayDiscoverer.HighestResolution} ({displayDiscoverer.HighestResolution!.Value.HighestSupportedResolutionMode})");
+		Console.WriteLine($"Highest Refresh Rate Display: {displayDiscoverer.HighestRefreshRate} ({displayDiscoverer.HighestResolution!.Value.HighestSupportedRefreshRateMode})");
 
 		var windowBuilder = factory.WindowBuilder;
 		using var window = windowBuilder.CreateWindow(new() {

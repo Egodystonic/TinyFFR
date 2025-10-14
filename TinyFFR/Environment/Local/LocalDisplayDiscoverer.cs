@@ -18,12 +18,10 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 	readonly DisplayModeArray[] _displayModes;
 	readonly string[] _displayNames;
 	readonly Display[] _displays;
-	readonly ResourceHandle<Display>? _recommendedHandle;
 	readonly ResourceHandle<Display>? _primaryHandle;
 	bool _isDisposed = false;
 
 	public ReadOnlySpan<Display> All => _isDisposed ? throw new ObjectDisposedException(nameof(IDisplayDiscoverer)) : _displays.AsSpan();
-	public Display? Recommended => _isDisposed ? throw new ObjectDisposedException(nameof(IDisplayDiscoverer)) : (_recommendedHandle != null ? new Display(_recommendedHandle.Value, this) : null);
 	public Display? Primary => _isDisposed ? throw new ObjectDisposedException(nameof(IDisplayDiscoverer)) : (_primaryHandle != null ? new Display(_primaryHandle.Value, this) : null);
 
 	public LocalDisplayDiscoverer(LocalFactoryGlobalObjectGroup globals) {
@@ -37,13 +35,11 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 		_displayModes = new DisplayModeArray[numDisplays];
 		_displayNames = new string[numDisplays];
 		if (numDisplays == 0) {
-			_recommendedHandle = null;
 			_primaryHandle = null;
 			return;
 		}
 
 		GetPrimaryDisplay(out var primaryHandle).ThrowIfFailure();
-		GetRecommendedDisplay(out var recommendedHandle).ThrowIfFailure();
 
 		using var nameBuffer = new InteropStringBuffer(MaxDisplayNameLength, true);
 		Span<char> nameBufferUtf16 = stackalloc char[MaxDisplayNameLength];
@@ -58,7 +54,6 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 			}
 
 			if (handle == primaryHandle) _primaryHandle = handle;
-			if (handle == recommendedHandle) _recommendedHandle = handle;
 
 			GetDisplayName(
 				handle,
@@ -80,7 +75,7 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 		var modes = _displayModes[handle];
 		var result = modes[0];
 		foreach (var displayMode in modes[1..]) {
-			if (displayMode.Resolution.ToVector2().LengthSquared() > result.Resolution.ToVector2().LengthSquared()) {
+			if (displayMode.Resolution.Area > result.Resolution.Area) {
 				result = displayMode;
 			}
 			else if (displayMode.Resolution == result.Resolution && displayMode.RefreshRateHz > result.RefreshRateHz) {
@@ -97,7 +92,7 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 			if (displayMode.RefreshRateHz > result.RefreshRateHz) {
 				result = displayMode;
 			}
-			else if (displayMode.RefreshRateHz == result.RefreshRateHz && displayMode.Resolution.ToVector2().LengthSquared() > result.Resolution.ToVector2().LengthSquared()) {
+			else if (displayMode.RefreshRateHz == result.RefreshRateHz && displayMode.Resolution.Area > result.Resolution.Area) {
 				result = displayMode;
 			}
 		}
@@ -107,10 +102,6 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 	public bool GetIsPrimary(ResourceHandle<Display> handle) {
 		ThrowIfDisposedOrUnrecognizedDisplay(handle);
 		return handle == _primaryHandle;
-	}
-	public bool GetIsRecommended(ResourceHandle<Display> handle) {
-		ThrowIfDisposedOrUnrecognizedDisplay(handle);
-		return handle == _recommendedHandle;
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<Display> handle) {
@@ -152,9 +143,6 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 	public override string ToString() => _isDisposed ? "TinyFFR Display Discoverer [Disposed]" : "TinyFFR Display Discoverer";
 
 	#region Native Methods
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_recommended_display")]
-	static extern InteropResult GetRecommendedDisplay(out nuint outResult);
-
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_primary_display")]
 	static extern InteropResult GetPrimaryDisplay(out nuint outResult);
 
