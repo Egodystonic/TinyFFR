@@ -1,9 +1,11 @@
 • Go through all documentation (not just the website but all our markdown docs in various places etc, like readmes etc)
 • Test everything in Release build
 • Build via github
-• Test the packages in the package test projects
+• Test the packages in the package test projects (in Release)
 	• Delete any cached packages from ~/.nuget/packages/ first
 	• The Nupkg projects must be built manually to run, so rebuild first then run
 • Add tag, push it
+	• git tag vM.m.p
+	• git push origin tag vM.m.p
 • Upload nugets
-• Make release on github
+• Update website (instructions in documentation dir)
