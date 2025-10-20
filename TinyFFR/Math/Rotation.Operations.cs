@@ -7,6 +7,7 @@ using static Egodystonic.TinyFFR.MathUtils;
 namespace Egodystonic.TinyFFR;
 
 partial struct Rotation : 
+	INormalizable<Rotation>,
 	IAlgebraicGroup<Rotation>,
 	IAngleMeasurable<Rotation, Rotation>,
 	IScalable<Rotation>,

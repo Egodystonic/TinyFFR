@@ -487,6 +487,78 @@ class AngleTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyTriangularize() {
+		void AssertRectified(Angle input, Angle peak, Angle expectation) {
+			AssertToleranceEquals(expectation, input.TriangularizeRectified(peak), TestTolerance);
+			AssertToleranceEquals(expectation, (input + (peak * 2f)).TriangularizeRectified(peak), TestTolerance);
+			AssertToleranceEquals(expectation, (input - (peak * 2f)).TriangularizeRectified(peak), TestTolerance);
+
+			AssertToleranceEquals(-expectation, input.TriangularizeRectified(-peak), TestTolerance);
+			AssertToleranceEquals(-expectation, (input + (peak * 2f)).TriangularizeRectified(-peak), TestTolerance);
+			AssertToleranceEquals(-expectation, (input - (peak * 2f)).TriangularizeRectified(-peak), TestTolerance);
+		}
+
+		void AssertStandard(Angle input, Angle peak, Angle expectation) {
+			AssertToleranceEquals(expectation, input.Triangularize(peak), TestTolerance);
+			AssertToleranceEquals(expectation, (input + (peak * 4f)).Triangularize(peak), TestTolerance);
+			AssertToleranceEquals(expectation, (input - (peak * 4f)).Triangularize(peak), TestTolerance);
+
+			AssertToleranceEquals(-expectation, input.Triangularize(-peak), TestTolerance);
+			AssertToleranceEquals(-expectation, (input + (peak * 4f)).Triangularize(-peak), TestTolerance);
+			AssertToleranceEquals(-expectation, (input - (peak * 4f)).Triangularize(-peak), TestTolerance);
+		}
+
+		AssertRectified(30f, 10f, 10f);
+		AssertRectified(0f, 0f, 0f);
+		AssertRectified(10f, 0f, 0f);
+		AssertRectified(-10f, 0f, 0f);
+
+		AssertRectified(0f, 20f, 0f);
+		AssertRectified(10f, 20f, 10f);
+		AssertRectified(20f, 20f, 20f);
+		AssertRectified(30f, 20f, 10f);
+		AssertRectified(40f, 20f, 0f);
+		AssertRectified(50f, 20f, 10f);
+		AssertRectified(60f, 20f, 20f);
+		AssertRectified(70f, 20f, 10f);
+		AssertRectified(80f, 20f, 0f);
+		AssertRectified(80f + 0f, 20f, 0f);
+		AssertRectified(80f + 10f, 20f, 10f);
+		AssertRectified(80f + 20f, 20f, 20f);
+		AssertRectified(80f + 30f, 20f, 10f);
+		AssertRectified(80f + 40f, 20f, 0f);
+		AssertRectified(80f + 50f, 20f, 10f);
+		AssertRectified(80f + 60f, 20f, 20f);
+		AssertRectified(80f + 70f, 20f, 10f);
+		AssertRectified(80f + 80f, 20f, 0f);
+
+
+		AssertStandard(30f, 10f, -10f);
+		AssertStandard(0f, 0f, 0f);
+		AssertStandard(10f, 0f, 0f);
+		AssertStandard(-10f, 0f, 0f);
+
+		AssertStandard(0f, 20f, 0f);
+		AssertStandard(10f, 20f, 10f);
+		AssertStandard(20f, 20f, 20f);
+		AssertStandard(30f, 20f, 10f);
+		AssertStandard(40f, 20f, 0f);
+		AssertStandard(50f, 20f, -10f);
+		AssertStandard(60f, 20f, -20f);
+		AssertStandard(70f, 20f, -10f);
+		AssertStandard(80f, 20f, 0f);
+		AssertStandard(80f + 0f, 20f, 0f);
+		AssertStandard(80f + 10f, 20f, 10f);
+		AssertStandard(80f + 20f, 20f, 20f);
+		AssertStandard(80f + 30f, 20f, 10f);
+		AssertStandard(80f + 40f, 20f, 0f);
+		AssertStandard(80f + 50f, 20f, -10f);
+		AssertStandard(80f + 60f, 20f, -20f);
+		AssertStandard(80f + 70f, 20f, -10f);
+		AssertStandard(80f + 80f, 20f, 0f);
+	}
+
+	[Test]
 	public void ShouldCorrectlyClamp() {
 		void AssertZeroToHalf(Angle input, Angle expectedOutput) {
 			Assert.AreEqual(expectedOutput, input.ClampZeroToHalfCircle());

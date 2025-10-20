@@ -16,6 +16,7 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/5?closed=1) 
 ### Improvements
 
 * Replaced the ambiguous "Recommended" display property on the display discoverer with separate "HighestResolution" and "HighestRefreshRate" properties
+* Added `Triangularize`/`TriangularizeRectified` methods to `Angle` to help create triangle functions
 
 ### Bug Fixes
 

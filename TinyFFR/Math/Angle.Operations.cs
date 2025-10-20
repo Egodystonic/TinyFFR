@@ -6,10 +6,12 @@ using static System.Numerics.Vector4;
 
 namespace Egodystonic.TinyFFR;
 
-partial struct Angle : 
+partial struct Angle :
 	IAlgebraicGroup<Angle>,
-	IScalable<Angle>, 
-	IOrdinal<Angle> {
+	IScalable<Angle>,
+	IOrdinal<Angle>,
+	INormalizable<Angle>,
+	IAbsolutizable<Angle> {
 	static Angle IAdditiveIdentity<Angle, Angle>.AdditiveIdentity => Zero;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -98,6 +100,26 @@ partial struct Angle :
 	public Angle ClampNegativeFullCircleToFullCircle() => Clamp(-FullCircle, FullCircle);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle ClampNegativeHalfCircleToHalfCircle() => Clamp(-HalfCircle, HalfCircle);
+
+	// TODO xmldoc this creates a triangle wave when plotting y = x.Triangularize(p) where p is the maximum and -p is the minimum.
+	// The period of the wave is peak * 4. Submitting a negative peak flips the wave. 
+	public Angle Triangularize(Angle peak) {
+		if (peak == Zero) return Zero;
+		var period = peak * 4f;
+		var ieeeRemainder = MathF.IEEERemainder(Radians / period.Radians, 1f);
+		var amplitude = (0.25f - MathF.Abs(0.25f - MathF.Abs(ieeeRemainder))) * period.Radians;
+		return FromRadians(MathF.CopySign(amplitude, ieeeRemainder));
+	}
+
+	// TODO xmldoc this creates a triangle wave when plotting y = x.TriangularizeRectified(p) where p is the extreme and 0 is the minimum.
+	// All results are one side of the x-axis (or 0) and the period of the wave is peak * 2
+	public Angle TriangularizeRectified(Angle peak) {
+		if (peak == Zero) return Zero;
+		var period = peak * 4f;
+		var ieeeRemainder = MathF.IEEERemainder(Radians / period.Radians, 1f);
+		var amplitude = (0.25f - MathF.Abs(0.25f - MathF.Abs(ieeeRemainder))) * period.Radians;
+		return FromRadians(amplitude);
+	}
 
 	public static Angle Interpolate(Angle start, Angle end, float distance) => FromRadians(Single.Lerp(start.Radians, end.Radians, distance));
 	#endregion

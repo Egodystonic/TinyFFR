@@ -13,6 +13,7 @@ public readonly partial struct UnitSphericalCoordinate : IMathPrimitive<UnitSphe
 	readonly Angle _azimuthalOffset;
 	readonly Angle _polarOffset;
 
+	// TODO xmldoc: Azimuthal offset is anti-clockwise (when the polar direction is looking towards you)
 	public Angle AzimuthalOffset {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _azimuthalOffset;
@@ -32,7 +33,7 @@ public readonly partial struct UnitSphericalCoordinate : IMathPrimitive<UnitSphe
 	}
 
 	#region Random
-	public static UnitSphericalCoordinate Random() => new(Angle.Random(Angle.Zero, Angle.FullCircle), Angle.Random(-Angle.QuarterCircle, Angle.QuarterCircle));
+	public static UnitSphericalCoordinate Random() => new(Angle.Random(Angle.Zero, Angle.FullCircle), Angle.Random(Angle.Zero, Angle.FullCircle));
 	public static UnitSphericalCoordinate Random(UnitSphericalCoordinate minInclusive, UnitSphericalCoordinate maxExclusive) {
 		return new(Angle.Random(minInclusive.AzimuthalOffset, maxExclusive.AzimuthalOffset), Angle.Random(minInclusive.PolarOffset, maxExclusive.PolarOffset));
 	}
@@ -77,7 +78,11 @@ public readonly partial struct UnitSphericalCoordinate : IMathPrimitive<UnitSphe
 
 	#region Equality
 	public bool Equals(UnitSphericalCoordinate other) => _azimuthalOffset.Equals(other._azimuthalOffset) && _polarOffset.Equals(other._polarOffset);
-	public bool Equals(UnitSphericalCoordinate other, float tolerance) => AzimuthalOffset.Equals(other.AzimuthalOffset, tolerance) && PolarOffset.Equals(other.PolarOffset, tolerance);
+	public bool Equals(UnitSphericalCoordinate other, float tolerance) => _azimuthalOffset.Equals(other._azimuthalOffset, tolerance) && _polarOffset.Equals(other._polarOffset, tolerance);
+	public bool IsEquivalentWithinSphereTo(UnitSphericalCoordinate other) => IsEquivalentWithinSphereTo(other, 0f);
+	public bool IsEquivalentWithinSphereTo(UnitSphericalCoordinate other, Angle tolerance) => IsEquivalentWithinSphereTo(other, tolerance.Degrees);
+	public bool IsEquivalentWithinSphereTo(UnitSphericalCoordinate other, float toleranceDegrees) => Normalized.Equals(other.Normalized, toleranceDegrees);
+
 	public override bool Equals(object? obj) => obj is Ray other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(_azimuthalOffset, _polarOffset);
 	public static bool operator ==(UnitSphericalCoordinate left, UnitSphericalCoordinate right) => left.Equals(right);

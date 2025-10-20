@@ -4,6 +4,16 @@
 
 namespace Egodystonic.TinyFFR;
 
+public interface INormalizable<out TSelf>
+	where TSelf : INormalizable<TSelf> {
+	TSelf Normalized { get; }
+}
+
+public interface IAbsolutizable<out TSelf>
+	where TSelf : IAbsolutizable<TSelf> {
+	TSelf Absolute { get; }
+}
+
 public interface IInvertible<TSelf> :
 	IUnaryNegationOperators<TSelf, TSelf>
 	where TSelf : IInvertible<TSelf> {

@@ -13,6 +13,7 @@ public enum XyPairClockOrientation {
 }
 
 partial struct XYPair<T> :
+	IAbsolutizable<XYPair<T>>,
 	IAlgebraicRing<XYPair<T>>,
 	IInterpolatable<XYPair<T>>,
 	IDistanceMeasurable<XYPair<T>>,
@@ -20,7 +21,7 @@ partial struct XYPair<T> :
 	IPointTransformable2D<XYPair<T>>,
 	ILengthAdjustable<XYPair<T>>,
 	IInnerProductSpace<XYPair<T>>,
-	IRelatable<XYPair<T>, XYPair<T>, XyPairClockOrientation>  {
+	IRelatable<XYPair<T>, XYPair<T>, XyPairClockOrientation> {
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static XYPair<T> operator -(XYPair<T> operand) => operand.Negated;
