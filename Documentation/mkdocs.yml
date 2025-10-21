@@ -122,9 +122,9 @@ nav:
     - examples/index.md
     - examples/installing.md
     - examples/hello_cube.md
-    - examples/texture_patterns.md
     - examples/loading_assets.md
     - examples/handling_input.md
+    - examples/texture_patterns.md
     - examples/integrating_wpf.md
     - examples/integrating_avalonia.md
     - examples/integrating_winforms.md

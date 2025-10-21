@@ -36,10 +36,10 @@ All texture patterns can be created by using the static methods on the `TextureP
 Any type of map can be created with any pattern type, it just depends what type of value you specify for the pattern's "value" arguments:
 
 * For color maps, you should make a texture pattern of `ColorVect`s.
-* For normal maps, you should make a texture pattern of `Direction`s.
+* For normal maps, you should make a texture pattern of `UnitSphericalCoordinate`s.
 * For occlusion, roughness, or metallic maps, you should make a texture pattern of `Real`s.
 
-The following examples will show you how to create texture patterns:
+Examples using each of these types follow below:
 
 ## Chequerboard Color Maps
 
@@ -239,13 +239,6 @@ The following examples will show you how to create texture patterns:
 
 ## Circle or Rectangle Normal Maps
 
-???+ failure "Subject to Change"
-	[The way normal patterns are generated will be changed in v0.3](https://github.com/Egodystonic/TinyFFR/issues/90).
-
-	`TexturePattern`s will still be used, but instead of specifying `Direction`s you will a different custom type that's easier to work with.
-
-	You can still create normal patterns now with `Directions`, but be aware that you will have to change your code eventually.
-
 === "Rectangular Studs"
 
 	![Cube with flat colour map and rectangular 'stud' normals](texture_patterns_normal_studs.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
@@ -253,12 +246,7 @@ The following examples will show you how to create texture patterns:
 	This cube has a flat color map but the normal map gives it the impression of having 'studs' on its surface
 	///
 
-	Normal maps in TinyFFR are specified as 2D textures of `Direction`s. Just like with `ColorVect`s, we can use the texture pattern generator to create `Direction` patterns.
-
-	??? question "What does the 'Direction' of a pixel mean in a normal map?"
-		Normal maps are textures, but instead of the pixels representing colours (RGB) they represent directions (XYZ).
-
-		In the real world, most surfaces aren't perfectly flat but actually have slight grooves and imperfections. Normal maps attempt to model those imperfections and patterns by specifying the *direction* each pixel of the surface is facing (relative to the overall surface plane) and are used when calculating lighting reflections to provide a more realistic-looking material.
+	Normal maps are textures, but instead of the pixels representing colours (RGB) they represent directions (XYZ). In the real world, most surfaces aren't perfectly flat but actually have slight grooves and imperfections. Normal maps attempt to model those imperfections and patterns by specifying the *direction* each pixel of the surface is facing (relative to the overall surface plane) and are used when calculating lighting reflections to provide a more realistic-looking material. That means we can make "interesting" normal maps by specifying some pixels that don't face perfectly forward (relative to the surface).
 
 	??? question "Why are they called 'normal' maps?"
 		You might be confused if you've never come across this terminology before, and be wondering if there's such a thing as an "abnormal" map or a "weird" map. But be assured, no such thing exists.
@@ -266,22 +254,32 @@ The following examples will show you how to create texture patterns:
 		In math/geometry, a [normal vector](https://en.wikipedia.org/wiki/Normal_(geometry)) is the name given to the vector (e.g. arrow) that points exactly perpendicularly out from a surface. This represents exactly what we're trying to model with a normal map: We want a texture that describes how our surface/material is deformed on the per-pixel level, for more realistic lighting.
 
 		The term "normal" ultimately comes from Latin; a "norma" was a carpenter's tool for making right-angles.
+	
+	Normal maps in TinyFFR can be generated with `UnitSphericalCoordinate` texture patterns.
 
-	By [convention](/concepts/conventions.md), `Direction.Forward` is the "default" direction for a surface's pixel. Any pixel whose direction is set to `new Direction(x: 0f, y: 0f, z: 1f)` (which is the same as `Direction.Forward`) will be rendered as perfectly straight/plumb with respect to the surface.
+	???+ abstract "What is a 'UnitSphericalCoordinate' in a normal map pattern?"
+		Each `UnitSphericalCoordinate` is comprised of two angle parameters: An `AzimuthalOffset` and a `PolarOffset`.
 
-	That means we can make "interesting" normal maps by specifying some pixels that don't face perfectly forward.
-
-	??? question "What about when my cube surface isn't actually facing forward?"
-		You might be wondering why we're specifying everything as facing 'forward' by default when in a real 3D scene it's unlikely most surfaces will be facing exactly forward.
+		Any value greater than `0°` for `PolarOffset` (the second parameter) will "bend" the texture normal towards the direction determined by the `AzimuthalOffset` (the first parameter).
 		
-		Everything in a normal map is a direction specified *relative* to a conventional 'flat' direction (the convention in TinyFFR is `Direction.Forward` being the 'flat' direction).
-
-		When your surface itself isn't *actually* facing forward in the world/scene, it doesn't matter. The normals are specified *in relation to* whichever direction the surface is *actually* facing-- that direction is considered "forward" in the context of the normal map lighting calculations. The renderer translates your normal directions on a per-frame basis depending on the actual direction the material surface is facing.
-
-	??? warning "Normals should never face inward"
-		It generally doesn't make sense to have normals with a negative Z component. In a physical sense, this would imply the surface for that pixel faces inward. 
+		* 	The first parameter (`AzimuthalOffset`) can be any angle and it represents the 2D orientation of the texel's normal direction. In other words, this parameter specifies the **direction of distortion** on the surface. 
 		
-		Materials with inward-facing normals will not react in any sensible way with lighting. They will appear to only be lit from behind, and the reflections will be reversed. Note also that this behaviour is not even guaranteed-- it is undefined and may change in future.
+			The mapping of angle to actual world direction depends on the mesh you're using(1) and any rotation of the model instance. For a non-rotated `Cuboid` built using the standard method shown previously in "Hello Cube" the [standard convention](/concepts/conventions.md/#2d-handedness-orientation) applies(2).
+			{ .annotate }
+
+			1. 	A value of `0°` points along the mesh's "U" axis (also known as its **tangent** direction). 
+			
+				A value of `90°` points along the mesh's "V" axis (also known as its **bitangent** direction).
+
+				See [Meshes](/concepts/meshes.md/#meshvertex) for more information on U/V axes.
+
+			2.	So, for a standard `Cuboid` mesh, `0°` means the normal points rightward, `90°` upward, `180°` leftward, and `270°` downward along the surface.
+
+		* 	The second parameter (`PolarOffset`) should be an angle between `0°`and `90°` and it represents **how distorted** the surface is. 
+		
+			A value of `0°` means the texel normal direction will point perfectly straight out from the surface (indicating a perfectly flat surface at this point). 
+			
+			A value of `90°` means the texel normal direction will be completely flattened against the surface (indicating a 100% distorted surface).
 
 	For this first example, we will create a normal map that gives the impression of rectangular 'studs' sticking out of our surface by using the `Rectangles` texture pattern:
 
@@ -290,15 +288,23 @@ The following examples will show you how to create texture patterns:
 		interiorSize: (64, 64),
 		borderSize: (8, 8),
 		paddingSize: (32, 32),
-		interiorValue: new Direction(0f, 0f, 1f),
-		borderRightValue: new Direction(1f, 0f, 1f),
-		borderTopValue: new Direction(0f, 1f, 1f),
-		borderLeftValue: new Direction(-1f, 0f, 1f),
-		borderBottomValue: new Direction(0f, -1f, 1f),
-		paddingValue: new Direction(0f, 0f, 1f),
+		interiorValue: new UnitSphericalCoordinate(0f, 0f), // (1)!
+		borderRightValue: new UnitSphericalCoordinate(0f, 45f), // (2)!
+		borderTopValue: new UnitSphericalCoordinate(90f, 45f),
+		borderLeftValue: new UnitSphericalCoordinate(180f, 45f),
+		borderBottomValue: new UnitSphericalCoordinate(270f, 45f),
+		paddingValue: new UnitSphericalCoordinate(0f, 0f),
 		repetitions: (6, 6)
 	));
 	```
+
+	1. 	The `interiorValue` and `paddingValue` specify the value in this pattern for all texels inside and outside the rectangle borders respectively.
+
+		In this case, we want to specify that these interior and padding texels are perfectly flat (non-distorted), so we specify the `UnitSphericalCoordinate`'s `PolarOffset` as 0°.
+
+	2.	We specify each border direction's coordinate `AzimuthalOffset` as being 90° offset from the previous (e.g. right is 0°, top is 90°, left is 180°, bottom is 270°).
+
+		We then make these border texels point exactly 45° out from the surface by setting their `PolarOffset`s to 45°.
 
 	To use it, the `normalMap` is supplied to `CreateOpaqueMaterial()` alongside your `colorMap`:
 
@@ -311,8 +317,32 @@ The following examples will show you how to create texture patterns:
 
 === "Circular Indents"
 
-	???+ failure "Pending Changes"
-		This example will be written once [the planned changes to normal map patterns](https://github.com/Egodystonic/TinyFFR/issues/90) have been completed.
+	![Image showing circular indents](texture_patterns_normal_indents.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	/// caption
+	This surface shows circular indentations.
+	///
+
+	Like with the [Interpolated Circle example above](#__tabbed_2_2) we use the interpolatable functionality of `UnitSphericalCoordinate` to create a smooth interpolated circle:
+
+	```csharp
+	using var normalMap = materialBuilder.CreateNormalMap(TexturePattern.Circles(
+		interiorValue: new UnitSphericalCoordinate(0f, 0f), // (1)!
+		borderValueRight: new UnitSphericalCoordinate(180f, 45f), // (2)!
+		borderValueTop: new UnitSphericalCoordinate(270f, 45f),
+		borderValueLeft: new UnitSphericalCoordinate(0f, 45f),
+		borderValueBottom: new UnitSphericalCoordinate(90f, 45f),
+		paddingValue: new UnitSphericalCoordinate(0f, 0f),
+		repetitions: (6, 6)
+	));
+	```
+
+	1. 	The `interiorValue` and `paddingValue` specify the value in this pattern for all texels inside and outside the circle borders respectively.
+
+		In this case, we want to specify that these interior and padding texels are perfectly flat (non-distorted), so we specify the `UnitSphericalCoordinate`'s `PolarOffset` as 0°.
+
+	2.	We specify each border direction's coordinate `AzimuthalOffset` as being one of the 90° right-angle values.
+
+		We deliberately flip the top/bottom and left/right borders from the [usual convention](/concepts/conventions.md/#2d-handedness-orientation) in order to create an "indented" rather than "outdented" effect.
 
 ## Line & Circle ORM Maps
 

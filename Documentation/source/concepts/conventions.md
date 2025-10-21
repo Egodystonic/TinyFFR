@@ -42,7 +42,7 @@ This page lists the various conventions TinyFFR uses (in no particular order):
 
 	* Texture origins (`(0, 0)`) start at the bottom-left corner.
 		* This includes render output buffer readbacks *unless* they are specifically requested in inverted order
-	* Normal maps:
+	* Normal maps (after encoding as a 3D vector):
 		* +X points towards the positive mesh tangent direction
 		* +Y points towards the positive mesh bitangent direction
 		* +Z points out of the texture, up away from the surface. Normal maps' Z should always be positive or 0, never negative.
