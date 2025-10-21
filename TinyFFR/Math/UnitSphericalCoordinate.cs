@@ -9,6 +9,7 @@ namespace Egodystonic.TinyFFR;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = sizeof(float) * 2)]
 public readonly partial struct UnitSphericalCoordinate : IMathPrimitive<UnitSphericalCoordinate> {
+	public static readonly UnitSphericalCoordinate ZeroZero = new(0f, 0f);
 	readonly Angle _azimuthalOffset;
 	readonly Angle _polarOffset;
 

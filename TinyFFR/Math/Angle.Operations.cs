@@ -52,7 +52,7 @@ partial struct Angle :
 	public Angle Minus(Angle other) => FromRadians(Radians - other.Radians);
 
 	// TODO xmldoc explain that this is the difference "around the clock" to the other angle; e.g. 270 & 180 = 90; 270 & 90 = 180, etc. Range is always between 0 and 180
-	public Angle AbsoluteDifferenceTo(Angle other) {
+	public Angle ShortestDifferenceTo(Angle other) {
 		return FromRadians(MathF.Min((this - other).Normalized.Radians, (other - this).Normalized.Radians));
 	}
 	#endregion
@@ -122,6 +122,16 @@ partial struct Angle :
 	}
 
 	public static Angle Interpolate(Angle start, Angle end, float distance) => FromRadians(Single.Lerp(start.Radians, end.Radians, distance));
+	public static Angle InterpolateShortestDifference(Angle start, Angle end, float distance) {
+		var shortestDiff = start.ShortestDifferenceTo(end);
+		var isPositiveDelta = end.ShortestDifferenceTo(start + shortestDiff) < end.ShortestDifferenceTo(start - shortestDiff);
+		var startNorm = start.Normalized;
+		return FromRadians(Single.Lerp(
+			startNorm.Radians, 
+			startNorm.Radians + (isPositiveDelta ? shortestDiff.Radians : -shortestDiff.Radians), 
+			distance
+		)).Normalized;
+	}
 	#endregion
 
 	#region Comparison

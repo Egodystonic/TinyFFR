@@ -6,12 +6,12 @@ using System;
 namespace Egodystonic.TinyFFR.World;
 
 public interface ILightBuilder {
-	PointLight CreatePointLight(Location? position = null, ColorVect? color = null, float? brightness = null, float? falloffRange = null, bool? castsShadows = null, ReadOnlySpan<char> name = default) {
+	PointLight CreatePointLight(Location? position = null, ColorVect? color = null, float? brightness = null, float? maxIlluminationRadius = null, bool? castsShadows = null, ReadOnlySpan<char> name = default) {
 		return CreatePointLight(new PointLightCreationConfig {
 			InitialPosition = position ?? PointLightCreationConfig.DefaultInitialPosition, 
 			InitialColor = color ?? PointLightCreationConfig.DefaultInitialColor,
 			InitialBrightness = brightness ?? PointLightCreationConfig.DefaultInitialBrightness,
-			InitialMaxIlluminationRadius = falloffRange ?? PointLightCreationConfig.DefaultInitialMaxIlluminationRadius,
+			InitialMaxIlluminationRadius = maxIlluminationRadius ?? PointLightCreationConfig.DefaultInitialMaxIlluminationRadius,
 			CastsShadows = castsShadows ?? PointLightCreationConfig.DefaultCastsShadows,
 			Name = name
 		});

@@ -12,6 +12,7 @@ using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.World;
 using System;
+using System.Numerics;
 
 namespace Egodystonic.TinyFFR;
 
@@ -61,12 +62,12 @@ class LocalRenderOutputBufferTest {
 			interiorSize: (256, 256),
 			borderSize: (64, 64),
 			paddingSize: (0, 0),
-			interiorValue: Direction.Forward,
-			borderRightValue: (-1f, 0f, 1f),
-			borderTopValue: (0f, 1f, 1f),
-			borderLeftValue: (1f, 0f, 1f),
-			borderBottomValue: (0f, -1f, 1f),
-			paddingValue: Direction.Forward,
+			interiorValue: IMaterialBuilder.DefaultTexelNormalVect,
+			borderRightValue: new Vector3(-1f, 0f, 1f),
+			borderTopValue: new Vector3(0f, 1f, 1f),
+			borderLeftValue: new Vector3(1f, 0f, 1f),
+			borderBottomValue: new Vector3(0f, -1f, 1f),
+			paddingValue: IMaterialBuilder.DefaultTexelNormalVect,
 			repetitions: (8, 8)
 		), "normal");
 		using var renderBufferMatOrmTex = factory.MaterialBuilder.CreateOrmMap(name: "orm");
@@ -126,12 +127,12 @@ class LocalRenderOutputBufferTest {
 			interiorSize: (256, 256),
 			borderSize: (64, 64),
 			paddingSize: (0, 0),
-			interiorValue: Direction.Forward,
-			borderRightValue: (-1f, 0f, 1f),
-			borderTopValue: (0f, 1f, 1f),
-			borderLeftValue: (1f, 0f, 1f),
-			borderBottomValue: (0f, -1f, 1f),
-			paddingValue: Direction.Forward,
+			interiorValue: IMaterialBuilder.DefaultTexelNormalVect,
+			borderRightValue: new Vector3(-1f, 0f, 1f),
+			borderTopValue: new Vector3(0f, 1f, 1f),
+			borderLeftValue: new Vector3(1f, 0f, 1f),
+			borderBottomValue: new Vector3(0f, -1f, 1f),
+			paddingValue: IMaterialBuilder.DefaultTexelNormalVect,
 			repetitions: (8, 8)
 		), "normal");
 		using var ormTex = factory.MaterialBuilder.CreateOrmMap(name: "orm");

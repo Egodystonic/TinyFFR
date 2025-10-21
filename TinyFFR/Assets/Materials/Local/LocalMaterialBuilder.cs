@@ -339,12 +339,12 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 				interiorSize: (128, 128),
 				borderSize: (8, 8),
 				paddingSize: (0, 0),
-				interiorValue: Direction.Forward,
-				borderRightValue: (-1f, 0f, 1f),
-				borderTopValue: (0f, 1f, 1f),
-				borderLeftValue: (1f, 0f, 1f),
-				borderBottomValue: (0f, -1f, 1f),
-				paddingValue: Direction.Forward,
+				interiorValue: IMaterialBuilder.DefaultTexelNormalVect,
+				borderRightValue: new Vector3(-1f, 0f, 1f),
+				borderTopValue: new Vector3(0f, 1f, 1f),
+				borderLeftValue: new Vector3(1f, 0f, 1f),
+				borderBottomValue: new Vector3(0f, -1f, 1f),
+				paddingValue: IMaterialBuilder.DefaultTexelNormalVect,
 				repetitions: (8, 8)
 			),
 			name: TestMaterialNormalMapName

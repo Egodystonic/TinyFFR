@@ -9,7 +9,7 @@ using System.Numerics;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = TexelSizeBytes)]
-public readonly record struct TexelRgb24(byte R, byte G, byte B) : IThreeByteChannelTexel<TexelRgb24>, IConversionSupplyingTexel<TexelRgb24, ColorVect>, IConversionSupplyingTexel<TexelRgb24, Direction> {
+public readonly record struct TexelRgb24(byte R, byte G, byte B) : IThreeByteChannelTexel<TexelRgb24>, IConversionSupplyingTexel<TexelRgb24, ColorVect> {
 	public const int TexelSizeBytes = 3;
 
 	public TexelRgba32 AsRgba32 => new(R, G, B, Byte.MaxValue);
@@ -49,12 +49,6 @@ public readonly record struct TexelRgb24(byte R, byte G, byte B) : IThreeByteCha
 	public static explicit operator TexelRgb24(TexelRgba32 texel) => texel.AsRgb24;
 
 	public static TexelRgb24 ConvertFrom(ColorVect v) => new(v);
-	public static TexelRgb24 ConvertFrom(Direction d) {
-		const float Multiplicand = Byte.MaxValue * 0.5f;
-
-		var v = (d.ToVector3() + Vector3.One) * Multiplicand;
-		return new((byte) v.X, (byte) v.Y, (byte) v.Z);
-	}
 
 	public TexelRgb24 WithInvertedChannelIfPresent(int channelIndex) {
 		return channelIndex switch {

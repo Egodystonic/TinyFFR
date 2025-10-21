@@ -346,7 +346,7 @@ partial struct Direction :
 		if (polarAngle == null) return this;
 
 		// Outside the max arc diff
-		if (polarAngle.Value.AbsoluteDifferenceTo(Angle.Zero) > halfArc) {
+		if (polarAngle.Value.ShortestDifferenceTo(Angle.Zero) > halfArc) {
 			resultOnPlane = XYPair<float>.FromPolarAngleAndLength(polarAngle > Angle.HalfCircle ? halfArc : -halfArc, resultOnPlane.ToVector2().Length());
 		}
 

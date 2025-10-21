@@ -25,6 +25,9 @@ public readonly partial struct UnitSphericalCoordinate :
 	public UnitSphericalCoordinate Inverted => new UnitSphericalCoordinate(AzimuthalOffset + Angle.HalfCircle, Angle.HalfCircle - PolarOffset).Normalized;
 
 	public static UnitSphericalCoordinate Interpolate(UnitSphericalCoordinate start, UnitSphericalCoordinate end, float distance) {
+		return new(Angle.InterpolateShortestDifference(start.AzimuthalOffset, end.AzimuthalOffset, distance), Angle.InterpolateShortestDifference(start.PolarOffset, end.PolarOffset, distance));
+	}
+	public static UnitSphericalCoordinate InterpolateLinearly(UnitSphericalCoordinate start, UnitSphericalCoordinate end, float distance) {
 		return new(Angle.Interpolate(start.AzimuthalOffset, end.AzimuthalOffset, distance), Angle.Interpolate(start.PolarOffset, end.PolarOffset, distance));
 	}
 
