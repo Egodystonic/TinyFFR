@@ -7,9 +7,8 @@ using System.Globalization;
 
 namespace Egodystonic.TinyFFR;
 
-[DebuggerDisplay("{ToStringDescriptive()}")]
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = sizeof(float) * 2)]
-public readonly partial struct UnitSphericalCoordinate : IMathPrimitive<UnitSphericalCoordinate>, IDescriptiveStringProvider {
+public readonly partial struct UnitSphericalCoordinate : IMathPrimitive<UnitSphericalCoordinate> {
 	readonly Angle _azimuthalOffset;
 	readonly Angle _polarOffset;
 
@@ -57,7 +56,6 @@ public readonly partial struct UnitSphericalCoordinate : IMathPrimitive<UnitSphe
 
 	#region String Conversions
 	public override string ToString() => ToString(null, null);
-	public string ToStringDescriptive() => $"{nameof(UnitSphericalCoordinate)}{GeometryUtils.ParameterStartToken}{nameof(AzimuthalOffset)}{GeometryUtils.ParameterKeyValueSeparatorToken}{AzimuthalOffset}{GeometryUtils.ParameterSeparatorToken}{nameof(PolarOffset)}{GeometryUtils.ParameterKeyValueSeparatorToken}{PolarOffset}{GeometryUtils.ParameterEndToken}";
 	public string ToString(string? format, IFormatProvider? formatProvider) => GeometryUtils.StandardizedToString(format, formatProvider, nameof(UnitSphericalCoordinate), (nameof(AzimuthalOffset), AzimuthalOffset), (nameof(PolarOffset), PolarOffset));
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => GeometryUtils.StandardizedTryFormat(destination, out charsWritten, format, provider, nameof(UnitSphericalCoordinate), (nameof(AzimuthalOffset), AzimuthalOffset), (nameof(PolarOffset), PolarOffset));
 
@@ -81,7 +79,10 @@ public readonly partial struct UnitSphericalCoordinate : IMathPrimitive<UnitSphe
 	public bool Equals(UnitSphericalCoordinate other, float tolerance) => _azimuthalOffset.Equals(other._azimuthalOffset, tolerance) && _polarOffset.Equals(other._polarOffset, tolerance);
 	public bool IsEquivalentWithinSphereTo(UnitSphericalCoordinate other) => IsEquivalentWithinSphereTo(other, 0f);
 	public bool IsEquivalentWithinSphereTo(UnitSphericalCoordinate other, Angle tolerance) => IsEquivalentWithinSphereTo(other, tolerance.Degrees);
-	public bool IsEquivalentWithinSphereTo(UnitSphericalCoordinate other, float toleranceDegrees) => Normalized.Equals(other.Normalized, toleranceDegrees);
+	public bool IsEquivalentWithinSphereTo(UnitSphericalCoordinate other, float toleranceDegrees) {
+		return _azimuthalOffset.IsEquivalentWithinCircleTo(other._azimuthalOffset, toleranceDegrees)
+			&& _polarOffset.IsEquivalentWithinCircleTo(other._polarOffset, toleranceDegrees);
+	}
 
 	public override bool Equals(object? obj) => obj is Ray other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(_azimuthalOffset, _polarOffset);

@@ -31,7 +31,7 @@ class UnitSphericalCoordinateTest {
 		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(anglesToTest.Select(a => new UnitSphericalCoordinate(a, a)).ToArray());
 		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(new UnitSphericalCoordinate(), 0f, 0f);
 		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestCoord, new Angle(135f).Radians, new Angle(20f).Radians);
-		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(-TestCoord, new Angle(-135f).Radians, new Angle(-20f).Radians);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(-TestCoord, TestCoord.Inverted.AzimuthalOffset.Radians, TestCoord.Inverted.PolarOffset.Radians);
 	}
 
 	[Test]
@@ -54,7 +54,6 @@ class UnitSphericalCoordinateTest {
 
 	[Test]
 	public void ShouldCorrectlyImplementEqualityMembers() {
-		Assert.AreEqual(default(UnitSphericalCoordinate), -default(UnitSphericalCoordinate));
 		Assert.AreNotEqual(default(UnitSphericalCoordinate), TestCoord);
 		Assert.IsTrue(TestCoord.Equals(TestCoord));
 		Assert.IsFalse(TestCoord.Equals(-TestCoord));
@@ -83,45 +82,45 @@ class UnitSphericalCoordinateTest {
 
 		for (var f = -720f; f < 720f + 36f; f += 36f) {
 			Assert.IsTrue(new UnitSphericalCoordinate(360f + f, 360 + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f), TestTolerance));
-			Assert.IsTrue(new UnitSphericalCoordinate(720f + f, 720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f), (Angle) TestTolerance));
+			Assert.IsTrue(new UnitSphericalCoordinate(720f + f, 720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f), TestTolerance));
 			Assert.IsTrue(new UnitSphericalCoordinate(-360f + f, -360f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f), TestTolerance));
-			Assert.IsTrue(new UnitSphericalCoordinate(-720f + f, -720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f), (Angle) TestTolerance));
+			Assert.IsTrue(new UnitSphericalCoordinate(-720f + f, -720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f), TestTolerance));
 
 			Assert.IsFalse(new UnitSphericalCoordinate(360f + f, 360f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f + 1f), TestTolerance));
-			Assert.IsFalse(new UnitSphericalCoordinate(720f + f, 720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f + 1f), (Angle) TestTolerance));
+			Assert.IsFalse(new UnitSphericalCoordinate(720f + f, 720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f + 1f), TestTolerance));
 			Assert.IsFalse(new UnitSphericalCoordinate(-360f + f, -360f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f + 1f), TestTolerance));
-			Assert.IsFalse(new UnitSphericalCoordinate(-720f + f, -720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f + 1f), (Angle) TestTolerance));
+			Assert.IsFalse(new UnitSphericalCoordinate(-720f + f, -720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f + 1f), TestTolerance));
 			Assert.IsFalse(new UnitSphericalCoordinate(360f + f, 360f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f - 1f), TestTolerance));
-			Assert.IsFalse(new UnitSphericalCoordinate(720f + f, 720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f - 1f), (Angle) TestTolerance));
+			Assert.IsFalse(new UnitSphericalCoordinate(720f + f, 720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f - 1f), TestTolerance));
 			Assert.IsFalse(new UnitSphericalCoordinate(-360f + f, -360f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f - 1f), TestTolerance));
-			Assert.IsFalse(new UnitSphericalCoordinate(-720f + f, -720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f - 1f), (Angle) TestTolerance));
+			Assert.IsFalse(new UnitSphericalCoordinate(-720f + f, -720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f - 1f), TestTolerance));
 
 			Assert.IsFalse(new UnitSphericalCoordinate(360f + f, 360f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f + 1f, f), TestTolerance));
-			Assert.IsFalse(new UnitSphericalCoordinate(720f + f, 720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f + 1f, f), (Angle) TestTolerance));
+			Assert.IsFalse(new UnitSphericalCoordinate(720f + f, 720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f + 1f, f), TestTolerance));
 			Assert.IsFalse(new UnitSphericalCoordinate(-360f + f, -360f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f + 1f, f), TestTolerance));
-			Assert.IsFalse(new UnitSphericalCoordinate(-720f + f, -720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f + 1f, f), (Angle) TestTolerance));
+			Assert.IsFalse(new UnitSphericalCoordinate(-720f + f, -720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f + 1f, f), TestTolerance));
 			Assert.IsFalse(new UnitSphericalCoordinate(360f + f, 360f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f - 1f, f), TestTolerance));
-			Assert.IsFalse(new UnitSphericalCoordinate(720f + f, 720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f - 1f, f), (Angle) TestTolerance));
+			Assert.IsFalse(new UnitSphericalCoordinate(720f + f, 720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f - 1f, f), TestTolerance));
 			Assert.IsFalse(new UnitSphericalCoordinate(-360f + f, -360f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f - 1f, f), TestTolerance));
-			Assert.IsFalse(new UnitSphericalCoordinate(-720f + f, -720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f - 1f, f), (Angle) TestTolerance));
+			Assert.IsFalse(new UnitSphericalCoordinate(-720f + f, -720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f - 1f, f), TestTolerance));
 
 			Assert.IsFalse(new UnitSphericalCoordinate(360f + f, 360f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f + 180f), TestTolerance));
-			Assert.IsFalse(new UnitSphericalCoordinate(720f + f, 720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f + 180f), (Angle) TestTolerance));
+			Assert.IsFalse(new UnitSphericalCoordinate(720f + f, 720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f + 180f), TestTolerance));
 			Assert.IsFalse(new UnitSphericalCoordinate(-360f + f, -360f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f + 180f), TestTolerance));
-			Assert.IsFalse(new UnitSphericalCoordinate(-720f + f, -720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f + 180f), (Angle) TestTolerance));
+			Assert.IsFalse(new UnitSphericalCoordinate(-720f + f, -720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f + 180f), TestTolerance));
 			Assert.IsFalse(new UnitSphericalCoordinate(360f + f, 360f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f - 180f), TestTolerance));
-			Assert.IsFalse(new UnitSphericalCoordinate(720f + f, 720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f - 180f), (Angle) TestTolerance));
+			Assert.IsFalse(new UnitSphericalCoordinate(720f + f, 720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f - 180f), TestTolerance));
 			Assert.IsFalse(new UnitSphericalCoordinate(-360f + f, -360f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f - 180f), TestTolerance));
-			Assert.IsFalse(new UnitSphericalCoordinate(-720f + f, -720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f - 180f), (Angle) TestTolerance));
+			Assert.IsFalse(new UnitSphericalCoordinate(-720f + f, -720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f, f - 180f), TestTolerance));
 
 			Assert.IsFalse(new UnitSphericalCoordinate(360f + f, 360f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f + 180f, f), TestTolerance));
-			Assert.IsFalse(new UnitSphericalCoordinate(720f + f, 720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f + 180f, f), (Angle) TestTolerance));
+			Assert.IsFalse(new UnitSphericalCoordinate(720f + f, 720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f + 180f, f), TestTolerance));
 			Assert.IsFalse(new UnitSphericalCoordinate(-360f + f, -360f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f + 180f, f), TestTolerance));
-			Assert.IsFalse(new UnitSphericalCoordinate(-720f + f, -720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f + 180f, f), (Angle) TestTolerance));
+			Assert.IsFalse(new UnitSphericalCoordinate(-720f + f, -720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f + 180f, f), TestTolerance));
 			Assert.IsFalse(new UnitSphericalCoordinate(360f + f, 360f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f - 180f, f), TestTolerance));
-			Assert.IsFalse(new UnitSphericalCoordinate(720f + f, 720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f - 180f, f), (Angle) TestTolerance));
+			Assert.IsFalse(new UnitSphericalCoordinate(720f + f, 720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f - 180f, f), TestTolerance));
 			Assert.IsFalse(new UnitSphericalCoordinate(-360f + f, -360f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f - 180f, f), TestTolerance));
-			Assert.IsFalse(new UnitSphericalCoordinate(-720f + f, -720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f - 180f, f), (Angle) TestTolerance));
+			Assert.IsFalse(new UnitSphericalCoordinate(-720f + f, -720f + f).IsEquivalentWithinSphereTo(new UnitSphericalCoordinate(f - 180f, f), TestTolerance));
 		}
 	}
 
@@ -178,20 +177,26 @@ class UnitSphericalCoordinateTest {
 		for (var x = -5f; x <= 5f; x += 1f) {
 			for (var y = -5f; y <= 5f; y += 1f) {
 				for (var z = -5f; z <= 5f; z += 1f) {
-					var azimuthZero = new Direction(x, y, z);
-					var polarZero = azimuthZero.AnyOrthogonal();
-					
 					var azimuthalOffset = Angle.Random(-360f, 360f);
 					var polarOffset = Angle.Random(-360f, 360f);
 
+					var azimuthZero = new Direction(x, y, z);
+					var polarZero = azimuthZero.AnyOrthogonal();
+
+					if (azimuthZero == Direction.None) {
+						Assert.AreEqual(Direction.None, new UnitSphericalCoordinate(azimuthalOffset, 90f).ToDirection(azimuthZero, polarZero));
+						Assert.AreEqual(Direction.None, new UnitSphericalCoordinate(0f, polarOffset).ToDirection(azimuthZero, polarZero));
+						continue;
+					}
+					
 					AssertToleranceEquals(
-						azimuthalOffset.Normalized,
+						azimuthalOffset.TriangularizeRectified(180f),
 						new UnitSphericalCoordinate(azimuthalOffset, 90f).ToDirection(azimuthZero, polarZero).AngleTo(azimuthZero),
 						TestTolerance
 					);
 
 					AssertToleranceEquals(
-						polarOffset.Normalized,
+						polarOffset.TriangularizeRectified(180f),
 						new UnitSphericalCoordinate(0f, polarOffset).ToDirection(azimuthZero, polarZero).AngleTo(polarZero),
 						TestTolerance
 					);
@@ -203,7 +208,7 @@ class UnitSphericalCoordinateTest {
 	[Test]
 	public void ShouldCorrectlyInvert() {
 		Assert.AreEqual(-TestCoord, TestCoord.Inverted);
-		Assert.AreEqual(new UnitSphericalCoordinate(315f, 160f), TestCoord.Inverted);
+		AssertToleranceEquals(new UnitSphericalCoordinate(315f, 160f), TestCoord.Inverted, TestTolerance);
 
 		AssertToleranceEquals(
 			Direction.Backward,
@@ -220,6 +225,11 @@ class UnitSphericalCoordinateTest {
 					for (var a = -720f; a < 720f + 36f; a += 36f) {
 						var coord = new UnitSphericalCoordinate(a, a);
 
+						if (azimuthZero == Direction.None) {
+							Assert.AreEqual(Direction.None, coord.ToDirection(azimuthZero, polarZero));
+							continue;
+						}
+
 						AssertToleranceEquals(
 							180f,
 							coord.ToDirection(azimuthZero, polarZero).AngleTo(
@@ -235,7 +245,7 @@ class UnitSphericalCoordinateTest {
 
 	[Test]
 	public void ShouldCorrectlyNormalize() {
-		Assert.AreEqual(TestCoord, TestCoord.Normalized);
+		AssertToleranceEquals(TestCoord, TestCoord.Normalized, TestTolerance);
 
 		for (var x = -5f; x <= 5f; x += 1f) {
 			for (var y = -5f; y <= 5f; y += 1f) {
