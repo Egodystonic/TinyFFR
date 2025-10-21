@@ -353,17 +353,33 @@ class UnitSphericalCoordinateTest {
 
 	[Test]
 	public void ShouldCorrectlyInterpolate() {
-		AssertToleranceEquals(new(0f, 0f), UnitSphericalCoordinate.Interpolate(new(-100f, -100f), new(100f, 100f), 0.5f), TestTolerance);
-		AssertToleranceEquals(new(-100f, -100f), UnitSphericalCoordinate.Interpolate(new(-100f, -100f), new(100f, 100f), 0f), TestTolerance);
-		AssertToleranceEquals(new(100f, 100f), UnitSphericalCoordinate.Interpolate(new(-100f, -100f), new(100f, 100f), 1f), TestTolerance);
-		AssertToleranceEquals(new(-200f, -200f), UnitSphericalCoordinate.Interpolate(new(-100f, -100f), new(100f, 100f), -0.5f), TestTolerance);
-		AssertToleranceEquals(new(200f, 200f), UnitSphericalCoordinate.Interpolate(new(-100f, -100f), new(100f, 100f), 1.5f), TestTolerance);
+		AssertToleranceEquals(new(315f, 315f), UnitSphericalCoordinate.InterpolateGeometrically(new(270f, 270f), new(0f, 0f), 0.5f), TestTolerance);
 
-		AssertToleranceEquals(new(30f, 30f), UnitSphericalCoordinate.Interpolate(new(30f, 30f), new(30f, 30f), -1f), TestTolerance);
-		AssertToleranceEquals(new(30f, 30f), UnitSphericalCoordinate.Interpolate(new(30f, 30f), new(30f, 30f), 0f), TestTolerance);
-		AssertToleranceEquals(new(30f, 30f), UnitSphericalCoordinate.Interpolate(new(30f, 30f), new(30f, 30f), 0.5f), TestTolerance);
-		AssertToleranceEquals(new(30f, 30f), UnitSphericalCoordinate.Interpolate(new(30f, 30f), new(30f, 30f), 1f), TestTolerance);
-		AssertToleranceEquals(new(30f, 30f), UnitSphericalCoordinate.Interpolate(new(30f, 30f), new(30f, 30f), 2f), TestTolerance);
+		AssertToleranceEquals(new(180f, 180f), UnitSphericalCoordinate.InterpolateGeometrically(new(-100f, -100f), new(100f, 100f), 0.5f), TestTolerance);
+		AssertToleranceEquals(new(260f, 260f), UnitSphericalCoordinate.InterpolateGeometrically(new(-100f, -100f), new(100f, 100f), 0f), TestTolerance);
+		AssertToleranceEquals(new(100f, 100f), UnitSphericalCoordinate.InterpolateGeometrically(new(-100f, -100f), new(100f, 100f), 1f), TestTolerance);
+		AssertToleranceEquals(new(340f, 340f), UnitSphericalCoordinate.InterpolateGeometrically(new(-100f, -100f), new(100f, 100f), -0.5f), TestTolerance);
+		AssertToleranceEquals(new(20f, 20f), UnitSphericalCoordinate.InterpolateGeometrically(new(-100f, -100f), new(100f, 100f), 1.5f), TestTolerance);
+
+		AssertToleranceEquals(new(30f, 30f), UnitSphericalCoordinate.InterpolateGeometrically(new(30f, 30f), new(30f, 30f), -1f), TestTolerance);
+		AssertToleranceEquals(new(30f, 30f), UnitSphericalCoordinate.InterpolateGeometrically(new(30f, 30f), new(30f, 30f), 0f), TestTolerance);
+		AssertToleranceEquals(new(30f, 30f), UnitSphericalCoordinate.InterpolateGeometrically(new(30f, 30f), new(30f, 30f), 0.5f), TestTolerance);
+		AssertToleranceEquals(new(30f, 30f), UnitSphericalCoordinate.InterpolateGeometrically(new(30f, 30f), new(30f, 30f), 1f), TestTolerance);
+		AssertToleranceEquals(new(30f, 30f), UnitSphericalCoordinate.InterpolateGeometrically(new(30f, 30f), new(30f, 30f), 2f), TestTolerance);
+
+		AssertToleranceEquals(new(135f, 135f), UnitSphericalCoordinate.InterpolateArithmetically(new(270f, 270f), new(0f, 0f), 0.5f), TestTolerance);
+
+		AssertToleranceEquals(new(0f, 0f), UnitSphericalCoordinate.InterpolateArithmetically(new(-100f, -100f), new(100f, 100f), 0.5f), TestTolerance);
+		AssertToleranceEquals(new(-100f, -100f), UnitSphericalCoordinate.InterpolateArithmetically(new(-100f, -100f), new(100f, 100f), 0f), TestTolerance);
+		AssertToleranceEquals(new(100f, 100f), UnitSphericalCoordinate.InterpolateArithmetically(new(-100f, -100f), new(100f, 100f), 1f), TestTolerance);
+		AssertToleranceEquals(new(-200f, -200f), UnitSphericalCoordinate.InterpolateArithmetically(new(-100f, -100f), new(100f, 100f), -0.5f), TestTolerance);
+		AssertToleranceEquals(new(200f, 200f), UnitSphericalCoordinate.InterpolateArithmetically(new(-100f, -100f), new(100f, 100f), 1.5f), TestTolerance);
+
+		AssertToleranceEquals(new(30f, 30f), UnitSphericalCoordinate.InterpolateArithmetically(new(30f, 30f), new(30f, 30f), -1f), TestTolerance);
+		AssertToleranceEquals(new(30f, 30f), UnitSphericalCoordinate.InterpolateArithmetically(new(30f, 30f), new(30f, 30f), 0f), TestTolerance);
+		AssertToleranceEquals(new(30f, 30f), UnitSphericalCoordinate.InterpolateArithmetically(new(30f, 30f), new(30f, 30f), 0.5f), TestTolerance);
+		AssertToleranceEquals(new(30f, 30f), UnitSphericalCoordinate.InterpolateArithmetically(new(30f, 30f), new(30f, 30f), 1f), TestTolerance);
+		AssertToleranceEquals(new(30f, 30f), UnitSphericalCoordinate.InterpolateArithmetically(new(30f, 30f), new(30f, 30f), 2f), TestTolerance);
 	}
 
 	[Test]

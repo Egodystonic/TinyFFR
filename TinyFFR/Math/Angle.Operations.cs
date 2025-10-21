@@ -122,6 +122,9 @@ partial struct Angle :
 	}
 
 	public static Angle Interpolate(Angle start, Angle end, float distance) => FromRadians(Single.Lerp(start.Radians, end.Radians, distance));
+
+	// TODO xmldoc this interpolates from start to end via the shortest distance "around the clock"; i.e. 270deg -> 0deg goes forward 90 rather than backwards 270
+	// The result will always be in the range [0, <360]
 	public static Angle InterpolateShortestDifference(Angle start, Angle end, float distance) {
 		var shortestDiff = start.ShortestDifferenceTo(end);
 		var isPositiveDelta = end.ShortestDifferenceTo(start + shortestDiff) < end.ShortestDifferenceTo(start - shortestDiff);

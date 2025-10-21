@@ -659,6 +659,8 @@ class AngleTest {
 
 	[Test]
 	public void ShouldCorrectlyInterpolate() {
+		AssertToleranceEquals(135f, Angle.Interpolate(270f, 0f, 0.5f), TestTolerance);
+
 		AssertToleranceEquals(0f, Angle.Interpolate(-100f, 100f, 0.5f), TestTolerance);
 		AssertToleranceEquals(-100f, Angle.Interpolate(-100f, 100f, 0f), TestTolerance);
 		AssertToleranceEquals(100f, Angle.Interpolate(-100f, 100f, 1f), TestTolerance);
@@ -674,7 +676,6 @@ class AngleTest {
 
 	[Test]
 	public void ShouldCorrectlyInterpolateShortestDifference() {
-		AssertToleranceEquals(135f, Angle.Interpolate(270f, 0f, 0.5f), TestTolerance);
 		AssertToleranceEquals(315f, Angle.InterpolateShortestDifference(270f, 0f, 0.5f), TestTolerance);
 
 		AssertToleranceEquals(180f, Angle.InterpolateShortestDifference(-100f, 100f, 0.5f), TestTolerance);

@@ -24,12 +24,12 @@ class LocalCuboidRenderTest {
 	public void SetUpTest() {
 		_colorPattern = TexturePattern.ChequerboardBordered(new ColorVect(1f, 1f, 1f), 2, new ColorVect(1f, 0f, 0f), new ColorVect(0f, 1f, 0f), new ColorVect(0f, 0f, 1f), new ColorVect(0.5f, 0.5f, 0.5f), (4, 4));
 		_normalPattern = TexturePattern.Circles(
-			IMaterialBuilder.DefaultTexelNormalCoord,
+			IMaterialBuilder.DefaultTexelNormal,
 			new UnitSphericalCoordinate(0f, 45f),
 			new UnitSphericalCoordinate(90f, 45f),
 			new UnitSphericalCoordinate(180f, 45f),
 			new UnitSphericalCoordinate(270f, 45f),
-			IMaterialBuilder.DefaultTexelNormalCoord
+			IMaterialBuilder.DefaultTexelNormal
 		);
 		_occlusionPattern = TexturePattern.Chequerboard<Real>(0.5f, 1f, 0.8f, (27, 27));
 		_roughnessPattern = TexturePattern.Chequerboard<Real>(0.8f, 0.4f, 1f, (27, 27));

@@ -19,13 +19,13 @@ class LocalNormalMapConversionTest {
 	[SetUp]
 	public void SetUpTest() {
 		_normalPattern = TexturePattern.Circles(
-			IMaterialBuilder.DefaultTexelNormalCoord,
+			IMaterialBuilder.DefaultTexelNormal,
 			new UnitSphericalCoordinate(0f, 45f),
 			new UnitSphericalCoordinate(90f, 45f),
 			new UnitSphericalCoordinate(180f, 45f),
 			new UnitSphericalCoordinate(270f, 45f),
-			IMaterialBuilder.DefaultTexelNormalCoord,
-			borderSize: 192
+			IMaterialBuilder.DefaultTexelNormal,
+			interiorRadius: 96, borderSize: 24, paddingSize: TexturePattern.CirclesDefaultPaddingSize / 3
 		);
 	}
 
@@ -36,7 +36,7 @@ class LocalNormalMapConversionTest {
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
-		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Normal Map Conversion Test");
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "Expectation: Outdent Circles");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
 		using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap();

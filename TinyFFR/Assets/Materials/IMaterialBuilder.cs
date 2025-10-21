@@ -17,8 +17,7 @@ public interface IMaterialBuilder {
 	}
 
 	static ColorVect DefaultTexelColor { get; } = StandardColor.White;
-	static UnitSphericalCoordinate DefaultTexelNormalCoord { get; } = UnitSphericalCoordinate.ZeroZero;
-	static Vector3 DefaultTexelNormalVect { get; } = new(0f, 0f, 1f);
+	static UnitSphericalCoordinate DefaultTexelNormal { get; } = UnitSphericalCoordinate.ZeroZero;
 	static float DefaultTexelOcclusion { get; } = 1f;
 	static float DefaultTexelRoughness { get; } = 0.4f;
 	static float DefaultTexelMetallic { get; } = 0f;
@@ -96,14 +95,16 @@ public interface IMaterialBuilder {
 	}
 	unsafe Texture CreateNormalMap(TexturePattern<UnitSphericalCoordinate>? pattern = null, ReadOnlySpan<char> name = default) {
 		static TexelRgb24 Convert(UnitSphericalCoordinate coord) {
-			var v = coord.ToDirection(new Direction(1f, 0f, 0f), new Direction(0f, 0f, 1f)).ToVector3();
-
 			const float Multiplicand = Byte.MaxValue * 0.5f;
-			v = (v + Vector3.One) * Multiplicand;
+
+			var v = coord.ToDirection(new Direction(1f, 0f, 0f), new Direction(0f, 0f, 1f))
+						.ToVector3()
+						+ Vector3.One;
+			v *= Multiplicand;
 			return new((byte) v.X, (byte) v.Y, (byte) v.Z);
 		}
 		
-		pattern ??= TexturePattern.PlainFill(DefaultTexelNormalCoord);
+		pattern ??= TexturePattern.PlainFill(DefaultTexelNormal);
 		var dimensions = pattern.Value.Dimensions;
 		TexturePattern.AssertDimensions(dimensions);
 
@@ -117,27 +118,6 @@ public interface IMaterialBuilder {
 		};
 
 		return CreateTextureAndDisposePreallocatedBuffer(FillPreallocatedBuffer(pattern.Value, &Convert), genConfig, config);
-	}
-	unsafe Texture CreateNormalMap(TexturePattern<Vector3> pattern, ReadOnlySpan<char> name = default) {
-		static TexelRgb24 Convert(Vector3 v) {
-			const float Multiplicand = Byte.MaxValue * 0.5f;
-			v = (v + Vector3.One) * Multiplicand;
-			return new((byte) v.X, (byte) v.Y, (byte) v.Z);
-		}
-
-		var dimensions = pattern.Dimensions;
-		TexturePattern.AssertDimensions(dimensions);
-
-		var config = new TextureCreationConfig {
-			GenerateMipMaps = dimensions.X > 1 || dimensions.Y > 1,
-			Name = name
-		};
-		var genConfig = new TextureGenerationConfig {
-			Height = dimensions.Y,
-			Width = dimensions.X,
-		};
-
-		return CreateTextureAndDisposePreallocatedBuffer(FillPreallocatedBuffer(pattern, &Convert), genConfig, config);
 	}
 	Texture CreateOrmMap(TexturePattern<Real>? occlusionPattern = null, TexturePattern<Real>? roughnessPattern = null, TexturePattern<Real>? metallicPattern = null, ReadOnlySpan<char> name = default) {
 		return CreateOrmMap(
