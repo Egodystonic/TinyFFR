@@ -23,7 +23,7 @@ You can use the built-in texture pattern generators to create interesting color 
 
 	:material-texture: An __ORM__ map is actually three values baked in to one texture, and is used to add additional information about the nature of the material surface:
 
-	* :material-alpha-o-box-outline: The __Occlusion__ channel is stored in the Red pixel data of the texture and defines on a scale of 0.0 to 1.0 how much light is blocked (or 'occluded') from reaching each pixel on the material surface. For example, if you're trying to simulate a surface of wooden boards, it's likely that less light will reach in the crevices between the boards than on the surface of the boards themselves.
+	* :material-alpha-o-box-outline: The __Occlusion__ channel is stored in the Red pixel data of the texture and defines on a scale of 0.0 to 1.0 how much ambient light reflects off each pixel on the material surface. For example, if you're trying to simulate a surface of wooden boards, it's likely that less light will reach in the crevices between the boards than on the surface of the boards themselves.
 
 	* :material-alpha-r-box-outline: The __Roughness__ channel is stored in the Green pixel data of the texture and defines on a scale of 0.0 to 1.0 how 'rough' the material is at each pixel of its surface. This value is used to determine how 'shiny' the light reflections are on each part of the surface.
 	
@@ -344,6 +344,8 @@ Examples using each of these types follow below:
 
 		We deliberately flip the top/bottom and left/right borders from the [usual convention](/concepts/conventions.md/#2d-handedness-orientation) in order to create an "indented" rather than "outdented" effect.
 
+	Compare also to [Occluded Circular Divots](#__tabbed_4_3) below.
+
 ## Line & Circle ORM Maps
 
 === "Metallic Strips"
@@ -474,8 +476,39 @@ Examples using each of these types follow below:
 
 === "Occluded Circular Divots"
 
-	???+ failure "Pending Changes"
-		This example will be written once [the planned changes to normal map patterns](https://github.com/Egodystonic/TinyFFR/issues/90) have been completed.
+	![Image showing circular indents with ambient occlusion inside the divots](texture_patterns_occluded_divots.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	/// caption
+	This surface shows circular divots where the interior of each divot has some ambient occlusion applied to dim the ambient lighting from the skybox.
+	///
+
+	This example builds on [Circular Indents](#__tabbed_3_2) above and adds some ambient occlusion inside the circular divots for additional realism.
+
+	As a reminder, the actual surface geometry has not changed (it's still a plain cube mesh); but by clever usage of normal and occlusion mapping we can give the strong "effect" of surface detail.
+
+	```csharp
+	var normalMap = MaterialBuilder.CreateNormalMap(TexturePattern.Circles( // (1)!
+		interiorValue: new UnitSphericalCoordinate(0f, 0f),
+		borderValueRight: new UnitSphericalCoordinate(180f, 45f),
+		borderValueTop: new UnitSphericalCoordinate(270f, 45f),
+		borderValueLeft: new UnitSphericalCoordinate(0f, 45f),
+		borderValueBottom: new UnitSphericalCoordinate(90f, 45f),
+		paddingValue: new UnitSphericalCoordinate(0f, 0f),
+		repetitions: (6, 6)
+	));
+
+	var ormMap = MaterialBuilder.CreateOrmMap( // (2)!
+		occlusionPattern: TexturePattern.Circles<Real>(
+			interiorValue: 0.5f,
+			borderValue: 0.75f,
+			paddingValue: 1f,
+			repetitions: (6, 6)
+		)
+	);
+	```
+
+	1.	The normal pattern is identical to the one shown above in the [Circular Indents](#__tabbed_3_2) example.
+
+	2.	We make a `Circles` pattern with the same dimensions/repetition count as our normal map, but specify the interiors of the circles as having 50% ambient reflectivity, the borders/rims as having 75%, and the outsides of the circles as having the standard 100%.
 
 ## Plain Fills & Gradients
 
