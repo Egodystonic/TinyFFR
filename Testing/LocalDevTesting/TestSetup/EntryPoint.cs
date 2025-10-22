@@ -6,6 +6,7 @@ using Egodystonic.TinyFFR.Testing;
 using Egodystonic.TinyFFR.Testing.Local.TestSetup;
 using Egodystonic.TinyFFR.World;
 
+Console.Clear();
 CommonTestSupportFunctions.ResolveNativeAssembliesFromBuildOutputDir();
 TestScaffold.SetUpStandardTestObjects();
 TestScaffold.RunTestLoop();

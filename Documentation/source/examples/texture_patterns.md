@@ -716,8 +716,32 @@ The  tabs below show the three different transformation types being applied to i
 
 === "Translation"
 
-	???+ failure "Pending Changes"
-		This example will be written once [the planned changes to texture pattern translations](https://github.com/Egodystonic/TinyFFR/issues/94) have been completed.
+	![Transformation translation example](texture_pattern_transform_translation.png){ style="max-height:200px;max-width:200px;border-radius:12px"}
+	/// caption
+	Translation transform applied to the original color map. 
+	///
+
+	In this example we shift the pattern right by 1/8 and down by 1/4:
+
+	```csharp
+	using var colorMap = materialBuilder.CreateColorMap(
+		TexturePattern.ChequerboardBordered<ColorVect>(
+			borderValue: StandardColor.Black,
+			firstValue: StandardColor.Red,
+			secondValue: StandardColor.Green,
+			thirdValue: StandardColor.Blue,
+			fourthValue: StandardColor.Purple,
+			borderWidth: 8,
+			transform: new Transform2D(translation: (1f / 8f, -1f / 4f)) // (1)!
+		)
+	);
+	```
+
+	1. 	This transform is specifying a positive shift of one eighth in the X/U direction and a negative shift of one quarter in the Y/V direction.
+
+	The translation values for X and Y are specified as fractions of the entire pattern's width/height respectively, so usually you'll want to supply values in the range `[-1, 1]` (though any valid float is permitted).
+
+	As per the [usual convention](/concepts/conventions.md/#2d-handedness-orientation) a positive X value shifts right and a positive Y value shifts upward.
 
 
 

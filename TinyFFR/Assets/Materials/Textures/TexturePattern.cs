@@ -77,12 +77,14 @@ public readonly unsafe struct TexturePattern<T> where T : unmanaged {
 		TexturePattern.AssertDimensions(dimensions);
 		ArgumentNullException.ThrowIfNull(generationFunc);
 
-		transform = transform?.Inverse;
-
 		_dimensions = dimensions;
 		_generationFunc = generationFunc;
 		_argsBuffer = argsBuffer;
-		_transform = transform;
+
+		if (transform.HasValue) {
+			_transform = (transform.Value with { Translation = transform.Value.Translation * dimensions.Cast<float>() }).Inverse;
+		}
+		else _transform = null;
 	}
 }
 #pragma warning restore CA1815
