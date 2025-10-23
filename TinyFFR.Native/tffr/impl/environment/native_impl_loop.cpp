@@ -212,6 +212,13 @@ void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* 
 				quitRequested = interop_bool_true;
 				break;
 			}
+
+			case SDL_EventType::SDL_WINDOWEVENT: {
+				if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
+					quitRequested = interop_bool_true;
+				}
+				break;
+			}
 		}
 	}
 

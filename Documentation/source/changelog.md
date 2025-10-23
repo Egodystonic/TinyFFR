@@ -26,7 +26,7 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/5?closed=1) 
 
 ### Bug Fixes
 
-
+* `UserQuitRequested` flag is now set when user requests a quit in a multi-window application.
 
 ## 0.4
 
