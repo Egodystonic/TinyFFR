@@ -26,6 +26,7 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/5?closed=1) 
 
 ### Bug Fixes
 
+* Switching between `Fullscreen` and `FullscreenBorderless` modes is now more reliable and the correct mode should be reported back via the `FullscreenStyle` property.
 * `UserQuitRequested` flag is now set when user requests a quit in a multi-window application.
 
 ## 0.4
