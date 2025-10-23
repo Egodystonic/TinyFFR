@@ -90,5 +90,17 @@ class LocalWindowTest {
 		Assert.Throws<ArgumentOutOfRangeException>(() => window.Size = (100, -1));
 		Assert.AreEqual(new XYPair<int>(100, 800), window.Size);
 		Assert.AreEqual(new XYPair<int>(400, 70), window.Position);
+
+		window.Size = window.Display.HighestSupportedResolutionMode.Resolution;
+		foreach (var fsStyle in Enum.GetValues<WindowFullscreenStyle>()) {
+			Console.WriteLine($"Setting window fullscreen style to {fsStyle} @ {window.Size}...");
+			window.FullscreenStyle = fsStyle;
+			Assert.AreEqual(fsStyle, window.FullscreenStyle);
+		}
+		foreach (var fsStyle in ((IEnumerable<WindowFullscreenStyle>) Enum.GetValues<WindowFullscreenStyle>()).Reverse()) {
+			Console.WriteLine($"Setting window fullscreen style to {fsStyle} @ {window.Size}...");
+			window.FullscreenStyle = fsStyle;
+			Assert.AreEqual(fsStyle, window.FullscreenStyle);
+		}
 	}
 }

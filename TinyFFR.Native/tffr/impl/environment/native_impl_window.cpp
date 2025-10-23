@@ -147,10 +147,12 @@ StartExportedFunc(get_window_position, WindowHandle ptr, int32_t* outX, int32_t*
 
 void native_impl_window::set_window_fullscreen_state(WindowHandle handle, interop_bool fullscreen, interop_bool borderless) {
 	ThrowIfNull(handle, "Window was null.");
-	auto fsSetResult = SDL_SetWindowFullscreen(handle, fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
+	int fsSetResult;
+	if (!fullscreen) fsSetResult = SDL_SetWindowFullscreen(handle, 0);
+	else if (!borderless) fsSetResult = SDL_SetWindowFullscreen(handle, SDL_WINDOW_FULLSCREEN);
+	else fsSetResult = SDL_SetWindowFullscreen(handle, SDL_WINDOW_FULLSCREEN_DESKTOP);
+	
 	ThrowIfNotZero(fsSetResult, "Could not set fullscreen state of window: ", SDL_GetError());
-	SDL_SetWindowBordered(handle, borderless && fullscreen ? SDL_FALSE : SDL_TRUE);
-	SDL_SetWindowResizable(handle, (borderless || fullscreen) ? SDL_FALSE : SDL_TRUE);
 }
 StartExportedFunc(set_window_fullscreen_state, WindowHandle ptr, interop_bool fullscreen, interop_bool borderless) {
 	native_impl_window::set_window_fullscreen_state(ptr, fullscreen, borderless);
@@ -161,8 +163,10 @@ void native_impl_window::get_window_fullscreen_state(WindowHandle handle, intero
 	ThrowIfNull(outFullscreen, "Out fullscreen pointer was null.");
 	ThrowIfNull(outBorderless, "Out borderless pointer was null.");
 	auto flags = SDL_GetWindowFlags(handle);
-	*outFullscreen = (flags & SDL_WINDOW_FULLSCREEN) > 0 ? interop_bool_true : interop_bool_false;
-	*outBorderless = (flags & SDL_WINDOW_BORDERLESS) > 0 ? interop_bool_true : interop_bool_false;
+	auto isFullscreen = (flags & SDL_WINDOW_FULLSCREEN) != 0;
+	auto isBorderless = (flags & SDL_WINDOW_FULLSCREEN_DESKTOP) > SDL_WINDOW_FULLSCREEN;
+	*outFullscreen = (isFullscreen || isBorderless) ? interop_bool_true : interop_bool_false;
+	*outBorderless = isBorderless ? interop_bool_true : interop_bool_false;
 }
 StartExportedFunc(get_window_fullscreen_state, WindowHandle ptr, interop_bool* outFullscreen, interop_bool* outBorderless) {
 	native_impl_window::get_window_fullscreen_state(ptr, outFullscreen, outBorderless);
