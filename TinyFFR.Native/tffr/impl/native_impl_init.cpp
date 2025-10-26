@@ -10,6 +10,7 @@ deallocate_asset_buffer_delegate native_impl_init::deallocation_delegate;
 log_notify_delegate native_impl_init::log_delegate;
 
 void native_impl_init::initialize_all() {
+	SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
 	auto sdlInitResult = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
 	ThrowIfNotZero(sdlInitResult, "Could not initialize SDL: ", SDL_GetError());
 
