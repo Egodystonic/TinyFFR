@@ -80,8 +80,11 @@ StartExportedFunc(get_display_mode_count, DisplayHandle handle, int32_t* outNumD
 }
 
 void native_impl_display::get_display_mode(DisplayHandle handle, int32_t modeIndex, int32_t* outWidth, int32_t* outHeight, int32_t* outRefreshRateHz) {
+	ThrowIfNull(outWidth, "Out width pointer was null.");
+	ThrowIfNull(outHeight, "Out height pointer was null.");
+	ThrowIfNull(outRefreshRateHz, "Out refresh rate pointer was null.");
 	SDL_DisplayMode mode;
-	SDL_GetDisplayMode(handle, modeIndex, &mode);
+	ThrowIfNotZero(SDL_GetDisplayMode(handle, modeIndex, &mode), "Could not get display mode data: ", SDL_GetError());
 	*outWidth = mode.w;
 	*outHeight = mode.h;
 	*outRefreshRateHz = mode.refresh_rate;

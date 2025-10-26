@@ -121,6 +121,32 @@ StartExportedFunc(get_window_size, WindowHandle ptr, int32_t* outWidth, int32_t*
 	native_impl_window::get_window_size(ptr, outWidth, outHeight);
 	EndExportedFunc
 }
+void native_impl_window::set_window_fullscreen_display_mode(WindowHandle window, DisplayHandle display, int32_t modeIndex) {
+	ThrowIfNull(window, "Window was null.");
+	SDL_DisplayMode mode;
+	ThrowIfNotZero(SDL_GetDisplayMode(display, modeIndex, &mode), "Could not get display mode data: ", SDL_GetError());
+	ThrowIfNotZero(SDL_SetWindowDisplayMode(window, &mode), "Could not set window display mode: ", SDL_GetError());
+}
+StartExportedFunc(set_window_fullscreen_display_mode, WindowHandle window, DisplayHandle display, int32_t modeIndex) {
+	native_impl_window::set_window_fullscreen_display_mode(window, display, modeIndex);
+	EndExportedFunc
+}
+void native_impl_window::get_window_fullscreen_display_mode(WindowHandle handle, int32_t* outWidth, int32_t* outHeight, int32_t* outRefreshRateHz) {
+	ThrowIfNull(handle, "Window was null.");
+	ThrowIfNull(outWidth, "Out width pointer was null.");
+	ThrowIfNull(outHeight, "Out height pointer was null.");
+	ThrowIfNull(outRefreshRateHz, "Out refresh rate pointer was null.");
+
+	SDL_DisplayMode mode;
+	ThrowIfNotZero(SDL_GetWindowDisplayMode(handle, &mode), "Could not get display mode data: ", SDL_GetError());
+	*outWidth = mode.w;
+	*outHeight = mode.h;
+	*outRefreshRateHz = mode.refresh_rate;
+}
+StartExportedFunc(get_window_fullscreen_display_mode, WindowHandle handle, int32_t* outWidth, int32_t* outHeight, int32_t* outRefreshRateHz) {
+	native_impl_window::get_window_fullscreen_display_mode(handle, outWidth, outHeight, outRefreshRateHz);
+	EndExportedFunc
+}
 
 
 

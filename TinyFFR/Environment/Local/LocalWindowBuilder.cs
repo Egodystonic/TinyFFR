@@ -257,6 +257,12 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_window_size")]
 	static extern InteropResult SetWindowSize(UIntPtr handle, int newWidth, int newHeight);
 
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_window_fullscreen_display_mode")]
+	static extern InteropResult GetWindowFullscreenSize(UIntPtr handle, out int outWidth, out int outHeight, out int outRefreshRateHz);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_window_fullscreen_display_mode")]
+	static extern InteropResult SetWindowFullscreenSize(UIntPtr handle, UIntPtr displayHandle, int displayModeIndex);
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_window_position")]
 	static extern InteropResult GetWindowPosition(UIntPtr handle, out int outX, out int outY);
 
