@@ -75,6 +75,27 @@ Therefore, setting the position to `(0, 0)` will always move the window to the t
 
 You can also set the `Display` after the `Window` is created (i.e. `#!csharp window.Display = display2;`) and the window will keep its relative position on the new display.
 
+### Size and FullscreenStyle
+
+#### FullscreenStyle
+
+TinyFFR supports three `FullscreenStyle` options for `Window` objects: `NotFullscreen` for a standard window with a border and typical controls (e.g. minimize, restore, close) etc.; and `Fullscreen` or `FullscreenBorderless` for a window that should take the entire display's screen space with no border or typical window controls.
+
+The difference between `Fullscreen` and `FullscreenBorderless` is ultimately in how the operating system and TinyFFR interact: 
+
+* With standard `Fullscreen` TinyFFR takes control of the target display itself, setting the target display's resolution according to your requested window `Size`.
+* With `FullscreenBorderless`, the window is instead drawn as an OS window that is set to perfectly match the resolution of the user's desktop, with no borders or controls. The target display's resolution is not adjusted.
+
+In general, `FullscreenBorderless` is recommended over `Fullscreen` as it interacts more nicely with the user's existing desktop configuration (especially concerning multi-monitor setups). However, the size of the window resolution can not be set in this mode. In cases where you wish to set the fullscreen resolution, traditional `Fullscreen` is the only option. Where possible, offer your users the option to configure between the two. Some graphics drivers or desktop OSs may, in some cases, require one option over the other.
+
+#### Size
+
+Setting a window's `Size` property has a different effect depending on its `FullscreenStyle`:
+
+* `NotFullscreen`: The `Size` property simply sets the size of the window.
+* `Fullscreen`: The `Size` property sets the resolution of the display. This resolution must be one of the `SupportedDisplayModes`. If you specify a width/height that is not supported, TinyFFR will automatically pick the nearest one for you.
+* `FullscreenBorderless`: The `Size` property has no effect, but will be remembered & applied if you change the `FullscreenStyle` again later. 
+
 ### Multiple Windows
 
 It is possible to operate multiple windows in one application. You can also operate independent `Scene`s and `Renderer`s (or render the same scene twice from different camera angles, etc).

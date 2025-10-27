@@ -48,6 +48,7 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 			GetDisplayModeCount(handle, out var numDisplayModes).ThrowIfFailure();
 			if (numDisplayModes < 1) continue;
 			var modes = new DisplayMode[numDisplayModes];
+			// Maintainer's note: The ordering of modes is used as an implicit "mode index" in LocalWindowBuilder
 			for (var i = 0; i < numDisplayModes; ++i) {
 				GetDisplayMode(handle, i, out var modeWidth, out var modeHeight, out var modeRate).ThrowIfFailure();
 				modes[i] = new DisplayMode((modeWidth, modeHeight), modeRate);

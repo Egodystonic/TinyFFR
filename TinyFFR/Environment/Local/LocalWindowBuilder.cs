@@ -130,18 +130,60 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 
 	public XYPair<int> GetSize(ResourceHandle<Window> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		GetWindowSize(
-			handle,
-			out var width,
-			out var height
-		).ThrowIfFailure();
-		return new(width, height);
+
+		var fsStyle = GetFullscreenStyle(handle);
+		if (fsStyle is WindowFullscreenStyle.Fullscreen) {
+			GetWindowFullscreenMode(
+				handle,
+				out var width,
+				out var height,
+				out _
+			).ThrowIfFailure();
+			return new(width, height);
+		}
+		else {
+			GetWindowSize(
+				handle,
+				out var width,
+				out var height
+			).ThrowIfFailure();
+			return new(width, height);
+		}
 	}
 	public void SetSize(ResourceHandle<Window> handle, XYPair<int> newSize) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		if (newSize.X < 0) throw new ArgumentOutOfRangeException(nameof(newSize), newSize, $"'{nameof(newSize.X)}' value must be positive or 0.");
 		if (newSize.Y < 0) throw new ArgumentOutOfRangeException(nameof(newSize), newSize, $"'{nameof(newSize.Y)}' value must be positive or 0.");
+
+		var fsStyle = GetFullscreenStyle(handle);
+		if (fsStyle is WindowFullscreenStyle.Fullscreen) {
+			var targetArea = newSize.Area;
+
+			var display = _displayMap[handle];
+			var bestMatch = new DisplayMode(XYPair<int>.Zero, 0);
+			var bestMatchAreaDelta = targetArea;
+			var bestMatchIndex = -1;
+
+			for (var i = 0; i < display.SupportedDisplayModes.Length; ++i) {
+				var thisMode = display.SupportedDisplayModes[i];
+				var thisModeArea = display.SupportedDisplayModes[i].Resolution.Area;
+				var thisModeAreaDelta = Math.Abs(thisModeArea - targetArea);
+				if (thisModeAreaDelta < bestMatchAreaDelta || (thisModeAreaDelta == bestMatchAreaDelta && thisMode.RefreshRateHz > bestMatch.RefreshRateHz)) {
+					bestMatch = thisMode;
+					bestMatchAreaDelta = thisModeAreaDelta;
+					bestMatchIndex = i;
+				}
+			}
+
+			if (bestMatchIndex >= 0) {
+				SetWindowFullscreenMode(
+					handle,
+					display.Handle,
+					bestMatchIndex
+				).ThrowIfFailure();
+			}
+		}
 
 		SetWindowSize(
 			handle,
@@ -185,11 +227,19 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 	}
 	public void SetFullscreenStyle(ResourceHandle<Window> handle, WindowFullscreenStyle newStyle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		var existingSize = GetSize(handle);
+		var existingStyle = GetFullscreenStyle(handle);
+
 		SetWindowFullscreenState(
 			handle,
 			newStyle != WindowFullscreenStyle.NotFullscreen,
 			newStyle == WindowFullscreenStyle.FullscreenBorderless
 		).ThrowIfFailure();
+
+		// If we're swapping between fullscreen and non-fullscreen styles we have to re-set the size according to the right method
+		if ((newStyle == WindowFullscreenStyle.Fullscreen) != (existingStyle == WindowFullscreenStyle.Fullscreen)) {
+			SetSize(handle, existingSize);
+		}
 	}
 
 	public bool GetCursorLock(ResourceHandle<Window> handle) {
@@ -258,10 +308,10 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 	static extern InteropResult SetWindowSize(UIntPtr handle, int newWidth, int newHeight);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_window_fullscreen_display_mode")]
-	static extern InteropResult GetWindowFullscreenSize(UIntPtr handle, out int outWidth, out int outHeight, out int outRefreshRateHz);
+	static extern InteropResult GetWindowFullscreenMode(UIntPtr handle, out int outWidth, out int outHeight, out int outRefreshRateHz);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_window_fullscreen_display_mode")]
-	static extern InteropResult SetWindowFullscreenSize(UIntPtr handle, UIntPtr displayHandle, int displayModeIndex);
+	static extern InteropResult SetWindowFullscreenMode(UIntPtr handle, UIntPtr displayHandle, int displayModeIndex);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_window_position")]
 	static extern InteropResult GetWindowPosition(UIntPtr handle, out int outX, out int outY);

@@ -23,6 +23,7 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/5?closed=1) 
 	* Added `Triangularize`/`TriangularizeRectified` methods to `Angle` to help create triangle functions
 	* Added `UnitSphericalCoordinate` to represent unit-length spherical coord (azimuthal + polar angle); can be converted to a `Direction` given two basis directions
 	* Added interpolation type for `Angle` that interpolates through the shortest path around a circle
+* Improved handling of resolution / size changes of windows across fullscreen/borderless modes
 
 ### Bug Fixes
 
