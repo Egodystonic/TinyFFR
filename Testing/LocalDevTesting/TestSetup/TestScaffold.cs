@@ -29,6 +29,8 @@ sealed class TestOptions {
 	public bool UseDefaultCameraControls { get; set; } = true;
 	public bool UseDefaultLoop { get; set; } = true;
 	public Func<ILocalTinyFfrFactory, ApplicationLoop>? CustomLoopCreationFunc { get; set; } = null;
+
+	public TimeSpan? FpsMetricPeriod { get; set; } = TimeSpan.FromSeconds(30d);
 }
 
 sealed class TestObjects {
@@ -160,8 +162,8 @@ static class TestScaffold {
 		if (!ShouldRunDefaultLoop) return;
 
 		var loop = _testObjects.Loop!.Value;
-		var frameCount = 0;
-		var startTime = Stopwatch.StartNew();
+		var periodicalFpsTimer = Stopwatch.StartNew();
+		var periodicalFrameCount = 0;
 		while (!loop.Input.UserQuitRequested && !_exitTestCalled && !loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) {
 			var sw = Stopwatch.StartNew();
 			var deltaTime = loop.IterateOnce();
@@ -176,15 +178,22 @@ static class TestScaffold {
 			_testObjects.Renderer?.Render();
 
 			if (sw.ElapsedMilliseconds > 20) Console.WriteLine("Slow frame! Measured: " + sw.ElapsedMilliseconds + "ms / DeltaTime: " + deltaTime.TotalMilliseconds + "ms");
-			++frameCount;
+
+			if (_options.FpsMetricPeriod != null) {
+				++periodicalFrameCount;
+				if (periodicalFpsTimer.Elapsed >= _options.FpsMetricPeriod) {
+					Console.WriteLine($"Framecount over last {periodicalFpsTimer.Elapsed.TotalSeconds:N1} seconds = {periodicalFrameCount} ({(periodicalFrameCount / periodicalFpsTimer.Elapsed.TotalSeconds):N0} FPS)");
+					periodicalFrameCount = 0;
+					periodicalFpsTimer.Restart();
+				}
+			}
 		}
 
-		try {
-			CleanUpTestObjects();
+		if (_options.FpsMetricPeriod != null) {
+			Console.WriteLine($"Framecount over final {periodicalFpsTimer.Elapsed.TotalSeconds:N1} seconds = {periodicalFrameCount} ({(periodicalFrameCount / periodicalFpsTimer.Elapsed.TotalSeconds):N0} FPS)");
 		}
-		finally {
-			Console.WriteLine("Avg FPS: " + (frameCount / startTime.Elapsed.TotalSeconds).ToString("N0") + " (" + frameCount + " frames over " + startTime.Elapsed.TotalSeconds.ToString("N1") + " seconds)");
-		}
+
+		CleanUpTestObjects();
 	}
 
 	public static void ExitTest() {

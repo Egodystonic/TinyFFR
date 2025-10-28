@@ -210,7 +210,8 @@ void native_impl_render::render_scene(RendererHandle renderer, ViewDescriptorHan
 	ThrowIfNull(viewDescriptor, "View was null.");
 	ThrowIfNull(swapChain, "Swap chain pointer was null.");
 
-	if (!renderer->beginFrame(swapChain)) return;
+	//if (!renderer->beginFrame(swapChain)) return; // We do our own synchronization external to filament so we ignore this
+	renderer->beginFrame(swapChain);
 	renderer->render(viewDescriptor);
 	renderer->endFrame();
 }
