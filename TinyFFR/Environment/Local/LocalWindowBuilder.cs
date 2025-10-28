@@ -191,6 +191,16 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 			newSize.Y
 		).ThrowIfFailure();
 	}
+	public XYPair<int> GetViewportDimensions(ResourceHandle<Window> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		GetWindowBackBufferSizeActual(
+			handle,
+			out var outWidth,
+			out var outHeight
+		).ThrowIfFailure();
+
+		return new(outWidth, outHeight);
+	}
 
 	public XYPair<int> GetPosition(ResourceHandle<Window> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -312,6 +322,9 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_window_fullscreen_display_mode")]
 	static extern InteropResult SetWindowFullscreenMode(UIntPtr handle, UIntPtr displayHandle, int displayModeIndex);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_window_back_buffer_size_actual")]
+	static extern InteropResult GetWindowBackBufferSizeActual(UIntPtr handle, out int outWidth, out int outHeight);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_window_position")]
 	static extern InteropResult GetWindowPosition(UIntPtr handle, out int outX, out int outY);

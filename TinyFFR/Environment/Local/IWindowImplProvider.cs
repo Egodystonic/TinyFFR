@@ -22,6 +22,7 @@ public interface IWindowImplProvider : IDisposableResourceImplProvider<Window> {
 
 	XYPair<int> GetSize(ResourceHandle<Window> handle);
 	void SetSize(ResourceHandle<Window> handle, XYPair<int> newSize);
+	XYPair<int> GetViewportDimensions(ResourceHandle<Window> handle);
 
 	XYPair<int> GetPosition(ResourceHandle<Window> handle);
 	void SetPosition(ResourceHandle<Window> handle, XYPair<int> newPosition);

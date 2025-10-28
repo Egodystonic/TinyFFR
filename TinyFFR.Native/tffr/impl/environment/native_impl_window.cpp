@@ -147,7 +147,17 @@ StartExportedFunc(get_window_fullscreen_display_mode, WindowHandle handle, int32
 	native_impl_window::get_window_fullscreen_display_mode(handle, outWidth, outHeight, outRefreshRateHz);
 	EndExportedFunc
 }
-
+void native_impl_window::get_window_back_buffer_size_actual(WindowHandle handle, int32_t* outWidth, int32_t* outHeight) {
+	ThrowIfNull(handle, "Window was null.");
+	ThrowIfNull(outWidth, "Width out pointer was null.");
+	ThrowIfNull(outHeight, "Height out pointer was null.");
+	//SDL_GL_GetDrawableSize(handle, outWidth, outHeight); // Theoretically an outdated API -- can try this though if we see issues with GetWindowSizeInPixels
+	SDL_GetWindowSizeInPixels(handle, outWidth, outHeight);
+}
+StartExportedFunc(get_window_back_buffer_size_actual, WindowHandle ptr, int32_t* outWidth, int32_t* outHeight) {
+	native_impl_window::get_window_back_buffer_size_actual(ptr, outWidth, outHeight);
+	EndExportedFunc
+}
 
 
 void native_impl_window::set_window_position(WindowHandle handle, int32_t newX, int32_t newY) {
