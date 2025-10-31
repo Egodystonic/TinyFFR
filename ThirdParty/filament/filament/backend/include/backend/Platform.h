@@ -156,6 +156,10 @@ public:
          *      - PlatformMetal
          */
         bool metalDisablePanicOnDrawableFailure = false;
+
+        // === Begin TinyFFR Alteration ===
+        bool disableVsync = false;
+        // === End TinyFFR Alteration ===
     };
 
     Platform() noexcept;

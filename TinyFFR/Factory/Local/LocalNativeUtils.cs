@@ -41,8 +41,8 @@ static unsafe class LocalNativeUtils {
 		return Encoding.UTF8.GetString(asSpan[..(firstZero >= 0 ? firstZero : NativeErrorBufferLength)]);
 	}
 
-	[DllImport(NativeLibName, EntryPoint = "initialize_all")]
-	static extern InteropResult InitializeAll();
+	[DllImport(NativeLibName, EntryPoint = "exec_once_only_initialization")]
+	static extern InteropResult ExecOnceOnlyInitialization();
 
 	public static void InitializeNativeLibIfNecessary() {
 		if (_nativeLibInitialized) return;
@@ -56,7 +56,7 @@ static unsafe class LocalNativeUtils {
 		_ = NativeLibrary.TryLoad("nvapi64.dll", out _);
 
 		SetLogNotifyDelegate(&HandleLogMessage);
-		InitializeAll().ThrowIfFailure();
+		ExecOnceOnlyInitialization().ThrowIfFailure();
 		SetBufferDeallocationDelegate(&DeallocateRentedBuffer).ThrowIfFailure();
 		_nativeLibInitialized = true;
 	}

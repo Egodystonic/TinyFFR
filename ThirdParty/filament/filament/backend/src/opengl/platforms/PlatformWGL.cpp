@@ -74,6 +74,10 @@ struct WGLSwapChain {
 };
 
 static PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribs = nullptr;
+// === Begin TinyFFR Alteration ===
+static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = nullptr;
+static int vsyncParameter = 0;
+// === End TinyFFR Alteration ===
 
 Driver* PlatformWGL::createDriver(void* sharedGLContext,
         const Platform::DriverConfig& driverConfig) noexcept {
@@ -159,6 +163,12 @@ Driver* PlatformWGL::createDriver(void* sharedGLContext,
 
     result = bluegl::bind();
     FILAMENT_CHECK_POSTCONDITION(!result) << "Unable to load OpenGL entry points.";
+
+    // === Begin TinyFFR Alteration ===
+    wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC) wglGetProcAddress("wglSwapIntervalEXT");
+    FILAMENT_CHECK_POSTCONDITION(wglSwapIntervalEXT != nullptr) << "Unable to load vsync setup entry point.";
+    vsyncParameter = driverConfig.disableVsync ? 0 : 1;
+    // === End TinyFFR Alteration ===
 
     return OpenGLPlatform::createDefaultDriver(this, sharedGLContext, driverConfig);
 
@@ -276,6 +286,11 @@ bool PlatformWGL::makeCurrent(ContextType type, SwapChain* drawSwapChain,
             reportWindowsError(dwError);
             wglMakeCurrent(0, NULL);
         }
+        // === Begin TinyFFR Alteration ===
+        else {
+            wglSwapIntervalEXT(vsyncParameter);
+        }
+        // === End TinyFFR Alteration ===
     }
     return true;
 }

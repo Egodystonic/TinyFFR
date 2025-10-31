@@ -60,7 +60,13 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		if (_instance != null) throw new InvalidOperationException($"Only one {nameof(LocalTinyFfrFactory)} may be live at any given time. Dispose the previous instance before creating another one.");
 
 		LocalNativeUtils.InitializeNativeLibIfNecessary();
-		factoryConfig ??= new LocalTinyFfrFactoryConfig();
+		
+		factoryConfig ??= new();
+		windowBuilderConfig ??= new();
+		assetLoaderConfig ??= new();
+		rendererBuilderConfig ??= new();
+
+		OnFactoryBuild(rendererBuilderConfig.EnableVSync).ThrowIfFailure();
 
 		var resourceGroupProviderRef = new DeferredRef<LocalResourceGroupImplProvider>();
 		_gpuHoldingBufferPool = new FixedByteBufferPool(factoryConfig.MaxCpuToGpuAssetTransferSizeBytes);
@@ -76,14 +82,14 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		resourceGroupProviderRef.Resolve(_resourceGroupProvider);
 
 		_displayDiscoverer = new LocalDisplayDiscoverer(globals);
-		_windowBuilder = new LocalWindowBuilder(globals, windowBuilderConfig ?? new());
+		_windowBuilder = new LocalWindowBuilder(globals, windowBuilderConfig);
 		_applicationLoopBuilder = new LocalApplicationLoopBuilder(globals);
-		_assetLoader = new LocalAssetLoader(globals, assetLoaderConfig ?? new());
+		_assetLoader = new LocalAssetLoader(globals, assetLoaderConfig);
 		_cameraBuilder = new LocalCameraBuilder(globals);
 		_lightBuilder = new LocalLightBuilder(globals);
 		_objectBuilder = new LocalObjectBuilder(globals);
 		_sceneBuilder = new LocalSceneBuilder(globals);
-		_rendererBuilder = new LocalRendererBuilder(globals, rendererBuilderConfig ?? new());
+		_rendererBuilder = new LocalRendererBuilder(globals, rendererBuilderConfig);
 		_resourceAllocator = new LocalResourceAllocator(globals);
 
 		_instance = this;
@@ -124,6 +130,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 			DisposeObjectIfDisposable(_heapPool);
 			DisposeObjectIfDisposable(_stringPool);
 			DisposeObjectIfDisposable(_dependencyTracker);
+			OnFactoryTeardown().ThrowIfFailure();
 			LocalNativeUtils.DisposeTemporaryCpuBufferPoolIfSafe(this);
 		}
 		finally {
@@ -135,5 +142,13 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	internal void ThrowIfThisIsDisposed() {
 		ObjectDisposedException.ThrowIf(IsDisposed, typeof(ITinyFfrFactory));
 	}
+	#endregion
+
+	#region Native Methods
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "on_factory_build")]
+	static extern InteropResult OnFactoryBuild(InteropBool enableVSync);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "on_factory_teardown")]
+	static extern InteropResult OnFactoryTeardown();
 	#endregion
 }

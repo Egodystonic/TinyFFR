@@ -410,6 +410,10 @@ public:
          * @deprecated use "backend.opengl.assert_native_window_is_valid" feature flag instead
          */
         bool assertNativeWindowIsValid = false;
+
+        // === Begin TinyFFR Alteration ===
+        bool disableVsync = false;
+        // === End TinyFFR Alteration ===
     };
 
 

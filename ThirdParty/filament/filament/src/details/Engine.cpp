@@ -139,6 +139,9 @@ Engine* FEngine::create(Builder const& builder) {
                 .stereoscopicType = instance->getConfig().stereoscopicType,
                 .assertNativeWindowIsValid = instance->features.backend.opengl.assert_native_window_is_valid,
                 .metalDisablePanicOnDrawableFailure = instance->getConfig().metalDisablePanicOnDrawableFailure,
+                // === Begin TinyFFR Alteration ===
+                .disableVsync = instance->getConfig().disableVsync,
+                // === End TinyFFR Alteration ===
         };
         instance->mDriver = platform->createDriver(sharedContext, driverConfig);
 
@@ -735,6 +738,9 @@ int FEngine::loop() {
             .stereoscopicType =  mConfig.stereoscopicType,
             .assertNativeWindowIsValid = features.backend.opengl.assert_native_window_is_valid,
             .metalDisablePanicOnDrawableFailure = mConfig.metalDisablePanicOnDrawableFailure,
+            // === Begin TinyFFR Alteration ===
+            .disableVsync = mConfig.disableVsync,
+            // === End TinyFFR Alteration ===
     };
     mDriver = mPlatform->createDriver(mSharedGLContext, driverConfig);
 

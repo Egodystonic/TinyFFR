@@ -20,5 +20,7 @@ public sealed record RendererBuilderConfig {
 		}
 	}
 
+	public bool EnableVSync { get; init; } = true;
+
 	internal RenderingBackendApi GetActualRenderingApi() => RenderingBackendApi.OpenGl; // TODO once we add support for more APIs this will return the recommended API if SystemRecommended
 }

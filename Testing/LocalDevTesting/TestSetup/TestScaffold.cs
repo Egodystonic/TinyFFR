@@ -8,6 +8,7 @@ using Egodystonic.TinyFFR.World;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using Egodystonic.TinyFFR.Rendering.Local;
 
 namespace Egodystonic.TinyFFR.Testing.Local.TestSetup;
 
@@ -153,7 +154,7 @@ static class TestScaffold {
 	}
 
 	static ApplicationLoop CreateDefaultLoop(ILocalTinyFfrFactory factory) {
-		return factory.ApplicationLoopBuilder.CreateLoop(frameRateCapHz: 60);
+		return factory.ApplicationLoopBuilder.CreateLoop(frameRateCapHz: null);
 	}
 
 	public static void RunTestLoop() {

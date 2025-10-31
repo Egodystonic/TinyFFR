@@ -5,22 +5,17 @@
 #include "sdl/SDL.h"
 #include "filament/utils/Log.h"
 
-filament::Engine* filament_engine;
+filament::Engine* native_impl_init::filament_engine_ptr;
 deallocate_asset_buffer_delegate native_impl_init::deallocation_delegate;
 log_notify_delegate native_impl_init::log_delegate;
 
-void native_impl_init::initialize_all() {
+void native_impl_init::exec_once_only_initialization() {
 	SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
 	auto sdlInitResult = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
 	ThrowIfNotZero(sdlInitResult, "Could not initialize SDL: ", SDL_GetError());
-
-	filament_engine_ptr = filament::Engine::Builder()
-						  .backend(filament::Engine::Backend::OPENGL)
-						  .build();
-	ThrowIfNull(filament_engine_ptr, "Could not initialize filament renderer.");
 }
-StartExportedFunc(initialize_all) {
-	native_impl_init::initialize_all();
+StartExportedFunc(exec_once_only_initialization) {
+	native_impl_init::exec_once_only_initialization();
 	EndExportedFunc
 }
 
@@ -46,4 +41,29 @@ StartExportedFunc(set_log_notify_delegate, log_notify_delegate logNotifyDelegate
 void native_impl_init::notify_of_log_msg() {
 	if (log_delegate == nullptr) return;
 	log_delegate();
+}
+
+void native_impl_init::on_factory_build(interop_bool enableVsync) {
+	auto config = filament::Engine::Config{
+		.disableVsync = enableVsync ? false : true
+	};
+
+	filament_engine_ptr = filament::Engine::Builder()
+		.backend(filament::Engine::Backend::OPENGL)
+		.config(&config)
+		.build();
+
+	ThrowIfNull(filament_engine_ptr, "Could not initialize filament.");
+}
+StartExportedFunc(on_factory_build, interop_bool enableVsync) {
+	native_impl_init::on_factory_build(enableVsync);
+	EndExportedFunc
+}
+void native_impl_init::on_factory_teardown() {
+	if (filament_engine_ptr == nullptr) return;
+	filament_engine_ptr->destroy(&filament_engine_ptr);
+}
+StartExportedFunc(on_factory_teardown) {
+	native_impl_init::on_factory_teardown();
+	EndExportedFunc
 }
