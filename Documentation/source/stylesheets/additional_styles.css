@@ -6,6 +6,7 @@
     max-width: initial;
 }
 
+
 [data-md-color-scheme="default"] .md-header {
 	background: linear-gradient(90deg, rgba(100,70,70,1) 0%, rgba(100,100,70,1) 16.666%, rgba(70,100,70,1) 33.333%, rgba(70,100,100,1) 50%, rgba(70,70,100,1) 66.666%, rgba(100,70,100,1) 83.333%);
 }

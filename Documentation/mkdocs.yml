@@ -54,21 +54,18 @@ extra:
   social:
     - icon: octicons/history-16
       link: https://tinyffr.dev/archive/
-      name: Archived Versions
-    - icon: fontawesome/solid/arrow-up-right-dots
-      link: /changelog/
-      name: Changelog
+      name: Archived Documentation
     - icon: fontawesome/brands/github
       link: https://github.com/Egodystonic/TinyFFR
-      name: Repository
+      name: Source Code
     - icon: fontawesome/solid/comments
       link: https://github.com/Egodystonic/TinyFFR/discussions
       name: Discussions
 
 theme:
   name: material
-  logo: logo_128.png
-  favicon: logo_128.png
+  logo: logo.png
+  favicon: logo.png
   custom_dir: theme_overrides
   icon:
     annotation: material/message-question
@@ -115,21 +112,23 @@ validation:
 strict: true
 
 nav:
-  - Home:
-    - index.md
-    - changelog.md
+  - index.md
+  - changelog.md
   - Examples: 
-    - examples/index.md
-    - examples/installing.md
-    - examples/hello_cube.md
-    - examples/loading_assets.md
-    - examples/handling_input.md
-    - examples/texture_patterns.md
-    - examples/integrating_wpf.md
-    - examples/integrating_avalonia.md
-    - examples/integrating_winforms.md
+    - Getting Started:
+      - examples/installing.md
+      - examples/hello_cube.md
+    - Basic Features:
+      - examples/loading_assets.md
+      - examples/handling_input.md
+      - examples/texture_patterns.md
+    - UI Integration:
+      - examples/integrating_wpf.md
+      - examples/integrating_avalonia.md
+      - examples/integrating_winforms.md
+    - Snippets:
+      - examples/snippets/vsync.md
   - Concepts:
-    - concepts/index.md
     - concepts/factory.md
     - concepts/resources.md
     - concepts/displays_and_windows.md
@@ -141,6 +140,10 @@ nav:
     - concepts/lighting.md
     - concepts/conventions.md
   - Reference Docs:
-    - reference/index.md
     - Utils:
       - reference/typed_referent_iterator.md
+
+not_in_nav: |
+  examples/index.md
+  concepts/index.md
+  reference/index.md

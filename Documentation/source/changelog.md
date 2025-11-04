@@ -1,6 +1,7 @@
 ---
-title: What's New (Changelog)
+title: Changelog
 description: Abridged changelog for TinyFFR.
+icon: material/source-branch-plus
 search:
   exclude: true
 ---
@@ -27,6 +28,7 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/5?closed=1) 
 
 ### Bug Fixes
 
+* VSync control is now supported on Windows and Linux (MacOS support will come later).
 * Switching between `Fullscreen` and `FullscreenBorderless` modes is now more reliable and the correct mode should be reported back via the `FullscreenStyle` property.
 * Resolution modes of displays are now correctly reported on DPI-scaled Windows systems.
 * `UserQuitRequested` flag is now set when user requests a quit in a multi-window application.
