@@ -119,7 +119,15 @@ bool PlatformEGL::isOpenGL() const noexcept {
 
 PlatformEGL::ExternalImageEGL::~ExternalImageEGL() = default;
 
+// === Begin TinyFFR Alteration ===
+static int vsyncParameter = 0;
+// === End TinyFFR Alteration ===
+
 Driver* PlatformEGL::createDriver(void* sharedContext, const DriverConfig& driverConfig) noexcept {
+    // === Begin TinyFFR Alteration ===
+    vsyncParameter = driverConfig.disableVsync ? 0 : 1;
+    // === End TinyFFR Alteration ===
+
     mEGLDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     assert_invariant(mEGLDisplay != EGL_NO_DISPLAY);
 
@@ -806,6 +814,9 @@ EGLBoolean PlatformEGL::EGL::makeCurrent(EGLContext context, EGLSurface drawSurf
             mCurrentDrawSurface = drawSurface;
             mCurrentReadSurface = readSurface;
             mCurrentContext = context;
+            // === Begin TinyFFR Alteration ===
+            eglSwapInterval(mEGLDisplay, vsyncParameter);
+            // === End TinyFFR Alteration ===
         }
         return success;
     }

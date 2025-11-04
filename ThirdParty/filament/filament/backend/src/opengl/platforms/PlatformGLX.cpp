@@ -43,16 +43,27 @@ struct GLXFunctions {
     PFNGLXDESTROYPBUFFERPROC destroyPbuffer;
     PFNGLXMAKECONTEXTCURRENTPROC setCurrentContext;
 
+    // === Begin TinyFFR Alteration ===
+    PFNGLXSWAPINTERVALEXTPROC setSwapInterval;
+    // === End TinyFFR Alteration ===
+
     /* 
+
        When creating a shared GL context, we query the used
+
        GLX_FBCONFIG_ID to make sure our display framebuffer
+
        attributes match; otherwise making our context current
+
        results in a BadMatch
+
        https://gist.github.com/roxlu/c282d642c353ce96ef19b6359c741bcb
+
     */
     PFNGLXQUERYCONTEXTPROC queryContext;
 
     /* 
+
        When creating a shared GL context, we select the matching
        GLXFBConfig that is used by the shared GL context. `getFBConfigs`
        will return all the available GLXFBConfigs.
@@ -62,6 +73,7 @@ struct GLXFunctions {
     /*
       When creating a shared GL contect, we iterate over the
       available GLXFBConfigs that are returned by `getFBConfigs`,
+
       we use `getFbConfigAttrib` to find the matching
       `GLX_FBCONFIG_ID`.
     */
@@ -80,6 +92,9 @@ struct X11Functions {
 } g_x11;
 
 static PFNGLXGETPROCADDRESSPROC getProcAddress;
+// === Begin TinyFFR Alteration ===
+static int vsyncParameter = 0;
+// === End TinyFFR Alteration ===
 
 static bool loadLibraries() {
     g_glx.library = dlopen(LIBRARY_GLX, RTLD_LOCAL | RTLD_NOW);
@@ -105,6 +120,10 @@ static bool loadLibraries() {
             getProcAddress((const GLubyte*)"glXDestroyContext");
     g_glx.swapBuffers = (GLX_SWAP_BUFFERS)
             getProcAddress((const GLubyte*)"glXSwapBuffers");
+    // === Begin TinyFFR Alteration ===
+    g_glx.setSwapInterval = (PFNGLXSWAPINTERVALEXTPROC)
+            getProcAddress((const GLubyte*)"glXSwapIntervalEXT");
+    // === End TinyFFR Alteration ===
 
     g_glx.queryContext = (PFNGLXQUERYCONTEXTPROC)
             getProcAddress((const GLubyte*)"glXQueryContext");
@@ -228,6 +247,11 @@ Driver* PlatformGLX::createDriver(void* sharedGLContext,
     int result = bluegl::bind();
     FILAMENT_CHECK_POSTCONDITION(!result) << "Unable to load OpenGL entry points.";
 
+    // === Begin TinyFFR Alteration ===
+    FILAMENT_CHECK_POSTCONDITION(g_glx.setSwapInterval != nullptr) << "Could not load swap interval set function.";
+    vsyncParameter = driverConfig.disableVsync ? 0 : 1;
+    // === End TinyFFR Alteration ===
+
     return OpenGLPlatform::createDefaultDriver(this, sharedGLContext, driverConfig);
 }
 
@@ -269,6 +293,9 @@ bool PlatformGLX::makeCurrent(ContextType type, SwapChain* drawSwapChain,
         SwapChain* readSwapChain) noexcept {
     g_glx.setCurrentContext(mGLXDisplay,
             (GLXDrawable)drawSwapChain, (GLXDrawable)readSwapChain, mGLXContext);
+    // === Begin TinyFFR Alteration ===
+    g_glx.setSwapInterval(mGLXDisplay, (GLXDrawable)drawSwapChain, vsyncParameter);
+    // === End TinyFFR Alteration ===
     return true;
 }
 
