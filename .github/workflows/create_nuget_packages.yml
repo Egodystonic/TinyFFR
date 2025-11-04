@@ -161,13 +161,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: native_libs_macos
-          path: ./Publishing/TinyFFR.NuGet/prebuilt_binaries/linux-x64/
+          path: ./Publishing/TinyFFR.NuGet/prebuilt_binaries/osx-arm64/
 
       - name: Download Linux Native Libs
         uses: actions/download-artifact@v4
         with:
           name: native_libs_linux
-          path: ./Publishing/TinyFFR.NuGet/prebuilt_binaries/osx-arm64/
+          path: ./Publishing/TinyFFR.NuGet/prebuilt_binaries/linux-x64/
 
       - name: Download Windows Native Libs
         uses: actions/download-artifact@v4

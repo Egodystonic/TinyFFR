@@ -10,12 +10,10 @@ search:
 
 __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/5?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.5.0)__
 
-### Major Features
-
-
-
 ### Improvements
 
+* VSync control is now supported on Windows and Linux (MacOS support will come later).
+* Improved handling of resolution / size changes of windows across fullscreen/borderless modes
 * Replaced the ambiguous "Recommended" display property on the display discoverer with separate "HighestResolution" and "HighestRefreshRate" properties
 * Texture patterns:
 	* Normal map texture patterns now use unit spherical coordinates which are more intuitive than unit vectors for creating patterns
@@ -24,13 +22,13 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/5?closed=1) 
 	* Added `Triangularize`/`TriangularizeRectified` methods to `Angle` to help create triangle functions
 	* Added `UnitSphericalCoordinate` to represent unit-length spherical coord (azimuthal + polar angle); can be converted to a `Direction` given two basis directions
 	* Added interpolation type for `Angle` that interpolates through the shortest path around a circle
-* Improved handling of resolution / size changes of windows across fullscreen/borderless modes
 
 ### Bug Fixes
 
-* VSync control is now supported on Windows and Linux (MacOS support will come later).
+* Fixed a build error with v0.4 that resulted in a `DllNotFoundException` on Linux or MacOS
 * Switching between `Fullscreen` and `FullscreenBorderless` modes is now more reliable and the correct mode should be reported back via the `FullscreenStyle` property.
 * Resolution modes of displays are now correctly reported on DPI-scaled Windows systems.
+* Fixed a small resource leak that occurred when disposing a scene without first removing its backdrop.
 * `UserQuitRequested` flag is now set when user requests a quit in a multi-window application.
 
 ## 0.4
