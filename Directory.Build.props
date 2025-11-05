@@ -26,7 +26,7 @@
 
   <!-- Publishing properties -->
   <PropertyGroup>
-    <TffrVersion>0.5.0</TffrVersion>
+    <TffrVersion>0.5.0-rc001</TffrVersion>
     <TffrPackageId>Egodystonic.TinyFFR</TffrPackageId>
     <TffrAuthors>Ben Bowen</TffrAuthors>
     <TffrCompany>Egodystonic Studios</TffrCompany>
