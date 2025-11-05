@@ -9,7 +9,7 @@
     <PackageReadmeFile>PACKAGE_README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 
-    <PackageVersion>$(TffrVersion)</PackageVersion>
+    <PackageVersion>$(TffrVersion)$(TffrVersionSuffix)</PackageVersion>
     <PackageId>$(TffrPackageId)</PackageId>
     <Authors>$(TffrAuthors)</Authors>
     <Company>$(TffrCompany)</Company>

@@ -36,7 +36,7 @@
     <Configurations>Debug;Release;Optimized</Configurations>
     <AssemblyVersion>$(TffrVersion).0</AssemblyVersion>
     <FileVersion>$(TffrVersion)</FileVersion>
-    <InformationalVersion>$(TffrVersion)</InformationalVersion>
+    <InformationalVersion>$(TffrVersion)$(TffrVersionSuffix)</InformationalVersion>
   </PropertyGroup>
   
   <ItemGroup>

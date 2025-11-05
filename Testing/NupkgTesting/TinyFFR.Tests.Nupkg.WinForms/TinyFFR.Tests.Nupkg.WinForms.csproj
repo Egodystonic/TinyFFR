@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Egodystonic.TinyFFR.WinForms" Version="$(TffrVersion)" />
+    <PackageReference Include="Egodystonic.TinyFFR.WinForms" Version="$(TffrVersion)$(TffrVersionSuffix)" />
   </ItemGroup>
 
 </Project>

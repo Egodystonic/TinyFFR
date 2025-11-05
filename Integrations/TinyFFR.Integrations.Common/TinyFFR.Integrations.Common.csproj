@@ -3,6 +3,9 @@
   <PropertyGroup>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <AssemblyVersion>$(TffrVersion).0</AssemblyVersion>
+    <FileVersion>$(TffrVersion)</FileVersion>
+    <InformationalVersion>$(TffrVersion)$(TffrVersionSuffix)</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>

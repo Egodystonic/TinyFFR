@@ -19,7 +19,7 @@
     <PackageReference Include="Avalonia.Fonts.Inter" Version="$(AvaloniaVersion)" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="$(CommunityToolkitVersion)" />
 
-	<PackageReference Include="Egodystonic.TinyFFR.Avalonia" Version="$(TffrVersion)" />
+	<PackageReference Include="Egodystonic.TinyFFR.Avalonia" Version="$(TffrVersion)$(TffrVersionSuffix)" />
 
     <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)" />

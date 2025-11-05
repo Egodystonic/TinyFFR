@@ -9,7 +9,7 @@
     <PackageReadmeFile>PACKAGE_README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 
-    <PackageVersion>$(TffrVersion)</PackageVersion>
+    <PackageVersion>$(TffrVersion)$(TffrVersionSuffix)</PackageVersion>
     <PackageId>$(TffrPackageId).Wpf</PackageId>
     <Authors>$(TffrAuthors)</Authors>
     <Company>$(TffrCompany)</Company>
@@ -35,7 +35,7 @@
     <None Include="..\..\Integrations\TinyFFR.Wpf\bin\Release\TinyFFR.Wpf.dll" Pack="true" PackagePath="lib\$(TargetFramework)\" />
     <None Include="..\..\Integrations\TinyFFR.Integrations.Common\bin\Release\TinyFFR.Integrations.Common.dll" Pack="true" PackagePath="lib\$(TargetFramework)\" />
     
-    <PackageReference Include="$(TffrPackageId)" Version="$(TffrVersion)" />
+    <PackageReference Include="$(TffrPackageId)" Version="$(TffrVersion)$(TffrVersionSuffix)" />
   </ItemGroup>
 
 </Project>

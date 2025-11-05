@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Egodystonic.TinyFFR" Version="$(TffrVersion)" />
+    <PackageReference Include="Egodystonic.TinyFFR" Version="$(TffrVersion)$(TffrVersionSuffix)" />
   </ItemGroup>
 
 </Project>
