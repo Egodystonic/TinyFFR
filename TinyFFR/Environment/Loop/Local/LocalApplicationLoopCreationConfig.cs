@@ -7,7 +7,6 @@ using static Egodystonic.TinyFFR.IConfigStruct;
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 public readonly ref struct LocalApplicationLoopCreationConfig : IConfigStruct<LocalApplicationLoopCreationConfig> {
-	public const bool DefaultWaitForVSync = false;
 	internal readonly TimeSpan MaxCpuBusyWaitTime = TimeSpan.FromMilliseconds(1d);
 
 	public ApplicationLoopCreationConfig BaseConfig { get; private init; } = new();
@@ -15,8 +14,6 @@ public readonly ref struct LocalApplicationLoopCreationConfig : IConfigStruct<Lo
 		get => BaseConfig.FrameRateCapHz;
 		init => BaseConfig = BaseConfig with { FrameRateCapHz = value };
 	} 
-	
-	public bool WaitForVSync { get; init; } = DefaultWaitForVSync;
 
 	public TimeSpan FrameTimingPrecisionBusyWaitTime {
 		get {
@@ -46,20 +43,17 @@ public readonly ref struct LocalApplicationLoopCreationConfig : IConfigStruct<Lo
 
 	public static int GetHeapStorageFormattedLength(in LocalApplicationLoopCreationConfig src) {
 		return	SerializationSizeOfSubConfig(src.BaseConfig) // BaseConfig
-			+	SerializationSizeOfBool() // WaitForVSync
 			+	SerializationSizeOfLong() // FrameTimingPrecisionBusyWaitTime
 			+	SerializationSizeOfBool(); // IterationShouldRefreshGlobalInputStates
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in LocalApplicationLoopCreationConfig src) {
 		SerializationWriteSubConfig(ref dest, src.BaseConfig);
-		SerializationWriteBool(ref dest, src.WaitForVSync);
 		SerializationWriteLong(ref dest, src.FrameTimingPrecisionBusyWaitTime.Ticks);
 		SerializationWriteBool(ref dest, src.IterationShouldRefreshGlobalInputStates);
 	}
 	public static LocalApplicationLoopCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new() {
 			BaseConfig = SerializationReadSubConfig<ApplicationLoopCreationConfig>(ref src),
-			WaitForVSync = SerializationReadBool(ref src),
 			FrameTimingPrecisionBusyWaitTime = TimeSpan.FromTicks(SerializationReadLong(ref src)),
 			IterationShouldRefreshGlobalInputStates = SerializationReadBool(ref src)
 		};

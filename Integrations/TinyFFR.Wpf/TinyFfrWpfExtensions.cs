@@ -25,7 +25,6 @@ namespace Egodystonic.TinyFFR.Wpf {
 				FrameRateCapHz = null,
 				IterationShouldRefreshGlobalInputStates = false,
 				Name = name,
-				WaitForVSync = false,
 				FrameTimingPrecisionBusyWaitTime = TimeSpan.Zero
 			});
 			var dispatcherTimerCancellationTokenSource = new CancellationTokenSource();

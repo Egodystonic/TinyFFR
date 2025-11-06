@@ -57,21 +57,18 @@ class ApplicationLoopCreationConfigTest {
 			FrameRateCapHz = 60,
 			Name = "Aa Aa",
 			FrameTimingPrecisionBusyWaitTime = TimeSpan.FromSeconds(3d),
-			IterationShouldRefreshGlobalInputStates = true,
-			WaitForVSync = true
+			IterationShouldRefreshGlobalInputStates = true
 		};
 		var testConfigB = new LocalApplicationLoopCreationConfig {
 			FrameRateCapHz = null,
 			Name = "BBBbbb",
 			FrameTimingPrecisionBusyWaitTime = TimeSpan.FromSeconds(13d),
-			IterationShouldRefreshGlobalInputStates = false,
-			WaitForVSync = false
+			IterationShouldRefreshGlobalInputStates = false
 		};
 
 		static void ComparisonFunc(LocalApplicationLoopCreationConfig expected, LocalApplicationLoopCreationConfig actual) {
 			Assert.AreEqual(expected.FrameTimingPrecisionBusyWaitTime, actual.FrameTimingPrecisionBusyWaitTime);
 			Assert.AreEqual(expected.IterationShouldRefreshGlobalInputStates, actual.IterationShouldRefreshGlobalInputStates);
-			Assert.AreEqual(expected.WaitForVSync, actual.WaitForVSync);
 			CompareBaseConfigs(expected.BaseConfig, actual.BaseConfig);
 		}
 
@@ -83,7 +80,6 @@ class ApplicationLoopCreationConfigTest {
 				FrameRateCapHz = 60,
 				Name = "Aa Aa"
 			})
-			.Bool(true)
 			.Long(TimeSpan.FromSeconds(3d).Ticks)
 			.Bool(true)
 			.For(testConfigA);
@@ -93,7 +89,6 @@ class ApplicationLoopCreationConfigTest {
 				FrameRateCapHz = null,
 				Name = "BBBbbb"
 			})
-			.Bool(false)
 			.Long(TimeSpan.FromSeconds(13d).Ticks)
 			.Bool(false)
 			.For(testConfigB);
@@ -104,7 +99,6 @@ class ApplicationLoopCreationConfigTest {
 			.Including(nameof(LocalApplicationLoopCreationConfig.Name))
 			.Including(nameof(LocalApplicationLoopCreationConfig.FrameTimingPrecisionBusyWaitTime))
 			.Including(nameof(LocalApplicationLoopCreationConfig.IterationShouldRefreshGlobalInputStates))
-			.Including(nameof(LocalApplicationLoopCreationConfig.WaitForVSync))
 			.End();
 	}
 }
