@@ -92,6 +92,12 @@ jobs:
           cd ./TinyFFR.Native/build/
           dotnet run build.cs -- Release
 
+      - name: Copy Clang/LLVM Runtime to Build Output
+        run: | 
+          cp -L "/usr/lib/x86_64-linux-gnu/libc++.so.1" "build_output/Release/"
+          cp -L "/usr/lib/x86_64-linux-gnu/libc++abi.so.1" "build_output/Release/"
+          cp -L "/usr/lib/x86_64-linux-gnu/libunwind.so.1" "build_output/Release/"
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -101,6 +107,8 @@ jobs:
             build_output/Release/libSDL*
             !build_output/Release/libSDL2_test*
             build_output/Release/libTinyFFR*
+            build_output/Release/libc++*
+            build_output/Release/libunwind*
 
 
   build_windows:
