@@ -171,11 +171,14 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 
 			if (@this._loadedTargets.ContainsKey(result)) return result;
 			
-			AllocateRendererAndSwapChain(
+			AllocateSwapChain(
 				window.Handle,
-				out var rendererHandle,
 				out var swapChainHandle
 			).ThrowIfFailure();
+			AllocateRenderer(
+				out var rendererHandle
+			).ThrowIfFailure();
+
 			@this._loadedTargets.Add(result, new(rendererHandle, swapChainHandle));
 			return result;
 		}
@@ -252,6 +255,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 
 		var rendererData = _loadedRenderers[handle];
 		var viewportData = rendererData.Viewport;
+		var targetData = _loadedTargets[rendererData.RenderTarget];
 		var curViewportSize = viewportData.CurrentSize;
 		var curTargetSize = rendererData.RenderTarget.ViewportDimensions;
 		if (curViewportSize != curTargetSize) {
@@ -262,9 +266,19 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 			if (rendererData.AutoUpdateCameraAspectRatio) {
 				rendererData.Camera.SetAspectRatio(curTargetSize.Ratio ?? CameraCreationConfig.DefaultAspectRatio);
 			}
+
+			if (rendererData.RenderTarget.IsWindow && targetData.SwapChainPtr.HasValue) {
+				DisposeSwapChain(targetData.SwapChainPtr.Value).ThrowIfFailure();
+				AllocateSwapChain(
+					rendererData.RenderTarget.AsWindow.Handle, 
+					out var newSwapChainHandle
+				).ThrowIfFailure();
+				targetData = targetData with { SwapChainPtr = newSwapChainHandle };
+				_loadedTargets[rendererData.RenderTarget] = targetData;
+			}
 		}
 
-		var targetData = _loadedTargets[rendererData.RenderTarget];
+		
 		if (rendererData.RenderTarget.IsWindow) {
 			RenderScene(
 				targetData.RendererPtr,
@@ -575,10 +589,9 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	}
 
 	#region Native Methods
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_renderer_and_swap_chain")]
-	static extern InteropResult AllocateRendererAndSwapChain(
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_swap_chain")]
+	static extern InteropResult AllocateSwapChain(
 		UIntPtr windowHandle,
-		out UIntPtr rendererHandle,
 		out UIntPtr swapChainHandle
 	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_renderer")]

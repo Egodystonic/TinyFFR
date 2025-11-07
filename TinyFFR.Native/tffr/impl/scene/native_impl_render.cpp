@@ -24,9 +24,8 @@ static void handle_filament_buffer_ready_callback(void* _, size_t __, BufferIden
 	native_impl_init::deallocation_delegate(identity);
 }
 
-void native_impl_render::allocate_renderer_and_swap_chain(WindowHandle window, RendererHandle* outRenderer, SwapChainHandle* outSwapChain) {
+void native_impl_render::allocate_swap_chain(WindowHandle window, SwapChainHandle* outSwapChain) {
 	ThrowIfNull(window, "Window was null.");
-	ThrowIfNull(outRenderer, "Renderer out pointer was null.");
 	ThrowIfNull(outSwapChain, "Swap chain out pointer was null.");
 
 	SDL_SysWMinfo wmInfo;
@@ -60,13 +59,9 @@ void native_impl_render::allocate_renderer_and_swap_chain(WindowHandle window, R
 #endif
 
 	ThrowIfNull(*outSwapChain, "Could not create swap chain.");
-
-	*outRenderer = filament_engine->createRenderer();
-	(*outRenderer)->setClearOptions({ { 0.0, 0.0, 0.0, 0.0 }, 0U, true, true });
-	ThrowIfNull(*outRenderer, "Could not create renderer.");
 }
-StartExportedFunc(allocate_renderer_and_swap_chain, WindowHandle window, RendererHandle* outRenderer, SwapChainHandle* outSwapChain) {
-	native_impl_render::allocate_renderer_and_swap_chain(window, outRenderer, outSwapChain);
+StartExportedFunc(allocate_swap_chain, WindowHandle window, SwapChainHandle* outSwapChain) {
+	native_impl_render::allocate_swap_chain(window, outSwapChain);
 	EndExportedFunc
 }
 void native_impl_render::allocate_renderer(RendererHandle* outRenderer) {

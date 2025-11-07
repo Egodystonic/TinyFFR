@@ -74,6 +74,10 @@ class LocalDiscsRenderTest {
 			sunlight.RotateBy(new Rotation(200f * dt, Direction.Down));
 
 			light.Color = light.Color.WithHueAdjustedBy(1f);
+
+			if (loop.TotalIteratedTime > TimeSpan.FromSeconds(5d) && loop.TotalIteratedTime - TimeSpan.FromSeconds(dt) < TimeSpan.FromSeconds(5d)) {
+				window.Size = window.Size.ScaledByReal(1.2f);
+			}
 		}
 	}
 }

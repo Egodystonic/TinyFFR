@@ -16,7 +16,7 @@ typedef RenderTarget* RenderTargetHandle;
 
 class native_impl_render {
 public:
-	static void allocate_renderer_and_swap_chain(WindowHandle window, RendererHandle* outRenderer, SwapChainHandle* outSwapChain);
+	static void allocate_swap_chain(WindowHandle window, SwapChainHandle* outSwapChain);
 	static void allocate_renderer(RendererHandle* outRenderer);
 	static void allocate_view_descriptor(SceneHandle scene, CameraHandle camera, RenderTargetHandle optionalRenderTarget, ViewDescriptorHandle* outViewDescriptor);
 	static void dispose_view_descriptor(ViewDescriptorHandle viewDescriptor);
