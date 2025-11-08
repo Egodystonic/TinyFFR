@@ -33,6 +33,7 @@
     <None Include="prebuilt_binaries\win-x64\*.*" Pack="true" PackagePath="\runtimes\win-x64\native\" />
     <None Include="prebuilt_binaries\linux-x64\*.*" Pack="true" PackagePath="\runtimes\linux-x64\native\" />
     <None Include="prebuilt_binaries\osx-arm64\*.*" Pack="true" PackagePath="\runtimes\osx-arm64\native\" />
+    <None Include="Egodystonic.TinyFFR.targets" Pack="true" PackagePath="\build\" />
   </ItemGroup>
 
 </Project>

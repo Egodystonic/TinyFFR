@@ -1,0 +1,9 @@
+<!-- This is necessary because for some reason MSBuild deliberately doesn't copy the clang runtime libs as it is "preferred" to use the platform installed version; except it doesn't check that it's actually installed first -->
+<!-- For future reference: Error message during build (only in diagnostic file) is "Encountered conflict between 'Platform:libc++.so.1' and 'CopyLocal:/home/ben/.nuget/packages/egodystonic.tinyffr/0.5.0-rc002/runtimes/linux-x64/native/libc++.so.1'. Choosing 'Platform:libc++.so.1' because it comes from a package that is preferred." -->
+<!-- For future reference: See also "_ConflictPackageFiles" -->
+<Project>
+  <Target Name="CopyClangLlvm" AfterTargets="Build">
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)../runtimes/linux-x64/native/libc++.so.1" DestinationFolder="$(OutputPath)runtimes/linux-x64/native/" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)../runtimes/linux-x64/native/libc++abi.so.1" DestinationFolder="$(OutputPath)runtimes/linux-x64/native/" />
+  </Target>
+</Project>
