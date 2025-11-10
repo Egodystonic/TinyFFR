@@ -27,25 +27,25 @@
     <File Path="Publishing/release_steps.txt" />
     <File Path="README.md" />
     <File Path="THIRD_PARTY_NOTICES.md" />
-  	<Project Path="Publishing/TinyFFR.Avalonia.NuGet/TinyFFR.Avalonia.NuGet.csproj" Id="c951296c-96f7-4f80-a793-75b6db2d595f">
+    <Project Path="Publishing/TinyFFR.Avalonia.NuGet/TinyFFR.Avalonia.NuGet.csproj" Id="c951296c-96f7-4f80-a793-75b6db2d595f">
       <BuildType Project="Release" />
-	  <Platform Solution="*|ARM64" Project="ARM64" />
-      <Platform Solution="*|x64" Project="x64" />
-  	  <Build Project="false" />
-    </Project>
-  	<Project Path="Publishing/TinyFFR.Wpf.NuGet/TinyFFR.Wpf.NuGet.csproj" Id="58fe3ae7-d0d2-4dc8-9cc7-2e33d5cea02f">
-      <BuildType Project="Release" />
-	  <Platform Solution="*|ARM64" Project="ARM64" />
-      <Platform Solution="*|x64" Project="x64" />
-  	  <Build Project="false" />
-    </Project>
-    <Project Path="Publishing/TinyFFR.WinForms.NuGet/TinyFFR.WinForms.NuGet.csproj" Id="0d5f8103-ddb3-4c84-8ec6-dcafb9292cce">
-      <BuildType Project="Release" />
-	  <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
       <Platform Solution="*|x64" Project="x64" />
       <Build Project="false" />
     </Project>
     <Project Path="Publishing/TinyFFR.NuGet/TinyFFR.NuGet.csproj" Id="1087b2c9-d4b1-4b1b-ad1a-72ce291aa3d5">
+      <BuildType Project="Release" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Build Project="false" />
+    </Project>
+    <Project Path="Publishing/TinyFFR.WinForms.NuGet/TinyFFR.WinForms.NuGet.csproj" Id="0d5f8103-ddb3-4c84-8ec6-dcafb9292cce">
+      <BuildType Project="Release" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Build Project="false" />
+    </Project>
+    <Project Path="Publishing/TinyFFR.Wpf.NuGet/TinyFFR.Wpf.NuGet.csproj" Id="58fe3ae7-d0d2-4dc8-9cc7-2e33d5cea02f">
       <BuildType Project="Release" />
       <Platform Solution="*|ARM64" Project="ARM64" />
       <Platform Solution="*|x64" Project="x64" />
@@ -58,69 +58,73 @@
     <File Path="Directory.Build.props" />
   </Folder>
   <Folder Name="/Testing/">
-  	<Project Path="Testing/TestCommon/TestCommon.csproj" Id="c5487859-95a3-4bf9-85dc-23f9d6e6fd3d">
-      <BuildType Solution="Optimized|*" Project="Release" />
-    </Project>
-	<Project Path="Testing/TinyFFR.Tests/TinyFFR.Tests.csproj">
-      <BuildType Solution="Optimized|*" Project="Release" />
-      <Platform Solution="*|ARM64" Project="ARM64" />
-      <Platform Solution="*|x64" Project="x64" />
-    </Project>
     <Project Path="Testing/LocalDevTesting/LocalDevTesting.csproj">
       <BuildDependency Project="TinyFFR.Native/TinyFFR.Native.vcxproj" />
       <BuildDependency Project="TinyFFR/TinyFFR.csproj" />
       <Platform Solution="*|ARM64" Project="ARM64" />
       <Platform Solution="*|x64" Project="x64" />
     </Project>
+    <Project Path="Testing/TestCommon/TestCommon.csproj" Id="c5487859-95a3-4bf9-85dc-23f9d6e6fd3d">
+      <BuildType Solution="Optimized|*" Project="Release" />
+    </Project>
+    <Project Path="Testing/TinyFFR.Tests/TinyFFR.Tests.csproj">
+      <BuildType Solution="Optimized|*" Project="Release" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
   </Folder>
   <Folder Name="/Testing/Integrations/">
-	<Project Path="Testing/ManualIntegrationTestRunner/ManualIntegrationTestRunner.csproj" Id="df2e4704-c5a6-4e8d-b074-677ad9804034">
-		<BuildType Solution="Optimized|*" Project="Release" />
-		<Platform Solution="*|ARM64" Project="ARM64" />
-		<Platform Solution="*|x64" Project="x64" />
-	</Project>
-	<Project Path="Testing/Integrations/TinyFFR.Tests.Integrations.Avalonia.Desktop/TinyFFR.Tests.Integrations.Avalonia.Desktop.csproj">
-		<BuildType Solution="Optimized|*" Project="Release" />
-	</Project>
-	<Project Path="Testing/Integrations/TinyFFR.Tests.Integrations.Avalonia/TinyFFR.Tests.Integrations.Avalonia.csproj">
-		<BuildType Solution="Optimized|*" Project="Release" />
-	</Project>
-	<Project Path="Testing/Integrations/TinyFFR.Tests.Integrations.WinForms/TinyFFR.Tests.Integrations.WinForms.csproj" Id="ca7c90a7-5dc6-4007-8bb3-2126bff1e9d4">
-		<BuildType Solution="Optimized|*" Project="Release" />
-	</Project>
-	<Project Path="Testing/Integrations/TinyFFR.Tests.Integrations.Wpf/TinyFFR.Tests.Integrations.Wpf.csproj" Id="acc84590-659b-49c0-80f9-0607b7216b4c">
-		<BuildType Solution="Optimized|*" Project="Release" />
-	</Project>
-</Folder>
+    <Project Path="Testing/Integrations/TinyFFR.Tests.Integrations.Avalonia.Desktop/TinyFFR.Tests.Integrations.Avalonia.Desktop.csproj">
+      <BuildType Solution="Optimized|*" Project="Release" />
+    </Project>
+    <Project Path="Testing/Integrations/TinyFFR.Tests.Integrations.Avalonia/TinyFFR.Tests.Integrations.Avalonia.csproj">
+      <BuildType Solution="Optimized|*" Project="Release" />
+    </Project>
+    <Project Path="Testing/Integrations/TinyFFR.Tests.Integrations.WinForms/TinyFFR.Tests.Integrations.WinForms.csproj" Id="ca7c90a7-5dc6-4007-8bb3-2126bff1e9d4">
+      <BuildType Solution="Optimized|*" Project="Release" />
+    </Project>
+    <Project Path="Testing/Integrations/TinyFFR.Tests.Integrations.Wpf/TinyFFR.Tests.Integrations.Wpf.csproj" Id="acc84590-659b-49c0-80f9-0607b7216b4c">
+      <BuildType Solution="Optimized|*" Project="Release" />
+    </Project>
+    <Project Path="Testing/ManualIntegrationTestRunner/ManualIntegrationTestRunner.csproj" Id="df2e4704-c5a6-4e8d-b074-677ad9804034">
+      <BuildType Solution="Optimized|*" Project="Release" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+  </Folder>
 <Folder Name="/Testing/NupkgTesting/">
-	<Project Path="Testing/NupkgTesting/TinyFFR.Tests.Nupkg.TinyFFR/TinyFFR.Tests.Nupkg.TinyFFR.csproj">
-		<BuildType Solution="Optimized|*" Project="Release" />
-		<Platform Solution="*|ARM64" Project="ARM64" />
-		<Platform Solution="*|x64" Project="x64" />
-		<Build Project="false" />
-	</Project>
-	<Project Path="Testing/NupkgTesting/TinyFFR.Tests.Nupkg.Avalonia/TinyFFR.Tests.Nupkg.Avalonia.csproj">
-		<BuildType Solution="Optimized|*" Project="Release" />
-		<Build Project="false" />
-	</Project>
-	<Project Path="Testing/NupkgTesting/TinyFFR.Tests.Nupkg.Avalonia.Desktop/TinyFFR.Tests.Nupkg.Avalonia.Desktop.csproj">
-		<BuildType Solution="Optimized|*" Project="Release" />
-		<Build Project="false" />
-	</Project>
-	<Project Path="Testing/NupkgTesting/TinyFFR.Tests.Nupkg.Wpf/TinyFFR.Tests.Nupkg.Wpf.csproj">
-		<BuildType Solution="Optimized|*" Project="Release" />
-		<Build Project="false" />
-	</Project>
-	<Project Path="Testing/NupkgTesting/TinyFFR.Tests.Nupkg.WinForms/TinyFFR.Tests.Nupkg.WinForms.csproj">
-		<BuildType Solution="Optimized|*" Project="Release" />
-		<Build Project="false" />
-	</Project>
+  <Project Path="Testing/NupkgTesting/TinyFFR.Tests.Nupkg.Avalonia.Desktop/TinyFFR.Tests.Nupkg.Avalonia.Desktop.csproj">
+    <BuildType Solution="Optimized|*" Project="Release" />
+    <Build Project="false" />
+  </Project>
+  <Project Path="Testing/NupkgTesting/TinyFFR.Tests.Nupkg.Avalonia/TinyFFR.Tests.Nupkg.Avalonia.csproj">
+    <BuildType Solution="Optimized|*" Project="Release" />
+    <Build Project="false" />
+  </Project>
+  <Project Path="Testing/NupkgTesting/TinyFFR.Tests.Nupkg.TinyFFR/TinyFFR.Tests.Nupkg.TinyFFR.csproj">
+    <BuildType Solution="Optimized|*" Project="Release" />
+    <Platform Solution="*|ARM64" Project="ARM64" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Build Project="false" />
+  </Project>
+  <Project Path="Testing/NupkgTesting/TinyFFR.Tests.Nupkg.WinForms/TinyFFR.Tests.Nupkg.WinForms.csproj">
+    <BuildType Solution="Optimized|*" Project="Release" />
+    <Build Project="false" />
+  </Project>
+  <Project Path="Testing/NupkgTesting/TinyFFR.Tests.Nupkg.Wpf/TinyFFR.Tests.Nupkg.Wpf.csproj">
+    <BuildType Solution="Optimized|*" Project="Release" />
+    <Build Project="false" />
+  </Project>
 </Folder>
+  <Folder Name="/Tooling/">
+    <Project Path="Tooling/ShaderPrecompiler/ShaderPrecompiler.csproj" Id="8c5d986d-3a05-4dd1-a2be-ab766dbf3ebd">
+      <BuildType Solution="Optimized|*" Project="Release" />
+    </Project>
+  </Folder>
   <Project Path="TinyFFR.Native/TinyFFR.Native.vcxproj" Id="ac530f90-8cb3-4e18-9bf2-89079fb171eb">
     <BuildType Solution="Optimized|*" Project="Release" />
     <Platform Project="x64" />
     <Build Solution="*|ARM64" Project="false" />
   </Project>
-  <Project Path="TinyFFR/TinyFFR.csproj">
-  </Project>
+  <Project Path="TinyFFR/TinyFFR.csproj" />
 </Solution>

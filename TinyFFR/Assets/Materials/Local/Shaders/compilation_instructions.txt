@@ -1,9 +1,0 @@
-﻿To compile the .txt files to .filamat files, use matc.exe (downloaded as part of the compressed filament download).
-
-Commandline should look as follows:
-
-matc.exe -p desktop -a opengl -o Path\To\TinyFFR\Assets\Materials\Local\Shaders\shader_name.filamat Path\To\TinyFFR\Assets\Materials\Local\Shaders\shader_name.txt
-
-Don't include matc.exe in the repo as I'm not sure about redistribution rights and we also don't want to mix matc versions up if/when we upgrade the filament version.
-
-If it's a new material, once compiled, adjust the properties of the file and make sure it's an embedded resource in the assembly.
