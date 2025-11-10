@@ -29,7 +29,7 @@ class LocalRenderOutputBufferTest {
 
 	[SetUp]
 	public void SetUpTest() {
-		Console.WriteLine("Screenshots should show cube at upper half of all captures");
+		Console.WriteLine("Screenshots and bitmaps should show cube at upper half of all captures");
 
 		_screenshotsDir = SetUpCleanTestDir("screenshots");
 		Console.WriteLine("Screenshots being written to " + _screenshotsDir);
