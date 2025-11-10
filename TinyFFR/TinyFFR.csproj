@@ -41,14 +41,13 @@
   
   <ItemGroup>
     <EmbeddedResource Include="Assets\Local\cmgen.exe" />
+    <EmbeddedResource Include="Assets\Local\cmgen" />
     <EmbeddedResource Include="Assets\Local\cmgen_mac" />
-    <EmbeddedResource Include="Assets\Materials\Local\Shaders\alpha_aware.filamat" />
-    <EmbeddedResource Include="Assets\Materials\Local\Shaders\alpha_aware_mask.filamat" />
+    <EmbeddedResource Include="Assets\Materials\Local\Shaders\CompiledObjects\*.filamat" />
     <EmbeddedResource Include="logo_128.png" />
-    <EmbeddedResource Include="Assets\Materials\Local\Shaders\opaque.filamat" />
+    <None Remove="Assets\Local\cmgen.exe" />
     <None Remove="Assets\Local\cmgen" />
     <None Remove="Assets\Local\cmgen_mac" />
-    <EmbeddedResource Include="Assets\Local\cmgen" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
@@ -75,13 +74,6 @@
     <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
     <OutputPath>..\build_output\Release</OutputPath>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Remove="Assets\Local\cmgen.exe" />
-    <None Remove="Assets\Materials\Local\Shaders\alpha_aware.filamat" />
-    <None Remove="Assets\Materials\Local\Shaders\alpha_aware_mask.filamat" />
-    <None Remove="Assets\Materials\Local\Shaders\opaque.filamat" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />

@@ -1,0 +1,90 @@
+﻿material {
+	name : %NAME%,
+	parameters : [
+		{
+			type : sampler2d,
+			name : color_map
+		}
+#if Normals
+		,
+		{
+			type : sampler2d,
+			name : normal_map
+		}
+#endif Normals
+#if Orm
+		,
+		{
+			type : sampler2d,
+			name : orm_map
+		}
+#endif Orm
+#if Emissive
+		,
+		{
+			type : sampler2d,
+			name : emissive_map
+		}
+#endif Emissive
+#if Anisotropy
+		,
+		{
+			type : sampler2d,
+			name : anisotropy_map
+		}
+#endif Anisotropy
+#if Clearcoat
+		,
+		{
+			type : sampler2d,
+			name : clearcoat_map
+		}
+#endif Clearcoat
+	],
+	requires : [
+		uv0
+	],
+	shadingModel : lit,
+	flipUV : false,
+#option BlendMode
+#variant Opaque
+	blending : opaque
+#variant OpaqueWithAlpha
+	blending : fade
+#variant OpaqueWithAlphaShadows
+	blending : masked
+#endoption
+}
+
+fragment {
+	void material(inout MaterialInputs material) {
+		vec2 uv0 = getUV0();
+
+#if Normals
+		material.normal = texture(materialParams_normal_map, uv0).xyz * 2.0 - 1.0;
+		material.normal.y = -material.normal.y;
+#endif Normals
+
+		prepareMaterial(material);
+
+#option BlendMode
+#variant Opaque
+		material.baseColor.rgb = texture(materialParams_color_map, uv0).rgb;
+#variant OpaqueWithAlpha
+		material.baseColor.rgba = texture(materialParams_color_map, uv0).rgba;
+#variant OpaqueWithAlphaShadows
+		material.baseColor.rgba = texture(materialParams_color_map, uv0).rgba;
+#endoption
+
+#if Orm
+		material.ambientOcclusion = texture(materialParams_orm_map, uv0).r;
+		material.roughness = texture(materialParams_orm_map, uv0).g;
+		material.metallic = texture(materialParams_orm_map, uv0).b;
+#option OrmReflectance
+#variant No
+#variant Yes
+		material.reflectance = texture(materialParams_orm_map, uv0).a;
+#endoption
+#endif Orm
+	}
+}

@@ -1,5 +1,7 @@
 ﻿using Egodystonic.TinyFFR;
 
+Console.Clear();
+
 var solutionDir = Directory.GetCurrentDirectory();
 while (!Path.GetFileName(solutionDir).Equals("Tooling")) {
 	solutionDir	= Directory.GetParent(solutionDir)?.FullName ?? throw new ApplicationException("Can't find tooling dir");
@@ -51,14 +53,14 @@ Console.WriteLine();
 var shaderSourceFiles = Directory.GetFiles(shaderSourcesLocation, "shader_*.txt");
 Console.WriteLine("Shader source files found:");
 foreach (var sourceFile in shaderSourceFiles) {
-	Console.WriteLine("\t" + sourceFile);
+	Console.WriteLine("\t" + Path.GetFileName(sourceFile));
 }
 
 Console.WriteLine();
 var compiledObjectsToDelete = Directory.GetFiles(compiledShadersLocation, "*.filamat");
 Console.WriteLine("Previous compiled objects to be deleted:");
 foreach (var objFile in compiledObjectsToDelete) {
-	Console.WriteLine("\t" + objFile);
+	Console.WriteLine("\t" + Path.GetFileName(objFile));
 }
 
 Console.WriteLine();

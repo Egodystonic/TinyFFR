@@ -1,6 +1,8 @@
 ﻿// Created on 2025-11-10 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
+using System.Diagnostics;
+using System.Linq;
 using System.Text;
 
 namespace Egodystonic.TinyFFR;
@@ -23,22 +25,66 @@ static class CompilerRunner {
 		Console.WriteLine("Preprocessing:");
 		var processedFiles = ParseSourceFiles(sourceFiles).ToArray();
 		Console.WriteLine("\tTotal: " + processedFiles.Length + " target objects");
+
+		Console.WriteLine();
+		Console.WriteLine("Compiling:");
+		CompileAll(matcLocation, destinationDir, processedFiles);
+
+		Console.WriteLine();
+		Console.WriteLine("Completed.");
 	}
 
-	record ProcessedFileContents(string DestinationFileName, string[] EnabledFlags, string ProcessedContents);
+	record FileOption(string Name, string[] Variants);
+	record ProcessedFileContents(string DestinationFileName, string ProcessedContents);
 
 	static IEnumerable<ProcessedFileContents> ParseSourceFiles(string[] sourceFiles) {
 		foreach (var file in sourceFiles) {
+			var options = new List<FileOption>();
 			var flagLines = new List<(string FlagName, int IfLineIdx, int EndIfLineIdx)>();
 			
 			Console.WriteLine("\t" + Path.GetFileName(file) + "...");
 			var lines = File.ReadAllLines(file);
 			
 			var openFlags = new List<(string FlagName, int IfLineIdx)>();
+			var openOption = (string?) null;
+			var variants = new List<string>();
 			for (var lineIndex = 0; lineIndex < lines.Length; ++lineIndex) {
 				var line = lines[lineIndex];
 				var lineStartsFlag = line.StartsWith("#if ");
 				var lineEndsFlag = line.StartsWith("#endif ");
+				var lineStartsOption = line.StartsWith("#option ");
+				var lineEndsOption = line.StartsWith("#endoption");
+				var lineDemarcatesVariant = line.StartsWith("#variant ");
+				
+				if (lineStartsOption) {
+					if (openOption != null) {
+						throw new ApplicationException($"Can not embed options (line {lineIndex + 1})");
+					}
+					openOption = String.Join(" ", line.Split(' ')[1..]).ToLowerInvariant();
+					continue;
+				}
+				if (lineEndsOption) {
+					if (openOption == null) {
+						throw new ApplicationException($"Endoption without one being started (line {lineIndex + 1})");
+					}
+					options.Add(new(openOption, variants.ToArray()));
+					Console.WriteLine("\t\t" + openOption + " [" + String.Join("/", variants) + "] end @ " + (lineIndex + 1));
+					openOption = null;
+					variants.Clear();
+					continue;
+				}
+				if (lineDemarcatesVariant) {
+					if (openOption == null) {
+						throw new ApplicationException($"Variant outside of option (line {lineIndex + 1})");
+					}
+					var variant = String.Join(" ", line.Split(' ')[1..]).ToLowerInvariant();
+					if (String.IsNullOrWhiteSpace(variant)) {
+						throw new ApplicationException($"Variant tag with no name (line {lineIndex + 1})");
+					}
+					variants.Add(variant);
+					continue;
+				}
+				
 				if (!lineStartsFlag && !lineEndsFlag) continue;
 				
 				var flag = String.Join(" ", line.Split(' ')[1..]).ToLowerInvariant();
@@ -69,17 +115,23 @@ static class CompilerRunner {
 			if (openFlags.Any()) {
 				throw new ApplicationException($"No #endif for {openFlags[0].FlagName} (opened on line {(openFlags[0].IfLineIdx + 1)})");
 			}
+			if (openOption != null) {
+				throw new ApplicationException($"No endoption for {openOption}");
+			}
 
 			var destinationFileNameStart = Path.GetFileNameWithoutExtension(file)["shader_".Length..];
-			foreach (var result in ProcessFile(destinationFileNameStart, lines, flagLines.ToArray())) {
+			var optionsArray = options.GroupBy(o => o.Name).Select(g => new FileOption(g.Key, g.SelectMany(o => o.Variants).Distinct().ToArray())).ToArray();
+			foreach (var result in ProcessFile(destinationFileNameStart, lines, flagLines.ToArray(), optionsArray)) {
 				yield return result;
 			}
 		}
 	}
 
-	static IEnumerable<ProcessedFileContents> ProcessFile(string destinationFileNameStart, string[] fileLinesRaw, (string FlagName, int IfLineIdx, int EndIfLineIdx)[] flags) {
-		var linesWithActiveFlagStates = new (string Text, string[] ActiveFlags)[fileLinesRaw.Length];
+	static IEnumerable<ProcessedFileContents> ProcessFile(string destinationFileNameStart, string[] fileLinesRaw, (string FlagName, int IfLineIdx, int EndIfLineIdx)[] flags, FileOption[] options) {
+		var linesWithActiveFlagStates = new List<(string Text, string[] ActiveFlags, (string Option, string Variant)? OptionVariant)>();
 		var currentlyActiveFlags = new List<string>();
+		var activeOption = (string?) null;
+		var activeVariant = (string?) null;
 		for (var i = 0; i < fileLinesRaw.Length; ++i) {
 			var flagTuple = flags.SingleOrDefault(tuple => tuple.IfLineIdx == i || tuple.EndIfLineIdx == i);
 			if (flagTuple.FlagName != null) {
@@ -89,36 +141,51 @@ static class CompilerRunner {
 				else {
 					currentlyActiveFlags.Remove(flagTuple.FlagName);
 				}
-				linesWithActiveFlagStates[i] = ("", currentlyActiveFlags.ToArray());
+			}
+			else if (fileLinesRaw[i].StartsWith("#option")) {
+				activeOption = String.Join(" ", fileLinesRaw[i].Split(' ')[1..]).ToLowerInvariant();
+			}
+			else if (fileLinesRaw[i].StartsWith("#variant")) {
+				activeVariant = String.Join(" ", fileLinesRaw[i].Split(' ')[1..]).ToLowerInvariant();
+			}
+			else if (fileLinesRaw[i].StartsWith("#endoption")) {
+				activeVariant = null;
+				activeOption = null;
 			}
 			else {
-				linesWithActiveFlagStates[i] = (fileLinesRaw[i], currentlyActiveFlags.ToArray());
+				linesWithActiveFlagStates.Add((fileLinesRaw[i], currentlyActiveFlags.ToArray(), activeVariant == null ? null : (activeOption!, activeVariant)));
 			}
 		}
 
-		IEnumerable<ProcessedFileContents> RecursivelyCreateContents(string[] enabledFlags, string[] flagsYetToBeDetermined) {
+		IEnumerable<ProcessedFileContents> RecursivelyCreateContents(Dictionary<string, string> activeVariants, string[] enabledFlags, string[] flagsYetToBeDetermined) {
 			if (flagsYetToBeDetermined.Length == 0) {
-				var destFileName = destinationFileNameStart + String.Join("", enabledFlags.Select(f => "_" + f)) + ".filamat";
+				var nameToken = destinationFileNameStart 
+								+ String.Join("", activeVariants.OrderBy(kvp => kvp.Key).Select(kvp => $"_{kvp.Key}={kvp.Value}")) 
+								+ String.Join("", enabledFlags.Select(f => "_" + f));
+				var destFileName = nameToken + ".filamat";
 				Console.WriteLine("\t\t\t" + destFileName);
 
 				var processedContentsBuilder = new StringBuilder();
 				foreach (var line in linesWithActiveFlagStates) {
-					if (line.ActiveFlags.Length == 0 || line.ActiveFlags.All(enabledFlags.Contains)) processedContentsBuilder.AppendLine(line.Text);
+					if (line.ActiveFlags.Length != 0 && !line.ActiveFlags.All(enabledFlags.Contains)) {
+						continue;
+					}
+					if (line.OptionVariant != null && activeVariants[line.OptionVariant.Value.Option] != line.OptionVariant.Value.Variant) {
+						continue;
+					}
+
+					processedContentsBuilder.AppendLine(line.Text.Replace("%NAME%", "\"" + nameToken + "\""));
 				}
 
-				yield return new ProcessedFileContents(
-					destFileName,
-					enabledFlags,
-					processedContentsBuilder.ToString()
-				);
+				yield return new ProcessedFileContents(destFileName, processedContentsBuilder.ToString());
 
 				yield break;
 			}
 
-			foreach (var withFlagOnResult in RecursivelyCreateContents(enabledFlags.Concat([flagsYetToBeDetermined[0]]).ToArray(), flagsYetToBeDetermined[1..])) {
+			foreach (var withFlagOnResult in RecursivelyCreateContents(activeVariants, enabledFlags.Concat([flagsYetToBeDetermined[0]]).ToArray(), flagsYetToBeDetermined[1..])) {
 				yield return withFlagOnResult;
 			}
-			foreach (var withFlagOffResult in RecursivelyCreateContents(enabledFlags, flagsYetToBeDetermined[1..])) {
+			foreach (var withFlagOffResult in RecursivelyCreateContents(activeVariants, enabledFlags, flagsYetToBeDetermined[1..])) {
 				yield return withFlagOffResult;
 			}
 		}
@@ -129,11 +196,65 @@ static class CompilerRunner {
 		foreach (var distinctFlag in distinctFlags) {
 			Console.WriteLine("\t\t\t" + distinctFlag);
 		}
-		Console.WriteLine();
-		Console.WriteLine("\t\tOutput object count: " + Math.Pow(2, distinctFlags.Length));
 
-		foreach (var result in RecursivelyCreateContents(Array.Empty<string>(), distinctFlags)) {
-			yield return result;
+		Console.WriteLine();
+		Console.WriteLine("\t\tVariants:");
+		foreach (var o in options) {
+			Console.WriteLine("\t\t\t" + o.Name + " [" + String.Join("/", o.Variants) + "]");
 		}
+		Console.WriteLine();
+		Console.WriteLine("\t\tOutput object count: " + Math.Pow(2, distinctFlags.Length) * options.Aggregate(1, (m, o) => m * o.Variants.Length));
+
+
+		if (options.Length == 0) {
+			foreach (var result in RecursivelyCreateContents(new(), Array.Empty<string>(), distinctFlags)) {
+				yield return result;
+			}
+		}
+		else {
+			var variantGroups = options.Aggregate(
+				new List<Dictionary<string, string>>(),
+				(oldList, option) => {
+					var newList = new List<Dictionary<string, string>>();
+					foreach (var v in option.Variants) {
+						if (oldList.Count == 0) {
+							newList.Add(new Dictionary<string, string> { [option.Name] = v });
+						}
+						else {
+							foreach (var d in oldList) {
+								var newDict = new Dictionary<string, string>(d);
+								newDict[option.Name] = v;
+								newList.Add(newDict);
+							}
+						}
+					}
+					return newList;
+				}
+			);
+			foreach (var g in variantGroups) {
+				foreach (var result in RecursivelyCreateContents(g, Array.Empty<string>(), distinctFlags)) {
+					yield return result;
+				}
+			}
+		}
+	}
+
+	static void CompileAll(string matcLocation, string destinationDir, ProcessedFileContents[] files) {
+		var tempFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Egodystonic", "TinyFFR", "ShaderPrecompiler");
+		if (!Directory.Exists(tempFolder)) Directory.CreateDirectory(tempFolder);
+		Environment.CurrentDirectory = tempFolder;
+
+		Console.WriteLine("\tUsing temp folder: " + Environment.CurrentDirectory);
+		
+		Parallel.ForEach(files, file => {
+			var tempFileName = file.DestinationFileName + ".txt";
+			var destFileName = Path.Combine(destinationDir, file.DestinationFileName);
+			File.WriteAllText(tempFileName, file.ProcessedContents);
+			var proc = Process.Start(matcLocation, $"-p desktop -a opengl -o \"{destFileName}\" \"{tempFileName}\"");
+			proc.WaitForExit();
+			if (proc.ExitCode != 0) {
+				throw new ApplicationException("Error when compiling " + tempFileName);
+			}
+		});
 	}
 }
