@@ -46,12 +46,12 @@
 	],
 	shadingModel : lit,
 	flipUV : false,
-#option BlendMode
-#variant Opaque
+#option AlphaMode
+#variant AlphaOff
 	blending : opaque
-#variant OpaqueWithAlpha
+#variant AlphaOn
 	blending : fade
-#variant OpaqueWithAlphaShadows
+#variant AlphaOnWithShadowSupport
 	blending : masked
 #endoption
 }
@@ -67,12 +67,12 @@ fragment {
 
 		prepareMaterial(material);
 
-#option BlendMode
-#variant Opaque
+#option AlphaMode
+#variant AlphaOff
 		material.baseColor.rgb = texture(materialParams_color_map, uv0).rgb;
-#variant OpaqueWithAlpha
+#variant AlphaOn
 		material.baseColor.rgba = texture(materialParams_color_map, uv0).rgba;
-#variant OpaqueWithAlphaShadows
+#variant AlphaOnWithShadowSupport
 		material.baseColor.rgba = texture(materialParams_color_map, uv0).rgba;
 #endoption
 
@@ -81,9 +81,9 @@ fragment {
 		material.roughness = texture(materialParams_orm_map, uv0).g;
 		material.metallic = texture(materialParams_orm_map, uv0).b;
 #option OrmReflectance
-#variant No
-#variant Yes
+#variant On
 		material.reflectance = texture(materialParams_orm_map, uv0).a;
+#variant Off
 #endoption
 #endif Orm
 	}
