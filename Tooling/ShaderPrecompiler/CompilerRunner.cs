@@ -163,7 +163,6 @@ static class CompilerRunner {
 								+ String.Join("", activeVariants.OrderBy(kvp => kvp.Key).Select(kvp => $"_{kvp.Key}={kvp.Value}")) 
 								+ String.Join("", enabledFlags.Select(f => "_" + f));
 				var destFileName = nameToken + ".filamat";
-				Console.WriteLine("\t\t\t" + destFileName);
 
 				var processedContentsBuilder = new StringBuilder();
 				foreach (var line in linesWithActiveFlagStates) {
@@ -204,6 +203,7 @@ static class CompilerRunner {
 		}
 		Console.WriteLine();
 		Console.WriteLine("\t\tOutput object count: " + Math.Pow(2, distinctFlags.Length) * options.Aggregate(1, (m, o) => m * o.Variants.Length));
+		Console.WriteLine();
 
 
 		if (options.Length == 0) {
@@ -240,21 +240,40 @@ static class CompilerRunner {
 	}
 
 	static void CompileAll(string matcLocation, string destinationDir, ProcessedFileContents[] files) {
+		var errorLock = new Lock();
+		var errorBuilder = new StringBuilder();
 		var tempFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Egodystonic", "TinyFFR", "ShaderPrecompiler");
 		if (!Directory.Exists(tempFolder)) Directory.CreateDirectory(tempFolder);
 		Environment.CurrentDirectory = tempFolder;
 
 		Console.WriteLine("\tUsing temp folder: " + Environment.CurrentDirectory);
-		
-		Parallel.ForEach(files, file => {
-			var tempFileName = file.DestinationFileName + ".txt";
-			var destFileName = Path.Combine(destinationDir, file.DestinationFileName);
-			File.WriteAllText(tempFileName, file.ProcessedContents);
-			var proc = Process.Start(matcLocation, $"-p desktop -a opengl -o \"{destFileName}\" \"{tempFileName}\"");
-			proc.WaitForExit();
-			if (proc.ExitCode != 0) {
-				throw new ApplicationException("Error when compiling " + tempFileName);
+
+		try {
+			Parallel.ForEach(files, file => {
+				var tempFileName = file.DestinationFileName + ".txt";
+				var destFileName = Path.Combine(destinationDir, file.DestinationFileName);
+				File.WriteAllText(tempFileName, file.ProcessedContents);
+				var proc = Process.Start(matcLocation, $"-p desktop -a opengl -o \"{destFileName}\" \"{tempFileName}\"");
+				proc.WaitForExit();
+				Console.WriteLine("\t\t\t" + file.DestinationFileName);
+				if (proc.ExitCode != 0) {
+					lock (errorLock) {
+						errorBuilder.AppendLine();
+						errorBuilder.AppendLine("===========================================");
+						errorBuilder.AppendLine($"Error ({file.DestinationFileName})");
+						errorBuilder.AppendLine("===========================================");
+						errorBuilder.Append(file.ProcessedContents);
+						errorBuilder.AppendLine("===========================================");
+						errorBuilder.AppendLine();
+					}
+					throw new ApplicationException("Error when compiling " + tempFileName);
+				}
+			});
+		}
+		finally {
+			lock (errorLock) {
+				Console.Write(errorBuilder.ToString());
 			}
-		});
+		}
 	}
 }

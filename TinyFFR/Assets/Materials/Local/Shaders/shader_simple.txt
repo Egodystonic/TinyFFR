@@ -1,0 +1,32 @@
+﻿material {
+	name : %NAME%,
+	parameters : [
+		{
+			type : sampler2d,
+			name : color_map
+		}
+#if Emissive
+		,
+		{
+			type : sampler2d,
+			name : emissive_map
+		}
+#endif Emissive
+	],
+	requires : [
+		uv0
+	],
+	shadingModel : unlit,
+	flipUV : false,
+	blending : transparent
+}
+
+fragment {
+	void material(inout MaterialInputs material) {
+		vec2 uv0 = getUV0();
+
+		prepareMaterial(material);
+
+		material.baseColor.rgba = texture(materialParams_color_map, uv0).rgba;
+	}
+}

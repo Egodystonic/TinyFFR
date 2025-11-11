@@ -50,9 +50,9 @@
 #variant AlphaOff
 	blending : opaque
 #variant AlphaOn
-	blending : fade
-#variant AlphaOnWithShadowSupport
 	blending : masked
+#variant AlphaOnBlended
+	blending : fade
 #endoption
 }
 
@@ -72,7 +72,7 @@ fragment {
 		material.baseColor.rgb = texture(materialParams_color_map, uv0).rgb;
 #variant AlphaOn
 		material.baseColor.rgba = texture(materialParams_color_map, uv0).rgba;
-#variant AlphaOnWithShadowSupport
+#variant AlphaOnBlended
 		material.baseColor.rgba = texture(materialParams_color_map, uv0).rgba;
 #endoption
 
