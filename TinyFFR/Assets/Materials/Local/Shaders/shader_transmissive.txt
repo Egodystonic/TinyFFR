@@ -91,8 +91,8 @@ fragment {
 		material.roughness = texture(materialParams_orm_map, uv0).g;
 		material.metallic = texture(materialParams_orm_map, uv0).b;
 #option OrmReflectance
-#variant No
-#variant Yes
+#variant Off
+#variant On
 		material.reflectance = texture(materialParams_orm_map, uv0).a;
 #endoption
 #endif Orm
