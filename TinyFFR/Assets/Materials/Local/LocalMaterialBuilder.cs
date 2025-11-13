@@ -188,7 +188,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, in generationConfig, in config);
 	}
 
-	public Material CreateOpaqueMaterial(in OpaqueMaterialCreationConfig config) {
+	public Material CreateOpaqueMaterial(in StandardMaterialCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 

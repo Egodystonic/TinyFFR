@@ -18,7 +18,12 @@
 	],
 	shadingModel : unlit,
 	flipUV : false,
+#option AlphaMode
+#variant AlphaOff
+	blending : opaque
+#variant AlphaOn
 	blending : transparent
+#endoption
 }
 
 fragment {
@@ -27,6 +32,11 @@ fragment {
 
 		prepareMaterial(material);
 
+#option AlphaMode
+#variant AlphaOff
+		material.baseColor.rgb = texture(materialParams_color_map, uv0).rgb;
+#variant AlphaOn
 		material.baseColor.rgba = texture(materialParams_color_map, uv0).rgba;
+#endoption
 	}
 }

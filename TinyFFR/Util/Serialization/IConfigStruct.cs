@@ -31,6 +31,7 @@ public interface IConfigStruct {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	protected static int SerializationSizeOfNullableBool() => sizeof(bool) + sizeof(bool);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	protected static int SerializationSizeOfNullableResource() => sizeof(bool) + IResource.SerializedLengthBytes;
 	protected static int SerializationSizeOfNullable<T>() where T : IFixedLengthByteSpanSerializable<T> => sizeof(bool) + T.SerializationByteSpanLength;
 
 	protected static void SerializationWriteFloat(scoped ref Span<byte> dest, float v) {
@@ -89,6 +90,12 @@ public interface IConfigStruct {
 		dest[0] = (v ?? default) ? Byte.MaxValue : Byte.MinValue;
 		dest = dest[1..];
 	}
+	protected static void SerializationWriteAndAllocateNullableResource<T>(scoped ref Span<byte> dest, T? v) where T : struct, IResource<T> {
+		SerializationWriteBool(ref dest, v.HasValue);
+		if (v.HasValue) v.Value.AllocateGcHandleAndSerializeResource(dest);
+		else dest[..SerializationSizeOfResource()].Clear();
+		dest = dest[SerializationSizeOfResource()..];
+	}
 	protected static void SerializationWriteNullable<T>(scoped ref Span<byte> dest, T? v) where T : struct, IFixedLengthByteSpanSerializable<T> {
 		SerializationWriteBool(ref dest, v.HasValue);
 		T.SerializeToBytes(dest, v ?? default);
@@ -145,6 +152,9 @@ public interface IConfigStruct {
 	protected static void SerializationDisposeResourceHandle(ReadOnlySpan<byte> resourceData) {
 		IResource.ReadGcHandleFromSerializedResource(resourceData).Free();
 	}
+	protected static void SerializationDisposeNullableResourceHandle(ReadOnlySpan<byte> flagAndResourceData) {
+		if (SerializationReadBool(ref flagAndResourceData)) SerializationDisposeResourceHandle(flagAndResourceData);
+	}
 
 	protected static float? SerializationReadNullableFloat(scoped ref ReadOnlySpan<byte> src) {
 		var hasValue = SerializationReadBool(ref src);
@@ -165,6 +175,13 @@ public interface IConfigStruct {
 		var hasValue = SerializationReadBool(ref src);
 		var value = SerializationReadBool(ref src);
 		return hasValue ? value : null;
+	}
+	protected static T? SerializationReadNullableResource<T>(scoped ref ReadOnlySpan<byte> src) where T : struct, IResource<T> {
+		var hasValue = SerializationReadBool(ref src);
+		if (hasValue) return SerializationReadResource<T>(ref src);
+
+		src = src[SerializationSizeOfResource()..];
+		return null;
 	}
 	protected static T? SerializationReadNullable<T>(scoped ref ReadOnlySpan<byte> src) where T : struct, IFixedLengthByteSpanSerializable<T> {
 		var hasValue = SerializationReadBool(ref src);

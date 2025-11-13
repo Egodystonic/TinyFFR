@@ -49,6 +49,7 @@ public readonly record struct TexelRgb24(byte R, byte G, byte B) : IThreeByteCha
 	public static explicit operator TexelRgb24(TexelRgba32 texel) => texel.AsRgb24;
 
 	public static TexelRgb24 ConvertFrom(ColorVect v) => new(v);
+	public static TexelRgb24 ConvertFrom<T>(T v) where T : unmanaged, IThreeByteChannelTexel<T> => new(v[0], v[1], v[2]);
 
 	public TexelRgb24 WithInvertedChannelIfPresent(int channelIndex) {
 		return channelIndex switch {

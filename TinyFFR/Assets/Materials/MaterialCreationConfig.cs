@@ -31,4 +31,10 @@ public readonly ref struct MaterialCreationConfig : IConfigStruct<MaterialCreati
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		/* no-op */
 	}
+
+	internal static void ThrowIfTextureIsNotCorrectTexelType(Texture? texture, TexelType expectedType, [CallerArgumentExpression(nameof(texture))] string? textureName = null) {
+		if (texture.HasValue && texture.Value.TexelType != expectedType) {
+			throw new ArgumentException($"Texture is required to be of texel type '{expectedType}'; but was '{texture.Value.TexelType}'.", textureName);
+		}
+	}
 }

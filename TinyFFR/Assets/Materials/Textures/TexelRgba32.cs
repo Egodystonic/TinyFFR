@@ -52,6 +52,7 @@ public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : IFou
 	public static explicit operator TexelRgba32(TexelRgb24 texel) => texel.AsRgba32;
 	
 	public static TexelRgba32 ConvertFrom(ColorVect v) => new(v);
+	public static TexelRgba32 ConvertFrom<T>(T v) where T : unmanaged, IFourByteChannelTexel<T> => new(v[0], v[1], v[2], v[3]);
 
 	public TexelRgba32 WithInvertedChannelIfPresent(int channelIndex) {
 		return channelIndex switch {

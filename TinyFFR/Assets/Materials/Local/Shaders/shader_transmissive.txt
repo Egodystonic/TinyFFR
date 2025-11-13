@@ -1,14 +1,11 @@
 ﻿material {
 	name : %NAME%,
-#option RefractionType
-#variant Thin
 	constants : [
 		{
 			type : float,
 			name : surface_thickness
 		}
 	],
-#endoption
 	parameters : [
 		{
 			type : sampler2d,
@@ -53,7 +50,14 @@
 	],
 	shadingModel : lit,
 	flipUV : false,
-	blending : masked,
+#option AlphaMode
+#variant AlphaOff
+	blending : opaque
+#variant AlphaOn
+	blending : masked
+#variant AlphaOnBlended
+	blending : fade
+#endoption
 #option RefractionQuality
 #variant Disabled
 	refractionMode : none,
@@ -84,7 +88,14 @@ fragment {
 
 		prepareMaterial(material);
 
+#option AlphaMode
+#variant AlphaOff
+		material.baseColor.rgb = texture(materialParams_color_map, uv0).rgb;
+#variant AlphaOn
 		material.baseColor.rgba = texture(materialParams_color_map, uv0).rgba;
+#variant AlphaOnBlended
+		material.baseColor.rgba = texture(materialParams_color_map, uv0).rgba;
+#endoption
 
 #if Orm
 		material.ambientOcclusion = texture(materialParams_orm_map, uv0).r;

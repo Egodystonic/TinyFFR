@@ -21,6 +21,11 @@ public readonly struct Texture : IDisposableResource<Texture, ITextureImplProvid
 		get => Implementation.GetDimensions(_handle);
 	}
 
+	public TexelType TexelType {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetTexelType(_handle);
+	}
+
 	internal Texture(ResourceHandle<Texture> handle, ITextureImplProvider impl) {
 		_handle = handle;
 		_impl = impl;

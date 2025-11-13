@@ -49,20 +49,20 @@ class MaterialConfigsTest {
 	public void ShouldCorrectlyConvertOpaqueMaterialCreationConfigToAndFromHeapStorageFormat() {
 		var colorTexImplSub = Substitute.For<ITextureImplProvider>();
 		colorTexImplSub.IsDisposed(Arg.Any<ResourceHandle<Texture>>()).Returns(false);
-		var testConfigA = new OpaqueMaterialCreationConfig {
+		var testConfigA = new StandardMaterialCreationConfig {
 			Name = "Aa Aa",
 			ColorMap = new Texture(111, colorTexImplSub),
 			NormalMap = new Texture(222, colorTexImplSub),
 			OrmMap = new Texture(333, colorTexImplSub)
 		};
-		var testConfigB = new OpaqueMaterialCreationConfig {
+		var testConfigB = new StandardMaterialCreationConfig {
 			Name = "BBBbbb",
 			ColorMap = new Texture(1111, colorTexImplSub),
 			NormalMap = new Texture(2222, colorTexImplSub),
 			OrmMap = new Texture(3333, colorTexImplSub)
 		};
 
-		void CompareConfigs(OpaqueMaterialCreationConfig expected, OpaqueMaterialCreationConfig actual) {
+		void CompareConfigs(StandardMaterialCreationConfig expected, StandardMaterialCreationConfig actual) {
 			Assert.AreEqual(expected.ColorMap, actual.ColorMap);
 			Assert.AreEqual(expected.NormalMap, actual.NormalMap);
 			Assert.AreEqual(expected.OrmMap, actual.OrmMap);
@@ -72,26 +72,26 @@ class MaterialConfigsTest {
 		AssertRoundTripHeapStorage(testConfigA, CompareConfigs);
 		AssertRoundTripHeapStorage(testConfigB, CompareConfigs);
 
-		AssertHeapSerializationWithObjects<OpaqueMaterialCreationConfig>()
+		AssertHeapSerializationWithObjects<StandardMaterialCreationConfig>()
 			.Resource(testConfigA.ColorMap)
 			.Resource(testConfigA.NormalMap)
 			.Resource(testConfigA.OrmMap)
 			.SubConfig(testConfigA.BaseConfig)
 			.For(testConfigA);
 
-		AssertHeapSerializationWithObjects<OpaqueMaterialCreationConfig>()
+		AssertHeapSerializationWithObjects<StandardMaterialCreationConfig>()
 			.Resource(testConfigB.ColorMap)
 			.Resource(testConfigB.NormalMap)
 			.Resource(testConfigB.OrmMap)
 			.SubConfig(testConfigB.BaseConfig)
 			.For(testConfigB);
 
-		AssertPropertiesAccountedFor<OpaqueMaterialCreationConfig>()
-			.Including(nameof(OpaqueMaterialCreationConfig.ColorMap))
-			.Including(nameof(OpaqueMaterialCreationConfig.NormalMap))
-			.Including(nameof(OpaqueMaterialCreationConfig.OrmMap))
-			.Including(nameof(OpaqueMaterialCreationConfig.BaseConfig))
-			.Including(nameof(OpaqueMaterialCreationConfig.Name));
+		AssertPropertiesAccountedFor<StandardMaterialCreationConfig>()
+			.Including(nameof(StandardMaterialCreationConfig.ColorMap))
+			.Including(nameof(StandardMaterialCreationConfig.NormalMap))
+			.Including(nameof(StandardMaterialCreationConfig.OrmMap))
+			.Including(nameof(StandardMaterialCreationConfig.BaseConfig))
+			.Including(nameof(StandardMaterialCreationConfig.Name));
 	}
 
 	[Test]
