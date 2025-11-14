@@ -8,14 +8,14 @@ using static Egodystonic.TinyFFR.IConfigStruct;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public enum TransmissiveMaterialQuality {
-	SkyboxReflectionsOnly = LocalShaderPackageConstants.TransmissiveMaterialShaderConstants.RefractionQualityVariant.Disabled,
-	SkyboxReflectionsAndRefraction = LocalShaderPackageConstants.TransmissiveMaterialShaderConstants.RefractionQualityVariant.Low,
-	TrueReflectionsAndRefraction = LocalShaderPackageConstants.TransmissiveMaterialShaderConstants.RefractionQualityVariant.High,
+	SkyboxReflectionsOnly,
+	SkyboxReflectionsAndRefraction,
+	TrueReflectionsAndRefraction,
 }
 
 public enum TransmissiveMaterialAlphaMode {
-	MaskOnly = LocalShaderPackageConstants.StandardMaterialShaderConstants.AlphaModeVariant.AlphaOn,
-	FullBlending = LocalShaderPackageConstants.StandardMaterialShaderConstants.AlphaModeVariant.AlphaOnBlended,
+	MaskOnly,
+	FullBlending,
 }
 
 public readonly ref struct TransmissiveMaterialCreationConfig : IConfigStruct<TransmissiveMaterialCreationConfig> {
@@ -46,6 +46,7 @@ public readonly ref struct TransmissiveMaterialCreationConfig : IConfigStruct<Tr
 		if (!Enum.IsDefined(AlphaMode)) throw new ArgumentOutOfRangeException(nameof(AlphaMode), AlphaMode, null);
 		MaterialCreationConfig.ThrowIfTextureIsNotCorrectTexelType(AnisotropyMap, TexelType.Rgba32);
 		MaterialCreationConfig.ThrowIfTextureIsNotCorrectTexelType(EmissiveMap, TexelType.Rgba32);
+		MaterialCreationConfig.ThrowIfTextureIsNotCorrectTexelType(OcclusionRoughnessMetallicReflectanceMap, TexelType.Rgba32);
 	}
 
 	public static int GetHeapStorageFormattedLength(in TransmissiveMaterialCreationConfig src) {

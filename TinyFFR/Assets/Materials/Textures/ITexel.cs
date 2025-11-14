@@ -19,12 +19,14 @@ public interface ITexel {
 }
 public interface ITexel<TSelf> : ITexel, IFixedLengthByteSpanSerializable<TSelf> where TSelf : unmanaged, ITexel<TSelf> {
 	TSelf WithInvertedChannelIfPresent(int channelIndex);
+	TSelf SwizzlePresentChannels(ColorChannel redSource, ColorChannel greenSource, ColorChannel blueSource, ColorChannel alphaSource);
 }
 public interface IConversionSupplyingTexel<TSelf, in TOther> : ITexel<TSelf> where TSelf : unmanaged, IConversionSupplyingTexel<TSelf, TOther> {
 	static abstract TSelf ConvertFrom(TOther o);
 }
 public interface ITexel<TSelf, out TChannel> : ITexel<TSelf> where TSelf : unmanaged, ITexel<TSelf, TChannel> {
 	TChannel this[int index] { get; }
+	TChannel this[ColorChannel channel] { get; }
 }
 public interface IThreeChannelTexel<TSelf, out TChannel> : ITexel<TSelf, TChannel> where TSelf : unmanaged, IThreeChannelTexel<TSelf, TChannel> {
 	static int ITexel.ChannelCount => 3;

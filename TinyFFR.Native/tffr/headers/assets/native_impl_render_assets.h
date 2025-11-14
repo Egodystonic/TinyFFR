@@ -41,6 +41,7 @@ public:
 	static void load_shader_package(void* dataPtr, int32_t dataLen, PackageHandle* outHandle);
 	static void create_material(PackageHandle package, MaterialHandle* outMaterial);
 	static void set_material_parameter_texture(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture);
+	static void set_material_parameter_real(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, float val);
 	static void dispose_material(MaterialHandle material);
 	static void dispose_shader_package(PackageHandle handle);
 };

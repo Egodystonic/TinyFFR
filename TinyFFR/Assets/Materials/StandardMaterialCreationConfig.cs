@@ -8,13 +8,17 @@ using static Egodystonic.TinyFFR.IConfigStruct;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public enum StandardMaterialAlphaMode {
-	MaskOnly = LocalShaderPackageConstants.StandardMaterialShaderConstants.AlphaModeVariant.AlphaOn,
-	FullBlending = LocalShaderPackageConstants.StandardMaterialShaderConstants.AlphaModeVariant.AlphaOnBlended,
+	MaskOnly,
+	FullBlending,
 }
 
 public readonly ref struct StandardMaterialCreationConfig : IConfigStruct<StandardMaterialCreationConfig> {
 	public required Texture ColorMap { get; init; }
 	public Texture? NormalMap { get; init; }
+	public Texture? OcclusionRoughnessMetallicMap {
+		get => OcclusionRoughnessMetallicReflectanceMap;
+		init => OcclusionRoughnessMetallicReflectanceMap = value;
+	}
 	public Texture? OcclusionRoughnessMetallicReflectanceMap { get; init; }
 	public Texture? AnisotropyMap { get; init; }
 	public Texture? EmissiveMap { get; init; }

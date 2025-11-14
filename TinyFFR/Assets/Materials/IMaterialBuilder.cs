@@ -252,11 +252,11 @@ public unsafe interface IMaterialBuilder {
 	}
 	Material CreateSimpleMaterial(in SimpleMaterialCreationConfig config);
 
-	Material CreateStandardMaterial(Texture colorMap, Texture? normalMap = null, Texture? occlusionRoughnessMetallicReflectanceMap = null, Texture? anisotropyMap = null, Texture? emissiveMap = null, Texture? clearCoatMap = null, StandardMaterialAlphaMode? alphaMode = null, ReadOnlySpan<char> name = default) {
+	Material CreateStandardMaterial(Texture colorMap, Texture? normalMap = null, Texture? ormOrOrmrMap = null, Texture? anisotropyMap = null, Texture? emissiveMap = null, Texture? clearCoatMap = null, StandardMaterialAlphaMode? alphaMode = null, ReadOnlySpan<char> name = default) {
 		return CreateStandardMaterial(new StandardMaterialCreationConfig {
 			ColorMap = colorMap,
 			NormalMap = normalMap,
-			OcclusionRoughnessMetallicReflectanceMap = occlusionRoughnessMetallicReflectanceMap,
+			OcclusionRoughnessMetallicReflectanceMap = ormOrOrmrMap,
 			AnisotropyMap = anisotropyMap,
 			EmissiveMap = emissiveMap,
 			ClearCoatMap = clearCoatMap,
@@ -266,12 +266,12 @@ public unsafe interface IMaterialBuilder {
 	}
 	Material CreateStandardMaterial(in StandardMaterialCreationConfig config);
 
-	Material CreateTransmissiveMaterial(Texture colorMap, Texture absorptionTransmissionMap, TransmissiveMaterialQuality? quality = null, Texture? normalMap = null, Texture? occlusionRoughnessMetallicReflectanceMap = null, Texture? anisotropyMap = null, Texture? emissiveMap = null, TransmissiveMaterialAlphaMode? alphaMode = null, ReadOnlySpan<char> name = default) {
+	Material CreateTransmissiveMaterial(Texture colorMap, Texture absorptionTransmissionMap, TransmissiveMaterialQuality? quality = null, Texture? normalMap = null, Texture? ormrMap = null, Texture? anisotropyMap = null, Texture? emissiveMap = null, TransmissiveMaterialAlphaMode? alphaMode = null, ReadOnlySpan<char> name = default) {
 		return CreateTransmissiveMaterial(new TransmissiveMaterialCreationConfig {
 			ColorMap = colorMap,
 			AbsorptionTransmissionMap = absorptionTransmissionMap,
 			NormalMap = normalMap,
-			OcclusionRoughnessMetallicReflectanceMap = occlusionRoughnessMetallicReflectanceMap,
+			OcclusionRoughnessMetallicReflectanceMap = ormrMap,
 			AnisotropyMap = anisotropyMap,
 			EmissiveMap = emissiveMap,
 			Quality = quality ?? TransmissiveMaterialQuality.SkyboxReflectionsAndRefraction,

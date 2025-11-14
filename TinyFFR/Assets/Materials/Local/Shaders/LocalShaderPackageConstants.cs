@@ -3,9 +3,11 @@
 
 using Egodystonic.TinyFFR.Resources.Memory;
 using System;
+using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConstants.StandardMaterialShaderConstants;
 
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
+#pragma warning disable CA1001 // Warning about the ArrayPoolBackMaps not being disposed; but we know they will live for the entire lifetime of the application
 static class LocalShaderPackageConstants {
 	const string ResourceNamespace = "Assets.Materials.Local.Shaders.CompiledObjects.";
 	const string ShaderResourceExtension = ".filamat";
@@ -115,10 +117,6 @@ static class LocalShaderPackageConstants {
 			Orm = 1 << 3,
 		}
 		
-		public enum OrmReflectanceVariant {
-			Off,
-			On
-		}
 		public enum AlphaModeVariant {
 			AlphaOff,
 			AlphaOn,
@@ -134,19 +132,16 @@ static class LocalShaderPackageConstants {
 			Thick
 		}
 
-		readonly ArrayPoolBackedMap<(Flags Flags, AlphaModeVariant AlphaMode, OrmReflectanceVariant OrmReflectance, RefractionQualityVariant RefractionQuality, RefractionTypeVariant RefractionType), string> _resourceNameMap;
+		readonly ArrayPoolBackedMap<(Flags Flags, AlphaModeVariant AlphaMode, RefractionQualityVariant RefractionQuality, RefractionTypeVariant RefractionType), string> _resourceNameMap;
 
 		public TransmissiveMaterialShaderConstants() {
 			const string ShaderNameStart = ResourceNamespace + "transmissive";
 			const string AlphaModeVariantStart = "_alphamode=";
-			const string OrmReflectanceVariantStart = "_ormreflectance=";
 			const string RefractionQualityVariantStart = "_refractionquality=";
 			const string RefractionTypeVariantStart = "_refractiontype=";
 			const Flags LastFlag = Flags.Orm;
 			const AlphaModeVariant FirstAlphaMode = AlphaModeVariant.AlphaOff;
 			const AlphaModeVariant LastAlphaMode = AlphaModeVariant.AlphaOnBlended;
-			const OrmReflectanceVariant FirstOrmReflectance = OrmReflectanceVariant.Off;
-			const OrmReflectanceVariant LastOrmReflectance = OrmReflectanceVariant.On;
 			const RefractionQualityVariant FirstRefractionQuality = RefractionQualityVariant.Disabled;
 			const RefractionQualityVariant LastRefractionQuality = RefractionQualityVariant.High;
 			const RefractionTypeVariant FirstRefractionType = RefractionTypeVariant.Thin;
@@ -159,73 +154,61 @@ static class LocalShaderPackageConstants {
 
 			for (var flag = (Flags) 0; flag <= (Flags) ((int) LastFlag + 1); ++flag) {
 				for (var vAlphaMode = FirstAlphaMode; vAlphaMode <= LastAlphaMode; ++vAlphaMode) {
-					for (var vOrmReflectance = FirstOrmReflectance; vOrmReflectance <= LastOrmReflectance; ++vOrmReflectance) {
-						for (var vRefractionQuality = FirstRefractionQuality; vRefractionQuality <= LastRefractionQuality; ++vRefractionQuality) {
-							for (var vRefractionType = FirstRefractionType; vRefractionType <= LastRefractionType; ++vRefractionType) {
-								var emptySpaceSpan = stringBuildSpace[ShaderNameStart.Length..];
+					for (var vRefractionQuality = FirstRefractionQuality; vRefractionQuality <= LastRefractionQuality; ++vRefractionQuality) {
+						for (var vRefractionType = FirstRefractionType; vRefractionType <= LastRefractionType; ++vRefractionType) {
+							var emptySpaceSpan = stringBuildSpace[ShaderNameStart.Length..];
 
-								Write(ref emptySpaceSpan, AlphaModeVariantStart);
-								Write(
-									ref emptySpaceSpan,
-									vAlphaMode switch {
-										AlphaModeVariant.AlphaOff => "alphaoff",
-										AlphaModeVariant.AlphaOn => "alphaon",
-										AlphaModeVariant.AlphaOnBlended => "alphaonblended",
-										_ => throw new ArgumentOutOfRangeException()
-									}
-								);
+							Write(ref emptySpaceSpan, AlphaModeVariantStart);
+							Write(
+								ref emptySpaceSpan,
+								vAlphaMode switch {
+									AlphaModeVariant.AlphaOff => "alphaoff",
+									AlphaModeVariant.AlphaOn => "alphaon",
+									AlphaModeVariant.AlphaOnBlended => "alphaonblended",
+									_ => throw new ArgumentOutOfRangeException()
+								}
+							);
 
-								Write(ref emptySpaceSpan, OrmReflectanceVariantStart);
-								Write(
-									ref emptySpaceSpan,
-									vOrmReflectance switch {
-										OrmReflectanceVariant.Off => "off",
-										OrmReflectanceVariant.On => "on",
-										_ => throw new ArgumentOutOfRangeException()
-									}
-								);
+							Write(ref emptySpaceSpan, RefractionQualityVariantStart);
+							Write(
+								ref emptySpaceSpan,
+								vRefractionQuality switch {
+									RefractionQualityVariant.Disabled => "disabled",
+									RefractionQualityVariant.Low => "low",
+									RefractionQualityVariant.High => "high",
+									_ => throw new ArgumentOutOfRangeException()
+								}
+							);
 
-								Write(ref emptySpaceSpan, RefractionQualityVariantStart);
-								Write(
-									ref emptySpaceSpan,
-									vRefractionQuality switch {
-										RefractionQualityVariant.Disabled => "disabled",
-										RefractionQualityVariant.Low => "low",
-										RefractionQualityVariant.High => "high",
-										_ => throw new ArgumentOutOfRangeException()
-									}
-								);
+							Write(ref emptySpaceSpan, RefractionTypeVariantStart);
+							Write(
+								ref emptySpaceSpan,
+								vRefractionType switch {
+									RefractionTypeVariant.Thin => "thin",
+									RefractionTypeVariant.Thick => "thick",
+									_ => throw new ArgumentOutOfRangeException()
+								}
+							);
 
-								Write(ref emptySpaceSpan, RefractionTypeVariantStart);
-								Write(
-									ref emptySpaceSpan,
-									vRefractionType switch {
-										RefractionTypeVariant.Thin => "thin",
-										RefractionTypeVariant.Thick => "thick",
-										_ => throw new ArgumentOutOfRangeException()
-									}
-								);
+							WriteIfFlagExists(ref emptySpaceSpan, "_anisotropy", (int) flag, (int) Flags.Anisotropy);
+							WriteIfFlagExists(ref emptySpaceSpan, "_emissive", (int) flag, (int) Flags.Emissive);
+							WriteIfFlagExists(ref emptySpaceSpan, "_normals", (int) flag, (int) Flags.Normals);
+							WriteIfFlagExists(ref emptySpaceSpan, "_orm", (int) flag, (int) Flags.Orm);
 
-								WriteIfFlagExists(ref emptySpaceSpan, "_anisotropy", (int) flag, (int) Flags.Anisotropy);
-								WriteIfFlagExists(ref emptySpaceSpan, "_emissive", (int) flag, (int) Flags.Emissive);
-								WriteIfFlagExists(ref emptySpaceSpan, "_normals", (int) flag, (int) Flags.Normals);
-								WriteIfFlagExists(ref emptySpaceSpan, "_orm", (int) flag, (int) Flags.Orm);
+							Write(ref emptySpaceSpan, ShaderResourceExtension);
 
-								Write(ref emptySpaceSpan, ShaderResourceExtension);
-
-								_resourceNameMap.Add(
-									(flag, vAlphaMode, vOrmReflectance, vRefractionQuality, vRefractionType),
-									new String(stringBuildSpace[..^emptySpaceSpan.Length])
-								);
-							}
+							_resourceNameMap.Add(
+								(flag, vAlphaMode, vRefractionQuality, vRefractionType),
+								new String(stringBuildSpace[..^emptySpaceSpan.Length])
+							);
 						}
 					}
 				}
 			}
 		}
 
-		public string GetShaderResourceName(Flags flags, AlphaModeVariant alphaMode, OrmReflectanceVariant ormReflectance, RefractionQualityVariant refractionQuality, RefractionTypeVariant refractionType) {
-			return _resourceNameMap[(flags, alphaMode, ormReflectance, refractionQuality, refractionType)];
+		public string GetShaderResourceName(Flags flags, AlphaModeVariant alphaMode, RefractionQualityVariant refractionQuality, RefractionTypeVariant refractionType) {
+			return _resourceNameMap[(flags, alphaMode, refractionQuality, refractionType)];
 		}
 
 		public ReadOnlySpan<byte> ParamSurfaceThickness => "surface_thickness"u8;

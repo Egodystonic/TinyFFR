@@ -44,13 +44,19 @@ public readonly ref struct TextureReadConfig : IConfigStruct<TextureReadConfig> 
 
 public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreationConfig> {
 	public bool GenerateMipMaps { get; init; } = true;
+	public bool IsLinearColorspace { get; init; } = true;
 	public bool FlipX { get; init; } = false;
 	public bool FlipY { get; init; } = false;
 	public bool InvertXRedChannel { get; init; } = false;
 	public bool InvertYGreenChannel { get; init; } = false;
 	public bool InvertZBlueChannel { get; init; } = false;
 	public bool InvertWAlphaChannel { get; init; } = false;
-	public bool IsLinearColorspace { get; init; } = true;
+	// TODO xmldoc these four properties set which channels will make up the final output channels
+	// TODO e.g. if XRedFinalOutputSource is 'G', the YGreen channel will be copied to XRed as the last step
+	public ColorChannel XRedFinalOutputSource { get; init; } = ColorChannel.R;
+	public ColorChannel YGreenFinalOutputSource { get; init; } = ColorChannel.G;
+	public ColorChannel ZBlueFinalOutputSource { get; init; } = ColorChannel.B;
+	public ColorChannel WAlphaFinalOutputSource { get; init; } = ColorChannel.A;
 	public ReadOnlySpan<char> Name { get; init; }
 
 	public TextureCreationConfig() { }
@@ -66,6 +72,10 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 			+	SerializationSizeOfBool() // InvertZBlueChannel
 			+	SerializationSizeOfBool() // InvertWAlphaChannel
 			+	SerializationSizeOfBool() // IsLinearColorspace
+			+	SerializationSizeOfInt() // XRedFinalOutputSource
+			+	SerializationSizeOfInt() // YGreenFinalOutputSource
+			+	SerializationSizeOfInt() // ZBlueFinalOutputSource
+			+	SerializationSizeOfInt() // WAlphaFinalOutputSource
 			+	SerializationSizeOfString(src.Name); // Name
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in TextureCreationConfig src) {
@@ -77,6 +87,10 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 		SerializationWriteBool(ref dest, src.InvertZBlueChannel);
 		SerializationWriteBool(ref dest, src.InvertWAlphaChannel);
 		SerializationWriteBool(ref dest, src.IsLinearColorspace);
+		SerializationWriteInt(ref dest, (int) src.XRedFinalOutputSource);
+		SerializationWriteInt(ref dest, (int) src.YGreenFinalOutputSource);
+		SerializationWriteInt(ref dest, (int) src.ZBlueFinalOutputSource);
+		SerializationWriteInt(ref dest, (int) src.WAlphaFinalOutputSource);
 		SerializationWriteString(ref dest, src.Name);
 	}
 	public static TextureCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
@@ -89,6 +103,10 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 			InvertZBlueChannel = SerializationReadBool(ref src),
 			InvertWAlphaChannel = SerializationReadBool(ref src),
 			IsLinearColorspace = SerializationReadBool(ref src),
+			XRedFinalOutputSource = (ColorChannel) SerializationReadInt(ref src),
+			YGreenFinalOutputSource = (ColorChannel) SerializationReadInt(ref src),
+			ZBlueFinalOutputSource = (ColorChannel) SerializationReadInt(ref src),
+			WAlphaFinalOutputSource = (ColorChannel) SerializationReadInt(ref src),
 			Name = SerializationReadString(ref src),
 		};
 	}

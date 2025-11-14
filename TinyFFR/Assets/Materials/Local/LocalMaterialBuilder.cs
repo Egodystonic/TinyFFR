@@ -1,11 +1,6 @@
 ﻿// Created on 2024-08-19 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-using System;
-using System.Globalization;
-using System.Reflection;
-using System.Resources;
-using System.Security;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment.Input;
@@ -15,31 +10,28 @@ using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Rendering.Local.Sync;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using System;
+using System.Globalization;
+using System.Reflection;
+using System.Reflection.Metadata;
+using System.Resources;
+using System.Security;
 using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConstants;
 
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IDisposable {
-	readonly record struct TextureData(XYPair<int> Dimensions);
+	readonly record struct TextureData(XYPair<int> Dimensions, TexelType TexelType);
 	const string DefaultMaterialName = "Unnamed Material";
 	const string DefaultTextureName = "Unnamed Texture";
-	const string DefaultColorMapName = "Default Color Map";
-	const string DefaultNormalMapName = "Default Normal Map";
-	const string DefaultOrmMapName = "Default Orm Map";
-	const string TestMaterialColorMapName = "Test Material Color Map";
-	const string TestMaterialNormalMapName = "Test Material Normal Map";
-	const string TestMaterialOrmMapName = "Test Material Orm Map";
 	const string TestMaterialName = "Test Material";
 	readonly TextureImplProvider _textureImplProvider;
 	readonly ArrayPoolBackedMap<ResourceHandle<Texture>, TextureData> _loadedTextures = new();
 	readonly ArrayPoolBackedMap<string, UIntPtr> _loadedShaderPackages = new();
 	readonly ArrayPoolBackedVector<ResourceHandle<Material>> _activeMaterials = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
-	readonly Lazy<Texture> _defaultColorMap;
-	readonly Lazy<Texture> _defaultNormalMap;
-	readonly Lazy<Texture> _defaultOrmMap;
-	readonly Lazy<Material> _testMaterial;
+	readonly Lazy<ResourceGroup> _testMaterialTextures;
 	bool _isDisposed = false;
 
 	// This is a private embedded 'delegating' object to help provide distinction between some default interface methods
@@ -50,6 +42,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		public TextureImplProvider(LocalMaterialBuilder owner) => _owner = owner;
 
 		public XYPair<int> GetDimensions(ResourceHandle<Texture> handle) => _owner.GetDimensions(handle);
+		public TexelType GetTexelType(ResourceHandle<Texture> handle) => _owner.GetTexelType(handle);
 		public string GetNameAsNewStringObject(ResourceHandle<Texture> handle) => _owner.GetNameAsNewStringObject(handle);
 		public int GetNameLength(ResourceHandle<Texture> handle) => _owner.GetNameLength(handle);
 		public void CopyName(ResourceHandle<Texture> handle, Span<char> destinationBuffer) => _owner.CopyName(handle, destinationBuffer);
@@ -58,22 +51,14 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		public override string ToString() => _owner.ToString();
 	}
 
-	public Texture DefaultColorMap => _defaultColorMap.Value;
-	public Texture DefaultNormalMap => _defaultNormalMap.Value;
-	public Texture DefaultOrmMap => _defaultOrmMap.Value;
-	public Material TestMaterial => _testMaterial.Value;
-
 	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config) {
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
 		_textureImplProvider = new(this);
-
-		_defaultColorMap = new(() => (this as IMaterialBuilder).CreateColorMap(name: DefaultColorMapName));
-		_defaultNormalMap = new(() => (this as IMaterialBuilder).CreateNormalMap(name: DefaultNormalMapName));
-		_defaultOrmMap = new(() => (this as IMaterialBuilder).CreateOrmMap(name: DefaultOrmMapName));
-		_testMaterial = new(CreateTestMaterial);
+		_testMaterialTextures = new(CreateTestMaterialTextures);
 	}
 
+	#region Textures
 	void ApplyConfig<TTexel>(Span<TTexel> buffer, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
 		const int MaxTextureWidthForStackRowSwap = 65_536;
 
@@ -97,12 +82,26 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 				rowSwapSpace.CopyTo(upperRow);
 			}
 		}
-		if (config.InvertXRedChannel || config.InvertYGreenChannel || config.InvertZBlueChannel || config.InvertWAlphaChannel) {
-			for (var i = 0; i < texelCount; ++i) {
-				if (config.InvertXRedChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(0);
-				if (config.InvertYGreenChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(1);
-				if (config.InvertZBlueChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(2);
-				if (config.InvertWAlphaChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(3);
+
+		var shouldSwizzle = config.XRedFinalOutputSource != ColorChannel.R
+						|| config.YGreenFinalOutputSource != ColorChannel.G
+						|| config.ZBlueFinalOutputSource != ColorChannel.B
+						|| config.WAlphaFinalOutputSource != ColorChannel.A;
+		var shouldPreprocess = config.InvertXRedChannel || config.InvertYGreenChannel || config.InvertZBlueChannel || config.InvertWAlphaChannel || shouldSwizzle;
+		if (!shouldPreprocess) return;
+
+		for (var i = 0; i < texelCount; ++i) {
+			if (config.InvertXRedChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(0);
+			if (config.InvertYGreenChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(1);
+			if (config.InvertZBlueChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(2);
+			if (config.InvertWAlphaChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(3);
+			if (shouldSwizzle) {
+				buffer[i] = buffer[i].SwizzlePresentChannels(
+					config.XRedFinalOutputSource,
+					config.YGreenFinalOutputSource,
+					config.ZBlueFinalOutputSource,
+					config.WAlphaFinalOutputSource
+				);
 			}
 		}
 	}
@@ -115,7 +114,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		if (generationConfig.Width * generationConfig.Height > preallocatedBuffer.Buffer.Length) {
 			throw new ArgumentException(
 				$"Given config width/height require a buffer of {generationConfig.Width}x{generationConfig.Height}={(generationConfig.Width * generationConfig.Height)} texels, " +
-				$"but supplied texel buffer only has {preallocatedBuffer.Buffer.Length} texels.", 
+				$"but supplied texel buffer only has {preallocatedBuffer.Buffer.Length} texels.",
 				nameof(config)
 			);
 		}
@@ -123,7 +122,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		var dataPointer = Unsafe.AsPointer(ref MemoryMarshal.GetReference(preallocatedBuffer.Buffer));
 		var dataLength = preallocatedBuffer.Buffer.Length * sizeof(TTexel);
-		
+
 		UIntPtr outHandle;
 		switch (TTexel.BlitType) {
 			case TexelType.Rgb24:
@@ -156,7 +155,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		var handle = (ResourceHandle<Texture>) outHandle;
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultTextureName);
-		_loadedTextures.Add(handle, new((generationConfig.Width, generationConfig.Height)));
+		_loadedTextures.Add(handle, new((generationConfig.Width, generationConfig.Height), TTexel.BlitType));
 		return HandleToInstance(handle);
 	}
 
@@ -187,99 +186,33 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		texels.CopyTo(buffer.Buffer);
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, in generationConfig, in config);
 	}
-
-	public Material CreateOpaqueMaterial(in StandardMaterialCreationConfig config) {
+	public void ProcessTexture<TTexel>(Span<TTexel> texels, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 
-		var shaderConstants = OpaqueMaterialShader;
-		var shaderPackageHandle = GetOrLoadShaderPackageHandle(shaderConstants.ResourceName);
-		CreateMaterial(
-			shaderPackageHandle,
-			out var outHandle
-		).ThrowIfFailure();
-		var handle = (ResourceHandle<Material>) outHandle;
+		var width = generationConfig.Width;
+		var height = generationConfig.Height;
 
-		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultMaterialName);
-		_activeMaterials.Add(handle);
-		var result = HandleToInstance(handle);
+		var texelCount = width * height;
+		if (texelCount > texels.Length) {
+			throw new ArgumentException(
+				$"Texture dimensions are {width}x{height}, requiring a texel span of length {texelCount} or greater, " +
+				$"but actual span length was {texels.Length}.",
+				nameof(texels)
+			);
+		}
+		texels = texels[..texelCount];
 
-		SetMaterialParameterTexture(
-			handle,
-			in ParamRef(shaderConstants.ParamColorMap),
-			ParamLen(shaderConstants.ParamColorMap),
-			config.ColorMap.Handle
-		).ThrowIfFailure();
-		_globals.DependencyTracker.RegisterDependency(result, config.ColorMap);
-
-		SetMaterialParameterTexture(
-			handle,
-			in ParamRef(shaderConstants.ParamNormalMap),
-			ParamLen(shaderConstants.ParamNormalMap),
-			config.NormalMap.Handle
-		).ThrowIfFailure();
-		_globals.DependencyTracker.RegisterDependency(result, config.NormalMap);
-
-		SetMaterialParameterTexture(
-			handle,
-			in ParamRef(shaderConstants.ParamOrmMap),
-			ParamLen(shaderConstants.ParamOrmMap),
-			config.OrmMap.Handle
-		).ThrowIfFailure();
-		_globals.DependencyTracker.RegisterDependency(result, config.OrmMap);
-
-		return result;
-	}
-
-	public Material CreateAlphaAwareMaterial(in AlphaAwareMaterialCreationConfig config) {
-		ThrowIfThisIsDisposed();
-		config.ThrowIfInvalid();
-
-		IAlphaAwareMaterialShader shaderConstants = config.Type switch {
-			AlphaMaterialType.ShadowMask => AlphaAwareMaskMaterialShader,
-			_ => AlphaAwareMaterialShader
-		};
-		var shaderPackageHandle = GetOrLoadShaderPackageHandle(shaderConstants.ResourceName);
-		CreateMaterial(
-			shaderPackageHandle,
-			out var outHandle
-		).ThrowIfFailure();
-		var handle = (ResourceHandle<Material>) outHandle;
-
-		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultMaterialName);
-		_activeMaterials.Add(handle);
-		var result = HandleToInstance(handle);
-
-		SetMaterialParameterTexture(
-			handle,
-			in ParamRef(shaderConstants.ParamColorMap),
-			ParamLen(shaderConstants.ParamColorMap),
-			config.ColorMap.Handle
-		).ThrowIfFailure();
-		_globals.DependencyTracker.RegisterDependency(result, config.ColorMap);
-
-		SetMaterialParameterTexture(
-			handle,
-			in ParamRef(shaderConstants.ParamNormalMap),
-			ParamLen(shaderConstants.ParamNormalMap),
-			config.NormalMap.Handle
-		).ThrowIfFailure();
-		_globals.DependencyTracker.RegisterDependency(result, config.NormalMap);
-
-		SetMaterialParameterTexture(
-			handle,
-			in ParamRef(shaderConstants.ParamOrmMap),
-			ParamLen(shaderConstants.ParamOrmMap),
-			config.OrmMap.Handle
-		).ThrowIfFailure();
-		_globals.DependencyTracker.RegisterDependency(result, config.OrmMap);
-
-		return result;
+		ApplyConfig(texels, in generationConfig, in config);
 	}
 
 	public XYPair<int> GetDimensions(ResourceHandle<Texture> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _loadedTextures[handle].Dimensions;
+	}
+	public TexelType GetTexelType(ResourceHandle<Texture> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _loadedTextures[handle].TexelType;
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<Texture> handle) {
@@ -294,17 +227,182 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_globals.CopyResourceName(handle.Ident, DefaultTextureName, destinationBuffer);
 	}
-	public string GetNameAsNewStringObject(ResourceHandle<Material> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return new String(_globals.GetResourceName(handle.Ident, DefaultMaterialName));
+	#endregion
+
+	#region Materials
+	ResourceGroup CreateTestMaterialTextures() {
+		var result = _globals.ResourceGroupProvider.CreateGroup(
+			disposeContainedResourcesWhenDisposed: true,
+			name: TestMaterialName + " Texture Group"
+		);
+
+		result.Add((this as IMaterialBuilder).CreateTexture(
+			TexturePattern.ChequerboardBordered(
+				new ColorVect(0.5f, 0.5f, 0.5f),
+				8,
+				new ColorVect(1f, 0f, 0f),
+				new ColorVect(0f, 1f, 0f),
+				new ColorVect(0f, 0f, 1f),
+				new ColorVect(1f, 1f, 1f),
+				repetitionCount: (8, 8),
+				cellResolution: 128
+			),
+			includeAlpha: false,
+			name: TestMaterialName + " Color Map"
+		));
+
+		result.Add((this as IMaterialBuilder).CreateTexture(
+			TexturePattern.Rectangles(
+				interiorSize: (128, 128),
+				borderSize: (8, 8),
+				paddingSize: (0, 0),
+				interiorValue: UnitSphericalCoordinate.ZeroZero,
+				borderRightValue: new UnitSphericalCoordinate(Orientation2D.Right.ToPolarAngle()!.Value, 45f),
+				borderTopValue: new UnitSphericalCoordinate(Orientation2D.Up.ToPolarAngle()!.Value, 45f),
+				borderLeftValue: new UnitSphericalCoordinate(Orientation2D.Left.ToPolarAngle()!.Value, 45f),
+				borderBottomValue: new UnitSphericalCoordinate(Orientation2D.Down.ToPolarAngle()!.Value, 45f),
+				paddingValue: UnitSphericalCoordinate.ZeroZero,
+				repetitions: (8, 8)
+			),
+			name: TestMaterialName + " Normal Map"
+		));
+
+		return result;
 	}
-	public int GetNameLength(ResourceHandle<Material> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceName(handle.Ident, DefaultMaterialName).Length;
+
+	public Material CreateTestMaterial() {
+		ThrowIfThisIsDisposed();
+		
+		var textureGroup = _testMaterialTextures.Value;
+		
+		return CreateStandardMaterial(new StandardMaterialCreationConfig {
+			ColorMap = textureGroup.Textures[0],
+			NormalMap = textureGroup.Textures[1],
+			Name = TestMaterialName
+		});
 	}
-	public void CopyName(ResourceHandle<Material> handle, Span<char> destinationBuffer) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		_globals.CopyResourceName(handle.Ident, DefaultMaterialName, destinationBuffer);
+
+	public Material CreateSimpleMaterial(in SimpleMaterialCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+
+		var shaderConstants = SimpleMaterialShader;
+
+		var flags = (SimpleMaterialShaderConstants.Flags) 0;
+		var alphaModeVariant = SimpleMaterialShaderConstants.AlphaModeVariant.AlphaOff;
+
+		if (config.EmissiveMap.HasValue) flags |= SimpleMaterialShaderConstants.Flags.Emissive;
+		if (config.ColorMap.TexelType == TexelType.Rgba32) {
+			alphaModeVariant = SimpleMaterialShaderConstants.AlphaModeVariant.AlphaOn;
+		}
+
+		var shaderResourceName = shaderConstants.GetShaderResourceName(flags, alphaModeVariant);
+		var result = InstantiateMaterial(shaderResourceName, config.Name);
+
+		ApplyMaterialParam(result, config.ColorMap, shaderConstants.ParamColorMap);
+		ApplyMaterialParam(result, config.EmissiveMap, shaderConstants.ParamEmissiveMap);
+
+		return result;
+	}
+
+	public Material CreateStandardMaterial(in StandardMaterialCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+
+		var shaderConstants = StandardMaterialShader;
+		
+		var flags = (StandardMaterialShaderConstants.Flags) 0;
+		var alphaModeVariant = StandardMaterialShaderConstants.AlphaModeVariant.AlphaOff;
+		var ormReflectanceVariant = StandardMaterialShaderConstants.OrmReflectanceVariant.Off;
+
+		if (config.AnisotropyMap.HasValue) flags |= StandardMaterialShaderConstants.Flags.Anisotropy;
+		if (config.ClearCoatMap.HasValue) flags |= StandardMaterialShaderConstants.Flags.ClearCoat;
+		if (config.EmissiveMap.HasValue) flags |= StandardMaterialShaderConstants.Flags.Emissive;
+		if (config.NormalMap.HasValue) flags |= StandardMaterialShaderConstants.Flags.Normals;
+		if (config.OcclusionRoughnessMetallicReflectanceMap.HasValue) {
+			flags |= StandardMaterialShaderConstants.Flags.Orm;
+			if (config.OcclusionRoughnessMetallicReflectanceMap.Value.TexelType == TexelType.Rgba32) {
+				ormReflectanceVariant = StandardMaterialShaderConstants.OrmReflectanceVariant.On;
+			}
+		}
+		if (config.ColorMap.TexelType == TexelType.Rgba32) {
+			alphaModeVariant = config.AlphaMode switch {
+				StandardMaterialAlphaMode.FullBlending => StandardMaterialShaderConstants.AlphaModeVariant.AlphaOnBlended,
+				_ => StandardMaterialShaderConstants.AlphaModeVariant.AlphaOn
+			};
+		}
+
+		var shaderResourceName = shaderConstants.GetShaderResourceName(flags, alphaModeVariant, ormReflectanceVariant);
+		var result = InstantiateMaterial(shaderResourceName, config.Name);
+
+		ApplyMaterialParam(result, config.ColorMap, shaderConstants.ParamColorMap);
+		ApplyMaterialParam(result, config.AnisotropyMap, shaderConstants.ParamAnisotropyMap);
+		ApplyMaterialParam(result, config.ClearCoatMap, shaderConstants.ParamClearCoatMap);
+		ApplyMaterialParam(result, config.EmissiveMap, shaderConstants.ParamEmissiveMap);
+		ApplyMaterialParam(result, config.NormalMap, shaderConstants.ParamNormalMap);
+		ApplyMaterialParam(result, config.OcclusionRoughnessMetallicReflectanceMap, shaderConstants.ParamOrmMap);
+
+		return result;
+	}
+
+	public Material CreateTransmissiveMaterial(in TransmissiveMaterialCreationConfig config) {
+		const float ThinThickRefractionModelCrossoverThickness = 0.2f;
+		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+
+		var shaderConstants = TransmissiveMaterialShader;
+
+		var flags = (TransmissiveMaterialShaderConstants.Flags) 0;
+		var alphaModeVariant = TransmissiveMaterialShaderConstants.AlphaModeVariant.AlphaOff;
+		var refractionQualityVariant = config.Quality switch {
+			TransmissiveMaterialQuality.SkyboxReflectionsAndRefraction => TransmissiveMaterialShaderConstants.RefractionQualityVariant.Low,
+			TransmissiveMaterialQuality.TrueReflectionsAndRefraction => TransmissiveMaterialShaderConstants.RefractionQualityVariant.High,
+			_ => TransmissiveMaterialShaderConstants.RefractionQualityVariant.Disabled
+		};
+		var refractionTypeVariant = TransmissiveMaterialShaderConstants.RefractionTypeVariant.Thin;
+
+		if (config.AnisotropyMap.HasValue) flags |= TransmissiveMaterialShaderConstants.Flags.Anisotropy;
+		if (config.EmissiveMap.HasValue) flags |= TransmissiveMaterialShaderConstants.Flags.Emissive;
+		if (config.NormalMap.HasValue) flags |= TransmissiveMaterialShaderConstants.Flags.Normals;
+		if (config.OcclusionRoughnessMetallicReflectanceMap.HasValue) {
+			flags |= TransmissiveMaterialShaderConstants.Flags.Orm;
+		}
+		if (config.ColorMap.TexelType == TexelType.Rgba32) {
+			alphaModeVariant = config.AlphaMode switch {
+				TransmissiveMaterialAlphaMode.FullBlending => TransmissiveMaterialShaderConstants.AlphaModeVariant.AlphaOnBlended,
+				_ => TransmissiveMaterialShaderConstants.AlphaModeVariant.AlphaOn
+			};
+		}
+		if (config.RefractionThickness >= ThinThickRefractionModelCrossoverThickness) {
+			refractionTypeVariant = TransmissiveMaterialShaderConstants.RefractionTypeVariant.Thick;
+		}
+
+		var shaderResourceName = shaderConstants.GetShaderResourceName(flags, alphaModeVariant, refractionQualityVariant, refractionTypeVariant);
+		var result = InstantiateMaterial(shaderResourceName, config.Name);
+
+		ApplyMaterialParam(result, config.ColorMap, shaderConstants.ParamColorMap);
+		ApplyMaterialParam(result, config.RefractionThickness, shaderConstants.ParamSurfaceThickness);
+		ApplyMaterialParam(result, config.AbsorptionTransmissionMap, shaderConstants.ParamAbsorptionTransmissionMap);
+		ApplyMaterialParam(result, config.AnisotropyMap, shaderConstants.ParamAnisotropyMap);
+		ApplyMaterialParam(result, config.EmissiveMap, shaderConstants.ParamEmissiveMap);
+		ApplyMaterialParam(result, config.NormalMap, shaderConstants.ParamNormalMap);
+		ApplyMaterialParam(result, config.OcclusionRoughnessMetallicReflectanceMap, shaderConstants.ParamOrmMap);
+
+		return result;
+	}
+
+	Material InstantiateMaterial(string shaderResourceName, ReadOnlySpan<char> resourceName) {
+		var shaderPackageHandle = GetOrLoadShaderPackageHandle(shaderResourceName);
+
+		CreateMaterial(
+			shaderPackageHandle,
+			out var outHandle
+		).ThrowIfFailure();
+		var handle = (ResourceHandle<Material>) outHandle;
+
+		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, resourceName, DefaultMaterialName);
+		_activeMaterials.Add(handle);
+		return HandleToInstance(handle);
 	}
 
 	UIntPtr GetOrLoadShaderPackageHandle(string resourceName) {
@@ -320,70 +418,40 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		return newHandle;
 	}
 
-	Material CreateTestMaterial() {
-		var colorMap = (this as IMaterialBuilder).CreateColorMap(
-			TexturePattern.ChequerboardBordered(
-				new ColorVect(0.5f, 0.5f, 0.5f),
-				8,
-				new ColorVect(1f, 0f, 0f),
-				new ColorVect(0f, 1f, 0f),
-				new ColorVect(0f, 0f, 1f),
-				new ColorVect(1f, 1f, 1f),
-				repetitionCount: (8, 8),
-				cellResolution: 128
-			),
-			name: TestMaterialColorMapName
-		);
-		var normalMap = (this as IMaterialBuilder).CreateNormalMap(
-			TexturePattern.Rectangles(
-				interiorSize: (128, 128),
-				borderSize: (8, 8),
-				paddingSize: (0, 0),
-				interiorValue: IMaterialBuilder.DefaultTexelNormal,
-				borderRightValue: new UnitSphericalCoordinate(Orientation2D.Right.ToPolarAngle()!.Value, 45f),
-				borderTopValue: new UnitSphericalCoordinate(Orientation2D.Up.ToPolarAngle()!.Value, 45f),
-				borderLeftValue: new UnitSphericalCoordinate(Orientation2D.Left.ToPolarAngle()!.Value, 45f),
-				borderBottomValue: new UnitSphericalCoordinate(Orientation2D.Down.ToPolarAngle()!.Value, 45f),
-				paddingValue: IMaterialBuilder.DefaultTexelNormal,
-				repetitions: (8, 8)
-			),
-			name: TestMaterialNormalMapName
-		);
-		var ormMap = (this as IMaterialBuilder).CreateOrmMap(
-			TexturePattern.ChequerboardBordered<Real>(
-				1f,
-				4,
-				1f,
-				1f,
-				1f,
-				1f,
-				repetitionCount: (8, 8),
-				cellResolution: 64
-			),
-			TexturePattern.ChequerboardBordered<Real>(
-				0.4f,
-				4,
-				0.7f,
-				0.3f,
-				0.5f,
-				1f,
-				repetitionCount: (32, 32),
-				cellResolution: 64
-			),
-			TexturePattern.ChequerboardBordered<Real>(
-				0f,
-				4,
-				0.7f,
-				0.3f,
-				1f,
-				0f,
-				repetitionCount: (24, 24),
-				cellResolution: 64
-			),
-			name: TestMaterialOrmMapName
-		);
-		return (this as IMaterialBuilder).CreateOpaqueMaterial(colorMap, normalMap, ormMap, TestMaterialName);
+	void ApplyMaterialParam(Material material, Texture? map, ReadOnlySpan<byte> param) {
+		if (!map.HasValue) return;
+		SetMaterialParameterTexture(
+			material.Handle,
+			in ParamRef(param),
+			ParamLen(param),
+			map.Value.Handle
+		).ThrowIfFailure();
+		_globals.DependencyTracker.RegisterDependency(material, map.Value);
 	}
+
+	void ApplyMaterialParam(Material material, float? val, ReadOnlySpan<byte> param) {
+		if (!val.HasValue) return;
+		SetMaterialParameterReal(
+			material.Handle,
+			in ParamRef(param),
+			ParamLen(param),
+			val.Value
+		).ThrowIfFailure();
+	}
+
+	public string GetNameAsNewStringObject(ResourceHandle<Material> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return new String(_globals.GetResourceName(handle.Ident, DefaultMaterialName));
+	}
+	public int GetNameLength(ResourceHandle<Material> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceName(handle.Ident, DefaultMaterialName).Length;
+	}
+	public void CopyName(ResourceHandle<Material> handle, Span<char> destinationBuffer) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_globals.CopyResourceName(handle.Ident, DefaultMaterialName, destinationBuffer);
+	}
+	#endregion
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "load_texture_rgb_24")]
@@ -434,6 +502,14 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ref readonly byte utf8ParameterNameBuffer,
 		int parameterNameBufferLength,
 		UIntPtr textureHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_material_parameter_real")]
+	static extern InteropResult SetMaterialParameterReal(
+		UIntPtr materialHandle,
+		ref readonly byte utf8ParameterNameBuffer,
+		int parameterNameBufferLength,
+		float val
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_material")]
@@ -488,6 +564,10 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			_activeMaterials.Dispose();
 			_loadedTextures.Dispose();
 			_loadedShaderPackages.Dispose();
+
+			if (_testMaterialTextures.IsValueCreated) {
+				_testMaterialTextures.Value.Dispose(disposeContainedResources: true);
+			}
 		}
 		finally {
 			_isDisposed = true;

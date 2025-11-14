@@ -21,6 +21,12 @@ public readonly record struct TexelRgb24(byte R, byte G, byte B) : IThreeByteCha
 		2 => B,
 		_ => throw new ArgumentOutOfRangeException(nameof(index), index, "Index must be in range 0 - 2.")
 	};
+	public byte this[ColorChannel channel] => channel switch {
+		ColorChannel.R => R,
+		ColorChannel.G => G,
+		ColorChannel.B => B,
+		_ => throw new ArgumentOutOfRangeException(nameof(channel), channel, "Only R, G, B channels included in this texel type.")
+	};
 
 	public TexelRgb24(TexelRgba32 rgba) : this(rgba.R, rgba.G, rgba.B) { }
 	public TexelRgb24(ColorVect color) : this(0, 0, 0) {
@@ -58,5 +64,22 @@ public readonly record struct TexelRgb24(byte R, byte G, byte B) : IThreeByteCha
 			2 => this with { B = (byte) (Byte.MaxValue - B) },
 			_ => this
 		};
+	}
+
+	public TexelRgb24 SwizzlePresentChannels(ColorChannel redSource, ColorChannel greenSource, ColorChannel blueSource, ColorChannel alphaSource) {
+		static byte? GetColorChannel(TexelRgb24 @this, ColorChannel channel) {
+			return channel switch {
+				ColorChannel.R => @this[0],
+				ColorChannel.G => @this[1],
+				ColorChannel.B => @this[2],
+				_ => null
+			};
+		}
+
+		return new(
+			GetColorChannel(this, redSource) ?? R,
+			GetColorChannel(this, greenSource) ?? G,
+			GetColorChannel(this, blueSource) ?? B
+		);
 	}
 }

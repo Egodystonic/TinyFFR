@@ -77,13 +77,18 @@ fragment {
 #endoption
 
 #if Orm
-		material.ambientOcclusion = texture(materialParams_orm_map, uv0).r;
-		material.roughness = texture(materialParams_orm_map, uv0).g;
-		material.metallic = texture(materialParams_orm_map, uv0).b;
 #option OrmReflectance
 #variant On
-		material.reflectance = texture(materialParams_orm_map, uv0).a;
+		vec4 ormr = texture(materialParams_orm_map, uv0).rgba;
+		material.ambientOcclusion = ormr.r;
+		material.roughness = ormr.g;
+		material.metallic = ormr.b;
+		material.reflectance = ormr.a;
 #variant Off
+		vec3 orm = texture(materialParams_orm_map, uv0).rgb;
+		material.ambientOcclusion = orm.r;
+		material.roughness = orm.g;
+		material.metallic = orm.b;
 #endoption
 #endif Orm
 	}

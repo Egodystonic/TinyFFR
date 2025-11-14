@@ -151,6 +151,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		public bool IsDisposed(ResourceHandle<Texture> handle) => TryGetOwningBuffer(handle) == null;
 		public void Dispose(ResourceHandle<Texture> handle) { /* no-op */ }
 		public XYPair<int> GetDimensions(ResourceHandle<Texture> handle) => _owner._loadedBuffers[GetOwningBuffer(handle)].TextureDimensions.Cast<int>();
+		public TexelType GetTexelType(ResourceHandle<Texture> handle) => TexelType.Rgba32;
 	}
 
 	public LocalRendererBuilder(LocalFactoryGlobalObjectGroup globals, RendererBuilderConfig config) {
