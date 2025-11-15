@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreationConfig> {
 	public bool GenerateMipMaps { get; init; } = true;
-	public bool IsLinearColorspace { get; init; } = true;
+	public required bool IsLinearColorspace { get; init; }
 	public TexelType TexelType { get; init; } = TexelType.Rgb24;
 	public ReadOnlySpan<char> Name { get; init; }
 	public TextureProcessingConfig ProcessingToApply { get; init; } = TextureProcessingConfig.None;

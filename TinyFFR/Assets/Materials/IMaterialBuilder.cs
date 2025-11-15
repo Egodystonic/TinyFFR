@@ -64,6 +64,7 @@ public unsafe interface IMaterialBuilder {
 
 		outConfig = new TextureCreationConfig {
 			GenerateMipMaps = dimensions.X > 1 || dimensions.Y > 1,
+			IsLinearColorspace = typeof(T) != typeof(ColorVect),
 			Name = name
 		};
 		outGenerationConfig = new TextureGenerationConfig { Dimensions = dimensions };
@@ -141,6 +142,7 @@ public unsafe interface IMaterialBuilder {
 
 		var config = new TextureCreationConfig {
 			GenerateMipMaps = dimensions.X > 1 || dimensions.Y > 1,
+			IsLinearColorspace = true,
 			Name = name
 		};
 		var genConfig = new TextureGenerationConfig { Dimensions = dimensions };
@@ -190,6 +192,7 @@ public unsafe interface IMaterialBuilder {
 
 		var config = new TextureCreationConfig {
 			GenerateMipMaps = dimensions.X > 1 || dimensions.Y > 1,
+			IsLinearColorspace = true,
 			Name = name
 		};
 		var genConfig = new TextureGenerationConfig { Dimensions = dimensions };

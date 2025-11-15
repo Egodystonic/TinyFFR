@@ -51,7 +51,9 @@ public interface IAssetLoader {
 	IMaterialBuilder MaterialBuilder { get; }
 
 	#region Load / Read Texture
-	Texture LoadTexture(ReadOnlySpan<char> filePath, bool isLinearColorspace = true, ReadOnlySpan<char> name = default) {
+	Texture LoadColorMapTexture(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) => LoadTexture(filePath, isLinearColorspace: false, name);
+	Texture LoadDataMapTexture(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) => LoadTexture(filePath, isLinearColorspace: true, name);
+	Texture LoadTexture(ReadOnlySpan<char> filePath, bool isLinearColorspace, ReadOnlySpan<char> name = default) {
 		return LoadTexture(
 			filePath, 
 			new TextureCreationConfig {

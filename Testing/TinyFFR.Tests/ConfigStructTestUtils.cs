@@ -56,8 +56,16 @@ static class ConfigStructTestUtils {
 		}
 		public ObjectAssertionBuilder<T> Resource<TValue>(TValue v) where TValue : IResource<TValue> {
 			var buf = new byte[IResource.SerializedLengthBytes];
+
 			v.AllocateGcHandleAndSerializeResource(buf);
 			_resources.Add((v, _data.Count));
+
+			_data.AddRange(buf);
+			return this;
+		}
+		public ObjectAssertionBuilder<T> ZeroResource() {
+			var buf = new byte[IResource.SerializedLengthBytes];
+
 			_data.AddRange(buf);
 			return this;
 		}

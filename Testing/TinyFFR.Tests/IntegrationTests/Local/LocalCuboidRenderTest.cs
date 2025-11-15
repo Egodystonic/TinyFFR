@@ -1,6 +1,7 @@
 ﻿// Created on 2024-01-22 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using System.Diagnostics;
 using System.Numerics;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
@@ -41,6 +42,7 @@ class LocalCuboidRenderTest {
 
 	[Test]
 	public void Execute() {
+		var sw = Stopwatch.StartNew();
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Cuboid Render Test");

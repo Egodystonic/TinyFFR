@@ -84,20 +84,21 @@ class LocalAssetImportTest {
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Asset Import Test");
 		window.SetIcon(CommonTestAssets.FindAsset(KnownTestAsset.EgodystonicLogo));
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
-		using var albedo = factory.AssetLoader.LoadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex));
-		using var normal = factory.AssetLoader.LoadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex));
+		using var albedo = factory.AssetLoader.LoadColorMapTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex));
+		using var normal = factory.AssetLoader.LoadDataMapTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex));
 		using var orm = factory.AssetLoader.LoadCombinedTexture(
 			aFilePath: CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex),
 			aProcessingConfig: TextureProcessingConfig.None,
 			bFilePath: CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex),
 			bProcessingConfig: TextureProcessingConfig.None,
+			cFilePath: CommonTestAssets.FindAsset(KnownTestAsset.WhiteTex),
+			cProcessingConfig: TextureProcessingConfig.None,
 			combinationConfig: new(
 				new(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
 				new(TextureCombinationSourceTexture.TextureB, ColorChannel.R),
-				new(TextureCombinationSourceTexture.TextureB, ColorChannel.R)
-				// TODO white texture in test dir; also I want to investigate the colorspace argument's effect on non-color textures -- I think we need separate load overloads that default to either or to make IsLinearColorspace required
+				new(TextureCombinationSourceTexture.TextureC, ColorChannel.R)
 			),
-			finalOutputConfig: new TextureCreationConfig { TexelType = TexelType.Rgb24, IsLinearColorspace = false, ProcessingToApply = new() { InvertYGreenChannel = true } }
+			finalOutputConfig: new TextureCreationConfig { TexelType = TexelType.Rgb24, IsLinearColorspace = false, ProcessingToApply = new() { InvertYGreenChannel = true, InvertZBlueChannel = true } }
 		);
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(albedo, normal, orm);
 		using var mesh = factory.AssetLoader.LoadMesh(

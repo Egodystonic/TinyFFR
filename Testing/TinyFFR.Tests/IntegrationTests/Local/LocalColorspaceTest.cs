@@ -39,10 +39,10 @@ class LocalColorspaceTest {
 			isLinearColorspace: false,
 			name: "srgbWallTex"
 		);
-		using var wallNormals = factory.AssetLoader.LoadTexture(
+		using var wallNormals = factory.AssetLoader.LoadDataMapTexture(
 			CommonTestAssets.FindAsset(KnownTestAsset.BrickNormalTex)
 		);
-		using var wallOrm = factory.AssetLoader.LoadTexture(
+		using var wallOrm = factory.AssetLoader.LoadDataMapTexture(
 			CommonTestAssets.FindAsset(KnownTestAsset.BrickOrmTex)
 		);
 
