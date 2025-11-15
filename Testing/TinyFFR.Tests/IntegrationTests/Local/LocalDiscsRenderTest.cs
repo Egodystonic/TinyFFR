@@ -40,15 +40,16 @@ class LocalDiscsRenderTest {
 			);
 		} 
 		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(polyGroup, new Transform2D(scaling: new(2f), rotation: 45f));
-		using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(
-			TexturePattern.Lines(ColorVect.FromStandardColor(StandardColor.White), ColorVect.FromStandardColor(StandardColor.Silver), true, perturbationMagnitude: 0.1f)
+		using var colorMap = factory.AssetLoader.MaterialBuilder.CreateTexture(
+			TexturePattern.Lines(ColorVect.FromStandardColor(StandardColor.White), ColorVect.FromStandardColor(StandardColor.Silver), true, perturbationMagnitude: 0.1f), includeAlpha: false
 		);
-		using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap();
-		using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(
-			metallicPattern: TexturePattern.Lines<Real>(0f, 1f, false, perturbationMagnitude: 0.1f),
-			roughnessPattern: TexturePattern.Lines<Real>(1f, 0f, false, perturbationMagnitude: 0.1f)
+		using var normalMap = factory.AssetLoader.MaterialBuilder.CreateTexture(TexturePattern.PlainFill(UnitSphericalCoordinate.ZeroZero));
+		using var ormMap = factory.AssetLoader.MaterialBuilder.CreateTexture(
+			TexturePattern.Lines<Real>(0f, 1f, false, perturbationMagnitude: 0.1f),
+			TexturePattern.Lines<Real>(1f, 0f, false, perturbationMagnitude: 0.1f),
+			TexturePattern.PlainFill<Real>(0f)
 		);
-		using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap, normalMap, ormMap);
+		using var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(colorMap, normalMap, ormMap);
 		using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 5.2f);
 		using var light = factory.LightBuilder.CreateSpotLight(camera.Position, camera.ViewDirection, color: ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f), coneAngle: 25f, intenseBeamAngle: 10f, brightness: 0.4f, highQuality: true);
 		using var sunlight = factory.LightBuilder.CreateDirectionalLight(new Direction(0f, 0f, -1f), StandardColor.LightingSunRiseSet, showSunDisc: true, brightness: 1f);

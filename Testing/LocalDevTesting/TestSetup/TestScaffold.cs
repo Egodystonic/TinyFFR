@@ -148,9 +148,11 @@ static class TestScaffold {
 	}
 
 	static ModelInstance CreateCube(ILocalTinyFfrFactory factory, List<IDisposable> disposables) {
+		var testMat = factory.MaterialBuilder.CreateTestMaterial();
 		var mesh = factory.MeshBuilder.CreateMesh(new Cuboid(1f));
+		disposables.Add(testMat);
 		disposables.Add(mesh);
-		return factory.ObjectBuilder.CreateModelInstance(mesh, factory.MaterialBuilder.TestMaterial);
+		return factory.ObjectBuilder.CreateModelInstance(mesh, testMat);
 	}
 
 	static ApplicationLoop CreateDefaultLoop(ILocalTinyFfrFactory factory) {

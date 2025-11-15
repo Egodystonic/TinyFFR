@@ -46,26 +46,39 @@ class MaterialConfigsTest {
 	}
 
 	[Test]
-	public void ShouldCorrectlyConvertOpaqueMaterialCreationConfigToAndFromHeapStorageFormat() {
+	public void ShouldCorrectlyConvertStandardMaterialCreationConfigToAndFromHeapStorageFormat() {
 		var colorTexImplSub = Substitute.For<ITextureImplProvider>();
 		colorTexImplSub.IsDisposed(Arg.Any<ResourceHandle<Texture>>()).Returns(false);
 		var testConfigA = new StandardMaterialCreationConfig {
 			Name = "Aa Aa",
 			ColorMap = new Texture(111, colorTexImplSub),
-			NormalMap = new Texture(222, colorTexImplSub),
-			OrmMap = new Texture(333, colorTexImplSub)
+			NormalMap = null,
+			OcclusionRoughnessMetallicMap = new Texture(333, colorTexImplSub),
+			AnisotropyMap = null,
+			EmissiveMap = new Texture(5555, colorTexImplSub),
+			ClearCoatMap = null,
+			AlphaMode = StandardMaterialAlphaMode.FullBlending
 		};
 		var testConfigB = new StandardMaterialCreationConfig {
 			Name = "BBBbbb",
 			ColorMap = new Texture(1111, colorTexImplSub),
 			NormalMap = new Texture(2222, colorTexImplSub),
-			OrmMap = new Texture(3333, colorTexImplSub)
+			OcclusionRoughnessMetallicMap = null,
+			AnisotropyMap = new Texture(4444, colorTexImplSub),
+			EmissiveMap = null,
+			ClearCoatMap = new Texture(6666, colorTexImplSub),
+			AlphaMode = StandardMaterialAlphaMode.MaskOnly
 		};
 
 		void CompareConfigs(StandardMaterialCreationConfig expected, StandardMaterialCreationConfig actual) {
 			Assert.AreEqual(expected.ColorMap, actual.ColorMap);
 			Assert.AreEqual(expected.NormalMap, actual.NormalMap);
-			Assert.AreEqual(expected.OrmMap, actual.OrmMap);
+			Assert.AreEqual(expected.OcclusionRoughnessMetallicMap, actual.OcclusionRoughnessMetallicMap);
+			Assert.AreEqual(expected.OcclusionRoughnessMetallicReflectanceMap, actual.OcclusionRoughnessMetallicReflectanceMap);
+			Assert.AreEqual(expected.AnisotropyMap, actual.AnisotropyMap);
+			Assert.AreEqual(expected.EmissiveMap, actual.EmissiveMap);
+			Assert.AreEqual(expected.ClearCoatMap, actual.ClearCoatMap);
+			Assert.AreEqual(expected.AlphaMode, actual.AlphaMode);
 			CompareBaseConfigs(expected.BaseConfig, actual.BaseConfig);
 		}
 
@@ -74,78 +87,137 @@ class MaterialConfigsTest {
 
 		AssertHeapSerializationWithObjects<StandardMaterialCreationConfig>()
 			.Resource(testConfigA.ColorMap)
-			.Resource(testConfigA.NormalMap)
-			.Resource(testConfigA.OrmMap)
+			.Bool(false)
+			.Resource(new Texture(0, null!))
+			.Bool(true)
+			.Resource(testConfigA.OcclusionRoughnessMetallicMap.Value)
+			.Bool(false)
+			.Resource(new Texture(0, null!))
+			.Bool(true)
+			.Resource(testConfigA.EmissiveMap.Value)
+			.Bool(false)
+			.Resource(new Texture(0, null!))
+			.Int((int) StandardMaterialAlphaMode.FullBlending)
 			.SubConfig(testConfigA.BaseConfig)
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<StandardMaterialCreationConfig>()
 			.Resource(testConfigB.ColorMap)
-			.Resource(testConfigB.NormalMap)
-			.Resource(testConfigB.OrmMap)
+			.Bool(true)
+			.Resource(testConfigB.NormalMap.Value)
+			.Bool(false)
+			.Resource(new Texture(0, null!))
+			.Bool(true)
+			.Resource(testConfigB.AnisotropyMap.Value)
+			.Bool(false)
+			.Resource(new Texture(0, null!))
+			.Bool(true)
+			.Resource(testConfigB.ClearCoatMap.Value)
+			.Int((int) StandardMaterialAlphaMode.MaskOnly)
 			.SubConfig(testConfigB.BaseConfig)
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<StandardMaterialCreationConfig>()
 			.Including(nameof(StandardMaterialCreationConfig.ColorMap))
 			.Including(nameof(StandardMaterialCreationConfig.NormalMap))
-			.Including(nameof(StandardMaterialCreationConfig.OrmMap))
-			.Including(nameof(StandardMaterialCreationConfig.BaseConfig))
+			.Including(nameof(StandardMaterialCreationConfig.OcclusionRoughnessMetallicMap))
+			.Including(nameof(StandardMaterialCreationConfig.OcclusionRoughnessMetallicReflectanceMap))
+			.Including(nameof(StandardMaterialCreationConfig.AnisotropyMap))
+			.Including(nameof(StandardMaterialCreationConfig.EmissiveMap))
+			.Including(nameof(StandardMaterialCreationConfig.ClearCoatMap))
+			.Including(nameof(StandardMaterialCreationConfig.AlphaMode))
 			.Including(nameof(StandardMaterialCreationConfig.Name));
 	}
 
 	[Test]
-	public void ShouldCorrectlyConvertAlphaAwareMaterialCreationConfigToAndFromHeapStorageFormat() {
+	public void ShouldCorrectlyConvertTransmissiveMaterialCreationConfigToAndFromHeapStorageFormat() {
 		var colorTexImplSub = Substitute.For<ITextureImplProvider>();
 		colorTexImplSub.IsDisposed(Arg.Any<ResourceHandle<Texture>>()).Returns(false);
-		var testConfigA = new AlphaAwareMaterialCreationConfig {
+		var testConfigA = new TransmissiveMaterialCreationConfig {
 			Name = "Aa Aa",
 			ColorMap = new Texture(111, colorTexImplSub),
-			NormalMap = new Texture(222, colorTexImplSub),
-			OrmMap = new Texture(333, colorTexImplSub),
-			Type = AlphaMaterialType.ShadowMask
+			AbsorptionTransmissionMap = new Texture(11, colorTexImplSub),
+			NormalMap = null,
+			OcclusionRoughnessMetallicReflectanceMap = new Texture(333, colorTexImplSub),
+			AnisotropyMap = null,
+			EmissiveMap = new Texture(5555, colorTexImplSub),
+			RefractionThickness = 1f,
+			Quality = TransmissiveMaterialQuality.TrueReflectionsAndRefraction,
+			AlphaMode = TransmissiveMaterialAlphaMode.FullBlending
 		};
-		var testConfigB = new AlphaAwareMaterialCreationConfig {
+		var testConfigB = new TransmissiveMaterialCreationConfig {
 			Name = "BBBbbb",
 			ColorMap = new Texture(1111, colorTexImplSub),
+			AbsorptionTransmissionMap = new Texture(111, colorTexImplSub),
 			NormalMap = new Texture(2222, colorTexImplSub),
-			OrmMap = new Texture(3333, colorTexImplSub),
-			Type = AlphaMaterialType.Standard
+			OcclusionRoughnessMetallicReflectanceMap = null,
+			AnisotropyMap = new Texture(4444, colorTexImplSub),
+			EmissiveMap = null,
+			RefractionThickness = 0.1f,
+			Quality = TransmissiveMaterialQuality.SkyboxReflectionsAndRefraction,
+			AlphaMode = TransmissiveMaterialAlphaMode.MaskOnly
 		};
 
-		void CompareConfigs(AlphaAwareMaterialCreationConfig expected, AlphaAwareMaterialCreationConfig actual) {
+		void CompareConfigs(TransmissiveMaterialCreationConfig expected, TransmissiveMaterialCreationConfig actual) {
 			Assert.AreEqual(expected.ColorMap, actual.ColorMap);
+			Assert.AreEqual(expected.AbsorptionTransmissionMap, actual.AbsorptionTransmissionMap);
 			Assert.AreEqual(expected.NormalMap, actual.NormalMap);
-			Assert.AreEqual(expected.OrmMap, actual.OrmMap);
-			Assert.AreEqual(expected.Type, actual.Type);
+			Assert.AreEqual(expected.OcclusionRoughnessMetallicReflectanceMap, actual.OcclusionRoughnessMetallicReflectanceMap);
+			Assert.AreEqual(expected.AnisotropyMap, actual.AnisotropyMap);
+			Assert.AreEqual(expected.EmissiveMap, actual.EmissiveMap);
+			Assert.AreEqual(expected.RefractionThickness, actual.RefractionThickness);
+			Assert.AreEqual(expected.Quality, actual.Quality);
+			Assert.AreEqual(expected.AlphaMode, actual.AlphaMode);
 			CompareBaseConfigs(expected.BaseConfig, actual.BaseConfig);
 		}
 
 		AssertRoundTripHeapStorage(testConfigA, CompareConfigs);
 		AssertRoundTripHeapStorage(testConfigB, CompareConfigs);
 
-		AssertHeapSerializationWithObjects<AlphaAwareMaterialCreationConfig>()
+		AssertHeapSerializationWithObjects<TransmissiveMaterialCreationConfig>()
 			.Resource(testConfigA.ColorMap)
-			.Resource(testConfigA.NormalMap)
-			.Resource(testConfigA.OrmMap)
-			.Int((int) testConfigA.Type)
+			.Resource(testConfigA.AbsorptionTransmissionMap)
+			.Bool(false)
+			.Resource(new Texture(0, null!))
+			.Bool(true)
+			.Resource(testConfigA.OcclusionRoughnessMetallicReflectanceMap.Value)
+			.Bool(false)
+			.Resource(new Texture(0, null!))
+			.Bool(true)
+			.Resource(testConfigA.EmissiveMap.Value)
+			.Float(1f)
+			.Int((int) TransmissiveMaterialQuality.TrueReflectionsAndRefraction)
+			.Int((int) TransmissiveMaterialAlphaMode.FullBlending)
 			.SubConfig(testConfigA.BaseConfig)
 			.For(testConfigA);
 
-		AssertHeapSerializationWithObjects<AlphaAwareMaterialCreationConfig>()
+		AssertHeapSerializationWithObjects<TransmissiveMaterialCreationConfig>()
 			.Resource(testConfigB.ColorMap)
-			.Resource(testConfigB.NormalMap)
-			.Resource(testConfigB.OrmMap)
-			.Int((int) testConfigB.Type)
+			.Resource(testConfigB.AbsorptionTransmissionMap)
+			.Bool(true)
+			.Resource(testConfigB.NormalMap.Value)
+			.Bool(false)
+			.Resource(new Texture(0, null!))
+			.Bool(true)
+			.Resource(testConfigB.AnisotropyMap.Value)
+			.Bool(false)
+			.Resource(new Texture(0, null!))
+			.Float(0.1f)
+			.Int((int) TransmissiveMaterialQuality.SkyboxReflectionsAndRefraction)
+			.Int((int) TransmissiveMaterialAlphaMode.MaskOnly)
 			.SubConfig(testConfigB.BaseConfig)
 			.For(testConfigB);
 
-		AssertPropertiesAccountedFor<AlphaAwareMaterialCreationConfig>()
-			.Including(nameof(AlphaAwareMaterialCreationConfig.ColorMap))
-			.Including(nameof(AlphaAwareMaterialCreationConfig.NormalMap))
-			.Including(nameof(AlphaAwareMaterialCreationConfig.OrmMap))
-			.Including(nameof(AlphaAwareMaterialCreationConfig.Type))
-			.Including(nameof(AlphaAwareMaterialCreationConfig.BaseConfig))
-			.Including(nameof(AlphaAwareMaterialCreationConfig.Name));
+		AssertPropertiesAccountedFor<TransmissiveMaterialCreationConfig>()
+			.Including(nameof(TransmissiveMaterialCreationConfig.ColorMap))
+			.Including(nameof(TransmissiveMaterialCreationConfig.AbsorptionTransmissionMap))
+			.Including(nameof(TransmissiveMaterialCreationConfig.NormalMap))
+			.Including(nameof(TransmissiveMaterialCreationConfig.OcclusionRoughnessMetallicReflectanceMap))
+			.Including(nameof(TransmissiveMaterialCreationConfig.AnisotropyMap))
+			.Including(nameof(TransmissiveMaterialCreationConfig.EmissiveMap))
+			.Including(nameof(TransmissiveMaterialCreationConfig.RefractionThickness))
+			.Including(nameof(TransmissiveMaterialCreationConfig.Quality))
+			.Including(nameof(TransmissiveMaterialCreationConfig.AlphaMode))
+			.Including(nameof(TransmissiveMaterialCreationConfig.Name));
 	}
 }

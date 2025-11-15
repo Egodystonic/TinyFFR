@@ -60,8 +60,8 @@ class ImageUtilsTest {
 		foreach (var kvp in bitmaps) {
 			try {
 				var metadata = factory.AssetLoader.ReadTextureMetadata(kvp.Key);
-				Assert.AreEqual(InputWidth, metadata.Width);
-				Assert.AreEqual(InputHeight, metadata.Height);
+				Assert.AreEqual(InputWidth, metadata.Dimensions.X);
+				Assert.AreEqual(InputHeight, metadata.Dimensions.Y);
 				factory.AssetLoader.ReadTexture(kvp.Key, destBuffer.AsSpan());
 				if (Path.GetFileName(kvp.Key).StartsWith("rgb_", StringComparison.OrdinalIgnoreCase)) {
 					Assert.IsTrue(destBuffer.SequenceEqual(expectations[kvp.Value.Config with { IncludeAlphaChannel = false }]));

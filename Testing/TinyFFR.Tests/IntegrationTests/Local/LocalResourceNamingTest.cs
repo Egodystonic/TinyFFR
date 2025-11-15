@@ -31,9 +31,12 @@ class LocalResourceNamingTest {
 	public void Execute() {
 		// ReSharper disable AccessToDisposedClosure Factory will be disposed only after closure is no longer in use
 		using var factory = new LocalTinyFfrFactory();
+		using var tex = factory.MaterialBuilder.CreateTexture(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false);
+		using var mat = factory.MaterialBuilder.CreateStandardMaterial(tex);
+		
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr), name: n));
-		TestNameStorageAndRetrieval(n => factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(name: n));
-		TestNameStorageAndRetrieval(n => factory.AssetLoader.MaterialBuilder.CreateColorMap(ColorVect.Black, name: n));
+		TestNameStorageAndRetrieval(n => factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex, name: n));
+		TestNameStorageAndRetrieval(n => factory.AssetLoader.MaterialBuilder.CreateTexture(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false, name: n));
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f), name: n));
 		TestNameStorageAndRetrieval(n => factory.ApplicationLoopBuilder.CreateLoop(name: n));
 		if (factory.DisplayDiscoverer.Primary is { } primaryDisplay) {
@@ -49,7 +52,7 @@ class LocalResourceNamingTest {
 		TestNameStorageAndRetrieval(n => factory.LightBuilder.CreateSpotLight(name: n));
 		TestNameStorageAndRetrieval(n => factory.SceneBuilder.CreateScene(name: n));
 		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f));
-		TestNameStorageAndRetrieval(n => factory.ObjectBuilder.CreateModelInstance(mesh, factory.AssetLoader.MaterialBuilder.TestMaterial, name: n));
+		TestNameStorageAndRetrieval(n => factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: n));
 		TestNameStorageAndRetrieval(n => factory.RendererBuilder.CreateRenderOutputBuffer(name: n));
 		// ReSharper restore AccessToDisposedClosure
 	}

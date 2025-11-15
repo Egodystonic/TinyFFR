@@ -24,12 +24,12 @@ class LocalCuboidRenderTest {
 	public void SetUpTest() {
 		_colorPattern = TexturePattern.ChequerboardBordered(new ColorVect(1f, 1f, 1f), 2, new ColorVect(1f, 0f, 0f), new ColorVect(0f, 1f, 0f), new ColorVect(0f, 0f, 1f), new ColorVect(0.5f, 0.5f, 0.5f), (4, 4));
 		_normalPattern = TexturePattern.Circles(
-			IMaterialBuilder.DefaultTexelNormal,
+			UnitSphericalCoordinate.ZeroZero,
 			new UnitSphericalCoordinate(0f, 45f),
 			new UnitSphericalCoordinate(90f, 45f),
 			new UnitSphericalCoordinate(180f, 45f),
 			new UnitSphericalCoordinate(270f, 45f),
-			IMaterialBuilder.DefaultTexelNormal
+			UnitSphericalCoordinate.ZeroZero
 		);
 		_occlusionPattern = TexturePattern.Chequerboard<Real>(0.5f, 1f, 0.8f, (27, 27));
 		_roughnessPattern = TexturePattern.Chequerboard<Real>(0.8f, 0.4f, 1f, (27, 27));
@@ -46,10 +46,10 @@ class LocalCuboidRenderTest {
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Cuboid Render Test");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
-		using var colorMap = factory.AssetLoader.MaterialBuilder.CreateColorMap(_colorPattern);
-		using var normalMap = factory.AssetLoader.MaterialBuilder.CreateNormalMap(_normalPattern);
-		using var ormMap = factory.AssetLoader.MaterialBuilder.CreateOrmMap(_occlusionPattern, _roughnessPattern, _metallicPattern);
-		using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(colorMap, normalMap, ormMap);
+		using var colorMap = factory.AssetLoader.MaterialBuilder.CreateTexture(_colorPattern, includeAlpha: false);
+		using var normalMap = factory.AssetLoader.MaterialBuilder.CreateTexture(_normalPattern);
+		using var ormMap = factory.AssetLoader.MaterialBuilder.CreateTexture(_occlusionPattern, _roughnessPattern, _metallicPattern);
+		using var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(colorMap, normalMap, ormMap);
 		using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 2.2f);
 		using var light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f));
 		var backdropColor = new ColorVect(0f, 1f, 0.7f);

@@ -35,9 +35,9 @@ class LocalResourceGroupTest {
 		var cameras = new Camera[4];
 		for (var i = 0; i < cameras.Length; ++i) cameras[i] = factory.CameraBuilder.CreateCamera(new Location(i, i, i));
 
-		using var tex = factory.AssetLoader.MaterialBuilder.CreateColorMap(StandardColor.RealWorldBrick);
+		using var tex = factory.AssetLoader.MaterialBuilder.CreateTexture(TexturePattern.PlainFill<ColorVect>(StandardColor.RealWorldBrick), includeAlpha: false);
 		var materials = new Material[2];
-		for (var i = 0; i < materials.Length; ++i) materials[i] = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(tex);
+		for (var i = 0; i < materials.Length; ++i) materials[i] = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex);
 
 		using (var group = factory.ResourceAllocator.CreateResourceGroup(true)) {
 			Assert.AreEqual(true, group.DisposesContainedResourcesByDefaultWhenDisposed);

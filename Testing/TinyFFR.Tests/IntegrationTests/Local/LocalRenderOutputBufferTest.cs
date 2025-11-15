@@ -57,21 +57,20 @@ class LocalRenderOutputBufferTest {
 
 		// RenderBuffer Scene
 		using var renderBufferCamera = factory.CameraBuilder.CreateCamera(Location.Origin);
-		using var renderBufferMatColorTex = factory.MaterialBuilder.CreateColorMap(ColorVect.White, "color");
-		using var renderBufferMatNormalTex = factory.MaterialBuilder.CreateNormalMap(TexturePattern.Rectangles(
+		using var renderBufferMatColorTex = factory.MaterialBuilder.CreateTexture(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false, name: "color");
+		using var renderBufferMatNormalTex = factory.MaterialBuilder.CreateTexture(TexturePattern.Rectangles(
 			interiorSize: (256, 256),
 			borderSize: (64, 64),
 			paddingSize: (0, 0),
-			interiorValue: IMaterialBuilder.DefaultTexelNormal,
+			interiorValue: UnitSphericalCoordinate.ZeroZero,
 			borderRightValue: new UnitSphericalCoordinate(Orientation2D.Right.ToPolarAngle()!.Value, 45f),
 			borderTopValue: new UnitSphericalCoordinate(Orientation2D.Up.ToPolarAngle()!.Value, 45f),
 			borderLeftValue: new UnitSphericalCoordinate(Orientation2D.Left.ToPolarAngle()!.Value, 45f),
 			borderBottomValue: new UnitSphericalCoordinate(Orientation2D.Down.ToPolarAngle()!.Value, 45f),
-			paddingValue: IMaterialBuilder.DefaultTexelNormal,
+			paddingValue: UnitSphericalCoordinate.ZeroZero,
 			repetitions: (8, 8)
 		), "normal");
-		using var renderBufferMatOrmTex = factory.MaterialBuilder.CreateOrmMap(name: "orm");
-		using var renderBufferMat = factory.MaterialBuilder.CreateOpaqueMaterial(renderBufferMatColorTex, renderBufferMatNormalTex, renderBufferMatOrmTex, name: "mat");
+		using var renderBufferMat = factory.MaterialBuilder.CreateStandardMaterial(renderBufferMatColorTex, renderBufferMatNormalTex, name: "mat");
 		using var renderBufferModel = factory.ObjectBuilder.CreateModelInstance(
 			cubeMesh,
 			renderBufferMat,
@@ -85,9 +84,7 @@ class LocalRenderOutputBufferTest {
 
 		// Window Scene
 		using var windowColorTex = renderBuffer.CreateDynamicTexture();
-		using var windowNormalTex = factory.MaterialBuilder.CreateNormalMap();
-		using var windowOrmTex = factory.MaterialBuilder.CreateOrmMap();
-		using var windowMat = factory.MaterialBuilder.CreateOpaqueMaterial(windowColorTex, windowNormalTex, windowOrmTex);
+		using var windowMat = factory.MaterialBuilder.CreateStandardMaterial(windowColorTex);
 		using var windowModel = factory.ObjectBuilder.CreateModelInstance(
 			cubeMesh,
 			windowMat,
@@ -122,21 +119,20 @@ class LocalRenderOutputBufferTest {
 	void TestReadbacksAndBitmapWriting() {
 		using var factory = new LocalTinyFfrFactory();
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
-		using var colorTex = factory.MaterialBuilder.CreateColorMap(ColorVect.White, "color");
-		using var normalTex = factory.MaterialBuilder.CreateNormalMap(TexturePattern.Rectangles(
+		using var colorTex = factory.MaterialBuilder.CreateTexture(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false, name: "color");
+		using var normalTex = factory.MaterialBuilder.CreateTexture(TexturePattern.Rectangles(
 			interiorSize: (256, 256),
 			borderSize: (64, 64),
 			paddingSize: (0, 0),
-			interiorValue: IMaterialBuilder.DefaultTexelNormal,
+			interiorValue: UnitSphericalCoordinate.ZeroZero,
 			borderRightValue: new UnitSphericalCoordinate(Orientation2D.Right.ToPolarAngle()!.Value, 45f),
 			borderTopValue: new UnitSphericalCoordinate(Orientation2D.Up.ToPolarAngle()!.Value, 45f),
 			borderLeftValue: new UnitSphericalCoordinate(Orientation2D.Left.ToPolarAngle()!.Value, 45f),
 			borderBottomValue: new UnitSphericalCoordinate(Orientation2D.Down.ToPolarAngle()!.Value, 45f),
-			paddingValue: IMaterialBuilder.DefaultTexelNormal,
+			paddingValue: UnitSphericalCoordinate.ZeroZero,
 			repetitions: (8, 8)
 		), "normal");
-		using var ormTex = factory.MaterialBuilder.CreateOrmMap(name: "orm");
-		using var mat = factory.MaterialBuilder.CreateOpaqueMaterial(colorTex, normalTex, ormTex, name: "mat");
+		using var mat = factory.MaterialBuilder.CreateStandardMaterial(colorTex, normalTex, name: "mat");
 		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
 		using var cube = factory.ObjectBuilder.CreateModelInstance(
 			mesh,

@@ -54,9 +54,9 @@ class LocalAssetImportTest {
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 
-		Assert.AreEqual(new TextureReadMetadata(1024, 1024), factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex)));
-		Assert.AreEqual(new TextureReadMetadata(1024, 1024), factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex)));
-		Assert.AreEqual(new TextureReadMetadata(1024, 1024), factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex)));
+		Assert.AreEqual(new TextureReadMetadata((1024, 1024)), factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex)));
+		Assert.AreEqual(new TextureReadMetadata((1024, 1024)), factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex)));
+		Assert.AreEqual(new TextureReadMetadata((1024, 1024)), factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex)));
 
 		var texBuffer = (new TexelRgb24[1024 * 1024]).AsSpan();
 		factory.AssetLoader.ReadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex), texBuffer);
@@ -86,12 +86,20 @@ class LocalAssetImportTest {
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var albedo = factory.AssetLoader.LoadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex));
 		using var normal = factory.AssetLoader.LoadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex));
-		using var orm = factory.AssetLoader.LoadAndCombineOrmTextures(
-			roughnessMapFilePath: CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex), 
-			metallicMapFilePath: CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex), 
-			config: new() { InvertYGreenChannel = true }
+		using var orm = factory.AssetLoader.LoadCombinedTexture(
+			aFilePath: CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex),
+			aProcessingConfig: TextureProcessingConfig.None,
+			bFilePath: CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex),
+			bProcessingConfig: TextureProcessingConfig.None,
+			combinationConfig: new(
+				new(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
+				new(TextureCombinationSourceTexture.TextureB, ColorChannel.R),
+				new(TextureCombinationSourceTexture.TextureB, ColorChannel.R)
+				// TODO white texture in test dir; also I want to investigate the colorspace argument's effect on non-color textures -- I think we need separate load overloads that default to either or to make IsLinearColorspace required
+			),
+			finalOutputConfig: new TextureCreationConfig { TexelType = TexelType.Rgb24, IsLinearColorspace = false, ProcessingToApply = new() { InvertYGreenChannel = true } }
 		);
-		using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(albedo, normal, orm);
+		using var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(albedo, normal, orm);
 		using var mesh = factory.AssetLoader.LoadMesh(
 			CommonTestAssets.FindAsset(KnownTestAsset.CrateMesh), 
 			new MeshCreationConfig { LinearRescalingFactor = 0.03f, OriginTranslation = calculatedOrigin.AsVect() }

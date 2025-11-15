@@ -46,17 +46,17 @@ class LocalColorspaceTest {
 			CommonTestAssets.FindAsset(KnownTestAsset.BrickOrmTex)
 		);
 
-		using var linearWallMat = factory.MaterialBuilder.CreateOpaqueMaterial(
+		using var linearWallMat = factory.MaterialBuilder.CreateStandardMaterial(
 			linearWallAlbedo,
 			wallNormals,
 			wallOrm,
-			"linearwall"
+			name: "linearwall"
 		);
-		using var srgbWallMat = factory.MaterialBuilder.CreateOpaqueMaterial(
+		using var srgbWallMat = factory.MaterialBuilder.CreateStandardMaterial(
 			srgbWallAlbedo,
 			wallNormals,
 			wallOrm,
-			"srgbwall"
+			name: "srgbwall"
 		);
 
 		var display = factory.DisplayDiscoverer.Primary!.Value;

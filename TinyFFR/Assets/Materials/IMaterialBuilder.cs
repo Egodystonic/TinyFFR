@@ -99,11 +99,6 @@ public unsafe interface IMaterialBuilder {
 		return CreateTextureAndDisposePreallocatedBuffer(FillPreallocatedBuffer(pattern), genConfig, config);
 	}
 
-	Texture CreateTexture<T>(TexturePattern<T> pattern, ReadOnlySpan<char> name = default) where T : unmanaged, IThreeByteChannelTexel<T> {
-		GetPatternConfigObjects(pattern, name, out var genConfig, out var config);
-		return CreateTextureAndDisposePreallocatedBuffer(FillPreallocatedBuffer(pattern, &TexelRgb24.ConvertFrom), genConfig, config);
-	}
-
 	Texture CreateTexture<T>(TexturePattern<T> pattern, delegate* managed<T, TexelRgb24> conversionMapFunc, ReadOnlySpan<char> name = default) where T : unmanaged {
 		GetPatternConfigObjects(pattern, name, out var genConfig, out var config);
 		return CreateTextureAndDisposePreallocatedBuffer(FillPreallocatedBuffer(pattern, conversionMapFunc), genConfig, config);
