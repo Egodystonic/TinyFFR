@@ -66,10 +66,7 @@ public unsafe interface IMaterialBuilder {
 			GenerateMipMaps = dimensions.X > 1 || dimensions.Y > 1,
 			Name = name
 		};
-		outGenerationConfig = new TextureGenerationConfig {
-			Height = dimensions.Y,
-			Width = dimensions.X,
-		};
+		outGenerationConfig = new TextureGenerationConfig { Dimensions = dimensions };
 	}
 	Texture CreateTexture(TexturePattern<ColorVect> pattern, bool includeAlpha, ReadOnlySpan<char> name = default) {
 		GetPatternConfigObjects(pattern, name, out var genConfig, out var config);
@@ -151,10 +148,7 @@ public unsafe interface IMaterialBuilder {
 			GenerateMipMaps = dimensions.X > 1 || dimensions.Y > 1,
 			Name = name
 		};
-		var genConfig = new TextureGenerationConfig {
-			Height = dimensions.Y,
-			Width = dimensions.X,
-		};
+		var genConfig = new TextureGenerationConfig { Dimensions = dimensions };
 
 		var buffer = PreallocateBuffer<TexelRgb24>(dimensions.X * dimensions.Y);
 		if (sameDimensions) {
@@ -203,10 +197,7 @@ public unsafe interface IMaterialBuilder {
 			GenerateMipMaps = dimensions.X > 1 || dimensions.Y > 1,
 			Name = name
 		};
-		var genConfig = new TextureGenerationConfig {
-			Height = dimensions.Y,
-			Width = dimensions.X,
-		};
+		var genConfig = new TextureGenerationConfig { Dimensions = dimensions };
 
 		var buffer = PreallocateBuffer<TexelRgba32>(dimensions.X * dimensions.Y);
 		if (sameDimensions) {

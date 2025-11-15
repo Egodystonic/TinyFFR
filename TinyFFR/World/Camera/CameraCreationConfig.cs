@@ -31,7 +31,7 @@ public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationCo
 
 	internal void ThrowIfInvalid() {
 		static void ThrowArgException(object erroneousArg, string message, [CallerArgumentExpression(nameof(erroneousArg))] string? argName = null) {
-			throw new ArgumentException($"{nameof(CameraCreationConfig)}.{argName} {message} Value was {erroneousArg}.", argName);
+			throw new InvalidOperationException($"{nameof(CameraCreationConfig)}.{argName} {message} Value was {erroneousArg}.");
 		}
 
 		if (ViewDirection == Direction.None) {

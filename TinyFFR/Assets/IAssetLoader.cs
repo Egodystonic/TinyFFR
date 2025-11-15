@@ -20,9 +20,11 @@ public readonly record struct TextureCombinationSource(TextureCombinationSourceT
 	internal byte SelectTexelChannel(ReadOnlySpan<TexelRgba32> samples) => samples[(int) SourceTexture][SourceChannel];
 
 	internal void ThrowIfInvalid(int numTexturesBeingCombined) {
-		if (!Enum.IsDefined(SourceChannel)) throw new ArgumentOutOfRangeException(nameof(SourceChannel), SourceChannel, null);
+		if (!Enum.IsDefined(SourceChannel)) {
+			throw new InvalidOperationException($"{nameof(SourceChannel)} was not a recognised {nameof(ColorChannel)}.");
+		}
 		if ((int) SourceTexture < 0 || (int) SourceTexture >= numTexturesBeingCombined) {
-			throw new ArgumentOutOfRangeException(nameof(SourceTexture), SourceTexture, $"Invalid texture value or references a texture that was not provided (i.e. 'TextureC' when only textures A & B exist).");
+			throw new InvalidOperationException($"Non-defined value or references a texture that was not provided (i.e. 'TextureC' when only textures A & B exist).");
 		}
 	}
 }
@@ -48,79 +50,80 @@ public interface IAssetLoader {
 	IMeshBuilder MeshBuilder { get; }
 	IMaterialBuilder MaterialBuilder { get; }
 
-	Texture LoadTexture(ReadOnlySpan<char> filePath, bool includeWAlphaChannel = false, bool isLinearColorspace = true, ReadOnlySpan<char> name = default) {
+	#region Load / Read Texture
+	Texture LoadTexture(ReadOnlySpan<char> filePath, bool isLinearColorspace = true, ReadOnlySpan<char> name = default) {
 		return LoadTexture(
-			new TextureReadConfig {
-				FilePath = filePath,
-				IncludeWAlphaChannel = includeWAlphaChannel
-			},
+			filePath, 
 			new TextureCreationConfig {
-				Name = name.IsEmpty ? Path.GetFileName(filePath) : name,
-				IsLinearColorspace = isLinearColorspace
+				IsLinearColorspace = isLinearColorspace,
+				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
 			}
 		);
 	}
-	Texture LoadTexture(ReadOnlySpan<char> filePath, in TextureCreationConfig config) => LoadTexture(new TextureReadConfig { FilePath = filePath }, config);
-	Texture LoadTexture(in TextureReadConfig readConfig, in TextureCreationConfig config);
-	
+	Texture LoadTexture(ReadOnlySpan<char> filePath, in TextureCreationConfig config);
+
+	TextureReadMetadata ReadTextureMetadata(ReadOnlySpan<char> filePath);
+	void ReadTexture<TTexel>(ReadOnlySpan<char> filePath, Span<TTexel> destinationBuffer) where TTexel : unmanaged, ITexel<TTexel> => ReadTexture(filePath, TextureProcessingConfig.None, destinationBuffer);
+	void ReadTexture<TTexel>(ReadOnlySpan<char> filePath, in TextureProcessingConfig processingConfig, Span<TTexel> destinationBuffer) where TTexel : unmanaged, ITexel<TTexel>;
+	#endregion
+
+	#region Load / Read Combined Texture
 	Texture LoadCombinedTexture(
-		in TextureReadConfig aReadConfig, in TextureCreationConfig aConfig,
-		in TextureReadConfig bReadConfig, in TextureCreationConfig bConfig,
-		TextureCombinationConfig combinationConfig, in TextureCreationConfig combinedTextureConfig
+		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
+		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
+		TextureCombinationConfig combinationConfig, in TextureCreationConfig finalOutputConfig
 	);
 	Texture LoadCombinedTexture(
-		in TextureReadConfig aReadConfig, in TextureCreationConfig aConfig,
-		in TextureReadConfig bReadConfig, in TextureCreationConfig bConfig,
-		in TextureReadConfig cReadConfig, in TextureCreationConfig cConfig,
-		TextureCombinationConfig combinationConfig, in TextureCreationConfig combinedTextureConfig
+		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
+		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
+		ReadOnlySpan<char> cFilePath, in TextureProcessingConfig cProcessingConfig,
+		TextureCombinationConfig combinationConfig, in TextureCreationConfig finalOutputConfig
 	);
 	Texture LoadCombinedTexture(
-		in TextureReadConfig aReadConfig, in TextureCreationConfig aConfig,
-		in TextureReadConfig bReadConfig, in TextureCreationConfig bConfig,
-		in TextureReadConfig cReadConfig, in TextureCreationConfig cConfig,
-		in TextureReadConfig dReadConfig, in TextureCreationConfig dConfig,
-		TextureCombinationConfig combinationConfig, in TextureCreationConfig combinedTextureConfig
+		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
+		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
+		ReadOnlySpan<char> cFilePath, in TextureProcessingConfig cProcessingConfig,
+		ReadOnlySpan<char> dFilePath, in TextureProcessingConfig dProcessingConfig,
+		TextureCombinationConfig combinationConfig, in TextureCreationConfig finalOutputConfig
 	);
 
-	TextureReadMetadata ReadTextureMetadata(ReadOnlySpan<char> filePath) => ReadTextureMetadata(new TextureReadConfig { FilePath = filePath });
-	TextureReadMetadata ReadTextureMetadata(in TextureReadConfig readConfig);
-	void ReadTexture<TTexel>(ReadOnlySpan<char> filePath, Span<TTexel> destinationBuffer) where TTexel : unmanaged, ITexel<TTexel> => ReadTexture(new TextureReadConfig { FilePath = filePath }, destinationBuffer);
-	void ReadTexture<TTexel>(in TextureReadConfig readConfig, Span<TTexel> destinationBuffer) where TTexel : unmanaged, ITexel<TTexel>;
-	
-	TextureReadMetadata ReadCombinedTextureMetadata(ReadOnlySpan<char> aFilePath, ReadOnlySpan<char> bFilePath) {
-		return ReadCombinedTextureMetadata(new TextureReadConfig { FilePath = aFilePath }, new TextureReadConfig { FilePath = bFilePath });
-	}
-	TextureReadMetadata ReadCombinedTextureMetadata(in TextureReadConfig aReadConfig, in TextureReadConfig bReadConfig);
-	TextureReadMetadata ReadCombinedTextureMetadata(ReadOnlySpan<char> aFilePath, ReadOnlySpan<char> bFilePath, ReadOnlySpan<char> cFilePath) {
-		return ReadCombinedTextureMetadata(new TextureReadConfig { FilePath = aFilePath }, new TextureReadConfig { FilePath = bFilePath }, new TextureReadConfig { FilePath = cFilePath });
-	}
-	TextureReadMetadata ReadCombinedTextureMetadata(in TextureReadConfig aReadConfig, in TextureReadConfig bReadConfig, in TextureReadConfig cReadConfig);
-	TextureReadMetadata ReadCombinedTextureMetadata(ReadOnlySpan<char> aFilePath, ReadOnlySpan<char> bFilePath, ReadOnlySpan<char> cFilePath, ReadOnlySpan<char> dFilePath) {
-		return ReadCombinedTextureMetadata(new TextureReadConfig { FilePath = aFilePath }, new TextureReadConfig { FilePath = bFilePath }, new TextureReadConfig { FilePath = cFilePath }, new TextureReadConfig { FilePath = dFilePath });
-	}
-	TextureReadMetadata ReadCombinedTextureMetadata(in TextureReadConfig aReadConfig, in TextureReadConfig bReadConfig, in TextureReadConfig cReadConfig, in TextureReadConfig dReadConfig);
-	void ReadCombinedTexture<TTexel>(
-		in TextureReadConfig aReadConfig, in TextureCreationConfig aConfig,
-		in TextureReadConfig bReadConfig, in TextureCreationConfig bConfig,
-		TextureCombinationConfig combinationConfig, in TextureCreationConfig combinedTextureConfig,
-		Span<TTexel> destinationBuffer
-	) where TTexel : unmanaged, ITexel<TTexel>;
-	void ReadCombinedTexture<TTexel>(
-		in TextureReadConfig aReadConfig, in TextureCreationConfig aConfig,
-		in TextureReadConfig bReadConfig, in TextureCreationConfig bConfig,
-		in TextureReadConfig cReadConfig, in TextureCreationConfig cConfig,
-		TextureCombinationConfig combinationConfig, in TextureCreationConfig combinedTextureConfig,
-		Span<TTexel> destinationBuffer
-	) where TTexel : unmanaged, ITexel<TTexel>;
-	void ReadCombinedTexture<TTexel>(
-		in TextureReadConfig aReadConfig, in TextureCreationConfig aConfig,
-		in TextureReadConfig bReadConfig, in TextureCreationConfig bConfig,
-		in TextureReadConfig cReadConfig, in TextureCreationConfig cConfig,
-		in TextureReadConfig dReadConfig, in TextureCreationConfig dConfig,
-		TextureCombinationConfig combinationConfig, in TextureCreationConfig combinedTextureConfig,
-		Span<TTexel> destinationBuffer
-	) where TTexel : unmanaged, ITexel<TTexel>;
+	TextureReadMetadata ReadCombinedTextureMetadata(ReadOnlySpan<char> aFilePath, ReadOnlySpan<char> bFilePath);
+	TextureReadMetadata ReadCombinedTextureMetadata(ReadOnlySpan<char> aFilePath, ReadOnlySpan<char> bFilePath, ReadOnlySpan<char> cFilePath);
+	TextureReadMetadata ReadCombinedTextureMetadata(ReadOnlySpan<char> aFilePath, ReadOnlySpan<char> bFilePath, ReadOnlySpan<char> cFilePath, ReadOnlySpan<char> dFilePath);
 
+	void ReadCombinedTexture<TTexel>(
+		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
+		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
+		TextureCombinationConfig combinationConfig, in TextureProcessingConfig finalOutputProcessingConfig, Span<TTexel> destinationBuffer
+	) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgba32>;
+
+	void ReadCombinedTexture<TTexel>(
+		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
+		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
+		ReadOnlySpan<char> cFilePath, in TextureProcessingConfig cProcessingConfig,
+		TextureCombinationConfig combinationConfig, in TextureProcessingConfig finalOutputProcessingConfig, Span<TTexel> destinationBuffer
+	) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgba32>;
+
+	void ReadCombinedTexture<TTexel>(
+		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
+		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
+		ReadOnlySpan<char> cFilePath, in TextureProcessingConfig cProcessingConfig,
+		ReadOnlySpan<char> dFilePath, in TextureProcessingConfig dProcessingConfig,
+		TextureCombinationConfig combinationConfig, in TextureProcessingConfig finalOutputProcessingConfig, Span<TTexel> destinationBuffer
+	) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgba32>;
+	#endregion
+
+	#region Load Environment Cubemap
+	EnvironmentCubemap LoadEnvironmentCubemap(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, ReadOnlySpan<char> name = default) {
+		return LoadEnvironmentCubemap(
+			new EnvironmentCubemapReadConfig { IblKtxFilePath = iblKtxFilePath, SkyboxKtxFilePath = skyboxKtxFilePath },
+			new EnvironmentCubemapCreationConfig { Name = name }
+		);
+	}
+	EnvironmentCubemap LoadEnvironmentCubemap(in EnvironmentCubemapReadConfig readConfig, in EnvironmentCubemapCreationConfig config);
+	#endregion
+
+	#region Load / Read Mesh
 	Mesh LoadMesh(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
 		return LoadMesh(
 			new MeshReadConfig {
@@ -137,12 +140,5 @@ public interface IAssetLoader {
 	MeshReadMetadata ReadMeshMetadata(in MeshReadConfig readConfig);
 	void ReadMesh(ReadOnlySpan<char> filePath, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer) => ReadMesh(new MeshReadConfig { FilePath = filePath }, vertexBuffer, triangleBuffer);
 	void ReadMesh(in MeshReadConfig readConfig, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer);
-
-	EnvironmentCubemap LoadEnvironmentCubemap(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, ReadOnlySpan<char> name = default) {
-		return LoadEnvironmentCubemap(
-			new EnvironmentCubemapReadConfig { IblKtxFilePath = iblKtxFilePath, SkyboxKtxFilePath = skyboxKtxFilePath }, 
-			new EnvironmentCubemapCreationConfig { Name = name }
-		);
-	}
-	EnvironmentCubemap LoadEnvironmentCubemap(in EnvironmentCubemapReadConfig readConfig, in EnvironmentCubemapCreationConfig config);
+	#endregion
 }
