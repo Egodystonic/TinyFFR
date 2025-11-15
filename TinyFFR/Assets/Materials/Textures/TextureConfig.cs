@@ -116,8 +116,7 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 }
 
 public readonly ref struct TextureGenerationConfig : IConfigStruct<TextureGenerationConfig> {
-	public required int Width { get; init; }
-	public required int Height { get; init; }
+	public required XYPair<int> Dimensions { get; init; }
 
 	public TextureGenerationConfig() { }
 
@@ -126,26 +125,23 @@ public readonly ref struct TextureGenerationConfig : IConfigStruct<TextureGenera
 			throw new ArgumentException($"{nameof(TextureCreationConfig)}.{argName} {message} Value was {erroneousArg}.", argName);
 		}
 
-		if (Width < 1) {
-			ThrowArgException(Width, "must be positive.");
+		if (Dimensions.X < 1) {
+			ThrowArgException(Dimensions.X, "must be positive.");
 		}
-		if (Height < 1) {
-			ThrowArgException(Height, "must be positive.");
+		if (Dimensions.Y < 1) {
+			ThrowArgException(Dimensions.Y, "must be positive.");
 		}
 	}
 
 	public static int GetHeapStorageFormattedLength(in TextureGenerationConfig src) {
-		return	SerializationSizeOfInt() // Width
-			+	SerializationSizeOfInt(); // Height
+		return	SerializationSizeOf<XYPair<int>>(); // Dimensions
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in TextureGenerationConfig src) {
-		SerializationWriteInt(ref dest, src.Width);
-		SerializationWriteInt(ref dest, src.Height);
+		SerializationWrite(ref dest, src.Dimensions);
 	}
 	public static TextureGenerationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new TextureGenerationConfig {
-			Width = SerializationReadInt(ref src),
-			Height = SerializationReadInt(ref src)
+			Dimensions = SerializationRead<XYPair<int>>(ref src)
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {

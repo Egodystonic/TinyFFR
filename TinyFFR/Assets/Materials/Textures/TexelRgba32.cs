@@ -8,7 +8,7 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = TexelSizeBytes)]
-public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : IFourByteChannelTexel<TexelRgba32>, IConversionSupplyingTexel<TexelRgba32, ColorVect> {
+public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : IFourByteChannelTexel<TexelRgba32>, IConversionSupplyingTexel<TexelRgba32, ColorVect>, IConversionSupplyingTexel<TexelRgba32, TexelRgb24>, IConversionSupplyingTexel<TexelRgba32, TexelRgba32> {
 	public const int TexelSizeBytes = 4;
 
 	public TexelRgb24 AsRgb24 => new(R, G, B);
@@ -59,6 +59,8 @@ public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : IFou
 	public static explicit operator TexelRgba32(TexelRgb24 texel) => texel.AsRgba32;
 	
 	public static TexelRgba32 ConvertFrom(ColorVect v) => new(v);
+	static TexelRgba32 IConversionSupplyingTexel<TexelRgba32, TexelRgba32>.ConvertFrom(TexelRgba32 t) => t;
+	public static TexelRgba32 ConvertFrom(TexelRgb24 t) => t.AsRgba32;
 	public static TexelRgba32 ConvertFrom<T>(T v) where T : unmanaged, IFourByteChannelTexel<T> => new(v[0], v[1], v[2], v[3]);
 
 	public TexelRgba32 WithInvertedChannelIfPresent(int channelIndex) {
