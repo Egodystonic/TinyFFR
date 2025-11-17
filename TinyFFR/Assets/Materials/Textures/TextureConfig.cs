@@ -10,30 +10,24 @@ namespace Egodystonic.TinyFFR.Assets.Materials;
 public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreationConfig> {
 	public bool GenerateMipMaps { get; init; } = true;
 	public required bool IsLinearColorspace { get; init; }
-	public TexelType TexelType { get; init; } = TexelType.Rgb24;
 	public ReadOnlySpan<char> Name { get; init; }
 	public TextureProcessingConfig ProcessingToApply { get; init; } = TextureProcessingConfig.None;
 
 	public TextureCreationConfig() { }
 
 	internal void ThrowIfInvalid() {
-		switch (TexelType) {
-			case TexelType.Rgb24 or TexelType.Rgba32: break;
-			default: throw new InvalidOperationException($"{nameof(TexelType)} must be either {nameof(TexelType.Rgb24)} or {TexelType.Rgba32}.");
-		}
+		/* no-op */
 	}
 
 	public static int GetHeapStorageFormattedLength(in TextureCreationConfig src) {
 		return	SerializationSizeOfBool() // GenerateMipMaps
 			+	SerializationSizeOfBool() // IsLinearColorspace
-			+	SerializationSizeOfInt() // TexelType
 			+	SerializationSizeOfString(src.Name) // Name
 			+	SerializationSizeOfSubConfig(src.ProcessingToApply);
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in TextureCreationConfig src) {
 		SerializationWriteBool(ref dest, src.GenerateMipMaps);
 		SerializationWriteBool(ref dest, src.IsLinearColorspace);
-		SerializationWriteInt(ref dest, (int) src.TexelType);
 		SerializationWriteString(ref dest, src.Name);
 		SerializationWriteSubConfig(ref dest, src.ProcessingToApply);
 	}
@@ -41,7 +35,6 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 		return new TextureCreationConfig {
 			GenerateMipMaps = SerializationReadBool(ref src),
 			IsLinearColorspace = SerializationReadBool(ref src),
-			TexelType = (TexelType) SerializationReadInt(ref src),
 			Name = SerializationReadString(ref src),
 			ProcessingToApply = SerializationReadSubConfig<TextureProcessingConfig>(ref src),
 		};

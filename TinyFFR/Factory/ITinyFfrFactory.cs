@@ -18,6 +18,7 @@ public interface ITinyFfrFactory : IDisposable {
 	IApplicationLoopBuilder ApplicationLoopBuilder { get; }
 	IAssetLoader AssetLoader { get; }
 	IMeshBuilder MeshBuilder => AssetLoader.MeshBuilder;
+	ITextureBuilder TextureBuilder => AssetLoader.TextureBuilder;
 	IMaterialBuilder MaterialBuilder => AssetLoader.MaterialBuilder;
 	ICameraBuilder CameraBuilder { get; }
 	ILightBuilder LightBuilder { get; }

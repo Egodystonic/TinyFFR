@@ -54,9 +54,9 @@ public readonly unsafe struct TexturePattern<T> where T : unmanaged {
 	readonly TexturePatternArgData _argsBuffer;
 	readonly Transform2D? _transform;
 
-	internal XYPair<int> Dimensions => _dimensions;
+	public XYPair<int> Dimensions => _dimensions;
 
-	internal T this[int x, int y] {
+	public T this[int x, int y] {
 		get {
 			if (_generationFunc == null) throw InvalidObjectException.InvalidDefault<TexturePattern<T>>();
 			if (x < 0 || x >= _dimensions.X) throw new ArgumentOutOfRangeException(nameof(x));

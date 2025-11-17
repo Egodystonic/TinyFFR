@@ -50,6 +50,7 @@ public readonly record struct TextureCombinationConfig(TextureCombinationSource 
 public interface IAssetLoader {
 	IMeshBuilder MeshBuilder { get; }
 	IMaterialBuilder MaterialBuilder { get; }
+	ITextureBuilder TextureBuilder { get; }
 	IBuiltInTexturePathLibrary BuiltInTexturePaths { get; }
 
 	#region Load / Read Texture
