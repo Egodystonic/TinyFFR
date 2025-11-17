@@ -27,6 +27,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 	const string HdrPreprocessedIblFileSearch = "*_ibl.ktx";
 	readonly string _hdrPreprocessorFilePath;
 	readonly string _hdrPreprocessorResourceName;
+	readonly LocalBuiltInTexturePathLibrary _builtInTextureLibrary = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly LocalMeshBuilder _meshBuilder;
 	readonly LocalMaterialBuilder _materialBuilder;
@@ -41,6 +42,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 
 	public IMeshBuilder MeshBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IAssetLoader)) : _meshBuilder;
 	public IMaterialBuilder MaterialBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IAssetLoader)) : _materialBuilder;
+	public IBuiltInTexturePathLibrary BuiltInTexturePaths => _isDisposed ? throw new ObjectDisposedException(nameof(IAssetLoader)) : _builtInTextureLibrary;
 
 	public LocalAssetLoader(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config) {
 		ArgumentNullException.ThrowIfNull(globals);
@@ -72,13 +74,33 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 	public Texture LoadTexture(ReadOnlySpan<char> filePath, in TextureCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
-		var includeAlpha = config.TexelType == TexelType.Rgba32;
+		var includeWChannel = config.TexelType == TexelType.Rgba32;
+
+		var builtInTexel = _builtInTextureLibrary.GetBuiltInTexel(filePath);
+		if (builtInTexel.HasValue) {
+			if (includeWChannel) {
+				var localTexelCopy = builtInTexel.Value;
+				return _materialBuilder.CreateTexture(
+					new ReadOnlySpan<TexelRgba32>(in localTexelCopy),
+					new() { Dimensions = new(1, 1) },
+					config
+				);
+			}
+			else {
+				var localTexelCopy = builtInTexel.Value.AsRgb24;
+				return _materialBuilder.CreateTexture(
+					new ReadOnlySpan<TexelRgb24>(in localTexelCopy),
+					new() { Dimensions = new(1, 1) },
+					config
+				);
+			}
+		}
 
 		try {
 			_assetFilePathBuffer.ConvertFromUtf16(filePath);
 			LoadTextureFileInToMemory(
 				in _assetFilePathBuffer.AsRef,
-				includeWAlphaChannel: includeAlpha,
+				includeWAlphaChannel: includeWChannel,
 				out var width,
 				out var height,
 				out var texelBuffer
@@ -88,7 +110,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 				if (width < 0 || height < 0) throw new InvalidOperationException($"Loaded texture had width/height of {width}/{height}.");
 				var texelCount = width * height;
 
-				if (includeAlpha) {
+				if (includeWChannel) {
 					return _materialBuilder.CreateTexture(
 						new ReadOnlySpan<TexelRgba32>(texelBuffer, texelCount),
 						new() { Dimensions = new(width, height) },
@@ -115,6 +137,8 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 	public TextureReadMetadata ReadTextureMetadata(ReadOnlySpan<char> filePath) {
 		ThrowIfThisIsDisposed();
 
+		if (_builtInTextureLibrary.IsBuiltIn(filePath)) return new TextureReadMetadata((1, 1));
+
 		try {
 			_assetFilePathBuffer.ConvertFromUtf16(filePath);
 			LoadTextureFileInToMemory(
@@ -139,6 +163,31 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 	}
 	public void ReadTexture<TTexel>(ReadOnlySpan<char> filePath, in TextureProcessingConfig processingConfig, Span<TTexel> destinationBuffer) where TTexel : unmanaged, ITexel<TTexel> {
 		ThrowIfThisIsDisposed();
+
+		var builtInTexel = _builtInTextureLibrary.GetBuiltInTexel(filePath);
+		if (builtInTexel.HasValue) {
+			if (destinationBuffer.Length < 1) {
+				throw new ArgumentException($"Given destination buffer size ({destinationBuffer.Length}) is too small to accomodate texture data ({1} texels).");
+			}
+			
+			switch (TTexel.BlitType) {
+				case TexelType.Rgba32: {
+					var localTexelCopy = builtInTexel.Value;
+					destinationBuffer[0] = Unsafe.As<TexelRgba32, TTexel>(ref localTexelCopy);
+					break;
+				}
+				case TexelType.Rgb24: {
+					var localTexelCopy = builtInTexel.Value.AsRgb24;
+					destinationBuffer[0] = Unsafe.As<TexelRgb24, TTexel>(ref localTexelCopy);
+					break;
+				}
+				default:
+					throw new ArgumentOutOfRangeException(nameof(TTexel), "Unknown texel blit type.");
+			}
+
+			_materialBuilder.ProcessTexture(destinationBuffer, new TextureGenerationConfig { Dimensions = (1, 1) }, in processingConfig);
+			return;
+		}
 
 		var includeWChannel = TTexel.BlitType switch {
 			TexelType.Rgb24 => false,

@@ -49,6 +49,7 @@ public readonly record struct TextureCombinationConfig(TextureCombinationSource 
 public interface IAssetLoader {
 	IMeshBuilder MeshBuilder { get; }
 	IMaterialBuilder MaterialBuilder { get; }
+	IBuiltInTexturePathLibrary BuiltInTexturePaths { get; }
 
 	#region Load / Read Texture
 	Texture LoadColorMapTexture(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) => LoadTexture(filePath, isLinearColorspace: false, name);

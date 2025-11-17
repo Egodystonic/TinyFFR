@@ -4,15 +4,17 @@ title: TypedReferentIterator&lt;TIn, TOut&gt;
 
 ## Summary
 
-This type is designed to take an input type `TIn` and allow garbage-free iteration over some property or facet of that type, yielding a sequence of `TOut` values, without exposing the memory or mechanism of generation for those values (which in some cases may be unmanaged or ad-hoc).
-
-More specifically, it is something that allows you to __iterate__ over values of a certain __type__ belonging to a __referent__ (i.e. the owning object being referred to), hence: __Typed__ __Referent__ __Iterator__.
-
 ### Plain-English
 
 An instance of a `TypedReferentIterator<TIn, TOut>` lets you enumerate, count, and copy all of the `TOut`s in a `TIn` according to some property/function.
 
 In most cases you can use this type like a pseudo-collection; it implements `IEnumerable<TOut>`.
+
+### Further Detail
+
+This type is designed to take an input type `TIn` and allow garbage-free iteration over some property or facet of that type, yielding a sequence of `TOut` values, without exposing the memory or mechanism of generation for those values (which in some cases may be unmanaged or ad-hoc).
+
+More specifically, it is something that allows you to __iterate__ over values of a certain __type__ belonging to a __referent__ (i.e. the owning object being referred to), hence: __Typed__ __Referent__ __Iterator__.
 
 ## Iteration
 

@@ -42,7 +42,6 @@ class LocalCuboidRenderTest {
 
 	[Test]
 	public void Execute() {
-		var sw = Stopwatch.StartNew();
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Cuboid Render Test");
