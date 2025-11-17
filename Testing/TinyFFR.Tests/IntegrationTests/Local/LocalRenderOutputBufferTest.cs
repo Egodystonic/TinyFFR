@@ -198,7 +198,7 @@ class LocalRenderOutputBufferTest {
 				Assert.AreEqual(list[0].Length, list[i].Length);
 
 				for (var t = 0; t < list[0].Length; ++t) {
-					list[i][t].AsColorVect.ToHueSaturationLightness(out var h, out var s, out var l);
+					list[i][t].ToColorVect().ToHueSaturationLightness(out var h, out var s, out var l);
 					cumulativeHueValues[i] += h.Radians;
 					cumulativeSaturationValues[i] += s;
 					cumulativeLightnessValues[i] += l;

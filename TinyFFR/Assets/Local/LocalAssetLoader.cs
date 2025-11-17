@@ -87,7 +87,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 				);
 			}
 			else {
-				var localTexelCopy = builtInTexel.Value.AsRgb24;
+				var localTexelCopy = builtInTexel.Value.ToRgb24();
 				return _materialBuilder.CreateTexture(
 					new ReadOnlySpan<TexelRgb24>(in localTexelCopy),
 					new() { Dimensions = new(1, 1) },
@@ -161,7 +161,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 			else throw;
 		}
 	}
-	public void ReadTexture<TTexel>(ReadOnlySpan<char> filePath, in TextureProcessingConfig processingConfig, Span<TTexel> destinationBuffer) where TTexel : unmanaged, ITexel<TTexel> {
+	public int ReadTexture<TTexel>(ReadOnlySpan<char> filePath, in TextureProcessingConfig processingConfig, Span<TTexel> destinationBuffer) where TTexel : unmanaged, ITexel<TTexel> {
 		ThrowIfThisIsDisposed();
 
 		var builtInTexel = _builtInTextureLibrary.GetBuiltInTexel(filePath);
@@ -177,7 +177,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 					break;
 				}
 				case TexelType.Rgb24: {
-					var localTexelCopy = builtInTexel.Value.AsRgb24;
+					var localTexelCopy = builtInTexel.Value.ToRgb24();
 					destinationBuffer[0] = Unsafe.As<TexelRgb24, TTexel>(ref localTexelCopy);
 					break;
 				}
@@ -186,7 +186,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 			}
 
 			_materialBuilder.ProcessTexture(destinationBuffer, new TextureGenerationConfig { Dimensions = (1, 1) }, in processingConfig);
-			return;
+			return 1;
 		}
 
 		var includeWChannel = TTexel.BlitType switch {
@@ -222,6 +222,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 				}
 
 				_materialBuilder.ProcessTexture(destinationBuffer, new TextureGenerationConfig { Dimensions = (width, height) }, in processingConfig);
+				return texelCount;
 			}
 			finally {
 				UnloadTextureFileFromMemory(texelBuffer).ThrowIfFailure();
@@ -494,7 +495,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		return new(GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions, dMetadata.Dimensions, out _));
 	}
 
-	public void ReadCombinedTexture<TTexel>(
+	public int ReadCombinedTexture<TTexel>(
 		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
 		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
 		TextureCombinationConfig combinationConfig, in TextureProcessingConfig finalOutputProcessingConfig, Span<TTexel> destinationBuffer
@@ -505,8 +506,9 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 
 		CombineTextures(aFilePath, in aProcessingConfig, aMetadata, bFilePath, in bProcessingConfig, bMetadata, combinationConfig, destinationBuffer);
 		_materialBuilder.ProcessTexture(destinationBuffer, new TextureGenerationConfig { Dimensions = destDimensions }, in finalOutputProcessingConfig);
+		return destDimensions.Area;
 	}
-	public void ReadCombinedTexture<TTexel>(
+	public int ReadCombinedTexture<TTexel>(
 		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
 		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
 		ReadOnlySpan<char> cFilePath, in TextureProcessingConfig cProcessingConfig,
@@ -519,8 +521,9 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 
 		CombineTextures(aFilePath, in aProcessingConfig, aMetadata, bFilePath, in bProcessingConfig, bMetadata, cFilePath, in cProcessingConfig, cMetadata, combinationConfig, destinationBuffer);
 		_materialBuilder.ProcessTexture(destinationBuffer, new TextureGenerationConfig { Dimensions = destDimensions }, in finalOutputProcessingConfig);
+		return destDimensions.Area;
 	}
-	public void ReadCombinedTexture<TTexel>(
+	public int ReadCombinedTexture<TTexel>(
 		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
 		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
 		ReadOnlySpan<char> cFilePath, in TextureProcessingConfig cProcessingConfig,
@@ -535,6 +538,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 
 		CombineTextures(aFilePath, in aProcessingConfig, aMetadata, bFilePath, in bProcessingConfig, bMetadata, cFilePath, in cProcessingConfig, cMetadata, dFilePath, in dProcessingConfig, dMetadata, combinationConfig, destinationBuffer);
 		_materialBuilder.ProcessTexture(destinationBuffer, new TextureGenerationConfig { Dimensions = destDimensions }, in finalOutputProcessingConfig);
+		return destDimensions.Area;
 	}
 	#endregion
 
@@ -643,7 +647,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 			else throw;
 		}
 	}
-	public void ReadMesh(in MeshReadConfig readConfig, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer) {
+	public MeshReadCountData ReadMesh(in MeshReadConfig readConfig, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer) {
 		ThrowIfThisIsDisposed();
 		readConfig.ThrowIfInvalid();
 
@@ -700,6 +704,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 						_vertexTriangleBufferPool.Return(fixedVertexBuffer);
 						_vertexTriangleBufferPool.Return(fixedTriangleBuffer);
 					}
+					return new(totalVertexCount, totalTriangleCount);
 				}
 			}
 			finally {

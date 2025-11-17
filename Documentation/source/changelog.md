@@ -6,6 +6,28 @@ search:
   exclude: true
 ---
 
+## 0.6
+
+__Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/6?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.6.0)__
+
+### Major Features
+
+* 
+
+### Improvements
+
+* `IAssetLoader` interface:
+	* Unified texture processing interface (i.e. you can specify a `TextureProcessingConfig` for any texture being loaded/read; allowing you to swizzle, invert, or flip textures)
+	* Can now inline load/parse texture combinations (up to four textures simultaneously) via `LoadCombinedTexture` / `ReadCombinedTexture`
+	* Forces decision of colourspace (i.e. sRGB or linear) on load (with some helper methods for the easy path; "`LoadColorMapTexture`"/"`LoadDataMapTexture`")
+	* Much better layout of config structs in general
+	* Methods that read textures or meshes now return the number of elements written to the destination span as a convenience
+	* Provision of `BuiltInTexturePaths` property that provides some built-in greyscale textures for convenience when building map textures
+
+### Bug Fixes
+
+* 
+
 ## 0.5
 
 __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/5?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.5.0)__

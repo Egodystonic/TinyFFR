@@ -13,6 +13,8 @@ public enum StandardMaterialAlphaMode {
 }
 
 public readonly ref struct StandardMaterialCreationConfig : IConfigStruct<StandardMaterialCreationConfig> {
+	public static readonly StandardMaterialAlphaMode DefaultAlphaMode = StandardMaterialAlphaMode.MaskOnly;
+
 	public required Texture ColorMap { get; init; }
 	public Texture? NormalMap { get; init; }
 	public Texture? OcclusionRoughnessMetallicMap {
@@ -23,7 +25,7 @@ public readonly ref struct StandardMaterialCreationConfig : IConfigStruct<Standa
 	public Texture? AnisotropyMap { get; init; }
 	public Texture? EmissiveMap { get; init; }
 	public Texture? ClearCoatMap { get; init; }
-	public StandardMaterialAlphaMode AlphaMode { get; init; } = StandardMaterialAlphaMode.MaskOnly;
+	public StandardMaterialAlphaMode AlphaMode { get; init; } = DefaultAlphaMode;
 
 	public MaterialCreationConfig BaseConfig { get; private init; } = new();
 	public ReadOnlySpan<char> Name {

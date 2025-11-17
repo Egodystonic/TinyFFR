@@ -22,7 +22,7 @@ class ImageUtilsTest {
 		var rgbInput = new TexelRgb24[rgbaInput.Length];
 		for (var i = 0; i < rgbaInput.Length; ++i) {
 			rgbaInput[i] = TexelRgba32.ConvertFrom(ColorVect.Random());
-			rgbInput[i] = rgbaInput[i].AsRgb24;
+			rgbInput[i] = rgbaInput[i].ToRgb24();
 		}
 
 		var testDir = SetUpCleanTestDir("bitmap_save");

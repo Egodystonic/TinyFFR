@@ -9,6 +9,7 @@ namespace Egodystonic.TinyFFR.Assets;
 
 public readonly record struct TextureReadMetadata(XYPair<int> Dimensions);
 public readonly record struct MeshReadMetadata(int VertexCount, int TriangleCount);
+public readonly record struct MeshReadCountData(int NumVerticesWritten, int NumTrianglesWritten);
 
 public enum TextureCombinationSourceTexture {
 	TextureA,
@@ -66,8 +67,8 @@ public interface IAssetLoader {
 	Texture LoadTexture(ReadOnlySpan<char> filePath, in TextureCreationConfig config);
 
 	TextureReadMetadata ReadTextureMetadata(ReadOnlySpan<char> filePath);
-	void ReadTexture<TTexel>(ReadOnlySpan<char> filePath, Span<TTexel> destinationBuffer) where TTexel : unmanaged, ITexel<TTexel> => ReadTexture(filePath, TextureProcessingConfig.None, destinationBuffer);
-	void ReadTexture<TTexel>(ReadOnlySpan<char> filePath, in TextureProcessingConfig processingConfig, Span<TTexel> destinationBuffer) where TTexel : unmanaged, ITexel<TTexel>;
+	int ReadTexture<TTexel>(ReadOnlySpan<char> filePath, Span<TTexel> destinationBuffer) where TTexel : unmanaged, ITexel<TTexel> => ReadTexture(filePath, TextureProcessingConfig.None, destinationBuffer);
+	int ReadTexture<TTexel>(ReadOnlySpan<char> filePath, in TextureProcessingConfig processingConfig, Span<TTexel> destinationBuffer) where TTexel : unmanaged, ITexel<TTexel>;
 	#endregion
 
 	#region Load / Read Combined Texture
@@ -94,20 +95,20 @@ public interface IAssetLoader {
 	TextureReadMetadata ReadCombinedTextureMetadata(ReadOnlySpan<char> aFilePath, ReadOnlySpan<char> bFilePath, ReadOnlySpan<char> cFilePath);
 	TextureReadMetadata ReadCombinedTextureMetadata(ReadOnlySpan<char> aFilePath, ReadOnlySpan<char> bFilePath, ReadOnlySpan<char> cFilePath, ReadOnlySpan<char> dFilePath);
 
-	void ReadCombinedTexture<TTexel>(
+	int ReadCombinedTexture<TTexel>(
 		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
 		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
 		TextureCombinationConfig combinationConfig, in TextureProcessingConfig finalOutputProcessingConfig, Span<TTexel> destinationBuffer
 	) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgba32>;
 
-	void ReadCombinedTexture<TTexel>(
+	int ReadCombinedTexture<TTexel>(
 		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
 		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
 		ReadOnlySpan<char> cFilePath, in TextureProcessingConfig cProcessingConfig,
 		TextureCombinationConfig combinationConfig, in TextureProcessingConfig finalOutputProcessingConfig, Span<TTexel> destinationBuffer
 	) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgba32>;
 
-	void ReadCombinedTexture<TTexel>(
+	int ReadCombinedTexture<TTexel>(
 		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig,
 		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig,
 		ReadOnlySpan<char> cFilePath, in TextureProcessingConfig cProcessingConfig,
@@ -141,7 +142,7 @@ public interface IAssetLoader {
 	Mesh LoadMesh(in MeshReadConfig readConfig, in MeshCreationConfig config);
 	MeshReadMetadata ReadMeshMetadata(ReadOnlySpan<char> filePath) => ReadMeshMetadata(new MeshReadConfig { FilePath = filePath });
 	MeshReadMetadata ReadMeshMetadata(in MeshReadConfig readConfig);
-	void ReadMesh(ReadOnlySpan<char> filePath, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer) => ReadMesh(new MeshReadConfig { FilePath = filePath }, vertexBuffer, triangleBuffer);
-	void ReadMesh(in MeshReadConfig readConfig, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer);
+	MeshReadCountData ReadMesh(ReadOnlySpan<char> filePath, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer) => ReadMesh(new MeshReadConfig { FilePath = filePath }, vertexBuffer, triangleBuffer);
+	MeshReadCountData ReadMesh(in MeshReadConfig readConfig, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer);
 	#endregion
 }

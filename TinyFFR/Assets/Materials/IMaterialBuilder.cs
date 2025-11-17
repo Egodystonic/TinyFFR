@@ -249,13 +249,13 @@ public unsafe interface IMaterialBuilder {
 			AnisotropyMap = anisotropyMap,
 			EmissiveMap = emissiveMap,
 			ClearCoatMap = clearCoatMap,
-			AlphaMode = alphaMode ?? StandardMaterialAlphaMode.MaskOnly,
+			AlphaMode = alphaMode ?? StandardMaterialCreationConfig.DefaultAlphaMode,
 			Name = name
 		});
 	}
 	Material CreateStandardMaterial(in StandardMaterialCreationConfig config);
 
-	Material CreateTransmissiveMaterial(Texture colorMap, Texture absorptionTransmissionMap, TransmissiveMaterialQuality? quality = null, Texture? normalMap = null, Texture? ormrMap = null, Texture? anisotropyMap = null, Texture? emissiveMap = null, TransmissiveMaterialAlphaMode? alphaMode = null, ReadOnlySpan<char> name = default) {
+	Material CreateTransmissiveMaterial(Texture colorMap, Texture absorptionTransmissionMap, TransmissiveMaterialQuality? quality = null, Texture? normalMap = null, Texture? ormrMap = null, Texture? anisotropyMap = null, Texture? emissiveMap = null, TransmissiveMaterialAlphaMode? alphaMode = null, float? refractionThickness = null, ReadOnlySpan<char> name = default) {
 		return CreateTransmissiveMaterial(new TransmissiveMaterialCreationConfig {
 			ColorMap = colorMap,
 			AbsorptionTransmissionMap = absorptionTransmissionMap,
@@ -263,8 +263,9 @@ public unsafe interface IMaterialBuilder {
 			OcclusionRoughnessMetallicReflectanceMap = ormrMap,
 			AnisotropyMap = anisotropyMap,
 			EmissiveMap = emissiveMap,
-			Quality = quality ?? TransmissiveMaterialQuality.SkyboxReflectionsAndRefraction,
-			AlphaMode = alphaMode ?? TransmissiveMaterialAlphaMode.MaskOnly,
+			Quality = quality ?? TransmissiveMaterialCreationConfig.DefaultQuality,
+			AlphaMode = alphaMode ?? TransmissiveMaterialCreationConfig.DefaultAlphaMode,
+			RefractionThickness = refractionThickness ?? TransmissiveMaterialCreationConfig.DefaultRefractionThickness,
 			Name = name
 		});
 	}

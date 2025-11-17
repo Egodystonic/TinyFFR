@@ -12,9 +12,6 @@ namespace Egodystonic.TinyFFR.Assets.Materials;
 public readonly record struct TexelRgb24(byte R, byte G, byte B) : IThreeByteChannelTexel<TexelRgb24>, IConversionSupplyingTexel<TexelRgb24, ColorVect>, IConversionSupplyingTexel<TexelRgb24, TexelRgb24>, IConversionSupplyingTexel<TexelRgb24, TexelRgba32> {
 	public const int TexelSizeBytes = 3;
 
-	public TexelRgba32 AsRgba32 => new(R, G, B, Byte.MaxValue);
-	public ColorVect AsColorVect => ColorVect.FromRgb24(R, G, B);
-
 	public byte this[int index] => index switch {
 		0 => R,
 		1 => G,
@@ -50,13 +47,16 @@ public readonly record struct TexelRgb24(byte R, byte G, byte B) : IThreeByteCha
 			   $"{B}";
 	}
 
+	public TexelRgba32 ToRgba32() => new(R, G, B, Byte.MaxValue);
+	public ColorVect ToColorVect() => ColorVect.FromRgb24(R, G, B);
+
 	public static explicit operator TexelRgb24(ColorVect color) => new(color);
-	public static explicit operator ColorVect(TexelRgb24 texel) => texel.AsColorVect;
-	public static explicit operator TexelRgb24(TexelRgba32 texel) => texel.AsRgb24;
+	public static explicit operator ColorVect(TexelRgb24 texel) => texel.ToColorVect();
+	public static explicit operator TexelRgb24(TexelRgba32 texel) => texel.ToRgb24();
 
 	public static TexelRgb24 ConvertFrom(ColorVect v) => new(v);
 	static TexelRgb24 IConversionSupplyingTexel<TexelRgb24, TexelRgb24>.ConvertFrom(TexelRgb24 t) => t;
-	public static TexelRgb24 ConvertFrom(TexelRgba32 t) => t.AsRgb24;
+	public static TexelRgb24 ConvertFrom(TexelRgba32 t) => t.ToRgb24();
 	public static TexelRgb24 ConvertFrom<T>(T v) where T : unmanaged, IThreeByteChannelTexel<T> => new(v[0], v[1], v[2]);
 
 	public TexelRgb24 WithInvertedChannelIfPresent(int channelIndex) {

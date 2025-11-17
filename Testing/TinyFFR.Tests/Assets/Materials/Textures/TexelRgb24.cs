@@ -26,8 +26,8 @@ class TexelRgb24Test {
 
 	[Test]
 	public void ShouldCorrectlyConvert() {
-		Assert.AreEqual(new TexelRgba32(11, 22, 33, Byte.MaxValue), TestTexel.AsRgba32);
-		Assert.AreEqual(ColorVect.FromRgb24(11, 22, 33), TestTexel.AsColorVect);
+		Assert.AreEqual(new TexelRgba32(11, 22, 33, Byte.MaxValue), TestTexel.ToRgba32());
+		Assert.AreEqual(ColorVect.FromRgb24(11, 22, 33), TestTexel.ToColorVect());
 	}
 
 	[Test]

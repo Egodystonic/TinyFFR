@@ -38,7 +38,8 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			var factory = new LocalTinyFfrFactory();
 			var camera = factory.CameraBuilder.CreateCamera(Egodystonic.TinyFFR.Location.Origin);
 			var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
-			var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial();
+			var tex = factory.AssetLoader.LoadColorMapTexture(factory.AssetLoader.BuiltInTexturePaths.White);
+			var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex);
 			_instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 2.2f);
 			_light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f));
 			var scene = factory.SceneBuilder.CreateScene(backdropColor: StandardColor.LightingSunMidday);
@@ -50,6 +51,7 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			_disposables.Add(factory);
 			_disposables.Add(camera);
 			_disposables.Add(mesh);
+			_disposables.Add(tex);
 			_disposables.Add(mat);
 			_disposables.Add(_instance);
 			_disposables.Add(_light);

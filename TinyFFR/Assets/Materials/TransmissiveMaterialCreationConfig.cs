@@ -19,15 +19,19 @@ public enum TransmissiveMaterialAlphaMode {
 }
 
 public readonly ref struct TransmissiveMaterialCreationConfig : IConfigStruct<TransmissiveMaterialCreationConfig> {
+	public static readonly float DefaultRefractionThickness = 0.1f;
+	public static readonly TransmissiveMaterialAlphaMode DefaultAlphaMode = TransmissiveMaterialAlphaMode.FullBlending;
+	public static readonly TransmissiveMaterialQuality DefaultQuality = TransmissiveMaterialQuality.TrueReflectionsAndRefraction;
+
 	public required Texture ColorMap { get; init; }
 	public required Texture AbsorptionTransmissionMap { get; init; }
 	public Texture? NormalMap { get; init; }
 	public Texture? OcclusionRoughnessMetallicReflectanceMap { get; init; }
 	public Texture? AnisotropyMap { get; init; }
 	public Texture? EmissiveMap { get; init; }
-	public float RefractionThickness { get; init; } = 0.1f;
-	public TransmissiveMaterialQuality Quality { get; init; }
-	public TransmissiveMaterialAlphaMode AlphaMode { get; init; } = TransmissiveMaterialAlphaMode.MaskOnly;
+	public float RefractionThickness { get; init; } = DefaultRefractionThickness;
+	public TransmissiveMaterialQuality Quality { get; init; } = DefaultQuality;
+	public TransmissiveMaterialAlphaMode AlphaMode { get; init; } = DefaultAlphaMode;
 
 	public MaterialCreationConfig BaseConfig { get; private init; } = new();
 	public ReadOnlySpan<char> Name {
