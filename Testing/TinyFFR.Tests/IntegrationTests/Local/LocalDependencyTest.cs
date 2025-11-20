@@ -38,11 +38,11 @@ class LocalDependencyTest {
 			group.Add(loop);
 			AssertDependency(loop, group);
 
-			var tex = factory.AssetLoader.MaterialBuilder.CreateTexture(TexturePattern.PlainFill<ColorVect>(StandardColor.White), includeAlpha: false);
+			var tex = factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill<ColorVect>(StandardColor.White), includeAlpha: false);
 			var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex);
 			AssertDependency(tex, mat);
 
-			tex = factory.AssetLoader.MaterialBuilder.CreateTexture(TexturePattern.PlainFill<ColorVect>(StandardColor.White), includeAlpha: false);
+			tex = factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill<ColorVect>(StandardColor.White), includeAlpha: false);
 			mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex);
 			var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
 			var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat);
@@ -85,11 +85,11 @@ class LocalDependencyTest {
 			camera.Dispose();
 
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.ApplicationLoopBuilder.CreateLoop());
-			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.MaterialBuilder.CreateTexture(TexturePattern.PlainFill<ColorVect>(StandardColor.White), includeAlpha: false));
-			var tempTex = factory.MaterialBuilder.CreateTexture(TexturePattern.PlainFill<ColorVect>(StandardColor.White), includeAlpha: false);
+			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill<ColorVect>(StandardColor.White), includeAlpha: false));
+			var tempTex = factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill<ColorVect>(StandardColor.White), includeAlpha: false);
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, tempTex, factory.MaterialBuilder.CreateStandardMaterial(tempTex));
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.MeshBuilder.CreateMesh(Cuboid.UnitCube));
-			tempTex = factory.MaterialBuilder.CreateTexture(TexturePattern.PlainFill<ColorVect>(StandardColor.White), includeAlpha: false);
+			tempTex = factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill<ColorVect>(StandardColor.White), includeAlpha: false);
 			var tempMat = factory.MaterialBuilder.CreateStandardMaterial(tempTex);
 			var tempMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube);
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, tempTex, tempMat, tempMesh, factory.ObjectBuilder.CreateModelInstance(tempMesh, tempMat));

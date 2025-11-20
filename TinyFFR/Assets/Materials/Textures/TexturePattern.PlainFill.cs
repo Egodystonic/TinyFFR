@@ -5,6 +5,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using static Egodystonic.TinyFFR.Assets.Materials.TexturePatternDefaultValues;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 

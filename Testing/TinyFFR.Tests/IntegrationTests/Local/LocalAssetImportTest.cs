@@ -54,9 +54,9 @@ class LocalAssetImportTest {
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 
-		Assert.AreEqual(new TextureReadMetadata((1024, 1024)), factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex)));
-		Assert.AreEqual(new TextureReadMetadata((1024, 1024)), factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex)));
-		Assert.AreEqual(new TextureReadMetadata((1024, 1024)), factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex)));
+		Assert.AreEqual(new TextureReadMetadata((1024, 1024), false), factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex)));
+		Assert.AreEqual(new TextureReadMetadata((1024, 1024), false), factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex)));
+		Assert.AreEqual(new TextureReadMetadata((1024, 1024), false), factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex)));
 
 		var texBuffer = (new TexelRgb24[1024 * 1024]).AsSpan();
 		factory.AssetLoader.ReadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex), texBuffer);
@@ -98,7 +98,7 @@ class LocalAssetImportTest {
 				new(TextureCombinationSourceTexture.TextureB, ColorChannel.R),
 				new(TextureCombinationSourceTexture.TextureC, ColorChannel.R)
 			),
-			finalOutputConfig: new TextureCreationConfig { TexelType = TexelType.Rgb24, IsLinearColorspace = false, ProcessingToApply = new() { InvertYGreenChannel = true, InvertZBlueChannel = true } }
+			finalOutputConfig: new TextureCreationConfig { IsLinearColorspace = false, ProcessingToApply = new() { InvertYGreenChannel = true, InvertZBlueChannel = true } }
 		);
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(albedo, normal, orm);
 		using var mesh = factory.AssetLoader.LoadMesh(

@@ -41,7 +41,7 @@ class LocalShadowsTest {
 
 		using var cubeMesh = factory.MeshBuilder.CreateMesh(new Cuboid(CubeSize));
 		using var cubeMat = factory.MaterialBuilder.CreateStandardMaterial(
-			colorMap: factory.MaterialBuilder.CreateTexture(
+			colorMap: factory.TextureBuilder.CreateColorMap(
 				TexturePattern.Chequerboard(
 					new ColorVect(1f, 1f, 1f, 1f), 
 					new ColorVect(0f, 0f, 0f, 0f)
@@ -50,7 +50,7 @@ class LocalShadowsTest {
 			),
 			alphaMode: StandardMaterialAlphaMode.MaskOnly
 		);
-		using var floorMat = factory.MaterialBuilder.CreateStandardMaterial(factory.MaterialBuilder.CreateTexture(TexturePattern.PlainFill(new ColorVect(0.5f, 0.5f, 0.5f, 0.5f)), includeAlpha: true), alphaMode: StandardMaterialAlphaMode.FullBlending);
+		using var floorMat = factory.MaterialBuilder.CreateStandardMaterial(factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(new ColorVect(0.5f, 0.5f, 0.5f, 0.5f)), includeAlpha: true), alphaMode: StandardMaterialAlphaMode.FullBlending);
 
 		var cubeList = factory.ResourceAllocator.CreateNewArrayPoolBackedList<ModelInstance>();
 		

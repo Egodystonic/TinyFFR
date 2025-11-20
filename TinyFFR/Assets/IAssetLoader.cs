@@ -7,7 +7,7 @@ using Egodystonic.TinyFFR.Assets.Meshes;
 
 namespace Egodystonic.TinyFFR.Assets;
 
-public readonly record struct TextureReadMetadata(XYPair<int> Dimensions);
+public readonly record struct TextureReadMetadata(XYPair<int> Dimensions, bool IncludesAlphaChannel);
 public readonly record struct MeshReadMetadata(int VertexCount, int TriangleCount);
 public readonly record struct MeshReadCountData(int NumVerticesWritten, int NumTrianglesWritten);
 
@@ -65,7 +65,8 @@ public interface IAssetLoader {
 			}
 		);
 	}
-	Texture LoadTexture(ReadOnlySpan<char> filePath, in TextureCreationConfig config);
+	Texture LoadTexture(ReadOnlySpan<char> filePath, in TextureCreationConfig config) => LoadTexture(new TextureReadConfig { FilePath = filePath }, in config);
+	Texture LoadTexture(in TextureReadConfig readConfig, in TextureCreationConfig config);
 
 	TextureReadMetadata ReadTextureMetadata(ReadOnlySpan<char> filePath);
 	int ReadTexture<TTexel>(ReadOnlySpan<char> filePath, Span<TTexel> destinationBuffer) where TTexel : unmanaged, ITexel<TTexel> => ReadTexture(filePath, TextureProcessingConfig.None, destinationBuffer);

@@ -14,6 +14,92 @@ class TextureConfigTest {
 	public void TearDownTest() { }
 
 	[Test]
+	public void ProcessingConfigShouldCorrectlySetRequiresProcessingFlag() {
+		Assert.AreEqual(false, new TextureProcessingConfig().FlipX);
+		Assert.AreEqual(false, new TextureProcessingConfig().FlipY);
+		Assert.AreEqual(false, new TextureProcessingConfig().InvertXRedChannel);
+		Assert.AreEqual(false, new TextureProcessingConfig().InvertYGreenChannel);
+		Assert.AreEqual(false, new TextureProcessingConfig().InvertZBlueChannel);
+		Assert.AreEqual(false, new TextureProcessingConfig().InvertWAlphaChannel);
+		Assert.AreEqual(ColorChannel.R, new TextureProcessingConfig().XRedFinalOutputSource);
+		Assert.AreEqual(ColorChannel.G, new TextureProcessingConfig().YGreenFinalOutputSource);
+		Assert.AreEqual(ColorChannel.B, new TextureProcessingConfig().ZBlueFinalOutputSource);
+		Assert.AreEqual(ColorChannel.A, new TextureProcessingConfig().WAlphaFinalOutputSource);
+		Assert.AreEqual(false, new TextureProcessingConfig().RequiresProcessing);
+
+		Assert.AreEqual(false, new TextureProcessingConfig { FlipX = false }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { FlipX = true }.RequiresProcessing);
+
+		Assert.AreEqual(false, new TextureProcessingConfig { FlipY = false }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { FlipY = true }.RequiresProcessing);
+
+		Assert.AreEqual(false, new TextureProcessingConfig { InvertXRedChannel = false }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { InvertXRedChannel = true }.RequiresProcessing);
+
+		Assert.AreEqual(false, new TextureProcessingConfig { InvertYGreenChannel = false }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { InvertYGreenChannel = true }.RequiresProcessing);
+
+		Assert.AreEqual(false, new TextureProcessingConfig { InvertZBlueChannel = false }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { InvertZBlueChannel = true }.RequiresProcessing);
+
+		Assert.AreEqual(false, new TextureProcessingConfig { InvertWAlphaChannel = false }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { InvertWAlphaChannel = true }.RequiresProcessing);
+
+		Assert.AreEqual(false, new TextureProcessingConfig { XRedFinalOutputSource = ColorChannel.R }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { XRedFinalOutputSource = ColorChannel.G }.RequiresProcessing);
+
+		Assert.AreEqual(false, new TextureProcessingConfig { YGreenFinalOutputSource = ColorChannel.G }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { YGreenFinalOutputSource = ColorChannel.B }.RequiresProcessing);
+
+		Assert.AreEqual(false, new TextureProcessingConfig { ZBlueFinalOutputSource = ColorChannel.B }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { ZBlueFinalOutputSource = ColorChannel.A }.RequiresProcessing);
+
+		Assert.AreEqual(false, new TextureProcessingConfig { WAlphaFinalOutputSource = ColorChannel.A }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { WAlphaFinalOutputSource = ColorChannel.R }.RequiresProcessing);
+
+		Assert.AreEqual(
+			false, 
+			new TextureProcessingConfig {
+				FlipX = false,
+				FlipY = false,
+				InvertXRedChannel = false,
+				InvertYGreenChannel = false,
+				InvertZBlueChannel = false,
+				InvertWAlphaChannel = false,
+				XRedFinalOutputSource = ColorChannel.R,
+				YGreenFinalOutputSource = ColorChannel.G,
+				ZBlueFinalOutputSource = ColorChannel.B,
+				WAlphaFinalOutputSource = ColorChannel.A,
+			}.RequiresProcessing
+		);
+
+		Assert.AreEqual(true, new TextureProcessingConfig { FlipX = true, FlipY = false }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { FlipX = true, FlipY = true }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { FlipY = true, FlipX = false }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { FlipY = true, FlipX = true }.RequiresProcessing);
+
+		Assert.AreEqual(true, new TextureProcessingConfig { InvertXRedChannel = true, InvertYGreenChannel = false }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { InvertXRedChannel = true, InvertYGreenChannel = true }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { InvertYGreenChannel = true, InvertXRedChannel = false }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { InvertYGreenChannel = true, InvertXRedChannel = true }.RequiresProcessing);
+
+		Assert.AreEqual(true, new TextureProcessingConfig { InvertZBlueChannel = true, InvertWAlphaChannel = false }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { InvertZBlueChannel = true, InvertWAlphaChannel = true }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { InvertWAlphaChannel = true, InvertZBlueChannel = false }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { InvertWAlphaChannel = true, InvertZBlueChannel = true }.RequiresProcessing);
+
+		Assert.AreEqual(true, new TextureProcessingConfig { XRedFinalOutputSource = ColorChannel.G, YGreenFinalOutputSource = ColorChannel.G }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { XRedFinalOutputSource = ColorChannel.G, YGreenFinalOutputSource = ColorChannel.B }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { YGreenFinalOutputSource = ColorChannel.B, XRedFinalOutputSource = ColorChannel.R }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { YGreenFinalOutputSource = ColorChannel.B, XRedFinalOutputSource = ColorChannel.G }.RequiresProcessing);
+
+		Assert.AreEqual(true, new TextureProcessingConfig { ZBlueFinalOutputSource = ColorChannel.A, WAlphaFinalOutputSource = ColorChannel.A }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { ZBlueFinalOutputSource = ColorChannel.A, WAlphaFinalOutputSource = ColorChannel.R }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { WAlphaFinalOutputSource = ColorChannel.R, ZBlueFinalOutputSource = ColorChannel.B }.RequiresProcessing);
+		Assert.AreEqual(true, new TextureProcessingConfig { WAlphaFinalOutputSource = ColorChannel.R, ZBlueFinalOutputSource = ColorChannel.A }.RequiresProcessing);
+	}
+
+	[Test]
 	public void ShouldCorrectlyConvertProcessingConfigToAndFromHeapStorageFormat() {
 		var testConfigA = new TextureProcessingConfig {
 			FlipX = false,
@@ -130,7 +216,6 @@ class TextureConfigTest {
 		var testConfigA = new TextureCreationConfig {
 			GenerateMipMaps = true,
 			IsLinearColorspace = true,
-			TexelType = TexelType.Rgba32,
 			Name = "Aa Aa",
 			ProcessingToApply = new TextureProcessingConfig {
 				FlipX = false,
@@ -148,7 +233,6 @@ class TextureConfigTest {
 		var testConfigB = new TextureCreationConfig {
 			GenerateMipMaps = false,
 			IsLinearColorspace = false,
-			TexelType = TexelType.Rgb24,
 			Name = "BBBbbb",
 			ProcessingToApply = new TextureProcessingConfig {
 				FlipX = true,
@@ -167,7 +251,6 @@ class TextureConfigTest {
 		void AssertConfigsMatch(TextureCreationConfig expected, TextureCreationConfig actual) {
 			Assert.AreEqual(expected.GenerateMipMaps, actual.GenerateMipMaps);
 			Assert.AreEqual(expected.IsLinearColorspace, actual.IsLinearColorspace);
-			Assert.AreEqual(expected.TexelType, actual.TexelType);
 			Assert.AreEqual(expected.Name.ToString(), actual.Name.ToString());
 			Assert.AreEqual(expected.ProcessingToApply, actual.ProcessingToApply);
 		}
@@ -178,7 +261,6 @@ class TextureConfigTest {
 		AssertHeapSerializationWithObjects<TextureCreationConfig>()
 			.Bool(true)
 			.Bool(true)
-			.Int((int) TexelType.Rgba32)
 			.String("Aa Aa")
 			.SubConfig(testConfigA.ProcessingToApply)
 			.For(testConfigA);
@@ -186,7 +268,6 @@ class TextureConfigTest {
 		AssertHeapSerializationWithObjects<TextureCreationConfig>()
 			.Bool(false)
 			.Bool(false)
-			.Int((int) TexelType.Rgb24)
 			.String("BBBbbb")
 			.SubConfig(testConfigB.ProcessingToApply)
 			.For(testConfigB);
@@ -194,7 +275,6 @@ class TextureConfigTest {
 		AssertPropertiesAccountedFor<TextureCreationConfig>()
 			.Including(nameof(TextureCreationConfig.GenerateMipMaps))
 			.Including(nameof(TextureCreationConfig.IsLinearColorspace))
-			.Including(nameof(TextureCreationConfig.TexelType))
 			.Including(nameof(TextureCreationConfig.Name))
 			.Including(nameof(TextureCreationConfig.ProcessingToApply))
 			.End();

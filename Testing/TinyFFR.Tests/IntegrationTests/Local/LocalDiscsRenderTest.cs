@@ -40,11 +40,11 @@ class LocalDiscsRenderTest {
 			);
 		} 
 		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(polyGroup, new Transform2D(scaling: new(2f), rotation: 45f));
-		using var colorMap = factory.AssetLoader.MaterialBuilder.CreateTexture(
+		using var colorMap = factory.AssetLoader.TextureBuilder.CreateColorMap(
 			TexturePattern.Lines(ColorVect.FromStandardColor(StandardColor.White), ColorVect.FromStandardColor(StandardColor.Silver), true, perturbationMagnitude: 0.1f), includeAlpha: false
 		);
-		using var normalMap = factory.AssetLoader.MaterialBuilder.CreateTexture(TexturePattern.PlainFill(UnitSphericalCoordinate.ZeroZero));
-		using var ormMap = factory.AssetLoader.MaterialBuilder.CreateTexture(
+		using var normalMap = factory.AssetLoader.TextureBuilder.CreateNormalMap(TexturePattern.PlainFill(UnitSphericalCoordinate.ZeroZero));
+		using var ormMap = factory.AssetLoader.TextureBuilder.CreateOcclusionRoughnessMetallicMap(
 			TexturePattern.Lines<Real>(0f, 1f, false, perturbationMagnitude: 0.1f),
 			TexturePattern.Lines<Real>(1f, 0f, false, perturbationMagnitude: 0.1f),
 			TexturePattern.PlainFill<Real>(0f)

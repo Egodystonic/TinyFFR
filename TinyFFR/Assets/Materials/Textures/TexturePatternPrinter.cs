@@ -1,10 +1,13 @@
 ﻿// Created on 2025-11-18 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
+using System.Threading;
+using Egodystonic.TinyFFR.Resources.Memory;
+
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public static unsafe class TexturePatternPrinter {
-	#region Texel Conversions & Helper Funcs
+	#region Helper Funcs
 	static void ThrowIfBufferCanNotFitPattern(XYPair<int> dimensions, int spanLength) {
 		if (dimensions.Area <= spanLength) return;
 		throw new ArgumentException($"Destination buffer length ({spanLength}) was too small to accomodate pattern ({dimensions.X}x{dimensions.Y}={dimensions.Area} texels).");
@@ -28,21 +31,9 @@ public static unsafe class TexturePatternPrinter {
 			Math.Max(pattern1.Dimensions.Y, Math.Max(pattern2.Dimensions.Y, Math.Max(pattern3.Dimensions.Y, pattern4.Dimensions.Y)))
 		);
 	}
-
-	public static TexelRgb24 ConvertSphericalCoordToNormalTexel(UnitSphericalCoordinate coord) {
-		const float Multiplicand = Byte.MaxValue * 0.5f;
-
-		var v = coord.ToDirection(new Direction(1f, 0f, 0f), new Direction(0f, 0f, 1f))
-					.ToVector3()
-					+ Vector3.One;
-		v *= Multiplicand;
-		return new((byte) v.X, (byte) v.Y, (byte) v.Z);
-	}
-
-	public static byte ConvertNormalizedRealToTexelByteChannel(Real r) => (byte) (r * Byte.MaxValue);
 	#endregion
 
-	#region Fundamental Print Functions
+	#region Print Pattern (Delegate Pointer Overloads)
 	public static int PrintPattern<TTexel>(in TexturePattern<TTexel> pattern, Span<TTexel> destinationBuffer) where TTexel : unmanaged {
 		var dimensions = pattern.Dimensions;
 		ThrowIfBufferCanNotFitPattern(dimensions, destinationBuffer.Length);
@@ -68,7 +59,8 @@ public static unsafe class TexturePatternPrinter {
 		}
 		return texelIndex;
 	}
-	public static int PrintPattern<T, TTexel>(in TexturePattern<T> pattern, delegate* managed<T, TTexel> conversionMapFunc, Span<TTexel> destinationBuffer) where T : unmanaged where TTexel : unmanaged {
+
+	public static int PrintPattern<T1, TTexel>(in TexturePattern<T1> pattern, delegate* managed<T1, TTexel> conversionMapFunc, Span<TTexel> destinationBuffer) where T1 : unmanaged {
 		var dimensions = pattern.Dimensions;
 		ThrowIfBufferCanNotFitPattern(dimensions, destinationBuffer.Length);
 
@@ -82,11 +74,11 @@ public static unsafe class TexturePatternPrinter {
 		return texelIndex;
 	}
 
-	public static int PrintPattern<T>(in TexturePattern<T> xRedPattern, in TexturePattern<T> yGreenPattern, delegate* managed<T, byte> conversionMapFunc, Span<TexelRgb24> destinationBuffer) where T : unmanaged {
-		var sameDimensions = xRedPattern.Dimensions == yGreenPattern.Dimensions;
+	public static int PrintPattern<T1, T2, TTexel>(in TexturePattern<T1> pattern1, in TexturePattern<T2> pattern2, delegate* managed<T1, T2, TTexel> conversionMapFunc, Span<TTexel> destinationBuffer) where T1 : unmanaged where T2 : unmanaged {
+		var sameDimensions = pattern1.Dimensions == pattern2.Dimensions;
 		var dimensions = sameDimensions
-			? xRedPattern.Dimensions
-			: GetCompositePatternDimensions(in xRedPattern, in yGreenPattern);
+			? pattern1.Dimensions
+			: GetCompositePatternDimensions(in pattern1, in pattern2);
 
 		ThrowIfBufferCanNotFitPattern(dimensions, destinationBuffer.Length);
 
@@ -94,10 +86,9 @@ public static unsafe class TexturePatternPrinter {
 			var texelIndex = 0;
 			for (var y = 0; y < dimensions.Y; ++y) {
 				for (var x = 0; x < dimensions.X; ++x) {
-					destinationBuffer[texelIndex++] = new(
-						conversionMapFunc(xRedPattern[x, y]),
-						conversionMapFunc(yGreenPattern[x, y]),
-						0
+					destinationBuffer[texelIndex++] = conversionMapFunc(
+						pattern1[x, y], 
+						pattern2[x, y]
 					);
 				}
 			}
@@ -107,82 +98,9 @@ public static unsafe class TexturePatternPrinter {
 			var texelIndex = 0;
 			for (var y = 0; y < dimensions.Y; ++y) {
 				for (var x = 0; x < dimensions.X; ++x) {
-					destinationBuffer[texelIndex++] = new(
-						conversionMapFunc(xRedPattern[x % xRedPattern.Dimensions.X, y % xRedPattern.Dimensions.Y]),
-						conversionMapFunc(yGreenPattern[x % yGreenPattern.Dimensions.X, y % yGreenPattern.Dimensions.Y]),
-						0
-					);
-				}
-			}
-			return texelIndex;
-		}
-	}
-	public static int PrintPattern<T>(in TexturePattern<T> xRedPattern, in TexturePattern<T> yGreenPattern, in TexturePattern<T> zBluePattern, delegate* managed<T, byte> conversionMapFunc, Span<TexelRgb24> destinationBuffer) where T : unmanaged {
-		var sameDimensions = xRedPattern.Dimensions == yGreenPattern.Dimensions && yGreenPattern.Dimensions == zBluePattern.Dimensions;
-		var dimensions = sameDimensions
-			? xRedPattern.Dimensions
-			: GetCompositePatternDimensions(in xRedPattern, in yGreenPattern, in zBluePattern);
-
-		ThrowIfBufferCanNotFitPattern(dimensions, destinationBuffer.Length);
-
-		if (sameDimensions) {
-			var texelIndex = 0;
-			for (var y = 0; y < dimensions.Y; ++y) {
-				for (var x = 0; x < dimensions.X; ++x) {
-					destinationBuffer[texelIndex++] = new(
-						conversionMapFunc(xRedPattern[x, y]),
-						conversionMapFunc(yGreenPattern[x, y]),
-						conversionMapFunc(zBluePattern[x, y])
-					);
-				}
-			}
-			return texelIndex;
-		}
-		else {
-			var texelIndex = 0;
-			for (var y = 0; y < dimensions.Y; ++y) {
-				for (var x = 0; x < dimensions.X; ++x) {
-					destinationBuffer[texelIndex++] = new(
-						conversionMapFunc(xRedPattern[x % xRedPattern.Dimensions.X, y % xRedPattern.Dimensions.Y]),
-						conversionMapFunc(yGreenPattern[x % yGreenPattern.Dimensions.X, y % yGreenPattern.Dimensions.Y]),
-						conversionMapFunc(zBluePattern[x % zBluePattern.Dimensions.X, y % zBluePattern.Dimensions.Y])
-					);
-				}
-			}
-			return texelIndex;
-		}
-	}
-	public static int PrintPattern<T>(in TexturePattern<T> xRedPattern, in TexturePattern<T> yGreenPattern, in TexturePattern<T> zBluePattern, in TexturePattern<T> wAlphaPattern, delegate* managed<T, byte> conversionMapFunc, Span<TexelRgba32> destinationBuffer) where T : unmanaged {
-		var sameDimensions = xRedPattern.Dimensions == yGreenPattern.Dimensions && yGreenPattern.Dimensions == zBluePattern.Dimensions && zBluePattern.Dimensions == wAlphaPattern.Dimensions;
-		var dimensions = sameDimensions
-			? xRedPattern.Dimensions
-			: GetCompositePatternDimensions(in xRedPattern, in yGreenPattern, in zBluePattern, in wAlphaPattern);
-
-		ThrowIfBufferCanNotFitPattern(dimensions, destinationBuffer.Length);
-
-		if (sameDimensions) {
-			var texelIndex = 0;
-			for (var y = 0; y < dimensions.Y; ++y) {
-				for (var x = 0; x < dimensions.X; ++x) {
-					destinationBuffer[texelIndex++] = new(
-						conversionMapFunc(xRedPattern[x, y]),
-						conversionMapFunc(yGreenPattern[x, y]),
-						conversionMapFunc(zBluePattern[x, y]),
-						conversionMapFunc(wAlphaPattern[x, y])
-					);
-				}
-			}
-			return texelIndex;
-		}
-		else {
-			var texelIndex = 0;
-			for (var y = 0; y < dimensions.Y; ++y) {
-				for (var x = 0; x < dimensions.X; ++x) {
-					destinationBuffer[texelIndex++] = new(
-						conversionMapFunc(xRedPattern[x % xRedPattern.Dimensions.X, y % xRedPattern.Dimensions.Y]),
-						conversionMapFunc(yGreenPattern[x % yGreenPattern.Dimensions.X, y % yGreenPattern.Dimensions.Y]),
-						conversionMapFunc(zBluePattern[x % zBluePattern.Dimensions.X, y % zBluePattern.Dimensions.Y]),
-						conversionMapFunc(wAlphaPattern[x % wAlphaPattern.Dimensions.X, y % wAlphaPattern.Dimensions.Y])
+					destinationBuffer[texelIndex++] = conversionMapFunc(
+						pattern1[x % pattern1.Dimensions.X, y % pattern1.Dimensions.Y],
+						pattern2[x % pattern2.Dimensions.X, y % pattern2.Dimensions.Y]
 					);
 				}
 			}
@@ -190,12 +108,11 @@ public static unsafe class TexturePatternPrinter {
 		}
 	}
 
-	// TODO Offer BMP functions below; add Func<> overloads; add default values to TexturePattern (e.g. TexturePattern.DefaultMapValues.Metallic)
-	public static int PrintPattern<TXyz, TW>(in TexturePattern<TXyz> xyzRgbPattern, in TexturePattern<TW> wAlphaPattern, delegate* managed<TXyz, TexelRgb24> xyzConversionMapFunc, delegate* managed<TW, byte> wConversionMapFunc, Span<TexelRgba32> destinationBuffer) where TXyz : unmanaged where TW : unmanaged {
-		var sameDimensions = xyzRgbPattern.Dimensions == wAlphaPattern.Dimensions;
+	public static int PrintPattern<T1, T2, T3, TTexel>(in TexturePattern<T1> pattern1, in TexturePattern<T2> pattern2, in TexturePattern<T3> pattern3, delegate* managed<T1, T2, T3, TTexel> conversionMapFunc, Span<TTexel> destinationBuffer) where T1 : unmanaged where T2 : unmanaged where T3 : unmanaged {
+		var sameDimensions = pattern1.Dimensions == pattern2.Dimensions && pattern2.Dimensions == pattern3.Dimensions;
 		var dimensions = sameDimensions
-			? xyzRgbPattern.Dimensions
-			: GetCompositePatternDimensions(in xyzRgbPattern, in wAlphaPattern);
+			? pattern1.Dimensions
+			: GetCompositePatternDimensions(in pattern1, in pattern2, in pattern3);
 
 		ThrowIfBufferCanNotFitPattern(dimensions, destinationBuffer.Length);
 
@@ -203,9 +120,10 @@ public static unsafe class TexturePatternPrinter {
 			var texelIndex = 0;
 			for (var y = 0; y < dimensions.Y; ++y) {
 				for (var x = 0; x < dimensions.X; ++x) {
-					destinationBuffer[texelIndex++] = new(
-						xyzConversionMapFunc(xyzRgbPattern[x, y]),
-						wConversionMapFunc(wAlphaPattern[x, y])
+					destinationBuffer[texelIndex++] = conversionMapFunc(
+						pattern1[x, y],
+						pattern2[x, y],
+						pattern3[x, y]
 					);
 				}
 			}
@@ -215,13 +133,352 @@ public static unsafe class TexturePatternPrinter {
 			var texelIndex = 0;
 			for (var y = 0; y < dimensions.Y; ++y) {
 				for (var x = 0; x < dimensions.X; ++x) {
-					destinationBuffer[texelIndex++] = new(
-						xyzConversionMapFunc(xyzRgbPattern[x % xyzRgbPattern.Dimensions.X, y % xyzRgbPattern.Dimensions.Y]),
-						wConversionMapFunc(wAlphaPattern[x % wAlphaPattern.Dimensions.X, y % wAlphaPattern.Dimensions.Y])
+					destinationBuffer[texelIndex++] = conversionMapFunc(
+						pattern1[x % pattern1.Dimensions.X, y % pattern1.Dimensions.Y],
+						pattern2[x % pattern2.Dimensions.X, y % pattern2.Dimensions.Y],
+						pattern3[x % pattern3.Dimensions.X, y % pattern3.Dimensions.Y]
 					);
 				}
 			}
 			return texelIndex;
+		}
+	}
+
+	public static int PrintPattern<T1, T2, T3, T4, TTexel>(in TexturePattern<T1> pattern1, in TexturePattern<T2> pattern2, in TexturePattern<T3> pattern3, in TexturePattern<T4> pattern4, delegate* managed<T1, T2, T3, T4, TTexel> conversionMapFunc, Span<TTexel> destinationBuffer) where T1 : unmanaged where T2 : unmanaged where T3 : unmanaged where T4 : unmanaged {
+		var sameDimensions = pattern1.Dimensions == pattern2.Dimensions && pattern2.Dimensions == pattern3.Dimensions && pattern3.Dimensions == pattern4.Dimensions;
+		var dimensions = sameDimensions
+			? pattern1.Dimensions
+			: GetCompositePatternDimensions(in pattern1, in pattern2, in pattern3, in pattern4);
+
+		ThrowIfBufferCanNotFitPattern(dimensions, destinationBuffer.Length);
+
+		if (sameDimensions) {
+			var texelIndex = 0;
+			for (var y = 0; y < dimensions.Y; ++y) {
+				for (var x = 0; x < dimensions.X; ++x) {
+					destinationBuffer[texelIndex++] = conversionMapFunc(
+						pattern1[x, y],
+						pattern2[x, y],
+						pattern3[x, y],
+						pattern4[x, y]
+					);
+				}
+			}
+			return texelIndex;
+		}
+		else {
+			var texelIndex = 0;
+			for (var y = 0; y < dimensions.Y; ++y) {
+				for (var x = 0; x < dimensions.X; ++x) {
+					destinationBuffer[texelIndex++] = conversionMapFunc(
+						pattern1[x % pattern1.Dimensions.X, y % pattern1.Dimensions.Y],
+						pattern2[x % pattern2.Dimensions.X, y % pattern2.Dimensions.Y],
+						pattern3[x % pattern3.Dimensions.X, y % pattern3.Dimensions.Y],
+						pattern4[x % pattern4.Dimensions.X, y % pattern4.Dimensions.Y]
+					);
+				}
+			}
+			return texelIndex;
+		}
+	}
+	#endregion
+
+	#region Print Pattern (Func Overloads)
+	public static int PrintPattern<T1, TTexel>(in TexturePattern<T1> pattern, Func<T1, TTexel> conversionMapFunc, Span<TTexel> destinationBuffer) where T1 : unmanaged {
+		var dimensions = pattern.Dimensions;
+		ThrowIfBufferCanNotFitPattern(dimensions, destinationBuffer.Length);
+
+		var texelIndex = 0;
+		for (var y = 0; y < dimensions.Y; ++y) {
+			for (var x = 0; x < dimensions.X; ++x) {
+				destinationBuffer[texelIndex++] = conversionMapFunc(pattern[x, y]);
+			}
+		}
+
+		return texelIndex;
+	}
+
+	public static int PrintPattern<T1, T2, TTexel>(in TexturePattern<T1> pattern1, in TexturePattern<T2> pattern2, Func<T1, T2, TTexel> conversionMapFunc, Span<TTexel> destinationBuffer) where T1 : unmanaged where T2 : unmanaged {
+		var sameDimensions = pattern1.Dimensions == pattern2.Dimensions;
+		var dimensions = sameDimensions
+			? pattern1.Dimensions
+			: GetCompositePatternDimensions(in pattern1, in pattern2);
+
+		ThrowIfBufferCanNotFitPattern(dimensions, destinationBuffer.Length);
+
+		if (sameDimensions) {
+			var texelIndex = 0;
+			for (var y = 0; y < dimensions.Y; ++y) {
+				for (var x = 0; x < dimensions.X; ++x) {
+					destinationBuffer[texelIndex++] = conversionMapFunc(
+						pattern1[x, y],
+						pattern2[x, y]
+					);
+				}
+			}
+			return texelIndex;
+		}
+		else {
+			var texelIndex = 0;
+			for (var y = 0; y < dimensions.Y; ++y) {
+				for (var x = 0; x < dimensions.X; ++x) {
+					destinationBuffer[texelIndex++] = conversionMapFunc(
+						pattern1[x % pattern1.Dimensions.X, y % pattern1.Dimensions.Y],
+						pattern2[x % pattern2.Dimensions.X, y % pattern2.Dimensions.Y]
+					);
+				}
+			}
+			return texelIndex;
+		}
+	}
+
+	public static int PrintPattern<T1, T2, T3, TTexel>(in TexturePattern<T1> pattern1, in TexturePattern<T2> pattern2, in TexturePattern<T3> pattern3, Func<T1, T2, T3, TTexel> conversionMapFunc, Span<TTexel> destinationBuffer) where T1 : unmanaged where T2 : unmanaged where T3 : unmanaged {
+		var sameDimensions = pattern1.Dimensions == pattern2.Dimensions && pattern2.Dimensions == pattern3.Dimensions;
+		var dimensions = sameDimensions
+			? pattern1.Dimensions
+			: GetCompositePatternDimensions(in pattern1, in pattern2, in pattern3);
+
+		ThrowIfBufferCanNotFitPattern(dimensions, destinationBuffer.Length);
+
+		if (sameDimensions) {
+			var texelIndex = 0;
+			for (var y = 0; y < dimensions.Y; ++y) {
+				for (var x = 0; x < dimensions.X; ++x) {
+					destinationBuffer[texelIndex++] = conversionMapFunc(
+						pattern1[x, y],
+						pattern2[x, y],
+						pattern3[x, y]
+					);
+				}
+			}
+			return texelIndex;
+		}
+		else {
+			var texelIndex = 0;
+			for (var y = 0; y < dimensions.Y; ++y) {
+				for (var x = 0; x < dimensions.X; ++x) {
+					destinationBuffer[texelIndex++] = conversionMapFunc(
+						pattern1[x % pattern1.Dimensions.X, y % pattern1.Dimensions.Y],
+						pattern2[x % pattern2.Dimensions.X, y % pattern2.Dimensions.Y],
+						pattern3[x % pattern3.Dimensions.X, y % pattern3.Dimensions.Y]
+					);
+				}
+			}
+			return texelIndex;
+		}
+	}
+
+	public static int PrintPattern<T1, T2, T3, T4, TTexel>(in TexturePattern<T1> pattern1, in TexturePattern<T2> pattern2, in TexturePattern<T3> pattern3, in TexturePattern<T4> pattern4, Func<T1, T2, T3, T4, TTexel> conversionMapFunc, Span<TTexel> destinationBuffer) where T1 : unmanaged where T2 : unmanaged where T3 : unmanaged where T4 : unmanaged {
+		var sameDimensions = pattern1.Dimensions == pattern2.Dimensions && pattern2.Dimensions == pattern3.Dimensions && pattern3.Dimensions == pattern4.Dimensions;
+		var dimensions = sameDimensions
+			? pattern1.Dimensions
+			: GetCompositePatternDimensions(in pattern1, in pattern2, in pattern3, in pattern4);
+
+		ThrowIfBufferCanNotFitPattern(dimensions, destinationBuffer.Length);
+
+		if (sameDimensions) {
+			var texelIndex = 0;
+			for (var y = 0; y < dimensions.Y; ++y) {
+				for (var x = 0; x < dimensions.X; ++x) {
+					destinationBuffer[texelIndex++] = conversionMapFunc(
+						pattern1[x, y],
+						pattern2[x, y],
+						pattern3[x, y],
+						pattern4[x, y]
+					);
+				}
+			}
+			return texelIndex;
+		}
+		else {
+			var texelIndex = 0;
+			for (var y = 0; y < dimensions.Y; ++y) {
+				for (var x = 0; x < dimensions.X; ++x) {
+					destinationBuffer[texelIndex++] = conversionMapFunc(
+						pattern1[x % pattern1.Dimensions.X, y % pattern1.Dimensions.Y],
+						pattern2[x % pattern2.Dimensions.X, y % pattern2.Dimensions.Y],
+						pattern3[x % pattern3.Dimensions.X, y % pattern3.Dimensions.Y],
+						pattern4[x % pattern4.Dimensions.X, y % pattern4.Dimensions.Y]
+					);
+				}
+			}
+			return texelIndex;
+		}
+	}
+	#endregion
+
+	#region Save Pattern (Delegate Pointer Overloads)
+	static readonly HeapPool _bitmapHeapPool = new();
+	static readonly Lock _bitmapHeapPoolMutationLock = new();
+
+	public static void SavePattern<TTexel>(in TexturePattern<TTexel> pattern, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? bitmapConfig = null) where TTexel : unmanaged, ITexel<TTexel, byte> {
+		var dimensions = pattern.Dimensions;
+		PooledHeapMemory<TTexel> pooledMemory;
+		lock (_bitmapHeapPoolMutationLock) {
+			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
+		}
+		try {
+			_ = PrintPattern(pattern, pooledMemory.Buffer);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new());
+		}
+		finally {
+			lock (_bitmapHeapPoolMutationLock) {
+				pooledMemory.Dispose();
+			}
+		}
+	}
+	public static void SavePattern<T, TTexel>(in TexturePattern<T> pattern, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? bitmapConfig = null) where T : unmanaged where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, T>, ITexel<TTexel, byte> {
+		var dimensions = pattern.Dimensions;
+		PooledHeapMemory<TTexel> pooledMemory;
+		lock (_bitmapHeapPoolMutationLock) {
+			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
+		}
+		try {
+			_ = PrintPattern(pattern, pooledMemory.Buffer);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new());
+		}
+		finally {
+			lock (_bitmapHeapPoolMutationLock) {
+				pooledMemory.Dispose();
+			}
+		}
+	}
+
+	public static void SavePattern<T1, TTexel>(in TexturePattern<T1> pattern, delegate* managed<T1, TTexel> conversionMapFunc, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? bitmapConfig = null) where T1 : unmanaged where TTexel : unmanaged, ITexel<TTexel, byte> {
+		var dimensions = pattern.Dimensions;
+		PooledHeapMemory<TTexel> pooledMemory;
+		lock (_bitmapHeapPoolMutationLock) {
+			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
+		}
+		try {
+			_ = PrintPattern(pattern, conversionMapFunc, pooledMemory.Buffer);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new());
+		}
+		finally {
+			lock (_bitmapHeapPoolMutationLock) {
+				pooledMemory.Dispose();
+			}
+		}
+	}
+
+	public static void SavePattern<T1, T2, TTexel>(in TexturePattern<T1> pattern1, in TexturePattern<T2> pattern2, delegate* managed<T1, T2, TTexel> conversionMapFunc, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? bitmapConfig = null) where T1 : unmanaged where T2 : unmanaged where TTexel : unmanaged, ITexel<TTexel, byte> {
+		var dimensions = GetCompositePatternDimensions(pattern1, pattern2);
+		PooledHeapMemory<TTexel> pooledMemory;
+		lock (_bitmapHeapPoolMutationLock) {
+			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
+		}
+		try {
+			_ = PrintPattern(pattern1, pattern2, conversionMapFunc, pooledMemory.Buffer);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new());
+		}
+		finally {
+			lock (_bitmapHeapPoolMutationLock) {
+				pooledMemory.Dispose();
+			}
+		}
+	}
+
+	public static void SavePattern<T1, T2, T3, TTexel>(in TexturePattern<T1> pattern1, in TexturePattern<T2> pattern2, in TexturePattern<T3> pattern3, delegate* managed<T1, T2, T3, TTexel> conversionMapFunc, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? bitmapConfig = null) where T1 : unmanaged where T2 : unmanaged where T3 : unmanaged where TTexel : unmanaged, ITexel<TTexel, byte> {
+		var dimensions = GetCompositePatternDimensions(pattern1, pattern2, pattern3);
+		PooledHeapMemory<TTexel> pooledMemory;
+		lock (_bitmapHeapPoolMutationLock) {
+			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
+		}
+		try {
+			_ = PrintPattern(pattern1, pattern2, pattern3, conversionMapFunc, pooledMemory.Buffer);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new());
+		}
+		finally {
+			lock (_bitmapHeapPoolMutationLock) {
+				pooledMemory.Dispose();
+			}
+		}
+	}
+
+	public static void SavePattern<T1, T2, T3, T4, TTexel>(in TexturePattern<T1> pattern1, in TexturePattern<T2> pattern2, in TexturePattern<T3> pattern3, in TexturePattern<T4> pattern4, delegate* managed<T1, T2, T3, T4, TTexel> conversionMapFunc, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? bitmapConfig = null) where T1 : unmanaged where T2 : unmanaged where T3 : unmanaged where T4 : unmanaged where TTexel : unmanaged, ITexel<TTexel, byte> {
+		var dimensions = GetCompositePatternDimensions(pattern1, pattern2, pattern3, pattern4);
+		PooledHeapMemory<TTexel> pooledMemory;
+		lock (_bitmapHeapPoolMutationLock) {
+			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
+		}
+		try {
+			_ = PrintPattern(pattern1, pattern2, pattern3, pattern4, conversionMapFunc, pooledMemory.Buffer);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new());
+		}
+		finally {
+			lock (_bitmapHeapPoolMutationLock) {
+				pooledMemory.Dispose();
+			}
+		}
+	}
+	#endregion
+
+	#region Save Pattern (Func Overloads)
+	public static void SavePattern<T1, TTexel>(in TexturePattern<T1> pattern, Func<T1, TTexel> conversionMapFunc, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? bitmapConfig = null) where T1 : unmanaged where TTexel : unmanaged, ITexel<TTexel, byte> {
+		var dimensions = pattern.Dimensions;
+		PooledHeapMemory<TTexel> pooledMemory;
+		lock (_bitmapHeapPoolMutationLock) {
+			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
+		}
+		try {
+			_ = PrintPattern(pattern, conversionMapFunc, pooledMemory.Buffer);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new());
+		}
+		finally {
+			lock (_bitmapHeapPoolMutationLock) {
+				pooledMemory.Dispose();
+			}
+		}
+	}
+
+	public static void SavePattern<T1, T2, TTexel>(in TexturePattern<T1> pattern1, in TexturePattern<T2> pattern2, Func<T1, T2, TTexel> conversionMapFunc, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? bitmapConfig = null) where T1 : unmanaged where T2 : unmanaged where TTexel : unmanaged, ITexel<TTexel, byte> {
+		var dimensions = GetCompositePatternDimensions(pattern1, pattern2);
+		PooledHeapMemory<TTexel> pooledMemory;
+		lock (_bitmapHeapPoolMutationLock) {
+			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
+		}
+		try {
+			_ = PrintPattern(pattern1, pattern2, conversionMapFunc, pooledMemory.Buffer);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new());
+		}
+		finally {
+			lock (_bitmapHeapPoolMutationLock) {
+				pooledMemory.Dispose();
+			}
+		}
+	}
+
+	public static void SavePattern<T1, T2, T3, TTexel>(in TexturePattern<T1> pattern1, in TexturePattern<T2> pattern2, in TexturePattern<T3> pattern3, Func<T1, T2, T3, TTexel> conversionMapFunc, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? bitmapConfig = null) where T1 : unmanaged where T2 : unmanaged where T3 : unmanaged where TTexel : unmanaged, ITexel<TTexel, byte> {
+		var dimensions = GetCompositePatternDimensions(pattern1, pattern2, pattern3);
+		PooledHeapMemory<TTexel> pooledMemory;
+		lock (_bitmapHeapPoolMutationLock) {
+			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
+		}
+		try {
+			_ = PrintPattern(pattern1, pattern2, pattern3, conversionMapFunc, pooledMemory.Buffer);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new());
+		}
+		finally {
+			lock (_bitmapHeapPoolMutationLock) {
+				pooledMemory.Dispose();
+			}
+		}
+	}
+
+	public static void SavePattern<T1, T2, T3, T4, TTexel>(in TexturePattern<T1> pattern1, in TexturePattern<T2> pattern2, in TexturePattern<T3> pattern3, in TexturePattern<T4> pattern4, Func<T1, T2, T3, T4, TTexel> conversionMapFunc, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? bitmapConfig = null) where T1 : unmanaged where T2 : unmanaged where T3 : unmanaged where T4 : unmanaged where TTexel : unmanaged, ITexel<TTexel, byte> {
+		var dimensions = GetCompositePatternDimensions(pattern1, pattern2, pattern3, pattern4);
+		PooledHeapMemory<TTexel> pooledMemory;
+		lock (_bitmapHeapPoolMutationLock) {
+			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
+		}
+		try {
+			_ = PrintPattern(pattern1, pattern2, pattern3, pattern4, conversionMapFunc, pooledMemory.Buffer);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new());
+		}
+		finally {
+			lock (_bitmapHeapPoolMutationLock) {
+				pooledMemory.Dispose();
+			}
 		}
 	}
 	#endregion

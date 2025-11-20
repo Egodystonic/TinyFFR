@@ -22,7 +22,10 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/6?closed=1) 
 	* Forces decision of colourspace (i.e. sRGB or linear) on load (with some helper methods for the easy path; "`LoadColorMapTexture`"/"`LoadDataMapTexture`")
 	* Much better layout of config structs in general
 	* Methods that read textures or meshes now return the number of elements written to the destination span as a convenience
-	* Provision of `BuiltInTexturePaths` property that provides some built-in greyscale textures for convenience when building map textures
+	* Provision of `BuiltInTexturePaths` property that provides some built-in greyscale textures and default maps for convenience
+* `ITextureBuilder` interface:
+	* A new builder added specifically to deal with building various textures and maps that TinyFFR uses.
+	* `TexturePatternPrinter` added- new static class that prints `TexturePattern`s to a span or bitmap
 
 ### Bug Fixes
 

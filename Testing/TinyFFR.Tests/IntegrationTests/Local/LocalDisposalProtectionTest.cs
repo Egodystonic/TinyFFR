@@ -117,15 +117,18 @@ class LocalDisposalProtectionTest {
 			v => _ = v.BufferData
 		};
 		AssertUseAfterDisposalThrowsException(meshBuilder.CreateMesh(new Cuboid(1f)), objectIsAlreadyDisposed: false, meshActions);
-		var materialBuilder = assetLoader.MaterialBuilder;
-		var texture = materialBuilder.CreateTexture(TexturePattern.PlainFill<ColorVect>(StandardColor.RealWorldBrick), includeAlpha: false);
+		var textureBuilder = assetLoader.TextureBuilder;
+		var texture = textureBuilder.CreateColorMap(TexturePattern.PlainFill<ColorVect>(StandardColor.RealWorldBrick), includeAlpha: false);
 		var textureActions = new Action<Texture>[] {
 			v => _ = v.Handle,
 			v => _ = v.GetNameAsNewStringObject(),
 			v => _ = v.GetNameLength(),
+			v => _ = v.Dimensions,
+			v => _ = v.TexelType,
 			v => v.CopyName(_nameDestinationBuffer),
 		};
-		AssertUseAfterDisposalThrowsException(materialBuilder.CreateTexture(TexturePattern.PlainFill<ColorVect>(StandardColor.RealWorldBrick), includeAlpha: false), objectIsAlreadyDisposed: false, textureActions);
+		AssertUseAfterDisposalThrowsException(textureBuilder.CreateColorMap(TexturePattern.PlainFill<ColorVect>(StandardColor.RealWorldBrick), includeAlpha: false), objectIsAlreadyDisposed: false, textureActions);
+		var materialBuilder = assetLoader.MaterialBuilder;
 		var material = materialBuilder.CreateStandardMaterial(texture);
 		var materialActions = new Action<Material>[] {
 			v => _ = v.Handle,
@@ -338,15 +341,20 @@ class LocalDisposalProtectionTest {
 		AssertUseAfterDisposalThrowsException(
 			assetLoader, objectIsAlreadyDisposed: true,
 			v => _ = v.MeshBuilder,
-			v => _ = v.MaterialBuilder
+			v => _ = v.MaterialBuilder,
+			v => _ = v.TextureBuilder
 		);
 		AssertUseAfterDisposalThrowsException(
 			meshBuilder, objectIsAlreadyDisposed: true,
 			v => _ = v.CreateMesh(new Cuboid(1f))
 		);
 		AssertUseAfterDisposalThrowsException(
+			textureBuilder, objectIsAlreadyDisposed: true,
+			v => _ = v.CreateColorMap(TexturePattern.PlainFill<ColorVect>(StandardColor.RealWorldBrick), includeAlpha: false)
+		);
+		AssertUseAfterDisposalThrowsException(
 			materialBuilder, objectIsAlreadyDisposed: true,
-			v => _ = v.CreateTexture(TexturePattern.PlainFill<ColorVect>(StandardColor.RealWorldBrick), includeAlpha: false)
+			v => _ = v.CreateTestMaterial()
 		);
 		AssertUseAfterDisposalThrowsException(
 			objectBuilder, objectIsAlreadyDisposed: true,

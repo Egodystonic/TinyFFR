@@ -7,7 +7,7 @@ using static Egodystonic.TinyFFR.Assets.Materials.TexturePatternPrinter;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public unsafe interface ITextureBuilder {
-	#region Texture Creation And Processing
+	#region Fundamental Methods
 	protected readonly ref struct PreallocatedBuffer<TTexel> where TTexel : unmanaged, ITexel<TTexel> {
 		public nuint BufferId { get; }
 		public Span<TTexel> Span { get; }
@@ -36,91 +36,9 @@ public unsafe interface ITextureBuilder {
 	void ProcessTexture<TTexel>(Span<TTexel> texels, XYPair<int> dimensions, in TextureProcessingConfig config) where TTexel : unmanaged, ITexel<TTexel>;
 	#endregion
 
-	#region Single Texel Patterns
-	Texture CreateTextureWithSingleTexel<TTexel>(TTexel plainFill, bool isLinearColorspace, ReadOnlySpan<char> name = default) where TTexel : unmanaged, ITexel<TTexel> {
-		return CreateTexture(
-			new ReadOnlySpan<TTexel>(in plainFill),
-			XYPair<int>.One,
-			isLinearColorspace,
-			generateMipMaps: false,
-			name
-		);
-	}
-	Texture CreateTextureWithSingleTexel<TTexel>(TTexel plainFill, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
-		return CreateTexture(
-			new ReadOnlySpan<TTexel>(in plainFill),
-			new TextureGenerationConfig { Dimensions = XYPair<int>.One },
-			in config
-		);
-	}
-
-	Texture CreateTextureWithSingleTexel(ColorVect plainFill, bool includeAlpha, ReadOnlySpan<char> name = default) {
-		return includeAlpha 
-			? CreateTextureWithSingleTexel(new TexelRgba32(plainFill), isLinearColorspace: false, name)
-			: CreateTextureWithSingleTexel(new TexelRgb24(plainFill), isLinearColorspace: false, name);
-	}
-	Texture CreateTextureWithSingleTexel(ColorVect plainFill, bool includeAlpha, in TextureCreationConfig config) {
-		return includeAlpha
-			? CreateTextureWithSingleTexel(new TexelRgba32(plainFill), in config)
-			: CreateTextureWithSingleTexel(new TexelRgb24(plainFill), in config);
-	}
-
-	Texture CreateTextureWithSingleTexel(UnitSphericalCoordinate plainFill, ReadOnlySpan<char> name = default) {
-		return CreateTextureWithSingleTexel(ConvertSphericalCoordToNormalTexel(plainFill), isLinearColorspace: true, name);
-	}
-	Texture CreateTextureWithSingleTexel(UnitSphericalCoordinate plainFill, in TextureCreationConfig config) {
-		return CreateTextureWithSingleTexel(ConvertSphericalCoordToNormalTexel(plainFill), in config);
-	}
-
-	Texture CreateTextureWithSingleTexel(UnitSphericalCoordinate xyzPlainFill, Real wPlainFill, ReadOnlySpan<char> name = default) {
-		return CreateTextureWithSingleTexel(new TexelRgba32(ConvertSphericalCoordToNormalTexel(xyzPlainFill), ConvertNormalizedRealToTexelByteChannel(wPlainFill)), isLinearColorspace: true, name);
-	}
-	Texture CreateTextureWithSingleTexel(UnitSphericalCoordinate xyzPlainFill, Real wPlainFill, in TextureCreationConfig config) {
-		return CreateTextureWithSingleTexel(new TexelRgba32(ConvertSphericalCoordToNormalTexel(xyzPlainFill), ConvertNormalizedRealToTexelByteChannel(wPlainFill)), in config);
-	}
-
-	Texture CreateTextureWithSingleTexel(byte redPlainFill, byte greenPlainFill, ReadOnlySpan<char> name = default) {
-		return CreateTextureWithSingleTexel(new TexelRgb24(redPlainFill, greenPlainFill, 0), isLinearColorspace: true, name);
-	}
-	Texture CreateTextureWithSingleTexel(byte redPlainFill, byte greenPlainFill, in TextureCreationConfig config) {
-		return CreateTextureWithSingleTexel(new TexelRgb24(redPlainFill, greenPlainFill, 0), in config);
-	}
-	Texture CreateTextureWithSingleTexel(byte redPlainFill, byte greenPlainFill, byte bluePlainFill, ReadOnlySpan<char> name = default) {
-		return CreateTextureWithSingleTexel(new TexelRgb24(redPlainFill, greenPlainFill, bluePlainFill), isLinearColorspace: true, name);
-	}
-	Texture CreateTextureWithSingleTexel(byte redPlainFill, byte greenPlainFill, byte bluePlainFill, in TextureCreationConfig config) {
-		return CreateTextureWithSingleTexel(new TexelRgb24(redPlainFill, greenPlainFill, bluePlainFill), in config);
-	}
-	Texture CreateTextureWithSingleTexel(byte redPlainFill, byte greenPlainFill, byte bluePlainFill, byte alphaPlainFill, ReadOnlySpan<char> name = default) {
-		return CreateTextureWithSingleTexel(new TexelRgba32(redPlainFill, greenPlainFill, bluePlainFill, alphaPlainFill), isLinearColorspace: true, name);
-	}
-	Texture CreateTextureWithSingleTexel(byte redPlainFill, byte greenPlainFill, byte bluePlainFill, byte alphaPlainFill, in TextureCreationConfig config) {
-		return CreateTextureWithSingleTexel(new TexelRgba32(redPlainFill, greenPlainFill, bluePlainFill, alphaPlainFill), in config);
-	}
-
-	Texture CreateTextureWithSingleTexel(Real xPlainFill, Real yPlainFill, ReadOnlySpan<char> name = default) {
-		return CreateTextureWithSingleTexel(new TexelRgb24(ConvertNormalizedRealToTexelByteChannel(xPlainFill), ConvertNormalizedRealToTexelByteChannel(yPlainFill), 0), isLinearColorspace: true, name);
-	}
-	Texture CreateTextureWithSingleTexel(Real xPlainFill, Real yPlainFill, in TextureCreationConfig config) {
-		return CreateTextureWithSingleTexel(new TexelRgb24(ConvertNormalizedRealToTexelByteChannel(xPlainFill), ConvertNormalizedRealToTexelByteChannel(yPlainFill), 0), in config);
-	}
-	Texture CreateTextureWithSingleTexel(Real xPlainFill, Real yPlainFill, Real zPlainFill, ReadOnlySpan<char> name = default) {
-		return CreateTextureWithSingleTexel(new TexelRgb24(ConvertNormalizedRealToTexelByteChannel(xPlainFill), ConvertNormalizedRealToTexelByteChannel(yPlainFill), ConvertNormalizedRealToTexelByteChannel(zPlainFill)), isLinearColorspace: true, name);
-	}
-	Texture CreateTextureWithSingleTexel(Real xPlainFill, Real yPlainFill, Real zPlainFill, in TextureCreationConfig config) {
-		return CreateTextureWithSingleTexel(new TexelRgb24(ConvertNormalizedRealToTexelByteChannel(xPlainFill), ConvertNormalizedRealToTexelByteChannel(yPlainFill), ConvertNormalizedRealToTexelByteChannel(zPlainFill)), in config);
-	}
-	Texture CreateTextureWithSingleTexel(Real xPlainFill, Real yPlainFill, Real zPlainFill, Real wPlainFill, ReadOnlySpan<char> name = default) {
-		return CreateTextureWithSingleTexel(new TexelRgba32(ConvertNormalizedRealToTexelByteChannel(xPlainFill), ConvertNormalizedRealToTexelByteChannel(yPlainFill), ConvertNormalizedRealToTexelByteChannel(zPlainFill), ConvertNormalizedRealToTexelByteChannel(wPlainFill)), isLinearColorspace: true, name);
-	}
-	Texture CreateTextureWithSingleTexel(Real xPlainFill, Real yPlainFill, Real zPlainFill, Real wPlainFill, in TextureCreationConfig config) {
-		return CreateTextureWithSingleTexel(new TexelRgba32(ConvertNormalizedRealToTexelByteChannel(xPlainFill), ConvertNormalizedRealToTexelByteChannel(yPlainFill), ConvertNormalizedRealToTexelByteChannel(zPlainFill), ConvertNormalizedRealToTexelByteChannel(wPlainFill)), in config);
-	}
-	#endregion
-
 	#region Generic Patterns
-	Texture CreateTextureFromPattern<TTexel>(in TexturePattern<TTexel> pattern, bool isLinearColorspace, ReadOnlySpan<char> name = default) where TTexel : unmanaged, ITexel<TTexel> {
-		return CreateTextureFromPattern(
+	Texture CreateTexture<TTexel>(in TexturePattern<TTexel> pattern, bool isLinearColorspace, ReadOnlySpan<char> name = default) where TTexel : unmanaged, ITexel<TTexel> {
+		return CreateTexture(
 			pattern,
 			new TextureCreationConfig {
 				GenerateMipMaps = pattern.Dimensions.Area != 1,
@@ -130,24 +48,44 @@ public unsafe interface ITextureBuilder {
 			}
 		);
 	}
-	Texture CreateTextureFromPattern<TTexel>(in TexturePattern<TTexel> pattern, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
+	Texture CreateTexture<TTexel>(in TexturePattern<TTexel> pattern, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
 		var buffer = PreallocateBuffer<TTexel>(pattern.Dimensions.Area);
 		_ = PrintPattern(pattern, buffer.Span);
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, new TextureGenerationConfig { Dimensions = pattern.Dimensions }, in config);
 	}
+
+	Texture CreateTexture<TTexel>(TTexel plainFill, bool isLinearColorspace, ReadOnlySpan<char> name = default) where TTexel : unmanaged, ITexel<TTexel> {
+		return CreateTexture(
+			new ReadOnlySpan<TTexel>(in plainFill),
+			XYPair<int>.One,
+			isLinearColorspace,
+			generateMipMaps: false,
+			name
+		);
+	}
+	Texture CreateTexture<TTexel>(TTexel plainFill, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
+		return CreateTexture(
+			new ReadOnlySpan<TTexel>(in plainFill),
+			new TextureGenerationConfig { Dimensions = XYPair<int>.One },
+			in config
+		);
+	}
 	#endregion
 
 	#region Color Map Patterns
-	Texture CreateColorMapFromPattern(in TexturePattern<ColorVect> colorPattern, bool includeAlpha, ReadOnlySpan<char> name = default) { 
+	static readonly ColorVect DefaultColor = ColorVect.White;
+	static TexelRgba32 CreateColorTexel(ColorVect color) => new(color);
+
+	Texture CreateColorMap(in TexturePattern<ColorVect> colorPattern, bool includeAlpha, ReadOnlySpan<char> name = default) { 
 		var creationConfig = new TextureCreationConfig {
 			GenerateMipMaps = colorPattern.Dimensions.Area != 1,
 			IsLinearColorspace = false,
 			Name = name,
 			ProcessingToApply = TextureProcessingConfig.None
 		};
-		return CreateColorMapFromPattern(colorPattern, includeAlpha, in creationConfig); 
+		return CreateColorMap(colorPattern, includeAlpha, in creationConfig); 
 	}
-	Texture CreateColorMapFromPattern(in TexturePattern<ColorVect> colorPattern, bool includeAlpha, in TextureCreationConfig config) {
+	Texture CreateColorMap(in TexturePattern<ColorVect> colorPattern, bool includeAlpha, in TextureCreationConfig config) {
 		if (includeAlpha) {
 			var buffer = PreallocateBuffer<TexelRgba32>(colorPattern.Dimensions.Area);
 			_ = PrintPattern(colorPattern, buffer.Span);
@@ -159,11 +97,34 @@ public unsafe interface ITextureBuilder {
 			return CreateTextureAndDisposePreallocatedBuffer(buffer, new TextureGenerationConfig { Dimensions = colorPattern.Dimensions }, in config);
 		}
 	}
+
+	Texture CreateColorMap(ReadOnlySpan<char> name = default) => CreateColorMap(DefaultColor, includeAlpha: false, name);
+	Texture CreateColorMap(ColorVect color, bool includeAlpha, ReadOnlySpan<char> name = default) {
+		return includeAlpha
+			? CreateTexture(new TexelRgba32(color), isLinearColorspace: false, name)
+			: CreateTexture(new TexelRgb24(color), isLinearColorspace: false, name);
+	}
+	Texture CreateColorMap(ColorVect color, bool includeAlpha, in TextureCreationConfig config) {
+		return includeAlpha
+			? CreateTexture(new TexelRgba32(color), in config)
+			: CreateTexture(new TexelRgb24(color), in config);
+	}
 	#endregion
 
 	#region Normal Map Patterns
-	Texture CreateNormalMapFromPattern(in TexturePattern<UnitSphericalCoordinate> normalPattern, ReadOnlySpan<char> name = default) {
-		return CreateNormalMapFromPattern(
+	static readonly UnitSphericalCoordinate DefaultNormalOffset = UnitSphericalCoordinate.ZeroZero;
+	static TexelRgb24 CreateNormalTexel(UnitSphericalCoordinate normalOffset) {
+		const float Multiplicand = Byte.MaxValue * 0.5f;
+
+		var v = normalOffset.ToDirection(new Direction(1f, 0f, 0f), new Direction(0f, 0f, 1f))
+					.ToVector3()
+					+ Vector3.One;
+		v *= Multiplicand;
+		return new((byte) v.X, (byte) v.Y, (byte) v.Z);
+	}
+
+	Texture CreateNormalMap(in TexturePattern<UnitSphericalCoordinate> normalPattern, ReadOnlySpan<char> name = default) {
+		return CreateNormalMap(
 			normalPattern,
 			new TextureCreationConfig {
 				GenerateMipMaps = normalPattern.Dimensions.Area != 1,
@@ -173,16 +134,30 @@ public unsafe interface ITextureBuilder {
 			}
 		);
 	}
-	Texture CreateNormalMapFromPattern(in TexturePattern<UnitSphericalCoordinate> normalPattern, in TextureCreationConfig config) {
+	Texture CreateNormalMap(in TexturePattern<UnitSphericalCoordinate> normalPattern, in TextureCreationConfig config) {
 		var buffer = PreallocateBuffer<TexelRgb24>(normalPattern.Dimensions.Area);
-		_ = PrintPattern(normalPattern, &ConvertSphericalCoordToNormalTexel, buffer.Span);
+		_ = PrintPattern(normalPattern, &CreateNormalTexel, buffer.Span);
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, new TextureGenerationConfig { Dimensions = normalPattern.Dimensions }, in config);
+	}
+
+	Texture CreateNormalMap(UnitSphericalCoordinate? normalOffset = null, ReadOnlySpan<char> name = default) {
+		return CreateTexture(CreateNormalTexel(normalOffset ?? DefaultNormalOffset), isLinearColorspace: true, name);
+	}
+	Texture CreateNormalMap(UnitSphericalCoordinate normalOffset, in TextureCreationConfig config) {
+		return CreateTexture(CreateNormalTexel(normalOffset), in config);
 	}
 	#endregion
 
 	#region Orm/Ormr Map Patterns
-	Texture CreateOcclusionRoughnessMetallicMapFromPattern(in TexturePattern<Real> occlusionPattern, in TexturePattern<Real> roughnessPattern, in TexturePattern<Real> metallicPattern, ReadOnlySpan<char> name = default) {
-		return CreateOcclusionRoughnessMetallicMapFromPattern(
+	static readonly Real DefaultOcclusion = 1f;
+	static readonly Real DefaultRoughness = 0.4f;
+	static readonly Real DefaultMetallic = 0f;
+	static readonly Real DefaultReflectance = 0.5f;
+	static TexelRgb24 CreateOcclusionRoughnessMetallicTexel(Real occlusion, Real roughness, Real metallic) => TexelRgb24.FromNormalizedFloats(occlusion, roughness, metallic);
+	static TexelRgba32 CreateOcclusionRoughnessMetallicReflectanceTexel(Real occlusion, Real roughness, Real metallic, Real reflectance) => TexelRgba32.FromNormalizedFloats(occlusion, roughness, metallic, reflectance);
+
+	Texture CreateOcclusionRoughnessMetallicMap(in TexturePattern<Real> occlusionPattern, in TexturePattern<Real> roughnessPattern, in TexturePattern<Real> metallicPattern, ReadOnlySpan<char> name = default) {
+		return CreateOcclusionRoughnessMetallicMap(
 			occlusionPattern,
 			roughnessPattern,
 			metallicPattern,
@@ -195,15 +170,15 @@ public unsafe interface ITextureBuilder {
 		);
 	}
 
-	Texture CreateOcclusionRoughnessMetallicMapFromPattern(in TexturePattern<Real> occlusionPattern, in TexturePattern<Real> roughnessPattern, in TexturePattern<Real> metallicPattern, in TextureCreationConfig config) {
+	Texture CreateOcclusionRoughnessMetallicMap(in TexturePattern<Real> occlusionPattern, in TexturePattern<Real> roughnessPattern, in TexturePattern<Real> metallicPattern, in TextureCreationConfig config) {
 		var dimensions = GetCompositePatternDimensions(occlusionPattern, roughnessPattern, metallicPattern);
 		var buffer = PreallocateBuffer<TexelRgb24>(dimensions.Area);
-		_ = PrintPattern(occlusionPattern, roughnessPattern, metallicPattern, &ConvertNormalizedRealToTexelByteChannel, buffer.Span);
+		_ = PrintPattern(occlusionPattern, roughnessPattern, metallicPattern, &TexelRgb24.FromNormalizedFloats, buffer.Span);
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, new TextureGenerationConfig { Dimensions = dimensions }, in config);
 	}
 
-	Texture CreateOcclusionRoughnessMetallicReflectanceMapFromPattern(in TexturePattern<Real> occlusionPattern, in TexturePattern<Real> roughnessPattern, in TexturePattern<Real> metallicPattern, in TexturePattern<Real> reflectancePattern, ReadOnlySpan<char> name = default) {
-		return CreateOcclusionRoughnessMetallicReflectanceMapFromPattern(
+	Texture CreateOcclusionRoughnessMetallicReflectanceMap(in TexturePattern<Real> occlusionPattern, in TexturePattern<Real> roughnessPattern, in TexturePattern<Real> metallicPattern, in TexturePattern<Real> reflectancePattern, ReadOnlySpan<char> name = default) {
+		return CreateOcclusionRoughnessMetallicReflectanceMap(
 			occlusionPattern,
 			roughnessPattern,
 			metallicPattern,
@@ -217,82 +192,148 @@ public unsafe interface ITextureBuilder {
 		);
 	}
 
-	Texture CreateOcclusionRoughnessMetallicReflectanceMapFromPattern(in TexturePattern<Real> occlusionPattern, in TexturePattern<Real> roughnessPattern, in TexturePattern<Real> metallicPattern, in TexturePattern<Real> reflectancePattern, in TextureCreationConfig config) {
+	Texture CreateOcclusionRoughnessMetallicReflectanceMap(in TexturePattern<Real> occlusionPattern, in TexturePattern<Real> roughnessPattern, in TexturePattern<Real> metallicPattern, in TexturePattern<Real> reflectancePattern, in TextureCreationConfig config) {
 		var dimensions = GetCompositePatternDimensions(occlusionPattern, roughnessPattern, metallicPattern, reflectancePattern);
 		var buffer = PreallocateBuffer<TexelRgba32>(dimensions.Area);
-		_ = PrintPattern(occlusionPattern, roughnessPattern, metallicPattern, reflectancePattern, &ConvertNormalizedRealToTexelByteChannel, buffer.Span);
+		_ = PrintPattern(occlusionPattern, roughnessPattern, metallicPattern, reflectancePattern, &TexelRgba32.FromNormalizedFloats, buffer.Span);
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, new TextureGenerationConfig { Dimensions = dimensions }, in config);
+	}
+
+	Texture CreateOcclusionRoughnessMetallicMap(Real? occlusion = null, Real? roughness = null, Real? metallic = null, ReadOnlySpan<char> name = default) {
+		return CreateTexture(TexelRgb24.FromNormalizedFloats(occlusion ?? DefaultOcclusion, roughness ?? DefaultRoughness, metallic ?? DefaultMetallic), isLinearColorspace: true, name);
+	}
+	Texture CreateOcclusionRoughnessMetallicMap(Real occlusion, Real roughness, Real metallic, in TextureCreationConfig config) {
+		return CreateTexture(TexelRgb24.FromNormalizedFloats(occlusion, roughness, metallic), in config);
+	}
+	Texture CreateOcclusionRoughnessMetallicReflectanceMap(Real? occlusion = null, Real? roughness = null, Real? metallic = null, Real? reflectance = null, ReadOnlySpan<char> name = default) {
+		return CreateTexture(TexelRgba32.FromNormalizedFloats(occlusion ?? DefaultOcclusion, roughness ?? DefaultRoughness, metallic ?? DefaultMetallic, reflectance ?? DefaultReflectance), isLinearColorspace: true, name);
+	}
+	Texture CreateOcclusionRoughnessMetallicReflectanceMap(Real occlusion, Real roughness, Real metallic, Real reflectance, in TextureCreationConfig config) {
+		return CreateTexture(TexelRgba32.FromNormalizedFloats(occlusion, roughness, metallic, reflectance), in config);
 	}
 	#endregion
 
 	#region Absorption Transmission Map Patterns
-	Texture CreateAbsorptionTransmissionMapFromPattern(in TexturePattern<ColorVect> absorptionPattern, in TexturePattern<Real> transmissionPattern, ReadOnlySpan<char> name = default) {
+	static readonly ColorVect DefaultAbsorption = ColorVect.White;
+	static readonly Real DefaultTransmission = 0.5f;
+	static TexelRgba32 CreateAbsorptionTransmissionTexel(ColorVect absorption, Real transmission) => new(new TexelRgb24(absorption), (byte) (transmission * Byte.MaxValue));
+
+	Texture CreateAbsorptionTransmissionMap(in TexturePattern<ColorVect> absorptionPattern, in TexturePattern<Real> transmissionPattern, ReadOnlySpan<char> name = default) {
 		var creationConfig = new TextureCreationConfig {
 			GenerateMipMaps = absorptionPattern.Dimensions.Area != 1 || transmissionPattern.Dimensions.Area != 1,
 			IsLinearColorspace = false,
 			Name = name,
 			ProcessingToApply = TextureProcessingConfig.None
 		};
-		return CreateAbsorptionTransmissionMapFromPattern(absorptionPattern, transmissionPattern, in creationConfig);
+		return CreateAbsorptionTransmissionMap(absorptionPattern, transmissionPattern, in creationConfig);
 	}
-	Texture CreateAbsorptionTransmissionMapFromPattern(in TexturePattern<ColorVect> absorptionPattern, in TexturePattern<Real> transmissionPattern, in TextureCreationConfig config) {
+	Texture CreateAbsorptionTransmissionMap(in TexturePattern<ColorVect> absorptionPattern, in TexturePattern<Real> transmissionPattern, in TextureCreationConfig config) {
 		var dimensions = GetCompositePatternDimensions(absorptionPattern, transmissionPattern);
 		var buffer = PreallocateBuffer<TexelRgba32>(dimensions.Area);
-		_ = PrintPattern(absorptionPattern, transmissionPattern, &TexelRgb24.ConvertFrom, &ConvertNormalizedRealToTexelByteChannel, buffer.Span);
+		_ = PrintPattern(absorptionPattern, transmissionPattern, &CreateAbsorptionTransmissionTexel, buffer.Span);
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, new TextureGenerationConfig { Dimensions = dimensions }, in config);
+	}
+
+	Texture CreateAbsorptionTransmissionMap(ColorVect? absorption = null, Real? transmission = null, ReadOnlySpan<char> name = default) {
+		return CreateTexture(CreateAbsorptionTransmissionTexel(absorption ?? DefaultAbsorption, transmission ?? DefaultTransmission), isLinearColorspace: true, name);
+	}
+	Texture CreateAbsorptionTransmissionMap(ColorVect absorption, Real transmission, in TextureCreationConfig config) {
+		return CreateTexture(CreateAbsorptionTransmissionTexel(absorption, transmission), in config);
 	}
 	#endregion
 
 	#region Emissive Map Patterns
-	Texture CreateEmissiveMapFromPattern(in TexturePattern<ColorVect> colorPattern, in TexturePattern<Real> intensityPattern, ReadOnlySpan<char> name = default) {
+	static readonly ColorVect DefaultEmissiveColor = StandardColor.LightingIncandescentBulb;
+	static readonly Real DefaultEmissiveIntensity = 0.5f;
+	static TexelRgba32 CreateEmissiveTexel(ColorVect color, Real intensity) => new(new TexelRgb24(color), (byte) (intensity * Byte.MaxValue));
+
+	Texture CreateEmissiveMap(in TexturePattern<ColorVect> colorPattern, in TexturePattern<Real> intensityPattern, ReadOnlySpan<char> name = default) {
 		var creationConfig = new TextureCreationConfig {
 			GenerateMipMaps = colorPattern.Dimensions.Area != 1 || intensityPattern.Dimensions.Area != 1,
 			IsLinearColorspace = false,
 			Name = name,
 			ProcessingToApply = TextureProcessingConfig.None
 		};
-		return CreateEmissiveMapFromPattern(colorPattern, intensityPattern, in creationConfig);
+		return CreateEmissiveMap(colorPattern, intensityPattern, in creationConfig);
 	}
-	Texture CreateEmissiveMapFromPattern(in TexturePattern<ColorVect> colorPattern, in TexturePattern<Real> intensityPattern, in TextureCreationConfig config) {
+	Texture CreateEmissiveMap(in TexturePattern<ColorVect> colorPattern, in TexturePattern<Real> intensityPattern, in TextureCreationConfig config) {
 		var dimensions = GetCompositePatternDimensions(colorPattern, intensityPattern);
 		var buffer = PreallocateBuffer<TexelRgba32>(dimensions.Area);
-		_ = PrintPattern(colorPattern, intensityPattern, &TexelRgb24.ConvertFrom, &ConvertNormalizedRealToTexelByteChannel, buffer.Span);
+		_ = PrintPattern(colorPattern, intensityPattern, &CreateEmissiveTexel, buffer.Span);
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, new TextureGenerationConfig { Dimensions = dimensions }, in config);
+	}
+
+	Texture CreateEmissiveMap(ColorVect? color = null, Real? intensity = null, ReadOnlySpan<char> name = default) {
+		return CreateTexture(CreateEmissiveTexel(color ?? DefaultEmissiveColor, intensity ?? DefaultEmissiveIntensity), isLinearColorspace: true, name);
+	}
+	Texture CreateEmissiveMap(ColorVect color, Real intensity, in TextureCreationConfig config) {
+		return CreateTexture(CreateEmissiveTexel(color, intensity), in config);
 	}
 	#endregion
 
 	#region Anisotropy Map Patterns
-	Texture CreateAnisotropyMapFromPattern(in TexturePattern<Angle> tangentPattern, in TexturePattern<Real> strengthPattern, ReadOnlySpan<char> name = default) {
+	static readonly Angle DefaultAnisotropyTangent = 0f;
+	static readonly Real DefaultAnisotropyStrength = 1f;
+	static TexelRgb24 CreateAnisotropyTexel(Angle tangent, Real strength) {
+		var asTangentSpaceVect2 = (XYPair<float>.FromPolarAngle(tangent)
+			+ XYPair<float>.One
+			* (Byte.MaxValue * 0.5f))
+			.CastWithRoundingIfNecessary<float, byte>(MidpointRounding.AwayFromZero);
+
+
+		return new TexelRgb24(asTangentSpaceVect2.X, asTangentSpaceVect2.Y, (byte) (strength * Byte.MaxValue));
+	}
+
+	Texture CreateAnisotropyMap(in TexturePattern<Angle> tangentPattern, in TexturePattern<Real> strengthPattern, ReadOnlySpan<char> name = default) {
 		var creationConfig = new TextureCreationConfig {
-			GenerateMipMaps = anisotropyPattern.Dimensions.Area != 1,
+			GenerateMipMaps = tangentPattern.Dimensions.Area != 1 || strengthPattern.Dimensions.Area != 1,
 			IsLinearColorspace = true,
 			Name = name,
 			ProcessingToApply = TextureProcessingConfig.None
 		};
-		return CreateAnisotropyMapFromPattern(anisotropyPattern, in creationConfig);
+		return CreateAnisotropyMap(tangentPattern, strengthPattern, in creationConfig);
 	}
-	Texture CreateAnisotropyMapFromPattern(in TexturePattern<Angle> tangentPattern, in TexturePattern<Real> strengthPattern, in TextureCreationConfig config) {
-		var buffer = PreallocateBuffer<TexelRgb24>(anisotropyPattern.Dimensions.Area);
-		_ = PrintPattern(xyzPattern, wPattern, &Convert, &Convert, buffer.Span);
+	Texture CreateAnisotropyMap(in TexturePattern<Angle> tangentPattern, in TexturePattern<Real> strengthPattern, in TextureCreationConfig config) {
+		var dimensions = GetCompositePatternDimensions(tangentPattern, strengthPattern);
+		var buffer = PreallocateBuffer<TexelRgb24>(dimensions.Area);
+		_ = PrintPattern(tangentPattern, strengthPattern, &CreateAnisotropyTexel, buffer.Span);
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, new TextureGenerationConfig { Dimensions = dimensions }, in config);
+	}
+
+	Texture CreateAnisotropyMap(Angle? tangent = null, Real? strength = null, ReadOnlySpan<char> name = default) {
+		return CreateTexture(CreateAnisotropyTexel(tangent ?? DefaultAnisotropyTangent, strength ?? DefaultAnisotropyStrength), isLinearColorspace: true, name);
+	}
+	Texture CreateAnisotropyMap(Angle tangent, Real strength, in TextureCreationConfig config) {
+		return CreateTexture(CreateAnisotropyTexel(tangent, strength), in config);
 	}
 	#endregion
 
 	#region ClearCoat Map Patterns
-	Texture CreateTextureFromPattern(in TexturePattern<Real> xPattern, in TexturePattern<Real> yPattern, ReadOnlySpan<char> name = default) {
+	static readonly Real DefaultClearCoatThickness = 1f;
+	static readonly Real DefaultClearCoatRoughness = 0f;
+	static TexelRgb24 CreateClearCoatTexel(Real thickness, Real roughness) => TexelRgb24.FromNormalizedFloats(thickness, roughness, Real.Zero);
+
+	Texture CreateClearCoatMap(in TexturePattern<Real> thicknessPattern, in TexturePattern<Real> roughnessPattern, ReadOnlySpan<char> name = default) {
 		var creationConfig = new TextureCreationConfig {
-			GenerateMipMaps = xPattern.Dimensions.Area != 1 || yPattern.Dimensions.Area != 1,
+			GenerateMipMaps = thicknessPattern.Dimensions.Area != 1 || roughnessPattern.Dimensions.Area != 1,
 			IsLinearColorspace = true,
 			Name = name,
 			ProcessingToApply = TextureProcessingConfig.None
 		};
-		return CreateTextureFromPattern(xPattern, yPattern, in creationConfig);
+		return CreateClearCoatMap(thicknessPattern, roughnessPattern, in creationConfig);
 	}
-	Texture CreateTextureFromPattern(in TexturePattern<Real> xPattern, in TexturePattern<Real> yPattern, in TextureCreationConfig config) {
-		var dimensions = GetCompositePatternDimensions(xPattern, yPattern);
+	Texture CreateClearCoatMap(in TexturePattern<Real> thicknessPattern, in TexturePattern<Real> roughnessPattern, in TextureCreationConfig config) {
+		var dimensions = GetCompositePatternDimensions(thicknessPattern, roughnessPattern);
 		var buffer = PreallocateBuffer<TexelRgb24>(dimensions.Area);
-		_ = PrintPattern(xPattern, yPattern, &Convert, buffer.Span);
+		_ = PrintPattern(thicknessPattern, roughnessPattern, &CreateClearCoatTexel, buffer.Span);
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, new TextureGenerationConfig { Dimensions = dimensions }, in config);
+	}
+
+	Texture CreateClearCoatMap(Real? thickness = null, Real? roughness = null, ReadOnlySpan<char> name = default) {
+		return CreateTexture(CreateClearCoatTexel(thickness ?? DefaultClearCoatThickness, roughness ?? DefaultClearCoatRoughness), isLinearColorspace: true, name);
+	}
+	Texture CreateClearCoatMap(Real thickness, Real roughness, in TextureCreationConfig config) {
+		return CreateTexture(CreateClearCoatTexel(thickness, roughness), in config);
 	}
 	#endregion
 }

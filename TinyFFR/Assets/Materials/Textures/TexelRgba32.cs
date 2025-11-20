@@ -35,6 +35,19 @@ public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : IFou
 		A = a;
 	}
 
+	// This is provided so we can use it in TexturePatterns
+	public static TexelRgba32 FromByteComponents(byte r, byte g, byte b, byte a) => new(r, g, b, a);
+	public static TexelRgba32 FromNormalizedFloats(float r, float g, float b, float a) {
+		var vec4 = new Vector4(r, g, b, a) * Byte.MaxValue;
+		return FromByteComponents(
+			(byte) vec4.X,
+			(byte) vec4.Y,
+			(byte) vec4.Z,
+			(byte) vec4.W
+		);
+	}
+	public static TexelRgba32 FromNormalizedFloats(Real r, Real g, Real b, Real a) => FromNormalizedFloats((float) r, (float) g, (float) b, (float) a);
+
 	public static void SerializeToBytes(Span<byte> dest, TexelRgba32 src) {
 		dest[0] = src.R;
 		dest[1] = src.G;
@@ -53,6 +66,10 @@ public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : IFou
 
 	public TexelRgb24 ToRgb24() => new(R, G, B);
 	public ColorVect ToColorVect() => ColorVect.FromRgba32(R, G, B, A);
+	public Vector4 ToNormalizedFloats() {
+		const float Multiplicand = 1f / Byte.MaxValue;
+		return new Vector4(R, G, B, A) * Multiplicand;
+	}
 
 	public static explicit operator TexelRgba32(ColorVect color) => new(color);
 	public static explicit operator ColorVect(TexelRgba32 texel) => texel.ToColorVect();

@@ -33,6 +33,18 @@ public readonly record struct TexelRgb24(byte R, byte G, byte B) : IThreeByteCha
 		B = b;
 	}
 
+	// This is provided so we can use it in TexturePatterns
+	public static TexelRgb24 FromByteComponents(byte r, byte g, byte b) => new(r, g, b);
+	public static TexelRgb24 FromNormalizedFloats(float r, float g, float b) {
+		var vec3 = new Vector3(r, g, b) * Byte.MaxValue;
+		return FromByteComponents(
+			(byte) vec3.X,
+			(byte) vec3.Y,
+			(byte) vec3.Z
+		);
+	}
+	public static TexelRgb24 FromNormalizedFloats(Real r, Real g, Real b) => FromNormalizedFloats((float) r, (float) g, (float) b);
+
 	public static void SerializeToBytes(Span<byte> dest, TexelRgb24 src) {
 		dest[0] = src.R;
 		dest[1] = src.G;
@@ -49,6 +61,10 @@ public readonly record struct TexelRgb24(byte R, byte G, byte B) : IThreeByteCha
 
 	public TexelRgba32 ToRgba32() => new(R, G, B, Byte.MaxValue);
 	public ColorVect ToColorVect() => ColorVect.FromRgb24(R, G, B);
+	public Vector3 ToNormalizedFloats() {
+		const float Multiplicand = 1f / Byte.MaxValue;
+		return new Vector3(R, G, B) * Multiplicand;
+	}
 
 	public static explicit operator TexelRgb24(ColorVect color) => new(color);
 	public static explicit operator ColorVect(TexelRgb24 texel) => texel.ToColorVect();

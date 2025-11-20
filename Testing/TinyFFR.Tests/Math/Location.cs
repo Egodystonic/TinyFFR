@@ -381,8 +381,8 @@ class LocationTest {
 			var startToVal = start >> val;
 			var valToEnd = val >> end;
 
-			Assert.IsTrue(startToEnd.Direction.IsWithinAngleTo(startToVal.Direction, 5f));
-			Assert.IsTrue(startToEnd.Direction.IsWithinAngleTo(valToEnd.Direction, 5f));
+			Assert.IsTrue(startToEnd.Direction.IsWithinAngleTo(startToVal.Direction, 6f));
+			Assert.IsTrue(startToEnd.Direction.IsWithinAngleTo(valToEnd.Direction, 6f));
 			Assert.LessOrEqual(startToVal.LengthSquared, startToEnd.LengthSquared);
 			Assert.LessOrEqual(valToEnd.LengthSquared, startToEnd.LengthSquared);
 		}

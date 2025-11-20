@@ -5,12 +5,11 @@ using Egodystonic.TinyFFR.Resources.Memory;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using static Egodystonic.TinyFFR.Assets.Materials.TexturePatternDefaultValues;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public static unsafe partial class TexturePattern {
-	public static readonly XYPair<int> GradientDefaultResolution = (512, 512);
-
 	public static TexturePattern<T> GradientHorizontal<T>(T left, T right, T? centre = null, XYPair<int>? resolution = null, Transform2D? transform = null) where T : unmanaged, IInterpolatable<T> {
 		centre ??= T.Interpolate(left, right, 0.5f);
 

@@ -5,15 +5,11 @@ using Egodystonic.TinyFFR.Resources.Memory;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using static Egodystonic.TinyFFR.Assets.Materials.TexturePatternDefaultValues;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public static unsafe partial class TexturePattern {
-	public const int LineDefaultRepeatCount = 4;
-	public const int LineDefaultTextureSize = 1024;
-	public const float LineDefaultPerturbationMagnitude = 0f;
-	public const float LineDefaultPerturbationFrequency = 1f;
-
 	public static TexturePattern<T> Lines<T>(T firstValue, T secondValue, bool horizontal, int numRepeats = LineDefaultRepeatCount, float perturbationMagnitude = LineDefaultPerturbationMagnitude, float perturbationFrequency = LineDefaultPerturbationFrequency, int? lineThickness = null, int? colinearSize = null, Transform2D? transform = null) where T : unmanaged {
 		const int NumValues = 2;
 		return Lines(

@@ -206,12 +206,25 @@ StartExportedFunc(unload_asset_file_from_memory, MemoryLoadedAssetHandle assetHa
 }
 
 
-
-
-
-
+void native_impl_asset_loader::get_texture_file_data(const char* filePath, int32_t* outWidth, int32_t* outHeight, int32_t* outChannelCount) {
+	ThrowIfNull(filePath, "File path pointer was null.");
+	ThrowIfNull(outWidth, "Out width pointer was null.");
+	ThrowIfNull(outHeight, "Out height pointer was null.");
+	ThrowIfNull(outChannelCount, "Out channel count pointer was null.");
+	int width, height, channelCount;
+	stbi_info(filePath, &width, &height, &channelCount);
+	*outWidth = static_cast<int32_t>(width);
+	*outHeight = static_cast<int32_t>(height);
+	*outChannelCount = static_cast<int32_t>(channelCount);
+}
+StartExportedFunc(get_texture_file_data, const char* filePath, int32_t* outWidth, int32_t* outHeight, int32_t* outChannelCount) {
+	native_impl_asset_loader::get_texture_file_data(filePath, outWidth, outHeight, outChannelCount);
+	EndExportedFunc
+}
 void native_impl_asset_loader::load_texture_file_in_to_memory(const char* filePath, interop_bool includeWAlphaChannel, int32_t* outWidth, int32_t* outHeight, MemoryLoadedTextureRgba32DataPtr* outTextureData) {
 	ThrowIfNull(filePath, "File path pointer was null.");
+	ThrowIfNull(outWidth, "Out width pointer was null.");
+	ThrowIfNull(outHeight, "Out height pointer was null.");
 	ThrowIfNull(outTextureData, "Out texture data pointer was null.");
 	int width, height, channelCount;
 	stbi_set_flip_vertically_on_load(true);

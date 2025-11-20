@@ -22,8 +22,8 @@ sealed class LocalBuiltInTexturePathLibrary : IBuiltInTexturePathLibrary {
 
 	public bool IsBuiltIn(ReadOnlySpan<char> filePath) => filePath.StartsWith(LocalBuiltInTexturePrefix);
 	
-	public TexelRgba32? GetBuiltInTexel(ReadOnlySpan<char> filePath) {
-		static TexelRgba32 AllBytesAs(byte b) => new(b, b, b, b);
+	public Pair<TexelRgb24?, TexelRgba32?>? GetBuiltInTexel(ReadOnlySpan<char> filePath) {
+		static Pair<TexelRgb24?, TexelRgba32?>? AllBytesAs(byte b) => new(new(b, b, b), null);
 
 		if (!IsBuiltIn(filePath)) return null;
 		return filePath[LocalBuiltInTexturePrefix.Length..] switch {

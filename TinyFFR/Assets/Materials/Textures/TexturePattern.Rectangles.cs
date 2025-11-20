@@ -5,15 +5,11 @@ using Egodystonic.TinyFFR.Resources.Memory;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using static Egodystonic.TinyFFR.Assets.Materials.TexturePatternDefaultValues;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public static unsafe partial class TexturePattern {
-	public static readonly XYPair<int> RectanglesDefaultInteriorSize = (512, 256);
-	public static readonly XYPair<int> RectanglesDefaultBorderSize = (64, 32);
-	public static readonly XYPair<int> RectanglesDefaultPaddingSize = (128, 64);
-	public static readonly XYPair<int> RectanglesDefaultRepetitions = (4, 8);
-
 	public static TexturePattern<T> Rectangles<T>(T interiorValue, T paddingValue, XYPair<int>? interiorSize = null, XYPair<int>? paddingSize = null, XYPair<int>? repetitions = null, Transform2D? transform = null) where T : unmanaged {
 		return Rectangles(interiorValue, paddingValue, default, interiorSize, paddingSize, (0, 0), repetitions, transform);
 	}

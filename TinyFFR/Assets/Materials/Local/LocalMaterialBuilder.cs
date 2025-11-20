@@ -22,228 +22,31 @@ namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IDisposable {
-	readonly record struct TextureData(XYPair<int> Dimensions, TexelType TexelType);
 	const string DefaultMaterialName = "Unnamed Material";
-	const string DefaultTextureName = "Unnamed Texture";
 	const string TestMaterialName = "Test Material";
-	readonly TextureImplProvider _textureImplProvider;
-	readonly ArrayPoolBackedMap<ResourceHandle<Texture>, TextureData> _loadedTextures = new();
 	readonly ArrayPoolBackedMap<string, UIntPtr> _loadedShaderPackages = new();
 	readonly ArrayPoolBackedVector<ResourceHandle<Material>> _activeMaterials = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly Lazy<ResourceGroup> _testMaterialTextures;
+	readonly LocalTextureBuilder _textureBuilder;
 	bool _isDisposed = false;
 
-	// This is a private embedded 'delegating' object to help provide distinction between some default interface methods
-	// on both IMaterialImplProvider and ITextureImplProvider. 
-	sealed class TextureImplProvider : ITextureImplProvider {
-		readonly LocalMaterialBuilder _owner;
+	public ITextureBuilder TextureBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IMaterialBuilder)) : _textureBuilder;
 
-		public TextureImplProvider(LocalMaterialBuilder owner) => _owner = owner;
-
-		public XYPair<int> GetDimensions(ResourceHandle<Texture> handle) => _owner.GetDimensions(handle);
-		public TexelType GetTexelType(ResourceHandle<Texture> handle) => _owner.GetTexelType(handle);
-		public string GetNameAsNewStringObject(ResourceHandle<Texture> handle) => _owner.GetNameAsNewStringObject(handle);
-		public int GetNameLength(ResourceHandle<Texture> handle) => _owner.GetNameLength(handle);
-		public void CopyName(ResourceHandle<Texture> handle, Span<char> destinationBuffer) => _owner.CopyName(handle, destinationBuffer);
-		public bool IsDisposed(ResourceHandle<Texture> handle) => _owner.IsDisposed(handle);
-		public void Dispose(ResourceHandle<Texture> handle) => _owner.Dispose(handle);
-		public override string ToString() => _owner.ToString();
-	}
-
-	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config) {
+	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config, LocalTextureBuilder textureBuilder) {
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
-		_textureImplProvider = new(this);
+		_textureBuilder = textureBuilder;
 		_testMaterialTextures = new(CreateTestMaterialTextures);
 	}
 
-	#region Textures
-	void ApplyConfig<TTexel>(Span<TTexel> buffer, in TextureGenerationConfig generationConfig, in TextureProcessingConfig config) where TTexel : unmanaged, ITexel<TTexel> {
-		const int MaxTextureWidthForStackRowSwap = 65_536;
-
-		var width = generationConfig.Dimensions.X;
-		var height = generationConfig.Dimensions.Y;
-
-		var texelCount = width * height;
-
-		if (config.FlipX) {
-			for (var y = 0; y < height; ++y) {
-				var row = buffer[(y * width)..((y + 1) * width)];
-				for (var x = 0; x < width / 2; ++x) {
-					(row[x], row[^(x + 1)]) = (row[^(x + 1)], row[x]);
-				}
-			}
-		}
-		if (config.FlipY) {
-			var rowSwapSpace = width > MaxTextureWidthForStackRowSwap ? new TTexel[width] : stackalloc TTexel[width];
-			for (var y = 0; y < height / 2; ++y) {
-				var lowerRow = buffer[(y * width)..((y + 1) * width)];
-				var upperRow = buffer[((height - (y + 1)) * width)..((height - y) * width)];
-				lowerRow.CopyTo(rowSwapSpace);
-				upperRow.CopyTo(lowerRow);
-				rowSwapSpace.CopyTo(upperRow);
-			}
-		}
-
-		var shouldSwizzle = config.XRedFinalOutputSource != ColorChannel.R
-						|| config.YGreenFinalOutputSource != ColorChannel.G
-						|| config.ZBlueFinalOutputSource != ColorChannel.B
-						|| config.WAlphaFinalOutputSource != ColorChannel.A;
-		var shouldPreprocess = config.InvertXRedChannel || config.InvertYGreenChannel || config.InvertZBlueChannel || config.InvertWAlphaChannel || shouldSwizzle;
-		if (!shouldPreprocess) return;
-
-		for (var i = 0; i < texelCount; ++i) {
-			if (config.InvertXRedChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(0);
-			if (config.InvertYGreenChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(1);
-			if (config.InvertZBlueChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(2);
-			if (config.InvertWAlphaChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(3);
-			if (shouldSwizzle) {
-				buffer[i] = buffer[i].SwizzlePresentChannels(
-					config.XRedFinalOutputSource,
-					config.YGreenFinalOutputSource,
-					config.ZBlueFinalOutputSource,
-					config.WAlphaFinalOutputSource
-				);
-			}
-		}
-	}
-
-	// Maintainer's note: The buffer is disposed on the native side when it's asynchronously loaded on to the GPU
-	Texture IMaterialBuilder.CreateTextureAndDisposePreallocatedBuffer<TTexel>(IMaterialBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) => CreateTextureAndDisposePreallocatedBuffer(preallocatedBuffer, in generationConfig, in config);
-	Texture CreateTextureAndDisposePreallocatedBuffer<TTexel>(IMaterialBuilder.PreallocatedBuffer<TTexel> preallocatedBuffer, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
-		generationConfig.ThrowIfInvalid();
-		config.ThrowIfInvalid();
-
-		if (preallocatedBuffer.Buffer.IsEmpty) throw InvalidObjectException.InvalidDefault(typeof(IMaterialBuilder.PreallocatedBuffer<TTexel>));
-		if (generationConfig.Dimensions.Area > preallocatedBuffer.Buffer.Length) {
-			throw new ArgumentException(
-				$"Given config width/height require a buffer of {generationConfig.Dimensions.X}x{generationConfig.Dimensions.Y}={generationConfig.Dimensions.Area} texels, " +
-				$"but supplied texel buffer only has {preallocatedBuffer.Buffer.Length} texels.",
-				nameof(config)
-			);
-		}
-		ApplyConfig(preallocatedBuffer.Buffer, in generationConfig, config.ProcessingToApply);
-
-		var dataPointer = Unsafe.AsPointer(ref MemoryMarshal.GetReference(preallocatedBuffer.Buffer));
-		var dataLength = preallocatedBuffer.Buffer.Length * sizeof(TTexel);
-
-		UIntPtr outHandle;
-		switch (TTexel.BlitType) {
-			case TexelType.Rgb24:
-				LoadTextureRgb24(
-					preallocatedBuffer.BufferId,
-					(TexelRgb24*) dataPointer,
-					dataLength,
-					(uint) generationConfig.Dimensions.X,
-					(uint) generationConfig.Dimensions.Y,
-					config.GenerateMipMaps,
-					config.IsLinearColorspace,
-					out outHandle
-				).ThrowIfFailure();
-				break;
-			case TexelType.Rgba32:
-				LoadTextureRgba32(
-					preallocatedBuffer.BufferId,
-					(TexelRgba32*) dataPointer,
-					dataLength,
-					(uint) generationConfig.Dimensions.X,
-					(uint) generationConfig.Dimensions.Y,
-					config.GenerateMipMaps,
-					config.IsLinearColorspace,
-					out outHandle
-				).ThrowIfFailure();
-				break;
-			default:
-				throw new InvalidOperationException($"Unknown or unsupported texel type '{typeof(TTexel)}' (BlitType property '{TTexel.BlitType}').");
-		}
-
-		var handle = (ResourceHandle<Texture>) outHandle;
-		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultTextureName);
-		_loadedTextures.Add(handle, new(generationConfig.Dimensions, TTexel.BlitType));
-		return HandleToInstance(handle);
-	}
-
-	IMaterialBuilder.PreallocatedBuffer<TTexel> IMaterialBuilder.PreallocateBuffer<TTexel>(int texelCount) => PreallocateBuffer<TTexel>(texelCount);
-	IMaterialBuilder.PreallocatedBuffer<TTexel> PreallocateBuffer<TTexel>(int texelCount) where TTexel : unmanaged, ITexel<TTexel> {
-		var buffer = _globals.CreateGpuHoldingBuffer<TTexel>(texelCount);
-		return new(buffer.BufferIdentity, buffer.AsSpan<TTexel>());
-	}
-
-	public Texture CreateTexture<TTexel>(ReadOnlySpan<TTexel> texels, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel> {
-		ThrowIfThisIsDisposed();
-		generationConfig.ThrowIfInvalid();
-		config.ThrowIfInvalid();
-
-		var width = generationConfig.Dimensions.X;
-		var height = generationConfig.Dimensions.Y;
-
-		var texelCount = width * height;
-		if (texelCount > texels.Length) {
-			throw new ArgumentException(
-				$"Texture dimensions are {width}x{height}, requiring a texel span of length {texelCount} or greater, " +
-				$"but actual span length was {texels.Length}.",
-				nameof(texels)
-			);
-		}
-		texels = texels[..texelCount];
-
-		var buffer = PreallocateBuffer<TTexel>(texelCount);
-		texels.CopyTo(buffer.Buffer);
-		return CreateTextureAndDisposePreallocatedBuffer(buffer, in generationConfig, in config);
-	}
-	public void ProcessTexture<TTexel>(Span<TTexel> texels, in TextureGenerationConfig generationConfig, in TextureProcessingConfig config) where TTexel : unmanaged, ITexel<TTexel> {
-		ThrowIfThisIsDisposed();
-		generationConfig.ThrowIfInvalid();
-		config.ThrowIfInvalid();
-
-		var width = generationConfig.Dimensions.X;
-		var height = generationConfig.Dimensions.Y;
-
-		var texelCount = width * height;
-		if (texelCount > texels.Length) {
-			throw new ArgumentException(
-				$"Texture dimensions are {width}x{height}, requiring a texel span of length {texelCount} or greater, " +
-				$"but actual span length was {texels.Length}.",
-				nameof(texels)
-			);
-		}
-		texels = texels[..texelCount];
-
-		ApplyConfig(texels, in generationConfig, in config);
-	}
-
-	public XYPair<int> GetDimensions(ResourceHandle<Texture> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _loadedTextures[handle].Dimensions;
-	}
-	public TexelType GetTexelType(ResourceHandle<Texture> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _loadedTextures[handle].TexelType;
-	}
-
-	public string GetNameAsNewStringObject(ResourceHandle<Texture> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return new String(_globals.GetResourceName(handle.Ident, DefaultTextureName));
-	}
-	public int GetNameLength(ResourceHandle<Texture> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceName(handle.Ident, DefaultTextureName).Length;
-	}
-	public void CopyName(ResourceHandle<Texture> handle, Span<char> destinationBuffer) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		_globals.CopyResourceName(handle.Ident, DefaultTextureName, destinationBuffer);
-	}
-	#endregion
-
-	#region Materials
 	ResourceGroup CreateTestMaterialTextures() {
 		var result = _globals.ResourceGroupProvider.CreateGroup(
 			disposeContainedResourcesWhenDisposed: true,
 			name: TestMaterialName + " Texture Group"
 		);
 
-		result.Add((this as IMaterialBuilder).CreateTexture(
+		result.Add((_textureBuilder as ITextureBuilder).CreateColorMap(
 			TexturePattern.ChequerboardBordered(
 				new ColorVect(0.5f, 0.5f, 0.5f),
 				8,
@@ -258,7 +61,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			name: TestMaterialName + " Color Map"
 		));
 
-		result.Add((this as IMaterialBuilder).CreateTexture(
+		result.Add((_textureBuilder as ITextureBuilder).CreateNormalMap(
 			TexturePattern.Rectangles(
 				interiorSize: (128, 128),
 				borderSize: (8, 8),
@@ -458,38 +261,8 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_globals.CopyResourceName(handle.Ident, DefaultMaterialName, destinationBuffer);
 	}
-	#endregion
 
 	#region Native Methods
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "load_texture_rgb_24")]
-	static extern InteropResult LoadTextureRgb24(
-		nuint bufferId,
-		TexelRgb24* bufferPtr,
-		int bufferLength,
-		uint width,
-		uint height,
-		InteropBool generateMipmaps,
-		InteropBool isLinearColorspace,
-		out UIntPtr outTextureHandle
-	);
-
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "load_texture_rgba_32")]
-	static extern InteropResult LoadTextureRgba32(
-		nuint bufferId,
-		TexelRgba32* bufferPtr,
-		int bufferLength,
-		uint width,
-		uint height,
-		InteropBool generateMipmaps,
-		InteropBool isLinearColorspace,
-		out UIntPtr outTextureHandle
-	);
-
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_texture")]
-	static extern InteropResult DisposeTexture(
-		UIntPtr textureHandle
-	);
-
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "load_shader_package")]
 	static extern InteropResult LoadShaderPackage(
 		byte* packageDataPtr,
@@ -531,25 +304,12 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	#endregion
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	Texture HandleToInstance(ResourceHandle<Texture> h) => new(h, _textureImplProvider);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Material HandleToInstance(ResourceHandle<Material> h) => new(h, this);
 
 	public override string ToString() => _isDisposed ? "TinyFFR Local Material Builder [Disposed]" : "TinyFFR Local Material Builder";
 
 	#region Disposal
-	public bool IsDisposed(ResourceHandle<Texture> handle) => _isDisposed || !_loadedTextures.ContainsKey(handle);
 	public bool IsDisposed(ResourceHandle<Material> handle) => _isDisposed || !_activeMaterials.Contains(handle);
-
-	public void Dispose(ResourceHandle<Texture> handle) => Dispose(handle, removeFromCollection: true);
-	void Dispose(ResourceHandle<Texture> handle, bool removeFromCollection) {
-		if (IsDisposed(handle)) return;
-		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
-		LocalFrameSynchronizationManager.QueueResourceDisposal(handle, &DisposeTexture);
-		_globals.DisposeResourceNameIfExists(handle.Ident);
-		if (removeFromCollection) _loadedTextures.Remove(handle);
-	}
 
 	public void Dispose(ResourceHandle<Material> handle) => Dispose(handle, removeFromCollection: true);
 	void Dispose(ResourceHandle<Material> handle, bool removeFromCollection) {
@@ -565,11 +325,9 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		if (_isDisposed) return;
 		try {
 			foreach (var mat in _activeMaterials) Dispose(mat, removeFromCollection: false);
-			foreach (var tex in _loadedTextures.Keys) Dispose(tex, removeFromCollection: false);
 			foreach (var packageHandle in _loadedShaderPackages.Values) DisposeShaderPackage(packageHandle).ThrowIfFailure();
 
 			_activeMaterials.Dispose();
-			_loadedTextures.Dispose();
 			_loadedShaderPackages.Dispose();
 
 			if (_testMaterialTextures.IsValueCreated) {
@@ -581,7 +339,6 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		}
 	}
 
-	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<Texture> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Texture));
 	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<Material> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Material));
 	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 	#endregion

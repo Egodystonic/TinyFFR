@@ -57,8 +57,8 @@ class LocalRenderOutputBufferTest {
 
 		// RenderBuffer Scene
 		using var renderBufferCamera = factory.CameraBuilder.CreateCamera(Location.Origin);
-		using var renderBufferMatColorTex = factory.MaterialBuilder.CreateTexture(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false, name: "color");
-		using var renderBufferMatNormalTex = factory.MaterialBuilder.CreateTexture(TexturePattern.Rectangles(
+		using var renderBufferMatColorTex = factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false, name: "color");
+		using var renderBufferMatNormalTex = factory.TextureBuilder.CreateNormalMap(TexturePattern.Rectangles(
 			interiorSize: (256, 256),
 			borderSize: (64, 64),
 			paddingSize: (0, 0),
@@ -119,8 +119,8 @@ class LocalRenderOutputBufferTest {
 	void TestReadbacksAndBitmapWriting() {
 		using var factory = new LocalTinyFfrFactory();
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
-		using var colorTex = factory.MaterialBuilder.CreateTexture(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false, name: "color");
-		using var normalTex = factory.MaterialBuilder.CreateTexture(TexturePattern.Rectangles(
+		using var colorTex = factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false, name: "color");
+		using var normalTex = factory.TextureBuilder.CreateNormalMap(TexturePattern.Rectangles(
 			interiorSize: (256, 256),
 			borderSize: (64, 64),
 			paddingSize: (0, 0),

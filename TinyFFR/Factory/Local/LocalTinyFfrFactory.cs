@@ -46,6 +46,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	public ILocalAssetLoader AssetLoader => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _assetLoader;
 	public IMeshBuilder MeshBuilder => AssetLoader.MeshBuilder;
 	public IMaterialBuilder MaterialBuilder => AssetLoader.MaterialBuilder;
+	public ITextureBuilder TextureBuilder => AssetLoader.TextureBuilder;
 	public ICameraBuilder CameraBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _cameraBuilder;
 	public ILightBuilder LightBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _lightBuilder;
 	public IObjectBuilder ObjectBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _objectBuilder;

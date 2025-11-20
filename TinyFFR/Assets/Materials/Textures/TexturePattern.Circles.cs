@@ -5,15 +5,11 @@ using Egodystonic.TinyFFR.Resources.Memory;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using static Egodystonic.TinyFFR.Assets.Materials.TexturePatternDefaultValues;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public static unsafe partial class TexturePattern {
-	public const int CirclesDefaultInteriorRadius = 256;
-	public const int CirclesDefaultBorderSize = 24;
-	public static readonly XYPair<int> CirclesDefaultPaddingSize = new(96);
-	public static readonly XYPair<int> CirclesDefaultRepetitions = new(3);
-
 	public static TexturePattern<T> Circles<T>(T interiorValue, T borderValue, T paddingValue, int interiorRadius = CirclesDefaultInteriorRadius, int borderSize = CirclesDefaultBorderSize, XYPair<int>? paddingSize = null, XYPair<int>? repetitions = null, Transform2D? transform = null) where T : unmanaged {
 		static T GetTexel(ReadOnlySpan<byte> args, XYPair<int> dimensions, XYPair<int> xy) {
 			args

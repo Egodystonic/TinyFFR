@@ -25,7 +25,7 @@ class LocalNormalMapConversionTest {
 			new UnitSphericalCoordinate(180f, 45f),
 			new UnitSphericalCoordinate(270f, 45f),
 			UnitSphericalCoordinate.ZeroZero,
-			interiorRadius: 96, borderSize: 24, paddingSize: TexturePattern.CirclesDefaultPaddingSize / 3
+			interiorRadius: 96, borderSize: 24, paddingSize: TexturePatternDefaultValues.CirclesDefaultPaddingSize / 3
 		);
 	}
 
@@ -39,8 +39,8 @@ class LocalNormalMapConversionTest {
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Expectation: Outdent Circles");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
-		using var colorMap = factory.AssetLoader.MaterialBuilder.CreateTexture(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false);
-		using var normalMap = factory.AssetLoader.MaterialBuilder.CreateTexture(_normalPattern);
+		using var colorMap = factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false);
+		using var normalMap = factory.AssetLoader.TextureBuilder.CreateNormalMap(_normalPattern);
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(colorMap, normalMap);
 		using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 2.2f);
 		using var light = factory.LightBuilder.CreatePointLight(color: ColorVect.White, maxIlluminationRadius: 2f);

@@ -1,6 +1,8 @@
 ﻿// Created on 2025-11-14 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
+using System.Numerics;
+
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 [TestFixture]
@@ -28,6 +30,10 @@ class TexelRgb24Test {
 	public void ShouldCorrectlyConvert() {
 		Assert.AreEqual(new TexelRgba32(11, 22, 33, Byte.MaxValue), TestTexel.ToRgba32());
 		Assert.AreEqual(ColorVect.FromRgb24(11, 22, 33), TestTexel.ToColorVect());
+		Assert.AreEqual(TestTexel, TexelRgb24.FromByteComponents(11, 22, 33));
+		Assert.AreEqual(TestTexel, TexelRgb24.FromNormalizedFloats(11f / 255f, 22f / 255f, 33f / 255f));
+		Assert.AreEqual(TexelRgb24.FromNormalizedFloats(11f / 255f, 22f / 255f, 33f / 255f), TexelRgb24.FromNormalizedFloats((Real) 11f / 255f, (Real) 22f / 255f, (Real) 33f / 255f));
+		Assert.AreEqual(new Vector3(11f / 255f, 22f / 255f, 33f / 255f), TestTexel.ToNormalizedFloats());
 	}
 
 	[Test]
