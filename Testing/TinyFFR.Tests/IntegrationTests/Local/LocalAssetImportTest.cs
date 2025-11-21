@@ -87,11 +87,11 @@ class LocalAssetImportTest {
 		using var albedo = factory.AssetLoader.LoadColorMapTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex));
 		using var normal = factory.AssetLoader.LoadDataMapTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex));
 		using var orm = factory.AssetLoader.LoadCombinedTexture(
-			aFilePath: CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex),
+			aFilePath: CommonTestAssets.FindAsset(KnownTestAsset.WhiteTex),
 			aProcessingConfig: TextureProcessingConfig.None,
 			bFilePath: CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex),
 			bProcessingConfig: TextureProcessingConfig.None,
-			cFilePath: CommonTestAssets.FindAsset(KnownTestAsset.WhiteTex),
+			cFilePath: CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex),
 			cProcessingConfig: TextureProcessingConfig.None,
 			combinationConfig: new(
 				new(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
