@@ -275,11 +275,10 @@ public unsafe interface ITextureBuilder {
 	static readonly Angle DefaultAnisotropyTangent = 0f;
 	static readonly Real DefaultAnisotropyStrength = 1f;
 	static TexelRgb24 CreateAnisotropyTexel(Angle tangent, Real strength) {
-		var asTangentSpaceVect2 = (XYPair<float>.FromPolarAngle(tangent)
-			+ XYPair<float>.One
+		var asTangentSpaceVect2 = ((XYPair<float>.FromPolarAngle(tangent)
+			+ XYPair<float>.One)
 			* (Byte.MaxValue * 0.5f))
 			.CastWithRoundingIfNecessary<float, byte>(MidpointRounding.AwayFromZero);
-
 
 		return new TexelRgb24(asTangentSpaceVect2.X, asTangentSpaceVect2.Y, (byte) (strength * Byte.MaxValue));
 	}

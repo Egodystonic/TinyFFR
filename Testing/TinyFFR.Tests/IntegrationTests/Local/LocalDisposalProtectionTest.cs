@@ -342,7 +342,9 @@ class LocalDisposalProtectionTest {
 			assetLoader, objectIsAlreadyDisposed: true,
 			v => _ = v.MeshBuilder,
 			v => _ = v.MaterialBuilder,
-			v => _ = v.TextureBuilder
+			v => _ = v.TextureBuilder,
+			v => _ = v.LoadTexture("", false),
+			v => _ = v.LoadMesh("")
 		);
 		AssertUseAfterDisposalThrowsException(
 			meshBuilder, objectIsAlreadyDisposed: true,

@@ -52,7 +52,7 @@ static class LocalShaderPackageConstants {
 			Span<char> stringBuildSpace = stackalloc char[1000];
 			ShaderNameStart.CopyTo(stringBuildSpace);
 
-			for (var flag = (Flags) 0; flag <= (Flags) (((int) LastFlag << 1) - 1); ++flag) {
+			for (var flag = (Flags) 0; flag < (Flags) ((int) LastFlag << 1); ++flag) {
 				for (var vAlphaMode = FirstAlphaMode; vAlphaMode <= LastAlphaMode; ++vAlphaMode) {
 					for (var vOrmReflectance = FirstOrmReflectance; vOrmReflectance <= LastOrmReflectance; ++vOrmReflectance) {
 						var emptySpaceSpan = stringBuildSpace[ShaderNameStart.Length..];
@@ -152,7 +152,7 @@ static class LocalShaderPackageConstants {
 			Span<char> stringBuildSpace = stackalloc char[1000];
 			ShaderNameStart.CopyTo(stringBuildSpace);
 
-			for (var flag = (Flags) 0; flag <= (Flags) (((int) LastFlag << 1) - 1); ++flag) {
+			for (var flag = (Flags) 0; flag < (Flags) ((int) LastFlag << 1); ++flag) {
 				for (var vAlphaMode = FirstAlphaMode; vAlphaMode <= LastAlphaMode; ++vAlphaMode) {
 					for (var vRefractionQuality = FirstRefractionQuality; vRefractionQuality <= LastRefractionQuality; ++vRefractionQuality) {
 						for (var vRefractionType = FirstRefractionType; vRefractionType <= LastRefractionType; ++vRefractionType) {
@@ -245,7 +245,7 @@ static class LocalShaderPackageConstants {
 			Span<char> stringBuildSpace = stackalloc char[1000];
 			ShaderNameStart.CopyTo(stringBuildSpace);
 
-			for (var flag = (Flags) 0; flag <= (Flags) (((int) LastFlag << 1) - 1); ++flag) {
+			for (var flag = (Flags) 0; flag < (Flags) ((int) LastFlag << 1); ++flag) {
 				for (var vAlphaMode = FirstAlphaMode; vAlphaMode <= LastAlphaMode; ++vAlphaMode) {
 					var emptySpaceSpan = stringBuildSpace[ShaderNameStart.Length..];
 

@@ -8,14 +8,24 @@ namespace Egodystonic.TinyFFR;
 
 // This is mostly a wrapper for float that implements some interfaces, meaning we can use floats in some APIs that work with those interfaces.
 // This could go away with a 'shapes' or 'extension everything' implementation in C#
-public readonly record struct Real(float AsFloat) : IMathPrimitive<Real>, IAlgebraicRing<Real>, IOrdinal<Real> {
+public readonly struct Real : IMathPrimitive<Real>, IAlgebraicRing<Real>, IOrdinal<Real> {
 	public static readonly Real Zero = 0f;
+
+	public float AsFloat { get; }
+	public Real(float asFloat) { AsFloat = asFloat; }
 
 	public static implicit operator Real(float f) => new(f);
 	public static implicit operator float(Real r) => r.AsFloat;
+	public bool Equals(Real other) => AsFloat.Equals(other.AsFloat);
 	public bool Equals(Real other, float tolerance) => MathF.Abs(AsFloat - other.AsFloat) <= tolerance;
+	public static bool operator ==(Real left, Real right) => left.Equals(right);
+	public static bool operator !=(Real left, Real right) => !left.Equals(right);
+	public override int GetHashCode() => AsFloat.GetHashCode();
 
 	#region Parsing / Formatting / ToString
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public override string ToString() => ToString(null, null);
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string ToString(string? format, IFormatProvider? formatProvider) => AsFloat.ToString(format, formatProvider);
 

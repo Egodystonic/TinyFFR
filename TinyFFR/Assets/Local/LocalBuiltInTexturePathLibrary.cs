@@ -64,12 +64,9 @@ sealed class LocalBuiltInTexturePathLibrary : IBuiltInTexturePathLibrary {
 	public ReadOnlySpan<char> RedGreenTransparent => Bytes + $"255{Sep}255{Sep}0{Sep}0";
 	public ReadOnlySpan<char> GreenBlueTransparent => Bytes + $"0{Sep}255{Sep}255{Sep}0";
 	public ReadOnlySpan<char> RedBlueTransparent => Bytes + $"255{Sep}0{Sep}255{Sep}0";
-
-	public bool IsBuiltIn(ReadOnlySpan<char> filePath) => filePath.StartsWith(LocalBuiltInTexturePrefix);
 	
 	public Pair<TexelRgb24?, TexelRgba32?>? GetBuiltInTexel(ReadOnlySpan<char> filePath) {
-		if (!IsBuiltIn(filePath)) return null;
-		
+		if (!filePath.StartsWith(LocalBuiltInTexturePrefix)) return null;
 		var filePathAfterBuiltInPrefix = filePath[LocalBuiltInTexturePrefix.Length..];
 
 		if (filePathAfterBuiltInPrefix.StartsWith(MapTexelPrefix)) {
