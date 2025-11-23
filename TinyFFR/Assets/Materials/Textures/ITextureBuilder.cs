@@ -88,12 +88,12 @@ public unsafe interface ITextureBuilder {
 	Texture CreateColorMap(in TexturePattern<ColorVect> colorPattern, bool includeAlpha, in TextureCreationConfig config) {
 		if (includeAlpha) {
 			var buffer = PreallocateBuffer<TexelRgba32>(colorPattern.Dimensions.Area);
-			_ = PrintPattern(colorPattern, buffer.Span);
+			_ = PrintPattern(colorPattern, &TexelRgba32.ConvertFrom, buffer.Span);
 			return CreateTextureAndDisposePreallocatedBuffer(buffer, new TextureGenerationConfig { Dimensions = colorPattern.Dimensions }, in config);
 		}
 		else {
 			var buffer = PreallocateBuffer<TexelRgb24>(colorPattern.Dimensions.Area);
-			_ = PrintPattern(colorPattern, buffer.Span);
+			_ = PrintPattern(colorPattern, &TexelRgb24.ConvertFrom, buffer.Span);
 			return CreateTextureAndDisposePreallocatedBuffer(buffer, new TextureGenerationConfig { Dimensions = colorPattern.Dimensions }, in config);
 		}
 	}

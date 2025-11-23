@@ -20,7 +20,7 @@ public static class ImageUtils {
 	static ReadOnlySpan<byte> DummyFileData => "tinyffr"u8;
 
 	public static void SaveBitmap<TTexel>(ReadOnlySpan<char> filePath, XYPair<int> dimensions, ReadOnlySpan<TTexel> texels) where TTexel : unmanaged, ITexel<TTexel, byte> {
-		SaveBitmap(filePath, dimensions, texels, new(IncludeAlphaChannel: false, FlipVertical: false, FlipHorizontal: false));
+		SaveBitmap(filePath, dimensions, texels, new(IncludeAlphaChannel: TTexel.ChannelCount > 3, FlipVertical: false, FlipHorizontal: false));
 	}
 	public static unsafe void SaveBitmap<TTexel>(ReadOnlySpan<char> filePath, XYPair<int> dimensions, ReadOnlySpan<TTexel> texels, BitmapSaveConfig config) where TTexel : unmanaged, ITexel<TTexel, byte> {
 		if (dimensions.X <= 0 || dimensions.Y <= 0) {
