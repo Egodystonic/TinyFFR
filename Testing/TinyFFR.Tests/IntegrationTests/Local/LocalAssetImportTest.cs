@@ -134,6 +134,8 @@ class LocalAssetImportTest {
 	void ExecuteTextureCombineAndReadTests(ILocalTinyFfrFactory factory) {
 		var swatchTexPath = CommonTestAssets.FindAsset(KnownTestAsset.SwatchTex);
 		var swatchAlphaTexPath = CommonTestAssets.FindAsset(KnownTestAsset.SwatchAlphaTex);
+		var whiteTexPath = CommonTestAssets.FindAsset(KnownTestAsset.WhiteTex);
+		var egdTexPath = CommonTestAssets.FindAsset(KnownTestAsset.EgodystonicLogo);
 		var rgbBuffer = new TexelRgb24[100];
 		var rgbaBuffer = new TexelRgba32[100];
 
@@ -266,5 +268,18 @@ class LocalAssetImportTest {
 		for (var i = 0; i < 9; ++i) rgbaBuffer[i] = rgbBuffer[i].ToRgba32(expectation[i].A);
 		Assert.IsTrue(rgbaBuffer[..9].SequenceEqual(expectation));
 		Array.Clear(rgbaBuffer);
+
+		// combination metadata
+		var twoTexCombineMetadata = factory.AssetLoader.ReadCombinedTextureMetadata(swatchTexPath, whiteTexPath);
+		Assert.AreEqual(new XYPair<int>(3, 3), twoTexCombineMetadata.Dimensions);
+		Assert.AreEqual(false, twoTexCombineMetadata.IncludesAlphaChannel);
+
+		var threeTexCombineMetadata = factory.AssetLoader.ReadCombinedTextureMetadata(swatchAlphaTexPath, whiteTexPath, swatchTexPath);
+		Assert.AreEqual(new XYPair<int>(3, 3), threeTexCombineMetadata.Dimensions);
+		Assert.AreEqual(true, threeTexCombineMetadata.IncludesAlphaChannel);
+
+		var fourTexCombineMetadata = factory.AssetLoader.ReadCombinedTextureMetadata(swatchAlphaTexPath, whiteTexPath, swatchTexPath, egdTexPath);
+		Assert.AreEqual(new XYPair<int>(128, 128), fourTexCombineMetadata.Dimensions);
+		Assert.AreEqual(true, fourTexCombineMetadata.IncludesAlphaChannel);
 	}
 }
