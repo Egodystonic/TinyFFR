@@ -59,7 +59,8 @@ public readonly record struct TexelRgb24(byte R, byte G, byte B) : IThreeByteCha
 			   $"{B}";
 	}
 
-	public TexelRgba32 ToRgba32() => new(R, G, B, Byte.MaxValue);
+	public TexelRgba32 ToRgba32() => ToRgba32(Byte.MaxValue);
+	public TexelRgba32 ToRgba32(byte alphaValue) => new(R, G, B, alphaValue);
 	public ColorVect ToColorVect() => ColorVect.FromRgb24(R, G, B);
 	public Vector3 ToNormalizedFloats() {
 		const float Multiplicand = 1f / Byte.MaxValue;

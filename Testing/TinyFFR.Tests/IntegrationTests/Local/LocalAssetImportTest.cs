@@ -54,6 +54,8 @@ class LocalAssetImportTest {
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 
+		ExecuteTextureCombineAndReadTests(factory);
+
 		Assert.AreEqual(new TextureReadMetadata((1024, 1024), false), factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex)));
 		Assert.AreEqual(new TextureReadMetadata((1024, 1024), false), factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex)));
 		Assert.AreEqual(new TextureReadMetadata((1024, 1024), false), factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex)));
@@ -127,5 +129,142 @@ class LocalAssetImportTest {
 			scene.SetBackdrop(cubemap, cbBrightness);
 			window.SetTitle("Backdrop brightness level " + PercentageUtils.ConvertFractionToPercentageString(cbBrightness));
 		}
+	}
+
+	void ExecuteTextureCombineAndReadTests(ILocalTinyFfrFactory factory) {
+		var swatchTexPath = CommonTestAssets.FindAsset(KnownTestAsset.SwatchTex);
+		var swatchAlphaTexPath = CommonTestAssets.FindAsset(KnownTestAsset.SwatchAlphaTex);
+		var rgbBuffer = new TexelRgb24[100];
+		var rgbaBuffer = new TexelRgba32[100];
+
+		void AssertSwatchBufferAndClear() {
+			Assert.AreEqual(new TexelRgb24(255, 255, 255), rgbBuffer[0]);
+			Assert.AreEqual(new TexelRgb24(0, 0, 0), rgbBuffer[1]);
+			Assert.AreEqual(new TexelRgb24(128, 128, 128), rgbBuffer[2]);
+			Assert.AreEqual(new TexelRgb24(255, 255, 0), rgbBuffer[3]);
+			Assert.AreEqual(new TexelRgb24(0, 255, 255), rgbBuffer[4]);
+			Assert.AreEqual(new TexelRgb24(255, 0, 255), rgbBuffer[5]);
+			Assert.AreEqual(new TexelRgb24(255, 0, 0), rgbBuffer[6]);
+			Assert.AreEqual(new TexelRgb24(0, 255, 0), rgbBuffer[7]);
+			Assert.AreEqual(new TexelRgb24(0, 0, 255), rgbBuffer[8]);
+			Array.Clear(rgbBuffer);
+		}
+
+		// swatch
+		var swatchMetadata = factory.AssetLoader.ReadTextureMetadata(swatchTexPath);
+		Assert.AreEqual(new XYPair<int>(3, 3), swatchMetadata.Dimensions);
+		Assert.AreEqual(false, swatchMetadata.IncludesAlphaChannel);
+
+		var texelCount = factory.AssetLoader.ReadTexture(swatchTexPath, rgbBuffer);
+		Assert.AreEqual(9, texelCount);
+
+		AssertSwatchBufferAndClear();
+
+		texelCount = factory.AssetLoader.ReadTexture(swatchTexPath, rgbaBuffer);
+		Assert.AreEqual(9, texelCount);
+
+		for (var i = 0; i < 9; ++i) {
+			Assert.AreEqual((byte) 255, rgbaBuffer[i].A);
+			rgbBuffer[i] = rgbaBuffer[i].ToRgb24();
+		}
+		AssertSwatchBufferAndClear();
+
+		// swatch_alpha
+		var swatchAlphaMetadata = factory.AssetLoader.ReadTextureMetadata(swatchAlphaTexPath);
+		Assert.AreEqual(new XYPair<int>(3, 3), swatchAlphaMetadata.Dimensions);
+		Assert.AreEqual(true, swatchAlphaMetadata.IncludesAlphaChannel);
+
+		texelCount = factory.AssetLoader.ReadTexture(swatchAlphaTexPath, rgbBuffer);
+		Assert.AreEqual(9, texelCount);
+
+		AssertSwatchBufferAndClear();
+
+		texelCount = factory.AssetLoader.ReadTexture(swatchAlphaTexPath, rgbaBuffer);
+		Assert.AreEqual(9, texelCount);
+
+		for (var i = 0; i < 9; ++i) {
+			Assert.AreEqual((byte) 127, rgbaBuffer[i].A);
+			rgbBuffer[i] = rgbaBuffer[i].ToRgb24();
+		}
+		AssertSwatchBufferAndClear();
+
+
+		// Combination testing
+		var expectation = new TexelRgba32[] {
+			new(255 - 0, 255 - 128, 255 - 127, 255 - 128),
+			new(255 - 255, 255 - 0, 255 - 127, 255 - 0),
+			new(255 - 0, 255 - 255, 255 - 127, 255 - 255),
+
+			new(255 - 255, 255 - 255, 255 - 127, 255 - 255),
+			new(255 - 255, 255 - 0, 255 - 127, 255 - 255),
+			new(255 - 0, 255 - 255, 255 - 127, 255 - 0),
+
+			new(255 - 255, 255 - 0, 255 - 127, 255 - 255),
+			new(255 - 0, 255 - 0, 255 - 127, 255 - 0),
+			new(255 - 128, 255 - 255, 255 - 127, 255 - 0),
+		};
+
+		// 2x combine in to RGBA buffer
+		factory.AssetLoader.ReadCombinedTexture(
+			swatchTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: true, aroundHorizontalCentre: false),
+			swatchAlphaTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: false, aroundHorizontalCentre: true),
+			new TextureCombinationConfig("bGaRbAaB"), TextureProcessingConfig.Negate(), rgbaBuffer
+		);
+		Assert.IsTrue(rgbaBuffer[..9].SequenceEqual(expectation));
+		Array.Clear(rgbaBuffer);
+
+		// 2x combine in to RGB buffer
+		factory.AssetLoader.ReadCombinedTexture(
+			swatchTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: true, aroundHorizontalCentre: false),
+			swatchAlphaTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: false, aroundHorizontalCentre: true),
+			new TextureCombinationConfig("bGaRbAaB"), TextureProcessingConfig.Negate(), rgbBuffer
+		);
+		for (var i = 0; i < 9; ++i) rgbaBuffer[i] = rgbBuffer[i].ToRgba32(expectation[i].A);
+		Assert.IsTrue(rgbaBuffer[..9].SequenceEqual(expectation));
+		Array.Clear(rgbaBuffer);
+
+		// 3x combine in to RGBA buffer
+		factory.AssetLoader.ReadCombinedTexture(
+			swatchTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: true, aroundHorizontalCentre: false),
+			swatchAlphaTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: false, aroundHorizontalCentre: true),
+			swatchTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: true, aroundHorizontalCentre: false),
+			new TextureCombinationConfig("bGaRbAcB"), TextureProcessingConfig.Negate(), rgbaBuffer
+		);
+		Assert.IsTrue(rgbaBuffer[..9].SequenceEqual(expectation));
+		Array.Clear(rgbaBuffer);
+
+		// 3x combine in to RGB buffer
+		factory.AssetLoader.ReadCombinedTexture(
+			swatchTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: true, aroundHorizontalCentre: false),
+			swatchAlphaTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: false, aroundHorizontalCentre: true),
+			swatchTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: true, aroundHorizontalCentre: false),
+			new TextureCombinationConfig("bGcRbAaB"), TextureProcessingConfig.Negate(), rgbBuffer
+		);
+		for (var i = 0; i < 9; ++i) rgbaBuffer[i] = rgbBuffer[i].ToRgba32(expectation[i].A);
+		Assert.IsTrue(rgbaBuffer[..9].SequenceEqual(expectation));
+		Array.Clear(rgbaBuffer);
+
+		// 4x combine in to RGBA buffer
+		factory.AssetLoader.ReadCombinedTexture(
+			swatchTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: true, aroundHorizontalCentre: false),
+			swatchAlphaTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: false, aroundHorizontalCentre: true),
+			swatchTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: true, aroundHorizontalCentre: false),
+			swatchAlphaTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: false, aroundHorizontalCentre: true),
+			new TextureCombinationConfig("dGaRbAcB"), TextureProcessingConfig.Negate(), rgbaBuffer
+		);
+		Assert.IsTrue(rgbaBuffer[..9].SequenceEqual(expectation));
+		Array.Clear(rgbaBuffer);
+
+		// 4x combine in to RGB buffer
+		factory.AssetLoader.ReadCombinedTexture(
+			swatchTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: true, aroundHorizontalCentre: false),
+			swatchAlphaTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: false, aroundHorizontalCentre: true),
+			swatchTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: true, aroundHorizontalCentre: false),
+			swatchAlphaTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: false, aroundHorizontalCentre: true),
+			new TextureCombinationConfig("bGcRdAaB"), TextureProcessingConfig.Negate(), rgbBuffer
+		);
+		for (var i = 0; i < 9; ++i) rgbaBuffer[i] = rgbBuffer[i].ToRgba32(expectation[i].A);
+		Assert.IsTrue(rgbaBuffer[..9].SequenceEqual(expectation));
+		Array.Clear(rgbaBuffer);
 	}
 }

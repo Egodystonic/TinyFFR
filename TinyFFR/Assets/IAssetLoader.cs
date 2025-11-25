@@ -30,6 +30,32 @@ public readonly record struct TextureCombinationSource(TextureCombinationSourceT
 	}
 }
 public readonly record struct TextureCombinationConfig(TextureCombinationSource OutputTextureXRedChannelSource, TextureCombinationSource OutputTextureYGreenChannelSource, TextureCombinationSource OutputTextureZBlueChannelSource, TextureCombinationSource? OutputTextureWAlphaChannelSource = null) {
+	static TextureCombinationSource ExtractFromString(ReadOnlySpan<char> twoChars) {
+		return new TextureCombinationSource(
+			Char.ToLowerInvariant(twoChars[0]) switch {
+				'a' or '0' => TextureCombinationSourceTexture.TextureA,
+				'b' or '1' => TextureCombinationSourceTexture.TextureB,
+				'c' or '2' => TextureCombinationSourceTexture.TextureC,
+				'd' or '3' => TextureCombinationSourceTexture.TextureD,
+				_ => throw new ArgumentException($"Character '{twoChars[0]}' was expected to be one of 'a', 'b', 'c', 'd', '0', '1', '2', '3' (to denote a source texture).")
+			},
+			Char.ToLowerInvariant(twoChars[1]) switch {
+				'r' or 'x' => ColorChannel.R,
+				'g' or 'y' => ColorChannel.G,
+				'b' or 'z' => ColorChannel.B,
+				'a' or 'w' => ColorChannel.A,
+				_ => throw new ArgumentException($"Character '{twoChars[1]}' was expected to be one of 'r', 'g', 'b', 'a', 'x', 'y', 'z', 'w' (to denote a source channel).")
+			}
+		);
+	}
+
+	public TextureCombinationConfig(ReadOnlySpan<char> selectionString) : this(
+		ExtractFromString(selectionString[0..2]),
+		ExtractFromString(selectionString[2..4]),
+		ExtractFromString(selectionString[4..6]),
+		selectionString.Length >= 8 ? ExtractFromString(selectionString[6..8]) : null
+	) { }
+	
 	internal TexelRgba32 SelectTexel(ReadOnlySpan<TexelRgba32> samples) {
 		return new TexelRgba32(
 			OutputTextureXRedChannelSource.SelectTexelChannel(samples),

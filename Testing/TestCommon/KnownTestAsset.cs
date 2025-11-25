@@ -13,7 +13,9 @@ public enum KnownTestAsset {
 	BrickAlbedoTex,
 	BrickNormalTex,
 	BrickOrmTex,
-	WhiteTex
+	WhiteTex,
+	SwatchTex,
+	SwatchAlphaTex
 }
 
 public static class KnownTestAssetExtensions {
@@ -29,6 +31,8 @@ public static class KnownTestAssetExtensions {
 			KnownTestAsset.BrickNormalTex => "brickwalltextures/brick_wall_001_nor_gl_2k.jpg",
 			KnownTestAsset.BrickOrmTex => "brickwalltextures/brick_wall_001_arm_2k.jpg",
 			KnownTestAsset.WhiteTex => "white.bmp",
+			KnownTestAsset.SwatchTex => "swatch.bmp",
+			KnownTestAsset.SwatchAlphaTex => "swatch_alpha.png",
 			_ => throw new ArgumentOutOfRangeException(nameof(@this), @this, "Unknown test asset.")
 		};
 	}
