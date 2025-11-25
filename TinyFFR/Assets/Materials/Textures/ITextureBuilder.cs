@@ -33,7 +33,6 @@ public unsafe interface ITextureBuilder {
 		);
 	}
 	Texture CreateTexture<TTexel>(ReadOnlySpan<TTexel> texels, in TextureGenerationConfig generationConfig, in TextureCreationConfig config) where TTexel : unmanaged, ITexel<TTexel>;
-	void ProcessTexture<TTexel>(Span<TTexel> texels, XYPair<int> dimensions, in TextureProcessingConfig config) where TTexel : unmanaged, ITexel<TTexel>;
 	#endregion
 
 	#region Generic Patterns
@@ -235,7 +234,7 @@ public unsafe interface ITextureBuilder {
 	}
 
 	Texture CreateAbsorptionTransmissionMap(ColorVect? absorption = null, Real? transmission = null, ReadOnlySpan<char> name = default) {
-		return CreateTexture(CreateAbsorptionTransmissionTexel(absorption ?? DefaultAbsorption, transmission ?? DefaultTransmission), isLinearColorspace: true, name);
+		return CreateTexture(CreateAbsorptionTransmissionTexel(absorption ?? DefaultAbsorption, transmission ?? DefaultTransmission), isLinearColorspace: false, name);
 	}
 	Texture CreateAbsorptionTransmissionMap(ColorVect absorption, Real transmission, in TextureCreationConfig config) {
 		return CreateTexture(CreateAbsorptionTransmissionTexel(absorption, transmission), in config);
@@ -264,7 +263,7 @@ public unsafe interface ITextureBuilder {
 	}
 
 	Texture CreateEmissiveMap(ColorVect? color = null, Real? intensity = null, ReadOnlySpan<char> name = default) {
-		return CreateTexture(CreateEmissiveTexel(color ?? DefaultEmissiveColor, intensity ?? DefaultEmissiveIntensity), isLinearColorspace: true, name);
+		return CreateTexture(CreateEmissiveTexel(color ?? DefaultEmissiveColor, intensity ?? DefaultEmissiveIntensity), isLinearColorspace: false, name);
 	}
 	Texture CreateEmissiveMap(ColorVect color, Real intensity, in TextureCreationConfig config) {
 		return CreateTexture(CreateEmissiveTexel(color, intensity), in config);

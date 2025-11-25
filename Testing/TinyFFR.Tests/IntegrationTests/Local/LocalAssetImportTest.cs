@@ -84,8 +84,8 @@ class LocalAssetImportTest {
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Asset Import Test");
 		window.SetIcon(CommonTestAssets.FindAsset(KnownTestAsset.EgodystonicLogo));
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
-		using var albedo = factory.AssetLoader.LoadColorMapTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex));
-		using var normal = factory.AssetLoader.LoadDataMapTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex));
+		using var albedo = factory.AssetLoader.LoadColorTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex));
+		using var normal = factory.AssetLoader.LoadDataTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex));
 		using var orm = factory.AssetLoader.LoadCombinedTexture(
 			aFilePath: CommonTestAssets.FindAsset(KnownTestAsset.WhiteTex),
 			aProcessingConfig: TextureProcessingConfig.None,

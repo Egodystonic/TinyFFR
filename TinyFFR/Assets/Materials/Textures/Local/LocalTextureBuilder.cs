@@ -48,7 +48,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 				nameof(config)
 			);
 		}
-		ProcessTexture(preallocatedBuffer.Span, generationConfig.Dimensions, config.ProcessingToApply);
+		TextureUtils.ProcessTexture(preallocatedBuffer.Span, generationConfig.Dimensions, config.ProcessingToApply);
 
 		var dataPointer = Unsafe.AsPointer(ref MemoryMarshal.GetReference(preallocatedBuffer.Span));
 		var dataLength = preallocatedBuffer.Span.Length * sizeof(TTexel);
@@ -118,66 +118,6 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		var buffer = PreallocateBuffer<TTexel>(texelCount);
 		texels.CopyTo(buffer.Span);
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, in generationConfig, in config);
-	}
-
-	public void ProcessTexture<TTexel>(Span<TTexel> buffer, XYPair<int> dimensions, in TextureProcessingConfig config) where TTexel : unmanaged, ITexel<TTexel> {
-		const int MaxTextureWidthForStackRowSwap = 65_536;
-		config.ThrowIfInvalid();
-		if (!config.RequiresProcessing) return;
-
-		var width = dimensions.X;
-		var height = dimensions.Y;
-
-		var texelCount = width * height;
-
-		if (texelCount > buffer.Length) {
-			throw new ArgumentException(
-				$"Texture dimensions are {width}x{height}, requiring a texel span of length {texelCount} or greater, " +
-				$"but actual span length was {buffer.Length}.",
-				nameof(buffer)
-			);
-		}
-
-		if (config.FlipX) {
-			for (var y = 0; y < height; ++y) {
-				var row = buffer[(y * width)..((y + 1) * width)];
-				for (var x = 0; x < width / 2; ++x) {
-					(row[x], row[^(x + 1)]) = (row[^(x + 1)], row[x]);
-				}
-			}
-		}
-		if (config.FlipY) {
-			var rowSwapSpace = width > MaxTextureWidthForStackRowSwap ? new TTexel[width] : stackalloc TTexel[width];
-			for (var y = 0; y < height / 2; ++y) {
-				var lowerRow = buffer[(y * width)..((y + 1) * width)];
-				var upperRow = buffer[((height - (y + 1)) * width)..((height - y) * width)];
-				lowerRow.CopyTo(rowSwapSpace);
-				upperRow.CopyTo(lowerRow);
-				rowSwapSpace.CopyTo(upperRow);
-			}
-		}
-
-		var shouldSwizzle = config.XRedFinalOutputSource != ColorChannel.R
-						|| config.YGreenFinalOutputSource != ColorChannel.G
-						|| config.ZBlueFinalOutputSource != ColorChannel.B
-						|| config.WAlphaFinalOutputSource != ColorChannel.A;
-		var shouldPreprocess = config.InvertXRedChannel || config.InvertYGreenChannel || config.InvertZBlueChannel || config.InvertWAlphaChannel || shouldSwizzle;
-		if (!shouldPreprocess) return;
-
-		for (var i = 0; i < texelCount; ++i) {
-			if (config.InvertXRedChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(0);
-			if (config.InvertYGreenChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(1);
-			if (config.InvertZBlueChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(2);
-			if (config.InvertWAlphaChannel) buffer[i] = buffer[i].WithInvertedChannelIfPresent(3);
-			if (shouldSwizzle) {
-				buffer[i] = buffer[i].SwizzlePresentChannels(
-					config.XRedFinalOutputSource,
-					config.YGreenFinalOutputSource,
-					config.ZBlueFinalOutputSource,
-					config.WAlphaFinalOutputSource
-				);
-			}
-		}
 	}
 	#endregion
 

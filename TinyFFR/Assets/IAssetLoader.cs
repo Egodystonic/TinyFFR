@@ -54,8 +54,8 @@ public interface IAssetLoader {
 	IBuiltInTexturePathLibrary BuiltInTexturePaths { get; }
 
 	#region Load / Read Texture
-	Texture LoadColorMapTexture(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) => LoadTexture(filePath, isLinearColorspace: false, name);
-	Texture LoadDataMapTexture(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) => LoadTexture(filePath, isLinearColorspace: true, name);
+	Texture LoadColorTexture(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) => LoadTexture(filePath, isLinearColorspace: false, name);
+	Texture LoadDataTexture(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) => LoadTexture(filePath, isLinearColorspace: true, name);
 	Texture LoadTexture(ReadOnlySpan<char> filePath, bool isLinearColorspace, ReadOnlySpan<char> name = default) {
 		return LoadTexture(
 			filePath, 

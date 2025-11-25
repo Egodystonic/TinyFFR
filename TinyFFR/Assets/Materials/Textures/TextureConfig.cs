@@ -155,6 +155,29 @@ public readonly record struct TextureProcessingConfig : IConfigStruct<TexturePro
 
 	public TextureProcessingConfig() { }
 
+	public static TextureProcessingConfig Flip(bool aroundVerticalCentre, bool aroundHorizontalCentre) {
+		return new() {
+			FlipX = aroundVerticalCentre, 
+			FlipY = aroundHorizontalCentre
+		};
+	}
+	public static TextureProcessingConfig Negate(bool includeRedChannel = true, bool includeGreenChannel = true, bool includeBlueChannel = true, bool includeAlphaChannel = true) {
+		return new() {
+			InvertXRedChannel = includeRedChannel, 
+			InvertYGreenChannel = includeGreenChannel, 
+			InvertZBlueChannel = includeBlueChannel, 
+			InvertWAlphaChannel = includeAlphaChannel
+		};
+	}
+	public static TextureProcessingConfig Swizzle(ColorChannel redSource = ColorChannel.R, ColorChannel greenSource = ColorChannel.G, ColorChannel blueSource = ColorChannel.B, ColorChannel alphaSource = ColorChannel.A) {
+		return new() {
+			XRedFinalOutputSource = redSource, 
+			YGreenFinalOutputSource = greenSource,
+			ZBlueFinalOutputSource = blueSource,
+			WAlphaFinalOutputSource = alphaSource
+		};
+	}
+
 	internal void ThrowIfInvalid() { /* no-op */ }
 
 	public static int GetHeapStorageFormattedLength(in TextureProcessingConfig src) {

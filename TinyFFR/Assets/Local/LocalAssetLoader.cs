@@ -194,7 +194,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 					throw new ArgumentOutOfRangeException(nameof(TTexel), "Unknown texel blit type.");
 			}
 
-			_textureBuilder.ProcessTexture(destinationBuffer, (1, 1), in processingConfig);
+			TextureUtils.ProcessTexture(destinationBuffer, (1, 1), in processingConfig);
 			return 1;
 		}
 
@@ -230,7 +230,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 					MemoryMarshal.AsBytes(new ReadOnlySpan<TexelRgb24>(texelBuffer, texelCount)).CopyTo(destinationBufferAsBytes);
 				}
 
-				_textureBuilder.ProcessTexture(destinationBuffer, (width, height), in processingConfig);
+				TextureUtils.ProcessTexture(destinationBuffer, (width, height), in processingConfig);
 				return texelCount;
 			}
 			finally {
@@ -523,7 +523,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		var destDimensions = GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, null, null, out _);
 
 		CombineTextures(aFilePath, in aProcessingConfig, aMetadata, bFilePath, in bProcessingConfig, bMetadata, combinationConfig, destinationBuffer);
-		_textureBuilder.ProcessTexture(destinationBuffer, destDimensions, in finalOutputProcessingConfig);
+		TextureUtils.ProcessTexture(destinationBuffer, destDimensions, in finalOutputProcessingConfig);
 		return destDimensions.Area;
 	}
 	public int ReadCombinedTexture<TTexel>(
@@ -538,7 +538,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		var destDimensions = GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions, null, out _);
 
 		CombineTextures(aFilePath, in aProcessingConfig, aMetadata, bFilePath, in bProcessingConfig, bMetadata, cFilePath, in cProcessingConfig, cMetadata, combinationConfig, destinationBuffer);
-		_textureBuilder.ProcessTexture(destinationBuffer, destDimensions, in finalOutputProcessingConfig);
+		TextureUtils.ProcessTexture(destinationBuffer, destDimensions, in finalOutputProcessingConfig);
 		return destDimensions.Area;
 	}
 	public int ReadCombinedTexture<TTexel>(
@@ -555,7 +555,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		var destDimensions = GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions, dMetadata.Dimensions, out _);
 
 		CombineTextures(aFilePath, in aProcessingConfig, aMetadata, bFilePath, in bProcessingConfig, bMetadata, cFilePath, in cProcessingConfig, cMetadata, dFilePath, in dProcessingConfig, dMetadata, combinationConfig, destinationBuffer);
-		_textureBuilder.ProcessTexture(destinationBuffer, destDimensions, in finalOutputProcessingConfig);
+		TextureUtils.ProcessTexture(destinationBuffer, destDimensions, in finalOutputProcessingConfig);
 		return destDimensions.Area;
 	}
 	#endregion

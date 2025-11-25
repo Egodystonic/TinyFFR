@@ -29,20 +29,18 @@ class LocalColorspaceTest {
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 
-		using var linearWallAlbedo = factory.AssetLoader.LoadTexture(
+		using var linearWallAlbedo = factory.AssetLoader.LoadDataTexture(
 			CommonTestAssets.FindAsset(KnownTestAsset.BrickAlbedoTex),
-			isLinearColorspace: true,
 			name: "linearWallTex"
 		);
-		using var srgbWallAlbedo = factory.AssetLoader.LoadTexture(
+		using var srgbWallAlbedo = factory.AssetLoader.LoadColorTexture(
 			CommonTestAssets.FindAsset(KnownTestAsset.BrickAlbedoTex),
-			isLinearColorspace: false,
 			name: "srgbWallTex"
 		);
-		using var wallNormals = factory.AssetLoader.LoadDataMapTexture(
+		using var wallNormals = factory.AssetLoader.LoadDataTexture(
 			CommonTestAssets.FindAsset(KnownTestAsset.BrickNormalTex)
 		);
-		using var wallOrm = factory.AssetLoader.LoadDataMapTexture(
+		using var wallOrm = factory.AssetLoader.LoadDataTexture(
 			CommonTestAssets.FindAsset(KnownTestAsset.BrickOrmTex)
 		);
 
