@@ -4,6 +4,8 @@
 namespace Egodystonic.TinyFFR;
 
 static class MathUtils {
+	public const float GoldenRatio = 1.6180339887f;
+
 	public static T TrueModulus<T>(T lhs, T rhs) where T : IModulusOperators<T, T, T>, IAdditionOperators<T, T, T> => (lhs % rhs + rhs) % rhs;
 
 	public static Vector4 NormalizeOrZero(Vector4 v) {

@@ -22,7 +22,7 @@ public interface IMeshPolygonGroup : IDisposable {
 	protected Span<MeshVertex> ReallocateVertexBufferForCurrentCount();
 	protected Span<VertexTriangle> ReallocateTriangleBufferForCurrentCount();
 
-	internal void Triangulate(Transform2D textureTransform, out ReadOnlySpan<MeshVertex> outVertexBuffer, out ReadOnlySpan<VertexTriangle> outTriangleBuffer) {
+	void Triangulate(Transform2D textureTransform, out ReadOnlySpan<MeshVertex> outVertexBuffer, out ReadOnlySpan<VertexTriangle> outTriangleBuffer) {
 		textureTransform = textureTransform with { Scaling = textureTransform.Scaling.Reciprocal ?? XYPair<float>.Zero };
 		
 		var twoDimensionalBuffer = Reallocate2DBufferForCurrentCount();

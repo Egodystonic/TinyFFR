@@ -104,6 +104,7 @@ public readonly partial struct Direction : IVect<Direction>, IDescriptiveStringP
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Direction FromOrientation(Orientation orientation) => new(orientation.GetAxisSign(Axis.X), orientation.GetAxisSign(Axis.Y), orientation.GetAxisSign(Axis.Z));
 
+	// TODO xmldoc -- by default follows right hand rule (index finger = dirA, middle finger = dirB, thumb = result)
 	public static Direction FromDualOrthogonalization(Direction dirA, Direction dirB) {
 		var cross = Vector3.Cross(dirA.ToVector3(), dirB.ToVector3());
 		var crossLength = cross.LengthSquared();

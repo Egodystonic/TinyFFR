@@ -18,6 +18,7 @@ public readonly struct Real : IMathPrimitive<Real>, IAlgebraicRing<Real>, IOrdin
 	public static implicit operator float(Real r) => r.AsFloat;
 	public bool Equals(Real other) => AsFloat.Equals(other.AsFloat);
 	public bool Equals(Real other, float tolerance) => MathF.Abs(AsFloat - other.AsFloat) <= tolerance;
+	public override bool Equals(object? obj) => obj is Real other && Equals(other);
 	public static bool operator ==(Real left, Real right) => left.Equals(right);
 	public static bool operator !=(Real left, Real right) => !left.Equals(right);
 	public override int GetHashCode() => AsFloat.GetHashCode();
