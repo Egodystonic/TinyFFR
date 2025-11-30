@@ -98,6 +98,7 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 	public ColorVect(StandardColor c) { this = FromStandardColor(c); }
 
 	#region Factories and Conversions
+	public ColorVect WithPremultipliedAlpha() => PremultiplyAlpha(this);
 	public static ColorVect PremultiplyAlpha(ColorVect nonpremultipliedInput) {
 		return new(
 			nonpremultipliedInput.Red * nonpremultipliedInput.Alpha,

@@ -39,7 +39,6 @@ public readonly ref struct StandardMaterialCreationConfig : IConfigStruct<Standa
 	internal void ThrowIfInvalid() {
 		BaseConfig.ThrowIfInvalid();
 		if (ColorMap == default) throw InvalidObjectException.InvalidDefault<Texture>(nameof(ColorMap));
-		MaterialCreationConfig.ThrowIfTextureIsNotCorrectTexelType(AnisotropyMap, TexelType.Rgba32);
 		MaterialCreationConfig.ThrowIfTextureIsNotCorrectTexelType(EmissiveMap, TexelType.Rgba32);
 		if (!Enum.IsDefined(AlphaMode)) throw new ArgumentOutOfRangeException(nameof(AlphaMode), AlphaMode, null);
 	}

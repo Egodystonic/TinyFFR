@@ -21,15 +21,46 @@ class LocalMaterialsTest {
 
 	const KeyboardOrMouseKey MapAlphaToggleKey = KeyboardOrMouseKey.A;
 	const KeyboardOrMouseKey MapEmissiveToggleKey = KeyboardOrMouseKey.E;
+	const KeyboardOrMouseKey MapNormalToggleKey = KeyboardOrMouseKey.N;
+	const KeyboardOrMouseKey MapOrmrToggleKey = KeyboardOrMouseKey.O;
+	const KeyboardOrMouseKey MapAnisotropicToggleKey = KeyboardOrMouseKey.T;
+	const KeyboardOrMouseKey MapClearCoatToggleKey = KeyboardOrMouseKey.C;
+
+	const string WindowTitleStart = $"settings: B,R shaders: 1,2,3 maps: A,E,N,O,T,C";
 
 	sealed record UserOptions {
 		public int BackdropIntensity { get; set; } = 2;
 		public bool Rotate { get; set; } = true;
 
-		public bool MapAlpha { get; set; } = false;
+		public int MapAlphaType { get; set; } = 0;
 		public bool MapEmissive { get; set; } = false;
+		public bool MapNormal { get; set; } = false;
+		public int MapOrmrType { get; set; } = 0;
+		public bool MapAnisotropic { get; set; } = false;
+		public int MapClearCoatType { get; set; } = 0;
 
 		public int ShaderType { get; set; } = 1;
+
+		public string GetWindowTitleString() {
+			var mapsStr = "";
+			if (MapAlphaType == 1) mapsStr += " alpha(mask)";
+			if (MapAlphaType == 2) mapsStr += " alpha(blend)";
+			if (MapEmissive) mapsStr += " emiss";
+			if (MapNormal) mapsStr += " norm";
+			if (MapOrmrType == 1) mapsStr += " orm";
+			if (MapOrmrType == 2) mapsStr += " ormr";
+			if (MapAnisotropic) mapsStr += " aniso";
+			if (MapClearCoatType == 1) mapsStr += " ccoat(thin/smooth)";
+			if (MapClearCoatType == 2) mapsStr += " ccoat(thick/smooth)";
+			if (MapClearCoatType == 3) mapsStr += " ccoat(thin/rough)";
+			if (MapClearCoatType == 4) mapsStr += " ccoat(thick/rough)";
+
+			return " || " + ShaderType switch {
+				1 => "SIMPLE",
+				3 => "TRANSMISSIVE",
+				_ => "STANDARD"
+			} + mapsStr;
+		}
 	}
 
 	[SetUp]
@@ -48,9 +79,7 @@ class LocalMaterialsTest {
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(
 			display, 
-			title: $"settings: {BackdropToggleKey},{RotationToggleKey} " +
-				   $"shaders: 1,2,3 " +
-				   $"maps: {MapAlphaToggleKey},{MapEmissiveToggleKey}"
+			title: WindowTitleStart + curUserOptions.GetWindowTitleString()
 		);
 
 		using var backdrop = factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
@@ -59,7 +88,7 @@ class LocalMaterialsTest {
 		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere, subdivisionLevel: 1);
 
 		using var camera = factory.CameraBuilder.CreateCamera();
-		using var light = factory.LightBuilder.CreateSpotLight(highQuality: true);
+		using var light = factory.LightBuilder.CreatePointLight(position: (0f, 0f, 1f));
 		using var scene = factory.SceneBuilder.CreateScene();
 		scene.SetBackdrop(backdrop);
 		scene.Add(light);
@@ -83,7 +112,7 @@ class LocalMaterialsTest {
 						factory.ResourceAllocator,
 						factory.TextureBuilder,
 						factory.MaterialBuilder,
-						curUserOptions.MapAlpha,
+						curUserOptions.MapAlphaType != 0,
 						curUserOptions.MapEmissive
 					);
 					break;
@@ -92,18 +121,24 @@ class LocalMaterialsTest {
 						factory.ResourceAllocator,
 						factory.TextureBuilder,
 						factory.MaterialBuilder,
-						curUserOptions.MapAlpha,
-						curUserOptions.MapEmissive
+						curUserOptions.MapAlphaType switch { 1 => StandardMaterialAlphaMode.MaskOnly, 2 => StandardMaterialAlphaMode.FullBlending, _ => null },
+						curUserOptions.MapEmissive,
+						curUserOptions.MapNormal,
+						curUserOptions.MapOrmrType > 0,
+						curUserOptions.MapOrmrType > 1,
+						curUserOptions.MapAnisotropic,
+						curUserOptions.MapClearCoatType
 					);
 					break;
 			}
 			
-
 			cubeInstance.Material = newMaterialResources.Materials[0];
 			sphereInstance.Material = newMaterialResources.Materials[0];
 
 			currentMaterialResources.Dispose();
 			currentMaterialResources = newMaterialResources;
+
+			window.SetTitle(WindowTitleStart + curUserOptions.GetWindowTitleString());
 		}
 		void HandleMapAndShaderToggles(ILatestKeyboardAndMouseInputRetriever kbm) {
 			var recreationNecessary = false;
@@ -120,11 +155,30 @@ class LocalMaterialsTest {
 				recreationNecessary = true;
 			}
 			if (kbm.KeyWasPressedThisIteration(MapAlphaToggleKey)) {
-				curUserOptions.MapAlpha = !curUserOptions.MapAlpha;
+				curUserOptions.MapAlphaType++;
+				if (curUserOptions.MapAlphaType > 2) curUserOptions.MapAlphaType = 0;
 				recreationNecessary = true;
 			}
 			if (kbm.KeyWasPressedThisIteration(MapEmissiveToggleKey)) {
 				curUserOptions.MapEmissive = !curUserOptions.MapEmissive;
+				recreationNecessary = true;
+			}
+			if (kbm.KeyWasPressedThisIteration(MapNormalToggleKey)) {
+				curUserOptions.MapNormal = !curUserOptions.MapNormal;
+				recreationNecessary = true;
+			}
+			if (kbm.KeyWasPressedThisIteration(MapOrmrToggleKey)) {
+				curUserOptions.MapOrmrType++;
+				if (curUserOptions.MapOrmrType > 2) curUserOptions.MapOrmrType = 0;
+				recreationNecessary = true;
+			}
+			if (kbm.KeyWasPressedThisIteration(MapAnisotropicToggleKey)) {
+				curUserOptions.MapAnisotropic = !curUserOptions.MapAnisotropic;
+				recreationNecessary = true;
+			}
+			if (kbm.KeyWasPressedThisIteration(MapClearCoatToggleKey)) {
+				curUserOptions.MapClearCoatType++;
+				if (curUserOptions.MapClearCoatType > 4) curUserOptions.MapClearCoatType = 0;
 				recreationNecessary = true;
 			}
 
@@ -161,12 +215,11 @@ class LocalMaterialsTest {
 				HandleSettingsToggles(kbm);
 
 				if (curUserOptions.Rotate) {
-					cubeInstance.RotateBy(dt * 90f % Direction.Up);
-					sphereInstance.RotateBy(dt * 90f % Direction.Down);
+					cubeInstance.RotateBy(dt * 30f % Direction.Up);
+					sphereInstance.RotateBy(dt * 30f % Direction.Down);
 				}
 
-				light.Position = new Location(MathF.Sin(tt) * 2f, 0f, 0f);
-				light.ConeDirection = light.Position.DirectionTo(new Location(0f, 0f, 1f));
+				light.Position = light.Position with { Y = MathF.Sin(tt) };
 
 				renderer.Render();
 			}
@@ -189,19 +242,36 @@ class LocalMaterialsTest {
 		Texture colorMap;
 		Texture? emissiveMap = null;
 		
-		colorMap = texBuilder.CreateColorMap(
-			TexturePattern.Lines(
-				new ColorVect(1f, 0f, 0f, 0.5f),
-				new ColorVect(0f, 1f, 0f, 1f),
-				new ColorVect(0f, 0f, 1f, 0.5f),
-				new ColorVect(1f, 1f, 1f, 0f),
-				horizontal: false,
-				numRepeats: 4,
-				perturbationMagnitude: 0.3f
-			),
-			includeAlpha,
-			"Simple Material Color Map"
-		);
+		if (includeAlpha) {
+			colorMap = texBuilder.CreateColorMap(
+				TexturePattern.Lines(
+					new ColorVect(1f, 0f, 0f, 0.5f).WithPremultipliedAlpha(),
+					new ColorVect(0f, 1f, 0f, 1f).WithPremultipliedAlpha(),
+					new ColorVect(0f, 0f, 1f, 0.5f).WithPremultipliedAlpha(),
+					new ColorVect(1f, 1f, 1f, 0f).WithPremultipliedAlpha(),
+					horizontal: false,
+					numRepeats: 4,
+					perturbationMagnitude: 0.3f
+				),
+				true,
+				name: "Simple Material Color Map"
+			);
+		}
+		else {
+			colorMap = texBuilder.CreateColorMap(
+				TexturePattern.Lines(
+					new ColorVect(1f, 0f, 0f),
+					new ColorVect(0f, 1f, 0f),
+					new ColorVect(0f, 0f, 1f),
+					new ColorVect(1f, 1f, 1f),
+					horizontal: false,
+					numRepeats: 4,
+					perturbationMagnitude: 0.3f
+				),
+				false,
+				name: "Simple Material Color Map"
+			);
+		}
 		result.Add(colorMap);
 
 		if (emissive) {
@@ -210,13 +280,13 @@ class LocalMaterialsTest {
 					interiorValue: ColorVect.FromStandardColor(StandardColor.LightingCandle),
 					borderValue: ColorVect.FromStandardColor(StandardColor.Lime),
 					paddingValue: ColorVect.Black,
-					repetitions: (5, 5)
+					repetitions: (3, 3)
 				),
 				TexturePattern.Rectangles<Real>(
 					interiorValue: 0.5f,
 					borderValue: 1f,
 					paddingValue: 0f,
-					repetitions: (5, 5)
+					repetitions: (3, 3)
 				),
 				name: "Simple Material Emissive Map"
 			);
@@ -234,7 +304,7 @@ class LocalMaterialsTest {
 		return result;
 	}
 
-	ResourceGroup CreateStandardMaterial(IResourceAllocator resAllocator, ITextureBuilder texBuilder, IMaterialBuilder matBuilder, bool includeAlpha, bool emissive) {
+	ResourceGroup CreateStandardMaterial(IResourceAllocator resAllocator, ITextureBuilder texBuilder, IMaterialBuilder matBuilder, StandardMaterialAlphaMode? alphaMode, bool emissive, bool norm, bool orm, bool r, bool aniso, int clearcoatType) {
 		var result = resAllocator.CreateResourceGroup(
 			disposeContainedResourcesWhenDisposed: true,
 			name: "Standard Material Resources"
@@ -242,20 +312,42 @@ class LocalMaterialsTest {
 
 		Texture colorMap;
 		Texture? emissiveMap = null;
+		Texture? normalMap = null;
+		Texture? ormrMap = null;
+		Texture? anisotropyMap = null;
+		Texture? clearcoatMap = null;
 
-		colorMap = texBuilder.CreateColorMap(
-			TexturePattern.Lines(
-				new ColorVect(1f, 0f, 0f, 0.5f),
-				new ColorVect(0f, 1f, 0f, 1f),
-				new ColorVect(0f, 0f, 1f, 0.5f),
-				new ColorVect(1f, 1f, 1f, 0f),
-				horizontal: false,
-				numRepeats: 4,
-				perturbationMagnitude: 0.3f
-			),
-			includeAlpha,
-			" Material Color Map"
-		);
+		if (alphaMode == StandardMaterialAlphaMode.FullBlending) {
+			colorMap = texBuilder.CreateColorMap(
+				TexturePattern.Lines(
+					new ColorVect(1f, 0f, 0f, 0.5f).WithPremultipliedAlpha(),
+					new ColorVect(0f, 1f, 0f, 1f).WithPremultipliedAlpha(),
+					new ColorVect(0f, 0f, 1f, 0.5f).WithPremultipliedAlpha(),
+					new ColorVect(1f, 1f, 1f, 0f).WithPremultipliedAlpha(),
+					horizontal: false,
+					numRepeats: 4,
+					perturbationMagnitude: 0.3f
+				),
+				true,
+				name: "Standard Material Color Map"
+			);
+		}
+		else {
+			colorMap = texBuilder.CreateColorMap(
+				TexturePattern.Lines(
+					new ColorVect(1f, 0f, 0f, 0.5f),
+					new ColorVect(0f, 1f, 0f, 1f),
+					new ColorVect(0f, 0f, 1f, 0.5f),
+					new ColorVect(1f, 1f, 1f, 0f),
+					horizontal: false,
+					numRepeats: 4,
+					perturbationMagnitude: 0.3f
+				),
+				alphaMode != null,
+				name: "Stamdard Material Color Map"
+			);
+		}
+		
 		result.Add(colorMap);
 
 		if (emissive) {
@@ -277,9 +369,88 @@ class LocalMaterialsTest {
 			result.Add(emissiveMap.Value);
 		}
 
+		if (norm) {
+			normalMap = texBuilder.CreateNormalMap(
+				TexturePattern.Rectangles(
+					interiorSize: new XYPair<int>(256, 256),
+					borderSize: new XYPair<int>(16, 16),
+					paddingSize: new XYPair<int>(64, 64),
+					interiorValue: UnitSphericalCoordinate.ZeroZero,
+					paddingValue: UnitSphericalCoordinate.ZeroZero,
+					borderRightValue: new UnitSphericalCoordinate(0f, 45f),
+					borderTopValue: new UnitSphericalCoordinate(90f, 45f),
+					borderLeftValue: new UnitSphericalCoordinate(180f, 45f),
+					borderBottomValue: new UnitSphericalCoordinate(270f, 45f),
+					repetitions: (2, 2)
+				),
+				name: "Standard Material Normal Map"
+			);
+			result.Add(normalMap.Value);
+		}
+
+		if (orm) {
+			if (r) {
+				ormrMap = texBuilder.CreateOcclusionRoughnessMetallicMap(
+					TexturePattern.ChequerboardBordered<Real>(1f, 64, 0f, cellResolution: 12),
+					TexturePattern.Lines<Real>(0f, 0.25f, 0.5f, 0.75f, 1f, horizontal: true),
+					TexturePattern.Lines<Real>(0f, 0.25f, 0.5f, 0.75f, 1f, horizontal: false),
+					name: "Standard Material ORM Map"
+				);
+			}
+			else {
+				ormrMap = texBuilder.CreateOcclusionRoughnessMetallicReflectanceMap(
+					TexturePattern.ChequerboardBordered<Real>(1f, 64, 0f, cellResolution: 12),
+					TexturePattern.Lines<Real>(0f, 0.25f, 0.5f, 0.75f, 1f, horizontal: true),
+					TexturePattern.Lines<Real>(0f, 0.25f, 0.5f, 0.75f, 1f, horizontal: false),
+					TexturePattern.Circles<Real>(0.5f, 1f, 0f, repetitions: (1, 1)),
+					name: "Standard Material ORMR Map"
+				);
+			}
+			result.Add(ormrMap.Value);
+		}
+
+		if (aniso) {
+			anisotropyMap = texBuilder.CreateAnisotropyMap(
+				TexturePattern.Lines(
+					Angle.From2DPolarAngle(Orientation2D.Right)!.Value,
+					Angle.From2DPolarAngle(Orientation2D.Up)!.Value,
+					Angle.From2DPolarAngle(Orientation2D.Left)!.Value,
+					Angle.From2DPolarAngle(Orientation2D.Down)!.Value,
+					horizontal: false,
+					numRepeats: 4,
+					perturbationMagnitude: 0.3f
+				),
+				TexturePattern.Lines<Real>(
+					1f,
+					1f,
+					1f,
+					1f,
+					0f,
+					0f,
+					0f,
+					0f,
+					horizontal: false,
+					numRepeats: 2,
+					perturbationMagnitude: 0.3f
+				),
+				name: "Standard Material Anisotropy Map"
+			);
+		}
+
+		if (clearcoatType > 0) {
+			clearcoatMap = texBuilder.CreateClearCoatMap(
+				clearcoatType % 2 == 1 ? 0.3f : 1f, clearcoatType > 2 ? 1f : 0f, name: "Standard Material Clear"
+			);
+		}
+
 		var matConfig = new StandardMaterialCreationConfig {
 			ColorMap = colorMap,
 			EmissiveMap = emissiveMap,
+			NormalMap = normalMap,
+			AlphaMode = alphaMode ?? StandardMaterialCreationConfig.DefaultAlphaMode,
+			OcclusionRoughnessMetallicReflectanceMap = ormrMap,
+			AnisotropyMap = anisotropyMap,
+			ClearCoatMap = clearcoatMap,
 			Name = "Standard Material"
 		};
 		var mat = matBuilder.CreateStandardMaterial(matConfig);
