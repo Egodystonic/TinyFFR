@@ -99,7 +99,7 @@ public interface IMeshBuilder {
 	#endregion
 
 	#region Sphere
-	private const int MaxSphereSubdivisionLevel = 10;
+	private const int MaxSphereSubdivisionLevel = 8;
 	private static readonly ArrayPoolBackedVector<(MeshVertex[] Vertices, VertexTriangle[] Triangles)> _sphereMeshes = new();
 	private static readonly HeapPool _sphereVertexPool = new();
 
@@ -166,29 +166,29 @@ public interface IMeshBuilder {
 			points[i + 8] = points[i][Axis.Y, Axis.Z, Axis.X];
 		}
 
-		triangles[0] = new(0, 5, 11);
-		triangles[1] = new(0, 1, 5);
-		triangles[2] = new(0, 7, 1);
-		triangles[3] = new(0, 10, 7);
-		triangles[4] = new(0, 11, 10);
+		triangles[0] = new(5, 0, 11);
+		triangles[1] = new(1, 0, 5);
+		triangles[2] = new(7, 0, 1);
+		triangles[3] = new(10, 0, 7);
+		triangles[4] = new(11, 0, 10);
 		
-		triangles[5] = new(1, 9, 5);
-		triangles[6] = new(5, 4, 11);
-		triangles[7] = new(11, 2, 10);
-		triangles[8] = new(10, 6, 7);
-		triangles[9] = new(7, 8, 1);
+		triangles[5] = new(9, 1, 5);
+		triangles[6] = new(4, 5, 11);
+		triangles[7] = new(2, 11, 10);
+		triangles[8] = new(6, 10, 7);
+		triangles[9] = new(8, 7, 1);
 
-		triangles[10] = new(3, 4, 9);
-		triangles[11] = new(3, 2, 4);
-		triangles[12] = new(3, 6, 2);
-		triangles[13] = new(3, 8, 6);
-		triangles[14] = new(3, 9, 8);
+		triangles[10] = new(4, 3, 9);
+		triangles[11] = new(2, 3, 4);
+		triangles[12] = new(6, 3, 2);
+		triangles[13] = new(8, 3, 6);
+		triangles[14] = new(9, 3, 8);
 
-		triangles[15] = new(4, 5, 9);
-		triangles[16] = new(2, 11, 4);
-		triangles[17] = new(6, 10, 2);
-		triangles[18] = new(8, 7, 6);
-		triangles[19] = new(9, 1, 8);
+		triangles[15] = new(5, 4, 9);
+		triangles[16] = new(11, 2, 4);
+		triangles[17] = new(10, 6, 2);
+		triangles[18] = new(7, 8, 6);
+		triangles[19] = new(1, 9, 8);
 
 		Span<XYPair<float>> pointUvs = stackalloc XYPair<float>[points.Length];
 		for (var i = 0; i < points.Length; ++i) {
@@ -208,6 +208,8 @@ public interface IMeshBuilder {
 				pointUvs[triangle.IndexC],
 				vertices.AsSpan()[(i * 3)..]
 			);
+
+			triangles[i] = new VertexTriangle(i * 3, i * 3 + 1, i * 3 + 2);
 		}
 
 		return (vertices, triangles);
@@ -255,7 +257,7 @@ public interface IMeshBuilder {
 
 		dest[1] = new MeshVertex(
 			vertexB,
-			vertexAUv,
+			vertexBUv,
 			tangent, bitangent, normal
 		);
 
@@ -270,7 +272,7 @@ public interface IMeshBuilder {
 		var xzPlaneConverter = new DimensionConverter(Direction.Left, Direction.Forward, Direction.Up);
 		return new XYPair<float>(
 			xzPlaneConverter.ConvertVect(point.AsVect()).PolarAngle?.FullCircleFraction ?? 0f,
-			(point.Y + MathUtils.GoldenRatio) / (MathUtils.GoldenRatio * 2f)
+			(point.Y + 1f) * 0.5f
 		);
 	}
 	#endregion

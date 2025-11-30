@@ -9,6 +9,8 @@ public readonly partial struct Sphere : IConvexShape<Sphere> {
 	internal const float DefaultRandomMin = 1f;
 	internal const float DefaultRandomMax = 3f;
 	public static readonly Sphere UnitSphere = new(1f);
+	public static readonly Sphere OneMeterDiameterSphere = FromDiameter(1f);
+	public static readonly Sphere OneMeterCubedVolumeSphere = FromVolume(1f);
 
 	readonly float _radius;
 

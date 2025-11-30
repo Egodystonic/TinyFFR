@@ -17,6 +17,13 @@ class SphereTest {
 	public void TearDownTest() { }
 
 	[Test]
+	public void StaticReadonlyFieldsShouldBeCorrectlySet() {
+		Assert.AreEqual(1f, Sphere.UnitSphere.Radius);
+		Assert.AreEqual(1f, Sphere.OneMeterDiameterSphere.Diameter, TestTolerance);
+		Assert.AreEqual(1f, Sphere.OneMeterCubedVolumeSphere.Volume, TestTolerance);
+	}
+
+	[Test]
 	public void ShouldCorrectlyCalculateProperties() {
 		// https://www.wolframalpha.com/input?i=volume%2C+surface+area%2C+circumference%2C+diameter+of+sphere+with+radius+7.4
 		Assert.AreEqual(7.4f, TestSphere.Radius, TestTolerance);

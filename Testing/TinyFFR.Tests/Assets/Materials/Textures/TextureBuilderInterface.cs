@@ -94,7 +94,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(true, cc.IsLinearColorspace);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
-			Assert.IsTrue(cc.Name == default);
+			Assert.IsTrue(cc.Name.IsEmpty);
 		}
 
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
@@ -138,7 +138,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(false, cc.IsLinearColorspace);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
-			Assert.IsTrue(cc.Name == default);
+			Assert.IsTrue(cc.Name.IsEmpty);
 		}
 
 		void AssertRgbaInvocation(ReadOnlySpan<TexelRgba32> texels, TextureGenerationConfig gc, TextureCreationConfig cc) {
@@ -148,7 +148,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(false, cc.IsLinearColorspace);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
-			Assert.IsTrue(cc.Name == default);
+			Assert.IsTrue(cc.Name.IsEmpty);
 		}
 
 		AssertCreateTextureCall<TexelRgb24>(AssertRgbInvocation);
@@ -189,7 +189,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(true, cc.IsLinearColorspace);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
-			Assert.IsTrue(cc.Name == default);
+			Assert.IsTrue(cc.Name.IsEmpty);
 		}
 
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
@@ -216,7 +216,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(true, cc.IsLinearColorspace);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
-			Assert.IsTrue(cc.Name == default);
+			Assert.IsTrue(cc.Name.IsEmpty);
 		}
 
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
@@ -243,7 +243,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(true, cc.IsLinearColorspace);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
-			Assert.IsTrue(cc.Name == default);
+			Assert.IsTrue(cc.Name.IsEmpty);
 		}
 
 		AssertCreateTextureCall<TexelRgba32>(AssertInvocation);
@@ -270,7 +270,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(false, cc.IsLinearColorspace);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
-			Assert.IsTrue(cc.Name == default);
+			Assert.IsTrue(cc.Name.IsEmpty);
 		}
 
 		AssertCreateTextureCall<TexelRgba32>(AssertInvocation);
@@ -297,7 +297,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(false, cc.IsLinearColorspace);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
-			Assert.IsTrue(cc.Name == default);
+			Assert.IsTrue(cc.Name.IsEmpty);
 		}
 
 		AssertCreateTextureCall<TexelRgba32>(AssertInvocation);
@@ -324,7 +324,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(true, cc.IsLinearColorspace);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
-			Assert.IsTrue(cc.Name == default);
+			Assert.IsTrue(cc.Name.IsEmpty);
 		}
 
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
@@ -351,7 +351,7 @@ unsafe class TextureBuilderInterfaceTest {
 			Assert.AreEqual(true, cc.IsLinearColorspace);
 			Assert.AreEqual(false, cc.GenerateMipMaps);
 			Assert.AreEqual(TextureProcessingConfig.None, cc.ProcessingToApply);
-			Assert.IsTrue(cc.Name == default);
+			Assert.IsTrue(cc.Name.IsEmpty);
 		}
 
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);

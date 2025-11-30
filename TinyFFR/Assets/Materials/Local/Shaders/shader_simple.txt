@@ -38,5 +38,11 @@ fragment {
 #variant AlphaOn
 		material.baseColor.rgba = texture(materialParams_color_map, uv0).rgba;
 #endoption
+
+#if Emissive
+		material.emissive.rgba = texture(materialParams_emissive_map, uv0).rgba;
+		material.emissive.rgb = material.emissive.rgb * 100.0 * material.emissive.a;
+		material.emissive.a = 0.5;
+#endif Emissive
 	}
 }
