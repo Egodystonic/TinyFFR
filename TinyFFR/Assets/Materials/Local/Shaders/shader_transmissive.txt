@@ -102,5 +102,31 @@ fragment {
 		material.metallic = ormr.b;
 		material.reflectance = ormr.a;
 #endif Orm
+
+#if Emissive
+		vec4 emissive = texture(materialParams_emissive_map, uv0).rgba;
+		material.emissive.rgb = emissive.rgb * (100.0 * emissive.a);
+		material.emissive.a = 0.05;
+#endif Emissive
+
+#if Anisotropy
+		vec3 anisotropy = texture(materialParams_anisotropy_map, uv0).rgb;
+		material.anisotropyDirection = vec3(anisotropy.rg * 2.0 - 1.0, 0.0);
+		material.anisotropy = anisotropy.b;
+#endif Anisotropy
+
+#option RefractionQuality
+#variant Disabled
+#variant Low
+		vec4 at = texture(materialParams_at_map, uv0).rgba;
+		material.absorption = at.rgb;
+		material.transmission = at.a;
+		material.thickness = materialParams.surface_thickness;
+#variant High
+		vec4 at = texture(materialParams_at_map, uv0).rgba;
+		material.absorption = at.rgb;
+		material.transmission = at.a;
+		material.thickness = materialParams.surface_thickness;
+#endoption
 	}
 }

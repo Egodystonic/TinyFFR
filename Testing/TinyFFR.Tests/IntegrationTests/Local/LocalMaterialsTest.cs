@@ -25,8 +25,10 @@ class LocalMaterialsTest {
 	const KeyboardOrMouseKey MapOrmrToggleKey = KeyboardOrMouseKey.O;
 	const KeyboardOrMouseKey MapAnisotropicToggleKey = KeyboardOrMouseKey.T;
 	const KeyboardOrMouseKey MapClearCoatToggleKey = KeyboardOrMouseKey.C;
+	const KeyboardOrMouseKey MapThicknessToggleKey = KeyboardOrMouseKey.K;
+	const KeyboardOrMouseKey QualityToggleKey = KeyboardOrMouseKey.Q;
 
-	const string WindowTitleStart = $"settings: B,R shaders: 1,2,3 maps: A,E,N,O,T,C";
+	const string WindowTitleStart = $"settings: B,R shaders: 1,2,3(Q) maps: A,E,N,O,T,C,K";
 
 	sealed record UserOptions {
 		public int BackdropIntensity { get; set; } = 2;
@@ -38,11 +40,16 @@ class LocalMaterialsTest {
 		public int MapOrmrType { get; set; } = 0;
 		public bool MapAnisotropic { get; set; } = false;
 		public int MapClearCoatType { get; set; } = 0;
+		public int MapThicknessLevel { get; set; } = 0;
 
 		public int ShaderType { get; set; } = 1;
+		public int ShaderQualityType { get; set; } = 0;
 
 		public string GetWindowTitleString() {
 			var mapsStr = "";
+			if (ShaderQualityType == 0) mapsStr += " qual=high";
+			if (ShaderQualityType == 1) mapsStr += " qual=med";
+			if (ShaderQualityType == 2) mapsStr += " qual=low";
 			if (MapAlphaType == 1) mapsStr += " alpha(mask)";
 			if (MapAlphaType == 2) mapsStr += " alpha(blend)";
 			if (MapEmissive) mapsStr += " emiss";
@@ -54,7 +61,11 @@ class LocalMaterialsTest {
 			if (MapClearCoatType == 2) mapsStr += " ccoat(thick/smooth)";
 			if (MapClearCoatType == 3) mapsStr += " ccoat(thin/rough)";
 			if (MapClearCoatType == 4) mapsStr += " ccoat(thick/rough)";
-
+			if (MapThicknessLevel == 0) mapsStr += " thick=0.01";
+			if (MapThicknessLevel == 1) mapsStr += " thick=0.1";
+			if (MapThicknessLevel == 2) mapsStr += " thick=0.5";
+			if (MapThicknessLevel == 3) mapsStr += " thick=1";
+			
 			return " || " + ShaderType switch {
 				1 => "SIMPLE",
 				3 => "TRANSMISSIVE",
@@ -96,10 +107,14 @@ class LocalMaterialsTest {
 
 		var currentMaterialResources = CreateSimpleMaterial(factory.ResourceAllocator, factory.TextureBuilder, factory.MaterialBuilder, includeAlpha: false, emissive: false);
 
-		var cubeInstance = factory.ObjectBuilder.CreateModelInstance(cubeMesh, currentMaterialResources.Materials[0], new Location(1f, 0f, 2f));
-		var sphereInstance = factory.ObjectBuilder.CreateModelInstance(sphereMesh, currentMaterialResources.Materials[0], new Location(-1f, 0f, 2f));
-		scene.Add(cubeInstance);
-		scene.Add(sphereInstance);
+		var cubeFrontInstance = factory.ObjectBuilder.CreateModelInstance(cubeMesh, currentMaterialResources.Materials[0], new Location(1f, 0f, 2f));
+		var sphereFrontInstance = factory.ObjectBuilder.CreateModelInstance(sphereMesh, currentMaterialResources.Materials[0], new Location(-1f, 0f, 2f));
+		var cubeBackInstance = factory.ObjectBuilder.CreateModelInstance(cubeMesh, currentMaterialResources.Materials[0], new Location(1.3f, 0f, 3.5f));
+		var sphereBackInstance = factory.ObjectBuilder.CreateModelInstance(sphereMesh, currentMaterialResources.Materials[0], new Location(-1.3f, 0f, 3.5f));
+		scene.Add(cubeFrontInstance);
+		scene.Add(sphereFrontInstance);
+		scene.Add(cubeBackInstance);
+		scene.Add(sphereBackInstance);
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
 
@@ -114,6 +129,20 @@ class LocalMaterialsTest {
 						factory.MaterialBuilder,
 						curUserOptions.MapAlphaType != 0,
 						curUserOptions.MapEmissive
+					);
+					break;
+				case 3:
+					newMaterialResources = CreateTransmissiveMaterial(
+						factory.ResourceAllocator,
+						factory.TextureBuilder,
+						factory.MaterialBuilder,
+						curUserOptions.ShaderQualityType switch { 1 => TransmissiveMaterialQuality.SkyboxReflectionsAndRefraction, 2 => TransmissiveMaterialQuality.SkyboxReflectionsOnly, _ => TransmissiveMaterialQuality.TrueReflectionsAndRefraction },
+						curUserOptions.MapAlphaType switch { 1 => TransmissiveMaterialAlphaMode.MaskOnly, 2 => TransmissiveMaterialAlphaMode.FullBlending, _ => null },
+						curUserOptions.MapEmissive,
+						curUserOptions.MapNormal,
+						curUserOptions.MapOrmrType > 0,
+						curUserOptions.MapAnisotropic,
+						curUserOptions.MapThicknessLevel switch { 1 => 0.1f, 2 => 0.5f, 3 => 1f, _ => 0.01f }
 					);
 					break;
 				default:
@@ -131,9 +160,11 @@ class LocalMaterialsTest {
 					);
 					break;
 			}
-			
-			cubeInstance.Material = newMaterialResources.Materials[0];
-			sphereInstance.Material = newMaterialResources.Materials[0];
+
+			cubeFrontInstance.Material = newMaterialResources.Materials[0];
+			sphereFrontInstance.Material = newMaterialResources.Materials[0];
+			cubeBackInstance.Material = newMaterialResources.Materials[0];
+			sphereBackInstance.Material = newMaterialResources.Materials[0];
 
 			currentMaterialResources.Dispose();
 			currentMaterialResources = newMaterialResources;
@@ -181,6 +212,16 @@ class LocalMaterialsTest {
 				if (curUserOptions.MapClearCoatType > 4) curUserOptions.MapClearCoatType = 0;
 				recreationNecessary = true;
 			}
+			if (kbm.KeyWasPressedThisIteration(MapThicknessToggleKey)) {
+				curUserOptions.MapThicknessLevel++;
+				if (curUserOptions.MapThicknessLevel > 3) curUserOptions.MapThicknessLevel = 0;
+				recreationNecessary = true;
+			}
+			if (kbm.KeyWasPressedThisIteration(QualityToggleKey)) {
+				curUserOptions.ShaderQualityType++;
+				if (curUserOptions.ShaderQualityType > 2) curUserOptions.ShaderQualityType = 0;
+				recreationNecessary = true;
+			}
 
 			if (recreationNecessary) RecreateMaterial();
 		}
@@ -215,8 +256,10 @@ class LocalMaterialsTest {
 				HandleSettingsToggles(kbm);
 
 				if (curUserOptions.Rotate) {
-					cubeInstance.RotateBy(dt * 30f % Direction.Up);
-					sphereInstance.RotateBy(dt * 30f % Direction.Down);
+					cubeFrontInstance.RotateBy(dt * 30f % Direction.Up);
+					sphereFrontInstance.RotateBy(dt * 30f % Direction.Down);
+					cubeBackInstance.RotateBy(dt * -20f % Direction.Up);
+					sphereBackInstance.RotateBy(dt * -20f % Direction.Down);
 				}
 
 				light.Position = light.Position with { Y = MathF.Sin(tt) };
@@ -225,10 +268,14 @@ class LocalMaterialsTest {
 			}
 		}
 		finally {
-			scene.Remove(cubeInstance);
-			scene.Remove(sphereInstance);
-			cubeInstance.Dispose();
-			sphereInstance.Dispose();
+			scene.Remove(cubeFrontInstance);
+			scene.Remove(sphereFrontInstance);
+			scene.Remove(cubeBackInstance);
+			scene.Remove(sphereBackInstance);
+			cubeFrontInstance.Dispose();
+			sphereFrontInstance.Dispose();
+			cubeBackInstance.Dispose();
+			sphereBackInstance.Dispose();
 			currentMaterialResources.Dispose();
 		}
 	}
@@ -277,20 +324,26 @@ class LocalMaterialsTest {
 		if (emissive) {
 			emissiveMap = texBuilder.CreateEmissiveMap(
 				TexturePattern.Rectangles(
-					interiorValue: ColorVect.FromStandardColor(StandardColor.LightingCandle),
-					borderValue: ColorVect.FromStandardColor(StandardColor.Lime),
+					interiorSize: TexturePatternDefaultValues.RectanglesDefaultInteriorSize,
+					borderSize: new XYPair<int>(16, 16),
+					paddingSize: TexturePatternDefaultValues.RectanglesDefaultPaddingSize,
+					interiorValue: ColorVect.White,
+					borderRightValue: new ColorVect(1f, 0f, 0f),
+					borderTopValue: new ColorVect(1f, 1f, 0f),
+					borderLeftValue: new ColorVect(0f, 1f, 0f),
+					borderBottomValue: new ColorVect(0f, 0f, 1f),
 					paddingValue: ColorVect.Black,
-					repetitions: (3, 3)
+					repetitions: (1, 1)
 				),
 				TexturePattern.Rectangles<Real>(
-					interiorValue: 0.5f,
+					interiorValue: 0f,
 					borderValue: 1f,
 					paddingValue: 0f,
-					repetitions: (3, 3)
+					repetitions: (1, 1),
+					borderSize: (16, 16)
 				),
 				name: "Simple Material Emissive Map"
 			);
-			result.Add(emissiveMap.Value);
 		}
 
 		var matConfig = new SimpleMaterialCreationConfig {
@@ -353,16 +406,23 @@ class LocalMaterialsTest {
 		if (emissive) {
 			emissiveMap = texBuilder.CreateEmissiveMap(
 				TexturePattern.Rectangles(
-					interiorValue: ColorVect.FromStandardColor(StandardColor.LightingCandle),
-					borderValue: ColorVect.FromStandardColor(StandardColor.Lime),
+					interiorSize: TexturePatternDefaultValues.RectanglesDefaultInteriorSize,
+					borderSize: new XYPair<int>(16, 16),
+					paddingSize: TexturePatternDefaultValues.RectanglesDefaultPaddingSize,
+					interiorValue: ColorVect.White,
+					borderRightValue: new ColorVect(1f, 0f, 0f),
+					borderTopValue: new ColorVect(1f, 1f, 0f),
+					borderLeftValue: new ColorVect(0f, 1f, 0f),
+					borderBottomValue: new ColorVect(0f, 0f, 1f),
 					paddingValue: ColorVect.Black,
-					repetitions: (5, 5)
+					repetitions: (1, 1)
 				),
 				TexturePattern.Rectangles<Real>(
-					interiorValue: 0.5f,
+					interiorValue: 0f,
 					borderValue: 1f,
 					paddingValue: 0f,
-					repetitions: (5, 5)
+					repetitions: (1, 1),
+					borderSize: (16, 16)
 				),
 				name: "Standard Material Emissive Map"
 			);
@@ -372,16 +432,16 @@ class LocalMaterialsTest {
 		if (norm) {
 			normalMap = texBuilder.CreateNormalMap(
 				TexturePattern.Rectangles(
-					interiorSize: new XYPair<int>(256, 256),
-					borderSize: new XYPair<int>(16, 16),
-					paddingSize: new XYPair<int>(64, 64),
+					interiorSize: new XYPair<int>(24, 24),
+					borderSize: new XYPair<int>(8, 8),
+					paddingSize: new XYPair<int>(4, 4),
 					interiorValue: UnitSphericalCoordinate.ZeroZero,
 					paddingValue: UnitSphericalCoordinate.ZeroZero,
 					borderRightValue: new UnitSphericalCoordinate(0f, 45f),
 					borderTopValue: new UnitSphericalCoordinate(90f, 45f),
 					borderLeftValue: new UnitSphericalCoordinate(180f, 45f),
 					borderBottomValue: new UnitSphericalCoordinate(270f, 45f),
-					repetitions: (2, 2)
+					repetitions: (12, 12)
 				),
 				name: "Standard Material Normal Map"
 			);
@@ -414,8 +474,8 @@ class LocalMaterialsTest {
 				TexturePattern.Lines(
 					Angle.From2DPolarAngle(Orientation2D.Right)!.Value,
 					Angle.From2DPolarAngle(Orientation2D.Up)!.Value,
-					Angle.From2DPolarAngle(Orientation2D.Left)!.Value,
-					Angle.From2DPolarAngle(Orientation2D.Down)!.Value,
+					Angle.From2DPolarAngle(Orientation2D.UpLeft)!.Value,
+					Angle.From2DPolarAngle(Orientation2D.DownLeft)!.Value,
 					horizontal: false,
 					numRepeats: 4,
 					perturbationMagnitude: 0.3f
@@ -454,6 +514,175 @@ class LocalMaterialsTest {
 			Name = "Standard Material"
 		};
 		var mat = matBuilder.CreateStandardMaterial(matConfig);
+		result.Add(mat);
+
+		return result;
+	}
+
+	ResourceGroup CreateTransmissiveMaterial(IResourceAllocator resAllocator, ITextureBuilder texBuilder, IMaterialBuilder matBuilder, TransmissiveMaterialQuality quality, TransmissiveMaterialAlphaMode? alphaMode, bool emissive, bool norm, bool ormr, bool aniso, float thickness) {
+		var result = resAllocator.CreateResourceGroup(
+			disposeContainedResourcesWhenDisposed: true,
+			name: "Transmissive Material Resources"
+		);
+
+		Texture colorMap;
+		Texture atMap;
+		Texture? emissiveMap = null;
+		Texture? normalMap = null;
+		Texture? ormrMap = null;
+		Texture? anisotropyMap = null;
+
+		if (alphaMode == null) {
+			colorMap = texBuilder.CreateColorMap(
+				TexturePattern.PlainFill(
+					new ColorVect(1f, 1f, 1f, 1f)
+				),
+				false,
+				name: "Transmissive Material Color Map"
+			);
+		}
+		else if (alphaMode == TransmissiveMaterialAlphaMode.FullBlending) {
+			colorMap = texBuilder.CreateColorMap(
+				TexturePattern.Lines(
+					new ColorVect(1f, 1f, 1f, 1f).WithPremultipliedAlpha(),
+					new ColorVect(1f, 1f, 1f, 0.5f).WithPremultipliedAlpha(),
+					new ColorVect(1f, 1f, 1f, 1f).WithPremultipliedAlpha(),
+					new ColorVect(1f, 1f, 1f, 0f).WithPremultipliedAlpha(),
+					horizontal: false,
+					numRepeats: 4
+				),
+				true,
+				name: "Transmissive Material Color Map"
+			);
+		}
+		else {
+			colorMap = texBuilder.CreateColorMap(
+				TexturePattern.Lines(
+					new ColorVect(1f, 1f, 1f, 1f),
+					new ColorVect(1f, 1f, 1f, 0.5f),
+					new ColorVect(1f, 1f, 1f, 1f),
+					new ColorVect(1f, 1f, 1f, 0f),
+					horizontal: false,
+					numRepeats: 4
+				),
+				true,
+				name: "Transmissive Material Color Map"
+			);
+		}
+		result.Add(colorMap);
+
+		atMap = texBuilder.CreateAbsorptionTransmissionMap(
+			TexturePattern.Lines(
+				new ColorVect(0f, 1f, 1f),
+				new ColorVect(1f, 0f, 1f),
+				new ColorVect(1f, 1f, 0f),
+				horizontal: true,
+				numRepeats: 1
+			),
+			TexturePattern.Lines<Real>(
+				1f,
+				0.5f,
+				0f,
+				horizontal: true,
+				numRepeats: 2
+			)
+		);
+		result.Add(atMap);
+
+		if (emissive) {
+			emissiveMap = texBuilder.CreateEmissiveMap(
+				TexturePattern.Rectangles(
+					interiorSize: TexturePatternDefaultValues.RectanglesDefaultInteriorSize,
+					borderSize: new XYPair<int>(16, 16),
+					paddingSize: TexturePatternDefaultValues.RectanglesDefaultPaddingSize,
+					interiorValue: ColorVect.White,
+					borderRightValue: new ColorVect(1f, 0f, 0f),
+					borderTopValue: new ColorVect(1f, 1f, 0f),
+					borderLeftValue: new ColorVect(0f, 1f, 0f),
+					borderBottomValue: new ColorVect(0f, 0f, 1f),
+					paddingValue: ColorVect.Black,
+					repetitions: (1, 1)
+				),
+				TexturePattern.Rectangles<Real>(
+					interiorValue: 0f,
+					borderValue: 1f,
+					paddingValue: 0f,
+					repetitions: (1, 1),
+					borderSize: (16, 16)
+				),
+				name: "Transmissive Material Emissive Map"
+			);
+		}
+
+		if (norm) {
+			normalMap = texBuilder.CreateNormalMap(
+				TexturePattern.Rectangles(
+					interiorSize: new XYPair<int>(256, 256),
+					borderSize: new XYPair<int>(16, 16),
+					paddingSize: new XYPair<int>(64, 64),
+					interiorValue: UnitSphericalCoordinate.ZeroZero,
+					paddingValue: UnitSphericalCoordinate.ZeroZero,
+					borderRightValue: new UnitSphericalCoordinate(0f, 45f),
+					borderTopValue: new UnitSphericalCoordinate(90f, 45f),
+					borderLeftValue: new UnitSphericalCoordinate(180f, 45f),
+					borderBottomValue: new UnitSphericalCoordinate(270f, 45f),
+					repetitions: (2, 2)
+				),
+				name: "Transmissive Material Normal Map"
+			);
+			result.Add(normalMap.Value);
+		}
+
+		if (ormr) {
+			ormrMap = texBuilder.CreateOcclusionRoughnessMetallicReflectanceMap(
+				TexturePattern.ChequerboardBordered<Real>(1f, 64, 0f, cellResolution: 12),
+				TexturePattern.Lines<Real>(0f, 0.25f, 0.5f, 0.75f, 1f, horizontal: true),
+				TexturePattern.Lines<Real>(0f, 0.25f, 0.5f, 0.75f, 1f, horizontal: false),
+				TexturePattern.GradientVertical<Real>(1f, 0f),
+				name: "Transmissive Material ORMR Map"
+			);
+			result.Add(ormrMap.Value);
+		}
+
+		if (aniso) {
+			anisotropyMap = texBuilder.CreateAnisotropyMap(
+				TexturePattern.Lines(
+					Angle.From2DPolarAngle(Orientation2D.Right)!.Value,
+					Angle.From2DPolarAngle(Orientation2D.Up)!.Value,
+					Angle.From2DPolarAngle(Orientation2D.UpLeft)!.Value,
+					Angle.From2DPolarAngle(Orientation2D.DownLeft)!.Value,
+					horizontal: false,
+					numRepeats: 4
+				),
+				TexturePattern.Lines<Real>(
+					1f,
+					1f,
+					1f,
+					1f,
+					0f,
+					0f,
+					0f,
+					0f,
+					horizontal: false,
+					numRepeats: 2
+				),
+				name: "Transmissive Material Anisotropy Map"
+			);
+		}
+
+		var matConfig = new TransmissiveMaterialCreationConfig {
+			ColorMap = colorMap,
+			EmissiveMap = emissiveMap,
+			NormalMap = normalMap,
+			AlphaMode = alphaMode ?? TransmissiveMaterialAlphaMode.MaskOnly,
+			OcclusionRoughnessMetallicReflectanceMap = ormrMap,
+			AnisotropyMap = anisotropyMap,
+			AbsorptionTransmissionMap = atMap,
+			RefractionThickness = thickness,
+			Quality = quality,
+			Name = "Transmissive Material"
+		};
+		var mat = matBuilder.CreateTransmissiveMaterial(matConfig);
 		result.Add(mat);
 
 		return result;

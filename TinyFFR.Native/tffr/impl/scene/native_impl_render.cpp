@@ -89,6 +89,16 @@ void native_impl_render::allocate_view_descriptor(SceneHandle scene, CameraHandl
 	if (optionalRenderTarget != nullptr) {
 		(*outViewDescriptor)->setRenderTarget(optionalRenderTarget);
 	}
+
+	BloomOptions bo{ 
+		.enabled = true
+	};
+	(*outViewDescriptor)->setBloomOptions(bo);
+	ScreenSpaceReflectionsOptions ssro{
+		.enabled = true
+	};
+	(*outViewDescriptor)->setScreenSpaceReflectionsOptions(ssro);
+	(*outViewDescriptor)->setScreenSpaceRefractionEnabled(true);
 }
 StartExportedFunc(allocate_view_descriptor, SceneHandle scene, CameraHandle camera, RenderTargetHandle optionalRenderTarget, ViewDescriptorHandle* outViewDescriptor) {
 	native_impl_render::allocate_view_descriptor(scene, camera, optionalRenderTarget, outViewDescriptor);
