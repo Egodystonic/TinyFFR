@@ -8,20 +8,19 @@ using static Egodystonic.TinyFFR.IConfigStruct;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public enum TransmissiveMaterialQuality {
-	SkyboxReflectionsOnly,
-	SkyboxReflectionsAndRefraction,
-	TrueReflectionsAndRefraction,
+	FullReflectionsAndRefraction,
+	SkyboxOnlyReflectionsAndRefraction,
 }
 
 public enum TransmissiveMaterialAlphaMode {
-	MaskOnly,
 	FullBlending,
+	MaskOnly,
 }
 
 public readonly ref struct TransmissiveMaterialCreationConfig : IConfigStruct<TransmissiveMaterialCreationConfig> {
 	public static readonly float DefaultRefractionThickness = 0.1f;
 	public static readonly TransmissiveMaterialAlphaMode DefaultAlphaMode = TransmissiveMaterialAlphaMode.FullBlending;
-	public static readonly TransmissiveMaterialQuality DefaultQuality = TransmissiveMaterialQuality.TrueReflectionsAndRefraction;
+	public static readonly TransmissiveMaterialQuality DefaultQuality = TransmissiveMaterialQuality.FullReflectionsAndRefraction;
 
 	public required Texture ColorMap { get; init; }
 	public required Texture AbsorptionTransmissionMap { get; init; }

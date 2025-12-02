@@ -48,7 +48,7 @@ namespace TinyFFR.Tests.Integrations.Wpf {
 			var factory = new LocalTinyFfrFactory();
 			var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 			var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
-			var tex = factory.AssetLoader.LoadColorTexture(factory.AssetLoader.BuiltInTexturePaths.White);
+			var tex = factory.AssetLoader.LoadColorMap(factory.AssetLoader.BuiltInTexturePaths.White);
 			var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex);
 			_instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 2.2f);
 			_light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f));

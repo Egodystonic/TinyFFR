@@ -21,10 +21,23 @@ sealed class LocalBuiltInTexturePathLibrary : IBuiltInTexturePathLibrary {
 	public ReadOnlySpan<char> DefaultNormalMap => Map + "normals";
 	public ReadOnlySpan<char> DefaultOcclusionRoughnessMetallicMap => Map + "orm";
 	public ReadOnlySpan<char> DefaultOcclusionRoughnessMetallicReflectanceMap => Map + "ormr";
+	public ReadOnlySpan<char> DefaultOcclusionMap => Map + "occlusion";
+	public ReadOnlySpan<char> DefaultRoughnessMap => Map + "roughness";
+	public ReadOnlySpan<char> DefaultMetallicMap => Map + "metallic";
+	public ReadOnlySpan<char> DefaultReflectanceMap => Map + "reflectance";
 	public ReadOnlySpan<char> DefaultAbsorptionTransmissionMap => Map + "at";
+	public ReadOnlySpan<char> DefaultAbsorptionMap => Map + "absorption";
+	public ReadOnlySpan<char> DefaultTransmissionMap => Map + "transmission";
 	public ReadOnlySpan<char> DefaultEmissiveMap => Map + "emissive";
+	public ReadOnlySpan<char> DefaultEmissiveColorMap => Map + "emissive-color";
+	public ReadOnlySpan<char> DefaultEmissiveIntensityMap => Map + "emissive-intensity";
 	public ReadOnlySpan<char> DefaultAnisotropyMap => Map + "anisotropy";
+	public ReadOnlySpan<char> DefaultAnisotropyRadialAngleMap => Map + "anisotropy-angle";
+	public ReadOnlySpan<char> DefaultAnisotropyTangentVectorMap => Map + "anisotropy-vector";
+	public ReadOnlySpan<char> DefaultAnisotropyStrengthMap => Map + "anisotropy-strength";
 	public ReadOnlySpan<char> DefaultClearCoatMap => Map + "clearcoat";
+	public ReadOnlySpan<char> DefaultClearCoatThicknessMap => Map + "clearcoat-thickness";
+	public ReadOnlySpan<char> DefaultClearCoatRoughnessMap => Map + "clearcoat-roughness";
 
 	public ReadOnlySpan<char> Rgba100Percent => Bytes + $"255{Sep}255{Sep}255{Sep}255";
 	public ReadOnlySpan<char> Rgba90Percent => Bytes + $"230{Sep}230{Sep}230{Sep}230";
@@ -75,10 +88,23 @@ sealed class LocalBuiltInTexturePathLibrary : IBuiltInTexturePathLibrary {
 				"normals" => (CreateNormalTexel(DefaultNormalOffset), null),
 				"orm" => (CreateOcclusionRoughnessMetallicTexel(DefaultOcclusion, DefaultRoughness, DefaultMetallic), null),
 				"ormr" => (null, CreateOcclusionRoughnessMetallicReflectanceTexel(DefaultOcclusion, DefaultRoughness, DefaultMetallic, DefaultReflectance)),
+				"occlusion" => (TexelRgb24.FromNormalizedFloats(DefaultOcclusion, DefaultOcclusion, DefaultOcclusion), null),
+				"roughness" => (TexelRgb24.FromNormalizedFloats(DefaultRoughness, DefaultRoughness, DefaultRoughness), null),
+				"metallic" => (TexelRgb24.FromNormalizedFloats(DefaultMetallic, DefaultMetallic, DefaultMetallic), null),
+				"reflectance" => (TexelRgb24.FromNormalizedFloats(DefaultReflectance, DefaultReflectance, DefaultReflectance), null),
 				"at" => (null, CreateAbsorptionTransmissionTexel(DefaultAbsorption, DefaultTransmission)),
+				"absorption" => (new TexelRgb24(DefaultAbsorption), null),
+				"transmission" => (TexelRgb24.FromNormalizedFloats(DefaultTransmission, DefaultTransmission, DefaultTransmission), null),
 				"emissive" => (null, CreateEmissiveTexel(DefaultEmissiveColor, DefaultEmissiveIntensity)),
-				"anisotropy" => (CreateAnisotropyTexel(DefaultAnisotropyTangent, DefaultAnisotropyStrength), null),
+				"emissive-color" => (new TexelRgb24(DefaultEmissiveColor), null),
+				"emissive-intensity" => (TexelRgb24.FromNormalizedFloats(DefaultEmissiveIntensity, DefaultEmissiveIntensity, DefaultEmissiveIntensity), null),
+				"anisotropy" => (CreateAnisotropyTexel(DefaultAnisotropyRadialAngle, DefaultAnisotropyStrength), null),
+				"anisotropy-angle" => (TexelRgb24.FromNormalizedFloats(DefaultAnisotropyRadialAngle.Radians, DefaultAnisotropyRadialAngle.Radians, DefaultAnisotropyRadialAngle.Radians), null),
+				"anisotropy-vector" => (CreateAnisotropyTexel(DefaultAnisotropyRadialAngle, 0f), null),
+				"anisotropy-strength" => (TexelRgb24.FromNormalizedFloats(DefaultAnisotropyStrength, DefaultAnisotropyStrength, DefaultAnisotropyStrength), null),
 				"clearcoat" => (CreateClearCoatTexel(DefaultClearCoatThickness, DefaultClearCoatRoughness), null),
+				"clearcoat-thickness" => (TexelRgb24.FromNormalizedFloats(DefaultClearCoatThickness, DefaultClearCoatThickness, DefaultClearCoatThickness), null),
+				"clearcoat-roughness" => (TexelRgb24.FromNormalizedFloats(DefaultClearCoatRoughness, DefaultClearCoatRoughness, DefaultClearCoatRoughness), null),
 				_ => null
 			};
 		}

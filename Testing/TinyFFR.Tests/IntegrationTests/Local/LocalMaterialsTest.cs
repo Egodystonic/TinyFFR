@@ -28,7 +28,7 @@ class LocalMaterialsTest {
 	const KeyboardOrMouseKey MapThicknessToggleKey = KeyboardOrMouseKey.K;
 	const KeyboardOrMouseKey QualityToggleKey = KeyboardOrMouseKey.Q;
 
-	const string WindowTitleStart = $"settings: B,R shaders: 1,2,3(Q) maps: A,E,N,O,T,C,K";
+	const string WindowTitleStart = $"settings: B,R,Q shaders: 1-7 maps: A,E,N,O,T,C,K";
 
 	sealed record UserOptions {
 		public int BackdropIntensity { get; set; } = 2;
@@ -47,28 +47,33 @@ class LocalMaterialsTest {
 
 		public string GetWindowTitleString() {
 			var mapsStr = "";
-			if (ShaderQualityType == 0) mapsStr += " qual=high";
-			if (ShaderQualityType == 1) mapsStr += " qual=med";
-			if (ShaderQualityType == 2) mapsStr += " qual=low";
-			if (MapAlphaType == 1) mapsStr += " alpha(mask)";
-			if (MapAlphaType == 2) mapsStr += " alpha(blend)";
-			if (MapEmissive) mapsStr += " emiss";
-			if (MapNormal) mapsStr += " norm";
-			if (MapOrmrType == 1) mapsStr += " orm";
-			if (MapOrmrType == 2) mapsStr += " ormr";
-			if (MapAnisotropic) mapsStr += " aniso";
-			if (MapClearCoatType == 1) mapsStr += " ccoat(thin/smooth)";
-			if (MapClearCoatType == 2) mapsStr += " ccoat(thick/smooth)";
-			if (MapClearCoatType == 3) mapsStr += " ccoat(thin/rough)";
-			if (MapClearCoatType == 4) mapsStr += " ccoat(thick/rough)";
-			if (MapThicknessLevel == 0) mapsStr += " thick=0.01";
-			if (MapThicknessLevel == 1) mapsStr += " thick=0.1";
-			if (MapThicknessLevel == 2) mapsStr += " thick=0.5";
-			if (MapThicknessLevel == 3) mapsStr += " thick=1";
+			if (ShaderType < 4) {
+				if (ShaderQualityType == 0) mapsStr += " qual=high";
+				if (ShaderQualityType == 1) mapsStr += " qual=low";
+				if (MapAlphaType == 1) mapsStr += " alpha(mask)";
+				if (MapAlphaType == 2) mapsStr += " alpha(blend)";
+				if (MapEmissive) mapsStr += " emiss";
+				if (MapNormal) mapsStr += " norm";
+				if (MapOrmrType == 1) mapsStr += " orm";
+				if (MapOrmrType == 2) mapsStr += " ormr";
+				if (MapAnisotropic) mapsStr += " aniso";
+				if (MapClearCoatType == 1) mapsStr += " ccoat(thin/smooth)";
+				if (MapClearCoatType == 2) mapsStr += " ccoat(thick/smooth)";
+				if (MapClearCoatType == 3) mapsStr += " ccoat(thin/rough)";
+				if (MapClearCoatType == 4) mapsStr += " ccoat(thick/rough)";
+				if (MapThicknessLevel == 0) mapsStr += " thick=0.01";
+				if (MapThicknessLevel == 1) mapsStr += " thick=0.1";
+				if (MapThicknessLevel == 2) mapsStr += " thick=0.5";
+				if (MapThicknessLevel == 3) mapsStr += " thick=1";
+			}
 			
 			return " || " + ShaderType switch {
 				1 => "SIMPLE",
 				3 => "TRANSMISSIVE",
+				4 => "ANISOMETAL",
+				5 => "HEXNORM",
+				6 => "GLASS",
+				7 => "MIRROR",
 				_ => "STANDARD"
 			} + mapsStr;
 		}
@@ -105,12 +110,17 @@ class LocalMaterialsTest {
 		scene.Add(light);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
+		using var backMaterialAlbedo = factory.AssetLoader.LoadColorMap(CommonTestAssets.FindAsset(KnownTestAsset.BrickAlbedoTex));
+		using var backMaterialNormals = factory.AssetLoader.LoadNormalMap(CommonTestAssets.FindAsset(KnownTestAsset.BrickNormalTex));
+		using var backMaterialOrm = factory.AssetLoader.LoadOcclusionRoughnessMetallicMap(CommonTestAssets.FindAsset(KnownTestAsset.BrickOrmTex));
+		using var backInstanceMaterial = factory.MaterialBuilder.CreateStandardMaterial(backMaterialAlbedo, backMaterialNormals, backMaterialOrm);
+
 		var currentMaterialResources = CreateSimpleMaterial(factory.ResourceAllocator, factory.TextureBuilder, factory.MaterialBuilder, includeAlpha: false, emissive: false);
 
 		var cubeFrontInstance = factory.ObjectBuilder.CreateModelInstance(cubeMesh, currentMaterialResources.Materials[0], new Location(1f, 0f, 2f));
 		var sphereFrontInstance = factory.ObjectBuilder.CreateModelInstance(sphereMesh, currentMaterialResources.Materials[0], new Location(-1f, 0f, 2f));
-		var cubeBackInstance = factory.ObjectBuilder.CreateModelInstance(cubeMesh, currentMaterialResources.Materials[0], new Location(1.3f, 0f, 3.5f));
-		var sphereBackInstance = factory.ObjectBuilder.CreateModelInstance(sphereMesh, currentMaterialResources.Materials[0], new Location(-1.3f, 0f, 3.5f));
+		var cubeBackInstance = factory.ObjectBuilder.CreateModelInstance(cubeMesh, backInstanceMaterial, new Location(1.8f, 0f, 3.5f));
+		var sphereBackInstance = factory.ObjectBuilder.CreateModelInstance(sphereMesh, backInstanceMaterial, new Location(-1.8f, 0f, 3.5f));
 		scene.Add(cubeFrontInstance);
 		scene.Add(sphereFrontInstance);
 		scene.Add(cubeBackInstance);
@@ -136,7 +146,7 @@ class LocalMaterialsTest {
 						factory.ResourceAllocator,
 						factory.TextureBuilder,
 						factory.MaterialBuilder,
-						curUserOptions.ShaderQualityType switch { 1 => TransmissiveMaterialQuality.SkyboxReflectionsAndRefraction, 2 => TransmissiveMaterialQuality.SkyboxReflectionsOnly, _ => TransmissiveMaterialQuality.TrueReflectionsAndRefraction },
+						curUserOptions.ShaderQualityType switch { 1 => TransmissiveMaterialQuality.SkyboxOnlyReflectionsAndRefraction, _ => TransmissiveMaterialQuality.FullReflectionsAndRefraction },
 						curUserOptions.MapAlphaType switch { 1 => TransmissiveMaterialAlphaMode.MaskOnly, 2 => TransmissiveMaterialAlphaMode.FullBlending, _ => null },
 						curUserOptions.MapEmissive,
 						curUserOptions.MapNormal,
@@ -144,6 +154,18 @@ class LocalMaterialsTest {
 						curUserOptions.MapAnisotropic,
 						curUserOptions.MapThicknessLevel switch { 1 => 0.1f, 2 => 0.5f, 3 => 1f, _ => 0.01f }
 					);
+					break;
+				case 4:
+					newMaterialResources = LoadAnisoMaterial(factory.ResourceAllocator, factory.AssetLoader, factory.MaterialBuilder);
+					break;
+				case 5:
+					newMaterialResources = LoadHexNormMaterial(factory.ResourceAllocator, factory.AssetLoader, factory.MaterialBuilder);
+					break;
+				case 6:
+					newMaterialResources = CreateGlassMaterial(factory.ResourceAllocator, factory.TextureBuilder, factory.MaterialBuilder);
+					break;
+				case 7:
+					newMaterialResources = CreateMirrorMaterial(factory.ResourceAllocator, factory.TextureBuilder, factory.MaterialBuilder);
 					break;
 				default:
 					newMaterialResources = CreateStandardMaterial(
@@ -163,8 +185,6 @@ class LocalMaterialsTest {
 
 			cubeFrontInstance.Material = newMaterialResources.Materials[0];
 			sphereFrontInstance.Material = newMaterialResources.Materials[0];
-			cubeBackInstance.Material = newMaterialResources.Materials[0];
-			sphereBackInstance.Material = newMaterialResources.Materials[0];
 
 			currentMaterialResources.Dispose();
 			currentMaterialResources = newMaterialResources;
@@ -183,6 +203,22 @@ class LocalMaterialsTest {
 			}
 			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow3)) {
 				curUserOptions.ShaderType = 3;
+				recreationNecessary = true;
+			}
+			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow4)) {
+				curUserOptions.ShaderType = 4;
+				recreationNecessary = true;
+			}
+			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow5)) {
+				curUserOptions.ShaderType = 5;
+				recreationNecessary = true;
+			}
+			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow6)) {
+				curUserOptions.ShaderType = 6;
+				recreationNecessary = true;
+			}
+			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow7)) {
+				curUserOptions.ShaderType = 7;
 				recreationNecessary = true;
 			}
 			if (kbm.KeyWasPressedThisIteration(MapAlphaToggleKey)) {
@@ -219,7 +255,7 @@ class LocalMaterialsTest {
 			}
 			if (kbm.KeyWasPressedThisIteration(QualityToggleKey)) {
 				curUserOptions.ShaderQualityType++;
-				if (curUserOptions.ShaderQualityType > 2) curUserOptions.ShaderQualityType = 0;
+				if (curUserOptions.ShaderQualityType > 1) curUserOptions.ShaderQualityType = 0;
 				recreationNecessary = true;
 			}
 
@@ -580,11 +616,10 @@ class LocalMaterialsTest {
 				numRepeats: 1
 			),
 			TexturePattern.Lines<Real>(
-				1f,
-				0.5f,
-				0f,
+				0.7f,
+				0.2f,
 				horizontal: true,
-				numRepeats: 2
+				numRepeats: 3
 			)
 		);
 		result.Add(atMap);
@@ -617,16 +652,16 @@ class LocalMaterialsTest {
 		if (norm) {
 			normalMap = texBuilder.CreateNormalMap(
 				TexturePattern.Rectangles(
-					interiorSize: new XYPair<int>(256, 256),
-					borderSize: new XYPair<int>(16, 16),
-					paddingSize: new XYPair<int>(64, 64),
+					interiorSize: new XYPair<int>(24, 24),
+					borderSize: new XYPair<int>(8, 8),
+					paddingSize: new XYPair<int>(4, 4),
 					interiorValue: UnitSphericalCoordinate.ZeroZero,
 					paddingValue: UnitSphericalCoordinate.ZeroZero,
 					borderRightValue: new UnitSphericalCoordinate(0f, 45f),
 					borderTopValue: new UnitSphericalCoordinate(90f, 45f),
 					borderLeftValue: new UnitSphericalCoordinate(180f, 45f),
 					borderBottomValue: new UnitSphericalCoordinate(270f, 45f),
-					repetitions: (2, 2)
+					repetitions: (12, 12)
 				),
 				name: "Transmissive Material Normal Map"
 			);
@@ -683,6 +718,159 @@ class LocalMaterialsTest {
 			Name = "Transmissive Material"
 		};
 		var mat = matBuilder.CreateTransmissiveMaterial(matConfig);
+		result.Add(mat);
+
+		return result;
+	}
+
+	ResourceGroup LoadAnisoMaterial(IResourceAllocator resAllocator, IAssetLoader assetLoader, IMaterialBuilder matBuilder) {
+		var result = resAllocator.CreateResourceGroup(
+			disposeContainedResourcesWhenDisposed: true,
+			name: "AnisoMetal Material Resources"
+		);
+
+		var albedo = assetLoader.LoadColorMap(CommonTestAssets.FindAsset("aniso_metal/albedo.jpg"));
+		var orm = assetLoader.LoadOcclusionRoughnessMetallicMap(
+			CommonTestAssets.FindAsset("aniso_metal/occlusion.jpg"),
+			CommonTestAssets.FindAsset("aniso_metal/roughness.jpg"),
+			CommonTestAssets.FindAsset("aniso_metal/metallic.jpg")
+		);
+		var aniso = assetLoader.LoadAnisotropyMapRadialAngleFormatted(
+			CommonTestAssets.FindAsset("aniso_metal/aniso_angle.jpg"),
+			CommonTestAssets.FindAsset("aniso_metal/aniso_strength.jpg"),
+			Orientation2D.Up,
+			AnisotropyRadialAngleRange.ZeroTo360,
+			encodedAnticlockwise: true
+		);
+
+		result.Add(albedo);
+		result.Add(orm);
+		result.Add(aniso);
+
+		var mat = matBuilder.CreateStandardMaterial(albedo, ormOrOrmrMap: orm, anisotropyMap: aniso);
+		result.Add(mat);
+
+		return result;
+	}
+
+	ResourceGroup LoadHexNormMaterial(IResourceAllocator resAllocator, IAssetLoader assetLoader, IMaterialBuilder matBuilder) {
+		var result = resAllocator.CreateResourceGroup(
+			disposeContainedResourcesWhenDisposed: true,
+			name: "HexNorm Material Resources"
+		);
+
+		var albedo = assetLoader.LoadColorMap(CommonTestAssets.FindAsset("hex_metal/albedo.jpg"));
+		var orm = assetLoader.LoadOcclusionRoughnessMetallicMap(
+			CommonTestAssets.FindAsset("hex_metal/occlusion.jpg"),
+			CommonTestAssets.FindAsset("hex_metal/roughness.jpg"),
+			CommonTestAssets.FindAsset("hex_metal/metallic.jpg")
+		);
+		var norm = assetLoader.LoadNormalMap(
+			CommonTestAssets.FindAsset("hex_metal/norm_dx.png"),
+			isDirectXFormat: true
+		);
+
+		result.Add(albedo);
+		result.Add(orm);
+		result.Add(norm);
+
+		var mat = matBuilder.CreateStandardMaterial(albedo, ormOrOrmrMap: orm, normalMap: norm);
+		result.Add(mat);
+
+		return result;
+	}
+
+	ResourceGroup CreateGlassMaterial(IResourceAllocator resAllocator, ITextureBuilder texBuilder, IMaterialBuilder matBuilder) {
+		var result = resAllocator.CreateResourceGroup(
+			disposeContainedResourcesWhenDisposed: true,
+			name: "Glass Material Resources"
+		);
+
+		var albedo = texBuilder.CreateColorMap(ColorVect.White, includeAlpha: false);
+		var at = texBuilder.CreateAbsorptionTransmissionMap(ColorVect.Black, transmission: 0.9f);
+		var ormr = texBuilder.CreateOcclusionRoughnessMetallicReflectanceMap(
+			occlusion: 1f,
+			roughness: 0f,
+			metallic: 0f,
+			reflectance: 0.5f
+		);
+		var norm = texBuilder.CreateNormalMap(
+			TexturePattern.Rectangles(
+				interiorSize: new XYPair<int>(24, 24),
+				borderSize: new XYPair<int>(8, 8),
+				paddingSize: new XYPair<int>(4, 4),
+				interiorValue: UnitSphericalCoordinate.ZeroZero,
+				paddingValue: UnitSphericalCoordinate.ZeroZero,
+				borderRightValue: new UnitSphericalCoordinate(0f, 45f),
+				borderTopValue: new UnitSphericalCoordinate(90f, 45f),
+				borderLeftValue: new UnitSphericalCoordinate(180f, 45f),
+				borderBottomValue: new UnitSphericalCoordinate(270f, 45f),
+				repetitions: (12, 12)
+			)
+		);
+		result.Add(norm);
+
+		result.Add(albedo);
+		result.Add(at);
+		result.Add(ormr);
+
+		var mat = matBuilder.CreateTransmissiveMaterial(
+			albedo, 
+			at, 
+			quality: TransmissiveMaterialQuality.FullReflectionsAndRefraction,
+			ormrMap: ormr,
+			normalMap: norm,
+			refractionThickness: 0.01f,
+			name: "Glass Material"
+		);
+		result.Add(mat);
+
+		return result;
+	}
+
+	ResourceGroup CreateMirrorMaterial(IResourceAllocator resAllocator, ITextureBuilder texBuilder, IMaterialBuilder matBuilder) {
+		var result = resAllocator.CreateResourceGroup(
+			disposeContainedResourcesWhenDisposed: true,
+			name: "Mirror Material Resources"
+		);
+
+		var albedo = texBuilder.CreateColorMap(ColorVect.White, includeAlpha: false);
+		var at = texBuilder.CreateAbsorptionTransmissionMap(ColorVect.White, transmission: 0f);
+		var ormr = texBuilder.CreateOcclusionRoughnessMetallicReflectanceMap(
+			occlusion: 1f,
+			roughness: 0f,
+			metallic: 1f,
+			reflectance: 1f
+		);
+		var norm = texBuilder.CreateNormalMap(
+			TexturePattern.Rectangles(
+				interiorSize: new XYPair<int>(24, 24),
+				borderSize: new XYPair<int>(8, 8),
+				paddingSize: new XYPair<int>(4, 4),
+				interiorValue: UnitSphericalCoordinate.ZeroZero,
+				paddingValue: UnitSphericalCoordinate.ZeroZero,
+				borderRightValue: new UnitSphericalCoordinate(0f, 45f),
+				borderTopValue: new UnitSphericalCoordinate(90f, 45f),
+				borderLeftValue: new UnitSphericalCoordinate(180f, 45f),
+				borderBottomValue: new UnitSphericalCoordinate(270f, 45f),
+				repetitions: (12, 12)
+			)
+		);
+		result.Add(norm);
+
+		result.Add(albedo);
+		result.Add(at);
+		result.Add(ormr);
+
+		var mat = matBuilder.CreateTransmissiveMaterial(
+			albedo,
+			at,
+			quality: TransmissiveMaterialQuality.FullReflectionsAndRefraction,
+			ormrMap: ormr,
+			normalMap: norm,
+			refractionThickness: 0.01f,
+			name: "Mirror Material"
+		);
 		result.Add(mat);
 
 		return result;

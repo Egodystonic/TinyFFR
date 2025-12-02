@@ -86,8 +86,8 @@ class LocalAssetImportTest {
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Asset Import Test");
 		window.SetIcon(CommonTestAssets.FindAsset(KnownTestAsset.EgodystonicLogo));
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
-		using var albedo = factory.AssetLoader.LoadColorTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex));
-		using var normal = factory.AssetLoader.LoadDataTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex));
+		using var albedo = factory.AssetLoader.LoadColorMap(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex));
+		using var normal = factory.AssetLoader.LoadNormalMap(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex));
 		using var orm = factory.AssetLoader.LoadCombinedTexture(
 			aFilePath: CommonTestAssets.FindAsset(KnownTestAsset.WhiteTex),
 			aProcessingConfig: TextureProcessingConfig.None,
@@ -210,7 +210,7 @@ class LocalAssetImportTest {
 		factory.AssetLoader.ReadCombinedTexture(
 			swatchTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: true, aroundHorizontalCentre: false),
 			swatchAlphaTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: false, aroundHorizontalCentre: true),
-			new TextureCombinationConfig("bGaRbAaB"), TextureProcessingConfig.Negate(), rgbaBuffer
+			new TextureCombinationConfig("bGaRbAaB"), TextureProcessingConfig.Invert(), rgbaBuffer
 		);
 		Assert.IsTrue(rgbaBuffer[..9].SequenceEqual(expectation));
 		Array.Clear(rgbaBuffer);
@@ -219,7 +219,7 @@ class LocalAssetImportTest {
 		factory.AssetLoader.ReadCombinedTexture(
 			swatchTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: true, aroundHorizontalCentre: false),
 			swatchAlphaTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: false, aroundHorizontalCentre: true),
-			new TextureCombinationConfig("bGaRbAaB"), TextureProcessingConfig.Negate(), rgbBuffer
+			new TextureCombinationConfig("bGaRbAaB"), TextureProcessingConfig.Invert(), rgbBuffer
 		);
 		for (var i = 0; i < 9; ++i) rgbaBuffer[i] = rgbBuffer[i].ToRgba32(expectation[i].A);
 		Assert.IsTrue(rgbaBuffer[..9].SequenceEqual(expectation));
@@ -230,7 +230,7 @@ class LocalAssetImportTest {
 			swatchTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: true, aroundHorizontalCentre: false),
 			swatchAlphaTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: false, aroundHorizontalCentre: true),
 			swatchTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: true, aroundHorizontalCentre: false),
-			new TextureCombinationConfig("bGaRbAcB"), TextureProcessingConfig.Negate(), rgbaBuffer
+			new TextureCombinationConfig("bGaRbAcB"), TextureProcessingConfig.Invert(), rgbaBuffer
 		);
 		Assert.IsTrue(rgbaBuffer[..9].SequenceEqual(expectation));
 		Array.Clear(rgbaBuffer);
@@ -240,7 +240,7 @@ class LocalAssetImportTest {
 			swatchTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: true, aroundHorizontalCentre: false),
 			swatchAlphaTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: false, aroundHorizontalCentre: true),
 			swatchTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: true, aroundHorizontalCentre: false),
-			new TextureCombinationConfig("bGcRbAaB"), TextureProcessingConfig.Negate(), rgbBuffer
+			new TextureCombinationConfig("bGcRbAaB"), TextureProcessingConfig.Invert(), rgbBuffer
 		);
 		for (var i = 0; i < 9; ++i) rgbaBuffer[i] = rgbBuffer[i].ToRgba32(expectation[i].A);
 		Assert.IsTrue(rgbaBuffer[..9].SequenceEqual(expectation));
@@ -252,7 +252,7 @@ class LocalAssetImportTest {
 			swatchAlphaTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: false, aroundHorizontalCentre: true),
 			swatchTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: true, aroundHorizontalCentre: false),
 			swatchAlphaTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: false, aroundHorizontalCentre: true),
-			new TextureCombinationConfig("dGaRbAcB"), TextureProcessingConfig.Negate(), rgbaBuffer
+			new TextureCombinationConfig("dGaRbAcB"), TextureProcessingConfig.Invert(), rgbaBuffer
 		);
 		Assert.IsTrue(rgbaBuffer[..9].SequenceEqual(expectation));
 		Array.Clear(rgbaBuffer);
@@ -263,7 +263,7 @@ class LocalAssetImportTest {
 			swatchAlphaTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: false, aroundHorizontalCentre: true),
 			swatchTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: true, aroundHorizontalCentre: false),
 			swatchAlphaTexPath, TextureProcessingConfig.Flip(aroundVerticalCentre: false, aroundHorizontalCentre: true),
-			new TextureCombinationConfig("bGcRdAaB"), TextureProcessingConfig.Negate(), rgbBuffer
+			new TextureCombinationConfig("bGcRdAaB"), TextureProcessingConfig.Invert(), rgbBuffer
 		);
 		for (var i = 0; i < 9; ++i) rgbaBuffer[i] = rgbBuffer[i].ToRgba32(expectation[i].A);
 		Assert.IsTrue(rgbaBuffer[..9].SequenceEqual(expectation));

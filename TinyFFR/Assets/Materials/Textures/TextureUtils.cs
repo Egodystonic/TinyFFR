@@ -8,7 +8,7 @@ public static class TextureUtils {
 		ProcessTexture(buffer, dimensions, TextureProcessingConfig.Flip(aroundVerticalCentre, aroundHorizontalCentre));
 	}
 	public static void NegateTexture<TTexel>(Span<TTexel> buffer, XYPair<int> dimensions, bool includeRedChannel = true, bool includeGreenChannel = true, bool includeBlueChannel = true, bool includeAlphaChannel = true) where TTexel : unmanaged, ITexel<TTexel> {
-		ProcessTexture(buffer, dimensions, TextureProcessingConfig.Negate(includeRedChannel, includeGreenChannel, includeBlueChannel, includeAlphaChannel));
+		ProcessTexture(buffer, dimensions, TextureProcessingConfig.Invert(includeRedChannel, includeGreenChannel, includeBlueChannel, includeAlphaChannel));
 	}
 	public static void SwizzleTexture<TTexel>(Span<TTexel> buffer, XYPair<int> dimensions, ColorChannel redSource = ColorChannel.R, ColorChannel greenSource = ColorChannel.G, ColorChannel blueSource = ColorChannel.B, ColorChannel alphaSource = ColorChannel.A) where TTexel : unmanaged, ITexel<TTexel> {
 		ProcessTexture(buffer, dimensions, TextureProcessingConfig.Swizzle(redSource, greenSource, blueSource, alphaSource));

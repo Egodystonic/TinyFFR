@@ -54,11 +54,11 @@ class TextureUtilsTest {
 		AssertSequence(TextureProcessingConfig.Flip(false, true), 4, 5, 6, 7, 0, 1, 2, 3);
 		AssertSequence(TextureProcessingConfig.Flip(true, true), 7, 6, 5, 4, 3, 2, 1, 0);
 
-		AssertSequence(TextureProcessingConfig.Negate(false, false, false, false), 0, 1, 2, 3, 4, 5, 6, 7);
-		AssertSequence(TextureProcessingConfig.Negate(), ~0, ~1, ~2, ~3, ~4, ~5, ~6, ~7);
-		AssertTexels(TextureProcessingConfig.Negate(true, false, false, false), Inv(0, 0), Inv(1, 0), Inv(2, 0), Inv(3, 0), Inv(4, 0), Inv(5, 0), Inv(6, 0), Inv(7, 0));
-		AssertTexels(TextureProcessingConfig.Negate(false, true, true, false), Inv(0, 1, 2), Inv(1, 1, 2), Inv(2, 1, 2), Inv(3, 1, 2), Inv(4, 1, 2), Inv(5, 1, 2), Inv(6, 1, 2), Inv(7, 1, 2));
-		AssertTexels(TextureProcessingConfig.Negate(false, false, false, true), Inv(0, 3), Inv(1, 3), Inv(2, 3), Inv(3, 3), Inv(4, 3), Inv(5, 3), Inv(6, 3), Inv(7, 3));
+		AssertSequence(TextureProcessingConfig.Invert(false, false, false, false), 0, 1, 2, 3, 4, 5, 6, 7);
+		AssertSequence(TextureProcessingConfig.Invert(), ~0, ~1, ~2, ~3, ~4, ~5, ~6, ~7);
+		AssertTexels(TextureProcessingConfig.Invert(true, false, false, false), Inv(0, 0), Inv(1, 0), Inv(2, 0), Inv(3, 0), Inv(4, 0), Inv(5, 0), Inv(6, 0), Inv(7, 0));
+		AssertTexels(TextureProcessingConfig.Invert(false, true, true, false), Inv(0, 1, 2), Inv(1, 1, 2), Inv(2, 1, 2), Inv(3, 1, 2), Inv(4, 1, 2), Inv(5, 1, 2), Inv(6, 1, 2), Inv(7, 1, 2));
+		AssertTexels(TextureProcessingConfig.Invert(false, false, false, true), Inv(0, 3), Inv(1, 3), Inv(2, 3), Inv(3, 3), Inv(4, 3), Inv(5, 3), Inv(6, 3), Inv(7, 3));
 
 		AssertSequence(TextureProcessingConfig.Swizzle(), 0, 1, 2, 3, 4, 5, 6, 7);
 		AssertTexels(TextureProcessingConfig.Swizzle(ColorChannel.G, ColorChannel.B, ColorChannel.A, ColorChannel.R), Enumerable.Range(0, 8).Select(i => Swiz(i, 1, 2, 3, 0)).ToArray());

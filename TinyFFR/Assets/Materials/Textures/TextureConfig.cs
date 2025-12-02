@@ -161,7 +161,7 @@ public readonly record struct TextureProcessingConfig : IConfigStruct<TexturePro
 			FlipY = aroundHorizontalCentre
 		};
 	}
-	public static TextureProcessingConfig Negate(bool includeRedChannel = true, bool includeGreenChannel = true, bool includeBlueChannel = true, bool includeAlphaChannel = true) {
+	public static TextureProcessingConfig Invert(bool includeRedChannel = true, bool includeGreenChannel = true, bool includeBlueChannel = true, bool includeAlphaChannel = true) {
 		return new() {
 			InvertXRedChannel = includeRedChannel, 
 			InvertYGreenChannel = includeGreenChannel, 

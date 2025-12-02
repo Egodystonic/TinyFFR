@@ -8,10 +8,23 @@ public interface IBuiltInTexturePathLibrary {
 	ReadOnlySpan<char> DefaultNormalMap { get; }
 	ReadOnlySpan<char> DefaultOcclusionRoughnessMetallicMap { get; }
 	ReadOnlySpan<char> DefaultOcclusionRoughnessMetallicReflectanceMap { get; }
+	ReadOnlySpan<char> DefaultOcclusionMap { get; }
+	ReadOnlySpan<char> DefaultRoughnessMap { get; }
+	ReadOnlySpan<char> DefaultMetallicMap { get; }
+	ReadOnlySpan<char> DefaultReflectanceMap { get; }
 	ReadOnlySpan<char> DefaultAbsorptionTransmissionMap { get; }
+	ReadOnlySpan<char> DefaultAbsorptionMap { get; }
+	ReadOnlySpan<char> DefaultTransmissionMap { get; }
 	ReadOnlySpan<char> DefaultEmissiveMap { get; }
+	ReadOnlySpan<char> DefaultEmissiveColorMap { get; }
+	ReadOnlySpan<char> DefaultEmissiveIntensityMap { get; }
 	ReadOnlySpan<char> DefaultAnisotropyMap { get; }
+	ReadOnlySpan<char> DefaultAnisotropyRadialAngleMap { get; }
+	ReadOnlySpan<char> DefaultAnisotropyTangentVectorMap { get; }
+	ReadOnlySpan<char> DefaultAnisotropyStrengthMap { get; }
 	ReadOnlySpan<char> DefaultClearCoatMap { get; }
+	ReadOnlySpan<char> DefaultClearCoatThicknessMap { get; }
+	ReadOnlySpan<char> DefaultClearCoatRoughnessMap { get; }
 
 	ReadOnlySpan<char> Rgba100Percent { get; }
 	ReadOnlySpan<char> Rgba90Percent { get; }

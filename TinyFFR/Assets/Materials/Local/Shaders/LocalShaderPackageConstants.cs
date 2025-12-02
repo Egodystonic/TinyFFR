@@ -123,7 +123,6 @@ static class LocalShaderPackageConstants {
 			AlphaOnBlended
 		}
 		public enum RefractionQualityVariant {
-			Disabled,
 			Low,
 			High
 		}
@@ -142,7 +141,7 @@ static class LocalShaderPackageConstants {
 			const Flags LastFlag = Flags.Orm;
 			const AlphaModeVariant FirstAlphaMode = AlphaModeVariant.AlphaOff;
 			const AlphaModeVariant LastAlphaMode = AlphaModeVariant.AlphaOnBlended;
-			const RefractionQualityVariant FirstRefractionQuality = RefractionQualityVariant.Disabled;
+			const RefractionQualityVariant FirstRefractionQuality = RefractionQualityVariant.Low;
 			const RefractionQualityVariant LastRefractionQuality = RefractionQualityVariant.High;
 			const RefractionTypeVariant FirstRefractionType = RefractionTypeVariant.Thin;
 			const RefractionTypeVariant LastRefractionType = RefractionTypeVariant.Thick;
@@ -173,7 +172,6 @@ static class LocalShaderPackageConstants {
 							Write(
 								ref emptySpaceSpan,
 								vRefractionQuality switch {
-									RefractionQualityVariant.Disabled => "disabled",
 									RefractionQualityVariant.Low => "low",
 									RefractionQualityVariant.High => "high",
 									_ => throw new ArgumentOutOfRangeException()

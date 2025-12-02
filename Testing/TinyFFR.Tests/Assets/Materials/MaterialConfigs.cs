@@ -142,7 +142,7 @@ class MaterialConfigsTest {
 			AnisotropyMap = null,
 			EmissiveMap = new Texture(5555, colorTexImplSub),
 			RefractionThickness = 1f,
-			Quality = TransmissiveMaterialQuality.TrueReflectionsAndRefraction,
+			Quality = TransmissiveMaterialQuality.FullReflectionsAndRefraction,
 			AlphaMode = TransmissiveMaterialAlphaMode.FullBlending
 		};
 		var testConfigB = new TransmissiveMaterialCreationConfig {
@@ -154,7 +154,7 @@ class MaterialConfigsTest {
 			AnisotropyMap = new Texture(4444, colorTexImplSub),
 			EmissiveMap = null,
 			RefractionThickness = 0.1f,
-			Quality = TransmissiveMaterialQuality.SkyboxReflectionsAndRefraction,
+			Quality = TransmissiveMaterialQuality.SkyboxOnlyReflectionsAndRefraction,
 			AlphaMode = TransmissiveMaterialAlphaMode.MaskOnly
 		};
 
@@ -186,7 +186,7 @@ class MaterialConfigsTest {
 			.Bool(true)
 			.Resource(testConfigA.EmissiveMap.Value)
 			.Float(1f)
-			.Int((int) TransmissiveMaterialQuality.TrueReflectionsAndRefraction)
+			.Int((int) TransmissiveMaterialQuality.FullReflectionsAndRefraction)
 			.Int((int) TransmissiveMaterialAlphaMode.FullBlending)
 			.SubConfig(testConfigA.BaseConfig)
 			.For(testConfigA);
@@ -203,7 +203,7 @@ class MaterialConfigsTest {
 			.Bool(false)
 			.ZeroResource()
 			.Float(0.1f)
-			.Int((int) TransmissiveMaterialQuality.SkyboxReflectionsAndRefraction)
+			.Int((int) TransmissiveMaterialQuality.SkyboxOnlyReflectionsAndRefraction)
 			.Int((int) TransmissiveMaterialAlphaMode.MaskOnly)
 			.SubConfig(testConfigB.BaseConfig)
 			.For(testConfigB);

@@ -52,7 +52,8 @@
 #variant AlphaOn
 	blending : masked
 #variant AlphaOnBlended
-	blending : fade
+	blending : fade,
+	transparency : twoPassesTwoSides
 #endoption
 }
 

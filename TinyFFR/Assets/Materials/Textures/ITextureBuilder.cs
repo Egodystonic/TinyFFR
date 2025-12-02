@@ -213,7 +213,7 @@ public unsafe interface ITextureBuilder {
 	#endregion
 
 	#region Absorption Transmission Map Patterns
-	static readonly ColorVect DefaultAbsorption = ColorVect.White;
+	static readonly ColorVect DefaultAbsorption = ColorVect.Black;
 	static readonly Real DefaultTransmission = 0.5f;
 	static TexelRgba32 CreateAbsorptionTransmissionTexel(ColorVect absorption, Real transmission) => new(new TexelRgb24(absorption), (byte) (transmission * Byte.MaxValue));
 
@@ -243,7 +243,7 @@ public unsafe interface ITextureBuilder {
 
 	#region Emissive Map Patterns
 	static readonly ColorVect DefaultEmissiveColor = StandardColor.LightingIncandescentBulb;
-	static readonly Real DefaultEmissiveIntensity = 0.5f;
+	static readonly Real DefaultEmissiveIntensity = 1f;
 	static TexelRgba32 CreateEmissiveTexel(ColorVect color, Real intensity) => new(new TexelRgb24(color), (byte) (intensity * Byte.MaxValue));
 
 	Texture CreateEmissiveMap(in TexturePattern<ColorVect> colorPattern, in TexturePattern<Real> intensityPattern, ReadOnlySpan<char> name = default) {
@@ -271,10 +271,10 @@ public unsafe interface ITextureBuilder {
 	#endregion
 
 	#region Anisotropy Map Patterns
-	static readonly Angle DefaultAnisotropyTangent = 0f;
+	static readonly Angle DefaultAnisotropyRadialAngle = 0f;
 	static readonly Real DefaultAnisotropyStrength = 1f;
-	static TexelRgb24 CreateAnisotropyTexel(Angle tangent, Real strength) {
-		var asTangentSpaceVect2 = ((XYPair<float>.FromPolarAngle(tangent)
+	static TexelRgb24 CreateAnisotropyTexel(Angle radialAngle, Real strength) {
+		var asTangentSpaceVect2 = ((XYPair<float>.FromPolarAngle(radialAngle)
 			+ XYPair<float>.One)
 			* (Byte.MaxValue * 0.5f))
 			.CastWithRoundingIfNecessary<float, byte>(MidpointRounding.AwayFromZero);
@@ -282,27 +282,27 @@ public unsafe interface ITextureBuilder {
 		return new TexelRgb24(asTangentSpaceVect2.X, asTangentSpaceVect2.Y, (byte) (strength * Byte.MaxValue));
 	}
 
-	Texture CreateAnisotropyMap(in TexturePattern<Angle> tangentPattern, in TexturePattern<Real> strengthPattern, ReadOnlySpan<char> name = default) {
+	Texture CreateAnisotropyMap(in TexturePattern<Angle> radialAnglePattern, in TexturePattern<Real> strengthPattern, ReadOnlySpan<char> name = default) {
 		var creationConfig = new TextureCreationConfig {
-			GenerateMipMaps = tangentPattern.Dimensions.Area != 1 || strengthPattern.Dimensions.Area != 1,
+			GenerateMipMaps = radialAnglePattern.Dimensions.Area != 1 || strengthPattern.Dimensions.Area != 1,
 			IsLinearColorspace = true,
 			Name = name,
 			ProcessingToApply = TextureProcessingConfig.None
 		};
-		return CreateAnisotropyMap(tangentPattern, strengthPattern, in creationConfig);
+		return CreateAnisotropyMap(radialAnglePattern, strengthPattern, in creationConfig);
 	}
-	Texture CreateAnisotropyMap(in TexturePattern<Angle> tangentPattern, in TexturePattern<Real> strengthPattern, in TextureCreationConfig config) {
-		var dimensions = GetCompositePatternDimensions(tangentPattern, strengthPattern);
+	Texture CreateAnisotropyMap(in TexturePattern<Angle> radialAnglePattern, in TexturePattern<Real> strengthPattern, in TextureCreationConfig config) {
+		var dimensions = GetCompositePatternDimensions(radialAnglePattern, strengthPattern);
 		var buffer = PreallocateBuffer<TexelRgb24>(dimensions.Area);
-		_ = PrintPattern(tangentPattern, strengthPattern, &CreateAnisotropyTexel, buffer.Span);
+		_ = PrintPattern(radialAnglePattern, strengthPattern, &CreateAnisotropyTexel, buffer.Span);
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, new TextureGenerationConfig { Dimensions = dimensions }, in config);
 	}
 
-	Texture CreateAnisotropyMap(Angle? tangent = null, Real? strength = null, ReadOnlySpan<char> name = default) {
-		return CreateTexture(CreateAnisotropyTexel(tangent ?? DefaultAnisotropyTangent, strength ?? DefaultAnisotropyStrength), isLinearColorspace: true, name);
+	Texture CreateAnisotropyMap(Angle? radialAngle = null, Real? strength = null, ReadOnlySpan<char> name = default) {
+		return CreateTexture(CreateAnisotropyTexel(radialAngle ?? DefaultAnisotropyRadialAngle, strength ?? DefaultAnisotropyStrength), isLinearColorspace: true, name);
 	}
-	Texture CreateAnisotropyMap(Angle tangent, Real strength, in TextureCreationConfig config) {
-		return CreateTexture(CreateAnisotropyTexel(tangent, strength), in config);
+	Texture CreateAnisotropyMap(Angle radialAngle, Real strength, in TextureCreationConfig config) {
+		return CreateTexture(CreateAnisotropyTexel(radialAngle, strength), in config);
 	}
 	#endregion
 

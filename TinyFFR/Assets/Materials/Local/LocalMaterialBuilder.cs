@@ -165,9 +165,8 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		var flags = (TransmissiveMaterialShaderConstants.Flags) 0;
 		var alphaModeVariant = TransmissiveMaterialShaderConstants.AlphaModeVariant.AlphaOff;
 		var refractionQualityVariant = config.Quality switch {
-			TransmissiveMaterialQuality.SkyboxReflectionsAndRefraction => TransmissiveMaterialShaderConstants.RefractionQualityVariant.Low,
-			TransmissiveMaterialQuality.TrueReflectionsAndRefraction => TransmissiveMaterialShaderConstants.RefractionQualityVariant.High,
-			_ => TransmissiveMaterialShaderConstants.RefractionQualityVariant.Disabled
+			TransmissiveMaterialQuality.SkyboxOnlyReflectionsAndRefraction => TransmissiveMaterialShaderConstants.RefractionQualityVariant.Low,
+			_ => TransmissiveMaterialShaderConstants.RefractionQualityVariant.High,
 		};
 		var refractionTypeVariant = TransmissiveMaterialShaderConstants.RefractionTypeVariant.Thin;
 
