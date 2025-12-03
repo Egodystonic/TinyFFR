@@ -20,7 +20,7 @@ public interface IBuiltInTexturePathLibrary {
 	ReadOnlySpan<char> DefaultEmissiveIntensityMap { get; }
 	ReadOnlySpan<char> DefaultAnisotropyMap { get; }
 	ReadOnlySpan<char> DefaultAnisotropyRadialAngleMap { get; }
-	ReadOnlySpan<char> DefaultAnisotropyTangentVectorMap { get; }
+	ReadOnlySpan<char> DefaultAnisotropyVectorMap { get; }
 	ReadOnlySpan<char> DefaultAnisotropyStrengthMap { get; }
 	ReadOnlySpan<char> DefaultClearCoatMap { get; }
 	ReadOnlySpan<char> DefaultClearCoatThicknessMap { get; }

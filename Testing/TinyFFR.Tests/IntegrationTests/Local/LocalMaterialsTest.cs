@@ -11,6 +11,7 @@ using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Testing;
+using System.Reflection.PortableExecutable;
 
 namespace Egodystonic.TinyFFR;
 
@@ -28,7 +29,7 @@ class LocalMaterialsTest {
 	const KeyboardOrMouseKey MapThicknessToggleKey = KeyboardOrMouseKey.K;
 	const KeyboardOrMouseKey QualityToggleKey = KeyboardOrMouseKey.Q;
 
-	const string WindowTitleStart = $"settings: B,R,Q shaders: 1-7 maps: A,E,N,O,T,C,K";
+	const string WindowTitleStart = $"settings: B,R,Q shaders: 1-8 maps: A,E,N,O,T,C,K";
 
 	sealed record UserOptions {
 		public int BackdropIntensity { get; set; } = 2;
@@ -42,7 +43,7 @@ class LocalMaterialsTest {
 		public int MapClearCoatType { get; set; } = 0;
 		public int MapThicknessLevel { get; set; } = 0;
 
-		public int ShaderType { get; set; } = 1;
+		public int ShaderType { get; set; } = 8;
 		public int ShaderQualityType { get; set; } = 0;
 
 		public string GetWindowTitleString() {
@@ -74,6 +75,7 @@ class LocalMaterialsTest {
 				5 => "HEXNORM",
 				6 => "GLASS",
 				7 => "MIRROR",
+				8 => "TEST",
 				_ => "STANDARD"
 			} + mapsStr;
 		}
@@ -101,7 +103,7 @@ class LocalMaterialsTest {
 		using var backdrop = factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
 		
 		using var cubeMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube);
-		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere, subdivisionLevel: 1);
+		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere, subdivisionLevel: 7);
 
 		using var camera = factory.CameraBuilder.CreateCamera();
 		using var light = factory.LightBuilder.CreatePointLight(position: (0f, 0f, 1f));
@@ -115,7 +117,7 @@ class LocalMaterialsTest {
 		using var backMaterialOrm = factory.AssetLoader.LoadOcclusionRoughnessMetallicMap(CommonTestAssets.FindAsset(KnownTestAsset.BrickOrmTex));
 		using var backInstanceMaterial = factory.MaterialBuilder.CreateStandardMaterial(backMaterialAlbedo, backMaterialNormals, backMaterialOrm);
 
-		var currentMaterialResources = CreateSimpleMaterial(factory.ResourceAllocator, factory.TextureBuilder, factory.MaterialBuilder, includeAlpha: false, emissive: false);
+		var currentMaterialResources = CreateTestMaterial(factory.ResourceAllocator, factory.MaterialBuilder);
 
 		var cubeFrontInstance = factory.ObjectBuilder.CreateModelInstance(cubeMesh, currentMaterialResources.Materials[0], new Location(1f, 0f, 2f));
 		var sphereFrontInstance = factory.ObjectBuilder.CreateModelInstance(sphereMesh, currentMaterialResources.Materials[0], new Location(-1f, 0f, 2f));
@@ -166,6 +168,9 @@ class LocalMaterialsTest {
 					break;
 				case 7:
 					newMaterialResources = CreateMirrorMaterial(factory.ResourceAllocator, factory.TextureBuilder, factory.MaterialBuilder);
+					break;
+				case 8:
+					newMaterialResources = CreateTestMaterial(factory.ResourceAllocator, factory.MaterialBuilder);
 					break;
 				default:
 					newMaterialResources = CreateStandardMaterial(
@@ -219,6 +224,10 @@ class LocalMaterialsTest {
 			}
 			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow7)) {
 				curUserOptions.ShaderType = 7;
+				recreationNecessary = true;
+			}
+			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow8)) {
+				curUserOptions.ShaderType = 8;
 				recreationNecessary = true;
 			}
 			if (kbm.KeyWasPressedThisIteration(MapAlphaToggleKey)) {
@@ -670,10 +679,10 @@ class LocalMaterialsTest {
 
 		if (ormr) {
 			ormrMap = texBuilder.CreateOcclusionRoughnessMetallicReflectanceMap(
-				TexturePattern.ChequerboardBordered<Real>(1f, 64, 0f, cellResolution: 12),
-				TexturePattern.Lines<Real>(0f, 0.25f, 0.5f, 0.75f, 1f, horizontal: true),
-				TexturePattern.Lines<Real>(0f, 0.25f, 0.5f, 0.75f, 1f, horizontal: false),
-				TexturePattern.GradientVertical<Real>(1f, 0f),
+				TexturePattern.PlainFill<Real>(1f),
+				TexturePattern.Circles<Real>(0.8f, 1f, 0f, paddingSize: (192, 192), repetitions: (1, 1)),
+				TexturePattern.Lines<Real>(0f, 1f, 0f, 1f, 0f, numRepeats: 1, horizontal: false),
+				TexturePattern.Lines<Real>(1f, 0f, 0f, 1f, 0f, numRepeats: 1, horizontal: false),
 				name: "Transmissive Material ORMR Map"
 			);
 			result.Add(ormrMap.Value);
@@ -787,12 +796,12 @@ class LocalMaterialsTest {
 		);
 
 		var albedo = texBuilder.CreateColorMap(ColorVect.White, includeAlpha: false);
-		var at = texBuilder.CreateAbsorptionTransmissionMap(ColorVect.Black, transmission: 0.9f);
+		var at = texBuilder.CreateAbsorptionTransmissionMap(ColorVect.Black, transmission: 1f);
 		var ormr = texBuilder.CreateOcclusionRoughnessMetallicReflectanceMap(
 			occlusion: 1f,
 			roughness: 0f,
 			metallic: 0f,
-			reflectance: 0.5f
+			reflectance: 1f
 		);
 		var norm = texBuilder.CreateNormalMap(
 			TexturePattern.Rectangles(
@@ -820,7 +829,7 @@ class LocalMaterialsTest {
 			quality: TransmissiveMaterialQuality.FullReflectionsAndRefraction,
 			ormrMap: ormr,
 			normalMap: norm,
-			refractionThickness: 0.01f,
+			refractionThickness: 0.1f,
 			name: "Glass Material"
 		);
 		result.Add(mat);
@@ -849,10 +858,10 @@ class LocalMaterialsTest {
 				paddingSize: new XYPair<int>(4, 4),
 				interiorValue: UnitSphericalCoordinate.ZeroZero,
 				paddingValue: UnitSphericalCoordinate.ZeroZero,
-				borderRightValue: new UnitSphericalCoordinate(0f, 45f),
-				borderTopValue: new UnitSphericalCoordinate(90f, 45f),
-				borderLeftValue: new UnitSphericalCoordinate(180f, 45f),
-				borderBottomValue: new UnitSphericalCoordinate(270f, 45f),
+				borderRightValue: new UnitSphericalCoordinate(0f, 15f),
+				borderTopValue: new UnitSphericalCoordinate(90f, 15f),
+				borderLeftValue: new UnitSphericalCoordinate(180f, 15f),
+				borderBottomValue: new UnitSphericalCoordinate(270f, 15f),
 				repetitions: (12, 12)
 			)
 		);
@@ -871,6 +880,18 @@ class LocalMaterialsTest {
 			refractionThickness: 0.01f,
 			name: "Mirror Material"
 		);
+		result.Add(mat);
+
+		return result;
+	}
+
+	ResourceGroup CreateTestMaterial(IResourceAllocator resAllocator, IMaterialBuilder matBuilder) {
+		var result = resAllocator.CreateResourceGroup(
+			disposeContainedResourcesWhenDisposed: true,
+			name: "Test Material Resources"
+		);
+
+		var mat = matBuilder.CreateTestMaterial(ignoresLighting: false);
 		result.Add(mat);
 
 		return result;

@@ -186,7 +186,7 @@ public interface IAssetLoader {
 		var a = Path.GetFileName(occlusionFilePath);
 		var b = Path.GetFileName(roughnessFilePath);
 		var c = Path.GetFileName(metallicFilePath);
-		var d = Path.GetFileName(metallicFilePath);
+		var d = Path.GetFileName(reflectanceFilePath);
 		Span<char> name = stackalloc char[a.Length + 1 + b.Length + 1 + c.Length + 1 + d.Length];
 		a.CopyTo(name);
 		name[a.Length] = '+';
@@ -283,8 +283,7 @@ public interface IAssetLoader {
 	Texture LoadAnisotropyMapVectorFormatted(ReadOnlySpan<char> filePath, ColorChannel? strengthChannel) {
 		return strengthChannel switch {
 			B => LoadTexture(filePath, isLinearColorspace: true, name: Path.GetFileName(filePath)),
-			A => LoadTexture(filePath, new TextureCreationConfig { IsLinearColorspace = true, Name = Path.GetFileName(filePath), ProcessingToApply = TextureProcessingConfig.Swizzle(blueSource: A) }
-			),
+			A => LoadTexture(filePath, new TextureCreationConfig { IsLinearColorspace = true, Name = Path.GetFileName(filePath), ProcessingToApply = TextureProcessingConfig.Swizzle(blueSource: A) }),
 			_ => LoadAnisotropyMapVectorFormatted(filePath, BuiltInTexturePaths.DefaultAnisotropyStrengthMap)
 		};
 	}
@@ -317,7 +316,7 @@ public interface IAssetLoader {
 		const float AngleCoefficientZeroTo360 = 1f / Byte.MaxValue;
 		var angleAddition = Angle.From2DPolarAngle(zeroDirection) ?? Angle.Zero;
 		var angleCoefficient = encodedRange == AnisotropyRadialAngleRange.ZeroTo180 ? AngleCoefficientZeroTo180 : AngleCoefficientZeroTo360;
-		if (encodedAnticlockwise) angleCoefficient *= -1f;
+		if (!encodedAnticlockwise) angleCoefficient *= -1f;
 
 		if (strengthChannel is G or B or A) {
 			for (var i = 0; i < texels.Length; ++i) {

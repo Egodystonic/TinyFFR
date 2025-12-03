@@ -33,7 +33,7 @@ sealed class LocalBuiltInTexturePathLibrary : IBuiltInTexturePathLibrary {
 	public ReadOnlySpan<char> DefaultEmissiveIntensityMap => Map + "emissive-intensity";
 	public ReadOnlySpan<char> DefaultAnisotropyMap => Map + "anisotropy";
 	public ReadOnlySpan<char> DefaultAnisotropyRadialAngleMap => Map + "anisotropy-angle";
-	public ReadOnlySpan<char> DefaultAnisotropyTangentVectorMap => Map + "anisotropy-vector";
+	public ReadOnlySpan<char> DefaultAnisotropyVectorMap => Map + "anisotropy-vector";
 	public ReadOnlySpan<char> DefaultAnisotropyStrengthMap => Map + "anisotropy-strength";
 	public ReadOnlySpan<char> DefaultClearCoatMap => Map + "clearcoat";
 	public ReadOnlySpan<char> DefaultClearCoatThicknessMap => Map + "clearcoat-thickness";

@@ -5,12 +5,15 @@ using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Testing;
+using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR;
 
@@ -52,6 +55,8 @@ class LocalAssetImportTest {
 
 	[Test]
 	public void Execute() {
+		TestAnisotropyConversion();
+
 		using var factory = new LocalTinyFfrFactory();
 
 		ExecuteTextureCombineAndReadTests(factory);
@@ -129,6 +134,230 @@ class LocalAssetImportTest {
 			scene.SetBackdrop(cubemap, cbBrightness);
 			window.SetTitle("Backdrop brightness level " + PercentageUtils.ConvertFractionToPercentageString(cbBrightness));
 		}
+
+		scene.SetBackdrop(cubemap, 0.77f);
+		scene.Remove(instance);
+		ExecuteMapLoadTests(factory, window, loop, camera, scene, renderer);
+	}
+
+	void TestAnisotropyConversion() {
+		var texel = new TexelRgb24();
+		var tSpan = new Span<TexelRgb24>(ref texel);
+
+		texel = new(0, 127, 0);
+		IAssetLoader.ConvertRadialAngleToVectorFormatAnisotropy(tSpan, Orientation2D.Right, AnisotropyRadialAngleRange.ZeroTo180, true, ColorChannel.G);
+		Assert.AreEqual(ITextureBuilder.CreateAnisotropyTexel(0f, 0.5f), texel);
+
+		texel = new(64, 26, 0);
+		IAssetLoader.ConvertRadialAngleToVectorFormatAnisotropy(tSpan, Orientation2D.Left, AnisotropyRadialAngleRange.ZeroTo360, true, ColorChannel.G);
+		Assert.AreEqual(ITextureBuilder.CreateAnisotropyTexel(270f, 0.105f), texel);
+
+		texel = new(64, 26, 0);
+		IAssetLoader.ConvertRadialAngleToVectorFormatAnisotropy(tSpan, Orientation2D.Right, AnisotropyRadialAngleRange.ZeroTo360, true, ColorChannel.G);
+		Assert.AreEqual(ITextureBuilder.CreateAnisotropyTexel(90f, 0.105f), texel);
+
+		texel = new(64, 26, 0);
+		IAssetLoader.ConvertRadialAngleToVectorFormatAnisotropy(tSpan, Orientation2D.Right, AnisotropyRadialAngleRange.ZeroTo180, true, ColorChannel.G);
+		Assert.AreEqual(ITextureBuilder.CreateAnisotropyTexel(45.5f, 0.105f), texel);
+
+		texel = new(64, 26, 0);
+		IAssetLoader.ConvertRadialAngleToVectorFormatAnisotropy(tSpan, Orientation2D.Right, AnisotropyRadialAngleRange.ZeroTo360, false, ColorChannel.G);
+		Assert.AreEqual(ITextureBuilder.CreateAnisotropyTexel(-90f, 0.105f), texel);
+
+		texel = new(64, 0, 26);
+		IAssetLoader.ConvertRadialAngleToVectorFormatAnisotropy(tSpan, Orientation2D.Right, AnisotropyRadialAngleRange.ZeroTo360, false, ColorChannel.B);
+		Assert.AreEqual(ITextureBuilder.CreateAnisotropyTexel(-90f, 0.105f), texel);
+	}
+
+	void ExecuteMapLoadTests(LocalTinyFfrFactory factory, Window window, ApplicationLoop loop, Camera camera, Scene scene, Renderer renderer) {
+		var cube = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube);
+		var defaultMat = factory.MaterialBuilder.CreateTestMaterial(false);
+		var instance = factory.ObjectBuilder.CreateModelInstance(cube, defaultMat);
+		var lights = new List<PointLight>();
+		lights.Add(factory.LightBuilder.CreatePointLight(Location.Origin + Direction.Forward * 2f));
+		lights.Add(factory.LightBuilder.CreatePointLight(Location.Origin + Direction.Backward * 2f));
+		lights.Add(factory.LightBuilder.CreatePointLight(Location.Origin + Direction.Right * 2f));
+		lights.Add(factory.LightBuilder.CreatePointLight(Location.Origin + Direction.Left * 2f));
+		foreach (var l in lights) scene.Add(l);
+
+		instance.Position = Location.Origin;
+		instance.Scaling = new Vect(0.4f);
+		scene.Add(instance);
+
+		camera.Position = new Location(0f, 0f, -1f);
+		var instanceToCameraVect = instance.Position >> camera.Position;
+		camera.UpDirection = Direction.Up;
+
+		window.SetTitle("Press Space");
+		var curTestIndex = 0;
+
+		var resourcesToBeDisposed = new List<IDisposableResource>();
+
+		while (!loop.Input.UserQuitRequested) {
+			_ = loop.IterateOnce();
+			renderer.Render();
+
+			camera.Position = instance.Position + instanceToCameraVect * (Direction.Up % ((float) loop.TotalIteratedTime.TotalSeconds * 20f));
+			camera.ViewDirection = (camera.Position >> instance.Position).Direction;
+
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
+				curTestIndex++;
+				switch (curTestIndex) {
+					case 1: {
+						var prevMat = instance.Material;
+						resourcesToBeDisposed.Add(factory.AssetLoader.LoadColorMap(factory.AssetLoader.BuiltInTexturePaths.White));
+						Assert.AreEqual("?tffr_builtin?bytes_255_255_255", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
+						var newMat = factory.MaterialBuilder.CreateStandardMaterial(
+							colorMap: (Texture) resourcesToBeDisposed[0]
+						);
+						instance.Material = newMat;
+						prevMat.Dispose();
+						window.SetTitle("Press Space // should be white cube");
+						break;
+					}
+					case 2: {
+						var prevMat = instance.Material;
+						resourcesToBeDisposed.Add(factory.AssetLoader.LoadNormalMap(factory.AssetLoader.BuiltInTexturePaths.RedGreen));
+						Assert.AreEqual("?tffr_builtin?bytes_255_255_0", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
+						var newMat = factory.MaterialBuilder.CreateStandardMaterial(
+							colorMap: (Texture) resourcesToBeDisposed[0],
+							normalMap: (Texture) resourcesToBeDisposed[^1]
+						);
+						instance.Material = newMat;
+						prevMat.Dispose();
+						window.SetTitle("Press Space // should be white cube with weird normals");
+						break;
+					}
+					case 3: {
+						var prevMat = instance.Material;
+						resourcesToBeDisposed.Add(factory.AssetLoader.LoadOcclusionRoughnessMetallicMap(
+							factory.AssetLoader.BuiltInTexturePaths.DefaultOcclusionMap,
+							factory.AssetLoader.BuiltInTexturePaths.DefaultRoughnessMap,
+							factory.AssetLoader.BuiltInTexturePaths.DefaultMetallicMap
+						));
+						Assert.AreEqual("?tffr_builtin?map_occlusion+?tffr_builtin?map_roughness+?tffr_builtin?map_metallic", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
+						resourcesToBeDisposed.Add(factory.AssetLoader.LoadOcclusionRoughnessMetallicReflectanceMap(
+							factory.AssetLoader.BuiltInTexturePaths.DefaultOcclusionRoughnessMetallicMap,
+							factory.AssetLoader.BuiltInTexturePaths.DefaultReflectanceMap
+						));
+						Assert.AreEqual("?tffr_builtin?map_orm+?tffr_builtin?map_reflectance", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
+						resourcesToBeDisposed.Add(factory.AssetLoader.LoadOcclusionRoughnessMetallicReflectanceMap(
+							factory.AssetLoader.BuiltInTexturePaths.Red,
+							factory.AssetLoader.BuiltInTexturePaths.Green,
+							factory.AssetLoader.BuiltInTexturePaths.Blue,
+							factory.AssetLoader.BuiltInTexturePaths.White
+						));
+						Assert.AreEqual("?tffr_builtin?bytes_255_0_0+?tffr_builtin?bytes_0_255_0+?tffr_builtin?bytes_0_0_255+?tffr_builtin?bytes_255_255_255", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
+						var newMat = factory.MaterialBuilder.CreateStandardMaterial(
+							colorMap: (Texture) resourcesToBeDisposed[0],
+							ormOrOrmrMap: (Texture) resourcesToBeDisposed[^1]
+						);
+						instance.Material = newMat;
+						prevMat.Dispose();
+						window.SetTitle("Press Space // should be white cube with reflectance");
+						break;
+					}
+					case 4: {
+						var prevMat = instance.Material;
+						resourcesToBeDisposed.Add(factory.AssetLoader.LoadAbsorptionTransmissionMap(
+							factory.AssetLoader.BuiltInTexturePaths.DefaultAbsorptionTransmissionMap
+						));
+						Assert.AreEqual("?tffr_builtin?map_at", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
+						resourcesToBeDisposed.Add(factory.AssetLoader.LoadAbsorptionTransmissionMap(
+							factory.AssetLoader.BuiltInTexturePaths.DefaultAbsorptionMap
+						));
+						Assert.AreEqual("?tffr_builtin?map_absorption+?tffr_builtin?map_transmission", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
+						resourcesToBeDisposed.Add(factory.AssetLoader.LoadAbsorptionTransmissionMap(
+							factory.AssetLoader.BuiltInTexturePaths.RedOpaque,
+							factory.AssetLoader.BuiltInTexturePaths.White,
+							invertAbsorption: true
+						));
+						Assert.AreEqual("?tffr_builtin?bytes_255_0_0_255+?tffr_builtin?bytes_255_255_255", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
+
+						resourcesToBeDisposed.Add(factory.TextureBuilder.CreateOcclusionRoughnessMetallicReflectanceMap(metallic: 0f, reflectance: 1f, roughness: 0.15f));
+						var newMat = factory.MaterialBuilder.CreateTransmissiveMaterial(
+							colorMap: (Texture) resourcesToBeDisposed[0],
+							ormrMap: (Texture) resourcesToBeDisposed[^1],
+							absorptionTransmissionMap: (Texture) resourcesToBeDisposed[^2],
+							refractionThickness: 1f
+						);
+						instance.Material = newMat;
+						prevMat.Dispose();
+						window.SetTitle("Press Space // should be reddish translucent cube");
+						break;
+					}
+					case 5: {
+						var prevMat = instance.Material;
+						resourcesToBeDisposed.Add(factory.AssetLoader.LoadEmissiveMap(
+							factory.AssetLoader.BuiltInTexturePaths.DefaultEmissiveColorMap,
+							factory.AssetLoader.BuiltInTexturePaths.DefaultEmissiveIntensityMap
+						));
+						Assert.AreEqual("?tffr_builtin?map_emissive-color+?tffr_builtin?map_emissive-intensity", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
+						
+						var newMat = factory.MaterialBuilder.CreateStandardMaterial(
+							colorMap: (Texture) resourcesToBeDisposed[0],
+							emissiveMap: (Texture) resourcesToBeDisposed[^1]
+						);
+						instance.Material = newMat;
+						prevMat.Dispose();
+						window.SetTitle("Press Space // should be glowing cube");
+						break;
+					}
+					case 6: {
+						var prevMat = instance.Material;
+						resourcesToBeDisposed.Add(factory.AssetLoader.LoadAnisotropyMapVectorFormatted(
+							factory.AssetLoader.BuiltInTexturePaths.DefaultAnisotropyVectorMap,
+							factory.AssetLoader.BuiltInTexturePaths.DefaultAnisotropyStrengthMap
+						));
+						Assert.AreEqual("?tffr_builtin?map_anisotropy-vector+?tffr_builtin?map_anisotropy-strength", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
+						resourcesToBeDisposed.Add(factory.AssetLoader.LoadAnisotropyMapRadialAngleFormatted(
+							factory.AssetLoader.BuiltInTexturePaths.DefaultAnisotropyRadialAngleMap,
+							factory.AssetLoader.BuiltInTexturePaths.DefaultAnisotropyStrengthMap,
+							Orientation2D.Up, AnisotropyRadialAngleRange.ZeroTo180, true
+						));
+						Assert.AreEqual("?tffr_builtin?map_anisotropy-angle+?tffr_builtin?map_anisotropy-strength", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
+
+						var newMat = factory.MaterialBuilder.CreateStandardMaterial(
+							colorMap: (Texture) resourcesToBeDisposed[0],
+							anisotropyMap: (Texture) resourcesToBeDisposed[^1]
+						);
+						instance.Material = newMat;
+						prevMat.Dispose();
+						window.SetTitle("Press Space // should be cube with anisotropic highlights");
+						break;
+					}
+					case 7: {
+						var prevMat = instance.Material;
+						resourcesToBeDisposed.Add(factory.AssetLoader.LoadClearCoatMap(
+							factory.AssetLoader.BuiltInTexturePaths.DefaultClearCoatThicknessMap,
+							factory.AssetLoader.BuiltInTexturePaths.DefaultClearCoatRoughnessMap
+						));
+						Assert.AreEqual("?tffr_builtin?map_clearcoat-thickness+?tffr_builtin?map_clearcoat-roughness", resourcesToBeDisposed[^1].GetNameAsNewStringObject());
+
+						var newMat = factory.MaterialBuilder.CreateStandardMaterial(
+							colorMap: (Texture) resourcesToBeDisposed[0],
+							clearCoatMap: (Texture) resourcesToBeDisposed[^1]
+						);
+						instance.Material = newMat;
+						prevMat.Dispose();
+						window.SetTitle("Press Space // should be cube with clearcoat");
+						break;
+					}
+					default: return;
+				}
+			}
+		}
+
+		scene.Remove(instance);
+		foreach (var l in lights) {
+			scene.Remove(l);
+			l.Dispose();
+		}
+		var mat = instance.Material;
+		instance.Dispose();
+		mat.Dispose();
+		cube.Dispose();
+		foreach (var r in resourcesToBeDisposed) r.Dispose();
 	}
 
 	void ExecuteTextureCombineAndReadTests(ILocalTinyFfrFactory factory) {

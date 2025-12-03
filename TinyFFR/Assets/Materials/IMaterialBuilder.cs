@@ -10,7 +10,7 @@ namespace Egodystonic.TinyFFR.Assets.Materials;
 public interface IMaterialBuilder {
 	ITextureBuilder TextureBuilder { get; }
 
-	Material CreateTestMaterial();
+	Material CreateTestMaterial(bool ignoresLighting = true);
 
 	Material CreateSimpleMaterial(Texture colorMap, Texture? emissiveMap = null, ReadOnlySpan<char> name = default) {
 		return CreateSimpleMaterial(new SimpleMaterialCreationConfig {

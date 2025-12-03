@@ -99,12 +99,20 @@ public interface IMeshBuilder {
 	#endregion
 
 	#region Sphere
-	private const int MaxSphereSubdivisionLevel = 8;
+	private const int MaxSphereSubdivisionLevel = 7;
 	private static readonly ArrayPoolBackedVector<(MeshVertex[] Vertices, VertexTriangle[] Triangles)> _sphereMeshes = new();
+	private static readonly ArrayPoolBackedVector<MeshVertex[]> _nonTransformedFixedSeamVertexCache = new();
 	private static readonly HeapPool _sphereVertexPool = new();
 
 	Mesh CreateMesh(Sphere sphereDesc, Transform2D? textureTransform = null, int subdivisionLevel = 4, ReadOnlySpan<char> name = default) => CreateMesh(sphereDesc, subdivisionLevel, new MeshGenerationConfig { TextureTransform = textureTransform ?? Transform2D.None }, new MeshCreationConfig { Name = name });
 	Mesh CreateMesh(Sphere sphereDesc, int subdivisionLevel, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
+		static void CreateFixedSeamVertexCacheForLatestMeshLevel() {
+			var latestMeshLevelTuple = _sphereMeshes[^1];
+			var fixedSeamVertices = new MeshVertex[latestMeshLevelTuple.Vertices.Length];
+			FixIcosphereSeams(latestMeshLevelTuple.Vertices, latestMeshLevelTuple.Triangles, fixedSeamVertices, 1f);
+			_nonTransformedFixedSeamVertexCache.Add(fixedSeamVertices);
+		}
+		
 		if (!sphereDesc.IsPhysicallyValid) {
 			throw new ArgumentException("Given sphere must be physically valid (radius should be positive).", nameof(sphereDesc));
 		}
@@ -112,20 +120,24 @@ public interface IMeshBuilder {
 		subdivisionLevel = Int32.Min(subdivisionLevel, MaxSphereSubdivisionLevel);
 
 		ReadOnlySpan<MeshVertex> defaultVertices;
+		ReadOnlySpan<MeshVertex> fixedVertices;
 		ReadOnlySpan<VertexTriangle> triangles;
 		PooledHeapMemory<MeshVertex>? verticesMemory;
 
 		lock (_staticMutationLock) {
 			if (_sphereMeshes.Count == 0) {
 				_sphereMeshes.Add(GenerateStartingIcosphere());
+				CreateFixedSeamVertexCacheForLatestMeshLevel();
 			}
 
 			while (_sphereMeshes.Count <= subdivisionLevel) {
 				_sphereMeshes.Add(SubdivideIcosphere(_sphereMeshes[^1].Vertices, _sphereMeshes[^1].Triangles));
+				CreateFixedSeamVertexCacheForLatestMeshLevel();
 			}
 
 			var prebuiltMeshTuple = _sphereMeshes[subdivisionLevel];
 			defaultVertices = prebuiltMeshTuple.Vertices;
+			fixedVertices = _nonTransformedFixedSeamVertexCache[subdivisionLevel];
 			triangles = prebuiltMeshTuple.Triangles;
 			verticesMemory = generationConfig.TextureTransform != Transform2D.None
 				? _sphereVertexPool.Borrow<MeshVertex>(defaultVertices.Length)
@@ -135,12 +147,14 @@ public interface IMeshBuilder {
 		try {
 			var configWithScaling = config with { LinearRescalingFactor = config.LinearRescalingFactor * sphereDesc.Radius };
 			if (verticesMemory == null) {
-				return CreateMesh(defaultVertices, triangles, in configWithScaling);
+				return CreateMesh(fixedVertices, triangles, in configWithScaling);
 			}
 			else {
+				var texTransform = generationConfig.TextureTransform with { Scaling = generationConfig.TextureTransform.Scaling.Reciprocal ?? XYPair<float>.Zero };
 				for (var i = 0; i < defaultVertices.Length; ++i) {
-					verticesMemory.Value.Buffer[i] = defaultVertices[i] with { TextureCoords = defaultVertices[i].TextureCoords * generationConfig.TextureTransform };
+					verticesMemory.Value.Buffer[i] = defaultVertices[i] with { TextureCoords = defaultVertices[i].TextureCoords * texTransform };
 				}
+				FixIcosphereSeams(verticesMemory.Value.Buffer, triangles, verticesMemory.Value.Buffer, texTransform.Scaling.X);
 				return CreateMesh(verticesMemory.Value.Buffer, triangles, in configWithScaling);
 			}
 		}
@@ -216,29 +230,37 @@ public interface IMeshBuilder {
 	}
 
 	private (MeshVertex[] Vertices, VertexTriangle[] Triangles) SubdivideIcosphere(ReadOnlySpan<MeshVertex> baseVertices, ReadOnlySpan<VertexTriangle> baseTriangles) {
-		var resultVertices = new MeshVertex[baseVertices.Length * 3];
-		var resultTriangles = new VertexTriangle[baseTriangles.Length * 3];
+		var resultVertices = new MeshVertex[baseVertices.Length * 4];
+		var resultTriangles = new VertexTriangle[baseTriangles.Length * 4];
 
 		for (var i = 0; i < baseTriangles.Length; ++i) {
 			var baseTriangle = baseTriangles[i];
 			var a = baseVertices[baseTriangle.IndexA].Location;
 			var b = baseVertices[baseTriangle.IndexB].Location;
 			var c = baseVertices[baseTriangle.IndexC].Location;
-			var n = ((a.AsVect() + b.AsVect() + c.AsVect()) / 3f).AsUnitLength.AsLocation();
+			
+			var ab = (a + (a >> b).ScaledBy(0.5f)).AsVect().AsUnitLength.AsLocation();
+			var bc = (b + (b >> c).ScaledBy(0.5f)).AsVect().AsUnitLength.AsLocation();
+			var ca = (c + (c >> a).ScaledBy(0.5f)).AsVect().AsUnitLength.AsLocation();
 
 			var aUv = baseVertices[baseTriangle.IndexA].TextureCoords;
 			var bUv = baseVertices[baseTriangle.IndexB].TextureCoords;
 			var cUv = baseVertices[baseTriangle.IndexC].TextureCoords;
-			var nUv = ConvertIcospherePointToTexUv(n);
+			var abUv = ConvertIcospherePointToTexUv(ab);
+			var bcUv = ConvertIcospherePointToTexUv(bc);
+			var caUv = ConvertIcospherePointToTexUv(ca);
 
-			var iMult9 = i * 9;
-			var resultVerticesSubSpan = resultVertices.AsSpan()[iMult9..];
-			WriteIcosphereTriangleVertices(a, b, n, aUv, bUv, nUv, resultVerticesSubSpan[0..3]);
-			WriteIcosphereTriangleVertices(b, c, n, bUv, cUv, nUv, resultVerticesSubSpan[3..6]);
-			WriteIcosphereTriangleVertices(c, a, n, cUv, aUv, nUv, resultVerticesSubSpan[6..9]);
-			resultTriangles[i * 3 + 0] = new VertexTriangle(iMult9 + 0, iMult9 + 1, iMult9 + 2);
-			resultTriangles[i * 3 + 1] = new VertexTriangle(iMult9 + 3, iMult9 + 4, iMult9 + 5);
-			resultTriangles[i * 3 + 2] = new VertexTriangle(iMult9 + 6, iMult9 + 7, iMult9 + 8);
+			var iTimes12 = i * 12;
+			var resultVerticesSubSpan = resultVertices.AsSpan()[iTimes12..];
+			WriteIcosphereTriangleVertices(ca, a, ab, caUv, aUv, abUv, resultVerticesSubSpan[0..3]);
+			WriteIcosphereTriangleVertices(ab, b, bc, abUv, bUv, bcUv, resultVerticesSubSpan[3..6]);
+			WriteIcosphereTriangleVertices(bc, c, ca, bcUv, cUv, caUv, resultVerticesSubSpan[6..9]);
+			WriteIcosphereTriangleVertices(ab, bc, ca, abUv, bcUv, caUv, resultVerticesSubSpan[9..12]);
+			
+			resultTriangles[i * 4 + 0] = new VertexTriangle(iTimes12 + 0, iTimes12 + 1, iTimes12 + 2);
+			resultTriangles[i * 4 + 1] = new VertexTriangle(iTimes12 + 3, iTimes12 + 4, iTimes12 + 5);
+			resultTriangles[i * 4 + 2] = new VertexTriangle(iTimes12 + 6, iTimes12 + 7, iTimes12 + 8);
+			resultTriangles[i * 4 + 3] = new VertexTriangle(iTimes12 + 9, iTimes12 + 10, iTimes12 + 11);
 		}
 
 		return (resultVertices, resultTriangles);
@@ -269,11 +291,39 @@ public interface IMeshBuilder {
 	}
 
 	private static XYPair<float> ConvertIcospherePointToTexUv(Location point) {
-		var xzPlaneConverter = new DimensionConverter(Direction.Left, Direction.Forward, Direction.Up);
+		var xzPlaneConverter = new DimensionConverter(Direction.Right, Direction.Forward, Direction.Up);
+		var y = (point.Y + 1f) * 0.5f;
+		// Maintainer's note: The 3x multiplier is the best way to map the texture laterally trying to keep its original proportionality intact.
+		// 3.14 would be perfect but that creates an obvious seam; 3x is the closest value that perfectly repeats.
 		return new XYPair<float>(
-			xzPlaneConverter.ConvertVect(point.AsVect()).PolarAngle?.FullCircleFraction ?? 0f,
-			(point.Y + 1f) * 0.5f
+			((xzPlaneConverter.ConvertVect(point.AsVect()).PolarAngle?.FullCircleFraction ?? y) * 3f) % 1f,
+			y
 		);
+	}
+
+	private static void FixIcosphereSeams(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, Span<MeshVertex> dest, float lateralScale) {
+		var maxDiffBeforeFix = (0.5f * lateralScale);
+
+		foreach (var triangle in triangles) {
+			var vertexAUv = vertices[triangle.IndexA].TextureCoords;
+			var vertexBUv = vertices[triangle.IndexB].TextureCoords;
+			var vertexCUv = vertices[triangle.IndexC].TextureCoords;
+
+			var qDiff = MathF.Abs(vertexAUv.X - vertexBUv.X);
+			var rDiff = MathF.Abs(vertexBUv.X - vertexCUv.X);
+
+			static XYPair<float> AdjustSeamUv(XYPair<float> input, float median, float adjustment) => new(input.X < median ? input.X + adjustment : input.X, input.Y);
+
+			if (qDiff > maxDiffBeforeFix || rDiff > maxDiffBeforeFix) {
+				vertexAUv = AdjustSeamUv(vertexAUv, maxDiffBeforeFix, lateralScale);
+				vertexBUv = AdjustSeamUv(vertexBUv, maxDiffBeforeFix, lateralScale);
+				vertexCUv = AdjustSeamUv(vertexCUv, maxDiffBeforeFix, lateralScale);
+			}
+
+			dest[triangle.IndexA] = vertices[triangle.IndexA] with { TextureCoords = vertexAUv };
+			dest[triangle.IndexB] = vertices[triangle.IndexB] with { TextureCoords = vertexBUv };
+			dest[triangle.IndexC] = vertices[triangle.IndexC] with { TextureCoords = vertexCUv };
+		}
 	}
 	#endregion
 

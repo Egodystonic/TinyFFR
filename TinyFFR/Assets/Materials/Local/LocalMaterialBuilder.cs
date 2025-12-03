@@ -12,6 +12,7 @@ using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using System;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Resources;
@@ -24,19 +25,20 @@ namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IDisposable {
 	const string DefaultMaterialName = "Unnamed Material";
 	const string TestMaterialName = "Test Material";
+	const string TestUvTexResourceName = "Assets.Materials.uv.png";
 	readonly ArrayPoolBackedMap<string, UIntPtr> _loadedShaderPackages = new();
 	readonly ArrayPoolBackedVector<ResourceHandle<Material>> _activeMaterials = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly Lazy<ResourceGroup> _testMaterialTextures;
-	readonly LocalTextureBuilder _textureBuilder;
+	readonly LocalAssetLoader _owningAssetLoader;
 	bool _isDisposed = false;
 
-	public ITextureBuilder TextureBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IMaterialBuilder)) : _textureBuilder;
+	public ITextureBuilder TextureBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IMaterialBuilder)) : _owningAssetLoader.TextureBuilder;
 
-	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config, LocalTextureBuilder textureBuilder) {
+	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config, LocalAssetLoader owningAssetLoader) {
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
-		_textureBuilder = textureBuilder;
+		_owningAssetLoader = owningAssetLoader;
 		_testMaterialTextures = new(CreateTestMaterialTextures);
 	}
 
@@ -46,22 +48,33 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			name: TestMaterialName + " Texture Group"
 		);
 
-		result.Add((_textureBuilder as ITextureBuilder).CreateColorMap(
-			TexturePattern.ChequerboardBordered(
-				new ColorVect(0.5f, 0.5f, 0.5f),
-				8,
-				new ColorVect(1f, 0f, 0f),
-				new ColorVect(0f, 1f, 0f),
-				new ColorVect(0f, 0f, 1f),
-				new ColorVect(1f, 1f, 1f),
-				repetitionCount: (8, 8),
-				cellResolution: 128
-			),
-			includeAlpha: false,
-			name: TestMaterialName + " Color Map"
-		));
+		try {
+			var uvTexFilePath = Path.Combine(LocalFileSystemUtils.ApplicationDataDirectoryPath, TestUvTexResourceName);
+			if (!File.Exists(uvTexFilePath)) {
+				var uvRes = EmbeddedResourceResolver.GetResource(TestUvTexResourceName);
+				File.WriteAllBytes(uvTexFilePath, uvRes.AsSpan);
+			}
+			result.Add((_owningAssetLoader as IAssetLoader).LoadTexture(uvTexFilePath, isLinearColorspace: false, name: TestMaterialName + " Color Map"));
+		}
+		catch (Exception e) when (LocalFileSystemUtils.ExceptionIndicatesGeneralIoError(e)) {
+			Console.WriteLine($"Using generated color map for test material as UV test texture could not be extracted ({e}/{e.Message}).");
+			result.Add(TextureBuilder.CreateColorMap(
+				TexturePattern.ChequerboardBordered(
+					new ColorVect(0.5f, 0.5f, 0.5f),
+					8,
+					new ColorVect(1f, 0f, 0f),
+					new ColorVect(0f, 1f, 0f),
+					new ColorVect(0f, 0f, 1f),
+					new ColorVect(1f, 1f, 1f),
+					repetitionCount: (8, 8),
+					cellResolution: 128
+				),
+				includeAlpha: false,
+				name: TestMaterialName + " Color Map"
+			));
+		}
 
-		result.Add((_textureBuilder as ITextureBuilder).CreateNormalMap(
+		result.Add(TextureBuilder.CreateNormalMap(
 			TexturePattern.Rectangles(
 				interiorSize: (128, 128),
 				borderSize: (8, 8),
@@ -80,16 +93,24 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		return result;
 	}
 
-	public Material CreateTestMaterial() {
+	public Material CreateTestMaterial(bool ignoresLighting = true) {
 		ThrowIfThisIsDisposed();
 		
 		var textureGroup = _testMaterialTextures.Value;
 		
-		return CreateStandardMaterial(new StandardMaterialCreationConfig {
-			ColorMap = textureGroup.Textures[0],
-			NormalMap = textureGroup.Textures[1],
-			Name = TestMaterialName
-		});
+		if (ignoresLighting) {
+			return CreateSimpleMaterial(new SimpleMaterialCreationConfig {
+				ColorMap = textureGroup.Textures[0],
+				Name = TestMaterialName
+			});
+		}
+		else {
+			return CreateStandardMaterial(new StandardMaterialCreationConfig {
+				ColorMap = textureGroup.Textures[0],
+				NormalMap = textureGroup.Textures[1],
+				Name = TestMaterialName
+			});
+		}
 	}
 
 	public Material CreateSimpleMaterial(in SimpleMaterialCreationConfig config) {
