@@ -10,7 +10,7 @@ namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 #pragma warning disable CA1001 // Warning about the ArrayPoolBackMaps not being disposed; but we know they will live for the entire lifetime of the application
 static class LocalShaderPackageConstants {
 	const string ResourceNamespace = "Assets.Materials.Local.Shaders.CompiledObjects.";
-	const string ShaderResourceExtension = ".filamat";
+	const string ShaderResourceExtension = ".filamat.zip";
 
 	public static ref readonly byte ParamRef(ReadOnlySpan<byte> param) => ref MemoryMarshal.GetReference(param);
 	public static int ParamLen(ReadOnlySpan<byte> param) => param.Length;

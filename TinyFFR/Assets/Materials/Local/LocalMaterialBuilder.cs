@@ -31,15 +31,14 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	readonly ArrayPoolBackedVector<ResourceHandle<Material>> _activeMaterials = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly Lazy<ResourceGroup> _testMaterialTextures;
-	readonly ITextureBuilder _texBuilderRef;
 	bool _isDisposed = false;
 
-	public ITextureBuilder TextureBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IMaterialBuilder)) : _texBuilderRef;
+	public ITextureBuilder TextureBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IMaterialBuilder)) : field;
 
 	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config, ITextureBuilder texBuilderRef) {
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
-		_texBuilderRef = texBuilderRef;
+		TextureBuilder = texBuilderRef;
 		_testMaterialTextures = new(CreateTestMaterialTextures);
 	}
 

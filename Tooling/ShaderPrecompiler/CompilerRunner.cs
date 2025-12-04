@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2025
 
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 
@@ -268,6 +269,12 @@ static class CompilerRunner {
 					}
 					throw new ApplicationException("Error when compiling " + tempFileName);
 				}
+
+				using (var zf = ZipFile.Open(destFileName + ".zip", ZipArchiveMode.Create)) {
+					_ = zf.CreateEntryFromFile(destFileName, "x", CompressionLevel.SmallestSize);
+				}
+
+				File.Delete(destFileName);
 			});
 		}
 		finally {

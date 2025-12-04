@@ -57,7 +57,7 @@ foreach (var sourceFile in shaderSourceFiles) {
 }
 
 Console.WriteLine();
-var compiledObjectsToDelete = Directory.GetFiles(compiledShadersLocation, "*.filamat");
+var compiledObjectsToDelete = Directory.GetFiles(compiledShadersLocation, "*.zip");
 Console.WriteLine("Previous compiled objects to be deleted:");
 foreach (var objFile in compiledObjectsToDelete) {
 	Console.WriteLine("\t" + Path.GetFileName(objFile));
