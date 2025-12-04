@@ -53,7 +53,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		_globals = globals;
 		_meshBuilder = new LocalMeshBuilder(globals);
 		_textureBuilder = new LocalTextureBuilder(globals, config);
-		_materialBuilder = new LocalMaterialBuilder(globals, config, this);
+		_materialBuilder = new LocalMaterialBuilder(globals, config, _textureBuilder);
 		_assetFilePathBuffer = new InteropStringBuffer(config.MaxAssetFilePathLengthChars, addOneForNullTerminator: true);
 		_vertexTriangleBufferPool = new FixedByteBufferPool(config.MaxAssetVertexIndexBufferSizeBytes);
 		_ktxFileBufferPool = new FixedByteBufferPool(config.MaxKtxFileBufferSizeBytes);

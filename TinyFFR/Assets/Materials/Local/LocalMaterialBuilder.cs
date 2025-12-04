@@ -25,20 +25,21 @@ namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IDisposable {
 	const string DefaultMaterialName = "Unnamed Material";
 	const string TestMaterialName = "Test Material";
-	const string TestUvTexResourceName = "Assets.Materials.uv.png";
+	const string TestUvTexResourceName = "Assets.Materials.uvtex.bin";
+	const int TestUvTexSquareDimension = 2048;
 	readonly ArrayPoolBackedMap<string, UIntPtr> _loadedShaderPackages = new();
 	readonly ArrayPoolBackedVector<ResourceHandle<Material>> _activeMaterials = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly Lazy<ResourceGroup> _testMaterialTextures;
-	readonly LocalAssetLoader _owningAssetLoader;
+	readonly ITextureBuilder _texBuilderRef;
 	bool _isDisposed = false;
 
-	public ITextureBuilder TextureBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IMaterialBuilder)) : _owningAssetLoader.TextureBuilder;
+	public ITextureBuilder TextureBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IMaterialBuilder)) : _texBuilderRef;
 
-	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config, LocalAssetLoader owningAssetLoader) {
+	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config, ITextureBuilder texBuilderRef) {
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
-		_owningAssetLoader = owningAssetLoader;
+		_texBuilderRef = texBuilderRef;
 		_testMaterialTextures = new(CreateTestMaterialTextures);
 	}
 
@@ -48,31 +49,13 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			name: TestMaterialName + " Texture Group"
 		);
 
-		try {
-			var uvTexFilePath = Path.Combine(LocalFileSystemUtils.ApplicationDataDirectoryPath, TestUvTexResourceName);
-			if (!File.Exists(uvTexFilePath)) {
-				var uvRes = EmbeddedResourceResolver.GetResource(TestUvTexResourceName);
-				File.WriteAllBytes(uvTexFilePath, uvRes.AsSpan);
-			}
-			result.Add((_owningAssetLoader as IAssetLoader).LoadTexture(uvTexFilePath, isLinearColorspace: false, name: TestMaterialName + " Color Map"));
-		}
-		catch (Exception e) when (LocalFileSystemUtils.ExceptionIndicatesGeneralIoError(e)) {
-			Console.WriteLine($"Using generated color map for test material as UV test texture could not be extracted ({e}/{e.Message}).");
-			result.Add(TextureBuilder.CreateColorMap(
-				TexturePattern.ChequerboardBordered(
-					new ColorVect(0.5f, 0.5f, 0.5f),
-					8,
-					new ColorVect(1f, 0f, 0f),
-					new ColorVect(0f, 1f, 0f),
-					new ColorVect(0f, 0f, 1f),
-					new ColorVect(1f, 1f, 1f),
-					repetitionCount: (8, 8),
-					cellResolution: 128
-				),
-				includeAlpha: false,
-				name: TestMaterialName + " Color Map"
-			));
-		}
+		var uvTex = EmbeddedResourceResolver.GetResource(TestUvTexResourceName);
+		result.Add(TextureBuilder.CreateTexture(
+			MemoryMarshal.Cast<byte, TexelRgb24>(uvTex.AsSpan), 
+			dimensions: (TestUvTexSquareDimension, TestUvTexSquareDimension), 
+			isLinearColorspace: false, 
+			name: TestMaterialName + " Color Map"
+		));
 
 		result.Add(TextureBuilder.CreateNormalMap(
 			TexturePattern.Rectangles(
