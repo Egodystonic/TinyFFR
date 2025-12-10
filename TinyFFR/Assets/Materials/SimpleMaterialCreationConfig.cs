@@ -15,6 +15,10 @@ public readonly ref struct SimpleMaterialCreationConfig : IConfigStruct<SimpleMa
 		get => BaseConfig.Name;
 		init => BaseConfig = BaseConfig with { Name = value };
 	}
+	public bool EnablePerInstanceEffects {
+		get => BaseConfig.EnablePerInstanceEffects;
+		init => BaseConfig = BaseConfig with { EnablePerInstanceEffects = value };
+	}
 
 	public SimpleMaterialCreationConfig() { }
 	public SimpleMaterialCreationConfig(MaterialCreationConfig baseConfig) => BaseConfig = baseConfig;

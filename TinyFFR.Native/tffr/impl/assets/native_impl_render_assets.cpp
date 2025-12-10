@@ -179,6 +179,17 @@ StartExportedFunc(create_material, PackageHandle package, MaterialHandle* outMat
 	EndExportedFunc
 }
 
+void native_impl_render_assets::duplicate_material(MaterialHandle targetMaterial, MaterialHandle* outMaterial) {
+	ThrowIfNull(targetMaterial, "Package handle was null.");
+	ThrowIfNull(outMaterial, "Out material pointer was null.");
+	*outMaterial = MaterialInstance::duplicate(targetMaterial);
+	ThrowIfNull(*outMaterial, "Could not create material.");
+}
+StartExportedFunc(duplicate_material, MaterialHandle targetMaterial, MaterialHandle* outMaterial) {
+	native_impl_render_assets::duplicate_material(targetMaterial, outMaterial);
+	EndExportedFunc
+}
+
 void native_impl_render_assets::set_material_parameter_texture(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture) {
 	ThrowIfNull(material, "Material was null.");
 	ThrowIfNull(parameterName, "Parameter name was null.");
@@ -205,6 +216,18 @@ void native_impl_render_assets::set_material_parameter_real(MaterialHandle mater
 }
 StartExportedFunc(set_material_parameter_real, MaterialHandle material, const char* parameterName, int32_t parameterNameLength, float val) {
 	native_impl_render_assets::set_material_parameter_real(material, parameterName, parameterNameLength, val);
+	EndExportedFunc
+}
+
+void native_impl_render_assets::set_material_parameter_matrix(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, mat4f& valRef) {
+	ThrowIfNull(material, "Material was null.");
+	ThrowIfNull(parameterName, "Parameter name was null.");
+	ThrowIfNegative(parameterNameLength, "Parameter name length was negative.");
+
+	material->setParameter(parameterName, static_cast<size_t>(parameterNameLength), valRef);
+}
+StartExportedFunc(set_material_parameter_matrix, MaterialHandle material, const char* parameterName, int32_t parameterNameLength, mat4f& valRef) {
+	native_impl_render_assets::set_material_parameter_matrix(material, parameterName, parameterNameLength, valRef);
 	EndExportedFunc
 }
 

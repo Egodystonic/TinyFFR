@@ -8,6 +8,27 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.World;
 
+public readonly record struct MaterialEffectController {
+	readonly ModelInstance _attachedModelInstance;
+
+	public MaterialEffectController(ModelInstance attachedModelInstance) => _attachedModelInstance = attachedModelInstance;
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetTransform(Transform2D newTransform) {
+		_attachedModelInstance.SetMaterialEffectTransform(newTransform);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetBlendTexture(MaterialEffectMapType mapType, Texture texture) {
+		_attachedModelInstance.SetEffectBlendTexture(mapType, texture);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetBlendDistance(MaterialEffectMapType mapType, float distance) {
+		_attachedModelInstance.SetEffectBlendDistance(mapType, distance);
+	}
+}
+
 public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModelInstanceImplProvider>, ITransformedSceneObject {
 	readonly ResourceHandle<ModelInstance> _handle;
 	readonly IModelInstanceImplProvider _impl;
@@ -63,6 +84,11 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetMaterial(Material material) => Material = material;
 
+	public MaterialEffectController MaterialEffects {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(this);
+	}
+
 	public Mesh Mesh {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetMesh(_handle);
@@ -94,6 +120,15 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	public void ScaleBy(Vect vect) => Implementation.ScaleBy(_handle, vect);
 	public void AdjustScaleBy(float scalar) => Implementation.AdjustScaleBy(_handle, scalar);
 	public void AdjustScaleBy(Vect vect) => Implementation.AdjustScaleBy(_handle, vect);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void SetMaterialEffectTransform(Transform2D newTransform) => Implementation.SetMaterialEffectTransform(_handle, newTransform);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void SetEffectBlendTexture(MaterialEffectMapType mapType, Texture texture) => Implementation.SetMaterialEffectBlendTexture(_handle, mapType, texture);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void SetEffectBlendDistance(MaterialEffectMapType mapType, float distance) => Implementation.SetMaterialEffectBlendDistance(_handle, mapType, distance);
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

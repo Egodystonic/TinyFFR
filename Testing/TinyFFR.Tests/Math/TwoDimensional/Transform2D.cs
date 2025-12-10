@@ -88,6 +88,60 @@ class Transform2DTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyConvertToMatrix() {
+		void AssertMat(Matrix3x2 expectation, Transform2D transform) {
+			AssertToleranceEquals(expectation, transform.ToMatrix(), TestTolerance);
+			Matrix3x2 actual = new();
+			transform.ToMatrix(ref actual);
+			AssertToleranceEquals(expectation, actual, TestTolerance);
+		}
+
+		AssertMat(Matrix3x2.Identity, Transform2D.None);
+
+		AssertMat(
+			new Matrix3x2(
+				1f, 0f,
+				0f, 1f,
+				1f, 2f
+			),
+			new Transform2D(translation: new(1f, 2f))
+		);
+
+		var rotAngle = new Angle(60f);
+		var (sin, cos) = MathF.SinCos(rotAngle.Radians);
+		AssertMat(
+			new Matrix3x2(
+				cos, -sin, 
+				sin, cos, 
+				0f, 0f
+			),
+			new Transform2D(rotation: rotAngle)
+		);
+
+		AssertMat(
+			new Matrix3x2(
+				2f, 0f,
+				0f, 3f,
+				0f, 0f
+			),
+			new Transform2D(scaling: new(2f, 3f))
+		);
+
+		AssertMat(
+			new Matrix3x2(
+				cos * 2f, -sin * 3f,
+				sin * 2f, cos * 3f,
+				1f, 2f
+			),
+			new Transform2D(
+				translation: new(1f, 2f),
+				rotation: 60f,
+				scaling: new(2f, 3f)
+			)
+		);
+	}
+
+	[Test]
 	public void ShouldCorrectlyConvertToTuple() {
 		var (t, r, s) = TestTransform;
 

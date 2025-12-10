@@ -35,6 +35,23 @@ public readonly partial struct Transform2D : IMathPrimitive<Transform2D>, IDescr
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Transform2D FromTranslationOnly(XYPair<float> translation) => new(translation: translation);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Matrix3x2 ToMatrix() {
+		var result = new Matrix3x2();
+		ToMatrix(ref result);
+		return result;
+	}
+
+	public void ToMatrix(ref Matrix3x2 dest) {
+		var (sin, cos) = MathF.SinCos(Rotation.Radians);
+		dest.M11 = cos * Scaling.X;
+		dest.M12 = -sin * Scaling.Y;
+		dest.M21 = sin * Scaling.X;
+		dest.M22 = cos * Scaling.Y;
+		dest.M31 = Translation.X;
+		dest.M32 = Translation.Y;
+	}
+
 	public Transform To3D() => To3D(new(Direction.Forward));
 	public Transform To3D(DimensionConverter dimensionConverter) {
 		return new(

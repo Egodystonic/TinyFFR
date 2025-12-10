@@ -1,18 +1,27 @@
 ﻿// Created on 2025-11-17 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
-using System.Globalization;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Resources;
+using System.Globalization;
 using static Egodystonic.TinyFFR.Assets.Materials.ITextureBuilder;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
 sealed class LocalBuiltInTexturePathLibrary : IBuiltInTexturePathLibrary {
+	public enum BuiltInTextureType {
+		None,
+		Texel,
+		EmbeddedResourceTexture
+	}
+
 	public const string LocalBuiltInTexturePrefix = "?tffr_builtin?";
+	public const string EmbeddedTextureResourcePrefix = "restex_";
 	public const string MapTexelPrefix = "map_";
 	public const string ByteValueTexelPrefix = "bytes_";
 	public const string ByteValueSeparator = "_";
 	// These are just combinations of the key tokens above to provide terseness below
+	public const string Tex = LocalBuiltInTexturePrefix + EmbeddedTextureResourcePrefix;
 	public const string Map = LocalBuiltInTexturePrefix + MapTexelPrefix;
 	public const string Bytes = LocalBuiltInTexturePrefix + ByteValueTexelPrefix;
 	public const string Sep = ByteValueSeparator;
@@ -77,8 +86,30 @@ sealed class LocalBuiltInTexturePathLibrary : IBuiltInTexturePathLibrary {
 	public ReadOnlySpan<char> RedGreenTransparent => Bytes + $"255{Sep}255{Sep}0{Sep}0";
 	public ReadOnlySpan<char> GreenBlueTransparent => Bytes + $"0{Sep}255{Sep}255{Sep}0";
 	public ReadOnlySpan<char> RedBlueTransparent => Bytes + $"255{Sep}0{Sep}255{Sep}0";
-	
-	public Pair<TexelRgb24?, TexelRgba32?>? GetBuiltInTexel(ReadOnlySpan<char> filePath) {
+
+	public ReadOnlySpan<char> UvTestingTexture => Tex + "uv_testing";
+
+	public BuiltInTextureType GetLikelyBuiltInTextureType(ReadOnlySpan<char> filePath) {
+		if (!filePath.StartsWith(LocalBuiltInTexturePrefix, StringComparison.Ordinal)) return BuiltInTextureType.None;
+
+		var filePathAfterBuiltInPrefix = filePath[LocalBuiltInTexturePrefix.Length..];
+		if (filePathAfterBuiltInPrefix.StartsWith(MapTexelPrefix, StringComparison.Ordinal) || filePathAfterBuiltInPrefix.StartsWith(ByteValueTexelPrefix, StringComparison.Ordinal)) return BuiltInTextureType.Texel;
+		if (filePathAfterBuiltInPrefix.StartsWith(EmbeddedTextureResourcePrefix, StringComparison.Ordinal)) return BuiltInTextureType.EmbeddedResourceTexture;
+		
+		return BuiltInTextureType.None;
+	}
+
+	public (EmbeddedResourceResolver.ResourceDataRef DataRef, bool ContainsAlpha, XYPair<int> Dimensions)? TryGetBuiltInEmbeddedResourceTexture(ReadOnlySpan<char> filePath) {
+		if (!filePath.StartsWith(Tex)) return null;
+		var filePathAfterBuiltInPrefix = filePath[Tex.Length..];
+
+		return filePathAfterBuiltInPrefix switch {
+			"uv_testing" => (EmbeddedResourceResolver.GetResource("Assets.uvtex.bin"), false, (2048, 2048)),
+			_ => null
+		};
+	}
+
+	public Pair<TexelRgb24?, TexelRgba32?>? TryGetBuiltInTexel(ReadOnlySpan<char> filePath) {
 		if (!filePath.StartsWith(LocalBuiltInTexturePrefix)) return null;
 		var filePathAfterBuiltInPrefix = filePath[LocalBuiltInTexturePrefix.Length..];
 

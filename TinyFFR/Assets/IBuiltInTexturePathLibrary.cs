@@ -64,4 +64,6 @@ public interface IBuiltInTexturePathLibrary {
 	ReadOnlySpan<char> RedGreenTransparent { get; }
 	ReadOnlySpan<char> GreenBlueTransparent { get; }
 	ReadOnlySpan<char> RedBlueTransparent { get; }
+
+	ReadOnlySpan<char> UvTestingTexture { get; }
 }

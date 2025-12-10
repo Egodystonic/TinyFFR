@@ -1,0 +1,69 @@
+﻿material {
+	name : %NAME%,
+	parameters : [
+		{
+			type : float4x4,
+			name : uv_transform
+		},
+		{
+			type : sampler2d,
+			name : color_map
+		},
+		{
+			type : sampler2d,
+			name : color_map_blend
+		},
+		{
+			type : float,
+			name : color_map_blend_distance
+		}
+#if Emissive
+		,
+		{
+			type : sampler2d,
+			name : emissive_map
+		},
+		{
+			type : sampler2d,
+			name : emissive_map_blend
+		},
+		{
+			type : float,
+			name : emissive_map_blend_distance
+		}
+#endif Emissive
+	],
+	requires : [
+		uv0
+	],
+	shadingModel : unlit,
+	flipUV : false,
+#option AlphaMode
+#variant AlphaOff
+	blending : opaque
+#variant AlphaOn
+	blending : fade
+#endoption
+}
+
+fragment {
+	void material(inout MaterialInputs material) {
+		float3 uv0Extended = float3(getUV0().xy, 1.0);
+		vec2 uv0 = mulMat3x3Float3(materialParams.uv_transform, uv0Extended).xy;
+
+		prepareMaterial(material);
+
+#option AlphaMode
+#variant AlphaOff
+		material.baseColor.rgb = texture(materialParams_color_map, uv0).rgb;
+#variant AlphaOn
+		material.baseColor.rgba = texture(materialParams_color_map, uv0).rgba;
+#endoption
+
+#if Emissive
+		vec4 emissive = texture(materialParams_emissive_map, uv0).rgba;
+		material.emissive.rgb = emissive.rgb * (100.0 * emissive.a);
+		material.emissive.a = 0.05;
+#endif Emissive
+	}
+}

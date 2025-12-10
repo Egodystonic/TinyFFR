@@ -55,19 +55,19 @@ class LocalShaderPackageConstantsTest {
 		>();
 
 		foreach (var option in simpleOptions) {
-			var shader = SimpleMaterialShader.GetShaderResourceName(option.Flag, option.Variant1);
+			var shader = SimpleMaterialShader.GetShaderResourceName(option.EnableEffects, option.Flag, option.Variant1);
 			Assert.IsFalse(shaderSet.Contains(shader));
 			shaderSet.Add(shader);
 		}
 
 		foreach (var option in standardOptions) {
-			var shader = StandardMaterialShader.GetShaderResourceName(option.Flag, option.Variant1, option.Variant2);
+			var shader = StandardMaterialShader.GetShaderResourceName(option.EnableEffects, option.Flag, option.Variant1, option.Variant2);
 			Assert.IsFalse(shaderSet.Contains(shader));
 			shaderSet.Add(shader);
 		}
 
 		foreach (var option in transmissiveOptions) {
-			var shader = TransmissiveMaterialShader.GetShaderResourceName(option.Flag, option.Variant1, option.Variant2, option.Variant3);
+			var shader = TransmissiveMaterialShader.GetShaderResourceName(option.EnableEffects, option.Flag, option.Variant1, option.Variant2, option.Variant3);
 			Assert.IsFalse(shaderSet.Contains(shader));
 			shaderSet.Add(shader);
 		}
@@ -86,18 +86,19 @@ class LocalShaderPackageConstantsTest {
 
 	T[] GetAllVariants<T>() where T : struct, Enum => Enum.GetValues<T>();
 
-	IEnumerable<(TFlag Flag, T1 Variant1)> GetAllShaderOptions<TFlag, T1>() where TFlag : struct, Enum where T1 : struct, Enum {
+	IEnumerable<(bool EnableEffects, TFlag Flag, T1 Variant1)> GetAllShaderOptions<TFlag, T1>() where TFlag : struct, Enum where T1 : struct, Enum {
 		var flags = GetAllFlagCombinations<TFlag>();
 		var v1s = GetAllVariants<T1>();
 
 		foreach (var f in flags) {
 			foreach (var v1 in v1s) {
-				yield return (f, v1);
+				yield return (false, f, v1);
+				yield return (true, f, v1);
 			}
 		}
 	}
 
-	IEnumerable<(TFlag Flag, T1 Variant1, T2 Variant2)> GetAllShaderOptions<TFlag, T1, T2>() where TFlag : struct, Enum where T1 : struct, Enum where T2 : struct, Enum {
+	IEnumerable<(bool EnableEffects, TFlag Flag, T1 Variant1, T2 Variant2)> GetAllShaderOptions<TFlag, T1, T2>() where TFlag : struct, Enum where T1 : struct, Enum where T2 : struct, Enum {
 		var flags = GetAllFlagCombinations<TFlag>();
 		var v1s = GetAllVariants<T1>();
 		var v2s = GetAllVariants<T2>();
@@ -105,13 +106,14 @@ class LocalShaderPackageConstantsTest {
 		foreach (var f in flags) {
 			foreach (var v1 in v1s) {
 				foreach (var v2 in v2s) {
-					yield return (f, v1, v2);
+					yield return (false, f, v1, v2);
+					yield return (true, f, v1, v2);
 				}
 			}
 		}
 	}
 
-	IEnumerable<(TFlag Flag, T1 Variant1, T2 Variant2, T3 Variant3)> GetAllShaderOptions<TFlag, T1, T2, T3>() where TFlag : struct, Enum where T1 : struct, Enum where T2 : struct, Enum where T3 : struct, Enum {
+	IEnumerable<(bool EnableEffects, TFlag Flag, T1 Variant1, T2 Variant2, T3 Variant3)> GetAllShaderOptions<TFlag, T1, T2, T3>() where TFlag : struct, Enum where T1 : struct, Enum where T2 : struct, Enum where T3 : struct, Enum {
 		var flags = GetAllFlagCombinations<TFlag>();
 		var v1s = GetAllVariants<T1>();
 		var v2s = GetAllVariants<T2>();
@@ -121,7 +123,8 @@ class LocalShaderPackageConstantsTest {
 			foreach (var v1 in v1s) {
 				foreach (var v2 in v2s) {
 					foreach (var v3 in v3s) {
-						yield return (f, v1, v2, v3);
+						yield return (false, f, v1, v2, v3);
+						yield return (true, f, v1, v2, v3);
 					}
 				}
 			}

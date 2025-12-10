@@ -3,6 +3,7 @@
 
 using System;
 using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
@@ -16,6 +17,11 @@ public readonly struct Material : IDisposableResource<Material, IMaterialImplPro
 	IMaterialImplProvider IResource<Material, IMaterialImplProvider>.Implementation => Implementation;
 	ResourceHandle<Material> IResource<Material>.Handle => Handle;
 
+	public bool SupportsPerInstanceEffects {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetSupportsPerInstanceEffects(_handle);
+	}
+
 	internal Material(ResourceHandle<Material> handle, IMaterialImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
@@ -27,6 +33,18 @@ public readonly struct Material : IDisposableResource<Material, IMaterialImplPro
 	public int GetNameLength() => Implementation.GetNameLength(_handle);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CopyName(Span<char> destinationBuffer) => Implementation.CopyName(_handle, destinationBuffer);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal Material Duplicate() => Implementation.Duplicate(_handle);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void SetEffectTransform(Transform2D transform) => Implementation.SetEffectTransform(_handle, transform);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void SetEffectBlendTexture(MaterialEffectMapType mapType, Texture blendTex) => Implementation.SetEffectBlendTexture(_handle, mapType, blendTex);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void SetEffectBlendDistance(MaterialEffectMapType mapType, float distance) => Implementation.SetEffectBlendDistance(_handle, mapType, distance);
 
 	static Material IResource<Material>.CreateFromHandleAndImpl(ResourceHandle<Material> handle, IResourceImplProvider impl) {
 		return new Material(handle, impl as IMaterialImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));

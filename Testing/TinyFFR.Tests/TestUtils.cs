@@ -214,6 +214,42 @@ static class TestUtils {
 		);
 	}
 
+	public static void AssertToleranceEquals(Matrix3x2 expected, Matrix3x2 actual, float tolerance) {
+		for (var r = 0; r < 3; ++r) {
+			for (var c = 0; c < 2; ++c) {
+				if (MathF.Abs(expected[r, c] - actual[r, c]) > tolerance) goto fail;
+			}
+		}
+		return;
+
+fail:
+		var expectedString = expected.ToString();
+		var actualString = actual.ToString();
+		Assert.Fail(
+			$"Expected and actual value were not within tolerance of {tolerance}" + System.Environment.NewLine +
+			$"\tExpected value: {expectedString}" + System.Environment.NewLine +
+			$"\tActual value: {actualString}"
+		);
+	}
+
+	public static void AssertToleranceNotEquals(Matrix3x2 expected, Matrix3x2 actual, float tolerance) {
+		for (var r = 0; r < 3; ++r) {
+			for (var c = 0; c < 2; ++c) {
+				if (MathF.Abs(expected[r, c] - actual[r, c]) <= tolerance) goto fail;
+			}
+		}
+		return;
+
+fail:
+		var expectedString = expected.ToString();
+		var actualString = actual.ToString();
+		Assert.Fail(
+			$"Expected and actual value were equal within tolerance of {tolerance}" + System.Environment.NewLine +
+			$"\tExpected value: {expectedString}" + System.Environment.NewLine +
+			$"\tActual value: {actualString}"
+		);
+	}
+
 	public static unsafe void AssertStructLayout<T>(int expectedSize) where T : unmanaged {
 		Assert.AreEqual(expectedSize, typeof(T).StructLayoutAttribute!.Size);
 		Assert.AreEqual(expectedSize, sizeof(T));

@@ -37,6 +37,10 @@ public readonly ref struct TransmissiveMaterialCreationConfig : IConfigStruct<Tr
 		get => BaseConfig.Name;
 		init => BaseConfig = BaseConfig with { Name = value };
 	}
+	public bool EnablePerInstanceEffects {
+		get => BaseConfig.EnablePerInstanceEffects;
+		init => BaseConfig = BaseConfig with { EnablePerInstanceEffects = value };
+	}
 
 	public TransmissiveMaterialCreationConfig() { }
 	public TransmissiveMaterialCreationConfig(MaterialCreationConfig baseConfig) => BaseConfig = baseConfig;

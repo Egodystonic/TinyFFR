@@ -22,7 +22,7 @@ static unsafe class EmbeddedResourceResolver {
 		using var stream = typeof(EmbeddedResourceResolver).Assembly.GetManifestResourceStream(RootResourceNamespace + resourceName)
 						?? throw new InvalidOperationException($"Resource '{resourceName}' not found in assembly (this is a bug in TinyFFR).");
 
-		if (resourceName.EndsWith(".zip")) {
+		if (resourceName.EndsWith(".zip", StringComparison.Ordinal)) {
 			using var za = new ZipArchive(stream);
 			// For now we only ever expect 1 entry per zip file
 			if (za.Entries.Count != 1) {

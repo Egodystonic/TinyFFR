@@ -32,6 +32,10 @@ public readonly ref struct StandardMaterialCreationConfig : IConfigStruct<Standa
 		get => BaseConfig.Name;
 		init => BaseConfig = BaseConfig with { Name = value };
 	}
+	public bool EnablePerInstanceEffects {
+		get => BaseConfig.EnablePerInstanceEffects;
+		init => BaseConfig = BaseConfig with { EnablePerInstanceEffects = value };
+	}
 
 	public StandardMaterialCreationConfig() { }
 	public StandardMaterialCreationConfig(MaterialCreationConfig baseConfig) => BaseConfig = baseConfig;

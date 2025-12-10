@@ -23,62 +23,31 @@ namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IDisposable {
+	readonly record struct MaterialData(IShaderPackageConstants PackageConstants, bool SupportsPerInstanceEffects, Texture? EffectBlendColorMap, Texture? EffectBlendOrmMap, Texture? EffectBlendEmissiveMap, Texture? EffectBlendAbsorptionTransmissionMap);
+
+	internal const string TestMaterialName = "Test Material";
 	const string DefaultMaterialName = "Unnamed Material";
-	const string TestMaterialName = "Test Material";
-	const string TestUvTexResourceName = "Assets.Materials.uvtex.bin";
-	const int TestUvTexSquareDimension = 2048;
 	readonly ArrayPoolBackedMap<string, UIntPtr> _loadedShaderPackages = new();
-	readonly ArrayPoolBackedVector<ResourceHandle<Material>> _activeMaterials = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Material>, MaterialData> _activeMaterials = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
-	readonly Lazy<ResourceGroup> _testMaterialTextures;
+	readonly Lazy<ResourceGroup> _testMaterialTexturesRef;
 	bool _isDisposed = false;
 
 	public ITextureBuilder TextureBuilder => _isDisposed ? throw new ObjectDisposedException(nameof(IMaterialBuilder)) : field;
 
-	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config, ITextureBuilder texBuilderRef) {
+	public LocalMaterialBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config, ITextureBuilder texBuilderRef, Lazy<ResourceGroup> testMaterialTexturesRef) {
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
 		TextureBuilder = texBuilderRef;
-		_testMaterialTextures = new(CreateTestMaterialTextures);
+		_testMaterialTexturesRef = testMaterialTexturesRef;
 	}
 
-	ResourceGroup CreateTestMaterialTextures() {
-		var result = _globals.ResourceGroupProvider.CreateGroup(
-			disposeContainedResourcesWhenDisposed: true,
-			name: TestMaterialName + " Texture Group"
-		);
-
-		var uvTex = EmbeddedResourceResolver.GetResource(TestUvTexResourceName);
-		result.Add(TextureBuilder.CreateTexture(
-			MemoryMarshal.Cast<byte, TexelRgb24>(uvTex.AsSpan), 
-			dimensions: (TestUvTexSquareDimension, TestUvTexSquareDimension), 
-			isLinearColorspace: false, 
-			name: TestMaterialName + " Color Map"
-		));
-
-		result.Add(TextureBuilder.CreateNormalMap(
-			TexturePattern.Rectangles(
-				interiorSize: (128, 128),
-				borderSize: (8, 8),
-				paddingSize: (0, 0),
-				interiorValue: UnitSphericalCoordinate.ZeroZero,
-				borderRightValue: new UnitSphericalCoordinate(Orientation2D.Right.ToPolarAngle()!.Value, 45f),
-				borderTopValue: new UnitSphericalCoordinate(Orientation2D.Up.ToPolarAngle()!.Value, 45f),
-				borderLeftValue: new UnitSphericalCoordinate(Orientation2D.Left.ToPolarAngle()!.Value, 45f),
-				borderBottomValue: new UnitSphericalCoordinate(Orientation2D.Down.ToPolarAngle()!.Value, 45f),
-				paddingValue: UnitSphericalCoordinate.ZeroZero,
-				repetitions: (8, 8)
-			),
-			name: TestMaterialName + " Normal Map"
-		));
-
-		return result;
-	}
+	
 
 	public Material CreateTestMaterial(bool ignoresLighting = true) {
 		ThrowIfThisIsDisposed();
 		
-		var textureGroup = _testMaterialTextures.Value;
+		var textureGroup = _testMaterialTexturesRef.Value;
 		
 		if (ignoresLighting) {
 			return CreateSimpleMaterial(new SimpleMaterialCreationConfig {
@@ -109,11 +78,13 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			alphaModeVariant = SimpleMaterialShaderConstants.AlphaModeVariant.AlphaOn;
 		}
 
-		var shaderResourceName = shaderConstants.GetShaderResourceName(flags, alphaModeVariant);
-		var result = InstantiateMaterial(shaderResourceName, config.Name);
+		var shaderResourceName = shaderConstants.GetShaderResourceName(config.EnablePerInstanceEffects, flags, alphaModeVariant);
+		var result = InstantiateMaterial(shaderResourceName, config.Name, shaderConstants, config.EnablePerInstanceEffects);
 
 		ApplyMaterialParam(result, config.ColorMap, shaderConstants.ParamColorMap);
 		ApplyMaterialParam(result, config.EmissiveMap, shaderConstants.ParamEmissiveMap);
+
+		if (config.EnablePerInstanceEffects) SetUpDefaultEffectsParameters(result, shaderConstants);
 
 		return result;
 	}
@@ -145,8 +116,8 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			};
 		}
 
-		var shaderResourceName = shaderConstants.GetShaderResourceName(flags, alphaModeVariant, ormReflectanceVariant);
-		var result = InstantiateMaterial(shaderResourceName, config.Name);
+		var shaderResourceName = shaderConstants.GetShaderResourceName(config.EnablePerInstanceEffects, flags, alphaModeVariant, ormReflectanceVariant);
+		var result = InstantiateMaterial(shaderResourceName, config.Name, shaderConstants, config.EnablePerInstanceEffects);
 
 		ApplyMaterialParam(result, config.ColorMap, shaderConstants.ParamColorMap);
 		ApplyMaterialParam(result, config.AnisotropyMap, shaderConstants.ParamAnisotropyMap);
@@ -154,6 +125,8 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ApplyMaterialParam(result, config.EmissiveMap, shaderConstants.ParamEmissiveMap);
 		ApplyMaterialParam(result, config.NormalMap, shaderConstants.ParamNormalMap);
 		ApplyMaterialParam(result, config.OcclusionRoughnessMetallicReflectanceMap, shaderConstants.ParamOrmMap);
+
+		if (config.EnablePerInstanceEffects) SetUpDefaultEffectsParameters(result, shaderConstants);
 
 		return result;
 	}
@@ -189,8 +162,8 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 			refractionTypeVariant = TransmissiveMaterialShaderConstants.RefractionTypeVariant.Thick;
 		}
 
-		var shaderResourceName = shaderConstants.GetShaderResourceName(flags, alphaModeVariant, refractionQualityVariant, refractionTypeVariant);
-		var result = InstantiateMaterial(shaderResourceName, config.Name);
+		var shaderResourceName = shaderConstants.GetShaderResourceName(config.EnablePerInstanceEffects, flags, alphaModeVariant, refractionQualityVariant, refractionTypeVariant);
+		var result = InstantiateMaterial(shaderResourceName, config.Name, shaderConstants, config.EnablePerInstanceEffects);
 
 		ApplyMaterialParam(result, config.ColorMap, shaderConstants.ParamColorMap);
 		ApplyMaterialParam(result, config.RefractionThickness, shaderConstants.ParamSurfaceThickness);
@@ -200,10 +173,19 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ApplyMaterialParam(result, config.NormalMap, shaderConstants.ParamNormalMap);
 		ApplyMaterialParam(result, config.OcclusionRoughnessMetallicReflectanceMap, shaderConstants.ParamOrmMap);
 
+		if (config.EnablePerInstanceEffects) SetUpDefaultEffectsParameters(result, shaderConstants);
+
 		return result;
 	}
 
-	Material InstantiateMaterial(string shaderResourceName, ReadOnlySpan<char> resourceName) {
+	void SetUpDefaultEffectsParameters(Material mat, IShaderPackageConstants packageConstants) {
+		if (packageConstants.HasEffectUvTransform) {
+			var identityMat = Matrix4x4.Identity;
+			ApplyMaterialParam(mat, in identityMat, packageConstants.GetEffectUvTransformParamOrThrow());
+		}
+	}
+
+	Material InstantiateMaterial(string shaderResourceName, ReadOnlySpan<char> resourceName, IShaderPackageConstants packageConstants, bool supportsPerInstanceEffects) {
 		var shaderPackageHandle = GetOrLoadShaderPackageHandle(shaderResourceName);
 
 		CreateMaterial(
@@ -213,7 +195,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		var handle = (ResourceHandle<Material>) outHandle;
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, resourceName, DefaultMaterialName);
-		_activeMaterials.Add(handle);
+		_activeMaterials.Add(handle, new MaterialData(packageConstants, supportsPerInstanceEffects, null, null, null, null));
 		return HandleToInstance(handle);
 	}
 
@@ -251,6 +233,118 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		).ThrowIfFailure();
 	}
 
+	void ApplyMaterialParam(Material material, ref readonly Matrix4x4 matrixRef, ReadOnlySpan<byte> param) {
+		SetMaterialParameterMatrix(
+			material.Handle,
+			in ParamRef(param),
+			ParamLen(param),
+			in matrixRef
+		).ThrowIfFailure();
+	}
+
+	public bool GetSupportsPerInstanceEffects(ResourceHandle<Material> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeMaterials[handle].SupportsPerInstanceEffects;
+	}
+
+	public Material Duplicate(ResourceHandle<Material> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		DuplicateMaterial(
+			handle,
+			out var newMaterialHandle
+		).ThrowIfFailure();
+
+		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<Material>(newMaterialHandle).Ident, _globals.GetResourceName(handle.Ident, DefaultMaterialName), DefaultMaterialName);
+		_activeMaterials.Add(newMaterialHandle, _activeMaterials[handle]);
+		return HandleToInstance(newMaterialHandle);
+	}
+
+	public void SetEffectTransform(ResourceHandle<Material> handle, Transform2D newTransform) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var matData = _activeMaterials[handle];
+		if (!matData.SupportsPerInstanceEffects || !matData.PackageConstants.HasEffectUvTransform) return;
+
+		var transformMat = (newTransform with { Scaling = newTransform.Scaling.Reciprocal ?? XYPair<float>.Zero }).ToMatrix();
+		var value = Matrix4x4.Identity;
+		value.M11 = transformMat.M11;
+		value.M12 = transformMat.M12;
+		value.M21 = transformMat.M21;
+		value.M22 = transformMat.M22;
+		value.M31 = -transformMat.M31; // Deliberately inverts X-axis translation
+		value.M32 = -transformMat.M32; // Deliberately inverts Y-axis translation
+
+		var uvTransformParam = matData.PackageConstants.GetEffectUvTransformParamOrThrow();
+		ApplyMaterialParam(HandleToInstance(handle), in value, uvTransformParam);
+	}
+	public void SetEffectBlendTexture(ResourceHandle<Material> handle, MaterialEffectMapType mapType, Texture mapTexture) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var matData = _activeMaterials[handle];
+		if (!matData.SupportsPerInstanceEffects) return;
+
+		ReadOnlySpan<byte> param;
+
+		switch (mapType) {
+			case MaterialEffectMapType.Color:
+				if (!matData.PackageConstants.HasEffectColorMap) return;
+				if (matData.EffectBlendColorMap != null) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), matData.EffectBlendColorMap.Value);
+				_activeMaterials[handle] = matData with { EffectBlendColorMap = mapTexture };
+				param = matData.PackageConstants.GetEffectColorMapTexParamOrThrow();
+				break;
+			case MaterialEffectMapType.OcclusionRoughnessMetallic:
+				if (!matData.PackageConstants.HasEffectOrmMap) return;
+				if (matData.EffectBlendOrmMap != null) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), matData.EffectBlendOrmMap.Value);
+				_activeMaterials[handle] = matData with { EffectBlendOrmMap = mapTexture };
+				param = matData.PackageConstants.GetEffectOrmMapTexParamOrThrow();
+				break;
+			case MaterialEffectMapType.Emissive:
+				if (!matData.PackageConstants.HasEffectEmissiveMap) return;
+				if (matData.EffectBlendEmissiveMap != null) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), matData.EffectBlendEmissiveMap.Value);
+				_activeMaterials[handle] = matData with { EffectBlendEmissiveMap = mapTexture };
+				param = matData.PackageConstants.GetEffectEmissiveMapTexParamOrThrow();
+				break;
+			case MaterialEffectMapType.AbsorptionTransmission:
+				if (!matData.PackageConstants.HasEffectAbsorptionTransmissionMap) return;
+				if (matData.EffectBlendAbsorptionTransmissionMap != null) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), matData.EffectBlendAbsorptionTransmissionMap.Value);
+				_activeMaterials[handle] = matData with { EffectBlendAbsorptionTransmissionMap = mapTexture };
+				param = matData.PackageConstants.GetEffectAbsorptionTransmissionMapTexParamOrThrow();
+				break;
+			default:
+				throw new ArgumentOutOfRangeException(nameof(mapType), mapType, null);
+		}
+
+		ApplyMaterialParam(HandleToInstance(handle), mapTexture, param);
+	}
+	public void SetEffectBlendDistance(ResourceHandle<Material> handle, MaterialEffectMapType mapType, float distance) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var matData = _activeMaterials[handle];
+		if (!matData.SupportsPerInstanceEffects) return;
+
+		ReadOnlySpan<byte> param;
+
+		switch (mapType) {
+			case MaterialEffectMapType.Color:
+				if (!matData.PackageConstants.HasEffectColorMap) return;
+				param = matData.PackageConstants.GetEffectColorMapDistanceParamOrThrow();
+				break;
+			case MaterialEffectMapType.OcclusionRoughnessMetallic:
+				if (!matData.PackageConstants.HasEffectOrmMap) return;
+				param = matData.PackageConstants.GetEffectOrmMapDistanceParamOrThrow();
+				break;
+			case MaterialEffectMapType.Emissive:
+				if (!matData.PackageConstants.HasEffectEmissiveMap) return;
+				param = matData.PackageConstants.GetEffectEmissiveMapDistanceParamOrThrow();
+				break;
+			case MaterialEffectMapType.AbsorptionTransmission:
+				if (!matData.PackageConstants.HasEffectAbsorptionTransmissionMap) return;
+				param = matData.PackageConstants.GetEffectAbsorptionTransmissionMapDistanceParamOrThrow();
+				break;
+			default:
+				throw new ArgumentOutOfRangeException(nameof(mapType), mapType, null);
+		}
+
+		ApplyMaterialParam(HandleToInstance(handle), distance, param);
+	}
+
 	public string GetNameAsNewStringObject(ResourceHandle<Material> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return new String(_globals.GetResourceName(handle.Ident, DefaultMaterialName));
@@ -278,6 +372,12 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		out UIntPtr outMaterialHandle
 	);
 
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "duplicate_material")]
+	static extern InteropResult DuplicateMaterial(
+		UIntPtr targetMaterialHandle,
+		out UIntPtr outMaterialHandle
+	);
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_material_parameter_texture")]
 	static extern InteropResult SetMaterialParameterTexture(
 		UIntPtr materialHandle,
@@ -292,6 +392,14 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ref readonly byte utf8ParameterNameBuffer,
 		int parameterNameBufferLength,
 		float val
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_material_parameter_matrix")]
+	static extern InteropResult SetMaterialParameterMatrix(
+		UIntPtr materialHandle,
+		ref readonly byte utf8ParameterNameBuffer,
+		int parameterNameBufferLength,
+		ref readonly Matrix4x4 matrixRef
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_material")]
@@ -311,7 +419,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	public override string ToString() => _isDisposed ? "TinyFFR Local Material Builder [Disposed]" : "TinyFFR Local Material Builder";
 
 	#region Disposal
-	public bool IsDisposed(ResourceHandle<Material> handle) => _isDisposed || !_activeMaterials.Contains(handle);
+	public bool IsDisposed(ResourceHandle<Material> handle) => _isDisposed || !_activeMaterials.ContainsKey(handle);
 
 	public void Dispose(ResourceHandle<Material> handle) => Dispose(handle, removeFromCollection: true);
 	void Dispose(ResourceHandle<Material> handle, bool removeFromCollection) {
@@ -326,15 +434,11 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
-			foreach (var mat in _activeMaterials) Dispose(mat, removeFromCollection: false);
+			foreach (var kvp in _activeMaterials) Dispose(kvp.Key, removeFromCollection: false);
 			foreach (var packageHandle in _loadedShaderPackages.Values) DisposeShaderPackage(packageHandle).ThrowIfFailure();
 
 			_activeMaterials.Dispose();
 			_loadedShaderPackages.Dispose();
-
-			if (_testMaterialTextures.IsValueCreated) {
-				_testMaterialTextures.Value.Dispose(disposeContainedResources: true);
-			}
 		}
 		finally {
 			_isDisposed = true;

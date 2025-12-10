@@ -20,13 +20,13 @@ typedef MaterialInstance* MaterialHandle;
 class native_impl_render_assets {
 public:
 	PushSafeStructPacking
-	struct MeshVertex {
+		struct MeshVertex {
 		float3 Position;
 		float2 TextureUV;
 		float4 Tangent;
 	};
 	PopSafeStructPacking
-	static_assert(sizeof(MeshVertex) == 36);
+		static_assert(sizeof(MeshVertex) == 36);
 
 	static void allocate_vertex_buffer(BufferIdentity bufferIdentity, MeshVertex* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer);
 	static void allocate_index_buffer(BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer);
@@ -40,8 +40,10 @@ public:
 
 	static void load_shader_package(void* dataPtr, int32_t dataLen, PackageHandle* outHandle);
 	static void create_material(PackageHandle package, MaterialHandle* outMaterial);
+	static void duplicate_material(MaterialHandle targetMaterial, MaterialHandle* outMaterial);
 	static void set_material_parameter_texture(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture);
 	static void set_material_parameter_real(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, float val);
+	static void set_material_parameter_matrix(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, mat4f& valRef);
 	static void dispose_material(MaterialHandle material);
 	static void dispose_shader_package(PackageHandle handle);
 };

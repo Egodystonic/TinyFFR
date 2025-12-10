@@ -46,18 +46,19 @@ class LocalBuiltInTexturePathLibraryTest {
 			Assert.IsTrue(_referencedProperties.Contains(prop.Name), $"Missing test of property '{prop.Name}'.");
 		}
 
-		Assert.AreEqual(null, _lib.GetBuiltInTexel(LocalBuiltInTexturePrefix));
-		Assert.AreEqual(null, _lib.GetBuiltInTexel(LocalBuiltInTexturePrefix + MapTexelPrefix));
-		Assert.AreEqual(null, _lib.GetBuiltInTexel(LocalBuiltInTexturePrefix + ByteValueTexelPrefix));
-		Assert.AreEqual(null, _lib.GetBuiltInTexel(LocalBuiltInTexturePrefix + "fake"));
-		Assert.AreEqual(null, _lib.GetBuiltInTexel(LocalBuiltInTexturePrefix + MapTexelPrefix + "fake"));
-		Assert.AreEqual(null, _lib.GetBuiltInTexel(LocalBuiltInTexturePrefix + ByteValueTexelPrefix + "fake"));
-		Assert.AreEqual(null, _lib.GetBuiltInTexel(LocalBuiltInTexturePrefix + ByteValueTexelPrefix + "255" + ByteValueSeparator));
-		Assert.AreEqual(null, _lib.GetBuiltInTexel(LocalBuiltInTexturePrefix + ByteValueTexelPrefix + "255" + ByteValueSeparator + "a"));
-		Assert.AreEqual(null, _lib.GetBuiltInTexel(LocalBuiltInTexturePrefix + ByteValueTexelPrefix + "255" + ByteValueSeparator + "255" + ByteValueSeparator));
-		Assert.AreEqual(null, _lib.GetBuiltInTexel(LocalBuiltInTexturePrefix + ByteValueTexelPrefix + "255" + ByteValueSeparator + "255" + ByteValueSeparator + "a"));
-		Assert.AreEqual(null, _lib.GetBuiltInTexel(LocalBuiltInTexturePrefix + ByteValueTexelPrefix + "255" + ByteValueSeparator + "255" + ByteValueSeparator + "255" + ByteValueSeparator + "a"));
-		Assert.AreEqual(null, _lib.GetBuiltInTexel(LocalBuiltInTexturePrefix + ByteValueTexelPrefix + "255" + ByteValueSeparator + "255" + ByteValueSeparator + "255" + ByteValueSeparator + "255" + ByteValueSeparator + "255"));
+		Assert.AreEqual(null, _lib.TryGetBuiltInTexel(LocalBuiltInTexturePrefix));
+		Assert.AreEqual(null, _lib.TryGetBuiltInTexel(LocalBuiltInTexturePrefix + MapTexelPrefix));
+		Assert.AreEqual(null, _lib.TryGetBuiltInTexel(LocalBuiltInTexturePrefix + ByteValueTexelPrefix));
+		Assert.AreEqual(null, _lib.TryGetBuiltInTexel(LocalBuiltInTexturePrefix + "fake"));
+		Assert.AreEqual(null, _lib.TryGetBuiltInTexel(LocalBuiltInTexturePrefix + MapTexelPrefix + "fake"));
+		Assert.AreEqual(null, _lib.TryGetBuiltInTexel(LocalBuiltInTexturePrefix + ByteValueTexelPrefix + "fake"));
+		Assert.AreEqual(null, _lib.TryGetBuiltInTexel(LocalBuiltInTexturePrefix + ByteValueTexelPrefix + "255" + ByteValueSeparator));
+		Assert.AreEqual(null, _lib.TryGetBuiltInTexel(LocalBuiltInTexturePrefix + ByteValueTexelPrefix + "255" + ByteValueSeparator + "a"));
+		Assert.AreEqual(null, _lib.TryGetBuiltInTexel(LocalBuiltInTexturePrefix + ByteValueTexelPrefix + "255" + ByteValueSeparator + "255" + ByteValueSeparator));
+		Assert.AreEqual(null, _lib.TryGetBuiltInTexel(LocalBuiltInTexturePrefix + ByteValueTexelPrefix + "255" + ByteValueSeparator + "255" + ByteValueSeparator + "a"));
+		Assert.AreEqual(null, _lib.TryGetBuiltInTexel(LocalBuiltInTexturePrefix + ByteValueTexelPrefix + "255" + ByteValueSeparator + "255" + ByteValueSeparator + "255" + ByteValueSeparator + "a"));
+		Assert.AreEqual(null, _lib.TryGetBuiltInTexel(LocalBuiltInTexturePrefix + ByteValueTexelPrefix + "255" + ByteValueSeparator + "255" + ByteValueSeparator + "255" + ByteValueSeparator + "255" + ByteValueSeparator + "255"));
+		Assert.AreEqual(null, _lib.TryGetBuiltInEmbeddedResourceTexture(LocalBuiltInTexturePrefix + EmbeddedTextureResourcePrefix + "_fake"));
 	}
 
 	void AssertAllProperties() {
@@ -123,6 +124,8 @@ class LocalBuiltInTexturePathLibraryTest {
 		AssertProperty(255, 255, 0, 0, lib => lib.RedGreenTransparent);
 		AssertProperty(0, 255, 255, 0, lib => lib.GreenBlueTransparent);
 		AssertProperty(255, 0, 255, 0, lib => lib.RedBlueTransparent);
+
+		AssertProperty(new XYPair<int>(2048, 2048), false, lib => lib.UvTestingTexture);
 	}
 
 	void AssertProperty(byte r, byte g, byte b, Func<IBuiltInTexturePathLibrary, ReadOnlySpan<char>> pathSelector, [CallerArgumentExpression(nameof(pathSelector))] string? propNameExpression = null) {
@@ -146,7 +149,21 @@ class LocalBuiltInTexturePathLibraryTest {
 		Assert.IsTrue(_referencedProperties.Add(prop));
 
 		var path = pathSelector(_lib);
-		var builtin = _lib.GetBuiltInTexel(path);
+		var builtin = _lib.TryGetBuiltInTexel(path);
 		Assert.AreEqual(expectation, (object?) builtin?.First ?? (object?) builtin?.Second);
+
+		Assert.AreEqual(BuiltInTextureType.Texel, _lib.GetLikelyBuiltInTextureType(path));
+	}
+
+	void AssertProperty(XYPair<int> dimensions, bool containsAlpha, Func<IBuiltInTexturePathLibrary, ReadOnlySpan<char>> pathSelector, [CallerArgumentExpression(nameof(pathSelector))] string? propNameExpression = null) {
+		var prop = propNameExpression!.Split('.').Last();
+		Assert.IsTrue(_referencedProperties.Add(prop));
+
+		var path = pathSelector(_lib);
+		var builtin = _lib.TryGetBuiltInEmbeddedResourceTexture(path);
+		Assert.AreEqual(dimensions, builtin!.Value.Dimensions);
+		Assert.AreEqual(containsAlpha, builtin!.Value.ContainsAlpha);
+
+		Assert.AreEqual(BuiltInTextureType.EmbeddedResourceTexture, _lib.GetLikelyBuiltInTextureType(path));
 	}
 } 

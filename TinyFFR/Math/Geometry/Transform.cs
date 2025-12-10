@@ -43,8 +43,15 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Transform FromTranslationOnly(Vect translation) => new(translation: translation);
-
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Matrix4x4 ToMatrix() {
+		var result = new Matrix4x4();
+		ToMatrix(ref result);
+		return result;
+	}
+	
+	public void ToMatrix(ref Matrix4x4 dest) {
 		var rotVect = RotationQuaternion.AsVector4();
 		var rotVectSquared = rotVect * rotVect;
 
@@ -67,15 +74,14 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 			0f
 		) * Scaling.Z;
 
-		return new Matrix4x4(
-			rowA.X, rowA.Y, rowA.Z, rowA.W,
-			rowB.X, rowB.Y, rowB.Z, rowB.W,
-			rowC.X, rowC.Y, rowC.Z, rowC.W,
-			Translation.X, Translation.Y, Translation.Z, 1f
-		);
+		dest.M11 = rowA.X; dest.M12 = rowA.Y; dest.M13 = rowA.Z; dest.M14 = rowA.W;
+		dest.M21 = rowB.X; dest.M22 = rowB.Y; dest.M23 = rowB.Z; dest.M24 = rowB.W;
+		dest.M31 = rowC.X; dest.M32 = rowC.Y; dest.M33 = rowC.Z; dest.M34 = rowC.W;
+		dest.M41 = Translation.X;
+		dest.M42 = Translation.Y; 
+		dest.M43 = Translation.Z;
+		dest.M44 = 1f;
 	}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ToMatrix(out Matrix4x4 dest) => dest = ToMatrix();
 
 	public Transform2D To2D() => To2D(new(Direction.Forward));
 	public Transform2D To2D(DimensionConverter dimensionConverter) {

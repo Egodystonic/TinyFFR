@@ -37,6 +37,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 	readonly FixedByteBufferPool _ktxFileBufferPool;
 	readonly TimeSpan _maxHdrProcessingTime;
 	readonly ArrayPoolBackedMap<ResourceHandle<EnvironmentCubemap>, CubemapData> _loadedCubemaps = new();
+	readonly Lazy<ResourceGroup> _testMaterialTextures;
 	nuint _prevCubemapHandle = 0;
 	bool _isDisposed = false;
 	bool _hdrPreprocessorHasBeenExtracted = false;
@@ -51,9 +52,10 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		ArgumentNullException.ThrowIfNull(config);
 
 		_globals = globals;
+		_testMaterialTextures = new(CreateTestMaterialTextures);
 		_meshBuilder = new LocalMeshBuilder(globals);
 		_textureBuilder = new LocalTextureBuilder(globals, config);
-		_materialBuilder = new LocalMaterialBuilder(globals, config, _textureBuilder);
+		_materialBuilder = new LocalMaterialBuilder(globals, config, _textureBuilder, _testMaterialTextures);
 		_assetFilePathBuffer = new InteropStringBuffer(config.MaxAssetFilePathLengthChars, addOneForNullTerminator: true);
 		_vertexTriangleBufferPool = new FixedByteBufferPool(config.MaxAssetVertexIndexBufferSizeBytes);
 		_ktxFileBufferPool = new FixedByteBufferPool(config.MaxKtxFileBufferSizeBytes);
@@ -78,23 +80,46 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 		
-		var builtInTexel = _builtInTextureLibrary.GetBuiltInTexel(readConfig.FilePath);
-		var builtInRgb = builtInTexel?.First;
-		var builtInRgba = builtInTexel?.Second;
+		switch (_builtInTextureLibrary.GetLikelyBuiltInTextureType(readConfig.FilePath)) {
+			case LocalBuiltInTexturePathLibrary.BuiltInTextureType.Texel:
+				var builtInTexel = _builtInTextureLibrary.TryGetBuiltInTexel(readConfig.FilePath);
+				var builtInRgb = builtInTexel?.First;
+				var builtInRgba = builtInTexel?.Second;
 
-		if (builtInRgb is { } rgb) {
-			return _textureBuilder.CreateTexture(
-				new ReadOnlySpan<TexelRgb24>(in rgb),
-				new() { Dimensions = new(1, 1) },
-				config
-			);
-		}
-		else if (builtInRgba is { } rgba) {
-			return _textureBuilder.CreateTexture(
-				new ReadOnlySpan<TexelRgba32>(in rgba),
-				new() { Dimensions = new(1, 1) },
-				config
-			);
+				if (builtInRgb is { } rgb) {
+					return _textureBuilder.CreateTexture(
+						new ReadOnlySpan<TexelRgb24>(in rgb),
+						new() { Dimensions = new(1, 1) },
+						config
+					);
+				}
+				else if (builtInRgba is { } rgba) {
+					return _textureBuilder.CreateTexture(
+						new ReadOnlySpan<TexelRgba32>(in rgba),
+						new() { Dimensions = new(1, 1) },
+						config
+					);
+				}
+				break;
+			case LocalBuiltInTexturePathLibrary.BuiltInTextureType.EmbeddedResourceTexture:
+				var embeddedTextureAssetData = _builtInTextureLibrary.TryGetBuiltInEmbeddedResourceTexture(readConfig.FilePath);
+				if (embeddedTextureAssetData is { } tuple) {
+					if (tuple.ContainsAlpha) {
+						return _textureBuilder.CreateTexture(
+							MemoryMarshal.Cast<byte, TexelRgba32>(tuple.DataRef.AsSpan)[..tuple.Dimensions.Area],
+							new TextureGenerationConfig { Dimensions = tuple.Dimensions },
+							config
+						);
+					}
+					else {
+						return _textureBuilder.CreateTexture(
+							MemoryMarshal.Cast<byte, TexelRgb24>(tuple.DataRef.AsSpan)[..tuple.Dimensions.Area],
+							new TextureGenerationConfig { Dimensions = tuple.Dimensions },
+							config
+						);
+					}
+				}
+				break;
 		}
 
 		try {
@@ -147,8 +172,16 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 	public TextureReadMetadata ReadTextureMetadata(ReadOnlySpan<char> filePath) {
 		ThrowIfThisIsDisposed();
 
-		var builtInTexel = _builtInTextureLibrary.GetBuiltInTexel(filePath);
-		if (builtInTexel.HasValue) return new TextureReadMetadata((1, 1), builtInTexel.Value.Second.HasValue);
+		switch (_builtInTextureLibrary.GetLikelyBuiltInTextureType(filePath)) {
+			case LocalBuiltInTexturePathLibrary.BuiltInTextureType.Texel:
+				var builtInTexel = _builtInTextureLibrary.TryGetBuiltInTexel(filePath);
+				if (builtInTexel.HasValue) return new TextureReadMetadata((1, 1), builtInTexel.Value.Second.HasValue);
+				break;
+			case LocalBuiltInTexturePathLibrary.BuiltInTextureType.EmbeddedResourceTexture:
+				var embeddedResourceData = _builtInTextureLibrary.TryGetBuiltInEmbeddedResourceTexture(filePath);
+				if (embeddedResourceData is { } tuple) return new TextureReadMetadata(tuple.Dimensions, tuple.ContainsAlpha);
+				break;
+		}
 
 		try {
 			_assetFilePathBuffer.ConvertFromUtf16(filePath);
@@ -169,34 +202,84 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 	public int ReadTexture<TTexel>(ReadOnlySpan<char> filePath, in TextureProcessingConfig processingConfig, Span<TTexel> destinationBuffer) where TTexel : unmanaged, ITexel<TTexel> {
 		ThrowIfThisIsDisposed();
 
-		var builtInTexel = _builtInTextureLibrary.GetBuiltInTexel(filePath);
-		if (builtInTexel.HasValue) {
-			if (destinationBuffer.Length < 1) {
-				throw new ArgumentException($"Given destination buffer size ({destinationBuffer.Length}) is too small to accomodate texture data ({1} texels).");
-			}
-			
-			switch (TTexel.BlitType) {
-				case TexelType.Rgba32: {
-					var localTexelCopy = builtInTexel.Value.First?.ToRgba32() 
-										 ?? builtInTexel.Value.Second 
-										 ?? throw new InvalidOperationException("Unexpected null texel pair (this is a bug in TinyFFR).");
-					destinationBuffer[0] = Unsafe.As<TexelRgba32, TTexel>(ref localTexelCopy);
-					break;
-				}
-				case TexelType.Rgb24: {
-						var localTexelCopy = builtInTexel.Value.First
-											 ?? builtInTexel.Value.Second?.ToRgb24()
-											 ?? throw new InvalidOperationException("Unexpected null texel pair (this is a bug in TinyFFR).");
-						destinationBuffer[0] = Unsafe.As<TexelRgb24, TTexel>(ref localTexelCopy);
-					break;
-				}
-				default:
-					throw new ArgumentOutOfRangeException(nameof(TTexel), "Unknown texel blit type.");
-			}
+		switch (_builtInTextureLibrary.GetLikelyBuiltInTextureType(filePath)) {
+			case LocalBuiltInTexturePathLibrary.BuiltInTextureType.Texel:
+				var builtInTexel = _builtInTextureLibrary.TryGetBuiltInTexel(filePath);
+				if (builtInTexel.HasValue) {
+					if (destinationBuffer.Length < 1) {
+						throw new ArgumentException($"Given destination buffer size ({destinationBuffer.Length}) is too small to accomodate texture data ({1} texels).");
+					}
 
-			TextureUtils.ProcessTexture(destinationBuffer, (1, 1), in processingConfig);
-			return 1;
+					switch (TTexel.BlitType) {
+						case TexelType.Rgba32: {
+								var localTexelCopy = builtInTexel.Value.First?.ToRgba32()
+													 ?? builtInTexel.Value.Second
+													 ?? throw new InvalidOperationException("Unexpected null texel pair (this is a bug in TinyFFR).");
+								destinationBuffer[0] = Unsafe.As<TexelRgba32, TTexel>(ref localTexelCopy);
+								break;
+							}
+						case TexelType.Rgb24: {
+								var localTexelCopy = builtInTexel.Value.First
+													 ?? builtInTexel.Value.Second?.ToRgb24()
+													 ?? throw new InvalidOperationException("Unexpected null texel pair (this is a bug in TinyFFR).");
+								destinationBuffer[0] = Unsafe.As<TexelRgb24, TTexel>(ref localTexelCopy);
+								break;
+							}
+						default:
+							throw new ArgumentOutOfRangeException(nameof(TTexel), "Unknown texel blit type.");
+					}
+
+					TextureUtils.ProcessTexture(destinationBuffer, (1, 1), in processingConfig);
+					return 1;
+				}
+				break;
+			case LocalBuiltInTexturePathLibrary.BuiltInTextureType.EmbeddedResourceTexture:
+				var embeddedResourceData = _builtInTextureLibrary.TryGetBuiltInEmbeddedResourceTexture(filePath);
+				if (embeddedResourceData is { } tuple) {
+					if (destinationBuffer.Length < tuple.Dimensions.Area) {
+						throw new ArgumentException($"Given destination buffer size ({destinationBuffer.Length}) is too small to accomodate texture data ({tuple.Dimensions.Area} texels).");
+					}
+
+					if (tuple.ContainsAlpha) {
+						var texelData = MemoryMarshal.Cast<byte, TexelRgba32>(tuple.DataRef.AsSpan)[..tuple.Dimensions.Area];
+						switch (TTexel.BlitType) {
+							case TexelType.Rgba32: {
+								MemoryMarshal.Cast<TexelRgba32, TTexel>(texelData).CopyTo(destinationBuffer);
+								break;
+							}
+							case TexelType.Rgb24: {
+								for (var i = 0; i < texelData.Length; ++i) {
+									var convertedTexel = texelData[i].ToRgb24();
+									destinationBuffer[i] = Unsafe.As<TexelRgb24, TTexel>(ref convertedTexel);
+								}
+								break;
+							}
+							default: throw new ArgumentOutOfRangeException(nameof(TTexel), "Unknown texel blit type.");
+						}
+						return texelData.Length;
+					}
+					else {
+						var texelData = MemoryMarshal.Cast<byte, TexelRgb24>(tuple.DataRef.AsSpan)[..tuple.Dimensions.Area];
+						switch (TTexel.BlitType) {
+							case TexelType.Rgba32: {
+								for (var i = 0; i < texelData.Length; ++i) {
+									var convertedTexel = texelData[i].ToRgba32();
+									destinationBuffer[i] = Unsafe.As<TexelRgba32, TTexel>(ref convertedTexel);
+								}
+								break;
+							}
+							case TexelType.Rgb24: {
+								MemoryMarshal.Cast<TexelRgb24, TTexel>(texelData).CopyTo(destinationBuffer);
+								break;
+							}
+							default: throw new ArgumentOutOfRangeException(nameof(TTexel), "Unknown texel blit type.");
+						}
+						return texelData.Length;
+					}
+				}
+				break;
 		}
+		
 
 		var includeWChannel = TTexel.BlitType switch {
 			TexelType.Rgb24 => false,
@@ -881,6 +964,36 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 	}
 	#endregion
 
+	ResourceGroup CreateTestMaterialTextures() {
+		var result = _globals.ResourceGroupProvider.CreateGroup(
+			disposeContainedResourcesWhenDisposed: true,
+			name: LocalMaterialBuilder.TestMaterialName + " Texture Group"
+		);
+
+		result.Add(LoadTexture(
+			new TextureReadConfig { FilePath = _builtInTextureLibrary.UvTestingTexture, IncludeWAlphaChannel = false },
+			new TextureCreationConfig { GenerateMipMaps = true, IsLinearColorspace = false, Name = LocalMaterialBuilder.TestMaterialName + " Color Map", ProcessingToApply = TextureProcessingConfig.None }
+		));
+
+		result.Add(TextureBuilder.CreateNormalMap(
+			TexturePattern.Rectangles(
+				interiorSize: (128, 128),
+				borderSize: (8, 8),
+				paddingSize: (0, 0),
+				interiorValue: UnitSphericalCoordinate.ZeroZero,
+				borderRightValue: new UnitSphericalCoordinate(Orientation2D.Right.ToPolarAngle()!.Value, 45f),
+				borderTopValue: new UnitSphericalCoordinate(Orientation2D.Up.ToPolarAngle()!.Value, 45f),
+				borderLeftValue: new UnitSphericalCoordinate(Orientation2D.Left.ToPolarAngle()!.Value, 45f),
+				borderBottomValue: new UnitSphericalCoordinate(Orientation2D.Down.ToPolarAngle()!.Value, 45f),
+				paddingValue: UnitSphericalCoordinate.ZeroZero,
+				repetitions: (8, 8)
+			),
+			name: LocalMaterialBuilder.TestMaterialName + " Normal Map"
+		));
+
+		return result;
+	}
+
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "load_asset_file_in_to_memory")]
 	static extern InteropResult LoadAssetFileInToMemory(
@@ -1016,6 +1129,11 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 			_assetFilePathBuffer.Dispose();
 			_meshBuilder.Dispose();
 			_materialBuilder.Dispose();
+
+			if (_testMaterialTextures.IsValueCreated) {
+				_testMaterialTextures.Value.Dispose(disposeContainedResources: true);
+			}
+
 			_textureBuilder.Dispose();
 			_loadedCubemaps.Dispose();
 		}

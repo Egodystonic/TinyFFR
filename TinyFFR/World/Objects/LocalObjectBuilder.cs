@@ -12,9 +12,13 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.World;
 
 sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IDisposable {
+	readonly record struct ActiveModelInstanceEffectsData(Material PerInstanceEffectMaterialCopy);
+
 	const string DefaultModelInstanceName = "Unnamed Model Instance";
 	readonly LocalFactoryGlobalObjectGroup _globals;
-	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, Transform> _activeInstanceMap = new();
+	// Because instance transforms are set so frequently, they're kept in their own separate map for performance
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, Transform> _activeInstanceTransforms = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, ActiveModelInstanceEffectsData> _activeInstanceEffectsData = new();
 	bool _isDisposed = false;
 
 	public LocalObjectBuilder(LocalFactoryGlobalObjectGroup globals) {
@@ -35,7 +39,7 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 			out var handle
 		).ThrowIfFailure();
 		var result = HandleToInstance(handle);
-		_activeInstanceMap.Add(handle, config.InitialTransform);
+		_activeInstanceTransforms.Add(handle, config.InitialTransform);
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<ModelInstance>(handle).Ident, config.Name, DefaultModelInstanceName);
 		_globals.DependencyTracker.RegisterDependency(result, mesh);
 		_globals.DependencyTracker.RegisterDependency(result, material);
@@ -44,11 +48,11 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 
 	void UpdateTransformAndMatrix(ResourceHandle<ModelInstance> handle, Transform newTransform) {
 		SetModelInstanceWorldMatrix(handle, newTransform.ToMatrix()).ThrowIfFailure();
-		_activeInstanceMap[handle] = newTransform;
+		_activeInstanceTransforms[handle] = newTransform;
 	}
 	public Transform GetTransform(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _activeInstanceMap[handle];
+		return _activeInstanceTransforms[handle];
 	}
 	public void SetTransform(ResourceHandle<ModelInstance> handle, Transform newTransform) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -57,54 +61,54 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 
 	public Location GetPosition(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _activeInstanceMap[handle].Translation.AsLocation();
+		return _activeInstanceTransforms[handle].Translation.AsLocation();
 	}
 	public void SetPosition(ResourceHandle<ModelInstance> handle, Location newPosition) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle] with { Translation = newPosition.AsVect() });
+		UpdateTransformAndMatrix(handle, _activeInstanceTransforms[handle] with { Translation = newPosition.AsVect() });
 	}
 
 	public Rotation GetRotation(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _activeInstanceMap[handle].Rotation;
+		return _activeInstanceTransforms[handle].Rotation;
 	}
 	public void SetRotation(ResourceHandle<ModelInstance> handle, Rotation newRotation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle] with { Rotation = newRotation });
+		UpdateTransformAndMatrix(handle, _activeInstanceTransforms[handle] with { Rotation = newRotation });
 	}
 
 	public Vect GetScaling(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _activeInstanceMap[handle].Scaling;
+		return _activeInstanceTransforms[handle].Scaling;
 	}
 	public void SetScaling(ResourceHandle<ModelInstance> handle, Vect newScaling) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle] with { Scaling = newScaling });
+		UpdateTransformAndMatrix(handle, _activeInstanceTransforms[handle] with { Scaling = newScaling });
 	}
 
 	public void TranslateBy(ResourceHandle<ModelInstance> handle, Vect translation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithAdditionalTranslation(translation));
+		UpdateTransformAndMatrix(handle, _activeInstanceTransforms[handle].WithAdditionalTranslation(translation));
 	}
 	public void RotateBy(ResourceHandle<ModelInstance> handle, Rotation rotation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithAdditionalRotation(rotation));
+		UpdateTransformAndMatrix(handle, _activeInstanceTransforms[handle].WithAdditionalRotation(rotation));
 	}
 	public void ScaleBy(ResourceHandle<ModelInstance> handle, float scalar) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithScalingMultipliedBy(scalar));
+		UpdateTransformAndMatrix(handle, _activeInstanceTransforms[handle].WithScalingMultipliedBy(scalar));
 	}
 	public void ScaleBy(ResourceHandle<ModelInstance> handle, Vect vect) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithScalingMultipliedBy(vect));
+		UpdateTransformAndMatrix(handle, _activeInstanceTransforms[handle].WithScalingMultipliedBy(vect));
 	}
 	public void AdjustScaleBy(ResourceHandle<ModelInstance> handle, float scalar) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithScalingAdjustedBy(scalar));
+		UpdateTransformAndMatrix(handle, _activeInstanceTransforms[handle].WithScalingAdjustedBy(scalar));
 	}
 	public void AdjustScaleBy(ResourceHandle<ModelInstance> handle, Vect vect) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		UpdateTransformAndMatrix(handle, _activeInstanceMap[handle].WithScalingAdjustedBy(vect));
+		UpdateTransformAndMatrix(handle, _activeInstanceTransforms[handle].WithScalingAdjustedBy(vect));
 	}
 
 	public Mesh GetMesh(ResourceHandle<ModelInstance> handle) {
@@ -131,12 +135,53 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 	}
 	public void SetMaterial(ResourceHandle<ModelInstance> handle, Material newMaterial) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+
 		SetModelInstanceMaterial(
 			handle,
 			newMaterial.Handle
 		).ThrowIfFailure();
 		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), GetMaterial(handle));
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMaterial);
+
+		DisposeEffectMaterialCopyIfPresent(handle);
+	}
+
+	public void SetMaterialEffectTransform(ResourceHandle<ModelInstance> handle, Transform2D newTransform) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var effectsMaterialInstance = GetOrCreateEffectMaterialCopy(handle);
+		effectsMaterialInstance?.SetEffectTransform(newTransform);
+	}
+	public void SetMaterialEffectBlendTexture(ResourceHandle<ModelInstance> handle, MaterialEffectMapType mapType, Texture mapTexture) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var effectsMaterialInstance = GetOrCreateEffectMaterialCopy(handle);
+		effectsMaterialInstance?.SetEffectBlendTexture(mapType, mapTexture);
+	}
+	public void SetMaterialEffectBlendDistance(ResourceHandle<ModelInstance> handle, MaterialEffectMapType mapType, float distance) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var effectsMaterialInstance = GetOrCreateEffectMaterialCopy(handle);
+		effectsMaterialInstance?.SetEffectBlendDistance(mapType, distance);
+	}
+
+	Material? GetOrCreateEffectMaterialCopy(ResourceHandle<ModelInstance> handle) {
+		if (_activeInstanceEffectsData.TryGetValue(handle, out var effectsData)) return effectsData.PerInstanceEffectMaterialCopy;
+
+		var curMat = GetMaterial(handle);
+		if (!curMat.SupportsPerInstanceEffects) return null;
+
+		var result = curMat.Duplicate();
+		SetModelInstanceMaterial(
+			handle,
+			result.Handle
+		).ThrowIfFailure();
+		_activeInstanceEffectsData[handle] = new(result);
+		return result;
+	}
+
+	void DisposeEffectMaterialCopyIfPresent(ResourceHandle<ModelInstance> handle) {
+		if (!_activeInstanceEffectsData.TryGetValue(handle, out var effectsData)) return;
+
+		effectsData.PerInstanceEffectMaterialCopy.Dispose();
+		_activeInstanceEffectsData.Remove(handle);
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<ModelInstance> handle) {
@@ -196,7 +241,7 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 	#endregion
 
 	#region Disposal
-	public bool IsDisposed(ResourceHandle<ModelInstance> handle) => _isDisposed || !_activeInstanceMap.ContainsKey(handle);
+	public bool IsDisposed(ResourceHandle<ModelInstance> handle) => _isDisposed || !_activeInstanceTransforms.ContainsKey(handle);
 	public void Dispose(ResourceHandle<ModelInstance> handle) => Dispose(handle, removeFromMap: true);
 
 	void Dispose(ResourceHandle<ModelInstance> handle, bool removeFromMap) {
@@ -204,14 +249,16 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		DisposeModelInstance(handle).ThrowIfFailure();
-		if (removeFromMap) _activeInstanceMap.Remove(handle);
+		DisposeEffectMaterialCopyIfPresent(handle);
+		if (removeFromMap) _activeInstanceTransforms.Remove(handle);
 	}
 
 	public void Dispose() {
 		try {
 			if (_isDisposed) return;
-			foreach (var kvp in _activeInstanceMap) Dispose(kvp.Key, removeFromMap: false);
-			_activeInstanceMap.Dispose();
+			foreach (var kvp in _activeInstanceTransforms) Dispose(kvp.Key, removeFromMap: false);
+			_activeInstanceTransforms.Dispose();
+			_activeInstanceEffectsData.Dispose();
 		}
 		finally {
 			_isDisposed = true;
