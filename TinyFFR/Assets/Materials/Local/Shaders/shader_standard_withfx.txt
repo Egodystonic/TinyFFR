@@ -1,0 +1,157 @@
+﻿material {
+	name : %NAME%,
+	featureLevel : 3,
+	parameters : [
+		{
+			type : float4x4,
+			name : uv_transform
+		},
+		{
+			type : sampler2d,
+			name : color_map
+		},
+		{
+			type : sampler2d,
+			name : color_map_blend
+		},
+		{
+			type : float,
+			name : color_map_blend_distance
+		}
+#if Normals
+		,
+		{
+			type : sampler2d,
+			name : normal_map
+		}
+#endif Normals
+#if Orm
+		,
+		{
+			type : sampler2d,
+			name : orm_map
+		},
+		{
+			type : sampler2d,
+			name : orm_map_blend
+		},
+		{
+			type : float,
+			name : orm_map_blend_distance
+		}
+#endif Orm
+#if Emissive
+		,
+		{
+			type : sampler2d,
+			name : emissive_map
+		},
+		{
+			type : sampler2d,
+			name : emissive_map_blend
+		},
+		{
+			type : float,
+			name : emissive_map_blend_distance
+		}
+#endif Emissive
+#if Anisotropy
+		,
+		{
+			type : sampler2d,
+			name : anisotropy_map
+		}
+#endif Anisotropy
+#if Clearcoat
+		,
+		{
+			type : sampler2d,
+			name : clearcoat_map
+		}
+#endif Clearcoat
+	],
+	requires : [
+		uv0
+	],
+	shadingModel : lit,
+	flipUV : false,
+#option AlphaMode
+#variant AlphaOff
+	blending : opaque
+#variant AlphaOn
+	blending : masked
+#variant AlphaOnBlended
+	blending : fade,
+	transparency : twoPassesTwoSides
+#endoption
+}
+
+fragment {
+	void material(inout MaterialInputs material) {
+		float3 uv0Extended = float3(getUV0().xy, 1.0);
+		vec2 uv0 = mulMat3x3Float3(materialParams.uv_transform, uv0Extended).xy;
+
+#if Normals
+		material.normal = texture(materialParams_normal_map, uv0).xyz * 2.0 - 1.0;
+		material.normal.y = -material.normal.y;
+#endif Normals
+
+		prepareMaterial(material);
+
+#option AlphaMode
+#variant AlphaOff
+		vec3 startColor = texture(materialParams_color_map, uv0).rgb;
+		vec3 endColor = texture(materialParams_color_map_blend, uv0).rgb;
+		material.baseColor.rgb = startColor * (1.0f - materialParams.color_map_blend_distance) + endColor * materialParams.color_map_blend_distance;
+#variant AlphaOn
+		vec4 startColor = texture(materialParams_color_map, uv0).rgba;
+		vec4 endColor = texture(materialParams_color_map_blend, uv0).rgba;
+		material.baseColor.rgba = startColor * (1.0f - materialParams.color_map_blend_distance) + endColor * materialParams.color_map_blend_distance;
+#variant AlphaOnBlended
+		vec4 startColor = texture(materialParams_color_map, uv0).rgba;
+		vec4 endColor = texture(materialParams_color_map_blend, uv0).rgba;
+		material.baseColor.rgba = startColor * (1.0f - materialParams.color_map_blend_distance) + endColor * materialParams.color_map_blend_distance;
+#endoption
+
+#if Orm
+#option OrmReflectance
+#variant On
+		vec4 startOrmr = texture(materialParams_orm_map, uv0).rgba;
+		vec4 endOrmr = texture(materialParams_orm_map_blend, uv0).rgba;
+		vec4 ormr = startOrmr * (1.0f - materialParams.orm_map_blend_distance) + endOrmr * materialParams.orm_map_blend_distance;
+		material.ambientOcclusion = ormr.r;
+		material.roughness = ormr.g;
+		material.metallic = ormr.b;
+		material.reflectance = ormr.a;
+#variant Off
+		vec3 startOrm = texture(materialParams_orm_map, uv0).rgb;
+		vec3 endOrm = texture(materialParams_orm_map_blend, uv0).rgb;
+		vec3 orm = startOrm * (1.0f - materialParams.orm_map_blend_distance) + endOrm * materialParams.orm_map_blend_distance;
+		material.ambientOcclusion = orm.r;
+		material.roughness = orm.g;
+		material.metallic = orm.b;
+#endoption
+#endif Orm
+
+#if Emissive
+		vec4 startEmissive = texture(materialParams_emissive_map, uv0).rgba;
+		vec4 endEmissive = texture(materialParams_emissive_map_blend, uv0).rgba;
+
+		vec4 emissive = startEmissive * (1.0f - materialParams.emissive_map_blend_distance) + endEmissive * materialParams.emissive_map_blend_distance;
+		material.emissive.rgb = emissive.rgb * (100.0 * emissive.a);
+		material.emissive.a = 0.05;
+#endif Emissive
+
+#if Anisotropy
+		vec3 anisotropy = texture(materialParams_anisotropy_map, uv0).rgb;
+		material.anisotropyDirection = vec3(anisotropy.rg * 2.0 - 1.0, 0.0);
+		material.anisotropy = anisotropy.b;
+#endif Anisotropy
+
+#if ClearCoat
+		vec2 clearcoat = texture(materialParams_clearcoat_map, uv0).rg;
+		material.clearCoat = clearcoat.r;
+		material.clearCoatRoughness = clearcoat.g;
+#endif ClearCoat
+	}
+}

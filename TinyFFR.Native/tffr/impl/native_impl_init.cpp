@@ -50,6 +50,7 @@ void native_impl_init::on_factory_build(interop_bool enableVsync) {
 
 	filament_engine_ptr = filament::Engine::Builder()
 		.backend(filament::Engine::Backend::OPENGL)
+		.featureLevel(filament::Engine::FeatureLevel::FEATURE_LEVEL_3)
 		.config(&config)
 		.build();
 

@@ -288,7 +288,7 @@ static class LocalShaderPackageConstants {
 		public ReadOnlySpan<byte> GetEffectColorMapDistanceParamOrThrow() => ParamEffectColorMapBlendDistance;
 		public ReadOnlySpan<byte> GetEffectEmissiveMapTexParamOrThrow() => ParamEffectEmissiveMapBlend;
 		public ReadOnlySpan<byte> GetEffectEmissiveMapDistanceParamOrThrow() => ParamEffectEmissiveMapBlendDistance;
-		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapTexParamOrThrow() => ParamAbsorptionTransmissionMap;
+		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapTexParamOrThrow() => ParamEffectAbsorptionTransmissionMapBlend;
 		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapDistanceParamOrThrow() => ParamEffectAbsorptionTransmissionMapBlendDistance;
 		public ReadOnlySpan<byte> GetEffectOrmMapTexParamOrThrow() => ParamEffectOrmMapBlend;
 		public ReadOnlySpan<byte> GetEffectOrmMapDistanceParamOrThrow() => ParamEffectOrmMapBlendDistance;

@@ -84,9 +84,11 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetMaterial(Material material) => Material = material;
 
-	public MaterialEffectController MaterialEffects {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => new(this);
+	public MaterialEffectController? MaterialEffects {
+		get {
+			if (!Material.SupportsPerInstanceEffects) return null;
+			return new MaterialEffectController(this);
+		}
 	}
 
 	public Mesh Mesh {
