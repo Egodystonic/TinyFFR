@@ -5,19 +5,13 @@
 			type : sampler2d,
 			name : color_map
 		}
-#if Emissive
-		,
-		{
-			type : sampler2d,
-			name : emissive_map
-		}
-#endif Emissive
 	],
 	requires : [
 		uv0
 	],
-	shadingModel : unlit,
+	shadingModel : lit,
 	flipUV : false,
+	postLightingBlending : opaque,
 #option AlphaMode
 #variant AlphaOff
 	blending : opaque
@@ -34,15 +28,9 @@ fragment {
 
 #option AlphaMode
 #variant AlphaOff
-		material.baseColor.rgb = texture(materialParams_color_map, uv0).rgb;
+		material.postLightingColor.rgb = texture(materialParams_color_map, uv0).rgb;
 #variant AlphaOn
-		material.baseColor.rgba = texture(materialParams_color_map, uv0).rgba;
+		material.postLightingColor.rgba = texture(materialParams_color_map, uv0).rgba;
 #endoption
-
-#if Emissive
-		vec4 emissive = texture(materialParams_emissive_map, uv0).rgba;
-		material.emissive.rgb = emissive.rgb * (100.0 * emissive.a);
-		material.emissive.a = 0.05;
-#endif Emissive
 	}
 }

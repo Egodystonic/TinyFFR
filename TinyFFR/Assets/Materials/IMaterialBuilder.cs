@@ -12,10 +12,9 @@ public interface IMaterialBuilder {
 
 	Material CreateTestMaterial(bool ignoresLighting = true);
 
-	Material CreateSimpleMaterial(Texture colorMap, Texture? emissiveMap = null, bool enablePerInstanceEffects = false, ReadOnlySpan<char> name = default) {
+	Material CreateSimpleMaterial(Texture colorMap, bool enablePerInstanceEffects = false, ReadOnlySpan<char> name = default) {
 		return CreateSimpleMaterial(new SimpleMaterialCreationConfig {
 			ColorMap = colorMap,
-			EmissiveMap = emissiveMap,
 			EnablePerInstanceEffects = enablePerInstanceEffects,
 			Name = name
 		});

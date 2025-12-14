@@ -37,7 +37,6 @@ class LocalShaderPackageConstantsTest {
 		var shaderSet = new HashSet<string>();
 
 		var simpleOptions = GetAllShaderOptions<
-			SimpleMaterialShaderConstants.Flags, 
 			SimpleMaterialShaderConstants.AlphaModeVariant
 		>();
 
@@ -55,7 +54,7 @@ class LocalShaderPackageConstantsTest {
 		>();
 
 		foreach (var option in simpleOptions) {
-			var shader = SimpleMaterialShader.GetShaderResourceName(option.EnableEffects, option.Flag, option.Variant1);
+			var shader = SimpleMaterialShader.GetShaderResourceName(option.EnableEffects, option.Variant1);
 			Assert.IsFalse(shaderSet.Contains(shader));
 			shaderSet.Add(shader);
 		}
@@ -85,6 +84,15 @@ class LocalShaderPackageConstantsTest {
 	}
 
 	T[] GetAllVariants<T>() where T : struct, Enum => Enum.GetValues<T>();
+
+	IEnumerable<(bool EnableEffects, T1 Variant1)> GetAllShaderOptions<T1>() where T1 : struct, Enum {
+		var v1s = GetAllVariants<T1>();
+
+		foreach (var v1 in v1s) {
+			yield return (false, v1);
+			yield return (true, v1);
+		}
+	}
 
 	IEnumerable<(bool EnableEffects, TFlag Flag, T1 Variant1)> GetAllShaderOptions<TFlag, T1>() where TFlag : struct, Enum where T1 : struct, Enum {
 		var flags = GetAllFlagCombinations<TFlag>();

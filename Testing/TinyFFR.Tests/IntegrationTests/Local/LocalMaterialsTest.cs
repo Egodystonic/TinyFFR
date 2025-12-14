@@ -106,7 +106,7 @@ class LocalMaterialsTest {
 		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere, subdivisionLevel: 7);
 
 		using var camera = factory.CameraBuilder.CreateCamera();
-		using var light = factory.LightBuilder.CreatePointLight(position: (0f, 0f, 1f));
+		using var light = factory.LightBuilder.CreatePointLight(position: (0f, 0f, 1f), castsShadows: true);
 		using var scene = factory.SceneBuilder.CreateScene();
 		scene.SetBackdrop(backdrop);
 		scene.Add(light);
@@ -139,8 +139,7 @@ class LocalMaterialsTest {
 						factory.ResourceAllocator,
 						factory.TextureBuilder,
 						factory.MaterialBuilder,
-						curUserOptions.MapAlphaType != 0,
-						curUserOptions.MapEmissive
+						curUserOptions.MapAlphaType != 0
 					);
 					break;
 				case 3:
@@ -325,14 +324,13 @@ class LocalMaterialsTest {
 		}
 	}
 
-	ResourceGroup CreateSimpleMaterial(IResourceAllocator resAllocator, ITextureBuilder texBuilder, IMaterialBuilder matBuilder, bool includeAlpha, bool emissive) {
+	ResourceGroup CreateSimpleMaterial(IResourceAllocator resAllocator, ITextureBuilder texBuilder, IMaterialBuilder matBuilder, bool includeAlpha) {
 		var result = resAllocator.CreateResourceGroup(
 			disposeContainedResourcesWhenDisposed: true,
 			name: "Simple Material Resources"
 		);
 
 		Texture colorMap;
-		Texture? emissiveMap = null;
 		
 		if (includeAlpha) {
 			colorMap = texBuilder.CreateColorMap(
@@ -366,34 +364,8 @@ class LocalMaterialsTest {
 		}
 		result.Add(colorMap);
 
-		if (emissive) {
-			emissiveMap = texBuilder.CreateEmissiveMap(
-				TexturePattern.Rectangles(
-					interiorSize: TexturePatternDefaultValues.RectanglesDefaultInteriorSize,
-					borderSize: new XYPair<int>(16, 16),
-					paddingSize: TexturePatternDefaultValues.RectanglesDefaultPaddingSize,
-					interiorValue: ColorVect.White,
-					borderRightValue: new ColorVect(1f, 0f, 0f),
-					borderTopValue: new ColorVect(1f, 1f, 0f),
-					borderLeftValue: new ColorVect(0f, 1f, 0f),
-					borderBottomValue: new ColorVect(0f, 0f, 1f),
-					paddingValue: ColorVect.Black,
-					repetitions: (1, 1)
-				),
-				TexturePattern.Rectangles<Real>(
-					interiorValue: 0f,
-					borderValue: 1f,
-					paddingValue: 0f,
-					repetitions: (1, 1),
-					borderSize: (16, 16)
-				),
-				name: "Simple Material Emissive Map"
-			);
-		}
-
 		var matConfig = new SimpleMaterialCreationConfig {
 			ColorMap = colorMap,
-			EmissiveMap = emissiveMap,
 			Name = "Simple Material"
 		};
 		var mat = matBuilder.CreateSimpleMaterial(matConfig);

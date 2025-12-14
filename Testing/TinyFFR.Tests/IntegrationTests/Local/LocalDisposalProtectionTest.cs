@@ -129,7 +129,7 @@ class LocalDisposalProtectionTest {
 		};
 		AssertUseAfterDisposalThrowsException(textureBuilder.CreateColorMap(TexturePattern.PlainFill<ColorVect>(StandardColor.RealWorldBrick), includeAlpha: false), objectIsAlreadyDisposed: false, textureActions);
 		var materialBuilder = assetLoader.MaterialBuilder;
-		var material = materialBuilder.CreateStandardMaterial(texture);
+		var material = materialBuilder.CreateStandardMaterial(texture, enablePerInstanceEffects: true);
 		var materialActions = new Action<Material>[] {
 			v => _ = v.Handle,
 			v => _ = v.GetNameAsNewStringObject(),
@@ -147,6 +147,10 @@ class LocalDisposalProtectionTest {
 			v => v.AdjustScaleBy(Vect.One),
 			v => v.AdjustScaleBy(1f),
 			v => _ = v.Material,
+			v => _ = v.MaterialEffects,
+			v => v.MaterialEffects!.Value.SetTransform(Transform2D.None),
+			v => v.MaterialEffects!.Value.SetBlendTexture(MaterialEffectMapType.Color, texture),
+			v => v.MaterialEffects!.Value.SetBlendDistance(MaterialEffectMapType.Color, 1f),
 			v => _ = v.Mesh,
 			v => v.MoveBy(Vect.One),
 			v => _ = v.Position,

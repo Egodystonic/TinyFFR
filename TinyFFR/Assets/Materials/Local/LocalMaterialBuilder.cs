@@ -82,23 +82,19 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		var shaderConstants = SimpleMaterialShader;
 
-		var flags = (SimpleMaterialShaderConstants.Flags) 0;
 		var alphaModeVariant = SimpleMaterialShaderConstants.AlphaModeVariant.AlphaOff;
 
-		if (config.EmissiveMap.HasValue) flags |= SimpleMaterialShaderConstants.Flags.Emissive;
 		if (config.ColorMap.TexelType == TexelType.Rgba32) {
 			alphaModeVariant = SimpleMaterialShaderConstants.AlphaModeVariant.AlphaOn;
 		}
 
-		var shaderResourceName = shaderConstants.GetShaderResourceName(config.EnablePerInstanceEffects, flags, alphaModeVariant);
+		var shaderResourceName = shaderConstants.GetShaderResourceName(config.EnablePerInstanceEffects, alphaModeVariant);
 		var result = InstantiateMaterial(shaderResourceName, config.Name, shaderConstants);
 
 		ApplyMaterialParam(result, config.ColorMap, shaderConstants.ParamColorMap);
-		ApplyMaterialParam(result, config.EmissiveMap, shaderConstants.ParamEmissiveMap);
 
 		if (config.EnablePerInstanceEffects) {
 			var supportedEffects = SupportedEffectsFlags.UvTransform | SupportedEffectsFlags.ColorMapBlend;
-			if (config.EmissiveMap.HasValue) supportedEffects |= SupportedEffectsFlags.EmissiveMapBlend;
 			
 			SetUpDefaultEffectsParameters(result, shaderConstants, supportedEffects);
 			_activeMaterials[result.Handle] = _activeMaterials[result.Handle] with { SupportedEffects = supportedEffects };
@@ -372,6 +368,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 				throw new ArgumentOutOfRangeException(nameof(mapType), mapType, null);
 		}
 
+		if (!Single.IsFinite(distance)) distance = 0f;
 		ApplyMaterialParam(HandleToInstance(handle), distance, param);
 	}
 

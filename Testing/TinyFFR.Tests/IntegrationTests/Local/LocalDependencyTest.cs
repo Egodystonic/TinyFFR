@@ -101,6 +101,26 @@ class LocalDependencyTest {
 			var tempWindow = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, tempCamera, tempScene, tempWindow, factory.RendererBuilder.CreateRenderer(tempScene, tempCamera, tempWindow));
 			AssertCheckForDependentsBeforeDisposal(factory.ResourceAllocator, factory.RendererBuilder.CreateRenderOutputBuffer());
+
+			void CheckEffectsMaterial(Func<Texture, Material> matCreationFunc, Action<Texture, MaterialEffectController> assignBlendDestTexAction) {
+				using var map = factory.TextureBuilder.CreateTexture(new TexelRgba32(), isLinearColorspace: true);
+				using var m = matCreationFunc(map);
+				using var cube = factory.MeshBuilder.CreateMesh(new Cuboid(1f));
+				var blendMap = factory.TextureBuilder.CreateTexture(new TexelRgba32(), isLinearColorspace: true);
+				var obj = factory.ObjectBuilder.CreateModelInstance(cube, m);
+				assignBlendDestTexAction(blendMap, obj.MaterialEffects!.Value);
+				AssertDependency(blendMap, obj);
+			}
+			// ReSharper disable AccessToDisposedClosure We know it won't be disposed
+			CheckEffectsMaterial(t => factory.MaterialBuilder.CreateSimpleMaterial(t, enablePerInstanceEffects: true), (t, c) => c.SetBlendTexture(MaterialEffectMapType.Color, t));
+			CheckEffectsMaterial(t => factory.MaterialBuilder.CreateStandardMaterial(t, enablePerInstanceEffects: true), (t, c) => c.SetBlendTexture(MaterialEffectMapType.Color, t));
+			CheckEffectsMaterial(t => factory.MaterialBuilder.CreateStandardMaterial(t, ormOrOrmrMap: t, enablePerInstanceEffects: true), (t, c) => c.SetBlendTexture(MaterialEffectMapType.OcclusionRoughnessMetallic, t));
+			CheckEffectsMaterial(t => factory.MaterialBuilder.CreateStandardMaterial(t, emissiveMap: t, enablePerInstanceEffects: true), (t, c) => c.SetBlendTexture(MaterialEffectMapType.Emissive, t));
+			CheckEffectsMaterial(t => factory.MaterialBuilder.CreateTransmissiveMaterial(t, absorptionTransmissionMap: t, enablePerInstanceEffects: true), (t, c) => c.SetBlendTexture(MaterialEffectMapType.Color, t));
+			CheckEffectsMaterial(t => factory.MaterialBuilder.CreateTransmissiveMaterial(t, absorptionTransmissionMap: t, ormrMap: t, enablePerInstanceEffects: true), (t, c) => c.SetBlendTexture(MaterialEffectMapType.OcclusionRoughnessMetallicReflectance, t));
+			CheckEffectsMaterial(t => factory.MaterialBuilder.CreateTransmissiveMaterial(t, absorptionTransmissionMap: t, emissiveMap: t, enablePerInstanceEffects: true), (t, c) => c.SetBlendTexture(MaterialEffectMapType.Emissive, t));
+			CheckEffectsMaterial(t => factory.MaterialBuilder.CreateTransmissiveMaterial(t, absorptionTransmissionMap: t, enablePerInstanceEffects: true), (t, c) => c.SetBlendTexture(MaterialEffectMapType.AbsorptionTransmission, t));
+			// ReSharper restore AccessToDisposedClosure
 		}
 
 		Assert.DoesNotThrow(() => new LocalTinyFfrFactory().Dispose());

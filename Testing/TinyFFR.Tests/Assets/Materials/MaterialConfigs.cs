@@ -23,10 +23,12 @@ class MaterialConfigsTest {
 	[Test]
 	public void ShouldCorrectlyConvertMaterialCreationConfigToAndFromHeapStorageFormat() {
 		var testConfigA = new MaterialCreationConfig {
-			Name = "Aa Aa"
+			Name = "Aa Aa",
+			EnablePerInstanceEffects = true
 		};
 		var testConfigB = new MaterialCreationConfig {
-			Name = "BBBbbb"
+			Name = "BBBbbb",
+			EnablePerInstanceEffects = false
 		};
 
 		AssertRoundTripHeapStorage(testConfigA, CompareBaseConfigs);
@@ -34,15 +36,56 @@ class MaterialConfigsTest {
 
 		AssertHeapSerializationWithObjects<MaterialCreationConfig>()
 			.String("Aa Aa")
+			.Bool(true)
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<MaterialCreationConfig>()
 			.String("BBBbbb")
+			.Bool(false)
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<MaterialCreationConfig>()
 			.Including(nameof(MaterialCreationConfig.Name))
+			.Including(nameof(MaterialCreationConfig.EnablePerInstanceEffects))
 			.End();
+	}
+
+	[Test]
+	public void ShouldCorrectlyConvertSimpleMaterialCreationConfigToAndFromHeapStorageFormat() {
+		var colorTexImplSub = Substitute.For<ITextureImplProvider>();
+		colorTexImplSub.IsDisposed(Arg.Any<ResourceHandle<Texture>>()).Returns(false);
+		var testConfigA = new SimpleMaterialCreationConfig {
+			Name = "Aa Aa",
+			EnablePerInstanceEffects = true,
+			ColorMap = new Texture(111, colorTexImplSub),
+		};
+		var testConfigB = new SimpleMaterialCreationConfig {
+			Name = "BBBbbb",
+			EnablePerInstanceEffects = false,
+			ColorMap = new Texture(1111, colorTexImplSub),
+		};
+
+		void CompareConfigs(SimpleMaterialCreationConfig expected, SimpleMaterialCreationConfig actual) {
+			Assert.AreEqual(expected.ColorMap, actual.ColorMap);
+			CompareBaseConfigs(expected.BaseConfig, actual.BaseConfig);
+		}
+
+		AssertRoundTripHeapStorage(testConfigA, CompareConfigs);
+		AssertRoundTripHeapStorage(testConfigB, CompareConfigs);
+
+		AssertHeapSerializationWithObjects<SimpleMaterialCreationConfig>()
+			.Resource(testConfigA.ColorMap)
+			.SubConfig(testConfigA.BaseConfig)
+			.For(testConfigA);
+
+		AssertHeapSerializationWithObjects<SimpleMaterialCreationConfig>()
+			.Resource(testConfigB.ColorMap)
+			.SubConfig(testConfigB.BaseConfig)
+			.For(testConfigB);
+
+		AssertPropertiesAccountedFor<SimpleMaterialCreationConfig>()
+			.Including(nameof(SimpleMaterialCreationConfig.ColorMap))
+			.Including(nameof(SimpleMaterialCreationConfig.Name));
 	}
 
 	[Test]

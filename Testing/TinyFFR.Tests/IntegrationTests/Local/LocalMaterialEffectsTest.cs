@@ -11,8 +11,7 @@ using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Testing;
-using System.Reflection.PortableExecutable;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR;
 
@@ -25,6 +24,49 @@ class LocalMaterialEffectsTest {
 
 	[TearDown]
 	public void TearDownTest() { }
+
+	void AssertInvalidRequestsDoNotCauseIssues(ILocalTinyFfrFactory factory) {
+		// This prods against non-effect materials and also against effect materials with blend maps for non-loaded map types
+		using var colorMap = factory.TextureBuilder.CreateColorMap();
+		using var atMap = factory.TextureBuilder.CreateAbsorptionTransmissionMap();
+		using var cubeMesh = factory.MeshBuilder.CreateMesh(new Cuboid(1f));
+		using var simpleMat = factory.MaterialBuilder.CreateSimpleMaterial(colorMap);
+		using var standardMat = factory.MaterialBuilder.CreateStandardMaterial(colorMap);
+		using var transmissiveMat = factory.MaterialBuilder.CreateTransmissiveMaterial(colorMap, atMap);
+		using var simpleMatWithEffects = factory.MaterialBuilder.CreateSimpleMaterial(colorMap, enablePerInstanceEffects: true);
+		using var standardMatWithEffects = factory.MaterialBuilder.CreateStandardMaterial(colorMap, enablePerInstanceEffects: true);
+		using var transmissiveMatWithEffects = factory.MaterialBuilder.CreateTransmissiveMaterial(colorMap, atMap, enablePerInstanceEffects: true);
+
+		using var simpleObj = factory.ObjectBuilder.CreateModelInstance(cubeMesh, simpleMat);
+		using var standardObj = factory.ObjectBuilder.CreateModelInstance(cubeMesh, standardMat);
+		using var transmissiveObj = factory.ObjectBuilder.CreateModelInstance(cubeMesh, transmissiveMat);
+
+		Assert.IsNull(simpleObj.MaterialEffects);
+		Assert.IsNull(standardObj.MaterialEffects);
+		Assert.IsNull(transmissiveObj.MaterialEffects);
+
+		simpleObj.Material = simpleMatWithEffects;
+		standardObj.Material = standardMatWithEffects;
+		transmissiveObj.Material = transmissiveMatWithEffects;
+
+		void TestEffectsController(MaterialEffectController c) {
+			c.SetBlendDistance(MaterialEffectMapType.Color, Single.NaN);
+			c.SetBlendDistance(MaterialEffectMapType.OcclusionRoughnessMetallic, Single.PositiveInfinity);
+			c.SetBlendDistance(MaterialEffectMapType.OcclusionRoughnessMetallicReflectance, Single.NegativeInfinity);
+			c.SetBlendDistance(MaterialEffectMapType.Emissive, Single.NaN);
+			c.SetBlendDistance(MaterialEffectMapType.AbsorptionTransmission, Single.PositiveInfinity);
+
+			c.SetBlendTexture(MaterialEffectMapType.Color, colorMap);
+			c.SetBlendTexture(MaterialEffectMapType.OcclusionRoughnessMetallic, colorMap);
+			c.SetBlendTexture(MaterialEffectMapType.OcclusionRoughnessMetallicReflectance, colorMap);
+			c.SetBlendTexture(MaterialEffectMapType.Emissive, colorMap);
+			c.SetBlendTexture(MaterialEffectMapType.AbsorptionTransmission, colorMap);
+		}
+
+		TestEffectsController(simpleObj.MaterialEffects!.Value);
+		TestEffectsController(standardObj.MaterialEffects!.Value);
+		TestEffectsController(transmissiveObj.MaterialEffects!.Value);
+	}
 
 	[Test]
 	public void Execute() {
@@ -42,9 +84,9 @@ class LocalMaterialEffectsTest {
 		using var camera = factory.CameraBuilder.CreateCamera(initialPosition: (0f, 1.4f, 0f));
 		camera.LookAt((0f, 0f, 3f), Direction.Up);
 		camera.MoveBy(camera.ViewDirection * 0.4f);
-		using var light = factory.LightBuilder.CreateDirectionalLight(direction: (1f, -1f, 0f), castsShadows: false); // TODO
-		// TODO run quick automated test prodding against non-effect materials and also against effect materials with blend maps for non-loaded map types
-		
+		using var light = factory.LightBuilder.CreateDirectionalLight(direction: (1f, -1f, 0f), castsShadows: false);
+		AssertInvalidRequestsDoNotCauseIssues(factory);
+
 		var uvTexMetadata = factory.AssetLoader.ReadTextureMetadata(factory.AssetLoader.BuiltInTexturePaths.UvTestingTexture);
 		Assert.AreEqual(false, uvTexMetadata.IncludesAlphaChannel);
 		var uvTexDataSpan = new TexelRgb24[uvTexMetadata.Dimensions.Area];
@@ -107,7 +149,6 @@ class LocalMaterialEffectsTest {
 
 		using var leftMat = factory.MaterialBuilder.CreateSimpleMaterial(
 			colorMap: colorMap,
-			emissiveMap: emissiveMap,
 			enablePerInstanceEffects: true
 		);
 		using var midMat = factory.MaterialBuilder.CreateStandardMaterial(

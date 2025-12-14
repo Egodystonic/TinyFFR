@@ -17,27 +17,13 @@
 			type : float,
 			name : color_map_blend_distance
 		}
-#if Emissive
-		,
-		{
-			type : sampler2d,
-			name : emissive_map
-		},
-		{
-			type : sampler2d,
-			name : emissive_map_blend
-		},
-		{
-			type : float,
-			name : emissive_map_blend_distance
-		}
-#endif Emissive
 	],
 	requires : [
 		uv0
 	],
-	shadingModel : unlit,
+	shadingModel : lit,
 	flipUV : false,
+	postLightingBlending : opaque,
 #option AlphaMode
 #variant AlphaOff
 	blending : opaque
@@ -57,20 +43,11 @@ fragment {
 #variant AlphaOff
 		vec3 startColor = texture(materialParams_color_map, uv0).rgb;
 		vec3 endColor = texture(materialParams_color_map_blend, uv0).rgb;
-		material.baseColor.rgb = startColor * (1.0f - materialParams.color_map_blend_distance) + endColor * materialParams.color_map_blend_distance;
+		material.postLightingColor.rgb = startColor * (1.0f - materialParams.color_map_blend_distance) + endColor * materialParams.color_map_blend_distance;
 #variant AlphaOn
 		vec4 startColor = texture(materialParams_color_map, uv0).rgba;
 		vec4 endColor = texture(materialParams_color_map_blend, uv0).rgba;
-		material.baseColor.rgba = startColor * (1.0f - materialParams.color_map_blend_distance) + endColor * materialParams.color_map_blend_distance;
+		material.postLightingColor.rgba = startColor * (1.0f - materialParams.color_map_blend_distance) + endColor * materialParams.color_map_blend_distance;
 #endoption
-
-#if Emissive
-		vec4 startEmissive = texture(materialParams_emissive_map, uv0).rgba;
-		vec4 endEmissive = texture(materialParams_emissive_map_blend, uv0).rgba;
-
-		vec4 emissive = startEmissive * (1.0f - materialParams.emissive_map_blend_distance) + endEmissive * materialParams.emissive_map_blend_distance;
-		material.emissive.rgb = emissive.rgb * (100.0 * emissive.a);
-		material.emissive.a = 0.05;
-#endif Emissive
 	}
 }

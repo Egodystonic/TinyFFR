@@ -296,22 +296,17 @@ static class LocalShaderPackageConstants {
 
 	public static SimpleMaterialShaderConstants SimpleMaterialShader { get; } = new();
 	public sealed class SimpleMaterialShaderConstants : IShaderPackageConstants {
-		[Flags]
-		public enum Flags {
-			Emissive = 1 << 0,
-		}
 		public enum AlphaModeVariant {
 			AlphaOff,
 			AlphaOn
 		}
 
-		readonly ArrayPoolBackedMap<(bool SupportsEffects, Flags Flags, AlphaModeVariant AlphaMode), string> _resourceNameMap;
+		readonly ArrayPoolBackedMap<(bool SupportsEffects, AlphaModeVariant AlphaMode), string> _resourceNameMap;
 
 		public SimpleMaterialShaderConstants() {
 			const string ShaderNameStart = ResourceNamespace + "simple";
 			const string ShaderNameStartWithEffects = ShaderNameStart + ShaderWithEffectsSuffix;
 			const string AlphaModeVariantStart = "_alphamode=";
-			const Flags LastFlag = Flags.Emissive;
 			const AlphaModeVariant FirstAlphaMode = AlphaModeVariant.AlphaOff;
 			const AlphaModeVariant LastAlphaMode = AlphaModeVariant.AlphaOn;
 
@@ -319,49 +314,42 @@ static class LocalShaderPackageConstants {
 
 			Span<char> stringBuildSpace = stackalloc char[1000];
 
-			for (var flag = (Flags) 0; flag < (Flags) ((int) LastFlag << 1); ++flag) {
-				for (var vAlphaMode = FirstAlphaMode; vAlphaMode <= LastAlphaMode; ++vAlphaMode) {
-					ShaderNameStartWithEffects.CopyTo(stringBuildSpace);
-					var emptySpaceSpan = stringBuildSpace[ShaderNameStartWithEffects.Length..];
+			for (var vAlphaMode = FirstAlphaMode; vAlphaMode <= LastAlphaMode; ++vAlphaMode) {
+				ShaderNameStartWithEffects.CopyTo(stringBuildSpace);
+				var emptySpaceSpan = stringBuildSpace[ShaderNameStartWithEffects.Length..];
 
-					Write(ref emptySpaceSpan, AlphaModeVariantStart);
-					Write(
-						ref emptySpaceSpan,
-						vAlphaMode switch {
-							AlphaModeVariant.AlphaOff => "alphaoff",
-							AlphaModeVariant.AlphaOn => "alphaon",
-							_ => throw new ArgumentOutOfRangeException()
-						}
-					);
+				Write(ref emptySpaceSpan, AlphaModeVariantStart);
+				Write(
+					ref emptySpaceSpan,
+					vAlphaMode switch {
+						AlphaModeVariant.AlphaOff => "alphaoff",
+						AlphaModeVariant.AlphaOn => "alphaon",
+						_ => throw new ArgumentOutOfRangeException()
+					}
+				);
 
-					WriteIfFlagExists(ref emptySpaceSpan, "_emissive", (int) flag, (int) Flags.Emissive);
+				Write(ref emptySpaceSpan, ShaderResourceExtension);
 
-					Write(ref emptySpaceSpan, ShaderResourceExtension);
-
-					_resourceNameMap.Add(
-						(true, flag, vAlphaMode),
-						new String(stringBuildSpace[..^emptySpaceSpan.Length])
-					);
-					stringBuildSpace[..ShaderNameStart.Length].CopyTo(stringBuildSpace[ShaderWithEffectsSuffix.Length..]);
-					_resourceNameMap.Add(
-						(false, flag, vAlphaMode),
-						new String(stringBuildSpace[ShaderWithEffectsSuffix.Length..^emptySpaceSpan.Length])
-					);
-				}
+				_resourceNameMap.Add(
+					(true, vAlphaMode),
+					new String(stringBuildSpace[..^emptySpaceSpan.Length])
+				);
+				stringBuildSpace[..ShaderNameStart.Length].CopyTo(stringBuildSpace[ShaderWithEffectsSuffix.Length..]);
+				_resourceNameMap.Add(
+					(false, vAlphaMode),
+					new String(stringBuildSpace[ShaderWithEffectsSuffix.Length..^emptySpaceSpan.Length])
+				);
 			}
 		}
 
-		public string GetShaderResourceName(bool supportsEffects, Flags flags, AlphaModeVariant alphaMode) {
-			return _resourceNameMap[(supportsEffects, flags, alphaMode)];
+		public string GetShaderResourceName(bool supportsEffects, AlphaModeVariant alphaMode) {
+			return _resourceNameMap[(supportsEffects, alphaMode)];
 		}
 
 		public ReadOnlySpan<byte> ParamColorMap => "color_map"u8;
-		public ReadOnlySpan<byte> ParamEmissiveMap => "emissive_map"u8;
 		public ReadOnlySpan<byte> ParamEffectUvTransform => "uv_transform"u8;
 		public ReadOnlySpan<byte> ParamEffectColorMapBlend => "color_map_blend"u8;
 		public ReadOnlySpan<byte> ParamEffectColorMapBlendDistance => "color_map_blend_distance"u8;
-		public ReadOnlySpan<byte> ParamEffectEmissiveMapBlend => "emissive_map_blend"u8;
-		public ReadOnlySpan<byte> ParamEffectEmissiveMapBlendDistance => "emissive_map_blend_distance"u8;
 
 		public bool HasEffectUvTransform { get; } = true;
 		public bool HasEffectColorMap { get; } = true;
@@ -371,8 +359,8 @@ static class LocalShaderPackageConstants {
 		public ReadOnlySpan<byte> GetEffectUvTransformParamOrThrow() => ParamEffectUvTransform;
 		public ReadOnlySpan<byte> GetEffectColorMapTexParamOrThrow() => ParamEffectColorMapBlend;
 		public ReadOnlySpan<byte> GetEffectColorMapDistanceParamOrThrow() => ParamEffectColorMapBlendDistance;
-		public ReadOnlySpan<byte> GetEffectEmissiveMapTexParamOrThrow() => ParamEffectEmissiveMapBlend;
-		public ReadOnlySpan<byte> GetEffectEmissiveMapDistanceParamOrThrow() => ParamEffectEmissiveMapBlendDistance;
+		public ReadOnlySpan<byte> GetEffectEmissiveMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
+		public ReadOnlySpan<byte> GetEffectEmissiveMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectAbsorptionTransmissionMapDistanceParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
 		public ReadOnlySpan<byte> GetEffectOrmMapTexParamOrThrow() => throw new InvalidOperationException("Bug in TinyFFR (or concurrency failure).");
