@@ -56,7 +56,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 	
 
-	public Material CreateTestMaterial(bool ignoresLighting = true) {
+	public Material CreateTestMaterial(bool ignoresLighting = false) {
 		ThrowIfThisIsDisposed();
 		
 		var textureGroup = _testMaterialTexturesRef.Value;

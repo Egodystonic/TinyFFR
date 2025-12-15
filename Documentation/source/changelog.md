@@ -12,24 +12,51 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/6?closed=1) 
 
 ### Major Features
 
-* 
+* Addition of three new material types:
+	* **Simple** material: Just uses a colour/colourmap, bypasses lighting
+	* **Standard** material: Support for:
+		* Color/albedo/diffuse maps
+		* Normal maps
+		* Ambient Occlusion, Roughness, Metallic, Reflectance maps
+		* Anisotropy maps
+		* Emissive maps
+		* Clearcoat maps
+		* Alpha blending
+	* **Transmissive** material: Support for:
+		* Color/albedo/diffuse maps
+		* Absorption, Transmission maps
+		* Screenspace reflection, refraction
+		* Normal maps
+		* Ambient Occlusion, Roughness, Metallic, Reflectance maps
+		* Anisotropy maps
+		* Emissive maps
+		* Alpha blending
+		* Variable refractive thickness
+* Added rudimentary per-object material effects:
+	* When enabled, the following effects can be applied individually for any model instance's material:
+		* Texture transform (scale, rotation, translation)
+		* Blending between base color map and a blend target color map
+		* Blending between base ORM/ORMR map and a blend target ORM/ORMR map
+		* Blending between base emissive map and a blend target emissive map
+		* Blending between base absorption/transmission map and a blend target absorption/transmission map
 
 ### Improvements
 
 * `IAssetLoader` interface:
 	* Unified texture processing interface (i.e. you can specify a `TextureProcessingConfig` for any texture being loaded/read; allowing you to swizzle, invert, or flip textures)
 	* Can now inline load/parse texture combinations (up to four textures simultaneously) via `LoadCombinedTexture` / `ReadCombinedTexture`
-	* Forces decision of colourspace (i.e. sRGB or linear) on load (with some helper methods for the easy path; "`LoadColorMapTexture`"/"`LoadDataMapTexture`")
+	* Specialized functions for loading specific texture maps (e.g. `LoadColorMap()`, `LoadAnisotropyMap()`, etc.); often with useful parameters for combining image files or loading alternative formats
 	* Much better layout of config structs in general
 	* Methods that read textures or meshes now return the number of elements written to the destination span as a convenience
 	* Provision of `BuiltInTexturePaths` property that provides some built-in greyscale textures and default maps for convenience
 * `ITextureBuilder` interface:
-	* A new builder added specifically to deal with building various textures and maps that TinyFFR uses.
+	* This is a new builder added specifically to deal with building various textures and maps that TinyFFR uses
 	* `TexturePatternPrinter` added- new static class that prints `TexturePattern`s to a span or bitmap
-
-### Bug Fixes
-
-* 
+* Added ability to create icosphere meshes to `IMeshBuilder`
+* Test material:
+	* Improved test material (now shows a UV test pattern)
+	* Must now be created, meaning resource lifetime is easier to reason about
+* Added function to convert `Transform2D` to `Matrix3x2`
 
 ## 0.5
 

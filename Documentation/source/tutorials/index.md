@@ -1,5 +1,5 @@
 ---
-title: TinyFFR Examples
+title: TinyFFR Tutorials
 description: This is the starting page for examples of using TinyFFR.
 icon: material/cogs
 search:

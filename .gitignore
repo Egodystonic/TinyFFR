@@ -432,3 +432,6 @@ Publishing/TinyFFR.WinForms.NuGet/prebuilt_binaries/**
 
 # TinyFFR - ignore local packages
 Testing/local_packages/**
+
+# Kate
+*.kate-swp

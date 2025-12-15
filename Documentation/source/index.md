@@ -99,10 +99,10 @@ have performance issues and bugs at this early stage.
 
 ### :material-cogs: Learn by Example
 
-If you want to just get stuck in and writing code with TinyFFR, head to the examples section:
+If you want to just get stuck in and writing code with TinyFFR, head to the tutorials section:
 { : style="margin-left:1em" }
 
-[:octicons-arrow-right-24: Examples](/examples/index.md)
+[:octicons-arrow-right-24: Tutorials](/tutorials/index.md)
 { : style="margin-left:1em" }
 
 ### :material-lightbulb: Understand the Concepts

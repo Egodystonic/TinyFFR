@@ -114,20 +114,20 @@ strict: true
 nav:
   - index.md
   - changelog.md
-  - Examples: 
-    - Getting Started:
-      - examples/installing.md
-      - examples/hello_cube.md
-    - Basic Features:
-      - examples/loading_assets.md
-      - examples/handling_input.md
-      - examples/texture_patterns.md
+  - Tutorials:
+    - Basics:
+      - tutorials/installing.md
+      - tutorials/hello_cube.md
+      - tutorials/handling_input.md
+    - Managing Assets:
+      - tutorials/loading_assets.md
+      - tutorials/texture_patterns.md
     - UI Integration:
-      - examples/integrating_wpf.md
-      - examples/integrating_avalonia.md
-      - examples/integrating_winforms.md
+      - tutorials/integrating_wpf.md
+      - tutorials/integrating_avalonia.md
+      - tutorials/integrating_winforms.md
     - Snippets:
-      - examples/snippets/vsync.md
+      - tutorials/snippets/vsync.md
   - Concepts:
     - concepts/factory.md
     - concepts/resources.md
@@ -144,6 +144,6 @@ nav:
       - reference/typed_referent_iterator.md
 
 not_in_nav: |
-  examples/index.md
+  tutorials/index.md
   concepts/index.md
   reference/index.md
