@@ -20,19 +20,19 @@ sealed unsafe class LocalLatestKeyboardAndMouseInputRetriever : ILatestKeyboardA
 	public XYPair<int> MouseCursorPosition { get; internal set; }
 	public XYPair<int> MouseCursorDelta { get; internal set; }
 
-	public TypedReferentIterator<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKeyEvent> NewKeyEvents => new(
+	public IndirectEnumerable<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKeyEvent> NewKeyEvents => new(
 		this, _iterationVersion, &GetNewKeyEventsSpanLength, &GetIterationVersion, &GetNewKeyEvent
 	);
-	public TypedReferentIterator<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKey> NewKeyDownEvents => new(
+	public IndirectEnumerable<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKey> NewKeyDownEvents => new(
 		this, _iterationVersion, &GetNewKeyDownEventsSpanLength, &GetIterationVersion, &GetNewKeyDownEvent
 	);
-	public TypedReferentIterator<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKey> NewKeyUpEvents => new(
+	public IndirectEnumerable<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKey> NewKeyUpEvents => new(
 		this, _iterationVersion, &GetNewKeyUpEventsSpanLength, &GetIterationVersion, &GetNewKeyUpEvent
 	);
-	public TypedReferentIterator<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKey> CurrentlyPressedKeys => new(
+	public IndirectEnumerable<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKey> CurrentlyPressedKeys => new(
 		this, _iterationVersion, &GetCurrentlyPressedKeysSpanLength, &GetIterationVersion, &GetCurrentlyPressedKey
 	);
-	public TypedReferentIterator<ILatestKeyboardAndMouseInputRetriever, MouseClickEvent> NewMouseClicks => new(
+	public IndirectEnumerable<ILatestKeyboardAndMouseInputRetriever, MouseClickEvent> NewMouseClicks => new(
 		this, _iterationVersion, &GetNewMouseClicksSpanLength, &GetIterationVersion, &GetNewMouseClick
 	);
 

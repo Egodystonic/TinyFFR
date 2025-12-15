@@ -1,12 +1,12 @@
 ﻿// Created on 2024-08-01 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
-using StrIterator = Egodystonic.TinyFFR.TypedReferentIterator<string, char>;
+using StrIterator = Egodystonic.TinyFFR.IndirectEnumerable<string, char>;
 
 namespace Egodystonic.TinyFFR;
 
 [TestFixture]
-unsafe class TypedReferentIteratorTest {
+unsafe class IndirectEnumerableTest {
 	[SetUp]
 	public void SetUpTest() { }
 
@@ -106,7 +106,7 @@ unsafe class TypedReferentIteratorTest {
 
 		var testList = new List<int> { 1, 2, 3 };
 
-		var iterator = new TypedReferentIterator<List<int>, int>(
+		var iterator = new IndirectEnumerable<List<int>, int>(
 			testList,
 			6,
 			&GetCount,

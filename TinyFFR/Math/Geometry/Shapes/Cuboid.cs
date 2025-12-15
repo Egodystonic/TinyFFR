@@ -57,19 +57,19 @@ public readonly partial struct Cuboid : IConvexShape<Cuboid> {
 	public float Volume => HalfWidth * HalfHeight * HalfDepth * 8f;
 	public float SurfaceArea => (Width * Height + Height * Depth + Depth * Width) * 2f;
 
-	public unsafe TypedReferentIterator<Cuboid, Location> Corners => new(this, IteratorVersionNumber, &GetCornerCountForEnumerator, &GetIteratorVersion, &GetCornerForEnumerator);
+	public unsafe IndirectEnumerable<Cuboid, Location> Corners => new(this, IteratorVersionNumber, &GetCornerCountForEnumerator, &GetIteratorVersion, &GetCornerForEnumerator);
 	static int GetCornerCountForEnumerator(Cuboid _) => 8;
 	static Location GetCornerForEnumerator(Cuboid @this, int index) => @this.CornerAt(OrientationUtils.AllDiagonals[index]);
 
-	public unsafe TypedReferentIterator<Cuboid, BoundedRay> Edges => new(this, IteratorVersionNumber, &GetEdgeCountForEnumerator, &GetIteratorVersion, &GetEdgeForEnumerator);
+	public unsafe IndirectEnumerable<Cuboid, BoundedRay> Edges => new(this, IteratorVersionNumber, &GetEdgeCountForEnumerator, &GetIteratorVersion, &GetEdgeForEnumerator);
 	static int GetEdgeCountForEnumerator(Cuboid _) => 12;
 	static BoundedRay GetEdgeForEnumerator(Cuboid @this, int index) => @this.EdgeAt(OrientationUtils.AllIntercardinals[index]);
 
-	public unsafe TypedReferentIterator<Cuboid, Plane> Sides => new(this, IteratorVersionNumber, &GetSideCountForEnumerator, &GetIteratorVersion, &GetSideForEnumerator);
+	public unsafe IndirectEnumerable<Cuboid, Plane> Sides => new(this, IteratorVersionNumber, &GetSideCountForEnumerator, &GetIteratorVersion, &GetSideForEnumerator);
 	static int GetSideCountForEnumerator(Cuboid _) => 6;
 	static Plane GetSideForEnumerator(Cuboid @this, int index) => @this.SideAt(OrientationUtils.AllCardinals[index]);
 
-	public unsafe TypedReferentIterator<Cuboid, Location> Centroids => new(this, IteratorVersionNumber, &GetCentroidCountForEnumerator, &GetIteratorVersion, &GetCentroidForEnumerator);
+	public unsafe IndirectEnumerable<Cuboid, Location> Centroids => new(this, IteratorVersionNumber, &GetCentroidCountForEnumerator, &GetIteratorVersion, &GetCentroidForEnumerator);
 	static int GetCentroidCountForEnumerator(Cuboid _) => 6;
 	static Location GetCentroidForEnumerator(Cuboid @this, int index) => @this.CentroidAt(OrientationUtils.AllCardinals[index]);
 

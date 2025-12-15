@@ -25,7 +25,7 @@ sealed unsafe class LocalLatestInputRetriever : ILatestInputRetriever, IDisposab
 
 	public bool UserQuitRequested { get; private set; } = false;
 	public ILatestKeyboardAndMouseInputRetriever KeyboardAndMouse => _kbmState;
-	public TypedReferentIterator<ILatestInputRetriever, ILatestGameControllerInputStateRetriever> GameControllers => new(
+	public IndirectEnumerable<ILatestInputRetriever, ILatestGameControllerInputStateRetriever> GameControllers => new(
 		this, _iterationVersion, &GetGameControllersCount, &GetIterationVersion, &GetGameController
 	);
 	public ILatestGameControllerInputStateRetriever GameControllersCombined => _combinedControllerState;

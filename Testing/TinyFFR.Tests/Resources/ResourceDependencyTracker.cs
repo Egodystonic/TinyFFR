@@ -204,7 +204,7 @@ class ResourceDependencyTrackerTest {
 
 	[Test]
 	public void ShouldCorrectlyInvalidateIteratorsAfterStateChanges() {
-		void AssertIteratorValid<T>(TypedReferentIterator<IResourceDependencyTracker.EnumerationInput, T> iterator) {
+		void AssertIteratorValid<T>(IndirectEnumerable<IResourceDependencyTracker.EnumerationInput, T> iterator) {
 			Assert.DoesNotThrow(() => iterator.CopyTo(new T[100]));
 			Assert.DoesNotThrow(() => _ = iterator.TryCopyTo(new T[1000]));
 			Assert.DoesNotThrow(() => _ = iterator.Count);
@@ -212,7 +212,7 @@ class ResourceDependencyTrackerTest {
 			Assert.DoesNotThrow(() => _ = iterator.Count());
 			Assert.DoesNotThrow(() => _ = iterator[0]);
 		}
-		void AssertIteratorInvalid<T>(TypedReferentIterator<IResourceDependencyTracker.EnumerationInput, T> iterator) {
+		void AssertIteratorInvalid<T>(IndirectEnumerable<IResourceDependencyTracker.EnumerationInput, T> iterator) {
 			Assert.Catch<InvalidOperationException>(() => iterator.CopyTo(new T[100]));
 			Assert.Catch<InvalidOperationException>(() => _ = iterator.TryCopyTo(new T[1000]));
 			Assert.Catch<InvalidOperationException>(() => _ = iterator.Count);

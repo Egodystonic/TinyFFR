@@ -36,10 +36,10 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	#region Specific Resource Enumeration Properties
 	// Maintainer's note: We don't provide one of these for every resource type, only those that we feel are likely to be grouped.
 	// Users can still use GetAllResourcesOfType for any resource type. These are just a convenience shortcut.
-	public TypedReferentIterator<EnumerationInput, Material> Materials => GetAllResourcesOfType<Material>();
-	public TypedReferentIterator<EnumerationInput, Texture> Textures => GetAllResourcesOfType<Texture>();
-	public TypedReferentIterator<EnumerationInput, Mesh> Meshes => GetAllResourcesOfType<Mesh>();
-	public TypedReferentIterator<EnumerationInput, ModelInstance> ModelInstances => GetAllResourcesOfType<ModelInstance>();
+	public IndirectEnumerable<EnumerationInput, Material> Materials => GetAllResourcesOfType<Material>();
+	public IndirectEnumerable<EnumerationInput, Texture> Textures => GetAllResourcesOfType<Texture>();
+	public IndirectEnumerable<EnumerationInput, Mesh> Meshes => GetAllResourcesOfType<Mesh>();
+	public IndirectEnumerable<EnumerationInput, ModelInstance> ModelInstances => GetAllResourcesOfType<ModelInstance>();
 	#endregion
 
 	internal ReadOnlySpan<ResourceStub> Resources {
@@ -71,7 +71,7 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	public void Seal() => Implementation.Seal(Handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public TypedReferentIterator<EnumerationInput, TResource> GetAllResourcesOfType<TResource>() where TResource : IResource<TResource> {
+	public IndirectEnumerable<EnumerationInput, TResource> GetAllResourcesOfType<TResource>() where TResource : IResource<TResource> {
 		return Implementation.GetAllResourcesOfType<TResource>(Handle);
 	}
 

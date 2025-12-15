@@ -9,13 +9,13 @@ interface IResourceDependencyTracker {
 	void DeregisterDependency<TDependent, TTarget>(TDependent dependent, TTarget targetNoLongerInUse) where TDependent : IResource where TTarget : IResource;
 	void DeregisterAllDependencies<TDependent>(TDependent dependent) where TDependent : IResource;
 	void ThrowForPrematureDisposalIfTargetHasDependents<TTarget>(TTarget targetPotentiallyInUse) where TTarget : IResource;
-	TypedReferentIterator<EnumerationInput, ResourceStub> GetDependents<TTarget>(TTarget targetPotentiallyInUse) where TTarget : IResource;
-	TypedReferentIterator<EnumerationInput, ResourceStub> GetTargets<TDependent>(TDependent dependent) where TDependent : IResource;
-	TypedReferentIterator<EnumerationInput, TDependent> GetDependentsOfGivenType<TTarget, TDependent, TImpl>(TTarget targetPotentiallyInUse)
+	IndirectEnumerable<EnumerationInput, ResourceStub> GetDependents<TTarget>(TTarget targetPotentiallyInUse) where TTarget : IResource;
+	IndirectEnumerable<EnumerationInput, ResourceStub> GetTargets<TDependent>(TDependent dependent) where TDependent : IResource;
+	IndirectEnumerable<EnumerationInput, TDependent> GetDependentsOfGivenType<TTarget, TDependent, TImpl>(TTarget targetPotentiallyInUse)
 		where TTarget : IResource
 		where TDependent : IResource<TDependent, TImpl>
 		where TImpl : class, IResourceImplProvider;
-	TypedReferentIterator<EnumerationInput, TTarget> GetTargetsOfGivenType<TDependent, TTarget, TImpl>(TDependent dependent)
+	IndirectEnumerable<EnumerationInput, TTarget> GetTargetsOfGivenType<TDependent, TTarget, TImpl>(TDependent dependent)
 		where TDependent : IResource
 		where TTarget : IResource<TTarget, TImpl>
 		where TImpl : class, IResourceImplProvider;

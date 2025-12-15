@@ -5,7 +5,7 @@ namespace Egodystonic.TinyFFR;
 
 #pragma warning disable CA1815 // "Should implement IEquatable" -- It's not recommended to compare function pointers, so there's no real way to provide equality for this type (plus it's not particularly useful anyway)
 // Represents an enumerator that takes a copy of TIn and uses a pointer to a static indexer and count method to avoid accidental garbage generation
-public readonly unsafe struct TypedReferentIterator<TIn, TOut> : IEnumerable<TOut> {
+public readonly unsafe struct IndirectEnumerable<TIn, TOut> : IEnumerable<TOut> {
 	public struct Enumerator : IEnumerator<TOut> {
 		readonly TIn _input;
 		readonly int _count;
@@ -40,7 +40,7 @@ public readonly unsafe struct TypedReferentIterator<TIn, TOut> : IEnumerable<TOu
 
 		void ThrowIfInvalid() {
 			if (_getVersionFunc == null || _getItemFunc == null) throw InvalidObjectException.InvalidDefault<Enumerator>();
-			if (_getVersionFunc(_input) != _inputVersion) throw new InvalidOperationException($"{_input} was modified, this {nameof(TypedReferentIterator<TIn, TOut>)} is no longer valid.");
+			if (_getVersionFunc(_input) != _inputVersion) throw new InvalidOperationException($"{_input} was modified, this {nameof(IndirectEnumerable<TIn, TOut>)} is no longer valid.");
 		}
 	}
 
@@ -61,7 +61,7 @@ public readonly unsafe struct TypedReferentIterator<TIn, TOut> : IEnumerable<TOu
 		get => ElementAt(index);
 	}
 
-	public TypedReferentIterator(TIn input, int inputVersion, delegate*<TIn, int> getCountFunc, delegate*<TIn, int> getVersionFunc, delegate*<TIn, int, TOut> getItemFunc) {
+	public IndirectEnumerable(TIn input, int inputVersion, delegate*<TIn, int> getCountFunc, delegate*<TIn, int> getVersionFunc, delegate*<TIn, int, TOut> getItemFunc) {
 		ArgumentNullException.ThrowIfNull(getCountFunc);
 		ArgumentNullException.ThrowIfNull(getVersionFunc);
 		ArgumentNullException.ThrowIfNull(getItemFunc);
@@ -100,7 +100,7 @@ public readonly unsafe struct TypedReferentIterator<TIn, TOut> : IEnumerable<TOu
 	IEnumerator<TOut> IEnumerable<TOut>.GetEnumerator() => GetEnumerator();
 
 	internal void ThrowIfInvalid() {
-		if (_getCountFunc == null || _getItemFunc == null) throw InvalidObjectException.InvalidDefault<TypedReferentIterator<TIn, TOut>>();
-		if (_getVersionFunc(_input) != _inputVersion) throw new InvalidOperationException($"{_input} was modified, this {nameof(TypedReferentIterator<TIn, TOut>)} is no longer valid.");
+		if (_getCountFunc == null || _getItemFunc == null) throw InvalidObjectException.InvalidDefault<IndirectEnumerable<TIn, TOut>>();
+		if (_getVersionFunc(_input) != _inputVersion) throw new InvalidOperationException($"{_input} was modified, this {nameof(IndirectEnumerable<TIn, TOut>)} is no longer valid.");
 	}
 }

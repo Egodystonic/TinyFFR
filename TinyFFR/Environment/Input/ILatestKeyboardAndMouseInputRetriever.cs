@@ -4,11 +4,11 @@
 namespace Egodystonic.TinyFFR.Environment.Input;
 
 public interface ILatestKeyboardAndMouseInputRetriever {
-	TypedReferentIterator<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKeyEvent> NewKeyEvents { get; }
-	TypedReferentIterator<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKey> NewKeyDownEvents { get; }
-	TypedReferentIterator<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKey> NewKeyUpEvents { get; }
-	TypedReferentIterator<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKey> CurrentlyPressedKeys { get; }
-	TypedReferentIterator<ILatestKeyboardAndMouseInputRetriever, MouseClickEvent> NewMouseClicks { get; }
+	IndirectEnumerable<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKeyEvent> NewKeyEvents { get; }
+	IndirectEnumerable<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKey> NewKeyDownEvents { get; }
+	IndirectEnumerable<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKey> NewKeyUpEvents { get; }
+	IndirectEnumerable<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKey> CurrentlyPressedKeys { get; }
+	IndirectEnumerable<ILatestKeyboardAndMouseInputRetriever, MouseClickEvent> NewMouseClicks { get; }
 
 	XYPair<int> MouseCursorPosition { get; } // TODO document that this is relative to window, e.g. (0, 0) is top left corner of the window
 	XYPair<int> MouseCursorDelta { get; }

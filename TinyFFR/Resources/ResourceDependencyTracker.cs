@@ -81,10 +81,10 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 		);
 	}
 
-	public TypedReferentIterator<EnumerationInput, ResourceStub> GetDependents<TTarget>(TTarget targetPotentiallyInUse) where TTarget : IResource {
+	public IndirectEnumerable<EnumerationInput, ResourceStub> GetDependents<TTarget>(TTarget targetPotentiallyInUse) where TTarget : IResource {
 		ThrowIfDisposed();
 
-		return new TypedReferentIterator<EnumerationInput, ResourceStub>(
+		return new IndirectEnumerable<EnumerationInput, ResourceStub>(
 			new(this, targetPotentiallyInUse.Ident),
 			_stateVersion,
 			&GetDependentsEnumerationCount,
@@ -102,10 +102,10 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 		@this.ThrowIfDisposed();
 		return GetMapEnumerationItem(@this._targetsToDependentsMap, input.ArgumentIdent, index);
 	}
-	public TypedReferentIterator<EnumerationInput, ResourceStub> GetTargets<TDependent>(TDependent dependent) where TDependent : IResource {
+	public IndirectEnumerable<EnumerationInput, ResourceStub> GetTargets<TDependent>(TDependent dependent) where TDependent : IResource {
 		ThrowIfDisposed();
 
-		return new TypedReferentIterator<EnumerationInput, ResourceStub>(
+		return new IndirectEnumerable<EnumerationInput, ResourceStub>(
 			new(this, dependent.Ident),
 			_stateVersion,
 			&GetTargetsEnumerationCount,
@@ -124,13 +124,13 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 		return GetMapEnumerationItem(@this._dependentsToTargetsMap, input.ArgumentIdent, index);
 	}
 
-	public TypedReferentIterator<EnumerationInput, TDependent> GetDependentsOfGivenType<TTarget, TDependent, TImpl>(TTarget targetPotentiallyInUse) 
+	public IndirectEnumerable<EnumerationInput, TDependent> GetDependentsOfGivenType<TTarget, TDependent, TImpl>(TTarget targetPotentiallyInUse) 
 		where TTarget : IResource
 		where TDependent : IResource<TDependent, TImpl>
 		where TImpl : class, IResourceImplProvider {
 		ThrowIfDisposed();
 
-		return new TypedReferentIterator<EnumerationInput, TDependent>(
+		return new IndirectEnumerable<EnumerationInput, TDependent>(
 			new(this, targetPotentiallyInUse.Ident),
 			_stateVersion,
 			&GetDependentsEnumerationCount<TDependent, TImpl>,
@@ -158,13 +158,13 @@ sealed unsafe class ResourceDependencyTracker : IResourceDependencyTracker, IDis
 		@this.ThrowIfDisposed();
 		return IResource<TDependent, TImpl>.RecreateFromResourceStub(GetMapEnumerationItem<TDependent>(@this._targetsToDependentsMap, input.ArgumentIdent, index));
 	}
-	public TypedReferentIterator<EnumerationInput, TTarget> GetTargetsOfGivenType<TDependent, TTarget, TImpl>(TDependent dependent)
+	public IndirectEnumerable<EnumerationInput, TTarget> GetTargetsOfGivenType<TDependent, TTarget, TImpl>(TDependent dependent)
 		where TDependent : IResource
 		where TTarget : IResource<TTarget, TImpl>
 		where TImpl : class, IResourceImplProvider {
 		ThrowIfDisposed();
 
-		return new TypedReferentIterator<EnumerationInput, TTarget>(
+		return new IndirectEnumerable<EnumerationInput, TTarget>(
 			new(this, dependent.Ident),
 			_stateVersion,
 			&GetTargetsEnumerationCount<TTarget, TImpl>,

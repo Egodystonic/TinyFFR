@@ -12,10 +12,10 @@ public interface ILatestGameControllerInputStateRetriever : IStringSpanNameEnabl
 	public GameControllerTriggerPosition LeftTriggerPosition { get; }
 	public GameControllerTriggerPosition RightTriggerPosition { get; }
 
-	public TypedReferentIterator<ILatestGameControllerInputStateRetriever, GameControllerButtonEvent> NewButtonEvents { get; }
-	public TypedReferentIterator<ILatestGameControllerInputStateRetriever, GameControllerButton> NewButtonDownEvents { get; }
-	public TypedReferentIterator<ILatestGameControllerInputStateRetriever, GameControllerButton> NewButtonUpEvents { get; }
-	public TypedReferentIterator<ILatestGameControllerInputStateRetriever, GameControllerButton> CurrentlyPressedButtons { get; }
+	public IndirectEnumerable<ILatestGameControllerInputStateRetriever, GameControllerButtonEvent> NewButtonEvents { get; }
+	public IndirectEnumerable<ILatestGameControllerInputStateRetriever, GameControllerButton> NewButtonDownEvents { get; }
+	public IndirectEnumerable<ILatestGameControllerInputStateRetriever, GameControllerButton> NewButtonUpEvents { get; }
+	public IndirectEnumerable<ILatestGameControllerInputStateRetriever, GameControllerButton> CurrentlyPressedButtons { get; }
 
 	public bool ButtonIsCurrentlyDown(GameControllerButton button);
 	public bool ButtonWasPressedThisIteration(GameControllerButton button);

@@ -23,16 +23,16 @@ sealed unsafe class LocalLatestGameControllerState : ILatestGameControllerInputS
 	bool _isDisposed = false;
 	int _iterationVersion = 0;
 
-	TypedReferentIterator<ILatestGameControllerInputStateRetriever, GameControllerButtonEvent> ILatestGameControllerInputStateRetriever.NewButtonEvents => new(
+	IndirectEnumerable<ILatestGameControllerInputStateRetriever, GameControllerButtonEvent> ILatestGameControllerInputStateRetriever.NewButtonEvents => new(
 		this, _iterationVersion, &GetNewButtonEventsSpanLength, &GetIterationVersion, &GetNewButtonEvent 	
 	);
-	TypedReferentIterator<ILatestGameControllerInputStateRetriever, GameControllerButton> ILatestGameControllerInputStateRetriever.NewButtonDownEvents => new(
+	IndirectEnumerable<ILatestGameControllerInputStateRetriever, GameControllerButton> ILatestGameControllerInputStateRetriever.NewButtonDownEvents => new(
 		this, _iterationVersion, &GetNewButtonDownEventsSpanLength, &GetIterationVersion, &GetNewButtonDownEvent
 	);
-	TypedReferentIterator<ILatestGameControllerInputStateRetriever, GameControllerButton> ILatestGameControllerInputStateRetriever.NewButtonUpEvents => new(
+	IndirectEnumerable<ILatestGameControllerInputStateRetriever, GameControllerButton> ILatestGameControllerInputStateRetriever.NewButtonUpEvents => new(
 		this, _iterationVersion, &GetNewButtonUpEventsSpanLength, &GetIterationVersion, &GetNewButtonUpEvent
 	);
-	TypedReferentIterator<ILatestGameControllerInputStateRetriever, GameControllerButton> ILatestGameControllerInputStateRetriever.CurrentlyPressedButtons => new(
+	IndirectEnumerable<ILatestGameControllerInputStateRetriever, GameControllerButton> ILatestGameControllerInputStateRetriever.CurrentlyPressedButtons => new(
 		this, _iterationVersion, &GetCurrentlyPressedButtonsSpanLength, &GetIterationVersion, &GetCurrentlyPressedButton
 	);
 

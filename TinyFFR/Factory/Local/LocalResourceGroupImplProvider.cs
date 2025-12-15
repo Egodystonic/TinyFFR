@@ -82,8 +82,8 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), resource);
 	}
 
-	public TypedReferentIterator<EnumerationInput, TResource> GetAllResourcesOfType<TResource>(ResourceHandle<ResourceGroup> handle) where TResource : IResource<TResource> {
-		return new TypedReferentIterator<EnumerationInput, TResource>(
+	public IndirectEnumerable<EnumerationInput, TResource> GetAllResourcesOfType<TResource>(ResourceHandle<ResourceGroup> handle) where TResource : IResource<TResource> {
+		return new IndirectEnumerable<EnumerationInput, TResource>(
 			new(this, handle, typeof(TResource).TypeHandle.Value),
 			GetDataForHandleOrThrow(handle).Count,
 			&GetEnumeratorResourceCount,
