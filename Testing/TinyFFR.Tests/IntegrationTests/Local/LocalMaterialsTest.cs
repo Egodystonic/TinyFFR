@@ -12,6 +12,7 @@ using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Testing;
 using System.Reflection.PortableExecutable;
+using Egodystonic.TinyFFR.Rendering;
 
 namespace Egodystonic.TinyFFR;
 
@@ -44,13 +45,14 @@ class LocalMaterialsTest {
 		public int MapThicknessLevel { get; set; } = 0;
 
 		public int ShaderType { get; set; } = 8;
-		public int ShaderQualityType { get; set; } = 0;
+		public int ShaderQualityType { get; set; } = 1;
 
 		public string GetWindowTitleString() {
 			var mapsStr = "";
+			if (ShaderQualityType == 0) mapsStr += " qual=v_high";
+			if (ShaderQualityType == 1) mapsStr += " qual=standard";
+			if (ShaderQualityType == 2) mapsStr += " qual=v_low";
 			if (ShaderType < 4) {
-				if (ShaderQualityType == 0) mapsStr += " qual=high";
-				if (ShaderQualityType == 1) mapsStr += " qual=low";
 				if (MapAlphaType == 1) mapsStr += " alpha(mask)";
 				if (MapAlphaType == 2) mapsStr += " alpha(blend)";
 				if (MapEmissive) mapsStr += " emiss";
@@ -106,10 +108,14 @@ class LocalMaterialsTest {
 		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere, subdivisionLevel: 7);
 
 		using var camera = factory.CameraBuilder.CreateCamera();
-		using var light = factory.LightBuilder.CreatePointLight(position: (0f, 0f, 1f), castsShadows: true);
+		using var light = factory.LightBuilder.CreatePointLight(position: (0f, 0f, 1f), castsShadows: true, brightness: 0.5f);
+		using var leftLight = factory.LightBuilder.CreatePointLight(position: (2.6f, 0f, 1f), color: ColorVect.RandomOpaque(), castsShadows: true);
+		using var rightLight = factory.LightBuilder.CreatePointLight(position: (-2.6f, 0f, 1f), color: ColorVect.RandomOpaque(), castsShadows: true);
 		using var scene = factory.SceneBuilder.CreateScene();
 		scene.SetBackdrop(backdrop);
 		scene.Add(light);
+		scene.Add(leftLight);
+		scene.Add(rightLight);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
 		using var backMaterialAlbedo = factory.AssetLoader.LoadColorMap(CommonTestAssets.FindAsset(KnownTestAsset.BrickAlbedoTex));
@@ -263,7 +269,12 @@ class LocalMaterialsTest {
 			}
 			if (kbm.KeyWasPressedThisIteration(QualityToggleKey)) {
 				curUserOptions.ShaderQualityType++;
-				if (curUserOptions.ShaderQualityType > 1) curUserOptions.ShaderQualityType = 0;
+				if (curUserOptions.ShaderQualityType > 2) curUserOptions.ShaderQualityType = 0;
+				renderer.SetQuality(curUserOptions.ShaderQualityType switch {
+					2 => new RenderQualityConfig(Quality.VeryLow),
+					1 => new RenderQualityConfig(Quality.Standard),
+					_ => new RenderQualityConfig(Quality.VeryHigh)
+				});
 				recreationNecessary = true;
 			}
 
@@ -307,6 +318,8 @@ class LocalMaterialsTest {
 				}
 
 				light.Position = light.Position with { Y = MathF.Sin(tt) };
+				leftLight.Position = leftLight.Position with { Y = MathF.Sin(tt) };
+				rightLight.Position = rightLight.Position with { Y = MathF.Sin(tt) };
 
 				renderer.Render();
 			}
@@ -773,7 +786,7 @@ class LocalMaterialsTest {
 			occlusion: 1f,
 			roughness: 0f,
 			metallic: 0f,
-			reflectance: 1f
+			reflectance: 0.4f
 		);
 		var norm = texBuilder.CreateNormalMap(
 			TexturePattern.Rectangles(

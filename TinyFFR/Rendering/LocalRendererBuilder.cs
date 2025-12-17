@@ -385,6 +385,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_loadedRenderers[handle] = _loadedRenderers[handle] with { Quality = newConfig };
 		SetViewShadowFidelityLevel(_loadedRenderers[handle].Viewport.Handle, (int) newConfig.ShadowQuality).ThrowIfFailure();
+		SetViewScreenSpaceEffectsLevel(_loadedRenderers[handle].Viewport.Handle, (int) newConfig.ScreenSpaceEffectsQuality).ThrowIfFailure();
 	}
 
 	public Texture CreateDynamicTexture(ResourceHandle<RenderOutputBuffer> handle) {
@@ -627,6 +628,11 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	);
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_shadow_fidelity_level")]
 	static extern InteropResult SetViewShadowFidelityLevel(
+		UIntPtr viewDescriptorHandle,
+		int level
+	);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_screen_space_effects_level")]
+	static extern InteropResult SetViewScreenSpaceEffectsLevel(
 		UIntPtr viewDescriptorHandle,
 		int level
 	);

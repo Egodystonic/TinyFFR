@@ -8,6 +8,5 @@ using Egodystonic.TinyFFR.World;
 
 Console.Clear();
 CommonTestSupportFunctions.ResolveNativeAssembliesFromBuildOutputDir();
-TestScaffold.SetUpStandardTestObjects();
-TestScaffold.RunTestLoop();
+TestScaffold.Execute();
 Console.WriteLine("Test finished with no exceptions.");

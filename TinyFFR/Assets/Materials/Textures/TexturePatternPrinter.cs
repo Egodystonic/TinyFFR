@@ -173,6 +173,7 @@ public static unsafe class TexturePatternPrinter {
 
 	#region Print Pattern (Func Overloads)
 	public static int PrintPattern<T1, TTexel>(in TexturePattern<T1> pattern, Func<T1, TTexel> conversionMapFunc, Span<TTexel> destinationBuffer) where T1 : unmanaged {
+		ArgumentNullException.ThrowIfNull(conversionMapFunc);
 		var dimensions = pattern.Dimensions;
 		ThrowIfBufferCanNotFitPattern(dimensions, destinationBuffer.Length);
 
@@ -187,6 +188,7 @@ public static unsafe class TexturePatternPrinter {
 	}
 
 	public static int PrintPattern<T1, T2, TTexel>(in TexturePattern<T1> pattern1, in TexturePattern<T2> pattern2, Func<T1, T2, TTexel> conversionMapFunc, Span<TTexel> destinationBuffer) where T1 : unmanaged where T2 : unmanaged {
+		ArgumentNullException.ThrowIfNull(conversionMapFunc);
 		var sameDimensions = pattern1.Dimensions == pattern2.Dimensions;
 		var dimensions = sameDimensions
 			? pattern1.Dimensions
@@ -221,6 +223,7 @@ public static unsafe class TexturePatternPrinter {
 	}
 
 	public static int PrintPattern<T1, T2, T3, TTexel>(in TexturePattern<T1> pattern1, in TexturePattern<T2> pattern2, in TexturePattern<T3> pattern3, Func<T1, T2, T3, TTexel> conversionMapFunc, Span<TTexel> destinationBuffer) where T1 : unmanaged where T2 : unmanaged where T3 : unmanaged {
+		ArgumentNullException.ThrowIfNull(conversionMapFunc);
 		var sameDimensions = pattern1.Dimensions == pattern2.Dimensions && pattern2.Dimensions == pattern3.Dimensions;
 		var dimensions = sameDimensions
 			? pattern1.Dimensions
@@ -257,6 +260,7 @@ public static unsafe class TexturePatternPrinter {
 	}
 
 	public static int PrintPattern<T1, T2, T3, T4, TTexel>(in TexturePattern<T1> pattern1, in TexturePattern<T2> pattern2, in TexturePattern<T3> pattern3, in TexturePattern<T4> pattern4, Func<T1, T2, T3, T4, TTexel> conversionMapFunc, Span<TTexel> destinationBuffer) where T1 : unmanaged where T2 : unmanaged where T3 : unmanaged where T4 : unmanaged {
+		ArgumentNullException.ThrowIfNull(conversionMapFunc);
 		var sameDimensions = pattern1.Dimensions == pattern2.Dimensions && pattern2.Dimensions == pattern3.Dimensions && pattern3.Dimensions == pattern4.Dimensions;
 		var dimensions = sameDimensions
 			? pattern1.Dimensions

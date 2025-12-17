@@ -85,20 +85,17 @@ void native_impl_render::allocate_view_descriptor(SceneHandle scene, CameraHandl
 	ThrowIfNull(*outViewDescriptor, "Could not create view descriptor.");
 	(*outViewDescriptor)->setCamera(camera);
 	(*outViewDescriptor)->setScene(scene);
-	(*outViewDescriptor)->setShadowType(ShadowType::PCSS);
 	if (optionalRenderTarget != nullptr) {
 		(*outViewDescriptor)->setRenderTarget(optionalRenderTarget);
 	}
 
-	BloomOptions bo{ 
+	native_impl_render::set_view_shadow_fidelity_level(*outViewDescriptor, 0);
+	native_impl_render::set_view_screen_space_effects_level(*outViewDescriptor, 0);
+	BloomOptions bo {
 		.enabled = true
 	};
 	(*outViewDescriptor)->setBloomOptions(bo);
-	ScreenSpaceReflectionsOptions ssro{
-		.enabled = true
-	};
-	(*outViewDescriptor)->setScreenSpaceReflectionsOptions(ssro);
-	(*outViewDescriptor)->setScreenSpaceRefractionEnabled(true);
+	
 }
 StartExportedFunc(allocate_view_descriptor, SceneHandle scene, CameraHandle camera, RenderTargetHandle optionalRenderTarget, ViewDescriptorHandle* outViewDescriptor) {
 	native_impl_render::allocate_view_descriptor(scene, camera, optionalRenderTarget, outViewDescriptor);
@@ -144,19 +141,57 @@ StartExportedFunc(set_view_descriptor_size, ViewDescriptorHandle viewDescriptor,
 
 void native_impl_render::set_view_shadow_fidelity_level(ViewDescriptorHandle viewDescriptor, int32_t level) {
 	ThrowIfNull(viewDescriptor, "View was null.");
-	switch (level) {
-		case 1:
-		case 2:
-			// Looks "worse" (less smooth, more dithery) from some aspects but does not suffer from light bleeding which definitely looks "less bad" in the worst case
-			viewDescriptor->setShadowType(ShadowType::PCSS);
-			break;
-		default:
-			viewDescriptor->setShadowType(ShadowType::VSM);
-			break;
-	}
+	// TODO PCSS doesn't seem very stable, it may be that we need to better configure the frustum/FOV
+	// switch (level) {
+	// 	case 1:
+	// 	case 2:
+	// 		// Looks "worse" (less smooth, more dithery) from some aspects but does not suffer from light bleeding which definitely looks "less bad" in the worst case
+	// 		viewDescriptor->setShadowType(ShadowType::PCSS);
+	// 		break;
+	// 	default:
+	// 		viewDescriptor->setShadowType(ShadowType::VSM);
+	// 		break;
+	// }
+	viewDescriptor->setShadowType(ShadowType::VSM);
 }
 StartExportedFunc(set_view_shadow_fidelity_level, ViewDescriptorHandle viewDescriptor, int32_t level) {
 	native_impl_render::set_view_shadow_fidelity_level(viewDescriptor, level);
+	EndExportedFunc
+}
+
+void native_impl_render::set_view_screen_space_effects_level(ViewDescriptorHandle viewDescriptor, int32_t level) {
+	ThrowIfNull(viewDescriptor, "View was null.");
+	switch (level) {
+		case 1:
+		case 2: {
+			ScreenSpaceReflectionsOptions ssro {
+				.enabled = true
+			};
+			viewDescriptor->setScreenSpaceReflectionsOptions(ssro);
+			viewDescriptor->setScreenSpaceRefractionEnabled(true);
+			break;
+		}
+		case -1:
+		case -2:{
+			ScreenSpaceReflectionsOptions ssro {
+				.enabled = false
+			};
+			viewDescriptor->setScreenSpaceReflectionsOptions(ssro);
+			viewDescriptor->setScreenSpaceRefractionEnabled(false);
+			break;
+		}
+		default: {
+			ScreenSpaceReflectionsOptions ssro {
+				.enabled = false
+			};
+			viewDescriptor->setScreenSpaceReflectionsOptions(ssro);
+			viewDescriptor->setScreenSpaceRefractionEnabled(true);
+			break;
+		}
+	}
+}
+StartExportedFunc(set_view_screen_space_effects_level, ViewDescriptorHandle viewDescriptor, int32_t level) {
+	native_impl_render::set_view_screen_space_effects_level(viewDescriptor, level);
 	EndExportedFunc
 }
 

@@ -1,226 +1,82 @@
 ﻿using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.World;
+using System;
 using System.Diagnostics;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using Egodystonic.TinyFFR.Rendering.Local;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace Egodystonic.TinyFFR.Testing.Local.TestSetup;
 
-sealed class TestOptions {
-	public Func<ILocalTinyFfrFactory>? CustomFactoryCreationFunc { get; set; } = null;
-
-	public bool CreateWindow { get; set; } = true;
-	public Func<ILocalTinyFfrFactory, Window>? CustomWindowCreationFunc { get; set; } = null;
-
-	public bool CreateScene { get; set; } = true;
-	public Func<ILocalTinyFfrFactory, Scene>? CustomSceneCreationFunc { get; set; } = null;
-
-	public bool LockCursorToWindow { get; set; } = true;
-	public bool AddSkyBackdrop { get; set; } = true;
-	public bool AddCube { get; set; } = true;
-	public bool AddSunlight { get; set; } = true;
-	public bool AddCamera { get; set; } = true;
-	public bool AddRenderer { get; set; } = true;
-	public bool UseDefaultCameraControls { get; set; } = true;
-	public bool UseDefaultLoop { get; set; } = true;
-	public Func<ILocalTinyFfrFactory, ApplicationLoop>? CustomLoopCreationFunc { get; set; } = null;
-
-	public TimeSpan? FpsMetricPeriod { get; set; } = TimeSpan.FromSeconds(30d);
-}
-
-sealed class TestObjects {
-	public required List<IDisposable> Disposables { get; init; }
-	public required ILocalTinyFfrFactory Factory { get; init; }
-	public Window? Window { get; init; }
-	public Scene? Scene { get; init; }
-	public EnvironmentCubemap? SkyBackdrop { get; init; }
-	public ModelInstance? Cube { get; init; }
-	public DirectionalLight? Sunlight { get; init; }
-	public Camera? Camera { get; init; }
-	public Renderer? Renderer { get; init; }
-	public ApplicationLoop? Loop { get; init; }
-}
-
 static class TestScaffold {
-	static TestObjects? _testObjects;
-	static TestOptions? _options;
-	static bool _exitTestCalled = false;
-
-	public static TestObjects TestObjects => _testObjects ?? throw new InvalidOperationException("Test not yet initialized. Can not access test objects.");
-
-	static bool ShouldRunDefaultLoop => _options != null && _testObjects != null && _options.UseDefaultLoop && _testObjects.Loop != null;
-
-	public static void SetUpStandardTestObjects() {
-		_options = new TestOptions();
-		TestMain.ConfigureTest(_options);
-
-		var disposables = new List<IDisposable>();
-
-		var factory = (_options.CustomFactoryCreationFunc ?? CreateDefaultTestFactory).Invoke();
-		disposables.Add(factory);
-
-		Window? window = _options.CreateWindow
-			? (_options.CustomWindowCreationFunc ?? CreateDefaultWindow).Invoke(factory)
-			: null;
-		if (window is { } w) {
-			disposables.Add(w);
-			if (_options.LockCursorToWindow) w.LockCursor = true;
+	static TestBuilder? _builder;
+	static TestContext? _materializedContext;
+	static bool _defaultLoopExitRequested = false;
+	
+	public static void Execute() {
+		_builder = new TestBuilder();
+		try {
+			TestMain.ConfigureTest(_builder);
+		}
+		catch (Exception e) {
+			Console.WriteLine($"{e.GetType().Name} occurred when configuring test ('{e.Message}').");
+			throw;
 		}
 
-		Scene? scene = _options.CreateScene
-			? (_options.CustomSceneCreationFunc ?? CreateDefaultScene).Invoke(factory)
-			: null;
-		// We don't add scene to disposables because we add it in CleanUpTestObjects
+		_materializedContext = ((TestContextBuilder) _builder.Context).Materialize();
 
-		EnvironmentCubemap? skyBackdrop = _options.AddSkyBackdrop
-			? factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr))
-			: null;
-		if (skyBackdrop is { } b) {
-			disposables.Add(b);
-			scene?.SetBackdrop(b);
+		try {
+			TestMain.StartTest(_materializedContext);
+		}
+		catch (Exception e) {
+			Console.WriteLine($"{e.GetType().Name} occurred when running test ('{e.Message}').");
+			throw;
 		}
 
-		ModelInstance? cube = _options.AddCube
-			? CreateCube(factory, disposables)
-			: null;
-		if (cube is { } c) {
-			disposables.Add(c);
-			scene?.Add(c);
-		}
-
-		DirectionalLight? sunlight = _options.AddSunlight
-			? factory.LightBuilder.CreateDirectionalLight()
-			: null;
-		if (sunlight is { } s) {
-			disposables.Add(s);
-			scene?.Add(s);
-		}
-
-		Camera? camera = _options.AddCamera
-			? factory.CameraBuilder.CreateCamera((0f, 0f, -2f))
-			: null;
-		if (camera is { } cam) {
-			disposables.Add(cam);
-		}
-
-		Renderer? renderer = (_options.AddRenderer && scene is { } rendererScene && camera is { } rendererCamera && window is { } rendererWindow)
-			? factory.RendererBuilder.CreateRenderer(rendererScene, rendererCamera, rendererWindow)
-			: null;
-		// We don't add renderer to disposables because we add it in CleanUpTestObjects
-
-		ApplicationLoop? loop = _options.UseDefaultLoop
-			? (_options.CustomLoopCreationFunc ?? CreateDefaultLoop).Invoke(factory)
-			: null;
-		if (loop is { } l) {
-			disposables.Add(l);
-		}
-
-		_testObjects = new TestObjects {
-			Disposables = disposables,
-			Factory = factory,
-			Scene = scene,
-			Window = window,
-			SkyBackdrop = skyBackdrop,
-			Cube = cube,
-			Sunlight = sunlight,
-			Camera = camera,
-			Renderer = renderer,
-			Loop = loop
-		};
+		if (_builder.AutoDisposeContextObjectsOnTestEnd) _materializedContext.DisposeObjects();
 	}
+	
+	public static void BeginDefaultLoop(Func<float, bool> loopAction, ApplicationLoop loop, Camera? autoCameraControlTarget) {
+		if (_builder == null || _materializedContext == null) throw new InvalidOperationException($"Must complete {nameof(TestMain.ConfigureTest)} first.");
 
-	static ILocalTinyFfrFactory CreateDefaultTestFactory() {
-		return new LocalTinyFfrFactory();
-	}
-
-	static Window CreateDefaultWindow(ILocalTinyFfrFactory factory) {
-		return factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
-	}
-
-	static Scene CreateDefaultScene(ILocalTinyFfrFactory factory) {
-		return factory.SceneBuilder.CreateScene();
-	}
-
-	static ModelInstance CreateCube(ILocalTinyFfrFactory factory, List<IDisposable> disposables) {
-		var testMat = factory.MaterialBuilder.CreateTestMaterial();
-		var mesh = factory.MeshBuilder.CreateMesh(new Cuboid(1f));
-		disposables.Add(testMat);
-		disposables.Add(mesh);
-		return factory.ObjectBuilder.CreateModelInstance(mesh, testMat);
-	}
-
-	static ApplicationLoop CreateDefaultLoop(ILocalTinyFfrFactory factory) {
-		return factory.ApplicationLoopBuilder.CreateLoop(frameRateCapHz: null);
-	}
-
-	public static void RunTestLoop() {
-		if (_options == null || _testObjects == null) throw new InvalidOperationException($"Must invoke {nameof(SetUpStandardTestObjects)} first.");
-		TestMain.StartTest();
-		if (!ShouldRunDefaultLoop) return;
-
-		var loop = _testObjects.Loop!.Value;
 		var periodicalFpsTimer = Stopwatch.StartNew();
 		var periodicalFrameCount = 0;
-		while (!loop.Input.UserQuitRequested && !_exitTestCalled && !loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) {
+		while (!loop.Input.UserQuitRequested && !_defaultLoopExitRequested) {
 			var sw = Stopwatch.StartNew();
 			var deltaTime = loop.IterateOnce();
 			var dtSecs = (float) deltaTime.TotalSeconds;
 
-			if (_options.UseDefaultCameraControls && _testObjects.Camera is { } camera) {
-				DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, camera, dtSecs);
+			if (autoCameraControlTarget is { } camera) {
+				DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, camera, dtSecs, _builder.Context.Window);
 				DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, camera, dtSecs);
 			}
 
-			TestMain.Tick(dtSecs, loop.Input);
-			_testObjects.Renderer?.Render();
-
-			if (sw.ElapsedMilliseconds > 20) Console.WriteLine("Slow frame! Measured: " + sw.ElapsedMilliseconds + "ms / DeltaTime: " + deltaTime.TotalMilliseconds + "ms");
-
-			if (_options.FpsMetricPeriod != null) {
-				++periodicalFrameCount;
-				if (periodicalFpsTimer.Elapsed >= _options.FpsMetricPeriod) {
-					Console.WriteLine($"Framecount over last {periodicalFpsTimer.Elapsed.TotalSeconds:N1} seconds = {periodicalFrameCount} ({(periodicalFrameCount / periodicalFpsTimer.Elapsed.TotalSeconds):N0} FPS)");
-					periodicalFrameCount = 0;
-					periodicalFpsTimer.Restart();
-				}
-			}
-		}
-
-		if (_options.FpsMetricPeriod != null) {
-			Console.WriteLine($"Framecount over final {periodicalFpsTimer.Elapsed.TotalSeconds:N1} seconds = {periodicalFrameCount} ({(periodicalFrameCount / periodicalFpsTimer.Elapsed.TotalSeconds):N0} FPS)");
-		}
-
-		CleanUpTestObjects();
-	}
-
-	public static void ExitTest() {
-		_exitTestCalled = true;
-		if (!ShouldRunDefaultLoop) CleanUpTestObjects();
-	}
-
-	static void CleanUpTestObjects() {
-		if (_testObjects == null) return;
-
-		var disposalExceptions = new List<Exception>();
-		if (_testObjects.Scene is { } s) _testObjects.Disposables.Add(s);
-		if (_testObjects.Renderer is { } r) _testObjects.Disposables.Add(r);
-		for (var i = _testObjects.Disposables.Count - 1; i >= 0; --i) {
 			try {
-				Console.WriteLine($"Disposing {_testObjects.Disposables[i]}...");
-				_testObjects.Disposables[i].Dispose();
+				_defaultLoopExitRequested = loopAction(dtSecs);
 			}
 			catch (Exception e) {
-				Console.WriteLine($"Error when disposing '{_testObjects.Disposables[i]}': {e.Message}");
-				disposalExceptions.Add(e);
+				Console.WriteLine($"{e.GetType().Name} occurred when running one iteration of default loop ('{e.Message}').");
+				throw;
+			}
+
+			if (_builder.DefaultLoopSlowFrameReportingEnable && sw.Elapsed > _builder.DefaultLoopSlowFrameTime) {
+				Console.WriteLine("Slow frame! Measured: " + sw.ElapsedMilliseconds + "ms / DeltaTime: " + deltaTime.TotalMilliseconds + "ms");
+			}
+
+			++periodicalFrameCount;
+			if (_builder.DefaultLoopFpsReportingEnable && periodicalFpsTimer.Elapsed >= _builder.DefaultLoopFpsReportingPeriod) {
+				Console.WriteLine($"Framecount over last {periodicalFpsTimer.Elapsed.TotalSeconds:N1} seconds = {periodicalFrameCount} ({(periodicalFrameCount / periodicalFpsTimer.Elapsed.TotalSeconds):N0} FPS)");
+				periodicalFrameCount = 0;
+				periodicalFpsTimer.Restart();
 			}
 		}
 
-		if (disposalExceptions.Any()) throw new AggregateException("One or more resources threw an exception when being disposed.", disposalExceptions);
+		_defaultLoopExitRequested = false;
+		Console.WriteLine($"Framecount over final {periodicalFpsTimer.Elapsed.TotalSeconds:N1} seconds = {periodicalFrameCount} ({(periodicalFrameCount / periodicalFpsTimer.Elapsed.TotalSeconds):N0} FPS)");
 	}
 }

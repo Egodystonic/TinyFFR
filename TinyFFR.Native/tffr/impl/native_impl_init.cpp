@@ -45,6 +45,7 @@ void native_impl_init::notify_of_log_msg() {
 
 void native_impl_init::on_factory_build(interop_bool enableVsync) {
 	auto config = filament::Engine::Config{
+		.perRenderPassArenaSizeMB = 70,
 		.disableVsync = enableVsync ? false : true
 	};
 

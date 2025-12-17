@@ -13,17 +13,30 @@ public enum Quality {
 }
 
 public readonly record struct RenderQualityConfig : IConfigStruct<RenderQualityConfig> {
-	public Quality ShadowQuality { get; init; }
+	public static readonly Quality DefaultShadowQuality = Quality.Standard;
+	public static readonly Quality DefaultScreenSpaceEffectsQuality = Quality.Standard;
+
+	public Quality ShadowQuality { get; init; } = DefaultShadowQuality;
+	public Quality ScreenSpaceEffectsQuality { get; init; } = DefaultScreenSpaceEffectsQuality;
+
+	public RenderQualityConfig() { }
+	public RenderQualityConfig(Quality universalQualityLevel) {
+		ShadowQuality = universalQualityLevel;
+		ScreenSpaceEffectsQuality = universalQualityLevel;
+	}
 
 	public static int GetHeapStorageFormattedLength(in RenderQualityConfig src) {
-		return SerializationSizeOfInt(); // ShadowQuality
+		return SerializationSizeOfInt() // ShadowQuality
+			 + SerializationSizeOfInt(); // EnableScreenSpaceReflectionPass
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in RenderQualityConfig src) {
 		SerializationWriteInt(ref dest, (int) src.ShadowQuality);
+		SerializationWriteInt(ref dest, (int) src.ScreenSpaceEffectsQuality);
 	}
 	public static RenderQualityConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new() {
-			ShadowQuality = (Quality) SerializationReadInt(ref src)
+			ShadowQuality = (Quality) SerializationReadInt(ref src),
+			ScreenSpaceEffectsQuality = (Quality) SerializationReadInt(ref src)
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {

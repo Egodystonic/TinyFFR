@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2025
 
 using Egodystonic.TinyFFR.Environment.Input;
+using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Testing.Local.TestSetup;
@@ -12,8 +13,8 @@ static class DefaultCameraInputHandler {
 	static Angle _currentVerticalAngle = Angle.Zero;
 	static Direction _currentHorizontalPlaneDir = Direction.Forward;
 
-	public static void TickKbm(ILatestKeyboardAndMouseInputRetriever input, Camera camera, float deltaTime) {
-		AdjustCameraViewDirectionKbm(input, camera, deltaTime);
+	public static void TickKbm(ILatestKeyboardAndMouseInputRetriever input, Camera camera, float deltaTime, Window? cursorLockWindow) {
+		AdjustCameraViewDirectionKbm(input, camera, deltaTime, cursorLockWindow);
 		AdjustCameraPositionKbm(input, camera, deltaTime);
 	}
 
@@ -22,12 +23,19 @@ static class DefaultCameraInputHandler {
 		AdjustCameraPositionGamepad(input, camera, deltaTime);
 	}
 
-	static void AdjustCameraViewDirectionKbm(ILatestKeyboardAndMouseInputRetriever input, Camera camera, float deltaTime) {
+	static void AdjustCameraViewDirectionKbm(ILatestKeyboardAndMouseInputRetriever input, Camera camera, float deltaTime, Window? cursorLockWindow) {
 		const float MouseSensitivity = 0.05f;
 
+		var adjustmentSpeed = 0f;
+		var mouseLeftDown = input.KeyIsCurrentlyDown(KeyboardOrMouseKey.MouseLeft);
+		var mouseRightDown = input.KeyIsCurrentlyDown(KeyboardOrMouseKey.MouseRight);
+		if (mouseLeftDown) adjustmentSpeed += MouseSensitivity;
+		if (mouseRightDown) adjustmentSpeed += MouseSensitivity * 2f;
+		cursorLockWindow?.LockCursor = mouseLeftDown || mouseRightDown;
+
 		var cursorDelta = input.MouseCursorDelta;
-		_currentHorizontalAngle += cursorDelta.X * MouseSensitivity;
-		_currentVerticalAngle += cursorDelta.Y * MouseSensitivity;
+		_currentHorizontalAngle += cursorDelta.X * adjustmentSpeed;
+		_currentVerticalAngle += cursorDelta.Y * adjustmentSpeed;
 
 		_currentHorizontalAngle = _currentHorizontalAngle.Normalized;
 		_currentVerticalAngle = _currentVerticalAngle.Clamp(-Angle.QuarterCircle, Angle.QuarterCircle);

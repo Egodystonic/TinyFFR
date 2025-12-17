@@ -28,6 +28,7 @@ public:
 	static void render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity);
 
 	static void set_view_shadow_fidelity_level(ViewDescriptorHandle viewDescriptor, int32_t level);
+	static void set_view_screen_space_effects_level(ViewDescriptorHandle viewDescriptor, int32_t level);
 
 	static void allocate_render_target(int32_t width, int32_t height, TextureHandle* outBuffer, RenderTargetHandle* outRenderTarget);
 	static void dispose_render_target_buffer(TextureHandle buffer);
