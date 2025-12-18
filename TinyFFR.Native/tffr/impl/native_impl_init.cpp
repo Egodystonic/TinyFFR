@@ -43,10 +43,13 @@ void native_impl_init::notify_of_log_msg() {
 	log_delegate();
 }
 
-void native_impl_init::on_factory_build(interop_bool enableVsync) {
+void native_impl_init::on_factory_build(interop_bool enableVsync, uint32_t commandBufferSizeMb, interop_bool furtherReduceMemoryUsage) {
 	auto config = filament::Engine::Config{
-		.perRenderPassArenaSizeMB = 70,
-		.disableVsync = enableVsync ? false : true
+		.commandBufferSizeMB = commandBufferSizeMb * 5U, // x5 because we allow up to 5x frame queue
+		.perRenderPassArenaSizeMB = furtherReduceMemoryUsage ? 3U : 70U,
+		.minCommandBufferSizeMB = commandBufferSizeMb,
+		.perFrameCommandsSizeMB = furtherReduceMemoryUsage ? 2U : 35U,
+		.disableVsync = enableVsync ? false : true,
 	};
 
 	filament_engine_ptr = filament::Engine::Builder()
@@ -57,8 +60,8 @@ void native_impl_init::on_factory_build(interop_bool enableVsync) {
 
 	ThrowIfNull(filament_engine_ptr, "Could not initialize filament.");
 }
-StartExportedFunc(on_factory_build, interop_bool enableVsync) {
-	native_impl_init::on_factory_build(enableVsync);
+StartExportedFunc(on_factory_build, interop_bool enableVsync, uint32_t commandBufferSizeMb, interop_bool furtherReduceMemoryUsage) {
+	native_impl_init::on_factory_build(enableVsync, commandBufferSizeMb, furtherReduceMemoryUsage);
 	EndExportedFunc
 }
 void native_impl_init::on_factory_teardown() {

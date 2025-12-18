@@ -68,7 +68,15 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		assetLoaderConfig ??= new();
 		rendererBuilderConfig ??= new();
 
-		OnFactoryBuild(rendererBuilderConfig.EnableVSync).ThrowIfFailure();
+		OnFactoryBuild(
+			rendererBuilderConfig.EnableVSync,
+			factoryConfig.MemoryUsageRubric switch {
+				MemoryUsageRubric.UseSignificantlyLessMemory => 2U,
+				MemoryUsageRubric.UseLessMemory => 15U,
+				_ => 50U
+			},
+			factoryConfig.MemoryUsageRubric == MemoryUsageRubric.UseSignificantlyLessMemory
+		).ThrowIfFailure();
 
 		var resourceGroupProviderRef = new DeferredRef<LocalResourceGroupImplProvider>();
 		_gpuHoldingBufferPool = new FixedByteBufferPool(factoryConfig.MaxCpuToGpuAssetTransferSizeBytes);
@@ -148,7 +156,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "on_factory_build")]
-	static extern InteropResult OnFactoryBuild(InteropBool enableVSync);
+	static extern InteropResult OnFactoryBuild(InteropBool enableVSync, uint commandBufferSizeMb, InteropBool furtherReduceMemoryUsage);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "on_factory_teardown")]
 	static extern InteropResult OnFactoryTeardown();

@@ -20,6 +20,6 @@ public:
 	static void set_log_notify_delegate(log_notify_delegate logNotifyDelegate);
 	static void notify_of_log_msg();
 
-	static void on_factory_build(interop_bool enableVsync);
+	static void on_factory_build(interop_bool enableVsync, uint32_t commandBufferSizeMb, interop_bool furtherReduceMemoryUsage);
 	static void on_factory_teardown();
 };

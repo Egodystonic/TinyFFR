@@ -73,11 +73,15 @@ class RenderableManager;
 class TransformManager;
 
 #ifndef FILAMENT_PER_RENDER_PASS_ARENA_SIZE_IN_MB
-#    define FILAMENT_PER_RENDER_PASS_ARENA_SIZE_IN_MB 3
+// === Begin TinyFFR Alteration ===
+#    define FILAMENT_PER_RENDER_PASS_ARENA_SIZE_IN_MB 100
+// === End TinyFFR Alteration ===
 #endif
 
 #ifndef FILAMENT_PER_FRAME_COMMANDS_SIZE_IN_MB
-#    define FILAMENT_PER_FRAME_COMMANDS_SIZE_IN_MB 2
+// === Begin TinyFFR Alteration ===
+#    define FILAMENT_PER_FRAME_COMMANDS_SIZE_IN_MB 50
+// === End TinyFFR Alteration ===
 #endif
 
 #ifndef FILAMENT_MIN_COMMAND_BUFFERS_SIZE_IN_MB
@@ -85,7 +89,9 @@ class TransformManager;
 #endif
 
 #ifndef FILAMENT_COMMAND_BUFFER_SIZE_IN_MB
-#    define FILAMENT_COMMAND_BUFFER_SIZE_IN_MB (FILAMENT_MIN_COMMAND_BUFFERS_SIZE_IN_MB * 3)
+// === Begin TinyFFR Alteration ===
+#    define FILAMENT_COMMAND_BUFFER_SIZE_IN_MB (FILAMENT_MIN_COMMAND_BUFFERS_SIZE_IN_MB * 10)
+// === End TinyFFR Alteration ===
 #endif
 
 /**

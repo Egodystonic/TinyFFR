@@ -235,7 +235,7 @@ sealed record TestContextBuilder : ITestContextBuilder {
 		if (Factory == null || Window is not { } window || Scene is not { } scene || Camera is not { } camera) return null;
 		var result = Factory.RendererBuilder.CreateRenderer(scene, camera, window, new RendererCreationConfig { // TODO this should include the window/camera/scene
 			Name = "Default Test Renderer",
-			Quality = new RenderQualityConfig { ShadowQuality = Quality.VeryHigh }
+			Quality = new RenderQualityConfig(Quality.VeryHigh)
 		});
 		return result;
 	}

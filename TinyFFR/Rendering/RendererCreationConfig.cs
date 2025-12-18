@@ -15,24 +15,23 @@ public readonly ref struct RendererCreationConfig : IConfigStruct<RendererCreati
 	public const int MaxGpuSynchronizationFrameBufferCount = LocalFrameSynchronizationManager.MaxBufferSize;
 	public static readonly RenderQualityConfig DefaultQuality = new();
 
-	readonly int _gpuSynchronizationFrameBufferCount = DefaultGpuSynchronizationFrameBufferCount;
-
 	public bool AutoUpdateCameraAspectRatio { get; init; } = DefaultAutoUpdateCameraAspectRatio;
-	
+
 	public int GpuSynchronizationFrameBufferCount {
-		get => _gpuSynchronizationFrameBufferCount;
+		get;
 		init {
 			if (value is < MinGpuSynchronizationFrameBufferCount or > MaxGpuSynchronizationFrameBufferCount) {
 				throw new ArgumentOutOfRangeException(
-					nameof(GpuSynchronizationFrameBufferCount), 
-					value, 
+					nameof(GpuSynchronizationFrameBufferCount),
+					value,
 					$"Must be between {nameof(MinGpuSynchronizationFrameBufferCount)} ({MinGpuSynchronizationFrameBufferCount}) and " +
 					$"{nameof(MaxGpuSynchronizationFrameBufferCount)} ({MaxGpuSynchronizationFrameBufferCount}) (inclusive)."
 				);
 			}
-			_gpuSynchronizationFrameBufferCount = value;
+
+			field = value;
 		}
-	}
+	} = DefaultGpuSynchronizationFrameBufferCount;
 
 	public RenderQualityConfig Quality { get; init; } = DefaultQuality;
 
