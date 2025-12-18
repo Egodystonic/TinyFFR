@@ -57,6 +57,7 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/6?closed=1) 
 	* Improved test material (now shows a UV test pattern)
 	* Must now be created, meaning resource lifetime is easier to reason about
 * Added function to convert `Transform2D` to `Matrix3x2`
+* Added option to set memory usage rubric in factory setup
 
 ## 0.5
 

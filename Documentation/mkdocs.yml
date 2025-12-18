@@ -115,7 +115,7 @@ nav:
   - index.md
   - changelog.md
   - Tutorials:
-    - Basics:
+    - Fundamentals:
       - tutorials/installing.md
       - tutorials/hello_cube.md
       - tutorials/handling_input.md
@@ -129,16 +129,16 @@ nav:
     - Snippets:
       - tutorials/snippets/vsync.md
   - Concepts:
+    - concepts/materials.md
+    - concepts/meshes.md
+    - concepts/lighting.md
+    - concepts/input.md
+    - concepts/scenes_and_rendering.md
+    - concepts/displays_and_windows.md
+    - concepts/math_and_geometry.md
+    - concepts/conventions.md
     - concepts/factory.md
     - concepts/resources.md
-    - concepts/displays_and_windows.md
-    - concepts/scenes_and_rendering.md
-    - concepts/math_and_geometry.md
-    - concepts/input.md
-    - concepts/meshes.md
-    - concepts/materials.md
-    - concepts/lighting.md
-    - concepts/conventions.md
   - Reference Docs:
     - Utils:
       - reference/typed_referent_iterator.md

@@ -1,6 +1,7 @@
 ﻿// Created on 2025-12-15 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
+using System.Runtime.CompilerServices;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment;
@@ -68,8 +69,8 @@ sealed record TestContext {
 		_factory?.Dispose();
 	}
 
-	static InvalidOperationException NoContextObjectException() {
-		return new InvalidOperationException($"Context object (or one of its dependent objects) was deliberately set to null in test setup, and is therefore unavailable inside the test.");
+	static InvalidOperationException NoContextObjectException([CallerMemberName] string? memberName = null) {
+		return new InvalidOperationException($"Context object '{memberName}' (or one of its dependent objects) was deliberately set to null in test setup, and is therefore unavailable inside the test.");
 	}
 }
 
@@ -184,13 +185,13 @@ sealed record TestContextBuilder : ITestContextBuilder {
 		return opt.Value;
 	}
 
-	void SetOrThrowIfAlreadySet<T>(ref RefOption<T> opt, T? value) where T : class {
-		if (opt.IsSet) throw new InvalidOperationException("The value of this context object has already been set, either directly or indirectly (e.g. materialized when getting it or another object that depends on it).");
+	void SetOrThrowIfAlreadySet<T>(ref RefOption<T> opt, T? value, [CallerMemberName] string? memberName = null) where T : class {
+		if (opt.IsSet) throw new InvalidOperationException($"The value of this context object ('{memberName}') has already been set, either directly or indirectly (e.g. materialized when getting it or another object that depends on it).");
 		opt = new(value, true);
 	}
 
-	void SetOrThrowIfAlreadySet<T>(ref ValOption<T> opt, T? value) where T : struct {
-		if (opt.IsSet) throw new InvalidOperationException("The value of this context object has already been set, either directly or indirectly (e.g. materialized when getting it or another object that depends on it).");
+	void SetOrThrowIfAlreadySet<T>(ref ValOption<T> opt, T? value, [CallerMemberName] string? memberName = null) where T : struct {
+		if (opt.IsSet) throw new InvalidOperationException($"The value of this context object ('{memberName}') has already been set, either directly or indirectly (e.g. materialized when getting it or another object that depends on it).");
 		opt = new(value, true);
 	}
 
