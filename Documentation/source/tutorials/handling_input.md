@@ -11,7 +11,7 @@ TinyFFR comes with a built-in API for reacting to user input via keyboard, mouse
 	If you wish you can integrate these camera controls directly with the hello cube example and/or the treasure chest example from the previous page, just replace/remove any pre-existing camera manipulation code.
 
 ???+ warning "Math Ahead"
-	The examples on this page necessitate a little more usage of the in-built math API than previous pages. It might be worth checking out the [Math & Geometry](/concepts/math_and_geometry.md) page first for a primer, depending on how confident you are already with 3D math.
+	The examples on this page necessitate a little more usage of the in-built math API than previous pages. It might be worth checking out the [Math & Geometry](math_and_geometry.md) page first for a primer, depending on how confident you are already with 3D math.
 
 	If you learn best by example however go ahead and jump right in: Every line of math below is annotated with explanations.
 
@@ -515,7 +515,7 @@ static void AdjustCameraPositionGamepad(ILatestGameControllerInputStateRetriever
 
 	An angle of 0° indicates the stick is being pushed exactly to the right, 90° exactly up, 180° exactly left, and 270° exactly down.
 
-	This [convention](/concepts/conventions.md) comes from [polar co-ordinate systems](https://en.wikipedia.org/wiki/Polar_coordinate_system#Conventions), hence why the method is named `GetPolarAngle()`.
+	This [convention](conventions.md) comes from [polar co-ordinate systems](https://en.wikipedia.org/wiki/Polar_coordinate_system#Conventions), hence why the method is named `GetPolarAngle()`.
 
 6.	Here we use a C# null-checking pattern to check that `stickAngle` is not `null`, and if is not, we assign the non-null value to an inline variable `horizontalMovementAngle`.
 

@@ -110,7 +110,7 @@ The `factory` is the "entry point" of the library, and exposes for us a set of b
 
 Most resources in TinyFFR implement the `IDisposable` interface, and they must be disposed by the user (you) when no longer needed. The factory object is no exception to this. For this example, we will use [C#'s `using` syntax](https://learn.microsoft.com/en-us/dotnet/fundamentals/runtime-libraries/system-idisposable#the-c-f-and-visual-basic-using-statement) to automatically dispose the factory at the end of the example. You may wish to manually dispose the factory yourself instead, depending on your application's architecture.
 
-For deeper documentation on the factory, see: [:material-lightbulb: The Factory](/concepts/factory.md)
+For deeper documentation on the factory, see: [:material-lightbulb: The Factory](factory.md)
 { : style="font-size:0.8em;" }
 
 ### Creating the Cube Mesh
@@ -148,7 +148,7 @@ using var cubeMesh = meshBuilder.CreateMesh(cubeDesc); // (3)!
 
 Because the resultant `cubeMesh` is a disposable resource, we once again use the `using` pattern to make sure it's disposed when we're done.
 
-For deeper documentation on meshes, see: [:material-lightbulb: Meshes](/concepts/meshes.md)
+For deeper documentation on meshes, see: [:material-lightbulb: Meshes](meshes.md)
 { : style="font-size:0.8em;" }
 
 ### Creating a Material for the Cube
@@ -171,7 +171,7 @@ using var cubeMaterial = materialBuilder.CreateTestMaterial(); // (2)!
 
 The `cubeMaterial` is a disposable resource, so again we use the `using` pattern to make sure it gets disposed.
 
-For deeper documentation on materials, see: [:material-lightbulb: Materials](/concepts/materials.md)
+For deeper documentation on materials, see: [:material-lightbulb: Materials](materials.md)
 { : style="font-size:0.8em;" }
 
 ### Creating a Cube Instance
@@ -219,7 +219,7 @@ As with all the other resources, the `light` is disposable.
 
 	However, ambient scene-wide illumination tends to be very flat and uninteresting, and you'll usually want at least one dynamic light source to provide a convincing 3D effect.
 
-For deeper documentation on lighting, see: [:material-lightbulb: Lighting](/concepts/lighting.md)
+For deeper documentation on lighting, see: [:material-lightbulb: Lighting](lighting.md)
 { : style="font-size:0.8em;" }
 
 ### Putting Together a Scene
@@ -249,7 +249,7 @@ scene.Add(light); // (3)!
 
 Of course, the `scene` is a disposable resource, just like the other resources so far.
 
-For deeper documentation on scenes, see: [:material-lightbulb: Scenes & Rendering](/concepts/scenes_and_rendering.md)
+For deeper documentation on scenes, see: [:material-lightbulb: Scenes & Rendering](scenes_and_rendering.md)
 { : style="font-size:0.8em;" }
 
 ### Creating a Window
@@ -281,7 +281,7 @@ Unlike other resources, the `primaryDisplay` is not disposable as you can not 'd
 
 The `window`, of course, *is* disposable so we instantiate it with the `using` pattern as usual.
 
-For deeper documentation on windows, see: [:material-lightbulb: Displays & Windows](/concepts/displays_and_windows.md)
+For deeper documentation on windows, see: [:material-lightbulb: Displays & Windows](displays_and_windows.md)
 { : style="font-size:0.8em;" }
 
 ### Creating a Camera and Renderer
@@ -328,7 +328,7 @@ using var renderer = rendererBuilder.CreateRenderer(scene, camera, window);
 The `camera` can be set up with various properties such as its position, field-of-view, up direction, etc. For now we're happy with most of the defaults, so we just want to set its position to be at the origin of our world and make sure it's looking forward.
 
 ??? question "Why 'Forward'?" 	
-	There's nothing "special" about the `Forward` direction (or any other direction). It's a [convention](/concepts/conventions.md) in TinyFFR that "Forward" points along the positive Z-axis, but in a scene ("world space") there's nothing particularly important about any axis in particular. 
+	There's nothing "special" about the `Forward` direction (or any other direction). It's a [convention](conventions.md) in TinyFFR that "Forward" points along the positive Z-axis, but in a scene ("world space") there's nothing particularly important about any axis in particular. 
 
 	In fact, you could just as easily recreate this whole scene with the cube "above" the camera and have the camera's `ViewDirection` be `Direction.Up`; or even set up the whole scene with everything looking in some completely arbitrary direction. 
 	
@@ -338,7 +338,7 @@ Unlike the `cube` instance and the `light`, the camera is __not__ added to the s
 
 The `renderer` is like the final bit of glue that takes a scene, a camera, and a window and puts them all together to produce an output. Another way to think of a renderer is as something that takes two inputs (a camera and a scene) and uses them to take a "snapshot" each frame to be shown on the output (the window).
 
-For deeper documentation on cameras & renderers, see: [:material-lightbulb: Scenes & Rendering](/concepts/scenes_and_rendering.md)
+For deeper documentation on cameras & renderers, see: [:material-lightbulb: Scenes & Rendering](scenes_and_rendering.md)
 { : style="font-size:0.8em;" }
 
 ### Rendering at 60Hz, Handling Input
@@ -372,7 +372,7 @@ while (!loop.Input.UserQuitRequested) { // (3)!
 
 	The variable `cubeRotationSpeedPerSec` is defining exactly this rotation for our cube-- we want it to spin around the `Down` axis at a rate of `90°` per second.
 
-2. The `60` here is the desired framerate in Hz. If you want an unlocked framerate, pass `null`. To disable vsync, see [here](/tutorials/snippets/vsync.md).
+2. The `60` here is the desired framerate in Hz. If you want an unlocked framerate, pass `null`. To disable vsync, see [here](/reference/vsync.md).
 3. 	`loop.Input.UserQuitRequested` will be `true` when the user has requested the application exit via any of the built-in means for the OS.
 
 	In most cases, this will be when the user tries to close the window with the :fontawesome-solid-square-xmark: button.
@@ -398,7 +398,7 @@ while (!loop.Input.UserQuitRequested) { // (3)!
 
 	Remember, `renderer.Render()` is being called 60 times per second- thereby giving the illusion of a moving image!
 
-For deeper documentation on input handling, see: [:material-lightbulb: Input](/concepts/input.md)
+For deeper documentation on input handling, see: [:material-lightbulb: Input](input.md)
 { : style="font-size:0.8em;" }
 
 ### Complete Example

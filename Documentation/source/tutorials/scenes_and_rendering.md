@@ -291,7 +291,7 @@ When invoking `Render()` on the `renderer`, the scene captured with the camera w
 
 		1. 	The first `X` texels in the span will constitute the first row of texel data; the second `X` texels will constitute the second, etc; for a total of `Y` rows.
 
-			By default, the first row is considered to be the *bottom* of the texture data (as this matches the 2D texture [convention](/concepts/conventions.md#textures-materials) TinyFFR uses). However, this can be reversed with the "`presentFrameTopToBottom`" parameter described below.
+			By default, the first row is considered to be the *bottom* of the texture data (as this matches the 2D texture [convention](conventions.md#textures-materials) TinyFFR uses). However, this can be reversed with the "`presentFrameTopToBottom`" parameter described below.
 
 		2.	There is no "stride" or blank data at the end of rows; each row is packed without padding and the beginning of one row starts immediately after the end of the previous one in the data.
 

@@ -126,7 +126,7 @@ using var mesh = factory.AssetLoader.LoadMesh(
 
 	Most rendering engines (including TinyFFR) employ something called __back-face culling__, which is a performance optimisation where the rendering of the inside of opaque models is skipped. However, which side of a mesh is its inside, or 'back side', is determined its' polygons'/triangles' *winding order*. 
 	
-	The [convention](/concepts/conventions.md) in TinyFFR is that front-facing polygons should have an anti-clockwise order with respect to the camera. Some exporters may export their models with a clockwise order however; and in this case you can simply flip the triangles by specifying `FlipTriangles = true`.
+	The [convention](conventions.md) in TinyFFR is that front-facing polygons should have an anti-clockwise order with respect to the camera. Some exporters may export their models with a clockwise order however; and in this case you can simply flip the triangles by specifying `FlipTriangles = true`.
 
 2.	`InvertTextureU`, if set to `true`, will *mirror* all textures & materials shown on the mesh surface in the __X/horizontal__ direction.
 
@@ -264,7 +264,7 @@ using var normalMap = factory.AssetLoader.LoadTexture(
 
 ### Importing Normal Maps
 
-By [convention](/concepts/conventions.md) TinyFFR expects normal maps in "OpenGL"/"GL" format. If you're using a normal map that has been exported in "DirectX"/"DX" format however, you may need to invert its green channel to flip the normals' Y direction, otherwise your material's lighting may look incorrect:
+By [convention](conventions.md) TinyFFR expects normal maps in "OpenGL"/"GL" format. If you're using a normal map that has been exported in "DirectX"/"DX" format however, you may need to invert its green channel to flip the normals' Y direction, otherwise your material's lighting may look incorrect:
 
 ```csharp
 using var normalMap = factory.AssetLoader.LoadTexture(
@@ -464,7 +464,7 @@ while (!loop.Input.UserQuitRequested) {
 
 	We will then rotate this `Vect` over time in our application loop below and use it to continuously reposition our camera in an orbiting motion around the treasure chest.
 
-	For more information on `Vect`s, see: [Math & Geometry](/concepts/math_and_geometry.md).
+	For more information on `Vect`s, see: [Math & Geometry](math_and_geometry.md).
 
 9.	We set the initial location of the camera to the world's origin *plus* the `chestToCameraStartVect` (i.e. backwards by 1.3m).
 
@@ -476,7 +476,7 @@ while (!loop.Input.UserQuitRequested) {
 
 11. Here we set a rotation/orbit speed for the camera as __90 degrees per second__ around the __Down__ axis.
 
-	For more information about rotations, see: [Math & Geometry](/concepts/math_and_geometry.md).
+	For more information about rotations, see: [Math & Geometry](math_and_geometry.md).
 
 12. We work out the current rotation around the treasure chest by multiplying the `cameraRotationPerSec` by the number of seconds that have elapsed so far.
 
@@ -490,4 +490,4 @@ while (!loop.Input.UserQuitRequested) {
 
 	We work out which way the camera should be facing by taking the `Vect` from its position to the world origin (`camera.Position >> Location.Origin`) and then determining the `Direction` of that `Vect` (`.Direction`).
 
-	Again, if you need more help with the built-in math API, see: [Math & Geometry](/concepts/math_and_geometry.md).
+	Again, if you need more help with the built-in math API, see: [Math & Geometry](math_and_geometry.md).

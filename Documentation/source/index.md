@@ -97,20 +97,12 @@ have performance issues and bugs at this early stage.
 
 ## Where to Start
 
-### :material-cogs: Learn by Example
+### :material-cogs: See Examples
 
 If you want to just get stuck in and writing code with TinyFFR, head to the tutorials section:
 { : style="margin-left:1em" }
 
 [:octicons-arrow-right-24: Tutorials](/tutorials/index.md)
-{ : style="margin-left:1em" }
-
-### :material-lightbulb: Understand the Concepts
-
-If you want to understand the concepts and design of TinyFFR's API, head to the concepts section:
-{ : style="margin-left:1em" }
-
-[:octicons-arrow-right-24: Concepts](/concepts/index.md)
 { : style="margin-left:1em" }
 
 ### :fontawesome-solid-book: Read the Reference Documentation

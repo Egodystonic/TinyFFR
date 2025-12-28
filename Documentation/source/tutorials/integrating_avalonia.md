@@ -53,7 +53,7 @@ You should not bind a disposed `Renderer` or a non-bindable `Renderer` to a `Tin
 
 ## Input, Loop, and Threading
 
-The [input and application-loop management subsystem](/concepts/input.md) is mostly disabled when using Avalonia integration. 
+The [input and application-loop management subsystem](input.md) is mostly disabled when using Avalonia integration. 
 
 * Input should be handled via Avalonia's built-in input layer instead.
 * All interaction with your UI and TinyFFR should be done in the UI Dispatcher context (e.g. on the UI thread).

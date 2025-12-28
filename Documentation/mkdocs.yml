@@ -121,27 +121,26 @@ nav:
       - tutorials/loading_assets.md
       - tutorials/texture_patterns.md
     - Advanced:
-        - tutorials/materials.md
-        - tutorials/lighting.md
-        - tutorials/input.md
-        - tutorials/meshes.md
-        - tutorials/scenes_and_rendering.md
-        - tutorials/displays_and_windows.md
-        - tutorials/math_and_geometry.md
-        - tutorials/conventions.md
-        - tutorials/factory.md
-        - tutorials/resources.md
+      - tutorials/materials.md
+      - tutorials/lighting.md
+      - tutorials/input.md
+      - tutorials/meshes.md
+      - tutorials/scenes_and_rendering.md
+      - tutorials/displays_and_windows.md
+      - tutorials/math_and_geometry.md
+      - tutorials/conventions.md
+      - tutorials/resources.md
+      - tutorials/factory.md
     - UI Integration:
       - tutorials/integrating_wpf.md
       - tutorials/integrating_avalonia.md
       - tutorials/integrating_winforms.md
-    - Snippets:
-      - tutorials/snippets/vsync.md
   - Reference Docs:
+    - Code Snippets:
+      - reference/vsync.md
     - Utils:
       - reference/typed_referent_iterator.md
 
 not_in_nav: |
   tutorials/index.md
-  concepts/index.md
   reference/index.md
