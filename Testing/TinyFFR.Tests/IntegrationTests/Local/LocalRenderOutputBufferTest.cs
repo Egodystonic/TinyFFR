@@ -62,12 +62,12 @@ class LocalRenderOutputBufferTest {
 			interiorSize: (256, 256),
 			borderSize: (64, 64),
 			paddingSize: (0, 0),
-			interiorValue: UnitSphericalCoordinate.ZeroZero,
-			borderRightValue: new UnitSphericalCoordinate(Orientation2D.Right.ToPolarAngle()!.Value, 45f),
-			borderTopValue: new UnitSphericalCoordinate(Orientation2D.Up.ToPolarAngle()!.Value, 45f),
-			borderLeftValue: new UnitSphericalCoordinate(Orientation2D.Left.ToPolarAngle()!.Value, 45f),
-			borderBottomValue: new UnitSphericalCoordinate(Orientation2D.Down.ToPolarAngle()!.Value, 45f),
-			paddingValue: UnitSphericalCoordinate.ZeroZero,
+			interiorValue: SphericalTranslation.ZeroZero,
+			borderRightValue: new SphericalTranslation(Orientation2D.Right.ToPolarAngle()!.Value, 45f),
+			borderTopValue: new SphericalTranslation(Orientation2D.Up.ToPolarAngle()!.Value, 45f),
+			borderLeftValue: new SphericalTranslation(Orientation2D.Left.ToPolarAngle()!.Value, 45f),
+			borderBottomValue: new SphericalTranslation(Orientation2D.Down.ToPolarAngle()!.Value, 45f),
+			paddingValue: SphericalTranslation.ZeroZero,
 			repetitions: (8, 8)
 		), "normal");
 		using var renderBufferMat = factory.MaterialBuilder.CreateStandardMaterial(renderBufferMatColorTex, renderBufferMatNormalTex, name: "mat");
@@ -124,12 +124,12 @@ class LocalRenderOutputBufferTest {
 			interiorSize: (256, 256),
 			borderSize: (64, 64),
 			paddingSize: (0, 0),
-			interiorValue: UnitSphericalCoordinate.ZeroZero,
-			borderRightValue: new UnitSphericalCoordinate(Orientation2D.Right.ToPolarAngle()!.Value, 45f),
-			borderTopValue: new UnitSphericalCoordinate(Orientation2D.Up.ToPolarAngle()!.Value, 45f),
-			borderLeftValue: new UnitSphericalCoordinate(Orientation2D.Left.ToPolarAngle()!.Value, 45f),
-			borderBottomValue: new UnitSphericalCoordinate(Orientation2D.Down.ToPolarAngle()!.Value, 45f),
-			paddingValue: UnitSphericalCoordinate.ZeroZero,
+			interiorValue: SphericalTranslation.ZeroZero,
+			borderRightValue: new SphericalTranslation(Orientation2D.Right.ToPolarAngle()!.Value, 45f),
+			borderTopValue: new SphericalTranslation(Orientation2D.Up.ToPolarAngle()!.Value, 45f),
+			borderLeftValue: new SphericalTranslation(Orientation2D.Left.ToPolarAngle()!.Value, 45f),
+			borderBottomValue: new SphericalTranslation(Orientation2D.Down.ToPolarAngle()!.Value, 45f),
+			paddingValue: SphericalTranslation.ZeroZero,
 			repetitions: (8, 8)
 		), "normal");
 		using var mat = factory.MaterialBuilder.CreateStandardMaterial(colorTex, normalTex, name: "mat");

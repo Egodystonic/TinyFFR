@@ -584,6 +584,12 @@ class AngleTest {
 			Assert.AreEqual(expectedOutput, input.Clamp(Angle.HalfCircle, -Angle.HalfCircle));
 		}
 
+		void AssertNegQuarterToQuarter(Angle input, Angle expectedOutput) {
+			Assert.AreEqual(expectedOutput, input.ClampNegativeQuarterCircleToQuarterCircle());
+			Assert.AreEqual(expectedOutput, input.Clamp(-Angle.QuarterCircle, Angle.QuarterCircle));
+			Assert.AreEqual(expectedOutput, input.Clamp(Angle.QuarterCircle, -Angle.QuarterCircle));
+		}
+
 		AssertZeroToHalf(0f, 0f);
 		AssertZeroToHalf(90f, 90f);
 		AssertZeroToHalf(180f, 180f);
@@ -623,6 +629,18 @@ class AngleTest {
 		AssertNegHalfToHalf(-270f, -180f);
 		AssertNegHalfToHalf(-360f, -180f);
 		AssertNegHalfToHalf(-450f, -180f);
+
+		AssertNegQuarterToQuarter(0f, 0f);
+		AssertNegQuarterToQuarter(90f, 90f);
+		AssertNegQuarterToQuarter(180f, 90f);
+		AssertNegQuarterToQuarter(270f, 90f);
+		AssertNegQuarterToQuarter(360f, 90f);
+		AssertNegQuarterToQuarter(450f, 90f);
+		AssertNegQuarterToQuarter(-90f, -90f);
+		AssertNegQuarterToQuarter(-180f, -90f);
+		AssertNegQuarterToQuarter(-270f, -90f);
+		AssertNegQuarterToQuarter(-360f, -90f);
+		AssertNegQuarterToQuarter(-450f, -90f);
 
 		Assert.AreEqual(new Angle(100f), new Angle(0f).Clamp(new Angle(100f), new Angle(100f)));
 	}

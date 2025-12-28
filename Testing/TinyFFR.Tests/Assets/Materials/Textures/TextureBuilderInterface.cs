@@ -193,18 +193,18 @@ unsafe class TextureBuilderInterfaceTest {
 		}
 
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
-		_tb.CreateNormalMap(TexturePattern.PlainFill(new UnitSphericalCoordinate(90f, 90f)));
+		_tb.CreateNormalMap(TexturePattern.PlainFill(new SphericalTranslation(90f, 90f)));
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
-		_tb.CreateNormalMap(TexturePattern.PlainFill(new UnitSphericalCoordinate(90f, 90f)), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
+		_tb.CreateNormalMap(TexturePattern.PlainFill(new SphericalTranslation(90f, 90f)), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
-		_tb.CreateNormalMap(new UnitSphericalCoordinate(90f, 90f));
+		_tb.CreateNormalMap(new SphericalTranslation(90f, 90f));
 		AssertCreateTextureCall<TexelRgb24>(AssertInvocation);
-		_tb.CreateNormalMap(new UnitSphericalCoordinate(90f, 90f), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
+		_tb.CreateNormalMap(new SphericalTranslation(90f, 90f), new TextureCreationConfig { GenerateMipMaps = false, IsLinearColorspace = true });
 
 		AssertCreateTextureName<TexelRgb24>("abc");
-		_tb.CreateNormalMap(TexturePattern.PlainFill(new UnitSphericalCoordinate(90f, 90f)), name: "abc");
+		_tb.CreateNormalMap(TexturePattern.PlainFill(new SphericalTranslation(90f, 90f)), name: "abc");
 		AssertCreateTextureName<TexelRgb24>("abc");
-		_tb.CreateNormalMap(new UnitSphericalCoordinate(90f, 90f), name: "abc");
+		_tb.CreateNormalMap(new SphericalTranslation(90f, 90f), name: "abc");
 	}
 
 	[Test]

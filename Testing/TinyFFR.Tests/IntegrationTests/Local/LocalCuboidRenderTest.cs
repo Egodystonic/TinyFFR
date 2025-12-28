@@ -16,7 +16,7 @@ namespace Egodystonic.TinyFFR;
 [TestFixture, Explicit]
 class LocalCuboidRenderTest {
 	TexturePattern<ColorVect> _colorPattern;
-	TexturePattern<UnitSphericalCoordinate> _normalPattern;
+	TexturePattern<SphericalTranslation> _normalPattern;
 	TexturePattern<Real> _occlusionPattern;
 	TexturePattern<Real> _roughnessPattern;
 	TexturePattern<Real> _metallicPattern;
@@ -25,12 +25,12 @@ class LocalCuboidRenderTest {
 	public void SetUpTest() {
 		_colorPattern = TexturePattern.ChequerboardBordered(new ColorVect(1f, 1f, 1f), 2, new ColorVect(1f, 0f, 0f), new ColorVect(0f, 1f, 0f), new ColorVect(0f, 0f, 1f), new ColorVect(0.5f, 0.5f, 0.5f), (4, 4));
 		_normalPattern = TexturePattern.Circles(
-			UnitSphericalCoordinate.ZeroZero,
-			new UnitSphericalCoordinate(0f, 45f),
-			new UnitSphericalCoordinate(90f, 45f),
-			new UnitSphericalCoordinate(180f, 45f),
-			new UnitSphericalCoordinate(270f, 45f),
-			UnitSphericalCoordinate.ZeroZero
+			SphericalTranslation.ZeroZero,
+			new SphericalTranslation(0f, 45f),
+			new SphericalTranslation(90f, 45f),
+			new SphericalTranslation(180f, 45f),
+			new SphericalTranslation(270f, 45f),
+			SphericalTranslation.ZeroZero
 		);
 		_occlusionPattern = TexturePattern.Chequerboard<Real>(0.5f, 1f, 0.8f, (27, 27));
 		_roughnessPattern = TexturePattern.Chequerboard<Real>(0.8f, 0.4f, 1f, (27, 27));

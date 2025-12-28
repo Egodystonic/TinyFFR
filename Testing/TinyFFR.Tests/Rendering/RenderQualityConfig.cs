@@ -16,14 +16,17 @@ class RenderQualityConfigTest {
 	[Test]
 	public void ShouldCorrectlyConvertToAndFromHeapStorageFormat() {
 		var testConfigA = new RenderQualityConfig {
-			ShadowQuality = Quality.VeryLow
+			ShadowQuality = Quality.VeryLow,
+			ScreenSpaceEffectsQuality = Quality.Standard
 		};
 		var testConfigB = new RenderQualityConfig {
-			ShadowQuality = Quality.VeryHigh
+			ShadowQuality = Quality.VeryHigh,
+			ScreenSpaceEffectsQuality = Quality.High
 		};
 
 		static void ComparisonFunc(RenderQualityConfig expected, RenderQualityConfig actual) {
 			Assert.AreEqual(expected.ShadowQuality, actual.ShadowQuality);
+			Assert.AreEqual(expected.ScreenSpaceEffectsQuality, actual.ScreenSpaceEffectsQuality);
 		}
 
 		AssertRoundTripHeapStorage(testConfigA, ComparisonFunc);
@@ -31,14 +34,17 @@ class RenderQualityConfigTest {
 
 		AssertHeapSerializationWithObjects<RenderQualityConfig>()
 			.Int((int) Quality.VeryLow)
+			.Int((int) Quality.Standard)
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<RenderQualityConfig>()
 			.Int((int) Quality.VeryHigh)
+			.Int((int) Quality.High)
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<RenderQualityConfig>()
 			.Including(nameof(RenderQualityConfig.ShadowQuality))
+			.Including(nameof(RenderQualityConfig.ScreenSpaceEffectsQuality))
 			.End();
 	}
 }

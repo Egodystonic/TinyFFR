@@ -7,17 +7,84 @@ description: An example on how to make a simple cube appear using TinyFFR.
 
 This tutorial will show you how to get started with the basics of TinyFFR. In this example, we will:
 
+* Install TinyFFR;
 * Create a window;
-* Create a cube and a light source;
+* Create a cube;
 * Create a camera;
-* Create a 'scene' to hold the cube, light, and camera;
-* Create a renderer to take the scene and render it through the camera to the window;
+* Create a light source;
+* Render the cube + light to the window;
 * Handle the user holding the space-bar to rotate the cube.
 
 If you prefer to start with a complete example first and work your way through the code, jump to the [Complete Example](#complete-example) heading below. Otherwise, this page will take you step-by-step through creating a red cube as shown in the image above.
 { : style="margin-top:3em;" }
 
+## Project Setup
+
+### Installing TinyFFR
+
+__If you already know how to use NuGet all you need to do is install `Egodystonic.TinyFFR` from the standard Nuget package source.__ 
+
+TinyFFR is currently provided as a .NET9 NuGet package targeting 64-bit desktop platforms (Windows, MacOS on Apple Silicon, Linux on Debian-based systems).
+{ style="margin-bottom:3em;" }
+
+??? info "How to install a NuGet package"
+	If you're new to .NET here's a quick guide on installing a NuGet package:
+	
+	#### Editing the .csproj File Manually
+
+	The easiest way might be to add the TinyFFR package manually by editing your .NET project's `.csproj` file, simply add a `<PackageReference>`:
+
+	```xml
+	<ItemGroup>
+	<PackageReference Include="Egodystonic.TinyFFR" Version="M.m.*" /> <!-- (1)! -->
+	</ItemGroup>
+	```
+
+	1. Replace "`M.m`" with the actual version number of the package you'd like to install (e.g. `0.6.*` for v0.6). See the [Changelog](/changelog.md) for the latest version.
+	
+	#### Commandline
+
+	You can install TinyFFR via commandline using the .NET CLI. In your project's root directory, run the following command:
+
+	```plaintext
+	dotnet add package Egodystonic.TinyFFR
+	```
+
+	#### Visual Studio Code
+
+	TinyFFR can be installed via the command palette in VS Code, assuming you have the [C# Dev Kit](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit) installed. Follow [the official instructions on installing a NuGet package](https://code.visualstudio.com/docs/csharp/package-management), and in step __(3)__ search for `Egodystonic.TinyFFR`. Use the latest version of the package available.
+
+	#### Visual Studio
+
+	With Visual Studio, the easiest way to add TinyFFR is via the NuGet package manager. 
+
+	1. Right-click on the project you wish to add TinyFFR to and select "Manage NuGet Packages": 
+		- ![Image showing "Manage NuGet Packages"](installing_rclick_nuget.png)
+		{ : style="list-style: none;" }
+	2. In the package browser, make sure your package source is set to "Nuget" (or "All"): 
+		- ![Image showing how to set nuget package manager source](installing_nuget_source.png)
+		{ : style="list-style: none;" }
+	3. In the search box, type "TinyFFR", and you should see the TinyFFR package show up. The official name of the package is "Egodystonic.TinyFFR" by `EgodystonicStudios`: 
+		- ![Image showing TinyFFR in the nuget package manager browser](installing_package_search.png)
+		{ : style="list-style: none;" }
+	4. Select the package from the list and then on the right `Install` the latest stable version: 
+		- ![Image showing the install button for TinyFFR](installing_package_install.png)
+		{ : style="list-style: none;" }
+	5. You should now see TinyFFR in the `Installed` tab: 
+		- ![Image showing TinyFFR in the installed tab](installing_installed.png)
+		{ : style="list-style: none;" }
+
+	For more assistance using NuGet in Visual Studio, consult [the official documentation](https://learn.microsoft.com/en-us/nuget/quickstart/install-and-use-a-package-in-visual-studio).
+
+	#### Other Environments
+
+	For other environments follow the instructions provided by the environment author for working with NuGet packages and add `Egodystonic.TinyFFR` from the official Nuget source.
+
+	Help is always available on the [discussions tab on TinyFFR's Github page](https://github.com/Egodystonic/TinyFFR/discussions/categories/help-assistance).
+
 ## Code
+
+All the code in this tutorial can be fit in to a single C# file using [top-level statements](https://learn.microsoft.com/en-us/dotnet/csharp/tutorials/top-level-statements). For a complete example you can copy/paste in to `Program.cs`, see below: [Complete Example](#complete-example).
 
 ### Namespaces
 
@@ -71,11 +138,11 @@ using var cubeMesh = meshBuilder.CreateMesh(cubeDesc); // (3)!
 
 1.  The `MeshBuilder` is a factory interface that helps us build meshes, either via specifying polygons or shapes (in our case we will specify a cuboid shape).
 
-2. 	`cubeDesc` is just a description of a 1m x 1m x 1m cube. It is not a mesh itself, just an instance of a `Cuboid` (which is a struct simply used to describe a cuboid's shape/dimensions).
+2. 	`cubeDesc` is just a description of a 1m x 1m x 1m cube. It is not a mesh itself, just an instance of a `Cuboid`, which is a struct used to describe a cuboid's shape/dimensions.
 
-	Most floating-point values (technically *scalars*) in TinyFFR are generally assumed to be in meters; but you can choose any 'base unit' you like depending on your application.
+	Most floating-point values in TinyFFR are generally assumed to be in meters; but you can choose any 'base unit' you like depending on your application.
 	
-	The constructor for `Cuboid` can take three parameters instead of one if you prefer a separate width, depth, and height. In this example though we are specifying that our `Cuboid` should just be 1 meter in every dimension.
+	The constructor for `Cuboid` can take three parameters instead of one if you prefer a separate width, depth, and height. In this example though we are specifying that our `Cuboid` should just be 1 meter in every dimension. You can also use `Cuboid.UnitCube` to achieve the same result.
 	
 3. `CreateMesh` can take a variety of different parameters, for now we just supply our description of a cuboid to generate a polygon mesh of that shape.
 
@@ -86,34 +153,23 @@ For deeper documentation on meshes, see: [:material-lightbulb: Meshes](/concepts
 
 ### Creating a Material for the Cube
 
-You may think that we've specified everything we need to put our cube in front of a camera, but hold on! All we've done so far is create a *mesh* for the cube, i.e. a description of a layout of polygons that defines the __shape__ of the cube. 
+The cube mesh is a description of a layout of polygons that defines the __shape__ of the cube; we will also need a *material* that describes the __surface__ of the cube. 
 
-We will also need a *material* that describes the __surface__ of the cube. At the most fundamental level, we can create a material that describes the cube's surface as a single colour.
-
-We can use the factory's *material builder* to build such a material:
+For now, we'll use a testing material that comes included with TinyFFR. We can use the factory's *material builder* to build such a material:
 
 ```csharp
 var materialBuilder = factory.MaterialBuilder; // (1)!
 
-using var colorMap = materialBuilder.CreateColorMap(StandardColor.Maroon); // (2)!
-using var material = materialBuilder.CreateOpaqueMaterial(colorMap); // (3)!
+using var cubeMaterial = materialBuilder.CreateTestMaterial(); // (2)!
 ```
 
-1. The material builder helps us create materials programmatically (rather than, say, loading them from texture files).
-2. 	A color map is basically a 2D texture (e.g. an image/bitmap) that will be applied to the surface of a mesh.
+1. The material builder helps us create materials by combining textures. In this case we'll just be using it to create a test material. Later tutorials explain how to use the material builder in more depth.
 
-	`CreateColorMap()` takes a variety of parameters, but in this example we're using an [implicit conversion](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/user-defined-conversion-operators) from `StandardColor` to `ColorVect` to specify a single uniform color. If you want to experiment, you can try providing a `ColorVect` directly instead, the type is fairly simple to use!
+2. 	The test material is a 8x8 grid of differently-coloured squares with a slight indentation between each square to give it a more "3D" look. 
 
-3. "Opaque" means non-transparent, i.e. we're creating a material that you can not see through. Most real-world materials are opaque, and because transparent materials have a higher performance cost to render, it makes sense that you'll be creating opaque materials most of the time.
+	The grid layout of the texture helps align mesh UV points (a more advanced technique explained elsewhere); for now we'll use just the test material as an easy way to get started without having to import or build materials from scratch.
 
-??? question "Color Map vs Material"
-	You might wonder why there's a two-step process to creating a material: We create a "color map" first, and then use that to create an "opaque material". 
-
-	In actuality, a material is more than just the colour of something; objects generally have an array of parameters used to describe their surface such as roughness, metallicness, and distortions ('normals') on their surface. 
-	
-	`CreateOpaqueMaterial()` can take more parameters to specify such values with more texture maps, but for this initial example we only care to specify a colour, so we just supply a `colorMap`.
-
-Finally, the `colorMap` and `material` are both disposable resources, so again we use the `using` pattern to make sure they get disposed.
+The `cubeMaterial` is a disposable resource, so again we use the `using` pattern to make sure it gets disposed.
 
 For deeper documentation on materials, see: [:material-lightbulb: Materials](/concepts/materials.md)
 { : style="font-size:0.8em;" }
@@ -125,12 +181,12 @@ Now that we have a cube *mesh* and a *material* loaded on to the GPU, we can use
 ```csharp
 var objectBuilder = factory.ObjectBuilder;
 
-using var cube = objectBuilder.CreateModelInstance(cubeMesh, material);
+using var cube = objectBuilder.CreateModelInstance(cubeMesh, cubeMaterial);
 ```
 
 The *object builder* is another interface exposed via our factory object that helps us build 'objects' to put in our scene. 
 
-We pass in our `cubeMesh` and our `material` to `CreateModelInstance()`, and it returns one "model instance" that combines them together to create one instance of a complete maroon-coloured cube model(1).
+We pass in our `cubeMesh` and our `cubeMaterial` to `CreateModelInstance()`, and it returns one "model instance" that combines them together to create one instance of a complete cube model(1).
 { .annotate }
 
 1. A "model" is a mesh + material pair (and sometimes more, but always at least a mesh & material).
@@ -142,7 +198,7 @@ The returned `cube` instance is, of course, a disposable resource again (hopeful
 To make things feel "3D" we generally need to simulate light sources in scenes. Therefore we will add a single point-light(1) to our scene.
 { .annotate }
 
-1. A point light is the simplest form of light source. Imagine a single "point" in space emitting light evenly all around itself in a sphere: That's a point light!
+1. A point light is the simplest form of light source. Imagine a single "point" in space emitting light evenly all around itself in a sphere: That's a point light.
 
 To create a light, we use the *light builder*:
 
@@ -156,7 +212,7 @@ using var light = lightBuilder.CreatePointLight(Location.Origin); // (1)!
 
 	We can specify any `Location` in the world we like, but for now we'll place the light at the very centre of our 3D world, otherwise known as the world's `Origin`.
 
-As always, the `light` is disposable.
+As with all the other resources, the `light` is disposable.
 
 ??? info "Indirect Illumination"
 	By default, all scenes also have an amount of indirect ambient illumination that is emitted by the scene backdrop. Therefore, it's not actually necessary to add a light at all to see the cube.
@@ -246,7 +302,7 @@ var rendererBuilder = factory.RendererBuilder;
 using var camera = cameraBuilder.CreateCamera();
 camera.Position = Location.Origin; // (1)!
 camera.ViewDirection = Direction.Forward; // (2)!
-cube.Position = camera.Position + Direction.Forward * 2f; // (3)!
+cube.Position = camera.Position + Direction.Forward * 1.5f; // (3)!
 
 using var renderer = rendererBuilder.CreateRenderer(scene, camera, window);
 ```
@@ -263,9 +319,9 @@ using var renderer = rendererBuilder.CreateRenderer(scene, camera, window);
 
 3.	On this line we're setting the cube's position 2m in front of the camera. 
 
-	The expression `camera.Position + Direction.Forward * 2f` evaluates to a new `Location` that is two meters in front of our camera.
+	The expression `camera.Position + Direction.Forward * 1.5f` evaluates to a new `Location` that is 1.5 meters in front of our camera.
 	
-	Another way to understand it is that `camera.Position + Direction.Forward * 2f` is calculating "the camera's position (`camera.Position`) *plus* two meters in the forward direction (`Direction.Forward * 2f`)", or put another way: "Add two meters on to `camera.Position` in the `Forward` direction".
+	Another way to understand it is that `camera.Position + Direction.Forward * 1.5f` is calculating "the camera's position (`camera.Position`) *plus* 1.5 meters in the forward direction (`Direction.Forward * 1.5f`)", or put another way: "Add one and a half meters on to `camera.Position` in the `Forward` direction".
 
 	Because the camera is looking forward, this will place the cube right in front of it.
 
@@ -312,11 +368,11 @@ while (!loop.Input.UserQuitRequested) { // (3)!
 
 	Rotations in TinyFFR are stored as an *angle* in degrees and an *axis*. In this line, we're creating a rotation that is represented as "__90°__ around the __down__ axis".
 	
-	To get a good understanding of this, imagine holding a pencil in your hand and pointing it directly at the floor (that's your `Down` axis). Now, imagine one side of the pencil has some writing on it facing away from your body, and then imagine turning the pencil so that the writing is now facing to your right: You just made a 90° rotation around the down axis!
+	To get a good understanding of this, imagine holding a pencil in your hand and pointing it directly at the floor (that's your `Down` axis). Now, imagine one side of the pencil has some writing on it facing away from your body, and then imagine turning the pencil so that the writing is now facing to your right: You just made a 90° rotation around the down axis.
 
-	Now, simply imagine that instead of turning a pencil you were turning a cube in exactly the same way. The variable `cubeRotationSpeedPerSec` is defining exactly this rotation for our cube-- we want it to spin around the `Down` axis at a rate of `90°` per second.
+	The variable `cubeRotationSpeedPerSec` is defining exactly this rotation for our cube-- we want it to spin around the `Down` axis at a rate of `90°` per second.
 
-2. The `60` here is the desired framerate in Hz. If you want an unlocked framerate, pass `null`.
+2. The `60` here is the desired framerate in Hz. If you want an unlocked framerate, pass `null`. To disable vsync, see [here](/tutorials/snippets/vsync.md).
 3. 	`loop.Input.UserQuitRequested` will be `true` when the user has requested the application exit via any of the built-in means for the OS.
 
 	In most cases, this will be when the user tries to close the window with the :fontawesome-solid-square-xmark: button.
@@ -325,7 +381,7 @@ while (!loop.Input.UserQuitRequested) { // (3)!
 
 	The return value of `loop.IterateOnce()` will be a [TimeSpan](https://learn.microsoft.com/en-us/dotnet/api/system.timespan?view=net-9.0) that tells you how long has elapsed since the last frame. At a 60Hz framerate, this will ideally be 16.666ms, but due to various factors it may vary. 
 	
-	We use this value to extract a `deltaTime` in seconds.
+	We use this value to extract a `deltaTime` in seconds -- that's the time in seconds since the last frame.
 
 5. This line checks if, for the current frame, the user is currently holding down the space bar. Remember, this loop is iterating 60 times per second.
 6. 	This applies the rotation we created above to the cube. 
@@ -347,7 +403,7 @@ For deeper documentation on input handling, see: [:material-lightbulb: Input](/c
 
 ### Complete Example
 
-This example is written as a single file (e.g. using C#'s [top-level statements](https://learn.microsoft.com/en-us/dotnet/csharp/tutorials/top-level-statements)). You may need to move the actual code in to a method if necessary.
+This example is written as a single file (e.g. using C#'s [top-level statements](https://learn.microsoft.com/en-us/dotnet/csharp/tutorials/top-level-statements)).
 
 ```csharp
 using Egodystonic.TinyFFR;
@@ -359,6 +415,7 @@ using Egodystonic.TinyFFR.Environment.Input;
 using var factory = new LocalTinyFfrFactory();
 
 
+
 // "Creating the Cube Mesh" (2)
 var meshBuilder = factory.MeshBuilder;
 
@@ -366,23 +423,26 @@ var cubeDesc = new Cuboid(1f);
 using var cubeMesh = meshBuilder.CreateMesh(cubeDesc);
 
 
+
 // "Creating a Material for the Cube" (3)
 var materialBuilder = factory.MaterialBuilder;
 
-using var colorMap = materialBuilder.CreateColorMap(StandardColor.Maroon);
-using var material = materialBuilder.CreateOpaqueMaterial(colorMap);
+using var cubeMaterial = materialBuilder.CreateTestMaterial();
+
 
 
 // "Creating a Cube Instance" (4)
 var objectBuilder = factory.ObjectBuilder;
 
-using var cube = objectBuilder.CreateModelInstance(cubeMesh, material);
+using var cube = objectBuilder.CreateModelInstance(cubeMesh, cubeMaterial);
+
 
 
 // "Illuminating the Cube" (5)
 var lightBuilder = factory.LightBuilder;
 
 using var light = lightBuilder.CreatePointLight(Location.Origin);
+
 
 
 // "Putting Together a Scene" (6)
@@ -394,14 +454,16 @@ scene.Add(cube);
 scene.Add(light);
 
 
+
 // "Creating a Window" (7)
 var displayDiscoverer = factory.DisplayDiscoverer;
 var windowBuilder = factory.WindowBuilder;
 
-var primaryDisplay = displayDiscoverer.Primary 
+var primaryDisplay = displayDiscoverer.Primary
 	?? throw new InvalidOperationException("No displays connected!");
 
 using var window = windowBuilder.CreateWindow(primaryDisplay);
+
 
 
 // "Creating a Camera and Renderer" (8)
@@ -411,9 +473,10 @@ var rendererBuilder = factory.RendererBuilder;
 using var camera = cameraBuilder.CreateCamera();
 camera.Position = Location.Origin;
 camera.ViewDirection = Direction.Forward;
-cube.Position = camera.Position + Direction.Forward * 2f;
+cube.Position = camera.Position + Direction.Forward * 1.5f;
 
 using var renderer = rendererBuilder.CreateRenderer(scene, camera, window);
+
 
 
 // "Rendering at 60Hz, Handling Input" (9)
@@ -434,13 +497,13 @@ while (!loop.Input.UserQuitRequested) {
 
 1. [:material-arrow-up: Scroll up to "Creating the Factory"](#creating-the-factory)
 2. [:material-arrow-up: Scroll up to "Creating the Cube Mesh"](#creating-the-cube-mesh)
-3. [:material-arrow-up: Scroll up to "Creating a Material for the Cube"](#creating-a-material-for-the-cube)
+3. [:material-arrow-up: Scroll up to "Creating a Material For the Cube"](#creating-a-material-for-the-cube)
 4. [:material-arrow-up: Scroll up to "Creating a Cube Instance"](#creating-a-cube-instance)
 5. [:material-arrow-up: Scroll up to "Illuminating the Cube"](#illuminating-the-cube)
 6. [:material-arrow-up: Scroll up to "Putting Together a Scene"](#putting-together-a-scene)
 7. [:material-arrow-up: Scroll up to "Creating a Window"](#creating-a-window)
 8. [:material-arrow-up: Scroll up to "Creating a Camera and Renderer"](#creating-a-camera-and-renderer)
-8. [:material-arrow-up: Scroll up to "Rendering at 60Hz, Handling Input"](#rendering-at-60hz-handling-input)
+9. [:material-arrow-up: Scroll up to "Rendering at 60Hz, Handling Input"](#rendering-at-60hz-handling-input)
 
 ## Result
 
@@ -458,27 +521,20 @@ using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Environment.Input;
 
 using var factory = new LocalTinyFfrFactory();
-using var cubeMesh = factory.MeshBuilder.CreateMesh(new Cuboid(1f));
-using var colorMap = factory.MaterialBuilder.CreateColorMap(StandardColor.Maroon);
-using var material = factory.MaterialBuilder.CreateOpaqueMaterial(colorMap);
-using var cube = factory.ObjectBuilder.CreateModelInstance(cubeMesh, material, initialPosition: (0f, 0f, 2f));
-using var light = factory.LightBuilder.CreatePointLight();
+using var cubeMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube);
+using var cubeMaterial = factory.MaterialBuilder.CreateTestMaterial();
+using var cube = factory.ObjectBuilder.CreateModelInstance(cubeMesh, cubeMaterial, initialPosition: (0f, 0f, 1.5f));
+using var light = factory.LightBuilder.CreatePointLight(Location.Origin);
 using var scene = factory.SceneBuilder.CreateScene();
-
 scene.Add(cube);
 scene.Add(light);
-
 using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
-using var camera = factory.CameraBuilder.CreateCamera();
-
+using var camera = factory.CameraBuilder.CreateCamera(initialPosition: Location.Origin, initialViewDirection: Direction.Forward);
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
-var input = loop.Input;
-var kbm = input.KeyboardAndMouse;
-
-while (!input.UserQuitRequested) {
+while (!loop.Input.UserQuitRequested) {
 	var deltaTime = (float) loop.IterateOnce().TotalSeconds;
-	if (kbm.KeyIsCurrentlyDown(KeyboardOrMouseKey.Space)) cube.RotateBy(90f % Direction.Down * deltaTime);
+	if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Space)) cube.RotateBy(90f % Direction.Down * deltaTime);
 	renderer.Render();
 }
 ```

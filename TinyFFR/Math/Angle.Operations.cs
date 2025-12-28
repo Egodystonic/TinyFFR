@@ -100,6 +100,8 @@ partial struct Angle :
 	public Angle ClampNegativeFullCircleToFullCircle() => Clamp(-FullCircle, FullCircle);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Angle ClampNegativeHalfCircleToHalfCircle() => Clamp(-HalfCircle, HalfCircle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Angle ClampNegativeQuarterCircleToQuarterCircle() => Clamp(-QuarterCircle, QuarterCircle);
 
 	// TODO xmldoc this creates a triangle wave when plotting y = x.Triangularize(p) where p is the maximum and -p is the minimum.
 	// The period of the wave is peak * 4. Submitting a negative peak flips the wave. 

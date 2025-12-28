@@ -14,17 +14,17 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalNormalMapConversionTest {
-	TexturePattern<UnitSphericalCoordinate> _normalPattern;
+	TexturePattern<SphericalTranslation> _normalPattern;
 
 	[SetUp]
 	public void SetUpTest() {
 		_normalPattern = TexturePattern.Circles(
-			UnitSphericalCoordinate.ZeroZero,
-			new UnitSphericalCoordinate(0f, 45f),
-			new UnitSphericalCoordinate(90f, 45f),
-			new UnitSphericalCoordinate(180f, 45f),
-			new UnitSphericalCoordinate(270f, 45f),
-			UnitSphericalCoordinate.ZeroZero,
+			SphericalTranslation.ZeroZero,
+			new SphericalTranslation(0f, 45f),
+			new SphericalTranslation(90f, 45f),
+			new SphericalTranslation(180f, 45f),
+			new SphericalTranslation(270f, 45f),
+			SphericalTranslation.ZeroZero,
 			interiorRadius: 96, borderSize: 24, paddingSize: TexturePatternDefaultValues.CirclesDefaultPaddingSize / 3
 		);
 	}

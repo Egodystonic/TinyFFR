@@ -980,12 +980,12 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 				interiorSize: (128, 128),
 				borderSize: (8, 8),
 				paddingSize: (0, 0),
-				interiorValue: UnitSphericalCoordinate.ZeroZero,
-				borderRightValue: new UnitSphericalCoordinate(Orientation2D.Right.ToPolarAngle()!.Value, 45f),
-				borderTopValue: new UnitSphericalCoordinate(Orientation2D.Up.ToPolarAngle()!.Value, 45f),
-				borderLeftValue: new UnitSphericalCoordinate(Orientation2D.Left.ToPolarAngle()!.Value, 45f),
-				borderBottomValue: new UnitSphericalCoordinate(Orientation2D.Down.ToPolarAngle()!.Value, 45f),
-				paddingValue: UnitSphericalCoordinate.ZeroZero,
+				interiorValue: SphericalTranslation.ZeroZero,
+				borderRightValue: new SphericalTranslation(Orientation2D.Right.ToPolarAngle()!.Value, 45f),
+				borderTopValue: new SphericalTranslation(Orientation2D.Up.ToPolarAngle()!.Value, 45f),
+				borderLeftValue: new SphericalTranslation(Orientation2D.Left.ToPolarAngle()!.Value, 45f),
+				borderBottomValue: new SphericalTranslation(Orientation2D.Down.ToPolarAngle()!.Value, 45f),
+				paddingValue: SphericalTranslation.ZeroZero,
 				repetitions: (8, 8)
 			),
 			name: LocalMaterialBuilder.TestMaterialName + " Normal Map"

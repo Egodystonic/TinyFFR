@@ -111,18 +111,18 @@ public unsafe interface ITextureBuilder {
 	#endregion
 
 	#region Normal Map Patterns
-	static readonly UnitSphericalCoordinate DefaultNormalOffset = UnitSphericalCoordinate.ZeroZero;
-	static TexelRgb24 CreateNormalTexel(UnitSphericalCoordinate normalOffset) {
+	static readonly SphericalTranslation DefaultNormalOffset = SphericalTranslation.ZeroZero;
+	static TexelRgb24 CreateNormalTexel(SphericalTranslation normalOffset) {
 		const float Multiplicand = Byte.MaxValue * 0.5f;
 
-		var v = normalOffset.ToDirection(new Direction(1f, 0f, 0f), new Direction(0f, 0f, 1f))
+		var v = normalOffset.Translate(new Direction(1f, 0f, 0f), new Direction(0f, 0f, 1f))
 					.ToVector3()
 					+ Vector3.One;
 		v *= Multiplicand;
 		return new((byte) v.X, (byte) v.Y, (byte) v.Z);
 	}
 
-	Texture CreateNormalMap(in TexturePattern<UnitSphericalCoordinate> normalPattern, ReadOnlySpan<char> name = default) {
+	Texture CreateNormalMap(in TexturePattern<SphericalTranslation> normalPattern, ReadOnlySpan<char> name = default) {
 		return CreateNormalMap(
 			normalPattern,
 			new TextureCreationConfig {
@@ -133,16 +133,16 @@ public unsafe interface ITextureBuilder {
 			}
 		);
 	}
-	Texture CreateNormalMap(in TexturePattern<UnitSphericalCoordinate> normalPattern, in TextureCreationConfig config) {
+	Texture CreateNormalMap(in TexturePattern<SphericalTranslation> normalPattern, in TextureCreationConfig config) {
 		var buffer = PreallocateBuffer<TexelRgb24>(normalPattern.Dimensions.Area);
 		_ = PrintPattern(normalPattern, &CreateNormalTexel, buffer.Span);
 		return CreateTextureAndDisposePreallocatedBuffer(buffer, new TextureGenerationConfig { Dimensions = normalPattern.Dimensions }, in config);
 	}
 
-	Texture CreateNormalMap(UnitSphericalCoordinate? normalOffset = null, ReadOnlySpan<char> name = default) {
+	Texture CreateNormalMap(SphericalTranslation? normalOffset = null, ReadOnlySpan<char> name = default) {
 		return CreateTexture(CreateNormalTexel(normalOffset ?? DefaultNormalOffset), isLinearColorspace: true, name);
 	}
-	Texture CreateNormalMap(UnitSphericalCoordinate normalOffset, in TextureCreationConfig config) {
+	Texture CreateNormalMap(SphericalTranslation normalOffset, in TextureCreationConfig config) {
 		return CreateTexture(CreateNormalTexel(normalOffset), in config);
 	}
 	#endregion

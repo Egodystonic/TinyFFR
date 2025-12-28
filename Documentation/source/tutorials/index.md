@@ -8,11 +8,6 @@ search:
 
 ## Fundamentals
 
-[:material-arrow-right-bold:{ .lg } :material-package-down:{ .lg : style="margin-right:0.3em" } __Installing TinyFFR__{ : style="font-size:1.3em;" }](installing.md)
-
-Learn how to install TinyFFR via NuGet.
-{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
-
 [:material-arrow-right-bold:{ .lg } :material-cube:{ .lg : style="margin-right:0.3em" } __Hello Cube__{ : style="font-size:1.3em;" }](hello_cube.md)
 
 Get a simple cube rendering and understand the fundamentals of the library.

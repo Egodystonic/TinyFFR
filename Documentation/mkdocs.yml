@@ -116,29 +116,27 @@ nav:
   - changelog.md
   - Tutorials:
     - Fundamentals:
-      - tutorials/installing.md
       - tutorials/hello_cube.md
       - tutorials/handling_input.md
-    - Managing Assets:
       - tutorials/loading_assets.md
       - tutorials/texture_patterns.md
+    - Advanced:
+        - tutorials/materials.md
+        - tutorials/lighting.md
+        - tutorials/input.md
+        - tutorials/meshes.md
+        - tutorials/scenes_and_rendering.md
+        - tutorials/displays_and_windows.md
+        - tutorials/math_and_geometry.md
+        - tutorials/conventions.md
+        - tutorials/factory.md
+        - tutorials/resources.md
     - UI Integration:
       - tutorials/integrating_wpf.md
       - tutorials/integrating_avalonia.md
       - tutorials/integrating_winforms.md
     - Snippets:
       - tutorials/snippets/vsync.md
-  - Concepts:
-    - concepts/materials.md
-    - concepts/meshes.md
-    - concepts/lighting.md
-    - concepts/input.md
-    - concepts/scenes_and_rendering.md
-    - concepts/displays_and_windows.md
-    - concepts/math_and_geometry.md
-    - concepts/conventions.md
-    - concepts/factory.md
-    - concepts/resources.md
   - Reference Docs:
     - Utils:
       - reference/typed_referent_iterator.md
