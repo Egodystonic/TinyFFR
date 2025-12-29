@@ -64,7 +64,7 @@ ORMR maps are the same, but with the addition of **R**eflectance data in the alp
 
 Sometimes ORM data will be supplied as multiple separate texture files (usually monochromatic, i.e. single-channel). The `AssetLoader` offers overloads of `LoadOcclusionRoughnessMetallicMap(...)` / `LoadOcclusionRoughnessMetallicReflectanceMap()` that make it easy to combine multiple files in to a single ORM/ORMR map.
 
-Additionally, sometimes you may have only one or two of the required data textures (e.g. only roughness data, or no occlusion data, etc). In these instances it's possible to pass sensible default built-in texture files via `AssetLoader.BuiltInTexturePaths`:
+Additionally, sometimes you may have only one or two of the required data textures (e.g. only roughness data, or no occlusion data, etc). In these instances it's possible to pass sensible default built-in texture files via ``:
 
 * `AssetLoader.BuiltInTexturePaths.DefaultOcclusionMap`: Resolves to an occlusion texture that simply allows all ambient light to affect a material surface.
 * `AssetLoader.BuiltInTexturePaths.DefaultRoughnessMap`: Resolves to a roughness texture that represents 40% roughness, a common 'default' value for materials that otherwise lack roughness information.
@@ -185,6 +185,21 @@ If you only have one data channel (e.g. only roughness or only thickness), you c
 
 ### Standard Materials
 
+![Standard material with aniso](materials_standard_aniso.jpg){ : style="width:77%;" }
+/// caption
+A standard material utilising an anisotropy map.
+///
+
+![Standard material with metallic](materials_standard_norm_metal.jpg){ : style="width:77%;" }
+/// caption
+A standard material with high metallic and reflectance map values, also utilising normal mapping to skew each hexagonal panel.
+///
+
+![Standard material with just color](materials_standard_color.jpg){ : style="width:77%;" }
+/// caption
+A standard material using only a color map.
+///
+
 Most objects in a typical scene will use a standard material. Standard material surfaces support the following map types:
 
 * Color maps
@@ -208,6 +223,21 @@ When creating a standard material, you may optionally supply an ORM or ORMR map,
 If your color map has an alpha channel, you may wish to specify the `StandardMaterialAlphaMode`. `MaskOnly` is the default, and interprets the alpha data as essentially turning various texels on/off for rendering (any texel below 40% alpha will be culled entirely, all other texels will be rendered opaque). Alternatively, `FullBlending` properly blends your object surface with the rest of the scene (but is more computationally expensive). `FullBlending` expects premultiplied alpha.
 
 ### Transmissive Materials
+
+![Standard material with aniso](materials_transmissive_glass.jpg){ : style="width:77%;" }
+/// caption
+A transmissive material showcasing a glass (refractive) effect.
+///
+
+![Standard material with metallic](materials_transmissive_mirror.jpg){ : style="width:77%;" }
+/// caption
+A transmissive material showcasing a mirror (reflective) effect.
+///
+
+![Standard material with just color](materials_transmissive_glass_stained.jpg){ : style="width:77%;" }
+/// caption
+A transmissive material showcasing a stained-glass absorption effect.
+///
 
 Transmissive materials must be considered if you want to use absorption-transmission maps or create realtime refractive or reflective surfaces. Transmissive materials support the following map types:
 
@@ -243,7 +273,12 @@ When creating a transmissive material, you may also optionally supply a `refract
 
 ### Simple Materials
 
-Simple materials are unaffected by [lights](lighting.md). They only support color maps.
+![Simple material](materials_simple.jpg){ : style="width:77%;" }
+/// caption
+A simple material with `AssetLoader.BuiltInTexturePaths.UvTestingTexture` as its color map.
+///
+
+Simple materials are unaffected by all [lighting](lighting.md). They only support color maps.
 
 These materials are useful if you don't want or need more complex PBR rendering techniques, or want to render more diagnostic/analytical scenes.
 
@@ -252,6 +287,11 @@ Because they're unaffected by lighting you don't need to worry about how your sc
 When using a color map with alpha present, objects using simple materials are always blended with the scene (never masked).
 
 ### Test Material
+
+![Simple material](materials_test.jpg){ : style="width:77%;" }
+/// caption
+The test material with `ignoresLighting` set to `false`.
+///
 
 `CreateTestMaterial()` creates either a simple or standard material depending on whether `ignoresLighting` is `false` or `true`. 
 
