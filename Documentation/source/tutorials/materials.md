@@ -24,7 +24,7 @@ The `AssetLoader` makes it easy to load texture files for all supported map type
 
 Also known as albedo or diffuse maps. When a texture is interpreted as a color map its data will be used to set the albedo/diffuse (e.g. the "base") color of a material.
 
-When alpha data is present, the RGB channels are expected to be premultiplied. Additionally, the way the alpha data is used depends on the material type and configuration (see corresponding material documentation below).
+When alpha data is present, the RGB channels are expected to be premultiplied (unless alpha is just being used as a on/off mask). Additionally, the way the alpha data is used depends on the material type and configuration (see corresponding material documentation below).
 
 ### Normal Maps
 
@@ -181,75 +181,383 @@ If you only have one data channel (e.g. only roughness or only thickness), you c
 * `AssetLoader.BuiltInTexturePaths.DefaultClearCoatThicknessMap`: Resolves to a clearcoat thickness texture that indicates a maximally-thick coat.
 * `AssetLoader.BuiltInTexturePaths.DefaultClearCoatRoughnessMap`: Resolves to a clearcoat roughness texture that indicates a fully glossy/smooth coat.
 
-## Loading Textures
+## Material Types
+
+### Standard Materials
+
+Most objects in a typical scene will use a standard material. Standard material surfaces support the following map types:
+
+* Color maps
+* Normal maps
+* ORM/ORMR maps
+* Emissive maps
+* Anisotropy maps
+* Clearcoat maps
+
+In fact, the only map type *not* supported by standard materials is the absorption-transmission map.
+
+???+ tip "Fewer Maps is Better for Performance"
+	Only supply map types that you actually need. Most typical objects only require a color, normal, and ORM map.
+	
+	Adding more maps to a standard material increases its rendering cost, and having many complex materials in your scene will likely reduce overall framerate.
+
+Only the color map is mandatory, all other maps are optional.
+
+When creating a standard material, you may optionally supply an ORM or ORMR map, either is fine. When using an ORM map, a default reflectance value will be used.
+
+If your color map has an alpha channel, you may wish to specify the `StandardMaterialAlphaMode`. `MaskOnly` is the default, and interprets the alpha data as essentially turning various texels on/off for rendering (any texel below 40% alpha will be culled entirely, all other texels will be rendered opaque). Alternatively, `FullBlending` properly blends your object surface with the rest of the scene (but is more computationally expensive). `FullBlending` expects premultiplied alpha.
+
+### Transmissive Materials
+
+Transmissive materials must be considered if you want to use absorption-transmission maps or create realtime refractive or reflective surfaces. Transmissive materials support the following map types:
+
+* Color maps
+* Absorption-transmission maps
+* Normal maps
+* ORM/ORMR maps
+* Emissive maps
+* Anisotropy maps
+
+Only clearcoat maps are not supported on transmissive materials.
+
+???+ tip "Transmissive Materials are more Expensive"
+	Transmissive materials are much more computationally expensive to render. Adding many transmissive materials to your scene will almost certainly reduce overall framerate.
+
+	As with standard materials, only supply map types that you actually need.
+	
+The color map and absorption-transmission maps are mandatory. All other maps are optional.
+
+If your color map has an alpha channel, you may wish to specify the `TransmissiveMaterialAlphaMode`. Unlike with a standard material, `FullBlending` is the default for transmissive materials. See above for an explanation of `FullBlending` vs `MaskOnly`.
+
+When creating a transmissive material, you may also optionally supply a `refractionThickness` and a `TransmissiveMaterialQuality`.
+
+* The `refractionThickness` value indicates how 'thick' (in meters) the surface should be modeled as. This affects how much light is absorbed (in conjunction with the absorption-transmission map).
+* The `quality` value is set to `FullReflectionsAndRefraction` by default; enabling full screen-space refraction and reflection. If you don't need this, you could consider setting the quality to `SkyboxOnlyReflectionsAndRefraction` which will make the material instead only reflect/refract the scene background texture (this is less computationally expensive to render).
+
+???+ warning "Renderer Quality Overrides Material Quality"
+	Note that refractions/reflections may be disabled entirely by the overall quality settings set on your [Renderer](scenes_and_rendering.md#renderers).
+
+### Simple Materials
+
+Simple materials are unaffected by [lights](lighting.md). They only support color maps.
+
+These materials are useful if you don't want or need more complex PBR rendering techniques, or want to render more diagnostic/analytical scenes.
+
+Because they're unaffected by lighting you don't need to worry about how your scene will be lit.
+
+When using a color map with alpha present, objects using simple materials are always blended with the scene (never masked).
+
+### Test Material
+
+`CreateTestMaterial()` creates either a simple or standard material depending on whether `ignoresLighting` is `false` or `true`. 
+
+The output material is always the same: A UV-test color map (with a subtle normal map pattern if `ignoresLighting` was `false`).
+
+## Material Effects
+
+When creating any material (except the test material) you can optionally enable per-instance effects. 
+
+???+ tip "Material Effects are more Expensive"
+	Enabling effects on a material automatically makes it much more expensive to render; even if you don't use those effects on any objects.
+	
+	Only enable material effects occasionally and judiciously.
+
+When enabled on a material, you can control the following parameters in real-time per-object for all objects using that material:
+
+* Material transform (e.g. scale/rotation/translation of the textures on the surface).
+* Blend textures (e.g. blending between two map textures) for any of the following types: Color maps, ORM/ORMR maps, emissive maps, absorption-transmission maps.
+
+To use per-material effects on an object, make sure that object is using a material with effects enabled, and then access the effects controller via `myObjectInstance.MaterialEffects`. This property returns `null` if the current material set on the object does not support effects.
+
+You can use the effects controller like this:
+
+```csharp
+var effectsController = myObjectInstance.MaterialEffects;
+if (effectsController is { } c) { // (1)!
+	c.SetTransform(new Transform2D(...)); // (2)!
+	c.SetBlendTexture(MaterialEffectMapType.Color, destinationColorMap); // (3)!
+	c.SetBlendDistance(MaterialEffectMapType.Color, 0.5f); // (4)!
+}
+```
+
+1.	This is a C# null check, we only try to use the effects controller if it's non-null (indicating that the material supports effects).
+
+2.	This sets the material transform (allowing you to dynamically scale, rotatate, or move the surface's texture maps in realtime).
+
+3.	This sets a 'target'/destination color map texture. You can then blend (interpolate) between the color map the texture was created with and this new destination color map using the `SetBlendDistance()` function.
+
+	Attempting to set/control a blend texture for a map type that the material wasn't originally created with has no effect.
+	
+4.	This sets the 'distance' between the starting color map of the material and our new destination color map to 50%. `0f` resets the material's color map to its starting state; `1f` completely replaces it with the new color map.
+
+	If you haven't set a destination texture for this map type yet, the results are undefined (but safe).
+
+## Loading & Combining Textures Manually
+
+As well as using the `Load[...]Map()` methods described above, you can load texture data "raw" with `LoadTexture()`. When loading texture data this way you must at least specify whether the texture was authored in a linear or sRGB colourspace (via the `isLinearColorspace` argument). You can then use the returned `Texture` resource as any map type you desire.
+
+#### LoadCombinedTexture(...)
+
+Additionally, if you need to combine textures in to a single resource, you can use `LoadCombinedTexture(...)` to combine up to four separate files in to a single RGB or RGBA texture. Each `LoadCombinedTexture()` overload requires you to specify a `TextureCombinationConfig` that determines how the source files should be combined.
+
+Some overloads of `LoadCombinedTexture()` also allow you to specify a pre-processing `TextureProcessingConfig` for each individual component texture. These configs are applied before the final combination processing.
+
+[See below](#texture-config-objects) for more information on the various config objects.
 
 ### Built-In Textures
 
-## Generating Textures
+`AssetLoader.BuiltInTexturePaths` provides a collection of `ReadOnlySpan<char>` properties that can be passed to any texture-loading methods on the asset loader just like any other file path. These built-in texture paths represent pre-provided utility textures built in to TinyFFR that can be useful when creating maps:
 
-### Texture Patterns
+<span class="def-icon">:material-card-bulleted-outline:</span> `Default[...]Map`
 
-## Material Types
+:	Various default maps that can be used to create sensible default texture resources for your materials. A default map is provided for every map type TinyFFR supports.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `Rgba[...]Percent`
+
+:	Each property represents an RGBA texture with every channel set to the same value. 
+
+	The value chosen depends on the percentage specified in the property name (e.g. `Rgba100Percent` represents a texture with channel values 255/255/255/255, `Rgba0Percent` represents 0/0/0/0, `Rgba50Percent` represents 128/128/128/128, etc).
+	
+<span class="def-icon">:material-card-bulleted-outline:</span> `White`, `Black`, `Red`, `Green`, `Blue`, `RedGreen`, `GreenBlue`, `RedBlue`
+
+:	Represents various RGB textures:
+
+	* `White`: 255/255/255
+	* `Black`: 0/0/0
+	* `Red`: 255/0/0
+	* `Green`: 0/255/0
+	* `Blue`: 0/0/255
+	* `RedGreen`: 255/255/0
+	* `GreenBlue`: 0/255/255
+	* `RedBlue`: 255/0/255
+	
+<span class="def-icon">:material-card-bulleted-outline:</span> `[...]Opaque`
+
+:	Same as above, but RGBA with the alpha channel set to 255.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `[...]Transparent`
+
+:	Same as above, but RGBA with the alpha channel set to 0.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `UvTestingTexture`
+
+:	The color map used by the test material.
 
 
+## Texture Config Objects
 
+### TextureReadConfig
 
+You can optionally provide a `TextureReadConfig` to some overloads of `LoadTexture()`. This struct controls how a texture file is read from disc:
 
+<span class="def-icon">:material-card-bulleted-outline:</span> `FilePath`
 
+:	This is the file path of the texture file to read.
 
+<span class="def-icon">:material-card-bulleted-outline:</span> `IncludeWAlphaChannel`
 
+:	Defaults to `true`. 
 
+	If `true`, and the texture file includes an alpha channel, the alpha data will be included in the `Texture` resource loaded on the GPU.
+	
+	However, if you wish to exclude alpha data even when present, set this value to `false`.
+	
+### TextureCreationConfig
 
----------
+Many method overloads on the `AssetLoader` and `TextureBuilder` take a `TextureCreationConfig`. This struct can be used to control how a texture is created on the GPU when loaded:
 
-1. `FlipX`, if set to `true`, will mirror/flip the image along its horizontal/X-axis.
-2. `FlipY`, if set to `true`, will mirror/flip the image along its vertical/Y-axis.
-3. 	`GenerateMipMaps` should generally be left as `true` unless the image/texture needs to retain maximum quality at all distances from the camera. 
+<span class="def-icon">:material-card-bulleted-outline:</span> `GenerateMipMaps`
+
+:	Defaults to `true`.
+
+	`GenerateMipMaps` should generally be left as `true` unless the image/texture needs to retain maximum quality at all distances from the camera. 
 
 	[Mipmaps](https://en.wikipedia.org/wiki/Mipmap) are a technique used to improve performance and reduce aliasing of objects at distance.
 
 	You may also wish to disable mipmap generation to reduce video RAM consumption in constrained scenarios.
+	
+<span class="def-icon">:material-card-bulleted-outline:</span> `IsLinearColorspace`
 
-4. 	`InvertXRedChannel`, if set to `true`, will negate the red channel of the image. Likewise, `InvertYGreenChannel`, `InvertZBlueChannel`, and `InvertWAlphaChannel` will invert the green, blue, and alpha colour channels.
+:	This property has no default value (it is required to be specified).
+
+	If `true`, the texture data is interpreted as being in a linear colourspace, otherwise the texture data is interpreted in sRGB.
+	
+	As a rule of thumb, data-oriented texture maps (such as normal maps, ORM maps, anisotropy maps, and clearcoat maps) are typically in linear colourspace; whereas texture maps that contain colour data (such as color maps, absorption-transmission maps, and emissive maps) are typically in sRGB colourspace.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `ProcessingToApply`
+
+:	This is a `TextureProcessingConfig` that indicates how, if at all, the texture data should be processed before being loaded on to the GPU.
+
+	By default this is set to `TextureProcessingConfig.None`; see below for more information on this type.
+
+### TextureProcessingConfig
+
+A `TextureProcessingConfig` object is used to determine if and how texture data should be pre-processed before being loaded. It has the following properties and methods:
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `FlipX` / `FlipY`
+
+:	Defaults to `false`. If set to `true`, the texture will be mirrored/flipped along its horizontal/X-axis (`FlipX`) and/or vertical/Y-axis (`FlipY`).
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `InvertXRedChannel` / `InvertYGreenChannel` / `InvertZBlueChannel` / `InvertWAlphaChannel`
+
+:	Defaults to `false`. If set to `true`, the corresponding channel of the texture will be negated/inverted.
 
 	Negation in this context means inverting the strength of the colour for each pixel; i.e. if a pixel had 100% strength of this colour it will now have 0%; if it had 80% it will have 20%; and so on.
 
 	This is mostly useful when dealing with image maps that are defining things other than colour/albedo/diffuse values (such as ORM maps and normal maps). If the channel for a given value in such a map was exported with a reversed meaning, this parameter can be used to invert/reverse it back.
 
-	For example, if we want to use a "metallic" map that defines `0f` as metallic and `1f` as non-metallic we will need to invert that value for use in TinyFFR.
-	
-	
-	
-	
-	
-	
-	
-	
-	
-Sometimes you may be dealing with assets that use [an older material model](https://en.wikipedia.org/wiki/Blinn%E2%80%93Phong_reflection_model) and you may be given a "specularity"/"specular" map.
+	For example, if we want to use a "glossiness" map that defines `0f` as fully rough and `1f` as fully smooth we will need to invert that value for use in TinyFFR as a roughness map.
 
-Although there is no 1:1 conversion from a specularity map to a PBR model (which is what TinyFFR uses), you can import the specular map as an approximate roughness map by inverting it:
+<span class="def-icon">:material-card-bulleted-outline:</span> `XRedFinalOutputSource` / `YGreenFinalOutputSource` / `ZBlueFinalOutputSource` / `WAlphaFinalOutputSource`
+
+:	These properties can be used to swap the channels of a texture (i.e. you can swap Red and Green, or copy Blue to Alpha, etc) (also known as "[swizzling](https://community.khronos.org/t/what-is-texture-swizzling/66666)").
+
+	Each property determines the source data for the final value of its corresponding channel. For example, setting `XRedFinalOutputSource` to `ColorChannel.G` means the **green** data channel will be copied to the **red** channel.
+	
+	These copy/swizzle operations happen as the very final step in texture processing, after flipping/inverting has occured.
+	
+	By default, each property is set to its own channel (e.g. `XRedFinalOutputSource` is set to `ColorChannel.R`, `YGreenFinalOutputSource` is set to `ColorChannel.G`, and so on).
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `Flip(...)`
+
+:   This static method (e.g. `TextureProcessingConfig.Flip(...)`) helps create a processing config that applies a flip only.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `Invert(...)`
+
+:   This static method (e.g. `TextureProcessingConfig.Invert(...)`) helps create a processing config that applies channel inversions only.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `Swizzle(...)`
+
+:   This static method (e.g. `TextureProcessingConfig.Swizzle(...)`) helps create a processing config that applies channel swaps/swizzling only.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `None`
+
+:	This static property (e.g. `TextureProcessingConfig.None`) returns a processing config object that represents zero/no processing to be applied.
+
+### TextureCombinationConfig
+
+This config object type is used when combining multiple textures in to one. It determines how the source files should be compiled in to the output:
 
 ```csharp
-using var roughnessTex = factory.AssetLoader.LoadTexture(
-	@"Path\To\specular.bmp",
-	new TextureCreationConfig {
-		InvertXRedChannel = true,
-		InvertYGreenChannel = true,
-		InvertZBlueChannel = true,
-	}
+/* This example shows a config that indicates the Red channel should be used from each source texture (a/b/c/d) 
+ * to comprise the output texture's R/G/B/A channels. */
+var combinationConfig = new TextureCombinationConfig(
+	new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
+	new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R),
+	new TextureCombinationSource(TextureCombinationSourceTexture.TextureC, ColorChannel.R),
+	// This last line is optional depending on whether you want the output texture to include an alpha channel
+	new TextureCombinationSource(TextureCombinationSourceTexture.TextureD, ColorChannel.R)
 );
+
+/* This slightly terser example copies texture A's Red and Green channels to the output texture's R/G channels 
+ * and texture B's Red and Green channels to the output texture's B/A channels. */
+var combinationConfig = new TextureCombinationConfig(
+	TextureCombinationSourceTexture.TextureA, ColorChannel.R,
+	TextureCombinationSourceTexture.TextureA, ColorChannel.G,
+	TextureCombinationSourceTexture.TextureB, ColorChannel.R,
+	// This last line is optional depending on whether you want the output texture to include an alpha channel
+	TextureCombinationSourceTexture.TextureB, ColorChannel.G
+);
+
+/* This final example uses a string to specify how the textures should be combined.
+ * This has the same effect as the other approaches above but is arguably easier to read.
+ * The format of the string is 6 or 8 characters (depending on if the output should include alpha or not)
+ * and each destination channel is specified in the order RGBA by two characters
+ * (e.g. 'aR' indicates the output red is given by red channel of texture A, 
+ * 'bG' indicates the output green is given by green channel of texture B, and so on). */
+var combinationConfig = new TextureCombinationConfig("aRbGcBdA");
 ```
 
+## Generating Textures
 
+As well as loading textures from files, it's possible to instead programmatically create `Texture` resources with the `TextureBuilder` (accessible via `factory.TextureBuilder` or `factory.AssetLoader.TextureBuilder`):
 
+`textureBuilder.CreateTexture()` is the most "fundamental" method that allows you to create a `Texture` using simply a `ReadOnlySpan<>` of texels. The span must be of a valid texel type (usually `ReadOnlySpan<TexelRgb24>` or `ReadOnlySpan<TexelRgba32>`).
 
+It's also possible to create a 1x1 plain texture passing in a single `TexelRgb24`/`TexelRgba32` instead of a span.
 
+???+ info "Texture Patterns"
 
+	Many methods on the `TextureBuilder` can also take a `TexturePattern<T>` argument. Texture patterns are created via the static `TexturePattern` class and are essentially mini-algorithms that define how to auto-generate texture data.
 
+	Texture patterns are explained in detail in the reference docs: [Texture Patterns](/reference/texture_patterns.md).
 
+### Generating Map Textures
 
+<span class="def-icon">:material-code-block-parentheses:</span> `CreateColorMap(...)`
 
+:   Color maps are generated using `ColorVect`s. You must also specify whether or not to `includeAlpha` (e.g. whether the output `Texture` will be RGB or RGBA).
+
+	If you wish to incorporate alpha in to your color map, you should be using premultiplied color vects. `colorVect.WithPremultipliedAlpha()` can be used to achieve this.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `CreateNormalMap(...)`
+
+:   Normal maps are generated using `SphericalTranslation`s. The translation represents the azimuthal and polar offset applied to a default normal vector.
+
+	Any value greater than `0°` for `PolarOffset` will "bend" the texture normal towards the direction determined by the `AzimuthalOffset`.
+		
+	* 	`AzimuthalOffset` can be any angle and it represents the 2D orientation of the texel's normal direction. In other words, this parameter specifies the **direction of distortion** on the surface. 
+	
+		The mapping of angle to actual world direction depends on the mesh you're using(1) and any rotation of the model instance. For a non-rotated `Cuboid` built using the standard method shown previously in "Hello Cube" the [standard convention](/tutorials/conventions.md/#2d-handedness-orientation) applies(2).
+		{ .annotate }
+
+		1. 	A value of `0°` points along the mesh's "U" axis (also known as its **tangent** direction). 
+		
+			A value of `90°` points along the mesh's "V" axis (also known as its **bitangent** direction).
+
+			See [Meshes](/tutorials/meshes.md/#meshvertex) for more information on U/V axes.
+
+		2.	So, for a standard `Cuboid` mesh, `0°` means the normal points rightward, `90°` upward, `180°` leftward, and `270°` downward along the surface.
+
+	* 	`PolarOffset` should be an angle between `0°`and `90°` and it represents **how distorted** the surface is. 
+	
+		A value of `0°` means the texel normal direction will point perfectly straight out from the surface (indicating a perfectly flat surface at this point). 
+		
+		A value of `90°` means the texel normal direction will be completely flattened against the surface (indicating a 100% distorted surface).
+		
+<span class="def-icon">:material-code-block-parentheses:</span> `CreateOcclusionRoughnessMetallicMap(...)` / `CreateOcclusionRoughnessMetallicReflectanceMap(...)`
+
+:   ORM/ORMR maps are generated using `Real`s (`Real` is implicitly convertible to/from `float`). 
+
+	Every value is expected to be in the range `0f` to `1f`.
+
+<span class="def-icon">:material-code-block-parentheses:</span> `CreateAbsorptionTransmissionMap(...)`
+
+:   AT maps are generated using `ColorVect`s for the absorption data and `Real`s for the transmission data (`Real` is implicitly convertible to/from `float`). 
+
+	The alpha channel for every `ColorVect` value is ignored.
+	
+	Every `Real` value is expected to be in the range `0f` to `1f`.
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `CreateEmissiveMap(...)`
+
+:   Emissive maps are generated using `ColorVect`s for the color data and `Real`s for the intensity data (`Real` is implicitly convertible to/from `float`). 
+
+	The alpha channel for every `ColorVect` value is ignored.
+	
+	Every `Real` value is expected to be in the range `0f` to `1f`.
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `CreateAnisotropyMap(...)`
+
+:   Anisotropy maps are generated using `Angle`s for the anisotropy direction data and `Real`s for the anisotropy strength data (`Real` is implicitly convertible to/from `float`). 
+
+	The `Angle` for every direction value is converted to a tangent-space vector according to the [standard convention](/tutorials/conventions.md#2d-handedness-orientation).
+	
+	Every `Real` value is expected to be in the range `0f` to `1f`.
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `CreateClearCoatMap(...)`
+
+:   Clearcoat maps are generated using `Real`s (`Real` is implicitly convertible to/from `float`). 
+
+	Every value is expected to be in the range `0f` to `1f`.
+	
+#### Default Texture Values
+
+`ITextureBuilder` has some static properties/methods that can be useful for supplying default values or precalculating texel data when generating textures.
+
+## Reading & Modifying Texture Data
+
+The factory's `AssetLoader` lets you read texture data in to a texel buffer. You can use this to modify a loaded texture's data and then pass it to `CreateTexture()` in the same way:
 
 ```csharp
 var assLoad = factory.AssetLoader;
@@ -263,10 +571,10 @@ assLoad.ReadTexture(@"Path\To\tex.jpg", texelBuffer.Span); // (2)!
 // Do stuff with texelBuffer here
 
 // Optional: Load the texture on to the GPU with the material builder
-using var colorMap = assLoad.MaterialBuilder.CreateTexture(
+using var colorMap = assLoad.TextureBuilder.CreateTexture(
 	texelBuffer.Span, 
-	new TextureGenerationConfig { Height = textureMetadata.Height, Width = textureMetadata.Width}, 
-	new TextureCreationConfig()
+	dimensions: textureMetadata.Dimensions, 
+	isLinearColorspace: false
 );
 
 // Don't forget to return the rented buffer
@@ -275,3 +583,5 @@ factory.ResourceAllocator.ReturnPooledMemoryBuffer(texelBuffer);
 
 1. `ReadTextureMetadata()` will tell you the width and height of the texture in texels. You can then use this data to allocate a texel buffer.
 2. `ReadTexture()` will read a texture's texel data in to a preallocated buffer.
+
+You can also use `ReadCombinedTexture()` instead of [LoadCombinedTexture()](#loadcombinedtexture) to read the output data in to a texel buffer instead of creating a `Texture` resource.

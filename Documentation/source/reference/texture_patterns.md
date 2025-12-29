@@ -29,7 +29,7 @@ You can use the built-in texture pattern generators to create interesting color 
 	
 	* :material-alpha-m-box-outline: The __Metallic__ channel is stored in the Blue pixel data of the texture and defines on a scale of 0.0 to 1.0 how 'metallic' the material is at each pixel of its surface. In reality, most materials' surfaces' texel data should always be 0.0 (non-metallic) or 1.0 (metallic). This value is used to determine how reflections and lighting interacts with the surface.
 
-	For more information, see: [:octicons-arrow-right-24: Materials](materials.md)
+	For more information, see: [:octicons-arrow-right-24: Materials](/tutorials/materials.md)
 
 All texture patterns can be created by using the static methods on the `TexturePattern` class, located in the `Egodystonic.TinyFFR.Assets.Materials` namespace.
 
@@ -264,14 +264,14 @@ Examples using each of these types follow below:
 		
 		* 	The first parameter (`AzimuthalOffset`) can be any angle and it represents the 2D orientation of the texel's normal direction. In other words, this parameter specifies the **direction of distortion** on the surface. 
 		
-			The mapping of angle to actual world direction depends on the mesh you're using(1) and any rotation of the model instance. For a non-rotated `Cuboid` built using the standard method shown previously in "Hello Cube" the [standard convention](conventions.md/#2d-handedness-orientation) applies(2).
+			The mapping of angle to actual world direction depends on the mesh you're using(1) and any rotation of the model instance. For a non-rotated `Cuboid` built using the standard method shown previously in "Hello Cube" the [standard convention](/tutorials/conventions.md/#2d-handedness-orientation) applies(2).
 			{ .annotate }
 
 			1. 	A value of `0°` points along the mesh's "U" axis (also known as its **tangent** direction). 
 			
 				A value of `90°` points along the mesh's "V" axis (also known as its **bitangent** direction).
 
-				See [Meshes](meshes.md/#meshvertex) for more information on U/V axes.
+				See [Meshes](/tutorials/meshes.md/#meshvertex) for more information on U/V axes.
 
 			2.	So, for a standard `Cuboid` mesh, `0°` means the normal points rightward, `90°` upward, `180°` leftward, and `270°` downward along the surface.
 
@@ -342,7 +342,7 @@ Examples using each of these types follow below:
 
 	2.	We specify each border direction's coordinate `AzimuthalOffset` as being one of the 90° right-angle values.
 
-		We deliberately flip the top/bottom and left/right borders from the [usual convention](conventions.md/#2d-handedness-orientation) in order to create an "indented" rather than "outdented" effect.
+		We deliberately flip the top/bottom and left/right borders from the [usual convention](/tutorials/conventions.md/#2d-handedness-orientation) in order to create an "indented" rather than "outdented" effect.
 
 	Compare also to [Occluded Circular Divots](#__tabbed_4_3) below.
 
@@ -712,7 +712,7 @@ The  tabs below show the three different transformation types being applied to i
 	???+ note "Clockwise Rotations"
 		You can rotate clockwise by supplying a negative value for `rotation` in your `transform`.
 
-		The reason positive values result in an anticlockwise rotation in TinyFFR is just a [convention](conventions.md), although it's worth noting this is ultimately just conforming to a [general convention in trigonometry](https://math.stackexchange.com/questions/1749279/why-are-the-trig-functions-defined-by-the-counterclockwise-path-of-a-circle).
+		The reason positive values result in an anticlockwise rotation in TinyFFR is just a [convention](/tutorials/conventions.md), although it's worth noting this is ultimately just conforming to a [general convention in trigonometry](https://math.stackexchange.com/questions/1749279/why-are-the-trig-functions-defined-by-the-counterclockwise-path-of-a-circle).
 
 === "Translation"
 
@@ -741,7 +741,7 @@ The  tabs below show the three different transformation types being applied to i
 
 	The translation values for X and Y are specified as fractions of the entire pattern's width/height respectively, so usually you'll want to supply values in the range `[-1, 1]` (though any valid float is permitted).
 
-	As per the [usual convention](conventions.md/#2d-handedness-orientation) a positive X value shifts right and a positive Y value shifts upward.
+	As per the [usual convention](/tutorials/conventions.md/#2d-handedness-orientation) a positive X value shifts right and a positive Y value shifts upward.
 
 
 

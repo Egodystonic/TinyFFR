@@ -119,7 +119,6 @@ nav:
       - tutorials/hello_cube.md
       - tutorials/loading_assets.md
       - tutorials/handling_input.md
-      - tutorials/texture_patterns.md
     - Advanced:
       - tutorials/materials.md
       - tutorials/lighting.md
@@ -138,6 +137,8 @@ nav:
   - Reference Docs:
     - How-To Guides:
       - reference/vsync.md
+    - Assets:
+      - reference/texture_patterns.md
     - Utils:
       - reference/typed_referent_iterator.md
 

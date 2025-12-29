@@ -23,11 +23,6 @@ Learn how to load texture files, 3D models, and sky environments from storage in
 Learn different ways to manage keyboard, mouse, and gamepad interactions.
 { : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
 
-[:material-arrow-right-bold:{ .lg } :material-texture:{ .lg : style="margin-right:0.3em" } __Texture Patterns__{ : style="font-size:1.3em;" }](texture_patterns.md)
-
-Learn how to use built-in texture pattern generators to create interesting color, normal, and ORM maps.
-{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
-
 ## Advanced
 
 [:material-arrow-right-bold:{ .lg } :material-texture-box:{ .lg : style="margin-right:0.3em" } __Materials__{ : style="font-size:1.3em;" }](materials.md)
