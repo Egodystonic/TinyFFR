@@ -21,10 +21,11 @@
             <Button Command="{Binding ChangeLightColourButtonPressed}" Content="Change Light Colour" />
             <CheckBox Content="Toggle Animated Rendering" IsChecked="{Binding Animate}" />
             <Button Command="{Binding RenderOnce}" Content="Render Manually" />
+            <Button Command="{Binding ToggleResolutionButtonPressed}" Content="Toggle Resolution" />
         </StackPanel>
         <tffrAvalonia:TinyFfrSceneView
             FallbackBrush="LightGray"
-            InternalRenderResolution="300,150"
+            InternalRenderResolution="{Binding InternalRenderRes}"
             Renderer="{Binding Renderer}" />
     </DockPanel>
 </UserControl>

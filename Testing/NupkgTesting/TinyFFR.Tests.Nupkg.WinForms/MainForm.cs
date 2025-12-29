@@ -18,6 +18,10 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			ToggleRendering();
 		}
 
+		private void toggleResolutionButton_Click(object sender, EventArgs e) {
+			ToggleResolution();
+		}
+
 		private void changeLightColourButton_Click(object sender, EventArgs e) {
 			ChangeLightColour();
 		}
@@ -27,9 +31,15 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			else StopRendering();
 		}
 
+		void ToggleResolution() {
+			if (sceneView.InternalRenderResolution == null) sceneView.InternalRenderResolution = new Size(300, 150);
+			else sceneView.InternalRenderResolution = null;
+		}
+
 		void ChangeLightColour() {
 			if (_disposables == null) return;
-			_light.AdjustColorHueBy(30f);
+			_light.AdjustColorHueBy((float) Real.Random(30f, 60f));
+			_light.SetBrightness(Real.Random(0.25f, 4f));
 		}
 
 		void StartRendering() {
@@ -38,10 +48,11 @@ namespace TinyFFR.Tests.Integrations.WinForms {
 			var factory = new LocalTinyFfrFactory();
 			var camera = factory.CameraBuilder.CreateCamera(Egodystonic.TinyFFR.Location.Origin);
 			var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
-			var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial();
+			var mat = factory.AssetLoader.MaterialBuilder.CreateTestMaterial();
 			_instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 2.2f);
-			_light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f));
+			_light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f), brightness: 4f);
 			var scene = factory.SceneBuilder.CreateScene(backdropColor: StandardColor.LightingSunMidday);
+			scene.RemoveBackdrop();
 			sceneView.Renderer = factory.RendererBuilder.CreateBindableRenderer(scene, camera, factory.ResourceAllocator);
 
 			scene.Add(_instance);

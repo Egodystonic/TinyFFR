@@ -105,7 +105,7 @@ class LocalAssetImportTest {
 				new(TextureCombinationSourceTexture.TextureB, ColorChannel.R),
 				new(TextureCombinationSourceTexture.TextureC, ColorChannel.R)
 			),
-			finalOutputConfig: new TextureCreationConfig { IsLinearColorspace = false, ProcessingToApply = new() { InvertYGreenChannel = true, InvertZBlueChannel = true } }
+			finalOutputConfig: new TextureCreationConfig { IsLinearColorspace = true, ProcessingToApply = new() { InvertYGreenChannel = true, InvertZBlueChannel = true } }
 		);
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(albedo, normal, orm);
 		using var mesh = factory.AssetLoader.LoadMesh(

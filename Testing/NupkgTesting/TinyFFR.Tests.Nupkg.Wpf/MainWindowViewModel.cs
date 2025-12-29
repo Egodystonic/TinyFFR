@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace TinyFFR.Tests.Integrations.Wpf {
 	public partial class MainWindowViewModel : ObservableObject {
@@ -25,11 +26,18 @@ namespace TinyFFR.Tests.Integrations.Wpf {
 		public partial RelayCommand ChangeLightColourButtonPressed { get; set; }
 
 		[ObservableProperty]
+		public partial RelayCommand ToggleResolutionButtonPressed { get; set; }
+
+		[ObservableProperty]
 		public partial Renderer? Renderer { get; set; }
+
+		[ObservableProperty]
+		public partial Size? InternalRenderRes { get; set; }
 
 		public MainWindowViewModel() {
 			ToggleRenderingButtonPressed = new(ToggleRendering);
 			ChangeLightColourButtonPressed = new(ChangeLightColour);
+			ToggleResolutionButtonPressed = new(ToggleResolution);
 		}
 
 		void ToggleRendering() {
@@ -37,9 +45,15 @@ namespace TinyFFR.Tests.Integrations.Wpf {
 			else StopRendering();
 		}
 
+		void ToggleResolution() {
+			if (InternalRenderRes == null) InternalRenderRes = new Size(300, 150);
+			else InternalRenderRes = null;
+		}
+
 		void ChangeLightColour() {
 			if (_disposables == null) return;
-			_light.AdjustColorHueBy(30f);
+			_light.AdjustColorHueBy((float) Real.Random(30f, 60f));
+			_light.SetBrightness(Real.Random(0.25f, 4f));
 		}
 
 		void StartRendering() {
@@ -48,10 +62,11 @@ namespace TinyFFR.Tests.Integrations.Wpf {
 			var factory = new LocalTinyFfrFactory();
 			var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 			var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
-			var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial();
+			var mat = factory.AssetLoader.MaterialBuilder.CreateTestMaterial();
 			_instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 2.2f);
-			_light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f));
+			_light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f), brightness: 4f);
 			var scene = factory.SceneBuilder.CreateScene(backdropColor: StandardColor.LightingSunMidday);
+			scene.RemoveBackdrop();
 			Renderer = factory.RendererBuilder.CreateBindableRenderer(scene, camera, factory.ResourceAllocator);
 
 			scene.Add(_instance);

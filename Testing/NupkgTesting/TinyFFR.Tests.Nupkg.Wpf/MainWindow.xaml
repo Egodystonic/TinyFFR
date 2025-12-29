@@ -18,10 +18,11 @@
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
             <Button Command="{Binding ToggleRenderingButtonPressed}" Content="Toggle Rendering" />
             <Button Command="{Binding ChangeLightColourButtonPressed}" Content="Change Light Colour" />
+            <Button Command="{Binding ToggleResolutionButtonPressed}" Content="Toggle Resolution" />
         </StackPanel>
         <tffrWpf:TinyFfrSceneView
             FallbackBrush="LightGray"
-            InternalRenderResolution="300,150"
+            InternalRenderResolution="{Binding InternalRenderRes}"
             Renderer="{Binding Renderer}" />
     </DockPanel>
 </Window>

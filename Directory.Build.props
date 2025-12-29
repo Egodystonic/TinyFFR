@@ -25,7 +25,7 @@
 
   <!-- Testing properties -->
   <PropertyGroup>
-    <TffrNugetTestingReferenceVersion>0.5.0</TffrNugetTestingReferenceVersion>
+    <TffrNugetTestingReferenceVersion>0.6.0-rc001</TffrNugetTestingReferenceVersion>
   </PropertyGroup>
 
 

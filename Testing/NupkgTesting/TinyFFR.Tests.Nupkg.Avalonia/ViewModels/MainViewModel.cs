@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using Avalonia;
 using Avalonia.Threading;
 using Egodystonic.TinyFFR.Avalonia;
 
@@ -27,6 +28,9 @@ public partial class MainViewModel : ViewModelBase {
 	public partial RelayCommand ChangeLightColourButtonPressed { get; set; }
 
 	[ObservableProperty]
+	public partial RelayCommand ToggleResolutionButtonPressed { get; set; }
+
+	[ObservableProperty]
 	public partial bool Animate { get; set; } = true;
 
 	[ObservableProperty]
@@ -35,9 +39,13 @@ public partial class MainViewModel : ViewModelBase {
 	[ObservableProperty]
 	public partial Renderer? Renderer { get; set; }
 
+	[ObservableProperty]
+	public partial Size? InternalRenderRes { get; set; }
+
 	public MainViewModel() {
 		ToggleRenderingButtonPressed = new(ToggleRendering);
 		ChangeLightColourButtonPressed = new(ChangeLightColour);
+		ToggleResolutionButtonPressed = new(ToggleResolution);
 		RenderOnce = new(() => Renderer?.Render());
 	}
 
@@ -46,9 +54,15 @@ public partial class MainViewModel : ViewModelBase {
 		else StopRendering();
 	}
 
+	void ToggleResolution() {
+		if (InternalRenderRes == null) InternalRenderRes = new Size(300, 150);
+		else InternalRenderRes = null;
+	}
+
 	void ChangeLightColour() {
 		if (_disposables == null) return;
-		_light.AdjustColorHueBy(30f);
+		_light.AdjustColorHueBy((float) Real.Random(30f, 60f));
+		_light.SetBrightness(Real.Random(0.25f, 4f));
 	}
 
 	void StartRendering() {
@@ -57,11 +71,11 @@ public partial class MainViewModel : ViewModelBase {
 		var factory = new LocalTinyFfrFactory();
 		var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
-		var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial();
+		var mat = factory.AssetLoader.MaterialBuilder.CreateTestMaterial();
 		_instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 2.2f);
 		_light = factory.LightBuilder.CreateSpotLight(_instance.Position + Direction.Up * 3f, Direction.Down, 60f, 20f, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f));
 		var scene = factory.SceneBuilder.CreateScene(backdropColor: StandardColor.LightingSunMidday);
-		scene.SetBackdrop(StandardColor.LightingSunMidday, indirectLightingIntensity: 0f);
+		scene.RemoveBackdrop();
 		Renderer = factory.RendererBuilder.CreateBindableRenderer(scene, camera, factory.ResourceAllocator);
 
 		scene.Add(_instance);

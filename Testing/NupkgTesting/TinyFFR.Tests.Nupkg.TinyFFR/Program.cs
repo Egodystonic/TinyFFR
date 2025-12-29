@@ -9,9 +9,9 @@ using static Egodystonic.TinyFFR.Testing.Nupkg.AssetTestConstants;
 
 using var factory = new LocalTinyFfrFactory();
 
-if (new TextureReadMetadata(1024, 1024) != factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex))) throw new InvalidOperationException("Test fail");
-if (new TextureReadMetadata(1024, 1024) != factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex))) throw new InvalidOperationException("Test fail");
-if (new TextureReadMetadata(1024, 1024) != factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex))) throw new InvalidOperationException("Test fail");
+if (new TextureReadMetadata((1024, 1024), false) != factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex))) throw new InvalidOperationException("Test fail");
+if (new TextureReadMetadata((1024, 1024), false) != factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex))) throw new InvalidOperationException("Test fail");
+if (new TextureReadMetadata((1024, 1024), false) != factory.AssetLoader.ReadTextureMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex))) throw new InvalidOperationException("Test fail");
 
 var texBuffer = (new TexelRgb24[1024 * 1024]).AsSpan();
 factory.AssetLoader.ReadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex), texBuffer);
@@ -39,17 +39,26 @@ var display = factory.DisplayDiscoverer.Primary!.Value;
 using var window = factory.WindowBuilder.CreateWindow(display, title: "Nupkg Test");
 window.SetIcon(CommonTestAssets.FindAsset(KnownTestAsset.EgodystonicLogo));
 using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
-using var albedo = factory.AssetLoader.LoadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex));
-using var normal = factory.AssetLoader.LoadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex));
-using var orm = factory.AssetLoader.LoadAndCombineOrmTextures(
-	roughnessMapFilePath: CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex), 
-	metallicMapFilePath: CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex), 
-	config: new() { InvertYGreenChannel = true }
+using var albedo = factory.AssetLoader.LoadColorMap(CommonTestAssets.FindAsset(KnownTestAsset.CrateAlbedoTex));
+using var normal = factory.AssetLoader.LoadNormalMap(CommonTestAssets.FindAsset(KnownTestAsset.CrateNormalTex));
+using var orm = factory.AssetLoader.LoadCombinedTexture(
+	aFilePath: CommonTestAssets.FindAsset(KnownTestAsset.WhiteTex),
+	aProcessingConfig: TextureProcessingConfig.None,
+	bFilePath: CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex),
+	bProcessingConfig: TextureProcessingConfig.None,
+	cFilePath: CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex),
+	cProcessingConfig: TextureProcessingConfig.None,
+	combinationConfig: new(
+		new(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
+		new(TextureCombinationSourceTexture.TextureB, ColorChannel.R),
+		new(TextureCombinationSourceTexture.TextureC, ColorChannel.R)
+	),
+	finalOutputConfig: new TextureCreationConfig { IsLinearColorspace = true, ProcessingToApply = new() { InvertYGreenChannel = true, InvertZBlueChannel = true } }
 );
-using var mat = factory.AssetLoader.MaterialBuilder.CreateOpaqueMaterial(albedo, normal, orm);
+using var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(albedo, normal, orm);
 using var mesh = factory.AssetLoader.LoadMesh(CommonTestAssets.FindAsset(KnownTestAsset.CrateMesh), new MeshCreationConfig { LinearRescalingFactor = 0.03f, OriginTranslation = calculatedOrigin.AsVect() });
 using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 1.3f);
-using var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
+using var cubemap = factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
 using var scene = factory.SceneBuilder.CreateScene();
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 

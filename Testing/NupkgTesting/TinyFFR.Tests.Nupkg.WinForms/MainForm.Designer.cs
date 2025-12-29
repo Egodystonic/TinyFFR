@@ -26,6 +26,7 @@
 			toggleRenderingButton = new Button();
 			changeLightColourButton = new Button();
 			sceneView = new Egodystonic.TinyFFR.WinForms.TinyFfrSceneView();
+			button1 = new Button();
 			SuspendLayout();
 			// 
 			// toggleRenderingButton
@@ -56,11 +57,22 @@
 			sceneView.Size = new Size(1933, 1146);
 			sceneView.TabIndex = 2;
 			// 
+			// button1
+			// 
+			button1.Location = new Point(481, 12);
+			button1.Name = "button1";
+			button1.Size = new Size(251, 34);
+			button1.TabIndex = 3;
+			button1.Text = "Toggle Resolution";
+			button1.UseVisualStyleBackColor = true;
+			button1.Click += toggleResolutionButton_Click;
+			// 
 			// MainForm
 			// 
 			AutoScaleDimensions = new SizeF(10F, 25F);
 			AutoScaleMode = AutoScaleMode.Font;
 			ClientSize = new Size(1957, 1222);
+			Controls.Add(button1);
 			Controls.Add(sceneView);
 			Controls.Add(changeLightColourButton);
 			Controls.Add(toggleRenderingButton);
@@ -74,5 +86,6 @@
 		private Button toggleRenderingButton;
 		private Button changeLightColourButton;
 		private Egodystonic.TinyFFR.WinForms.TinyFfrSceneView sceneView;
+		private Button button1;
 	}
 }
