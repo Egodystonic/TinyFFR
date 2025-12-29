@@ -6,7 +6,7 @@ search:
   exclude: true
 ---
 
-# TinyFFR Manual
+# :material-cube: TinyFFR || Realtime .NET 3D
 
 ![Rotating Cube](tffrcube.webp){ align=right : style="height:200px;width:200px;border-radius:12px"}
 
