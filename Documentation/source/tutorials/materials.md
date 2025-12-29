@@ -50,7 +50,7 @@ The normal map is interpreted as a unit-length 3D vector where R, G, and B chann
 | Expected Channel Count       | 3 (RGB) or 4 (RGBA)                                                                            |
 | Expected Linear or sRGB      | Assumed linear                                                                                 |
 
-ORM maps (also known as ARM maps) combine the Ambient-**O**clusion, **R**oughness and **M**etallic information about a surface in to the red, green, and blue texture channels of a single texture.
+ORM maps (also known as ARM maps) combine the Ambient-**O**cclusion, **R**oughness and **M**etallic information about a surface in to the red, green, and blue texture channels of a single texture.
 
 ORMR maps are the same, but with the addition of **R**eflectance data in the alpha channel.
 
@@ -244,7 +244,7 @@ Transmissive materials must be considered if you want to use absorption-transmis
 * Color maps
 * Absorption-transmission maps
 * Normal maps
-* ORM/ORMR maps
+* ORMR maps (**not** ORM)
 * Emissive maps
 * Anisotropy maps
 
@@ -257,12 +257,23 @@ Only clearcoat maps are not supported on transmissive materials.
 	
 The color map and absorption-transmission maps are mandatory. All other maps are optional.
 
-If your color map has an alpha channel, you may wish to specify the `TransmissiveMaterialAlphaMode`. Unlike with a standard material, `FullBlending` is the default for transmissive materials. See above for an explanation of `FullBlending` vs `MaskOnly`.
+If supplying an ORMR map, you must supply four-channel ORMR data, *not* ORM-only. Most transmissive materials will probably want to specify ORMR data anyway.
+
+If your color map has an alpha channel, you may wish to specify the `TransmissiveMaterialAlphaMode`. Unlike with a standard material, `FullBlending` is the default for transmissive materials. `FullBlending` properly blends your object surface with the rest of the scene (but is more computationally expensive), and expects premultiplied alpha. `MaskOnly` interprets the alpha data as essentially turning various texels on/off for rendering (any texel below 40% alpha will be culled entirely, all other texels will be rendered opaque).
 
 When creating a transmissive material, you may also optionally supply a `refractionThickness` and a `TransmissiveMaterialQuality`.
 
-* The `refractionThickness` value indicates how 'thick' (in meters) the surface should be modeled as. This affects how much light is absorbed (in conjunction with the absorption-transmission map).
+* The `refractionThickness` value indicates how 'thick' (in meters) the object's surfaces should be modeled as; this affects how much light is absorbed (in conjunction with the absorption-transmission map). (1)
+	{ .annotate }
+	
+	1.	Any positive value is valid; try to set the thickness according to how far an average light ray would have to travel through your object before emerging from a given surface.
+	
+		For solid and thick objects (e.g. an acrylic cube) values are usually in the meter to centimeter range; for hollow or thin objects (e.g. a stained-glass window), values are usually in the centimeter to millimeter range.
+	
+		
+	
 * The `quality` value is set to `FullReflectionsAndRefraction` by default; enabling full screen-space refraction and reflection. If you don't need this, you could consider setting the quality to `SkyboxOnlyReflectionsAndRefraction` which will make the material instead only reflect/refract the scene background texture (this is less computationally expensive to render).
+
 
 !!! warning "Renderer Quality Overrides Material Quality"
 	Note that refractions/reflections may be disabled entirely by the overall quality settings set on your [Renderer](scenes_and_rendering.md#renderers).
