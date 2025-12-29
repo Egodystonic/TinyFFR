@@ -5,8 +5,10 @@
 	• Delete any cached packages from ~/.nuget/packages/ first
 	• Set TffrNugetTestingReferenceVersion in Directory.Build.props to the appropriate version number
 	• The Nupkg projects must be built manually to run, so rebuild first then run
+• Set package version to non-rc in Directory.Build.props
 • Add tag, push it
 	• git tag vM.m.p
 	• git push origin tag vM.m.p
-• Upload nugets
+• Build nugets again with non rc suffix and upload them to nuget.org
 • Update website (instructions in documentation dir)
+• Update package version to next with rc suffix in Directory.Build.props
