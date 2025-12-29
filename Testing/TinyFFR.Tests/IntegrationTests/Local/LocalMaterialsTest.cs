@@ -922,7 +922,7 @@ class LocalMaterialsTest {
 			name: "Test Material Resources"
 		);
 
-		var mat = matBuilder.CreateTestMaterial(ignoresLighting: true);
+		var mat = matBuilder.CreateTestMaterial(ignoresLighting: false);
 		result.Add(mat);
 
 		return result;

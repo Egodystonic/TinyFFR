@@ -1,99 +1,100 @@
 # ![TinyFFR logo](logo_48.png) TinyFFR
 
-A **Tiny** **F**ixed **F**unction **R**endering library for C#/.NET 9.
+A **Tiny** **F**ixed **F**unction **R**endering library for C#/.NET 9+.
 
-* Distributed via NuGet (.NET 9)
-* Free for commercial and non-commercial use (see license)
+* Delivered via [NuGet](https://www.nuget.org/packages/Egodystonic.TinyFFR/)
 * Supports Windows, MacOS (Apple Silicon only), Linux (Debian/Ubuntu)
 * Standalone or integrated with WPF, Avalonia, Winforms
-* Features:
-  * Physically-based rendering (via [filament](https://github.com/google/filament))
-  * Asset loading (via [assimp](https://github.com/assimp/assimp) and [stb_image](https://github.com/nothings/stb))
-  * Window management and input handling (via [SDL](https://github.com/libsdl-org/SDL))
-  * Fully-abstracted math & geometry API - no pre-existing 3D or linear algebra knowledge required
-  * Zero-GC design
-
-> [!CAUTION]
-> TinyFFR is currently in early prerelease. There will be bugs. Please have patience and consider reporting any issues you find in this repository.
+* Free for commercial and non-commercial use ([see license](https://github.com/Egodystonic/TinyFFR/blob/main/LICENSE.md))
+* Physically-based rendering (via [filament](https://github.com/google/filament))
+* Asset loading (via [assimp](https://github.com/assimp/assimp) and [stb_image](https://github.com/nothings/stb))
+* Window management and input handling (via [SDL](https://github.com/libsdl-org/SDL))
+* Fully-abstracted math & geometry API - no pre-existing 3D or linear algebra knowledge required
+* Zero-GC design
 
 ## Manual
 
 Manual is available at [tinyffr.dev](https://tinyffr.dev).
 
-## Examples
-
-### Hello Cube
-
-This is a complete example; the code shown below is all that is required to render the given image (and rotate it when holding the spacebar):
-
-![Image of rendered cube](hello_cube.jpg)
+## Hello Cube
 
 ```csharp
-// The factory object is used to create all other resources
+// Tutorial: https://tinyffr.dev/tutorials/hello_cube/
+
+using Egodystonic.TinyFFR;
+using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Environment.Input;
+
 using var factory = new LocalTinyFfrFactory();
-
-// Create a cuboid mesh and load an instance of it in to the world with a test material
-using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f)); // 1m cube
-using var instance = factory.ObjectBuilder.CreateModelInstance(
-  mesh, 
-  factory.AssetLoader.MaterialBuilder.TestMaterial
-);
-
-// Create a light to illuminate the cube
+using var cubeMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube);
+using var cubeMaterial = factory.MaterialBuilder.CreateTestMaterial();
+using var cube = factory.ObjectBuilder.CreateModelInstance(cubeMesh, cubeMaterial, initialPosition: (0f, 0f, 1.5f));
 using var light = factory.LightBuilder.CreatePointLight(Location.Origin);
-
-// Create a window to render to, 
-// a scene to render, 
-// a camera to capture the scene, 
-// and a renderer to render it all
-using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
 using var scene = factory.SceneBuilder.CreateScene();
-using var camera = factory.CameraBuilder.CreateCamera();
-using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
-
-// Add the cube instance and light to the scene
-scene.Add(instance);
+scene.Add(cube);
 scene.Add(light);
-
-// Put the cube 2m in front of the camera
-instance.SetPosition(new Location(0f, 0f, 2f));
-
-// Keep rendering at 60Hz until the user closes the window
+using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
+using var camera = factory.CameraBuilder.CreateCamera(initialPosition: Location.Origin, initialViewDirection: Direction.Forward);
+using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 while (!loop.Input.UserQuitRequested) {
-	var dt = (float) loop.IterateOnce().TotalSeconds;
-  
-	// If we're holding space down, rotate the cube
-	if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Space)) {
-		instance.RotateBy(new Rotation(angle: 90f, axis: Direction.Down) * dt);
-	}
-
-	renderer.Render();
+    var deltaTime = (float) loop.IterateOnce().TotalSeconds;
+    if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Space)) cube.RotateBy(90f % Direction.Down * deltaTime);
+    renderer.Render();
 }
 ```
 
+![Image of rendered cube](example_hellocube.jpg)
+
 ----
 
-### Asset Loading
-
-This snippet demonstrates how to load texture and mesh files:
-
-![Image of imported crate and sky texture](asset_import.jpg)
+## Asset Loading
 
 ```csharp
-var loader = factory.AssetLoader;
+// Tutorial: https://tinyffr.dev/tutorials/loading_assets/
 
-// Load albedo, normal, and occlusion/roughness/metallic map from specular-model PNG files
-using var albedo = loader.LoadTexture("Crate.png");
-using var normal = loader.LoadTexture("CreateNormals.png");
-using var orm = loader.LoadAndCombineOrmTextures(roughnessMapFilePath: "CrateSpecular.png", metallicMapFilePath: "CrateSpecular.png", config: new() { InvertYGreenChannel = true });
+using var sceneBackdrop = assetLoader.LoadBackdropTexture(@"belfast_sunset_puresky_4k.hdr");
 
-// Create material
-using var mat = loader.MaterialBuilder.CreateOpaqueMaterial(albedo, normal, orm);
+using var treasureChestMesh = assetLoader.LoadMesh(@"treasure_chest_4k.gltf"); 
+using var treasureChestColorMap = assetLoader.LoadColorMap(@"treasure_chest_diff_4k.jpg"); 
+using var treasureChestNormalMap = assetLoader.LoadNormalMap(@"treasure_chest_nor_gl_4k.jpg"); 
+using var treasureChestOrmMap = assetLoader.LoadOcclusionRoughnessMetallicMap(@"treasure_chest_arm_4k.jpg"); 
+using var treasureChestMaterial = materialBuilder.CreateStandardMaterial( 
+    colorMap: treasureChestColorMap,
+    normalMap: treasureChestNormalMap,
+    ormOrOrmrMap: treasureChestOrmMap
+);
 
-// Load .obj mesh and scale it down
-using var mesh = loader.LoadMesh("Crate.obj", new MeshCreationConfig { LinearRescalingFactor = 0.03f });
+using var treasureChest = objectBuilder.CreateModelInstance(
+    treasureChestMesh, 
+    treasureChestMaterial, 
+    initialPosition: (0f, -0.3f, 1f) 
+);
 
-// Load HDR cubemap
-using var cubemap = loader.LoadEnvironmentCubemap("SkyClouds.hdr");
+scene.SetBackdrop(sceneBackdrop);
+scene.Add(treasureChest);
 ```
+
+![Image of imported crate and sky texture](example_assetloading.jpg)
+
+----
+
+## Material Examples
+
+### Anisotropic Metal
+![Aniso metal example](example_materials_standard_aniso.jpg)
+
+### Transmissive Glass w/ Absorption
+![Aniso metal example](example_materials_transmissive_glass_stained.jpg)
+
+### Reflective
+![Aniso metal example](example_materials_transmissive_mirror.jpg)
+
+### Alpha-masked
+![Aniso metal example](example_materials_standard_color.jpg)
+
+### Refractive
+![Aniso metal example](example_materials_transmissive_glass.jpg)
+
+### Normal Mapped
+![Aniso metal example](example_materials_standard_norm_metal.jpg)

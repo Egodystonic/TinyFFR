@@ -197,7 +197,7 @@ A standard material with high metallic and reflectance map values, also utilisin
 
 ![Standard material with just color](materials_standard_color.jpg){ : style="width:77%;" }
 /// caption
-A standard material using only a color map.
+A standard material using only a color map with alpha enabled in `MaskOnly` mode.
 ///
 
 Most objects in a typical scene will use a standard material. Standard material surfaces support the following map types:
