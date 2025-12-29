@@ -1,27 +1,25 @@
 ---
-title: TypedReferentIterator&lt;TIn, TOut&gt;
+title: IndirectEnumerable&lt;TIn, TOut&gt;
 ---
 
 ## Summary
 
 ### Plain-English
 
-An instance of a `TypedReferentIterator<TIn, TOut>` lets you enumerate, count, and copy all of the `TOut`s in a `TIn` according to some property/function.
+An instance of a `IndirectEnumerable<TIn, TOut>` lets you enumerate, count, and copy all of the `TOut`s in a `TIn` according to some property/function.
 
 In most cases you can use this type like a pseudo-collection; it implements `IEnumerable<TOut>`.
 
 ### Further Detail
 
-This type is designed to take an input type `TIn` and allow garbage-free iteration over some property or facet of that type, yielding a sequence of `TOut` values, without exposing the memory or mechanism of generation for those values (which in some cases may be unmanaged or ad-hoc).
-
-More specifically, it is something that allows you to __iterate__ over values of a certain __type__ belonging to a __referent__ (i.e. the owning object being referred to), hence: __Typed__ __Referent__ __Iterator__.
+This type is designed to take an input type `TIn` and allow garbage-free iteration over some property or facet of that type, yielding a sequence of `TOut` values, without exposing the memory or mechanism of generation for those values (which in some cases may be unmanaged or ad-hoc). In other words, it is something that allows you to iterate over values of a certain type belonging to a referent (i.e. the owning object being referred to).
 
 ## Iteration
 
 The simplest way to use this type is via a `foreach` loop. The `TOut` type is the element type in the enumeration:
 
 ```csharp
-// CurrentlyPressedKeys returns a TypedReferentIterator<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKey>
+// CurrentlyPressedKeys returns a IndirectEnumerable<ILatestKeyboardAndMouseInputRetriever, KeyboardOrMouseKey>
 foreach (var key in loop.Input.KeyboardAndMouse.CurrentlyPressedKeys) {
 	// 'key' will be a TOut (KeyboardOrMouseKey)
 }
@@ -54,7 +52,7 @@ var success = loop.Input.KeyboardAndMouse.CurrentlyPressedKeys.TryCopyTo(mySpan)
 
 ## Invalidation
 
-Note that, like how iterators/enumerators maintain a "collection version", a `TypedReferentIterator<TIn, TOut>` maintains an internal "referent version". If you modify the owning `TIn` reference your iterator will be invalidated, and attempting to access any of its functions will result in an exception being thrown:
+Note that, like how iterators/enumerators maintain a "collection version", a `IndirectEnumerable<TIn, TOut>` maintains an internal "referent version". If you modify the owning `TIn` reference your iterator will be invalidated, and attempting to access any of its functions will result in an exception being thrown:
 
 ```csharp
 var currentKeys = loop.Input.KeyboardAndMouse.CurrentlyPressedKeys;

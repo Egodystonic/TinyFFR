@@ -36,7 +36,7 @@ All texture patterns can be created by using the static methods on the `TextureP
 Any type of map can be created with any pattern type, it just depends what type of value you specify for the pattern's "value" arguments:
 
 * For color maps, you should make a texture pattern of `ColorVect`s.
-* For normal maps, you should make a texture pattern of `UnitSphericalCoordinate`s.
+* For normal maps, you should make a texture pattern of `SphericalTranslation`s.
 * For occlusion, roughness, or metallic maps, you should make a texture pattern of `Real`s.
 
 Examples using each of these types follow below:
@@ -255,10 +255,10 @@ Examples using each of these types follow below:
 
 		The term "normal" ultimately comes from Latin; a "norma" was a carpenter's tool for making right-angles.
 	
-	Normal maps in TinyFFR can be generated with `UnitSphericalCoordinate` texture patterns.
+	Normal maps in TinyFFR can be generated with `SphericalTranslation` texture patterns.
 
-	???+ abstract "What is a 'UnitSphericalCoordinate' in a normal map pattern?"
-		Each `UnitSphericalCoordinate` is comprised of two angle parameters: An `AzimuthalOffset` and a `PolarOffset`.
+	???+ abstract "What is a 'SphericalTranslation' in a normal map pattern?"
+		Each `SphericalTranslation` is comprised of two angle parameters: An `AzimuthalOffset` and a `PolarOffset`.
 
 		Any value greater than `0°` for `PolarOffset` (the second parameter) will "bend" the texture normal towards the direction determined by the `AzimuthalOffset` (the first parameter).
 		
@@ -288,19 +288,19 @@ Examples using each of these types follow below:
 		interiorSize: (64, 64),
 		borderSize: (8, 8),
 		paddingSize: (32, 32),
-		interiorValue: new UnitSphericalCoordinate(0f, 0f), // (1)!
-		borderRightValue: new UnitSphericalCoordinate(0f, 45f), // (2)!
-		borderTopValue: new UnitSphericalCoordinate(90f, 45f),
-		borderLeftValue: new UnitSphericalCoordinate(180f, 45f),
-		borderBottomValue: new UnitSphericalCoordinate(270f, 45f),
-		paddingValue: new UnitSphericalCoordinate(0f, 0f),
+		interiorValue: new SphericalTranslation(0f, 0f), // (1)!
+		borderRightValue: new SphericalTranslation(0f, 45f), // (2)!
+		borderTopValue: new SphericalTranslation(90f, 45f),
+		borderLeftValue: new SphericalTranslation(180f, 45f),
+		borderBottomValue: new SphericalTranslation(270f, 45f),
+		paddingValue: new SphericalTranslation(0f, 0f),
 		repetitions: (6, 6)
 	));
 	```
 
 	1. 	The `interiorValue` and `paddingValue` specify the value in this pattern for all texels inside and outside the rectangle borders respectively.
 
-		In this case, we want to specify that these interior and padding texels are perfectly flat (non-distorted), so we specify the `UnitSphericalCoordinate`'s `PolarOffset` as 0°.
+		In this case, we want to specify that these interior and padding texels are perfectly flat (non-distorted), so we specify the `SphericalTranslation`'s `PolarOffset` as 0°.
 
 	2.	We specify each border direction's coordinate `AzimuthalOffset` as being 90° offset from the previous (e.g. right is 0°, top is 90°, left is 180°, bottom is 270°).
 
@@ -322,23 +322,23 @@ Examples using each of these types follow below:
 	This surface shows circular indentations.
 	///
 
-	Like with the [Interpolated Circle example above](#__tabbed_2_2) we use the interpolatable functionality of `UnitSphericalCoordinate` to create a smooth interpolated circle:
+	Like with the [Interpolated Circle example above](#__tabbed_2_2) we use the interpolatable functionality of `SphericalTranslation` to create a smooth interpolated circle:
 
 	```csharp
 	using var normalMap = materialBuilder.CreateNormalMap(TexturePattern.Circles(
-		interiorValue: new UnitSphericalCoordinate(0f, 0f), // (1)!
-		borderValueRight: new UnitSphericalCoordinate(180f, 45f), // (2)!
-		borderValueTop: new UnitSphericalCoordinate(270f, 45f),
-		borderValueLeft: new UnitSphericalCoordinate(0f, 45f),
-		borderValueBottom: new UnitSphericalCoordinate(90f, 45f),
-		paddingValue: new UnitSphericalCoordinate(0f, 0f),
+		interiorValue: new SphericalTranslation(0f, 0f), // (1)!
+		borderValueRight: new SphericalTranslation(180f, 45f), // (2)!
+		borderValueTop: new SphericalTranslation(270f, 45f),
+		borderValueLeft: new SphericalTranslation(0f, 45f),
+		borderValueBottom: new SphericalTranslation(90f, 45f),
+		paddingValue: new SphericalTranslation(0f, 0f),
 		repetitions: (6, 6)
 	));
 	```
 
 	1. 	The `interiorValue` and `paddingValue` specify the value in this pattern for all texels inside and outside the circle borders respectively.
 
-		In this case, we want to specify that these interior and padding texels are perfectly flat (non-distorted), so we specify the `UnitSphericalCoordinate`'s `PolarOffset` as 0°.
+		In this case, we want to specify that these interior and padding texels are perfectly flat (non-distorted), so we specify the `SphericalTranslation`'s `PolarOffset` as 0°.
 
 	2.	We specify each border direction's coordinate `AzimuthalOffset` as being one of the 90° right-angle values.
 
@@ -487,12 +487,12 @@ Examples using each of these types follow below:
 
 	```csharp
 	var normalMap = MaterialBuilder.CreateNormalMap(TexturePattern.Circles( // (1)!
-		interiorValue: new UnitSphericalCoordinate(0f, 0f),
-		borderValueRight: new UnitSphericalCoordinate(180f, 45f),
-		borderValueTop: new UnitSphericalCoordinate(270f, 45f),
-		borderValueLeft: new UnitSphericalCoordinate(0f, 45f),
-		borderValueBottom: new UnitSphericalCoordinate(90f, 45f),
-		paddingValue: new UnitSphericalCoordinate(0f, 0f),
+		interiorValue: new SphericalTranslation(0f, 0f),
+		borderValueRight: new SphericalTranslation(180f, 45f),
+		borderValueTop: new SphericalTranslation(270f, 45f),
+		borderValueLeft: new SphericalTranslation(0f, 45f),
+		borderValueBottom: new SphericalTranslation(90f, 45f),
+		paddingValue: new SphericalTranslation(0f, 0f),
 		repetitions: (6, 6)
 	));
 

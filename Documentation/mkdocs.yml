@@ -137,10 +137,11 @@ nav:
   - Reference Docs:
     - How-To Guides:
       - reference/vsync.md
+      - reference/controlling_memory.md
     - Assets:
       - reference/texture_patterns.md
     - Utils:
-      - reference/typed_referent_iterator.md
+      - reference/indirect_enumerable.md
 
 not_in_nav: |
   tutorials/index.md

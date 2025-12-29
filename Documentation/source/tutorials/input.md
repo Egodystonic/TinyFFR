@@ -34,7 +34,7 @@ The `Input` property on the `loop` returns an `ILatestInputRetriever`. As its na
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `GameControllers`
 
-:   Returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `ILatestGameControllerInputStateRetriever`s. Each `ILatestGameControllerInputStateRetriever` can be used to access input updates for one connected game controller.
+:   Returns an [IndirectEnumerable](/reference/indirect_enumerable.md) of `ILatestGameControllerInputStateRetriever`s. Each `ILatestGameControllerInputStateRetriever` can be used to access input updates for one connected game controller.
 
 	See below for usage guide.
 
@@ -117,7 +117,7 @@ The `ILatestKeyboardAndMouseInputRetriever` interface (accessed via the `Keyboar
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `NewKeyEvents`
 
-:   This returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `KeyboardOrMouseKeyEvent`s that enumerates all the new mouse/keyboard events in this loop iteration.
+:   This returns an [IndirectEnumerable](/reference/indirect_enumerable.md) of `KeyboardOrMouseKeyEvent`s that enumerates all the new mouse/keyboard events in this loop iteration.
 
 	Each `KeyboardOrMouseKeyEvent` contains two properties:  
 
@@ -128,7 +128,7 @@ The `ILatestKeyboardAndMouseInputRetriever` interface (accessed via the `Keyboar
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `NewKeyDownEvents`
 
-:   This returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `KeyboardOrMouseKey`s that enumerates every key that was *pressed* in this loop iteration.
+:   This returns an [IndirectEnumerable](/reference/indirect_enumerable.md) of `KeyboardOrMouseKey`s that enumerates every key that was *pressed* in this loop iteration.
 
 	If you only care about keys being pressed, not released, you can use this property to quickly iterate every new key press.
 
@@ -138,7 +138,7 @@ The `ILatestKeyboardAndMouseInputRetriever` interface (accessed via the `Keyboar
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `NewKeyUpEvents`
 
-:   This returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `KeyboardOrMouseKey`s that enumerates every key that was *released* in this loop iteration.
+:   This returns an [IndirectEnumerable](/reference/indirect_enumerable.md) of `KeyboardOrMouseKey`s that enumerates every key that was *released* in this loop iteration.
 
 	If you only care about keys being released, not pressed, you can use this property to quickly iterate every new key release.
 
@@ -148,7 +148,7 @@ The `ILatestKeyboardAndMouseInputRetriever` interface (accessed via the `Keyboar
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `CurrentlyPressedKeys`
 
-:   This returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `KeyboardOrMouseKey`s that enumerates every key that is currently being pressed/held-down by the user.
+:   This returns an [IndirectEnumerable](/reference/indirect_enumerable.md) of `KeyboardOrMouseKey`s that enumerates every key that is currently being pressed/held-down by the user.
 
 	Note that this is not the same as `NewKeyDownEvents` as this iterator enumerates keys that were pressed in previous loop iterations but are still being pressed/held-down in this iteration.
 
@@ -156,7 +156,7 @@ The `ILatestKeyboardAndMouseInputRetriever` interface (accessed via the `Keyboar
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `NewMouseClicks`
 
-:   This returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `MouseClickEvent`s that enumerates a list of events detailing every mouse 'click' since the last loop iteration.
+:   This returns an [IndirectEnumerable](/reference/indirect_enumerable.md) of `MouseClickEvent`s that enumerates a list of events detailing every mouse 'click' since the last loop iteration.
 
 	Mouse clicks are "duplicated" in all the other properties (i.e. they count as `CurrentlyPressedKeys` and they emit keyup/keydown events). However, this iterator provides additional mouse-specific details for each mouse click.
 
@@ -240,7 +240,7 @@ The `ILatestGameControllerInputStateRetriever` interface (accessed via the `Game
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `NewButtonEvents`
 
-:   This returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `GameControllerButtonEvent`s that enumerates all the new button events in this loop iteration.
+:   This returns an [IndirectEnumerable](/reference/indirect_enumerable.md) of `GameControllerButtonEvent`s that enumerates all the new button events in this loop iteration.
 
 	Each `GameControllerButtonEvent` contains two properties:  
 
@@ -251,7 +251,7 @@ The `ILatestGameControllerInputStateRetriever` interface (accessed via the `Game
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `NewButtonDownEvents`
 
-:   This returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `GameControllerButton`s that enumerates every button that was *pressed* in this loop iteration.(1)
+:   This returns an [IndirectEnumerable](/reference/indirect_enumerable.md) of `GameControllerButton`s that enumerates every button that was *pressed* in this loop iteration.(1)
 	{ .annotate }
 
 	1. Unfortunately this property does *not* inform you about new formal-dress parties in your area.
@@ -264,7 +264,7 @@ The `ILatestGameControllerInputStateRetriever` interface (accessed via the `Game
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `NewButtonUpEvents`
 
-:   This returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `GameControllerButton`s that enumerates every button that was *released* in this loop iteration.
+:   This returns an [IndirectEnumerable](/reference/indirect_enumerable.md) of `GameControllerButton`s that enumerates every button that was *released* in this loop iteration.
 
 	If you only care about buttons being released, not pressed, you can use this property to quickly iterate every new button release.
 
@@ -274,7 +274,7 @@ The `ILatestGameControllerInputStateRetriever` interface (accessed via the `Game
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `CurrentlyPressedButtons`
 
-:   This returns a [TypedReferentIterator](/reference/typed_referent_iterator.md) of `GameControllerButton`s that enumerates every button that is currently being pressed/held-down by the user.
+:   This returns an [IndirectEnumerable](/reference/indirect_enumerable.md) of `GameControllerButton`s that enumerates every button that is currently being pressed/held-down by the user.
 
 	Note that this is not the same as `NewButtonDownEvents` as this iterator enumerates buttons that were pressed in previous loop iterations but are still being pressed/held-down in this iteration.
 

@@ -234,8 +234,12 @@ When creating a transmissive material, you may also optionally supply a `refract
 * The `refractionThickness` value indicates how 'thick' (in meters) the surface should be modeled as. This affects how much light is absorbed (in conjunction with the absorption-transmission map).
 * The `quality` value is set to `FullReflectionsAndRefraction` by default; enabling full screen-space refraction and reflection. If you don't need this, you could consider setting the quality to `SkyboxOnlyReflectionsAndRefraction` which will make the material instead only reflect/refract the scene background texture (this is less computationally expensive to render).
 
-???+ warning "Renderer Quality Overrides Material Quality"
+!!! warning "Renderer Quality Overrides Material Quality"
 	Note that refractions/reflections may be disabled entirely by the overall quality settings set on your [Renderer](scenes_and_rendering.md#renderers).
+	
+!!! failure "Multi-Compositing not Supported"
+	It is not currently possible to composite multiple refractive/translucent transmissive objects on top of each other. Attempting to do so will most likely result in one or more objects seeming to "disappear" behind each other.
+	
 
 ### Simple Materials
 
