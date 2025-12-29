@@ -31,8 +31,8 @@
 
   <!-- Publishing properties -->
   <PropertyGroup>
-    <TffrVersion>0.6.0</TffrVersion>
-    <TffrVersionSuffix></TffrVersionSuffix> <!-- Empty for mainline releases, something like "-rc001" for prereleases, "-variant-whatever001" for branches -->
+    <TffrVersion>0.7.0</TffrVersion>
+    <TffrVersionSuffix>-rc001</TffrVersionSuffix> <!-- Empty for mainline releases, something like "-rc001" for prereleases, "-variant-whatever001" for branches -->
     <TffrPackageId>Egodystonic.TinyFFR</TffrPackageId>
     <TffrAuthors>Ben Bowen</TffrAuthors>
     <TffrCompany>Egodystonic Studios</TffrCompany>

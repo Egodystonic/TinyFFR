@@ -6,9 +6,10 @@
 	• Set TffrNugetTestingReferenceVersion in Directory.Build.props to the appropriate version number
 	• The Nupkg projects must be built manually to run, so rebuild first then run
 • Set package version to non-rc in Directory.Build.props
-• Add tag, push it
+• Commit, push it, add tag, push it
 	• git tag vM.m.p
 	• git push origin tag vM.m.p
-• Build nugets again with non rc suffix and upload them to nuget.org
+• Build nugets again and upload them to nuget.org
+	• dotnet nuget push Egodystonic.TinyFFR.etc.nupkg --api-key keyhere --source https://api.nuget.org/v3/index.json
 • Update website (instructions in documentation dir)
 • Update package version to next with rc suffix in Directory.Build.props
