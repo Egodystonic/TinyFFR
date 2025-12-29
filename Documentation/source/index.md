@@ -6,7 +6,7 @@ search:
   exclude: true
 ---
 
-# 3D Rendering in C\# Made Easy
+# TinyFFR Manual
 
 ![Rotating Cube](tffrcube.webp){ align=right : style="height:200px;width:200px;border-radius:12px"}
 
