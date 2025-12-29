@@ -117,8 +117,8 @@ nav:
   - Tutorials:
     - Fundamentals:
       - tutorials/hello_cube.md
-      - tutorials/handling_input.md
       - tutorials/loading_assets.md
+      - tutorials/handling_input.md
       - tutorials/texture_patterns.md
     - Advanced:
       - tutorials/materials.md
@@ -136,7 +136,7 @@ nav:
       - tutorials/integrating_avalonia.md
       - tutorials/integrating_winforms.md
   - Reference Docs:
-    - Code Snippets:
+    - How-To Guides:
       - reference/vsync.md
     - Utils:
       - reference/typed_referent_iterator.md

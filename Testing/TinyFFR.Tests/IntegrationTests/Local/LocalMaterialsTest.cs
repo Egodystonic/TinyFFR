@@ -30,7 +30,7 @@ class LocalMaterialsTest {
 	const KeyboardOrMouseKey MapThicknessToggleKey = KeyboardOrMouseKey.K;
 	const KeyboardOrMouseKey QualityToggleKey = KeyboardOrMouseKey.Q;
 
-	const string WindowTitleStart = $"settings: B,R,Q shaders: 1-8 maps: A,E,N,O,T,C,K";
+	const string WindowTitleStart = $"settings: B,R,Q shaders: 1-9 maps: A,E,N,O,T,C,K";
 
 	sealed record UserOptions {
 		public int BackdropIntensity { get; set; } = 2;
@@ -78,6 +78,7 @@ class LocalMaterialsTest {
 				6 => "GLASS",
 				7 => "MIRROR",
 				8 => "TEST",
+				9 => "STAINEDGLASS",
 				_ => "STANDARD"
 			} + mapsStr;
 		}
@@ -102,7 +103,7 @@ class LocalMaterialsTest {
 			title: WindowTitleStart + curUserOptions.GetWindowTitleString()
 		);
 
-		using var backdrop = factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
+		using var backdrop = factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
 		
 		using var cubeMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube);
 		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere, subdivisionLevel: 7);
@@ -177,6 +178,9 @@ class LocalMaterialsTest {
 				case 8:
 					newMaterialResources = CreateTestMaterial(factory.ResourceAllocator, factory.MaterialBuilder);
 					break;
+				case 9:
+					newMaterialResources = CreateStainedGlassMaterial(factory.ResourceAllocator, factory.AssetLoader, factory.TextureBuilder, factory.MaterialBuilder);
+					break;
 				default:
 					newMaterialResources = CreateStandardMaterial(
 						factory.ResourceAllocator,
@@ -233,6 +237,10 @@ class LocalMaterialsTest {
 			}
 			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow8)) {
 				curUserOptions.ShaderType = 8;
+				recreationNecessary = true;
+			}
+			if (kbm.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow9)) {
+				curUserOptions.ShaderType = 9;
 				recreationNecessary = true;
 			}
 			if (kbm.KeyWasPressedThisIteration(MapAlphaToggleKey)) {
@@ -864,6 +872,44 @@ class LocalMaterialsTest {
 			normalMap: norm,
 			refractionThickness: 0.01f,
 			name: "Mirror Material"
+		);
+		result.Add(mat);
+
+		return result;
+	}
+
+	ResourceGroup CreateStainedGlassMaterial(IResourceAllocator resAllocator, IAssetLoader assetLoader, ITextureBuilder texBuilder, IMaterialBuilder matBuilder) {
+		var result = resAllocator.CreateResourceGroup(
+			disposeContainedResourcesWhenDisposed: true,
+			name: "Stained Glass Material Resources"
+		);
+
+		var albedo = assetLoader.LoadColorMap(CommonTestAssets.FindAsset("stained_glass/albedo.jpg"));
+		var at = assetLoader.LoadAbsorptionTransmissionMap(
+			absorptionFilePath: CommonTestAssets.FindAsset("stained_glass/inverted_absorption.jpg"),
+			transmissionFilePath: assetLoader.BuiltInTexturePaths.Rgba90Percent,
+			invertAbsorption: true
+		);
+		var ormr = texBuilder.CreateOcclusionRoughnessMetallicReflectanceMap(
+			occlusion: 1f,
+			roughness: 0.2f,
+			metallic: 0f,
+			reflectance: 0.8f
+		);
+		var norm = assetLoader.LoadNormalMap(CommonTestAssets.FindAsset("stained_glass/normal.jpg"));
+		result.Add(albedo);
+		result.Add(at);
+		result.Add(ormr);
+		result.Add(norm);
+
+		var mat = matBuilder.CreateTransmissiveMaterial(
+			albedo,
+			at,
+			quality: TransmissiveMaterialQuality.FullReflectionsAndRefraction,
+			ormrMap: ormr,
+			normalMap: norm,
+			refractionThickness: 0.1f,
+			name: "Stained Glass Material"
 		);
 		result.Add(mat);
 

@@ -16,9 +16,9 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
-sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImplProvider, IDisposable {
-	readonly record struct CubemapData(UIntPtr SkyboxTextureHandle, UIntPtr IblTextureHandle);
-	const string DefaultEnvironmentCubemapName = "Unnamed Environment Cubemap";
+sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplProvider, IDisposable {
+	readonly record struct BackdropTextureData(UIntPtr SkyboxTextureHandle, UIntPtr IblTextureHandle);
+	const string DefaultBackdropTextureName = "Unnamed Backdrop Texture";
 	const string HdrPreprocessorNameWin = "cmgen.exe";
 	const string HdrPreprocessorNameLinux = "cmgen";
 	const string HdrPreprocessorNameMacos = "cmgen_mac";
@@ -36,9 +36,9 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 	readonly FixedByteBufferPool _vertexTriangleBufferPool;
 	readonly FixedByteBufferPool _ktxFileBufferPool;
 	readonly TimeSpan _maxHdrProcessingTime;
-	readonly ArrayPoolBackedMap<ResourceHandle<EnvironmentCubemap>, CubemapData> _loadedCubemaps = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<BackdropTexture>, BackdropTextureData> _loadedBackdropTextures = new();
 	readonly Lazy<ResourceGroup> _testMaterialTextures;
-	nuint _prevCubemapHandle = 0;
+	nuint _prevBackdropTextureHandle = 0;
 	bool _isDisposed = false;
 	bool _hdrPreprocessorHasBeenExtracted = false;
 
@@ -819,7 +819,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 	}
 	#endregion
 
-	#region Environment / Cubemap
+	#region Environment / Backdrop
 	void ExtractHdrPreprocessorIfNecessary() {
 		if (_hdrPreprocessorHasBeenExtracted) return;
 
@@ -842,7 +842,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		_hdrPreprocessorHasBeenExtracted = true;
 	}
 
-	public void PreprocessHdrTextureToEnvironmentCubemapDirectory(ReadOnlySpan<char> hdrFilePath, ReadOnlySpan<char> destinationDirectoryPath) {
+	public void PreprocessHdrTextureToBackdropTextureDirectory(ReadOnlySpan<char> hdrFilePath, ReadOnlySpan<char> destinationDirectoryPath) {
 		ThrowIfThisIsDisposed();
 
 		var destDirString = destinationDirectoryPath.ToString();
@@ -882,7 +882,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		}
 	}
 	// TODO xmldoc that the directory should be empty other than the preprocessed hdr file contents
-	public EnvironmentCubemap LoadEnvironmentCubemapFromPreprocessedHdrDirectory(ReadOnlySpan<char> directoryPath, in EnvironmentCubemapCreationConfig config) {
+	public BackdropTexture LoadBackdropTextureFromPreprocessedHdrDirectory(ReadOnlySpan<char> directoryPath, in BackdropTextureCreationConfig config) {
 		try {
 			var dirPathString = directoryPath.ToString();
 			var skyboxFile = Directory.GetFiles(dirPathString, HdrPreprocessedSkyboxFileSearch).FirstOrDefault();
@@ -892,13 +892,13 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 				throw new InvalidOperationException($"Could not find skybox ({HdrPreprocessedSkyboxFileSearch}) and/or IBL ({HdrPreprocessedIblFileSearch}) file in given directory ({dirPathString}).");
 			}
 
-			return LoadEnvironmentCubemap(new() { IblKtxFilePath = iblFile, SkyboxKtxFilePath = skyboxFile }, config);
+			return LoadBackdropTexture(new() { IblKtxFilePath = iblFile, SkyboxKtxFilePath = skyboxFile }, config);
 		}
 		catch (Exception e) {
 			throw new InvalidOperationException("Could not load processed HDR directory.", e);
 		}
 	}
-	public EnvironmentCubemap LoadEnvironmentCubemap(in EnvironmentCubemapReadConfig readConfig, in EnvironmentCubemapCreationConfig config) {
+	public BackdropTexture LoadBackdropTexture(in BackdropTextureReadConfig readConfig, in BackdropTextureCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		readConfig.ThrowIfInvalid();
 		config.ThrowIfInvalid();
@@ -927,10 +927,10 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 				).ThrowIfFailure();
 				_ktxFileBufferPool.Return(iblFixedBuffer);
 
-				++_prevCubemapHandle;
-				var handle = (ResourceHandle<EnvironmentCubemap>) _prevCubemapHandle;
-				_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultEnvironmentCubemapName);
-				_loadedCubemaps.Add(_prevCubemapHandle, new(skyboxTextureHandle, iblTextureHandle));
+				++_prevBackdropTextureHandle;
+				var handle = (ResourceHandle<BackdropTexture>) _prevBackdropTextureHandle;
+				_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultBackdropTextureName);
+				_loadedBackdropTextures.Add(_prevBackdropTextureHandle, new(skyboxTextureHandle, iblTextureHandle));
 				return HandleToInstance(handle);
 			}
 		}
@@ -941,26 +941,26 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 		}
 	}
 
-	public UIntPtr GetSkyboxTextureHandle(ResourceHandle<EnvironmentCubemap> handle) {
+	public UIntPtr GetSkyboxTextureHandle(ResourceHandle<BackdropTexture> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _loadedCubemaps[handle].SkyboxTextureHandle;
+		return _loadedBackdropTextures[handle].SkyboxTextureHandle;
 	}
-	public UIntPtr GetIndirectLightingTextureHandle(ResourceHandle<EnvironmentCubemap> handle) {
+	public UIntPtr GetIndirectLightingTextureHandle(ResourceHandle<BackdropTexture> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _loadedCubemaps[handle].IblTextureHandle;
+		return _loadedBackdropTextures[handle].IblTextureHandle;
 	}
 
-	public string GetNameAsNewStringObject(ResourceHandle<EnvironmentCubemap> handle) {
+	public string GetNameAsNewStringObject(ResourceHandle<BackdropTexture> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return new String(_globals.GetResourceName(handle.Ident, DefaultEnvironmentCubemapName));
+		return new String(_globals.GetResourceName(handle.Ident, DefaultBackdropTextureName));
 	}
-	public int GetNameLength(ResourceHandle<EnvironmentCubemap> handle) {
+	public int GetNameLength(ResourceHandle<BackdropTexture> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.GetResourceName(handle.Ident, DefaultEnvironmentCubemapName).Length;
+		return _globals.GetResourceName(handle.Ident, DefaultBackdropTextureName).Length;
 	}
-	public void CopyName(ResourceHandle<EnvironmentCubemap> handle, Span<char> destinationBuffer) {
+	public void CopyName(ResourceHandle<BackdropTexture> handle, Span<char> destinationBuffer) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		_globals.CopyResourceName(handle.Ident, DefaultEnvironmentCubemapName, destinationBuffer);
+		_globals.CopyResourceName(handle.Ident, DefaultBackdropTextureName, destinationBuffer);
 	}
 	#endregion
 
@@ -1101,29 +1101,29 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 	#endregion
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	EnvironmentCubemap HandleToInstance(ResourceHandle<EnvironmentCubemap> h) => new(h, this);
+	BackdropTexture HandleToInstance(ResourceHandle<BackdropTexture> h) => new(h, this);
 
 	public override string ToString() => _isDisposed ? "TinyFFR Local Asset Loader [Disposed]" : "TinyFFR Local Asset Loader";
 
 	#region Disposal
-	public bool IsDisposed(ResourceHandle<EnvironmentCubemap> handle) => _isDisposed || !_loadedCubemaps.ContainsKey(handle);
+	public bool IsDisposed(ResourceHandle<BackdropTexture> handle) => _isDisposed || !_loadedBackdropTextures.ContainsKey(handle);
 
-	public void Dispose(ResourceHandle<EnvironmentCubemap> handle) => Dispose(handle, removeFromCollection: true);
-	void Dispose(ResourceHandle<EnvironmentCubemap> handle, bool removeFromCollection) {
+	public void Dispose(ResourceHandle<BackdropTexture> handle) => Dispose(handle, removeFromCollection: true);
+	void Dispose(ResourceHandle<BackdropTexture> handle, bool removeFromCollection) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
-		var data = _loadedCubemaps[handle];
+		var data = _loadedBackdropTextures[handle];
 		LocalFrameSynchronizationManager.QueueResourceDisposal(data.IblTextureHandle, &UnloadIblFileFromMemory);
 		LocalFrameSynchronizationManager.QueueResourceDisposal(data.SkyboxTextureHandle, &UnloadSkyboxFileFromMemory);
 		_globals.DisposeResourceNameIfExists(handle.Ident);
-		if (removeFromCollection) _loadedCubemaps.Remove(handle);
+		if (removeFromCollection) _loadedBackdropTextures.Remove(handle);
 	}
 
 
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
-			foreach (var cubemap in _loadedCubemaps.Keys) Dispose(cubemap, removeFromCollection: false);
+			foreach (var backdropTex in _loadedBackdropTextures.Keys) Dispose(backdropTex, removeFromCollection: false);
 			_ktxFileBufferPool.Dispose();
 			_vertexTriangleBufferPool.Dispose();
 			_assetFilePathBuffer.Dispose();
@@ -1135,7 +1135,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 			}
 
 			_textureBuilder.Dispose();
-			_loadedCubemaps.Dispose();
+			_loadedBackdropTextures.Dispose();
 		}
 		finally {
 			_isDisposed = true;
@@ -1145,6 +1145,6 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IEnvironmentCubemapImp
 	void ThrowIfThisIsDisposed() {
 		ObjectDisposedException.ThrowIf(_isDisposed, typeof(IAssetLoader));
 	}
-	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<EnvironmentCubemap> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(EnvironmentCubemap));
+	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<BackdropTexture> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(BackdropTexture));
 	#endregion
 }

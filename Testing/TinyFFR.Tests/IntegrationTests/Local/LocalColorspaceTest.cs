@@ -63,7 +63,7 @@ class LocalColorspaceTest {
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Colorspace Test");
 		using var camera = factory.CameraBuilder.CreateCamera((0f, 2f, -2f));
 		using var mesh = factory.MeshBuilder.CreateMesh(new Cuboid(1f));
-		using var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
+		using var cubemap = factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
 
 		using var linearInstance = factory.ObjectBuilder.CreateModelInstance(mesh, linearWallMat, initialPosition: (0.8f, 0f, 0f));
 		using var srgbInstance = factory.ObjectBuilder.CreateModelInstance(mesh, srgbWallMat, initialPosition: (-0.8f, 0f, 0f));

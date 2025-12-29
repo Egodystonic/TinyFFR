@@ -64,6 +64,7 @@ public readonly record struct TextureCombinationConfig(TextureCombinationSource 
 	public TextureCombinationConfig(TextureCombinationSourceTexture xRedSourceTex, ColorChannel xRedSourceChannel, TextureCombinationSourceTexture yGreenSourceTex, ColorChannel yGreenSourceChannel, TextureCombinationSourceTexture zBlueSourceTex, ColorChannel zBlueSourceChannel, TextureCombinationSourceTexture wAlphaSourceTex, ColorChannel wAlphaSourceChannel)
 		: this(new TextureCombinationSource(xRedSourceTex, xRedSourceChannel), new TextureCombinationSource(yGreenSourceTex, yGreenSourceChannel), new TextureCombinationSource(zBlueSourceTex, zBlueSourceChannel), new TextureCombinationSource(wAlphaSourceTex, wAlphaSourceChannel)) { }
 
+
 	internal TexelRgba32 SelectTexel(ReadOnlySpan<TexelRgba32> samples) {
 		return new TexelRgba32(
 			OutputTextureXRedChannelSource.SelectTexelChannel(samples),
@@ -476,14 +477,14 @@ public interface IAssetLoader {
 	) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgba32>;
 	#endregion
 
-	#region Load Environment Cubemap
-	EnvironmentCubemap LoadEnvironmentCubemap(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, ReadOnlySpan<char> name = default) {
-		return LoadEnvironmentCubemap(
-			new EnvironmentCubemapReadConfig { IblKtxFilePath = iblKtxFilePath, SkyboxKtxFilePath = skyboxKtxFilePath },
-			new EnvironmentCubemapCreationConfig { Name = name }
+	#region Load Backdrop Texture
+	BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, ReadOnlySpan<char> name = default) {
+		return LoadBackdropTexture(
+			new BackdropTextureReadConfig { IblKtxFilePath = iblKtxFilePath, SkyboxKtxFilePath = skyboxKtxFilePath },
+			new BackdropTextureCreationConfig { Name = name }
 		);
 	}
-	EnvironmentCubemap LoadEnvironmentCubemap(in EnvironmentCubemapReadConfig readConfig, in EnvironmentCubemapCreationConfig config);
+	BackdropTexture LoadBackdropTexture(in BackdropTextureReadConfig readConfig, in BackdropTextureCreationConfig config);
 	#endregion
 
 	#region Load / Read Mesh

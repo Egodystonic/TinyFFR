@@ -77,7 +77,7 @@ class LocalMaterialEffectsTest {
 			title: "Effects test: Arrow keys, RShift, RCtrl, PgUpPgDown | 0-9, ` | C, O, E, A"
 		);
 
-		using var backdrop = factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
+		using var backdrop = factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
 		
 		using var cubeMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, centreTextureOrigin: true);
 

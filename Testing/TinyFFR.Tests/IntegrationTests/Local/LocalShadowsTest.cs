@@ -34,7 +34,7 @@ class LocalShadowsTest {
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Shadows Test", size: (1920, 1080), position: (100, 100));
 		using var camera = factory.CameraBuilder.CreateCamera();
-		using var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
+		using var cubemap = factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
 		using var scene = factory.SceneBuilder.CreateScene();
 		scene.SetBackdrop(cubemap, backdropIntensity: 1f, rotation: 180f % Direction.Forward);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);

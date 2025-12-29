@@ -65,9 +65,25 @@ Accordingly, a `VertexTriangle` has only three properties: __IndexA__, __IndexB_
 
 The order the vertices are specified in within the triangle is important and define the triangle's *winding order*. When looking at the visible (front) face of the triangle, the vertices should be specified in an anti-clockwise order (it doesn't matter which one comes first, just the respective order). This is a [convention](conventions.md) in TinyFFR. If your vertices are specified with a *clockwise* winding order, the triangle will not be rendered except when looking from the inside out or behind the mesh.
 
-## Creating Meshes
+## Creating / Importing Meshes
 
 Meshes can be loaded via the factory's `AssetLoader` (see [Loading Assets](/tutorials/loading_assets.md)) or created from triangles/vertices using the `IMeshBuilder` interface (found via the factory at `factory.MeshBuilder` or `factory.AssetLoader.MeshBuilder`).
+
+### MeshReadConfig
+
+All ways to read mesh data from files have methods that can take a `MeshReadConfig`. This struct allows you to control how TinyFFR processes the mesh data and has the following properties:
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `FixCommonExportErrors`
+
+:   Defaults to `true`. Set to `false` to stop TinyFFR attempting to fix common mesh data errors (such as in-facing normals, degenerate polygons, etc).
+
+	You should usually want to keep this as `true` unless you find TinyFFR is "fixing" your mesh incorrectly.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `OptimizeForGpu`
+
+:   Defaults to `true`. When `true`, TinyFFR will spend some additional time optimizing the mesh data to improve your framerate. 
+
+	Setting this to `false` may improve load times, but may also have a negative impact on framerate.
 
 ### MeshCreationConfig
 
@@ -77,27 +93,60 @@ All ways to create meshes have methods that can take a `MeshCreationConfig`. Thi
 
 :   Set to `true` to reverse the winding-order of triangles in the mesh (i.e. flip the mesh "inside-out").
 
+	Most rendering engines (including TinyFFR) employ something called __back-face culling__, which is a performance optimisation where the rendering of the inside of opaque models is skipped. However, which side of a mesh is its inside, or 'back side', is determined its' polygons'/triangles' *winding order*. 
+	
+	The [convention](conventions.md) in TinyFFR is that front-facing polygons should have an anti-clockwise order with respect to the camera. Some exporters may export their models with a clockwise order however; and in this case you can simply flip the triangles by specifying `FlipTriangles = true`.
+
 <span class="def-icon">:material-card-bulleted-outline:</span> `InvertTextureU`
 
 :   Set to `true` to swap the direction of texture `U` co-ordinates by inverting them.
 
 	"Inverting" means flipping the values so that `1f` becomes `0f`, `0.3f` becomes `0.7f`, and so-on.
+	
+	This may be useful in cases where the mesh has been exported with an inverted/flipped texture-mapping convention. You may need to use this and `InvertTextureV` in conjunction with `FlipTriangles` for some meshes to get them to display correctly.
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `InvertTextureV`
 
 :   Set to `true` to swap the direction of texture `V` co-ordinates by inverting them.
 
 	"Inverting" means flipping the values so that `1f` becomes `0f`, `0.3f` becomes `0.7f`, and so-on.
+	
+	This may be useful in cases where the mesh has been exported with an inverted/flipped texture-mapping convention. You may need to use this and `InvertTextureU` in conjunction with `FlipTriangles` for some meshes to get them to display correctly.
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `LinearRescalingFactor`
 
-:	Resizes the mesh by scaling all vertex `Location`s by the given amount (with respect to `(0, 0, 0)`).
+:	Resizes the mesh by scaling all vertex `Location`s by the given amount (with respect to `(0, 0, 0)`). This is useful when there may be a mismatch between the units used in the original modelling software and those used by your application.
+
+	The specified value is a simple linear factor / coefficient of the original imported size:
+
+	* Values greater than `1f` will expand the mesh's size (e.g. `1.5f` increases its size by 50%).
+
+	* Values less than `1f` will reduce the mesh's size (e.g. `0.5f` decreases its size by 50%).
+
+	* Negative values also invert the mesh and will generally turn it inside-out.
+
+	For example, if a mesh was exported with a size of `1f` meaning 1 foot, but you want `1f` to mean 1 meter, you could set your `LinearRescalingFactor` to `1f / 3.28084f`.
+
+	??? question "Why only a uniform scalar? Why can I not rescale the mesh differently for each axis?"
+		Only a uniform rescale maintains a mesh's integrity regarding its vertex data.
+
+		Although we may think of a polygon mesh as just being points in space, each vertex also generally contains pre-baked data such as tangents, bitangents, normals, and texture U/V data.
+
+		A uniform scaling maintains the correctness of this additional data, but non-uniform scaling will break this information. If you need a non-uniform scaling of mesh data, it is best to go back to the authoring program it was originally created with and make the change there.
+
+		If you want to non-uniformly rescale *model instances* after importing the *mesh*, that is fine and can be done later. This parameter is instead concerned with applying a universal rescale to the imported polygon data.
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `OriginTranslation`
 
 :	Moves all vertices' `Location`s by the inverse of this value in order to create a shift of the local origin point.
 
 	For example, if this value is `(1, 2, 3)`, all vertex `Location`s will have `(-1, -2, -3)` added to them.
+	
+	When placing a model instance in a scene, the mesh's origin point indicates the exact point on that mesh that be positioned at the requested spot in the scene/world.
+	
+	When rotating and scaling model instances, the underlying mesh's origin point will also be used as the default point around which that model will be transformed. For example, pick up anything around you right now and imagine rotating it in 3D space: You must select a point in or around that object to rotate it *around* (even if that's simply the centre of that object).
+
+	A value of `Vect.Zero` (e.g. `(0f, 0f, 0f)`) makes no adjustment to the mesh's origin point. Otherwise, the specified value moves the origin point in the mesh by the given amount, e.g. `(1f, 2f, 3f)` moves the origin point by 1 in the X direction, 2 in the Y direction, and 3 in the Z direction.
 
 ### MeshGenerationConfig
 
@@ -377,7 +426,7 @@ factory.ResourceAllocator.ReturnPooledMemoryBuffer(trianglesMemory);
 factory.ResourceAllocator.ReturnPooledMemoryBuffer(verticesMemory);
 ```
 
-#### Reading & Modifying
+## Reading & Modifying Mesh Data
 
 The factory's `AssetLoader` lets you read mesh data in to a vertex and triangle buffer. You can use this to modify a loaded mesh's data and then pass it to `CreateMesh()` in the same way:
 

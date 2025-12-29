@@ -3,7 +3,7 @@ title: Hello Cube
 description: An example on how to make a simple cube appear using TinyFFR.
 ---
 
-![Image showing a standard cube displayed on a window.](hello_cube_cube.png){ align=right : style="max-width:300px;" }
+![Image showing a standard cube displayed on a window.](hello_cube_cube.png){ align=right : style="max-width:44%;" }
 
 This tutorial will show you how to get started with the basics of TinyFFR. In this example, we will:
 

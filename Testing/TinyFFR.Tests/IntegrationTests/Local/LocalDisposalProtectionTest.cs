@@ -240,8 +240,8 @@ class LocalDisposalProtectionTest {
 			v => v.Remove(modelInstance)
 		};
 		AssertUseAfterDisposalThrowsException(sceneBuilder.CreateScene(), objectIsAlreadyDisposed: false, sceneActions);
-		var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
-		var cubemapActions = new Action<EnvironmentCubemap>[] {
+		var cubemap = factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
+		var cubemapActions = new Action<BackdropTexture>[] {
 			v => _ = v.Handle,
 			v => _ = v.GetNameAsNewStringObject(),
 			v => _ = v.GetNameLength(),
@@ -249,7 +249,7 @@ class LocalDisposalProtectionTest {
 			v => _ = v.SkyboxTextureHandle,
 			v => _ = v.IndirectLightingTextureHandle,
 		};
-		AssertUseAfterDisposalThrowsException(factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr)), objectIsAlreadyDisposed: false, cubemapActions);
+		AssertUseAfterDisposalThrowsException(factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr)), objectIsAlreadyDisposed: false, cubemapActions);
 		var rendererBuilder = factory.RendererBuilder;
 		var renderer = rendererBuilder.CreateRenderer(scene, camera, window);
 		var rendererActions = new Action<Renderer>[] {

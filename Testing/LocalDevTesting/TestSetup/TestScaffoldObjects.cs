@@ -21,7 +21,7 @@ sealed record TestContext {
 	readonly Material? _material;
 	readonly Mesh? _mesh;
 	readonly ModelInstance? _modelInstance;
-	readonly EnvironmentCubemap? _backdrop;
+	readonly BackdropTexture? _backdrop;
 	readonly DirectionalLight? _directionLight;
 	readonly Camera? _camera;
 	readonly Renderer? _renderer;
@@ -33,7 +33,7 @@ sealed record TestContext {
 	public Material Material => _material ?? throw NoContextObjectException();
 	public Mesh Mesh => _mesh ?? throw NoContextObjectException();
 	public ModelInstance ModelInstance => _modelInstance ?? throw NoContextObjectException();
-	public EnvironmentCubemap Backdrop => _backdrop ?? throw NoContextObjectException();
+	public BackdropTexture Backdrop => _backdrop ?? throw NoContextObjectException();
 	public DirectionalLight DirectionalLight => _directionLight ?? throw NoContextObjectException();
 	public Camera Camera => _camera ?? throw NoContextObjectException();
 	public Renderer Renderer => _renderer ?? throw NoContextObjectException();
@@ -41,7 +41,7 @@ sealed record TestContext {
 
 	public ILatestInputRetriever Input => Loop.Input;
 
-	public TestContext(ILocalTinyFfrFactory? factory, Window? window, Scene? scene, Material? material, Mesh? mesh, ModelInstance? modelInstance, EnvironmentCubemap? backdrop, DirectionalLight? directionLight, Camera? camera, Renderer? renderer, ApplicationLoop? loop) {
+	public TestContext(ILocalTinyFfrFactory? factory, Window? window, Scene? scene, Material? material, Mesh? mesh, ModelInstance? modelInstance, BackdropTexture? backdrop, DirectionalLight? directionLight, Camera? camera, Renderer? renderer, ApplicationLoop? loop) {
 		_factory = factory;
 		_window = window;
 		_scene = scene;
@@ -81,7 +81,7 @@ interface ITestContextBuilder {
 	public Material? Material { get; set; }
 	public Mesh? Mesh { get; set; }
 	public ModelInstance? ModelInstance { get; set; }
-	public EnvironmentCubemap? Backdrop { get; set; }
+	public BackdropTexture? Backdrop { get; set; }
 	public DirectionalLight? DirectionalLight { get; set; }
 	public Camera? Camera { get; set; }
 	public Renderer? Renderer { get; set; }
@@ -98,7 +98,7 @@ sealed record TestContextBuilder : ITestContextBuilder {
 	ValOption<Material> _material = default;
 	ValOption<Mesh> _mesh = default;
 	ValOption<ModelInstance> _modelInstance = default;
-	ValOption<EnvironmentCubemap> _backdrop = default;
+	ValOption<BackdropTexture> _backdrop = default;
 	ValOption<DirectionalLight> _directionalLight = default;
 	ValOption<Camera> _camera = default;
 	ValOption<Renderer> _renderer = default;
@@ -134,7 +134,7 @@ sealed record TestContextBuilder : ITestContextBuilder {
 		set => SetOrThrowIfAlreadySet(ref _modelInstance, value);
 	}
 
-	public EnvironmentCubemap? Backdrop {
+	public BackdropTexture? Backdrop {
 		get => Materialize(ref _backdrop, CreateDefaultBackdrop);
 		set => SetOrThrowIfAlreadySet(ref _backdrop, value);
 	}
@@ -214,9 +214,9 @@ sealed record TestContextBuilder : ITestContextBuilder {
 		Scene?.Add(result);
 		return result;
 	}
-	EnvironmentCubemap? CreateDefaultBackdrop() {
+	BackdropTexture? CreateDefaultBackdrop() {
 		if (Factory == null) return null;
-		var result = Factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr), name: "Default Test Backdrop");
+		var result = Factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr), name: "Default Test Backdrop");
 		Scene?.SetBackdrop(result);
 		return result;
 	}

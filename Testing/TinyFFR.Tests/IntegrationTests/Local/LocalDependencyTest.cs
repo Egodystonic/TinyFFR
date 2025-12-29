@@ -60,7 +60,7 @@ class LocalDependencyTest {
 			var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 			AssertDependency(camera, renderer);
 
-			var cubemap = factory.AssetLoader.LoadEnvironmentCubemap(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
+			var cubemap = factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
 			scene.SetBackdrop(cubemap);
 			AssertDependency(cubemap, scene);
 			cubemap.Dispose();

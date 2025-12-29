@@ -5,17 +5,10 @@ description: Examples of how to manage user input.
 
 TinyFFR comes with a built-in API for reacting to user input via keyboard, mouse, and gamepad. This page will demonstrate how to use those devices to control a free-flying camera.
 
-??? example "Continuing "Hello Cube""
-	This tutorial will mostly be concerned with showing you how to move the `camera` according to input captured via keyboard & mouse and/or gamepad.
+!!! example "Continuing "Hello Cube""
+	This tutorial will mostly be concerned with showing you how to move a `Camera` according to input captured via keyboard & mouse and/or gamepad.
 
-	If you wish you can integrate these camera controls directly with the hello cube example and/or the treasure chest example from the previous page, just replace/remove any pre-existing camera manipulation code.
-
-???+ warning "Math Ahead"
-	The examples on this page necessitate a little more usage of the in-built math API than previous pages. It might be worth checking out the [Math & Geometry](math_and_geometry.md) page first for a primer, depending on how confident you are already with 3D math.
-
-	If you learn best by example however go ahead and jump right in: Every line of math below is annotated with explanations.
-
-	Also, don't forget you can use the debugger to inspect what's going on in each frame, or even print things out to console! Try commenting out certain lines or just experimenting with changing values to get a feel for what's going on.
+	If you wish you can integrate these examples directly with the hello cube tutorial and/or the treasure chest tutorial from the previous page, you can simply manipulate the `camera` resource that's already created + added to the `scene`.
 
 ## Initial Setup
 
@@ -110,17 +103,6 @@ while (!loop.Input.UserQuitRequested) {
 	This may or may not matter for your application, but one implication is that if we move the camera with the gamepad and the keyboard at the same time, it will move at double the speed.
 
 	Improving this will depend on how exactly you wish to handle various input sources for your application.
-
-??? question "What is `loop.Input`?"
-	The `Input` property on the `loop` returns an `ILatestInputRetriever`. This interface provides an API for capturing the __latest__ user input events & state.
-
-	You might be wondering what exactly "latest" means: The answer is that the state and events retrieved by this interface are updated every time `loop.IterateOnce()` is invoked (hence why it's a property of the `ApplicationLoop`). In actuality, the instance returned by `loop.Input` is the same one every time.
-
-	This means you can hold on to the same `ILatestInputRetriever` reference indefinitely and as long as the `ApplicationLoop` it came from is not disposed, the instance will remain valid and can be used to always access input data for the current frame.
-
-	The same lifetime and usage pattern applies to all members of the `ILatestInputRetriever`, including the `ILatestKeyboardAndMouseInputRetriever` returned via the `KeyboardAndMouse` property and the `ILatestGameControllerInputStateRetriever` returned by the `GameControllers`/`GameControllersCombined` properties.
-
-	That being said, simply accessing `loop.Input` every time like we're doing above is absolutely fine too.
 
 ??? question "What is `GameControllersCombined`?"
 	`GameControllersCombined` returns an `ILatestGameControllerInputStateRetriever` that represents every game controller connected to the system, combined. For example, you can press the "A" button on one controller, and the "B" button on a second controller, and both button press events will be reflected in the `GameControllersCombined` retriever.

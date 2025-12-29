@@ -12,7 +12,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.World;
 
 sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisposable {
-	readonly record struct BackdropData(EnvironmentCubemap? Cubemap, UIntPtr SkyboxHandle, UIntPtr IndirectLightHandle);
+	readonly record struct BackdropData(BackdropTexture? BackdropTex, UIntPtr SkyboxHandle, UIntPtr IndirectLightHandle);
 	const string DefaultSceneName = "Unnamed Scene";
 	
 	readonly ArrayPoolBackedVector<ResourceHandle<Scene>> _activeSceneHandles = new();
@@ -151,14 +151,14 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	#endregion
 
 	#region Backdrop
-	public void SetBackdrop(ResourceHandle<Scene> handle, EnvironmentCubemap cubemap, float indirectLightingIntensity, Rotation rotation) {
+	public void SetBackdrop(ResourceHandle<Scene> handle, BackdropTexture backdrop, float indirectLightingIntensity, Rotation rotation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		RemoveBackdrop(handle);
 
 		CreateSceneBackdrop(
-			cubemap.SkyboxTextureHandle,
-			cubemap.IndirectLightingTextureHandle,
+			backdrop.SkyboxTextureHandle,
+			backdrop.IndirectLightingTextureHandle,
 			Scene.BrightnessToLux(indirectLightingIntensity),
 			rotation.Angle.Radians,
 			rotation.Axis.ToVector3(),
@@ -172,8 +172,8 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 			indirectLightHandle
 		).ThrowIfFailure();
 
-		_backdropMap[handle] = new(cubemap, skyboxHandle, indirectLightHandle);
-		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), cubemap);
+		_backdropMap[handle] = new(backdrop, skyboxHandle, indirectLightHandle);
+		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), backdrop);
 	}
 	public void SetBackdrop(ResourceHandle<Scene> handle, ColorVect color, float indirectLightingIntensity) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -195,14 +195,14 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 
 		_backdropMap[handle] = new(null, skyboxHandle, indirectLightHandle);
 	}
-	public void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, EnvironmentCubemap cubemap, float backdropIntensity, Rotation rotation) {
+	public void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, BackdropTexture backdrop, float backdropIntensity, Rotation rotation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		RemoveBackdrop(handle);
 
 		CreateSceneBackdrop(
-			cubemap.SkyboxTextureHandle,
-			cubemap.IndirectLightingTextureHandle,
+			backdrop.SkyboxTextureHandle,
+			backdrop.IndirectLightingTextureHandle,
 			Scene.BrightnessToLux(backdropIntensity),
 			rotation.Angle.Radians,
 			rotation.Axis.ToVector3(),
@@ -216,8 +216,8 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 			UIntPtr.Zero
 		).ThrowIfFailure();
 
-		_backdropMap[handle] = new(cubemap, skyboxHandle, indirectLightHandle);
-		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), cubemap);
+		_backdropMap[handle] = new(backdrop, skyboxHandle, indirectLightHandle);
+		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), backdrop);
 	}
 	public void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, ColorVect color) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -245,7 +245,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 
 		UnsetSceneBackdrop(handle).ThrowIfFailure();
 		DisposeSceneBackdrop(curBackdropData.SkyboxHandle, curBackdropData.IndirectLightHandle).ThrowIfFailure();
-		if (curBackdropData.Cubemap is { } cubemap) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), cubemap);
+		if (curBackdropData.BackdropTex is { } backdropTex) _globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), backdropTex);
 	}
 	#endregion
 

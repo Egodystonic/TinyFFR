@@ -17,13 +17,13 @@ Attempting to add an object already in a scene to that same scene again has no e
 
 Scenes can include a backdrop; either a flat colour or an HDR image.
 
-Use `SetBackdrop()` to set the backdrop to either a colour or an `EnvironmentCubemap` containing a loaded HDR image. An `EnvironmentCubemap` is a resource and can be created with the factory's `AssetLoader`.
+Use `SetBackdrop()` to set the backdrop to either a colour or a `BackdropTexture` containing a loaded HDR image. A `BackdropTexture` is a resource and can be created with the factory's `AssetLoader`.
 
 #### Indirect Lighting
 
 By default, all objects in the scene are globally lit by the backdrop. 
 
-When using a plain colour backdrop the illumination is the same colour uniformly applied to every surface. When using an environment cubemap the lighting is applied to each surface differently according to the brightness and colour of the sky facing that surface.
+When using a plain colour backdrop the illumination is the same colour uniformly applied to every surface. When using a backdrop texture the lighting is applied to each surface differently according to the brightness and colour of the sky facing that surface.
 
 The ambient occlusion map used for any material is used to dim indirect lighting.
 
@@ -39,13 +39,13 @@ You can also set a backdrop with indirect lighting disabled, if desired (see bel
 
 	You can also optionally set a value for `indirectLightingIntensity`, where `1f` is the default (meaning 100%). Setting this value will not affect the backdrop color.
 
-<span class="def-icon">:material-code-block-parentheses:</span> `SetBackdrop(EnvironmentCubemap cubemap, float backdropIntensity = 1f, Rotation? rotation = null)`
+<span class="def-icon">:material-code-block-parentheses:</span> `SetBackdrop(BackdropTexture backdrop, float backdropIntensity = 1f, Rotation? rotation = null)`
 
-:   Sets the backdrop of the scene to the given `cubemap`.
+:   Sets the backdrop of the scene to the given `backdrop`.
 
 	You can also optionally set a value for `backdropIntensity`, where `1f` is the default (meaning 100%). Setting this value changes the intensity of indirect lighting and also the brightness/intensity of the backdrop.
 
-	Finally, you can also set an optional `rotation` value which can be used to rotate the skybox texture/cubemap.
+	Finally, you can also set an optional `rotation` value which can be used to rotate the skybox texture/backdrop.
 
 <span class="def-icon">:material-code-block-parentheses:</span> `SetBackdropWithoutIndirectLighting(ColorVect color)`
 
@@ -53,15 +53,15 @@ You can also set a backdrop with indirect lighting disabled, if desired (see bel
 
 	This method will simply set a backdrop color but disables all indirect lighting. This means objects will appear to be pitch-black unless lit by another light source.
 
-<span class="def-icon">:material-code-block-parentheses:</span> `SetBackdropWithoutIndirectLighting(EnvironmentCubemap cubemap, float backdropIntensity = 1f, Rotation? rotation = null)`
+<span class="def-icon">:material-code-block-parentheses:</span> `SetBackdropWithoutIndirectLighting(BackdropTexture backdrop, float backdropIntensity = 1f, Rotation? rotation = null)`
 
-:   Sets the backdrop of the scene to the given `cubemap`.
+:   Sets the backdrop of the scene to the given `backdrop`.
 
-	This method will set the environment cubemap as the backdrop/sky, but will not use it to apply any indirect lighting. This means objects will appear to be pitch-black unless lit by another light source.
+	This method will set the environment backdrop as the backdrop/sky, but will not use it to apply any indirect lighting. This means objects will appear to be pitch-black unless lit by another light source.
 
-	You can still set the intensity/brightness of the cubemap using the optional `backdropIntensity` value. This will only adjust the brightness of the sky.
+	You can still set the intensity/brightness of the backdrop using the optional `backdropIntensity` value. This will only adjust the brightness of the sky.
 
-	Finally, you can also set an optional `rotation` value which can be used to rotate the skybox texture/cubemap.
+	Finally, you can also set an optional `rotation` value which can be used to rotate the skybox texture/backdrop.
 
 <span class="def-icon">:material-code-block-parentheses:</span> `RemoveBackdrop()`
 

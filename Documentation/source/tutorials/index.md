@@ -13,14 +13,14 @@ search:
 Get a simple cube rendering and understand the fundamentals of the library.
 { : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
 
-[:material-arrow-right-bold:{ .lg } :material-keyboard:{ .lg : style="margin-right:0.3em" } __Handling Input__{ : style="font-size:1.3em;" }](handling_input.md)
-
-Learn different ways to manage keyboard, mouse, and gamepad interactions.
-{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
-
 [:material-arrow-right-bold:{ .lg } :fontawesome-solid-draw-polygon:{ .lg : style="margin-right:0.3em" } __Loading Assets__{ : style="font-size:1.3em;" }](loading_assets.md)
 
 Learn how to load texture files, 3D models, and sky environments from storage in to your scenes.
+{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
+
+[:material-arrow-right-bold:{ .lg } :material-keyboard:{ .lg : style="margin-right:0.3em" } __Handling Input__{ : style="font-size:1.3em;" }](handling_input.md)
+
+Learn different ways to manage keyboard, mouse, and gamepad interactions.
 { : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
 
 [:material-arrow-right-bold:{ .lg } :material-texture:{ .lg : style="margin-right:0.3em" } __Texture Patterns__{ : style="font-size:1.3em;" }](texture_patterns.md)
