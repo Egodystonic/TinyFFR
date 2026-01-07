@@ -5,6 +5,7 @@
     <TargetFramework>$(TffrTargetFramework)-windows</TargetFramework>
     <LangVersion>preview</LangVersion>
     <UseWPF>true</UseWPF>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 
   <ItemGroup>

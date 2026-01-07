@@ -151,4 +151,8 @@ static class ConfigStructTestUtils {
 	public static ObjectPropertiesAsserter<T> AssertPropertiesAccountedFor<T>() where T : struct, IConfigStruct<T>, allows ref struct {
 		return new ObjectPropertiesAsserter<T>();
 	}
+
+	static void Test() {
+		Console.WriteLine();
+	}
 }

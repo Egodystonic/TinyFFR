@@ -3,7 +3,7 @@
 ## Windows
 
 * Install .NET 10
-* Install VS2022, ensure the **.NET Desktop Development** and **Desktop Development with C++** workloads are installed
+* Install latest VS, ensure the **.NET Desktop Development** and **Desktop Development with C++** workloads are installed
 * Install [CMake](https://cmake.org/)
 * Open command prompt in `/ThirdParty/` folder
 	* Run `dotnet run build_and_copy_all_third_party.cs`; takes 30mins to an hour
@@ -28,8 +28,7 @@
 * Install IDE(s) of your choice, Rider + CLion recommended
 * Install required dependencies (alter the following commands if necessary according to your pre-existing environment):
 	* `sudo apt-get update`
-    * `sudo apt-get install -y cmake build-essential libglu1-mesa-dev ninja-build libc++-dev libc++abi-dev clang-18 libc++-18-dev libc++abi-18-dev mesa-common-dev libxi-dev libxxf86vm-dev libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev libwayland-dev libxkbcommon-dev wayland-protocols libgl1-mesa-dev`
-	* `sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-18 100`
+    * `sudo apt-get install -y cmake build-essential libglu1-mesa-dev ninja-build libc++-dev libc++abi-dev clang mesa-common-dev libxi-dev libxxf86vm-dev libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev libwayland-dev libxkbcommon-dev wayland-protocols`
 * Open terminal in `/ThirdParty/` folder
 	* Run `dotnet run build_and_copy_all_third_party.cs`; takes 30mins to an hour
 * Open terminal in `/TinyFFR.Native/build/` folder

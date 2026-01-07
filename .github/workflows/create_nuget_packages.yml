@@ -78,8 +78,7 @@ jobs:
             libegl1-mesa-dev \
             libwayland-dev \
             libxkbcommon-dev \
-            wayland-protocols \
-            libgl1-mesa-dev
+            wayland-protocols
           sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++-18 100
 
       - name: Build Third Party Libraries
