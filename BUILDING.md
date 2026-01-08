@@ -35,6 +35,23 @@
 	* Run `dotnet run build.cs` -- this builds TinyFFR.Native and can be repeated whenever you make changes
 * Build solution/C# projects with `dotnet` or your IDE
 
+## Updating Third-Party Dependencies
+
+* If you want to update the third-party dependencies, you'll need to set up the origin refs (one time only):
+
+```
+git remote add tp_assimp https://github.com/assimp/assimp.git
+git remote add tp_sdl https://github.com/libsdl-org/SDL.git
+git remote add tp_filament https://github.com/google/filament.git
+```
+
+Then, you can update any third-party dependency like so at any point (replace `xyz` with `assimp` or `sdl` or `filament`) (replace `vtag` with actual tag, e.g. "v1.2.3"):
+
+```
+git fetch tp_xyz --tags
+git subtree pull --prefix=ThirdParty/xyz --squash tp_xyz vtag
+```
+
 # Repository Structure
 
 ## /
