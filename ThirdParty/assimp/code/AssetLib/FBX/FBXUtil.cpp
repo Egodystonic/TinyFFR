@@ -2,8 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
-
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -51,11 +50,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <cstring>
 
-#ifndef ASSIMP_BUILD_NO_FBX_IMPORTER
-
-namespace Assimp {
-namespace FBX {
-namespace Util {
+namespace Assimp::FBX::Util {
 
 // ------------------------------------------------------------------------------------------------
 const char* TokenTypeString(TokenType t)
@@ -155,7 +150,7 @@ size_t DecodeBase64(const char* in, size_t inLength, uint8_t* out, size_t maxOut
     const size_t realLength = inLength - size_t(in[inLength - 1] == '=') - size_t(in[inLength - 2] == '=');
     size_t dst_offset = 0;
     int val = 0, valb = -8;
-    for (size_t src_offset = 0; src_offset < realLength; ++src_offset)
+    for (size_t src_offset = 0; src_offset < realLength && dst_offset < maxOutLength; ++src_offset)
     {
         const uint8_t table_value = Util::DecodeBase64(in[src_offset]);
         if (table_value == 255)
@@ -234,8 +229,5 @@ std::string EncodeBase64(const char* data, size_t length)
     return encoded_string;
 }
 
-} // !Util
-} // !FBX
-} // !Assimp
+} // namespace Assimp::FBX::Util
 
-#endif

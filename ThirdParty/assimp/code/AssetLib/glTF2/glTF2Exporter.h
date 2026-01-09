@@ -2,7 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2022, assimp team
+Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
 
@@ -45,10 +45,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef AI_GLTF2EXPORTER_H_INC
 #define AI_GLTF2EXPORTER_H_INC
 
-#if !defined(ASSIMP_BUILD_NO_GLTF_IMPORTER) && !defined(ASSIMP_BUILD_NO_GLTF2_IMPORTER)
-
 #include <assimp/material.h>
 #include <assimp/types.h>
+#include <assimp/defs.h>
 
 #include <map>
 #include <memory>
@@ -83,6 +82,7 @@ struct MaterialTransmission;
 struct MaterialVolume;
 struct MaterialIOR;
 struct MaterialEmissiveStrength;
+struct MaterialAnisotropy;
 
 // Vec/matrix types, as raw float arrays
 typedef float(vec2)[2];
@@ -125,6 +125,7 @@ protected:
     bool GetMatVolume(const aiMaterial &mat, glTF2::MaterialVolume &volume);
     bool GetMatIOR(const aiMaterial &mat, glTF2::MaterialIOR &ior);
     bool GetMatEmissiveStrength(const aiMaterial &mat, glTF2::MaterialEmissiveStrength &emissiveStrength);
+    bool GetMatAnisotropy(const aiMaterial &mat, glTF2::MaterialAnisotropy &anisotropy);
     void ExportMetadata();
     void ExportMaterials();
     void ExportMeshes();
@@ -142,10 +143,9 @@ private:
     std::map<std::string, unsigned int> mTexturesByPath;
     std::shared_ptr<glTF2::Asset> mAsset;
     std::vector<unsigned char> mBodyData;
+    ai_real configEpsilon;
 };
 
 } // namespace Assimp
-
-#endif // ASSIMP_BUILD_NO_GLTF_IMPORTER
 
 #endif // AI_GLTF2EXPORTER_H_INC
