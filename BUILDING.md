@@ -3,7 +3,7 @@
 ## Windows
 
 * Install .NET 10
-* Install latest VS, ensure the **.NET Desktop Development** and **Desktop Development with C++** workloads are installed
+* Install latest Visual Studio, ensure the **.NET Desktop Development** and **Desktop Development with C++** workloads are installed
 * Install [CMake](https://cmake.org/)
 * Open command prompt in `/ThirdParty/` folder
 	* Run `dotnet run build_and_copy_all_third_party.cs`; takes 30mins to an hour
