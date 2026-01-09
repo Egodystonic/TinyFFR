@@ -37,20 +37,15 @@
 
 ## Updating Third-Party Dependencies
 
-* If you want to update the third-party dependencies, you'll need to set up the origin refs (one time only):
+Currently, I update third-party dependencies via the following steps:
 
-```
-git remote add tp_assimp https://github.com/assimp/assimp.git
-git remote add tp_sdl https://github.com/libsdl-org/SDL.git
-git remote add tp_filament https://github.com/google/filament.git
-```
-
-Then, you can update any third-party dependency like so at any point (replace `xyz` with `assimp` or `sdl` or `filament`) (replace `vtag` with actual tag, e.g. "v1.2.3"):
-
-```
-git fetch tp_xyz --tags
-git subtree pull --prefix=ThirdParty/xyz --squash tp_xyz vtag
-```
+* Clone the third-party repository in to a separate directory if you haven't already
+* Checkout the specific tag/ref in that repo that you want to incorporate in to TinyFFR
+* Create a new branch in TinyFFR (e.g. `git checkout -b update/assimp/v6.0.2` if you were updating to assimp v6.0.2) 
+* Delete everything from the appropriate TinyFFR subdirectory (e.g. `/ThirdParty/assimp` for assimp), and then copy over the updated code from the standalone cloned repo to this subdirectory
+* Commit everything with a useful message (e.g. "Update assimp to v6.0.2")
+* Checkout `main` again (or whichever TinyFFR branch you want to merge the update in to)
+* Merge the update branch (e.g. `git merge update/assimp/v6.0.2`) -- for simple updates this should be painless, but you will need to resolve merges where TinyFFR has modified the third-party code to keep TinyFFR's changes at the same time as updating
 
 # Repository Structure
 

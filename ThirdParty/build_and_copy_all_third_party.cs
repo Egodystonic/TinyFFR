@@ -41,14 +41,14 @@ if (OperatingSystem.IsLinux()) {
 //		Assimp
 if (OperatingSystem.IsMacOS()) {
 	commandLists[LibAssimp].AddRange(
-		$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} -DASSIMP_BUILD_ZLIB=OFF -DASSIMP_INSTALL=OFF -DASSIMP_BUILD_TESTS=OFF \"{RepoRootDirToken}/CMakeLists.txt\"",
+		$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} -DASSIMP_BUILD_ZLIB=OFF -DASSIMP_INSTALL=ON -DASSIMP_BUILD_TESTS=OFF \"{RepoRootDirToken}/CMakeLists.txt\"",
 		$"cmake --build . --config {ConfigurationToken}",
 		$"cmake --build . --target install --config {ConfigurationToken}"
 	);
 }
 else {
 	commandLists[LibAssimp].AddRange(
-		$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} -DASSIMP_INSTALL=OFF -DASSIMP_BUILD_TESTS=OFF \"{RepoRootDirToken}/CMakeLists.txt\"",
+		$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} -DASSIMP_INSTALL=ON -DASSIMP_BUILD_TESTS=OFF \"{RepoRootDirToken}/CMakeLists.txt\"",
 		$"cmake --build . --config {ConfigurationToken}",
 		$"cmake --build . --target install --config {ConfigurationToken}"
 	);
