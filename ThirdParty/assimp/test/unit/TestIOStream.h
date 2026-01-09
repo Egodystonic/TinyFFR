@@ -2,7 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2025, assimp team
+Copyright (c) 2006-2020, assimp team
 All rights reserved.
 
 Redistribution and use of this software in source and binary forms,
@@ -43,9 +43,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using namespace ::Assimp;
 
-class TestDefaultIOStream final : public DefaultIOStream {
+class TestDefaultIOStream : public DefaultIOStream {
 public:
-    TestDefaultIOStream() = default;
-    TestDefaultIOStream(FILE* pFile, const std::string &strFilename) : DefaultIOStream(pFile, strFilename) {}
-    ~TestDefaultIOStream() override = default;
+    TestDefaultIOStream()
+        : DefaultIOStream() {
+        // empty
+    }
+
+    TestDefaultIOStream( FILE* pFile, const std::string &strFilename )
+    : DefaultIOStream( pFile, strFilename ) {
+        // empty
+    }
+
+    virtual ~TestDefaultIOStream() {
+        // empty
+    }
 };
+

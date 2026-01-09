@@ -56,46 +56,45 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <map>
 
-namespace Assimp::Profiling {
+namespace Assimp {
+namespace Profiling {
 
 using namespace Formatter;
 
 // ------------------------------------------------------------------------------------------------
-/// @brief Simple wrapper around boost::timer to simplify reporting. 
-///
-/// Timings are automatically dumped to the log file.
+/** Simple wrapper around boost::timer to simplify reporting. Timings are automatically
+ *  dumped to the log file.
+ */
 class Profiler {
 public:
-    /// @brief The class constructor.
     Profiler() = default;
 
-    /// @brief The class destructor.
-    ~Profiler() = default;
 
-    /// @brief Starts a named timer.
-    /// @param region    The profiling region name.
+    /** Start a named timer */
     void BeginRegion(const std::string& region) {
-        mRegions[region] = std::chrono::system_clock::now();
+        regions[region] = std::chrono::system_clock::now();
         ASSIMP_LOG_DEBUG("START `",region,"`");
     }
 
-    /// @brief End a specific named timer and write its end time to the log.
-    /// @param region    The profiling region name.
+
+    /** End a specific named timer and write its end time to the log */
     void EndRegion(const std::string& region) {
-        if (auto it = mRegions.find(region); it == mRegions.end()) {
+        RegionMap::const_iterator it = regions.find(region);
+        if (it == regions.end()) {
             return;
         }
 
-        auto elapsedSeconds = std::chrono::system_clock::now() - mRegions[region];
+        std::chrono::duration<double> elapsedSeconds = std::chrono::system_clock::now() - regions[region];
         ASSIMP_LOG_DEBUG("END   `",region,"`, dt= ", elapsedSeconds.count()," s");
     }
 
 private:
-    using RegionMap = std::map<std::string,std::chrono::time_point<std::chrono::system_clock>>;
-    RegionMap mRegions{};
+    typedef std::map<std::string,std::chrono::time_point<std::chrono::system_clock>> RegionMap;
+    RegionMap regions;
 };
 
-} // namespace Assimp::Profiling
+}
+}
 
 #endif // AI_INCLUDED_PROFILER_H
 

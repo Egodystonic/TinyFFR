@@ -57,13 +57,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // ASE is quite similar to 3ds. We can reuse some structures
 #include "AssetLib/3DS/3DSLoader.h"
 
-namespace Assimp::ASE {
+namespace Assimp {
+namespace ASE {
 
 using namespace D3DS;
 
 // ---------------------------------------------------------------------------
 /** Helper structure representing an ASE material */
-struct Material final : D3DS::Material {
+struct Material : public D3DS::Material {
     //! Default constructor has been deleted
     Material() = delete;
 
@@ -114,7 +115,7 @@ struct Material final : D3DS::Material {
         return *this;
     }
 
-    ~Material() override = default;
+    ~Material() = default;
 
     //! Contains all sub materials of this material
     std::vector<Material> avSubMaterials;
@@ -372,8 +373,8 @@ struct Dummy : public BaseNode {
 };
 
 // Parameters to Parser::Parse()
-static constexpr unsigned int AI_ASE_NEW_FILE_FORMAT = 200;
-static constexpr unsigned int AI_ASE_OLD_FILE_FORMAT = 110;
+#define AI_ASE_NEW_FILE_FORMAT 200
+#define AI_ASE_OLD_FILE_FORMAT 110
 
 // Internally we're a little bit more tolerant
 #define AI_ASE_IS_NEW_FILE_FORMAT() (iFileFormat >= 200)
@@ -667,7 +668,8 @@ public:
     unsigned int iFileFormat;
 };
 
-} // Namespace Assimp::ASE
+} // Namespace ASE
+} // namespace Assimp
 
 #endif // ASSIMP_BUILD_NO_3DS_IMPORTER
 

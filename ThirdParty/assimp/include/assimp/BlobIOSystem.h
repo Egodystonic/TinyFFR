@@ -64,7 +64,7 @@ class BlobIOSystem;
 // --------------------------------------------------------------------------------------------
 /** Redirect IOStream to a blob */
 // --------------------------------------------------------------------------------------------
-class BlobIOStream final : public IOStream {
+class BlobIOStream : public IOStream {
 public:
     /// @brief The class constructor with all needed parameters
     /// @param creator  Pointer to the creator instance
@@ -84,6 +84,7 @@ public:
     ///	@brief  The class destructor.
     ~BlobIOStream() override;
 
+public:
     // -------------------------------------------------------------------
     aiExportDataBlob *GetBlob() {
         aiExportDataBlob *blob = new aiExportDataBlob();
@@ -192,10 +193,11 @@ private:
 // --------------------------------------------------------------------------------------------
 /** Redirect IOSystem to a blob */
 // --------------------------------------------------------------------------------------------
-class BlobIOSystem final : public IOSystem {
+class BlobIOSystem : public IOSystem {
 
     friend class BlobIOStream;
-    using BlobEntry = std::pair<std::string, aiExportDataBlob *>;
+    typedef std::pair<std::string, aiExportDataBlob *> BlobEntry;
+
 
 public:
     /// @brief The default class constructor.
@@ -228,7 +230,7 @@ public:
         const bool hasBaseName = baseName != AI_BLOBIO_MAGIC;
 
         // one must be the master
-        aiExportDataBlob *master = nullptr;
+        aiExportDataBlob *master = nullptr, *cur;
 
         for (const BlobEntry &blobby : blobs) {
             if (blobby.first == magicName) {
@@ -243,7 +245,7 @@ public:
             return nullptr;
         }
 
-        aiExportDataBlob *cur = master;
+        cur = master;
 
         for (const BlobEntry &blobby : blobs) {
             if (blobby.second == master) {

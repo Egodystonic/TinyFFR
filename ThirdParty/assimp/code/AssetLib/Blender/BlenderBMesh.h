@@ -63,12 +63,14 @@ namespace Assimp
         struct MLoop;
     }
 
-    class BlenderBMeshConverter final : public LogFunctions< BlenderBMeshConverter >
+    class BlenderBMeshConverter: public LogFunctions< BlenderBMeshConverter >
     {
     public:
-        explicit BlenderBMeshConverter( const Blender::Mesh* mesh );
-        ~BlenderBMeshConverter();
-        bool ContainsBMesh() const;
+        BlenderBMeshConverter( const Blender::Mesh* mesh );
+        ~BlenderBMeshConverter( );
+
+        bool ContainsBMesh( ) const;
+
         const Blender::Mesh* TriangulateBMesh( );
 
     private:

@@ -68,11 +68,11 @@ public:
 
     //! Represents data that is allocated on the heap, thus needs to be deleted
     template <typename T>
-    struct THeapData final : Base {
+    struct THeapData : public Base {
         explicit THeapData(T *in) :
                 data(in) {}
 
-        ~THeapData() override {
+        ~THeapData() {
             delete data;
         }
         T *data;
@@ -80,11 +80,11 @@ public:
 
     //! Represents static, by-value data not allocated on the heap
     template <typename T>
-    struct TStaticData final : Base {
+    struct TStaticData : public Base {
         explicit TStaticData(T in) :
                 data(in) {}
 
-        ~TStaticData() override= default;
+        ~TStaticData() = default;
 
         T data;
     };

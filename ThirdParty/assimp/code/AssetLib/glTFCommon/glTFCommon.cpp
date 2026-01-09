@@ -38,11 +38,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ----------------------------------------------------------------------
 */
+#ifndef ASSIMP_BUILD_NO_GLTF_IMPORTER
+
 #include "AssetLib/glTFCommon/glTFCommon.h"
+
+namespace glTFCommon {
 
 using namespace glTFCommon::Util;
 
-namespace glTFCommon::Util {
+namespace Util {
 
 bool ParseDataURI(const char *const_uri, size_t uriLen, DataURI &out) {
     if (nullptr == const_uri) {
@@ -107,4 +111,7 @@ bool ParseDataURI(const char *const_uri, size_t uriLen, DataURI &out) {
     return true;
 }
 
-} // namespace glTFCommon::Uti
+} // namespace Util
+} // namespace glTFCommon
+
+#endif

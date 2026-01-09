@@ -54,7 +54,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assimp/qnan.h>
 #include <cstdio> //sprintf
 
-namespace Assimp::D3DS {
+namespace Assimp {
+namespace D3DS {
 
 #include <assimp/Compiler/pushpack1.h>
 
@@ -578,6 +579,7 @@ struct Scene {
     // Node* pcRootNode;
 };
 
-} // end of namespace Assimp::D3DS
+} // end of namespace D3DS
+} // end of namespace Assimp
 
 #endif // AI_XFILEHELPER_H_INC

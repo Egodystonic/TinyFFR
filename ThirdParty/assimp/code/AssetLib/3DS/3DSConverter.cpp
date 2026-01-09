@@ -56,27 +56,23 @@ namespace Assimp {
 
 static constexpr unsigned int NotSet = 0xcdcdcdcd;
 
-using namespace D3DS;
-
 // ------------------------------------------------------------------------------------------------
-// Setup final material indices, generate a default material if necessary
+// Setup final material indices, generae a default material if necessary
 void Discreet3DSImporter::ReplaceDefaultMaterial() {
     // Try to find an existing material that matches the
     // typical default material setting:
     // - no textures
     // - diffuse color (in grey!)
-    // NOTE: This is here to work-around the fact that some
+    // NOTE: This is here to workaround the fact that some
     // exporters are writing a default material, too.
     unsigned int idx(NotSet);
     for (unsigned int i = 0; i < mScene->mMaterials.size(); ++i) {
-        auto s = mScene->mMaterials[i].mName;
+        std::string s = mScene->mMaterials[i].mName;
         for (char &it : s) {
             it = static_cast<char>(::tolower(static_cast<unsigned char>(it)));
         }
 
-        if (std::string::npos == s.find("default")) {
-            continue;
-        }
+        if (std::string::npos == s.find("default")) continue;
 
         if (mScene->mMaterials[i].mDiffuse.r !=
                         mScene->mMaterials[i].mDiffuse.g ||
@@ -89,22 +85,22 @@ void Discreet3DSImporter::ReplaceDefaultMaterial() {
         idx = i;
     }
     if (NotSet == idx) {
-        idx = static_cast<unsigned int>(mScene->mMaterials.size());
+        idx = (unsigned int)mScene->mMaterials.size();
     }
 
     // now iterate through all meshes and through all faces and
     // find all faces that are using the default material
     unsigned int cnt = 0;
     for (auto i = mScene->mMeshes.begin(); i != mScene->mMeshes.end(); ++i) {
-        for (auto a = i->mFaceMaterials.begin(); a != i->mFaceMaterials.end(); ++a) {
+        for (auto a = (*i).mFaceMaterials.begin(); a != (*i).mFaceMaterials.end(); ++a) {
             // NOTE: The additional check seems to be necessary,
             // some exporters seem to generate invalid data here
 
-            if (NotSet == *a) {
-                *a = idx;
+            if (NotSet == (*a)) {
+                (*a) = idx;
                 ++cnt;
             } else if ((*a) >= mScene->mMaterials.size()) {
-                *a = idx;
+                (*a) = idx;
                 ASSIMP_LOG_WARN("Material index overflow in 3DS file. Using default material");
                 ++cnt;
             }
@@ -178,7 +174,7 @@ void CopyTexture(aiMaterial &mat, Texture &texture, aiTextureType type) {
         mat.AddProperty<ai_real>(&texture.mTextureBlend, 1, AI_MATKEY_TEXBLEND(type, 0));
 
     // Setup the texture mapping mode
-    auto mapMode = static_cast<int>(texture.mMapMode);
+    int mapMode = static_cast<int>(texture.mMapMode);
     mat.AddProperty<int>(&mapMode, 1, AI_MATKEY_MAPPINGMODE_U(type, 0));
     mat.AddProperty<int>(&mapMode, 1, AI_MATKEY_MAPPINGMODE_V(type, 0));
 
@@ -330,11 +326,10 @@ void Discreet3DSImporter::ConvertMeshes(aiScene *pcOut) {
     aiString name;
 
     // we need to split all meshes by their materials
-    for (auto i = mScene->mMeshes.begin(); i != mScene->mMeshes.end(); ++i) {
+    for (std::vector<D3DS::Mesh>::iterator i = mScene->mMeshes.begin(); i != mScene->mMeshes.end(); ++i) {
         std::unique_ptr<std::vector<unsigned int>[]> aiSplit(new std::vector<unsigned int>[mScene->mMaterials.size()]);
 
-        name.length = ASSIMP_itoa10(name.data, num);
-        ++num;
+        name.length = ASSIMP_itoa10(name.data, num++);
 
         unsigned int iNum = 0;
         for (std::vector<unsigned int>::const_iterator a = (*i).mFaceMaterials.begin();
@@ -346,7 +341,7 @@ void Discreet3DSImporter::ConvertMeshes(aiScene *pcOut) {
             if (aiSplit[p].empty()) {
                 continue;
             }
-            auto *meshOut = new aiMesh();
+            aiMesh *meshOut = new aiMesh();
             meshOut->mName = name;
             meshOut->mPrimitiveTypes = aiPrimitiveType_TRIANGLE;
 
@@ -358,7 +353,7 @@ void Discreet3DSImporter::ConvertMeshes(aiScene *pcOut) {
             avOutMeshes.push_back(meshOut);
 
             // convert vertices
-            meshOut->mNumFaces = static_cast<unsigned int>(aiSplit[p].size());
+            meshOut->mNumFaces = (unsigned int)aiSplit[p].size();
             meshOut->mNumVertices = meshOut->mNumFaces * 3;
 
             // allocate enough storage for faces
@@ -406,7 +401,8 @@ void Discreet3DSImporter::ConvertMeshes(aiScene *pcOut) {
 
 // ------------------------------------------------------------------------------------------------
 // Add a node to the scenegraph and setup its final transformation
-void Discreet3DSImporter::AddNodeToGraph(aiScene *pcSOut, aiNode *pcOut, D3DS::Node *pcIn, aiMatrix4x4 & /*absTrafo*/) {
+void Discreet3DSImporter::AddNodeToGraph(aiScene *pcSOut, aiNode *pcOut,
+        D3DS::Node *pcIn, aiMatrix4x4 & /*absTrafo*/) {
     std::vector<unsigned int> iArray;
     iArray.reserve(3);
 
@@ -414,7 +410,7 @@ void Discreet3DSImporter::AddNodeToGraph(aiScene *pcSOut, aiNode *pcOut, D3DS::N
 
     // Find all meshes with the same name as the node
     for (unsigned int a = 0; a < pcSOut->mNumMeshes; ++a) {
-        const auto *pcMesh = (const D3DS::Mesh *)pcSOut->mMeshes[a]->mColors[0];
+        const D3DS::Mesh *pcMesh = (const D3DS::Mesh *)pcSOut->mMeshes[a]->mColors[0];
         ai_assert(nullptr != pcMesh);
 
         if (pcIn->mName == pcMesh->mName)
@@ -423,7 +419,7 @@ void Discreet3DSImporter::AddNodeToGraph(aiScene *pcSOut, aiNode *pcOut, D3DS::N
     if (!iArray.empty()) {
         // The matrix should be identical for all meshes with the
         // same name. It HAS to be identical for all meshes .....
-        auto *imesh = ((D3DS::Mesh *)pcSOut->mMeshes[iArray[0]]->mColors[0]);
+        D3DS::Mesh *imesh = ((D3DS::Mesh *)pcSOut->mMeshes[iArray[0]]->mColors[0]);
 
         // Compute the inverse of the transformation matrix to move the
         // vertices back to their relative and local space
@@ -432,7 +428,7 @@ void Discreet3DSImporter::AddNodeToGraph(aiScene *pcSOut, aiNode *pcOut, D3DS::N
         mInvTransposed.Transpose();
         aiVector3D pivot = pcIn->vPivot;
 
-        pcOut->mNumMeshes = static_cast<unsigned int>(iArray.size());
+        pcOut->mNumMeshes = (unsigned int)iArray.size();
         pcOut->mMeshes = new unsigned int[iArray.size()];
         for (unsigned int i = 0; i < iArray.size(); ++i) {
             const unsigned int iIndex = iArray[i];
@@ -451,7 +447,7 @@ void Discreet3DSImporter::AddNodeToGraph(aiScene *pcSOut, aiNode *pcOut, D3DS::N
 
                 // Handle negative transformation matrix determinant -> invert vertex x
                 if (imesh->mMat.Determinant() < 0.0f) {
-                    // we *must* have normals
+                    /* we *must* have normals */
                     for (pvCurrent = mesh->mVertices, t2 = mesh->mNormals; pvCurrent != pvEnd; ++pvCurrent, ++t2) {
                         pvCurrent->x *= -1.f;
                         t2->x *= -1.f;
@@ -478,7 +474,7 @@ void Discreet3DSImporter::AddNodeToGraph(aiScene *pcSOut, aiNode *pcOut, D3DS::N
     // Setup the name of the node
     // First instance keeps its name otherwise something might break, all others will be postfixed with their instance number
     if (pcIn->mInstanceNumber > 1) {
-        char tmp[12] = {'\0'};
+        char tmp[12];
         ASSIMP_itoa10(tmp, pcIn->mInstanceNumber);
         std::string tempStr = pcIn->mName + "_inst_";
         tempStr += tmp;
@@ -491,7 +487,7 @@ void Discreet3DSImporter::AddNodeToGraph(aiScene *pcSOut, aiNode *pcOut, D3DS::N
     if (pcIn->aRotationKeys.size()) {
 
         // FIX to get to Assimp's quaternion conventions
-        for (auto it = pcIn->aRotationKeys.begin(); it != pcIn->aRotationKeys.end(); ++it) {
+        for (std::vector<aiQuatKey>::iterator it = pcIn->aRotationKeys.begin(); it != pcIn->aRotationKeys.end(); ++it) {
             (*it).mValue.w *= -1.f;
         }
 
@@ -603,11 +599,11 @@ void Discreet3DSImporter::AddNodeToGraph(aiScene *pcSOut, aiNode *pcOut, D3DS::N
         }
 
         // Allocate a new node anim and setup its name
-        auto *nda = anim->mChannels[anim->mNumChannels++] = new aiNodeAnim();
+        aiNodeAnim *nda = anim->mChannels[anim->mNumChannels++] = new aiNodeAnim();
         nda->mNodeName.Set(pcIn->mName);
 
         // POSITION keys
-        if (!pcIn->aPositionKeys.empty()) {
+        if (pcIn->aPositionKeys.size() > 0) {
             nda->mNumPositionKeys = (unsigned int)pcIn->aPositionKeys.size();
             nda->mPositionKeys = new aiVectorKey[nda->mNumPositionKeys];
             ::memcpy(nda->mPositionKeys, &pcIn->aPositionKeys[0],
@@ -615,7 +611,7 @@ void Discreet3DSImporter::AddNodeToGraph(aiScene *pcSOut, aiNode *pcOut, D3DS::N
         }
 
         // ROTATION keys
-        if (!pcIn->aRotationKeys.empty()) {
+        if (pcIn->aRotationKeys.size() > 0) {
             nda->mNumRotationKeys = (unsigned int)pcIn->aRotationKeys.size();
             nda->mRotationKeys = new aiQuatKey[nda->mNumRotationKeys];
 
@@ -631,7 +627,7 @@ void Discreet3DSImporter::AddNodeToGraph(aiScene *pcSOut, aiNode *pcOut, D3DS::N
         }
 
         // SCALING keys
-        if (!pcIn->aScalingKeys.empty()) {
+        if (pcIn->aScalingKeys.size() > 0) {
             nda->mNumScalingKeys = (unsigned int)pcIn->aScalingKeys.size();
             nda->mScalingKeys = new aiVectorKey[nda->mNumScalingKeys];
             ::memcpy(nda->mScalingKeys, &pcIn->aScalingKeys[0],
@@ -640,7 +636,7 @@ void Discreet3DSImporter::AddNodeToGraph(aiScene *pcSOut, aiNode *pcOut, D3DS::N
     }
 
     // Allocate storage for children
-    const auto size = static_cast<unsigned int>(pcIn->mChildren.size());
+    const unsigned int size = static_cast<unsigned int>(pcIn->mChildren.size());
 
     pcOut->mNumChildren = size;
     if (size == 0) {
@@ -683,7 +679,7 @@ void CountTracks(D3DS::Node *node, unsigned int &cnt) {
 // Generate the output node graph
 void Discreet3DSImporter::GenerateNodeGraph(aiScene *pcOut) {
     pcOut->mRootNode = new aiNode();
-    if (mRootNode->mChildren.empty()) {
+    if (0 == mRootNode->mChildren.size()) {
         //////////////////////////////////////////////////////////////////////////////
         // It seems the file is so messed up that it has not even a hierarchy.
         // generate a flat hiearachy which looks like this:
@@ -705,8 +701,7 @@ void Discreet3DSImporter::GenerateNodeGraph(aiScene *pcOut) {
         // Build dummy nodes for all meshes
         unsigned int a = 0;
         for (unsigned int i = 0; i < pcOut->mNumMeshes; ++i, ++a) {
-            pcOut->mRootNode->mChildren[a] = new aiNode();  
-            auto *pcNode = pcOut->mRootNode->mChildren[a];
+            aiNode *pcNode = pcOut->mRootNode->mChildren[a] = new aiNode();
             pcNode->mParent = pcOut->mRootNode;
             pcNode->mMeshes = new unsigned int[1];
             pcNode->mMeshes[0] = i;
@@ -718,7 +713,7 @@ void Discreet3DSImporter::GenerateNodeGraph(aiScene *pcOut) {
 
         // Build dummy nodes for all cameras
         for (unsigned int i = 0; i < (unsigned int)mScene->mCameras.size(); ++i, ++a) {
-            auto *pcNode = pcOut->mRootNode->mChildren[a] = new aiNode();
+            aiNode *pcNode = pcOut->mRootNode->mChildren[a] = new aiNode();
             pcNode->mParent = pcOut->mRootNode;
 
             // Build a name for the node
@@ -727,7 +722,7 @@ void Discreet3DSImporter::GenerateNodeGraph(aiScene *pcOut) {
 
         // Build dummy nodes for all lights
         for (unsigned int i = 0; i < (unsigned int)mScene->mLights.size(); ++i, ++a) {
-            auto *pcNode = pcOut->mRootNode->mChildren[a] = new aiNode();
+            aiNode *pcNode = pcOut->mRootNode->mChildren[a] = new aiNode();
             pcNode->mParent = pcOut->mRootNode;
 
             // Build a name for the node
@@ -743,7 +738,7 @@ void Discreet3DSImporter::GenerateNodeGraph(aiScene *pcOut) {
             // Allocate a primary animation channel
             pcOut->mNumAnimations = 1;
             pcOut->mAnimations = new aiAnimation *[1];
-            auto *anim = pcOut->mAnimations[0] = new aiAnimation();
+            aiAnimation *anim = pcOut->mAnimations[0] = new aiAnimation();
 
             anim->mName.Set("3DSMasterAnim");
 
@@ -786,7 +781,7 @@ void Discreet3DSImporter::ConvertScene(aiScene *pcOut) {
 
     //  ... and convert the 3DS materials to aiMaterial's
     for (unsigned int i = 0; i < pcOut->mNumMaterials; ++i) {
-        auto *pcNew = new aiMaterial();
+        aiMaterial *pcNew = new aiMaterial();
         ConvertMaterial(mScene->mMaterials[i], *pcNew);
         pcOut->mMaterials[i] = pcNew;
     }

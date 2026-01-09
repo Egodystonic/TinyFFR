@@ -334,8 +334,8 @@ bool DefaultLogger::attachStream(LogStream *pStream, unsigned int severity) {
         }
     }
 
-    m_StreamArray.push_back(new LogStreamInfo(severity, pStream));
-
+    LogStreamInfo *pInfo = new LogStreamInfo(severity, pStream);
+    m_StreamArray.push_back(pInfo);
     return true;
 }
 

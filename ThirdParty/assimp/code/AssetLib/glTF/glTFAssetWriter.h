@@ -49,7 +49,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GLTFASSETWRITER_H_INC
 #define GLTFASSETWRITER_H_INC
 
-//#if !defined(ASSIMP_BUILD_NO_GLTF_IMPORTER) && !defined(ASSIMP_BUILD_NO_GLTF1_IMPORTER)
+#if !defined(ASSIMP_BUILD_NO_GLTF_IMPORTER) && !defined(ASSIMP_BUILD_NO_GLTF1_IMPORTER)
 
 #include "glTFAsset.h"
 
@@ -63,19 +63,8 @@ class AssetWriter
     template<class T>
     friend void WriteLazyDict(LazyDict<T>& d, AssetWriter& w);
 
-public:
-    Document mDoc;
-    Asset& mAsset;
-
-    MemoryPoolAllocator<>& mAl;
-
-    AssetWriter(Asset& asset);
-    ~AssetWriter() = default;
-
-    void WriteFile(const char* path);
-    void WriteGLBFile(const char* path);
-
 private:
+
     void WriteBinaryData(IOStream* outfile, size_t sceneLength);
 
     void WriteMetadata();
@@ -83,6 +72,17 @@ private:
 
     template<class T>
     void WriteObjects(LazyDict<T>& d);
+
+public:
+    Document mDoc;
+    Asset& mAsset;
+
+    MemoryPoolAllocator<>& mAl;
+
+    AssetWriter(Asset& asset);
+
+    void WriteFile(const char* path);
+    void WriteGLBFile(const char* path);
 };
 
 }
@@ -90,6 +90,6 @@ private:
 // Include the implementation of the methods
 #include "glTFAssetWriter.inl"
 
-//#endif // ASSIMP_BUILD_NO_GLTF_IMPORTER
+#endif // ASSIMP_BUILD_NO_GLTF_IMPORTER
 
 #endif // GLTFASSETWRITER_H_INC

@@ -78,30 +78,25 @@ for(LineSplitter splitter(stream);splitter;++splitter) {
 // ------------------------------------------------------------------------------------------------
 class LineSplitter {
 public:
-    /// The current line index in the data block.
-    using line_idx = size_t;
+    typedef size_t line_idx;
 
     // -----------------------------------------
-    /// @brief The class constructor.
-    /// @note  trim is *always* assumed true if skyp_empty_lines==true
+    /** construct from existing stream reader
+    note: trim is *always* assumed true if skyp_empty_lines==true
+    */
     LineSplitter(StreamReaderLE& stream, bool skip_empty_lines = true, bool trim = true);
 
-    // -----------------------------------------    
-    /// @brief The class destructor.
     ~LineSplitter() = default;
 
     // -----------------------------------------
-    /// @brief pseudo-iterator increment
+    /** pseudo-iterator increment */
     LineSplitter& operator++();
 
     // -----------------------------------------
-    /// @brief pseudo-iterator increment
     LineSplitter& operator++(int);
 
     // -----------------------------------------
-    /// @brief  Get a pointer to the beginning of a particular token.
-    /// @param  idx     The index into the token.
-    /// @return The token.
+    /** get a pointer to the beginning of a particular token */
     const char* operator[] (size_t idx) const;
 
     // -----------------------------------------
@@ -110,41 +105,33 @@ public:
     void get_tokens(const char* (&tokens)[N]) const;
 
     // -----------------------------------------
-    /// member access via -> operator.
+    /** member access */
     const std::string* operator -> () const;
 
-    // -----------------------------------------
-    /// member access via * operator.
     std::string operator* () const;
-    
-    /// @brief  Will return the end marker, end of the buffer plus one.
-    /// @return The end pointer marker.
+
     const char *getEnd() const;
 
     // -----------------------------------------
-    /// boolean context.
+    /** boolean context */
     operator bool() const;
 
     // -----------------------------------------
-    /// line indices are zero-based, empty lines are included
+    /** line indices are zero-based, empty lines are included */
     operator line_idx() const;
 
-    /// @brief  Will return the current index.
-    /// @return The current index.
     line_idx get_index() const;
 
     // -----------------------------------------
-    /// @brief Access the underlying stream object.
-    /// @return Reference to the stream reader.
+    /** access the underlying stream object */
     StreamReaderLE& get_stream();
 
     // -----------------------------------------
-    /// !strcmp((*this)->substr(0,strlen(check)),check)
-    /// @return true if token matches.
+    /** !strcmp((*this)->substr(0,strlen(check)),check) */
     bool match_start(const char* check);
 
     // -----------------------------------------
-    /// @brief Swallow the next call to ++, return the previous value.
+    /** swallow the next call to ++, return the previous value. */
     void swallow_next_increment();
 
     LineSplitter( const LineSplitter & ) = delete;
@@ -152,17 +139,19 @@ public:
     LineSplitter &operator = ( const LineSplitter & ) = delete;
 
 private:
-    line_idx mIdx{0};
-    std::string mCur{};
-    const char *mEnd{nullptr};
-    StreamReaderLE &mStream;
-    bool mSwallow{false};
-    bool mSkip_empty_lines{ false };
-    bool mTrim{ false };
+    line_idx mIdx;
+    std::string mCur;
+    const char *mEnd;
+    StreamReaderLE& mStream;
+    bool mSwallow, mSkip_empty_lines, mTrim;
 };
 
 AI_FORCE_INLINE LineSplitter::LineSplitter(StreamReaderLE& stream, bool skip_empty_lines, bool trim ) :
+        mIdx(0),
+        mCur(),
+        mEnd(nullptr),
         mStream(stream),
+        mSwallow(),
         mSkip_empty_lines(skip_empty_lines),
         mTrim(trim) {
     mCur.reserve(1024);

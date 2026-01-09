@@ -49,7 +49,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 struct aiMaterial;
 struct aiMesh;
 
-namespace Assimp:: D3MF {
+namespace Assimp {
+namespace D3MF {
 
 enum class ResourceType {
     RT_Object,
@@ -64,7 +65,8 @@ class Resource {
 public:
     int mId;
 
-    explicit Resource(int id) : mId(id) {
+    Resource(int id) :
+            mId(id) {
         // empty
     }
 
@@ -75,7 +77,7 @@ public:
     }
 };
 
-class EmbeddedTexture final : public Resource {
+class EmbeddedTexture : public Resource {
 public:
     std::string mPath;
     std::string mContentType;
@@ -83,7 +85,12 @@ public:
     std::string mTilestyleV;
     std::vector<char> mBuffer;
 
-    explicit EmbeddedTexture(int id) : Resource(id) {
+    EmbeddedTexture(int id) :
+            Resource(id),
+            mPath(),
+            mContentType(),
+            mTilestyleU(),
+            mTilestyleV() {
         // empty
     }
 
@@ -94,12 +101,13 @@ public:
     }
 };
 
-class Texture2DGroup final : public Resource {
+class Texture2DGroup : public Resource {
 public:
     std::vector<aiVector2D> mTex2dCoords;
     int mTexId;
-
-    explicit Texture2DGroup(int id) : Resource(id), mTexId(-1) {
+    Texture2DGroup(int id) :
+            Resource(id),
+            mTexId(-1) {
         // empty
     }
 
@@ -110,11 +118,11 @@ public:
     }
 };
 
-class ColorGroup final : public Resource {
+class ColorGroup : public Resource {
 public:
     std::vector<aiColor4D> mColors;
-
-    explicit ColorGroup(int id) : Resource(id) {
+    ColorGroup(int id) :
+            Resource(id){
         // empty
     }
 
@@ -125,11 +133,13 @@ public:
     }
 };
 
-class BaseMaterials final : public Resource {
+class BaseMaterials : public Resource {
 public:
     std::vector<unsigned int> mMaterialIndex;
 
-    explicit BaseMaterials(int id) : Resource(id) {
+    BaseMaterials(int id) :
+            Resource(id),
+            mMaterialIndex() {
         // empty
     }
 
@@ -145,14 +155,14 @@ struct Component {
     aiMatrix4x4 mTransformation;
 };
 
-class Object final : public Resource {
+class Object : public Resource {
 public:
     std::vector<aiMesh *> mMeshes;
     std::vector<unsigned int> mMeshIndex;
     std::vector<Component> mComponents;
     std::string mName;
 
-    explicit Object(int id) :
+    Object(int id) :
             Resource(id),
             mName(std::string("Object_") + ai_to_string(id)) {
         // empty
@@ -165,4 +175,5 @@ public:
     }
 };
 
-} // namespace Assimp::D3MF
+} // namespace D3MF
+} // namespace Assimp

@@ -50,7 +50,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <cstring>
 
-namespace Assimp::FBX::Util {
+#ifndef ASSIMP_BUILD_NO_FBX_IMPORTER
+
+namespace Assimp {
+namespace FBX {
+namespace Util {
 
 // ------------------------------------------------------------------------------------------------
 const char* TokenTypeString(TokenType t)
@@ -229,5 +233,8 @@ std::string EncodeBase64(const char* data, size_t length)
     return encoded_string;
 }
 
-} // namespace Assimp::FBX::Util
+} // !Util
+} // !FBX
+} // !Assimp
 
+#endif

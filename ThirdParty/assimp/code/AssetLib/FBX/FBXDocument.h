@@ -174,7 +174,7 @@ class NodeAttribute : public Object {
 public:
     NodeAttribute(uint64_t id, const Element& element, const Document& doc, const std::string& name);
 
-    ~NodeAttribute() override = default;
+    virtual ~NodeAttribute() = default;
 
     const PropertyTable& Props() const {
         ai_assert(props.get());
@@ -186,11 +186,11 @@ private:
 };
 
 /** DOM base class for FBX camera settings attached to a node */
-class CameraSwitcher final : public NodeAttribute {
+class CameraSwitcher : public NodeAttribute {
 public:
     CameraSwitcher(uint64_t id, const Element& element, const Document& doc, const std::string& name);
 
-    ~CameraSwitcher() override= default;
+    virtual ~CameraSwitcher() = default;
 
     int CameraID() const {
         return cameraId;
@@ -231,11 +231,11 @@ private:
 
 
 /** DOM base class for FBX cameras attached to a node */
-class Camera final : public NodeAttribute {
+class Camera : public NodeAttribute {
 public:
     Camera(uint64_t id, const Element& element, const Document& doc, const std::string& name);
 
-    ~Camera() override = default;
+    virtual  ~Camera() = default;
 
     fbx_simple_property(Position, aiVector3D, aiVector3D(0,0,0))
     fbx_simple_property(UpVector, aiVector3D, aiVector3D(0,1,0))
@@ -257,24 +257,24 @@ public:
 };
 
 /** DOM base class for FBX null markers attached to a node */
-class Null final : public NodeAttribute {
+class Null : public NodeAttribute {
 public:
     Null(uint64_t id, const Element& element, const Document& doc, const std::string& name);
-    ~Null() override = default;
+    virtual ~Null() = default;
 };
 
 /** DOM base class for FBX limb node markers attached to a node */
-class LimbNode final : public NodeAttribute {
+class LimbNode : public NodeAttribute {
 public:
     LimbNode(uint64_t id, const Element& element, const Document& doc, const std::string& name);
-    ~LimbNode() override = default;
+    virtual ~LimbNode() = default;
 };
 
 /** DOM base class for FBX lights attached to a node */
-class Light final : public NodeAttribute {
+class Light : public NodeAttribute {
 public:
     Light(uint64_t id, const Element& element, const Document& doc, const std::string& name);
-    ~Light() override = default;
+    virtual ~Light() = default;
 
     enum Type {
         Type_Point,
@@ -329,7 +329,7 @@ public:
 };
 
 /** DOM base class for FBX models (even though its semantics are more "node" than "model" */
-class Model final : public Object {
+class Model : public Object {
 public:
     enum RotOrder {
         RotOrder_EulerXYZ = 0,
@@ -354,7 +354,7 @@ public:
 
     Model(uint64_t id, const Element& element, const Document& doc, const std::string& name);
 
-    ~Model() override = default;
+    virtual ~Model() = default;
 
     fbx_simple_property(QuaternionInterpolate, int, 0)
 
@@ -477,11 +477,11 @@ private:
 };
 
 /** DOM class for generic FBX textures */
-class Texture final : public Object {
+class Texture : public Object {
 public:
     Texture(uint64_t id, const Element& element, const Document& doc, const std::string& name);
 
-    ~Texture() override;
+    virtual ~Texture();
 
     const std::string& Type() const {
         return type;
@@ -542,10 +542,10 @@ private:
 };
 
 /** DOM class for layered FBX textures */
-class LayeredTexture final : public Object {
+class LayeredTexture : public Object {
 public:
     LayeredTexture(uint64_t id, const Element& element, const Document& doc, const std::string& name);
-    ~LayeredTexture() override;
+    virtual ~LayeredTexture();
 
     // Can only be called after construction of the layered texture object due to construction flag.
     void fillTexture(const Document& doc);
@@ -608,11 +608,11 @@ using TextureMap = std::fbx_unordered_map<std::string, const Texture*>;
 using LayeredTextureMap = std::fbx_unordered_map<std::string, const LayeredTexture*>;
 
 /** DOM class for generic FBX videos */
-class Video final : public Object {
+class Video : public Object {
 public:
     Video(uint64_t id, const Element& element, const Document& doc, const std::string& name);
 
-    ~Video() override;
+    virtual ~Video();
 
     const std::string& Type() const {
         return type;
@@ -697,10 +697,10 @@ using KeyTimeList = std::vector<int64_t>;
 using KeyValueList = std::vector<float>;
 
 /** Represents a FBX animation curve (i.e. a 1-dimensional set of keyframes and values therefore) */
-class AnimationCurve final : public Object {
+class AnimationCurve : public Object {
 public:
     AnimationCurve(uint64_t id, const Element& element, const std::string& name, const Document& doc);
-    ~AnimationCurve() override = default;
+    virtual ~AnimationCurve() = default;
 
     /** get list of keyframe positions (time).
      *  Invariant: |GetKeys()| > 0 */
@@ -733,7 +733,7 @@ private:
 using AnimationCurveMap = std::map<std::string, const AnimationCurve*>;
 
 /** Represents a FBX animation curve (i.e. a mapping from single animation curves to nodes) */
-class AnimationCurveNode final : public Object {
+class AnimationCurveNode : public Object {
 public:
     /* the optional white list specifies a list of property names for which the caller
     wants animations for. If the curve node does not match one of these, std::range_error
@@ -741,7 +741,7 @@ public:
     AnimationCurveNode(uint64_t id, const Element& element, const std::string& name, const Document& doc,
             const char *const *target_prop_whitelist = nullptr, size_t whitelist_size = 0);
 
-   ~AnimationCurveNode() override = default;
+    virtual ~AnimationCurveNode() = default;
 
     const PropertyTable& Props() const {
         ai_assert(props.get());
@@ -783,7 +783,7 @@ private:
 using AnimationCurveNodeList = std::vector<const AnimationCurveNode*>;
 
 /** Represents a FBX animation layer (i.e. a list of node animations) */
-class AnimationLayer final : public Object {
+class AnimationLayer : public Object {
 public:
     AnimationLayer(uint64_t id, const Element& element, const std::string& name, const Document& doc);
     virtual ~AnimationLayer() = default;
@@ -806,7 +806,7 @@ private:
 using AnimationLayerList = std::vector<const AnimationLayer*>;
 
 /** Represents a FBX animation stack (i.e. a list of animation layers) */
-class AnimationStack final : public Object {
+class AnimationStack : public Object {
 public:
     AnimationStack(uint64_t id, const Element& element, const std::string& name, const Document& doc);
     virtual ~AnimationStack() = default;
@@ -851,7 +851,7 @@ using WeightIndexArray = std::vector<unsigned int>;
 
 
 /** DOM class for BlendShapeChannel deformers */
-class BlendShapeChannel final : public Deformer {
+class BlendShapeChannel : public Deformer {
 public:
     BlendShapeChannel(uint64_t id, const Element& element, const Document& doc, const std::string& name);
 
@@ -876,7 +876,7 @@ private:
 };
 
 /** DOM class for BlendShape deformers */
-class BlendShape final : public Deformer {
+class BlendShape : public Deformer {
 public:
     BlendShape(uint64_t id, const Element& element, const Document& doc, const std::string& name);
 
@@ -891,7 +891,7 @@ private:
 };
 
 /** DOM class for skin deformer clusters (aka sub-deformers) */
-class Cluster final : public Deformer {
+class Cluster : public Deformer {
 public:
     Cluster(uint64_t id, const Element& element, const Document& doc, const std::string& name);
 
@@ -935,7 +935,7 @@ private:
 };
 
 /** DOM class for skin deformers */
-class Skin final : public Deformer {
+class Skin : public Deformer {
 public:
     Skin(uint64_t id, const Element& element, const Document& doc, const std::string& name);
 

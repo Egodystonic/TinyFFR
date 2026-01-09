@@ -65,7 +65,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <rapidjson/document.h>
 #include <rapidjson/rapidjson.h>
-#include <rapidjson/error/en.h>
 
 using namespace Assimp;
 using namespace glTF2;
@@ -1663,7 +1662,7 @@ void glTF2Importer::ImportEmbeddedTextures(glTF2::Asset &r) {
                     ext = "kx2";
                 } else if (strcmp(ext, "basis") == 0) { // basisu
                     ext = "bu";
-                } // webp requires no transformation
+                }
 
                 size_t len = strlen(ext);
                 if (len > 3) len = 3;
@@ -1681,8 +1680,7 @@ void glTF2Importer::ImportCommonMetadata(glTF2::Asset &a) {
     const bool hasGenerator = !a.asset.generator.empty();
     const bool hasCopyright = !a.asset.copyright.empty();
     const bool hasSceneMetadata = a.scene->customExtensions;
-    const bool hasSceneExtras = a.scene->extras.HasExtras();
-    if (hasVersion || hasGenerator || hasCopyright || hasSceneMetadata || hasSceneExtras) {
+    if (hasVersion || hasGenerator || hasCopyright || hasSceneMetadata) {
         mScene->mMetaData = new aiMetadata;
         if (hasVersion) {
             mScene->mMetaData->Add(AI_METADATA_SOURCE_FORMAT_VERSION, aiString(a.asset.version));
@@ -1695,9 +1693,6 @@ void glTF2Importer::ImportCommonMetadata(glTF2::Asset &a) {
         }
         if (hasSceneMetadata) {
             ParseExtensions(mScene->mMetaData, a.scene->customExtensions);
-        }
-        if (hasSceneExtras) {
-            ParseExtras(mScene->mMetaData, a.scene->extras);
         }
     }
 }

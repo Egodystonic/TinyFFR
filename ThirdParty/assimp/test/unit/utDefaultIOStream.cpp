@@ -41,7 +41,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <gtest/gtest.h>
 #include "TestIOStream.h"
 #include "UnitTestFileGenerator.h"
-#include "Tools/TestTools.h"
 #include <cstdio>
 #include <cstdlib>
 #include <string>
@@ -61,9 +60,8 @@ TEST_F( utDefaultIOStream, FileSizeTest ) {
     const auto dataSize = sizeof(data);
     const auto dataCount = dataSize / sizeof(*data);
 
-    char fpath[] = { TMP_PATH"rndfp.XXXXXX\0" };
-    std::string tmpName;
-    auto *fs = MakeTmpFile(fpath, std::strlen(fpath), tmpName);
+    char fpath[] = { TMP_PATH"rndfp.XXXXXX" };
+    auto* fs = MakeTmpFile(fpath);
     ASSERT_NE(nullptr, fs);
     {
         auto written = std::fwrite(data, sizeof(*data), dataCount, fs );
@@ -73,13 +71,13 @@ TEST_F( utDefaultIOStream, FileSizeTest ) {
         ASSERT_EQ(vflush, 0);
 
 		std::fclose(fs);
+		fs = std::fopen(fpath, "r");
 
-        EXPECT_TRUE(Unittest::TestTools::openFilestream(&fs, tmpName.c_str(), "r"));
-        ASSERT_NE(nullptr, fs);
+		ASSERT_NE(nullptr, fs);
 
         TestDefaultIOStream myStream( fs, fpath);
         size_t size = myStream.FileSize();
         EXPECT_EQ( size, dataSize);
     }
-    remove(tmpName.c_str());
+    remove(fpath);
 }

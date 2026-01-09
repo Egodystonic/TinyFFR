@@ -82,7 +82,7 @@ struct ColladaMeshIndex {
  * Collada is over-engineered to death, with every new iteration bringing  more useless stuff,
  * so I limited the data to what I think is useful for games.
 */
-class ColladaLoader final : public BaseImporter {
+class ColladaLoader : public BaseImporter {
 public:
     /// The class constructor.
     ColladaLoader();

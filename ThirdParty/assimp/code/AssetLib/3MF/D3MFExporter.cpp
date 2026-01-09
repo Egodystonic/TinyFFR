@@ -48,6 +48,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assimp/scene.h>
 #include <assimp/DefaultLogger.hpp>
 #include <assimp/Exporter.hpp>
+#include <assimp/IOStream.hpp>
 #include <assimp/IOSystem.hpp>
 
 #include "3MFXmlTags.h"
@@ -93,7 +94,7 @@ D3MFExporter::~D3MFExporter() {
     mRelations.clear();
 }
 
-bool D3MFExporter::validate() const {
+bool D3MFExporter::validate() {
     if (mArchiveName.empty()) {
         return false;
     }

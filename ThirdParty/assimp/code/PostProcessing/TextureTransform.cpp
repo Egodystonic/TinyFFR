@@ -1,6 +1,7 @@
 /*
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
+
 Copyright (c) 2006-2025, assimp team
 
 All rights reserved.
@@ -34,20 +35,27 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 ----------------------------------------------------------------------
 */
 
 /** @file A helper class that processes texture transformations */
 
-#include "TextureTransform.h"
-
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/DefaultLogger.hpp>
 #include <assimp/scene.h>
+
+#include "TextureTransform.h"
 #include <assimp/StringUtils.h>
 
-namespace Assimp {
+using namespace Assimp;
+
+// ------------------------------------------------------------------------------------------------
+// Constructor to be privately used by Importer
+TextureTransformStep::TextureTransformStep() : configFlags()  {
+    // nothing to do here
+}
 
 // ------------------------------------------------------------------------------------------------
 // Returns whether the processing step is present in the given flag field.
@@ -193,6 +201,7 @@ inline static const char* MappingModeToChar(aiTextureMapMode map) {
 // ------------------------------------------------------------------------------------------------
 void TextureTransformStep::Execute( aiScene* pScene) {
     ASSIMP_LOG_DEBUG("TransformUVCoordsProcess begin");
+
 
     /*  We build a per-mesh list of texture transformations we'll need
      *  to apply. To achieve this, we iterate through all materials,
@@ -417,12 +426,14 @@ void TextureTransformStep::Execute( aiScene* pScene) {
         // it shouldn't be too worse if we remove them.
         unsigned int size = (unsigned int)trafo.size();
         if (size > AI_MAX_NUMBER_OF_TEXTURECOORDS) {
+
             if (!DefaultLogger::isNullLogger()) {
                 ASSIMP_LOG_ERROR(static_cast<unsigned int>(trafo.size()), " UV channels required but just ",
                     AI_MAX_NUMBER_OF_TEXTURECOORDS, " available");
             }
             size = AI_MAX_NUMBER_OF_TEXTURECOORDS;
         }
+
 
         aiVector3D* old[AI_MAX_NUMBER_OF_TEXTURECOORDS];
         for (unsigned int n = 0; n < AI_MAX_NUMBER_OF_TEXTURECOORDS;++n)
@@ -432,13 +443,14 @@ void TextureTransformStep::Execute( aiScene* pScene) {
         // that we're not going to need later can be overridden.
         it = trafo.begin();
         for (unsigned int n = 0; n < trafo.size();++n,++it) {
+
             if (n >= size)  {
                 // Try to use an untransformed channel for all channels we threw over board
                 UpdateUVIndex((*it).updateList,untransformed);
                 continue;
             }
 
-            ++outChannels;
+            outChannels++;
 
             // Write to the log
             if (!DefaultLogger::isNullLogger()) {
@@ -458,18 +470,15 @@ void TextureTransformStep::Execute( aiScene* pScene) {
             // Check whether we need a new buffer here
             if (mesh->mTextureCoords[n])    {
 
-                it2 = it;
-		++it2;
+                it2 = it;++it2;
                 for (unsigned int m = n+1; m < size;++m, ++it2) {
+
                     if ((*it2).uvIndex == n){
                         it2 = trafo.begin();
                         break;
                     }
                 }
-                if (it2 == trafo.begin()) { 	            
-		    {
-                        std::unique_ptr<aiVector3D[]> oldTextureCoords(mesh->mTextureCoords[n]);
-                    }
+                if (it2 == trafo.begin()){
                     mesh->mTextureCoords[n] = new aiVector3D[mesh->mNumVertices];
                 }
             }
@@ -527,12 +536,13 @@ void TextureTransformStep::Execute( aiScene* pScene) {
 
     // Print some detailed statistics into the log
     if (!DefaultLogger::isNullLogger()) {
+
         if (transformedChannels)    {
             ASSIMP_LOG_INFO("TransformUVCoordsProcess end: ", outChannels, " output channels (in: ", inChannels, ", modified: ", transformedChannels,")");
         } else {
-            ASSIMP_LOG_INFO("TransformUVCoordsProcess finished");
+            ASSIMP_LOG_DEBUG("TransformUVCoordsProcess finished");
         }
     }
 }
 
-} // namespace Assimp
+

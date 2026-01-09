@@ -55,16 +55,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // ---------------------------------------------------------------------------
 
-/// @brief The original illum property
+// the original illum property
 #define AI_MATKEY_OBJ_ILLUM "$mat.illum", 0, 0
 
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-/// @brief Pure key names for all obj texture-related properties
+// Pure key names for all obj texture-related properties
 //! @cond MATS_DOC_FULL
 
-/// @brief Support for bump -bm
+// support for bump -bm
 #define _AI_MATKEY_OBJ_BUMPMULT_BASE "$tex.bumpmult"
 //! @endcond
 
@@ -80,4 +80,5 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //! @endcond
 
-#endif // AI_OBJMATERIAL_H_INC
+
+#endif

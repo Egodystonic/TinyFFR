@@ -165,23 +165,21 @@ struct Material {
     //! Ambient color
     aiColor3D ambient;
     //! Diffuse color
-    aiColor3D diffuse = aiColor3D(0.6f, 0.6f, 0.6f);
+    aiColor3D diffuse;
     //! Specular color
     aiColor3D specular;
     //! Emissive color
     aiColor3D emissive;
     //! Alpha value
-    ai_real alpha = ai_real(1.0);
+    ai_real alpha;
     //! Shineness factor
-    ai_real shineness = ai_real(0.0);
+    ai_real shineness;
     //! Illumination model
-    int illumination_model = 1;
+    int illumination_model;
     //! Index of refraction
-    ai_real ior = ai_real(1.0);
+    ai_real ior;
     //! Transparency color
-    aiColor3D transparent = aiColor3D(1.0f, 1.0f, 1.0f);
-    //! Ambient occlusion
-    Maybe<ai_real> ambient_occlusion;
+    aiColor3D transparent;
 
     //! PBR Roughness
     Maybe<ai_real> roughness;
@@ -189,33 +187,31 @@ struct Material {
     Maybe<ai_real> metallic;
     //! PBR Metallic
     Maybe<aiColor3D> sheen;
-    //! PBR Sheen: an additional grazing component, primarily intended for cloth.
-    Maybe<ai_real> sheen_grazing;
-    //! PBR Sheen Tint: amount to tint sheen towards base color.
-    Maybe<ai_real> sheen_tint;
-    //! PBR Clearcoat
-    Maybe<ai_real> clearcoat;
     //! PBR Clearcoat Thickness
     Maybe<ai_real> clearcoat_thickness;
     //! PBR Clearcoat Rougness
     Maybe<ai_real> clearcoat_roughness;
-    //! PBR clearcoatGloss: controls clearcoat glossiness (0 = a “satin” appearance, 1 = a “gloss” appearance).
-    Maybe<ai_real> clearcoat_gloss;
     //! PBR Anisotropy
-    ai_real anisotropy = ai_real(0.0);
-    //! PBR Anisotropy Rotation
-    Maybe<ai_real> anisotropy_rotation;
-    //! PBR Subsurface Scattering
-    Maybe<ai_real> subsurface_scattering;
-    //! PBR Specular Tint: a concession for artistic control that tints incident specular towards the base color.
-    Maybe<ai_real> specular_tint;
-    // See: https://disneyanimation.com/publications/physically-based-shading-at-disney/
+    ai_real anisotropy;
 
-    //! bump map multiplier (normal map scalar)(-bm)
-    ai_real bump_multiplier = ai_real(1.0);
+    //! bump map multipler (normal map scalar)(-bm)
+    ai_real bump_multiplier;
 
     //! Constructor
-    Material() {
+    Material() :
+            diffuse(0.6f, 0.6f, 0.6f),
+            alpha(ai_real(1.0)),
+            shineness(ai_real(0.0)),
+            illumination_model(1),
+            ior(ai_real(1.0)),
+            transparent(1.0f, 1.0, 1.0),
+            roughness(),
+            metallic(),
+            sheen(),
+            clearcoat_thickness(),
+            clearcoat_roughness(),
+            anisotropy(ai_real(0.0)),
+            bump_multiplier(ai_real(1.0)) {
         std::fill_n(clamp, static_cast<unsigned int>(TextureTypeCount), false);
     }
 

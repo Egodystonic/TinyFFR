@@ -65,22 +65,22 @@ namespace Assimp {
  * You can contact RevoluPowered <gordon@gordonite.tech>
  * For more info about this
 */
-class ASSIMP_API ArmaturePopulate final : public BaseProcess {
+class ASSIMP_API ArmaturePopulate : public BaseProcess {
 public:
     /// The default class constructor.
     ArmaturePopulate() = default;
 
     /// The class destructor.
-    ~ArmaturePopulate() override = default;
+    virtual ~ArmaturePopulate() = default;
 
     /// Overwritten, @see BaseProcess
-    bool IsActive( unsigned int pFlags ) const override;
+    virtual bool IsActive( unsigned int pFlags ) const;
 
     /// Overwritten, @see BaseProcess
-    void SetupProperties( const Importer* pImp ) override;
+    virtual void SetupProperties( const Importer* pImp );
 
     /// Overwritten, @see BaseProcess
-    void Execute( aiScene* pScene ) override;
+    virtual void Execute( aiScene* pScene );
 
     static aiNode *GetArmatureRoot(aiNode *bone_node,
                                       std::vector<aiBone *> &bone_list);

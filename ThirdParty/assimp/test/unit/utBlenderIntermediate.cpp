@@ -5,6 +5,8 @@ Open Asset Import Library (assimp)
 
 Copyright (c) 2006-2025, assimp team
 
+
+
 All rights reserved.
 
 Redistribution and use of this software in source and binary forms,

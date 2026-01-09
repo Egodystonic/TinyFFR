@@ -93,22 +93,17 @@ void ExportScenePbrt(const char *pFile, IOSystem *pIOSystem, const aiScene *pSce
         const ExportProperties *) {
     std::string path = DefaultIOSystem::absolutePath(std::string(pFile));
     std::string file = DefaultIOSystem::completeBaseName(std::string(pFile));
-    std::string texturesPath = path;
-    if (!texturesPath.empty()) {
-        texturesPath+=pIOSystem->getOsSeparator(); 
-    }
-    texturesPath+="textures";
     
     // initialize the exporter
-    PbrtExporter exporter(pScene, pIOSystem, path, file, texturesPath);
+    PbrtExporter exporter(pScene, pIOSystem, path, file);
 }
 
 } // end of namespace Assimp
 
-static void create_embedded_textures_folder(const aiScene *scene, IOSystem *pIOSystem, const std::string &texturesPath) {
+static void create_embedded_textures_folder(const aiScene *scene, IOSystem *pIOSystem) {
     if (scene->mNumTextures > 0) {
-        if (!pIOSystem->Exists(texturesPath)) {
-            if (!pIOSystem->CreateDirectory(texturesPath)) {
+        if (!pIOSystem->Exists("textures")) {
+            if (!pIOSystem->CreateDirectory("textures")) {
                 throw DeadlyExportError("Could not create textures/ directory.");
             }
         }
@@ -117,12 +112,11 @@ static void create_embedded_textures_folder(const aiScene *scene, IOSystem *pIOS
 
 PbrtExporter::PbrtExporter(
         const aiScene *pScene, IOSystem *pIOSystem,
-        const std::string &path, const std::string &file, const std::string &texturesPath) :
+        const std::string &path, const std::string &file) :
         mScene(pScene),
         mIOSystem(pIOSystem),
         mPath(path),
         mFile(file),
-        mTexturesPath(texturesPath),
         mRootTransform(
             // rotates the (already left-handed) CRS -90 degrees around the x axis in order to
             // make +Z 'up' and +Y 'towards viewer', as in default in pbrt
@@ -140,7 +134,7 @@ PbrtExporter::PbrtExporter(
     ) * mRootTransform;
 
     // Export embedded textures.
-    create_embedded_textures_folder(mScene, mIOSystem, mTexturesPath);
+    create_embedded_textures_folder(mScene, mIOSystem);
 
     for (unsigned int i = 0; i < mScene->mNumTextures; ++i) {
         aiTexture* tex = mScene->mTextures[i];
@@ -690,7 +684,7 @@ std::string PbrtExporter::CleanTextureFilename(const aiString &f, bool rewriteEx
     }
 
     // Expect all textures in textures
-    fn = mTexturesPath + mIOSystem->getOsSeparator() + fn;
+    fn = std::string("textures") + mIOSystem->getOsSeparator() + fn;
 
     // Rewrite extension for unsupported file formats.
     if (rewriteExtension) {

@@ -23,6 +23,7 @@ z_const char * const z_errmsg[10] = {
     (z_const char *)""
 };
 
+
 const char * ZEXPORT zlibVersion()
 {
     return ZLIB_VERSION;

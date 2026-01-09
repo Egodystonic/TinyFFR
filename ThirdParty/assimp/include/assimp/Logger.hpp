@@ -94,7 +94,7 @@ public:
     };
 
     /** @brief  Virtual destructor */
-    virtual ~Logger() = default;
+    virtual ~Logger();
 
     // ----------------------------------------------------------------------
     /** @brief  Writes a debug message
@@ -184,12 +184,12 @@ public:
 
 protected:
     /**
-     *  @brief Default constructor
+     *  Default constructor
      */
-    Logger() AI_NO_EXCEPT = default;
+    Logger() AI_NO_EXCEPT;
 
     /**
-     *  @brief Construction with a given log severity
+     *  Construction with a given log severity
      */
     explicit Logger(LogSeverity severity);
 
@@ -253,8 +253,17 @@ protected:
     }
 
 protected:
-    LogSeverity m_Severity{NORMAL};
+    LogSeverity m_Severity;
 };
+
+// ----------------------------------------------------------------------------------
+inline Logger::Logger() AI_NO_EXCEPT :
+        m_Severity(NORMAL) {
+    // empty
+}
+
+// ----------------------------------------------------------------------------------
+inline Logger::~Logger() = default;
 
 // ----------------------------------------------------------------------------------
 inline Logger::Logger(LogSeverity severity) :

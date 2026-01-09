@@ -76,26 +76,26 @@ class ChunkWriter {
 
 public:
     ChunkWriter(StreamWriterLE &writer, uint16_t chunk_type) :
-            mWriter(writer) {
-        mChunkStartPos = writer.GetCurrentPos();
+            writer(writer) {
+        chunk_start_pos = writer.GetCurrentPos();
         writer.PutU2(chunk_type);
         writer.PutU4((uint32_t)CHUNK_SIZE_NOT_SET);
     }
 
     ~ChunkWriter() {
-        std::size_t head_pos = mWriter.GetCurrentPos();
+        std::size_t head_pos = writer.GetCurrentPos();
 
-        ai_assert(head_pos > mChunkStartPos);
-        const std::size_t chunk_size = head_pos - mChunkStartPos;
+        ai_assert(head_pos > chunk_start_pos);
+        const std::size_t chunk_size = head_pos - chunk_start_pos;
 
-        mWriter.SetCurrentPos(mChunkStartPos + SIZE_OFFSET);
-        mWriter.PutU4(static_cast<uint32_t>(chunk_size));
-        mWriter.SetCurrentPos(head_pos);
+        writer.SetCurrentPos(chunk_start_pos + SIZE_OFFSET);
+        writer.PutU4(static_cast<uint32_t>(chunk_size));
+        writer.SetCurrentPos(head_pos);
     }
 
 private:
-    StreamWriterLE &mWriter;
-    std::size_t mChunkStartPos;
+    StreamWriterLE &writer;
+    std::size_t chunk_start_pos;
 };
 
 // Return an unique name for a given |mesh| attached to |node| that
@@ -122,7 +122,8 @@ std::string GetMaterialName(const aiMaterial &mat, unsigned int index) {
     char postfix[10] = { 0 };
     ASSIMP_itoa10(postfix, index);
 
-    if (aiString mat_name; AI_SUCCESS == mat.Get(AI_MATKEY_NAME, mat_name)) {
+    aiString mat_name;
+    if (AI_SUCCESS == mat.Get(AI_MATKEY_NAME, mat_name)) {
         return mat_name.C_Str() + underscore + postfix;
     }
 
@@ -302,7 +303,8 @@ void Discreet3DSExporter::WriteMaterials() {
             WriteColor(color);
         }
 
-        if (aiShadingMode shading_mode = aiShadingMode_Flat; mat.Get(AI_MATKEY_SHADING_MODEL, shading_mode) == AI_SUCCESS) {
+        aiShadingMode shading_mode = aiShadingMode_Flat;
+        if (mat.Get(AI_MATKEY_SHADING_MODEL, shading_mode) == AI_SUCCESS) {
             ChunkWriter chunk(writer, Discreet3DS::CHUNK_MAT_SHADING);
 
             Discreet3DS::shadetype3ds shading_mode_out;
@@ -330,7 +332,7 @@ void Discreet3DSExporter::WriteMaterials() {
             default:
                 shading_mode_out = Discreet3DS::Flat;
                 ai_assert(false);
-            }
+            };
             writer.PutU2(static_cast<uint16_t>(shading_mode_out));
         }
 
@@ -344,7 +346,8 @@ void Discreet3DSExporter::WriteMaterials() {
             WritePercentChunk(f);
         }
 
-        if (int twosided; mat.Get(AI_MATKEY_TWOSIDED, twosided) == AI_SUCCESS && twosided != 0) {
+        int twosided;
+        if (mat.Get(AI_MATKEY_TWOSIDED, twosided) == AI_SUCCESS && twosided != 0) {
             ChunkWriter chunk(writer, Discreet3DS::CHUNK_MAT_TWO_SIDE);
             writer.PutI2(1);
         }
@@ -538,7 +541,7 @@ void Discreet3DSExporter::WriteFaceMaterialChunk(const aiMesh &mesh) {
 
 // ------------------------------------------------------------------------------------------------
 void Discreet3DSExporter::WriteString(const std::string &s) {
-    for (auto it = s.begin(); it != s.end(); ++it) {
+    for (std::string::const_iterator it = s.begin(); it != s.end(); ++it) {
         writer.PutI1(*it);
     }
     writer.PutI1('\0');

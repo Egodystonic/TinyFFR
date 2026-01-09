@@ -165,4 +165,4 @@ int Assimp_Export(const char *const *params, unsigned int num) {
     return AssimpCmdError::Success;
 }
 
-#endif // ASSIMP_BUILD_NO_EXPORT
+#endif // no export

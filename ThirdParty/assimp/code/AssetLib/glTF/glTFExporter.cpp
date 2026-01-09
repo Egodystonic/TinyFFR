@@ -42,7 +42,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef ASSIMP_BUILD_NO_GLTF_EXPORTER
 
 #include "AssetLib/glTF/glTFExporter.h"
-#include "AssetLib/glTF/glTFAsset.h"
 #include "AssetLib/glTF/glTFAssetWriter.h"
 #include "PostProcessing/SplitLargeMeshes.h"
 
@@ -62,10 +61,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 #include <limits>
 #include <inttypes.h>
-
-#include <rapidjson/rapidjson.h>
-#include <rapidjson/document.h>
-#include <rapidjson/error/en.h>
 
 #ifdef ASSIMP_IMPORTER_GLTF_USE_OPEN3DGC
 	// Header files, Open3DGC.
@@ -1068,6 +1063,7 @@ void glTFExporter::ExportAnimations()
 
     } // End: for-loop mNumAnimations
 }
+
 
 #endif // ASSIMP_BUILD_NO_GLTF_EXPORTER
 #endif // ASSIMP_BUILD_NO_EXPORT
