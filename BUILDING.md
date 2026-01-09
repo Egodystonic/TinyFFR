@@ -35,18 +35,6 @@
 	* Run `dotnet run build.cs` -- this builds TinyFFR.Native and can be repeated whenever you make changes
 * Build solution/C# projects with `dotnet` or your IDE
 
-## Updating Third-Party Dependencies
-
-Currently, I update third-party dependencies via the following steps:
-
-* Clone the third-party repository in to a separate directory if you haven't already
-* Checkout the specific tag/ref in that repo that you want to incorporate in to TinyFFR
-* Create a new branch in TinyFFR (e.g. `git checkout -b update/assimp/v6.0.2` if you were updating to assimp v6.0.2) 
-* Delete everything from the appropriate TinyFFR subdirectory (e.g. `/ThirdParty/assimp` for assimp), and then copy over the updated code from the standalone cloned repo to this subdirectory
-* Commit everything with a useful message (e.g. "Update assimp to v6.0.2")
-* Checkout `main` again (or whichever TinyFFR branch you want to merge the update in to)
-* Merge the update branch (e.g. `git merge update/assimp/v6.0.2`) -- for simple updates this should be painless, but you will need to resolve merges where TinyFFR has modified the third-party code to keep TinyFFR's changes at the same time as updating
-
 # Repository Structure
 
 ## /
@@ -139,3 +127,47 @@ The other projects in the `Publishing` folder help publish integration packages 
 They expect their corresponding integration projects (e.g. the corresponding project in /Integrations/) to be built first (in `Release` mode).
 
 They also expect `TinyFFR.NuGet` to be built first.
+
+## Updating Third-Party Dependencies
+
+This is a little involved at the moment:
+
+### One-Time Setup
+
+There's a fork of each third party dependency, clone the one(s) you're interested somewhere separate from each other and TinyFFR:
+
+`https://github.com/Egodystonic/sdl.git`
+`https://github.com/Egodystonic/assimp.git`
+`https://github.com/Egodystonic/filament.git`
+
+On each of these forks there is a branch **tinyffr/main** which represents the state of the codebase currently in the main TinyFFR branch/repo.
+
+For each fork I also add a "source" remote:
+
+`git remote add source https://github.com/libsdl-org/SDL.git`
+`git remote add source https://github.com/assimp/assimp.git`
+`git remote add source https://github.com/google/filament.git`
+
+### Updating to newer version of third-party dep
+
+* Firstly, update "source" (`git fetch source`) and probably make sure you're on **tinyffr/main** (`git checkout tinyffr/main`)
+* Next, merge the source tag/commit in to **tinyffr/main**: `git merge v1.2.3`
+	* This may require some manual merge management if the TinyFFR fork of the repo has TinyFFR changes
+* Copy everything from this repo **except the .git folder** to the appropriate **ThirdParty** folder in the TinyFFR repo
+* Re-run the third party build from the **ThirdParty** folder. You can supply an argument to the script to specify which dependency needs rebuilding (e.g. `dotnet run build_and_copy_all_third_party.cs assimp`)
+* Re-run the first party native build (rebuild TinyFFR.Native in Visual Studio on Windows or run `dotnet run build.cs` in **/TinyFFR.Native/build/**)
+* (Contributors only) Confirm everything still works, push **tinyffr/main**
+
+### Making changes to third-party source
+
+Note: For the sake of an easier workflow, it might be better to make changes in the main TinyFFR repo's appropriate **/ThirdParty/** folder, rebuilding + testing in-place until satisfied, and then follow the steps below for the forked dependency repo:
+
+* Probably make sure you're on **tinyffr/main** (`git checkout tinyffr/main`)
+* Create new branch for the modifications (e.g. `git checkout -b tinyffr/feature/feature_name`)
+* Make changes, commit etc
+* (Contributors only) push branch to remote, keep it up to date as changes are made
+* Switch back to **tinyffr/main** (`git checkout tinyffr/main`), and merge in the feature (`git merge tinyffr/feature/feature_name`)
+* Copy everything from this repo **except the .git folder** to the appropriate **ThirdParty** folder in the TinyFFR repo
+* Re-run the third party build from the **ThirdParty** folder. You can supply an argument to the script to specify which dependency needs rebuilding (e.g. `dotnet run build_and_copy_all_third_party.cs assimp`)
+* Re-run the first party native build (rebuild TinyFFR.Native in Visual Studio on Windows or run `dotnet run build.cs` in **/TinyFFR.Native/build/**)
+* (Contributors only) Confirm everything still works, push **tinyffr/main**
