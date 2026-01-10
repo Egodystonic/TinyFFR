@@ -53,7 +53,7 @@ void native_impl_init::on_factory_build(interop_bool enableVsync, uint32_t comma
 	};
 
 	filament_engine_ptr = filament::Engine::Builder()
-		.backend(filament::Engine::Backend::OPENGL)
+		.backend(filament::Engine::Backend::VULKAN)
 		.featureLevel(filament::Engine::FeatureLevel::FEATURE_LEVEL_3)
 		.config(&config)
 		.build();
@@ -66,7 +66,7 @@ StartExportedFunc(on_factory_build, interop_bool enableVsync, uint32_t commandBu
 }
 void native_impl_init::on_factory_teardown() {
 	if (filament_engine_ptr == nullptr) return;
-	filament_engine_ptr->destroy(&filament_engine_ptr);
+	filament::Engine::destroy(&filament_engine_ptr);
 }
 StartExportedFunc(on_factory_teardown) {
 	native_impl_init::on_factory_teardown();

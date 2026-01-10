@@ -40,13 +40,14 @@
 #include "private/backend/CircularBuffer.h"
 #include "private/backend/CommandStream.h"
 
-#include <utils/compiler.h>
-#include <utils/debug.h>
+#include <private/utils/Tracing.h>
+
 #include <utils/JobSystem.h>
 #include <utils/Panic.h>
-#include <utils/Slice.h>
-#include <utils/Systrace.h>
 #include <utils/Range.h>
+#include <utils/Slice.h>
+#include <utils/compiler.h>
+#include <utils/debug.h>
 
 #include <algorithm>
 #include <functional>
@@ -81,8 +82,6 @@ RenderPassBuilder& RenderPassBuilder::customCommand(
 
 RenderPass RenderPassBuilder::build(FEngine const& engine, DriverApi& driver) const {
     assert_invariant(mRenderableSoa);
-    assert_invariant(mScissorViewport.width  <= std::numeric_limits<int32_t>::max());
-    assert_invariant(mScissorViewport.height <= std::numeric_limits<int32_t>::max());
     return RenderPass{ engine, driver, *this };
 }
 
@@ -106,8 +105,7 @@ void RenderPass::DescriptorSetHandleDeleter::operator()(
 RenderPass::RenderPass(FEngine const& engine, DriverApi& driver,
         RenderPassBuilder const& builder) noexcept
         : mRenderableSoa(*builder.mRenderableSoa),
-          mColorPassDescriptorSet(builder.mColorPassDescriptorSet),
-          mScissorViewport(builder.mScissorViewport) {
+          mColorPassDescriptorSet(builder.mColorPassDescriptorSet) {
 
     // compute the number of commands we need
     updateSummedPrimitiveCounts(
@@ -192,11 +190,11 @@ void RenderPass::appendCommands(FEngine const& engine,
         Variant const variant,
         float3 const cameraPosition,
         float3 const cameraForwardVector) const noexcept {
-    SYSTRACE_CALL();
-    SYSTRACE_CONTEXT();
+    FILAMENT_TRACING_CALL(FILAMENT_TRACING_CATEGORY_FILAMENT);
+    FILAMENT_TRACING_CONTEXT(FILAMENT_TRACING_CATEGORY_FILAMENT);
 
     // trace the number of visible renderables
-    SYSTRACE_VALUE32("visibleRenderables", visibleRenderables.size());
+    FILAMENT_TRACING_VALUE(FILAMENT_TRACING_CATEGORY_FILAMENT, "visibleRenderables", visibleRenderables.size());
     if (UTILS_UNLIKELY(visibleRenderables.empty())) {
         // no renderables, we still need the sentinel and the command buffer size should be
         // exactly 1.
@@ -245,7 +243,7 @@ void RenderPass::appendCommands(FEngine const& engine,
     for (Command const* first = curr, *last = curr + commandCount ; first != last ; ++first) {
         if (UTILS_LIKELY((first->key & CUSTOM_MASK) == uint64_t(CustomCommand::PASS))) {
             auto ma = first->info.mi->getMaterial();
-            ma->prepareProgram(first->info.materialVariant);
+            ma->prepareProgram(first->info.materialVariant, CompilerPriorityQueue::CRITICAL);
         }
     }
 }
@@ -256,7 +254,7 @@ void RenderPass::appendCustomCommand(Command* commands,
 
     assert_invariant((uint64_t(order) << CUSTOM_ORDER_SHIFT) <=  CUSTOM_ORDER_MASK);
 
-    channel = std::min(channel, uint8_t(0x3));
+    channel = std::min(channel, uint8_t(CHANNEL_COUNT - 1));
 
     uint32_t const index = mCustomCommands.size();
     mCustomCommands.push_back(std::move(command));
@@ -272,7 +270,7 @@ void RenderPass::appendCustomCommand(Command* commands,
 
 RenderPass::Command* RenderPass::sortCommands(
         Command* const begin, Command* const end) noexcept {
-    SYSTRACE_NAME("sort commands");
+    FILAMENT_TRACING_NAME(FILAMENT_TRACING_CATEGORY_FILAMENT, "sort commands");
 
     std::sort(begin, end);
 
@@ -289,7 +287,7 @@ RenderPass::Command* RenderPass::instanceify(DriverApi& driver,
         DescriptorSetLayoutHandle perRenderableDescriptorSetLayoutHandle,
         Command* curr, Command* const last,
         int32_t const eyeCount) const noexcept {
-    SYSTRACE_NAME("instanceify");
+    FILAMENT_TRACING_NAME(FILAMENT_TRACING_CATEGORY_FILAMENT, "instanceify");
 
     // instanceify works by scanning the **sorted** command stream, looking for repeat draw
     // commands. When one is found, it is replaced by an instanced command.
@@ -406,8 +404,8 @@ RenderPass::Command* RenderPass::instanceify(DriverApi& driver,
     }
 
     if (UTILS_UNLIKELY(firstSentinel)) {
-        //slog.d << "auto-instancing, saving " << drawCallsSavedCount << " draw calls, out of "
-        //       << count << io::endl;
+        // DLOG(INFO) << "auto-instancing, saving " << drawCallsSavedCount << " draw calls, out of "
+        //            << count;
         // we have instanced primitives
         // copy our instanced ubo data
         driver.updateBufferObjectUnsynchronized(mInstancedUboHandle, {
@@ -492,7 +490,7 @@ void RenderPass::generateCommands(CommandTypeFlags commandTypeFlags, Command* co
         float3 const cameraPosition, float3 const cameraForward,
         uint8_t instancedStereoEyeCount) noexcept {
 
-    SYSTRACE_CALL();
+    FILAMENT_TRACING_CALL(FILAMENT_TRACING_CATEGORY_FILAMENT);
 
     // generateCommands() writes both the draw and depth commands simultaneously such that
     // we go throw the list of renderables just once.
@@ -672,8 +670,8 @@ RenderPass::Command* RenderPass::generateCommandsImpl(CommandTypeFlags extraFlag
 
         cmd.key |= makeField(soaVisibility[i].priority, PRIORITY_MASK, PRIORITY_SHIFT);
         cmd.key |= makeField(soaVisibility[i].channel, CHANNEL_MASK, CHANNEL_SHIFT);
-        cmd.info.index = i;
-        cmd.info.hasHybridInstancing = bool(soaInstanceInfo[i].handle);
+        cmd.info.index = soaInstanceInfo[i].buffer ? soaInstanceInfo[i].buffer->getIndex() : i;
+        cmd.info.hasHybridInstancing = bool(soaInstanceInfo[i].buffer);
         cmd.info.instanceCount = soaInstanceInfo[i].count;
         cmd.info.hasMorphing = bool(morphing.handle);
         cmd.info.hasSkinning = bool(skinning.handle);
@@ -695,7 +693,7 @@ RenderPass::Command* RenderPass::generateCommandsImpl(CommandTypeFlags extraFlag
         const bool shadowCaster = soaVisibility[i].castShadows & hasShadowing;
         const bool writeDepthForShadowCasters = depthContainsShadowCasters & shadowCaster;
 
-        const Slice<FRenderPrimitive>& primitives = soaPrimitives[i];
+        Slice<const FRenderPrimitive> primitives = soaPrimitives[i];
         /*
          * This is our hot loop. It's written to avoid branches.
          * When modifying this code, always ensure it stays efficient.
@@ -922,14 +920,14 @@ UTILS_NOINLINE // no need to be inlined
 void RenderPass::Executor::execute(FEngine const& engine, DriverApi& driver,
         Command const* first, Command const* last) const noexcept {
 
-    SYSTRACE_CALL();
-    SYSTRACE_CONTEXT();
+    FILAMENT_TRACING_CALL(FILAMENT_TRACING_CATEGORY_FILAMENT);
+    FILAMENT_TRACING_CONTEXT(FILAMENT_TRACING_CATEGORY_FILAMENT);
 
     size_t const capacity = engine.getMinCommandBufferSize();
     CircularBuffer const& circularBuffer = driver.getCircularBuffer();
 
     if (first != last) {
-        SYSTRACE_VALUE32("commandCount", last - first);
+        FILAMENT_TRACING_VALUE(FILAMENT_TRACING_CATEGORY_FILAMENT, "commandCount", last - first);
 
         // The scissor rectangle is associated to a render pass, so the tracking can be local.
         backend::Viewport currentScissor{ 0, 0, INT32_MAX, INT32_MAX };
@@ -941,6 +939,13 @@ void RenderPass::Executor::execute(FEngine const& engine, DriverApi& driver,
             currentScissor = mScissor;
             driver.scissor(mScissor);
         }
+
+        // If we have a mColorPassDescriptorSet, we need to use its idea of "VSM" to select
+        // the descriptor set layout. Materials always offer both.
+        // If we don't have a mColorPassDescriptorSet, it doesn't matter because the layout
+        // are chosen via the variant only.
+        bool const useVsmDescriptorSetLayout =
+                mColorPassDescriptorSet ? mColorPassDescriptorSet->isVSM() : false;
 
         bool const polygonOffsetOverride = mPolygonOffsetOverride;
         PipelineState pipeline{
@@ -1007,6 +1012,8 @@ void RenderPass::Executor::execute(FEngine const& engine, DriverApi& driver,
                     uint32_t const index = (first->key & CUSTOM_INDEX_MASK) >> CUSTOM_INDEX_SHIFT;
                     assert_invariant(index < mCustomCommands.size());
                     pCustomCommands[index]();
+                    currentPipeline = {};
+                    currentPrimitiveHandle ={};
                     continue;
                 }
 
@@ -1051,37 +1058,51 @@ void RenderPass::Executor::execute(FEngine const& engine, DriverApi& driver,
 
                     // Each material has its own version of the per-view descriptor-set layout,
                     // because it depends on the material features (e.g. lit/unlit)
+                    // TODO: QUESTION: are
+                    //      Variant::isValidDepthVariant(info.materialVariant) and
+                    //      Variant::isSSRVariant(info.materialVariant)
+                    //      constant? If so we could precompute ma->getPerViewDescriptorSetLayout()
                     pipeline.pipelineLayout.setLayout[+DescriptorSetBindingPoints::PER_VIEW] =
-                            ma->getPerViewDescriptorSetLayout(info.materialVariant).getHandle();
+                            ma->getPerViewDescriptorSetLayout(info.materialVariant,
+                                    useVsmDescriptorSetLayout).getHandle();
 
                     // Each material has a per-material descriptor-set layout which encodes the
                     // material's parameters (ubo and samplers)
                     pipeline.pipelineLayout.setLayout[+DescriptorSetBindingPoints::PER_MATERIAL] =
-                            ma->getDescriptorSetLayout().getHandle();
+                            ma->getDescriptorSetLayout(info.materialVariant).getHandle();
 
-                    if (UTILS_UNLIKELY(ma->getMaterialDomain() == MaterialDomain::POST_PROCESS)) {
-                        // It is possible to get a post-process material here (even though it's
-                        // not technically a public API yet, it is used by the IBLPrefilterLibrary.
-                        // Ideally we would have a more formal compute API). In this case, we need
-                        // to set the post-process descriptor-set.
-                        engine.getPostProcessManager().bindPostProcessDescriptorSet(driver);
-                    } else {
-                        // If we have a ColorPassDescriptorSet we use it to bind the per-view
-                        // descriptor-set (ideally only if it changed). If we don't, it means
-                        // the descriptor-set is already bound and the layout we got from the
-                        // material above should match. This is the case for situations where we
-                        // have a known per-view descriptor-set layout, e.g.: shadow-maps, ssr and
-                        // structure passes.
-                        if (mColorPassDescriptorSet) {
+                    // If we have a ColorPassDescriptorSet we use it to bind the per-view
+                    // descriptor-set (ideally only if it changed).
+                    // If we don't, it means the descriptor-set is already bound and the layout we
+                    // got from the material above should match. This is the case for situations
+                    // where we have a known per-view descriptor-set layout,
+                    // e.g.: postfx, shadow-maps, ssr and structure passes.
+                    if (mColorPassDescriptorSet) {
+                        if (UTILS_UNLIKELY(ma->getMaterialDomain() == MaterialDomain::POST_PROCESS)) {
+                            // It is possible to get a post-process material here (even though it's
+                            // not technically a public API yet, it is used by the IBLPrefilterLibrary.
+                            // Ideally we would have a more formal compute API). In this case, we need
+                            // to set the post-process descriptor-set.
+                            engine.getPostProcessManager().bindPostProcessDescriptorSet(driver);
+                        } else {
                             // We have a ColorPassDescriptorSet, we need to go through it for binding
                             // the per-view descriptor-set because its layout can change based on the
                             // material.
                             mColorPassDescriptorSet->bind(driver, ma->getPerViewLayoutIndex());
                         }
+                    } else {
+                        // if we're here it means the per-view descriptor set is constant and
+                        // already set. This will be the case for postfx, ssr, structure and
+                        // shadow passes. All these passes use a static descriptor set layout
+                        // (albeit potentially different for each pass). In particular the
+                        // per-view UBO must be compatible for all material domains.
+                        // This is the case by construction for postfx, ssr. However, shadows
+                        // and structure have their own UBO, but it's content is (must be)
+                        // compatible with POST_PROCESS and COMPUTE materials.
                     }
 
                     // Each MaterialInstance has its own descriptor set. This binds it.
-                    mi->use(driver);
+                    mi->use(driver, info.materialVariant);
                 }
 
                 assert_invariant(ma);
@@ -1099,8 +1120,7 @@ void RenderPass::Executor::execute(FEngine const& engine, DriverApi& driver,
 
                 // Bind per-renderable uniform block. There is no need to attempt to skip this command
                 // because the backends already do this.
-                uint32_t const offset = info.hasHybridInstancing ?
-                                      0 : info.index * sizeof(PerRenderableData);
+                uint32_t const offset = info.index * sizeof(PerRenderableData);
 
                 assert_invariant(info.dsh);
                 driver.bindDescriptorSet(info.dsh,

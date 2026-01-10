@@ -20,7 +20,7 @@
 #include "details/Camera.h"
 
 #include <utils/Entity.h>
-#include <utils/Log.h>
+#include <utils/Logger.h>
 #include <utils/debug.h>
 
 using namespace utils;
@@ -36,11 +36,8 @@ FCameraManager::~FCameraManager() noexcept = default;
 void FCameraManager::terminate(FEngine& engine) noexcept {
     auto& manager = mManager;
     if (!manager.empty()) {
-#ifndef NDEBUG
-        slog.d << "cleaning up " << manager.getComponentCount()
-               << " leaked Camera components" << io::endl;
-#endif
-        Slice<Entity> const entities{ manager.getEntities(), manager.getComponentCount() };
+        DLOG(INFO) << "cleaning up " << manager.getComponentCount() << " leaked Camera components";
+        Slice<const Entity> entities{ manager.getEntities(), manager.getComponentCount() };
         for (Entity const e : entities) {
             destroy(engine, e);
         }

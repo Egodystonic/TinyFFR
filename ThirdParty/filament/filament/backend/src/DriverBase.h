@@ -78,6 +78,9 @@ struct HwBufferObject : public HwBase {
     explicit HwBufferObject(uint32_t byteCount) noexcept : byteCount(byteCount) {}
 };
 
+struct HwMemoryMappedBuffer : public HwBase {
+};
+
 struct HwIndexBuffer : public HwBase {
     uint32_t count : 27;
     uint32_t elementSize : 5;
@@ -138,6 +141,10 @@ struct HwRenderTarget : public HwBase {
 
 struct HwFence : public HwBase {
     Platform::Fence* fence = nullptr;
+};
+
+struct HwSync : public HwBase {
+    Platform::Sync* sync = nullptr;
 };
 
 struct HwSwapChain : public HwBase {
@@ -207,15 +214,15 @@ public:
 protected:
     class CallbackDataDetails;
 
-    inline void scheduleDestroy(BufferDescriptor&& buffer) noexcept {
+    void scheduleDestroy(BufferDescriptor&& buffer) {
         if (buffer.hasCallback()) {
             scheduleDestroySlow(std::move(buffer));
         }
     }
 
-    void scheduleDestroySlow(BufferDescriptor&& buffer) noexcept;
+    void scheduleDestroySlow(BufferDescriptor&& buffer);
 
-    void scheduleRelease(AcquiredImage const& image) noexcept;
+    void scheduleRelease(AcquiredImage const& image);
 
     void debugCommandBegin(CommandStream* cmds, bool synchronous, const char* methodName) noexcept override;
     void debugCommandEnd(CommandStream* cmds, bool synchronous, const char* methodName) noexcept override;

@@ -113,7 +113,7 @@ private:
 }// anonymous namespace
 
 Driver* PlatformOSMesa::createDriver(void* sharedGLContext,
-        const DriverConfig& driverConfig) noexcept {
+        const DriverConfig& driverConfig) {
 
     OSMesaAPI* api = new OSMesaAPI();
     mOsMesaApi = api;
@@ -169,7 +169,7 @@ void PlatformOSMesa::destroySwapChain(Platform::SwapChain* swapChain) noexcept {
 }
 
 bool PlatformOSMesa::makeCurrent(ContextType type, SwapChain* drawSwapChain,
-        SwapChain* readSwapChain) noexcept {
+        SwapChain* readSwapChain) {
     OSMesaAPI* api = (OSMesaAPI*) mOsMesaApi;
     OSMesaSwapchain* impl = (OSMesaSwapchain*) drawSwapChain;
 

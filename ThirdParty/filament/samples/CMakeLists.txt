@@ -47,7 +47,7 @@ if (NOT FILAMENT_SUPPORTS_WEBGPU)
     set(MATERIAL_SRCS ${MATERIAL_SRCS} materials/pointSprites.mat)
 endif ()
 
-if (CMAKE_CROSSCOMPILING)
+if (CMAKE_CROSSCOMPILING OR FILAMENT_IMPORT_PREBUILT_EXECUTABLES)
     include(${IMPORT_EXECUTABLES})
 endif()
 
@@ -217,6 +217,23 @@ endif()
 target_sources(gltf-demo-resources PRIVATE ${RESGEN_SOURCE})
 
 # ==================================================================================================
+# Common Sample Utilities
+# ==================================================================================================
+
+add_library(samples-common STATIC
+    common/arguments.cpp
+    common/configuration.h
+    common/configuration.cpp
+)
+
+target_include_directories(samples-common PRIVATE
+    ${ROOT_DIR}/third_party/getopt/include
+)
+target_link_libraries(samples-common filament)
+
+set_target_properties(samples-common PROPERTIES FOLDER Samples/Common)
+
+# ==================================================================================================
 # Compiler flags
 # ==================================================================================================
 
@@ -234,7 +251,7 @@ endif()
 function(add_demo NAME)
     include_directories(${GENERATION_ROOT})
     add_executable(${NAME} ${NAME}.cpp)
-    target_link_libraries(${NAME} PRIVATE sample-resources filamentapp)
+    target_link_libraries(${NAME} PRIVATE sample-resources filamentapp samples-common)
     target_compile_options(${NAME} PRIVATE ${COMPILER_FLAGS})
     set_target_properties(${NAME} PROPERTIES FOLDER Samples)
 
@@ -259,9 +276,11 @@ if (NOT ANDROID)
     add_demo(helloskinningbuffer)
     add_demo(helloskinningbuffer_morebones)
     add_demo(hellostereo)
+    add_demo(hybrid_instancing)
     add_demo(image_viewer)
     add_demo(lightbulb)
     add_demo(material_sandbox)
+    add_demo(materialinstancestress)
     add_demo(multiple_windows)
     # Tint does not support setting gl_PointSize, disable the relevant sample if using WebGPU
     # https://github.com/gpuweb/gpuweb/issues/1190
@@ -287,6 +306,7 @@ if (NOT ANDROID)
     target_link_libraries(hellopbr PRIVATE filameshio suzanne-resources)
     target_link_libraries(hellostereo PRIVATE filameshio suzanne-resources)
     target_link_libraries(image_viewer PRIVATE viewer imageio)
+    target_link_libraries(materialinstancestress PRIVATE geometry filameshio suzanne-resources)
     target_link_libraries(multiple_windows PRIVATE filameshio suzanne-resources)
     target_link_libraries(rendertarget PRIVATE filameshio suzanne-resources)
     target_link_libraries(sample_cloth PRIVATE filameshio)

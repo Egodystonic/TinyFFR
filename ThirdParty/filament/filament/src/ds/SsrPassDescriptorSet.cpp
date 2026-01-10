@@ -41,7 +41,8 @@ SsrPassDescriptorSet::SsrPassDescriptorSet() noexcept = default;
 
 void SsrPassDescriptorSet::init(FEngine& engine) noexcept {
     // create the descriptor-set from the layout
-    mDescriptorSet = DescriptorSet{ engine.getPerViewDescriptorSetLayoutSsrVariant() };
+    mDescriptorSet = DescriptorSet{
+            "SsrPassDescriptorSet", engine.getPerViewDescriptorSetLayoutSsrVariant() };
 
     // create a dummy Shadow UBO (see comment in setFrameUniforms() below)
     mShadowUbh = engine.getDriverApi().createBufferObject(sizeof(ShadowUib),
@@ -53,51 +54,37 @@ void SsrPassDescriptorSet::terminate(DriverApi& driver) {
     driver.destroyBufferObject(mShadowUbh);
 }
 
-void SsrPassDescriptorSet::setFrameUniforms(TypedUniformBuffer<PerViewUib>& uniforms) noexcept {
+void SsrPassDescriptorSet::setFrameUniforms(FEngine const& engine,
+        TypedUniformBuffer<PerViewUib>& uniforms) noexcept {
     // initialize the descriptor-set
-    mDescriptorSet.setBuffer(+PerViewBindingPoints::FRAME_UNIFORMS,
+    mDescriptorSet.setBuffer(engine.getPerViewDescriptorSetLayoutSsrVariant(),
+            +PerViewBindingPoints::FRAME_UNIFORMS,
             uniforms.getUboHandle(), 0, uniforms.getSize());
 
     // This is actually not used for the SSR variants, but the descriptor-set layout needs
     // to have this UBO because the fragment shader used is the "generic" one. Both Metal
     // and GL would be okay without this, but Vulkan's validation layer would complain.
-    mDescriptorSet.setBuffer(+PerViewBindingPoints::SHADOWS, mShadowUbh, 0, sizeof(ShadowUib));
-
-    mUniforms = std::addressof(uniforms);
+    mDescriptorSet.setBuffer(engine.getPerViewDescriptorSetLayoutSsrVariant(),
+            +PerViewBindingPoints::SHADOWS, mShadowUbh, 0, sizeof(ShadowUib));
 }
 
-void SsrPassDescriptorSet::prepareHistorySSR(Handle<HwTexture> ssr,
-        mat4f const& historyProjection,
-        mat4f const& uvFromViewMatrix,
-        ScreenSpaceReflectionsOptions const& ssrOptions) noexcept {
-
-    mDescriptorSet.setSampler(+PerViewBindingPoints::SSR, ssr, {
-        .filterMag = SamplerMagFilter::LINEAR,
-        .filterMin = SamplerMinFilter::LINEAR
-    });
-
-    assert_invariant(mUniforms);
-    auto& s = mUniforms->edit();
-    s.ssrReprojection = historyProjection;
-    s.ssrUvFromViewMatrix = uvFromViewMatrix;
-    s.ssrThickness = ssrOptions.thickness;
-    s.ssrBias = ssrOptions.bias;
-    s.ssrDistance = ssrOptions.enabled ? ssrOptions.maxDistance : 0.0f;
-    s.ssrStride = ssrOptions.stride;
+void SsrPassDescriptorSet::prepareHistorySSR(FEngine const& engine, Handle<HwTexture> ssr) noexcept {
+    mDescriptorSet.setSampler(engine.getPerViewDescriptorSetLayoutSsrVariant(),
+            +PerViewBindingPoints::SSR_HISTORY, ssr, SamplerParams{
+                .filterMag = SamplerMagFilter::LINEAR,
+                .filterMin = SamplerMinFilter::LINEAR
+            });
 }
 
-void SsrPassDescriptorSet::prepareStructure(Handle<HwTexture> structure) noexcept {
+void SsrPassDescriptorSet::prepareStructure(FEngine const& engine,
+        Handle<HwTexture> structure) noexcept {
     // sampler must be NEAREST
-    mDescriptorSet.setSampler(+PerViewBindingPoints::STRUCTURE, structure, {});
+    mDescriptorSet.setSampler(engine.getPerViewDescriptorSetLayoutSsrVariant(),
+            +PerViewBindingPoints::STRUCTURE, structure, SamplerParams{});
 }
 
 void SsrPassDescriptorSet::commit(FEngine& engine) noexcept {
-    assert_invariant(mUniforms);
     DriverApi& driver = engine.getDriverApi();
-    if (mUniforms->isDirty()) {
-        driver.updateBufferObject(mUniforms->getUboHandle(),
-                mUniforms->toBufferDescriptor(driver), 0);
-    }
     mDescriptorSet.commit(engine.getPerViewDescriptorSetLayoutSsrVariant(), driver);
 }
 

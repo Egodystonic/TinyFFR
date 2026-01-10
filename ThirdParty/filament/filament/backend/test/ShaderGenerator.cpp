@@ -118,7 +118,7 @@ ShaderGenerator::Blob ShaderGenerator::transpileShader(ShaderStage stage, std::s
     } else if (backend == Backend::VULKAN) {
         shader.insert(pos, "#define TARGET_VULKAN_ENVIRONMENT\n");
     } else if (backend == Backend::WEBGPU) {
-        shader.insert(pos, "#define TARGET_VULKAN_ENVIRONMENT\n");
+        shader.insert(pos, "#define TARGET_WEBGPU_ENVIRONMENT\n");
     }
 
     const char* shaderCString = shader.c_str();
@@ -173,6 +173,7 @@ ShaderGenerator::Blob ShaderGenerator::transpileShader(ShaderStage stage, std::s
         return { (uint8_t*)spirv.data(), (uint8_t*)(spirv.data() + spirv.size()) };
     } else if (backend == Backend::WEBGPU){
         filamat::GLSLPostProcessor::spirvToWgsl(&spirv, &result);
+        return { result.c_str(), result.c_str() + result.length() + 1 };
     }
 
     return {};
@@ -183,6 +184,18 @@ Program ShaderGenerator::getProgram(filament::backend::DriverApi&) noexcept {
     program.shaderLanguage(mShaderLanguage);
     program.shader(ShaderStage::VERTEX, mVertexBlob.data(), mVertexBlob.size());
     program.shader(ShaderStage::FRAGMENT, mFragmentBlob.data(), mFragmentBlob.size());
+    return program;
+}
+
+Program ShaderGenerator::getProgramWithPushConstants(filament::backend::DriverApi&,
+        std::array<PushConstants, filament::backend::Program::SHADER_TYPE_COUNT> constants) {
+    Program program;
+    program.shaderLanguage(mShaderLanguage);
+    program.shader(ShaderStage::VERTEX, mVertexBlob.data(), mVertexBlob.size());
+    program.shader(ShaderStage::FRAGMENT, mFragmentBlob.data(), mFragmentBlob.size());
+    for (auto const stage : {ShaderStage::VERTEX, ShaderStage::FRAGMENT }) {
+        program.pushConstants(stage, constants[uint8_t(stage)]);
+    }
     return program;
 }
 

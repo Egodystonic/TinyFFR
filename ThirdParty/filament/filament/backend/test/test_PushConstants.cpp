@@ -21,10 +21,15 @@
 #include "ShaderGenerator.h"
 #include "Skip.h"
 #include "TrianglePrimitive.h"
+#include "backend/DriverEnums.h"
+#include "backend/Handle.h"
 
 #include <utils/Hash.h>
 
 namespace test {
+
+static ShaderGenerator::PushConstants gVertConstants;
+static ShaderGenerator::PushConstants gFragConstants;
 
 using namespace filament;
 using namespace filament::backend;
@@ -79,40 +84,59 @@ void main() {
     fragColor = vec4(pushConstants.red, pushConstants.green, pushConstants.blue, 1.0);
 })";
 
+void initPushConstants() {
+    // TODO: move this initialization to a more appropriate place.
+    gVertConstants.clear();
+    gFragConstants.clear();
+
+    gVertConstants.reserve(4);
+    gVertConstants.resize(4);
+    gVertConstants[pushConstantIndex.TRIANGLE_HIDE] = {"hideTriangle", backend::ConstantType::BOOL};
+    gVertConstants[pushConstantIndex.TRIANGLE_SCALE] = {"triangleScale", backend::ConstantType::FLOAT};
+    gVertConstants[pushConstantIndex.TRIANGLE_OFFSET_X] = {"triangleOffsetX", backend::ConstantType::FLOAT};
+    gVertConstants[pushConstantIndex.TRIANGLE_OFFSET_Y] = {"triangleOffsetY", backend::ConstantType::FLOAT};
+
+    gFragConstants.reserve(4);
+    gFragConstants.resize(4);
+    gFragConstants[pushConstantIndex.RED] = {"red", backend::ConstantType::FLOAT};
+    gFragConstants[pushConstantIndex.GREEN] = {"green", backend::ConstantType::FLOAT};
+    gFragConstants[pushConstantIndex.BLUE] = {"blue", backend::ConstantType::FLOAT};
+}
+
 TEST_F(BackendTest, PushConstants) {
-    SKIP_IF(Backend::OPENGL, "Push constants not supported on OpenGL");
-    FAIL_IF(Backend::VULKAN, "Crashing due to no program set when setting push constants");
+    SKIP_IF(Backend::OPENGL, "see b/453757504");
+    SKIP_IF(SkipEnvironment(OperatingSystem::CI, Backend::VULKAN), "see b/453776664");
+    SKIP_IF(Backend::WEBGPU, "Push constants not supported on WebGPU");
+
+    initPushConstants();
 
     auto& api = getDriverApi();
 
     api.startCapture(0);
-    Cleanup cleanup(api);
 
     // The test is executed within this block scope to force destructors to run before
     // executeCommands().
     {
         // Create a SwapChain and make it current.
-        auto swapChain = cleanup.add(createSwapChain());
+        auto swapChain = addCleanup(createSwapChain());
         api.makeCurrent(swapChain, swapChain);
 
         // Create a program.
         ShaderGenerator shaderGen(triangleVs, triangleFs, sBackend, sIsMobilePlatform);
-        Program p = shaderGen.getProgram(api);
-        ProgramHandle program = cleanup.add(api.createProgram(std::move(p)));
+        Program p =
+                shaderGen.getProgramWithPushConstants(api, { gVertConstants, gFragConstants, {} });
+        ProgramHandle program = addCleanup(api.createProgram(std::move(p)));
 
-        Handle<HwRenderTarget> renderTarget = cleanup.add(api.createDefaultRenderTarget());
+        Handle<HwRenderTarget> renderTarget = addCleanup(api.createDefaultRenderTarget());
 
         TrianglePrimitive triangle(api);
 
-        RenderPassParams params = {};
-        params.flags.clear = TargetBufferFlags::COLOR0;
-        params.viewport = { 0, 0, 512, 512 };
-        params.clearColor = math::float4(0.0f, 0.0f, 1.0f, 1.0f);
-        params.flags.discardStart = TargetBufferFlags::ALL;
-        params.flags.discardEnd = TargetBufferFlags::NONE;
+        RenderPassParams params = getClearColorRenderPass();
+        params.viewport = getFullViewport();
 
         PipelineState ps = {};
         ps.program = program;
+        ps.vertexBufferInfo = triangle.getVertexBufferInfo();
         ps.rasterState.colorWrite = true;
         ps.rasterState.depthWrite = false;
 
@@ -120,6 +144,8 @@ TEST_F(BackendTest, PushConstants) {
         api.beginFrame(0, 0, 0);
 
         api.beginRenderPass(renderTarget, params);
+        api.bindPipeline(ps);
+        api.bindRenderPrimitive(triangle.getRenderPrimitive());
 
         // Set the push constants to scale the triangle in half
         api.setPushConstant(ShaderStage::VERTEX, pushConstantIndex.TRIANGLE_HIDE, false);
@@ -129,7 +155,7 @@ TEST_F(BackendTest, PushConstants) {
         api.setPushConstant(ShaderStage::FRAGMENT, pushConstantIndex.RED, 0.25f);
         api.setPushConstant(ShaderStage::FRAGMENT, pushConstantIndex.GREEN, 0.5f);
         api.setPushConstant(ShaderStage::FRAGMENT, pushConstantIndex.BLUE, 1.0f);
-        api.draw(ps, triangle.getRenderPrimitive(), 0, 3, 1);
+        api.draw2(0, 3, 1);
 
         // Draw another triangle, transposed to the upper-right.
         api.setPushConstant(ShaderStage::VERTEX, pushConstantIndex.TRIANGLE_OFFSET_X, 0.5f);
@@ -139,7 +165,7 @@ TEST_F(BackendTest, PushConstants) {
         api.setPushConstant(ShaderStage::FRAGMENT, pushConstantIndex.GREEN, 0.5f);
         api.setPushConstant(ShaderStage::FRAGMENT, pushConstantIndex.BLUE, 0.25f);
 
-        api.draw(ps, triangle.getRenderPrimitive(), 0, 3, 1);
+        api.draw2(0, 3, 1);
 
         // Draw a final triangle, transposed to the lower-left.
         api.setPushConstant(ShaderStage::VERTEX, pushConstantIndex.TRIANGLE_OFFSET_X, -0.5f);
@@ -149,12 +175,12 @@ TEST_F(BackendTest, PushConstants) {
         api.setPushConstant(ShaderStage::FRAGMENT, pushConstantIndex.GREEN, 0.25f);
         api.setPushConstant(ShaderStage::FRAGMENT, pushConstantIndex.BLUE, 1.00f);
 
-        api.draw(ps, triangle.getRenderPrimitive(), 0, 3, 1);
+        api.draw2(0, 3, 1);
 
         api.endRenderPass();
 
-        EXPECT_IMAGE(renderTarget, getExpectations(),
-                ScreenshotParams(512, 512, "pushConstants", 1957275826));
+        EXPECT_IMAGE(renderTarget, ScreenshotParams(params.viewport.width, params.viewport.height,
+                                           "pushConstants", 3575588741));
 
         api.commit(swapChain);
         api.endFrame(0);

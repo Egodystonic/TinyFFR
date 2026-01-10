@@ -34,8 +34,41 @@ using namespace bluevk;
 
 namespace filament::backend {
 
-VulkanPipelineCache::VulkanPipelineCache(VkDevice device)
-    : mDevice(device) {
+namespace {
+
+#if FVK_ENABLED(FVK_DEBUG_SHADER_MODULE)
+void printPipelineFeedbackInfo(VkPipelineCreationFeedbackCreateInfo const& feedbackInfo) {
+    VkPipelineCreationFeedback const& pipelineInfo = *feedbackInfo.pPipelineCreationFeedback;
+    if (!(pipelineInfo.flags & VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT)) {
+        return;
+    }
+
+    bool const isCacheHit =
+            (pipelineInfo.flags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT);
+    FVK_LOGD << "Pipeline build stats - Cache hit: " << isCacheHit
+             << ", Time: " << pipelineInfo.duration / 1000000.0 << "ms";
+
+    for (uint32_t i = 0; i < feedbackInfo.pipelineStageCreationFeedbackCount; ++i) {
+        VkPipelineCreationFeedback const& stageInfo = feedbackInfo.pPipelineStageCreationFeedbacks[i];
+        if (!(stageInfo.flags & VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT)) {
+            continue;
+        }
+
+        bool const isVertexShader = (i == 0);
+        bool const isCacheHit = (stageInfo.flags &
+                                 VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT);
+        FVK_LOGD << (isVertexShader ? "Vertex" : "Fragment")
+                 << " shader build stats - Cache hit: " << isCacheHit
+                 << ", Time: " << stageInfo.duration / 1000000.0 << "ms";
+    }
+}
+#endif
+
+} // namespace
+
+VulkanPipelineCache::VulkanPipelineCache(VkDevice device, VulkanContext const& context)
+        : mDevice(device),
+          mContext(context) {
     VkPipelineCacheCreateInfo createInfo = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
     };
@@ -158,9 +191,12 @@ VulkanPipelineCache::PipelineCacheEntry* VulkanPipelineCache::createPipeline() n
         .alphaToCoverageEnable = raster.alphaToCoverageEnable,
         .alphaToOneEnable = VK_FALSE,
     };
+    bool const enableDepthTest =
+        raster.depthCompareOp != SamplerCompareFunc::A ||
+        raster.depthWriteEnable;
     VkPipelineDepthStencilStateCreateInfo vkDs = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        .depthTestEnable = VK_TRUE,
+        .depthTestEnable = enableDepthTest ? VK_TRUE : VK_FALSE,
         .depthWriteEnable = raster.depthWriteEnable,
         .depthCompareOp = fvkutils::getCompareOp(raster.depthCompareOp),
         .depthBoundsTestEnable = VK_FALSE,
@@ -216,19 +252,43 @@ VulkanPipelineCache::PipelineCacheEntry* VulkanPipelineCache::createPipeline() n
         }
     }
 
-    #if FVK_ENABLED(FVK_DEBUG_SHADER_MODULE)
-        FVK_LOGD << "vkCreateGraphicsPipelines with shaders = ("
-                 << shaderStages[0].module << ", " << shaderStages[1].module << ")"
-                 << utils::io::endl;
-    #endif
+#if FVK_ENABLED(FVK_DEBUG_SHADER_MODULE)
+    FVK_LOGD << "vkCreateGraphicsPipelines with shaders = (" << shaderStages[0].module << ", "
+             << shaderStages[1].module << ")";
+
+    VkPipelineCreationFeedback stageFeedbacks[SHADER_MODULE_COUNT] = {};
+    VkPipelineCreationFeedback pipelineFeedback = {};
+    VkPipelineCreationFeedbackCreateInfo feedbackInfo = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO_EXT,
+        .pNext = nullptr,
+        .pPipelineCreationFeedback = &pipelineFeedback,
+        .pipelineStageCreationFeedbackCount = hasFragmentShader ? SHADER_MODULE_COUNT : 1,
+        .pPipelineStageCreationFeedbacks = stageFeedbacks,
+    };
+
+    if (mContext.pipelineCreationFeedbackSupported()) {
+        feedbackInfo.pNext = pipelineCreateInfo.pNext;
+        pipelineCreateInfo.pNext = &feedbackInfo;
+    }
+#endif
     PipelineCacheEntry cacheEntry = {
         .lastUsed = mCurrentTime,
     };
     VkResult error = vkCreateGraphicsPipelines(mDevice, mPipelineCache, 1, &pipelineCreateInfo,
             VKALLOC, &cacheEntry.handle);
+
+#if FVK_ENABLED(FVK_DEBUG_SHADER_MODULE)
+    FVK_LOGD << "vkCreateGraphicsPipelines with shaders = (" << shaderStages[0].module << ", "
+             << shaderStages[1].module << ")";
+
+    if (mContext.pipelineCreationFeedbackSupported()) {
+        printPipelineFeedbackInfo(feedbackInfo);
+    }
+#endif
+
     assert_invariant(error == VK_SUCCESS);
     if (error != VK_SUCCESS) {
-        FVK_LOGE << "vkCreateGraphicsPipelines error " << error << utils::io::endl;
+        FVK_LOGE << "vkCreateGraphicsPipelines error " << error;
         return nullptr;
     }
     return &mPipelines.emplace(mPipelineRequirements, cacheEntry).first.value();
@@ -242,7 +302,7 @@ void VulkanPipelineCache::bindProgram(fvkmemory::resource_ptr<VulkanProgram> pro
 #if FVK_ENABLED(FVK_DEBUG_SHADER_MODULE)
     if (mPipelineRequirements.shaders[0] == VK_NULL_HANDLE ||
             mPipelineRequirements.shaders[1] == VK_NULL_HANDLE) {
-        FVK_LOGE << "Binding missing shader: " << program->name.c_str() << utils::io::endl;
+        FVK_LOGE << "Binding missing shader: " << program->name.c_str();
     }
 #endif
 }
@@ -268,10 +328,14 @@ void VulkanPipelineCache::bindVertexArray(VkVertexInputAttributeDescription cons
             mPipelineRequirements.vertexAttributes[i] = attribDesc[i];
             mPipelineRequirements.vertexBuffers[i] = bufferDesc[i];
         } else {
-            mPipelineRequirements.vertexAttributes[i] = {};
-            mPipelineRequirements.vertexBuffers[i] = {};
+            mPipelineRequirements.vertexAttributes[i] = VertexInputAttributeDescription{};
+            mPipelineRequirements.vertexBuffers[i] = VertexInputBindingDescription{};
         }
     }
+}
+
+void VulkanPipelineCache::resetBoundPipeline() {
+    mBoundPipeline = {};
 }
 
 void VulkanPipelineCache::terminate() noexcept {
@@ -279,7 +343,7 @@ void VulkanPipelineCache::terminate() noexcept {
         vkDestroyPipeline(mDevice, iter.second.handle, VKALLOC);
     }
     mPipelines.clear();
-    mBoundPipeline = {};
+    resetBoundPipeline();
 
     vkDestroyPipelineCache(mDevice, mPipelineCache, VKALLOC);
 }
@@ -293,7 +357,7 @@ void VulkanPipelineCache::gc() noexcept {
 
     // The Vulkan spec says: "When a command buffer begins recording, all state in that command
     // buffer is undefined." Therefore, we need to clear all bindings at this time.
-    mBoundPipeline = {};
+    resetBoundPipeline();
 
     // NOTE: Due to robin_map restrictions, we cannot use auto or range-based loops.
 

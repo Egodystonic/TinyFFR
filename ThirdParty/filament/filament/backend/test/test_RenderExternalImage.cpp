@@ -46,24 +46,24 @@ Shader createShader(DriverApi& api, Cleanup& cleanup, Backend backend) {
 
 // Rendering an external image without setting any data should not crash.
 TEST_F(BackendTest, RenderExternalImageWithoutSet) {
-    SKIP_IF(Backend::METAL, "External images aren't supported in metal");
-    SKIP_IF(Backend::VULKAN, "External images aren't supported in vulkan");
+    SKIP_IF(Backend::METAL, "External images aren't supported in Metal");
+    SKIP_IF(Backend::VULKAN, "b/453776730");
+    SKIP_IF(Backend::WEBGPU, "External images aren't supported in WebGPU");
     auto& api = getDriverApi();
-    Cleanup cleanup(api);
 
     TrianglePrimitive triangle(api);
 
-    auto swapChain = cleanup.add(createSwapChain());
+    auto swapChain = addCleanup(createSwapChain());
 
-    Shader shader = createShader(api, cleanup, sBackend);
+    Shader shader = createShader(api, *mCleanup, sBackend);
 
-    backend::Handle<HwRenderTarget> defaultRenderTarget = cleanup.add(
-            api.createDefaultRenderTarget(0));
+    backend::Handle<HwRenderTarget> defaultRenderTarget = addCleanup(
+            api.createDefaultRenderTarget());
 
     // Create a texture that will be backed by an external image.
     auto usage = TextureUsage::COLOR_ATTACHMENT | TextureUsage::SAMPLEABLE;
     const NativeView& view = getNativeView();
-    backend::Handle<HwTexture> texture = cleanup.add(api.createTexture(
+    backend::Handle<HwTexture> texture = addCleanup(api.createTexture(
             SamplerType::SAMPLER_EXTERNAL,      // target
             1,                                  // levels
             TextureFormat::RGBA8,               // format
@@ -73,20 +73,11 @@ TEST_F(BackendTest, RenderExternalImageWithoutSet) {
             1,                                  // depth
             usage));                             // usage
 
-    RenderPassParams params = {};
-    fullViewport(params);
-    params.flags.clear = TargetBufferFlags::COLOR;
-    params.clearColor = { 0.f, 1.f, 0.f, 1.f };
-    params.flags.discardStart = TargetBufferFlags::ALL;
-    params.flags.discardEnd = TargetBufferFlags::NONE;
+    PipelineState state = getColorWritePipelineState();
+    shader.addProgramToPipelineState(state);
 
-    PipelineState state;
-    state.program = shader.getProgram();
-    state.pipelineLayout.setLayout[0] = { shader.getDescriptorSetLayout() };
-    state.rasterState.colorWrite = true;
-    state.rasterState.depthWrite = false;
-    state.rasterState.depthFunc = RasterState::DepthFunc::A;
-    state.rasterState.culling = CullingMode::NONE;
+    RenderPassParams params = getClearColorRenderPass();
+    params.viewport = getFullViewport();
 
     DescriptorSetHandle descriptorSet = shader.createDescriptorSet(api);
 
@@ -99,7 +90,11 @@ TEST_F(BackendTest, RenderExternalImageWithoutSet) {
 
     // Render a triangle.
     api.beginRenderPass(defaultRenderTarget, params);
-    api.draw(state, triangle.getRenderPrimitive(), 0, 3, 1);
+    state.primitiveType = PrimitiveType::TRIANGLES;
+    state.vertexBufferInfo = triangle.getVertexBufferInfo();
+    api.bindPipeline(state);
+    api.bindRenderPrimitive(triangle.getRenderPrimitive());
+    api.draw2(0, 3, 1);
     api.endRenderPass();
 
     api.flush();
@@ -114,20 +109,21 @@ TEST_F(BackendTest, RenderExternalImageWithoutSet) {
 }
 
 TEST_F(BackendTest, RenderExternalImage) {
-    SKIP_IF(Backend::METAL, "External images aren't supported in metal");
-    SKIP_IF(Backend::VULKAN, "External images aren't supported in vulkan");
+    SKIP_IF(Backend::METAL, "External images aren't supported in Metal");
+    SKIP_IF(Backend::VULKAN, "b/453777319");
+    SKIP_IF(Backend::WEBGPU, "External images aren't supported in WebGPU");
+    SKIP_IF(SkipEnvironment(OperatingSystem::CI, Backend::OPENGL), "b/453758594");
     auto& api = getDriverApi();
-    Cleanup cleanup(api);
 
     TrianglePrimitive triangle(api);
 
-    auto swapChain = cleanup.add(createSwapChain());
+    auto swapChain = addCleanup(createSwapChain());
 
-    Shader shader = createShader(api, cleanup, sBackend);
+    Shader shader = createShader(api, *mCleanup, sBackend);
     DescriptorSetHandle descriptorSet = shader.createDescriptorSet(api);
 
-    backend::Handle<HwRenderTarget> defaultRenderTarget = cleanup.add(
-            api.createDefaultRenderTarget(0));
+    backend::Handle<HwRenderTarget> defaultRenderTarget = addCleanup(
+            api.createDefaultRenderTarget());
 
     // require users to create two Filament textures and have two material parameters
     // add a "plane" parameter to setExternalImage
@@ -173,26 +169,17 @@ TEST_F(BackendTest, RenderExternalImage) {
 
     api.setupExternalImage(pixBuffer);
     backend::Handle<HwTexture> texture =
-            cleanup.add(api.createTextureExternalImage(SamplerType::SAMPLER_EXTERNAL,
+            addCleanup(api.createTextureExternalImage(SamplerType::SAMPLER_EXTERNAL,
                     TextureFormat::RGBA8, 1024, 1024, usage, pixBuffer));
 
     // We're now free to release the buffer.
     CVBufferRelease(pixBuffer);
 
-    RenderPassParams params = {};
-    fullViewport(params);
-    params.flags.clear = TargetBufferFlags::COLOR;
-    params.clearColor = { 0.f, 1.f, 0.f, 1.f };
-    params.flags.discardStart = TargetBufferFlags::ALL;
-    params.flags.discardEnd = TargetBufferFlags::NONE;
+    PipelineState state = getColorWritePipelineState();
+    shader.addProgramToPipelineState(state);
 
-    PipelineState state;
-    state.program = shader.getProgram();
-    state.pipelineLayout.setLayout[0] = { shader.getDescriptorSetLayout() };
-    state.rasterState.colorWrite = true;
-    state.rasterState.depthWrite = false;
-    state.rasterState.depthFunc = RasterState::DepthFunc::A;
-    state.rasterState.culling = CullingMode::NONE;
+    RenderPassParams params = getClearColorRenderPass();
+    params.viewport = getFullViewport();
 
     api.startCapture(0);
     api.makeCurrent(swapChain, swapChain);
@@ -203,14 +190,18 @@ TEST_F(BackendTest, RenderExternalImage) {
 
     // Render a triangle.
     api.beginRenderPass(defaultRenderTarget, params);
-    api.draw(state, triangle.getRenderPrimitive(), 0, 3, 1);
+    state.primitiveType = PrimitiveType::TRIANGLES;
+    state.vertexBufferInfo = triangle.getVertexBufferInfo();
+    api.bindPipeline(state);
+    api.bindRenderPrimitive(triangle.getRenderPrimitive());
+    api.draw2(0, 3, 1);
     api.endRenderPass();
 
     api.flush();
     api.commit(swapChain);
     api.endFrame(0);
-    EXPECT_IMAGE(defaultRenderTarget, getExpectations(),
-            ScreenshotParams(512, 512, "RenderExternalImage", 267229901));
+    EXPECT_IMAGE(defaultRenderTarget,
+            ScreenshotParams(screenWidth(), screenHeight(), "RenderExternalImage", 1206264951));
 
     api.stopCapture(0);
     api.finish();

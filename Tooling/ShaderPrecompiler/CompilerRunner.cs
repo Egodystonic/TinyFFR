@@ -249,12 +249,13 @@ static class CompilerRunner {
 
 		Console.WriteLine("\tUsing temp folder: " + Environment.CurrentDirectory);
 
+		var completedFileCount = 0;
 		try {
 			Parallel.ForEach(files, file => {
 				var tempFileName = file.DestinationFileName + ".txt";
 				var destFileName = Path.Combine(destinationDir, file.DestinationFileName);
 				File.WriteAllText(tempFileName, file.ProcessedContents);
-				var proc = Process.Start(matcLocation, $"-p desktop -a opengl -o \"{destFileName}\" \"{tempFileName}\"");
+				var proc = Process.Start(matcLocation, $"-p desktop -a all -o \"{destFileName}\" \"{tempFileName}\"");
 				proc.WaitForExit();
 				Console.WriteLine("\t\t\t" + file.DestinationFileName);
 				if (proc.ExitCode != 0) {
@@ -275,6 +276,10 @@ static class CompilerRunner {
 				}
 
 				File.Delete(destFileName);
+				var numFilesCompleted = Interlocked.Increment(ref completedFileCount);
+				if (numFilesCompleted % 20 == 0) {
+					Console.WriteLine(Environment.NewLine + $"\t\t\tProgress: {(numFilesCompleted / (float) files.Length) * 100f:N0}%" + Environment.NewLine);
+				}
 			});
 		}
 		finally {

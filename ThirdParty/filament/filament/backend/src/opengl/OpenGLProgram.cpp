@@ -25,12 +25,13 @@
 #include <backend/Program.h>
 #include <backend/Handle.h>
 
+#include <private/utils/Tracing.h>
+
 #include <utils/BitmaskEnum.h>
 #include <utils/compiler.h>
 #include <utils/debug.h>
 #include <utils/FixedCapacityVector.h>
 #include <utils/Log.h>
-#include <utils/Systrace.h>
 
 #include <algorithm>
 #include <array>
@@ -51,8 +52,8 @@ using namespace backend;
 struct OpenGLProgram::LazyInitializationData {
     Program::DescriptorSetInfo descriptorBindings;
     Program::BindingUniformsInfo bindingUniformInfo;
-    utils::FixedCapacityVector<Program::PushConstant> vertexPushConstants;
-    utils::FixedCapacityVector<Program::PushConstant> fragmentPushConstants;
+    FixedCapacityVector<Program::PushConstant> vertexPushConstants;
+    FixedCapacityVector<Program::PushConstant> fragmentPushConstants;
 };
 
 
@@ -96,8 +97,7 @@ OpenGLProgram::~OpenGLProgram() noexcept {
 }
 
 void OpenGLProgram::initialize(OpenGLDriver& gld) {
-
-    SYSTRACE_CALL();
+    FILAMENT_TRACING_CALL(FILAMENT_TRACING_CATEGORY_FILAMENT);
 
     assert_invariant(gl.program == 0);
     assert_invariant(mToken);
@@ -121,9 +121,8 @@ void OpenGLProgram::initialize(OpenGLDriver& gld) {
  * checkProgramStatus() has been successfully called.
  */
 void OpenGLProgram::initializeProgramState(OpenGLContext& context, GLuint program,
-        LazyInitializationData& lazyInitializationData) noexcept {
-
-    SYSTRACE_CALL();
+        LazyInitializationData& lazyInitializationData) {
+    FILAMENT_TRACING_CALL(FILAMENT_TRACING_CATEGORY_FILAMENT);
 
     // from the pipeline layout we compute a mapping from {set, binding} to {binding}
     // for both buffers and textures
@@ -142,7 +141,7 @@ void OpenGLProgram::initializeProgramState(OpenGLContext& context, GLuint progra
     context.useProgram(program);
 
     UTILS_NOUNROLL
-    for (backend::descriptor_set_t set = 0; set < MAX_DESCRIPTOR_SET_COUNT; set++) {
+    for (descriptor_set_t set = 0; set < MAX_DESCRIPTOR_SET_COUNT; set++) {
         for (Program::Descriptor const& entry: lazyInitializationData.descriptorBindings[set]) {
             switch (entry.type) {
                 case DescriptorType::UNIFORM_BUFFER:
@@ -175,7 +174,31 @@ void OpenGLProgram::initializeProgramState(OpenGLContext& context, GLuint progra
                     }
                     break;
                 }
-                case DescriptorType::SAMPLER:
+                case DescriptorType::SAMPLER_2D_FLOAT:
+                case DescriptorType::SAMPLER_2D_INT:
+                case DescriptorType::SAMPLER_2D_UINT:
+                case DescriptorType::SAMPLER_2D_DEPTH:
+                case DescriptorType::SAMPLER_2D_ARRAY_FLOAT:
+                case DescriptorType::SAMPLER_2D_ARRAY_INT:
+                case DescriptorType::SAMPLER_2D_ARRAY_UINT:
+                case DescriptorType::SAMPLER_2D_ARRAY_DEPTH:
+                case DescriptorType::SAMPLER_CUBE_FLOAT:
+                case DescriptorType::SAMPLER_CUBE_INT:
+                case DescriptorType::SAMPLER_CUBE_UINT:
+                case DescriptorType::SAMPLER_CUBE_DEPTH:
+                case DescriptorType::SAMPLER_CUBE_ARRAY_FLOAT:
+                case DescriptorType::SAMPLER_CUBE_ARRAY_INT:
+                case DescriptorType::SAMPLER_CUBE_ARRAY_UINT:
+                case DescriptorType::SAMPLER_CUBE_ARRAY_DEPTH:
+                case DescriptorType::SAMPLER_3D_FLOAT:
+                case DescriptorType::SAMPLER_3D_INT:
+                case DescriptorType::SAMPLER_3D_UINT:
+                case DescriptorType::SAMPLER_2D_MS_FLOAT:
+                case DescriptorType::SAMPLER_2D_MS_INT:
+                case DescriptorType::SAMPLER_2D_MS_UINT:
+                case DescriptorType::SAMPLER_2D_MS_ARRAY_FLOAT:
+                case DescriptorType::SAMPLER_2D_MS_ARRAY_INT:
+                case DescriptorType::SAMPLER_2D_MS_ARRAY_UINT:
                 case DescriptorType::SAMPLER_EXTERNAL: {
                     if (!entry.name.empty()) {
                         GLint const loc = glGetUniformLocation(program, entry.name.c_str());
@@ -191,8 +214,8 @@ void OpenGLProgram::initializeProgramState(OpenGLContext& context, GLuint progra
                 case DescriptorType::INPUT_ATTACHMENT:
                     break;
             }
-            CHECK_GL_ERROR(utils::slog.e)
         }
+        CHECK_GL_ERROR()
     }
 
     if (context.isES2()) {
@@ -239,19 +262,24 @@ void OpenGLProgram::initializeProgramState(OpenGLContext& context, GLuint progra
 }
 
 void OpenGLProgram::updateUniforms(
-        uint32_t index, GLuint id, void const* buffer, uint16_t age) const noexcept {
+        uint32_t const index, GLuint const id, void const* buffer,
+        uint16_t const age, uint32_t const offset) const noexcept {
     assert_invariant(mUniformsRecords);
     assert_invariant(buffer);
 
     // only update the uniforms if the UBO has changed since last time we updated
     UniformsRecord const& records = mUniformsRecords[index];
-    if (records.id == id && records.age == age) {
+    if (records.id == id && records.age == age && records.offset == offset) {
         return;
     }
     records.id = id;
     records.age = age;
+    records.offset = offset;
 
     assert_invariant(records.uniforms.size() == records.locations.size());
+
+    // apply the offset to the buffer
+    buffer = static_cast<char const*>(buffer) + offset;
 
     for (size_t i = 0, c = records.uniforms.size(); i < c; i++) {
         Program::Uniform const& u = records.uniforms[i];

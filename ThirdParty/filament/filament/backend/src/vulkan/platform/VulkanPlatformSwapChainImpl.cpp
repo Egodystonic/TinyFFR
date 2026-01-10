@@ -23,6 +23,10 @@
 
 #include <backend/DriverEnums.h>
 
+#ifdef __ANDROID__
+#include <AndroidNativeWindow.h>
+#endif
+
 using namespace bluevk;
 using namespace utils;
 
@@ -68,12 +72,12 @@ std::tuple<VkImage, VkDeviceMemory> createImageAndMemory(VulkanContext const& co
             = context.selectMemoryType(memReqs.memoryTypeBits, requiredMemoryFlags);
 
     FILAMENT_CHECK_POSTCONDITION(memoryTypeIndex < VK_MAX_MEMORY_TYPES)
-            << "VulkanPlatformSwapChainImpl: unable to find a memory type that meets requirements.";
+            << "VulkanPlatformSwapChainBase: unable to find a memory type that meets requirements.";
 
     VkMemoryAllocateInfo allocInfo = {
-            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            .allocationSize = memReqs.size,
-            .memoryTypeIndex = memoryTypeIndex,
+        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        .allocationSize = memReqs.size,
+        .memoryTypeIndex = memoryTypeIndex,
     };
     result = vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory);
     FILAMENT_CHECK_POSTCONDITION(result == VK_SUCCESS) << "Unable to allocate image memory."
@@ -94,17 +98,15 @@ VkFormat selectDepthFormat(fvkutils::VkFormatList const& depthFormats, bool hasS
 
 }// anonymous namespace
 
-VulkanPlatformSwapChainImpl::VulkanPlatformSwapChainImpl(VulkanContext const& context,
+VulkanPlatformSwapChainBase::VulkanPlatformSwapChainBase(VulkanContext const& context,
         VkDevice device, VkQueue queue)
     : mContext(context),
       mDevice(device),
       mQueue(queue) {}
 
-VulkanPlatformSwapChainImpl::~VulkanPlatformSwapChainImpl() {
-    destroy();
-}
+VulkanPlatformSwapChainBase::~VulkanPlatformSwapChainBase() = default;
 
-void VulkanPlatformSwapChainImpl::destroy() {
+void VulkanPlatformSwapChainBase::destroy() {
     if (mSwapChainBundle.depth) {
         vkDestroyImage(mDevice, mSwapChainBundle.depth, VKALLOC);
         if (mMemory.find(mSwapChainBundle.depth) != mMemory.end()) {
@@ -118,24 +120,39 @@ void VulkanPlatformSwapChainImpl::destroy() {
     mSwapChainBundle.colors.clear();
 }
 
-VkImage VulkanPlatformSwapChainImpl::createImage(VkExtent2D extent, VkFormat format,
+VkImage VulkanPlatformSwapChainBase::createImage(VkExtent2D extent, VkFormat format,
         bool isProtected) {
     auto [image, memory] = createImageAndMemory(mContext, mDevice, extent, format, isProtected);
     mMemory.insert({image, memory});
     return image;
 }
 
+bool VulkanPlatformSwapChainBase::queryCompositorTiming(
+        CompositorTiming* outCompositorTiming) const {
+    return false;
+}
+
+bool VulkanPlatformSwapChainBase::setPresentFrameId(uint64_t frameId) const {
+    return false;
+}
+
+bool VulkanPlatformSwapChainBase::queryFrameTimestamps(uint64_t frameId,
+        FrameTimestamps* outFrameTimestamps) const {
+    return false;
+}
+
 VulkanPlatformSurfaceSwapChain::VulkanPlatformSurfaceSwapChain(VulkanContext const& context,
         VkPhysicalDevice physicalDevice, VkDevice device, VkQueue queue, VkInstance instance,
-        VkSurfaceKHR surface, VkExtent2D fallbackExtent, uint64_t flags)
-    : VulkanPlatformSwapChainImpl(context, device, queue),
+        VkSurfaceKHR surface, VkExtent2D fallbackExtent, void* nativeWindow, uint64_t flags)
+    : VulkanPlatformSwapChainBase(context, device, queue),
       mInstance(instance),
       mPhysicalDevice(physicalDevice),
       mSurface(surface),
       mFallbackExtent(fallbackExtent),
       mUsesRGB((flags & backend::SWAP_CHAIN_CONFIG_SRGB_COLORSPACE) != 0),
       mHasStencil((flags & backend::SWAP_CHAIN_HAS_STENCIL_BUFFER) != 0),
-      mIsProtected((flags & backend::SWAP_CHAIN_CONFIG_PROTECTED_CONTENT) != 0) {
+      mIsProtected((flags & backend::SWAP_CHAIN_CONFIG_PROTECTED_CONTENT) != 0),
+      mNativeWindow(nativeWindow) {
     assert_invariant(surface);
     create();
 }
@@ -146,6 +163,15 @@ VulkanPlatformSurfaceSwapChain::~VulkanPlatformSurfaceSwapChain() {
 }
 
 VkResult VulkanPlatformSurfaceSwapChain::create() {
+#ifdef __ANDROID__
+    NativeWindow::enableFrameTimestamps(static_cast<ANativeWindow*>(mNativeWindow), true);
+    // on Android, disable producer throttling
+    if (mProducerThrottling.isSupported()) {
+        mProducerThrottling.setProducerThrottlingEnabled(
+                static_cast<ANativeWindow*>(mNativeWindow), false);
+    }
+#endif
+
     VkSurfaceFormatKHR surfaceFormat = {};
     VkSurfaceCapabilitiesKHR caps;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mPhysicalDevice, mSurface, &caps);
@@ -163,8 +189,7 @@ VkResult VulkanPlatformSurfaceSwapChain::create() {
     // the number of images, though there may be limits related to the total amount of memory used
     // by presentable images."
     if (maxImageCount != 0 && desiredImageCount > maxImageCount) {
-        FVK_LOGE << "Swap chain does not support " << desiredImageCount << " images."
-                      << utils::io::endl;
+        FVK_LOGE << "Swap chain does not support " << desiredImageCount << " images.";
         desiredImageCount = caps.minImageCount;
     }
 
@@ -172,13 +197,13 @@ VkResult VulkanPlatformSurfaceSwapChain::create() {
     FixedCapacityVector<VkSurfaceFormatKHR> const surfaceFormats
             = fvkutils::enumerate(vkGetPhysicalDeviceSurfaceFormatsKHR, mPhysicalDevice, mSurface);
     std::array<VkFormat, 2> expectedFormats = {
-            VK_FORMAT_R8G8B8A8_UNORM,
-            VK_FORMAT_B8G8R8A8_UNORM,
+        VK_FORMAT_R8G8B8A8_UNORM,
+        VK_FORMAT_B8G8R8A8_UNORM,
     };
     if (mUsesRGB) {
         expectedFormats = {
-                VK_FORMAT_R8G8B8A8_SRGB,
-                VK_FORMAT_B8G8R8A8_SRGB,
+            VK_FORMAT_R8G8B8A8_SRGB,
+            VK_FORMAT_B8G8R8A8_SRGB,
         };
     }
     for (VkSurfaceFormatKHR const& format: surfaceFormats) {
@@ -196,13 +221,9 @@ VkResult VulkanPlatformSurfaceSwapChain::create() {
     VkPresentModeKHR const desiredPresentMode = VK_PRESENT_MODE_FIFO_KHR;
     FixedCapacityVector<VkPresentModeKHR> presentModes = fvkutils::enumerate(
             vkGetPhysicalDeviceSurfacePresentModesKHR, mPhysicalDevice, mSurface);
-    bool foundSuitablePresentMode = false;
-    for (VkPresentModeKHR mode: presentModes) {
-        if (mode == desiredPresentMode) {
-            foundSuitablePresentMode = true;
-            break;
-        }
-    }
+
+    bool const foundSuitablePresentMode = std::find(presentModes.begin(), presentModes.end(),
+                                            desiredPresentMode) != presentModes.end();
     FILAMENT_CHECK_POSTCONDITION(foundSuitablePresentMode)
             << "Desired present mode is not supported by this device.";
 
@@ -266,8 +287,7 @@ VkResult VulkanPlatformSurfaceSwapChain::create() {
            << "swapchain-size=" << mSwapChainBundle.colors.size() << ", "
            << "identity-transform=" << (caps.currentTransform == 1) << ", "
            << "depth=" << mSwapChainBundle.depthFormat << ", "
-           << "protected=" << mSwapChainBundle.isProtected
-           << io::endl;
+           << "protected=" << mSwapChainBundle.isProtected;
 
     VkSemaphoreCreateInfo const semaphoreCreateInfo = {
             .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
@@ -293,7 +313,7 @@ VkResult VulkanPlatformSurfaceSwapChain::acquire(VulkanPlatform::ImageSyncData* 
     // Users should be notified of a suboptimal surface, but it should not cause a cascade of
     // log messages or a loop of re-creations.
     if (result == VK_SUBOPTIMAL_KHR && !mSuboptimal) {
-        FVK_LOGW << "Vulkan Driver: Suboptimal swap chain." << io::endl;
+        FVK_LOGW << "Vulkan Driver: Suboptimal swap chain.";
         mSuboptimal = true;
     }
     return result;
@@ -315,13 +335,13 @@ VkResult VulkanPlatformSurfaceSwapChain::present(uint32_t index, VkSemaphore fin
     // On Android Q and above, a suboptimal surface is always reported after screen rotation:
     // https://android-developers.googleblog.com/2020/02/handling-device-orientation-efficiently.html
     if (result == VK_SUBOPTIMAL_KHR && !mSuboptimal) {
-        FVK_LOGW << "Vulkan Driver: Suboptimal swap chain." << utils::io::endl;
+        FVK_LOGW << "Vulkan Driver: Suboptimal swap chain.";
         mSuboptimal = true;
     }
     return result;
 }
 
-bool VulkanPlatformSurfaceSwapChain::hasResized() {
+bool VulkanPlatformSurfaceSwapChain::hasResized() const {
     VkSurfaceCapabilitiesKHR caps;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mPhysicalDevice, mSurface, &caps);
     VkExtent2D perceivedExtent = caps.currentExtent;
@@ -333,8 +353,59 @@ bool VulkanPlatformSurfaceSwapChain::hasResized() {
     return !fvkutils::equivalent(mSwapChainBundle.extent, perceivedExtent);
 }
 
-bool VulkanPlatformSurfaceSwapChain::isProtected() {
+bool VulkanPlatformSurfaceSwapChain::isProtected() const {
     return mIsProtected;
+}
+
+bool VulkanPlatformSurfaceSwapChain::queryCompositorTiming(
+        CompositorTiming* outCompositorTiming) const {
+#ifdef __ANDROID__
+    // fallback to private APIs
+    if (UTILS_VERY_LIKELY(mNativeWindow)) {
+        int const status = NativeWindow::getCompositorTiming(
+                static_cast<ANativeWindow*>(mNativeWindow),
+                &outCompositorTiming->compositeDeadline,
+                &outCompositorTiming->compositeInterval,
+                &outCompositorTiming->compositeToPresentLatency);
+        if (status == 0) {
+            return true;
+        }
+    }
+#endif
+    return VulkanPlatformSwapChainBase::queryCompositorTiming(outCompositorTiming);
+}
+
+bool VulkanPlatformSurfaceSwapChain::setPresentFrameId(uint64_t frameId) const {
+#ifdef __ANDROID__
+    return mImpl.setPresentFrameId(static_cast<ANativeWindow*>(mNativeWindow), frameId);
+#endif
+    return VulkanPlatformSwapChainBase::setPresentFrameId(frameId);
+}
+
+bool VulkanPlatformSurfaceSwapChain::queryFrameTimestamps(uint64_t const frameId,
+        FrameTimestamps* outFrameTimestamps) const {
+#ifdef __ANDROID__
+    uint64_t const hwFrameId = mImpl.getFrameId(frameId);
+    if (hwFrameId == std::numeric_limits<uint64_t>::max()) {
+        return false;
+    }
+    // fallback to private APIs
+    int const status = NativeWindow::getFrameTimestamps(
+            static_cast<ANativeWindow*>(mNativeWindow), hwFrameId,
+            &outFrameTimestamps->requestedPresentTime,
+            &outFrameTimestamps->acquireTime,
+            &outFrameTimestamps->latchTime,
+            &outFrameTimestamps->firstCompositionStartTime,
+            &outFrameTimestamps->lastCompositionStartTime,
+            &outFrameTimestamps->gpuCompositionDoneTime,
+            &outFrameTimestamps->displayPresentTime,
+            &outFrameTimestamps->dequeueReadyTime,
+            &outFrameTimestamps->releaseTime);
+    if (status == 0) {
+        return true;
+    }
+#endif
+    return VulkanPlatformSwapChainBase::queryFrameTimestamps(frameId, outFrameTimestamps);
 }
 
 // Non-virtual override
@@ -360,7 +431,7 @@ void VulkanPlatformSurfaceSwapChain::destroy() {
     // phone). If necessary, we can revisit and implement the workaround [1].
     vkQueueWaitIdle(mQueue);
 
-    VulkanPlatformSwapChainImpl::destroy();
+    VulkanPlatformSwapChainBase::destroy();
 
     for (uint32_t i = 0; i < IMAGE_READY_SEMAPHORE_COUNT; ++i) {
         if (mImageReady[i] != VK_NULL_HANDLE) {
@@ -376,7 +447,7 @@ void VulkanPlatformSurfaceSwapChain::destroy() {
 
 VulkanPlatformHeadlessSwapChain::VulkanPlatformHeadlessSwapChain(VulkanContext const& context,
         VkDevice device, VkQueue queue, VkExtent2D extent, uint64_t flags)
-    : VulkanPlatformSwapChainImpl(context, device, queue),
+    : VulkanPlatformSwapChainBase(context, device, queue),
       mCurrentIndex(0) {
     mSwapChainBundle.extent = extent;
     mSwapChainBundle.colorFormat = (flags & backend::SWAP_CHAIN_CONFIG_SRGB_COLORSPACE) != 0
@@ -421,7 +492,10 @@ void VulkanPlatformHeadlessSwapChain::destroy() {
         }
     }
     mSwapChainBundle.colors.clear();
-    // No need to manually call through to the super because the super's destructor will be called
+
+    // Still need to call through to free the depth image.  But must do it after releasing the color
+    // images.
+    VulkanPlatformSwapChainBase::destroy();
 }
 
 }// namespace filament::backend

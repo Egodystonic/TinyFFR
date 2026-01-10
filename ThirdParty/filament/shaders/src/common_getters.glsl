@@ -47,8 +47,23 @@ highp mat4 getViewFromClipMatrix() {
 }
 
 /** @public-api */
+highp mat4 getEyeFromViewMatrix() {
+    return frameUniforms.eyeFromViewMatrix[getEyeIndex()];
+}
+
+/** @public-api */
+highp mat4 getEyeFromViewMatrix(int eyeIndex) {
+    return frameUniforms.eyeFromViewMatrix[eyeIndex];
+}
+
+/** @public-api */
 highp mat4 getClipFromWorldMatrix() {
     return frameUniforms.clipFromWorldMatrix[getEyeIndex()];
+}
+
+/** @public-api */
+highp mat4 getClipFromWorldMatrix(int eyeIndex) {
+    return frameUniforms.clipFromWorldMatrix[eyeIndex];
 }
 
 /** @public-api */
@@ -79,10 +94,10 @@ highp float getUserTimeMod(float m) {
 /**
  * Transforms a texture UV to make it suitable for a render target attachment.
  *
- * In Vulkan and Metal, texture coords are Y-down but in OpenGL they are Y-up. This wrapper function
- * accounts for these differences. When sampling from non-render targets (i.e. uploaded textures)
- * these differences do not matter because OpenGL has a second piece of backwardness, which is that
- * the first row of texels in glTexImage2D is interpreted as the bottom row.
+ * In Vulkan, WebGPU and Metal, texture coords are Y-down but in OpenGL they are Y-up. This wrapper
+ * function accounts for these differences. When sampling from non-render targets (i.e. uploaded
+ * textures) these differences do not matter because OpenGL has a second piece of backwardness,
+ * which is that the first row of texels in glTexImage2D is interpreted as the bottom row.
  *
  * To protect users from these differences, we recommend that materials in the SURFACE domain
  * leverage this wrapper function when sampling from offscreen render targets.
@@ -90,7 +105,7 @@ highp float getUserTimeMod(float m) {
  * @public-api
  */
 highp vec2 uvToRenderTargetUV(const highp vec2 uv) {
-#if defined(TARGET_METAL_ENVIRONMENT) || defined(TARGET_VULKAN_ENVIRONMENT)
+#if defined(TARGET_METAL_ENVIRONMENT) || defined(TARGET_VULKAN_ENVIRONMENT) || defined(TARGET_WEBGPU_ENVIRONMENT)
     return vec2(uv.x, 1.0 - uv.y);
 #else
     return uv;

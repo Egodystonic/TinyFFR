@@ -495,8 +495,11 @@ class_<Engine>("Engine")
             (Engine* engine, utils::Entity camera) { engine->destroyCameraComponent(camera); },
             allow_raw_pointers())
 
-    .function("_createMaterial", EMBIND_LAMBDA(Material*, (Engine* engine, BufferDescriptor mbd), {
-        return Material::Builder().package(mbd.bd->buffer, mbd.bd->size).build(*engine);
+    .function("_createMaterial", EMBIND_LAMBDA(Material*, (Engine* engine, BufferDescriptor mbd, Material::UboBatchingMode uboBatching), {
+        return Material::Builder()
+                .package(mbd.bd->buffer, mbd.bd->size)
+                .uboBatching(uboBatching)
+                .build(*engine);
     }), allow_raw_pointers())
     /// destroyMaterial ::method::
     /// material ::argument:: an instance of [Material]
@@ -623,11 +626,16 @@ class_<Renderer>("Renderer")
         }
         engine->execute();
     }), allow_raw_pointers())
+    .function("getUserTime", &Renderer::getUserTime)
+    .function("resetUserTime", &Renderer::resetUserTime)
+    .function("skipNextFrames", &Renderer::skipNextFrames)
+    .function("getFrameToSkipCount", &Renderer::getFrameToSkipCount)
     .function("_setClearOptions", &Renderer::setClearOptions, allow_raw_pointers())
     .function("getClearOptions", &Renderer::getClearOptions)
     .function("setPresentationTime", &Renderer::setPresentationTime)
     .function("setVsyncTime", &Renderer::setVsyncTime)
     .function("skipFrame", &Renderer::skipFrame)
+    .function("shouldRenderFrame", &Renderer::shouldRenderFrame)
     .function("beginFrame", EMBIND_LAMBDA(bool, (Renderer* self, SwapChain* swapChain), {
         return self->beginFrame(swapChain);
     }), allow_raw_pointers())
@@ -655,6 +663,8 @@ class_<View>("View")
     .function("setCamera", &View::setCamera, allow_raw_pointers())
     .function("hasCamera", &View::hasCamera)
     .function("setColorGrading", &View::setColorGrading, allow_raw_pointers())
+    .function("setChannelDepthClearEnabled", &View::setChannelDepthClearEnabled)
+    .function("isChannelDepthClearEnabled", &View::isChannelDepthClearEnabled)
     .function("setBlendMode", &View::setBlendMode)
     .function("getBlendMode", &View::getBlendMode)
     .function("setViewport", &View::setViewport)
@@ -687,6 +697,7 @@ class_<View>("View")
     .function("isStencilBufferEnabled", &View::isStencilBufferEnabled)
     .function("setMaterialGlobal", &View::setMaterialGlobal)
     .function("getMaterialGlobal", &View::getMaterialGlobal)
+    .function("getLastDynamicResolutionScale", &View::getLastDynamicResolutionScale)
     .function("getFogEntity", &View::getFogEntity)
     .function("clearFrameHistory", &View::clearFrameHistory);
 
@@ -1099,6 +1110,7 @@ class_<RenderableManager>("RenderableManager")
 
     .function("getAxisAlignedBoundingBox", &RenderableManager::getAxisAlignedBoundingBox)
     .function("getPrimitiveCount", &RenderableManager::getPrimitiveCount)
+    .function("getInstanceCount", &RenderableManager::getInstanceCount)
     .function("setMaterialInstanceAt", &RenderableManager::setMaterialInstanceAt,
             allow_raw_pointers())
     .function("clearMaterialInstanceAt", &RenderableManager::clearMaterialInstanceAt)
@@ -1345,7 +1357,15 @@ class_<Material>("Material")
         return self->createInstance(name.c_str()); }), allow_raw_pointers())
     .function("getName", EMBIND_LAMBDA(std::string, (Material* self), {
         return std::string(self->getName());
+    }), allow_raw_pointers())
+    .function("getParameterTransformName", EMBIND_LAMBDA(std::string, (Material* self, std::string samplerName), {
+        const char* transformName = self->getParameterTransformName(samplerName.c_str());
+        return transformName ? std::string(transformName) : std::string();
     }), allow_raw_pointers());
+
+enum_<Material::UboBatchingMode>("Material$UboBatchingMode")
+    .value("DISABLED", Material::UboBatchingMode::DISABLED)
+    .value("DEFAULT", Material::UboBatchingMode::DEFAULT);
 
 class_<MaterialInstance>("MaterialInstance")
     .function("getName", EMBIND_LAMBDA(std::string, (MaterialInstance* self), {

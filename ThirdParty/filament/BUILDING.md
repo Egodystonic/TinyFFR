@@ -4,8 +4,8 @@
 
 To build Filament, you must first install the following tools:
 
-- CMake 3.19 (or more recent)
-- clang 14.0 (or more recent)
+- CMake 3.22.1 (or more recent)
+- clang 16.0 (or more recent)
 - [ninja 1.10](https://github.com/ninja-build/ninja/wiki/Pre-built-Ninja-packages) (or more recent)
 
 Additional dependencies may be required for your operating system. Please refer to the appropriate
@@ -62,6 +62,11 @@ force a clean build by adding the `-c` flag in that case.
 To install the libraries and executables in `out/debug/` and `out/release/`, add the `-i` flag.
 The script offers more features described by executing `build.sh -h`.
 
+For more specialized options, please also consider the following pages:
+ - `-d`: [`matdbg`](https://google.github.io/filament/dup/matdbg.html)
+ - `-t`: [`fgviewer`](https://google.github.io/filament/dup/fgviewer.html)
+ - `-b` and `-y`: [ASAN/UBSAN builds](https://google.github.io/filament/notes/asan_ubsan.html)
+
 ### Filament-specific CMake Options
 
 The following CMake options are boolean options specific to Filament:
@@ -88,14 +93,18 @@ Options can also be set with the CMake GUI.
 
 Make sure you've installed the following dependencies:
 
-- `clang-14` or higher
+- `clang-16` or higher
 - `libglu1-mesa-dev`
-- `libc++-14-dev` (`libcxx-devel` and `libcxx-static` on Fedora) or higher
-- `libc++abi-14-dev` (`libcxxabi-static` on Fedora) or higher
+- `libc++-16-dev` (`libcxx-devel` and `libcxx-static` on Fedora) or higher
+- `libc++abi-16-dev` (`libcxxabi-static` on Fedora) or higher
 - `ninja-build`
 - `libxi-dev`
 - `libxcomposite-dev` (`libXcomposite-devel` on Fedora)
 - `libxxf86vm-dev` (`libXxf86vm-devel` on Fedora)
+
+```shell
+sudo apt install clang-16 libglu1-mesa-dev libc++-16-dev libc++abi-16-dev ninja-build libxi-dev libxcomposite-dev libxxf86vm-dev -y
+```
 
 After dependencies have been installed, we highly recommend using the [easy build](#easy-build)
 script.
@@ -115,7 +124,7 @@ Your Linux distribution might default to `gcc` instead of `clang`, if that's the
 ```shell
 mkdir out/cmake-release
 cd out/cmake-release
-# Or use a specific version of clang, for instance /usr/bin/clang-14
+# Or use a specific version of clang, for instance /usr/bin/clang-16
 CC=/usr/bin/clang CXX=/usr/bin/clang++ CXXFLAGS=-stdlib=libc++ \
   cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../release/filament ../..
 ```
@@ -125,8 +134,8 @@ solution is to use `update-alternatives` to both change the default compiler, an
 specific version of clang:
 
 ```shell
-update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 100
-update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-14 100
+update-alternatives --install /usr/bin/clang clang /usr/bin/clang-16 100
+update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-16 100
 update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
 update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
 ```
@@ -387,7 +396,7 @@ Alternatively, if you have node installed you can use the
 [live-server](https://www.npmjs.com/package/live-server) package, which automatically refreshes the
 web page when it detects a change.
 
-Each sample app has its own handwritten html file. Additionally the server folder contains assets
+Each sample app has its own handwritten html file. Additionally, the server folder contains assets
 such as meshes, textures, and materials.
 
 ## Running the native samples

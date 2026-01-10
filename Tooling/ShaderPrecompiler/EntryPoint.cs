@@ -5,17 +5,37 @@ Console.Clear();
 var solutionDir = Directory.GetCurrentDirectory();
 while (!Path.GetFileName(solutionDir).Equals("Tooling")) {
 	solutionDir	= Directory.GetParent(solutionDir)?.FullName ?? throw new ApplicationException("Can't find tooling dir");
-
 }
 solutionDir = Directory.GetParent(solutionDir)?.FullName ?? throw new ApplicationException("Can't find solution dir");
+
 var matcLocation = Path.Combine(
 	solutionDir, 
 	"ThirdParty", "build_output", "filament", "Release", "tools", "matc", "Release", "matc.exe"
 );
+if (!File.Exists(matcLocation)) {
+	matcLocation = Path.Combine(
+		solutionDir, 
+		"ThirdParty", "build_output", "filament", "Release", "tools", "matc", "matc.exe"
+	);
+}
+if (!File.Exists(matcLocation)) {
+	matcLocation = Path.Combine(
+		solutionDir, 
+		"ThirdParty", "build_output", "filament", "Release", "tools", "matc", "Release", "matc"
+	);
+}
+if (!File.Exists(matcLocation)) {
+	matcLocation = Path.Combine(
+		solutionDir, 
+		"ThirdParty", "build_output", "filament", "Release", "tools", "matc", "matc"
+	);
+}
+
 var shaderSourcesLocation = Path.Combine(
 	solutionDir,
 	"TinyFFR", "Assets", "Materials", "Local", "Shaders"
 );
+
 var compiledShadersLocation = Path.Combine(
 	solutionDir,
 	"TinyFFR", "Assets", "Materials", "Local", "Shaders", "CompiledObjects"
@@ -23,7 +43,7 @@ var compiledShadersLocation = Path.Combine(
 
 Console.WriteLine("Key directories:");
 Console.WriteLine();
-Console.WriteLine("\tmatc.exe");
+Console.WriteLine("\tmatc");
 Console.WriteLine("\t\t" + matcLocation);
 Console.WriteLine("\t\tExists: " + File.Exists(matcLocation));
 Console.WriteLine();

@@ -29,11 +29,12 @@
 #include <backend/DriverApiForward.h>
 #include <backend/DriverEnums.h>
 
+#include <private/utils/Tracing.h>
+
 #include <utils/compiler.h>
 #include <utils/debug.h>
 #include <utils/Entity.h>
 #include <utils/Slice.h>
-#include <utils/Systrace.h>
 
 #include <math/vec3.h>
 #include <math/vec4.h>
@@ -795,7 +796,7 @@ float4 ShadowMap::computeBoundingSphere(float3 const* vertices, size_t count) no
 Aabb ShadowMap::compute2DBounds(const mat4f& lightView,
         float3 const* wsVertices, size_t const count) noexcept {
     Aabb bounds{};
-    Slice<float3> const vertices{ wsVertices, count };
+    Slice<const float3> vertices{ wsVertices, count };
     for (auto const& vertice : vertices) {
         const float3 v = mat4f::project(lightView, vertice);
         bounds.min.xy = min(bounds.min.xy, v.xy);
@@ -1200,7 +1201,7 @@ float ShadowMap::texelSizeWorldSpace(const mat4f& Wp, const mat4f& MbMtF,
 template<typename Casters, typename Receivers>
 void ShadowMap::visitScene(const FScene& scene, uint32_t const visibleLayers,
         Casters casters, Receivers receivers) noexcept {
-    SYSTRACE_CALL();
+    FILAMENT_TRACING_CALL(FILAMENT_TRACING_CATEGORY_FILAMENT);
 
     using State = FRenderableManager::Visibility;
     FScene::RenderableSoa const& soa = scene.getRenderableData();
@@ -1365,8 +1366,8 @@ float4 ShadowMap::getClampToEdgeCoords(ShadowMapInfo const& shadowMapInfo) const
 // ------------------------------------------------------------------------------------------------
 
 void ShadowMap::prepareCamera(Transaction const& transaction,
-        DriverApi& driver, const CameraInfo& cameraInfo) noexcept {
-    ShadowMapDescriptorSet::prepareCamera(transaction, driver, cameraInfo);
+        FEngine const& engine, const CameraInfo& cameraInfo) noexcept {
+    ShadowMapDescriptorSet::prepareCamera(transaction, engine, cameraInfo);
     ShadowMapDescriptorSet::prepareLodBias(transaction, 0.0f);
 }
 
@@ -1378,6 +1379,11 @@ void ShadowMap::prepareViewport(Transaction const& transaction,
 void ShadowMap::prepareTime(Transaction const& transaction,
         FEngine const& engine, float4 const& userTime) noexcept {
     ShadowMapDescriptorSet::prepareTime(transaction, engine, userTime);
+}
+
+void ShadowMap::prepareMaterialGlobals(Transaction const& transaction,
+        std::array<float4, 4> const& materialGlobals) noexcept {
+    ShadowMapDescriptorSet::prepareMaterialGlobals(transaction, materialGlobals);
 }
 
 void ShadowMap::prepareShadowMapping(Transaction const& transaction,

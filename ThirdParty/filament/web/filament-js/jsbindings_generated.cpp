@@ -95,7 +95,17 @@ value_object<View::AmbientOcclusionOptions::Ssct>("View$AmbientOcclusionOptions$
     .field("enabled", &View::AmbientOcclusionOptions::Ssct::enabled)
     ;
 
+value_object<View::AmbientOcclusionOptions::Gtao>("View$AmbientOcclusionOptions$Gtao")
+    .field("sampleSliceCount", &View::AmbientOcclusionOptions::Gtao::sampleSliceCount)
+    .field("sampleStepsPerSlice", &View::AmbientOcclusionOptions::Gtao::sampleStepsPerSlice)
+    .field("thicknessHeuristic", &View::AmbientOcclusionOptions::Gtao::thicknessHeuristic)
+    .field("useVisibilityBitmasks", &View::AmbientOcclusionOptions::Gtao::useVisibilityBitmasks)
+    .field("constThickness", &View::AmbientOcclusionOptions::Gtao::constThickness)
+    .field("linearThickness", &View::AmbientOcclusionOptions::Gtao::linearThickness)
+    ;
+
 value_object<View::AmbientOcclusionOptions>("View$AmbientOcclusionOptions")
+    .field("aoType", &View::AmbientOcclusionOptions::aoType)
     .field("radius", &View::AmbientOcclusionOptions::radius)
     .field("power", &View::AmbientOcclusionOptions::power)
     .field("bias", &View::AmbientOcclusionOptions::bias)
@@ -109,6 +119,7 @@ value_object<View::AmbientOcclusionOptions>("View$AmbientOcclusionOptions")
     .field("bentNormals", &View::AmbientOcclusionOptions::bentNormals)
     .field("minHorizonAngleRad", &View::AmbientOcclusionOptions::minHorizonAngleRad)
     // JavaScript binding for ssct is not yet supported, must use default value.
+    // JavaScript binding for gtao is not yet supported, must use default value.
     ;
 
 value_object<View::MultiSampleAntiAliasingOptions>("View$MultiSampleAntiAliasingOptions")

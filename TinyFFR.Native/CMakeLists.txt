@@ -82,11 +82,11 @@ elseif(UNIX AND NOT APPLE)
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libutils.a
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libgeometry.a
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libsmol-v.a
-			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libvkshaders.a
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libibl.a
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libabseil.a
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libktxreader.a
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libimage.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libzstd.a
 	)
 elseif(APPLE)
 	target_compile_definitions(TinyFFR.Native PRIVATE TFFR_MACOS)
@@ -109,10 +109,10 @@ elseif(APPLE)
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libutils.a
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libgeometry.a
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libsmol-v.a
-			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libvkshaders.a
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libibl.a
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libabseil.a
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libktxreader.a
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libimage.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libzstd.a
 	)
 endif()

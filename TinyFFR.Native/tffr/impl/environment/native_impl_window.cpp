@@ -13,7 +13,7 @@ WindowHandle native_impl_window::create_window(int32_t width, int32_t height, in
 		yPos, 
 		width,
 		height, 
-		SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
+		SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE
 	);
 	ThrowIfNull(result, "Could not create window: ", SDL_GetError());
 	SDL_ShowWindow(result);

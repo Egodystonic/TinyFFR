@@ -27,7 +27,10 @@
 
 #include <backend/DriverEnums.h>
 
+#include <utils/compiler.h>
+#include <utils/CString.h>
 #include <utils/debug.h>
+#include <utils/FixedCapacityVector.h>
 
 #include <utility>
 
@@ -74,7 +77,9 @@ void MaterialSamplerInterfaceBlockChunk::flatten(Flattener& f) {
         f.writeUint8(static_cast<uint8_t>(sInfo.type));
         f.writeUint8(static_cast<uint8_t>(sInfo.format));
         f.writeUint8(static_cast<uint8_t>(sInfo.precision));
+        f.writeBool(sInfo.filterable);
         f.writeBool(sInfo.multisample);
+        f.writeString(sInfo.transformName.c_str_safe());
     }
 }
 
@@ -109,6 +114,7 @@ void MaterialConstantParametersChunk::flatten(Flattener& f) {
     for (const auto& constant : mConstants) {
         f.writeString(constant.name.c_str());
         f.writeUint8(static_cast<uint8_t>(constant.type));
+        f.writeUint32(static_cast<uint32_t>(constant.defaultValue.i));
     }
 }
 
@@ -194,11 +200,7 @@ void MaterialDescriptorBindingsChuck::flatten(Flattener& f) {
     // all the material's sampler descriptors
     for (auto const& entry: mSamplerInterfaceBlock.getSamplerInfoList()) {
         f.writeString({ entry.uniformName.data(), entry.uniformName.size() });
-        if (entry.type == SamplerInterfaceBlock::Type::SAMPLER_EXTERNAL) {
-            f.writeUint8(uint8_t(DescriptorType::SAMPLER_EXTERNAL));
-        } else {
-            f.writeUint8(uint8_t(DescriptorType::SAMPLER));
-        }
+        f.writeUint8(uint8_t(descriptor_sets::getDescriptorType(entry.type, entry.format)));
         f.writeUint8(entry.binding);
     }
 }
@@ -223,19 +225,19 @@ void MaterialDescriptorSetLayoutChunk::flatten(Flattener& f) {
     f.writeUint8(uint8_t(DescriptorType::UNIFORM_BUFFER));
     f.writeUint8(uint8_t(ShaderStageFlags::VERTEX | ShaderStageFlags::FRAGMENT));
     f.writeUint8(0);
-    f.writeUint8(uint8_t(DescriptorFlags::NONE));
+    f.writeUint8(uint8_t(DescriptorFlags::DYNAMIC_OFFSET));
     f.writeUint16(0);
 
     // all the material's sampler descriptors
     for (auto const& entry: mSamplerInterfaceBlock.getSamplerInfoList()) {
-        if (entry.type == SamplerInterfaceBlock::Type::SAMPLER_EXTERNAL) {
-            f.writeUint8(uint8_t(DescriptorType::SAMPLER_EXTERNAL));
-        } else {
-            f.writeUint8(uint8_t(DescriptorType::SAMPLER));
-        }
-        f.writeUint8(uint8_t(ShaderStageFlags::VERTEX | ShaderStageFlags::FRAGMENT));
+        f.writeUint8(uint8_t(descriptor_sets::getDescriptorType(entry.type, entry.format)));
+        f.writeUint8(uint8_t(entry.stages));
         f.writeUint8(entry.binding);
-        f.writeUint8(uint8_t(DescriptorFlags::NONE));
+        if (!entry.filterable) {
+            f.writeUint8(uint8_t(DescriptorFlags::UNFILTERABLE));
+        } else {
+            f.writeUint8(uint8_t(DescriptorFlags::NONE));
+        }
         f.writeUint16(0);
     }
 }

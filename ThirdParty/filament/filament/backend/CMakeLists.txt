@@ -6,18 +6,6 @@ set(PUBLIC_HDR_DIR include)
 set(GENERATION_ROOT ${CMAKE_CURRENT_BINARY_DIR})
 
 # ==================================================================================================
-# Compilation options
-# ==================================================================================================
-#
-set(BACKEND_SANITIZATION "" CACHE STRING "Sanitization option")
-set_property(CACHE BACKEND_SANITIZATION PROPERTY STRINGS ";ASAN")
-
-set(BACKEND_SANITIZERS)
-if (BACKEND_SANITIZATION STREQUAL "ASAN")
-    set(BACKEND_SANITIZERS -fsanitize=address)
-endif()
-
-# ==================================================================================================
 # Sources and headers
 # ==================================================================================================
 set(PUBLIC_HDRS
@@ -48,6 +36,7 @@ set(SRCS
         src/Driver.cpp
         src/Handle.cpp
         src/HandleAllocator.cpp
+        src/JobQueue.cpp
         src/ostream.cpp
         src/noop/NoopDriver.cpp
         src/noop/PlatformNoop.cpp
@@ -71,6 +60,7 @@ set(PRIVATE_HDRS
         src/CompilerThreadPool.h
         src/DataReshaper.h
         src/DriverBase.h
+        src/JobQueue.h
 )
 
 # ==================================================================================================
@@ -90,6 +80,8 @@ if (FILAMENT_SUPPORTS_OPENGL AND NOT FILAMENT_USE_EXTERNAL_GLES3)
             src/opengl/GLTexture.h
             src/opengl/GLUtils.cpp
             src/opengl/GLUtils.h
+            src/opengl/GLMemoryMappedBuffer.cpp
+            src/opengl/GLMemoryMappedBuffer.h
             src/opengl/OpenGLBlobCache.cpp
             src/opengl/OpenGLBlobCache.h
             src/opengl/OpenGLContext.cpp
@@ -114,6 +106,10 @@ if (FILAMENT_SUPPORTS_OPENGL AND NOT FILAMENT_USE_EXTERNAL_GLES3)
         list(APPEND SRCS src/VirtualMachineEnv.cpp)
     endif ()
     if (ANDROID)
+        list(APPEND SRCS src/AndroidNdk.cpp)
+        list(APPEND SRCS src/AndroidNativeWindow.cpp)
+        list(APPEND SRCS src/AndroidSwapChainHelper.cpp)
+        list(APPEND SRCS src/AndroidFrameCallback.cpp)
         list(APPEND SRCS src/opengl/platforms/ExternalStreamManagerAndroid.cpp)
         list(APPEND SRCS src/opengl/platforms/PlatformEGLAndroid.cpp)
     elseif (IOS)
@@ -189,11 +185,15 @@ endif()
 if (FILAMENT_SUPPORTS_VULKAN)
     list(APPEND SRCS
             include/backend/platforms/VulkanPlatform.h
+            src/vulkan/VulkanAsyncHandles.cpp
             src/vulkan/VulkanAsyncHandles.h
             src/vulkan/VulkanBlitter.cpp
             src/vulkan/VulkanBlitter.h
-            src/vulkan/VulkanBuffer.cpp
             src/vulkan/VulkanBuffer.h
+            src/vulkan/VulkanBufferCache.h
+            src/vulkan/VulkanBufferCache.cpp
+            src/vulkan/VulkanBufferProxy.h
+            src/vulkan/VulkanBufferProxy.cpp
             src/vulkan/VulkanCommands.cpp
             src/vulkan/VulkanCommands.h
             src/vulkan/VulkanConstants.h
@@ -208,6 +208,8 @@ if (FILAMENT_SUPPORTS_VULKAN)
             src/vulkan/VulkanDriverFactory.h
             src/vulkan/VulkanExternalImageManager.cpp
             src/vulkan/VulkanExternalImageManager.h
+            src/vulkan/VulkanStreamedImageManager.cpp
+            src/vulkan/VulkanStreamedImageManager.h
             src/vulkan/VulkanFboCache.cpp
             src/vulkan/VulkanFboCache.h
             src/vulkan/VulkanHandles.cpp
@@ -224,6 +226,10 @@ if (FILAMENT_SUPPORTS_VULKAN)
             src/vulkan/VulkanReadPixels.h
             src/vulkan/VulkanSamplerCache.cpp
             src/vulkan/VulkanSamplerCache.h
+            src/vulkan/VulkanSemaphore.cpp
+            src/vulkan/VulkanSemaphore.h
+            src/vulkan/VulkanSemaphoreManager.cpp
+            src/vulkan/VulkanSemaphoreManager.h
             src/vulkan/VulkanStagePool.cpp
             src/vulkan/VulkanStagePool.h
             src/vulkan/VulkanSwapChain.cpp
@@ -250,10 +256,21 @@ if (FILAMENT_SUPPORTS_VULKAN)
             src/vulkan/utils/Spirv.h
             src/vulkan/utils/StaticVector.h
     )
-    if (LINUX OR WIN32)
-        list(APPEND SRCS src/vulkan/platform/VulkanPlatformLinuxWindows.cpp)
+    if (LINUX)
+        list(APPEND SRCS
+            src/vulkan/platform/VulkanPlatformLinux.cpp
+            include/backend/platforms/VulkanPlatformLinux.h
+        )
+    elseif (WIN32)
+        list(APPEND SRCS
+            include/backend/platforms/VulkanPlatformWindows.h
+            src/vulkan/platform/VulkanPlatformWindows.cpp
+        )
     elseif (APPLE OR IOS)
-        list(APPEND SRCS src/vulkan/platform/VulkanPlatformApple.mm)
+        list(APPEND SRCS
+            include/backend/platforms/VulkanPlatformApple.h
+            src/vulkan/platform/VulkanPlatformApple.mm
+        )
     elseif (ANDROID)
         list(APPEND SRCS
             include/backend/platforms/VulkanPlatformAndroid.h
@@ -266,16 +283,56 @@ if (FILAMENT_SUPPORTS_WEBGPU)
     list(APPEND SRCS
             include/backend/platforms/WebGPUPlatform.h
             src/webgpu/platform/WebGPUPlatform.cpp
+            src/webgpu/SpdMipmapGenerator/SpdMipmapGenerator.cpp
+            src/webgpu/utils/AsyncTaskCounter.cpp
+            src/webgpu/utils/AsyncTaskCounter.h
+            src/webgpu/utils/StringPlaceholderTemplateProcessor.cpp
+            src/webgpu/utils/StringPlaceholderTemplateProcessor.h
+            src/webgpu/WebGPUBlitter.cpp
+            src/webgpu/WebGPUBlitter.h
+            src/webgpu/WebGPUBufferBase.cpp
+            src/webgpu/WebGPUBufferBase.h
+            src/webgpu/WebGPUBufferObject.cpp
+            src/webgpu/WebGPUBufferObject.h
             src/webgpu/WebGPUConstants.h
+            src/webgpu/WebGPUDescriptorSet.cpp
+            src/webgpu/WebGPUDescriptorSet.h
+            src/webgpu/WebGPUDescriptorSetLayout.cpp
+            src/webgpu/WebGPUDescriptorSetLayout.h
             src/webgpu/WebGPUDriver.cpp
             src/webgpu/WebGPUDriver.h
-            src/webgpu/WebGPUHandles.cpp
-            src/webgpu/WebGPUHandles.h
-            src/webgpu/WebGPUPipelineCreation.cpp
-            src/webgpu/WebGPUPipelineCreation.h
+            src/webgpu/WebGPUFence.cpp
+            src/webgpu/WebGPUFence.h
+            src/webgpu/WebGPUIndexBuffer.cpp
+            src/webgpu/WebGPUIndexBuffer.h
+            src/webgpu/WebGPUMsaaTextureResolver.cpp
+            src/webgpu/WebGPUMsaaTextureResolver.h
+            src/webgpu/WebGPUPipelineCache.cpp
+            src/webgpu/WebGPUPipelineCache.h
+            src/webgpu/WebGPUPipelineLayoutCache.cpp
+            src/webgpu/WebGPUPipelineLayoutCache.h
+            src/webgpu/WebGPUProgram.cpp
+            src/webgpu/WebGPUProgram.h
+            src/webgpu/WebGPUQueueManager.cpp
+            src/webgpu/WebGPUQueueManager.h
+            src/webgpu/WebGPURenderPassMipmapGenerator.cpp
+            src/webgpu/WebGPURenderPassMipmapGenerator.h
+            src/webgpu/WebGPURenderPrimitive.h
+            src/webgpu/WebGPURenderTarget.cpp
+            src/webgpu/WebGPURenderTarget.h
+            src/webgpu/WebGPUStagePool.cpp
+            src/webgpu/WebGPUStagePool.h
+            src/webgpu/WebGPUStrings.h
             src/webgpu/WebGPUSwapChain.cpp
             src/webgpu/WebGPUSwapChain.h
-            src/webgpu/WGPUProgram.cpp
+            src/webgpu/WebGPUSync.h
+            src/webgpu/WebGPUTexture.cpp
+            src/webgpu/WebGPUTexture.h
+            src/webgpu/WebGPUTextureHelpers.h
+            src/webgpu/WebGPUVertexBuffer.cpp
+            src/webgpu/WebGPUVertexBuffer.h
+            src/webgpu/WebGPUVertexBufferInfo.cpp
+            src/webgpu/WebGPUVertexBufferInfo.h
     )
     if (WIN32)
         list(APPEND SRCS src/webgpu/platform/WebGPUPlatformWindows.cpp)
@@ -301,12 +358,6 @@ endif()
 if (ANDROID)
     list(APPEND SRCS src/BackendUtilsAndroid.cpp)
 endif()
-
-# ==================================================================================================
-# Definitions
-# ==================================================================================================
-# "2" corresponds to SYSTRACE_TAG_FILEMENT (See: utils/Systrace.h)
-add_definitions(-DSYSTRACE_TAG=2 )
 
 # ==================================================================================================
 # Includes & target definition
@@ -338,46 +389,6 @@ add_library(${TARGET}_headers INTERFACE)
 target_include_directories(${TARGET}_headers INTERFACE ${PUBLIC_HDR_DIR})
 
 # ==================================================================================================
-# Build SPIRV snippets used by the Vulkan backend.
-# ==================================================================================================
-
-set(VKSHADERS_DIR  "${CMAKE_CURRENT_BINARY_DIR}/generated/vkshaders")
-
-file(MAKE_DIRECTORY ${VKSHADERS_DIR})
-
-get_resgen_vars(${VKSHADERS_DIR} vkshaders)
-
-set(VKSHADER_BINS)
-function(build_vkshader SOURCE TARGET_PATH)
-    set(SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/vulkan/${SOURCE}")
-    set(VKSHADER_BINS ${VKSHADER_BINS} ${TARGET_PATH} PARENT_SCOPE)
-    add_custom_command(
-            OUTPUT ${TARGET_PATH}
-            COMMAND matc --raw -o ${TARGET_PATH} ${SOURCE_PATH}
-            MAIN_DEPENDENCY ${SOURCE_PATH}
-            DEPENDS matc ${SOURCE_PATH}
-            COMMENT "Building SPIR-V")
-endfunction()
-build_vkshader("BlitDepth.vs" "BlitDepthVs.spv")
-build_vkshader("BlitDepth.fs" "BlitDepthFs.spv")
-
-add_custom_command(
-        OUTPUT ${RESGEN_OUTPUTS}
-        COMMAND resgen ${RESGEN_FLAGS} ${VKSHADER_BINS}
-        DEPENDS resgen ${VKSHADER_BINS}
-        COMMENT "Aggregating compiled VK shaders")
-
-if (DEFINED RESGEN_SOURCE_FLAGS)
-    set_source_files_properties(${RESGEN_SOURCE} PROPERTIES COMPILE_FLAGS ${RESGEN_SOURCE_FLAGS})
-endif()
-
-set(DUMMY_SRC "${VKSHADERS_DIR}/dummy.c")
-add_custom_command(OUTPUT ${DUMMY_SRC} COMMAND echo "//" > ${DUMMY_SRC})
-
-add_library(vkshaders STATIC ${DUMMY_SRC} ${RESGEN_SOURCE})
-set_target_properties(vkshaders PROPERTIES FOLDER Filament/Generated)
-
-# ==================================================================================================
 # Dependencies
 # ==================================================================================================
 
@@ -394,10 +405,15 @@ endif()
 
 if (APPLE AND NOT IOS)
     target_link_libraries(${TARGET} PRIVATE "-framework Cocoa")
+    target_link_libraries(${TARGET} PRIVATE "-framework QuartzCore")
 endif()
 
 target_link_libraries(${TARGET} PUBLIC math)
 target_link_libraries(${TARGET} PUBLIC utils)
+
+if (FILAMENT_USE_ABSEIL_LOGGING)
+    target_link_libraries(${TARGET} PRIVATE absl::log)
+endif()
 
 # Android, iOS, and WebGL do not use bluegl.
 if(FILAMENT_SUPPORTS_OPENGL AND NOT IOS AND NOT ANDROID AND NOT WEBGL)
@@ -405,7 +421,7 @@ if(FILAMENT_SUPPORTS_OPENGL AND NOT IOS AND NOT ANDROID AND NOT WEBGL)
 endif()
 
 if (FILAMENT_SUPPORTS_VULKAN)
-    target_link_libraries(${TARGET} PUBLIC bluevk vkmemalloc vkshaders smol-v)
+    target_link_libraries(${TARGET} PUBLIC bluevk vkmemalloc smol-v)
     target_link_libraries(${TARGET} PRIVATE SPIRV-Headers)
 endif()
 
@@ -434,6 +450,13 @@ if (MSVC)
 elseif(WEBGL)
     # Avoid strict-vtable-pointers here, it is broken in WebAssembly.
     set(OPTIMIZATION_FLAGS -fvisibility-inlines-hidden)
+elseif(FILAMENT_USING_GCC)
+    set(OPTIMIZATION_FLAGS
+        -ffast-math
+        -fno-finite-math-only
+        -ffp-contract=fast
+        -fvisibility-inlines-hidden
+    )
 else()
     set(OPTIMIZATION_FLAGS
         -ffast-math
@@ -460,6 +483,13 @@ endif()
 
 if (MSVC)
     set(FILAMENT_WARNINGS /W3)
+elseif (FILAMENT_USING_GCC)
+    # GCC is not officially supported, so use a weaker set of warnings (incl. not using -Werror)
+    set(FILAMENT_WARNINGS
+            -Wall -Wno-unused-parameter -Wno-missing-field-initializers
+            -Wdeprecated -Wnon-virtual-dtor -Wno-strict-aliasing
+            -Wno-invalid-constexpr -Wno-parentheses -Wno-unused-variable
+    )
 else()
     set(FILAMENT_WARNINGS
             -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers
@@ -469,9 +499,6 @@ else()
             -Wover-aligned -Wreorder-init-list
             -Werror
     )
-    if (CMAKE_CXX_STANDARD EQUAL 20)
-        list(APPEND FILAMENT_WARNINGS -Wno-deprecated-this-capture)
-    endif()
 endif()
 
 if (APPLE)
@@ -484,7 +511,6 @@ target_compile_options(${TARGET} PRIVATE
         ${OSMESA_COMPILE_FLAGS}
         $<$<CONFIG:Release>:${OPTIMIZATION_FLAGS}>
         $<$<AND:$<PLATFORM_ID:Darwin>,$<CONFIG:Release>>:${DARWIN_OPTIMIZATION_FLAGS}>
-        ${BACKEND_SANITIZERS}
 )
 
 if (FILAMENT_SUPPORTS_METAL)
@@ -495,19 +521,26 @@ if (FILAMENT_SUPPORTS_WEBGPU)
     target_compile_definitions(${TARGET} PRIVATE $<$<BOOL:${FILAMENT_WEBGPU_IMMEDIATE_ERROR_HANDLING}>:FILAMENT_WEBGPU_IMMEDIATE_ERROR_HANDLING>)
 endif()
 
-target_link_options(${TARGET} PRIVATE ${BACKEND_SANITIZERS})
+# ==================================================================================================
+# Linker flags
+# ==================================================================================================
 
 target_link_libraries(${TARGET} PRIVATE
-        ${OSMESA_LINKER_FLAGS}
         $<$<AND:$<PLATFORM_ID:Linux>,$<CONFIG:Release>>:${LINUX_LINKER_OPTIMIZATION_FLAGS}>
 )
+
+if (LINUX AND FILAMENT_SUPPORTS_WEBGPU)
+    # Unclear why this needs to be explicit while other linux libs do not, but it is necessary for
+    # WebGPU to build on linux.
+    target_link_libraries(${TARGET} PRIVATE -lxcb -lX11)
+endif()
 
 # ==================================================================================================
 # Installation
 # ==================================================================================================
 set(INSTALL_TYPE ARCHIVE)
 install(TARGETS ${TARGET} ${INSTALL_TYPE} DESTINATION lib/${DIST_DIR})
-install(TARGETS vkshaders ${INSTALL_TYPE} DESTINATION lib/${DIST_DIR})
+install(TARGETS ${INSTALL_TYPE} DESTINATION lib/${DIST_DIR})
 install(DIRECTORY ${PUBLIC_HDR_DIR}/backend DESTINATION include)
 
 if (FILAMENT_SUPPORTS_WEBGPU)
@@ -537,6 +570,9 @@ if (APPLE OR LINUX)
         test/test_ReadPixels.cpp
         test/test_BufferUpdates.cpp
         test/test_Callbacks.cpp
+        test/test_JobQueue.cpp
+        test/test_MemoryMappedBuffer.cpp
+        test/test_MsaaSwapChain.cpp
         test/test_MRT.cpp
         test/test_PushConstants.cpp
         test/test_LoadImage.cpp
@@ -544,7 +580,21 @@ if (APPLE OR LINUX)
         test/test_Scissor.cpp
         test/test_MipLevels.cpp
         test/test_Handles.cpp
+        test/test_CircularBuffer.cpp
+        test/test_CommandBufferQueue.cpp
+        test/test_Template.cpp
     )
+    if (FILAMENT_SUPPORTS_WEBGPU)
+        list(APPEND BACKEND_TEST_SRC
+                test/test_WebGPUAsyncTaskCounter.cpp
+                test/test_WebGPUComposeSwizzle.cpp)
+    endif()
+    if (APPLE)
+        # Metal-specific tests
+        list(APPEND BACKEND_TEST_SRC
+            test/test_MetalBlitter.mm
+        )
+    endif()
     set(BACKEND_TEST_LIBS
         absl::str_format
         backend
@@ -556,6 +606,7 @@ if (APPLE OR LINUX)
         spirv-cross-glsl)
     # Create input/output directories for test result images.
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/images/actual_images)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/images/diff_images)
     file(COPY test/expected_images DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/images)
 endif()
 
@@ -566,8 +617,7 @@ if (APPLE AND NOT IOS)
          test/test_RenderExternalImage.cpp)
     add_library(backend_test STATIC ${BACKEND_TEST_SRC})
     target_link_libraries(backend_test PUBLIC ${BACKEND_TEST_LIBS})
-    target_compile_options(backend_test PRIVATE ${BACKEND_SANITIZERS})
-    target_link_options(backend_test PRIVATE ${BACKEND_SANITIZERS})
+    target_compile_options(backend_test PRIVATE "-fobjc-arc")
 
     set(BACKEND_TEST_DEPS
             OSDependent
@@ -585,6 +635,10 @@ if (APPLE AND NOT IOS)
     if (NOT IOS)
         target_link_libraries(backend_test PRIVATE image imageio)
         list(APPEND BACKEND_TEST_DEPS image)
+    endif()
+    if (FILAMENT_SUPPORTS_WEBGPU)
+        target_link_libraries(backend_test PRIVATE webgpu_dawn dawncpp_headers)
+        list(APPEND BACKEND_TEST_DEPS webgpu_dawn dawncpp_headers)
     endif()
 
     set(BACKEND_TEST_COMBINED_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/libbackendtest_combined.a")
@@ -606,7 +660,6 @@ if (APPLE AND NOT IOS)
        # linker from removing "unused" symbols.
        target_link_libraries(backend_test_mac PRIVATE -force_load backend_test)
        set_target_properties(backend_test_mac PROPERTIES FOLDER Tests)
-       target_link_options(backend_test_mac PRIVATE ${BACKEND_SANITIZERS})
 
        # This is needed after XCode 15.3
        set_target_properties(backend_test_mac PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
@@ -616,10 +669,11 @@ endif()
 
 if (LINUX)
     add_executable(backend_test_linux test/linux_runner.cpp ${BACKEND_TEST_SRC})
-    target_compile_options(backend_test_linux PRIVATE ${BACKEND_SANITIZERS})
-    target_link_options(backend_test_linux PRIVATE ${BACKEND_SANITIZERS})
     target_link_libraries(backend_test_linux PRIVATE ${BACKEND_TEST_LIBS})
     set_target_properties(backend_test_linux PROPERTIES FOLDER Tests)
+    if (FILAMENT_SUPPORTS_WEBGPU)
+        target_link_libraries(backend_test_linux PRIVATE webgpu_dawn dawncpp_headers)
+    endif()
 endif()
 
 # ==================================================================================================

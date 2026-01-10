@@ -67,11 +67,11 @@ public:
     // TODO: consider renaming, this pertains to material variants, not strictly visibility.
     struct Visibility {
         uint8_t priority                : 3;
-        uint8_t channel                 : 2;
+        uint8_t channel                 : 3;
         bool castShadows                : 1;
         bool receiveShadows             : 1;
-        bool culling                    : 1;
 
+        bool culling                    : 1;
         bool skinning                   : 1;
         bool morphing                   : 1;
         bool screenSpaceContactShadows  : 1;
@@ -129,7 +129,7 @@ public:
     // The priority is clamped to the range [0..7]
     inline void setPriority(Instance instance, uint8_t priority) noexcept;
 
-    // The channel is clamped to the range [0..3]
+    // The channel is clamped to the range [0..7]
     inline void setChannel(Instance instance, uint8_t channel) noexcept;
 
     inline void setCastShadows(Instance instance, bool enable) noexcept;
@@ -141,7 +141,8 @@ public:
     inline void setFogEnabled(Instance instance, bool enable) noexcept;
     inline bool getFogEnabled(Instance instance) const noexcept;
 
-    inline void setPrimitives(Instance instance, utils::Slice<FRenderPrimitive> const& primitives) noexcept;
+    inline void setPrimitives(Instance instance,
+            utils::Slice<FRenderPrimitive> primitives) noexcept;
 
     inline void setSkinning(Instance instance, bool enable);
     void setBones(Instance instance, Bone const* transforms, size_t boneCount, size_t offset = 0);
@@ -165,7 +166,7 @@ public:
 
 
     inline Box const& getAABB(Instance instance) const noexcept;
-    inline Box const& getAxisAlignedBoundingBox(Instance const instance) const noexcept { return getAABB(instance); }
+    Box const& getAxisAlignedBoundingBox(Instance const instance) const noexcept { return getAABB(instance); }
     inline Visibility getVisibility(Instance instance) const noexcept;
     inline uint8_t getLayerMask(Instance instance) const noexcept;
     inline uint8_t getPriority(Instance instance) const noexcept;
@@ -189,19 +190,17 @@ public:
     inline MorphingBindingInfo getMorphingBufferInfo(Instance instance) const noexcept;
 
     struct InstancesInfo {
-        union {
-            FInstanceBuffer* buffer;
-            uint64_t padding;          // ensures the pointer is 64 bits on all archs
-        };
-        backend::Handle<backend::HwBufferObject> handle;
-        uint16_t count;
-        char padding0[2];
+        FInstanceBuffer* buffer = nullptr;
+        alignas(8) // ensures the pointer is 64 bits on all archs
+        uint16_t count = 0;
+        char padding0[6] = {};
     };
     static_assert(sizeof(InstancesInfo) == 16);
     inline InstancesInfo getInstancesInfo(Instance instance) const noexcept;
 
-    inline size_t getLevelCount(Instance) const noexcept { return 1u; }
+    size_t getLevelCount(Instance) const noexcept { return 1u; }
     size_t getPrimitiveCount(Instance instance, uint8_t level) const noexcept;
+    size_t getInstanceCount(Instance instance) const noexcept;
     void setMaterialInstanceAt(Instance instance, uint8_t level,
             size_t primitiveIndex, FMaterialInstance const* materialInstance);
     void clearMaterialInstanceAt(Instance instance, uint8_t level, size_t primitiveIndex);
@@ -212,8 +211,8 @@ public:
     void setBlendOrderAt(Instance instance, uint8_t level, size_t primitiveIndex, uint16_t blendOrder) noexcept;
     void setGlobalBlendOrderEnabledAt(Instance instance, uint8_t level, size_t primitiveIndex, bool enabled) noexcept;
     AttributeBitset getEnabledAttributesAt(Instance instance, uint8_t level, size_t primitiveIndex) const noexcept;
-    inline utils::Slice<FRenderPrimitive> const& getRenderPrimitives(Instance instance, uint8_t level) const noexcept;
-    inline utils::Slice<FRenderPrimitive>& getRenderPrimitives(Instance instance, uint8_t level) noexcept;
+    inline utils::Slice<const FRenderPrimitive> getRenderPrimitives(Instance instance, uint8_t level) const noexcept;
+    inline utils::Slice<FRenderPrimitive> getRenderPrimitives(Instance instance, uint8_t level) noexcept;
 
     struct Entry {
         VertexBuffer* vertices = nullptr;
@@ -233,7 +232,7 @@ private:
     void destroyComponent(Instance ci) noexcept;
     static void destroyComponentPrimitives(
             HwRenderPrimitiveFactory& factory, backend::DriverApi& driver,
-            utils::Slice<FRenderPrimitive>& primitives) noexcept;
+            utils::Slice<FRenderPrimitive> primitives) noexcept;
 
     struct Bones {
         backend::Handle<backend::HwBufferObject> handle;
@@ -350,7 +349,7 @@ void FRenderableManager::setPriority(Instance const instance, uint8_t const prio
 void FRenderableManager::setChannel(Instance const instance, uint8_t const channel) noexcept {
     if (instance) {
         Visibility& visibility = mManager[instance].visibility;
-        visibility.channel = std::min(channel, uint8_t(0x3));
+        visibility.channel = std::min(channel, uint8_t(CONFIG_RENDERPASS_CHANNEL_COUNT - 1));
     }
 }
 
@@ -416,7 +415,7 @@ void FRenderableManager::setMorphing(Instance const instance, bool const enable)
 }
 
 void FRenderableManager::setPrimitives(Instance const instance,
-        utils::Slice<FRenderPrimitive> const& primitives) noexcept {
+        utils::Slice<FRenderPrimitive> primitives) noexcept {
     if (instance) {
         mManager[instance].primitives = primitives;
     }
@@ -478,12 +477,12 @@ FRenderableManager::getInstancesInfo(Instance const instance) const noexcept {
     return mManager[instance].instances;
 }
 
-utils::Slice<FRenderPrimitive> const& FRenderableManager::getRenderPrimitives(
+utils::Slice<const FRenderPrimitive> FRenderableManager::getRenderPrimitives(
         Instance const instance, UTILS_UNUSED uint8_t level) const noexcept {
-    return mManager[instance].primitives;
+    return utils::Slice<const FRenderPrimitive>(mManager[instance].primitives);
 }
 
-utils::Slice<FRenderPrimitive>& FRenderableManager::getRenderPrimitives(
+utils::Slice<FRenderPrimitive> FRenderableManager::getRenderPrimitives(
         Instance const instance, UTILS_UNUSED uint8_t level) noexcept {
     return mManager[instance].primitives;
 }

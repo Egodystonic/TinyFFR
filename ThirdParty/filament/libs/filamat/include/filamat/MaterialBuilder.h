@@ -21,7 +21,6 @@
 
 #include <filament/MaterialEnums.h>
 
-#include <filamat/IncludeCallback.h>
 #include <filamat/Package.h>
 
 #include <backend/DriverEnums.h>
@@ -35,11 +34,14 @@
 #include <math/vec3.h>
 
 #include <atomic>
+#include <limits>
+#include <mutex>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 #include <variant>
+#include <optional>
 
 #include <stddef.h>
 #include <stdint.h>
@@ -115,6 +117,11 @@ public:
         PERFORMANCE
     };
 
+    enum class Workarounds : uint64_t {
+        NONE = 0,
+        ALL = 0xFFFFFFFFFFFFFFFF
+    };
+
     /**
      * Initialize MaterialBuilder.
      *
@@ -138,6 +145,7 @@ protected:
     Platform mPlatform = Platform::DESKTOP;
     TargetApi mTargetApi = (TargetApi) 0;
     Optimization mOptimization = Optimization::PERFORMANCE;
+    Workarounds mWorkarounds = Workarounds::ALL;
     bool mPrintShaders = false;
     bool mSaveRawVariants = false;
     bool mGenerateDebugInfo = false;
@@ -245,6 +253,7 @@ public:
     using AttributeType = filament::backend::UniformType;
     using UniformType = filament::backend::UniformType;
     using ConstantType = filament::backend::ConstantType;
+    using ConstantValue = filament::backend::ConstantValue;
     using SamplerType = filament::backend::SamplerType;
     using SubpassType = filament::backend::SubpassType;
     using SamplerFormat = filament::backend::SamplerFormat;
@@ -254,6 +263,7 @@ public:
     using FeatureLevel = filament::backend::FeatureLevel;
     using StereoscopicType = filament::backend::StereoscopicType;
     using ShaderStage = filament::backend::ShaderStage;
+    using ShaderStageFlags = filament::backend::ShaderStageFlags;
 
     enum class VariableQualifier : uint8_t {
         OUT
@@ -292,6 +302,9 @@ public:
     //! Set the file name of this material file. Used in error reporting.
     MaterialBuilder& fileName(const char* name) noexcept;
 
+    //! Set the commandline parameters of matc. Used for debugging purpose.
+    MaterialBuilder& compilationParameters(const char* params) noexcept;
+
     //! Set the shading model.
     MaterialBuilder& shading(Shading shading) noexcept;
 
@@ -304,7 +317,7 @@ public:
 
     //! Add a parameter array to this material.
     MaterialBuilder& parameter(const char* name, size_t size, UniformType type,
-            ParameterPrecision precision = ParameterPrecision::DEFAULT) noexcept;
+            ParameterPrecision precision = ParameterPrecision::DEFAULT);
 
     //! Add a constant parameter to this material.
     template<typename T>
@@ -323,10 +336,11 @@ public:
     MaterialBuilder& parameter(const char* name, SamplerType samplerType,
             SamplerFormat format = SamplerFormat::FLOAT,
             ParameterPrecision precision = ParameterPrecision::DEFAULT,
-            bool multisample = false,
-            const char* transformName = "") noexcept;
+            bool filterable = true, /* defaulting to filterable because format is default to float */
+            bool multisample = false, const char* transformName = "",
+            std::optional<ShaderStageFlags> stages = {});
 
-    MaterialBuilder& buffer(filament::BufferInterfaceBlock bib) noexcept;
+    MaterialBuilder& buffer(filament::BufferInterfaceBlock bib);
 
     //! Custom variables (all float4).
     MaterialBuilder& variable(Variable v, const char* name) noexcept;
@@ -369,17 +383,12 @@ public:
      * }
      * ~~~~~
      *
-     * @param code The source code of the material.
+     * @param code The source code of the material. Expected it to be all inlined. (#includes are
+     * resolved.)
      * @param line The line number offset of the material, where 0 is the first line. Used for error
      *             reporting
      */
     MaterialBuilder& material(const char* code, size_t line = 0) noexcept;
-
-    /**
-     * Set the callback used for resolving include directives.
-     * The default is no callback, which disallows all includes.
-     */
-    MaterialBuilder& includeCallback(IncludeCallback callback) noexcept;
 
     /**
      * Set the vertex code content of this material.
@@ -404,7 +413,8 @@ public:
      * }
      * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-     * @param code The source code of the material.
+     * @param code The source code of the material. Expected it to be all inlined. (#includes are
+     * resolved.)
      * @param line The line number offset of the material, where 0 is the first line. Used for error
      *             reporting
      */
@@ -528,6 +538,12 @@ public:
     //! Enable / disable flipping of the Y coordinate of UV attributes, enabled by default.
     MaterialBuilder& flipUV(bool flipUV) noexcept;
 
+    //! Enable / disable the cheapest linear fog, disabled by default.
+    MaterialBuilder& linearFog(bool enabled) noexcept;
+
+    //! Enable / disable shadow far attenuation, enabled by default.
+    MaterialBuilder& shadowFarAttenuation(bool enabled) noexcept;
+
     //! Enable / disable multi-bounce ambient occlusion, disabled by default on mobile.
     MaterialBuilder& multiBounceAmbientOcclusion(bool multiBounceAO) noexcept;
 
@@ -593,6 +609,13 @@ public:
      */
     MaterialBuilder& optimization(Optimization optimization) noexcept;
 
+    /**
+     * Specifies workarounds to enable during code generation. By default, all workaround are
+     * enabled. These workarounds typically disable important optimizations and in some cases
+     * whole features.
+     */
+    MaterialBuilder& workarounds(Workarounds workarounds) noexcept;
+
     // TODO: this is present here for matc's "--print" flag, but ideally does not belong inside MaterialBuilder.
     //! If true, will output the generated GLSL shader code to stdout.
     MaterialBuilder& printShaders(bool printShaders) noexcept;
@@ -616,7 +639,7 @@ public:
 
     //! Add a new fragment shader output variable. Only valid for materials in the POST_PROCESS domain.
     MaterialBuilder& output(VariableQualifier qualifier, OutputTarget target, Precision precision,
-            OutputType type, const char* name, int location = -1) noexcept;
+            OutputType type, const char* name, int location = -1);
 
     MaterialBuilder& enableFramebufferFetch() noexcept;
 
@@ -632,6 +655,18 @@ public:
     MaterialBuilder& groupSize(filament::math::uint3 groupSize) noexcept;
 
     /**
+     * Force Filament to use its default variant for depth passes. Useful if a material provides a
+     * custom vertex shader which can be skipped during depth-only passes.
+     */
+    MaterialBuilder& useDefaultDepthVariant() noexcept;
+
+    /**
+     * Sets the source ASCII material (aka .mat file).
+     * The provided `source` string_view must remain valid until MaterialBuilder::build() is called.
+     */
+    MaterialBuilder& materialSource(std::string_view source) noexcept;
+
+    /**
      * Build the material. If you are using the Filament engine with this library, you should use
      * the job system provided by Engine.
      */
@@ -645,27 +680,51 @@ public:
      * Add a subpass parameter to this material.
      */
     MaterialBuilder& subpass(SubpassType subpassType,
-            SamplerFormat format, ParameterPrecision precision, const char* name) noexcept;
+            SamplerFormat format, ParameterPrecision precision, const char* name);
     MaterialBuilder& subpass(SubpassType subpassType,
-            SamplerFormat format, const char* name) noexcept;
+            SamplerFormat format, const char* name);
     MaterialBuilder& subpass(SubpassType subpassType,
-            ParameterPrecision precision, const char* name) noexcept;
-    MaterialBuilder& subpass(SubpassType subpassType, const char* name) noexcept;
+            ParameterPrecision precision, const char* name);
+    MaterialBuilder& subpass(SubpassType subpassType, const char* name);
 
     struct Parameter {
         Parameter() noexcept: parameterType(INVALID) {}
 
         // Sampler
-        Parameter(const char* paramName, SamplerType t, SamplerFormat f, ParameterPrecision p, bool ms, const char* tn)
-                : name(paramName), size(1), precision(p), samplerType(t), format(f), parameterType(SAMPLER), multisample(ms), transformName(tn) { }
+        Parameter(const char* paramName, SamplerType t, SamplerFormat f, ParameterPrecision p,
+                bool filterable, bool ms, const char* tn, std::optional<ShaderStageFlags> s)
+            : name(paramName),
+              size(1),
+              precision(p),
+              samplerType(t),
+              format(f),
+              filterable(filterable),
+              multisample(ms),
+              transformName(tn),
+              stages(s),
+              parameterType(SAMPLER) {}
 
         // Uniform
         Parameter(const char* paramName, UniformType t, size_t typeSize, ParameterPrecision p)
-                : name(paramName), size(typeSize), uniformType(t), precision(p), parameterType(UNIFORM) { }
+            : name(paramName),
+              size(typeSize),
+              uniformType(t),
+              precision(p),
+              format{ 0 },
+              filterable(false),
+              multisample(false),
+              parameterType(UNIFORM) {}
 
         // Subpass
         Parameter(const char* paramName, SubpassType t, SamplerFormat f, ParameterPrecision p)
-                : name(paramName), size(1), precision(p), subpassType(t), format(f), parameterType(SUBPASS) { }
+            : name(paramName),
+              size(1),
+              precision(p),
+              subpassType(t),
+              format(f),
+              filterable(false),
+              multisample(false),
+              parameterType(SUBPASS) {}
 
         utils::CString name;
         size_t size;
@@ -674,8 +733,10 @@ public:
         SamplerType samplerType;
         SubpassType subpassType;
         SamplerFormat format;
+        bool filterable;
         bool multisample;
         utils::CString transformName;
+        std::optional<ShaderStageFlags> stages;
         enum {
             INVALID,
             UNIFORM,
@@ -706,11 +767,7 @@ public:
     struct Constant {
         utils::CString name;
         ConstantType type;
-        union {
-            int32_t i;
-            float f;
-            bool b;
-        } defaultValue;
+        ConstantValue defaultValue;
     };
 
     struct PushConstant {
@@ -746,17 +803,16 @@ public:
     // Returns true if any of the parameter samplers matches the specified type.
     bool hasSamplerType(SamplerType samplerType) const noexcept;
 
-    static constexpr size_t MAX_PARAMETERS_COUNT = 48;
     static constexpr size_t MAX_SUBPASS_COUNT = 1;
     static constexpr size_t MAX_BUFFERS_COUNT = 4;
-    using ParameterList = Parameter[MAX_PARAMETERS_COUNT];
+    using ParameterList = std::vector<Parameter>;
     using SubpassList = Parameter[MAX_SUBPASS_COUNT];
     using BufferList = std::vector<std::unique_ptr<filament::BufferInterfaceBlock>>;
     using ConstantList = std::vector<Constant>;
     using PushConstantList = std::vector<PushConstant>;
 
     // returns the number of parameters declared in this material
-    uint8_t getParameterCount() const noexcept { return mParameterCount; }
+    size_t getParameterCount() const noexcept { return mParameters.size(); }
 
     // returns a list of at least getParameterCount() parameters
     const ParameterList& getParameters() const noexcept { return mParameters; }
@@ -833,21 +889,16 @@ private:
     bool isLit() const noexcept { return mShading != filament::Shading::UNLIT; }
 
     utils::CString mMaterialName;
-    utils::CString mFileName;
+    utils::CString mCompilationParameters;
 
     class ShaderCode {
     public:
         void setLineOffset(size_t offset) noexcept { mLineOffset = offset; }
-        void setUnresolved(const utils::CString& code) noexcept {
-            mIncludesResolved = false;
+        void setCode(const utils::CString& code) noexcept {
             mCode = code;
         }
 
-        // Resolve all the #include directives, returns true if successful.
-        bool resolveIncludes(IncludeCallback callback, const utils::CString& fileName) noexcept;
-
-        const utils::CString& getResolved() const noexcept {
-            assert(mIncludesResolved);
+        const utils::CString& getCode() const noexcept {
             return mCode;
         }
 
@@ -856,13 +907,11 @@ private:
     private:
         utils::CString mCode;
         size_t mLineOffset = 0;
-        bool mIncludesResolved = false;
     };
 
     ShaderCode mMaterialFragmentCode;
     ShaderCode mMaterialVertexCode;
-
-    IncludeCallback mIncludeCallback = nullptr;
+    std::string_view mMaterialSource;
 
     PropertyList mProperties;
     ParameterList mParameters;
@@ -901,7 +950,6 @@ private:
     bool mShadowMultiplier = false;
     bool mTransparentShadow = false;
 
-    uint8_t mParameterCount = 0;
     uint8_t mSubpassCount = 0;
 
     bool mDoubleSided = false;
@@ -918,6 +966,8 @@ private:
     bool mClearCoatIorChange = true;
 
     bool mFlipUV = true;
+    bool mLinearFog = false;
+    bool mShadowFarAttenuation = true;
 
     bool mMultiBounceAO = false;
     bool mMultiBounceAOSet = false;
@@ -938,11 +988,21 @@ private:
     filament::UserVariantFilterMask mVariantFilter = {};
 
     bool mNoSamplerValidation = false;
+
+    bool mUseDefaultDepthVariant = false;
 };
 
 } // namespace filamat
 
-template<> struct utils::EnableBitMaskOperators<filamat::MaterialBuilder::TargetApi>
-        : public std::true_type {};
+template<>
+struct utils::EnableBitMaskOperators<filamat::MaterialBuilder::TargetApi>
+        : public std::true_type {
+};
+
+template<>
+struct utils::EnableBitMaskOperators<filamat::MaterialBuilder::Workarounds>
+        : public std::true_type {
+};
+
 
 #endif

@@ -29,6 +29,8 @@
 
 #include "details/Texture.h"
 
+#include <utils/Logger.h>
+
 using namespace filament;
 using namespace backend;
 
@@ -39,7 +41,7 @@ class MockResourceAllocator : public ResourceAllocatorInterface {
     } disposer;
 
 public:
-    backend::RenderTargetHandle createRenderTarget(const char* name,
+    backend::RenderTargetHandle createRenderTarget(utils::StaticString name,
             backend::TargetBufferFlags targetBufferFlags,
             uint32_t width,
             uint32_t height,
@@ -54,7 +56,7 @@ public:
     void destroyRenderTarget(backend::RenderTargetHandle h) noexcept override {
     }
 
-    backend::TextureHandle createTexture(const char* name, backend::SamplerType target,
+    backend::TextureHandle createTexture(utils::StaticString name, backend::SamplerType target,
             uint8_t levels,
             backend::TextureFormat format, uint8_t samples, uint32_t width, uint32_t height,
             uint32_t depth, std::array<backend::TextureSwizzle, 4>,
@@ -76,7 +78,9 @@ protected:
     }
 
     void TearDown() override {
-        //fg.export_graphviz(utils::slog.d);
+        //utils::io::sstream graphviz;
+        //fg.export_graphviz(graphviz);
+        //DLOG(INFO) << graphviz.c_str();
     }
 
     Backend backend = Backend::NOOP;
@@ -107,7 +111,9 @@ TEST(DependencyGraphTest, Simple) {
 
     graph.cull();
 
-    //graph.export_graphviz(utils::slog.d);
+    //utils::io::sstream graphviz;
+    //graph.export_graphviz(graphviz);
+    //DLOG(INFO) << graphviz.c_str();
 
     EXPECT_FALSE(n2->isCulled());
     EXPECT_FALSE(n1->isCulled());
@@ -141,7 +147,9 @@ TEST(DependencyGraphTest, Culling1) {
 
     graph.cull();
 
-    //graph.export_graphviz(utils::slog.d);
+    //utils::io::sstream graphviz;
+    //graph.export_graphviz(graphviz);
+    //DLOG(INFO) << graphviz.c_str();
 
     EXPECT_TRUE(n1_0->isCulled());
     EXPECT_TRUE(n1_0->isCulledCalled());
@@ -182,7 +190,9 @@ TEST(DependencyGraphTest, Culling2) {
 
     graph.cull();
 
-    //graph.export_graphviz(utils::slog.d);
+    //utils::io::sstream graphviz;
+    //graph.export_graphviz(graphviz);
+    //DLOG(INFO) << graphviz.c_str();
 
     EXPECT_TRUE(n1_0->isCulled());
     EXPECT_TRUE(n1_0_0->isCulled());

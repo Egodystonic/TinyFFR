@@ -16,15 +16,19 @@
 
 #include "private/backend/CommandStream.h"
 
+#include <private/utils/Tracing.h>
+
 #if DEBUG_COMMAND_STREAM
 #include <utils/CallStack.h>
 #endif
 
-#include <utils/compiler.h>
-#include <utils/Log.h>
-#include <utils/ostream.h>
+#include <private/utils/Tracing.h>
+
+#include <utils/Logger.h>
 #include <utils/Profiler.h>
-#include <utils/Systrace.h>
+#include <utils/compiler.h>
+#include <utils/ostream.h>
+#include <utils/sstream.h>
 
 #include <cstddef>
 #include <functional>
@@ -53,12 +57,15 @@ static void printParameterPack(io::ostream& out, const FIRST& first, const REMAI
     printParameterPack(out, rest...);
 }
 
-static UTILS_NOINLINE UTILS_UNUSED std::string extractMethodName(std::string& command) noexcept {
-    constexpr const char startPattern[] = "::Command<&filament::backend::Driver::";
+static UTILS_NOINLINE UTILS_UNUSED std::string_view extractMethodName(std::string_view command) noexcept { // NOLINT(*-exception-escape)
+    constexpr char startPattern[] = "::Command<&filament::backend::Driver::";
     auto pos = command.rfind(startPattern);
     auto end = command.rfind('(');
     pos += sizeof(startPattern) - 1;
-    return command.substr(pos, end-pos);
+    if (pos > command.size()) {
+        return { command.data(), command.size() };
+    }
+    return command.substr(pos, end-pos); // this can't throw by construction
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -79,12 +86,13 @@ CommandStream::CommandStream(Driver& driver, CircularBuffer& buffer) noexcept
 }
 
 void CommandStream::execute(void* buffer) {
-    // NOTE: we can't use SYSTRACE_CALL() or similar here because, execute() below, also
+    // NOTE: we can't use FILAMENT_TRACING_CALL() or similar here because, execute() below, also
     // uses systrace BEGIN/END and the END is not guaranteed to be happening in this scope.
 
     Profiler profiler;
 
-    if (SYSTRACE_TAG) {
+
+    if constexpr (FILAMENT_TRACING_ENABLED) {
         if (UTILS_UNLIKELY(mUsePerformanceCounter)) {
             // we want to remove all this when tracing is completely disabled
             profiler.resetEvents(Profiler::EV_CPU_CYCLES  | Profiler::EV_BPU_MISSES);
@@ -92,25 +100,27 @@ void CommandStream::execute(void* buffer) {
         }
     }
 
-    mDriver.execute([this, buffer]() {
-        Driver& UTILS_RESTRICT driver = mDriver;
-        CommandBase* UTILS_RESTRICT base = static_cast<CommandBase*>(buffer);
-        while (UTILS_LIKELY(base)) {
-            base = base->execute(driver);
+    Driver& UTILS_RESTRICT driver = mDriver;
+    CommandBase* UTILS_RESTRICT base = static_cast<CommandBase*>(buffer);
+    mDriver.execute([&driver, base] {
+        auto& d = driver;
+        auto p = base;
+        while (UTILS_LIKELY(p)) {
+            p = p->execute(d);
         }
     });
 
-    if (SYSTRACE_TAG) {
+    if constexpr (FILAMENT_TRACING_ENABLED) {
         if (UTILS_UNLIKELY(mUsePerformanceCounter)) {
             // we want to remove all this when tracing is completely disabled
             profiler.stop();
             UTILS_UNUSED Profiler::Counters const counters = profiler.readCounters();
-            SYSTRACE_CONTEXT();
-            SYSTRACE_VALUE32("GLThread (I)", counters.getInstructions());
-            SYSTRACE_VALUE32("GLThread (C)", counters.getCpuCycles());
-            SYSTRACE_VALUE32("GLThread (CPI x10)", counters.getCPI() * 10);
-            SYSTRACE_VALUE32("GLThread (BPU miss)", counters.getBranchMisses());
-            SYSTRACE_VALUE32("GLThread (I / BPU miss)",
+            FILAMENT_TRACING_CONTEXT(FILAMENT_TRACING_CATEGORY_FILAMENT);
+            FILAMENT_TRACING_VALUE(FILAMENT_TRACING_CATEGORY_FILAMENT, "GLThread (I)", counters.getInstructions());
+            FILAMENT_TRACING_VALUE(FILAMENT_TRACING_CATEGORY_FILAMENT, "GLThread (C)", counters.getCpuCycles());
+            FILAMENT_TRACING_VALUE(FILAMENT_TRACING_CATEGORY_FILAMENT, "GLThread (CPI x10)", counters.getCPI() * 10);
+            FILAMENT_TRACING_VALUE(FILAMENT_TRACING_CATEGORY_FILAMENT, "GLThread (BPU miss)", counters.getBranchMisses());
+            FILAMENT_TRACING_VALUE(FILAMENT_TRACING_CATEGORY_FILAMENT, "GLThread (I / BPU miss)",
                     counters.getInstructions() / counters.getBranchMisses());
         }
     }
@@ -126,10 +136,11 @@ template<std::size_t... I>
 void CommandType<void (Driver::*)(ARGS...)>::Command<METHOD>::log(std::index_sequence<I...>) noexcept  {
 #if DEBUG_COMMAND_STREAM
     static_assert(UTILS_HAS_RTTI, "DEBUG_COMMAND_STREAM can only be used with RTTI");
-    std::string command = utils::CallStack::demangleTypeName(typeid(Command).name()).c_str();
-    slog.d << extractMethodName(command) << " : size=" << sizeof(Command) << "\n\t";
-    printParameterPack(slog.d, std::get<I>(mArgs)...);
-    slog.d << io::endl;
+    CString command = CallStack::demangleTypeName(typeid(Command).name());
+    DLOG(INFO) << extractMethodName({command.data(), command.size()}) << " : size=" << sizeof(Command);
+    io::sstream parameterPack;
+    printParameterPack(parameterPack, std::get<I>(mArgs)...);
+    DLOG(INFO) << "\t" << parameterPack.c_str();
 #endif
 }
 
@@ -156,7 +167,7 @@ void CommandType<void (Driver::*)(ARGS...)>::Command<METHOD>::log() noexcept  {
 // ------------------------------------------------------------------------------------------------
 
 void CustomCommand::execute(Driver&, CommandBase* base, intptr_t* next) {
-    *next = CustomCommand::align(sizeof(CustomCommand));
+    *next = align(sizeof(CustomCommand));
     static_cast<CustomCommand*>(base)->mCommand();
     static_cast<CustomCommand*>(base)->~CustomCommand();
 }

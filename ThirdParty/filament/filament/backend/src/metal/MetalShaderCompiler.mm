@@ -21,6 +21,7 @@
 #include <backend/Program.h>
 
 #include <utils/JobSystem.h>
+#include <utils/Logger.h>
 #include <utils/Mutex.h>
 
 #include <chrono>
@@ -110,15 +111,22 @@ bool MetalShaderCompiler::isParallelShaderCompileSupported() const noexcept {
         id<MTLLibrary> library = nil;
         switch (program.getShaderLanguage()) {
             case ShaderLanguage::MSL: {
-                // By default, Metal uses the most recent language version.
                 MTLCompileOptions* options = [MTLCompileOptions new];
-
-                // Disable Fast Math optimizations.
-                // This ensures that operations adhere to IEEE standards for floating-point
-                // arithmetic, which is crucial for half precision floats in scenarios where fast
-                // math optimizations lead to inaccuracies, such as in handling special values like
-                // NaN or Infinity.
-                options.fastMathEnabled = NO;
+                options.fastMathEnabled = YES;
+                // The docs for MTLCompileOptions say that Metal uses the most
+                // recent language version if it is not specified, but this is
+                // not always true: it is possible for the environment to be set
+                // up in a way where an older version is used by default. So we
+                // explicitly set the minimum version we require.
+                #if defined(FILAMENT_IOS)
+                    options.languageVersion = MTLLanguageVersion2_0;
+                #else
+                    if (@available(macOS 11.0, *)) {
+                        options.languageVersion = MTLLanguageVersion2_3;
+                    } else {
+                        options.languageVersion = MTLLanguageVersion2_2;
+                    }
+                #endif
 
                 assert_invariant(source[source.size() - 1] == '\0');
                 // the shader string is null terminated and the length includes the null character
@@ -139,6 +147,7 @@ bool MetalShaderCompiler::isParallelShaderCompileSupported() const noexcept {
             case ShaderLanguage::ESSL3:
             case ShaderLanguage::SPIRV:
             case ShaderLanguage::WGSL:
+            case ShaderLanguage::UNSPECIFIED:
                 break;
         }
 
@@ -147,7 +156,7 @@ bool MetalShaderCompiler::isParallelShaderCompileSupported() const noexcept {
             if (error) {
                 auto description =
                         [error.localizedDescription cStringUsingEncoding:NSUTF8StringEncoding];
-                utils::slog.w << description << utils::io::endl;
+                LOG(WARNING) << description;
                 errorMessage = error.localizedDescription;
             }
             PANIC_LOG("Failed to compile Metal program.");
@@ -157,14 +166,15 @@ bool MetalShaderCompiler::isParallelShaderCompileSupported() const noexcept {
 
         MTLFunctionConstantValues* constants = [MTLFunctionConstantValues new];
         auto const& specializationConstants = program.getSpecializationConstants();
-        for (auto const& sc : specializationConstants) {
+        for (size_t i = 0; i < specializationConstants.size(); i++) {
+            auto const& sc = specializationConstants[i];
             const std::array<MTLDataType, 3> types{
                     MTLDataTypeInt, MTLDataTypeFloat, MTLDataTypeBool };
-            std::visit([&sc, constants, type = types[sc.value.index()]](auto&& arg) {
+            std::visit([i, constants, type = types[sc.index()]](auto&& arg) {
                 [constants setConstantValue:&arg
                                        type:type
-                                    atIndex:sc.id];
-            }, sc.value);
+                                    atIndex:i];
+            }, sc);
         }
 
         id<MTLFunction> function = [library newFunctionWithName:@"main0"
@@ -178,7 +188,7 @@ bool MetalShaderCompiler::isParallelShaderCompileSupported() const noexcept {
             if (error) {
                 auto description =
                         [error.localizedDescription cStringUsingEncoding:NSUTF8StringEncoding];
-                utils::slog.w << description << utils::io::endl;
+                LOG(WARNING) << description;
                 errorMessage = error.localizedDescription;
             }
             PANIC_LOG("Failed to load main0 in Metal program.");

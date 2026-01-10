@@ -88,7 +88,7 @@ from scratch.
 
 ## XcodeGen
 
-[XcodeGen](https://github.com/yonaskolb/XcodeGen) version 2.29.0 is used to generate the Xcode
+[XcodeGen](https://github.com/yonaskolb/XcodeGen) version 2.43.0 is used to generate the Xcode
 projects. While not required to run the samples, XcodeGen makes modifying them easier. Each sample
 folder contains the `project.yml` file used for the sample, which includes a global
 `app-template.yml` file. Simply run
@@ -102,7 +102,8 @@ project in Xcode to see changes take effect.
 
 ## Building iOS Samples with ASan / UBSan
 
-1. Turn on ASan / UBSan in Filament's top-level CMakeLists.txt by uncommenting the following line:
+1. Turn on ASan / UBSan in Filament's top-level CMakeLists.txt by passing
+   `-DFILAMENT_ENABLE_ASAN_UBSAN=1` to trigger the following line:
 
 ```
 set(EXTRA_SANITIZE_OPTIONS "-fsanitize=undefined -fsanitize=address")

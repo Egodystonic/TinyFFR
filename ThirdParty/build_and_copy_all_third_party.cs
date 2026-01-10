@@ -81,7 +81,7 @@ else {
 	}
 	else if (OperatingSystem.IsLinux()) {
 		commandLists[LibFilament].AddRange(
-			$"cmake -G Ninja -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} " +
+			$"cmake -G Ninja -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} -DCMAKE_BUILD_TYPE={ConfigurationToken} " +
 				$"-DFILAMENT_SUPPORTS_OPENGL=ON -DFILAMENT_INSTALL_BACKEND_TEST=OFF -DFILAMENT_SKIP_SAMPLES=ON -DFILAMENT_SUPPORTS_METAL=OFF -DFILAMENT_SUPPORTS_VULKAN=ON -DFILAMENT_SUPPORTS_WAYLAND=ON " +
 				$"\"{RepoRootDirToken}/CMakeLists.txt\"",
 			$"ninja"

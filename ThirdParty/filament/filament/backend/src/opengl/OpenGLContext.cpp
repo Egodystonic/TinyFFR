@@ -21,12 +21,14 @@
 
 #include <backend/platforms/OpenGLPlatform.h>
 #include <backend/DriverEnums.h>
+#include <backend/Platform.h>
 
+#include <utils/Logger.h>
 #include <utils/compiler.h>
 #include <utils/debug.h>
-#include <utils/Log.h>
 #include <utils/ostream.h>
 
+#include <algorithm>
 #include <functional>
 #include <string_view>
 #include <utility>
@@ -77,8 +79,8 @@ OpenGLContext::OpenGLContext(OpenGLPlatform& platform,
     state.version  = (char const*)glGetString(GL_VERSION);
     state.shader   = (char const*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 
-    slog.v << "[" << state.vendor << "], [" << state.renderer << "], "
-              "[" << state.version << "], [" << state.shader << "]" << io::endl;
+    LOG(INFO) << "[" << state.vendor << "], [" << state.renderer << "], "
+                 "[" << state.version << "], [" << state.shader << "]";
 
     /*
      * Figure out GL / GLES version, extensions and capabilities we need to
@@ -100,6 +102,8 @@ OpenGLContext::OpenGLContext(OpenGLPlatform& platform,
 
     initBugs(&bugs, ext, state.major, state.minor,
             state.vendor, state.renderer, state.version, state.shader);
+
+    initWorkarounds(bugs, &ext);
 
     glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE,             &gets.max_renderbuffer_size);
     glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS,           &gets.max_texture_image_units);
@@ -164,51 +168,33 @@ OpenGLContext::OpenGLContext(OpenGLPlatform& platform,
     }
 #endif
 
-    slog.v << "Feature level: " << +mFeatureLevel << '\n';
-    slog.v << "Active workarounds: " << '\n';
+    LOG(INFO) << "Feature level: " << +mFeatureLevel;
+    LOG(INFO) << "Active workarounds: ";
     UTILS_NOUNROLL
     for (auto [enabled, name, _] : mBugDatabase) {
         if (enabled) {
-            slog.v << name << '\n';
+            LOG(INFO) << name;
         }
     }
-    flush(slog.v);
 
 #ifndef NDEBUG
     // this is useful for development
-    slog.v
-            << "GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT = "
-                    << gets.max_anisotropy << '\n'
-            << "GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS = "
-                    << gets.max_combined_texture_image_units << '\n'
-            << "GL_MAX_TEXTURE_SIZE = "
-                    << gets.max_texture_size << '\n'
-            << "GL_MAX_CUBE_MAP_TEXTURE_SIZE = "
-                    << gets.max_cubemap_texture_size << '\n'
-            << "GL_MAX_3D_TEXTURE_SIZE = "
-                    << gets.max_3d_texture_size << '\n'
-            << "GL_MAX_ARRAY_TEXTURE_LAYERS = "
-                    << gets.max_array_texture_layers << '\n'
-            << "GL_MAX_DRAW_BUFFERS = "
-                    << gets.max_draw_buffers << '\n'
-            << "GL_MAX_RENDERBUFFER_SIZE = "
-                    << gets.max_renderbuffer_size << '\n'
-            << "GL_MAX_SAMPLES = "
-                    << gets.max_samples << '\n'
-            << "GL_MAX_TEXTURE_IMAGE_UNITS = "
-                    << gets.max_texture_image_units << '\n'
-            << "GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS = "
-                    << gets.max_transform_feedback_separate_attribs << '\n'
-            << "GL_MAX_UNIFORM_BLOCK_SIZE = "
-                    << gets.max_uniform_block_size << '\n'
-            << "GL_MAX_UNIFORM_BUFFER_BINDINGS = "
-                    << gets.max_uniform_buffer_bindings << '\n'
-            << "GL_NUM_PROGRAM_BINARY_FORMATS = "
-                    << gets.num_program_binary_formats << '\n'
-            << "GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT = "
-                    << gets.uniform_buffer_offset_alignment << '\n'
-            ;
-    flush(slog.v);
+    LOG(INFO) << "GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT = " << gets.max_anisotropy;
+    LOG(INFO) << "GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS = " << gets.max_combined_texture_image_units;
+    LOG(INFO) << "GL_MAX_TEXTURE_SIZE = " << gets.max_texture_size;
+    LOG(INFO) << "GL_MAX_CUBE_MAP_TEXTURE_SIZE = " << gets.max_cubemap_texture_size;
+    LOG(INFO) << "GL_MAX_3D_TEXTURE_SIZE = " << gets.max_3d_texture_size;
+    LOG(INFO) << "GL_MAX_ARRAY_TEXTURE_LAYERS = " << gets.max_array_texture_layers;
+    LOG(INFO) << "GL_MAX_DRAW_BUFFERS = " << gets.max_draw_buffers;
+    LOG(INFO) << "GL_MAX_RENDERBUFFER_SIZE = " << gets.max_renderbuffer_size;
+    LOG(INFO) << "GL_MAX_SAMPLES = " << gets.max_samples;
+    LOG(INFO) << "GL_MAX_TEXTURE_IMAGE_UNITS = " << gets.max_texture_image_units;
+    LOG(INFO) << "GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS = "
+              << gets.max_transform_feedback_separate_attribs;
+    LOG(INFO) << "GL_MAX_UNIFORM_BLOCK_SIZE = " << gets.max_uniform_block_size;
+    LOG(INFO) << "GL_MAX_UNIFORM_BUFFER_BINDINGS = " << gets.max_uniform_buffer_bindings;
+    LOG(INFO) << "GL_NUM_PROGRAM_BINARY_FORMATS = " << gets.num_program_binary_formats;
+    LOG(INFO) << "GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT = " << gets.uniform_buffer_offset_alignment;
 #endif
 
 #ifndef FILAMENT_SILENCE_NOT_SUPPORTED_BY_ES2
@@ -242,15 +228,14 @@ OpenGLContext::OpenGLContext(OpenGLPlatform& platform,
     if (ext.KHR_debug) {
         auto cb = +[](GLenum, GLenum type, GLuint, GLenum severity, GLsizei length,
                 const GLchar* message, const void *) {
-            io::ostream* stream = &slog.i;
+            auto logSeverity = utils::LogSeverity::kInfo;
             switch (severity) {
-                case GL_DEBUG_SEVERITY_HIGH:    stream = &slog.e;   break;
-                case GL_DEBUG_SEVERITY_MEDIUM:  stream = &slog.w;   break;
-                case GL_DEBUG_SEVERITY_LOW:     stream = &slog.d;   break;
+                case GL_DEBUG_SEVERITY_HIGH:    logSeverity = utils::LogSeverity::kError;   break;
+                case GL_DEBUG_SEVERITY_MEDIUM:  logSeverity = utils::LogSeverity::kWarning; break;
+                case GL_DEBUG_SEVERITY_LOW:     logSeverity = utils::LogSeverity::kInfo;    break;
                 case GL_DEBUG_SEVERITY_NOTIFICATION:
                 default: break;
             }
-            io::ostream& out = *stream;
             const char* level = ": ";
             switch (type) {
                 case GL_DEBUG_TYPE_ERROR:               level = "ERROR: ";               break;
@@ -262,7 +247,7 @@ OpenGLContext::OpenGLContext(OpenGLPlatform& platform,
                 case GL_DEBUG_TYPE_MARKER:              level = "MARKER: ";              break;
                 default: break;
             }
-            out << "KHR_debug " << level << std::string_view{ message, size_t(length) } << io::endl;
+            LOG(LEVEL(logSeverity)) << "KHR_debug " << level << std::string_view{ message, size_t(length) };
         };
         glEnable(GL_DEBUG_OUTPUT);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -292,7 +277,7 @@ void OpenGLContext::terminate() noexcept {
 }
 
 void OpenGLContext::destroyWithContext(
-        size_t index, std::function<void(OpenGLContext&)> const& closure) noexcept {
+        size_t index, std::function<void(OpenGLContext&)> const& closure) {
     if (index == 0) {
         // Note: we only need to delay the destruction of objects on the unprotected context
         // (index 0) because the protected context is always immediately destroyed and all its
@@ -311,7 +296,7 @@ void OpenGLContext::unbindEverything() noexcept {
     //        worry about.
 }
 
-void OpenGLContext::synchronizeStateAndCache(size_t index) noexcept {
+void OpenGLContext::synchronizeStateAndCache(size_t index) {
 
     // if we're just switching back to context 0, run all the pending destructors
     if (index == 0) {
@@ -522,26 +507,53 @@ void OpenGLContext::initBugs(Bugs* bugs, Extensions const& exts,
         } else if (strstr(renderer, "Mali")) {
             // ARM GPU
             bugs->vao_doesnt_store_element_array_buffer_binding = true;
+
+            // We have run into several problems with timer queries on Mali-Gxx:
+            // - timer queries seem to cause memory corruptions in some cases on some devices
+            //   (see b/233754398)
+            //          - appeared at least in: "OpenGL ES 3.2 v1.r26p0-01eac0"
+            //          - wasn't present in: "OpenGL ES 3.2 v1.r32p1-00pxl1"
+            // - timer queries sometime crash with an NPE (see b/273759031)
+            //   (see b/273759031)
+            //          - possibly not present in: "OpenGL ES 3.2 v1.r46p0"
+            bugs->dont_use_timer_query = true;
+
+            // at least some version of Mali have problems with framebuffer_fetch
+            // (see b/445721121, https://github.com/google/filament/issues/7794)
+            bugs->disable_framebuffer_fetch_extension = true;
+
             if (strstr(renderer, "Mali-T")) {
                 bugs->disable_glFlush = true;
                 bugs->disable_shared_context_draws = true;
-                // We have not verified that timer queries work on Mali-T, so we disable to be safe.
-                bugs->dont_use_timer_query = true;
             }
             if (strstr(renderer, "Mali-G")) {
-                // We have run into several problems with timer queries on Mali-Gxx:
-                // - timer queries seem to cause memory corruptions in some cases on some devices
-                //   (see b/233754398)
-                //          - appeared at least in: "OpenGL ES 3.2 v1.r26p0-01eac0"
-                //          - wasn't present in: "OpenGL ES 3.2 v1.r32p1-00pxl1"
-                // - timer queries sometime crash with an NPE (see b/273759031)
-                bugs->dont_use_timer_query = true;
+                int maj, min, driverVersion, driverRelease;
+                int const c = sscanf(version, "OpenGL ES %d.%d v%d.r%d",
+                        &maj, &min, &driverVersion, &driverRelease);
+                if (UTILS_LIKELY(c == 4)) {
+                    // we were able to parse the version string
+                    if (driverVersion > 1 || (driverVersion == 1 && driverRelease >= 46)) {
+                        // this driver version is known to be good
+                        bugs->dont_use_timer_query = false;
+                    }
+                    if (driverVersion > 1 || (driverVersion == 1 && driverRelease >= 53)) {
+                        // this driver version is known to be good
+                        bugs->disable_framebuffer_fetch_extension = false;
+                    }
+                }
             }
             // Mali seems to have no problem with this (which is good for us)
             bugs->allow_read_only_ancillary_feedback_loop = true;
         } else if (strstr(renderer, "Intel")) {
             // Intel GPU
             bugs->vao_doesnt_store_element_array_buffer_binding = true;
+
+            if (strstr(renderer, "Mesa")) {
+                // Mesa Intel driver on Linux/Android
+                // Renderer of the form [Mesa Intel(R) HD Graphics 505 (APL 3)]
+                // b/405252622
+                bugs->disable_invalidate_framebuffer = true;
+            }
         } else if (strstr(renderer, "PowerVR")) {
             // PowerVR GPU
             // On PowerVR (Rogue GE8320) glFlush doesn't seem to do anything, in particular,
@@ -571,13 +583,22 @@ void OpenGLContext::initBugs(Bugs* bugs, Extensions const& exts,
         }
 
         if (strstr(vendor, "Mesa")) {
-            // Seen on
-            //  [Mesa],
-            //  [llvmpipe (LLVM 17.0.6, 256 bits)],
-            //  [4.5 (Core Profile) Mesa 24.0.6-1],
-            //  [4.50]
-            // not known which version are affected
-            bugs->rebind_buffer_after_deletion = true;
+            if (strstr(renderer, "llvmpipe")) {
+                // Seen on
+                //  [Mesa],
+                //  [llvmpipe (LLVM 17.0.6, 256 bits)],
+                //  [4.5 (Core Profile) Mesa 24.0.6-1],
+                //  [4.50]
+                // not known which version are affected
+                bugs->rebind_buffer_after_deletion = true;
+
+                // Seen on
+                // [Mesa]
+                // [llvmpipe (LLVM 17.0.6, 256 bits)]
+                // [4.5 (Core Profile) Mesa 24.2.1 (git-c222f7299c)]
+                // [4.50]
+                bugs->disable_framebuffer_fetch_extension = true;
+            }
         }
     } else {
         // When running under ANGLE, it's a different set of workaround that we need.
@@ -621,6 +642,12 @@ void OpenGLContext::initBugs(Bugs* bugs, Extensions const& exts,
     // feedback loops are allowed on GL desktop as long as writes are disabled
     bugs->allow_read_only_ancillary_feedback_loop = true;
 #endif
+}
+
+void OpenGLContext::initWorkarounds(Bugs const& bugs, Extensions* ext) {
+    if (bugs.disable_framebuffer_fetch_extension) {
+        ext->EXT_shader_framebuffer_fetch = false;
+    }
 }
 
 FeatureLevel OpenGLContext::resolveFeatureLevel(GLint major, GLint minor,
@@ -700,9 +727,8 @@ void OpenGLContext::initExtensionsGLES(Extensions* ext, GLint major, GLint minor
     GLUtils::unordered_string_set const exts = GLUtils::split(extensions);
     if constexpr (DEBUG_PRINT_EXTENSIONS) {
         for (auto extension: exts) {
-            slog.d << "\"" << std::string_view(extension) << "\"\n";
+            DLOG(INFO) << "\"" << std::string_view(extension) << "\"";
         }
-        flush(slog.d);
     }
 
     // figure out and initialize the extensions we need
@@ -734,6 +760,7 @@ void OpenGLContext::initExtensionsGLES(Extensions* ext, GLint major, GLint minor
     ext->EXT_texture_compression_rgtc = exts.has("GL_EXT_texture_compression_rgtc"sv);
     ext->EXT_texture_compression_bptc = exts.has("GL_EXT_texture_compression_bptc"sv);
     ext->EXT_texture_cube_map_array = exts.has("GL_EXT_texture_cube_map_array"sv) || exts.has("GL_OES_texture_cube_map_array"sv);
+    ext->EXT_texture_filter_anisotropic = exts.has("GL_EXT_texture_filter_anisotropic"sv);
     ext->GOOGLE_cpp_style_line_directive = exts.has("GL_GOOGLE_cpp_style_line_directive"sv);
     ext->KHR_debug = exts.has("GL_KHR_debug"sv);
     ext->KHR_parallel_shader_compile = exts.has("GL_KHR_parallel_shader_compile"sv);
@@ -776,9 +803,8 @@ void OpenGLContext::initExtensionsGL(Extensions* ext, GLint major, GLint minor) 
     }
     if constexpr (DEBUG_PRINT_EXTENSIONS) {
         for (auto extension: exts) {
-            slog.d << "\"" << std::string_view(extension) << "\"\n";
+            DLOG(INFO) << "\"" << std::string_view(extension) << "\"";
         }
-        flush(slog.d);
     }
 
     using namespace std::literals;
@@ -840,10 +866,12 @@ GLuint OpenGLContext::bindFramebuffer(GLenum target, GLuint buffer) noexcept {
     if (UTILS_UNLIKELY(buffer == 0)) {
         // we're binding the default frame buffer, resolve its actual name
         auto& defaultFboForThisContext = mDefaultFbo[contextIndex];
+
         if (UTILS_UNLIKELY(!defaultFboForThisContext.has_value())) {
             defaultFboForThisContext = GLuint(mPlatform.getDefaultFramebufferObject());
         }
-        buffer = defaultFboForThisContext.value();
+        // by construction, defaultFboForThisContext has a value. value_or() avoids a throwing call.
+        buffer = defaultFboForThisContext.value_or(0);
     }
     bindFramebufferResolved(target, buffer);
     return buffer;
@@ -1038,7 +1066,7 @@ GLuint OpenGLContext::getSamplerSlow(SamplerParams params) const noexcept {
                 std::min(gets.max_anisotropy, anisotropy));
     }
 #endif
-    CHECK_GL_ERROR(utils::slog.e)
+    CHECK_GL_ERROR()
     mSamplerMap[params] = s;
     return s;
 }

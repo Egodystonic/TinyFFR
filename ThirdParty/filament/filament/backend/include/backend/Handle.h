@@ -17,15 +17,16 @@
 #ifndef TNT_FILAMENT_BACKEND_HANDLE_H
 #define TNT_FILAMENT_BACKEND_HANDLE_H
 
-#if !defined(NDEBUG)
-#include <utils/ostream.h>
-#endif
 #include <utils/debug.h>
 
 #include <type_traits> // FIXME: STL headers are not allowed in public headers
 #include <utility>
 
 #include <stdint.h>
+
+namespace utils::io {
+class ostream;
+} // namespace utils::io
 
 namespace filament::backend {
 
@@ -37,12 +38,14 @@ struct HwRenderPrimitive;
 struct HwRenderTarget;
 struct HwStream;
 struct HwSwapChain;
+struct HwSync;
 struct HwTexture;
 struct HwTimerQuery;
 struct HwVertexBufferInfo;
 struct HwVertexBuffer;
 struct HwDescriptorSetLayout;
 struct HwDescriptorSet;
+struct HwMemoryMappedBuffer;
 
 /*
  * A handle to a backend resource. HandleBase is for internal use only.
@@ -150,12 +153,14 @@ using RenderPrimitiveHandle     = Handle<HwRenderPrimitive>;
 using RenderTargetHandle        = Handle<HwRenderTarget>;
 using StreamHandle              = Handle<HwStream>;
 using SwapChainHandle           = Handle<HwSwapChain>;
+using SyncHandle                = Handle<HwSync>;
 using TextureHandle             = Handle<HwTexture>;
 using TimerQueryHandle          = Handle<HwTimerQuery>;
 using VertexBufferHandle        = Handle<HwVertexBuffer>;
 using VertexBufferInfoHandle    = Handle<HwVertexBufferInfo>;
 using DescriptorSetLayoutHandle = Handle<HwDescriptorSetLayout>;
 using DescriptorSetHandle       = Handle<HwDescriptorSet>;
+using MemoryMappedBufferHandle  = Handle<HwMemoryMappedBuffer>;
 
 } // namespace filament::backend
 

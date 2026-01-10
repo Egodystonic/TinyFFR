@@ -375,6 +375,10 @@ export class Material {
     public getName(): string;
 }
 
+export enum Material$UboBatchingMode {
+    DISABLED,
+    DEFAULT,
+}
 export class Frustum {
     constructor(pv: mat4);
     public setProjection(pv: mat4): void;
@@ -542,7 +546,7 @@ export class Engine {
     public static destroy(engine: Engine): void;
     public execute(): void;
     public createCamera(entity: Entity): Camera;
-    public createMaterial(urlOrBuffer: BufferReference): Material;
+    public createMaterial(urlOrBuffer: BufferReference, options?: { uboBatching?: Material$UboBatchingMode }): Material;
     public createRenderer(): Renderer;
     public createScene(): Scene;
     public createSwapChain(): SwapChain;
@@ -1146,8 +1150,8 @@ export enum View$BlendMode {
  *
  * \note
  * Dynamic resolution is only supported on platforms where the time to render
- * a frame can be measured accurately. Dynamic resolution is currently only
- * supported on Android.
+ * a frame can be measured accurately. On platforms where this is not supported,
+ * Dynamic Resolution can't be enabled unless minScale == maxScale.
  *
  * @see Renderer::FrameRateOptions
  *
@@ -1179,9 +1183,12 @@ export interface View$DynamicResolutionOptions {
      * MEDIUM: Qualcomm Snapdragon Game Super Resolution (SGSR) 1.0
      * HIGH:   AMD FidelityFX FSR1 w/ mobile optimizations
      * ULTRA:  AMD FidelityFX FSR1
-     *      FSR1 and SGSR require a well anti-aliased (MSAA or TAA), noise free scene. Avoid FXAA and dithering.
+     *      FSR1 and SGSR require a well anti-aliased (MSAA or TAA), noise free scene.
+     *      Avoid FXAA and dithering.
      *
      * The default upscaling quality is set to LOW.
+     *
+     * caveat: currently, 'quality' is always set to LOW if the View is TRANSLUCENT.
      */
     quality?: View$QualityLevel;
 }
@@ -1301,7 +1308,9 @@ export interface View$BloomOptions {
 }
 
 /**
- * Options to control large-scale fog in the scene
+ * Options to control large-scale fog in the scene. Materials can enable the `linearFog` property,
+ * which uses a simplified, linear equation for fog calculation; in this mode, the heightFalloff
+ * is ignored as well as the mipmap selection in IBL or skyColor mode.
  */
 export interface View$FogOptions {
     /**
@@ -1318,7 +1327,7 @@ export interface View$FogOptions {
      */
     cutOffDistance?: number;
     /**
-     * fog's maximum opacity between 0 and 1
+     * fog's maximum opacity between 0 and 1. Ignored in `linearFog` mode.
      */
     maximumOpacity?: number;
     /**
@@ -1326,12 +1335,15 @@ export interface View$FogOptions {
      */
     height?: number;
     /**
-     * How fast the fog dissipates with altitude. heightFalloff has a unit of [1/m].
+     * How fast the fog dissipates with the altitude. heightFalloff has a unit of [1/m].
      * It can be expressed as 1/H, where H is the altitude change in world units [m] that causes a
      * factor 2.78 (e) change in fog density.
      *
      * A falloff of 0 means the fog density is constant everywhere and may result is slightly
      * faster computations.
+     *
+     * In `linearFog` mode, only use to compute the slope of the linear equation. Completely
+     * ignored if set to 0.
      */
     heightFalloff?: number;
     /**
@@ -1351,7 +1363,7 @@ export interface View$FogOptions {
      */
     color?: float3;
     /**
-     * Extinction factor in [1/m] at altitude 'height'. The extinction factor controls how much
+     * Extinction factor in [1/m] at an altitude 'height'. The extinction factor controls how much
      * light is absorbed and out-scattered per unit of distance. Each unit of extinction reduces
      * the incoming light to 37% of its original value.
      *
@@ -1360,10 +1372,15 @@ export interface View$FogOptions {
      * the composition of the fog/atmosphere.
      *
      * For historical reason this parameter is called `density`.
+     *
+     * In `linearFog` mode this is the slope of the linear equation if heightFalloff is set to 0.
+     * Otherwise, heightFalloff affects the slope calculation such that it matches the slope of
+     * the standard equation at the camera height.
      */
     density?: number;
     /**
      * Distance in world units [m] from the camera where the Sun in-scattering starts.
+     * Ignored in `linearFog` mode.
      */
     inScatteringStart?: number;
     /**
@@ -1371,6 +1388,7 @@ export interface View$FogOptions {
      * is scattered (by the fog) towards the camera.
      * Size of the Sun in-scattering (>0 to activate). Good values are >> 1 (e.g. ~10 - 100).
      * Smaller values result is a larger scattering size.
+     * Ignored in `linearFog` mode.
      */
     inScatteringSize?: number;
     /**
@@ -1400,7 +1418,7 @@ export enum View$DepthOfFieldOptions$Filter {
 /**
  * Options to control Depth of Field (DoF) effect in the scene.
  *
- * cocScale can be used to set the depth of field blur independently from the camera
+ * cocScale can be used to set the depth of field blur independently of the camera
  * aperture, e.g. for artistic reasons. This can be achieved by setting:
  *      cocScale = cameraAperture / desiredDoFAperture
  *
@@ -1516,6 +1534,11 @@ export interface View$RenderQuality {
     hdrColorBuffer?: View$QualityLevel;
 }
 
+export enum View$AmbientOcclusionOptions$AmbientOcclusionType {
+    SAO, // use Scalable Ambient Occlusion
+    GTAO, // use Ground Truth-Based Ambient Occlusion
+}
+
 /**
  * Screen Space Cone Tracing (SSCT) options
  * Ambient shadows from dominant light
@@ -1564,10 +1587,46 @@ export interface View$AmbientOcclusionOptions$Ssct {
 }
 
 /**
+ * Ground Truth-base Ambient Occlusion (GTAO) options
+ */
+export interface View$AmbientOcclusionOptions$Gtao {
+    /**
+     * # of slices. Higher value makes less noise.
+     */
+    sampleSliceCount?: number;
+    /**
+     * # of steps the radius is divided into for integration. Higher value makes less bias.
+     */
+    sampleStepsPerSlice?: number;
+    /**
+     * thickness heuristic, should be closed to 0. No effect when useVisibilityBitmasks sets to true.
+     */
+    thicknessHeuristic?: number;
+    /**
+     * Enables or disables visibility bitmasks mode. Notes that bent normal doesn't work under this mode.
+     * Caution: Changing this option at runtime is very expensive as it may trigger a shader re-compilation.
+     */
+    useVisibilityBitmasks?: boolean;
+    /**
+     * constant thickness value of objects on the screen in world space. Only take effect when useVisibilityBitmasks is set to true.
+     */
+    constThickness?: number;
+    /**
+     * Increase thickness with distance to maintain detail on distant surfaces.
+     * Caution: Changing this option at runtime is very expensive as it may trigger a shader re-compilation.
+     */
+    linearThickness?: boolean;
+}
+
+/**
  * Options for screen space Ambient Occlusion (SSAO) and Screen Space Cone Tracing (SSCT)
  * @see setAmbientOcclusionOptions()
  */
 export interface View$AmbientOcclusionOptions {
+    /**
+     * Type of ambient occlusion algorithm.
+     */
+    aoType?: View$AmbientOcclusionOptions$AmbientOcclusionType;
     /**
      * Ambient Occlusion radius in meters, between 0 and ~10.
      */
@@ -1577,7 +1636,8 @@ export interface View$AmbientOcclusionOptions {
      */
     power?: number;
     /**
-     * Self-occlusion bias in meters. Use to avoid self-occlusion. Between 0 and a few mm.
+     * Self-occlusion bias in meters. Use to avoid self-occlusion.
+     * Between 0 and a few mm. No effect when aoType set to GTAO
      */
     bias?: number;
     /**
@@ -1593,11 +1653,11 @@ export interface View$AmbientOcclusionOptions {
      */
     bilateralThreshold?: number;
     /**
-     * affects # of samples used for AO.
+     * affects # of samples used for AO and params for filtering
      */
     quality?: View$QualityLevel;
     /**
-     * affects AO smoothness
+     * affects AO smoothness. Recommend setting to HIGH when aoType set to GTAO.
      */
     lowPassFilter?: View$QualityLevel;
     /**
@@ -1613,10 +1673,11 @@ export interface View$AmbientOcclusionOptions {
      */
     bentNormals?: boolean;
     /**
-     * min angle in radian to consider
+     * min angle in radian to consider. No effect when aoType set to GTAO.
      */
     minHorizonAngleRad?: number;
     // JavaScript binding for ssct is not yet supported, must use default value.
+    // JavaScript binding for gtao is not yet supported, must use default value.
 }
 
 /**

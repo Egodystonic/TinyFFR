@@ -41,6 +41,36 @@ using namespace filament::math;
 namespace filament {
 namespace viewer {
 
+namespace {
+
+ImGuiKey convertKey(int keycode) {
+
+    // The following table uses normal ANSI codes, which is consistent with the keyCode that
+    // comes from a web "keydown" event.
+    switch (keycode) {
+        case 9: return ImGuiKey_Tab;
+        case 37: return ImGuiKey_LeftArrow;
+        case 39: return ImGuiKey_RightArrow;
+        case 38: return ImGuiKey_UpArrow;
+        case 40: return ImGuiKey_DownArrow;
+        case 36: return ImGuiKey_Home;
+        case 35: return ImGuiKey_End;
+        case 46: return ImGuiKey_Delete;
+        case 8: return ImGuiKey_Backspace;
+        case 13: return ImGuiKey_Enter;
+        case 27: return ImGuiKey_Escape;
+        case 65: return ImGuiKey_A;
+        case 67: return ImGuiKey_C;
+        case 86: return ImGuiKey_V;
+        case 88: return ImGuiKey_X;
+        case 89: return ImGuiKey_Y;
+        case 90: return ImGuiKey_Z;
+        default: return ImGuiKey_None;
+    }
+}
+
+}
+
 mat4f fitIntoUnitCube(const Aabb& bounds, float zoffset) {
     float3 minpt = bounds.min;
     float3 maxpt = bounds.max;
@@ -563,27 +593,6 @@ void ViewerGui::renderUserInterface(float timeStepInSeconds, View* guiView, floa
         mImGuiHelper = new ImGuiHelper(mEngine, guiView, "");
 
         auto& io = ImGui::GetIO();
-
-        // The following table uses normal ANSI codes, which is consistent with the keyCode that
-        // comes from a web "keydown" event.
-        io.KeyMap[ImGuiKey_Tab] = 9;
-        io.KeyMap[ImGuiKey_LeftArrow] = 37;
-        io.KeyMap[ImGuiKey_RightArrow] = 39;
-        io.KeyMap[ImGuiKey_UpArrow] = 38;
-        io.KeyMap[ImGuiKey_DownArrow] = 40;
-        io.KeyMap[ImGuiKey_Home] = 36;
-        io.KeyMap[ImGuiKey_End] = 35;
-        io.KeyMap[ImGuiKey_Delete] = 46;
-        io.KeyMap[ImGuiKey_Backspace] = 8;
-        io.KeyMap[ImGuiKey_Enter] = 13;
-        io.KeyMap[ImGuiKey_Escape] = 27;
-        io.KeyMap[ImGuiKey_A] = 65;
-        io.KeyMap[ImGuiKey_C] = 67;
-        io.KeyMap[ImGuiKey_V] = 86;
-        io.KeyMap[ImGuiKey_X] = 88;
-        io.KeyMap[ImGuiKey_Y] = 89;
-        io.KeyMap[ImGuiKey_Z] = 90;
-
         // TODO: this is not the best way to handle high DPI in ImGui, but it is fine when using the
         // proggy font. Users need to refresh their window when dragging between displays with
         // different pixel ratios.
@@ -609,20 +618,28 @@ void ViewerGui::mouseEvent(float mouseX, float mouseY, bool mouseButton, float m
         io.MouseDown[0] = mouseButton != 0;
         io.MouseDown[1] = false;
         io.MouseDown[2] = false;
-        io.KeyCtrl = control;
+        io.AddKeyEvent(ImGuiMod_Ctrl, control);
     }
 }
 
 void ViewerGui::keyDownEvent(int keyCode) {
-    if (mImGuiHelper && keyCode < IM_ARRAYSIZE(ImGui::GetIO().KeysDown)) {
-        ImGui::GetIO().KeysDown[keyCode] = true;
+    if (!mImGuiHelper) {
+        return;
     }
+    ImGuiIO& io = ImGui::GetIO();
+    io.AddKeyEvent(
+            convertKey(keyCode),
+            true);
 }
 
 void ViewerGui::keyUpEvent(int keyCode) {
-    if (mImGuiHelper && keyCode < IM_ARRAYSIZE(ImGui::GetIO().KeysDown)) {
-        ImGui::GetIO().KeysDown[keyCode] = false;
+    if (!mImGuiHelper) {
+        return;
     }
+    ImGuiIO& io = ImGui::GetIO();
+    io.AddKeyEvent(
+            convertKey(keyCode),
+            false);
 }
 
 void ViewerGui::keyPressEvent(int charCode) {
@@ -824,6 +841,12 @@ void ViewerGui::updateUserInterface() {
     if (ImGui::CollapsingHeader("SSAO Options")) {
         auto& ssao = mSettings.view.ssao;
 
+        ImGui::Checkbox("Enabled", &ssao.enabled);
+
+        int ambienOcclusionType = (int)ssao.aoType;
+        ImGui::Combo("AO Type", &ambienOcclusionType, "SAO\0GTAO\0\0");
+        ssao.aoType = (decltype(ssao.aoType))ambienOcclusionType;
+
         int quality = (int) ssao.quality;
         int lowpass = (int) ssao.lowPassFilter;
         bool upsampling = ssao.upsampling != View::QualityLevel::LOW;
@@ -833,7 +856,33 @@ void ViewerGui::updateUserInterface() {
         ImGui::SliderInt("Low Pass", &lowpass, 0, 2);
         ImGui::Checkbox("Bent Normals", &ssao.bentNormals);
         ImGui::Checkbox("High quality upsampling", &upsampling);
-        ImGui::SliderFloat("Min Horizon angle", &ssao.minHorizonAngleRad, 0.0f, (float)M_PI_4);
+        ImGui::SliderFloat("Radius", &ssao.radius, 0.1f, 10.0f);
+        ImGui::SliderFloat("Power", &ssao.power, 1.0f, 8.0f);
+
+        switch (ssao.aoType) {
+            case AmbientOcclusionOptions::AmbientOcclusionType::SAO: {
+                ImGui::SliderFloat("Min Horizon angle", &ssao.minHorizonAngleRad, 0.0f,
+                        (float) M_PI_4);
+                break;
+            }
+            case AmbientOcclusionOptions::AmbientOcclusionType::GTAO: {
+                int sliceCount = ssao.gtao.sampleSliceCount;
+                int stepsPerSlice = ssao.gtao.sampleStepsPerSlice;
+
+                ImGui::SliderInt("Slice Count", &sliceCount, 1, 10);
+                ImGui::SliderInt("Steps Per Slice", &stepsPerSlice, 1, 4);
+                ImGui::Checkbox("Use Visibility Bitmasks", &ssao.gtao.useVisibilityBitmasks);
+                if (ssao.gtao.useVisibilityBitmasks) {
+                    ImGui::SliderFloat("Constant Thickness", &ssao.gtao.constThickness, 0.01f, 10.0f);
+                    ImGui::Checkbox("Linear Thickness", &ssao.gtao.linearThickness);
+                }
+
+                ssao.gtao.sampleSliceCount = static_cast<uint8_t>(sliceCount);
+                ssao.gtao.sampleStepsPerSlice = static_cast<uint8_t>(stepsPerSlice);
+                break;
+            }
+        }
+
         ImGui::SliderFloat("Bilateral Threshold", &ssao.bilateralThreshold, 0.0f, 0.1f);
         ImGui::Checkbox("Half resolution", &halfRes);
         ssao.resolution = halfRes ? 0.5f : 1.0f;
@@ -1106,15 +1155,22 @@ void ViewerGui::updateUserInterface() {
                 debug.getPropertyAddress<bool>("d.stereo.combine_multiview_images"));
         ImGui::Unindent();
 #endif
-#endif
-        ImGui::SliderFloat("Ocular distance", &mSettings.viewer.cameraEyeOcularDistance, 0.0f,
-                1.0f);
+        ImGui::SliderFloat("Ocular distance",
+            &mSettings.viewer.cameraEyeOcularDistance, 0.0f, 1.0f);
 
         float toeInDegrees = mSettings.viewer.cameraEyeToeIn / f::PI * 180.0f;
         ImGui::SliderFloat("Toe in", &toeInDegrees, 0.0f, 30.0, "%.3f°");
         mSettings.viewer.cameraEyeToeIn = toeInDegrees / 180.0f * f::PI;
 
         ImGui::Unindent();
+#endif
+    }
+
+    if (ImGui::CollapsingHeader("Debug Options")) {
+        mSettings.debug.skipFrames = 0;
+        if (ImGui::Button("Skip 10 frames")) {
+            mSettings.debug.skipFrames = 10;
+        }
     }
 
     colorGradingUI(mSettings, mRangePlot, mCurvePlot, mToneMapPlot);

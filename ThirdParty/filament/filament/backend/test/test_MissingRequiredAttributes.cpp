@@ -63,35 +63,26 @@ TEST_F(BackendTest, MissingRequiredAttributes) {
     // executeCommands().
     {
         DriverApi& api = getDriverApi();
-        Cleanup cleanup(api);
         // Create a platform-specific SwapChain and make it current.
-        auto swapChain = cleanup.add(createSwapChain());
+        auto swapChain = addCleanup(createSwapChain());
         api.makeCurrent(swapChain, swapChain);
 
         // Create a program.
-        Shader shader(api, cleanup, ShaderConfig{
+        Shader shader(api, *mCleanup, ShaderConfig{
                 .vertexShader = vertex,
                 .fragmentShader = SharedShaders::getFragmentShaderText(FragmentShaderType::White,
                         ShaderUniformType::None),
         });
 
-        auto defaultRenderTarget = cleanup.add(api.createDefaultRenderTarget(0));
+        auto defaultRenderTarget = addCleanup(api.createDefaultRenderTarget());
 
         TrianglePrimitive triangle(api);
 
-        RenderPassParams params = {};
-        fullViewport(params);
-        params.flags.clear = TargetBufferFlags::COLOR;
-        params.clearColor = { 0.f, 1.f, 0.f, 1.f };
-        params.flags.discardStart = TargetBufferFlags::ALL;
-        params.flags.discardEnd = TargetBufferFlags::NONE;
+        PipelineState state = getColorWritePipelineState();
+        shader.addProgramToPipelineState(state);
 
-        PipelineState state;
-        state.program = shader.getProgram();
-        state.rasterState.colorWrite = true;
-        state.rasterState.depthWrite = false;
-        state.rasterState.depthFunc = RasterState::DepthFunc::A;
-        state.rasterState.culling = CullingMode::NONE;
+        RenderPassParams params = getClearColorRenderPass();
+        params.viewport = getFullViewport();
 
         api.startCapture(0);
 
@@ -100,7 +91,11 @@ TEST_F(BackendTest, MissingRequiredAttributes) {
 
         // Render a triangle.
         api.beginRenderPass(defaultRenderTarget, params);
-        api.draw(state, triangle.getRenderPrimitive(), 0, 3, 1);
+        state.primitiveType = PrimitiveType::TRIANGLES;
+        state.vertexBufferInfo = triangle.getVertexBufferInfo();
+        api.bindPipeline(state);
+        api.bindRenderPrimitive(triangle.getRenderPrimitive());
+        api.draw2(0, 3, 1);
         api.endRenderPass();
 
         api.flush();

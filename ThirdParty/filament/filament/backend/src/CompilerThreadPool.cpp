@@ -16,9 +16,16 @@
 
 #include "CompilerThreadPool.h"
 
-#include <utils/Systrace.h>
+#include <private/utils/Tracing.h>
 
+#include <utils/compiler.h>
+#include <utils/debug.h>
+
+#include <algorithm>
+#include <iterator>
 #include <memory>
+#include <mutex>
+#include <utility>
 
 namespace filament::backend {
 
@@ -32,16 +39,17 @@ CompilerThreadPool::~CompilerThreadPool() noexcept {
     assert_invariant(mCompilerThreads.empty());
     assert_invariant(mQueues[0].empty());
     assert_invariant(mQueues[1].empty());
+    assert_invariant(mQueues[2].empty());
 }
 
 void CompilerThreadPool::init(uint32_t threadCount,
-        ThreadSetup&& threadSetup, ThreadCleanup&& threadCleanup) noexcept {
+        ThreadSetup&& threadSetup, ThreadCleanup&& threadCleanup) {
     auto setup = std::make_shared<ThreadSetup>(std::move(threadSetup));
     auto cleanup = std::make_shared<ThreadCleanup>(std::move(threadCleanup));
 
     for (size_t i = 0; i < threadCount; i++) {
         mCompilerThreads.emplace_back([this, setup, cleanup]() {
-            SYSTRACE_CONTEXT();
+            FILAMENT_TRACING_CONTEXT(FILAMENT_TRACING_CATEGORY_FILAMENT);
 
             (*setup)();
 
@@ -54,8 +62,8 @@ void CompilerThreadPool::init(uint32_t threadCount,
                                     [](auto&& q) { return q.empty(); }));
                 });
 
-                SYSTRACE_VALUE32("CompilerThreadPool Jobs",
-                        mQueues[0].size() + mQueues[1].size());
+                FILAMENT_TRACING_VALUE(FILAMENT_TRACING_CATEGORY_FILAMENT, "CompilerThreadPool Jobs",
+                        mQueues[0].size() + mQueues[1].size() + mQueues[2].size());
 
                 if (UTILS_LIKELY(!mExitRequested)) {
                     Job job;

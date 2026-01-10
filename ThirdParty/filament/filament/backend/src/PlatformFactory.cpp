@@ -16,7 +16,8 @@
 
 #include <private/backend/PlatformFactory.h>
 
-#include <utils/Systrace.h>
+#include <private/utils/Tracing.h>
+
 #include <utils/debug.h>
 
 // We need to keep this up top for the linux (X11) name collisions.
@@ -66,8 +67,12 @@
 #if defined(FILAMENT_DRIVER_SUPPORTS_VULKAN)
     #if defined(__ANDROID__)
         #include "backend/platforms/VulkanPlatformAndroid.h"
-    #else
-        #include "backend/platforms/VulkanPlatform.h"
+    #elif defined(__APPLE__)
+        #include "backend/platforms/VulkanPlatformApple.h"
+    #elif defined(__linux__)
+        #include "backend/platforms/VulkanPlatformLinux.h"
+    #elif defined(WIN32)
+        #include "backend/platforms/VulkanPlatformWindows.h"
     #endif
 #endif
 
@@ -85,7 +90,7 @@ namespace filament::backend {
 // responsible for destroying it. Initialization of the backend API is deferred until
 // createDriver(). The passed-in backend hint is replaced with the resolved backend.
 Platform* PlatformFactory::create(Backend* backend) noexcept {
-    SYSTRACE_CALL();
+    FILAMENT_TRACING_CALL(FILAMENT_TRACING_CATEGORY_FILAMENT);
     assert_invariant(backend);
 
 #if defined(__ANDROID__)
@@ -116,8 +121,14 @@ Platform* PlatformFactory::create(Backend* backend) noexcept {
         #if defined(FILAMENT_DRIVER_SUPPORTS_VULKAN)
             #if defined(__ANDROID__)
                 return new VulkanPlatformAndroid();
+            #elif defined(__APPLE__)
+                return new VulkanPlatformApple();
+            #elif defined(__linux__)
+                return new VulkanPlatformLinux();
+            #elif defined(WIN32)
+                return new VulkanPlatformWindows();
             #else
-                return new VulkanPlatform();
+                return nullptr;
             #endif
         #else
             return nullptr;

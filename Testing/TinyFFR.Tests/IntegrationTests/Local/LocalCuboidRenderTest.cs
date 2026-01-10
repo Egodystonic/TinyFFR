@@ -48,32 +48,37 @@ class LocalCuboidRenderTest {
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
 		using var colorMap = factory.AssetLoader.TextureBuilder.CreateColorMap(_colorPattern, includeAlpha: false);
-		using var normalMap = factory.AssetLoader.TextureBuilder.CreateNormalMap(_normalPattern);
+		//using var normalMap = factory.AssetLoader.TextureBuilder.CreateNormalMap(_normalPattern);
+		using var normalMap = factory.AssetLoader.TextureBuilder.CreateNormalMap();
 		using var ormMap = factory.AssetLoader.TextureBuilder.CreateOcclusionRoughnessMetallicMap(_occlusionPattern, _roughnessPattern, _metallicPattern);
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(colorMap, normalMap, ormMap);
 		using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 2.2f);
 		using var light = factory.LightBuilder.CreatePointLight(camera.Position, ColorVect.FromHueSaturationLightness(0f, 0.8f, 0.75f));
 		var backdropColor = new ColorVect(0f, 1f, 0.7f);
 		using var scene = factory.SceneBuilder.CreateScene(backdropColor: backdropColor);
-		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
+		var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
+		//
+		// scene.Add(instance);
+		// scene.Add(light);
 
-		scene.Add(instance);
-		scene.Add(light);
-
-		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
-		while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(8d)) {
-			_ = loop.IterateOnce();
-			renderer.Render();
-
-			instance.RotateBy(1.3f % Direction.Up);
-			instance.RotateBy(0.8f % Direction.Right);
-
-			light.Color = light.Color.WithHueAdjustedBy(1f);
-			light.Position = instance.Position + (((instance.Position >> camera.Position) * 0.44f) * ((MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 5f) * 15f) % Direction.Down));
-			light.Position += Direction.Up * MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 4f) * 0.5f;
-
-			backdropColor = backdropColor.WithHueAdjustedBy(-1f);
-			scene.SetBackdrop(backdropColor);
-		}
+		// using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
+		// while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(8d)) {
+		// 	_ = loop.IterateOnce();
+		// 	renderer.Render();
+		//
+		// 	 instance.RotateBy(1.3f % Direction.Up);
+		// 	 instance.RotateBy(0.8f % Direction.Right);
+		// 	
+		// 	 light.Color = light.Color.WithHueAdjustedBy(1f);
+		// 	 light.Position = instance.Position + (((instance.Position >> camera.Position) * 0.44f) * ((MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 5f) * 15f) % Direction.Down));
+		// 	 light.Position += Direction.Up * MathF.Sin((float) loop.TotalIteratedTime.TotalSeconds * 4f) * 0.5f;
+		// 	
+		// 	 backdropColor = backdropColor.WithHueAdjustedBy(-1f);
+		// 	 scene.SetBackdrop(backdropColor);
+		// }
+		
+		
+		renderer.Dispose();
+		scene.Dispose();
 	}
 }

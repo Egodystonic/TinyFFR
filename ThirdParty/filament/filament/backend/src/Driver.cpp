@@ -23,11 +23,12 @@
 #include <backend/BufferDescriptor.h>
 #include <backend/DriverEnums.h>
 
+#include <private/utils/Tracing.h>
+
+#include <utils/Logger.h>
 #include <utils/compiler.h>
 #include <utils/debug.h>
-#include <utils/Log.h>
 #include <utils/ostream.h>
-#include <utils/Systrace.h>
 
 #include <math/half.h>
 #include <math/vec2.h>
@@ -130,7 +131,7 @@ void DriverBase::purge() noexcept {
 
 // ------------------------------------------------------------------------------------------------
 
-void DriverBase::scheduleDestroySlow(BufferDescriptor&& buffer) noexcept {
+void DriverBase::scheduleDestroySlow(BufferDescriptor&& buffer) {
     auto const handler = buffer.getHandler();
     scheduleCallback(handler, [buffer = std::move(buffer)]() {
         // user callback is called when BufferDescriptor gets destroyed
@@ -139,7 +140,7 @@ void DriverBase::scheduleDestroySlow(BufferDescriptor&& buffer) noexcept {
 
 // This is called from an async driver method so it's in the GL thread, but purge is called
 // on the user thread. This is typically called 0 or 1 times per frame.
-void DriverBase::scheduleRelease(AcquiredImage const& image) noexcept {
+void DriverBase::scheduleRelease(AcquiredImage const& image) {
     scheduleCallback(image.handler, [callback = image.callback, image = image.image, userData = image.userData]() {
         callback(image, userData);
     });
@@ -148,33 +149,34 @@ void DriverBase::scheduleRelease(AcquiredImage const& image) noexcept {
 void DriverBase::debugCommandBegin(CommandStream* cmds, bool synchronous, const char* methodName) noexcept {
     if constexpr (bool(FILAMENT_DEBUG_COMMANDS > FILAMENT_DEBUG_COMMANDS_NONE)) {
         if constexpr (bool(FILAMENT_DEBUG_COMMANDS & FILAMENT_DEBUG_COMMANDS_LOG)) {
-            utils::slog.d << methodName << utils::io::endl;
+            DLOG(INFO) << methodName;
         }
         if constexpr (bool(FILAMENT_DEBUG_COMMANDS & FILAMENT_DEBUG_COMMANDS_SYSTRACE)) {
-            SYSTRACE_CONTEXT();
-            SYSTRACE_NAME_BEGIN(methodName);
+            FILAMENT_TRACING_CONTEXT(FILAMENT_TRACING_CATEGORY_FILAMENT);
+            FILAMENT_TRACING_NAME_BEGIN(FILAMENT_TRACING_CATEGORY_FILAMENT, methodName);
 
             if (!synchronous) {
                 cmds->queueCommand([=]() {
-                    SYSTRACE_CONTEXT();
-                    SYSTRACE_NAME_BEGIN(methodName);
+                    FILAMENT_TRACING_CONTEXT(FILAMENT_TRACING_CATEGORY_FILAMENT);
+                    FILAMENT_TRACING_NAME_BEGIN(FILAMENT_TRACING_CATEGORY_FILAMENT, methodName);
                 });
             }
         }
     }
 }
 
-void DriverBase::debugCommandEnd(CommandStream* cmds, bool synchronous, const char* methodName) noexcept {
+void DriverBase::debugCommandEnd(CommandStream* cmds, bool synchronous,
+        const char* methodName) noexcept {
     if constexpr (bool(FILAMENT_DEBUG_COMMANDS > FILAMENT_DEBUG_COMMANDS_NONE)) {
         if constexpr (bool(FILAMENT_DEBUG_COMMANDS & FILAMENT_DEBUG_COMMANDS_SYSTRACE)) {
             if (!synchronous) {
                 cmds->queueCommand([]() {
-                    SYSTRACE_CONTEXT();
-                    SYSTRACE_NAME_END();
+                    FILAMENT_TRACING_CONTEXT(FILAMENT_TRACING_CATEGORY_FILAMENT);
+                    FILAMENT_TRACING_NAME_END(FILAMENT_TRACING_CATEGORY_FILAMENT);
                 });
             }
-            SYSTRACE_CONTEXT();
-            SYSTRACE_NAME_END();
+            FILAMENT_TRACING_CONTEXT(FILAMENT_TRACING_CATEGORY_FILAMENT);
+            FILAMENT_TRACING_NAME_END(FILAMENT_TRACING_CATEGORY_FILAMENT);
         }
     }
 }

@@ -32,12 +32,32 @@
 
 #include <utils/compiler.h> // UTILS_FALLTHROUGH
 #include <utils/Panic.h>    // ASSERT_POSTCONDITION
+#include <utils/CString.h>
 
 using namespace bluevk;
 
 namespace filament::backend {
 
 namespace {
+
+// We don't have a good estimate for this magic number. This is used to remove empty
+// slots from a descriptor set (a VulkanDescriptorset is backed by multiple
+// VkDescriptorSet.
+size_t DESCRIPTOR_SET_GC_LIMIT = 10;
+
+inline VulkanBufferBinding getBufferObjectBinding(BufferObjectBinding bindingType) noexcept {
+    switch (bindingType) {
+        case BufferObjectBinding::VERTEX:
+            return VulkanBufferBinding::VERTEX;
+        case BufferObjectBinding::UNIFORM:
+            return VulkanBufferBinding::UNIFORM;
+        case BufferObjectBinding::SHADER_STORAGE:
+            return VulkanBufferBinding::SHADER_STORAGE;
+            // when adding more buffer-types here, make sure to update VulkanBuffer::loadFromCpu()
+            // if necessary.
+    }
+    return VulkanBufferBinding::UNKNOWN;
+}
 
 void flipVertically(VkViewport* rect, uint32_t framebufferHeight) {
     rect->y = framebufferHeight - rect->y - rect->height;
@@ -93,7 +113,32 @@ BitmaskGroup fromBackendLayout(DescriptorSetLayout const& layout) {
             case DescriptorType::SAMPLER_EXTERNAL:
                 fromStageFlags(binding.stageFlags, binding.binding, mask.externalSampler);
                 UTILS_FALLTHROUGH;
-            case DescriptorType::SAMPLER: {
+
+            case DescriptorType::SAMPLER_2D_FLOAT:
+            case DescriptorType::SAMPLER_2D_INT:
+            case DescriptorType::SAMPLER_2D_UINT:
+            case DescriptorType::SAMPLER_2D_DEPTH:
+            case DescriptorType::SAMPLER_2D_ARRAY_FLOAT:
+            case DescriptorType::SAMPLER_2D_ARRAY_INT:
+            case DescriptorType::SAMPLER_2D_ARRAY_UINT:
+            case DescriptorType::SAMPLER_2D_ARRAY_DEPTH:
+            case DescriptorType::SAMPLER_CUBE_FLOAT:
+            case DescriptorType::SAMPLER_CUBE_INT:
+            case DescriptorType::SAMPLER_CUBE_UINT:
+            case DescriptorType::SAMPLER_CUBE_DEPTH:
+            case DescriptorType::SAMPLER_CUBE_ARRAY_FLOAT:
+            case DescriptorType::SAMPLER_CUBE_ARRAY_INT:
+            case DescriptorType::SAMPLER_CUBE_ARRAY_UINT:
+            case DescriptorType::SAMPLER_CUBE_ARRAY_DEPTH:
+            case DescriptorType::SAMPLER_3D_FLOAT:
+            case DescriptorType::SAMPLER_3D_INT:
+            case DescriptorType::SAMPLER_3D_UINT:
+            case DescriptorType::SAMPLER_2D_MS_FLOAT:
+            case DescriptorType::SAMPLER_2D_MS_INT:
+            case DescriptorType::SAMPLER_2D_MS_UINT:
+            case DescriptorType::SAMPLER_2D_MS_ARRAY_FLOAT:
+            case DescriptorType::SAMPLER_2D_MS_ARRAY_INT:
+            case DescriptorType::SAMPLER_2D_MS_ARRAY_UINT: {
                 fromStageFlags(binding.stageFlags, binding.binding, mask.sampler);
                 break;
             }
@@ -141,14 +186,6 @@ VulkanAttachment createSwapchainAttachment(const fvkmemory::resource_ptr<VulkanT
 
 } // anonymous namespace
 
-void VulkanDescriptorSet::acquire(fvkmemory::resource_ptr<VulkanTexture> texture) {
-    mResources.push_back(texture);
-}
-
-void VulkanDescriptorSet::acquire(fvkmemory::resource_ptr<VulkanBufferObject> obj) {
-    mResources.push_back(obj);
-}
-
 VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(DescriptorSetLayout&& layout,
         VkDescriptorSetLayout vkLayout)
     : bitmask(fromBackendLayout(layout)),
@@ -158,6 +195,72 @@ VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(DescriptorSetLayout&& layou
 VulkanDescriptorSetLayout::Bitmask VulkanDescriptorSetLayout::Bitmask::fromLayoutDescription(
         DescriptorSetLayout const& layout) {
     return fromBackendLayout(layout);
+}
+
+VulkanDescriptorSet::~VulkanDescriptorSet() {
+    for (auto setBundle: mSets) {
+        if (setBundle.onRecycleFn) {
+            setBundle.onRecycleFn(this);
+        }
+    }
+}
+
+VulkanDescriptorSet::VulkanDescriptorSet(fvkmemory::resource_ptr<VulkanDescriptorSetLayout> layout,
+        OnRecycle&& onRecycleFn, VkDescriptorSet vkSet)
+    : dynamicUboMask(layout->bitmask.dynamicUbo),
+      uniqueDynamicUboCount(layout->count.dynamicUbo),
+      mLayout(layout),
+      mCurrentSetIndex(0) {
+    addNewSet(vkSet, std::move(onRecycleFn));
+}
+
+void VulkanDescriptorSet::referencedBy(VulkanCommandBuffer& commands) {
+    // This will store an age associated with this command buffer into the VulkanBuffer, which
+    // will allow us to determine whether a barrier is necessary or not.
+    mUboMask.forEachSetBit([this, &commands](size_t index) {
+        auto& res = mResources[index];
+        fvkmemory::resource_ptr<VulkanBufferObject> bo =
+                fvkmemory::resource_ptr<VulkanBufferObject>::cast((VulkanBufferObject*) res.get());
+        bo->referencedBy(commands);
+    });
+    mSets[mCurrentSetIndex].fenceStatus = commands.getFenceStatus();
+}
+
+void VulkanDescriptorSet::gc() {
+    size_t empty = 0;
+    for (auto& setBundle: mSets) {
+        assert_invariant(setBundle.onRecycleFn);
+        if (setBundle.vkSet == VK_NULL_HANDLE) {
+            empty++;
+            continue;
+        }
+        if (setBundle.fenceStatus && setBundle.fenceStatus->getStatus() == VK_SUCCESS) {
+            setBundle.onRecycleFn(this);
+            setBundle.vkSet = VK_NULL_HANDLE;
+            setBundle.fenceStatus = {};
+            empty++;
+        }
+    }
+
+    if (empty > DESCRIPTOR_SET_GC_LIMIT) {
+        std::vector<InternalVkSet> retainedSets;
+        for (auto& setBundle: mSets) {
+            if (setBundle.vkSet != VK_NULL_HANDLE) {
+                retainedSets.push_back({
+                    setBundle.vkSet,
+                    std::move(setBundle.onRecycleFn),
+                    std::move(setBundle.fenceStatus)
+                });
+            }
+        }
+        std::swap(mSets, retainedSets);
+    }
+}
+
+void VulkanDescriptorSet::addNewSet(VkDescriptorSet vkSet, OnRecycle&& onRecycleFn) {
+    gc();
+    mCurrentSetIndex = mSets.size();
+    mSets.push_back({ vkSet, std::move(onRecycleFn) });
 }
 
 PushConstantDescription::PushConstantDescription(backend::Program const& program) {
@@ -243,7 +346,7 @@ VulkanProgram::VulkanProgram(VkDevice device, Program const& builder) noexcept
                 << " error=" << static_cast<int32_t>(result);
 
 #if FVK_ENABLED(FVK_DEBUG_DEBUG_UTILS)
-        std::string name{ builder.getName().c_str(), builder.getName().size() };
+        utils::CString name{ builder.getName().c_str(), builder.getName().size() };
         switch (static_cast<ShaderStage>(i)) {
             case ShaderStage::VERTEX:
                 name += "_vs";
@@ -262,7 +365,7 @@ VulkanProgram::VulkanProgram(VkDevice device, Program const& builder) noexcept
 
 #if FVK_ENABLED(FVK_DEBUG_SHADER_MODULE)
     FVK_LOGD << "Created VulkanProgram " << builder << ", shaders = (" << modules[0]
-             << ", " << modules[1] << ")" << utils::io::endl;
+             << ", " << modules[1] << ")";
 #endif
 }
 
@@ -333,7 +436,7 @@ VulkanRenderTarget::VulkanRenderTarget(VkDevice device, VkPhysicalDevice physica
     // Constrain the sample count according to both kinds of sample count masks obtained from
     // VkPhysicalDeviceProperties. This is consistent with the VulkanTexture constructor.
     auto const& limits = context.getPhysicalDeviceLimits();
-    samples = samples = fvkutils::reduceSampleCount(samples,
+    samples = fvkutils::reduceSampleCount(samples,
             limits.framebufferDepthSampleCounts & limits.framebufferColorSampleCounts);
 
     auto& rpkey = mInfo->rpkey;
@@ -347,7 +450,7 @@ VulkanRenderTarget::VulkanRenderTarget(VkDevice device, VkPhysicalDevice physica
     fbkey.samples = samples;
 
     std::vector<VulkanAttachment>& attachments = mInfo->attachments;
-    std::vector<VulkanAttachment> msaa;
+    std::vector<VulkanAttachment> msaaAttachments;
 
     for (int index = 0; index < MRT::MAX_SUPPORTED_RENDER_TARGET_COUNT; index++) {
         VulkanAttachment& attachment = color[index];
@@ -390,13 +493,13 @@ VulkanRenderTarget::VulkanRenderTarget(VkDevice device, VkPhysicalDevice physica
                 };
             }
             fbkey.color[index] = msaaAttachment.getImageView();
-            msaa.push_back(msaaAttachment);
+            msaaAttachments.push_back(msaaAttachment);
         }
     }
 
-    if (attachments.size() > 0 && samples > 1 && msaa.size() > 0) {
+    if (attachments.size() > 0 && samples > 1 && msaaAttachments.size() > 0) {
         mInfo->msaaIndex = (uint8_t) attachments.size();
-        attachments.insert(attachments.end(), msaa.begin(), msaa.end());
+        attachments.insert(attachments.end(), msaaAttachments.begin(), msaaAttachments.end());
     }
 
     if (depth.texture) {
@@ -411,10 +514,15 @@ VulkanRenderTarget::VulkanRenderTarget(VkDevice device, VkPhysicalDevice physica
                 uint8_t const msLevel = 1;
                 // Create sidecar MSAA texture for the depth attachment if it does not already
                 // exist.
-                auto msaa = initMsaaTexture(depthTexture, device, physicalDevice, context,
+                auto msaaTexture = initMsaaTexture(depthTexture, device, physicalDevice, context,
                         allocator, commands, resourceManager, msLevel, samples, stagePool);
                 mInfo->msaaDepthIndex = (uint8_t) attachments.size();
-                attachments.push_back({ .texture = msaa, .layerCount = layerCount });
+                VulkanAttachment msaaAttachment = {
+                    .texture = msaaTexture,
+                    .layerCount = layerCount,
+                };
+                attachments.push_back(msaaAttachment);
+                fbkey.depth = msaaAttachment.getImageView();
             }
         }
     }
@@ -495,7 +603,8 @@ void VulkanRenderTarget::emitBarriersEndRenderPass(VulkanCommandBuffer& commands
             }
         } else {
             texture->setLayout(range, VulkanFboCache::FINAL_COLOR_ATTACHMENT_LAYOUT);
-            if (!texture->transitionLayout(&commands, range, VulkanLayout::READ_WRITE)) {
+            if (texture->isSampleable() &&
+                    !texture->transitionLayout(&commands, range, VulkanLayout::FRAG_READ)) {
                 texture->attachmentToSamplerBarrier(&commands, range);
             }
         }
@@ -557,22 +666,24 @@ void VulkanVertexBuffer::setBuffer(fvkmemory::resource_ptr<VulkanBufferObject> b
     int8_t const* const attribToBuffer = vbi->getAttributeToBuffer();
     for (uint8_t attribIndex = 0; attribIndex < count; attribIndex++) {
         if (attribToBuffer[attribIndex] == static_cast<int8_t>(index)) {
-            vkbuffers[attribIndex] = bufferObject->buffer.getGpuBuffer();
+            vkbuffers[attribIndex] = bufferObject->getVkBuffer();
         }
     }
     mResources.push_back(bufferObject);
 }
 
-VulkanBufferObject::VulkanBufferObject(VmaAllocator allocator, VulkanStagePool& stagePool,
-        uint32_t byteCount, BufferObjectBinding bindingType)
+VulkanBufferObject::VulkanBufferObject(VulkanContext const& context, VmaAllocator allocator,
+        VulkanStagePool& stagePool, VulkanBufferCache& bufferCache, uint32_t byteCount,
+        BufferObjectBinding bindingType, BufferUsage usage)
     : HwBufferObject(byteCount),
-      buffer(allocator, stagePool, getBufferObjectUsage(bindingType), byteCount),
-      bindingType(bindingType) {}
+      bindingType(bindingType),
+      mBuffer(context, allocator, stagePool, bufferCache, getBufferObjectBinding(bindingType),
+              usage, byteCount) {}
 
 VulkanRenderPrimitive::VulkanRenderPrimitive(PrimitiveType pt,
         fvkmemory::resource_ptr<VulkanVertexBuffer> vb,
         fvkmemory::resource_ptr<VulkanIndexBuffer> ib)
-    : HwRenderPrimitive{.type = pt},
+    : HwRenderPrimitive{ .type = pt },
       vertexBuffer(vb),
       indexBuffer(ib) {}
 

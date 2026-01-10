@@ -239,9 +239,40 @@ public class Material {
         FRONT_AND_BACK
     }
 
+    /**
+     * Shader compiler priority queue
+     *
+     * On platforms which support parallel shader compilation, compilation requests will be
+     * processed in order of priority, then insertion order.
+     *
+     * See {@link #compile(CompilerPriorityQueue, int, Object, Runnable)}.
+     */
     public enum CompilerPriorityQueue {
+        /** We need this program NOW.
+         *
+         * When passed as an argument to {@link #compile(CompilerPriorityQueue, int, Object,
+         * Runnable)}, if the platform doesn't support parallel compilation, but does support
+         * amortized shader compilation, the given shader program will be synchronously compiled.
+         */
+        CRITICAL,
+        /** We will need this program soon. */
         HIGH,
+        /** We will need this program eventually. */
         LOW
+    }
+
+    /**
+     * Defines whether a material instance should use UBO batching or not.
+     */
+    public enum UboBatchingMode {
+        /**
+         * For default, it follows the engine settings.
+         * If UBO batching is enabled on the engine and the material domain is SURFACE, it
+         * turns on the UBO batching. Otherwise, it turns off the UBO batching.
+        */
+        DEFAULT,
+        /** Disable the Ubo Batching for this material */
+        DISABLED
     }
 
     public static class UserVariantFilterBit {
@@ -355,6 +386,7 @@ public class Material {
         private int mSize;
         private int mShBandCount = 0;
         private ShadowSamplingQuality mShadowSamplingQuality = ShadowSamplingQuality.LOW;
+        private UboBatchingMode mUboBatchingMode = UboBatchingMode.DEFAULT;
 
 
         /**
@@ -400,6 +432,17 @@ public class Material {
         }
 
         /**
+         * Set the batching mode of the instances created from this material.
+         * @param uboBatchingMode
+         * @return Reference to this Builder for chaining calls.
+         */
+        @NonNull
+        public Builder uboBatching(UboBatchingMode mode) {
+            mUboBatchingMode = mode;
+            return this;
+        }
+
+        /**
          * Creates and returns the Material object.
          *
          * @param engine reference to the Engine instance to associate this Material with
@@ -411,7 +454,7 @@ public class Material {
         @NonNull
         public Material build(@NonNull Engine engine) {
             long nativeMaterial = nBuilderBuild(engine.getNativeObject(),
-                mBuffer, mSize, mShBandCount, mShadowSamplingQuality.ordinal());
+                mBuffer, mSize, mShBandCount, mShadowSamplingQuality.ordinal(), mUboBatchingMode.ordinal());
             if (nativeMaterial == 0) throw new IllegalStateException("Couldn't create Material");
             return new Material(nativeMaterial);
         }
@@ -771,6 +814,21 @@ public class Material {
     }
 
     /**
+     * 
+     * Returns the name of the transform parameter associated with the given sampler parameter.
+     * In the case the parameter doesn't have a transform name field, it will return an empty string.
+     * 
+     * @param samplerName the name of the sampler parameter to query.
+     * 
+     * @see
+     * <a href="https://google.github.io/filament/Materials.html#materialdefinitions/materialblock/general:parameters">
+     * General: parameters</a>
+     */
+    public String getParameterTransformName(@NonNull String samplerName) {
+        return nGetParameterTransformName(getNativeObject(), samplerName);
+    }
+
+    /**
      * Sets the value of a bool parameter on this material's default instance.
      *
      * @param name the name of the material parameter
@@ -1062,7 +1120,7 @@ public class Material {
         mNativeObject = 0;
     }
 
-    private static native long nBuilderBuild(long nativeEngine, @NonNull Buffer buffer, int size, int shBandCount, int shadowQuality);
+    private static native long nBuilderBuild(long nativeEngine, @NonNull Buffer buffer, int size, int shBandCount, int shadowQuality, int uboBatchingMode);
     private static native long nCreateInstance(long nativeMaterial);
     private static native long nCreateInstanceWithName(long nativeMaterial, @NonNull String name);
     private static native long nGetDefaultInstance(long nativeMaterial);
@@ -1094,4 +1152,5 @@ public class Material {
     private static native int nGetRequiredAttributes(long nativeMaterial);
 
     private static native boolean nHasParameter(long nativeMaterial, @NonNull String name);
+    private static native String nGetParameterTransformName(long nativeMaterial, @NonNull String samplerName);
 }

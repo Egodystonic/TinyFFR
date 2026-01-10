@@ -37,13 +37,32 @@ void native_impl_render::allocate_swap_chain(WindowHandle window, SwapChainHandl
 #elif defined(TFFR_LINUX)
 	switch (wmInfo.subsystem) {
 		case SDL_SYSWM_X11: {
-			void* windowHandle = reinterpret_cast<void*>(static_cast<uintptr_t>(wmInfo.info.x11.window));
-			*outSwapChain = filament_engine->createSwapChain(windowHandle, 0UL);
+			auto nativeWindow = (Window) wmInfo.info.x11.window;
+			//void* windowHandle = reinterpret_cast<void*>(static_cast<uintptr_t>(wmInfo.info.x11.window));
+			Log("X11 voidcast");
+			*outSwapChain = filament_engine->createSwapChain((void*) nativeWindow, 0UL);
 			break;
 		}
 		case SDL_SYSWM_WAYLAND: {
-			void* surface = static_cast<void*>(wmInfo.info.wl.surface);
-			*outSwapChain = filament_engine->createSwapChain(surface, 0UL);
+			int width = 0;
+			int height = 0;
+			SDL_GetWindowSize(window, &width, &height);
+
+			// Static is used here to allocate the struct pointer for the lifetime of the program.
+			// Without static the valid struct quickly goes out of scope, and ends with seemingly
+			// random segfaults. We must update the values on each call.
+			static struct {
+				struct wl_display *display;
+				struct wl_surface *surface;
+				uint32_t width;
+				uint32_t height;
+			} wayland;
+			wayland.display = wmInfo.info.wl.display;
+			wayland.surface = wmInfo.info.wl.surface;
+			wayland.width = static_cast<uint32_t>(width);
+			wayland.height = static_cast<uint32_t>(height);
+			Log("Wayland etc");
+			*outSwapChain = filament_engine->createSwapChain((void *) &wayland, 0UL);
 			break;
 		}
 		default: {

@@ -40,6 +40,7 @@ set(PUBLIC_HDRS
         include/filament/Skybox.h
         include/filament/Stream.h
         include/filament/SwapChain.h
+        include/filament/Sync.h
         include/filament/Texture.h
         include/filament/TextureSampler.h
         include/filament/ToneMapper.h
@@ -50,6 +51,15 @@ set(PUBLIC_HDRS
 )
 
 set(SRCS
+        src/materials/antiAliasing/fxaa/fxaa.cpp
+        src/materials/antiAliasing/taa/taa.cpp
+        src/materials/bloom/bloom.cpp
+        src/materials/colorGrading/colorGrading.cpp
+        src/materials/dof/dof.cpp
+        src/materials/flare/flare.cpp
+        src/materials/fsr/fsr.cpp
+        src/materials/sgsr/sgsr.cpp
+        src/materials/ssao/ssao.cpp
         src/AtlasAllocator.cpp
         src/BufferObject.cpp
         src/Camera.cpp
@@ -74,7 +84,10 @@ set(SRCS
         src/InstanceBuffer.cpp
         src/LightManager.cpp
         src/Material.cpp
+        src/MaterialCache.cpp
+        src/MaterialDefinition.cpp
         src/MaterialInstance.cpp
+        src/MaterialInstanceManager.cpp
         src/MaterialParser.cpp
         src/MorphTargetBuffer.cpp
         src/PostProcessManager.cpp
@@ -93,6 +106,7 @@ set(SRCS
         src/Skybox.cpp
         src/Stream.cpp
         src/SwapChain.cpp
+        src/Sync.cpp
         src/Texture.cpp
         src/ToneMapper.cpp
         src/TransformManager.cpp
@@ -103,6 +117,7 @@ set(SRCS
         src/components/LightManager.cpp
         src/components/RenderableManager.cpp
         src/components/TransformManager.cpp
+        src/details/BufferAllocator.cpp
         src/details/BufferObject.cpp
         src/details/Camera.cpp
         src/details/ColorGrading.cpp
@@ -122,15 +137,19 @@ set(SRCS
         src/details/Skybox.cpp
         src/details/Stream.cpp
         src/details/SwapChain.cpp
+        src/details/Sync.cpp
         src/details/Texture.cpp
+        src/details/UboManager.cpp
         src/details/VertexBuffer.cpp
         src/details/View.cpp
+        src/ds/PerViewDescriptorSetUtils.cpp
         src/ds/ColorPassDescriptorSet.cpp
         src/ds/DescriptorSet.cpp
         src/ds/DescriptorSetLayout.cpp
         src/ds/PostProcessDescriptorSet.cpp
         src/ds/ShadowMapDescriptorSet.cpp
         src/ds/SsrPassDescriptorSet.cpp
+        src/ds/StructureDescriptorSet.cpp
         src/fg/Blackboard.cpp
         src/fg/DependencyGraph.cpp
         src/fg/FrameGraph.cpp
@@ -140,9 +159,11 @@ set(SRCS
         src/fg/PassNode.cpp
         src/fg/ResourceNode.cpp
         src/fsr.cpp
+        src/ZstdHelper.cpp
 )
 
 set(PRIVATE_HDRS
+        src/materials/StaticMaterialInfo.h
         src/Allocators.h
         src/Bimap.h
         src/BufferPoolAllocator.h
@@ -158,7 +179,10 @@ set(PRIVATE_HDRS
         src/HwRenderPrimitiveFactory.h
         src/HwVertexBufferInfoFactory.h
         src/Intersections.h
+        src/MaterialCache.h
+        src/MaterialDefinition.h
         src/MaterialParser.h
+        src/MaterialInstanceManager.h
         src/PIDController.h
         src/PostProcessManager.h
         src/RenderPass.h
@@ -174,6 +198,7 @@ set(PRIVATE_HDRS
         src/components/LightManager.h
         src/components/RenderableManager.h
         src/components/TransformManager.h
+        src/details/BufferAllocator.h
         src/details/BufferObject.h
         src/details/Camera.h
         src/details/ColorGrading.h
@@ -194,6 +219,7 @@ set(PRIVATE_HDRS
         src/details/Stream.h
         src/details/SwapChain.h
         src/details/Texture.h
+        src/details/UboManager.h
         src/details/VertexBuffer.h
         src/details/View.h
         src/downcast.h
@@ -221,14 +247,16 @@ set(PRIVATE_HDRS
         src/materials/fsr/ffx_a.h
         src/materials/fsr/ffx_fsr1.h
         src/materials/fsr/ffx_fsr1_mobile.fs
+        src/ZstdHelper.h
 )
 
 set(MATERIAL_SRCS
-        src/materials/antiAliasing/fxaa.mat
-        src/materials/antiAliasing/taa.mat
+        src/materials/antiAliasing/fxaa/fxaa.mat
+        src/materials/antiAliasing/taa/taa.mat
+        src/materials/blitArray.mat
         src/materials/blitDepth.mat
         src/materials/blitLow.mat
-        src/materials/blitArray.mat
+        src/materials/clearDepth.mat
         src/materials/bloom/bloomDownsample.mat
         src/materials/bloom/bloomDownsample2x.mat
         src/materials/bloom/bloomDownsample9.mat
@@ -265,6 +293,13 @@ set(MATERIAL_SRCS
         src/materials/vsmMipmap.mat
 )
 
+if (NOT FILAMENT_DISABLE_GTAO)
+    list(APPEND MATERIAL_SRCS
+        src/materials/ssao/gtao.mat
+        src/materials/ssao/gtaoBentNormals.mat
+    )
+endif()
+
 set(MATERIAL_FL0_SRCS
         src/materials/defaultMaterial.mat
         src/materials/skybox.mat
@@ -274,11 +309,6 @@ set(MATERIAL_MULTIVIEW_SRCS
         src/materials/defaultMaterial.mat
         src/materials/skybox.mat
 )
-
-# Embed the binary resource blob for materials.
-get_resgen_vars(${RESOURCE_DIR} materials)
-list(APPEND PRIVATE_HDRS ${RESGEN_HEADER})
-list(APPEND SRCS ${RESGEN_SOURCE})
 
 # ==================================================================================================
 # Configuration
@@ -314,12 +344,14 @@ if (FILAMENT_FORCE_PROFILING_MODE)
     add_definitions(-DFILAMENT_FORCE_PROFILING_MODE)
 endif()
 
+if (FILAMENT_DISABLE_GTAO)
+    add_definitions(-DFILAMENT_DISABLE_GTAO)
+endif()
+
 # ==================================================================================================
 # Definitions
 # ==================================================================================================
 
-# "2" corresponds to SYSTRACE_TAG_FILEMENT (See: utils/Systrace.h)
-add_definitions(-DSYSTRACE_TAG=2)
 add_definitions(-DFILAMENT_DFG_LUT_SIZE=${DFG_LUT_SIZE})
 add_definitions(
     -DFILAMENT_PER_RENDER_PASS_ARENA_SIZE_IN_MB=${FILAMENT_PER_RENDER_PASS_ARENA_SIZE_IN_MB}
@@ -333,52 +365,97 @@ add_definitions(
 # Generate all .filamat: default material, skyboxes, and post-process
 # ==================================================================================================
 
-if (CMAKE_CROSSCOMPILING)
+if (CMAKE_CROSSCOMPILING OR FILAMENT_IMPORT_PREBUILT_EXECUTABLES)
     include(${IMPORT_EXECUTABLES})
 endif()
 
-set(MATERIAL_BINS)
 file(MAKE_DIRECTORY ${MATERIAL_DIR})
+file(MAKE_DIRECTORY ${RESOURCE_DIR})
 
-foreach (mat_src ${MATERIAL_SRCS})
-    get_filename_component(localname "${mat_src}" NAME_WE)
-    get_filename_component(fullname "${mat_src}" ABSOLUTE)
-    set(output_path "${MATERIAL_DIR}/${localname}.filamat")
+set(GENERATED_RESOURCE_HDRS)
+set(GENERATED_RESOURCE_SRCS)
+
+# Get all unique directories containing materials
+set(MATERIAL_DIRS)
+foreach(mat_src ${MATERIAL_SRCS})
+    get_filename_component(mat_dir ${mat_src} DIRECTORY)
+    list(APPEND MATERIAL_DIRS ${mat_dir})
+endforeach()
+list(REMOVE_DUPLICATES MATERIAL_DIRS)
+
+# For each directory, generate a single resource package
+foreach(mat_dir ${MATERIAL_DIRS})
+    get_filename_component(package_name ${mat_dir} NAME)
+
+    set(MATERIALS_IN_DIR)
+    foreach(mat_src ${MATERIAL_SRCS})
+        get_filename_component(current_mat_dir ${mat_src} DIRECTORY)
+        if(current_mat_dir STREQUAL mat_dir)
+            list(APPEND MATERIALS_IN_DIR ${mat_src})
+        endif()
+    endforeach()
+
+    set(FILAMAT_FILES_FOR_GROUP)
+    set(FILAMAT_TARGETS_FOR_GROUP)
+
+    # Compile each material in the group
+    foreach(mat_src ${MATERIALS_IN_DIR})
+        get_filename_component(localname "${mat_src}" NAME_WE)
+        get_filename_component(fullname "${mat_src}" ABSOLUTE)
+
+        # --- Base material ---
+        set(output_path "${MATERIAL_DIR}/${localname}.filamat")
+        add_custom_command(
+                OUTPUT ${output_path}
+                COMMAND matc ${MATC_BASE_FLAGS} -o ${output_path} ${fullname}
+                MAIN_DEPENDENCY ${fullname}
+                DEPENDS matc
+                COMMENT "Compiling material ${fullname}"
+        )
+        list(APPEND FILAMAT_FILES_FOR_GROUP ${output_path})
+        list(APPEND FILAMAT_TARGETS_FOR_GROUP ${output_path})
+
+        # --- Feature Level 0 variant ---
+        list(FIND MATERIAL_FL0_SRCS ${mat_src} index)
+        if (${index} GREATER -1 AND FILAMENT_ENABLE_FEATURE_LEVEL_0)
+            string(REGEX REPLACE "[.]filamat$" "_fl0.filamat" output_path_fl0 ${output_path})
+            add_custom_command(
+                    OUTPUT ${output_path_fl0}
+                    COMMAND matc ${MATC_BASE_FLAGS} -PfeatureLevel=0 -o ${output_path_fl0} ${fullname}
+                    MAIN_DEPENDENCY ${fullname}
+                    DEPENDS matc
+                    COMMENT "Compiling material ${fullname} (FL0)"
+            )
+            list(APPEND FILAMAT_FILES_FOR_GROUP ${output_path_fl0})
+            list(APPEND FILAMAT_TARGETS_FOR_GROUP ${output_path_fl0})
+        endif()
+
+        # --- Multiview variant ---
+        list(FIND MATERIAL_MULTIVIEW_SRCS ${mat_src} index)
+        if (${index} GREATER -1 AND FILAMENT_ENABLE_MULTIVIEW)
+            string(REGEX REPLACE "[.]filamat$" "_multiview.filamat" output_path_multiview ${output_path})
+            add_custom_command(
+                    OUTPUT ${output_path_multiview}
+                    COMMAND matc ${MATC_BASE_FLAGS} -PstereoscopicType=multiview -o ${output_path_multiview} ${fullname}
+                    MAIN_DEPENDENCY ${fullname}
+                    DEPENDS matc
+                    COMMENT "Compiling material ${fullname} (Multiview)"
+            )
+            list(APPEND FILAMAT_FILES_FOR_GROUP ${output_path_multiview})
+            list(APPEND FILAMAT_TARGETS_FOR_GROUP ${output_path_multiview})
+        endif()
+    endforeach()
+
+    # Generate a single resource file for the whole group
+    get_resgen_vars(${RESOURCE_DIR} ${package_name})
     add_custom_command(
-            OUTPUT ${output_path}
-            COMMAND matc ${MATC_BASE_FLAGS} -o ${output_path} ${fullname}
-            MAIN_DEPENDENCY ${fullname}
-            DEPENDS matc
-            COMMENT "Compiling material ${fullname} to ${output_path}"
+            OUTPUT ${RESGEN_OUTPUTS}
+            COMMAND resgen ${RESGEN_FLAGS} ${FILAMAT_FILES_FOR_GROUP}
+            DEPENDS resgen ${FILAMAT_TARGETS_FOR_GROUP}
+            COMMENT "Generating resource package for ${package_name}"
     )
-    list(APPEND MATERIAL_BINS ${output_path})
-
-    list(FIND MATERIAL_FL0_SRCS ${mat_src} index)
-    if (${index} GREATER -1 AND FILAMENT_ENABLE_FEATURE_LEVEL_0)
-        string(REGEX REPLACE "[.]filamat$" "_fl0.filamat" output_path_fl0 ${output_path})
-        add_custom_command(
-                OUTPUT ${output_path_fl0}
-                COMMAND matc ${MATC_BASE_FLAGS} -PfeatureLevel=0 -o ${output_path_fl0} ${fullname}
-                MAIN_DEPENDENCY ${fullname}
-                DEPENDS matc
-                COMMENT "Compiling material ${fullname} to ${output_path_fl0}"
-        )
-        list(APPEND MATERIAL_BINS ${output_path_fl0})
-    endif ()
-
-    list(FIND MATERIAL_MULTIVIEW_SRCS ${mat_src} index)
-    if (${index} GREATER -1 AND FILAMENT_ENABLE_MULTIVIEW)
-        string(REGEX REPLACE "[.]filamat$" "_multiview.filamat" output_path_multiview ${output_path})
-        add_custom_command(
-                OUTPUT ${output_path_multiview}
-                COMMAND matc ${MATC_BASE_FLAGS} -PstereoscopicType=multiview -o ${output_path_multiview} ${fullname}
-                MAIN_DEPENDENCY ${fullname}
-                DEPENDS matc
-                COMMENT "Compiling material ${fullname} to ${output_path_multiview}"
-        )
-        list(APPEND MATERIAL_BINS ${output_path_multiview})
-    endif ()
-
+    list(APPEND GENERATED_RESOURCE_HDRS ${RESGEN_HEADER})
+    list(APPEND GENERATED_RESOURCE_SRCS ${RESGEN_SOURCE})
 endforeach()
 
 # Additional dependencies on included files for materials
@@ -401,7 +478,7 @@ add_custom_command(
 
 add_custom_command(
         OUTPUT "${MATERIAL_DIR}/fxaa.filamat"
-        DEPENDS src/materials/antiAliasing/fxaa.fs
+        DEPENDS src/materials/antiAliasing/fxaa/fxaa.fs
         APPEND
 )
 
@@ -463,6 +540,30 @@ add_custom_command(
         APPEND
 )
 
+if (NOT FILAMENT_DISABLE_GTAO)
+    add_custom_command(
+            OUTPUT "${MATERIAL_DIR}/gtao.filamat"
+            DEPENDS src/materials/ssao/ssaoUtils.fs
+            DEPENDS src/materials/ssao/ssct.fs
+            DEPENDS src/materials/utils/depthUtils.fs
+            DEPENDS src/materials/utils/geometry.fs
+            DEPENDS src/materials/ssao/gtaoImpl.fs
+            DEPENDS src/materials/ssao/ssctImpl.fs
+            APPEND
+    )
+
+    add_custom_command(
+            OUTPUT "${MATERIAL_DIR}/gtaoBentNormals.filamat"
+            DEPENDS src/materials/ssao/ssaoUtils.fs
+            DEPENDS src/materials/ssao/ssct.fs
+            DEPENDS src/materials/utils/depthUtils.fs
+            DEPENDS src/materials/utils/geometry.fs
+            DEPENDS src/materials/ssao/gtaoImpl.fs
+            DEPENDS src/materials/ssao/ssctImpl.fs
+            APPEND
+    )
+endif()
+
 add_custom_command(
         OUTPUT "${MATERIAL_DIR}/bilateralBlur.filamat"
         DEPENDS src/materials/ssao/ssaoUtils.fs
@@ -518,27 +619,36 @@ add_custom_command(
         APPEND
 )
 
-add_custom_command(
-        OUTPUT ${RESGEN_OUTPUTS}
-        COMMAND resgen ${RESGEN_FLAGS} ${MATERIAL_BINS}
-        DEPENDS resgen ${MATERIAL_BINS}
-        COMMENT "Aggregating compiled materials"
-)
-
-if (DEFINED RESGEN_SOURCE_FLAGS)
-    set_source_files_properties(${RESGEN_SOURCE} PROPERTIES COMPILE_FLAGS ${RESGEN_SOURCE_FLAGS})
-endif()
-
 file(MAKE_DIRECTORY "${GENERATION_ROOT}/generated/data/")
 
-set(output_path "${GENERATION_ROOT}/generated/data/dfg.inc")
+set(output_path_dfg_bin "${GENERATION_ROOT}/generated/data/dfg.bin")
 add_custom_command(
-        OUTPUT ${output_path}
-        COMMAND cmgen --quiet --size=${DFG_LUT_SIZE} --ibl-dfg-multiscatter --ibl-dfg-cloth --ibl-dfg=${output_path}
+        OUTPUT ${output_path_dfg_bin}
+        COMMAND cmgen --quiet --size=${DFG_LUT_SIZE} --ibl-dfg-multiscatter --ibl-dfg-cloth --ibl-dfg=${output_path_dfg_bin}
         DEPENDS cmgen
-        COMMENT "Generating DFG LUT ${output_path}"
+        COMMENT "Generating DFG LUT to ${output_path_dfg_bin}"
 )
-list(APPEND DATA_BINS ${output_path})
+
+set(dfg_package_name "dfg")
+get_resgen_vars(${RESOURCE_DIR} ${dfg_package_name})
+add_custom_command(
+        OUTPUT ${RESGEN_OUTPUTS}
+        COMMAND resgen ${RESGEN_FLAGS} -Z ${output_path_dfg_bin}
+        DEPENDS resgen
+        DEPENDS ${output_path_dfg_bin}
+        COMMENT "Generating DFG resource package for ${dfg_package_name}"
+)
+list(APPEND GENERATED_RESOURCE_HDRS ${RESGEN_HEADER})
+list(APPEND GENERATED_RESOURCE_SRCS ${RESGEN_SOURCE})
+
+# Add the generated resource files to the source and header lists.
+list(APPEND PRIVATE_HDRS ${GENERATED_RESOURCE_HDRS})
+list(APPEND SRCS ${GENERATED_RESOURCE_SRCS})
+
+if (DEFINED RESGEN_SOURCE_FLAGS)
+    set_source_files_properties(${GENERATED_RESOURCE_SRCS} PROPERTIES COMPILE_FLAGS ${RESGEN_SOURCE_FLAGS})
+endif()
+
 
 # ==================================================================================================
 # Includes & target definition
@@ -549,7 +659,7 @@ include_directories(${GENERATION_ROOT})
 include_directories(src)
 
 # we're building a library
-add_library(${TARGET} STATIC ${PRIVATE_HDRS} ${PUBLIC_HDRS} ${SRCS} ${DATA_BINS})
+add_library(${TARGET} STATIC ${PRIVATE_HDRS} ${PUBLIC_HDRS} ${SRCS})
 
 # specify where the public headers of this library are
 target_include_directories(${TARGET} PUBLIC ${PUBLIC_HDR_DIR})
@@ -566,7 +676,11 @@ target_link_libraries(${TARGET} PUBLIC math)
 target_link_libraries(${TARGET} PUBLIC utils)
 target_link_libraries(${TARGET} PUBLIC filaflat)
 target_link_libraries(${TARGET} PUBLIC filabridge)
-target_link_libraries(${TARGET} PUBLIC ibl-lite)
+target_link_libraries(${TARGET} PRIVATE zstd)
+
+if (FILAMENT_USE_ABSEIL_LOGGING)
+    target_link_libraries(${TARGET} PUBLIC absl::log)
+endif()
 
 if (FILAMENT_ENABLE_FGVIEWER)
     target_link_libraries(${TARGET} PUBLIC fgviewer)
@@ -596,6 +710,13 @@ if (MSVC)
 elseif(WEBGL)
     # Avoid strict-vtable-pointers here, it is broken in WebAssembly.
     set(OPTIMIZATION_FLAGS -fvisibility-inlines-hidden)
+elseif(FILAMENT_USING_GCC)
+    set(OPTIMIZATION_FLAGS
+        -ffast-math
+        -fno-finite-math-only
+        -ffp-contract=fast
+        -fvisibility-inlines-hidden
+    )
 else()
     set(OPTIMIZATION_FLAGS
         -ffast-math
@@ -617,6 +738,18 @@ set(LINUX_COMPILER_FLAGS
 
 if (MSVC)
     set(FILAMENT_WARNINGS /W3)
+elseif (FILAMENT_USING_GCC)
+    # GCC is not officially supported, so use a weaker set of warnings (incl. not using -Werror).
+    set(FILAMENT_WARNINGS
+            -Wall -Wextra-semi -Wundef
+            -Wno-unused-parameter -Wno-missing-field-initializers
+            -Wno-unused-but-set-variable -Wno-unused-variable -Wno-unused-function
+            -Wnon-virtual-dtor -Wimplicit-fallthrough
+            -Wno-strict-aliasing
+            -Wno-changes-meaning -Wno-return-type
+            -Wno-invalid-constexpr -Wno-parentheses
+            -Wno-sign-compare -Wno-deprecated-declarations
+    )
 else()
     set(FILAMENT_WARNINGS
             -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers
@@ -626,13 +759,6 @@ else()
             -Wover-aligned
             -Werror
     )
-    if (CMAKE_CXX_STANDARD EQUAL 20)
-        # The lambdas for passes in PostProcessManager.cpp capture this
-        # implicitly in a way that's deprecated in c++20, but can't easily be
-        # fixed in a way that's backwards compatible with c++17:
-        # https://www.nextptr.com/tutorial/ta1430524603/capture-this-in-lambda-expression-timeline-of-change
-        list(APPEND FILAMENT_WARNINGS -Wno-deprecated-this-capture)
-    endif()
 endif()
 
 target_compile_options(${TARGET} PRIVATE

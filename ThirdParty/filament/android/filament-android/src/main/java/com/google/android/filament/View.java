@@ -25,7 +25,6 @@ import java.util.EnumSet;
 
 import static com.google.android.filament.Asserts.assertFloat3In;
 import static com.google.android.filament.Asserts.assertFloat4In;
-import static com.google.android.filament.Colors.LinearColor;
 
 import com.google.android.filament.proguard.UsedByNative;
 
@@ -231,7 +230,7 @@ public class View {
      *
      * <p>
      * The View does not take ownership of the Scene pointer. Before destroying a Camera, be sure
-     * to remove it from all assoicated Views.
+     * to remove it from all associated Views. If the camera isn't set, Renderer::render() will result in a no-op.
      * </p>
      *
      * @see #getCamera
@@ -289,6 +288,25 @@ public class View {
     @NonNull
     public Viewport getViewport() {
         return mViewport;
+    }
+
+    /**
+     * Sets whether a channel must clear the depth buffer before all primitives are rendered.
+     * Channel depth clear is off by default for all channels.
+     * This is orthogonal to Renderer::setClearOptions().
+     * @param channel between 0 and 7
+     * @param enabled true to enable clear, false to disable
+     */
+    void setChannelDepthClearEnabled(@IntRange(from = 0, to = 7) int channel, boolean enabled) {
+        nSetChannelDepthClearEnabled(getNativeObject(), channel, enabled);
+    }
+
+    /**
+     * @param channel between 0 and 7
+     * @return true if this channel has depth clear enabled.
+     */
+    boolean isChannelDepthClearEnabled(@IntRange(from = 0, to = 7) int channel) {
+        return nIsChannelDepthClearEnabled(getNativeObject(), channel);
     }
 
     /**
@@ -653,6 +671,21 @@ public class View {
             mDynamicResolution = new DynamicResolutionOptions();
         }
         return mDynamicResolution;
+    }
+
+    /**
+     * Returns the last dynamic resolution scale factor used by this view. This value is updated
+     * when Renderer::render(View*) is called
+     * @param out A 2-float array where the value will be stored, or null in which case the array is
+     *            allocated.
+     * @return A 2-float array containing the horizontal and the vertical scale factors
+     * @see Renderer#render(View)
+     */
+    @NonNull @Size(min = 2)
+    public float[] getLastDynamicResolutionScale(@Nullable @Size(min = 2) float[] out) {
+        out = Asserts.assertFloat2(out);
+        nGetLastDynamicResolutionScale(getNativeObject(), out);
+        return out;
     }
 
     /**
@@ -1298,6 +1331,7 @@ public class View {
     private static native void nSetDithering(long nativeView, int dithering);
     private static native int nGetDithering(long nativeView);
     private static native void nSetDynamicResolutionOptions(long nativeView, boolean enabled, boolean homogeneousScaling, float minScale, float maxScale, float sharpness, int quality);
+    private static native void nGetLastDynamicResolutionScale(long nativeView, float[] out);
     private static native void nSetRenderQuality(long nativeView, int hdrColorBufferQuality);
     private static native void nSetDynamicLightingOptions(long nativeView, float zLightNear, float zLightFar);
     private static native void nSetShadowType(long nativeView, int type);
@@ -1318,6 +1352,8 @@ public class View {
             boolean lensFlare, boolean starburst, float chromaticAberration, int ghostCount, float ghostSpacing, float ghostThreshold, float haloThickness, float haloRadius, float haloThreshold);
     private static native void nSetFogOptions(long nativeView, float distance, float maximumOpacity, float height, float heightFalloff, float cutOffDistance, float v, float v1, float v2, float density, float inScatteringStart, float inScatteringSize, boolean fogColorFromIbl, long skyColorNativeObject, boolean enabled);
     private static native void nSetStereoscopicOptions(long nativeView, boolean enabled);
+    private static native void nSetChannelDepthClearEnabled(long nativeView, int channel, boolean enabled);
+    private static native boolean nIsChannelDepthClearEnabled(long nativeView, int channel);
     private static native void nSetBlendMode(long nativeView, int blendMode);
     private static native void nSetDepthOfFieldOptions(long nativeView, float cocScale, float maxApertureDiameter, boolean enabled, int filter,
             boolean nativeResolution, int foregroundRingCount, int backgroundRingCount, int fastGatherRingCount, int maxForegroundCOC, int maxBackgroundCOC);
@@ -1390,8 +1426,8 @@ public class View {
      *
      * \note
      * Dynamic resolution is only supported on platforms where the time to render
-     * a frame can be measured accurately. Dynamic resolution is currently only
-     * supported on Android.
+     * a frame can be measured accurately. On platforms where this is not supported,
+     * Dynamic Resolution can't be enabled unless minScale == maxScale.
      *
      * @see Renderer::FrameRateOptions
      *
@@ -1423,9 +1459,12 @@ public class View {
          * MEDIUM: Qualcomm Snapdragon Game Super Resolution (SGSR) 1.0
          * HIGH:   AMD FidelityFX FSR1 w/ mobile optimizations
          * ULTRA:  AMD FidelityFX FSR1
-         *      FSR1 and SGSR require a well anti-aliased (MSAA or TAA), noise free scene. Avoid FXAA and dithering.
+         *      FSR1 and SGSR require a well anti-aliased (MSAA or TAA), noise free scene.
+         *      Avoid FXAA and dithering.
          *
          * The default upscaling quality is set to LOW.
+         *
+         * caveat: currently, 'quality' is always set to LOW if the View is TRANSLUCENT.
          */
         @NonNull
         public QualityLevel quality = QualityLevel.LOW;
@@ -1561,7 +1600,9 @@ public class View {
     }
 
     /**
-     * Options to control large-scale fog in the scene
+     * Options to control large-scale fog in the scene. Materials can enable the `linearFog` property,
+     * which uses a simplified, linear equation for fog calculation; in this mode, the heightFalloff
+     * is ignored as well as the mipmap selection in IBL or skyColor mode.
      */
     public static class FogOptions {
         /**
@@ -1578,7 +1619,7 @@ public class View {
          */
         public float cutOffDistance = Float.POSITIVE_INFINITY;
         /**
-         * fog's maximum opacity between 0 and 1
+         * fog's maximum opacity between 0 and 1. Ignored in `linearFog` mode.
          */
         public float maximumOpacity = 1.0f;
         /**
@@ -1586,12 +1627,15 @@ public class View {
          */
         public float height = 0.0f;
         /**
-         * How fast the fog dissipates with altitude. heightFalloff has a unit of [1/m].
+         * How fast the fog dissipates with the altitude. heightFalloff has a unit of [1/m].
          * It can be expressed as 1/H, where H is the altitude change in world units [m] that causes a
          * factor 2.78 (e) change in fog density.
          *
          * A falloff of 0 means the fog density is constant everywhere and may result is slightly
          * faster computations.
+         *
+         * In `linearFog` mode, only use to compute the slope of the linear equation. Completely
+         * ignored if set to 0.
          */
         public float heightFalloff = 1.0f;
         /**
@@ -1607,12 +1651,12 @@ public class View {
          *
          *  This value is used as a tint instead, when fogColorFromIbl is enabled.
          *
-         *  @see fogColorFromIbl
+         *  @see #fogColorFromIbl
          */
         @NonNull @Size(min = 3)
         public float[] color = {1.0f, 1.0f, 1.0f};
         /**
-         * Extinction factor in [1/m] at altitude 'height'. The extinction factor controls how much
+         * Extinction factor in [1/m] at an altitude 'height'. The extinction factor controls how much
          * light is absorbed and out-scattered per unit of distance. Each unit of extinction reduces
          * the incoming light to 37% of its original value.
          *
@@ -1621,10 +1665,15 @@ public class View {
          * the composition of the fog/atmosphere.
          *
          * For historical reason this parameter is called `density`.
+         *
+         * In `linearFog` mode this is the slope of the linear equation if heightFalloff is set to 0.
+         * Otherwise, heightFalloff affects the slope calculation such that it matches the slope of
+         * the standard equation at the camera height.
          */
         public float density = 0.1f;
         /**
          * Distance in world units [m] from the camera where the Sun in-scattering starts.
+         * Ignored in `linearFog` mode.
          */
         public float inScatteringStart = 0.0f;
         /**
@@ -1632,6 +1681,7 @@ public class View {
          * is scattered (by the fog) towards the camera.
          * Size of the Sun in-scattering (>0 to activate). Good values are >> 1 (e.g. ~10 - 100).
          * Smaller values result is a larger scattering size.
+         * Ignored in `linearFog` mode.
          */
         public float inScatteringSize = -1.0f;
         /**
@@ -1642,7 +1692,7 @@ public class View {
          *
          * `fogColorFromIbl` is ignored when skyTexture is specified.
          *
-         * @see skyColor
+         * @see #skyColor
          */
         public boolean fogColorFromIbl = false;
         /**
@@ -1657,8 +1707,10 @@ public class View {
          *
          * `fogColorFromIbl` is ignored when skyTexture is specified.
          *
+         * In `linearFog` mode mipmap level 0 is always used.
+         *
          * @see Texture
-         * @see fogColorFromIbl
+         * @see #fogColorFromIbl
          */
         @Nullable
         public Texture skyColor = null;
@@ -1671,7 +1723,7 @@ public class View {
     /**
      * Options to control Depth of Field (DoF) effect in the scene.
      *
-     * cocScale can be used to set the depth of field blur independently from the camera
+     * cocScale can be used to set the depth of field blur independently of the camera
      * aperture, e.g. for artistic reasons. This can be achieved by setting:
      *      cocScale = cameraAperture / desiredDoFAperture
      *
@@ -1780,7 +1832,8 @@ public class View {
     /**
      * Structure used to set the precision of the color buffer and related quality settings.
      *
-     * @see setRenderQuality, getRenderQuality
+     * @see #setRenderQuality
+     * @see #getRenderQuality
      */
     public static class RenderQuality {
         /**
@@ -1798,9 +1851,25 @@ public class View {
 
     /**
      * Options for screen space Ambient Occlusion (SSAO) and Screen Space Cone Tracing (SSCT)
-     * @see setAmbientOcclusionOptions()
+     * @see #setAmbientOcclusionOptions
      */
     public static class AmbientOcclusionOptions {
+        public enum AmbientOcclusionType {
+            /**
+             * use Scalable Ambient Occlusion
+             */
+            SAO,
+            /**
+             * use Ground Truth-Based Ambient Occlusion
+             */
+            GTAO,
+        }
+
+        /**
+         * Type of ambient occlusion algorithm.
+         */
+        @NonNull
+        public AmbientOcclusionOptions.AmbientOcclusionType aoType = AmbientOcclusionOptions.AmbientOcclusionType.SAO;
         /**
          * Ambient Occlusion radius in meters, between 0 and ~10.
          */
@@ -1810,7 +1879,8 @@ public class View {
          */
         public float power = 1.0f;
         /**
-         * Self-occlusion bias in meters. Use to avoid self-occlusion. Between 0 and a few mm.
+         * Self-occlusion bias in meters. Use to avoid self-occlusion.
+         * Between 0 and a few mm. No effect when aoType set to GTAO
          */
         public float bias = 0.0005f;
         /**
@@ -1826,12 +1896,12 @@ public class View {
          */
         public float bilateralThreshold = 0.05f;
         /**
-         * affects # of samples used for AO.
+         * affects # of samples used for AO and params for filtering
          */
         @NonNull
         public QualityLevel quality = QualityLevel.LOW;
         /**
-         * affects AO smoothness
+         * affects AO smoothness. Recommend setting to HIGH when aoType set to GTAO.
          */
         @NonNull
         public QualityLevel lowPassFilter = QualityLevel.MEDIUM;
@@ -1849,7 +1919,7 @@ public class View {
          */
         public boolean bentNormals = false;
         /**
-         * min angle in radian to consider
+         * min angle in radian to consider. No effect when aoType set to GTAO.
          */
         public float minHorizonAngleRad = 0.0f;
         /**
@@ -1904,11 +1974,36 @@ public class View {
          */
         public boolean ssctEnabled = false;
 
+        /**
+         * Ground Truth-base Ambient Occlusion (GTAO) options
+         */
+        public int gtaoSampleSliceCount = 4;
+        /**
+         * Ground Truth-base Ambient Occlusion (GTAO) options
+         */
+        public int gtaoSampleStepsPerSlice = 3;
+        /**
+         * Ground Truth-base Ambient Occlusion (GTAO) options
+         */
+        public float gtaoThicknessHeuristic = 0.004f;
+        /**
+         * Ground Truth-base Ambient Occlusion (GTAO) options
+         */
+        public boolean gtaoUseVisibilityBitmasks = false;
+        /**
+         * Ground Truth-base Ambient Occlusion (GTAO) options
+         */
+        public float gtaoConstThickness = 0.5f;
+        /**
+         * Ground Truth-base Ambient Occlusion (GTAO) options
+         */
+        public boolean gtaoLinearThickness = false;
+
     }
 
     /**
      * Options for Multi-Sample Anti-aliasing (MSAA)
-     * @see setMultiSampleAntiAliasingOptions()
+     * @see #setMultiSampleAntiAliasingOptions
      */
     public static class MultiSampleAntiAliasingOptions {
         /**
@@ -1938,7 +2033,7 @@ public class View {
      * `feedback` of 0.1 effectively accumulates a maximum of 19 samples in steady state.
      * see "A Survey of Temporal Antialiasing Techniques" by Lei Yang and all for more information.
      *
-     * @see setTemporalAntiAliasingOptions()
+     * @see #setTemporalAntiAliasingOptions
      */
     public static class TemporalAntiAliasingOptions {
         public enum BoxType {
@@ -2040,7 +2135,7 @@ public class View {
 
     /**
      * Options for Screen-space Reflections.
-     * @see setScreenSpaceReflectionsOptions()
+     * @see #setScreenSpaceReflectionsOptions
      */
     public static class ScreenSpaceReflectionsOptions {
         /**
@@ -2074,7 +2169,9 @@ public class View {
 
     /**
      * List of available post-processing anti-aliasing techniques.
-     * @see setAntiAliasing, getAntiAliasing, setSampleCount
+     * @see #setAntiAliasing
+     * @see #getAntiAliasing
+     * @see #setSampleCount
      */
     public enum AntiAliasing {
         /**
@@ -2103,7 +2200,7 @@ public class View {
 
     /**
      * List of available shadow mapping techniques.
-     * @see setShadowType
+     * @see #setShadowType
      */
     public enum ShadowType {
         /**
@@ -2127,7 +2224,7 @@ public class View {
 
     /**
      * View-level options for VSM Shadowing.
-     * @see setVsmShadowOptions()
+     * @see #setVsmShadowOptions
      * @warning This API is still experimental and subject to change.
      */
     public static class VsmShadowOptions {
@@ -2168,7 +2265,7 @@ public class View {
 
     /**
      * View-level options for DPCF and PCSS Shadowing.
-     * @see setSoftShadowOptions()
+     * @see #setSoftShadowOptions
      * @warning This API is still experimental and subject to change.
      */
     public static class SoftShadowOptions {

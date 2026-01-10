@@ -64,7 +64,7 @@ PlatformCocoaTouchGL::~PlatformCocoaTouchGL() noexcept {
     delete pImpl;
 }
 
-Driver* PlatformCocoaTouchGL::createDriver(void* sharedGLContext, const Platform::DriverConfig& driverConfig) noexcept {
+Driver* PlatformCocoaTouchGL::createDriver(void* sharedGLContext, const Platform::DriverConfig& driverConfig) {
     EAGLSharegroup* sharegroup = (__bridge EAGLSharegroup*) sharedGLContext;
 
     EAGLContext *context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3 sharegroup:sharegroup];
@@ -155,7 +155,7 @@ uint32_t PlatformCocoaTouchGL::getDefaultFramebufferObject() noexcept {
 }
 
 bool PlatformCocoaTouchGL::makeCurrent(ContextType type, SwapChain* drawSwapChain,
-        SwapChain* readSwapChain) noexcept {
+        SwapChain* readSwapChain) {
     ASSERT_PRECONDITION_NON_FATAL(drawSwapChain == readSwapChain,
             "PlatformCocoaTouchGL does not support using distinct draw/read swap chains.");
     CAEAGLLayer* const glLayer = (__bridge CAEAGLLayer*) drawSwapChain;

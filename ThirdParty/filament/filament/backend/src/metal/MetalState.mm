@@ -18,7 +18,7 @@
 
 #include "MetalEnums.h"
 
-#include <utils/Log.h>
+#include <utils/Logger.h>
 
 namespace filament {
 namespace backend {
@@ -86,6 +86,7 @@ id<MTLRenderPipelineState> PipelineStateCreator::operator()(id<MTLDevice> device
 
     // MSAA
     descriptor.rasterSampleCount = state.sampleCount;
+    descriptor.alphaToCoverageEnabled = state.alphaToCoverage;
 
     NSError* error = nullptr;
     id<MTLRenderPipelineState> pipeline = [device newRenderPipelineStateWithDescriptor:descriptor
@@ -95,7 +96,7 @@ id<MTLRenderPipelineState> PipelineStateCreator::operator()(id<MTLDevice> device
             [NSString stringWithFormat:@"Could not create Metal pipeline state: %@",
                 error ? error.localizedDescription : @"unknown error"];
         auto description = [errorMessage cStringUsingEncoding:NSUTF8StringEncoding];
-        utils::slog.e << description << utils::io::endl;
+        LOG(ERROR) << description;
         [[NSException exceptionWithName:@"MetalRenderPipelineFailure"
                                  reason:errorMessage
                                userInfo:nil] raise];
@@ -154,9 +155,11 @@ id<MTLSamplerState> SamplerStateCreator::operator()(id<MTLDevice> device,
     // Older Apple devices (and the simulator) don't support setting a comparison function in
     // MTLSamplerDescriptor.
     // In practice, this means shadows are not supported when running in the simulator.
-    if (![device supportsFeatureSet:MTLFeatureSet_iOS_GPUFamily3_v1]) {
-        utils::slog.w << "Warning: sample comparison not supported by this GPU" << utils::io::endl;
-        samplerDescriptor.compareFunction = MTLCompareFunctionNever;
+    if (samplerDescriptor.compareFunction != MTLCompareFunctionNever) {
+        if (![device supportsFeatureSet:MTLFeatureSet_iOS_GPUFamily3_v1]) {
+            LOG(WARNING) << "Warning: sample comparison not supported by this GPU";
+            samplerDescriptor.compareFunction = MTLCompareFunctionNever;
+        }
     }
 #endif
 

@@ -19,12 +19,13 @@
 
 #include <utils/compiler.h>
 
-#include <type_traits>
+#include <utils/ostream.h>
+
 #include <string_view>
 
-#include <stddef.h>
-
 namespace utils {
+
+class ImmutableCString;
 
 /**
  * @brief A lightweight string class that stores a pointer to a string literal and its size, without dynamic allocation.
@@ -41,10 +42,10 @@ public:
     using const_iterator = std::string_view::const_iterator;
 
     // Constructor from string literal
-    template <size_t M>
+    template<unsigned int M>
     constexpr StaticString(const char (&str)[M]) noexcept : mString(str, M - 1) {} // NOLINT(*-explicit-constructor)
 
-    constexpr StaticString() noexcept = default;
+    constexpr StaticString() noexcept : mString("", 0) {}
 
     constexpr const_pointer c_str() const noexcept { return mString.data(); }
     constexpr const_pointer data() const noexcept { return mString.data(); }
@@ -61,7 +62,7 @@ public:
         return mString[pos];
     }
 
-    constexpr const_reference at(size_type pos) const {
+    constexpr const_reference at(size_type const pos) const {
         return mString[pos];
     }
 
@@ -78,6 +79,10 @@ public:
     }
 
 private:
+#if !defined(NDEBUG)
+    friend io::ostream& operator<<(io::ostream& out, const ImmutableCString& rhs);
+#endif
+
     std::string_view mString;
 
     friend constexpr bool operator==(const StaticString& lhs, const StaticString& rhs) noexcept {

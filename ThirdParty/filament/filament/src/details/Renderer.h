@@ -83,16 +83,26 @@ public:
 
     void resetUserTime();
 
+    void skipNextFrames(size_t frameCount) const noexcept {
+        mFrameSkipper.skipNextFrames(frameCount);
+    }
+
+    size_t getFrameToSkipCount() const noexcept {
+        return mFrameSkipper.getFrameToSkipCount();
+    }
+
     // renders a single standalone view. The view must have a a custom rendertarget.
     void renderStandaloneView(FView const* view);
 
-
-    void setPresentationTime(int64_t monotonic_clock_ns);
+    void setPresentationTime(int64_t monotonic_clock_ns) const;
 
     void setVsyncTime(uint64_t steadyClockTimeNano) noexcept;
 
     // skip a frame
     void skipFrame(uint64_t vsyncSteadyClockTimeNano);
+
+    // Whether a frame should be rendered or not.
+    bool shouldRenderFrame() const noexcept;
 
     // start a frame
     bool beginFrame(FSwapChain* swapChain, uint64_t vsyncSteadyClockTimeNano);
@@ -108,7 +118,7 @@ public:
             backend::PixelBufferDescriptor&& buffer);
 
     // read pixel from a rendertarget. must be called between beginFrame/enfFrame.
-    void readPixels(FRenderTarget* renderTarget,
+    void readPixels(FRenderTarget const* renderTarget,
             uint32_t xoffset, uint32_t yoffset, uint32_t width, uint32_t height,
             backend::PixelBufferDescriptor&& buffer);
 
@@ -186,8 +196,12 @@ private:
         return mCommandsHighWatermark;
     }
 
-    void renderInternal(FView const* view);
+    void renderInternal(FView const* view, bool flush);
     void renderJob(RootArenaScope& rootArenaScope, FView& view);
+
+    static std::pair<float, math::float2> prepareUpscaler(math::float2 scale,
+            TemporalAntiAliasingOptions const& taaOptions,
+            DynamicResolutionOptions const& dsrOptions);
 
     // keep a reference to our engine
     FEngine& mEngine;
@@ -195,8 +209,7 @@ private:
     backend::Handle<backend::HwRenderTarget> mRenderTargetHandle;
     FSwapChain* mSwapChain = nullptr;
     size_t mCommandsHighWatermark = 0;
-    uint32_t mFrameId = 0;
-    uint32_t mViewRenderedCount = 0;
+    uint32_t mFrameId = 1; // id 0 is reserved for standalone views
     FrameInfoManager mFrameInfoManager;
     backend::TextureFormat mHdrTranslucent;
     backend::TextureFormat mHdrQualityMedium;

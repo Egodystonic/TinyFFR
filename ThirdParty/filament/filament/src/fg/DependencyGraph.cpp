@@ -16,9 +16,15 @@
 
 #include "fg/details/DependencyGraph.h"
 
-#include <utils/Systrace.h>
+#include <private/utils/Tracing.h>
+
+#include <utils/compiler.h>
+#include <utils/debug.h>
+#include <utils/CString.h>
+#include <utils/ostream.h>
 
 #include <iterator>
+#include <cstdint>
 
 namespace filament {
 
@@ -103,7 +109,7 @@ DependencyGraph::Node* DependencyGraph::getNode(NodeID const id) noexcept {
 
 void DependencyGraph::cull() noexcept {
 
-    SYSTRACE_CALL();
+    FILAMENT_TRACING_CALL(FILAMENT_TRACING_CATEGORY_FILAMENT);
 
     auto& nodes = mNodes;
     auto& edges = mEdges;
@@ -254,25 +260,23 @@ char const* DependencyGraph::Node::getName() const noexcept {
 
 utils::CString DependencyGraph::Node::graphvizify() const noexcept {
 #ifndef NDEBUG
-    std::string s;
-    s.reserve(128);
+    utils::CString s;
 
-    uint32_t id = getId();
+    uint32_t const id = getId();
     const char* const nodeName = getName();
     uint32_t const refCount = getRefCount();
 
     s.append("[label=\"");
     s.append(nodeName);
     s.append("\\nrefs: ");
-    s.append(std::to_string(refCount));
+    s.append(utils::to_string(refCount));
     s.append(", id: ");
-    s.append(std::to_string(id));
+    s.append(utils::to_string(id));
     s.append("\", style=filled, fillcolor=");
     s.append(refCount ? "skyblue" : "skyblue4");
     s.append("]");
-    s.shrink_to_fit();
 
-    return utils::CString{ s.c_str() };
+    return s;
 #else
     return {};
 #endif

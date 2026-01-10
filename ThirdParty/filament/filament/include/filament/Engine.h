@@ -63,6 +63,7 @@ class Scene;
 class Skybox;
 class Stream;
 class SwapChain;
+class Sync;
 class Texture;
 class VertexBuffer;
 class View;
@@ -196,6 +197,8 @@ public:
     using FeatureLevel = backend::FeatureLevel;
     using StereoscopicType = backend::StereoscopicType;
     using Driver = backend::Driver;
+    using GpuContextPriority = backend::Platform::GpuContextPriority;
+    using AsynchronousMode = backend::AsynchronousMode;
 
     /**
      * Config is used to define the memory footprint used by the engine, such as the
@@ -420,6 +423,27 @@ public:
         // === Begin TinyFFR Alteration ===
         bool disableVsync = false;
         // === End TinyFFR Alteration ===
+        
+        /**
+         * GPU context priority level. Controls GPU work scheduling and preemption.
+         */
+        GpuContextPriority gpuContextPriority = GpuContextPriority::DEFAULT;
+
+        /**
+         * The initial size in bytes of the shared uniform buffer used for material instance
+         * batching.
+         *
+         * If the buffer runs out of space during a frame, it will be automatically reallocated
+         * with a larger capacity. Setting an appropriate initial size can help avoid runtime
+         * reallocations, which can cause a minor performance stutter, at the cost of higher
+         * initial memory usage.
+         */
+        uint32_t sharedUboInitialSizeInBytes = 256 * 64;
+
+        /**
+         * Asynchronous mode for the engine. Defines how asynchronous operations are handled.
+         */
+        AsynchronousMode asynchronousMode = AsynchronousMode::NONE;
     };
 
 
@@ -735,6 +759,14 @@ public:
     bool isStereoSupported(StereoscopicType stereoscopicType) const noexcept;
 
     /**
+     * Checks if the engine is set up for asynchronous operation. If it returns true, the
+     * asynchronous versions of the APIs are available for use.
+     *
+     * @return true if the engine supports asynchronous operation.
+     */
+    bool isAsynchronousOperationSupported() const noexcept;
+
+    /**
      * Retrieves the configuration settings of this Engine.
      *
      * This method returns the configuration object that was supplied to the Engine's
@@ -890,9 +922,19 @@ public:
      */
     Fence* UTILS_NONNULL createFence() noexcept;
 
+    /**
+     * Creates a Sync.
+     * @param callback A callback that will be invoked when the handle for
+     *                 the created sync is set
+     *
+     * @return A pointer to the newly created Sync.
+     */
+    Sync* UTILS_NONNULL createSync() noexcept;
+
     bool destroy(const BufferObject* UTILS_NULLABLE p);         //!< Destroys a BufferObject object.
     bool destroy(const VertexBuffer* UTILS_NULLABLE p);         //!< Destroys an VertexBuffer object.
     bool destroy(const Fence* UTILS_NULLABLE p);                //!< Destroys a Fence object.
+    bool destroy(const Sync* UTILS_NULLABLE p);                 //!< Destroys a Sync object.
     bool destroy(const IndexBuffer* UTILS_NULLABLE p);          //!< Destroys an IndexBuffer object.
     bool destroy(const SkinningBuffer* UTILS_NULLABLE p);       //!< Destroys a SkinningBuffer object.
     bool destroy(const MorphTargetBuffer* UTILS_NULLABLE p);    //!< Destroys a MorphTargetBuffer object.
@@ -926,6 +968,8 @@ public:
     bool isValid(const VertexBuffer* UTILS_NULLABLE p) const;
     /** Tells whether a Fence object is valid */
     bool isValid(const Fence* UTILS_NULLABLE p) const;
+    /** Tells whether a Sync object is valid */
+    bool isValid(const Sync* UTILS_NULLABLE p) const;
     /** Tells whether an IndexBuffer object is valid */
     bool isValid(const IndexBuffer* UTILS_NULLABLE p) const;
     /** Tells whether a SkinningBuffer object is valid */
@@ -1036,7 +1080,7 @@ public:
      *
      * @see setPaused
      */
-    bool isPaused() const noexcept;
+    bool isPaused() const noexcept(UTILS_HAS_THREADING);
 
     /**
      * Pause or resume rendering thread.

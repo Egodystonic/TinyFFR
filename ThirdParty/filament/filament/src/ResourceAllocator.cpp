@@ -27,12 +27,14 @@
 
 #include "private/backend/DriverApi.h"
 
+#include <utils/Logger.h>
 #include <utils/algorithm.h>
 #include <utils/bitset.h>
 #include <utils/compiler.h>
 #include <utils/debug.h>
-#include <utils/Log.h>
 #include <utils/ostream.h>
+#include <utils/ImmutableCString.h>
+#include <utils/StaticString.h>
 
 #include <array>
 #include <algorithm>
@@ -143,13 +145,12 @@ void ResourceAllocator::terminate() noexcept {
     }
 }
 
-RenderTargetHandle ResourceAllocator::createRenderTarget(const char* name,
+RenderTargetHandle ResourceAllocator::createRenderTarget(StaticString name,
         TargetBufferFlags const targetBufferFlags, uint32_t const width, uint32_t const height,
         uint8_t const samples, uint8_t const layerCount, MRT const color, TargetBufferInfo const depth,
         TargetBufferInfo const stencil) noexcept {
     auto handle = mBackend.createRenderTarget(targetBufferFlags,
-            width, height, samples ? samples : 1u, layerCount, color, depth, stencil);
-    mBackend.setDebugTag(handle.getId(), CString{ name });
+            width, height, samples ? samples : 1u, layerCount, color, depth, stencil, name);
     return handle;
 }
 
@@ -157,7 +158,7 @@ void ResourceAllocator::destroyRenderTarget(RenderTargetHandle const h) noexcept
     mBackend.destroyRenderTarget(h);
 }
 
-TextureHandle ResourceAllocator::createTexture(const char* name,
+TextureHandle ResourceAllocator::createTexture(StaticString name,
         SamplerType const target, uint8_t const levels, TextureFormat const format, uint8_t samples,
         uint32_t const width, uint32_t const height, uint32_t const depth,
         std::array<TextureSwizzle, 4> const swizzle,
@@ -167,7 +168,7 @@ TextureHandle ResourceAllocator::createTexture(const char* name,
     samples = samples ? samples : uint8_t(1);
 
     using TS = TextureSwizzle;
-    constexpr const auto defaultSwizzle = std::array<TextureSwizzle, 4>{
+    constexpr const auto defaultSwizzle = std::array{
         TS::CHANNEL_0, TS::CHANNEL_1, TS::CHANNEL_2, TS::CHANNEL_3};
 
     // do we have a suitable texture in the cache?
@@ -184,26 +185,25 @@ TextureHandle ResourceAllocator::createTexture(const char* name,
         } else {
             // we don't, allocate a new texture and populate the in-use list
             handle = mBackend.createTexture(
-                    target, levels, format, samples, width, height, depth, usage);
+                    target, levels, format, samples, width, height, depth, usage, name);
             if (swizzle != defaultSwizzle) {
                 TextureHandle swizzledHandle = mBackend.createTextureViewSwizzle(
-                        handle, swizzle[0], swizzle[1], swizzle[2], swizzle[3]);
+                        handle, swizzle[0], swizzle[1], swizzle[2], swizzle[3], name);
                 mBackend.destroyTexture(handle);
                 handle = swizzledHandle;
             }
         }
     } else {
         handle = mBackend.createTexture(
-                target, levels, format, samples, width, height, depth, usage);
+                target, levels, format, samples, width, height, depth, usage, name);
         if (swizzle != defaultSwizzle) {
             TextureHandle swizzledHandle = mBackend.createTextureViewSwizzle(
-                    handle, swizzle[0], swizzle[1], swizzle[2], swizzle[3]);
+                    handle, swizzle[0], swizzle[1], swizzle[2], swizzle[3], name);
             mBackend.destroyTexture(handle);
             handle = swizzledHandle;
         }
     }
     mDisposer->checkout(handle, key);
-    mBackend.setDebugTag(handle.getId(), CString{ name });
     return handle;
 }
 
@@ -291,17 +291,16 @@ void ResourceAllocator::gc(bool const skippedFrame) noexcept {
 UTILS_NOINLINE
 void ResourceAllocator::dump(bool const brief) const noexcept {
     constexpr float MiB = 1.0f / float(1u << 20u);
-    slog.d  << "# entries=" << mTextureCache.size()
-            << ", sz=" << (float)mCacheSize * MiB << " MiB"
-            << ", max=" << (float)mCacheSizeHiWaterMark * MiB << " MiB"
-            << io::endl;
+    DLOG(INFO) << "# entries=" << mTextureCache.size() << ", sz=" << (float) mCacheSize * MiB
+               << " MiB"
+               << ", max=" << (float) mCacheSizeHiWaterMark * MiB << " MiB";
     if (!brief) {
         for (auto const& it : mTextureCache) {
             auto w = it.first.width;
             auto h = it.first.height;
             auto f = FTexture::getFormatSize(it.first.format);
-            slog.d << it.first.name << ": w=" << w << ", h=" << h << ", f=" << f << ", sz="
-                   << (float)it.second.size * MiB << io::endl;
+            DLOG(INFO) << it.first.name.c_str() << ": w=" << w << ", h=" << h << ", f=" << f
+                       << ", sz=" << (float) it.second.size * MiB;
         }
     }
 }
@@ -309,7 +308,7 @@ void ResourceAllocator::dump(bool const brief) const noexcept {
 ResourceAllocator::CacheContainer::iterator
 ResourceAllocator::purge(
         CacheContainer::iterator const& pos) {
-    //slog.d << "purging " << pos->second.handle.getId() << ", age=" << pos->second.age << io::endl;
+    // DLOG(INFO) << "purging " << pos->second.handle.getId() << ", age=" << pos->second.age;
     mBackend.destroyTexture(pos->second.handle);
     mCacheSize -= pos->second.size;
     return mTextureCache.erase(pos);

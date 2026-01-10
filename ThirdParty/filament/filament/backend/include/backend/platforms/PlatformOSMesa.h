@@ -43,7 +43,7 @@ protected:
     // --------------------------------------------------------------------------------------------
     // Platform Interface
 
-    Driver* createDriver(void* sharedGLContext, const DriverConfig& driverConfig) noexcept override;
+    Driver* createDriver(void* sharedGLContext, const DriverConfig& driverConfig) override;
 
     int getOSVersion() const noexcept final override { return 0; }
 
@@ -56,7 +56,7 @@ protected:
     SwapChain* createSwapChain(uint32_t width, uint32_t height, uint64_t flags) noexcept override;
     void destroySwapChain(SwapChain* swapChain) noexcept override;
     bool makeCurrent(ContextType type, SwapChain* drawSwapChain,
-            SwapChain* readSwapChain) noexcept override;
+            SwapChain* readSwapChain) override;
     void commit(SwapChain* swapChain) noexcept override;
 
 private:

@@ -31,7 +31,7 @@ class VulkanSamplerCache;
 class VulkanDescriptorSetLayoutCache;
 class VulkanDescriptorSetCache;
 
-// Manages the logic of external images and their quirks wrt Vulikan.
+// Manages the logic of external images and their quirks wrt Vulkan.
 class VulkanExternalImageManager {
 public:
 
@@ -86,9 +86,9 @@ public:
         VkSamplerYcbcrConversion conversion = VK_NULL_HANDLE;
     };
 
-private:
-    bool hasExternalSampler(fvkmemory::resource_ptr<VulkanDescriptorSet> set);
+    bool hasExternalSampler(fvkmemory::resource_ptr<VulkanDescriptorSet> set) const;
 
+private:
     void updateSetAndLayout(fvkmemory::resource_ptr<VulkanDescriptorSet> set,
             fvkmemory::resource_ptr<VulkanDescriptorSetLayout> layout);
 
