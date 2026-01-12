@@ -20,13 +20,15 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 	readonly InteropStringBuffer _windowTitleBuffer;
 	readonly InteropStringBuffer _iconFilePathBuffer;
 	readonly ArrayPoolBackedVector<ResourceHandle<Window>> _activeWindows = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<Window>, Display> _displayMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Window>, Display> _lastSetDisplayMap = new();
+	readonly ReadOnlyMemory<Display> _displaysOrderedByIndex;
 	bool _isDisposed = false;
 
-	public LocalWindowBuilder(LocalFactoryGlobalObjectGroup globals, WindowBuilderConfig config) {
+	public LocalWindowBuilder(LocalFactoryGlobalObjectGroup globals, WindowBuilderConfig config, ReadOnlyMemory<Display> displaysOrderedByIndex) {
 		ArgumentNullException.ThrowIfNull(globals);
 		ArgumentNullException.ThrowIfNull(config);
 
+		_displaysOrderedByIndex = displaysOrderedByIndex;
 		_globals = globals;
 		_windowTitleBuffer = new InteropStringBuffer(config.MaxWindowTitleLength, addOneForNullTerminator: true);
 		_iconFilePathBuffer = new InteropStringBuffer(config.MaxIconFilePathLengthChars, addOneForNullTerminator: true);
@@ -45,7 +47,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		).ThrowIfFailure();
 		var result = new Window(outHandle, this);
 		_activeWindows.Add(outHandle);
-		_displayMap.Add(outHandle, config.Display);
+		_lastSetDisplayMap.Add(outHandle, config.Display);
 		result.FullscreenStyle = config.FullscreenStyle;
 		if (!config.Title.IsEmpty) SetTitleOnWindow(result.Handle, config.Title);
 		SetDefaultIcon(result.Handle);
@@ -119,12 +121,18 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 
 	public Display GetDisplay(ResourceHandle<Window> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _displayMap[handle];
+		
+		GetWindowDisplayIndex(
+			handle,
+			out var index
+		).ThrowIfFailure();
+		if (index < 0 || index >= _displaysOrderedByIndex.Length) return _lastSetDisplayMap[handle];
+		return _displaysOrderedByIndex.Span[index];
 	}
 	public void SetDisplay(ResourceHandle<Window> handle, Display newDisplay) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var localPos = GetPosition(handle);
-		_displayMap[handle] = newDisplay;
+		_lastSetDisplayMap[handle] = newDisplay;
 		SetPosition(handle, localPos);
 	}
 
@@ -160,7 +168,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		if (fsStyle is WindowFullscreenStyle.Fullscreen) {
 			var targetArea = newSize.Area;
 
-			var display = _displayMap[handle];
+			var display = GetDisplay(handle);
 			var bestMatch = new DisplayMode(XYPair<int>.Zero, 0);
 			var bestMatchAreaDelta = targetArea;
 			var bestMatchIndex = -1;
@@ -177,6 +185,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 			}
 
 			if (bestMatchIndex >= 0) {
+				Console.WriteLine("BMI = " + bestMatchIndex + " (" + display.SupportedDisplayModes[bestMatchIndex] + " on " + display.GetNameAsNewStringObject() + ")");
 				SetWindowFullscreenMode(
 					handle,
 					display.Handle,
@@ -185,6 +194,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 			}
 		}
 
+		Console.WriteLine("SWS = " + newSize);
 		SetWindowSize(
 			handle,
 			newSize.X,
@@ -209,11 +219,11 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 			out var x,
 			out var y
 		).ThrowIfFailure();
-		return _displayMap[handle].TranslateGlobalWindowPositionToDisplayLocal(new(x, y));
+		return GetDisplay(handle).TranslateGlobalWindowPositionToDisplayLocal(new(x, y));
 	}
 	public void SetPosition(ResourceHandle<Window> handle, XYPair<int> newPosition) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var translatedPosition = _displayMap[handle].TranslateDisplayLocalWindowPositionToGlobal(newPosition);
+		var translatedPosition = GetDisplay(handle).TranslateDisplayLocalWindowPositionToGlobal(newPosition);
 		SetWindowPosition(
 			handle,
 			translatedPosition.X,
@@ -281,7 +291,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 			DisposeWindow(handle).ThrowIfFailure();
 		}
 		finally {
-			_displayMap.Remove(handle);
+			_lastSetDisplayMap.Remove(handle);
 			_activeWindows.Remove(handle);
 		}
 	}
@@ -294,7 +304,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		try {
 			foreach (var handle in _activeWindows) DisposeWindow(handle).ThrowIfFailure();
 			_activeWindows.Dispose();
-			_displayMap.Dispose();
+			_lastSetDisplayMap.Dispose();
 			_iconFilePathBuffer.Dispose();
 			_windowTitleBuffer.Dispose();
 		}
@@ -313,6 +323,9 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_window_size")]
 	static extern InteropResult GetWindowSize(UIntPtr handle, out int outWidth, out int outHeight);
+	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_window_display_index")]
+	static extern InteropResult GetWindowDisplayIndex(UIntPtr handle, out int displayIndex);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_window_size")]
 	static extern InteropResult SetWindowSize(UIntPtr handle, int newWidth, int newHeight);

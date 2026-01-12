@@ -10,7 +10,8 @@ deallocate_asset_buffer_delegate native_impl_init::deallocation_delegate;
 log_notify_delegate native_impl_init::log_delegate;
 
 void native_impl_init::exec_once_only_initialization() {
-	SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
+	SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2"); // TODO ifdef these
+	SDL_SetHint(SDL_HINT_VIDEODRIVER, "wayland,x11");
 	auto sdlInitResult = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
 	ThrowIfNotZero(sdlInitResult, "Could not initialize SDL: ", SDL_GetError());
 }
@@ -53,7 +54,7 @@ void native_impl_init::on_factory_build(interop_bool enableVsync, uint32_t comma
 	};
 
 	filament_engine_ptr = filament::Engine::Builder()
-		.backend(filament::Engine::Backend::VULKAN)
+		.backend(filament::Engine::Backend::VULKAN) // TODO set this according to passed-in API, set vulkan as default
 		.featureLevel(filament::Engine::FeatureLevel::FEATURE_LEVEL_3)
 		.config(&config)
 		.build();

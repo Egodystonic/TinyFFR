@@ -36,17 +36,15 @@ void native_impl_render::allocate_swap_chain(WindowHandle window, SwapChainHandl
 	*outSwapChain = filament_engine->createSwapChain(hwnd, 0UL);
 #elif defined(TFFR_LINUX)
 	switch (wmInfo.subsystem) {
-		case SDL_SYSWM_X11: {
+		case SDL_SYSWM_X11: { // TODO Try and fake X11 support with render target outputs and copying
 			auto nativeWindow = (Window) wmInfo.info.x11.window;
-			//void* windowHandle = reinterpret_cast<void*>(static_cast<uintptr_t>(wmInfo.info.x11.window));
-			Log("X11 voidcast");
 			*outSwapChain = filament_engine->createSwapChain((void*) nativeWindow, 0UL);
 			break;
 		}
-		case SDL_SYSWM_WAYLAND: {
+		case SDL_SYSWM_WAYLAND: { // TODO make sure this works with multiple windows
 			int width = 0;
 			int height = 0;
-			SDL_GetWindowSize(window, &width, &height);
+			SDL_GetWindowSizeInPixels(window, &width, &height);
 
 			// Static is used here to allocate the struct pointer for the lifetime of the program.
 			// Without static the valid struct quickly goes out of scope, and ends with seemingly
@@ -61,7 +59,6 @@ void native_impl_render::allocate_swap_chain(WindowHandle window, SwapChainHandl
 			wayland.surface = wmInfo.info.wl.surface;
 			wayland.width = static_cast<uint32_t>(width);
 			wayland.height = static_cast<uint32_t>(height);
-			Log("Wayland etc");
 			*outSwapChain = filament_engine->createSwapChain((void *) &wayland, 0UL);
 			break;
 		}

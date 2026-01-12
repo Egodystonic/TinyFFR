@@ -73,8 +73,8 @@ class LocalAssetImportTest {
 		factory.AssetLoader.ReadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex), texBuffer);
 		AssertTexelSamples(texBuffer, _expectedSampledSpecularPixelValues);
 
-		Assert.AreEqual(new MeshReadMetadata(662, 480), factory.AssetLoader.ReadMeshMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateMesh)));
-		var meshVertexBuffer = new MeshVertex[662];
+		Assert.AreEqual(new MeshReadMetadata(602, 480), factory.AssetLoader.ReadMeshMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateMesh)));
+		var meshVertexBuffer = new MeshVertex[602];
 		var meshTriangleBuffer = new VertexTriangle[480];
 		factory.AssetLoader.ReadMesh(CommonTestAssets.FindAsset(KnownTestAsset.CrateMesh), meshVertexBuffer, meshTriangleBuffer);
 		var minLoc = new Location(Single.MaxValue, Single.MaxValue, Single.MaxValue);

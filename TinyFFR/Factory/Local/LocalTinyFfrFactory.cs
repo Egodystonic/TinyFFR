@@ -92,7 +92,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		resourceGroupProviderRef.Resolve(_resourceGroupProvider);
 
 		_displayDiscoverer = new LocalDisplayDiscoverer(globals);
-		_windowBuilder = new LocalWindowBuilder(globals, windowBuilderConfig);
+		_windowBuilder = new LocalWindowBuilder(globals, windowBuilderConfig, _displayDiscoverer.All.ToArray().AsMemory());
 		_applicationLoopBuilder = new LocalApplicationLoopBuilder(globals);
 		_assetLoader = new LocalAssetLoader(globals, assetLoaderConfig);
 		_cameraBuilder = new LocalCameraBuilder(globals);

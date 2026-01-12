@@ -98,7 +98,7 @@ void native_impl_render_assets::load_texture_rgb_24(BufferIdentity bufferIdentit
 		.height(height)
 		.levels(generateMipMaps ? 0xFF : 1)
 		.sampler(Texture::Sampler::SAMPLER_2D)
-		.usage(Texture::Usage::DEFAULT)
+		.usage(Texture::Usage::DEFAULT | (generateMipMaps ? Texture::Usage::GEN_MIPMAPPABLE : Texture::Usage::NONE))
 		.width(width)
 		.build(*filament_engine);
 	ThrowIfNull(*outTexture, "Could not load texture.");
@@ -133,7 +133,7 @@ void native_impl_render_assets::load_texture_rgba_32(BufferIdentity bufferIdenti
 		.height(height)
 		.levels(generateMipMaps ? 0xFF : 1)
 		.sampler(Texture::Sampler::SAMPLER_2D)
-		.usage(Texture::Usage::DEFAULT)
+		.usage(Texture::Usage::DEFAULT | (generateMipMaps ? Texture::Usage::GEN_MIPMAPPABLE : Texture::Usage::NONE))
 		.width(width)
 		.build(*filament_engine);
 	ThrowIfNull(*outTexture, "Could not load texture.");

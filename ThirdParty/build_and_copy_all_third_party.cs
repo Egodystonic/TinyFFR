@@ -56,7 +56,7 @@ else {
 
 //		SDL
 commandLists[LibSdl].AddRange(
-	$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} \"{RepoRootDirToken}/CMakeLists.txt\"",
+	$"cmake -DCMAKE_INSTALL_PREFIX={InterimInstallDirName} -DCMAKE_BUILD_TYPE={ConfigurationToken} \"{RepoRootDirToken}/CMakeLists.txt\"",
 	$"cmake --build . --config {ConfigurationToken}",
 	$"cmake --build . --target install --config {ConfigurationToken}"
 );

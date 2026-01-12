@@ -2,6 +2,7 @@
 #include "environment/native_impl_window.h"
 
 #define STBI_FAILURE_USERMSG
+#include "native_impl_init.h"
 #include "stb/stb_image.h"
 
 #include "utils_and_constants.h"
@@ -13,7 +14,7 @@ WindowHandle native_impl_window::create_window(int32_t width, int32_t height, in
 		yPos, 
 		width,
 		height, 
-		SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE
+		SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI // TODO allow high dpi on linux only and set vulkan or ogl accordingly
 	);
 	ThrowIfNull(result, "Could not create window: ", SDL_GetError());
 	SDL_ShowWindow(result);
@@ -151,7 +152,6 @@ void native_impl_window::get_window_back_buffer_size_actual(WindowHandle handle,
 	ThrowIfNull(handle, "Window was null.");
 	ThrowIfNull(outWidth, "Width out pointer was null.");
 	ThrowIfNull(outHeight, "Height out pointer was null.");
-	//SDL_GL_GetDrawableSize(handle, outWidth, outHeight); // Theoretically an outdated API -- can try this though if we see issues with GetWindowSizeInPixels
 	SDL_GetWindowSizeInPixels(handle, outWidth, outHeight);
 }
 StartExportedFunc(get_window_back_buffer_size_actual, WindowHandle ptr, int32_t* outWidth, int32_t* outHeight) {
@@ -159,6 +159,16 @@ StartExportedFunc(get_window_back_buffer_size_actual, WindowHandle ptr, int32_t*
 	EndExportedFunc
 }
 
+void native_impl_window::get_window_display_index(WindowHandle handle, int32_t* outDisplayIndex) {
+	ThrowIfNull(handle, "Window was null.");
+	ThrowIfNull(outDisplayIndex, "Out display index pointer was null.");
+	*outDisplayIndex = SDL_GetWindowDisplayIndex(handle);
+	if (*outDisplayIndex < 0) Log("Could not get display index for window: ", SDL_GetError())
+}
+StartExportedFunc(get_window_display_index, WindowHandle handle, int32_t* outDisplayIndex) {
+	native_impl_window::get_window_display_index(handle, outDisplayIndex);
+	EndExportedFunc
+}
 
 void native_impl_window::set_window_position(WindowHandle handle, int32_t newX, int32_t newY) {
 	ThrowIfNull(handle, "Window was null.");
