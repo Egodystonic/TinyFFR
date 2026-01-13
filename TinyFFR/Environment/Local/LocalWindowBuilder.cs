@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
@@ -21,13 +22,15 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 	readonly InteropStringBuffer _iconFilePathBuffer;
 	readonly ArrayPoolBackedVector<ResourceHandle<Window>> _activeWindows = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Window>, Display> _lastSetDisplayMap = new();
+	readonly RenderingBackendApi _actualRenderingApi;
 	readonly ReadOnlyMemory<Display> _displaysOrderedByIndex;
 	bool _isDisposed = false;
 
-	public LocalWindowBuilder(LocalFactoryGlobalObjectGroup globals, WindowBuilderConfig config, ReadOnlyMemory<Display> displaysOrderedByIndex) {
+	public LocalWindowBuilder(LocalFactoryGlobalObjectGroup globals, WindowBuilderConfig config, RenderingBackendApi actualRenderingApi, ReadOnlyMemory<Display> displaysOrderedByIndex) {
 		ArgumentNullException.ThrowIfNull(globals);
 		ArgumentNullException.ThrowIfNull(config);
 
+		_actualRenderingApi = actualRenderingApi;
 		_displaysOrderedByIndex = displaysOrderedByIndex;
 		_globals = globals;
 		_windowTitleBuffer = new InteropStringBuffer(config.MaxWindowTitleLength, addOneForNullTerminator: true);
@@ -43,7 +46,8 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 			config.Size.X,
 			config.Size.Y,
 			globalPosition.X,
-			globalPosition.Y
+			globalPosition.Y,
+			(int) _actualRenderingApi
 		).ThrowIfFailure();
 		var result = new Window(outHandle, this);
 		_activeWindows.Add(outHandle);
@@ -133,7 +137,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var localPos = GetPosition(handle);
 		_lastSetDisplayMap[handle] = newDisplay;
-		SetPosition(handle, localPos);
+		SetPosition(handle, localPos, newDisplay);
 	}
 
 	public XYPair<int> GetSize(ResourceHandle<Window> handle) {
@@ -143,20 +147,21 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		if (fsStyle is WindowFullscreenStyle.Fullscreen) {
 			GetWindowFullscreenMode(
 				handle,
-				out var width,
-				out var height,
+				out var fsWidth,
+				out var fsHeight,
 				out _
 			).ThrowIfFailure();
-			return new(width, height);
+			// Sometimes we can't get this (usually on e.g. Wayland with its weirdness when one window overlaps two displays)
+			// In that case width/height will be -1. In those cases, we will just use GetWindowSize
+			if (fsWidth >= 0 && fsHeight >= 0) return new(fsWidth, fsHeight);
 		}
-		else {
-			GetWindowSize(
-				handle,
-				out var width,
-				out var height
-			).ThrowIfFailure();
-			return new(width, height);
-		}
+		
+		GetWindowSize(
+			handle,
+			out var width,
+			out var height
+		).ThrowIfFailure();
+		return new(width, height);
 	}
 	public void SetSize(ResourceHandle<Window> handle, XYPair<int> newSize) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -168,7 +173,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		if (fsStyle is WindowFullscreenStyle.Fullscreen) {
 			var targetArea = newSize.Area;
 
-			var display = GetDisplay(handle);
+			var display = _displaysOrderedByIndex.Span[2];
 			var bestMatch = new DisplayMode(XYPair<int>.Zero, 0);
 			var bestMatchAreaDelta = targetArea;
 			var bestMatchIndex = -1;
@@ -185,16 +190,17 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 			}
 
 			if (bestMatchIndex >= 0) {
-				Console.WriteLine("BMI = " + bestMatchIndex + " (" + display.SupportedDisplayModes[bestMatchIndex] + " on " + display.GetNameAsNewStringObject() + ")");
 				SetWindowFullscreenMode(
 					handle,
 					display.Handle,
 					bestMatchIndex
 				).ThrowIfFailure();
+				
+				// Wayland requires setting the window size equal to the backbuffer, Windows stores it as a separate value
+				if (OperatingSystem.IsLinux()) newSize = display.SupportedDisplayModes[bestMatchIndex].Resolution;
 			}
 		}
-
-		Console.WriteLine("SWS = " + newSize);
+		
 		SetWindowSize(
 			handle,
 			newSize.X,
@@ -221,9 +227,11 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		).ThrowIfFailure();
 		return GetDisplay(handle).TranslateGlobalWindowPositionToDisplayLocal(new(x, y));
 	}
-	public void SetPosition(ResourceHandle<Window> handle, XYPair<int> newPosition) {
+	public void SetPosition(ResourceHandle<Window> handle, XYPair<int> newPosition) => SetPosition(handle, newPosition, GetDisplay(handle));
+	public void SetPosition(ResourceHandle<Window> handle, XYPair<int> newPosition, Display display) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var translatedPosition = GetDisplay(handle).TranslateDisplayLocalWindowPositionToGlobal(newPosition);
+		
+		var translatedPosition = display.TranslateDisplayLocalWindowPositionToGlobal(newPosition);
 		SetWindowPosition(
 			handle,
 			translatedPosition.X,
@@ -249,6 +257,9 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var existingSize = GetSize(handle);
 		var existingStyle = GetFullscreenStyle(handle);
+		
+		// Borderless just does not work atm on Wayland with SDL2; upgrade may fix it
+		if (OperatingSystem.IsLinux() && newStyle == WindowFullscreenStyle.FullscreenBorderless) newStyle = WindowFullscreenStyle.Fullscreen;
 
 		SetWindowFullscreenState(
 			handle,
@@ -319,7 +330,7 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "create_window")]
-	static extern InteropResult CreateWindow(out UIntPtr outHandle, int width, int height, int xPos, int yPos);
+	static extern InteropResult CreateWindow(out UIntPtr outHandle, int width, int height, int xPos, int yPos, int renderingApiIndex);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_window_size")]
 	static extern InteropResult GetWindowSize(UIntPtr handle, out int outWidth, out int outHeight);

@@ -10,8 +10,12 @@ deallocate_asset_buffer_delegate native_impl_init::deallocation_delegate;
 log_notify_delegate native_impl_init::log_delegate;
 
 void native_impl_init::exec_once_only_initialization() {
-	SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2"); // TODO ifdef these
+#if defined(TFFR_WIN)
+	SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
+#elif defined(TFFR_LINUX)
 	SDL_SetHint(SDL_HINT_VIDEODRIVER, "wayland,x11");
+#endif
+	
 	auto sdlInitResult = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
 	ThrowIfNotZero(sdlInitResult, "Could not initialize SDL: ", SDL_GetError());
 }
@@ -44,25 +48,33 @@ void native_impl_init::notify_of_log_msg() {
 	log_delegate();
 }
 
-void native_impl_init::on_factory_build(interop_bool enableVsync, uint32_t commandBufferSizeMb, interop_bool furtherReduceMemoryUsage) {
+void native_impl_init::on_factory_build(interop_bool enableVsync, uint32_t commandBufferSizeMb, interop_bool furtherReduceMemoryUsage, int32_t renderingApiIndex) {
 	auto config = filament::Engine::Config{
 		.commandBufferSizeMB = commandBufferSizeMb * 5U, // x5 because we allow up to 5x frame queue
 		.perRenderPassArenaSizeMB = furtherReduceMemoryUsage ? 3U : 70U,
 		.minCommandBufferSizeMB = commandBufferSizeMb,
 		.perFrameCommandsSizeMB = furtherReduceMemoryUsage ? 2U : 35U,
-		.disableVsync = enableVsync ? false : true,
+		.disableVsync = enableVsync ? false : true, // TODO add vsync toggle support for Vulkan
 	};
-
+	
+#if defined(TFFR_MACOS)
+	auto backend = filament::Engine::Backend::OPENGL;
+#elif defined(TFFR_LINUX)
+	auto backend = filament::Engine::Backend::VULKAN;
+#else
+	auto backend = (renderingApiIndex == RENDERING_API_OPENGL ? filament::Engine::Backend::OPENGL : filament::Engine::Backend::VULKAN);
+#endif
+	
 	filament_engine_ptr = filament::Engine::Builder()
-		.backend(filament::Engine::Backend::VULKAN) // TODO set this according to passed-in API, set vulkan as default
+		.backend(backend)
 		.featureLevel(filament::Engine::FeatureLevel::FEATURE_LEVEL_3)
 		.config(&config)
 		.build();
 
 	ThrowIfNull(filament_engine_ptr, "Could not initialize filament.");
 }
-StartExportedFunc(on_factory_build, interop_bool enableVsync, uint32_t commandBufferSizeMb, interop_bool furtherReduceMemoryUsage) {
-	native_impl_init::on_factory_build(enableVsync, commandBufferSizeMb, furtherReduceMemoryUsage);
+StartExportedFunc(on_factory_build, interop_bool enableVsync, uint32_t commandBufferSizeMb, interop_bool furtherReduceMemoryUsage, int32_t renderingApiIndex) {
+	native_impl_init::on_factory_build(enableVsync, commandBufferSizeMb, furtherReduceMemoryUsage, renderingApiIndex);
 	EndExportedFunc
 }
 void native_impl_init::on_factory_teardown() {

@@ -6,7 +6,10 @@ using System;
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 public readonly record struct DisplayMode(XYPair<int> Resolution, int RefreshRateHz) {
+	public XYPair<int> AspectRatio => Resolution / (int) BigInteger.GreatestCommonDivisor(Resolution.X, Resolution.Y);
+	
 	public override string ToString() {
-		return $"{Resolution.X:#} x {Resolution.Y:#} @ {RefreshRateHz}Hz";
+		var ar = AspectRatio;
+		return $"{Resolution.X:#} x {Resolution.Y:#} ({ar.X}:{ar.Y}) @ {RefreshRateHz}Hz";
 	}
 }

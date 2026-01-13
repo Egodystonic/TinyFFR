@@ -8,7 +8,7 @@ typedef SDL_Window* WindowHandle;
 
 class native_impl_window {
 public:
-	static WindowHandle create_window(int32_t width, int32_t height, int32_t xPos, int32_t yPos);
+	static WindowHandle create_window(int32_t width, int32_t height, int32_t xPos, int32_t yPos, int32_t renderingApiIndex);
 
 	static void set_window_title(WindowHandle handle, const char* newTitle);
 	static void get_window_title(WindowHandle handle, char* resultBuffer, int32_t bufferLen);

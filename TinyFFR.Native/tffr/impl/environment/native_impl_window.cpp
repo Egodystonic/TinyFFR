@@ -7,22 +7,31 @@
 
 #include "utils_and_constants.h"
 
-WindowHandle native_impl_window::create_window(int32_t width, int32_t height, int32_t xPos, int32_t yPos) {
+WindowHandle native_impl_window::create_window(int32_t width, int32_t height, int32_t xPos, int32_t yPos, int32_t renderingApiIndex) {
+#if defined(TFFR_LINUX)
+	auto windowFlags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI;
+#else
+	auto windowFlags = SDL_WINDOW_RESIZABLE;
+#endif
+	
+	if (renderingApiIndex == RENDERING_API_OPENGL) windowFlags |= SDL_WINDOW_OPENGL;
+	else windowFlags |= SDL_WINDOW_VULKAN;
+	
 	auto result = SDL_CreateWindow(
 		"TinyFFR Application", 
 		xPos, 
 		yPos, 
 		width,
 		height, 
-		SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI // TODO allow high dpi on linux only and set vulkan or ogl accordingly
+		windowFlags
 	);
 	ThrowIfNull(result, "Could not create window: ", SDL_GetError());
 	SDL_ShowWindow(result);
 	return result;
 }
-StartExportedFunc(create_window, WindowHandle* outResult, int32_t width, int32_t height, int32_t xPos, int32_t yPos) {
+StartExportedFunc(create_window, WindowHandle* outResult, int32_t width, int32_t height, int32_t xPos, int32_t yPos, int32_t renderingApiIndex) {
 	ThrowIfNull(outResult, "Window out result pointer was null.");
-	auto result = native_impl_window::create_window(width, height, xPos, yPos);
+	auto result = native_impl_window::create_window(width, height, xPos, yPos, renderingApiIndex);
 	*outResult = result;
 	EndExportedFunc
 }
@@ -125,7 +134,13 @@ StartExportedFunc(get_window_size, WindowHandle ptr, int32_t* outWidth, int32_t*
 void native_impl_window::set_window_fullscreen_display_mode(WindowHandle window, DisplayHandle display, int32_t modeIndex) {
 	ThrowIfNull(window, "Window was null.");
 	SDL_DisplayMode mode;
-	ThrowIfNotZero(SDL_GetDisplayMode(display, modeIndex, &mode), "Could not get display mode data: ", SDL_GetError());
+
+	// This can fail on Wayland if a window is overlapping two displays (or SDL fails to 'guess' the display correctly)
+	if (SDL_GetDisplayMode(display, modeIndex, &mode) != 0) {
+		Log("Could not get display mode data: ", SDL_GetError());
+		return;
+	}
+
 	ThrowIfNotZero(SDL_SetWindowDisplayMode(window, &mode), "Could not set window display mode: ", SDL_GetError());
 }
 StartExportedFunc(set_window_fullscreen_display_mode, WindowHandle window, DisplayHandle display, int32_t modeIndex) {
@@ -138,7 +153,16 @@ void native_impl_window::get_window_fullscreen_display_mode(WindowHandle handle,
 	ThrowIfNull(outHeight, "Out height pointer was null.");
 	ThrowIfNull(outRefreshRateHz, "Out refresh rate pointer was null.");
 
+	// This can fail on Wayland if a window is overlapping two displays (or SDL fails to 'guess' the display correctly)
 	SDL_DisplayMode mode;
+	if (SDL_GetWindowDisplayMode(handle, &mode) != 0) {
+		Log("Could not get display mode data: ", SDL_GetError());
+		*outWidth = -1;
+		*outHeight = -1;
+		*outRefreshRateHz = -1;
+		return;
+	}
+
 	ThrowIfNotZero(SDL_GetWindowDisplayMode(handle, &mode), "Could not get display mode data: ", SDL_GetError());
 	*outWidth = mode.w;
 	*outHeight = mode.h;

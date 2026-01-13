@@ -7,7 +7,8 @@ namespace Egodystonic.TinyFFR.Rendering.Local;
 
 public enum RenderingBackendApi {
 	SystemRecommended = 0,
-	OpenGl = 1
+	OpenGl = 1,
+	Vulkan = 2
 }
 
 public sealed record RendererBuilderConfig {
@@ -22,5 +23,11 @@ public sealed record RendererBuilderConfig {
 
 	public bool EnableVSync { get; init; } = true;
 
-	internal RenderingBackendApi GetActualRenderingApi() => RenderingBackendApi.OpenGl; // TODO once we add support for more APIs this will return the recommended API if SystemRecommended
+	internal RenderingBackendApi GetActualRenderingApi() {
+		if (RenderingApi != RenderingBackendApi.SystemRecommended) return RenderingApi;
+		
+		if (OperatingSystem.IsWindows()) return RenderingBackendApi.Vulkan;
+		else if (OperatingSystem.IsLinux()) return RenderingBackendApi.Vulkan;
+		else return RenderingBackendApi.OpenGl;
+	}
 }

@@ -41,14 +41,11 @@ void native_impl_render::allocate_swap_chain(WindowHandle window, SwapChainHandl
 			*outSwapChain = filament_engine->createSwapChain((void*) nativeWindow, 0UL);
 			break;
 		}
-		case SDL_SYSWM_WAYLAND: { // TODO make sure this works with multiple windows
+		case SDL_SYSWM_WAYLAND: {
 			int width = 0;
 			int height = 0;
 			SDL_GetWindowSizeInPixels(window, &width, &height);
 
-			// Static is used here to allocate the struct pointer for the lifetime of the program.
-			// Without static the valid struct quickly goes out of scope, and ends with seemingly
-			// random segfaults. We must update the values on each call.
 			static struct {
 				struct wl_display *display;
 				struct wl_surface *surface;
