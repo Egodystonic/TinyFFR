@@ -681,6 +681,9 @@ struct VulkanPlatformPrivate {
 
     bool mSharedContext = false;
     bool mForceXCBSwapchain = false;
+    // === Begin TinyFFR Alteration
+    bool mDisableVSync = false;
+    // === End TinyFFR Alteration
 };
 
 void VulkanPlatform::terminate() {
@@ -720,6 +723,10 @@ Driver* VulkanPlatform::createDriver(void* sharedContext,
     }
 
     VulkanContext& context = mImpl->mContext;
+
+    // === Begin TinyFFR Alteration
+    mImpl->mDisableVSync = driverConfig.disableVsync;
+    // === End TinyFFR Alteration
 
     // Pass along relevant driver config (feature flags)
     context.mStagingBufferBypassEnabled = driverConfig.vulkanEnableStagingBufferBypass;
@@ -975,7 +982,9 @@ SwapChainPtr VulkanPlatform::createSwapChain(void* nativeWindow, uint64_t flags,
     // The VulkanPlatformSurfaceSwapChain now `owns` the surface.
     VulkanPlatformSurfaceSwapChain* swapchain = new VulkanPlatformSurfaceSwapChain(mImpl->mContext,
             mImpl->mPhysicalDevice, mImpl->mDevice, mImpl->mGraphicsQueue, mImpl->mInstance,
-            surface, fallbackExtent, nativeWindow, flags);
+            // === Begin TinyFFR Alteration ===
+            surface, fallbackExtent, nativeWindow, flags, mImpl->mDisableVSync);
+            // === End TinyFFR Alteration ===
     return swapchain;
 }
 

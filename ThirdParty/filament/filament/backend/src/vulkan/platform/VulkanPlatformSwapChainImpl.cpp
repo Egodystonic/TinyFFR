@@ -143,7 +143,9 @@ bool VulkanPlatformSwapChainBase::queryFrameTimestamps(uint64_t frameId,
 
 VulkanPlatformSurfaceSwapChain::VulkanPlatformSurfaceSwapChain(VulkanContext const& context,
         VkPhysicalDevice physicalDevice, VkDevice device, VkQueue queue, VkInstance instance,
-        VkSurfaceKHR surface, VkExtent2D fallbackExtent, void* nativeWindow, uint64_t flags)
+        // === Begin TinyFFR Alteration ===
+        VkSurfaceKHR surface, VkExtent2D fallbackExtent, void* nativeWindow, uint64_t flags, bool disableVSync)
+        // === End TinyFFR Alteration ===
     : VulkanPlatformSwapChainBase(context, device, queue),
       mInstance(instance),
       mPhysicalDevice(physicalDevice),
@@ -152,6 +154,9 @@ VulkanPlatformSurfaceSwapChain::VulkanPlatformSurfaceSwapChain(VulkanContext con
       mUsesRGB((flags & backend::SWAP_CHAIN_CONFIG_SRGB_COLORSPACE) != 0),
       mHasStencil((flags & backend::SWAP_CHAIN_HAS_STENCIL_BUFFER) != 0),
       mIsProtected((flags & backend::SWAP_CHAIN_CONFIG_PROTECTED_CONTENT) != 0),
+      // === Begin TinyFFR Alteration ===
+      mDisableVSync(disableVSync),
+      // === End TinyFFR Alteration ===
       mNativeWindow(nativeWindow) {
     assert_invariant(surface);
     create();
@@ -216,16 +221,26 @@ VkResult VulkanPlatformSurfaceSwapChain::create() {
     FILAMENT_CHECK_POSTCONDITION(surfaceFormat.format != VK_FORMAT_UNDEFINED)
             << "Cannot find suitable swapchain format";
 
-    // Verify that our chosen present mode is supported. In practice all devices support the FIFO
-    // mode, but we check for it anyway for completeness.  (and to avoid validation warnings)
-    VkPresentModeKHR const desiredPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+    // === Begin TinyFFR Alteration ===
     FixedCapacityVector<VkPresentModeKHR> presentModes = fvkutils::enumerate(
-            vkGetPhysicalDeviceSurfacePresentModesKHR, mPhysicalDevice, mSurface);
+        vkGetPhysicalDeviceSurfacePresentModesKHR, mPhysicalDevice, mSurface);
 
-    bool const foundSuitablePresentMode = std::find(presentModes.begin(), presentModes.end(),
-                                            desiredPresentMode) != presentModes.end();
-    FILAMENT_CHECK_POSTCONDITION(foundSuitablePresentMode)
-            << "Desired present mode is not supported by this device.";
+    VkPresentModeKHR desiredPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+
+    if (mDisableVSync) {
+        desiredPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+        bool foundMailboxMode = std::find(presentModes.begin(), presentModes.end(), desiredPresentMode) != presentModes.end();
+
+        if (!foundMailboxMode) {
+            desiredPresentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+            bool foundImmediateMode = std::find(presentModes.begin(), presentModes.end(), desiredPresentMode) != presentModes.end();
+
+            if (!foundImmediateMode) {
+                desiredPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+            }
+        }
+    }
+    // === End TinyFFR Alteration ===
 
     // Create the low-level swap chain.
     if (caps.currentExtent.width == VULKAN_UNDEFINED_EXTENT
@@ -287,6 +302,9 @@ VkResult VulkanPlatformSurfaceSwapChain::create() {
            << "swapchain-size=" << mSwapChainBundle.colors.size() << ", "
            << "identity-transform=" << (caps.currentTransform == 1) << ", "
            << "depth=" << mSwapChainBundle.depthFormat << ", "
+           // === Begin TinyFFR Alteration ===
+           << "present-mode=" << (desiredPresentMode == VK_PRESENT_MODE_MAILBOX_KHR ? "mailbox" : (desiredPresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR ? "immediate" : "fifo")) << ", "
+           // === End TinyFFR Alteration ===
            << "protected=" << mSwapChainBundle.isProtected;
 
     VkSemaphoreCreateInfo const semaphoreCreateInfo = {
