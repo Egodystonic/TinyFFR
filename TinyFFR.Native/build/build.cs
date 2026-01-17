@@ -25,7 +25,7 @@ void ExecuteLinux(string nativeProjDir, string config, List<string> thirdPartyBi
 	Environment.SetEnvironmentVariable("CXX", "/usr/bin/clang++");
 	Environment.SetEnvironmentVariable("CXXFLAGS", "-stdlib=libc++");
 
-	var createFilesArgs = $"\"{Path.Combine(nativeProjDir, "CMakeLists.txt")}\" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++";
+	var createFilesArgs = $"\"{Path.Combine(nativeProjDir, "CMakeLists.txt")}\" -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE={config} -DCMAKE_CXX_COMPILER=clang++";
 	Console.WriteLine($"> cmake {createFilesArgs}");
 	var cmakeCreateFiles = Process.Start("cmake", createFilesArgs);
 	cmakeCreateFiles.WaitForExit();
@@ -54,7 +54,7 @@ void ExecuteLinux(string nativeProjDir, string config, List<string> thirdPartyBi
 void ExecuteMacOS(string nativeProjDir, string config, List<string> thirdPartyBinaryFiles, string ultimateOutputDir) {
 	const string ExpectedBuiltLibraryFileName = "libTinyFFR.Native.dylib";
 
-	var createFilesArgs = $"\"{Path.Combine(nativeProjDir, "CMakeLists.txt")}\"";
+	var createFilesArgs = $"\"{Path.Combine(nativeProjDir, "CMakeLists.txt")}\" -DCMAKE_BUILD_TYPE={config}";
 	Console.WriteLine($"> cmake {createFilesArgs}");
 	var cmakeCreateFiles = Process.Start("cmake", createFilesArgs);
 	cmakeCreateFiles.WaitForExit();

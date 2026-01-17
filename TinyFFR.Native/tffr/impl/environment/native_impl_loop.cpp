@@ -172,7 +172,6 @@ void native_impl_loop::iterate_events(int32_t* outNumKbmEventsWritten, int32_t* 
 				break;
 			}
 		
-		
 			case SDL_EventType::SDL_MOUSEBUTTONDOWN:
 			case SDL_EventType::SDL_MOUSEBUTTONUP: {
 				auto mouseEvent = event.button;

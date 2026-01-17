@@ -36,7 +36,7 @@ void native_impl_render::allocate_swap_chain(WindowHandle window, SwapChainHandl
 	*outSwapChain = filament_engine->createSwapChain(hwnd, 0UL);
 #elif defined(TFFR_LINUX)
 	switch (wmInfo.subsystem) {
-		case SDL_SYSWM_X11: { // TODO Try and fake X11 support with render target outputs and copying
+		case SDL_SYSWM_X11: { // TODO try and fake X11 support with render target outputs and copying
 			auto nativeWindow = (Window) wmInfo.info.x11.window;
 			*outSwapChain = filament_engine->createSwapChain((void*) nativeWindow, 0UL);
 			break;

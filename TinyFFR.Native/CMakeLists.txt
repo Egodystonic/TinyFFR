@@ -71,22 +71,25 @@ elseif(UNIX AND NOT APPLE)
 	target_compile_definitions(TinyFFR.Native PRIVATE TFFR_LINUX)
     target_link_libraries(TinyFFR.Native 
 		PRIVATE 
-			${PROJECT_SOURCE_DIR}/third_party/binaries/assimp/release/libassimp.so
-			${PROJECT_SOURCE_DIR}/third_party/binaries/sdl/release/libSDL2.so
-			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libfilament.a
-			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libbackend.a
-			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libbluegl.a
-			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libbluevk.a
-			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libfilabridge.a
-			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libfilaflat.a
-			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libutils.a
-			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libgeometry.a
-			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libsmol-v.a
-			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libibl.a
-			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libabseil.a
-			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libktxreader.a
-			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libimage.a
-			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/release/libzstd.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/assimp/$<LOWER_CASE:$<CONFIG>>/libassimp.so
+			debug
+				${PROJECT_SOURCE_DIR}/third_party/binaries/sdl/$<LOWER_CASE:$<CONFIG>>/libSDL2d.so
+			optimized
+				${PROJECT_SOURCE_DIR}/third_party/binaries/sdl/$<LOWER_CASE:$<CONFIG>>/libSDL2.so
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/$<LOWER_CASE:$<CONFIG>>/libfilament.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/$<LOWER_CASE:$<CONFIG>>/libbackend.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/$<LOWER_CASE:$<CONFIG>>/libbluegl.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/$<LOWER_CASE:$<CONFIG>>/libbluevk.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/$<LOWER_CASE:$<CONFIG>>/libfilabridge.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/$<LOWER_CASE:$<CONFIG>>/libfilaflat.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/$<LOWER_CASE:$<CONFIG>>/libutils.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/$<LOWER_CASE:$<CONFIG>>/libgeometry.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/$<LOWER_CASE:$<CONFIG>>/libsmol-v.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/$<LOWER_CASE:$<CONFIG>>/libibl.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/$<LOWER_CASE:$<CONFIG>>/libabseil.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/$<LOWER_CASE:$<CONFIG>>/libktxreader.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/$<LOWER_CASE:$<CONFIG>>/libimage.a
+			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/$<LOWER_CASE:$<CONFIG>>/libzstd.a
 	)
 elseif(APPLE)
 	target_compile_definitions(TinyFFR.Native PRIVATE TFFR_MACOS)

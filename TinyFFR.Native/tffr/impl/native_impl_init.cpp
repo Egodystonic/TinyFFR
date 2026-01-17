@@ -18,6 +18,8 @@ void native_impl_init::exec_once_only_initialization() {
 	
 	auto sdlInitResult = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
 	ThrowIfNotZero(sdlInitResult, "Could not initialize SDL: ", SDL_GetError());
+	
+	SDL_StopTextInput(); // Required to stop SDL sending some key inputs as SDL_TEXTINPUT events instead of SDL_KEYDOWN etc
 }
 StartExportedFunc(exec_once_only_initialization) {
 	native_impl_init::exec_once_only_initialization();
