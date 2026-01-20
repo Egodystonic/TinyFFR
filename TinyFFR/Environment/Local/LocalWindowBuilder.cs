@@ -168,44 +168,110 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 
 		if (newSize.X < 0) throw new ArgumentOutOfRangeException(nameof(newSize), newSize, $"'{nameof(newSize.X)}' value must be positive or 0.");
 		if (newSize.Y < 0) throw new ArgumentOutOfRangeException(nameof(newSize), newSize, $"'{nameof(newSize.Y)}' value must be positive or 0.");
+		
+		// =========== Linux =========== 
+		if (OperatingSystem.IsLinux()) {
+			var fsStyle = GetFullscreenStyle(handle);
+			
+			if (fsStyle is WindowFullscreenStyle.Fullscreen or WindowFullscreenStyle.FullscreenBorderless) {
+				var targetArea = newSize.Area;
 
-		var fsStyle = GetFullscreenStyle(handle);
-		if (fsStyle is WindowFullscreenStyle.Fullscreen) {
-			var targetArea = newSize.Area;
+				var display = GetDisplay(handle);
+				var bestMatch = new DisplayMode(XYPair<int>.Zero, 0);
+				var bestMatchAreaDelta = targetArea;
+				var bestMatchIndex = -1;
 
-			var display = _displaysOrderedByIndex.Span[2];
-			var bestMatch = new DisplayMode(XYPair<int>.Zero, 0);
-			var bestMatchAreaDelta = targetArea;
-			var bestMatchIndex = -1;
+				for (var i = 0; i < display.SupportedDisplayModes.Length; ++i) {
+					var thisMode = display.SupportedDisplayModes[i];
+					var thisModeArea = display.SupportedDisplayModes[i].Resolution.Area;
+					var thisModeAreaDelta = Math.Abs(thisModeArea - targetArea);
+					if (thisModeAreaDelta < bestMatchAreaDelta || (thisModeAreaDelta == bestMatchAreaDelta && thisMode.RefreshRateHz > bestMatch.RefreshRateHz)) {
+						bestMatch = thisMode;
+						bestMatchAreaDelta = thisModeAreaDelta;
+						bestMatchIndex = i;
+					}
+				}
 
-			for (var i = 0; i < display.SupportedDisplayModes.Length; ++i) {
-				var thisMode = display.SupportedDisplayModes[i];
-				var thisModeArea = display.SupportedDisplayModes[i].Resolution.Area;
-				var thisModeAreaDelta = Math.Abs(thisModeArea - targetArea);
-				if (thisModeAreaDelta < bestMatchAreaDelta || (thisModeAreaDelta == bestMatchAreaDelta && thisMode.RefreshRateHz > bestMatch.RefreshRateHz)) {
-					bestMatch = thisMode;
-					bestMatchAreaDelta = thisModeAreaDelta;
-					bestMatchIndex = i;
+				if (bestMatchIndex >= 0) {
+					newSize = display.SupportedDisplayModes[bestMatchIndex].Resolution;
+					if (newSize == display.HighestSupportedResolutionMode.Resolution) {
+						SetWindowFullscreenState(
+							handle,
+							false,
+							false
+						).ThrowIfFailure();
+						
+						SetWindowSize(
+							handle,
+							1,
+							1
+						).ThrowIfFailure();
+						
+						SetWindowFullscreenState(
+							handle,
+							true,
+							true
+						).ThrowIfFailure();
+						return;
+					}
+					
+					SetWindowFullscreenState(
+						handle,
+						true,
+						false
+					).ThrowIfFailure();
+					
+					SetWindowFullscreenMode(
+						handle,
+						display.Handle,
+						bestMatchIndex
+					).ThrowIfFailure();
 				}
 			}
 
-			if (bestMatchIndex >= 0) {
-				SetWindowFullscreenMode(
-					handle,
-					display.Handle,
-					bestMatchIndex
-				).ThrowIfFailure();
-				
-				// Wayland requires setting the window size equal to the backbuffer, Windows stores it as a separate value
-				if (OperatingSystem.IsLinux()) newSize = display.SupportedDisplayModes[bestMatchIndex].Resolution;
-			}
+			SetWindowSize(
+				handle,
+				newSize.X,
+				newSize.Y
+			).ThrowIfFailure();
 		}
-		
-		SetWindowSize(
-			handle,
-			newSize.X,
-			newSize.Y
-		).ThrowIfFailure();
+		// =========== Windows / MacOS ===========
+		else {
+			var fsStyle = GetFullscreenStyle(handle);
+			if (fsStyle is WindowFullscreenStyle.Fullscreen) {
+				var targetArea = newSize.Area;
+
+				var display = GetDisplay(handle);
+				var bestMatch = new DisplayMode(XYPair<int>.Zero, 0);
+				var bestMatchAreaDelta = targetArea;
+				var bestMatchIndex = -1;
+
+				for (var i = 0; i < display.SupportedDisplayModes.Length; ++i) {
+					var thisMode = display.SupportedDisplayModes[i];
+					var thisModeArea = display.SupportedDisplayModes[i].Resolution.Area;
+					var thisModeAreaDelta = Math.Abs(thisModeArea - targetArea);
+					if (thisModeAreaDelta < bestMatchAreaDelta || (thisModeAreaDelta == bestMatchAreaDelta && thisMode.RefreshRateHz > bestMatch.RefreshRateHz)) {
+						bestMatch = thisMode;
+						bestMatchAreaDelta = thisModeAreaDelta;
+						bestMatchIndex = i;
+					}
+				}
+
+				if (bestMatchIndex >= 0) {
+					SetWindowFullscreenMode(
+						handle,
+						display.Handle,
+						bestMatchIndex
+					).ThrowIfFailure();
+				}
+			}
+
+			SetWindowSize(
+				handle,
+				newSize.X,
+				newSize.Y
+			).ThrowIfFailure();
+		}
 	}
 	public XYPair<int> GetViewportDimensions(ResourceHandle<Window> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -258,15 +324,41 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		var existingSize = GetSize(handle);
 		var existingStyle = GetFullscreenStyle(handle);
 		
-		// Borderless just does not work atm on Wayland with SDL2; upgrade may fix it
-		if (OperatingSystem.IsLinux() && newStyle == WindowFullscreenStyle.FullscreenBorderless) newStyle = WindowFullscreenStyle.Fullscreen;
-
+		// Wayland permits only borderless mode if you want the native resolution; and only native resolution as a precursor to borderless
+		if (OperatingSystem.IsLinux()) {
+			var curVpSizeIsMaxRes = GetViewportDimensions(handle) == GetDisplay(handle).HighestSupportedResolutionMode.Resolution;
+			if (newStyle is WindowFullscreenStyle.Fullscreen && curVpSizeIsMaxRes) {
+				newStyle = WindowFullscreenStyle.FullscreenBorderless;
+			}
+			else if (newStyle is WindowFullscreenStyle.FullscreenBorderless && !curVpSizeIsMaxRes) {
+				SetWindowFullscreenState(
+					handle,
+					false,
+					false
+				).ThrowIfFailure();
+				
+				SetWindowSize(
+					handle,
+					1,
+					1
+				).ThrowIfFailure();
+				
+				SetWindowFullscreenState(
+					handle,
+					true,
+					true
+				).ThrowIfFailure();
+				
+				return;
+			}
+		}
+		
 		SetWindowFullscreenState(
 			handle,
 			newStyle != WindowFullscreenStyle.NotFullscreen,
 			newStyle == WindowFullscreenStyle.FullscreenBorderless
-		).ThrowIfFailure();
-
+		).ThrowIfFailure();	
+		
 		// If we're swapping between fullscreen and non-fullscreen styles we have to re-set the size according to the right method
 		if ((newStyle == WindowFullscreenStyle.Fullscreen) != (existingStyle == WindowFullscreenStyle.Fullscreen)) {
 			SetSize(handle, existingSize);

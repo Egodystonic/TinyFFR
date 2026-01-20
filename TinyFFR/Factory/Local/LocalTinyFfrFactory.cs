@@ -57,7 +57,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 
 	IApplicationLoopBuilder ITinyFfrFactory.ApplicationLoopBuilder => ApplicationLoopBuilder;
 
-	public LocalTinyFfrFactory(LocalTinyFfrFactoryConfig? factoryConfig = null, WindowBuilderConfig? windowBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null, RendererBuilderConfig? rendererBuilderConfig = null) {
+	public unsafe LocalTinyFfrFactory(LocalTinyFfrFactoryConfig? factoryConfig = null, WindowBuilderConfig? windowBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null, RendererBuilderConfig? rendererBuilderConfig = null) {
 		if (_instance != null) throw new InvalidOperationException($"Only one {nameof(LocalTinyFfrFactory)} may be live at any given time. Dispose the previous instance before creating another one.");
 
 		LocalFileSystemUtils.AttemptToEnsureApplicationDataFolderExists();
@@ -76,7 +76,8 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 				_ => 50U
 			},
 			factoryConfig.MemoryUsageRubric == MemoryUsageRubric.UseSignificantlyLessMemory,
-			(int) rendererBuilderConfig.GetActualRenderingApi()
+			(int) rendererBuilderConfig.GetActualRenderingApi(),
+			&LocalRendererBuilder.RenewSwapchains
 		).ThrowIfFailure();
 
 		var resourceGroupProviderRef = new DeferredRef<LocalResourceGroupImplProvider>();
@@ -157,7 +158,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "on_factory_build")]
-	static extern InteropResult OnFactoryBuild(InteropBool enableVSync, uint commandBufferSizeMb, InteropBool furtherReduceMemoryUsage, int renderingApiIndex);
+	static extern unsafe InteropResult OnFactoryBuild(InteropBool enableVSync, uint commandBufferSizeMb, InteropBool furtherReduceMemoryUsage, int renderingApiIndex, delegate* unmanaged<void> swapchainRenewalHintDelegate);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "on_factory_teardown")]
 	static extern InteropResult OnFactoryTeardown();

@@ -79,7 +79,7 @@ struct VulkanPlatformSurfaceSwapChain : public VulkanPlatformSwapChainBase {
     VulkanPlatformSurfaceSwapChain(VulkanContext const& context, VkPhysicalDevice physicalDevice,
             VkDevice device, VkQueue queue, VkInstance instance, VkSurfaceKHR surface,
             // === Begin TinyFFR Alteration ===
-            VkExtent2D fallbackExtent, void* nativeWindow, uint64_t flags, bool disableVSync);
+            VkExtent2D fallbackExtent, void* nativeWindow, uint64_t flags, bool disableVSync, swapchain_recreation_notify_delegate swapchainRecreationHintCallback);
             // === End TinyFFR Alteration ===
 
     ~VulkanPlatformSurfaceSwapChain() override;
@@ -122,6 +122,7 @@ private:
     bool const mIsProtected = false;
     // === Begin TinyFFR Alteration ===
     bool const mDisableVSync = false;
+    swapchain_recreation_notify_delegate const mSwapchainRecreationHintCallback = nullptr;
     // === End TinyFFR Alteration ===
     bool mSuboptimal;
     UTILS_UNUSED void* mNativeWindow = nullptr;

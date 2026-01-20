@@ -50,13 +50,14 @@ void native_impl_init::notify_of_log_msg() {
 	log_delegate();
 }
 
-void native_impl_init::on_factory_build(interop_bool enableVsync, uint32_t commandBufferSizeMb, interop_bool furtherReduceMemoryUsage, int32_t renderingApiIndex) {
+void native_impl_init::on_factory_build(interop_bool enableVsync, uint32_t commandBufferSizeMb, interop_bool furtherReduceMemoryUsage, int32_t renderingApiIndex, filament::backend::swapchain_recreation_notify_delegate swapchainRecreationHintCallback) {
 	auto config = filament::Engine::Config{
 		.commandBufferSizeMB = commandBufferSizeMb * 5U, // x5 because we allow up to 5x frame queue
 		.perRenderPassArenaSizeMB = furtherReduceMemoryUsage ? 3U : 70U,
 		.minCommandBufferSizeMB = commandBufferSizeMb,
 		.perFrameCommandsSizeMB = furtherReduceMemoryUsage ? 2U : 35U,
 		.disableVsync = enableVsync ? false : true,
+		.swapchainRecreationHintCallback = swapchainRecreationHintCallback
 	};
 	
 #if defined(TFFR_MACOS)
@@ -75,8 +76,8 @@ void native_impl_init::on_factory_build(interop_bool enableVsync, uint32_t comma
 
 	ThrowIfNull(filament_engine_ptr, "Could not initialize filament.");
 }
-StartExportedFunc(on_factory_build, interop_bool enableVsync, uint32_t commandBufferSizeMb, interop_bool furtherReduceMemoryUsage, int32_t renderingApiIndex) {
-	native_impl_init::on_factory_build(enableVsync, commandBufferSizeMb, furtherReduceMemoryUsage, renderingApiIndex);
+StartExportedFunc(on_factory_build, interop_bool enableVsync, uint32_t commandBufferSizeMb, interop_bool furtherReduceMemoryUsage, int32_t renderingApiIndex, filament::backend::swapchain_recreation_notify_delegate swapchainRecreationHintCallback) {
+	native_impl_init::on_factory_build(enableVsync, commandBufferSizeMb, furtherReduceMemoryUsage, renderingApiIndex, swapchainRecreationHintCallback);
 	EndExportedFunc
 }
 void native_impl_init::on_factory_teardown() {

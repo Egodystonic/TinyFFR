@@ -683,6 +683,7 @@ struct VulkanPlatformPrivate {
     bool mForceXCBSwapchain = false;
     // === Begin TinyFFR Alteration
     bool mDisableVSync = false;
+    swapchain_recreation_notify_delegate mSwapchainRecreationHintCallback = nullptr;
     // === End TinyFFR Alteration
 };
 
@@ -726,6 +727,7 @@ Driver* VulkanPlatform::createDriver(void* sharedContext,
 
     // === Begin TinyFFR Alteration
     mImpl->mDisableVSync = driverConfig.disableVsync;
+    mImpl->mSwapchainRecreationHintCallback = driverConfig.swapchainRecreationHintCallback;
     // === End TinyFFR Alteration
 
     // Pass along relevant driver config (feature flags)
@@ -983,7 +985,7 @@ SwapChainPtr VulkanPlatform::createSwapChain(void* nativeWindow, uint64_t flags,
     VulkanPlatformSurfaceSwapChain* swapchain = new VulkanPlatformSurfaceSwapChain(mImpl->mContext,
             mImpl->mPhysicalDevice, mImpl->mDevice, mImpl->mGraphicsQueue, mImpl->mInstance,
             // === Begin TinyFFR Alteration ===
-            surface, fallbackExtent, nativeWindow, flags, mImpl->mDisableVSync);
+            surface, fallbackExtent, nativeWindow, flags, mImpl->mDisableVSync, mImpl->mSwapchainRecreationHintCallback);
             // === End TinyFFR Alteration ===
     return swapchain;
 }

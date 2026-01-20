@@ -144,7 +144,7 @@ bool VulkanPlatformSwapChainBase::queryFrameTimestamps(uint64_t frameId,
 VulkanPlatformSurfaceSwapChain::VulkanPlatformSurfaceSwapChain(VulkanContext const& context,
         VkPhysicalDevice physicalDevice, VkDevice device, VkQueue queue, VkInstance instance,
         // === Begin TinyFFR Alteration ===
-        VkSurfaceKHR surface, VkExtent2D fallbackExtent, void* nativeWindow, uint64_t flags, bool disableVSync)
+        VkSurfaceKHR surface, VkExtent2D fallbackExtent, void* nativeWindow, uint64_t flags, bool disableVSync, swapchain_recreation_notify_delegate swapchainRecreationHintCallback)
         // === End TinyFFR Alteration ===
     : VulkanPlatformSwapChainBase(context, device, queue),
       mInstance(instance),
@@ -156,6 +156,7 @@ VulkanPlatformSurfaceSwapChain::VulkanPlatformSurfaceSwapChain(VulkanContext con
       mIsProtected((flags & backend::SWAP_CHAIN_CONFIG_PROTECTED_CONTENT) != 0),
       // === Begin TinyFFR Alteration ===
       mDisableVSync(disableVSync),
+      mSwapchainRecreationHintCallback(swapchainRecreationHintCallback),
       // === End TinyFFR Alteration ===
       mNativeWindow(nativeWindow) {
     assert_invariant(surface);
@@ -285,8 +286,13 @@ VkResult VulkanPlatformSurfaceSwapChain::create() {
             .oldSwapchain = mSwapchain,
     };
     VkResult result = vkCreateSwapchainKHR(mDevice, &createInfo, VKALLOC, &mSwapchain);
-    FILAMENT_CHECK_POSTCONDITION(result == VK_SUCCESS) << "vkCreateSwapchainKHR failed."
+    // === Begin TinyFFR Alteration ===
+    FILAMENT_CHECK_POSTCONDITION(result == VK_SUCCESS || result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) << "vkCreateSwapchainKHR failed."
                                                        << " error=" << static_cast<int32_t>(result);
+    if (mSwapchainRecreationHintCallback != nullptr && (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)) {
+        mSwapchainRecreationHintCallback();
+    }
+    // === End TinyFFR Alteration ===
 
     mSwapChainBundle.colors = fvkutils::enumerate(vkGetSwapchainImagesKHR, mDevice, mSwapchain);
     mSwapChainBundle.colorFormat = surfaceFormat.format;
@@ -304,6 +310,7 @@ VkResult VulkanPlatformSurfaceSwapChain::create() {
            << "depth=" << mSwapChainBundle.depthFormat << ", "
            // === Begin TinyFFR Alteration ===
            << "present-mode=" << (desiredPresentMode == VK_PRESENT_MODE_MAILBOX_KHR ? "mailbox" : (desiredPresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR ? "immediate" : "fifo")) << ", "
+           << "result=" << result << ", "
            // === End TinyFFR Alteration ===
            << "protected=" << mSwapChainBundle.isProtected;
 
@@ -333,6 +340,10 @@ VkResult VulkanPlatformSurfaceSwapChain::acquire(VulkanPlatform::ImageSyncData* 
     if (result == VK_SUBOPTIMAL_KHR && !mSuboptimal) {
         FVK_LOGW << "Vulkan Driver: Suboptimal swap chain.";
         mSuboptimal = true;
+    }
+
+    if (mSwapchainRecreationHintCallback != nullptr && (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)) {
+        mSwapchainRecreationHintCallback();
     }
     return result;
 }

@@ -422,6 +422,7 @@ public:
 
         // === Begin TinyFFR Alteration ===
         bool disableVsync = false;
+        UTILS_NULLABLE backend::swapchain_recreation_notify_delegate swapchainRecreationHintCallback = nullptr;
         // === End TinyFFR Alteration ===
         
         /**

@@ -36,6 +36,10 @@ namespace filament::backend {
 class CallbackHandler;
 class Driver;
 
+// === Begin TinyFFR Alteration ===
+typedef void(*swapchain_recreation_notify_delegate)();
+// === End TinyFFR Alteration ===
+
 /**
  * Platform is an interface that abstracts how the backend (also referred to as Driver) is
  * created. The backend provides several common Platform concrete implementations, which are
@@ -335,6 +339,7 @@ public:
 
         // === Begin TinyFFR Alteration ===
         bool disableVsync = false;
+        UTILS_NULLABLE swapchain_recreation_notify_delegate swapchainRecreationHintCallback = nullptr;
         // === End TinyFFR Alteration ===
         
         /**

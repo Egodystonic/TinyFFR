@@ -115,6 +115,7 @@ backend::Platform::DriverConfig getDriverConfig(FEngine* instance) {
                 instance->getConfig().metalDisablePanicOnDrawableFailure,
         // === Begin TinyFFR Alteration ===
         .disableVsync = instance->getConfig().disableVsync,
+        .swapchainRecreationHintCallback = instance->getConfig().swapchainRecreationHintCallback,
         // === End TinyFFR Alteration ===
         .gpuContextPriority = instance->getConfig().gpuContextPriority,
         .vulkanEnableStagingBufferBypass =

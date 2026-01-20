@@ -11,7 +11,9 @@ using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.World;
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using Egodystonic.TinyFFR.Rendering.Local;
 using static System.Formats.Asn1.AsnWriter;
 
@@ -69,7 +71,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		public static bool operator !=(RenderTargetUnion left, RenderTargetUnion right) => !left.Equals(right);
 	}
 	
-	readonly record struct TargetSpecificData(UIntPtr RendererPtr, UIntPtr? SwapChainPtr);
+	readonly record struct TargetSpecificData(UIntPtr RendererPtr, UIntPtr? SwapChainPtr, bool SwapchainShouldBeRenewed);
 	readonly record struct ViewportData(UIntPtr Handle, XYPair<int> CurrentSize);
 	readonly record struct RendererData(Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, bool EmitFences, RenderQualityConfig Quality);
 	readonly unsafe struct OutputBufferCallbackData {
@@ -92,6 +94,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	const string SnapshotBufferName = "Snapshot Buffer";
 	const string SnapshotRendererName = "Snapshot Renderer";
 
+	static readonly Lock _loadedTargetDataMutationLock = new();
+	static readonly ArrayPoolBackedVector<LocalRendererBuilder> _buildersWithPotentialLoadedTargets = new();
 	static readonly ArrayPoolBackedMap<nuint, (LocalRendererBuilder Builder, ResourceHandle<RenderOutputBuffer> BufferHandle, OutputBufferCallbackData Callbacks)> _pendingRenderTargetReadbacks = new();
 	readonly ArrayPoolBackedMap<RenderTargetUnion, TargetSpecificData> _loadedTargets = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<RenderOutputBuffer>, OutputBufferData> _loadedBuffers = new();
@@ -161,6 +165,9 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		_config = config;
 		_renderOutputBufferImplProvider = new(this);
 		_textureImplProvider = new(this);
+		lock (_loadedTargetDataMutationLock) {
+			_buildersWithPotentialLoadedTargets.Add(this);
+		}
 	}
 
 	public Renderer CreateRenderer<TRenderTarget>(Scene scene, Camera camera, TRenderTarget renderTarget, in RendererCreationConfig config) where TRenderTarget : IRenderTarget, IResource<TRenderTarget> {
@@ -180,7 +187,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 				out var rendererHandle
 			).ThrowIfFailure();
 
-			@this._loadedTargets.Add(result, new(rendererHandle, swapChainHandle));
+			@this._loadedTargets.Add(result, new(rendererHandle, swapChainHandle, false));
 			return result;
 		}
 		static RenderTargetUnion SetUpBufferRenderer(LocalRendererBuilder @this, RenderOutputBuffer buffer) {
@@ -191,15 +198,18 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 			AllocateRenderer(
 				out var rendererHandle
 			).ThrowIfFailure();
-			@this._loadedTargets.Add(result, new(rendererHandle, null));
+			@this._loadedTargets.Add(result, new(rendererHandle, null, false));
 			return result;
 		}
 
-		var rtu = renderTarget switch {
-			Window w => SetUpWindowRenderer(this, w),
-			RenderOutputBuffer b => SetUpBufferRenderer(this, b),
-			_ => throw new InvalidOperationException($"{this} does not support render targets of type {typeof(TRenderTarget).Name}.")
-		};
+		RenderTargetUnion rtu;
+		lock (_loadedTargetDataMutationLock) {
+			rtu = renderTarget switch {
+				Window w => SetUpWindowRenderer(this, w),
+				RenderOutputBuffer b => SetUpBufferRenderer(this, b),
+				_ => throw new InvalidOperationException($"{this} does not support render targets of type {typeof(TRenderTarget).Name}.")
+			};	
+		}
 		
 		AllocateViewDescriptor(
 			scene.Handle,
@@ -256,9 +266,13 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 
 		var rendererData = _loadedRenderers[handle];
 		var viewportData = rendererData.Viewport;
-		var targetData = _loadedTargets[rendererData.RenderTarget];
+		TargetSpecificData targetData;
+		lock (_loadedTargetDataMutationLock) {
+			targetData = _loadedTargets[rendererData.RenderTarget];
+		}
 		var curViewportSize = viewportData.CurrentSize;
 		var curTargetSize = rendererData.RenderTarget.ViewportDimensions;
+		var shouldRenewSwapChainIfIsWindowAndAlreadyExists = targetData.SwapchainShouldBeRenewed;
 		if (curViewportSize != curTargetSize) {
 			viewportData = viewportData with { CurrentSize = curTargetSize };
 			rendererData = rendererData with { Viewport = viewportData };
@@ -268,17 +282,20 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 				rendererData.Camera.SetAspectRatio(curTargetSize.Ratio ?? CameraCreationConfig.DefaultAspectRatio);
 			}
 
-			if (rendererData.RenderTarget.IsWindow && targetData.SwapChainPtr.HasValue) {
-				DisposeSwapChain(targetData.SwapChainPtr.Value).ThrowIfFailure();
-				AllocateSwapChain(
-					rendererData.RenderTarget.AsWindow.Handle, 
-					out var newSwapChainHandle
-				).ThrowIfFailure();
-				targetData = targetData with { SwapChainPtr = newSwapChainHandle };
+			shouldRenewSwapChainIfIsWindowAndAlreadyExists = true;
+		}
+
+		if (shouldRenewSwapChainIfIsWindowAndAlreadyExists && rendererData.RenderTarget.IsWindow && targetData.SwapChainPtr.HasValue) {
+			DisposeSwapChain(targetData.SwapChainPtr.Value).ThrowIfFailure();
+			AllocateSwapChain(
+				rendererData.RenderTarget.AsWindow.Handle, 
+				out var newSwapChainHandle
+			).ThrowIfFailure();
+			targetData = targetData with { SwapChainPtr = newSwapChainHandle, SwapchainShouldBeRenewed = false };
+			lock (_loadedTargetDataMutationLock) {
 				_loadedTargets[rendererData.RenderTarget] = targetData;
 			}
 		}
-
 		
 		if (rendererData.RenderTarget.IsWindow) {
 			RenderScene(
@@ -515,6 +532,13 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 			throw new IOException($"Could not save {dimensions.X} x {dimensions.Y} bitmap to {_nextScreenshotCaptureFilePath?.AsNewStringObject ?? "<null>"}.", e);
 		}
 	}
+	
+	void HandleSwapchainRenewalHintNotice() {
+		Debug.Assert(_loadedTargetDataMutationLock.IsHeldByCurrentThread);
+		foreach (var kvp in _loadedTargets) {
+			_loadedTargets[kvp.Key] = kvp.Value with { SwapchainShouldBeRenewed = true };
+		}
+	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<Renderer> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -672,6 +696,15 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	static extern InteropResult DisposeRenderTargetBuffer(
 		UIntPtr textureHandle
 	);
+	
+	[UnmanagedCallersOnly]
+	public static void RenewSwapchains() {
+		lock (_loadedTargetDataMutationLock) {
+			foreach (var builder in _buildersWithPotentialLoadedTargets) {
+				builder.HandleSwapchainRenewalHintNotice();
+			}
+		}
+	}
 	#endregion
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -707,7 +740,10 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 			if (rendererData.RenderTarget == data.RenderTarget) return;
 		}
 
-		_loadedTargets.Remove(data.RenderTarget, out var swapChainData);
+		TargetSpecificData swapChainData;
+		lock (_loadedTargetDataMutationLock) {
+			_loadedTargets.Remove(data.RenderTarget, out swapChainData);
+		}
 		DisposeRenderer(
 			swapChainData.RendererPtr
 		).ThrowIfFailure();
@@ -734,6 +770,9 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
+			lock (_loadedTargetDataMutationLock) {
+				_buildersWithPotentialLoadedTargets.Remove(this);
+			}
 			while (_loadedRenderers.Count > 0) {
 				Dispose(_loadedRenderers.GetPairAtIndex(0).Key);
 			}
@@ -742,7 +781,9 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 			}
 
 			_loadedRenderers.Dispose();
-			_loadedTargets.Dispose();
+			lock (_loadedTargetDataMutationLock) {
+				_loadedTargets.Dispose();
+			}
 			_loadedBuffers.Dispose();
 		}
 		finally {
