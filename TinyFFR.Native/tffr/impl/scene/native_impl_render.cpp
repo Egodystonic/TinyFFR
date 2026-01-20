@@ -36,11 +36,6 @@ void native_impl_render::allocate_swap_chain(WindowHandle window, SwapChainHandl
 	*outSwapChain = filament_engine->createSwapChain(hwnd, 0UL);
 #elif defined(TFFR_LINUX)
 	switch (wmInfo.subsystem) {
-		case SDL_SYSWM_X11: { // TODO try and fake X11 support with render target outputs and copying
-			auto nativeWindow = (Window) wmInfo.info.x11.window;
-			*outSwapChain = filament_engine->createSwapChain((void*) nativeWindow, 0UL);
-			break;
-		}
 		case SDL_SYSWM_WAYLAND: {
 			int width = 0;
 			int height = 0;
@@ -59,9 +54,11 @@ void native_impl_render::allocate_swap_chain(WindowHandle window, SwapChainHandl
 			*outSwapChain = filament_engine->createSwapChain((void *) &wayland, 0UL);
 			break;
 		}
+		case SDL_SYSWM_X11: { 
+			Throw("Unfortunately X11 is no longer supported by TinyFFR. Wayland will be supported going forward.");
+		}
 		default: {
-			Throw("Unknown window manager.");
-			break;
+			Throw("Unknown windowing compositor.");
 		}
 	}
 #elif defined(TFFR_MACOS)
