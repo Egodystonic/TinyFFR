@@ -342,9 +342,11 @@ VkResult VulkanPlatformSurfaceSwapChain::acquire(VulkanPlatform::ImageSyncData* 
         mSuboptimal = true;
     }
 
+    // === Begin TinyFFR Alteration ===
     if (mSwapchainRecreationHintCallback != nullptr && (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)) {
         mSwapchainRecreationHintCallback();
     }
+    // === End TinyFFR Alteration ===
     return result;
 }
 
