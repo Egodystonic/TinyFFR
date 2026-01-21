@@ -144,7 +144,10 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var fsStyle = GetFullscreenStyle(handle);
-		if (fsStyle is WindowFullscreenStyle.Fullscreen) {
+		if (fsStyle is WindowFullscreenStyle.FullscreenBorderless) {
+			return GetViewportDimensions(handle);
+		}
+		else if (fsStyle is WindowFullscreenStyle.Fullscreen) {
 			GetWindowFullscreenMode(
 				handle,
 				out var fsWidth,

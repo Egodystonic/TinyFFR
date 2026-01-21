@@ -6,6 +6,19 @@ search:
   exclude: true
 ---
 
+## 0.7
+
+__Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/9?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.7.0)__
+
+### Major Features
+
+### Improvements
+
+* Greatly improved Linux stability. First-class support for Wayland (X11 support is removed for now).
+
+### Bug Fixes
+
+
 ## 0.6
 
 __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/6?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.6.0)__

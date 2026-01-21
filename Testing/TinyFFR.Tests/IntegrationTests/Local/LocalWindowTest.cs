@@ -91,16 +91,47 @@ class LocalWindowTest {
 		Assert.AreEqual(new XYPair<int>(100, 800), window.Size);
 		Assert.AreEqual(new XYPair<int>(400, 70), window.Position);
 
-		window.Size = window.Display.HighestSupportedResolutionMode.Resolution;
-		foreach (var fsStyle in Enum.GetValues<WindowFullscreenStyle>()) {
-			Console.WriteLine($"Setting window fullscreen style to {fsStyle} @ {window.Size}...");
-			window.FullscreenStyle = fsStyle;
-			Assert.AreEqual(fsStyle, window.FullscreenStyle);
+		// Wayland operates differently. We could write this in a way that works on all OSs but
+		// flipping between non-primary resolution fullscreen modes on Windows tends to really
+		// mess up the desktop so this is easier
+		if (OperatingSystem.IsLinux()) {
+			var lowestSupportedResMode = window.Display.SupportedDisplayModes.ToArray().OrderBy(m => m.Resolution.Area).First();
+			window.Size = lowestSupportedResMode.Resolution;
+			
+			Console.WriteLine($"Setting window fullscreen style to {WindowFullscreenStyle.NotFullscreen} @ {window.Size}...");
+			window.FullscreenStyle = WindowFullscreenStyle.NotFullscreen;
+			Assert.AreEqual(WindowFullscreenStyle.NotFullscreen, window.FullscreenStyle);
+			
+			Console.WriteLine($"Setting window fullscreen style to {WindowFullscreenStyle.Fullscreen} @ {window.Size}...");
+			window.FullscreenStyle = WindowFullscreenStyle.Fullscreen;
+			Assert.AreEqual(WindowFullscreenStyle.Fullscreen, window.FullscreenStyle);
+			
+			Console.WriteLine($"Setting window fullscreen style to {WindowFullscreenStyle.FullscreenBorderless}...");
+			window.FullscreenStyle = WindowFullscreenStyle.FullscreenBorderless;
+			Assert.AreEqual(WindowFullscreenStyle.FullscreenBorderless, window.FullscreenStyle);
+			Assert.AreEqual(window.Display.HighestSupportedResolutionMode.Resolution, window.Size);
+			
+			Console.WriteLine($"Setting window size to {lowestSupportedResMode.Resolution}...");
+			window.Size = lowestSupportedResMode.Resolution;
+			Assert.AreEqual(WindowFullscreenStyle.Fullscreen, window.FullscreenStyle);
+			Assert.AreEqual(lowestSupportedResMode.Resolution, window.Size);
+			
+			Console.WriteLine($"Setting window fullscreen style to {WindowFullscreenStyle.NotFullscreen} @ {window.Size}...");
+			window.FullscreenStyle = WindowFullscreenStyle.NotFullscreen;
+			Assert.AreEqual(WindowFullscreenStyle.NotFullscreen, window.FullscreenStyle);
 		}
-		foreach (var fsStyle in ((IEnumerable<WindowFullscreenStyle>) Enum.GetValues<WindowFullscreenStyle>()).Reverse()) {
-			Console.WriteLine($"Setting window fullscreen style to {fsStyle} @ {window.Size}...");
-			window.FullscreenStyle = fsStyle;
-			Assert.AreEqual(fsStyle, window.FullscreenStyle);
+		else {
+			window.Size = window.Display.HighestSupportedResolutionMode.Resolution;
+			foreach (var fsStyle in Enum.GetValues<WindowFullscreenStyle>()) {
+				Console.WriteLine($"Setting window fullscreen style to {fsStyle} @ {window.Size}...");
+				window.FullscreenStyle = fsStyle;
+				Assert.AreEqual(fsStyle, window.FullscreenStyle);
+			}
+			foreach (var fsStyle in ((IEnumerable<WindowFullscreenStyle>) Enum.GetValues<WindowFullscreenStyle>()).Reverse()) {
+				Console.WriteLine($"Setting window fullscreen style to {fsStyle} @ {window.Size}...");
+				window.FullscreenStyle = fsStyle;
+				Assert.AreEqual(fsStyle, window.FullscreenStyle);
+			}	
 		}
 	}
 }

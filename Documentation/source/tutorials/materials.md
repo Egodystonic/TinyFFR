@@ -64,7 +64,7 @@ ORMR maps are the same, but with the addition of **R**eflectance data in the alp
 
 Sometimes ORM data will be supplied as multiple separate texture files (usually monochromatic, i.e. single-channel). The `AssetLoader` offers overloads of `LoadOcclusionRoughnessMetallicMap(...)` / `LoadOcclusionRoughnessMetallicReflectanceMap()` that make it easy to combine multiple files in to a single ORM/ORMR map.
 
-Additionally, sometimes you may have only one or two of the required data textures (e.g. only roughness data, or no occlusion data, etc). In these instances it's possible to pass sensible default built-in texture files via ``:
+Additionally, sometimes you may have only one or two of the required data textures (e.g. only roughness data, or no occlusion data, etc). In these instances it's possible to pass sensible default built-in texture files via `AssetLoader.BuiltInTexturePaths`:
 
 * `AssetLoader.BuiltInTexturePaths.DefaultOcclusionMap`: Resolves to an occlusion texture that simply allows all ambient light to affect a material surface.
 * `AssetLoader.BuiltInTexturePaths.DefaultRoughnessMap`: Resolves to a roughness texture that represents 40% roughness, a common 'default' value for materials that otherwise lack roughness information.
@@ -148,7 +148,7 @@ TinyFFR internally stores anisotropy data as a 3-channel map where the red & gre
 	
 	<span class="def-icon">:material-code-json:</span> `encodedAnticlockwise`
 
-	:   This argument specifies the angle moves anticlockwise from 0 to 255, or whether it moves clockwise.
+	:   This argument specifies whether the angle moves anticlockwise or clockwise from 0 to 255.
 	
 	<span class="def-icon">:material-code-json:</span> `strengthChannel`
 
