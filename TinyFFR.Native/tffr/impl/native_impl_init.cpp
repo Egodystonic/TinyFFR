@@ -13,7 +13,7 @@ void native_impl_init::exec_once_only_initialization() {
 #if defined(TFFR_WIN)
 	SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
 #elif defined(TFFR_LINUX)
-	SDL_SetHint(SDL_HINT_VIDEODRIVER, "wayland,x11");
+	SDL_SetHint(SDL_HINT_VIDEODRIVER, "wayland");
 #endif
 	
 	auto sdlInitResult = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
