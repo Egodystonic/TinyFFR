@@ -156,4 +156,9 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		_actualRenderer.CaptureScreenshot(handler, captureResolution, lowestAddressesRepresentFrameTop);
 	}
+	
+	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		return _actualRenderer.CastRayFromRenderSurface(pixelCoord, yZeroOriginAtBottom);
+	}
 }

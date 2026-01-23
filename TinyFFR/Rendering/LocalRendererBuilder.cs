@@ -540,6 +540,20 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 		}
 	}
 
+	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		
+		var rendererData = _loadedRenderers[handle];
+		var renderSurfaceDimensions = rendererData.RenderTarget.IsWindow ? rendererData.RenderTarget.AsWindow.Size : rendererData.RenderTarget.AsBuffer.TextureDimensions;
+		var normalizedCoord = new XYPair<float>(
+			((Real) pixelCoord.X).RemapRange(new Pair<Real, Real>(0f, renderSurfaceDimensions.X), new Pair<Real, Real>(-1f, 1f)),	
+			((Real) pixelCoord.Y).RemapRange(new Pair<Real, Real>(0f, renderSurfaceDimensions.Y), new Pair<Real, Real>(-1f, 1f))	
+		);
+		if (!yZeroOriginAtBottom) normalizedCoord = normalizedCoord with { Y = -normalizedCoord.Y };
+		
+		return rendererData.Camera.CastRayFromNearPlane(normalizedCoord);
+	}
+
 	public string GetNameAsNewStringObject(ResourceHandle<Renderer> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return new String(_globals.GetResourceName(handle.Ident, DefaultRendererName));

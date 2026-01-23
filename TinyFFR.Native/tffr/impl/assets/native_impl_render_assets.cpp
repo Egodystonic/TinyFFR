@@ -197,6 +197,7 @@ void native_impl_render_assets::set_material_parameter_texture(MaterialHandle ma
 	ThrowIfNull(texture, "Texture was null.");
 
 	TextureSampler sampler {
+		backend::SamplerMinFilter::LINEAR_MIPMAP_LINEAR,
 		backend::SamplerMagFilter::LINEAR,
 		backend::SamplerWrapMode::REPEAT
 	};

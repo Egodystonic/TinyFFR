@@ -124,6 +124,7 @@ partial struct Angle :
 	}
 
 	public static Angle Interpolate(Angle start, Angle end, float distance) => FromRadians(Single.Lerp(start.Radians, end.Radians, distance));
+	public static float GetInterpolationDistance(Angle start, Angle end, Angle input) => Real.GetInterpolationDistance(start.Radians, end.Radians, input.Radians);
 
 	// TODO xmldoc this interpolates from start to end via the shortest distance "around the clock"; i.e. 270deg -> 0deg goes forward 90 rather than backwards 270
 	// The result will always be in the range [0, <360]

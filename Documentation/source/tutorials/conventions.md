@@ -23,6 +23,7 @@ This page lists the various conventions TinyFFR uses (in no particular order):
 	* In most contexts any 2D system follows trigonometric / cartesian defaults:
 		* +X points right
 		* +Y points up
+		* `(0, 0)`/origin is at the bottom-left corner
 
 	* 2D rotations are always assumed to be anti-clockwise when the angle is positive
 	
@@ -30,7 +31,7 @@ This page lists the various conventions TinyFFR uses (in no particular order):
 		* ![Polar angle coordinates diagram](conventions_polar.png){ : style="max-width:200px;" }
 		{ : style="list-style: none;" }
 
-	??? info "Exception: Windows / Desktop Pixels"
+	??? info "Exception: Windows / Desktop Pixels & Cursor Position"
 		* When dealing *specifically* with window and/or desktop pixel co-ordinates, the top-left corner is the `(0, 0)` origin point, therefore:
 			* +X points right
 			* +Y points down

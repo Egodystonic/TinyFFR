@@ -77,6 +77,11 @@ public readonly struct Real : IMathPrimitive<Real>, IAlgebraicRing<Real>, IOrdin
 	public static Real RandomNegOneToOneInclusive() => RandomUtils.NextSingleNegOneToOneInclusive();
 
 	public static Real Interpolate(Real start, Real end, float distance) => start + (end - start) * distance;
+	public static float GetInterpolationDistance(Real start, Real end, Real input) {
+		var result = ((input - start) / (end - start)).AsFloat;
+		if (Single.IsInfinity(result) || Single.IsNaN(result)) return 0f;
+		else return result;
+	}
 
 	public Real Clamp(Real min, Real max) => max < min ? Single.Clamp(this, max, min) : Single.Clamp(this, min, max);
 	#endregion

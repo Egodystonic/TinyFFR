@@ -61,7 +61,9 @@ public interface IOrdinal<TSelf> :
 	IInterpolatable<TSelf>,
 	IComparable<TSelf>,
 	IComparisonOperators<TSelf, TSelf, bool>
-	where TSelf : IOrdinal<TSelf>;
+	where TSelf : IOrdinal<TSelf> {
+	static abstract float GetInterpolationDistance(TSelf start, TSelf end, TSelf input);
+}
 
 public interface IAlgebraicGroup<TSelf> :
 	IInvertible<TSelf>,

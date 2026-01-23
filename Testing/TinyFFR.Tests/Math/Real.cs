@@ -120,6 +120,16 @@ class RealTest {
 		Assert.AreEqual(1f, Real.Interpolate(0f, 1f, 1f).AsFloat);
 		Assert.AreEqual(2f, Real.Interpolate(0f, 1f, 2f).AsFloat);
 		Assert.AreEqual(-1f, Real.Interpolate(0f, 1f, -1f).AsFloat);
+		
+		Assert.AreEqual(0f, Real.GetInterpolationDistance(0f, 1f, 0f));
+		Assert.AreEqual(0.3f, Real.GetInterpolationDistance(0f, 1f, 0.3f));
+		Assert.AreEqual(1f, Real.GetInterpolationDistance(0f, 1f, 1f));
+		Assert.AreEqual(2f, Real.GetInterpolationDistance(0f, 1f, 2f));
+		Assert.AreEqual(-1f, Real.GetInterpolationDistance(0f, 1f, -1f));
+		
+		Assert.AreEqual(0f, Real.GetInterpolationDistance(1f, 1f, 1f));
+		Assert.AreEqual(0f, Real.GetInterpolationDistance(1f, 1f, 2f));
+		Assert.AreEqual(0f, Real.GetInterpolationDistance(1f, 1f, 0f));
 	}
 
 	[Test]

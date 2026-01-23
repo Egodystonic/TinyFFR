@@ -157,6 +157,10 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	public void LookAt(Location target) => ViewDirection = Position.DirectionTo(target);
 	public void LookAt(Location target, Direction upDirection) => SetViewAndUpDirection(Position.DirectionTo(target), upDirection);
 
+	public Ray CastRayFromNearPlane() => new(Position + ViewDirection * NearPlaneDistance, ViewDirection);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray CastRayFromNearPlane(XYPair<float> normalizedNearPlaneCoord) => Implementation.CastRayFromNearPlane(_handle, normalizedNearPlaneCoord);
+
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Implementation.Dispose(_handle);

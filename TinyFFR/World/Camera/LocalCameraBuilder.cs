@@ -254,23 +254,18 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 
 		var near = parameters.NearPlaneDistance;
 		var far = parameters.FarPlaneDistance;
-
-		var h = MathF.Tan(parameters.VerticalFovRadians * 0.5f) * near;
-		var w = h * parameters.AspectRatio;
-
-		var left = -w;
-		var right = w;
-		var bottom = -h;
-		var top = h;
+		
+		CameraUtils.CalculateProjectionMatrix(
+			parameters.NearPlaneDistance,
+			parameters.FarPlaneDistance,
+			Angle.FromRadians(parameters.VerticalFovRadians),
+			parameters.AspectRatio,
+			out var mat
+		);
 
 		SetCameraProjectionMatrix(
 			handle,
-			new Matrix4x4(
-				(near * 2f) / (right - left),			0f,										0f,										0f,
-				0f,										(near * 2f) / (top - bottom),			0f,										0f,
-				(right + left) / (right - left),			(top + bottom) / (top - bottom),			-(far + near) / (far - near),			-1f,
-				0f,										0f,										-(2f * far * near) / (far - near),		0f
-			),
+			mat,
 			near,
 			far
 		).ThrowIfFailure();
@@ -278,28 +273,27 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 
 	void UpdateModelMatrixFromParameters(ResourceHandle<Camera> handle) {
 		var parameters = _activeCameras[handle];
-
-		var p = parameters.Position.ToVector3();
-		var z = parameters.ViewDirection.ToVector3();
-		var x = Vector3.Cross(z, parameters.UpDirection.ToVector3());
-		var y = Vector3.Cross(x, z);
-		z = -z;
+		
+		CameraUtils.CalculateModelMatrix(
+			parameters.Position,
+			parameters.ViewDirection,
+			parameters.UpDirection,
+			out var mat
+		);
 
 		SetCameraModelMatrix(
 			handle,
-			new Matrix4x4(
-				m11: x.X, m12: x.Y, m13: x.Z,
-				m21: y.X, m22: y.Y, m23: y.Z,
-				m31: z.X, m32: z.Y, m33: z.Z,
-				m41: p.X,
-				m42: p.Y,
-				m43: p.Z,
-				m14: 0f,
-				m24: 0f,
-				m34: 0f,
-				m44: 1f
-			)
+			mat
 		).ThrowIfFailure();
+	}
+
+	public Ray CastRayFromNearPlane(ResourceHandle<Camera> handle, XYPair<float> normalizedNearPlaneCoord) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		
+		GetCameraModelMatrix(handle, out var modelMat).ThrowIfFailure();
+		GetCameraProjectionMatrix(handle, out var projMat, out _, out _).ThrowIfFailure();
+		
+		return CameraUtils.CreateRayFromCameraFrustumNearPlane(in modelMat, in projMat, normalizedNearPlaneCoord);
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<Camera> handle) {

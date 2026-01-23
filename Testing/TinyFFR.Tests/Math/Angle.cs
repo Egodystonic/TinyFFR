@@ -690,6 +690,20 @@ class AngleTest {
 		AssertToleranceEquals(30f, Angle.Interpolate(30f, 30f, 0.5f), TestTolerance);
 		AssertToleranceEquals(30f, Angle.Interpolate(30f, 30f, 1f), TestTolerance);
 		AssertToleranceEquals(30f, Angle.Interpolate(30f, 30f, 2f), TestTolerance);
+		
+		
+		
+		AssertToleranceEquals(0.5f, Angle.GetInterpolationDistance(270f, 0f, 135f), TestTolerance);
+
+		AssertToleranceEquals(0.5f, Angle.GetInterpolationDistance(-100f, 100f, 0f), TestTolerance);
+		AssertToleranceEquals(0f, Angle.GetInterpolationDistance(-100f, 100f, -100f), TestTolerance);
+		AssertToleranceEquals(1f, Angle.GetInterpolationDistance(-100f, 100f, 100f), TestTolerance);
+		AssertToleranceEquals(-0.5f, Angle.GetInterpolationDistance(-100f, 100f, -200f), TestTolerance);
+		AssertToleranceEquals(1.5f, Angle.GetInterpolationDistance(-100f, 100f, 200f), TestTolerance);
+
+		AssertToleranceEquals(0f, Angle.GetInterpolationDistance(30f, 30f, 30f), TestTolerance);
+		AssertToleranceEquals(0f, Angle.GetInterpolationDistance(30f, 30f, 40f), TestTolerance);
+		AssertToleranceEquals(0f, Angle.GetInterpolationDistance(30f, 30f, 20f), TestTolerance);
 	}
 
 	[Test]

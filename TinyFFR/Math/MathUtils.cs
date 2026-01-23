@@ -3,7 +3,7 @@
 
 namespace Egodystonic.TinyFFR;
 
-static class MathUtils {
+public static class MathUtils {
 	public const float GoldenRatio = 1.6180339887f;
 
 	public static T TrueModulus<T>(T lhs, T rhs) where T : IModulusOperators<T, T, T>, IAdditionOperators<T, T, T> => (lhs % rhs + rhs) % rhs;
@@ -23,5 +23,10 @@ static class MathUtils {
 
 	public static T SafeAbs<T>(T num) where T : IMinMaxValue<T>, ISignedNumber<T>, IBinaryInteger<T> {
 		return num == T.MinValue ? T.MaxValue : T.Abs(num);
+	}
+	
+	public static T RemapRange<T>(this T @this, Pair<T, T> inputRange, Pair<T, T> outputRange) where T : IOrdinal<T> {
+		var inputDistance = T.GetInterpolationDistance(inputRange.First, inputRange.Second, @this);
+		return T.Interpolate(outputRange.First, outputRange.Second, inputDistance);
 	}
 }

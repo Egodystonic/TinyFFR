@@ -6,7 +6,7 @@ using static Egodystonic.TinyFFR.ConfigStructTestUtils;
 namespace Egodystonic.TinyFFR.World.Camera;
 
 [TestFixture]
-class RendererCreationConfigTest {
+class CameraCreationConfigTest {
 	[SetUp]
 	public void SetUpTest() { }
 

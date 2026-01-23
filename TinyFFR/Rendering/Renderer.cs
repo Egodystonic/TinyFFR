@@ -58,6 +58,11 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public unsafe void CaptureScreenshot(delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, XYPair<int>? captureResolution = null, bool presentFrameTopToBottom = false) => Implementation.CaptureScreenshot(_handle, handler, captureResolution, presentFrameTopToBottom);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray CastRayFromRenderSurface(XYPair<int> pixelCoord) => CastRayFromRenderSurface(pixelCoord, false);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray CastRayFromRenderSurface(XYPair<int> pixelCoord, bool yZeroOriginAtBottom) => Implementation.CastRayFromRenderSurface(_handle, pixelCoord, yZeroOriginAtBottom);
+
 	public override string ToString() => $"Renderer {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Disposal

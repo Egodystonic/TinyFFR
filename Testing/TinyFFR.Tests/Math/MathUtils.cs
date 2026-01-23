@@ -77,4 +77,23 @@ class MathUtilsTest {
 		Assert.AreEqual(Int64.MaxValue, SafeAbs(Int64.MaxValue));
 		Assert.AreEqual(Int64.MaxValue, SafeAbs(Int64.MinValue));
 	}
+
+	[Test]
+	public void ShouldCorrectlyRemapRanges() {
+		AssertToleranceEquals((Real) 50f, ((Real) 0.5f).RemapRange(new(0f, 1f), new(0f, 100f)), TestTolerance);
+		AssertToleranceEquals((Real) 0.5f, ((Real) 50f).RemapRange(new(0f, 100f), new(0f, 1f)), TestTolerance);
+		AssertToleranceEquals(-(Real) 50f, (-(Real) 0.5f).RemapRange(new(0f, 1f), new(0f, 100f)), TestTolerance);
+		AssertToleranceEquals(-(Real) 0.5f, (-(Real) 50f).RemapRange(new(0f, 100f), new(0f, 1f)), TestTolerance);
+		AssertToleranceEquals((Real) 50f, ((Real) 0.5f).RemapRange(new(-0f, -1f), new(-0f, -100f)), TestTolerance);
+		AssertToleranceEquals((Real) 0.5f, ((Real) 50f).RemapRange(new(-0f, -100f), new(-0f, -1f)), TestTolerance);
+		AssertToleranceEquals(-(Real) 50f, (-(Real) 0.5f).RemapRange(new(-0f, -1f), new(-0f, -100f)), TestTolerance);
+		AssertToleranceEquals(-(Real) 0.5f, (-(Real) 50f).RemapRange(new(-0f, -100f), new(-0f, -1f)), TestTolerance);
+		
+		AssertToleranceEquals((Real) 200f, ((Real) 2f).RemapRange(new(0f, 1f), new(0f, 100f)), TestTolerance);
+		AssertToleranceEquals((Real) 2f, ((Real) 200f).RemapRange(new(0f, 100f), new(0f, 1f)), TestTolerance);
+		AssertToleranceEquals((Real) 0f, ((Real) 0f).RemapRange(new(0f, 100f), new(0f, 1f)), TestTolerance);
+		
+		AssertToleranceEquals((Real) 6f, ((Real) 2f).RemapRange(new(-2f, 2f), new(2f, 6f)), TestTolerance);
+		AssertToleranceEquals((Real) 2f, (-(Real) 2f).RemapRange(new(-2f, 2f), new(2f, 6f)), TestTolerance);
+	}
 }
