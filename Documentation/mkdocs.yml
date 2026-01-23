@@ -137,6 +137,7 @@ nav:
   - Reference Docs:
     - How-To Guides:
       - reference/vsync.md
+      - reference/camera_ray_casting.md
       - reference/controlling_memory.md
     - Assets:
       - reference/texture_patterns.md

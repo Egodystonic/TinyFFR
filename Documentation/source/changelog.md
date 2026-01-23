@@ -12,6 +12,8 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/9?closed=1) 
 
 ### Major Features
 
+* Added support for pixel picking (i.e. camera ray casting).
+
 ### Improvements
 
 * Greatly improved Linux stability. First-class support for Wayland (X11 support is removed for now).
