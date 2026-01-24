@@ -7,22 +7,15 @@ namespace Egodystonic.TinyFFR.World;
 
 public static class CameraUtils {
 	public static void CalculateProjectionMatrix(float nearPlaneDistance, float farPlaneDistance, Angle verticalFov, float aspectRatio, out Matrix4x4 dest) {
-		var near = nearPlaneDistance;
-		var far = farPlaneDistance;
-
-		var h = MathF.Tan(verticalFov.Radians * 0.5f) * near;
+		var frustumLength = farPlaneDistance - nearPlaneDistance;
+		var h = MathF.Tan(verticalFov.Radians * 0.5f) * nearPlaneDistance;
 		var w = h * aspectRatio;
 
-		var left = -w;
-		var right = w;
-		var bottom = -h;
-		var top = h;
-
 		dest = new Matrix4x4(
-			(near * 2f) / (right - left),			0f,										0f,										0f,
-			0f,										(near * 2f) / (top - bottom),			0f,										0f,
-			(right + left) / (right - left),		(top + bottom) / (top - bottom),		-(far + near) / (far - near),			-1f,
-			0f,										0f,										-(2f * far * near) / (far - near),		0f
+			nearPlaneDistance / w,					0f,											0f,																	0f,
+			0f,										nearPlaneDistance / h,						0f,																	0f,
+			0f,										0f,											-(farPlaneDistance + nearPlaneDistance) / frustumLength,			-1f,
+			0f,										0f,											-(2f * farPlaneDistance * nearPlaneDistance) / frustumLength,		0f
 		);
 	}
 	
