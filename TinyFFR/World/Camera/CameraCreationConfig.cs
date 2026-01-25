@@ -11,19 +11,23 @@ public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationCo
 	public static readonly Direction DefaultViewDirection = Direction.Forward;
 	public static readonly Direction DefaultUpDirection = Direction.Up;
 	public static readonly Angle DefaultFieldOfView = 60f;
+	public static readonly float DefaultOrthographicHeight = 1f;
 	public static readonly float DefaultAspectRatio = 16f / 9f;
 	public static readonly bool DefaultFieldOfViewVerticalFlag = true;
 	public static readonly float DefaultNearPlaneDistance = 0.15f;
 	public static readonly float DefaultFarPlaneDistance = 5_000f;
+	public static readonly CameraProjectionType DefaultProjectionType = CameraProjectionType.Perspective;
 
 	public Location Position { get; init; } = DefaultPosition;
 	public Direction ViewDirection { get; init; } = DefaultViewDirection;
 	public Direction UpDirection { get; init; } = DefaultUpDirection;
 	public Angle FieldOfView { get; init; } = DefaultFieldOfView;
+	public float OrthographicHeight { get; init; } = DefaultOrthographicHeight;
 	public float AspectRatio { get; init; } = DefaultAspectRatio;
 	public bool FieldOfViewIsVertical { get; init; } = DefaultFieldOfViewVerticalFlag;
 	public float NearPlaneDistance { get; init; } = DefaultNearPlaneDistance;
 	public float FarPlaneDistance { get; init; } = DefaultFarPlaneDistance;
+	public CameraProjectionType ProjectionType { get; init; } = DefaultProjectionType;
 
 	public ReadOnlySpan<char> Name { get; init; }
 
@@ -45,6 +49,10 @@ public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationCo
 		if (FieldOfView < Camera.FieldOfViewMin || FieldOfView > Camera.FieldOfViewMax) {
 			ThrowArgException(FieldOfView, $"must be between {nameof(Camera)}.{nameof(Camera.FieldOfViewMin)} ({Camera.FieldOfViewMin}) and {nameof(Camera)}.{nameof(Camera.FieldOfViewMax)} ({Camera.FieldOfViewMax}).");
 		}
+		
+		if (!OrthographicHeight.IsNonNegativeAndFinite()) {
+			ThrowArgException(OrthographicHeight, $"must be non-negative and finite."); 
+		}
 
 		if (!AspectRatio.IsPositiveAndFinite()) {
 			ThrowArgException(AspectRatio, $"must be a normal, positive floating-point value.");
@@ -57,6 +65,10 @@ public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationCo
 		if (!Single.IsNormal(FarPlaneDistance) || FarPlaneDistance <= NearPlaneDistance || FarPlaneDistance / NearPlaneDistance > Camera.NearFarPlaneDistanceRatioMax) {
 			ThrowArgException(FarPlaneDistance, $"must be a normal floating-point value, larger than {nameof(NearPlaneDistance)}, and no greater than {nameof(Camera)}.{nameof(Camera.NearFarPlaneDistanceRatioMax)} ({Camera.NearFarPlaneDistanceRatioMax}) times the {nameof(NearPlaneDistance)}.");
 		}
+		
+		if (!Enum.IsDefined(ProjectionType)) {
+			ThrowArgException(ProjectionType, $"must be one of: {String.Join(", ", Enum.GetValues<CameraProjectionType>())}");
+		}
 	}
 
 	public static int GetHeapStorageFormattedLength(in CameraCreationConfig src) {
@@ -64,10 +76,12 @@ public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationCo
 			+	SerializationSizeOf<Direction>() // ViewDirection
 			+	SerializationSizeOf<Direction>() // UpDirection
 			+	SerializationSizeOf<Angle>() // FieldOfView
+			+	SerializationSizeOfFloat() // OrthographicHeight
 			+	SerializationSizeOfFloat() // AspectRatio
 			+	SerializationSizeOfBool() // FieldOfViewIsVertical
 			+	SerializationSizeOfFloat() // NearPlaneDistance
 			+	SerializationSizeOfFloat() // FarPlaneDistance
+			+	SerializationSizeOfInt() // ProjectionType
 			+	SerializationSizeOfString(src.Name); // Name
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in CameraCreationConfig src) {
@@ -75,10 +89,12 @@ public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationCo
 		SerializationWrite(ref dest, src.ViewDirection);
 		SerializationWrite(ref dest, src.UpDirection);
 		SerializationWrite(ref dest, src.FieldOfView);
+		SerializationWriteFloat(ref dest, src.OrthographicHeight);
 		SerializationWriteFloat(ref dest, src.AspectRatio);
 		SerializationWriteBool(ref dest, src.FieldOfViewIsVertical);
 		SerializationWriteFloat(ref dest, src.NearPlaneDistance);
 		SerializationWriteFloat(ref dest, src.FarPlaneDistance);
+		SerializationWriteInt(ref dest, (int) src.ProjectionType);
 		SerializationWriteString(ref dest, src.Name);
 	}
 	public static CameraCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
@@ -87,10 +103,12 @@ public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationCo
 			ViewDirection = SerializationRead<Direction>(ref src),
 			UpDirection = SerializationRead<Direction>(ref src),
 			FieldOfView = SerializationRead<Angle>(ref src),
+			OrthographicHeight = SerializationReadFloat(ref src),
 			AspectRatio = SerializationReadFloat(ref src),
 			FieldOfViewIsVertical = SerializationReadBool(ref src),
 			NearPlaneDistance = SerializationReadFloat(ref src),
 			FarPlaneDistance = SerializationReadFloat(ref src),
+			ProjectionType = (CameraProjectionType) SerializationReadInt(ref src),
 			Name = SerializationReadString(ref src),
 		};
 	}

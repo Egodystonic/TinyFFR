@@ -12,14 +12,17 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/9?closed=1) 
 
 ### Major Features
 
-* Added support for pixel picking (i.e. camera ray casting).
+* Enabled Vulkan for Windows & Linux; made it the default rendering API on those platforms.
 
 ### Improvements
 
+* Added support for pixel picking (i.e. camera ray casting).
+* Added support for orthographic camera projection.
 * Greatly improved Linux stability. First-class support for Wayland (X11 support is removed for now).
 
 ### Bug Fixes
 
+* Fixed mipmap generation not actually being applied in previous versions.
 
 ## 0.6
 

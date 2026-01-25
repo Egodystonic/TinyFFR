@@ -28,12 +28,12 @@ class LocalCameraRayCreationTest {
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
-		using var window = factory.WindowBuilder.CreateWindow(display, title: "Click Mouse and/or Hold Space");
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "Keys: Mouse1 / Space / Enter");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin + Direction.Backward * 2f);
 		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere);
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateTestMaterial();
 		
-		var activeInstances = new ModelInstance[10];
+		var activeInstances = new ModelInstance[8];
 		for (var i = 0; i < activeInstances.Length; ++i) {
 			activeInstances[i] = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialScaling: new Vect(0.04f));
 		}
@@ -51,11 +51,17 @@ class LocalCameraRayCreationTest {
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(null);
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Escape)) {
 			var deltaTime = (float) loop.IterateOnce().TotalSeconds;
+			
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Return)) {
+				var curProjectionStyle = camera.ProjectionType;
+				if (curProjectionStyle == CameraProjectionType.Orthographic) camera.SetProjectionType(CameraProjectionType.Perspective);
+				else camera.SetProjectionType(CameraProjectionType.Orthographic);
+			}
 
 			foreach (var mc in loop.Input.KeyboardAndMouse.NewMouseClicks) {
 				var ray = renderer.CastRayFromRenderSurface(mc.Location);
 				for (var i = 0; i < activeInstances.Length; ++i) {
-					activeInstances[i].SetPosition(ray.UnboundedLocationAtDistance(0.2f * (i + 1)));
+					activeInstances[i].SetPosition(ray.UnboundedLocationAtDistance(0.1f * (i + 1)));
 				}
 			}
 			

@@ -17,7 +17,7 @@ class CameraUtilsTest {
 
 	[Test]
 	public void ShouldCorrectlyCalculateProjectionMatrix() {
-		CameraUtils.CalculateProjectionMatrix(
+		CameraUtils.CalculatePerspectiveProjectionMatrix(
 			nearPlaneDistance: 0.15f,
 			farPlaneDistance: 5000f,
 			verticalFov: 60f,
@@ -27,6 +27,20 @@ class CameraUtilsTest {
 
 		AssertToleranceEquals(
 			new Matrix4x4(0.974f, 0f, 0f, 0f, 0f, 1.732f, 0f, 0f, 0f, 0f, -1f, -1f, 0f, 0f, -0.3f, 0f),
+			result,
+			TestTolerance
+		);
+		
+		CameraUtils.CalculateOrthographicProjectionMatrix(
+			nearPlaneDistance: 0.15f,
+			farPlaneDistance: 5000f,
+			orthographicHeight: 2f,
+			aspectRatio: 1920f / 1080f,
+			out result
+		);
+
+		AssertToleranceEquals(
+			new Matrix4x4(0.563f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, -1f, 1f),
 			result,
 			TestTolerance
 		);

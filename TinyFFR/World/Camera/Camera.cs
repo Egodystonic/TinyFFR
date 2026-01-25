@@ -65,6 +65,15 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetVerticalFieldOfView(Angle fov) => VerticalFieldOfView = fov;
+	
+	public float OrthographicHeight {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetOrthographicHeight(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetOrthographicHeight(_handle, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetOrthographicHeight(float height) => OrthographicHeight = height;
 
 	public float AspectRatio {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -92,6 +101,15 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetFarPlaneDistance(float distance) => FarPlaneDistance = distance;
+	
+	public CameraProjectionType ProjectionType {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetProjectionType(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetProjectionType(_handle, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetProjectionType(CameraProjectionType projectionType) => ProjectionType = projectionType;
 
 	Rotation IOrientedSceneObject.Rotation {
 		get => Rotation.FromStartAndEndDirection(Direction.Forward, ViewDirection);

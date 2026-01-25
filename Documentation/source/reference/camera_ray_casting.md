@@ -8,15 +8,19 @@ description: Snippet demonstrating how to cast rays from a camera, optionally vi
 Cast a ray from a window pixel:
 
 ```csharp
-var clickLocation = loop.Input.KeyboardAndMouse.NewMouseClicks[0].Location; // (1)!
-var ray = renderer.CastRayFromRenderSurface(clickLocation); // (2)!
+if (loop.Input.KeyboardAndMouse.NewMouseClicks.Count > 0) {
+	var clickLocation = loop.Input.KeyboardAndMouse.NewMouseClicks[0].Location; // (1)!
+	var ray = renderer.CastRayFromRenderSurface(clickLocation); // (2)!
+}
 ```
 
-1. 	Accessing `NewMouseClicks[0]` throws an exception if `NewMouseClicks.Count` is not at least `1`.
+1.	This example converts the location of a mouse click on a `Window` to a ray starting at the camera's near plane.
 
-2.	The `clickLocation` parameter indicates which pixel on the render output surface (e.g. window) the ray should be cast from (it doesn't have to be a mouse click).
+	You don't need to use a mouse click however; `CastRayFromRenderSurface()` simply takes an `XYPair<int>` indicating which pixel on the `Window` the resultant `Ray` should eminate from.
 
-	It is assumed that the target `renderer` was created with the relevant `Camera` and `Window` for the ray cast operation.
+2.	The `clickLocation` parameter indicates which pixel on the render output surface (e.g. window) the ray should be cast from.
+
+	The `Camera` and `Window` (or `RenderOutputBuffer`) that this `renderer` was built with will be used to create the resultant `Ray`.
 
 Cast a ray from a camera's near plane:
 
@@ -26,12 +30,12 @@ var ray = camera.CastRayFromNearPlane(); // (1)!
 var ray = camera.CastRayFromNearPlane(new XYPair<float>(0f, 0f)); // (2)!
 
 // Without a camera instance
-var ray = CameraUtils.CreateRayFromCameraFrustumNearPlane(
+var ray = CameraUtils.CreateRayFromPerspectiveCameraParameters( // (3)!
 	modelMatrix,
 	projectionMatrix,
-	rayCoord // (3)!
+	rayCoord // (4)!
 );
-var ray = CameraUtils.CreateRayFromCameraFrustumNearPlane(
+var ray = CameraUtils.CreateRayFromPerspectiveCameraParameters(
 	cameraPosition,
 	cameraViewDirection,
 	cameraUpDirection,
@@ -49,7 +53,13 @@ var ray = CameraUtils.CreateRayFromCameraFrustumNearPlane(
 
 	This coordinate pair is expected as a normalized device coordinate, e.g. X and Y both in the range `-1` to `1` (where `(-1, -1)` is the bottom left corner).
 	
-3.	This argument specifies where on the near plane the ray should originate from; and is expected as a normalized device coordinate, e.g. X and Y both in the range `-1` to `1` (where `(-1, -1)` is the bottom left corner).
+	`(0, 0)` indicates the ray should emanate from the very centre of the camera's view (identical to the overload on the line above).
+	
+3.	`CreateRayFromPerspectiveCameraParameters` works assuming a perspective projection. Use `CreateRayFromOrthographicCameraParameters` for an orthographic projection.
+
+	The default for most cameras is a perspective projection.
+
+4.	This argument specifies where on the near plane the ray should originate from; and is expected as a normalized device coordinate, e.g. X and Y both in the range `-1` to `1` (where `(-1, -1)` is the bottom left corner).
 
 
 ## Explanation

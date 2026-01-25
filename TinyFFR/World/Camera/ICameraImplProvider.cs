@@ -19,6 +19,8 @@ public interface ICameraImplProvider : IDisposableResourceImplProvider<Camera> {
 	public void SetHorizontalFieldOfView(ResourceHandle<Camera> handle, Angle newFov);
 	public Angle GetVerticalFieldOfView(ResourceHandle<Camera> handle);
 	public void SetVerticalFieldOfView(ResourceHandle<Camera> handle, Angle newFov);
+	public float GetOrthographicHeight(ResourceHandle<Camera> handle);
+	public void SetOrthographicHeight(ResourceHandle<Camera> handle, float newHeight);
 	public float GetAspectRatio(ResourceHandle<Camera> handle);
 	public void SetAspectRatio(ResourceHandle<Camera> handle, float newRatio);
 
@@ -26,6 +28,8 @@ public interface ICameraImplProvider : IDisposableResourceImplProvider<Camera> {
 	public void SetNearPlaneDistance(ResourceHandle<Camera> handle, float newDistance);
 	public float GetFarPlaneDistance(ResourceHandle<Camera> handle);
 	public void SetFarPlaneDistance(ResourceHandle<Camera> handle, float newDistance);
+	public CameraProjectionType GetProjectionType(ResourceHandle<Camera> handle);
+	public void SetProjectionType(ResourceHandle<Camera> handle, CameraProjectionType newProjectionType);
 
 	public void GetProjectionMatrix(ResourceHandle<Camera> handle, out Matrix4x4 outMatrix);
 	public void SetProjectionMatrix(ResourceHandle<Camera> handle, in Matrix4x4 newMatrix);

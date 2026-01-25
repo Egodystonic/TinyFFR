@@ -10,7 +10,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.World;
 
 sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposable {
-	readonly record struct CameraParameters(Location Position, Direction ViewDirection, Direction UpDirection, float VerticalFovRadians, float AspectRatio, float NearPlaneDistance, float FarPlaneDistance);
+	readonly record struct CameraParameters(Location Position, Direction ViewDirection, Direction UpDirection, float VerticalFovRadians, float OrthographicHeight, float AspectRatio, float NearPlaneDistance, float FarPlaneDistance, CameraProjectionType ProjectionType);
 
 	const string DefaultCameraName = "Unnamed Camera";
 	readonly ArrayPoolBackedMap<ResourceHandle<Camera>, CameraParameters> _activeCameras = new();
@@ -33,9 +33,11 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 			config.ViewDirection,
 			GetReorthogonalizedUpOrViewDirection(config.UpDirection, config.ViewDirection),
 			config.FieldOfViewIsVertical ? config.FieldOfView.Radians : ConvertHorizontalFovToVertical(config.FieldOfView.Radians, config.AspectRatio),
+			config.OrthographicHeight,
 			config.AspectRatio,
 			config.NearPlaneDistance,
-			config.FarPlaneDistance
+			config.FarPlaneDistance,
+			config.ProjectionType
 		);
 
 		_activeCameras.Add(newCameraHandle, parameters);
@@ -132,6 +134,17 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 		SetVerticalFieldOfView(handle, Angle.FromRadians(ConvertHorizontalFovToVertical(newFov.Radians, _activeCameras[handle].AspectRatio)));
 	}
 
+	public float GetOrthographicHeight(ResourceHandle<Camera> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeCameras[handle].OrthographicHeight;
+	}
+	public void SetOrthographicHeight(ResourceHandle<Camera> handle, float newHeight) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (!newHeight.IsNonNegativeAndFinite()) throw new ArgumentException($"Orthographic height must be non-negative and finite.", nameof(newHeight));
+		_activeCameras[handle] = _activeCameras[handle] with { OrthographicHeight = newHeight };
+		UpdateProjectionMatrixFromParameters(handle);
+	}
+
 	public float GetAspectRatio(ResourceHandle<Camera> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeCameras[handle].AspectRatio;
@@ -205,6 +218,20 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 		UpdateProjectionMatrixFromParameters(handle);
 	}
 
+	public CameraProjectionType GetProjectionType(ResourceHandle<Camera> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeCameras[handle].ProjectionType;
+	}
+	
+	public void SetProjectionType(ResourceHandle<Camera> handle, CameraProjectionType newProjectionType) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (!Enum.IsDefined(newProjectionType)) throw new ArgumentOutOfRangeException(nameof(newProjectionType), newProjectionType, null);
+		_activeCameras[handle] = _activeCameras[handle] with {
+			ProjectionType = newProjectionType
+		};
+		UpdateProjectionMatrixFromParameters(handle);
+	}
+
 	public void GetProjectionMatrix(ResourceHandle<Camera> handle, out Matrix4x4 outMatrix) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		GetCameraProjectionMatrix(handle, out outMatrix, out _, out _).ThrowIfFailure();
@@ -255,17 +282,29 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 		var near = parameters.NearPlaneDistance;
 		var far = parameters.FarPlaneDistance;
 		
-		CameraUtils.CalculateProjectionMatrix(
-			parameters.NearPlaneDistance,
-			parameters.FarPlaneDistance,
-			Angle.FromRadians(parameters.VerticalFovRadians),
-			parameters.AspectRatio,
-			out var mat
-		);
+		Matrix4x4 projectionMatrix;
+		if (parameters.ProjectionType == CameraProjectionType.Orthographic) {
+			CameraUtils.CalculateOrthographicProjectionMatrix(
+				parameters.NearPlaneDistance,
+				parameters.FarPlaneDistance,
+				parameters.OrthographicHeight,
+				parameters.AspectRatio,
+				out projectionMatrix
+			);
+		}
+		else {
+			CameraUtils.CalculatePerspectiveProjectionMatrix(
+				parameters.NearPlaneDistance,
+				parameters.FarPlaneDistance,
+				Angle.FromRadians(parameters.VerticalFovRadians),
+				parameters.AspectRatio,
+				out projectionMatrix
+			);
+		}
 
 		SetCameraProjectionMatrix(
 			handle,
-			mat,
+			projectionMatrix,
 			near,
 			far
 		).ThrowIfFailure();
@@ -293,7 +332,9 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 		GetCameraModelMatrix(handle, out var modelMat).ThrowIfFailure();
 		GetCameraProjectionMatrix(handle, out var projMat, out _, out _).ThrowIfFailure();
 		
-		return CameraUtils.CreateRayFromCameraFrustumNearPlane(in modelMat, in projMat, normalizedNearPlaneCoord);
+		return _activeCameras[handle].ProjectionType == CameraProjectionType.Orthographic
+			? CameraUtils.CreateRayFromOrthographicCameraParameters(in modelMat, in projMat, normalizedNearPlaneCoord)
+			: CameraUtils.CreateRayFromPerspectiveCameraParameters(in modelMat, in projMat, normalizedNearPlaneCoord);
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<Camera> handle) {

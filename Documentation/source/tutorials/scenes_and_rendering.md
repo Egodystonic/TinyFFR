@@ -110,6 +110,8 @@ Cameras offer the following controls:
 	Changing this will automatically change `VerticalFieldOfView` according to the currently-set `AspectRatio`.
 
 	Must be between `Camera.FieldOfViewMin` (0°) and `Camera.FieldOfViewMax` (360°).
+	
+	Note that this value is only used when the camera's `ProjectionType` is set to `Perspective` (the default value).
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `VerticalFieldOfView`
 
@@ -120,6 +122,8 @@ Cameras offer the following controls:
 	Changing this will automatically change `HorizontalFieldOfView` according to the currently-set `AspectRatio`.
 
 	Must be between `Camera.FieldOfViewMin` (0°) and `Camera.FieldOfViewMax` (360°).
+	
+	Note that this value is only used when the camera's `ProjectionType` is set to `Perspective` (the default value).
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `AspectRatio`
 
@@ -148,6 +152,23 @@ Cameras offer the following controls:
 	In general you should try to keep the `FarPlaneDistance` no more than 5 orders of magnitude more than `NearPlaneDistance`, 6 at an absolute max. TinyFFR will automatically adjust the `FarPlaneDistance` to make sure it is never more than 1E6 times higher than `NearPlaneDistance`.
 
 	The default value is `CameraCreationConfig.DefaultFarPlaneDistance` (5000m). This can not be lower than or equal to `NearPlaneDistance`.
+	
+<span class="def-icon">:material-card-bulleted-outline:</span> `ProjectionType`
+
+:   Determines the way the camera "projects" the 3D world on to the 2D Window/RenderOutputBuffer.
+
+	The default value (`Perspective`) captures the scene with a target `VerticalFieldOfView`/`HorizontalFieldOfView`. Everything inside that FOV will be rendered on to the target according to a *perspective projection*, meaning objects further away will appear smaller relative to their size compared to objects closer to the camera. This matches how we typically view and understand the real world around us.
+	
+	Conversely, the `Orthographic` option captures the scene with a target `OrthographicHeight`. Everything inside that height and a calculated width (1) will be rendered to the target with no perspective distortion, meaning objects of the same size appear the same no matter their distance to the camera; essentially flatting the scene to a "2D" effect. This is often used for more technical views/renderings or for special effects such as [isometric rendering](https://en.wikipedia.org/wiki/Isometric_video_game_graphics).
+	{ .annotate }
+	
+	1.	The width is determined according to the set `OrthographicHeight` and `AspectRatio`.
+	
+<span class="def-icon">:material-card-bulleted-outline:</span> `OrthographicHeight`
+
+:   Indicates the vertical span of the camera's view when its `ProjectionType` is set to `Orthographic`. For example, if this value is `1.5f`, the camera will show 1.5m of the world from top-to-bottom. The width of the camera's view is determined by multiplying this height by the `AspectRatio`.
+
+	Defaults to `1f`. Has no effect when `ProjectionType` is not `Orthographic`.
 
 <span class="def-icon">:material-code-block-parentheses:</span> `SetViewAndUpDirection(Direction newViewDirection, Direction newUpDirection, bool enforceOrthogonality = true)`
 
