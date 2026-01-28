@@ -20,13 +20,13 @@ typedef MaterialInstance* MaterialHandle;
 class native_impl_render_assets {
 public:
 	PushSafeStructPacking
-		struct MeshVertex {
+	struct MeshVertex {
 		float3 Position;
 		float2 TextureUV;
 		float4 Tangent;
 	};
 	PopSafeStructPacking
-		static_assert(sizeof(MeshVertex) == 36);
+	static_assert(sizeof(MeshVertex) == 36);
 
 	static void allocate_vertex_buffer(BufferIdentity bufferIdentity, MeshVertex* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer);
 	static void allocate_index_buffer(BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer);

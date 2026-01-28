@@ -16,8 +16,9 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
-sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplProvider, IDisposable {
+sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, IDisposable {
 	readonly record struct BackdropTextureData(UIntPtr SkyboxTextureHandle, UIntPtr IblTextureHandle);
+	const string DefaultModelName = "Unnamed Model";
 	const string DefaultBackdropTextureName = "Unnamed Backdrop Texture";
 	const string HdrPreprocessorNameWin = "cmgen.exe";
 	const string HdrPreprocessorNameLinux = "cmgen";
@@ -27,6 +28,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 	const string HdrPreprocessedIblFileSearch = "*_ibl.ktx";
 	readonly string _hdrPreprocessorFilePath;
 	readonly string _hdrPreprocessorResourceName;
+	readonly BackdropTextureImplProvider _backdropTextureImplProvider;
 	readonly LocalBuiltInTexturePathLibrary _builtInTextureLibrary = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly LocalMeshBuilder _meshBuilder;
@@ -36,6 +38,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 	readonly FixedByteBufferPool _vertexTriangleBufferPool;
 	readonly FixedByteBufferPool _ktxFileBufferPool;
 	readonly TimeSpan _maxHdrProcessingTime;
+	readonly ArrayPoolBackedMap<ResourceHandle<Model>, ResourceGroup> _loadedModels = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<BackdropTexture>, BackdropTextureData> _loadedBackdropTextures = new();
 	readonly Lazy<ResourceGroup> _testMaterialTextures;
 	nuint _prevBackdropTextureHandle = 0;
@@ -60,6 +63,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 		_vertexTriangleBufferPool = new FixedByteBufferPool(config.MaxAssetVertexIndexBufferSizeBytes);
 		_ktxFileBufferPool = new FixedByteBufferPool(config.MaxKtxFileBufferSizeBytes);
 		_maxHdrProcessingTime = config.MaxHdrProcessingTime;
+		_backdropTextureImplProvider = new BackdropTextureImplProvider(this);
 
 		if (OperatingSystem.IsWindows()) {
 			_hdrPreprocessorFilePath = Path.Combine(LocalFileSystemUtils.ApplicationDataDirectoryPath, HdrPreprocessorNameWin);
@@ -76,13 +80,13 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 	}
 
 	#region Read / Load Texture
-	public Texture LoadTexture(in TextureReadConfig readConfig, in TextureCreationConfig config) {
+	public Texture LoadTexture(ReadOnlySpan<char> filePath, in TextureCreationConfig config, in TextureReadConfig readConfig) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 		
-		switch (_builtInTextureLibrary.GetLikelyBuiltInTextureType(readConfig.FilePath)) {
+		switch (_builtInTextureLibrary.GetLikelyBuiltInTextureType(filePath)) {
 			case LocalBuiltInTexturePathLibrary.BuiltInTextureType.Texel:
-				var builtInTexel = _builtInTextureLibrary.TryGetBuiltInTexel(readConfig.FilePath);
+				var builtInTexel = _builtInTextureLibrary.TryGetBuiltInTexel(filePath);
 				var builtInRgb = builtInTexel?.First;
 				var builtInRgba = builtInTexel?.Second;
 
@@ -102,7 +106,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 				}
 				break;
 			case LocalBuiltInTexturePathLibrary.BuiltInTextureType.EmbeddedResourceTexture:
-				var embeddedTextureAssetData = _builtInTextureLibrary.TryGetBuiltInEmbeddedResourceTexture(readConfig.FilePath);
+				var embeddedTextureAssetData = _builtInTextureLibrary.TryGetBuiltInEmbeddedResourceTexture(filePath);
 				if (embeddedTextureAssetData is { } tuple) {
 					if (tuple.ContainsAlpha) {
 						return _textureBuilder.CreateTexture(
@@ -123,7 +127,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 		}
 
 		try {
-			_assetFilePathBuffer.ConvertFromUtf16(readConfig.FilePath);
+			_assetFilePathBuffer.ConvertFromUtf16(filePath);
 			GetTextureFileData(
 				in _assetFilePathBuffer.AsRef,
 				out _,
@@ -165,7 +169,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 			}
 		}
 		catch (Exception e) {
-			if (!File.Exists(readConfig.FilePath.ToString())) throw new InvalidOperationException($"File '{readConfig.FilePath}' does not exist.", e);
+			if (!File.Exists(filePath.ToString())) throw new InvalidOperationException($"File '{filePath}' does not exist.", e);
 			else throw;
 		}
 	}
@@ -644,13 +648,13 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 	#endregion
 
 	#region Meshes
-	public Mesh LoadMesh(in MeshReadConfig readConfig, in MeshCreationConfig config) {
+	public Mesh LoadMesh(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig) {
 		ThrowIfThisIsDisposed();
 		readConfig.ThrowIfInvalid();
 		config.ThrowIfInvalid();
 
 		try {
-			_assetFilePathBuffer.ConvertFromUtf16(readConfig.FilePath);
+			_assetFilePathBuffer.ConvertFromUtf16(filePath);
 			LoadAssetFileInToMemory(
 				in _assetFilePathBuffer.AsRef,
 				readConfig.FixCommonExportErrors,
@@ -705,16 +709,16 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 			}
 		}
 		catch (Exception e) {
-			if (!File.Exists(readConfig.FilePath.ToString())) throw new InvalidOperationException($"File '{readConfig.FilePath}' does not exist.", e);
+			if (!File.Exists(filePath.ToString())) throw new InvalidOperationException($"File '{filePath}' does not exist.", e);
 			else throw;
 		}
 	}
-	public MeshReadMetadata ReadMeshMetadata(in MeshReadConfig readConfig) {
+	public MeshReadMetadata ReadMeshMetadata(ReadOnlySpan<char> filePath, in MeshReadConfig readConfig) {
 		ThrowIfThisIsDisposed();
 		readConfig.ThrowIfInvalid();
 
 		try {
-			_assetFilePathBuffer.ConvertFromUtf16(readConfig.FilePath);
+			_assetFilePathBuffer.ConvertFromUtf16(filePath);
 			LoadAssetFileInToMemory(
 				in _assetFilePathBuffer.AsRef,
 				readConfig.FixCommonExportErrors,
@@ -744,16 +748,16 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 			}
 		}
 		catch (Exception e) {
-			if (!File.Exists(readConfig.FilePath.ToString())) throw new InvalidOperationException($"File '{readConfig.FilePath}' does not exist.", e);
+			if (!File.Exists(filePath.ToString())) throw new InvalidOperationException($"File '{filePath}' does not exist.", e);
 			else throw;
 		}
 	}
-	public MeshReadCountData ReadMesh(in MeshReadConfig readConfig, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer) {
+	public MeshReadCountData ReadMesh(ReadOnlySpan<char> filePath, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer, in MeshReadConfig readConfig) {
 		ThrowIfThisIsDisposed();
 		readConfig.ThrowIfInvalid();
 
 		try {
-			_assetFilePathBuffer.ConvertFromUtf16(readConfig.FilePath);
+			_assetFilePathBuffer.ConvertFromUtf16(filePath);
 			LoadAssetFileInToMemory(
 				in _assetFilePathBuffer.AsRef,
 				readConfig.FixCommonExportErrors,
@@ -813,13 +817,30 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 			}
 		}
 		catch (Exception e) {
-			if (!File.Exists(readConfig.FilePath.ToString())) throw new InvalidOperationException($"File '{readConfig.FilePath}' does not exist.", e);
+			if (!File.Exists(filePath.ToString())) throw new InvalidOperationException($"File '{filePath}' does not exist.", e);
 			else throw;
 		}
 	}
 	#endregion
 
 	#region Environment / Backdrop
+	// This is a private embedded 'delegating' object to help provide distinction between some default interface methods
+	// on both IModelImplProvider and IBackdropTextureImplProvider. 
+	sealed class BackdropTextureImplProvider : IBackdropTextureImplProvider {
+		readonly LocalAssetLoader _owner;
+
+		public BackdropTextureImplProvider(LocalAssetLoader owner) => _owner = owner;
+
+		public UIntPtr GetSkyboxTextureHandle(ResourceHandle<BackdropTexture> handle) => _owner.GetSkyboxTextureHandle(handle);
+		public UIntPtr GetIndirectLightingTextureHandle(ResourceHandle<BackdropTexture> handle) => _owner.GetIndirectLightingTextureHandle(handle);
+		public string GetNameAsNewStringObject(ResourceHandle<BackdropTexture> handle) => _owner.GetNameAsNewStringObject(handle);
+		public int GetNameLength(ResourceHandle<BackdropTexture> handle) => _owner.GetNameLength(handle);
+		public void CopyName(ResourceHandle<BackdropTexture> handle, Span<char> destinationBuffer) => _owner.CopyName(handle, destinationBuffer);
+		public bool IsDisposed(ResourceHandle<BackdropTexture> handle) => _owner.IsDisposed(handle);
+		public void Dispose(ResourceHandle<BackdropTexture> handle) => _owner.Dispose(handle);
+		public override string ToString() => _owner.ToString();
+	}
+	
 	void ExtractHdrPreprocessorIfNecessary() {
 		if (_hdrPreprocessorHasBeenExtracted) return;
 
@@ -892,20 +913,19 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 				throw new InvalidOperationException($"Could not find skybox ({HdrPreprocessedSkyboxFileSearch}) and/or IBL ({HdrPreprocessedIblFileSearch}) file in given directory ({dirPathString}).");
 			}
 
-			return LoadBackdropTexture(new() { IblKtxFilePath = iblFile, SkyboxKtxFilePath = skyboxFile }, config);
+			return LoadBackdropTexture(skyboxFile, iblFile, config);
 		}
 		catch (Exception e) {
 			throw new InvalidOperationException("Could not load processed HDR directory.", e);
 		}
 	}
-	public BackdropTexture LoadBackdropTexture(in BackdropTextureReadConfig readConfig, in BackdropTextureCreationConfig config) {
+	public BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, in BackdropTextureCreationConfig config) {
 		ThrowIfThisIsDisposed();
-		readConfig.ThrowIfInvalid();
 		config.ThrowIfInvalid();
 		try {
 			checked {
-				using var skyboxFs = new FileStream(readConfig.SkyboxKtxFilePath.ToString(), FileMode.Open, FileAccess.Read, FileShare.Read);
-				using var iblFs = new FileStream(readConfig.IblKtxFilePath.ToString(), FileMode.Open, FileAccess.Read, FileShare.Read);
+				using var skyboxFs = new FileStream(skyboxKtxFilePath.ToString(), FileMode.Open, FileAccess.Read, FileShare.Read);
+				using var iblFs = new FileStream(iblKtxFilePath.ToString(), FileMode.Open, FileAccess.Read, FileShare.Read);
 
 				var skyboxFileLen = (int) skyboxFs.Length;
 				var skyboxFixedBuffer = _ktxFileBufferPool.Rent(skyboxFileLen);
@@ -935,8 +955,8 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 			}
 		}
 		catch (Exception e) {
-			if (!File.Exists(readConfig.SkyboxKtxFilePath.ToString())) throw new InvalidOperationException($"File '{readConfig.SkyboxKtxFilePath}' does not exist.", e);
-			if (!File.Exists(readConfig.IblKtxFilePath.ToString())) throw new InvalidOperationException($"File '{readConfig.IblKtxFilePath}' does not exist.", e);
+			if (!File.Exists(skyboxKtxFilePath.ToString())) throw new InvalidOperationException($"File '{skyboxKtxFilePath}' does not exist.", e);
+			if (!File.Exists(iblKtxFilePath.ToString())) throw new InvalidOperationException($"File '{iblKtxFilePath}' does not exist.", e);
 			throw new InvalidOperationException("Error occured when reading and/or loading skybox or IBL file.", e);
 		}
 	}
@@ -963,6 +983,124 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 		_globals.CopyResourceName(handle.Ident, DefaultBackdropTextureName, destinationBuffer);
 	}
 	#endregion
+	
+	#region Load Generic / Combined
+	public ResourceGroup Load(ReadOnlySpan<char> filePath, in AssetCreationConfig config, in AssetReadConfig readConfig) {
+		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+		readConfig.ThrowIfInvalid();
+		
+		try {
+			_assetFilePathBuffer.ConvertFromUtf16(filePath);
+			
+			LoadAssetFileInToMemory(
+				in _assetFilePathBuffer.AsRef,
+				readConfig.MeshConfig.FixCommonExportErrors,
+				readConfig.MeshConfig.OptimizeForGpu,
+				out var assetHandle
+			).ThrowIfFailure();
+
+			try {
+				GetLoadedAssetMeshCount(assetHandle, out var meshCount).ThrowIfFailure(); 
+				GetLoadedAssetMaterialCount(assetHandle, out var materialCount).ThrowIfFailure(); 
+				GetLoadedAssetTextureCount(assetHandle, out var textureCount).ThrowIfFailure(); 
+				
+				var result = _globals.ResourceGroupProvider.CreateGroup(
+					disposeContainedResourcesWhenDisposed: true,
+					name: config.Name,
+					meshCount + materialCount + textureCount
+				);
+				
+				for (var t = 0; t < textureCount; ++t) {
+					
+				}
+				
+				for (var m = 0; m < materialCount; ++m) {
+					
+				}
+				
+				for (var m = 0; m < meshCount; ++m) {
+					GetLoadedAssetMeshVertexCount(assetHandle, m, out var vCount).ThrowIfFailure();
+					GetLoadedAssetMeshTriangleCount(assetHandle, m, out var tCount).ThrowIfFailure();
+					
+					var fixedVertexBuffer = _vertexTriangleBufferPool.Rent<MeshVertex>(vCount);
+					var fixedTriangleBuffer = _vertexTriangleBufferPool.Rent<VertexTriangle>(tCount);
+					try {
+						CopyLoadedAssetMeshVertices(assetHandle, m, fixedVertexBuffer.Size<MeshVertex>(), (MeshVertex*) fixedVertexBuffer.StartPtr).ThrowIfFailure();
+						CopyLoadedAssetMeshTriangles(assetHandle, m, fixedTriangleBuffer.Size<VertexTriangle>(), (VertexTriangle*) fixedTriangleBuffer.StartPtr).ThrowIfFailure();
+					}
+					finally {
+						_vertexTriangleBufferPool.Return(fixedVertexBuffer);
+						_vertexTriangleBufferPool.Return(fixedTriangleBuffer);
+					}
+					
+					var mesh = _meshBuilder.CreateMesh(
+						fixedVertexBuffer.AsReadOnlySpan<MeshVertex>(vCount),
+						fixedTriangleBuffer.AsReadOnlySpan<VertexTriangle>(tCount),
+						config.MeshConfig
+					);
+					
+					result.Add(mesh);
+				}
+				
+				result.Seal();
+				return result;
+			}
+			finally {
+				UnloadAssetFileFromMemory(assetHandle).ThrowIfFailure();
+			}
+		}
+		catch (Exception e) {
+			if (!File.Exists(filePath.ToString())) throw new InvalidOperationException($"File '{filePath}' does not exist.", e);
+			else throw;
+		}
+	}
+
+	public Mesh GetMesh(ResourceHandle<Model> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _loadedModels[handle].Meshes[0];
+	}
+	public Material GetMaterial(ResourceHandle<Model> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _loadedModels[handle].Materials[0];
+	}
+	public IndirectEnumerable<Model, Texture> GetTextures(ResourceHandle<Model> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return new IndirectEnumerable<Model, Texture>(
+			HandleToInstance(handle),
+			0,
+			&GetModelTextureCount,
+			&GetModelVersion,
+			&GetModelTextureAtIndex
+		);
+	}
+	static int GetModelTextureCount(Model m) {
+		var @this = m.Implementation as LocalAssetLoader;
+		if (@this == null) throw new InvalidOperationException("Model textures enumerated against differing implementation.");
+		var handle = m.Handle; // Throws if disposed
+		return @this._loadedModels[handle].Textures.Count;
+	}
+	static Texture GetModelTextureAtIndex(Model m, int index) {
+		var @this = m.Implementation as LocalAssetLoader;
+		if (@this == null) throw new InvalidOperationException("Model textures enumerated against differing implementation.");
+		var handle = m.Handle; // Throws if disposed
+		return @this._loadedModels[handle].Textures[index];
+	}
+	static int GetModelVersion(Model _) => 0;
+
+	public string GetNameAsNewStringObject(ResourceHandle<Model> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return new String(_globals.GetResourceName(handle.Ident, DefaultBackdropTextureName));
+	}
+	public int GetNameLength(ResourceHandle<Model> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _globals.GetResourceName(handle.Ident, DefaultBackdropTextureName).Length;
+	}
+	public void CopyName(ResourceHandle<Model> handle, Span<char> destinationBuffer) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_globals.CopyResourceName(handle.Ident, DefaultBackdropTextureName, destinationBuffer);
+	}
+	#endregion
 
 	ResourceGroup CreateTestMaterialTextures() {
 		var result = _globals.ResourceGroupProvider.CreateGroup(
@@ -971,8 +1109,9 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 		);
 
 		result.Add(LoadTexture(
-			new TextureReadConfig { FilePath = _builtInTextureLibrary.UvTestingTexture, IncludeWAlphaChannel = false },
-			new TextureCreationConfig { GenerateMipMaps = true, IsLinearColorspace = false, Name = LocalMaterialBuilder.TestMaterialName + " Color Map", ProcessingToApply = TextureProcessingConfig.None }
+			_builtInTextureLibrary.UvTestingTexture,
+			new TextureCreationConfig { GenerateMipMaps = true, IsLinearColorspace = false, Name = LocalMaterialBuilder.TestMaterialName + " Color Map", ProcessingToApply = TextureProcessingConfig.None },
+			new TextureReadConfig { IncludeWAlphaChannel = false }
 		));
 
 		result.Add(TextureBuilder.CreateNormalMap(
@@ -1101,12 +1240,23 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 	#endregion
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	BackdropTexture HandleToInstance(ResourceHandle<BackdropTexture> h) => new(h, this);
+	Model HandleToInstance(ResourceHandle<Model> h) => new(h, this);
+	BackdropTexture HandleToInstance(ResourceHandle<BackdropTexture> h) => new(h, _backdropTextureImplProvider);
 
 	public override string ToString() => _isDisposed ? "TinyFFR Local Asset Loader [Disposed]" : "TinyFFR Local Asset Loader";
 
 	#region Disposal
+	public bool IsDisposed(ResourceHandle<Model> handle) => _isDisposed || !_loadedModels.ContainsKey(handle);
 	public bool IsDisposed(ResourceHandle<BackdropTexture> handle) => _isDisposed || !_loadedBackdropTextures.ContainsKey(handle);
+
+	public void Dispose(ResourceHandle<Model> handle) => Dispose(handle, removeFromCollection: true);
+	void Dispose(ResourceHandle<Model> handle, bool removeFromCollection) {
+		if (IsDisposed(handle)) return;
+		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
+		_loadedModels[handle].Dispose();
+		_globals.DisposeResourceNameIfExists(handle.Ident);
+		if (removeFromCollection) _loadedModels.Remove(handle);
+	}
 
 	public void Dispose(ResourceHandle<BackdropTexture> handle) => Dispose(handle, removeFromCollection: true);
 	void Dispose(ResourceHandle<BackdropTexture> handle, bool removeFromCollection) {
@@ -1119,10 +1269,10 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 		if (removeFromCollection) _loadedBackdropTextures.Remove(handle);
 	}
 
-
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
+			foreach (var model in _loadedModels.Keys) Dispose(model, removeFromCollection: false);
 			foreach (var backdropTex in _loadedBackdropTextures.Keys) Dispose(backdropTex, removeFromCollection: false);
 			_ktxFileBufferPool.Dispose();
 			_vertexTriangleBufferPool.Dispose();
@@ -1136,6 +1286,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 
 			_textureBuilder.Dispose();
 			_loadedBackdropTextures.Dispose();
+			_loadedModels.Dispose();
 		}
 		finally {
 			_isDisposed = true;
@@ -1145,6 +1296,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IBackdropTextureImplPr
 	void ThrowIfThisIsDisposed() {
 		ObjectDisposedException.ThrowIf(_isDisposed, typeof(IAssetLoader));
 	}
+	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<Model> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(Model));
 	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<BackdropTexture> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(BackdropTexture));
 	#endregion
 }

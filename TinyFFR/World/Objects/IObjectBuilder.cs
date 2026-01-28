@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Resources;
@@ -9,19 +10,10 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.World;
 
 public interface IObjectBuilder {
-	private static void GetMeshAndMaterialFromGroup(ResourceGroup meshAndMaterialGroup, out Mesh outMesh, out Material outMaterial) {
-		if (meshAndMaterialGroup.Meshes.Count < 1) throw new ArgumentException($"Given {nameof(ResourceGroup)} does not contain any {nameof(Mesh)} instances.", nameof(meshAndMaterialGroup));
-		if (meshAndMaterialGroup.Materials.Count < 1) throw new ArgumentException($"Given {nameof(ResourceGroup)} does not contain any {nameof(Material)} instances.", nameof(meshAndMaterialGroup));
-
-		outMesh = meshAndMaterialGroup.Meshes[0];
-		outMaterial = meshAndMaterialGroup.Materials[0];
-	}
-
-	ModelInstance CreateModelInstance(ResourceGroup meshAndMaterialGroup, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, ReadOnlySpan<char> name = default) {
-		GetMeshAndMaterialFromGroup(meshAndMaterialGroup, out var mesh, out var material);
+	ModelInstance CreateModelInstance(Model model, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, ReadOnlySpan<char> name = default) {
 		return CreateModelInstance(
-			mesh,
-			material,
+			model.Mesh,
+			model.Material,
 			initialPosition,
 			initialRotation,
 			initialScaling,
@@ -41,11 +33,10 @@ public interface IObjectBuilder {
 		);
 	}
 
-	ModelInstance CreateModelInstance(ResourceGroup meshAndMaterialGroup, Transform initialTransform, ReadOnlySpan<char> name = default) {
-		GetMeshAndMaterialFromGroup(meshAndMaterialGroup, out var mesh, out var material);
+	ModelInstance CreateModelInstance(Model model, Transform initialTransform, ReadOnlySpan<char> name = default) {
 		return CreateModelInstance(
-			mesh,
-			material,
+			model.Mesh,
+			model.Material,
 			initialTransform, 
 			name
 		);

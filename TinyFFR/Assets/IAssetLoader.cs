@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using static Egodystonic.TinyFFR.Assets.TextureCombinationSourceTexture;
 using static Egodystonic.TinyFFR.ColorChannel;
@@ -103,8 +104,8 @@ public interface IAssetLoader {
 			}
 		);
 	}
-	Texture LoadTexture(ReadOnlySpan<char> filePath, in TextureCreationConfig config) => LoadTexture(new TextureReadConfig { FilePath = filePath }, in config);
-	Texture LoadTexture(in TextureReadConfig readConfig, in TextureCreationConfig config);
+	Texture LoadTexture(ReadOnlySpan<char> filePath, in TextureCreationConfig config) => LoadTexture(filePath, in config, new TextureReadConfig());
+	Texture LoadTexture(ReadOnlySpan<char> filePath, in TextureCreationConfig config, in TextureReadConfig readConfig);
 
 	TextureReadMetadata ReadTextureMetadata(ReadOnlySpan<char> filePath);
 	int ReadTexture<TTexel>(ReadOnlySpan<char> filePath, Span<TTexel> destinationBuffer) where TTexel : unmanaged, ITexel<TTexel> => ReadTexture(filePath, TextureProcessingConfig.None, destinationBuffer);
@@ -480,29 +481,40 @@ public interface IAssetLoader {
 	#region Load Backdrop Texture
 	BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, ReadOnlySpan<char> name = default) {
 		return LoadBackdropTexture(
-			new BackdropTextureReadConfig { IblKtxFilePath = iblKtxFilePath, SkyboxKtxFilePath = skyboxKtxFilePath },
+			skyboxKtxFilePath, iblKtxFilePath,
 			new BackdropTextureCreationConfig { Name = name }
 		);
 	}
-	BackdropTexture LoadBackdropTexture(in BackdropTextureReadConfig readConfig, in BackdropTextureCreationConfig config);
+	BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, in BackdropTextureCreationConfig config);
 	#endregion
 
 	#region Load / Read Mesh
 	Mesh LoadMesh(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
 		return LoadMesh(
-			new MeshReadConfig {
-				FilePath = filePath
-			},
+			filePath,
 			new MeshCreationConfig {
 				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
 			}
 		);
 	}
-	Mesh LoadMesh(ReadOnlySpan<char> filePath, in MeshCreationConfig config) => LoadMesh(new MeshReadConfig { FilePath = filePath }, config);
-	Mesh LoadMesh(in MeshReadConfig readConfig, in MeshCreationConfig config);
-	MeshReadMetadata ReadMeshMetadata(ReadOnlySpan<char> filePath) => ReadMeshMetadata(new MeshReadConfig { FilePath = filePath });
-	MeshReadMetadata ReadMeshMetadata(in MeshReadConfig readConfig);
-	MeshReadCountData ReadMesh(ReadOnlySpan<char> filePath, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer) => ReadMesh(new MeshReadConfig { FilePath = filePath }, vertexBuffer, triangleBuffer);
-	MeshReadCountData ReadMesh(in MeshReadConfig readConfig, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer);
+	Mesh LoadMesh(ReadOnlySpan<char> filePath, in MeshCreationConfig config) => LoadMesh(filePath, config, new MeshReadConfig());
+	Mesh LoadMesh(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig);
+	MeshReadMetadata ReadMeshMetadata(ReadOnlySpan<char> filePath) => ReadMeshMetadata(filePath, new MeshReadConfig());
+	MeshReadMetadata ReadMeshMetadata(ReadOnlySpan<char> filePath, in MeshReadConfig readConfig);
+	MeshReadCountData ReadMesh(ReadOnlySpan<char> filePath, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer) => ReadMesh(filePath, vertexBuffer, triangleBuffer, new MeshReadConfig());
+	MeshReadCountData ReadMesh(ReadOnlySpan<char> filePath, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer, in MeshReadConfig readConfig);
+	#endregion
+
+	#region Load Generic / Combined
+	ResourceGroup Load(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
+		return Load(
+			filePath,
+			new AssetCreationConfig {
+				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
+			}
+		);
+	}
+	ResourceGroup Load(ReadOnlySpan<char> filePath, in AssetCreationConfig config) => Load(filePath, in config, new AssetReadConfig());
+	ResourceGroup Load(ReadOnlySpan<char> filePath, in AssetCreationConfig config, in AssetReadConfig readConfig);
 	#endregion
 }

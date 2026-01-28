@@ -8,10 +8,21 @@
 #include "assimp/postprocess.h"
 
 typedef const aiScene* MemoryLoadedAssetHandle;
-typedef const unsigned char* MemoryLoadedTextureRgba32DataPtr;
+typedef unsigned char* MemoryLoadedTextureRgba32DataPtr;
 
 class native_impl_asset_loader {
 public:
+	enum AssetMaterialParam
+	{
+		
+	};
+	enum AssetMaterialParamDataFormat
+	{
+		NotIncluded = 0,
+		Numerical = 1,
+		TextureMap = 2
+	};
+	
 	static void load_asset_file_in_to_memory(const char* filePath, interop_bool fixCommonExporterErrors, interop_bool optimize, MemoryLoadedAssetHandle* outAssetHandle);
 	static void get_loaded_asset_mesh_count(MemoryLoadedAssetHandle assetHandle, int32_t* outMeshCount);
 	static void get_loaded_asset_material_count(MemoryLoadedAssetHandle assetHandle, int32_t* outMaterialCount);
@@ -20,6 +31,8 @@ public:
 	static void get_loaded_asset_mesh_triangle_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outTriangleCount);
 	static void copy_loaded_asset_mesh_vertices(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertex* buffer);
 	static void copy_loaded_asset_mesh_triangles(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeTriangles, int32_t* buffer);
+	static void get_loaded_asset_texture_size(MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootFilePath, int32_t* outWidth, int32_t* outHeight);
+	static void get_loaded_asset_texture_data(MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootFilePath, MemoryLoadedTextureRgba32DataPtr buffer, int32_t bufferLengthBytes);
 	static void unload_asset_file_from_memory(MemoryLoadedAssetHandle assetHandle);
 
 	static void get_texture_file_data(const char* filePath, int32_t* outWidth, int32_t* outHeight, int32_t* outChannelCount);

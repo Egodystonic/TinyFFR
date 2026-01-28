@@ -8,28 +8,22 @@ using static Egodystonic.TinyFFR.IConfigStruct;
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
 public readonly ref struct TextureReadConfig : IConfigStruct<TextureReadConfig> {
-	public required ReadOnlySpan<char> FilePath { get; init; }
 	public bool IncludeWAlphaChannel { get; init; } = true;
 
 	public TextureReadConfig() { }
 
 	internal void ThrowIfInvalid() {
-		if (FilePath.IsEmpty) {
-			throw new ArgumentException($"{nameof(TextureReadConfig)}.{nameof(FilePath)} can not be empty.", nameof(FilePath));
-		}
+		/* no-op */
 	}
 
 	public static int GetHeapStorageFormattedLength(in TextureReadConfig src) {
-		return SerializationSizeOfString(src.FilePath) // FilePath
-			+ SerializationSizeOfBool(); // IncludeWAlphaChannel
+		return SerializationSizeOfBool(); // IncludeWAlphaChannel
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in TextureReadConfig src) {
-		SerializationWriteString(ref dest, src.FilePath);
 		SerializationWriteBool(ref dest, src.IncludeWAlphaChannel);
 	}
 	public static TextureReadConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new TextureReadConfig {
-			FilePath = SerializationReadString(ref src),
 			IncludeWAlphaChannel = SerializationReadBool(ref src)
 		};
 	}

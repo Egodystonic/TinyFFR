@@ -12,31 +12,25 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 // Creation Config for general processing in the local builder when creating the resource
 
 public readonly ref struct MeshReadConfig : IConfigStruct<MeshReadConfig> {
-	public required ReadOnlySpan<char> FilePath { get; init; }
 	public bool FixCommonExportErrors { get; init; } = true;
 	public bool OptimizeForGpu { get; init; } = true;
 
 	public MeshReadConfig() { }
 
 	internal void ThrowIfInvalid() {
-		if (FilePath.IsEmpty) {
-			throw new ArgumentException($"{nameof(MeshReadConfig)}.{nameof(FilePath)} can not be empty.", nameof(FilePath));
-		}
+		/* no-op */
 	}
 
 	public static int GetHeapStorageFormattedLength(in MeshReadConfig src) {
-		return	SerializationSizeOfString(src.FilePath) // FilePath
-			+	SerializationSizeOfBool() // FixCommonExportErrors
+		return	SerializationSizeOfBool() // FixCommonExportErrors
 			+	SerializationSizeOfBool();  // OptimizeForGpu
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in MeshReadConfig src) {
-		SerializationWriteString(ref dest, src.FilePath);
 		SerializationWriteBool(ref dest, src.FixCommonExportErrors);
 		SerializationWriteBool(ref dest, src.OptimizeForGpu);
 	}
 	public static MeshReadConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new MeshReadConfig {
-			FilePath = SerializationReadString(ref src),
 			FixCommonExportErrors = SerializationReadBool(ref src),
 			OptimizeForGpu = SerializationReadBool(ref src)
 		};
