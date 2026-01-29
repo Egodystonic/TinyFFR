@@ -198,7 +198,7 @@ StartExportedFunc(copy_loaded_asset_mesh_triangles, MemoryLoadedAssetHandle asse
 	EndExportedFunc
 }
 
-void native_impl_asset_loader::get_loaded_asset_texture_size(MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootFilePath, int32_t* outWidth, int32_t* outHeight) {
+void native_impl_asset_loader::get_loaded_asset_texture_size(MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootDirPath, int32_t* outWidth, int32_t* outHeight) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 	ThrowIf(static_cast<uint32_t>(textureIndex) >= assetHandle->mNumTextures, "Texture index was out of bounds.");
 	ThrowIfNull(outWidth, "Out width pointer was null.");
@@ -229,23 +229,24 @@ void native_impl_asset_loader::get_loaded_asset_texture_size(MemoryLoadedAssetHa
 	
 	// External file
 	int32_t channelCount;
-	std::filesystem::path root { assetRootFilePath };
+	std::filesystem::path root { assetRootDirPath };
 	std::filesystem::path rel { filename.C_Str() };
 	std::filesystem::path full = root / rel; // Don't be tempted to inline this and the line below, root / rel creates a temp that is moved to 'full' here. C++ fucking sucks lol
 	auto fullPath = full.c_str();
 	get_texture_file_data(fullPath, outWidth, outHeight, &channelCount);
 }
-StartExportedFunc(get_loaded_asset_texture_size, MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootFilePath, int32_t* outWidth, int32_t* outHeight) {
-	native_impl_asset_loader::get_loaded_asset_texture_size(assetHandle, textureIndex, assetRootFilePath, outWidth, outHeight);
+StartExportedFunc(get_loaded_asset_texture_size, MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootDirPath, int32_t* outWidth, int32_t* outHeight) {
+	native_impl_asset_loader::get_loaded_asset_texture_size(assetHandle, textureIndex, assetRootDirPath, outWidth, outHeight);
 	EndExportedFunc
 }
 
-void native_impl_asset_loader::get_loaded_asset_texture_data(MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootFilePath, MemoryLoadedTextureRgba32DataPtr buffer, int32_t bufferLengthBytes) {
+void native_impl_asset_loader::get_loaded_asset_texture_data(MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootDirPath, MemoryLoadedTextureRgba32DataPtr buffer, int32_t bufferLengthBytes, int32_t* outWidth, int32_t* outHeight) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 	ThrowIf(static_cast<uint32_t>(textureIndex) >= assetHandle->mNumTextures, "Texture index was out of bounds.");
-	ThrowIfNull(assetRootFilePath, "Asset root file path was null.");
+	ThrowIfNull(assetRootDirPath, "Asset root file path was null.");
 	ThrowIfNull(buffer, "Buffer pointer was null.");
 	
+	constexpr int MaxEmbeddedTextureDimension = 16384;
 	auto texture = assetHandle->mTextures[textureIndex];
 	auto filename = texture->mFilename;
 	ThrowIf(filename.length < 1U, "Asset texture URI was empty!");
@@ -258,16 +259,24 @@ void native_impl_asset_loader::get_loaded_asset_texture_data(MemoryLoadedAssetHa
 			int width, height, channelCount;
 			auto imageData = stbi_load_from_memory(reinterpret_cast<stbi_uc const*>(texture->pcData), static_cast<int>(texture->mWidth), &width, &height, &channelCount, 4);
 			ThrowIfNull(imageData, "Could not load embedded texture '", texture->mFilename.C_Str(), "': ", stbi_failure_reason());
+			if (width > MaxEmbeddedTextureDimension || height > MaxEmbeddedTextureDimension || width <= 0 || height <= 0) {
+				stbi_image_free(imageData);
+				Throw("Embedded texture was either too large or had malformed size information.");
+			}
 			if (width * height * 4 > bufferLengthBytes) {
 				stbi_image_free(imageData);
 				Throw("Given buffer length was too small to fit embedded texture.");
 			}
 			memcpy((void*) buffer, imageData, width * height * 4); 
 			stbi_image_free(imageData);
+			*outWidth = width;
+			*outHeight = height;
 			return;
 		}
 		
 		// Uncompressed format, need to manually copy over
+		ThrowIf(texture->mWidth > MaxEmbeddedTextureDimension, "Embedded texture was either too large or had malformed size information.");
+		ThrowIf(texture->mHeight > MaxEmbeddedTextureDimension, "Embedded texture was either too large or had malformed size information.");
 		auto numTexels = texture->mWidth * texture->mHeight;
 		if (numTexels * 4 > bufferLengthBytes) {
 			Throw("Given buffer length was too small to fit embedded texture.");
@@ -278,26 +287,34 @@ void native_impl_asset_loader::get_loaded_asset_texture_data(MemoryLoadedAssetHa
 			buffer[i * 4 + 2] = texture->pcData[i].b;
 			buffer[i * 4 + 3] = texture->pcData[i].a;
 		}
+		*outWidth = static_cast<int32_t>(texture->mWidth);
+		*outHeight = static_cast<int32_t>(texture->mHeight);
 		return;
 	}
 	
 	// External file
-	std::filesystem::path root { assetRootFilePath };
+	std::filesystem::path root { assetRootDirPath };
 	std::filesystem::path rel { filename.C_Str() };
 	std::filesystem::path full = root / rel; // Don't be tempted to inline this and the line below, root / rel creates a temp that is moved to 'full' here. C++ fucking sucks lol
 	auto fullPath = full.c_str();
 	int32_t width, height;
 	MemoryLoadedTextureRgba32DataPtr imageData;
 	load_texture_file_in_to_memory(fullPath, interop_bool_true, &width, &height, &imageData);
+	if (width > MaxEmbeddedTextureDimension || height > MaxEmbeddedTextureDimension || width <= 0 || height <= 0) {
+		stbi_image_free(imageData);
+		Throw("Embedded texture was either too large or had malformed size information.");
+	}
 	if (width * height * 4 > bufferLengthBytes) {
 		stbi_image_free(imageData);
 		Throw("Given buffer length was too small to fit embedded texture.");
 	}
 	memcpy((void*) buffer, imageData, width * height * 4); 
 	stbi_image_free(imageData);
+	*outWidth = width;
+	*outHeight = height;
 }
-StartExportedFunc(get_loaded_asset_texture_data, MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootFilePath, MemoryLoadedTextureRgba32DataPtr buffer, int32_t bufferLengthBytes) {
-	native_impl_asset_loader::get_loaded_asset_texture_data(assetHandle, textureIndex, assetRootFilePath, buffer, bufferLengthBytes);
+StartExportedFunc(get_loaded_asset_texture_data, MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootFilePath, MemoryLoadedTextureRgba32DataPtr buffer, int32_t bufferLengthBytes, int32_t* outWidth, int32_t* outHeight) {
+	native_impl_asset_loader::get_loaded_asset_texture_data(assetHandle, textureIndex, assetRootFilePath, buffer, bufferLengthBytes, outWidth, outHeight);
 	EndExportedFunc
 }
 

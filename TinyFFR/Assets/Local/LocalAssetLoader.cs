@@ -37,6 +37,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, ID
 	readonly InteropStringBuffer _assetFilePathBuffer;
 	readonly FixedByteBufferPool _vertexTriangleBufferPool;
 	readonly FixedByteBufferPool _ktxFileBufferPool;
+	readonly FixedByteBufferPool _embeddedAssetTextureBufferPool;
 	readonly TimeSpan _maxHdrProcessingTime;
 	readonly ArrayPoolBackedMap<ResourceHandle<Model>, ResourceGroup> _loadedModels = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<BackdropTexture>, BackdropTextureData> _loadedBackdropTextures = new();
@@ -62,6 +63,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, ID
 		_assetFilePathBuffer = new InteropStringBuffer(config.MaxAssetFilePathLengthChars, addOneForNullTerminator: true);
 		_vertexTriangleBufferPool = new FixedByteBufferPool(config.MaxAssetVertexIndexBufferSizeBytes);
 		_ktxFileBufferPool = new FixedByteBufferPool(config.MaxKtxFileBufferSizeBytes);
+		_embeddedAssetTextureBufferPool = new FixedByteBufferPool(config.MaxEmbeddedAssetTextureFileSizeBytes);
 		_maxHdrProcessingTime = config.MaxHdrProcessingTime;
 		_backdropTextureImplProvider = new BackdropTextureImplProvider(this);
 
@@ -999,6 +1001,8 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, ID
 				readConfig.MeshConfig.OptimizeForGpu,
 				out var assetHandle
 			).ThrowIfFailure();
+			
+			_assetFilePathBuffer.ConvertFromUtf16(Path.GetDirectoryName(filePath));
 
 			try {
 				GetLoadedAssetMeshCount(assetHandle, out var meshCount).ThrowIfFailure(); 
@@ -1012,7 +1016,36 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, ID
 				);
 				
 				for (var t = 0; t < textureCount; ++t) {
-					
+					GetLoadedAssetTextureSize(
+						assetHandle, 
+						t,
+						in _assetFilePathBuffer.AsRef,
+						out var outWidth,
+						out var outHeight
+					).ThrowIfFailure();
+					var texelBuffer = _embeddedAssetTextureBufferPool.Rent<TexelRgba32>(checked(outWidth * outHeight));
+					try {
+						GetLoadedAssetTextureData(
+							assetHandle,
+							t,
+							in _assetFilePathBuffer.AsRef,
+							(void*) texelBuffer.StartPtr,
+							texelBuffer.SizeBytes,
+							out outWidth,
+							out outHeight
+						).ThrowIfFailure();
+						var actualLengthTexels = checked(outWidth * outHeight);
+						result.Add(
+							_textureBuilder.CreateTexture(
+								texelBuffer.AsSpan<TexelRgba32>(actualLengthTexels),
+								new TextureGenerationConfig { Dimensions = (outWidth, outHeight) },
+								config.TextureConfig
+							)
+						);
+					}
+					finally {
+						_embeddedAssetTextureBufferPool.Return(texelBuffer);
+					}
 				}
 				
 				for (var m = 0; m < materialCount; ++m) {
@@ -1189,6 +1222,26 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, ID
 		int bufferSizeTriangles,
 		VertexTriangle* triangleBufferPtr
 	);
+	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_texture_size")]
+	static extern InteropResult GetLoadedAssetTextureSize(
+		UIntPtr assetHandle,
+		int textureIndex,
+		ref readonly byte utf8AssetRootDirPathBufferPtr,
+		out int outWidth,
+		out int outHeight
+	);
+	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_texture_data")]
+	static extern InteropResult GetLoadedAssetTextureData(
+		UIntPtr assetHandle,
+		int textureIndex,
+		ref readonly byte utf8AssetRootDirPathBufferPtr,
+		void* dataBufferPtr,
+		int bufferLengthBytes,
+		out int outWidth,
+		out int outHeight
+	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "unload_asset_file_from_memory")]
 	static extern InteropResult UnloadAssetFileFromMemory(
@@ -1274,6 +1327,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, ID
 		try {
 			foreach (var model in _loadedModels.Keys) Dispose(model, removeFromCollection: false);
 			foreach (var backdropTex in _loadedBackdropTextures.Keys) Dispose(backdropTex, removeFromCollection: false);
+			_embeddedAssetTextureBufferPool.Dispose();
 			_ktxFileBufferPool.Dispose();
 			_vertexTriangleBufferPool.Dispose();
 			_assetFilePathBuffer.Dispose();
