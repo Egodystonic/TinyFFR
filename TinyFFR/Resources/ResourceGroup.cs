@@ -1,6 +1,7 @@
 ﻿// Created on 2024-08-07 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.World;
@@ -39,6 +40,7 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	public IndirectEnumerable<EnumerationInput, Material> Materials => GetAllResourcesOfType<Material>();
 	public IndirectEnumerable<EnumerationInput, Texture> Textures => GetAllResourcesOfType<Texture>();
 	public IndirectEnumerable<EnumerationInput, Mesh> Meshes => GetAllResourcesOfType<Mesh>();
+	public IndirectEnumerable<EnumerationInput, Model> Models => GetAllResourcesOfType<Model>();
 	public IndirectEnumerable<EnumerationInput, ModelInstance> ModelInstances => GetAllResourcesOfType<ModelInstance>();
 	#endregion
 

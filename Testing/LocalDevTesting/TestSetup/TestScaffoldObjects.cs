@@ -160,7 +160,7 @@ sealed record TestContextBuilder : ITestContextBuilder {
 	}
 
 	public TestContext Materialize() {
-		return new TestContext(
+		var result = new TestContext(
 			Factory,
 			Window,
 			Scene,
@@ -173,6 +173,12 @@ sealed record TestContextBuilder : ITestContextBuilder {
 			Renderer,
 			Loop
 		);
+		
+		if (ModelInstance is {} mi) Scene?.Add(mi);
+		if (DirectionalLight is {} dl) Scene?.Add(dl);
+		if (Backdrop is {} b) Scene?.SetBackdrop(b);
+		
+		return result;
 	}
 
 	T? Materialize<T>(ref RefOption<T> opt, Func<T?> defaultMaterializationFunc) where T : class {
@@ -210,35 +216,27 @@ sealed record TestContextBuilder : ITestContextBuilder {
 	Mesh? CreateDefaultMesh() => Factory?.MeshBuilder.CreateMesh(new Cuboid(1f));
 	ModelInstance? CreateDefaultModelInstance() {
 		if (Factory == null || Material is not { } material || Mesh is not { } mesh) return null;
-		var result = Factory.ObjectBuilder.CreateModelInstance(mesh, material, initialPosition: Location.Origin + Direction.Forward * 1.35f, initialRotation: 45f % Direction.Down, name: "Default Test Model Instance");
-		Scene?.Add(result);
-		return result;
+		return Factory.ObjectBuilder.CreateModelInstance(mesh, material, initialPosition: Location.Origin + Direction.Forward * 1.35f, initialRotation: 45f % Direction.Down, name: "Default Test Model Instance");
 	}
 	BackdropTexture? CreateDefaultBackdrop() {
 		if (Factory == null) return null;
-		var result = Factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr), name: "Default Test Backdrop");
-		Scene?.SetBackdrop(result);
-		return result;
+		return Factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr), name: "Default Test Backdrop");
 	}
 	DirectionalLight? CreateDefaultDirectionalLight() {
 		if (Factory == null) return null;
-		var result = Factory.LightBuilder.CreateDirectionalLight(castsShadows: false, showSunDisc: true, direction: new(0f, -1f, -0.3f), name: "Default Test Directional Light");
-		Scene?.Add(result);
-		return result;
+		return Factory.LightBuilder.CreateDirectionalLight(castsShadows: false, showSunDisc: true, direction: new(0f, -1f, -0.3f), name: "Default Test Directional Light");
 	}
 	Camera? CreateDefaultCamera() {
 		if (Factory == null) return null;
 		var initialPos = (Direction.Up * 0.7f).AsLocation();
-		var result = Factory.CameraBuilder.CreateCamera(initialPosition: initialPos, initialViewDirection: (initialPos >> (Direction.Forward * 1.35f).AsLocation()).Direction, name: "Default Test Camera");
-		return result;
+		return Factory.CameraBuilder.CreateCamera(initialPosition: initialPos, initialViewDirection: (initialPos >> (Direction.Forward * 1.35f).AsLocation()).Direction, name: "Default Test Camera");
 	}
 	Renderer? CreateDefaultRenderer() {
 		if (Factory == null || Window is not { } window || Scene is not { } scene || Camera is not { } camera) return null;
-		var result = Factory.RendererBuilder.CreateRenderer(scene, camera, window, new RendererCreationConfig { // TODO this should include the window/camera/scene
+		return Factory.RendererBuilder.CreateRenderer(scene, camera, window, new RendererCreationConfig {
 			Name = "Default Test Renderer",
 			Quality = new RenderQualityConfig(Quality.VeryHigh)
 		});
-		return result;
 	}
 	ApplicationLoop? CreateDefaultLoop() {
 		if (Factory == null) return null;

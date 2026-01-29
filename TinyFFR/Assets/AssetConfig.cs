@@ -12,8 +12,9 @@ namespace Egodystonic.TinyFFR.Assets;
 // Creation Config for general processing in the local builder when creating the resource
 
 public readonly ref struct AssetReadConfig : IConfigStruct<AssetReadConfig> {
-	public MeshReadConfig MeshConfig { get; init; }
-	public TextureReadConfig TextureConfig { get; init; }
+	public MeshReadConfig MeshConfig { get; init; } = new();
+	public TextureReadConfig TextureConfig { get; init; } = new();
+	public bool SkipUnusedMaterials { get; init; } = true;
 	
 	public AssetReadConfig() { }
 
@@ -24,16 +25,19 @@ public readonly ref struct AssetReadConfig : IConfigStruct<AssetReadConfig> {
 
 	public static int GetHeapStorageFormattedLength(in AssetReadConfig src) {
 		return  SerializationSizeOfSubConfig(src.MeshConfig) // MeshConfig
-			+	SerializationSizeOfSubConfig(src.TextureConfig); // TextureConfig
+			+	SerializationSizeOfSubConfig(src.TextureConfig) // TextureConfig
+			+	SerializationSizeOfBool(); // SkipUnusedMaterials
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in AssetReadConfig src) {
 		SerializationWriteSubConfig(ref dest, src.MeshConfig);
 		SerializationWriteSubConfig(ref dest, src.TextureConfig);
+		SerializationWriteBool(ref dest, src.SkipUnusedMaterials);
 	}
 	public static AssetReadConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new AssetReadConfig {
 			MeshConfig = SerializationReadSubConfig<MeshReadConfig>(ref src),
 			TextureConfig = SerializationReadSubConfig<TextureReadConfig>(ref src),
+			SkipUnusedMaterials = SerializationReadBool(ref src)
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
@@ -47,8 +51,8 @@ public readonly ref struct AssetReadConfig : IConfigStruct<AssetReadConfig> {
 }
 
 public readonly ref struct AssetCreationConfig : IConfigStruct<AssetCreationConfig> {
-	public MeshCreationConfig MeshConfig { get; init; }
-	public TextureCreationConfig TextureConfig { get; init; }
+	public MeshCreationConfig MeshConfig { get; init; } = new();
+	public TextureCreationConfig TextureConfig { get; init; } = new() { IsLinearColorspace = true };
 	public ReadOnlySpan<char> Name { get; init; }
 	
 	public AssetCreationConfig() { }

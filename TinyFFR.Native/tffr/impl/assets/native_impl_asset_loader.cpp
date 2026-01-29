@@ -105,6 +105,18 @@ aiMesh* get_mesh_at_index(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex
 	return assetHandle->mMeshes[resultGlobalIndex];
 }
 
+void native_impl_asset_loader::get_loaded_asset_mesh_material_index(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outMaterialIndex) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIfNull(outMaterialIndex, "Out material index pointer was null.");
+	
+	auto unused = aiMatrix4x4{};
+	*outMaterialIndex = get_mesh_at_index(assetHandle, meshIndex, unused)->mMaterialIndex;
+}
+StartExportedFunc(get_loaded_asset_mesh_material_index, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outMaterialIndex) {
+	native_impl_asset_loader::get_loaded_asset_mesh_material_index(assetHandle, meshIndex, outMaterialIndex);
+	EndExportedFunc
+}
+
 void native_impl_asset_loader::get_loaded_asset_mesh_vertex_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outVertexCount) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 	ThrowIfNull(outVertexCount, "Out vertex count pointer was null.");
@@ -206,10 +218,9 @@ void native_impl_asset_loader::get_loaded_asset_texture_size(MemoryLoadedAssetHa
 	
 	auto texture = assetHandle->mTextures[textureIndex];
 	auto filename = texture->mFilename;
-	ThrowIf(filename.length < 1U, "Asset texture URI was empty!");
 	
 	// Embedded texture
-	if (filename.data[0] == '*') { 
+	if (filename.length < 1U || filename.data[0] == '*') { 
 		// Compressed format
 		if (texture->mHeight == 0U) { 
 			ThrowIf(texture->mWidth > 0x7FFFFFF, "Embedded texture '", texture->mFilename.C_Str(), "' is too large.");
@@ -249,10 +260,9 @@ void native_impl_asset_loader::get_loaded_asset_texture_data(MemoryLoadedAssetHa
 	constexpr int MaxEmbeddedTextureDimension = 16384;
 	auto texture = assetHandle->mTextures[textureIndex];
 	auto filename = texture->mFilename;
-	ThrowIf(filename.length < 1U, "Asset texture URI was empty!");
 	
 	// Embedded texture
-	if (filename.data[0] == '*') { 
+	if (filename.length < 1U || filename.data[0] == '*') { 
 		// Compressed format, requires stbi
 		if (texture->mHeight == 0U) { 
 			ThrowIf(texture->mWidth > 0x7FFFFFF, "Embedded texture '", texture->mFilename.C_Str(), "' is too large.");
@@ -315,6 +325,89 @@ void native_impl_asset_loader::get_loaded_asset_texture_data(MemoryLoadedAssetHa
 }
 StartExportedFunc(get_loaded_asset_texture_data, MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootFilePath, MemoryLoadedTextureRgba32DataPtr buffer, int32_t bufferLengthBytes, int32_t* outWidth, int32_t* outHeight) {
 	native_impl_asset_loader::get_loaded_asset_texture_data(assetHandle, textureIndex, assetRootFilePath, buffer, bufferLengthBytes, outWidth, outHeight);
+	EndExportedFunc
+}
+
+int get_texture_index_from_path(MemoryLoadedAssetHandle assetHandle, aiString& path) {
+	auto cstr = path.C_Str();
+	auto cstrlen = strlen(cstr);
+	if (cstrlen >= 2 && cstr[0] == '*') {
+		auto idx = atoi(cstr + 1);
+		if (idx < assetHandle->mNumTextures) return idx;
+	}
+	
+	for (auto i = 0; i < assetHandle->mNumTextures; ++i) {
+		if (assetHandle->mTextures[i]->mFilename == path) {
+			return i;
+		}
+	}
+	
+	return -1;
+}
+
+void native_impl_asset_loader::get_loaded_asset_material_data(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, AssetMaterialParam* outColorParam, AssetMaterialParam* outNormalsParam, AssetMaterialParam* outOrmParam) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIf(static_cast<uint32_t>(materialIndex) >= assetHandle->mNumMaterials, "Material index was out of bounds.");
+	ThrowIfNull(outColorParam, "Out color param pointer was null.");
+	ThrowIfNull(outNormalsParam, "Out normals param pointer was null.");
+	ThrowIfNull(outOrmParam, "Out orm param pointer was null.");
+	
+	auto mat = assetHandle->mMaterials[materialIndex];
+		
+	outColorParam->Format = AssetMaterialParamDataFormat::NotIncluded; 
+	outNormalsParam->Format = AssetMaterialParamDataFormat::NotIncluded; 
+	outOrmParam->Format = AssetMaterialParamDataFormat::NotIncluded;
+	
+	aiString path;
+	aiColor4D rgba;
+	
+	// Color
+	auto hasColorTex = 
+		mat->GetTexture(aiTextureType_BASE_COLOR, 0, &path) == aiReturn_SUCCESS
+		|| mat->GetTexture(aiTextureType_DIFFUSE, 0, &path) == aiReturn_SUCCESS;
+	if (hasColorTex) {
+		outColorParam->Format = AssetMaterialParamDataFormat::TextureMap;
+		outColorParam->TextureMapIndex = get_texture_index_from_path(assetHandle, path);
+		ThrowIfNegative(outColorParam->TextureMapIndex, "Could not find matching texture index for '", path.C_Str(), "'"); 		
+	}
+	else {
+		auto hasColorData =
+			mat->Get(AI_MATKEY_BASE_COLOR, rgba) == aiReturn_SUCCESS
+			|| mat->Get(AI_MATKEY_COLOR_DIFFUSE, rgba) == aiReturn_SUCCESS;
+		if (hasColorData) {
+			outColorParam->Format = AssetMaterialParamDataFormat::Numerical;
+			outColorParam->NumericalValueR = rgba.r;
+			outColorParam->NumericalValueG = rgba.g;
+			outColorParam->NumericalValueB = rgba.b;
+			outColorParam->NumericalValueA = rgba.a;
+		}
+	}
+	
+	// Normals
+	auto hasNormalTex = 
+		mat->GetTexture(aiTextureType_NORMALS, 0, &path) == aiReturn_SUCCESS;
+	if (hasNormalTex) {
+		outNormalsParam->Format = AssetMaterialParamDataFormat::TextureMap;
+		outNormalsParam->TextureMapIndex = get_texture_index_from_path(assetHandle, path);
+		ThrowIfNegative(outNormalsParam->TextureMapIndex, "Could not find matching texture index for '", path.C_Str(), "'");
+	}
+	else {
+		auto hasNormalsData =
+			mat->Get(AI_MATKEY_MAPPING_NORMALS(0), rgba) == aiReturn_SUCCESS;
+		if (hasNormalsData) {
+			outNormalsParam->Format = AssetMaterialParamDataFormat::Numerical;
+			outNormalsParam->NumericalValueR = rgba.r;
+			outNormalsParam->NumericalValueG = rgba.g;
+			outNormalsParam->NumericalValueB = rgba.b;
+			outNormalsParam->NumericalValueA = rgba.a;
+		}
+	}
+	
+	// ORM
+	// TODO
+}
+StartExportedFunc(get_loaded_asset_material_data, MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, native_impl_asset_loader::AssetMaterialParam* outColorParam, native_impl_asset_loader::AssetMaterialParam* outNormalsParam, native_impl_asset_loader::AssetMaterialParam* outOrmParam) {
+	native_impl_asset_loader::get_loaded_asset_material_data(assetHandle, materialIndex, outColorParam, outNormalsParam, outOrmParam);
 	EndExportedFunc
 }
 

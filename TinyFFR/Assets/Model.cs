@@ -26,10 +26,6 @@ public readonly struct Model : IDisposableResource<Model, IModelImplProvider> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetMaterial(_handle);
 	}
-	public IndirectEnumerable<Model, Texture> Textures {
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetTextures(_handle);
-	}
 
 	internal Model(ResourceHandle<Model> handle, IModelImplProvider impl) {
 		_handle = handle;

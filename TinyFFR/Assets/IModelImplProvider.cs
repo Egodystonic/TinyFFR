@@ -10,5 +10,4 @@ namespace Egodystonic.TinyFFR.Assets;
 public interface IModelImplProvider : IDisposableResourceImplProvider<Model> {
 	Mesh GetMesh(ResourceHandle<Model> handle);
 	Material GetMaterial(ResourceHandle<Model> handle);
-	IndirectEnumerable<Model, Texture> GetTextures(ResourceHandle<Model> handle);
 }

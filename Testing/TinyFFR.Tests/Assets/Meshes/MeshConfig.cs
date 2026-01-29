@@ -16,18 +16,15 @@ class MeshConfigTest {
 	[Test]
 	public void ShouldCorrectlyConvertReadConfigToAndFromHeapStorageFormat() {
 		var testConfigA = new MeshReadConfig {
-			FilePath = "Aa Aa",
 			FixCommonExportErrors = true,
 			OptimizeForGpu = false
 		};
 		var testConfigB = new MeshReadConfig {
-			FilePath = "BBBbbb",
 			FixCommonExportErrors = false,
 			OptimizeForGpu = true
 		};
 
 		void AssertConfigsMatch(MeshReadConfig expected, MeshReadConfig actual) {
-			Assert.AreEqual(expected.FilePath.ToString(), actual.FilePath.ToString());
 			Assert.AreEqual(expected.FixCommonExportErrors, actual.FixCommonExportErrors);
 			Assert.AreEqual(expected.OptimizeForGpu, actual.OptimizeForGpu);
 		}
@@ -36,19 +33,16 @@ class MeshConfigTest {
 		AssertRoundTripHeapStorage(testConfigB, AssertConfigsMatch);
 
 		AssertHeapSerializationWithObjects<MeshReadConfig>()
-			.String("Aa Aa")
 			.Bool(true)
 			.Bool(false)
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<MeshReadConfig>()
-			.String("BBBbbb")
 			.Bool(false)
 			.Bool(true)
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<MeshReadConfig>()
-			.Including(nameof(MeshReadConfig.FilePath))
 			.Including(nameof(MeshReadConfig.FixCommonExportErrors))
 			.Including(nameof(MeshReadConfig.OptimizeForGpu))
 			.End();

@@ -17,6 +17,8 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Assets.Local;
 
 sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, IDisposable {
+	enum AssetMaterialParamDataFormat : int { NotIncluded = 0, Numerical = 1, TextureMap = 2 }
+	[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 24)] readonly record struct AssetMaterialParam(AssetMaterialParamDataFormat Format, int TextureMapIndex, float NumericalValueR, float NumericalValueG, float NumericalValueB, float NumericalValueA);
 	readonly record struct BackdropTextureData(UIntPtr SkyboxTextureHandle, UIntPtr IblTextureHandle);
 	const string DefaultModelName = "Unnamed Model";
 	const string DefaultBackdropTextureName = "Unnamed Backdrop Texture";
@@ -43,6 +45,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, ID
 	readonly ArrayPoolBackedMap<ResourceHandle<BackdropTexture>, BackdropTextureData> _loadedBackdropTextures = new();
 	readonly Lazy<ResourceGroup> _testMaterialTextures;
 	nuint _prevBackdropTextureHandle = 0;
+	nuint _prevModelHandle = 0;
 	bool _isDisposed = false;
 	bool _hdrPreprocessorHasBeenExtracted = false;
 
@@ -987,6 +990,18 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, ID
 	#endregion
 	
 	#region Load Generic / Combined
+	public Model CreateModel(Mesh mesh, Material material, ReadOnlySpan<char> name) {
+		ThrowIfThisIsDisposed();
+		++_prevModelHandle;
+		var handle = (ResourceHandle<Model>) _prevModelHandle;
+		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultModelName);
+		var resGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: false, initialCapacity: 2, name: name);
+		resGroup.Add(mesh);
+		resGroup.Add(material);
+		_loadedModels.Add(_prevModelHandle, resGroup);
+		return HandleToInstance(handle);
+	}
+	
 	public ResourceGroup Load(ReadOnlySpan<char> filePath, in AssetCreationConfig config, in AssetReadConfig readConfig) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
@@ -1007,7 +1022,18 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, ID
 			try {
 				GetLoadedAssetMeshCount(assetHandle, out var meshCount).ThrowIfFailure(); 
 				GetLoadedAssetMaterialCount(assetHandle, out var materialCount).ThrowIfFailure(); 
-				GetLoadedAssetTextureCount(assetHandle, out var textureCount).ThrowIfFailure(); 
+				GetLoadedAssetTextureCount(assetHandle, out var textureCount).ThrowIfFailure();
+				
+				var meshMaterialMap = meshCount > 1024 ? new int[meshCount] : stackalloc int[meshCount];
+				for (var m = 0; m < meshCount; ++m) {
+					GetLoadedAssetMeshMaterialIndex(
+						assetHandle, 
+						m, 
+						out var matIndex
+					).ThrowIfFailure();
+					meshMaterialMap[m] = matIndex; 
+				}
+				var materialIndexToResultIndexMap = materialCount > 1024 ? new int[materialCount] : stackalloc int[materialCount];
 				
 				var result = _globals.ResourceGroupProvider.CreateGroup(
 					disposeContainedResourcesWhenDisposed: true,
@@ -1039,7 +1065,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, ID
 							_textureBuilder.CreateTexture(
 								texelBuffer.AsSpan<TexelRgba32>(actualLengthTexels),
 								new TextureGenerationConfig { Dimensions = (outWidth, outHeight) },
-								config.TextureConfig
+								config.TextureConfig // TODO we need to determine whether it should be linear colorspace or not, that's gonna require us setting up the mapping beforehand
 							)
 						);
 					}
@@ -1049,7 +1075,38 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, ID
 				}
 				
 				for (var m = 0; m < materialCount; ++m) {
+					if (readConfig.SkipUnusedMaterials && meshCount > 0) {
+						var skip = true;
+						for (var i = 0; i < meshMaterialMap.Length; ++i) {
+							if (meshMaterialMap[i] == m) {
+								skip = false;
+								break;
+							}
+						}
+						if (skip) continue;
+					}
 					
+					GetLoadedAssetMaterialData(
+						assetHandle,
+						m,
+						out var colorData,
+						out var normalsData,
+						out var ormData
+					).ThrowIfFailure();
+					
+					var colorMap = colorData.Format switch {
+						AssetMaterialParamDataFormat.Numerical => ((ITextureBuilder) _textureBuilder).CreateColorMap(new ColorVect(colorData.NumericalValueR, colorData.NumericalValueG, colorData.NumericalValueB, colorData.NumericalValueA), includeAlpha: true, config.TextureConfig with { IsLinearColorspace = false }),
+						AssetMaterialParamDataFormat.TextureMap => result.Textures[colorData.TextureMapIndex],
+						_ => ((ITextureBuilder) _textureBuilder).CreateColorMap(),
+					};
+
+					var mat = _materialBuilder.CreateStandardMaterial(
+						new StandardMaterialCreationConfig {
+							ColorMap = colorMap
+						}
+					);
+					result.Add(mat);
+					materialIndexToResultIndexMap[m] = result.Materials.Count - 1;
 				}
 				
 				for (var m = 0; m < meshCount; ++m) {
@@ -1066,7 +1123,7 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, ID
 						_vertexTriangleBufferPool.Return(fixedVertexBuffer);
 						_vertexTriangleBufferPool.Return(fixedTriangleBuffer);
 					}
-					
+
 					var mesh = _meshBuilder.CreateMesh(
 						fixedVertexBuffer.AsReadOnlySpan<MeshVertex>(vCount),
 						fixedTriangleBuffer.AsReadOnlySpan<VertexTriangle>(tCount),
@@ -1074,6 +1131,10 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, ID
 					);
 					
 					result.Add(mesh);
+					
+					var mat = result.Materials[materialIndexToResultIndexMap[meshMaterialMap[m]]];
+					var model = CreateModel(mesh, mat, default);
+					result.Add(model);
 				}
 				
 				result.Seal();
@@ -1097,29 +1158,6 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, ID
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _loadedModels[handle].Materials[0];
 	}
-	public IndirectEnumerable<Model, Texture> GetTextures(ResourceHandle<Model> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return new IndirectEnumerable<Model, Texture>(
-			HandleToInstance(handle),
-			0,
-			&GetModelTextureCount,
-			&GetModelVersion,
-			&GetModelTextureAtIndex
-		);
-	}
-	static int GetModelTextureCount(Model m) {
-		var @this = m.Implementation as LocalAssetLoader;
-		if (@this == null) throw new InvalidOperationException("Model textures enumerated against differing implementation.");
-		var handle = m.Handle; // Throws if disposed
-		return @this._loadedModels[handle].Textures.Count;
-	}
-	static Texture GetModelTextureAtIndex(Model m, int index) {
-		var @this = m.Implementation as LocalAssetLoader;
-		if (@this == null) throw new InvalidOperationException("Model textures enumerated against differing implementation.");
-		var handle = m.Handle; // Throws if disposed
-		return @this._loadedModels[handle].Textures[index];
-	}
-	static int GetModelVersion(Model _) => 0;
 
 	public string GetNameAsNewStringObject(ResourceHandle<Model> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -1192,6 +1230,13 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, ID
 		UIntPtr assetHandle,
 		out int outTextureCount
 	);
+	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_material_index")]
+	static extern InteropResult GetLoadedAssetMeshMaterialIndex(
+		UIntPtr assetHandle,
+		int meshIndex,
+		out int outMaterialIndex
+	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_vertex_count")]
 	static extern InteropResult GetLoadedAssetMeshVertexCount(
@@ -1241,6 +1286,15 @@ sealed unsafe class LocalAssetLoader : ILocalAssetLoader, IModelImplProvider, ID
 		int bufferLengthBytes,
 		out int outWidth,
 		out int outHeight
+	);
+	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_material_data")]
+	static extern InteropResult GetLoadedAssetMaterialData(
+		UIntPtr assetHandle,
+		int materialIndex,
+		out AssetMaterialParam outColorParam,
+		out AssetMaterialParam outNormalsParam,
+		out AssetMaterialParam outOrmParam
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "unload_asset_file_from_memory")]
