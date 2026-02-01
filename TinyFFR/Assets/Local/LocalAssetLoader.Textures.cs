@@ -302,7 +302,7 @@ unsafe partial class LocalAssetLoader {
 		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig, TextureReadMetadata bMetadata,
 		TextureCombinationConfig combinationConfig, Span<TTexel> destinationBuffer
 	) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgba32> {
-		const int NumTexturesBeingCombined = 3;
+		const int NumTexturesBeingCombined = 2;
 
 		aProcessingConfig.ThrowIfInvalid();
 		bProcessingConfig.ThrowIfInvalid();

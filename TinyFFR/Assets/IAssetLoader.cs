@@ -7,7 +7,7 @@ using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
-using static Egodystonic.TinyFFR.Assets.TextureCombinationSourceTexture;
+using static Egodystonic.TinyFFR.Assets.Materials.TextureCombinationSourceTexture;
 using static Egodystonic.TinyFFR.ColorChannel;
 
 namespace Egodystonic.TinyFFR.Assets;
@@ -15,73 +15,6 @@ namespace Egodystonic.TinyFFR.Assets;
 public readonly record struct TextureReadMetadata(XYPair<int> Dimensions, bool IncludesAlphaChannel);
 public readonly record struct MeshReadMetadata(int VertexCount, int TriangleCount);
 public readonly record struct MeshReadCountData(int NumVerticesWritten, int NumTrianglesWritten);
-
-public enum TextureCombinationSourceTexture {
-	TextureA,
-	TextureB,
-	TextureC,
-	TextureD
-}
-public readonly record struct TextureCombinationSource(TextureCombinationSourceTexture SourceTexture, ColorChannel SourceChannel) {
-	internal byte SelectTexelChannel(ReadOnlySpan<TexelRgba32> samples) => samples[(int) SourceTexture][SourceChannel];
-
-	internal void ThrowIfInvalid(int numTexturesBeingCombined) {
-		if (!Enum.IsDefined(SourceChannel)) {
-			throw new InvalidOperationException($"{nameof(SourceChannel)} was not a recognised {nameof(ColorChannel)}.");
-		}
-		if ((int) SourceTexture < 0 || (int) SourceTexture >= numTexturesBeingCombined) {
-			throw new InvalidOperationException($"Non-defined value or references a texture that was not provided (i.e. 'TextureC' when only textures A & B exist).");
-		}
-	}
-}
-public readonly record struct TextureCombinationConfig(TextureCombinationSource OutputTextureXRedChannelSource, TextureCombinationSource OutputTextureYGreenChannelSource, TextureCombinationSource OutputTextureZBlueChannelSource, TextureCombinationSource? OutputTextureWAlphaChannelSource = null) {
-	static TextureCombinationSource ExtractFromString(ReadOnlySpan<char> twoChars) {
-		return new TextureCombinationSource(
-			Char.ToLowerInvariant(twoChars[0]) switch {
-				'a' or '0' => TextureA,
-				'b' or '1' => TextureB,
-				'c' or '2' => TextureC,
-				'd' or '3' => TextureD,
-				_ => throw new ArgumentException($"Character '{twoChars[0]}' was expected to be one of 'a', 'b', 'c', 'd', '0', '1', '2', '3' (to denote a source texture).")
-			},
-			Char.ToLowerInvariant(twoChars[1]) switch {
-				'r' or 'x' => R,
-				'g' or 'y' => G,
-				'b' or 'z' => B,
-				'a' or 'w' => A,
-				_ => throw new ArgumentException($"Character '{twoChars[1]}' was expected to be one of 'r', 'g', 'b', 'a', 'x', 'y', 'z', 'w' (to denote a source channel).")
-			}
-		);
-	}
-
-	public TextureCombinationConfig(ReadOnlySpan<char> selectionString) : this(
-		ExtractFromString(selectionString[0..2]),
-		ExtractFromString(selectionString[2..4]),
-		ExtractFromString(selectionString[4..6]),
-		selectionString.Length >= 8 ? ExtractFromString(selectionString[6..8]) : null
-	) { }
-	public TextureCombinationConfig(TextureCombinationSourceTexture xRedSourceTex, ColorChannel xRedSourceChannel, TextureCombinationSourceTexture yGreenSourceTex, ColorChannel yGreenSourceChannel, TextureCombinationSourceTexture zBlueSourceTex, ColorChannel zBlueSourceChannel)
-		: this(new TextureCombinationSource(xRedSourceTex, xRedSourceChannel), new TextureCombinationSource(yGreenSourceTex, yGreenSourceChannel), new TextureCombinationSource(zBlueSourceTex, zBlueSourceChannel)) { }
-	public TextureCombinationConfig(TextureCombinationSourceTexture xRedSourceTex, ColorChannel xRedSourceChannel, TextureCombinationSourceTexture yGreenSourceTex, ColorChannel yGreenSourceChannel, TextureCombinationSourceTexture zBlueSourceTex, ColorChannel zBlueSourceChannel, TextureCombinationSourceTexture wAlphaSourceTex, ColorChannel wAlphaSourceChannel)
-		: this(new TextureCombinationSource(xRedSourceTex, xRedSourceChannel), new TextureCombinationSource(yGreenSourceTex, yGreenSourceChannel), new TextureCombinationSource(zBlueSourceTex, zBlueSourceChannel), new TextureCombinationSource(wAlphaSourceTex, wAlphaSourceChannel)) { }
-
-
-	internal TexelRgba32 SelectTexel(ReadOnlySpan<TexelRgba32> samples) {
-		return new TexelRgba32(
-			OutputTextureXRedChannelSource.SelectTexelChannel(samples),
-			OutputTextureYGreenChannelSource.SelectTexelChannel(samples),
-			OutputTextureZBlueChannelSource.SelectTexelChannel(samples),
-			OutputTextureWAlphaChannelSource?.SelectTexelChannel(samples) ?? Byte.MaxValue
-		);
-	}
-
-	internal void ThrowIfInvalid(int numTexturesBeingCombined) {
-		OutputTextureXRedChannelSource.ThrowIfInvalid(numTexturesBeingCombined);
-		OutputTextureYGreenChannelSource.ThrowIfInvalid(numTexturesBeingCombined);
-		OutputTextureZBlueChannelSource.ThrowIfInvalid(numTexturesBeingCombined);
-		OutputTextureWAlphaChannelSource?.ThrowIfInvalid(numTexturesBeingCombined);
-	}
-}
 
 public enum AnisotropyRadialAngleRange {
 	ZeroTo360,

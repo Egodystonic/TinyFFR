@@ -3,7 +3,7 @@
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
-public static class TextureUtils {
+public static partial class TextureUtils {
 	public static void FlipTexture<TTexel>(Span<TTexel> buffer, XYPair<int> dimensions, bool aroundVerticalCentre, bool aroundHorizontalCentre) where TTexel : unmanaged, ITexel<TTexel> {
 		ProcessTexture(buffer, dimensions, TextureProcessingConfig.Flip(aroundVerticalCentre, aroundHorizontalCentre));
 	}

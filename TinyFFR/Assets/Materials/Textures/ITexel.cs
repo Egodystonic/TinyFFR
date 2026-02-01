@@ -24,15 +24,23 @@ public interface ITexel<TSelf> : ITexel, IFixedLengthByteSpanSerializable<TSelf>
 public interface IConversionSupplyingTexel<TSelf, in TOther> : ITexel<TSelf> where TSelf : unmanaged, IConversionSupplyingTexel<TSelf, TOther> {
 	static abstract TSelf ConvertFrom(TOther o);
 }
-public interface ITexel<TSelf, out TChannel> : ITexel<TSelf> where TSelf : unmanaged, ITexel<TSelf, TChannel> {
+public interface ITexel<TSelf, TChannel> : ITexel<TSelf> where TSelf : unmanaged, ITexel<TSelf, TChannel> where TChannel : struct {
 	TChannel this[int index] { get; }
 	TChannel this[ColorChannel channel] { get; }
+	static abstract TChannel MinChannelValue { get; }
+	static abstract TChannel MaxChannelValue { get; }
+
+	static abstract TSelf ConstructFromIgnoringExcessArguments(params ReadOnlySpan<TChannel> channelArgs);
+	TChannel? TryGetChannel(int index);
+	TChannel? TryGetChannel(ColorChannel channel);
 }
-public interface IThreeChannelTexel<TSelf, out TChannel> : ITexel<TSelf, TChannel> where TSelf : unmanaged, IThreeChannelTexel<TSelf, TChannel> {
+public interface IThreeChannelTexel<TSelf, TChannel> : ITexel<TSelf, TChannel> where TSelf : unmanaged, IThreeChannelTexel<TSelf, TChannel> where TChannel : struct {
 	static int ITexel.ChannelCount => 3;
+	static abstract TSelf ConstructFrom(TChannel r, TChannel g, TChannel b);
 }
-public interface IFourChannelTexel<TSelf, out TChannel> : ITexel<TSelf, TChannel> where TSelf : unmanaged, IFourChannelTexel<TSelf, TChannel> {
+public interface IFourChannelTexel<TSelf, TChannel> : ITexel<TSelf, TChannel> where TSelf : unmanaged, IFourChannelTexel<TSelf, TChannel> where TChannel : struct {
 	static int ITexel.ChannelCount => 4;
+	static abstract TSelf ConstructFrom(TChannel r, TChannel g, TChannel b, TChannel a);
 }
 public interface IThreeByteChannelTexel<TSelf> : IThreeChannelTexel<TSelf, byte> where TSelf : unmanaged, IThreeByteChannelTexel<TSelf> {
 	static TexelType ITexel.BlitType => TexelType.Rgb24;
