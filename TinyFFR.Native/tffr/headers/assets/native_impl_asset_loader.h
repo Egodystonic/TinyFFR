@@ -30,6 +30,26 @@ public:
 	};
 	PopSafeStructPacking
 	static_assert(sizeof(AssetMaterialParam) == 24);
+	PushSafeStructPacking
+	struct AssetMaterialParamGroup
+	{
+		AssetMaterialParam* ColorParamsPtr;
+		AssetMaterialParam* NormalParamsPtr;
+		AssetMaterialParam* AmbientOcclusionParamsPtr;
+		AssetMaterialParam* RoughnessParamsPtr;
+		AssetMaterialParam* GlossinessParamsPtr;
+		AssetMaterialParam* MetallicParamsPtr;
+		AssetMaterialParam* ReflectanceParamsPtr;
+		AssetMaterialParam* IoRParamsPtr;
+		AssetMaterialParam* AbsorptionParamsPtr;
+		AssetMaterialParam* TransmissionParamsPtr;
+		AssetMaterialParam* EmissiveParamsPtr;
+		AssetMaterialParam* EmissiveIntensityParamsPtr;
+		AssetMaterialParam* AnisotropyAngleParamsPtr;
+		AssetMaterialParam* AnisotropyStrengthParamsPtr;
+	};
+	PopSafeStructPacking
+	static_assert(sizeof(AssetMaterialParamGroup) == 14 * 8);
 	
 	static void load_asset_file_in_to_memory(const char* filePath, interop_bool fixCommonExporterErrors, interop_bool optimize, MemoryLoadedAssetHandle* outAssetHandle);
 	static void get_loaded_asset_mesh_count(MemoryLoadedAssetHandle assetHandle, int32_t* outMeshCount);
@@ -42,7 +62,7 @@ public:
 	static void copy_loaded_asset_mesh_triangles(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeTriangles, int32_t* buffer);
 	static void get_loaded_asset_texture_size(MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootDirPath, int32_t* outWidth, int32_t* outHeight);
 	static void get_loaded_asset_texture_data(MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootDirPath, MemoryLoadedTextureRgba32DataPtr buffer, int32_t bufferLengthBytes, int32_t* outWidth, int32_t* outHeight);
-	static void get_loaded_asset_material_data(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, AssetMaterialParam* outColorParam, AssetMaterialParam* outNormalsParam, AssetMaterialParam* outOrmParam);
+	static void get_loaded_asset_material_data(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, AssetMaterialParamGroup* paramGroupPtr);
 	static void unload_asset_file_from_memory(MemoryLoadedAssetHandle assetHandle);
 
 	static void get_texture_file_data(const char* filePath, int32_t* outWidth, int32_t* outHeight, int32_t* outChannelCount);

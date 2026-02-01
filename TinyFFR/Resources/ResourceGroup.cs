@@ -41,7 +41,6 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	public IndirectEnumerable<EnumerationInput, Texture> Textures => GetAllResourcesOfType<Texture>();
 	public IndirectEnumerable<EnumerationInput, Mesh> Meshes => GetAllResourcesOfType<Mesh>();
 	public IndirectEnumerable<EnumerationInput, Model> Models => GetAllResourcesOfType<Model>();
-	public IndirectEnumerable<EnumerationInput, ModelInstance> ModelInstances => GetAllResourcesOfType<ModelInstance>();
 	#endregion
 
 	internal ReadOnlySpan<ResourceStub> Resources {
