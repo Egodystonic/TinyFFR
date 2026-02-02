@@ -303,7 +303,8 @@ unsafe partial class LocalAssetLoader {
 		var aBuffer = aPool.Buffer;
 		var bBuffer = bPool.Buffer;
 
-		if (destinationBuffer is Span<TexelRgba32> rgbaBuffer) {
+		if (typeof(TTexel) == typeof(TexelRgba32)) {
+			var rgbaBuffer = MemoryMarshal.Cast<TTexel, TexelRgba32>(destinationBuffer);
 			TextureUtils.CombineTextures(aBuffer, aMetadata.Dimensions, bBuffer, bMetadata.Dimensions, combinationConfig, rgbaBuffer);
 		}
 		else {
@@ -335,7 +336,8 @@ unsafe partial class LocalAssetLoader {
 		var bBuffer = bPool.Buffer;
 		var cBuffer = cPool.Buffer;
 
-		if (destinationBuffer is Span<TexelRgba32> rgbaBuffer) {
+		if (typeof(TTexel) == typeof(TexelRgba32)) {
+			var rgbaBuffer = MemoryMarshal.Cast<TTexel, TexelRgba32>(destinationBuffer);
 			TextureUtils.CombineTextures(aBuffer, aMetadata.Dimensions, bBuffer, bMetadata.Dimensions, cBuffer, cMetadata.Dimensions, combinationConfig, rgbaBuffer);
 		}
 		else {
@@ -370,7 +372,8 @@ unsafe partial class LocalAssetLoader {
 		var cBuffer = cPool.Buffer;
 		var dBuffer = dPool.Buffer;
 
-		if (destinationBuffer is Span<TexelRgba32> rgbaBuffer) {
+		if (typeof(TTexel) == typeof(TexelRgba32)) {
+			var rgbaBuffer = MemoryMarshal.Cast<TTexel, TexelRgba32>(destinationBuffer);
 			TextureUtils.CombineTextures(aBuffer, aMetadata.Dimensions, bBuffer, bMetadata.Dimensions, cBuffer, cMetadata.Dimensions, dBuffer, dMetadata.Dimensions, combinationConfig, rgbaBuffer);
 		}
 		else {

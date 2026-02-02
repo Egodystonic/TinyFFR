@@ -12,6 +12,12 @@ typedef unsigned char* MemoryLoadedTextureRgba32DataPtr;
 
 class native_impl_asset_loader {
 public:
+	enum AssetMaterialAlphaFormat : int32_t
+	{
+		None = 0,
+		Masked = 1,
+		Blended = 2
+	};
 	enum AssetMaterialParamDataFormat : int32_t
 	{
 		NotIncluded = 0,
@@ -42,13 +48,15 @@ public:
 		AssetMaterialParam* IoRParamsPtr;
 		AssetMaterialParam* AbsorptionParamsPtr;
 		AssetMaterialParam* TransmissionParamsPtr;
-		AssetMaterialParam* EmissiveParamsPtr;
+		AssetMaterialParam* EmissiveColorParamsPtr;
 		AssetMaterialParam* EmissiveIntensityParamsPtr;
 		AssetMaterialParam* AnisotropyAngleParamsPtr;
 		AssetMaterialParam* AnisotropyStrengthParamsPtr;
+		AssetMaterialParam* ClearCoatRoughnessParamsPtr;
+		AssetMaterialParam* ClearCoatStrengthParamsPtr;
 	};
 	PopSafeStructPacking
-	static_assert(sizeof(AssetMaterialParamGroup) == 13 * 8);
+	static_assert(sizeof(AssetMaterialParamGroup) == 15 * 8);
 	
 	static void load_asset_file_in_to_memory(const char* filePath, interop_bool fixCommonExporterErrors, interop_bool optimize, MemoryLoadedAssetHandle* outAssetHandle);
 	static void get_loaded_asset_mesh_count(MemoryLoadedAssetHandle assetHandle, int32_t* outMeshCount);
@@ -61,7 +69,7 @@ public:
 	static void copy_loaded_asset_mesh_triangles(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeTriangles, int32_t* buffer);
 	static void get_loaded_asset_texture_size(MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootDirPath, int32_t* outWidth, int32_t* outHeight);
 	static void get_loaded_asset_texture_data(MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootDirPath, MemoryLoadedTextureRgba32DataPtr buffer, int32_t bufferLengthBytes, int32_t* outWidth, int32_t* outHeight);
-	static void get_loaded_asset_material_data(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, AssetMaterialParamGroup* paramGroupPtr);
+	static void get_loaded_asset_material_data(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, AssetMaterialParamGroup* paramGroupPtr, AssetMaterialAlphaFormat* outAlphaFormat, float_t* outRefractionThickness);
 	static void unload_asset_file_from_memory(MemoryLoadedAssetHandle assetHandle);
 
 	static void get_texture_file_data(const char* filePath, int32_t* outWidth, int32_t* outHeight, int32_t* outChannelCount);

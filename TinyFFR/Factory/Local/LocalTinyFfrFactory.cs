@@ -29,16 +29,16 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	readonly FixedByteBufferPool _gpuHoldingBufferPool;
 #pragma warning restore CA2213
 
-	readonly IDisplayDiscoverer _displayDiscoverer;
-	readonly IWindowBuilder _windowBuilder;
-	readonly ILocalApplicationLoopBuilder _applicationLoopBuilder;
-	readonly ILocalAssetLoader _assetLoader;
-	readonly ICameraBuilder _cameraBuilder;
-	readonly ILightBuilder _lightBuilder;
-	readonly IObjectBuilder _objectBuilder;
-	readonly ISceneBuilder _sceneBuilder;
-	readonly IRendererBuilder _rendererBuilder;
-	readonly IResourceAllocator _resourceAllocator;
+	readonly LocalDisplayDiscoverer _displayDiscoverer;
+	readonly LocalWindowBuilder _windowBuilder;
+	readonly LocalApplicationLoopBuilder _applicationLoopBuilder;
+	readonly LocalAssetLoader _assetLoader;
+	readonly LocalCameraBuilder _cameraBuilder;
+	readonly LocalLightBuilder _lightBuilder;
+	readonly LocalObjectBuilder _objectBuilder;
+	readonly LocalSceneBuilder _sceneBuilder;
+	readonly LocalRendererBuilder _rendererBuilder;
+	readonly LocalResourceAllocator _resourceAllocator;
 
 	public IDisplayDiscoverer DisplayDiscoverer => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _displayDiscoverer;
 	public IWindowBuilder WindowBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _windowBuilder;

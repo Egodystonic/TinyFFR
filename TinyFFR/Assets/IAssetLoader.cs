@@ -253,7 +253,7 @@ public interface IAssetLoader {
 		var angleCoefficient = encodedRange == AnisotropyRadialAngleRange.ZeroTo180 ? AngleCoefficientZeroTo180 : AngleCoefficientZeroTo360;
 		if (!encodedAnticlockwise) angleCoefficient *= -1f;
 
-		if (strengthChannel is G or B or A) {
+		if (strengthChannel is G or B) {
 			for (var i = 0; i < texels.Length; ++i) {
 				texels[i] = ITextureBuilder.CreateAnisotropyTexel(Angle.FromFullCircleFraction(texels[i].R * angleCoefficient) + angleAddition, texels[i][strengthChannel.Value] * StrengthCoefficient);
 			}
@@ -261,6 +261,25 @@ public interface IAssetLoader {
 		else {
 			for (var i = 0; i < texels.Length; ++i) {
 				texels[i] = ITextureBuilder.CreateAnisotropyTexel(Angle.FromFullCircleFraction(texels[i].R * angleCoefficient) + angleAddition, ITextureBuilder.DefaultAnisotropyStrength);
+			}
+		}
+	}
+	static void ConvertRadialAngleToVectorFormatAnisotropy(Span<TexelRgba32> texels, Orientation2D zeroDirection, AnisotropyRadialAngleRange encodedRange, bool encodedAnticlockwise, ColorChannel? strengthChannel) {
+		const float StrengthCoefficient = 1f / Byte.MaxValue;
+		const float AngleCoefficientZeroTo180 = 0.5f / Byte.MaxValue;
+		const float AngleCoefficientZeroTo360 = 1f / Byte.MaxValue;
+		var angleAddition = Angle.From2DPolarAngle(zeroDirection) ?? Angle.Zero;
+		var angleCoefficient = encodedRange == AnisotropyRadialAngleRange.ZeroTo180 ? AngleCoefficientZeroTo180 : AngleCoefficientZeroTo360;
+		if (!encodedAnticlockwise) angleCoefficient *= -1f;
+
+		if (strengthChannel is G or B or A) {
+			for (var i = 0; i < texels.Length; ++i) {
+				texels[i] = ITextureBuilder.CreateAnisotropyTexel(Angle.FromFullCircleFraction(texels[i].R * angleCoefficient) + angleAddition, texels[i][strengthChannel.Value] * StrengthCoefficient).ToRgba32();
+			}
+		}
+		else {
+			for (var i = 0; i < texels.Length; ++i) {
+				texels[i] = ITextureBuilder.CreateAnisotropyTexel(Angle.FromFullCircleFraction(texels[i].R * angleCoefficient) + angleAddition, ITextureBuilder.DefaultAnisotropyStrength).ToRgba32();
 			}
 		}
 	}
@@ -439,15 +458,17 @@ public interface IAssetLoader {
 	#endregion
 
 	#region Load Generic / Combined
-	ResourceGroup Load(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
-		return Load(
+	Model CreateModel(Mesh mesh, Material material, ReadOnlySpan<char> name = default);
+	
+	ResourceGroup LoadModels(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
+		return LoadModels(
 			filePath,
 			new AssetCreationConfig {
 				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
 			}
 		);
 	}
-	ResourceGroup Load(ReadOnlySpan<char> filePath, in AssetCreationConfig config) => Load(filePath, in config, new AssetReadConfig());
-	ResourceGroup Load(ReadOnlySpan<char> filePath, in AssetCreationConfig config, in AssetReadConfig readConfig);
+	ResourceGroup LoadModels(ReadOnlySpan<char> filePath, in AssetCreationConfig config) => LoadModels(filePath, in config, new AssetReadConfig());
+	ResourceGroup LoadModels(ReadOnlySpan<char> filePath, in AssetCreationConfig config, in AssetReadConfig readConfig);
 	#endregion
 }
