@@ -76,21 +76,49 @@ public readonly record struct TextureCombinationConfig(TextureCombinationSource 
 }
 
 public static partial class TextureUtils {
-	public static XYPair<int> GetCombinedTextureDimensions(XYPair<int> aDimensions, XYPair<int> bDimensions, XYPair<int>? cDimensions, XYPair<int>? dDimensions, out bool allDimensionsMatched) {
-		cDimensions ??= aDimensions;
-		dDimensions ??= bDimensions;
-		allDimensionsMatched = aDimensions == bDimensions && bDimensions == cDimensions && cDimensions == dDimensions;
-
+	public static XYPair<int> GetCombinedTextureDimensions(XYPair<int> aDimensions, XYPair<int> bDimensions) => GetCombinedTextureDimensions(aDimensions, bDimensions, out _);
+	public static XYPair<int> GetCombinedTextureDimensions(XYPair<int> aDimensions, XYPair<int> bDimensions, out bool allDimensionsMatched) {
+		allDimensionsMatched = aDimensions == bDimensions;
 		if (allDimensionsMatched) return aDimensions;
 
 		return new(
-			Int32.Max(Int32.Max(Int32.Max(aDimensions.X, bDimensions.X), cDimensions.Value.X), dDimensions.Value.X),
-			Int32.Max(Int32.Max(Int32.Max(aDimensions.Y, bDimensions.Y), cDimensions.Value.Y), dDimensions.Value.Y)
+			Int32.Max(aDimensions.X, bDimensions.X),
+			Int32.Max(aDimensions.Y, bDimensions.Y)
+		);
+	}
+	
+	public static XYPair<int> GetCombinedTextureDimensions(XYPair<int> aDimensions, XYPair<int> bDimensions, XYPair<int> cDimensions) => GetCombinedTextureDimensions(aDimensions, bDimensions, cDimensions, out _);
+	public static XYPair<int> GetCombinedTextureDimensions(XYPair<int> aDimensions, XYPair<int> bDimensions, XYPair<int> cDimensions, out bool allDimensionsMatched) {
+		allDimensionsMatched = aDimensions == bDimensions && bDimensions == cDimensions;
+		if (allDimensionsMatched) return aDimensions;
+
+		return new(
+			Int32.Max(Int32.Max(aDimensions.X, bDimensions.X), cDimensions.X),
+			Int32.Max(Int32.Max(aDimensions.Y, bDimensions.Y), cDimensions.Y)
+		);
+	}
+	
+	public static XYPair<int> GetCombinedTextureDimensions(XYPair<int> aDimensions, XYPair<int> bDimensions, XYPair<int> cDimensions, XYPair<int> dDimensions) => GetCombinedTextureDimensions(aDimensions, bDimensions, cDimensions, dDimensions, out _);
+	public static XYPair<int> GetCombinedTextureDimensions(XYPair<int> aDimensions, XYPair<int> bDimensions, XYPair<int> cDimensions, XYPair<int> dDimensions, out bool allDimensionsMatched) {
+		allDimensionsMatched = aDimensions == bDimensions && bDimensions == cDimensions && cDimensions == dDimensions;
+		if (allDimensionsMatched) return aDimensions;
+
+		return new(
+			Int32.Max(Int32.Max(Int32.Max(aDimensions.X, bDimensions.X), cDimensions.X), dDimensions.X),
+			Int32.Max(Int32.Max(Int32.Max(aDimensions.Y, bDimensions.Y), cDimensions.Y), dDimensions.Y)
 		);
 	}
 
 	static int CalculateWrappedIndexForCombination(XYPair<int> dimensions, int x, int y) => dimensions.X * (y % dimensions.Y) + (x % dimensions.X);
 
+	public static void CombineTextures(
+		ReadOnlySpan<TexelRgba32> aBuffer, XYPair<int> aDimensions,
+		ReadOnlySpan<TexelRgba32> bBuffer, XYPair<int> bDimensions,
+		TextureCombinationConfig combinationConfig, Span<TexelRgba32> destinationBuffer) => CombineTextures<TexelRgba32, byte>(aBuffer, aDimensions, bBuffer, bDimensions, combinationConfig, destinationBuffer);
+	public static void CombineTextures(
+		ReadOnlySpan<TexelRgb24> aBuffer, XYPair<int> aDimensions,
+		ReadOnlySpan<TexelRgb24> bBuffer, XYPair<int> bDimensions,
+		TextureCombinationConfig combinationConfig, Span<TexelRgb24> destinationBuffer) => CombineTextures<TexelRgb24, byte>(aBuffer, aDimensions, bBuffer, bDimensions, combinationConfig, destinationBuffer);
 	public static void CombineTextures<TTexel, TChannel>(
 		ReadOnlySpan<TTexel> aBuffer, XYPair<int> aDimensions,
 		ReadOnlySpan<TTexel> bBuffer, XYPair<int> bDimensions,
@@ -99,12 +127,12 @@ public static partial class TextureUtils {
 		const int NumTexturesBeingCombined = 2;
 		combinationConfig.ThrowIfInvalid(NumTexturesBeingCombined);
 
-		var destDimensions = GetCombinedTextureDimensions(aDimensions, bDimensions, null, null, out var allDimensionsMatch);
+		var destDimensions = GetCombinedTextureDimensions(aDimensions, bDimensions, out var allDimensionsMatch);
 		if (destinationBuffer.Length < destDimensions.Area) {
 			throw new ArgumentException(
 				$"Destination buffer length needs to be at least {destDimensions.Area} " +
 				$"(output combined texture would have dimensions {destDimensions}). " +
-				$"Calculate the dimensions of the output texture first using {nameof(ReadCombinedTextureMetadata)}.",
+				$"Calculate the dimensions of the output texture first using {nameof(GetCombinedTextureDimensions)}.",
 				nameof(destinationBuffer)
 			);
 		}
@@ -121,9 +149,116 @@ public static partial class TextureUtils {
 		else {
 			for (var x = 0; x < destDimensions.X; ++x) {
 				for (var y = 0; y < destDimensions.Y; ++y) {
-					localSampleBuffer[0] = aBuffer[CalculateWrappedIndexForCombination(aMetadata.Dimensions, x, y)];
-					localSampleBuffer[1] = bBuffer[CalculateWrappedIndexForCombination(bMetadata.Dimensions, x, y)];
-					destinationBuffer[destDimensions.X * y + x] = TTexel.ConvertFrom(combinationConfig.SelectTexel(localSampleBuffer));
+					localSampleBuffer[0] = aBuffer[CalculateWrappedIndexForCombination(aDimensions, x, y)];
+					localSampleBuffer[1] = bBuffer[CalculateWrappedIndexForCombination(bDimensions, x, y)];
+					destinationBuffer[destDimensions.X * y + x] = combinationConfig.SelectTexel<TTexel, TChannel>(localSampleBuffer);
+				}
+			}
+		}
+	}
+	
+	public static void CombineTextures(
+		ReadOnlySpan<TexelRgba32> aBuffer, XYPair<int> aDimensions,
+		ReadOnlySpan<TexelRgba32> bBuffer, XYPair<int> bDimensions,
+		ReadOnlySpan<TexelRgba32> cBuffer, XYPair<int> cDimensions,
+		TextureCombinationConfig combinationConfig, Span<TexelRgba32> destinationBuffer) => CombineTextures<TexelRgba32, byte>(aBuffer, aDimensions, bBuffer, bDimensions, cBuffer, cDimensions, combinationConfig, destinationBuffer);
+	public static void CombineTextures(
+		ReadOnlySpan<TexelRgb24> aBuffer, XYPair<int> aDimensions,
+		ReadOnlySpan<TexelRgb24> bBuffer, XYPair<int> bDimensions,
+		ReadOnlySpan<TexelRgb24> cBuffer, XYPair<int> cDimensions,
+		TextureCombinationConfig combinationConfig, Span<TexelRgb24> destinationBuffer) => CombineTextures<TexelRgb24, byte>(aBuffer, aDimensions, bBuffer, bDimensions, cBuffer, cDimensions, combinationConfig, destinationBuffer);
+	public static void CombineTextures<TTexel, TChannel>(
+		ReadOnlySpan<TTexel> aBuffer, XYPair<int> aDimensions,
+		ReadOnlySpan<TTexel> bBuffer, XYPair<int> bDimensions,
+		ReadOnlySpan<TTexel> cBuffer, XYPair<int> cDimensions,
+		TextureCombinationConfig combinationConfig, Span<TTexel> destinationBuffer
+	) where TTexel : unmanaged, ITexel<TTexel, TChannel> where TChannel : struct {
+		const int NumTexturesBeingCombined = 3;
+		combinationConfig.ThrowIfInvalid(NumTexturesBeingCombined);
+
+		var destDimensions = GetCombinedTextureDimensions(aDimensions, bDimensions, cDimensions, out var allDimensionsMatch);
+		if (destinationBuffer.Length < destDimensions.Area) {
+			throw new ArgumentException(
+				$"Destination buffer length needs to be at least {destDimensions.Area} " +
+				$"(output combined texture would have dimensions {destDimensions}). " +
+				$"Calculate the dimensions of the output texture first using {nameof(GetCombinedTextureDimensions)}.",
+				nameof(destinationBuffer)
+			);
+		}
+
+		Span<TTexel> localSampleBuffer = stackalloc TTexel[NumTexturesBeingCombined];
+
+		if (allDimensionsMatch) {
+			for (var i = 0; i < destDimensions.Area; ++i) {
+				localSampleBuffer[0] = aBuffer[i];
+				localSampleBuffer[1] = bBuffer[i];
+				localSampleBuffer[2] = cBuffer[i];
+				destinationBuffer[i] = combinationConfig.SelectTexel<TTexel, TChannel>(localSampleBuffer);
+			}
+		}
+		else {
+			for (var x = 0; x < destDimensions.X; ++x) {
+				for (var y = 0; y < destDimensions.Y; ++y) {
+					localSampleBuffer[0] = aBuffer[CalculateWrappedIndexForCombination(aDimensions, x, y)];
+					localSampleBuffer[1] = bBuffer[CalculateWrappedIndexForCombination(bDimensions, x, y)];
+					localSampleBuffer[2] = cBuffer[CalculateWrappedIndexForCombination(cDimensions, x, y)];
+					destinationBuffer[destDimensions.X * y + x] = combinationConfig.SelectTexel<TTexel, TChannel>(localSampleBuffer);
+				}
+			}
+		}
+	}
+	
+	public static void CombineTextures(
+		ReadOnlySpan<TexelRgba32> aBuffer, XYPair<int> aDimensions,
+		ReadOnlySpan<TexelRgba32> bBuffer, XYPair<int> bDimensions,
+		ReadOnlySpan<TexelRgba32> cBuffer, XYPair<int> cDimensions,
+		ReadOnlySpan<TexelRgba32> dBuffer, XYPair<int> dDimensions,
+		TextureCombinationConfig combinationConfig, Span<TexelRgba32> destinationBuffer) => CombineTextures<TexelRgba32, byte>(aBuffer, aDimensions, bBuffer, bDimensions, cBuffer, cDimensions, dBuffer, dDimensions, combinationConfig, destinationBuffer);
+	public static void CombineTextures(
+		ReadOnlySpan<TexelRgb24> aBuffer, XYPair<int> aDimensions,
+		ReadOnlySpan<TexelRgb24> bBuffer, XYPair<int> bDimensions,
+		ReadOnlySpan<TexelRgb24> cBuffer, XYPair<int> cDimensions,
+		ReadOnlySpan<TexelRgb24> dBuffer, XYPair<int> dDimensions,
+		TextureCombinationConfig combinationConfig, Span<TexelRgb24> destinationBuffer) => CombineTextures<TexelRgb24, byte>(aBuffer, aDimensions, bBuffer, bDimensions, cBuffer, cDimensions, dBuffer, dDimensions, combinationConfig, destinationBuffer);
+	public static void CombineTextures<TTexel, TChannel>(
+		ReadOnlySpan<TTexel> aBuffer, XYPair<int> aDimensions,
+		ReadOnlySpan<TTexel> bBuffer, XYPair<int> bDimensions,
+		ReadOnlySpan<TTexel> cBuffer, XYPair<int> cDimensions,
+		ReadOnlySpan<TTexel> dBuffer, XYPair<int> dDimensions,
+		TextureCombinationConfig combinationConfig, Span<TTexel> destinationBuffer
+	) where TTexel : unmanaged, ITexel<TTexel, TChannel> where TChannel : struct {
+		const int NumTexturesBeingCombined = 4;
+		combinationConfig.ThrowIfInvalid(NumTexturesBeingCombined);
+
+		var destDimensions = GetCombinedTextureDimensions(aDimensions, bDimensions, cDimensions, dDimensions, out var allDimensionsMatch);
+		if (destinationBuffer.Length < destDimensions.Area) {
+			throw new ArgumentException(
+				$"Destination buffer length needs to be at least {destDimensions.Area} " +
+				$"(output combined texture would have dimensions {destDimensions}). " +
+				$"Calculate the dimensions of the output texture first using {nameof(GetCombinedTextureDimensions)}.",
+				nameof(destinationBuffer)
+			);
+		}
+
+		Span<TTexel> localSampleBuffer = stackalloc TTexel[NumTexturesBeingCombined];
+
+		if (allDimensionsMatch) {
+			for (var i = 0; i < destDimensions.Area; ++i) {
+				localSampleBuffer[0] = aBuffer[i];
+				localSampleBuffer[1] = bBuffer[i];
+				localSampleBuffer[2] = cBuffer[i];
+				localSampleBuffer[3] = dBuffer[i];
+				destinationBuffer[i] = combinationConfig.SelectTexel<TTexel, TChannel>(localSampleBuffer);
+			}
+		}
+		else {
+			for (var x = 0; x < destDimensions.X; ++x) {
+				for (var y = 0; y < destDimensions.Y; ++y) {
+					localSampleBuffer[0] = aBuffer[CalculateWrappedIndexForCombination(aDimensions, x, y)];
+					localSampleBuffer[1] = bBuffer[CalculateWrappedIndexForCombination(bDimensions, x, y)];
+					localSampleBuffer[2] = cBuffer[CalculateWrappedIndexForCombination(cDimensions, x, y)];
+					localSampleBuffer[3] = dBuffer[CalculateWrappedIndexForCombination(dDimensions, x, y)];
+					destinationBuffer[destDimensions.X * y + x] = combinationConfig.SelectTexel<TTexel, TChannel>(localSampleBuffer);
 				}
 			}
 		}

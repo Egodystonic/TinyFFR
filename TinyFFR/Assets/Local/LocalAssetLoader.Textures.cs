@@ -276,41 +276,21 @@ unsafe partial class LocalAssetLoader {
 	#endregion
 
 	#region Read / Load Combined Texture
-	XYPair<int> GetCombinedTextureDimensions(XYPair<int> aDimensions, XYPair<int> bDimensions, XYPair<int>? cDimensions, XYPair<int>? dDimensions, out bool allDimensionsMatched) {
-		cDimensions ??= aDimensions;
-		dDimensions ??= bDimensions;
-		allDimensionsMatched = aDimensions == bDimensions && bDimensions == cDimensions && cDimensions == dDimensions;
-
-		if (allDimensionsMatched) {
-			return aDimensions;
-		}
-
-		return new(
-			Int32.Max(Int32.Max(Int32.Max(aDimensions.X, bDimensions.X), cDimensions.Value.X), dDimensions.Value.X),
-			Int32.Max(Int32.Max(Int32.Max(aDimensions.Y, bDimensions.Y), cDimensions.Value.Y), dDimensions.Value.Y)
-		);
-	}
 	PooledHeapMemory<TexelRgba32> ReadTextureForCombination(ReadOnlySpan<char> filePath, TextureReadMetadata metadata, in TextureProcessingConfig processingConfig) {
+		processingConfig.ThrowIfInvalid();
 		var result = _globals.HeapPool.Borrow<TexelRgba32>(metadata.Dimensions.Area);
 		ReadTexture(filePath, in processingConfig, result.Buffer);
 		return result;
 	}
-	int CalculateWrappedIndexForCombination(XYPair<int> dimensions, int x, int y) => dimensions.X * (y % dimensions.Y) + (x % dimensions.X);
 	
 	void CombineTextures<TTexel>(
 		ReadOnlySpan<char> aFilePath, in TextureProcessingConfig aProcessingConfig, TextureReadMetadata aMetadata,
 		ReadOnlySpan<char> bFilePath, in TextureProcessingConfig bProcessingConfig, TextureReadMetadata bMetadata,
 		TextureCombinationConfig combinationConfig, Span<TTexel> destinationBuffer
 	) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgba32> {
-		const int NumTexturesBeingCombined = 2;
-
-		aProcessingConfig.ThrowIfInvalid();
-		bProcessingConfig.ThrowIfInvalid();
-		combinationConfig.ThrowIfInvalid(NumTexturesBeingCombined);
-
 		using var aPool = ReadTextureForCombination(aFilePath, aMetadata, in aProcessingConfig);
 		using var bPool = ReadTextureForCombination(bFilePath, bMetadata, in bProcessingConfig);
-		var destDimensions = GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, null, null, out var allDimensionsMatch);
+		var destDimensions = TextureUtils.GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions);
 		if (destinationBuffer.Length < destDimensions.Area) {
 			throw new ArgumentException(
 				$"Destination buffer length needs to be at least {destDimensions.Area} " +
@@ -322,23 +302,14 @@ unsafe partial class LocalAssetLoader {
 
 		var aBuffer = aPool.Buffer;
 		var bBuffer = bPool.Buffer;
-		Span<TexelRgba32> localSampleBuffer = stackalloc TexelRgba32[NumTexturesBeingCombined];
 
-		if (allDimensionsMatch) {
-			for (var i = 0; i < destDimensions.Area; ++i) {
-				localSampleBuffer[0] = aBuffer[i];
-				localSampleBuffer[1] = bBuffer[i];
-				destinationBuffer[i] = TTexel.ConvertFrom(combinationConfig.SelectTexel(localSampleBuffer));
-			}
+		if (destinationBuffer is Span<TexelRgba32> rgbaBuffer) {
+			TextureUtils.CombineTextures(aBuffer, aMetadata.Dimensions, bBuffer, bMetadata.Dimensions, combinationConfig, rgbaBuffer);
 		}
 		else {
-			for (var x = 0; x < destDimensions.X; ++x) {
-				for (var y = 0; y < destDimensions.Y; ++y) {
-					localSampleBuffer[0] = aBuffer[CalculateWrappedIndexForCombination(aMetadata.Dimensions, x, y)];
-					localSampleBuffer[1] = bBuffer[CalculateWrappedIndexForCombination(bMetadata.Dimensions, x, y)];
-					destinationBuffer[destDimensions.X * y + x] = TTexel.ConvertFrom(combinationConfig.SelectTexel(localSampleBuffer));
-				}
-			}
+			using var destPool = _globals.HeapPool.Borrow<TexelRgba32>(destDimensions.Area);
+			TextureUtils.CombineTextures(aBuffer, aMetadata.Dimensions, bBuffer, bMetadata.Dimensions, combinationConfig, destPool.Buffer);
+			for (var i = 0; i < destDimensions.Area; ++i) destinationBuffer[i] = TTexel.ConvertFrom(destPool.Buffer[i]);
 		}
 	}
 	void CombineTextures<TTexel>(
@@ -347,17 +318,10 @@ unsafe partial class LocalAssetLoader {
 		ReadOnlySpan<char> cFilePath, in TextureProcessingConfig cProcessingConfig, TextureReadMetadata cMetadata,
 		TextureCombinationConfig combinationConfig, Span<TTexel> destinationBuffer
 	) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgba32> {
-		const int NumTexturesBeingCombined = 3;
-
-		aProcessingConfig.ThrowIfInvalid();
-		bProcessingConfig.ThrowIfInvalid();
-		cProcessingConfig.ThrowIfInvalid();
-		combinationConfig.ThrowIfInvalid(NumTexturesBeingCombined);
-
 		using var aPool = ReadTextureForCombination(aFilePath, aMetadata, in aProcessingConfig);
 		using var bPool = ReadTextureForCombination(bFilePath, bMetadata, in bProcessingConfig);
 		using var cPool = ReadTextureForCombination(cFilePath, cMetadata, in cProcessingConfig);
-		var destDimensions = GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions, null, out var allDimensionsMatch);
+		var destDimensions = TextureUtils.GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions);
 		if (destinationBuffer.Length < destDimensions.Area) {
 			throw new ArgumentException(
 				$"Destination buffer length needs to be at least {destDimensions.Area} " +
@@ -370,25 +334,14 @@ unsafe partial class LocalAssetLoader {
 		var aBuffer = aPool.Buffer;
 		var bBuffer = bPool.Buffer;
 		var cBuffer = cPool.Buffer;
-		Span<TexelRgba32> localSampleBuffer = stackalloc TexelRgba32[NumTexturesBeingCombined];
 
-		if (allDimensionsMatch) {
-			for (var i = 0; i < destDimensions.Area; ++i) {
-				localSampleBuffer[0] = aBuffer[i];
-				localSampleBuffer[1] = bBuffer[i];
-				localSampleBuffer[2] = cBuffer[i];
-				destinationBuffer[i] = TTexel.ConvertFrom(combinationConfig.SelectTexel(localSampleBuffer));
-			}
+		if (destinationBuffer is Span<TexelRgba32> rgbaBuffer) {
+			TextureUtils.CombineTextures(aBuffer, aMetadata.Dimensions, bBuffer, bMetadata.Dimensions, cBuffer, cMetadata.Dimensions, combinationConfig, rgbaBuffer);
 		}
 		else {
-			for (var x = 0; x < destDimensions.X; ++x) {
-				for (var y = 0; y < destDimensions.Y; ++y) {
-					localSampleBuffer[0] = aBuffer[CalculateWrappedIndexForCombination(aMetadata.Dimensions, x, y)];
-					localSampleBuffer[1] = bBuffer[CalculateWrappedIndexForCombination(bMetadata.Dimensions, x, y)];
-					localSampleBuffer[2] = cBuffer[CalculateWrappedIndexForCombination(cMetadata.Dimensions, x, y)];
-					destinationBuffer[destDimensions.X * y + x] = TTexel.ConvertFrom(combinationConfig.SelectTexel(localSampleBuffer));
-				}
-			}
+			using var destPool = _globals.HeapPool.Borrow<TexelRgba32>(destDimensions.Area);
+			TextureUtils.CombineTextures(aBuffer, aMetadata.Dimensions, bBuffer, bMetadata.Dimensions, cBuffer, cMetadata.Dimensions, combinationConfig, destPool.Buffer);
+			for (var i = 0; i < destDimensions.Area; ++i) destinationBuffer[i] = TTexel.ConvertFrom(destPool.Buffer[i]);
 		}
 	}
 	void CombineTextures<TTexel>(
@@ -398,19 +351,11 @@ unsafe partial class LocalAssetLoader {
 		ReadOnlySpan<char> dFilePath, in TextureProcessingConfig dProcessingConfig, TextureReadMetadata dMetadata,
 		TextureCombinationConfig combinationConfig, Span<TTexel> destinationBuffer
 	) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgba32> {
-		const int NumTexturesBeingCombined = 4;
-
-		aProcessingConfig.ThrowIfInvalid();
-		bProcessingConfig.ThrowIfInvalid();
-		cProcessingConfig.ThrowIfInvalid();
-		dProcessingConfig.ThrowIfInvalid();
-		combinationConfig.ThrowIfInvalid(NumTexturesBeingCombined);
-
 		using var aPool = ReadTextureForCombination(aFilePath, aMetadata, in aProcessingConfig);
 		using var bPool = ReadTextureForCombination(bFilePath, bMetadata, in bProcessingConfig);
 		using var cPool = ReadTextureForCombination(cFilePath, cMetadata, in cProcessingConfig);
-		using var dPool = ReadTextureForCombination(dFilePath, cMetadata, in dProcessingConfig);
-		var destDimensions = GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions, dMetadata.Dimensions, out var allDimensionsMatch);
+		using var dPool = ReadTextureForCombination(dFilePath, dMetadata, in dProcessingConfig);
+		var destDimensions = TextureUtils.GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions, dMetadata.Dimensions);
 		if (destinationBuffer.Length < destDimensions.Area) {
 			throw new ArgumentException(
 				$"Destination buffer length needs to be at least {destDimensions.Area} " +
@@ -424,27 +369,14 @@ unsafe partial class LocalAssetLoader {
 		var bBuffer = bPool.Buffer;
 		var cBuffer = cPool.Buffer;
 		var dBuffer = dPool.Buffer;
-		Span<TexelRgba32> localSampleBuffer = stackalloc TexelRgba32[NumTexturesBeingCombined];
 
-		if (allDimensionsMatch) {
-			for (var i = 0; i < destDimensions.Area; ++i) {
-				localSampleBuffer[0] = aBuffer[i];
-				localSampleBuffer[1] = bBuffer[i];
-				localSampleBuffer[2] = cBuffer[i];
-				localSampleBuffer[3] = dBuffer[i];
-				destinationBuffer[i] = TTexel.ConvertFrom(combinationConfig.SelectTexel(localSampleBuffer));
-			}
+		if (destinationBuffer is Span<TexelRgba32> rgbaBuffer) {
+			TextureUtils.CombineTextures(aBuffer, aMetadata.Dimensions, bBuffer, bMetadata.Dimensions, cBuffer, cMetadata.Dimensions, dBuffer, dMetadata.Dimensions, combinationConfig, rgbaBuffer);
 		}
 		else {
-			for (var x = 0; x < destDimensions.X; ++x) {
-				for (var y = 0; y < destDimensions.Y; ++y) {
-					localSampleBuffer[0] = aBuffer[CalculateWrappedIndexForCombination(aMetadata.Dimensions, x, y)];
-					localSampleBuffer[1] = bBuffer[CalculateWrappedIndexForCombination(bMetadata.Dimensions, x, y)];
-					localSampleBuffer[2] = cBuffer[CalculateWrappedIndexForCombination(cMetadata.Dimensions, x, y)];
-					localSampleBuffer[3] = dBuffer[CalculateWrappedIndexForCombination(cMetadata.Dimensions, x, y)];
-					destinationBuffer[destDimensions.X * y + x] = TTexel.ConvertFrom(combinationConfig.SelectTexel(localSampleBuffer));
-				}
-			}
+			using var destPool = _globals.HeapPool.Borrow<TexelRgba32>(destDimensions.Area);
+			TextureUtils.CombineTextures(aBuffer, aMetadata.Dimensions, bBuffer, bMetadata.Dimensions, cBuffer, cMetadata.Dimensions, dBuffer, dMetadata.Dimensions, combinationConfig, destPool.Buffer);
+			for (var i = 0; i < destDimensions.Area; ++i) destinationBuffer[i] = TTexel.ConvertFrom(destPool.Buffer[i]);
 		}
 	}
 
@@ -455,7 +387,7 @@ unsafe partial class LocalAssetLoader {
 	) {
 		var aMetadata = ReadTextureMetadata(aFilePath);
 		var bMetadata = ReadTextureMetadata(bFilePath);
-		var destDimensions = GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, null, null, out _);
+		var destDimensions = TextureUtils.GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions);
 
 		if (combinationConfig.OutputTextureWAlphaChannelSource == null) {
 			using var destPool = _globals.HeapPool.Borrow<TexelRgb24>(destDimensions.Area);
@@ -477,7 +409,7 @@ unsafe partial class LocalAssetLoader {
 		var aMetadata = ReadTextureMetadata(aFilePath);
 		var bMetadata = ReadTextureMetadata(bFilePath);
 		var cMetadata = ReadTextureMetadata(cFilePath);
-		var destDimensions = GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions, null, out _);
+		var destDimensions = TextureUtils.GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions);
 
 		if (combinationConfig.OutputTextureWAlphaChannelSource == null) {
 			using var destPool = _globals.HeapPool.Borrow<TexelRgb24>(destDimensions.Area);
@@ -501,7 +433,7 @@ unsafe partial class LocalAssetLoader {
 		var bMetadata = ReadTextureMetadata(bFilePath);
 		var cMetadata = ReadTextureMetadata(cFilePath);
 		var dMetadata = ReadTextureMetadata(dFilePath);
-		var destDimensions = GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions, dMetadata.Dimensions, out _);
+		var destDimensions = TextureUtils.GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions, dMetadata.Dimensions);
 
 		if (combinationConfig.OutputTextureWAlphaChannelSource == null) {
 			using var destPool = _globals.HeapPool.Borrow<TexelRgb24>(destDimensions.Area);
@@ -519,7 +451,7 @@ unsafe partial class LocalAssetLoader {
 		var aMetadata = ReadTextureMetadata(aFilePath);
 		var bMetadata = ReadTextureMetadata(bFilePath);
 		return new(
-			GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, null, null, out _), 
+			TextureUtils.GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions), 
 			aMetadata.IncludesAlphaChannel || bMetadata.IncludesAlphaChannel
 		);
 	}
@@ -528,7 +460,7 @@ unsafe partial class LocalAssetLoader {
 		var bMetadata = ReadTextureMetadata(bFilePath);
 		var cMetadata = ReadTextureMetadata(cFilePath);
 		return new(
-			GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions, null, out _),
+			TextureUtils.GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions),
 			aMetadata.IncludesAlphaChannel || bMetadata.IncludesAlphaChannel || cMetadata.IncludesAlphaChannel
 		);
 	}
@@ -538,7 +470,7 @@ unsafe partial class LocalAssetLoader {
 		var cMetadata = ReadTextureMetadata(cFilePath);
 		var dMetadata = ReadTextureMetadata(dFilePath);
 		return new(
-			GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions, dMetadata.Dimensions, out _),
+			TextureUtils.GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions, dMetadata.Dimensions),
 			aMetadata.IncludesAlphaChannel || bMetadata.IncludesAlphaChannel || cMetadata.IncludesAlphaChannel || dMetadata.IncludesAlphaChannel
 		);
 	}
@@ -550,7 +482,7 @@ unsafe partial class LocalAssetLoader {
 	) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgba32> {
 		var aMetadata = ReadTextureMetadata(aFilePath);
 		var bMetadata = ReadTextureMetadata(bFilePath);
-		var destDimensions = GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, null, null, out _);
+		var destDimensions = TextureUtils.GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions);
 
 		CombineTextures(aFilePath, in aProcessingConfig, aMetadata, bFilePath, in bProcessingConfig, bMetadata, combinationConfig, destinationBuffer);
 		TextureUtils.ProcessTexture(destinationBuffer, destDimensions, in finalOutputProcessingConfig);
@@ -565,7 +497,7 @@ unsafe partial class LocalAssetLoader {
 		var aMetadata = ReadTextureMetadata(aFilePath);
 		var bMetadata = ReadTextureMetadata(bFilePath);
 		var cMetadata = ReadTextureMetadata(cFilePath);
-		var destDimensions = GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions, null, out _);
+		var destDimensions = TextureUtils.GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions);
 
 		CombineTextures(aFilePath, in aProcessingConfig, aMetadata, bFilePath, in bProcessingConfig, bMetadata, cFilePath, in cProcessingConfig, cMetadata, combinationConfig, destinationBuffer);
 		TextureUtils.ProcessTexture(destinationBuffer, destDimensions, in finalOutputProcessingConfig);
@@ -582,7 +514,7 @@ unsafe partial class LocalAssetLoader {
 		var bMetadata = ReadTextureMetadata(bFilePath);
 		var cMetadata = ReadTextureMetadata(cFilePath);
 		var dMetadata = ReadTextureMetadata(dFilePath);
-		var destDimensions = GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions, dMetadata.Dimensions, out _);
+		var destDimensions = TextureUtils.GetCombinedTextureDimensions(aMetadata.Dimensions, bMetadata.Dimensions, cMetadata.Dimensions, dMetadata.Dimensions);
 
 		CombineTextures(aFilePath, in aProcessingConfig, aMetadata, bFilePath, in bProcessingConfig, bMetadata, cFilePath, in cProcessingConfig, cMetadata, dFilePath, in dProcessingConfig, dMetadata, combinationConfig, destinationBuffer);
 		TextureUtils.ProcessTexture(destinationBuffer, destDimensions, in finalOutputProcessingConfig);

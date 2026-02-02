@@ -39,7 +39,6 @@ public:
 		AssetMaterialParam* RoughnessParamsPtr;
 		AssetMaterialParam* GlossinessParamsPtr;
 		AssetMaterialParam* MetallicParamsPtr;
-		AssetMaterialParam* ReflectanceParamsPtr;
 		AssetMaterialParam* IoRParamsPtr;
 		AssetMaterialParam* AbsorptionParamsPtr;
 		AssetMaterialParam* TransmissionParamsPtr;
@@ -49,7 +48,7 @@ public:
 		AssetMaterialParam* AnisotropyStrengthParamsPtr;
 	};
 	PopSafeStructPacking
-	static_assert(sizeof(AssetMaterialParamGroup) == 14 * 8);
+	static_assert(sizeof(AssetMaterialParamGroup) == 13 * 8);
 	
 	static void load_asset_file_in_to_memory(const char* filePath, interop_bool fixCommonExporterErrors, interop_bool optimize, MemoryLoadedAssetHandle* outAssetHandle);
 	static void get_loaded_asset_mesh_count(MemoryLoadedAssetHandle assetHandle, int32_t* outMeshCount);

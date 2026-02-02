@@ -47,6 +47,7 @@ public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : IFou
 		);
 	}
 	public static TexelRgba32 FromNormalizedFloats(Real r, Real g, Real b, Real a) => FromNormalizedFloats((float) r, (float) g, (float) b, (float) a);
+	static TexelRgba32 IFourChannelTexel<TexelRgba32, byte>.ConstructFrom(byte r, byte g, byte b, byte a) => FromByteComponents(r, g, b, a);
 
 	public static void SerializeToBytes(Span<byte> dest, TexelRgba32 src) {
 		dest[0] = src.R;

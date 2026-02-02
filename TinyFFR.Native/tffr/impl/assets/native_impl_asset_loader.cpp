@@ -404,7 +404,7 @@ void native_impl_asset_loader::get_loaded_asset_material_data(MemoryLoadedAssetH
 	}
 	
 	// ORM
-	// TODO
+	// TODO all of this. Also WHEN LOADING SINGLE NUMERICAL VALUES WE NEED TO SET ALL OF RGBA TO THAT VALUE to make it work on the C# side
 }
 StartExportedFunc(get_loaded_asset_material_data, MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, native_impl_asset_loader::AssetMaterialParam* outColorParam, native_impl_asset_loader::AssetMaterialParam* outNormalsParam, native_impl_asset_loader::AssetMaterialParam* outOrmParam) {
 	native_impl_asset_loader::get_loaded_asset_material_data(assetHandle, materialIndex, outColorParam, outNormalsParam, outOrmParam);

@@ -19,8 +19,11 @@ namespace Egodystonic.TinyFFR.Assets.Local;
 unsafe partial class LocalAssetLoader {
 	enum AssetMaterialParamDataFormat : int { NotIncluded = 0, Numerical = 1, TextureMap = 2 }
 	[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 24)] 
-	readonly record struct AssetMaterialParam(AssetMaterialParamDataFormat Format, int TextureMapIndex, float NumericalValueR, float NumericalValueG, float NumericalValueB, float NumericalValueA);
-	[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 8 * 14)] 
+	readonly record struct AssetMaterialParam(AssetMaterialParamDataFormat Format, int TextureMapIndex, float NumericalValueR, float NumericalValueG, float NumericalValueB, float NumericalValueA) {
+		public TexelRgba32 ToTexel() => TexelRgba32.FromNormalizedFloats(NumericalValueR, NumericalValueG, NumericalValueB, NumericalValueA);
+		public ColorVect ToColorVect() => new(NumericalValueR, NumericalValueG, NumericalValueB, NumericalValueA);
+	}
+	[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 8 * 13)] 
 	readonly struct AssetMaterialParamGroup {
 		public readonly AssetMaterialParam* ColorParamsPtr;
 		public readonly AssetMaterialParam* NormalParamsPtr;
@@ -28,7 +31,6 @@ unsafe partial class LocalAssetLoader {
 		public readonly AssetMaterialParam* RoughnessParamsPtr;
 		public readonly AssetMaterialParam* GlossinessParamsPtr;
 		public readonly AssetMaterialParam* MetallicParamsPtr;
-		public readonly AssetMaterialParam* ReflectanceParamsPtr;
 		public readonly AssetMaterialParam* IoRParamsPtr;
 		public readonly AssetMaterialParam* AbsorptionParamsPtr;
 		public readonly AssetMaterialParam* TransmissionParamsPtr;
@@ -37,14 +39,13 @@ unsafe partial class LocalAssetLoader {
 		public readonly AssetMaterialParam* AnisotropyAngleParamsPtr;
 		public readonly AssetMaterialParam* AnisotropyStrengthParamsPtr;
 
-		public AssetMaterialParamGroup(AssetMaterialParam* colorParamsPtr, AssetMaterialParam* normalParamsPtr, AssetMaterialParam* ambientOcclusionParamsPtr, AssetMaterialParam* roughnessParamsPtr, AssetMaterialParam* glossinessParamsPtr, AssetMaterialParam* metallicParamsPtr, AssetMaterialParam* reflectanceParamsPtr, AssetMaterialParam* ioRParamsPtr, AssetMaterialParam* absorptionParamsPtr, AssetMaterialParam* transmissionParamsPtr, AssetMaterialParam* emissiveParamsPtr, AssetMaterialParam* emissiveIntensityParamsPtr, AssetMaterialParam* anisotropyAngleParamsPtr, AssetMaterialParam* anisotropyStrengthParamsPtr) {
+		public AssetMaterialParamGroup(AssetMaterialParam* colorParamsPtr, AssetMaterialParam* normalParamsPtr, AssetMaterialParam* ambientOcclusionParamsPtr, AssetMaterialParam* roughnessParamsPtr, AssetMaterialParam* glossinessParamsPtr, AssetMaterialParam* metallicParamsPtr, AssetMaterialParam* ioRParamsPtr, AssetMaterialParam* absorptionParamsPtr, AssetMaterialParam* transmissionParamsPtr, AssetMaterialParam* emissiveParamsPtr, AssetMaterialParam* emissiveIntensityParamsPtr, AssetMaterialParam* anisotropyAngleParamsPtr, AssetMaterialParam* anisotropyStrengthParamsPtr) {
 			ColorParamsPtr = colorParamsPtr;
 			NormalParamsPtr = normalParamsPtr;
 			AmbientOcclusionParamsPtr = ambientOcclusionParamsPtr;
 			RoughnessParamsPtr = roughnessParamsPtr;
 			GlossinessParamsPtr = glossinessParamsPtr;
 			MetallicParamsPtr = metallicParamsPtr;
-			ReflectanceParamsPtr = reflectanceParamsPtr;
 			IoRParamsPtr = ioRParamsPtr;
 			AbsorptionParamsPtr = absorptionParamsPtr;
 			TransmissionParamsPtr = transmissionParamsPtr;
@@ -54,6 +55,21 @@ unsafe partial class LocalAssetLoader {
 			AnisotropyStrengthParamsPtr = anisotropyStrengthParamsPtr;
 		}
 	};
+	readonly struct EmbeddedTextureData : IDisposable {
+		readonly FixedByteBufferPool _owningPool;
+		readonly FixedByteBufferPool.FixedByteBuffer _rentedBuffer;
+		public readonly XYPair<int> Dimensions;
+		
+		public ReadOnlySpan<TexelRgba32> TexelSpan => _rentedBuffer.AsReadOnlySpan<TexelRgba32>(Dimensions.Area);
+
+		public EmbeddedTextureData(FixedByteBufferPool owningPool, FixedByteBufferPool.FixedByteBuffer rentedBuffer, XYPair<int> dimensions) {
+			_owningPool = owningPool;
+			_rentedBuffer = rentedBuffer;
+			Dimensions = dimensions;
+		}
+
+		public void Dispose() => _owningPool.Return(_rentedBuffer);
+	}
 	
 	const string DefaultModelName = "Unnamed Model";
 	readonly FixedByteBufferPool _embeddedAssetTextureBufferPool;
@@ -72,250 +88,337 @@ unsafe partial class LocalAssetLoader {
 		return HandleToInstance(handle);
 	}
 	
-	public ResourceGroup Load(ReadOnlySpan<char> filePath, in AssetCreationConfig config, in AssetReadConfig readConfig) {
-		static (FixedByteBufferPool.FixedByteBuffer TexelBuffer, XYPair<int> Dimensions) LoadAssetTexture(FixedByteBufferPool texelBufferPool, UIntPtr assetHandle, int textureIndex, ref readonly byte assetRootDirStrRef) {
-			GetLoadedAssetTextureSize(
-				assetHandle, 
-				textureIndex,
-				in assetRootDirStrRef,
-				out var outWidth,
-				out var outHeight
-			).ThrowIfFailure();
-			
-			if (outWidth < 0 || outHeight < 0) throw new InvalidOperationException($"Width or height for asset texture at index '{textureIndex}' was malformed.");
-			
-			var texelBuffer = texelBufferPool.Rent<TexelRgba32>(checked(outWidth * outHeight));
-			
-			GetLoadedAssetTextureData(
-				assetHandle,
-				textureIndex,
-				in assetRootDirStrRef,
-				(void*) texelBuffer.StartPtr,
-				texelBuffer.SizeBytes,
-				out outWidth,
-				out outHeight
-			).ThrowIfFailure();
-			
-			return (texelBuffer, new XYPair<int>(outWidth, outHeight));
-		}
+	EmbeddedTextureData LoadAssetTexture(UIntPtr assetHandle, int textureIndex, ref readonly byte assetRootDirStrRef) {
+		GetLoadedAssetTextureSize(
+			assetHandle, 
+			textureIndex,
+			in assetRootDirStrRef,
+			out var outWidth,
+			out var outHeight
+		).ThrowIfFailure();
 		
-		static Material CreateAssetMaterial(FixedByteBufferPool texelBufferPool, ITextureBuilder textureBuilder, IMaterialBuilder materialBuilder, UIntPtr assetHandle, int materialIndex, Span<int> materialToGroupAddOrderMap, ref readonly byte assetRootDirStrRef, in TextureCreationConfig config, ResourceGroup result) {
-			var matParamsBuffer = stackalloc AssetMaterialParam[14];
-			var matParams = new AssetMaterialParamGroup(
-				matParamsBuffer + 0,
-				matParamsBuffer + 1,
-				matParamsBuffer + 2,
-				matParamsBuffer + 3,
-				matParamsBuffer + 4,
-				matParamsBuffer + 5,
-				matParamsBuffer + 6,
-				matParamsBuffer + 7,
-				matParamsBuffer + 8,
-				matParamsBuffer + 9,
-				matParamsBuffer + 10,
-				matParamsBuffer + 11,
-				matParamsBuffer + 12,
-				matParamsBuffer + 13
-			);
-			(FixedByteBufferPool.FixedByteBuffer TexelBuffer, XYPair<int> Dimensions) loadedTex;
+		if (outWidth < 0 || outHeight < 0) throw new InvalidOperationException($"Width or height for asset texture at index '{textureIndex}' was malformed.");
+		
+		var texelBuffer = _embeddedAssetTextureBufferPool.Rent<TexelRgba32>(checked(outWidth * outHeight));
+		
+		GetLoadedAssetTextureData(
+			assetHandle,
+			textureIndex,
+			in assetRootDirStrRef,
+			(void*) texelBuffer.StartPtr,
+			texelBuffer.SizeBytes,
+			out outWidth,
+			out outHeight
+		).ThrowIfFailure();
+		
+		return new(_embeddedAssetTextureBufferPool, texelBuffer, new XYPair<int>(outWidth, outHeight));
+	}
+	
+	ReadOnlySpan<TexelRgba32> AbstractTexelSpanFromParamPtr(AssetMaterialParam* paramPtr, UIntPtr assetHandle, ref readonly byte assetRootDirStrRef, ref TexelRgba32 stackTexelWithDefaultValue, out EmbeddedTextureData? outEmbeddedTex) {
+		switch (paramPtr->Format) {
+			case AssetMaterialParamDataFormat.Numerical:
+				stackTexelWithDefaultValue = paramPtr->ToTexel();
+				outEmbeddedTex = null;
+				return new ReadOnlySpan<TexelRgba32>(in stackTexelWithDefaultValue);
+		
+			case AssetMaterialParamDataFormat.TextureMap:
+				outEmbeddedTex = LoadAssetTexture(
+					assetHandle,
+					paramPtr->TextureMapIndex,
+					in assetRootDirStrRef
+				);
+				return outEmbeddedTex.Value.TexelSpan;
 			
-			GetLoadedAssetMaterialData(
-				assetHandle,
-				materialIndex,
-				&matParams
-			).ThrowIfFailure();
+			default: 
+				outEmbeddedTex = null;
+				return new ReadOnlySpan<TexelRgba32>(in stackTexelWithDefaultValue);
+		}
+	}
+	
+	static bool ParamPtrsRepresentIdenticalTextures(AssetMaterialParam* paramPtrA, AssetMaterialParam* paramPtrB) {
+		return paramPtrA->Format == AssetMaterialParamDataFormat.TextureMap
+			&& paramPtrB->Format == AssetMaterialParamDataFormat.TextureMap
+			&& paramPtrA->TextureMapIndex == paramPtrB->TextureMapIndex;
+	}
+	
+	Texture CreateAssetColorMap(AssetMaterialParam* paramPtr, UIntPtr assetHandle, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
+		switch (paramPtr->Format) {
+			case AssetMaterialParamDataFormat.Numerical:
+				return TextureBuilder.CreateColorMap(
+					paramPtr->ToColorVect(),
+					includeAlpha: true,
+					config with {
+						IsLinearColorspace = false
+					}
+				);
 			
-			Texture colorMap;
-			Texture? atMap = null;
-			Texture? normalMap = null;
-			Texture? ormMap = null;
-			Texture? anisotropyMap = null;
-			Texture? emissiveMap = null;
-			Texture? clearCoatMap = null;
-
-			#region ColorMap
-			switch (matParams.ColorParamsPtr->Format) {
-				case AssetMaterialParamDataFormat.Numerical: {
-					colorMap = textureBuilder.CreateColorMap(
-						new ColorVect(matParams.ColorParamsPtr->NumericalValueR, matParams.ColorParamsPtr->NumericalValueG, matParams.ColorParamsPtr->NumericalValueB, matParams.ColorParamsPtr->NumericalValueA), 
-						includeAlpha: true, 
+			case AssetMaterialParamDataFormat.TextureMap:
+				using (var embeddedTex = LoadAssetTexture(assetHandle, paramPtr->TextureMapIndex, in assetRootDirStrRef)) {
+					return TextureBuilder.CreateTexture(
+						embeddedTex.TexelSpan,
+						new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
 						config with { IsLinearColorspace = false }
 					);
-					break;	
 				}
-				case AssetMaterialParamDataFormat.TextureMap: {
-
-					loadedTex = LoadAssetTexture(
-						texelBufferPool,
-						assetHandle,
-						matParams.ColorParamsPtr->TextureMapIndex,
-						in assetRootDirStrRef
-					);
-					colorMap = textureBuilder.CreateTexture(
-						loadedTex.TexelBuffer.AsReadOnlySpan<TexelRgba32>(loadedTex.Dimensions.Area),
-						new TextureGenerationConfig { Dimensions = loadedTex.Dimensions },
-						config with { IsLinearColorspace = false } 
-					);
-					texelBufferPool.Return(loadedTex.TexelBuffer);
-					break;
-				}
-				default: {
-					colorMap = textureBuilder.CreateColorMap();
-					break;
-				}
-			}
-			result.Add(colorMap);
-			#endregion
-
-			#region AtMap
-			switch ((matParams.AbsorptionParamsPtr->Format, matParams.TransmissionParamsPtr->Format)) {
-				case (AssetMaterialParamDataFormat.NotIncluded, AssetMaterialParamDataFormat.Numerical): {
-					atMap = textureBuilder.CreateAbsorptionTransmissionMap(
-						transmission: matParams.TransmissionParamsPtr->NumericalValueR
-					);
-					break;
-				}
-				case (AssetMaterialParamDataFormat.NotIncluded, AssetMaterialParamDataFormat.TextureMap): {
-					loadedTex = LoadAssetTexture(
-						texelBufferPool,
-						assetHandle,
-						matParams.TransmissionParamsPtr->TextureMapIndex,
-						in assetRootDirStrRef
-					);
-					// We assume the transmission data is in the R channel, so we move it to A, and leave absorption as black
-					var texels = loadedTex.TexelBuffer.AsSpan<TexelRgba32>(loadedTex.Dimensions.Area);
-					for (var i = 0; i < texels.Length; ++i) texels[i] = new TexelRgba32(0, 0, 0, texels[i].R);
-					atMap = textureBuilder.CreateTexture(
-						texels,
-						new TextureGenerationConfig { Dimensions = loadedTex.Dimensions },
-						config with { IsLinearColorspace = false } 
-					);
-					texelBufferPool.Return(loadedTex.TexelBuffer);
-					break;
-				}
-				case (AssetMaterialParamDataFormat.TextureMap, AssetMaterialParamDataFormat.NotIncluded): {
-					loadedTex = LoadAssetTexture(
-						texelBufferPool,
-						assetHandle,
-						matParams.AbsorptionParamsPtr->TextureMapIndex,
-						in assetRootDirStrRef
-					);
-					// We assume the transmission data is in the R channel, so we move it to A, and leave absorption as black
-					var texels = loadedTex.TexelBuffer.AsSpan<TexelRgba32>(loadedTex.Dimensions.Area);
-					for (var i = 0; i < texels.Length; ++i) texels[i] = texels[i] with { A = (byte) (ITextureBuilder.DefaultTransmission * Byte.MaxValue) };
-					atMap = textureBuilder.CreateTexture(
-						texels,
-						new TextureGenerationConfig { Dimensions = loadedTex.Dimensions },
-						config with { IsLinearColorspace = false } 
-					);
-					texelBufferPool.Return(loadedTex.TexelBuffer);
-					break;
-				}
-				case (AssetMaterialParamDataFormat.TextureMap, AssetMaterialParamDataFormat.Numerical): {
-					loadedTex = LoadAssetTexture(
-						texelBufferPool,
-						assetHandle,
-						matParams.AbsorptionParamsPtr->TextureMapIndex,
-						in assetRootDirStrRef
-					);
-					var texels = loadedTex.TexelBuffer.AsSpan<TexelRgba32>(loadedTex.Dimensions.Area);
-					for (var i = 0; i < texels.Length; ++i) texels[i] = texels[i] with { A = (byte) (matParams.TransmissionParamsPtr->NumericalValueR * Byte.MaxValue) };
-					atMap = textureBuilder.CreateTexture(
-						texels,
-						new TextureGenerationConfig { Dimensions = loadedTex.Dimensions },
-						config with { IsLinearColorspace = false } 
-					);
-					texelBufferPool.Return(loadedTex.TexelBuffer);
-					break;
-				}
-				case (AssetMaterialParamDataFormat.TextureMap, AssetMaterialParamDataFormat.TextureMap) when matParams.TransmissionParamsPtr->TextureMapIndex == matParams.AbsorptionParamsPtr->TextureMapIndex: {
-					loadedTex = LoadAssetTexture(
-						texelBufferPool,
-						assetHandle,
-						matParams.TransmissionParamsPtr->TextureMapIndex,
-						in assetRootDirStrRef
-					);
-					atMap = textureBuilder.CreateTexture(
-						loadedTex.TexelBuffer.AsReadOnlySpan<TexelRgba32>(loadedTex.Dimensions.Area),
-						new TextureGenerationConfig { Dimensions = loadedTex.Dimensions },
-						config with { IsLinearColorspace = false } 
-					);
-					texelBufferPool.Return(loadedTex.TexelBuffer);
-					break;
-				}
-				case (AssetMaterialParamDataFormat.TextureMap, AssetMaterialParamDataFormat.TextureMap): {
-					var absorptionTex = LoadAssetTexture(
-						texelBufferPool,
-						assetHandle,
-						matParams.AbsorptionParamsPtr->TextureMapIndex,
-						in assetRootDirStrRef
-					);
-					var transmissionTex = LoadAssetTexture(
-						texelBufferPool,
-						assetHandle,
-						matParams.TransmissionParamsPtr->TextureMapIndex,
-						in assetRootDirStrRef
-					);
-					var texels = absorptionTex.TexelBuffer.AsSpan<TexelRgba32>(absorptionTex.Dimensions.Area);
-					// TODO better rescaling
-					for (var i = 0; i < texels.Length; ++i) texels[i] = texels[i] with { A = transmissionTex.TexelBuffer.AsSpan<TexelRgba32>(transmissionTex.Dimensions.Area)[i % transmissionTex.Dimensions.Area].R };
-					atMap = textureBuilder.CreateTexture(
-						texels,
-						new TextureGenerationConfig { Dimensions = absorptionTex.Dimensions },
-						config with { IsLinearColorspace = false } 
-					);
-					texelBufferPool.Return(absorptionTex.TexelBuffer);
-					texelBufferPool.Return(transmissionTex.TexelBuffer);
-					break;
-				}
-				case (AssetMaterialParamDataFormat.Numerical, AssetMaterialParamDataFormat.NotIncluded): {
-					atMap = textureBuilder.CreateAbsorptionTransmissionMap(
-						absorption: new ColorVect(
-							matParams.AbsorptionParamsPtr->NumericalValueR,
-							matParams.AbsorptionParamsPtr->NumericalValueG,
-							matParams.AbsorptionParamsPtr->NumericalValueB
-						)
-					);
-					break;
-				}
-				case (AssetMaterialParamDataFormat.Numerical, AssetMaterialParamDataFormat.Numerical): {
-					atMap = textureBuilder.CreateAbsorptionTransmissionMap(
-						absorption: new ColorVect(
-							matParams.AbsorptionParamsPtr->NumericalValueR,
-							matParams.AbsorptionParamsPtr->NumericalValueG,
-							matParams.AbsorptionParamsPtr->NumericalValueB
-						),
-						transmission: matParams.TransmissionParamsPtr->NumericalValueR
-					);
-					break;
-				}
-				case (AssetMaterialParamDataFormat.Numerical, AssetMaterialParamDataFormat.TextureMap): {
-					loadedTex = LoadAssetTexture(
-						texelBufferPool,
-						assetHandle,
-						matParams.TransmissionParamsPtr->TextureMapIndex,
-						in assetRootDirStrRef
-					);
-					var texels = loadedTex.TexelBuffer.AsSpan<TexelRgba32>(loadedTex.Dimensions.Area);
-					for (var i = 0; i < texels.Length; ++i) texels[i] = new TexelRgba32(new ColorVect(matParams.AbsorptionParamsPtr->NumericalValueR, matParams.AbsorptionParamsPtr->NumericalValueG, matParams.AbsorptionParamsPtr->NumericalValueB)) with { A = texels[i].R };
-					atMap = textureBuilder.CreateTexture(
-						texels,
-						new TextureGenerationConfig { Dimensions = loadedTex.Dimensions },
-						config with { IsLinearColorspace = false } 
-					);
-					texelBufferPool.Return(loadedTex.TexelBuffer);
-					break;
-				}
-			}
-			if (atMap != null) result.Add(atMap.Value);
-			#endregion
-			
-			result.Add(mat);
-			materialToGroupAddOrderMap[materialIndex] = result.Materials.Count;
-			
-			return mat;
+				
+			default: return TextureBuilder.CreateColorMap();
+		}
+	}
+	
+	Texture? CreateAssetAbsorptionTransmissionMap(AssetMaterialParam* absorptionParamPtr, AssetMaterialParam* transmissionParamPtr, UIntPtr assetHandle, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
+		if (absorptionParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && transmissionParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
+		
+		// All in one texture, just load the whole thing once and return it, no combination required
+		if (ParamPtrsRepresentIdenticalTextures(absorptionParamPtr, transmissionParamPtr)) {
+			using var embeddedTex = LoadAssetTexture(
+				assetHandle,
+				absorptionParamPtr->TextureMapIndex,
+				in assetRootDirStrRef
+			);
+			return TextureBuilder.CreateTexture(
+				embeddedTex.TexelSpan,
+				new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
+				config with { IsLinearColorspace = false }
+			);
 		}
 		
+		var defaultAbsorptionTexel = new TexelRgba32(ITextureBuilder.DefaultAbsorption);
+		var defaultTransmissionTexel = TexelRgba32.FromNormalizedFloats(ITextureBuilder.DefaultTransmission, Real.Zero, Real.Zero, Real.Zero);
+		
+		var absorptionTexels = AbstractTexelSpanFromParamPtr(
+			absorptionParamPtr,
+			assetHandle,
+			in assetRootDirStrRef,
+			ref defaultAbsorptionTexel,
+			out var absorptionEmbeddedTex
+		);
+		var transmissionTexels = AbstractTexelSpanFromParamPtr(
+			transmissionParamPtr,
+			assetHandle,
+			in assetRootDirStrRef,
+			ref defaultTransmissionTexel,
+			out var transmissionEmbeddedTex
+		);
+
+		try {
+			var aDim = absorptionEmbeddedTex?.Dimensions ?? XYPair<int>.One;
+			var bDim = transmissionEmbeddedTex?.Dimensions ?? XYPair<int>.One;
+			var destDim = TextureUtils.GetCombinedTextureDimensions(aDim, bDim);
+			using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgba32>(destDim.Area);
+			TextureUtils.CombineTextures(
+				absorptionTexels, aDim,	
+				transmissionTexels, bDim,
+				new TextureCombinationConfig(
+					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
+					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.G),
+					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.B),
+					new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R)
+				),
+				destinationBuffer.Buffer
+			);
+			return TextureBuilder.CreateTexture(
+				destinationBuffer.Buffer,
+				new TextureGenerationConfig { Dimensions = destDim },
+				config with { IsLinearColorspace = false }
+			);
+		}
+		finally {
+			absorptionEmbeddedTex?.Dispose();
+			transmissionEmbeddedTex?.Dispose();
+		}
+	}
+	
+	Texture? CreateAssetNormalMap(AssetMaterialParam* paramPtr, UIntPtr assetHandle, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
+		switch (paramPtr->Format) {
+			case AssetMaterialParamDataFormat.Numerical:
+				return TextureBuilder.CreateTexture(
+					paramPtr->ToTexel().ToRgb24(),
+					config with {
+						IsLinearColorspace = true
+					}
+				);
+			
+			case AssetMaterialParamDataFormat.TextureMap:
+				using (var embeddedTex = LoadAssetTexture(assetHandle, paramPtr->TextureMapIndex, in assetRootDirStrRef)) {
+					using var rgbTexelBuffer = _globals.HeapPool.Borrow<TexelRgb24>(embeddedTex.Dimensions.Area);
+					TextureUtils.Convert(embeddedTex.TexelSpan, rgbTexelBuffer.Buffer);
+					return TextureBuilder.CreateTexture(
+						rgbTexelBuffer.Buffer,
+						new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
+						config with { IsLinearColorspace = false }
+					);
+				}
+				
+			default: return null;
+		}
+	}
+	
+	Texture? CreateAssetOrmrMap(AssetMaterialParam* occlusionParamPtr, AssetMaterialParam* roughnessParamPtr, AssetMaterialParam* glossinessParamPtr, AssetMaterialParam* metallicParamPtr, AssetMaterialParam* iorParamPtr, bool reflectanceRequired, UIntPtr assetHandle, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
+		// Maintainer's note:
+		// Reflectance can not be stored in a texture map, because it's actually exposed as IoR from assimp and there's no industry-normalized range mapping [0-1] to any known IoR range
+		// So either we don't specify it at all or if there's a numerical value it's considered to be IoR and must be converted
+		if (occlusionParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded 
+			&& roughnessParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded 
+			&& glossinessParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded
+			&& metallicParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded
+			&& iorParamPtr->Format != AssetMaterialParamDataFormat.Numerical) {
+			return null;
+		}
+		
+		var reflectanceValue = iorParamPtr->Format == AssetMaterialParamDataFormat.Numerical
+			? MathF.Pow((iorParamPtr->NumericalValueR - 1f) / (iorParamPtr->NumericalValueR + 1f), 2f) // Conversion from IoR to reflectance
+			: (float?) null;
+		if (reflectanceRequired) reflectanceValue ??= ITextureBuilder.DefaultReflectance;
+		
+		var occlusionAndRoughnessAreCombinedTextures = ParamPtrsRepresentIdenticalTextures(occlusionParamPtr, roughnessParamPtr);
+		var roughnessAndMetallicAreCombinedTextures = ParamPtrsRepresentIdenticalTextures(roughnessParamPtr, metallicParamPtr);
+		
+		// No reflectance and the rest are a singular ORM map, just load it and be done
+		if (reflectanceValue == null && occlusionAndRoughnessAreCombinedTextures && roughnessAndMetallicAreCombinedTextures) {
+			using var embeddedTex = LoadAssetTexture(
+				assetHandle,
+				occlusionParamPtr->TextureMapIndex,
+				in assetRootDirStrRef
+			);
+			return TextureBuilder.CreateTexture(
+				embeddedTex.TexelSpan,
+				new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
+				config with { IsLinearColorspace = true }
+			);
+		}
+		
+		var occlusionAndMetallicAreCombinedTextures = ParamPtrsRepresentIdenticalTextures(occlusionParamPtr, metallicParamPtr);
+		
+		var defaultOcclusionTexel = TexelRgba32.FromNormalizedFloats(ITextureBuilder.DefaultOcclusion, ITextureBuilder.DefaultOcclusion, ITextureBuilder.DefaultOcclusion, ITextureBuilder.DefaultOcclusion);
+		var defaultRoughnessTexel = TexelRgba32.FromNormalizedFloats(ITextureBuilder.DefaultRoughness, ITextureBuilder.DefaultRoughness, ITextureBuilder.DefaultRoughness, ITextureBuilder.DefaultRoughness);
+		var defaultMetallicTexel = TexelRgba32.FromNormalizedFloats(ITextureBuilder.DefaultMetallic, ITextureBuilder.DefaultMetallic, ITextureBuilder.DefaultMetallic, ITextureBuilder.DefaultMetallic);
+		
+		var occlusionTexels = AbstractTexelSpanFromParamPtr(
+			occlusionParamPtr,
+			assetHandle,
+			in assetRootDirStrRef,
+			ref defaultOcclusionTexel,
+			out var occlusionEmbeddedTex
+		);
+		var roughnessTexels = AbstractTexelSpanFromParamPtr( // TODO handle glossiness instead
+			roughnessParamPtr,
+			assetHandle,
+			in assetRootDirStrRef,
+			ref defaultRoughnessTexel,
+			out var roughnessEmbeddedTex
+		);
+		var metallicTexels = AbstractTexelSpanFromParamPtr(
+			metallicParamPtr,
+			assetHandle,
+			in assetRootDirStrRef,
+			ref defaultMetallicTexel,
+			out var metallicEmbeddedTex
+		);
+		
+		try {
+			var aDim = occlusionEmbeddedTex?.Dimensions ?? XYPair<int>.One;
+			var bDim = roughnessEmbeddedTex?.Dimensions ?? XYPair<int>.One;
+			var cDim = metallicEmbeddedTex?.Dimensions ?? XYPair<int>.One;
+			var destDim = TextureUtils.GetCombinedTextureDimensions(aDim, bDim, cDim);
+			using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgba32>(destDim.Area);
+			var metallicChannel = (occlusionAndRoughnessAreCombinedTextures, roughnessAndMetallicAreCombinedTextures, occlusionAndMetallicAreCombinedTextures) switch {
+				(_, false, false) => ColorChannel.R,
+				(false, true, false) => ColorChannel.G,
+				(false, false, true) => ColorChannel.G,
+				_ => ColorChannel.B,	
+			};
+			if (reflectanceValue.HasValue) {
+				var reflectanceTexel = TexelRgba32.FromNormalizedFloats(reflectanceValue.Value, reflectanceValue.Value, reflectanceValue.Value, reflectanceValue.Value);
+				TextureUtils.CombineTextures(
+					occlusionTexels, aDim,	
+					roughnessTexels, bDim,
+					metallicTexels, cDim,
+					new ReadOnlySpan<TexelRgba32>(in reflectanceTexel), XYPair<int>.One,
+					new TextureCombinationConfig(
+						new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
+						new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, occlusionAndRoughnessAreCombinedTextures ? ColorChannel.G : ColorChannel.R),
+						new TextureCombinationSource(TextureCombinationSourceTexture.TextureC, metallicChannel),
+						new TextureCombinationSource(TextureCombinationSourceTexture.TextureD, ColorChannel.A)
+					),
+					destinationBuffer.Buffer
+				);
+				return TextureBuilder.CreateTexture(
+					destinationBuffer.Buffer,
+					new TextureGenerationConfig { Dimensions = destDim },
+					config with { IsLinearColorspace = true }
+				);
+			}
+			else {
+				TextureUtils.CombineTextures(
+					occlusionTexels, aDim,	
+					roughnessTexels, bDim,
+					metallicTexels, cDim,
+					new TextureCombinationConfig(
+						new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
+						new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, occlusionAndRoughnessAreCombinedTextures ? ColorChannel.G : ColorChannel.R),
+						new TextureCombinationSource(TextureCombinationSourceTexture.TextureC, metallicChannel)
+					),
+					destinationBuffer.Buffer
+				);
+				using var rgbTexelBuffer = _globals.HeapPool.Borrow<TexelRgb24>(destDim.Area);
+				TextureUtils.Convert(destinationBuffer.Buffer, rgbTexelBuffer.Buffer);
+				return TextureBuilder.CreateTexture(
+					rgbTexelBuffer.Buffer,
+					new TextureGenerationConfig { Dimensions = destDim },
+					config with { IsLinearColorspace = true }
+				);
+			}
+		}
+		finally {
+			occlusionEmbeddedTex?.Dispose();
+			roughnessEmbeddedTex?.Dispose();
+			metallicEmbeddedTex?.Dispose();
+		}
+	}
+	
+	Material CreateAssetMaterial(UIntPtr assetHandle, int materialIndex, ResourceGroup assetResources, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
+		var matParamsBuffer = stackalloc AssetMaterialParam[13];
+		var matParams = new AssetMaterialParamGroup(
+			matParamsBuffer + 0,
+			matParamsBuffer + 1,
+			matParamsBuffer + 2,
+			matParamsBuffer + 3,
+			matParamsBuffer + 4,
+			matParamsBuffer + 5,
+			matParamsBuffer + 6,
+			matParamsBuffer + 7,
+			matParamsBuffer + 8,
+			matParamsBuffer + 9,
+			matParamsBuffer + 10,
+			matParamsBuffer + 11,
+			matParamsBuffer + 12
+		);
+		
+		GetLoadedAssetMaterialData(
+			assetHandle,
+			materialIndex,
+			&matParams
+		).ThrowIfFailure();
+		
+		var colorMap = CreateAssetColorMap(matParams.ColorParamsPtr, assetHandle, in config, in assetRootDirStrRef);
+		var atMap = CreateAssetAbsorptionTransmissionMap(matParams.AbsorptionParamsPtr, matParams.TransmissionParamsPtr, assetHandle, in config, in assetRootDirStrRef);
+		var normalMap = CreateAssetNormalMap(matParams.NormalParamsPtr, assetHandle, in config, in assetRootDirStrRef);
+		var ormMap = CreateAssetOrmrMap(matParams.AmbientOcclusionParamsPtr, matParams.RoughnessParamsPtr, matParams.GlossinessParamsPtr, matParams.MetallicParamsPtr, matParams.IoRParamsPtr, atMap.HasValue, assetHandle, in config, in assetRootDirStrRef);
+		Texture? anisotropyMap = null;
+		Texture? emissiveMap = null;
+		Texture? clearCoatMap = null;
+
+		assetResources.Add(colorMap);
+
+
+		
+		
+		
+		
+		return // TODO create material here;
+	}
+	
+	public ResourceGroup Load(ReadOnlySpan<char> filePath, in AssetCreationConfig config, in AssetReadConfig readConfig) {
 		const int MaxIndicesOnStack = 1024;
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
@@ -378,16 +481,14 @@ unsafe partial class LocalAssetLoader {
 						}
 						else {
 							mat = CreateAssetMaterial(
-								_embeddedAssetTextureBufferPool,
-								_textureBuilder,
-								_materialBuilder,
 								assetHandle,
 								matIndex,
-								materialToGroupAddOrderMap, 
-								in _assetFilePathBuffer.AsRef,
+								result,
 								config.TextureConfig,
-								result
+								in _assetFilePathBuffer.AsRef
 							);
+							result.Add(mat);
+							materialToGroupAddOrderMap[matIndex] = result.Materials.Count;
 						}
 						
 						result.Add(CreateModel(mesh, mat, default));
@@ -398,7 +499,7 @@ unsafe partial class LocalAssetLoader {
 					}
 				}
 				
-				// TODO if skip is false, add the un-added mats/textures here
+				// TODO if skip is false, add the un-added mats/textures here -- or just ignore completely and call this "LoadModels"?
 				
 				
 				

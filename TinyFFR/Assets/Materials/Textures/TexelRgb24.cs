@@ -44,6 +44,7 @@ public readonly record struct TexelRgb24(byte R, byte G, byte B) : IThreeByteCha
 		);
 	}
 	public static TexelRgb24 FromNormalizedFloats(Real r, Real g, Real b) => FromNormalizedFloats((float) r, (float) g, (float) b);
+	static TexelRgb24 IThreeChannelTexel<TexelRgb24, byte>.ConstructFrom(byte r, byte g, byte b) => FromByteComponents(r, g, b);
 
 	public static void SerializeToBytes(Span<byte> dest, TexelRgb24 src) {
 		dest[0] = src.R;
