@@ -52,8 +52,8 @@ public:
 		AssetMaterialParam* EmissiveIntensityParamsPtr;
 		AssetMaterialParam* AnisotropyAngleParamsPtr;
 		AssetMaterialParam* AnisotropyStrengthParamsPtr;
-		AssetMaterialParam* ClearCoatRoughnessParamsPtr;
 		AssetMaterialParam* ClearCoatStrengthParamsPtr;
+		AssetMaterialParam* ClearCoatRoughnessParamsPtr;
 	};
 	PopSafeStructPacking
 	static_assert(sizeof(AssetMaterialParamGroup) == 15 * 8);

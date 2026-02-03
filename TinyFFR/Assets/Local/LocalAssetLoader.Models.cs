@@ -152,7 +152,7 @@ unsafe partial class LocalAssetLoader {
 					paramPtr->ToColorVect(),
 					includeAlpha: true,
 					config with {
-						IsLinearColorspace = false
+						IsLinearColorspace = true // Numerical outputs are in linear space
 					}
 				);
 			
@@ -223,7 +223,7 @@ unsafe partial class LocalAssetLoader {
 			return TextureBuilder.CreateTexture(
 				destinationBuffer.Buffer,
 				new TextureGenerationConfig { Dimensions = destDim },
-				config with { IsLinearColorspace = false }
+				config with { IsLinearColorspace = !absorptionEmbeddedTex.HasValue } // Numerical values are linear, textures assumed sRGB
 			);
 		}
 		finally {
@@ -249,7 +249,7 @@ unsafe partial class LocalAssetLoader {
 					return TextureBuilder.CreateTexture(
 						rgbTexelBuffer.Buffer,
 						new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
-						config with { IsLinearColorspace = false }
+						config with { IsLinearColorspace = true }
 					);
 				}
 				
@@ -507,7 +507,7 @@ unsafe partial class LocalAssetLoader {
 			return TextureBuilder.CreateTexture(
 				destinationBuffer.Buffer,
 				new TextureGenerationConfig { Dimensions = destDim },
-				config with { IsLinearColorspace = false }
+				config with { IsLinearColorspace = !colorEmbeddedTex.HasValue } // Numerical values are linear, textures assumed sRGB
 			);
 		}
 		finally {
@@ -637,7 +637,7 @@ unsafe partial class LocalAssetLoader {
 				EmissiveMap = emissiveMap,
 				NormalMap = normalMap,
 				OcclusionRoughnessMetallicReflectanceMap = ormMap,
-				RefractionThickness = refractionThickness
+				RefractionThickness = refractionThickness >= 0f ? refractionThickness : TransmissiveMaterialCreationConfig.DefaultRefractionThickness
 			});
 		}
 		else {

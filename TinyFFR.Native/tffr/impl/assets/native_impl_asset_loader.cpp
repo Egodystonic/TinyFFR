@@ -11,6 +11,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION // This should only be defined in one file ever, it imports the entire implementation for stb_image in as a definition file
 #include <filesystem>
 
+#include "assimp/GltfMaterial.h"
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
 
@@ -345,69 +346,205 @@ int get_texture_index_from_path(MemoryLoadedAssetHandle assetHandle, aiString& p
 	return -1;
 }
 
-void native_impl_asset_loader::get_loaded_asset_material_data(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, AssetMaterialParam* outColorParam, AssetMaterialParam* outNormalsParam, AssetMaterialParam* outOrmParam) {
+bool apply_material_texture_if_present(MemoryLoadedAssetHandle assetHandle, aiMaterial* matPtr, native_impl_asset_loader::AssetMaterialParam* paramPtr, aiTextureType texType) {
+	aiString path;
+	auto result = matPtr->GetTexture(texType, 0, &path) == aiReturn_SUCCESS;
+	if (!result) return result;
+	paramPtr->Format = native_impl_asset_loader::AssetMaterialParamDataFormat::TextureMap;
+	paramPtr->TextureMapIndex = get_texture_index_from_path(assetHandle, path);
+	ThrowIfNegative(paramPtr->TextureMapIndex, "Could not find matching texture index for '", path.C_Str(), "'.");
+	return result;
+}
+
+bool apply_material_numerical_if_present(MemoryLoadedAssetHandle assetHandle, aiMaterial* matPtr, native_impl_asset_loader::AssetMaterialParam* paramPtr, const char* pKey, unsigned int type, unsigned int idx, bool clamp) {
+	aiColor4D rgba;
+	aiColor3D rgb;
+	ai_real real;
+	
+	auto result = matPtr->Get(pKey, type, idx, rgba) == aiReturn_SUCCESS;
+	if (result) {
+		paramPtr->Format = native_impl_asset_loader::AssetMaterialParamDataFormat::Numerical;
+		paramPtr->NumericalValueR = rgba.r;
+		paramPtr->NumericalValueG = rgba.g;
+		paramPtr->NumericalValueB = rgba.b;
+		paramPtr->NumericalValueA = rgba.a;
+		if (clamp) {
+			paramPtr->NumericalValueR = std::clamp(paramPtr->NumericalValueR, 0.0f, 1.0f);
+			paramPtr->NumericalValueG = std::clamp(paramPtr->NumericalValueG, 0.0f, 1.0f);
+			paramPtr->NumericalValueB = std::clamp(paramPtr->NumericalValueB, 0.0f, 1.0f);
+			paramPtr->NumericalValueA = std::clamp(paramPtr->NumericalValueA, 0.0f, 1.0f);
+		}
+		return result;
+	}
+	
+	result = matPtr->Get(pKey, type, idx, rgb) == aiReturn_SUCCESS;
+	if (result) {
+		paramPtr->Format = native_impl_asset_loader::AssetMaterialParamDataFormat::Numerical;
+		paramPtr->NumericalValueR = rgba.r;
+		paramPtr->NumericalValueG = rgba.g;
+		paramPtr->NumericalValueB = rgba.b;
+		paramPtr->NumericalValueA = 1.0f;
+		if (clamp) {
+			paramPtr->NumericalValueR = std::clamp(paramPtr->NumericalValueR, 0.0f, 1.0f);
+			paramPtr->NumericalValueG = std::clamp(paramPtr->NumericalValueG, 0.0f, 1.0f);
+			paramPtr->NumericalValueB = std::clamp(paramPtr->NumericalValueB, 0.0f, 1.0f);
+		}
+		return result;
+	}
+	
+	result = matPtr->Get(pKey, type, idx, real) == aiReturn_SUCCESS;
+	if (result) {
+		if (clamp) real = std::clamp(real, 0.0f, 1.0f);
+		paramPtr->Format = native_impl_asset_loader::AssetMaterialParamDataFormat::Numerical;
+		paramPtr->NumericalValueR = real;
+		paramPtr->NumericalValueG = real;
+		paramPtr->NumericalValueB = real;
+		paramPtr->NumericalValueA = real;
+		return result;
+	}
+	
+	return false;
+}
+
+void native_impl_asset_loader::get_loaded_asset_material_data(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, AssetMaterialParamGroup* paramGroupPtr, AssetMaterialAlphaFormat* outAlphaFormat, float_t* outRefractionThickness) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 	ThrowIf(static_cast<uint32_t>(materialIndex) >= assetHandle->mNumMaterials, "Material index was out of bounds.");
-	ThrowIfNull(outColorParam, "Out color param pointer was null.");
-	ThrowIfNull(outNormalsParam, "Out normals param pointer was null.");
-	ThrowIfNull(outOrmParam, "Out orm param pointer was null.");
+	ThrowIfNull(paramGroupPtr, "Param group pointer was null.");
+	ThrowIfNull(outAlphaFormat, "Out alpha format pointer was null.");
+	ThrowIfNull(outRefractionThickness, "Out refraction thickness pointer was null.");
 	
 	auto mat = assetHandle->mMaterials[materialIndex];
-		
-	outColorParam->Format = AssetMaterialParamDataFormat::NotIncluded; 
-	outNormalsParam->Format = AssetMaterialParamDataFormat::NotIncluded; 
-	outOrmParam->Format = AssetMaterialParamDataFormat::NotIncluded;
-	
-	aiString path;
-	aiColor4D rgba;
+	bool valueFound = false;
+	AssetMaterialParam* paramPtr = nullptr;
 	
 	// Color
-	auto hasColorTex = 
-		mat->GetTexture(aiTextureType_BASE_COLOR, 0, &path) == aiReturn_SUCCESS
-		|| mat->GetTexture(aiTextureType_DIFFUSE, 0, &path) == aiReturn_SUCCESS;
-	if (hasColorTex) {
-		outColorParam->Format = AssetMaterialParamDataFormat::TextureMap;
-		outColorParam->TextureMapIndex = get_texture_index_from_path(assetHandle, path);
-		ThrowIfNegative(outColorParam->TextureMapIndex, "Could not find matching texture index for '", path.C_Str(), "'"); 		
-	}
-	else {
-		auto hasColorData =
-			mat->Get(AI_MATKEY_BASE_COLOR, rgba) == aiReturn_SUCCESS
-			|| mat->Get(AI_MATKEY_COLOR_DIFFUSE, rgba) == aiReturn_SUCCESS;
-		if (hasColorData) {
-			outColorParam->Format = AssetMaterialParamDataFormat::Numerical;
-			outColorParam->NumericalValueR = rgba.r;
-			outColorParam->NumericalValueG = rgba.g;
-			outColorParam->NumericalValueB = rgba.b;
-			outColorParam->NumericalValueA = rgba.a;
-		}
-	}
+	paramPtr = paramGroupPtr->ColorParamsPtr;
+	valueFound = 
+		apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_BASE_COLOR)
+		|| apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_DIFFUSE)
+		|| apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_BASE_COLOR, true)
+		|| apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_COLOR_DIFFUSE, true);
+	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
 	
 	// Normals
-	auto hasNormalTex = 
-		mat->GetTexture(aiTextureType_NORMALS, 0, &path) == aiReturn_SUCCESS;
-	if (hasNormalTex) {
-		outNormalsParam->Format = AssetMaterialParamDataFormat::TextureMap;
-		outNormalsParam->TextureMapIndex = get_texture_index_from_path(assetHandle, path);
-		ThrowIfNegative(outNormalsParam->TextureMapIndex, "Could not find matching texture index for '", path.C_Str(), "'");
-	}
-	else {
-		auto hasNormalsData =
-			mat->Get(AI_MATKEY_MAPPING_NORMALS(0), rgba) == aiReturn_SUCCESS;
-		if (hasNormalsData) {
-			outNormalsParam->Format = AssetMaterialParamDataFormat::Numerical;
-			outNormalsParam->NumericalValueR = rgba.r;
-			outNormalsParam->NumericalValueG = rgba.g;
-			outNormalsParam->NumericalValueB = rgba.b;
-			outNormalsParam->NumericalValueA = rgba.a;
-		}
+	paramPtr = paramGroupPtr->NormalParamsPtr;
+	valueFound = 
+		apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_NORMALS);
+	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
+	
+	// ORM - O
+	paramPtr = paramGroupPtr->AmbientOcclusionParamsPtr;
+	valueFound = 
+		apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_AMBIENT_OCCLUSION);
+	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
+	
+	// ORM - R
+	paramPtr = paramGroupPtr->RoughnessParamsPtr;
+	valueFound = 
+		apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_DIFFUSE_ROUGHNESS)
+		|| apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_ROUGHNESS_FACTOR, true);
+	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
+	
+	// ORM - ^R (i.e. Glossiness, Shininess)
+	paramPtr = paramGroupPtr->GlossinessParamsPtr;
+	valueFound = 
+		apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_SHININESS)
+		|| apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_SHININESS_STRENGTH, true)
+		|| apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_SHININESS, true);
+	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
+	
+	// ORM - M
+	paramPtr = paramGroupPtr->MetallicParamsPtr;
+	valueFound = 
+		apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_METALNESS)
+		|| apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_METALLIC_FACTOR, true);
+	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
+	
+	// ORM(R) - IoR
+	paramPtr = paramGroupPtr->IoRParamsPtr;
+	valueFound = 
+		apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_REFRACTI, false);
+	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
+	
+	// AT - A
+	paramPtr = paramGroupPtr->AbsorptionParamsPtr;
+	valueFound =
+		apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_TRANSMISSION)
+		|| apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_VOLUME_ATTENUATION_COLOR, true);
+	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
+	
+	// AT - T
+	paramPtr = paramGroupPtr->TransmissionParamsPtr;
+	valueFound = 
+		apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_TRANSMISSION)
+		|| apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_TRANSMISSION_FACTOR, true);
+	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
+	
+	// Emissive - Color
+	paramPtr = paramGroupPtr->EmissiveColorParamsPtr;
+	valueFound = 
+		apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_EMISSIVE)
+		|| apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_EMISSION_COLOR)
+		|| apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_COLOR_EMISSIVE, true);
+	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
+	
+	// Emissive - Intensity
+	paramPtr = paramGroupPtr->EmissiveColorParamsPtr;
+	valueFound = 
+		apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_EMISSIVE)
+		|| apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_EMISSIVE_INTENSITY, true);
+	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
+	
+	// Anisotropy - Angle
+	paramPtr = paramGroupPtr->AnisotropyAngleParamsPtr;
+	valueFound = 
+		apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_ANISOTROPY)
+		|| apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_ANISOTROPY_ROTATION, false);
+	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
+	else if (paramPtr->Format == Numerical) {
+		auto input = paramPtr->NumericalValueR;
+		if (input < 0.0f) input *= -1.0f;
+		input /= (F_PI * 2.0f);
+		paramPtr->NumericalValueR = input;
+		paramPtr->NumericalValueG = input;
+		paramPtr->NumericalValueB = input;
+		paramPtr->NumericalValueA = input;
 	}
 	
-	// ORM
-	// TODO all of this. Also WHEN LOADING SINGLE NUMERICAL VALUES WE NEED TO SET ALL OF RGBA TO THAT VALUE to make it work on the C# side
+	// Anisotropy - Strength
+	paramPtr = paramGroupPtr->AnisotropyStrengthParamsPtr;
+	valueFound = 
+		apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_ANISOTROPY)
+		|| apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_ANISOTROPY_FACTOR, true);
+	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
+	
+	// Clear coat - Strength
+	paramPtr = paramGroupPtr->ClearCoatStrengthParamsPtr;
+	valueFound = 
+		apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_CLEARCOAT)
+		|| apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_CLEARCOAT_FACTOR, true);
+	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
+	
+	// Clear coat - Roughness
+	paramPtr = paramGroupPtr->ClearCoatRoughnessParamsPtr;
+	valueFound = 
+		apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_CLEARCOAT)
+		|| apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_CLEARCOAT_ROUGHNESS_FACTOR, true);
+	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
+	
+	*outAlphaFormat = AssetMaterialAlphaFormat::None;
+	aiString alphaMode;
+	if (mat->Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode) == aiReturn_SUCCESS) {
+		if (alphaMode == aiString("MASK")) *outAlphaFormat = AssetMaterialAlphaFormat::Masked;
+		else if (alphaMode == aiString("BLEND")) *outAlphaFormat = AssetMaterialAlphaFormat::Blended;
+	}
+	
+	*outRefractionThickness = -1.0f;
+	ai_real attenDist;
+	if (mat->Get(AI_MATKEY_VOLUME_ATTENUATION_DISTANCE, attenDist) == aiReturn_SUCCESS) *outRefractionThickness = attenDist;
 }
-StartExportedFunc(get_loaded_asset_material_data, MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, native_impl_asset_loader::AssetMaterialParam* outColorParam, native_impl_asset_loader::AssetMaterialParam* outNormalsParam, native_impl_asset_loader::AssetMaterialParam* outOrmParam) {
-	native_impl_asset_loader::get_loaded_asset_material_data(assetHandle, materialIndex, outColorParam, outNormalsParam, outOrmParam);
+StartExportedFunc(get_loaded_asset_material_data, MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, native_impl_asset_loader::AssetMaterialParamGroup* paramGroupPtr, native_impl_asset_loader::AssetMaterialAlphaFormat* outAlphaFormat, float_t* outRefractionThickness) {
+	native_impl_asset_loader::get_loaded_asset_material_data(assetHandle, materialIndex, paramGroupPtr, outAlphaFormat, outRefractionThickness);
 	EndExportedFunc
 }
 
