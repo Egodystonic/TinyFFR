@@ -58,12 +58,12 @@ public readonly record struct TextureCombinationConfig(TextureCombinationSource 
 		: this(new TextureCombinationSource(xRedSourceTex, xRedSourceChannel), new TextureCombinationSource(yGreenSourceTex, yGreenSourceChannel), new TextureCombinationSource(zBlueSourceTex, zBlueSourceChannel), new TextureCombinationSource(wAlphaSourceTex, wAlphaSourceChannel)) { }
 
 
-	internal TTexel SelectTexel<TTexel, TChannel>(ReadOnlySpan<TTexel> samples) where TTexel : unmanaged, ITexel<TTexel, TChannel> where TChannel : struct {
-		return TTexel.ConstructFromIgnoringExcessArguments(
-			OutputTextureXRedChannelSource.SelectTexelChannel<TTexel, TChannel>(samples) ?? TTexel.MinChannelValue,
-			OutputTextureYGreenChannelSource.SelectTexelChannel<TTexel, TChannel>(samples) ?? TTexel.MinChannelValue,
-			OutputTextureZBlueChannelSource.SelectTexelChannel<TTexel, TChannel>(samples) ?? TTexel.MinChannelValue,
-			OutputTextureWAlphaChannelSource?.SelectTexelChannel<TTexel, TChannel>(samples) ?? TTexel.MaxChannelValue
+	internal TOut SelectTexel<TIn, TOut, TChannel>(ReadOnlySpan<TIn> samples) where TIn : unmanaged, ITexel<TIn, TChannel> where TOut : unmanaged, ITexel<TOut, TChannel> where TChannel : struct {
+		return TOut.ConstructFromIgnoringExcessArguments(
+			OutputTextureXRedChannelSource.SelectTexelChannel<TIn, TChannel>(samples) ?? TOut.MinChannelValue,
+			OutputTextureYGreenChannelSource.SelectTexelChannel<TIn, TChannel>(samples) ?? TOut.MinChannelValue,
+			OutputTextureZBlueChannelSource.SelectTexelChannel<TIn, TChannel>(samples) ?? TOut.MinChannelValue,
+			OutputTextureWAlphaChannelSource?.SelectTexelChannel<TIn, TChannel>(samples) ?? TOut.MaxChannelValue
 		);
 	}
 
@@ -114,16 +114,24 @@ public static partial class TextureUtils {
 	public static void CombineTextures(
 		ReadOnlySpan<TexelRgba32> aBuffer, XYPair<int> aDimensions,
 		ReadOnlySpan<TexelRgba32> bBuffer, XYPair<int> bDimensions,
-		TextureCombinationConfig combinationConfig, Span<TexelRgba32> destinationBuffer) => CombineTextures<TexelRgba32, byte>(aBuffer, aDimensions, bBuffer, bDimensions, combinationConfig, destinationBuffer);
+		TextureCombinationConfig combinationConfig, Span<TexelRgba32> destinationBuffer) => CombineTextures<TexelRgba32, TexelRgba32, byte>(aBuffer, aDimensions, bBuffer, bDimensions, combinationConfig, destinationBuffer);
 	public static void CombineTextures(
 		ReadOnlySpan<TexelRgb24> aBuffer, XYPair<int> aDimensions,
 		ReadOnlySpan<TexelRgb24> bBuffer, XYPair<int> bDimensions,
-		TextureCombinationConfig combinationConfig, Span<TexelRgb24> destinationBuffer) => CombineTextures<TexelRgb24, byte>(aBuffer, aDimensions, bBuffer, bDimensions, combinationConfig, destinationBuffer);
-	public static void CombineTextures<TTexel, TChannel>(
-		ReadOnlySpan<TTexel> aBuffer, XYPair<int> aDimensions,
-		ReadOnlySpan<TTexel> bBuffer, XYPair<int> bDimensions,
-		TextureCombinationConfig combinationConfig, Span<TTexel> destinationBuffer
-	) where TTexel : unmanaged, ITexel<TTexel, TChannel> where TChannel : struct {
+		TextureCombinationConfig combinationConfig, Span<TexelRgb24> destinationBuffer) => CombineTextures<TexelRgb24, TexelRgb24, byte>(aBuffer, aDimensions, bBuffer, bDimensions, combinationConfig, destinationBuffer);
+	public static void CombineTextures(
+		ReadOnlySpan<TexelRgba32> aBuffer, XYPair<int> aDimensions,
+		ReadOnlySpan<TexelRgba32> bBuffer, XYPair<int> bDimensions,
+		TextureCombinationConfig combinationConfig, Span<TexelRgb24> destinationBuffer) => CombineTextures<TexelRgba32, TexelRgb24, byte>(aBuffer, aDimensions, bBuffer, bDimensions, combinationConfig, destinationBuffer);
+	public static void CombineTextures(
+		ReadOnlySpan<TexelRgb24> aBuffer, XYPair<int> aDimensions,
+		ReadOnlySpan<TexelRgb24> bBuffer, XYPair<int> bDimensions,
+		TextureCombinationConfig combinationConfig, Span<TexelRgba32> destinationBuffer) => CombineTextures<TexelRgb24, TexelRgba32, byte>(aBuffer, aDimensions, bBuffer, bDimensions, combinationConfig, destinationBuffer);
+	public static void CombineTextures<TIn, TOut, TChannel>(
+		ReadOnlySpan<TIn> aBuffer, XYPair<int> aDimensions,
+		ReadOnlySpan<TIn> bBuffer, XYPair<int> bDimensions,
+		TextureCombinationConfig combinationConfig, Span<TOut> destinationBuffer
+	) where TIn : unmanaged, ITexel<TIn, TChannel> where TOut : unmanaged, ITexel<TOut, TChannel> where TChannel : struct {
 		const int NumTexturesBeingCombined = 2;
 		combinationConfig.ThrowIfInvalid(NumTexturesBeingCombined);
 
@@ -137,13 +145,13 @@ public static partial class TextureUtils {
 			);
 		}
 
-		Span<TTexel> localSampleBuffer = stackalloc TTexel[NumTexturesBeingCombined];
+		Span<TIn> localSampleBuffer = stackalloc TIn[NumTexturesBeingCombined];
 
 		if (allDimensionsMatch) {
 			for (var i = 0; i < destDimensions.Area; ++i) {
 				localSampleBuffer[0] = aBuffer[i];
 				localSampleBuffer[1] = bBuffer[i];
-				destinationBuffer[i] = combinationConfig.SelectTexel<TTexel, TChannel>(localSampleBuffer);
+				destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
 			}
 		}
 		else {
@@ -151,7 +159,7 @@ public static partial class TextureUtils {
 				for (var y = 0; y < destDimensions.Y; ++y) {
 					localSampleBuffer[0] = aBuffer[CalculateWrappedIndexForCombination(aDimensions, x, y)];
 					localSampleBuffer[1] = bBuffer[CalculateWrappedIndexForCombination(bDimensions, x, y)];
-					destinationBuffer[destDimensions.X * y + x] = combinationConfig.SelectTexel<TTexel, TChannel>(localSampleBuffer);
+					destinationBuffer[destDimensions.X * y + x] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
 				}
 			}
 		}
@@ -161,18 +169,28 @@ public static partial class TextureUtils {
 		ReadOnlySpan<TexelRgba32> aBuffer, XYPair<int> aDimensions,
 		ReadOnlySpan<TexelRgba32> bBuffer, XYPair<int> bDimensions,
 		ReadOnlySpan<TexelRgba32> cBuffer, XYPair<int> cDimensions,
-		TextureCombinationConfig combinationConfig, Span<TexelRgba32> destinationBuffer) => CombineTextures<TexelRgba32, byte>(aBuffer, aDimensions, bBuffer, bDimensions, cBuffer, cDimensions, combinationConfig, destinationBuffer);
+		TextureCombinationConfig combinationConfig, Span<TexelRgba32> destinationBuffer) => CombineTextures<TexelRgba32, TexelRgba32, byte>(aBuffer, aDimensions, bBuffer, bDimensions, cBuffer, cDimensions, combinationConfig, destinationBuffer);
 	public static void CombineTextures(
 		ReadOnlySpan<TexelRgb24> aBuffer, XYPair<int> aDimensions,
 		ReadOnlySpan<TexelRgb24> bBuffer, XYPair<int> bDimensions,
 		ReadOnlySpan<TexelRgb24> cBuffer, XYPair<int> cDimensions,
-		TextureCombinationConfig combinationConfig, Span<TexelRgb24> destinationBuffer) => CombineTextures<TexelRgb24, byte>(aBuffer, aDimensions, bBuffer, bDimensions, cBuffer, cDimensions, combinationConfig, destinationBuffer);
-	public static void CombineTextures<TTexel, TChannel>(
-		ReadOnlySpan<TTexel> aBuffer, XYPair<int> aDimensions,
-		ReadOnlySpan<TTexel> bBuffer, XYPair<int> bDimensions,
-		ReadOnlySpan<TTexel> cBuffer, XYPair<int> cDimensions,
-		TextureCombinationConfig combinationConfig, Span<TTexel> destinationBuffer
-	) where TTexel : unmanaged, ITexel<TTexel, TChannel> where TChannel : struct {
+		TextureCombinationConfig combinationConfig, Span<TexelRgb24> destinationBuffer) => CombineTextures<TexelRgb24, TexelRgb24, byte>(aBuffer, aDimensions, bBuffer, bDimensions, cBuffer, cDimensions, combinationConfig, destinationBuffer);
+	public static void CombineTextures(
+		ReadOnlySpan<TexelRgba32> aBuffer, XYPair<int> aDimensions,
+		ReadOnlySpan<TexelRgba32> bBuffer, XYPair<int> bDimensions,
+		ReadOnlySpan<TexelRgba32> cBuffer, XYPair<int> cDimensions,
+		TextureCombinationConfig combinationConfig, Span<TexelRgb24> destinationBuffer) => CombineTextures<TexelRgba32, TexelRgb24, byte>(aBuffer, aDimensions, bBuffer, bDimensions, cBuffer, cDimensions, combinationConfig, destinationBuffer);
+	public static void CombineTextures(
+		ReadOnlySpan<TexelRgb24> aBuffer, XYPair<int> aDimensions,
+		ReadOnlySpan<TexelRgb24> bBuffer, XYPair<int> bDimensions,
+		ReadOnlySpan<TexelRgb24> cBuffer, XYPair<int> cDimensions,
+		TextureCombinationConfig combinationConfig, Span<TexelRgba32> destinationBuffer) => CombineTextures<TexelRgb24, TexelRgba32, byte>(aBuffer, aDimensions, bBuffer, bDimensions, cBuffer, cDimensions, combinationConfig, destinationBuffer);
+	public static void CombineTextures<TIn, TOut, TChannel>(
+		ReadOnlySpan<TIn> aBuffer, XYPair<int> aDimensions,
+		ReadOnlySpan<TIn> bBuffer, XYPair<int> bDimensions,
+		ReadOnlySpan<TIn> cBuffer, XYPair<int> cDimensions,
+		TextureCombinationConfig combinationConfig, Span<TOut> destinationBuffer
+	) where TIn : unmanaged, ITexel<TIn, TChannel> where TOut : unmanaged, ITexel<TOut, TChannel> where TChannel : struct {
 		const int NumTexturesBeingCombined = 3;
 		combinationConfig.ThrowIfInvalid(NumTexturesBeingCombined);
 
@@ -186,14 +204,14 @@ public static partial class TextureUtils {
 			);
 		}
 
-		Span<TTexel> localSampleBuffer = stackalloc TTexel[NumTexturesBeingCombined];
+		Span<TIn> localSampleBuffer = stackalloc TIn[NumTexturesBeingCombined];
 
 		if (allDimensionsMatch) {
 			for (var i = 0; i < destDimensions.Area; ++i) {
 				localSampleBuffer[0] = aBuffer[i];
 				localSampleBuffer[1] = bBuffer[i];
 				localSampleBuffer[2] = cBuffer[i];
-				destinationBuffer[i] = combinationConfig.SelectTexel<TTexel, TChannel>(localSampleBuffer);
+				destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
 			}
 		}
 		else {
@@ -202,7 +220,7 @@ public static partial class TextureUtils {
 					localSampleBuffer[0] = aBuffer[CalculateWrappedIndexForCombination(aDimensions, x, y)];
 					localSampleBuffer[1] = bBuffer[CalculateWrappedIndexForCombination(bDimensions, x, y)];
 					localSampleBuffer[2] = cBuffer[CalculateWrappedIndexForCombination(cDimensions, x, y)];
-					destinationBuffer[destDimensions.X * y + x] = combinationConfig.SelectTexel<TTexel, TChannel>(localSampleBuffer);
+					destinationBuffer[destDimensions.X * y + x] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
 				}
 			}
 		}
@@ -213,20 +231,32 @@ public static partial class TextureUtils {
 		ReadOnlySpan<TexelRgba32> bBuffer, XYPair<int> bDimensions,
 		ReadOnlySpan<TexelRgba32> cBuffer, XYPair<int> cDimensions,
 		ReadOnlySpan<TexelRgba32> dBuffer, XYPair<int> dDimensions,
-		TextureCombinationConfig combinationConfig, Span<TexelRgba32> destinationBuffer) => CombineTextures<TexelRgba32, byte>(aBuffer, aDimensions, bBuffer, bDimensions, cBuffer, cDimensions, dBuffer, dDimensions, combinationConfig, destinationBuffer);
+		TextureCombinationConfig combinationConfig, Span<TexelRgba32> destinationBuffer) => CombineTextures<TexelRgba32, TexelRgba32, byte>(aBuffer, aDimensions, bBuffer, bDimensions, cBuffer, cDimensions, dBuffer, dDimensions, combinationConfig, destinationBuffer);
 	public static void CombineTextures(
 		ReadOnlySpan<TexelRgb24> aBuffer, XYPair<int> aDimensions,
 		ReadOnlySpan<TexelRgb24> bBuffer, XYPair<int> bDimensions,
 		ReadOnlySpan<TexelRgb24> cBuffer, XYPair<int> cDimensions,
 		ReadOnlySpan<TexelRgb24> dBuffer, XYPair<int> dDimensions,
-		TextureCombinationConfig combinationConfig, Span<TexelRgb24> destinationBuffer) => CombineTextures<TexelRgb24, byte>(aBuffer, aDimensions, bBuffer, bDimensions, cBuffer, cDimensions, dBuffer, dDimensions, combinationConfig, destinationBuffer);
-	public static void CombineTextures<TTexel, TChannel>(
-		ReadOnlySpan<TTexel> aBuffer, XYPair<int> aDimensions,
-		ReadOnlySpan<TTexel> bBuffer, XYPair<int> bDimensions,
-		ReadOnlySpan<TTexel> cBuffer, XYPair<int> cDimensions,
-		ReadOnlySpan<TTexel> dBuffer, XYPair<int> dDimensions,
-		TextureCombinationConfig combinationConfig, Span<TTexel> destinationBuffer
-	) where TTexel : unmanaged, ITexel<TTexel, TChannel> where TChannel : struct {
+		TextureCombinationConfig combinationConfig, Span<TexelRgb24> destinationBuffer) => CombineTextures<TexelRgb24, TexelRgb24, byte>(aBuffer, aDimensions, bBuffer, bDimensions, cBuffer, cDimensions, dBuffer, dDimensions, combinationConfig, destinationBuffer);
+	public static void CombineTextures(
+		ReadOnlySpan<TexelRgba32> aBuffer, XYPair<int> aDimensions,
+		ReadOnlySpan<TexelRgba32> bBuffer, XYPair<int> bDimensions,
+		ReadOnlySpan<TexelRgba32> cBuffer, XYPair<int> cDimensions,
+		ReadOnlySpan<TexelRgba32> dBuffer, XYPair<int> dDimensions,
+		TextureCombinationConfig combinationConfig, Span<TexelRgb24> destinationBuffer) => CombineTextures<TexelRgba32, TexelRgb24, byte>(aBuffer, aDimensions, bBuffer, bDimensions, cBuffer, cDimensions, dBuffer, dDimensions, combinationConfig, destinationBuffer);
+	public static void CombineTextures(
+		ReadOnlySpan<TexelRgb24> aBuffer, XYPair<int> aDimensions,
+		ReadOnlySpan<TexelRgb24> bBuffer, XYPair<int> bDimensions,
+		ReadOnlySpan<TexelRgb24> cBuffer, XYPair<int> cDimensions,
+		ReadOnlySpan<TexelRgb24> dBuffer, XYPair<int> dDimensions,
+		TextureCombinationConfig combinationConfig, Span<TexelRgba32> destinationBuffer) => CombineTextures<TexelRgb24, TexelRgba32, byte>(aBuffer, aDimensions, bBuffer, bDimensions, cBuffer, cDimensions, dBuffer, dDimensions, combinationConfig, destinationBuffer);
+	public static void CombineTextures<TIn, TOut, TChannel>(
+		ReadOnlySpan<TIn> aBuffer, XYPair<int> aDimensions,
+		ReadOnlySpan<TIn> bBuffer, XYPair<int> bDimensions,
+		ReadOnlySpan<TIn> cBuffer, XYPair<int> cDimensions,
+		ReadOnlySpan<TIn> dBuffer, XYPair<int> dDimensions,
+		TextureCombinationConfig combinationConfig, Span<TOut> destinationBuffer
+	) where TIn : unmanaged, ITexel<TIn, TChannel> where TOut : unmanaged, ITexel<TOut, TChannel> where TChannel : struct {
 		const int NumTexturesBeingCombined = 4;
 		combinationConfig.ThrowIfInvalid(NumTexturesBeingCombined);
 
@@ -240,7 +270,7 @@ public static partial class TextureUtils {
 			);
 		}
 
-		Span<TTexel> localSampleBuffer = stackalloc TTexel[NumTexturesBeingCombined];
+		Span<TIn> localSampleBuffer = stackalloc TIn[NumTexturesBeingCombined];
 
 		if (allDimensionsMatch) {
 			for (var i = 0; i < destDimensions.Area; ++i) {
@@ -248,7 +278,7 @@ public static partial class TextureUtils {
 				localSampleBuffer[1] = bBuffer[i];
 				localSampleBuffer[2] = cBuffer[i];
 				localSampleBuffer[3] = dBuffer[i];
-				destinationBuffer[i] = combinationConfig.SelectTexel<TTexel, TChannel>(localSampleBuffer);
+				destinationBuffer[i] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
 			}
 		}
 		else {
@@ -258,7 +288,7 @@ public static partial class TextureUtils {
 					localSampleBuffer[1] = bBuffer[CalculateWrappedIndexForCombination(bDimensions, x, y)];
 					localSampleBuffer[2] = cBuffer[CalculateWrappedIndexForCombination(cDimensions, x, y)];
 					localSampleBuffer[3] = dBuffer[CalculateWrappedIndexForCombination(dDimensions, x, y)];
-					destinationBuffer[destDimensions.X * y + x] = combinationConfig.SelectTexel<TTexel, TChannel>(localSampleBuffer);
+					destinationBuffer[destDimensions.X * y + x] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
 				}
 			}
 		}

@@ -326,7 +326,6 @@ unsafe partial class LocalAssetLoader {
 			var bDim = roughnessEmbeddedTex?.Dimensions ?? XYPair<int>.One;
 			var cDim = metallicEmbeddedTex?.Dimensions ?? XYPair<int>.One;
 			var destDim = TextureUtils.GetCombinedTextureDimensions(aDim, bDim, cDim);
-			using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgba32>(destDim.Area);
 			var metallicChannel = (occlusionAndRoughnessAreCombinedTextures, roughnessAndMetallicAreCombinedTextures, occlusionAndMetallicAreCombinedTextures) switch {
 				(_, false, false) => ColorChannel.R,
 				(false, true, false) => ColorChannel.G,
@@ -335,6 +334,7 @@ unsafe partial class LocalAssetLoader {
 			};
 			if (glossinessSpecifiedOverRoughness) TextureUtils.NegateTexture(roughnessTexels, bDim);
 			if (reflectanceValue.HasValue) {
+				using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgba32>(destDim.Area);
 				var reflectanceTexel = TexelRgba32.FromNormalizedFloats(reflectanceValue.Value, reflectanceValue.Value, reflectanceValue.Value, reflectanceValue.Value);
 				TextureUtils.CombineTextures(
 					occlusionTexels, aDim,	
@@ -356,6 +356,7 @@ unsafe partial class LocalAssetLoader {
 				);
 			}
 			else {
+				using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgb24>(destDim.Area);
 				TextureUtils.CombineTextures(
 					occlusionTexels, aDim,	
 					roughnessTexels, bDim,
@@ -367,10 +368,8 @@ unsafe partial class LocalAssetLoader {
 					),
 					destinationBuffer.Buffer
 				);
-				using var rgbTexelBuffer = _globals.HeapPool.Borrow<TexelRgb24>(destDim.Area);
-				TextureUtils.Convert(destinationBuffer.Buffer, rgbTexelBuffer.Buffer);
 				return TextureBuilder.CreateTexture(
-					rgbTexelBuffer.Buffer,
+					destinationBuffer.Buffer,
 					new TextureGenerationConfig { Dimensions = destDim },
 					config with { IsLinearColorspace = true }
 				);
@@ -425,24 +424,21 @@ unsafe partial class LocalAssetLoader {
 			var aDim = angleEmbeddedTex?.Dimensions ?? XYPair<int>.One;
 			var bDim = strengthEmbeddedTex?.Dimensions ?? XYPair<int>.One;
 			var destDim = TextureUtils.GetCombinedTextureDimensions(aDim, bDim);
-			using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgba32>(destDim.Area);
+			using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgb24>(destDim.Area);
 			TextureUtils.CombineTextures(
 				angleTexels, aDim,	
 				strengthTexels, bDim,
 				new TextureCombinationConfig(
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
-					new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R),
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R)
 				),
 				destinationBuffer.Buffer
 			);
 			// After combining the disparate textures we need to convert them from angle/strength to tangent-space vector + strength
 			IAssetLoader.ConvertRadialAngleToVectorFormatAnisotropy(destinationBuffer.Buffer, Orientation2D.Right, AnisotropyRadialAngleRange.ZeroTo360, true, ColorChannel.B);
-			using var rgbTexelBuffer = _globals.HeapPool.Borrow<TexelRgb24>(destDim.Area);
-			TextureUtils.Convert(destinationBuffer.Buffer, rgbTexelBuffer.Buffer);
 			return TextureBuilder.CreateTexture(
-				rgbTexelBuffer.Buffer,
+				destinationBuffer.Buffer,
 				new TextureGenerationConfig { Dimensions = destDim },
 				config with { IsLinearColorspace = true }
 			);
@@ -558,20 +554,17 @@ unsafe partial class LocalAssetLoader {
 			var aDim = strengthEmbeddedTex?.Dimensions ?? XYPair<int>.One;
 			var bDim = roughnessEmbeddedTex?.Dimensions ?? XYPair<int>.One;
 			var destDim = TextureUtils.GetCombinedTextureDimensions(aDim, bDim);
-			using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgba32>(destDim.Area);
+			using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgb24>(destDim.Area);
 			TextureUtils.CombineTextures(
 				strengthTexels, aDim,	
 				roughnessTexels, bDim,
 				new TextureCombinationConfig(
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R),
-					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
-					new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R)
+					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R)
 				),
 				destinationBuffer.Buffer
 			);
-			using var rgbTexelBuffer = _globals.HeapPool.Borrow<TexelRgb24>(destDim.Area);
-			TextureUtils.Convert(destinationBuffer.Buffer, rgbTexelBuffer.Buffer);
 			return TextureBuilder.CreateTexture(
 				destinationBuffer.Buffer,
 				new TextureGenerationConfig { Dimensions = destDim },

@@ -405,10 +405,6 @@ Some overloads of `LoadCombinedTexture()` also allow you to specify a pre-proces
 
 You can optionally provide a `TextureReadConfig` to some overloads of `LoadTexture()`. This struct controls how a texture file is read from disc:
 
-<span class="def-icon">:material-card-bulleted-outline:</span> `FilePath`
-
-:	This is the file path of the texture file to read.
-
 <span class="def-icon">:material-card-bulleted-outline:</span> `IncludeWAlphaChannel`
 
 :	Defaults to `true`. 
