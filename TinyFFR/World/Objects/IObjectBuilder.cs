@@ -32,6 +32,8 @@ public interface IObjectBuilder {
 			name
 		);
 	}
+	
+	
 
 	ModelInstance CreateModelInstance(Model model, Transform initialTransform, ReadOnlySpan<char> name = default) {
 		return CreateModelInstance(
@@ -51,6 +53,9 @@ public interface IObjectBuilder {
 			}
 		);
 	}
+	
+	
 
+	ModelInstance CreateModelInstance(Model model, in ModelInstanceCreationConfig config) => CreateModelInstance(model.Mesh, model.Material, in config);
 	ModelInstance CreateModelInstance(Mesh mesh, Material material, in ModelInstanceCreationConfig config);
 }

@@ -37,10 +37,10 @@ public readonly record struct TextureCombinationConfig(TextureCombinationSource 
 				_ => throw new ArgumentException($"Character '{twoChars[0]}' was expected to be one of 'a', 'b', 'c', 'd', '0', '1', '2', '3' (to denote a source texture).")
 			},
 			Char.ToLowerInvariant(twoChars[1]) switch {
-				'r' or 'x' => R,
-				'g' or 'y' => G,
-				'b' or 'z' => B,
-				'a' or 'w' => A,
+				'r' or 'x' or '0' => R,
+				'g' or 'y' or '1' => G,
+				'b' or 'z' or '2' => B,
+				'a' or 'w' or '3' => A,
 				_ => throw new ArgumentException($"Character '{twoChars[1]}' was expected to be one of 'r', 'g', 'b', 'a', 'x', 'y', 'z', 'w' (to denote a source channel).")
 			}
 		);
