@@ -91,7 +91,54 @@ unsafe partial class LocalAssetLoader {
 		return HandleToInstance(handle);
 	}
 	
-	EmbeddedTextureData LoadAssetTexture(UIntPtr assetHandle, int textureIndex, ref readonly byte assetRootDirStrRef) {
+	EmbeddedTextureData LoadAssetTexture(UIntPtr assetHandle, int materialIndex, int textureIndex, ref readonly byte assetRootDirStrRef) {
+		const int MaxExternalAssetFilePathLength = 2048;
+		
+		if (textureIndex < 0) {
+			GetLoadedAssetTextureExternalPathLength(
+				assetHandle,
+				materialIndex,
+				textureIndex,
+				in assetRootDirStrRef,
+				out var strLenLessNullTerminator
+			).ThrowIfFailure();
+			
+			if (strLenLessNullTerminator <= 0 || strLenLessNullTerminator >= MaxExternalAssetFilePathLength) {
+				throw new InvalidOperationException($"Can not load embedded texture at index '{textureIndex}' as its external path length is '{strLenLessNullTerminator}' bytes.");
+			}
+			
+			var strBuffer = stackalloc byte[strLenLessNullTerminator + 1];
+			
+			GetLoadedAssetTextureExternalPath(
+				assetHandle,
+				materialIndex,
+				textureIndex,
+				in assetRootDirStrRef,
+				strBuffer,
+				strLenLessNullTerminator + 1
+			).ThrowIfFailure();
+			
+			LoadTextureFileInToMemory(
+				in Unsafe.AsRef<byte>(strBuffer),
+				true,
+				out var width,
+				out var height,
+				out var texBuf
+			).ThrowIfFailure();
+
+			try {
+				if (width < 0 || height < 0) throw new InvalidOperationException($"Loaded texture had width/height of {width}/{height}.");
+				var texelCount = width * height;
+
+				var resultBuffer = _embeddedAssetTextureBufferPool.Rent<TexelRgba32>(checked(width * height));
+				new ReadOnlySpan<TexelRgba32>(texBuf, texelCount).CopyTo(resultBuffer.AsSpan<TexelRgba32>(texelCount));
+				return new(_embeddedAssetTextureBufferPool, resultBuffer, new XYPair<int>(width, height));
+			}
+			finally {
+				UnloadTextureFileFromMemory(texBuf).ThrowIfFailure();
+			}
+		}
+		
 		GetLoadedAssetTextureSize(
 			assetHandle, 
 			textureIndex,
@@ -117,7 +164,7 @@ unsafe partial class LocalAssetLoader {
 		return new(_embeddedAssetTextureBufferPool, texelBuffer, new XYPair<int>(outWidth, outHeight));
 	}
 	
-	Span<TexelRgba32> AbstractTexelSpanFromParamPtr(AssetMaterialParam* paramPtr, UIntPtr assetHandle, ref readonly byte assetRootDirStrRef, ref TexelRgba32 stackTexelWithDefaultValue, out EmbeddedTextureData? outEmbeddedTex) {
+	Span<TexelRgba32> AbstractTexelSpanFromParamPtr(AssetMaterialParam* paramPtr, UIntPtr assetHandle, int materialIndex, ref readonly byte assetRootDirStrRef, ref TexelRgba32 stackTexelWithDefaultValue, out EmbeddedTextureData? outEmbeddedTex) {
 		switch (paramPtr->Format) {
 			case AssetMaterialParamDataFormat.Numerical:
 				stackTexelWithDefaultValue = paramPtr->ToTexel();
@@ -127,6 +174,7 @@ unsafe partial class LocalAssetLoader {
 			case AssetMaterialParamDataFormat.TextureMap:
 				outEmbeddedTex = LoadAssetTexture(
 					assetHandle,
+					materialIndex,
 					paramPtr->TextureMapIndex,
 					in assetRootDirStrRef
 				);
@@ -144,7 +192,7 @@ unsafe partial class LocalAssetLoader {
 			&& paramPtrA->TextureMapIndex == paramPtrB->TextureMapIndex;
 	}
 	
-	Texture CreateAssetColorMap(AssetMaterialParam* paramPtr, UIntPtr assetHandle, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
+	Texture CreateAssetColorMap(AssetMaterialParam* paramPtr, UIntPtr assetHandle, int materialIndex, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
 		switch (paramPtr->Format) {
 			case AssetMaterialParamDataFormat.Numerical:
 				return TextureBuilder.CreateColorMap(
@@ -156,7 +204,7 @@ unsafe partial class LocalAssetLoader {
 				);
 			
 			case AssetMaterialParamDataFormat.TextureMap:
-				using (var embeddedTex = LoadAssetTexture(assetHandle, paramPtr->TextureMapIndex, in assetRootDirStrRef)) {
+				using (var embeddedTex = LoadAssetTexture(assetHandle, materialIndex, paramPtr->TextureMapIndex, in assetRootDirStrRef)) {
 					return TextureBuilder.CreateTexture(
 						embeddedTex.TexelSpan,
 						new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
@@ -168,13 +216,14 @@ unsafe partial class LocalAssetLoader {
 		}
 	}
 	
-	Texture? CreateAssetAbsorptionTransmissionMap(AssetMaterialParam* absorptionParamPtr, AssetMaterialParam* transmissionParamPtr, UIntPtr assetHandle, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
+	Texture? CreateAssetAbsorptionTransmissionMap(AssetMaterialParam* absorptionParamPtr, AssetMaterialParam* transmissionParamPtr, UIntPtr assetHandle, int materialIndex, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
 		if (absorptionParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && transmissionParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
 		
 		// All in one texture, just load the whole thing once and return it, no combination required
 		if (ParamPtrsRepresentIdenticalTextures(absorptionParamPtr, transmissionParamPtr)) {
 			using var embeddedTex = LoadAssetTexture(
 				assetHandle,
+				materialIndex,
 				absorptionParamPtr->TextureMapIndex,
 				in assetRootDirStrRef
 			);
@@ -191,6 +240,7 @@ unsafe partial class LocalAssetLoader {
 		var absorptionTexels = AbstractTexelSpanFromParamPtr(
 			absorptionParamPtr,
 			assetHandle,
+			materialIndex,
 			in assetRootDirStrRef,
 			ref defaultAbsorptionTexel,
 			out var absorptionEmbeddedTex
@@ -198,6 +248,7 @@ unsafe partial class LocalAssetLoader {
 		var transmissionTexels = AbstractTexelSpanFromParamPtr(
 			transmissionParamPtr,
 			assetHandle,
+			materialIndex,
 			in assetRootDirStrRef,
 			ref defaultTransmissionTexel,
 			out var transmissionEmbeddedTex
@@ -231,7 +282,7 @@ unsafe partial class LocalAssetLoader {
 		}
 	}
 	
-	Texture? CreateAssetNormalMap(AssetMaterialParam* paramPtr, UIntPtr assetHandle, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
+	Texture? CreateAssetNormalMap(AssetMaterialParam* paramPtr, UIntPtr assetHandle, int materialIndex, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
 		switch (paramPtr->Format) {
 			case AssetMaterialParamDataFormat.Numerical:
 				return TextureBuilder.CreateTexture(
@@ -242,7 +293,7 @@ unsafe partial class LocalAssetLoader {
 				);
 			
 			case AssetMaterialParamDataFormat.TextureMap:
-				using (var embeddedTex = LoadAssetTexture(assetHandle, paramPtr->TextureMapIndex, in assetRootDirStrRef)) {
+				using (var embeddedTex = LoadAssetTexture(assetHandle, materialIndex, paramPtr->TextureMapIndex, in assetRootDirStrRef)) {
 					using var rgbTexelBuffer = _globals.HeapPool.Borrow<TexelRgb24>(embeddedTex.Dimensions.Area);
 					TextureUtils.Convert(embeddedTex.TexelSpan, rgbTexelBuffer.Buffer);
 					return TextureBuilder.CreateTexture(
@@ -256,7 +307,7 @@ unsafe partial class LocalAssetLoader {
 		}
 	}
 	
-	Texture? CreateAssetOrmrMap(AssetMaterialParam* occlusionParamPtr, AssetMaterialParam* roughnessParamPtr, AssetMaterialParam* glossinessParamPtr, AssetMaterialParam* metallicParamPtr, AssetMaterialParam* iorParamPtr, bool reflectanceRequired, UIntPtr assetHandle, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
+	Texture? CreateAssetOrmrMap(AssetMaterialParam* occlusionParamPtr, AssetMaterialParam* roughnessParamPtr, AssetMaterialParam* glossinessParamPtr, AssetMaterialParam* metallicParamPtr, AssetMaterialParam* iorParamPtr, bool reflectanceRequired, UIntPtr assetHandle, int materialIndex, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
 		// Maintainer's note:
 		// Reflectance can not be stored in a texture map, because it's actually exposed as IoR from assimp and there's no industry-normalized range mapping [0-1] to any known IoR range
 		// So either we don't specify it at all or if there's a numerical value it's considered to be IoR and must be converted
@@ -280,6 +331,7 @@ unsafe partial class LocalAssetLoader {
 		if (reflectanceValue == null && occlusionAndRoughnessAreCombinedTextures && roughnessAndMetallicAreCombinedTextures) {
 			using var embeddedTex = LoadAssetTexture(
 				assetHandle,
+				materialIndex,
 				occlusionParamPtr->TextureMapIndex,
 				in assetRootDirStrRef
 			);
@@ -301,6 +353,7 @@ unsafe partial class LocalAssetLoader {
 		var occlusionTexels = AbstractTexelSpanFromParamPtr(
 			occlusionParamPtr,
 			assetHandle,
+			materialIndex,
 			in assetRootDirStrRef,
 			ref defaultOcclusionTexel,
 			out var occlusionEmbeddedTex
@@ -308,6 +361,7 @@ unsafe partial class LocalAssetLoader {
 		var roughnessTexels = AbstractTexelSpanFromParamPtr(
 			glossinessSpecifiedOverRoughness ? glossinessParamPtr : roughnessParamPtr,
 			assetHandle,
+			materialIndex,
 			in assetRootDirStrRef,
 			ref defaultRoughnessTexel,
 			out var roughnessEmbeddedTex
@@ -315,6 +369,7 @@ unsafe partial class LocalAssetLoader {
 		var metallicTexels = AbstractTexelSpanFromParamPtr(
 			metallicParamPtr,
 			assetHandle,
+			materialIndex,
 			in assetRootDirStrRef,
 			ref defaultMetallicTexel,
 			out var metallicEmbeddedTex
@@ -381,7 +436,7 @@ unsafe partial class LocalAssetLoader {
 		}
 	}
 	
-	Texture? CreateAssetAnisotropyMap(AssetMaterialParam* angleParamPtr, AssetMaterialParam* strengthParamPtr, UIntPtr assetHandle, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
+	Texture? CreateAssetAnisotropyMap(AssetMaterialParam* angleParamPtr, AssetMaterialParam* strengthParamPtr, UIntPtr assetHandle, int materialIndex, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
 		if (angleParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && strengthParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
 		
 		// All in one texture; the only well-defined texture format is in the glTF spec: https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_materials_anisotropy/README.md
@@ -389,6 +444,7 @@ unsafe partial class LocalAssetLoader {
 		if (ParamPtrsRepresentIdenticalTextures(angleParamPtr, strengthParamPtr)) {
 			using var embeddedTex = LoadAssetTexture(
 				assetHandle,
+				materialIndex,
 				angleParamPtr->TextureMapIndex,
 				in assetRootDirStrRef
 			);
@@ -407,6 +463,7 @@ unsafe partial class LocalAssetLoader {
 		var angleTexels = AbstractTexelSpanFromParamPtr(
 			angleParamPtr,
 			assetHandle,
+			materialIndex,
 			in assetRootDirStrRef,
 			ref defaultAngleTexel,
 			out var angleEmbeddedTex
@@ -414,6 +471,7 @@ unsafe partial class LocalAssetLoader {
 		var strengthTexels = AbstractTexelSpanFromParamPtr(
 			strengthParamPtr,
 			assetHandle,
+			materialIndex,
 			in assetRootDirStrRef,
 			ref defaultStrengthTexel,
 			out var strengthEmbeddedTex
@@ -448,13 +506,14 @@ unsafe partial class LocalAssetLoader {
 		}
 	}
 	
-	Texture? CreateAssetEmissiveMap(AssetMaterialParam* colorParamPtr, AssetMaterialParam* intensityParamPtr, UIntPtr assetHandle, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
+	Texture? CreateAssetEmissiveMap(AssetMaterialParam* colorParamPtr, AssetMaterialParam* intensityParamPtr, UIntPtr assetHandle, int materialIndex, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
 		if (colorParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && intensityParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
 		
 		// All in one texture, just load the whole thing once and return it, no combination required
 		if (ParamPtrsRepresentIdenticalTextures(colorParamPtr, intensityParamPtr)) {
 			using var embeddedTex = LoadAssetTexture(
 				assetHandle,
+				materialIndex,
 				colorParamPtr->TextureMapIndex,
 				in assetRootDirStrRef
 			);
@@ -471,6 +530,7 @@ unsafe partial class LocalAssetLoader {
 		var colorTexels = AbstractTexelSpanFromParamPtr(
 			colorParamPtr,
 			assetHandle,
+			materialIndex,
 			in assetRootDirStrRef,
 			ref defaultColorTexel,
 			out var colorEmbeddedTex
@@ -478,6 +538,7 @@ unsafe partial class LocalAssetLoader {
 		var intensityTexels = AbstractTexelSpanFromParamPtr(
 			intensityParamPtr,
 			assetHandle,
+			materialIndex,
 			in assetRootDirStrRef,
 			ref defaultIntensityTexel,
 			out var intensityEmbeddedTex
@@ -511,7 +572,7 @@ unsafe partial class LocalAssetLoader {
 		}
 	}
 	
-	Texture? CreateAssetClearCoatMap(AssetMaterialParam* strengthParamPtr, AssetMaterialParam* roughnessParamPtr, UIntPtr assetHandle, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
+	Texture? CreateAssetClearCoatMap(AssetMaterialParam* strengthParamPtr, AssetMaterialParam* roughnessParamPtr, UIntPtr assetHandle, int materialIndex, in TextureCreationConfig config, ref readonly byte assetRootDirStrRef) {
 		if (strengthParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && roughnessParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
 		
 		// All in one texture; the only well-defined texture format is in the glTF spec: https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_clearcoat
@@ -519,6 +580,7 @@ unsafe partial class LocalAssetLoader {
 		if (ParamPtrsRepresentIdenticalTextures(strengthParamPtr, roughnessParamPtr)) {
 			using var embeddedTex = LoadAssetTexture(
 				assetHandle,
+				materialIndex,
 				strengthParamPtr->TextureMapIndex,
 				in assetRootDirStrRef
 			);
@@ -537,6 +599,7 @@ unsafe partial class LocalAssetLoader {
 		var strengthTexels = AbstractTexelSpanFromParamPtr(
 			strengthParamPtr,
 			assetHandle,
+			materialIndex,
 			in assetRootDirStrRef,
 			ref defaultStrengthTexel,
 			out var strengthEmbeddedTex
@@ -544,6 +607,7 @@ unsafe partial class LocalAssetLoader {
 		var roughnessTexels = AbstractTexelSpanFromParamPtr(
 			roughnessParamPtr,
 			assetHandle,
+			materialIndex,
 			in assetRootDirStrRef,
 			ref defaultRoughnessTexel,
 			out var roughnessEmbeddedTex
@@ -603,14 +667,40 @@ unsafe partial class LocalAssetLoader {
 			out var alphaFormat,
 			out var refractionThickness
 		).ThrowIfFailure();
+
+		for (var p = 0; p < 15; ++p) {
+			Console.Write(p switch {
+				0 => "Color: ",
+				1 => "Normal: ",
+				2 => "AO: ",
+				3 => "Roughness: ",
+				4 => "Gloss: ",
+				5 => "Metallic: ",
+				6 => "IoR: ",
+				7 => "Absorption: ",
+				8 => "Transmission: ",
+				9 => "Emissive Color: ",
+				10 => "Emissive Intensity: ",
+				11 => "Aniso Angle: ",
+				12 => "Aniso Str: ",
+				13 => "CC Str: ",
+				14 => "CC Rough: ",
+				_ => ""
+			});
+			Console.WriteLine(matParamsBuffer[p].Format switch {
+				AssetMaterialParamDataFormat.TextureMap => "Texture " + matParamsBuffer[p].TextureMapIndex,
+				AssetMaterialParamDataFormat.Numerical => new ColorVect(matParamsBuffer[p].NumericalValueR, matParamsBuffer[p].NumericalValueG, matParamsBuffer[p].NumericalValueB, matParamsBuffer[p].NumericalValueA).ToString(),
+				_ => "None",
+			});
+		}
 		
-		var colorMap = CreateAssetColorMap(matParams.ColorParamsPtr, assetHandle, in config, in assetRootDirStrRef);
-		var atMap = CreateAssetAbsorptionTransmissionMap(matParams.AbsorptionParamsPtr, matParams.TransmissionParamsPtr, assetHandle, in config, in assetRootDirStrRef);
-		var normalMap = CreateAssetNormalMap(matParams.NormalParamsPtr, assetHandle, in config, in assetRootDirStrRef);
-		var ormMap = CreateAssetOrmrMap(matParams.AmbientOcclusionParamsPtr, matParams.RoughnessParamsPtr, matParams.GlossinessParamsPtr, matParams.MetallicParamsPtr, matParams.IoRParamsPtr, atMap.HasValue, assetHandle, in config, in assetRootDirStrRef);
-		var anisotropyMap = CreateAssetAnisotropyMap(matParams.AnisotropyAngleParamsPtr, matParams.AnisotropyStrengthParamsPtr, assetHandle, in config, in assetRootDirStrRef);
-		var emissiveMap = CreateAssetEmissiveMap(matParams.EmissiveColorParamsPtr, matParams.EmissiveIntensityParamsPtr, assetHandle, in config, in assetRootDirStrRef);
-		var clearCoatMap = atMap.HasValue ? null : CreateAssetClearCoatMap(matParams.ClearCoatStrengthParamsPtr, matParams.ClearCoatRoughnessParamsPtr, assetHandle, in config, in assetRootDirStrRef);
+		var colorMap = CreateAssetColorMap(matParams.ColorParamsPtr, assetHandle, materialIndex, in config, in assetRootDirStrRef);
+		var atMap = CreateAssetAbsorptionTransmissionMap(matParams.AbsorptionParamsPtr, matParams.TransmissionParamsPtr, assetHandle, materialIndex, in config, in assetRootDirStrRef);
+		var normalMap = CreateAssetNormalMap(matParams.NormalParamsPtr, assetHandle, materialIndex, in config, in assetRootDirStrRef);
+		var ormMap = CreateAssetOrmrMap(matParams.AmbientOcclusionParamsPtr, matParams.RoughnessParamsPtr, matParams.GlossinessParamsPtr, matParams.MetallicParamsPtr, matParams.IoRParamsPtr, atMap.HasValue, assetHandle, materialIndex, in config, in assetRootDirStrRef);
+		var anisotropyMap = CreateAssetAnisotropyMap(matParams.AnisotropyAngleParamsPtr, matParams.AnisotropyStrengthParamsPtr, assetHandle, materialIndex, in config, in assetRootDirStrRef);
+		var emissiveMap = CreateAssetEmissiveMap(matParams.EmissiveColorParamsPtr, matParams.EmissiveIntensityParamsPtr, assetHandle, materialIndex, in config, in assetRootDirStrRef);
+		var clearCoatMap = atMap.HasValue ? null : CreateAssetClearCoatMap(matParams.ClearCoatStrengthParamsPtr, matParams.ClearCoatRoughnessParamsPtr, assetHandle, materialIndex, in config, in assetRootDirStrRef);
 
 		assetResources.Add(colorMap);
 		if (atMap != null) assetResources.Add(atMap.Value);
@@ -810,6 +900,25 @@ unsafe partial class LocalAssetLoader {
 		int bufferLengthBytes,
 		out int outWidth,
 		out int outHeight
+	);
+	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_texture_path_len")]
+	static extern InteropResult GetLoadedAssetTextureExternalPathLength(
+		UIntPtr assetHandle,
+		int materialIndex,
+		int textureIndex,
+		ref readonly byte utf8AssetRootDirPathBufferPtr,
+		out int stringLengthCharsWithoutNullTerminator
+	);
+	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_texture_path")]
+	static extern InteropResult GetLoadedAssetTextureExternalPath(
+		UIntPtr assetHandle,
+		int materialIndex,
+		int textureIndex,
+		ref readonly byte utf8AssetRootDirPathBufferPtr,
+		byte* stringBufferPtr,
+		int stringBufferLengthBytes
 	);
 	
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_material_data")]

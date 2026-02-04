@@ -352,7 +352,10 @@ bool apply_material_texture_if_present(MemoryLoadedAssetHandle assetHandle, aiMa
 	if (!result) return result;
 	paramPtr->Format = native_impl_asset_loader::AssetMaterialParamDataFormat::TextureMap;
 	paramPtr->TextureMapIndex = get_texture_index_from_path(assetHandle, path);
-	ThrowIfNegative(paramPtr->TextureMapIndex, "Could not find matching texture index for '", path.C_Str(), "'.");
+	if (paramPtr->TextureMapIndex < 0) {
+		ThrowIfNotPositive(texType, "Can't encode external texture index as negative value because given texture type value is already non-positive.");
+		paramPtr->TextureMapIndex = texType * -1;
+	}
 	return result;
 }
 
@@ -404,6 +407,51 @@ bool apply_material_numerical_if_present(MemoryLoadedAssetHandle assetHandle, ai
 	}
 	
 	return false;
+}
+
+void native_impl_asset_loader::get_loaded_asset_texture_path_len(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, int32_t textureIndex, const char* assetRootDirPath, int32_t* outPathLength) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIf(static_cast<uint32_t>(materialIndex) >= assetHandle->mNumMaterials, "Material index was out of bounds.");
+	ThrowIfNull(outPathLength, "Out path length pointer was null.");
+	
+	aiString path;
+	auto result = assetHandle->mMaterials[materialIndex]->GetTexture(static_cast<aiTextureType>(-1 * textureIndex), 0, &path);
+	if (result != aiReturn_SUCCESS) {
+		*outPathLength = 0;
+		return;
+	}
+	auto cStr = path.C_Str();
+	std::filesystem::path root { assetRootDirPath };
+	std::filesystem::path rel { cStr };
+	std::filesystem::path full = root / rel; // Don't be tempted to inline this and the line below, root / rel creates a temp that is moved to 'full' here. C++ fucking sucks lol
+	auto fullPath = full.c_str();
+	*outPathLength = strlen(fullPath);
+}
+StartExportedFunc(get_loaded_asset_texture_path_len, MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, int32_t textureIndex, const char* assetRootDirPath, int32_t* outPathLength) {
+	native_impl_asset_loader::get_loaded_asset_texture_path_len(assetHandle, materialIndex, textureIndex, assetRootDirPath, outPathLength);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::get_loaded_asset_texture_path(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, int32_t textureIndex, const char* assetRootDirPath, char* strBuffer, int32_t bufferLengthBytes) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIf(static_cast<uint32_t>(materialIndex) >= assetHandle->mNumMaterials, "Material index was out of bounds.");
+	ThrowIfNull(strBuffer, "String buffer pointer was null.");
+	
+	aiString path;
+	auto result = assetHandle->mMaterials[materialIndex]->GetTexture(static_cast<aiTextureType>(-1 * textureIndex), 0, &path);
+	ThrowIf(result != aiReturn_SUCCESS, "Could not load texture path!");
+	auto cStr = path.C_Str();
+	std::filesystem::path root { assetRootDirPath };
+	std::filesystem::path rel { cStr };
+	std::filesystem::path full = root / rel; // Don't be tempted to inline this and the line below, root / rel creates a temp that is moved to 'full' here. C++ fucking sucks lol
+	auto fullPath = full.c_str();
+	auto len = strlen(fullPath);
+	ThrowIf(bufferLengthBytes <= len, "Given string buffer too small for texture path string.");
+	strcpy(strBuffer, fullPath);
+}
+StartExportedFunc(get_loaded_asset_texture_path, MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, int32_t textureIndex, const char* assetRootDirPath, char* strBuffer, int32_t bufferLengthBytes) {
+	native_impl_asset_loader::get_loaded_asset_texture_path(assetHandle, materialIndex, textureIndex, assetRootDirPath, strBuffer, bufferLengthBytes);
+	EndExportedFunc
 }
 
 void native_impl_asset_loader::get_loaded_asset_material_data(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, AssetMaterialParamGroup* paramGroupPtr, AssetMaterialAlphaFormat* outAlphaFormat, float_t* outRefractionThickness) {
