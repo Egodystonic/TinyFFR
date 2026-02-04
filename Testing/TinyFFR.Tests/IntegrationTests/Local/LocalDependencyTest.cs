@@ -51,6 +51,14 @@ class LocalDependencyTest {
 			mesh = factory.AssetLoader.MeshBuilder.CreateMesh(Cuboid.UnitCube);
 			instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat);
 			AssertDependency(mat, instance);
+			
+			mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex);
+			var model = factory.AssetLoader.CreateModel(mesh, mat);
+			AssertDependency(mat, model);
+			mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex);
+			model = factory.AssetLoader.CreateModel(mesh, mat);
+			AssertDependency(mesh, model);
+			mat.Dispose();
 			mesh.Dispose();
 			tex.Dispose();
 

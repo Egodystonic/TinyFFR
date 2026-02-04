@@ -463,12 +463,12 @@ public interface IAssetLoader {
 	ResourceGroup LoadModels(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
 		return LoadModels(
 			filePath,
-			new AssetCreationConfig {
+			new ModelCreationConfig {
 				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
 			}
 		);
 	}
-	ResourceGroup LoadModels(ReadOnlySpan<char> filePath, in AssetCreationConfig config) => LoadModels(filePath, in config, new AssetReadConfig());
-	ResourceGroup LoadModels(ReadOnlySpan<char> filePath, in AssetCreationConfig config, in AssetReadConfig readConfig);
+	ResourceGroup LoadModels(ReadOnlySpan<char> filePath, in ModelCreationConfig config) => LoadModels(filePath, in config, new ModelReadConfig());
+	ResourceGroup LoadModels(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig);
 	#endregion
 }

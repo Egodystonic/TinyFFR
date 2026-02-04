@@ -11,33 +11,29 @@ namespace Egodystonic.TinyFFR.Assets;
 // Read Config for just how to read the file in (e.g. any preprocessing and the file path)
 // Creation Config for general processing in the local builder when creating the resource
 
-public readonly ref struct AssetReadConfig : IConfigStruct<AssetReadConfig> {
+public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 	public MeshReadConfig MeshConfig { get; init; } = new();
 	public TextureReadConfig TextureConfig { get; init; } = new();
-	public bool SkipUnusedMaterials { get; init; } = true;
 	
-	public AssetReadConfig() { }
+	public ModelReadConfig() { }
 
 	internal void ThrowIfInvalid() {
 		MeshConfig.ThrowIfInvalid();
 		TextureConfig.ThrowIfInvalid();
 	}
 
-	public static int GetHeapStorageFormattedLength(in AssetReadConfig src) {
+	public static int GetHeapStorageFormattedLength(in ModelReadConfig src) {
 		return  SerializationSizeOfSubConfig(src.MeshConfig) // MeshConfig
-			+	SerializationSizeOfSubConfig(src.TextureConfig) // TextureConfig
-			+	SerializationSizeOfBool(); // SkipUnusedMaterials
+			+	SerializationSizeOfSubConfig(src.TextureConfig); // TextureConfig
 	}
-	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in AssetReadConfig src) {
+	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in ModelReadConfig src) {
 		SerializationWriteSubConfig(ref dest, src.MeshConfig);
 		SerializationWriteSubConfig(ref dest, src.TextureConfig);
-		SerializationWriteBool(ref dest, src.SkipUnusedMaterials);
 	}
-	public static AssetReadConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
-		return new AssetReadConfig {
+	public static ModelReadConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		return new ModelReadConfig {
 			MeshConfig = SerializationReadSubConfig<MeshReadConfig>(ref src),
-			TextureConfig = SerializationReadSubConfig<TextureReadConfig>(ref src),
-			SkipUnusedMaterials = SerializationReadBool(ref src)
+			TextureConfig = SerializationReadSubConfig<TextureReadConfig>(ref src)
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
@@ -50,30 +46,30 @@ public readonly ref struct AssetReadConfig : IConfigStruct<AssetReadConfig> {
 	}
 }
 
-public readonly ref struct AssetCreationConfig : IConfigStruct<AssetCreationConfig> {
+public readonly ref struct ModelCreationConfig : IConfigStruct<ModelCreationConfig> {
 	public MeshCreationConfig MeshConfig { get; init; } = new();
 	public TextureCreationConfig TextureConfig { get; init; } = new() { IsLinearColorspace = true };
 	public ReadOnlySpan<char> Name { get; init; }
 	
-	public AssetCreationConfig() { }
+	public ModelCreationConfig() { }
 
 	internal void ThrowIfInvalid() {
 		MeshConfig.ThrowIfInvalid();
 		TextureConfig.ThrowIfInvalid();
 	}
 
-	public static int GetHeapStorageFormattedLength(in AssetCreationConfig src) {
+	public static int GetHeapStorageFormattedLength(in ModelCreationConfig src) {
 		return  SerializationSizeOfSubConfig(src.MeshConfig) // MeshConfig
 			+	SerializationSizeOfSubConfig(src.TextureConfig) // TextureConfig
 			+	SerializationSizeOfString(src.Name); // Name
 	}
-	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in AssetCreationConfig src) {
+	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in ModelCreationConfig src) {
 		SerializationWriteSubConfig(ref dest, src.MeshConfig);
 		SerializationWriteSubConfig(ref dest, src.TextureConfig);
 		SerializationWriteString(ref dest, src.Name);
 	}
-	public static AssetCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
-		return new AssetCreationConfig {
+	public static ModelCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
+		return new ModelCreationConfig {
 			MeshConfig = SerializationReadSubConfig<MeshCreationConfig>(ref src),
 			TextureConfig = SerializationReadSubConfig<TextureCreationConfig>(ref src),
 			Name = SerializationReadString(ref src),

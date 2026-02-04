@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Reflection;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Environment;
 using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
@@ -137,8 +138,18 @@ class LocalDisposalProtectionTest {
 			v => v.CopyName(_nameDestinationBuffer),
 		};
 		AssertUseAfterDisposalThrowsException(materialBuilder.CreateStandardMaterial(texture), objectIsAlreadyDisposed: false, materialActions);
+		var model = assetLoader.CreateModel(mesh, material);
+		var modelActions = new Action<Model>[] {
+			v => _ = v.Handle,
+			v => _ = v.GetNameAsNewStringObject(),
+			v => _ = v.GetNameLength(),
+			v => v.CopyName(_nameDestinationBuffer),
+			v => _ = v.Material,
+			v => _ = v.Mesh,
+		};
+		AssertUseAfterDisposalThrowsException(assetLoader.CreateModel(mesh, material), objectIsAlreadyDisposed: false, modelActions);
 		var objectBuilder = factory.ObjectBuilder;
-		var modelInstance = objectBuilder.CreateModelInstance(mesh, material);
+		var modelInstance = objectBuilder.CreateModelInstance(model);
 		var modelInstanceActions = new Action<ModelInstance>[] {
 			v => _ = v.Handle,
 			v => _ = v.GetNameAsNewStringObject(),
@@ -167,7 +178,7 @@ class LocalDisposalProtectionTest {
 			v => v.Scaling = Vect.One,
 			v => v.Transform = Transform.None
 		};
-		AssertUseAfterDisposalThrowsException(objectBuilder.CreateModelInstance(mesh, material), objectIsAlreadyDisposed: false, modelInstanceActions);
+		AssertUseAfterDisposalThrowsException(objectBuilder.CreateModelInstance(model), objectIsAlreadyDisposed: false, modelInstanceActions);
 		var lightBuilder = factory.LightBuilder;
 		var pointLight = lightBuilder.CreatePointLight();
 		var pointLightActions = new Action<PointLight>[] {
@@ -299,6 +310,7 @@ class LocalDisposalProtectionTest {
 		AssertUseAfterDisposalThrowsException(mesh, objectIsAlreadyDisposed: true, meshActions);
 		AssertUseAfterDisposalThrowsException(texture, objectIsAlreadyDisposed: true, textureActions);
 		AssertUseAfterDisposalThrowsException(material, objectIsAlreadyDisposed: true, materialActions);
+		AssertUseAfterDisposalThrowsException(model, objectIsAlreadyDisposed: true, modelActions);
 		AssertUseAfterDisposalThrowsException(modelInstance, objectIsAlreadyDisposed: true, modelInstanceActions);
 		AssertUseAfterDisposalThrowsException(pointLight, objectIsAlreadyDisposed: true, pointLightActions);
 		AssertUseAfterDisposalThrowsException(spotLight, objectIsAlreadyDisposed: true, spotLightActions);

@@ -77,7 +77,7 @@ unsafe partial class LocalAssetLoader {
 	
 	const string DefaultModelName = "Unnamed Model";
 	readonly FixedByteBufferPool _embeddedAssetTextureBufferPool;
-	readonly ArrayPoolBackedMap<ResourceHandle<Model>, ResourceGroup> _loadedModels = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Model>, (Mesh Mesh, Material Material)> _loadedModels = new();
 	nuint _prevModelHandle = 0;
 	
 	public Model CreateModel(Mesh mesh, Material material, ReadOnlySpan<char> name) {
@@ -85,10 +85,9 @@ unsafe partial class LocalAssetLoader {
 		++_prevModelHandle;
 		var handle = (ResourceHandle<Model>) _prevModelHandle;
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, name, DefaultModelName);
-		var resGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: false, initialCapacity: 2, name: name);
-		resGroup.Add(mesh);
-		resGroup.Add(material);
-		_loadedModels.Add(_prevModelHandle, resGroup);
+		_loadedModels.Add(_prevModelHandle, (mesh, material));
+		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), mesh);
+		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), material);
 		return HandleToInstance(handle);
 	}
 	
@@ -646,7 +645,7 @@ unsafe partial class LocalAssetLoader {
 		}
 	}
 	
-	public ResourceGroup LoadModels(ReadOnlySpan<char> filePath, in AssetCreationConfig config, in AssetReadConfig readConfig) {
+	public ResourceGroup LoadModels(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig) {
 		const int MaxIndicesOnStack = 1024;
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
@@ -742,11 +741,11 @@ unsafe partial class LocalAssetLoader {
 
 	public Mesh GetMesh(ResourceHandle<Model> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _loadedModels[handle].Meshes[0];
+		return _loadedModels[handle].Mesh;
 	}
 	public Material GetMaterial(ResourceHandle<Model> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _loadedModels[handle].Materials[0];
+		return _loadedModels[handle].Material;
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<Model> handle) {
@@ -835,7 +834,7 @@ unsafe partial class LocalAssetLoader {
 	void Dispose(ResourceHandle<Model> handle, bool removeFromCollection) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
-		_loadedModels[handle].Dispose();
+		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		_globals.DisposeResourceNameIfExists(handle.Ident);
 		if (removeFromCollection) _loadedModels.Remove(handle);
 	}
