@@ -178,6 +178,25 @@ unsafe partial class LocalAssetLoader {
 					paramPtr->TextureMapIndex,
 					in assetRootDirStrRef
 				);
+				// ReSharper disable CompareOfFloatsByEqualityOperator -- expected that the native side will explicitly set these to exactly -1f/0f/1f/etc
+				if (paramPtr->NumericalValueR == -1f && paramPtr->NumericalValueG == -1f && paramPtr->NumericalValueB == -1f && paramPtr->NumericalValueA != 1f) {
+					if (paramPtr->NumericalValueA == 0f) {
+						// Shortcut out for a 0 value
+						outEmbeddedTex.Value.TexelSpan.Clear();
+					}
+					else {
+						for (var i = 0; i < outEmbeddedTex.Value.TexelSpan.Length; ++i) {
+							var beforeMult = outEmbeddedTex.Value.TexelSpan[i];
+							outEmbeddedTex.Value.TexelSpan[i] = new TexelRgba32(
+								(byte) (beforeMult.R * paramPtr->NumericalValueA),
+								(byte) (beforeMult.G * paramPtr->NumericalValueA),
+								(byte) (beforeMult.B * paramPtr->NumericalValueA),
+								(byte) (beforeMult.A * paramPtr->NumericalValueA)
+							);
+						}	
+					}
+				}
+				// ReSharper restore CompareOfFloatsByEqualityOperator
 				return outEmbeddedTex.Value.TexelSpan;
 			
 			default: 
@@ -399,6 +418,7 @@ unsafe partial class LocalAssetLoader {
 				: ColorChannel.R;
 			if (reflectanceValue.HasValue) {
 				using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgba32>(destDim.Area);
+				Console.WriteLine("Reflectance = " + reflectanceValue.Value);
 				var reflectanceTexel = TexelRgba32.FromNormalizedFloats(reflectanceValue.Value, reflectanceValue.Value, reflectanceValue.Value, reflectanceValue.Value);
 				TextureUtils.CombineTextures(
 					occlusionTexels, aDim,	
@@ -703,6 +723,8 @@ unsafe partial class LocalAssetLoader {
 				_ => "None",
 			});
 		}
+		Console.WriteLine("Thickness: " + refractionThickness);
+		Console.WriteLine();
 		
 		var colorMap = CreateAssetColorMap(matParams.ColorParamsPtr, assetHandle, materialIndex, in config, in assetRootDirStrRef);
 		var atMap = CreateAssetAbsorptionTransmissionMap(matParams.AbsorptionParamsPtr, matParams.TransmissionParamsPtr, assetHandle, materialIndex, in config, in assetRootDirStrRef);
@@ -729,7 +751,7 @@ unsafe partial class LocalAssetLoader {
 				EmissiveMap = emissiveMap,
 				NormalMap = normalMap,
 				OcclusionRoughnessMetallicReflectanceMap = ormMap,
-				RefractionThickness = refractionThickness >= 0f ? refractionThickness : TransmissiveMaterialCreationConfig.DefaultRefractionThickness
+				RefractionThickness = refractionThickness.IsPositiveAndFinite() ? refractionThickness : TransmissiveMaterialCreationConfig.DefaultRefractionThickness
 			});
 		}
 		else {

@@ -24,33 +24,31 @@ class LocalModelLoadingTest {
 	[SetUp]
 	public void SetUpTest() {
 		_filesToLoad = new[] {
-			"TextureCoordinateTest.glb",
-			"TransmissionTest.glb",
-			"TransmissionRoughnessTest.glb",
-			"MetalRoughSpheres.glb",
-			"EmissiveStrengthTest.glb",
 			"NegativeScaleTest.glb",
-			"NodePerformanceTest.glb",
-			"NormalTangentMirrorTest.glb",
-			"CompareTransmission.glb",
-			"BarramundiFish.glb",
-			"Avocado.glb",
-			"CompareAmbientOcclusion.glb",
-			"CompareBaseColor.glb",
-			"CompareEmissiveStrength.glb",
 			"CompareIor.glb",
-			"CompareMetallic.glb",
-			"CompareNormal.glb",
+			"AttenuationTest.glb",
 			"CompareRoughness.glb",
+			"MetalRoughSpheres.glb",
+			"CompareMetallic.glb",
+			"TransmissionRoughnessTest.glb",
+			"EmissiveStrengthTest.glb",
+			"CompareTransmission.glb",
+			"TransmissionTest.glb",
+			"BoxTextured.gltf",	
+			"BarramundiFish.glb",
+			"CompareAmbientOcclusion.glb",
+			"CompareNormal.glb",
+			"Avocado.glb",
+			"TextureCoordinateTest.glb",
+			"NormalTangentMirrorTest.glb",
 			"ClearCoatTest.glb",
 			"DamagedHelmet.glb",
-			"AttenuationTest.glb",
 			"AnisotropyStrengthTest.glb",
 			"AnisotropyDiscTest.glb",
-			"BoxTextured.gltf",	
 			"BoxTexturedSelfContained.gltf",
 			"BoxTextured.glb",
 			"BoxTexturedNonPowerOfTwo.glb",
+			"NodePerformanceTest.glb",
 		};
 	}
 
@@ -101,7 +99,7 @@ class LocalModelLoadingTest {
 					instances.Add(factory.ObjectBuilder.CreateModelInstance(model));
 					scene.Add(instances[^1]);
 				}
-				window.SetTitle($"L controls camera light | X/Y/Z rotates models | '{_filesToLoad[curFileIndex]}'");
+				window.SetTitle($"L controls camera light | X/Y/Z rotates models | '{_filesToLoad[curFileIndex]}' ({group.Value.Models.Count} models / {group.Value.Meshes.Count} meshes / {group.Value.Materials.Count} materials / {group.Value.Textures.Count} textures)");
 			}
 
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.X)) {
