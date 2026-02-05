@@ -24,6 +24,7 @@ class LocalModelLoadingTest {
 	[SetUp]
 	public void SetUpTest() {
 		_filesToLoad = new[] {
+			"Box With Spaces.gltf",
 			"NegativeScaleTest.glb",
 			"CompareIor.glb",
 			"AttenuationTest.glb",

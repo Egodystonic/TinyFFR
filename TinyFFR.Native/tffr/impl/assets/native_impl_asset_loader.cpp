@@ -155,9 +155,9 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_vertices(MemoryLoadedAsset
 
 	auto transform = aiMatrix4x4{};
 	auto mesh = get_mesh_at_index(assetHandle, meshIndex, transform);
+	auto transformDetIsNeg = transform.Determinant() < 0.0f;
 	auto normalMatrix = aiMatrix3x3 { transform };
 	normalMatrix = normalMatrix.Inverse().Transpose();
-	auto normMatDetIsNeg = normalMatrix.Determinant() < 0.0f;
 
 	ThrowIf(bufferSizeVertices < 0, "Invalid buffer size.");
 	ThrowIf(static_cast<uint32_t>(bufferSizeVertices) < mesh->mNumVertices, "Given buffer was too small.")
@@ -173,8 +173,10 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_vertices(MemoryLoadedAsset
 			auto t = (normalMatrix * mesh->mTangents[vertexIndex]).Normalize();
 			auto b = (normalMatrix * mesh->mBitangents[vertexIndex]).Normalize();
 			auto n = (normalMatrix * mesh->mNormals[vertexIndex]).Normalize();
-			if (normMatDetIsNeg) {
+			if (transformDetIsNeg) {
+				t = -t;
 				b = -b;
+				n = -n;
 			}
 			native_impl_render_assets::calculate_tangent_rotation(
 				float3{ t.x, t.y, t.z },
@@ -198,18 +200,30 @@ StartExportedFunc(copy_loaded_asset_mesh_vertices, MemoryLoadedAssetHandle asset
 void native_impl_asset_loader::copy_loaded_asset_mesh_triangles(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeTriangles, int32_t* buffer) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 
-	auto unused = aiMatrix4x4{};
-	auto mesh = get_mesh_at_index(assetHandle, meshIndex, unused);
+	auto transform = aiMatrix4x4{};
+	auto mesh = get_mesh_at_index(assetHandle, meshIndex, transform);
+	auto transformDetIsNeg = transform.Determinant() < 0.0f;
 	auto triangleCount = get_mesh_triangle_count(mesh);
 
 	ThrowIf(bufferSizeTriangles < triangleCount, "Given buffer was too small.");
 
-	for (auto faceIndex = 0; faceIndex < triangleCount; ++faceIndex) {
-		auto face = mesh->mFaces[faceIndex];
-		if (face.mNumIndices != 3) continue;
-		buffer[(faceIndex * 3) + 0] = face.mIndices[0];
-		buffer[(faceIndex * 3) + 1] = face.mIndices[1];
-		buffer[(faceIndex * 3) + 2] = face.mIndices[2];
+	if (transformDetIsNeg) {
+		for (auto faceIndex = 0; faceIndex < triangleCount; ++faceIndex) {
+			auto face = mesh->mFaces[faceIndex];
+			if (face.mNumIndices != 3) continue;
+			buffer[(faceIndex * 3) + 0] = face.mIndices[0];
+			buffer[(faceIndex * 3) + 1] = face.mIndices[2];
+			buffer[(faceIndex * 3) + 2] = face.mIndices[1];
+		}
+	}
+	else {
+		for (auto faceIndex = 0; faceIndex < triangleCount; ++faceIndex) {
+			auto face = mesh->mFaces[faceIndex];
+			if (face.mNumIndices != 3) continue;
+			buffer[(faceIndex * 3) + 0] = face.mIndices[0];
+			buffer[(faceIndex * 3) + 1] = face.mIndices[1];
+			buffer[(faceIndex * 3) + 2] = face.mIndices[2];
+		}
 	}
 }
 StartExportedFunc(copy_loaded_asset_mesh_triangles, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeTriangles, int32_t* buffer) {

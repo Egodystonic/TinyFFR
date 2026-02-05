@@ -418,7 +418,6 @@ unsafe partial class LocalAssetLoader {
 				: ColorChannel.R;
 			if (reflectanceValue.HasValue) {
 				using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgba32>(destDim.Area);
-				Console.WriteLine("Reflectance = " + reflectanceValue.Value);
 				var reflectanceTexel = TexelRgba32.FromNormalizedFloats(reflectanceValue.Value, reflectanceValue.Value, reflectanceValue.Value, reflectanceValue.Value);
 				TextureUtils.CombineTextures(
 					occlusionTexels, aDim,	
@@ -697,34 +696,6 @@ unsafe partial class LocalAssetLoader {
 			out var alphaFormat,
 			out var refractionThickness
 		).ThrowIfFailure();
-
-		for (var p = 0; p < 15; ++p) {
-			Console.Write(p switch {
-				0 => "Color: ",
-				1 => "Normal: ",
-				2 => "AO: ",
-				3 => "Roughness: ",
-				4 => "Gloss: ",
-				5 => "Metallic: ",
-				6 => "IoR: ",
-				7 => "Absorption: ",
-				8 => "Transmission: ",
-				9 => "Emissive Color: ",
-				10 => "Emissive Intensity: ",
-				11 => "Aniso Angle: ",
-				12 => "Aniso Str: ",
-				13 => "CC Str: ",
-				14 => "CC Rough: ",
-				_ => ""
-			});
-			Console.WriteLine(matParamsBuffer[p].Format switch {
-				AssetMaterialParamDataFormat.TextureMap => "Texture " + matParamsBuffer[p].TextureMapIndex,
-				AssetMaterialParamDataFormat.Numerical => new ColorVect(matParamsBuffer[p].NumericalValueR, matParamsBuffer[p].NumericalValueG, matParamsBuffer[p].NumericalValueB, matParamsBuffer[p].NumericalValueA).ToString(),
-				_ => "None",
-			});
-		}
-		Console.WriteLine("Thickness: " + refractionThickness);
-		Console.WriteLine();
 		
 		var colorMap = CreateAssetColorMap(matParams.ColorParamsPtr, assetHandle, materialIndex, in config, in assetRootDirStrRef);
 		var atMap = CreateAssetAbsorptionTransmissionMap(matParams.AbsorptionParamsPtr, matParams.TransmissionParamsPtr, assetHandle, materialIndex, in config, in assetRootDirStrRef);
