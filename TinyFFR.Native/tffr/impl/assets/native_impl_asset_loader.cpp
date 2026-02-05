@@ -167,9 +167,9 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_vertices(MemoryLoadedAsset
 		auto uv = hasUVs ? mesh->mTextureCoords[0][vertexIndex] : aiVector3D{ 0.0f, 0.0f, 0.0f };
 		auto tangent = float4{ };
 		if (hasTangents) {
-			auto t = mesh->mTangents[vertexIndex];
-			auto b = mesh->mBitangents[vertexIndex];
-			auto n = mesh->mNormals[vertexIndex];
+			auto t = transform * mesh->mTangents[vertexIndex];
+			auto b = transform * mesh->mBitangents[vertexIndex];
+			auto n = transform * mesh->mNormals[vertexIndex];
 			native_impl_render_assets::calculate_tangent_rotation(
 				float3{ t.x, t.y, t.z },
 				float3{ b.x, b.y, b.z },
@@ -191,9 +191,9 @@ StartExportedFunc(copy_loaded_asset_mesh_vertices, MemoryLoadedAssetHandle asset
 
 void native_impl_asset_loader::copy_loaded_asset_mesh_triangles(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeTriangles, int32_t* buffer) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
-	ThrowIf(static_cast<uint32_t>(meshIndex) >= assetHandle->mNumMeshes, "Mesh index was out of bounds.");
 
-	auto mesh = assetHandle->mMeshes[meshIndex];
+	auto unused = aiMatrix4x4{};
+	auto mesh = get_mesh_at_index(assetHandle, meshIndex, unused);
 	auto triangleCount = get_mesh_triangle_count(mesh);
 
 	ThrowIf(bufferSizeTriangles < triangleCount, "Given buffer was too small.");
@@ -218,34 +218,21 @@ void native_impl_asset_loader::get_loaded_asset_texture_size(MemoryLoadedAssetHa
 	ThrowIfNull(outHeight, "Out height pointer was null.");
 	
 	auto texture = assetHandle->mTextures[textureIndex];
-	auto filename = texture->mFilename;
 	
-	// Embedded texture
-	if (filename.length < 1U || filename.data[0] == '*') { 
-		// Compressed format
-		if (texture->mHeight == 0U) { 
-			ThrowIf(texture->mWidth > 0x7FFFFFF, "Embedded texture '", texture->mFilename.C_Str(), "' is too large.");
-			int width, height, channelCount;
-			auto result = stbi_info_from_memory(reinterpret_cast<stbi_uc const*>(texture->pcData), static_cast<int>(texture->mWidth), &width, &height, &channelCount);
-			ThrowIfNotPositive(result, "Could not load metadata for embedded texture '", texture->mFilename.C_Str(), "': ", stbi_failure_reason());
-			*outWidth = static_cast<int32_t>(width);
-			*outHeight = static_cast<int32_t>(height);
-			return;
-		}
-		
-		// Uncompressed format
-		*outWidth = static_cast<int32_t>(texture->mWidth);
-		*outHeight = static_cast<int32_t>(texture->mHeight);
+	// Compressed format
+	if (texture->mHeight == 0U) { 
+		ThrowIf(texture->mWidth > 0x7FFFFFF, "Embedded texture '", texture->mFilename.C_Str(), "' is too large.");
+		int width, height, channelCount;
+		auto result = stbi_info_from_memory(reinterpret_cast<stbi_uc const*>(texture->pcData), static_cast<int>(texture->mWidth), &width, &height, &channelCount);
+		ThrowIfNotPositive(result, "Could not load metadata for embedded texture '", texture->mFilename.C_Str(), "': ", stbi_failure_reason());
+		*outWidth = static_cast<int32_t>(width);
+		*outHeight = static_cast<int32_t>(height);
 		return;
 	}
 	
-	// External file
-	int32_t channelCount;
-	std::filesystem::path root { assetRootDirPath };
-	std::filesystem::path rel { filename.C_Str() };
-	std::filesystem::path full = root / rel; // Don't be tempted to inline this and the line below, root / rel creates a temp that is moved to 'full' here. C++ fucking sucks lol
-	auto fullPath = full.c_str();
-	get_texture_file_data(fullPath, outWidth, outHeight, &channelCount);
+	// Uncompressed format
+	*outWidth = static_cast<int32_t>(texture->mWidth);
+	*outHeight = static_cast<int32_t>(texture->mHeight);
 }
 StartExportedFunc(get_loaded_asset_texture_size, MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootDirPath, int32_t* outWidth, int32_t* outHeight) {
 	native_impl_asset_loader::get_loaded_asset_texture_size(assetHandle, textureIndex, assetRootDirPath, outWidth, outHeight);
@@ -262,67 +249,43 @@ void native_impl_asset_loader::get_loaded_asset_texture_data(MemoryLoadedAssetHa
 	auto texture = assetHandle->mTextures[textureIndex];
 	auto filename = texture->mFilename;
 	
-	// Embedded texture
-	if (filename.length < 1U || filename.data[0] == '*') { 
-		// Compressed format, requires stbi
-		if (texture->mHeight == 0U) { 
-			ThrowIf(texture->mWidth > 0x7FFFFFF, "Embedded texture '", texture->mFilename.C_Str(), "' is too large.");
-			int width, height, channelCount;
-			auto imageData = stbi_load_from_memory(reinterpret_cast<stbi_uc const*>(texture->pcData), static_cast<int>(texture->mWidth), &width, &height, &channelCount, 4);
-			ThrowIfNull(imageData, "Could not load embedded texture '", texture->mFilename.C_Str(), "': ", stbi_failure_reason());
-			if (width > MaxEmbeddedTextureDimension || height > MaxEmbeddedTextureDimension || width <= 0 || height <= 0) {
-				stbi_image_free(imageData);
-				Throw("Embedded texture was either too large or had malformed size information.");
-			}
-			if (width * height * 4 > bufferLengthBytes) {
-				stbi_image_free(imageData);
-				Throw("Given buffer length was too small to fit embedded texture.");
-			}
-			memcpy((void*) buffer, imageData, width * height * 4); 
+	// Compressed format, requires stbi
+	if (texture->mHeight == 0U) { 
+		ThrowIf(texture->mWidth > 0x7FFFFFF, "Embedded texture '", texture->mFilename.C_Str(), "' is too large.");
+		int width, height, channelCount;
+		stbi_set_flip_vertically_on_load(true);
+		auto imageData = stbi_load_from_memory(reinterpret_cast<stbi_uc const*>(texture->pcData), static_cast<int>(texture->mWidth), &width, &height, &channelCount, 4);
+		ThrowIfNull(imageData, "Could not load embedded texture '", texture->mFilename.C_Str(), "': ", stbi_failure_reason());
+		if (width > MaxEmbeddedTextureDimension || height > MaxEmbeddedTextureDimension || width <= 0 || height <= 0) {
 			stbi_image_free(imageData);
-			*outWidth = width;
-			*outHeight = height;
-			return;
+			Throw("Embedded texture was either too large or had malformed size information.");
 		}
-		
-		// Uncompressed format, need to manually copy over
-		ThrowIf(texture->mWidth > MaxEmbeddedTextureDimension, "Embedded texture was either too large or had malformed size information.");
-		ThrowIf(texture->mHeight > MaxEmbeddedTextureDimension, "Embedded texture was either too large or had malformed size information.");
-		auto numTexels = texture->mWidth * texture->mHeight;
-		if (numTexels * 4 > bufferLengthBytes) {
+		if (width * height * 4 > bufferLengthBytes) {
+			stbi_image_free(imageData);
 			Throw("Given buffer length was too small to fit embedded texture.");
 		}
-		for (auto i = 0; i < numTexels; ++i) {
-			buffer[i * 4 + 0] = texture->pcData[i].r;
-			buffer[i * 4 + 1] = texture->pcData[i].g;
-			buffer[i * 4 + 2] = texture->pcData[i].b;
-			buffer[i * 4 + 3] = texture->pcData[i].a;
-		}
-		*outWidth = static_cast<int32_t>(texture->mWidth);
-		*outHeight = static_cast<int32_t>(texture->mHeight);
+		memcpy((void*) buffer, imageData, width * height * 4); 
+		stbi_image_free(imageData);
+		*outWidth = width;
+		*outHeight = height;
 		return;
 	}
-	
-	// External file
-	std::filesystem::path root { assetRootDirPath };
-	std::filesystem::path rel { filename.C_Str() };
-	std::filesystem::path full = root / rel; // Don't be tempted to inline this and the line below, root / rel creates a temp that is moved to 'full' here. C++ fucking sucks lol
-	auto fullPath = full.c_str();
-	int32_t width, height;
-	MemoryLoadedTextureRgba32DataPtr imageData;
-	load_texture_file_in_to_memory(fullPath, interop_bool_true, &width, &height, &imageData);
-	if (width > MaxEmbeddedTextureDimension || height > MaxEmbeddedTextureDimension || width <= 0 || height <= 0) {
-		stbi_image_free(imageData);
-		Throw("Embedded texture was either too large or had malformed size information.");
-	}
-	if (width * height * 4 > bufferLengthBytes) {
-		stbi_image_free(imageData);
+		
+	// Uncompressed format, need to manually copy over
+	ThrowIf(texture->mWidth > MaxEmbeddedTextureDimension, "Embedded texture was either too large or had malformed size information.");
+	ThrowIf(texture->mHeight > MaxEmbeddedTextureDimension, "Embedded texture was either too large or had malformed size information.");
+	auto numTexels = texture->mWidth * texture->mHeight;
+	if (numTexels * 4 > bufferLengthBytes) {
 		Throw("Given buffer length was too small to fit embedded texture.");
 	}
-	memcpy((void*) buffer, imageData, width * height * 4); 
-	stbi_image_free(imageData);
-	*outWidth = width;
-	*outHeight = height;
+	for (auto i = 0; i < numTexels; ++i) {
+		buffer[i * 4 + 0] = texture->pcData[i].r;
+		buffer[i * 4 + 1] = texture->pcData[i].g;
+		buffer[i * 4 + 2] = texture->pcData[i].b;
+		buffer[i * 4 + 3] = texture->pcData[i].a;
+	}
+	*outWidth = static_cast<int32_t>(texture->mWidth);
+	*outHeight = static_cast<int32_t>(texture->mHeight);
 }
 StartExportedFunc(get_loaded_asset_texture_data, MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootFilePath, MemoryLoadedTextureRgba32DataPtr buffer, int32_t bufferLengthBytes, int32_t* outWidth, int32_t* outHeight) {
 	native_impl_asset_loader::get_loaded_asset_texture_data(assetHandle, textureIndex, assetRootFilePath, buffer, bufferLengthBytes, outWidth, outHeight);
@@ -336,13 +299,7 @@ int get_texture_index_from_path(MemoryLoadedAssetHandle assetHandle, aiString& p
 		auto idx = atoi(cstr + 1);
 		if (idx < assetHandle->mNumTextures) return idx;
 	}
-	
-	for (auto i = 0; i < assetHandle->mNumTextures; ++i) {
-		if (assetHandle->mTextures[i]->mFilename == path) {
-			return i;
-		}
-	}
-	
+		
 	return -1;
 }
 

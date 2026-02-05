@@ -380,13 +380,23 @@ unsafe partial class LocalAssetLoader {
 			var bDim = roughnessEmbeddedTex?.Dimensions ?? XYPair<int>.One;
 			var cDim = metallicEmbeddedTex?.Dimensions ?? XYPair<int>.One;
 			var destDim = TextureUtils.GetCombinedTextureDimensions(aDim, bDim, cDim);
+			if (glossinessSpecifiedOverRoughness) TextureUtils.NegateTexture(roughnessTexels, bDim);
+			// If the metallic texture is completely separate, assume it's monochromatic and is in R
+			// Otherwise if the occlusion and metallic are combined,
+			//		but not roughness, we're dealing with some very esoteric texture that isn't really conventional, so just assume it goes ORM=RGB
+			//		anyway and that roughness is simply not part of this model, so select B
+			// Finally if it's a roughness/metallic texture without occlusion, the glTF convention specifies that it's still ORM=RGB, so select B here also 
+			//		Reference: https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#_material_pbrmetallicroughness_metallicroughnesstexture
 			var metallicChannel = (occlusionAndRoughnessAreCombinedTextures, roughnessAndMetallicAreCombinedTextures, occlusionAndMetallicAreCombinedTextures) switch {
 				(_, false, false) => ColorChannel.R,
-				(false, true, false) => ColorChannel.G,
-				(false, false, true) => ColorChannel.G,
 				_ => ColorChannel.B,	
 			};
-			if (glossinessSpecifiedOverRoughness) TextureUtils.NegateTexture(roughnessTexels, bDim);
+			// If it's an OR map again that's esoteric but we just assume ORM=RGB, so select G
+			// Alternatively as stated above, RM maps in glTF are ORM=RGB, so select G
+			// Finally if it's a completely separate map assume it's monochromatic and select R
+			var roughnessChannel = occlusionAndRoughnessAreCombinedTextures || roughnessAndMetallicAreCombinedTextures 
+				? ColorChannel.G 
+				: ColorChannel.R;
 			if (reflectanceValue.HasValue) {
 				using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgba32>(destDim.Area);
 				var reflectanceTexel = TexelRgba32.FromNormalizedFloats(reflectanceValue.Value, reflectanceValue.Value, reflectanceValue.Value, reflectanceValue.Value);
@@ -397,7 +407,7 @@ unsafe partial class LocalAssetLoader {
 					new ReadOnlySpan<TexelRgba32>(in reflectanceTexel), XYPair<int>.One,
 					new TextureCombinationConfig(
 						new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
-						new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, occlusionAndRoughnessAreCombinedTextures ? ColorChannel.G : ColorChannel.R),
+						new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, roughnessChannel),
 						new TextureCombinationSource(TextureCombinationSourceTexture.TextureC, metallicChannel),
 						new TextureCombinationSource(TextureCombinationSourceTexture.TextureD, ColorChannel.A)
 					),
@@ -417,7 +427,7 @@ unsafe partial class LocalAssetLoader {
 					metallicTexels, cDim,
 					new TextureCombinationConfig(
 						new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
-						new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, occlusionAndRoughnessAreCombinedTextures ? ColorChannel.G : ColorChannel.R),
+						new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, roughnessChannel),
 						new TextureCombinationSource(TextureCombinationSourceTexture.TextureC, metallicChannel)
 					),
 					destinationBuffer.Buffer

@@ -24,9 +24,33 @@ class LocalModelLoadingTest {
 	[SetUp]
 	public void SetUpTest() {
 		_filesToLoad = new[] {
+			"TextureCoordinateTest.glb",
+			"TransmissionTest.glb",
+			"TransmissionRoughnessTest.glb",
+			"MetalRoughSpheres.glb",
+			"EmissiveStrengthTest.glb",
+			"NegativeScaleTest.glb",
+			"NodePerformanceTest.glb",
+			"NormalTangentMirrorTest.glb",
+			"CompareTransmission.glb",
+			"BarramundiFish.glb",
+			"Avocado.glb",
+			"CompareAmbientOcclusion.glb",
+			"CompareBaseColor.glb",
+			"CompareEmissiveStrength.glb",
+			"CompareIor.glb",
+			"CompareMetallic.glb",
+			"CompareNormal.glb",
+			"CompareRoughness.glb",
+			"ClearCoatTest.glb",
+			"DamagedHelmet.glb",
+			"AttenuationTest.glb",
+			"AnisotropyStrengthTest.glb",
+			"AnisotropyDiscTest.glb",
 			"BoxTextured.gltf",	
 			"BoxTexturedSelfContained.gltf",
 			"BoxTextured.glb",
+			"BoxTexturedNonPowerOfTwo.glb",
 		};
 	}
 
@@ -37,64 +61,71 @@ class LocalModelLoadingTest {
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
-		using var window = factory.WindowBuilder.CreateWindow(display, title: "Arrows control camera | Press Space");
-		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 4f, -4f), initialViewDirection: new Direction(0f, -1f, 1f));
-		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, castsShadows: true);
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "L controls camera light | X/Y/Z rotates models | Press Space");
+		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f));
+		var lightBrightnessStage = 3;
+		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, castsShadows: true, highQuality: true);
+		using var backdrop = factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
 		using var scene = factory.SceneBuilder.CreateScene();
+		scene.SetBackdrop(backdrop);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
 		scene.Add(light);
 		
 		var curFileIndex = -1;
-		var curModelIndex = -1;
 		ResourceGroup? group = null; 
-		ModelInstance? instance = null;
+		List<ModelInstance> instances = new();
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) {
 			var deltaTime = (float) loop.IterateOnce().TotalSeconds;
 			
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
-				if (instance is {} i) {
-					scene.Remove(i);
-					i.Dispose();
+				foreach (var instance in instances) {
+					scene.Remove(instance);
+					instance.Dispose();
 				}
+				instances.Clear();
 				
 				if (group is {} g) {
-					curModelIndex++;
-					if (curModelIndex >= g.Models.Count) {
-						g.Dispose();
-					}
-					group = null;
+					g.Dispose();
 				}
 				
-				if (group == null) {
-					curFileIndex++;
-					if (curFileIndex >= _filesToLoad.Length) curFileIndex = 0;
-					
-					Console.WriteLine(_filesToLoad[curFileIndex]);
-					group = factory.AssetLoader.LoadModels(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]));
-					curModelIndex = 0;
-				}
+				curFileIndex++;
+				if (curFileIndex >= _filesToLoad.Length) curFileIndex = 0;
+				
+				Console.WriteLine(_filesToLoad[curFileIndex]);
+				group = factory.AssetLoader.LoadModels(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]));
 
-				instance = factory.ObjectBuilder.CreateModelInstance(group.Value.Models[curModelIndex]);
-				scene.Add(instance.Value);
-				window.SetTitle($"Arrows control camera, PgUp/PgDown/Home controls model | '{_filesToLoad[curFileIndex]}' #{curModelIndex}");
+				foreach (var model in group.Value.Models) {
+					instances.Add(factory.ObjectBuilder.CreateModelInstance(model));
+					scene.Add(instances[^1]);
+				}
+				window.SetTitle($"L controls camera light | X/Y/Z rotates models | '{_filesToLoad[curFileIndex]}'");
 			}
 
-			var originToCam = Location.Origin >> camera.Position;
-			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.ArrowRight)) originToCam *= ((-90f * deltaTime) % Direction.Down);
-			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.ArrowLeft)) originToCam *= ((90f * deltaTime) % Direction.Down);
+			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.X)) {
+				foreach (var instance in instances) instance.RotateBy((90f * deltaTime) % Direction.Left);
+			}
+			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Y)) {
+				foreach (var instance in instances) instance.RotateBy((90f * deltaTime) % Direction.Up);
+			}
+			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Z)) {
+				foreach (var instance in instances) instance.RotateBy((90f * deltaTime) % Direction.Forward);
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.L)) {
+				lightBrightnessStage++;
+				if (lightBrightnessStage > 3) lightBrightnessStage = 0;
+				light.SetBrightness(lightBrightnessStage switch {
+					0 => 0f,
+					1 => 0.33f,
+					2 => 0.66f,
+					_ => 1f
+				});
+			}
 			
-			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.ArrowUp)) originToCam = originToCam.WithLengthDecreasedBy(2f * deltaTime);
-			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.ArrowDown)) originToCam = originToCam.WithLengthIncreasedBy(2f * deltaTime);
-			
-			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.PageUp)) instance?.RotateBy((90f * deltaTime) % Direction.Left);
-			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.PageDown)) instance?.RotateBy((90f * deltaTime) % Direction.Forward);
-			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Home)) instance?.SetRotation(Rotation.None);
-			
-			camera.Position = Location.Origin + originToCam;
-			camera.LookAt(Location.Origin, Direction.Up);
+			DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, camera, deltaTime, window);
+			DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, camera, deltaTime);
 			
 			light.Position = camera.Position;
 			light.ConeDirection = camera.ViewDirection;
