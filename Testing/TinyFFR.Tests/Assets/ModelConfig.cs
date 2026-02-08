@@ -23,7 +23,10 @@ class ModelConfigTest {
 			},
 			TextureConfig = new() {
 				IncludeWAlphaChannel = true
-			}
+			},
+			HandleUriEscapedStrings = true,
+			GltfEmissiveStrengthScalar = 1f,
+			EmissiveStrengthCap = 0.5f
 		};
 		var testConfigB = new ModelReadConfig {
 			MeshConfig = new() {
@@ -32,13 +35,19 @@ class ModelConfigTest {
 			},
 			TextureConfig = new() {
 				IncludeWAlphaChannel = false
-			}
+			},
+			HandleUriEscapedStrings = false,
+			GltfEmissiveStrengthScalar = 0.3f,
+			EmissiveStrengthCap = 0f
 		};
 
 		void AssertConfigsMatch(ModelReadConfig expected, ModelReadConfig actual) {
 			Assert.AreEqual(expected.MeshConfig.FixCommonExportErrors, actual.MeshConfig.FixCommonExportErrors);
 			Assert.AreEqual(expected.MeshConfig.OptimizeForGpu, actual.MeshConfig.OptimizeForGpu);
 			Assert.AreEqual(expected.TextureConfig.IncludeWAlphaChannel, actual.TextureConfig.IncludeWAlphaChannel);
+			Assert.AreEqual(expected.HandleUriEscapedStrings, actual.HandleUriEscapedStrings);
+			Assert.AreEqual(expected.GltfEmissiveStrengthScalar, actual.GltfEmissiveStrengthScalar);
+			Assert.AreEqual(expected.EmissiveStrengthCap, actual.EmissiveStrengthCap);
 		}
 
 		AssertRoundTripHeapStorage(testConfigA, AssertConfigsMatch);
@@ -47,16 +56,25 @@ class ModelConfigTest {
 		AssertHeapSerializationWithObjects<ModelReadConfig>()
 			.SubConfig(testConfigA.MeshConfig)
 			.SubConfig(testConfigA.TextureConfig)
+			.Bool(true)
+			.Float(1f)
+			.Float(0.5f)
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<ModelReadConfig>()
 			.SubConfig(testConfigB.MeshConfig)
 			.SubConfig(testConfigB.TextureConfig)
+			.Bool(false)
+			.Float(0.3f)
+			.Float(0f)
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<ModelReadConfig>()
 			.Including(nameof(ModelReadConfig.MeshConfig))
 			.Including(nameof(ModelReadConfig.TextureConfig))
+			.Including(nameof(ModelReadConfig.HandleUriEscapedStrings))
+			.Including(nameof(ModelReadConfig.GltfEmissiveStrengthScalar))
+			.Including(nameof(ModelReadConfig.EmissiveStrengthCap))
 			.End();
 	}
 

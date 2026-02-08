@@ -24,31 +24,58 @@ class LocalModelLoadingTest {
 	[SetUp]
 	public void SetUpTest() {
 		_filesToLoad = new[] {
-			"Box With Spaces.gltf",
-			"NegativeScaleTest.glb",
-			"CompareIor.glb",
-			"AttenuationTest.glb",
-			"CompareRoughness.glb",
-			"MetalRoughSpheres.glb",
-			"CompareMetallic.glb",
-			"TransmissionRoughnessTest.glb",
-			"EmissiveStrengthTest.glb",
-			"CompareTransmission.glb",
-			"TransmissionTest.glb",
+			// Color / texturing / basic import tests
 			"BoxTextured.gltf",	
-			"BarramundiFish.glb",
-			"CompareAmbientOcclusion.glb",
-			"CompareNormal.glb",
-			"Avocado.glb",
-			"TextureCoordinateTest.glb",
+			"BoxTextured.glb",
+			"BoxTexturedSelfContained.gltf",
+			"BoxTexturedNonPowerOfTwo.glb",
+			"Box With Spaces.gltf",
+			
+			// Mesh + normals / tangents / bitangents + transform node walk tests
 			"NormalTangentMirrorTest.glb",
-			"ClearCoatTest.glb",
-			"DamagedHelmet.glb",
+			"NegativeScaleTest.glb",
+			"TextureCoordinateTest.glb",
+			"CompareNormal.glb",
+			
+			// ORM
+			"CompareRoughness.glb",
+			"CompareMetallic.glb",
+			"MetalRoughSpheres.glb",
+			"CompareAmbientOcclusion.glb",
+			
+			// Aniso
 			"AnisotropyStrengthTest.glb",
 			"AnisotropyDiscTest.glb",
-			"BoxTexturedSelfContained.gltf",
-			"BoxTextured.glb",
-			"BoxTexturedNonPowerOfTwo.glb",
+			
+			// Emissive
+			"EmissiveStrengthTest.glb",
+			
+			// AT
+			"TransmissionTest.glb",
+			"CompareTransmission.glb",
+			"TransmissionRoughnessTest.glb",
+			"AttenuationTest.glb",
+			"CompareIor.glb",
+			
+			// CC
+			"ClearCoatTest.glb",
+			
+			// Showcase
+			"BarramundiFish.glb",
+			"Avocado.glb",
+			"DamagedHelmet.glb",
+			"showcase_ABeautifulGame.glb",
+			"showcase_GlassHurricaneCandleHolder.glb",
+			"showcase_MaterialsVariantsShoe.glb",
+			"showcase_MosquitoInAmber.glb",
+			"showcase_PotOfCoals.glb",
+			"showcase_ToyCar.glb",
+			"showcase_AnisotropyBarnLamp.glb",
+			"showcase_CarConcept.glb",
+			"showcase_ChronographWatch.glb",
+			"showcase_CommercialRefrigerator.glb",
+			
+			// Stress test
 			"NodePerformanceTest.glb",
 		};
 	}
@@ -62,6 +89,7 @@ class LocalModelLoadingTest {
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "L controls camera light | X/Y/Z rotates models | Press Space");
 		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f));
+		camera.NearPlaneDistance = 0.001f;
 		var lightBrightnessStage = 3;
 		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, castsShadows: true, highQuality: true);
 		using var backdrop = factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
@@ -94,7 +122,7 @@ class LocalModelLoadingTest {
 				if (curFileIndex >= _filesToLoad.Length) curFileIndex = 0;
 				
 				Console.WriteLine(_filesToLoad[curFileIndex]);
-				group = factory.AssetLoader.LoadModels(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]));
+				group = factory.AssetLoader.LoadModels(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), new ModelCreationConfig(), new ModelReadConfig() { HandleUriEscapedStrings = true });
 
 				foreach (var model in group.Value.Models) {
 					instances.Add(factory.ObjectBuilder.CreateModelInstance(model));

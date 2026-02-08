@@ -58,8 +58,8 @@ unsafe partial class LocalAssetLoader {
 						for (var i = 0; i < meshCount; ++i) {
 							GetLoadedAssetMeshVertexCount(assetHandle, i, out var vCount).ThrowIfFailure();
 							GetLoadedAssetMeshTriangleCount(assetHandle, i, out var tCount).ThrowIfFailure();
-							CopyLoadedAssetMeshVertices(assetHandle, i, (int) (fixedVertexBuffer.Size<MeshVertex>() - (vBufferPtr - (MeshVertex*) fixedVertexBuffer.StartPtr)), vBufferPtr);
-							CopyLoadedAssetMeshTriangles(assetHandle, i, (int) (fixedTriangleBuffer.Size<VertexTriangle>() - (tBufferPtr - (VertexTriangle*) fixedTriangleBuffer.StartPtr)), tBufferPtr);
+							CopyLoadedAssetMeshVertices(assetHandle, i, readConfig.CorrectFlippedOrientation, (int) (fixedVertexBuffer.Size<MeshVertex>() - (vBufferPtr - (MeshVertex*) fixedVertexBuffer.StartPtr)), vBufferPtr);
+							CopyLoadedAssetMeshTriangles(assetHandle, i, readConfig.CorrectFlippedOrientation, (int) (fixedTriangleBuffer.Size<VertexTriangle>() - (tBufferPtr - (VertexTriangle*) fixedTriangleBuffer.StartPtr)), tBufferPtr);
 							vBufferPtr += vCount;
 							tBufferPtr += tCount;
 						}
@@ -168,8 +168,8 @@ unsafe partial class LocalAssetLoader {
 						for (var i = 0; i < meshCount; ++i) {
 							GetLoadedAssetMeshVertexCount(assetHandle, i, out var vCount).ThrowIfFailure();
 							GetLoadedAssetMeshTriangleCount(assetHandle, i, out var tCount).ThrowIfFailure();
-							CopyLoadedAssetMeshVertices(assetHandle, i, (int) (fixedVertexBuffer.Size<MeshVertex>() - (vBufferPtr - (MeshVertex*) fixedVertexBuffer.StartPtr)), vBufferPtr);
-							CopyLoadedAssetMeshTriangles(assetHandle, i, (int) (fixedTriangleBuffer.Size<VertexTriangle>() - (tBufferPtr - (VertexTriangle*) fixedTriangleBuffer.StartPtr)), tBufferPtr);
+							CopyLoadedAssetMeshVertices(assetHandle, i, readConfig.CorrectFlippedOrientation, (int) (fixedVertexBuffer.Size<MeshVertex>() - (vBufferPtr - (MeshVertex*) fixedVertexBuffer.StartPtr)), vBufferPtr);
+							CopyLoadedAssetMeshTriangles(assetHandle, i, readConfig.CorrectFlippedOrientation, (int) (fixedTriangleBuffer.Size<VertexTriangle>() - (tBufferPtr - (VertexTriangle*) fixedTriangleBuffer.StartPtr)), tBufferPtr);
 							vBufferPtr += vCount;
 							tBufferPtr += tCount;
 						}
@@ -219,6 +219,7 @@ unsafe partial class LocalAssetLoader {
 	static extern InteropResult CopyLoadedAssetMeshVertices(
 		UIntPtr assetHandle,
 		int meshIndex,
+		InteropBool correctFlippedOrientation,
 		int bufferSizeVertices,
 		MeshVertex* vertexBufferPtr
 	);
@@ -227,6 +228,7 @@ unsafe partial class LocalAssetLoader {
 	static extern InteropResult CopyLoadedAssetMeshTriangles(
 		UIntPtr assetHandle,
 		int meshIndex,
+		InteropBool correctFlippedOrientation,
 		int bufferSizeTriangles,
 		VertexTriangle* triangleBufferPtr
 	);

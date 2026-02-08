@@ -14,6 +14,7 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 public readonly ref struct MeshReadConfig : IConfigStruct<MeshReadConfig> {
 	public bool FixCommonExportErrors { get; init; } = true;
 	public bool OptimizeForGpu { get; init; } = true;
+	public bool CorrectFlippedOrientation { get; init; } = true;
 
 	public MeshReadConfig() { }
 
@@ -23,16 +24,19 @@ public readonly ref struct MeshReadConfig : IConfigStruct<MeshReadConfig> {
 
 	public static int GetHeapStorageFormattedLength(in MeshReadConfig src) {
 		return	SerializationSizeOfBool() // FixCommonExportErrors
-			+	SerializationSizeOfBool();  // OptimizeForGpu
+			+	SerializationSizeOfBool() // OptimizeForGpu
+			+	SerializationSizeOfBool(); // CorrectFlippedOrientation
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in MeshReadConfig src) {
 		SerializationWriteBool(ref dest, src.FixCommonExportErrors);
 		SerializationWriteBool(ref dest, src.OptimizeForGpu);
+		SerializationWriteBool(ref dest, src.CorrectFlippedOrientation);
 	}
 	public static MeshReadConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new MeshReadConfig {
 			FixCommonExportErrors = SerializationReadBool(ref src),
-			OptimizeForGpu = SerializationReadBool(ref src)
+			OptimizeForGpu = SerializationReadBool(ref src),
+			CorrectFlippedOrientation = SerializationReadBool(ref src)
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {

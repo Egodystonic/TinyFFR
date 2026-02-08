@@ -150,7 +150,7 @@ StartExportedFunc(get_loaded_asset_mesh_triangle_count, MemoryLoadedAssetHandle 
 	EndExportedFunc
 }
 
-void native_impl_asset_loader::copy_loaded_asset_mesh_vertices(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertex* buffer) {
+void native_impl_asset_loader::copy_loaded_asset_mesh_vertices(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertex* buffer) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 
 	auto transform = aiMatrix4x4{};
@@ -173,7 +173,7 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_vertices(MemoryLoadedAsset
 			auto t = (normalMatrix * mesh->mTangents[vertexIndex]).Normalize();
 			auto b = (normalMatrix * mesh->mBitangents[vertexIndex]).Normalize();
 			auto n = (normalMatrix * mesh->mNormals[vertexIndex]).Normalize();
-			if (transformDetIsNeg) {
+			if (correctFlippedOrientation && transformDetIsNeg) {
 				t = -t;
 				b = -b;
 				n = -n;
@@ -192,12 +192,12 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_vertices(MemoryLoadedAsset
 		};
 	}
 }
-StartExportedFunc(copy_loaded_asset_mesh_vertices, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertex* buffer) {
-	native_impl_asset_loader::copy_loaded_asset_mesh_vertices(assetHandle, meshIndex, bufferSizeVertices, buffer);
+StartExportedFunc(copy_loaded_asset_mesh_vertices, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertex* buffer) {
+	native_impl_asset_loader::copy_loaded_asset_mesh_vertices(assetHandle, meshIndex, correctFlippedOrientation, bufferSizeVertices, buffer);
 	EndExportedFunc
 }
 
-void native_impl_asset_loader::copy_loaded_asset_mesh_triangles(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeTriangles, int32_t* buffer) {
+void native_impl_asset_loader::copy_loaded_asset_mesh_triangles(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeTriangles, int32_t* buffer) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 
 	auto transform = aiMatrix4x4{};
@@ -207,7 +207,7 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_triangles(MemoryLoadedAsse
 
 	ThrowIf(bufferSizeTriangles < triangleCount, "Given buffer was too small.");
 
-	if (transformDetIsNeg) {
+	if (correctFlippedOrientation && transformDetIsNeg) {
 		for (auto faceIndex = 0; faceIndex < triangleCount; ++faceIndex) {
 			auto face = mesh->mFaces[faceIndex];
 			if (face.mNumIndices != 3) continue;
@@ -226,8 +226,8 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_triangles(MemoryLoadedAsse
 		}
 	}
 }
-StartExportedFunc(copy_loaded_asset_mesh_triangles, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeTriangles, int32_t* buffer) {
-	native_impl_asset_loader::copy_loaded_asset_mesh_triangles(assetHandle, meshIndex, bufferSizeTriangles, buffer);
+StartExportedFunc(copy_loaded_asset_mesh_triangles, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeTriangles, int32_t* buffer) {
+	native_impl_asset_loader::copy_loaded_asset_mesh_triangles(assetHandle, meshIndex, correctFlippedOrientation, bufferSizeTriangles, buffer);
 	EndExportedFunc
 }
 
@@ -542,14 +542,6 @@ void native_impl_asset_loader::get_loaded_asset_material_data(MemoryLoadedAssetH
 		apply_material_texture_if_present(assetHandle, mat, paramPtr, aiTextureType_EMISSIVE)
 		|| apply_material_numerical_if_present(assetHandle, mat, paramPtr, AI_MATKEY_EMISSIVE_INTENSITY, false, false);
 	if (!valueFound) paramPtr->Format = AssetMaterialParamDataFormat::NotIncluded;
-	else if (paramPtr->Format == Numerical) {
-		auto input = paramPtr->NumericalValueR;
-		input = std::clamp(input * 0.05f, 0.0f, 1.0f);
-		paramPtr->NumericalValueR = input;
-		paramPtr->NumericalValueG = input;
-		paramPtr->NumericalValueB = input;
-		paramPtr->NumericalValueA = input;
-	}
 	
 	// Anisotropy - Angle
 	paramPtr = paramGroupPtr->AnisotropyAngleParamsPtr;
