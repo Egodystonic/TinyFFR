@@ -134,7 +134,7 @@ That being said, the dependency type graph is enumerated for convenience below:
 
 ## Memory Management
 
-### Groups
+### Resource Groups
 
 The factory allows you to create a lightweight handle called a `ResourceGroup` that represents a grouped collection of arbitrary resources; without allocating any garbage-collected data:
 

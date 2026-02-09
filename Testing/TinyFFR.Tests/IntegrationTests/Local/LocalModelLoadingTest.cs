@@ -11,6 +11,7 @@ using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Testing;
 using Egodystonic.TinyFFR.World;
@@ -91,54 +92,53 @@ class LocalModelLoadingTest {
 		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f));
 		camera.NearPlaneDistance = 0.001f;
 		var lightBrightnessStage = 3;
-		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, castsShadows: true, highQuality: true);
+		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, highQuality: true);
+		using var sunlight = factory.LightBuilder.CreateDirectionalLight(castsShadows: true);
 		using var backdrop = factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
 		using var scene = factory.SceneBuilder.CreateScene();
 		scene.SetBackdrop(backdrop);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
+		renderer.SetQuality(new(Quality.VeryHigh));
 
 		scene.Add(light);
+		scene.Add(sunlight);
 		
 		var curFileIndex = -1;
-		ResourceGroup? group = null; 
-		List<ModelInstance> instances = new();
+		ResourceGroup? loadedResources = null; 
+		ModelInstanceGroup? modelInstances = null;
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) {
 			var deltaTime = (float) loop.IterateOnce().TotalSeconds;
 			
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
-				foreach (var instance in instances) {
-					scene.Remove(instance);
-					instance.Dispose();
+				if (modelInstances is {} i) {
+					scene.Remove(i);
+					i.Dispose();
 				}
-				instances.Clear();
 				
-				if (group is {} g) {
+				if (loadedResources is {} g) {
 					g.Dispose();
 				}
 				
 				curFileIndex++;
 				if (curFileIndex >= _filesToLoad.Length) curFileIndex = 0;
 				
-				Console.WriteLine(_filesToLoad[curFileIndex]);
-				group = factory.AssetLoader.LoadModels(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), new ModelCreationConfig(), new ModelReadConfig() { HandleUriEscapedStrings = true });
+				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), new ModelCreationConfig(), new ModelReadConfig() { HandleUriEscapedStrings = true });
 
-				foreach (var model in group.Value.Models) {
-					instances.Add(factory.ObjectBuilder.CreateModelInstance(model));
-					scene.Add(instances[^1]);
-				}
-				window.SetTitle($"L controls camera light | X/Y/Z rotates models | '{_filesToLoad[curFileIndex]}' ({group.Value.Models.Count} models / {group.Value.Meshes.Count} meshes / {group.Value.Materials.Count} materials / {group.Value.Textures.Count} textures)");
+				modelInstances = factory.ObjectBuilder.CreateModelInstanceGroup(loadedResources.Value);
+				scene.Add(modelInstances.Value);
+				window.SetTitle($"L controls camera light | X/Y/Z rotates models | '{_filesToLoad[curFileIndex]}' ({loadedResources.Value.Models.Count} models / {loadedResources.Value.Meshes.Count} meshes / {loadedResources.Value.Materials.Count} materials / {loadedResources.Value.Textures.Count} textures)");
 			}
 
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.X)) {
-				foreach (var instance in instances) instance.RotateBy((90f * deltaTime) % Direction.Left);
+				modelInstances?.RotateBy((90f * deltaTime) % Direction.Left);
 			}
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Y)) {
-				foreach (var instance in instances) instance.RotateBy((90f * deltaTime) % Direction.Up);
+				modelInstances?.RotateBy((90f * deltaTime) % Direction.Up);
 			}
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Z)) {
-				foreach (var instance in instances) instance.RotateBy((90f * deltaTime) % Direction.Forward);
+				modelInstances?.RotateBy((90f * deltaTime) % Direction.Forward);
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.L)) {
 				lightBrightnessStage++;

@@ -12,6 +12,7 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/9?closed=1) 
 
 ### Major Features
 
+* Added support for combined-asset resource files (such as `.gltf`, `.glb`, etc.)
 * Enabled Vulkan for Windows & Linux; made it the default rendering API on those platforms.
 
 ### Improvements

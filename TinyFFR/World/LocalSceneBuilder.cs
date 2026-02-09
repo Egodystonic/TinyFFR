@@ -90,6 +90,15 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 
 		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), modelInstance);
 	}
+
+	public void Add(ResourceHandle<Scene> handle, ModelInstanceGroup modelInstanceGroup) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		foreach (var inst in modelInstanceGroup) Add(handle, inst);
+	}
+	public void Remove(ResourceHandle<Scene> handle, ModelInstanceGroup modelInstanceGroup) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		foreach (var inst in modelInstanceGroup) Remove(handle, inst);
+	}
 	#endregion
 
 	#region Light

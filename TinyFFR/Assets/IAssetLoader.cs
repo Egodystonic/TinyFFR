@@ -460,15 +460,15 @@ public interface IAssetLoader {
 	#region Load Generic / Combined
 	Model CreateModel(Mesh mesh, Material material, ReadOnlySpan<char> name = default);
 	
-	ResourceGroup LoadModels(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
-		return LoadModels(
+	ResourceGroup LoadAll(ReadOnlySpan<char> filePath, ReadOnlySpan<char> name = default) {
+		return LoadAll(
 			filePath,
 			new ModelCreationConfig {
 				Name = name.IsEmpty ? Path.GetFileName(filePath) : name
 			}
 		);
 	}
-	ResourceGroup LoadModels(ReadOnlySpan<char> filePath, in ModelCreationConfig config) => LoadModels(filePath, in config, new ModelReadConfig());
-	ResourceGroup LoadModels(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig);
+	ResourceGroup LoadAll(ReadOnlySpan<char> filePath, in ModelCreationConfig config) => LoadAll(filePath, in config, new ModelReadConfig());
+	ResourceGroup LoadAll(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig);
 	#endregion
 }

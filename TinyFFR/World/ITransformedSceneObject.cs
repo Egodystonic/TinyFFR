@@ -5,21 +5,30 @@ using System;
 
 namespace Egodystonic.TinyFFR.World;
 
-public interface IPositionedSceneObject {
-	Location Position { get; set; }
+public interface IMovableSceneObject {
 	void MoveBy(Vect translation);
 }
-public interface IOrientedSceneObject {
-	Rotation Rotation { get; set; }
+public interface IPositionedSceneObject : IMovableSceneObject {
+	Location Position { get; set; }
+}
+
+public interface IReorientableSceneObject {
 	void RotateBy(Rotation rotation);
 }
-public interface IScaledSceneObject {
-	Vect Scaling { get; set; }
+public interface IOrientedSceneObject : IReorientableSceneObject {
+	Rotation Rotation { get; set; }
+}
+
+public interface IRescalableSceneObject {
 	void ScaleBy(float scalar);
 	void ScaleBy(Vect vect);
 	void AdjustScaleBy(float scalar);
 	void AdjustScaleBy(Vect vect);
 }
+public interface IScaledSceneObject : IRescalableSceneObject {
+	Vect Scaling { get; set; }
+}
+
 public interface ITransformedSceneObject : IPositionedSceneObject, IOrientedSceneObject, IScaledSceneObject {
 	Transform Transform { get; set; }
 }

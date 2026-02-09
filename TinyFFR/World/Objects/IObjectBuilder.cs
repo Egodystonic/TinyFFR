@@ -32,6 +32,17 @@ public interface IObjectBuilder {
 			name
 		);
 	}
+	ModelInstanceGroup CreateModelInstanceGroup(ResourceGroup modelGroup, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, ReadOnlySpan<char> name = default) {
+		return CreateModelInstanceGroup(
+			modelGroup,
+			new Transform(
+				translation: initialPosition?.AsVect() ?? ModelInstanceCreationConfig.DefaultInitialTransform.Translation,
+				rotation: initialRotation ?? ModelInstanceCreationConfig.DefaultInitialTransform.Rotation,
+				scaling: initialScaling ?? ModelInstanceCreationConfig.DefaultInitialTransform.Scaling
+			),
+			name
+		);
+	}
 	
 	
 
@@ -53,9 +64,19 @@ public interface IObjectBuilder {
 			}
 		);
 	}
+	ModelInstanceGroup CreateModelInstanceGroup(ResourceGroup modelGroup, Transform initialTransform, ReadOnlySpan<char> name = default) {
+		return CreateModelInstanceGroup(
+			modelGroup,
+			new ModelInstanceCreationConfig {
+				InitialTransform = initialTransform,
+				Name = name
+			}
+		);
+	}
 	
 	
 
 	ModelInstance CreateModelInstance(Model model, in ModelInstanceCreationConfig config) => CreateModelInstance(model.Mesh, model.Material, in config);
 	ModelInstance CreateModelInstance(Mesh mesh, Material material, in ModelInstanceCreationConfig config);
+	ModelInstanceGroup CreateModelInstanceGroup(ResourceGroup modelGroup, in ModelInstanceCreationConfig config);
 }

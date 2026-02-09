@@ -41,6 +41,11 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	public void Add(ModelInstance modelInstance) => Implementation.Add(_handle, modelInstance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove(ModelInstance modelInstance) => Implementation.Remove(_handle, modelInstance);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Add(ModelInstanceGroup modelInstance) => Implementation.Add(_handle, modelInstance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void Remove(ModelInstanceGroup modelInstance) => Implementation.Remove(_handle, modelInstance);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Add<TLight>(TLight light) where TLight : ILight<TLight> => Implementation.Add(_handle, light);

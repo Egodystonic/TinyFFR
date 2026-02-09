@@ -84,6 +84,14 @@ All ways to read mesh data from files have methods that can take a `MeshReadConf
 :   Defaults to `true`. When `true`, TinyFFR will spend some additional time optimizing the mesh data to improve your framerate. 
 
 	Setting this to `false` may improve load times, but may also have a negative impact on framerate.
+	
+<span class="def-icon">:material-card-bulleted-outline:</span> `CorrectFlippedOrientation`
+
+:   Defaults to `true`. When `true`, TinyFFR will correct winding order, normals, tangents, and bitangents if it detects the mesh data has been exported with a flipped orientation.
+
+	This can happen sometimes if a mesh's data is combined with a negative scaling or mirror transform, etc.
+	
+	Setting this to `false` will tell TinyFFR not to attempt this correction (in the case you want to see the data exactly as exported, for example).
 
 ### MeshCreationConfig
 

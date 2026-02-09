@@ -12,6 +12,9 @@ namespace Egodystonic.TinyFFR.World;
 public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	void Add(ResourceHandle<Scene> handle, ModelInstance modelInstance);
 	void Remove(ResourceHandle<Scene> handle, ModelInstance modelInstance);
+	
+	void Add(ResourceHandle<Scene> handle, ModelInstanceGroup modelInstanceGroup);
+	void Remove(ResourceHandle<Scene> handle, ModelInstanceGroup modelInstanceGroup);
 
 	void Add<TLight>(ResourceHandle<Scene> handle, TLight light) where TLight : ILight<TLight>;
 	void Remove<TLight>(ResourceHandle<Scene> handle, TLight light) where TLight : ILight<TLight>;

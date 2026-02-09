@@ -255,3 +255,44 @@ scene.Add(treasureChest); // (7)!
 	- ZGL
 
 	TinyFFR does not currently support some more esoteric features of 3D model formats such as scenes, multi-material objects, or exported material systems. Support for some of the file formats listed above may be minimal.
+
+## Model Loading	
+
+![Image showing a chess scene](loading_assets_chess.jpg){ align=right : style="max-width:44%;" }
+
+The example above shows how to import a mesh and its material/textures as independent steps. However, for formats like `glTF`/`glb` (and many others), TinyFFR supports loading all contained models(1) as a single step, in to a `ResourceGroup`.
+{ .annotate }
+
+1.	A `Model` is defined as one `Mesh` and one `Material` combined.
+
+In this example, we will use the ['Beautiful Game'](https://github.khronos.org/glTF-Assets/model/ABeautifulGame) asset provided by Khronos group. Click the link and download the `GLB`(1) formatted file.
+{ .annotate }
+
+1.	`GLB` is a binary-packed variant of `glTF` that contains all asset data in one file for convenience.
+
+Then we can load everything from the packed `glb` file with `LoadAll()`:
+
+```csharp
+using var chessResources = assetLoader.LoadAll(@"your_path/ABeautifulGame.glb"); // (1)!
+using var chessInstanceGroup = objectBuilder.CreateModelInstanceGroup(chessResources); // (2)!
+scene.Add(chessInstanceGroup); // (3)!
+```
+
+1.	`LoadAll` will return a `ResourceGroup` that contains all the loaded `Mesh`, `Texture`, `Material`, and `Model` resources directly extracted from the given asset file.
+
+	Disposing this group will dispose all those resources.
+	
+2.	`CreateModelInstance()` takes a `Mesh` and `Material` (or a `Model` representing those) and returns you a single `ModelInstance`.
+
+	Following-on from that, `CreateModelInstanceGroup()` takes a `ResourceGroup` and creates a `ModelInstance` for every contained `Model`; returning them as a combined `ModelInstanceGroup`.
+	
+	You can enumerate over a `ModelInstanceGroup` to access all contained `ModelInstance`s. Disposing the `ModelInstanceGroup` disposes all contained `ModelInstance`s.
+	
+3.	This adds every `ModelInstance` from the `chessInstanceGroup` to the scene.
+
+??? question "When to use `LoadAll()` vs `LoadMesh()` + `Load[...]Map()`?"
+	When you have a combined-resource asset file (such as `.glb`), or when multiple models are packed in to a single sub-asset file, you have no choice but to use `LoadAll()` to access those embedded resources.
+	
+	However, for formats such as `.gltf` when you have singular mesh files and textures kept separately, you can choose to load those resources manually with the `LoadMesh()` and `Load[...]Map()` (or `LoadTexture()`) functions; *or* you can pass the `.gltf` file path to `LoadAll()` as before.
+	
+	Ultimately, "manual" loading of resources gives you the most control of how those textures/meshes are imported, but for complex models this can be cumbersome. TinyFFR gives you a variety of approaches for importing assets; for serious applications you/your team should define an asset export + import pipeline and test that every material and mesh/model type you need is working correctly using a well-defined loading approach.

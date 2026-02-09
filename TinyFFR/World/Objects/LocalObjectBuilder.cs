@@ -46,6 +46,17 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 		return result;
 	}
 
+	public ModelInstanceGroup CreateModelInstanceGroup(ResourceGroup modelGroup, in ModelInstanceCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		var enumerator = modelGroup.Models;
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: enumerator.Count, name: config.Name);
+		foreach (var model in enumerator) {
+			resourceGroup.Add(CreateModelInstance(model.Mesh, model.Material, in config));
+		}
+		resourceGroup.Seal();
+		return new ModelInstanceGroup(resourceGroup);
+	}
+
 	void UpdateTransformAndMatrix(ResourceHandle<ModelInstance> handle, Transform newTransform) {
 		SetModelInstanceWorldMatrix(handle, newTransform.ToMatrix()).ThrowIfFailure();
 		_activeInstanceTransforms[handle] = newTransform;

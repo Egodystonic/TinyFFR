@@ -96,6 +96,7 @@ unsafe partial class LocalAssetLoader {
 	}
 	
 	const string DefaultModelName = "Unnamed Model";
+	const int MaxExternalAssetFilePathLength = 2048;
 	readonly FixedByteBufferPool _embeddedAssetTextureBufferPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Model>, (Mesh Mesh, Material Material)> _loadedModels = new();
 	nuint _prevModelHandle = 0;
@@ -112,8 +113,6 @@ unsafe partial class LocalAssetLoader {
 	}
 	
 	EmbeddedTextureData LoadAssetTexture(UIntPtr assetHandle, int materialIndex, int textureIndex, ref readonly byte assetRootDirStrRef, bool uriUnescapeEmbeddedResourceStrings) {
-		const int MaxExternalAssetFilePathLength = 2048;
-		
 		if (textureIndex < 0) {
 			GetLoadedAssetTextureExternalPathLength(
 				assetHandle,
@@ -147,7 +146,7 @@ unsafe partial class LocalAssetLoader {
 				strBufferSpan.Clear(); // This makes sure the unwritten portion of the buffer will be null terminator(s)
 				Encoding.UTF8.GetBytes(unescapedStr, strBufferSpan[..^1]);
 			}
-			
+
 			var loadResult = LoadTextureFileInToMemory(
 				in Unsafe.AsRef<byte>(strBuffer),
 				true,
@@ -248,10 +247,56 @@ unsafe partial class LocalAssetLoader {
 		}
 	}
 	
-	static bool ParamPtrsRepresentIdenticalTextures(AssetMaterialParam* paramPtrA, AssetMaterialParam* paramPtrB) {
-		return paramPtrA->Format == AssetMaterialParamDataFormat.TextureMap
-			&& paramPtrB->Format == AssetMaterialParamDataFormat.TextureMap
-			&& paramPtrA->TextureMapIndex == paramPtrB->TextureMapIndex;
+	static bool ParamPtrsRepresentIdenticalTextures(UIntPtr assetHandle, int materialIndex, ref readonly byte assetRootDirStrRef, AssetMaterialParam* paramPtrA, AssetMaterialParam* paramPtrB) {
+		if (paramPtrA->Format != AssetMaterialParamDataFormat.TextureMap || paramPtrB->Format != AssetMaterialParamDataFormat.TextureMap) return false;
+		if (paramPtrA->TextureMapIndex == paramPtrB->TextureMapIndex) return true;
+		if (paramPtrA->TextureMapIndex >= 0 || paramPtrB->TextureMapIndex >= 0) return false;
+		
+		GetLoadedAssetTextureExternalPathLength(
+			assetHandle,
+			materialIndex,
+			paramPtrA->TextureMapIndex,
+			in assetRootDirStrRef,
+			out var aStrLenLessNullTerminator
+		).ThrowIfFailure();
+		
+		GetLoadedAssetTextureExternalPathLength(
+			assetHandle,
+			materialIndex,
+			paramPtrB->TextureMapIndex,
+			in assetRootDirStrRef,
+			out var bStrLenLessNullTerminator
+		).ThrowIfFailure();
+		
+		var aInvalid = aStrLenLessNullTerminator is <= 0 or >= MaxExternalAssetFilePathLength;
+		var bInvalid = bStrLenLessNullTerminator is <= 0 or >= MaxExternalAssetFilePathLength;
+		
+		if (aInvalid || bInvalid || aStrLenLessNullTerminator != bStrLenLessNullTerminator) return false;
+		
+		var aStrBuffer = stackalloc byte[aStrLenLessNullTerminator + 1];
+		var bStrBuffer = stackalloc byte[bStrLenLessNullTerminator + 1];
+		
+		GetLoadedAssetTextureExternalPath(
+			assetHandle,
+			materialIndex,
+			paramPtrA->TextureMapIndex,
+			in assetRootDirStrRef,
+			aStrBuffer,
+			aStrLenLessNullTerminator + 1
+		).ThrowIfFailure();
+		
+		GetLoadedAssetTextureExternalPath(
+			assetHandle,
+			materialIndex,
+			paramPtrB->TextureMapIndex,
+			in assetRootDirStrRef,
+			bStrBuffer,
+			bStrLenLessNullTerminator + 1
+		).ThrowIfFailure();
+		
+		var aSpan = new ReadOnlySpan<byte>(aStrBuffer, aStrLenLessNullTerminator);
+		var bSpan = new ReadOnlySpan<byte>(bStrBuffer, bStrLenLessNullTerminator);
+		return aSpan.SequenceEqual(bSpan);
 	}
 	
 	Texture CreateAssetColorMap(AssetMaterialParam* paramPtr, AssetMaterialCreationParameters creationParams) {
@@ -282,7 +327,7 @@ unsafe partial class LocalAssetLoader {
 		if (absorptionParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && transmissionParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
 		
 		// All in one texture, just load the whole thing once and return it, no combination required
-		if (ParamPtrsRepresentIdenticalTextures(absorptionParamPtr, transmissionParamPtr)) {
+		if (ParamPtrsRepresentIdenticalTextures(creationParams.AssetHandle, creationParams.MaterialIndex, in creationParams.AssetRootDirStrRef, absorptionParamPtr, transmissionParamPtr)) {
 			using var embeddedTex = LoadAssetTexture(
 				creationParams.AssetHandle,
 				creationParams.MaterialIndex,
@@ -389,11 +434,10 @@ unsafe partial class LocalAssetLoader {
 			: (float?) null;
 		if (reflectanceRequired) reflectanceValue ??= ITextureBuilder.DefaultReflectance;
 		
-		var occlusionAndRoughnessAreCombinedTextures = ParamPtrsRepresentIdenticalTextures(occlusionParamPtr, roughnessParamPtr);
-		var roughnessAndMetallicAreCombinedTextures = ParamPtrsRepresentIdenticalTextures(roughnessParamPtr, metallicParamPtr);
-		
+		var occlusionRoughnessAreSameTexture = ParamPtrsRepresentIdenticalTextures(creationParams.AssetHandle, creationParams.MaterialIndex, in creationParams.AssetRootDirStrRef, occlusionParamPtr, roughnessParamPtr);
+		var roughnessMetallicAreSameTexture = ParamPtrsRepresentIdenticalTextures(creationParams.AssetHandle, creationParams.MaterialIndex, in creationParams.AssetRootDirStrRef, roughnessParamPtr, metallicParamPtr);
 		// No reflectance and the rest are a singular ORM map, just load it and be done
-		if (reflectanceValue == null && occlusionAndRoughnessAreCombinedTextures && roughnessAndMetallicAreCombinedTextures) {
+		if (reflectanceValue == null && occlusionRoughnessAreSameTexture && roughnessMetallicAreSameTexture) {
 			using var embeddedTex = LoadAssetTexture(
 				creationParams.AssetHandle,
 				creationParams.MaterialIndex,
@@ -407,8 +451,6 @@ unsafe partial class LocalAssetLoader {
 				creationParams.Config with { IsLinearColorspace = true }
 			);
 		}
-		
-		var occlusionAndMetallicAreCombinedTextures = ParamPtrsRepresentIdenticalTextures(occlusionParamPtr, metallicParamPtr);
 		
 		var defaultOcclusionTexel = TexelRgba32.FromNormalizedFloats(ITextureBuilder.DefaultOcclusion, ITextureBuilder.DefaultOcclusion, ITextureBuilder.DefaultOcclusion, ITextureBuilder.DefaultOcclusion);
 		var defaultRoughnessTexel = TexelRgba32.FromNormalizedFloats(ITextureBuilder.DefaultRoughness, ITextureBuilder.DefaultRoughness, ITextureBuilder.DefaultRoughness, ITextureBuilder.DefaultRoughness);
@@ -450,22 +492,14 @@ unsafe partial class LocalAssetLoader {
 			var cDim = metallicEmbeddedTex?.Dimensions ?? XYPair<int>.One;
 			var destDim = TextureUtils.GetCombinedTextureDimensions(aDim, bDim, cDim);
 			if (glossinessSpecifiedOverRoughness) TextureUtils.NegateTexture(roughnessTexels, bDim);
-			// If the metallic texture is completely separate, assume it's monochromatic and is in R
-			// Otherwise if the occlusion and metallic are combined,
-			//		but not roughness, we're dealing with some very esoteric texture that isn't really conventional, so just assume it goes ORM=RGB
-			//		anyway and that roughness is simply not part of this model, so select B
-			// Finally if it's a roughness/metallic texture without occlusion, the glTF convention specifies that it's still ORM=RGB, so select B here also 
-			//		Reference: https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#_material_pbrmetallicroughness_metallicroughnesstexture
-			var metallicChannel = (occlusionAndRoughnessAreCombinedTextures, roughnessAndMetallicAreCombinedTextures, occlusionAndMetallicAreCombinedTextures) switch {
-				(_, false, false) => ColorChannel.R,
-				_ => ColorChannel.B,	
-			};
-			// If it's an OR map again that's esoteric but we just assume ORM=RGB, so select G
-			// Alternatively as stated above, RM maps in glTF are ORM=RGB, so select G
-			// Finally if it's a completely separate map assume it's monochromatic and select R
-			var roughnessChannel = occlusionAndRoughnessAreCombinedTextures || roughnessAndMetallicAreCombinedTextures 
-				? ColorChannel.G 
-				: ColorChannel.R;
+			
+			/*	Maintainer's note:
+			 *	I originally had logic here to select the roughness/metallic channel for combination below depending on which textures were detected as "combined".
+			 *	The thinking was that if e.g. the metallic texture was a separate texture file, we should select its R channel rather than the canonical B channel,
+			 *	as it could in theory have data only in Red. However, this proved more problematic than useful, and more often than not was just plain wrong.
+			 *	In fact, if we have a separate metallic texture I think we can assume it's monochromatic but with all RGB channels set to the same value. Ditto roughness.
+			 */
+
 			if (reflectanceValue.HasValue) {
 				using var destinationBuffer = _globals.HeapPool.Borrow<TexelRgba32>(destDim.Area);
 				var reflectanceTexel = TexelRgba32.FromNormalizedFloats(reflectanceValue.Value, reflectanceValue.Value, reflectanceValue.Value, reflectanceValue.Value);
@@ -476,8 +510,8 @@ unsafe partial class LocalAssetLoader {
 					new ReadOnlySpan<TexelRgba32>(in reflectanceTexel), XYPair<int>.One,
 					new TextureCombinationConfig(
 						new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
-						new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, roughnessChannel),
-						new TextureCombinationSource(TextureCombinationSourceTexture.TextureC, metallicChannel),
+						new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.G),
+						new TextureCombinationSource(TextureCombinationSourceTexture.TextureC, ColorChannel.B),
 						new TextureCombinationSource(TextureCombinationSourceTexture.TextureD, ColorChannel.A)
 					),
 					destinationBuffer.Buffer
@@ -496,8 +530,8 @@ unsafe partial class LocalAssetLoader {
 					metallicTexels, cDim,
 					new TextureCombinationConfig(
 						new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
-						new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, roughnessChannel),
-						new TextureCombinationSource(TextureCombinationSourceTexture.TextureC, metallicChannel)
+						new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.G),
+						new TextureCombinationSource(TextureCombinationSourceTexture.TextureC, ColorChannel.B)
 					),
 					destinationBuffer.Buffer
 				);
@@ -520,7 +554,7 @@ unsafe partial class LocalAssetLoader {
 		
 		// All in one texture; the only well-defined texture format is in the glTF spec: https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_materials_anisotropy/README.md
 		// So we assume this format is the one being used, which matches what TinyFFR already expects thankfully
-		if (ParamPtrsRepresentIdenticalTextures(angleParamPtr, strengthParamPtr)) {
+		if (ParamPtrsRepresentIdenticalTextures(creationParams.AssetHandle, creationParams.MaterialIndex, in creationParams.AssetRootDirStrRef, angleParamPtr, strengthParamPtr)) {
 			using var embeddedTex = LoadAssetTexture(
 				creationParams.AssetHandle,
 				creationParams.MaterialIndex,
@@ -605,7 +639,7 @@ unsafe partial class LocalAssetLoader {
 		}
 		
 		// All in one texture, just load the whole thing once and return it, no combination required
-		if (ParamPtrsRepresentIdenticalTextures(colorParamPtr, intensityParamPtr)) {
+		if (ParamPtrsRepresentIdenticalTextures(creationParams.AssetHandle, creationParams.MaterialIndex, in creationParams.AssetRootDirStrRef, colorParamPtr, intensityParamPtr)) {
 			using var embeddedTex = LoadAssetTexture(
 				creationParams.AssetHandle,
 				creationParams.MaterialIndex,
@@ -685,7 +719,7 @@ unsafe partial class LocalAssetLoader {
 		
 		// All in one texture; the only well-defined texture format is in the glTF spec: https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_clearcoat
 		// So we assume this format is the one being used, which matches what TinyFFR already expects thankfully
-		if (ParamPtrsRepresentIdenticalTextures(strengthParamPtr, roughnessParamPtr)) {
+		if (ParamPtrsRepresentIdenticalTextures(creationParams.AssetHandle, creationParams.MaterialIndex, in creationParams.AssetRootDirStrRef, strengthParamPtr, roughnessParamPtr)) {
 			using var embeddedTex = LoadAssetTexture(
 				creationParams.AssetHandle,
 				creationParams.MaterialIndex,
@@ -821,7 +855,7 @@ unsafe partial class LocalAssetLoader {
 		}
 	}
 	
-	public ResourceGroup LoadModels(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig) {
+	public ResourceGroup LoadAll(ReadOnlySpan<char> filePath, in ModelCreationConfig config, in ModelReadConfig readConfig) {
 		const int MaxIndicesOnStack = 1024;
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
