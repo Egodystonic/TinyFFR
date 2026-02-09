@@ -148,13 +148,25 @@ unsafe partial class LocalAssetLoader {
 				Encoding.UTF8.GetBytes(unescapedStr, strBufferSpan[..^1]);
 			}
 			
-			LoadTextureFileInToMemory(
+			var loadResult = LoadTextureFileInToMemory(
 				in Unsafe.AsRef<byte>(strBuffer),
 				true,
 				out var width,
 				out var height,
 				out var texBuf
-			).ThrowIfFailure();
+			);
+			if (!loadResult) {
+				try {
+					loadResult.ThrowIfFailure();
+				}
+				catch (Exception e) {
+					if (uriUnescapeEmbeddedResourceStrings) throw;
+					else {
+						throw new InvalidOperationException($"Failure to load embedded model texture; " +
+							$"if this resource name is an escaped URI string consider setting {nameof(ModelReadConfig.HandleUriEscapedStrings)} to true.", e);
+					}
+				}
+			}
 
 			try {
 				if (width < 0 || height < 0) throw new InvalidOperationException($"Loaded texture had width/height of {width}/{height}.");
