@@ -78,4 +78,26 @@ class TexelRgb24Test {
 			)
 		);
 	}
+
+	[Test]
+	public void ShouldCorrectlyBlend() {
+		var start = new TexelRgb24(50, 80, 100);
+		var end = new TexelRgb24(150, 180, 200);
+
+		Assert.AreEqual(start, TexelRgb24.Blend(start, end, 0f));
+		Assert.AreEqual(end, TexelRgb24.Blend(start, end, 1f));
+		Assert.AreEqual(new TexelRgb24(100, 130, 150), TexelRgb24.Blend(start, end, 0.5f));
+		Assert.AreEqual(new TexelRgb24(0, 30, 50), TexelRgb24.Blend(start, end, -0.5f));
+		Assert.AreEqual(new TexelRgb24(200, 230, 250), TexelRgb24.Blend(start, end, 1.5f));
+		Assert.AreEqual(
+			new TexelRgb24(60, 150, 225),
+			TexelRgb24.Blend(new TexelRgb24(10, 100, 200), new TexelRgb24(110, 200, 250), 0.5f)
+		);
+		
+		Assert.AreEqual(start, TexelRgb24.Blend(start, start, 0f));
+		Assert.AreEqual(start, TexelRgb24.Blend(start, start, 0.5f));
+		Assert.AreEqual(start, TexelRgb24.Blend(start, start, 1f));
+		Assert.AreEqual(start, TexelRgb24.Blend(start, start, -0.5f));
+		Assert.AreEqual(start, TexelRgb24.Blend(start, start, 1.5f));
+	}
 }

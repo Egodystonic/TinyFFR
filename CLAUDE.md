@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## General Code Guidelines
+
+* Do not add comments to code unless doing something unusual or non-conventional.
+
 ## Project Overview
 
 TinyFFR (Tiny Fixed Function Renderer) is a C#/.NET 9 rendering library providing physically-based rendering (PBR) via Google's Filament engine. It targets developers who want simple 3D rendering without needing a full game engine. Cross-platform: Windows (x64), Linux (x64), macOS (ARM64).

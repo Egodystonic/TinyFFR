@@ -80,4 +80,26 @@ class TexelRgba32Test {
 			)
 		);
 	}
+
+	[Test]
+	public void ShouldCorrectlyBlend() {
+		var start = new TexelRgba32(50, 80, 100, 70);
+		var end = new TexelRgba32(150, 180, 200, 170);
+
+		Assert.AreEqual(start, TexelRgba32.Blend(start, end, 0f));
+		Assert.AreEqual(end, TexelRgba32.Blend(start, end, 1f));
+		Assert.AreEqual(new TexelRgba32(100, 130, 150, 120), TexelRgba32.Blend(start, end, 0.5f));
+		Assert.AreEqual(new TexelRgba32(0, 30, 50, 20), TexelRgba32.Blend(start, end, -0.5f));
+		Assert.AreEqual(new TexelRgba32(200, 230, 250, 220), TexelRgba32.Blend(start, end, 1.5f));
+		Assert.AreEqual(
+			new TexelRgba32(60, 150, 225, 100),
+			TexelRgba32.Blend(new TexelRgba32(10, 100, 200, 50), new TexelRgba32(110, 200, 250, 150), 0.5f)
+		);
+
+		Assert.AreEqual(start, TexelRgba32.Blend(start, start, 0f));
+		Assert.AreEqual(start, TexelRgba32.Blend(start, start, 0.5f));
+		Assert.AreEqual(start, TexelRgba32.Blend(start, start, 1f));
+		Assert.AreEqual(start, TexelRgba32.Blend(start, start, -0.5f));
+		Assert.AreEqual(start, TexelRgba32.Blend(start, start, 1.5f));
+	}
 }
