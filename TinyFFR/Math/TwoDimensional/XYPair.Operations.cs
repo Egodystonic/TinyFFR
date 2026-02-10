@@ -260,4 +260,14 @@ public static class XYPairExtensions {
 			: new(TNew.CreateSaturating(T.Round(@this.X, midpointRounding)), TNew.CreateSaturating(T.Round(@this.Y, midpointRounding)));
 	}
 	#endregion
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static int Index(this XYPair<int> @this, XYPair<int> xy) => @this.X * xy.Y + xy.X;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static int Index(this XYPair<int> @this, int x, int y) => @this.Index(new(x, y));
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static int IndexClamped(this XYPair<int> @this, XYPair<int> xy) => @this.Index(xy.Clamp(XYPair<int>.Zero, @this - XYPair<int>.One));
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static int IndexClamped(this XYPair<int> @this, int x, int y) => @this.IndexClamped(new(x, y));
 }

@@ -675,4 +675,29 @@ class XYPairTest {
 		AssertRoundedOriginTransform(new XYPair<int>(-6, 0), (3, 4), new(scaling: (2f, -1f), rotation: 180f, translation: (3.5f, -4f)), (-1f, -1f), MidpointRounding.ToEven);
 		AssertRoundedOriginTransform(new XYPair<int>(-5, 0), (3, 4), new(scaling: (2f, -1f), rotation: 180f, translation: (3.5f, -4f)), (-1f, -1f), MidpointRounding.ToZero);
 	}
+
+	[Test]
+	public void ShouldCorrectlyConvertToIndex() {
+		Assert.AreEqual(0, new XYPair<int>(0, 0).Index(0, 0));
+		Assert.AreEqual(0, new XYPair<int>(10, 10).Index(0, 0));
+		Assert.AreEqual(5, new XYPair<int>(10, 10).Index(5, 0));
+		Assert.AreEqual(50, new XYPair<int>(10, 10).Index(0, 5));
+		Assert.AreEqual(55, new XYPair<int>(10, 10).Index(5, 5));
+		Assert.AreEqual(99, new XYPair<int>(10, 10).Index(9, 9));
+		Assert.AreEqual(110, new XYPair<int>(10, 10).Index(10, 10));
+		Assert.AreEqual(-11, new XYPair<int>(10, 10).Index(-1, -1));
+		Assert.AreEqual(209, new XYPair<int>(10, 10).Index(9, 20));
+		Assert.AreEqual(110, new XYPair<int>(10, 10).Index(20, 9));
+		
+		Assert.AreEqual(0, new XYPair<int>(0, 0).IndexClamped(0, 0));
+		Assert.AreEqual(0, new XYPair<int>(10, 10).IndexClamped(0, 0));
+		Assert.AreEqual(5, new XYPair<int>(10, 10).IndexClamped(5, 0));
+		Assert.AreEqual(50, new XYPair<int>(10, 10).IndexClamped(0, 5));
+		Assert.AreEqual(55, new XYPair<int>(10, 10).IndexClamped(5, 5));
+		Assert.AreEqual(99, new XYPair<int>(10, 10).IndexClamped(9, 9));
+		Assert.AreEqual(99, new XYPair<int>(10, 10).IndexClamped(10, 10));
+		Assert.AreEqual(0, new XYPair<int>(10, 10).IndexClamped(-1, -1));
+		Assert.AreEqual(99, new XYPair<int>(10, 10).IndexClamped(9, 20));
+		Assert.AreEqual(99, new XYPair<int>(10, 10).IndexClamped(20, 9));
+	}
 }

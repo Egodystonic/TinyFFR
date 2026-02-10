@@ -17,16 +17,19 @@ class MeshConfigTest {
 	public void ShouldCorrectlyConvertReadConfigToAndFromHeapStorageFormat() {
 		var testConfigA = new MeshReadConfig {
 			FixCommonExportErrors = true,
-			OptimizeForGpu = false
+			OptimizeForGpu = false,
+			CorrectFlippedOrientation = true
 		};
 		var testConfigB = new MeshReadConfig {
 			FixCommonExportErrors = false,
-			OptimizeForGpu = true
+			OptimizeForGpu = true,
+			CorrectFlippedOrientation = false
 		};
 
 		void AssertConfigsMatch(MeshReadConfig expected, MeshReadConfig actual) {
 			Assert.AreEqual(expected.FixCommonExportErrors, actual.FixCommonExportErrors);
 			Assert.AreEqual(expected.OptimizeForGpu, actual.OptimizeForGpu);
+			Assert.AreEqual(expected.CorrectFlippedOrientation, actual.CorrectFlippedOrientation);
 		}
 
 		AssertRoundTripHeapStorage(testConfigA, AssertConfigsMatch);
@@ -35,16 +38,19 @@ class MeshConfigTest {
 		AssertHeapSerializationWithObjects<MeshReadConfig>()
 			.Bool(true)
 			.Bool(false)
+			.Bool(true)
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<MeshReadConfig>()
 			.Bool(false)
 			.Bool(true)
+			.Bool(false)
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<MeshReadConfig>()
 			.Including(nameof(MeshReadConfig.FixCommonExportErrors))
 			.Including(nameof(MeshReadConfig.OptimizeForGpu))
+			.Including(nameof(MeshReadConfig.CorrectFlippedOrientation))
 			.End();
 	}
 

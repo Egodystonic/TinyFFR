@@ -10,7 +10,9 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
 
+#pragma warning disable CA1710 // "Rename to ModelInstanceStack/Queue/List etc" -- Compiler is being overly aggressive because this implements IReadOnlyCollection; but in this case 'Group' is better aligned with other names in TinyFFR
 public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable, IStringSpanNameEnabled, IReadOnlyCollection<ModelInstance>, IEquatable<ModelInstanceGroup> {
+#pragma warning restore CA1710
 	public ResourceGroup UnderlyingResourceGroup { get; }
 	public IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, ModelInstance> Instances { get; }
 	public int Count { get; }
@@ -20,7 +22,7 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable
 	public ModelInstanceGroup(ResourceGroup underlyingResourceGroup) {
 		if (!underlyingResourceGroup.IsSealed) throw new ArgumentException("Resource group must be sealed.", nameof(underlyingResourceGroup));
 		UnderlyingResourceGroup = underlyingResourceGroup;
-		Instances = UnderlyingResourceGroup.GetAllResourcesOfType<ModelInstance>();
+		Instances = UnderlyingResourceGroup.ModelInstances;
 		Count = Instances.Count;
 	}
 

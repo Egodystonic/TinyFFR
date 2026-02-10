@@ -109,4 +109,13 @@ public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : IFou
 			GetColorChannel(this, alphaSource) ?? A
 		);
 	}
+	
+	public static TexelRgba32 Blend(TexelRgba32 start, TexelRgba32 end, float distance) {
+		return new TexelRgba32(
+			(byte) Real.Interpolate(start.R, end.R, distance),
+			(byte) Real.Interpolate(start.G, end.G, distance),
+			(byte) Real.Interpolate(start.B, end.B, distance),
+			(byte) Real.Interpolate(start.A, end.A, distance)
+		);
+	}
 }

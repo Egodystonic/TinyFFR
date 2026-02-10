@@ -83,8 +83,9 @@ unsafe partial class LocalAssetLoader {
 		public readonly bool UriUnescapeEmbeddedResourceStrings;
 		public readonly float GltfEmissiveStrengthScalar;
 		public readonly float EmissiveStrengthCap;
+		public readonly TextureCombinationScalingStrategy TextureCombinationStrategy;
 
-		public AssetMaterialCreationParameters(UIntPtr assetHandle, int materialIndex, TextureCreationConfig config, ref readonly byte assetRootDirStrRef, bool uriUnescapeEmbeddedResourceStrings, float gltfEmissiveStrengthScalar, float emissiveStrengthCap) {
+		public AssetMaterialCreationParameters(UIntPtr assetHandle, int materialIndex, TextureCreationConfig config, ref readonly byte assetRootDirStrRef, bool uriUnescapeEmbeddedResourceStrings, float gltfEmissiveStrengthScalar, float emissiveStrengthCap, TextureCombinationScalingStrategy textureCombinationStrategy) {
 			AssetHandle = assetHandle;
 			MaterialIndex = materialIndex;
 			Config = config;
@@ -92,6 +93,7 @@ unsafe partial class LocalAssetLoader {
 			UriUnescapeEmbeddedResourceStrings = uriUnescapeEmbeddedResourceStrings;
 			GltfEmissiveStrengthScalar = gltfEmissiveStrengthScalar;
 			EmissiveStrengthCap = emissiveStrengthCap;
+			TextureCombinationStrategy = textureCombinationStrategy;
 		}
 	}
 	
@@ -373,6 +375,7 @@ unsafe partial class LocalAssetLoader {
 				absorptionTexels, aDim,	
 				transmissionTexels, bDim,
 				new TextureCombinationConfig(
+					creationParams.TextureCombinationStrategy,
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.G),
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.B),
@@ -509,6 +512,7 @@ unsafe partial class LocalAssetLoader {
 					metallicTexels, cDim,
 					new ReadOnlySpan<TexelRgba32>(in reflectanceTexel), XYPair<int>.One,
 					new TextureCombinationConfig(
+						creationParams.TextureCombinationStrategy,
 						new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
 						new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.G),
 						new TextureCombinationSource(TextureCombinationSourceTexture.TextureC, ColorChannel.B),
@@ -529,6 +533,7 @@ unsafe partial class LocalAssetLoader {
 					roughnessTexels, bDim,
 					metallicTexels, cDim,
 					new TextureCombinationConfig(
+						creationParams.TextureCombinationStrategy,
 						new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
 						new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.G),
 						new TextureCombinationSource(TextureCombinationSourceTexture.TextureC, ColorChannel.B)
@@ -602,6 +607,7 @@ unsafe partial class LocalAssetLoader {
 				angleTexels, aDim,	
 				strengthTexels, bDim,
 				new TextureCombinationConfig(
+					creationParams.TextureCombinationStrategy,
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R)
@@ -695,6 +701,7 @@ unsafe partial class LocalAssetLoader {
 				colorTexels, aDim,	
 				intensityTexels, bDim,
 				new TextureCombinationConfig(
+					creationParams.TextureCombinationStrategy,
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.G),
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.B),
@@ -767,6 +774,7 @@ unsafe partial class LocalAssetLoader {
 				strengthTexels, aDim,	
 				roughnessTexels, bDim,
 				new TextureCombinationConfig(
+					creationParams.TextureCombinationStrategy,
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R),
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R)
@@ -813,7 +821,7 @@ unsafe partial class LocalAssetLoader {
 			out var refractionThickness
 		).ThrowIfFailure();
 		
-		var assetMaterialCreationParams = new AssetMaterialCreationParameters(assetHandle, materialIndex, config, in assetRootDirStrRef, readconfig.HandleUriEscapedStrings, readconfig.GltfEmissiveStrengthScalar, readconfig.EmissiveStrengthCap);
+		var assetMaterialCreationParams = new AssetMaterialCreationParameters(assetHandle, materialIndex, config, in assetRootDirStrRef, readconfig.HandleUriEscapedStrings, readconfig.GltfEmissiveStrengthScalar, readconfig.EmissiveStrengthCap, readconfig.EmbeddedTextureMapScalingStrategy);
 		var colorMap = CreateAssetColorMap(matParams.ColorParamsPtr, assetMaterialCreationParams);
 		var atMap = CreateAssetAbsorptionTransmissionMap(matParams.AbsorptionParamsPtr, matParams.TransmissionParamsPtr, assetMaterialCreationParams);
 		var normalMap = CreateAssetNormalMap(matParams.NormalParamsPtr, assetMaterialCreationParams);

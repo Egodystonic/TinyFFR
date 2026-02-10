@@ -26,7 +26,8 @@ class ModelConfigTest {
 			},
 			HandleUriEscapedStrings = true,
 			GltfEmissiveStrengthScalar = 1f,
-			EmissiveStrengthCap = 0.5f
+			EmissiveStrengthCap = 0.5f,
+			EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.RepeatingTile
 		};
 		var testConfigB = new ModelReadConfig {
 			MeshConfig = new() {
@@ -38,7 +39,8 @@ class ModelConfigTest {
 			},
 			HandleUriEscapedStrings = false,
 			GltfEmissiveStrengthScalar = 0.3f,
-			EmissiveStrengthCap = 0f
+			EmissiveStrengthCap = 0f,
+			EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.StretchPixelated
 		};
 
 		void AssertConfigsMatch(ModelReadConfig expected, ModelReadConfig actual) {
@@ -48,6 +50,7 @@ class ModelConfigTest {
 			Assert.AreEqual(expected.HandleUriEscapedStrings, actual.HandleUriEscapedStrings);
 			Assert.AreEqual(expected.GltfEmissiveStrengthScalar, actual.GltfEmissiveStrengthScalar);
 			Assert.AreEqual(expected.EmissiveStrengthCap, actual.EmissiveStrengthCap);
+			Assert.AreEqual(expected.EmbeddedTextureMapScalingStrategy, actual.EmbeddedTextureMapScalingStrategy);
 		}
 
 		AssertRoundTripHeapStorage(testConfigA, AssertConfigsMatch);
@@ -59,6 +62,7 @@ class ModelConfigTest {
 			.Bool(true)
 			.Float(1f)
 			.Float(0.5f)
+			.Int((int) TextureCombinationScalingStrategy.RepeatingTile)
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<ModelReadConfig>()
@@ -67,6 +71,7 @@ class ModelConfigTest {
 			.Bool(false)
 			.Float(0.3f)
 			.Float(0f)
+			.Int((int) TextureCombinationScalingStrategy.StretchPixelated)
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<ModelReadConfig>()
@@ -75,6 +80,7 @@ class ModelConfigTest {
 			.Including(nameof(ModelReadConfig.HandleUriEscapedStrings))
 			.Including(nameof(ModelReadConfig.GltfEmissiveStrengthScalar))
 			.Including(nameof(ModelReadConfig.EmissiveStrengthCap))
+			.Including(nameof(ModelReadConfig.EmbeddedTextureMapScalingStrategy))
 			.End();
 	}
 

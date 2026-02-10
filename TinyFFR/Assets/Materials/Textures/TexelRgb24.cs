@@ -102,4 +102,12 @@ public readonly record struct TexelRgb24(byte R, byte G, byte B) : IThreeByteCha
 			GetColorChannel(this, blueSource) ?? B
 		);
 	}
+
+	public static TexelRgb24 Blend(TexelRgb24 start, TexelRgb24 end, float distance) {
+		return new TexelRgb24(
+			(byte) Real.Interpolate(start.R, end.R, distance),
+			(byte) Real.Interpolate(start.G, end.G, distance),
+			(byte) Real.Interpolate(start.B, end.B, distance)
+		);
+	}
 }

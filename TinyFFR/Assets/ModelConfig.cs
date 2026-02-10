@@ -15,11 +15,13 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 	public static readonly bool DefaultHandleUriEscapedStrings = false;
 	public static readonly float DefaultGltfEmissiveStrengthScalar = 0.05f;
 	public static readonly float DefaultEmissiveStrengthCap = 1f;
+	public static readonly TextureCombinationScalingStrategy DefaultEmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.StretchBlended;
 	public MeshReadConfig MeshConfig { get; init; } = new();
 	public TextureReadConfig TextureConfig { get; init; } = new();
 	public bool HandleUriEscapedStrings { get; init; } = DefaultHandleUriEscapedStrings;
 	public float GltfEmissiveStrengthScalar { get; init; } = DefaultGltfEmissiveStrengthScalar;
 	public float EmissiveStrengthCap { get; init; } = DefaultEmissiveStrengthCap;
+	public TextureCombinationScalingStrategy EmbeddedTextureMapScalingStrategy { get; init; } = DefaultEmbeddedTextureMapScalingStrategy;
 	
 	public ModelReadConfig() { }
 
@@ -29,6 +31,9 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 		if (EmissiveStrengthCap is > 1f or < 0f) {
 			throw new ArgumentException("Emissive strength cap must be between 0 and 1.", nameof(EmissiveStrengthCap));
 		}
+		if (!Enum.IsDefined(EmbeddedTextureMapScalingStrategy)) {
+			throw new ArgumentOutOfRangeException(nameof(EmbeddedTextureMapScalingStrategy), EmbeddedTextureMapScalingStrategy, null);
+		}
 	}
 
 	public static int GetHeapStorageFormattedLength(in ModelReadConfig src) {
@@ -36,7 +41,8 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 			+	SerializationSizeOfSubConfig(src.TextureConfig) // TextureConfig
 			+	SerializationSizeOfBool() // HandleUriEscapedStrings
 			+	SerializationSizeOfFloat() // GltfEmissiveStrengthScalar
-			+	SerializationSizeOfFloat(); // EmissiveStrengthCap
+			+	SerializationSizeOfFloat() // EmissiveStrengthCap
+			+	SerializationSizeOfInt(); // EmbeddedTextureMapScalingStrategy
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in ModelReadConfig src) {
 		SerializationWriteSubConfig(ref dest, src.MeshConfig);
@@ -44,6 +50,7 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 		SerializationWriteBool(ref dest, src.HandleUriEscapedStrings);
 		SerializationWriteFloat(ref dest, src.GltfEmissiveStrengthScalar);
 		SerializationWriteFloat(ref dest, src.EmissiveStrengthCap);
+		SerializationWriteInt(ref dest, (int) src.EmbeddedTextureMapScalingStrategy);
 	}
 	public static ModelReadConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new ModelReadConfig {
@@ -51,7 +58,8 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 			TextureConfig = SerializationReadSubConfig<TextureReadConfig>(ref src),
 			HandleUriEscapedStrings = SerializationReadBool(ref src),
 			GltfEmissiveStrengthScalar = SerializationReadFloat(ref src),
-			EmissiveStrengthCap = SerializationReadFloat(ref src)
+			EmissiveStrengthCap = SerializationReadFloat(ref src),
+			EmbeddedTextureMapScalingStrategy = (TextureCombinationScalingStrategy) SerializationReadInt(ref src)
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {

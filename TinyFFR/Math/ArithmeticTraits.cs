@@ -43,9 +43,15 @@ public interface IMultiplicative<TSelf, TOther, TResult> :
 	TResult DividedBy(TOther other);
 }
 
+public interface IBlendable<TSelf> {
+	static abstract TSelf Blend(TSelf start, TSelf end, float distance);
+}
+
 public interface IInterpolatable<TSelf> :
+	IBlendable<TSelf>,
 	IBoundedRandomizable<TSelf>
 	where TSelf : IInterpolatable<TSelf> {
+	static TSelf IBlendable<TSelf>.Blend(TSelf start, TSelf end, float distance) => TSelf.Interpolate(start, end, distance);
 	static abstract TSelf Interpolate(TSelf start, TSelf end, float distance);
 	TSelf Clamp(TSelf min, TSelf max);
 }

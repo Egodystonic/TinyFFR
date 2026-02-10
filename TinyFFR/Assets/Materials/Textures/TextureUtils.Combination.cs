@@ -6,6 +6,16 @@ using static Egodystonic.TinyFFR.ColorChannel;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
+public enum TextureCombinationScalingStrategy {
+	// TODO xmldoc This is a Bilinear algorithm
+	StretchBlended,
+	// TODO xmldoc This is a Wrap algorithm
+	RepeatingTile,
+	// TODO xmldoc This is a Center + Clamp algorithm
+	ExtendEdges,
+	// TODO xmldoc This is a NearestNeighbour algorithm
+	StretchPixelated
+}
 public enum TextureCombinationSourceTexture {
 	TextureA,
 	TextureB,
@@ -26,7 +36,12 @@ public readonly record struct TextureCombinationSource(TextureCombinationSourceT
 		}
 	}
 }
-public readonly record struct TextureCombinationConfig(TextureCombinationSource OutputTextureXRedChannelSource, TextureCombinationSource OutputTextureYGreenChannelSource, TextureCombinationSource OutputTextureZBlueChannelSource, TextureCombinationSource? OutputTextureWAlphaChannelSource = null) {
+public readonly record struct TextureCombinationConfig(TextureCombinationScalingStrategy ScalingStrategy, TextureCombinationSource OutputTextureXRedChannelSource, TextureCombinationSource OutputTextureYGreenChannelSource, TextureCombinationSource OutputTextureZBlueChannelSource, TextureCombinationSource? OutputTextureWAlphaChannelSource = null) {
+	public static readonly TextureCombinationScalingStrategy DefaultScalingStrategy = TextureCombinationScalingStrategy.StretchBlended;
+	
+	public TextureCombinationConfig(TextureCombinationSource OutputTextureXRedChannelSource, TextureCombinationSource OutputTextureYGreenChannelSource, TextureCombinationSource OutputTextureZBlueChannelSource, TextureCombinationSource? OutputTextureWAlphaChannelSource = null)
+		: this(DefaultScalingStrategy, OutputTextureXRedChannelSource, OutputTextureYGreenChannelSource, OutputTextureZBlueChannelSource, OutputTextureWAlphaChannelSource) { }
+
 	static TextureCombinationSource ExtractFromString(ReadOnlySpan<char> twoChars) {
 		return new TextureCombinationSource(
 			Char.ToLowerInvariant(twoChars[0]) switch {
@@ -47,15 +62,27 @@ public readonly record struct TextureCombinationConfig(TextureCombinationSource 
 	}
 
 	public TextureCombinationConfig(ReadOnlySpan<char> selectionString) : this(
+		DefaultScalingStrategy,
+		ExtractFromString(selectionString[0..2]),
+		ExtractFromString(selectionString[2..4]),
+		ExtractFromString(selectionString[4..6]),
+		selectionString.Length >= 8 ? ExtractFromString(selectionString[6..8]) : null
+	) { }
+	public TextureCombinationConfig(TextureCombinationScalingStrategy scalingStrategy, ReadOnlySpan<char> selectionString) : this(
+		scalingStrategy,
 		ExtractFromString(selectionString[0..2]),
 		ExtractFromString(selectionString[2..4]),
 		ExtractFromString(selectionString[4..6]),
 		selectionString.Length >= 8 ? ExtractFromString(selectionString[6..8]) : null
 	) { }
 	public TextureCombinationConfig(TextureCombinationSourceTexture xRedSourceTex, ColorChannel xRedSourceChannel, TextureCombinationSourceTexture yGreenSourceTex, ColorChannel yGreenSourceChannel, TextureCombinationSourceTexture zBlueSourceTex, ColorChannel zBlueSourceChannel)
-		: this(new TextureCombinationSource(xRedSourceTex, xRedSourceChannel), new TextureCombinationSource(yGreenSourceTex, yGreenSourceChannel), new TextureCombinationSource(zBlueSourceTex, zBlueSourceChannel)) { }
+		: this(DefaultScalingStrategy, new TextureCombinationSource(xRedSourceTex, xRedSourceChannel), new TextureCombinationSource(yGreenSourceTex, yGreenSourceChannel), new TextureCombinationSource(zBlueSourceTex, zBlueSourceChannel)) { }
+	public TextureCombinationConfig(TextureCombinationScalingStrategy scalingStrategy, TextureCombinationSourceTexture xRedSourceTex, ColorChannel xRedSourceChannel, TextureCombinationSourceTexture yGreenSourceTex, ColorChannel yGreenSourceChannel, TextureCombinationSourceTexture zBlueSourceTex, ColorChannel zBlueSourceChannel)
+		: this(scalingStrategy, new TextureCombinationSource(xRedSourceTex, xRedSourceChannel), new TextureCombinationSource(yGreenSourceTex, yGreenSourceChannel), new TextureCombinationSource(zBlueSourceTex, zBlueSourceChannel)) { }
 	public TextureCombinationConfig(TextureCombinationSourceTexture xRedSourceTex, ColorChannel xRedSourceChannel, TextureCombinationSourceTexture yGreenSourceTex, ColorChannel yGreenSourceChannel, TextureCombinationSourceTexture zBlueSourceTex, ColorChannel zBlueSourceChannel, TextureCombinationSourceTexture wAlphaSourceTex, ColorChannel wAlphaSourceChannel)
-		: this(new TextureCombinationSource(xRedSourceTex, xRedSourceChannel), new TextureCombinationSource(yGreenSourceTex, yGreenSourceChannel), new TextureCombinationSource(zBlueSourceTex, zBlueSourceChannel), new TextureCombinationSource(wAlphaSourceTex, wAlphaSourceChannel)) { }
+		: this(DefaultScalingStrategy, new TextureCombinationSource(xRedSourceTex, xRedSourceChannel), new TextureCombinationSource(yGreenSourceTex, yGreenSourceChannel), new TextureCombinationSource(zBlueSourceTex, zBlueSourceChannel), new TextureCombinationSource(wAlphaSourceTex, wAlphaSourceChannel)) { }
+	public TextureCombinationConfig(TextureCombinationScalingStrategy scalingStrategy, TextureCombinationSourceTexture xRedSourceTex, ColorChannel xRedSourceChannel, TextureCombinationSourceTexture yGreenSourceTex, ColorChannel yGreenSourceChannel, TextureCombinationSourceTexture zBlueSourceTex, ColorChannel zBlueSourceChannel, TextureCombinationSourceTexture wAlphaSourceTex, ColorChannel wAlphaSourceChannel)
+		: this(scalingStrategy, new TextureCombinationSource(xRedSourceTex, xRedSourceChannel), new TextureCombinationSource(yGreenSourceTex, yGreenSourceChannel), new TextureCombinationSource(zBlueSourceTex, zBlueSourceChannel), new TextureCombinationSource(wAlphaSourceTex, wAlphaSourceChannel)) { }
 
 
 	internal TOut SelectTexel<TIn, TOut, TChannel>(ReadOnlySpan<TIn> samples) where TIn : unmanaged, ITexel<TIn, TChannel> where TOut : unmanaged, ITexel<TOut, TChannel> where TChannel : struct {
@@ -76,6 +103,7 @@ public readonly record struct TextureCombinationConfig(TextureCombinationSource 
 }
 
 public static partial class TextureUtils {
+	#region Public API
 	public static XYPair<int> GetCombinedTextureDimensions(XYPair<int> aDimensions, XYPair<int> bDimensions) => GetCombinedTextureDimensions(aDimensions, bDimensions, out _);
 	public static XYPair<int> GetCombinedTextureDimensions(XYPair<int> aDimensions, XYPair<int> bDimensions, out bool allDimensionsMatched) {
 		allDimensionsMatched = aDimensions == bDimensions;
@@ -108,8 +136,6 @@ public static partial class TextureUtils {
 			Int32.Max(Int32.Max(Int32.Max(aDimensions.Y, bDimensions.Y), cDimensions.Y), dDimensions.Y)
 		);
 	}
-
-	static int CalculateWrappedIndexForCombination(XYPair<int> dimensions, int x, int y) => dimensions.X * (y % dimensions.Y) + (x % dimensions.X);
 
 	public static void CombineTextures(
 		ReadOnlySpan<TexelRgba32> aBuffer, XYPair<int> aDimensions,
@@ -155,16 +181,18 @@ public static partial class TextureUtils {
 			}
 		}
 		else {
-			for (var x = 0; x < destDimensions.X; ++x) {
-				for (var y = 0; y < destDimensions.Y; ++y) {
-					localSampleBuffer[0] = aBuffer[CalculateWrappedIndexForCombination(aDimensions, x, y)];
-					localSampleBuffer[1] = bBuffer[CalculateWrappedIndexForCombination(bDimensions, x, y)];
-					destinationBuffer[destDimensions.X * y + x] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+			var aCentralizingOffset = CalculateCentralizingOffsetForCenterClampSampling(aDimensions, destDimensions);
+			var bCentralizingOffset = CalculateCentralizingOffsetForCenterClampSampling(bDimensions, destDimensions);
+			for (var y = 0; y < destDimensions.Y; ++y) {
+				for (var x = 0; x < destDimensions.X; ++x) {
+					localSampleBuffer[0] = CalculateUpwardRescaledValue(x, y, aBuffer, aDimensions, destDimensions, aCentralizingOffset, combinationConfig.ScalingStrategy);
+					localSampleBuffer[1] = CalculateUpwardRescaledValue(x, y, bBuffer, bDimensions, destDimensions, bCentralizingOffset, combinationConfig.ScalingStrategy);
+					destinationBuffer[destDimensions.Index(x, y)] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
 				}
 			}
 		}
 	}
-	
+
 	public static void CombineTextures(
 		ReadOnlySpan<TexelRgba32> aBuffer, XYPair<int> aDimensions,
 		ReadOnlySpan<TexelRgba32> bBuffer, XYPair<int> bDimensions,
@@ -215,17 +243,20 @@ public static partial class TextureUtils {
 			}
 		}
 		else {
-			for (var x = 0; x < destDimensions.X; ++x) {
-				for (var y = 0; y < destDimensions.Y; ++y) {
-					localSampleBuffer[0] = aBuffer[CalculateWrappedIndexForCombination(aDimensions, x, y)];
-					localSampleBuffer[1] = bBuffer[CalculateWrappedIndexForCombination(bDimensions, x, y)];
-					localSampleBuffer[2] = cBuffer[CalculateWrappedIndexForCombination(cDimensions, x, y)];
-					destinationBuffer[destDimensions.X * y + x] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+			var aCentralizingOffset = CalculateCentralizingOffsetForCenterClampSampling(aDimensions, destDimensions);
+			var bCentralizingOffset = CalculateCentralizingOffsetForCenterClampSampling(bDimensions, destDimensions);
+			var cCentralizingOffset = CalculateCentralizingOffsetForCenterClampSampling(cDimensions, destDimensions);
+			for (var y = 0; y < destDimensions.Y; ++y) {
+				for (var x = 0; x < destDimensions.X; ++x) {
+					localSampleBuffer[0] = CalculateUpwardRescaledValue(x, y, aBuffer, aDimensions, destDimensions, aCentralizingOffset, combinationConfig.ScalingStrategy);
+					localSampleBuffer[1] = CalculateUpwardRescaledValue(x, y, bBuffer, bDimensions, destDimensions, bCentralizingOffset, combinationConfig.ScalingStrategy);
+					localSampleBuffer[2] = CalculateUpwardRescaledValue(x, y, cBuffer, cDimensions, destDimensions, cCentralizingOffset, combinationConfig.ScalingStrategy);
+					destinationBuffer[destDimensions.Index(x, y)] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
 				}
 			}
 		}
 	}
-	
+
 	public static void CombineTextures(
 		ReadOnlySpan<TexelRgba32> aBuffer, XYPair<int> aDimensions,
 		ReadOnlySpan<TexelRgba32> bBuffer, XYPair<int> bDimensions,
@@ -282,15 +313,95 @@ public static partial class TextureUtils {
 			}
 		}
 		else {
-			for (var x = 0; x < destDimensions.X; ++x) {
-				for (var y = 0; y < destDimensions.Y; ++y) {
-					localSampleBuffer[0] = aBuffer[CalculateWrappedIndexForCombination(aDimensions, x, y)];
-					localSampleBuffer[1] = bBuffer[CalculateWrappedIndexForCombination(bDimensions, x, y)];
-					localSampleBuffer[2] = cBuffer[CalculateWrappedIndexForCombination(cDimensions, x, y)];
-					localSampleBuffer[3] = dBuffer[CalculateWrappedIndexForCombination(dDimensions, x, y)];
-					destinationBuffer[destDimensions.X * y + x] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
+			var aCentralizingOffset = CalculateCentralizingOffsetForCenterClampSampling(aDimensions, destDimensions);
+			var bCentralizingOffset = CalculateCentralizingOffsetForCenterClampSampling(bDimensions, destDimensions);
+			var cCentralizingOffset = CalculateCentralizingOffsetForCenterClampSampling(cDimensions, destDimensions);
+			var dCentralizingOffset = CalculateCentralizingOffsetForCenterClampSampling(dDimensions, destDimensions);
+			for (var y = 0; y < destDimensions.Y; ++y) {
+				for (var x = 0; x < destDimensions.X; ++x) {
+					localSampleBuffer[0] = CalculateUpwardRescaledValue(x, y, aBuffer, aDimensions, destDimensions, aCentralizingOffset, combinationConfig.ScalingStrategy);
+					localSampleBuffer[1] = CalculateUpwardRescaledValue(x, y, bBuffer, bDimensions, destDimensions, bCentralizingOffset, combinationConfig.ScalingStrategy);
+					localSampleBuffer[2] = CalculateUpwardRescaledValue(x, y, cBuffer, cDimensions, destDimensions, cCentralizingOffset, combinationConfig.ScalingStrategy);
+					localSampleBuffer[3] = CalculateUpwardRescaledValue(x, y, dBuffer, dDimensions, destDimensions, dCentralizingOffset, combinationConfig.ScalingStrategy);
+					destinationBuffer[destDimensions.Index(x, y)] = combinationConfig.SelectTexel<TIn, TOut, TChannel>(localSampleBuffer);
 				}
 			}
 		}
 	}
+	#endregion
+	
+	#region Rescaling Algorithms
+	internal static T CalculateUpwardRescaledValue<T>(
+		int x, int y,
+		ReadOnlySpan<T> sourceBuffer,
+		XYPair<int> sourceDimensions,
+		XYPair<int> destinationDimensions,
+		XYPair<int> centralizingOffset,
+		TextureCombinationScalingStrategy scalingStrategy
+	) where T : unmanaged, IBlendable<T> {
+		// Perf + image stability optimizations:
+		// These following two lines gives us an early exit where it's either a perf improvement and/or
+		//	applying a rescaling algorithm will actually give a worse result due to FP inaccuracy (e.g.
+		//	bilinear filtering for matching texture dimensions is strictly worse than just returning the
+		//	original texel).  
+		if (sourceDimensions == destinationDimensions) return sourceBuffer[sourceDimensions.Index(x, y)];
+		if (sourceDimensions == XYPair<int>.One) return sourceBuffer[0];
+		
+		return scalingStrategy switch {
+			TextureCombinationScalingStrategy.RepeatingTile => SampleResizedBufferWrapped(x, y, sourceBuffer, sourceDimensions),
+			TextureCombinationScalingStrategy.ExtendEdges => SampleResizedBufferCenteredClamped(x, y, sourceBuffer, sourceDimensions, centralizingOffset),
+			TextureCombinationScalingStrategy.StretchPixelated => SampleResizedBufferNearestNeighbor(x, y, sourceBuffer, sourceDimensions, destinationDimensions),
+			TextureCombinationScalingStrategy.StretchBlended => SampleResizedBufferBilinear(x, y, sourceBuffer, sourceDimensions, destinationDimensions),
+			_ => throw new ArgumentOutOfRangeException(nameof(scalingStrategy), scalingStrategy, $"Unknown {nameof(TextureCombinationScalingStrategy)} value.")
+		};
+	}
+
+	static T SampleResizedBufferWrapped<T>(int x, int y, ReadOnlySpan<T> sourceBuffer, XYPair<int> sourceDimensions) {
+		return sourceBuffer[sourceDimensions.X * (y % sourceDimensions.Y) + (x % sourceDimensions.X)];
+	}
+	
+	static XYPair<int> CalculateCentralizingOffsetForCenterClampSampling(XYPair<int> sourceDimensions, XYPair<int> destDimensions) {
+		return (destDimensions - sourceDimensions) / 2; 
+	}
+	static T SampleResizedBufferCenteredClamped<T>(int x, int y, ReadOnlySpan<T> sourceBuffer, XYPair<int> sourceDimensions, XYPair<int> centralizingOffset) {
+		var resultIndex = sourceDimensions.Index(
+			Math.Clamp(x - centralizingOffset.X, 0, sourceDimensions.X - 1),
+			Math.Clamp(y - centralizingOffset.Y, 0, sourceDimensions.Y - 1)
+		);
+		return sourceBuffer[resultIndex];
+	}
+
+	static T SampleResizedBufferNearestNeighbor<T>(int x, int y, ReadOnlySpan<T> sourceBuffer, XYPair<int> sourceDimensions, XYPair<int> destinationDimensions) {
+		var resultIndex = sourceDimensions.Index(
+			Math.Clamp((int) MathF.Round(((float) x / destinationDimensions.X) * sourceDimensions.X), 0, sourceDimensions.X - 1),
+			Math.Clamp((int) MathF.Round(((float) y / destinationDimensions.Y) * sourceDimensions.Y), 0, sourceDimensions.Y - 1)
+		);
+		return sourceBuffer[resultIndex];
+	}
+
+	static T SampleResizedBufferBilinear<T>(int x, int y, ReadOnlySpan<T> sourceBuffer, XYPair<int> sourceDimensions, XYPair<int> destinationDimensions) where T : IBlendable<T> {
+		var distance = new XYPair<float>(x, y) / destinationDimensions.Cast<float>();
+		var roundedDownCoords = (distance * sourceDimensions.Cast<float>()).Cast<int>();
+		var roundedUpCoords = new XYPair<int>(roundedDownCoords.X + 1, roundedDownCoords.Y + 1);
+		
+		var xDist = distance.X - roundedDownCoords.X;
+		var yDist = distance.Y - roundedDownCoords.Y;
+		
+		var bottom = T.Blend(
+			sourceBuffer[sourceDimensions.IndexClamped(roundedDownCoords.X, roundedDownCoords.Y)],	
+			sourceBuffer[sourceDimensions.IndexClamped(roundedUpCoords.X, roundedDownCoords.Y)],
+			xDist
+		);
+		var top = T.Blend(
+			sourceBuffer[sourceDimensions.IndexClamped(roundedDownCoords.X, roundedUpCoords.Y)],	
+			sourceBuffer[sourceDimensions.IndexClamped(roundedUpCoords.X, roundedUpCoords.Y)],
+			xDist
+		);
+		return T.Blend(
+			bottom,
+			top,
+			yDist
+		);
+	}
+	#endregion
 }

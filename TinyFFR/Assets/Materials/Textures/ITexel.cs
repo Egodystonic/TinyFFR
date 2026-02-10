@@ -17,7 +17,7 @@ public interface ITexel {
 	static abstract TexelType BlitType { get; }
 	static abstract int ChannelCount { get; }
 }
-public interface ITexel<TSelf> : ITexel, IFixedLengthByteSpanSerializable<TSelf> where TSelf : unmanaged, ITexel<TSelf> {
+public interface ITexel<TSelf> : ITexel, IBlendable<TSelf>, IFixedLengthByteSpanSerializable<TSelf> where TSelf : unmanaged, ITexel<TSelf> {
 	TSelf WithInvertedChannelIfPresent(int channelIndex);
 	TSelf SwizzlePresentChannels(ColorChannel redSource, ColorChannel greenSource, ColorChannel blueSource, ColorChannel alphaSource);
 }
