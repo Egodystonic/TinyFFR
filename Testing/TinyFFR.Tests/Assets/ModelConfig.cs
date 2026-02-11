@@ -40,7 +40,7 @@ class ModelConfigTest {
 			HandleUriEscapedStrings = false,
 			GltfEmissiveStrengthScalar = 0.3f,
 			EmissiveStrengthCap = 0f,
-			EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.StretchPixelated
+			EmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.PixelUpscale
 		};
 
 		void AssertConfigsMatch(ModelReadConfig expected, ModelReadConfig actual) {
@@ -71,7 +71,7 @@ class ModelConfigTest {
 			.Bool(false)
 			.Float(0.3f)
 			.Float(0f)
-			.Int((int) TextureCombinationScalingStrategy.StretchPixelated)
+			.Int((int) TextureCombinationScalingStrategy.PixelUpscale)
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<ModelReadConfig>()

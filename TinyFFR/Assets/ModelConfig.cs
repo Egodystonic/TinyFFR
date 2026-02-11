@@ -15,7 +15,7 @@ public readonly ref struct ModelReadConfig : IConfigStruct<ModelReadConfig> {
 	public static readonly bool DefaultHandleUriEscapedStrings = false;
 	public static readonly float DefaultGltfEmissiveStrengthScalar = 0.05f;
 	public static readonly float DefaultEmissiveStrengthCap = 1f;
-	public static readonly TextureCombinationScalingStrategy DefaultEmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.StretchBlended;
+	public static readonly TextureCombinationScalingStrategy DefaultEmbeddedTextureMapScalingStrategy = TextureCombinationScalingStrategy.PixelUpscale;
 	public MeshReadConfig MeshConfig { get; init; } = new();
 	public TextureReadConfig TextureConfig { get; init; } = new();
 	public bool HandleUriEscapedStrings { get; init; } = DefaultHandleUriEscapedStrings;

@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## General Code Guidelines
 
 * Do not add comments to code unless doing something unusual or non-conventional.
+* Avoid code that create GC pressure in the main library code (TinyFFR). Generating garbage is absolutely fine in the test projects.
 
 ## Project Overview
 

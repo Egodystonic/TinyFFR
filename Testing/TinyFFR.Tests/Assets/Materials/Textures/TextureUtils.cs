@@ -239,4 +239,119 @@ class TextureUtilsTest {
 		AssertAll(4, "0R3G2B1B");
 		AssertAll(4, "1A2R3B0G");
 	}
+
+	[Test]
+	public void ShouldCorrectlyApplyUpwardRescaling() {
+		var srcDimensions = new XYPair<int>(8, 8);
+		var rygbBorderedTex = new TexelRgb24[srcDimensions.Area];
+		for (var quadrant = 0; quadrant < 4; ++quadrant) {
+			var (xOffset, yOffset) = quadrant switch {
+				0 => (0, 0),
+				1 => (4, 0),
+				2 => (0, 4),
+				_ => (4, 4),
+			};
+			for (var x = 0; x < 4; ++x) {
+				for (var y = 0; y < 4; ++y) {
+					var q = quadrant;
+					if (x + xOffset == 0 || x + xOffset == 7 || y + yOffset == 0 || y + yOffset == 7) {
+						q++;
+						if (q > 3) q = 0;
+					}
+					
+					rygbBorderedTex[srcDimensions.Index(xOffset + x, yOffset + y)] = q switch {
+						0 => new TexelRgb24(255, 0, 0),
+						1 => new TexelRgb24(255, 255, 0),
+						2 => new TexelRgb24(0, 255, 0),
+						_ => new TexelRgb24(0, 0, 255)
+					};
+				}
+			}
+		}
+		
+		var testDir = SetUpCleanTestDir("upward_rescaling");
+		Console.WriteLine("Saving generated images to '" + testDir + "'");
+		ImageUtils.SaveBitmap(Path.Combine(testDir, "input.bmp"), srcDimensions, rygbBorderedTex);
+
+		void AssertStrategy(Func<int, int, TexelRgb24> expectationBuilder, XYPair<int> destDimensions, TextureCombinationScalingStrategy strategy) {
+			var centralOffset = TextureUtils.CalculateCentralizingOffsetForCenterClampSampling(srcDimensions, destDimensions);
+			var expected = new TexelRgb24[destDimensions.Area];
+			var actual = new TexelRgb24[destDimensions.Area];
+			
+			for (var y = 0; y < destDimensions.Y; ++y) {
+				for (var x = 0; x < destDimensions.X; ++x) {
+					expected[destDimensions.Index(x, y)] = expectationBuilder(x, y);
+				}
+			}
+			
+			for (var y = 0; y < destDimensions.Y; ++y) {
+				for (var x = 0; x < destDimensions.X; ++x) {
+					actual[destDimensions.Index(x, y)] = TextureUtils.CalculateUpwardRescaledValue(
+						x, y, (ReadOnlySpan<TexelRgb24>) rygbBorderedTex, srcDimensions, destDimensions, centralOffset, strategy
+					);
+				}
+			}
+			
+			Assert.IsTrue(expected.SequenceEqual(actual));
+			ImageUtils.SaveBitmap(Path.Combine(testDir, destDimensions.X + "x" + destDimensions.Y + "_" + strategy + ".bmp"), destDimensions, actual);
+		}
+
+		foreach (var destDim in new[] { (128, 128), (64, 128), (128, 64), srcDimensions }) {
+			AssertStrategy(
+				(x, y) => {
+					var wrappedX = x - x / srcDimensions.X * srcDimensions.X;
+					var wrappedY = y - y / srcDimensions.Y * srcDimensions.Y;
+					return rygbBorderedTex[wrappedY * srcDimensions.X + wrappedX];
+				},
+				destDim,
+				TextureCombinationScalingStrategy.RepeatingTile
+			);
+
+			AssertStrategy(
+				(x, y) => {
+					var halfGapX = (destDim.X - srcDimensions.X) / 2;
+					var halfGapY = (destDim.Y - srcDimensions.Y) / 2;
+					var srcX = Math.Max(0, Math.Min(x - halfGapX, srcDimensions.X - 1));
+					var srcY = Math.Max(0, Math.Min(y - halfGapY, srcDimensions.Y - 1));
+					return rygbBorderedTex[srcY * srcDimensions.X + srcX];
+				},
+				destDim,
+				TextureCombinationScalingStrategy.ExtendEdges
+			);
+
+			AssertStrategy(
+				(x, y) => {
+					var srcX = Math.Max(0, Math.Min((int) ((x + 0.5f) * srcDimensions.X / destDim.X), srcDimensions.X - 1));
+					var srcY = Math.Max(0, Math.Min((int) ((y + 0.5f) * srcDimensions.Y / destDim.Y), srcDimensions.Y - 1));
+					return rygbBorderedTex[srcY * srcDimensions.X + srcX];
+				},
+				destDim,
+				TextureCombinationScalingStrategy.PixelUpscale
+			);
+
+			AssertStrategy(
+				(x, y) => {
+					var srcXf = (x + 0.5f) * srcDimensions.X / (float) destDim.X - 0.5f;
+					var srcYf = (y + 0.5f) * srcDimensions.Y / (float) destDim.Y - 0.5f;
+
+					var x0 = (int) MathF.Floor(srcXf);
+					var y0 = (int) MathF.Floor(srcYf);
+					var x1 = x0 + 1;
+					var y1 = y0 + 1;
+
+					var xFrac = srcXf - MathF.Floor(srcXf);
+					var yFrac = srcYf - MathF.Floor(srcYf);
+
+					int ClampCoord(int v, int max) => Math.Max(0, Math.Min(v, max));
+					int Idx(int cx, int cy) => ClampCoord(cy, srcDimensions.Y - 1) * srcDimensions.X + ClampCoord(cx, srcDimensions.X - 1);
+
+					var rowLow = TexelRgb24.Blend(rygbBorderedTex[Idx(x0, y0)], rygbBorderedTex[Idx(x1, y0)], xFrac);
+					var rowHigh = TexelRgb24.Blend(rygbBorderedTex[Idx(x0, y1)], rygbBorderedTex[Idx(x1, y1)], xFrac);
+					return TexelRgb24.Blend(rowLow, rowHigh, yFrac);
+				},
+				destDim,
+				TextureCombinationScalingStrategy.BilinearUpscale
+			);
+		}
+	}
 }

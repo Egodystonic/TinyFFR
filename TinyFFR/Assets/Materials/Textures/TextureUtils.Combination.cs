@@ -6,15 +6,16 @@ using static Egodystonic.TinyFFR.ColorChannel;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
+// TODO when we document this on the site, we can use the generated images from the corresponding unit test
 public enum TextureCombinationScalingStrategy {
+	// TODO xmldoc This is a NearestNeighbour algorithm
+	PixelUpscale,
 	// TODO xmldoc This is a Bilinear algorithm
-	StretchBlended,
+	BilinearUpscale,
 	// TODO xmldoc This is a Wrap algorithm
 	RepeatingTile,
 	// TODO xmldoc This is a Center + Clamp algorithm
 	ExtendEdges,
-	// TODO xmldoc This is a NearestNeighbour algorithm
-	StretchPixelated
 }
 public enum TextureCombinationSourceTexture {
 	TextureA,
@@ -37,7 +38,7 @@ public readonly record struct TextureCombinationSource(TextureCombinationSourceT
 	}
 }
 public readonly record struct TextureCombinationConfig(TextureCombinationScalingStrategy ScalingStrategy, TextureCombinationSource OutputTextureXRedChannelSource, TextureCombinationSource OutputTextureYGreenChannelSource, TextureCombinationSource OutputTextureZBlueChannelSource, TextureCombinationSource? OutputTextureWAlphaChannelSource = null) {
-	public static readonly TextureCombinationScalingStrategy DefaultScalingStrategy = TextureCombinationScalingStrategy.StretchBlended;
+	public static readonly TextureCombinationScalingStrategy DefaultScalingStrategy = TextureCombinationScalingStrategy.PixelUpscale;
 	
 	public TextureCombinationConfig(TextureCombinationSource OutputTextureXRedChannelSource, TextureCombinationSource OutputTextureYGreenChannelSource, TextureCombinationSource OutputTextureZBlueChannelSource, TextureCombinationSource? OutputTextureWAlphaChannelSource = null)
 		: this(DefaultScalingStrategy, OutputTextureXRedChannelSource, OutputTextureYGreenChannelSource, OutputTextureZBlueChannelSource, OutputTextureWAlphaChannelSource) { }
@@ -348,10 +349,10 @@ public static partial class TextureUtils {
 		if (sourceDimensions == XYPair<int>.One) return sourceBuffer[0];
 		
 		return scalingStrategy switch {
+			TextureCombinationScalingStrategy.PixelUpscale => SampleResizedBufferNearestNeighbor(x, y, sourceBuffer, sourceDimensions, destinationDimensions),
+			TextureCombinationScalingStrategy.BilinearUpscale => SampleResizedBufferBilinear(x, y, sourceBuffer, sourceDimensions, destinationDimensions),
 			TextureCombinationScalingStrategy.RepeatingTile => SampleResizedBufferWrapped(x, y, sourceBuffer, sourceDimensions),
 			TextureCombinationScalingStrategy.ExtendEdges => SampleResizedBufferCenteredClamped(x, y, sourceBuffer, sourceDimensions, centralizingOffset),
-			TextureCombinationScalingStrategy.StretchPixelated => SampleResizedBufferNearestNeighbor(x, y, sourceBuffer, sourceDimensions, destinationDimensions),
-			TextureCombinationScalingStrategy.StretchBlended => SampleResizedBufferBilinear(x, y, sourceBuffer, sourceDimensions, destinationDimensions),
 			_ => throw new ArgumentOutOfRangeException(nameof(scalingStrategy), scalingStrategy, $"Unknown {nameof(TextureCombinationScalingStrategy)} value.")
 		};
 	}
@@ -360,7 +361,7 @@ public static partial class TextureUtils {
 		return sourceBuffer[sourceDimensions.X * (y % sourceDimensions.Y) + (x % sourceDimensions.X)];
 	}
 	
-	static XYPair<int> CalculateCentralizingOffsetForCenterClampSampling(XYPair<int> sourceDimensions, XYPair<int> destDimensions) {
+	internal static XYPair<int> CalculateCentralizingOffsetForCenterClampSampling(XYPair<int> sourceDimensions, XYPair<int> destDimensions) {
 		return (destDimensions - sourceDimensions) / 2; 
 	}
 	static T SampleResizedBufferCenteredClamped<T>(int x, int y, ReadOnlySpan<T> sourceBuffer, XYPair<int> sourceDimensions, XYPair<int> centralizingOffset) {
@@ -373,19 +374,22 @@ public static partial class TextureUtils {
 
 	static T SampleResizedBufferNearestNeighbor<T>(int x, int y, ReadOnlySpan<T> sourceBuffer, XYPair<int> sourceDimensions, XYPair<int> destinationDimensions) {
 		var resultIndex = sourceDimensions.Index(
-			Math.Clamp((int) MathF.Round(((float) x / destinationDimensions.X) * sourceDimensions.X), 0, sourceDimensions.X - 1),
-			Math.Clamp((int) MathF.Round(((float) y / destinationDimensions.Y) * sourceDimensions.Y), 0, sourceDimensions.Y - 1)
+			Math.Clamp((int) ((x + 0.5f) * sourceDimensions.X / destinationDimensions.X), 0, sourceDimensions.X - 1),
+			Math.Clamp((int) ((y + 0.5f) * sourceDimensions.Y / destinationDimensions.Y), 0, sourceDimensions.Y - 1)
 		);
 		return sourceBuffer[resultIndex];
 	}
 
 	static T SampleResizedBufferBilinear<T>(int x, int y, ReadOnlySpan<T> sourceBuffer, XYPair<int> sourceDimensions, XYPair<int> destinationDimensions) where T : IBlendable<T> {
-		var distance = new XYPair<float>(x, y) / destinationDimensions.Cast<float>();
-		var roundedDownCoords = (distance * sourceDimensions.Cast<float>()).Cast<int>();
+		var sourceCoordsReal = new XYPair<float>(
+			(x + 0.5f) * sourceDimensions.X / destinationDimensions.X - 0.5f,
+			(y + 0.5f) * sourceDimensions.Y / destinationDimensions.Y - 0.5f
+		);
+		var roundedDownCoords = new XYPair<int>((int) MathF.Floor(sourceCoordsReal.X), (int) MathF.Floor(sourceCoordsReal.Y));
 		var roundedUpCoords = new XYPair<int>(roundedDownCoords.X + 1, roundedDownCoords.Y + 1);
-		
-		var xDist = distance.X - roundedDownCoords.X;
-		var yDist = distance.Y - roundedDownCoords.Y;
+
+		var xDist = sourceCoordsReal.X - roundedDownCoords.X;
+		var yDist = sourceCoordsReal.Y - roundedDownCoords.Y;
 		
 		var bottom = T.Blend(
 			sourceBuffer[sourceDimensions.IndexClamped(roundedDownCoords.X, roundedDownCoords.Y)],	
