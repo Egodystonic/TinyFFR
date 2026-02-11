@@ -431,13 +431,13 @@ public interface IAssetLoader {
 	#endregion
 
 	#region Load Backdrop Texture
-	BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, ReadOnlySpan<char> name = default) {
-		return LoadBackdropTexture(
+	BackdropTexture LoadPreprocessedBackdropTexture(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, ReadOnlySpan<char> name = default) {
+		return LoadPreprocessedBackdropTexture(
 			skyboxKtxFilePath, iblKtxFilePath,
 			new BackdropTextureCreationConfig { Name = name }
 		);
 	}
-	BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, in BackdropTextureCreationConfig config);
+	BackdropTexture LoadPreprocessedBackdropTexture(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, in BackdropTextureCreationConfig config);
 	#endregion
 
 	#region Load / Read Mesh

@@ -5,11 +5,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using Egodystonic.TinyFFR.Assets.Materials;
-using Egodystonic.TinyFFR.Assets.Materials.Local;
-using Egodystonic.TinyFFR.Assets.Meshes;
-using Egodystonic.TinyFFR.Assets.Meshes.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Rendering.Local.Sync;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
@@ -73,11 +71,11 @@ unsafe partial class LocalAssetLoader {
 		_hdrPreprocessorHasBeenExtracted = true;
 	}
 
-	public void PreprocessHdrTextureToBackdropTextureDirectory(ReadOnlySpan<char> hdrFilePath, ReadOnlySpan<char> destinationDirectoryPath) {
+	public void PreprocessHdrOrExrTextureToBackdropTextureDirectory(ReadOnlySpan<char> hdrOrExrFilePath, ReadOnlySpan<char> destinationDirectoryPath, BackdropTextureResolution backdropTextureResolution = BackdropTextureResolution.Standard) {
 		ThrowIfThisIsDisposed();
 
 		var destDirString = destinationDirectoryPath.ToString();
-		var fileString = hdrFilePath.ToString();
+		var fileString = hdrOrExrFilePath.ToString();
 
 		ExtractHdrPreprocessorIfNecessary();
 
@@ -86,11 +84,18 @@ unsafe partial class LocalAssetLoader {
 												$"is not present at the expected location ({_hdrPreprocessorFilePath}).");
 		}
 		if (!File.Exists(fileString)) {
-			throw new ArgumentException($"File '{fileString}' does not exist.", nameof(hdrFilePath));
+			throw new ArgumentException($"File '{fileString}' does not exist.", nameof(hdrOrExrFilePath));
 		}
 		
 		try {
-			var process = Process.Start(_hdrPreprocessorFilePath, "-q -f ktx -x \"" + destinationDirectoryPath.ToString() + "\" \"" + fileString + "\"");
+			var quality = backdropTextureResolution switch {
+				BackdropTextureResolution.RoughDraft => "64",
+				BackdropTextureResolution.Higher => "512",
+				BackdropTextureResolution.VeryHigh => "2048",
+				BackdropTextureResolution.Production => "4096",
+				_ => "256"
+			};
+			var process = Process.Start(_hdrPreprocessorFilePath, "-q -s " + quality + " -f ktx -x \"" + destinationDirectoryPath.ToString() + "\" \"" + fileString + "\"");
 			if (!process.WaitForExit(_maxHdrProcessingTime)) {
 				try {
 					process.Kill(entireProcessTree: true);
@@ -113,7 +118,7 @@ unsafe partial class LocalAssetLoader {
 		}
 	}
 	// TODO xmldoc that the directory should be empty other than the preprocessed hdr file contents
-	public BackdropTexture LoadBackdropTextureFromPreprocessedHdrDirectory(ReadOnlySpan<char> directoryPath, in BackdropTextureCreationConfig config) {
+	public BackdropTexture LoadBackdropTextureFromPreprocessedDirectory(ReadOnlySpan<char> directoryPath, in BackdropTextureCreationConfig config) {
 		try {
 			var dirPathString = directoryPath.ToString();
 			var skyboxFile = Directory.GetFiles(dirPathString, HdrPreprocessedSkyboxFileSearch).FirstOrDefault();
@@ -123,13 +128,13 @@ unsafe partial class LocalAssetLoader {
 				throw new InvalidOperationException($"Could not find skybox ({HdrPreprocessedSkyboxFileSearch}) and/or IBL ({HdrPreprocessedIblFileSearch}) file in given directory ({dirPathString}).");
 			}
 
-			return LoadBackdropTexture(skyboxFile, iblFile, config);
+			return LoadPreprocessedBackdropTexture(skyboxFile, iblFile, config);
 		}
 		catch (Exception e) {
 			throw new InvalidOperationException("Could not load processed HDR directory.", e);
 		}
 	}
-	public BackdropTexture LoadBackdropTexture(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, in BackdropTextureCreationConfig config) {
+	public BackdropTexture LoadPreprocessedBackdropTexture(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, in BackdropTextureCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 		try {
@@ -169,6 +174,28 @@ unsafe partial class LocalAssetLoader {
 			if (!File.Exists(iblKtxFilePath.ToString())) throw new InvalidOperationException($"File '{iblKtxFilePath}' does not exist.", e);
 			throw new InvalidOperationException("Error occured when reading and/or loading skybox or IBL file.", e);
 		}
+	}
+	public BackdropTexture LoadBinaryBackdropTexture(EmbeddedResourceResolver.ResourceDataRef iblData, EmbeddedResourceResolver.ResourceDataRef skyData, in BackdropTextureCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+		
+		LoadSkyboxFileInToMemory(
+			(byte*) skyData.DataPtr, 
+			skyData.DataLenBytes, 
+			out var skyboxTextureHandle
+		).ThrowIfFailure();
+		
+		LoadIblFileInToMemory(
+			(byte*) iblData.DataPtr, 
+			iblData.DataLenBytes, 
+			out var iblTextureHandle
+		).ThrowIfFailure();
+		
+		++_prevBackdropTextureHandle;
+		var handle = (ResourceHandle<BackdropTexture>) _prevBackdropTextureHandle;
+		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultBackdropTextureName);
+		_loadedBackdropTextures.Add(_prevBackdropTextureHandle, new(skyboxTextureHandle, iblTextureHandle));
+		return HandleToInstance(handle);
 	}
 
 	public UIntPtr GetSkyboxTextureHandle(ResourceHandle<BackdropTexture> handle) {

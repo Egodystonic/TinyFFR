@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
@@ -14,6 +15,9 @@ namespace Egodystonic.TinyFFR.World;
 sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisposable {
 	readonly record struct BackdropData(BackdropTexture? BackdropTex, UIntPtr SkyboxHandle, UIntPtr IndirectLightHandle);
 	const string DefaultSceneName = "Unnamed Scene";
+	const string BuiltInSceneDataResourcePrefix = "Assets.builtin_backdrop_";
+	const string BuiltInBackdropNamePrefix = "Built-In Scene Backdrop Texture '";
+	const string BuiltInBackdropNameSuffix = "'";
 	
 	readonly ArrayPoolBackedVector<ResourceHandle<Scene>> _activeSceneHandles = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, ArrayPoolBackedVector<ModelInstance>> _modelInstanceMap = new();
@@ -23,13 +27,16 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	readonly VectorPool<Light> _lightVectorPool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Scene>, BackdropData> _backdropMap = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
+	readonly ArrayPoolBackedMap<BuiltInSceneBackdrop, BackdropTexture> _loadedBuiltInBackdropTextures = new();
+	readonly LocalAssetLoader _assetLoader;
 	
 	bool _isDisposed = false;
 
-	public LocalSceneBuilder(LocalFactoryGlobalObjectGroup globals) {
+	public LocalSceneBuilder(LocalFactoryGlobalObjectGroup globals, LocalAssetLoader assetLoader) {
 		ArgumentNullException.ThrowIfNull(globals);
 
 		_globals = globals;
+		_assetLoader = assetLoader;
 		_modelInstanceVectorPool = new(zeroMemoryOnReturn: false);
 		_lightVectorPool = new(zeroMemoryOnReturn: false);
 	}
@@ -46,7 +53,8 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<Scene>(handle).Ident, config.Name, DefaultSceneName);
 
-		if (config.InitialBackdropColor is { } color) SetBackdrop(handle, color, 1f);
+		if (config.InitialBackdrop is { } backdrop) SetBackdrop(handle, backdrop, 1f, Rotation.None);
+		else if (config.InitialBackdropColor is { } color) SetBackdrop(handle, color, 1f);
 		return HandleToInstance(handle);
 	}
 
@@ -160,6 +168,35 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 	#endregion
 
 	#region Backdrop
+	public void SetBackdrop(ResourceHandle<Scene> handle, BuiltInSceneBackdrop backdrop, float indirectLightingIntensity, Rotation rotation) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		
+		if (_loadedBuiltInBackdropTextures.TryGetValue(backdrop, out var preloadedTex)) {
+			SetBackdrop(handle, preloadedTex, indirectLightingIntensity, rotation);
+			return;
+		}
+		
+		var (iblResStr, skyResStr) = backdrop switch {
+			BuiltInSceneBackdrop.Clouds => (BuiltInSceneDataResourcePrefix + "clouds_ibl.zip", BuiltInSceneDataResourcePrefix + "clouds_skybox.zip"),
+			BuiltInSceneBackdrop.Starfield => (BuiltInSceneDataResourcePrefix + "starfield_ibl.zip", BuiltInSceneDataResourcePrefix + "starfield_skybox.zip"),
+			BuiltInSceneBackdrop.Metro => (BuiltInSceneDataResourcePrefix + "metro_ibl.zip", BuiltInSceneDataResourcePrefix + "metro_skybox.zip"),
+			_ => throw new ArgumentOutOfRangeException(nameof(backdrop), backdrop, null)
+		};
+		
+		var iblData = EmbeddedResourceResolver.GetResource(iblResStr);
+		var skyData = EmbeddedResourceResolver.GetResource(skyResStr);
+		
+		var texName = backdrop switch {
+			BuiltInSceneBackdrop.Clouds => BuiltInBackdropNamePrefix + "Clouds" + BuiltInBackdropNameSuffix,
+			BuiltInSceneBackdrop.Starfield => BuiltInBackdropNamePrefix + "Starfield" + BuiltInBackdropNameSuffix,
+			BuiltInSceneBackdrop.Metro => BuiltInBackdropNamePrefix + "Metro" + BuiltInBackdropNameSuffix,
+			_ => throw new ArgumentOutOfRangeException(nameof(backdrop), backdrop, null)
+		};
+		var tex = _assetLoader.LoadBinaryBackdropTexture(iblData, skyData, new() { Name = texName });
+		_loadedBuiltInBackdropTextures[backdrop] = tex;
+		SetBackdrop(handle, tex, indirectLightingIntensity, rotation);
+	}
+
 	public void SetBackdrop(ResourceHandle<Scene> handle, BackdropTexture backdrop, float indirectLightingIntensity, Rotation rotation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
@@ -342,7 +379,12 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 
 			_modelInstanceMap.Dispose();
 			_modelInstanceVectorPool.Dispose();
+			
+			foreach (var builtInBackdropTex in _loadedBuiltInBackdropTextures.Values) {
+				builtInBackdropTex.Dispose();
+			}
 
+			_loadedBuiltInBackdropTextures.Dispose();
 			_backdropMap.Dispose();
 			_lightMap.Dispose();
 			_lightVectorPool.Dispose();

@@ -100,7 +100,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		_cameraBuilder = new LocalCameraBuilder(globals);
 		_lightBuilder = new LocalLightBuilder(globals);
 		_objectBuilder = new LocalObjectBuilder(globals);
-		_sceneBuilder = new LocalSceneBuilder(globals);
+		_sceneBuilder = new LocalSceneBuilder(globals, _assetLoader);
 		_rendererBuilder = new LocalRendererBuilder(globals, rendererBuilderConfig);
 		_resourceAllocator = new LocalResourceAllocator(globals);
 

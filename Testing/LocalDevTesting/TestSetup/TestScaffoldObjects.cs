@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2025
 
 using System.Runtime.CompilerServices;
+using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Environment;
@@ -210,7 +211,7 @@ sealed record TestContextBuilder : ITestContextBuilder {
 	}
 	Scene? CreateDefaultScene() {
 		if (Factory == null) return null;
-		return Factory.SceneBuilder.CreateScene(name: "Default Test Scene");
+		return Factory.SceneBuilder.CreateScene(backdrop: BuiltInSceneBackdrop.Metro, name: "Default Test Scene");
 	}
 	Material? CreateDefaultMaterial() => Factory?.MaterialBuilder.CreateTestMaterial();
 	Mesh? CreateDefaultMesh() => Factory?.MeshBuilder.CreateMesh(new Cuboid(1f));
@@ -219,8 +220,7 @@ sealed record TestContextBuilder : ITestContextBuilder {
 		return Factory.ObjectBuilder.CreateModelInstance(mesh, material, initialPosition: Location.Origin + Direction.Forward * 1.35f, initialRotation: 45f % Direction.Down, name: "Default Test Model Instance");
 	}
 	BackdropTexture? CreateDefaultBackdrop() {
-		if (Factory == null) return null;
-		return Factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr), name: "Default Test Backdrop");
+		return null;
 	}
 	DirectionalLight? CreateDefaultDirectionalLight() {
 		if (Factory == null) return null;

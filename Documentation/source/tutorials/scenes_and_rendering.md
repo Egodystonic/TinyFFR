@@ -19,6 +19,8 @@ Scenes can include a backdrop; either a flat colour or an HDR image.
 
 Use `SetBackdrop()` to set the backdrop to either a colour or a `BackdropTexture` containing a loaded HDR image. A `BackdropTexture` is a resource and can be created with the factory's `AssetLoader`.
 
+Alternatively, you can set the backdrop to one of the built-in environments; e.g. `SetBackdrop(BuiltInSceneBackdrop.Clouds)`.
+
 #### Indirect Lighting
 
 By default, all objects in the scene are globally lit by the backdrop. 
@@ -38,6 +40,14 @@ You can also set a backdrop with indirect lighting disabled, if desired (see bel
 :   Sets the backdrop of the scene to the given `color`.
 
 	You can also optionally set a value for `indirectLightingIntensity`, where `1f` is the default (meaning 100%). Setting this value will not affect the backdrop color.
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `SetBackdrop(BuiltInSceneBackdrop backdrop, float backdropIntensity = 1f, Rotation? rotation = null)`
+
+:   Sets the backdrop of the scene to the given built-in `backdrop`.
+
+	You can also optionally set a value for `backdropIntensity`, where `1f` is the default (meaning 100%). Setting this value changes the intensity of indirect lighting and also the brightness/intensity of the backdrop.
+
+	Finally, you can also set an optional `rotation` value which can be used to rotate the skybox texture/backdrop.
 
 <span class="def-icon">:material-code-block-parentheses:</span> `SetBackdrop(BackdropTexture backdrop, float backdropIntensity = 1f, Rotation? rotation = null)`
 

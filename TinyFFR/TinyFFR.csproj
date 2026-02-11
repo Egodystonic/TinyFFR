@@ -46,6 +46,7 @@
     <EmbeddedResource Include="Assets\Materials\Local\Shaders\CompiledObjects\*.zip" />
     <EmbeddedResource Include="Assets\uvtex.bin" />
     <EmbeddedResource Include="logo_128.png" />
+    <EmbeddedResource Include="Assets\builtin_backdrop_*.zip" />
     <None Remove="Assets\Local\cmgen.exe" />
     <None Remove="Assets\Local\cmgen" />
     <None Remove="Assets\Local\cmgen_mac" />

@@ -113,7 +113,7 @@ class LocalAssetImportTest {
 			new MeshCreationConfig { LinearRescalingFactor = 0.03f, OriginTranslation = calculatedOrigin.AsVect() }
 		);
 		using var instance = factory.ObjectBuilder.CreateModelInstance(mesh, mat, initialPosition: camera.Position + Direction.Forward * 1.3f);
-		using var cubemap = factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
+		using var cubemap = factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr), new BackdropTextureCreationConfig(), BackdropTextureResolution.RoughDraft);
 		using var scene = factory.SceneBuilder.CreateScene();
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 

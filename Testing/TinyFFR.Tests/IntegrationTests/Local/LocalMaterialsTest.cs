@@ -13,6 +13,7 @@ using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Testing;
 using System.Reflection.PortableExecutable;
 using Egodystonic.TinyFFR.Rendering;
+using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR;
 
@@ -102,8 +103,6 @@ class LocalMaterialsTest {
 			display, 
 			title: WindowTitleStart + curUserOptions.GetWindowTitleString()
 		);
-
-		using var backdrop = factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
 		
 		using var cubeMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube);
 		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere, subdivisionLevel: 7);
@@ -112,8 +111,7 @@ class LocalMaterialsTest {
 		using var light = factory.LightBuilder.CreatePointLight(position: (0f, 0f, 1f), castsShadows: true, brightness: 0.5f);
 		using var leftLight = factory.LightBuilder.CreatePointLight(position: (2.6f, 0f, 1f), color: ColorVect.RandomOpaque(), castsShadows: true);
 		using var rightLight = factory.LightBuilder.CreatePointLight(position: (-2.6f, 0f, 1f), color: ColorVect.RandomOpaque(), castsShadows: true);
-		using var scene = factory.SceneBuilder.CreateScene();
-		scene.SetBackdrop(backdrop);
+		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Metro);
 		scene.Add(light);
 		scene.Add(leftLight);
 		scene.Add(rightLight);
@@ -297,10 +295,10 @@ class LocalMaterialsTest {
 						scene.RemoveBackdrop();
 						break;
 					case 1:
-						scene.SetBackdrop(backdrop, backdropIntensity: 0.5f);
+						scene.SetBackdrop(BuiltInSceneBackdrop.Metro, backdropIntensity: 0.5f);
 						break;
 					case 2:
-						scene.SetBackdrop(backdrop, backdropIntensity: 1f);
+						scene.SetBackdrop(BuiltInSceneBackdrop.Metro, backdropIntensity: 1f);
 						break;
 				}
 			}

@@ -8,6 +8,12 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.World;
 
+public enum BuiltInSceneBackdrop {
+	Clouds,
+	Starfield,
+	Metro
+}
+
 public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	public const float DefaultLux = 10_000f;
 	public const float MaxBrightness = 1E15f;
@@ -52,6 +58,8 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Remove<TLight>(TLight light) where TLight : ILight<TLight> => Implementation.Remove(_handle, light);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetBackdrop(BuiltInSceneBackdrop backdrop, float backdropIntensity = 1f, Rotation? rotation = null) => Implementation.SetBackdrop(_handle, backdrop, backdropIntensity, rotation ?? Rotation.None);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetBackdrop(BackdropTexture backdrop, float backdropIntensity = 1f, Rotation? rotation = null) => Implementation.SetBackdrop(_handle, backdrop, backdropIntensity, rotation ?? Rotation.None);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

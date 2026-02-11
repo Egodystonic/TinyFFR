@@ -297,3 +297,11 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+----
+
+This project also embeds some CC0 resources:
+
+https://ambientcg.com/view?id=NightSkyHDRI001
+https://polyhaven.com/a/metro_noord
+https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky

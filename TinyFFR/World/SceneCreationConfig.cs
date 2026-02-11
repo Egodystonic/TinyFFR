@@ -11,25 +11,29 @@ public readonly ref struct SceneCreationConfig : IConfigStruct<SceneCreationConf
 
 	public ReadOnlySpan<char> Name { get; init; }
 	public ColorVect? InitialBackdropColor { get; init; } = DefaultInitialBackdropColor;
+	public BuiltInSceneBackdrop? InitialBackdrop { get; init; } = null;
 
 	public SceneCreationConfig() { }
 
 	internal void ThrowIfInvalid() {
-		
+		if (InitialBackdrop != null && !Enum.IsDefined(InitialBackdrop.Value)) throw new ArgumentOutOfRangeException(nameof(InitialBackdrop.Value), InitialBackdrop.Value, null);
 	}
 
 	public static int GetHeapStorageFormattedLength(in SceneCreationConfig src) {
 		return	SerializationSizeOfString(src.Name) // Name
-			+	SerializationSizeOfNullable<ColorVect>(); // InitialBackdropColor
+			+	SerializationSizeOfNullable<ColorVect>() // InitialBackdropColor
+			+	SerializationSizeOfNullableInt(); // InitialBackdrop
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in SceneCreationConfig src) {
 		SerializationWriteString(ref dest, src.Name);
 		SerializationWriteNullable(ref dest, src.InitialBackdropColor);
+		SerializationWriteNullableInt(ref dest, (int?) src.InitialBackdrop);
 	}
 	public static SceneCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new SceneCreationConfig {
 			Name = SerializationReadString(ref src),
-			InitialBackdropColor = SerializationReadNullable<ColorVect>(ref src)
+			InitialBackdropColor = SerializationReadNullable<ColorVect>(ref src),
+			InitialBackdrop = (BuiltInSceneBackdrop?) SerializationReadNullableInt(ref src)
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {

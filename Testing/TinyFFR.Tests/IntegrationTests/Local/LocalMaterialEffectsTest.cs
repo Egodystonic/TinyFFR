@@ -76,8 +76,6 @@ class LocalMaterialEffectsTest {
 			display, 
 			title: "Effects test: Arrow keys, RShift, RCtrl, PgUpPgDown | 0-9, ` | C, O, E, A"
 		);
-
-		using var backdrop = factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
 		
 		using var cubeMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, centreTextureOrigin: true);
 
@@ -188,8 +186,7 @@ class LocalMaterialEffectsTest {
 		midInstance.MaterialEffects?.SetBlendTexture(MaterialEffectMapType.AbsorptionTransmission, atMapBlend);
 		rightInstance.MaterialEffects?.SetBlendTexture(MaterialEffectMapType.AbsorptionTransmission, atMapBlend);
 
-		using var scene = factory.SceneBuilder.CreateScene();
-		scene.SetBackdrop(backdrop);
+		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
 		scene.Add(light);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		scene.Add(leftInstance);

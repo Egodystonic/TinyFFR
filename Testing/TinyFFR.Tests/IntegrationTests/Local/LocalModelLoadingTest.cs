@@ -94,9 +94,7 @@ class LocalModelLoadingTest {
 		var lightBrightnessStage = 3;
 		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, highQuality: true);
 		using var sunlight = factory.LightBuilder.CreateDirectionalLight(castsShadows: true);
-		using var backdrop = factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr));
-		using var scene = factory.SceneBuilder.CreateScene();
-		scene.SetBackdrop(backdrop);
+		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Metro);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		renderer.SetQuality(new(Quality.VeryHigh));
 

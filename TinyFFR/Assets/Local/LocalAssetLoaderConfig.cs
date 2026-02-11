@@ -13,7 +13,7 @@ public sealed record LocalAssetLoaderConfig {
 	public const int MaxMaxEmbeddedAssetTextureFileSizeBytes = 16_384 * 16_384 * 4; // Matches max in native_impl_asset_loader.cpp
 	public const int DefaultMaxAssetFilePathLengthChars = 2048;
 	public const int DefaultMaxAssetVertexIndexBufferSizeBytes = 1_000_000 * MeshVertex.ExpectedSerializedSize; // 1m vertex mesh
-	public const int DefaultMaxKtxFileBufferSizeBytes = 100 * 1024 * 1024; // 100 MB
+	public const int DefaultMaxKtxFileBufferSizeBytes = 256 * 1024 * 1024; // 256 MB
 	public const int DefaultMaxEmbeddedAssetTextureFileSizeBytes = 8192 * 8192 * 4; // 8k image; 256MB
 	public static readonly TimeSpan DefaultMaxHdrProcessingTime = TimeSpan.FromMinutes(2d);
 

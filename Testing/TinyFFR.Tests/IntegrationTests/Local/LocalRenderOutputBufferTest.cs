@@ -78,7 +78,7 @@ class LocalRenderOutputBufferTest {
 			initialRotation: Direction.Up % 30f + Direction.Right % 14f
 		);
 		using var renderBuffer = factory.RendererBuilder.CreateRenderOutputBuffer((1024, 1024));
-		using var renderBufferScene = factory.SceneBuilder.CreateScene(includeBackdrop: true, backdropColor: StandardColor.Green);
+		using var renderBufferScene = factory.SceneBuilder.CreateScene(backdropColor: StandardColor.Green);
 		renderBufferScene.Add(renderBufferModel);
 		using var renderBufferRenderer = factory.RendererBuilder.CreateRenderer(renderBufferScene, renderBufferCamera, renderBuffer);
 
@@ -92,7 +92,7 @@ class LocalRenderOutputBufferTest {
 		);
 		using var windowCamera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var window = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value);
-		using var windowScene = factory.SceneBuilder.CreateScene(includeBackdrop: true, backdropColor: ColorVect.White);
+		using var windowScene = factory.SceneBuilder.CreateScene(backdropColor: ColorVect.White);
 		windowScene.Add(windowModel);
 		using var windowRenderer = factory.RendererBuilder.CreateRenderer(windowScene, windowCamera, window);
 
@@ -146,7 +146,7 @@ class LocalRenderOutputBufferTest {
 		var texelDumps = SceneColors.ToDictionary(tuple => tuple.Name, _ => new List<TexelRgb24[]>());
 		for (var frameBufferCount = 0; frameBufferCount <= RendererCreationConfig.MaxGpuSynchronizationFrameBufferCount; ++frameBufferCount) {
 			var scenes = SceneColors.ToDictionary(tuple => tuple.Name, tuple => {
-				var result = factory.SceneBuilder.CreateScene(includeBackdrop: true, backdropColor: tuple.Color);
+				var result = factory.SceneBuilder.CreateScene(backdropColor: tuple.Color);
 				result.Add(cube);
 				result.Add(light);
 				return result;
