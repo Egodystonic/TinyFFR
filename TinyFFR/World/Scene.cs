@@ -10,8 +10,7 @@ namespace Egodystonic.TinyFFR.World;
 
 public enum BuiltInSceneBackdrop {
 	Clouds,
-	Starfield,
-	Metro
+	Starfield
 }
 
 public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {

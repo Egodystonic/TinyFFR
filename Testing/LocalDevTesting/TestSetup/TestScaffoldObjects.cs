@@ -211,7 +211,7 @@ sealed record TestContextBuilder : ITestContextBuilder {
 	}
 	Scene? CreateDefaultScene() {
 		if (Factory == null) return null;
-		return Factory.SceneBuilder.CreateScene(backdrop: BuiltInSceneBackdrop.Metro, name: "Default Test Scene");
+		return Factory.SceneBuilder.CreateScene(name: "Default Test Scene");
 	}
 	Material? CreateDefaultMaterial() => Factory?.MaterialBuilder.CreateTestMaterial();
 	Mesh? CreateDefaultMesh() => Factory?.MeshBuilder.CreateMesh(new Cuboid(1f));
@@ -220,7 +220,8 @@ sealed record TestContextBuilder : ITestContextBuilder {
 		return Factory.ObjectBuilder.CreateModelInstance(mesh, material, initialPosition: Location.Origin + Direction.Forward * 1.35f, initialRotation: 45f % Direction.Down, name: "Default Test Model Instance");
 	}
 	BackdropTexture? CreateDefaultBackdrop() {
-		return null;
+		if (Factory == null) return null;
+		return Factory.AssetLoader.LoadPreprocessedBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.MetroSkyKtx), CommonTestAssets.FindAsset(KnownTestAsset.MetroIblKtx));
 	}
 	DirectionalLight? CreateDefaultDirectionalLight() {
 		if (Factory == null) return null;

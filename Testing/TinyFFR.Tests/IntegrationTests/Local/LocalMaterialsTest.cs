@@ -111,7 +111,7 @@ class LocalMaterialsTest {
 		using var light = factory.LightBuilder.CreatePointLight(position: (0f, 0f, 1f), castsShadows: true, brightness: 0.5f);
 		using var leftLight = factory.LightBuilder.CreatePointLight(position: (2.6f, 0f, 1f), color: ColorVect.RandomOpaque(), castsShadows: true);
 		using var rightLight = factory.LightBuilder.CreatePointLight(position: (-2.6f, 0f, 1f), color: ColorVect.RandomOpaque(), castsShadows: true);
-		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Metro);
+		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
 		scene.Add(light);
 		scene.Add(leftLight);
 		scene.Add(rightLight);
@@ -295,10 +295,10 @@ class LocalMaterialsTest {
 						scene.RemoveBackdrop();
 						break;
 					case 1:
-						scene.SetBackdrop(BuiltInSceneBackdrop.Metro, backdropIntensity: 0.5f);
+						scene.SetBackdrop(BuiltInSceneBackdrop.Clouds, backdropIntensity: 0.5f);
 						break;
 					case 2:
-						scene.SetBackdrop(BuiltInSceneBackdrop.Metro, backdropIntensity: 1f);
+						scene.SetBackdrop(BuiltInSceneBackdrop.Clouds, backdropIntensity: 1f);
 						break;
 				}
 			}

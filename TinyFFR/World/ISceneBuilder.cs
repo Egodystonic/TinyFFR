@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Assets.Materials;
 
 namespace Egodystonic.TinyFFR.World;
 
@@ -14,6 +15,9 @@ public interface ISceneBuilder {
 	}
 	Scene CreateScene(BuiltInSceneBackdrop backdrop, ReadOnlySpan<char> name = default) {
 		return CreateScene(new SceneCreationConfig { InitialBackdrop = backdrop, Name = name});
+	}
+	Scene CreateScene(BackdropTexture backdrop, ReadOnlySpan<char> name = default) {
+		return CreateScene(new SceneCreationConfig { InitialBackdropTexture = backdrop, Name = name});
 	}
 	Scene CreateScene(in SceneCreationConfig config);
 }

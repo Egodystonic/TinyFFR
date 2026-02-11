@@ -53,7 +53,8 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<Scene>(handle).Ident, config.Name, DefaultSceneName);
 
-		if (config.InitialBackdrop is { } backdrop) SetBackdrop(handle, backdrop, 1f, Rotation.None);
+		if (config.InitialBackdropTexture is { } backdropTexture) SetBackdrop(handle, backdropTexture, 1f, Rotation.None);
+		else if (config.InitialBackdrop is { } backdrop) SetBackdrop(handle, backdrop, 1f, Rotation.None);
 		else if (config.InitialBackdropColor is { } color) SetBackdrop(handle, color, 1f);
 		return HandleToInstance(handle);
 	}
@@ -179,7 +180,6 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		var (iblResStr, skyResStr) = backdrop switch {
 			BuiltInSceneBackdrop.Clouds => (BuiltInSceneDataResourcePrefix + "clouds_ibl.zip", BuiltInSceneDataResourcePrefix + "clouds_skybox.zip"),
 			BuiltInSceneBackdrop.Starfield => (BuiltInSceneDataResourcePrefix + "starfield_ibl.zip", BuiltInSceneDataResourcePrefix + "starfield_skybox.zip"),
-			BuiltInSceneBackdrop.Metro => (BuiltInSceneDataResourcePrefix + "metro_ibl.zip", BuiltInSceneDataResourcePrefix + "metro_skybox.zip"),
 			_ => throw new ArgumentOutOfRangeException(nameof(backdrop), backdrop, null)
 		};
 		
@@ -189,7 +189,6 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 		var texName = backdrop switch {
 			BuiltInSceneBackdrop.Clouds => BuiltInBackdropNamePrefix + "Clouds" + BuiltInBackdropNameSuffix,
 			BuiltInSceneBackdrop.Starfield => BuiltInBackdropNamePrefix + "Starfield" + BuiltInBackdropNameSuffix,
-			BuiltInSceneBackdrop.Metro => BuiltInBackdropNamePrefix + "Metro" + BuiltInBackdropNameSuffix,
 			_ => throw new ArgumentOutOfRangeException(nameof(backdrop), backdrop, null)
 		};
 		var tex = _assetLoader.LoadBinaryBackdropTexture(iblData, skyData, new() { Name = texName });

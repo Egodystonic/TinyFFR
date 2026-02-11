@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Assets.Materials;
 using static Egodystonic.TinyFFR.IConfigStruct;
 
 namespace Egodystonic.TinyFFR.World;
@@ -12,6 +13,7 @@ public readonly ref struct SceneCreationConfig : IConfigStruct<SceneCreationConf
 	public ReadOnlySpan<char> Name { get; init; }
 	public ColorVect? InitialBackdropColor { get; init; } = DefaultInitialBackdropColor;
 	public BuiltInSceneBackdrop? InitialBackdrop { get; init; } = null;
+	public BackdropTexture? InitialBackdropTexture { get; init; } = null;
 
 	public SceneCreationConfig() { }
 
@@ -20,23 +22,26 @@ public readonly ref struct SceneCreationConfig : IConfigStruct<SceneCreationConf
 	}
 
 	public static int GetHeapStorageFormattedLength(in SceneCreationConfig src) {
-		return	SerializationSizeOfString(src.Name) // Name
+		return	SerializationSizeOfNullableResource() // InitialBackdropTexture
+			+	SerializationSizeOfString(src.Name) // Name
 			+	SerializationSizeOfNullable<ColorVect>() // InitialBackdropColor
 			+	SerializationSizeOfNullableInt(); // InitialBackdrop
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in SceneCreationConfig src) {
+		SerializationWriteAndAllocateNullableResource(ref dest, src.InitialBackdropTexture);
 		SerializationWriteString(ref dest, src.Name);
 		SerializationWriteNullable(ref dest, src.InitialBackdropColor);
 		SerializationWriteNullableInt(ref dest, (int?) src.InitialBackdrop);
 	}
 	public static SceneCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new SceneCreationConfig {
+			InitialBackdropTexture = SerializationReadNullableResource<BackdropTexture>(ref src),
 			Name = SerializationReadString(ref src),
 			InitialBackdropColor = SerializationReadNullable<ColorVect>(ref src),
-			InitialBackdrop = (BuiltInSceneBackdrop?) SerializationReadNullableInt(ref src)
+			InitialBackdrop = (BuiltInSceneBackdrop?) SerializationReadNullableInt(ref src),
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {
-		/* no-op */
+		SerializationDisposeNullableResourceHandle(src);
 	}
 }

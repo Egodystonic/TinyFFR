@@ -237,9 +237,11 @@ scene.Add(cube); // (2)!
 scene.Add(light); // (3)!
 ```
 
-1. 	You can specify a different backdrop colour for your scene here if you wish.
+1. 	You can specify a different backdrop for your scene here if you wish.
 	
-	For example, for a red backdrop, use `CreateScene(backdropColor: ColorVect.FromRgb24(0xFF0000))`.
+	For example, for a red backdrop, use `CreateScene(ColorVect.FromRgb24(0xFF0000))`. 
+	
+	Alternatively you could use one of the built-in backdrop textures: `CreateScene(BuiltInSceneBackdrop.Clouds)`.
 
 2. 	The cube instance we created earlier will not be shown until it's added to a scene (and then the scene must be rendered, more on that below). 
 	

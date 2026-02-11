@@ -115,17 +115,18 @@ using var sceneBackdrop = assetLoader.LoadBackdropTexture(@"your_path/belfast_su
 scene.SetBackdrop(sceneBackdrop); // (1)!
 ```
 
-1. 	If you're modifying the "Hello Cube" tutorial, it's best to load the `sceneBackdrop` before creating the `scene` itself, so that the C# auto-disposal mechanism (e.g. the `using` keyword) disposes the scene *before* disposing the backdrop texture. A more complete example might look like this:
+1. 	If you're modifying the "Hello Cube" tutorial, it's best to load the `sceneBackdrop` before creating the `scene` itself, so that the C# auto-disposal mechanism (e.g. the `using` keyword) disposes the scene *before* disposing the backdrop texture. 
+
+	Also, you can set the backdrop directly when creating the scene with `CreateScene()`. The following code gives an example:
 
 	```csharp
 	var sceneBuilder = factory.SceneBuilder;
 
 	using var sceneBackdrop = assetLoader.LoadBackdropTexture(@"C:\Users\ben\Documents\Temp\treasure_chest\belfast_sunset_puresky_4k.hdr");
-	using var scene = sceneBuilder.CreateScene();
+	using var scene = sceneBuilder.CreateScene(sceneBackdrop);
 
 	scene.Add(cube);
 	scene.Add(light);
-	scene.SetBackdrop(sceneBackdrop);
 	```
 	
 ## Mesh Loading	
