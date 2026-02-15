@@ -13,7 +13,7 @@ using static Egodystonic.TinyFFR.ColorChannel;
 namespace Egodystonic.TinyFFR.Assets;
 
 public readonly record struct TextureReadMetadata(XYPair<int> Dimensions, bool IncludesAlphaChannel);
-public readonly record struct MeshReadMetadata(int VertexCount, int TriangleCount);
+public readonly record struct MeshReadMetadata(int TotalVertexCount, int TotalTriangleCount, int TotalBoneCount, int SubMeshCount);
 public readonly record struct MeshReadCountData(int NumVerticesWritten, int NumTrianglesWritten);
 
 public enum AnisotropyRadialAngleRange {
@@ -455,6 +455,8 @@ public interface IAssetLoader {
 	MeshReadMetadata ReadMeshMetadata(ReadOnlySpan<char> filePath, in MeshReadConfig readConfig);
 	MeshReadCountData ReadMesh(ReadOnlySpan<char> filePath, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer) => ReadMesh(filePath, vertexBuffer, triangleBuffer, new MeshReadConfig());
 	MeshReadCountData ReadMesh(ReadOnlySpan<char> filePath, Span<MeshVertex> vertexBuffer, Span<VertexTriangle> triangleBuffer, in MeshReadConfig readConfig);
+	MeshReadCountData ReadMesh(ReadOnlySpan<char> filePath, Span<MeshVertexSkeletal> vertexBuffer, Span<VertexTriangle> triangleBuffer) => ReadMesh(filePath, vertexBuffer, triangleBuffer, new MeshReadConfig());
+	MeshReadCountData ReadMesh(ReadOnlySpan<char> filePath, Span<MeshVertexSkeletal> vertexBuffer, Span<VertexTriangle> triangleBuffer, in MeshReadConfig readConfig);
 	#endregion
 
 	#region Load Generic / Combined

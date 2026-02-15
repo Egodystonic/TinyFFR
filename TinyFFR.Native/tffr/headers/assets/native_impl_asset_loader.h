@@ -66,6 +66,8 @@ public:
 	static void get_loaded_asset_mesh_vertex_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outVertexCount);
 	static void get_loaded_asset_mesh_triangle_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outTriangleCount);
 	static void copy_loaded_asset_mesh_vertices(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertex* buffer);
+	static void copy_loaded_asset_mesh_skeletal_vertices(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertexSkeletal* buffer);
+	static void get_loaded_asset_mesh_bone_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outBoneCount);
 	static void copy_loaded_asset_mesh_triangles(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeTriangles, int32_t* buffer);
 	static void get_loaded_asset_texture_size(MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootDirPath, int32_t* outWidth, int32_t* outHeight);
 	static void get_loaded_asset_texture_data(MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootDirPath, MemoryLoadedTextureRgba32DataPtr buffer, int32_t bufferLengthBytes, int32_t* outWidth, int32_t* outHeight);

@@ -31,6 +31,26 @@ StartExportedFunc(allocate_vertex_buffer, BufferIdentity bufferIdentity, native_
 	EndExportedFunc
 }
 
+void native_impl_render_assets::allocate_vertex_buffer_skeletal(BufferIdentity bufferIdentity, MeshVertexSkeletal* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer) {
+	ThrowIfNull(vertices, "Vertices pointer was null.");
+	ThrowIfNegative(vertexCount, "Vertex count was negative.");
+	ThrowIfNull(outBuffer, "Out buffer pointer was null.");
+	*outBuffer = VertexBuffer::Builder()
+		.vertexCount(vertexCount)
+		.bufferCount(1)
+		.attribute(VertexAttribute::POSITION, 0, VertexBuffer::AttributeType::FLOAT3, 0, sizeof(MeshVertexSkeletal))
+		.attribute(VertexAttribute::UV0, 0, VertexBuffer::AttributeType::FLOAT2, 12, sizeof(MeshVertexSkeletal))
+		.attribute(VertexAttribute::TANGENTS, 0, VertexBuffer::AttributeType::FLOAT4, 20, sizeof(MeshVertexSkeletal))
+		.attribute(VertexAttribute::BONE_INDICES, 0, VertexBuffer::AttributeType::UBYTE4, 36, sizeof(MeshVertexSkeletal))
+		.attribute(VertexAttribute::BONE_WEIGHTS, 0, VertexBuffer::AttributeType::FLOAT4, 40, sizeof(MeshVertexSkeletal))
+		.build(*filament_engine);
+	(*outBuffer)->setBufferAt(*filament_engine, 0, backend::BufferDescriptor{ vertices, vertexCount * sizeof(MeshVertexSkeletal), &handle_filament_buffer_copy_callback, bufferIdentity });
+}
+StartExportedFunc(allocate_vertex_buffer_skeletal, BufferIdentity bufferIdentity, native_impl_render_assets::MeshVertexSkeletal* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer) {
+	native_impl_render_assets::allocate_vertex_buffer_skeletal(bufferIdentity, vertices, vertexCount, outBuffer);
+	EndExportedFunc
+}
+
 void native_impl_render_assets::allocate_index_buffer(BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer) {
 	ThrowIfNull(indices, "Indices pointer was null.");
 	ThrowIfNegative(indexCount, "Index count was negative.");

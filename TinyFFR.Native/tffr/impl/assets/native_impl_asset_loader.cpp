@@ -21,7 +21,7 @@ constexpr unsigned int NoAnswerFoundGlobalIndex = MeshMaxCount + 1;
 void native_impl_asset_loader::load_asset_file_in_to_memory(const char* filePath, interop_bool fixCommonExporterErrors, interop_bool optimize, MemoryLoadedAssetHandle* outAssetHandle) {
 	ThrowIfNull(filePath, "File path pointer was null.");
 	ThrowIfNull(outAssetHandle, "Out asset handle pointer was null.");
-	unsigned int flags = aiProcess_CalcTangentSpace | aiProcess_GenNormals | aiProcess_GenBoundingBoxes | aiProcess_GenUVCoords | aiProcess_Triangulate | aiProcess_SortByPType;
+	unsigned int flags = aiProcess_CalcTangentSpace | aiProcess_GenNormals | aiProcess_GenBoundingBoxes | aiProcess_GenUVCoords | aiProcess_Triangulate | aiProcess_SortByPType | aiProcess_LimitBoneWeights;
 	if (fixCommonExporterErrors) flags |= aiProcess_FindDegenerates | aiProcess_FindInvalidData | aiProcess_FixInfacingNormals;
 	if (optimize) flags |= aiProcess_ImproveCacheLocality | aiProcess_JoinIdenticalVertices | aiProcess_OptimizeGraph | aiProcess_OptimizeMeshes | aiProcess_FindInstances;
 	*outAssetHandle = aiImportFile(filePath, flags);
@@ -150,7 +150,9 @@ StartExportedFunc(get_loaded_asset_mesh_triangle_count, MemoryLoadedAssetHandle 
 	EndExportedFunc
 }
 
-void native_impl_asset_loader::copy_loaded_asset_mesh_vertices(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertex* buffer) {
+typedef void(*standard_vertex_data_callback)(unsigned vertexIndex, float3& position, float2& textureUv, float4& tangent, void* bufferPtr);
+
+void get_mesh_standard_vertex_attributes(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeVertices, void* bufferPtr, standard_vertex_data_callback callback, aiMesh** outMeshPtr) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 
 	auto transform = aiMatrix4x4{};
@@ -185,15 +187,82 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_vertices(MemoryLoadedAsset
 				&tangent
 			);
 		}
-		buffer[vertexIndex] = {
+		auto f3Position = float3 { position.x, position.y, position.z };
+		auto f2textureUv = float2 { uv.x, uv.y };
+		callback(
+			vertexIndex,
+			f3Position,
+			f2textureUv,
+			tangent,
+			bufferPtr
+		);
+	}
+	
+	*outMeshPtr = mesh;
+}
+
+void native_impl_asset_loader::copy_loaded_asset_mesh_vertices(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertex* buffer) {
+	auto callback = [](unsigned vertexIndex, float3& position, float2& textureUv, float4& tangent, void* userData) {
+		static_cast<native_impl_render_assets::MeshVertex*>(userData)[vertexIndex] = {
 			.Position = { position.x, position.y, position.z },
-			.TextureUV = { uv.x, uv.y },
+			.TextureUV = { textureUv.x, textureUv.y },
 			.Tangent = tangent
 		};
-	}
+	};
+	
+	aiMesh* unused;
+	get_mesh_standard_vertex_attributes(assetHandle, meshIndex, correctFlippedOrientation, bufferSizeVertices, buffer, callback, &unused);
 }
 StartExportedFunc(copy_loaded_asset_mesh_vertices, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertex* buffer) {
 	native_impl_asset_loader::copy_loaded_asset_mesh_vertices(assetHandle, meshIndex, correctFlippedOrientation, bufferSizeVertices, buffer);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_vertices(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertexSkeletal* buffer) {
+	auto callback = [](unsigned vertexIndex, float3& position, float2& textureUv, float4& tangent, void* userData) {
+		static_cast<native_impl_render_assets::MeshVertexSkeletal*>(userData)[vertexIndex] = {
+			.Position = { position.x, position.y, position.z },
+			.TextureUV = { textureUv.x, textureUv.y },
+			.Tangent = tangent
+		};
+	};
+	
+	aiMesh* mesh;
+	get_mesh_standard_vertex_attributes(assetHandle, meshIndex, correctFlippedOrientation, bufferSizeVertices, buffer, callback, &mesh);
+
+	for (auto boneIndex = 0U; boneIndex < max(mesh->mNumBones, 255U); ++boneIndex) {
+		auto bone = mesh->mBones[boneIndex];
+		for (auto weightIndex = 0U; weightIndex < bone->mNumWeights; ++weightIndex) {
+			auto weight = bone->mWeights[weightIndex];
+			
+			ThrowIf(weight.mVertexId >= bufferSizeVertices, "Bone weight vertex ID out of bounds.");
+			auto& vertexRef = buffer[weight.mVertexId];
+			
+			for (auto i = 0; i < MaxSkeletalVertexBoneCount; ++i) {
+				if (vertexRef.BoneWeights[i] == 0.0f) {
+					vertexRef.BoneIndices[i] = static_cast<uint8_t>(boneIndex);
+					vertexRef.BoneWeights[i] = weight.mWeight;
+					break;
+				}
+			}
+		}
+	}
+}
+StartExportedFunc(copy_loaded_asset_mesh_skeletal_vertices, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertexSkeletal* buffer) {
+	native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_vertices(assetHandle, meshIndex, correctFlippedOrientation, bufferSizeVertices, buffer);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::get_loaded_asset_mesh_bone_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outBoneCount) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIfNull(outBoneCount, "Out bone count pointer was null.");
+
+	auto unused = aiMatrix4x4{};
+	auto mesh = get_mesh_at_index(assetHandle, meshIndex, unused);
+	*outBoneCount = static_cast<int32_t>(mesh->mNumBones);
+}
+StartExportedFunc(get_loaded_asset_mesh_bone_count, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outBoneCount) {
+	native_impl_asset_loader::get_loaded_asset_mesh_bone_count(assetHandle, meshIndex, outBoneCount);
 	EndExportedFunc
 }
 

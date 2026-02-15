@@ -57,6 +57,14 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 	}
 
 	public Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config) {
+		return CreateMesh<MeshVertex>(vertices, triangles, in config);
+	}
+
+	public Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config) {
+		return CreateMesh<MeshVertexSkeletal>(vertices, triangles, in config);
+	}
+	
+	Mesh CreateMesh<TVertex>(ReadOnlySpan<TVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config) where TVertex : unmanaged, IMeshVertex {
 		ThrowIfThisIsDisposed();
 		static void CheckTriangleIndex(char indexChar, int triangleIndex, int value, int numVertices) {
 			if (value < 0 || value >= numVertices) {
@@ -89,7 +97,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 
 		// ReSharper disable once CompareOfFloatsByEqualityOperator Direct comparison with 1f is correct and exact
 		if (config.InvertTextureU || config.InvertTextureV || config.OriginTranslation != Vect.Zero || config.LinearRescalingFactor != 1f) {
-			var vBufferSpan = tempVertexBuffer.AsSpan<MeshVertex>();
+			var vBufferSpan = tempVertexBuffer.AsSpan<TVertex>();
 			for (var v = 0; v < vBufferSpan.Length; ++v) {
 				vBufferSpan[v] = vBufferSpan[v] with {
 					Location = (vBufferSpan[v].Location - config.OriginTranslation).ScaledFromOriginBy(config.LinearRescalingFactor),
@@ -106,7 +114,16 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 			indexBufferCount = triangles.Length * 3;
 		}
 
-		AllocateVertexBuffer(tempVertexBuffer.BufferIdentity, (MeshVertex*) tempVertexBuffer.DataPtr, vertices.Length, out var vbHandle).ThrowIfFailure();
+		UIntPtr vbHandle;
+		if (typeof(TVertex) == typeof(MeshVertex)) {
+			AllocateVertexBuffer(tempVertexBuffer.BufferIdentity, (MeshVertex*) tempVertexBuffer.DataPtr, vertices.Length, out vbHandle).ThrowIfFailure();
+		}
+		else if (typeof(TVertex) == typeof(MeshVertexSkeletal)) {
+			AllocateSkeletalVertexBuffer(tempVertexBuffer.BufferIdentity, (MeshVertexSkeletal*) tempVertexBuffer.DataPtr, vertices.Length, out vbHandle).ThrowIfFailure();
+		}
+		else {
+			throw new InvalidOperationException($"Unexpected mesh vertex type '{typeof(TVertex)}'.");
+		}
 		AllocateIndexBuffer(tempIndexBuffer.BufferIdentity, (VertexTriangle*) tempIndexBuffer.DataPtr, indexBufferCount, out var ibHandle).ThrowIfFailure();
 
 		_vertexBufferRefCounts.Add(vbHandle, 1);
@@ -144,6 +161,14 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 	static extern InteropResult AllocateVertexBuffer(
 		nuint bufferId,
 		MeshVertex* verticesPtr,
+		int numVertices,
+		out UIntPtr outBufferHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_vertex_buffer_skeletal")]
+	static extern InteropResult AllocateSkeletalVertexBuffer(
+		nuint bufferId,
+		MeshVertexSkeletal* verticesPtr,
 		int numVertices,
 		out UIntPtr outBufferHandle
 	);

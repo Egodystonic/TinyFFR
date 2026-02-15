@@ -17,6 +17,8 @@ typedef Texture* TextureHandle;
 typedef Material* PackageHandle;
 typedef MaterialInstance* MaterialHandle;
 
+constexpr int MaxSkeletalVertexBoneCount = 4;
+
 class native_impl_render_assets {
 public:
 	PushSafeStructPacking
@@ -28,7 +30,19 @@ public:
 	PopSafeStructPacking
 	static_assert(sizeof(MeshVertex) == 36);
 
+	PushSafeStructPacking
+	struct MeshVertexSkeletal {
+		float3 Position;
+		float2 TextureUV;
+		float4 Tangent;
+		uint8_t BoneIndices[MaxSkeletalVertexBoneCount];
+		float_t BoneWeights[MaxSkeletalVertexBoneCount];
+	};
+	PopSafeStructPacking
+	static_assert(sizeof(MeshVertexSkeletal) == 56);
+
 	static void allocate_vertex_buffer(BufferIdentity bufferIdentity, MeshVertex* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer);
+	static void allocate_vertex_buffer_skeletal(BufferIdentity bufferIdentity, MeshVertexSkeletal* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer);
 	static void allocate_index_buffer(BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer);
 	static void dispose_vertex_buffer(VertexBufferHandle buffer);
 	static void dispose_index_buffer(IndexBufferHandle buffer);

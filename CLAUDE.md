@@ -37,10 +37,7 @@ Run a single test:
 ```bash
 dotnet test Testing/TinyFFR.Tests --filter "FullyQualifiedName~TestClassName.TestMethodName"
 ```
-Integration tests are marked `[Explicit]` and require manual invocation. On macOS, use the ManualIntegrationTestRunner project (Cocoa requires main thread for UI).
-
-### Ad-Hoc Dev Testing
-Write test code in `Testing/LocalDevTesting/TestMain.cs`. Scaffolding is in `Testing/LocalDevTesting/TestSetup/`.
+Integration tests are marked `[Explicit]` and require manual invocation. Do not run these.
 
 ## Architecture
 

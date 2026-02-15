@@ -895,54 +895,63 @@ unsafe partial class LocalAssetLoader {
 				var materialToGroupAddOrderMap = materialCount > MaxIndicesOnStack ? new int[materialCount] : stackalloc int[materialCount];
 				
 				for (var i = 0; i < meshCount; ++i) {
-					GetLoadedAssetMeshVertexCount(assetHandle, i, out var vCount).ThrowIfFailure();
-					GetLoadedAssetMeshTriangleCount(assetHandle, i, out var tCount).ThrowIfFailure();
+					GetLoadedAssetMeshBoneCount(assetHandle, i, out var boneCount).ThrowIfFailure(); 
+					var useSkeletalVertices = boneCount > 0 && readConfig.MeshConfig.LoadSkeletalDataIfPresent;
 					
-					var fixedVertexBuffer = _vertexTriangleBufferPool.Rent<MeshVertex>(vCount);
-					var fixedTriangleBuffer = _vertexTriangleBufferPool.Rent<VertexTriangle>(tCount);
+					var copyResult = useSkeletalVertices
+						? CopySubMeshDataFromAsset<MeshVertexSkeletal>(assetHandle, readConfig.MeshConfig.CorrectFlippedOrientation, i)
+						: CopySubMeshDataFromAsset<MeshVertex>(assetHandle, readConfig.MeshConfig.CorrectFlippedOrientation, i);
+					
+					Mesh mesh;
 					try {
-						CopyLoadedAssetMeshVertices(assetHandle, i, readConfig.MeshConfig.CorrectFlippedOrientation, fixedVertexBuffer.Size<MeshVertex>(), (MeshVertex*) fixedVertexBuffer.StartPtr).ThrowIfFailure();
-						CopyLoadedAssetMeshTriangles(assetHandle, i, readConfig.MeshConfig.CorrectFlippedOrientation, fixedTriangleBuffer.Size<VertexTriangle>(), (VertexTriangle*) fixedTriangleBuffer.StartPtr).ThrowIfFailure();
-						
-						var mesh = _meshBuilder.CreateMesh(
-							fixedVertexBuffer.AsReadOnlySpan<MeshVertex>(vCount),
-							fixedTriangleBuffer.AsReadOnlySpan<VertexTriangle>(tCount),
-							config.MeshConfig
-						);
-						
-						result.Add(mesh);
-					
-						GetLoadedAssetMeshMaterialIndex(
-							assetHandle, 
-							i, 
-							out var matIndex
-						).ThrowIfFailure();
-						
-						if (matIndex < 0 || matIndex >= materialCount) throw new InvalidOperationException($"Mesh at index '{i}' references material at index '{matIndex}' but asset only contains {materialCount} materials.");
-						
-						Material mat;
-						if (materialToGroupAddOrderMap[matIndex] > 0) {
-							mat = result.Materials[materialToGroupAddOrderMap[matIndex] - 1];
+						if (useSkeletalVertices) {
+							mesh = _meshBuilder.CreateMesh(
+								copyResult.VertexBuffer.AsReadOnlySpan<MeshVertexSkeletal>(copyResult.NumVerticesWritten),
+								copyResult.TriangleBuffer.AsReadOnlySpan<VertexTriangle>(copyResult.NumTrianglesWritten),
+								config.MeshConfig
+							);
 						}
 						else {
-							mat = CreateAssetMaterial(
-								assetHandle,
-								matIndex,
-								result,
-								config.TextureConfig,
-								in readConfig,
-								in _assetFilePathBuffer.AsRef
+							mesh = _meshBuilder.CreateMesh(
+								copyResult.VertexBuffer.AsReadOnlySpan<MeshVertex>(copyResult.NumVerticesWritten),
+								copyResult.TriangleBuffer.AsReadOnlySpan<VertexTriangle>(copyResult.NumTrianglesWritten),
+								config.MeshConfig
 							);
-							result.Add(mat);
-							materialToGroupAddOrderMap[matIndex] = result.Materials.Count;
 						}
-						
-						result.Add(CreateModel(mesh, mat, default));
 					}
 					finally {
-						_vertexTriangleBufferPool.Return(fixedVertexBuffer);
-						_vertexTriangleBufferPool.Return(fixedTriangleBuffer);
+						_vertexTriangleBufferPool.Return(copyResult.VertexBuffer);
+						_vertexTriangleBufferPool.Return(copyResult.TriangleBuffer);
 					}
+
+					result.Add(mesh);
+				
+					GetLoadedAssetMeshMaterialIndex(
+						assetHandle, 
+						i, 
+						out var matIndex
+					).ThrowIfFailure();
+					
+					if (matIndex < 0 || matIndex >= materialCount) throw new InvalidOperationException($"Mesh at index '{i}' references material at index '{matIndex}' but asset only contains {materialCount} materials.");
+					
+					Material mat;
+					if (materialToGroupAddOrderMap[matIndex] > 0) {
+						mat = result.Materials[materialToGroupAddOrderMap[matIndex] - 1];
+					}
+					else {
+						mat = CreateAssetMaterial(
+							assetHandle,
+							matIndex,
+							result,
+							config.TextureConfig,
+							in readConfig,
+							in _assetFilePathBuffer.AsRef
+						);
+						result.Add(mat);
+						materialToGroupAddOrderMap[matIndex] = result.Materials.Count;
+					}
+					
+					result.Add(CreateModel(mesh, mat, default));
 				}
 				
 				result.Seal();

@@ -8,7 +8,7 @@ using System;
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = ExpectedSerializedSize)]
-public readonly record struct MeshVertex {
+public readonly record struct MeshVertex : IMeshVertex {
 	internal const int ExpectedSerializedSize = 36;
 	readonly float _locX, _locY, _locZ;
 	readonly float _texU, _texV;
@@ -45,27 +45,8 @@ public readonly record struct MeshVertex {
 		Location = location;
 		TextureCoords = textureCoords;
 		TangentRotation = tangentRotation;
-		// _tanX = 0f;
-		// _tanY = 1f;
-		// _tanZ = 0f;
-		// _tanW = 3.05185094e-05f;
 	}
 
-	public static Quaternion CalculateTangentRotation(Direction tangent, Direction bitangent, Direction normal) {
-		CalculateTangentRotation(
-			tangent.ToVector3(), 
-			bitangent.ToVector3(), 
-			normal.ToVector3(), 
-			out var resultQuat
-		).ThrowIfFailure();
-		return resultQuat;
-	}
-
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "calculate_tangent_rotation")]
-	static extern InteropResult CalculateTangentRotation(
-		Vector3 tangent,
-		Vector3 bitangent,
-		Vector3 normal,
-		out Quaternion outRot
-	);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Quaternion CalculateTangentRotation(Direction tangent, Direction bitangent, Direction normal) => IMeshVertex.CalculateTangentRotation(tangent, bitangent, normal);
 }
