@@ -189,7 +189,7 @@ unsafe partial class LocalAssetLoader {
 					tBufferPtr += tCount;
 				}
 			}
-			else if (typeof(TVertex) == typeof(MeshVertex)) {
+			else if (typeof(TVertex) == typeof(MeshVertexSkeletal)) {
 				var vBufferPtr = (MeshVertexSkeletal*) vertexBuffer.StartPtr;
 		
 				for (var i = 0; i < metadata.SubMeshCount; ++i) {

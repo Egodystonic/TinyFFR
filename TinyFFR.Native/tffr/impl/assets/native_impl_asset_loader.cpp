@@ -230,7 +230,7 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_vertices(MemoryLo
 	aiMesh* mesh;
 	get_mesh_standard_vertex_attributes(assetHandle, meshIndex, correctFlippedOrientation, bufferSizeVertices, buffer, callback, &mesh);
 
-	for (auto boneIndex = 0U; boneIndex < max(mesh->mNumBones, 255U); ++boneIndex) {
+	for (auto boneIndex = 0U; boneIndex < min(mesh->mNumBones, 255U); ++boneIndex) {
 		auto bone = mesh->mBones[boneIndex];
 		for (auto weightIndex = 0U; weightIndex < bone->mNumWeights; ++weightIndex) {
 			auto weight = bone->mWeights[weightIndex];
