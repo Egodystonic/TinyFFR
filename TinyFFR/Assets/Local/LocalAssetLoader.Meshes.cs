@@ -183,7 +183,7 @@ unsafe partial class LocalAssetLoader {
 				for (var i = 0; i < metadata.SubMeshCount; ++i) {
 					GetLoadedAssetMeshVertexCount(assetHandle, i, out var vCount).ThrowIfFailure();
 					GetLoadedAssetMeshTriangleCount(assetHandle, i, out var tCount).ThrowIfFailure();
-					CopyLoadedAssetMeshVertices(assetHandle, i, correctFlippedOrientation, (int) (vertexBuffer.Size<MeshVertex>() - (vBufferPtr - (MeshVertex*) vertexBuffer.StartPtr)), vBufferPtr);
+					CopyLoadedAssetMeshVertices(assetHandle, i, (int) (vertexBuffer.Size<MeshVertex>() - (vBufferPtr - (MeshVertex*) vertexBuffer.StartPtr)), vBufferPtr);
 					CopyLoadedAssetMeshTriangles(assetHandle, i, correctFlippedOrientation, (int) (triangleBuffer.Size<VertexTriangle>() - (tBufferPtr - (VertexTriangle*) triangleBuffer.StartPtr)), tBufferPtr);
 					vBufferPtr += vCount;
 					tBufferPtr += tCount;
@@ -195,7 +195,7 @@ unsafe partial class LocalAssetLoader {
 				for (var i = 0; i < metadata.SubMeshCount; ++i) {
 					GetLoadedAssetMeshVertexCount(assetHandle, i, out var vCount).ThrowIfFailure();
 					GetLoadedAssetMeshTriangleCount(assetHandle, i, out var tCount).ThrowIfFailure();
-					CopyLoadedAssetMeshSkeletalVertices(assetHandle, i, correctFlippedOrientation, (int) (vertexBuffer.Size<MeshVertexSkeletal>() - (vBufferPtr - (MeshVertexSkeletal*) vertexBuffer.StartPtr)), vBufferPtr);
+					CopyLoadedAssetMeshSkeletalVertices(assetHandle, i, (int) (vertexBuffer.Size<MeshVertexSkeletal>() - (vBufferPtr - (MeshVertexSkeletal*) vertexBuffer.StartPtr)), vBufferPtr);
 					CopyLoadedAssetMeshTriangles(assetHandle, i, correctFlippedOrientation, (int) (triangleBuffer.Size<VertexTriangle>() - (tBufferPtr - (VertexTriangle*) triangleBuffer.StartPtr)), tBufferPtr);
 					vBufferPtr += vCount;
 					tBufferPtr += tCount;
@@ -219,10 +219,10 @@ unsafe partial class LocalAssetLoader {
 		CopyLoadedAssetMeshTriangles(assetHandle, subMeshIndex, correctFlippedOrientation, triangleBuffer.Size<VertexTriangle>(), (VertexTriangle*) triangleBuffer.StartPtr);
 			
 		if (typeof(TVertex) == typeof(MeshVertex)) {
-			CopyLoadedAssetMeshVertices(assetHandle, subMeshIndex, correctFlippedOrientation, vertexBuffer.Size<MeshVertex>(), (MeshVertex*) vertexBuffer.StartPtr);
+			CopyLoadedAssetMeshVertices(assetHandle, subMeshIndex, vertexBuffer.Size<MeshVertex>(), (MeshVertex*) vertexBuffer.StartPtr);
 		}
 		else if (typeof(TVertex) == typeof(MeshVertexSkeletal)) {
-			CopyLoadedAssetMeshSkeletalVertices(assetHandle, subMeshIndex, correctFlippedOrientation, vertexBuffer.Size<MeshVertexSkeletal>(), (MeshVertexSkeletal*) vertexBuffer.StartPtr);
+			CopyLoadedAssetMeshSkeletalVertices(assetHandle, subMeshIndex, vertexBuffer.Size<MeshVertexSkeletal>(), (MeshVertexSkeletal*) vertexBuffer.StartPtr);
 		}
 		else {
 			throw new InvalidOperationException($"Unknown vertex type '{typeof(TVertex)}'.");
@@ -256,7 +256,6 @@ unsafe partial class LocalAssetLoader {
 	static extern InteropResult CopyLoadedAssetMeshVertices(
 		UIntPtr assetHandle,
 		int meshIndex,
-		InteropBool correctFlippedOrientation,
 		int bufferSizeVertices,
 		MeshVertex* vertexBufferPtr
 	);
@@ -265,7 +264,6 @@ unsafe partial class LocalAssetLoader {
 	static extern InteropResult CopyLoadedAssetMeshSkeletalVertices(
 		UIntPtr assetHandle,
 		int meshIndex,
-		InteropBool correctFlippedOrientation,
 		int bufferSizeVertices,
 		MeshVertexSkeletal* vertexBufferPtr
 	);

@@ -19,65 +19,13 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
-class LocalModelLoadingTest {
+class LocalAnimationTest {
 	string[] _filesToLoad;
 	
 	[SetUp]
 	public void SetUpTest() {
 		_filesToLoad = new[] {
-			// Color / texturing / basic import tests
-			"BoxTextured.gltf",	
-			"BoxTextured.glb",
-			"BoxTexturedSelfContained.gltf",
-			"BoxTexturedNonPowerOfTwo.glb",
-			"Box With Spaces.gltf",
-			
-			// Mesh + normals / tangents / bitangents + transform node walk tests
-			"NormalTangentMirrorTest.glb",
-			"NegativeScaleTest.glb",
-			"TextureCoordinateTest.glb",
-			"CompareNormal.glb",
-			
-			// ORM
-			"CompareRoughness.glb",
-			"CompareMetallic.glb",
-			"MetalRoughSpheres.glb",
-			"CompareAmbientOcclusion.glb",
-			
-			// Aniso
-			"AnisotropyStrengthTest.glb",
-			"AnisotropyDiscTest.glb",
-			
-			// Emissive
-			"EmissiveStrengthTest.glb",
-			
-			// AT
-			"TransmissionTest.glb",
-			"CompareTransmission.glb",
-			"TransmissionRoughnessTest.glb",
-			"AttenuationTest.glb",
-			"CompareIor.glb",
-			
-			// CC
-			"ClearCoatTest.glb",
-			
-			// Showcase
-			"BarramundiFish.glb",
-			"Avocado.glb",
-			"DamagedHelmet.glb",
-			"showcase_ABeautifulGame.glb",
-			"showcase_GlassHurricaneCandleHolder.glb",
-			"showcase_MaterialsVariantsShoe.glb",
-			"showcase_MosquitoInAmber.glb",
-			"showcase_PotOfCoals.glb",
-			"showcase_ToyCar.glb",
-			"showcase_AnisotropyBarnLamp.glb",
-			"showcase_CarConcept.glb",
-			"showcase_ChronographWatch.glb",
-			"showcase_CommercialRefrigerator.glb",
-			
-			// Stress test
-			"NodePerformanceTest.glb",
+			"RiggedSimple.glb"
 		};
 	}
 
@@ -123,7 +71,7 @@ class LocalModelLoadingTest {
 				curFileIndex++;
 				if (curFileIndex >= _filesToLoad.Length) curFileIndex = 0;
 				
-				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), new ModelCreationConfig(), new ModelReadConfig() { MeshConfig = new() { CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true });
+				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), new ModelCreationConfig(), new ModelReadConfig() { HandleUriEscapedStrings = true });
 
 				modelInstances = factory.ObjectBuilder.CreateModelInstanceGroup(loadedResources.Value);
 				scene.Add(modelInstances.Value);

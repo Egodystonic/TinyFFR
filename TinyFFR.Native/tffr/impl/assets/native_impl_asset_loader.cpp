@@ -77,7 +77,7 @@ StartExportedFunc(get_loaded_asset_texture_count, MemoryLoadedAssetHandle assetH
 void walk_nodes_to_find_global_index_from_mesh_index(aiNode* node, int32_t& startingIndex, int32_t targetIndex, unsigned int& resultGlobalIndex, aiMatrix4x4& resultTransform) {
 	ThrowIf(node->mNumMeshes > MeshMaxCount, "Mesh count too high.");
 
-	resultTransform = node->mTransformation * resultTransform;
+	resultTransform = resultTransform * node->mTransformation;
 
 	auto originalStartingIndex = startingIndex;
 	startingIndex += static_cast<int32_t>(node->mNumMeshes);
@@ -152,12 +152,11 @@ StartExportedFunc(get_loaded_asset_mesh_triangle_count, MemoryLoadedAssetHandle 
 
 typedef void(*standard_vertex_data_callback)(unsigned vertexIndex, float3& position, float2& textureUv, float4& tangent, void* bufferPtr);
 
-void get_mesh_standard_vertex_attributes(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeVertices, void* bufferPtr, standard_vertex_data_callback callback, aiMesh** outMeshPtr) {
+void get_mesh_standard_vertex_attributes(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeVertices, void* bufferPtr, standard_vertex_data_callback callback, aiMesh** outMeshPtr) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 
 	auto transform = aiMatrix4x4{};
 	auto mesh = get_mesh_at_index(assetHandle, meshIndex, transform);
-	auto transformDetIsNeg = transform.Determinant() < 0.0f;
 	auto normalMatrix = aiMatrix3x3 { transform };
 	normalMatrix = normalMatrix.Inverse().Transpose();
 
@@ -165,7 +164,8 @@ void get_mesh_standard_vertex_attributes(MemoryLoadedAssetHandle assetHandle, in
 	ThrowIf(static_cast<uint32_t>(bufferSizeVertices) < mesh->mNumVertices, "Given buffer was too small.")
 
 	auto hasUVs = mesh->HasTextureCoords(0);
-	auto hasTangents = mesh->HasTangentsAndBitangents() && mesh->HasNormals();
+	auto hasNormals = mesh->HasNormals();
+	auto hasTangents = hasNormals && mesh->HasTangentsAndBitangents();
 
 	for (auto vertexIndex = 0U; vertexIndex < mesh->mNumVertices; ++vertexIndex) {
 		auto position = transform * mesh->mVertices[vertexIndex];
@@ -175,11 +175,6 @@ void get_mesh_standard_vertex_attributes(MemoryLoadedAssetHandle assetHandle, in
 			auto t = (normalMatrix * mesh->mTangents[vertexIndex]).Normalize();
 			auto b = (normalMatrix * mesh->mBitangents[vertexIndex]).Normalize();
 			auto n = (normalMatrix * mesh->mNormals[vertexIndex]).Normalize();
-			if (correctFlippedOrientation && transformDetIsNeg) {
-				t = -t;
-				b = -b;
-				n = -n;
-			}
 			native_impl_render_assets::calculate_tangent_rotation(
 				float3{ t.x, t.y, t.z },
 				float3{ b.x, b.y, b.z },
@@ -187,6 +182,20 @@ void get_mesh_standard_vertex_attributes(MemoryLoadedAssetHandle assetHandle, in
 				&tangent
 			);
 		}
+		else if (hasNormals) {
+			auto n = (normalMatrix * mesh->mNormals[vertexIndex]).Normalize();
+			auto orthogonalizationTargetVect = std::abs(n.y) < 0.999f ? aiVector3D{0, 1, 0} : aiVector3D{1, 0, 0};
+			auto t = (orthogonalizationTargetVect ^ n).Normalize();
+			auto b = (n ^ t).Normalize();
+			native_impl_render_assets::calculate_tangent_rotation(
+				float3{ t.x, t.y, t.z },
+				float3{ b.x, b.y, b.z },
+				float3{ n.x, n.y, n.z },
+				&tangent
+			);
+		}
+		else tangent = float4{ 0.0f, 0.0f, 0.0f, 1.0f };
+
 		auto f3Position = float3 { position.x, position.y, position.z };
 		auto f2textureUv = float2 { uv.x, uv.y };
 		callback(
@@ -201,7 +210,7 @@ void get_mesh_standard_vertex_attributes(MemoryLoadedAssetHandle assetHandle, in
 	*outMeshPtr = mesh;
 }
 
-void native_impl_asset_loader::copy_loaded_asset_mesh_vertices(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertex* buffer) {
+void native_impl_asset_loader::copy_loaded_asset_mesh_vertices(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertex* buffer) {
 	auto callback = [](unsigned vertexIndex, float3& position, float2& textureUv, float4& tangent, void* userData) {
 		static_cast<native_impl_render_assets::MeshVertex*>(userData)[vertexIndex] = {
 			.Position = { position.x, position.y, position.z },
@@ -211,14 +220,14 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_vertices(MemoryLoadedAsset
 	};
 	
 	aiMesh* unused;
-	get_mesh_standard_vertex_attributes(assetHandle, meshIndex, correctFlippedOrientation, bufferSizeVertices, buffer, callback, &unused);
+	get_mesh_standard_vertex_attributes(assetHandle, meshIndex, bufferSizeVertices, buffer, callback, &unused);
 }
-StartExportedFunc(copy_loaded_asset_mesh_vertices, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertex* buffer) {
-	native_impl_asset_loader::copy_loaded_asset_mesh_vertices(assetHandle, meshIndex, correctFlippedOrientation, bufferSizeVertices, buffer);
+StartExportedFunc(copy_loaded_asset_mesh_vertices, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertex* buffer) {
+	native_impl_asset_loader::copy_loaded_asset_mesh_vertices(assetHandle, meshIndex, bufferSizeVertices, buffer);
 	EndExportedFunc
 }
 
-void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_vertices(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertexSkeletal* buffer) {
+void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_vertices(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertexSkeletal* buffer) {
 	auto callback = [](unsigned vertexIndex, float3& position, float2& textureUv, float4& tangent, void* userData) {
 		static_cast<native_impl_render_assets::MeshVertexSkeletal*>(userData)[vertexIndex] = {
 			.Position = { position.x, position.y, position.z },
@@ -228,7 +237,7 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_vertices(MemoryLo
 	};
 	
 	aiMesh* mesh;
-	get_mesh_standard_vertex_attributes(assetHandle, meshIndex, correctFlippedOrientation, bufferSizeVertices, buffer, callback, &mesh);
+	get_mesh_standard_vertex_attributes(assetHandle, meshIndex, bufferSizeVertices, buffer, callback, &mesh);
 
 	for (auto boneIndex = 0U; boneIndex < min(mesh->mNumBones, 255U); ++boneIndex) {
 		auto bone = mesh->mBones[boneIndex];
@@ -248,8 +257,8 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_vertices(MemoryLo
 		}
 	}
 }
-StartExportedFunc(copy_loaded_asset_mesh_skeletal_vertices, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertexSkeletal* buffer) {
-	native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_vertices(assetHandle, meshIndex, correctFlippedOrientation, bufferSizeVertices, buffer);
+StartExportedFunc(copy_loaded_asset_mesh_skeletal_vertices, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertexSkeletal* buffer) {
+	native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_vertices(assetHandle, meshIndex, bufferSizeVertices, buffer);
 	EndExportedFunc
 }
 
