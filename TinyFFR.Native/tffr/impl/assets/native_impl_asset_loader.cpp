@@ -150,6 +150,30 @@ StartExportedFunc(get_loaded_asset_mesh_triangle_count, MemoryLoadedAssetHandle 
 	EndExportedFunc
 }
 
+void native_impl_asset_loader::get_loaded_asset_mesh_bone_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outBoneCount) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIfNull(outBoneCount, "Out bone count pointer was null.");
+
+	auto unused = aiMatrix4x4{};
+	auto mesh = get_mesh_at_index(assetHandle, meshIndex, unused);
+	*outBoneCount = static_cast<int32_t>(mesh->mNumBones);
+}
+StartExportedFunc(get_loaded_asset_mesh_bone_count, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outBoneCount) {
+	native_impl_asset_loader::get_loaded_asset_mesh_bone_count(assetHandle, meshIndex, outBoneCount);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::get_loaded_asset_animation_count(MemoryLoadedAssetHandle assetHandle, int32_t* outAnimationCount) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIfNull(outAnimationCount, "Out animation count pointer was null.");
+
+	*outAnimationCount = static_cast<int32_t>(assetHandle->mNumAnimations);
+}
+StartExportedFunc(get_loaded_asset_animation_count, MemoryLoadedAssetHandle assetHandle, int32_t* outAnimationCount) {
+	native_impl_asset_loader::get_loaded_asset_animation_count(assetHandle, outAnimationCount);
+	EndExportedFunc
+}
+
 typedef void(*standard_vertex_data_callback)(unsigned vertexIndex, float3& position, float2& textureUv, float4& tangent, void* bufferPtr);
 
 void get_mesh_standard_vertex_attributes(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeVertices, void* bufferPtr, standard_vertex_data_callback callback, aiMesh** outMeshPtr) {
@@ -259,19 +283,6 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_vertices(MemoryLo
 }
 StartExportedFunc(copy_loaded_asset_mesh_skeletal_vertices, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertexSkeletal* buffer) {
 	native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_vertices(assetHandle, meshIndex, bufferSizeVertices, buffer);
-	EndExportedFunc
-}
-
-void native_impl_asset_loader::get_loaded_asset_mesh_bone_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outBoneCount) {
-	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
-	ThrowIfNull(outBoneCount, "Out bone count pointer was null.");
-
-	auto unused = aiMatrix4x4{};
-	auto mesh = get_mesh_at_index(assetHandle, meshIndex, unused);
-	*outBoneCount = static_cast<int32_t>(mesh->mNumBones);
-}
-StartExportedFunc(get_loaded_asset_mesh_bone_count, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outBoneCount) {
-	native_impl_asset_loader::get_loaded_asset_mesh_bone_count(assetHandle, meshIndex, outBoneCount);
 	EndExportedFunc
 }
 

@@ -238,6 +238,12 @@ unsafe partial class LocalAssetLoader {
 		out int outMeshCount
 	);
 	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_animation_count")]
+	static extern InteropResult GetLoadedAssetAnimationCount(
+		UIntPtr assetHandle,
+		out int outAnimationCount
+	);
+	
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_vertex_count")]
 	static extern InteropResult GetLoadedAssetMeshVertexCount(
 		UIntPtr assetHandle,

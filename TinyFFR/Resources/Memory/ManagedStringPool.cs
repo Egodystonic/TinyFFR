@@ -8,6 +8,7 @@ namespace Egodystonic.TinyFFR.Resources.Memory;
 sealed class ManagedStringPool {
 	public readonly record struct RentedStringHandle(char[] BorrowedArray, int Length) {
 		public ReadOnlySpan<char> AsSpan => BorrowedArray.AsSpan(0, Length);
+		public ReadOnlyMemory<char> AsMemory => BorrowedArray.AsMemory(0, Length);
 		public string AsNewStringObject => new(AsSpan);
 	}
 

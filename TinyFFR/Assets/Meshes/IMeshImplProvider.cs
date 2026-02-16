@@ -7,4 +7,6 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 public interface IMeshImplProvider : IDisposableResourceImplProvider<Mesh> {
 	MeshBufferData GetBufferData(ResourceHandle<Mesh> handle);
+	IndirectEnumerable<Mesh, MeshAnimation> GetAnimations(ResourceHandle<Mesh> handle, MeshAnimationType? type);
+	MeshAnimation? TryGetAnimationByName(ResourceHandle<Mesh> handle, ReadOnlySpan<char> name, MeshAnimationType? type);
 }

@@ -20,11 +20,19 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetBufferData(_handle);
 	}
+	
+	public MeshAnimationIndex Animations {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(this);
+	}
 
 	internal Mesh(ResourceHandle<Mesh> handle, IMeshImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
 	}
+	
+	internal IndirectEnumerable<Mesh, MeshAnimation> GetAnimations(MeshAnimationType? type) => Implementation.GetAnimations(_handle, type);
+	internal MeshAnimation? TryGetAnimationByName(ReadOnlySpan<char> name, MeshAnimationType? type) => Implementation.TryGetAnimationByName(_handle, name, type);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
