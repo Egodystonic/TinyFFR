@@ -362,4 +362,8 @@ public interface IMeshBuilder {
 	Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<char> name = default) => CreateMesh(vertices, triangles, new MeshCreationConfig { Name = name });
 	Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config);
 	#endregion
+	
+	#region Animations
+	MeshAnimation AttachAnimation(Mesh mesh, /* data structure(s) here for skeletal anim */);
+	#endregion
 }

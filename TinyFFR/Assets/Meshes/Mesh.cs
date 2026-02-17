@@ -33,6 +33,7 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 	
 	internal IndirectEnumerable<Mesh, MeshAnimation> GetAnimations(MeshAnimationType? type) => Implementation.GetAnimations(_handle, type);
 	internal MeshAnimation? TryGetAnimationByName(ReadOnlySpan<char> name, MeshAnimationType? type) => Implementation.TryGetAnimationByName(_handle, name, type);
+	internal bool GetHasAnyAnimations() => Implementation.GetHasAnyAnimations(_handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);

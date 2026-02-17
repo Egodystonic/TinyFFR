@@ -56,13 +56,26 @@ sealed class LocalFactoryGlobalObjectGroup {
 		if (name.IsEmpty) return;
 		_resourceNameMap.Add(ident, StringPool.RentAndCopy(name));
 	}
+	
+	public void StoreMandatoryResourceName(ResourceIdent ident, ReadOnlySpan<char> name) {
+		if (name.IsEmpty) throw new ArgumentException($"Name for {ident} is mandatory (can not be empty)!", nameof(name));
+		_resourceNameMap.Add(ident, StringPool.RentAndCopy(name));
+	}
 
 	public ReadOnlySpan<char> GetResourceName(ResourceIdent ident, ReadOnlySpan<char> fallback) {
 		return _resourceNameMap.TryGetValue(ident, out var handle) ? handle.AsSpan : fallback;
 	}
+	public ReadOnlySpan<char> GetMandatoryResourceName(ResourceIdent ident) {
+		return _resourceNameMap[ident].AsSpan;
+	}
 
 	public int CopyResourceName(ResourceIdent ident, ReadOnlySpan<char> fallback, Span<char> dest) {
 		var span = GetResourceName(ident, fallback);
+		span.CopyTo(dest);
+		return span.Length;
+	}
+	public int CopyMandatoryResourceName(ResourceIdent ident, Span<char> dest) {
+		var span = GetMandatoryResourceName(ident);
 		span.CopyTo(dest);
 		return span.Length;
 	}

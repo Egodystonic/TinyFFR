@@ -38,6 +38,4 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	void SetMaterialEffectTransform(ResourceHandle<ModelInstance> handle, Transform2D newTransform);
 	void SetMaterialEffectBlendTexture(ResourceHandle<ModelInstance> handle, MaterialEffectMapType mapType, Texture mapTexture);
 	void SetMaterialEffectBlendDistance(ResourceHandle<ModelInstance> handle, MaterialEffectMapType mapType, float distance);
-	
-	void SetAnimationTimePoint<TAnimationData>(ResourceHandle<ModelInstance> handle, TAnimationData animationData, float timePoint) where TAnimationData : IAnimationData;
 }

@@ -23,7 +23,7 @@ unsafe class ObjectPoolTest {
 	[TearDown]
 	public void TearDownTest() {
 		_simplePool.Dispose();
-		_argPool.Dispose();
+		_argPool.Dispose(false);
 	}
 
 	static List<string> DefaultCreateNewListMethod() {

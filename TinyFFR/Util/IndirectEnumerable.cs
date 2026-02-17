@@ -49,6 +49,21 @@ public readonly unsafe struct IndirectEnumerable<TIn, TOut> : IEnumerable<TOut> 
 	readonly delegate* managed<TIn, int> _getCountFunc;
 	readonly delegate* managed<TIn, int> _getVersionFunc;
 	readonly delegate* managed<TIn, int, TOut> _getItemFunc;
+	
+	public static IndirectEnumerable<TIn, TOut> Empty {
+		get {
+			return new IndirectEnumerable<TIn, TOut>(
+				default!,
+				-1,
+				&GetZeroCount,
+				&GetNegOneVer,
+				&ThrowIfAccessed
+			);
+		}
+	}
+	static int GetZeroCount(TIn _) => 0;
+	static int GetNegOneVer(TIn _) => -1;
+	static TOut ThrowIfAccessed(TIn _, int __) => throw new InvalidOperationException("This enumerable is empty.");
 
 	public int Count {
 		get {

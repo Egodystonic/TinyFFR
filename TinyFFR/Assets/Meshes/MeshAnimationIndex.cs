@@ -11,6 +11,11 @@ public enum MeshAnimationType {
 }
 
 public readonly record struct MeshAnimationIndex(Mesh Mesh) {
+	public bool Any {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Mesh.GetHasAnyAnimations();
+	}
+	
 	public IndirectEnumerable<Mesh, MeshAnimation> Skeletal {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Mesh.GetAnimations(MeshAnimationType.Skeletal);
@@ -24,7 +29,9 @@ public readonly record struct MeshAnimationIndex(Mesh Mesh) {
 		get => Mesh.GetAnimations(null);
 	}
 	
+#pragma warning disable CA1043 // Telling me to use a string or int arg for indexers -- we are though, just a more GC-friendly one
 	public MeshAnimation this[ReadOnlySpan<char> name] {
+#pragma warning restore CA1043
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => TryGetAnimationByName(name) ?? throw new KeyNotFoundException($"No animation with name '{name}' was found for this mesh ({Mesh}).");
 	}

@@ -132,9 +132,6 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void SetEffectBlendDistance(MaterialEffectMapType mapType, float distance) => Implementation.SetMaterialEffectBlendDistance(_handle, mapType, distance);
-	
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal void SetAnimationTimePoint<TAnimationData>(TAnimationData animationData, float timePoint) where TAnimationData : IAnimationData => Implementation.SetAnimationTimePoint(_handle, animationData, timePoint);
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

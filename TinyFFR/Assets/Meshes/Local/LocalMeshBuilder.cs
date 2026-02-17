@@ -22,11 +22,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, MeshBufferData> _activeMeshes = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<VertexBuffer>, int> _vertexBufferRefCounts = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<IndexBuffer>, int> _indexBufferRefCounts = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, LocalMeshSkeletalAnimationTable> _activeMeshSkeletalAnimationTables = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, LocalMeshMorphingAnimationTable> _activeMeshMorphingAnimationTables = new();
 	readonly ObjectPool<LocalMeshPolygonGroup, LocalMeshBuilder> _meshPolyGroupPool;
-	readonly ObjectPool<LocalMeshSkeletalAnimationTable> _meshSkeletalAnimationTablePool;
-	readonly ObjectPool<LocalMeshMorphingAnimationTable> _meshMorphingAnimationTablePool;
+	readonly ObjectPool<LocalMeshAnimationTable, LocalMeshBuilder> _meshAnimationTablePool;
+	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, LocalMeshAnimationTable> _activeMeshAnimationTables = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
 	nuint _nextHandleId = 0;
@@ -35,13 +33,11 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
 		_meshPolyGroupPool = new(&CreateNewPolyGroupInstance, this);
-		_meshSkeletalAnimationTablePool = new(&CreateNewSkeletalAnimationTable);
-		_meshMorphingAnimationTablePool = new(&CreateNewMorphingAnimationTable);
+		_meshAnimationTablePool = new(&CreateNewMeshAnimationTable, this);
 	}
 
 	static LocalMeshPolygonGroup CreateNewPolyGroupInstance(LocalMeshBuilder arg) => new(arg, &PolyGroupHeapPoolAccessorFunc, &ReturnPolyGroup);
-	static LocalMeshSkeletalAnimationTable CreateNewSkeletalAnimationTable() => new();
-	static LocalMeshMorphingAnimationTable CreateNewMorphingAnimationTable() => new();
+	static LocalMeshAnimationTable CreateNewMeshAnimationTable(LocalMeshBuilder @this) => new(@this._globals);
 
 	static HeapPool PolyGroupHeapPoolAccessorFunc(LocalMeshBuilder builder) {
 		if (builder._isDisposed) {
@@ -148,47 +144,122 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		return _activeMeshes[handle];
 	}
 	
-	LocalMeshSkeletalAnimationTable GetOrCreateSkeletalAnimationTable(ResourceHandle<Mesh> handle) {
+	LocalMeshAnimationTable GetOrCreateAnimationTable(ResourceHandle<Mesh> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (_activeMeshSkeletalAnimationTables.TryGetValue(handle, out var result)) return result;
-		var newTable = _meshSkeletalAnimationTablePool.Rent();
-		newTable.OnRented();
-		_activeMeshSkeletalAnimationTables.Add(handle, newTable);
-		return newTable;
-	}
-	LocalMeshMorphingAnimationTable GetOrCreateMorphingAnimationTable(ResourceHandle<Mesh> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		if (_activeMeshMorphingAnimationTables.TryGetValue(handle, out var result)) return result;
-		var newTable = _meshMorphingAnimationTablePool.Rent();
-		newTable.OnRented();
-		_activeMeshMorphingAnimationTables.Add(handle, newTable);
+		if (_activeMeshAnimationTables.TryGetValue(handle, out var result)) return result;
+		var newTable = _meshAnimationTablePool.Rent();
+		_activeMeshAnimationTables.Add(handle, newTable);
 		return newTable;
 	}
 	
-	public void AddAnimation(ResourceHandle<Mesh> handle, ReadOnlySpan<char> name, SkeletalAnimationData animationData) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		GetOrCreateSkeletalAnimationTable(handle).AddAnimation(name, animationData);
+	public MeshAnimation AttachAnimation(Mesh mesh, /* data structure(s) here for skeletal anim */) {
+		var handle = mesh.Handle;
+		
+		return GetOrCreateAnimationTable(handle).Add(/* data structure(s) here for skeletal anim */);
 	}
-	public void AddAnimation(ResourceHandle<Mesh> handle, ReadOnlySpan<char> name, MorphingAnimationData animationData) {
+
+	public bool GetHasAnyAnimations(ResourceHandle<Mesh> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		GetOrCreateMorphingAnimationTable(handle).AddAnimation(name, animationData);
+		return _activeMeshAnimationTables.TryGetValue(handle, out var animTable) && animTable.Count > 0;
 	}
 
 	public IndirectEnumerable<Mesh, MeshAnimation> GetAnimations(ResourceHandle<Mesh> handle, MeshAnimationType? type) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		
+		if (!_activeMeshAnimationTables.TryGetValue(handle, out var animTable)) return IndirectEnumerable<Mesh, MeshAnimation>.Empty;
+		
+		static LocalMeshAnimationTable? GetAnimTableForMeshIterator(Mesh m) {
+			if (m.Implementation is not LocalMeshBuilder lmb) return null;
+			if (!lmb._activeMeshAnimationTables.TryGetValue(m.Handle, out var animTable)) return null;
+			return animTable;
+		}
+		static int GetMeshAnimCount(Mesh m) => GetAnimTableForMeshIterator(m)?.Count ?? -1;
+		static MeshAnimation GetMeshAnimAtIndex(Mesh m, int index) => GetAnimTableForMeshIterator(m)?.GetAnimationAtUnstableIndex(index) ?? throw new InvalidOperationException("Somehow attempted to access null animation table.");
+		static int GetMeshSkeletalAnimCount(Mesh m) {
+			var animTable = GetAnimTableForMeshIterator(m);
+			if (animTable == null) return -1;
+			
+			var result = 0;
+			for (var i = 0; i < animTable.Count; ++i) {
+				if (animTable.GetAnimationAtUnstableIndex(i).Type == MeshAnimationType.Skeletal) ++result;
+			}
+			return result;
+		}
+		static MeshAnimation GetMeshSkeletalAnimAtIndex(Mesh m, int index) {
+			var animTable = GetAnimTableForMeshIterator(m);
+			if (animTable == null) throw new InvalidOperationException("Somehow attempted to access null animation table.");
+			
+			var count = 0;
+			for (var i = 0; i < animTable.Count; ++i) {
+				var anim = animTable.GetAnimationAtUnstableIndex(i);
+				if (anim.Type == MeshAnimationType.Skeletal) {
+					if (count == index) return anim;
+					++count;
+				}
+			}
+			throw new ArgumentOutOfRangeException(nameof(index));
+		}
+		static int GetMeshMorphingAnimCount(Mesh m) {
+			var animTable = GetAnimTableForMeshIterator(m);
+			if (animTable == null) return -1;
+			
+			var result = 0;
+			for (var i = 0; i < animTable.Count; ++i) {
+				if (animTable.GetAnimationAtUnstableIndex(i).Type == MeshAnimationType.Morphing) ++result;
+			}
+			return result;
+		}
+		static MeshAnimation GetMeshMorphingAnimAtIndex(Mesh m, int index) {
+			var animTable = GetAnimTableForMeshIterator(m);
+			if (animTable == null) throw new InvalidOperationException("Somehow attempted to access null animation table.");
+			
+			var count = 0;
+			for (var i = 0; i < animTable.Count; ++i) {
+				var anim = animTable.GetAnimationAtUnstableIndex(i);
+				if (anim.Type == MeshAnimationType.Morphing) {
+					if (count == index) return anim;
+					++count;
+				}
+			}
+			throw new ArgumentOutOfRangeException(nameof(index));
+		}
+		
+		switch (type) {
+			case MeshAnimationType.Skeletal:
+				return new IndirectEnumerable<Mesh, MeshAnimation>(
+					HandleToInstance(handle),
+					animTable.Count,
+					&GetMeshSkeletalAnimCount,
+					&GetMeshSkeletalAnimCount,
+					&GetMeshSkeletalAnimAtIndex
+				);
+			case MeshAnimationType.Morphing:
+				return new IndirectEnumerable<Mesh, MeshAnimation>(
+					HandleToInstance(handle),
+					animTable.Count,
+					&GetMeshMorphingAnimCount,
+					&GetMeshMorphingAnimCount,
+					&GetMeshMorphingAnimAtIndex
+				);
+			default:
+				return new IndirectEnumerable<Mesh, MeshAnimation>(
+					HandleToInstance(handle),
+					animTable.Count,
+					&GetMeshAnimCount,
+					&GetMeshAnimCount,
+					&GetMeshAnimAtIndex
+				);
+		}
 	}
+
 	public MeshAnimation? TryGetAnimationByName(ResourceHandle<Mesh> handle, ReadOnlySpan<char> name, MeshAnimationType? type) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		if (!_activeMeshAnimationTables.TryGetValue(handle, out var animTable)) return null;
 		
-		if (type != MeshAnimationType.Morphing && _activeMeshSkeletalAnimationTables.TryGetValue(handle, out var skeletalAnimationTable)) {
-			if (skeletalAnimationTable.FindByName(name) is { } animationData) return new MeshAnimation(animationData); // TODO I think we need a LocalAnimationLoader, with IAnimationImplProvider etc
-		}
-		else if (type != MeshAnimationType.Skeletal && _activeMeshMorphingAnimationTables.TryGetValue(handle, out var morphingAnimationTable)) {
-			if (morphingAnimationTable.FindByName(name) is { } animationData) return new MeshAnimation(animationData);
-		}
+		var match = animTable.FindByName(name);
+		if (match == null || (type != null && type != match.Value.Type)) return null;
 		
-		return null;
+		return match;
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<Mesh> handle) {
@@ -223,14 +294,6 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		int numVertices,
 		out UIntPtr outBufferHandle
 	);
-	
-	static InteropResult DisposeSkeletalAnimationData(
-		UIntPtr bufferHandle
-	) => throw new NotImplementedException();
-	
-	static InteropResult DisposeMorphingAnimationData(
-		UIntPtr bufferHandle
-	) => throw new NotImplementedException();
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_vertex_buffer")]
 	static extern InteropResult DisposeVertexBuffer(
@@ -261,19 +324,12 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		
-		if (_activeMeshSkeletalAnimationTables.Remove(handle, out var skeletalTable)) {
-			foreach (var animData in skeletalTable.Values) {
-				LocalFrameSynchronizationManager.QueueResourceDisposal(animData.Handle, &DisposeSkeletalAnimationData);
-			}
-			skeletalTable.OnReturning();
-			_meshSkeletalAnimationTablePool.Return(skeletalTable);
-		}
-		if (_activeMeshMorphingAnimationTables.Remove(handle, out var morphingTable)) {
-			foreach (var animData in morphingTable.Values) {
-				LocalFrameSynchronizationManager.QueueResourceDisposal(animData.Handle, &DisposeMorphingAnimationData);
-			}
-			morphingTable.OnReturning();
-			_meshMorphingAnimationTablePool.Return(morphingTable);
+#pragma warning disable CA2000 // Compiler incorrectly assumes animTable is going out of scope here and warns me to invoke Dispose() on it
+		if (_activeMeshAnimationTables.Remove(handle, out var animTable)) {
+#pragma warning restore CA2000
+			animTable.QueueAllAnimationsForDisposal();
+			animTable.Recycle();
+			_meshAnimationTablePool.Return(animTable);
 		}
 		
 		var bufferData = _activeMeshes[handle];
@@ -296,7 +352,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		try {
 			foreach (var kvp in _activeMeshes) Dispose(kvp.Key, removeFromMap: false);
 			_activeMeshes.Dispose();
-			_activeMeshSkeletalAnimationTables.Dispose();
+			_activeMeshAnimationTables.Dispose();
 
 			// In theory, both ref-count maps should be empty at this point. But we'll do this anyway.
 			foreach (var kvp in _vertexBufferRefCounts) {
@@ -307,9 +363,8 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 			}
 			_vertexBufferRefCounts.Dispose();
 			_indexBufferRefCounts.Dispose();
-			_meshSkeletalAnimationTablePool.Dispose();
-			_meshMorphingAnimationTablePool.Dispose();
-			_meshPolyGroupPool.Dispose();
+			_meshAnimationTablePool.Dispose(invokeDisposeOnEachBeforeRelease: true);
+			_meshPolyGroupPool.Dispose(invokeDisposeOnEachBeforeRelease: false);
 		}
 		finally {
 			_isDisposed = true;

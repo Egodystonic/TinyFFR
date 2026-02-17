@@ -43,8 +43,21 @@ sealed unsafe class ObjectPool<T, TArg> : IDisposable {
 	}
 
 	public void Return(T item) => _pool.Add(item);
+	
+	public void ReleasePooledObjects(bool invokeDisposeOnEachBeforeRelease) {
+		if (invokeDisposeOnEachBeforeRelease) {
+			foreach (var item in _pool) {
+				(item as IDisposable)?.Dispose();
+			}
+		}
+		_pool.Clear();
+	}
 
-	public void Dispose() => _pool.Dispose();
+	void IDisposable.Dispose() => Dispose(false); 
+	public void Dispose(bool invokeDisposeOnEachBeforeRelease) {
+		ReleasePooledObjects(invokeDisposeOnEachBeforeRelease);
+		_pool.Dispose();
+	}
 }
 
 sealed unsafe class VectorPool<T> : IDisposable {
