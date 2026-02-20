@@ -29,15 +29,18 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 	public ModelInstance CreateModelInstance(Mesh mesh, Material material, in ModelInstanceCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		var meshBufferData = mesh.BufferData;
+		
 		AllocateModelInstance(
 			config.InitialTransform.ToMatrix(),
 			meshBufferData.VertexBufferHandle,
 			meshBufferData.IndexBufferHandle,
 			meshBufferData.IndexBufferStartIndex,
 			meshBufferData.IndexBufferCount,
+			meshBufferData.BoneCount,
 			material.Handle,
 			out var handle
 		).ThrowIfFailure();
+		
 		var result = HandleToInstance(handle);
 		_activeInstanceTransforms.Add(handle, config.InitialTransform);
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<ModelInstance>(handle).Ident, config.Name, DefaultModelInstanceName);
@@ -219,6 +222,7 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 		UIntPtr indexBufferHandle,
 		int indexBufferStartIndex,
 		int indexBufferCount,
+		int boneCount,
 		UIntPtr materialHandle,
 		out UIntPtr outModelInstanceHandle
 	);

@@ -11,7 +11,7 @@
 
 using namespace utils;
 
-void native_impl_objects::allocate_model_instance(mat4f* initialTransformPtr, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount, MaterialHandle material, ModelInstanceHandle* outModelInstance) {
+void native_impl_objects::allocate_model_instance(mat4f* initialTransformPtr, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount, int32_t boneCount, MaterialHandle material, ModelInstanceHandle* outModelInstance) {
 	ThrowIfNull(initialTransformPtr, "Transform was null.");
 	ThrowIfNull(vb, "VB was null.");
 	ThrowIfNull(ib, "IB was null.");
@@ -20,22 +20,40 @@ void native_impl_objects::allocate_model_instance(mat4f* initialTransformPtr, Ve
 
 	auto entity = filament_engine->getEntityManager().create();
 
-	auto result = RenderableManager::Builder(1)
+	auto& builder = RenderableManager::Builder(1)
 		.culling(false)
 		.geometry(0, RenderableManager::PrimitiveType::TRIANGLES, vb, ib, ibStartIndex, ibCount)
 		.material(0, material)
 		.boundingBox({ { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 } })
 		.castShadows(true)
-		.receiveShadows(true)
-		.build(*filament_engine, entity);
+		.receiveShadows(true);
+	
+	if (boneCount > 0) builder.skinning(boneCount);
+	
+	auto result = builder.build(*filament_engine, entity);
 
 	if (result != RenderableManager::Builder::Success) Throw("Could not create entity.");
 
 	filament_engine->getTransformManager().create(entity, TransformManager::Instance{}, *initialTransformPtr);
 	*outModelInstance = Entity::smuggle(entity);
 }
-StartExportedFunc(allocate_model_instance, mat4f* initialTransformPtr, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount, MaterialHandle material, ModelInstanceHandle* outModelInstance) {
-	native_impl_objects::allocate_model_instance(initialTransformPtr, vb, ib, ibStartIndex, ibCount, material, outModelInstance);
+StartExportedFunc(allocate_model_instance, mat4f* initialTransformPtr, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount, int32_t boneCount, MaterialHandle material, ModelInstanceHandle* outModelInstance) {
+	native_impl_objects::allocate_model_instance(initialTransformPtr, vb, ib, ibStartIndex, ibCount, boneCount, material, outModelInstance);
+	EndExportedFunc
+}
+
+void native_impl_objects::set_model_instance_bone_transforms(ModelInstanceHandle modelInstance, mat4f* transforms, int32_t boneCount) {
+	ThrowIfNull(transforms, "Transforms pointer was null.");
+	ThrowIfNotPositive(boneCount, "Bone count must be positive.");
+
+	auto entity = Entity::import(modelInstance);
+	auto& manager = filament_engine->getRenderableManager();
+	auto instance = manager.getInstance(entity);
+	ThrowIf(!instance.isValid(), "Given entity instance was not associated with any renderable.");
+	manager.setBones(instance, transforms, boneCount, 0);
+}
+StartExportedFunc(set_model_instance_bone_transforms, ModelInstanceHandle modelInstance, mat4f* transforms, int32_t boneCount) {
+	native_impl_objects::set_model_instance_bone_transforms(modelInstance, transforms, boneCount);
 	EndExportedFunc
 }
 

@@ -15,7 +15,7 @@ public readonly ref struct MeshReadConfig : IConfigStruct<MeshReadConfig> {
 	public bool FixCommonExportErrors { get; init; } = true;
 	public bool OptimizeForGpu { get; init; } = true;
 	public bool CorrectFlippedOrientation { get; init; } = true;
-	public bool LoadSkeletalDataIfPresent { get; init; } = true;
+	public bool LoadSkeletalAnimationDataIfPresent { get; init; } = true;
 	public int? SubMeshIndex { get; init; } = null;
 
 	public MeshReadConfig() { }
@@ -28,14 +28,14 @@ public readonly ref struct MeshReadConfig : IConfigStruct<MeshReadConfig> {
 		return	SerializationSizeOfBool() // FixCommonExportErrors
 			+	SerializationSizeOfBool() // OptimizeForGpu
 			+	SerializationSizeOfBool() // CorrectFlippedOrientation
-			+	SerializationSizeOfBool() // LoadSkeletalDataIfPresent
+			+	SerializationSizeOfBool() // LoadSkeletalAnimationDataIfPresent
 			+	SerializationSizeOfNullableInt(); // SubMeshIndex
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in MeshReadConfig src) {
 		SerializationWriteBool(ref dest, src.FixCommonExportErrors);
 		SerializationWriteBool(ref dest, src.OptimizeForGpu);
 		SerializationWriteBool(ref dest, src.CorrectFlippedOrientation);
-		SerializationWriteBool(ref dest, src.LoadSkeletalDataIfPresent);
+		SerializationWriteBool(ref dest, src.LoadSkeletalAnimationDataIfPresent);
 		SerializationWriteNullableInt(ref dest, src.SubMeshIndex);
 	}
 	public static MeshReadConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
@@ -43,7 +43,7 @@ public readonly ref struct MeshReadConfig : IConfigStruct<MeshReadConfig> {
 			FixCommonExportErrors = SerializationReadBool(ref src),
 			OptimizeForGpu = SerializationReadBool(ref src),
 			CorrectFlippedOrientation = SerializationReadBool(ref src),
-			LoadSkeletalDataIfPresent = SerializationReadBool(ref src),
+			LoadSkeletalAnimationDataIfPresent = SerializationReadBool(ref src),
 			SubMeshIndex = SerializationReadNullableInt(ref src)
 		};
 	}

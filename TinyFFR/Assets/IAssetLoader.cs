@@ -13,7 +13,7 @@ using static Egodystonic.TinyFFR.ColorChannel;
 namespace Egodystonic.TinyFFR.Assets;
 
 public readonly record struct TextureReadMetadata(XYPair<int> Dimensions, bool IncludesAlphaChannel);
-public readonly record struct MeshReadMetadata(int TotalVertexCount, int TotalTriangleCount, int TotalBoneCount, int SubMeshCount);
+public readonly record struct MeshReadMetadata(int TotalVertexCount, int TotalTriangleCount, int SubMeshCount);
 public readonly record struct MeshReadCountData(int NumVerticesWritten, int NumTrianglesWritten);
 
 public enum AnisotropyRadialAngleRange {

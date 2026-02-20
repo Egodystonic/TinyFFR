@@ -895,21 +895,50 @@ unsafe partial class LocalAssetLoader {
 				var materialToGroupAddOrderMap = materialCount > MaxIndicesOnStack ? new int[materialCount] : stackalloc int[materialCount];
 				
 				for (var i = 0; i < meshCount; ++i) {
-					GetLoadedAssetMeshBoneCount(assetHandle, i, out var boneCount).ThrowIfFailure(); 
-					var useSkeletalVertices = boneCount > 0 && readConfig.MeshConfig.LoadSkeletalDataIfPresent;
-					
-					var copyResult = useSkeletalVertices
+					GetLoadedAssetMeshBoneCount(assetHandle, i, out var boneCount).ThrowIfFailure();
+					var loadSkeletalAnimationData = boneCount > 0 && readConfig.MeshConfig.LoadSkeletalAnimationDataIfPresent;
+					if (loadSkeletalAnimationData && boneCount > IMeshBuilder.MaxSkeletalBoneCount) {
+						Console.WriteLine($"Can not load skeletal animation data for file '{filePath}' (sub-mesh {i}) as its bone count ({boneCount}) is higher than the maximum TinyFFR supports ({IMeshBuilder.MaxSkeletalBoneCount}).");
+						loadSkeletalAnimationData = false;
+					}
+
+					var copyResult = loadSkeletalAnimationData
 						? CopySubMeshDataFromAsset<MeshVertexSkeletal>(assetHandle, readConfig.MeshConfig.CorrectFlippedOrientation, i)
 						: CopySubMeshDataFromAsset<MeshVertex>(assetHandle, readConfig.MeshConfig.CorrectFlippedOrientation, i);
-					
+
 					Mesh mesh;
 					try {
-						if (useSkeletalVertices) {
-							mesh = _meshBuilder.CreateMesh(
-								copyResult.VertexBuffer.AsReadOnlySpan<MeshVertexSkeletal>(copyResult.NumVerticesWritten),
-								copyResult.TriangleBuffer.AsReadOnlySpan<VertexTriangle>(copyResult.NumTrianglesWritten),
-								config.MeshConfig
-							);
+						if (loadSkeletalAnimationData) { 
+							var parentIndicesBuffer = _boneDataBufferPool.Rent<int>(boneCount);
+							var bindPoseInversionMatricesBuffer = _boneDataBufferPool.Rent<Matrix4x4>(boneCount);
+							var defaultLocalTransformsBuffer = _boneDataBufferPool.Rent<Matrix4x4>(boneCount);
+							
+							try {
+								GetLoadedAssetMeshBoneHierarchy(
+									assetHandle, 
+									i, 
+									(int*) parentIndicesBuffer.StartPtr,
+									(Matrix4x4*) bindPoseInversionMatricesBuffer.StartPtr, 
+									(Matrix4x4*) defaultLocalTransformsBuffer.StartPtr, 
+									boneCount
+								).ThrowIfFailure();
+
+								mesh = _meshBuilder.CreateMesh(
+									copyResult.VertexBuffer.AsReadOnlySpan<MeshVertexSkeletal>(copyResult.NumVerticesWritten),
+									copyResult.TriangleBuffer.AsReadOnlySpan<VertexTriangle>(copyResult.NumTrianglesWritten),
+									parentIndicesBuffer.AsReadOnlySpan<int>(boneCount), 
+									bindPoseInversionMatricesBuffer.AsReadOnlySpan<Matrix4x4>(boneCount), 
+									defaultLocalTransformsBuffer.AsReadOnlySpan<Matrix4x4>(boneCount),
+									config.MeshConfig
+								);
+
+								LoadAndAttachMeshAnimations(assetHandle, i, boneCount, mesh);
+							}
+							finally {
+								_boneDataBufferPool.Return(parentIndicesBuffer);
+								_boneDataBufferPool.Return(bindPoseInversionMatricesBuffer);
+								_boneDataBufferPool.Return(defaultLocalTransformsBuffer);
+							}
 						}
 						else {
 							mesh = _meshBuilder.CreateMesh(

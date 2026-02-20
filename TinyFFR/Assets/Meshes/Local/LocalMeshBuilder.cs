@@ -61,14 +61,46 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 	}
 
 	public Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config) {
-		return CreateMesh<MeshVertex>(vertices, triangles, in config);
+		return ProcessVerticesAndCreateMesh(vertices, triangles, in config, 0);
 	}
 
-	public Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config) {
-		return CreateMesh<MeshVertexSkeletal>(vertices, triangles, in config);
+	public Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<int> boneParentIndices, ReadOnlySpan<Matrix4x4> boneBindPoseInversionMatrices, ReadOnlySpan<Matrix4x4> boneDefaultLocalTransforms, in MeshCreationConfig config) {
+		var boneCount = boneParentIndices.Length;
+		if (boneBindPoseInversionMatrices.Length != boneCount || boneDefaultLocalTransforms.Length != boneCount) {
+			throw new ArgumentException(
+				$"The spans '{nameof(boneParentIndices)}', '{nameof(boneBindPoseInversionMatrices)}', and '{nameof(boneDefaultLocalTransforms)}' must all have the same length, " +
+				$"indicating the number of bones in the mesh skeleton. Actual lengths provided were {boneParentIndices.Length}, {boneBindPoseInversionMatrices.Length}, and {boneDefaultLocalTransforms.Length} respectively."
+			);
+		}
+		if (boneCount > IMeshBuilder.MaxSkeletalBoneCount) {
+			throw new ArgumentException($"TinyFFR only supports a maximum of {IMeshBuilder.MaxSkeletalBoneCount} skeletal bones ({boneCount} supplied).");
+		}
+		
+		// If there are 0 bones we'll create a mesh with a default value for a single bone instead.
+		// This just makes things easier elsewhere as we don't have to branch around 'null' or 'invalid' skeleton setups.
+		if (boneCount == 0) {
+			var defaultParentIndex = -1;
+			var identityMat = Matrix4x4.Identity;
+			 
+			return CreateMesh(
+				vertices, 
+				triangles, 
+				new ReadOnlySpan<int>(in defaultParentIndex), 
+				new ReadOnlySpan<Matrix4x4>(in identityMat),
+				new ReadOnlySpan<Matrix4x4>(in identityMat), 
+				in config
+			);
+		}
+
+		var result = ProcessVerticesAndCreateMesh(vertices, triangles, in config, boneParentIndices.Length);
+		
+		var animTable = _meshAnimationTablePool.Rent();
+		animTable.SetSkeleton(boneCount, boneParentIndices, boneBindPoseInversionMatrices, boneDefaultLocalTransforms);
+		_activeMeshAnimationTables.Add(result.Handle, animTable);
+		return result;
 	}
 	
-	Mesh CreateMesh<TVertex>(ReadOnlySpan<TVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config) where TVertex : unmanaged, IMeshVertex {
+	Mesh ProcessVerticesAndCreateMesh<TVertex>(ReadOnlySpan<TVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config, int boneCount) where TVertex : unmanaged, IMeshVertex {
 		ThrowIfThisIsDisposed();
 		static void CheckTriangleIndex(char indexChar, int triangleIndex, int value, int numVertices) {
 			if (value < 0 || value >= numVertices) {
@@ -134,7 +166,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		_indexBufferRefCounts.Add(ibHandle, 1);
 		_nextHandleId++;
 		var handle = new ResourceHandle<Mesh>(_nextHandleId);
-		_activeMeshes.Add(handle, new(vbHandle, ibHandle, 0, indexBufferCount));
+		_activeMeshes.Add(handle, new(vbHandle, ibHandle, 0, indexBufferCount, boneCount));
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultMeshName);
 		return new Mesh(handle, this);
 	}
@@ -144,18 +176,12 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		return _activeMeshes[handle];
 	}
 	
-	LocalMeshAnimationTable GetOrCreateAnimationTable(ResourceHandle<Mesh> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		if (_activeMeshAnimationTables.TryGetValue(handle, out var result)) return result;
-		var newTable = _meshAnimationTablePool.Rent();
-		_activeMeshAnimationTables.Add(handle, newTable);
-		return newTable;
-	}
-	
-	public MeshAnimation AttachAnimation(Mesh mesh, /* data structure(s) here for skeletal anim */) {
+	public MeshAnimation AttachAnimation(Mesh mesh, ReadOnlySpan<char> name, float defaultCompletionTimeSeconds, ReadOnlySpan<AnimationChannelHeader> channelHeaders, ReadOnlySpan<AnimationVectorKeyframe> allPositionKeys, ReadOnlySpan<AnimationQuaternionKeyframe> allRotationKeys, ReadOnlySpan<AnimationVectorKeyframe> allScalingKeys) {
 		var handle = mesh.Handle;
-		
-		return GetOrCreateAnimationTable(handle).Add(/* data structure(s) here for skeletal anim */);
+		if (!_activeMeshAnimationTables.TryGetValue(handle, out var animTable)) {
+			throw new InvalidOperationException($"Can not attach animation to {mesh} as it was not created with skeletal vertex/bone data.");
+		}
+		return animTable.Add(name, defaultCompletionTimeSeconds, channelHeaders, allPositionKeys, allRotationKeys, allScalingKeys);
 	}
 
 	public bool GetHasAnyAnimations(ResourceHandle<Mesh> handle) {
@@ -327,7 +353,6 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 #pragma warning disable CA2000 // Compiler incorrectly assumes animTable is going out of scope here and warns me to invoke Dispose() on it
 		if (_activeMeshAnimationTables.Remove(handle, out var animTable)) {
 #pragma warning restore CA2000
-			animTable.QueueAllAnimationsForDisposal();
 			animTable.Recycle();
 			_meshAnimationTablePool.Return(animTable);
 		}

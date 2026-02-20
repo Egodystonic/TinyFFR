@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 * Do not add comments to code unless doing something unusual or non-conventional.
 * Avoid code that create GC pressure in the main library code (TinyFFR). Generating garbage is absolutely fine in the test projects.
+* Don't try to run any tests marked as [Explicit]. These tests often spin up windows on the desktop and expect user interaction for verification.
 
 ## Project Overview
 

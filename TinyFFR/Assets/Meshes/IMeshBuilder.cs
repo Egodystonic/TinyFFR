@@ -10,6 +10,7 @@ using System.Threading;
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 public interface IMeshBuilder {
+	public const int MaxSkeletalBoneCount = 255;
 	private static readonly Lock _staticMutationLock = new();
 	
 	#region Cuboid
@@ -359,11 +360,22 @@ public interface IMeshBuilder {
 	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<char> name = default) => CreateMesh(vertices, triangles, new MeshCreationConfig { Name = name });
 	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config);
 
-	Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<char> name = default) => CreateMesh(vertices, triangles, new MeshCreationConfig { Name = name });
-	Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config);
+	Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<int> boneParentIndices, ReadOnlySpan<Matrix4x4> boneBindPoseInversionMatrices, ReadOnlySpan<Matrix4x4> boneDefaultLocalTransforms, ReadOnlySpan<char> name = default) {
+		return CreateMesh(
+			vertices,
+			triangles,
+			boneParentIndices,
+			boneBindPoseInversionMatrices,
+			boneDefaultLocalTransforms,
+			new MeshCreationConfig {
+				Name = name
+			}
+		);
+	}
+	Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<int> boneParentIndices, ReadOnlySpan<Matrix4x4> boneBindPoseInversionMatrices, ReadOnlySpan<Matrix4x4> boneDefaultLocalTransforms, in MeshCreationConfig config);
 	#endregion
 	
 	#region Animations
-	MeshAnimation AttachAnimation(Mesh mesh, /* data structure(s) here for skeletal anim */);
+	MeshAnimation AttachAnimation(Mesh mesh, ReadOnlySpan<char> name, float defaultCompletionTimeSeconds, ReadOnlySpan<AnimationChannelHeader> channelHeaders, ReadOnlySpan<AnimationVectorKeyframe> allPositionKeys, ReadOnlySpan<AnimationQuaternionKeyframe> allRotationKeys, ReadOnlySpan<AnimationVectorKeyframe> allScalingKeys);
 	#endregion
 }

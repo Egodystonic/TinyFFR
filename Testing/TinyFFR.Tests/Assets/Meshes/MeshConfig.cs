@@ -19,20 +19,20 @@ class MeshConfigTest {
 			FixCommonExportErrors = true,
 			OptimizeForGpu = false,
 			CorrectFlippedOrientation = true,
-			LoadSkeletalDataIfPresent = false
+			LoadSkeletalAnimationDataIfPresent = false
 		};
 		var testConfigB = new MeshReadConfig {
 			FixCommonExportErrors = false,
 			OptimizeForGpu = true,
 			CorrectFlippedOrientation = false,
-			LoadSkeletalDataIfPresent = true
+			LoadSkeletalAnimationDataIfPresent = true
 		};
 
 		void AssertConfigsMatch(MeshReadConfig expected, MeshReadConfig actual) {
 			Assert.AreEqual(expected.FixCommonExportErrors, actual.FixCommonExportErrors);
 			Assert.AreEqual(expected.OptimizeForGpu, actual.OptimizeForGpu);
 			Assert.AreEqual(expected.CorrectFlippedOrientation, actual.CorrectFlippedOrientation);
-			Assert.AreEqual(expected.LoadSkeletalDataIfPresent, actual.LoadSkeletalDataIfPresent);
+			Assert.AreEqual(expected.LoadSkeletalAnimationDataIfPresent, actual.LoadSkeletalAnimationDataIfPresent);
 		}
 
 		AssertRoundTripHeapStorage(testConfigA, AssertConfigsMatch);
@@ -56,7 +56,7 @@ class MeshConfigTest {
 			.Including(nameof(MeshReadConfig.FixCommonExportErrors))
 			.Including(nameof(MeshReadConfig.OptimizeForGpu))
 			.Including(nameof(MeshReadConfig.CorrectFlippedOrientation))
-			.Including(nameof(MeshReadConfig.LoadSkeletalDataIfPresent))
+			.Including(nameof(MeshReadConfig.LoadSkeletalAnimationDataIfPresent))
 			.End();
 	}
 

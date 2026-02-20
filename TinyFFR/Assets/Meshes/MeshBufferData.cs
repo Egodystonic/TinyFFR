@@ -5,4 +5,4 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
-public readonly record struct MeshBufferData(ResourceHandle<VertexBuffer> VertexBufferHandle, ResourceHandle<IndexBuffer> IndexBufferHandle, int IndexBufferStartIndex, int IndexBufferCount);
+public readonly record struct MeshBufferData(ResourceHandle<VertexBuffer> VertexBufferHandle, ResourceHandle<IndexBuffer> IndexBufferHandle, int IndexBufferStartIndex, int IndexBufferCount, int BoneCount);

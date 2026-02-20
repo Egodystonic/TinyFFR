@@ -11,6 +11,8 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION // This should only be defined in one file ever, it imports the entire implementation for stb_image in as a definition file
 #include <filesystem>
 
+#include <unordered_map>
+#include <string>
 #include "assimp/GltfMaterial.h"
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
@@ -695,6 +697,214 @@ void native_impl_asset_loader::unload_asset_file_from_memory(MemoryLoadedAssetHa
 }
 StartExportedFunc(unload_asset_file_from_memory, MemoryLoadedAssetHandle assetHandle) {
 	native_impl_asset_loader::unload_asset_file_from_memory(assetHandle);
+	EndExportedFunc
+}
+
+
+void native_impl_asset_loader::get_loaded_asset_animation_data(MemoryLoadedAssetHandle assetHandle, int32_t animIndex,
+	int32_t* outNameLengthBytes, float_t* outDurationSeconds, int32_t* outChannelCount) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIf(animIndex < 0 || static_cast<uint32_t>(animIndex) >= assetHandle->mNumAnimations, "Animation index out of bounds.");
+	ThrowIfNull(outNameLengthBytes, "Out name length pointer was null.");
+	ThrowIfNull(outDurationSeconds, "Out duration pointer was null.");
+	ThrowIfNull(outChannelCount, "Out channel count pointer was null.");
+
+	auto anim = assetHandle->mAnimations[animIndex];
+	*outNameLengthBytes = static_cast<int32_t>(anim->mName.length);
+	auto tps = anim->mTicksPerSecond > 0.0 ? anim->mTicksPerSecond : 25.0;
+	*outDurationSeconds = static_cast<float_t>(anim->mDuration / tps);
+	*outChannelCount = static_cast<int32_t>(anim->mNumChannels);
+}
+StartExportedFunc(get_loaded_asset_animation_data, MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t* outNameLengthBytes, float_t* outDurationSeconds, int32_t* outChannelCount) {
+	native_impl_asset_loader::get_loaded_asset_animation_data(assetHandle, animIndex, outNameLengthBytes, outDurationSeconds, outChannelCount);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::get_loaded_asset_animation_ticks_per_second(MemoryLoadedAssetHandle assetHandle, int32_t animIndex,
+	float_t* outTicksPerSecond) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIf(animIndex < 0 || static_cast<uint32_t>(animIndex) >= assetHandle->mNumAnimations, "Animation index out of bounds.");
+	ThrowIfNull(outTicksPerSecond, "Out ticks per second pointer was null.");
+
+	auto anim = assetHandle->mAnimations[animIndex];
+	*outTicksPerSecond = static_cast<float_t>(anim->mTicksPerSecond > 0.0 ? anim->mTicksPerSecond : 25.0);
+}
+StartExportedFunc(get_loaded_asset_animation_ticks_per_second, MemoryLoadedAssetHandle assetHandle, int32_t animIndex, float_t* outTicksPerSecond) {
+	native_impl_asset_loader::get_loaded_asset_animation_ticks_per_second(assetHandle, animIndex, outTicksPerSecond);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::copy_loaded_asset_animation_name(MemoryLoadedAssetHandle assetHandle, int32_t animIndex,
+	char* nameBuffer, int32_t bufferLength) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIf(animIndex < 0 || static_cast<uint32_t>(animIndex) >= assetHandle->mNumAnimations, "Animation index out of bounds.");
+	ThrowIfNull(nameBuffer, "Name buffer pointer was null.");
+
+	auto anim = assetHandle->mAnimations[animIndex];
+	auto nameLen = static_cast<int32_t>(anim->mName.length);
+	ThrowIf(bufferLength < nameLen, "Name buffer too small.");
+	memcpy(nameBuffer, anim->mName.C_Str(), nameLen);
+}
+StartExportedFunc(copy_loaded_asset_animation_name, MemoryLoadedAssetHandle assetHandle, int32_t animIndex, char* nameBuffer, int32_t bufferLength) {
+	native_impl_asset_loader::copy_loaded_asset_animation_name(assetHandle, animIndex, nameBuffer, bufferLength);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::get_loaded_asset_animation_channel_data(MemoryLoadedAssetHandle assetHandle, int32_t animIndex,
+	int32_t channelIndex, int32_t meshIndex,
+	int32_t* outBoneIndex, int32_t* outPositionKeyCount, int32_t* outRotationKeyCount, int32_t* outScalingKeyCount) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIf(animIndex < 0 || static_cast<uint32_t>(animIndex) >= assetHandle->mNumAnimations, "Animation index out of bounds.");
+	ThrowIfNull(outBoneIndex, "Out bone index pointer was null.");
+	ThrowIfNull(outPositionKeyCount, "Out position key count pointer was null.");
+	ThrowIfNull(outRotationKeyCount, "Out rotation key count pointer was null.");
+	ThrowIfNull(outScalingKeyCount, "Out scaling key count pointer was null.");
+
+	auto anim = assetHandle->mAnimations[animIndex];
+	ThrowIf(channelIndex < 0 || static_cast<uint32_t>(channelIndex) >= anim->mNumChannels, "Channel index out of bounds.");
+	auto channel = anim->mChannels[channelIndex];
+
+	auto unused = aiMatrix4x4{};
+	auto mesh = get_mesh_at_index(assetHandle, meshIndex, unused);
+
+	*outBoneIndex = -1;
+	for (auto b = 0U; b < mesh->mNumBones; ++b) {
+		if (mesh->mBones[b]->mName == channel->mNodeName) {
+			*outBoneIndex = static_cast<int32_t>(b);
+			break;
+		}
+	}
+
+	*outPositionKeyCount = static_cast<int32_t>(channel->mNumPositionKeys);
+	*outRotationKeyCount = static_cast<int32_t>(channel->mNumRotationKeys);
+	*outScalingKeyCount = static_cast<int32_t>(channel->mNumScalingKeys);
+}
+StartExportedFunc(get_loaded_asset_animation_channel_data, MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t channelIndex, int32_t meshIndex, int32_t* outBoneIndex, int32_t* outPositionKeyCount, int32_t* outRotationKeyCount, int32_t* outScalingKeyCount) {
+	native_impl_asset_loader::get_loaded_asset_animation_channel_data(assetHandle, animIndex, channelIndex, meshIndex, outBoneIndex, outPositionKeyCount, outRotationKeyCount, outScalingKeyCount);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::copy_loaded_asset_animation_channel_position_keys(MemoryLoadedAssetHandle assetHandle, int32_t animIndex,
+	int32_t channelIndex, float_t ticksToSecondsMultiplier, AnimationVectorKeyframe* buffer, int32_t bufferSize) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	auto anim = assetHandle->mAnimations[animIndex];
+	auto channel = anim->mChannels[channelIndex];
+	ThrowIf(bufferSize < static_cast<int32_t>(channel->mNumPositionKeys), "Buffer too small for position keys.");
+
+	for (auto i = 0U; i < channel->mNumPositionKeys; ++i) {
+		auto& key = channel->mPositionKeys[i];
+		buffer[i] = { static_cast<float_t>(key.mTime * ticksToSecondsMultiplier), key.mValue.x, key.mValue.y, key.mValue.z };
+	}
+}
+StartExportedFunc(copy_loaded_asset_animation_channel_position_keys, MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t channelIndex, float_t ticksToSecondsMultiplier, native_impl_asset_loader::AnimationVectorKeyframe* buffer, int32_t bufferSize) {
+	native_impl_asset_loader::copy_loaded_asset_animation_channel_position_keys(assetHandle, animIndex, channelIndex, ticksToSecondsMultiplier, buffer, bufferSize);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::copy_loaded_asset_animation_channel_rotation_keys(MemoryLoadedAssetHandle assetHandle, int32_t animIndex,
+	int32_t channelIndex, float_t ticksToSecondsMultiplier, AnimationQuaternionKeyframe* buffer, int32_t bufferSize) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	auto anim = assetHandle->mAnimations[animIndex];
+	auto channel = anim->mChannels[channelIndex];
+	ThrowIf(bufferSize < static_cast<int32_t>(channel->mNumRotationKeys), "Buffer too small for rotation keys.");
+
+	for (auto i = 0U; i < channel->mNumRotationKeys; ++i) {
+		auto& key = channel->mRotationKeys[i];
+		buffer[i] = { static_cast<float_t>(key.mTime * ticksToSecondsMultiplier), key.mValue.x, key.mValue.y, key.mValue.z, key.mValue.w };
+	}
+}
+StartExportedFunc(copy_loaded_asset_animation_channel_rotation_keys, MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t channelIndex, float_t ticksToSecondsMultiplier, native_impl_asset_loader::AnimationQuaternionKeyframe* buffer, int32_t bufferSize) {
+	native_impl_asset_loader::copy_loaded_asset_animation_channel_rotation_keys(assetHandle, animIndex, channelIndex, ticksToSecondsMultiplier, buffer, bufferSize);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::copy_loaded_asset_animation_channel_scaling_keys(MemoryLoadedAssetHandle assetHandle, int32_t animIndex,
+	int32_t channelIndex, float_t ticksToSecondsMultiplier, AnimationVectorKeyframe* buffer, int32_t bufferSize) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	auto anim = assetHandle->mAnimations[animIndex];
+	auto channel = anim->mChannels[channelIndex];
+	ThrowIf(bufferSize < static_cast<int32_t>(channel->mNumScalingKeys), "Buffer too small for scaling keys.");
+
+	for (auto i = 0U; i < channel->mNumScalingKeys; ++i) {
+		auto& key = channel->mScalingKeys[i];
+		buffer[i] = { static_cast<float_t>(key.mTime * ticksToSecondsMultiplier), key.mValue.x, key.mValue.y, key.mValue.z };
+	}
+}
+StartExportedFunc(copy_loaded_asset_animation_channel_scaling_keys, MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t channelIndex, float_t ticksToSecondsMultiplier, native_impl_asset_loader::AnimationVectorKeyframe* buffer, int32_t bufferSize) {
+	native_impl_asset_loader::copy_loaded_asset_animation_channel_scaling_keys(assetHandle, animIndex, channelIndex, ticksToSecondsMultiplier, buffer, bufferSize);
+	EndExportedFunc
+}
+
+aiNode* find_node_by_name(aiNode* node, const aiString& name) {
+	if (node->mName == name) return node;
+	for (auto i = 0U; i < node->mNumChildren; ++i) {
+		auto result = find_node_by_name(node->mChildren[i], name);
+		if (result != nullptr) return result;
+	}
+	return nullptr;
+}
+
+mat4f aimat_to_mat4f(const aiMatrix4x4& m) {
+	return mat4f{
+		float4{ m.a1, m.b1, m.c1, m.d1 },
+		float4{ m.a2, m.b2, m.c2, m.d2 },
+		float4{ m.a3, m.b3, m.c3, m.d3 },
+		float4{ m.a4, m.b4, m.c4, m.d4 }
+	};
+}
+
+void native_impl_asset_loader::get_loaded_asset_mesh_bone_hierarchy(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex,
+	int32_t* parentIndicesBuffer, mat4f* inverseBindPoseBuffer, mat4f* defaultLocalTransformBuffer, int32_t boneCount) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIfNull(parentIndicesBuffer, "Parent indices buffer was null.");
+	ThrowIfNull(inverseBindPoseBuffer, "Inverse bind pose buffer was null.");
+	ThrowIfNull(defaultLocalTransformBuffer, "Default local transform buffer was null.");
+
+	auto unused = aiMatrix4x4{};
+	auto mesh = get_mesh_at_index(assetHandle, meshIndex, unused);
+	ThrowIf(boneCount != static_cast<int32_t>(mesh->mNumBones), "Bone count mismatch.");
+
+	// Build name-to-index map for bones
+	std::unordered_map<std::string, int32_t> boneNameToIndex;
+	for (auto b = 0U; b < mesh->mNumBones; ++b) {
+		boneNameToIndex[mesh->mBones[b]->mName.C_Str()] = static_cast<int32_t>(b);
+	}
+
+	for (auto b = 0U; b < mesh->mNumBones; ++b) {
+		auto bone = mesh->mBones[b];
+		inverseBindPoseBuffer[b] = aimat_to_mat4f(bone->mOffsetMatrix);
+
+		auto boneNode = find_node_by_name(assetHandle->mRootNode, bone->mName);
+		ThrowIfNull(boneNode, "Could not find node for bone '", bone->mName.C_Str(), "'.");
+
+		// Default local transform: multiply in any intermediate non-bone nodes between this bone and its bone-parent
+		auto localTransform = boneNode->mTransformation;
+		defaultLocalTransformBuffer[b] = aimat_to_mat4f(localTransform);
+
+		// Walk up to find nearest ancestor that is also a bone
+		parentIndicesBuffer[b] = -1;
+		auto currentNode = boneNode->mParent;
+		auto accumulatedTransform = aiMatrix4x4{};
+		while (currentNode != nullptr) {
+			auto it = boneNameToIndex.find(currentNode->mName.C_Str());
+			if (it != boneNameToIndex.end()) {
+				parentIndicesBuffer[b] = it->second;
+				break;
+			}
+			// Accumulate non-bone ancestor transforms into this bone's local transform
+			accumulatedTransform = currentNode->mTransformation * accumulatedTransform;
+			currentNode = currentNode->mParent;
+		}
+
+		// If there were intermediate non-bone nodes, fold their transforms in
+		if (accumulatedTransform != aiMatrix4x4{}) {
+			auto combined = accumulatedTransform * localTransform;
+			defaultLocalTransformBuffer[b] = aimat_to_mat4f(combined);
+		}
+	}
+}
+StartExportedFunc(get_loaded_asset_mesh_bone_hierarchy, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* parentIndicesBuffer, mat4f* inverseBindPoseBuffer, mat4f* defaultLocalTransformBuffer, int32_t boneCount) {
+	native_impl_asset_loader::get_loaded_asset_mesh_bone_hierarchy(assetHandle, meshIndex, parentIndicesBuffer, inverseBindPoseBuffer, defaultLocalTransformBuffer, boneCount);
 	EndExportedFunc
 }
 
