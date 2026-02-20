@@ -23,6 +23,8 @@ unsafe partial class LocalAssetLoader {
 	readonly LocalMeshBuilder _meshBuilder;
 	readonly FixedByteBufferPool _vertexTriangleBufferPool;
 	readonly FixedByteBufferPool _boneDataBufferPool;
+	readonly InteropStringBuffer _animationAndBoneNameBuffer;
+	readonly FixedByteBufferPool _skeletalAnimationKeyframeDataPool;
 	
 	public Mesh LoadMesh(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig) {
 		ThrowIfThisIsDisposed();
@@ -41,7 +43,7 @@ unsafe partial class LocalAssetLoader {
 			try {
 				var metadata = GetAmalgamatedMeshMetadataFromOpenedFile(assetHandle);
 				if (metadata.SubMeshCount <= 0) throw new ArgumentException($"Given file '{filePath}' does not contain any mesh data.");
-				GetLoadedAssetMeshBoneCount(assetHandle, 0, out var boneCount).ThrowIfFailure();
+				GetLoadedAssetMeshSkeletalBoneCount(assetHandle, 0, out var boneCount).ThrowIfFailure();
 				var loadSkeletalAnimationData = boneCount > 0 && readConfig.LoadSkeletalAnimationDataIfPresent;
 				if (loadSkeletalAnimationData && boneCount > IMeshBuilder.MaxSkeletalBoneCount) {
 					Console.WriteLine($"Can not load skeletal animation data for file '{filePath}' as its bone count ({boneCount}) is higher than the maximum TinyFFR supports ({IMeshBuilder.MaxSkeletalBoneCount}).");
@@ -63,7 +65,7 @@ unsafe partial class LocalAssetLoader {
 						var defaultLocalTransformsBuffer = _boneDataBufferPool.Rent<Matrix4x4>(boneCount);
 
 						try {
-							GetLoadedAssetMeshBoneHierarchy(
+							GetLoadedAssetMeshSkeletalBoneHierarchy(
 								assetHandle, 
 								0, 
 								(int*) parentIndicesBuffer.StartPtr,
@@ -268,85 +270,155 @@ unsafe partial class LocalAssetLoader {
 	}
 
 	void LoadAndAttachMeshAnimations(UIntPtr assetHandle, int meshIndex, int boneCount, Mesh mesh) {
+		const int MaxNameLengthForStackAlloc = 2048;
 		if (boneCount <= 0) return;
-		GetLoadedAssetAnimationCount(assetHandle, out var animCount).ThrowIfFailure();
-		if (animCount <= 0) return;
+		
+		GetLoadedAssetAnimationCount(
+			assetHandle, 
+			out var animationCount
+		).ThrowIfFailure();
+		
+		if (animationCount <= 0) return;
+		
+		Span<char> stackNameBuffer = stackalloc char[MaxNameLengthForStackAlloc]; 
 
-		for (var animIdx = 0; animIdx < animCount; ++animIdx) {
-			GetLoadedAssetAnimationData(assetHandle, animIdx, out var nameLen, out var durationSeconds, out var channelCount).ThrowIfFailure();
+		for (var a = 0; a < animationCount; ++a) {
+			GetLoadedAssetSkeletalAnimationMetadata(
+				assetHandle, 
+				a, 
+				out var nameLenBytes,
+				out var animationDurationSeconds, 
+				out var animationChannelCount
+			).ThrowIfFailure();
 
-			Span<byte> nameUtf8 = nameLen <= 512 ? stackalloc byte[nameLen] : new byte[nameLen];
-			fixed (byte* namePtr = nameUtf8) {
-				CopyLoadedAssetAnimationName(assetHandle, animIdx, namePtr, nameLen).ThrowIfFailure();
+			if (nameLenBytes > _animationAndBoneNameBuffer.Length) {
+				throw new InvalidOperationException($"Animation name length too long; increase {nameof(LocalAssetLoaderConfig.MaxAnimationAndBoneNameLengthChars)} in {nameof(LocalAssetLoaderConfig)}!");
 			}
-			Span<char> nameChars = nameLen <= 512 ? stackalloc char[nameLen] : new char[nameLen];
-			var nameCharCount = Encoding.UTF8.GetChars(nameUtf8, nameChars);
-			var name = nameChars[..nameCharCount];
+			CopyLoadedAssetSkeletalAnimationName(
+				assetHandle,
+				a,
+				_animationAndBoneNameBuffer.AsPointer,
+				_animationAndBoneNameBuffer.Length
+			).ThrowIfFailure();
+			
+			var animNameUtf16Length = _animationAndBoneNameBuffer.GetUtf16Length();
+			using var animNameHeapBuffer = animNameUtf16Length > MaxNameLengthForStackAlloc
+				? _globals.HeapPool.Borrow<char>(animNameUtf16Length)
+				: (PooledHeapMemory<char>?) null;
+			var animNameBuffer = animNameHeapBuffer.HasValue ? animNameHeapBuffer.Value.Buffer : stackNameBuffer;
+			_animationAndBoneNameBuffer.ConvertToUtf16(animNameBuffer);
 
-			GetLoadedAssetAnimationTicksPerSecond(assetHandle, animIdx, out var tps).ThrowIfFailure();
-			var ticksToSecondsMultiplier = tps > 0f ? 1f / tps : 1f / 25f;
-
-			var totalPosKeys = 0;
-			var totalRotKeys = 0;
-			var totalScaleKeys = 0;
-			var validChannelCount = 0;
-
-			Span<AnimationChannelHeader> headers = channelCount <= 128 ? stackalloc AnimationChannelHeader[channelCount] : new AnimationChannelHeader[channelCount];
-
-			for (var chIdx = 0; chIdx < channelCount; ++chIdx) {
-				GetLoadedAssetAnimationChannelData(assetHandle, animIdx, chIdx, meshIndex,
-					out var boneIdx, out var posKeyCount, out var rotKeyCount, out var scaleKeyCount).ThrowIfFailure();
-
-				if (boneIdx < 0) continue;
-
-				headers[validChannelCount] = new AnimationChannelHeader(
-					boneIdx,
-					totalPosKeys, posKeyCount,
-					totalRotKeys, rotKeyCount,
-					totalScaleKeys, scaleKeyCount
+			var totalTranslationKeyframes = 0;
+			var totalRotationKeyframes = 0;
+			var totalScalingKeyframes = 0;
+			var highestSingleChannelScalingKeyframeCount = 0;
+			var highestSingleChannelRotationKeyframeCount = 0;
+			var highestSingleChannelTranslationKeyframeCount = 0;
+			var mutations = _globals.HeapPool.Borrow<SkeletalAnimationBoneMutationDescriptor>(animationChannelCount);
+			
+			for (var c = 0; c < animationChannelCount; ++c) {
+				var getMetadataResult = GetLoadedAssetSkeletalAnimationChannelMetadata(
+					assetHandle, 
+					meshIndex, 
+					a, 
+					c,
+					out var boneIndex, 
+					out var numScalingKeyframes, 
+					out var numRotationKeyframes, 
+					out var numTranslationKeyframes
 				);
-				++validChannelCount;
-				totalPosKeys += posKeyCount;
-				totalRotKeys += rotKeyCount;
-				totalScaleKeys += scaleKeyCount;
+				if (!getMetadataResult) {
+					mutations.Dispose();
+					getMetadataResult.ThrowIfFailure();
+					throw new InvalidOperationException();
+				}
+
+				mutations.Buffer[c] = new SkeletalAnimationBoneMutationDescriptor(
+					boneIndex,
+					totalScalingKeyframes, numScalingKeyframes,
+					totalRotationKeyframes, numRotationKeyframes,
+					totalTranslationKeyframes, numTranslationKeyframes
+				);
+				totalScalingKeyframes += numScalingKeyframes;
+				totalRotationKeyframes += numRotationKeyframes;
+				totalTranslationKeyframes += numTranslationKeyframes;
+				highestSingleChannelScalingKeyframeCount = Int32.Max(highestSingleChannelScalingKeyframeCount, numScalingKeyframes);
+				highestSingleChannelRotationKeyframeCount = Int32.Max(highestSingleChannelRotationKeyframeCount, numRotationKeyframes);
+				highestSingleChannelTranslationKeyframeCount = Int32.Max(highestSingleChannelTranslationKeyframeCount, numTranslationKeyframes);
 			}
 
-			headers = headers[..validChannelCount];
+			var scalingKeyframes = _globals.HeapPool.Borrow<SkeletalAnimationScalingKeyframe>(totalScalingKeyframes);
+			var rotationKeyframes = _globals.HeapPool.Borrow<SkeletalAnimationRotationKeyframe>(totalRotationKeyframes);
+			var translationKeyframes = _globals.HeapPool.Borrow<SkeletalAnimationTranslationKeyframe>(totalTranslationKeyframes);
+			var scalingVectorBuffer = _skeletalAnimationKeyframeDataPool.Rent<Vector3>(highestSingleChannelScalingKeyframeCount);
+			var scalingTimeCodeBuffer = _skeletalAnimationKeyframeDataPool.Rent<float>(highestSingleChannelScalingKeyframeCount);
+			var rotationQuaternionBuffer = _skeletalAnimationKeyframeDataPool.Rent<Quaternion>(highestSingleChannelRotationKeyframeCount);
+			var rotationTimeCodeBuffer = _skeletalAnimationKeyframeDataPool.Rent<float>(highestSingleChannelRotationKeyframeCount);
+			var translationVectorBuffer = _skeletalAnimationKeyframeDataPool.Rent<Vector3>(highestSingleChannelTranslationKeyframeCount);
+			var translationTimeCodeBuffer = _skeletalAnimationKeyframeDataPool.Rent<float>(highestSingleChannelTranslationKeyframeCount);
 
-			using var posKeysBorrow = _globals.HeapPool.Borrow<AnimationVectorKeyframe>(totalPosKeys);
-			using var rotKeysBorrow = _globals.HeapPool.Borrow<AnimationQuaternionKeyframe>(totalRotKeys);
-			using var scaleKeysBorrow = _globals.HeapPool.Borrow<AnimationVectorKeyframe>(totalScaleKeys);
+			try {
+				for (var c = 0; c < animationChannelCount; ++c) {
+					CopyLoadedAssetSkeletalAnimationChannelData(
+						assetHandle, 
+						a, 
+						c,
+						(Vector3*) scalingVectorBuffer.StartPtr,
+						(float*) scalingTimeCodeBuffer.StartPtr,
+						highestSingleChannelScalingKeyframeCount,
+						(Quaternion*) rotationQuaternionBuffer.StartPtr,
+						(float*) rotationTimeCodeBuffer.StartPtr,
+						highestSingleChannelRotationKeyframeCount,
+						(Vector3*) translationVectorBuffer.StartPtr,
+						(float*) translationTimeCodeBuffer.StartPtr,
+						highestSingleChannelTranslationKeyframeCount
+					).ThrowIfFailure();
 
-			var posKeysSpan = posKeysBorrow.Buffer;
-			var rotKeysSpan = rotKeysBorrow.Buffer;
-			var scaleKeysSpan = scaleKeysBorrow.Buffer;
-
-			var posOffset = 0;
-			var rotOffset = 0;
-			var scaleOffset = 0;
-			for (var chIdx = 0; chIdx < channelCount; ++chIdx) {
-				GetLoadedAssetAnimationChannelData(assetHandle, animIdx, chIdx, meshIndex,
-					out var boneIdx, out var posKeyCount, out var rotKeyCount, out var scaleKeyCount).ThrowIfFailure();
-
-				if (boneIdx < 0) continue;
-
-				fixed (AnimationVectorKeyframe* posPtr = posKeysSpan[posOffset..]) {
-					CopyLoadedAssetAnimationChannelPositionKeys(assetHandle, animIdx, chIdx, ticksToSecondsMultiplier, posPtr, posKeyCount).ThrowIfFailure();
+					for (var s = 0; s < mutations.Buffer[c].ScalingKeyframeCount; ++s) {
+						scalingKeyframes.Buffer[mutations.Buffer[c].ScalingKeyframeStartIndex + s] = new SkeletalAnimationScalingKeyframe(
+							scalingTimeCodeBuffer.AsReadOnlySpan<float>()[s],
+							Vect.FromVector3(scalingVectorBuffer.AsReadOnlySpan<Vector3>()[s])
+						);
+					}
+					for (var r = 0; r < mutations.Buffer[c].RotationKeyframeCount; ++r) {
+						rotationKeyframes.Buffer[mutations.Buffer[c].RotationKeyframeStartIndex + r] = new SkeletalAnimationRotationKeyframe(
+							rotationTimeCodeBuffer.AsReadOnlySpan<float>()[r],
+							Rotation.FromQuaternionPreNormalized(rotationQuaternionBuffer.AsReadOnlySpan<Quaternion>()[r])
+						);
+					}
+					for (var t = 0; t < mutations.Buffer[c].TranslationKeyframeCount; ++t) {
+						translationKeyframes.Buffer[mutations.Buffer[c].TranslationKeyframeStartIndex + t] = new SkeletalAnimationTranslationKeyframe(
+							translationTimeCodeBuffer.AsReadOnlySpan<float>()[t],
+							Vect.FromVector3(translationVectorBuffer.AsReadOnlySpan<Vector3>()[t])
+						);
+					}
 				}
-				fixed (AnimationQuaternionKeyframe* rotPtr = rotKeysSpan[rotOffset..]) {
-					CopyLoadedAssetAnimationChannelRotationKeys(assetHandle, animIdx, chIdx, ticksToSecondsMultiplier, rotPtr, rotKeyCount).ThrowIfFailure();
-				}
-				fixed (AnimationVectorKeyframe* scalePtr = scaleKeysSpan[scaleOffset..]) {
-					CopyLoadedAssetAnimationChannelScalingKeys(assetHandle, animIdx, chIdx, ticksToSecondsMultiplier, scalePtr, scaleKeyCount).ThrowIfFailure();
-				}
 
-				posOffset += posKeyCount;
-				rotOffset += rotKeyCount;
-				scaleOffset += scaleKeyCount;
+				_meshBuilder.AttachAnimationAndTransferBufferOwnership(
+					mesh,
+					scalingKeyframes,
+					rotationKeyframes,
+					translationKeyframes,
+					mutations,
+					animationDurationSeconds,
+					animNameBuffer[..animNameUtf16Length]
+				);
 			}
-
-			_meshBuilder.AttachAnimation(mesh, name, durationSeconds,
-				headers, posKeysSpan, rotKeysSpan, scaleKeysSpan);
+			catch {
+				scalingKeyframes.Dispose();
+				rotationKeyframes.Dispose();
+				translationKeyframes.Dispose();
+				mutations.Dispose();
+				throw;
+			}
+			finally {
+				_skeletalAnimationKeyframeDataPool.Return(scalingVectorBuffer);
+				_skeletalAnimationKeyframeDataPool.Return(scalingTimeCodeBuffer);
+				_skeletalAnimationKeyframeDataPool.Return(rotationQuaternionBuffer);
+				_skeletalAnimationKeyframeDataPool.Return(rotationTimeCodeBuffer);
+				_skeletalAnimationKeyframeDataPool.Return(translationVectorBuffer);
+				_skeletalAnimationKeyframeDataPool.Return(translationTimeCodeBuffer);
+			}
 		}
 	}
 
@@ -377,6 +449,15 @@ unsafe partial class LocalAssetLoader {
 		out int outTriangleCount
 	);
 	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "copy_loaded_asset_mesh_triangles")]
+	static extern InteropResult CopyLoadedAssetMeshTriangles(
+		UIntPtr assetHandle,
+		int meshIndex,
+		InteropBool correctFlippedOrientation,
+		int bufferSizeTriangles,
+		VertexTriangle* triangleBufferPtr
+	);
+	
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "copy_loaded_asset_mesh_vertices")]
 	static extern InteropResult CopyLoadedAssetMeshVertices(
 		UIntPtr assetHandle,
@@ -392,69 +473,67 @@ unsafe partial class LocalAssetLoader {
 		int bufferSizeVertices,
 		MeshVertexSkeletal* vertexBufferPtr
 	);
-
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_bone_count")]
-	static extern InteropResult GetLoadedAssetMeshBoneCount(
+	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_skeletal_bone_count")]
+	static extern InteropResult GetLoadedAssetMeshSkeletalBoneCount(
 		UIntPtr assetHandle,
 		int meshIndex,
 		out int boneCount
 	);
-
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "copy_loaded_asset_mesh_triangles")]
-	static extern InteropResult CopyLoadedAssetMeshTriangles(
-		UIntPtr assetHandle,
+	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_skeletal_bone_hierarchy")]
+	static extern InteropResult GetLoadedAssetMeshSkeletalBoneHierarchy(
+		UIntPtr assetHandle, 
 		int meshIndex,
-		InteropBool correctFlippedOrientation,
-		int bufferSizeTriangles,
-		VertexTriangle* triangleBufferPtr
+		int* parentIndicesBuffer, 
+		Matrix4x4* bindPoseInversionMatricesBuffer, 
+		Matrix4x4* defaultLocalTransformsBuffer, 
+		int boneCount
 	);
 
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_animation_data")]
-	static extern InteropResult GetLoadedAssetAnimationData(
-		UIntPtr assetHandle, int animIndex,
-		out int outNameLengthBytes, out float outDurationSeconds, out int outChannelCount
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_skeletal_animation_metadata")]
+	static extern InteropResult GetLoadedAssetSkeletalAnimationMetadata(
+		UIntPtr assetHandle, 
+		int animationIndex,
+		out int outNameLengthBytes, 
+		out float outDurationSeconds, 
+		out int outChannelCount
 	);
 
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_animation_ticks_per_second")]
-	static extern InteropResult GetLoadedAssetAnimationTicksPerSecond(
-		UIntPtr assetHandle, int animIndex,
-		out float outTicksPerSecond
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "copy_loaded_asset_mesh_skeletal_animation_name")]
+	static extern InteropResult CopyLoadedAssetSkeletalAnimationName(
+		UIntPtr assetHandle, 
+		int animationIndex,
+		byte* utf8NameBuffer, 
+		int bufferLengthBytes
 	);
 
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "copy_loaded_asset_animation_name")]
-	static extern InteropResult CopyLoadedAssetAnimationName(
-		UIntPtr assetHandle, int animIndex,
-		byte* nameBuffer, int bufferLength
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_skeletal_animation_channel_metadata")]
+	static extern InteropResult GetLoadedAssetSkeletalAnimationChannelMetadata(
+		UIntPtr assetHandle, 
+		int meshIndex,
+		int animationIndex,
+		int channelIndex,
+		out int outBoneIndex,
+		out int outScalingKeyframeCount,
+		out int outRotationKeyframeCount,
+		out int outTranslationKeyframeCount
 	);
 
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_animation_channel_data")]
-	static extern InteropResult GetLoadedAssetAnimationChannelData(
-		UIntPtr assetHandle, int animIndex, int channelIndex, int meshIndex,
-		out int outBoneIndex, out int outPosKeyCount, out int outRotKeyCount, out int outScaleKeyCount
-	);
-
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "copy_loaded_asset_animation_channel_position_keys")]
-	static extern InteropResult CopyLoadedAssetAnimationChannelPositionKeys(
-		UIntPtr assetHandle, int animIndex, int channelIndex,
-		float ticksToSecondsMultiplier, AnimationVectorKeyframe* buffer, int bufferSize
-	);
-
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "copy_loaded_asset_animation_channel_rotation_keys")]
-	static extern InteropResult CopyLoadedAssetAnimationChannelRotationKeys(
-		UIntPtr assetHandle, int animIndex, int channelIndex,
-		float ticksToSecondsMultiplier, AnimationQuaternionKeyframe* buffer, int bufferSize
-	);
-
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "copy_loaded_asset_animation_channel_scaling_keys")]
-	static extern InteropResult CopyLoadedAssetAnimationChannelScalingKeys(
-		UIntPtr assetHandle, int animIndex, int channelIndex,
-		float ticksToSecondsMultiplier, AnimationVectorKeyframe* buffer, int bufferSize
-	);
-
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_bone_hierarchy")]
-	static extern InteropResult GetLoadedAssetMeshBoneHierarchy(
-		UIntPtr assetHandle, int meshIndex,
-		int* parentIndicesBuffer, Matrix4x4* inverseBindPoseBuffer, Matrix4x4* defaultLocalTransformBuffer, int boneCount
-	);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "copy_loaded_asset_mesh_skeletal_animation_channel_data")]
+	static extern InteropResult CopyLoadedAssetSkeletalAnimationChannelData(
+		UIntPtr assetHandle, 
+		int animationIndex, 
+		int channelIndex,
+		Vector3* scalingVectorBuffer,
+		float* scalingTimeCodeBuffer,
+		int scalingBufferCount,
+		Quaternion* rotationQuaternionBuffer,
+		float* rotationTimeCodeBuffer,
+		int rotationBufferCount,
+		Vector3* translationVectorBuffer,
+		float* translationTimeCodeBuffer,
+		int translationBufferCount
+	);	
 	#endregion
 }

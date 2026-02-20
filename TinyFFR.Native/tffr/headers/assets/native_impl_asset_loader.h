@@ -66,7 +66,7 @@ public:
 	static void get_loaded_asset_mesh_material_index(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outMaterialIndex);
 	static void get_loaded_asset_mesh_vertex_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outVertexCount);
 	static void get_loaded_asset_mesh_triangle_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outTriangleCount);
-	static void get_loaded_asset_mesh_bone_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outBoneCount);
+	static void get_loaded_asset_mesh_skeletal_bone_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outBoneCount);
 	static void copy_loaded_asset_mesh_vertices(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertex* buffer);
 	static void copy_loaded_asset_mesh_skeletal_vertices(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertexSkeletal* buffer);
 	static void copy_loaded_asset_mesh_triangles(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, interop_bool correctFlippedOrientation, int32_t bufferSizeTriangles, int32_t* buffer);
@@ -76,38 +76,17 @@ public:
 	static void get_loaded_asset_texture_path(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, int32_t textureIndex, const char* assetRootDirPath, char* strBuffer, int32_t bufferLengthBytes);
 	static void get_loaded_asset_material_data(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, AssetMaterialParamGroup* paramGroupPtr, AssetMaterialAlphaFormat* outAlphaFormat, float_t* outRefractionThickness);
 	static void unload_asset_file_from_memory(MemoryLoadedAssetHandle assetHandle);
+	
+	static void get_loaded_asset_mesh_skeletal_bone_hierarchy(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* parentIndicesBuffer, mat4f* inverseBindPoseBuffer, mat4f* defaultLocalTransformBuffer, int32_t boneCount);
+	static void get_loaded_asset_mesh_skeletal_animation_metadata(MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t* outNameLengthBytes, float_t* outDurationSeconds, int32_t* outChannelCount);
+	static void copy_loaded_asset_mesh_skeletal_animation_name(MemoryLoadedAssetHandle assetHandle, int32_t animIndex, char* nameBuffer, int32_t bufferLengthBytes);
+	static void get_loaded_asset_mesh_skeletal_animation_channel_metadata(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t animIndex, int32_t channelIndex, int32_t* outBoneIndex, int32_t* outScalingKeyframeCount, int32_t* outRotationKeyframeCount, int32_t* outTranslationKeyframeCount);
+	static void copy_loaded_asset_mesh_skeletal_animation_channel_data(MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t channelIndex, float3* scalingVectorBuffer, int32_t scalingVectorBufferCount, quatf* rotationQuaternionBuffer, int32_t rotationQuaternionBufferCount, float3* translationVectorBuffer, int32_t translationVectorBufferCount);
 
 	static void get_texture_file_data(const char* filePath, int32_t* outWidth, int32_t* outHeight, int32_t* outChannelCount);
 	static void load_texture_file_in_to_memory(const char* filePath, interop_bool includeWAlphaChannel, int32_t* outWidth, int32_t* outHeight, MemoryLoadedTextureRgba32DataPtr* outTextureData);
 	static void unload_texture_file_from_memory(MemoryLoadedTextureRgba32DataPtr textureData);
-	static void write_texels_to_disk(const char* filePath, int32_t width, int32_t height, int32_t bytesPerPixel, const void* data);
-
-	PushSafeStructPacking
-	struct AnimationVectorKeyframe { float_t Time; float_t X; float_t Y; float_t Z; };
-	PopSafeStructPacking
-	static_assert(sizeof(AnimationVectorKeyframe) == 16);
-	PushSafeStructPacking
-	struct AnimationQuaternionKeyframe { float_t Time; float_t X; float_t Y; float_t Z; float_t W; };
-	PopSafeStructPacking
-	static_assert(sizeof(AnimationQuaternionKeyframe) == 20);
-
-	static void get_loaded_asset_animation_data(MemoryLoadedAssetHandle assetHandle, int32_t animIndex,
-		int32_t* outNameLengthBytes, float_t* outDurationSeconds, int32_t* outChannelCount);
-	static void get_loaded_asset_animation_ticks_per_second(MemoryLoadedAssetHandle assetHandle, int32_t animIndex,
-		float_t* outTicksPerSecond);
-	static void copy_loaded_asset_animation_name(MemoryLoadedAssetHandle assetHandle, int32_t animIndex,
-		char* nameBuffer, int32_t bufferLength);
-	static void get_loaded_asset_animation_channel_data(MemoryLoadedAssetHandle assetHandle, int32_t animIndex,
-		int32_t channelIndex, int32_t meshIndex,
-		int32_t* outBoneIndex, int32_t* outPositionKeyCount, int32_t* outRotationKeyCount, int32_t* outScalingKeyCount);
-	static void copy_loaded_asset_animation_channel_position_keys(MemoryLoadedAssetHandle assetHandle, int32_t animIndex,
-		int32_t channelIndex, float_t ticksToSecondsMultiplier, AnimationVectorKeyframe* buffer, int32_t bufferSize);
-	static void copy_loaded_asset_animation_channel_rotation_keys(MemoryLoadedAssetHandle assetHandle, int32_t animIndex,
-		int32_t channelIndex, float_t ticksToSecondsMultiplier, AnimationQuaternionKeyframe* buffer, int32_t bufferSize);
-	static void copy_loaded_asset_animation_channel_scaling_keys(MemoryLoadedAssetHandle assetHandle, int32_t animIndex,
-		int32_t channelIndex, float_t ticksToSecondsMultiplier, AnimationVectorKeyframe* buffer, int32_t bufferSize);
-	static void get_loaded_asset_mesh_bone_hierarchy(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex,
-		int32_t* parentIndicesBuffer, mat4f* inverseBindPoseBuffer, mat4f* defaultLocalTransformBuffer, int32_t boneCount);
+	static void write_texels_to_disk(const char* filePath, int32_t width, int32_t height, int32_t bytesPerPixel, const void* data);	
 
 	static void load_skybox_file_in_to_memory(uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle);
 	static void unload_skybox_file_from_memory(TextureHandle textureHandle);

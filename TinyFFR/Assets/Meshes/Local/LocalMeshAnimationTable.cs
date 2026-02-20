@@ -14,11 +14,11 @@ namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDisposable {
 	readonly record struct AnimationData(
-		float DefaultCompletionTimeSeconds,
-		PooledHeapMemory<AnimationChannelHeader> ChannelHeaders,
-		PooledHeapMemory<AnimationTranslationKeyframe> TranslationKeys,
-		PooledHeapMemory<AnimationRotationKeyframe> RotationKeys,
-		PooledHeapMemory<AnimationScalingKeyframe> ScalingKeys
+		PooledHeapMemory<SkeletalAnimationScalingKeyframe> ScalingKeyframes,
+		PooledHeapMemory<SkeletalAnimationRotationKeyframe> RotationKeyframes,
+		PooledHeapMemory<SkeletalAnimationTranslationKeyframe> TranslationKeyframes,
+		PooledHeapMemory<SkeletalAnimationBoneMutationDescriptor> BoneMutationDescriptors,
+		float DefaultCompletionTimeSeconds
 	);
 	readonly record struct SkeletonData(
 		int BoneCount, 
@@ -111,30 +111,42 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		);
 	}
 
-	public MeshAnimation Add(ReadOnlySpan<char> name, float defaultCompletionTimeSeconds,
-		ReadOnlySpan<AnimationChannelHeader> channelHeaders,
-		ReadOnlySpan<AnimationVectorKeyframe> translationKeys,
-		ReadOnlySpan<AnimationQuaternionKeyframe> rotationKeys,
-		ReadOnlySpan<AnimationVectorKeyframe> scalingKeys) {
+	public MeshAnimation Add( 
+		ReadOnlySpan<SkeletalAnimationScalingKeyframe> scalingKeyframes, 
+		ReadOnlySpan<SkeletalAnimationRotationKeyframe> rotationKeyframes, 
+		ReadOnlySpan<SkeletalAnimationTranslationKeyframe> translationKeyframes, 
+		ReadOnlySpan<SkeletalAnimationBoneMutationDescriptor> boneMutations, 
+		float defaultCompletionTimeSeconds, 
+		ReadOnlySpan<char> name
+	) {
 		ThrowIfThisIsDisposed();
-
-		var chBorrow = _globals.HeapPool.Borrow<AnimationChannelHeader>(channelHeaders.Length);
-		channelHeaders.CopyTo(chBorrow.Buffer);
-		var pkBorrow = _globals.HeapPool.Borrow<AnimationVectorKeyframe>(translationKeys.Length);
-		translationKeys.CopyTo(pkBorrow.Buffer);
-		var rkBorrow = _globals.HeapPool.Borrow<AnimationQuaternionKeyframe>(rotationKeys.Length);
-		rotationKeys.CopyTo(rkBorrow.Buffer);
-		var skBorrow = _globals.HeapPool.Borrow<AnimationVectorKeyframe>(scalingKeys.Length);
-		scalingKeys.CopyTo(skBorrow.Buffer);
-
-		var data = new AnimationData(defaultCompletionTimeSeconds, chBorrow, pkBorrow, rkBorrow, skBorrow);
-		++_nextHandleId;
-		var newHandle = new ResourceHandle<MeshAnimation>(_nextHandleId);
-		_dataMap.Add(newHandle, data);
-		_globals.StoreMandatoryResourceName(newHandle.Ident, name);
-		_nameMap.Add(name, HandleToInstance(newHandle));
-		return HandleToInstance(newHandle);
+		
+		var scalingHeapBuffer = _globals.HeapPool.BorrowAndCopy(scalingKeyframes);
+		var rotationHeapBuffer = _globals.HeapPool.BorrowAndCopy(rotationKeyframes);
+		var translationHeapBuffer = _globals.HeapPool.BorrowAndCopy(translationKeyframes);
+		var mutationHeapBuffer = _globals.HeapPool.BorrowAndCopy(boneMutations);
+		
+		return AddAndTransferBufferOwnership(scalingHeapBuffer, rotationHeapBuffer, translationHeapBuffer, mutationHeapBuffer, defaultCompletionTimeSeconds, name);
 	}
+	public MeshAnimation AddAndTransferBufferOwnership( 
+		PooledHeapMemory<SkeletalAnimationScalingKeyframe> scalingKeyframes, 
+		PooledHeapMemory<SkeletalAnimationRotationKeyframe> rotationKeyframes, 
+		PooledHeapMemory<SkeletalAnimationTranslationKeyframe> translationKeyframes, 
+		PooledHeapMemory<SkeletalAnimationBoneMutationDescriptor> boneMutations, 
+		float defaultCompletionTimeSeconds, 
+		ReadOnlySpan<char> name
+	) {
+		ThrowIfThisIsDisposed();
+		
+		var handle = new ResourceHandle<MeshAnimation>(++_nextHandleId);
+		var data = new AnimationData(scalingKeyframes, rotationKeyframes, translationKeyframes, boneMutations, defaultCompletionTimeSeconds);
+		
+		_dataMap.Add(handle, data);
+		_globals.StoreMandatoryResourceName(handle.Ident, name);
+		_nameMap.Add(name, HandleToInstance(handle));
+		return HandleToInstance(handle);
+	}
+
 
 	public float GetDefaultCompletionTimeSeconds(ResourceHandle<MeshAnimation> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -152,10 +164,10 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		var animation = _dataMap[handle];
 		var boneCount = skeleton.BoneCount;
 
-		var channelHeaders = animation.ChannelHeaders.Buffer;
-		var translationKeys = animation.TranslationKeys.Buffer;
-		var rotationKeys = animation.RotationKeys.Buffer;
-		var scalingKeys = animation.ScalingKeys.Buffer;
+		var mutations = animation.BoneMutationDescriptors.Buffer;
+		var translationKeys = animation.TranslationKeyframes.Buffer;
+		var rotationKeys = animation.RotationKeyframes.Buffer;
+		var scalingKeys = animation.ScalingKeyframes.Buffer;
 
 		var globalTransformsBuffer = _applyTransformsBuffer.Rent<Matrix4x4>(boneCount);
 		var outputTransformsBuffer = _applyTransformsBuffer.Rent<Matrix4x4>(boneCount);
@@ -184,9 +196,9 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 				var lowIndex = 0;
 				var highIndex = keys.Length - 1;
 				while (lowIndex < highIndex - 1) {
-					var curMidpointIndex = (lowIndex + highIndex) >> 1;
-					if (keys[curMidpointIndex].TimeKeySeconds <= targetTimeSecs) lowIndex = curMidpointIndex;
-					else highIndex = curMidpointIndex;
+					var midpointIndex = (lowIndex + highIndex) >> 1;
+					if (keys[midpointIndex].TimeKeySeconds <= targetTimeSecs) lowIndex = midpointIndex;
+					else highIndex = midpointIndex;
 				}
 				
 				var low = keys[lowIndex];
@@ -198,15 +210,15 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 				);
 			}
 			
-			for (var c = 0; c < channelHeaders.Length; ++c) {
-				var channel = channelHeaders[c];
+			for (var m = 0; m < mutations.Length; ++m) {
+				var mutation = mutations[m];
 				var transform = new Transform(
-					scaling: InterpolateKeyframes<AnimationScalingKeyframe, Vect>(scalingKeys.Slice(channel.ScalingKeyStart, channel.ScalingKeyCount), targetTimePointSeconds),
-					rotation: InterpolateKeyframes<AnimationRotationKeyframe, Rotation>(rotationKeys.Slice(channel.RotationKeyStart, channel.RotationKeyCount), targetTimePointSeconds),
-					translation: InterpolateKeyframes<AnimationTranslationKeyframe, Vect>(translationKeys.Slice(channel.TranslationKeyStart, channel.TranslationKeyCount), targetTimePointSeconds)
+					scaling: InterpolateKeyframes<SkeletalAnimationScalingKeyframe, Vect>(scalingKeys.Slice(mutation.ScalingKeyframeStartIndex, mutation.ScalingKeyframeCount), targetTimePointSeconds),
+					rotation: InterpolateKeyframes<SkeletalAnimationRotationKeyframe, Rotation>(rotationKeys.Slice(mutation.RotationKeyframeStartIndex, mutation.RotationKeyframeCount), targetTimePointSeconds),
+					translation: InterpolateKeyframes<SkeletalAnimationTranslationKeyframe, Vect>(translationKeys.Slice(mutation.TranslationKeyframeStartIndex, mutation.TranslationKeyframeCount), targetTimePointSeconds)
 				);
 
-				transform.ToMatrix(ref outputTransforms[channel.BoneIndex]);
+				transform.ToMatrix(ref outputTransforms[mutation.TargetBoneIndex]);
 			}
 
 			// Step 3: Accumulate global transforms and compute final output
@@ -267,10 +279,10 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 	public void Recycle() {
 		foreach (var kvp in _dataMap) {
 			var data = kvp.Value;
-			data.ChannelHeaders.Dispose();
-			data.TranslationKeys.Dispose();
-			data.RotationKeys.Dispose();
-			data.ScalingKeys.Dispose();
+			data.BoneMutationDescriptors.Dispose();
+			data.TranslationKeyframes.Dispose();
+			data.RotationKeyframes.Dispose();
+			data.ScalingKeyframes.Dispose();
 		}
 		_dataMap.Clear();
 		_nameMap.Clear();

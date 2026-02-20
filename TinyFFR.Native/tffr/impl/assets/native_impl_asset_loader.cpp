@@ -720,20 +720,6 @@ StartExportedFunc(get_loaded_asset_animation_data, MemoryLoadedAssetHandle asset
 	EndExportedFunc
 }
 
-void native_impl_asset_loader::get_loaded_asset_animation_ticks_per_second(MemoryLoadedAssetHandle assetHandle, int32_t animIndex,
-	float_t* outTicksPerSecond) {
-	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
-	ThrowIf(animIndex < 0 || static_cast<uint32_t>(animIndex) >= assetHandle->mNumAnimations, "Animation index out of bounds.");
-	ThrowIfNull(outTicksPerSecond, "Out ticks per second pointer was null.");
-
-	auto anim = assetHandle->mAnimations[animIndex];
-	*outTicksPerSecond = static_cast<float_t>(anim->mTicksPerSecond > 0.0 ? anim->mTicksPerSecond : 25.0);
-}
-StartExportedFunc(get_loaded_asset_animation_ticks_per_second, MemoryLoadedAssetHandle assetHandle, int32_t animIndex, float_t* outTicksPerSecond) {
-	native_impl_asset_loader::get_loaded_asset_animation_ticks_per_second(assetHandle, animIndex, outTicksPerSecond);
-	EndExportedFunc
-}
-
 void native_impl_asset_loader::copy_loaded_asset_animation_name(MemoryLoadedAssetHandle assetHandle, int32_t animIndex,
 	char* nameBuffer, int32_t bufferLength) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");

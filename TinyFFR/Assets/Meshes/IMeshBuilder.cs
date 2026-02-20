@@ -376,6 +376,14 @@ public interface IMeshBuilder {
 	#endregion
 	
 	#region Animations
-	MeshAnimation AttachAnimation(Mesh mesh, ReadOnlySpan<char> name, float defaultCompletionTimeSeconds, ReadOnlySpan<AnimationChannelHeader> channelHeaders, ReadOnlySpan<AnimationVectorKeyframe> allPositionKeys, ReadOnlySpan<AnimationQuaternionKeyframe> allRotationKeys, ReadOnlySpan<AnimationVectorKeyframe> allScalingKeys);
+	MeshAnimation AttachAnimation(
+		Mesh mesh, 
+		ReadOnlySpan<SkeletalAnimationScalingKeyframe> scalingKeyframes, 
+		ReadOnlySpan<SkeletalAnimationRotationKeyframe> rotationKeyframes, 
+		ReadOnlySpan<SkeletalAnimationTranslationKeyframe> translationKeyframes, 
+		ReadOnlySpan<SkeletalAnimationBoneMutationDescriptor> boneMutations, 
+		float defaultCompletionTimeSeconds, 
+		ReadOnlySpan<char> name
+	);
 	#endregion
 }

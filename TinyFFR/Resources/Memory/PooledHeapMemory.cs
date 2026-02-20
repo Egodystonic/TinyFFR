@@ -10,6 +10,11 @@ namespace Egodystonic.TinyFFR.Resources.Memory;
 sealed unsafe class HeapPool {
 	readonly ArrayPool<byte> _pool = ArrayPool<byte>.Shared;
 
+	public PooledHeapMemory<T> BorrowAndCopy<T>(ReadOnlySpan<T> copySource) where T : unmanaged {
+		var result = Borrow<T>(copySource.Length);
+		copySource.CopyTo(result.Buffer);
+		return result;
+	}
 	public PooledHeapMemory<T> Borrow<T>(int numElements) where T : unmanaged => Borrow<T>(numElements, sizeof(T));
 	public PooledHeapMemory<T> Borrow<T>(int numElements, int elementSize) where T : unmanaged => new(_pool, elementSize * numElements);
 	public PooledHeapMemory<byte> Borrow(int numBytes) => new(_pool, numBytes);

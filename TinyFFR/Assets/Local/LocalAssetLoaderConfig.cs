@@ -8,10 +8,14 @@ namespace Egodystonic.TinyFFR.Assets.Local;
 
 public sealed record LocalAssetLoaderConfig {
 	public const int MaxMaxAssetFilePathLengthChars = 1 << 29;
+	public const int MaxMaxAnimationAndBoneNameLengthChars = 1 << 29;
 	public const int MaxMaxAssetVertexIndexBufferSizeBytes = 1 << 29;
+	public const int MaxMaxSkeletalAnimationChannelKeyframeCount = 1 << 29;
 	public const int MaxMaxKtxFileBufferSizeBytes = 1 << 29;
 	public const int MaxMaxEmbeddedAssetTextureFileSizeBytes = 16_384 * 16_384 * 4; // Matches max in native_impl_asset_loader.cpp
 	public const int DefaultMaxAssetFilePathLengthChars = 2048;
+	public const int DefaultMaxAnimationAndBoneNameLengthChars = 2048;
+	public const int DefaultMaxSkeletalAnimationChannelKeyframeCount = 4096;
 	public const int DefaultMaxAssetVertexIndexBufferSizeBytes = 1_000_000 * MeshVertex.ExpectedSerializedSize; // 1m vertex mesh
 	public const int DefaultMaxKtxFileBufferSizeBytes = 256 * 1024 * 1024; // 256 MB
 	public const int DefaultMaxEmbeddedAssetTextureFileSizeBytes = 8192 * 8192 * 4; // 8k image; 256MB
@@ -25,6 +29,28 @@ public sealed record LocalAssetLoaderConfig {
 				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max asset file path length must be between 1 and {MaxMaxAssetFilePathLengthChars}.");
 			}
 			_maxAssetFilePathLengthChars = value;
+		}
+	}
+	
+	readonly int _maxAnimationAndBoneNameLengthChars = DefaultMaxAnimationAndBoneNameLengthChars;
+	public int MaxAnimationAndBoneNameLengthChars {
+		get => _maxAnimationAndBoneNameLengthChars;
+		init {
+			if (value is <= 0 or > MaxMaxAnimationAndBoneNameLengthChars) {
+				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max animation/bone name length must be between 1 and {MaxMaxAnimationAndBoneNameLengthChars}.");
+			}
+			_maxAnimationAndBoneNameLengthChars = value;
+		}
+	}
+	
+	readonly int _maxSkeletalAnimationChannelKeyframeCount = DefaultMaxSkeletalAnimationChannelKeyframeCount;
+	public int MaxSkeletalAnimationChannelKeyframeCount {
+		get => _maxSkeletalAnimationChannelKeyframeCount;
+		init {
+			if (value is <= 0 or > MaxMaxSkeletalAnimationChannelKeyframeCount) {
+				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max skeletal animation channel keyframe count must be between 1 and {MaxMaxSkeletalAnimationChannelKeyframeCount}.");
+			}
+			_maxSkeletalAnimationChannelKeyframeCount = value;
 		}
 	}
 

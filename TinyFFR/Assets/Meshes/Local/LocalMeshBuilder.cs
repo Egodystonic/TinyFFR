@@ -176,12 +176,35 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		return _activeMeshes[handle];
 	}
 	
-	public MeshAnimation AttachAnimation(Mesh mesh, ReadOnlySpan<char> name, float defaultCompletionTimeSeconds, ReadOnlySpan<AnimationChannelHeader> channelHeaders, ReadOnlySpan<AnimationVectorKeyframe> allPositionKeys, ReadOnlySpan<AnimationQuaternionKeyframe> allRotationKeys, ReadOnlySpan<AnimationVectorKeyframe> allScalingKeys) {
+	public MeshAnimation AttachAnimation(
+		Mesh mesh, 
+		ReadOnlySpan<SkeletalAnimationScalingKeyframe> scalingKeyframes, 
+		ReadOnlySpan<SkeletalAnimationRotationKeyframe> rotationKeyframes, 
+		ReadOnlySpan<SkeletalAnimationTranslationKeyframe> translationKeyframes, 
+		ReadOnlySpan<SkeletalAnimationBoneMutationDescriptor> boneMutations, 
+		float defaultCompletionTimeSeconds, 
+		ReadOnlySpan<char> name
+	) {
 		var handle = mesh.Handle;
 		if (!_activeMeshAnimationTables.TryGetValue(handle, out var animTable)) {
 			throw new InvalidOperationException($"Can not attach animation to {mesh} as it was not created with skeletal vertex/bone data.");
 		}
-		return animTable.Add(name, defaultCompletionTimeSeconds, channelHeaders, allPositionKeys, allRotationKeys, allScalingKeys);
+		return animTable.Add(scalingKeyframes, rotationKeyframes, translationKeyframes, boneMutations, defaultCompletionTimeSeconds, name);
+	}
+	public MeshAnimation AttachAnimationAndTransferBufferOwnership(
+		Mesh mesh, 
+		PooledHeapMemory<SkeletalAnimationScalingKeyframe> scalingKeyframes, 
+		PooledHeapMemory<SkeletalAnimationRotationKeyframe> rotationKeyframes, 
+		PooledHeapMemory<SkeletalAnimationTranslationKeyframe> translationKeyframes, 
+		PooledHeapMemory<SkeletalAnimationBoneMutationDescriptor> boneMutations, 
+		float defaultCompletionTimeSeconds, 
+		ReadOnlySpan<char> name
+	) {
+		var handle = mesh.Handle;
+		if (!_activeMeshAnimationTables.TryGetValue(handle, out var animTable)) {
+			throw new InvalidOperationException($"Can not attach animation to {mesh} as it was not created with skeletal vertex/bone data.");
+		}
+		return animTable.AddAndTransferBufferOwnership(scalingKeyframes, rotationKeyframes, translationKeyframes, boneMutations, defaultCompletionTimeSeconds, name);
 	}
 
 	public bool GetHasAnyAnimations(ResourceHandle<Mesh> handle) {
