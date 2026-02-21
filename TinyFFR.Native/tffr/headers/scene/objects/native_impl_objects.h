@@ -6,7 +6,7 @@
 using namespace filament;
 using namespace filament::math;
 
-typedef int32_t ModelInstanceHandle;
+typedef uintptr_t ModelInstanceHandle;
 
 class native_impl_objects {
 public:

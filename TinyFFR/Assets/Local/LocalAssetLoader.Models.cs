@@ -895,7 +895,7 @@ unsafe partial class LocalAssetLoader {
 				var materialToGroupAddOrderMap = materialCount > MaxIndicesOnStack ? new int[materialCount] : stackalloc int[materialCount];
 				
 				for (var i = 0; i < meshCount; ++i) {
-					GetLoadedAssetMeshBoneCount(assetHandle, i, out var boneCount).ThrowIfFailure();
+					GetLoadedAssetMeshSkeletalBoneCount(assetHandle, i, out var boneCount).ThrowIfFailure();
 					var loadSkeletalAnimationData = boneCount > 0 && readConfig.MeshConfig.LoadSkeletalAnimationDataIfPresent;
 					if (loadSkeletalAnimationData && boneCount > IMeshBuilder.MaxSkeletalBoneCount) {
 						Console.WriteLine($"Can not load skeletal animation data for file '{filePath}' (sub-mesh {i}) as its bone count ({boneCount}) is higher than the maximum TinyFFR supports ({IMeshBuilder.MaxSkeletalBoneCount}).");
@@ -914,7 +914,7 @@ unsafe partial class LocalAssetLoader {
 							var defaultLocalTransformsBuffer = _boneDataBufferPool.Rent<Matrix4x4>(boneCount);
 							
 							try {
-								GetLoadedAssetMeshBoneHierarchy(
+								GetLoadedAssetMeshSkeletalBoneHierarchy(
 									assetHandle, 
 									i, 
 									(int*) parentIndicesBuffer.StartPtr,

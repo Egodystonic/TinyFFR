@@ -20,16 +20,16 @@ void native_impl_objects::allocate_model_instance(mat4f* initialTransformPtr, Ve
 
 	auto entity = filament_engine->getEntityManager().create();
 
-	auto& builder = RenderableManager::Builder(1)
-		.culling(false)
+	RenderableManager::Builder builder(1);
+	builder.culling(false)
 		.geometry(0, RenderableManager::PrimitiveType::TRIANGLES, vb, ib, ibStartIndex, ibCount)
 		.material(0, material)
 		.boundingBox({ { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 } })
 		.castShadows(true)
 		.receiveShadows(true);
-	
+
 	if (boneCount > 0) builder.skinning(boneCount);
-	
+
 	auto result = builder.build(*filament_engine, entity);
 
 	if (result != RenderableManager::Builder::Success) Throw("Could not create entity.");

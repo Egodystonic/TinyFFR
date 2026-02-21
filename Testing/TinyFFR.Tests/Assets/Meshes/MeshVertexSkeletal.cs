@@ -30,7 +30,7 @@ class MeshVertexSkeletalTest {
 		Assert.AreEqual(0.2f, valPtr[6]);
 		Assert.AreEqual(0.3f, valPtr[7]);
 		Assert.AreEqual(0.4f, valPtr[8]);
-		Assert.AreEqual(BinaryPrimitives.ReadSingleBigEndian([12, 34, 56, 78]), valPtr[9]);
+		Assert.AreEqual(BinaryPrimitives.ReadSingleLittleEndian([12, 34, 56, 78]), valPtr[9]);
 		Assert.AreEqual(1.2f, valPtr[10]);
 		Assert.AreEqual(3.4f, valPtr[11]);
 		Assert.AreEqual(5.6f, valPtr[12]);
@@ -45,7 +45,7 @@ class MeshVertexSkeletalTest {
 		Assert.AreEqual(0.6f, valPtr[20]);
 		Assert.AreEqual(0.7f, valPtr[21]);
 		Assert.AreEqual(0.8f, valPtr[22]);
-		Assert.AreEqual(BinaryPrimitives.ReadSingleBigEndian([87, 65, 32, 21]), valPtr[23]);
+		Assert.AreEqual(BinaryPrimitives.ReadSingleLittleEndian([87, 65, 43, 21]), valPtr[23]);
 		Assert.AreEqual(8.7f, valPtr[24]);
 		Assert.AreEqual(6.5f, valPtr[25]);
 		Assert.AreEqual(4.3f, valPtr[26]);

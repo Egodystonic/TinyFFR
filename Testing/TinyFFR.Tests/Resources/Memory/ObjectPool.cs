@@ -70,7 +70,7 @@ unsafe class ObjectPoolTest {
 		const int NumIterations = 10_000;
 
 		_simplePool.Dispose();
-		_argPool.Dispose();
+		_argPool.Dispose(invokeDisposeOnEachBeforeRelease: false);
 
 		_simplePool = new(&NullaryCreationFunc);
 		_argPool = new(&UnaryCreationFunc, 0);

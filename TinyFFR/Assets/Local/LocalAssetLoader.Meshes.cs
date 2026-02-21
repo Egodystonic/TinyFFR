@@ -285,6 +285,7 @@ unsafe partial class LocalAssetLoader {
 		for (var a = 0; a < animationCount; ++a) {
 			GetLoadedAssetSkeletalAnimationMetadata(
 				assetHandle, 
+				meshIndex,
 				a, 
 				out var nameLenBytes,
 				out var animationDurationSeconds, 
@@ -306,7 +307,15 @@ unsafe partial class LocalAssetLoader {
 				? _globals.HeapPool.Borrow<char>(animNameUtf16Length)
 				: (PooledHeapMemory<char>?) null;
 			var animNameBuffer = animNameHeapBuffer.HasValue ? animNameHeapBuffer.Value.Buffer : stackNameBuffer;
-			_animationAndBoneNameBuffer.ConvertToUtf16(animNameBuffer);
+			if (animNameUtf16Length == 0) {
+				const string FallbackAnimationNamePrefix = "anim_";
+				FallbackAnimationNamePrefix.CopyTo(animNameBuffer);
+				if (a.TryFormat(animNameBuffer[FallbackAnimationNamePrefix.Length..], out var additionalCharsWritten, default, null)) {
+					animNameUtf16Length = FallbackAnimationNamePrefix.Length + additionalCharsWritten;
+				}
+				else animNameUtf16Length = FallbackAnimationNamePrefix.Length;
+			}
+			else _animationAndBoneNameBuffer.ConvertToUtf16(animNameBuffer);
 
 			var totalTranslationKeyframes = 0;
 			var totalRotationKeyframes = 0;
@@ -361,6 +370,7 @@ unsafe partial class LocalAssetLoader {
 				for (var c = 0; c < animationChannelCount; ++c) {
 					CopyLoadedAssetSkeletalAnimationChannelData(
 						assetHandle, 
+						meshIndex,
 						a, 
 						c,
 						(Vector3*) scalingVectorBuffer.StartPtr,
@@ -494,6 +504,7 @@ unsafe partial class LocalAssetLoader {
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_skeletal_animation_metadata")]
 	static extern InteropResult GetLoadedAssetSkeletalAnimationMetadata(
 		UIntPtr assetHandle, 
+		int meshIndex,
 		int animationIndex,
 		out int outNameLengthBytes, 
 		out float outDurationSeconds, 
@@ -523,6 +534,7 @@ unsafe partial class LocalAssetLoader {
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "copy_loaded_asset_mesh_skeletal_animation_channel_data")]
 	static extern InteropResult CopyLoadedAssetSkeletalAnimationChannelData(
 		UIntPtr assetHandle, 
+		int meshIndex,
 		int animationIndex, 
 		int channelIndex,
 		Vector3* scalingVectorBuffer,
