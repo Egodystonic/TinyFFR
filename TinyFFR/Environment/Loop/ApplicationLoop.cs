@@ -54,7 +54,7 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IA
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetTotalIteratedTime(TimeSpan newValue) => TotalIteratedTime = newValue;
-
+	
 	public TimeSpan TimeUntilNextIteration {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetTimeUntilNextIteration(_handle);

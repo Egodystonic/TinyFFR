@@ -43,11 +43,26 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	} 
 	public void ApplyLooped(ModelInstance targetInstance, float targetTimePointSeconds) => Apply(targetInstance, MathUtils.TrueModulus(targetTimePointSeconds, DefaultCompletionTimeSeconds));
 	
+	public void ApplyLoopedWithPingPong(ModelInstance targetInstance, float targetTimePointSeconds, float desiredAnimationCompletionTimeSeconds) {
+		ApplyLoopedWithPingPong(targetInstance, GetTargetTimeCoefficientForDesiredCompletionTime(desiredAnimationCompletionTimeSeconds) * targetTimePointSeconds);	
+	} 
+	public void ApplyLoopedWithPingPong(ModelInstance targetInstance, float targetTimePointSeconds) {
+		Apply(targetInstance, Angle.FromRadians(targetTimePointSeconds).TriangularizeRectified(Angle.FromRadians(DefaultCompletionTimeSeconds)).Radians);
+	}
+
 	public void ApplyClamped(ModelInstance targetInstance, float targetTimePointSeconds, float desiredAnimationCompletionTimeSeconds) {
 		ApplyClamped(targetInstance, GetTargetTimeCoefficientForDesiredCompletionTime(desiredAnimationCompletionTimeSeconds) * targetTimePointSeconds);	
 	} 
 	public void ApplyClamped(ModelInstance targetInstance, float targetTimePointSeconds) => Apply(targetInstance, ((Real) targetTimePointSeconds).Clamp(0f, DefaultCompletionTimeSeconds));
 	
+	public void ApplyClampedWithPingPong(ModelInstance targetInstance, float targetTimePointSeconds, float desiredAnimationCompletionTimeSeconds) {
+		ApplyClampedWithPingPong(targetInstance, GetTargetTimeCoefficientForDesiredCompletionTime(desiredAnimationCompletionTimeSeconds) * targetTimePointSeconds);	
+	} 
+	public void ApplyClampedWithPingPong(ModelInstance targetInstance, float targetTimePointSeconds) {
+		var clampedTargetTime = ((Real) targetTimePointSeconds).Clamp(0f, DefaultCompletionTimeSeconds * 2f); 
+		ApplyLoopedWithPingPong(targetInstance, clampedTargetTime);
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Apply(ModelInstance targetInstance, float targetTimePointSeconds) {
 		Implementation.Apply(_handle, targetInstance, targetTimePointSeconds);

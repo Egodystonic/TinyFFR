@@ -25,7 +25,12 @@ class LocalAnimationTest {
 	[SetUp]
 	public void SetUpTest() {
 		_filesToLoad = new[] {
-			"RiggedSimple.glb"
+			"SimpleSkin.gltf",
+			"RiggedSimple.glb",
+			"RiggedFigure.glb",
+			"CesiumMan.glb",
+			"RecursiveSkeletons.glb",
+			"BrainStem.glb"
 		};
 	}
 
@@ -51,15 +56,18 @@ class LocalAnimationTest {
 		scene.Add(sunlight);
 		
 		var curFileIndex = -1;
-		ResourceGroup? loadedResources = null; 
-		ModelInstanceGroup? modelInstances = null;
+		var curAnimIndex = 0;
+		var curAnimCount = 1;
+		var playingAnim = false;
+		ResourceGroup? loadedResources = null;
+		ModelInstanceGroup? modelInstanceGroup = null;
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) {
 			var deltaTime = (float) loop.IterateOnce().TotalSeconds;
 			
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
-				if (modelInstances is {} i) {
+				if (modelInstanceGroup is {} i) {
 					scene.Remove(i);
 					i.Dispose();
 				}
@@ -70,22 +78,33 @@ class LocalAnimationTest {
 				
 				curFileIndex++;
 				if (curFileIndex >= _filesToLoad.Length) curFileIndex = 0;
+				curAnimIndex = 0;
 				
 				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), new ModelCreationConfig(), new ModelReadConfig() { HandleUriEscapedStrings = true });
+				curAnimCount = loadedResources.Value.Models.Max(m => m.Mesh.Animations.All.Count);
+				Assert.GreaterOrEqual(curAnimCount, 1);
 
-				modelInstances = factory.ObjectBuilder.CreateModelInstanceGroup(loadedResources.Value);
-				scene.Add(modelInstances.Value);
-				window.SetTitle($"L controls camera light | X/Y/Z rotates models | '{_filesToLoad[curFileIndex]}' ({loadedResources.Value.Models.Count} models / {loadedResources.Value.Meshes.Count} meshes / {loadedResources.Value.Materials.Count} materials / {loadedResources.Value.Textures.Count} textures)");
+				modelInstanceGroup = factory.ObjectBuilder.CreateModelInstanceGroup(loadedResources.Value);
+				scene.Add(modelInstanceGroup.Value);
+				window.SetTitle($"L controls camera light | X/Y/Z rotates models | A selects anim | S starts/stops anim | '{_filesToLoad[curFileIndex]}' anim {(curAnimIndex + 1)} / {curAnimCount}");
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.A) && modelInstanceGroup.HasValue) {
+				++curAnimIndex;
+				if (curAnimIndex >= curAnimCount) curAnimIndex = 0;
+				window.SetTitle($"L controls camera light | X/Y/Z rotates models | A selects anim | S starts/stops anim | '{_filesToLoad[curFileIndex]}' anim {(curAnimIndex + 1)} / {curAnimCount}");
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.S) && modelInstanceGroup.HasValue) {
+				playingAnim = !playingAnim;
 			}
 
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.X)) {
-				modelInstances?.RotateBy((90f * deltaTime) % Direction.Left);
+				modelInstanceGroup?.RotateBy((90f * deltaTime) % Direction.Left);
 			}
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Y)) {
-				modelInstances?.RotateBy((90f * deltaTime) % Direction.Up);
+				modelInstanceGroup?.RotateBy((90f * deltaTime) % Direction.Up);
 			}
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Z)) {
-				modelInstances?.RotateBy((90f * deltaTime) % Direction.Forward);
+				modelInstanceGroup?.RotateBy((90f * deltaTime) % Direction.Forward);
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.L)) {
 				lightBrightnessStage++;
@@ -96,6 +115,13 @@ class LocalAnimationTest {
 					2 => 0.66f,
 					_ => 1f
 				});
+			}
+			
+			if (playingAnim && modelInstanceGroup.HasValue) {
+				foreach (var mi in modelInstanceGroup) {
+					if (curAnimIndex >= mi.Mesh.Animations.All.Count) continue;
+					mi.Mesh.Animations.All[curAnimIndex].ApplyLoopedWithPingPong(mi, (float) loop.TotalIteratedTime.TotalSeconds);
+				}
 			}
 			
 			DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, camera, deltaTime, window);
