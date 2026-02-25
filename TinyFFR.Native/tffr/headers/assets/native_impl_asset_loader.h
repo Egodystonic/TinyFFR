@@ -77,7 +77,7 @@ public:
 	static void get_loaded_asset_material_data(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, AssetMaterialParamGroup* paramGroupPtr, AssetMaterialAlphaFormat* outAlphaFormat, float_t* outRefractionThickness);
 	static void unload_asset_file_from_memory(MemoryLoadedAssetHandle assetHandle);
 	
-	static void get_loaded_asset_mesh_skeletal_bone_hierarchy(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* parentIndicesBuffer, mat4f* inverseBindPoseBuffer, mat4f* defaultLocalTransformBuffer, int32_t boneCount);
+	static void get_loaded_asset_mesh_skeletal_bone_hierarchy(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* parentIndicesBuffer, mat4f* inverseBindPoseBuffer, mat4f* defaultLocalTransformBuffer, mat4f* outGlobalTransform, int32_t boneCount);
 	static void get_loaded_asset_mesh_skeletal_animation_metadata(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t animIndex, int32_t* outNameLengthBytes, float_t* outDurationSeconds, int32_t* outBoneChannelCount);
 	static void copy_loaded_asset_mesh_skeletal_animation_name(MemoryLoadedAssetHandle assetHandle, int32_t animIndex, char* nameBuffer, int32_t bufferLengthBytes);
 	static void get_loaded_asset_mesh_skeletal_animation_channel_metadata(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t animIndex, int32_t boneChannelIndex, int32_t* outBoneIndex, int32_t* outScalingKeyframeCount, int32_t* outRotationKeyframeCount, int32_t* outTranslationKeyframeCount);

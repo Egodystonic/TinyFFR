@@ -43,6 +43,9 @@ void interop_utils::copy_concat_space_to_err_buffer() {
 void interop_utils::int_str(char* inputArray, size_t inputArrayLen, int val) {
 	snprintf(inputArray, inputArrayLen, "%d", val);
 }
+void interop_utils::float_str(char* inputArray, size_t inputArrayLen, float val) {
+	snprintf(inputArray, inputArrayLen, "%f", val);
+}
 
 
 EXPORT_FUNC char* get_err_buffer() {

@@ -70,7 +70,8 @@ unsafe partial class LocalAssetLoader {
 								0, 
 								(int*) parentIndicesBuffer.StartPtr,
 								(Matrix4x4*) bindPoseInversionMatricesBuffer.StartPtr, 
-								(Matrix4x4*) defaultLocalTransformsBuffer.StartPtr, 
+								(Matrix4x4*) defaultLocalTransformsBuffer.StartPtr,
+								out var globalTransform,
 								boneCount
 							).ThrowIfFailure();
 
@@ -80,6 +81,7 @@ unsafe partial class LocalAssetLoader {
 								parentIndicesBuffer.AsReadOnlySpan<int>(boneCount), 
 								bindPoseInversionMatricesBuffer.AsReadOnlySpan<Matrix4x4>(boneCount), 
 								defaultLocalTransformsBuffer.AsReadOnlySpan<Matrix4x4>(boneCount),
+								globalTransform,
 								config
 							);
 						
@@ -493,11 +495,12 @@ unsafe partial class LocalAssetLoader {
 	
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_skeletal_bone_hierarchy")]
 	static extern InteropResult GetLoadedAssetMeshSkeletalBoneHierarchy(
-		UIntPtr assetHandle, 
+		UIntPtr assetHandle,
 		int meshIndex,
-		int* parentIndicesBuffer, 
-		Matrix4x4* bindPoseInversionMatricesBuffer, 
-		Matrix4x4* defaultLocalTransformsBuffer, 
+		int* parentIndicesBuffer,
+		Matrix4x4* bindPoseInversionMatricesBuffer,
+		Matrix4x4* defaultLocalTransformsBuffer,
+		out Matrix4x4 outGlobalTransform,
 		int boneCount
 	);
 

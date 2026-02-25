@@ -23,4 +23,5 @@ public:
 	static void safe_copy_string(char* dest, size_t destLenBytes, const char* src);
 
 	static void int_str(char* inputArray, size_t inputArrayLen, int val);
+	static void float_str(char* inputArray, size_t inputArrayLen, float val);
 };

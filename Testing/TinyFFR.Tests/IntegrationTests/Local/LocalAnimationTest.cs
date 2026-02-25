@@ -79,7 +79,8 @@ class LocalAnimationTest {
 				curFileIndex++;
 				if (curFileIndex >= _filesToLoad.Length) curFileIndex = 0;
 				curAnimIndex = 0;
-				
+
+				Console.WriteLine("Loading " + _filesToLoad[curFileIndex] + "...");
 				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), new ModelCreationConfig(), new ModelReadConfig() { HandleUriEscapedStrings = true });
 				curAnimCount = loadedResources.Value.Models.Max(m => m.Mesh.Animations.All.Count);
 				Assert.GreaterOrEqual(curAnimCount, 1);
@@ -95,6 +96,14 @@ class LocalAnimationTest {
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.S) && modelInstanceGroup.HasValue) {
 				playingAnim = !playingAnim;
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0) && modelInstanceGroup.HasValue) {
+				Console.WriteLine("Setting t=0 on anim #" + curAnimIndex);
+				foreach (var mi in modelInstanceGroup) {
+					if (curAnimIndex >= mi.Mesh.Animations.All.Count) continue;
+					mi.Mesh.Animations.All[curAnimIndex].ApplyLoopedWithPingPong(mi, 0f);
+				}
+				playingAnim = false;
 			}
 
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.X)) {

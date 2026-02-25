@@ -64,7 +64,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		return ProcessVerticesAndCreateMesh(vertices, triangles, in config, 0);
 	}
 
-	public Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<int> boneParentIndices, ReadOnlySpan<Matrix4x4> boneBindPoseInversionMatrices, ReadOnlySpan<Matrix4x4> boneDefaultLocalTransforms, in MeshCreationConfig config) {
+	public Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<int> boneParentIndices, ReadOnlySpan<Matrix4x4> boneBindPoseInversionMatrices, ReadOnlySpan<Matrix4x4> boneDefaultLocalTransforms, Matrix4x4 globalTransform, in MeshCreationConfig config) {
 		var boneCount = boneParentIndices.Length;
 		if (boneBindPoseInversionMatrices.Length != boneCount || boneDefaultLocalTransforms.Length != boneCount) {
 			throw new ArgumentException(
@@ -88,6 +88,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 				new ReadOnlySpan<int>(in defaultParentIndex), 
 				new ReadOnlySpan<Matrix4x4>(in identityMat),
 				new ReadOnlySpan<Matrix4x4>(in identityMat), 
+				globalTransform,
 				in config
 			);
 		}
@@ -95,7 +96,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		var result = ProcessVerticesAndCreateMesh(vertices, triangles, in config, boneParentIndices.Length);
 		
 		var animTable = _meshAnimationTablePool.Rent();
-		animTable.SetSkeleton(boneCount, boneParentIndices, boneBindPoseInversionMatrices, boneDefaultLocalTransforms);
+		animTable.SetSkeleton(boneCount, boneParentIndices, boneBindPoseInversionMatrices, boneDefaultLocalTransforms, globalTransform);
 		_activeMeshAnimationTables.Add(result.Handle, animTable);
 		return result;
 	}

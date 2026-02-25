@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2026
 
 using System;
+using System.Globalization;
 using System.Security;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
@@ -25,7 +26,8 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		PooledHeapMemory<int> OriginalIndices, 
 		PooledHeapMemory<int> ParentIndices, 
 		PooledHeapMemory<Matrix4x4> BindPoseInversionMatrices, 
-		PooledHeapMemory<Matrix4x4> DefaultLocalTransforms
+		PooledHeapMemory<Matrix4x4> DefaultLocalTransforms,
+		Matrix4x4 GlobalInverseTransform
 	);
 	static nuint _nextHandleId = 0U;
 	readonly ArrayPoolBackedStringKeyMap<MeshAnimation> _nameMap = new();
@@ -43,7 +45,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 	public ArrayPoolBackedMap<ManagedStringPool.RentedStringHandle, MeshAnimation>.ValueEnumerator Values => _nameMap.Values;
 	public ArrayPoolBackedMap<ManagedStringPool.RentedStringHandle, MeshAnimation>.Enumerator GetEnumerator() => _nameMap.GetEnumerator();
 
-	public void SetSkeleton(int boneCount, ReadOnlySpan<int> parentIndices, ReadOnlySpan<Matrix4x4> bindPoseInversionMatrices, ReadOnlySpan<Matrix4x4> defaultLocalTransforms) {
+	public void SetSkeleton(int boneCount, ReadOnlySpan<int> parentIndices, ReadOnlySpan<Matrix4x4> bindPoseInversionMatrices, ReadOnlySpan<Matrix4x4> defaultLocalTransforms, Matrix4x4 globalTransform) {
 		if (_currentSkeleton != null) {
 			throw new InvalidOperationException("Skeleton already set for this animation table (this is a bug in TinyFFR).");
 		}
@@ -101,18 +103,30 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 			bindPoseInversionMatricesHeapMemory.Buffer[i] = bindPoseInversionMatrices[originalIndex];
 			defaultLocalTransformsHeapMemory.Buffer[i] = defaultLocalTransforms[originalIndex];
 		}
+
+		if (!Matrix4x4.Invert(globalTransform, out var globalInverseTransform)) globalInverseTransform = Matrix4x4.Identity; 
 		
 		_currentSkeleton = new(
 			boneCount,
 			originalIndicesHeapMemory,
 			parentIndicesHeapMemory,
 			bindPoseInversionMatricesHeapMemory,
-			defaultLocalTransformsHeapMemory
+			defaultLocalTransformsHeapMemory,
+			globalTransform
 		);
+		
+		Console.WriteLine("SKELETON:");
+		Console.WriteLine("\tBoneCount: " + _currentSkeleton.Value.BoneCount);
+		Console.WriteLine("\tOriginal Indices: " + String.Join(", ", _currentSkeleton.Value.OriginalIndices.Buffer.ToArray()));
+		Console.WriteLine("\tParent Indices: " + String.Join(", ", _currentSkeleton.Value.ParentIndices.Buffer.ToArray()));
+		Console.WriteLine("\tBind Pose Inversions: " + String.Join(", ", _currentSkeleton.Value.BindPoseInversionMatrices.Buffer.ToArray().Select(MatStr)));
+		Console.WriteLine("\tDefault Local Transforms: " + String.Join(", ", _currentSkeleton.Value.DefaultLocalTransforms.Buffer.ToArray().Select(MatStr)));
+		Console.WriteLine("\tGlobal transform: " + String.Join(", ", MatStr(globalTransform)));
+		Console.WriteLine("\tGlobal transform inverse: " + String.Join(", ", MatStr(_currentSkeleton.Value.GlobalInverseTransform)));
 	}
 
 	public MeshAnimation Add( 
-		ReadOnlySpan<SkeletalAnimationScalingKeyframe> scalingKeyframes, 
+		ReadOnlySpan<SkeletalAnimationScalingKeyframe> scalingKeyframes,
 		ReadOnlySpan<SkeletalAnimationRotationKeyframe> rotationKeyframes, 
 		ReadOnlySpan<SkeletalAnimationTranslationKeyframe> translationKeyframes, 
 		ReadOnlySpan<SkeletalAnimationBoneMutationDescriptor> boneMutations, 
@@ -144,6 +158,13 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		_dataMap.Add(handle, data);
 		_globals.StoreMandatoryResourceName(handle.Ident, name);
 		_nameMap.Add(name, HandleToInstance(handle));
+		
+		Console.WriteLine($"ANIM '{name}':");
+		Console.WriteLine("\tScaling Keyframes: " + String.Join(", ", data.ScalingKeyframes.Buffer.ToArray()));
+		Console.WriteLine("\tRotation Keyframes: " + String.Join(", ", data.RotationKeyframes.Buffer.ToArray()));
+		Console.WriteLine("\tTranslation Keyframes: " + String.Join(", ", data.TranslationKeyframes.Buffer.ToArray()));
+		Console.WriteLine("\tMutations: " + String.Join(", ", data.BoneMutationDescriptors.Buffer.ToArray()));
+		
 		return HandleToInstance(handle);
 	}
 
@@ -156,6 +177,24 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 	public MeshAnimationType GetType(ResourceHandle<MeshAnimation> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return MeshAnimationType.Skeletal;
+	}
+	
+	static string MatStr(Matrix4x4 m) {
+		var result = "<";
+		var isIdentity = true;
+		var isOnlyTranslation = true;
+		for (var r = 0; r < 4; ++r) {
+			for (var c = 0; c < 4; ++c) {
+				var val2dp = m[r, c].ToString("N2", CultureInfo.InvariantCulture);
+				result += val2dp + (r == 3 && c == 3 ? ">" : " ");
+				if (MathF.Abs(Matrix4x4.Identity[r, c] - m[r, c]) > 0.001f) {
+					isIdentity = false;
+					if (r != 3) isOnlyTranslation = false;
+				}
+			}
+			if (r != 3) result += "| ";
+		}
+		return isIdentity ? "Identity" : (isOnlyTranslation ? $"Translation[{m[3, 0]:N2}/{m[3,1]:N2}/{m[3,2]:N2}]" : result);
 	}
 	
 	public void Apply(ResourceHandle<MeshAnimation> handle, ModelInstance targetInstance, float targetTimePointSeconds) {
@@ -183,7 +222,8 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 
 			// Step 1: Use outputTransforms to calcualte local transforms (for now)
 			for (var i = 0; i < boneCount; ++i) {
-				outputTransforms[originalIndices[i]] = defaultLocalTransforms[i];
+				outputTransforms[i] = defaultLocalTransforms[i];
+				Console.WriteLine($"\tSTEP 1 | Index #{i} | outputTransforms[{i}] = {MatStr(outputTransforms[i])}");
 			}
 			
 			// Step 2: Overwrite local transforms according to channels
@@ -204,7 +244,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 				var low = keys[lowIndex];
 				var high = keys[highIndex];
 				return TValue.Interpolate(
-					low.Value, 
+					low.Value,
 					high.Value, 
 					Real.GetInterpolationDistance(low.TimeKeySeconds, high.TimeKeySeconds, targetTimeSecs)
 				);
@@ -219,16 +259,29 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 				);
 
 				transform.ToMatrix(ref outputTransforms[mutation.TargetBoneIndex]);
+				Console.WriteLine($"\tSTEP 2 | Mutation #{m} | mutation = {mutation} | transform = {transform} | outputTransforms[{mutation.TargetBoneIndex}] = {MatStr(outputTransforms[mutation.TargetBoneIndex])}");
 			}
 
 			// Step 3: Accumulate global transforms and compute final output
 			for (var i = 0; i < boneCount; ++i) {
 				var originalBoneIndex = originalIndices[i];
 				var parentBoneIndex = parentIndices[i];
-				globalTransforms[i] = parentBoneIndex < 0 ? outputTransforms[originalBoneIndex] : outputTransforms[originalBoneIndex] * globalTransforms[parentBoneIndex];
-				outputTransforms[originalBoneIndex] = bindPoseInversionMatrices[i] * globalTransforms[i];
+				Console.Write($"\tSTEP 3 | Index #{i} | originalBoneIndex = {originalBoneIndex} | parentBoneIndex = {parentBoneIndex} | outputTransforms[{i}] = {MatStr(outputTransforms[i])}");
+				outputTransforms[i] = parentBoneIndex < 0 ? outputTransforms[i] : outputTransforms[parentBoneIndex] * outputTransforms[i];
+				Console.WriteLine($" | outputTransformsAFTER_PARENT[{i}] = {MatStr(outputTransforms[i])}");
+			}
+			
+			for (var i = 0; i < boneCount; ++i) {
+				outputTransforms[i] *= bindPoseInversionMatrices[i];
+				Console.WriteLine($"\tSTEP 4 | outputTransforms[{i}] = {MatStr(outputTransforms[i])}");
 			}
 
+			Console.Write("\tFINAL OUTPUT: ");
+			foreach (var m in outputTransformsBuffer.AsReadOnlySpan<Matrix4x4>(boneCount)) {
+				Console.Write(MatStr(m) + "   ");
+			}
+			Console.WriteLine();
+			
 			// Step 4: Send it
 			SetModelInstanceBoneTransforms(
 				targetInstance.Handle, 

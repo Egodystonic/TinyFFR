@@ -164,5 +164,9 @@ typedef uint8_t interop_bool;
 #define IntStr(name, val) \
 	char name[50]; \
 	interop_utils::int_str(name, 50, val); \
+	
+#define FloatStr(name, val) \
+	char name[50]; \
+	interop_utils::float_str(name, 50, val); \
 
 #pragma endregion

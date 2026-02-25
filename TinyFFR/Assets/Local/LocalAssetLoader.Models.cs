@@ -919,7 +919,8 @@ unsafe partial class LocalAssetLoader {
 									i, 
 									(int*) parentIndicesBuffer.StartPtr,
 									(Matrix4x4*) bindPoseInversionMatricesBuffer.StartPtr, 
-									(Matrix4x4*) defaultLocalTransformsBuffer.StartPtr, 
+									(Matrix4x4*) defaultLocalTransformsBuffer.StartPtr,
+									out var globalTransform,
 									boneCount
 								).ThrowIfFailure();
 
@@ -929,6 +930,7 @@ unsafe partial class LocalAssetLoader {
 									parentIndicesBuffer.AsReadOnlySpan<int>(boneCount), 
 									bindPoseInversionMatricesBuffer.AsReadOnlySpan<Matrix4x4>(boneCount), 
 									defaultLocalTransformsBuffer.AsReadOnlySpan<Matrix4x4>(boneCount),
+									globalTransform,
 									config.MeshConfig
 								);
 

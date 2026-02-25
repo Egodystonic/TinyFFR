@@ -10,7 +10,7 @@ public enum MeshAnimationType {
 	Morphing
 }
 
-public readonly record struct MeshAnimationIndex(Mesh Mesh) {
+public readonly record struct MeshAnimationIndex(Mesh Mesh) : IEnumerable<MeshAnimation> {
 	public bool Any {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Mesh.GetHasAnyAnimations();
@@ -35,10 +35,20 @@ public readonly record struct MeshAnimationIndex(Mesh Mesh) {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => TryGetAnimationByName(name) ?? throw new KeyNotFoundException($"No animation with name '{name}' was found for this mesh ({Mesh}).");
 	}
+	
+	public MeshAnimation this[int index] {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => All[index];
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public MeshAnimation? TryGetAnimationByName(ReadOnlySpan<char> name) => Mesh.TryGetAnimationByName(name, null);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public MeshAnimation? TryGetAnimationByName(ReadOnlySpan<char> name, MeshAnimationType animationType) => Mesh.TryGetAnimationByName(name, animationType);
+
+	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+	IEnumerator<MeshAnimation> IEnumerable<MeshAnimation>.GetEnumerator() => GetEnumerator();
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public IndirectEnumerable<Mesh, MeshAnimation>.Enumerator GetEnumerator() => All.GetEnumerator();
 }

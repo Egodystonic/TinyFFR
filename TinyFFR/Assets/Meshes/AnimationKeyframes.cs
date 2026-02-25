@@ -25,4 +25,8 @@ public readonly record struct SkeletalAnimationBoneMutationDescriptor(
 	int ScalingKeyframeStartIndex, int ScalingKeyframeCount,
 	int RotationKeyframeStartIndex, int RotationKeyframeCount,
 	int TranslationKeyframeStartIndex, int TranslationKeyframeCount
-);
+) {
+	public override string ToString() {
+		return $"[Bone #{TargetBoneIndex} => S={ScalingKeyframeStartIndex}+{ScalingKeyframeCount}; R={RotationKeyframeStartIndex}+{RotationKeyframeCount}; T={TranslationKeyframeStartIndex}+{TranslationKeyframeCount}]";
+	}
+}

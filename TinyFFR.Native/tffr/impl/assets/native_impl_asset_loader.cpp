@@ -79,7 +79,7 @@ StartExportedFunc(get_loaded_asset_texture_count, MemoryLoadedAssetHandle assetH
 void walk_nodes_to_find_global_index_from_mesh_index(aiNode* node, int32_t& startingIndex, int32_t targetIndex, unsigned int& resultGlobalIndex, aiMatrix4x4& resultTransform) {
 	ThrowIf(node->mNumMeshes > MeshMaxCount, "Mesh count too high.");
 
-	resultTransform = resultTransform * node->mTransformation;
+	resultTransform = node->mTransformation * resultTransform;
 
 	auto originalStartingIndex = startingIndex;
 	startingIndex += static_cast<int32_t>(node->mNumMeshes);
@@ -826,12 +826,13 @@ StartExportedFunc(copy_loaded_asset_mesh_skeletal_animation_channel_data, Memory
 	EndExportedFunc
 }
 
-aiNode* find_node_by_name(aiNode* node, const aiString& name) {
-	if (node->mName == name) return node;
-	for (auto i = 0U; i < node->mNumChildren; ++i) {
-		auto result = find_node_by_name(node->mChildren[i], name);
+aiNode* lookup_node_by_name(aiNode* root, const aiString& name) {
+	if (root->mName == name) return root;
+	for (auto i = 0U; i < root->mNumChildren; ++i) {
+		auto result = lookup_node_by_name(root->mChildren[i], name);
 		if (result != nullptr) return result;
 	}
+	ThrowIf(root->mParent == nullptr, "Could not find node '", name.C_Str(), "'"); 
 	return nullptr;
 }
 
@@ -844,58 +845,115 @@ mat4f aimat_to_mat4f(const aiMatrix4x4& m) {
 	};
 }
 
-void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_bone_hierarchy(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex,
-	int32_t* parentIndicesBuffer, mat4f* inverseBindPoseBuffer, mat4f* defaultLocalTransformBuffer, int32_t boneCount) {
-	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
-	ThrowIfNull(parentIndicesBuffer, "Parent indices buffer was null.");
-	ThrowIfNull(inverseBindPoseBuffer, "Inverse bind pose buffer was null.");
-	ThrowIfNull(defaultLocalTransformBuffer, "Default local transform buffer was null.");
-
-	auto unused = aiMatrix4x4{};
-	auto mesh = get_mesh_at_index(assetHandle, meshIndex, unused);
-	ThrowIf(boneCount != static_cast<int32_t>(mesh->mNumBones), "Bone count mismatch.");
-
-	// Build name-to-index map for bones
-	std::unordered_map<std::string, int32_t> boneNameToIndex;
-	for (auto b = 0U; b < mesh->mNumBones; ++b) {
-		boneNameToIndex[mesh->mBones[b]->mName.C_Str()] = static_cast<int32_t>(b);
-	}
-
-	for (auto b = 0U; b < mesh->mNumBones; ++b) {
-		auto bone = mesh->mBones[b];
-		inverseBindPoseBuffer[b] = aimat_to_mat4f(bone->mOffsetMatrix);
-
-		auto boneNode = find_node_by_name(assetHandle->mRootNode, bone->mName);
-		ThrowIfNull(boneNode, "Could not find node for bone '", bone->mName.C_Str(), "'.");
-
-		// Default local transform: multiply in any intermediate non-bone nodes between this bone and its bone-parent
-		auto localTransform = boneNode->mTransformation;
-		defaultLocalTransformBuffer[b] = aimat_to_mat4f(localTransform);
-
-		// Walk up to find nearest ancestor that is also a bone
-		parentIndicesBuffer[b] = -1;
-		auto currentNode = boneNode->mParent;
-		auto accumulatedTransform = aiMatrix4x4{};
-		while (currentNode != nullptr) {
-			auto it = boneNameToIndex.find(currentNode->mName.C_Str());
-			if (it != boneNameToIndex.end()) {
-				parentIndicesBuffer[b] = it->second;
-				break;
-			}
-			// Accumulate non-bone ancestor transforms into this bone's local transform
-			accumulatedTransform = currentNode->mTransformation * accumulatedTransform;
-			currentNode = currentNode->mParent;
-		}
-
-		// If there were intermediate non-bone nodes, fold their transforms in
-		if (accumulatedTransform != aiMatrix4x4{}) {
-			auto combined = accumulatedTransform * localTransform;
-			defaultLocalTransformBuffer[b] = aimat_to_mat4f(combined);
-		}
-	}
+void log_aimat(const aiMatrix4x4& m) {
+	FloatStr(a1, m.a1);
+	FloatStr(a2, m.a2);
+	FloatStr(a3, m.a3);
+	FloatStr(a4, m.a4);
+	FloatStr(b1, m.b1);
+	FloatStr(b2, m.b2);
+	FloatStr(b3, m.b3);
+	FloatStr(b4, m.b4);
+	FloatStr(c1, m.c1);
+	FloatStr(c2, m.c2);
+	FloatStr(c3, m.c3);
+	FloatStr(c4, m.c4);
+	FloatStr(d1, m.d1);
+	FloatStr(d2, m.d2);
+	FloatStr(d3, m.d3);
+	FloatStr(d4, m.d4);
+	
+	Log(a1, b1, c1, d1);
+	Log(a2, b2, c2, d2);
+	Log(a3, b3, c3, d3);
+	Log(a4, b4, c4, d4);
 }
-StartExportedFunc(get_loaded_asset_mesh_skeletal_bone_hierarchy, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* parentIndicesBuffer, mat4f* inverseBindPoseBuffer, mat4f* defaultLocalTransformBuffer, int32_t boneCount) {
-	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_bone_hierarchy(assetHandle, meshIndex, parentIndicesBuffer, inverseBindPoseBuffer, defaultLocalTransformBuffer, boneCount);
+
+void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_bone_hierarchy(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* parentIndicesBuffer, mat4f* inverseBindPoseBuffer, mat4f* defaultLocalTransformBuffer, mat4f* outGlobalTransform, int32_t boneCount) {
+    ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+    ThrowIfNull(parentIndicesBuffer, "Parent indices buffer was null.");
+    ThrowIfNull(inverseBindPoseBuffer, "Inverse bind pose buffer was null.");
+    ThrowIfNull(defaultLocalTransformBuffer, "Default local transform buffer was null.");
+    ThrowIfNull(outGlobalTransform, "Out global transform pointer was null.");
+
+    aiMatrix4x4 meshGlobalTransform{};
+    aiMesh* mesh = get_mesh_at_index(assetHandle, meshIndex, meshGlobalTransform);
+    *outGlobalTransform = aimat_to_mat4f(meshGlobalTransform);
+
+    ThrowIf(boneCount != static_cast<int32_t>(mesh->mNumBones), "Bone count mismatch.");
+ 
+    std::unordered_map<std::string, aiNode*> nodeMap;
+    std::function<void(aiNode*)> buildNodeMap = [&](aiNode* node) {
+        nodeMap[node->mName.C_Str()] = node;
+        for (uint32_t i = 0; i < node->mNumChildren; ++i) buildNodeMap(node->mChildren[i]);
+    };
+    buildNodeMap(assetHandle->mRootNode);
+
+    std::unordered_map<std::string, int32_t> boneIndexMap;
+    for (uint32_t b = 0; b < mesh->mNumBones; ++b) boneIndexMap[mesh->mBones[b]->mName.C_Str()] = static_cast<int32_t>(b);
+
+    
+    for (uint32_t b = 0; b < mesh->mNumBones; ++b) {
+        aiBone* bone = mesh->mBones[b];
+        auto nodeFindResult = nodeMap.find(bone->mName.C_Str());
+        ThrowIf(nodeFindResult == nodeMap.end(), "Bone node not found in hierarchy.");
+
+        aiNode* boneNode = nodeFindResult->second;
+        aiNode* parentNode = boneNode->mParent;
+    	
+        inverseBindPoseBuffer[b] = aimat_to_mat4f(bone->mOffsetMatrix);
+    	
+    	if (parentNode == nullptr) {
+			parentIndicesBuffer[b] = -1;
+    	}
+    	else {
+    		parentNode->mName
+    	}
+
+        while (parentNode)
+        {
+            auto it = boneIndexMap.find(parentNode->mName.C_Str());
+            if (it != boneIndexMap.end())
+            {
+                parentIndicesBuffer[b] = it->second;
+                break;
+            }
+            parentNode = parentNode->mParent;
+        }
+
+        // 4c. Compute global bind transform of this bone
+        aiMatrix4x4 globalBind = boneNode->mTransformation;
+        aiNode* current = boneNode->mParent;
+        while (current)
+        {
+            globalBind = current->mTransformation * globalBind;
+            current = current->mParent;
+        }
+
+        // 4d. Compute local transform relative to parent bone
+        if (parentIndicesBuffer[b] != -1)
+        {
+            aiMatrix4x4 parentGlobalBind = boneNode->mParent->mTransformation;
+            aiNode* p = boneNode->mParent->mParent;
+            while (p)
+            {
+                // only multiply parents that are bones
+                if (boneIndexMap.find(p->mName.C_Str()) != boneIndexMap.end())
+                    parentGlobalBind = p->mTransformation * parentGlobalBind;
+                p = p->mParent;
+            }
+            aiMatrix4x4 localBind = parentGlobalBind.Inverse() * globalBind;
+            defaultLocalTransformBuffer[b] = aimat_to_mat4f(localBind);
+        }
+        else
+        {
+            // root bone: local = global
+            defaultLocalTransformBuffer[b] = aimat_to_mat4f(globalBind);
+        }
+    }
+}
+StartExportedFunc(get_loaded_asset_mesh_skeletal_bone_hierarchy, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* parentIndicesBuffer, mat4f* inverseBindPoseBuffer, mat4f* defaultLocalTransformBuffer, mat4f* outGlobalTransform, int32_t boneCount) {
+	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_bone_hierarchy(assetHandle, meshIndex, parentIndicesBuffer, inverseBindPoseBuffer, defaultLocalTransformBuffer, outGlobalTransform, boneCount);
 	EndExportedFunc
 }
 
