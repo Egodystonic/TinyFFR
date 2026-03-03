@@ -19,12 +19,18 @@ namespace Egodystonic.TinyFFR.Assets.Local;
 
 unsafe partial class LocalAssetLoader {
 	readonly record struct MeshDataCopyResult(FixedByteBufferPool.FixedByteBuffer VertexBuffer, int NumVerticesWritten, FixedByteBufferPool.FixedByteBuffer TriangleBuffer, int NumTrianglesWritten);
+	[StructLayout(LayoutKind.Explicit, Pack = 8, Size = 3 * 8)]
+	readonly struct NodeHandle {
+		[FieldOffset(0)] readonly UIntPtr _node;
+		[FieldOffset(8)] readonly UIntPtr _bone;
+		[FieldOffset(16)] readonly int _boneIndex;
+	} 
 	
 	readonly LocalMeshBuilder _meshBuilder;
 	readonly FixedByteBufferPool _vertexTriangleBufferPool;
-	readonly FixedByteBufferPool _boneDataBufferPool;
 	readonly InteropStringBuffer _animationAndBoneNameBuffer;
 	readonly FixedByteBufferPool _skeletalAnimationKeyframeDataPool;
+	readonly FixedByteBufferPool _skeletalNodeBufferPool;
 	
 	public Mesh LoadMesh(ReadOnlySpan<char> filePath, in MeshCreationConfig config, in MeshReadConfig readConfig) {
 		ThrowIfThisIsDisposed();
@@ -43,55 +49,80 @@ unsafe partial class LocalAssetLoader {
 			try {
 				var metadata = GetAmalgamatedMeshMetadataFromOpenedFile(assetHandle);
 				if (metadata.SubMeshCount <= 0) throw new ArgumentException($"Given file '{filePath}' does not contain any mesh data.");
-				GetLoadedAssetMeshSkeletalBoneCount(assetHandle, 0, out var boneCount).ThrowIfFailure();
-				var loadSkeletalAnimationData = boneCount > 0 && readConfig.LoadSkeletalAnimationDataIfPresent;
-				if (loadSkeletalAnimationData && boneCount > IMeshBuilder.MaxSkeletalBoneCount) {
-					Console.WriteLine($"Can not load skeletal animation data for file '{filePath}' as its bone count ({boneCount}) is higher than the maximum TinyFFR supports ({IMeshBuilder.MaxSkeletalBoneCount}).");
-					loadSkeletalAnimationData = false;
+				
+				var loadSkeletalAnimationData = readConfig.LoadSkeletalAnimationDataIfPresent;
+				var skeletalSubMeshIndex = readConfig.SubMeshIndex ?? 0;
+				if (loadSkeletalAnimationData) {
+					if (metadata.SubMeshCount != 1 && readConfig.SubMeshIndex == null) {
+						Console.WriteLine($"Can not load skeletal animation data for file '{filePath}' as it contains multiple sub-meshes and no {nameof(MeshReadConfig.SubMeshIndex)} was given " +
+										  $"(TinyFFR can not currently amalgamate multi-mesh animations in to a single object; use {nameof(LoadAll)}(...) instead).");
+						loadSkeletalAnimationData = false;
+					}
 				}
-				else if (loadSkeletalAnimationData && metadata.SubMeshCount != 1) {
-					Console.WriteLine($"Can not load skeletal animation data for file '{filePath}' as it contains multiple sub-meshes " +
-						$"(TinyFFR can not currently amalgamate multi-mesh animations in to a single object; use {nameof(LoadAll)}(...) instead).");
-					loadSkeletalAnimationData = false;
+				if (loadSkeletalAnimationData) {
+					GetLoadedAssetMeshSkeletalBoneCount(assetHandle, skeletalSubMeshIndex, out var boneCount).ThrowIfFailure();
+					switch (boneCount) {
+						case <= 0:
+							loadSkeletalAnimationData = false;
+							break;
+						case > IMeshBuilder.MaxSkeletalBoneCount:
+							Console.WriteLine($"Can not load skeletal animation data for file '{filePath}' as its bone count ({boneCount}) is higher than the maximum TinyFFR supports ({IMeshBuilder.MaxSkeletalBoneCount}).");
+							loadSkeletalAnimationData = false;
+							break;
+					}
 				}
+				
 				var copyResult = loadSkeletalAnimationData
 					? CopyMeshDataFromAsset<MeshVertexSkeletal>(assetHandle, metadata, in readConfig)
 					: CopyMeshDataFromAsset<MeshVertex>(assetHandle, metadata, in readConfig);
 
 				try {
 					if (loadSkeletalAnimationData) {
-						var parentIndicesBuffer = _boneDataBufferPool.Rent<int>(boneCount);
-						var bindPoseInversionMatricesBuffer = _boneDataBufferPool.Rent<Matrix4x4>(boneCount);
-						var defaultLocalTransformsBuffer = _boneDataBufferPool.Rent<Matrix4x4>(boneCount);
-
+						GetLoadedAssetMeshSkeletalNodeCount(assetHandle, skeletalSubMeshIndex, out var nodeCount).ThrowIfFailure();
+						
+						var internalNodeBuffer = _skeletalNodeBufferPool.Rent<NodeHandle>(nodeCount);
+						var translatedNodeBuffer = _globals.HeapPool.Borrow<SkeletalAnimationNode>(nodeCount);
+						
 						try {
-							GetLoadedAssetMeshSkeletalBoneHierarchy(
-								assetHandle, 
-								0, 
-								(int*) parentIndicesBuffer.StartPtr,
-								(Matrix4x4*) bindPoseInversionMatricesBuffer.StartPtr, 
-								(Matrix4x4*) defaultLocalTransformsBuffer.StartPtr,
-								out var globalTransform,
-								boneCount
+							GenerateLoadedAssetMeshSkeletalNodeFlatBuffer(
+								assetHandle,
+								skeletalSubMeshIndex,
+								(NodeHandle*) internalNodeBuffer.StartPtr,
+								nodeCount
 							).ThrowIfFailure();
+							
+							for (var n = 0; n < nodeCount; ++n) {
+								GetLoadedAssetMeshSkeletalNode(
+									(NodeHandle*) internalNodeBuffer.StartPtr,
+									nodeCount,
+									n,
+									out var inverseBindPoseMatrix,
+									out var defaultTransformMatrix,
+									out var parentNodeIndex,
+									out var boneIndex
+								).ThrowIfFailure();
+								
+								translatedNodeBuffer.Buffer[n] = new(
+									defaultTransformMatrix,
+									inverseBindPoseMatrix,
+									parentNodeIndex >= 0 ? parentNodeIndex : null,
+									boneIndex >= 0 ? boneIndex : null
+								);
+							}
 
 							var result = _meshBuilder.CreateMesh(
 								copyResult.VertexBuffer.AsReadOnlySpan<MeshVertexSkeletal>(copyResult.NumVerticesWritten),
 								copyResult.TriangleBuffer.AsReadOnlySpan<VertexTriangle>(copyResult.NumTrianglesWritten),
-								parentIndicesBuffer.AsReadOnlySpan<int>(boneCount), 
-								bindPoseInversionMatricesBuffer.AsReadOnlySpan<Matrix4x4>(boneCount), 
-								defaultLocalTransformsBuffer.AsReadOnlySpan<Matrix4x4>(boneCount),
-								globalTransform,
+								translatedNodeBuffer.Buffer,
 								config
 							);
 						
-							LoadAndAttachMeshAnimations(assetHandle, 0, boneCount, result);
+							LoadAndAttachMeshAnimations(assetHandle, skeletalSubMeshIndex, (NodeHandle*) internalNodeBuffer.StartPtr, nodeCount, result);
 							return result;
 						}
 						finally {
-							_boneDataBufferPool.Return(parentIndicesBuffer);
-							_boneDataBufferPool.Return(bindPoseInversionMatricesBuffer);
-							_boneDataBufferPool.Return(defaultLocalTransformsBuffer);
+							_skeletalNodeBufferPool.Return(internalNodeBuffer);
+							translatedNodeBuffer.Dispose();
 						}
 					}
 					else {
@@ -271,9 +302,8 @@ unsafe partial class LocalAssetLoader {
 		return new(vertexBuffer, subMeshVertexCount, triangleBuffer, subMeshTriangleCount);
 	}
 
-	void LoadAndAttachMeshAnimations(UIntPtr assetHandle, int meshIndex, int boneCount, Mesh mesh) {
+	void LoadAndAttachMeshAnimations(UIntPtr assetHandle, int meshIndex, NodeHandle* nodeHandleBuffer, int nodeHandleBufferCount, Mesh mesh) {
 		const int MaxNameLengthForStackAlloc = 2048;
-		if (boneCount <= 0) return;
 		
 		GetLoadedAssetAnimationCount(
 			assetHandle, 
@@ -441,8 +471,8 @@ unsafe partial class LocalAssetLoader {
 		out int outMeshCount
 	);
 	
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_animation_count")]
-	static extern InteropResult GetLoadedAssetAnimationCount(
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_skeletal_animation_count")]
+	static extern InteropResult GetLoadedAssetSkeletalAnimationCount(
 		UIntPtr assetHandle,
 		out int outAnimationCount
 	);
@@ -493,15 +523,30 @@ unsafe partial class LocalAssetLoader {
 		out int boneCount
 	);
 	
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_skeletal_bone_hierarchy")]
-	static extern InteropResult GetLoadedAssetMeshSkeletalBoneHierarchy(
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_skeletal_node_count")]
+	static extern InteropResult GetLoadedAssetMeshSkeletalNodeCount(
 		UIntPtr assetHandle,
 		int meshIndex,
-		int* parentIndicesBuffer,
-		Matrix4x4* bindPoseInversionMatricesBuffer,
-		Matrix4x4* defaultLocalTransformsBuffer,
-		out Matrix4x4 outGlobalTransform,
-		int boneCount
+		out int nodeCount
+	);
+	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "generate_loaded_asset_mesh_skeletal_node_flat_buffer")]
+	static extern InteropResult GenerateLoadedAssetMeshSkeletalNodeFlatBuffer(
+		UIntPtr assetHandle,
+		int meshIndex,
+		NodeHandle* nodeHandleBuffer,
+		int nodeHandleBufferCount
+	);
+	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_skeletal_node")]
+	static extern InteropResult GetLoadedAssetMeshSkeletalNode(
+		NodeHandle* nodeHandleBuffer,
+		int nodeHandleBufferCount,
+		int nodeIndex,
+		out Matrix4x4 outInverseBindPoseMatrix,
+		out Matrix4x4 outDefaultTransformMatrix,
+		out int outParentNodeIndex,
+		out int outBoneIndex
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_skeletal_animation_metadata")]

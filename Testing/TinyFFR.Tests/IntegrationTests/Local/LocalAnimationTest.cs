@@ -105,6 +105,14 @@ class LocalAnimationTest {
 				}
 				playingAnim = false;
 			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1) && modelInstanceGroup.HasValue) {
+				Console.WriteLine("Setting t=max on anim #" + curAnimIndex);
+				foreach (var mi in modelInstanceGroup) {
+					if (curAnimIndex >= mi.Mesh.Animations.All.Count) continue;
+					mi.Mesh.Animations.All[curAnimIndex].ApplyLoopedWithPingPong(mi, mi.Mesh.Animations[curAnimIndex].DefaultCompletionTimeSeconds);
+				}
+				playingAnim = false;
+			}
 
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.X)) {
 				modelInstanceGroup?.RotateBy((90f * deltaTime) % Direction.Left);

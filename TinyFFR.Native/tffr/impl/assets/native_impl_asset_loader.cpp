@@ -23,7 +23,7 @@ constexpr unsigned int NoAnswerFoundGlobalIndex = MeshMaxCount + 1;
 void native_impl_asset_loader::load_asset_file_in_to_memory(const char* filePath, interop_bool fixCommonExporterErrors, interop_bool optimize, MemoryLoadedAssetHandle* outAssetHandle) {
 	ThrowIfNull(filePath, "File path pointer was null.");
 	ThrowIfNull(outAssetHandle, "Out asset handle pointer was null.");
-	unsigned int flags = aiProcess_CalcTangentSpace | aiProcess_GenNormals | aiProcess_GenBoundingBoxes | aiProcess_GenUVCoords | aiProcess_Triangulate | aiProcess_SortByPType | aiProcess_LimitBoneWeights;
+	unsigned int flags = aiProcess_CalcTangentSpace | aiProcess_GenNormals | aiProcess_GenBoundingBoxes | aiProcess_GenUVCoords | aiProcess_Triangulate | aiProcess_SortByPType | aiProcess_LimitBoneWeights | aiProcess_PopulateArmatureData;
 	if (fixCommonExporterErrors) flags |= aiProcess_FindDegenerates | aiProcess_FindInvalidData | aiProcess_FixInfacingNormals;
 	if (optimize) flags |= aiProcess_ImproveCacheLocality | aiProcess_JoinIdenticalVertices | aiProcess_OptimizeGraph | aiProcess_OptimizeMeshes | aiProcess_FindInstances;
 	*outAssetHandle = aiImportFile(filePath, flags);
@@ -162,17 +162,6 @@ void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_bone_count(MemoryL
 }
 StartExportedFunc(get_loaded_asset_mesh_skeletal_bone_count, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outBoneCount) {
 	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_bone_count(assetHandle, meshIndex, outBoneCount);
-	EndExportedFunc
-}
-
-void native_impl_asset_loader::get_loaded_asset_animation_count(MemoryLoadedAssetHandle assetHandle, int32_t* outAnimationCount) {
-	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
-	ThrowIfNull(outAnimationCount, "Out animation count pointer was null.");
-
-	*outAnimationCount = static_cast<int32_t>(assetHandle->mNumAnimations);
-}
-StartExportedFunc(get_loaded_asset_animation_count, MemoryLoadedAssetHandle assetHandle, int32_t* outAnimationCount) {
-	native_impl_asset_loader::get_loaded_asset_animation_count(assetHandle, outAnimationCount);
 	EndExportedFunc
 }
 
@@ -701,23 +690,22 @@ StartExportedFunc(unload_asset_file_from_memory, MemoryLoadedAssetHandle assetHa
 }
 
 
-int32_t find_bone_index_for_channel(aiMesh* mesh, aiNodeAnim* channel) {
-	for (auto b = 0U; b < mesh->mNumBones; ++b) {
-		if (mesh->mBones[b]->mName == channel->mNodeName) return static_cast<int32_t>(b);
-	}
-	return -1;
-}
 
-aiNodeAnim* get_bone_channel_at_filtered_index(aiAnimation* anim, aiMesh* mesh, int32_t boneChannelIndex) {
-	auto boneChannelsSeen = 0;
-	for (auto c = 0U; c < anim->mNumChannels; ++c) {
-		auto channel = anim->mChannels[c];
-		if (find_bone_index_for_channel(mesh, channel) >= 0) {
-			if (boneChannelsSeen == boneChannelIndex) return channel;
-			++boneChannelsSeen;
-		}
+void native_impl_asset_loader::get_loaded_asset_skeletal_animation_count(MemoryLoadedAssetHandle assetHandle, int32_t* outAnimationCount) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIfNull(outAnimationCount, "Out animation count pointer was null.");
+	
+	*outAnimationCount = 0;
+	for (auto i = 0U; i < assetHandle->mNumAnimations; ++i) {
+		if (assetHandle->mAnimations[i]->mNumChannels == 0U) continue;
+		for (auto m 
 	}
-	Throw("Bone channel index out of bounds.");
+
+	*outAnimationCount = static_cast<int32_t>(assetHandle->mNumAnimations);
+}
+StartExportedFunc(get_loaded_asset_skeletal_animation_count, MemoryLoadedAssetHandle assetHandle, int32_t* outAnimationCount) {
+	native_impl_asset_loader::get_loaded_asset_skeletal_animation_count(assetHandle, outAnimationCount);
+	EndExportedFunc
 }
 
 void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_metadata(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t animIndex,	int32_t* outNameLengthBytes, float_t* outDurationSeconds, int32_t* outBoneChannelCount) {
@@ -791,8 +779,16 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_animation_channel
 	float3* translationVectorBuffer, float_t* translationTimeBuffer, int32_t translationBufferCount) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 	ThrowIf(animIndex < 0 || static_cast<uint32_t>(animIndex) >= assetHandle->mNumAnimations, "Animation index out of bounds.");
+	
+	IntStr(ai, animIndex);
+	IntStr(ain, assetHandle->mNumAnimations);
+	Log("A", ai, "/", ain);
 
 	auto anim = assetHandle->mAnimations[animIndex];
+	for (auto i = 0; i < anim->mNumChannels; ++i) {
+		IntStr(ci, i);
+		Log("AC", ci, "=", anim->mChannels[i]->mNodeName.C_Str());
+	}
 	auto unused = aiMatrix4x4{};
 	auto mesh = get_mesh_at_index(assetHandle, meshIndex, unused);
 	auto channel = get_bone_channel_at_filtered_index(anim, mesh, boneChannelIndex);
@@ -869,91 +865,127 @@ void log_aimat(const aiMatrix4x4& m) {
 	Log(a4, b4, c4, d4);
 }
 
-void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_bone_hierarchy(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* parentIndicesBuffer, mat4f* inverseBindPoseBuffer, mat4f* defaultLocalTransformBuffer, mat4f* outGlobalTransform, int32_t boneCount) {
-    ThrowIfNull(assetHandle, "Asset handle pointer was null.");
-    ThrowIfNull(parentIndicesBuffer, "Parent indices buffer was null.");
-    ThrowIfNull(inverseBindPoseBuffer, "Inverse bind pose buffer was null.");
-    ThrowIfNull(defaultLocalTransformBuffer, "Default local transform buffer was null.");
-    ThrowIfNull(outGlobalTransform, "Out global transform pointer was null.");
-
-    aiMatrix4x4 meshGlobalTransform{};
-    aiMesh* mesh = get_mesh_at_index(assetHandle, meshIndex, meshGlobalTransform);
-    *outGlobalTransform = aimat_to_mat4f(meshGlobalTransform);
-
-    ThrowIf(boneCount != static_cast<int32_t>(mesh->mNumBones), "Bone count mismatch.");
- 
-    std::unordered_map<std::string, aiNode*> nodeMap;
-    std::function<void(aiNode*)> buildNodeMap = [&](aiNode* node) {
-        nodeMap[node->mName.C_Str()] = node;
-        for (uint32_t i = 0; i < node->mNumChildren; ++i) buildNodeMap(node->mChildren[i]);
-    };
-    buildNodeMap(assetHandle->mRootNode);
-
-    std::unordered_map<std::string, int32_t> boneIndexMap;
-    for (uint32_t b = 0; b < mesh->mNumBones; ++b) boneIndexMap[mesh->mBones[b]->mName.C_Str()] = static_cast<int32_t>(b);
-
-    
-    for (uint32_t b = 0; b < mesh->mNumBones; ++b) {
-        aiBone* bone = mesh->mBones[b];
-        auto nodeFindResult = nodeMap.find(bone->mName.C_Str());
-        ThrowIf(nodeFindResult == nodeMap.end(), "Bone node not found in hierarchy.");
-
-        aiNode* boneNode = nodeFindResult->second;
-        aiNode* parentNode = boneNode->mParent;
-    	
-        inverseBindPoseBuffer[b] = aimat_to_mat4f(bone->mOffsetMatrix);
-    	
-    	if (parentNode == nullptr) {
-			parentIndicesBuffer[b] = -1;
-    	}
-    	else {
-    		parentNode->mName
-    	}
-
-        while (parentNode)
-        {
-            auto it = boneIndexMap.find(parentNode->mName.C_Str());
-            if (it != boneIndexMap.end())
-            {
-                parentIndicesBuffer[b] = it->second;
-                break;
-            }
-            parentNode = parentNode->mParent;
-        }
-
-        // 4c. Compute global bind transform of this bone
-        aiMatrix4x4 globalBind = boneNode->mTransformation;
-        aiNode* current = boneNode->mParent;
-        while (current)
-        {
-            globalBind = current->mTransformation * globalBind;
-            current = current->mParent;
-        }
-
-        // 4d. Compute local transform relative to parent bone
-        if (parentIndicesBuffer[b] != -1)
-        {
-            aiMatrix4x4 parentGlobalBind = boneNode->mParent->mTransformation;
-            aiNode* p = boneNode->mParent->mParent;
-            while (p)
-            {
-                // only multiply parents that are bones
-                if (boneIndexMap.find(p->mName.C_Str()) != boneIndexMap.end())
-                    parentGlobalBind = p->mTransformation * parentGlobalBind;
-                p = p->mParent;
-            }
-            aiMatrix4x4 localBind = parentGlobalBind.Inverse() * globalBind;
-            defaultLocalTransformBuffer[b] = aimat_to_mat4f(localBind);
-        }
-        else
-        {
-            // root bone: local = global
-            defaultLocalTransformBuffer[b] = aimat_to_mat4f(globalBind);
-        }
-    }
+void LogNodesAndRecurse(aiNode* root, int recursionDepth) {
+	if (recursionDepth == 0) {
+		Log(root->mName.C_Str());
+	}
+	else if (recursionDepth == 1) {
+		Log("1\t", root->mName.C_Str());
+	}
+	else if (recursionDepth == 2) {
+		Log("2\t\t", root->mName.C_Str());
+	}
+	else {
+		IntStr(rd, recursionDepth);
+		Log(rd, "\t\t\t", root->mName.C_Str());
+	}
+	
+	log_aimat(root->mTransformation);
+	
+	for (auto i = 0; i < root->mNumChildren; ++i) {
+		LogNodesAndRecurse(root->mChildren[i], recursionDepth + 1);
+	}
 }
-StartExportedFunc(get_loaded_asset_mesh_skeletal_bone_hierarchy, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* parentIndicesBuffer, mat4f* inverseBindPoseBuffer, mat4f* defaultLocalTransformBuffer, mat4f* outGlobalTransform, int32_t boneCount) {
-	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_bone_hierarchy(assetHandle, meshIndex, parentIndicesBuffer, inverseBindPoseBuffer, defaultLocalTransformBuffer, outGlobalTransform, boneCount);
+
+unsigned int count_nodes(aiNode* node) {
+	auto result = node->mNumChildren;
+	for (auto i = 0U; i < node->mNumChildren; ++i) {
+		result += count_nodes(node->mChildren[i]);
+	}
+	return result;
+}
+
+void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outNodeCount) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIfNull(outNodeCount, "Out node count pointer was null.");
+
+	auto unused = aiMatrix4x4{};
+	auto mesh = get_mesh_at_index(assetHandle, meshIndex, unused);
+	if (!mesh->HasBones()) *outNodeCount = 0;
+	else *outNodeCount = static_cast<int32_t>(count_nodes(mesh->mBones[0]->mArmature));
+}
+StartExportedFunc(get_loaded_asset_mesh_skeletal_node_count, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outNodeCount) {
+	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node_count(assetHandle, meshIndex, outNodeCount);
+	EndExportedFunc
+}
+
+unsigned int write_nodes(aiMesh* mesh, aiNode* node, native_impl_asset_loader::NodeHandle* buffer, unsigned int remainingBufferCount, std::unordered_map<std::string, unsigned int>& boneMap) {
+	ThrowIf(remainingBufferCount == 0U, "Buffer not large enough.");
+	auto result = 1U;
+	auto boneExists = boneMap.contains(node->mName.C_Str());
+	buffer[0] = {
+		.Node = node,
+		.BoneIfExists = boneExists ? mesh->mBones[boneMap[node->mName.C_Str()]] : nullptr,
+		.BoneIndex = boneExists ? static_cast<int32_t>(boneMap[node->mName.C_Str()]) : -1
+	};
+	for (auto i = 0U; i < node->mNumChildren; ++i) {
+		result += write_nodes(mesh, node->mChildren[i], buffer + result, remainingBufferCount - result, boneMap);
+	}
+	return result;
+}
+
+void native_impl_asset_loader::generate_loaded_asset_mesh_skeletal_node_flat_buffer(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, NodeHandle* nodeHandleBuffer, int32_t handleBufferCount) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	ThrowIfNull(nodeHandleBuffer, "Node handle buffer pointer was null.");
+	ThrowIf(handleBufferCount <= 0, "Invalid handle buffer count.");
+	
+	auto unused = aiMatrix4x4{};
+	auto mesh = get_mesh_at_index(assetHandle, meshIndex, unused);
+	ThrowIf(!mesh->HasBones(), "Can not create flattened node buffer for mesh with no bones.");
+	
+	std::unordered_map<std::string, unsigned int> boneMap { };
+	for (auto i = 0; i < mesh->mNumBones; ++i) {
+		boneMap[mesh->mBones[i]->mName.C_Str()] = i;
+	}
+	
+	auto numNodesWritten = write_nodes(mesh, mesh->mBones[0]->mArmature, nodeHandleBuffer, static_cast<unsigned int>(handleBufferCount), boneMap);	
+	ThrowIf(numNodesWritten != static_cast<unsigned int>(handleBufferCount), "Buffer count did not match node count.");
+	
+	Log("Node tree:");
+	LogNodesAndRecurse(nodeHandleBuffer[0].Node, 0);
+	
+	Log("Node buffer:");
+	for (auto i = 0; i < handleBufferCount; ++i) {
+		IntStr(is, i);
+		if (nodeHandleBuffer[i].BoneIfExists != nullptr) {
+			Log(is, nodeHandleBuffer[i].Node->mName.C_Str(), " | Bone = ", nodeHandleBuffer[i].BoneIfExists->mName.C_Str());
+		}
+		else Log(is, nodeHandleBuffer[i].Node->mName.C_Str());
+	}
+}
+StartExportedFunc(generate_loaded_asset_mesh_skeletal_node_flat_buffer, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, native_impl_asset_loader::NodeHandle* nodeHandleBuffer, int32_t handleBufferCount) {
+	native_impl_asset_loader::generate_loaded_asset_mesh_skeletal_node_flat_buffer(assetHandle, meshIndex, nodeHandleBuffer, handleBufferCount);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node(NodeHandle* nodeHandleBuffer, int32_t handleBufferCount, int32_t nodeIndex, mat4f* outInverseBindPose, mat4f* outDefaultTransform, int32_t* outParentNodeIndex, int32_t* outBoneIndex) {
+    ThrowIfNull(nodeHandleBuffer, "Node handle buffer pointer was null.");
+	ThrowIf(handleBufferCount <= 0, "Handle buffer count was invalid.");
+    ThrowIfNull(outInverseBindPose, "Out inverse bind pose pointer was null.");
+    ThrowIfNull(outDefaultTransform, "Out default transform pointer was null.");
+    ThrowIfNull(outParentNodeIndex, "Out parent node index was null.");
+    ThrowIfNull(outBoneIndex, "Out bone index was null.");
+	ThrowIf(nodeIndex >= handleBufferCount, "Node index was >= handle buffer count.");
+	
+	auto identityMatrix = mat4f { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+		
+	auto nodeHandle = nodeHandleBuffer[nodeIndex];
+	*outInverseBindPose = nodeHandle.BoneIfExists == nullptr ? identityMatrix : aimat_to_mat4f(nodeHandle.BoneIfExists->mOffsetMatrix);
+	*outDefaultTransform = aimat_to_mat4f(nodeHandle.Node->mTransformation);
+	
+	*outParentNodeIndex = -1;
+	auto* parentNode = nodeHandle.Node->mParent;
+	for (auto i = nodeIndex - 1; i >= 0; --i) {
+		if (nodeHandleBuffer[i].Node == parentNode) {
+			*outParentNodeIndex = i;
+			break;
+		}
+	}
+	
+	*outBoneIndex = nodeHandleBuffer->BoneIndex;
+}
+StartExportedFunc(get_loaded_asset_mesh_skeletal_node, native_impl_asset_loader::NodeHandle* nodeHandleBuffer, int32_t handleBufferCount, int32_t nodeIndex, mat4f* outInverseBindPose, mat4f* outDefaultTransform, int32_t* outParentNodeIndex, int32_t* outBoneIndex) {
+	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node(nodeHandleBuffer, handleBufferCount, nodeIndex, outInverseBindPose, outDefaultTransform, outParentNodeIndex, outBoneIndex);
 	EndExportedFunc
 }
 

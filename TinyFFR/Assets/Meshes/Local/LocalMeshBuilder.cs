@@ -64,39 +64,40 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		return ProcessVerticesAndCreateMesh(vertices, triangles, in config, 0);
 	}
 
-	public Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<int> boneParentIndices, ReadOnlySpan<Matrix4x4> boneBindPoseInversionMatrices, ReadOnlySpan<Matrix4x4> boneDefaultLocalTransforms, Matrix4x4 globalTransform, in MeshCreationConfig config) {
-		var boneCount = boneParentIndices.Length;
-		if (boneBindPoseInversionMatrices.Length != boneCount || boneDefaultLocalTransforms.Length != boneCount) {
-			throw new ArgumentException(
-				$"The spans '{nameof(boneParentIndices)}', '{nameof(boneBindPoseInversionMatrices)}', and '{nameof(boneDefaultLocalTransforms)}' must all have the same length, " +
-				$"indicating the number of bones in the mesh skeleton. Actual lengths provided were {boneParentIndices.Length}, {boneBindPoseInversionMatrices.Length}, and {boneDefaultLocalTransforms.Length} respectively."
-			);
+	public Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, in MeshCreationConfig config) {
+		var boneCount = 0;
+		for (var i = 0; i < skeletalNodes.Length; ++i) {
+			if (skeletalNodes[i].CorrespondingBoneIndex >= boneCount) boneCount = skeletalNodes[i].CorrespondingBoneIndex!.Value + 1;
 		}
+		
 		if (boneCount > IMeshBuilder.MaxSkeletalBoneCount) {
-			throw new ArgumentException($"TinyFFR only supports a maximum of {IMeshBuilder.MaxSkeletalBoneCount} skeletal bones ({boneCount} supplied).");
+			throw new ArgumentException($"TinyFFR only supports a maximum of {IMeshBuilder.MaxSkeletalBoneCount} skeletal bones (given nodes refer to a bone at index {boneCount - 1}).");
 		}
 		
 		// If there are 0 bones we'll create a mesh with a default value for a single bone instead.
 		// This just makes things easier elsewhere as we don't have to branch around 'null' or 'invalid' skeleton setups.
+		// Supplying an animation skeleton with no bones is kind of an error anyway and there's no meaningful result
+		// when trying to apply an animation.
 		if (boneCount == 0) {
-			var defaultParentIndex = -1;
-			var identityMat = Matrix4x4.Identity;
+			var defaultNode = new SkeletalAnimationNode(
+				Matrix4x4.Identity,
+				Matrix4x4.Identity,
+				null,
+				0
+			);
 			 
 			return CreateMesh(
 				vertices, 
 				triangles, 
-				new ReadOnlySpan<int>(in defaultParentIndex), 
-				new ReadOnlySpan<Matrix4x4>(in identityMat),
-				new ReadOnlySpan<Matrix4x4>(in identityMat), 
-				globalTransform,
+				new ReadOnlySpan<SkeletalAnimationNode>(in defaultNode),
 				in config
 			);
 		}
 
-		var result = ProcessVerticesAndCreateMesh(vertices, triangles, in config, boneParentIndices.Length);
+		var result = ProcessVerticesAndCreateMesh(vertices, triangles, in config, boneCount);
 		
 		var animTable = _meshAnimationTablePool.Rent();
-		animTable.SetSkeleton(boneCount, boneParentIndices, boneBindPoseInversionMatrices, boneDefaultLocalTransforms, globalTransform);
+		animTable.SetSkeleton(boneCount, skeletalNodes);
 		_activeMeshAnimationTables.Add(result.Handle, animTable);
 		return result;
 	}

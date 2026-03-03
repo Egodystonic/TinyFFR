@@ -12,21 +12,24 @@ public interface IAnimationKeyframe<out T> : ITimeKeyedItem where T : IInterpola
 
 public readonly record struct SkeletalAnimationTranslationKeyframe(float TimeKeySeconds, Vect Value) : IAnimationKeyframe<Vect> {
 	public static Vect FallbackValue { get; } = Vect.Zero;
+	public override string ToString() => $"[{Value.ToStringDescriptive()} @ {TimeKeySeconds}s]";
 }
 public readonly record struct SkeletalAnimationScalingKeyframe(float TimeKeySeconds, Vect Value) : IAnimationKeyframe<Vect> {
 	public static Vect FallbackValue { get; } = Vect.One;
+	public override string ToString() => $"[{Value.ToStringDescriptive()} @ {TimeKeySeconds}s]";
 }
 public readonly record struct SkeletalAnimationRotationKeyframe(float TimeKeySeconds, Rotation Value) : IAnimationKeyframe<Rotation> {
 	public static Rotation FallbackValue { get; } = Rotation.None;
+	public override string ToString() => $"[{Value.ToStringDescriptive()} @ {TimeKeySeconds}s]";
 }
 
 public readonly record struct SkeletalAnimationBoneMutationDescriptor(
-	int TargetBoneIndex,
+	int TargetNodeIndex,
 	int ScalingKeyframeStartIndex, int ScalingKeyframeCount,
 	int RotationKeyframeStartIndex, int RotationKeyframeCount,
 	int TranslationKeyframeStartIndex, int TranslationKeyframeCount
 ) {
 	public override string ToString() {
-		return $"[Bone #{TargetBoneIndex} => S={ScalingKeyframeStartIndex}+{ScalingKeyframeCount}; R={RotationKeyframeStartIndex}+{RotationKeyframeCount}; T={TranslationKeyframeStartIndex}+{TranslationKeyframeCount}]";
+		return $"[Node #{TargetNodeIndex} => S={ScalingKeyframeStartIndex}+{ScalingKeyframeCount}; R={RotationKeyframeStartIndex}+{RotationKeyframeCount}; T={TranslationKeyframeStartIndex}+{TranslationKeyframeCount}]";
 	}
 }

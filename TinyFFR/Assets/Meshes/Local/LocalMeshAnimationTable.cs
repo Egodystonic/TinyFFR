@@ -23,11 +23,10 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 	);
 	readonly record struct SkeletonData(
 		int BoneCount, 
-		PooledHeapMemory<int> OriginalIndices, 
-		PooledHeapMemory<int> ParentIndices, 
-		PooledHeapMemory<Matrix4x4> BindPoseInversionMatrices, 
 		PooledHeapMemory<Matrix4x4> DefaultLocalTransforms,
-		Matrix4x4 GlobalInverseTransform
+		PooledHeapMemory<Matrix4x4> BindPoseInversions, 
+		PooledHeapMemory<int> ParentIndices,
+		PooledHeapMemory<int> OutputIndices
 	);
 	static nuint _nextHandleId = 0U;
 	readonly ArrayPoolBackedStringKeyMap<MeshAnimation> _nameMap = new();
@@ -45,84 +44,79 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 	public ArrayPoolBackedMap<ManagedStringPool.RentedStringHandle, MeshAnimation>.ValueEnumerator Values => _nameMap.Values;
 	public ArrayPoolBackedMap<ManagedStringPool.RentedStringHandle, MeshAnimation>.Enumerator GetEnumerator() => _nameMap.GetEnumerator();
 
-	public void SetSkeleton(int boneCount, ReadOnlySpan<int> parentIndices, ReadOnlySpan<Matrix4x4> bindPoseInversionMatrices, ReadOnlySpan<Matrix4x4> defaultLocalTransforms, Matrix4x4 globalTransform) {
+	public void SetSkeleton(int boneCount, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes) {
+		var nodeCount = skeletalNodes.Length;
 		if (_currentSkeleton != null) {
 			throw new InvalidOperationException("Skeleton already set for this animation table (this is a bug in TinyFFR).");
 		}
 		if (boneCount is < 1 or > IMeshBuilder.MaxSkeletalBoneCount) {
 			throw new InvalidOperationException($"Bone count = {boneCount} (this is a bug in TinyFFR).");
 		}
-		if (boneCount != parentIndices.Length || boneCount != bindPoseInversionMatrices.Length || boneCount != defaultLocalTransforms.Length) {
-			throw new InvalidOperationException("Given bone count did not match length of at least one input buffer (this is a bug in TinyFFR).");
-		}
-
-		static void ComputeProcessingOrder(ReadOnlySpan<int> parentIndices, Span<int> indicesInProcessingOrder, Span<int> originalToProcessingOrderLookup) {
-			// Maintainer's note: This algorithm works by determining the dependency depth of each bone index.
-			// Bones with the same depth can't rely on each other, so a simple ordering of bones by dependency depth means
-			// we'll always process them in the right order down below when applying an animation.
-			// (The reordering itself is necessary as when processing the animation, some transformations rely on transforms
-			// calculated on parent bones higher up the skeletal heirarchy first).
-			var numBones = parentIndices.Length;
-			Span<int> depths = stackalloc int[numBones];
-			
-			var maxDepth = 0;
-			for (var i = 0; i < numBones; ++i) {
-				var curBoneIndex = i;
-				while (parentIndices[curBoneIndex] > -1) {
-					maxDepth = Int32.Max(maxDepth, ++depths[i]);
-					curBoneIndex = parentIndices[curBoneIndex];
+		
+		// Maintainer's note: This first step calculates the optimal processing order of the nodes so we can do a single-pass
+		// calculation of the animation transform matrices in Apply().
+		// This algorithm works by determining the dependency depth of each bone index.
+		// Bones with the same depth can't rely on each other, so a simple ordering of bones by dependency depth means
+		// we'll always process them in the right order down below when applying an animation.
+		// (The reordering itself is necessary as when processing the animation, some transformations rely on transforms
+		// calculated on parent bones higher up the skeletal hierarchy first).
+		Span<int> depths = stackalloc int[nodeCount];
+		Span<int> processingOrder = stackalloc int[nodeCount];
+		Span<int> inputToOutputIndexMap = stackalloc int[nodeCount];
+		var maxDepth = 0;
+		
+		for (var i = 0; i < nodeCount; ++i) {
+			var parentNodeIndex = skeletalNodes[i].ParentNodeIndex;
+			while (parentNodeIndex is { } pni) {
+				if (pni < 0 || pni >= skeletalNodes.Length) {
+					throw new ArgumentException(
+						$"Given skeletal node at index {i} refers to parent node at index '{pni}'; " +
+						$"but only {nodeCount} nodes were supplied.",
+						nameof(skeletalNodes)
+					);
 				}
-			}
-			
-			var o = 0;
-			for (var curDepthToSearchFor = 0; curDepthToSearchFor <= maxDepth; ++curDepthToSearchFor) {
-				for (var i = 0; i < numBones; ++i) {
-					if (depths[i] == curDepthToSearchFor) {
-						indicesInProcessingOrder[o] = i;
-						originalToProcessingOrderLookup[i] = o;
-						++o;
-					}
-				}
+				maxDepth = Int32.Max(maxDepth, ++depths[i]);
+				parentNodeIndex = skeletalNodes[pni].ParentNodeIndex;
 			}
 		}
+		var processingOrderCursor = 0;
+		for (var curDepthToSearchFor = 0; curDepthToSearchFor <= maxDepth; ++curDepthToSearchFor) {
+			for (var i = 0; i < nodeCount; ++i) {
+				if (depths[i] == curDepthToSearchFor) {
+					inputToOutputIndexMap[i] = processingOrderCursor;
+					processingOrder[processingOrderCursor++] = i;
+				}
+			}
+		}
 		
-		Span<int> processingOrder = stackalloc int[boneCount];
-		Span<int> originalToProcessingOrderLookup = stackalloc int[boneCount];
-		ComputeProcessingOrder(parentIndices, processingOrder, originalToProcessingOrderLookup);
+		var bindPoseInversionsHeapMemory = _globals.HeapPool.Borrow<Matrix4x4>(nodeCount);
+		var defaultLocalTransformsHeapMemory = _globals.HeapPool.Borrow<Matrix4x4>(nodeCount);
+		var parentIndicesHeapMemory = _globals.HeapPool.Borrow<int>(nodeCount);
+		var outputIndicesHeapMemory = _globals.HeapPool.Borrow<int>(nodeCount);
 		
-		var originalIndicesHeapMemory = _globals.HeapPool.Borrow<int>(boneCount);
-		var parentIndicesHeapMemory = _globals.HeapPool.Borrow<int>(boneCount);
-		var bindPoseInversionMatricesHeapMemory = _globals.HeapPool.Borrow<Matrix4x4>(boneCount);
-		var defaultLocalTransformsHeapMemory = _globals.HeapPool.Borrow<Matrix4x4>(boneCount);
-		
-		for (var i = 0; i < processingOrder.Length; ++i) {
-			var originalIndex = processingOrder[i];
-			originalIndicesHeapMemory.Buffer[i] = originalIndex;
-			var originalParentIndex = parentIndices[originalIndex];
-			parentIndicesHeapMemory.Buffer[i] = originalParentIndex >= 0 ? originalToProcessingOrderLookup[originalParentIndex] : -1;
-			bindPoseInversionMatricesHeapMemory.Buffer[i] = bindPoseInversionMatrices[originalIndex];
-			defaultLocalTransformsHeapMemory.Buffer[i] = defaultLocalTransforms[originalIndex];
+		for (var outputIndex = 0; outputIndex < processingOrder.Length; ++outputIndex) {
+			var inputIndex = processingOrder[outputIndex];
+			bindPoseInversionsHeapMemory.Buffer[outputIndex] = skeletalNodes[inputIndex].BindPoseInversion;
+			defaultLocalTransformsHeapMemory.Buffer[outputIndex] = skeletalNodes[inputIndex].DefaultLocalTransform;
+			parentIndicesHeapMemory.Buffer[outputIndex] = skeletalNodes[inputIndex].ParentNodeIndex.HasValue ? inputToOutputIndexMap[skeletalNodes[inputIndex].ParentNodeIndex!.Value] : -1;
+			outputIndicesHeapMemory.Buffer[outputIndex] = skeletalNodes[inputIndex].CorrespondingBoneIndex ?? -1;
 		}
 
-		if (!Matrix4x4.Invert(globalTransform, out var globalInverseTransform)) globalInverseTransform = Matrix4x4.Identity; 
-		
 		_currentSkeleton = new(
 			boneCount,
-			originalIndicesHeapMemory,
-			parentIndicesHeapMemory,
-			bindPoseInversionMatricesHeapMemory,
 			defaultLocalTransformsHeapMemory,
-			globalTransform
+			bindPoseInversionsHeapMemory,
+			parentIndicesHeapMemory,
+			outputIndicesHeapMemory
 		);
 		
 		Console.WriteLine("SKELETON:");
 		Console.WriteLine("\tBoneCount: " + _currentSkeleton.Value.BoneCount);
-		Console.WriteLine("\tOriginal Indices: " + String.Join(", ", _currentSkeleton.Value.OriginalIndices.Buffer.ToArray()));
-		Console.WriteLine("\tParent Indices: " + String.Join(", ", _currentSkeleton.Value.ParentIndices.Buffer.ToArray()));
-		Console.WriteLine("\tBind Pose Inversions: " + String.Join(", ", _currentSkeleton.Value.BindPoseInversionMatrices.Buffer.ToArray().Select(MatStr)));
-		Console.WriteLine("\tDefault Local Transforms: " + String.Join(", ", _currentSkeleton.Value.DefaultLocalTransforms.Buffer.ToArray().Select(MatStr)));
-		Console.WriteLine("\tGlobal transform: " + String.Join(", ", MatStr(globalTransform)));
-		Console.WriteLine("\tGlobal transform inverse: " + String.Join(", ", MatStr(_currentSkeleton.Value.GlobalInverseTransform)));
+		for (var i = 0; i < nodeCount; ++i) {
+			Console.WriteLine("\tNode " + i + " Parent(" + parentIndicesHeapMemory.Buffer[i] + ") Bone(" + outputIndicesHeapMemory.Buffer[i] + "):");
+			Console.WriteLine("\t\tDLT: " + MatStr(defaultLocalTransformsHeapMemory.Buffer[i]));
+			Console.WriteLine("\t\tBPI: " + MatStr(bindPoseInversionsHeapMemory.Buffer[i]));
+		}
 	}
 
 	public MeshAnimation Add( 
@@ -216,9 +210,8 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 			var outputTransforms = outputTransformsBuffer.AsSpan<Matrix4x4>(boneCount);
 
 			var defaultLocalTransforms = skeleton.DefaultLocalTransforms.Buffer;
-			var bindPoseInversionMatrices = skeleton.BindPoseInversionMatrices.Buffer;
+			var bindPoseInversionMatrices = skeleton.BindPoseInversions.Buffer;
 			var parentIndices = skeleton.ParentIndices.Buffer;
-			var originalIndices = skeleton.OriginalIndices.Buffer;
 
 			// Step 1: Use outputTransforms to calcualte local transforms (for now)
 			for (var i = 0; i < boneCount; ++i) {
@@ -243,6 +236,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 				
 				var low = keys[lowIndex];
 				var high = keys[highIndex];
+				Console.WriteLine($"Interp({typeof(TValue).Name}): {lowIndex}->{highIndex}@{Real.GetInterpolationDistance(low.TimeKeySeconds, high.TimeKeySeconds, targetTimeSecs)}");
 				return TValue.Interpolate(
 					low.Value,
 					high.Value, 
@@ -258,13 +252,13 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 					translation: InterpolateKeyframes<SkeletalAnimationTranslationKeyframe, Vect>(translationKeys.Slice(mutation.TranslationKeyframeStartIndex, mutation.TranslationKeyframeCount), targetTimePointSeconds)
 				);
 
-				transform.ToMatrix(ref outputTransforms[mutation.TargetBoneIndex]);
-				Console.WriteLine($"\tSTEP 2 | Mutation #{m} | mutation = {mutation} | transform = {transform} | outputTransforms[{mutation.TargetBoneIndex}] = {MatStr(outputTransforms[mutation.TargetBoneIndex])}");
+				transform.ToMatrix(ref outputTransforms[mutation.TargetNodeIndex]);
+				Console.WriteLine($"\tSTEP 2 | Mutation #{m} | mutation = {mutation} | transform = {transform} | outputTransforms[{mutation.TargetNodeIndex}] = {MatStr(outputTransforms[mutation.TargetNodeIndex])}");
 			}
 
 			// Step 3: Accumulate global transforms and compute final output
 			for (var i = 0; i < boneCount; ++i) {
-				var originalBoneIndex = originalIndices[i];
+				var originalBoneIndex = skeleton.OriginalIndices.Buffer[i];
 				var parentBoneIndex = parentIndices[i];
 				Console.Write($"\tSTEP 3 | Index #{i} | originalBoneIndex = {originalBoneIndex} | parentBoneIndex = {parentBoneIndex} | outputTransforms[{i}] = {MatStr(outputTransforms[i])}");
 				outputTransforms[i] = parentBoneIndex < 0 ? outputTransforms[i] : outputTransforms[parentBoneIndex] * outputTransforms[i];
@@ -340,7 +334,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		_dataMap.Clear();
 		_nameMap.Clear();
 		
-		_currentSkeleton?.BindPoseInversionMatrices.Dispose();
+		_currentSkeleton?.BindPoseInversions.Dispose();
 		_currentSkeleton?.DefaultLocalTransforms.Dispose();
 		_currentSkeleton?.ParentIndices.Dispose();
 		_currentSkeleton?.OriginalIndices.Dispose();

@@ -360,20 +360,17 @@ public interface IMeshBuilder {
 	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<char> name = default) => CreateMesh(vertices, triangles, new MeshCreationConfig { Name = name });
 	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config);
 
-	Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<int> boneParentIndices, ReadOnlySpan<Matrix4x4> boneBindPoseInversionMatrices, ReadOnlySpan<Matrix4x4> boneDefaultLocalTransforms, Matrix4x4 globalTransform, ReadOnlySpan<char> name = default) {
+	Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, ReadOnlySpan<char> name = default) {
 		return CreateMesh(
 			vertices,
 			triangles,
-			boneParentIndices,
-			boneBindPoseInversionMatrices,
-			boneDefaultLocalTransforms,
-			globalTransform,
+			skeletalNodes,
 			new MeshCreationConfig {
 				Name = name
 			}
 		);
 	}
-	Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<int> boneParentIndices, ReadOnlySpan<Matrix4x4> boneBindPoseInversionMatrices, ReadOnlySpan<Matrix4x4> boneDefaultLocalTransforms, Matrix4x4 globalTransform, in MeshCreationConfig config);
+	Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, in MeshCreationConfig config);
 	#endregion
 	
 	#region Animations

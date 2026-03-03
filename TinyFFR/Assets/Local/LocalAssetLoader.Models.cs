@@ -908,10 +908,12 @@ unsafe partial class LocalAssetLoader {
 
 					Mesh mesh;
 					try {
-						if (loadSkeletalAnimationData) { 
-							var parentIndicesBuffer = _boneDataBufferPool.Rent<int>(boneCount);
-							var bindPoseInversionMatricesBuffer = _boneDataBufferPool.Rent<Matrix4x4>(boneCount);
-							var defaultLocalTransformsBuffer = _boneDataBufferPool.Rent<Matrix4x4>(boneCount);
+						if (loadSkeletalAnimationData) {
+							
+							var nodeBuffer = _skeletalNodeBufferPool.Rent<NodeHandle>(node
+							var parentIndicesBuffer = _skeletalNodeBufferPool.Rent<int>(boneCount);
+							var bindPoseInversionMatricesBuffer = _skeletalNodeBufferPool.Rent<Matrix4x4>(boneCount);
+							var defaultLocalTransformsBuffer = _skeletalNodeBufferPool.Rent<Matrix4x4>(boneCount);
 							
 							try {
 								GetLoadedAssetMeshSkeletalBoneHierarchy(
@@ -923,7 +925,7 @@ unsafe partial class LocalAssetLoader {
 									out var globalTransform,
 									boneCount
 								).ThrowIfFailure();
-
+								
 								mesh = _meshBuilder.CreateMesh(
 									copyResult.VertexBuffer.AsReadOnlySpan<MeshVertexSkeletal>(copyResult.NumVerticesWritten),
 									copyResult.TriangleBuffer.AsReadOnlySpan<VertexTriangle>(copyResult.NumTrianglesWritten),
@@ -937,9 +939,9 @@ unsafe partial class LocalAssetLoader {
 								LoadAndAttachMeshAnimations(assetHandle, i, boneCount, mesh);
 							}
 							finally {
-								_boneDataBufferPool.Return(parentIndicesBuffer);
-								_boneDataBufferPool.Return(bindPoseInversionMatricesBuffer);
-								_boneDataBufferPool.Return(defaultLocalTransformsBuffer);
+								_skeletalNodeBufferPool.Return(parentIndicesBuffer);
+								_skeletalNodeBufferPool.Return(bindPoseInversionMatricesBuffer);
+								_skeletalNodeBufferPool.Return(defaultLocalTransformsBuffer);
 							}
 						}
 						else {

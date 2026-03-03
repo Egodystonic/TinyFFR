@@ -57,12 +57,20 @@ public:
 	};
 	PopSafeStructPacking
 	static_assert(sizeof(AssetMaterialParamGroup) == 15 * 8);
+	PushSafeStructPacking
+	struct NodeHandle
+	{
+		aiNode* Node;
+		aiBone* BoneIfExists;
+		int32_t BoneIndex;
+	};
+	PopSafeStructPacking
+	static_assert(sizeof(NodeHandle) == 3 * 8);
 	
 	static void load_asset_file_in_to_memory(const char* filePath, interop_bool fixCommonExporterErrors, interop_bool optimize, MemoryLoadedAssetHandle* outAssetHandle);
 	static void get_loaded_asset_mesh_count(MemoryLoadedAssetHandle assetHandle, int32_t* outMeshCount);
 	static void get_loaded_asset_material_count(MemoryLoadedAssetHandle assetHandle, int32_t* outMaterialCount);
 	static void get_loaded_asset_texture_count(MemoryLoadedAssetHandle assetHandle, int32_t* outTextureCount);
-	static void get_loaded_asset_animation_count(MemoryLoadedAssetHandle assetHandle, int32_t* outAnimationCount);
 	static void get_loaded_asset_mesh_material_index(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outMaterialIndex);
 	static void get_loaded_asset_mesh_vertex_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outVertexCount);
 	static void get_loaded_asset_mesh_triangle_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outTriangleCount);
@@ -77,7 +85,10 @@ public:
 	static void get_loaded_asset_material_data(MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, AssetMaterialParamGroup* paramGroupPtr, AssetMaterialAlphaFormat* outAlphaFormat, float_t* outRefractionThickness);
 	static void unload_asset_file_from_memory(MemoryLoadedAssetHandle assetHandle);
 	
-	static void get_loaded_asset_mesh_skeletal_bone_hierarchy(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* parentIndicesBuffer, mat4f* inverseBindPoseBuffer, mat4f* defaultLocalTransformBuffer, mat4f* outGlobalTransform, int32_t boneCount);
+	static void get_loaded_asset_mesh_skeletal_node_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outNodeCount);
+	static void generate_loaded_asset_mesh_skeletal_node_flat_buffer(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, NodeHandle* nodeHandleBuffer, int32_t handleBufferCount);
+	static void get_loaded_asset_mesh_skeletal_node(NodeHandle* nodeHandleBuffer, int32_t handleBufferCount, int32_t nodeIndex, mat4f* outInverseBindPose, mat4f* outDefaultTransform, int32_t* outParentNodeIndex, int32_t* outBoneIndex);
+	static void get_loaded_asset_skeletal_animation_count(MemoryLoadedAssetHandle assetHandle, int32_t* outAnimationCount);
 	static void get_loaded_asset_mesh_skeletal_animation_metadata(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t animIndex, int32_t* outNameLengthBytes, float_t* outDurationSeconds, int32_t* outBoneChannelCount);
 	static void copy_loaded_asset_mesh_skeletal_animation_name(MemoryLoadedAssetHandle assetHandle, int32_t animIndex, char* nameBuffer, int32_t bufferLengthBytes);
 	static void get_loaded_asset_mesh_skeletal_animation_channel_metadata(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t animIndex, int32_t boneChannelIndex, int32_t* outBoneIndex, int32_t* outScalingKeyframeCount, int32_t* outRotationKeyframeCount, int32_t* outTranslationKeyframeCount);
