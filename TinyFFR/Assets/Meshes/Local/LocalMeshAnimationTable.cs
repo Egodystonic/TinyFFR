@@ -22,9 +22,10 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		float DefaultCompletionTimeSeconds
 	);
 	readonly record struct SkeletonData(
-		int BoneCount, 
+		int BoneCount,
 		PooledHeapMemory<Matrix4x4> DefaultLocalTransforms,
 		PooledHeapMemory<Matrix4x4> BindPoseInversions, 
+		PooledHeapMemory<Matrix4x4> Workspace,
 		PooledHeapMemory<int> ParentIndices,
 		PooledHeapMemory<int> OutputIndices
 	);
@@ -91,6 +92,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		
 		var bindPoseInversionsHeapMemory = _globals.HeapPool.Borrow<Matrix4x4>(nodeCount);
 		var defaultLocalTransformsHeapMemory = _globals.HeapPool.Borrow<Matrix4x4>(nodeCount);
+		var workspaceMemory = _globals.HeapPool.Borrow<Matrix4x4>(nodeCount);
 		var parentIndicesHeapMemory = _globals.HeapPool.Borrow<int>(nodeCount);
 		var outputIndicesHeapMemory = _globals.HeapPool.Borrow<int>(nodeCount);
 		
@@ -106,6 +108,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 			boneCount,
 			defaultLocalTransformsHeapMemory,
 			bindPoseInversionsHeapMemory,
+			workspaceMemory,
 			parentIndicesHeapMemory,
 			outputIndicesHeapMemory
 		);
@@ -194,32 +197,24 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 	public void Apply(ResourceHandle<MeshAnimation> handle, ModelInstance targetInstance, float targetTimePointSeconds) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (_currentSkeleton is not { } skeleton) return;
-		var animation = _dataMap[handle];
-		var boneCount = skeleton.BoneCount;
 
+		var workspace = skeleton.Workspace.Buffer;
+		skeleton.DefaultLocalTransforms.Buffer.CopyTo(workspace);
+		var bindPoseInversions = skeleton.BindPoseInversions.Buffer;
+		var parents = skeleton.ParentIndices.Buffer;
+		var outputIndices = skeleton.OutputIndices.Buffer;
+		
+		var animation = _dataMap[handle];
+		var nodeCount = skeleton.Workspace.Buffer.Length;
 		var mutations = animation.BoneMutationDescriptors.Buffer;
 		var translationKeys = animation.TranslationKeyframes.Buffer;
 		var rotationKeys = animation.RotationKeyframes.Buffer;
 		var scalingKeys = animation.ScalingKeyframes.Buffer;
 
-		var globalTransformsBuffer = _applyTransformsBuffer.Rent<Matrix4x4>(boneCount);
-		var outputTransformsBuffer = _applyTransformsBuffer.Rent<Matrix4x4>(boneCount);
+		var resultBuffer = _applyTransformsBuffer.Rent<Matrix4x4>(skeleton.BoneCount);
+		var results = resultBuffer.AsSpan<Matrix4x4>(skeleton.BoneCount);
 		
 		try {
-			var globalTransforms = globalTransformsBuffer.AsSpan<Matrix4x4>(boneCount);
-			var outputTransforms = outputTransformsBuffer.AsSpan<Matrix4x4>(boneCount);
-
-			var defaultLocalTransforms = skeleton.DefaultLocalTransforms.Buffer;
-			var bindPoseInversionMatrices = skeleton.BindPoseInversions.Buffer;
-			var parentIndices = skeleton.ParentIndices.Buffer;
-
-			// Step 1: Use outputTransforms to calcualte local transforms (for now)
-			for (var i = 0; i < boneCount; ++i) {
-				outputTransforms[i] = defaultLocalTransforms[i];
-				Console.WriteLine($"\tSTEP 1 | Index #{i} | outputTransforms[{i}] = {MatStr(outputTransforms[i])}");
-			}
-			
-			// Step 2: Overwrite local transforms according to channels
 			static TValue InterpolateKeyframes<T, TValue>(ReadOnlySpan<T> keys, float targetTimeSecs) where T : IAnimationKeyframe<TValue> where TValue : IInterpolatable<TValue> {
 				if (keys.Length == 0) return T.FallbackValue;
 				if (keys.Length == 1 || targetTimeSecs <= keys[0].TimeKeySeconds) return keys[0].Value;
@@ -244,48 +239,40 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 				);
 			}
 			
-			for (var m = 0; m < mutations.Length; ++m) {
-				var mutation = mutations[m];
+			for (var i = 0; i < mutations.Length; ++i) {
+				var mutation = mutations[i];
 				var transform = new Transform(
 					scaling: InterpolateKeyframes<SkeletalAnimationScalingKeyframe, Vect>(scalingKeys.Slice(mutation.ScalingKeyframeStartIndex, mutation.ScalingKeyframeCount), targetTimePointSeconds),
 					rotation: InterpolateKeyframes<SkeletalAnimationRotationKeyframe, Rotation>(rotationKeys.Slice(mutation.RotationKeyframeStartIndex, mutation.RotationKeyframeCount), targetTimePointSeconds),
 					translation: InterpolateKeyframes<SkeletalAnimationTranslationKeyframe, Vect>(translationKeys.Slice(mutation.TranslationKeyframeStartIndex, mutation.TranslationKeyframeCount), targetTimePointSeconds)
 				);
 
-				transform.ToMatrix(ref outputTransforms[mutation.TargetNodeIndex]);
-				Console.WriteLine($"\tSTEP 2 | Mutation #{m} | mutation = {mutation} | transform = {transform} | outputTransforms[{mutation.TargetNodeIndex}] = {MatStr(outputTransforms[mutation.TargetNodeIndex])}");
+				transform.ToMatrix(ref workspace[mutation.TargetNodeIndex]);
+				Console.WriteLine($"\tMutation #{i} | mutation = {mutation} | transform = {transform} | outputTransforms[{mutation.TargetNodeIndex}] = {MatStr(workspace[mutation.TargetNodeIndex])}");
 			}
 
-			// Step 3: Accumulate global transforms and compute final output
-			for (var i = 0; i < boneCount; ++i) {
-				var originalBoneIndex = skeleton.OriginalIndices.Buffer[i];
-				var parentBoneIndex = parentIndices[i];
-				Console.Write($"\tSTEP 3 | Index #{i} | originalBoneIndex = {originalBoneIndex} | parentBoneIndex = {parentBoneIndex} | outputTransforms[{i}] = {MatStr(outputTransforms[i])}");
-				outputTransforms[i] = parentBoneIndex < 0 ? outputTransforms[i] : outputTransforms[parentBoneIndex] * outputTransforms[i];
-				Console.WriteLine($" | outputTransformsAFTER_PARENT[{i}] = {MatStr(outputTransforms[i])}");
+			for (var i = 0; i < nodeCount; ++i) {
+				var parentIndex = parents[i];
+				if (parentIndex >= 0) workspace[i] = workspace[parentIndex] * workspace[i];
+				Console.WriteLine($"\tIndex #{i} | parentIndex = {parentIndex} | workspace[{i}] = {MatStr(workspace[i])}");
 			}
 			
-			for (var i = 0; i < boneCount; ++i) {
-				outputTransforms[i] *= bindPoseInversionMatrices[i];
-				Console.WriteLine($"\tSTEP 4 | outputTransforms[{i}] = {MatStr(outputTransforms[i])}");
+			for (var i = 0; i < nodeCount; ++i) {
+				var outputIndex = outputIndices[i];
+				if (outputIndex >= 0) {
+					results[outputIndex] = workspace[i] * bindPoseInversions[i];
+					Console.WriteLine($"\tOutput #{outputIndex} | results[{outputIndex}] = workspace[{i}] * bindPoseInversions[{i}] = {MatStr(results[outputIndex])}");
+				}
 			}
-
-			Console.Write("\tFINAL OUTPUT: ");
-			foreach (var m in outputTransformsBuffer.AsReadOnlySpan<Matrix4x4>(boneCount)) {
-				Console.Write(MatStr(m) + "   ");
-			}
-			Console.WriteLine();
 			
-			// Step 4: Send it
 			SetModelInstanceBoneTransforms(
 				targetInstance.Handle, 
-				(Matrix4x4*) outputTransformsBuffer.StartPtr, 
-				boneCount
+				(Matrix4x4*) resultBuffer.StartPtr, 
+				results.Length
 			).ThrowIfFailure();
 		}
 		finally {
-			_applyTransformsBuffer.Return(globalTransformsBuffer);
-			_applyTransformsBuffer.Return(outputTransformsBuffer);
+			_applyTransformsBuffer.Return(resultBuffer);
 		}
 	}
 
@@ -336,8 +323,9 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		
 		_currentSkeleton?.BindPoseInversions.Dispose();
 		_currentSkeleton?.DefaultLocalTransforms.Dispose();
+		_currentSkeleton?.Workspace.Dispose();
 		_currentSkeleton?.ParentIndices.Dispose();
-		_currentSkeleton?.OriginalIndices.Dispose();
+		_currentSkeleton?.OutputIndices.Dispose();
 		_currentSkeleton = null;
 	}
 

@@ -691,55 +691,42 @@ StartExportedFunc(unload_asset_file_from_memory, MemoryLoadedAssetHandle assetHa
 
 
 
-void native_impl_asset_loader::get_loaded_asset_skeletal_animation_count(MemoryLoadedAssetHandle assetHandle, int32_t* outAnimationCount) {
+void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_count(MemoryLoadedAssetHandle assetHandle, int32_t* outAnimationCount) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 	ThrowIfNull(outAnimationCount, "Out animation count pointer was null.");
 	
-	*outAnimationCount = 0;
-	for (auto i = 0U; i < assetHandle->mNumAnimations; ++i) {
-		if (assetHandle->mAnimations[i]->mNumChannels == 0U) continue;
-		for (auto m 
-	}
-
 	*outAnimationCount = static_cast<int32_t>(assetHandle->mNumAnimations);
 }
-StartExportedFunc(get_loaded_asset_skeletal_animation_count, MemoryLoadedAssetHandle assetHandle, int32_t* outAnimationCount) {
-	native_impl_asset_loader::get_loaded_asset_skeletal_animation_count(assetHandle, outAnimationCount);
+StartExportedFunc(get_loaded_asset_mesh_skeletal_animation_count, MemoryLoadedAssetHandle assetHandle, int32_t* outAnimationCount) {
+	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_count(assetHandle, outAnimationCount);
 	EndExportedFunc
 }
 
-void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_metadata(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t animIndex,	int32_t* outNameLengthBytes, float_t* outDurationSeconds, int32_t* outBoneChannelCount) {
-	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
-	ThrowIf(animIndex < 0 || static_cast<uint32_t>(animIndex) >= assetHandle->mNumAnimations, "Animation index out of bounds.");
+void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_metadata(MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t* outNameLengthBytes, float_t* outDurationSeconds, int32_t* outChannelCount) {
+	ThrowIfNull(assetHandle, "Anim handle was null.");
+	ThrowIf(animIndex < 0 || animIndex >= assetHandle->mNumAnimations, "Anim index out of bounds.");
 	ThrowIfNull(outNameLengthBytes, "Out name length pointer was null.");
 	ThrowIfNull(outDurationSeconds, "Out duration pointer was null.");
-	ThrowIfNull(outBoneChannelCount, "Out channel count pointer was null.");
-
+	ThrowIfNull(outChannelCount, "Out channel count pointer was null.");
+	
 	auto anim = assetHandle->mAnimations[animIndex];
-	*outNameLengthBytes = static_cast<int32_t>(anim->mName.length);
-	auto tps = anim->mTicksPerSecond > 0.0 ? anim->mTicksPerSecond : 25.0;
-	*outDurationSeconds = static_cast<float_t>(anim->mDuration / tps);
 
-	auto unused = aiMatrix4x4{};
-	auto mesh = get_mesh_at_index(assetHandle, meshIndex, unused);
-	int32_t boneChannelCount = 0;
-	for (auto c = 0U; c < anim->mNumChannels; ++c) {
-		if (find_bone_index_for_channel(mesh, anim->mChannels[c]) >= 0) ++boneChannelCount;
-	}
-	*outBoneChannelCount = boneChannelCount;
+	*outNameLengthBytes = static_cast<int32_t>(anim->mName.length);
+	*outDurationSeconds = static_cast<float_t>(anim->mDuration / (anim->mTicksPerSecond > 0.0 ? anim->mTicksPerSecond : 25.0));
+	*outChannelCount = anim->mNumChannels;
 }
-StartExportedFunc(get_loaded_asset_mesh_skeletal_animation_metadata, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t animIndex, int32_t* outNameLengthBytes, float_t* outDurationSeconds, int32_t* outBoneChannelCount) {
-	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_metadata(assetHandle, meshIndex, animIndex, outNameLengthBytes, outDurationSeconds, outBoneChannelCount);
+StartExportedFunc(get_loaded_asset_mesh_skeletal_animation_metadata, MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t* outNameLengthBytes, float_t* outDurationSeconds, int32_t* outChannelCount) {
+	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_metadata(assetHandle, animIndex, outNameLengthBytes, outDurationSeconds, outChannelCount);
 	EndExportedFunc
 }
 
-void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_animation_name(MemoryLoadedAssetHandle assetHandle, int32_t animIndex,
-	char* nameBuffer, int32_t bufferLengthBytes) {
-	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
-	ThrowIf(animIndex < 0 || static_cast<uint32_t>(animIndex) >= assetHandle->mNumAnimations, "Animation index out of bounds.");
+void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_animation_name(MemoryLoadedAssetHandle assetHandle, int32_t animIndex, char* nameBuffer, int32_t bufferLengthBytes) {
+	ThrowIfNull(assetHandle, "Anim handle was null.");
+	ThrowIf(animIndex < 0 || animIndex >= assetHandle->mNumAnimations, "Anim index out of bounds.");
 	ThrowIfNull(nameBuffer, "Name buffer pointer was null.");
-
+	
 	auto anim = assetHandle->mAnimations[animIndex];
+
 	auto nameLen = static_cast<int32_t>(anim->mName.length);
 	ThrowIf(bufferLengthBytes < nameLen, "Name buffer too small.");
 	memcpy(nameBuffer, anim->mName.C_Str(), nameLen);
@@ -749,76 +736,69 @@ StartExportedFunc(copy_loaded_asset_mesh_skeletal_animation_name, MemoryLoadedAs
 	EndExportedFunc
 }
 
-void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_channel_metadata(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t animIndex, int32_t boneChannelIndex,
-	int32_t* outBoneIndex, int32_t* outScalingKeyframeCount, int32_t* outRotationKeyframeCount, int32_t* outTranslationKeyframeCount) {
-	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
-	ThrowIf(animIndex < 0 || static_cast<uint32_t>(animIndex) >= assetHandle->mNumAnimations, "Animation index out of bounds.");
-	ThrowIfNull(outBoneIndex, "Out bone index pointer was null.");
+void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_channel_metadata(MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t channelIndex, NodeHandle* nodeHandleBuffer, int32_t handleBufferCount, int32_t* outNodeIndex, int32_t* outScalingKeyframeCount, int32_t* outRotationKeyframeCount, int32_t* outTranslationKeyframeCount) {
+	ThrowIfNull(assetHandle, "Anim handle was null.");
+	ThrowIf(animIndex < 0 || animIndex >= assetHandle->mNumAnimations, "Anim index out of bounds.");
+	auto anim = assetHandle->mAnimations[animIndex];
+	ThrowIf(channelIndex < 0 || channelIndex >= anim->mNumChannels, "Channel index out of bounds.");
+	ThrowIfNull(nodeHandleBuffer, "Node handle buffer pointer was null.");
+	ThrowIf(handleBufferCount < 0, "Invalid handle buffer count.");
+	ThrowIfNull(outNodeIndex, "Out node index pointer was null.");
 	ThrowIfNull(outScalingKeyframeCount, "Out scaling keyframe count pointer was null.");
 	ThrowIfNull(outRotationKeyframeCount, "Out rotation keyframe count pointer was null.");
 	ThrowIfNull(outTranslationKeyframeCount, "Out translation keyframe count pointer was null.");
 
-	auto anim = assetHandle->mAnimations[animIndex];
-	auto unused = aiMatrix4x4{};
-	auto mesh = get_mesh_at_index(assetHandle, meshIndex, unused);
-	auto channel = get_bone_channel_at_filtered_index(anim, mesh, boneChannelIndex);
+	auto channel = anim->mChannels[channelIndex];
+	auto node = assetHandle->mRootNode->FindNode(channel->mNodeName);
+	*outNodeIndex = -1;
+	for (int32_t i = 0; i < handleBufferCount; ++i) {
+		if (nodeHandleBuffer[i].Node == node) {
+			*outNodeIndex = i;
+			break;
+		}
+	}
 
-	*outBoneIndex = find_bone_index_for_channel(mesh, channel);
 	*outScalingKeyframeCount = static_cast<int32_t>(channel->mNumScalingKeys);
 	*outRotationKeyframeCount = static_cast<int32_t>(channel->mNumRotationKeys);
 	*outTranslationKeyframeCount = static_cast<int32_t>(channel->mNumPositionKeys);
 }
-StartExportedFunc(get_loaded_asset_mesh_skeletal_animation_channel_metadata, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t animIndex, int32_t boneChannelIndex, int32_t* outBoneIndex, int32_t* outScalingKeyframeCount, int32_t* outRotationKeyframeCount, int32_t* outTranslationKeyframeCount) {
-	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_channel_metadata(assetHandle, meshIndex, animIndex, boneChannelIndex, outBoneIndex, outScalingKeyframeCount, outRotationKeyframeCount, outTranslationKeyframeCount);
+StartExportedFunc(get_loaded_asset_mesh_skeletal_animation_channel_metadata, MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t channelIndex, native_impl_asset_loader::NodeHandle* nodeHandleBuffer, int32_t handleBufferCount, int32_t* outNodeIndex, int32_t* outScalingKeyframeCount, int32_t* outRotationKeyframeCount, int32_t* outTranslationKeyframeCount) {
+	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_channel_metadata(assetHandle, animIndex, channelIndex, nodeHandleBuffer, handleBufferCount, outNodeIndex, outScalingKeyframeCount, outRotationKeyframeCount, outTranslationKeyframeCount);
 	EndExportedFunc
 }
 
-void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_animation_channel_data(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t animIndex, int32_t boneChannelIndex,
-	float3* scalingVectorBuffer, float_t* scalingTimeBuffer, int32_t scalingBufferCount,
-	quatf* rotationQuaternionBuffer, float_t* rotationTimeBuffer, int32_t rotationBufferCount,
-	float3* translationVectorBuffer, float_t* translationTimeBuffer, int32_t translationBufferCount) {
+void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_animation_channel_data(MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t channelIndex, float3* scalingVectorBuffer, float_t* scalingTimeBuffer, int32_t scalingBufferCount, quatf* rotationQuaternionBuffer, float_t* rotationTimeBuffer, int32_t rotationBufferCount, float3* translationVectorBuffer, float_t* translationTimeBuffer, int32_t translationBufferCount) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
-	ThrowIf(animIndex < 0 || static_cast<uint32_t>(animIndex) >= assetHandle->mNumAnimations, "Animation index out of bounds.");
-	
-	IntStr(ai, animIndex);
-	IntStr(ain, assetHandle->mNumAnimations);
-	Log("A", ai, "/", ain);
-
+	ThrowIf(animIndex < 0 || animIndex >= assetHandle->mNumAnimations, "Anim index out of bounds.");
 	auto anim = assetHandle->mAnimations[animIndex];
-	for (auto i = 0; i < anim->mNumChannels; ++i) {
-		IntStr(ci, i);
-		Log("AC", ci, "=", anim->mChannels[i]->mNodeName.C_Str());
-	}
-	auto unused = aiMatrix4x4{};
-	auto mesh = get_mesh_at_index(assetHandle, meshIndex, unused);
-	auto channel = get_bone_channel_at_filtered_index(anim, mesh, boneChannelIndex);
+	ThrowIf(channelIndex < 0 || channelIndex >= anim->mNumChannels, "Channel index out of bounds.");
+	auto channel = anim->mChannels[channelIndex];
+	ThrowIf(scalingBufferCount < channel->mNumScalingKeys, "Scaling buffer too small.");
+	ThrowIf(rotationBufferCount < channel->mNumRotationKeys, "Rotation buffer too small.");
+	ThrowIf(translationBufferCount < channel->mNumPositionKeys, "Translation buffer too small.");
+	
+	auto ticksToSecondsCoefficient = 1.0 / (anim->mTicksPerSecond > 0.0 ? anim->mTicksPerSecond : 25.0);
 
-	auto tps = anim->mTicksPerSecond > 0.0 ? anim->mTicksPerSecond : 25.0;
-	auto ticksToSeconds = 1.0 / tps;
-
-	ThrowIf(scalingBufferCount < static_cast<int32_t>(channel->mNumScalingKeys), "Scaling buffer too small.");
 	for (auto i = 0U; i < channel->mNumScalingKeys; ++i) {
-		auto& key = channel->mScalingKeys[i];
+		auto key = channel->mScalingKeys[i];
 		scalingVectorBuffer[i] = { key.mValue.x, key.mValue.y, key.mValue.z };
-		scalingTimeBuffer[i] = static_cast<float_t>(key.mTime * ticksToSeconds);
+		scalingTimeBuffer[i] = static_cast<float_t>(key.mTime * ticksToSecondsCoefficient);
 	}
 
-	ThrowIf(rotationBufferCount < static_cast<int32_t>(channel->mNumRotationKeys), "Rotation buffer too small.");
 	for (auto i = 0U; i < channel->mNumRotationKeys; ++i) {
-		auto& key = channel->mRotationKeys[i];
+		auto key = channel->mRotationKeys[i];
 		rotationQuaternionBuffer[i] = quatf(key.mValue.w, key.mValue.x, key.mValue.y, key.mValue.z);
-		rotationTimeBuffer[i] = static_cast<float_t>(key.mTime * ticksToSeconds);
+		rotationTimeBuffer[i] = static_cast<float_t>(key.mTime * ticksToSecondsCoefficient);
 	}
 
-	ThrowIf(translationBufferCount < static_cast<int32_t>(channel->mNumPositionKeys), "Translation buffer too small.");
 	for (auto i = 0U; i < channel->mNumPositionKeys; ++i) {
-		auto& key = channel->mPositionKeys[i];
+		auto key = channel->mPositionKeys[i];
 		translationVectorBuffer[i] = { key.mValue.x, key.mValue.y, key.mValue.z };
-		translationTimeBuffer[i] = static_cast<float_t>(key.mTime * ticksToSeconds);
+		translationTimeBuffer[i] = static_cast<float_t>(key.mTime * ticksToSecondsCoefficient);
 	}
 }
-StartExportedFunc(copy_loaded_asset_mesh_skeletal_animation_channel_data, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t animIndex, int32_t boneChannelIndex, float3* scalingVectorBuffer, float_t* scalingTimeBuffer, int32_t scalingBufferCount, quatf* rotationQuaternionBuffer, float_t* rotationTimeBuffer, int32_t rotationBufferCount, float3* translationVectorBuffer, float_t* translationTimeBuffer, int32_t translationBufferCount) {
-	native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_animation_channel_data(assetHandle, meshIndex, animIndex, boneChannelIndex, scalingVectorBuffer, scalingTimeBuffer, scalingBufferCount, rotationQuaternionBuffer, rotationTimeBuffer, rotationBufferCount, translationVectorBuffer, translationTimeBuffer, translationBufferCount);
+StartExportedFunc(copy_loaded_asset_mesh_skeletal_animation_channel_data, MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t channelIndex, float3* scalingVectorBuffer, float_t* scalingTimeBuffer, int32_t scalingBufferCount, quatf* rotationQuaternionBuffer, float_t* rotationTimeBuffer, int32_t rotationBufferCount, float3* translationVectorBuffer, float_t* translationTimeBuffer, int32_t translationBufferCount) {
+	native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_animation_channel_data(assetHandle, animIndex, channelIndex, scalingVectorBuffer, scalingTimeBuffer, scalingBufferCount, rotationQuaternionBuffer, rotationTimeBuffer, rotationBufferCount, translationVectorBuffer, translationTimeBuffer, translationBufferCount);
 	EndExportedFunc
 }
 
@@ -888,7 +868,7 @@ void LogNodesAndRecurse(aiNode* root, int recursionDepth) {
 }
 
 unsigned int count_nodes(aiNode* node) {
-	auto result = node->mNumChildren;
+	auto result = 1U;
 	for (auto i = 0U; i < node->mNumChildren; ++i) {
 		result += count_nodes(node->mChildren[i]);
 	}
@@ -982,7 +962,7 @@ void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node(NodeHandle* n
 		}
 	}
 	
-	*outBoneIndex = nodeHandleBuffer->BoneIndex;
+	*outBoneIndex = nodeHandle.BoneIndex;
 }
 StartExportedFunc(get_loaded_asset_mesh_skeletal_node, native_impl_asset_loader::NodeHandle* nodeHandleBuffer, int32_t handleBufferCount, int32_t nodeIndex, mat4f* outInverseBindPose, mat4f* outDefaultTransform, int32_t* outParentNodeIndex, int32_t* outBoneIndex) {
 	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node(nodeHandleBuffer, handleBufferCount, nodeIndex, outInverseBindPose, outDefaultTransform, outParentNodeIndex, outBoneIndex);
