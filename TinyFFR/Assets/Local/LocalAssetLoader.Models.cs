@@ -901,7 +901,7 @@ unsafe partial class LocalAssetLoader {
 						Console.WriteLine($"Can not load skeletal animation data for file '{filePath}' (sub-mesh {i}) as its bone count ({boneCount}) is higher than the maximum TinyFFR supports ({IMeshBuilder.MaxSkeletalBoneCount}).");
 						loadSkeletalAnimationData = false;
 					}
-
+					
 					var copyResult = loadSkeletalAnimationData
 						? CopySubMeshDataFromAsset<MeshVertexSkeletal>(assetHandle, readConfig.MeshConfig.CorrectFlippedOrientation, i)
 						: CopySubMeshDataFromAsset<MeshVertex>(assetHandle, readConfig.MeshConfig.CorrectFlippedOrientation, i);

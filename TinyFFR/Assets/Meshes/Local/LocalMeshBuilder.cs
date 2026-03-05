@@ -13,6 +13,7 @@ using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Rendering.Local.Sync;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
+using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
@@ -162,6 +163,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		else {
 			throw new InvalidOperationException($"Unexpected mesh vertex type '{typeof(TVertex)}'.");
 		}
+		
 		AllocateIndexBuffer(tempIndexBuffer.BufferIdentity, (VertexTriangle*) tempIndexBuffer.DataPtr, indexBufferCount, out var ibHandle).ThrowIfFailure();
 
 		_vertexBufferRefCounts.Add(vbHandle, 1);
@@ -183,7 +185,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		ReadOnlySpan<SkeletalAnimationScalingKeyframe> scalingKeyframes, 
 		ReadOnlySpan<SkeletalAnimationRotationKeyframe> rotationKeyframes, 
 		ReadOnlySpan<SkeletalAnimationTranslationKeyframe> translationKeyframes, 
-		ReadOnlySpan<SkeletalAnimationBoneMutationDescriptor> boneMutations, 
+		ReadOnlySpan<SkeletalAnimationNodeMutationDescriptor> boneMutations, 
 		float defaultCompletionTimeSeconds, 
 		ReadOnlySpan<char> name
 	) {
@@ -198,7 +200,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		PooledHeapMemory<SkeletalAnimationScalingKeyframe> scalingKeyframes, 
 		PooledHeapMemory<SkeletalAnimationRotationKeyframe> rotationKeyframes, 
 		PooledHeapMemory<SkeletalAnimationTranslationKeyframe> translationKeyframes, 
-		PooledHeapMemory<SkeletalAnimationBoneMutationDescriptor> boneMutations, 
+		PooledHeapMemory<SkeletalAnimationNodeMutationDescriptor> boneMutations, 
 		float defaultCompletionTimeSeconds, 
 		ReadOnlySpan<char> name
 	) {
@@ -311,6 +313,13 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		if (match == null || (type != null && type != match.Value.Type)) return null;
 		
 		return match;
+	}
+
+	public void ApplySkeletalBindPose(ResourceHandle<Mesh> handle, ModelInstance targetInstance) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (!_activeMeshAnimationTables.TryGetValue(handle, out var animTable)) return;
+		
+		animTable.ApplyBindPose(targetInstance);
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<Mesh> handle) {

@@ -18,7 +18,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		PooledHeapMemory<SkeletalAnimationScalingKeyframe> ScalingKeyframes,
 		PooledHeapMemory<SkeletalAnimationRotationKeyframe> RotationKeyframes,
 		PooledHeapMemory<SkeletalAnimationTranslationKeyframe> TranslationKeyframes,
-		PooledHeapMemory<SkeletalAnimationBoneMutationDescriptor> BoneMutationDescriptors,
+		PooledHeapMemory<SkeletalAnimationNodeMutationDescriptor> BoneMutationDescriptors,
 		float DefaultCompletionTimeSeconds
 	);
 	readonly record struct SkeletonData(
@@ -27,7 +27,8 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		PooledHeapMemory<Matrix4x4> BindPoseInversions, 
 		PooledHeapMemory<Matrix4x4> Workspace,
 		PooledHeapMemory<int> ParentIndices,
-		PooledHeapMemory<int> OutputIndices
+		PooledHeapMemory<int> OutputIndices,
+		PooledHeapMemory<int> MutationTargetIndexMap
 	);
 	static nuint _nextHandleId = 0U;
 	readonly ArrayPoolBackedStringKeyMap<MeshAnimation> _nameMap = new();
@@ -63,7 +64,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		// calculated on parent bones higher up the skeletal hierarchy first).
 		Span<int> depths = stackalloc int[nodeCount];
 		Span<int> processingOrder = stackalloc int[nodeCount];
-		Span<int> inputToOutputIndexMap = stackalloc int[nodeCount];
+		var inputToOutputIndexMapHeapMemory = _globals.HeapPool.Borrow<int>(nodeCount);
 		var maxDepth = 0;
 		
 		for (var i = 0; i < nodeCount; ++i) {
@@ -84,7 +85,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		for (var curDepthToSearchFor = 0; curDepthToSearchFor <= maxDepth; ++curDepthToSearchFor) {
 			for (var i = 0; i < nodeCount; ++i) {
 				if (depths[i] == curDepthToSearchFor) {
-					inputToOutputIndexMap[i] = processingOrderCursor;
+					inputToOutputIndexMapHeapMemory.Buffer[i] = processingOrderCursor;
 					processingOrder[processingOrderCursor++] = i;
 				}
 			}
@@ -100,7 +101,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 			var inputIndex = processingOrder[outputIndex];
 			bindPoseInversionsHeapMemory.Buffer[outputIndex] = skeletalNodes[inputIndex].BindPoseInversion;
 			defaultLocalTransformsHeapMemory.Buffer[outputIndex] = skeletalNodes[inputIndex].DefaultLocalTransform;
-			parentIndicesHeapMemory.Buffer[outputIndex] = skeletalNodes[inputIndex].ParentNodeIndex.HasValue ? inputToOutputIndexMap[skeletalNodes[inputIndex].ParentNodeIndex!.Value] : -1;
+			parentIndicesHeapMemory.Buffer[outputIndex] = skeletalNodes[inputIndex].ParentNodeIndex.HasValue ? inputToOutputIndexMapHeapMemory.Buffer[skeletalNodes[inputIndex].ParentNodeIndex!.Value] : -1;
 			outputIndicesHeapMemory.Buffer[outputIndex] = skeletalNodes[inputIndex].CorrespondingBoneIndex ?? -1;
 		}
 
@@ -110,13 +111,14 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 			bindPoseInversionsHeapMemory,
 			workspaceMemory,
 			parentIndicesHeapMemory,
-			outputIndicesHeapMemory
+			outputIndicesHeapMemory,
+			inputToOutputIndexMapHeapMemory
 		);
 		
 		Console.WriteLine("SKELETON:");
 		Console.WriteLine("\tBoneCount: " + _currentSkeleton.Value.BoneCount);
 		for (var i = 0; i < nodeCount; ++i) {
-			Console.WriteLine("\tNode " + i + " Parent(" + parentIndicesHeapMemory.Buffer[i] + ") Bone(" + outputIndicesHeapMemory.Buffer[i] + "):");
+			Console.WriteLine("\tNode " + i + " Parent(" + parentIndicesHeapMemory.Buffer[i] + ") Bone(" + outputIndicesHeapMemory.Buffer[i] + ") Original(" + processingOrder[i] + "):");
 			Console.WriteLine("\t\tDLT: " + MatStr(defaultLocalTransformsHeapMemory.Buffer[i]));
 			Console.WriteLine("\t\tBPI: " + MatStr(bindPoseInversionsHeapMemory.Buffer[i]));
 		}
@@ -126,7 +128,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		ReadOnlySpan<SkeletalAnimationScalingKeyframe> scalingKeyframes,
 		ReadOnlySpan<SkeletalAnimationRotationKeyframe> rotationKeyframes, 
 		ReadOnlySpan<SkeletalAnimationTranslationKeyframe> translationKeyframes, 
-		ReadOnlySpan<SkeletalAnimationBoneMutationDescriptor> boneMutations, 
+		ReadOnlySpan<SkeletalAnimationNodeMutationDescriptor> nodeMutations, 
 		float defaultCompletionTimeSeconds, 
 		ReadOnlySpan<char> name
 	) {
@@ -135,7 +137,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		var scalingHeapBuffer = _globals.HeapPool.BorrowAndCopy(scalingKeyframes);
 		var rotationHeapBuffer = _globals.HeapPool.BorrowAndCopy(rotationKeyframes);
 		var translationHeapBuffer = _globals.HeapPool.BorrowAndCopy(translationKeyframes);
-		var mutationHeapBuffer = _globals.HeapPool.BorrowAndCopy(boneMutations);
+		var mutationHeapBuffer = _globals.HeapPool.BorrowAndCopy(nodeMutations);
 		
 		return AddAndTransferBufferOwnership(scalingHeapBuffer, rotationHeapBuffer, translationHeapBuffer, mutationHeapBuffer, defaultCompletionTimeSeconds, name);
 	}
@@ -143,24 +145,30 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		PooledHeapMemory<SkeletalAnimationScalingKeyframe> scalingKeyframes, 
 		PooledHeapMemory<SkeletalAnimationRotationKeyframe> rotationKeyframes, 
 		PooledHeapMemory<SkeletalAnimationTranslationKeyframe> translationKeyframes, 
-		PooledHeapMemory<SkeletalAnimationBoneMutationDescriptor> boneMutations, 
+		PooledHeapMemory<SkeletalAnimationNodeMutationDescriptor> nodeMutations, 
 		float defaultCompletionTimeSeconds, 
 		ReadOnlySpan<char> name
 	) {
 		ThrowIfThisIsDisposed();
+		if (_currentSkeleton is not { } skeleton) {
+			throw new InvalidOperationException("Skeleton not set for this animation table (this is a bug in TinyFFR).");
+		}
 		
 		var handle = new ResourceHandle<MeshAnimation>(++_nextHandleId);
-		var data = new AnimationData(scalingKeyframes, rotationKeyframes, translationKeyframes, boneMutations, defaultCompletionTimeSeconds);
+		for (var m = 0; m < nodeMutations.Buffer.Length; ++m) {
+			nodeMutations.Buffer[m] = nodeMutations.Buffer[m] with { TargetNodeIndex = skeleton.MutationTargetIndexMap.Buffer[nodeMutations.Buffer[m].TargetNodeIndex] };
+		}
+		var data = new AnimationData(scalingKeyframes, rotationKeyframes, translationKeyframes, nodeMutations, defaultCompletionTimeSeconds);
 		
 		_dataMap.Add(handle, data);
 		_globals.StoreMandatoryResourceName(handle.Ident, name);
 		_nameMap.Add(name, HandleToInstance(handle));
 		
-		Console.WriteLine($"ANIM '{name}':");
-		Console.WriteLine("\tScaling Keyframes: " + String.Join(", ", data.ScalingKeyframes.Buffer.ToArray()));
-		Console.WriteLine("\tRotation Keyframes: " + String.Join(", ", data.RotationKeyframes.Buffer.ToArray()));
-		Console.WriteLine("\tTranslation Keyframes: " + String.Join(", ", data.TranslationKeyframes.Buffer.ToArray()));
-		Console.WriteLine("\tMutations: " + String.Join(", ", data.BoneMutationDescriptors.Buffer.ToArray()));
+		// Console.WriteLine($"ANIM '{name}':");
+		// Console.WriteLine("\tScaling Keyframes: " + String.Join(", ", data.ScalingKeyframes.Buffer.ToArray()));
+		// Console.WriteLine("\tRotation Keyframes: " + String.Join(", ", data.RotationKeyframes.Buffer.ToArray()));
+		// Console.WriteLine("\tTranslation Keyframes: " + String.Join(", ", data.TranslationKeyframes.Buffer.ToArray()));
+		// Console.WriteLine("\tMutations: " + String.Join(", ", data.BoneMutationDescriptors.Buffer.ToArray()));
 		
 		return HandleToInstance(handle);
 	}
@@ -191,7 +199,66 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 			}
 			if (r != 3) result += "| ";
 		}
-		return isIdentity ? "Identity" : (isOnlyTranslation ? $"Translation[{m[3, 0]:N2}/{m[3,1]:N2}/{m[3,2]:N2}]" : result);
+		
+		//return result;
+		if (isIdentity) return "Identity";
+		if (isOnlyTranslation) return $"Translation[{m[3, 0]:N2}/{m[3,1]:N2}/{m[3,2]:N2}]";
+		
+		foreach (var c in OrientationUtils.AllCardinals) {
+			var rotMat = new Transform(rotation: 90f % c.ToDirection()).ToMatrix();
+			for (var x = 0; x < 3; ++x) {
+				for (var y = 0; y < 3; ++y) {
+					if (MathF.Abs(rotMat[x, y] - m[x, y]) >= 0.001f) {
+						goto noMatch;
+					}
+				}
+			}
+			result = "Rotation[" + new Angle(90f).ToString("N0", CultureInfo.InvariantCulture) + " around " + c +"]";
+			if (MathF.Abs(m[3, 0]) > 0.001f || MathF.Abs(m[3, 1]) > 0.001f || MathF.Abs(m[3, 2]) > 0.001f) {
+				result += $"Translation[{m[3, 0]:N2}/{m[3,1]:N2}/{m[3,2]:N2}]";
+			}  
+			return result;
+			noMatch: continue;
+		}
+		
+		return result;
+	}
+	
+	public void ApplyBindPose(ModelInstance targetInstance) {
+		ThrowIfThisIsDisposed();
+		if (_currentSkeleton is not { } skeleton) return;
+		
+		var workspace = skeleton.Workspace.Buffer;
+		skeleton.DefaultLocalTransforms.Buffer.CopyTo(workspace);
+		var bindPoseInversions = skeleton.BindPoseInversions.Buffer;
+		var parents = skeleton.ParentIndices.Buffer;
+		var outputIndices = skeleton.OutputIndices.Buffer;
+		
+		var nodeCount = skeleton.Workspace.Buffer.Length;
+		
+		var resultBuffer = _applyTransformsBuffer.Rent<Matrix4x4>(skeleton.BoneCount);
+		var results = resultBuffer.AsSpan<Matrix4x4>(skeleton.BoneCount);
+		
+		try {
+			for (var i = 0; i < nodeCount; ++i) {
+				var parentIndex = parents[i];
+				if (parentIndex >= 0) workspace[i] = workspace[i] * workspace[parentIndex];
+			}
+			
+			for (var i = 0; i < nodeCount; ++i) {
+				var outputIndex = outputIndices[i];
+				if (outputIndex >= 0) results[outputIndex] = bindPoseInversions[i] * workspace[i];
+			}
+			
+			SetModelInstanceBoneTransforms(
+				targetInstance.Handle, 
+				(Matrix4x4*) resultBuffer.StartPtr, 
+				results.Length
+			).ThrowIfFailure();
+		}
+		finally {
+			_applyTransformsBuffer.Return(resultBuffer);
+		}
 	}
 	
 	public void Apply(ResourceHandle<MeshAnimation> handle, ModelInstance targetInstance, float targetTimePointSeconds) {
@@ -248,20 +315,24 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 				);
 
 				transform.ToMatrix(ref workspace[mutation.TargetNodeIndex]);
-				Console.WriteLine($"\tMutation #{i} | mutation = {mutation} | transform = {transform} | outputTransforms[{mutation.TargetNodeIndex}] = {MatStr(workspace[mutation.TargetNodeIndex])}");
+				Console.WriteLine($"\tMutation #{i} | mutation = {mutation} | transform = {transform} | workspace[{mutation.TargetNodeIndex}] = {MatStr(workspace[mutation.TargetNodeIndex])}");
 			}
 
 			for (var i = 0; i < nodeCount; ++i) {
 				var parentIndex = parents[i];
-				if (parentIndex >= 0) workspace[i] = workspace[parentIndex] * workspace[i];
-				Console.WriteLine($"\tIndex #{i} | parentIndex = {parentIndex} | workspace[{i}] = {MatStr(workspace[i])}");
+				if (parentIndex >= 0) {
+					Console.Write($"\tIndex #{i} | parentIndex = {parentIndex} | workspace[{i}] = {MatStr(workspace[i])} * workspace[{parentIndex}] ");
+					workspace[i] = workspace[i] * workspace[parentIndex];
+					Console.WriteLine($"= {MatStr(workspace[i])}");
+				}
+				else Console.WriteLine($"\tIndex #{i} | parentIndex = {parentIndex} | workspace[{i}] = {MatStr(workspace[i])}");
 			}
 			
 			for (var i = 0; i < nodeCount; ++i) {
 				var outputIndex = outputIndices[i];
 				if (outputIndex >= 0) {
-					results[outputIndex] = workspace[i] * bindPoseInversions[i];
-					Console.WriteLine($"\tOutput #{outputIndex} | results[{outputIndex}] = workspace[{i}] * bindPoseInversions[{i}] = {MatStr(results[outputIndex])}");
+					results[outputIndex] = bindPoseInversions[i] * workspace[i];
+					Console.WriteLine($"\tOutput #{outputIndex} | results[{outputIndex}] = bindPoseInversions[{i}] * workspace[{i}] = {MatStr(results[outputIndex])}");
 				}
 			}
 			
@@ -326,6 +397,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		_currentSkeleton?.Workspace.Dispose();
 		_currentSkeleton?.ParentIndices.Dispose();
 		_currentSkeleton?.OutputIndices.Dispose();
+		_currentSkeleton?.MutationTargetIndexMap.Dispose();
 		_currentSkeleton = null;
 	}
 

@@ -379,7 +379,7 @@ public interface IMeshBuilder {
 		ReadOnlySpan<SkeletalAnimationScalingKeyframe> scalingKeyframes, 
 		ReadOnlySpan<SkeletalAnimationRotationKeyframe> rotationKeyframes, 
 		ReadOnlySpan<SkeletalAnimationTranslationKeyframe> translationKeyframes, 
-		ReadOnlySpan<SkeletalAnimationBoneMutationDescriptor> boneMutations, 
+		ReadOnlySpan<SkeletalAnimationNodeMutationDescriptor> boneMutations, 
 		float defaultCompletionTimeSeconds, 
 		ReadOnlySpan<char> name
 	);

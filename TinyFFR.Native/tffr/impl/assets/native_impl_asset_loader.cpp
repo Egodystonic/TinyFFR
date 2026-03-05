@@ -23,9 +23,26 @@ constexpr unsigned int NoAnswerFoundGlobalIndex = MeshMaxCount + 1;
 void native_impl_asset_loader::load_asset_file_in_to_memory(const char* filePath, interop_bool fixCommonExporterErrors, interop_bool optimize, MemoryLoadedAssetHandle* outAssetHandle) {
 	ThrowIfNull(filePath, "File path pointer was null.");
 	ThrowIfNull(outAssetHandle, "Out asset handle pointer was null.");
-	unsigned int flags = aiProcess_CalcTangentSpace | aiProcess_GenNormals | aiProcess_GenBoundingBoxes | aiProcess_GenUVCoords | aiProcess_Triangulate | aiProcess_SortByPType | aiProcess_LimitBoneWeights | aiProcess_PopulateArmatureData;
-	if (fixCommonExporterErrors) flags |= aiProcess_FindDegenerates | aiProcess_FindInvalidData | aiProcess_FixInfacingNormals;
-	if (optimize) flags |= aiProcess_ImproveCacheLocality | aiProcess_JoinIdenticalVertices | aiProcess_OptimizeGraph | aiProcess_OptimizeMeshes | aiProcess_FindInstances;
+	unsigned int flags = aiProcess_CalcTangentSpace 
+					   | aiProcess_GenNormals
+					   | aiProcess_GenBoundingBoxes
+					   | aiProcess_GenUVCoords
+					   | aiProcess_Triangulate
+					   | aiProcess_JoinIdenticalVertices // Note: Although this is technically an optimization it's actually required to make skeletal vertices correct after triangulation, so it's not optional. Also it's required for indexed geometry.
+					   | aiProcess_SortByPType
+					   | aiProcess_LimitBoneWeights
+					   | aiProcess_PopulateArmatureData;
+	if (fixCommonExporterErrors) {
+		flags |= aiProcess_FindDegenerates
+			   | aiProcess_FindInvalidData
+			   | aiProcess_FixInfacingNormals;	
+	}
+	if (optimize) {
+		flags |= aiProcess_ImproveCacheLocality
+			   | aiProcess_OptimizeGraph
+			   | aiProcess_OptimizeMeshes
+			   | aiProcess_FindInstances;
+	}
 	*outAssetHandle = aiImportFile(filePath, flags);
 	ThrowIfNull(*outAssetHandle, "Could not load asset '", filePath, "': ", aiGetErrorString());
 }
@@ -167,11 +184,12 @@ StartExportedFunc(get_loaded_asset_mesh_skeletal_bone_count, MemoryLoadedAssetHa
 
 typedef void(*standard_vertex_data_callback)(unsigned vertexIndex, float3& position, float2& textureUv, float4& tangent, void* bufferPtr);
 
-void get_mesh_standard_vertex_attributes(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeVertices, void* bufferPtr, standard_vertex_data_callback callback, aiMesh** outMeshPtr) {
+void get_mesh_standard_vertex_attributes(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, bool prebakeTransforms, int32_t bufferSizeVertices, void* bufferPtr, standard_vertex_data_callback callback, aiMesh** outMeshPtr) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 
 	auto transform = aiMatrix4x4{};
 	auto mesh = get_mesh_at_index(assetHandle, meshIndex, transform);
+	if (!prebakeTransforms) transform = aiMatrix4x4 { };
 	auto normalMatrix = aiMatrix3x3 { transform };
 	normalMatrix = normalMatrix.Inverse().Transpose();
 
@@ -235,7 +253,7 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_vertices(MemoryLoadedAsset
 	};
 	
 	aiMesh* unused;
-	get_mesh_standard_vertex_attributes(assetHandle, meshIndex, bufferSizeVertices, buffer, callback, &unused);
+	get_mesh_standard_vertex_attributes(assetHandle, meshIndex, true, bufferSizeVertices, buffer, callback, &unused);
 }
 StartExportedFunc(copy_loaded_asset_mesh_vertices, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t bufferSizeVertices, native_impl_render_assets::MeshVertex* buffer) {
 	native_impl_asset_loader::copy_loaded_asset_mesh_vertices(assetHandle, meshIndex, bufferSizeVertices, buffer);
@@ -252,7 +270,7 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_vertices(MemoryLo
 	};
 	
 	aiMesh* mesh;
-	get_mesh_standard_vertex_attributes(assetHandle, meshIndex, bufferSizeVertices, buffer, callback, &mesh);
+	get_mesh_standard_vertex_attributes(assetHandle, meshIndex, false, bufferSizeVertices, buffer, callback, &mesh);
 
 	for (auto boneIndex = 0U; boneIndex < min(mesh->mNumBones, 255U); ++boneIndex) {
 		auto bone = mesh->mBones[boneIndex];
@@ -812,7 +830,7 @@ aiNode* lookup_node_by_name(aiNode* root, const aiString& name) {
 	return nullptr;
 }
 
-mat4f aimat_to_mat4f(const aiMatrix4x4& m) {
+mat4f transpose_aimat_and_write_to_filament_mat(const aiMatrix4x4& m) {
 	return mat4f{
 		float4{ m.a1, m.b1, m.c1, m.d1 },
 		float4{ m.a2, m.b2, m.c2, m.d2 },
@@ -822,27 +840,29 @@ mat4f aimat_to_mat4f(const aiMatrix4x4& m) {
 }
 
 void log_aimat(const aiMatrix4x4& m) {
-	FloatStr(a1, m.a1);
-	FloatStr(a2, m.a2);
-	FloatStr(a3, m.a3);
-	FloatStr(a4, m.a4);
-	FloatStr(b1, m.b1);
-	FloatStr(b2, m.b2);
-	FloatStr(b3, m.b3);
-	FloatStr(b4, m.b4);
-	FloatStr(c1, m.c1);
-	FloatStr(c2, m.c2);
-	FloatStr(c3, m.c3);
-	FloatStr(c4, m.c4);
-	FloatStr(d1, m.d1);
-	FloatStr(d2, m.d2);
-	FloatStr(d3, m.d3);
-	FloatStr(d4, m.d4);
+	auto mat4 = transpose_aimat_and_write_to_filament_mat(m);
 	
-	Log(a1, b1, c1, d1);
-	Log(a2, b2, c2, d2);
-	Log(a3, b3, c3, d3);
-	Log(a4, b4, c4, d4);
+	FloatStr(a1, mat4.asArray()[0]);
+	FloatStr(a2, mat4.asArray()[1]);
+	FloatStr(a3, mat4.asArray()[2]);
+	FloatStr(a4, mat4.asArray()[3]);
+	FloatStr(b1, mat4.asArray()[4]);
+	FloatStr(b2, mat4.asArray()[5]);
+	FloatStr(b3, mat4.asArray()[6]);
+	FloatStr(b4, mat4.asArray()[7]);
+	FloatStr(c1, mat4.asArray()[8]);
+	FloatStr(c2, mat4.asArray()[9]);
+	FloatStr(c3, mat4.asArray()[10]);
+	FloatStr(c4, mat4.asArray()[11]);
+	FloatStr(d1, mat4.asArray()[12]);
+	FloatStr(d2, mat4.asArray()[13]);
+	FloatStr(d3, mat4.asArray()[14]);
+	FloatStr(d4, mat4.asArray()[15]);
+	
+	Log(a1, a2, a3, a4);
+	Log(b1, b2, b3, b4);
+	Log(c1, c2, c3, c4);
+	Log(d1, d2, d3, d4);
 }
 
 void LogNodesAndRecurse(aiNode* root, int recursionDepth) {
@@ -922,7 +942,7 @@ void native_impl_asset_loader::generate_loaded_asset_mesh_skeletal_node_flat_buf
 	ThrowIf(numNodesWritten != static_cast<unsigned int>(handleBufferCount), "Buffer count did not match node count.");
 	
 	Log("Node tree:");
-	LogNodesAndRecurse(nodeHandleBuffer[0].Node, 0);
+	LogNodesAndRecurse(assetHandle->mRootNode, 0);
 	
 	Log("Node buffer:");
 	for (auto i = 0; i < handleBufferCount; ++i) {
@@ -950,8 +970,8 @@ void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node(NodeHandle* n
 	auto identityMatrix = mat4f { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
 		
 	auto nodeHandle = nodeHandleBuffer[nodeIndex];
-	*outInverseBindPose = nodeHandle.BoneIfExists == nullptr ? identityMatrix : aimat_to_mat4f(nodeHandle.BoneIfExists->mOffsetMatrix);
-	*outDefaultTransform = aimat_to_mat4f(nodeHandle.Node->mTransformation);
+	*outInverseBindPose = nodeHandle.BoneIfExists == nullptr ? identityMatrix : transpose_aimat_and_write_to_filament_mat(nodeHandle.BoneIfExists->mOffsetMatrix);
+	*outDefaultTransform = transpose_aimat_and_write_to_filament_mat(nodeHandle.Node->mTransformation);
 	
 	*outParentNodeIndex = -1;
 	auto* parentNode = nodeHandle.Node->mParent;

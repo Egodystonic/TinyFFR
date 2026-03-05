@@ -29,7 +29,7 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 	public ModelInstance CreateModelInstance(Mesh mesh, Material material, in ModelInstanceCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		var meshBufferData = mesh.BufferData;
-		
+
 		AllocateModelInstance(
 			config.InitialTransform.ToMatrix(),
 			meshBufferData.VertexBufferHandle,
@@ -46,6 +46,8 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<ModelInstance>(handle).Ident, config.Name, DefaultModelInstanceName);
 		_globals.DependencyTracker.RegisterDependency(result, mesh);
 		_globals.DependencyTracker.RegisterDependency(result, material);
+		
+		if (meshBufferData.BoneCount > 0) mesh.Animations.ApplySkeletalBindPose(result);
 		return result;
 	}
 

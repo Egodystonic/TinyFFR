@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2026
 
 using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
@@ -46,6 +47,9 @@ public readonly record struct MeshAnimationIndex(Mesh Mesh) : IEnumerable<MeshAn
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public MeshAnimation? TryGetAnimationByName(ReadOnlySpan<char> name, MeshAnimationType animationType) => Mesh.TryGetAnimationByName(name, animationType);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void ApplySkeletalBindPose(ModelInstance targetInstance) => Mesh.ApplySkeletalBindPose(targetInstance);
 
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	IEnumerator<MeshAnimation> IEnumerable<MeshAnimation>.GetEnumerator() => GetEnumerator();

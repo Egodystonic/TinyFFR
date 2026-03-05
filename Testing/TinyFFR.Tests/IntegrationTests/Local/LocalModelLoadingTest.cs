@@ -25,6 +25,7 @@ class LocalModelLoadingTest {
 	[SetUp]
 	public void SetUpTest() {
 		_filesToLoad = new[] {
+			"SimpleSkin.gltf",
 			// Color / texturing / basic import tests
 			"BoxTextured.gltf",	
 			"BoxTextured.glb",
@@ -123,7 +124,7 @@ class LocalModelLoadingTest {
 				curFileIndex++;
 				if (curFileIndex >= _filesToLoad.Length) curFileIndex = 0;
 				
-				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), new ModelCreationConfig(), new ModelReadConfig() { MeshConfig = new() { CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true });
+				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), new ModelCreationConfig(), new ModelReadConfig() { MeshConfig = new() { LoadSkeletalAnimationDataIfPresent = false, CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true });
 
 				modelInstances = factory.ObjectBuilder.CreateModelInstanceGroup(loadedResources.Value);
 				scene.Add(modelInstances.Value);

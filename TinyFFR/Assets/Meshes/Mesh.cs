@@ -3,6 +3,7 @@
 
 using Egodystonic.TinyFFR.Resources;
 using System;
+using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
@@ -33,6 +34,7 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 	
 	internal IndirectEnumerable<Mesh, MeshAnimation> GetAnimations(MeshAnimationType? type) => Implementation.GetAnimations(_handle, type);
 	internal MeshAnimation? TryGetAnimationByName(ReadOnlySpan<char> name, MeshAnimationType? type) => Implementation.TryGetAnimationByName(_handle, name, type);
+	internal void ApplySkeletalBindPose(ModelInstance targetInstance) => Implementation.ApplySkeletalBindPose(_handle, targetInstance);
 	internal bool GetHasAnyAnimations() => Implementation.GetHasAnyAnimations(_handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -355,7 +355,7 @@ unsafe partial class LocalAssetLoader {
 			var highestSingleChannelScalingKeyframeCount = 0;
 			var highestSingleChannelRotationKeyframeCount = 0;
 			var highestSingleChannelTranslationKeyframeCount = 0;
-			var mutations = _globals.HeapPool.Borrow<SkeletalAnimationBoneMutationDescriptor>(animationChannelCount);
+			var mutations = _globals.HeapPool.Borrow<SkeletalAnimationNodeMutationDescriptor>(animationChannelCount);
 			var channelsToInclude = _globals.HeapPool.Borrow<int>(animationChannelCount);
 			var numChannelsIncluded = 0;
 			
@@ -380,7 +380,7 @@ unsafe partial class LocalAssetLoader {
 				if (nodeIndex < 0 || nodeIndex >= nodeHandleBufferCount) continue;
 				
 				channelsToInclude.Buffer[numChannelsIncluded] = c;
-				mutations.Buffer[numChannelsIncluded] = new SkeletalAnimationBoneMutationDescriptor(
+				mutations.Buffer[numChannelsIncluded] = new SkeletalAnimationNodeMutationDescriptor(
 					nodeIndex,
 					totalScalingKeyframes, numScalingKeyframes,
 					totalRotationKeyframes, numRotationKeyframes,
@@ -441,6 +441,13 @@ unsafe partial class LocalAssetLoader {
 							Vect.FromVector3(translationVectorBuffer.AsReadOnlySpan<Vector3>()[t])
 						);
 					}
+				}
+				
+				if (numChannelsIncluded != animationChannelCount) {
+					var newMutationsBuffer = _globals.HeapPool.Borrow<SkeletalAnimationNodeMutationDescriptor>(numChannelsIncluded);
+					mutations.Buffer[..numChannelsIncluded].CopyTo(newMutationsBuffer.Buffer);
+					mutations.Dispose();
+					mutations = newMutationsBuffer;
 				}
 
 				_meshBuilder.AttachAnimationAndTransferBufferOwnership(

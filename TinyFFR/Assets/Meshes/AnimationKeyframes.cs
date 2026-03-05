@@ -23,7 +23,7 @@ public readonly record struct SkeletalAnimationRotationKeyframe(float TimeKeySec
 	public override string ToString() => $"[{Value.ToStringDescriptive()} @ {TimeKeySeconds}s]";
 }
 
-public readonly record struct SkeletalAnimationBoneMutationDescriptor(
+public readonly record struct SkeletalAnimationNodeMutationDescriptor(
 	int TargetNodeIndex,
 	int ScalingKeyframeStartIndex, int ScalingKeyframeCount,
 	int RotationKeyframeStartIndex, int RotationKeyframeCount,

@@ -25,6 +25,8 @@ public readonly record struct MeshVertexSkeletal : IMeshVertex {
 		public override int GetHashCode() => HashCode.Combine(this[0], this[1], this[2], this[3]);
 		public static bool operator ==(BoneIndexArray left, BoneIndexArray right) => left.Equals(right);
 		public static bool operator !=(BoneIndexArray left, BoneIndexArray right) => !left.Equals(right);
+
+		public override string ToString() => $"[{this[0]}, {this[1]}, {this[2]}, {this[3]}]";
 	}
 
 	[InlineArray(MaxBonesPerVertex)]
@@ -43,6 +45,8 @@ public readonly record struct MeshVertexSkeletal : IMeshVertex {
 		public override int GetHashCode() => HashCode.Combine(this[0], this[1], this[2], this[3]);
 		public static bool operator ==(BoneWeightArray left, BoneWeightArray right) => left.Equals(right);
 		public static bool operator !=(BoneWeightArray left, BoneWeightArray right) => !left.Equals(right);
+		
+		public override string ToString() => $"[{this[0]}, {this[1]}, {this[2]}, {this[3]}]";
 	}
 #pragma warning restore CA1034
 	
