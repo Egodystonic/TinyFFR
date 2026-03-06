@@ -464,11 +464,11 @@ unsafe partial class LocalAssetLoader {
 				scalingKeyframes.Dispose();
 				rotationKeyframes.Dispose();
 				translationKeyframes.Dispose();
-				channelsToInclude.Dispose();
 				mutations.Dispose();
 				throw;
 			}
 			finally {
+				channelsToInclude.Dispose();
 				_skeletalAnimationKeyframeDataPool.Return(scalingVectorBuffer);
 				_skeletalAnimationKeyframeDataPool.Return(scalingTimeCodeBuffer);
 				_skeletalAnimationKeyframeDataPool.Return(rotationQuaternionBuffer);

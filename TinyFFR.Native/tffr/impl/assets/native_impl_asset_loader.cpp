@@ -864,11 +864,12 @@ StartExportedFunc(get_loaded_asset_mesh_skeletal_node_count, MemoryLoadedAssetHa
 unsigned int write_nodes(aiMesh* mesh, aiNode* node, native_impl_asset_loader::NodeHandle* buffer, unsigned int remainingBufferCount, std::unordered_map<std::string, unsigned int>& boneMap) {
 	ThrowIf(remainingBufferCount == 0U, "Buffer not large enough.");
 	auto result = 1U;
-	auto boneExists = boneMap.contains(node->mName.C_Str());
+	auto kvp = boneMap.find(node->mName.C_Str());
+	auto boneExists = kvp != boneMap.end();
 	buffer[0] = {
 		.Node = node,
-		.BoneIfExists = boneExists ? mesh->mBones[boneMap[node->mName.C_Str()]] : nullptr,
-		.BoneIndex = boneExists ? static_cast<int32_t>(boneMap[node->mName.C_Str()]) : -1
+		.BoneIfExists = boneExists ? mesh->mBones[kvp->second] : nullptr,
+		.BoneIndex = boneExists ? static_cast<int32_t>(kvp->second) : -1
 	};
 	for (auto i = 0U; i < node->mNumChildren; ++i) {
 		result += write_nodes(mesh, node->mChildren[i], buffer + result, remainingBufferCount - result, boneMap);
