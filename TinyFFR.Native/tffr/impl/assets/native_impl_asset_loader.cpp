@@ -130,7 +130,7 @@ void native_impl_asset_loader::get_loaded_asset_mesh_material_index(MemoryLoaded
 	ThrowIfNull(outMaterialIndex, "Out material index pointer was null.");
 	
 	auto unused = aiMatrix4x4{};
-	*outMaterialIndex = get_mesh_at_index(assetHandle, meshIndex, unused)->mMaterialIndex;
+	*outMaterialIndex = static_cast<int32_t>(get_mesh_at_index(assetHandle, meshIndex, unused)->mMaterialIndex);
 }
 StartExportedFunc(get_loaded_asset_mesh_material_index, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outMaterialIndex) {
 	native_impl_asset_loader::get_loaded_asset_mesh_material_index(assetHandle, meshIndex, outMaterialIndex);
@@ -309,18 +309,18 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_triangles(MemoryLoadedAsse
 		for (auto faceIndex = 0; faceIndex < triangleCount; ++faceIndex) {
 			auto face = mesh->mFaces[faceIndex];
 			if (face.mNumIndices != 3) continue;
-			buffer[(faceIndex * 3) + 0] = face.mIndices[0];
-			buffer[(faceIndex * 3) + 1] = face.mIndices[2];
-			buffer[(faceIndex * 3) + 2] = face.mIndices[1];
+			buffer[(faceIndex * 3) + 0] = static_cast<int32_t>(face.mIndices[0]);
+			buffer[(faceIndex * 3) + 1] = static_cast<int32_t>(face.mIndices[2]);
+			buffer[(faceIndex * 3) + 2] = static_cast<int32_t>(face.mIndices[1]);
 		}
 	}
 	else {
 		for (auto faceIndex = 0; faceIndex < triangleCount; ++faceIndex) {
 			auto face = mesh->mFaces[faceIndex];
 			if (face.mNumIndices != 3) continue;
-			buffer[(faceIndex * 3) + 0] = face.mIndices[0];
-			buffer[(faceIndex * 3) + 1] = face.mIndices[1];
-			buffer[(faceIndex * 3) + 2] = face.mIndices[2];
+			buffer[(faceIndex * 3) + 0] = static_cast<int32_t>(face.mIndices[0]);
+			buffer[(faceIndex * 3) + 1] = static_cast<int32_t>(face.mIndices[1]);
+			buffer[(faceIndex * 3) + 2] = static_cast<int32_t>(face.mIndices[2]);
 		}
 	}
 }
@@ -515,7 +515,7 @@ void native_impl_asset_loader::get_loaded_asset_texture_path_len(MemoryLoadedAss
 	std::filesystem::path rel { cStr };
 	std::filesystem::path full = root / rel; // Don't be tempted to inline this and the line below, root / rel creates a temp that is moved to 'full' here. C++ fucking sucks lol
 	auto fullPath = full.c_str();
-	*outPathLength = strlen(fullPath);
+	*outPathLength = static_cast<int32_t>(strlen(fullPath));
 }
 StartExportedFunc(get_loaded_asset_texture_path_len, MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, int32_t textureIndex, const char* assetRootDirPath, int32_t* outPathLength) {
 	native_impl_asset_loader::get_loaded_asset_texture_path_len(assetHandle, materialIndex, textureIndex, assetRootDirPath, outPathLength);
@@ -731,7 +731,7 @@ void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_metadata
 
 	*outNameLengthBytes = static_cast<int32_t>(anim->mName.length);
 	*outDurationSeconds = static_cast<float_t>(anim->mDuration / (anim->mTicksPerSecond > 0.0 ? anim->mTicksPerSecond : 25.0));
-	*outChannelCount = anim->mNumChannels;
+	*outChannelCount = static_cast<int32_t>(anim->mNumChannels);
 }
 StartExportedFunc(get_loaded_asset_mesh_skeletal_animation_metadata, MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t* outNameLengthBytes, float_t* outDurationSeconds, int32_t* outChannelCount) {
 	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_metadata(assetHandle, animIndex, outNameLengthBytes, outDurationSeconds, outChannelCount);
@@ -839,54 +839,6 @@ mat4f transpose_aimat_and_write_to_filament_mat(const aiMatrix4x4& m) {
 	};
 }
 
-void log_aimat(const aiMatrix4x4& m) {
-	auto mat4 = transpose_aimat_and_write_to_filament_mat(m);
-	
-	FloatStr(a1, mat4.asArray()[0]);
-	FloatStr(a2, mat4.asArray()[1]);
-	FloatStr(a3, mat4.asArray()[2]);
-	FloatStr(a4, mat4.asArray()[3]);
-	FloatStr(b1, mat4.asArray()[4]);
-	FloatStr(b2, mat4.asArray()[5]);
-	FloatStr(b3, mat4.asArray()[6]);
-	FloatStr(b4, mat4.asArray()[7]);
-	FloatStr(c1, mat4.asArray()[8]);
-	FloatStr(c2, mat4.asArray()[9]);
-	FloatStr(c3, mat4.asArray()[10]);
-	FloatStr(c4, mat4.asArray()[11]);
-	FloatStr(d1, mat4.asArray()[12]);
-	FloatStr(d2, mat4.asArray()[13]);
-	FloatStr(d3, mat4.asArray()[14]);
-	FloatStr(d4, mat4.asArray()[15]);
-	
-	Log(a1, a2, a3, a4);
-	Log(b1, b2, b3, b4);
-	Log(c1, c2, c3, c4);
-	Log(d1, d2, d3, d4);
-}
-
-void LogNodesAndRecurse(aiNode* root, int recursionDepth) {
-	if (recursionDepth == 0) {
-		Log(root->mName.C_Str());
-	}
-	else if (recursionDepth == 1) {
-		Log("1\t", root->mName.C_Str());
-	}
-	else if (recursionDepth == 2) {
-		Log("2\t\t", root->mName.C_Str());
-	}
-	else {
-		IntStr(rd, recursionDepth);
-		Log(rd, "\t\t\t", root->mName.C_Str());
-	}
-	
-	log_aimat(root->mTransformation);
-	
-	for (auto i = 0; i < root->mNumChildren; ++i) {
-		LogNodesAndRecurse(root->mChildren[i], recursionDepth + 1);
-	}
-}
-
 unsigned int count_nodes(aiNode* node) {
 	auto result = 1U;
 	for (auto i = 0U; i < node->mNumChildren; ++i) {
@@ -940,18 +892,6 @@ void native_impl_asset_loader::generate_loaded_asset_mesh_skeletal_node_flat_buf
 	
 	auto numNodesWritten = write_nodes(mesh, mesh->mBones[0]->mArmature, nodeHandleBuffer, static_cast<unsigned int>(handleBufferCount), boneMap);	
 	ThrowIf(numNodesWritten != static_cast<unsigned int>(handleBufferCount), "Buffer count did not match node count.");
-	
-	Log("Node tree:");
-	LogNodesAndRecurse(assetHandle->mRootNode, 0);
-	
-	Log("Node buffer:");
-	for (auto i = 0; i < handleBufferCount; ++i) {
-		IntStr(is, i);
-		if (nodeHandleBuffer[i].BoneIfExists != nullptr) {
-			Log(is, nodeHandleBuffer[i].Node->mName.C_Str(), " | Bone = ", nodeHandleBuffer[i].BoneIfExists->mName.C_Str());
-		}
-		else Log(is, nodeHandleBuffer[i].Node->mName.C_Str());
-	}
 }
 StartExportedFunc(generate_loaded_asset_mesh_skeletal_node_flat_buffer, MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, native_impl_asset_loader::NodeHandle* nodeHandleBuffer, int32_t handleBufferCount) {
 	native_impl_asset_loader::generate_loaded_asset_mesh_skeletal_node_flat_buffer(assetHandle, meshIndex, nodeHandleBuffer, handleBufferCount);

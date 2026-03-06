@@ -432,7 +432,7 @@ unsafe partial class LocalAssetLoader {
 					for (var r = 0; r < mutations.Buffer[i].RotationKeyframeCount; ++r) {
 						rotationKeyframes.Buffer[mutations.Buffer[i].RotationKeyframeStartIndex + r] = new SkeletalAnimationRotationKeyframe(
 							rotationTimeCodeBuffer.AsReadOnlySpan<float>()[r],
-							Rotation.FromQuaternionPreNormalized(rotationQuaternionBuffer.AsReadOnlySpan<Quaternion>()[r])
+							rotationQuaternionBuffer.AsReadOnlySpan<Quaternion>()[r]
 						);
 					}
 					for (var t = 0; t < mutations.Buffer[i].TranslationKeyframeCount; ++t) {

@@ -29,8 +29,10 @@ class LocalAnimationTest {
 			"RiggedSimple.glb",
 			"RiggedFigure.glb",
 			"CesiumMan.glb",
-			"RecursiveSkeletons.glb",
-			"BrainStem.glb"
+			"BrainStem.glb",
+			"Fox.glb",
+			"Mixamo.fbx",
+			//"RecursiveSkeletons.glb", // One day we might need to support this; but not today
 		};
 	}
 
@@ -41,7 +43,7 @@ class LocalAnimationTest {
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
-		using var window = factory.WindowBuilder.CreateWindow(display, title: "L controls camera light | X/Y/Z rotates models | Press Space");
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "L controls camera light | X/Y/Z rotates models | Mousewheel scales | Press Space");
 		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f));
 		camera.NearPlaneDistance = 0.001f;
 		var lightBrightnessStage = 3;
@@ -81,18 +83,18 @@ class LocalAnimationTest {
 				curAnimIndex = 0;
 
 				Console.WriteLine("Loading " + _filesToLoad[curFileIndex] + "...");
-				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), new ModelCreationConfig(), new ModelReadConfig() { HandleUriEscapedStrings = true });
+				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), new ModelCreationConfig() { MeshConfig = new() {  }}, new ModelReadConfig() { HandleUriEscapedStrings = true });
 				curAnimCount = loadedResources.Value.Models.Max(m => m.Mesh.Animations.All.Count);
 				Assert.GreaterOrEqual(curAnimCount, 1);
 
 				modelInstanceGroup = factory.ObjectBuilder.CreateModelInstanceGroup(loadedResources.Value);
 				scene.Add(modelInstanceGroup.Value);
-				window.SetTitle($"L controls camera light | X/Y/Z rotates models | A selects anim | S starts/stops anim | '{_filesToLoad[curFileIndex]}' anim {(curAnimIndex + 1)} / {curAnimCount}");
+				window.SetTitle($"L controls camera light | X/Y/Z rotates models | A selects anim | S starts/stops anim | Mousewheel scales | '{_filesToLoad[curFileIndex]}' anim {(curAnimIndex + 1)} / {curAnimCount} | {modelInstanceGroup.Value.Count} models");
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.A) && modelInstanceGroup.HasValue) {
 				++curAnimIndex;
 				if (curAnimIndex >= curAnimCount) curAnimIndex = 0;
-				window.SetTitle($"L controls camera light | X/Y/Z rotates models | A selects anim | S starts/stops anim | '{_filesToLoad[curFileIndex]}' anim {(curAnimIndex + 1)} / {curAnimCount}");
+				window.SetTitle($"L controls camera light | X/Y/Z rotates models | A selects anim | S starts/stops anim | Mousewheel scales | '{_filesToLoad[curFileIndex]}' anim {(curAnimIndex + 1)} / {curAnimCount} | {modelInstanceGroup.Value.Count} models");
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.S) && modelInstanceGroup.HasValue) {
 				playingAnim = !playingAnim;
@@ -101,7 +103,7 @@ class LocalAnimationTest {
 				Console.WriteLine("Setting t=0 on anim #" + curAnimIndex);
 				foreach (var mi in modelInstanceGroup) {
 					if (curAnimIndex >= mi.Mesh.Animations.All.Count) continue;
-					mi.Mesh.Animations.All[curAnimIndex].ApplyLoopedWithPingPong(mi, 0f);
+					mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetCompletionFraction(0f);
 				}
 				playingAnim = false;
 			}
@@ -109,7 +111,7 @@ class LocalAnimationTest {
 				Console.WriteLine("Setting t=max on anim #" + curAnimIndex);
 				foreach (var mi in modelInstanceGroup) {
 					if (curAnimIndex >= mi.Mesh.Animations.All.Count) continue;
-					mi.Mesh.Animations.All[curAnimIndex].ApplyLoopedWithPingPong(mi, mi.Mesh.Animations[curAnimIndex].DefaultCompletionTimeSeconds);
+					mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetCompletionFraction(1f);
 				}
 				playingAnim = false;
 			}
@@ -133,11 +135,15 @@ class LocalAnimationTest {
 					_ => 1f
 				});
 			}
+			modelInstanceGroup?.ScaleBy(1f - (0.05f * loop.Input.KeyboardAndMouse.MouseScrollWheelDelta)); 
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.E)) {
+				factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[0])).Meshes[0].Animations.ApplySkeletalBindPose(modelInstanceGroup!.Value.Instances[0]);
+			}
 			
 			if (playingAnim && modelInstanceGroup.HasValue) {
 				foreach (var mi in modelInstanceGroup) {
 					if (curAnimIndex >= mi.Mesh.Animations.All.Count) continue;
-					mi.Mesh.Animations.All[curAnimIndex].ApplyLoopedWithPingPong(mi, (float) loop.TotalIteratedTime.TotalSeconds);
+					mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationTimestampWrapStyle.Loop);
 				}
 			}
 			

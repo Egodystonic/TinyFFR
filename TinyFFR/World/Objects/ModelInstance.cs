@@ -91,6 +91,11 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 			return new MaterialEffectController(this);
 		}
 	}
+	
+	public MeshAnimationIndex Animations {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Mesh.Animations;
+	}
 
 	public Mesh Mesh {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -105,6 +110,15 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 		_handle = handle;
 		_impl = impl;
 	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public MeshAnimationPlayer GetAnimationPlayer(MeshAnimation animation) => new(animation, this);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public MeshAnimationPlayer GetAnimationPlayerWithSpeedMultiplier(MeshAnimation animation, float animationSpeedMultiplier) => MeshAnimationPlayer.CreateWithSpeedMultiplier(animation, this, animationSpeedMultiplier);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public MeshAnimationPlayer GetAnimationPlayerWithTargetDuration(MeshAnimation animation, float animationDurationSeconds) => MeshAnimationPlayer.CreateWithTargetDuration(animation, this, animationDurationSeconds);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);

@@ -98,7 +98,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		var result = ProcessVerticesAndCreateMesh(vertices, triangles, in config, boneCount);
 		
 		var animTable = _meshAnimationTablePool.Rent();
-		animTable.SetSkeleton(boneCount, skeletalNodes);
+		animTable.SetSkeleton(result, boneCount, skeletalNodes);
 		_activeMeshAnimationTables.Add(result.Handle, animTable);
 		return result;
 	}

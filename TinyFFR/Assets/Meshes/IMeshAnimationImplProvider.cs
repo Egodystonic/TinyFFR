@@ -7,7 +7,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 public interface IMeshAnimationImplProvider : IResourceImplProvider<MeshAnimation> {
-	float GetDefaultCompletionTimeSeconds(ResourceHandle<MeshAnimation> handle);
+	float GetDefaultDurationSeconds(ResourceHandle<MeshAnimation> handle);
 	MeshAnimationType GetType(ResourceHandle<MeshAnimation> handle);
 	void Apply(ResourceHandle<MeshAnimation> handle, ModelInstance targetInstance, float targetTimePointSeconds);
 	bool IsDisposed(ResourceHandle<MeshAnimation> handle);
