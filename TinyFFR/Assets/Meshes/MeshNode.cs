@@ -32,7 +32,9 @@ public readonly struct MeshNode : IResource<MeshNode, IMeshNodeImplProvider> {
 	static MeshNode IResource<MeshNode>.CreateFromHandleAndImpl(ResourceHandle<MeshNode> handle, IResourceImplProvider impl) {
 		return new MeshNode(handle, impl as IMeshNodeImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
-	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ResourceHandle<MeshNode> GetHandleWithoutDisposeCheck() => _handle;
+
 	#region Disposal
 	internal bool IsDisposed {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -49,6 +49,7 @@ public interface IResource<TSelf> : IResource, IEquatable<TSelf> where TSelf : I
 
 	internal static abstract TSelf CreateFromHandleAndImpl(ResourceHandle<TSelf> handle, IResourceImplProvider impl);
 	internal static virtual TSelf CreateFromStub(ResourceStub stub) => TSelf.CreateFromHandleAndImpl(stub.CreateTypedHandleWithTypeCheck<TSelf>(), stub.Implementation);
+	internal ResourceHandle<TSelf> GetHandleWithoutDisposeCheck();
 }
 public interface IResource<TSelf, out TImpl> : IResource<TSelf>
 	where TSelf : IResource<TSelf> 

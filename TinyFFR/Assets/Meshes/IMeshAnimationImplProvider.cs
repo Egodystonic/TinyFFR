@@ -10,5 +10,7 @@ public interface IMeshAnimationImplProvider : IResourceImplProvider<MeshAnimatio
 	float GetDefaultDurationSeconds(ResourceHandle<MeshAnimation> handle);
 	MeshAnimationType GetType(ResourceHandle<MeshAnimation> handle);
 	void Apply(ResourceHandle<MeshAnimation> handle, ModelInstance targetInstance, float targetTimePointSeconds);
+	void GetNodeTransforms(ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms);
+	void ApplyAndGetNodeTransforms(ResourceHandle<MeshAnimation> handle, ModelInstance targetInstance, float targetTimePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms);
 	bool IsDisposed(ResourceHandle<MeshAnimation> handle);
 }

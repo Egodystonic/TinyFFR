@@ -266,6 +266,90 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		}
 	}
 	
+	void WriteAnimationNodeTransformsToWorkspace(ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (_currentSkeleton is not { } skeleton) return;
+
+		var workspace = skeleton.Workspace.Buffer;
+		skeleton.DefaultLocalTransforms.Buffer.CopyTo(workspace);
+		var parents = skeleton.ParentIndices.Buffer;
+		var firstParentedNodeIndex = skeleton.FirstParentedNodeIndex;
+		
+		var animation = _animationDataMap[handle];
+		var nodeCount = skeleton.NodeCount;
+		var mutations = animation.BoneMutationDescriptors.Buffer;
+		var translationKeys = animation.TranslationKeyframes.Buffer;
+		var rotationKeys = animation.RotationKeyframes.Buffer;
+		var scalingKeys = animation.ScalingKeyframes.Buffer;
+		
+		static TValue InterpolateKeyframes<T, TValue>(ReadOnlySpan<T> keys, float targetTimeSecs) where T : IAnimationKeyframe<TValue> {
+			if (keys.Length == 0) return T.FallbackValue;
+			if (keys.Length == 1 || targetTimeSecs <= keys[0].TimeKeySeconds) return keys[0].Value;
+			if (targetTimeSecs >= keys[^1].TimeKeySeconds) return keys[^1].Value;
+			
+			// Binary search
+			var lowIndex = 0;
+			var highIndex = keys.Length - 1;
+			while (lowIndex < highIndex - 1) {
+				var midpointIndex = (lowIndex + highIndex) >> 1;
+				if (keys[midpointIndex].TimeKeySeconds <= targetTimeSecs) lowIndex = midpointIndex;
+				else highIndex = midpointIndex;
+			}
+			
+			var low = keys[lowIndex];
+			var high = keys[highIndex];
+			return T.InterpolateValues(
+				low.Value,
+				high.Value, 
+				Real.GetInterpolationDistance(low.TimeKeySeconds, high.TimeKeySeconds, targetTimeSecs)
+			);
+		}
+		
+		for (var i = 0; i < mutations.Length; ++i) {
+			var mutation = mutations[i];
+			var transform = new Transform(
+				scaling: InterpolateKeyframes<SkeletalAnimationScalingKeyframe, Vect>(scalingKeys.Slice(mutation.ScalingKeyframeStartIndex, mutation.ScalingKeyframeCount), targetTimePointSeconds),
+				rotationQuaternion: InterpolateKeyframes<SkeletalAnimationRotationKeyframe, Quaternion>(rotationKeys.Slice(mutation.RotationKeyframeStartIndex, mutation.RotationKeyframeCount), targetTimePointSeconds),
+				translation: InterpolateKeyframes<SkeletalAnimationTranslationKeyframe, Vect>(translationKeys.Slice(mutation.TranslationKeyframeStartIndex, mutation.TranslationKeyframeCount), targetTimePointSeconds)
+			);
+
+			transform.ToMatrix(ref workspace[mutation.TargetNodeIndex]);
+		}
+
+		for (var i = firstParentedNodeIndex; i < nodeCount; ++i) {
+			workspace[i] *= workspace[parents[i]];
+		}
+	}
+	
+	void CopyRequestedNodeTransformsFromWorkspace(ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+		if (nodes.Length > modelSpaceTransforms.Length) {
+			throw new ArgumentException($"Requested {nodes.Length} {nameof(nodes)}, but {nameof(modelSpaceTransforms)} destination span is too small (length {modelSpaceTransforms.Length}).", nameof(modelSpaceTransforms));
+		}
+		
+		static void ThrowIfNodeInvalid(MeshNode node, IMeshNodeImplProvider implProvider, int nodeCount) {
+			var nodeIndex = (int) node.GetHandleWithoutDisposeCheck().AsInteger;
+			if (!ReferenceEquals(node.Implementation, implProvider) || nodeIndex < 0 || nodeIndex >= nodeCount) {
+				throw new ArgumentException($"Given node {node} is not valid for this mesh.", nameof(nodes));
+			}
+		}
+		
+		if (_currentSkeleton is { } skeleton) {
+			for (var i = 0; i < nodes.Length; ++i) {
+				var node = nodes[i];
+				ThrowIfNodeInvalid(node, _meshNodeImplProvider, skeleton.NodeCount);
+				var nodeIndex = (int) node.GetHandleWithoutDisposeCheck().AsInteger;
+				modelSpaceTransforms[i] = skeleton.Workspace.Buffer[nodeIndex];
+			}
+		}
+		else {
+			for (var i = 0; i < nodes.Length; ++i) {
+				var node = nodes[i];
+				ThrowIfNodeInvalid(node, _meshNodeImplProvider, Int32.MaxValue);
+				modelSpaceTransforms[i] = Matrix4x4.Identity;
+			}	
+		}
+	}
+	
 	public void Apply(ResourceHandle<MeshAnimation> handle, ModelInstance targetInstance, float targetTimePointSeconds) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (_currentSkeleton is not { } skeleton) return;
@@ -275,64 +359,18 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 				$"Model instance is using {targetInstance.Mesh}, {nameof(MeshAnimationIndex)} is for {skeleton.OwningMesh}."
 			);
 		}
+		WriteAnimationNodeTransformsToWorkspace(handle, targetTimePointSeconds);
 
 		var workspace = skeleton.Workspace.Buffer;
 		skeleton.DefaultLocalTransforms.Buffer.CopyTo(workspace);
 		var bindPoseInversions = skeleton.BindPoseInversions.Buffer;
-		var parents = skeleton.ParentIndices.Buffer;
 		var boneToNodeMap = skeleton.BoneToNodeMap.Buffer;
-		var firstParentedNodeIndex = skeleton.FirstParentedNodeIndex;
-		
-		var animation = _animationDataMap[handle];
-		var nodeCount = skeleton.NodeCount;
 		var boneCount = skeleton.BoneCount;
-		var mutations = animation.BoneMutationDescriptors.Buffer;
-		var translationKeys = animation.TranslationKeyframes.Buffer;
-		var rotationKeys = animation.RotationKeyframes.Buffer;
-		var scalingKeys = animation.ScalingKeyframes.Buffer;
 
 		var resultBuffer = _applyTransformsBuffer.Rent<Matrix4x4>(skeleton.BoneCount);
 		var results = resultBuffer.AsSpan<Matrix4x4>(skeleton.BoneCount);
 		
 		try {
-			static TValue InterpolateKeyframes<T, TValue>(ReadOnlySpan<T> keys, float targetTimeSecs) where T : IAnimationKeyframe<TValue> {
-				if (keys.Length == 0) return T.FallbackValue;
-				if (keys.Length == 1 || targetTimeSecs <= keys[0].TimeKeySeconds) return keys[0].Value;
-				if (targetTimeSecs >= keys[^1].TimeKeySeconds) return keys[^1].Value;
-				
-				// Binary search
-				var lowIndex = 0;
-				var highIndex = keys.Length - 1;
-				while (lowIndex < highIndex - 1) {
-					var midpointIndex = (lowIndex + highIndex) >> 1;
-					if (keys[midpointIndex].TimeKeySeconds <= targetTimeSecs) lowIndex = midpointIndex;
-					else highIndex = midpointIndex;
-				}
-				
-				var low = keys[lowIndex];
-				var high = keys[highIndex];
-				return T.InterpolateValues(
-					low.Value,
-					high.Value, 
-					Real.GetInterpolationDistance(low.TimeKeySeconds, high.TimeKeySeconds, targetTimeSecs)
-				);
-			}
-			
-			for (var i = 0; i < mutations.Length; ++i) {
-				var mutation = mutations[i];
-				var transform = new Transform(
-					scaling: InterpolateKeyframes<SkeletalAnimationScalingKeyframe, Vect>(scalingKeys.Slice(mutation.ScalingKeyframeStartIndex, mutation.ScalingKeyframeCount), targetTimePointSeconds),
-					rotationQuaternion: InterpolateKeyframes<SkeletalAnimationRotationKeyframe, Quaternion>(rotationKeys.Slice(mutation.RotationKeyframeStartIndex, mutation.RotationKeyframeCount), targetTimePointSeconds),
-					translation: InterpolateKeyframes<SkeletalAnimationTranslationKeyframe, Vect>(translationKeys.Slice(mutation.TranslationKeyframeStartIndex, mutation.TranslationKeyframeCount), targetTimePointSeconds)
-				);
-
-				transform.ToMatrix(ref workspace[mutation.TargetNodeIndex]);
-			}
-
-			for (var i = firstParentedNodeIndex; i < nodeCount; ++i) {
-				workspace[i] *= workspace[parents[i]];
-			}
-			
 			for (var i = 0; i < boneCount; ++i) {
 				results[i] = bindPoseInversions[i] * workspace[boneToNodeMap[i]];
 			}
@@ -346,6 +384,16 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		finally {
 			_applyTransformsBuffer.Return(resultBuffer);
 		}
+	}
+
+	public void ApplyAndGetNodeTransforms(ResourceHandle<MeshAnimation> handle, ModelInstance targetInstance, float targetTimePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+		Apply(handle, targetInstance, targetTimePointSeconds);
+		CopyRequestedNodeTransformsFromWorkspace(nodes, modelSpaceTransforms);
+	}
+
+	public void GetNodeTransforms(ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+		WriteAnimationNodeTransformsToWorkspace(handle, targetTimePointSeconds);
+		CopyRequestedNodeTransformsFromWorkspace(nodes, modelSpaceTransforms);
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<MeshAnimation> handle) {
