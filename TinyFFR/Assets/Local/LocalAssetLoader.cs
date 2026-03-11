@@ -36,7 +36,7 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 		_textureBuilder = new LocalTextureBuilder(globals, config);
 		_materialBuilder = new LocalMaterialBuilder(globals, config, _textureBuilder, _testMaterialTextures);
 		_assetFilePathBuffer = new InteropStringBuffer(config.MaxAssetFilePathLengthChars, addOneForNullTerminator: true);
-		_animationAndBoneNameBuffer = new InteropStringBuffer(config.MaxAnimationAndBoneNameLengthChars, addOneForNullTerminator: true);
+		_animationAndNodeNameBuffer = new InteropStringBuffer(config.MaxAnimationAndNodeNameLengthChars, addOneForNullTerminator: true);
 		_vertexTriangleBufferPool = new FixedByteBufferPool(config.MaxAssetVertexIndexBufferSizeBytes);
 		_skeletalNodeBufferPool = new FixedByteBufferPool(config.MaxSkeletalAnimationNodeCount * sizeof(NodeHandle));
 		_skeletalAnimationKeyframeDataPool = new FixedByteBufferPool(config.MaxSkeletalAnimationChannelKeyframeCount * sizeof(Quaternion));
@@ -72,7 +72,7 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 			_vertexTriangleBufferPool.Dispose();
 			_skeletalNodeBufferPool.Dispose();
 			_skeletalAnimationKeyframeDataPool.Dispose();
-			_animationAndBoneNameBuffer.Dispose();
+			_animationAndNodeNameBuffer.Dispose();
 			_assetFilePathBuffer.Dispose();
 			_meshBuilder.Dispose();
 			_materialBuilder.Dispose();

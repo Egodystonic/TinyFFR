@@ -45,6 +45,8 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IA
 	static ApplicationLoop IResource<ApplicationLoop>.CreateFromHandleAndImpl(ResourceHandle<ApplicationLoop> handle, IResourceImplProvider impl) {
 		return new ApplicationLoop(handle, impl as IApplicationLoopImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ResourceHandle<ApplicationLoop> GetHandleWithoutDisposeCheck() => _handle;
 
 	public TimeSpan TotalIteratedTime {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

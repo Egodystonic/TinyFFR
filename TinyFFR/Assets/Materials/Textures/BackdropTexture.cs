@@ -40,6 +40,8 @@ public readonly struct BackdropTexture : IDisposableResource<BackdropTexture, IB
 	static BackdropTexture IResource<BackdropTexture>.CreateFromHandleAndImpl(ResourceHandle<BackdropTexture> handle, IResourceImplProvider impl) {
 		return new BackdropTexture(handle, impl as IBackdropTextureImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ResourceHandle<BackdropTexture> GetHandleWithoutDisposeCheck() => _handle;
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

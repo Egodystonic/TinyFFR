@@ -18,6 +18,8 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable
 	public int Count { get; }
 	
 	ModelInstance? FirstInstance => Count > 0 ? Instances[0] : null;
+	
+	public ModelInstance this[int index] => Instances[index];
 
 	public ModelInstanceGroup(ResourceGroup underlyingResourceGroup) {
 		if (!underlyingResourceGroup.IsSealed) throw new ArgumentException("Resource group must be sealed.", nameof(underlyingResourceGroup));

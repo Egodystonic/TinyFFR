@@ -192,6 +192,13 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 	}
 	
 	public void SetNodeName(int nodeIndex, ReadOnlySpan<char> name) {
+		ThrowIfThisIsDisposed();
+		if (_currentSkeleton is not { } skeleton) {
+			throw new InvalidOperationException("Skeleton not set for this animation table (this is a bug in TinyFFR).");
+		}
+		if (nodeIndex < 0 || nodeIndex >= skeleton.NodeCount) throw new ArgumentOutOfRangeException(nameof(nodeIndex), nodeIndex, $"Node index must be non-negative and less than node count ({skeleton.NodeCount}).");
+		
+		nodeIndex = skeleton.MutationTargetIndexMap.Buffer[nodeIndex];
 		var meshNode = new MeshNode((nuint) nodeIndex, _meshNodeImplProvider);
 		
 		ReadOnlySpan<char> keyToRemove = default; 
@@ -203,6 +210,19 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		}
 		if (!keyToRemove.IsEmpty) _nodeNameMap.Remove(keyToRemove);
 		
+		if (_nodeNameMap.ContainsKey(name)) {
+			using var newNameBuffer = _globals.HeapPool.Borrow<char>(name.Length + 20);
+			name.CopyTo(newNameBuffer.Buffer);
+			newNameBuffer.Buffer[name.Length] = '_';
+			var repeatCharsStartIndex = name.Length + 1;
+			var repeatCount = 2;
+			do {
+				if (!repeatCount.TryFormat(newNameBuffer.Buffer[repeatCharsStartIndex..], out var repeatCharsCount, provider: CultureInfo.InvariantCulture)) {
+					throw new InvalidOperationException($"Can not handle repeated node name '{name}'.");
+				}
+				name = newNameBuffer.Buffer[..(repeatCharsStartIndex + repeatCharsCount)];
+			} while (_nodeNameMap.ContainsKey(name));
+		}
 		_nodeNameMap[name] = meshNode;
 	}
 	public int GetNodeCount() => _currentSkeleton?.NodeCount ?? 0;
@@ -224,6 +244,22 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		return MeshAnimationType.Skeletal;
 	}
 	
+	void WriteBindPoseNodeTransformsToWorkspace() {
+		ThrowIfThisIsDisposed();
+		if (_currentSkeleton is not { } skeleton) return;
+		
+		var workspace = skeleton.Workspace.Buffer;
+		var parents = skeleton.ParentIndices.Buffer;
+		var firstParentedNodeIndex = skeleton.FirstParentedNodeIndex;
+		var nodeCount = skeleton.Workspace.Buffer.Length;
+		
+		skeleton.DefaultLocalTransforms.Buffer.CopyTo(workspace);
+		
+		for (var i = firstParentedNodeIndex; i < nodeCount; ++i) {
+			workspace[i] *= workspace[parents[i]];
+		}
+	}
+	
 	public void ApplyBindPose(ModelInstance targetInstance) {
 		ThrowIfThisIsDisposed();
 		if (_currentSkeleton is not { } skeleton) return;
@@ -233,24 +269,17 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 				$"Model instance is using {targetInstance.Mesh}, {nameof(MeshAnimationIndex)} is for {skeleton.OwningMesh}."
 			);
 		}
+		WriteBindPoseNodeTransformsToWorkspace();
 		
 		var workspace = skeleton.Workspace.Buffer;
-		skeleton.DefaultLocalTransforms.Buffer.CopyTo(workspace);
 		var bindPoseInversions = skeleton.BindPoseInversions.Buffer;
-		var parents = skeleton.ParentIndices.Buffer;
 		var boneToNodeMap = skeleton.BoneToNodeMap.Buffer;
-		var firstParentedNodeIndex = skeleton.FirstParentedNodeIndex;
-		var nodeCount = skeleton.Workspace.Buffer.Length;
 		var boneCount = skeleton.BoneCount;
 		
 		var resultBuffer = _applyTransformsBuffer.Rent<Matrix4x4>(skeleton.BoneCount);
 		var results = resultBuffer.AsSpan<Matrix4x4>(skeleton.BoneCount);
 		
 		try {
-			for (var i = firstParentedNodeIndex; i < nodeCount; ++i) {
-				workspace[i] *= workspace[parents[i]];
-			}
-			
 			for (var i = 0; i < boneCount; ++i) {
 				results[i] = bindPoseInversions[i] * workspace[boneToNodeMap[i]];
 			}
@@ -265,13 +294,16 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 			_applyTransformsBuffer.Return(resultBuffer);
 		}
 	}
+	public void GetBindPoseNodeTransforms(ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+		WriteBindPoseNodeTransformsToWorkspace();
+		CopyRequestedNodeTransformsFromWorkspace(nodes, modelSpaceTransforms);
+	}
 	
 	void WriteAnimationNodeTransformsToWorkspace(ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (_currentSkeleton is not { } skeleton) return;
 
 		var workspace = skeleton.Workspace.Buffer;
-		skeleton.DefaultLocalTransforms.Buffer.CopyTo(workspace);
 		var parents = skeleton.ParentIndices.Buffer;
 		var firstParentedNodeIndex = skeleton.FirstParentedNodeIndex;
 		
@@ -304,6 +336,8 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 				Real.GetInterpolationDistance(low.TimeKeySeconds, high.TimeKeySeconds, targetTimeSecs)
 			);
 		}
+		
+		skeleton.DefaultLocalTransforms.Buffer.CopyTo(workspace);
 		
 		for (var i = 0; i < mutations.Length; ++i) {
 			var mutation = mutations[i];
@@ -362,7 +396,6 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		WriteAnimationNodeTransformsToWorkspace(handle, targetTimePointSeconds);
 
 		var workspace = skeleton.Workspace.Buffer;
-		skeleton.DefaultLocalTransforms.Buffer.CopyTo(workspace);
 		var bindPoseInversions = skeleton.BindPoseInversions.Buffer;
 		var boneToNodeMap = skeleton.BoneToNodeMap.Buffer;
 		var boneCount = skeleton.BoneCount;

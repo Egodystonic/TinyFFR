@@ -88,10 +88,11 @@ public:
 	
 	static void get_loaded_asset_mesh_skeletal_node_count(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, int32_t* outNodeCount);
 	static void generate_loaded_asset_mesh_skeletal_node_flat_buffer(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, NodeHandle* nodeHandleBuffer, int32_t handleBufferCount);
-	static void get_loaded_asset_mesh_skeletal_node(NodeHandle* nodeHandleBuffer, int32_t handleBufferCount, int32_t nodeIndex, mat4f* outInverseBindPose, mat4f* outDefaultTransform, int32_t* outParentNodeIndex, int32_t* outBoneIndex);
+	static void get_loaded_asset_mesh_skeletal_node(NodeHandle* nodeHandleBuffer, int32_t handleBufferCount, int32_t nodeIndex, mat4f* outInverseBindPose, mat4f* outDefaultTransform, int32_t* outParentNodeIndex, int32_t* outBoneIndex, int32_t* outNodeNameLengthBytes);
 	static void get_loaded_asset_mesh_skeletal_animation_count(MemoryLoadedAssetHandle assetHandle, int32_t* outAnimationCount);
 	static void get_loaded_asset_mesh_skeletal_animation_metadata(MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t* outNameLengthBytes, float_t* outDurationSeconds, int32_t* outChannelCount);
 	static void copy_loaded_asset_mesh_skeletal_animation_name(MemoryLoadedAssetHandle assetHandle, int32_t animIndex, char* nameBuffer, int32_t bufferLengthBytes);
+	static void copy_loaded_asset_mesh_skeletal_node_name(NodeHandle nodeHandle, char* nameBuffer, int32_t bufferLengthBytes);
 	static void get_loaded_asset_mesh_skeletal_animation_channel_metadata(MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t channelIndex, NodeHandle* nodeHandleBuffer, int32_t handleBufferCount, int32_t* outNodeIndex, int32_t* outScalingKeyframeCount, int32_t* outRotationKeyframeCount, int32_t* outTranslationKeyframeCount);
 	static void copy_loaded_asset_mesh_skeletal_animation_channel_data(MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t channelIndex, float3* scalingVectorBuffer, float_t* scalingTimeBuffer, int32_t scalingBufferCount, quatf* rotationQuaternionBuffer, float_t* rotationTimeBuffer, int32_t rotationBufferCount, float3* translationVectorBuffer, float_t* translationTimeBuffer, int32_t translationBufferCount);
 

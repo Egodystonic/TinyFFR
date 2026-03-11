@@ -43,7 +43,7 @@ class LocalAnimationTest {
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
-		using var window = factory.WindowBuilder.CreateWindow(display, title: "L controls camera light | X/Y/Z rotates models | Mousewheel scales | Press Space");
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "Press Space");
 		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f));
 		camera.NearPlaneDistance = 0.001f;
 		var lightBrightnessStage = 3;
@@ -53,16 +53,34 @@ class LocalAnimationTest {
 		using var scene = factory.SceneBuilder.CreateScene(backdrop);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		renderer.SetQuality(new(Quality.VeryHigh));
+		
+		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.UnitSphere);
+		using var testMat = factory.MaterialBuilder.CreateTestMaterial();
+		using var sphere = factory.ObjectBuilder.CreateModelInstance(sphereMesh, testMat); 
 
 		scene.Add(light);
 		scene.Add(sunlight);
 		
 		var curFileIndex = -1;
 		var curAnimIndex = 0;
+		var curNodeIndex = 0;
 		var curAnimCount = 1;
 		var playingAnim = false;
 		ResourceGroup? loadedResources = null;
 		ModelInstanceGroup? modelInstanceGroup = null;
+		
+		void UpdateTitle() {
+			window.SetTitle(
+				$"X/Y/Z rotates | " +
+				$"A = chg anim | " +
+				$"S = chg start/stop | " +
+				$"N = chg node | " +
+				$"Mousewheel scales | " +
+				$"'{_filesToLoad[curFileIndex]}' anim {(curAnimIndex + 1)} / {curAnimCount} | " +
+				$"'{modelInstanceGroup?[0].Skeleton.Nodes[curNodeIndex].GetNameAsNewStringObject()}' node | " +
+				$"{modelInstanceGroup?.Count ?? 0} models"
+			);
+		}
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) {
@@ -81,6 +99,7 @@ class LocalAnimationTest {
 				curFileIndex++;
 				if (curFileIndex >= _filesToLoad.Length) curFileIndex = 0;
 				curAnimIndex = 0;
+				curNodeIndex = 0;
 
 				Console.WriteLine("Loading " + _filesToLoad[curFileIndex] + "...");
 				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), new ModelCreationConfig() { MeshConfig = new() {  }}, new ModelReadConfig() { HandleUriEscapedStrings = true });
@@ -89,12 +108,12 @@ class LocalAnimationTest {
 
 				modelInstanceGroup = factory.ObjectBuilder.CreateModelInstanceGroup(loadedResources.Value);
 				scene.Add(modelInstanceGroup.Value);
-				window.SetTitle($"L controls camera light | X/Y/Z rotates models | A selects anim | S starts/stops anim | Mousewheel scales | '{_filesToLoad[curFileIndex]}' anim {(curAnimIndex + 1)} / {curAnimCount} | {modelInstanceGroup.Value.Count} models");
+				UpdateTitle();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.A) && modelInstanceGroup.HasValue) {
 				++curAnimIndex;
 				if (curAnimIndex >= curAnimCount) curAnimIndex = 0;
-				window.SetTitle($"L controls camera light | X/Y/Z rotates models | A selects anim | S starts/stops anim | Mousewheel scales | '{_filesToLoad[curFileIndex]}' anim {(curAnimIndex + 1)} / {curAnimCount} | {modelInstanceGroup.Value.Count} models");
+				UpdateTitle();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.S) && modelInstanceGroup.HasValue) {
 				playingAnim = !playingAnim;
@@ -137,7 +156,14 @@ class LocalAnimationTest {
 			}
 			modelInstanceGroup?.ScaleBy(1f - (0.05f * loop.Input.KeyboardAndMouse.MouseScrollWheelDelta)); 
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.E)) {
-				factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[0])).Meshes[0].Animations.ApplySkeletalBindPose(modelInstanceGroup!.Value.Instances[0]);
+				factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[0])).Meshes[0].ApplySkeletalBindPose(modelInstanceGroup!.Value.Instances[0]);
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.N)) {
+				if (modelInstanceGroup is { } mig) {
+					++curNodeIndex;
+					if (curNodeIndex >= mig[0].Skeleton.Nodes.Count) curNodeIndex = 0;
+					UpdateTitle();
+				}
 			}
 			
 			if (playingAnim && modelInstanceGroup.HasValue) {

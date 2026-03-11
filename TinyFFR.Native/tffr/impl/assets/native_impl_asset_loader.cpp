@@ -742,15 +742,24 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_animation_name(Me
 	ThrowIfNull(assetHandle, "Anim handle was null.");
 	ThrowIf(animIndex < 0 || animIndex >= assetHandle->mNumAnimations, "Anim index out of bounds.");
 	ThrowIfNull(nameBuffer, "Name buffer pointer was null.");
-	
 	auto anim = assetHandle->mAnimations[animIndex];
-
-	auto nameLen = static_cast<int32_t>(anim->mName.length);
-	ThrowIf(bufferLengthBytes < nameLen, "Name buffer too small.");
-	memcpy(nameBuffer, anim->mName.C_Str(), nameLen);
+	ThrowIf(bufferLengthBytes < 0 || anim->mName.length > static_cast<uint32_t>(bufferLengthBytes), "Invalid name buffer length.");
+	
+	strcpy(nameBuffer, anim->mName.C_Str());
 }
 StartExportedFunc(copy_loaded_asset_mesh_skeletal_animation_name, MemoryLoadedAssetHandle assetHandle, int32_t animIndex, char* nameBuffer, int32_t bufferLengthBytes) {
 	native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_animation_name(assetHandle, animIndex, nameBuffer, bufferLengthBytes);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_node_name(NodeHandle nodeHandle, char* nameBuffer, int32_t bufferLengthBytes) {
+	ThrowIfNull(nameBuffer, "Name buffer pointer was null.");
+	ThrowIf(bufferLengthBytes < 0 || nodeHandle.Node->mName.length > static_cast<uint32_t>(bufferLengthBytes), "Invalid name buffer length.");
+	
+	strcpy(nameBuffer, nodeHandle.Node->mName.C_Str());
+}
+StartExportedFunc(copy_loaded_asset_mesh_skeletal_node_name, native_impl_asset_loader::NodeHandle nodeHandle, char* nameBuffer, int32_t bufferLengthBytes) {
+	native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_node_name(nodeHandle, nameBuffer, bufferLengthBytes);
 	EndExportedFunc
 }
 
@@ -899,7 +908,7 @@ StartExportedFunc(generate_loaded_asset_mesh_skeletal_node_flat_buffer, MemoryLo
 	EndExportedFunc
 }
 
-void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node(NodeHandle* nodeHandleBuffer, int32_t handleBufferCount, int32_t nodeIndex, mat4f* outInverseBindPose, mat4f* outDefaultTransform, int32_t* outParentNodeIndex, int32_t* outBoneIndex) {
+void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node(NodeHandle* nodeHandleBuffer, int32_t handleBufferCount, int32_t nodeIndex, mat4f* outInverseBindPose, mat4f* outDefaultTransform, int32_t* outParentNodeIndex, int32_t* outBoneIndex, int32_t* outNodeNameLengthBytes) {
     ThrowIfNull(nodeHandleBuffer, "Node handle buffer pointer was null.");
 	ThrowIf(handleBufferCount <= 0, "Handle buffer count was invalid.");
     ThrowIfNull(outInverseBindPose, "Out inverse bind pose pointer was null.");
@@ -924,9 +933,10 @@ void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node(NodeHandle* n
 	}
 	
 	*outBoneIndex = nodeHandle.BoneIndex;
+	*outNodeNameLengthBytes = static_cast<int32_t>(nodeHandle.Node->mName.length);
 }
-StartExportedFunc(get_loaded_asset_mesh_skeletal_node, native_impl_asset_loader::NodeHandle* nodeHandleBuffer, int32_t handleBufferCount, int32_t nodeIndex, mat4f* outInverseBindPose, mat4f* outDefaultTransform, int32_t* outParentNodeIndex, int32_t* outBoneIndex) {
-	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node(nodeHandleBuffer, handleBufferCount, nodeIndex, outInverseBindPose, outDefaultTransform, outParentNodeIndex, outBoneIndex);
+StartExportedFunc(get_loaded_asset_mesh_skeletal_node, native_impl_asset_loader::NodeHandle* nodeHandleBuffer, int32_t handleBufferCount, int32_t nodeIndex, mat4f* outInverseBindPose, mat4f* outDefaultTransform, int32_t* outParentNodeIndex, int32_t* outBoneIndex, int32_t* outNodeNameLengthBytes) {
+	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node(nodeHandleBuffer, handleBufferCount, nodeIndex, outInverseBindPose, outDefaultTransform, outParentNodeIndex, outBoneIndex, outNodeNameLengthBytes);
 	EndExportedFunc
 }
 

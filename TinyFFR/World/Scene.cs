@@ -41,6 +41,8 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	static Scene IResource<Scene>.CreateFromHandleAndImpl(ResourceHandle<Scene> handle, IResourceImplProvider impl) {
 		return new Scene(handle, impl as ISceneImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ResourceHandle<Scene> GetHandleWithoutDisposeCheck() => _handle;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Add(ModelInstance modelInstance) => Implementation.Add(_handle, modelInstance);

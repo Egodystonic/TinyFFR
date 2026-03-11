@@ -43,7 +43,7 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 	internal MeshNode? TryGetNodeByName(ReadOnlySpan<char> name) => Implementation.TryGetNodeByName(_handle, name);
 	internal void ApplySkeletalBindPose(ModelInstance targetInstance) => Implementation.ApplySkeletalBindPose(_handle, targetInstance);
 	internal bool GetHasAnyAnimations() => Implementation.GetHasAnyAnimations(_handle);
-	internal void GetSkeletalAnimationNodeModelTransforms(MeshAnimation? anim, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) => Implementation.GetSkeletalAnimationNodeModelTransforms(_handle, anim, nodes, modelSpaceTransforms);
+	internal void GetSkeletalBindPoseNodeModelTransforms(ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) => Implementation.GetSkeletalBindPoseNodeModelTransforms(_handle, nodes, modelSpaceTransforms);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
@@ -55,6 +55,8 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 	static Mesh IResource<Mesh>.CreateFromHandleAndImpl(ResourceHandle<Mesh> handle, IResourceImplProvider impl) {
 		return new Mesh(handle, impl as IMeshImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ResourceHandle<Mesh> GetHandleWithoutDisposeCheck() => _handle;
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

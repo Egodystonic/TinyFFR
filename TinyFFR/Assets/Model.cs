@@ -42,6 +42,8 @@ public readonly struct Model : IDisposableResource<Model, IModelImplProvider> {
 	static Model IResource<Model>.CreateFromHandleAndImpl(ResourceHandle<Model> handle, IResourceImplProvider impl) {
 		return new Model(handle, impl as IModelImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ResourceHandle<Model> GetHandleWithoutDisposeCheck() => _handle;
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

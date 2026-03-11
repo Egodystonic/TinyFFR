@@ -29,7 +29,7 @@ unsafe partial class LocalAssetLoader {
 	
 	readonly LocalMeshBuilder _meshBuilder;
 	readonly FixedByteBufferPool _vertexTriangleBufferPool;
-	readonly InteropStringBuffer _animationAndBoneNameBuffer;
+	readonly InteropStringBuffer _animationAndNodeNameBuffer;
 	readonly FixedByteBufferPool _skeletalAnimationKeyframeDataPool;
 	readonly FixedByteBufferPool _skeletalNodeBufferPool;
 	
@@ -92,6 +92,7 @@ unsafe partial class LocalAssetLoader {
 								nodeCount
 							).ThrowIfFailure();
 							
+							var maxNodeNameLength = 0;
 							for (var n = 0; n < nodeCount; ++n) {
 								GetLoadedAssetMeshSkeletalNode(
 									(NodeHandle*) internalNodeBuffer.StartPtr,
@@ -100,7 +101,8 @@ unsafe partial class LocalAssetLoader {
 									out var inverseBindPoseMatrix,
 									out var defaultTransformMatrix,
 									out var parentNodeIndex,
-									out var boneIndex
+									out var boneIndex,
+									out var nameLength
 								).ThrowIfFailure();
 								
 								translatedNodeBuffer.Buffer[n] = new(
@@ -109,6 +111,7 @@ unsafe partial class LocalAssetLoader {
 									parentNodeIndex >= 0 ? parentNodeIndex : null,
 									boneIndex >= 0 ? boneIndex : null
 								);
+								maxNodeNameLength = Int32.Max(nameLength, maxNodeNameLength);
 							}
 
 							var result = _meshBuilder.CreateMesh(
@@ -119,6 +122,7 @@ unsafe partial class LocalAssetLoader {
 							);
 						
 							LoadAndAttachMeshAnimations(assetHandle, (NodeHandle*) internalNodeBuffer.StartPtr, nodeCount, result);
+							LoadAndSetNodeNames(internalNodeBuffer.AsReadOnlySpan<NodeHandle>(nodeCount), maxNodeNameLength, result);
 							return result;
 						}
 						finally {
@@ -302,6 +306,44 @@ unsafe partial class LocalAssetLoader {
 		
 		return new(vertexBuffer, subMeshVertexCount, triangleBuffer, subMeshTriangleCount);
 	}
+	
+	void LoadAndSetNodeNames(ReadOnlySpan<NodeHandle> nodeHandles, int maxNodeNameLength, Mesh mesh) {
+		const int MaxNameLengthForStackAlloc = 2048;
+		Span<char> stackNameBuffer = stackalloc char[MaxNameLengthForStackAlloc];
+		
+		if (maxNodeNameLength > _animationAndNodeNameBuffer.Length) {
+			throw new InvalidOperationException($"Node name length too long; increase {nameof(LocalAssetLoaderConfig.MaxAnimationAndNodeNameLengthChars)} in {nameof(LocalAssetLoaderConfig)}!");
+		}
+		
+		for (var i = 0; i < nodeHandles.Length; ++i) {
+			CopyLoadedAssetSkeletalNodeName(
+				nodeHandles[i],
+				_animationAndNodeNameBuffer.AsPointer,
+				_animationAndNodeNameBuffer.Length
+			).ThrowIfFailure();
+			
+			var nodeNameUtf16Length = _animationAndNodeNameBuffer.GetUtf16Length();
+			
+			if (nodeNameUtf16Length == 0) {
+				const string FallbackNodeNamePrefix = "node_";
+				var nodeNameBuffer = stackNameBuffer;
+				FallbackNodeNamePrefix.CopyTo(nodeNameBuffer);
+				if (i.TryFormat(nodeNameBuffer[FallbackNodeNamePrefix.Length..], out var additionalCharsWritten, default, null)) {
+					nodeNameUtf16Length = FallbackNodeNamePrefix.Length + additionalCharsWritten;
+				}
+				else nodeNameUtf16Length = FallbackNodeNamePrefix.Length;
+				_meshBuilder.SetNodeName(mesh, i, nodeNameBuffer[..nodeNameUtf16Length]);
+			}
+			else {
+				using var nodeNameHeapBuffer = nodeNameUtf16Length > MaxNameLengthForStackAlloc
+					? _globals.HeapPool.Borrow<char>(nodeNameUtf16Length)
+					: (PooledHeapMemory<char>?) null;
+				var nodeNameBuffer = nodeNameHeapBuffer.HasValue ? nodeNameHeapBuffer.Value.Buffer : stackNameBuffer;
+				_animationAndNodeNameBuffer.ConvertToUtf16(nodeNameBuffer);
+				_meshBuilder.SetNodeName(mesh, i, nodeNameBuffer[..nodeNameUtf16Length]);
+			}
+		}
+	}
 
 	void LoadAndAttachMeshAnimations(UIntPtr assetHandle, NodeHandle* nodeHandleBuffer, int nodeHandleBufferCount, Mesh mesh) {
 		const int MaxNameLengthForStackAlloc = 2048;
@@ -324,17 +366,17 @@ unsafe partial class LocalAssetLoader {
 				out var animationChannelCount
 			).ThrowIfFailure();
 
-			if (nameLenBytes > _animationAndBoneNameBuffer.Length) {
-				throw new InvalidOperationException($"Animation name length too long; increase {nameof(LocalAssetLoaderConfig.MaxAnimationAndBoneNameLengthChars)} in {nameof(LocalAssetLoaderConfig)}!");
+			if (nameLenBytes > _animationAndNodeNameBuffer.Length) {
+				throw new InvalidOperationException($"Animation name length too long; increase {nameof(LocalAssetLoaderConfig.MaxAnimationAndNodeNameLengthChars)} in {nameof(LocalAssetLoaderConfig)}!");
 			}
 			CopyLoadedAssetSkeletalAnimationName(
 				assetHandle,
 				a,
-				_animationAndBoneNameBuffer.AsPointer,
-				_animationAndBoneNameBuffer.Length
+				_animationAndNodeNameBuffer.AsPointer,
+				_animationAndNodeNameBuffer.Length
 			).ThrowIfFailure();
 			
-			var animNameUtf16Length = _animationAndBoneNameBuffer.GetUtf16Length();
+			var animNameUtf16Length = _animationAndNodeNameBuffer.GetUtf16Length();
 			using var animNameHeapBuffer = animNameUtf16Length > MaxNameLengthForStackAlloc
 				? _globals.HeapPool.Borrow<char>(animNameUtf16Length)
 				: (PooledHeapMemory<char>?) null;
@@ -347,7 +389,7 @@ unsafe partial class LocalAssetLoader {
 				}
 				else animNameUtf16Length = FallbackAnimationNamePrefix.Length;
 			}
-			else _animationAndBoneNameBuffer.ConvertToUtf16(animNameBuffer);
+			else _animationAndNodeNameBuffer.ConvertToUtf16(animNameBuffer);
 
 			var totalTranslationKeyframes = 0;
 			var totalRotationKeyframes = 0;
@@ -555,7 +597,8 @@ unsafe partial class LocalAssetLoader {
 		out Matrix4x4 outInverseBindPoseMatrix,
 		out Matrix4x4 outDefaultTransformMatrix,
 		out int outParentNodeIndex,
-		out int outBoneIndex
+		out int outBoneIndex,
+		out int nameLengthBytes
 	);
 	
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_loaded_asset_mesh_skeletal_animation_count")]
@@ -578,6 +621,13 @@ unsafe partial class LocalAssetLoader {
 		UIntPtr assetHandle, 
 		int animationIndex,
 		byte* utf8NameBuffer, 
+		int bufferLengthBytes
+	);
+	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "copy_loaded_asset_mesh_skeletal_node_name")]
+	static extern InteropResult CopyLoadedAssetSkeletalNodeName(
+		NodeHandle nodeHandle,
+		byte* utf8NameBuffer,
 		int bufferLengthBytes
 	);
 

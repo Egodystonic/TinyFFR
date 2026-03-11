@@ -8,14 +8,14 @@ namespace Egodystonic.TinyFFR.Assets.Local;
 
 public sealed record LocalAssetLoaderConfig {
 	public const int MaxMaxAssetFilePathLengthChars = 1 << 29;
-	public const int MaxMaxAnimationAndBoneNameLengthChars = 1 << 29;
+	public const int MaxMaxAnimationAndNodeNameLengthChars = 1 << 29;
 	public const int MaxMaxAssetVertexIndexBufferSizeBytes = 1 << 29;
 	public const int MaxMaxSkeletalAnimationChannelKeyframeCount = 1 << 29;
 	public const int MaxMaxSkeletalAnimationNodeCount = 1 << 29;
 	public const int MaxMaxKtxFileBufferSizeBytes = 1 << 29;
 	public const int MaxMaxEmbeddedAssetTextureFileSizeBytes = 16_384 * 16_384 * 4; // Matches max in native_impl_asset_loader.cpp
 	public const int DefaultMaxAssetFilePathLengthChars = 2048;
-	public const int DefaultMaxAnimationAndBoneNameLengthChars = 2048;
+	public const int DefaultMaxAnimationAndNodeNameLengthChars = 2048;
 	public const int DefaultMaxSkeletalAnimationChannelKeyframeCount = 4096;
 	public const int DefaultMaxSkeletalAnimationNodeCount = 32768;
 	public const int DefaultMaxAssetVertexIndexBufferSizeBytes = 1_000_000 * MeshVertex.ExpectedSerializedSize; // 1m vertex mesh
@@ -34,14 +34,14 @@ public sealed record LocalAssetLoaderConfig {
 		}
 	}
 	
-	readonly int _maxAnimationAndBoneNameLengthChars = DefaultMaxAnimationAndBoneNameLengthChars;
-	public int MaxAnimationAndBoneNameLengthChars {
-		get => _maxAnimationAndBoneNameLengthChars;
+	readonly int _maxAnimationAndNodeNameLengthChars = DefaultMaxAnimationAndNodeNameLengthChars;
+	public int MaxAnimationAndNodeNameLengthChars {
+		get => _maxAnimationAndNodeNameLengthChars;
 		init {
-			if (value is <= 0 or > MaxMaxAnimationAndBoneNameLengthChars) {
-				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max animation/bone name length must be between 1 and {MaxMaxAnimationAndBoneNameLengthChars}.");
+			if (value is <= 0 or > MaxMaxAnimationAndNodeNameLengthChars) {
+				throw new ArgumentOutOfRangeException(nameof(value), value, $"Max animation/bone name length must be between 1 and {MaxMaxAnimationAndNodeNameLengthChars}.");
 			}
-			_maxAnimationAndBoneNameLengthChars = value;
+			_maxAnimationAndNodeNameLengthChars = value;
 		}
 	}
 	

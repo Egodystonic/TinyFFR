@@ -31,6 +31,8 @@ public readonly struct IndexBuffer : IDisposableResource<IndexBuffer, IIndexBuff
 	static IndexBuffer IResource<IndexBuffer>.CreateFromHandleAndImpl(ResourceHandle<IndexBuffer> handle, IResourceImplProvider impl) {
 		return new IndexBuffer(handle, impl as IIndexBufferImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ResourceHandle<IndexBuffer> GetHandleWithoutDisposeCheck() => _handle;
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

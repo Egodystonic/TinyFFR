@@ -32,6 +32,8 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	static Renderer IResource<Renderer>.CreateFromHandleAndImpl(ResourceHandle<Renderer> handle, IResourceImplProvider impl) {
 		return new Renderer(handle, impl as IRendererImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ResourceHandle<Renderer> GetHandleWithoutDisposeCheck() => _handle;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Render() => Implementation.Render(_handle);

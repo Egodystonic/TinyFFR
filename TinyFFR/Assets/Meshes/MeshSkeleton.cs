@@ -24,5 +24,5 @@ public readonly record struct MeshSkeleton(Mesh Mesh) {
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void GetBindPoseNodeTransforms(ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) => Mesh.GetSkeletalAnimationNodeModelTransforms(null, nodes, modelSpaceTransforms);
+	public void GetBindPoseNodeTransforms(ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) => Mesh.GetSkeletalBindPoseNodeModelTransforms(nodes, modelSpaceTransforms);
 }

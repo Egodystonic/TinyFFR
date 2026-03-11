@@ -29,6 +29,8 @@ public readonly struct PointLight : ILight<PointLight>, IPositionedSceneObject {
 	static PointLight IResource<PointLight>.CreateFromHandleAndImpl(ResourceHandle<PointLight> handle, IResourceImplProvider impl) {
 		return new PointLight(handle, impl as ILightImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ResourceHandle<PointLight> GetHandleWithoutDisposeCheck() => _handle;
 
 	#region Light Type Casting
 	public Light AsBaseLight() => new(_handle, _impl);

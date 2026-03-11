@@ -15,6 +15,7 @@ readonly struct MockResourceAlpha : IResource<MockResourceAlpha, IMockResourceIm
 	public static MockResourceAlpha CreateFromHandleAndImpl(ResourceHandle<MockResourceAlpha> handle, IResourceImplProvider impl) {
 		return new() { Handle = handle, Implementation = (IMockResourceImplProvider) impl };
 	}
+	public ResourceHandle<MockResourceAlpha> GetHandleWithoutDisposeCheck() => Handle;
 	public ResourceHandle<MockResourceAlpha> Handle { get; init; }
 	public IMockResourceImplProvider Implementation { get; init; }
 	public string GetNameAsNewStringObject() => _name ?? "";
@@ -31,6 +32,7 @@ readonly struct MockResourceBravo : IResource<MockResourceBravo, IMockResourceIm
 	public static MockResourceBravo CreateFromHandleAndImpl(ResourceHandle<MockResourceBravo> handle, IResourceImplProvider impl) {
 		return new() { Handle = handle, Implementation = (IMockResourceImplProvider) impl };
 	}
+	public ResourceHandle<MockResourceBravo> GetHandleWithoutDisposeCheck() => Handle;
 	public ResourceHandle<MockResourceBravo> Handle { get; init; }
 	public IMockResourceImplProvider Implementation { get; init; }
 	public string GetNameAsNewStringObject() => _name ?? "";

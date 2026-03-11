@@ -96,6 +96,11 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Mesh.Animations;
 	}
+	
+	public MeshSkeleton Skeleton {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Mesh.Skeleton;
+	}
 
 	public Mesh Mesh {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -130,6 +135,8 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	static ModelInstance IResource<ModelInstance>.CreateFromHandleAndImpl(ResourceHandle<ModelInstance> handle, IResourceImplProvider impl) {
 		return new ModelInstance(handle, impl as IModelInstanceImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ResourceHandle<ModelInstance> GetHandleWithoutDisposeCheck() => _handle;
 
 	public void MoveBy(Vect translation) => Implementation.TranslateBy(_handle, translation);
 	public void RotateBy(Rotation rotation) => Implementation.RotateBy(_handle, rotation);

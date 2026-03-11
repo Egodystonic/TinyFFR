@@ -47,7 +47,7 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 		_globals.DependencyTracker.RegisterDependency(result, mesh);
 		_globals.DependencyTracker.RegisterDependency(result, material);
 		
-		if (meshBufferData.BoneCount > 0) mesh.Animations.ApplySkeletalBindPose(result);
+		if (meshBufferData.BoneCount > 0) mesh.ApplySkeletalBindPose(result);
 		return result;
 	}
 

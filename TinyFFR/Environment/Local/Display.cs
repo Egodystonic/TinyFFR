@@ -59,6 +59,8 @@ public readonly struct Display : IResource<Display, IDisplayImplProvider> {
 	static Display IResource<Display>.CreateFromHandleAndImpl(ResourceHandle<Display> handle, IResourceImplProvider impl) {
 		return new Display(handle, impl as IDisplayImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ResourceHandle<Display> GetHandleWithoutDisposeCheck() => _handle;
 
 	internal XYPair<int> TranslateDisplayLocalWindowPositionToGlobal(XYPair<int> displayLocalPosition) => displayLocalPosition + GlobalPositionOffset;
 	internal XYPair<int> TranslateGlobalWindowPositionToDisplayLocal(XYPair<int> globalPosition) => globalPosition - GlobalPositionOffset;

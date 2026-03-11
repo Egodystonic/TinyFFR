@@ -31,6 +31,8 @@ public readonly struct SpotLight : ILight<SpotLight>, IPositionedSceneObject, IO
 	static SpotLight IResource<SpotLight>.CreateFromHandleAndImpl(ResourceHandle<SpotLight> handle, IResourceImplProvider impl) {
 		return new SpotLight(handle, impl as ILightImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ResourceHandle<SpotLight> GetHandleWithoutDisposeCheck() => _handle;
 
 	#region Light Type Casting
 	public Light AsBaseLight() => new(_handle, _impl);

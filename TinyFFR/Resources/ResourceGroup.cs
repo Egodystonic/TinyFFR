@@ -65,6 +65,8 @@ public readonly struct ResourceGroup : IDisposableResource<ResourceGroup, IResou
 	static ResourceGroup IResource<ResourceGroup>.CreateFromHandleAndImpl(ResourceHandle<ResourceGroup> handle, IResourceImplProvider impl) {
 		return new(handle, impl as IResourceGroupImplProvider ?? throw new ArgumentException($"Impl was '{impl}'.", nameof(impl)));
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ResourceHandle<ResourceGroup> GetHandleWithoutDisposeCheck() => _handle;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Add<TResource>(TResource resource) where TResource : IResource => Implementation.AddResource(Handle, resource);

@@ -921,6 +921,7 @@ unsafe partial class LocalAssetLoader {
 									nodeCount
 								).ThrowIfFailure();
 								
+								var maxNodeNameLength = 0;
 								for (var n = 0; n < nodeCount; ++n) {
 									GetLoadedAssetMeshSkeletalNode(
 										(NodeHandle*) internalNodeBuffer.StartPtr,
@@ -929,7 +930,8 @@ unsafe partial class LocalAssetLoader {
 										out var inverseBindPoseMatrix,
 										out var defaultTransformMatrix,
 										out var parentNodeIndex,
-										out var boneIndex
+										out var boneIndex,
+										out var nameLength
 									).ThrowIfFailure();
 									
 									translatedNodeBuffer.Buffer[n] = new(
@@ -938,6 +940,7 @@ unsafe partial class LocalAssetLoader {
 										parentNodeIndex >= 0 ? parentNodeIndex : null,
 										boneIndex >= 0 ? boneIndex : null
 									);
+									maxNodeNameLength = Int32.Max(nameLength, maxNodeNameLength);
 								}
 
 								mesh = _meshBuilder.CreateMesh(
@@ -948,6 +951,7 @@ unsafe partial class LocalAssetLoader {
 								);
 
 								LoadAndAttachMeshAnimations(assetHandle, (NodeHandle*) internalNodeBuffer.StartPtr, nodeCount, mesh);
+								LoadAndSetNodeNames(internalNodeBuffer.AsReadOnlySpan<NodeHandle>(nodeCount), maxNodeNameLength, mesh);
 							}
 							finally {
 								_skeletalNodeBufferPool.Return(internalNodeBuffer);

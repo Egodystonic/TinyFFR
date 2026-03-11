@@ -29,6 +29,8 @@ public readonly struct DirectionalLight : ILight<DirectionalLight>, IOrientedSce
 	static DirectionalLight IResource<DirectionalLight>.CreateFromHandleAndImpl(ResourceHandle<DirectionalLight> handle, IResourceImplProvider impl) {
 		return new DirectionalLight(handle, impl as ILightImplProvider ?? throw new InvalidOperationException($"Impl was '{impl}'."));
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ResourceHandle<DirectionalLight> GetHandleWithoutDisposeCheck() => _handle;
 
 	#region Light Type Casting
 	public Light AsBaseLight() => new(_handle, _impl);
