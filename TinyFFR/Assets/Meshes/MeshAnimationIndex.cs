@@ -6,25 +6,12 @@ using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
-public interface IMeshAnimationIndex : IEnumerable<MeshAnimation> {
-	bool Any { get; }
-	IndirectEnumerable<Mesh, MeshAnimation> Skeletal { get; }
-	IndirectEnumerable<Mesh, MeshAnimation> Morphing { get; }
-	IndirectEnumerable<Mesh, MeshAnimation> All { get; }
-#pragma warning disable CA1043 // Telling me to use a string or int arg for indexers -- we are though, just a more GC-friendly one
-	MeshAnimation this[ReadOnlySpan<char> name] { get; }
-#pragma warning restore CA1043
-	MeshAnimation this[int index] { get; }
-	MeshAnimation? TryGetAnimationByName(ReadOnlySpan<char> name);
-	MeshAnimation? TryGetAnimationByName(ReadOnlySpan<char> name, MeshAnimationType animationType);
-}
-
 public enum MeshAnimationType {
 	Skeletal,
 	Morphing
 }
 
-public readonly record struct MeshAnimationIndex(Mesh Mesh) : IMeshAnimationIndex {
+public readonly record struct MeshAnimationIndex(Mesh Mesh) : IEnumerable<MeshAnimation> {
 	public bool Any {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Mesh.GetHasAnyAnimations();
@@ -60,9 +47,6 @@ public readonly record struct MeshAnimationIndex(Mesh Mesh) : IMeshAnimationInde
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public MeshAnimation? TryGetAnimationByName(ReadOnlySpan<char> name, MeshAnimationType animationType) => Mesh.TryGetAnimationByName(name, animationType);
-	
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ApplySkeletalBindPose(ModelInstance targetInstance) => Mesh.ApplySkeletalBindPose(targetInstance);
 
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	IEnumerator<MeshAnimation> IEnumerable<MeshAnimation>.GetEnumerator() => GetEnumerator();

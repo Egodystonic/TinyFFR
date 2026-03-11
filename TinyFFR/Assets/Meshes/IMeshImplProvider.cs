@@ -9,7 +9,10 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 public interface IMeshImplProvider : IDisposableResourceImplProvider<Mesh> {
 	MeshBufferData GetBufferData(ResourceHandle<Mesh> handle);
 	IndirectEnumerable<Mesh, MeshAnimation> GetAnimations(ResourceHandle<Mesh> handle, MeshAnimationType? type);
+	IndirectEnumerable<Mesh, MeshNode> GetNodes(ResourceHandle<Mesh> handle);
 	MeshAnimation? TryGetAnimationByName(ResourceHandle<Mesh> handle, ReadOnlySpan<char> name, MeshAnimationType? type);
+	MeshNode? TryGetNodeByName(ResourceHandle<Mesh> handle, ReadOnlySpan<char> name);
 	void ApplySkeletalBindPose(ResourceHandle<Mesh> handle, ModelInstance targetInstance);
 	bool GetHasAnyAnimations(ResourceHandle<Mesh> handle);
+	void GetSkeletalAnimationNodeModelTransforms(ResourceHandle<Mesh> handle, MeshAnimation? animation, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms);
 }

@@ -45,24 +45,61 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 		return new MeshAnimationPlayer(animation, instance) { DurationSeconds = targetAnimationCompletionTimeSeconds };
 	}
 	
+	#region Time Point
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePoint(float timePointSeconds) {
 		Animation.Apply(Instance, timePointSeconds * SpeedMultiplier);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetTimePointAndGetNodeTransform(float timePointSeconds, MeshNode node, out Matrix4x4 modelSpaceTransform) {
+		Animation.ApplyAndGetNodeTransform(Instance, timePointSeconds * SpeedMultiplier, node, out modelSpaceTransform);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetTimePointAndGetNodeTransforms(float timePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+		Animation.ApplyAndGetNodeTransforms(Instance, timePointSeconds * SpeedMultiplier, nodes, modelSpaceTransforms);
+	}
 	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePoint(float timePointSeconds, MeshAnimationTimestampWrapStyle wrapStyle) {
 		Animation.Apply(Instance, ApplyWrapping(timePointSeconds * SpeedMultiplier, wrapStyle, Animation.DefaultDurationSeconds));
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetTimePointAndGetNodeTransform(float timePointSeconds, MeshAnimationTimestampWrapStyle wrapStyle, MeshNode node, out Matrix4x4 modelSpaceTransform) {
+		Animation.ApplyAndGetNodeTransform(Instance, ApplyWrapping(timePointSeconds * SpeedMultiplier, wrapStyle, Animation.DefaultDurationSeconds), node, out modelSpaceTransform);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetTimePointAndGetNodeTransforms(float timePointSeconds, MeshAnimationTimestampWrapStyle wrapStyle, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+		Animation.ApplyAndGetNodeTransforms(Instance, ApplyWrapping(timePointSeconds * SpeedMultiplier, wrapStyle, Animation.DefaultDurationSeconds), nodes, modelSpaceTransforms);
+	}
+	#endregion
 
+	#region Completion Fraction
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFraction(float fraction) {
 		Animation.Apply(Instance, Animation.DefaultDurationSeconds * fraction);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetCompletionFractionAndGetNodeTransform(float fraction, MeshNode node, out Matrix4x4 modelSpaceTransform) {
+		Animation.ApplyAndGetNodeTransform(Instance, Animation.DefaultDurationSeconds * fraction, node, out modelSpaceTransform);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetCompletionFractionAndGetNodeTransforms(float fraction, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+		Animation.ApplyAndGetNodeTransforms(Instance, Animation.DefaultDurationSeconds * fraction, nodes, modelSpaceTransforms);
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFraction(float fraction, MeshAnimationTimestampWrapStyle wrapStyle) {
 		Animation.Apply(Instance, ApplyWrapping(Animation.DefaultDurationSeconds * fraction, wrapStyle, Animation.DefaultDurationSeconds));
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetCompletionFractionAndGetNodeTransform(float fraction, MeshAnimationTimestampWrapStyle wrapStyle, MeshNode node, out Matrix4x4 modelSpaceTransform) {
+		Animation.ApplyAndGetNodeTransform(Instance, ApplyWrapping(Animation.DefaultDurationSeconds * fraction, wrapStyle, Animation.DefaultDurationSeconds), node, out modelSpaceTransform);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetCompletionFractionAndGetNodeTransforms(float fraction, MeshAnimationTimestampWrapStyle wrapStyle, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+		Animation.ApplyAndGetNodeTransforms(Instance, ApplyWrapping(Animation.DefaultDurationSeconds * fraction, wrapStyle, Animation.DefaultDurationSeconds), nodes, modelSpaceTransforms);
+	}
+	#endregion
 	
 	public static float ApplyWrapping(float nonWrappedTimePoint, MeshAnimationTimestampWrapStyle wrapStyle, float animationDefaultDuration) {
 		return wrapStyle switch {

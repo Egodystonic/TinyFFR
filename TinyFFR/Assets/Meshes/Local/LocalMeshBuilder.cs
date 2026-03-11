@@ -79,6 +79,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		// This just makes things easier elsewhere as we don't have to branch around 'null' or 'invalid' skeleton setups.
 		// Supplying an animation skeleton with no bones is kind of an error anyway and there's no meaningful result
 		// when trying to apply an animation.
+		// We could also just throw an exception, but some users may expect a mesh with 0 bones to behave the same as the non-skeletal overload.
 		if (boneCount == 0) {
 			var defaultNode = new SkeletalAnimationNode(
 				Matrix4x4.Identity,
@@ -313,6 +314,40 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		if (match == null || (type != null && type != match.Value.Type)) return null;
 		
 		return match;
+	}
+
+	public void SetNodeName(Mesh mesh, int nodeIndex, ReadOnlySpan<char> name) {
+		var handle = mesh.Handle;
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (!_activeMeshAnimationTables.TryGetValue(handle, out var animTable)) return;
+		
+		animTable.SetNodeName(nodeIndex, name);
+	}
+	public IndirectEnumerable<Mesh, MeshNode> GetNodes(ResourceHandle<Mesh> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (!_activeMeshAnimationTables.TryGetValue(handle, out var animTable)) return IndirectEnumerable<Mesh, MeshNode>.Empty;
+		
+		static LocalMeshAnimationTable? GetAnimTableForMeshIterator(Mesh m) {
+			if (m.Implementation is not LocalMeshBuilder lmb) return null;
+			if (!lmb._activeMeshAnimationTables.TryGetValue(m.Handle, out var animTable)) return null;
+			return animTable;
+		}
+		static int GetNodeCount(Mesh m) => GetAnimTableForMeshIterator(m)?.GetNodeCount() ?? -1;
+		static int GetVersion(Mesh _) => 0;
+		static MeshNode GetNode(Mesh m, int index) => GetAnimTableForMeshIterator(m)?.GetNode(index) ?? throw new InvalidOperationException("Somehow attempted to access null animation table.");
+		
+		return new IndirectEnumerable<Mesh, MeshNode>(
+			HandleToInstance(handle),
+			0,
+			&GetNodeCount,
+			&GetVersion,
+			&GetNode
+		);
+	}
+	public MeshNode? TryGetNodeByName(ResourceHandle<Mesh> handle, ReadOnlySpan<char> name) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (!_activeMeshAnimationTables.TryGetValue(handle, out var animTable)) return null;
+		return animTable.TryGetNode(name);
 	}
 
 	public void ApplySkeletalBindPose(ResourceHandle<Mesh> handle, ModelInstance targetInstance) {

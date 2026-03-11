@@ -26,6 +26,11 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(this);
 	}
+	
+	public MeshSkeleton Skeleton {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(this);
+	}
 
 	internal Mesh(ResourceHandle<Mesh> handle, IMeshImplProvider impl) {
 		_handle = handle;
@@ -33,9 +38,12 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 	}
 	
 	internal IndirectEnumerable<Mesh, MeshAnimation> GetAnimations(MeshAnimationType? type) => Implementation.GetAnimations(_handle, type);
+	internal IndirectEnumerable<Mesh, MeshNode> GetNodes() => Implementation.GetNodes(_handle);
 	internal MeshAnimation? TryGetAnimationByName(ReadOnlySpan<char> name, MeshAnimationType? type) => Implementation.TryGetAnimationByName(_handle, name, type);
+	internal MeshNode? TryGetNodeByName(ReadOnlySpan<char> name) => Implementation.TryGetNodeByName(_handle, name);
 	internal void ApplySkeletalBindPose(ModelInstance targetInstance) => Implementation.ApplySkeletalBindPose(_handle, targetInstance);
 	internal bool GetHasAnyAnimations() => Implementation.GetHasAnyAnimations(_handle);
+	internal void GetSkeletalAnimationNodeModelTransforms(MeshAnimation? anim, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) => Implementation.GetSkeletalAnimationNodeModelTransforms(_handle, anim, nodes, modelSpaceTransforms);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);

@@ -14,6 +14,7 @@ namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDisposable {
+	const string DefaultNodeNamePrefix = "unnamed_node_";
 	readonly record struct AnimationData(
 		PooledHeapMemory<SkeletalAnimationScalingKeyframe> ScalingKeyframes,
 		PooledHeapMemory<SkeletalAnimationRotationKeyframe> RotationKeyframes,
@@ -34,20 +35,35 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		PooledHeapMemory<int> MutationTargetIndexMap
 	);
 	static nuint _nextHandleId = 0U;
-	readonly ArrayPoolBackedStringKeyMap<MeshAnimation> _nameMap = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<MeshAnimation>, AnimationData> _dataMap = new();
+	readonly MeshNodeImplProvider _meshNodeImplProvider;
+	readonly ArrayPoolBackedStringKeyMap<MeshAnimation> _animationNameMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<MeshAnimation>, AnimationData> _animationDataMap = new();
+	readonly ArrayPoolBackedStringKeyMap<MeshNode> _nodeNameMap = new();
 	readonly FixedByteBufferPool _applyTransformsBuffer = new(IMeshBuilder.MaxSkeletalBoneCount * sizeof(Matrix4x4));
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	SkeletonData? _currentSkeleton = null;
 	bool _isDisposed = false;
 
-	public LocalMeshAnimationTable(LocalFactoryGlobalObjectGroup globals) => _globals = globals;
+	public LocalMeshAnimationTable(LocalFactoryGlobalObjectGroup globals) {
+		_globals = globals;
+		_meshNodeImplProvider = new(this);
+	}
 
-	public int Count => _nameMap.Count;
-	public MeshAnimation? FindByName(ReadOnlySpan<char> name) => _nameMap.TryGetValue(name, out var animData) ? animData : null;
-	public ArrayPoolBackedMap<ManagedStringPool.RentedStringHandle, MeshAnimation>.KeyEnumerator Keys => _nameMap.Keys;
-	public ArrayPoolBackedMap<ManagedStringPool.RentedStringHandle, MeshAnimation>.ValueEnumerator Values => _nameMap.Values;
-	public ArrayPoolBackedMap<ManagedStringPool.RentedStringHandle, MeshAnimation>.Enumerator GetEnumerator() => _nameMap.GetEnumerator();
+	sealed class MeshNodeImplProvider : IMeshNodeImplProvider {
+		readonly LocalMeshAnimationTable _owner;
+		public MeshNodeImplProvider(LocalMeshAnimationTable owner) => _owner = owner;
+		
+		public string GetNameAsNewStringObject(ResourceHandle<MeshNode> handle) => _owner.GetNameAsNewStringObject(handle);
+		public int GetNameLength(ResourceHandle<MeshNode> handle) => _owner.GetNameLength(handle);
+		public void CopyName(ResourceHandle<MeshNode> handle, Span<char> destinationBuffer) => _owner.CopyName(handle, destinationBuffer);
+		public bool IsDisposed(ResourceHandle<MeshNode> handle) => _owner.IsDisposed(handle);
+	}
+
+	public int Count => _animationNameMap.Count;
+	public MeshAnimation? FindByName(ReadOnlySpan<char> name) => _animationNameMap.TryGetValue(name, out var animData) ? animData : null;
+	public ArrayPoolBackedMap<ManagedStringPool.RentedStringHandle, MeshAnimation>.KeyEnumerator Keys => _animationNameMap.Keys;
+	public ArrayPoolBackedMap<ManagedStringPool.RentedStringHandle, MeshAnimation>.ValueEnumerator Values => _animationNameMap.Values;
+	public ArrayPoolBackedMap<ManagedStringPool.RentedStringHandle, MeshAnimation>.Enumerator GetEnumerator() => _animationNameMap.GetEnumerator();
 
 	public void SetSkeleton(Mesh owningMesh, int boneCount, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes) {
 		var nodeCount = skeletalNodes.Length;
@@ -168,17 +184,39 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		nodeMutations.Buffer.Sort(static (a, b) => a.TargetNodeIndex.CompareTo(b.TargetNodeIndex));
 		var data = new AnimationData(scalingKeyframes, rotationKeyframes, translationKeyframes, nodeMutations, defaultCompletionTimeSeconds);
 		
-		_dataMap.Add(handle, data);
+		_animationDataMap.Add(handle, data);
 		_globals.StoreMandatoryResourceName(handle.Ident, name);
-		_nameMap.Add(name, HandleToInstance(handle));
+		_animationNameMap.Add(name, HandleToInstance(handle));
 		
 		return HandleToInstance(handle);
 	}
-
+	
+	public void SetNodeName(int nodeIndex, ReadOnlySpan<char> name) {
+		var meshNode = new MeshNode((nuint) nodeIndex, _meshNodeImplProvider);
+		
+		ReadOnlySpan<char> keyToRemove = default; 
+		foreach (var kvp in _nodeNameMap) {
+			if (kvp.Value == meshNode) {
+				keyToRemove = kvp.Key.AsSpan;
+				break;
+			}
+		}
+		if (!keyToRemove.IsEmpty) _nodeNameMap.Remove(keyToRemove);
+		
+		_nodeNameMap[name] = meshNode;
+	}
+	public int GetNodeCount() => _currentSkeleton?.NodeCount ?? 0;
+	public MeshNode GetNode(int index) => index < _currentSkeleton?.NodeCount ? new(new ResourceHandle<MeshNode>((nuint) index), _meshNodeImplProvider) : throw new ArgumentOutOfRangeException(nameof(index));
+	public MeshNode? TryGetNode(ReadOnlySpan<char> name) {
+		if (_nodeNameMap.TryGetValue(name, out var result)) return result;
+		if (!name.StartsWith(DefaultNodeNamePrefix, StringComparison.Ordinal)) return null;
+		if (!Int32.TryParse(name[DefaultNodeNamePrefix.Length..], CultureInfo.InvariantCulture, out var index)) return null;
+		return new((nuint) index, _meshNodeImplProvider);
+	}
 
 	public float GetDefaultDurationSeconds(ResourceHandle<MeshAnimation> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _dataMap[handle].DefaultCompletionTimeSeconds;
+		return _animationDataMap[handle].DefaultCompletionTimeSeconds;
 	}
 	
 	public MeshAnimationType GetType(ResourceHandle<MeshAnimation> handle) {
@@ -245,7 +283,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		var boneToNodeMap = skeleton.BoneToNodeMap.Buffer;
 		var firstParentedNodeIndex = skeleton.FirstParentedNodeIndex;
 		
-		var animation = _dataMap[handle];
+		var animation = _animationDataMap[handle];
 		var nodeCount = skeleton.NodeCount;
 		var boneCount = skeleton.BoneCount;
 		var mutations = animation.BoneMutationDescriptors.Buffer;
@@ -322,8 +360,44 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_globals.CopyMandatoryResourceName(handle.Ident, destinationBuffer);
 	}
+	
+	public string GetNameAsNewStringObject(ResourceHandle<MeshNode> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		foreach (var kvp in _nodeNameMap) {
+			if (kvp.Value.Handle == handle) return kvp.Key.AsNewStringObject;
+		}
+		return DefaultNodeNamePrefix + handle.AsInteger.ToString(CultureInfo.InvariantCulture);
+	}
+	public int GetNameLength(ResourceHandle<MeshNode> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		foreach (var kvp in _nodeNameMap) {
+			if (kvp.Value.Handle == handle) return kvp.Key.Length;
+		}
+		
+		Span<char> scrubSpace = stackalloc char[100];
+		if (!handle.AsInteger.TryFormat(scrubSpace, out var charsWritten, provider: CultureInfo.InvariantCulture)) {
+			return GetNameAsNewStringObject(handle).Length;
+		}
+		
+		return DefaultNodeNamePrefix.Length + charsWritten; 
+	}
+	public void CopyName(ResourceHandle<MeshNode> handle, Span<char> destinationBuffer) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		foreach (var kvp in _nodeNameMap) {
+			if (kvp.Value.Handle == handle) kvp.Key.AsSpan.CopyTo(destinationBuffer);
+		}
+		
+		Span<char> scrubSpace = stackalloc char[100];
+		if (!handle.AsInteger.TryFormat(scrubSpace, out var charsWritten, provider: CultureInfo.InvariantCulture)) {
+			GetNameAsNewStringObject(handle).CopyTo(destinationBuffer);
+			return;
+		}
+		
+		DefaultNodeNamePrefix.CopyTo(destinationBuffer);
+		scrubSpace[..charsWritten].CopyTo(destinationBuffer[charsWritten..]);
+	}
 
-	public MeshAnimation GetAnimationAtUnstableIndex(int index) => HandleToInstance(_dataMap.GetPairAtIndex(index).Key);
+	public MeshAnimation GetAnimationAtUnstableIndex(int index) => HandleToInstance(_animationDataMap.GetPairAtIndex(index).Key);
 
 	public override string ToString() => _isDisposed ? "TinyFFR Local Mesh Animation Table [Disposed]" : "TinyFFR Local Mesh Animation Table";
 
@@ -341,20 +415,23 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 	#endregion
 
 	#region Disposal
-	public bool IsDisposed(ResourceHandle<MeshAnimation> handle) => _isDisposed || !_dataMap.ContainsKey(handle);
+	public bool IsDisposed(ResourceHandle<MeshAnimation> handle) => _isDisposed || !_animationDataMap.ContainsKey(handle);
+	public bool IsDisposed(ResourceHandle<MeshNode> handle) => _isDisposed || _currentSkeleton is not { } skeleton || handle.AsInteger >= (nuint) skeleton.NodeCount;
 	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<MeshAnimation> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(MeshAnimation));
+	void ThrowIfThisOrHandleIsDisposed(ResourceHandle<MeshNode> handle) => ObjectDisposedException.ThrowIf(IsDisposed(handle), typeof(MeshAnimation));
 	void ThrowIfThisIsDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 
 	public void Recycle() {
-		foreach (var kvp in _dataMap) {
+		foreach (var kvp in _animationDataMap) {
 			var data = kvp.Value;
 			data.BoneMutationDescriptors.Dispose();
 			data.TranslationKeyframes.Dispose();
 			data.RotationKeyframes.Dispose();
 			data.ScalingKeyframes.Dispose();
 		}
-		_dataMap.Clear();
-		_nameMap.Clear();
+		_animationDataMap.Clear();
+		_animationNameMap.Clear();
+		_nodeNameMap.Clear();
 		
 		_currentSkeleton?.BindPoseInversions.Dispose();
 		_currentSkeleton?.DefaultLocalTransforms.Dispose();
@@ -369,8 +446,9 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		_isDisposed = true;
 		Recycle();
 		_applyTransformsBuffer.Dispose();
-		_nameMap.Dispose();
-		_dataMap.Dispose();
+		_animationNameMap.Dispose();
+		_animationDataMap.Dispose();
+		_nodeNameMap.Dispose();
 	}
 	#endregion
 }

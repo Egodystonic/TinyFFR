@@ -33,8 +33,30 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void GetNodeTransform(float targetTimePointSeconds, MeshNode node, out Matrix4x4 modelSpaceTransform) {
+		Unsafe.SkipInit(out modelSpaceTransform);
+		GetNodeTransforms(targetTimePointSeconds, new ReadOnlySpan<MeshNode>(in node), new Span<Matrix4x4>(ref modelSpaceTransform));
+	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void GetNodeTransforms(float targetTimePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+		Implementation.GetNodeTransforms(_handle, targetTimePointSeconds, nodes, modelSpaceTransforms);
+	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Apply(ModelInstance targetInstance, float targetTimePointSeconds) {
 		Implementation.Apply(_handle, targetInstance, targetTimePointSeconds);
+	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void ApplyAndGetNodeTransform(ModelInstance targetInstance, float targetTimePointSeconds, MeshNode node, out Matrix4x4 modelSpaceTransform) {
+		Unsafe.SkipInit(out modelSpaceTransform);
+		ApplyAndGetNodeTransforms(targetInstance, targetTimePointSeconds, new ReadOnlySpan<MeshNode>(in node), new Span<Matrix4x4>(ref modelSpaceTransform));
+	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void ApplyAndGetNodeTransforms(ModelInstance targetInstance, float targetTimePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+		Implementation.ApplyAndGetNodeTransforms(_handle, targetInstance, targetTimePointSeconds, nodes, modelSpaceTransforms);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -55,7 +77,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	}
 	#endregion
 	
-	public override string ToString() => $"Mesh Animation {GetNameAsNewStringObject()}";
+	public override string ToString() => $"Mesh Animation \"{GetNameAsNewStringObject()}\"";
 
 	#region Equality
 	public bool Equals(MeshAnimation other) => _handle == other._handle && _impl.Equals(other._impl);

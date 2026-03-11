@@ -373,7 +373,13 @@ public interface IMeshBuilder {
 	Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, in MeshCreationConfig config);
 	#endregion
 	
-	#region Animations
+	#region Nodes & Animations
+	void SetNodeName(
+		Mesh mesh,
+		int nodeIndex,
+		ReadOnlySpan<char> name
+	);
+	
 	MeshAnimation AttachAnimation(
 		Mesh mesh, 
 		ReadOnlySpan<SkeletalAnimationScalingKeyframe> scalingKeyframes, 
