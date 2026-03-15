@@ -20,14 +20,16 @@ class MeshConfigTest {
 			OptimizeForGpu = false,
 			CorrectFlippedOrientation = true,
 			LoadSkeletalAnimationDataIfPresent = false,
-			SubMeshIndex = null
+			SubMeshIndex = null,
+			AnimationTicksPerSecondOverride = 50f
 		};
 		var testConfigB = new MeshReadConfig {
 			FixCommonExportErrors = false,
 			OptimizeForGpu = true,
 			CorrectFlippedOrientation = false,
 			LoadSkeletalAnimationDataIfPresent = true,
-			SubMeshIndex = 1
+			SubMeshIndex = 1,
+			AnimationTicksPerSecondOverride = null
 		};
 
 		void AssertConfigsMatch(MeshReadConfig expected, MeshReadConfig actual) {
@@ -36,6 +38,7 @@ class MeshConfigTest {
 			Assert.AreEqual(expected.CorrectFlippedOrientation, actual.CorrectFlippedOrientation);
 			Assert.AreEqual(expected.LoadSkeletalAnimationDataIfPresent, actual.LoadSkeletalAnimationDataIfPresent);
 			Assert.AreEqual(expected.SubMeshIndex, actual.SubMeshIndex);
+			Assert.AreEqual(expected.AnimationTicksPerSecondOverride, actual.AnimationTicksPerSecondOverride);
 		}
 
 		AssertRoundTripHeapStorage(testConfigA, AssertConfigsMatch);
@@ -48,6 +51,8 @@ class MeshConfigTest {
 			.Bool(false)
 			.Bool(false)
 			.Int(0)
+			.Bool(true)
+			.Float(50f)
 			.For(testConfigA);
 
 		AssertHeapSerializationWithObjects<MeshReadConfig>()
@@ -57,6 +62,8 @@ class MeshConfigTest {
 			.Bool(true)
 			.Bool(true)
 			.Int(1)
+			.Bool(false)
+			.Float(0f)
 			.For(testConfigB);
 
 		AssertPropertiesAccountedFor<MeshReadConfig>()
@@ -65,6 +72,7 @@ class MeshConfigTest {
 			.Including(nameof(MeshReadConfig.CorrectFlippedOrientation))
 			.Including(nameof(MeshReadConfig.LoadSkeletalAnimationDataIfPresent))
 			.Including(nameof(MeshReadConfig.SubMeshIndex))
+			.Including(nameof(MeshReadConfig.AnimationTicksPerSecondOverride))
 			.End();
 	}
 

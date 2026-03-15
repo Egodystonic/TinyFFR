@@ -950,7 +950,7 @@ unsafe partial class LocalAssetLoader {
 									config.MeshConfig
 								);
 
-								LoadAndAttachMeshAnimations(assetHandle, (NodeHandle*) internalNodeBuffer.StartPtr, nodeCount, mesh);
+								LoadAndAttachMeshAnimations(assetHandle, (NodeHandle*) internalNodeBuffer.StartPtr, nodeCount, readConfig.MeshConfig.AnimationTicksPerSecondOverride, mesh);
 								LoadAndSetNodeNames(internalNodeBuffer.AsReadOnlySpan<NodeHandle>(nodeCount), maxNodeNameLength, mesh);
 							}
 							finally {

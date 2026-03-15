@@ -121,7 +121,7 @@ unsafe partial class LocalAssetLoader {
 								config
 							);
 						
-							LoadAndAttachMeshAnimations(assetHandle, (NodeHandle*) internalNodeBuffer.StartPtr, nodeCount, result);
+							LoadAndAttachMeshAnimations(assetHandle, (NodeHandle*) internalNodeBuffer.StartPtr, nodeCount, readConfig.AnimationTicksPerSecondOverride, result);
 							LoadAndSetNodeNames(internalNodeBuffer.AsReadOnlySpan<NodeHandle>(nodeCount), maxNodeNameLength, result);
 							return result;
 						}
@@ -345,7 +345,7 @@ unsafe partial class LocalAssetLoader {
 		}
 	}
 
-	void LoadAndAttachMeshAnimations(UIntPtr assetHandle, NodeHandle* nodeHandleBuffer, int nodeHandleBufferCount, Mesh mesh) {
+	void LoadAndAttachMeshAnimations(UIntPtr assetHandle, NodeHandle* nodeHandleBuffer, int nodeHandleBufferCount, float? animTicksPerSecOverride, Mesh mesh) {
 		const int MaxNameLengthForStackAlloc = 2048;
 		
 		GetLoadedAssetMeshSkeletalAnimationCount(
@@ -360,7 +360,8 @@ unsafe partial class LocalAssetLoader {
 		for (var a = 0; a < animationCount; ++a) {
 			GetLoadedAssetSkeletalAnimationMetadata(
 				assetHandle, 
-				a, 
+				a,
+				animTicksPerSecOverride ?? 0f,
 				out var nameLenBytes,
 				out var animationDurationSeconds, 
 				out var animationChannelCount
@@ -454,6 +455,7 @@ unsafe partial class LocalAssetLoader {
 						assetHandle,
 						a, 
 						c,
+						animTicksPerSecOverride ?? 0f,
 						(Vector3*) scalingVectorBuffer.StartPtr,
 						(float*) scalingTimeCodeBuffer.StartPtr,
 						highestSingleChannelScalingKeyframeCount,
@@ -611,6 +613,7 @@ unsafe partial class LocalAssetLoader {
 	static extern InteropResult GetLoadedAssetSkeletalAnimationMetadata(
 		UIntPtr assetHandle, 
 		int animationIndex,
+		float ticksPerSecondOverride,
 		out int outNameLengthBytes, 
 		out float outDurationSeconds, 
 		out int outChannelCount
@@ -649,6 +652,7 @@ unsafe partial class LocalAssetLoader {
 		UIntPtr assetHandle, 
 		int animationIndex, 
 		int channelIndex,
+		float ticksPerSecondOverride,
 		Vector3* scalingVectorBuffer,
 		float* scalingTimeCodeBuffer,
 		int scalingBufferCount,

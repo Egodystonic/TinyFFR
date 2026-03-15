@@ -17,6 +17,7 @@ public readonly ref struct MeshReadConfig : IConfigStruct<MeshReadConfig> {
 	public bool CorrectFlippedOrientation { get; init; } = true;
 	public bool LoadSkeletalAnimationDataIfPresent { get; init; } = true;
 	public int? SubMeshIndex { get; init; } = null;
+	public float? AnimationTicksPerSecondOverride { get; init; } = null;
 
 	public MeshReadConfig() { }
 
@@ -29,7 +30,8 @@ public readonly ref struct MeshReadConfig : IConfigStruct<MeshReadConfig> {
 			+	SerializationSizeOfBool() // OptimizeForGpu
 			+	SerializationSizeOfBool() // CorrectFlippedOrientation
 			+	SerializationSizeOfBool() // LoadSkeletalAnimationDataIfPresent
-			+	SerializationSizeOfNullableInt(); // SubMeshIndex
+			+	SerializationSizeOfNullableInt() // SubMeshIndex
+			+	SerializationSizeOfNullableFloat(); // AnimationTicksPerSecondOverride
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in MeshReadConfig src) {
 		SerializationWriteBool(ref dest, src.FixCommonExportErrors);
@@ -37,6 +39,7 @@ public readonly ref struct MeshReadConfig : IConfigStruct<MeshReadConfig> {
 		SerializationWriteBool(ref dest, src.CorrectFlippedOrientation);
 		SerializationWriteBool(ref dest, src.LoadSkeletalAnimationDataIfPresent);
 		SerializationWriteNullableInt(ref dest, src.SubMeshIndex);
+		SerializationWriteNullableFloat(ref dest, src.AnimationTicksPerSecondOverride);
 	}
 	public static MeshReadConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
 		return new MeshReadConfig {
@@ -44,7 +47,8 @@ public readonly ref struct MeshReadConfig : IConfigStruct<MeshReadConfig> {
 			OptimizeForGpu = SerializationReadBool(ref src),
 			CorrectFlippedOrientation = SerializationReadBool(ref src),
 			LoadSkeletalAnimationDataIfPresent = SerializationReadBool(ref src),
-			SubMeshIndex = SerializationReadNullableInt(ref src)
+			SubMeshIndex = SerializationReadNullableInt(ref src),
+			AnimationTicksPerSecondOverride = SerializationReadNullableFloat(ref src)
 		};
 	}
 	public static void DisposeAllocatedHeapStorage(ReadOnlySpan<byte> src) {

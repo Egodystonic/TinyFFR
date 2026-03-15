@@ -50,16 +50,17 @@ class LocalAnimationTest {
 		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, highQuality: true);
 		using var sunlight = factory.LightBuilder.CreateDirectionalLight(castsShadows: true);
 		using var backdrop = factory.AssetLoader.LoadPreprocessedBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.MetroSkyKtx), CommonTestAssets.FindAsset(KnownTestAsset.MetroIblKtx));
+		using var nodeHighlightMesh = factory.MeshBuilder.CreateMesh(new Cuboid(0.1f, 0.4f, 0.1f));
+		using var nodeHighlightMat = factory.MaterialBuilder.CreateSimpleMaterial(factory.TextureBuilder.CreateColorMap(StandardColor.Red, includeAlpha: false));
+		using var nodeHighlighter = factory.ObjectBuilder.CreateModelInstance(nodeHighlightMesh, nodeHighlightMat); 
 		using var scene = factory.SceneBuilder.CreateScene(backdrop);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		renderer.SetQuality(new(Quality.VeryHigh));
 		
-		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.UnitSphere);
-		using var testMat = factory.MaterialBuilder.CreateTestMaterial();
-		using var sphere = factory.ObjectBuilder.CreateModelInstance(sphereMesh, testMat); 
 
 		scene.Add(light);
 		scene.Add(sunlight);
+		scene.Add(nodeHighlighter);
 		
 		var curFileIndex = -1;
 		var curAnimIndex = 0;
@@ -162,14 +163,25 @@ class LocalAnimationTest {
 				if (modelInstanceGroup is { } mig) {
 					++curNodeIndex;
 					if (curNodeIndex >= mig[0].Skeleton.Nodes.Count) curNodeIndex = 0;
+					mig[0].Skeleton.GetBindPoseNodeTransform(mig[0].Skeleton.Nodes[curNodeIndex], out var bpt);
+					nodeHighlighter.SetTransform(bpt * mig[0].Transform.ToMatrix());
+					nodeHighlighter.SetScaling(1f);
 					UpdateTitle();
 				}
 			}
 			
 			if (playingAnim && modelInstanceGroup.HasValue) {
+				var isFirst = true;
 				foreach (var mi in modelInstanceGroup) {
 					if (curAnimIndex >= mi.Mesh.Animations.All.Count) continue;
-					mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationTimestampWrapStyle.Loop);
+					if (isFirst) {
+						mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePointAndGetNodeTransform((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationTimestampWrapStyle.Loop, mi.Skeleton.Nodes[curNodeIndex], out var transform);
+						nodeHighlighter.SetTransform(transform * mi.Transform.ToMatrix());
+						nodeHighlighter.SetScaling(1f);
+					}
+					else {
+						mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationTimestampWrapStyle.Loop);
+					}
 				}
 			}
 			

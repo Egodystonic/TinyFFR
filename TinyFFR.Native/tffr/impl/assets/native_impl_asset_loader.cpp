@@ -720,7 +720,7 @@ StartExportedFunc(get_loaded_asset_mesh_skeletal_animation_count, MemoryLoadedAs
 	EndExportedFunc
 }
 
-void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_metadata(MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t* outNameLengthBytes, float_t* outDurationSeconds, int32_t* outChannelCount) {
+void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_metadata(MemoryLoadedAssetHandle assetHandle, int32_t animIndex, float_t ticksPerSecOverride, int32_t* outNameLengthBytes, float_t* outDurationSeconds, int32_t* outChannelCount) {
 	ThrowIfNull(assetHandle, "Anim handle was null.");
 	ThrowIf(animIndex < 0 || animIndex >= assetHandle->mNumAnimations, "Anim index out of bounds.");
 	ThrowIfNull(outNameLengthBytes, "Out name length pointer was null.");
@@ -728,13 +728,15 @@ void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_metadata
 	ThrowIfNull(outChannelCount, "Out channel count pointer was null.");
 	
 	auto anim = assetHandle->mAnimations[animIndex];
+	auto tps = static_cast<double>(ticksPerSecOverride);
+	if (tps == 0.0) tps = (anim->mTicksPerSecond > 0.0 ? anim->mTicksPerSecond : 25.0);
 
 	*outNameLengthBytes = static_cast<int32_t>(anim->mName.length);
-	*outDurationSeconds = static_cast<float_t>(anim->mDuration / (anim->mTicksPerSecond > 0.0 ? anim->mTicksPerSecond : 25.0));
+	*outDurationSeconds = static_cast<float_t>(anim->mDuration / tps);
 	*outChannelCount = static_cast<int32_t>(anim->mNumChannels);
 }
-StartExportedFunc(get_loaded_asset_mesh_skeletal_animation_metadata, MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t* outNameLengthBytes, float_t* outDurationSeconds, int32_t* outChannelCount) {
-	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_metadata(assetHandle, animIndex, outNameLengthBytes, outDurationSeconds, outChannelCount);
+StartExportedFunc(get_loaded_asset_mesh_skeletal_animation_metadata, MemoryLoadedAssetHandle assetHandle, int32_t animIndex, float_t ticksPerSecOverride, int32_t* outNameLengthBytes, float_t* outDurationSeconds, int32_t* outChannelCount) {
+	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_metadata(assetHandle, animIndex, ticksPerSecOverride, outNameLengthBytes, outDurationSeconds, outChannelCount);
 	EndExportedFunc
 }
 
@@ -794,7 +796,7 @@ StartExportedFunc(get_loaded_asset_mesh_skeletal_animation_channel_metadata, Mem
 	EndExportedFunc
 }
 
-void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_animation_channel_data(MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t channelIndex, float3* scalingVectorBuffer, float_t* scalingTimeBuffer, int32_t scalingBufferCount, quatf* rotationQuaternionBuffer, float_t* rotationTimeBuffer, int32_t rotationBufferCount, float3* translationVectorBuffer, float_t* translationTimeBuffer, int32_t translationBufferCount) {
+void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_animation_channel_data(MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t channelIndex, float_t ticksPerSecOverride, float3* scalingVectorBuffer, float_t* scalingTimeBuffer, int32_t scalingBufferCount, quatf* rotationQuaternionBuffer, float_t* rotationTimeBuffer, int32_t rotationBufferCount, float3* translationVectorBuffer, float_t* translationTimeBuffer, int32_t translationBufferCount) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 	ThrowIf(animIndex < 0 || animIndex >= assetHandle->mNumAnimations, "Anim index out of bounds.");
 	auto anim = assetHandle->mAnimations[animIndex];
@@ -804,7 +806,9 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_animation_channel
 	ThrowIf(rotationBufferCount < channel->mNumRotationKeys, "Rotation buffer too small.");
 	ThrowIf(translationBufferCount < channel->mNumPositionKeys, "Translation buffer too small.");
 	
-	auto ticksToSecondsCoefficient = 1.0 / (anim->mTicksPerSecond > 0.0 ? anim->mTicksPerSecond : 25.0);
+	auto tps = static_cast<double>(ticksPerSecOverride);
+	if (tps == 0.0) tps = (anim->mTicksPerSecond > 0.0 ? anim->mTicksPerSecond : 25.0);
+	auto ticksToSecondsCoefficient = 1.0 / tps;
 
 	for (auto i = 0U; i < channel->mNumScalingKeys; ++i) {
 		auto key = channel->mScalingKeys[i];
@@ -824,8 +828,8 @@ void native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_animation_channel
 		translationTimeBuffer[i] = static_cast<float_t>(key.mTime * ticksToSecondsCoefficient);
 	}
 }
-StartExportedFunc(copy_loaded_asset_mesh_skeletal_animation_channel_data, MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t channelIndex, float3* scalingVectorBuffer, float_t* scalingTimeBuffer, int32_t scalingBufferCount, quatf* rotationQuaternionBuffer, float_t* rotationTimeBuffer, int32_t rotationBufferCount, float3* translationVectorBuffer, float_t* translationTimeBuffer, int32_t translationBufferCount) {
-	native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_animation_channel_data(assetHandle, animIndex, channelIndex, scalingVectorBuffer, scalingTimeBuffer, scalingBufferCount, rotationQuaternionBuffer, rotationTimeBuffer, rotationBufferCount, translationVectorBuffer, translationTimeBuffer, translationBufferCount);
+StartExportedFunc(copy_loaded_asset_mesh_skeletal_animation_channel_data, MemoryLoadedAssetHandle assetHandle, int32_t animIndex, int32_t channelIndex, float_t ticksPerSecOverride, float3* scalingVectorBuffer, float_t* scalingTimeBuffer, int32_t scalingBufferCount, quatf* rotationQuaternionBuffer, float_t* rotationTimeBuffer, int32_t rotationBufferCount, float3* translationVectorBuffer, float_t* translationTimeBuffer, int32_t translationBufferCount) {
+	native_impl_asset_loader::copy_loaded_asset_mesh_skeletal_animation_channel_data(assetHandle, animIndex, channelIndex, ticksPerSecOverride, scalingVectorBuffer, scalingTimeBuffer, scalingBufferCount, rotationQuaternionBuffer, rotationTimeBuffer, rotationBufferCount, translationVectorBuffer, translationTimeBuffer, translationBufferCount);
 	EndExportedFunc
 }
 

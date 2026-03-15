@@ -46,7 +46,10 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetTransform(_handle, value);
 	}
-	public void SetTransform(TransformOrMatrix transform) => Implementation.SetTransform(_handle, transform);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetTransform(Transform transform) => Implementation.SetTransform(_handle, transform);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetTransform(Matrix4x4 transformMatrix) => Implementation.SetTransform(_handle, transformMatrix);
 
 	public Location Position {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -74,6 +77,8 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetScaling(Vect scaling) => Scaling = scaling;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetScaling(float scaling) => Scaling = new Vect(scaling);
 
 	public Material Material {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -93,8 +93,7 @@ class TransformTest {
 	public void ShouldCorrectlyConvertToMatrix() {
 		void AssertMat(Matrix4x4 expectation, Transform transform) {
 			AssertToleranceEquals(expectation, transform.ToMatrix(), TestTolerance);
-			Matrix4x4 actual = new();
-			transform.ToMatrix(ref actual);
+			transform.ToMatrix(out var actual);
 			AssertToleranceEquals(expectation, actual, TestTolerance);
 		}
 

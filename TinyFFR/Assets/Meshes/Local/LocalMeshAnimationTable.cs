@@ -347,7 +347,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 				translation: InterpolateKeyframes<SkeletalAnimationTranslationKeyframe, Vect>(translationKeys.Slice(mutation.TranslationKeyframeStartIndex, mutation.TranslationKeyframeCount), targetTimePointSeconds)
 			);
 
-			transform.ToMatrix(ref workspace[mutation.TargetNodeIndex]);
+			transform.ToMatrix(out workspace[mutation.TargetNodeIndex]);
 		}
 
 		for (var i = firstParentedNodeIndex; i < nodeCount; ++i) {
