@@ -29,4 +29,50 @@ public static class MathUtils {
 		var inputDistance = T.GetInterpolationDistance(inputRange.First, inputRange.Second, @this);
 		return T.Interpolate(outputRange.First, outputRange.Second, inputDistance);
 	}
+
+	public static Transform GetBestGuessTransformFromMatrix(Matrix4x4 mat) {
+		if (Matrix4x4.Decompose(mat, out var s, out var r, out var t)) {
+			return new Transform(
+				Vect.FromVector3(t),
+				r,
+				Vect.FromVector3(s)
+			);
+		}
+
+		var rowA = new Vector3(mat[0, 0], mat[0, 1], mat[0, 2]);
+		var rowB = new Vector3(mat[1, 0], mat[1, 1], mat[1, 2]);
+		var rowC = new Vector3(mat[2, 0], mat[2, 1], mat[2, 2]);
+
+		var xScale = rowA.Length();
+		var yScale = rowB.Length();
+		var zScale = rowC.Length();
+
+		// Flip A/X if 3x3 mat has negative determinant
+		var aCrossB = Vector3.Cross(rowA, rowB);
+		if (Vector3.Dot(aCrossB, rowC) < 0f) {
+			xScale = -xScale;
+			rowA = -rowA;
+		}
+
+		rowA /= xScale;
+		rowB /= yScale;
+
+		// Gram-Schmidt                                                                                                                                                      
+		rowB -= Vector3.Dot(rowB, rowA) * rowA;
+		rowB = Vector3.Normalize(rowB);
+		rowC = Vector3.Cross(rowA, rowB);
+
+		var rotationQuat = Quaternion.CreateFromRotationMatrix(new Matrix4x4(
+			rowA.X, rowA.Y, rowA.Z, 0f,
+			rowB.X, rowB.Y, rowB.Z, 0f,
+			rowC.X, rowC.Y, rowC.Z, 0f,
+			0f, 0f, 0f, 1f
+		));
+
+		return new Transform(
+			new Vect(mat.M41, mat.M42, mat.M43),
+			rotationQuat,
+			new Vect(xScale, yScale, zScale)
+		);
+	}
 }

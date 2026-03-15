@@ -46,8 +46,7 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetTransform(_handle, value);
 	}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetTransform(Transform transform) => Transform = transform;
+	public void SetTransform(TransformOrMatrix transform) => Implementation.SetTransform(_handle, transform);
 
 	public Location Position {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -70,9 +70,10 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeInstanceTransforms[handle];
 	}
-	public void SetTransform(ResourceHandle<ModelInstance> handle, Transform newTransform) {
+	public void SetTransform(ResourceHandle<ModelInstance> handle, TransformOrMatrix newTransform) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		UpdateTransformAndMatrix(handle, newTransform);
+		SetModelInstanceWorldMatrix(handle, newTransform.ToMatrix()).ThrowIfFailure();
+		_activeInstanceTransforms[handle] = newTransform.AsTransform ?? MathUtils.GetBestGuessTransformFromMatrix(newTransform.AsMatrixFast);
 	}
 
 	public Location GetPosition(ResourceHandle<ModelInstance> handle) {

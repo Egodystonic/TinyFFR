@@ -46,12 +46,11 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Matrix4x4 ToMatrix() {
-		var result = new Matrix4x4();
-		ToMatrix(ref result);
+		ToMatrix(out var result);
 		return result;
 	}
 	
-	public void ToMatrix(ref Matrix4x4 dest) {
+	public void ToMatrix(out Matrix4x4 dest) {
 		var rotVect = RotationQuaternion.AsVector4();
 		var rotVectSquared = rotVect * rotVect;
 
