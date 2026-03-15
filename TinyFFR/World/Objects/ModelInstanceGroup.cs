@@ -67,6 +67,8 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetScaling(Vect scaling) => Scaling = scaling;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
 
 	public void MoveBy(Vect translation) {
 		for (var i = 0; i < Count; ++i) Instances[i].MoveBy(translation);

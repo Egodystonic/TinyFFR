@@ -20,18 +20,18 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalAnimationTest {
-	string[] _filesToLoad;
+	(string Filename, float ScalingFactor)[] _filesToLoad;
 	
 	[SetUp]
 	public void SetUpTest() {
 		_filesToLoad = new[] {
-			"SimpleSkin.gltf",
-			"RiggedSimple.glb",
-			"RiggedFigure.glb",
-			"CesiumMan.glb",
-			"BrainStem.glb",
-			"Fox.glb",
-			"Mixamo.fbx",
+			("SimpleSkin.gltf", 1f),
+			("RiggedSimple.glb", 0.25f),
+			("RiggedFigure.glb", 1f),
+			("CesiumMan.glb", 1f),
+			("BrainStem.glb", 0.8f),
+			("Fox.glb", 0.01f),
+			("Mixamo.fbx", 0.01f),
 			//"RecursiveSkeletons.glb", // One day we might need to support this; but not today
 		};
 	}
@@ -77,7 +77,7 @@ class LocalAnimationTest {
 				$"S = chg start/stop | " +
 				$"N = chg node | " +
 				$"Mousewheel scales | " +
-				$"'{_filesToLoad[curFileIndex]}' anim {(curAnimIndex + 1)} / {curAnimCount} | " +
+				$"'{_filesToLoad[curFileIndex].Filename}' anim {(curAnimIndex + 1)} / {curAnimCount} | " +
 				$"'{modelInstanceGroup?[0].Skeleton.Nodes[curNodeIndex].GetNameAsNewStringObject()}' node | " +
 				$"{modelInstanceGroup?.Count ?? 0} models"
 			);
@@ -102,8 +102,8 @@ class LocalAnimationTest {
 				curAnimIndex = 0;
 				curNodeIndex = 0;
 
-				Console.WriteLine("Loading " + _filesToLoad[curFileIndex] + "...");
-				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), new ModelCreationConfig() { MeshConfig = new() {  }}, new ModelReadConfig() { HandleUriEscapedStrings = true });
+				Console.WriteLine("Loading " + _filesToLoad[curFileIndex].Filename + "...");
+				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex].Filename), new ModelCreationConfig() { MeshConfig = new() { LinearRescalingFactor = _filesToLoad[curFileIndex].ScalingFactor, OriginTranslation = (0f, 0f, curFileIndex) }}, new ModelReadConfig() { HandleUriEscapedStrings = true });
 				curAnimCount = loadedResources.Value.Models.Max(m => m.Mesh.Animations.All.Count);
 				Assert.GreaterOrEqual(curAnimCount, 1);
 

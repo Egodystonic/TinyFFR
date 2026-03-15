@@ -78,7 +78,7 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetScaling(Vect scaling) => Scaling = scaling;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetScaling(float scaling) => Scaling = new Vect(scaling);
+	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
 
 	public Material Material {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -97,9 +97,10 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		}
 
 		var result = ProcessVerticesAndCreateMesh(vertices, triangles, in config, boneCount);
-		
+
+		var modelImportTransformMatrix = Matrix4x4.CreateTranslation(-(config.OriginTranslation.ToVector3())) * Matrix4x4.CreateScale(config.LinearRescalingFactor);
 		var animTable = _meshAnimationTablePool.Rent();
-		animTable.SetSkeleton(result, boneCount, skeletalNodes);
+		animTable.SetSkeleton(result, boneCount, skeletalNodes, modelImportTransformMatrix);
 		_activeMeshAnimationTables.Add(result.Handle, animTable);
 		return result;
 	}

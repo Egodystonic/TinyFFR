@@ -28,11 +28,12 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		int BoneCount,
 		int FirstParentedNodeIndex,
 		PooledHeapMemory<Matrix4x4> DefaultLocalTransforms,
-		PooledHeapMemory<Matrix4x4> BindPoseInversions, 
+		PooledHeapMemory<Matrix4x4> BindPoseInversions,
 		PooledHeapMemory<Matrix4x4> Workspace,
 		PooledHeapMemory<int> ParentIndices,
 		PooledHeapMemory<int> BoneToNodeMap,
-		PooledHeapMemory<int> MutationTargetIndexMap
+		PooledHeapMemory<int> MutationTargetIndexMap,
+		Matrix4x4 ModelImportTransformMatrix
 	);
 	static nuint _nextHandleId = 0U;
 	readonly MeshNodeImplProvider _meshNodeImplProvider;
@@ -65,7 +66,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 	public ArrayPoolBackedMap<ManagedStringPool.RentedStringHandle, MeshAnimation>.ValueEnumerator Values => _animationNameMap.Values;
 	public ArrayPoolBackedMap<ManagedStringPool.RentedStringHandle, MeshAnimation>.Enumerator GetEnumerator() => _animationNameMap.GetEnumerator();
 
-	public void SetSkeleton(Mesh owningMesh, int boneCount, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes) {
+	public void SetSkeleton(Mesh owningMesh, int boneCount, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, Matrix4x4 modelImportTransformMatrix) {
 		var nodeCount = skeletalNodes.Length;
 		if (_currentSkeleton != null) {
 			throw new InvalidOperationException("Skeleton already set for this animation table (this is a bug in TinyFFR).");
@@ -132,6 +133,12 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 			}
 		}
 
+		if (Matrix4x4.Invert(modelImportTransformMatrix, out var inverseModelImportTransformMatrix)) {
+			for (var i = 0; i < boneCount; ++i) {
+				bindPoseInversionsHeapMemory.Buffer[i] = inverseModelImportTransformMatrix * bindPoseInversionsHeapMemory.Buffer[i];
+			}	
+		}
+
 		_currentSkeleton = new(
 			owningMesh,
 			nodeCount,
@@ -142,7 +149,8 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 			workspaceHeapMemory,
 			parentIndicesHeapMemory,
 			boneToNodeMapHeapMemory,
-			inputToOutputIndexMapHeapMemory
+			inputToOutputIndexMapHeapMemory,
+			modelImportTransformMatrix
 		);
 	}
 
@@ -247,14 +255,18 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 	void WriteBindPoseNodeTransformsToWorkspace() {
 		ThrowIfThisIsDisposed();
 		if (_currentSkeleton is not { } skeleton) return;
-		
+
 		var workspace = skeleton.Workspace.Buffer;
 		var parents = skeleton.ParentIndices.Buffer;
 		var firstParentedNodeIndex = skeleton.FirstParentedNodeIndex;
 		var nodeCount = skeleton.Workspace.Buffer.Length;
-		
+
 		skeleton.DefaultLocalTransforms.Buffer.CopyTo(workspace);
-		
+
+		for (var i = 0; i < firstParentedNodeIndex; ++i) {
+			workspace[i] *= skeleton.ModelImportTransformMatrix;
+		}
+
 		for (var i = firstParentedNodeIndex; i < nodeCount; ++i) {
 			workspace[i] *= workspace[parents[i]];
 		}
@@ -338,7 +350,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		}
 		
 		skeleton.DefaultLocalTransforms.Buffer.CopyTo(workspace);
-		
+
 		for (var i = 0; i < mutations.Length; ++i) {
 			var mutation = mutations[i];
 			var transform = new Transform(
@@ -348,6 +360,10 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 			);
 
 			transform.ToMatrix(out workspace[mutation.TargetNodeIndex]);
+		}
+
+		for (var i = 0; i < firstParentedNodeIndex; ++i) {
+			workspace[i] *= skeleton.ModelImportTransformMatrix;
 		}
 
 		for (var i = firstParentedNodeIndex; i < nodeCount; ++i) {
