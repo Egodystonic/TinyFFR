@@ -16,8 +16,8 @@ public enum MeshAnimationTimestampWrapStyle {
 }
 
 public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
-	public MeshAnimation Animation { get; init; }
 	public ModelInstance Instance { get; init; }
+	public MeshAnimation Animation { get; init; }
 	public float SpeedMultiplier { get; init; }
 	public float DurationSeconds {
 		get => Animation.DefaultDurationSeconds / SpeedMultiplier;
@@ -27,22 +27,22 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 		}
 	}
 
-	public MeshAnimationPlayer(MeshAnimation animation, ModelInstance instance) : this(animation, instance, 1f) { }
-	MeshAnimationPlayer(MeshAnimation animation, ModelInstance instance, float speedMultiplier) {
+	public MeshAnimationPlayer(ModelInstance instance, MeshAnimation animation) : this(instance, animation, 1f) { }
+	MeshAnimationPlayer(ModelInstance instance, MeshAnimation animation, float speedMultiplier) {
 		if (speedMultiplier == 0f) speedMultiplier = 1f;
-		Animation = animation;
 		Instance = instance;
+		Animation = animation;
 		SpeedMultiplier = speedMultiplier;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static MeshAnimationPlayer CreateWithSpeedMultiplier(MeshAnimation animation, ModelInstance instance, float speedMultiplier) {
-		return new MeshAnimationPlayer(animation, instance, speedMultiplier);
+	public static MeshAnimationPlayer CreateWithSpeedMultiplier(ModelInstance instance, MeshAnimation animation, float speedMultiplier) {
+		return new MeshAnimationPlayer(instance, animation, speedMultiplier);
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static MeshAnimationPlayer CreateWithTargetDuration(MeshAnimation animation, ModelInstance instance, float targetAnimationCompletionTimeSeconds) {
-		return new MeshAnimationPlayer(animation, instance) { DurationSeconds = targetAnimationCompletionTimeSeconds };
+	public static MeshAnimationPlayer CreateWithTargetDuration(ModelInstance instance, MeshAnimation animation, float targetAnimationCompletionTimeSeconds) {
+		return new MeshAnimationPlayer(instance, animation) { DurationSeconds = targetAnimationCompletionTimeSeconds };
 	}
 	
 	#region Time Point
@@ -111,9 +111,9 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 		};
 	}
 
-	public bool Equals(MeshAnimationPlayer other) => Animation.Equals(other.Animation) && Instance.Equals(other.Instance);
+	public bool Equals(MeshAnimationPlayer other) => Instance.Equals(other.Instance) && Animation.Equals(other.Animation) && SpeedMultiplier.Equals(other.SpeedMultiplier);
 	public override bool Equals(object? obj) => obj is MeshAnimationPlayer other && Equals(other);
-	public override int GetHashCode() => HashCode.Combine(Animation, Instance);
+	public override int GetHashCode() => HashCode.Combine(Instance, Animation, SpeedMultiplier);
 	public static bool operator ==(MeshAnimationPlayer left, MeshAnimationPlayer right) => left.Equals(right);
 	public static bool operator !=(MeshAnimationPlayer left, MeshAnimationPlayer right) => !left.Equals(right);
 }

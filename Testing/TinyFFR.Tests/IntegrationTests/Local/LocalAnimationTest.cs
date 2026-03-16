@@ -20,6 +20,7 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalAnimationTest {
+	const float AnimBlendTime = 0.5f;
 	(string Filename, float ScalingFactor)[] _filesToLoad;
 	
 	[SetUp]
@@ -62,6 +63,9 @@ class LocalAnimationTest {
 		scene.Add(sunlight);
 		scene.Add(nodeHighlighter);
 		
+		var prevAnimIndex = 0;
+		var prevAnimTimeRemaining = 0f;
+		var prevAnimFreezeTime = 0f;
 		var curFileIndex = -1;
 		var curAnimIndex = 0;
 		var curNodeIndex = 0;
@@ -101,6 +105,7 @@ class LocalAnimationTest {
 				if (curFileIndex >= _filesToLoad.Length) curFileIndex = 0;
 				curAnimIndex = 0;
 				curNodeIndex = 0;
+				prevAnimTimeRemaining = 0f;
 
 				Console.WriteLine("Loading " + _filesToLoad[curFileIndex].Filename + "...");
 				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex].Filename), new ModelCreationConfig() { MeshConfig = new() { LinearRescalingFactor = _filesToLoad[curFileIndex].ScalingFactor, OriginTranslation = (0f, 0f, curFileIndex) }}, new ModelReadConfig() { HandleUriEscapedStrings = true });
@@ -112,6 +117,9 @@ class LocalAnimationTest {
 				UpdateTitle();
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.A) && modelInstanceGroup.HasValue) {
+				prevAnimIndex = curAnimIndex;
+				prevAnimTimeRemaining = AnimBlendTime;
+				prevAnimFreezeTime = (float) loop.TotalIteratedTime.TotalSeconds;
 				++curAnimIndex;
 				if (curAnimIndex >= curAnimCount) curAnimIndex = 0;
 				UpdateTitle();
@@ -174,13 +182,29 @@ class LocalAnimationTest {
 				var isFirst = true;
 				foreach (var mi in modelInstanceGroup) {
 					if (curAnimIndex >= mi.Mesh.Animations.All.Count) continue;
-					if (isFirst) {
-						mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePointAndGetNodeTransform((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationTimestampWrapStyle.Loop, mi.Skeleton.Nodes[curNodeIndex], out var transform);
-						nodeHighlighter.SetTransform(transform * mi.Transform.ToMatrix());
-						nodeHighlighter.SetScaling(1f);
+					
+					if (prevAnimTimeRemaining > 0f && prevAnimIndex < mi.Mesh.Animations.All.Count) {
+						if (isFirst) {
+							mi.GetAnimationPlayer(mi.Animations[curAnimIndex], mi.Animations[prevAnimIndex])
+								.SetTimePointAndGetNodeTransform((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationTimestampWrapStyle.Loop, prevAnimFreezeTime, MeshAnimationTimestampWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime, mi.Skeleton.Nodes[curNodeIndex], out var transform);
+							nodeHighlighter.SetTransform(transform * mi.Transform.ToMatrix());
+							nodeHighlighter.SetScaling(1f);
+						}
+						else {
+							mi.GetAnimationPlayer(mi.Animations[curAnimIndex], mi.Animations[prevAnimIndex])
+								.SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationTimestampWrapStyle.Loop, prevAnimFreezeTime, MeshAnimationTimestampWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime);
+						}
+						prevAnimTimeRemaining -= deltaTime;
 					}
 					else {
-						mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationTimestampWrapStyle.Loop);
+						if (isFirst) {
+							mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePointAndGetNodeTransform((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationTimestampWrapStyle.Loop, mi.Skeleton.Nodes[curNodeIndex], out var transform);
+							nodeHighlighter.SetTransform(transform * mi.Transform.ToMatrix());
+							nodeHighlighter.SetScaling(1f);
+						}
+						else {
+							mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationTimestampWrapStyle.Loop);
+						}	
 					}
 				}
 			}

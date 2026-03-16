@@ -45,7 +45,7 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Apply(ModelInstance targetInstance, float targetTimePointSeconds) {
-		Implementation.Apply(_handle, targetInstance, targetTimePointSeconds);
+		Implementation.Apply(targetInstance, _handle, targetTimePointSeconds);
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -56,7 +56,34 @@ public readonly struct MeshAnimation : IResource<MeshAnimation, IMeshAnimationIm
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ApplyAndGetNodeTransforms(ModelInstance targetInstance, float targetTimePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
-		Implementation.ApplyAndGetNodeTransforms(_handle, targetInstance, targetTimePointSeconds, nodes, modelSpaceTransforms);
+		Implementation.ApplyAndGetNodeTransforms(targetInstance, _handle, targetTimePointSeconds, nodes, modelSpaceTransforms);
+	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void GetBlendedNodeTransform(float targetTimePointSeconds, MeshAnimation blendAnimation, float blendAnimTargetTimePointSeconds, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
+		Unsafe.SkipInit(out modelSpaceTransform);
+		GetBlendedNodeTransforms(targetTimePointSeconds, blendAnimation, blendAnimTargetTimePointSeconds, interpolationDistance, new ReadOnlySpan<MeshNode>(in node), new Span<Matrix4x4>(ref modelSpaceTransform));
+	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void GetBlendedNodeTransforms(float targetTimePointSeconds, MeshAnimation blendAnimation, float blendAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+		Implementation.GetBlendedNodeTransforms(_handle, targetTimePointSeconds, blendAnimation.Handle, blendAnimTargetTimePointSeconds, interpolationDistance, nodes, modelSpaceTransforms);
+	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void ApplyBlended(ModelInstance targetInstance, float targetTimePointSeconds, MeshAnimation blendAnimation, float blendAnimTargetTimePointSeconds, float interpolationDistance) {
+		Implementation.ApplyBlended(targetInstance, _handle, targetTimePointSeconds, blendAnimation.Handle, blendAnimTargetTimePointSeconds, interpolationDistance);
+	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void ApplyBlendedAndGetNodeTransform(ModelInstance targetInstance, float targetTimePointSeconds, MeshAnimation blendAnimation, float blendAnimTargetTimePointSeconds, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
+		Unsafe.SkipInit(out modelSpaceTransform);
+		ApplyBlendedAndGetNodeTransforms(targetInstance, targetTimePointSeconds, blendAnimation, blendAnimTargetTimePointSeconds, interpolationDistance, new ReadOnlySpan<MeshNode>(in node), new Span<Matrix4x4>(ref modelSpaceTransform));
+	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void ApplyBlendedAndGetNodeTransforms(ModelInstance targetInstance, float targetTimePointSeconds, MeshAnimation blendAnimation, float blendAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+		Implementation.ApplyBlendedAndGetNodeTransforms(targetInstance, _handle, targetTimePointSeconds, blendAnimation.Handle, blendAnimTargetTimePointSeconds, interpolationDistance, nodes, modelSpaceTransforms);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

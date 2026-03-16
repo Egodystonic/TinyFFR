@@ -121,13 +121,22 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public MeshAnimationPlayer GetAnimationPlayer(MeshAnimation animation) => new(animation, this);
+	public MeshAnimationPlayer GetAnimationPlayer(MeshAnimation animation) => new(this, animation);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public MeshAnimationPlayer GetAnimationPlayerWithSpeedMultiplier(MeshAnimation animation, float animationSpeedMultiplier) => MeshAnimationPlayer.CreateWithSpeedMultiplier(animation, this, animationSpeedMultiplier);
+	public MeshAnimationPlayer GetAnimationPlayerWithSpeedMultiplier(MeshAnimation animation, float animationSpeedMultiplier) => MeshAnimationPlayer.CreateWithSpeedMultiplier(this, animation, animationSpeedMultiplier);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public MeshAnimationPlayer GetAnimationPlayerWithTargetDuration(MeshAnimation animation, float animationDurationSeconds) => MeshAnimationPlayer.CreateWithTargetDuration(animation, this, animationDurationSeconds);
+	public MeshAnimationPlayer GetAnimationPlayerWithTargetDuration(MeshAnimation animation, float animationDurationSeconds) => MeshAnimationPlayer.CreateWithTargetDuration(this, animation, animationDurationSeconds);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public MeshBlendedAnimationPlayer GetAnimationPlayer(MeshAnimation startAnimation, MeshAnimation endAnimation) => new(this, startAnimation, endAnimation);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public MeshBlendedAnimationPlayer GetAnimationPlayerWithSpeedMultiplier(MeshAnimation startAnimation, float startAnimationSpeedMultiplier, MeshAnimation endAnimation, float endAnimationSpeedMultiplier) => MeshBlendedAnimationPlayer.CreateWithSpeedMultiplier(this, startAnimation, endAnimation, startAnimationSpeedMultiplier, endAnimationSpeedMultiplier);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public MeshBlendedAnimationPlayer GetAnimationPlayerWithTargetDuration(MeshAnimation startAnimation, float startAnimationDurationSeconds, MeshAnimation endAnimation, float endAnimationDurationSeconds) => MeshBlendedAnimationPlayer.CreateWithTargetDuration(this, startAnimation, endAnimation, endAnimationDurationSeconds, endAnimationDurationSeconds);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);

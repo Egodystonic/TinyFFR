@@ -15,6 +15,8 @@ namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDisposable {
 	const string DefaultNodeNamePrefix = "unnamed_node_";
+	readonly record struct StartingAnimationData(ResourceHandle<MeshAnimation> AnimHandle, float TimePointSeconds);
+	readonly record struct EndingAnimationData(ResourceHandle<MeshAnimation> AnimHandle, float TimePointSeconds, float InterpolationDistance);
 	readonly record struct AnimationData(
 		PooledHeapMemory<SkeletalAnimationScalingKeyframe> ScalingKeyframes,
 		PooledHeapMemory<SkeletalAnimationRotationKeyframe> RotationKeyframes,
@@ -188,7 +190,9 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		for (var m = 0; m < nodeMutations.Buffer.Length; ++m) {
 			nodeMutations.Buffer[m] = nodeMutations.Buffer[m] with { TargetNodeIndex = skeleton.MutationTargetIndexMap.Buffer[nodeMutations.Buffer[m].TargetNodeIndex] };
 		}
-		// We pre-sort the mutations by target node index to get better cache locality later when writing the animation matrices to the workspace buffer
+		// We pre-sort the mutations by target node index for the following reasons:
+		// 1) Get better cache locality later when writing the animation matrices to the workspace buffer
+		// 2) When blending animations we actually rely on them being sorted
 		nodeMutations.Buffer.Sort(static (a, b) => a.TargetNodeIndex.CompareTo(b.TargetNodeIndex));
 		var data = new AnimationData(scalingKeyframes, rotationKeyframes, translationKeyframes, nodeMutations, defaultCompletionTimeSeconds);
 		
@@ -311,46 +315,35 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		CopyRequestedNodeTransformsFromWorkspace(nodes, modelSpaceTransforms);
 	}
 	
-	void WriteAnimationNodeTransformsToWorkspace(ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		if (_currentSkeleton is not { } skeleton) return;
-
-		var workspace = skeleton.Workspace.Buffer;
-		var parents = skeleton.ParentIndices.Buffer;
-		var firstParentedNodeIndex = skeleton.FirstParentedNodeIndex;
+	static TValue InterpolateKeyframes<T, TValue>(ReadOnlySpan<T> keys, float targetTimeSecs) where T : IAnimationKeyframe<TValue> {
+		if (keys.Length == 0) return T.FallbackValue;
+		if (keys.Length == 1 || targetTimeSecs <= keys[0].TimeKeySeconds) return keys[0].Value;
+		if (targetTimeSecs >= keys[^1].TimeKeySeconds) return keys[^1].Value;
 		
-		var animation = _animationDataMap[handle];
-		var nodeCount = skeleton.NodeCount;
-		var mutations = animation.BoneMutationDescriptors.Buffer;
-		var translationKeys = animation.TranslationKeyframes.Buffer;
-		var rotationKeys = animation.RotationKeyframes.Buffer;
-		var scalingKeys = animation.ScalingKeyframes.Buffer;
-		
-		static TValue InterpolateKeyframes<T, TValue>(ReadOnlySpan<T> keys, float targetTimeSecs) where T : IAnimationKeyframe<TValue> {
-			if (keys.Length == 0) return T.FallbackValue;
-			if (keys.Length == 1 || targetTimeSecs <= keys[0].TimeKeySeconds) return keys[0].Value;
-			if (targetTimeSecs >= keys[^1].TimeKeySeconds) return keys[^1].Value;
-			
-			// Binary search
-			var lowIndex = 0;
-			var highIndex = keys.Length - 1;
-			while (lowIndex < highIndex - 1) {
-				var midpointIndex = (lowIndex + highIndex) >> 1;
-				if (keys[midpointIndex].TimeKeySeconds <= targetTimeSecs) lowIndex = midpointIndex;
-				else highIndex = midpointIndex;
-			}
-			
-			var low = keys[lowIndex];
-			var high = keys[highIndex];
-			return T.InterpolateValues(
-				low.Value,
-				high.Value, 
-				Real.GetInterpolationDistance(low.TimeKeySeconds, high.TimeKeySeconds, targetTimeSecs)
-			);
+		// Binary search
+		var lowIndex = 0;
+		var highIndex = keys.Length - 1;
+		while (lowIndex < highIndex - 1) {
+			var midpointIndex = (lowIndex + highIndex) >> 1;
+			if (keys[midpointIndex].TimeKeySeconds <= targetTimeSecs) lowIndex = midpointIndex;
+			else highIndex = midpointIndex;
 		}
 		
-		skeleton.DefaultLocalTransforms.Buffer.CopyTo(workspace);
-
+		var low = keys[lowIndex];
+		var high = keys[highIndex];
+		return T.InterpolateValues(
+			low.Value,
+			high.Value, 
+			Real.GetInterpolationDistance(low.TimeKeySeconds, high.TimeKeySeconds, targetTimeSecs)
+		);
+	}
+	
+	void InterpolateKeyframesInToWorkspace(AnimationData anim, float targetTimePointSeconds, Span<Matrix4x4> workspace) {
+		var mutations = anim.BoneMutationDescriptors.Buffer;
+		var translationKeys = anim.TranslationKeyframes.Buffer;
+		var rotationKeys = anim.RotationKeyframes.Buffer;
+		var scalingKeys = anim.ScalingKeyframes.Buffer;
+		
 		for (var i = 0; i < mutations.Length; ++i) {
 			var mutation = mutations[i];
 			var transform = new Transform(
@@ -360,6 +353,101 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 			);
 
 			transform.ToMatrix(out workspace[mutation.TargetNodeIndex]);
+		}
+	}
+	
+	void InterpolateKeyframesInToWorkspace(AnimationData startAnim, float startTargetTimePointSeconds, AnimationData endAnim, float endTargetTimePointSeconds, float interpolationDistance, Span<Matrix4x4> workspace) {
+		var startMutations = startAnim.BoneMutationDescriptors.Buffer;
+		var startTranslationKeys = startAnim.TranslationKeyframes.Buffer;
+		var startRotationKeys = startAnim.RotationKeyframes.Buffer;
+		var startScalingKeys = startAnim.ScalingKeyframes.Buffer;
+		
+		var endMutations = endAnim.BoneMutationDescriptors.Buffer;
+		var endTranslationKeys = endAnim.TranslationKeyframes.Buffer;
+		var endRotationKeys = endAnim.RotationKeyframes.Buffer;
+		var endScalingKeys = endAnim.ScalingKeyframes.Buffer;
+		
+		var startMutationsCursor = 0;
+		var endMutationsCursor = 0;
+		
+		for (var i = 0; i < workspace.Length; ++i) {
+			switch ((startMutationsCursor < startMutations.Length && startMutations[startMutationsCursor].TargetNodeIndex == i, endMutationsCursor < endMutations.Length && endMutations[endMutationsCursor].TargetNodeIndex == i)) {
+				case (true, true): {
+					var startMutation = startMutations[startMutationsCursor];
+					var startTransform = new Transform(
+						scaling: InterpolateKeyframes<SkeletalAnimationScalingKeyframe, Vect>(startScalingKeys.Slice(startMutation.ScalingKeyframeStartIndex, startMutation.ScalingKeyframeCount), startTargetTimePointSeconds),
+						rotationQuaternion: InterpolateKeyframes<SkeletalAnimationRotationKeyframe, Quaternion>(startRotationKeys.Slice(startMutation.RotationKeyframeStartIndex, startMutation.RotationKeyframeCount), startTargetTimePointSeconds),
+						translation: InterpolateKeyframes<SkeletalAnimationTranslationKeyframe, Vect>(startTranslationKeys.Slice(startMutation.TranslationKeyframeStartIndex, startMutation.TranslationKeyframeCount), startTargetTimePointSeconds)
+					);
+					var endMutation = endMutations[endMutationsCursor];
+					var endTransform = new Transform(
+						scaling: InterpolateKeyframes<SkeletalAnimationScalingKeyframe, Vect>(endScalingKeys.Slice(endMutation.ScalingKeyframeStartIndex, endMutation.ScalingKeyframeCount), endTargetTimePointSeconds),
+						rotationQuaternion: InterpolateKeyframes<SkeletalAnimationRotationKeyframe, Quaternion>(endRotationKeys.Slice(endMutation.RotationKeyframeStartIndex, endMutation.RotationKeyframeCount), endTargetTimePointSeconds),
+						translation: InterpolateKeyframes<SkeletalAnimationTranslationKeyframe, Vect>(endTranslationKeys.Slice(endMutation.TranslationKeyframeStartIndex, endMutation.TranslationKeyframeCount), endTargetTimePointSeconds)
+					);
+					
+					Transform.Interpolate(startTransform, endTransform, interpolationDistance).ToMatrix(out workspace[i]);
+					
+					while (startMutationsCursor < startMutations.Length && startMutations[startMutationsCursor].TargetNodeIndex <= i) ++startMutationsCursor;
+					while (endMutationsCursor < endMutations.Length && endMutations[endMutationsCursor].TargetNodeIndex <= i) ++endMutationsCursor;
+					break;
+				}
+				case (true, false): {
+					var mutation = startMutations[startMutationsCursor];
+					var transform = new Transform(
+						scaling: InterpolateKeyframes<SkeletalAnimationScalingKeyframe, Vect>(startScalingKeys.Slice(mutation.ScalingKeyframeStartIndex, mutation.ScalingKeyframeCount), startTargetTimePointSeconds),
+						rotationQuaternion: InterpolateKeyframes<SkeletalAnimationRotationKeyframe, Quaternion>(startRotationKeys.Slice(mutation.RotationKeyframeStartIndex, mutation.RotationKeyframeCount), startTargetTimePointSeconds),
+						translation: InterpolateKeyframes<SkeletalAnimationTranslationKeyframe, Vect>(startTranslationKeys.Slice(mutation.TranslationKeyframeStartIndex, mutation.TranslationKeyframeCount), startTargetTimePointSeconds)
+					);
+					transform.ToMatrix(out workspace[mutation.TargetNodeIndex]);
+					
+					while (startMutationsCursor < startMutations.Length && startMutations[startMutationsCursor].TargetNodeIndex <= i) ++startMutationsCursor;
+					break;
+				}
+				case (false, true): {
+					var mutation = endMutations[endMutationsCursor];
+					var transform = new Transform(
+						scaling: InterpolateKeyframes<SkeletalAnimationScalingKeyframe, Vect>(endScalingKeys.Slice(mutation.ScalingKeyframeStartIndex, mutation.ScalingKeyframeCount), endTargetTimePointSeconds),
+						rotationQuaternion: InterpolateKeyframes<SkeletalAnimationRotationKeyframe, Quaternion>(endRotationKeys.Slice(mutation.RotationKeyframeStartIndex, mutation.RotationKeyframeCount), endTargetTimePointSeconds),
+						translation: InterpolateKeyframes<SkeletalAnimationTranslationKeyframe, Vect>(endTranslationKeys.Slice(mutation.TranslationKeyframeStartIndex, mutation.TranslationKeyframeCount), endTargetTimePointSeconds)
+					);
+					transform.ToMatrix(out workspace[mutation.TargetNodeIndex]);
+					
+					while (endMutationsCursor < endMutations.Length && endMutations[endMutationsCursor].TargetNodeIndex <= i) ++endMutationsCursor;
+					break;
+				}
+			}
+		}
+	}
+	
+	void WriteAnimationNodeTransformsToWorkspace(StartingAnimationData startAnimData, EndingAnimationData? endAnimData) {
+		ThrowIfThisOrHandleIsDisposed(startAnimData.AnimHandle);
+		if (endAnimData.HasValue) ObjectDisposedException.ThrowIf(IsDisposed(endAnimData.Value.AnimHandle), typeof(MeshAnimation));
+		if (_currentSkeleton is not { } skeleton) return;
+
+		var workspace = skeleton.Workspace.Buffer;
+		var parents = skeleton.ParentIndices.Buffer;
+		var firstParentedNodeIndex = skeleton.FirstParentedNodeIndex;
+		var nodeCount = skeleton.NodeCount;
+		
+		skeleton.DefaultLocalTransforms.Buffer.CopyTo(workspace);
+
+		if (endAnimData is { } endAnimDataValue) {
+			InterpolateKeyframesInToWorkspace(
+				_animationDataMap[startAnimData.AnimHandle], 
+				startAnimData.TimePointSeconds, 
+				_animationDataMap[endAnimDataValue.AnimHandle], 
+				endAnimDataValue.TimePointSeconds, 
+				endAnimDataValue.InterpolationDistance, 
+				workspace
+			);
+		}
+		else {
+			InterpolateKeyframesInToWorkspace(
+				_animationDataMap[startAnimData.AnimHandle], 
+				startAnimData.TimePointSeconds, 
+				workspace
+			);
 		}
 
 		for (var i = 0; i < firstParentedNodeIndex; ++i) {
@@ -399,9 +487,28 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 			}	
 		}
 	}
-	
-	public void Apply(ResourceHandle<MeshAnimation> handle, ModelInstance targetInstance, float targetTimePointSeconds) {
-		ThrowIfThisOrHandleIsDisposed(handle);
+
+	public void Apply(ModelInstance targetInstance, ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds) {
+		Apply(targetInstance, new(handle, targetTimePointSeconds), null);
+	}
+	public void GetNodeTransforms(ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+		GetNodeTransforms(new(handle, targetTimePointSeconds), null, nodes, modelSpaceTransforms);
+	}
+	public void ApplyAndGetNodeTransforms(ModelInstance targetInstance, ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+		ApplyAndGetNodeTransforms(targetInstance, new(handle, targetTimePointSeconds), null, nodes, modelSpaceTransforms);
+	}
+	public void ApplyBlended(ModelInstance targetInstance, ResourceHandle<MeshAnimation> startAnimHandle, float startAnimTargetTimePointSeconds, ResourceHandle<MeshAnimation> endAnimHandle, float endAnimTargetTimePointSeconds, float interpolationDistance) {
+		Apply(targetInstance, new(startAnimHandle, startAnimTargetTimePointSeconds), new EndingAnimationData(endAnimHandle, endAnimTargetTimePointSeconds, interpolationDistance));
+	}
+	public void GetBlendedNodeTransforms(ResourceHandle<MeshAnimation> startAnimHandle, float startAnimTargetTimePointSeconds, ResourceHandle<MeshAnimation> endAnimHandle, float endAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+		GetNodeTransforms(new(startAnimHandle, startAnimTargetTimePointSeconds), new EndingAnimationData(endAnimHandle, endAnimTargetTimePointSeconds, interpolationDistance), nodes, modelSpaceTransforms);
+	}
+	public void ApplyBlendedAndGetNodeTransforms(ModelInstance targetInstance, ResourceHandle<MeshAnimation> startAnimHandle, float startAnimTargetTimePointSeconds, ResourceHandle<MeshAnimation> endAnimHandle, float endAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+		ApplyAndGetNodeTransforms(targetInstance, new(startAnimHandle, startAnimTargetTimePointSeconds), new EndingAnimationData(endAnimHandle, endAnimTargetTimePointSeconds, interpolationDistance), nodes, modelSpaceTransforms);
+	}
+
+	void Apply(ModelInstance targetInstance, StartingAnimationData startAnimData, EndingAnimationData? endAnimData) {
+		ThrowIfThisIsDisposed();
 		if (_currentSkeleton is not { } skeleton) return;
 		if (targetInstance.Mesh != skeleton.OwningMesh) {
 			throw new InvalidOperationException(
@@ -409,7 +516,8 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 				$"Model instance is using {targetInstance.Mesh}, {nameof(MeshAnimationIndex)} is for {skeleton.OwningMesh}."
 			);
 		}
-		WriteAnimationNodeTransformsToWorkspace(handle, targetTimePointSeconds);
+		
+		WriteAnimationNodeTransformsToWorkspace(startAnimData, endAnimData);
 
 		var workspace = skeleton.Workspace.Buffer;
 		var bindPoseInversions = skeleton.BindPoseInversions.Buffer;
@@ -435,13 +543,13 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		}
 	}
 
-	public void ApplyAndGetNodeTransforms(ResourceHandle<MeshAnimation> handle, ModelInstance targetInstance, float targetTimePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
-		Apply(handle, targetInstance, targetTimePointSeconds);
+	void ApplyAndGetNodeTransforms(ModelInstance targetInstance, StartingAnimationData startAnimData, EndingAnimationData? endAnimData, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+		Apply(targetInstance, startAnimData, endAnimData);
 		CopyRequestedNodeTransformsFromWorkspace(nodes, modelSpaceTransforms);
 	}
 
-	public void GetNodeTransforms(ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
-		WriteAnimationNodeTransformsToWorkspace(handle, targetTimePointSeconds);
+	void GetNodeTransforms(StartingAnimationData startAnimData, EndingAnimationData? endAnimData, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+		WriteAnimationNodeTransformsToWorkspace(startAnimData, endAnimData);
 		CopyRequestedNodeTransformsFromWorkspace(nodes, modelSpaceTransforms);
 	}
 
