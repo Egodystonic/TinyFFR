@@ -74,7 +74,7 @@ partial struct Location :
 	static Location IMultiplicative<Location, float, Location>.operator *(float left, Location right) => right.ScaledFromOriginBy(left);
 	Location IScalable<Location>.ScaledBy(float scalar) => ScaledFromOriginBy(scalar);
 	Location IIndependentAxisScalable<Location>.ScaledBy(Vect vect) => ScaledFromOriginBy(vect);
-	Location IPointIndependentAxisScalable<Location>.ScaledBy(Vect vect, Location scalingOrigin) => TransformedBy(new(scaling: vect), scalingOrigin);
+	Location IPointIndependentAxisScalable<Location>.ScaledBy(Vect vect, Location scalingOrigin) => TransformedBy(new Transform(scaling: vect), scalingOrigin);
 	public Location ScaledFromOriginBy(float scalar) => FromVector3(ToVector3() * scalar);
 	public Location ScaledFromOriginBy(Vect vect) => FromVector3(ToVector3() * vect.ToVector3());
 
@@ -83,8 +83,11 @@ partial struct Location :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Location operator *(Transform transform, Location location) => location.TransformedAroundOriginBy(transform);
 	Location ITransformable<Location>.TransformedBy(Transform transform) => TransformedAroundOriginBy(transform);
+	Location ITransformable<Location>.TransformedBy(Matrix4x4 transformMatrix) => TransformedAroundOriginBy(transformMatrix);
 	public Location TransformedAroundOriginBy(Transform transform) => AsVect().TransformedBy(transform).AsLocation();
 	public Location TransformedBy(Transform transform, Location transformationOrigin) => transformationOrigin + (transformationOrigin >> this).TransformedBy(transform);
+	public Location TransformedAroundOriginBy(Matrix4x4 transformMatrix) => AsVect().TransformedBy(transformMatrix).AsLocation();
+	public Location TransformedBy(Matrix4x4 transformMatrix, Location transformationOrigin) => transformationOrigin + (transformationOrigin >> this).TransformedBy(transformMatrix);
 	#endregion
 
 	#region Clamping and Interpolation

@@ -89,7 +89,7 @@ class LocalAnimationTest {
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) {
-			var deltaTime = (float) loop.IterateOnce().TotalSeconds;
+			var deltaTime = loop.IterateOnce().AsDeltaTime();
 			
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
 				if (modelInstanceGroup is {} i) {

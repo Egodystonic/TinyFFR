@@ -192,12 +192,20 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 	public static BoundedRay operator *(BoundedRay ray, Transform transform) => ray.TransformedAroundStartBy(transform);
 	public static BoundedRay operator *(Transform transform, BoundedRay ray) => ray.TransformedAroundStartBy(transform);
 	BoundedRay ITransformable<BoundedRay>.TransformedBy(Transform transform) => TransformedAroundStartBy(transform);
+	BoundedRay ITransformable<BoundedRay>.TransformedBy(Matrix4x4 transformMatrix) => ((IPointTransformable<BoundedRay>) this).TransformedAroundOriginBy(transformMatrix);
 	public BoundedRay TransformedAroundStartBy(Transform transform) => TransformedBy(transform, StartPoint);
 	public BoundedRay TransformedAroundMiddleBy(Transform transform) => TransformedBy(transform, MiddlePoint);
 	public BoundedRay TransformedAroundEndBy(Transform transform) => TransformedBy(transform, EndPoint);
 	public BoundedRay TransformedAroundOriginBy(Transform transform) => ScaledFromOriginBy(transform.Scaling).RotatedAroundOriginBy(transform.Rotation).MovedBy(transform.Translation);
 	public BoundedRay TransformedBy(Transform transform, float transformationOriginSignedDistance) => TransformedBy(transform, UnboundedLocationAtDistance(transformationOriginSignedDistance));
 	public BoundedRay TransformedBy(Transform transform, Location transformationOrigin) => ScaledBy(transform.Scaling, transformationOrigin).RotatedBy(transform.Rotation, transformationOrigin).MovedBy(transform.Translation);
+	BoundedRay IPointTransformable<BoundedRay>.TransformedAroundOriginBy(Matrix4x4 transformMatrix) {
+		return new(StartPoint.AsVect().TransformedBy(transformMatrix).AsLocation(), EndPoint.AsVect().TransformedBy(transformMatrix).AsLocation());
+	}
+	// This isn't the same as with Transform, which is why it is (and all Matrix overloads are) explicit
+	BoundedRay IPointTransformable<BoundedRay>.TransformedBy(Matrix4x4 transformMatrix, Location transformationOrigin) {
+		return new(StartPoint.TransformedBy(transformMatrix, transformationOrigin), EndPoint.TransformedBy(transformMatrix, transformationOrigin));
+	}
 	#endregion
 
 	#region Distance / Closest Point / Containment

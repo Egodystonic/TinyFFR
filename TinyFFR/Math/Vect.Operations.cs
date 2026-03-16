@@ -219,6 +219,7 @@ partial struct Vect :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vect operator *(Transform transform, Vect v) => v.TransformedBy(transform);
 	public Vect TransformedBy(Transform transform) => ScaledBy(transform.Scaling).RotatedBy(transform.Rotation).Plus(transform.Translation);
+	public Vect TransformedBy(Matrix4x4 transformMatrix) => FromVector3(Transform(ToVector3(), transformMatrix).AsVector3());
 	#endregion
 
 	#region Clamping and Interpolation

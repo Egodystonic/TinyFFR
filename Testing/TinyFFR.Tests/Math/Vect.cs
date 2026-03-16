@@ -679,6 +679,11 @@ class VectTest {
 		);
 		Assert.AreEqual(OneTwoNegThree.TransformedBy(transform), OneTwoNegThree * transform);
 		Assert.AreEqual(OneTwoNegThree.TransformedBy(transform), transform * OneTwoNegThree);
+		
+		for (var i = 0; i < 10000; ++i) {
+			var t = Transform.Random();
+			AssertToleranceEquals(OneTwoNegThree.TransformedBy(t), OneTwoNegThree.TransformedBy(t.ToMatrix()), 0.01f);
+		}
 	}
 
 	[Test]

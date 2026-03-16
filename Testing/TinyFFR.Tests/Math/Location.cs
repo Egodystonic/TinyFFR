@@ -316,6 +316,11 @@ class LocationTest {
 			OneTwoNegThree.TransformedBy(transform, Location.Origin),
 			TestTolerance
 		);
+		AssertToleranceEquals(
+			OneTwoNegThree.TransformedAroundOriginBy(transform),
+			OneTwoNegThree.TransformedAroundOriginBy(transform.ToMatrix()),
+			TestTolerance
+		);
 
 		var transformOrigin = new Location(-1f, 0f, 2f);
 		AssertToleranceEquals(
@@ -323,6 +328,11 @@ class LocationTest {
 			OneTwoNegThree.TransformedBy(transform, transformOrigin),
 			TestTolerance
 		);
+		
+		for (var i = 0; i < 10000; ++i) {
+			var t = Transform.Random();
+			AssertToleranceEquals(OneTwoNegThree.TransformedBy(t, transformOrigin), OneTwoNegThree.TransformedBy(t.ToMatrix(), transformOrigin), 0.01f);
+		}
 	}
 
 	[Test]

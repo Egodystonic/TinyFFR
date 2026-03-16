@@ -37,6 +37,9 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetTransform(Transform transform) => Transform = transform;
+	public void SetTransform(Matrix4x4 transformMatrix) {
+		for (var i = 0; i < Count; ++i) Instances[i].SetTransform(transformMatrix);
+	}
 
 	public Location Position {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

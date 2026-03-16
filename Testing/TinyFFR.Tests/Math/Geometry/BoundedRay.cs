@@ -804,6 +804,13 @@ class BoundedRayTest {
 			TestRay.TransformedBy(transform, arbitraryPoint),
 			TestTolerance
 		);
+		
+		for (var i = 0; i < 10000; ++i) {
+			var t = Transform.Random();
+			AssertToleranceEquals(TestRay.TransformedAroundOriginBy(t), ((IPointTransformable<BoundedRay>) TestRay).TransformedAroundOriginBy(t.ToMatrix()), 0.01f);
+			var expectation = new BoundedRay(TestRay.StartPoint.TransformedBy(t, arbitraryPoint), TestRay.EndPoint.TransformedBy(t, arbitraryPoint));
+			AssertToleranceEquals(expectation, ((IPointTransformable<BoundedRay>) TestRay).TransformedBy(t.ToMatrix(), arbitraryPoint), 0.01f);
+		}
 	}
 
 	[Test]

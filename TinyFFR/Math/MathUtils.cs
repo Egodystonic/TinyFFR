@@ -1,6 +1,8 @@
 ﻿// Created on 2023-10-19 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
+using System.Globalization;
+
 namespace Egodystonic.TinyFFR;
 
 public static class MathUtils {
@@ -74,5 +76,46 @@ public static class MathUtils {
 			rotationQuat,
 			new Vect(xScale, yScale, zScale)
 		);
+	}
+	
+	// This is pretty ugly code, I wrote it while debugging some stuff and figured it's still
+	// kinda useful for debugging at times.
+	public static string ToStringDescriptive(this Matrix4x4 @this) {
+		var result = "<";
+		var isIdentity = true;
+		var isOnlyTranslation = true;
+		for (var r = 0; r < 4; ++r) {
+			for (var c = 0; c < 4; ++c) {
+				var val2dp = @this[r, c].ToString("N2", CultureInfo.InvariantCulture);
+				result += val2dp + (r == 3 && c == 3 ? ">" : " ");
+				if (MathF.Abs(Matrix4x4.Identity[r, c] - @this[r, c]) > 0.001f) {
+					isIdentity = false;
+					if (r != 3) isOnlyTranslation = false;
+				}
+			}
+			if (r != 3) result += "| ";
+		}
+
+		if (isIdentity) return "Identity";
+		if (isOnlyTranslation) return $"Translation[{@this[3, 0]:N2}/{@this[3,1]:N2}/{@this[3,2]:N2}]";
+
+		foreach (var c in OrientationUtils.AllCardinals) {
+			var rotMat = new Transform(rotation: 90f % c.ToDirection()).ToMatrix();
+			for (var x = 0; x < 3; ++x) {
+				for (var y = 0; y < 3; ++y) {
+					if (MathF.Abs(rotMat[x, y] - @this[x, y]) >= 0.001f) {
+						goto noMatch;
+					}
+				}
+			}
+			result = "Rotation[" + new Angle(90f).ToString("N0", CultureInfo.InvariantCulture) + " around " + c +"]";
+			if (MathF.Abs(@this[3, 0]) > 0.001f || MathF.Abs(@this[3, 1]) > 0.001f || MathF.Abs(@this[3, 2]) > 0.001f) {
+				result += $"Translation[{@this[3, 0]:N2}/{@this[3,1]:N2}/{@this[3,2]:N2}]";
+			}
+			return result;
+			noMatch: continue;
+		}
+
+		return result;
 	}
 }

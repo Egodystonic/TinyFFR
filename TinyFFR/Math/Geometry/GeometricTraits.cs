@@ -63,6 +63,7 @@ public interface ITransformable<TSelf> :
 	IMultiplyOperators<TSelf, Transform, TSelf>
 	where TSelf : ITransformable<TSelf>, IIndependentAxisScalable<TSelf>, IRotatable<TSelf>, ITranslatable<TSelf> {
 	TSelf TransformedBy(Transform transform);
+	TSelf TransformedBy(Matrix4x4 transformMatrix);
 	static abstract TSelf operator *(Transform left, TSelf right);
 }
 
@@ -71,6 +72,8 @@ public interface IPointTransformable<TSelf> :
 	where TSelf : IPointTransformable<TSelf>, ITransformable<TSelf>, IPointIndependentAxisScalable<TSelf>, IPointRotatable<TSelf> {
 	TSelf TransformedBy(Transform transform, Location transformationOrigin);
 	TSelf TransformedAroundOriginBy(Transform transform);
+	TSelf TransformedBy(Matrix4x4 transformMatrix, Location transformationOrigin);
+	TSelf TransformedAroundOriginBy(Matrix4x4 transformMatrix);
 }
 #endregion
 
