@@ -399,8 +399,15 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 						rotationQuaternion: InterpolateKeyframes<SkeletalAnimationRotationKeyframe, Quaternion>(startRotationKeys.Slice(mutation.RotationKeyframeStartIndex, mutation.RotationKeyframeCount), startTargetTimePointSeconds),
 						translation: InterpolateKeyframes<SkeletalAnimationTranslationKeyframe, Vect>(startTranslationKeys.Slice(mutation.TranslationKeyframeStartIndex, mutation.TranslationKeyframeCount), startTargetTimePointSeconds)
 					);
-					transform.ToMatrix(out workspace[mutation.TargetNodeIndex]);
-					
+
+					if (Matrix4x4.Decompose(workspace[i], out var defaultScaling, out var defaultRotation, out var defaultTranslation)) {
+						var defaultTransform = new Transform(Vect.FromVector3(defaultTranslation), defaultRotation, Vect.FromVector3(defaultScaling));
+						Transform.Interpolate(transform, defaultTransform, interpolationDistance).ToMatrix(out workspace[i]);
+					}
+					else {
+						transform.ToMatrix(out workspace[i]);
+					}
+
 					while (startMutationsCursor < startMutations.Length && startMutations[startMutationsCursor].TargetNodeIndex <= i) ++startMutationsCursor;
 					break;
 				}
@@ -411,8 +418,15 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 						rotationQuaternion: InterpolateKeyframes<SkeletalAnimationRotationKeyframe, Quaternion>(endRotationKeys.Slice(mutation.RotationKeyframeStartIndex, mutation.RotationKeyframeCount), endTargetTimePointSeconds),
 						translation: InterpolateKeyframes<SkeletalAnimationTranslationKeyframe, Vect>(endTranslationKeys.Slice(mutation.TranslationKeyframeStartIndex, mutation.TranslationKeyframeCount), endTargetTimePointSeconds)
 					);
-					transform.ToMatrix(out workspace[mutation.TargetNodeIndex]);
-					
+
+					if (Matrix4x4.Decompose(workspace[i], out var defaultScaling, out var defaultRotation, out var defaultTranslation)) {
+						var defaultTransform = new Transform(Vect.FromVector3(defaultTranslation), defaultRotation, Vect.FromVector3(defaultScaling));
+						Transform.Interpolate(defaultTransform, transform, interpolationDistance).ToMatrix(out workspace[i]);
+					}
+					else {
+						transform.ToMatrix(out workspace[i]);
+					}
+
 					while (endMutationsCursor < endMutations.Length && endMutations[endMutationsCursor].TargetNodeIndex <= i) ++endMutationsCursor;
 					break;
 				}
