@@ -123,9 +123,12 @@ partial struct Rotation :
 	public static Rotation Interpolate(Rotation start, Rotation end, float distance) => FromQuaternion(Interpolate(start.ToQuaternion(), end.ToQuaternion(), distance));
 	public static Quaternion Interpolate(Quaternion start, Quaternion end, float distance) {
 		const float CosPhiMinForLinearRenormalization = 1f - 1E-3f;
-		return MathF.Abs(Dot(start, end)) > CosPhiMinForLinearRenormalization
-			? ApproximatelyInterpolate(start, end, distance)
-			: AccuratelyInterpolate(start, end, distance);
+
+		return Dot(start, end) switch {
+			> CosPhiMinForLinearRenormalization => ApproximatelyInterpolate(start, end, distance),
+			< -CosPhiMinForLinearRenormalization => ApproximatelyInterpolate(start, Negate(end), distance),
+			_ => AccuratelyInterpolate(start, end, distance)
+		};
 	}
 
 	public static Rotation AccuratelyInterpolate(Rotation start, Rotation end, float distance) => FromQuaternion(AccuratelyInterpolate(start.ToQuaternion(), end.ToQuaternion(), distance));
