@@ -123,8 +123,22 @@ class LocalModelLoadingTest {
 				
 				curFileIndex++;
 				if (curFileIndex >= _filesToLoad.Length) curFileIndex = 0;
-				
+
+				Console.WriteLine(_filesToLoad[curFileIndex]);
 				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), new ModelCreationConfig(), new ModelReadConfig() { MeshConfig = new() { LoadSkeletalAnimationDataIfPresent = false, CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true });
+				Console.WriteLine("\tMeshes:");
+				foreach (var mesh in loadedResources.Value.Meshes) {
+					Console.WriteLine("\t\t" + mesh);
+				}
+				Console.WriteLine("\tMaterials:");
+				foreach (var mat in loadedResources.Value.Materials) {
+					Console.WriteLine("\t\t" + mat);
+				}
+				Console.WriteLine("\tTextures:");
+				foreach (var tex in loadedResources.Value.Textures) {
+					Console.WriteLine("\t\t" + tex);
+				}
+				Console.WriteLine();
 
 				modelInstances = factory.ObjectBuilder.CreateModelInstanceGroup(loadedResources.Value);
 				scene.Add(modelInstances.Value);

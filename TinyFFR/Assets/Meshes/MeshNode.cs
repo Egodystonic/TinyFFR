@@ -42,7 +42,7 @@ public readonly struct MeshNode : IResource<MeshNode, IMeshNodeImplProvider> {
 	}
 	#endregion
 	
-	public override string ToString() => $"Mesh Node \"{GetNameAsNewStringObject()}\"";
+	public override string ToString() => $"Mesh Node {_handle.AsInteger} \"{GetNameAsNewStringObject()}\"";
 
 	#region Equality
 	public bool Equals(MeshNode other) => _handle == other._handle && _impl.Equals(other._impl);

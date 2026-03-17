@@ -39,10 +39,23 @@ class LocalAnimationTest {
 
 	[TearDown]
 	public void TearDownTest() { }
+	
+	void TestRepeatNodeNames(LocalTinyFfrFactory factory) {
+		using var rGroup = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/Fox.glb"));
+		var mesh = rGroup.Meshes[0];
+		factory.AssetLoader.MeshBuilder.SetNodeName(mesh, 0, mesh.Skeleton.Nodes[1].GetNameAsNewStringObject());
+		factory.AssetLoader.MeshBuilder.SetNodeName(mesh, 5, "foxnode");
+		factory.AssetLoader.MeshBuilder.SetNodeName(mesh, 6, "foxnode");
+		factory.AssetLoader.MeshBuilder.SetNodeName(mesh, 7, "foxnode");
+		factory.AssetLoader.MeshBuilder.SetNodeName(mesh, 8, "foxnode");
+		
+		Assert.AreEqual(mesh.Skeleton.Nodes.Count, mesh.Skeleton.Nodes.Select(n => n.GetNameAsNewStringObject()).Distinct().Count());
+	}
 
 	[Test]
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
+		TestRepeatNodeNames(factory);
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Press Space");
 		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f));
@@ -65,7 +78,6 @@ class LocalAnimationTest {
 		
 		var prevAnimIndex = 0;
 		var prevAnimTimeRemaining = 0f;
-		var prevAnimFreezeTime = 0f;
 		var curFileIndex = -1;
 		var curAnimIndex = 0;
 		var curNodeIndex = 0;
@@ -119,7 +131,6 @@ class LocalAnimationTest {
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.A) && modelInstanceGroup.HasValue) {
 				prevAnimIndex = curAnimIndex;
 				prevAnimTimeRemaining = AnimBlendTime;
-				prevAnimFreezeTime = (float) loop.TotalIteratedTime.TotalSeconds;
 				++curAnimIndex;
 				if (curAnimIndex >= curAnimCount) curAnimIndex = 0;
 				UpdateTitle();

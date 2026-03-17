@@ -17,6 +17,17 @@ If you don't have a specific issue you wish to address, and instead are just loo
 
 Feel free to comment on any issue asking for more direction and help if you need!
 
+# LLM Usage Policy
+
+LLMs (branded as AI) can be extremely useful for certain software engineering tasks, and this repository has a `CLAUDE.md` at its root to enable/assist working with claude code. However, there are some best practices that are humbly requested when using LLMs to contribute to TinyFFR:
+
+* Please do not submit any purely "vibe coded" submissions/PRs. Using an LLM to fix bugs/implement features is okay, but YOU (the software engineer) are the only one actually capable of long-term thinking and understanding what's being submitted. An LLM is just a series of linear algebra functions operating on a transformation of curated model data; it is not an actual intelligence; YOU must understand every line of code submitted and be able to justify its inclusion. Previous experiments with fully agent-directed patches have resulted in sub-optimal results.
+* LLMs are best at conversational tasks. Claude Opus in particular has shown great aptitude in understanding the TinyFFR codebase and can help you work through it in the capacity of a primary TinyFFR contributor. I personally have found Claude to be best in planning mode when working through features + bugfixes in TinyFFR, I often "discuss" approaches with it before writing the implementation myself. However:
+* You must be prepared to challenge the LLM's feedback; they will confidently provide incorrect or sub-optimal approaches to a given task unless challenged further. They are also engineered to respond with sycophantic language towards the user, disregard any complimentary appraisals of your approach as white-noise.
+* Because of their inability to strategise and limited context windows, for actually writing code I tend to find LLMs most useful for "menial" tasks such as tedious naming changes that can't be handled by the IDE alone. They can be useful for writing unit tests too- but with supervision (you must understand every line being written).
+
+TinyFFR has been in development for a number of years, including before LLMs were available. Exactly 0 lines of code in the codebase are "vibe-coded"; this can be verified by looking through the codebase and noticing my personal idiosyncrasies are common throughout. A lot of care and thought has been put in to every design decision in TinyFFR, an approach that will not change with the now-industry-standard adoption of LLMs/coding agents.
+
 # Code & Design Guidelines
 
 The following guidelines are not meant to dissuade anyone from contributing. If you wish, simply scan through and read the "Important" bubbles for a quick starting point.

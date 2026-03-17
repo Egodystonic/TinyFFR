@@ -18,6 +18,12 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Assets.Local;
 
 unsafe partial class LocalAssetLoader {
+	const int ResourceNameIndexSpaceMax = 20;
+	const string MeshNameSuffix = " mesh ";
+	const string MatNameSuffix = " material ";
+	const string TexNameSuffix = " texture map_";
+	const int TexNameTypeSpaceMax = 20;
+	
 	enum AssetMaterialParamDataFormat : int { NotIncluded = 0, Numerical = 1, TextureMap = 2 }
 	[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 24)] 
 	readonly record struct AssetMaterialParam(AssetMaterialParamDataFormat Format, int TextureMapIndex, float NumericalValueR, float NumericalValueG, float NumericalValueB, float NumericalValueA) {
@@ -76,6 +82,8 @@ unsafe partial class LocalAssetLoader {
 		public void Dispose() => _owningPool.Return(_rentedBuffer);
 	}
 	readonly ref struct AssetMaterialCreationParameters {
+		readonly Span<char> _subResourceNameBuffer;
+		readonly int _subResourceNameTexTypeStartIndex;
 		public readonly UIntPtr AssetHandle;
 		public readonly int MaterialIndex;
 		public readonly TextureCreationConfig Config;
@@ -85,15 +93,23 @@ unsafe partial class LocalAssetLoader {
 		public readonly float EmissiveStrengthCap;
 		public readonly TextureCombinationScalingStrategy TextureCombinationStrategy;
 
-		public AssetMaterialCreationParameters(UIntPtr assetHandle, int materialIndex, TextureCreationConfig config, ref readonly byte assetRootDirStrRef, bool uriUnescapeEmbeddedResourceStrings, float gltfEmissiveStrengthScalar, float emissiveStrengthCap, TextureCombinationScalingStrategy textureCombinationStrategy) {
+		public AssetMaterialCreationParameters(UIntPtr assetHandle, int materialIndex, Span<char> subResourceNameBuffer, int matNameLength, TextureCreationConfig config, ref readonly byte assetRootDirStrRef, bool uriUnescapeEmbeddedResourceStrings, float gltfEmissiveStrengthScalar, float emissiveStrengthCap, TextureCombinationScalingStrategy textureCombinationStrategy) {
 			AssetHandle = assetHandle;
 			MaterialIndex = materialIndex;
+			_subResourceNameBuffer = subResourceNameBuffer;
+			TexNameSuffix.CopyTo(_subResourceNameBuffer[matNameLength..]);
+			_subResourceNameTexTypeStartIndex = matNameLength + TexNameSuffix.Length;
 			Config = config;
 			AssetRootDirStrRef = ref assetRootDirStrRef;
 			UriUnescapeEmbeddedResourceStrings = uriUnescapeEmbeddedResourceStrings;
 			GltfEmissiveStrengthScalar = gltfEmissiveStrengthScalar;
 			EmissiveStrengthCap = emissiveStrengthCap;
 			TextureCombinationStrategy = textureCombinationStrategy;
+		}
+		
+		public ReadOnlySpan<char> CreateTextureName(ReadOnlySpan<char> textureTypeName) {
+			textureTypeName.CopyTo(_subResourceNameBuffer[_subResourceNameTexTypeStartIndex..]);
+			return _subResourceNameBuffer[..(_subResourceNameTexTypeStartIndex + textureTypeName.Length)];
 		}
 	}
 	
@@ -302,12 +318,14 @@ unsafe partial class LocalAssetLoader {
 	}
 	
 	Texture CreateAssetColorMap(AssetMaterialParam* paramPtr, AssetMaterialCreationParameters creationParams) {
+		const string TextureTypeName = "color";
 		switch (paramPtr->Format) {
 			case AssetMaterialParamDataFormat.Numerical:
 				return TextureBuilder.CreateColorMap(
 					paramPtr->ToColorVect(),
 					includeAlpha: true,
 					creationParams.Config with {
+						Name = creationParams.CreateTextureName(TextureTypeName),
 						IsLinearColorspace = true // Numerical outputs are in linear space
 					}
 				);
@@ -317,15 +335,19 @@ unsafe partial class LocalAssetLoader {
 					return TextureBuilder.CreateTexture(
 						embeddedTex.TexelSpan,
 						new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
-						creationParams.Config with { IsLinearColorspace = false }
+						creationParams.Config with {
+							Name = creationParams.CreateTextureName(TextureTypeName),
+							IsLinearColorspace = false
+						}
 					);
 				}
 				
-			default: return TextureBuilder.CreateColorMap();
+			default: return TextureBuilder.CreateColorMap(name: creationParams.CreateTextureName(TextureTypeName));
 		}
 	}
 	
 	Texture? CreateAssetAbsorptionTransmissionMap(AssetMaterialParam* absorptionParamPtr, AssetMaterialParam* transmissionParamPtr, AssetMaterialCreationParameters creationParams) {
+		const string TextureTypeName = "at";
 		if (absorptionParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && transmissionParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
 		
 		// All in one texture, just load the whole thing once and return it, no combination required
@@ -340,7 +362,7 @@ unsafe partial class LocalAssetLoader {
 			return TextureBuilder.CreateTexture(
 				embeddedTex.TexelSpan,
 				new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
-				creationParams.Config with { IsLinearColorspace = false }
+				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = false }
 			);
 		}
 		
@@ -386,7 +408,10 @@ unsafe partial class LocalAssetLoader {
 			return TextureBuilder.CreateTexture(
 				destinationBuffer.Buffer,
 				new TextureGenerationConfig { Dimensions = destDim },
-				creationParams.Config with { IsLinearColorspace = !absorptionEmbeddedTex.HasValue } // Numerical values are linear, textures assumed sRGB
+				creationParams.Config with {
+					Name = creationParams.CreateTextureName(TextureTypeName),
+					IsLinearColorspace = !absorptionEmbeddedTex.HasValue // Numerical values are linear, textures assumed sRGB
+				}
 			);
 		}
 		finally {
@@ -396,11 +421,13 @@ unsafe partial class LocalAssetLoader {
 	}
 	
 	Texture? CreateAssetNormalMap(AssetMaterialParam* paramPtr, AssetMaterialCreationParameters creationParams) {
+		const string TextureTypeName = "norm";
 		switch (paramPtr->Format) {
 			case AssetMaterialParamDataFormat.Numerical:
 				return TextureBuilder.CreateTexture(
 					paramPtr->ToTexel().ToRgb24(),
 					creationParams.Config with {
+						Name = creationParams.CreateTextureName(TextureTypeName),
 						IsLinearColorspace = true
 					}
 				);
@@ -412,7 +439,10 @@ unsafe partial class LocalAssetLoader {
 					return TextureBuilder.CreateTexture(
 						rgbTexelBuffer.Buffer,
 						new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
-						creationParams.Config with { IsLinearColorspace = true }
+						creationParams.Config with {
+							Name = creationParams.CreateTextureName(TextureTypeName), 
+							IsLinearColorspace = true
+						}
 					);
 				}
 				
@@ -421,6 +451,8 @@ unsafe partial class LocalAssetLoader {
 	}
 	
 	Texture? CreateAssetOrmrMap(AssetMaterialParam* occlusionParamPtr, AssetMaterialParam* roughnessParamPtr, AssetMaterialParam* glossinessParamPtr, AssetMaterialParam* metallicParamPtr, AssetMaterialParam* iorParamPtr, bool reflectanceRequired, AssetMaterialCreationParameters creationParams) {
+		const string TextureTypeName = "orm";
+		
 		// Maintainer's note:
 		// Reflectance can not be stored in a texture map, because it's actually exposed as IoR from assimp and there's no industry-normalized range mapping [0-1] to any known IoR range
 		// So either we don't specify it at all or if there's a numerical value it's considered to be IoR and must be converted
@@ -451,7 +483,10 @@ unsafe partial class LocalAssetLoader {
 			return TextureBuilder.CreateTexture(
 				embeddedTex.TexelSpan,
 				new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
-				creationParams.Config with { IsLinearColorspace = true }
+				creationParams.Config with {
+					Name = creationParams.CreateTextureName(TextureTypeName),
+					IsLinearColorspace = true
+				}
 			);
 		}
 		
@@ -523,7 +558,7 @@ unsafe partial class LocalAssetLoader {
 				return TextureBuilder.CreateTexture(
 					destinationBuffer.Buffer,
 					new TextureGenerationConfig { Dimensions = destDim },
-					creationParams.Config with { IsLinearColorspace = true }
+					creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName + "r"), IsLinearColorspace = true }
 				);
 			}
 			else {
@@ -543,7 +578,7 @@ unsafe partial class LocalAssetLoader {
 				return TextureBuilder.CreateTexture(
 					destinationBuffer.Buffer,
 					new TextureGenerationConfig { Dimensions = destDim },
-					creationParams.Config with { IsLinearColorspace = true }
+					creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true }
 				);
 			}
 		}
@@ -555,6 +590,7 @@ unsafe partial class LocalAssetLoader {
 	}
 	
 	Texture? CreateAssetAnisotropyMap(AssetMaterialParam* angleParamPtr, AssetMaterialParam* strengthParamPtr, AssetMaterialCreationParameters creationParams) {
+		const string TextureTypeName = "aniso";
 		if (angleParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && strengthParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
 		
 		// All in one texture; the only well-defined texture format is in the glTF spec: https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_materials_anisotropy/README.md
@@ -572,7 +608,7 @@ unsafe partial class LocalAssetLoader {
 			return TextureBuilder.CreateTexture(
 				rgbTexelBuffer.Buffer,
 				new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
-				creationParams.Config with { IsLinearColorspace = true }
+				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true }
 			);
 		}
 		
@@ -619,7 +655,7 @@ unsafe partial class LocalAssetLoader {
 			return TextureBuilder.CreateTexture(
 				destinationBuffer.Buffer,
 				new TextureGenerationConfig { Dimensions = destDim },
-				creationParams.Config with { IsLinearColorspace = true }
+				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true }
 			);
 		}
 		finally {
@@ -629,6 +665,7 @@ unsafe partial class LocalAssetLoader {
 	}
 	
 	Texture? CreateAssetEmissiveMap(AssetMaterialParam* colorParamPtr, AssetMaterialParam* intensityParamPtr, AssetMaterialCreationParameters creationParams) {
+		const string TextureTypeName = "emissive";
 		if (colorParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && intensityParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
 		
 		static void ApplyEmissiveIntensityCap(Span<TexelRgba32> texels, bool targetAlphaChannel, byte cap) {
@@ -657,7 +694,7 @@ unsafe partial class LocalAssetLoader {
 			return TextureBuilder.CreateTexture(
 				embeddedTex.TexelSpan,
 				new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
-				creationParams.Config with { IsLinearColorspace = false }
+				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = false }
 			);
 		}
 		
@@ -712,7 +749,10 @@ unsafe partial class LocalAssetLoader {
 			return TextureBuilder.CreateTexture(
 				destinationBuffer.Buffer,
 				new TextureGenerationConfig { Dimensions = destDim },
-				creationParams.Config with { IsLinearColorspace = !colorEmbeddedTex.HasValue } // Numerical values are linear, textures assumed sRGB
+				creationParams.Config with {
+					Name = creationParams.CreateTextureName(TextureTypeName), 
+					IsLinearColorspace = !colorEmbeddedTex.HasValue // Numerical values are linear, textures assumed sRGB
+				}
 			);
 		}
 		finally {
@@ -722,6 +762,7 @@ unsafe partial class LocalAssetLoader {
 	}
 	
 	Texture? CreateAssetClearCoatMap(AssetMaterialParam* strengthParamPtr, AssetMaterialParam* roughnessParamPtr, AssetMaterialCreationParameters creationParams) {
+		const string TextureTypeName = "clearcoat";
 		if (strengthParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && roughnessParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
 		
 		// All in one texture; the only well-defined texture format is in the glTF spec: https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_clearcoat
@@ -739,7 +780,7 @@ unsafe partial class LocalAssetLoader {
 			return TextureBuilder.CreateTexture(
 				rgbTexelBuffer.Buffer,
 				new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
-				creationParams.Config with { IsLinearColorspace = true }
+				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true }
 			);
 		}
 		
@@ -784,7 +825,7 @@ unsafe partial class LocalAssetLoader {
 			return TextureBuilder.CreateTexture(
 				destinationBuffer.Buffer,
 				new TextureGenerationConfig { Dimensions = destDim },
-				creationParams.Config with { IsLinearColorspace = true }
+				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true }
 			);
 		}
 		finally {
@@ -793,7 +834,7 @@ unsafe partial class LocalAssetLoader {
 		}
 	}
 	
-	Material CreateAssetMaterial(UIntPtr assetHandle, int materialIndex, ResourceGroup assetResources, in TextureCreationConfig config, in ModelReadConfig readconfig, ref readonly byte assetRootDirStrRef) {
+	Material CreateAssetMaterial(UIntPtr assetHandle, int materialIndex, ResourceGroup assetResources, ReadOnlySpan<char> assetName, in TextureCreationConfig config, in ModelReadConfig readConfig, ref readonly byte assetRootDirStrRef) {
 		var matParamsBuffer = stackalloc AssetMaterialParam[15];
 		var matParams = new AssetMaterialParamGroup(
 			matParamsBuffer + 0,
@@ -821,7 +862,24 @@ unsafe partial class LocalAssetLoader {
 			out var refractionThickness
 		).ThrowIfFailure();
 		
-		var assetMaterialCreationParams = new AssetMaterialCreationParameters(assetHandle, materialIndex, config, in assetRootDirStrRef, readconfig.HandleUriEscapedStrings, readconfig.GltfEmissiveStrengthScalar, readconfig.EmissiveStrengthCap, readconfig.EmbeddedTextureMapScalingStrategy);
+		var matNamePlusSuffixConcatLength = SpanUtils.GetConcatenatedLength(assetName, MatNameSuffix);
+		Span<char> subResourceNameBuffer = stackalloc char[matNamePlusSuffixConcatLength + ResourceNameIndexSpaceMax + TexNameSuffix.Length + TexNameTypeSpaceMax];
+		SpanUtils.Concatenate(subResourceNameBuffer, assetName, MatNameSuffix);
+		_ = materialIndex.TryFormat(subResourceNameBuffer[matNamePlusSuffixConcatLength..], out var indexCharsCount, provider: CultureInfo.InvariantCulture);
+		var matName = subResourceNameBuffer[..(matNamePlusSuffixConcatLength + indexCharsCount)];
+		
+		var assetMaterialCreationParams = new AssetMaterialCreationParameters(
+			assetHandle, 
+			materialIndex, 
+			subResourceNameBuffer,
+			matName.Length,
+			config, 
+			in assetRootDirStrRef, 
+			readConfig.HandleUriEscapedStrings, 
+			readConfig.GltfEmissiveStrengthScalar, 
+			readConfig.EmissiveStrengthCap, 
+			readConfig.EmbeddedTextureMapScalingStrategy
+		);
 		var colorMap = CreateAssetColorMap(matParams.ColorParamsPtr, assetMaterialCreationParams);
 		var atMap = CreateAssetAbsorptionTransmissionMap(matParams.AbsorptionParamsPtr, matParams.TransmissionParamsPtr, assetMaterialCreationParams);
 		var normalMap = CreateAssetNormalMap(matParams.NormalParamsPtr, assetMaterialCreationParams);
@@ -847,7 +905,8 @@ unsafe partial class LocalAssetLoader {
 				EmissiveMap = emissiveMap,
 				NormalMap = normalMap,
 				OcclusionRoughnessMetallicReflectanceMap = ormMap,
-				RefractionThickness = refractionThickness.IsPositiveAndFinite() ? refractionThickness : TransmissiveMaterialCreationConfig.DefaultRefractionThickness
+				RefractionThickness = refractionThickness.IsPositiveAndFinite() ? refractionThickness : TransmissiveMaterialCreationConfig.DefaultRefractionThickness,
+				Name = matName
 			});
 		}
 		else {
@@ -858,7 +917,8 @@ unsafe partial class LocalAssetLoader {
 				ColorMap = colorMap,
 				EmissiveMap = emissiveMap,
 				NormalMap = normalMap,
-				OcclusionRoughnessMetallicMap = ormMap
+				OcclusionRoughnessMetallicMap = ormMap,
+				Name = matName
 			});
 		}
 	}
@@ -868,6 +928,12 @@ unsafe partial class LocalAssetLoader {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 		readConfig.ThrowIfInvalid();
+		
+		var resourceGroupName = config.Name;
+		if (resourceGroupName.IsEmpty) resourceGroupName = Path.GetFileName(filePath);
+		Span<char> meshNameBuffer = stackalloc char[SpanUtils.GetConcatenatedLength(resourceGroupName, MeshNameSuffix) + ResourceNameIndexSpaceMax];
+		SpanUtils.Concatenate(meshNameBuffer, resourceGroupName, MeshNameSuffix);
+		var meshNameWriteStartIndex = SpanUtils.GetConcatenatedLength(resourceGroupName, MeshNameSuffix);
 		
 		try {
 			_assetFilePathBuffer.ConvertFromUtf16(filePath);
@@ -888,13 +954,16 @@ unsafe partial class LocalAssetLoader {
 				
 				var result = _globals.ResourceGroupProvider.CreateGroup(
 					disposeContainedResourcesWhenDisposed: true,
-					name: config.Name,
+					name: resourceGroupName,
 					meshCount + materialCount + textureCount
 				);
 				
 				var materialToGroupAddOrderMap = materialCount > MaxIndicesOnStack ? new int[materialCount] : stackalloc int[materialCount];
 				
 				for (var i = 0; i < meshCount; ++i) {
+					_ = i.TryFormat(meshNameBuffer[meshNameWriteStartIndex..], out var idxCharsCount, provider: CultureInfo.InvariantCulture);
+					var meshName = meshNameBuffer[..(meshNameWriteStartIndex + idxCharsCount)];
+					
 					GetLoadedAssetMeshSkeletalBoneCount(assetHandle, i, out var boneCount).ThrowIfFailure();
 					var loadSkeletalAnimationData = boneCount > 0 && readConfig.MeshConfig.LoadSkeletalAnimationDataIfPresent;
 					if (loadSkeletalAnimationData && boneCount > IMeshBuilder.MaxSkeletalBoneCount) {
@@ -947,7 +1016,7 @@ unsafe partial class LocalAssetLoader {
 									copyResult.VertexBuffer.AsReadOnlySpan<MeshVertexSkeletal>(copyResult.NumVerticesWritten),
 									copyResult.TriangleBuffer.AsReadOnlySpan<VertexTriangle>(copyResult.NumTrianglesWritten),
 									translatedNodeBuffer.Buffer,
-									config.MeshConfig
+									config.MeshConfig with { Name = meshName }
 								);
 
 								LoadAndAttachMeshAnimations(assetHandle, (NodeHandle*) internalNodeBuffer.StartPtr, nodeCount, readConfig.MeshConfig.AnimationTicksPerSecondOverride, mesh);
@@ -962,7 +1031,7 @@ unsafe partial class LocalAssetLoader {
 							mesh = _meshBuilder.CreateMesh(
 								copyResult.VertexBuffer.AsReadOnlySpan<MeshVertex>(copyResult.NumVerticesWritten),
 								copyResult.TriangleBuffer.AsReadOnlySpan<VertexTriangle>(copyResult.NumTrianglesWritten),
-								config.MeshConfig
+								config.MeshConfig with { Name = meshName }
 							);
 						}
 					}
@@ -990,6 +1059,7 @@ unsafe partial class LocalAssetLoader {
 							assetHandle,
 							matIndex,
 							result,
+							resourceGroupName,
 							config.TextureConfig,
 							in readConfig,
 							in _assetFilePathBuffer.AsRef

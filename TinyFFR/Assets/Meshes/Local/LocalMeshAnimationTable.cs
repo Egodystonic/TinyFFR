@@ -225,14 +225,14 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		if (_nodeNameMap.ContainsKey(name)) {
 			using var newNameBuffer = _globals.HeapPool.Borrow<char>(name.Length + 20);
 			name.CopyTo(newNameBuffer.Buffer);
-			newNameBuffer.Buffer[name.Length] = '_';
-			var repeatCharsStartIndex = name.Length + 1;
+			var repeatCharsStartIndex = name.Length;
 			var repeatCount = 2;
 			do {
 				if (!repeatCount.TryFormat(newNameBuffer.Buffer[repeatCharsStartIndex..], out var repeatCharsCount, provider: CultureInfo.InvariantCulture)) {
 					throw new InvalidOperationException($"Can not handle repeated node name '{name}'.");
 				}
 				name = newNameBuffer.Buffer[..(repeatCharsStartIndex + repeatCharsCount)];
+				repeatCount++;
 			} while (_nodeNameMap.ContainsKey(name));
 		}
 		_nodeNameMap[name] = meshNode;
