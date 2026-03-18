@@ -44,8 +44,8 @@ sealed unsafe class ObjectPool<T, TArg> : IDisposable {
 
 	public void Return(T item) => _pool.Add(item);
 	
-	public void ReleasePooledObjects(bool invokeDisposeOnEachBeforeRelease) {
-		if (invokeDisposeOnEachBeforeRelease) {
+	public void ReleasePooledObjects(bool invokeDisposeOnEachItemBeforeRelease) {
+		if (invokeDisposeOnEachItemBeforeRelease) {
 			foreach (var item in _pool) {
 				(item as IDisposable)?.Dispose();
 			}
@@ -54,8 +54,8 @@ sealed unsafe class ObjectPool<T, TArg> : IDisposable {
 	}
 
 	void IDisposable.Dispose() => Dispose(false); 
-	public void Dispose(bool invokeDisposeOnEachBeforeRelease) {
-		ReleasePooledObjects(invokeDisposeOnEachBeforeRelease);
+	public void Dispose(bool invokeDisposeOnEachItemBeforeRelease) {
+		ReleasePooledObjects(invokeDisposeOnEachItemBeforeRelease);
 		_pool.Dispose();
 	}
 }

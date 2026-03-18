@@ -79,6 +79,44 @@ class MathUtilsTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyDecomposeMatrixToTransform() {
+		AssertToleranceEquals(Transform.None, GetBestGuessTransformFromMatrix(Matrix4x4.Identity), TestTolerance);
+
+		var translationVect = new Vect(3f, -5f, 7f);
+		AssertToleranceEquals(
+			new Transform(translation: translationVect), 
+			GetBestGuessTransformFromMatrix(Matrix4x4.CreateTranslation(translationVect.ToVector3())), 
+			TestTolerance
+		);
+		
+		var rotationQuat = Quaternion.Normalize(Quaternion.CreateFromYawPitchRoll(1f, 0.5f, 0.3f));
+		AssertToleranceEquals(
+			new Transform(translation: Vect.Zero, rotationQuaternion: rotationQuat, scaling: Vect.One), 
+			GetBestGuessTransformFromMatrix(Matrix4x4.CreateFromQuaternion(rotationQuat)), 
+			TestTolerance
+		);
+		
+		var scalingVect = new Vect(2f, 3f, 0.5f);
+		AssertToleranceEquals(
+			new Transform(scaling: scalingVect), 
+			GetBestGuessTransformFromMatrix(Matrix4x4.CreateScale(scalingVect.ToVector3())), 
+			TestTolerance
+		);
+
+		var combinedMat = Matrix4x4.CreateScale(scalingVect.ToVector3()) * Matrix4x4.CreateFromQuaternion(rotationQuat) * Matrix4x4.CreateTranslation(translationVect.ToVector3());
+		AssertToleranceEquals(
+			new Transform(scaling: scalingVect, rotationQuaternion: rotationQuat, translation: translationVect), 
+			GetBestGuessTransformFromMatrix(combinedMat), 
+			TestTolerance
+		);
+
+		var negScaleMat = Matrix4x4.CreateScale(-1f, 2f, 3f);
+		var negScaleResult = GetBestGuessTransformFromMatrix(negScaleMat);
+		AssertToleranceEquals(Vect.Zero, negScaleResult.Translation, TestTolerance);
+		AssertToleranceEquals(6f, MathF.Abs(negScaleResult.Scaling.X * negScaleResult.Scaling.Y * negScaleResult.Scaling.Z), TestTolerance);
+	}
+
+	[Test]
 	public void ShouldCorrectlyRemapRanges() {
 		AssertToleranceEquals((Real) 50f, ((Real) 0.5f).RemapRange(new(0f, 1f), new(0f, 100f)), TestTolerance);
 		AssertToleranceEquals((Real) 0.5f, ((Real) 50f).RemapRange(new(0f, 100f), new(0f, 1f)), TestTolerance);

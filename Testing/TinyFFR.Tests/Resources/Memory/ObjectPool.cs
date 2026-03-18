@@ -5,6 +5,11 @@ namespace Egodystonic.TinyFFR.Resources.Memory;
 
 [TestFixture]
 unsafe class ObjectPoolTest {
+	class MockDisposable : IDisposable {
+		public bool IsDisposed { get; set; } = false;
+		public void Dispose() => IsDisposed = true;
+	}
+	
 	const int InitialPoolCount = 10;
 	const int ArgPoolArg = 5;
 	ObjectPool<List<string>> _simplePool = null!;
@@ -70,7 +75,7 @@ unsafe class ObjectPoolTest {
 		const int NumIterations = 10_000;
 
 		_simplePool.Dispose();
-		_argPool.Dispose(invokeDisposeOnEachBeforeRelease: false);
+		_argPool.Dispose(invokeDisposeOnEachItemBeforeRelease: false);
 
 		_simplePool = new(&NullaryCreationFunc);
 		_argPool = new(&UnaryCreationFunc, 0);
@@ -120,6 +125,105 @@ unsafe class ObjectPoolTest {
 			var v = _vectorPool.Rent();
 			Assert.AreEqual(0, v.Count);
 		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyDisposeContainedItemsWhenRequested() {
+		var items = new List<MockDisposable>();
+		
+		static MockDisposable CreateDisposable(List<MockDisposable> list) {
+			var result = new MockDisposable();
+			list.Add(result);
+			return result;
+		}
+
+		var pool = new ObjectPool<MockDisposable, List<MockDisposable>>(&CreateDisposable, items, 4);
+
+		var rented1 = pool.Rent();
+		var rented2 = pool.Rent();
+		pool.Return(rented1);
+		pool.Return(rented2);
+
+		pool.Dispose(true);
+
+		Assert.IsTrue(rented1.IsDisposed);
+		Assert.IsTrue(rented2.IsDisposed);
+		foreach (var item in items) Assert.IsTrue(item.IsDisposed);
+		
+		items.Clear();
+		pool = new ObjectPool<MockDisposable, List<MockDisposable>>(&CreateDisposable, items, 4);
+
+		rented1 = pool.Rent();
+		rented2 = pool.Rent();
+		pool.Return(rented1);
+		pool.Return(rented2);
+
+		pool.ReleasePooledObjects(true);
+
+		Assert.IsTrue(rented1.IsDisposed);
+		Assert.IsTrue(rented2.IsDisposed);
+		foreach (var item in items) Assert.IsTrue(item.IsDisposed);
+		
+		
+		
+		
+		items.Clear();
+		pool = new ObjectPool<MockDisposable, List<MockDisposable>>(&CreateDisposable, items, 4);
+
+		rented1 = pool.Rent();
+		rented2 = pool.Rent();
+		pool.Return(rented1);
+		pool.Return(rented2);
+
+		pool.Dispose(false);
+
+		Assert.IsFalse(rented1.IsDisposed);
+		Assert.IsFalse(rented2.IsDisposed);
+		foreach (var item in items) Assert.IsFalse(item.IsDisposed);
+		
+		items.Clear();
+		pool = new ObjectPool<MockDisposable, List<MockDisposable>>(&CreateDisposable, items, 4);
+
+		rented1 = pool.Rent();
+		rented2 = pool.Rent();
+		pool.Return(rented1);
+		pool.Return(rented2);
+
+		pool.ReleasePooledObjects(false);
+
+		Assert.IsFalse(rented1.IsDisposed);
+		Assert.IsFalse(rented2.IsDisposed);
+		foreach (var item in items) Assert.IsFalse(item.IsDisposed);
+	}
+
+	[Test]
+	public void ShouldCorrectlyReleasePooledObjects() {
+		var trackers = new List<MockDisposable>();
+		static MockDisposable CreateTracker(List<MockDisposable> list) {
+			var tracker = new MockDisposable();
+			list.Add(tracker);
+			return tracker;
+		}
+
+		var pool = new ObjectPool<MockDisposable, List<MockDisposable>>(&CreateTracker, trackers, 0);
+
+		var rented1 = pool.Rent();
+		pool.Return(rented1);
+
+		pool.ReleasePooledObjects(true);
+		Assert.IsTrue(rented1.IsDisposed);
+
+		var rented2 = pool.Rent();
+		Assert.That(rented2, Is.Not.SameAs(rented1));
+		pool.Return(rented2);
+
+		pool.ReleasePooledObjects(false);
+		Assert.IsFalse(rented2.IsDisposed);
+
+		var rented3 = pool.Rent();
+		Assert.That(rented3, Is.Not.SameAs(rented2));
+
+		pool.Dispose(false);
 	}
 
 	[Test]

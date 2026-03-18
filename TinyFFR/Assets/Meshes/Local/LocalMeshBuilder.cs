@@ -471,8 +471,8 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 			}
 			_vertexBufferRefCounts.Dispose();
 			_indexBufferRefCounts.Dispose();
-			_meshAnimationTablePool.Dispose(invokeDisposeOnEachBeforeRelease: true);
-			_meshPolyGroupPool.Dispose(invokeDisposeOnEachBeforeRelease: false);
+			_meshAnimationTablePool.Dispose(invokeDisposeOnEachItemBeforeRelease: true);
+			_meshPolyGroupPool.Dispose(invokeDisposeOnEachItemBeforeRelease: false);
 		}
 		finally {
 			_isDisposed = true;

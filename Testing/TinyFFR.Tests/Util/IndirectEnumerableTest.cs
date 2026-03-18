@@ -99,6 +99,22 @@ unsafe class IndirectEnumerableTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyReturnEmptyEnumerable() {
+		var emptyIterator = StrIterator.Empty;
+		Assert.AreEqual(0, emptyIterator.Count);
+		Assert.AreEqual(0, emptyIterator.ToArray().Length);
+		Assert.Throws<ArgumentOutOfRangeException>(() => _ = emptyIterator[0]);
+		Assert.Throws<ArgumentOutOfRangeException>(() => _ = emptyIterator.ElementAt(0));
+		Assert.DoesNotThrow(() => emptyIterator.CopyTo(Span<char>.Empty));
+		Assert.IsTrue(emptyIterator.TryCopyTo(Span<char>.Empty));
+		var iterationCount = 0;
+		foreach (var _ in emptyIterator) {
+			iterationCount++;
+		}
+		Assert.AreEqual(0, iterationCount);
+	}
+
+	[Test]
 	public void ShouldProtectAgainstReferentStateChanges() {
 		static int GetCount(List<int> input) => input.Count;
 		static int GetVersion(List<int> input) => input.Sum();

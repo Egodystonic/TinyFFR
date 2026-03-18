@@ -88,7 +88,7 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 	}
 
 	const int HashMask = 0b11_1111;
-	const int NumBuckets = HashMask + 1;
+	internal const int NumBuckets = HashMask + 1;
 	readonly ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>[] _buckets;
 	
 	public ArrayPoolBackedMap() {

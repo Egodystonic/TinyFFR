@@ -48,6 +48,10 @@ public static class MathUtils {
 		var xScale = rowA.Length();
 		var yScale = rowB.Length();
 		var zScale = rowC.Length();
+		
+		if (!Single.IsFinite(xScale) || xScale == 0f) xScale = 1f;
+		if (!Single.IsFinite(yScale) || yScale == 0f) yScale = 1f;
+		if (!Single.IsFinite(zScale) || zScale == 0f) zScale = 1f;
 
 		// Flip A/X if 3x3 mat has negative determinant
 		var aCrossB = Vector3.Cross(rowA, rowB);
@@ -73,7 +77,7 @@ public static class MathUtils {
 
 		return new Transform(
 			new Vect(mat.M41, mat.M42, mat.M43),
-			rotationQuat,
+			Rotation.FromQuaternion(rotationQuat),
 			new Vect(xScale, yScale, zScale)
 		);
 	}
