@@ -185,9 +185,29 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		if (_currentSkeleton is not { } skeleton) {
 			throw new InvalidOperationException("Skeleton not set for this animation table (this is a bug in TinyFFR).");
 		}
+		static void EnsureKeyframesOrderedByTime<T, TValue>(ReadOnlySpan<T> keyframes) where T : IAnimationKeyframe<TValue> {
+			for (var i = 1; i < keyframes.Length; ++i) {
+				if (keyframes[i].TimeKeySeconds < keyframes[i - 1].TimeKeySeconds) {
+					throw new ArgumentException($"{typeof(T).Name} at index {i} had time key [{keyframes[i].TimeKeySeconds:N3}secs], " +
+						$"preceded by keyframe at index {i - 1} which had time key [{keyframes[i - 1].TimeKeySeconds:N3}secs].");
+				}
+			}
+		}
 		
 		var handle = new ResourceHandle<MeshAnimation>(++_nextHandleId);
 		for (var m = 0; m < nodeMutations.Buffer.Length; ++m) {
+			try {
+				EnsureKeyframesOrderedByTime<SkeletalAnimationScalingKeyframe, Vect>(scalingKeyframes.Buffer.Slice(nodeMutations.Buffer[m].ScalingKeyframeStartIndex, nodeMutations.Buffer[m].ScalingKeyframeCount));
+				EnsureKeyframesOrderedByTime<SkeletalAnimationRotationKeyframe, Quaternion>(rotationKeyframes.Buffer.Slice(nodeMutations.Buffer[m].RotationKeyframeStartIndex, nodeMutations.Buffer[m].RotationKeyframeCount));
+				EnsureKeyframesOrderedByTime<SkeletalAnimationTranslationKeyframe, Vect>(translationKeyframes.Buffer.Slice(nodeMutations.Buffer[m].TranslationKeyframeStartIndex, nodeMutations.Buffer[m].TranslationKeyframeCount));
+			}
+			catch (Exception e) {
+				throw new ArgumentException(
+					$"Mutation at index {m} ({nodeMutations.Buffer[m]}) requests keyframes that are not time-ordered.",
+					nameof(nodeMutations),
+					e
+				);
+			}
 			nodeMutations.Buffer[m] = nodeMutations.Buffer[m] with { TargetNodeIndex = skeleton.MutationTargetIndexMap.Buffer[nodeMutations.Buffer[m].TargetNodeIndex] };
 		}
 		// We pre-sort the mutations by target node index for the following reasons:

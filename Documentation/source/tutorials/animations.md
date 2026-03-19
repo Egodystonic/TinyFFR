@@ -440,7 +440,7 @@ factory.ResourceAllocator.ReturnPooledMemoryBuffer(trianglesMemory);
 factory.ResourceAllocator.ReturnPooledMemoryBuffer(verticesMemory);
 ```
 
-#### Skeletal Meshes
+### Skeletal Meshes
 
 It is also possible to manually create skeletal meshes (e.g. meshes with nodes/bones and vertex skinning data + animations); see [Animations](animations.md).
 

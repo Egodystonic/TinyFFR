@@ -12,20 +12,21 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/9?closed=1) 
 
 ### Major Features
 
-* Added support for combined-asset resource files (such as `.gltf`, `.glb`, etc.)
-* Enabled Vulkan for Windows & Linux; made it the default rendering API on those platforms.
+* Added support for loading entire models from combined-asset resource files (such as `.gltf`, `.glb`, etc.)
+* Added support for skeletal mesh animations (e.g. vertex skinning); including node transform tracking & animation blending
+* Enabled Vulkan for Windows & Linux; made it the default rendering API on those platforms
 
 ### Improvements
 
-* Added support for pixel picking (i.e. camera ray casting).
-* Added support for orthographic camera projection.
+* Added support for pixel picking (i.e. camera ray casting)
+* Added support for orthographic camera projection
 * Greatly improved Linux stability. First-class support for Wayland (X11 support is removed for now).
 * Improved loading speed for skybox textures on Linux
 * Added built-in scene backdrops
 
 ### Bug Fixes
 
-* Fixed mipmap generation not actually being applied in previous versions.
+* Fixed mipmap generation not actually being applied in previous versions
 
 ## 0.6
 

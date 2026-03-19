@@ -292,8 +292,8 @@ scene.Add(chessInstanceGroup); // (3)!
 3.	This adds every `ModelInstance` from the `chessInstanceGroup` to the scene.
 
 ??? question "When to use `LoadAll()` vs `LoadMesh()` + `Load[...]Map()`?"
-	When you have a combined-resource asset file (such as `.glb`), or when multiple models are packed in to a single sub-asset file, you have no choice but to use `LoadAll()` to access those embedded resources.
+	When you have a binary embedded resource asset file (such as `.glb`), you have no choice but to use `LoadAll()` to access those embedded resources.
 	
-	However, for formats such as `.gltf` when you have singular mesh files and textures kept separately, you can choose to load those resources manually with the `LoadMesh()` and `Load[...]Map()` (or `LoadTexture()`) functions; *or* you can pass the `.gltf` file path to `LoadAll()` as before.
+	However, for formats such as `.gltf` when you have direct access to individual mesh files and textures files you can choose to load those resources manually with the `LoadMesh()` and `Load[...]Map()` (or `LoadTexture()`) functions (you can still pass the `.gltf` file path to `LoadAll()` as with a `.glb` file also).
 	
 	Ultimately, "manual" loading of resources gives you the most control of how those textures/meshes are imported, but for complex models this can be cumbersome. TinyFFR gives you a variety of approaches for importing assets; for serious applications you/your team should define an asset export + import pipeline and test that every material and mesh/model type you need is working correctly using a well-defined loading approach.

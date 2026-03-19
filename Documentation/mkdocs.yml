@@ -126,6 +126,7 @@ nav:
       - tutorials/meshes.md
       - tutorials/scenes_and_rendering.md
       - tutorials/displays_and_windows.md
+      - tutorials/animations.md
       - tutorials/math_and_geometry.md
       - tutorials/conventions.md
       - tutorials/resources.md
