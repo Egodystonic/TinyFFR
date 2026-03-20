@@ -98,6 +98,20 @@ All ways to read mesh data from files have methods that can take a `MeshReadConf
 :   Defaults to `null`. When `null`, if the given asset file contains multiple sub-meshes those meshes will be loaded together and returned to you as a single amalgamated object.
 
 	If not null, this value specifies which sub-mesh to load. You can determine how many sub-meshes an asset file contains by inspecting the `SubMeshCount` of the returned `MeshReadMetadata` when invoking `ReadMeshMetadata()`.
+	
+<span class="def-icon">:material-card-bulleted-outline:</span> `LoadSkeletalAnimationDataIfPresent`
+
+:   Defaults to `true`. When `true`, if the loaded mesh contains skeletal animation bone/node data, that data will be loaded and embedded inside the mesh's vertex structures on the GPU memory. Any animations in the asset file will be accessible via the [animation playback system](animations.md).
+
+	If this is set to `false` TinyFFR will only load the data as though it were a static mesh.
+
+<span class="def-icon">:material-card-bulleted-outline:</span> `AnimationTicksPerSecondOverride`
+
+:   Defaults to `null`. If the loaded mesh contains skeletal animation data (and that data is being loaded), the embedded file's keyframe tick rate will be used to calculate the rate (per-second) at which each animation should play by default. Every file format has a different ticks-to-seconds ratio, and some file formats do not specify it at all (a default of 25 ticks/second is assumed in these scenarios).
+
+	If this default is incorrect (or you wish to adjust it), you can set this property to any non-null value.
+
+
 
 ### MeshCreationConfig
 

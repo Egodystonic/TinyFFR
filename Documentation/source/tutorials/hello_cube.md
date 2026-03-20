@@ -374,7 +374,7 @@ while (!loop.Input.UserQuitRequested) { // (3)!
 
 	The variable `cubeRotationSpeedPerSec` is defining exactly this rotation for our cube-- we want it to spin around the `Down` axis at a rate of `90°` per second.
 
-2. The `60` here is the desired framerate in Hz. If you want an unlocked framerate, pass `null`. To disable vsync, see [here](/reference/vsync.md).
+2. The `60` here is the desired framerate in Hz. If you want an unlocked framerate, pass `null`. To disable vsync, see [here](/tutorials/vsync.md).
 3. 	`loop.Input.UserQuitRequested` will be `true` when the user has requested the application exit via any of the built-in means for the OS.
 
 	In most cases, this will be when the user tries to close the window with the :fontawesome-solid-square-xmark: button.

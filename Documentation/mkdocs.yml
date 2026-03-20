@@ -115,11 +115,15 @@ nav:
   - index.md
   - changelog.md
   - Tutorials:
-    - Fundamentals:
+    - Walkthroughs:
       - tutorials/hello_cube.md
       - tutorials/loading_assets.md
       - tutorials/handling_input.md
-    - Advanced:
+      - UI Integration:
+        - tutorials/integrating_wpf.md
+        - tutorials/integrating_avalonia.md
+        - tutorials/integrating_winforms.md
+    - Topics:
       - tutorials/materials.md
       - tutorials/lighting.md
       - tutorials/input.md
@@ -131,15 +135,11 @@ nav:
       - tutorials/conventions.md
       - tutorials/resources.md
       - tutorials/factory.md
-    - UI Integration:
-      - tutorials/integrating_wpf.md
-      - tutorials/integrating_avalonia.md
-      - tutorials/integrating_winforms.md
+    - Quick Guides:
+      - tutorials/vsync.md
+      - tutorials/camera_ray_casting.md
+      - tutorials/controlling_memory.md
   - Reference Docs:
-    - How-To Guides:
-      - reference/vsync.md
-      - reference/camera_ray_casting.md
-      - reference/controlling_memory.md
     - Assets:
       - reference/texture_patterns.md
     - Utils:

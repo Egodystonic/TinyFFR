@@ -1,9 +1,89 @@
 ---
-title: Meshes
-description: This page explains the concept of meshes in TinyFFR.
+title: Animations
+description: This page explains the concept of mesh animations in TinyFFR.
 ---
 
-A mesh is a set/group of polygons defining the shape of a 3D object. Meshes do not define the surface material of an object, only its polygonal layout.
+Some meshes can support pre-defined animation data (such as a person walking/running). TinyFFR supports these via the animation playback system.
+
+## Skeletal Animation Playback
+
+Assuming you have an asset/model file that has pre-baked skeletal animation data, you can load it with `LoadAll()`:
+
+```csharp
+var myMeshData = assetLoader.LoadAll("myMesh.glb");
+var myMeshInstance = objectBuilder.CreateModelInstance(myMeshData.Models[0]); // (1)!
+scene.Add(myMeshInstance);
+```
+
+1. 	This code assumes there's at least one model that's been loaded (a `Model` is a `Mesh` + `Material` pair). If `Models.Count` is 0, an exception will be thrown.
+
+	Most animated mesh assets will usually have a material exported alongside them as it's difficult to programatically author materials for most realistic-looking animated skeletal meshes.
+
+	Hoever, if your asset file *does* only contain a `Mesh` (without a `Material`) you can still create a `ModelInstance` manually (e.g. load a material via `Load[...]Map()` and `materialBuilder.Create[...]()`, and then invoke `objectBuilder.CreateModelInstance(myMeshData.Meshes[0], myMaterial)`).
+
+You can then access loaded animations and create an `AnimationPlayer` for any of them:
+
+```csharp
+var player = myMeshInstance.GetAnimationPlayer(myMeshInstance.Animations[0]); // (1)!
+var player = myMeshInstance.GetAnimationPlayer(myMeshInstance.Animations["run"]); // (2)!
+var player = myMeshInstance.GetAnimationPlayerWithSpeedMultiplier(myMeshInstance.Animations[0], 2f); // (3)!
+var player = myMeshInstance.GetAnimationPlayerWithTargetDuration(myMeshInstance.Animations["praise_the_sun"], 10f); // (4)!
+```
+
+1.	This line creates an `AnimationPlayer` that plays the first animation loaded for the given `meshInstance`.
+
+	Note that if `Animations.Count` is 0, attempting to access `Animations[0]` will throw an exception.
+	
+2.	This line creates an `AnimationPlayer` that plays an animation named "run".
+
+	Note that if no animation named "run" was defined in the asset file, attempting to access `Animations["run"]` will throw an exception.
+	
+3.	This line creates an `AnimationPlayer` that plays the first animation loaded for the given `meshInstance`. Additionally, the player will play the animation at double speed (the `2f` argument represents a 2x playback speed).
+
+4.	This line creates an `AnimationPlayer` that plays the animation "praise_the_sun". Additionally, the player will play the animation with a target completion speed of 10 seconds.
+
+Once you have an `AnimationPlayer`, it can be used as follows to set the time point of the chosen animation on your model instance:
+
+```csharp
+player.SetTimePoint(10f); // (1)!
+player.SetTimePoint(10f, MeshAnimationWrapStyle.Once); // (2)!
+player.SetTimePoint(10f, MeshAnimationWrapStyle.OncePingPonged); // (3)!
+player.SetTimePoint(10f, MeshAnimationWrapStyle.Loop); // (4)!
+player.SetTimePoint(10f, MeshAnimationWrapStyle.LoopPingPonged); // (5)!
+```
+
+1.	This sets the animation to its defined pose at 10 seconds.
+
+2.	This sets the animation to its defined pose at 10 seconds, but if the animation's duration is less than 10 seconds it will be clamped to its endpoint. 
+
+	Note this is effectively the same as the line above, though it technically has an additional effect if the animation was authored with keyframes beyond its exported default duration (unlikely/unusual).
+	
+3.	This sets the animation to its defined pose at 10 seconds. However, once the set time point extends past the animation's duration, the player will begin to play the animation in reverse, until the set time point reaches 2x the original animation length.
+
+	This "ping-pong" will happen exactly once, after which the animation will stop at its startpoint.
+
+4.	This sets the animation to its defined pose at 10 seconds, but looping (e.g. as the time point extends past the end of the animation's duration, the animation will repeat infinitely).
+
+5.	This sets the animation to its defined pose at 10 seconds, looping like the above example. 
+	
+	However, rather than restarting the animation at timepoint 0 on every iteration, the animation will "ping-pong" back and forward, moving in reverse every other loop.
+
+The `AnimationPlayer` is just a regular struct; it is not a resource and does not need to be diposed. Creating an `AnimationPlayer` is cheap and can be done per-anim, per-frame.
+
+### Animation Blending
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ![Dolphin Mesh](meshes_dolphin.png)
 /// caption

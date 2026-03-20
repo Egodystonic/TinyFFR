@@ -6,7 +6,7 @@ search:
   exclude: true
 ---
 
-## Fundamentals
+## Walkthroughs
 
 [:material-arrow-right-bold:{ .lg } :material-cube:{ .lg : style="margin-right:0.3em" } __Hello Cube__{ : style="font-size:1.3em;" }](hello_cube.md)
 
@@ -23,7 +23,24 @@ Learn how to load texture files, 3D models, and sky environments from storage in
 Learn different ways to manage keyboard, mouse, and gamepad interactions.
 { : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
 
-## Advanced
+### UI Integration
+
+[:material-arrow-right-bold:{ .lg } :fontawesome-brands-windows:{ .lg : style="margin-right:0.3em" } __WPF Integration__{ : style="font-size:1.3em;" }](integrating_wpf.md)
+
+Learn how to integrate TinyFFR with WPF.
+{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
+
+[:material-arrow-right-bold:{ .lg } :material-alpha-a-box:{ .lg : style="margin-right:0.3em" } __Avalonia Integration__{ : style="font-size:1.3em;" }](integrating_avalonia.md)
+
+Learn how to integrate TinyFFR with Avalonia.
+{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
+
+[:material-arrow-right-bold:{ .lg } :material-microsoft-windows-classic:{ .lg : style="margin-right:0.3em" } __WinForms Integration__{ : style="font-size:1.3em;" }](integrating_winforms.md)
+
+Learn how to integrate TinyFFR with Windows Forms.
+{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
+
+## Topics
 
 [:material-arrow-right-bold:{ .lg } :material-texture-box:{ .lg : style="margin-right:0.3em" } __Materials__{ : style="font-size:1.3em;" }](materials.md)
 
@@ -40,7 +57,7 @@ Everything in the world must be lit somehow. Various different types of light so
 You can control your application out-of-the-box with a keyboard, mouse, or gamepad; or a combination thereof.
 { : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
 
-[:material-arrow-right-bold:{ .lg } :material-sphere:{ .lg : style="margin-right:0.3em" } __Meshes__{ : style="font-size:1.3em;" }](meshes.md)
+[:material-arrow-right-bold:{ .lg } :fontawesome-solid-dice-d20:{ .lg : style="margin-right:0.3em" } __Meshes__{ : style="font-size:1.3em;" }](meshes.md)
 
 Polygon meshes make up the shape/structure of every object displayed on-screen.
 { : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
@@ -53,6 +70,11 @@ Scenes, together with Cameras and Renderers, are the primary way to organise obj
 [:material-arrow-right-bold:{ .lg } :fontawesome-solid-display:{ .lg : style="margin-right:0.3em" } __Displays & Windows__{ : style="font-size:1.3em;" }](displays_and_windows.md)
 
 TinyFFR makes it easy to handle connected displays and create/manage windows.
+{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
+
+[:material-arrow-right-bold:{ .lg } :material-animation-play:{ .lg : style="margin-right:0.3em" } __Animations__{ : style="font-size:1.3em;" }](animations.md)
+
+It's possible to load and play mesh animations (such as vertex skinned/skeletal nodal anims).
 { : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
 
 [:material-arrow-right-bold:{ .lg } :material-math-integral:{ .lg : style="margin-right:0.3em" } __Math & Geometry__{ : style="font-size:1.3em;" }](math_and_geometry.md)
@@ -73,21 +95,4 @@ Most things in TinyFFR are "resources", and they must be managed correctly (life
 [:material-arrow-right-bold:{ .lg } :material-robot-industrial:{ .lg : style="margin-right:0.3em" } __The Factory__{ : style="font-size:1.3em;" }](factory.md)
 
 The factory object is the "root" entry point for using the library.
-{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
-
-## UI Integration
-
-[:material-arrow-right-bold:{ .lg } :fontawesome-brands-windows:{ .lg : style="margin-right:0.3em" } __WPF Integration__{ : style="font-size:1.3em;" }](integrating_wpf.md)
-
-Learn how to integrate TinyFFR with WPF.
-{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
-
-[:material-arrow-right-bold:{ .lg } :material-alpha-a-box:{ .lg : style="margin-right:0.3em" } __Avalonia Integration__{ : style="font-size:1.3em;" }](integrating_avalonia.md)
-
-Learn how to integrate TinyFFR with Avalonia.
-{ : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }
-
-[:material-arrow-right-bold:{ .lg } :material-microsoft-windows-classic:{ .lg : style="margin-right:0.3em" } __WinForms Integration__{ : style="font-size:1.3em;" }](integrating_winforms.md)
-
-Learn how to integrate TinyFFR with Windows Forms.
 { : style="margin-left: 2em; margin-top:-1em; margin-bottom: 2em;" }

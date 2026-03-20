@@ -67,34 +67,34 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetTimePoint(float startAnimTimePointSeconds, MeshAnimationTimestampWrapStyle startWrapStyle, float endAnimTimePointSeconds, MeshAnimationTimestampWrapStyle endWrapStyle, float interpolationDistance) {
+	public void SetTimePoint(float startAnimTimePointSeconds, MeshAnimationWrapStyle startWrapStyle, float endAnimTimePointSeconds, MeshAnimationWrapStyle endWrapStyle, float interpolationDistance) {
 		StartAnimation.ApplyBlended(
 			Instance,
-			ApplyWrapping(startAnimTimePointSeconds * StartAnimationSpeedMultiplier, startWrapStyle, StartAnimation.DefaultDurationSeconds),
+			startWrapStyle.ApplyToTimePoint(startAnimTimePointSeconds * StartAnimationSpeedMultiplier, StartAnimation.DefaultDurationSeconds),
 			EndAnimation,
-			ApplyWrapping(endAnimTimePointSeconds * EndAnimationSpeedMultiplier, endWrapStyle, EndAnimation.DefaultDurationSeconds),
+			endWrapStyle.ApplyToTimePoint(endAnimTimePointSeconds * EndAnimationSpeedMultiplier, EndAnimation.DefaultDurationSeconds),
 			interpolationDistance
 		);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetTimePointAndGetNodeTransform(float startAnimTimePointSeconds, MeshAnimationTimestampWrapStyle startWrapStyle, float endAnimTimePointSeconds, MeshAnimationTimestampWrapStyle endWrapStyle, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
+	public void SetTimePointAndGetNodeTransform(float startAnimTimePointSeconds, MeshAnimationWrapStyle startWrapStyle, float endAnimTimePointSeconds, MeshAnimationWrapStyle endWrapStyle, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
 		StartAnimation.ApplyBlendedAndGetNodeTransform(
 			Instance,
-			ApplyWrapping(startAnimTimePointSeconds * StartAnimationSpeedMultiplier, startWrapStyle, StartAnimation.DefaultDurationSeconds),
+			startWrapStyle.ApplyToTimePoint(startAnimTimePointSeconds * StartAnimationSpeedMultiplier, StartAnimation.DefaultDurationSeconds),
 			EndAnimation,
-			ApplyWrapping(endAnimTimePointSeconds * EndAnimationSpeedMultiplier, endWrapStyle, EndAnimation.DefaultDurationSeconds),
+			endWrapStyle.ApplyToTimePoint(endAnimTimePointSeconds * EndAnimationSpeedMultiplier, EndAnimation.DefaultDurationSeconds),
 			interpolationDistance,
 			node, 
 			out modelSpaceTransform
 		);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetTimePointAndGetNodeTransforms(float startAnimTimePointSeconds, MeshAnimationTimestampWrapStyle startWrapStyle, float endAnimTimePointSeconds, MeshAnimationTimestampWrapStyle endWrapStyle, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+	public void SetTimePointAndGetNodeTransforms(float startAnimTimePointSeconds, MeshAnimationWrapStyle startWrapStyle, float endAnimTimePointSeconds, MeshAnimationWrapStyle endWrapStyle, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
 		StartAnimation.ApplyBlendedAndGetNodeTransforms(
 			Instance,
-			ApplyWrapping(startAnimTimePointSeconds * StartAnimationSpeedMultiplier, startWrapStyle, StartAnimation.DefaultDurationSeconds),
+			startWrapStyle.ApplyToTimePoint(startAnimTimePointSeconds * StartAnimationSpeedMultiplier, StartAnimation.DefaultDurationSeconds),
 			EndAnimation,
-			ApplyWrapping(endAnimTimePointSeconds * EndAnimationSpeedMultiplier, endWrapStyle, EndAnimation.DefaultDurationSeconds),
+			endWrapStyle.ApplyToTimePoint(endAnimTimePointSeconds * EndAnimationSpeedMultiplier, EndAnimation.DefaultDurationSeconds),
 			interpolationDistance,
 			nodes, 
 			modelSpaceTransforms
@@ -117,43 +117,40 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetCompletionFraction(float startAnimFraction, MeshAnimationTimestampWrapStyle startWrapStyle, float endAnimFraction, MeshAnimationTimestampWrapStyle endWrapStyle, float interpolationDistance) {
+	public void SetCompletionFraction(float startAnimFraction, MeshAnimationWrapStyle startWrapStyle, float endAnimFraction, MeshAnimationWrapStyle endWrapStyle, float interpolationDistance) {
 		StartAnimation.ApplyBlended(
 			Instance,
-			ApplyWrapping(StartAnimation.DefaultDurationSeconds * startAnimFraction, startWrapStyle, StartAnimation.DefaultDurationSeconds),
+			startWrapStyle.ApplyToTimePoint(StartAnimation.DefaultDurationSeconds * startAnimFraction, StartAnimation.DefaultDurationSeconds),
 			EndAnimation,
-			ApplyWrapping(EndAnimation.DefaultDurationSeconds * endAnimFraction, endWrapStyle, EndAnimation.DefaultDurationSeconds),
+			endWrapStyle.ApplyToTimePoint(EndAnimation.DefaultDurationSeconds * endAnimFraction, EndAnimation.DefaultDurationSeconds),
 			interpolationDistance
 		);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetCompletionFractionAndGetNodeTransform(float startAnimFraction, MeshAnimationTimestampWrapStyle startWrapStyle, float endAnimFraction, MeshAnimationTimestampWrapStyle endWrapStyle, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
+	public void SetCompletionFractionAndGetNodeTransform(float startAnimFraction, MeshAnimationWrapStyle startWrapStyle, float endAnimFraction, MeshAnimationWrapStyle endWrapStyle, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
 		StartAnimation.ApplyBlendedAndGetNodeTransform(
 			Instance,
-			ApplyWrapping(StartAnimation.DefaultDurationSeconds * startAnimFraction, startWrapStyle, StartAnimation.DefaultDurationSeconds),
+			startWrapStyle.ApplyToTimePoint(StartAnimation.DefaultDurationSeconds * startAnimFraction, StartAnimation.DefaultDurationSeconds),
 			EndAnimation,
-			ApplyWrapping(EndAnimation.DefaultDurationSeconds * endAnimFraction, endWrapStyle, EndAnimation.DefaultDurationSeconds),
+			endWrapStyle.ApplyToTimePoint(EndAnimation.DefaultDurationSeconds * endAnimFraction, EndAnimation.DefaultDurationSeconds),
 			interpolationDistance,
 			node, 
 			out modelSpaceTransform
 		);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetCompletionFractionAndGetNodeTransforms(float startAnimFraction, MeshAnimationTimestampWrapStyle startWrapStyle, float endAnimFraction, MeshAnimationTimestampWrapStyle endWrapStyle, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+	public void SetCompletionFractionAndGetNodeTransforms(float startAnimFraction, MeshAnimationWrapStyle startWrapStyle, float endAnimFraction, MeshAnimationWrapStyle endWrapStyle, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
 		StartAnimation.ApplyBlendedAndGetNodeTransforms(
 			Instance,
-			ApplyWrapping(StartAnimation.DefaultDurationSeconds * startAnimFraction, startWrapStyle, StartAnimation.DefaultDurationSeconds),
+			startWrapStyle.ApplyToTimePoint(StartAnimation.DefaultDurationSeconds * startAnimFraction, StartAnimation.DefaultDurationSeconds),
 			EndAnimation,
-			ApplyWrapping(EndAnimation.DefaultDurationSeconds * endAnimFraction, endWrapStyle, EndAnimation.DefaultDurationSeconds),
+			endWrapStyle.ApplyToTimePoint(EndAnimation.DefaultDurationSeconds * endAnimFraction, EndAnimation.DefaultDurationSeconds),
 			interpolationDistance,
 			nodes, 
 			modelSpaceTransforms
 		);
 	}
 	#endregion
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float ApplyWrapping(float nonWrappedTimePoint, MeshAnimationTimestampWrapStyle wrapStyle, float animationDefaultDuration) => MeshAnimationPlayer.ApplyWrapping(nonWrappedTimePoint, wrapStyle, animationDefaultDuration);
 
 	public bool Equals(MeshBlendedAnimationPlayer other) => Instance.Equals(other.Instance) && StartAnimation.Equals(other.StartAnimation) && EndAnimation.Equals(other.EndAnimation) && StartAnimationSpeedMultiplier.Equals(other.StartAnimationSpeedMultiplier) && EndAnimationSpeedMultiplier.Equals(other.EndAnimationSpeedMultiplier);
 	public override bool Equals(object? obj) => obj is MeshBlendedAnimationPlayer other && Equals(other);
