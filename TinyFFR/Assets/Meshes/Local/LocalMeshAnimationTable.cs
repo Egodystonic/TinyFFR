@@ -60,6 +60,7 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		public int GetNameLength(ResourceHandle<MeshNode> handle) => _owner.GetNameLength(handle);
 		public void CopyName(ResourceHandle<MeshNode> handle, Span<char> destinationBuffer) => _owner.CopyName(handle, destinationBuffer);
 		public bool IsDisposed(ResourceHandle<MeshNode> handle) => _owner.IsDisposed(handle);
+		public int GetIndex(ResourceHandle<MeshNode> handle) => _owner.GetIndex(handle);
 	}
 
 	public int Count => _animationNameMap.Count;
@@ -328,6 +329,11 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		WriteBindPoseNodeTransformsToWorkspace();
 		CopyRequestedNodeTransformsFromWorkspace(nodes, modelSpaceTransforms);
 	}
+	public void GetBindPoseNodeTransforms(ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
+		WriteBindPoseNodeTransformsToWorkspace();
+		CopyRequestedNodeTransformsFromWorkspace(nodeIndices, modelSpaceTransforms);
+	}
+	
 	
 	static TValue InterpolateKeyframes<T, TValue>(ReadOnlySpan<T> keys, float targetTimeSecs) where T : IAnimationKeyframe<TValue> {
 		if (keys.Length == 0) return T.FallbackValue;
@@ -505,6 +511,32 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 			}	
 		}
 	}
+	void CopyRequestedNodeTransformsFromWorkspace(ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
+		if (nodeIndices.Length > modelSpaceTransforms.Length) {
+			throw new ArgumentException($"Requested {nodeIndices.Length} {nameof(nodeIndices)}, but {nameof(modelSpaceTransforms)} destination span is too small (length {modelSpaceTransforms.Length}).", nameof(modelSpaceTransforms));
+		}
+		
+		static void ThrowIfNodeInvalid(int nodeIndex, int nodeCount) {
+			if (nodeIndex < 0 || nodeIndex >= nodeCount) {
+				throw new ArgumentException($"Given node index {nodeIndex} is not valid for this mesh.", nameof(nodeIndices));
+			}
+		}
+		
+		if (_currentSkeleton is { } skeleton) {
+			for (var i = 0; i < nodeIndices.Length; ++i) {
+				var nodeIndex = nodeIndices[i];
+				ThrowIfNodeInvalid(nodeIndex, skeleton.NodeCount);
+				modelSpaceTransforms[i] = skeleton.Workspace.Buffer[nodeIndex];
+			}
+		}
+		else {
+			for (var i = 0; i < nodeIndices.Length; ++i) {
+				var nodeIndex = nodeIndices[i];
+				ThrowIfNodeInvalid(nodeIndex, Int32.MaxValue);
+				modelSpaceTransforms[i] = Matrix4x4.Identity;
+			}	
+		}
+	}
 
 	public void Apply(ModelInstance targetInstance, ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds) {
 		Apply(targetInstance, new(handle, targetTimePointSeconds), null);
@@ -512,8 +544,14 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 	public void GetNodeTransforms(ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
 		GetNodeTransforms(new(handle, targetTimePointSeconds), null, nodes, modelSpaceTransforms);
 	}
+	public void GetNodeTransforms(ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
+		GetNodeTransforms(new(handle, targetTimePointSeconds), null, nodeIndices, modelSpaceTransforms);
+	}
 	public void ApplyAndGetNodeTransforms(ModelInstance targetInstance, ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
 		ApplyAndGetNodeTransforms(targetInstance, new(handle, targetTimePointSeconds), null, nodes, modelSpaceTransforms);
+	}
+	public void ApplyAndGetNodeTransforms(ModelInstance targetInstance, ResourceHandle<MeshAnimation> handle, float targetTimePointSeconds, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
+		ApplyAndGetNodeTransforms(targetInstance, new(handle, targetTimePointSeconds), null, nodeIndices, modelSpaceTransforms);
 	}
 	public void ApplyBlended(ModelInstance targetInstance, ResourceHandle<MeshAnimation> startAnimHandle, float startAnimTargetTimePointSeconds, ResourceHandle<MeshAnimation> endAnimHandle, float endAnimTargetTimePointSeconds, float interpolationDistance) {
 		Apply(targetInstance, new(startAnimHandle, startAnimTargetTimePointSeconds), new EndingAnimationData(endAnimHandle, endAnimTargetTimePointSeconds, interpolationDistance));
@@ -521,8 +559,14 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 	public void GetBlendedNodeTransforms(ResourceHandle<MeshAnimation> startAnimHandle, float startAnimTargetTimePointSeconds, ResourceHandle<MeshAnimation> endAnimHandle, float endAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
 		GetNodeTransforms(new(startAnimHandle, startAnimTargetTimePointSeconds), new EndingAnimationData(endAnimHandle, endAnimTargetTimePointSeconds, interpolationDistance), nodes, modelSpaceTransforms);
 	}
+	public void GetBlendedNodeTransforms(ResourceHandle<MeshAnimation> startAnimHandle, float startAnimTargetTimePointSeconds, ResourceHandle<MeshAnimation> endAnimHandle, float endAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
+		GetNodeTransforms(new(startAnimHandle, startAnimTargetTimePointSeconds), new EndingAnimationData(endAnimHandle, endAnimTargetTimePointSeconds, interpolationDistance), nodeIndices, modelSpaceTransforms);
+	}
 	public void ApplyBlendedAndGetNodeTransforms(ModelInstance targetInstance, ResourceHandle<MeshAnimation> startAnimHandle, float startAnimTargetTimePointSeconds, ResourceHandle<MeshAnimation> endAnimHandle, float endAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
 		ApplyAndGetNodeTransforms(targetInstance, new(startAnimHandle, startAnimTargetTimePointSeconds), new EndingAnimationData(endAnimHandle, endAnimTargetTimePointSeconds, interpolationDistance), nodes, modelSpaceTransforms);
+	}
+	public void ApplyBlendedAndGetNodeTransforms(ModelInstance targetInstance, ResourceHandle<MeshAnimation> startAnimHandle, float startAnimTargetTimePointSeconds, ResourceHandle<MeshAnimation> endAnimHandle, float endAnimTargetTimePointSeconds, float interpolationDistance, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
+		ApplyAndGetNodeTransforms(targetInstance, new(startAnimHandle, startAnimTargetTimePointSeconds), new EndingAnimationData(endAnimHandle, endAnimTargetTimePointSeconds, interpolationDistance), nodeIndices, modelSpaceTransforms);
 	}
 
 	void Apply(ModelInstance targetInstance, StartingAnimationData startAnimData, EndingAnimationData? endAnimData) {
@@ -559,10 +603,25 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 		Apply(targetInstance, startAnimData, endAnimData);
 		CopyRequestedNodeTransformsFromWorkspace(nodes, modelSpaceTransforms);
 	}
+	
+	void ApplyAndGetNodeTransforms(ModelInstance targetInstance, StartingAnimationData startAnimData, EndingAnimationData? endAnimData, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
+		Apply(targetInstance, startAnimData, endAnimData);
+		CopyRequestedNodeTransformsFromWorkspace(nodeIndices, modelSpaceTransforms);
+	}
 
 	void GetNodeTransforms(StartingAnimationData startAnimData, EndingAnimationData? endAnimData, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
 		WriteAnimationNodeTransformsToWorkspace(startAnimData, endAnimData);
 		CopyRequestedNodeTransformsFromWorkspace(nodes, modelSpaceTransforms);
+	}
+	
+	void GetNodeTransforms(StartingAnimationData startAnimData, EndingAnimationData? endAnimData, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
+		WriteAnimationNodeTransformsToWorkspace(startAnimData, endAnimData);
+		CopyRequestedNodeTransformsFromWorkspace(nodeIndices, modelSpaceTransforms);
+	}
+	
+	int GetIndex(ResourceHandle<MeshNode> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return (int) handle.AsInteger;
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<MeshAnimation> handle) {

@@ -11,12 +11,14 @@ public enum MeshAnimationType {
 	Morphing
 }
 
-public readonly record struct MeshAnimationIndex(Mesh Mesh) : IEnumerable<MeshAnimation> {
-	public bool Any {
+#pragma warning disable CA1710 // "Must be called Collection because it implements IROCollection<>" -- I disagree in this case
+public readonly record struct MeshAnimationIndex(Mesh Mesh) : IReadOnlyCollection<MeshAnimation> {
+#pragma warning restore CA1710
+	public int Count {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Mesh.GetHasAnyAnimations();
+		get => All.Count;
 	}
-	
+
 	public IndirectEnumerable<Mesh, MeshAnimation> Skeletal {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Mesh.GetAnimations(MeshAnimationType.Skeletal);

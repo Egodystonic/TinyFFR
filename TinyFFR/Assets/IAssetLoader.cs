@@ -68,7 +68,7 @@ public interface IAssetLoader {
 		var a = Path.GetFileName(occlusionFilePath);
 		var b = Path.GetFileName(roughnessFilePath);
 		var c = Path.GetFileName(metallicFilePath);
-		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, b, c)];
+		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b, "+", c)];
 		SpanUtils.Concatenate(name, a, "+", b, "+", c);
 
 		return LoadCombinedTexture(
@@ -93,7 +93,7 @@ public interface IAssetLoader {
 	Texture LoadOcclusionRoughnessMetallicReflectanceMap(ReadOnlySpan<char> occlusionRoughnessMetallicFilePath, ReadOnlySpan<char> reflectanceFilePath) {
 		var a = Path.GetFileName(occlusionRoughnessMetallicFilePath);
 		var b = Path.GetFileName(reflectanceFilePath);
-		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, b)];
+		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
 		SpanUtils.Concatenate(name, a, "+", b);
 
 		return LoadCombinedTexture(
@@ -116,7 +116,7 @@ public interface IAssetLoader {
 		var b = Path.GetFileName(roughnessFilePath);
 		var c = Path.GetFileName(metallicFilePath);
 		var d = Path.GetFileName(reflectanceFilePath);
-		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, b, c, d)];
+		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b, "+", c, "+", d)];
 		SpanUtils.Concatenate(name, a, "+", b, "+", c, "+", d);
 
 		return LoadCombinedTexture(
@@ -154,7 +154,7 @@ public interface IAssetLoader {
 	Texture LoadAbsorptionTransmissionMap(ReadOnlySpan<char> absorptionFilePath, ReadOnlySpan<char> transmissionFilePath, bool invertAbsorption = false) {
 		var a = Path.GetFileName(absorptionFilePath);
 		var b = Path.GetFileName(transmissionFilePath);
-		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, b)];
+		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
 		SpanUtils.Concatenate(name, a, "+", b);
 
 		return LoadCombinedTexture(
@@ -180,7 +180,7 @@ public interface IAssetLoader {
 	Texture LoadEmissiveMap(ReadOnlySpan<char> emissiveColorFilePath, ReadOnlySpan<char> emissiveIntensityFilePath) {
 		var a = Path.GetFileName(emissiveColorFilePath);
 		var b = Path.GetFileName(emissiveIntensityFilePath);
-		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, b)];
+		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
 		SpanUtils.Concatenate(name, a, "+", b);
 
 		return LoadCombinedTexture(
@@ -209,7 +209,7 @@ public interface IAssetLoader {
 	Texture LoadAnisotropyMapVectorFormatted(ReadOnlySpan<char> vectorFilePath, ReadOnlySpan<char> strengthFilePath) {
 		var a = Path.GetFileName(vectorFilePath);
 		var b = Path.GetFileName(strengthFilePath);
-		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, b)];
+		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
 		SpanUtils.Concatenate(name, a, "+", b);
 
 		return LoadCombinedTexture(
@@ -281,7 +281,7 @@ public interface IAssetLoader {
 	Texture LoadAnisotropyMapRadialAngleFormatted(ReadOnlySpan<char> radialAngleFilePath, ReadOnlySpan<char> strengthFilePath, Orientation2D zeroDirection, AnisotropyRadialAngleRange encodedRange, bool encodedAnticlockwise) {
 		var a = Path.GetFileName(radialAngleFilePath);
 		var b = Path.GetFileName(strengthFilePath);
-		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, b)];
+		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
 		SpanUtils.Concatenate(name, a, "+", b);
 
 		lock (_staticMutationLock) {
@@ -307,7 +307,7 @@ public interface IAssetLoader {
 	Texture LoadClearCoatMap(ReadOnlySpan<char> thicknessFilePath, ReadOnlySpan<char> roughnessFilePath) {
 		var a = Path.GetFileName(thicknessFilePath);
 		var b = Path.GetFileName(roughnessFilePath);
-		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, b)];
+		Span<char> name = stackalloc char[SpanUtils.GetConcatenatedLength(a, "+", b)];
 		SpanUtils.Concatenate(name, a, "+", b);
 
 		return LoadCombinedTexture(

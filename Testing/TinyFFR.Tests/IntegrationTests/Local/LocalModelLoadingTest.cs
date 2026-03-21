@@ -25,7 +25,6 @@ class LocalModelLoadingTest {
 	[SetUp]
 	public void SetUpTest() {
 		_filesToLoad = new[] {
-			"SimpleSkin.gltf",
 			// Color / texturing / basic import tests
 			"BoxTextured.gltf",	
 			"BoxTextured.glb",

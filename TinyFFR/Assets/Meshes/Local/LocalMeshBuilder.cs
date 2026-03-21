@@ -213,11 +213,6 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		return animTable.AddAndTransferBufferOwnership(scalingKeyframes, rotationKeyframes, translationKeyframes, boneMutations, defaultCompletionTimeSeconds, name);
 	}
 
-	public bool GetHasAnyAnimations(ResourceHandle<Mesh> handle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return _activeMeshAnimationTables.TryGetValue(handle, out var animTable) && animTable.Count > 0;
-	}
-
 	public IndirectEnumerable<Mesh, MeshAnimation> GetAnimations(ResourceHandle<Mesh> handle, MeshAnimationType? type) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		
@@ -362,6 +357,19 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 			return;
 		}
 		animTable.GetBindPoseNodeTransforms(nodes, modelSpaceTransforms);
+	}
+	public void GetSkeletalBindPoseNodeModelTransforms(ResourceHandle<Mesh> handle, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (!_activeMeshAnimationTables.TryGetValue(handle, out var animTable)) {
+			if (nodeIndices.Length > modelSpaceTransforms.Length) {
+				throw new ArgumentException($"Requested {nodeIndices.Length} {nameof(nodeIndices)}, but {nameof(modelSpaceTransforms)} destination span is too small (length {modelSpaceTransforms.Length}).", nameof(modelSpaceTransforms));
+			}
+			for (var i = 0; i < nodeIndices.Length; ++i) {
+				modelSpaceTransforms[i] = Matrix4x4.Identity;
+			}
+			return;
+		}
+		animTable.GetBindPoseNodeTransforms(nodeIndices, modelSpaceTransforms);
 	}
 
 	public void ApplySkeletalBindPose(ResourceHandle<Mesh> handle, ModelInstance targetInstance) {

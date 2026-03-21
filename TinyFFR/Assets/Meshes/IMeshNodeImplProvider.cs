@@ -7,5 +7,6 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 public interface IMeshNodeImplProvider : IResourceImplProvider<MeshNode> {
+	int GetIndex(ResourceHandle<MeshNode> handle);
 	bool IsDisposed(ResourceHandle<MeshNode> handle);
 }

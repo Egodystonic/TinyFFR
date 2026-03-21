@@ -182,13 +182,13 @@ class LocalAnimationTest {
 				if (modelInstanceGroup is { } mig) {
 					++curNodeIndex;
 					if (curNodeIndex >= mig[0].Skeleton.Nodes.Count) curNodeIndex = 0;
-					mig[0].Skeleton.GetBindPoseNodeTransform(mig[0].Skeleton.Nodes[curNodeIndex], out var bpt);
+					mig[0].Skeleton.GetBindPoseNodeTransforms(mig[0].Skeleton.Nodes[curNodeIndex], out var bpt);
 					nodeHighlighter.SetTransform(bpt * mig[0].Transform.ToMatrix());
 					nodeHighlighter.SetScaling(1f);
 					UpdateTitle();
 				}
 			}
-			
+
 			if (playingAnim && modelInstanceGroup.HasValue) {
 				var isFirst = true;
 				foreach (var mi in modelInstanceGroup) {
@@ -197,7 +197,7 @@ class LocalAnimationTest {
 					if (prevAnimTimeRemaining > 0f && prevAnimIndex < mi.Mesh.Animations.All.Count) {
 						if (isFirst) {
 							mi.GetAnimationPlayer(mi.Animations[curAnimIndex], mi.Animations[prevAnimIndex])
-								.SetTimePointAndGetNodeTransform((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime, mi.Skeleton.Nodes[curNodeIndex], out var transform);
+								.SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime, mi.Skeleton.Nodes[curNodeIndex], out var transform);
 							nodeHighlighter.SetTransform(transform * mi.Transform.ToMatrix());
 							nodeHighlighter.SetScaling(1f);
 						}
@@ -209,7 +209,7 @@ class LocalAnimationTest {
 					}
 					else {
 						if (isFirst) {
-							mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePointAndGetNodeTransform((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationWrapStyle.Loop, mi.Skeleton.Nodes[curNodeIndex], out var transform);
+							mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationWrapStyle.Loop, mi.Skeleton.Nodes[curNodeIndex], out var transform);
 							nodeHighlighter.SetTransform(transform * mi.Transform.ToMatrix());
 							nodeHighlighter.SetScaling(1f);
 						}

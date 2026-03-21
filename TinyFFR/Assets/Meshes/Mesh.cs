@@ -42,8 +42,8 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 	internal MeshAnimation? TryGetAnimationByName(ReadOnlySpan<char> name, MeshAnimationType? type) => Implementation.TryGetAnimationByName(_handle, name, type);
 	internal MeshNode? TryGetNodeByName(ReadOnlySpan<char> name) => Implementation.TryGetNodeByName(_handle, name);
 	internal void ApplySkeletalBindPose(ModelInstance targetInstance) => Implementation.ApplySkeletalBindPose(_handle, targetInstance);
-	internal bool GetHasAnyAnimations() => Implementation.GetHasAnyAnimations(_handle);
 	internal void GetSkeletalBindPoseNodeModelTransforms(ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) => Implementation.GetSkeletalBindPoseNodeModelTransforms(_handle, nodes, modelSpaceTransforms);
+	internal void GetSkeletalBindPoseNodeModelTransforms(ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) => Implementation.GetSkeletalBindPoseNodeModelTransforms(_handle, nodeIndices, modelSpaceTransforms);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);

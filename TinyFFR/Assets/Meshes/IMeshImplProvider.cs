@@ -13,6 +13,6 @@ public interface IMeshImplProvider : IDisposableResourceImplProvider<Mesh> {
 	MeshAnimation? TryGetAnimationByName(ResourceHandle<Mesh> handle, ReadOnlySpan<char> name, MeshAnimationType? type);
 	MeshNode? TryGetNodeByName(ResourceHandle<Mesh> handle, ReadOnlySpan<char> name);
 	void ApplySkeletalBindPose(ResourceHandle<Mesh> handle, ModelInstance targetInstance);
-	bool GetHasAnyAnimations(ResourceHandle<Mesh> handle);
 	void GetSkeletalBindPoseNodeModelTransforms(ResourceHandle<Mesh> handle, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms);
+	void GetSkeletalBindPoseNodeModelTransforms(ResourceHandle<Mesh> handle, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms);
 }

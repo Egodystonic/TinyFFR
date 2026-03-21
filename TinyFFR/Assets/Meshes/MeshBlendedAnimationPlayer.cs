@@ -58,12 +58,16 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 		StartAnimation.ApplyBlended(Instance, startAnimTimePointSeconds * StartAnimationSpeedMultiplier, EndAnimation, endAnimTimePointSeconds * EndAnimationSpeedMultiplier, interpolationDistance);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetTimePointAndGetNodeTransform(float startAnimTimePointSeconds, float endAnimTimePointSeconds, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
-		StartAnimation.ApplyBlendedAndGetNodeTransform(Instance, startAnimTimePointSeconds * StartAnimationSpeedMultiplier, EndAnimation, endAnimTimePointSeconds * EndAnimationSpeedMultiplier, interpolationDistance, node, out modelSpaceTransform);
+	public void SetTimePointAndGetNodeTransforms(float startAnimTimePointSeconds, float endAnimTimePointSeconds, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
+		StartAnimation.ApplyBlendedAndGetNodeTransforms(Instance, startAnimTimePointSeconds * StartAnimationSpeedMultiplier, EndAnimation, endAnimTimePointSeconds * EndAnimationSpeedMultiplier, interpolationDistance, node, out modelSpaceTransform);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTimePointAndGetNodeTransforms(float startAnimTimePointSeconds, float endAnimTimePointSeconds, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
 		StartAnimation.ApplyBlendedAndGetNodeTransforms(Instance, startAnimTimePointSeconds * StartAnimationSpeedMultiplier, EndAnimation, endAnimTimePointSeconds * EndAnimationSpeedMultiplier, interpolationDistance, nodes, modelSpaceTransforms);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetTimePointAndGetNodeTransforms(float startAnimTimePointSeconds, float endAnimTimePointSeconds, float interpolationDistance, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
+		StartAnimation.ApplyBlendedAndGetNodeTransforms(Instance, startAnimTimePointSeconds * StartAnimationSpeedMultiplier, EndAnimation, endAnimTimePointSeconds * EndAnimationSpeedMultiplier, interpolationDistance, nodeIndices, modelSpaceTransforms);
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -77,8 +81,8 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 		);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetTimePointAndGetNodeTransform(float startAnimTimePointSeconds, MeshAnimationWrapStyle startWrapStyle, float endAnimTimePointSeconds, MeshAnimationWrapStyle endWrapStyle, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
-		StartAnimation.ApplyBlendedAndGetNodeTransform(
+	public void SetTimePointAndGetNodeTransforms(float startAnimTimePointSeconds, MeshAnimationWrapStyle startWrapStyle, float endAnimTimePointSeconds, MeshAnimationWrapStyle endWrapStyle, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
+		StartAnimation.ApplyBlendedAndGetNodeTransforms(
 			Instance,
 			startWrapStyle.ApplyToTimePoint(startAnimTimePointSeconds * StartAnimationSpeedMultiplier, StartAnimation.DefaultDurationSeconds),
 			EndAnimation,
@@ -100,6 +104,18 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 			modelSpaceTransforms
 		);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetTimePointAndGetNodeTransforms(float startAnimTimePointSeconds, MeshAnimationWrapStyle startWrapStyle, float endAnimTimePointSeconds, MeshAnimationWrapStyle endWrapStyle, float interpolationDistance, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
+		StartAnimation.ApplyBlendedAndGetNodeTransforms(
+			Instance,
+			startWrapStyle.ApplyToTimePoint(startAnimTimePointSeconds * StartAnimationSpeedMultiplier, StartAnimation.DefaultDurationSeconds),
+			EndAnimation,
+			endWrapStyle.ApplyToTimePoint(endAnimTimePointSeconds * EndAnimationSpeedMultiplier, EndAnimation.DefaultDurationSeconds),
+			interpolationDistance,
+			nodeIndices, 
+			modelSpaceTransforms
+		);
+	}
 	#endregion
 
 	#region Completion Fraction
@@ -108,12 +124,16 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 		StartAnimation.ApplyBlended(Instance, StartAnimation.DefaultDurationSeconds * startAnimFraction, EndAnimation, EndAnimation.DefaultDurationSeconds * endAnimFraction, interpolationDistance);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetCompletionFractionAndGetNodeTransform(float startAnimFraction, float endAnimFraction, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
-		StartAnimation.ApplyBlendedAndGetNodeTransform(Instance, StartAnimation.DefaultDurationSeconds * startAnimFraction, EndAnimation, EndAnimation.DefaultDurationSeconds * endAnimFraction, interpolationDistance, node, out modelSpaceTransform);
+	public void SetCompletionFractionAndGetNodeTransforms(float startAnimFraction, float endAnimFraction, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
+		StartAnimation.ApplyBlendedAndGetNodeTransforms(Instance, StartAnimation.DefaultDurationSeconds * startAnimFraction, EndAnimation, EndAnimation.DefaultDurationSeconds * endAnimFraction, interpolationDistance, node, out modelSpaceTransform);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetCompletionFractionAndGetNodeTransforms(float startAnimFraction, float endAnimFraction, float interpolationDistance, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
 		StartAnimation.ApplyBlendedAndGetNodeTransforms(Instance, StartAnimation.DefaultDurationSeconds * startAnimFraction, EndAnimation, EndAnimation.DefaultDurationSeconds * endAnimFraction, interpolationDistance, nodes, modelSpaceTransforms);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetCompletionFractionAndGetNodeTransforms(float startAnimFraction, float endAnimFraction, float interpolationDistance, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
+		StartAnimation.ApplyBlendedAndGetNodeTransforms(Instance, StartAnimation.DefaultDurationSeconds * startAnimFraction, EndAnimation, EndAnimation.DefaultDurationSeconds * endAnimFraction, interpolationDistance, nodeIndices, modelSpaceTransforms);
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -127,8 +147,8 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 		);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetCompletionFractionAndGetNodeTransform(float startAnimFraction, MeshAnimationWrapStyle startWrapStyle, float endAnimFraction, MeshAnimationWrapStyle endWrapStyle, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
-		StartAnimation.ApplyBlendedAndGetNodeTransform(
+	public void SetCompletionFractionAndGetNodeTransforms(float startAnimFraction, MeshAnimationWrapStyle startWrapStyle, float endAnimFraction, MeshAnimationWrapStyle endWrapStyle, float interpolationDistance, MeshNode node, out Matrix4x4 modelSpaceTransform) {
+		StartAnimation.ApplyBlendedAndGetNodeTransforms(
 			Instance,
 			startWrapStyle.ApplyToTimePoint(StartAnimation.DefaultDurationSeconds * startAnimFraction, StartAnimation.DefaultDurationSeconds),
 			EndAnimation,
@@ -147,6 +167,18 @@ public readonly struct MeshBlendedAnimationPlayer : IEquatable<MeshBlendedAnimat
 			endWrapStyle.ApplyToTimePoint(EndAnimation.DefaultDurationSeconds * endAnimFraction, EndAnimation.DefaultDurationSeconds),
 			interpolationDistance,
 			nodes, 
+			modelSpaceTransforms
+		);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetCompletionFractionAndGetNodeTransforms(float startAnimFraction, MeshAnimationWrapStyle startWrapStyle, float endAnimFraction, MeshAnimationWrapStyle endWrapStyle, float interpolationDistance, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
+		StartAnimation.ApplyBlendedAndGetNodeTransforms(
+			Instance,
+			startWrapStyle.ApplyToTimePoint(StartAnimation.DefaultDurationSeconds * startAnimFraction, StartAnimation.DefaultDurationSeconds),
+			EndAnimation,
+			endWrapStyle.ApplyToTimePoint(EndAnimation.DefaultDurationSeconds * endAnimFraction, EndAnimation.DefaultDurationSeconds),
+			interpolationDistance,
+			nodeIndices, 
 			modelSpaceTransforms
 		);
 	}

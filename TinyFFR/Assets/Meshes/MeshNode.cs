@@ -17,6 +17,11 @@ public readonly struct MeshNode : IResource<MeshNode, IMeshNodeImplProvider> {
 	IMeshNodeImplProvider IResource<MeshNode, IMeshNodeImplProvider>.Implementation => Implementation;
 	ResourceHandle<MeshNode> IResource<MeshNode>.Handle => Handle;
 	
+	public int Index {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetIndex(_handle);
+	}
+	
 	internal MeshNode(ResourceHandle<MeshNode> handle, IMeshNodeImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
