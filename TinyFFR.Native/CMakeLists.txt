@@ -91,6 +91,7 @@ elseif(UNIX AND NOT APPLE)
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/$<LOWER_CASE:$<CONFIG>>/libimage.a
 			${PROJECT_SOURCE_DIR}/third_party/binaries/filament/$<LOWER_CASE:$<CONFIG>>/libzstd.a
 	)
+	target_link_options(TinyFFR.Native PRIVATE -Wl,-z,noexecstack)
 elseif(APPLE)
 	target_compile_definitions(TinyFFR.Native PRIVATE TFFR_MACOS)
     target_link_libraries(TinyFFR.Native 

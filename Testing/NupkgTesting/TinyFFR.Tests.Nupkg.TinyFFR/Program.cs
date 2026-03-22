@@ -21,7 +21,7 @@ AssertTexelSamples(texBuffer, _expectedSampledNormalPixelValues);
 factory.AssetLoader.ReadTexture(CommonTestAssets.FindAsset(KnownTestAsset.CrateSpecularTex), texBuffer);
 AssertTexelSamples(texBuffer, _expectedSampledSpecularPixelValues);
 
-if (new MeshReadMetadata(662, 480) != factory.AssetLoader.ReadMeshMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateMesh))) throw new InvalidOperationException("Test fail");
+if (new MeshReadMetadata(662, 480, 1) != factory.AssetLoader.ReadMeshMetadata(CommonTestAssets.FindAsset(KnownTestAsset.CrateMesh))) throw new InvalidOperationException("Test fail");
 var meshVertexBuffer = new MeshVertex[662];
 var meshTriangleBuffer = new VertexTriangle[480];
 factory.AssetLoader.ReadMesh(CommonTestAssets.FindAsset(KnownTestAsset.CrateMesh), meshVertexBuffer, meshTriangleBuffer);
