@@ -43,19 +43,77 @@ class LocalAnimationTest {
 	void TestRepeatNodeNames(LocalTinyFfrFactory factory) {
 		using var rGroup = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/Fox.glb"));
 		var mesh = rGroup.Meshes[0];
-		factory.AssetLoader.MeshBuilder.SetNodeName(mesh, 0, mesh.Skeleton.Nodes[1].GetNameAsNewStringObject());
-		factory.AssetLoader.MeshBuilder.SetNodeName(mesh, 5, "foxnode");
-		factory.AssetLoader.MeshBuilder.SetNodeName(mesh, 6, "foxnode");
-		factory.AssetLoader.MeshBuilder.SetNodeName(mesh, 7, "foxnode");
-		factory.AssetLoader.MeshBuilder.SetNodeName(mesh, 8, "foxnode");
+		factory.AssetLoader.MeshBuilder.SetSkeletonNodeName(mesh, 0, mesh.Skeleton.Nodes[1].GetNameAsNewStringObject());
+		factory.AssetLoader.MeshBuilder.SetSkeletonNodeName(mesh, 5, "foxnode");
+		factory.AssetLoader.MeshBuilder.SetSkeletonNodeName(mesh, 6, "foxnode");
+		factory.AssetLoader.MeshBuilder.SetSkeletonNodeName(mesh, 7, "foxnode");
+		factory.AssetLoader.MeshBuilder.SetSkeletonNodeName(mesh, 8, "foxnode");
 		
 		Assert.AreEqual(mesh.Skeleton.Nodes.Count, mesh.Skeleton.Nodes.Select(n => n.GetNameAsNewStringObject()).Distinct().Count());
+	}
+	
+	void TestSynthesizedMesh(LocalTinyFfrFactory factory) {
+		var vertices = new MeshVertexSkeletal[] {
+			new(Location.Random(), XYPair<float>.Random(), Direction.Random(), Direction.Random(), Direction.Random(), MeshVertexSkeletal.BoneIndexArray.Create(1, 2, 3, 4), MeshVertexSkeletal.BoneWeightArray.Create(1, 2, 3, 4)), 
+			new(Location.Random(), XYPair<float>.Random(), Direction.Random(), Direction.Random(), Direction.Random(), MeshVertexSkeletal.BoneIndexArray.Create(1, 2, 3, 4), MeshVertexSkeletal.BoneWeightArray.Create(1, 2, 3, 4)), 
+			new(Location.Random(), XYPair<float>.Random(), Direction.Random(), Direction.Random(), Direction.Random(), MeshVertexSkeletal.BoneIndexArray.Create(1, 2, 3, 4), MeshVertexSkeletal.BoneWeightArray.Create(1, 2, 3, 4)), 
+		};
+		var triangles = new VertexTriangle[] {
+			new(1, 2, 0),
+			new(0, 2, 1),
+		};
+		var nodes = new SkeletalAnimationNode[] {
+			new(Matrix4x4.CreateTranslation(1f, 0f, 0f), Matrix4x4.Identity, 1, 0),	
+			new(Matrix4x4.CreateTranslation(0f, 2f, 0f), Matrix4x4.Identity, null, 1),	
+			new(Matrix4x4.CreateTranslation(0f, 0f, 3f), Matrix4x4.Identity, 0, 1),	
+		};
+		
+		var mesh = factory.MeshBuilder.CreateMesh(
+			vertices,
+			triangles,
+			nodes
+		);
+		factory.MeshBuilder.SetSkeletonNodeName(
+			mesh,
+			0,
+			"node0"
+		);
+		factory.MeshBuilder.SetSkeletonNodeName(
+			mesh,
+			1,
+			"node1"
+		);
+		factory.MeshBuilder.SetSkeletonNodeName(
+			mesh,
+			2,
+			"node2"
+		);
+
+		Assert.AreEqual("node0", mesh.Skeleton.Nodes[0].GetNameAsNewStringObject());
+		Assert.AreEqual("node1", mesh.Skeleton.Nodes[1].GetNameAsNewStringObject());
+		Assert.AreEqual("node2", mesh.Skeleton.Nodes[2].GetNameAsNewStringObject());
+		Assert.AreEqual(0, mesh.Skeleton.Nodes[0].Index);
+		Assert.AreEqual(1, mesh.Skeleton.Nodes[1].Index);
+		Assert.AreEqual(2, mesh.Skeleton.Nodes[2].Index);
+		var nodesIn = new[] { mesh.Skeleton.Nodes[0], mesh.Skeleton.Nodes[1], mesh.Skeleton.Nodes[2] };
+		var indicesIn = new[] { mesh.Skeleton.Nodes[0].Index, mesh.Skeleton.Nodes[1].Index, mesh.Skeleton.Nodes[2].Index };
+		var nodesOut = new Matrix4x4[3];
+		var indicesOut = new Matrix4x4[3];
+		mesh.Skeleton.GetBindPoseNodeTransforms(nodesIn, nodesOut);
+		mesh.Skeleton.GetBindPoseNodeTransforms(indicesIn, indicesOut);
+		AssertToleranceEquals(Matrix4x4.CreateTranslation(1f, 2f, 0f), nodesOut[0], 0.01f);
+		AssertToleranceEquals(Matrix4x4.CreateTranslation(0f, 2f, 0f), nodesOut[1], 0.01f);
+		AssertToleranceEquals(Matrix4x4.CreateTranslation(1f, 2f, 3f), nodesOut[2], 0.01f);
+		AssertToleranceEquals(Matrix4x4.CreateTranslation(1f, 2f, 0f), indicesOut[0], 0.01f);
+		AssertToleranceEquals(Matrix4x4.CreateTranslation(0f, 2f, 0f), indicesOut[1], 0.01f);
+		AssertToleranceEquals(Matrix4x4.CreateTranslation(1f, 2f, 3f), indicesOut[2], 0.01f);
 	}
 
 	[Test]
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 		TestRepeatNodeNames(factory);
+		TestSynthesizedMesh(factory);
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Press Space");
 		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f));

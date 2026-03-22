@@ -312,7 +312,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 		return match;
 	}
 
-	public void SetNodeName(Mesh mesh, int nodeIndex, ReadOnlySpan<char> name) {
+	public void SetSkeletonNodeName(Mesh mesh, int nodeIndex, ReadOnlySpan<char> name) {
 		var handle = mesh.Handle;
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (!_activeMeshAnimationTables.TryGetValue(handle, out var animTable)) return;

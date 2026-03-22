@@ -332,7 +332,7 @@ unsafe partial class LocalAssetLoader {
 					nodeNameUtf16Length = FallbackNodeNamePrefix.Length + additionalCharsWritten;
 				}
 				else nodeNameUtf16Length = FallbackNodeNamePrefix.Length;
-				_meshBuilder.SetNodeName(mesh, i, nodeNameBuffer[..nodeNameUtf16Length]);
+				_meshBuilder.SetSkeletonNodeName(mesh, i, nodeNameBuffer[..nodeNameUtf16Length]);
 			}
 			else {
 				using var nodeNameHeapBuffer = nodeNameUtf16Length > MaxNameLengthForStackAlloc
@@ -340,7 +340,7 @@ unsafe partial class LocalAssetLoader {
 					: (PooledHeapMemory<char>?) null;
 				var nodeNameBuffer = nodeNameHeapBuffer.HasValue ? nodeNameHeapBuffer.Value.Buffer : stackNameBuffer;
 				_animationAndNodeNameBuffer.ConvertToUtf16(nodeNameBuffer);
-				_meshBuilder.SetNodeName(mesh, i, nodeNameBuffer[..nodeNameUtf16Length]);
+				_meshBuilder.SetSkeletonNodeName(mesh, i, nodeNameBuffer[..nodeNameUtf16Length]);
 			}
 		}
 	}

@@ -281,6 +281,6 @@ Each animation requires the following arguments passed to `AttachAnimation()`:
 
 :   Every animation in TinyFFR must have a unique name.
 	
-### SetNodeName()
+### SetSkeletonNodeName()
 	
 This optional method on the `IMeshBuilder` allows you to set names for each node in a created skeletal mesh. This can be important if you need to look up those nodes later by name for e.g. getting their transform matrices post-animation.

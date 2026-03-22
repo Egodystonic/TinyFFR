@@ -374,7 +374,7 @@ public interface IMeshBuilder {
 	#endregion
 	
 	#region Nodes & Animations
-	void SetNodeName(
+	void SetSkeletonNodeName(
 		Mesh mesh,
 		int nodeIndex,
 		ReadOnlySpan<char> name
