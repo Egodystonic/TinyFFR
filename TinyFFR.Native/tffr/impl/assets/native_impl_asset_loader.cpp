@@ -20,6 +20,7 @@
 constexpr unsigned int MeshMaxCount = 1000000;
 constexpr unsigned int NoAnswerFoundGlobalIndex = MeshMaxCount + 1;
 
+#pragma region Asset Loading
 void native_impl_asset_loader::load_asset_file_in_to_memory(const char* filePath, interop_bool fixCommonExporterErrors, interop_bool optimize, MemoryLoadedAssetHandle* outAssetHandle) {
 	ThrowIfNull(filePath, "File path pointer was null.");
 	ThrowIfNull(outAssetHandle, "Out asset handle pointer was null.");
@@ -51,6 +52,14 @@ StartExportedFunc(load_asset_file_in_to_memory, const char* filePath, interop_bo
 	EndExportedFunc
 }
 
+void native_impl_asset_loader::unload_asset_file_from_memory(MemoryLoadedAssetHandle assetHandle) {
+	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
+	aiReleaseImport(assetHandle);
+}
+StartExportedFunc(unload_asset_file_from_memory, MemoryLoadedAssetHandle assetHandle) {
+	native_impl_asset_loader::unload_asset_file_from_memory(assetHandle);
+	EndExportedFunc
+}
 
 int32_t count_meshes_in_node_and_children(aiNode* node) {
 	auto result = static_cast<int32_t>(node->mNumMeshes);
@@ -92,7 +101,9 @@ StartExportedFunc(get_loaded_asset_texture_count, MemoryLoadedAssetHandle assetH
 	native_impl_asset_loader::get_loaded_asset_texture_count(assetHandle, outTextureCount);
 	EndExportedFunc
 }
+#pragma endregion
 
+#pragma region Mesh Queries
 void walk_nodes_to_find_global_index_from_mesh_index(aiNode* node, int32_t& startingIndex, int32_t targetIndex, unsigned int& resultGlobalIndex, aiMatrix4x4& resultTransform) {
 	ThrowIf(node->mNumMeshes > MeshMaxCount, "Mesh count too high.");
 
@@ -181,7 +192,9 @@ StartExportedFunc(get_loaded_asset_mesh_skeletal_bone_count, MemoryLoadedAssetHa
 	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_bone_count(assetHandle, meshIndex, outBoneCount);
 	EndExportedFunc
 }
+#pragma endregion
 
+#pragma region Mesh Geometry
 typedef void(*standard_vertex_data_callback)(unsigned vertexIndex, float3& position, float2& textureUv, float4& tangent, void* bufferPtr);
 
 void get_mesh_standard_vertex_attributes(MemoryLoadedAssetHandle assetHandle, int32_t meshIndex, bool prebakeTransforms, int32_t bufferSizeVertices, void* bufferPtr, standard_vertex_data_callback callback, aiMesh** outMeshPtr) {
@@ -328,7 +341,9 @@ StartExportedFunc(copy_loaded_asset_mesh_triangles, MemoryLoadedAssetHandle asse
 	native_impl_asset_loader::copy_loaded_asset_mesh_triangles(assetHandle, meshIndex, correctFlippedOrientation, bufferSizeTriangles, buffer);
 	EndExportedFunc
 }
+#pragma endregion
 
+#pragma region Materials and Textures
 void native_impl_asset_loader::get_loaded_asset_texture_size(MemoryLoadedAssetHandle assetHandle, int32_t textureIndex, const char* assetRootDirPath, int32_t* outWidth, int32_t* outHeight) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 	ThrowIf(static_cast<uint32_t>(textureIndex) >= assetHandle->mNumTextures, "Texture index was out of bounds.");
@@ -697,18 +712,9 @@ StartExportedFunc(get_loaded_asset_material_data, MemoryLoadedAssetHandle assetH
 	native_impl_asset_loader::get_loaded_asset_material_data(assetHandle, materialIndex, paramGroupPtr, outAlphaFormat, outRefractionThickness);
 	EndExportedFunc
 }
+#pragma endregion
 
-void native_impl_asset_loader::unload_asset_file_from_memory(MemoryLoadedAssetHandle assetHandle) {
-	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
-	aiReleaseImport(assetHandle);
-}
-StartExportedFunc(unload_asset_file_from_memory, MemoryLoadedAssetHandle assetHandle) {
-	native_impl_asset_loader::unload_asset_file_from_memory(assetHandle);
-	EndExportedFunc
-}
-
-
-
+#pragma region Skeletal Data
 void native_impl_asset_loader::get_loaded_asset_mesh_skeletal_animation_count(MemoryLoadedAssetHandle assetHandle, int32_t* outAnimationCount) {
 	ThrowIfNull(assetHandle, "Asset handle pointer was null.");
 	ThrowIfNull(outAnimationCount, "Out animation count pointer was null.");
@@ -943,8 +949,9 @@ StartExportedFunc(get_loaded_asset_mesh_skeletal_node, native_impl_asset_loader:
 	native_impl_asset_loader::get_loaded_asset_mesh_skeletal_node(nodeHandleBuffer, handleBufferCount, nodeIndex, outInverseBindPose, outDefaultTransform, outParentNodeIndex, outBoneIndex, outNodeNameLengthBytes);
 	EndExportedFunc
 }
+#pragma endregion
 
-
+#pragma region Standalone File I/O
 void native_impl_asset_loader::get_texture_file_data(const char* filePath, int32_t* outWidth, int32_t* outHeight, int32_t* outChannelCount) {
 	ThrowIfNull(filePath, "File path pointer was null.");
 	ThrowIfNull(outWidth, "Out width pointer was null.");
@@ -1049,3 +1056,4 @@ StartExportedFunc(unload_ibl_file_from_memory, TextureHandle textureHandle) {
 	native_impl_asset_loader::unload_ibl_file_from_memory(textureHandle);
 	EndExportedFunc
 }
+#pragma endregion

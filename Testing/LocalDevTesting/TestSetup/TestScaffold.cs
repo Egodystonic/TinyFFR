@@ -48,16 +48,16 @@ static class TestScaffold {
 		var periodicalFrameCount = 0;
 		while (!loop.Input.UserQuitRequested && !_defaultLoopExitRequested) {
 			var sw = Stopwatch.StartNew();
-			var deltaTime = loop.IterateOnce();
-			var dtSecs = (float) deltaTime.TotalSeconds;
+			var loopIterationTime = loop.IterateOnce();
+			var deltaTime = loopIterationTime.AsDeltaTime();
 
 			if (autoCameraControlTarget is { } camera) {
-				DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, camera, dtSecs, _builder.Context.Window);
-				DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, camera, dtSecs);
+				DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, camera, deltaTime, _builder.Context.Window);
+				DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, camera, deltaTime);
 			}
 
 			try {
-				_defaultLoopExitRequested = loopAction(dtSecs);
+				_defaultLoopExitRequested = loopAction(deltaTime);
 			}
 			catch (Exception e) {
 				Console.WriteLine($"{e.GetType().Name} occurred when running one iteration of default loop ('{e.Message}').");
@@ -65,7 +65,7 @@ static class TestScaffold {
 			}
 
 			if (_builder.DefaultLoopSlowFrameReportingEnable && sw.Elapsed > _builder.DefaultLoopSlowFrameTime) {
-				Console.WriteLine("Slow frame! Measured: " + sw.ElapsedMilliseconds + "ms / DeltaTime: " + deltaTime.TotalMilliseconds + "ms");
+				Console.WriteLine("Slow frame! Measured: " + sw.ElapsedMilliseconds + "ms / DeltaTime: " + loopIterationTime.TotalMilliseconds + "ms");
 			}
 
 			++periodicalFrameCount;

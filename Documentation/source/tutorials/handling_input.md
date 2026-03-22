@@ -84,7 +84,7 @@ We also need to lock our cursor inside the window while running to make sure it 
 window.LockCursor = true; // (1)!
 
 while (!loop.Input.UserQuitRequested) {
-	var deltaTime = (float) loop.IterateOnce().TotalSeconds;
+	var deltaTime = loop.IterateOnce().AsDeltaTime();
 
 	CameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, camera, deltaTime);
 	CameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, camera, deltaTime);
@@ -541,7 +541,7 @@ Here's the complete example that puts everything above together in one snippet:
 window.LockCursor = true;
 
 while (!loop.Input.UserQuitRequested) {
-	var deltaTime = (float) loop.IterateOnce().TotalSeconds;
+	var deltaTime = loop.IterateOnce().AsDeltaTime();
 
 	CameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, camera, deltaTime);
 	CameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, camera, deltaTime);

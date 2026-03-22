@@ -355,7 +355,7 @@ var appLoopBuilder = factory.ApplicationLoopBuilder;
 using var loop = appLoopBuilder.CreateLoop(60); // (2)!
 
 while (!loop.Input.UserQuitRequested) { // (3)!
-	var deltaTime = (float) loop.IterateOnce().TotalSeconds; // (4)!
+	var deltaTime = loop.IterateOnce().AsDeltaTime(); // (4)!
 
 	if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Space)) { // (5)!
 		var cubeRotationSpeedPerSec = new Rotation(90f, Direction.Down); // (1)!
@@ -383,7 +383,7 @@ while (!loop.Input.UserQuitRequested) { // (3)!
 
 	The return value of `loop.IterateOnce()` will be a [TimeSpan](https://learn.microsoft.com/en-us/dotnet/api/system.timespan?view=net-9.0) that tells you how long has elapsed since the last frame. At a 60Hz framerate, this will ideally be 16.666ms, but due to various factors it may vary. 
 	
-	We use this value to extract a `deltaTime` in seconds -- that's the time in seconds since the last frame.
+	A public extension method `AsDeltaTime()` is provided that we can use to extract a `float deltaTime` in seconds -- that's the time in seconds since the last frame. This is optional but useful, as TinyFFR uses `float`s everywhere in its public API. The alternative is having to cast `timeSpan.TotalSeconds` from `double` to `float` at every usage site.
 
 5. This line checks if, for the current frame, the user is currently holding down the space bar. Remember, this loop is iterating 60 times per second.
 6. 	This applies the rotation we created above to the cube. 
@@ -486,7 +486,7 @@ var appLoopBuilder = factory.ApplicationLoopBuilder;
 using var loop = appLoopBuilder.CreateLoop(60);
 
 while (!loop.Input.UserQuitRequested) {
-	var deltaTime = (float) loop.IterateOnce().TotalSeconds;
+	var deltaTime = loop.IterateOnce().AsDeltaTime();
 
 	if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Space)) {
 		var cubeRotationSpeedPerSec = new Rotation(90f, Direction.Down);
@@ -535,7 +535,7 @@ using var camera = factory.CameraBuilder.CreateCamera(initialPosition: Location.
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 while (!loop.Input.UserQuitRequested) {
-	var deltaTime = (float) loop.IterateOnce().TotalSeconds;
+	var deltaTime = loop.IterateOnce().AsDeltaTime();
 	if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Space)) cube.RotateBy(90f % Direction.Down * deltaTime);
 	renderer.Render();
 }

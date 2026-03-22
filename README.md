@@ -38,7 +38,7 @@ using var camera = factory.CameraBuilder.CreateCamera(initialPosition: Location.
 using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 while (!loop.Input.UserQuitRequested) {
-    var deltaTime = (float) loop.IterateOnce().TotalSeconds;
+    var deltaTime = loop.IterateOnce().AsDeltaTime();
     if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Space)) cube.RotateBy(90f % Direction.Down * deltaTime);
     renderer.Render();
 }

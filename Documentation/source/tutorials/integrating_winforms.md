@@ -73,13 +73,15 @@ This method allows you to supply a callback delegate that will be invoked at a t
 
 ```csharp
 // Example Tick function
-void Tick(TimeSpan deltaTime) {
+void Tick(TimeSpan tickIterationTime) {
+	var deltaTime = tickIterationTime.AsDeltaTime()
+
 	// Render one frame each tick
 	sceneView.Renderer.Render();
 
 	// Manipulate objects in the scene also
-	_instance.RotateBy((float) deltaTime.TotalSeconds * 130f % Direction.Up);
-	_instance.RotateBy((float) deltaTime.TotalSeconds * 80f % Direction.Right);
+	_instance.RotateBy(deltaTime * 130f % Direction.Up);
+	_instance.RotateBy(deltaTime * 80f % Direction.Right);
 
 	// It's safe to touch UI/control data and TinyFFR objects here; this function is guaranteed to be executed on the UI context
 	MyBoundProperty = SomeNewValue();
