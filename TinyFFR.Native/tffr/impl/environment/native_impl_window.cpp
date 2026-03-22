@@ -9,9 +9,9 @@
 
 WindowHandle native_impl_window::create_window(int32_t width, int32_t height, int32_t xPos, int32_t yPos, int32_t renderingApiIndex) {
 #if defined(TFFR_LINUX)
-	auto windowFlags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI;
+	Uint32 windowFlags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI;
 #else
-	auto windowFlags = SDL_WINDOW_RESIZABLE;
+	Uint32 windowFlags = SDL_WINDOW_RESIZABLE;
 #endif
 	
 	if (renderingApiIndex == RENDERING_API_OPENGL) windowFlags |= SDL_WINDOW_OPENGL;

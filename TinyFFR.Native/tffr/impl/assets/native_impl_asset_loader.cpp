@@ -529,8 +529,8 @@ void native_impl_asset_loader::get_loaded_asset_texture_path_len(MemoryLoadedAss
 	std::filesystem::path root { assetRootDirPath };
 	std::filesystem::path rel { cStr };
 	std::filesystem::path full = root / rel; // Don't be tempted to inline this and the line below, root / rel creates a temp that is moved to 'full' here. C++ fucking sucks lol
-	auto fullPath = full.c_str();
-	*outPathLength = static_cast<int32_t>(strlen(fullPath));
+	auto fullPathStr = full.string();
+	*outPathLength = static_cast<int32_t>(fullPathStr.length());
 }
 StartExportedFunc(get_loaded_asset_texture_path_len, MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, int32_t textureIndex, const char* assetRootDirPath, int32_t* outPathLength) {
 	native_impl_asset_loader::get_loaded_asset_texture_path_len(assetHandle, materialIndex, textureIndex, assetRootDirPath, outPathLength);
@@ -549,10 +549,10 @@ void native_impl_asset_loader::get_loaded_asset_texture_path(MemoryLoadedAssetHa
 	std::filesystem::path root { assetRootDirPath };
 	std::filesystem::path rel { cStr };
 	std::filesystem::path full = root / rel; // Don't be tempted to inline this and the line below, root / rel creates a temp that is moved to 'full' here. C++ fucking sucks lol
-	auto fullPath = full.c_str();
-	auto len = strlen(fullPath);
+	auto fullPathStr = full.string();
+	auto len = fullPathStr.length();
 	ThrowIf(bufferLengthBytes <= len, "Given string buffer too small for texture path string.");
-	strcpy(strBuffer, fullPath);
+	strcpy(strBuffer, fullPathStr.c_str());
 }
 StartExportedFunc(get_loaded_asset_texture_path, MemoryLoadedAssetHandle assetHandle, int32_t materialIndex, int32_t textureIndex, const char* assetRootDirPath, char* strBuffer, int32_t bufferLengthBytes) {
 	native_impl_asset_loader::get_loaded_asset_texture_path(assetHandle, materialIndex, textureIndex, assetRootDirPath, strBuffer, bufferLengthBytes);
