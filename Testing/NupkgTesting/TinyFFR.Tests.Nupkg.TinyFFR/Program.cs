@@ -69,7 +69,7 @@ var instanceToCameraVect = instance.Position >> camera.Position;
 
 using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSeconds(8.9d)) {
-	var deltaTime = (float) loop.IterateOnce().TotalSeconds;
+	var deltaTime = loop.IterateOnce().AsDeltaTime();
 	renderer.Render();
 
 	instanceToCameraVect = instanceToCameraVect.RotatedBy(2.3f % Direction.Up);
@@ -82,4 +82,25 @@ while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSe
 	if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) instance.AdjustScaleBy(-0.1f);
 }
 
-Console.WriteLine("Test completed fine (assuming you saw the crate and the backdrop).");
+scene.Remove(instance);
+
+var animResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/BrainStem.glb"));
+var animInstanceGroup = factory.ObjectBuilder.CreateModelInstanceGroup(animResources);
+animInstanceGroup.RotateBy(90f % Direction.Right);
+scene.Add(animInstanceGroup);
+
+window.SetTitle("Close window when ready with ESC");
+camera.Position = (0f, 1.4f, -2.6f);
+camera.LookAt((0f, 0.85f, 0f), Direction.Up);
+
+while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Escape)) {
+	var deltaTime = loop.IterateOnce().AsDeltaTime();
+
+	foreach (var i in animInstanceGroup) {
+		i.GetAnimationPlayerWithSpeedMultiplier(i.Animations[0], 0.8f).SetTimePoint(loop.TotalIteratedTime.AsDeltaTime(), MeshAnimationWrapStyle.Loop);
+	}
+
+	renderer.Render();
+}
+
+Console.WriteLine("Test completed fine (assuming you saw the crate and the backdrop and then the dancing figure).");
