@@ -35,11 +35,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native_libs_macos
-          path: | 
-            build_output/Release/libassimp*
-            build_output/Release/libSDL*
-            !build_output/Release/libSDL2_test*
-            build_output/Release/libTinyFFR*
+          path: |
+            build_output/Release/libassimp.?.dylib
+            build_output/Release/libSDL2-?.?.?.dylib
+            build_output/Release/libTinyFFR.Native.dylib
         
 
       
@@ -99,13 +98,15 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native_libs_linux
-          path: | 
-            build_output/Release/libassimp*
-            build_output/Release/libSDL*
-            !build_output/Release/libSDL2_test*
-            build_output/Release/libTinyFFR*
-            build_output/Release/libc++*
-            build_output/Release/libunwind*
+          path: |
+            build_output/Release/libassimp.so.?
+            build_output/Release/libSDL2-?.?.so.0
+            build_output/Release/libTinyFFR.Native.so
+            build_output/Release/libc++.so.1
+            build_output/Release/libc++abi.so.1
+            build_output/Release/libunwind.so.1
+
+
 
 
   build_windows:
@@ -140,11 +141,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native_libs_windows
-          path: | 
-            build_output/Release/assimp*
-            build_output/Release/SDL2*
-            !build_output/Release/SDL2_test*
-            build_output/Release/TinyFFR*
+          path: |
+            build_output/Release/assimp-vc143-mt.dll
+            build_output/Release/SDL2.dll
+            build_output/Release/TinyFFR.Native.dll
+
+
+
 
   create_nupkgs:
     runs-on: windows-latest
