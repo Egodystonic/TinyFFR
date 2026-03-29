@@ -60,18 +60,31 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 
 	readonly int _blockSize;
 	readonly int _blockSizeLessOne;
+	readonly string _overSizedRentalRequestExceptionMessage;
 	bool _isDisposed = false;
 	AllocatedSpace* _allocatedSpaces;
 	int _numAllocatedSpaces;
 
-	public FixedByteBufferPool(int largestRequiredBufferSizeBytes) {
+	public FixedByteBufferPool(int largestRequiredBufferSizeBytes, string overSizedRentalRequestExceptionMessage) {
 		if (largestRequiredBufferSizeBytes <= 0) throw new ArgumentOutOfRangeException(nameof(largestRequiredBufferSizeBytes), largestRequiredBufferSizeBytes, $"Largest required buffer size must be at least 1 byte.");
+		ArgumentNullException.ThrowIfNull(overSizedRentalRequestExceptionMessage);
+		_overSizedRentalRequestExceptionMessage = overSizedRentalRequestExceptionMessage;
 		_blockSizeLessOne = (largestRequiredBufferSizeBytes / NumBlocksPerSpace);
 		_blockSize = _blockSizeLessOne + 1;
 		_allocatedSpaces = (AllocatedSpace*) NativeMemory.Alloc((nuint) sizeof(AllocatedSpace));
 		_numAllocatedSpaces = 1;
 		AllocateNewSpaceAtEndOfList();
 	}
+	
+	public static FixedByteBufferPool CreateFromUserConfigurableParameter(int largestRequiredBufferSizeBytes, [CallerArgumentExpression(nameof(largestRequiredBufferSizeBytes))] string? parameterName = null) {
+		ArgumentNullException.ThrowIfNull(parameterName);
+		return new FixedByteBufferPool(
+			largestRequiredBufferSizeBytes,
+			$"An operation has failed because a request was made to an internal buffer for an allocation larger than the maximum size the buffer can provide. " +
+			$"To fix this, increase the size of the '{parameterName.Split(".")[^1]}' property to increase the size of the internal buffer." + System.Environment.NewLine +
+			$"Current max buffer size (bytes) is {largestRequiredBufferSizeBytes}."
+		);
+	}  
 
 	public int GetMaxBufferSize<T>() where T : unmanaged => MaxBufferSizeBytes / sizeof(T);
 
@@ -83,7 +96,9 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 			if (_allocatedSpaces[i].LargestContiguousMemoryBlockCount >= numBlocksRequired) return RentBlocksFromSpace(i, numBlocksRequired);
 		}
 
-		if (numBlocksRequired > NumBlocksPerSpace) throw new ArgumentOutOfRangeException(nameof(numBytesMinimum), numBytesMinimum, "Required size in bytes is larger than the given largest required buffer size (as specified in the constructor).");
+		if (numBlocksRequired > NumBlocksPerSpace) {
+			throw new InvalidOperationException(_overSizedRentalRequestExceptionMessage + System.Environment.NewLine + "Requested buffer size (bytes) was " + numBytesMinimum + ".");
+		}
 		IncreaseSpaceListSize();
 		AllocateNewSpaceAtEndOfList();
 		return RentBlocksFromSpace(_numAllocatedSpaces - 1, numBlocksRequired);
@@ -134,8 +149,8 @@ sealed unsafe class FixedByteBufferPool : IDisposable {
 	}
 
 	FixedByteBuffer RentBlocksFromSpace(int spaceIndex, int numBlocks) {
-		ArgumentOutOfRangeException.ThrowIfLessThan(spaceIndex, 0, nameof(spaceIndex));
-		ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(spaceIndex, _numAllocatedSpaces, nameof(spaceIndex));
+		ArgumentOutOfRangeException.ThrowIfLessThan(spaceIndex, 0);
+		ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(spaceIndex, _numAllocatedSpaces);
 		var spacePtr = _allocatedSpaces + spaceIndex;
 		ArgumentOutOfRangeException.ThrowIfLessThan(spacePtr->LargestContiguousMemoryBlockCount, numBlocks, nameof(numBlocks));
 		var result = new FixedByteBuffer(

@@ -37,11 +37,11 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 		_materialBuilder = new LocalMaterialBuilder(globals, config, _textureBuilder, _testMaterialTextures);
 		_assetFilePathBuffer = new InteropStringBuffer(config.MaxAssetFilePathLengthChars, addOneForNullTerminator: true);
 		_animationAndNodeNameBuffer = new InteropStringBuffer(config.MaxAnimationAndNodeNameLengthChars, addOneForNullTerminator: true);
-		_vertexTriangleBufferPool = new FixedByteBufferPool(config.MaxAssetVertexIndexBufferSizeBytes);
-		_skeletalNodeBufferPool = new FixedByteBufferPool(config.MaxSkeletalAnimationNodeCount * sizeof(NodeHandle));
-		_skeletalAnimationKeyframeDataPool = new FixedByteBufferPool(config.MaxSkeletalAnimationChannelKeyframeCount * sizeof(Quaternion));
-		_ktxFileBufferPool = new FixedByteBufferPool(config.MaxKtxFileBufferSizeBytes);
-		_embeddedAssetTextureBufferPool = new FixedByteBufferPool(config.MaxEmbeddedAssetTextureFileSizeBytes);
+		_vertexTriangleBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(config.MaxAssetVertexIndexBufferSizeBytes);
+		_skeletalNodeBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(config.MaxSkeletalAnimationNodeCount * sizeof(NodeHandle), nameof(config.MaxSkeletalAnimationNodeCount));
+		_skeletalAnimationKeyframeDataPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(config.MaxSkeletalAnimationChannelKeyframeCount * sizeof(Quaternion), nameof(config.MaxSkeletalAnimationChannelKeyframeCount));
+		_ktxFileBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(config.MaxKtxFileBufferSizeBytes);
+		_embeddedAssetTextureBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(config.MaxEmbeddedAssetTextureFileSizeBytes);
 		_maxHdrProcessingTime = config.MaxHdrProcessingTime;
 		_backdropTextureImplProvider = new BackdropTextureImplProvider(this);
 

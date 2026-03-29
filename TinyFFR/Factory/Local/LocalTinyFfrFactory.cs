@@ -81,7 +81,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		).ThrowIfFailure();
 
 		var resourceGroupProviderRef = new DeferredRef<LocalResourceGroupImplProvider>();
-		_gpuHoldingBufferPool = new FixedByteBufferPool(factoryConfig.MaxCpuToGpuAssetTransferSizeBytes);
+		_gpuHoldingBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(factoryConfig.MaxCpuToGpuAssetTransferSizeBytes);
 		var globals = new LocalFactoryGlobalObjectGroup(
 			this,
 			_resourceNameMap,

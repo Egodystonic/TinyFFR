@@ -14,7 +14,7 @@ class FixedByteBufferPoolTest {
 	[Test]
 	public void MaxBufferSizeShouldAlwaysBeAtLeastWhatWasRequested() {
 		for (var i = 4; i < 120; ++i) {
-			using var pool = new FixedByteBufferPool(i);
+			using var pool = new FixedByteBufferPool(i, "");
 			Assert.GreaterOrEqual(pool.MaxBufferSizeBytes, i);
 			Assert.GreaterOrEqual(pool.GetMaxBufferSize<uint>(), i / 4);
 		}
@@ -22,7 +22,7 @@ class FixedByteBufferPoolTest {
 
 	[Test]
 	public void ShouldAlwaysBePossibleToRentUpToMaximumBufferSize() {
-		using var pool = new FixedByteBufferPool(100);
+		using var pool = new FixedByteBufferPool(100, "");
 		var maxBufferSize = pool.MaxBufferSizeBytes;
 
 		var rentedBuffers = new List<FixedByteBufferPool.FixedByteBuffer>();
@@ -43,7 +43,7 @@ class FixedByteBufferPoolTest {
 	public void ShouldNeverLeakOrCorruptMemory() {
 		const int NumIterations = 20_000;
 
-		using var pool = new FixedByteBufferPool(100);
+		using var pool = new FixedByteBufferPool(100, "");
 		var maxBufferSize = pool.MaxBufferSizeBytes;
 		var rentedBufferArray = new FixedByteBufferPool.FixedByteBuffer[Byte.MaxValue];
 		for (var i = 0; i < rentedBufferArray.Length; ++i) {
@@ -68,7 +68,7 @@ class FixedByteBufferPoolTest {
 
 	[Test]
 	public void ShouldRentBuffersOfAppropriateSize() {
-		using var pool = new FixedByteBufferPool(100);
+		using var pool = new FixedByteBufferPool(100, "");
 
 		for (var i = 0; i < 10; ++i) {
 			Assert.GreaterOrEqual(pool.Rent<byte>(i).SizeBytes, i);
@@ -76,5 +76,14 @@ class FixedByteBufferPoolTest {
 			Assert.GreaterOrEqual(pool.Rent<float>(i).SizeBytes, i * sizeof(float));
 			Assert.GreaterOrEqual(pool.Rent<double>(i).SizeBytes, i * sizeof(double));
 		}
+	}
+
+	[Test]
+	public void ShouldUseCustomExceptionMessageWhenRequestingOversizedBuffer() {
+		var limit = 100;
+		using var pool = FixedByteBufferPool.CreateFromUserConfigurableParameter(limit);
+		var exception = Assert.Throws<InvalidOperationException>(() => pool.Rent(500));
+		Console.WriteLine(exception.Message);
+		Assert.IsTrue(exception.Message.Contains("limit", StringComparison.OrdinalIgnoreCase));
 	}
 }
