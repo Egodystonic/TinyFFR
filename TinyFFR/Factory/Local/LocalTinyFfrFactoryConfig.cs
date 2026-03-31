@@ -11,7 +11,7 @@ public enum MemoryUsageRubric {
 
 public sealed class LocalTinyFfrFactoryConfig {
 	public const int MaxMaxCpuToGpuAssetTransferSizeBytes = 1 << 29;
-	public const int DefaultMaxCpuToGpuAssetTransferSizeBytes = 1024 * 1024 * 100; // 100 MB 
+	public const int DefaultMaxCpuToGpuAssetTransferSizeBytes = 1024 * 1024 * 100; // 100 MB  
 	public static readonly MemoryUsageRubric DefaultMemoryUsageRubric = MemoryUsageRubric.Standard;
 
 	public int MaxCpuToGpuAssetTransferSizeBytes {
@@ -32,4 +32,6 @@ public sealed class LocalTinyFfrFactoryConfig {
 			field = value;
 		}
 	} = DefaultMemoryUsageRubric;
+	
+	
 }

@@ -28,6 +28,26 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IA
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetDesiredIterationInterval(_handle);
 	}
+	
+	public float FramesPerSecondRecentAverage {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetFramesPerSecondRecentAverage(_handle);
+	}
+	
+	public float FramesPerSecondRecentMin {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetFramesPerSecondRecentMin(_handle);
+	}
+	
+	public float FramesPerSecondRecentMax {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetFramesPerSecondRecentMax(_handle);
+	}
+	
+	public float FramesPerSecondLatest {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetFramesPerSecondLatest(_handle);
+	}
 
 	internal ApplicationLoop(ResourceHandle<ApplicationLoop> handle, IApplicationLoopImplProvider impl) {
 		ArgumentNullException.ThrowIfNull(impl);

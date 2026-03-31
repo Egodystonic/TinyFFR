@@ -6,6 +6,19 @@ search:
   exclude: true
 ---
 
+## 0.8
+
+__Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/7?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.8.0)__
+
+### Major Features
+
+### Improvements
+
+* Improved error messages when exceeding internal buffer size
+* Made it possible to create mock resources for testing
+
+### Bug Fixes
+
 ## 0.7
 
 __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/9?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.7.0)__

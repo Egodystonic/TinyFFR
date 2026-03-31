@@ -74,6 +74,13 @@ static class TestScaffold {
 				periodicalFrameCount = 0;
 				periodicalFpsTimer.Restart();
 			}
+			if (_builder is { UpdateWindowTitleWithFpsStats: true, Context.Window: {} window }) {
+				window.SetTitle(
+					$"FPS: {loop.FramesPerSecondRecentAverage:N0} avg | " +
+					$"[{loop.FramesPerSecondRecentMin:N0} - {loop.FramesPerSecondRecentMax:N0}] range | " +
+					$"{loop.FramesPerSecondLatest:N0} current"
+				);
+			}
 		}
 
 		_defaultLoopExitRequested = false;

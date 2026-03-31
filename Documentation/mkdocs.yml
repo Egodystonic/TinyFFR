@@ -139,6 +139,8 @@ nav:
       - tutorials/vsync.md
       - tutorials/camera_ray_casting.md
       - tutorials/controlling_memory.md
+      - tutorials/measuring_framerate.md
+      - tutorials/creating_mock_resources.md
   - Reference Docs:
     - Assets:
       - reference/texture_patterns.md

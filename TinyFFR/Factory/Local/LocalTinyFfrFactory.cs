@@ -57,7 +57,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 
 	IApplicationLoopBuilder ITinyFfrFactory.ApplicationLoopBuilder => ApplicationLoopBuilder;
 
-	public unsafe LocalTinyFfrFactory(LocalTinyFfrFactoryConfig? factoryConfig = null, WindowBuilderConfig? windowBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null, RendererBuilderConfig? rendererBuilderConfig = null) {
+	public unsafe LocalTinyFfrFactory(LocalTinyFfrFactoryConfig? factoryConfig = null, LocalApplicationLoopBuilderConfig? localLoopBuilderConfig = null, WindowBuilderConfig? windowBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null, RendererBuilderConfig? rendererBuilderConfig = null) {
 		if (_instance != null) throw new InvalidOperationException($"Only one {nameof(LocalTinyFfrFactory)} may be live at any given time. Dispose the previous instance before creating another one.");
 
 		LocalFileSystemUtils.AttemptToEnsureApplicationDataFolderExists();
@@ -67,6 +67,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		windowBuilderConfig ??= new();
 		assetLoaderConfig ??= new();
 		rendererBuilderConfig ??= new();
+		localLoopBuilderConfig ??= new();
 
 		OnFactoryBuild(
 			rendererBuilderConfig.EnableVSync,
@@ -95,7 +96,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 
 		_displayDiscoverer = new LocalDisplayDiscoverer(globals);
 		_windowBuilder = new LocalWindowBuilder(globals, windowBuilderConfig, rendererBuilderConfig.GetActualRenderingApi(), _displayDiscoverer.All.ToArray().AsMemory());
-		_applicationLoopBuilder = new LocalApplicationLoopBuilder(globals);
+		_applicationLoopBuilder = new LocalApplicationLoopBuilder(localLoopBuilderConfig, globals);
 		_assetLoader = new LocalAssetLoader(globals, assetLoaderConfig);
 		_cameraBuilder = new LocalCameraBuilder(globals);
 		_lightBuilder = new LocalLightBuilder(globals);

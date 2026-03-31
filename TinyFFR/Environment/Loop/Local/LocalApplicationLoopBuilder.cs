@@ -25,21 +25,32 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		TimeSpan TotalIteratedTime,
 		bool ShouldIterateInput
 	);
+	readonly record struct IterationTimingData(
+		PooledHeapMemory<TimeSpan> TimingBuffer,
+		int PreviousIterationSlot,
+		bool TimingBufferIsFilled
+	) {
+		public int NumSlotsWritten => TimingBufferIsFilled ? TimingBuffer.Buffer.Length : (PreviousIterationSlot + 1); 
+	}
 
 	const string DefaultLoopName = "Unnamed Loop";
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly ArrayPoolBackedMap<ResourceHandle<ApplicationLoop>, HandleTrackingData> _handleDataMap = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ApplicationLoop>, IterationTimingData> _iterationTimingsMap = new();
 #pragma warning disable CA2213 // Wants us to dispose _latestInputRetriever, but this is taken care of by the LocalInputManager
 	readonly LocalLatestInputRetriever _latestInputRetriever;
+	readonly int _iterationTimingBufferMask;
 #pragma warning restore CA2213
 	nuint _nextLoopHandleIndex = 1;
 	bool _isDisposed = false;
 
-	public LocalApplicationLoopBuilder(LocalFactoryGlobalObjectGroup globals) {
+	public LocalApplicationLoopBuilder(LocalApplicationLoopBuilderConfig config, LocalFactoryGlobalObjectGroup globals) {
 		ArgumentNullException.ThrowIfNull(globals);
 
 		_globals = globals;
 		_latestInputRetriever = LocalInputManager.IncrementRefCountAndGetRetriever();
+		_iterationTimingBufferMask = (1 << config.FrameRateBufferSizeLog2) - 1;
+		Console.WriteLine(_iterationTimingBufferMask + 1);
 	}
 
 	public ApplicationLoop CreateLoop(in LocalApplicationLoopCreationConfig config) {
@@ -49,6 +60,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		var curTime = Stopwatch.GetTimestamp();
 		var handle = (ResourceHandle<ApplicationLoop>) _nextLoopHandleIndex;
 		_handleDataMap.Add(handle, new(config.MaxCpuBusyWaitTime, config.BaseConfig.FrameInterval, curTime, curTime, TimeSpan.Zero, config.IterationShouldRefreshGlobalInputStates));
+		_iterationTimingsMap.Add(handle, new(_globals.HeapPool.Borrow<TimeSpan>(_iterationTimingBufferMask + 1), -1, false));
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.BaseConfig.Name, DefaultLoopName);
 		_nextLoopHandleIndex++;
 		return new(handle, this);
@@ -89,6 +101,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 			PreviousIterationReturnTimestamp = Stopwatch.GetTimestamp(),
 			TotalIteratedTime = _handleDataMap[handle].TotalIteratedTime + dt
 		};
+		LogIterationTiming(handle, dt);
 		return dt;
 	}
 	public bool TryIterateOnce(ResourceHandle<ApplicationLoop> handle, out TimeSpan outDeltaTime) {
@@ -107,6 +120,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 			PreviousIterationReturnTimestamp = Stopwatch.GetTimestamp(),
 			TotalIteratedTime = _handleDataMap[handle].TotalIteratedTime + dt
 		};
+		LogIterationTiming(handle, dt);
 		outDeltaTime = dt;
 		return true;
 	}
@@ -126,6 +140,58 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 	public TimeSpan GetDesiredIterationInterval(ResourceHandle<ApplicationLoop> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _handleDataMap[handle].FrameInterval;
+	}
+	
+	void LogIterationTiming(ResourceHandle<ApplicationLoop> handle, TimeSpan deltaTime) {
+		var curBufferData = _iterationTimingsMap[handle];
+		var iterationSlotIncremented = curBufferData.PreviousIterationSlot + 1;
+		curBufferData = curBufferData with { PreviousIterationSlot = iterationSlotIncremented & _iterationTimingBufferMask };
+		curBufferData = curBufferData with { TimingBufferIsFilled = curBufferData.TimingBufferIsFilled || curBufferData.PreviousIterationSlot < iterationSlotIncremented };
+		curBufferData.TimingBuffer.Buffer[curBufferData.PreviousIterationSlot] = deltaTime;
+		_iterationTimingsMap[handle] = curBufferData;
+	}
+	
+	static float ConvertTimeSpanToFpsValue(TimeSpan ts) {
+		var result = 1f / ts.AsDeltaTime();
+		return result.IsPositiveAndFinite() ? result : 0f;
+	}
+
+	public float GetFramesPerSecondLatest(ResourceHandle<ApplicationLoop> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var timingBufferData = _iterationTimingsMap[handle];
+		if (timingBufferData.PreviousIterationSlot < 0) return 0f;
+		return ConvertTimeSpanToFpsValue(timingBufferData.TimingBuffer.Buffer[timingBufferData.PreviousIterationSlot]);
+	}
+	
+	public float GetFramesPerSecondRecentAverage(ResourceHandle<ApplicationLoop> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var timingBufferData = _iterationTimingsMap[handle];
+		if (timingBufferData.NumSlotsWritten == 0) return 0f;
+		var sum = TimeSpan.Zero;
+		for (var i = 0; i < timingBufferData.NumSlotsWritten; ++i) {
+			sum += timingBufferData.TimingBuffer.Buffer[i];
+		}
+		return ConvertTimeSpanToFpsValue(TimeSpan.FromTicks(sum.Ticks / timingBufferData.NumSlotsWritten));
+	}
+	public float GetFramesPerSecondRecentMin(ResourceHandle<ApplicationLoop> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var timingBufferData = _iterationTimingsMap[handle];
+		var highestValue = TimeSpan.Zero;
+		for (var i = 0; i < timingBufferData.NumSlotsWritten; ++i) {
+			var val = timingBufferData.TimingBuffer.Buffer[i];
+			if (val > highestValue) highestValue = val;
+		}
+		return ConvertTimeSpanToFpsValue(highestValue);
+	}
+	public float GetFramesPerSecondRecentMax(ResourceHandle<ApplicationLoop> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var timingBufferData = _iterationTimingsMap[handle];
+		var lowestValue = TimeSpan.MaxValue;
+		for (var i = 0; i < timingBufferData.NumSlotsWritten; ++i) {
+			var val = timingBufferData.TimingBuffer.Buffer[i];
+			if (val < lowestValue) lowestValue = val;
+		}
+		return ConvertTimeSpanToFpsValue(lowestValue);
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<ApplicationLoop> handle) {
@@ -147,11 +213,15 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 	ApplicationLoop HandleToInstance(ResourceHandle<ApplicationLoop> h) => new(h, this);
 
 	#region Disposal
-	public void Dispose(ResourceHandle<ApplicationLoop> handle) {
+	public void Dispose(ResourceHandle<ApplicationLoop> handle) => Dispose(handle, removeFromMaps: true);
+	void Dispose(ResourceHandle<ApplicationLoop> handle, bool removeFromMaps) {
 		if (IsDisposed(handle)) return;
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DisposeResourceNameIfExists(handle.Ident);
+		_iterationTimingsMap[handle].TimingBuffer.Dispose();
+		if (!removeFromMaps) return;
 		_handleDataMap.Remove(handle);
+		_iterationTimingsMap.Remove(handle);
 	}
 	public bool IsDisposed(ResourceHandle<ApplicationLoop> handle) {
 		return _isDisposed || !_handleDataMap.ContainsKey(handle);
@@ -160,8 +230,9 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
-			foreach (var kvp in _handleDataMap) Dispose(kvp.Key);
+			foreach (var kvp in _handleDataMap) Dispose(kvp.Key, removeFromMaps: false);
 			_handleDataMap.Dispose();
+			_iterationTimingsMap.Dispose();
 			LocalInputManager.DecrementRefCount();
 		}
 		finally {

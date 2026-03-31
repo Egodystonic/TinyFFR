@@ -9,6 +9,10 @@ namespace Egodystonic.TinyFFR.Environment;
 public interface IApplicationLoopImplProvider : IDisposableResourceImplProvider<ApplicationLoop> {
 	ILatestInputRetriever GetInputStateProvider(ResourceHandle<ApplicationLoop> handle);
 	TimeSpan GetDesiredIterationInterval(ResourceHandle<ApplicationLoop> handle);
+	float GetFramesPerSecondRecentAverage(ResourceHandle<ApplicationLoop> handle);
+	float GetFramesPerSecondLatest(ResourceHandle<ApplicationLoop> handle);
+	float GetFramesPerSecondRecentMin(ResourceHandle<ApplicationLoop> handle);
+	float GetFramesPerSecondRecentMax(ResourceHandle<ApplicationLoop> handle);
 	TimeSpan IterateOnce(ResourceHandle<ApplicationLoop> handle);
 	bool TryIterateOnce(ResourceHandle<ApplicationLoop> handle, out TimeSpan outDeltaTime);
 	TimeSpan GetTimeUntilNextIteration(ResourceHandle<ApplicationLoop> handle);

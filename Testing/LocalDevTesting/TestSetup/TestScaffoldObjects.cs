@@ -251,6 +251,7 @@ sealed class TestBuilder {
 	public bool AutoDisposeContextObjectsOnTestEnd { get; set; } = true;
 	public bool DefaultLoopFpsReportingEnable { get; set; } = true;
 	public bool DefaultLoopSlowFrameReportingEnable { get; set; } = true;
+	public bool UpdateWindowTitleWithFpsStats { get; set; } = true;
 	public TimeSpan DefaultLoopFpsReportingPeriod { get; set; } = TimeSpan.FromSeconds(10d);
 	public TimeSpan DefaultLoopSlowFrameTime { get; set; } = TimeSpan.FromMilliseconds(20d);
 }
