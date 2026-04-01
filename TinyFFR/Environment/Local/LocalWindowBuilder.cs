@@ -15,7 +15,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IDisposable {
+sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IResourceFinder<Window>, IDisposable {
 	const string LogoResourceName = "logo_128.png";
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly InteropStringBuffer _windowTitleBuffer;
@@ -388,6 +388,35 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, ID
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Window HandleToInstance(ResourceHandle<Window> h) => new(h, this);
+	
+	#region Resource Finder
+	public Window? FindWindowByTitle(ReadOnlySpan<char> title, bool allowPartialMatch = IResourceFinder.DefaultAllowPartialMatch, StringComparison comparisonType = IResourceFinder.DefaultComparisonType) {
+		ThrowIfThisIsDisposed();
+		return _globals.FindResourceByName(this, title, allowPartialMatch, comparisonType);
+	}
+	public unsafe IndirectEnumerable<object, Window> AllCreatedWindows {
+		get {
+			static int GetCount(object self) => ((LocalWindowBuilder) self)._activeWindows.Count;
+			static int GetVersion(object self) {
+				var hc = new HashCode();
+				foreach (var w in ((LocalWindowBuilder) self)._activeWindows) hc.Add(w);
+				return hc.ToHashCode();
+			}
+			static Window GetItem(object self, int index) => ((LocalWindowBuilder) self).HandleToInstance(((LocalWindowBuilder) self)._activeWindows[index]);
+			
+			ThrowIfThisIsDisposed();
+			return new(
+				this,
+				GetVersion(this),
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+	}
+	Window? IResourceFinder<Window>.FindResourceByName(ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) => FindWindowByTitle(name, allowPartialMatch, comparisonType);
+	IndirectEnumerable<object, Window> IResourceFinder<Window>.GetAllResources() => AllCreatedWindows;
+	#endregion
 
 	#region Disposal
 	public void Dispose(ResourceHandle<Window> handle) {

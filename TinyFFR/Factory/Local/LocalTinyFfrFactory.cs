@@ -109,6 +109,34 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	}
 
 	public override string ToString() => IsDisposed ? "TinyFFR Local Renderer Factory [Disposed]" : "TinyFFR Local Renderer Factory";
+	
+	#region Resource Finder
+	public TResource? FindResourceByName<TResource>(ReadOnlySpan<char> name, bool allowPartialMatch = false, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase) where TResource : struct, IResource {
+		static TResource? DeferToSpecificFinder<T>(IResourceFinder<T> finder, ReadOnlySpan<char> n, bool p, StringComparison c) where T : struct, IResource {
+			var result = finder.FindResourceByName(n, p, c);
+			return Unsafe.As<T?, TResource?>(ref result);
+		} 
+		
+		if (typeof(TResource) == typeof(Display)) return DeferToSpecificFinder(_displayDiscoverer, name, allowPartialMatch, comparisonType);
+		if (typeof(TResource) == typeof(Window)) return DeferToSpecificFinder(_windowBuilder, name, allowPartialMatch, comparisonType);
+		if (typeof(TResource) == typeof(ApplicationLoop)) return DeferToSpecificFinder(_applicationLoopBuilder, name, allowPartialMatch, comparisonType);
+		
+		return default;
+	}
+	
+	public IndirectEnumerable<object, TResource> GetAllResources<TResource>() where TResource : struct, IResource {
+		static IndirectEnumerable<object, TResource> DeferToSpecificFinder<T>(IResourceFinder<T> finder) where T : struct, IResource {
+			var result = finder.GetAllResources();
+			return Unsafe.As<IndirectEnumerable<object, T>, IndirectEnumerable<object, TResource>>(ref result);
+		}
+		
+		if (typeof(TResource) == typeof(Display)) return DeferToSpecificFinder(_displayDiscoverer);
+		if (typeof(TResource) == typeof(Window)) return DeferToSpecificFinder(_windowBuilder);
+		if (typeof(TResource) == typeof(ApplicationLoop)) return DeferToSpecificFinder(_applicationLoopBuilder);
+		
+		return default;
+	}
+	#endregion
 
 	#region Disposal
 	public bool IsDisposed { get; private set; }

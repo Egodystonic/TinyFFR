@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
@@ -47,4 +48,6 @@ public interface IDisplayDiscoverer {
 			return result;
 		}
 	}
+	
+	Display? FindDisplayByName(ReadOnlySpan<char> name, bool allowPartialMatch = IResourceFinder.DefaultAllowPartialMatch, StringComparison comparisonType = IResourceFinder.DefaultComparisonType);
 }

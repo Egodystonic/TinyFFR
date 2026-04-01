@@ -16,7 +16,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplicationLoopImplProvider, IDisposable {
+sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplicationLoopImplProvider, IResourceFinder<ApplicationLoop>, IDisposable {
 	readonly record struct HandleTrackingData(
 		TimeSpan MaxCpuBusyWaitTime, 
 		TimeSpan FrameInterval, 
@@ -211,6 +211,36 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	ApplicationLoop HandleToInstance(ResourceHandle<ApplicationLoop> h) => new(h, this);
+	
+	#region Resource Finder
+	public ApplicationLoop? FindLoopByName(ReadOnlySpan<char> name, bool allowPartialMatch = IResourceFinder.DefaultAllowPartialMatch, StringComparison comparisonType = IResourceFinder.DefaultComparisonType) {
+		ThrowIfThisIsDisposed();
+		return _globals.FindResourceByName(this, name, allowPartialMatch, comparisonType);
+	}
+	public unsafe IndirectEnumerable<object, ApplicationLoop> AllCreatedLoops {
+		get {
+			static LocalApplicationLoopBuilder CastSelf(object self) => self as LocalApplicationLoopBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
+			static int GetCount(object self) => CastSelf(self)._handleDataMap.Count;
+			static int GetVersion(object self) {
+				var hc = new HashCode();
+				foreach (var w in CastSelf(self)._handleDataMap) hc.Add(w);
+				return hc.ToHashCode();
+			}
+			static ApplicationLoop GetItem(object self, int index) => CastSelf(self).HandleToInstance(CastSelf(self)._handleDataMap.GetPairAtIndex(index).Key);
+			
+			ThrowIfThisIsDisposed();
+			return new(
+				this,
+				GetVersion(this),
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+	}
+	ApplicationLoop? IResourceFinder<ApplicationLoop>.FindResourceByName(ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) => FindLoopByName(name, allowPartialMatch, comparisonType);
+	IndirectEnumerable<object, ApplicationLoop> IResourceFinder<ApplicationLoop>.GetAllResources() => AllCreatedLoops;
+	#endregion
 
 	#region Disposal
 	public void Dispose(ResourceHandle<ApplicationLoop> handle) => Dispose(handle, removeFromMaps: true);

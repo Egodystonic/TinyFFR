@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR.Environment.Local;
 
@@ -16,4 +17,7 @@ public interface IWindowBuilder {
 		});
 	}
 	Window CreateWindow(in WindowCreationConfig config);
+	
+	Window? FindWindowByTitle(ReadOnlySpan<char> title, bool allowPartialMatch = IResourceFinder.DefaultAllowPartialMatch, StringComparison comparisonType = IResourceFinder.DefaultComparisonType);
+	IndirectEnumerable<object, Window> AllCreatedWindows { get; }
 }

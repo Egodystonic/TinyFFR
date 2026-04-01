@@ -89,6 +89,18 @@ sealed class LocalFactoryGlobalObjectGroup {
 		DisposeResourceNameIfExists(ident);
 		StoreResourceNameIfNotEmpty(ident, newName);
 	}
+	
+	public TResource? FindResourceByName<TResource>(IResourceImplProvider<TResource> requestingImplProvider, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) where TResource : struct, IResource<TResource> {
+		foreach (var kvp in _resourceNameMap) {
+			if (kvp.Key.TypeHandle != ResourceHandle<TResource>.TypeHandle) continue;
+			var isMatch = allowPartialMatch switch {
+				true => kvp.Value.AsSpan.Contains(name, comparisonType),
+				false => kvp.Value.AsSpan.Equals(name, comparisonType)
+			};
+			if (isMatch) return TResource.CreateFromStub(new ResourceStub(kvp.Key, requestingImplProvider));
+		}
+		return null;
+	}
 
 	public TemporaryLoadSpaceBuffer CreateGpuHoldingBufferAndCopyData<T>(ReadOnlySpan<T> data) where T : unmanaged => LocalNativeUtils.CreateGpuHoldingBufferAndCopyData(_factory, data);
 	public TemporaryLoadSpaceBuffer CreateGpuHoldingBuffer<T>(int numElements) where T : unmanaged => LocalNativeUtils.CreateGpuHoldingBuffer<T>(_factory, numElements);
