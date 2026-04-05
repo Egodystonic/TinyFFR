@@ -75,6 +75,10 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 			[typeof(ModelInstance)] = ObjectBuilder,
 			[typeof(Scene)] = SceneBuilder,
 			[typeof(Renderer)] = RendererBuilder,
+			[typeof(RenderOutputBuffer)] = RendererBuilder,
+			[typeof(BackdropTexture)] = AssetLoader,
+			[typeof(MeshAnimation)] = MeshBuilder,
+			[typeof(MeshNode)] = MeshBuilder,
 			[typeof(ResourceGroup)] = _resourceGroupProvider,
 		});
 	}

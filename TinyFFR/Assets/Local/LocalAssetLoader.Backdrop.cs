@@ -14,7 +14,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
-unsafe partial class LocalAssetLoader {
+unsafe partial class LocalAssetLoader : IResourceDirectory<BackdropTexture> {
 	readonly record struct BackdropTextureData(UIntPtr SkyboxTextureHandle, UIntPtr IblTextureHandle);
 	const string DefaultBackdropTextureName = "Unnamed Backdrop Texture";
 	const string HdrPreprocessorNameWin = "cmgen.exe";
@@ -219,6 +219,33 @@ unsafe partial class LocalAssetLoader {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_globals.CopyResourceName(handle.Ident, DefaultBackdropTextureName, destinationBuffer);
 	}
+
+	#region Resource Directory
+	unsafe IndirectEnumerable<object, BackdropTexture> IResourceDirectory<BackdropTexture>.AllActiveInstances {
+		get {
+			static LocalAssetLoader CastSelf(object self) => self as LocalAssetLoader ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
+			static int GetCount(object self) => CastSelf(self)._loadedBackdropTextures.Count;
+			static int GetVersion(object self) => CastSelf(self)._loadedBackdropTextures.Version;
+			static BackdropTexture GetItem(object self, int index) => CastSelf(self).HandleToInstance(CastSelf(self)._loadedBackdropTextures.GetPairAtIndex(index).Key);
+
+			ThrowIfThisIsDisposed();
+			return new(
+				this,
+				GetVersion(this),
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+	}
+	public bool ResourceNameMatchIsMatching(BackdropTexture resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
+		var handle = resource.GetHandleWithoutDisposeCheck();
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return allowPartialMatch
+			? _globals.GetResourceName(handle.Ident, DefaultBackdropTextureName).Contains(name, comparisonType)
+			: _globals.GetResourceName(handle.Ident, DefaultBackdropTextureName).Equals(name, comparisonType);
+	}
+	#endregion
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "load_skybox_file_in_to_memory")]

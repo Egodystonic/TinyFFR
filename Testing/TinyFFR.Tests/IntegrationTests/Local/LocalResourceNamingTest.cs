@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
@@ -20,7 +21,8 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalResourceNamingTest {
-
+	HashSet<Type> _resourceTypes = default!;
+	
 	[SetUp]
 	public void SetUpTest() { }
 
@@ -29,6 +31,10 @@ class LocalResourceNamingTest {
 
 	[Test]
 	public void Execute() {
+		_resourceTypes = GetAllTypesInMainLibImplementingInterface(typeof(IResource), includeOtherInterfaces: false)
+			.Where(t => t != typeof(Display) && t != typeof(ResourceStub) && t != typeof(VertexBuffer) && t != typeof(IndexBuffer))
+			.ToHashSet();
+		
 		// ReSharper disable AccessToDisposedClosure Factory will be disposed only after closure is no longer in use
 		using var factory = new LocalTinyFfrFactory();
 		using var tex = factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false);
@@ -50,16 +56,51 @@ class LocalResourceNamingTest {
 		TestNameStorageAndRetrieval(n => factory.CameraBuilder.CreateCamera(name: n));
 		TestNameStorageAndRetrieval(n => factory.LightBuilder.CreatePointLight(name: n));
 		TestNameStorageAndRetrieval(n => factory.LightBuilder.CreateSpotLight(name: n));
+		TestNameStorageAndRetrieval(n => factory.LightBuilder.CreateDirectionalLight(name: n));
 		TestNameStorageAndRetrieval(n => factory.SceneBuilder.CreateScene(name: n));
 		using var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f));
 		TestNameStorageAndRetrieval(n => factory.ObjectBuilder.CreateModelInstance(mesh, mat, name: n));
 		TestNameStorageAndRetrieval(n => factory.RendererBuilder.CreateRenderOutputBuffer(name: n));
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.CreateModel(mesh, mat, name: n));
+		var boneIdx = MeshVertexSkeletal.BoneIndexArray.Create(0, 0, 0, 0);
+		var boneWgt = MeshVertexSkeletal.BoneWeightArray.Create(1f, 0f, 0f, 0f);
+		var skeletalVertices = new MeshVertexSkeletal[] {
+			new(new Location(0f, 0f, 0f), default, Direction.Up, Direction.Right, Direction.Forward, boneIdx, boneWgt),
+			new(new Location(1f, 0f, 0f), default, Direction.Up, Direction.Right, Direction.Forward, boneIdx, boneWgt),
+			new(new Location(0f, 1f, 0f), default, Direction.Up, Direction.Right, Direction.Forward, boneIdx, boneWgt),
+		};
+		var skeletalNodes = new SkeletalAnimationNode[] {
+			new(Matrix4x4.Identity, Matrix4x4.Identity, null, 0),
+			new(Matrix4x4.Identity, Matrix4x4.Identity, 0, null),
+			new(Matrix4x4.Identity, Matrix4x4.Identity, 0, null),
+		};
+		using var skeletalMesh = factory.MeshBuilder.CreateMesh(skeletalVertices, new VertexTriangle[] { new(0, 1, 2) }, skeletalNodes);
+		TestNameStorageAndRetrieval(n => factory.MeshBuilder.AttachAnimation(
+			skeletalMesh,
+			ReadOnlySpan<SkeletalAnimationScalingKeyframe>.Empty,
+			ReadOnlySpan<SkeletalAnimationRotationKeyframe>.Empty,
+			ReadOnlySpan<SkeletalAnimationTranslationKeyframe>.Empty,
+			ReadOnlySpan<SkeletalAnimationNodeMutationDescriptor>.Empty,
+			1f,
+			n
+		));
+		var meshNodeIndex = 0;
+		TestNameStorageAndRetrieval(n => {
+			factory.MeshBuilder.SetSkeletonNodeName(skeletalMesh, meshNodeIndex, n);
+			var node = skeletalMesh.Skeleton.Nodes[meshNodeIndex];
+			meshNodeIndex++;
+			return node;
+		});
 		// ReSharper restore AccessToDisposedClosure
+		
+		Assert.IsFalse(_resourceTypes.Any(), "Following resource types are untested: " + String.Join(", ", _resourceTypes.Select(t => t.Name)));
 	}
 
 	void TestNameStorageAndRetrieval<T>(Func<string, T> creationFunc) where T : IResource<T> {
 		const string TestName = "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
+		
+		Assert.IsTrue(_resourceTypes.Remove(typeof(T)), $"Resource type '{typeof(T).Name}' not found in resource type set (types = {String.Join(", ", _resourceTypes.Select(t => t.Name))})");
+		
 		var res = creationFunc(TestName);
 		var charArr = new char[TestName.Length];
 		res.CopyName(charArr);

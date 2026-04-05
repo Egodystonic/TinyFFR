@@ -8,6 +8,9 @@ namespace Egodystonic.TinyFFR.Resources;
 public interface IResourceDirectory {
 	protected internal const bool DefaultAllowPartialMatch = false;
 	protected internal const StringComparison DefaultComparisonType = StringComparison.OrdinalIgnoreCase;
+	
+	IndirectEnumerable<object, TResource> GetAllActiveInstances<TResource>() where TResource : struct, IResource => GetDirectoryForType<TResource>().AllActiveInstances;
+	
 	TResource? FindByName<TResource>(ReadOnlySpan<char> name, bool allowPartialMatch = DefaultAllowPartialMatch, StringComparison comparisonType = DefaultComparisonType) where TResource : struct, IResource {
 		return GetDirectoryForType<TResource>().FindByName(name, allowPartialMatch, comparisonType);
 	}

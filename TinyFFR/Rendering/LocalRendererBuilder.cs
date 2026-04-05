@@ -19,7 +19,7 @@ using static System.Formats.Asn1.AsnWriter;
 
 namespace Egodystonic.TinyFFR.Rendering;
 
-sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IResourceDirectory<Renderer>, IDisposable {
+sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IResourceDirectory<Renderer>, IResourceDirectory<RenderOutputBuffer>, IDisposable {
 	[StructLayout(LayoutKind.Explicit)]
 	readonly struct RenderTargetUnion : IRenderTarget, IEquatable<RenderTargetUnion> {
 		const int UnionRenderTargetOffset = 8;
@@ -754,6 +754,30 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		return allowPartialMatch
 			? _globals.GetResourceName(handle.Ident, DefaultRendererName).Contains(name, comparisonType)
 			: _globals.GetResourceName(handle.Ident, DefaultRendererName).Equals(name, comparisonType);
+	}
+	unsafe IndirectEnumerable<object, RenderOutputBuffer> IResourceDirectory<RenderOutputBuffer>.AllActiveInstances {
+		get {
+			static LocalRendererBuilder CastSelf(object self) => self as LocalRendererBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
+			static int GetCount(object self) => CastSelf(self)._loadedBuffers.Count;
+			static int GetVersion(object self) => CastSelf(self)._loadedBuffers.Version;
+			static RenderOutputBuffer GetItem(object self, int index) => CastSelf(self).HandleToInstance(CastSelf(self)._loadedBuffers.GetPairAtIndex(index).Key);
+
+			ThrowIfThisIsDisposed();
+			return new(
+				this,
+				GetVersion(this),
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+	}
+	bool IResourceDirectory<RenderOutputBuffer>.ResourceNameMatchIsMatching(RenderOutputBuffer resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
+		var handle = resource.GetHandleWithoutDisposeCheck();
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return allowPartialMatch
+			? _globals.GetResourceName(handle.Ident, DefaultRenderOutputBufferName).Contains(name, comparisonType)
+			: _globals.GetResourceName(handle.Ident, DefaultRenderOutputBufferName).Equals(name, comparisonType);
 	}
 	#endregion
 

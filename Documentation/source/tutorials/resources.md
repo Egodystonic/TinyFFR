@@ -277,3 +277,45 @@ You can access any non-disposed resource's name via three methods:
 	Attempting to access a resource's name by any of the methods listed above will result in an `ObjectDisposedException` being thrown if the resource has already been disposed.
 
 	This is because the memory retained to hold the resource's name is relinquished once the resource is disposed.
+
+## Finding Resources (Resource Directory)
+
+You can find any live (e.g. non-disposed) resource by its name using the `ResourceDirectory`:
+
+```csharp
+var directory = factory.ResourceDirectory;
+
+// Get all point lights
+var pointLights = directory.GetAllActiveInstances<PointLight>(); // (1)!
+
+// Find a single resource by its exact name
+var texture = directory.FindByName<Texture>("brickwall.jpg"); // (2)!
+
+// Find resources matching a partial name
+var materials = factory.ResourceAllocator.CreatePooledMemoryBuffer<Material>(10);
+var numMaterialsFound = directory.FindByName( // (3)!
+	materials.Span, 
+	"with_fx", 
+	allowPartialMatch: true,
+	comparisonType: StringComparison.OrdinalIgnoreCase
+);
+for (var i = 0; i < Int32.Min(numMaterialsFound, materials.Length); ++i) { // (4!)
+	var mat = materials.Span[i];
+	// ... Do something with each mat
+}
+factory.ResourceAllocator.ReturnPooledMemoryBuffer(materials);
+```
+
+1.	This line returns an [Indirect Enumerable](/reference/indirect_enumerable.md) allowing you to enumerate over each active `PointLight`.
+
+2.	This line demonstrates how to find the texture "brickwall.jpg". The returned value is a `Texture?` -- the value will be null if no match is found.
+
+3.	In this example, we pass a `Span<Material>` to `FindByName(...)` which we want to have filled in with all materials whose name matches the "with_fx" search string.
+
+	The returned value (`numMaterialsFound`) tells us how many materials match the name-- this may be higher than the length of the span we passed in.
+	
+	Setting `allowPartialMatch` to `true` indicates that we want partial name matches to be returned (e.g. "alpha_with_fx" and "with_fx_bravo" will both be matched).
+	
+	Tip: You can use `directory.GetAllActiveInstances<Material>.Count` to know beforehand the maximum necessary length of the passed-in span required to theoretically capture all matched resources.
+	
+4.	Here we iterate through all the materials found. We use `Int32.Min` to iterate through whichever is the lesser between the number of materials found via `FoundByName` and the length of the span we passed in. 

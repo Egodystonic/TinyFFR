@@ -321,17 +321,20 @@ sealed unsafe class LocalMeshAnimationTable : IMeshAnimationImplProvider, IDispo
 	public void CopyName(ResourceHandle<MeshNode> handle, Span<char> destinationBuffer) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		foreach (var kvp in _nodeNameMap) {
-			if (kvp.Value.Handle == handle) kvp.Key.AsSpan.CopyTo(destinationBuffer);
+			if (kvp.Value.Handle == handle) {
+				kvp.Key.AsSpan.CopyTo(destinationBuffer);
+				return;
+			}
 		}
-		
+
 		Span<char> scrubSpace = stackalloc char[100];
 		if (!handle.AsInteger.TryFormat(scrubSpace, out var charsWritten, provider: CultureInfo.InvariantCulture)) {
 			GetNameAsNewStringObject(handle).CopyTo(destinationBuffer);
 			return;
 		}
-		
+
 		DefaultNodeNamePrefix.CopyTo(destinationBuffer);
-		scrubSpace[..charsWritten].CopyTo(destinationBuffer[charsWritten..]);
+		scrubSpace[..charsWritten].CopyTo(destinationBuffer[DefaultNodeNamePrefix.Length..]);
 	}
 	#endregion
 	

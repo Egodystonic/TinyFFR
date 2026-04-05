@@ -18,7 +18,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourceDirectory<Mesh>, IDisposable {
+sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourceDirectory<Mesh>, IResourceDirectory<MeshAnimation>, IResourceDirectory<MeshNode>, IDisposable {
 	const string DefaultMeshName = "Unnamed Mesh";
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, MeshBufferData> _activeMeshes = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<VertexBuffer>, int> _vertexBufferRefCounts = new();
@@ -29,6 +29,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	bool _isDisposed = false;
 	nuint _nextHandleId = 0;
+	int _meshAnimDirectoryVersion = 0;
 
 	public LocalMeshBuilder(LocalFactoryGlobalObjectGroup globals) {
 		ArgumentNullException.ThrowIfNull(globals);
@@ -195,6 +196,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		if (!_activeMeshAnimationTables.TryGetValue(handle, out var animTable)) {
 			throw new InvalidOperationException($"Can not attach animation to {mesh} as it was not created with skeletal vertex/bone data.");
 		}
+		++_meshAnimDirectoryVersion;
 		return animTable.Add(scalingKeyframes, rotationKeyframes, translationKeyframes, boneMutations, defaultCompletionTimeSeconds, name);
 	}
 	public MeshAnimation AttachAnimationAndTransferBufferOwnership(
@@ -210,6 +212,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		if (!_activeMeshAnimationTables.TryGetValue(handle, out var animTable)) {
 			throw new InvalidOperationException($"Can not attach animation to {mesh} as it was not created with skeletal vertex/bone data.");
 		}
+		++_meshAnimDirectoryVersion;
 		return animTable.AddAndTransferBufferOwnership(scalingKeyframes, rotationKeyframes, translationKeyframes, boneMutations, defaultCompletionTimeSeconds, name);
 	}
 
@@ -419,6 +422,82 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		return allowPartialMatch
 			? _globals.GetResourceName(handle.Ident, DefaultMeshName).Contains(name, comparisonType)
 			: _globals.GetResourceName(handle.Ident, DefaultMeshName).Equals(name, comparisonType);
+	}
+	IndirectEnumerable<object, MeshAnimation> IResourceDirectory<MeshAnimation>.AllActiveInstances {
+		get {
+			static LocalMeshBuilder CastSelf(object self) => self as LocalMeshBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
+			static int GetCount(object self) {
+				var builder = CastSelf(self);
+				var count = 0;
+				for (var i = 0; i < builder._activeMeshAnimationTables.Count; ++i) count += builder._activeMeshAnimationTables.GetPairAtIndex(i).Value.Count;
+				return count;
+			}
+			static int GetVersion(object self) => CastSelf(self)._meshAnimDirectoryVersion;
+			static MeshAnimation GetItem(object self, int index) {
+				var builder = CastSelf(self);
+				for (var i = 0; i < builder._activeMeshAnimationTables.Count; ++i) {
+					var table = builder._activeMeshAnimationTables.GetPairAtIndex(i).Value;
+					if (index < table.Count) return table.GetAnimationAtUnstableIndex(index);
+					index -= table.Count;
+				}
+				throw new InvalidOperationException($"Index '{index}' out of range.");
+			}
+
+			ThrowIfThisIsDisposed();
+			return new(
+				this,
+				GetVersion(this),
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+	}
+	public bool ResourceNameMatchIsMatching(MeshAnimation resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
+		var handle = resource.GetHandleWithoutDisposeCheck();
+		var resourceName = _globals.GetMandatoryResourceName(handle.Ident);
+		return allowPartialMatch
+			? resourceName.Contains(name, comparisonType)
+			: resourceName.Equals(name, comparisonType);
+	}
+	IndirectEnumerable<object, MeshNode> IResourceDirectory<MeshNode>.AllActiveInstances {
+		get {
+			static LocalMeshBuilder CastSelf(object self) => self as LocalMeshBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
+			static int GetCount(object self) {
+				var builder = CastSelf(self);
+				var count = 0;
+				for (var i = 0; i < builder._activeMeshAnimationTables.Count; ++i) count += builder._activeMeshAnimationTables.GetPairAtIndex(i).Value.GetNodeCount();
+				return count;
+			}
+			static int GetVersion(object self) => CastSelf(self)._activeMeshAnimationTables.Version;
+			static MeshNode GetItem(object self, int index) {
+				var builder = CastSelf(self);
+				for (var i = 0; i < builder._activeMeshAnimationTables.Count; ++i) {
+					var table = builder._activeMeshAnimationTables.GetPairAtIndex(i).Value;
+					var nodeCount = table.GetNodeCount();
+					if (index < nodeCount) return table.GetNode(index);
+					index -= nodeCount;
+				}
+				throw new InvalidOperationException($"Index '{index}' out of range.");
+			}
+
+			ThrowIfThisIsDisposed();
+			return new(
+				this,
+				GetVersion(this),
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+	}
+	public bool ResourceNameMatchIsMatching(MeshNode resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
+		var nameLen = resource.GetNameLength();
+		using var nameBuffer = _globals.HeapPool.Borrow<char>(nameLen);
+		resource.CopyName(nameBuffer.Buffer);
+		return allowPartialMatch
+			? nameBuffer.Buffer.Contains(name, comparisonType)
+			: nameBuffer.Buffer.Equals(name, comparisonType);
 	}
 	#endregion
 
