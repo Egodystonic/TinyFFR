@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Egodystonic.TinyFFR.Factory;
 
 namespace Egodystonic.TinyFFR;
 
@@ -363,5 +364,15 @@ fail:
 		Directory.CreateDirectory(result);
 
 		return result;
+	}
+	
+	public static Type[] GetAllTypesInMainLibImplementingInterface(Type interfaceType, bool includeOtherInterfaces) {
+		IEnumerable<Type> types = typeof(ITinyFfrFactory).Assembly.GetTypes();
+		
+		if (!includeOtherInterfaces) types = types.Where(t => !t.IsInterface); 
+		
+		return types
+			.Where(t => t.GetInterfaces().Contains(interfaceType))
+			.ToArray();
 	}
 }

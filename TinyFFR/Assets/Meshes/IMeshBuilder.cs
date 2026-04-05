@@ -1,6 +1,7 @@
 ﻿// Created on 2024-08-13 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using System;
 using System.Buffers;
@@ -372,7 +373,7 @@ public interface IMeshBuilder {
 	}
 	Mesh CreateMesh(ReadOnlySpan<MeshVertexSkeletal> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<SkeletalAnimationNode> skeletalNodes, in MeshCreationConfig config);
 	#endregion
-	
+
 	#region Nodes & Animations
 	void SetSkeletonNodeName(
 		Mesh mesh,

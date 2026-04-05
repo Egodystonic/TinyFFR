@@ -12,7 +12,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
 
-sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable {
+sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IResourceDirectory<PointLight>, IResourceDirectory<SpotLight>, IResourceDirectory<DirectionalLight>, IDisposable {
 	readonly record struct LightData(LightType Type, nint TypeHandle, float Brightness, Angle SpotLightInner, Angle SpotLightOuter);
 	const string DefaultLightName = "Unnamed Light";
 	readonly LocalFactoryGlobalObjectGroup _globals;
@@ -279,6 +279,46 @@ sealed class LocalLightBuilder : ILightBuilder, ILightImplProvider, IDisposable 
 	SpotLight HandleToInstance(ResourceHandle<SpotLight> h) => new(h, this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	DirectionalLight HandleToInstance(ResourceHandle<DirectionalLight> h) => new(h, this);
+
+	#region Resource Directory
+	unsafe IndirectEnumerable<object, TLight> CreateLightEnumerable<TLight>() where TLight : ILight<TLight> {
+		static LocalLightBuilder CastSelf(object self) => self as LocalLightBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
+		static int GetCount(object self) => CastSelf(self)._activeLightMap.Count;
+		static int GetVersion(object self) => CastSelf(self)._activeLightMap.Version;
+		static TLight GetItem(object self, int index) {
+			var castSelf = CastSelf(self);
+			for (var i = 0; i < castSelf._activeLightMap.Count; ++i) {
+				var kvp = castSelf._activeLightMap.GetPairAtIndex(i);
+				if (kvp.Value.Type == TLight.SelfType) {
+					if (--index < 0) return TLight.CreateFromHandleAndImpl((ResourceHandle<TLight>) kvp.Key, castSelf);
+				}
+			}
+			throw new InvalidOperationException($"Index '{index}' out of range.");
+		}
+
+		ThrowIfThisIsDisposed();
+		return new(
+			this,
+			GetVersion(this),
+			&GetCount,
+			&GetVersion,
+			&GetItem
+		);
+	}
+	bool ResourceNameMatchIsMatching<TLight>(TLight resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) where TLight : ILight<TLight> {
+		var handle = resource.GetHandleWithoutDisposeCheck();
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return allowPartialMatch
+			? _globals.GetResourceName(handle.Ident, DefaultLightName).Contains(name, comparisonType)
+			: _globals.GetResourceName(handle.Ident, DefaultLightName).Equals(name, comparisonType);
+	}
+	IndirectEnumerable<object, PointLight> IResourceDirectory<PointLight>.AllActiveInstances => CreateLightEnumerable<PointLight>();
+	IndirectEnumerable<object, SpotLight> IResourceDirectory<SpotLight>.AllActiveInstances => CreateLightEnumerable<SpotLight>();
+	IndirectEnumerable<object, DirectionalLight> IResourceDirectory<DirectionalLight>.AllActiveInstances => CreateLightEnumerable<DirectionalLight>();
+	public bool ResourceNameMatchIsMatching(PointLight resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) => ResourceNameMatchIsMatching<PointLight>(resource, name, allowPartialMatch, comparisonType);
+	public bool ResourceNameMatchIsMatching(SpotLight resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) => ResourceNameMatchIsMatching<SpotLight>(resource, name, allowPartialMatch, comparisonType);
+	public bool ResourceNameMatchIsMatching(DirectionalLight resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) => ResourceNameMatchIsMatching<DirectionalLight>(resource, name, allowPartialMatch, comparisonType);
+	#endregion
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_light_position")]

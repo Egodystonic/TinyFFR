@@ -78,7 +78,7 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	#endregion
 
 	#region Equality
-	public bool Equals(Renderer other) => _handle == other._handle && _impl.Equals(other._impl);
+	public bool Equals(Renderer other) => _handle == other._handle && ReferenceEquals(_impl, other._impl);
 	public override bool Equals(object? obj) => obj is Renderer other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine((UIntPtr) _handle, _impl);
 	public static bool operator ==(Renderer left, Renderer right) => left.Equals(right);

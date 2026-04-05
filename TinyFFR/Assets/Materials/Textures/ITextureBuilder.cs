@@ -2,6 +2,8 @@
 // (c) Egodystonic / TinyFFR 2025
 
 using System.Xml.Linq;
+using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.Resources.Memory;
 using static Egodystonic.TinyFFR.Assets.Materials.TexturePatternPrinter;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;

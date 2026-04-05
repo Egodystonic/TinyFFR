@@ -6,6 +6,7 @@ using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
 

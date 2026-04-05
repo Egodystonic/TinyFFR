@@ -18,7 +18,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposable {
+sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourceDirectory<Mesh>, IDisposable {
 	const string DefaultMeshName = "Unnamed Mesh";
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, MeshBufferData> _activeMeshes = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<VertexBuffer>, int> _vertexBufferRefCounts = new();
@@ -394,6 +394,33 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IDisposa
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Mesh HandleToInstance(ResourceHandle<Mesh> h) => new(h, this);
+
+	#region Resource Directory
+	public IndirectEnumerable<object, Mesh> AllActiveInstances {
+		get {
+			static LocalMeshBuilder CastSelf(object self) => self as LocalMeshBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
+			static int GetCount(object self) => CastSelf(self)._activeMeshes.Count;
+			static int GetVersion(object self) => CastSelf(self)._activeMeshes.Version;
+			static Mesh GetItem(object self, int index) => CastSelf(self).HandleToInstance(CastSelf(self)._activeMeshes.GetPairAtIndex(index).Key);
+
+			ThrowIfThisIsDisposed();
+			return new(
+				this,
+				GetVersion(this),
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+	}
+	public bool ResourceNameMatchIsMatching(Mesh resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
+		var handle = resource.GetHandleWithoutDisposeCheck();
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return allowPartialMatch
+			? _globals.GetResourceName(handle.Ident, DefaultMeshName).Contains(name, comparisonType)
+			: _globals.GetResourceName(handle.Ident, DefaultMeshName).Equals(name, comparisonType);
+	}
+	#endregion
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_vertex_buffer")]

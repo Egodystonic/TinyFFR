@@ -47,7 +47,7 @@ public readonly struct IndexBuffer : IDisposableResource<IndexBuffer, IIndexBuff
 	public override string ToString() => $"Index Buffer {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Equality
-	public bool Equals(IndexBuffer other) => _handle == other._handle && _impl.Equals(other._impl);
+	public bool Equals(IndexBuffer other) => _handle == other._handle && ReferenceEquals(_impl, other._impl);
 	public override bool Equals(object? obj) => obj is IndexBuffer other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(_handle, _impl);
 	public static bool operator ==(IndexBuffer left, IndexBuffer right) => left.Equals(right);

@@ -100,7 +100,7 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 	#endregion
 
 	#region Equality
-	public bool Equals(Scene other) => _handle == other._handle && _impl.Equals(other._impl);
+	public bool Equals(Scene other) => _handle == other._handle && ReferenceEquals(_impl, other._impl);
 	public override bool Equals(object? obj) => obj is Scene other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine((UIntPtr) _handle, _impl);
 	public static bool operator ==(Scene left, Scene right) => left.Equals(right);

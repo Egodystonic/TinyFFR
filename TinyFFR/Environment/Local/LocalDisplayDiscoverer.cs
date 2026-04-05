@@ -11,7 +11,7 @@ using DisplayModeArray = Egodystonic.TinyFFR.Environment.Local.DisplayMode[];
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, IResourceFinder<Display>, IDisposable {
+sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, IResourceDirectory<Display>, IDisposable {
 	const int MaxDisplayNameLength = 200; // Should be low enough to be stackalloc'able (or rewrite ctor)
 	const int MaxDisplayCount = 1_000_000;
 	readonly LocalFactoryGlobalObjectGroup _globals;
@@ -142,28 +142,30 @@ sealed class LocalDisplayDiscoverer : IDisplayDiscoverer, IDisplayImplProvider, 
 	}
 
 	public override string ToString() => _isDisposed ? "TinyFFR Display Discoverer [Disposed]" : "TinyFFR Display Discoverer";
-	
-	#region Resource Finder
-	public Display? FindDisplayByName(ReadOnlySpan<char> name, bool allowPartialMatch = IResourceFinder.DefaultAllowPartialMatch, StringComparison comparisonType = IResourceFinder.DefaultComparisonType) {
-		ThrowIfThisIsDisposed();
-		for (var i = 0; i < _displayNames.Length; ++i) {
-			if (_displayNames[i].Equals(name, comparisonType)) return _displays[i];
+
+	#region Resource Directory
+	public unsafe IndirectEnumerable<object, Display> AllActiveInstances {
+		get {
+			static LocalDisplayDiscoverer CastSelf(object self) => (LocalDisplayDiscoverer) self;
+			static int GetCount(object self) => CastSelf(self)._displays.Length;
+			static Display GetItem(object self, int index) => CastSelf(self)._displays[index];
+			
+			ThrowIfThisIsDisposed();
+			return new(
+				this,
+				GetCount(this),
+				&GetCount,
+				&GetCount,
+				&GetItem
+			);
 		}
-		return null;
 	}
-	Display? IResourceFinder<Display>.FindResourceByName(ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) => FindDisplayByName(name, allowPartialMatch, comparisonType);
-	unsafe IndirectEnumerable<object, Display> IResourceFinder<Display>.GetAllResources() {
-		static int GetCount(object self) => ((LocalDisplayDiscoverer) self)._displays.Length;
-		static Display GetItem(object self, int index) => ((LocalDisplayDiscoverer) self)._displays[index];
-		
-		ThrowIfThisIsDisposed();
-		return new(
-			this,
-			GetCount(this),
-			&GetCount,
-			&GetCount,
-			&GetItem
-		);
+	public bool ResourceNameMatchIsMatching(Display resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
+		var handle = resource.GetHandleWithoutDisposeCheck();
+		ThrowIfDisposedOrUnrecognizedDisplay(handle);
+		return allowPartialMatch
+			? _displayNames[(int) handle.AsInteger].Contains(name, comparisonType)
+			: _displayNames[(int) handle.AsInteger].Equals(name, comparisonType);
 	}
 	#endregion
 

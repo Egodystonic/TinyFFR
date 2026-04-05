@@ -17,7 +17,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.Assets.Local;
 
-unsafe partial class LocalAssetLoader {
+unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 	const int ResourceNameIndexSpaceMax = 20;
 	const string MeshNameSuffix = " mesh ";
 	const string MatNameSuffix = " material ";
@@ -1108,6 +1108,33 @@ unsafe partial class LocalAssetLoader {
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Model HandleToInstance(ResourceHandle<Model> h) => new(h, this);
+
+	#region Resource Directory
+	public IndirectEnumerable<object, Model> AllActiveInstances {
+		get {
+			static LocalAssetLoader CastSelf(object self) => self as LocalAssetLoader ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
+			static int GetCount(object self) => CastSelf(self)._loadedModels.Count;
+			static int GetVersion(object self) => CastSelf(self)._loadedModels.Version;
+			static Model GetItem(object self, int index) => CastSelf(self).HandleToInstance(CastSelf(self)._loadedModels.GetPairAtIndex(index).Key);
+
+			ThrowIfThisIsDisposed();
+			return new(
+				this,
+				GetVersion(this),
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+	}
+	public bool ResourceNameMatchIsMatching(Model resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
+		var handle = resource.GetHandleWithoutDisposeCheck();
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return allowPartialMatch
+			? _globals.GetResourceName(handle.Ident, DefaultModelName).Contains(name, comparisonType)
+			: _globals.GetResourceName(handle.Ident, DefaultModelName).Equals(name, comparisonType);
+	}
+	#endregion
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "load_asset_file_in_to_memory")]

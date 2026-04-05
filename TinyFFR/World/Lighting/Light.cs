@@ -118,7 +118,7 @@ public readonly struct Light : ILight, IDisposable, IEquatable<Light>, IStringSp
 	}
 
 	#region Equality
-	public bool Equals(Light other) => _handle == other._handle && _impl.Equals(other._impl);
+	public bool Equals(Light other) => _handle == other._handle && ReferenceEquals(_impl, other._impl);
 	public bool Equals<TLight>(TLight other) where TLight : ILight => Equals(other.AsBaseLight());
 	public override bool Equals(object? obj) => obj is ILight other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine((UIntPtr) _handle, _impl);

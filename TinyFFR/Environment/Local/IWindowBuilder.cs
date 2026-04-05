@@ -17,7 +17,4 @@ public interface IWindowBuilder {
 		});
 	}
 	Window CreateWindow(in WindowCreationConfig config);
-	
-	Window? FindWindowByTitle(ReadOnlySpan<char> title, bool allowPartialMatch = IResourceFinder.DefaultAllowPartialMatch, StringComparison comparisonType = IResourceFinder.DefaultComparisonType);
-	IndirectEnumerable<object, Window> AllCreatedWindows { get; }
 }

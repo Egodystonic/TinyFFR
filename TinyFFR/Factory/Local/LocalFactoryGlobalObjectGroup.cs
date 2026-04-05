@@ -90,14 +90,14 @@ sealed class LocalFactoryGlobalObjectGroup {
 		StoreResourceNameIfNotEmpty(ident, newName);
 	}
 	
-	public TResource? FindResourceByName<TResource>(IResourceImplProvider<TResource> requestingImplProvider, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) where TResource : struct, IResource<TResource> {
-		foreach (var kvp in _resourceNameMap) {
-			if (kvp.Key.TypeHandle != ResourceHandle<TResource>.TypeHandle) continue;
+	public TResource? FindResourceByName<TResource, TEnumerable>(IResourceImplProvider<TResource> requestingImplProvider, TEnumerable resourceHandles, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) where TResource : struct, IResource<TResource> where TEnumerable : IEnumerable<ResourceHandle<TResource>> {
+		foreach (var handle in resourceHandles) {
+			if (!_resourceNameMap.TryGetValue(handle.Ident, out var nameBuffer)) continue;
 			var isMatch = allowPartialMatch switch {
-				true => kvp.Value.AsSpan.Contains(name, comparisonType),
-				false => kvp.Value.AsSpan.Equals(name, comparisonType)
+				true => nameBuffer.AsSpan.Contains(name, comparisonType),
+				false => nameBuffer.AsSpan.Equals(name, comparisonType)
 			};
-			if (isMatch) return TResource.CreateFromStub(new ResourceStub(kvp.Key, requestingImplProvider));
+			if (isMatch) return TResource.CreateFromHandleAndImpl(handle, requestingImplProvider);
 		}
 		return null;
 	}

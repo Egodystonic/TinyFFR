@@ -19,7 +19,7 @@ using static System.Formats.Asn1.AsnWriter;
 
 namespace Egodystonic.TinyFFR.Rendering;
 
-sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDisposable {
+sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IResourceDirectory<Renderer>, IDisposable {
 	[StructLayout(LayoutKind.Explicit)]
 	readonly struct RenderTargetUnion : IRenderTarget, IEquatable<RenderTargetUnion> {
 		const int UnionRenderTargetOffset = 8;
@@ -729,6 +729,33 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IDi
 	Texture HandleToInstance(ResourceHandle<Texture> h) => new(h, _textureImplProvider);
 
 	public override string ToString() => _isDisposed ? "TinyFFR Local Renderer Builder [Disposed]" : "TinyFFR Local Renderer Builder";
+
+	#region Resource Directory
+	public unsafe IndirectEnumerable<object, Renderer> AllActiveInstances {
+		get {
+			static LocalRendererBuilder CastSelf(object self) => self as LocalRendererBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
+			static int GetCount(object self) => CastSelf(self)._loadedRenderers.Count;
+			static int GetVersion(object self) => CastSelf(self)._loadedRenderers.Version;
+			static Renderer GetItem(object self, int index) => CastSelf(self).HandleToInstance(CastSelf(self)._loadedRenderers.GetPairAtIndex(index).Key);
+
+			ThrowIfThisIsDisposed();
+			return new(
+				this,
+				GetVersion(this),
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+	}
+	public bool ResourceNameMatchIsMatching(Renderer resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
+		var handle = resource.GetHandleWithoutDisposeCheck();
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return allowPartialMatch
+			? _globals.GetResourceName(handle.Ident, DefaultRendererName).Contains(name, comparisonType)
+			: _globals.GetResourceName(handle.Ident, DefaultRendererName).Equals(name, comparisonType);
+	}
+	#endregion
 
 	#region Disposal
 	public bool IsDisposed(ResourceHandle<Renderer> handle) => _isDisposed || !_loadedRenderers.ContainsKey(handle);

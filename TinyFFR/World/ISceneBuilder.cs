@@ -3,6 +3,8 @@
 
 using System;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
 

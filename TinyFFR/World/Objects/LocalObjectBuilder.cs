@@ -11,7 +11,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
 
-sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IDisposable {
+sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IResourceDirectory<ModelInstance>, IDisposable {
 	readonly record struct ActiveModelInstanceEffectsData(Material PerInstanceEffectMaterialCopy);
 
 	const string DefaultModelInstanceName = "Unnamed Model Instance";
@@ -221,6 +221,33 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, ID
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	ModelInstance HandleToInstance(ResourceHandle<ModelInstance> h) => new(h, this);
+
+	#region Resource Directory
+	public unsafe IndirectEnumerable<object, ModelInstance> AllActiveInstances {
+		get {
+			static LocalObjectBuilder CastSelf(object self) => self as LocalObjectBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
+			static int GetCount(object self) => CastSelf(self)._activeInstanceTransforms.Count;
+			static int GetVersion(object self) => CastSelf(self)._activeInstanceTransforms.Version;
+			static ModelInstance GetItem(object self, int index) => CastSelf(self).HandleToInstance(CastSelf(self)._activeInstanceTransforms.GetPairAtIndex(index).Key);
+
+			ThrowIfThisIsDisposed();
+			return new(
+				this,
+				GetVersion(this),
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+	}
+	public bool ResourceNameMatchIsMatching(ModelInstance resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
+		var handle = resource.GetHandleWithoutDisposeCheck();
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return allowPartialMatch
+			? _globals.GetResourceName(handle.Ident, DefaultModelInstanceName).Contains(name, comparisonType)
+			: _globals.GetResourceName(handle.Ident, DefaultModelInstanceName).Equals(name, comparisonType);
+	}
+	#endregion
 
 	#region Native Methods
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_model_instance")]

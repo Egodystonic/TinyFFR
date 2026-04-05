@@ -12,7 +12,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
 
-sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisposable {
+sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IResourceDirectory<Scene>, IDisposable {
 	readonly record struct BackdropData(BackdropTexture? BackdropTex, UIntPtr SkyboxHandle, UIntPtr IndirectLightHandle);
 	const string DefaultSceneName = "Unnamed Scene";
 	const string BuiltInSceneDataResourcePrefix = "Assets.builtin_backdrop_";
@@ -369,6 +369,33 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IDisp
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Scene HandleToInstance(ResourceHandle<Scene> h) => new(h, this);
+
+	#region Resource Directory
+	public IndirectEnumerable<object, Scene> AllActiveInstances {
+		get {
+			static LocalSceneBuilder CastSelf(object self) => self as LocalSceneBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
+			static int GetCount(object self) => CastSelf(self)._activeSceneHandles.Count;
+			static int GetVersion(object self) => CastSelf(self)._activeSceneHandles.Version;
+			static Scene GetItem(object self, int index) => CastSelf(self).HandleToInstance(CastSelf(self)._activeSceneHandles[index]);
+
+			ThrowIfThisIsDisposed();
+			return new(
+				this,
+				GetVersion(this),
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+	}
+	public bool ResourceNameMatchIsMatching(Scene resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
+		var handle = resource.GetHandleWithoutDisposeCheck();
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return allowPartialMatch
+			? _globals.GetResourceName(handle.Ident, DefaultSceneName).Contains(name, comparisonType)
+			: _globals.GetResourceName(handle.Ident, DefaultSceneName).Equals(name, comparisonType);
+	}
+	#endregion
 
 	#region Disposal
 	public void Dispose() {

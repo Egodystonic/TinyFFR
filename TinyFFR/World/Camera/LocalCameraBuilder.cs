@@ -9,7 +9,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
 
-sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposable {
+sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResourceDirectory<Camera>, IDisposable {
 	readonly record struct CameraParameters(Location Position, Direction ViewDirection, Direction UpDirection, float VerticalFovRadians, float OrthographicHeight, float AspectRatio, float NearPlaneDistance, float FarPlaneDistance, CameraProjectionType ProjectionType);
 
 	const string DefaultCameraName = "Unnamed Camera";
@@ -404,6 +404,33 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IDisposab
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Camera HandleToInstance(ResourceHandle<Camera> h) => new(h, this);
+
+	#region Resource Directory
+	public unsafe IndirectEnumerable<object, Camera> AllActiveInstances {
+		get {
+			static LocalCameraBuilder CastSelf(object self) => self as LocalCameraBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
+			static int GetCount(object self) => CastSelf(self)._activeCameras.Count;
+			static int GetVersion(object self) => CastSelf(self)._activeCameras.Version;
+			static Camera GetItem(object self, int index) => CastSelf(self).HandleToInstance(CastSelf(self)._activeCameras.GetPairAtIndex(index).Key);
+
+			ThrowIfThisIsDisposed();
+			return new(
+				this,
+				GetVersion(this),
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+	}
+	public bool ResourceNameMatchIsMatching(Camera resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
+		var handle = resource.GetHandleWithoutDisposeCheck();
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return allowPartialMatch
+			? _globals.GetResourceName(handle.Ident, DefaultCameraName).Contains(name, comparisonType)
+			: _globals.GetResourceName(handle.Ident, DefaultCameraName).Equals(name, comparisonType);
+	}
+	#endregion
 
 	#region Disposal
 	public void Dispose() {

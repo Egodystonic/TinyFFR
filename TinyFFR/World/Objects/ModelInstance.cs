@@ -180,7 +180,7 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	public override string ToString() => $"Model Instance {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Equality
-	public bool Equals(ModelInstance other) => _handle == other._handle && _impl.Equals(other._impl);
+	public bool Equals(ModelInstance other) => _handle == other._handle && ReferenceEquals(_impl, other._impl);
 	public override bool Equals(object? obj) => obj is ModelInstance other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine((UIntPtr) _handle, _impl);
 	public static bool operator ==(ModelInstance left, ModelInstance right) => left.Equals(right);

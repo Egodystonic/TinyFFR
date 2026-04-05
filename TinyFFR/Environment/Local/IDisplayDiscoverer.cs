@@ -48,6 +48,4 @@ public interface IDisplayDiscoverer {
 			return result;
 		}
 	}
-	
-	Display? FindDisplayByName(ReadOnlySpan<char> name, bool allowPartialMatch = IResourceFinder.DefaultAllowPartialMatch, StringComparison comparisonType = IResourceFinder.DefaultComparisonType);
 }

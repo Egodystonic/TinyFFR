@@ -206,7 +206,7 @@ public readonly struct SpotLight : ILight<SpotLight>, IPositionedSceneObject, IO
 
 	#region Equality
 	public bool Equals(Light other) => AsBaseLight().Equals(other);
-	public bool Equals(SpotLight other) => _handle == other._handle && _impl.Equals(other._impl);
+	public bool Equals(SpotLight other) => _handle == other._handle && ReferenceEquals(_impl, other._impl);
 	public override bool Equals(object? obj) => obj is ILight other && AsBaseLight().Equals(other.AsBaseLight());
 	public override int GetHashCode() => HashCode.Combine((UIntPtr) _handle, _impl);
 	public static bool operator ==(SpotLight left, SpotLight right) => left.Equals(right);

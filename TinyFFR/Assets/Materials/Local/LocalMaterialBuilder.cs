@@ -22,7 +22,7 @@ using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConsta
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IDisposable {
+sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvider, IResourceDirectory<Material>, IDisposable {
 	[Flags]
 	enum SupportedEffectsFlags {
 		None = 0,
@@ -442,6 +442,33 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Material HandleToInstance(ResourceHandle<Material> h) => new(h, this);
+
+	#region Resource Directory
+	public IndirectEnumerable<object, Material> AllActiveInstances {
+		get {
+			static LocalMaterialBuilder CastSelf(object self) => self as LocalMaterialBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
+			static int GetCount(object self) => CastSelf(self)._activeMaterials.Count;
+			static int GetVersion(object self) => CastSelf(self)._activeMaterials.Version;
+			static Material GetItem(object self, int index) => CastSelf(self).HandleToInstance(CastSelf(self)._activeMaterials.GetPairAtIndex(index).Key);
+
+			ThrowIfThisIsDisposed();
+			return new(
+				this,
+				GetVersion(this),
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+	}
+	public bool ResourceNameMatchIsMatching(Material resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
+		var handle = resource.GetHandleWithoutDisposeCheck();
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return allowPartialMatch
+			? _globals.GetResourceName(handle.Ident, DefaultMaterialName).Contains(name, comparisonType)
+			: _globals.GetResourceName(handle.Ident, DefaultMaterialName).Equals(name, comparisonType);
+	}
+	#endregion
 
 	public override string ToString() => _isDisposed ? "TinyFFR Local Material Builder [Disposed]" : "TinyFFR Local Material Builder";
 

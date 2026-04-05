@@ -50,7 +50,7 @@ public readonly struct MeshNode : IResource<MeshNode, IMeshNodeImplProvider> {
 	public override string ToString() => $"Mesh Node {_handle.AsInteger} \"{GetNameAsNewStringObject()}\"";
 
 	#region Equality
-	public bool Equals(MeshNode other) => _handle == other._handle && _impl.Equals(other._impl);
+	public bool Equals(MeshNode other) => _handle == other._handle && ReferenceEquals(_impl, other._impl);
 	public override bool Equals(object? obj) => obj is MeshNode other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(_handle, _impl);
 	public static bool operator ==(MeshNode left, MeshNode right) => left.Equals(right);

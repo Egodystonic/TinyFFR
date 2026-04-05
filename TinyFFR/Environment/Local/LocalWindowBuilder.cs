@@ -15,7 +15,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IResourceFinder<Window>, IDisposable {
+sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IResourceDirectory<Window>, IDisposable {
 	const string LogoResourceName = "logo_128.png";
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly InteropStringBuffer _windowTitleBuffer;
@@ -389,20 +389,13 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IR
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Window HandleToInstance(ResourceHandle<Window> h) => new(h, this);
 	
-	#region Resource Finder
-	public Window? FindWindowByTitle(ReadOnlySpan<char> title, bool allowPartialMatch = IResourceFinder.DefaultAllowPartialMatch, StringComparison comparisonType = IResourceFinder.DefaultComparisonType) {
-		ThrowIfThisIsDisposed();
-		return _globals.FindResourceByName(this, title, allowPartialMatch, comparisonType);
-	}
-	public unsafe IndirectEnumerable<object, Window> AllCreatedWindows {
+	#region Resource Directory
+	public IndirectEnumerable<object, Window> AllActiveInstances {
 		get {
-			static int GetCount(object self) => ((LocalWindowBuilder) self)._activeWindows.Count;
-			static int GetVersion(object self) {
-				var hc = new HashCode();
-				foreach (var w in ((LocalWindowBuilder) self)._activeWindows) hc.Add(w);
-				return hc.ToHashCode();
-			}
-			static Window GetItem(object self, int index) => ((LocalWindowBuilder) self).HandleToInstance(((LocalWindowBuilder) self)._activeWindows[index]);
+			static LocalWindowBuilder CastSelf(object self) => (LocalWindowBuilder) self;
+			static int GetCount(object self) => CastSelf(self)._activeWindows.Count;
+			static int GetVersion(object self) => CastSelf(self)._activeWindows.Version;
+			static Window GetItem(object self, int index) => CastSelf(self).HandleToInstance(CastSelf(self)._activeWindows[index]);
 			
 			ThrowIfThisIsDisposed();
 			return new(
@@ -414,8 +407,15 @@ sealed unsafe class LocalWindowBuilder : IWindowBuilder, IWindowImplProvider, IR
 			);
 		}
 	}
-	Window? IResourceFinder<Window>.FindResourceByName(ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) => FindWindowByTitle(name, allowPartialMatch, comparisonType);
-	IndirectEnumerable<object, Window> IResourceFinder<Window>.GetAllResources() => AllCreatedWindows;
+
+	public bool ResourceNameMatchIsMatching(Window resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
+		var handle = resource.GetHandleWithoutDisposeCheck();
+		ThrowIfThisOrHandleIsDisposed(handle);
+		ReadTitleFromWindow(handle);
+		return allowPartialMatch
+			? _globals.GetResourceName(handle.Ident, default).Contains(name, comparisonType)
+			: _globals.GetResourceName(handle.Ident, default).Equals(name, comparisonType);
+	}
 	#endregion
 
 	#region Disposal

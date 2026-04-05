@@ -9,48 +9,66 @@ namespace Egodystonic.TinyFFR.Resources.Memory;
 sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey, TValue> {
 	public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>> {
 		readonly ArrayPoolBackedMap<TKey, TValue> _owner;
+		readonly int _version;
 		int _curIndex;
 
-		public KeyValuePair<TKey, TValue> Current {
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			get => _owner.GetPairAtIndex(_curIndex);
-		}
+		public KeyValuePair<TKey, TValue> Current { get; private set; } = default;
 		object IEnumerator.Current => Current!;
 
 		public Enumerator(ArrayPoolBackedMap<TKey, TValue> owner) {
 			_owner = owner;
+			_version = owner.Version;
 			Reset();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public bool MoveNext() => ++_curIndex < _owner.Count;
+		public bool MoveNext() {
+			if (_version != _owner.Version) throw new InvalidOperationException("Collection was modified.");
+			if (++_curIndex < _owner.Count) {
+				Current = _owner.GetPairAtIndex(_curIndex);
+				return true;
+			}
+			
+			Current = default!;
+			return false;
+		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public void Reset() => _curIndex = -1;
+		public void Reset() {
+			_curIndex = -1;
+			Current = default!;
+		}
 
 		public void Dispose() { /* no op */ }
 	}
 
 	public struct KeyEnumerator : IEnumerator<TKey>, IEnumerable<TKey> {
 		readonly ArrayPoolBackedMap<TKey, TValue> _owner;
+		readonly int _version;
 		int _curIndex;
 
-		public TKey Current {
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			get => _owner.GetPairAtIndex(_curIndex).Key;
-		}
+		public TKey Current { get; private set; } = default!;
 		object IEnumerator.Current => Current!;
 
 		public KeyEnumerator(ArrayPoolBackedMap<TKey, TValue> owner) {
 			_owner = owner;
+			_version = owner.Version;
 			Reset();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public bool MoveNext() => ++_curIndex < _owner.Count;
+		public bool MoveNext() {
+			if (_version != _owner.Version) throw new InvalidOperationException("Collection was modified.");
+			if (++_curIndex < _owner.Count) {
+				Current = _owner.GetPairAtIndex(_curIndex).Key;
+				return true;
+			}
+			
+			Current = default!;
+			return false;
+		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public void Reset() => _curIndex = -1;
+		public void Reset() {
+			_curIndex = -1;
+			Current = default!;
+		}
 
 		public void Dispose() { /* no op */ }
 
@@ -61,24 +79,33 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 
 	public struct ValueEnumerator : IEnumerator<TValue>, IEnumerable<TValue> {
 		readonly ArrayPoolBackedMap<TKey, TValue> _owner;
+		readonly int _version;
 		int _curIndex;
 
-		public TValue Current {
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			get => _owner.GetPairAtIndex(_curIndex).Value;
-		}
+		public TValue Current { get; private set; } = default!;
 		object IEnumerator.Current => Current!;
 
 		public ValueEnumerator(ArrayPoolBackedMap<TKey, TValue> owner) {
 			_owner = owner;
+			_version = owner.Version;
 			Reset();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public bool MoveNext() => ++_curIndex < _owner.Count;
+		public bool MoveNext() {
+			if (_version != _owner.Version) throw new InvalidOperationException("Collection was modified.");
+			if (++_curIndex < _owner.Count) {
+				Current = _owner.GetPairAtIndex(_curIndex).Value;
+				return true;
+			}
+			
+			Current = default!;
+			return false;
+		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public void Reset() => _curIndex = -1;
+		public void Reset() {
+			_curIndex = -1;
+			Current = default!;
+		}
 
 		public void Dispose() { /* no op */ }
 
@@ -95,6 +122,8 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 		_buckets = ArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Rent(NumBuckets);
 		for (var i = 0; i < NumBuckets; ++i) _buckets[i] = new ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>();
 	}
+	
+	public int Version { get; private set; } = 0;
 
 	public int Count {
 		get {
@@ -139,13 +168,16 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 		if (ContainsKey(item.Key)) throw new ArgumentException($"Key '{item.Key}' already exists in this map.");
 
 		bucket.Add(item);
+		++Version;
 	}
 
 	public void Clear() {
 		for (var i = 0; i < NumBuckets; ++i) _buckets[i].Clear();
+		++Version;
 	}
 	public void ClearWithoutZeroingMemory() {
 		for (var i = 0; i < NumBuckets; ++i) _buckets[i].ClearWithoutZeroingMemory();
+		++Version;
 	}
 
 	public bool ContainsKey(TKey key) => GetIndexFromBucket(GetBucket(key), key).HasValue;
@@ -189,6 +221,7 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 		var index = GetIndexFromBucket(bucket, key);
 		if (!index.HasValue) return false;
 		bucket.RemoveAt(index.Value);
+		++Version;
 		return true;
 	}
 
@@ -201,6 +234,7 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 
 		if (!valueComparer.Equals(bucket[index.Value].Value, item.Value)) return false;
 		bucket.RemoveAt(index.Value);
+		++Version;
 		return true;
 	}
 
@@ -239,6 +273,7 @@ sealed class ArrayPoolBackedMap<TKey, TValue> : IArrayPoolBackedDictionary<TKey,
 	public void Dispose() {
 		for (var i = 0; i < NumBuckets; ++i) _buckets[i].Dispose();
 		ArrayPool<ArrayPoolBackedVector<KeyValuePair<TKey, TValue>>>.Shared.Return(_buckets);
+		++Version;
 	}
 
 	static int GetBucketIndex(TKey key) => (key?.GetHashCode() & HashMask) ?? 0;

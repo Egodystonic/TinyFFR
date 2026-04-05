@@ -2,6 +2,8 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
 

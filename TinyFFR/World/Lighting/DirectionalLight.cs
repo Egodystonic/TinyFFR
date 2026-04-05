@@ -169,7 +169,7 @@ public readonly struct DirectionalLight : ILight<DirectionalLight>, IOrientedSce
 
 	#region Equality
 	public bool Equals(Light other) => AsBaseLight().Equals(other);
-	public bool Equals(DirectionalLight other) => _handle == other._handle && _impl.Equals(other._impl);
+	public bool Equals(DirectionalLight other) => _handle == other._handle && ReferenceEquals(_impl, other._impl);
 	public override bool Equals(object? obj) => obj is ILight other && AsBaseLight().Equals(other.AsBaseLight());
 	public override int GetHashCode() => HashCode.Combine((UIntPtr) _handle, _impl);
 	public static bool operator ==(DirectionalLight left, DirectionalLight right) => left.Equals(right);

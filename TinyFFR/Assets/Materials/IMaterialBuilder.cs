@@ -1,6 +1,7 @@
 ﻿// Created on 2024-08-13 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2024
 
+using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using System;
 using System.Xml.Linq;

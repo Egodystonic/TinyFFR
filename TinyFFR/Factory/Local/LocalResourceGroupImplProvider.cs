@@ -11,7 +11,7 @@ using static Egodystonic.TinyFFR.Resources.IResourceGroupImplProvider;
 
 namespace Egodystonic.TinyFFR.Factory.Local;
 
-sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider, IDisposable {
+sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider, IResourceDirectory<ResourceGroup>, IDisposable {
 	readonly record struct GroupData(ResourceStub[] StubArray, int Count, bool DisposeContainedResourcesWhenDisposed, bool IsSealed) {
 		public void ThrowIfSealed(ReadOnlySpan<char> name) {
 			if (IsSealed) throw new ResourceGroupSealedException($"Can not add resource to {nameof(ResourceGroup)} '{name}' as it is sealed.");
@@ -132,6 +132,33 @@ sealed unsafe class LocalResourceGroupImplProvider : IResourceGroupImplProvider,
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_globals.CopyResourceName(handle.Ident, DefaultGroupName, destinationBuffer);
 	}
+	
+	#region Resource Directory
+	public IndirectEnumerable<object, ResourceGroup> AllActiveInstances {
+		get {
+			static LocalResourceGroupImplProvider CastSelf(object self) => self as LocalResourceGroupImplProvider ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
+			static int GetCount(object self) => CastSelf(self)._dataMap.Count;
+			static int GetVersion(object self) => CastSelf(self)._dataMap.Version;
+			static ResourceGroup GetItem(object self, int index) => CastSelf(self).HandleToInstance(CastSelf(self)._dataMap.GetPairAtIndex(index).Key);
+
+			ThrowIfThisIsDisposed();
+			return new(
+				this,
+				GetVersion(this),
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+	}
+	public bool ResourceNameMatchIsMatching(ResourceGroup resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
+		var handle = resource.GetHandleWithoutDisposeCheck();
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return allowPartialMatch
+			? _globals.GetResourceName(handle.Ident, DefaultGroupName).Contains(name, comparisonType)
+			: _globals.GetResourceName(handle.Ident, DefaultGroupName).Equals(name, comparisonType);
+	}
+	#endregion
 
 	public bool IsDisposed(ResourceHandle<ResourceGroup> handle) => !_dataMap.ContainsKey(handle.AsInteger);
 	public void Dispose(ResourceHandle<ResourceGroup> handle) {

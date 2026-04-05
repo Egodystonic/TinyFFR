@@ -57,7 +57,7 @@ public readonly struct Texture : IDisposableResource<Texture, ITextureImplProvid
 	public override string ToString() => $"Texture {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Equality
-	public bool Equals(Texture other) => _handle == other._handle && _impl.Equals(other._impl);
+	public bool Equals(Texture other) => _handle == other._handle && ReferenceEquals(_impl, other._impl);
 	public override bool Equals(object? obj) => obj is Texture other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(_handle, _impl);
 	public static bool operator ==(Texture left, Texture right) => left.Equals(right);

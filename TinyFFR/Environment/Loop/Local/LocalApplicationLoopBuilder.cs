@@ -16,7 +16,7 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.Environment.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplicationLoopImplProvider, IResourceFinder<ApplicationLoop>, IDisposable {
+sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplicationLoopImplProvider, IResourceDirectory<ApplicationLoop>, IDisposable {
 	readonly record struct HandleTrackingData(
 		TimeSpan MaxCpuBusyWaitTime, 
 		TimeSpan FrameInterval, 
@@ -50,7 +50,6 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		_globals = globals;
 		_latestInputRetriever = LocalInputManager.IncrementRefCountAndGetRetriever();
 		_iterationTimingBufferMask = (1 << config.FrameRateBufferSizeLog2) - 1;
-		Console.WriteLine(_iterationTimingBufferMask + 1);
 	}
 
 	public ApplicationLoop CreateLoop(in LocalApplicationLoopCreationConfig config) {
@@ -212,20 +211,12 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	ApplicationLoop HandleToInstance(ResourceHandle<ApplicationLoop> h) => new(h, this);
 	
-	#region Resource Finder
-	public ApplicationLoop? FindLoopByName(ReadOnlySpan<char> name, bool allowPartialMatch = IResourceFinder.DefaultAllowPartialMatch, StringComparison comparisonType = IResourceFinder.DefaultComparisonType) {
-		ThrowIfThisIsDisposed();
-		return _globals.FindResourceByName(this, name, allowPartialMatch, comparisonType);
-	}
-	public unsafe IndirectEnumerable<object, ApplicationLoop> AllCreatedLoops {
+	#region Resource Directory
+	public unsafe IndirectEnumerable<object, ApplicationLoop> AllActiveInstances {
 		get {
 			static LocalApplicationLoopBuilder CastSelf(object self) => self as LocalApplicationLoopBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
 			static int GetCount(object self) => CastSelf(self)._handleDataMap.Count;
-			static int GetVersion(object self) {
-				var hc = new HashCode();
-				foreach (var w in CastSelf(self)._handleDataMap) hc.Add(w);
-				return hc.ToHashCode();
-			}
+			static int GetVersion(object self) => CastSelf(self)._handleDataMap.Version;
 			static ApplicationLoop GetItem(object self, int index) => CastSelf(self).HandleToInstance(CastSelf(self)._handleDataMap.GetPairAtIndex(index).Key);
 			
 			ThrowIfThisIsDisposed();
@@ -238,8 +229,13 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 			);
 		}
 	}
-	ApplicationLoop? IResourceFinder<ApplicationLoop>.FindResourceByName(ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) => FindLoopByName(name, allowPartialMatch, comparisonType);
-	IndirectEnumerable<object, ApplicationLoop> IResourceFinder<ApplicationLoop>.GetAllResources() => AllCreatedLoops;
+	public bool ResourceNameMatchIsMatching(ApplicationLoop resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
+		var handle = resource.GetHandleWithoutDisposeCheck();
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return allowPartialMatch
+			? _globals.GetResourceName(handle.Ident, DefaultLoopName).Contains(name, comparisonType)
+			: _globals.GetResourceName(handle.Ident, DefaultLoopName).Equals(name, comparisonType);
+	}
 	#endregion
 
 	#region Disposal

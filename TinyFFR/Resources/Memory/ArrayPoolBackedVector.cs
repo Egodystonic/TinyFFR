@@ -8,24 +8,33 @@ namespace Egodystonic.TinyFFR.Resources.Memory;
 sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 	public struct Enumerator : IEnumerator<T> {
 		readonly ArrayPoolBackedVector<T> _owner;
+		readonly int _version;
 		int _curIndex;
 
-		public T Current {
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			get => _owner[_curIndex];
-		}
+		public T Current { get; private set; } = default!;
 		object IEnumerator.Current => Current!;
 
 		public Enumerator(ArrayPoolBackedVector<T> owner) {
 			_owner = owner;
+			_version = owner.Version;
 			Reset();
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public bool MoveNext() => ++_curIndex < _owner.Count;
+		public bool MoveNext() {
+			if (_version != _owner.Version) throw new InvalidOperationException("Collection was modified.");
+			if (++_curIndex < _owner.Count) {
+				Current = _owner[_curIndex];
+				return true;
+			}
+			
+			Current = default!;
+			return false;
+		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public void Reset() => _curIndex = -1;
+		public void Reset() {
+			_curIndex = -1;
+			Current = default!;
+		}
 
 		public void Dispose() { /* no op */ }
 	}
@@ -33,6 +42,8 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 	public const int DefaultInitialCapacity = 4;
 	T[] _backingArray;
 
+	public int Version { get; private set; } = 0;
+	
 	public Span<T> AsSpan {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _backingArray.AsSpan(0, Count);
@@ -59,11 +70,13 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 	public void Add(T item) {
 		IncreaseBackingArraySizeIfFull();
 		_backingArray[Count++] = item;
+		++Version;
 	}
 
 	public void Clear() {
 		Array.Clear(_backingArray);
 		Count = 0;
+		++Version;
 	}
 
 	public ref T GetValueByRef(int index) {
@@ -71,8 +84,10 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 		return ref _backingArray[index];
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ClearWithoutZeroingMemory() => Count = 0;
+	public void ClearWithoutZeroingMemory() {
+		Count = 0;
+		++Version;
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Contains(T item) => IndexOf(item) >= 0;
@@ -95,6 +110,7 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 		Array.Copy(_backingArray, index, _backingArray, index + 1, Count - index);
 		_backingArray[index] = item;
 		Count++;
+		++Version;
 	}
 
 	public void RemoveAt(int index) {
@@ -103,6 +119,7 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 		Count--;
 		Array.Copy(_backingArray, index + 1, _backingArray, index, Count - index);
 		_backingArray[Count] = default!;
+		++Version;
 	}
 
 	public T RemoveLast() {
@@ -111,6 +128,7 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 		Count--;
 		var result = _backingArray[Count];
 		_backingArray[Count] = default!;
+		++Version;
 		return result;
 	}
 
@@ -123,6 +141,7 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 		Count--;
 		result = _backingArray[Count];
 		_backingArray[Count] = default!;
+		++Version;
 		return true;
 	}
 
@@ -133,6 +152,7 @@ sealed class ArrayPoolBackedVector<T> : IArrayPoolBackedList<T> {
 	IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
 	public void Dispose() {
+		++Version;
 		ArrayPool<T>.Shared.Return(_backingArray);
 		_backingArray = null!;
 	}

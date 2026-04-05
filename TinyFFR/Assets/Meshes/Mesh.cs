@@ -71,7 +71,7 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 	public override string ToString() => $"Mesh {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Equality
-	public bool Equals(Mesh other) => _handle == other._handle && _impl.Equals(other._impl);
+	public bool Equals(Mesh other) => _handle == other._handle && ReferenceEquals(_impl, other._impl);
 	public override bool Equals(object? obj) => obj is Mesh other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(_handle, _impl);
 	public static bool operator ==(Mesh left, Mesh right) => left.Equals(right);

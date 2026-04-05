@@ -39,6 +39,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	readonly LocalSceneBuilder _sceneBuilder;
 	readonly LocalRendererBuilder _rendererBuilder;
 	readonly LocalResourceAllocator _resourceAllocator;
+	readonly ResourceDirectory _resourceDirectory;
 
 	public IDisplayDiscoverer DisplayDiscoverer => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _displayDiscoverer;
 	public IWindowBuilder WindowBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _windowBuilder;
@@ -54,8 +55,29 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 	public IRendererBuilder RendererBuilder => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _rendererBuilder;
 	public IResourceAllocator ResourceAllocator => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _resourceAllocator;
 	FixedByteBufferPool ILocalGpuHoldingBufferAllocator.GpuHoldingBufferPool => _gpuHoldingBufferPool;
-
 	IApplicationLoopBuilder ITinyFfrFactory.ApplicationLoopBuilder => ApplicationLoopBuilder;
+	public IResourceDirectory ResourceDirectory => IsDisposed ? throw new ObjectDisposedException(nameof(ILocalTinyFfrFactory)) : _resourceDirectory;
+
+	ResourceDirectory ConstructResourceDirectory() {
+		return new ResourceDirectory(new ArrayPoolBackedMap<Type, object> {
+			[typeof(Display)] = DisplayDiscoverer,
+			[typeof(Window)] = WindowBuilder,
+			[typeof(ApplicationLoop)] = ApplicationLoopBuilder,
+			[typeof(Model)] = AssetLoader,
+			[typeof(Mesh)] = MeshBuilder,
+			[typeof(Material)] = MaterialBuilder,
+			[typeof(Texture)] = TextureBuilder,
+			[typeof(Camera)] = CameraBuilder,
+			[typeof(Light)] = LightBuilder,
+			[typeof(PointLight)] = LightBuilder,
+			[typeof(SpotLight)] = LightBuilder,
+			[typeof(DirectionalLight)] = LightBuilder,
+			[typeof(ModelInstance)] = ObjectBuilder,
+			[typeof(Scene)] = SceneBuilder,
+			[typeof(Renderer)] = RendererBuilder,
+			[typeof(ResourceGroup)] = _resourceGroupProvider,
+		});
+	}
 
 	public unsafe LocalTinyFfrFactory(LocalTinyFfrFactoryConfig? factoryConfig = null, LocalApplicationLoopBuilderConfig? localLoopBuilderConfig = null, WindowBuilderConfig? windowBuilderConfig = null, LocalAssetLoaderConfig? assetLoaderConfig = null, RendererBuilderConfig? rendererBuilderConfig = null) {
 		if (_instance != null) throw new InvalidOperationException($"Only one {nameof(LocalTinyFfrFactory)} may be live at any given time. Dispose the previous instance before creating another one.");
@@ -104,40 +126,14 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 		_sceneBuilder = new LocalSceneBuilder(globals, _assetLoader);
 		_rendererBuilder = new LocalRendererBuilder(globals, rendererBuilderConfig);
 		_resourceAllocator = new LocalResourceAllocator(globals);
+		
+		_resourceDirectory = ConstructResourceDirectory();
 
 		_instance = this;
 	}
 
 	public override string ToString() => IsDisposed ? "TinyFFR Local Renderer Factory [Disposed]" : "TinyFFR Local Renderer Factory";
 	
-	#region Resource Finder
-	public TResource? FindResourceByName<TResource>(ReadOnlySpan<char> name, bool allowPartialMatch = false, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase) where TResource : struct, IResource {
-		static TResource? DeferToSpecificFinder<T>(IResourceFinder<T> finder, ReadOnlySpan<char> n, bool p, StringComparison c) where T : struct, IResource {
-			var result = finder.FindResourceByName(n, p, c);
-			return Unsafe.As<T?, TResource?>(ref result);
-		} 
-		
-		if (typeof(TResource) == typeof(Display)) return DeferToSpecificFinder(_displayDiscoverer, name, allowPartialMatch, comparisonType);
-		if (typeof(TResource) == typeof(Window)) return DeferToSpecificFinder(_windowBuilder, name, allowPartialMatch, comparisonType);
-		if (typeof(TResource) == typeof(ApplicationLoop)) return DeferToSpecificFinder(_applicationLoopBuilder, name, allowPartialMatch, comparisonType);
-		
-		return default;
-	}
-	
-	public IndirectEnumerable<object, TResource> GetAllResources<TResource>() where TResource : struct, IResource {
-		static IndirectEnumerable<object, TResource> DeferToSpecificFinder<T>(IResourceFinder<T> finder) where T : struct, IResource {
-			var result = finder.GetAllResources();
-			return Unsafe.As<IndirectEnumerable<object, T>, IndirectEnumerable<object, TResource>>(ref result);
-		}
-		
-		if (typeof(TResource) == typeof(Display)) return DeferToSpecificFinder(_displayDiscoverer);
-		if (typeof(TResource) == typeof(Window)) return DeferToSpecificFinder(_windowBuilder);
-		if (typeof(TResource) == typeof(ApplicationLoop)) return DeferToSpecificFinder(_applicationLoopBuilder);
-		
-		return default;
-	}
-	#endregion
-
 	#region Disposal
 	public bool IsDisposed { get; private set; }
 
@@ -156,6 +152,7 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 
 			// Maintainer's note: These are disposed in reverse order (e.g. opposite order compared to the order they're constructed in the ctor above)
 			// However, by erasing all dependencies (above) we also try to avoid nasty dependency-related exceptions getting thrown which are ultimately not that useful as we're disposing everything anyway.
+			DisposeObjectIfDisposable(_resourceDirectory);
 			DisposeObjectIfDisposable(_resourceAllocator);
 			DisposeObjectIfDisposable(_rendererBuilder);
 			DisposeObjectIfDisposable(_sceneBuilder);

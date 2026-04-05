@@ -21,7 +21,7 @@ using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConsta
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 [SuppressUnmanagedCodeSecurity]
-sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider, IDisposable {
+sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider, IResourceDirectory<Texture>, IDisposable {
 	readonly record struct TextureData(XYPair<int> Dimensions, TexelType TexelType);
 	const string DefaultTextureName = "Unnamed Texture";
 	readonly ArrayPoolBackedMap<ResourceHandle<Texture>, TextureData> _loadedTextures = new();
@@ -178,6 +178,33 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	Texture HandleToInstance(ResourceHandle<Texture> h) => new(h, this);
+
+	#region Resource Directory
+	public IndirectEnumerable<object, Texture> AllActiveInstances {
+		get {
+			static LocalTextureBuilder CastSelf(object self) => self as LocalTextureBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
+			static int GetCount(object self) => CastSelf(self)._loadedTextures.Count;
+			static int GetVersion(object self) => CastSelf(self)._loadedTextures.Version;
+			static Texture GetItem(object self, int index) => CastSelf(self).HandleToInstance(CastSelf(self)._loadedTextures.GetPairAtIndex(index).Key);
+
+			ThrowIfThisIsDisposed();
+			return new(
+				this,
+				GetVersion(this),
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+	}
+	public bool ResourceNameMatchIsMatching(Texture resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
+		var handle = resource.GetHandleWithoutDisposeCheck();
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return allowPartialMatch
+			? _globals.GetResourceName(handle.Ident, DefaultTextureName).Contains(name, comparisonType)
+			: _globals.GetResourceName(handle.Ident, DefaultTextureName).Equals(name, comparisonType);
+	}
+	#endregion
 
 	public override string ToString() => _isDisposed ? "TinyFFR Local Material Builder [Disposed]" : "TinyFFR Local Material Builder";
 
