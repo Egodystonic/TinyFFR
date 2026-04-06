@@ -12,6 +12,10 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/7?closed=1) 
 
 ### Major Features
 
+* Added control for camera exposure
+* Added resource directory (allowing finding active resources at runtime)
+* Added FPS metrics to application loop
+
 ### Improvements
 
 * Improved error messages when exceeding internal buffer size

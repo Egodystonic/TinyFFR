@@ -12,40 +12,40 @@ Some meshes can support pre-defined animation data (such as a person walking/run
 Assuming you have an asset/model file that has pre-baked skeletal animation data, you can load it with `LoadAll()`:
 
 ```csharp
-var myMeshData = assetLoader.LoadAll("myMesh.glb");
-var myMeshInstance = objectBuilder.CreateModelInstance(myMeshData.Models[0]); // (1)!
-scene.Add(myMeshInstance);
+var modelData = assetLoader.LoadAll("myMesh.glb");
+var animatedModel = objectBuilder.CreateModelInstance(modelData.Models[0]); // (1)!
+scene.Add(animatedModel);
 ```
 
 1. 	This code assumes there's at least one model that's been loaded (a `Model` is a `Mesh` + `Material` pair). If `Models.Count` is 0, an exception will be thrown.
 
 	Most animated mesh assets will usually have a material exported alongside them as it's difficult to programmatically author materials for most realistic-looking animated skeletal meshes.
 
-	However, if your asset file *does* only contain a `Mesh` (without a `Material`) you can still create a `ModelInstance` manually (e.g. load a material via `Load[...]Map()` and `materialBuilder.Create[...]()`, and then invoke `objectBuilder.CreateModelInstance(myMeshData.Meshes[0], myMaterial)`).
+	However, if your asset file *does* only contain a `Mesh` (without a `Material`) you can still create a `ModelInstance` manually (e.g. load a material via `Load[...]Map()` and `materialBuilder.Create[...]()`, and then invoke `objectBuilder.CreateModelInstance(modelData.Meshes[0], myMaterial)`).
 
 You can then access loaded animations and create a `MeshAnimationPlayer` for any of them:
 
 ```csharp
-var player = myMeshInstance.GetAnimationPlayer( // (1)!
-	myMeshInstance.Animations[0]
+var player = animatedModel.GetAnimationPlayer( // (1)!
+	animatedModel.Animations[0]
 );
 
-var player = myMeshInstance.GetAnimationPlayer( // (2)!
-	myMeshInstance.Animations["run"]
+var player = animatedModel.GetAnimationPlayer( // (2)!
+	animatedModel.Animations["run"]
 );
 
-var player = myMeshInstance.GetAnimationPlayerWithSpeedMultiplier( // (3)!
-	myMeshInstance.Animations[0], 
+var player = animatedModel.GetAnimationPlayerWithSpeedMultiplier( // (3)!
+	animatedModel.Animations[0], 
 	2f
 );
 
-var player = myMeshInstance.GetAnimationPlayerWithTargetDuration( // (4)!
-	myMeshInstance.Animations["praise_the_sun"], 
+var player = animatedModel.GetAnimationPlayerWithTargetDuration( // (4)!
+	animatedModel.Animations["praise_the_sun"], 
 	10f
 );
 ```
 
-1.	This line creates a `MeshAnimationPlayer` that plays the first animation loaded for the given `meshInstance`.
+1.	This line creates a `MeshAnimationPlayer` that plays the first animation loaded for the given `animatedModel`.
 
 	Note that if `Animations.Count` is 0, attempting to access `Animations[0]` will throw an exception.
 	
@@ -53,7 +53,7 @@ var player = myMeshInstance.GetAnimationPlayerWithTargetDuration( // (4)!
 
 	Note that if no animation named "run" was defined in the asset file, attempting to access `Animations["run"]` will throw an exception.
 	
-3.	This line creates a `MeshAnimationPlayer` that plays the first animation loaded for the given `meshInstance`. Additionally, the player will play the animation at double speed (the `2f` argument represents a 2x playback speed).
+3.	This line creates a `MeshAnimationPlayer` that plays the first animation loaded for the given `animatedModel`. Additionally, the player will play the animation at double speed (the `2f` argument represents a 2x playback speed).
 
 4.	This line creates a `MeshAnimationPlayer` that plays the animation "praise_the_sun". Additionally, the player will play the animation with a target duration of 10 seconds.
 
@@ -95,36 +95,36 @@ It is also possible to blend two animations together. This is often used when tr
 To create a `MeshBlendedAnimationPlayer`, simply supply a start and end animation to `GetAnimationPlayer()`:
 
 ```csharp
-var player = myMeshInstance.GetAnimationPlayer( // (1)!
-	myMeshInstance.Animations[0], 
-	myMeshInstance.Animations[1]
+var player = animatedModel.GetAnimationPlayer( // (1)!
+	animatedModel.Animations[0], 
+	animatedModel.Animations[1]
 );
 
-var player = myMeshInstance.GetAnimationPlayer( // (2)!
-	myMeshInstance.Animations["run"], 
-	myMeshInstance.Animations["walk"]
+var player = animatedModel.GetAnimationPlayer( // (2)!
+	animatedModel.Animations["run"], 
+	animatedModel.Animations["walk"]
 );
 
-var player = myMeshInstance.GetAnimationPlayerWithSpeedMultiplier( // (3)!
-	myMeshInstance.Animations[0], 
+var player = animatedModel.GetAnimationPlayerWithSpeedMultiplier( // (3)!
+	animatedModel.Animations[0], 
 	2f, 
-	myMeshInstance.Animations[1], 
+	animatedModel.Animations[1], 
 	0.5f
 );
 
-var player = myMeshInstance.GetAnimationPlayerWithTargetDuration( // (4)!
-	myMeshInstance.Animations["praise_the_sun"], 
+var player = animatedModel.GetAnimationPlayerWithTargetDuration( // (4)!
+	animatedModel.Animations["praise_the_sun"], 
 	10f, 
-	myMeshInstance.Animations["blaspheme_the_moon"], 
+	animatedModel.Animations["blaspheme_the_moon"], 
 	0.5f
 );
 ```
 
-1.	This line creates a `MeshBlendedAnimationPlayer` that blends between the first and second animation loaded for `myMeshInstance`.
+1.	This line creates a `MeshBlendedAnimationPlayer` that blends between the first and second animation loaded for `animatedModel`.
 	
 2.	This line creates a `MeshBlendedAnimationPlayer` that blends between the the "run" and "walk" animations.
 	
-3.	This line creates a `MeshBlendedAnimationPlayer` that blends between the first and second animation loaded for `myMeshInstance`. Additionally, the player will play the first animation at double speed (the `2f` argument represents a 2x playback speed) and the second animation at half speed (`0.5f` represents 50% playback speed).
+3.	This line creates a `MeshBlendedAnimationPlayer` that blends between the first and second animation loaded for `animatedModel`. Additionally, the player will play the first animation at double speed (the `2f` argument represents a 2x playback speed) and the second animation at half speed (`0.5f` represents 50% playback speed).
 
 4.	This line creates a `MeshBlendedAnimationPlayer` that blends between the "praise_the_sun" and "blaspheme_the_moon" animations. Additionally, the player will play the first animation with a target duration of 10 seconds and the second one with a target duration of 0.5 seconds.
 
@@ -173,14 +173,14 @@ player.SetTimePointAndGetNodeTransforms( // (1)!
 	out var leftHandTransform
 );
 
-swordInstance.SetTransform(leftHandTransform * playerInstance.Transform.ToMatrix()); // (2)!
+sword.SetTransform(leftHandTransform * playerInstance.Transform.ToMatrix()); // (2)!
 ```
 
 1.	This sets the time point for the animation to 1 second, but also passes `leftHandNode` as a second parameter. 
 
 	The `leftHandTransform` out-parameter is a `Matrix4x4` that will be equal to the model-space transform of the left hand when this animation is set to its 1-second time point.
 	
-2.	We can now move the sword to the position of the player model's left hand by taking the model-space transform matrix and multiplying it by the player instance's transform matrix.
+2.	We can now move the sword (presumbed to be a `ModelInstance`) to the position of the player model's left hand by taking the model-space transform matrix and multiplying it by the player instance's transform matrix.
 
 We can capture the transform of multiple nodes:
 
