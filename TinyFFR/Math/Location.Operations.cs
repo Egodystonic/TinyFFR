@@ -7,6 +7,7 @@ using static System.Numerics.Vector4;
 namespace Egodystonic.TinyFFR;
 
 partial struct Location : 
+	IPhysicalValidityDeterminable,
 	ITransitionRepresentable<Location, Vect>,
 	ISubtractionOperators<Location, Location, Vect>,
 	IPointTransformable<Location>,
@@ -14,6 +15,8 @@ partial struct Location :
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect AsVect() => (Vect) this;
+
+	public bool IsPhysicallyValid => Single.IsFinite(X) && Single.IsFinite(Y) && Single.IsFinite(Z);
 
 	#region Addition/Subtraction/Move
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -9,6 +9,7 @@ namespace Egodystonic.TinyFFR;
 public readonly record struct NearestOrientationResult<TOrientation>(TOrientation AsEnum, Direction AsDirection) where TOrientation : Enum;
 
 partial struct Direction :
+	IPhysicalValidityDeterminable,
 	IInvertible<Direction>,
 	IMultiplyOperators<Direction, float, Vect>,
 	IModulusOperators<Direction, Angle, Rotation>,
@@ -110,6 +111,8 @@ partial struct Direction :
 
 		orientation = OrientationUtils.CreateOrientationFromValueSigns(direction.X, direction.Y, direction.Z);
 	}
+	
+	public bool IsPhysicallyValid => IsUnitLength || this == None;
 
 	#region Scaling and Addition/Subtraction
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

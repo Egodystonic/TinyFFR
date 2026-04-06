@@ -320,7 +320,7 @@ class DirectionTest {
 			}
 		}
 	}
-
+	
 	[Test]
 	public void ShouldCorrectlyDetermineUnitLength() {
 		Assert.AreEqual(true, OneTwoNegThree.IsUnitLength);
@@ -353,6 +353,16 @@ class DirectionTest {
 				}
 			}
 		}
+	}
+	
+	[Test]
+	public void ShouldCorrectlyDeterminePhysicalValidity() {
+		Assert.AreEqual(true, OneTwoNegThree.IsPhysicallyValid);
+		Assert.AreEqual(true, Direction.None.IsPhysicallyValid);
+		Assert.AreEqual(false, new Direction(Single.NaN, 0f, 0f).IsPhysicallyValid);
+		Assert.AreEqual(false, new Direction(0f, Single.NegativeInfinity, 0f).IsPhysicallyValid);
+		Assert.AreEqual(false, new Direction(0f, 0f, Single.PositiveInfinity).IsPhysicallyValid);
+		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(1f, 1f, 1f)).IsPhysicallyValid);
 	}
 
 	[Test]

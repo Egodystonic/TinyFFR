@@ -196,6 +196,15 @@ class LocationTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyDeterminePhysicalValidity() {
+		Assert.AreEqual(true, OneTwoNegThree.IsPhysicallyValid);
+		Assert.AreEqual(true, Location.Origin.IsPhysicallyValid);
+		Assert.AreEqual(false, new Location(Single.NaN, 0f, 0f).IsPhysicallyValid);
+		Assert.AreEqual(false, new Location(0f, Single.NegativeInfinity, 0f).IsPhysicallyValid);
+		Assert.AreEqual(false, new Location(0f, 0f, Single.PositiveInfinity).IsPhysicallyValid);
+	}
+
+	[Test]
 	public void ShouldCorrectlyCombineWithVect() {
 		void AssertCombination(Location loc, Vect vec, Location expectedAdditiveResult, Location expectedSubtractiveResult) {
 			AssertToleranceEquals(expectedAdditiveResult, loc + vec, TestTolerance);

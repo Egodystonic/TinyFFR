@@ -246,7 +246,7 @@ class VectTest {
 		Assert.AreEqual(true, new Vect(0.707f, 0f, 0.707f).IsUnitLength);
 		Assert.AreEqual(true, new Vect(0f, 0.707f, -0.707f).IsUnitLength);
 	}
-
+	
 	[Test]
 	public void UnitLengthTestShouldUseAppropriateErrorMargin() {
 		const int NumNonNormalizedRotations = 200;
@@ -270,6 +270,15 @@ class VectTest {
 				}
 			}
 		}
+	}
+	
+	[Test]
+	public void ShouldCorrectlyDeterminePhysicalValidity() {
+		Assert.AreEqual(true, OneTwoNegThree.IsPhysicallyValid);
+		Assert.AreEqual(true, Vect.Zero.IsPhysicallyValid);
+		Assert.AreEqual(false, new Vect(Single.NaN, 0f, 0f).IsPhysicallyValid);
+		Assert.AreEqual(false, new Vect(0f, Single.NegativeInfinity, 0f).IsPhysicallyValid);
+		Assert.AreEqual(false, new Vect(0f, 0f, Single.PositiveInfinity).IsPhysicallyValid);
 	}
 
 	[Test]
