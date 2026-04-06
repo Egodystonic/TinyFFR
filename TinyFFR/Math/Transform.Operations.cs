@@ -18,6 +18,8 @@ partial struct Transform :
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public T AppliedTo<T>(T transformable) where T : ITransformable<T> => transformable.TransformedBy(this);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public T InverseAppliedTo<T>(T transformable) where T : ITransformable<T> => transformable.TransformedByInverseOf(this);
 
 	#region Scaling
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

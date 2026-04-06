@@ -82,6 +82,32 @@ public static class MathUtils {
 		);
 	}
 	
+	public static Matrix4x4 ForceInvertMatrix(Matrix4x4 mat) {
+		if (Matrix4x4.Invert(mat, out var simpleSolution)) return simpleSolution;
+		
+		var transform = GetBestGuessTransformFromMatrix(mat);
+		
+		static float SetMinimalScalingComponent(float scalar) {
+			const float MinAxisScaling = 1E-6f;
+			var sign = MathF.Sign(scalar);
+			if (sign == 0) sign = 1;
+			return MathF.Abs(scalar) < MinAxisScaling ? sign * MinAxisScaling : scalar;
+		}
+		var newScaling = transform.Scaling with {
+			X = SetMinimalScalingComponent(transform.Scaling.X),
+			Y = SetMinimalScalingComponent(transform.Scaling.Y),
+			Z = SetMinimalScalingComponent(transform.Scaling.Z),
+		};
+
+		var fixedMatrix = 
+			Matrix4x4.CreateScale(newScaling.ToVector3())
+			* Matrix4x4.CreateFromQuaternion(transform.RotationQuaternion)
+			* Matrix4x4.CreateTranslation(transform.Translation.ToVector3());
+
+		if (Matrix4x4.Invert(fixedMatrix, out var fixedSolution)) return fixedSolution;
+		return Matrix4x4.Identity;
+	}
+	
 	// This is pretty ugly code, I wrote it while debugging some stuff and figured it's still
 	// kinda useful for debugging at times.
 	public static string ToStringDescriptive(this Matrix4x4 @this) {

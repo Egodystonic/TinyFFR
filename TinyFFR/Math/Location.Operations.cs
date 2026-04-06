@@ -91,6 +91,12 @@ partial struct Location :
 	public Location TransformedBy(Transform transform, Location transformationOrigin) => transformationOrigin + (transformationOrigin >> this).TransformedBy(transform);
 	public Location TransformedAroundOriginBy(Matrix4x4 transformMatrix) => AsVect().TransformedBy(transformMatrix).AsLocation();
 	public Location TransformedBy(Matrix4x4 transformMatrix, Location transformationOrigin) => transformationOrigin + (transformationOrigin >> this).TransformedBy(transformMatrix);
+	Location ITransformable<Location>.TransformedByInverseOf(Transform transform) => TransformedAroundOriginByInverseOf(transform);
+	Location ITransformable<Location>.TransformedByInverseOf(Matrix4x4 transformMatrix) => TransformedAroundOriginByInverseOf(transformMatrix);
+	public Location TransformedAroundOriginByInverseOf(Transform transform) => AsVect().TransformedByInverseOf(transform).AsLocation();
+	public Location TransformedByInverseOf(Transform transform, Location transformationOrigin) => transformationOrigin + (transformationOrigin >> this).TransformedByInverseOf(transform);
+	public Location TransformedAroundOriginByInverseOf(Matrix4x4 transformMatrix) => AsVect().TransformedByInverseOf(transformMatrix).AsLocation();
+	public Location TransformedByInverseOf(Matrix4x4 transformMatrix, Location transformationOrigin) => transformationOrigin + (transformationOrigin >> this).TransformedByInverseOf(transformMatrix);
 	#endregion
 
 	#region Clamping and Interpolation

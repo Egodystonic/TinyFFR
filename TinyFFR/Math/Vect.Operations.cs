@@ -223,6 +223,8 @@ partial struct Vect :
 	public static Vect operator *(Transform transform, Vect v) => v.TransformedBy(transform);
 	public Vect TransformedBy(Transform transform) => ScaledBy(transform.Scaling).RotatedBy(transform.Rotation).Plus(transform.Translation);
 	public Vect TransformedBy(Matrix4x4 transformMatrix) => FromVector3(Transform(ToVector3(), transformMatrix).AsVector3());
+	public Vect TransformedByInverseOf(Transform transform) => Minus(transform.Translation).RotatedBy(transform.Rotation.Reversed).ScaledBy(transform.Scaling.Reciprocal ?? Vect.Zero);
+	public Vect TransformedByInverseOf(Matrix4x4 transformMatrix) => TransformedBy(ForceInvertMatrix(transformMatrix));
 	#endregion
 
 	#region Clamping and Interpolation
