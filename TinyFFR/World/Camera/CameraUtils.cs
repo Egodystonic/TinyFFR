@@ -103,4 +103,28 @@ public static class CameraUtils {
 		CalculatePerspectiveProjectionMatrix(nearPlaneDistance, farPlaneDistance, verticalFov, aspectRatio, out var projMat);
 		return CreateRayFromOrthographicCameraParameters(in modelMat, in projMat, normalizedNearPlaneCoordinate);
 	}
+	
+	public static void ConvertBasicExposureValueToGranularValues(ref float exposure, out float aperture, out float shutterSpeed, out float sensitivity) {
+		const float LowestExposureAperture = 32f; // Higher value = less exposure
+		const float LowestExposureShutterSpeed = 1f / 4000f; // Lower value = less exposure
+		const float LowestExposureSensitivity = 100f; // Lower value = less exposure
+		const float HighestExposureAperture = 2f; // Lower value = more exposure
+		const float HighestExposureShutterSpeed = 1f / 25f; // Higher value = more exposure
+		const float HighestExposureSensitivity = 750f; // Higher value = more exposure
+		
+		exposure = ((Real) exposure).Clamp(Camera.ExposureMin, Camera.ExposureMax);
+		
+		if (exposure < 1f) {
+			var distance = ((Real) exposure).RemapRange((Camera.ExposureDefault, Camera.ExposureMin), (0f, 1f));
+			aperture = Real.Interpolate(Camera.ApertureDefault, LowestExposureAperture, distance);
+			shutterSpeed = Real.Interpolate(Camera.ShutterSpeedDefault, LowestExposureShutterSpeed, distance);
+			sensitivity = Real.Interpolate(Camera.SensitivityDefault, LowestExposureSensitivity, distance);
+		}
+		else {
+			var distance = ((Real) exposure).RemapRange((Camera.ExposureDefault, Camera.ExposureMax), (0f, 1f));
+			aperture = Real.Interpolate(Camera.ApertureDefault, HighestExposureAperture, distance);
+			shutterSpeed = Real.Interpolate(Camera.ShutterSpeedDefault, HighestExposureShutterSpeed, distance);
+			sensitivity = Real.Interpolate(Camera.SensitivityDefault, HighestExposureSensitivity, distance);
+		}
+	}
 }

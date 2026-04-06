@@ -23,6 +23,10 @@ public interface ICameraImplProvider : IDisposableResourceImplProvider<Camera> {
 	public void SetOrthographicHeight(ResourceHandle<Camera> handle, float newHeight);
 	public float GetAspectRatio(ResourceHandle<Camera> handle);
 	public void SetAspectRatio(ResourceHandle<Camera> handle, float newRatio);
+	
+	public float GetExposure(ResourceHandle<Camera> handle);
+	public void SetExposure(ResourceHandle<Camera> handle, float newExposure);
+	public void SetExposure(ResourceHandle<Camera> handle, float aperture, float shutterSpeed, float sensitivity);
 
 	public float GetNearPlaneDistance(ResourceHandle<Camera> handle);
 	public void SetNearPlaneDistance(ResourceHandle<Camera> handle, float newDistance);

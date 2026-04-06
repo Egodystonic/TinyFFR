@@ -90,6 +90,15 @@ StartExportedFunc(get_camera_view_matrix, CameraHandle camera, mat4f* outMatrix)
 	EndExportedFunc
 }
 
+void native_impl_camera::set_camera_exposure(CameraHandle camera, float_t aperture, float_t shutterSpeed, float_t sensitivity) {
+	ThrowIfNull(camera, "Camera was null.");
+	camera->setExposure(aperture, shutterSpeed, sensitivity);
+}
+StartExportedFunc(set_camera_exposure, CameraHandle camera, float_t aperture, float_t shutterSpeed, float_t sensitivity) {
+	native_impl_camera::set_camera_exposure(camera, aperture, shutterSpeed, sensitivity);
+	EndExportedFunc
+}
+
 
 void native_impl_camera::dispose_camera(CameraHandle camera) {
 	ThrowIfNull(camera, "Camera was null.");

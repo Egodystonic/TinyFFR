@@ -11,6 +11,18 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	public static readonly Angle FieldOfViewMax = Angle.FullCircle;
 	public static readonly float NearPlaneDistanceMin = 1E-5f;
 	public static readonly float NearFarPlaneDistanceRatioMax = 1E6f;
+	public static readonly float ApertureDefault = 16f;
+	public static readonly float ApertureMin = 0.5f;
+	public static readonly float ApertureMax = 64f;
+	public static readonly float ShutterSpeedDefault = 1f / 125f;
+	public static readonly float ShutterSpeedMin = 1f / 25_000f;
+	public static readonly float ShutterSpeedMax = 60f;
+	public static readonly float SensitivityDefault = 100f;
+	public static readonly float SensitivityMin = 10f;
+	public static readonly float SensitivityMax = 204_800f;
+	public static readonly float ExposureDefault = 1f;
+	public static readonly float ExposureMax = 10f;
+	public static readonly float ExposureMin = 1f / ExposureMax;
 
 	readonly ResourceHandle<Camera> _handle;
 	readonly ICameraImplProvider _impl;
@@ -101,6 +113,17 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetFarPlaneDistance(float distance) => FarPlaneDistance = distance;
+	
+	public float Exposure {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetExposure(_handle);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		set => Implementation.SetExposure(_handle, value);
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
+	public void SetExposure(float exposure) => Exposure = exposure;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetExposure(float aperture, float shutterSpeed, float sensitivity) => Implementation.SetExposure(_handle, aperture, shutterSpeed, sensitivity);
 	
 	public CameraProjectionType ProjectionType {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

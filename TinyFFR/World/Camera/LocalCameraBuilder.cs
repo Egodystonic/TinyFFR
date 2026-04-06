@@ -10,7 +10,18 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.World;
 
 sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResourceDirectory<Camera>, IDisposable {
-	readonly record struct CameraParameters(Location Position, Direction ViewDirection, Direction UpDirection, float VerticalFovRadians, float OrthographicHeight, float AspectRatio, float NearPlaneDistance, float FarPlaneDistance, CameraProjectionType ProjectionType);
+	readonly record struct CameraParameters(
+		Location Position,
+		Direction ViewDirection,
+		Direction UpDirection,
+		float VerticalFovRadians,
+		float OrthographicHeight,
+		float AspectRatio,
+		float NearPlaneDistance,
+		float FarPlaneDistance,
+		float Exposure,
+		CameraProjectionType ProjectionType
+	);
 
 	const string DefaultCameraName = "Unnamed Camera";
 	readonly ArrayPoolBackedMap<ResourceHandle<Camera>, CameraParameters> _activeCameras = new();
@@ -37,6 +48,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 			config.AspectRatio,
 			config.NearPlaneDistance,
 			config.FarPlaneDistance,
+			Camera.ExposureDefault,
 			config.ProjectionType
 		);
 
@@ -218,6 +230,25 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 		UpdateProjectionMatrixFromParameters(handle);
 	}
 
+	public float GetExposure(ResourceHandle<Camera> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeCameras[handle].Exposure;
+	}
+	public void SetExposure(ResourceHandle<Camera> handle, float newExposure) {
+		CameraUtils.ConvertBasicExposureValueToGranularValues(ref newExposure, out var aperture, out var shutterSpeed, out var sensitivity);
+		SetExposure(handle, aperture, shutterSpeed, sensitivity);
+		_activeCameras[handle] = _activeCameras[handle] with { Exposure = newExposure };
+	}
+	public void SetExposure(ResourceHandle<Camera> handle, float aperture, float shutterSpeed, float sensitivity) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		SetCameraExposure(
+			handle,
+			aperture, 
+			shutterSpeed, 
+			sensitivity
+		).ThrowIfFailure();
+	}
+
 	public CameraProjectionType GetProjectionType(ResourceHandle<Camera> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeCameras[handle].ProjectionType;
@@ -394,6 +425,14 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 	static extern InteropResult GetCameraViewMatrix(
 		UIntPtr cameraHandle,
 		out Matrix4x4 outMatrix
+	);
+	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_camera_exposure")]
+	static extern InteropResult SetCameraExposure(
+		UIntPtr cameraHandle,
+		float aperture,
+		float shutterSpeed,
+		float sensitivity
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_camera")]
