@@ -163,6 +163,12 @@ Cameras offer the following controls:
 
 	The default value is `CameraCreationConfig.DefaultFarPlaneDistance` (5000m). This can not be lower than or equal to `NearPlaneDistance`.
 	
+<span class="def-icon">:material-card-bulleted-outline:</span> `Exposure`
+
+:   This sets how much light from the scene is "let in" to the camera. The default value of `1f` is selected to work well with most scenes, but you can modify this setting manually for maximum control.
+
+	Increasing this value (max `10f`) increases the perceived brightness of the scene. Decreasing this value (min `0.1f`) decreases it.
+	
 <span class="def-icon">:material-card-bulleted-outline:</span> `ProjectionType`
 
 :   Determines the way the camera "projects" the 3D world on to the 2D Window/RenderOutputBuffer.
