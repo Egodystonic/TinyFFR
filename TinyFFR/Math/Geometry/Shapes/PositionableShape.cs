@@ -261,7 +261,7 @@ public readonly struct PositionableConvexShape<T> : IPositionableConvexShape<Pos
 			: new(TranslateToWorldSpace(shapeSpaceResult.Value.First), TranslateToWorldSpace(shapeSpaceResult.Value.Second));
 	}
 	public ConvexShapeLineIntersection FastIntersectionWith(Line line) {
-		var shapeSpaceResult = BaseShape.FastIntersectionWith(line);
+		var shapeSpaceResult = BaseShape.FastIntersectionWith(TranslateToShapeSpace(line));
 		return new(TranslateToWorldSpace(shapeSpaceResult.First), TranslateToWorldSpace(shapeSpaceResult.Second));
 	}
 	public ConvexShapeLineIntersection? IntersectionWith(Ray ray) {
@@ -271,7 +271,7 @@ public readonly struct PositionableConvexShape<T> : IPositionableConvexShape<Pos
 			: new(TranslateToWorldSpace(shapeSpaceResult.Value.First), TranslateToWorldSpace(shapeSpaceResult.Value.Second));
 	}
 	public ConvexShapeLineIntersection FastIntersectionWith(Ray ray) {
-		var shapeSpaceResult = BaseShape.FastIntersectionWith(ray);
+		var shapeSpaceResult = BaseShape.FastIntersectionWith(TranslateToShapeSpace(ray));
 		return new(TranslateToWorldSpace(shapeSpaceResult.First), TranslateToWorldSpace(shapeSpaceResult.Second));
 	}
 	public ConvexShapeLineIntersection? IntersectionWith(BoundedRay ray) {
@@ -281,7 +281,7 @@ public readonly struct PositionableConvexShape<T> : IPositionableConvexShape<Pos
 			: new(TranslateToWorldSpace(shapeSpaceResult.Value.First), TranslateToWorldSpace(shapeSpaceResult.Value.Second));
 	}
 	public ConvexShapeLineIntersection FastIntersectionWith(BoundedRay ray) {
-		var shapeSpaceResult = BaseShape.FastIntersectionWith(ray);
+		var shapeSpaceResult = BaseShape.FastIntersectionWith(TranslateToShapeSpace(ray));
 		return new(TranslateToWorldSpace(shapeSpaceResult.First), TranslateToWorldSpace(shapeSpaceResult.Second));
 	}
 

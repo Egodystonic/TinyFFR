@@ -483,56 +483,56 @@ class PositionableShapeTest {
 
 
 
-		// Line, Fast (FastIntersectionWith expects shape-space inputs, returns world-space outputs)
-		intersection = TestShape.FastIntersectionWith(new Line(new Location(0f, 6f, 0f), Direction.Right));
+		// Line, Fast
+		intersection = TestShape.FastIntersectionWith(new Line(new Location(1f, 4f, 3f), Direction.Right));
 		Assert.AreEqual(7.4f, intersection.First.DistanceFrom(TestShape.Position), TestTolerance);
 		Assert.AreEqual(4f, intersection.First.Y, TestTolerance);
 		Assert.AreEqual(7.4f, intersection.Second!.Value.DistanceFrom(TestShape.Position), TestTolerance);
 		Assert.AreEqual(4f, intersection.Second!.Value.Y, TestTolerance);
 		Assert.AreEqual(2f - intersection.First.X, intersection.Second!.Value.X, TestTolerance);
 
-		intersection = TestShape.FastIntersectionWith(new Line(new Location(0f, 7.4f, 0f), Direction.Right));
+		intersection = TestShape.FastIntersectionWith(new Line(new Location(1f, 5.4f, 3f), Direction.Right));
 		AssertToleranceEquals((1f, 5.4f, 3f), intersection.First, TestTolerance);
 		Assert.IsFalse(intersection.Second.HasValue);
 
 
-		// Ray, Fast (FastIntersectionWith expects shape-space inputs, returns world-space outputs)
-		intersection = TestShape.FastIntersectionWith(new Ray(new Location(10f, 6f, 0f), Direction.Right));
+		// Ray, Fast
+		intersection = TestShape.FastIntersectionWith(new Ray(new Location(11f, 4f, 3f), Direction.Right));
 		Assert.AreEqual(7.4f, intersection.First.DistanceFrom(TestShape.Position), TestTolerance);
 		Assert.AreEqual(4f, intersection.First.Y, TestTolerance);
 		Assert.AreEqual(7.4f, intersection.Second!.Value.DistanceFrom(TestShape.Position), TestTolerance);
 		Assert.AreEqual(4f, intersection.Second!.Value.Y, TestTolerance);
 		Assert.AreEqual(2f - intersection.First.X, intersection.Second!.Value.X, TestTolerance);
 
-		intersection = TestShape.FastIntersectionWith(new Ray(new Location(0f, 6f, 0f), Direction.Right));
+		intersection = TestShape.FastIntersectionWith(new Ray(new Location(1f, 4f, 3f), Direction.Right));
 		Assert.AreEqual(7.4f, intersection.First.DistanceFrom(TestShape.Position), TestTolerance);
 		Assert.AreEqual(4f, intersection.First.Y, TestTolerance);
 		Assert.AreEqual(false, intersection.Second.HasValue);
 
-		intersection = TestShape.FastIntersectionWith(new Ray(new Location(0f, 7.4f, 0f), Direction.Right));
+		intersection = TestShape.FastIntersectionWith(new Ray(new Location(1f, 5.4f, 3f), Direction.Right));
 		AssertToleranceEquals((1f, 5.4f, 3f), intersection.First, TestTolerance);
 		Assert.IsFalse(intersection.Second.HasValue);
 
 
-		// BoundedRay, Fast (FastIntersectionWith expects shape-space inputs, returns world-space outputs)
-		intersection = TestShape.FastIntersectionWith(new BoundedRay(new Location(10f, 6f, 0f), Direction.Right * 100f));
+		// BoundedRay, Fast
+		intersection = TestShape.FastIntersectionWith(new BoundedRay(new Location(11f, 4f, 3f), Direction.Right * 100f));
 		Assert.AreEqual(7.4f, intersection.First.DistanceFrom(TestShape.Position), TestTolerance);
 		Assert.AreEqual(4f, intersection.First.Y, TestTolerance);
 		Assert.AreEqual(7.4f, intersection.Second!.Value.DistanceFrom(TestShape.Position), TestTolerance);
 		Assert.AreEqual(4f, intersection.Second!.Value.Y, TestTolerance);
 		Assert.AreEqual(2f - intersection.First.X, intersection.Second!.Value.X, TestTolerance);
 
-		intersection = TestShape.FastIntersectionWith(new BoundedRay(new Location(0f, 6f, 0f), Direction.Right * 100f));
+		intersection = TestShape.FastIntersectionWith(new BoundedRay(new Location(1f, 4f, 3f), Direction.Right * 100f));
 		Assert.AreEqual(7.4f, intersection.First.DistanceFrom(TestShape.Position), TestTolerance);
 		Assert.AreEqual(4f, intersection.First.Y, TestTolerance);
 		Assert.AreEqual(false, intersection.Second.HasValue);
 
-		intersection = TestShape.FastIntersectionWith(new BoundedRay(new Location(10f, 6f, 0f), Direction.Right * 10f));
+		intersection = TestShape.FastIntersectionWith(new BoundedRay(new Location(11f, 4f, 3f), Direction.Right * 10f));
 		Assert.AreEqual(7.4f, intersection.First.DistanceFrom(TestShape.Position), TestTolerance);
 		Assert.AreEqual(4f, intersection.First.Y, TestTolerance);
 		Assert.AreEqual(false, intersection.Second.HasValue);
 
-		intersection = TestShape.FastIntersectionWith(new BoundedRay(new Location(0f, 7.4f, 0f), Direction.Right * 100f));
+		intersection = TestShape.FastIntersectionWith(new BoundedRay(new Location(1f, 5.4f, 3f), Direction.Right * 100f));
 		AssertToleranceEquals((1f, 5.4f, 3f), intersection.First, TestTolerance);
 		Assert.IsFalse(intersection.Second.HasValue);
 	}
@@ -738,17 +738,17 @@ class PositionableShapeTest {
 		AssertReflection(new(TestShape.Position + new Direction(-1f, -1f, -1f) * TestShape.BaseShape.Radius, (-1f, -1f, -1f)), (1f, 1f, 1f), TestShape.Position);
 
 		AssertReflection(
-			new(TestShape.FastIntersectionWith(new Ray((0f, 10f, TestShape.BaseShape.Radius * 0.5f), Direction.Down)).First, Direction.Up * (Direction.Up >> Direction.Forward) with { Angle = 60f }),
+			new(TestShape.FastIntersectionWith(new Ray((1f, 8f, 3f + TestShape.BaseShape.Radius * 0.5f), Direction.Down)).First, Direction.Up * (Direction.Up >> Direction.Forward) with { Angle = 60f }),
 			Direction.Down,
 			(1f, -2f, 3f + TestShape.BaseShape.Radius * 0.5f)
 		);
 		AssertReflection(
-			new(TestShape.FastIntersectionWith(new Ray((0f, -10f, TestShape.BaseShape.Radius * 0.5f), Direction.Up)).First, Direction.Down * (Direction.Down >> Direction.Forward) with { Angle = 60f }),
+			new(TestShape.FastIntersectionWith(new Ray((1f, -12f, 3f + TestShape.BaseShape.Radius * 0.5f), Direction.Up)).First, Direction.Down * (Direction.Down >> Direction.Forward) with { Angle = 60f }),
 			Direction.Up,
 			(1f, -2f, 3f + TestShape.BaseShape.Radius * 0.5f)
 		);
 		AssertReflection(
-			new(TestShape.FastIntersectionWith(new Ray((-20f, -20f, -20f), (1f, 1f, 1f))).First, (-1f, -1f, -1f)),
+			new(TestShape.FastIntersectionWith(new Ray((-19f, -22f, -17f), (1f, 1f, 1f))).First, (-1f, -1f, -1f)),
 			(1f, 1f, 1f),
 			TestShape.Position
 		);
