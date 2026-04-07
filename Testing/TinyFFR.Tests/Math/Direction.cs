@@ -359,10 +359,14 @@ class DirectionTest {
 	public void ShouldCorrectlyDeterminePhysicalValidity() {
 		Assert.AreEqual(true, OneTwoNegThree.IsPhysicallyValid);
 		Assert.AreEqual(true, Direction.None.IsPhysicallyValid);
-		Assert.AreEqual(false, new Direction(Single.NaN, 0f, 0f).IsPhysicallyValid);
-		Assert.AreEqual(false, new Direction(0f, Single.NegativeInfinity, 0f).IsPhysicallyValid);
-		Assert.AreEqual(false, new Direction(0f, 0f, Single.PositiveInfinity).IsPhysicallyValid);
+		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(Single.NaN, 0f, 0f)).IsPhysicallyValid);
+		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(0f, Single.NegativeInfinity, 0f)).IsPhysicallyValid);
+		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(0f, 0f, Single.PositiveInfinity)).IsPhysicallyValid);
 		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(1f, 1f, 1f)).IsPhysicallyValid);
+		
+		for (var i = 0; i < 100_000; ++i) {
+			Assert.AreEqual(true, Direction.Random().IsPhysicallyValid);
+		}
 	}
 
 	[Test]
