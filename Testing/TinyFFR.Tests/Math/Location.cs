@@ -345,6 +345,55 @@ class LocationTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyApplyInverseTransform() {
+		var transform = new Transform(
+			(1f, 2f, 3f),
+			40f % Direction.Right,
+			(0.5f, 1.1f, -0.3f)
+		);
+
+		AssertToleranceEquals(
+			(OneTwoNegThree - transform.Translation).RotatedAroundOriginBy(transform.Rotation.Reversed).ScaledFromOriginBy(transform.Scaling.Reciprocal!.Value),
+			OneTwoNegThree.TransformedAroundOriginByInverseOf(transform),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			OneTwoNegThree.TransformedAroundOriginByInverseOf(transform),
+			OneTwoNegThree.TransformedByInverseOf(transform, Location.Origin),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			OneTwoNegThree.TransformedAroundOriginByInverseOf(transform),
+			OneTwoNegThree.TransformedAroundOriginByInverseOf(transform.ToMatrix()),
+			TestTolerance
+		);
+
+		var transformOrigin = new Location(-1f, 0f, 2f);
+		AssertToleranceEquals(
+			transformOrigin + (transformOrigin >> OneTwoNegThree).TransformedByInverseOf(transform),
+			OneTwoNegThree.TransformedByInverseOf(transform, transformOrigin),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			OneTwoNegThree,
+			OneTwoNegThree.TransformedAroundOriginBy(transform).TransformedAroundOriginByInverseOf(transform),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			OneTwoNegThree,
+			OneTwoNegThree.TransformedBy(transform, transformOrigin).TransformedByInverseOf(transform, transformOrigin),
+			TestTolerance
+		);
+
+		for (var i = 0; i < 10000; ++i) {
+			var t = new Transform(Vect.Random(), Rotation.Random(), Vect.Random(new(0.5f, 0.5f, 0.5f), new(2f, 2f, 2f)));
+			AssertToleranceEquals(OneTwoNegThree.TransformedByInverseOf(t, transformOrigin), OneTwoNegThree.TransformedByInverseOf(t.ToMatrix(), transformOrigin), 0.05f);
+			AssertToleranceEquals(OneTwoNegThree, OneTwoNegThree.TransformedBy(t, transformOrigin).TransformedByInverseOf(t, transformOrigin), 0.05f);
+		}
+	}
+
+	[Test]
 	public void ShouldCorrectlyInterpolate() {
 		AssertToleranceEquals(OneTwoNegThree, Location.Interpolate(OneTwoNegThree, Location.Origin, 0f), TestTolerance);
 		AssertToleranceEquals(Location.Origin, Location.Interpolate(OneTwoNegThree, Location.Origin, 1f), TestTolerance);

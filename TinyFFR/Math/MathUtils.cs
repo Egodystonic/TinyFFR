@@ -87,16 +87,23 @@ public static class MathUtils {
 		
 		var transform = GetBestGuessTransformFromMatrix(mat);
 		
-		static float SetMinimalScalingComponent(float scalar) {
-			const float MinAxisScaling = 1E-6f;
-			var sign = MathF.Sign(scalar);
-			if (sign == 0) sign = 1;
-			return MathF.Abs(scalar) < MinAxisScaling ? sign * MinAxisScaling : scalar;
+		static float FixScalingComponent(float scalar) {
+			const float MinAxisScaling = 1E-8f;
+			var scalarSign = MathF.Sign(scalar);
+			if (scalarSign == 0) scalarSign = 1;
+			
+			// Alternative approach: return MathF.Abs(scalar) < MinAxisScaling ? scalarSign * MinAxisScaling : scalar;
+			// This returns the tiny value -- but this assumes we're unable to invert due to FP inaccuracy rather than invalid input.
+			// Both are valid approaches, but in the end returning 1/-1 will stop things from blowing up/out to huge scales when they're not meant to
+			// and probably is a little less destructive to the scene overall.
+			// The approach chosen below works better if someone tries to squash something's scale progressively from N => 0; N is unlikely to be 1E8f.
+			if (MathF.Abs(scalar) >= MinAxisScaling) return scalar;
+			return scalarSign;
 		}
 		var newScaling = transform.Scaling with {
-			X = SetMinimalScalingComponent(transform.Scaling.X),
-			Y = SetMinimalScalingComponent(transform.Scaling.Y),
-			Z = SetMinimalScalingComponent(transform.Scaling.Z),
+			X = FixScalingComponent(transform.Scaling.X),
+			Y = FixScalingComponent(transform.Scaling.Y),
+			Z = FixScalingComponent(transform.Scaling.Z),
 		};
 
 		var fixedMatrix = 

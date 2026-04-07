@@ -209,12 +209,16 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 	
 	BoundedRay ITransformable<BoundedRay>.TransformedByInverseOf(Transform transform) => TransformedAroundStartByInverseOf(transform);
 	BoundedRay ITransformable<BoundedRay>.TransformedByInverseOf(Matrix4x4 transformMatrix) => ((IPointTransformable<BoundedRay>) this).TransformedAroundOriginByInverseOf(transformMatrix);
-	public BoundedRay TransformedAroundStartByInverseOf(Transform transform) => TransformedByInverseOf(transform, StartPoint);
-	public BoundedRay TransformedAroundMiddleByInverseOf(Transform transform) => TransformedByInverseOf(transform, MiddlePoint);
-	public BoundedRay TransformedAroundEndByInverseOf(Transform transform) => TransformedByInverseOf(transform, EndPoint);
+	public BoundedRay TransformedAroundStartByInverseOf(Transform transform, bool scaleAndRotateAroundStartPostTranslation = true) => TransformedByInverseOf(transform, StartPoint, scaleAndRotateAroundStartPostTranslation);
+	public BoundedRay TransformedAroundMiddleByInverseOf(Transform transform, bool scaleAndRotateAroundMiddlePostTranslation = true) => TransformedByInverseOf(transform, MiddlePoint, scaleAndRotateAroundMiddlePostTranslation);
+	public BoundedRay TransformedAroundEndByInverseOf(Transform transform, bool scaleAndRotateAroundEndPostTranslation = true) => TransformedByInverseOf(transform, EndPoint, scaleAndRotateAroundEndPostTranslation);
 	public BoundedRay TransformedAroundOriginByInverseOf(Transform transform) => MovedBy(-transform.Translation).RotatedAroundOriginBy(transform.Rotation.Reversed).ScaledFromOriginBy(transform.Scaling.Reciprocal ?? Vect.Zero);
-	public BoundedRay TransformedByInverseOf(Transform transform, float transformationOriginSignedDistance) => TransformedByInverseOf(transform, UnboundedLocationAtDistance(transformationOriginSignedDistance));
-	public BoundedRay TransformedByInverseOf(Transform transform, Location transformationOrigin) => MovedBy(-transform.Translation).RotatedBy(transform.Rotation.Reversed, transformationOrigin).ScaledBy(transform.Scaling.Reciprocal ?? Vect.Zero, transformationOrigin);
+	public BoundedRay TransformedByInverseOf(Transform transform, float transformationOriginSignedDistance, bool scaleAndRotateAroundTransformationOriginPostTranslation = true) => TransformedByInverseOf(transform, UnboundedLocationAtDistance(transformationOriginSignedDistance), scaleAndRotateAroundTransformationOriginPostTranslation);
+	public BoundedRay TransformedByInverseOf(Transform transform, Location transformationOrigin, bool scaleAndRotateAroundTransformationOriginPostTranslation = true) {
+		if (scaleAndRotateAroundTransformationOriginPostTranslation) transformationOrigin -= transform.Translation;
+		return MovedBy(-transform.Translation).RotatedBy(transform.Rotation.Reversed, transformationOrigin).ScaledBy(transform.Scaling.Reciprocal ?? Vect.Zero, transformationOrigin);
+	}
+	BoundedRay IPointTransformable<BoundedRay>.TransformedByInverseOf(Transform transform, Location transformationOrigin) => TransformedByInverseOf(transform, transformationOrigin);
 	BoundedRay IPointTransformable<BoundedRay>.TransformedAroundOriginByInverseOf(Matrix4x4 transformMatrix) {
 		return new(StartPoint.AsVect().TransformedByInverseOf(transformMatrix).AsLocation(), EndPoint.AsVect().TransformedByInverseOf(transformMatrix).AsLocation());
 	}

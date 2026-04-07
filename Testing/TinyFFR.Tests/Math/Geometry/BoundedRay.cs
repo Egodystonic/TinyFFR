@@ -814,6 +814,70 @@ class BoundedRayTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyInverseTransform() {
+		var transform = new Transform(
+			(1f, 2f, 3f),
+			40f % Direction.Right,
+			(0.5f, 1.1f, -0.3f)
+		);
+
+		AssertToleranceEquals(
+			TestRay.MovedBy(-transform.Translation).RotatedBy(transform.Rotation.Reversed, TestRay.StartPoint).ScaledBy(transform.Scaling.Reciprocal!.Value, TestRay.StartPoint),
+			TestRay.TransformedAroundStartByInverseOf(transform),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			TestRay.MovedBy(-transform.Translation).RotatedBy(transform.Rotation.Reversed, TestRay.EndPoint).ScaledBy(transform.Scaling.Reciprocal!.Value, TestRay.EndPoint),
+			TestRay.TransformedAroundEndByInverseOf(transform),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			TestRay.MovedBy(-transform.Translation).RotatedBy(transform.Rotation.Reversed, TestRay.MiddlePoint).ScaledBy(transform.Scaling.Reciprocal!.Value, TestRay.MiddlePoint),
+			TestRay.TransformedAroundMiddleByInverseOf(transform),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			TestRay.MovedBy(-transform.Translation).RotatedAroundOriginBy(transform.Rotation.Reversed).ScaledFromOriginBy(transform.Scaling.Reciprocal!.Value),
+			TestRay.TransformedAroundOriginByInverseOf(transform),
+			TestTolerance
+		);
+		var arbitraryPoint = new Location(5f, -0.5f, 0f);
+		AssertToleranceEquals(
+			TestRay.MovedBy(-transform.Translation).RotatedBy(transform.Rotation.Reversed, arbitraryPoint).ScaledBy(transform.Scaling.Reciprocal!.Value, arbitraryPoint),
+			TestRay.TransformedByInverseOf(transform, arbitraryPoint),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			TestRay,
+			TestRay.TransformedBy(transform, TestRay.StartPoint).TransformedByInverseOf(transform, TestRay.StartPoint),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			TestRay,
+			TestRay.TransformedBy(transform, TestRay.EndPoint).TransformedByInverseOf(transform, TestRay.EndPoint),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			TestRay,
+			TestRay.TransformedBy(transform, TestRay.MiddlePoint).TransformedByInverseOf(transform, TestRay.MiddlePoint),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			TestRay,
+			TestRay.TransformedAroundOriginBy(transform).TransformedAroundOriginByInverseOf(transform),
+			TestTolerance
+		);
+		for (var i = 0; i < 10000; ++i) {
+			var t = new Transform(Vect.Random(), Rotation.Random(), Vect.Random(new(0.5f, 0.5f, 0.5f), new(2f, 2f, 2f)));
+			AssertToleranceEquals(TestRay.TransformedAroundOriginByInverseOf(t), ((IPointTransformable<BoundedRay>) TestRay).TransformedAroundOriginByInverseOf(t.ToMatrix()), 0.05f);
+			var expectation = new BoundedRay(TestRay.StartPoint.TransformedByInverseOf(t, arbitraryPoint), TestRay.EndPoint.TransformedByInverseOf(t, arbitraryPoint));
+			AssertToleranceEquals(expectation, ((IPointTransformable<BoundedRay>) TestRay).TransformedByInverseOf(t.ToMatrix(), arbitraryPoint), 0.05f);
+			AssertToleranceEquals(TestRay, TestRay.TransformedAroundOriginBy(t).TransformedAroundOriginByInverseOf(t), 0.05f);
+		}
+	}
+
+	[Test]
 	public void ShouldCorrectlyFindClosestPointToLocation() {
 		Assert.AreEqual(
 			new Location(0f, 0f, 0f),

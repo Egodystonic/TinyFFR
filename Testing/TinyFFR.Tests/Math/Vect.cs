@@ -696,6 +696,38 @@ class VectTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyApplyInvertedTransforms() {
+		var transform = new Transform(
+			(1f, 2f, 3f),
+			40f % Direction.Right,
+			(0.5f, 1.1f, -0.3f)
+		);
+
+		AssertToleranceEquals(
+			OneTwoNegThree.Minus(transform.Translation).RotatedBy(transform.Rotation.Reversed).ScaledBy(transform.Scaling.Reciprocal!.Value),
+			OneTwoNegThree.TransformedByInverseOf(transform),
+			TestTolerance
+		);
+
+		AssertToleranceEquals(
+			OneTwoNegThree,
+			OneTwoNegThree.TransformedBy(transform).TransformedByInverseOf(transform),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			OneTwoNegThree,
+			OneTwoNegThree.TransformedByInverseOf(transform).TransformedBy(transform),
+			TestTolerance
+		);
+
+		for (var i = 0; i < 10000; ++i) {
+			var t = new Transform(Vect.Random(), Rotation.Random(), Vect.Random(new(0.5f, 0.5f, 0.5f), new(2f, 2f, 2f)));
+			AssertToleranceEquals(OneTwoNegThree.TransformedByInverseOf(t), OneTwoNegThree.TransformedByInverseOf(t.ToMatrix()), 0.05f);
+			AssertToleranceEquals(OneTwoNegThree, OneTwoNegThree.TransformedBy(t).TransformedByInverseOf(t), 0.05f);
+		}
+	}
+
+	[Test]
 	public void ShouldCorrectlyInterpolate() {
 		AssertToleranceEquals(OneTwoNegThree, Vect.Interpolate(OneTwoNegThree, Vect.Zero, 0f), TestTolerance);
 		AssertToleranceEquals(Vect.Zero, Vect.Interpolate(OneTwoNegThree, Vect.Zero, 1f), TestTolerance);

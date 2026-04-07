@@ -117,6 +117,41 @@ class MathUtilsTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyForceInvertMatrix() {
+		AssertToleranceEquals(Matrix4x4.Identity, ForceInvertMatrix(Matrix4x4.Identity), TestTolerance);
+
+		var translationMat = Matrix4x4.CreateTranslation(3f, -5f, 7f);
+		Matrix4x4.Invert(translationMat, out var expectedTranslationInverse);
+		AssertToleranceEquals(expectedTranslationInverse, ForceInvertMatrix(translationMat), TestTolerance);
+
+		var rotationQuat = Quaternion.Normalize(Quaternion.CreateFromYawPitchRoll(1f, 0.5f, 0.3f));
+		var rotationMat = Matrix4x4.CreateFromQuaternion(rotationQuat);
+		Matrix4x4.Invert(rotationMat, out var expectedRotationInverse);
+		AssertToleranceEquals(expectedRotationInverse, ForceInvertMatrix(rotationMat), TestTolerance);
+
+		var scalingMat = Matrix4x4.CreateScale(2f, 3f, 0.5f);
+		Matrix4x4.Invert(scalingMat, out var expectedScalingInverse);
+		AssertToleranceEquals(expectedScalingInverse, ForceInvertMatrix(scalingMat), TestTolerance);
+
+		var combinedMat = Matrix4x4.CreateScale(2f, 3f, 0.5f) * Matrix4x4.CreateFromQuaternion(rotationQuat) * Matrix4x4.CreateTranslation(3f, -5f, 7f);
+		Matrix4x4.Invert(combinedMat, out var expectedCombinedInverse);
+		AssertToleranceEquals(expectedCombinedInverse, ForceInvertMatrix(combinedMat), TestTolerance);
+
+		var zeroScaleMat = Matrix4x4.CreateScale(0f, 2f, 2f);
+		Assert.DoesNotThrow(() => Console.WriteLine(ForceInvertMatrix(zeroScaleMat).ToStringDescriptive()));
+
+		var allZeroScaleMat = Matrix4x4.CreateScale(0f, 0f, 0f);
+		Assert.DoesNotThrow(() => Console.WriteLine(ForceInvertMatrix(allZeroScaleMat).ToStringDescriptive()));
+
+		for (var i = 0; i < 10000; ++i) {
+			var t = new Transform(Vect.Random(), Rotation.Random(), Vect.Random(new(0.5f, 0.5f, 0.5f), new(2f, 2f, 2f)));
+			var mat = t.ToMatrix();
+			Matrix4x4.Invert(mat, out var expectedInverse);
+			AssertToleranceEquals(expectedInverse, ForceInvertMatrix(mat), TestTolerance);
+		}
+	}
+
+	[Test]
 	public void ShouldCorrectlyRemapRanges() {
 		AssertToleranceEquals((Real) 50f, ((Real) 0.5f).RemapRange(new(0f, 1f), new(0f, 100f)), TestTolerance);
 		AssertToleranceEquals((Real) 0.5f, ((Real) 50f).RemapRange(new(0f, 100f), new(0f, 1f)), TestTolerance);
