@@ -43,6 +43,9 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Transform FromTranslationOnly(Vect translation) => new(translation: translation);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Transform FromBestGuessDecompositionOfMatrix(Matrix4x4 matrix) => MathUtils.GetBestGuessTransformFromMatrix(matrix);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Matrix4x4 ToMatrix() {

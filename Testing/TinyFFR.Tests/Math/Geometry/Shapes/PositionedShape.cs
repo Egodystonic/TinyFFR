@@ -6,9 +6,9 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture]
-class PositionableShapeTest {
+class PositionedShapeTest {
 	const float TestTolerance = 0.01f;
-	static readonly PositionableConvexShape<Sphere> TestShape = new(new Sphere(7.4f), new Location(1f, -2f, 3f));
+	static readonly PositionedConvexShape<Sphere> TestShape = new(new Sphere(7.4f), new Location(1f, -2f, 3f));
 
 	[SetUp]
 	public void SetUpTest() { }
@@ -30,15 +30,15 @@ class PositionableShapeTest {
 
 	[Test]
 	public void ShouldCorrectlyDeterminePhysicalValidity() {
-		Assert.AreEqual(true, new PositionableConvexShape<Sphere>(new Sphere(1f), Location.Origin).IsPhysicallyValid);
-		Assert.AreEqual(false, new PositionableConvexShape<Sphere>(new Sphere(-1f), Location.Origin).IsPhysicallyValid);
-		Assert.AreEqual(false, new PositionableConvexShape<Sphere>(new Sphere(0f), Location.Origin).IsPhysicallyValid);
-		Assert.AreEqual(false, new PositionableConvexShape<Sphere>(new Sphere(Single.NaN), Location.Origin).IsPhysicallyValid);
-		Assert.AreEqual(false, new PositionableConvexShape<Sphere>(new Sphere(Single.PositiveInfinity), Location.Origin).IsPhysicallyValid);
-		Assert.AreEqual(false, new PositionableConvexShape<Sphere>(new Sphere(Single.NegativeInfinity), Location.Origin).IsPhysicallyValid);
-		Assert.AreEqual(false, new PositionableConvexShape<Sphere>(new Sphere(Single.NegativeZero), Location.Origin).IsPhysicallyValid);
-		Assert.AreEqual(false, new PositionableConvexShape<Sphere>(new Sphere(1f), new Location(Single.NaN, 0f, 0f)).IsPhysicallyValid);
-		Assert.AreEqual(false, new PositionableConvexShape<Sphere>(new Sphere(1f), new Location(0f, Single.PositiveInfinity, 0f)).IsPhysicallyValid);
+		Assert.AreEqual(true, new PositionedConvexShape<Sphere>(new Sphere(1f), Location.Origin).IsPhysicallyValid);
+		Assert.AreEqual(false, new PositionedConvexShape<Sphere>(new Sphere(-1f), Location.Origin).IsPhysicallyValid);
+		Assert.AreEqual(false, new PositionedConvexShape<Sphere>(new Sphere(0f), Location.Origin).IsPhysicallyValid);
+		Assert.AreEqual(false, new PositionedConvexShape<Sphere>(new Sphere(Single.NaN), Location.Origin).IsPhysicallyValid);
+		Assert.AreEqual(false, new PositionedConvexShape<Sphere>(new Sphere(Single.PositiveInfinity), Location.Origin).IsPhysicallyValid);
+		Assert.AreEqual(false, new PositionedConvexShape<Sphere>(new Sphere(Single.NegativeInfinity), Location.Origin).IsPhysicallyValid);
+		Assert.AreEqual(false, new PositionedConvexShape<Sphere>(new Sphere(Single.NegativeZero), Location.Origin).IsPhysicallyValid);
+		Assert.AreEqual(false, new PositionedConvexShape<Sphere>(new Sphere(1f), new Location(Single.NaN, 0f, 0f)).IsPhysicallyValid);
+		Assert.AreEqual(false, new PositionedConvexShape<Sphere>(new Sphere(1f), new Location(0f, Single.PositiveInfinity, 0f)).IsPhysicallyValid);
 	}
 
 	[Test]
@@ -54,8 +54,8 @@ class PositionableShapeTest {
 	[Test]
 	public void ShouldCorrectlyParse() {
 		const string Input = "Sphere[Radius 7.4] @ <1.0, -2.0, 3.0>";
-		Assert.AreEqual(TestShape, PositionableConvexShape<Sphere>.Parse(Input, CultureInfo.InvariantCulture));
-		Assert.AreEqual(true, PositionableConvexShape<Sphere>.TryParse(Input, CultureInfo.InvariantCulture, out var result));
+		Assert.AreEqual(TestShape, PositionedConvexShape<Sphere>.Parse(Input, CultureInfo.InvariantCulture));
+		Assert.AreEqual(true, PositionedConvexShape<Sphere>.TryParse(Input, CultureInfo.InvariantCulture, out var result));
 		Assert.AreEqual(TestShape, result);
 	}
 
@@ -68,36 +68,36 @@ class PositionableShapeTest {
 
 	[Test]
 	public void ShouldCorrectlyInterpolate() {
-		var start = new PositionableConvexShape<Sphere>(new Sphere(5f), new Location(0f, 0f, 0f));
-		var end = new PositionableConvexShape<Sphere>(new Sphere(15f), new Location(10f, 10f, 10f));
-		Assert.AreEqual(new PositionableConvexShape<Sphere>(new Sphere(10f), new Location(5f, 5f, 5f)), PositionableConvexShape<Sphere>.Interpolate(start, end, 0.5f));
-		Assert.AreEqual(start, PositionableConvexShape<Sphere>.Interpolate(start, end, 0f));
-		Assert.AreEqual(end, PositionableConvexShape<Sphere>.Interpolate(start, end, 1f));
-		Assert.AreEqual(new PositionableConvexShape<Sphere>(new Sphere(20f), new Location(15f, 15f, 15f)), PositionableConvexShape<Sphere>.Interpolate(start, end, 1.5f));
-		Assert.AreEqual(new PositionableConvexShape<Sphere>(new Sphere(0f), new Location(-5f, -5f, -5f)), PositionableConvexShape<Sphere>.Interpolate(start, end, -0.5f));
+		var start = new PositionedConvexShape<Sphere>(new Sphere(5f), new Location(0f, 0f, 0f));
+		var end = new PositionedConvexShape<Sphere>(new Sphere(15f), new Location(10f, 10f, 10f));
+		Assert.AreEqual(new PositionedConvexShape<Sphere>(new Sphere(10f), new Location(5f, 5f, 5f)), PositionedConvexShape<Sphere>.Interpolate(start, end, 0.5f));
+		Assert.AreEqual(start, PositionedConvexShape<Sphere>.Interpolate(start, end, 0f));
+		Assert.AreEqual(end, PositionedConvexShape<Sphere>.Interpolate(start, end, 1f));
+		Assert.AreEqual(new PositionedConvexShape<Sphere>(new Sphere(20f), new Location(15f, 15f, 15f)), PositionedConvexShape<Sphere>.Interpolate(start, end, 1.5f));
+		Assert.AreEqual(new PositionedConvexShape<Sphere>(new Sphere(0f), new Location(-5f, -5f, -5f)), PositionedConvexShape<Sphere>.Interpolate(start, end, -0.5f));
 	}
 
 	[Test]
 	public void ShouldCorrectlyClamp() {
-		var min = new PositionableConvexShape<Sphere>(new Sphere(5f), new Location(-5f, -5f, -5f));
-		var max = new PositionableConvexShape<Sphere>(new Sphere(15f), new Location(5f, 5f, 5f));
-		var mid = new PositionableConvexShape<Sphere>(new Sphere(10f), new Location(0f, 0f, 0f));
+		var min = new PositionedConvexShape<Sphere>(new Sphere(5f), new Location(-5f, -5f, -5f));
+		var max = new PositionedConvexShape<Sphere>(new Sphere(15f), new Location(5f, 5f, 5f));
+		var mid = new PositionedConvexShape<Sphere>(new Sphere(10f), new Location(0f, 0f, 0f));
 		Assert.AreEqual(mid, mid.Clamp(min, max));
 		Assert.AreEqual(mid, mid.Clamp(max, min));
-		Assert.AreEqual(max, new PositionableConvexShape<Sphere>(new Sphere(20f), new Location(10f, 10f, 10f)).Clamp(min, max));
-		Assert.AreEqual(max, new PositionableConvexShape<Sphere>(new Sphere(20f), new Location(10f, 10f, 10f)).Clamp(max, min));
-		Assert.AreEqual(min, new PositionableConvexShape<Sphere>(new Sphere(0f), new Location(-10f, -10f, -10f)).Clamp(min, max));
-		Assert.AreEqual(min, new PositionableConvexShape<Sphere>(new Sphere(0f), new Location(-10f, -10f, -10f)).Clamp(max, min));
+		Assert.AreEqual(max, new PositionedConvexShape<Sphere>(new Sphere(20f), new Location(10f, 10f, 10f)).Clamp(min, max));
+		Assert.AreEqual(max, new PositionedConvexShape<Sphere>(new Sphere(20f), new Location(10f, 10f, 10f)).Clamp(max, min));
+		Assert.AreEqual(min, new PositionedConvexShape<Sphere>(new Sphere(0f), new Location(-10f, -10f, -10f)).Clamp(min, max));
+		Assert.AreEqual(min, new PositionedConvexShape<Sphere>(new Sphere(0f), new Location(-10f, -10f, -10f)).Clamp(max, min));
 	}
 
 	[Test]
 	public void ShouldCorrectlyCreateRandomObjects() {
 		const int NumIterations = 10_000;
 
-		var min = new PositionableConvexShape<Sphere>(new Sphere(10f), new Location(-10f, -10f, -10f));
-		var max = new PositionableConvexShape<Sphere>(new Sphere(20f), new Location(10f, 10f, 10f));
+		var min = new PositionedConvexShape<Sphere>(new Sphere(10f), new Location(-10f, -10f, -10f));
+		var max = new PositionedConvexShape<Sphere>(new Sphere(20f), new Location(10f, 10f, 10f));
 		for (var i = 0; i < NumIterations; ++i) {
-			var val = PositionableConvexShape<Sphere>.Random(min, max);
+			var val = PositionedConvexShape<Sphere>.Random(min, max);
 			Assert.GreaterOrEqual(val.BaseShape.Radius, 10f);
 			Assert.Less(val.BaseShape.Radius, 20f);
 			Assert.GreaterOrEqual(val.Position.X, -10f);

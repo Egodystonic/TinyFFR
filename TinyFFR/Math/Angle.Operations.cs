@@ -7,6 +7,7 @@ using static System.Numerics.Vector4;
 namespace Egodystonic.TinyFFR;
 
 partial struct Angle :
+	IPhysicalValidityDeterminable,
 	IAlgebraicGroup<Angle>,
 	IScalable<Angle>,
 	IOrdinal<Angle>,
@@ -22,6 +23,7 @@ partial struct Angle :
 	}
 	Angle IInvertible<Angle>.Inverted => Negated;
 
+	public bool IsPhysicallyValid => Single.IsFinite(_radians);
 
 	public Angle Absolute { // TODO make it clear that this is not the same as normalizing
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -8,6 +8,7 @@ using System.Numerics;
 namespace Egodystonic.TinyFFR;
 
 partial struct Transform : 
+	IPhysicalValidityDeterminable,
 	IInterpolatable<Transform>,
 	IMultiplicativeInvertible<Transform>,
 	IMultiplicativeIdentity<Transform, Transform> {
@@ -15,6 +16,14 @@ partial struct Transform :
 	Transform? IMultiplicativeInvertible<Transform>.Reciprocal => Inverse;
 	public Transform Inverse => new(-Translation, -Rotation, Scaling.Reciprocal ?? Vect.Zero);
 	static Transform IMultiplicativeIdentity<Transform, Transform>.MultiplicativeIdentity => None;
+
+	public bool IsPhysicallyValid {
+		get {
+			return Translation.IsPhysicallyValid
+				&& Rotation.IsPhysicallyValid
+				&& Scaling.IsPhysicallyValid;
+		}
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public T AppliedTo<T>(T transformable) where T : ITransformable<T> => transformable.TransformedBy(this);

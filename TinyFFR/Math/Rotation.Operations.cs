@@ -7,6 +7,7 @@ using static Egodystonic.TinyFFR.MathUtils;
 namespace Egodystonic.TinyFFR;
 
 partial struct Rotation : 
+	IPhysicalValidityDeterminable,
 	INormalizable<Rotation>,
 	IAlgebraicGroup<Rotation>,
 	IAngleMeasurable<Rotation, Rotation>,
@@ -17,6 +18,12 @@ partial struct Rotation :
 	public Rotation Reversed => new(-Angle, Axis);
 	Rotation IInvertible<Rotation>.Inverted => Reversed;
 	static Rotation IAdditiveIdentity<Rotation, Rotation>.AdditiveIdentity => None;
+
+	public bool IsPhysicallyValid {
+		get {
+			return Axis.IsPhysicallyValid && Angle.IsPhysicallyValid;
+		}
+	}
 
 	// TODO xmldoc that this returns a rotation whose angle will always be in the range [0..<180], but that is equivalent for all directions to this rotation
 	// TODO xmldoc In the range [180..<360] it flips the axis and then [360..<540] the axis stays the same, and so on

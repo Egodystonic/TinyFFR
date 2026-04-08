@@ -6,37 +6,37 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Egodystonic.TinyFFR;
 
-public interface ITransformableShape : IShape;
-public interface ITransformableShape<TSelf> : ITransformableShape, IShape<TSelf>, ITransformable<TSelf> where TSelf : ITransformableShape<TSelf>; 
-public interface ITransformableShape<TSelf, TBase> : ITransformableShape<TSelf> where TSelf : ITransformableShape<TSelf, TBase> where TBase : IShape<TBase> { TBase BaseShape { get; init; } } 
-public interface ITransformableConvexShape : ITransformableShape, IConvexShape; 
-public interface ITransformableConvexShape<TSelf> : ITransformableShape<TSelf>, ITransformableConvexShape, IConvexShape<TSelf> where TSelf : ITransformableConvexShape<TSelf>;
-public interface ITransformableConvexShape<TSelf, TBase> : ITransformableConvexShape<TSelf>, ITransformableShape<TSelf, TBase> where TSelf : ITransformableConvexShape<TSelf, TBase> where TBase : IConvexShape<TBase>;
+public interface IPositionedShape : IShape;
+public interface IPositionedShape<TSelf> : IPositionedShape, IShape<TSelf>, ITranslatable<TSelf> where TSelf : IPositionedShape<TSelf>; 
+public interface IPositionedShape<TSelf, TBase> : IPositionedShape<TSelf> where TSelf : IPositionedShape<TSelf, TBase> where TBase : IShape<TBase> { TBase BaseShape { get; init; } } 
+public interface IPositionedConvexShape : IPositionedShape, IConvexShape; 
+public interface IPositionedConvexShape<TSelf> : IPositionedShape<TSelf>, IPositionedConvexShape, IConvexShape<TSelf> where TSelf : IPositionedConvexShape<TSelf>;
+public interface IPositionedConvexShape<TSelf, TBase> : IPositionedConvexShape<TSelf>, IPositionedShape<TSelf, TBase> where TSelf : IPositionedConvexShape<TSelf, TBase> where TBase : IConvexShape<TBase>; 
 
-public readonly struct TransformableShape<T> : ITransformableShape<TransformableShape<T>, T> where T : IShape<T> {
+public readonly struct PositionedShape<T> : IPositionedShape<PositionedShape<T>, T> where T : IShape<T> {
 	const string StringComponentSeparator = " @ ";
 	public T BaseShape { get; init; }
-	public Transform Transform { get; init; }
+	public Location Position { get; init; }
 
-	public bool IsPhysicallyValid => BaseShape.IsPhysicallyValid && Transform.IsPhysicallyValid;
+	public bool IsPhysicallyValid => BaseShape.IsPhysicallyValid && Position.IsPhysicallyValid;
 	
-	public TransformableShape(T baseShape, Transform transform) {
+	public PositionedShape(T baseShape, Location position) {
 		BaseShape = baseShape;
-		Transform = transform;
+		Position = position;
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal TransformToShapeSpace<TVal>(TVal val) where TVal : ITransformable<TVal> => val.TransformedByInverseOf(Transform);
+	internal TVal TranslateToShapeSpace<TVal>(TVal val) where TVal : ITranslatable<TVal> => val - Position.AsVect();
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal TransformToWorldSpace<TVal>(TVal val) where TVal : ITransformable<TVal> => val.TransformedBy(Transform);
+	internal TVal TranslateToWorldSpace<TVal>(TVal val) where TVal : ITranslatable<TVal> => val + Position.AsVect();
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal? TransformToShapeSpace<TVal>(TVal? val) where TVal : struct, ITransformable<TVal> => val?.TransformedByInverseOf(Transform);
+	internal TVal? TranslateToShapeSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal> => val?.Minus(Position.AsVect());
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal? TransformToWorldSpace<TVal>(TVal? val) where TVal : struct, ITransformable<TVal> => val?.TransformedBy(Transform);
+	internal TVal? TranslateToWorldSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal> => val?.Plus(Position.AsVect());
 
 	#region ToString / Format / Parse
 	public string ToString(string? format, IFormatProvider? formatProvider) {
-		return BaseShape.ToString(format, formatProvider) + StringComponentSeparator + Transform.ToString(format, formatProvider);
+		return BaseShape.ToString(format, formatProvider) + StringComponentSeparator + Position.ToString(format, formatProvider);
 	}
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
 		charsWritten = 0;
@@ -49,179 +49,178 @@ public readonly struct TransformableShape<T> : ITransformableShape<Transformable
 		charsWritten += StringComponentSeparator.Length;
 		destination = destination[StringComponentSeparator.Length..];
 		
-		if (!Transform.TryFormat(destination, out c, format, provider)) return false;
+		if (!Position.TryFormat(destination, out c, format, provider)) return false;
 		charsWritten += c;
 		return true;
 	}
-	public static TransformableShape<T> Parse(string s, IFormatProvider? provider) => Parse(s.AsSpan(), provider);
-	public static bool TryParse(string? s, IFormatProvider? provider, out TransformableShape<T> result) => TryParse(s.AsSpan(), provider, out result);
-	public static TransformableShape<T> Parse(ReadOnlySpan<char> s, IFormatProvider? provider) {
+	public static PositionedShape<T> Parse(string s, IFormatProvider? provider) => Parse(s.AsSpan(), provider);
+	public static bool TryParse(string? s, IFormatProvider? provider, out PositionedShape<T> result) => TryParse(s.AsSpan(), provider, out result);
+	public static PositionedShape<T> Parse(ReadOnlySpan<char> s, IFormatProvider? provider) {
 		if (!TryParse(s, provider, out var result)) {
-			throw new ArgumentException($"Given input string \"{s}\" does not represent a valid transformable {typeof(T).Name}.", nameof(s));
+			throw new ArgumentException($"Given input string \"{s}\" does not represent a valid Positioned {typeof(T).Name}.", nameof(s));
 		}
 		return result;
 	}
-	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out TransformableShape<T> result) {
+	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out PositionedShape<T> result) {
 		result = default;
 		
 		var splitIndex = s.IndexOf(StringComponentSeparator);
 		if (splitIndex < 0) return false;
 		
 		if (!T.TryParse(s[..splitIndex], provider, out var baseShape)) return false;
-		if (!Transform.TryParse(s[(splitIndex + StringComponentSeparator.Length)..], provider, out var transform)) return false;
+		if (!Location.TryParse(s[(splitIndex + StringComponentSeparator.Length)..], provider, out var position)) return false;
 		
-		result = new(baseShape, transform);
+		result = new(baseShape, position);
 		return true;
 	}
 	#endregion
 
 	#region Byte Span Serialization / Deserialization
-	public static int SerializationByteSpanLength => T.SerializationByteSpanLength + Transform.SerializationByteSpanLength;
-	public static void SerializeToBytes(Span<byte> dest, TransformableShape<T> src) {
+	public static int SerializationByteSpanLength => T.SerializationByteSpanLength + Location.SerializationByteSpanLength;
+	public static void SerializeToBytes(Span<byte> dest, PositionedShape<T> src) {
 		T.SerializeToBytes(dest, src.BaseShape);
-		Transform.SerializeToBytes(dest[T.SerializationByteSpanLength..], src.Transform);
+		Location.SerializeToBytes(dest[T.SerializationByteSpanLength..], src.Position);
 	}
-	public static TransformableShape<T> DeserializeFromBytes(ReadOnlySpan<byte> src) {
+	public static PositionedShape<T> DeserializeFromBytes(ReadOnlySpan<byte> src) {
 		return new(
 			T.DeserializeFromBytes(src),
-			Transform.DeserializeFromBytes(src[T.SerializationByteSpanLength..])
+			Location.DeserializeFromBytes(src[T.SerializationByteSpanLength..])
 		);
 	}
 	#endregion
 
-	#region Move / Rotate / Scale
-	public TransformableShape<T> MovedBy(Vect v) => new(BaseShape, Position.MovedBy(v));
-	public static TransformableShape<T> operator +(TransformableShape<T> left, Vect right) => new(left.BaseShape, left.Position + right);
-	public static TransformableShape<T> operator -(TransformableShape<T> left, Vect right) => new(left.BaseShape, left.Position - right);
-	public static TransformableShape<T> operator +(Vect left, TransformableShape<T> right) => new(right.BaseShape, right.Position + left);
+	#region Move / Scale
+	public PositionedShape<T> MovedBy(Vect v) => new(BaseShape, Position.MovedBy(v));
+	public static PositionedShape<T> operator +(PositionedShape<T> left, Vect right) => new(left.BaseShape, left.Position + right);
+	public static PositionedShape<T> operator -(PositionedShape<T> left, Vect right) => new(left.BaseShape, left.Position - right);
+	public static PositionedShape<T> operator +(Vect left, PositionedShape<T> right) => new(right.BaseShape, right.Position + left);
 
-	public static TransformableShape<T> operator *(TransformableShape<T> left, float right) => new(left.BaseShape * right, left.Position);
-	public static TransformableShape<T> operator /(TransformableShape<T> left, float right) => new(left.BaseShape / right, left.Position);
-	public static TransformableShape<T> operator *(float left, TransformableShape<T> right) => new(left * right.BaseShape, right.Position);
-	public TransformableShape<T> ScaledBy(float scalar) => new(BaseShape * scalar, Position);
-	public TransformableShape<T> ScaledBy(Vect vect) => new(BaseShape, ;
+	public static PositionedShape<T> operator *(PositionedShape<T> left, float right) => new(left.BaseShape * right, left.Position);
+	public static PositionedShape<T> operator /(PositionedShape<T> left, float right) => new(left.BaseShape / right, left.Position);
+	public static PositionedShape<T> operator *(float left, PositionedShape<T> right) => new(left * right.BaseShape, right.Position);
+	public PositionedShape<T> ScaledBy(float scalar) => new(BaseShape * scalar, Position);
 	#endregion
 
 	#region Equality
-	public override bool Equals(object? obj) => obj is TransformableShape<T> other && Equals(other);
-	public override int GetHashCode() => HashCode.Combine(BaseShape, Transform);
-	public bool Equals(TransformableShape<T> other) => BaseShape.Equals(other.BaseShape) && Transform.Equals(other.Transform);
-	public bool Equals(TransformableShape<T> other, float tolerance) => BaseShape.Equals(other.BaseShape, tolerance) && Transform.Equals(other.Transform, tolerance);
-	public static bool operator ==(TransformableShape<T> left, TransformableShape<T> right) => left.Equals(right);
-	public static bool operator !=(TransformableShape<T> left, TransformableShape<T> right) => !left.Equals(right);
+	public override bool Equals(object? obj) => obj is PositionedShape<T> other && Equals(other);
+	public override int GetHashCode() => HashCode.Combine(BaseShape, Position);
+	public bool Equals(PositionedShape<T> other) => BaseShape.Equals(other.BaseShape) && Position.Equals(other.Position);
+	public bool Equals(PositionedShape<T> other, float tolerance) => BaseShape.Equals(other.BaseShape, tolerance) && Position.Equals(other.Position, tolerance);
+	public static bool operator ==(PositionedShape<T> left, PositionedShape<T> right) => left.Equals(right);
+	public static bool operator !=(PositionedShape<T> left, PositionedShape<T> right) => !left.Equals(right);
 	#endregion
 
 	#region Random / Interp / Clamp
-	public static TransformableShape<T> Random() => new(T.Random(), Transform.Random());
-	public static TransformableShape<T> Random(TransformableShape<T> minInclusive, TransformableShape<T> maxExclusive) {
+	public static PositionedShape<T> Random() => new(T.Random(), Location.Random());
+	public static PositionedShape<T> Random(PositionedShape<T> minInclusive, PositionedShape<T> maxExclusive) {
 		return new(
 			T.Random(minInclusive.BaseShape, maxExclusive.BaseShape),
-			Transform.Random(minInclusive.Transform, maxExclusive.Transform)
+			Location.Random(minInclusive.Position, maxExclusive.Position)
 		);
 	}
-	public static TransformableShape<T> Interpolate(TransformableShape<T> start, TransformableShape<T> end, float distance) {
+	public static PositionedShape<T> Interpolate(PositionedShape<T> start, PositionedShape<T> end, float distance) {
 		return new(
 			T.Interpolate(start.BaseShape, end.BaseShape, distance),
-			Transform.Interpolate(start.Transform, end.Transform, distance)
+			Location.Interpolate(start.Position, end.Position, distance)
 		);
 	}
-	public TransformableShape<T> Clamp(TransformableShape<T> min, TransformableShape<T> max) {
+	public PositionedShape<T> Clamp(PositionedShape<T> min, PositionedShape<T> max) {
 		return new(
 			BaseShape.Clamp(min.BaseShape, max.BaseShape),
-			Transform.Clamp(min.Transform, max.Transform)
+			Position.Clamp(min.Position, max.Position)
 		);
 	}
 	#endregion
 }
 
-public readonly struct TransformableConvexShape<T> : ITransformableConvexShape<TransformableConvexShape<T>, T> where T : IConvexShape<T> {
+public readonly struct PositionedConvexShape<T> : IPositionedConvexShape<PositionedConvexShape<T>, T> where T : IConvexShape<T> {
 	public T BaseShape { get; init; }
-	public Transform Transform { get; init; }
+	public Location Position { get; init; }
 	
-	public TransformableConvexShape(T baseShape, Transform transform) {
+	public PositionedConvexShape(T baseShape, Location position) {
 		BaseShape = baseShape;
-		Transform = transform;
+		Position = position;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator TransformableShape<T>(TransformableConvexShape<T> operand) => new(operand.BaseShape, operand.Transform);
+	public static implicit operator PositionedShape<T>(PositionedConvexShape<T> operand) => new(operand.BaseShape, operand.Position);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator TransformableConvexShape<T>(TransformableShape<T> operand) => new(operand.BaseShape, operand.Transform);
+	public static implicit operator PositionedConvexShape<T>(PositionedShape<T> operand) => new(operand.BaseShape, operand.Position);
 	
 	#region Deferred Members
 	public bool IsPhysicallyValid {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => ((TransformableShape<T>) this).IsPhysicallyValid;
+		get => ((PositionedShape<T>) this).IsPhysicallyValid;
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal TransformToShapeSpace<TVal>(TVal val) where TVal : ITransformable<TVal> => ((TransformableShape<T>) this).TransformToShapeSpace(val);
+	internal TVal TranslateToShapeSpace<TVal>(TVal val) where TVal : ITranslatable<TVal> => ((PositionedShape<T>) this).TranslateToShapeSpace(val);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal TransformToWorldSpace<TVal>(TVal val) where TVal : ITransformable<TVal> => ((TransformableShape<T>) this).TransformToWorldSpace(val);
+	internal TVal TranslateToWorldSpace<TVal>(TVal val) where TVal : ITranslatable<TVal> => ((PositionedShape<T>) this).TranslateToWorldSpace(val);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal? TransformToShapeSpace<TVal>(TVal? val) where TVal : struct, ITransformable<TVal> => ((TransformableShape<T>) this).TransformToShapeSpace(val);
+	internal TVal? TranslateToShapeSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal> => ((PositionedShape<T>) this).TranslateToShapeSpace(val);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal? TransformToWorldSpace<TVal>(TVal? val) where TVal : struct, ITransformable<TVal> => ((TransformableShape<T>) this).TransformToWorldSpace(val);
+	internal TVal? TranslateToWorldSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal> => ((PositionedShape<T>) this).TranslateToWorldSpace(val);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public string ToString(string? format, IFormatProvider? formatProvider) => ((TransformableShape<T>) this).ToString(format, formatProvider);
+	public string ToString(string? format, IFormatProvider? formatProvider) => ((PositionedShape<T>) this).ToString(format, formatProvider);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => ((TransformableShape<T>) this).TryFormat(destination, out charsWritten, format, provider);
+	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => ((PositionedShape<T>) this).TryFormat(destination, out charsWritten, format, provider);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TransformableConvexShape<T> Parse(string s, IFormatProvider? provider) => TransformableShape<T>.Parse(s, provider);
+	public static PositionedConvexShape<T> Parse(string s, IFormatProvider? provider) => PositionedShape<T>.Parse(s, provider);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool TryParse(string? s, IFormatProvider? provider, out TransformableConvexShape<T> result) {
-		var returnValue = TransformableShape<T>.TryParse(s, provider, out var r);
+	public static bool TryParse(string? s, IFormatProvider? provider, out PositionedConvexShape<T> result) {
+		var returnValue = PositionedShape<T>.TryParse(s, provider, out var r);
 		result = r;
 		return returnValue;
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TransformableConvexShape<T> Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => TransformableShape<T>.Parse(s, provider);
+	public static PositionedConvexShape<T> Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => PositionedShape<T>.Parse(s, provider);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out TransformableConvexShape<T> result) {
-		var returnValue = TransformableShape<T>.TryParse(s, provider, out var r);
+	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out PositionedConvexShape<T> result) {
+		var returnValue = PositionedShape<T>.TryParse(s, provider, out var r);
 		result = r;
 		return returnValue;
 	}
 	public static int SerializationByteSpanLength {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => TransformableShape<T>.SerializationByteSpanLength;
+		get => PositionedShape<T>.SerializationByteSpanLength;
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void SerializeToBytes(Span<byte> dest, TransformableConvexShape<T> src) => TransformableShape<T>.SerializeToBytes(dest, src); 
+	public static void SerializeToBytes(Span<byte> dest, PositionedConvexShape<T> src) => PositionedShape<T>.SerializeToBytes(dest, src); 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TransformableConvexShape<T> DeserializeFromBytes(ReadOnlySpan<byte> src) => TransformableShape<T>.DeserializeFromBytes(src);
+	public static PositionedConvexShape<T> DeserializeFromBytes(ReadOnlySpan<byte> src) => PositionedShape<T>.DeserializeFromBytes(src);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public TransformableConvexShape<T> MovedBy(Vect v) => ((TransformableShape<T>) this).MovedBy(v);
+	public PositionedConvexShape<T> MovedBy(Vect v) => ((PositionedShape<T>) this).MovedBy(v);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TransformableConvexShape<T> operator +(TransformableConvexShape<T> left, Vect right) => ((TransformableShape<T>) left) + right;
+	public static PositionedConvexShape<T> operator +(PositionedConvexShape<T> left, Vect right) => ((PositionedShape<T>) left) + right;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TransformableConvexShape<T> operator -(TransformableConvexShape<T> left, Vect right) => ((TransformableShape<T>) left) - right;
+	public static PositionedConvexShape<T> operator -(PositionedConvexShape<T> left, Vect right) => ((PositionedShape<T>) left) - right;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TransformableConvexShape<T> operator +(Vect left, TransformableConvexShape<T> right) => left + ((TransformableShape<T>) right);
+	public static PositionedConvexShape<T> operator +(Vect left, PositionedConvexShape<T> right) => left + ((PositionedShape<T>) right);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TransformableConvexShape<T> operator *(TransformableConvexShape<T> left, float right) => ((TransformableShape<T>) left) * right;
+	public static PositionedConvexShape<T> operator *(PositionedConvexShape<T> left, float right) => ((PositionedShape<T>) left) * right;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TransformableConvexShape<T> operator /(TransformableConvexShape<T> left, float right) => ((TransformableShape<T>) left) / right;
+	public static PositionedConvexShape<T> operator /(PositionedConvexShape<T> left, float right) => ((PositionedShape<T>) left) / right;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TransformableConvexShape<T> operator *(float left, TransformableConvexShape<T> right) => ((TransformableShape<T>) right) * left;
+	public static PositionedConvexShape<T> operator *(float left, PositionedConvexShape<T> right) => ((PositionedShape<T>) right) * left;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public TransformableConvexShape<T> ScaledBy(float scalar) => ((TransformableShape<T>) this).ScaledBy(scalar);
+	public PositionedConvexShape<T> ScaledBy(float scalar) => ((PositionedShape<T>) this).ScaledBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TransformableConvexShape<T> Random() => TransformableShape<T>.Random();
+	public static PositionedConvexShape<T> Random() => PositionedShape<T>.Random();
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TransformableConvexShape<T> Random(TransformableConvexShape<T> minInclusive, TransformableConvexShape<T> maxExclusive) => TransformableShape<T>.Random(minInclusive, maxExclusive);
+	public static PositionedConvexShape<T> Random(PositionedConvexShape<T> minInclusive, PositionedConvexShape<T> maxExclusive) => PositionedShape<T>.Random(minInclusive, maxExclusive);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TransformableConvexShape<T> Interpolate(TransformableConvexShape<T> start, TransformableConvexShape<T> end, float distance) => TransformableShape<T>.Interpolate(start, end, distance);
+	public static PositionedConvexShape<T> Interpolate(PositionedConvexShape<T> start, PositionedConvexShape<T> end, float distance) => PositionedShape<T>.Interpolate(start, end, distance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public TransformableConvexShape<T> Clamp(TransformableConvexShape<T> min, TransformableConvexShape<T> max) => ((TransformableShape<T>) this).Clamp(min, max);
+	public PositionedConvexShape<T> Clamp(PositionedConvexShape<T> min, PositionedConvexShape<T> max) => ((PositionedShape<T>) this).Clamp(min, max);
 	#endregion
 
 	#region Equality
-	public override bool Equals(object? obj) => obj is TransformableConvexShape<T> other && Equals(other);
+	public override bool Equals(object? obj) => obj is PositionedConvexShape<T> other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(BaseShape, Position);
-	public bool Equals(TransformableConvexShape<T> other) => BaseShape.Equals(other.BaseShape) && Position.Equals(other.Position);
-	public bool Equals(TransformableConvexShape<T> other, float tolerance) => BaseShape.Equals(other.BaseShape, tolerance) && Position.Equals(other.Position, tolerance);
-	public static bool operator ==(TransformableConvexShape<T> left, TransformableConvexShape<T> right) => left.Equals(right);
-	public static bool operator !=(TransformableConvexShape<T> left, TransformableConvexShape<T> right) => !left.Equals(right);
+	public bool Equals(PositionedConvexShape<T> other) => BaseShape.Equals(other.BaseShape) && Position.Equals(other.Position);
+	public bool Equals(PositionedConvexShape<T> other, float tolerance) => BaseShape.Equals(other.BaseShape, tolerance) && Position.Equals(other.Position, tolerance);
+	public static bool operator ==(PositionedConvexShape<T> left, PositionedConvexShape<T> right) => left.Equals(right);
+	public static bool operator !=(PositionedConvexShape<T> left, PositionedConvexShape<T> right) => !left.Equals(right);
 	#endregion
 
 	public Location PointClosestTo(Location location) => TranslateToWorldSpace(BaseShape.PointClosestTo(TranslateToShapeSpace(location)));
