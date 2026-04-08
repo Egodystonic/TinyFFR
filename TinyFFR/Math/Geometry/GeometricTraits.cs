@@ -39,9 +39,10 @@ public interface IRotatable<TSelf> :
 }
 
 public interface IPointRotatable<TSelf> :
+	IRotatable<TSelf>,
 	IMultiplyOperators<TSelf, (Rotation Rotation, Location Pivot), TSelf>,
 	IMultiplyOperators<TSelf, (Location Pivot, Rotation Rotation), TSelf>
-	where TSelf : IPointRotatable<TSelf> {
+	where TSelf : IPointRotatable<TSelf>, IRotatable<TSelf> {
 	static abstract TSelf operator *((Rotation Rotation, Location Pivot) left, TSelf right);
 	static abstract TSelf operator *((Location Pivot, Rotation Rotation) left, TSelf right);
 	TSelf RotatedBy(Rotation rot, Location pivot);

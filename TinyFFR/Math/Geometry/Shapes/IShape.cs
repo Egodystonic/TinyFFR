@@ -67,13 +67,4 @@ public interface IConvexShape : IShape,
 	float SurfaceDistanceFrom(Plane plane);
 	float SurfaceDistanceSquaredFrom(Plane plane);
 }
-public interface IConvexShape<TSelf> : IConvexShape, IShape<TSelf> where TSelf : IConvexShape<TSelf>;
-
-
-
-// public interface IFullyTransformableWorldShape : IWorldShape; 
-// public interface IFullyTransformableWorldShape<TSelf> : IFullyTransformableWorldShape, IWorldShape<TSelf>, ITransformable<TSelf> where TSelf : IFullyTransformableWorldShape<TSelf>; 
-// public interface IFullyTransformableWorldShape<TSelf, TBase> : IFullyTransformableWorldShape<TSelf>, IWorldShape<TSelf, TBase> where TSelf : IFullyTransformableWorldShape<TSelf, TBase> where TBase : IShape<TBase>; 
-// public interface IFullyTransformableWorldConvexShape : IFullyTransformableWorldShape, IWorldConvexShape; 
-// public interface IFullyTransformableWorldConvexShape<TSelf> : IFullyTransformableWorldShape<TSelf>, IFullyTransformableWorldConvexShape, IWorldConvexShape<TSelf> where TSelf : IFullyTransformableWorldConvexShape<TSelf>; 
-// public interface IFullyTransformableWorldConvexShape<TSelf, TBase> : IFullyTransformableWorldConvexShape<TSelf>, IFullyTransformableWorldShape<TSelf, TBase> where TSelf : IFullyTransformableWorldConvexShape<TSelf, TBase> where TBase : IConvexShape<TBase>; 
+public interface IConvexShape<TSelf> : IConvexShape, IShape<TSelf> where TSelf : IConvexShape<TSelf>; 

@@ -41,6 +41,9 @@ partial struct Plane :
 	#endregion
 
 	#region Rotation
+	static Plane IMultiplyOperators<Plane, Rotation, Plane>.operator *(Plane left, Rotation right) => left.RotatedAroundOriginBy(right);
+	static Plane IRotatable<Plane>.operator *(Rotation left, Plane right) => right.RotatedAroundOriginBy(left);
+	Plane IRotatable<Plane>.RotatedBy(Rotation rot) => RotatedAroundOriginBy(rot);
 	public Plane RotatedAroundOriginBy(Rotation rot) => new(Normal * rot, PointClosestToOrigin.AsVect().RotatedBy(rot).AsLocation());
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
