@@ -48,8 +48,6 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetTransform(Transform transform) => Implementation.SetTransform(_handle, transform);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetTransform(Matrix4x4 transformMatrix) => Implementation.SetTransform(_handle, transformMatrix);
 
 	public Location Position {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

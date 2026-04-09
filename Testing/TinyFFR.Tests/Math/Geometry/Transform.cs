@@ -234,8 +234,11 @@ class TransformTest {
 	public void ShouldCorrectlyConvertToAndFromSpan() {
 		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<Transform>();
 		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(Transform.None, TestTransform);
-		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(Transform.None, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 1f, 1f);
-		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestTransform, 1f, 2f, 3f, 0f, -0.70710677f, 0f, 0.70710677f, 0.75f, 0.5f, 0.25f);
+		var noneTransform = Transform.None;
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(noneTransform, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 1f, 1f, 0f, 0f, 0f, 0f, 0f);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestTransform, 1f, 2f, 3f, 0f, 0f, -0.70710677f, 0f, 0.70710677f, 0.75f, 0.5f, 0.25f, 0f, 0f, 0f, 0f, 0f);
+		Transform.CoerceToMatrixRepresentation(ref noneTransform);
+		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(noneTransform, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f);
 	}
 
 	[Test]
@@ -373,14 +376,6 @@ class TransformTest {
 	}
 
 	[Test]
-	public void ShouldCorrectlyInvert() {
-		Assert.AreEqual(Transform.None, Transform.None.Inverse);
-		AssertToleranceEquals(new Vect(-1f, -2f, -3f), TestTransform.Inverse.Translation, TestTolerance);
-		AssertToleranceEquals(90f % Direction.Up, TestTransform.Inverse.Rotation.Normalized, TestTolerance);
-		AssertToleranceEquals(new Vect(1f / 0.75f, 2f, 4f), TestTransform.Inverse.Scaling, TestTolerance);
-	}
-
-	[Test]
 	public void ShouldCorrectlyCombineScaling() {
 		Assert.AreEqual(new Vect(1.75f, 1.5f, 1.25f), TestTransform.WithScalingAdjustedBy(1f).Scaling);
 		Assert.AreEqual(new Vect(-0.25f, -0.5f, -0.75f), TestTransform.WithScalingAdjustedBy(-1f).Scaling);
@@ -509,11 +504,30 @@ class TransformTest {
 	[Test]
 	public void ShouldCorrectlyApply() {
 		for (var i = 0; i < 100; ++i) {
-			var v = Vect.Random();
+			var l = Location.Random();
 			Assert.AreEqual(
-				v.TransformedBy(TestTransform),
-				TestTransform.AppliedTo(v)
+				l.TransformedAroundOriginBy(TestTransform),
+				TestTransform.AppliedTo(l)
 			);
+		}
+	}
+
+	[Test]
+	public void ShouldBeConvertibleBetweenFormatsWhenRequired() {
+		for (var i = 0; i < 1_000; ++i) {
+			var t = Transform.Random();
+			var tCopy = t;
+			
+			Assert.AreEqual(false, t.IsInternallyRepresentedByMatrix);
+			Transform.CoerceToComponentRepresentation(ref t);
+			Assert.AreEqual(false, t.IsInternallyRepresentedByMatrix);
+			Transform.CoerceToMatrixRepresentation(ref t);
+			Assert.AreEqual(true, t.IsInternallyRepresentedByMatrix);
+			AssertToleranceEquals(tCopy, t, TestTolerance);
+			Transform.CoerceToMatrixRepresentation(ref t);
+			Assert.AreEqual(true, t.IsInternallyRepresentedByMatrix);
+			Transform.CoerceToComponentRepresentation(ref t);
+			Assert.AreEqual(false, t.IsInternallyRepresentedByMatrix);
 		}
 	}
 }

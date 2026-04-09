@@ -75,11 +75,6 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 		SetModelInstanceWorldMatrix(handle, newTransform.ToMatrix()).ThrowIfFailure();
 		_activeInstanceTransforms[handle] = newTransform;
 	}
-	public void SetTransform(ResourceHandle<ModelInstance> handle, Matrix4x4 newTransformMatrix) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		SetModelInstanceWorldMatrix(handle, newTransformMatrix).ThrowIfFailure();
-		_activeInstanceTransforms[handle] = MathUtils.GetBestGuessTransformFromMatrix(newTransformMatrix);
-	}
 
 	public Location GetPosition(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);

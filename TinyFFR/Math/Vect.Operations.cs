@@ -9,7 +9,8 @@ namespace Egodystonic.TinyFFR;
 partial struct Vect :
 	IPhysicalValidityDeterminable,
 	IAlgebraicRing<Vect>,
-	ITransformable<Vect>,
+	IRotatable<Vect>,
+	IIndependentAxisScalable<Vect>,
 	IInnerProductSpace<Vect>,
 	IVectorProductSpace<Vect>,
 	ILengthAdjustable<Vect>,
@@ -93,7 +94,6 @@ partial struct Vect :
 	public static Vect operator -(Vect lhs, Vect rhs) => lhs.Minus(rhs);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect Minus(Vect other) => new(AsVector4 - other.AsVector4);
-	Vect ITranslatable<Vect>.MovedBy(Vect v) => Plus(v);
 
 	public static Vect operator *(Vect left, Vect right) => left.MultipliedBy(right);
 	public static Vect operator /(Vect left, Vect right) => left.DividedBy(right);
@@ -214,17 +214,6 @@ partial struct Vect :
 	public static Vect operator *(Rotation r, Vect d) => r.Rotate(d);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Vect RotatedBy(Rotation rotation) => rotation.Rotate(this);
-	#endregion
-
-	#region Transformation
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator *(Vect v, Transform transform) => v.TransformedBy(transform);
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vect operator *(Transform transform, Vect v) => v.TransformedBy(transform);
-	public Vect TransformedBy(Transform transform) => ScaledBy(transform.Scaling).RotatedBy(transform.Rotation).Plus(transform.Translation);
-	public Vect TransformedBy(Matrix4x4 transformMatrix) => FromVector3(Transform(ToVector3(), transformMatrix).AsVector3());
-	public Vect TransformedByInverseOf(Transform transform) => Minus(transform.Translation).RotatedBy(transform.Rotation.Reversed).ScaledBy(transform.Scaling.Reciprocal ?? Vect.Zero);
-	public Vect TransformedByInverseOf(Matrix4x4 transformMatrix) => TransformedBy(ForceInvertMatrix(transformMatrix));
 	#endregion
 
 	#region Clamping and Interpolation

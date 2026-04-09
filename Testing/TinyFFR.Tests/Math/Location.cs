@@ -309,6 +309,22 @@ class LocationTest {
 
 	[Test]
 	public void ShouldCorrectlyTransform() {
+		AssertToleranceEquals(
+			new Location(2f, 4f, -6f),
+			OneTwoNegThree.TransformedAroundOriginBy(Transform.FromTranslationOnly(new Vect(1f, 2f, -3f))),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Location(1f, 4f, 9f),
+			OneTwoNegThree.TransformedAroundOriginBy(Transform.FromScalingOnly(new Vect(1f, 2f, -3f))),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			new Location(-1f, -2f, -3f),
+			OneTwoNegThree.TransformedAroundOriginBy(Transform.FromRotationOnly(180f % Direction.Forward)),
+			TestTolerance
+		);
+
 		var transform = new Transform(
 			(1f, 2f, 3f),
 			40f % Direction.Right,
@@ -370,7 +386,7 @@ class LocationTest {
 
 		var transformOrigin = new Location(-1f, 0f, 2f);
 		AssertToleranceEquals(
-			transformOrigin + (transformOrigin >> OneTwoNegThree).TransformedByInverseOf(transform),
+			OneTwoNegThree.MovedBy(-transformOrigin.AsVect()).TransformedAroundOriginByInverseOf(transform).MovedBy(transformOrigin.AsVect()),
 			OneTwoNegThree.TransformedByInverseOf(transform, transformOrigin),
 			TestTolerance
 		);

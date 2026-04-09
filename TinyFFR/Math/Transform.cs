@@ -9,26 +9,72 @@ using System.Numerics;
 namespace Egodystonic.TinyFFR;
 
 [DebuggerDisplay("{ToStringDescriptive()}")]
+[StructLayout(LayoutKind.Explicit)]
 public readonly partial struct Transform : IMathPrimitive<Transform>, IDescriptiveStringProvider {
 	public static readonly Transform None = new();
 
-	public Vect Translation { get; init; }
-	public Quaternion RotationQuaternion { get; init; }
+	[FieldOffset(0)]
+	readonly Vect _translation;
+	[FieldOffset(sizeof(float) * 4)]
+	readonly Quaternion _rotation;
+	[FieldOffset(sizeof(float) * 8)]
+	readonly Vect _scaling;
+	[FieldOffset(0)]
+	readonly Matrix4x4 _matrix;
+	
+	public bool IsInternallyRepresentedByMatrix => _matrix.GetRow(3) != Vector4.Zero;
+	public Vect Translation {
+		get => IsInternallyRepresentedByMatrix ? MathUtils.GetTranslationFromMatrix(_matrix) : _translation; 
+		init {
+			if (IsInternallyRepresentedByMatrix) {
+				_matrix.Translation = value.ToVector3();
+				return;
+			}
+			
+			_translation = value;
+		}
+	}
+	public Quaternion RotationQuaternion {
+		get => IsInternallyRepresentedByMatrix ? MathUtils.GetBestGuessRotationFromMatrix(_matrix) : _rotation; 
+		init {
+			if (IsInternallyRepresentedByMatrix) {
+				var t = MathUtils.GetBestGuessTransformFromMatrix(_matrix);
+				_matrix = default;
+				_translation = t.Translation;
+				_scaling = t.Scaling;
+			}
+			
+			_rotation = value;
+		}
+	}
 	public Rotation Rotation {
 		get => Rotation.FromQuaternionPreNormalized(RotationQuaternion);
 		init => RotationQuaternion = value.ToQuaternion();
 	}
-	public Vect Scaling { get; init; }
+	public Vect Scaling {
+		get => IsInternallyRepresentedByMatrix ? MathUtils.GetBestGuessScalingFromMatrix(_matrix) : _scaling;
+		init {
+			if (IsInternallyRepresentedByMatrix) {
+				var t = MathUtils.GetBestGuessTransformFromMatrix(_matrix);
+				_matrix = default;
+				_translation = t.Translation;
+				_rotation = t.RotationQuaternion;
+			}
+			
+			_scaling = value;
+		}
+	}
 
 	public Transform() : this(Vect.Zero, Quaternion.Identity, Vect.One) { }
 	public Transform(float translationX, float translationY, float translationZ) : this(new Vect(translationX, translationY, translationZ), Quaternion.Identity, Vect.One) { }
 	public Transform(Vect? translation = null, Rotation? rotation = null, Vect? scaling = null) : this(translation ?? Vect.Zero, rotation?.ToQuaternion() ?? Quaternion.Identity, scaling ?? Vect.One) { }
 	public Transform(Vect translation, Rotation rotation, Vect scaling) : this(translation, rotation.ToQuaternion(), scaling) { }
 	public Transform(Vect translation, Quaternion rotationQuaternion, Vect scaling) {
-		Translation = translation;
-		RotationQuaternion = rotationQuaternion;
-		Scaling = scaling;
+		_translation = translation;
+		_rotation = rotationQuaternion;
+		_scaling = scaling;
 	}
+	public Transform(Matrix4x4 transformMatrix) => _matrix = transformMatrix;
 
 	#region Factories and Conversions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -44,8 +90,15 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Transform FromTranslationOnly(Vect translation) => new(translation: translation);
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Transform FromBestGuessDecompositionOfMatrix(Matrix4x4 matrix) => MathUtils.GetBestGuessTransformFromMatrix(matrix);
+	public static void CoerceToMatrixRepresentation(ref Transform t) {
+		if (t.IsInternallyRepresentedByMatrix) return;
+		t = new(t.ToMatrix());
+	}
+	
+	public static void CoerceToComponentRepresentation(ref Transform t) {
+		if (!t.IsInternallyRepresentedByMatrix) return;
+		t = MathUtils.GetBestGuessTransformFromMatrix(t._matrix);
+	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Matrix4x4 ToMatrix() {
@@ -54,6 +107,11 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	}
 	
 	public void ToMatrix(out Matrix4x4 dest) {
+		if (IsInternallyRepresentedByMatrix) {
+			dest = _matrix;
+			return;
+		}
+		
 		var rotVect = RotationQuaternion.AsVector4();
 		var rotVectSquared = rotVect * rotVect;
 
@@ -99,6 +157,11 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 		rotation = Rotation;
 		scaling = Scaling;
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static implicit operator Transform(Matrix4x4 operand) => new(operand);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static implicit operator Matrix4x4(Transform operand) => operand.ToMatrix();
 	#endregion
 
 	#region Random
@@ -111,6 +174,8 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	}
 
 	public static Transform Random(Transform minInclusive, Transform maxExclusive) {
+		CoerceToComponentRepresentation(ref minInclusive);
+		CoerceToComponentRepresentation(ref maxExclusive);
 		return new(
 			Vect.Random(minInclusive.Translation, maxExclusive.Translation),
 			Rotation.Random(minInclusive.Rotation, maxExclusive.Rotation),
@@ -120,35 +185,21 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	#endregion
 
 	#region Span Conversion
-	public static int SerializationByteSpanLength { get; } = Vect.SerializationByteSpanLength + sizeof(float) * 4 + Vect.SerializationByteSpanLength;
+	public static int SerializationByteSpanLength { get; } = sizeof(float) * 16;
 
 	public static void SerializeToBytes(Span<byte> dest, Transform src) {
-		Vect.SerializeToBytes(dest, src.Translation);
-		dest = dest[Vect.SerializationByteSpanLength..];
-		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 0)..(sizeof(float) * 1)], src.RotationQuaternion.X);
-		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 1)..(sizeof(float) * 2)], src.RotationQuaternion.Y);
-		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 2)..(sizeof(float) * 3)], src.RotationQuaternion.Z);
-		BinaryPrimitives.WriteSingleLittleEndian(dest[(sizeof(float) * 3)..(sizeof(float) * 4)], src.RotationQuaternion.W);
-		dest = dest[(sizeof(float) * 4)..];
-		Vect.SerializeToBytes(dest, src.Scaling);
+		MemoryMarshal.Write(dest, in src._matrix);
 	}
 
 	public static Transform DeserializeFromBytes(ReadOnlySpan<byte> src) {
-		var location = Vect.DeserializeFromBytes(src);
-		src = src[Vect.SerializationByteSpanLength..];
-		var x = BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 0)..(sizeof(float) * 1)]);
-		var y = BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 1)..(sizeof(float) * 2)]);
-		var z = BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 2)..(sizeof(float) * 3)]);
-		var w = BinaryPrimitives.ReadSingleLittleEndian(src[(sizeof(float) * 3)..(sizeof(float) * 4)]);
-		var rotationQuat = new Quaternion(x, y, z, w);
-		src = src[(sizeof(float) * 4)..];
-		var scaling = Vect.DeserializeFromBytes(src);
-		return new(location, rotationQuat, scaling);
+		return new(MemoryMarshal.Read<Matrix4x4>(src));
 	}
 	#endregion
 
 	#region String Conversion
 	public string ToStringDescriptive() {
+		if (IsInternallyRepresentedByMatrix) return _matrix.ToStringDescriptive();
+		
 		// ReSharper disable CompareOfFloatsByEqualityOperator Explicit comparison with a representable-in-FP default is fine
 		string scalingString;
 		if (Scaling == None.Scaling) scalingString = PercentageUtils.ConvertFractionToPercentageString(1f, "N0", CultureInfo.CurrentCulture);
@@ -198,8 +249,10 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	#endregion
 
 	#region Equality
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool Equals(Transform other) => Translation.Equals(other.Translation) && (RotationQuaternion.Equals(other.RotationQuaternion) || RotationQuaternion.Equals(-other.RotationQuaternion)) && Scaling.Equals(other.Scaling);
+	public bool Equals(Transform other) {
+		if (IsInternallyRepresentedByMatrix || other.IsInternallyRepresentedByMatrix) return ToMatrix().Equals(other.ToMatrix());
+		return Translation.Equals(other.Translation) && (RotationQuaternion.Equals(other.RotationQuaternion) || RotationQuaternion.Equals(-other.RotationQuaternion)) && Scaling.Equals(other.Scaling);
+	}
 	public bool Equals(Transform other, float tolerance) {
 		static bool CompareQuats(Quaternion a, Quaternion b, float t) {
 			return MathF.Abs(a.X - b.X) <= t
@@ -207,6 +260,8 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 				&& MathF.Abs(a.Z - b.Z) <= t
 				&& MathF.Abs(a.W - b.W) <= t;
 		}
+		
+		if (IsInternallyRepresentedByMatrix || other.IsInternallyRepresentedByMatrix) return ToMatrix().Equals(other.ToMatrix(), tolerance);
 
 		return Translation.Equals(other.Translation, tolerance) 
 			   && (CompareQuats(RotationQuaternion, other.RotationQuaternion, tolerance) || CompareQuats(RotationQuaternion, -other.RotationQuaternion, tolerance)) 
@@ -220,6 +275,9 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override bool Equals(object? obj) => obj is Transform other && Equals(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public override int GetHashCode() => HashCode.Combine(Translation.GetHashCode(), Rotation.GetHashCode(), Scaling.GetHashCode());
+	public override int GetHashCode() {
+		if (IsInternallyRepresentedByMatrix) return _matrix.GetHashCode();
+		return HashCode.Combine(Translation.GetHashCode(), Rotation.GetHashCode(), Scaling.GetHashCode());
+	}
 	#endregion
 }

@@ -8,6 +8,7 @@ using System.Numerics;
 namespace Egodystonic.TinyFFR;
 
 partial struct Transform2D : 
+	//ITransformable2D<Transform2D>,
 	IInterpolatable<Transform2D>,
 	IMultiplicativeInvertible<Transform2D>,
 	IMultiplicativeIdentity<Transform2D, Transform2D> {
@@ -40,6 +41,19 @@ partial struct Transform2D :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Transform2D WithAdditionalTranslation(XYPair<float> translation) => this with { Translation = Translation + translation };
 	#endregion
+
+	// #region Transform
+	// public static Transform2D operator *(Transform2D left, float right) => TransformedBy;
+	// public static Transform2D operator /(Transform2D left, float right) => TODO_IMPLEMENT_ME;
+	// public static Transform2D operator *(float left, Transform2D right) => TODO_IMPLEMENT_ME;
+	// public Transform2D ScaledBy(float scalar) => TODO_IMPLEMENT_ME;
+	// public Transform2D ScaledBy(XYPair<float> vect) => TODO_IMPLEMENT_ME;
+	// public Transform2D RotatedBy(Angle rot) => TODO_IMPLEMENT_ME;
+	// public Transform2D MovedBy(XYPair<float> v) => TODO_IMPLEMENT_ME;
+	// static Transform2D IMultiplyOperators<Transform2D, Transform2D, Transform2D>.operator *(Transform2D left, Transform2D right) => TODO_IMPLEMENT_ME;
+	// public Transform2D TransformedBy(Transform2D transform) => TODO_IMPLEMENT_ME;
+	// static Transform2D ITransformable2D<Transform2D>.operator *(Transform2D left, Transform2D right) => TODO_IMPLEMENT_ME;
+	// #endregion
 
 	#region Clamping and Interpolation
 	public static Transform2D Interpolate(Transform2D start, Transform2D end, float distance) {

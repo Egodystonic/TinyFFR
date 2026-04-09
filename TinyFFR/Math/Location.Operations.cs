@@ -86,17 +86,11 @@ partial struct Location :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Location operator *(Transform transform, Location location) => location.TransformedAroundOriginBy(transform);
 	Location ITransformable<Location>.TransformedBy(Transform transform) => TransformedAroundOriginBy(transform);
-	Location ITransformable<Location>.TransformedBy(Matrix4x4 transformMatrix) => TransformedAroundOriginBy(transformMatrix);
-	public Location TransformedAroundOriginBy(Transform transform) => AsVect().TransformedBy(transform).AsLocation();
-	public Location TransformedBy(Transform transform, Location transformationOrigin) => transformationOrigin + (transformationOrigin >> this).TransformedBy(transform);
-	public Location TransformedAroundOriginBy(Matrix4x4 transformMatrix) => AsVect().TransformedBy(transformMatrix).AsLocation();
-	public Location TransformedBy(Matrix4x4 transformMatrix, Location transformationOrigin) => transformationOrigin + (transformationOrigin >> this).TransformedBy(transformMatrix);
+	public Location TransformedAroundOriginBy(Transform transform) => new(Transform(AsVector4, transform.ToMatrix()));
+	public Location TransformedBy(Transform transform, Location transformationOrigin) => MovedBy(-transformationOrigin.AsVect()).TransformedAroundOriginBy(transform).MovedBy(transformationOrigin.AsVect());
 	Location ITransformable<Location>.TransformedByInverseOf(Transform transform) => TransformedAroundOriginByInverseOf(transform);
-	Location ITransformable<Location>.TransformedByInverseOf(Matrix4x4 transformMatrix) => TransformedAroundOriginByInverseOf(transformMatrix);
-	public Location TransformedAroundOriginByInverseOf(Transform transform) => AsVect().TransformedByInverseOf(transform).AsLocation();
-	public Location TransformedByInverseOf(Transform transform, Location transformationOrigin) => transformationOrigin + (transformationOrigin >> this).TransformedByInverseOf(transform);
-	public Location TransformedAroundOriginByInverseOf(Matrix4x4 transformMatrix) => AsVect().TransformedByInverseOf(transformMatrix).AsLocation();
-	public Location TransformedByInverseOf(Matrix4x4 transformMatrix, Location transformationOrigin) => transformationOrigin + (transformationOrigin >> this).TransformedByInverseOf(transformMatrix);
+	public Location TransformedAroundOriginByInverseOf(Transform transform) => new(Transform(AsVector4, ForceInvertMatrix(transform.ToMatrix())));
+	public Location TransformedByInverseOf(Transform transform, Location transformationOrigin) => MovedBy(-transformationOrigin.AsVect()).TransformedAroundOriginByInverseOf(transform).MovedBy(transformationOrigin.AsVect());
 	#endregion
 
 	#region Clamping and Interpolation

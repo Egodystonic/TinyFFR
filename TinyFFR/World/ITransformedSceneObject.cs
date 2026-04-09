@@ -31,5 +31,4 @@ public interface IScaledSceneObject : IRescalableSceneObject {
 
 public interface ITransformedSceneObject : IPositionedSceneObject, IOrientedSceneObject, IScaledSceneObject {
 	Transform Transform { get; set; }
-	void SetTransform(Matrix4x4 transformMatrix);
 }

@@ -32,6 +32,69 @@ public static class MathUtils {
 		return T.Interpolate(outputRange.First, outputRange.Second, inputDistance);
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Vect GetTranslationFromMatrix(Matrix4x4 mat) => Vect.FromVector3(mat.Translation);
+	
+	public static Vect GetBestGuessScalingFromMatrix(Matrix4x4 mat) {
+		if (Matrix4x4.Decompose(mat, out var s, out _, out _)) return Vect.FromVector3(s);
+
+		var rowA = new Vector3(mat[0, 0], mat[0, 1], mat[0, 2]);
+		var rowB = new Vector3(mat[1, 0], mat[1, 1], mat[1, 2]);
+		var rowC = new Vector3(mat[2, 0], mat[2, 1], mat[2, 2]);
+
+		var xScale = rowA.Length();
+		var yScale = rowB.Length();
+		var zScale = rowC.Length();
+		
+		if (!Single.IsFinite(xScale) || xScale == 0f) xScale = 1f;
+		if (!Single.IsFinite(yScale) || yScale == 0f) yScale = 1f;
+		if (!Single.IsFinite(zScale) || zScale == 0f) zScale = 1f;
+
+		// Flip A/X if 3x3 mat has negative determinant
+		var aCrossB = Vector3.Cross(rowA, rowB);
+		if (Vector3.Dot(aCrossB, rowC) < 0f) {
+			xScale = -xScale;
+		}
+		
+		return new Vect(xScale, yScale, zScale);
+	}
+	
+	public static Quaternion GetBestGuessRotationFromMatrix(Matrix4x4 mat) {
+		if (Matrix4x4.Decompose(mat, out _, out var r, out _)) return r;
+
+		var rowA = new Vector3(mat[0, 0], mat[0, 1], mat[0, 2]);
+		var rowB = new Vector3(mat[1, 0], mat[1, 1], mat[1, 2]);
+		var rowC = new Vector3(mat[2, 0], mat[2, 1], mat[2, 2]);
+
+		var xScale = rowA.Length();
+		var yScale = rowB.Length();
+		
+		if (!Single.IsFinite(xScale) || xScale == 0f) xScale = 1f;
+		if (!Single.IsFinite(yScale) || yScale == 0f) yScale = 1f;
+
+		// Flip A/X if 3x3 mat has negative determinant
+		var aCrossB = Vector3.Cross(rowA, rowB);
+		if (Vector3.Dot(aCrossB, rowC) < 0f) {
+			xScale = -xScale;
+			rowA = -rowA;
+		}
+
+		rowA /= xScale;
+		rowB /= yScale;
+
+		// Gram-Schmidt                                                                                                                                                      
+		rowB -= Vector3.Dot(rowB, rowA) * rowA;
+		rowB = Vector3.Normalize(rowB);
+		rowC = Vector3.Cross(rowA, rowB);
+
+		return Quaternion.CreateFromRotationMatrix(new Matrix4x4(
+			rowA.X, rowA.Y, rowA.Z, 0f,
+			rowB.X, rowB.Y, rowB.Z, 0f,
+			rowC.X, rowC.Y, rowC.Z, 0f,
+			0f, 0f, 0f, 1f
+		));
+	}
+
 	public static Transform GetBestGuessTransformFromMatrix(Matrix4x4 mat) {
 		if (Matrix4x4.Decompose(mat, out var s, out var r, out var t)) {
 			return new Transform(
@@ -154,5 +217,19 @@ public static class MathUtils {
 		}
 
 		return result;
+	}
+	
+	public static bool Equals(this Matrix4x4 @this, Matrix4x4 other, float tolerance) {
+		for (var i = 0; i < 16; ++i) {
+			if (MathF.Abs(@this[(i >> 2) & 0b11, i & 0b11] - other[(i >> 2) & 0b11, i & 0b11]) > tolerance) return false;
+		}
+		return true;
+	}
+	
+	public static Vector4 GetRow(this Matrix4x4 @this, int rowIndex) {
+		return new Vector4(@this[rowIndex, 0], @this[rowIndex, 1], @this[rowIndex, 2], @this[rowIndex, 3]);
+	}
+	public static Vector4 GetColumn(this Matrix4x4 @this, int columnIndex) {
+		return new Vector4(@this[0, columnIndex], @this[1, columnIndex], @this[2, columnIndex], @this[3, columnIndex]);
 	}
 }

@@ -88,11 +88,21 @@ class MathUtilsTest {
 			GetBestGuessTransformFromMatrix(Matrix4x4.CreateTranslation(translationVect.ToVector3())), 
 			TestTolerance
 		);
+		AssertToleranceEquals(
+			translationVect, 
+			GetTranslationFromMatrix(Matrix4x4.CreateTranslation(translationVect.ToVector3())), 
+			TestTolerance
+		);
 		
 		var rotationQuat = Quaternion.Normalize(Quaternion.CreateFromYawPitchRoll(1f, 0.5f, 0.3f));
 		AssertToleranceEquals(
 			new Transform(translation: Vect.Zero, rotationQuaternion: rotationQuat, scaling: Vect.One), 
 			GetBestGuessTransformFromMatrix(Matrix4x4.CreateFromQuaternion(rotationQuat)), 
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			rotationQuat, 
+			GetBestGuessRotationFromMatrix(Matrix4x4.CreateFromQuaternion(rotationQuat)), 
 			TestTolerance
 		);
 		
@@ -102,11 +112,31 @@ class MathUtilsTest {
 			GetBestGuessTransformFromMatrix(Matrix4x4.CreateScale(scalingVect.ToVector3())), 
 			TestTolerance
 		);
+		AssertToleranceEquals(
+			scalingVect, 
+			GetBestGuessScalingFromMatrix(Matrix4x4.CreateScale(scalingVect.ToVector3())), 
+			TestTolerance
+		);
 
 		var combinedMat = Matrix4x4.CreateScale(scalingVect.ToVector3()) * Matrix4x4.CreateFromQuaternion(rotationQuat) * Matrix4x4.CreateTranslation(translationVect.ToVector3());
 		AssertToleranceEquals(
 			new Transform(scaling: scalingVect, rotationQuaternion: rotationQuat, translation: translationVect), 
 			GetBestGuessTransformFromMatrix(combinedMat), 
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			translationVect, 
+			GetTranslationFromMatrix(combinedMat), 
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			rotationQuat, 
+			GetBestGuessRotationFromMatrix(combinedMat), 
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			scalingVect, 
+			GetBestGuessScalingFromMatrix(combinedMat), 
 			TestTolerance
 		);
 
