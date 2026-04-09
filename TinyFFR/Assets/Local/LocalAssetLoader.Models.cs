@@ -317,7 +317,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		return aSpan.SequenceEqual(bSpan);
 	}
 	
-	Texture CreateAssetColorMap(AssetMaterialParam* paramPtr, AssetMaterialCreationParameters creationParams) {
+	Texture CreateAssetColorMap(AssetMaterialParam* paramPtr, in AssetMaterialCreationParameters creationParams) {
 		const string TextureTypeName = "color";
 		switch (paramPtr->Format) {
 			case AssetMaterialParamDataFormat.Numerical:
@@ -346,7 +346,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		}
 	}
 	
-	Texture? CreateAssetAbsorptionTransmissionMap(AssetMaterialParam* absorptionParamPtr, AssetMaterialParam* transmissionParamPtr, AssetMaterialCreationParameters creationParams) {
+	Texture? CreateAssetAbsorptionTransmissionMap(AssetMaterialParam* absorptionParamPtr, AssetMaterialParam* transmissionParamPtr, in AssetMaterialCreationParameters creationParams) {
 		const string TextureTypeName = "at";
 		if (absorptionParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && transmissionParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
 		
@@ -420,7 +420,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		}
 	}
 	
-	Texture? CreateAssetNormalMap(AssetMaterialParam* paramPtr, AssetMaterialCreationParameters creationParams) {
+	Texture? CreateAssetNormalMap(AssetMaterialParam* paramPtr, in AssetMaterialCreationParameters creationParams) {
 		const string TextureTypeName = "norm";
 		switch (paramPtr->Format) {
 			case AssetMaterialParamDataFormat.Numerical:
@@ -450,7 +450,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		}
 	}
 	
-	Texture? CreateAssetOrmrMap(AssetMaterialParam* occlusionParamPtr, AssetMaterialParam* roughnessParamPtr, AssetMaterialParam* glossinessParamPtr, AssetMaterialParam* metallicParamPtr, AssetMaterialParam* iorParamPtr, bool reflectanceRequired, AssetMaterialCreationParameters creationParams) {
+	Texture? CreateAssetOrmrMap(AssetMaterialParam* occlusionParamPtr, AssetMaterialParam* roughnessParamPtr, AssetMaterialParam* glossinessParamPtr, AssetMaterialParam* metallicParamPtr, AssetMaterialParam* iorParamPtr, bool reflectanceRequired, in AssetMaterialCreationParameters creationParams) {
 		const string TextureTypeName = "orm";
 		
 		// Maintainer's note:
@@ -589,7 +589,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		}
 	}
 	
-	Texture? CreateAssetAnisotropyMap(AssetMaterialParam* angleParamPtr, AssetMaterialParam* strengthParamPtr, AssetMaterialCreationParameters creationParams) {
+	Texture? CreateAssetAnisotropyMap(AssetMaterialParam* angleParamPtr, AssetMaterialParam* strengthParamPtr, in AssetMaterialCreationParameters creationParams) {
 		const string TextureTypeName = "aniso";
 		if (angleParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && strengthParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
 		
@@ -664,7 +664,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		}
 	}
 	
-	Texture? CreateAssetEmissiveMap(AssetMaterialParam* colorParamPtr, AssetMaterialParam* intensityParamPtr, AssetMaterialCreationParameters creationParams) {
+	Texture? CreateAssetEmissiveMap(AssetMaterialParam* colorParamPtr, AssetMaterialParam* intensityParamPtr, in AssetMaterialCreationParameters creationParams) {
 		const string TextureTypeName = "emissive";
 		if (colorParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && intensityParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
 		
@@ -761,7 +761,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 		}
 	}
 	
-	Texture? CreateAssetClearCoatMap(AssetMaterialParam* strengthParamPtr, AssetMaterialParam* roughnessParamPtr, AssetMaterialCreationParameters creationParams) {
+	Texture? CreateAssetClearCoatMap(AssetMaterialParam* strengthParamPtr, AssetMaterialParam* roughnessParamPtr, in AssetMaterialCreationParameters creationParams) {
 		const string TextureTypeName = "clearcoat";
 		if (strengthParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded && roughnessParamPtr->Format == AssetMaterialParamDataFormat.NotIncluded) return null;
 		
