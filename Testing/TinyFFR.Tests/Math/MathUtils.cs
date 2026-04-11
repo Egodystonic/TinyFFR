@@ -182,6 +182,110 @@ class MathUtilsTest {
 	}
 
 	[Test]
+	public void ShouldCorrectlyDecomposeMatrix3x2ToTransform2D() {
+		AssertToleranceEquals(Transform2D.None, GetBestGuessTransformFromMatrix(Matrix3x2.Identity), TestTolerance);
+
+		var translationVect = new XYPair<float>(3f, -5f);
+		AssertToleranceEquals(
+			new Transform2D(translation: translationVect),
+			GetBestGuessTransformFromMatrix(Matrix3x2.CreateTranslation(translationVect.ToVector2())),
+			TestTolerance
+		);
+
+		var rotAngle = new Angle(60f);
+		AssertToleranceEquals(
+			new Transform2D(rotation: rotAngle),
+			GetBestGuessTransformFromMatrix(Matrix3x2.CreateRotation(rotAngle.Radians)),
+			TestTolerance
+		);
+
+		var scalingVect = new XYPair<float>(2f, 3f);
+		AssertToleranceEquals(
+			new Transform2D(scaling: scalingVect),
+			GetBestGuessTransformFromMatrix(Matrix3x2.CreateScale(scalingVect.ToVector2())),
+			TestTolerance
+		);
+
+		var combinedMat = Matrix3x2.CreateScale(scalingVect.ToVector2()) * Matrix3x2.CreateRotation(rotAngle.Radians) * Matrix3x2.CreateTranslation(translationVect.ToVector2());
+		AssertToleranceEquals(
+			new Transform2D(translation: translationVect, rotation: rotAngle, scaling: scalingVect),
+			GetBestGuessTransformFromMatrix(combinedMat),
+			TestTolerance
+		);
+
+		var negScaleMat = Matrix3x2.CreateScale(-1f, 2f);
+		var negScaleResult = GetBestGuessTransformFromMatrix(negScaleMat);
+		AssertToleranceEquals(XYPair<float>.Zero, negScaleResult.Translation, TestTolerance);
+		AssertToleranceEquals(2f, MathF.Abs(negScaleResult.Scaling.X * negScaleResult.Scaling.Y), TestTolerance);
+
+		for (var i = 0; i < 1_000; ++i) {
+			var t = Transform2D.Random(
+				new(new(-10f), Angle.Zero, new(0.5f)),
+				new(new(10f), (Angle) 360f, new(2f))
+			);
+			var roundTripped = GetBestGuessTransformFromMatrix(t.ToMatrix());
+			AssertToleranceEquals(t.ToMatrix(), roundTripped.ToMatrix(), TestTolerance);
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyForceInvertMatrix3x2() {
+		AssertToleranceEquals(Matrix3x2.Identity, ForceInvertMatrix(Matrix3x2.Identity), TestTolerance);
+
+		var translationMat = Matrix3x2.CreateTranslation(3f, -5f);
+		Matrix3x2.Invert(translationMat, out var expectedTranslationInverse);
+		AssertToleranceEquals(expectedTranslationInverse, ForceInvertMatrix(translationMat), TestTolerance);
+
+		var rotationMat = Matrix3x2.CreateRotation(new Angle(60f).Radians);
+		Matrix3x2.Invert(rotationMat, out var expectedRotationInverse);
+		AssertToleranceEquals(expectedRotationInverse, ForceInvertMatrix(rotationMat), TestTolerance);
+
+		var scalingMat = Matrix3x2.CreateScale(2f, 3f);
+		Matrix3x2.Invert(scalingMat, out var expectedScalingInverse);
+		AssertToleranceEquals(expectedScalingInverse, ForceInvertMatrix(scalingMat), TestTolerance);
+
+		var combinedMat = Matrix3x2.CreateScale(2f, 3f) * Matrix3x2.CreateRotation(new Angle(60f).Radians) * Matrix3x2.CreateTranslation(3f, -5f);
+		Matrix3x2.Invert(combinedMat, out var expectedCombinedInverse);
+		AssertToleranceEquals(expectedCombinedInverse, ForceInvertMatrix(combinedMat), TestTolerance);
+
+		var zeroScaleMat = Matrix3x2.CreateScale(0f, 2f);
+		Assert.DoesNotThrow(() => ForceInvertMatrix(zeroScaleMat));
+
+		var allZeroScaleMat = Matrix3x2.CreateScale(0f, 0f);
+		Assert.DoesNotThrow(() => ForceInvertMatrix(allZeroScaleMat));
+
+		for (var i = 0; i < 10_000; ++i) {
+			var t = Transform2D.Random(
+				new(new(-10f), Angle.Zero, new(0.5f)),
+				new(new(10f), (Angle) 360f, new(2f))
+			);
+			var mat = t.ToMatrix();
+			Matrix3x2.Invert(mat, out var expectedInverse);
+			AssertToleranceEquals(expectedInverse, ForceInvertMatrix(mat), TestTolerance);
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyCompareMatrix3x2WithTolerance() {
+		var a = new Matrix3x2(1f, 2f, 3f, 4f, 5f, 6f);
+		var b = new Matrix3x2(1f, 2f, 3f, 4f, 5f, 6f);
+
+		Assert.IsTrue(a.Equals(b, 0f));
+		Assert.IsTrue(a.Equals(b, 0.001f));
+
+		var c = new Matrix3x2(1.01f, 2.01f, 3.01f, 4.01f, 5.01f, 6.01f);
+		Assert.IsTrue(a.Equals(c, 0.02f));
+		Assert.IsFalse(a.Equals(c, 0.005f));
+
+		Assert.IsFalse(a.Equals(a with { M11 = 1.1f }, 0.05f));
+		Assert.IsFalse(a.Equals(a with { M12 = 2.1f }, 0.05f));
+		Assert.IsFalse(a.Equals(a with { M21 = 3.1f }, 0.05f));
+		Assert.IsFalse(a.Equals(a with { M22 = 4.1f }, 0.05f));
+		Assert.IsFalse(a.Equals(a with { M31 = 5.1f }, 0.05f));
+		Assert.IsFalse(a.Equals(a with { M32 = 6.1f }, 0.05f));
+	}
+
+	[Test]
 	public void ShouldCorrectlyRemapRanges() {
 		AssertToleranceEquals((Real) 50f, ((Real) 0.5f).RemapRange(new(0f, 1f), new(0f, 100f)), TestTolerance);
 		AssertToleranceEquals((Real) 0.5f, ((Real) 50f).RemapRange(new(0f, 100f), new(0f, 1f)), TestTolerance);

@@ -903,7 +903,7 @@ class BoundedRayTest {
 			TestTolerance
 		);
 		for (var i = 0; i < 10000; ++i) {
-			var t = Transform.Random();
+			var t = new Transform(Vect.Random(), Rotation.Random(), Vect.Random(new(0.5f, 0.5f, 0.5f), new(2f, 2f, 2f)));
 			AssertToleranceEquals(TestRay, TestRay.TransformedAroundOriginBy(t).TransformedAroundOriginByInverseOf(t), 1f);
 			AssertToleranceEquals(TestRay, TestRay.TransformedAroundStartBy(t).TransformedAroundStartByInverseOf(t), 1f);
 			AssertToleranceEquals(TestRay, TestRay.TransformedAroundEndBy(t).TransformedAroundEndByInverseOf(t), 1f);

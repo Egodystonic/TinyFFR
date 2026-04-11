@@ -355,7 +355,7 @@ class LocationTest {
 		);
 		
 		for (var i = 0; i < 10000; ++i) {
-			var t = Transform.Random();
+			var t = new Transform(Vect.Random(), Rotation.Random(), Vect.Random(new(0.5f, 0.5f, 0.5f), new(2f, 2f, 2f)));
 			AssertToleranceEquals(OneTwoNegThree.TransformedBy(t, transformOrigin), OneTwoNegThree.TransformedBy(t.ToMatrix(), transformOrigin), 0.01f);
 		}
 	}
