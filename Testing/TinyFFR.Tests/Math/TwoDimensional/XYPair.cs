@@ -639,6 +639,8 @@ class XYPairTest {
 			Assert.AreEqual(input * transform, transform * input);
 			Assert.AreEqual(input * transform, input.TransformedBy(transform));
 			Assert.AreEqual(input * transform, input.TransformedAroundOriginBy(transform));
+			AssertToleranceEquals(input, input.Cast<float>().TransformedBy(transform).TransformedByInverseOf(transform).CastWithRoundingIfNecessary<float, T>(), TestTolerance);
+			AssertToleranceEquals(input, input.Cast<float>().TransformedAroundOriginBy(transform).TransformedAroundOriginByInverseOf(transform).CastWithRoundingIfNecessary<float, T>(), TestTolerance);
 		}
 		void AssertRoundedTransform<T>(XYPair<T> expectation, XYPair<T> input, Transform2D transform, MidpointRounding rounding) where T : unmanaged, INumber<T> {
 			AssertToleranceEquals(expectation, input.TransformedBy(transform, rounding), TestTolerance);
@@ -674,6 +676,24 @@ class XYPairTest {
 		AssertRoundedTransform(new XYPair<int>(1, 2), (3, 4), Transform2D.FromScalingOnly(0.5f), MidpointRounding.ToZero);
 		AssertRoundedOriginTransform(new XYPair<int>(-6, 0), (3, 4), new(scaling: (2f, -1f), rotation: 180f, translation: (3.5f, -4f)), (-1f, -1f), MidpointRounding.ToEven);
 		AssertRoundedOriginTransform(new XYPair<int>(-5, 0), (3, 4), new(scaling: (2f, -1f), rotation: 180f, translation: (3.5f, -4f)), (-1f, -1f), MidpointRounding.ToZero);
+		
+		for (var i = 0; i < 10_000; ++i) {
+			var t = Transform2D.Random(new Transform2D((-100f, -100f), -360f, (0.5f, 0.5f)), new Transform2D((100f, 100f), 360f, (1.5f, 1.5f)));
+			var o = XYPair<float>.Random();
+
+			try {
+				AssertToleranceEquals(
+					ThreeFourFloat,
+					ThreeFourFloat.TransformedBy(t, o).TransformedByInverseOf(t, o),
+					0.5f
+				);
+			}
+			catch {
+				Console.WriteLine(t);
+				Console.WriteLine(o);
+				throw;
+			}
+		}
 	}
 
 	[Test]

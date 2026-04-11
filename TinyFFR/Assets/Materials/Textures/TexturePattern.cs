@@ -82,7 +82,7 @@ public readonly unsafe struct TexturePattern<T> where T : unmanaged {
 		_argsBuffer = argsBuffer;
 
 		if (transform.HasValue) {
-			_transform = (transform.Value with { Translation = transform.Value.Translation * dimensions.Cast<float>() }).Inverse;
+			_transform = MathUtils.ForceInvertMatrix((transform.Value with { Translation = transform.Value.Translation * dimensions.Cast<float>() }).ToMatrix());
 		}
 		else _transform = null;
 	}

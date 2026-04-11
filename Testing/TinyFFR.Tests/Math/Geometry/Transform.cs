@@ -59,6 +59,12 @@ class TransformTest {
 		Assert.IsTrue(new Rotation(30f, Direction.Left).IsEquivalentForAllDirectionsTo(transform.Rotation, TestTolerance));
 		Assert.AreEqual(new Rotation(30f, Direction.Left).ToQuaternion(), transform.RotationQuaternion);
 		Assert.AreEqual(new Vect(1.1f, 1.2f, 1.3f), transform.Scaling);
+		
+		Transform.CoerceToMatrixRepresentation(ref transform);
+		AssertToleranceEquals(new Vect(2f, 3f, 4f), transform.Translation, TestTolerance);
+		Assert.IsTrue(new Rotation(30f, Direction.Left).IsEquivalentForAllDirectionsTo(transform.Rotation, TestTolerance));
+		AssertToleranceEquals(new Rotation(30f, Direction.Left).ToQuaternion(), transform.RotationQuaternion, TestTolerance);
+		AssertToleranceEquals(new Vect(1.1f, 1.2f, 1.3f), transform.Scaling, TestTolerance);
 	}
 
 	[Test]
@@ -86,6 +92,11 @@ class TransformTest {
 		Assert.AreEqual(
 			TestTransform, 
 			new Transform(new(1f, 2f, 3f), 90f % Direction.Down, new(0.75f, 0.5f, 0.25f))
+		);
+		
+		Assert.AreEqual(
+			TestTransform, 
+			new Transform(TestTransform.ToMatrix())
 		);
 	}
 
@@ -234,6 +245,10 @@ class TransformTest {
 	public void ShouldCorrectlyConvertToAndFromSpan() {
 		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<Transform>();
 		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(Transform.None, TestTransform);
+		var exampleTransform = new Transform(new Vect(1f, 2f, 3f), 90f % Direction.Down, new Vect(1.1f, 2.2f, 3.3f)); 
+		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(exampleTransform);
+		Transform.CoerceToMatrixRepresentation(ref exampleTransform);
+		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(exampleTransform);
 		var noneTransform = Transform.None;
 		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(noneTransform, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 1f, 1f, 0f, 0f, 0f, 0f, 0f);
 		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestTransform, 1f, 2f, 3f, 0f, 0f, -0.70710677f, 0f, 0.70710677f, 0.75f, 0.5f, 0.25f, 0f, 0f, 0f, 0f, 0f);
@@ -373,6 +388,18 @@ class TransformTest {
 				, 0.05f
 			)
 		);
+		
+		Assert.AreEqual(Transform.None, new Transform(Transform.None.ToMatrix()));
+		Assert.AreNotEqual(Transform.None, new Transform(TestTransform.ToMatrix()));
+		Assert.IsTrue(TestTransform.Equals(new Transform(TestTransform.ToMatrix())));
+		Assert.IsFalse(TestTransform.Equals(new Transform(Transform.None.ToMatrix())));
+		Assert.IsTrue(TestTransform == new Transform(new Transform(new(1f, 2f, 3f), 90f % Direction.Down, new(0.75f, 0.5f, 0.25f)).ToMatrix()));
+		Assert.IsFalse(Transform.None == new Transform(TestTransform.ToMatrix()));
+		Assert.IsFalse(Transform.None != new Transform(new Transform(0f, 0f, 0f).ToMatrix()));
+		Assert.IsTrue(TestTransform != new Transform(Transform.None.ToMatrix()));
+		Assert.IsTrue(new Transform(TestTransform.ToMatrix()) != TestTransform with { Translation = new(1f) });
+		Assert.IsTrue(new Transform(TestTransform.ToMatrix()) != TestTransform with { Scaling = new(1f) });
+		Assert.IsTrue(new Transform(TestTransform.ToMatrix()) != TestTransform with { Rotation = Rotation.None });
 	}
 
 	[Test]
@@ -508,6 +535,10 @@ class TransformTest {
 			Assert.AreEqual(
 				l.TransformedAroundOriginBy(TestTransform),
 				TestTransform.AppliedTo(l)
+			);
+			Assert.AreEqual(
+				l.TransformedAroundOriginByInverseOf(TestTransform),
+				TestTransform.InverseAppliedTo(l)
 			);
 		}
 	}

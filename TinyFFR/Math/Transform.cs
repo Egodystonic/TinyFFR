@@ -188,11 +188,33 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	public static int SerializationByteSpanLength { get; } = sizeof(float) * 16;
 
 	public static void SerializeToBytes(Span<byte> dest, Transform src) {
-		MemoryMarshal.Write(dest, in src._matrix);
+		for (var i = 0; i < 16; ++i) {
+			BinaryPrimitives.WriteSingleLittleEndian(dest[(i * sizeof(float))..], src._matrix[(i >> 2) & 0b11, i & 0b11]);
+		}
 	}
 
 	public static Transform DeserializeFromBytes(ReadOnlySpan<byte> src) {
-		return new(MemoryMarshal.Read<Matrix4x4>(src));
+		return new Transform(new Matrix4x4(
+			BinaryPrimitives.ReadSingleLittleEndian(src[(4 * 0)..]),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(4 * 1)..]),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(4 * 2)..]),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(4 * 3)..]),
+			
+			BinaryPrimitives.ReadSingleLittleEndian(src[(4 * 4)..]),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(4 * 5)..]),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(4 * 6)..]),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(4 * 7)..]),
+			
+			BinaryPrimitives.ReadSingleLittleEndian(src[(4 * 8)..]),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(4 * 9)..]),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(4 * 10)..]),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(4 * 11)..]),
+			
+			BinaryPrimitives.ReadSingleLittleEndian(src[(4 * 12)..]),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(4 * 13)..]),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(4 * 14)..]),
+			BinaryPrimitives.ReadSingleLittleEndian(src[(4 * 15)..])
+		));
 	}
 	#endregion
 
@@ -251,20 +273,23 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	#region Equality
 	public bool Equals(Transform other) {
 		if (IsInternallyRepresentedByMatrix || other.IsInternallyRepresentedByMatrix) return ToMatrix().Equals(other.ToMatrix());
-		return Translation.Equals(other.Translation) && (RotationQuaternion.Equals(other.RotationQuaternion) || RotationQuaternion.Equals(-other.RotationQuaternion)) && Scaling.Equals(other.Scaling);
+		
+		return Translation.Equals(other.Translation)
+			&& Rotation.Equals(other.Rotation)
+			&& Scaling.Equals(other.Scaling);
 	}
 	public bool Equals(Transform other, float tolerance) {
+		if (IsInternallyRepresentedByMatrix || other.IsInternallyRepresentedByMatrix) return ToMatrix().Equals(other.ToMatrix(), tolerance);
+		
 		static bool CompareQuats(Quaternion a, Quaternion b, float t) {
 			return MathF.Abs(a.X - b.X) <= t
 				&& MathF.Abs(a.Y - b.Y) <= t
 				&& MathF.Abs(a.Z - b.Z) <= t
 				&& MathF.Abs(a.W - b.W) <= t;
 		}
-		
-		if (IsInternallyRepresentedByMatrix || other.IsInternallyRepresentedByMatrix) return ToMatrix().Equals(other.ToMatrix(), tolerance);
 
 		return Translation.Equals(other.Translation, tolerance) 
-			   && (CompareQuats(RotationQuaternion, other.RotationQuaternion, tolerance) || CompareQuats(RotationQuaternion, -other.RotationQuaternion, tolerance)) 
+			   && (CompareQuats(RotationQuaternion, other.RotationQuaternion, tolerance) || CompareQuats(RotationQuaternion, other.RotationQuaternion, tolerance))  
 			   && Scaling.Equals(other.Scaling, tolerance);
 	}
 
@@ -276,8 +301,9 @@ public readonly partial struct Transform : IMathPrimitive<Transform>, IDescripti
 	public override bool Equals(object? obj) => obj is Transform other && Equals(other);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override int GetHashCode() {
-		if (IsInternallyRepresentedByMatrix) return _matrix.GetHashCode();
-		return HashCode.Combine(Translation.GetHashCode(), Rotation.GetHashCode(), Scaling.GetHashCode());
+		var thisCopy = this;
+		CoerceToComponentRepresentation(ref thisCopy);
+		return HashCode.Combine(thisCopy.Translation.GetHashCode(), thisCopy.Rotation.GetHashCode(), thisCopy.Scaling.GetHashCode());
 	}
 	#endregion
 }

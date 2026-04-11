@@ -295,8 +295,8 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		var transformMat = (newTransform with { Scaling = newTransform.Scaling.Reciprocal ?? XYPair<float>.Zero }).ToMatrix();
 		var value = Matrix4x4.Identity;
 		value.M11 = transformMat.M11;
-		value.M12 = transformMat.M12;
-		value.M21 = transformMat.M21;
+		value.M12 = transformMat.M21; // These two rows swapped to make filament column-major convention apply rotation correctly
+		value.M21 = transformMat.M12; // These two rows swapped to make filament column-major convention apply rotation correctly
 		value.M22 = transformMat.M22;
 		value.M31 = -transformMat.M31; // Deliberately inverts X-axis translation
 		value.M32 = -transformMat.M32; // Deliberately inverts Y-axis translation

@@ -183,25 +183,37 @@ partial struct XYPair<T> :
 	public static XYPair<T> operator *(Transform2D left, XYPair<T> right) => right.TransformedBy(left);
 
 	XYPair<T> ITransformable2D<XYPair<T>>.TransformedBy(Transform2D transform) => TransformedBy(transform);
+	XYPair<T> ITransformable2D<XYPair<T>>.TransformedByInverseOf(Transform2D transform) => TransformedByInverseOf(transform);
 	XYPair<T> IPointTransformable2D<XYPair<T>>.TransformedBy(Transform2D transform, XYPair<float> transformationOrigin) => TransformedBy(transform, transformationOrigin);
+	XYPair<T> IPointTransformable2D<XYPair<T>>.TransformedByInverseOf(Transform2D transform, XYPair<float> transformationOrigin) => TransformedByInverseOf(transform, transformationOrigin);
 	XYPair<T> IPointTransformable2D<XYPair<T>>.TransformedAroundOriginBy(Transform2D transform) => TransformedAroundOriginBy(transform);
+	XYPair<T> IPointTransformable2D<XYPair<T>>.TransformedAroundOriginByInverseOf(Transform2D transform) => TransformedAroundOriginByInverseOf(transform);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public XYPair<T> TransformedBy(Transform2D transform, MidpointRounding midpointRounding = MidpointRounding.ToEven) => TransformedAroundOriginBy(transform, midpointRounding);
 	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public XYPair<T> TransformedByInverseOf(Transform2D transform, MidpointRounding midpointRounding = MidpointRounding.ToEven) => TransformedAroundOriginByInverseOf(transform, midpointRounding);
+	
 	public XYPair<T> TransformedAroundOriginBy(Transform2D transform, MidpointRounding midpointRounding = MidpointRounding.ToEven) {
-		return Cast<float>()
-			.ScaledBy(transform.Scaling)
-			.RotatedAroundOriginBy(transform.Rotation)
-			.MovedBy(transform.Translation)
+		return XYPair<float>.FromVector2(Vector2.Transform(ToVector2(), transform.ToMatrix()))
+			.CastWithRoundingIfNecessary<float, T>(midpointRounding);
+	}
+	
+	public XYPair<T> TransformedAroundOriginByInverseOf(Transform2D transform, MidpointRounding midpointRounding = MidpointRounding.ToEven) {
+		return XYPair<float>.FromVector2(Vector2.Transform(ToVector2(), MathUtils.ForceInvertMatrix(transform.ToMatrix())))
 			.CastWithRoundingIfNecessary<float, T>(midpointRounding);
 	}
 
 	public XYPair<T> TransformedBy(Transform2D transform, XYPair<float> transformationOrigin, MidpointRounding midpointRounding = MidpointRounding.ToEven) {
-		return Cast<float>()
-			.ScaledBy(transform.Scaling, transformationOrigin)
-			.RotatedBy(transform.Rotation, transformationOrigin)
-			.MovedBy(transform.Translation)
+		return XYPair<float>.FromVector2(Vector2.Transform(Cast<float>().MovedBy(-transformationOrigin).ToVector2(), transform.ToMatrix()))
+			.MovedBy(transformationOrigin)
+			.CastWithRoundingIfNecessary<float, T>(midpointRounding);
+	}
+	
+	public XYPair<T> TransformedByInverseOf(Transform2D transform, XYPair<float> transformationOrigin, MidpointRounding midpointRounding = MidpointRounding.ToEven) {
+		return XYPair<float>.FromVector2(Vector2.Transform(Cast<float>().MovedBy(-transformationOrigin).ToVector2(), MathUtils.ForceInvertMatrix(transform.ToMatrix())))
+			.MovedBy(transformationOrigin)
 			.CastWithRoundingIfNecessary<float, T>(midpointRounding);
 	}
 	#endregion

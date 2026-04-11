@@ -42,6 +42,25 @@ static class ByteSpanSerializationTestUtils {
 		Assert.IsTrue(span.SequenceEqual(expectation));
 		Assert.AreEqual(sampleItem, T.DeserializeFromBytes(expectation));
 	}
+	
+	public static void AssertBytes<T>(T sampleItem, params object[] expectation) where T : IByteSpanSerializable<T> {
+		var expectationAsBytes = new List<byte>();
+		Span<byte> scrubSpace = stackalloc byte[16]; 
+		foreach (var e in expectation) {
+			switch (e) {
+				case byte b: expectationAsBytes.Add(b); break;
+				case int i:
+					BinaryPrimitives.WriteInt32LittleEndian(scrubSpace, i);
+					expectationAsBytes.AddRange(scrubSpace[..4]); 
+					break;
+				case float f:
+					BinaryPrimitives.WriteSingleLittleEndian(scrubSpace, f);
+					expectationAsBytes.AddRange(scrubSpace[..4]); 
+					break;
+			}
+		}
+		AssertBytes(sampleItem, expectationAsBytes.ToArray());
+	}
 
 	public static void AssertLittleEndianSingles<T>(T sampleItem, params float[] expectation) where T : IByteSpanSerializable<T> {
 		var expectationBytes = new byte[expectation.Length * sizeof(float)];

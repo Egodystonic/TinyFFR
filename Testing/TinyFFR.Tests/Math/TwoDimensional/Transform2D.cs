@@ -57,6 +57,12 @@ class Transform2DTest {
 		Assert.AreEqual(new XYPair<float>(2f, 3f), transform.Translation);
 		Assert.AreEqual(new Angle(30f), transform.Rotation);
 		Assert.AreEqual(new XYPair<float>(1.1f, 1.2f), transform.Scaling);
+		
+		Transform2D.CoerceToMatrixRepresentation(ref transform);
+		
+		AssertToleranceEquals(new XYPair<float>(2f, 3f), transform.Translation, TestTolerance);
+		AssertToleranceEquals(new Angle(30f), transform.Rotation, TestTolerance);
+		AssertToleranceEquals(new XYPair<float>(1.1f, 1.2f), transform.Scaling, TestTolerance);
 	}
 
 	[Test]
@@ -85,6 +91,11 @@ class Transform2DTest {
 			TestTransform, 
 			new Transform2D(new(1f, 2f), 90f, new(0.75f, 0.5f))
 		);
+		
+		Assert.AreEqual(
+			TestTransform, 
+			new Transform2D(TestTransform.ToMatrix())
+		);
 	}
 
 	[Test]
@@ -111,8 +122,8 @@ class Transform2DTest {
 		var (sin, cos) = MathF.SinCos(rotAngle.Radians);
 		AssertMat(
 			new Matrix3x2(
-				cos, -sin, 
-				sin, cos, 
+				cos, sin,
+				-sin, cos,
 				0f, 0f
 			),
 			new Transform2D(rotation: rotAngle)
@@ -129,8 +140,8 @@ class Transform2DTest {
 
 		AssertMat(
 			new Matrix3x2(
-				cos * 2f, -sin * 3f,
-				sin * 2f, cos * 3f,
+				cos * 2f, sin * 2f,
+				-sin * 3f, cos * 3f,
 				1f, 2f
 			),
 			new Transform2D(
@@ -200,8 +211,15 @@ class Transform2DTest {
 	public void ShouldCorrectlyConvertToAndFromSpan() {
 		ByteSpanSerializationTestUtils.AssertDeclaredSpanLength<Transform2D>();
 		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(Transform2D.None, TestTransform);
-		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(Transform2D.None, 0f, 0f, 0f, 1f, 1f);
-		ByteSpanSerializationTestUtils.AssertLittleEndianSingles(TestTransform, 1f, 2f, Angle.QuarterCircle.Radians, 0.75f, 0.5f);
+		var exampleTransform = new Transform2D((1f, 2f), 90f, (1.1f, 2.2f));
+		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(exampleTransform);
+		Transform2D.CoerceToMatrixRepresentation(ref exampleTransform);
+		ByteSpanSerializationTestUtils.AssertSpanRoundTripConversion(exampleTransform);
+		ByteSpanSerializationTestUtils.AssertBytes(Transform2D.None, 0f, 0f, 0f, 1f, 1f, 0f, Byte.MinValue);
+		ByteSpanSerializationTestUtils.AssertBytes(TestTransform, 1f, 2f, Angle.QuarterCircle.Radians, 0.75f, 0.5f, 0f, Byte.MinValue);
+		var noneTransform = Transform2D.None;
+		Transform2D.CoerceToMatrixRepresentation(ref noneTransform);
+		ByteSpanSerializationTestUtils.AssertBytes(noneTransform, 1f, 0f, -0f, 1f, 0f, 0f, Byte.MaxValue);
 	}
 
 	[Test]
@@ -336,14 +354,18 @@ class Transform2DTest {
 				, 0.05f
 			)
 		);
-	}
-
-	[Test]
-	public void ShouldCorrectlyInvert() {
-		Assert.AreEqual(Transform2D.None, Transform2D.None.Inverse);
-		AssertToleranceEquals(new(-1f, -2f), TestTransform.Inverse.Translation, TestTolerance);
-		AssertToleranceEquals(-90f, TestTransform.Inverse.Rotation, TestTolerance);
-		AssertToleranceEquals(new(1f / 0.75f, 2f), TestTransform.Inverse.Scaling, TestTolerance);
+		
+		Assert.AreEqual(Transform2D.None, new Transform2D(new Transform2D(-0f, -0f).ToMatrix()));
+		Assert.AreNotEqual(Transform2D.None, new Transform2D(TestTransform.ToMatrix()));
+		Assert.IsTrue(TestTransform.Equals(new Transform2D(TestTransform.ToMatrix())));
+		Assert.IsFalse(TestTransform.Equals(new Transform2D(Transform2D.None.ToMatrix())));
+		Assert.IsTrue(TestTransform == new Transform2D(new Transform2D(new(1f, 2f), 90f, new(0.75f, 0.5f)).ToMatrix()));
+		Assert.IsFalse(Transform2D.None == new Transform2D(TestTransform.ToMatrix()));
+		Assert.IsFalse(Transform2D.None != new Transform2D(new Transform2D(0f, 0f).ToMatrix()));
+		Assert.IsTrue(TestTransform != new Transform2D(Transform2D.None.ToMatrix()));
+		Assert.IsTrue(new Transform2D(TestTransform.ToMatrix()) != TestTransform with { Translation = new(1f) });
+		Assert.IsTrue(new Transform2D(TestTransform.ToMatrix()) != TestTransform with { Scaling = new(1f) });
+		Assert.IsTrue(new Transform2D(TestTransform.ToMatrix()) != TestTransform with { Rotation = Angle.Zero });
 	}
 
 	[Test]
@@ -480,6 +502,118 @@ class Transform2DTest {
 				v.TransformedBy(TestTransform),
 				TestTransform.AppliedTo(v)
 			);
+			Assert.AreEqual(
+				v.TransformedByInverseOf(TestTransform),
+				TestTransform.InverseAppliedTo(v)
+			);
 		}
+	}
+
+	[Test]
+	public void ShouldBeConvertibleBetweenFormatsWhenRequired() {
+		for (var i = 0; i < 1_000; ++i) {
+			var t = Transform2D.Random();
+			var tCopy = t;
+
+			Assert.AreEqual(false, t.IsInternallyRepresentedByMatrix);
+			Transform2D.CoerceToComponentRepresentation(ref t);
+			Assert.AreEqual(false, t.IsInternallyRepresentedByMatrix);
+			Transform2D.CoerceToMatrixRepresentation(ref t);
+			Assert.AreEqual(true, t.IsInternallyRepresentedByMatrix);
+			AssertToleranceEquals(tCopy, t, TestTolerance);
+			Transform2D.CoerceToMatrixRepresentation(ref t);
+			Assert.AreEqual(true, t.IsInternallyRepresentedByMatrix);
+			Transform2D.CoerceToComponentRepresentation(ref t);
+			Assert.AreEqual(false, t.IsInternallyRepresentedByMatrix);
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyTransform() {
+		var translationOnly = Transform2D.FromTranslationOnly(new(3f, 4f));
+		var rotationOnly = Transform2D.FromRotationOnly(45f);
+		var scalingOnly = Transform2D.FromScalingOnly(new XYPair<float>(2f, 3f));
+
+		// Translation-only uses fast path (component addition)
+		AssertToleranceEquals(
+			new Transform2D(new(4f, 6f), 90f, new(0.75f, 0.5f)),
+			TestTransform.TransformedBy(translationOnly),
+			TestTolerance
+		);
+
+		// Rotation and scaling go through matrix multiplication
+		AssertToleranceEquals(
+			TestTransform.ToMatrix() * rotationOnly.ToMatrix(),
+			TestTransform.TransformedBy(rotationOnly).ToMatrix(),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			TestTransform.ToMatrix() * scalingOnly.ToMatrix(),
+			TestTransform.TransformedBy(scalingOnly).ToMatrix(),
+			TestTolerance
+		);
+
+		// Verify the * operator works the same as TransformedBy
+		AssertToleranceEquals(
+			TestTransform.TransformedBy(translationOnly),
+			TestTransform * translationOnly,
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			(TestTransform * rotationOnly).ToMatrix(),
+			TestTransform.TransformedBy(rotationOnly).ToMatrix(),
+			TestTolerance
+		);
+		AssertToleranceEquals(
+			(TestTransform * scalingOnly).ToMatrix(),
+			TestTransform.TransformedBy(scalingOnly).ToMatrix(),
+			TestTolerance
+		);
+
+		// Fuzz: TransformedByInverseOf should undo TransformedBy
+		for (var i = 0; i < 1_000; ++i) {
+			var a = Transform2D.Random(
+				new(new(-10f), Angle.Zero, new(0.5f)),
+				new(new(10f), (Angle) 360f, new(2f))
+			);
+			var b = Transform2D.Random(
+				new(new(-10f), Angle.Zero, new(0.5f)),
+				new(new(10f), (Angle) 360f, new(2f))
+			);
+
+			var composed = a.TransformedBy(b);
+			var recovered = composed.TransformedByInverseOf(b);
+			AssertToleranceEquals(a.ToMatrix(), recovered.ToMatrix(), 0.01f);
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyReportPhysicalValidity() {
+		Assert.IsTrue(Transform2D.None.IsPhysicallyValid);
+		Assert.IsTrue(TestTransform.IsPhysicallyValid);
+		Assert.IsTrue(new Transform2D(new(1000f, -1000f), 359f, new(0.001f, 100f)).IsPhysicallyValid);
+
+		Assert.IsFalse(new Transform2D(new(Single.NaN, 0f), Angle.Zero, XYPair<float>.One).IsPhysicallyValid);
+		Assert.IsFalse(new Transform2D(new(0f, Single.NaN), Angle.Zero, XYPair<float>.One).IsPhysicallyValid);
+		Assert.IsFalse(new Transform2D(XYPair<float>.Zero, Angle.FromRadians(Single.PositiveInfinity), XYPair<float>.One).IsPhysicallyValid);
+		Assert.IsFalse(new Transform2D(XYPair<float>.Zero, Angle.Zero, new(Single.NegativeInfinity, 1f)).IsPhysicallyValid);
+		Assert.IsFalse(new Transform2D(XYPair<float>.Zero, Angle.Zero, new(1f, Single.PositiveInfinity)).IsPhysicallyValid);
+		Assert.IsFalse(new Transform2D(XYPair<float>.Zero, Angle.Zero, new(0f, 0f)).IsPhysicallyValid);
+	}
+
+	[Test]
+	public void ShouldCorrectlyCompareComponentAndMatrixBacked() {
+		var component = TestTransform;
+		var matrixBacked = new Transform2D(TestTransform.ToMatrix());
+
+		Assert.IsFalse(component.IsInternallyRepresentedByMatrix);
+		Assert.IsTrue(matrixBacked.IsInternallyRepresentedByMatrix);
+		Assert.AreEqual(component, matrixBacked);
+		Assert.IsTrue(component.Equals(matrixBacked, TestTolerance));
+
+		// Matrix-backed properties should decompose correctly
+		AssertToleranceEquals(component.Translation, matrixBacked.Translation, TestTolerance);
+		AssertToleranceEquals(component.Rotation, matrixBacked.Rotation, TestTolerance);
+		AssertToleranceEquals(component.Scaling, matrixBacked.Scaling, TestTolerance);
 	}
 }

@@ -177,6 +177,44 @@ public static class MathUtils {
 		if (Matrix4x4.Invert(fixedMatrix, out var fixedSolution)) return fixedSolution;
 		return Matrix4x4.Identity;
 	}
+
+	public static Transform2D GetBestGuessTransformFromMatrix(Matrix3x2 mat) {
+		var sx = MathF.Sqrt(mat.M11 * mat.M11 + mat.M12 * mat.M12);
+		var sy = MathF.Sqrt(mat.M21 * mat.M21 + mat.M22 * mat.M22);
+
+		if (!Single.IsFinite(sx) || sx == 0f) sx = 1f;
+		if (!Single.IsFinite(sy) || sy == 0f) sy = 1f;
+
+		var det = mat.M11 * mat.M22 - mat.M12 * mat.M21;
+		if (det < 0f) sx = -sx;
+
+		var angle = Angle.FromRadians(MathF.Atan2(mat.M12 / sx, mat.M11 / sx));
+		return new Transform2D(new XYPair<float>(mat.M31, mat.M32), angle, new XYPair<float>(sx, sy));
+	}
+
+	public static Matrix3x2 ForceInvertMatrix(Matrix3x2 mat) {
+		if (Matrix3x2.Invert(mat, out var simpleSolution)) return simpleSolution;
+
+		var transform = GetBestGuessTransformFromMatrix(mat);
+
+		static float FixScalingComponent(float scalar) {
+			const float MinAxisScaling = 1E-8f;
+			var scalarSign = MathF.Sign(scalar);
+			if (scalarSign == 0) scalarSign = 1;
+			if (MathF.Abs(scalar) >= MinAxisScaling) return scalar;
+			return scalarSign;
+		}
+		var newScaling = new XYPair<float>(
+			FixScalingComponent(transform.Scaling.X),
+			FixScalingComponent(transform.Scaling.Y)
+		);
+
+		var fixedTransform = new Transform2D(transform.Translation, transform.Rotation, newScaling);
+		var fixedMatrix = fixedTransform.ToMatrix();
+
+		if (Matrix3x2.Invert(fixedMatrix, out var fixedSolution)) return fixedSolution;
+		return Matrix3x2.Identity;
+	}
 	
 	// This is pretty ugly code, I wrote it while debugging some stuff and figured it's still
 	// kinda useful for debugging at times.
@@ -224,6 +262,15 @@ public static class MathUtils {
 			if (MathF.Abs(@this[(i >> 2) & 0b11, i & 0b11] - other[(i >> 2) & 0b11, i & 0b11]) > tolerance) return false;
 		}
 		return true;
+	}
+
+	public static bool Equals(this Matrix3x2 @this, Matrix3x2 other, float tolerance) {
+		return MathF.Abs(@this.M11 - other.M11) <= tolerance
+			&& MathF.Abs(@this.M12 - other.M12) <= tolerance
+			&& MathF.Abs(@this.M21 - other.M21) <= tolerance
+			&& MathF.Abs(@this.M22 - other.M22) <= tolerance
+			&& MathF.Abs(@this.M31 - other.M31) <= tolerance
+			&& MathF.Abs(@this.M32 - other.M32) <= tolerance;
 	}
 	
 	public static Vector4 GetRow(this Matrix4x4 @this, int rowIndex) {

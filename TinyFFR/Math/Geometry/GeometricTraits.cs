@@ -139,6 +139,7 @@ public interface ITransformable2D<TSelf> :
 	IMultiplyOperators<TSelf, Transform2D, TSelf>
 	where TSelf : ITransformable2D<TSelf>, IIndependentAxisScalable2D<TSelf>, IRotatable2D<TSelf>, ITranslatable2D<TSelf> {
 	TSelf TransformedBy(Transform2D transform);
+	TSelf TransformedByInverseOf(Transform2D transform);
 	static abstract TSelf operator *(Transform2D left, TSelf right);
 }
 
@@ -146,7 +147,9 @@ public interface IPointTransformable2D<TSelf> :
 	ITransformable2D<TSelf>, IPointIndependentAxisScalable2D<TSelf>, IPointRotatable2D<TSelf>
 	where TSelf : IPointTransformable2D<TSelf>, ITransformable2D<TSelf>, IPointIndependentAxisScalable2D<TSelf>, IPointRotatable2D<TSelf> {
 	TSelf TransformedBy(Transform2D transform, XYPair<float> transformationOrigin);
+	TSelf TransformedByInverseOf(Transform2D transform, XYPair<float> transformationOrigin);
 	TSelf TransformedAroundOriginBy(Transform2D transform);
+	TSelf TransformedAroundOriginByInverseOf(Transform2D transform);
 }
 #endregion
 
