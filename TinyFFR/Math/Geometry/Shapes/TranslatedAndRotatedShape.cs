@@ -20,7 +20,7 @@ public readonly struct TranslatedAndRotatedShape<T> : ITranslatedAndRotatedShape
 	public Location Position { get; init; }
 	public Rotation Rotation { get; init; }
 
-	public bool IsPhysicallyValid => BaseShape.IsPhysicallyValid && Position.IsPhysicallyValid;
+	public bool IsPhysicallyValid => BaseShape.IsPhysicallyValid && Position.IsPhysicallyValid && Rotation.IsPhysicallyValid;
 	
 	public TranslatedAndRotatedShape(T baseShape, Location position, Rotation rotation) {
 		BaseShape = baseShape;
