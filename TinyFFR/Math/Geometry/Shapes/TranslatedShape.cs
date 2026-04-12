@@ -26,9 +26,9 @@ public readonly struct TranslatedShape<T> : ITranslatedShape<TranslatedShape<T>,
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal TranslateToShapeSpace<TVal>(TVal val) where TVal : ITranslatable<TVal> => val - Position.AsVect();
+	internal TVal TranslateToShapeSpace<TVal>(TVal val) where TVal : ITranslatable<TVal> => val.Minus(Position.AsVect());
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal TranslateToWorldSpace<TVal>(TVal val) where TVal : ITranslatable<TVal> => val + Position.AsVect();
+	internal TVal TranslateToWorldSpace<TVal>(TVal val) where TVal : ITranslatable<TVal> => val.Plus(Position.AsVect());
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal TVal? TranslateToShapeSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal> => val?.Minus(Position.AsVect());
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -57,7 +57,7 @@ public readonly struct TranslatedShape<T> : ITranslatedShape<TranslatedShape<T>,
 	public static bool TryParse(string? s, IFormatProvider? provider, out TranslatedShape<T> result) => TryParse(s.AsSpan(), provider, out result);
 	public static TranslatedShape<T> Parse(ReadOnlySpan<char> s, IFormatProvider? provider) {
 		if (!TryParse(s, provider, out var result)) {
-			throw new ArgumentException($"Given input string \"{s}\" does not represent a valid Translated {typeof(T).Name}.", nameof(s));
+			throw new ArgumentException($"Given input string \"{s}\" does not represent a valid translated {typeof(T).Name}.", nameof(s));
 		}
 		return result;
 	}
