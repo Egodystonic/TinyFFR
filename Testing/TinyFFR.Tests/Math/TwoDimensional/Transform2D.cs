@@ -599,6 +599,8 @@ class Transform2DTest {
 		Assert.IsFalse(new Transform2D(XYPair<float>.Zero, Angle.Zero, new(Single.NegativeInfinity, 1f)).IsPhysicallyValid);
 		Assert.IsFalse(new Transform2D(XYPair<float>.Zero, Angle.Zero, new(1f, Single.PositiveInfinity)).IsPhysicallyValid);
 		Assert.IsFalse(new Transform2D(XYPair<float>.Zero, Angle.Zero, new(0f, 0f)).IsPhysicallyValid);
+		Assert.IsFalse(new Transform2D(XYPair<float>.Zero, Angle.Zero, new(-1f, 1f)).IsPhysicallyValid);
+		Assert.IsFalse(new Transform2D(XYPair<float>.Zero, Angle.Zero, new(1f, -1f)).IsPhysicallyValid);
 	}
 
 	[Test]

@@ -22,9 +22,8 @@ partial struct Transform2D :
 			return Single.IsFinite(componentCopy.Translation.X)
 				&& Single.IsFinite(componentCopy.Translation.Y)
 				&& Single.IsFinite(componentCopy.Rotation.Radians)
-				&& Single.IsFinite(componentCopy.Scaling.X)
-				&& Single.IsFinite(componentCopy.Scaling.Y)
-				&& componentCopy.Scaling != XYPair<float>.Zero;
+				&& componentCopy.Scaling.X.IsPositiveAndFinite()
+				&& componentCopy.Scaling.Y.IsPositiveAndFinite();
 		}
 	}
 

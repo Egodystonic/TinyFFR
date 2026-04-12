@@ -191,7 +191,7 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 	#region Transformation
 	public static BoundedRay operator *(BoundedRay ray, Transform transform) => ray.TransformedAroundStartBy(transform);
 	public static BoundedRay operator *(Transform transform, BoundedRay ray) => ray.TransformedAroundStartBy(transform);
-	BoundedRay ITransformable<BoundedRay>.TransformedBy(Transform transform) => TransformedAroundStartBy(transform);
+	BoundedRay ITransformable<BoundedRay>.TransformedBy(Transform transform) => TransformedAroundOriginBy(transform);
 	public BoundedRay TransformedAroundStartBy(Transform transform) => TransformedBy(transform, StartPoint);
 	public BoundedRay TransformedAroundMiddleBy(Transform transform) => TransformedBy(transform, MiddlePoint);
 	public BoundedRay TransformedAroundEndBy(Transform transform) => TransformedBy(transform, EndPoint);
@@ -203,7 +203,7 @@ partial struct BoundedRay : IPointTransformable<BoundedRay>, IPointScalable<Boun
 		return new(StartPoint.TransformedBy(transform, transformationOrigin), EndPoint.TransformedBy(transform, transformationOrigin));
 	}
 
-	BoundedRay ITransformable<BoundedRay>.TransformedByInverseOf(Transform transform) => TransformedAroundStartByInverseOf(transform);
+	BoundedRay ITransformable<BoundedRay>.TransformedByInverseOf(Transform transform) => TransformedAroundOriginByInverseOf(transform);
 	public BoundedRay TransformedAroundStartByInverseOf(Transform transform, bool scaleAndRotateAroundStartPostTranslation = true) {
 		return TransformedByInverseOf(transform, scaleAndRotateAroundStartPostTranslation ? StartPoint - transform.Translation : StartPoint);
 	}

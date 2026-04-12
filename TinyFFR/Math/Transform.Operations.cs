@@ -21,7 +21,9 @@ partial struct Transform :
 			CoerceToComponentRepresentation(ref componentCopy);
 			return componentCopy.Translation.IsPhysicallyValid
 				&& componentCopy.Rotation.IsPhysicallyValid
-				&& componentCopy.Scaling.IsPhysicallyValid;
+				&& componentCopy.Scaling.X.IsPositiveAndFinite()
+				&& componentCopy.Scaling.Y.IsPositiveAndFinite()
+				&& componentCopy.Scaling.Z.IsPositiveAndFinite();
 		}
 	}
 
