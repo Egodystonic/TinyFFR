@@ -418,7 +418,7 @@ partial struct Cuboid : IIndependentAxisScalable<Cuboid> {
 
 	#region Distance From / Closest Point / Intersection (Plane)
 	bool QuickPlaneCuboidIntersectionTest(Plane plane) { // https://gdbooks.gitbooks.io/3dcollisions/content/Chapter2/static_aabb_plane.html
-		var halfDiagonalProjection = Width * MathF.Abs(plane.Normal.X) + Height * MathF.Abs(plane.Normal.Y) + Depth * MathF.Abs(plane.Normal.Z);
+		var halfDiagonalProjection = _halfWidth * MathF.Abs(plane.Normal.X) + _halfHeight * MathF.Abs(plane.Normal.Y) + _halfDepth * MathF.Abs(plane.Normal.Z);
 		return plane.DistanceFromOrigin() <= halfDiagonalProjection;
 	}
 

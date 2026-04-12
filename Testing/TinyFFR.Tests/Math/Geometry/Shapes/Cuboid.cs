@@ -2043,6 +2043,27 @@ class CuboidTest {
 			AssertDistance(expectedSignedDistance, plane);
 			AssertDistance(-expectedSignedDistance, plane.Flipped);
 		}
+		
+		foreach (var orientation in OrientationUtils.AllDiagonals) {
+			var corner = TestCuboid.CornerAt(orientation);
+			var plane = new Plane(orientation.ToDirection(), 8f);
+			AssertDistance(-plane.DistanceFrom(corner), plane);
+			AssertDistance(plane.DistanceFrom(corner), plane.Flipped);
+		}
+
+		foreach (var orientation in OrientationUtils.AllIntercardinals) {
+			var plane = new Plane(orientation.ToDirection(), 8f);
+			var edge = TestCuboid.EdgeAt(orientation);
+			AssertDistance(-plane.DistanceFrom(edge), plane);
+			AssertDistance(plane.DistanceFrom(edge), plane.Flipped);
+		}
+
+		foreach (var orientation in OrientationUtils.AllCardinals) {
+			var plane = new Plane(orientation.ToDirection(), 8f);
+			var expectedSignedDistance = -(8f - TestCuboid.GetHalfExtent(orientation.GetAxis()));
+			AssertDistance(expectedSignedDistance, plane);
+			AssertDistance(-expectedSignedDistance, plane.Flipped);
+		}
 
 		foreach (var orientation in OrientationUtils.All3DOrientations) {
 			var plane = new Plane(orientation.ToDirection(), 0f);

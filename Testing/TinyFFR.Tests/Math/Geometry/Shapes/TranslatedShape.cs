@@ -24,8 +24,8 @@ class TranslatedShapeTest {
 
 	[Test]
 	public void ShouldCorrectlyTranslateBetweenWorldAndShapeSpace() {
-		Assert.AreEqual(Location.Origin, TestShape.TranslateToShapeSpace(new Location(1f, -2f, 3f)));
-		Assert.AreEqual(new Location(1f, -2f, 3f), TestShape.TranslateToWorldSpace(Location.Origin));
+		Assert.AreEqual(Location.Origin, TestShape.TransformToShapeSpace(new Location(1f, -2f, 3f)));
+		Assert.AreEqual(new Location(1f, -2f, 3f), TestShape.TransformToWorldSpace(Location.Origin));
 	}
 
 	[Test]
@@ -114,6 +114,22 @@ class TranslatedShapeTest {
 		var scaled = TestShape.ScaledBy(3f);
 		AssertToleranceEquals(new Sphere(7.4f * 3f), scaled.BaseShape, TestTolerance);
 		Assert.AreEqual(TestShape.Position, scaled.Position);
+	}
+
+	[Test]
+	public void ShouldCorrectlyMoveByVect() {
+		var moveVect = new Vect(5f, 10f, -3f);
+
+		var moved = TestShape.MovedBy(moveVect);
+		Assert.AreEqual(TestShape.BaseShape, moved.BaseShape);
+		AssertToleranceEquals(TestShape.Position.MovedBy(moveVect), moved.Position, TestTolerance);
+
+		Assert.AreEqual(moved, TestShape + moveVect);
+		Assert.AreEqual(moved, moveVect + TestShape);
+
+		var movedBack = moved - moveVect;
+		AssertToleranceEquals(TestShape.Position, movedBack.Position, TestTolerance);
+		Assert.AreEqual(TestShape.BaseShape, movedBack.BaseShape);
 	}
 
 	[Test]
@@ -567,18 +583,18 @@ class TranslatedShapeTest {
 
 	[Test]
 	public void ShouldCorrectlyDetermineClosestPointToPlanes() {
-		AssertToleranceEquals((0f, 0f, 0f), TestShape.PointClosestTo(new Plane(Direction.Up, (1f, -2f, 3f))), TestTolerance);
-		AssertToleranceEquals((0f, 1f, 0f), TestShape.PointClosestTo(new Plane(Direction.Up, (1f, -1f, 3f))), TestTolerance);
-		AssertToleranceEquals((0f, 7.4f, 0f), TestShape.PointClosestTo(new Plane(Direction.Up, (1f, 5.4f, 3f))), TestTolerance);
-		AssertToleranceEquals((0f, 7.4f, 0f), TestShape.PointClosestTo(new Plane(Direction.Up, (1f, 8f, 3f))), TestTolerance);
+		AssertToleranceEquals((1f, -2f, 3f), TestShape.PointClosestTo(new Plane(Direction.Up, (1f, -2f, 3f))), TestTolerance);
+		AssertToleranceEquals((1f, -1f, 3f), TestShape.PointClosestTo(new Plane(Direction.Up, (1f, -1f, 3f))), TestTolerance);
+		AssertToleranceEquals((1f, 5.4f, 3f), TestShape.PointClosestTo(new Plane(Direction.Up, (1f, 5.4f, 3f))), TestTolerance);
+		AssertToleranceEquals((1f, 5.4f, 3f), TestShape.PointClosestTo(new Plane(Direction.Up, (1f, 8f, 3f))), TestTolerance);
 	}
 
 	[Test]
 	public void ShouldCorrectlyDetermineClosestPointOnPlanes() {
-		AssertToleranceEquals((0f, 0f, 0f), TestShape.ClosestPointOn(new Plane(Direction.Up, (1f, -2f, 3f))), TestTolerance);
-		AssertToleranceEquals((0f, 1f, 0f), TestShape.ClosestPointOn(new Plane(Direction.Up, (1f, -1f, 3f))), TestTolerance);
-		AssertToleranceEquals((0f, 7.4f, 0f), TestShape.ClosestPointOn(new Plane(Direction.Up, (1f, 5.4f, 3f))), TestTolerance);
-		AssertToleranceEquals((0f, 10f, 0f), TestShape.ClosestPointOn(new Plane(Direction.Up, (1f, 8f, 3f))), TestTolerance);
+		AssertToleranceEquals(0f, TestShape.DistanceFrom(TestShape.ClosestPointOn(new Plane(Direction.Up, (1f, -2f, 3f)))), TestTolerance);
+		AssertToleranceEquals(0f, TestShape.DistanceFrom(TestShape.ClosestPointOn(new Plane(Direction.Up, (1f, -2f + 7.4f, 3f)))), TestTolerance);
+		AssertToleranceEquals(1f, TestShape.DistanceFrom(TestShape.ClosestPointOn(new Plane(Direction.Up, (1f, -1f + 7.4f, 3f)))), TestTolerance);
+		AssertToleranceEquals(new Location(1f, 6.4f, 3f), TestShape.ClosestPointOn(new Plane(Direction.Up, (1f, -1f + 7.4f, 3f))), TestTolerance);
 	}
 
 	[Test]
