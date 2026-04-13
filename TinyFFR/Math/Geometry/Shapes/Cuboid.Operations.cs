@@ -482,9 +482,6 @@ partial struct Cuboid : IIndependentAxisScalable<Cuboid> {
 		return result;
 	}
 	public Location ClosestPointToSurfaceOn(Plane plane) => plane.PointClosestTo(SurfacePointClosestTo(plane));
-
-	float IConvexShape.SurfaceDistanceFrom(Plane plane) => DistanceFrom(plane);
-	float IConvexShape.SurfaceDistanceSquaredFrom(Plane plane) { var sqrt = DistanceFrom(plane); return sqrt * sqrt; }
 	#endregion
 
 	#region Clamping and Interpolation

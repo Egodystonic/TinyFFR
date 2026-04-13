@@ -600,19 +600,6 @@ class SphereTest {
 		Assert.AreEqual(0f, TestSphere.SignedDistanceFrom(new Plane(Direction.Up, (0f, -7.4f, 0f))));
 		Assert.AreEqual(-2.6f, TestSphere.SignedDistanceFrom(new Plane(Direction.Up, (0f, 10f, 0f))), TestTolerance);
 		Assert.AreEqual(2.6f, TestSphere.SignedDistanceFrom(new Plane(Direction.Up, (0f, -10f, 0f))), TestTolerance);
-
-
-		Assert.AreEqual(0f, TestSphere.SurfaceDistanceFrom(new Plane(Direction.Up, (0f, 0f, 0f))));
-		Assert.AreEqual(0f, TestSphere.SurfaceDistanceFrom(new Plane(Direction.Up, (0f, 7.4f, 0f))));
-		Assert.AreEqual(0f, TestSphere.SurfaceDistanceFrom(new Plane(Direction.Up, (0f, -7.4f, 0f))));
-		Assert.AreEqual(2.6f, TestSphere.SurfaceDistanceFrom(new Plane(Direction.Up, (0f, 10f, 0f))), TestTolerance);
-		Assert.AreEqual(2.6f, TestSphere.SurfaceDistanceFrom(new Plane(Direction.Up, (0f, -10f, 0f))), TestTolerance);
-
-		Assert.AreEqual(0f, TestSphere.SignedSurfaceDistanceFrom(new Plane(Direction.Up, (0f, 0f, 0f))));
-		Assert.AreEqual(0f, TestSphere.SignedSurfaceDistanceFrom(new Plane(Direction.Up, (0f, 7.4f, 0f))));
-		Assert.AreEqual(0f, TestSphere.SignedSurfaceDistanceFrom(new Plane(Direction.Up, (0f, -7.4f, 0f))));
-		Assert.AreEqual(-2.6f, TestSphere.SignedSurfaceDistanceFrom(new Plane(Direction.Up, (0f, 10f, 0f))), TestTolerance);
-		Assert.AreEqual(2.6f, TestSphere.SignedSurfaceDistanceFrom(new Plane(Direction.Up, (0f, -10f, 0f))), TestTolerance);
 	}
 
 	[Test]

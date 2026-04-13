@@ -28,9 +28,7 @@ class ShapeInterfaceTest {
 			AssertMirrorMethod<TShape, Plane>((s, p) => s.ClosestPointOn(p), (p, s) => p.PointClosestTo(s));
 			AssertMirrorMethod<TShape, Plane>((s, p) => s.ClosestPointToSurfaceOn(p), (p, s) => p.PointClosestToSurfaceOf(s));
 			AssertMirrorMethod<TShape, Plane>((s, p) => s.DistanceFrom(p), (p, s) => p.DistanceFrom(s));
-			AssertMirrorMethod<TShape, Plane>((s, p) => s.SurfaceDistanceFrom(p), (p, s) => p.DistanceFromSurfaceOf(s));
 			AssertMirrorMethod<TShape, Plane>((s, p) => s.DistanceSquaredFrom(p), (p, s) => p.DistanceSquaredFrom(s));
-			AssertMirrorMethod<TShape, Plane>((s, p) => s.SurfaceDistanceSquaredFrom(p), (p, s) => p.DistanceSquaredFromSurfaceOf(s));
 
 			AssertMirrorMethod<TShape, Line>((s, l) => s.PointClosestTo(l), (l, s) => l.ClosestPointInsideOf(s));
 			AssertMirrorMethod<TShape, Line>((s, l) => s.SurfacePointClosestTo(l), (l, s) => l.ClosestPointOnSurfaceOf(s));

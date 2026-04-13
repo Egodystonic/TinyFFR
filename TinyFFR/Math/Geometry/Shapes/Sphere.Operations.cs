@@ -316,13 +316,6 @@ partial struct Sphere {
 	}
 
 	float IDistanceMeasurable<Plane>.DistanceSquaredFrom(Plane plane) { var sqrt = DistanceFrom(plane); return sqrt * sqrt; }
-	float IConvexShape.SurfaceDistanceSquaredFrom(Plane plane) { var sqrt = SurfaceDistanceFrom(plane); return sqrt * sqrt; }
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float SurfaceDistanceFrom(Plane plane) => DistanceFrom(plane);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float SignedSurfaceDistanceFrom(Plane plane) => SignedDistanceFrom(plane);
 	#endregion
 
 	#region Clamping and Interpolation

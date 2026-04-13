@@ -610,13 +610,6 @@ class TranslatedShapeTest {
 		Assert.AreEqual(0f, TestShape.SignedDistanceFrom(new Plane(Direction.Up, (1f, -9.4f, 3f))));
 		Assert.AreEqual(-2.6f, TestShape.SignedDistanceFrom(new Plane(Direction.Up, (1f, 8f, 3f))), TestTolerance);
 		Assert.AreEqual(2.6f, TestShape.SignedDistanceFrom(new Plane(Direction.Up, (1f, -12f, 3f))), TestTolerance);
-
-
-		Assert.AreEqual(0f, TestShape.SurfaceDistanceFrom(new Plane(Direction.Up, (1f, -2f, 3f))));
-		Assert.AreEqual(0f, TestShape.SurfaceDistanceFrom(new Plane(Direction.Up, (1f, 5.4f, 3f))));
-		Assert.AreEqual(0f, TestShape.SurfaceDistanceFrom(new Plane(Direction.Up, (1f, -9.4f, 3f))));
-		Assert.AreEqual(2.6f, TestShape.SurfaceDistanceFrom(new Plane(Direction.Up, (1f, 8f, 3f))), TestTolerance);
-		Assert.AreEqual(2.6f, TestShape.SurfaceDistanceFrom(new Plane(Direction.Up, (1f, -12f, 3f))), TestTolerance);
 	}
 
 	[Test]

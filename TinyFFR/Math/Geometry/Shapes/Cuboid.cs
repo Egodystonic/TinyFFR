@@ -6,7 +6,31 @@ using Egodystonic.TinyFFR.Resources;
 
 namespace Egodystonic.TinyFFR;
 
-public readonly partial struct Cuboid : IConvexShape<Cuboid> {
+public interface ICuboid : IConvexShape {
+	float HalfWidth { get; init; }
+	float HalfHeight { get; init; }
+	float HalfDepth { get; init; }
+	float Width { get; init; }
+	float Height { get; init; }
+	float Depth { get; init; }
+	float Volume { get; }
+	float SurfaceArea { get; }
+	
+	Location CentroidAt(CardinalOrientation side);
+	Location CornerAt(DiagonalOrientation corner);
+	Plane SideAt(CardinalOrientation side);
+	BoundedRay EdgeAt(IntercardinalOrientation edge);
+}
+public interface ICuboid<TSelf> : ICuboid, IConvexShape<TSelf> where TSelf : ICuboid<TSelf> {
+	IndirectEnumerable<TSelf, Location> Corners { get; }
+	IndirectEnumerable<TSelf, BoundedRay> Edges { get; }
+	IndirectEnumerable<TSelf, Plane> Sides { get; }
+	IndirectEnumerable<TSelf, Location> Centroids { get; }
+	TSelf WithVolume(float newVolume);
+	TSelf WithSurfaceArea(float newSurfaceArea);
+}
+
+public readonly partial struct Cuboid : ICuboid<Cuboid> {
 	internal const float DefaultRandomMin = 0.5f;
 	internal const float DefaultRandomMax = 1.5f;
 	public static readonly Cuboid UnitCube = new(1f);

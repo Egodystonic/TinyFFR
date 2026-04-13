@@ -5,7 +5,19 @@ using System.Buffers.Binary;
 
 namespace Egodystonic.TinyFFR;
 
-public readonly partial struct Sphere : IConvexShape<Sphere> {
+public interface ISphere : IConvexShape {
+	float Radius { get; }
+	float RadiusSquared { get; }
+	float Volume { get; }
+	float SurfaceArea { get; }
+	float Circumference { get; }
+	float Diameter { get; }
+}
+public interface ISphere<TSelf> : ISphere, IConvexShape<TSelf> where TSelf : ISphere<TSelf> {
+	bool TrySplit(Plane plane, out Location circleCentrePoint, out float circleRadius);
+}
+
+public readonly partial struct Sphere : ISphere<Sphere> {
 	internal const float DefaultRandomMin = 1f;
 	internal const float DefaultRandomMax = 3f;
 	public static readonly Sphere UnitSphere = new(1f);

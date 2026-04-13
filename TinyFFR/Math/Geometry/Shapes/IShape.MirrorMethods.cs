@@ -31,11 +31,11 @@ partial struct Plane : IClosestConvexShapePointsDiscoverable, IConvexShapeDistan
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.DistanceFrom(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceFromSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.SurfaceDistanceFrom(this);
+	public float DistanceFromSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.DistanceFrom(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceSquaredFrom<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.DistanceSquaredFrom(this);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public float DistanceSquaredFromSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.SurfaceDistanceSquaredFrom(this);
+	public float DistanceSquaredFromSurfaceOf<TShape>(TShape shape) where TShape : IConvexShape<TShape> => shape.DistanceSquaredFrom(this);
 }
 
 partial struct Line {

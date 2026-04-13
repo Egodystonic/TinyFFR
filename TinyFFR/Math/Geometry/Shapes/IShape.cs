@@ -64,7 +64,5 @@ public interface IConvexShape : IShape,
 
 	Location SurfacePointClosestTo(Plane plane);
 	Location ClosestPointToSurfaceOn(Plane plane);
-	float SurfaceDistanceFrom(Plane plane);
-	float SurfaceDistanceSquaredFrom(Plane plane);
 }
 public interface IConvexShape<TSelf> : IConvexShape, IShape<TSelf> where TSelf : IConvexShape<TSelf>; 

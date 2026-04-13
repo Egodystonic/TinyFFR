@@ -464,6 +464,7 @@ class TranslatedAndRotatedShapeTest {
 		AssertToleranceEquals(-2f, TestShape.ClosestPointToSurfaceOn(new Plane(Direction.Backward, (1f, -2f, -2f))).Z, TestTolerance);
 	}
 
+
 	[Test]
 	public void ShouldCorrectlyDetermineIncidentAngleWithLines() {
 		const float LocalTestTolerance = 0.5f;
