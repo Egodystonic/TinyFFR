@@ -7,6 +7,8 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture]
 class PositionedSphereTest {
+	const float TestTolerance = 0.01f;
+
 	[SetUp]
 	public void SetUpTest() { }
 
@@ -156,5 +158,26 @@ class PositionedSphereTest {
 				AssertMethodDelegation(tuple.ImplMethod, tuple.TestMethod, null, null, $"iteration {i}");
 			}
 		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyImplementSplitting() {
+		var sphere = new PositionedSphere(10f, new Location(3f, 5f, -2f));
+
+		Assert.IsFalse(sphere.TrySplit(new Plane(Direction.Up, new Location(0f, 20f, 0f)), out _, out _));
+
+		Assert.IsTrue(sphere.TrySplit(new Plane(Direction.Up, new Location(3f, 5f, -2f)), out var centrePoint, out var radius));
+		AssertToleranceEquals(new Location(3f, 5f, -2f), centrePoint, TestTolerance);
+		Assert.AreEqual(10f, radius, TestTolerance);
+
+		Assert.IsTrue(sphere.TrySplit(new Plane(Direction.Up, new Location(0f, 10f, 0f)), out centrePoint, out radius));
+		AssertToleranceEquals(new Location(3f, 10f, -2f), centrePoint, TestTolerance);
+		Assert.AreEqual(8.66025f, radius, TestTolerance);
+
+		Assert.IsTrue(sphere.TrySplit(new Plane(Direction.Forward, new Location(3f, 5f, 5f)), out centrePoint, out radius));
+		AssertToleranceEquals(new Location(3f, 5f, 5f), centrePoint, TestTolerance);
+		Assert.AreEqual(7.1414f, radius, TestTolerance);
+
+		Assert.IsFalse(sphere.TrySplit(new Plane(Direction.Up, new Location(0f, 15.5f, 0f)), out _, out _));
 	}
 }

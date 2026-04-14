@@ -7,6 +7,9 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture]
 class PositionedCuboidTest {
+	const float TestTolerance = 0.01f;
+	static readonly PositionedCuboid TestCuboid = new(4f, 6f, 2f, new Location(10f, 20f, 30f));
+
 	[SetUp]
 	public void SetUpTest() { }
 
@@ -156,5 +159,106 @@ class PositionedCuboidTest {
 				AssertMethodDelegation(tuple.ImplMethod, tuple.TestMethod, null, null, $"iteration {i}");
 			}
 		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateCentroids() {
+		AssertToleranceEquals(new Location(12f, 20f, 30f), TestCuboid.CentroidAt(CardinalOrientation.Left), TestTolerance);
+		AssertToleranceEquals(new Location(8f, 20f, 30f), TestCuboid.CentroidAt(CardinalOrientation.Right), TestTolerance);
+		AssertToleranceEquals(new Location(10f, 23f, 30f), TestCuboid.CentroidAt(CardinalOrientation.Up), TestTolerance);
+		AssertToleranceEquals(new Location(10f, 17f, 30f), TestCuboid.CentroidAt(CardinalOrientation.Down), TestTolerance);
+		AssertToleranceEquals(new Location(10f, 20f, 31f), TestCuboid.CentroidAt(CardinalOrientation.Forward), TestTolerance);
+		AssertToleranceEquals(new Location(10f, 20f, 29f), TestCuboid.CentroidAt(CardinalOrientation.Backward), TestTolerance);
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateCorners() {
+		AssertToleranceEquals(new Location(12f, 23f, 31f), TestCuboid.CornerAt(DiagonalOrientation.LeftUpForward), TestTolerance);
+		AssertToleranceEquals(new Location(12f, 23f, 29f), TestCuboid.CornerAt(DiagonalOrientation.LeftUpBackward), TestTolerance);
+		AssertToleranceEquals(new Location(12f, 17f, 31f), TestCuboid.CornerAt(DiagonalOrientation.LeftDownForward), TestTolerance);
+		AssertToleranceEquals(new Location(12f, 17f, 29f), TestCuboid.CornerAt(DiagonalOrientation.LeftDownBackward), TestTolerance);
+		AssertToleranceEquals(new Location(8f, 23f, 31f), TestCuboid.CornerAt(DiagonalOrientation.RightUpForward), TestTolerance);
+		AssertToleranceEquals(new Location(8f, 23f, 29f), TestCuboid.CornerAt(DiagonalOrientation.RightUpBackward), TestTolerance);
+		AssertToleranceEquals(new Location(8f, 17f, 31f), TestCuboid.CornerAt(DiagonalOrientation.RightDownForward), TestTolerance);
+		AssertToleranceEquals(new Location(8f, 17f, 29f), TestCuboid.CornerAt(DiagonalOrientation.RightDownBackward), TestTolerance);
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateSides() {
+		AssertToleranceEquals(new Plane(Direction.Left, new Location(12f, 20f, 30f)), TestCuboid.SideAt(CardinalOrientation.Left), TestTolerance);
+		AssertToleranceEquals(new Plane(Direction.Right, new Location(8f, 20f, 30f)), TestCuboid.SideAt(CardinalOrientation.Right), TestTolerance);
+		AssertToleranceEquals(new Plane(Direction.Up, new Location(10f, 23f, 30f)), TestCuboid.SideAt(CardinalOrientation.Up), TestTolerance);
+		AssertToleranceEquals(new Plane(Direction.Down, new Location(10f, 17f, 30f)), TestCuboid.SideAt(CardinalOrientation.Down), TestTolerance);
+		AssertToleranceEquals(new Plane(Direction.Forward, new Location(10f, 20f, 31f)), TestCuboid.SideAt(CardinalOrientation.Forward), TestTolerance);
+		AssertToleranceEquals(new Plane(Direction.Backward, new Location(10f, 20f, 29f)), TestCuboid.SideAt(CardinalOrientation.Backward), TestTolerance);
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateEdges() {
+		void AssertEdge(IntercardinalOrientation orientation, Location expectedStart, Location expectedEnd) {
+			Assert.IsTrue(TestCuboid.EdgeAt(orientation).IsEquivalentDisregardingDirection(new(expectedStart, expectedEnd), TestTolerance));
+		}
+
+		AssertEdge(IntercardinalOrientation.UpForward, new(12f, 23f, 31f), new(8f, 23f, 31f));
+		AssertEdge(IntercardinalOrientation.UpBackward, new(12f, 23f, 29f), new(8f, 23f, 29f));
+		AssertEdge(IntercardinalOrientation.DownForward, new(12f, 17f, 31f), new(8f, 17f, 31f));
+		AssertEdge(IntercardinalOrientation.DownBackward, new(12f, 17f, 29f), new(8f, 17f, 29f));
+		AssertEdge(IntercardinalOrientation.LeftForward, new(12f, 23f, 31f), new(12f, 17f, 31f));
+		AssertEdge(IntercardinalOrientation.LeftBackward, new(12f, 23f, 29f), new(12f, 17f, 29f));
+		AssertEdge(IntercardinalOrientation.RightForward, new(8f, 23f, 31f), new(8f, 17f, 31f));
+		AssertEdge(IntercardinalOrientation.RightBackward, new(8f, 23f, 29f), new(8f, 17f, 29f));
+		AssertEdge(IntercardinalOrientation.LeftUp, new(12f, 23f, 31f), new(12f, 23f, 29f));
+		AssertEdge(IntercardinalOrientation.LeftDown, new(12f, 17f, 31f), new(12f, 17f, 29f));
+		AssertEdge(IntercardinalOrientation.RightUp, new(8f, 23f, 31f), new(8f, 23f, 29f));
+		AssertEdge(IntercardinalOrientation.RightDown, new(8f, 17f, 31f), new(8f, 17f, 29f));
+	}
+
+	[Test]
+	public void ShouldCorrectlyEnumerateProperties() {
+		Assert.AreEqual(8, TestCuboid.Corners.Count);
+		var cornerCount = 0;
+		foreach (var corner in TestCuboid.Corners) {
+			AssertToleranceEquals(TestCuboid.CornerAt(OrientationUtils.AllDiagonals[cornerCount]), corner, TestTolerance);
+			++cornerCount;
+		}
+		Assert.AreEqual(8, cornerCount);
+
+		Assert.AreEqual(12, TestCuboid.Edges.Count);
+		var edgeCount = 0;
+		foreach (var edge in TestCuboid.Edges) {
+			Assert.IsTrue(edge.IsEquivalentDisregardingDirection(TestCuboid.EdgeAt(OrientationUtils.AllIntercardinals[edgeCount]), TestTolerance));
+			++edgeCount;
+		}
+		Assert.AreEqual(12, edgeCount);
+
+		Assert.AreEqual(6, TestCuboid.Sides.Count);
+		var sideCount = 0;
+		foreach (var side in TestCuboid.Sides) {
+			AssertToleranceEquals(TestCuboid.SideAt(OrientationUtils.AllCardinals[sideCount]), side, TestTolerance);
+			++sideCount;
+		}
+		Assert.AreEqual(6, sideCount);
+
+		Assert.AreEqual(6, TestCuboid.Centroids.Count);
+		var centroidCount = 0;
+		foreach (var centroid in TestCuboid.Centroids) {
+			AssertToleranceEquals(TestCuboid.CentroidAt(OrientationUtils.AllCardinals[centroidCount]), centroid, TestTolerance);
+			++centroidCount;
+		}
+		Assert.AreEqual(6, centroidCount);
+	}
+
+	[Test]
+	public void ShouldCorrectlyPreservePositionForWithMethods() {
+		var withVol = TestCuboid.WithVolume(100f);
+		Assert.AreEqual(TestCuboid.Position, withVol.Position);
+		Assert.AreEqual(100f, withVol.Volume, TestTolerance);
+
+		var withSA = TestCuboid.WithSurfaceArea(200f);
+		Assert.AreEqual(TestCuboid.Position, withSA.Position);
+		Assert.AreEqual(200f, withSA.SurfaceArea, TestTolerance);
+
+		AssertToleranceEquals(TestCuboid.ToStandardCuboid(), TestCuboid.WithVolume(TestCuboid.Volume).ToStandardCuboid(), TestTolerance);
+		AssertToleranceEquals(TestCuboid.ToStandardCuboid(), TestCuboid.WithSurfaceArea(TestCuboid.SurfaceArea).ToStandardCuboid(), TestTolerance);
 	}
 }
