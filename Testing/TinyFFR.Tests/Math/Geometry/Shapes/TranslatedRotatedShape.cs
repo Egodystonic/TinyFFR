@@ -521,4 +521,14 @@ class TranslatedRotatedShapeTest {
 
 		Assert.IsNull(TestShape.ReflectionOf(new BoundedRay(new Location(1f, 5f, 3f), Direction.Down * 3f)));
 	}
+	
+	[Test]
+	public void ShouldCorrectlyGenerateRandomLocations() {
+		const int NumIterations = 100_000;
+		
+		for (var i = 0; i < NumIterations; ++i) {
+			var l = Location.Random(TestShape);
+			Assert.IsTrue(TestShape.Contains(l));
+		}
+	}
 }

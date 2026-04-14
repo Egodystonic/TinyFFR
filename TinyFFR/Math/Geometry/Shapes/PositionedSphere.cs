@@ -188,5 +188,6 @@ public readonly struct PositionedSphere : ITranslatedConvexShape<PositionedSpher
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public static PositionedSphere operator +(PositionedSphere left, Vect right) => left._impl + right;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public static PositionedSphere operator -(PositionedSphere left, Vect right) => left._impl - right;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public static PositionedSphere operator +(Vect left, PositionedSphere right) => left + right._impl;
+	Location IConvexShape.GetRandomInternalLocation() => ((IConvexShape) _impl).GetRandomInternalLocation();
 	#endregion
 }

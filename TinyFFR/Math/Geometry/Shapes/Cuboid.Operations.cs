@@ -501,4 +501,12 @@ partial struct Cuboid : IIndependentAxisScalable<Cuboid> {
 		);
 	}
 	#endregion
+	
+	Location IConvexShape.GetRandomInternalLocation() {
+		return new(
+			RandomUtils.NextSingle(-HalfWidth, HalfWidth), 
+			RandomUtils.NextSingle(-HalfHeight, HalfHeight), 
+			RandomUtils.NextSingle(-HalfDepth, HalfDepth)
+		);
+	}
 }

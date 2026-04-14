@@ -776,4 +776,14 @@ class TranslatedShapeTest {
 		AssertToleranceEquals(new BoundedRay(new Location(1f, -2f + TestShape.BaseShape.Radius, 3f), new Location(1f, -2f + TestShape.BaseShape.Radius + 1f, 3f)), TestShape.FastReflectionOf(new BoundedRay(new Location(1f, 98f, 3f), new Location(1f, -2f + TestShape.BaseShape.Radius - 1f, 3f))), LocalTestTolerance);
 		AssertToleranceEquals(new BoundedRay(new Location(1f, -2f + TestShape.BaseShape.Radius, 3f), new Location(1f, -2f + TestShape.BaseShape.Radius - (100f - (TestShape.BaseShape.Radius - 1f) - 1f), 3f)), TestShape.FastReflectionOf(new BoundedRay(new Location(1f, 98f, 3f), new Location(1f, -2f + TestShape.BaseShape.Radius - 1f, 3f)).Flipped), LocalTestTolerance);
 	}
+	
+	[Test]
+	public void ShouldCorrectlyGenerateRandomLocations() {
+		const int NumIterations = 100_000;
+		
+		for (var i = 0; i < NumIterations; ++i) {
+			var l = Location.Random(TestShape);
+			Assert.IsTrue(TestShape.Contains(l));
+		}
+	}
 }

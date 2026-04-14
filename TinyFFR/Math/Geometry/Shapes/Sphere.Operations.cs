@@ -322,4 +322,8 @@ partial struct Sphere {
 	public Sphere Clamp(Sphere min, Sphere max) => new(Radius.AsReal().Clamp(min.Radius, max.Radius));
 	public static Sphere Interpolate(Sphere start, Sphere end, float distance) => new(Single.Lerp(start.Radius, end.Radius, distance));
 	#endregion
+
+	Location IConvexShape.GetRandomInternalLocation() {
+		return (Direction.Random() * RandomUtils.NextSingle(0f, Radius)).AsLocation();
+	}
 }

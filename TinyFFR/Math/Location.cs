@@ -81,6 +81,8 @@ public readonly partial struct Location : IVect<Location> {
 	public static Location Random(Location minInclusive, Location maxExclusive) {
 		return minInclusive + ((minInclusive >> maxExclusive) * RandomUtils.NextSingle());
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Location Random<TShape>(TShape shape) where TShape : IConvexShape => shape.GetRandomInternalLocation();
 	#endregion
 
 	#region Span Conversion

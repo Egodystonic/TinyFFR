@@ -43,6 +43,8 @@ public interface IConvexShape : IShape,
 	IClosestEndogenousPointDiscoverable<Plane>,
 	IClosestExogenousPointDiscoverable<Plane>,
 	IRelatable<Plane, PlaneObjectRelationship> {
+	Location GetRandomInternalLocation();
+	
 	Location SurfacePointClosestTo(Location point);
 	float SurfaceDistanceFrom(Location point);
 	float SurfaceDistanceSquaredFrom(Location point);

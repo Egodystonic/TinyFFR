@@ -180,4 +180,16 @@ class PositionedSphereTest {
 
 		Assert.IsFalse(sphere.TrySplit(new Plane(Direction.Up, new Location(0f, 15.5f, 0f)), out _, out _));
 	}
+	
+	[Test]
+	public void ShouldCorrectlyGenerateRandomLocations() {
+		const int NumIterations = 100_000;
+		
+		var sphere = new PositionedSphere(10f, new Location(3f, 5f, -2f));
+		
+		for (var i = 0; i < NumIterations; ++i) {
+			var l = Location.Random(sphere);
+			Assert.IsTrue(sphere.Contains(l));
+		}
+	}
 }

@@ -237,5 +237,6 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public static PositionedCuboid operator +(PositionedCuboid left, Vect right) => left._impl + right;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public static PositionedCuboid operator -(PositionedCuboid left, Vect right) => left._impl - right;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public static PositionedCuboid operator +(Vect left, PositionedCuboid right) => left + right._impl;
+	Location IConvexShape.GetRandomInternalLocation() => ((IConvexShape) _impl).GetRandomInternalLocation();
 	#endregion
 }

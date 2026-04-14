@@ -2234,4 +2234,14 @@ class CuboidTest {
 		AssertToleranceEquals(new BoundedRay(new Location(0f, 0f, TestCuboid.HalfDepth), new Location(0.3f, 0f, TestCuboid.HalfDepth + 0.3f)), TestCuboid.ReflectionOf(new BoundedRay(new Location(0.3f, 0f, TestCuboid.HalfDepth - 0.3f), new Location(-0.3f, 0f, TestCuboid.HalfDepth + 0.3f)).Flipped), TestTolerance);
 		AssertToleranceEquals(new BoundedRay(new Location(0f, 0f, TestCuboid.HalfDepth), new Location(0.3f, 0f, TestCuboid.HalfDepth + 0.3f)), TestCuboid.FastReflectionOf(new BoundedRay(new Location(0.3f, 0f, TestCuboid.HalfDepth - 0.3f), new Location(-0.3f, 0f, TestCuboid.HalfDepth + 0.3f)).Flipped), TestTolerance);
 	}
+	
+	[Test]
+	public void ShouldCorrectlyGenerateRandomLocations() {
+		const int NumIterations = 100_000;
+		
+		for (var i = 0; i < NumIterations; ++i) {
+			var l = Location.Random(TestCuboid);
+			Assert.IsTrue(TestCuboid.Contains(l));
+		}
+	}
 }

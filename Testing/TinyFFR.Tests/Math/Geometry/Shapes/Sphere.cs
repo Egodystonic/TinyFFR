@@ -776,4 +776,14 @@ class SphereTest {
 		AssertToleranceEquals(new BoundedRay(new Location(0f, TestSphere.Radius, 0f), new Location(0f, TestSphere.Radius + 1f, 0f)), TestSphere.FastReflectionOf(new BoundedRay(new Location(0f, 100f, 0f), new Location(0f, TestSphere.Radius - 1f, 0f))), LocalTestTolerance);
 		AssertToleranceEquals(new BoundedRay(new Location(0f, TestSphere.Radius, 0f), new Location(0f, TestSphere.Radius - (100f - (TestSphere.Radius - 1f) - 1f), 0f)), TestSphere.FastReflectionOf(new BoundedRay(new Location(0f, 100f, 0f), new Location(0f, TestSphere.Radius - 1f, 0f)).Flipped), LocalTestTolerance);
 	}
+
+	[Test]
+	public void ShouldCorrectlyGenerateRandomLocations() {
+		const int NumIterations = 100_000;
+		
+		for (var i = 0; i < NumIterations; ++i) {
+			var l = Location.Random(TestSphere);
+			Assert.IsTrue(TestSphere.Contains(l));
+		}
+	}
 }

@@ -261,4 +261,14 @@ class PositionedCuboidTest {
 		AssertToleranceEquals(TestCuboid.ToStandardCuboid(), TestCuboid.WithVolume(TestCuboid.Volume).ToStandardCuboid(), TestTolerance);
 		AssertToleranceEquals(TestCuboid.ToStandardCuboid(), TestCuboid.WithSurfaceArea(TestCuboid.SurfaceArea).ToStandardCuboid(), TestTolerance);
 	}
+	
+	[Test]
+	public void ShouldCorrectlyGenerateRandomLocations() {
+		const int NumIterations = 100_000;
+		
+		for (var i = 0; i < NumIterations; ++i) {
+			var l = Location.Random(TestCuboid);
+			Assert.IsTrue(TestCuboid.Contains(l));
+		}
+	}
 }

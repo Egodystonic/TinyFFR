@@ -311,4 +311,5 @@ public readonly struct TranslatedConvexShape<T> : ITranslatedConvexShape<Transla
 	public float SurfaceDistanceSquaredFrom(BoundedRay ray) => BaseShape.SurfaceDistanceSquaredFrom(TransformToShapeSpace(ray));
 	public Location SurfacePointClosestTo(Plane plane) => TransformToWorldSpace(BaseShape.SurfacePointClosestTo(TransformToShapeSpace(plane)));
 	public Location ClosestPointToSurfaceOn(Plane plane) => TransformToWorldSpace(BaseShape.ClosestPointToSurfaceOn(TransformToShapeSpace(plane)));
+	Location IConvexShape.GetRandomInternalLocation() => TransformToWorldSpace(BaseShape.GetRandomInternalLocation());
 }
