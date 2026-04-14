@@ -44,9 +44,11 @@ public readonly partial struct Sphere : ISphere<Sphere> {
 	public static Sphere FromCircumference(float circumference) => new(circumference / MathF.Tau);
 	public static Sphere FromDiameter(float diameter) => new(diameter * 0.5f);
 	public static Sphere FromRadiusSquared(float radiusSquared) => new(MathF.Sqrt(radiusSquared));
-	
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public PositionableSphere ToPositionableSphere(Location centerPoint) => new(this, centerPoint); 
+	public PositionedSphere WithPosition(Location position) => ToPositionedSphere(position);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public PositionedSphere ToPositionedSphere(Location position) => new(this, position);
 	#endregion
 
 	#region Random

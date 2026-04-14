@@ -6,7 +6,7 @@ using System.Reflection;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture]
-class PositionableSphereTest {
+class PositionedSphereTest {
 	[SetUp]
 	public void SetUpTest() { }
 
@@ -15,7 +15,7 @@ class PositionableSphereTest {
 
 	[Test]
 	public void ShouldCorrectlyDelegateMembers() {
-		var testType = typeof(PositionableSphere);
+		var testType = typeof(PositionedSphere);
 		var implType = typeof(TranslatedConvexShape<Sphere>);
 		
 		bool HasByRefLikeParams(MethodInfo m) => m.GetParameters().Any(p => {
@@ -71,15 +71,15 @@ class PositionableSphereTest {
 			.ToArray()!;
 		}
 		
-		object? Normalize(object? value) => value is PositionableSphere ps ? (TranslatedConvexShape<Sphere>) ps : value;
+		object? Normalize(object? value) => value is PositionedSphere ps ? (TranslatedConvexShape<Sphere>) ps : value;
 
 		
 
 		object? RandomArg(Type type) {
-			if (type == testType) return (object) PositionableSphere.Random();
+			if (type == testType) return (object) PositionedSphere.Random();
 			if (type == typeof(float)) return Random.Shared.NextSingle() * 200f - 100f;
 			if (type == typeof(object)) return null;
-			if (type == typeof(string)) return PositionableSphere.Random().ToString("G", null);
+			if (type == typeof(string)) return PositionedSphere.Random().ToString("G", null);
 			if (type == typeof(IFormatProvider)) return null;
 			var randomMethod = type.GetMethod("Random", BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes);
 			if (randomMethod != null) return randomMethod.Invoke(null, null);
@@ -100,7 +100,7 @@ class PositionableSphereTest {
 				}
 				var arg = RandomArg(testParams[j].ParameterType);
 				testArgs[j] = arg;
-				implArgs[j] = arg is PositionableSphere argPs ? (object) (TranslatedConvexShape<Sphere>) argPs : arg;
+				implArgs[j] = arg is PositionedSphere argPs ? (object) (TranslatedConvexShape<Sphere>) argPs : arg;
 			}
 
 			Exception? implException = null, testException = null;
@@ -135,7 +135,7 @@ class PositionableSphereTest {
 		var staticMethods = PrintAndFilterMethods(implType.GetMethods(staticFlags));
 		
 		for (var i = 0; i < 1000; ++i) {
-			var input = PositionableSphere.Random();
+			var input = PositionedSphere.Random();
 			var castInput = (TranslatedConvexShape<Sphere>) input;
 			
 			foreach (var tuple in instanceProperties) {

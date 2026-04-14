@@ -161,6 +161,15 @@ public readonly partial struct Cuboid : ICuboid<Cuboid> {
 	}
 
 	#region Factories and Conversions
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public PositionedCuboid WithPosition(Location position) => ToPositionedCuboid(position);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public PositionedCuboid ToPositionedCuboid(Location position) => new(this, position);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public PositionedRotatedCuboid WithPositionAndRotation(Location position, Rotation rotation) => ToPositionedRotatedCuboid(position, rotation);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public PositionedRotatedCuboid ToPositionedRotatedCuboid(Location position, Rotation rotation) => new(this, position, rotation);
+
 	public static Cuboid FromHalfDimensions(float halfWidth, float halfHeight, float halfDepth) {
 		return new() {
 			HalfWidth = halfWidth,

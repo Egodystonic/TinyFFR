@@ -6,11 +6,11 @@ using System.Globalization;
 namespace Egodystonic.TinyFFR;
 
 [TestFixture]
-class TranslatedAndRotatedShapeTest {
+class TranslatedRotatedShapeTest {
 	const float TestTolerance = 0.01f;
 	static readonly Cuboid TestCuboid = new(4f, 6f, 2f);
 	static readonly Rotation TestRotation = new(90f, Direction.Up);
-	static readonly TranslatedAndRotatedConvexShape<Cuboid> TestShape = new(TestCuboid, new Vect(1f, -2f, 3f), TestRotation);
+	static readonly TranslatedRotatedConvexShape<Cuboid> TestShape = new(TestCuboid, new Vect(1f, -2f, 3f), TestRotation);
 
 	[SetUp]
 	public void SetUpTest() { }
@@ -37,15 +37,15 @@ class TranslatedAndRotatedShapeTest {
 
 	[Test]
 	public void ShouldCorrectlyDeterminePhysicalValidity() {
-		Assert.AreEqual(true, new TranslatedAndRotatedConvexShape<Cuboid>(new Cuboid(1f), Vect.Zero, Rotation.None).IsPhysicallyValid);
-		Assert.AreEqual(true, new TranslatedAndRotatedConvexShape<Cuboid>(new Cuboid(1f), Vect.Zero, TestRotation).IsPhysicallyValid);
-		Assert.AreEqual(false, new TranslatedAndRotatedConvexShape<Cuboid>(new Cuboid(-1f, 1f, 1f), Vect.Zero, Rotation.None).IsPhysicallyValid);
-		Assert.AreEqual(false, new TranslatedAndRotatedConvexShape<Cuboid>(new Cuboid(0f), Vect.Zero, Rotation.None).IsPhysicallyValid);
-		Assert.AreEqual(false, new TranslatedAndRotatedConvexShape<Cuboid>(new Cuboid(Single.NaN), Vect.Zero, Rotation.None).IsPhysicallyValid);
-		Assert.AreEqual(false, new TranslatedAndRotatedConvexShape<Cuboid>(new Cuboid(Single.PositiveInfinity), Vect.Zero, Rotation.None).IsPhysicallyValid);
-		Assert.AreEqual(false, new TranslatedAndRotatedConvexShape<Cuboid>(new Cuboid(1f), new Vect(Single.NaN, 0f, 0f), Rotation.None).IsPhysicallyValid);
-		Assert.AreEqual(false, new TranslatedAndRotatedConvexShape<Cuboid>(new Cuboid(1f), new Vect(0f, Single.PositiveInfinity, 0f), Rotation.None).IsPhysicallyValid);
-		Assert.AreEqual(false, new TranslatedAndRotatedConvexShape<Cuboid>(new Cuboid(1f), Vect.Zero, new Rotation(Single.NaN, Direction.Up)).IsPhysicallyValid);
+		Assert.AreEqual(true, new TranslatedRotatedConvexShape<Cuboid>(new Cuboid(1f), Vect.Zero, Rotation.None).IsPhysicallyValid);
+		Assert.AreEqual(true, new TranslatedRotatedConvexShape<Cuboid>(new Cuboid(1f), Vect.Zero, TestRotation).IsPhysicallyValid);
+		Assert.AreEqual(false, new TranslatedRotatedConvexShape<Cuboid>(new Cuboid(-1f, 1f, 1f), Vect.Zero, Rotation.None).IsPhysicallyValid);
+		Assert.AreEqual(false, new TranslatedRotatedConvexShape<Cuboid>(new Cuboid(0f), Vect.Zero, Rotation.None).IsPhysicallyValid);
+		Assert.AreEqual(false, new TranslatedRotatedConvexShape<Cuboid>(new Cuboid(Single.NaN), Vect.Zero, Rotation.None).IsPhysicallyValid);
+		Assert.AreEqual(false, new TranslatedRotatedConvexShape<Cuboid>(new Cuboid(Single.PositiveInfinity), Vect.Zero, Rotation.None).IsPhysicallyValid);
+		Assert.AreEqual(false, new TranslatedRotatedConvexShape<Cuboid>(new Cuboid(1f), new Vect(Single.NaN, 0f, 0f), Rotation.None).IsPhysicallyValid);
+		Assert.AreEqual(false, new TranslatedRotatedConvexShape<Cuboid>(new Cuboid(1f), new Vect(0f, Single.PositiveInfinity, 0f), Rotation.None).IsPhysicallyValid);
+		Assert.AreEqual(false, new TranslatedRotatedConvexShape<Cuboid>(new Cuboid(1f), Vect.Zero, new Rotation(Single.NaN, Direction.Up)).IsPhysicallyValid);
 	}
 
 	[Test]
@@ -61,11 +61,11 @@ class TranslatedAndRotatedShapeTest {
 	[Test]
 	public void ShouldCorrectlyParse() {
 		const string Input = "Cuboid[Width 4.0 | Height 6.0 | Depth 2.0] rotated by 90.0° around <0.0, 1.0, 0.0> @ <1.0, -2.0, 3.0>";
-		var parsed = TranslatedAndRotatedConvexShape<Cuboid>.Parse(Input, CultureInfo.InvariantCulture);
+		var parsed = TranslatedRotatedConvexShape<Cuboid>.Parse(Input, CultureInfo.InvariantCulture);
 		AssertToleranceEquals(TestShape.BaseShape, parsed.BaseShape, TestTolerance);
 		AssertToleranceEquals(TestShape.Translation, parsed.Translation, TestTolerance);
 		AssertToleranceEquals(TestShape.Rotation, parsed.Rotation, TestTolerance);
-		Assert.AreEqual(true, TranslatedAndRotatedConvexShape<Cuboid>.TryParse(Input, CultureInfo.InvariantCulture, out parsed));
+		Assert.AreEqual(true, TranslatedRotatedConvexShape<Cuboid>.TryParse(Input, CultureInfo.InvariantCulture, out parsed));
 		AssertToleranceEquals(TestShape.BaseShape, parsed.BaseShape, TestTolerance);
 		AssertToleranceEquals(TestShape.Translation, parsed.Translation, TestTolerance);
 		AssertToleranceEquals(TestShape.Rotation, parsed.Rotation, TestTolerance);
@@ -85,36 +85,36 @@ class TranslatedAndRotatedShapeTest {
 
 	[Test]
 	public void ShouldCorrectlyInterpolate() {
-		var start = new TranslatedAndRotatedConvexShape<Cuboid>(new Cuboid(2f, 4f, 2f), new Vect(0f, 0f, 0f), Rotation.None);
-		var end = new TranslatedAndRotatedConvexShape<Cuboid>(new Cuboid(6f, 8f, 4f), new Vect(10f, 10f, 10f), new Rotation(180f, Direction.Up));
+		var start = new TranslatedRotatedConvexShape<Cuboid>(new Cuboid(2f, 4f, 2f), new Vect(0f, 0f, 0f), Rotation.None);
+		var end = new TranslatedRotatedConvexShape<Cuboid>(new Cuboid(6f, 8f, 4f), new Vect(10f, 10f, 10f), new Rotation(180f, Direction.Up));
 
-		var mid = TranslatedAndRotatedConvexShape<Cuboid>.Interpolate(start, end, 0.5f);
+		var mid = TranslatedRotatedConvexShape<Cuboid>.Interpolate(start, end, 0.5f);
 		AssertToleranceEquals(new Cuboid(4f, 6f, 3f), mid.BaseShape, TestTolerance);
 		AssertToleranceEquals(new Vect(5f, 5f, 5f), mid.Translation, TestTolerance);
 
-		AssertToleranceEquals(start.BaseShape, TranslatedAndRotatedConvexShape<Cuboid>.Interpolate(start, end, 0f).BaseShape, TestTolerance);
-		AssertToleranceEquals(start.Translation, TranslatedAndRotatedConvexShape<Cuboid>.Interpolate(start, end, 0f).Translation, TestTolerance);
-		AssertToleranceEquals(end.BaseShape, TranslatedAndRotatedConvexShape<Cuboid>.Interpolate(start, end, 1f).BaseShape, TestTolerance);
-		AssertToleranceEquals(end.Translation, TranslatedAndRotatedConvexShape<Cuboid>.Interpolate(start, end, 1f).Translation, TestTolerance);
+		AssertToleranceEquals(start.BaseShape, TranslatedRotatedConvexShape<Cuboid>.Interpolate(start, end, 0f).BaseShape, TestTolerance);
+		AssertToleranceEquals(start.Translation, TranslatedRotatedConvexShape<Cuboid>.Interpolate(start, end, 0f).Translation, TestTolerance);
+		AssertToleranceEquals(end.BaseShape, TranslatedRotatedConvexShape<Cuboid>.Interpolate(start, end, 1f).BaseShape, TestTolerance);
+		AssertToleranceEquals(end.Translation, TranslatedRotatedConvexShape<Cuboid>.Interpolate(start, end, 1f).Translation, TestTolerance);
 	}
 
 	[Test]
 	public void ShouldCorrectlyClamp() {
-		var min = new TranslatedAndRotatedConvexShape<Cuboid>(new Cuboid(2f), new Vect(-5f, -5f, -5f), new Rotation(10f, Direction.Up));
-		var max = new TranslatedAndRotatedConvexShape<Cuboid>(new Cuboid(8f), new Vect(5f, 5f, 5f), new Rotation(100f, Direction.Up));
-		var mid = new TranslatedAndRotatedConvexShape<Cuboid>(new Cuboid(4f), new Vect(0f, 0f, 0f), new Rotation(50f, Direction.Up));
+		var min = new TranslatedRotatedConvexShape<Cuboid>(new Cuboid(2f), new Vect(-5f, -5f, -5f), new Rotation(10f, Direction.Up));
+		var max = new TranslatedRotatedConvexShape<Cuboid>(new Cuboid(8f), new Vect(5f, 5f, 5f), new Rotation(100f, Direction.Up));
+		var mid = new TranslatedRotatedConvexShape<Cuboid>(new Cuboid(4f), new Vect(0f, 0f, 0f), new Rotation(50f, Direction.Up));
 		var midClamped = mid.Clamp(min, max);
 		AssertToleranceEquals(mid.BaseShape, midClamped.BaseShape, TestTolerance);
 		AssertToleranceEquals(mid.Translation, midClamped.Translation, TestTolerance);
 		AssertToleranceEquals(mid.Rotation, midClamped.Rotation, TestTolerance);
 
-		var aboveMax = new TranslatedAndRotatedConvexShape<Cuboid>(new Cuboid(10f), new Vect(10f, 10f, 10f), new Rotation(200f, Direction.Up));
+		var aboveMax = new TranslatedRotatedConvexShape<Cuboid>(new Cuboid(10f), new Vect(10f, 10f, 10f), new Rotation(200f, Direction.Up));
 		var aboveClamped = aboveMax.Clamp(min, max);
 		AssertToleranceEquals(max.BaseShape, aboveClamped.BaseShape, TestTolerance);
 		AssertToleranceEquals(max.Translation, aboveClamped.Translation, TestTolerance);
 		AssertToleranceEquals(max.Rotation, aboveClamped.Rotation, TestTolerance);
 
-		var belowMin = new TranslatedAndRotatedConvexShape<Cuboid>(new Cuboid(1f), new Vect(-10f, -10f, -10f), new Rotation(0f, Direction.Up));
+		var belowMin = new TranslatedRotatedConvexShape<Cuboid>(new Cuboid(1f), new Vect(-10f, -10f, -10f), new Rotation(0f, Direction.Up));
 		var belowClamped = belowMin.Clamp(min, max);
 		AssertToleranceEquals(min.BaseShape, belowClamped.BaseShape, TestTolerance);
 		AssertToleranceEquals(min.Translation, belowClamped.Translation, TestTolerance);
@@ -125,10 +125,10 @@ class TranslatedAndRotatedShapeTest {
 	public void ShouldCorrectlyCreateRandomObjects() {
 		const int NumIterations = 10_000;
 
-		var min = new TranslatedAndRotatedConvexShape<Cuboid>(new Cuboid(2f), new Vect(-10f, -10f, -10f), new Rotation(10f, Direction.Up));
-		var max = new TranslatedAndRotatedConvexShape<Cuboid>(new Cuboid(8f), new Vect(10f, 10f, 10f), new Rotation(100f, Direction.Up));
+		var min = new TranslatedRotatedConvexShape<Cuboid>(new Cuboid(2f), new Vect(-10f, -10f, -10f), new Rotation(10f, Direction.Up));
+		var max = new TranslatedRotatedConvexShape<Cuboid>(new Cuboid(8f), new Vect(10f, 10f, 10f), new Rotation(100f, Direction.Up));
 		for (var i = 0; i < NumIterations; ++i) {
-			var val = TranslatedAndRotatedConvexShape<Cuboid>.Random(min, max);
+			var val = TranslatedRotatedConvexShape<Cuboid>.Random(min, max);
 			Assert.GreaterOrEqual(val.BaseShape.HalfWidth, 1f);
 			Assert.Less(val.BaseShape.HalfWidth, 4f);
 			Assert.GreaterOrEqual(val.Translation.X, -10f);

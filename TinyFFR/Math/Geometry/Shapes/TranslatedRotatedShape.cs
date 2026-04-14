@@ -6,16 +6,16 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Egodystonic.TinyFFR;
 
-public interface ITranslatedAndRotatedShape : ITranslatedShape {
+public interface ITranslatedRotatedShape : ITranslatedShape {
 	Rotation Rotation { get; init; }
 }
-public interface ITranslatedAndRotatedShape<TSelf> : ITranslatedAndRotatedShape, IShape<TSelf>, ITranslatable<TSelf>, IRotatable<TSelf> where TSelf : ITranslatedAndRotatedShape<TSelf>; 
-public interface ITranslatedAndRotatedShape<TSelf, TBase> : ITranslatedAndRotatedShape<TSelf> where TSelf : ITranslatedAndRotatedShape<TSelf, TBase> where TBase : IShape<TBase> { TBase BaseShape { get; init; } } 
-public interface ITranslatedAndRotatedConvexShape : ITranslatedAndRotatedShape, IConvexShape; 
-public interface ITranslatedAndRotatedConvexShape<TSelf> : ITranslatedAndRotatedShape<TSelf>, ITranslatedAndRotatedConvexShape, IConvexShape<TSelf> where TSelf : ITranslatedAndRotatedConvexShape<TSelf>;
-public interface ITranslatedAndRotatedConvexShape<TSelf, TBase> : ITranslatedAndRotatedConvexShape<TSelf>, ITranslatedAndRotatedShape<TSelf, TBase> where TSelf : ITranslatedAndRotatedConvexShape<TSelf, TBase> where TBase : IConvexShape<TBase>; 
+public interface ITranslatedRotatedShape<TSelf> : ITranslatedRotatedShape, IShape<TSelf>, ITranslatable<TSelf>, IRotatable<TSelf> where TSelf : ITranslatedRotatedShape<TSelf>; 
+public interface ITranslatedRotatedShape<TSelf, TBase> : ITranslatedRotatedShape<TSelf> where TSelf : ITranslatedRotatedShape<TSelf, TBase> where TBase : IShape<TBase> { TBase BaseShape { get; init; } } 
+public interface ITranslatedRotatedConvexShape : ITranslatedRotatedShape, IConvexShape; 
+public interface ITranslatedRotatedConvexShape<TSelf> : ITranslatedRotatedShape<TSelf>, ITranslatedRotatedConvexShape, IConvexShape<TSelf> where TSelf : ITranslatedRotatedConvexShape<TSelf>;
+public interface ITranslatedRotatedConvexShape<TSelf, TBase> : ITranslatedRotatedConvexShape<TSelf>, ITranslatedRotatedShape<TSelf, TBase> where TSelf : ITranslatedRotatedConvexShape<TSelf, TBase> where TBase : IConvexShape<TBase>; 
 
-public readonly struct TranslatedAndRotatedShape<T> : ITranslatedAndRotatedShape<TranslatedAndRotatedShape<T>, T> where T : IShape<T> {
+public readonly struct TranslatedRotatedShape<T> : ITranslatedRotatedShape<TranslatedRotatedShape<T>, T> where T : IShape<T> {
 	const string StringShapeTransformSeparator = " rotated by ";
 	const string StringPositionRotationSeparator = " @ ";
 	public T BaseShape { get; init; }
@@ -24,7 +24,7 @@ public readonly struct TranslatedAndRotatedShape<T> : ITranslatedAndRotatedShape
 
 	public bool IsPhysicallyValid => BaseShape.IsPhysicallyValid && Translation.IsPhysicallyValid && Rotation.IsPhysicallyValid;
 	
-	public TranslatedAndRotatedShape(T baseShape, Vect translation, Rotation rotation) {
+	public TranslatedRotatedShape(T baseShape, Vect translation, Rotation rotation) {
 		BaseShape = baseShape;
 		Translation = translation;
 		Rotation = rotation;
@@ -68,15 +68,15 @@ public readonly struct TranslatedAndRotatedShape<T> : ITranslatedAndRotatedShape
 		charsWritten += c;
 		return true;
 	}
-	public static TranslatedAndRotatedShape<T> Parse(string s, IFormatProvider? provider) => Parse(s.AsSpan(), provider);
-	public static bool TryParse(string? s, IFormatProvider? provider, out TranslatedAndRotatedShape<T> result) => TryParse(s.AsSpan(), provider, out result);
-	public static TranslatedAndRotatedShape<T> Parse(ReadOnlySpan<char> s, IFormatProvider? provider) {
+	public static TranslatedRotatedShape<T> Parse(string s, IFormatProvider? provider) => Parse(s.AsSpan(), provider);
+	public static bool TryParse(string? s, IFormatProvider? provider, out TranslatedRotatedShape<T> result) => TryParse(s.AsSpan(), provider, out result);
+	public static TranslatedRotatedShape<T> Parse(ReadOnlySpan<char> s, IFormatProvider? provider) {
 		if (!TryParse(s, provider, out var result)) {
 			throw new ArgumentException($"Given input string \"{s}\" does not represent a valid translated-and-rotated {typeof(T).Name}.", nameof(s));
 		}
 		return result;
 	}
-	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out TranslatedAndRotatedShape<T> result) {
+	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out TranslatedRotatedShape<T> result) {
 		result = default;
 		
 		var shapeTransformSplitIndex = s.IndexOf(StringShapeTransformSeparator);
@@ -97,12 +97,12 @@ public readonly struct TranslatedAndRotatedShape<T> : ITranslatedAndRotatedShape
 
 	#region Byte Span Serialization / Deserialization
 	public static int SerializationByteSpanLength => T.SerializationByteSpanLength + Location.SerializationByteSpanLength + Rotation.SerializationByteSpanLength;
-	public static void SerializeToBytes(Span<byte> dest, TranslatedAndRotatedShape<T> src) {
+	public static void SerializeToBytes(Span<byte> dest, TranslatedRotatedShape<T> src) {
 		T.SerializeToBytes(dest, src.BaseShape);
 		Vect.SerializeToBytes(dest[T.SerializationByteSpanLength..], src.Translation);
 		Rotation.SerializeToBytes(dest[(T.SerializationByteSpanLength + Location.SerializationByteSpanLength)..], src.Rotation);
 	}
-	public static TranslatedAndRotatedShape<T> DeserializeFromBytes(ReadOnlySpan<byte> src) {
+	public static TranslatedRotatedShape<T> DeserializeFromBytes(ReadOnlySpan<byte> src) {
 		return new(
 			T.DeserializeFromBytes(src),
 			Vect.DeserializeFromBytes(src[T.SerializationByteSpanLength..]),
@@ -112,47 +112,47 @@ public readonly struct TranslatedAndRotatedShape<T> : ITranslatedAndRotatedShape
 	#endregion
 
 	#region Move / Scale / Rotate
-	public TranslatedAndRotatedShape<T> MovedBy(Vect v) => new(BaseShape, Translation.Plus(v), Rotation);
-	public static TranslatedAndRotatedShape<T> operator +(TranslatedAndRotatedShape<T> left, Vect right) => new(left.BaseShape, left.Translation + right, left.Rotation);
-	public static TranslatedAndRotatedShape<T> operator -(TranslatedAndRotatedShape<T> left, Vect right) => new(left.BaseShape, left.Translation - right, left.Rotation);
-	public static TranslatedAndRotatedShape<T> operator +(Vect left, TranslatedAndRotatedShape<T> right) => new(right.BaseShape, right.Translation + left, right.Rotation);
+	public TranslatedRotatedShape<T> MovedBy(Vect v) => new(BaseShape, Translation.Plus(v), Rotation);
+	public static TranslatedRotatedShape<T> operator +(TranslatedRotatedShape<T> left, Vect right) => new(left.BaseShape, left.Translation + right, left.Rotation);
+	public static TranslatedRotatedShape<T> operator -(TranslatedRotatedShape<T> left, Vect right) => new(left.BaseShape, left.Translation - right, left.Rotation);
+	public static TranslatedRotatedShape<T> operator +(Vect left, TranslatedRotatedShape<T> right) => new(right.BaseShape, right.Translation + left, right.Rotation);
 
-	public static TranslatedAndRotatedShape<T> operator *(TranslatedAndRotatedShape<T> left, float right) => new(left.BaseShape * right, left.Translation, left.Rotation);
-	public static TranslatedAndRotatedShape<T> operator /(TranslatedAndRotatedShape<T> left, float right) => new(left.BaseShape / right, left.Translation, left.Rotation);
-	public static TranslatedAndRotatedShape<T> operator *(float left, TranslatedAndRotatedShape<T> right) => new(left * right.BaseShape, right.Translation, right.Rotation);
-	public TranslatedAndRotatedShape<T> ScaledBy(float scalar) => new(BaseShape * scalar, Translation, Rotation);
+	public static TranslatedRotatedShape<T> operator *(TranslatedRotatedShape<T> left, float right) => new(left.BaseShape * right, left.Translation, left.Rotation);
+	public static TranslatedRotatedShape<T> operator /(TranslatedRotatedShape<T> left, float right) => new(left.BaseShape / right, left.Translation, left.Rotation);
+	public static TranslatedRotatedShape<T> operator *(float left, TranslatedRotatedShape<T> right) => new(left * right.BaseShape, right.Translation, right.Rotation);
+	public TranslatedRotatedShape<T> ScaledBy(float scalar) => new(BaseShape * scalar, Translation, Rotation);
 
-	public static TranslatedAndRotatedShape<T> operator *(TranslatedAndRotatedShape<T> left, Rotation right) => new(left.BaseShape, left.Translation, left.Rotation + right);
-	public static TranslatedAndRotatedShape<T> operator *(Rotation left, TranslatedAndRotatedShape<T> right) => new(right.BaseShape, right.Translation, right.Rotation + left);
-	public TranslatedAndRotatedShape<T> RotatedBy(Rotation rot) => new(BaseShape, Translation, Rotation + rot);
+	public static TranslatedRotatedShape<T> operator *(TranslatedRotatedShape<T> left, Rotation right) => new(left.BaseShape, left.Translation, left.Rotation + right);
+	public static TranslatedRotatedShape<T> operator *(Rotation left, TranslatedRotatedShape<T> right) => new(right.BaseShape, right.Translation, right.Rotation + left);
+	public TranslatedRotatedShape<T> RotatedBy(Rotation rot) => new(BaseShape, Translation, Rotation + rot);
 	#endregion
 
 	#region Equality
-	public override bool Equals(object? obj) => obj is TranslatedAndRotatedShape<T> other && Equals(other);
+	public override bool Equals(object? obj) => obj is TranslatedRotatedShape<T> other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(BaseShape, Translation, Rotation);
-	public bool Equals(TranslatedAndRotatedShape<T> other) => BaseShape.Equals(other.BaseShape) && Translation.Equals(other.Translation) && Rotation.Equals(other.Rotation);
-	public bool Equals(TranslatedAndRotatedShape<T> other, float tolerance) => BaseShape.Equals(other.BaseShape, tolerance) && Translation.Equals(other.Translation, tolerance) && Rotation.Equals(other.Rotation, tolerance);
-	public static bool operator ==(TranslatedAndRotatedShape<T> left, TranslatedAndRotatedShape<T> right) => left.Equals(right);
-	public static bool operator !=(TranslatedAndRotatedShape<T> left, TranslatedAndRotatedShape<T> right) => !left.Equals(right);
+	public bool Equals(TranslatedRotatedShape<T> other) => BaseShape.Equals(other.BaseShape) && Translation.Equals(other.Translation) && Rotation.Equals(other.Rotation);
+	public bool Equals(TranslatedRotatedShape<T> other, float tolerance) => BaseShape.Equals(other.BaseShape, tolerance) && Translation.Equals(other.Translation, tolerance) && Rotation.Equals(other.Rotation, tolerance);
+	public static bool operator ==(TranslatedRotatedShape<T> left, TranslatedRotatedShape<T> right) => left.Equals(right);
+	public static bool operator !=(TranslatedRotatedShape<T> left, TranslatedRotatedShape<T> right) => !left.Equals(right);
 	#endregion
 
 	#region Random / Interp / Clamp
-	public static TranslatedAndRotatedShape<T> Random() => new(T.Random(), Vect.Random(), Rotation.Random());
-	public static TranslatedAndRotatedShape<T> Random(TranslatedAndRotatedShape<T> minInclusive, TranslatedAndRotatedShape<T> maxExclusive) {
+	public static TranslatedRotatedShape<T> Random() => new(T.Random(), Vect.Random(), Rotation.Random());
+	public static TranslatedRotatedShape<T> Random(TranslatedRotatedShape<T> minInclusive, TranslatedRotatedShape<T> maxExclusive) {
 		return new(
 			T.Random(minInclusive.BaseShape, maxExclusive.BaseShape),
 			Vect.Random(minInclusive.Translation, maxExclusive.Translation),
 			Rotation.Random(minInclusive.Rotation, maxExclusive.Rotation)
 		);
 	}
-	public static TranslatedAndRotatedShape<T> Interpolate(TranslatedAndRotatedShape<T> start, TranslatedAndRotatedShape<T> end, float distance) {
+	public static TranslatedRotatedShape<T> Interpolate(TranslatedRotatedShape<T> start, TranslatedRotatedShape<T> end, float distance) {
 		return new(
 			T.Interpolate(start.BaseShape, end.BaseShape, distance),
 			Vect.Interpolate(start.Translation, end.Translation, distance),
 			Rotation.Interpolate(start.Rotation, end.Rotation, distance)
 		);
 	}
-	public TranslatedAndRotatedShape<T> Clamp(TranslatedAndRotatedShape<T> min, TranslatedAndRotatedShape<T> max) {
+	public TranslatedRotatedShape<T> Clamp(TranslatedRotatedShape<T> min, TranslatedRotatedShape<T> max) {
 		return new(
 			BaseShape.Clamp(min.BaseShape, max.BaseShape),
 			Translation.Clamp(min.Translation, max.Translation),
@@ -162,102 +162,112 @@ public readonly struct TranslatedAndRotatedShape<T> : ITranslatedAndRotatedShape
 	#endregion
 }
 
-public readonly struct TranslatedAndRotatedConvexShape<T> : ITranslatedAndRotatedConvexShape<TranslatedAndRotatedConvexShape<T>, T> where T : IConvexShape<T> {
+public readonly struct TranslatedRotatedConvexShape<T> : ITranslatedRotatedConvexShape<TranslatedRotatedConvexShape<T>, T> where T : IConvexShape<T> {
 	public T BaseShape { get; init; }
 	public Vect Translation { get; init; }
 	public Rotation Rotation { get; init; }
 	
-	public TranslatedAndRotatedConvexShape(T baseShape, Vect translation, Rotation rotation) {
+	public TranslatedRotatedConvexShape(T baseShape, Vect translation, Rotation rotation) {
 		BaseShape = baseShape;
 		Translation = translation;
 		Rotation = rotation;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator TranslatedAndRotatedShape<T>(TranslatedAndRotatedConvexShape<T> operand) => new(operand.BaseShape, operand.Translation, operand.Rotation);
+	public static implicit operator TranslatedRotatedShape<T>(TranslatedRotatedConvexShape<T> operand) => new(operand.BaseShape, operand.Translation, operand.Rotation);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator TranslatedAndRotatedConvexShape<T>(TranslatedAndRotatedShape<T> operand) => new(operand.BaseShape, operand.Translation, operand.Rotation);
+	public static implicit operator TranslatedRotatedConvexShape<T>(TranslatedRotatedShape<T> operand) => new(operand.BaseShape, operand.Translation, operand.Rotation);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static explicit operator TranslatedShape<T>(TranslatedRotatedConvexShape<T> operand) => new(operand.BaseShape, operand.Translation);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static explicit operator TranslatedConvexShape<T>(TranslatedRotatedConvexShape<T> operand) => new(operand.BaseShape, operand.Translation);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static explicit operator TranslatedRotatedConvexShape<T>(TranslatedShape<T> operand) => new(operand.BaseShape, operand.Translation, Rotation.None);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static explicit operator TranslatedRotatedConvexShape<T>(TranslatedConvexShape<T> operand) => new(operand.BaseShape, operand.Translation, Rotation.None);
 	
 	#region Deferred Members
 	public bool IsPhysicallyValid {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => ((TranslatedAndRotatedShape<T>) this).IsPhysicallyValid;
+		get => ((TranslatedRotatedShape<T>) this).IsPhysicallyValid;
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal TransformToShapeSpace<TVal>(TVal val) where TVal : ITranslatable<TVal>, IPointRotatable<TVal> => ((TranslatedAndRotatedShape<T>) this).TransformToShapeSpace(val);
+	internal TVal TransformToShapeSpace<TVal>(TVal val) where TVal : ITranslatable<TVal>, IPointRotatable<TVal> => ((TranslatedRotatedShape<T>) this).TransformToShapeSpace(val);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal TransformToWorldSpace<TVal>(TVal val) where TVal : ITranslatable<TVal>, IPointRotatable<TVal> => ((TranslatedAndRotatedShape<T>) this).TransformToWorldSpace(val);
+	internal TVal TransformToWorldSpace<TVal>(TVal val) where TVal : ITranslatable<TVal>, IPointRotatable<TVal> => ((TranslatedRotatedShape<T>) this).TransformToWorldSpace(val);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal? TransformToShapeSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal>, IPointRotatable<TVal> => ((TranslatedAndRotatedShape<T>) this).TransformToShapeSpace(val);
+	internal TVal? TransformToShapeSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal>, IPointRotatable<TVal> => ((TranslatedRotatedShape<T>) this).TransformToShapeSpace(val);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal? TransformToWorldSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal>, IPointRotatable<TVal> => ((TranslatedAndRotatedShape<T>) this).TransformToWorldSpace(val);
+	internal TVal? TransformToWorldSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal>, IPointRotatable<TVal> => ((TranslatedRotatedShape<T>) this).TransformToWorldSpace(val);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public string ToString(string? format, IFormatProvider? formatProvider) => ((TranslatedAndRotatedShape<T>) this).ToString(format, formatProvider);
+	public string ToString(string? format, IFormatProvider? formatProvider) => ((TranslatedRotatedShape<T>) this).ToString(format, formatProvider);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => ((TranslatedAndRotatedShape<T>) this).TryFormat(destination, out charsWritten, format, provider);
+	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => ((TranslatedRotatedShape<T>) this).TryFormat(destination, out charsWritten, format, provider);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TranslatedAndRotatedConvexShape<T> Parse(string s, IFormatProvider? provider) => TranslatedAndRotatedShape<T>.Parse(s, provider);
+	public static TranslatedRotatedConvexShape<T> Parse(string s, IFormatProvider? provider) => TranslatedRotatedShape<T>.Parse(s, provider);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool TryParse(string? s, IFormatProvider? provider, out TranslatedAndRotatedConvexShape<T> result) {
-		var returnValue = TranslatedAndRotatedShape<T>.TryParse(s, provider, out var r);
+	public static bool TryParse(string? s, IFormatProvider? provider, out TranslatedRotatedConvexShape<T> result) {
+		var returnValue = TranslatedRotatedShape<T>.TryParse(s, provider, out var r);
 		result = r;
 		return returnValue;
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TranslatedAndRotatedConvexShape<T> Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => TranslatedAndRotatedShape<T>.Parse(s, provider);
+	public static TranslatedRotatedConvexShape<T> Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => TranslatedRotatedShape<T>.Parse(s, provider);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out TranslatedAndRotatedConvexShape<T> result) {
-		var returnValue = TranslatedAndRotatedShape<T>.TryParse(s, provider, out var r);
+	public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out TranslatedRotatedConvexShape<T> result) {
+		var returnValue = TranslatedRotatedShape<T>.TryParse(s, provider, out var r);
 		result = r;
 		return returnValue;
 	}
 	public static int SerializationByteSpanLength {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => TranslatedAndRotatedShape<T>.SerializationByteSpanLength;
+		get => TranslatedRotatedShape<T>.SerializationByteSpanLength;
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void SerializeToBytes(Span<byte> dest, TranslatedAndRotatedConvexShape<T> src) => TranslatedAndRotatedShape<T>.SerializeToBytes(dest, src); 
+	public static void SerializeToBytes(Span<byte> dest, TranslatedRotatedConvexShape<T> src) => TranslatedRotatedShape<T>.SerializeToBytes(dest, src); 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TranslatedAndRotatedConvexShape<T> DeserializeFromBytes(ReadOnlySpan<byte> src) => TranslatedAndRotatedShape<T>.DeserializeFromBytes(src);
+	public static TranslatedRotatedConvexShape<T> DeserializeFromBytes(ReadOnlySpan<byte> src) => TranslatedRotatedShape<T>.DeserializeFromBytes(src);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public TranslatedAndRotatedConvexShape<T> MovedBy(Vect v) => ((TranslatedAndRotatedShape<T>) this).MovedBy(v);
+	public TranslatedRotatedConvexShape<T> MovedBy(Vect v) => ((TranslatedRotatedShape<T>) this).MovedBy(v);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TranslatedAndRotatedConvexShape<T> operator +(TranslatedAndRotatedConvexShape<T> left, Vect right) => ((TranslatedAndRotatedShape<T>) left) + right;
+	public static TranslatedRotatedConvexShape<T> operator +(TranslatedRotatedConvexShape<T> left, Vect right) => ((TranslatedRotatedShape<T>) left) + right;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TranslatedAndRotatedConvexShape<T> operator -(TranslatedAndRotatedConvexShape<T> left, Vect right) => ((TranslatedAndRotatedShape<T>) left) - right;
+	public static TranslatedRotatedConvexShape<T> operator -(TranslatedRotatedConvexShape<T> left, Vect right) => ((TranslatedRotatedShape<T>) left) - right;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TranslatedAndRotatedConvexShape<T> operator +(Vect left, TranslatedAndRotatedConvexShape<T> right) => left + ((TranslatedAndRotatedShape<T>) right);
+	public static TranslatedRotatedConvexShape<T> operator +(Vect left, TranslatedRotatedConvexShape<T> right) => left + ((TranslatedRotatedShape<T>) right);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TranslatedAndRotatedConvexShape<T> operator *(TranslatedAndRotatedConvexShape<T> left, float right) => ((TranslatedAndRotatedShape<T>) left) * right;
+	public static TranslatedRotatedConvexShape<T> operator *(TranslatedRotatedConvexShape<T> left, float right) => ((TranslatedRotatedShape<T>) left) * right;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TranslatedAndRotatedConvexShape<T> operator /(TranslatedAndRotatedConvexShape<T> left, float right) => ((TranslatedAndRotatedShape<T>) left) / right;
+	public static TranslatedRotatedConvexShape<T> operator /(TranslatedRotatedConvexShape<T> left, float right) => ((TranslatedRotatedShape<T>) left) / right;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TranslatedAndRotatedConvexShape<T> operator *(float left, TranslatedAndRotatedConvexShape<T> right) => ((TranslatedAndRotatedShape<T>) right) * left;
+	public static TranslatedRotatedConvexShape<T> operator *(float left, TranslatedRotatedConvexShape<T> right) => ((TranslatedRotatedShape<T>) right) * left;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public TranslatedAndRotatedConvexShape<T> ScaledBy(float scalar) => ((TranslatedAndRotatedShape<T>) this).ScaledBy(scalar);
+	public TranslatedRotatedConvexShape<T> ScaledBy(float scalar) => ((TranslatedRotatedShape<T>) this).ScaledBy(scalar);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TranslatedAndRotatedConvexShape<T> Random() => TranslatedAndRotatedShape<T>.Random();
+	public static TranslatedRotatedConvexShape<T> Random() => TranslatedRotatedShape<T>.Random();
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TranslatedAndRotatedConvexShape<T> Random(TranslatedAndRotatedConvexShape<T> minInclusive, TranslatedAndRotatedConvexShape<T> maxExclusive) => TranslatedAndRotatedShape<T>.Random(minInclusive, maxExclusive);
+	public static TranslatedRotatedConvexShape<T> Random(TranslatedRotatedConvexShape<T> minInclusive, TranslatedRotatedConvexShape<T> maxExclusive) => TranslatedRotatedShape<T>.Random(minInclusive, maxExclusive);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TranslatedAndRotatedConvexShape<T> Interpolate(TranslatedAndRotatedConvexShape<T> start, TranslatedAndRotatedConvexShape<T> end, float distance) => TranslatedAndRotatedShape<T>.Interpolate(start, end, distance);
+	public static TranslatedRotatedConvexShape<T> Interpolate(TranslatedRotatedConvexShape<T> start, TranslatedRotatedConvexShape<T> end, float distance) => TranslatedRotatedShape<T>.Interpolate(start, end, distance);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public TranslatedAndRotatedConvexShape<T> Clamp(TranslatedAndRotatedConvexShape<T> min, TranslatedAndRotatedConvexShape<T> max) => ((TranslatedAndRotatedShape<T>) this).Clamp(min, max);
+	public TranslatedRotatedConvexShape<T> Clamp(TranslatedRotatedConvexShape<T> min, TranslatedRotatedConvexShape<T> max) => ((TranslatedRotatedShape<T>) this).Clamp(min, max);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TranslatedAndRotatedConvexShape<T> operator *(TranslatedAndRotatedConvexShape<T> left, Rotation right) => ((TranslatedAndRotatedShape<T>) left) * right;
+	public static TranslatedRotatedConvexShape<T> operator *(TranslatedRotatedConvexShape<T> left, Rotation right) => ((TranslatedRotatedShape<T>) left) * right;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static TranslatedAndRotatedConvexShape<T> operator *(Rotation left, TranslatedAndRotatedConvexShape<T> right) => left * ((TranslatedAndRotatedShape<T>) right);
+	public static TranslatedRotatedConvexShape<T> operator *(Rotation left, TranslatedRotatedConvexShape<T> right) => left * ((TranslatedRotatedShape<T>) right);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public TranslatedAndRotatedConvexShape<T> RotatedBy(Rotation rot) => ((TranslatedAndRotatedShape<T>) this).RotatedBy(rot);
+	public TranslatedRotatedConvexShape<T> RotatedBy(Rotation rot) => ((TranslatedRotatedShape<T>) this).RotatedBy(rot);
 	#endregion
 
 	#region Equality
-	public override bool Equals(object? obj) => obj is TranslatedAndRotatedConvexShape<T> other && Equals(other);
+	public override bool Equals(object? obj) => obj is TranslatedRotatedConvexShape<T> other && Equals(other);
 	public override int GetHashCode() => HashCode.Combine(BaseShape, Translation, Rotation);
-	public bool Equals(TranslatedAndRotatedConvexShape<T> other) => BaseShape.Equals(other.BaseShape) && Translation.Equals(other.Translation) && Rotation.Equals(other.Rotation);
-	public bool Equals(TranslatedAndRotatedConvexShape<T> other, float tolerance) => BaseShape.Equals(other.BaseShape, tolerance) && Translation.Equals(other.Translation, tolerance) && Rotation.Equals(other.Rotation, tolerance);
-	public static bool operator ==(TranslatedAndRotatedConvexShape<T> left, TranslatedAndRotatedConvexShape<T> right) => left.Equals(right);
-	public static bool operator !=(TranslatedAndRotatedConvexShape<T> left, TranslatedAndRotatedConvexShape<T> right) => !left.Equals(right);
+	public bool Equals(TranslatedRotatedConvexShape<T> other) => BaseShape.Equals(other.BaseShape) && Translation.Equals(other.Translation) && Rotation.Equals(other.Rotation);
+	public bool Equals(TranslatedRotatedConvexShape<T> other, float tolerance) => BaseShape.Equals(other.BaseShape, tolerance) && Translation.Equals(other.Translation, tolerance) && Rotation.Equals(other.Rotation, tolerance);
+	public static bool operator ==(TranslatedRotatedConvexShape<T> left, TranslatedRotatedConvexShape<T> right) => left.Equals(right);
+	public static bool operator !=(TranslatedRotatedConvexShape<T> left, TranslatedRotatedConvexShape<T> right) => !left.Equals(right);
 	#endregion
 
 	public Location PointClosestTo(Location location) => TransformToWorldSpace(BaseShape.PointClosestTo(TransformToShapeSpace(location)));
