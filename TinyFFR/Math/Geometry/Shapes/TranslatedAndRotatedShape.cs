@@ -6,7 +6,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Egodystonic.TinyFFR;
 
-public interface ITranslatedAndRotatedShape : IShape;
+public interface ITranslatedAndRotatedShape : ITranslatedShape {
+	Rotation Rotation { get; init; }
+}
 public interface ITranslatedAndRotatedShape<TSelf> : ITranslatedAndRotatedShape, IShape<TSelf>, ITranslatable<TSelf>, IRotatable<TSelf> where TSelf : ITranslatedAndRotatedShape<TSelf>; 
 public interface ITranslatedAndRotatedShape<TSelf, TBase> : ITranslatedAndRotatedShape<TSelf> where TSelf : ITranslatedAndRotatedShape<TSelf, TBase> where TBase : IShape<TBase> { TBase BaseShape { get; init; } } 
 public interface ITranslatedAndRotatedConvexShape : ITranslatedAndRotatedShape, IConvexShape; 
@@ -17,31 +19,31 @@ public readonly struct TranslatedAndRotatedShape<T> : ITranslatedAndRotatedShape
 	const string StringShapeTransformSeparator = " rotated by ";
 	const string StringPositionRotationSeparator = " @ ";
 	public T BaseShape { get; init; }
-	public Location Position { get; init; }
+	public Vect Translation { get; init; }
 	public Rotation Rotation { get; init; }
 
-	public bool IsPhysicallyValid => BaseShape.IsPhysicallyValid && Position.IsPhysicallyValid && Rotation.IsPhysicallyValid;
+	public bool IsPhysicallyValid => BaseShape.IsPhysicallyValid && Translation.IsPhysicallyValid && Rotation.IsPhysicallyValid;
 	
-	public TranslatedAndRotatedShape(T baseShape, Location position, Rotation rotation) {
+	public TranslatedAndRotatedShape(T baseShape, Vect translation, Rotation rotation) {
 		BaseShape = baseShape;
-		Position = position;
+		Translation = translation;
 		Rotation = rotation;
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal TransformToShapeSpace<TVal>(TVal val) where TVal : ITranslatable<TVal>, IPointRotatable<TVal> => val.Minus(Position.AsVect()).RotatedAroundOriginBy(Rotation.Reversed);
+	internal TVal TransformToShapeSpace<TVal>(TVal val) where TVal : ITranslatable<TVal>, IPointRotatable<TVal> => val.Minus(Translation).RotatedAroundOriginBy(Rotation.Reversed);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal TransformToWorldSpace<TVal>(TVal val) where TVal : ITranslatable<TVal>, IPointRotatable<TVal> => val.RotatedAroundOriginBy(Rotation).Plus(Position.AsVect());
+	internal TVal TransformToWorldSpace<TVal>(TVal val) where TVal : ITranslatable<TVal>, IPointRotatable<TVal> => val.RotatedAroundOriginBy(Rotation).Plus(Translation);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal? TransformToShapeSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal>, IPointRotatable<TVal> => val?.Minus(Position.AsVect()).RotatedAroundOriginBy(Rotation.Reversed);
+	internal TVal? TransformToShapeSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal>, IPointRotatable<TVal> => val?.Minus(Translation).RotatedAroundOriginBy(Rotation.Reversed);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal? TransformToWorldSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal>, IPointRotatable<TVal> => val?.RotatedAroundOriginBy(Rotation).Plus(Position.AsVect());
+	internal TVal? TransformToWorldSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal>, IPointRotatable<TVal> => val?.RotatedAroundOriginBy(Rotation).Plus(Translation);
 
 	#region ToString / Format / Parse
 	public string ToString(string? format, IFormatProvider? formatProvider) {
 		return BaseShape.ToString(format, formatProvider)
 			+ StringShapeTransformSeparator + Rotation.ToString(format, formatProvider)
-			+ StringPositionRotationSeparator + Position.ToString(format, formatProvider);
+			+ StringPositionRotationSeparator + Translation.ToString(format, formatProvider);
 	}
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
 		charsWritten = 0;
@@ -62,7 +64,7 @@ public readonly struct TranslatedAndRotatedShape<T> : ITranslatedAndRotatedShape
 		charsWritten += StringPositionRotationSeparator.Length;
 		destination = destination[StringPositionRotationSeparator.Length..];
 		
-		if (!Position.TryFormat(destination, out c, format, provider)) return false;
+		if (!Translation.TryFormat(destination, out c, format, provider)) return false;
 		charsWritten += c;
 		return true;
 	}
@@ -86,7 +88,7 @@ public readonly struct TranslatedAndRotatedShape<T> : ITranslatedAndRotatedShape
 		var positionRotationSplitIndex = s.IndexOf(StringPositionRotationSeparator);
 		if (positionRotationSplitIndex < 0) return false;
 		if (!Rotation.TryParse(s[..positionRotationSplitIndex], provider, out var rotation)) return false;
-		if (!Location.TryParse(s[(positionRotationSplitIndex + StringPositionRotationSeparator.Length)..], provider, out var position)) return false;
+		if (!Vect.TryParse(s[(positionRotationSplitIndex + StringPositionRotationSeparator.Length)..], provider, out var position)) return false;
 		
 		result = new(baseShape, position, rotation);
 		return true;
@@ -97,63 +99,63 @@ public readonly struct TranslatedAndRotatedShape<T> : ITranslatedAndRotatedShape
 	public static int SerializationByteSpanLength => T.SerializationByteSpanLength + Location.SerializationByteSpanLength + Rotation.SerializationByteSpanLength;
 	public static void SerializeToBytes(Span<byte> dest, TranslatedAndRotatedShape<T> src) {
 		T.SerializeToBytes(dest, src.BaseShape);
-		Location.SerializeToBytes(dest[T.SerializationByteSpanLength..], src.Position);
+		Vect.SerializeToBytes(dest[T.SerializationByteSpanLength..], src.Translation);
 		Rotation.SerializeToBytes(dest[(T.SerializationByteSpanLength + Location.SerializationByteSpanLength)..], src.Rotation);
 	}
 	public static TranslatedAndRotatedShape<T> DeserializeFromBytes(ReadOnlySpan<byte> src) {
 		return new(
 			T.DeserializeFromBytes(src),
-			Location.DeserializeFromBytes(src[T.SerializationByteSpanLength..]),
+			Vect.DeserializeFromBytes(src[T.SerializationByteSpanLength..]),
 			Rotation.DeserializeFromBytes(src[(T.SerializationByteSpanLength + Location.SerializationByteSpanLength)..])
 		);
 	}
 	#endregion
 
 	#region Move / Scale / Rotate
-	public TranslatedAndRotatedShape<T> MovedBy(Vect v) => new(BaseShape, Position.MovedBy(v), Rotation);
-	public static TranslatedAndRotatedShape<T> operator +(TranslatedAndRotatedShape<T> left, Vect right) => new(left.BaseShape, left.Position + right, left.Rotation);
-	public static TranslatedAndRotatedShape<T> operator -(TranslatedAndRotatedShape<T> left, Vect right) => new(left.BaseShape, left.Position - right, left.Rotation);
-	public static TranslatedAndRotatedShape<T> operator +(Vect left, TranslatedAndRotatedShape<T> right) => new(right.BaseShape, right.Position + left, right.Rotation);
+	public TranslatedAndRotatedShape<T> MovedBy(Vect v) => new(BaseShape, Translation.Plus(v), Rotation);
+	public static TranslatedAndRotatedShape<T> operator +(TranslatedAndRotatedShape<T> left, Vect right) => new(left.BaseShape, left.Translation + right, left.Rotation);
+	public static TranslatedAndRotatedShape<T> operator -(TranslatedAndRotatedShape<T> left, Vect right) => new(left.BaseShape, left.Translation - right, left.Rotation);
+	public static TranslatedAndRotatedShape<T> operator +(Vect left, TranslatedAndRotatedShape<T> right) => new(right.BaseShape, right.Translation + left, right.Rotation);
 
-	public static TranslatedAndRotatedShape<T> operator *(TranslatedAndRotatedShape<T> left, float right) => new(left.BaseShape * right, left.Position, left.Rotation);
-	public static TranslatedAndRotatedShape<T> operator /(TranslatedAndRotatedShape<T> left, float right) => new(left.BaseShape / right, left.Position, left.Rotation);
-	public static TranslatedAndRotatedShape<T> operator *(float left, TranslatedAndRotatedShape<T> right) => new(left * right.BaseShape, right.Position, right.Rotation);
-	public TranslatedAndRotatedShape<T> ScaledBy(float scalar) => new(BaseShape * scalar, Position, Rotation);
+	public static TranslatedAndRotatedShape<T> operator *(TranslatedAndRotatedShape<T> left, float right) => new(left.BaseShape * right, left.Translation, left.Rotation);
+	public static TranslatedAndRotatedShape<T> operator /(TranslatedAndRotatedShape<T> left, float right) => new(left.BaseShape / right, left.Translation, left.Rotation);
+	public static TranslatedAndRotatedShape<T> operator *(float left, TranslatedAndRotatedShape<T> right) => new(left * right.BaseShape, right.Translation, right.Rotation);
+	public TranslatedAndRotatedShape<T> ScaledBy(float scalar) => new(BaseShape * scalar, Translation, Rotation);
 
-	public static TranslatedAndRotatedShape<T> operator *(TranslatedAndRotatedShape<T> left, Rotation right) => new(left.BaseShape, left.Position, left.Rotation + right);
-	public static TranslatedAndRotatedShape<T> operator *(Rotation left, TranslatedAndRotatedShape<T> right) => new(right.BaseShape, right.Position, right.Rotation + left);
-	public TranslatedAndRotatedShape<T> RotatedBy(Rotation rot) => new(BaseShape, Position, Rotation + rot);
+	public static TranslatedAndRotatedShape<T> operator *(TranslatedAndRotatedShape<T> left, Rotation right) => new(left.BaseShape, left.Translation, left.Rotation + right);
+	public static TranslatedAndRotatedShape<T> operator *(Rotation left, TranslatedAndRotatedShape<T> right) => new(right.BaseShape, right.Translation, right.Rotation + left);
+	public TranslatedAndRotatedShape<T> RotatedBy(Rotation rot) => new(BaseShape, Translation, Rotation + rot);
 	#endregion
 
 	#region Equality
 	public override bool Equals(object? obj) => obj is TranslatedAndRotatedShape<T> other && Equals(other);
-	public override int GetHashCode() => HashCode.Combine(BaseShape, Position, Rotation);
-	public bool Equals(TranslatedAndRotatedShape<T> other) => BaseShape.Equals(other.BaseShape) && Position.Equals(other.Position) && Rotation.Equals(other.Rotation);
-	public bool Equals(TranslatedAndRotatedShape<T> other, float tolerance) => BaseShape.Equals(other.BaseShape, tolerance) && Position.Equals(other.Position, tolerance) && Rotation.Equals(other.Rotation, tolerance);
+	public override int GetHashCode() => HashCode.Combine(BaseShape, Translation, Rotation);
+	public bool Equals(TranslatedAndRotatedShape<T> other) => BaseShape.Equals(other.BaseShape) && Translation.Equals(other.Translation) && Rotation.Equals(other.Rotation);
+	public bool Equals(TranslatedAndRotatedShape<T> other, float tolerance) => BaseShape.Equals(other.BaseShape, tolerance) && Translation.Equals(other.Translation, tolerance) && Rotation.Equals(other.Rotation, tolerance);
 	public static bool operator ==(TranslatedAndRotatedShape<T> left, TranslatedAndRotatedShape<T> right) => left.Equals(right);
 	public static bool operator !=(TranslatedAndRotatedShape<T> left, TranslatedAndRotatedShape<T> right) => !left.Equals(right);
 	#endregion
 
 	#region Random / Interp / Clamp
-	public static TranslatedAndRotatedShape<T> Random() => new(T.Random(), Location.Random(), Rotation.Random());
+	public static TranslatedAndRotatedShape<T> Random() => new(T.Random(), Vect.Random(), Rotation.Random());
 	public static TranslatedAndRotatedShape<T> Random(TranslatedAndRotatedShape<T> minInclusive, TranslatedAndRotatedShape<T> maxExclusive) {
 		return new(
 			T.Random(minInclusive.BaseShape, maxExclusive.BaseShape),
-			Location.Random(minInclusive.Position, maxExclusive.Position),
+			Vect.Random(minInclusive.Translation, maxExclusive.Translation),
 			Rotation.Random(minInclusive.Rotation, maxExclusive.Rotation)
 		);
 	}
 	public static TranslatedAndRotatedShape<T> Interpolate(TranslatedAndRotatedShape<T> start, TranslatedAndRotatedShape<T> end, float distance) {
 		return new(
 			T.Interpolate(start.BaseShape, end.BaseShape, distance),
-			Location.Interpolate(start.Position, end.Position, distance),
+			Vect.Interpolate(start.Translation, end.Translation, distance),
 			Rotation.Interpolate(start.Rotation, end.Rotation, distance)
 		);
 	}
 	public TranslatedAndRotatedShape<T> Clamp(TranslatedAndRotatedShape<T> min, TranslatedAndRotatedShape<T> max) {
 		return new(
 			BaseShape.Clamp(min.BaseShape, max.BaseShape),
-			Position.Clamp(min.Position, max.Position),
+			Translation.Clamp(min.Translation, max.Translation),
 			Rotation.Clamp(min.Rotation, max.Rotation)
 		);
 	}
@@ -162,19 +164,19 @@ public readonly struct TranslatedAndRotatedShape<T> : ITranslatedAndRotatedShape
 
 public readonly struct TranslatedAndRotatedConvexShape<T> : ITranslatedAndRotatedConvexShape<TranslatedAndRotatedConvexShape<T>, T> where T : IConvexShape<T> {
 	public T BaseShape { get; init; }
-	public Location Position { get; init; }
+	public Vect Translation { get; init; }
 	public Rotation Rotation { get; init; }
 	
-	public TranslatedAndRotatedConvexShape(T baseShape, Location position, Rotation rotation) {
+	public TranslatedAndRotatedConvexShape(T baseShape, Vect translation, Rotation rotation) {
 		BaseShape = baseShape;
-		Position = position;
+		Translation = translation;
 		Rotation = rotation;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator TranslatedAndRotatedShape<T>(TranslatedAndRotatedConvexShape<T> operand) => new(operand.BaseShape, operand.Position, operand.Rotation);
+	public static implicit operator TranslatedAndRotatedShape<T>(TranslatedAndRotatedConvexShape<T> operand) => new(operand.BaseShape, operand.Translation, operand.Rotation);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator TranslatedAndRotatedConvexShape<T>(TranslatedAndRotatedShape<T> operand) => new(operand.BaseShape, operand.Position, operand.Rotation);
+	public static implicit operator TranslatedAndRotatedConvexShape<T>(TranslatedAndRotatedShape<T> operand) => new(operand.BaseShape, operand.Translation, operand.Rotation);
 	
 	#region Deferred Members
 	public bool IsPhysicallyValid {
@@ -251,9 +253,9 @@ public readonly struct TranslatedAndRotatedConvexShape<T> : ITranslatedAndRotate
 
 	#region Equality
 	public override bool Equals(object? obj) => obj is TranslatedAndRotatedConvexShape<T> other && Equals(other);
-	public override int GetHashCode() => HashCode.Combine(BaseShape, Position, Rotation);
-	public bool Equals(TranslatedAndRotatedConvexShape<T> other) => BaseShape.Equals(other.BaseShape) && Position.Equals(other.Position) && Rotation.Equals(other.Rotation);
-	public bool Equals(TranslatedAndRotatedConvexShape<T> other, float tolerance) => BaseShape.Equals(other.BaseShape, tolerance) && Position.Equals(other.Position, tolerance) && Rotation.Equals(other.Rotation, tolerance);
+	public override int GetHashCode() => HashCode.Combine(BaseShape, Translation, Rotation);
+	public bool Equals(TranslatedAndRotatedConvexShape<T> other) => BaseShape.Equals(other.BaseShape) && Translation.Equals(other.Translation) && Rotation.Equals(other.Rotation);
+	public bool Equals(TranslatedAndRotatedConvexShape<T> other, float tolerance) => BaseShape.Equals(other.BaseShape, tolerance) && Translation.Equals(other.Translation, tolerance) && Rotation.Equals(other.Rotation, tolerance);
 	public static bool operator ==(TranslatedAndRotatedConvexShape<T> left, TranslatedAndRotatedConvexShape<T> right) => left.Equals(right);
 	public static bool operator !=(TranslatedAndRotatedConvexShape<T> left, TranslatedAndRotatedConvexShape<T> right) => !left.Equals(right);
 	#endregion

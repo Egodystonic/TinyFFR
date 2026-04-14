@@ -6,7 +6,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Egodystonic.TinyFFR;
 
-public interface ITranslatedShape : IShape;
+public interface ITranslatedShape : IShape {
+	Vect Translation { get; init; }
+}
 public interface ITranslatedShape<TSelf> : ITranslatedShape, IShape<TSelf>, ITranslatable<TSelf> where TSelf : ITranslatedShape<TSelf>; 
 public interface ITranslatedShape<TSelf, TBase> : ITranslatedShape<TSelf> where TSelf : ITranslatedShape<TSelf, TBase> where TBase : IShape<TBase> { TBase BaseShape { get; init; } } 
 public interface ITranslatedConvexShape : ITranslatedShape, IConvexShape; 
@@ -16,27 +18,27 @@ public interface ITranslatedConvexShape<TSelf, TBase> : ITranslatedConvexShape<T
 public readonly struct TranslatedShape<T> : ITranslatedShape<TranslatedShape<T>, T> where T : IShape<T> {
 	const string StringComponentSeparator = " @ ";
 	public T BaseShape { get; init; }
-	public Location Position { get; init; }
+	public Vect Translation { get; init; }
 
-	public bool IsPhysicallyValid => BaseShape.IsPhysicallyValid && Position.IsPhysicallyValid;
+	public bool IsPhysicallyValid => BaseShape.IsPhysicallyValid && Translation.IsPhysicallyValid;
 	
-	public TranslatedShape(T baseShape, Location position) {
+	public TranslatedShape(T baseShape, Vect translation) {
 		BaseShape = baseShape;
-		Position = position;
+		Translation = translation;
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal TransformToShapeSpace<TVal>(TVal val) where TVal : ITranslatable<TVal> => val.Minus(Position.AsVect());
+	internal TVal TransformToShapeSpace<TVal>(TVal val) where TVal : ITranslatable<TVal> => val.Minus(Translation);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal TransformToWorldSpace<TVal>(TVal val) where TVal : ITranslatable<TVal> => val.Plus(Position.AsVect());
+	internal TVal TransformToWorldSpace<TVal>(TVal val) where TVal : ITranslatable<TVal> => val.Plus(Translation);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal? TransformToShapeSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal> => val?.Minus(Position.AsVect());
+	internal TVal? TransformToShapeSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal> => val?.Minus(Translation);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal TVal? TransformToWorldSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal> => val?.Plus(Position.AsVect());
+	internal TVal? TransformToWorldSpace<TVal>(TVal? val) where TVal : struct, ITranslatable<TVal> => val?.Plus(Translation);
 
 	#region ToString / Format / Parse
 	public string ToString(string? format, IFormatProvider? formatProvider) {
-		return BaseShape.ToString(format, formatProvider) + StringComponentSeparator + Position.ToString(format, formatProvider);
+		return BaseShape.ToString(format, formatProvider) + StringComponentSeparator + Translation.ToString(format, formatProvider);
 	}
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
 		charsWritten = 0;
@@ -49,7 +51,7 @@ public readonly struct TranslatedShape<T> : ITranslatedShape<TranslatedShape<T>,
 		charsWritten += StringComponentSeparator.Length;
 		destination = destination[StringComponentSeparator.Length..];
 		
-		if (!Position.TryFormat(destination, out c, format, provider)) return false;
+		if (!Translation.TryFormat(destination, out c, format, provider)) return false;
 		charsWritten += c;
 		return true;
 	}
@@ -68,9 +70,9 @@ public readonly struct TranslatedShape<T> : ITranslatedShape<TranslatedShape<T>,
 		if (splitIndex < 0) return false;
 		
 		if (!T.TryParse(s[..splitIndex], provider, out var baseShape)) return false;
-		if (!Location.TryParse(s[(splitIndex + StringComponentSeparator.Length)..], provider, out var position)) return false;
+		if (!Vect.TryParse(s[(splitIndex + StringComponentSeparator.Length)..], provider, out var translation)) return false;
 		
-		result = new(baseShape, position);
+		result = new(baseShape, translation);
 		return true;
 	}
 	#endregion
@@ -79,55 +81,55 @@ public readonly struct TranslatedShape<T> : ITranslatedShape<TranslatedShape<T>,
 	public static int SerializationByteSpanLength => T.SerializationByteSpanLength + Location.SerializationByteSpanLength;
 	public static void SerializeToBytes(Span<byte> dest, TranslatedShape<T> src) {
 		T.SerializeToBytes(dest, src.BaseShape);
-		Location.SerializeToBytes(dest[T.SerializationByteSpanLength..], src.Position);
+		Vect.SerializeToBytes(dest[T.SerializationByteSpanLength..], src.Translation);
 	}
 	public static TranslatedShape<T> DeserializeFromBytes(ReadOnlySpan<byte> src) {
 		return new(
 			T.DeserializeFromBytes(src),
-			Location.DeserializeFromBytes(src[T.SerializationByteSpanLength..])
+			Vect.DeserializeFromBytes(src[T.SerializationByteSpanLength..])
 		);
 	}
 	#endregion
 
 	#region Move / Scale
-	public TranslatedShape<T> MovedBy(Vect v) => new(BaseShape, Position.MovedBy(v));
-	public static TranslatedShape<T> operator +(TranslatedShape<T> left, Vect right) => new(left.BaseShape, left.Position + right);
-	public static TranslatedShape<T> operator -(TranslatedShape<T> left, Vect right) => new(left.BaseShape, left.Position - right);
-	public static TranslatedShape<T> operator +(Vect left, TranslatedShape<T> right) => new(right.BaseShape, right.Position + left);
+	public TranslatedShape<T> MovedBy(Vect v) => new(BaseShape, Translation.Plus(v));
+	public static TranslatedShape<T> operator +(TranslatedShape<T> left, Vect right) => new(left.BaseShape, left.Translation + right);
+	public static TranslatedShape<T> operator -(TranslatedShape<T> left, Vect right) => new(left.BaseShape, left.Translation - right);
+	public static TranslatedShape<T> operator +(Vect left, TranslatedShape<T> right) => new(right.BaseShape, right.Translation + left);
 
-	public static TranslatedShape<T> operator *(TranslatedShape<T> left, float right) => new(left.BaseShape * right, left.Position);
-	public static TranslatedShape<T> operator /(TranslatedShape<T> left, float right) => new(left.BaseShape / right, left.Position);
-	public static TranslatedShape<T> operator *(float left, TranslatedShape<T> right) => new(left * right.BaseShape, right.Position);
-	public TranslatedShape<T> ScaledBy(float scalar) => new(BaseShape * scalar, Position);
+	public static TranslatedShape<T> operator *(TranslatedShape<T> left, float right) => new(left.BaseShape * right, left.Translation);
+	public static TranslatedShape<T> operator /(TranslatedShape<T> left, float right) => new(left.BaseShape / right, left.Translation);
+	public static TranslatedShape<T> operator *(float left, TranslatedShape<T> right) => new(left * right.BaseShape, right.Translation);
+	public TranslatedShape<T> ScaledBy(float scalar) => new(BaseShape * scalar, Translation);
 	#endregion
 
 	#region Equality
 	public override bool Equals(object? obj) => obj is TranslatedShape<T> other && Equals(other);
-	public override int GetHashCode() => HashCode.Combine(BaseShape, Position);
-	public bool Equals(TranslatedShape<T> other) => BaseShape.Equals(other.BaseShape) && Position.Equals(other.Position);
-	public bool Equals(TranslatedShape<T> other, float tolerance) => BaseShape.Equals(other.BaseShape, tolerance) && Position.Equals(other.Position, tolerance);
+	public override int GetHashCode() => HashCode.Combine(BaseShape, Translation);
+	public bool Equals(TranslatedShape<T> other) => BaseShape.Equals(other.BaseShape) && Translation.Equals(other.Translation);
+	public bool Equals(TranslatedShape<T> other, float tolerance) => BaseShape.Equals(other.BaseShape, tolerance) && Translation.Equals(other.Translation, tolerance);
 	public static bool operator ==(TranslatedShape<T> left, TranslatedShape<T> right) => left.Equals(right);
 	public static bool operator !=(TranslatedShape<T> left, TranslatedShape<T> right) => !left.Equals(right);
 	#endregion
 
 	#region Random / Interp / Clamp
-	public static TranslatedShape<T> Random() => new(T.Random(), Location.Random());
+	public static TranslatedShape<T> Random() => new(T.Random(), Vect.Random());
 	public static TranslatedShape<T> Random(TranslatedShape<T> minInclusive, TranslatedShape<T> maxExclusive) {
 		return new(
 			T.Random(minInclusive.BaseShape, maxExclusive.BaseShape),
-			Location.Random(minInclusive.Position, maxExclusive.Position)
+			Vect.Random(minInclusive.Translation, maxExclusive.Translation)
 		);
 	}
 	public static TranslatedShape<T> Interpolate(TranslatedShape<T> start, TranslatedShape<T> end, float distance) {
 		return new(
 			T.Interpolate(start.BaseShape, end.BaseShape, distance),
-			Location.Interpolate(start.Position, end.Position, distance)
+			Vect.Interpolate(start.Translation, end.Translation, distance)
 		);
 	}
 	public TranslatedShape<T> Clamp(TranslatedShape<T> min, TranslatedShape<T> max) {
 		return new(
 			BaseShape.Clamp(min.BaseShape, max.BaseShape),
-			Position.Clamp(min.Position, max.Position)
+			Translation.Clamp(min.Translation, max.Translation)
 		);
 	}
 	#endregion
@@ -135,17 +137,17 @@ public readonly struct TranslatedShape<T> : ITranslatedShape<TranslatedShape<T>,
 
 public readonly struct TranslatedConvexShape<T> : ITranslatedConvexShape<TranslatedConvexShape<T>, T> where T : IConvexShape<T> {
 	public T BaseShape { get; init; }
-	public Location Position { get; init; }
+	public Vect Translation { get; init; }
 	
-	public TranslatedConvexShape(T baseShape, Location position) {
+	public TranslatedConvexShape(T baseShape, Vect translation) {
 		BaseShape = baseShape;
-		Position = position;
+		Translation = translation;
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator TranslatedShape<T>(TranslatedConvexShape<T> operand) => new(operand.BaseShape, operand.Position);
+	public static implicit operator TranslatedShape<T>(TranslatedConvexShape<T> operand) => new(operand.BaseShape, operand.Translation);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator TranslatedConvexShape<T>(TranslatedShape<T> operand) => new(operand.BaseShape, operand.Position);
+	public static implicit operator TranslatedConvexShape<T>(TranslatedShape<T> operand) => new(operand.BaseShape, operand.Translation);
 	
 	#region Deferred Members
 	public bool IsPhysicallyValid {
@@ -216,9 +218,9 @@ public readonly struct TranslatedConvexShape<T> : ITranslatedConvexShape<Transla
 
 	#region Equality
 	public override bool Equals(object? obj) => obj is TranslatedConvexShape<T> other && Equals(other);
-	public override int GetHashCode() => HashCode.Combine(BaseShape, Position);
-	public bool Equals(TranslatedConvexShape<T> other) => BaseShape.Equals(other.BaseShape) && Position.Equals(other.Position);
-	public bool Equals(TranslatedConvexShape<T> other, float tolerance) => BaseShape.Equals(other.BaseShape, tolerance) && Position.Equals(other.Position, tolerance);
+	public override int GetHashCode() => HashCode.Combine(BaseShape, Translation);
+	public bool Equals(TranslatedConvexShape<T> other) => BaseShape.Equals(other.BaseShape) && Translation.Equals(other.Translation);
+	public bool Equals(TranslatedConvexShape<T> other, float tolerance) => BaseShape.Equals(other.BaseShape, tolerance) && Translation.Equals(other.Translation, tolerance);
 	public static bool operator ==(TranslatedConvexShape<T> left, TranslatedConvexShape<T> right) => left.Equals(right);
 	public static bool operator !=(TranslatedConvexShape<T> left, TranslatedConvexShape<T> right) => !left.Equals(right);
 	#endregion
