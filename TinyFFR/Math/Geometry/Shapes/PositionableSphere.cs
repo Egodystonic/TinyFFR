@@ -91,6 +91,7 @@ public readonly struct PositionableSphere : ITranslatedShape<PositionableSphere,
 	}
 
 	#region Deferring Members
+	public override string ToString() => ToString(null, null);
 	public string ToString(string? format, IFormatProvider? formatProvider) => _impl.ToString(format, formatProvider);
 	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => _impl.TryFormat(destination, out charsWritten, format, provider);
 	public PositionableSphere MovedBy(Vect v) => _impl.MovedBy(v);
