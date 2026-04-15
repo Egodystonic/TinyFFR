@@ -25,6 +25,9 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, BackdropTexture backdrop, float backdropIntensity, Rotation rotation);
 	void SetBackdropWithoutIndirectLighting(ResourceHandle<Scene> handle, ColorVect color);
 	void RemoveBackdrop(ResourceHandle<Scene> handle);
+	
+	IndirectEnumerable<Scene, ModelInstance> GetModelInstances(ResourceHandle<Scene> handle);
+	IndirectEnumerable<Scene, Light> GetLights(ResourceHandle<Scene> handle);
 
 	internal void SetLightShadowFidelity(ResourceHandle<Scene> handle, Quality qualityPreset, LightShadowFidelityData pointLightFidelity, LightShadowFidelityData spotLightFidelity, LightShadowFidelityData directionalLightFidelity);
 }

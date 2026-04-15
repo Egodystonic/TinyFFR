@@ -3,7 +3,9 @@
 
 using System;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Resources;
+using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Rendering;
 
@@ -20,6 +22,23 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	internal Renderer(ResourceHandle<Renderer> handle, IRendererImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
+	}
+	
+	public Scene TargetScene {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetScene(_handle);
+	}
+	public Camera TargetCamera {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetCamera(_handle);
+	}
+	public Window? TargetWindow {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetWindow(_handle);
+	}
+	public RenderOutputBuffer? TargetBuffer {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetBuffer(_handle);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

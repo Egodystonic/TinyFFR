@@ -108,6 +108,37 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 		ThrowIfThisOrHandleIsDisposed(handle);
 		foreach (var inst in modelInstanceGroup) Remove(handle, inst);
 	}
+	
+	public IndirectEnumerable<Scene, ModelInstance> GetModelInstances(ResourceHandle<Scene> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		
+		static int GetCount(Scene s) {
+			if (s.Implementation is not LocalSceneBuilder lsb) throw new InvalidOperationException();
+			var h = s.GetHandleWithoutDisposeCheck();
+			lsb.ThrowIfThisOrHandleIsDisposed(h);
+			return lsb._modelInstanceMap[h].Count;
+		}
+		static int GetVersion(Scene s) {
+			if (s.Implementation is not LocalSceneBuilder lsb) throw new InvalidOperationException();
+			var h = s.GetHandleWithoutDisposeCheck();
+			lsb.ThrowIfThisOrHandleIsDisposed(h);
+			return lsb._modelInstanceMap[h].Version;
+		}
+		static ModelInstance GetItem(Scene s, int index) {
+			if (s.Implementation is not LocalSceneBuilder lsb) throw new InvalidOperationException();
+			var h = s.GetHandleWithoutDisposeCheck();
+			lsb.ThrowIfThisOrHandleIsDisposed(h);
+			return lsb._modelInstanceMap[h][index];
+		}
+
+		return new IndirectEnumerable<Scene, ModelInstance>(
+			HandleToInstance(handle),
+			_modelInstanceMap[handle].Version,
+			&GetCount,
+			&GetVersion,
+			&GetItem
+		);
+	}
 	#endregion
 
 	#region Light
@@ -165,6 +196,37 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 		}
 
 		_shadowQualityActivePresetMap[handle] = qualityPreset;
+	}
+
+	public IndirectEnumerable<Scene, Light> GetLights(ResourceHandle<Scene> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		
+		static int GetCount(Scene s) {
+			if (s.Implementation is not LocalSceneBuilder lsb) throw new InvalidOperationException();
+			var h = s.GetHandleWithoutDisposeCheck();
+			lsb.ThrowIfThisOrHandleIsDisposed(h);
+			return lsb._lightMap[h].Count;
+		}
+		static int GetVersion(Scene s) {
+			if (s.Implementation is not LocalSceneBuilder lsb) throw new InvalidOperationException();
+			var h = s.GetHandleWithoutDisposeCheck();
+			lsb.ThrowIfThisOrHandleIsDisposed(h);
+			return lsb._lightMap[h].Version;
+		}
+		static Light GetItem(Scene s, int index) {
+			if (s.Implementation is not LocalSceneBuilder lsb) throw new InvalidOperationException();
+			var h = s.GetHandleWithoutDisposeCheck();
+			lsb.ThrowIfThisOrHandleIsDisposed(h);
+			return lsb._lightMap[h][index];
+		}
+
+		return new IndirectEnumerable<Scene, Light>(
+			HandleToInstance(handle),
+			_lightMap[handle].Version,
+			&GetCount,
+			&GetVersion,
+			&GetItem
+		);
 	}
 	#endregion
 

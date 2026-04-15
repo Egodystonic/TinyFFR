@@ -81,6 +81,11 @@ class LocalRenderOutputBufferTest {
 		using var renderBufferScene = factory.SceneBuilder.CreateScene(backdropColor: StandardColor.Green);
 		renderBufferScene.Add(renderBufferModel);
 		using var renderBufferRenderer = factory.RendererBuilder.CreateRenderer(renderBufferScene, renderBufferCamera, renderBuffer);
+		
+		Assert.AreEqual(renderBufferScene, renderBufferRenderer.TargetScene);
+		Assert.AreEqual(renderBuffer, renderBufferRenderer.TargetBuffer);
+		Assert.AreEqual(null, renderBufferRenderer.TargetWindow);
+		Assert.AreEqual(renderBufferCamera, renderBufferRenderer.TargetCamera);
 
 		// Window Scene
 		using var windowColorTex = renderBuffer.CreateDynamicTexture();
@@ -95,6 +100,11 @@ class LocalRenderOutputBufferTest {
 		using var windowScene = factory.SceneBuilder.CreateScene(backdropColor: ColorVect.White);
 		windowScene.Add(windowModel);
 		using var windowRenderer = factory.RendererBuilder.CreateRenderer(windowScene, windowCamera, window);
+
+		Assert.AreEqual(windowScene, windowRenderer.TargetScene);
+		Assert.AreEqual(window, windowRenderer.TargetWindow);
+		Assert.AreEqual(null, windowRenderer.TargetBuffer);
+		Assert.AreEqual(windowCamera, windowRenderer.TargetCamera);
 
 		loop.ResetTotalIteratedTime();
 		while (loop.TotalIteratedTime < TimeSpan.FromSeconds(10d)) {

@@ -30,6 +30,15 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 		_handle = handle;
 		_impl = impl;
 	}
+	
+	public IndirectEnumerable<Scene, ModelInstance> ContainedModelInstances {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetModelInstances(_handle);
+	}
+	public IndirectEnumerable<Scene, Light> ContainedLights {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetLights(_handle);
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);

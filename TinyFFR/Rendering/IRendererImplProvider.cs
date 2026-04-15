@@ -4,10 +4,16 @@
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Resources;
 using System;
+using Egodystonic.TinyFFR.Environment.Local;
+using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Rendering;
 
 public interface IRendererImplProvider : IDisposableResourceImplProvider<Renderer> {
+	Scene GetScene(ResourceHandle<Renderer> handle);
+	Camera GetCamera(ResourceHandle<Renderer> handle);
+	Window? GetWindow(ResourceHandle<Renderer> handle);
+	RenderOutputBuffer? GetBuffer(ResourceHandle<Renderer> handle);
 	void Render(ResourceHandle<Renderer> handle);
 	void SetQualityConfig(ResourceHandle<Renderer> handle, RenderQualityConfig newConfig);
 	void WaitForGpu(ResourceHandle<Renderer> handle);

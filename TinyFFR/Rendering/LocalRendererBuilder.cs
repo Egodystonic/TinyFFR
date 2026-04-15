@@ -554,6 +554,27 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		return rendererData.Camera.CastRayFromNearPlane(normalizedCoord);
 	}
 
+	public Scene GetScene(ResourceHandle<Renderer> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _loadedRenderers[handle].Scene;
+	}
+	public Camera GetCamera(ResourceHandle<Renderer> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _loadedRenderers[handle].Camera;
+	}
+	public Window? GetWindow(ResourceHandle<Renderer> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _loadedRenderers[handle].RenderTarget.IsWindow 
+			? _loadedRenderers[handle].RenderTarget.AsWindow
+			: null;
+	}
+	public RenderOutputBuffer? GetBuffer(ResourceHandle<Renderer> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _loadedRenderers[handle].RenderTarget.IsBuffer 
+			? _loadedRenderers[handle].RenderTarget.AsBuffer
+			: null;
+	}
+
 	public string GetNameAsNewStringObject(ResourceHandle<Renderer> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return new String(_globals.GetResourceName(handle.Ident, DefaultRendererName));

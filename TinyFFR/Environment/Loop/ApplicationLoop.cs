@@ -24,9 +24,17 @@ public readonly struct ApplicationLoop : IDisposableResource<ApplicationLoop, IA
 		get => Implementation.GetInputStateProvider(_handle);
 	}
 
-	public TimeSpan DesiredIterationInterval {
+	public TimeSpan TargetIterationInterval {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetDesiredIterationInterval(_handle);
+		get => Implementation.GetTargetIterationInterval(_handle);
+	}
+	
+	public int? TargetFrameRate {
+		get {
+			var targetInterval = TargetIterationInterval;
+			if (targetInterval == TimeSpan.Zero) return null;
+			return (int) (TimeSpan.FromSeconds(1).Ticks / targetInterval.Ticks);
+		}
 	}
 	
 	public float FramesPerSecondRecentAverage {

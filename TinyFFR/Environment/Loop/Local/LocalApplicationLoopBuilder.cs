@@ -136,7 +136,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_handleDataMap[handle] = _handleDataMap[handle] with { TotalIteratedTime = newValue };
 	}
-	public TimeSpan GetDesiredIterationInterval(ResourceHandle<ApplicationLoop> handle) {
+	public TimeSpan GetTargetIterationInterval(ResourceHandle<ApplicationLoop> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _handleDataMap[handle].FrameInterval;
 	}

@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2025
 
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
@@ -160,5 +161,22 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		return _actualRenderer.CastRayFromRenderSurface(pixelCoord, yZeroOriginAtBottom);
+	}
+
+	public Scene GetScene(ResourceHandle<Renderer> handle) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		return _actualRenderer.TargetScene;
+	}
+	public Camera GetCamera(ResourceHandle<Renderer> handle) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		return _actualRenderer.TargetCamera;
+	}
+	public Window? GetWindow(ResourceHandle<Renderer> handle) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		return _actualRenderer.TargetWindow;
+	}
+	public RenderOutputBuffer? GetBuffer(ResourceHandle<Renderer> handle) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		return _actualRenderer.TargetBuffer;
 	}
 }

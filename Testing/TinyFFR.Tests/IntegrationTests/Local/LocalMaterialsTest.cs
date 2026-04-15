@@ -12,6 +12,7 @@ using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Testing;
 using System.Reflection.PortableExecutable;
+using Castle.Components.DictionaryAdapter.Xml;
 using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.World;
 
@@ -112,9 +113,14 @@ class LocalMaterialsTest {
 		using var leftLight = factory.LightBuilder.CreatePointLight(position: (2.6f, 0f, 1f), color: ColorVect.RandomOpaque(), castsShadows: true);
 		using var rightLight = factory.LightBuilder.CreatePointLight(position: (-2.6f, 0f, 1f), color: ColorVect.RandomOpaque(), castsShadows: true);
 		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
+		Assert.AreEqual(0, scene.ContainedLights.Count);
 		scene.Add(light);
 		scene.Add(leftLight);
 		scene.Add(rightLight);
+		Assert.AreEqual(3, scene.ContainedLights.Count);
+		Assert.AreEqual(1, scene.ContainedLights.Count(l => l == light));
+		Assert.AreEqual(1, scene.ContainedLights.Count(l => l == leftLight));
+		Assert.AreEqual(1, scene.ContainedLights.Count(l => l == rightLight));
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 
 		using var backMaterialAlbedo = factory.AssetLoader.LoadColorMap(CommonTestAssets.FindAsset(KnownTestAsset.BrickAlbedoTex));
@@ -128,10 +134,16 @@ class LocalMaterialsTest {
 		var sphereFrontInstance = factory.ObjectBuilder.CreateModelInstance(sphereMesh, currentMaterialResources.Materials[0], new Location(-1f, 0f, 2f));
 		var cubeBackInstance = factory.ObjectBuilder.CreateModelInstance(cubeMesh, backInstanceMaterial, new Location(1.8f, 0f, 3.5f));
 		var sphereBackInstance = factory.ObjectBuilder.CreateModelInstance(sphereMesh, backInstanceMaterial, new Location(-1.8f, 0f, 3.5f));
+		Assert.AreEqual(0, scene.ContainedModelInstances.Count);
 		scene.Add(cubeFrontInstance);
 		scene.Add(sphereFrontInstance);
 		scene.Add(cubeBackInstance);
 		scene.Add(sphereBackInstance);
+		Assert.AreEqual(4, scene.ContainedModelInstances.Count);
+		Assert.Contains(cubeFrontInstance, scene.ContainedModelInstances.ToArray());
+		Assert.Contains(sphereFrontInstance, scene.ContainedModelInstances.ToArray());
+		Assert.Contains(cubeBackInstance, scene.ContainedModelInstances.ToArray());
+		Assert.Contains(sphereBackInstance, scene.ContainedModelInstances.ToArray());
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
 

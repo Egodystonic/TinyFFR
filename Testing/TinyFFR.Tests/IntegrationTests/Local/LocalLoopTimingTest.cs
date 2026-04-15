@@ -57,6 +57,7 @@ class LocalLoopTimingTest {
 
 		loop.Dispose();
 		loop = loopBuilder.CreateLoop(new() { FrameRateCapHz = 30 });
+		Assert.AreEqual(30, loop.TargetFrameRate);
 		reportedTimesList = new List<TimeSpan>();
 		measuredTimesList = new List<TimeSpan>();
 		stopwatch = Stopwatch.StartNew();
