@@ -113,6 +113,8 @@ class MeshConfigTest {
 			InvertTextureV = true,
 			OriginTranslation = Vect.Random(),
 			LinearRescalingFactor = 123f,
+			BoundingBoxOverride = null,
+			BoundingBoxAdditionalMargin = 0f,
 			Name = "Aa Aa"
 		};
 		var testConfigB = new MeshCreationConfig {
@@ -121,6 +123,8 @@ class MeshConfigTest {
 			InvertTextureV = false,
 			OriginTranslation = Vect.Random(),
 			LinearRescalingFactor = -0.123f,
+			BoundingBoxOverride = PositionedCuboid.FromHalfDimensions(1f, 2f, 3f, new Location(4f, 5f, 6f)),
+			BoundingBoxAdditionalMargin = 0.5f,
 			Name = "BBBbbb"
 		};
 
@@ -130,6 +134,8 @@ class MeshConfigTest {
 			Assert.AreEqual(expected.InvertTextureV, actual.InvertTextureV);
 			Assert.AreEqual(expected.OriginTranslation, actual.OriginTranslation);
 			Assert.AreEqual(expected.LinearRescalingFactor, actual.LinearRescalingFactor);
+			Assert.AreEqual(expected.BoundingBoxOverride, actual.BoundingBoxOverride);
+			Assert.AreEqual(expected.BoundingBoxAdditionalMargin, actual.BoundingBoxAdditionalMargin);
 			Assert.AreEqual(expected.Name.ToString(), actual.Name.ToString());
 		}
 
@@ -142,6 +148,9 @@ class MeshConfigTest {
 			.Bool(true)
 			.Obj(testConfigA.OriginTranslation)
 			.Float(123f)
+			.Bool(false)
+			.Obj(default(PositionedCuboid))
+			.Float(0f)
 			.String("Aa Aa")
 			.For(testConfigA);
 
@@ -151,6 +160,9 @@ class MeshConfigTest {
 			.Bool(false)
 			.Obj(testConfigB.OriginTranslation)
 			.Float(-0.123f)
+			.Bool(true)
+			.Obj(PositionedCuboid.FromHalfDimensions(1f, 2f, 3f, new Location(4f, 5f, 6f)))
+			.Float(0.5f)
 			.String("BBBbbb")
 			.For(testConfigB);
 
@@ -160,6 +172,8 @@ class MeshConfigTest {
 			.Including(nameof(MeshCreationConfig.InvertTextureV))
 			.Including(nameof(MeshCreationConfig.OriginTranslation))
 			.Including(nameof(MeshCreationConfig.LinearRescalingFactor))
+			.Including(nameof(MeshCreationConfig.BoundingBoxOverride))
+			.Including(nameof(MeshCreationConfig.BoundingBoxAdditionalMargin))
 			.Including(nameof(MeshCreationConfig.Name))
 			.End();
 	}

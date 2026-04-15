@@ -230,6 +230,12 @@ class CuboidTest {
 			TestCuboid.ScaledBy((-1f, 0.5f, 2f)),
 			TestTolerance
 		);
+		
+		AssertToleranceEquals(
+			new Cuboid(width: 8.2f, height: 14.6f, depth: 2.4f),
+			TestCuboid.WithAllExtentsAdjustedBy(1f),
+			TestTolerance
+		);
 	}
 
 	[Test]

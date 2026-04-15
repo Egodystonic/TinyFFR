@@ -21,7 +21,12 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetBufferData(_handle);
 	}
-	
+
+	public PositionedCuboid BoundingBox {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetBoundingBox(_handle);
+	}
+
 	public MeshAnimationIndex Animations {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(this);

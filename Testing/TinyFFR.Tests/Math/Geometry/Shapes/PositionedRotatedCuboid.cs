@@ -250,15 +250,17 @@ class PositionedRotatedCuboidTest {
 
 	[Test]
 	public void ShouldCorrectlyPreservePositionAndRotationForWithMethods() {
-		var withVol = TestCuboid.WithVolume(100f);
-		Assert.AreEqual(TestCuboid.Position, withVol.Position);
-		AssertToleranceEquals(TestCuboid.Rotation, withVol.Rotation, TestTolerance);
-		Assert.AreEqual(100f, withVol.Volume, TestTolerance);
+		Assert.AreEqual(TestCuboid.Position, TestCuboid.WithVolume(100f).Position);
+		AssertToleranceEquals(TestCuboid.Rotation, TestCuboid.WithVolume(100f).Rotation, TestTolerance);
+		Assert.AreEqual(100f, TestCuboid.WithVolume(100f).Volume, TestTolerance);
 
-		var withSA = TestCuboid.WithSurfaceArea(200f);
-		Assert.AreEqual(TestCuboid.Position, withSA.Position);
-		AssertToleranceEquals(TestCuboid.Rotation, withSA.Rotation, TestTolerance);
-		Assert.AreEqual(200f, withSA.SurfaceArea, TestTolerance);
+		Assert.AreEqual(TestCuboid.Position, TestCuboid.WithSurfaceArea(200f).Position);
+		AssertToleranceEquals(TestCuboid.Rotation, TestCuboid.WithSurfaceArea(200f).Rotation, TestTolerance);
+		Assert.AreEqual(200f, TestCuboid.WithSurfaceArea(200f).SurfaceArea, TestTolerance);
+		
+		Assert.AreEqual(TestCuboid.Position, TestCuboid.WithAllExtentsAdjustedBy(2f).Position);
+		AssertToleranceEquals(TestCuboid.Rotation, TestCuboid.WithAllExtentsAdjustedBy(2f).Rotation, TestTolerance);
+		AssertToleranceEquals(TestCuboid.ToStandardCuboid().WithAllExtentsAdjustedBy(2f), TestCuboid.WithAllExtentsAdjustedBy(2f).ToStandardCuboid(), TestTolerance);
 
 		AssertToleranceEquals(TestCuboid.ToStandardCuboid(), TestCuboid.WithVolume(TestCuboid.Volume).ToStandardCuboid(), TestTolerance);
 		AssertToleranceEquals(TestCuboid.ToStandardCuboid(), TestCuboid.WithSurfaceArea(TestCuboid.SurfaceArea).ToStandardCuboid(), TestTolerance);

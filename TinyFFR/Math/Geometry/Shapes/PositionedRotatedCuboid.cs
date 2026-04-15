@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Egodystonic.TinyFFR;
 
 public readonly struct PositionedRotatedCuboid : ITranslatedRotatedConvexShape<PositionedRotatedCuboid, Cuboid>, ICuboid<PositionedRotatedCuboid> {
+	public static readonly PositionedRotatedCuboid UnitCubeAtOriginUnrotated = new(Cuboid.UnitCube, Location.Origin, Rotation.None);
 	readonly TranslatedRotatedConvexShape<Cuboid> _impl;
 
 	// TODO xmldoc this is the center point
@@ -109,9 +110,10 @@ public readonly struct PositionedRotatedCuboid : ITranslatedRotatedConvexShape<P
 	public float GetHalfExtent(Axis axis) => _impl.BaseShape.GetHalfExtent(axis);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float GetSideSurfaceArea(CardinalOrientation side) => _impl.BaseShape.GetSideSurfaceArea(side);
-
+	
 	public PositionedRotatedCuboid WithVolume(float newVolume) => new(_impl.BaseShape.WithVolume(newVolume), Position, Rotation);
 	public PositionedRotatedCuboid WithSurfaceArea(float newSurfaceArea) => new(_impl.BaseShape.WithSurfaceArea(newSurfaceArea), Position, Rotation);
+	public PositionedRotatedCuboid WithAllExtentsAdjustedBy(float adjustment) => new(_impl.BaseShape.WithAllExtentsAdjustedBy(adjustment), Position, Rotation);
 
 	Cuboid ITranslatedRotatedShape<PositionedRotatedCuboid, Cuboid>.BaseShape {
 		get => _impl.BaseShape;

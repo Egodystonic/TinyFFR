@@ -31,6 +31,10 @@ partial struct Cuboid : IIndependentAxisScalable<Cuboid> {
 
 	public Cuboid ScaledBy(float scalar) => FromHalfDimensions(HalfWidth * scalar, HalfHeight * scalar, HalfDepth * scalar);
 	public Cuboid ScaledBy(Vect vect) => FromHalfDimensions(HalfWidth * vect.X, HalfHeight * vect.Y, HalfDepth * vect.Z);
+	public Cuboid WithAllExtentsAdjustedBy(float adjustment) {
+		adjustment *= 0.5f;
+		return FromHalfDimensions(HalfWidth + adjustment, HalfHeight + adjustment, HalfDepth + adjustment);
+	}
 	#endregion
 
 	#region Distance From / Containment (Location & Line-Like)

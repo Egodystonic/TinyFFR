@@ -19,8 +19,10 @@ namespace Egodystonic.TinyFFR.Assets.Meshes.Local;
 
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourceDirectory<Mesh>, IResourceDirectory<MeshAnimation>, IResourceDirectory<MeshNode>, IDisposable {
+	readonly record struct MeshData(MeshBufferData BufferData, PositionedCuboid BoundingBox);
+	
 	const string DefaultMeshName = "Unnamed Mesh";
-	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, MeshBufferData> _activeMeshes = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, MeshData> _activeMeshes = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<VertexBuffer>, int> _vertexBufferRefCounts = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<IndexBuffer>, int> _indexBufferRefCounts = new();
 	readonly ObjectPool<LocalMeshPolygonGroup, LocalMeshBuilder> _meshPolyGroupPool;
@@ -106,6 +108,29 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		return result;
 	}
 	
+	PositionedCuboid CalculateBoundingBox<TVertex>(ReadOnlySpan<TVertex> vertices) where TVertex : IMeshVertex {
+		if (vertices.Length == 0) return PositionedCuboid.UnitCubeAtOrigin;
+		
+		var (minX, minY, minZ) = vertices[0].Location;
+		var (maxX, maxY, maxZ) = vertices[0].Location;
+		for (var i = 1; i < vertices.Length; ++i) {
+			var loc = vertices[i].Location;
+			if (loc.X < minX) minX = loc.X;
+			if (loc.Y < minY) minY = loc.Y;
+			if (loc.Z < minZ) minZ = loc.Z;
+			if (loc.X > maxX) maxX = loc.X;
+			if (loc.Y > maxY) maxY = loc.Y;
+			if (loc.Z > maxZ) maxZ = loc.Z;
+		}
+		
+		return new(
+			maxX - minX,
+			maxY - minY,
+			maxZ - minZ,
+			new Vect(minX + maxX, minY + maxY, minZ + maxZ).ScaledBy(0.5f).AsLocation()
+		);
+	}
+	
 	Mesh ProcessVerticesAndCreateMesh<TVertex>(ReadOnlySpan<TVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config, int boneCount) where TVertex : unmanaged, IMeshVertex {
 		ThrowIfThisIsDisposed();
 		static void CheckTriangleIndex(char indexChar, int triangleIndex, int value, int numVertices) {
@@ -151,6 +176,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			}
 		}
 
+		var boundingBox = (config.BoundingBoxOverride ?? CalculateBoundingBox(tempVertexBuffer.AsSpan<TVertex>()))
+			.WithAllExtentsAdjustedBy(config.BoundingBoxAdditionalMargin);
+
 		int indexBufferCount;
 		checked {
 			indexBufferCount = triangles.Length * 3;
@@ -166,23 +194,28 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		else {
 			throw new InvalidOperationException($"Unexpected mesh vertex type '{typeof(TVertex)}'.");
 		}
-		
+
 		AllocateIndexBuffer(tempIndexBuffer.BufferIdentity, (VertexTriangle*) tempIndexBuffer.DataPtr, indexBufferCount, out var ibHandle).ThrowIfFailure();
 
 		_vertexBufferRefCounts.Add(vbHandle, 1);
 		_indexBufferRefCounts.Add(ibHandle, 1);
 		_nextHandleId++;
 		var handle = new ResourceHandle<Mesh>(_nextHandleId);
-		_activeMeshes.Add(handle, new(vbHandle, ibHandle, 0, indexBufferCount, boneCount));
+		_activeMeshes.Add(handle, new(new MeshBufferData(vbHandle, ibHandle, 0, indexBufferCount, boneCount), boundingBox));
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultMeshName);
 		return new Mesh(handle, this);
 	}
 
 	public MeshBufferData GetBufferData(ResourceHandle<Mesh> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _activeMeshes[handle];
+		return _activeMeshes[handle].BufferData;
 	}
-	
+
+	public PositionedCuboid GetBoundingBox(ResourceHandle<Mesh> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeMeshes[handle].BoundingBox;
+	}
+
 	public MeshAnimation AttachAnimation(
 		Mesh mesh, 
 		ReadOnlySpan<SkeletalAnimationScalingKeyframe> scalingKeyframes, 
@@ -554,7 +587,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			_meshAnimationTablePool.Return(animTable);
 		}
 		
-		var bufferData = _activeMeshes[handle];
+		var bufferData = _activeMeshes[handle].BufferData;
 		var curVbRefCount = _vertexBufferRefCounts[bufferData.VertexBufferHandle];
 		var curIbRefCount = _indexBufferRefCounts[bufferData.IndexBufferHandle];
 		if (curVbRefCount <= 1) {

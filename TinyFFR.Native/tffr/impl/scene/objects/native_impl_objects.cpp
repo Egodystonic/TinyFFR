@@ -11,7 +11,7 @@
 
 using namespace utils;
 
-void native_impl_objects::allocate_model_instance(mat4f* initialTransformPtr, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount, int32_t boneCount, MaterialHandle material, ModelInstanceHandle* outModelInstance) {
+void native_impl_objects::allocate_model_instance(mat4f* initialTransformPtr, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount, int32_t boneCount, MaterialHandle material, float3 aabbCenter, float3 aabbHalfExtents, ModelInstanceHandle* outModelInstance) {
 	ThrowIfNull(initialTransformPtr, "Transform was null.");
 	ThrowIfNull(vb, "VB was null.");
 	ThrowIfNull(ib, "IB was null.");
@@ -21,10 +21,11 @@ void native_impl_objects::allocate_model_instance(mat4f* initialTransformPtr, Ve
 	auto entity = filament_engine->getEntityManager().create();
 
 	RenderableManager::Builder builder(1);
-	builder.culling(false)
+	builder
+		.culling(true)
 		.geometry(0, RenderableManager::PrimitiveType::TRIANGLES, vb, ib, ibStartIndex, ibCount)
 		.material(0, material)
-		.boundingBox({ { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 } })
+		.boundingBox({ aabbCenter, aabbHalfExtents })
 		.castShadows(true)
 		.receiveShadows(true);
 
@@ -37,8 +38,8 @@ void native_impl_objects::allocate_model_instance(mat4f* initialTransformPtr, Ve
 	filament_engine->getTransformManager().create(entity, TransformManager::Instance{}, *initialTransformPtr);
 	*outModelInstance = Entity::smuggle(entity);
 }
-StartExportedFunc(allocate_model_instance, mat4f* initialTransformPtr, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount, int32_t boneCount, MaterialHandle material, ModelInstanceHandle* outModelInstance) {
-	native_impl_objects::allocate_model_instance(initialTransformPtr, vb, ib, ibStartIndex, ibCount, boneCount, material, outModelInstance);
+StartExportedFunc(allocate_model_instance, mat4f* initialTransformPtr, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount, int32_t boneCount, MaterialHandle material, float3 aabbCenter, float3 aabbHalfExtents, ModelInstanceHandle* outModelInstance) {
+	native_impl_objects::allocate_model_instance(initialTransformPtr, vb, ib, ibStartIndex, ibCount, boneCount, material, aabbCenter, aabbHalfExtents, outModelInstance);
 	EndExportedFunc
 }
 
@@ -57,7 +58,7 @@ StartExportedFunc(set_model_instance_bone_transforms, ModelInstanceHandle modelI
 	EndExportedFunc
 }
 
-void native_impl_objects::set_model_instance_mesh(ModelInstanceHandle modelInstance, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount) {
+void native_impl_objects::set_model_instance_mesh(ModelInstanceHandle modelInstance, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount, float3 aabbCenter, float3 aabbHalfExtents) {
 	ThrowIfNull(vb, "VB was null.");
 	ThrowIfNull(ib, "IB was null.");
 
@@ -65,9 +66,10 @@ void native_impl_objects::set_model_instance_mesh(ModelInstanceHandle modelInsta
 	auto instance = manager.getInstance(Entity::import(modelInstance));
 	ThrowIf(!instance.isValid(), "Given entity instance was not associated with any renderable.");
 	manager.setGeometryAt(instance, 0, RenderableManager::PrimitiveType::TRIANGLES, vb, ib, ibStartIndex, ibCount);
+	manager.setAxisAlignedBoundingBox(instance, { aabbCenter, aabbHalfExtents });
 }
-StartExportedFunc(set_model_instance_mesh, ModelInstanceHandle modelInstance, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount) {
-	native_impl_objects::set_model_instance_mesh(modelInstance, vb, ib, ibStartIndex, ibCount);
+StartExportedFunc(set_model_instance_mesh, ModelInstanceHandle modelInstance, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount, float3 aabbCenter, float3 aabbHalfExtents) {
+	native_impl_objects::set_model_instance_mesh(modelInstance, vb, ib, ibStartIndex, ibCount, aabbCenter, aabbHalfExtents);
 	EndExportedFunc
 }
 

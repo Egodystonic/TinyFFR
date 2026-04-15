@@ -28,6 +28,7 @@ public interface ICuboid<TSelf> : ICuboid, IConvexShape<TSelf> where TSelf : ICu
 	IndirectEnumerable<TSelf, Location> Centroids { get; }
 	TSelf WithVolume(float newVolume);
 	TSelf WithSurfaceArea(float newSurfaceArea);
+	TSelf WithAllExtentsAdjustedBy(float adjustment);
 }
 
 public readonly partial struct Cuboid : ICuboid<Cuboid> {

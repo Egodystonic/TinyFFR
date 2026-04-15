@@ -6,7 +6,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Egodystonic.TinyFFR;
 
-public readonly struct PositionedSphere : ITranslatedConvexShape<PositionedSphere, Sphere>, ISphere<PositionedSphere> {
+public readonly struct PositionedSphere : ITranslatedConvexShape<PositionedSphere, Sphere>, ISphere<PositionedSphere> {  
+	public static readonly PositionedSphere UnitSphereAtOrigin = new(Sphere.UnitSphere, Location.Origin);
+	public static readonly PositionedSphere OneMeterDiameterSphereAtOrigin = new(Sphere.OneMeterDiameterSphere, Location.Origin);
+	public static readonly PositionedSphere OneMeterCubedVolumeSphereAtOrigin = new (Sphere.OneMeterCubedVolumeSphere, Location.Origin);
 	readonly TranslatedConvexShape<Sphere> _impl;
 
 	// TODO xmldoc this is the center point

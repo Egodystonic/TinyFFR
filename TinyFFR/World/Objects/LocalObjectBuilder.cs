@@ -29,6 +29,7 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 	public ModelInstance CreateModelInstance(Mesh mesh, Material material, in ModelInstanceCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		var meshBufferData = mesh.BufferData;
+		var aabb = mesh.BoundingBox;
 
 		AllocateModelInstance(
 			config.InitialTransform.ToMatrix(),
@@ -38,6 +39,8 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 			meshBufferData.IndexBufferCount,
 			meshBufferData.BoneCount,
 			material.Handle,
+			aabb.Position.ToVector3(),
+			new Vector3(aabb.HalfWidth, aabb.HalfHeight, aabb.HalfDepth),
 			out var handle
 		).ThrowIfFailure();
 		
@@ -135,12 +138,15 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 	public void SetMesh(ResourceHandle<ModelInstance> handle, Mesh newMesh) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var meshBufferData = newMesh.BufferData;
+		var aabb = newMesh.BoundingBox;
 		SetModelInstanceMesh(
 			handle,
 			meshBufferData.VertexBufferHandle,
 			meshBufferData.IndexBufferHandle,
 			meshBufferData.IndexBufferStartIndex,
-			meshBufferData.IndexBufferCount
+			meshBufferData.IndexBufferCount,
+			aabb.Position.ToVector3(),
+			new Vector3(aabb.HalfWidth, aabb.HalfHeight, aabb.HalfDepth)
 		).ThrowIfFailure();
 		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), GetMesh(handle));
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMesh);
@@ -254,6 +260,8 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 		int indexBufferCount,
 		int boneCount,
 		UIntPtr materialHandle,
+		Vector3 aabbCenter,
+		Vector3 aabbHalfExtents,
 		out UIntPtr outModelInstanceHandle
 	);
 
@@ -263,7 +271,9 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 		UIntPtr vertexBufferHandle,
 		UIntPtr indexBufferHandle,
 		int indexBufferStartIndex,
-		int indexBufferCount
+		int indexBufferCount,
+		Vector3 aabbCenter,
+		Vector3 aabbHalfExtents
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_model_instance_material")]

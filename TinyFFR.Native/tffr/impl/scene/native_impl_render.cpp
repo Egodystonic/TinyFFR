@@ -105,6 +105,7 @@ void native_impl_render::allocate_view_descriptor(SceneHandle scene, CameraHandl
 		.enabled = true
 	};
 	(*outViewDescriptor)->setBloomOptions(bo);
+	(*outViewDescriptor)->setFrustumCullingEnabled(true);
 	
 }
 StartExportedFunc(allocate_view_descriptor, SceneHandle scene, CameraHandle camera, RenderTargetHandle optionalRenderTarget, ViewDescriptorHandle* outViewDescriptor) {

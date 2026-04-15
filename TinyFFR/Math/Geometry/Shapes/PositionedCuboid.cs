@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Egodystonic.TinyFFR;
 
 public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboid, Cuboid>, ICuboid<PositionedCuboid> {
+	public static readonly PositionedCuboid UnitCubeAtOrigin = new(Cuboid.UnitCube, Location.Origin);
 	readonly TranslatedConvexShape<Cuboid> _impl;
 
 	// TODO xmldoc this is the center point
@@ -78,6 +79,7 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public BoundedRay EdgeAt(IntercardinalOrientation edge) => _impl.TransformToWorldSpace(_impl.BaseShape.EdgeAt(edge));
 
+
 	public unsafe IndirectEnumerable<PositionedCuboid, Location> Corners => new(this, GetIteratorVersion(this), &GetCornerCountForEnumerator, &GetIteratorVersion, &GetCornerForEnumerator);
 	static int GetCornerCountForEnumerator(PositionedCuboid _) => 8;
 	static Location GetCornerForEnumerator(PositionedCuboid @this, int index) => @this.CornerAt(OrientationUtils.AllDiagonals[index]);
@@ -105,6 +107,7 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 
 	public PositionedCuboid WithVolume(float newVolume) => new(_impl.BaseShape.WithVolume(newVolume), Position);
 	public PositionedCuboid WithSurfaceArea(float newSurfaceArea) => new(_impl.BaseShape.WithSurfaceArea(newSurfaceArea), Position);
+	public PositionedCuboid WithAllExtentsAdjustedBy(float adjustment) => new(_impl.BaseShape.WithAllExtentsAdjustedBy(adjustment), Position);
 
 	Cuboid ITranslatedShape<PositionedCuboid, Cuboid>.BaseShape {
 		get => _impl.BaseShape;
