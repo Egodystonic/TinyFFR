@@ -206,6 +206,15 @@ StartExportedFunc(set_view_screen_space_effects_level, ViewDescriptorHandle view
 	EndExportedFunc
 }
 
+void native_impl_render::set_view_frustum_culling_enabled(ViewDescriptorHandle viewDescriptor, interop_bool enabled) {
+	ThrowIfNull(viewDescriptor, "View was null.");
+	viewDescriptor->setFrustumCullingEnabled(enabled);
+}
+StartExportedFunc(set_view_frustum_culling_enabled, ViewDescriptorHandle viewDescriptor, interop_bool enabled) {
+	native_impl_render::set_view_frustum_culling_enabled(viewDescriptor, enabled);
+	EndExportedFunc
+}
+
 
 void native_impl_render::allocate_render_target(int32_t width, int32_t height, TextureHandle* outBuffer, RenderTargetHandle* outRenderTarget) {
 	ThrowIfNull(outBuffer, "Buffer out pointer was null.");

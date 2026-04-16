@@ -140,6 +140,10 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 
 		_actualRenderer.SetQuality(newConfig);
 	}
+	public void SetFrustumCullingEnabled(ResourceHandle<Renderer> handle, bool enabled) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		_actualRenderer.SetFrustumCullingEnabled(enabled);
+	}
 	public void WaitForGpu(ResourceHandle<Renderer> handle) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		_actualRenderer.WaitForGpu();

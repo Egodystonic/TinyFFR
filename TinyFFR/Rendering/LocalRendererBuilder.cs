@@ -405,6 +405,11 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		SetViewScreenSpaceEffectsLevel(_loadedRenderers[handle].Viewport.Handle, (int) newConfig.ScreenSpaceEffectsQuality).ThrowIfFailure();
 	}
 
+	public void SetFrustumCullingEnabled(ResourceHandle<Renderer> handle, bool enabled) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		SetViewFrustumCullingEnabled(_loadedRenderers[handle].Viewport.Handle, enabled).ThrowIfFailure();
+	}
+
 	public Texture CreateDynamicTexture(ResourceHandle<RenderOutputBuffer> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return HandleToInstance(new ResourceHandle<Texture>(_loadedBuffers[handle].TextureHandle));
@@ -694,6 +699,11 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 	static extern InteropResult SetViewScreenSpaceEffectsLevel(
 		UIntPtr viewDescriptorHandle,
 		int level
+	);
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_frustum_culling_enabled")]
+	static extern InteropResult SetViewFrustumCullingEnabled(
+		UIntPtr viewDescriptorHandle,
+		InteropBool enabled
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "render_scene")]

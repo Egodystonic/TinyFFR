@@ -16,6 +16,7 @@ public interface IRendererImplProvider : IDisposableResourceImplProvider<Rendere
 	RenderOutputBuffer? GetBuffer(ResourceHandle<Renderer> handle);
 	void Render(ResourceHandle<Renderer> handle);
 	void SetQualityConfig(ResourceHandle<Renderer> handle, RenderQualityConfig newConfig);
+	void SetFrustumCullingEnabled(ResourceHandle<Renderer> handle, bool enabled);
 	void WaitForGpu(ResourceHandle<Renderer> handle);
 	void CaptureScreenshot(ResourceHandle<Renderer> handle, ReadOnlySpan<char> bitmapFilePath, BitmapSaveConfig? saveConfig, XYPair<int>? captureResolution);
 	void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop);

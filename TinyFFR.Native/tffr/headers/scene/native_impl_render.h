@@ -29,6 +29,7 @@ public:
 
 	static void set_view_shadow_fidelity_level(ViewDescriptorHandle viewDescriptor, int32_t level);
 	static void set_view_screen_space_effects_level(ViewDescriptorHandle viewDescriptor, int32_t level);
+	static void set_view_frustum_culling_enabled(ViewDescriptorHandle viewDescriptor, interop_bool enabled);
 
 	static void allocate_render_target(int32_t width, int32_t height, TextureHandle* outBuffer, RenderTargetHandle* outRenderTarget);
 	static void dispose_render_target_buffer(TextureHandle buffer);

@@ -68,6 +68,9 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetQuality(RenderQualityConfig newQualityConfig) => Implementation.SetQualityConfig(_handle, newQualityConfig);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetFrustumCullingEnabled(bool enabled) => Implementation.SetFrustumCullingEnabled(_handle, enabled);
+
 	// TODO make it clear that CaptureScreenshot incurs a framedrop penalty and that rendering to an output buffer is preferable for continuous CPU streaming
 	// TODO also make it clear that the bitmapFilePath overload can throw IOException
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
