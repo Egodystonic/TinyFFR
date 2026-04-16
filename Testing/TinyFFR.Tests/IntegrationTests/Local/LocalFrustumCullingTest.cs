@@ -72,6 +72,10 @@ class LocalFrustumCullingTest {
 			renderer.Render();
 		}
 		
-		
+		foreach (var instance in instances) {
+			scene.Remove(instance);
+			instance.Dispose();
+		}
+		foreach (var mesh in meshes) mesh.Dispose();
 	}
 }

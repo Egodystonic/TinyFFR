@@ -19,6 +19,7 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/7?closed=1) 
 
 ### Improvements
 
+* Enabled frustum culling by default, auto-calculate axis-aligned bounding box for all geometry
 * Added ability to generate random locations inside convex shapes
 * Improved error messages when exceeding internal buffer size
 * Made it possible to create mock resources for testing

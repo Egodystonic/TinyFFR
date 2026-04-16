@@ -13,7 +13,7 @@ search:
 TinyFFR (*Tiny* *F*ixed *F*unction *R*enderer) is a C# .NET9 library designed to help you render things in 3D:
 
 * Delivered via [NuGet](https://www.nuget.org/packages/Egodystonic.TinyFFR/)
-* Supports :fontawesome-brands-windows: Windows, :fontawesome-brands-apple: MacOS (Apple Silicon only), :fontawesome-brands-linux: Linux (Debian/Ubuntu)
+* Supports :fontawesome-brands-windows: Windows, :fontawesome-brands-apple: MacOS (Apple Silicon only), :fontawesome-brands-linux: Linux (Wayland; Debian/Ubuntu)
 * Standalone or integrated with WPF, Avalonia, Winforms
 * Free for commercial and non-commercial use ([see license](https://github.com/Egodystonic/TinyFFR/blob/main/LICENSE.md))
 * Physically-based rendering (via [filament](https://github.com/google/filament))
