@@ -12,14 +12,14 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/7?closed=1) 
 
 ### Major Features
 
+* Enabled frustum culling by default, auto-calculate axis-aligned bounding box for all geometry
 * Added control for camera exposure
 * Added resource directory (allowing finding active resources at runtime)
-* Added FPS metrics to application loop
-* Added translation / rotation for shapes
 
 ### Improvements
 
-* Enabled frustum culling by default, auto-calculate axis-aligned bounding box for all geometry
+* Added FPS metrics to application loop
+* Added translation / rotation for shapes
 * Added ability to generate random locations inside convex shapes
 * Improved error messages when exceeding internal buffer size
 * Made it possible to create mock resources for testing
