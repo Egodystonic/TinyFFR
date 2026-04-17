@@ -1,17 +1,18 @@
 // Created on 2026-04-16 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+using static System.Single;
+
 namespace Egodystonic.TinyFFR;
 
 #pragma warning disable CA1815 // "Should override Equals" -- Can't meaningfully compare function pointers
 public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatable<T> {
 #pragma warning restore CA1815
 #pragma warning disable CA1034 // "Do not nest publicly-visible types" -- I prefer it like this
-	public readonly record struct StaticParameterGroup(float AdditionalParameterA, float AdditionalParameterB, float AdditionalParameterC, float AdditionalParameterD) {
-		
-		public StaticParameterGroup(float additionalParameterA) : this(additionalParameterA, 0f, 0f, 0f) {}
-		public StaticParameterGroup(float additionalParameterA, float additionalParameterB) : this(additionalParameterA, additionalParameterB, 0f, 0f) {}
-		public StaticParameterGroup(float additionalParameterA, float additionalParameterB, float additionalParameterC) : this(additionalParameterA, additionalParameterB, additionalParameterC, 0f) {}
+	public readonly record struct StaticParameterGroup(float A, float B, float C, float D) {
+		public StaticParameterGroup(float a) : this(a, 0f, 0f, 0f) {}
+		public StaticParameterGroup(float a, float b) : this(a, b, 0f, 0f) {}
+		public StaticParameterGroup(float a, float b, float c) : this(a, b, c, 0f) {}
 	}
 #pragma warning restore CA1034
 	readonly delegate* managed<T, T, StaticParameterGroup, float, T> _algorithmPtr;
@@ -19,6 +20,7 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 
 	public InterpolationAlgorithm() => this = Linear();
 	InterpolationAlgorithm(delegate* managed<T, T, StaticParameterGroup, float, T> algorithmPtr, StaticParameterGroup parameters) {
+		ArgumentNullException.ThrowIfNull(algorithmPtr);
 		_algorithmPtr = algorithmPtr;
 		_parameters = parameters;
 	}
@@ -48,7 +50,7 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 		return new(&Algorithm, new());
 	}
 
-	public static InterpolationAlgorithm<T> Accelerate(Strength strength = Strength.Standard) => Accelerate(strength switch {
+	public static InterpolationAlgorithm<T> AccelerateFromSlow(Strength strength = Strength.Standard) => AccelerateFromSlow(strength switch {
 		Strength.None => 1f,
 		Strength.VeryMild => 1.3f,
 		Strength.Mild => 1.75f,
@@ -56,9 +58,9 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 		Strength.VeryStrong => 5f,
 		_ => 2f
 	});
-	public static InterpolationAlgorithm<T> Accelerate(float exponent) { // TODO xmldoc this is EaseIn
+	public static InterpolationAlgorithm<T> AccelerateFromSlow(float exponent) { // TODO xmldoc this is EaseIn; starts slow and accelerates up to 1.0
 		static T Algorithm(T start, T end, StaticParameterGroup parameters, float linearDistance) {
-			return T.Interpolate(start, end, MathF.Pow(linearDistance, parameters.AdditionalParameterA));
+			return T.Interpolate(start, end, MathF.Pow(linearDistance, parameters.A));
 		}
 		static T AlgorithmSpecializationSquare(T start, T end, StaticParameterGroup parameters, float linearDistance) {
 			return T.Interpolate(start, end, linearDistance * linearDistance);
@@ -74,7 +76,7 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 		};
 	}
 
-	public static InterpolationAlgorithm<T> Decelerate(Strength strength = Strength.Standard) => Decelerate(strength switch {
+	public static InterpolationAlgorithm<T> DecelerateFromFast(Strength strength = Strength.Standard) => DecelerateFromFast(strength switch {
 		Strength.None => 1f,
 		Strength.VeryMild => 1.3f,
 		Strength.Mild => 1.75f,
@@ -82,9 +84,9 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 		Strength.VeryStrong => 5f,
 		_ => 2f
 	});
-	public static InterpolationAlgorithm<T> Decelerate(float exponent) { // TODO xmldoc this is EaseOut
+	public static InterpolationAlgorithm<T> DecelerateFromFast(float exponent) { // TODO xmldoc this is EaseOut; starts fast and decelerates to 1.0
 		static T Algorithm(T start, T end, StaticParameterGroup parameters, float linearDistance) {
-			return T.Interpolate(start, end, 1f - MathF.Pow(1f - linearDistance, parameters.AdditionalParameterA));
+			return T.Interpolate(start, end, 1f - MathF.Pow(1f - linearDistance, parameters.A));
 		}
 		static T AlgorithmSpecializationSquare(T start, T end, StaticParameterGroup parameters, float linearDistance) {
 			var linearDistanceMirrored = 1f - linearDistance;
@@ -102,7 +104,7 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 		};
 	}
 
-	public static InterpolationAlgorithm<T> AccelerateWithInitialReverse(Strength strength = Strength.Standard) => AccelerateWithInitialReverse(strength switch {
+	public static InterpolationAlgorithm<T> AccelerateFromSlowWithInitialReverse(Strength strength = Strength.Standard) => AccelerateFromSlowWithInitialReverse(strength switch {
 		Strength.None => 0f,
 		Strength.VeryMild => 1f,
 		Strength.Mild => 1.3f,
@@ -110,15 +112,19 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 		Strength.VeryStrong => 4f,
 		_ => 1.70158f // Results in a ~10% undershoot, from Robert Penner's algorithms
 	});
-	public static InterpolationAlgorithm<T> AccelerateWithInitialReverse(float coefficient) {
+	public static InterpolationAlgorithm<T> AccelerateFromSlowWithInitialReverse(float coefficient) {
 		static T Algorithm(T start, T end, StaticParameterGroup parameters, float linearDistance) {
 			var linearDistanceSquared = linearDistance * linearDistance;
-			return T.Interpolate(start, end, parameters.AdditionalParameterA * linearDistanceSquared * linearDistance - parameters.AdditionalParameterB * linearDistanceSquared);
+			return T.Interpolate(
+				start, 
+				end, 
+				parameters.A * linearDistanceSquared * linearDistance - parameters.B * linearDistanceSquared
+			);
 		}
 		return new(&Algorithm, new(coefficient + 1f, coefficient));
 	}
 
-	public static InterpolationAlgorithm<T> DecelerateWithOvershoot(Strength strength = Strength.Standard) => DecelerateWithOvershoot(strength switch {
+	public static InterpolationAlgorithm<T> DecelerateFromFastWithOvershoot(Strength strength = Strength.Standard) => DecelerateFromFastWithOvershoot(strength switch {
 		Strength.None => 0f,
 		Strength.VeryMild => 1f,
 		Strength.Mild => 1.3f,
@@ -126,60 +132,94 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 		Strength.VeryStrong => 4f,
 		_ => 1.70158f // Results in a ~10% overshoot, from Robert Penner's algorithms
 	});
-	public static InterpolationAlgorithm<T> DecelerateWithOvershoot(float coefficient) {
+	public static InterpolationAlgorithm<T> DecelerateFromFastWithOvershoot(float coefficient) {
 		static T Algorithm(T start, T end, StaticParameterGroup parameters, float linearDistance) {
 			var linearDistanceMirrored = 1f - linearDistance;
 			var linearDistanceMirroredSquared = linearDistanceMirrored * linearDistanceMirrored;
-			var distance = 1f + parameters.AdditionalParameterA * linearDistanceMirroredSquared * linearDistanceMirrored + parameters.AdditionalParameterB * linearDistanceMirroredSquared;
-			return T.Interpolate(start, end, distance);
+			return T.Interpolate(
+				start, 
+				end, 
+				1f - parameters.A * linearDistanceMirroredSquared * linearDistanceMirrored + parameters.B * linearDistanceMirroredSquared
+			);
 		}
 		return new(&Algorithm, new(coefficient + 1f, coefficient));
 	}
 	
-	public static InterpolationAlgorithm<T> AccelerateDecelerate() { // TODO bool param to choose between smooth or smoother, xmldoc this is smoothstep
-		static T Algorithm(T start, T end, StaticParameterGroup parameters, float linearDistance) {
+	public static InterpolationAlgorithm<T> Natural(bool additionalSmoothing = false) { // TODO xmldoc this is smoothstep/smootherstep
+		static T AlgorithmSmoothStep(T start, T end, StaticParameterGroup parameters, float linearDistance) {
 			return T.Interpolate(start, end, linearDistance * linearDistance * (3f - 2f * linearDistance));
 		}
-		return new(&Algorithm, new());
+		static T AlgorithmSmootherStep(T start, T end, StaticParameterGroup parameters, float linearDistance) {
+			return T.Interpolate(start, end, linearDistance * linearDistance * linearDistance * (linearDistance * (6.0f * linearDistance - 15.0f) + 10.0f));
+		}
+		return additionalSmoothing 
+			? new(&AlgorithmSmootherStep, new())
+			: new(&AlgorithmSmoothStep, new()) ;
 	}
 
-	public static InterpolationAlgorithm<T> CubicBezier(XYPair<float> firstCoord, XYPair<float> secondCoord) {
+	public static InterpolationAlgorithm<T> CubicBezier(XYPair<float> firstCoord, XYPair<float> secondCoord) { // TODO call out https://cubic-bezier.com as a way to play with these parameters
 		static T Algorithm(T start, T end, StaticParameterGroup parameters, float linearDistance) {
-			var cx = 3f * parameters.AdditionalParameterA;
-			var bx = 3f * (parameters.AdditionalParameterC - parameters.AdditionalParameterA) - cx;
-			var ax = 1f - cx - bx;
+			const float AcceptableErrorMargin = 1E-5f;
+			const float MinNewtonRaphsonGradient = 1E-6f;
+			const int MaxNewtonRaphsonIterations = 8;
+			const int MaxBinarySearchIterations = 20;
 
-			var cy = 3f * parameters.AdditionalParameterB;
-			var by = 3f * (parameters.AdditionalParameterD - parameters.AdditionalParameterB) - cy;
-			var ay = 1f - cy - by;
-
-			// Newton-Raphson to find bezier parameter u for given x-axis value t
-			var u = linearDistance;
-			for (var i = 0; i < 8; ++i) {
-				var xError = ((ax * u + bx) * u + cx) * u - linearDistance;
-				if (MathF.Abs(xError) < 1e-6f) goto solved;
-				var derivative = (3f * ax * u + 2f * bx) * u + cx;
-				if (MathF.Abs(derivative) < 1e-6f) break;
-				u -= xError / derivative;
+			// These two escape hatches continue the slope at x=0 or x=1
+			if (linearDistance < 0f) {
+				var x0Slope = parameters.A > 0f ? parameters.B / parameters.A : (parameters.C > 0f ? parameters.D / parameters.C : 1f);
+				return T.Interpolate(start, end, x0Slope * linearDistance);
+			}
+			if (linearDistance > 1f) {
+				var secondCoordYMirrored = 1f - parameters.C;
+				var firstCoordYMirrored = 1f - parameters.A;
+				var x1Slope = secondCoordYMirrored > 0f ? (1f - parameters.D) / secondCoordYMirrored : (firstCoordYMirrored > 0f ? (1f - parameters.B) / firstCoordYMirrored : 1f);
+				return T.Interpolate(start, end, FusedMultiplyAdd(x1Slope, linearDistance, 1f - x1Slope));
 			}
 
-			// Binary search fallback
-			var lo = 0f;
-			var hi = 1f;
-			u = linearDistance;
-			for (var i = 0; i < 20; ++i) {
-				var x = ((ax * u + bx) * u + cx) * u;
-				if (MathF.Abs(x - linearDistance) < 1e-6f) goto solved;
-				if (linearDistance > x) lo = u;
-				else hi = u;
-				u = (lo + hi) * 0.5f;
+			var cx = 3f * parameters.A;
+			var bx = 3f * (parameters.C - parameters.A) - cx;
+			var ax = (1f - cx) - bx;
+
+			var cy = 3f * parameters.B;
+			var by = 3f * (parameters.D - parameters.B) - cy;
+			var ay = (1f - cy) - by;
+			
+			var threeAx = ax * 3f;
+			var twoBx = bx * 2f;
+
+			var solution = linearDistance;
+			for (var i = 0; i < MaxNewtonRaphsonIterations; ++i) {
+				var xAxisDistanceFromRoot = FusedMultiplyAdd(FusedMultiplyAdd(FusedMultiplyAdd(ax, solution, bx), solution, cx), solution, -linearDistance);
+				if (MathF.Abs(xAxisDistanceFromRoot) < AcceptableErrorMargin) goto solved;
+				var derivative = FusedMultiplyAdd(FusedMultiplyAdd(threeAx, solution, twoBx), solution, cx);
+				if (MathF.Abs(derivative) < MinNewtonRaphsonGradient) break;
+				solution -= xAxisDistanceFromRoot * ReciprocalEstimate(derivative);
+			}
+
+			solution = linearDistance;
+			var binarySearchBoundsMin = 0f;
+			var binarySearchBoundsMax = 1f;
+			for (var i = 0; i < MaxBinarySearchIterations; ++i) {
+				var x = FusedMultiplyAdd(FusedMultiplyAdd(ax, solution, bx), solution, cx) * solution;
+				if (MathF.Abs(x - linearDistance) < AcceptableErrorMargin) goto solved;
+				if (linearDistance > x) binarySearchBoundsMin = solution;
+				else binarySearchBoundsMax = solution;
+				solution = (binarySearchBoundsMin + binarySearchBoundsMax) * 0.5f;
 			}
 
 			solved:
-			var distance = ((ay * u + by) * u + cy) * u;
-			return T.Interpolate(start, end, distance);
+			return T.Interpolate(start, end, FusedMultiplyAdd(FusedMultiplyAdd(ay, solution, by), solution, cy) * solution);
 		}
-		return new(&Algorithm, new(firstCoord.X, firstCoord.Y, secondCoord.X, secondCoord.Y));
+		
+		return new(
+			&Algorithm, 
+			new(
+				Clamp(firstCoord.X, 0f, 1f), 
+				firstCoord.Y, 
+				Clamp(secondCoord.X, 0f, 1f), 
+				secondCoord.Y
+			)
+		);
 	}
 	#endregion
 }
