@@ -25,7 +25,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		_controllerPool.Return(this);
 	}
 	#endregion
-	
+
 	public const float DefaultHeightMax = 0.35f;
 	public const float DefaultHeightMin = 0.1f;
 	public const float DefaultDistanceMax = 2f;
@@ -42,8 +42,8 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	readonly Spring1DBasedCameraSetpoint _heightSetpoint = new();
 	readonly CameraEffectStrengthMap _heightSmoothingStrengthMap = new(
 		None: 0f,
-		VeryMild: 0.02f,
-		Mild: 0.05f,
+		VeryMild: 0.05f,
+		Mild: 0.10f,
 		Standard: 0.15f,
 		Strong: 0.25f,
 		VeryStrong: 0.4f
@@ -57,7 +57,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		Strong: 0.65f,
 		VeryStrong: 0.9f
 	);
-	
+
 	public Strength AngleSmoothingStrength {
 		get => _angleSmoothingStrengthMap.From(_angleSetpoint.HalfLife);
 		set => _angleSetpoint.HalfLife = _angleSmoothingStrengthMap.From(value);
@@ -74,11 +74,13 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		get => _heightSetpoint.TargetValue;
 		set {
 			if (!Single.IsFinite(value)) return;
+			if (value < MinHeight) value = MinHeight.Value;
+			else if (value > MaxHeight) value = MaxHeight.Value;
 			_heightSetpoint.TargetValue = value;
 		}
 	}
 	public Direction UpDirection {
-		get; 
+		get;
 		set {
 			if (value == Direction.None) return;
 			field = value;
@@ -93,22 +95,43 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 			field = value.OrthogonalizedAgainst(UpDirection) ?? Direction.None;
 			if (field == Direction.None) field = UpDirection.AnyOrthogonal();
 		}
-	} 
+	}
 	public float Distance {
 		get => _distanceSetpoint.TargetValue;
 		set {
 			if (!value.IsNonNegativeAndFinite()) return;
-			_distanceSetpoint.TargetValue = value; 
+			if (value < MinDistance) value = MinDistance.Value;
+			else if (value > MaxDistance) value = MaxDistance.Value;
+			_distanceSetpoint.TargetValue = value;
 		}
 	}
 	public Angle Angle {
 		get => _angleSetpoint.TargetValue;
 		set {
 			if (!Single.IsFinite(value.Radians)) return;
+			if (MaxAngleDiffFromZero is { } nonNullMaxAngleAbs) {
+				if (nonNullMaxAngleAbs <= Angle.Zero) {
+					_angleSetpoint.TargetValue = Angle.Zero;
+					return;
+				}
+				var normalized = value.Normalized;
+				var half = nonNullMaxAngleAbs * 0.5f;
+				var negHalfNorm = (-half).Normalized;
+				var amountOver = normalized - half;
+				var amountUnder = negHalfNorm - normalized;
+				if (amountOver > Angle.Zero && amountUnder > Angle.Zero) {
+					value = amountOver > amountUnder ? negHalfNorm : half;
+				}
+			}
 			_angleSetpoint.TargetValue = value;
 		}
 	}
 	public Location Target { get; set; }
+	public Angle? MaxAngleDiffFromZero { get; set; } = null;
+	public float? MinHeight { get; set; } = DefaultHeightMin;
+	public float? MaxHeight { get; set; } = DefaultHeightMax;
+	public float? MinDistance { get; set; } = DefaultDistanceMin;
+	public float? MaxDistance { get; set; } = DefaultDistanceMax;
 
 	public void SetCustomAngleSmoothingStrength(float smoothingHalfLife) {
 		_angleSetpoint.HalfLife = smoothingHalfLife;
@@ -126,11 +149,17 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	}
 
 	public void ResetParametersToDefault() {
+		MaxAngleDiffFromZero = null;
+		MinHeight = DefaultHeightMin;
+		MaxHeight = DefaultHeightMax;
+		MinDistance = DefaultDistanceMin;
+		MaxDistance = DefaultDistanceMax;
+		UpDirection = Direction.Up;
+		ZeroAngleDirection = Direction.None;
+		Target = Location.Origin;
 		_angleSetpoint.Reset(Angle.Zero);
 		_heightSetpoint.Reset(DefaultHeightMin);
 		_distanceSetpoint.Reset(DefaultDistanceMin);
-		UpDirection = Direction.Up;
-		Target = Location.Origin;
 		SetGlobalSmoothing(Strength.Standard);
 	}
 
@@ -138,119 +167,124 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		_angleSetpoint.Progress(deltaTime);
 		_heightSetpoint.Progress(deltaTime);
 		_distanceSetpoint.Progress(deltaTime);
-		
+
 		var planarOffset = (_angleSetpoint.CurrentValue % UpDirection) * ZeroAngleDirection * _distanceSetpoint.CurrentValue;
 		var heightOffset = UpDirection * _heightSetpoint.CurrentValue;
 		Camera.SetPosition(Target + planarOffset + heightOffset);
 		Camera.LookAt(Target, UpDirection);
 	}
-	
-	public void AdjustAngle(Angle adjustment, Angle? maxAngleDiffFromZero = null) {
-		Angle += adjustment;
-		if (maxAngleDiffFromZero is not { } nonNullMaxAngleAbs) return;
-		var half = nonNullMaxAngleAbs * 0.5f;
-		var negHalfNorm = (-half).Normalized;
-		
-		var amountOver = Angle - half;
-		var amountUnder = negHalfNorm - Angle;
-		if (amountOver > Angle.Zero && amountUnder > Angle.Zero) {
-			if (amountOver > amountUnder) Angle = negHalfNorm;
-			else Angle = half;
-		}
-	}
-	public void AdjustAngleViaMouseCursor(XYPair<int> cursorDelta, Angle adjustmentPerPixel, Axis2D axis = Axis2D.X, bool invertMouseControl = false, Angle? maxAngleDiffFromZero = null) {
+
+	public void AdjustAngleViaMouseCursor(XYPair<int> cursorDelta, Angle adjustmentPerPixel, Axis2D axis = Axis2D.X, bool invertMouseControl = false) {
 		var delta = axis switch {
 			Axis2D.X => cursorDelta.X,
 			Axis2D.Y => -cursorDelta.Y,
 			_ => 0
 		} * (invertMouseControl ? -1f : 1f);
 
-		AdjustAngle(delta * adjustmentPerPixel, maxAngleDiffFromZero);
+		Angle += delta * adjustmentPerPixel;
 	}
-	public void AdjustAngleViaMouseWheel(int mouseWheelDelta, Angle adjustmentPerWheelIncrement, Angle? maxAngleDiffFromZero = null) {
-		AdjustAngle(mouseWheelDelta * adjustmentPerWheelIncrement, maxAngleDiffFromZero);
+	public void AdjustAngleViaMouseWheel(int mouseWheelDelta, Angle adjustmentPerWheelIncrement, bool invertMouseControl = false) {
+		Angle += mouseWheelDelta * adjustmentPerWheelIncrement * (invertMouseControl ? -1f: 1f);
 	}
-	public void AdjustAngleViaControllerStick(GameControllerStickPosition stickPosition, Angle fullStickDisplacementAdjustmentPerSec, float deltaTime, bool invertStickControl = false, Axis2D axis = Axis2D.X, Angle? maxAngleDiffFromZero = null) {
+	public void AdjustAngleViaControllerStick(GameControllerStickPosition stickPosition, Angle maxAdjustmentPerSec, float deltaTime, bool invertStickControl = false, Axis2D axis = Axis2D.X) {
 		var delta = axis switch {
 			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
 			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
 			_ => 0f
 		} * (invertStickControl ? -deltaTime : deltaTime);
-		
-		AdjustAngle(fullStickDisplacementAdjustmentPerSec * delta, maxAngleDiffFromZero);
+
+		Angle += maxAdjustmentPerSec * delta;
 	}
-	public void AdjustAngleViaControllerTriggers(GameControllerTriggerPosition anticlockwiseTriggerPosition, GameControllerTriggerPosition clockwiseTriggerPosition, Angle fullTriggerDisplacementAdjustmentPerSec, float deltaTime, Angle? maxAngleDiffFromZero = null) {
-		AdjustAngle(
-			deltaTime * (anticlockwiseTriggerPosition.GetDisplacementWithDeadzone() * fullTriggerDisplacementAdjustmentPerSec - clockwiseTriggerPosition.GetDisplacementWithDeadzone() * fullTriggerDisplacementAdjustmentPerSec), 
-			maxAngleDiffFromZero
-		);
+	public void AdjustAngleViaControllerTriggers(GameControllerTriggerPosition anticlockwiseTriggerPosition, GameControllerTriggerPosition clockwiseTriggerPosition, Angle maxAdjustmentPerSec, float deltaTime) {
+		Angle += deltaTime 
+			* (anticlockwiseTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - clockwiseTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec);
 	}
-	
-	public void AdjustHeight(float adjustment, float? minHeight = DefaultHeightMin, float? maxHeight = DefaultHeightMax) {
-		Height += adjustment;
-		if (Height < minHeight) Height = minHeight.Value;
-		else if (Height > maxHeight) Height = maxHeight.Value;
+	public void AdjustAngleViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Angle adjustmentPerSec, float deltaTime) {
+		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
+		Angle += adjustmentPerSec * deltaTime;
 	}
-	public void AdjustHeightViaMouseCursor(XYPair<int> cursorDelta, float adjustmentPerPixel, Axis2D axis = Axis2D.Y, bool invertMouseControl = false, float? minHeight = DefaultHeightMin, float? maxHeight = DefaultHeightMax) {
+	public void AdjustAngleViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Angle adjustmentPerSec, float deltaTime) {
+		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
+		Angle += adjustmentPerSec * deltaTime;
+	}
+
+	public void AdjustHeightViaMouseCursor(XYPair<int> cursorDelta, float adjustmentPerPixel, Axis2D axis = Axis2D.Y, bool invertMouseControl = false) {
 		var delta = axis switch {
 			Axis2D.X => cursorDelta.X,
 			Axis2D.Y => -cursorDelta.Y,
 			_ => 0
 		} * (invertMouseControl ? -1f : 1f);
-		
-		AdjustHeight(delta * adjustmentPerPixel, minHeight, maxHeight);
+
+		Height += delta * adjustmentPerPixel;
 	}
-	public void AdjustHeightViaMouseWheel(int mouseWheelDelta, float adjustmentPerWheelIncrement, float? minHeight = DefaultHeightMin, float? maxHeight = DefaultHeightMax) {
-		AdjustHeight(mouseWheelDelta * adjustmentPerWheelIncrement, minHeight, maxHeight);
+	public void AdjustHeightViaMouseWheel(int mouseWheelDelta, float adjustmentPerWheelIncrement, bool invertMouseControl = false) {
+		Height += mouseWheelDelta * adjustmentPerWheelIncrement * (invertMouseControl ? -1f: 1f);
 	}
-	public void AdjustHeightViaControllerStick(GameControllerStickPosition stickPosition, float fullStickDisplacementAdjustmentPerSec, float deltaTime, Axis2D axis = Axis2D.Y, bool invertStickControl = false, float? minHeight = DefaultHeightMin, float? maxHeight = DefaultHeightMax) {
+	public void AdjustHeightViaControllerStick(GameControllerStickPosition stickPosition, float maxAdjustmentPerSec, float deltaTime, Axis2D axis = Axis2D.Y, bool invertStickControl = false) {
 		var delta = axis switch {
 			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
 			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
 			_ => 0f
 		} * (invertStickControl ? -deltaTime : deltaTime);
-		
-		AdjustHeight(fullStickDisplacementAdjustmentPerSec * delta, minHeight, maxHeight);
+
+		Height += maxAdjustmentPerSec * delta;
 	}
-	public void AdjustHeightViaControllerTriggers(GameControllerTriggerPosition increasingTriggerPosition, GameControllerTriggerPosition decreasingTriggerPosition, float fullTriggerDisplacementAdjustmentPerSec, float deltaTime, float? minHeight = DefaultHeightMin, float? maxHeight = DefaultHeightMax) {
-		AdjustHeight(
-			deltaTime * (increasingTriggerPosition.GetDisplacementWithDeadzone() * fullTriggerDisplacementAdjustmentPerSec - decreasingTriggerPosition.GetDisplacementWithDeadzone() * fullTriggerDisplacementAdjustmentPerSec), 
-			minHeight, 
-			maxHeight
-		);
+	public void AdjustHeightViaControllerTriggers(GameControllerTriggerPosition increasingTriggerPosition, GameControllerTriggerPosition decreasingTriggerPosition, float maxAdjustmentPerSec, float deltaTime) {
+		Height += deltaTime
+			* (increasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - decreasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec);
 	}
-	
-	public void AdjustDistance(float adjustment, float? minDistance = DefaultDistanceMin, float? maxDistance = DefaultDistanceMax) {
-		Distance += adjustment;
-		if (Distance < minDistance) Distance = minDistance.Value;
-		else if (Distance > maxDistance) Distance = maxDistance.Value;
+	public void AdjustHeightViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, float adjustmentPerSec, float deltaTime) {
+		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
+		Height += adjustmentPerSec * deltaTime;
 	}
-	public void AdjustDistanceViaMouseCursor(XYPair<int> cursorDelta, float adjustmentPerPixel, Axis2D axis = Axis2D.Y, bool invertMouseControl = false,float? minDistance = DefaultDistanceMin, float? maxDistance = DefaultDistanceMax) {
+	public void AdjustHeightViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, float adjustmentPerSec, float deltaTime) {
+		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
+		Height += adjustmentPerSec * deltaTime;
+	}
+
+	public void AdjustDistanceViaMouseCursor(XYPair<int> cursorDelta, float adjustmentPerPixel, Axis2D axis = Axis2D.Y, bool invertMouseControl = false) {
 		var delta = axis switch {
 			Axis2D.X => cursorDelta.X,
 			Axis2D.Y => -cursorDelta.Y,
 			_ => 0
 		} * (invertMouseControl ? -1f : 1f);
-		
-		AdjustDistance(delta * adjustmentPerPixel, minDistance, maxDistance);
+
+		Distance += delta * adjustmentPerPixel;
 	}
-	public void AdjustDistanceViaMouseWheel(int mouseWheelDelta, float adjustmentPerWheelIncrement, float? minDistance = DefaultDistanceMin, float? maxDistance = DefaultDistanceMax) {
-		AdjustDistance(mouseWheelDelta * adjustmentPerWheelIncrement, minDistance, maxDistance);
+	public void AdjustDistanceViaMouseWheel(int mouseWheelDelta, float adjustmentPerWheelIncrement, bool invertMouseControl = false) {
+		Distance += mouseWheelDelta * adjustmentPerWheelIncrement * (invertMouseControl ? -1f: 1f);
 	}
-	public void AdjustDistanceViaControllerStick(GameControllerStickPosition stickPosition, float fullStickDisplacementAdjustmentPerSec, float deltaTime, Axis2D axis = Axis2D.Y, bool invertStickControl = false, float? minDistance = DefaultDistanceMin, float? maxDistance = DefaultDistanceMax) {
+	public void AdjustDistanceViaControllerStick(GameControllerStickPosition stickPosition, float maxAdjustmentPerSec, float deltaTime, Axis2D axis = Axis2D.Y, bool invertStickControl = false) {
 		var delta = axis switch {
 			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
 			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
 			_ => 0f
 		} * (invertStickControl ? -deltaTime : deltaTime);
-		
-		AdjustDistance(fullStickDisplacementAdjustmentPerSec * delta, minDistance, maxDistance);
+
+		Distance += maxAdjustmentPerSec * delta;
 	}
-	public void AdjustDistanceViaControllerTriggers(GameControllerTriggerPosition increasingTriggerPosition, GameControllerTriggerPosition decreasingTriggerPosition, float fullTriggerDisplacementAdjustmentPerSec, float deltaTime, float? minDistance = DefaultDistanceMin, float? maxDistance = DefaultDistanceMax) {
-		AdjustDistance(
-			deltaTime * (increasingTriggerPosition.GetDisplacementWithDeadzone() * fullTriggerDisplacementAdjustmentPerSec - decreasingTriggerPosition.GetDisplacementWithDeadzone() * fullTriggerDisplacementAdjustmentPerSec), 
-			minDistance, 
-			maxDistance
-		);
+	public void AdjustDistanceViaControllerTriggers(GameControllerTriggerPosition increasingTriggerPosition, GameControllerTriggerPosition decreasingTriggerPosition, float maxAdjustmentPerSec, float deltaTime) {
+		Distance += deltaTime
+			* (increasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - decreasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec);
+	}
+	public void AdjustDistanceViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, float adjustmentPerSec, float deltaTime) {
+		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
+		Distance += adjustmentPerSec * deltaTime;
+	}
+	public void AdjustDistanceViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, float adjustmentPerSec, float deltaTime) {
+		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
+		Distance += adjustmentPerSec * deltaTime;
+	}
+	
+	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime, bool invertAngleControl = false, bool invertHeightControl = false, bool invertDistanceControl = false, Angle? angleAdjustmentPerPixel = null, float? heightAdjustmentPerPixel = null, float? distanceAdjustmentPerWheelIncrement = null) {
+		AdjustAngleViaMouseCursor(kbmInput.MouseCursorDelta, angleAdjustmentPerPixel ?? 0.02f, invertMouseControl: invertAngleControl);
+		AdjustHeightViaMouseCursor(kbmInput.MouseCursorDelta, heightAdjustmentPerPixel ?? 0.0001f, invertMouseControl: invertHeightControl);
+		AdjustDistanceViaMouseWheel(kbmInput.MouseScrollWheelDelta, distanceAdjustmentPerWheelIncrement ?? 0.045f, invertMouseControl: invertDistanceControl);
+	}
+	
+	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime, bool invertAngleControl = false, bool invertHeightControl = false, bool invertDistanceControl = false, Angle? maxAngleAdjustmentPerSec = null, float? maxHeightAdjustmentPerSec = null, float? maxDistanceAdjustmentPerSec = null) {
+		AdjustAngleViaControllerStick(controllerInput.RightStickPosition, maxAngleAdjustmentPerSec ?? 120f, deltaTime, invertStickControl: invertAngleControl);
+		AdjustHeightViaControllerTriggers(invertHeightControl ? controllerInput.RightTriggerPosition : controllerInput.LeftTriggerPosition, invertHeightControl ? controllerInput.LeftTriggerPosition : controllerInput.RightTriggerPosition, maxHeightAdjustmentPerSec ?? 0.5f, deltaTime);
+		AdjustDistanceViaControllerStick(controllerInput.LeftStickPosition, maxDistanceAdjustmentPerSec ?? 0.5f, deltaTime, invertStickControl: invertDistanceControl);
 	}
 }

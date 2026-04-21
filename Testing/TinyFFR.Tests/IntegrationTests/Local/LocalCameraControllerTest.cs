@@ -61,15 +61,14 @@ class LocalCameraControllerTest {
 		// 	Scene.Remove(g);
 		// 	g.Dispose();
 		// }
-		protected void CycleValue<T>(ref T? val, params T?[] options) where T : struct, IToleranceEquatable<T> {
+		protected T? CycleValue<T>(T? val, params T?[] options) where T : struct, IToleranceEquatable<T> {
 			for (var i = 0; i < options.Length; ++i) {
 				if ((val == null && options[i] == null) || (val != null && options[i] != null && val.Value.Equals(options[i]!.Value, 0.001f))) {
-					val = options[(i + 1) % options.Length];
-					return;
+					return options[(i + 1) % options.Length];
 				}
 			}
 			
-			val = options[0];
+			return options[0];
 		}
 		protected void CycleSmoothing() {
 			Smoothing = (Strength) ((int) Smoothing + 1);
@@ -124,12 +123,6 @@ class LocalCameraControllerTest {
 		ModelInstance[] _staticInstances = null!;
 		ModelInstance _targetInstance;
 		
-		Angle? _maxAngle;
-		Real? _minHeight;
-		Real? _maxHeight;
-		Real? _minDistance;
-		Real? _maxDistance;
-		
 		public OrbitalScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
 
 		public override void Start() {
@@ -137,12 +130,6 @@ class LocalCameraControllerTest {
 			_staticInstances = Enumerable.Range(0, 4).Select(_ => AddTestModelToScene()).ToArray();
 			_targetInstance = AddTestModelToScene();
 			_controller = Camera.CreateController<OrbitalCameraController>();
-			
-			_maxAngle = null;
-			_minHeight = OrbitalCameraController.DefaultHeightMin;
-			_maxHeight = OrbitalCameraController.DefaultHeightMax;
-			_minDistance = OrbitalCameraController.DefaultDistanceMin;
-			_maxDistance = OrbitalCameraController.DefaultDistanceMax;
 			
 			_staticInstances[0].SetPosition(new Location(-0.5f, 0f, 0f));
 			_staticInstances[1].SetPosition(new Location(0.5f, 0f, 0f));
@@ -157,23 +144,23 @@ class LocalCameraControllerTest {
 		}
 		public override string GetWindowTitleString() {
 			return 
-				$"[1] Angle {_controller.Angle:N0} (max {_maxAngle?.ToString() ?? "<none>"}) " +
-				$"[2] Height {_controller.Height:N2} (min {_minHeight?.ToString("N2") ?? "<none>"} max {_maxHeight?.ToString("N2") ?? "<none>"}) " +
-				$"[3] Distance {_controller.Distance:N2} (min {_minDistance?.ToString("N2") ?? "<none>"} max {_maxDistance?.ToString("N2") ?? "<none>"}) " +
+				$"[1] Angle {_controller.Angle:N0} (max {_controller.MaxAngleDiffFromZero?.ToString() ?? "<none>"}) " +
+				$"[2] Height {_controller.Height:N2} (min {_controller.MinHeight?.ToString("N2") ?? "<none>"} max {_controller.MaxHeight?.ToString("N2") ?? "<none>"}) " +
+				$"[3] Distance {_controller.Distance:N2} (min {_controller.MinDistance?.ToString("N2") ?? "<none>"} max {_controller.MaxDistance?.ToString("N2") ?? "<none>"}) " +
 				$"[0] Smoothing {Smoothing}";
 		}
 
 		public override void Iterate(float dt, ILatestInputRetriever input) {
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) {
-				CycleValue(ref _maxAngle, null, 180f, 90f, 20f);
+				_controller.MaxAngleDiffFromZero = CycleValue(_controller.MaxAngleDiffFromZero, null, 180f, 90f, 20f);
 			}
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) {
-				CycleValue(ref _minHeight, OrbitalCameraController.DefaultHeightMin, OrbitalCameraController.DefaultHeightMin * 2f, OrbitalCameraController.DefaultHeightMin * 0.2f, null);
-				CycleValue(ref _maxHeight, OrbitalCameraController.DefaultHeightMax, OrbitalCameraController.DefaultHeightMax * 2f, OrbitalCameraController.DefaultHeightMax * 0.2f, null);
+				_controller.MinHeight = CycleValue<Real>(_controller.MinHeight, OrbitalCameraController.DefaultHeightMin, OrbitalCameraController.DefaultHeightMin * 2f, OrbitalCameraController.DefaultHeightMin * 0.2f, null);
+				_controller.MaxHeight = CycleValue<Real>(_controller.MaxHeight, OrbitalCameraController.DefaultHeightMax, OrbitalCameraController.DefaultHeightMax * 2f, OrbitalCameraController.DefaultHeightMax * 0.2f, null);
 			}
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow3)) {
-				CycleValue(ref _minDistance, OrbitalCameraController.DefaultDistanceMin, OrbitalCameraController.DefaultDistanceMin * 2f, OrbitalCameraController.DefaultDistanceMin * 0.2f, null);
-				CycleValue(ref _maxDistance, OrbitalCameraController.DefaultDistanceMax, OrbitalCameraController.DefaultDistanceMax * 2f, OrbitalCameraController.DefaultDistanceMax * 0.2f, null);
+				_controller.MinDistance = CycleValue<Real>(_controller.MinDistance, OrbitalCameraController.DefaultDistanceMin, OrbitalCameraController.DefaultDistanceMin * 2f, OrbitalCameraController.DefaultDistanceMin * 0.2f, null);
+				_controller.MaxDistance = CycleValue<Real>(_controller.MaxDistance, OrbitalCameraController.DefaultDistanceMax, OrbitalCameraController.DefaultDistanceMax * 2f, OrbitalCameraController.DefaultDistanceMax * 0.2f, null);
 			}
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0)) {
 				CycleSmoothing();
@@ -182,12 +169,8 @@ class LocalCameraControllerTest {
 			
 			_targetInstance.RotateBy(90f % Direction.Up * dt, Location.Origin);
 
-			_controller.AdjustAngleViaMouseCursor(input.KeyboardAndMouse.MouseCursorDelta, 0.02f, maxAngleDiffFromZero: _maxAngle);
-			_controller.AdjustHeightViaMouseCursor(input.KeyboardAndMouse.MouseCursorDelta, 0.0001f, minHeight: _minHeight, maxHeight: _maxHeight);
-			_controller.AdjustDistanceViaMouseWheel(input.KeyboardAndMouse.MouseScrollWheelDelta, 0.015f, minDistance: _minDistance, maxDistance: _maxDistance);
-			_controller.AdjustAngleViaControllerStick(input.GameControllersCombined.LeftStickPosition, 120f, dt, maxAngleDiffFromZero: _maxAngle);
-			_controller.AdjustHeightViaControllerStick(input.GameControllersCombined.LeftStickPosition, 0.5f, dt, minHeight: _minHeight, maxHeight: _maxHeight);
-			_controller.AdjustDistanceViaControllerTriggers(input.GameControllersCombined.LeftTriggerPosition, input.GameControllersCombined.RightTriggerPosition, 0.5f, dt, minDistance: _minDistance, maxDistance: _maxDistance);
+			_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
+			_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
 			
 			_controller.Target = _targetInstance.Position;
 			_controller.Progress(dt);
