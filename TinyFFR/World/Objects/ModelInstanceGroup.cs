@@ -76,6 +76,9 @@ public readonly struct ModelInstanceGroup : ITransformedSceneObject, IDisposable
 	public void RotateBy(Rotation rotation) {
 		for (var i = 0; i < Count; ++i) Instances[i].RotateBy(rotation);
 	}
+	public void RotateBy(Rotation rotation, Location pivotPoint) {
+		for (var i = 0; i < Count; ++i) Instances[i].RotateBy(rotation, pivotPoint);
+	}
 	public void ScaleBy(float scalar) {
 		for (var i = 0; i < Count; ++i) Instances[i].ScaleBy(scalar);
 	}

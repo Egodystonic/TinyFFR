@@ -57,7 +57,7 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 	public ModelInstanceGroup CreateModelInstanceGroup(ResourceGroup modelGroup, in ModelInstanceCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		var enumerator = modelGroup.Models;
-		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: enumerator.Count, name: config.Name);
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: enumerator.Count > 0 ? enumerator.Count : 1, name: config.Name);
 		foreach (var model in enumerator) {
 			resourceGroup.Add(CreateModelInstance(model.Mesh, model.Material, in config));
 		}
@@ -113,6 +113,14 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 	public void RotateBy(ResourceHandle<ModelInstance> handle, Rotation rotation) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		UpdateTransformAndMatrix(handle, _activeInstanceTransforms[handle].WithAdditionalRotation(rotation));
+	}
+	public void RotateBy(ResourceHandle<ModelInstance> handle, Rotation rotation, Location pivotPoint) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var curTransform = _activeInstanceTransforms[handle];
+		var curLoc = curTransform.Translation.AsLocation();
+		var pivotToCurLoc = pivotPoint >> curLoc;
+		var newLoc = pivotPoint + (pivotToCurLoc * rotation); 
+		UpdateTransformAndMatrix(handle, (curTransform with { Translation = newLoc.AsVect() }).WithAdditionalRotation(rotation));
 	}
 	public void ScaleBy(ResourceHandle<ModelInstance> handle, float scalar) {
 		ThrowIfThisOrHandleIsDisposed(handle);

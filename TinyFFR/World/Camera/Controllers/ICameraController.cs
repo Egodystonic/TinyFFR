@@ -7,9 +7,9 @@ public interface ICameraController : IDisposable {
 	Camera Camera { get; }
 	
 	void ResetParametersToDefault();
-	void Progress(TimeSpan deltaTime) => Progress(deltaTime.AsDeltaTime());
 	void Progress(float deltaTime); 
+	void SetGlobalSmoothing(Strength newSmoothingStrength);
 }
-public interface ICameraController<TSelf> : ICameraController where TSelf : ICameraController<TSelf> {
+public interface ICameraController<out TSelf> : ICameraController where TSelf : ICameraController<TSelf> {
 	internal static abstract TSelf RentAndTetherToCamera(Camera camera);
 }

@@ -31,4 +31,5 @@ public interface IScaledSceneObject : IRescalableSceneObject {
 
 public interface ITransformedSceneObject : IPositionedSceneObject, IOrientedSceneObject, IScaledSceneObject {
 	Transform Transform { get; set; }
+	void RotateBy(Rotation rotation, Location pivotPoint);
 }

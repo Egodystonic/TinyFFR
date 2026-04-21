@@ -150,4 +150,40 @@ unsafe class InterpolationAlgorithmTest {
 		AssertToleranceEquals(1f, GetValue(ease, 1.5f), LocalTestTolerance);
 		AssertToleranceEquals(1f, GetValue(ease, 2f), LocalTestTolerance);
 	}
+
+	[Test]
+	public void ShouldCorrectlyGetValueFromStartAndTargetValue() {
+		var urlExampleBezier = InterpolationAlgorithm<Real>.CubicBezier((0.8f, -0.44f), (0f, 1.23f));
+
+		Assert.AreEqual(urlExampleBezier.GetValue(Real.Zero, Real.One, 1f), urlExampleBezier.GetValue(Real.Zero, Real.One, 10f, 0f));
+		
+		for (var i = 0; i < 1000; ++i) {
+			var s = Real.RandomNegOneToOneInclusive();
+			var t = Real.Random(0.1f, 1.1f);
+			AssertToleranceEquals(
+				urlExampleBezier.GetValue(Real.Zero, Real.One, s / t),
+				urlExampleBezier.GetValue(Real.Zero, Real.One, s, t),
+				TestTolerance
+			);
+		}
+	}
+
+	[Test]
+	public void UnsafeAlternativeMethodsShouldCalculateSameValueAsSafeDefaults() {
+		var urlExampleBezier = InterpolationAlgorithm<Real>.CubicBezier((0.8f, -0.44f), (0f, 1.23f));
+		
+		for (var i = 0; i < 1000; ++i) {
+			var s = Real.RandomNegOneToOneInclusive();
+			var t = Real.Random(0.1f, 1.1f);
+			
+			Assert.AreEqual(
+				urlExampleBezier.GetValue(Real.Zero, Real.One, s / t),
+				urlExampleBezier.UnsafeGetValueSkipNullCheck(Real.Zero, Real.One, s / t)
+			);
+			Assert.AreEqual(
+				urlExampleBezier.GetValue(Real.Zero, Real.One, s, t),
+				urlExampleBezier.UnsafeGetValueSkipNullAndDividendCheck(Real.Zero, Real.One, s, t)
+			);
+		}
+	}
 }

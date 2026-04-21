@@ -151,6 +151,7 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 
 	public void MoveBy(Vect translation) => Implementation.TranslateBy(_handle, translation);
 	public void RotateBy(Rotation rotation) => Implementation.RotateBy(_handle, rotation);
+	public void RotateBy(Rotation rotation, Location pivotPoint) => Implementation.RotateBy(_handle, rotation, pivotPoint);
 	public void ScaleBy(float scalar) => Implementation.ScaleBy(_handle, scalar);
 	public void ScaleBy(Vect vect) => Implementation.ScaleBy(_handle, vect);
 	public void AdjustScaleBy(float scalar) => Implementation.AdjustScaleBy(_handle, scalar);

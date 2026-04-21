@@ -28,6 +28,10 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static InterpolationAlgorithm<T> Custom(delegate* managed<T, T, StaticParameterGroup, float, T> algorithmPtr, StaticParameterGroup parameters) => new(algorithmPtr, parameters);
 
+	public T GetValue(T startValue, T endValue, float currentValue, float targetValue) {
+		var linearDistance = currentValue * ReciprocalEstimate(targetValue);
+		return GetValue(startValue, endValue, IsFinite(linearDistance) ? linearDistance : 1f);
+	}
 	public T GetValue(T startValue, T endValue, float linearDistance) {
 		ThrowIfNullAlgorithm();
 		return UnsafeGetValueSkipNullCheck(startValue, endValue, linearDistance);
@@ -37,6 +41,9 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 		if (_algorithmPtr == null) throw InvalidObjectException.InvalidDefault<InterpolationAlgorithm<T>>();
 	} 
 	
+	internal T UnsafeGetValueSkipNullAndDividendCheck(T startValue, T endValue, float currentValue, float targetValue) {
+		return UnsafeGetValueSkipNullCheck(startValue, endValue, currentValue * ReciprocalEstimate(targetValue));
+	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal T UnsafeGetValueSkipNullCheck(T startValue, T endValue, float linearDistance) {
 		return _algorithmPtr(startValue, endValue, _parameters, linearDistance);

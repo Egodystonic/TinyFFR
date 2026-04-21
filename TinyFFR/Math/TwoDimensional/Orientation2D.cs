@@ -14,6 +14,15 @@ file static class Bits {
 	public const int VerticalBits = UpBit | DownBit;
 }
 
+#pragma warning disable CA1027 //"Mark flags enums with Flags attribute" ... This isn't a bitfield enum
+public enum Axis2D {
+	None = Axis.None,
+	X = Axis.X,
+	Y = Axis.Y
+}
+#pragma warning restore CA1027
+
+
 [Flags]
 public enum HorizontalOrientation2D { // TODO mention in XMLDoc that's always safe to cast this to Orientation2D but not the other way around
 	None = 0,
