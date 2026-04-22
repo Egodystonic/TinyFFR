@@ -57,7 +57,7 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 		return new(&Algorithm, new());
 	}
 
-	public static InterpolationAlgorithm<T> AccelerateFromSlow(Strength strength = Strength.Standard) => AccelerateFromSlow(strength switch {
+	public static InterpolationAlgorithm<T> AccelerateFromSlow(Strength strength = Strength.Moderate) => AccelerateFromSlow(strength switch {
 		Strength.None => 1f,
 		Strength.VeryMild => 1.3f,
 		Strength.Mild => 1.75f,
@@ -83,7 +83,7 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 		};
 	}
 
-	public static InterpolationAlgorithm<T> DecelerateFromFast(Strength strength = Strength.Standard) => DecelerateFromFast(strength switch {
+	public static InterpolationAlgorithm<T> DecelerateFromFast(Strength strength = Strength.Moderate) => DecelerateFromFast(strength switch {
 		Strength.None => 1f,
 		Strength.VeryMild => 1.3f,
 		Strength.Mild => 1.75f,
@@ -111,7 +111,7 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 		};
 	}
 
-	public static InterpolationAlgorithm<T> AccelerateFromSlowWithInitialReverse(Strength strength = Strength.Standard) => AccelerateFromSlowWithInitialReverse(strength switch {
+	public static InterpolationAlgorithm<T> AccelerateFromSlowWithInitialReverse(Strength strength = Strength.Moderate) => AccelerateFromSlowWithInitialReverse(strength switch {
 		Strength.None => 0f,
 		Strength.VeryMild => 1f,
 		Strength.Mild => 1.3f,
@@ -131,7 +131,7 @@ public readonly unsafe struct InterpolationAlgorithm<T> where T : IInterpolatabl
 		return new(&Algorithm, new(coefficient + 1f, coefficient));
 	}
 
-	public static InterpolationAlgorithm<T> DecelerateFromFastWithOvershoot(Strength strength = Strength.Standard) => DecelerateFromFastWithOvershoot(strength switch {
+	public static InterpolationAlgorithm<T> DecelerateFromFastWithOvershoot(Strength strength = Strength.Moderate) => DecelerateFromFastWithOvershoot(strength switch {
 		Strength.None => 0f,
 		Strength.VeryMild => 1f,
 		Strength.Mild => 1.3f,

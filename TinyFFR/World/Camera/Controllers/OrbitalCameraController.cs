@@ -26,7 +26,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	}
 	#endregion
 
-	public const float DefaultHeightMax = 0.35f;
+	public const float DefaultHeightMax = 0.5f;
 	public const float DefaultHeightMin = 0.1f;
 	public const float DefaultDistanceMax = 2f;
 	public const float DefaultDistanceMin = 0.6f;
@@ -213,7 +213,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		_angleSetpoint.Reset(Angle.Zero);
 		_heightSetpoint.Reset(DefaultHeightMin);
 		_distanceSetpoint.Reset(DefaultDistanceMin);
-		SetGlobalSmoothing(Strength.Standard);
+		SetGlobalSmoothing(Strength.VeryMild);
 	}
 
 	public void Progress(float deltaTime) {
@@ -230,7 +230,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	public void AdjustAngleViaMouseCursor(XYPair<int> cursorDelta, Angle adjustmentPerPixel, Axis2D axis = Axis2D.X, bool invertMouseControl = false) {
 		var delta = axis switch {
 			Axis2D.X => cursorDelta.X,
-			Axis2D.Y => -cursorDelta.Y,
+			Axis2D.Y => cursorDelta.Y,
 			_ => 0
 		} * (invertMouseControl ? -1f : 1f);
 
@@ -264,9 +264,9 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	public void AdjustHeightViaMouseCursor(XYPair<int> cursorDelta, float adjustmentPerPixel, Axis2D axis = Axis2D.Y, bool invertMouseControl = false) {
 		var delta = axis switch {
 			Axis2D.X => cursorDelta.X,
-			Axis2D.Y => -cursorDelta.Y,
+			Axis2D.Y => cursorDelta.Y,
 			_ => 0
-		} * (invertMouseControl ? -1f : 1f);
+		} * (invertMouseControl ? 1f : -1f);
 
 		Height += delta * adjustmentPerPixel;
 	}
@@ -298,7 +298,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	public void AdjustDistanceViaMouseCursor(XYPair<int> cursorDelta, float adjustmentPerPixel, Axis2D axis = Axis2D.Y, bool invertMouseControl = false) {
 		var delta = axis switch {
 			Axis2D.X => cursorDelta.X,
-			Axis2D.Y => -cursorDelta.Y,
+			Axis2D.Y => cursorDelta.Y,
 			_ => 0
 		} * (invertMouseControl ? -1f : 1f);
 

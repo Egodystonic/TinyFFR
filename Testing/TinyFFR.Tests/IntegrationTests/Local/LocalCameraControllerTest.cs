@@ -127,7 +127,7 @@ class LocalCameraControllerTest {
 		public OrbitalScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
 
 		public override void Start() {
-			Smoothing = Strength.Standard;
+			Smoothing = Strength.VeryMild;
 			_staticInstances = Enumerable.Range(0, 4).Select(_ => AddTestModelToScene()).ToArray();
 			_targetInstance = AddTestModelToScene();
 			_controller = Camera.CreateController<OrbitalCameraController>();
@@ -145,7 +145,7 @@ class LocalCameraControllerTest {
 		}
 		public override string GetWindowTitleString() {
 			return 
-				$"[1] Angle {_controller.Angle:N0} (range {_controller.AngleRange?.ToString() ?? "<none>"}) " +
+				$"[1] Angle {_controller.Angle:N0} (range {_controller.AngleRange?.ToString("N0", null) ?? "<none>"}) " +
 				$"[2] Height {_controller.Height:N2} (min {_controller.MinHeight?.ToString("N2") ?? "<none>"} max {_controller.MaxHeight?.ToString("N2") ?? "<none>"}) " +
 				$"[3] Distance {_controller.Distance:N2} (min {_controller.MinDistance?.ToString("N2") ?? "<none>"} max {_controller.MaxDistance?.ToString("N2") ?? "<none>"}) " +
 				$"[0] Smoothing {Smoothing}";
@@ -185,7 +185,7 @@ class LocalCameraControllerTest {
 		public PtzScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
 
 		public override void Start() {
-			Smoothing = Strength.Standard;
+			Smoothing = Strength.VeryMild;
 			_modelInstance = AddTestModelToScene();
 			_controller = Camera.CreateController<PanTiltZoomCameraController>();
 			_controller.Position = (0f, 1f, -2f);
@@ -199,9 +199,9 @@ class LocalCameraControllerTest {
 		}
 		public override string GetWindowTitleString() {
 			return 
-				$"[1] Pan {_controller.Pan:N0} (range {_controller.PanRange?.ToString() ?? "<none>"}) " +
-				$"[2] Tilt {_controller.Tilt:N2} (min {_controller.MaxTiltUp.ToString("N2", null)} max {_controller.MaxTiltDown.ToString("N2", null)}) " +
-				$"[3] Zoom {PercentageUtils.ConvertFractionToPercentageString(_controller.Zoom)} (min {_controller.HighestZoomFov.ToString("N2", null)} max {_controller.LowestZoomFov.ToString("N2", null)} " +
+				$"[1] Pan {_controller.Pan:N0} (range {_controller.PanRange?.ToString("N0", null) ?? "<none>"}) " +
+				$"[2] Tilt {_controller.Tilt:N2} (max up {_controller.MaxTiltUp.ToString("N2", null)} max down {_controller.MaxTiltDown.ToString("N2", null)}) " +
+				$"[3] Zoom {PercentageUtils.ConvertFractionToPercentageString(_controller.Zoom, "N2")} (min {_controller.HighestZoomFov.ToString("N0", null)} max {_controller.LowestZoomFov.ToString("N0", null)} " +
 				$"[0] Smoothing {Smoothing}";
 		}
 

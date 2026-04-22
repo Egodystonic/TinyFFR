@@ -17,7 +17,7 @@ readonly record struct CameraEffectStrengthMap(float None, float VeryMild, float
 	
 	public Strength From(float f) {
 		var dist = Single.MaxValue;
-		var result = Strength.Standard;
+		var result = Strength.Moderate;
 		ReadOnlySpan<float> values = stackalloc float[] { None, VeryMild, Mild, Standard, Strong, VeryStrong };
 		for (var i = 0; i < 6; ++i) {
 			var thisValueDist = MathF.Abs(values[i] - f);

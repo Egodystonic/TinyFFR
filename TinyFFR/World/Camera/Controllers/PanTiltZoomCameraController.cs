@@ -30,7 +30,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	public const float DefaultMaxTiltUpDegrees = 35f;
 	public const float DefaultMaxTiltDownDegrees = 55f;
 	public const float DefaultHighestZoomFov = 15f;
-	public const float DefaultLowestZoomFov = 125f;
+	public const float DefaultLowestZoomFov = 90f;
 	readonly SpringAngleBasedCameraSetpoint _panSetpoint = new();
 	readonly CameraEffectStrengthMap _panSmoothingStrengthMap = new(
 		None: 0f,
@@ -151,15 +151,15 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		}
 		set {
 			if (!Single.IsFinite(value.Radians)) return;
-			value = value.Clamp(-MaxTiltUp, MaxTiltDown);
+			value = value.Clamp(-MaxTiltDown, MaxTiltUp);
 			_tiltSetpoint.TargetValue = value;
 		}
 	}
 	public float Zoom {
-		get => _zoomSetpoint.TargetValue.RemapRange(new Pair<Angle, Angle>(HighestZoomFov, LowestZoomFov), new Pair<Angle, Angle>(Angle.FromRadians(0f), Angle.FromRadians(1f))).Radians;
+		get => _zoomSetpoint.TargetValue.RemapRange(new Pair<Angle, Angle>(LowestZoomFov, HighestZoomFov), new Pair<Angle, Angle>(Angle.FromRadians(0f), Angle.FromRadians(1f))).Radians;
 		set {
 			if (!Single.IsFinite(value)) return;
-			_zoomSetpoint.TargetValue = Angle.FromRadians(((Real) value).Clamp(0f, 1f).RemapRange(new Pair<Real, Real>(0f, 1f), new Pair<Real, Real>(HighestZoomFov.Radians, LowestZoomFov.Radians)));
+			_zoomSetpoint.TargetValue = Angle.FromRadians(((Real) value).Clamp(0f, 1f).RemapRange(new Pair<Real, Real>(0f, 1f), new Pair<Real, Real>(LowestZoomFov.Radians, HighestZoomFov.Radians)));
 		}
 	}
 	public Direction ZeroPanTiltDirection {
@@ -205,7 +205,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		_panSetpoint.Reset(Angle.Zero);
 		_tiltSetpoint.Reset(Angle.Zero);
 		_zoomSetpoint.Reset((DefaultLowestZoomFov - DefaultHighestZoomFov) * 0.5f + DefaultHighestZoomFov);
-		SetGlobalSmoothing(Strength.Standard);
+		SetGlobalSmoothing(Strength.VeryMild);
 	}
 
 	public void Progress(float deltaTime) {
@@ -223,10 +223,10 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 
 	public void AdjustPanViaMouseCursor(XYPair<int> cursorDelta, Angle adjustmentPerPixel, Axis2D axis = Axis2D.X, bool invertMouseControl = false) {
 		var delta = axis switch {
-			Axis2D.X => -cursorDelta.X,
-			Axis2D.Y => -cursorDelta.Y,
+			Axis2D.X => cursorDelta.X,
+			Axis2D.Y => cursorDelta.Y,
 			_ => 0
-		} * (invertMouseControl ? -1f : 1f);
+		} * (invertMouseControl ? 1f : -1f);
 
 		Pan += delta * adjustmentPerPixel;
 	}
@@ -257,10 +257,10 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 
 	public void AdjustTiltViaMouseCursor(XYPair<int> cursorDelta, Angle adjustmentPerPixel, Axis2D axis = Axis2D.Y, bool invertMouseControl = false) {
 		var delta = axis switch {
-			Axis2D.X => -cursorDelta.X,
-			Axis2D.Y => -cursorDelta.Y,
+			Axis2D.X => cursorDelta.X,
+			Axis2D.Y => cursorDelta.Y,
 			_ => 0
-		} * (invertMouseControl ? -1f : 1f);
+		} * (invertMouseControl ? 1f : -1f);
 
 		Tilt += delta * adjustmentPerPixel;
 	}
@@ -299,7 +299,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		Zoom += delta * adjustmentPerPixel;
 	}
 	public void AdjustZoomViaMouseWheel(int mouseWheelDelta, float adjustmentPerWheelIncrement, bool invertMouseControl = false) {
-		Zoom += mouseWheelDelta * adjustmentPerWheelIncrement * (invertMouseControl ? -1f: 1f);
+		Zoom += mouseWheelDelta * adjustmentPerWheelIncrement * (invertMouseControl ? 1f: -1f);
 	}
 	public void AdjustZoomViaControllerStick(GameControllerStickPosition stickPosition, float maxAdjustmentPerSec, float deltaTime, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
 		var delta = axis switch {
@@ -326,7 +326,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime, bool invertPanControl = false, bool invertTiltControl = false, bool invertZoomControl = false, Angle? panAdjustmentPerPixel = null, Angle? tiltAdjustmentPerPixel = null, float? zoomAdjustmentPerWheelIncrement = null) {
 		AdjustPanViaMouseCursor(kbmInput.MouseCursorDelta, panAdjustmentPerPixel ?? 0.02f, invertMouseControl: invertPanControl);
 		AdjustTiltViaMouseCursor(kbmInput.MouseCursorDelta, tiltAdjustmentPerPixel ?? 0.02f, invertMouseControl: invertTiltControl);
-		AdjustZoomViaMouseWheel(kbmInput.MouseScrollWheelDelta,  zoomAdjustmentPerWheelIncrement ?? 0.045f, invertMouseControl: invertZoomControl);
+		AdjustZoomViaMouseWheel(kbmInput.MouseScrollWheelDelta, zoomAdjustmentPerWheelIncrement ?? 0.025f, invertMouseControl: invertZoomControl);
 	}
 	
 	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime, bool invertPanControl = false, bool invertTiltControl = false, bool invertZoomControl = false, Angle? maxPanAdjustmentPerSec = null, Angle? maxTiltAdjustmentPerSec = null, float? maxZoomAdjustmentPerSec = null) {

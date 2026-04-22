@@ -1,13 +1,30 @@
 ﻿// Created on 2023-10-20 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2023
 
+using System.Globalization;
+
 namespace Egodystonic.TinyFFR;
 
 public static class PercentageUtils {
 	public const string StringSuffix = "%";
 
 	public static string ConvertFractionToPercentageString(float fraction, string? format = null, IFormatProvider? formatProvider = null) {
-		return $"{(fraction * 100f).ToString(format, formatProvider)}{StringSuffix}";
+		var result = $"{(fraction * 100f).ToString(format, formatProvider)}{StringSuffix}";
+		var nfi = NumberFormatInfo.GetInstance(formatProvider);
+		if (!result.StartsWith(nfi.NegativeSign, StringComparison.Ordinal)) return result;
+		var valueWithoutNegativeSign = result[nfi.NegativeSign.Length..];
+		for (var i = 0; i < (valueWithoutNegativeSign.Length - StringSuffix.Length); ++i) {
+			if (valueWithoutNegativeSign[i] == '0') continue;
+			
+			if (valueWithoutNegativeSign[i..].StartsWith(nfi.NumberDecimalSeparator, StringComparison.Ordinal)) {
+				i += nfi.NumberDecimalSeparator.Length - 1;
+			}
+			else if (valueWithoutNegativeSign[i..].StartsWith(nfi.NumberGroupSeparator, StringComparison.Ordinal)) {
+				i += nfi.NumberGroupSeparator.Length - 1;
+			}
+			else return result;
+		}
+		return valueWithoutNegativeSign;
 	}
 
 	public static bool TryFormatFractionToPercentageString(float fraction, Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {

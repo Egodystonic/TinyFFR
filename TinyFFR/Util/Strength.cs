@@ -7,7 +7,7 @@ public enum Strength {
 	None = 0,
 	VeryMild,
 	Mild,
-	Standard,
+	Moderate,
 	Strong,
 	VeryStrong
 }
