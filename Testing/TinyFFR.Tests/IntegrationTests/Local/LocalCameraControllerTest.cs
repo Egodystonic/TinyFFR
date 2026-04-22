@@ -145,7 +145,7 @@ class LocalCameraControllerTest {
 		}
 		public override string GetWindowTitleString() {
 			return 
-				$"[1] Angle {_controller.Angle:N0} (max {_controller.MaxAngleDiffFromZero?.ToString() ?? "<none>"}) " +
+				$"[1] Angle {_controller.Angle:N0} (range {_controller.AngleRange?.ToString() ?? "<none>"}) " +
 				$"[2] Height {_controller.Height:N2} (min {_controller.MinHeight?.ToString("N2") ?? "<none>"} max {_controller.MaxHeight?.ToString("N2") ?? "<none>"}) " +
 				$"[3] Distance {_controller.Distance:N2} (min {_controller.MinDistance?.ToString("N2") ?? "<none>"} max {_controller.MaxDistance?.ToString("N2") ?? "<none>"}) " +
 				$"[0] Smoothing {Smoothing}";
@@ -153,7 +153,7 @@ class LocalCameraControllerTest {
 
 		public override void Iterate(float dt, ILatestInputRetriever input) {
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) {
-				_controller.MaxAngleDiffFromZero = CycleValue(_controller.MaxAngleDiffFromZero, null, 180f, 90f, 20f);
+				_controller.AngleRange = CycleValue(_controller.AngleRange, null, 180f, 90f, 20f);
 			}
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) {
 				_controller.MinHeight = CycleValue<Real>(_controller.MinHeight, OrbitalCameraController.DefaultHeightMin, OrbitalCameraController.DefaultHeightMin * 2f, OrbitalCameraController.DefaultHeightMin * 0.2f, null);
@@ -199,7 +199,7 @@ class LocalCameraControllerTest {
 		}
 		public override string GetWindowTitleString() {
 			return 
-				$"[1] Pan {_controller.Pan:N0} (max {_controller.PanRange?.ToString() ?? "<none>"}) " +
+				$"[1] Pan {_controller.Pan:N0} (range {_controller.PanRange?.ToString() ?? "<none>"}) " +
 				$"[2] Tilt {_controller.Tilt:N2} (min {_controller.MaxTiltUp.ToString("N2", null)} max {_controller.MaxTiltDown.ToString("N2", null)}) " +
 				$"[3] Zoom {PercentageUtils.ConvertFractionToPercentageString(_controller.Zoom)} (min {_controller.HighestZoomFov.ToString("N2", null)} max {_controller.LowestZoomFov.ToString("N2", null)} " +
 				$"[0] Smoothing {Smoothing}";

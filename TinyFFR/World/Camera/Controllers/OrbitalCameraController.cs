@@ -71,7 +71,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		set => _distanceSetpoint.HalfLife = _distanceSmoothingStrengthMap.From(value);
 	}
 	
-	public Angle? MaxAngleDiffFromZero {
+	public Angle? AngleRange {
 		get; 
 		set {
 			if (!Single.IsFinite(value?.Radians ?? 0f)) return;
@@ -167,7 +167,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		get => _angleSetpoint.TargetValue;
 		set {
 			if (!Single.IsFinite(value.Radians)) return;
-			if (MaxAngleDiffFromZero is { } nonNullMaxAngleAbs) {
+			if (AngleRange is { } nonNullMaxAngleAbs) {
 				if (nonNullMaxAngleAbs <= Angle.Zero) {
 					_angleSetpoint.TargetValue = Angle.Zero;
 					return;
@@ -202,7 +202,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	}
 
 	public void ResetParametersToDefault() {
-		MaxAngleDiffFromZero = null;
+		AngleRange = null;
 		MinHeight = DefaultHeightMin;
 		MaxHeight = DefaultHeightMax;
 		MinDistance = DefaultDistanceMin;
