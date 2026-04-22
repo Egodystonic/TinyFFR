@@ -70,6 +70,64 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		get => _distanceSmoothingStrengthMap.From(_distanceSetpoint.HalfLife);
 		set => _distanceSetpoint.HalfLife = _distanceSmoothingStrengthMap.From(value);
 	}
+	
+	public Angle? MaxAngleDiffFromZero {
+		get; 
+		set {
+			if (!Single.IsFinite(value?.Radians ?? 0f)) return;
+			var absVal = value?.Absolute;
+			if (absVal > Angle.FullCircle) absVal = null;
+			field = absVal;
+#pragma warning disable CA2245 // Self-assignment: Forces re-limit-bounding
+			Angle = Angle;
+#pragma warning restore CA2245
+		}
+	}
+	public float? MinHeight {
+		get; 
+		set {
+			if (value?.IsPositiveAndFinite() == false) return;
+			field = value;
+			if (value > MaxHeight) MaxHeight = value;
+#pragma warning disable CA2245 // Self-assignment: Forces re-limit-bounding
+			Height = Height;
+#pragma warning restore CA2245
+		}
+	}
+	public float? MaxHeight {
+		get;
+		set {
+			if (value?.IsPositiveAndFinite() == false) return;
+			field = value;
+			if (value < MinHeight) MinHeight = value;
+#pragma warning disable CA2245 // Self-assignment: Forces re-limit-bounding
+			Height = Height;
+#pragma warning restore CA2245
+		}
+	}
+	public float? MinDistance {
+		get; 
+		set {
+			if (value?.IsPositiveAndFinite() == false) return;
+			field = value;
+			if (value > MaxDistance) MaxDistance = value;
+#pragma warning disable CA2245 // Self-assignment: Forces re-limit-bounding
+			Distance = Distance;
+#pragma warning restore CA2245
+		}
+	}
+	public float? MaxDistance {
+		get; 
+		set {
+			if (value?.IsPositiveAndFinite() == false) return;
+			field = value;
+			if (value < MinDistance) MinDistance = value;
+#pragma warning disable CA2245 // Self-assignment: Forces re-limit-bounding
+			Distance = Distance;
+#pragma warning restore CA2245
+		}
+	}
+	
 	public float Height {
 		get => _heightSetpoint.TargetValue;
 		set {
@@ -127,11 +185,6 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		}
 	}
 	public Location Target { get; set; }
-	public Angle? MaxAngleDiffFromZero { get; set; } = null;
-	public float? MinHeight { get; set; } = DefaultHeightMin;
-	public float? MaxHeight { get; set; } = DefaultHeightMax;
-	public float? MinDistance { get; set; } = DefaultDistanceMin;
-	public float? MaxDistance { get; set; } = DefaultDistanceMax;
 
 	public void SetCustomAngleSmoothingStrength(float smoothingHalfLife) {
 		_angleSetpoint.HalfLife = smoothingHalfLife;

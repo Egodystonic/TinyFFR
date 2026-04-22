@@ -89,6 +89,7 @@ class LocalCameraControllerTest {
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		
 		var scenarios = new CameraControllerScenario[] {
+			new PtzScenario(factory, camera, mesh, mat, scene),	
 			new OrbitalScenario(factory, camera, mesh, mat, scene)	
 		};
 		var scenarioIndex = -1;
@@ -173,6 +174,56 @@ class LocalCameraControllerTest {
 			_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
 			
 			_controller.Target = _targetInstance.Position;
+			_controller.Progress(dt);
+		}
+	}
+	
+	sealed class PtzScenario : CameraControllerScenario {
+		PanTiltZoomCameraController _controller = null!;
+		ModelInstance _modelInstance;
+		
+		public PtzScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
+
+		public override void Start() {
+			Smoothing = Strength.Standard;
+			_modelInstance = AddTestModelToScene();
+			_controller = Camera.CreateController<PanTiltZoomCameraController>();
+			_controller.Position = (0f, 1f, -2f);
+			_controller.ZeroPanTiltDirection = _controller.Position.DirectionTo(Location.Origin);
+			_controller.UpDirection = Direction.Up;
+			_modelInstance.SetPosition(Location.Origin);
+		}
+		public override void Stop() {
+			_controller.Dispose();
+			RemoveAndDispose(_modelInstance);
+		}
+		public override string GetWindowTitleString() {
+			return 
+				$"[1] Pan {_controller.Pan:N0} (max {_controller.PanRange?.ToString() ?? "<none>"}) " +
+				$"[2] Tilt {_controller.Tilt:N2} (min {_controller.MaxTiltUp.ToString("N2", null)} max {_controller.MaxTiltDown.ToString("N2", null)}) " +
+				$"[3] Zoom {PercentageUtils.ConvertFractionToPercentageString(_controller.Zoom)} (min {_controller.HighestZoomFov.ToString("N2", null)} max {_controller.LowestZoomFov.ToString("N2", null)} " +
+				$"[0] Smoothing {Smoothing}";
+		}
+
+		public override void Iterate(float dt, ILatestInputRetriever input) {
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) {
+				_controller.PanRange = CycleValue(_controller.PanRange, PanTiltZoomCameraController.DefaultPanRangeDegrees, 90f, 20f, null);
+			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) {
+				_controller.MaxTiltDown = CycleValue<Angle>(_controller.MaxTiltDown, PanTiltZoomCameraController.DefaultMaxTiltDownDegrees, PanTiltZoomCameraController.DefaultMaxTiltDownDegrees * 0.5f, PanTiltZoomCameraController.DefaultMaxTiltDownDegrees * 2f)!.Value;
+				_controller.MaxTiltUp = CycleValue<Angle>(_controller.MaxTiltUp, PanTiltZoomCameraController.DefaultMaxTiltUpDegrees, PanTiltZoomCameraController.DefaultMaxTiltUpDegrees * 0.5f, PanTiltZoomCameraController.DefaultMaxTiltUpDegrees * 2f)!.Value;
+			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow3)) {
+				_controller.HighestZoomFov = CycleValue<Angle>(_controller.HighestZoomFov, PanTiltZoomCameraController.DefaultHighestZoomFov, PanTiltZoomCameraController.DefaultHighestZoomFov * 0.5f, PanTiltZoomCameraController.DefaultHighestZoomFov * 1.3f)!.Value;
+				_controller.LowestZoomFov = CycleValue<Angle>(_controller.LowestZoomFov, PanTiltZoomCameraController.DefaultLowestZoomFov, PanTiltZoomCameraController.DefaultLowestZoomFov * 0.5f, PanTiltZoomCameraController.DefaultLowestZoomFov * 1.3f)!.Value;
+			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0)) {
+				CycleSmoothing();
+				_controller.SetGlobalSmoothing(Smoothing);
+			}
+			_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
+			_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
+			
 			_controller.Progress(dt);
 		}
 	}
