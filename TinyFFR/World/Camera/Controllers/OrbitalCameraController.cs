@@ -140,7 +140,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	public Direction UpDirection {
 		get;
 		set {
-			if (value == Direction.None) return;
+			if (!value.IsPhysicallyValid) return;
 			field = value;
 #pragma warning disable CA2245 // Self-assignment: Forces re-orthogonalization
 			ZeroAngleDirection = ZeroAngleDirection;
@@ -151,7 +151,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		get;
 		set {
 			field = value.OrthogonalizedAgainst(UpDirection) ?? Direction.None;
-			if (field == Direction.None) field = UpDirection.AnyOrthogonal();
+			if (!field.IsPhysicallyValid) field = UpDirection.AnyOrthogonal();
 		}
 	}
 	public float Distance {
@@ -227,6 +227,9 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		Camera.LookAt(Target, UpDirection);
 	}
 
+	public void AdjustAngle(Angle adjustmentPerSec, float deltaTime) {
+		Angle += adjustmentPerSec * deltaTime;
+	}
 	public void AdjustAngleViaMouseCursor(XYPair<int> cursorDelta, Angle adjustmentPerPixel, Axis2D axis = Axis2D.X, bool invertMouseControl = false) {
 		var delta = axis switch {
 			Axis2D.X => cursorDelta.X,
@@ -254,13 +257,16 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	}
 	public void AdjustAngleViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Angle adjustmentPerSec, float deltaTime) {
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
-		Angle += adjustmentPerSec * deltaTime;
+		AdjustAngle(adjustmentPerSec, deltaTime);
 	}
 	public void AdjustAngleViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Angle adjustmentPerSec, float deltaTime) {
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
-		Angle += adjustmentPerSec * deltaTime;
+		AdjustAngle(adjustmentPerSec, deltaTime);
 	}
 
+	public void AdjustHeight(float adjustmentPerSec, float deltaTime) {
+		Height += adjustmentPerSec * deltaTime;
+	}
 	public void AdjustHeightViaMouseCursor(XYPair<int> cursorDelta, float adjustmentPerPixel, Axis2D axis = Axis2D.Y, bool invertMouseControl = false) {
 		var delta = axis switch {
 			Axis2D.X => cursorDelta.X,
@@ -288,13 +294,16 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	}
 	public void AdjustHeightViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, float adjustmentPerSec, float deltaTime) {
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
-		Height += adjustmentPerSec * deltaTime;
+		AdjustHeight(adjustmentPerSec, deltaTime);
 	}
 	public void AdjustHeightViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, float adjustmentPerSec, float deltaTime) {
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
-		Height += adjustmentPerSec * deltaTime;
+		AdjustHeight(adjustmentPerSec, deltaTime);
 	}
 
+	public void AdjustDistance(float adjustmentPerSec, float deltaTime) {
+		Distance += adjustmentPerSec * deltaTime;
+	}
 	public void AdjustDistanceViaMouseCursor(XYPair<int> cursorDelta, float adjustmentPerPixel, Axis2D axis = Axis2D.Y, bool invertMouseControl = false) {
 		var delta = axis switch {
 			Axis2D.X => cursorDelta.X,
@@ -322,11 +331,11 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	}
 	public void AdjustDistanceViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, float adjustmentPerSec, float deltaTime) {
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
-		Distance += adjustmentPerSec * deltaTime;
+		AdjustDistance(adjustmentPerSec, deltaTime);
 	}
 	public void AdjustDistanceViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, float adjustmentPerSec, float deltaTime) {
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
-		Distance += adjustmentPerSec * deltaTime;
+		AdjustDistance(adjustmentPerSec, deltaTime);
 	}
 	
 	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime, bool invertAngleControl = false, bool invertHeightControl = false, bool invertDistanceControl = false, Angle? angleAdjustmentPerPixel = null, float? heightAdjustmentPerPixel = null, float? distanceAdjustmentPerWheelIncrement = null) {

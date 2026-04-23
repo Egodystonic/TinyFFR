@@ -29,8 +29,8 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	public const float DefaultPanRangeDegrees = 160f;
 	public const float DefaultMaxTiltUpDegrees = 35f;
 	public const float DefaultMaxTiltDownDegrees = 55f;
-	public const float DefaultHighestZoomFov = 15f;
-	public const float DefaultLowestZoomFov = 90f;
+	public const float DefaultMaxZoomInFov = 15f;
+	public const float DefaultMaxZoomOutFov = 90f;
 	readonly SpringAngleBasedCameraSetpoint _panSetpoint = new();
 	readonly CameraEffectStrengthMap _panSmoothingStrengthMap = new(
 		None: 0f,
@@ -104,23 +104,23 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 #pragma warning restore CA2245
 		}
 	}
-	public Angle HighestZoomFov {
+	public Angle MaxZoomInFov {
 		get; 
 		set {
 			if (!value.Radians.IsPositiveAndFinite()) return;
 			field = value;
-			if (value > LowestZoomFov) LowestZoomFov = value;
+			if (value > MaxZoomOutFov) MaxZoomOutFov = value;
 #pragma warning disable CA2245 // Self-assignment: Forces re-limit-bounding
 			Zoom = Zoom;
 #pragma warning restore CA2245
 		}
 	}
-	public Angle LowestZoomFov {
+	public Angle MaxZoomOutFov {
 		get; 
 		set {
 			if (!value.Radians.IsPositiveAndFinite()) return;
 			field = value;
-			if (value < HighestZoomFov) HighestZoomFov = value;
+			if (value < MaxZoomInFov) MaxZoomInFov = value;
 #pragma warning disable CA2245 // Self-assignment: Forces re-limit-bounding
 			Zoom = Zoom;
 #pragma warning restore CA2245
@@ -156,23 +156,23 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		}
 	}
 	public float Zoom {
-		get => _zoomSetpoint.TargetValue.RemapRange(new Pair<Angle, Angle>(LowestZoomFov, HighestZoomFov), new Pair<Angle, Angle>(Angle.FromRadians(0f), Angle.FromRadians(1f))).Radians;
+		get => _zoomSetpoint.TargetValue.RemapRange(new Pair<Angle, Angle>(MaxZoomOutFov, MaxZoomInFov), new Pair<Angle, Angle>(Angle.FromRadians(0f), Angle.FromRadians(1f))).Radians;
 		set {
 			if (!Single.IsFinite(value)) return;
-			_zoomSetpoint.TargetValue = Angle.FromRadians(((Real) value).Clamp(0f, 1f).RemapRange(new Pair<Real, Real>(0f, 1f), new Pair<Real, Real>(LowestZoomFov.Radians, HighestZoomFov.Radians)));
+			_zoomSetpoint.TargetValue = Angle.FromRadians(((Real) value).Clamp(0f, 1f).RemapRange(new Pair<Real, Real>(0f, 1f), new Pair<Real, Real>(MaxZoomOutFov.Radians, MaxZoomInFov.Radians)));
 		}
 	}
 	public Direction ZeroPanTiltDirection {
 		get;
 		set {
-			if (value == Direction.None) return;
+			if (!value.IsPhysicallyValid) return;
 			field = value;
 		}
 	}
 	public Direction UpDirection {
 		get;
 		set {
-			if (value == Direction.None) return;
+			if (!value.IsPhysicallyValid) return;
 			field = value;
 		}
 	}
@@ -197,14 +197,14 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		PanRange = DefaultPanRangeDegrees;
 		MaxTiltUp = DefaultMaxTiltUpDegrees;
 		MaxTiltDown = DefaultMaxTiltDownDegrees;
-		HighestZoomFov = DefaultHighestZoomFov;
-		LowestZoomFov = DefaultLowestZoomFov;
+		MaxZoomInFov = DefaultMaxZoomInFov;
+		MaxZoomOutFov = DefaultMaxZoomOutFov;
 		ZeroPanTiltDirection = Direction.Forward;
 		UpDirection = Direction.Up;
 		Position = Location.Origin;
 		_panSetpoint.Reset(Angle.Zero);
 		_tiltSetpoint.Reset(Angle.Zero);
-		_zoomSetpoint.Reset((DefaultLowestZoomFov - DefaultHighestZoomFov) * 0.5f + DefaultHighestZoomFov);
+		_zoomSetpoint.Reset((DefaultMaxZoomOutFov - DefaultMaxZoomInFov) * 0.5f + DefaultMaxZoomInFov);
 		SetGlobalSmoothing(Strength.VeryMild);
 	}
 
@@ -221,6 +221,9 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		Camera.SetVerticalFieldOfView(_zoomSetpoint.CurrentValue);
 	}
 
+	public void AdjustPan(Angle adjustmentPerSec, float deltaTime) {
+		Pan += adjustmentPerSec * deltaTime;
+	}
 	public void AdjustPanViaMouseCursor(XYPair<int> cursorDelta, Angle adjustmentPerPixel, Axis2D axis = Axis2D.X, bool invertMouseControl = false) {
 		var delta = axis switch {
 			Axis2D.X => cursorDelta.X,
@@ -248,13 +251,16 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	}
 	public void AdjustPanViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Angle adjustmentPerSec, float deltaTime) {
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
-		Pan += adjustmentPerSec * deltaTime;
+		AdjustPan(adjustmentPerSec, deltaTime);
 	}
 	public void AdjustPanViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Angle adjustmentPerSec, float deltaTime) {
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
-		Pan += adjustmentPerSec * deltaTime;
+		AdjustPan(adjustmentPerSec, deltaTime);
 	}
 
+	public void AdjustTilt(Angle adjustmentPerSec, float deltaTime) {
+		Tilt += adjustmentPerSec * deltaTime;
+	}
 	public void AdjustTiltViaMouseCursor(XYPair<int> cursorDelta, Angle adjustmentPerPixel, Axis2D axis = Axis2D.Y, bool invertMouseControl = false) {
 		var delta = axis switch {
 			Axis2D.X => cursorDelta.X,
@@ -276,19 +282,22 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 
 		Tilt += maxAdjustmentPerSec * delta;
 	}
-	public void AdjustTiltViaControllerTriggers(GameControllerTriggerPosition anticlockwiseTriggerPosition, GameControllerTriggerPosition clockwiseTriggerPosition, Angle maxAdjustmentPerSec, float deltaTime) {
+	public void AdjustTiltViaControllerTriggers(GameControllerTriggerPosition upwardTiltTriggerPosition, GameControllerTriggerPosition downwardTiltTriggerPosition, Angle maxAdjustmentPerSec, float deltaTime) {
 		Tilt += deltaTime 
-			* (anticlockwiseTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - clockwiseTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec);
+			* (upwardTiltTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - downwardTiltTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec);
 	}
 	public void AdjustTiltViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Angle adjustmentPerSec, float deltaTime) {
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
-		Tilt += adjustmentPerSec * deltaTime;
+		AdjustTilt(adjustmentPerSec, deltaTime);
 	}
 	public void AdjustTiltViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Angle adjustmentPerSec, float deltaTime) {
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
-		Tilt += adjustmentPerSec * deltaTime;
+		AdjustTilt(adjustmentPerSec, deltaTime);
 	}
 
+	public void AdjustZoom(float adjustmentPerSec, float deltaTime) {
+		Zoom += adjustmentPerSec * deltaTime;
+	}
 	public void AdjustZoomViaMouseCursor(XYPair<int> cursorDelta, float adjustmentPerPixel, Axis2D axis = Axis2D.Y, bool invertMouseControl = false) {
 		var delta = axis switch {
 			Axis2D.X => cursorDelta.X,
@@ -310,17 +319,17 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 
 		Zoom += maxAdjustmentPerSec * delta;
 	}
-	public void AdjustZoomViaControllerTriggers(GameControllerTriggerPosition anticlockwiseTriggerPosition, GameControllerTriggerPosition clockwiseTriggerPosition, float maxAdjustmentPerSec, float deltaTime) {
+	public void AdjustZoomViaControllerTriggers(GameControllerTriggerPosition zoomInTriggerPosition, GameControllerTriggerPosition zoomOutTriggerPosition, float maxAdjustmentPerSec, float deltaTime) {
 		Zoom += deltaTime 
-			* (anticlockwiseTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - clockwiseTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec);
+			* (zoomInTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - zoomOutTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec);
 	}
 	public void AdjustZoomViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, float adjustmentPerSec, float deltaTime) {
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
-		Zoom += adjustmentPerSec * deltaTime;
+		AdjustZoom(adjustmentPerSec, deltaTime);
 	}
 	public void AdjustZoomViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, float adjustmentPerSec, float deltaTime) {
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
-		Zoom += adjustmentPerSec * deltaTime;
+		AdjustZoom(adjustmentPerSec, deltaTime);
 	}
 	
 	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime, bool invertPanControl = false, bool invertTiltControl = false, bool invertZoomControl = false, Angle? panAdjustmentPerPixel = null, Angle? tiltAdjustmentPerPixel = null, float? zoomAdjustmentPerWheelIncrement = null) {

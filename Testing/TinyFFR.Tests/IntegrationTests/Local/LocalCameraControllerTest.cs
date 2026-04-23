@@ -16,66 +16,6 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalCameraControllerTest {
-	abstract class CameraControllerScenario {
-		protected readonly ILocalTinyFfrFactory Factory;
-		protected readonly Camera Camera;
-		protected readonly Mesh TestMesh;
-		protected readonly Material TestMat;
-		protected readonly Scene Scene;
-		protected Strength Smoothing;
-
-		protected CameraControllerScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) {
-			Factory = factory;
-			Camera = camera;
-			TestMesh = testMesh;
-			TestMat = testMat;
-			Scene = scene;
-		}
-
-		public abstract void Start();
-		public abstract void Stop();
-		public abstract void Iterate(float dt, ILatestInputRetriever input);
-		public abstract string GetWindowTitleString();
-		
-		protected ModelInstance AddTestModelToScene() {
-			var result = Factory.ObjectBuilder.CreateModelInstance(TestMesh, TestMat);
-			result.Scaling = Vect.One * 0.3f;
-			Scene.Add(result);
-			return result;
-		}
-		protected void RemoveAndDispose(ModelInstance i) {
-			Scene.Remove(i);
-			i.Dispose();
-		}
-		// protected ModelInstanceGroup AddTestModelsToScene(int count) {
-		// 	var group = Factory.ResourceAllocator.CreateResourceGroup(disposeContainedResourcesWhenDisposed: true);
-		// 	for (var i = 0; i < count; ++i) {
-		// 		group.Add(Factory.ObjectBuilder.CreateModelInstance(TestMesh, TestMat));
-		// 	}
-		// 	var result = Factory.ObjectBuilder.CreateModelInstanceGroup(group);
-		// 	result.Scaling = Vect.One * 0.3f;
-		// 	Scene.Add(result);
-		// 	return result;
-		// }
-		// protected void RemoveAndDispose(ModelInstanceGroup g) {
-		// 	Scene.Remove(g);
-		// 	g.Dispose();
-		// }
-		protected T? CycleValue<T>(T? val, params T?[] options) where T : struct, IToleranceEquatable<T> {
-			for (var i = 0; i < options.Length; ++i) {
-				if ((val == null && options[i] == null) || (val != null && options[i] != null && val.Value.Equals(options[i]!.Value, 0.001f))) {
-					return options[(i + 1) % options.Length];
-				}
-			}
-			
-			return options[0];
-		}
-		protected void CycleSmoothing() {
-			Smoothing = (Strength) ((int) Smoothing + 1);
-			if (!Enum.IsDefined(Smoothing)) Smoothing = 0;
-		}
-	}
-
 	[Test]
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
@@ -112,11 +52,63 @@ class LocalCameraControllerTest {
 				window.SetTitle(scenarios[scenarioIndex].GetType().Name + " | " + scenarios[scenarioIndex].GetWindowTitleString());				
 			}
 			
-			
 			renderer.Render();
 		}
 		
 		if (scenarioIndex >= 0) scenarios[scenarioIndex].Stop();
+	}
+	
+	sealed class PtzScenario : CameraControllerScenario {
+		PanTiltZoomCameraController _controller = null!;
+		ModelInstance _modelInstance;
+		Angle _startFov;
+		
+		public PtzScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
+
+		public override void Start() {
+			_startFov = Camera.VerticalFieldOfView;
+			Smoothing = Strength.VeryMild;
+			_modelInstance = AddTestModelToScene();
+			_controller = Camera.CreateController<PanTiltZoomCameraController>();
+			_controller.Position = (0f, 1f, -2f);
+			_controller.ZeroPanTiltDirection = _controller.Position.DirectionTo(Location.Origin);
+			_controller.UpDirection = Direction.Up;
+			_modelInstance.SetPosition(Location.Origin);
+		}
+		public override void Stop() {
+			_controller.Dispose();
+			RemoveAndDispose(_modelInstance);
+			Camera.VerticalFieldOfView = _startFov;
+		}
+		public override string GetWindowTitleString() {
+			return 
+				$"[1] Pan {_controller.Pan:N0} (range {_controller.PanRange?.ToString("N0", null) ?? "<none>"}) " +
+				$"[2] Tilt {_controller.Tilt:N2} (max up {_controller.MaxTiltUp.ToString("N2", null)} max down {_controller.MaxTiltDown.ToString("N2", null)}) " +
+				$"[3] Zoom {PercentageUtils.ConvertFractionToPercentageString(_controller.Zoom, "N2")} (max in {_controller.MaxZoomInFov.ToString("N0", null)} max out {_controller.MaxZoomOutFov.ToString("N0", null)} " +
+				$"[0] Smoothing {Smoothing}";
+		}
+
+		public override void Iterate(float dt, ILatestInputRetriever input) {
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) {
+				_controller.PanRange = CycleValue(_controller.PanRange, PanTiltZoomCameraController.DefaultPanRangeDegrees, 90f, 20f, null);
+			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) {
+				_controller.MaxTiltDown = CycleValue<Angle>(_controller.MaxTiltDown, PanTiltZoomCameraController.DefaultMaxTiltDownDegrees, PanTiltZoomCameraController.DefaultMaxTiltDownDegrees * 0.5f, PanTiltZoomCameraController.DefaultMaxTiltDownDegrees * 2f)!.Value;
+				_controller.MaxTiltUp = CycleValue<Angle>(_controller.MaxTiltUp, PanTiltZoomCameraController.DefaultMaxTiltUpDegrees, PanTiltZoomCameraController.DefaultMaxTiltUpDegrees * 0.5f, PanTiltZoomCameraController.DefaultMaxTiltUpDegrees * 2f)!.Value;
+			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow3)) {
+				_controller.MaxZoomInFov = CycleValue<Angle>(_controller.MaxZoomInFov, PanTiltZoomCameraController.DefaultMaxZoomInFov, PanTiltZoomCameraController.DefaultMaxZoomInFov * 0.5f, PanTiltZoomCameraController.DefaultMaxZoomInFov * 1.3f)!.Value;
+				_controller.MaxZoomOutFov = CycleValue<Angle>(_controller.MaxZoomOutFov, PanTiltZoomCameraController.DefaultMaxZoomOutFov, PanTiltZoomCameraController.DefaultMaxZoomOutFov * 0.5f, PanTiltZoomCameraController.DefaultMaxZoomOutFov * 1.3f)!.Value;
+			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0)) {
+				CycleSmoothing();
+				_controller.SetGlobalSmoothing(Smoothing);
+			}
+			_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
+			_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
+			
+			_controller.Progress(dt);
+		}
 	}
 	
 	sealed class OrbitalScenario : CameraControllerScenario {
@@ -178,53 +170,50 @@ class LocalCameraControllerTest {
 		}
 	}
 	
-	sealed class PtzScenario : CameraControllerScenario {
-		PanTiltZoomCameraController _controller = null!;
-		ModelInstance _modelInstance;
+	abstract class CameraControllerScenario {
+		protected readonly ILocalTinyFfrFactory Factory;
+		protected readonly Camera Camera;
+		protected readonly Mesh TestMesh;
+		protected readonly Material TestMat;
+		protected readonly Scene Scene;
+		protected Strength Smoothing;
+
+		protected CameraControllerScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) {
+			Factory = factory;
+			Camera = camera;
+			TestMesh = testMesh;
+			TestMat = testMat;
+			Scene = scene;
+		}
+
+		public abstract void Start();
+		public abstract void Stop();
+		public abstract void Iterate(float dt, ILatestInputRetriever input);
+		public abstract string GetWindowTitleString();
 		
-		public PtzScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
-
-		public override void Start() {
-			Smoothing = Strength.VeryMild;
-			_modelInstance = AddTestModelToScene();
-			_controller = Camera.CreateController<PanTiltZoomCameraController>();
-			_controller.Position = (0f, 1f, -2f);
-			_controller.ZeroPanTiltDirection = _controller.Position.DirectionTo(Location.Origin);
-			_controller.UpDirection = Direction.Up;
-			_modelInstance.SetPosition(Location.Origin);
+		protected ModelInstance AddTestModelToScene() {
+			var result = Factory.ObjectBuilder.CreateModelInstance(TestMesh, TestMat);
+			result.Scaling = Vect.One * 0.3f;
+			Scene.Add(result);
+			return result;
 		}
-		public override void Stop() {
-			_controller.Dispose();
-			RemoveAndDispose(_modelInstance);
-		}
-		public override string GetWindowTitleString() {
-			return 
-				$"[1] Pan {_controller.Pan:N0} (range {_controller.PanRange?.ToString("N0", null) ?? "<none>"}) " +
-				$"[2] Tilt {_controller.Tilt:N2} (max up {_controller.MaxTiltUp.ToString("N2", null)} max down {_controller.MaxTiltDown.ToString("N2", null)}) " +
-				$"[3] Zoom {PercentageUtils.ConvertFractionToPercentageString(_controller.Zoom, "N2")} (min {_controller.HighestZoomFov.ToString("N0", null)} max {_controller.LowestZoomFov.ToString("N0", null)} " +
-				$"[0] Smoothing {Smoothing}";
+		protected void RemoveAndDispose(ModelInstance i) {
+			Scene.Remove(i);
+			i.Dispose();
 		}
 
-		public override void Iterate(float dt, ILatestInputRetriever input) {
-			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) {
-				_controller.PanRange = CycleValue(_controller.PanRange, PanTiltZoomCameraController.DefaultPanRangeDegrees, 90f, 20f, null);
+		protected T? CycleValue<T>(T? val, params T?[] options) where T : struct, IToleranceEquatable<T> {
+			for (var i = 0; i < options.Length; ++i) {
+				if ((val == null && options[i] == null) || (val != null && options[i] != null && val.Value.Equals(options[i]!.Value, 0.001f))) {
+					return options[(i + 1) % options.Length];
+				}
 			}
-			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) {
-				_controller.MaxTiltDown = CycleValue<Angle>(_controller.MaxTiltDown, PanTiltZoomCameraController.DefaultMaxTiltDownDegrees, PanTiltZoomCameraController.DefaultMaxTiltDownDegrees * 0.5f, PanTiltZoomCameraController.DefaultMaxTiltDownDegrees * 2f)!.Value;
-				_controller.MaxTiltUp = CycleValue<Angle>(_controller.MaxTiltUp, PanTiltZoomCameraController.DefaultMaxTiltUpDegrees, PanTiltZoomCameraController.DefaultMaxTiltUpDegrees * 0.5f, PanTiltZoomCameraController.DefaultMaxTiltUpDegrees * 2f)!.Value;
-			}
-			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow3)) {
-				_controller.HighestZoomFov = CycleValue<Angle>(_controller.HighestZoomFov, PanTiltZoomCameraController.DefaultHighestZoomFov, PanTiltZoomCameraController.DefaultHighestZoomFov * 0.5f, PanTiltZoomCameraController.DefaultHighestZoomFov * 1.3f)!.Value;
-				_controller.LowestZoomFov = CycleValue<Angle>(_controller.LowestZoomFov, PanTiltZoomCameraController.DefaultLowestZoomFov, PanTiltZoomCameraController.DefaultLowestZoomFov * 0.5f, PanTiltZoomCameraController.DefaultLowestZoomFov * 1.3f)!.Value;
-			}
-			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0)) {
-				CycleSmoothing();
-				_controller.SetGlobalSmoothing(Smoothing);
-			}
-			_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
-			_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
 			
-			_controller.Progress(dt);
+			return options[0];
+		}
+		protected void CycleSmoothing() {
+			Smoothing = (Strength) ((int) Smoothing + 1);
+			if (!Enum.IsDefined(Smoothing)) Smoothing = 0;
 		}
 	}
 }

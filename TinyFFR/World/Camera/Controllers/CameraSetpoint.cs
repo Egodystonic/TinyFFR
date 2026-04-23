@@ -111,9 +111,9 @@ sealed class Spring3DBasedCameraSetpoint {
 			);
 		}
 	} 
-	public Location CurrentValue {
+	public Vect CurrentValue {
 		get {
-			return new Location(
+			return new Vect(
 				_xComponentSpring.CurrentValue,	
 				_yComponentSpring.CurrentValue,	
 				_zComponentSpring.CurrentValue	
@@ -125,9 +125,9 @@ sealed class Spring3DBasedCameraSetpoint {
 			_zComponentSpring.CurrentValue = value.Z;
 		}
 	} 
-	public Location TargetValue {
+	public Vect TargetValue {
 		get {
-			return new Location(
+			return new Vect(
 				_xComponentSpring.TargetValue,	
 				_yComponentSpring.TargetValue,	
 				_zComponentSpring.TargetValue	
@@ -140,10 +140,10 @@ sealed class Spring3DBasedCameraSetpoint {
 		}
 	}
 	
-	public void Reset(float currentValue) {
-		_xComponentSpring.Reset(currentValue);
-		_yComponentSpring.Reset(currentValue);
-		_zComponentSpring.Reset(currentValue);
+	public void Reset(Vect currentValue) {
+		_xComponentSpring.Reset(currentValue.X);
+		_yComponentSpring.Reset(currentValue.Y);
+		_zComponentSpring.Reset(currentValue.Z);
 	}
 	
 	public void Progress(float deltaTime) {
