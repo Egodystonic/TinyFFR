@@ -29,6 +29,7 @@ class LocalCameraControllerTest {
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		
 		var scenarios = new CameraControllerScenario[] {
+			new FirstPersonScenario(factory, camera, mesh, mat, scene),	
 			new OrbitalScenario(factory, camera, mesh, mat, scene),	
 			new FreeFlyingScenario(factory, camera, mesh, mat, scene),	
 			new PtzScenario(factory, camera, mesh, mat, scene),	
@@ -57,6 +58,46 @@ class LocalCameraControllerTest {
 		}
 		
 		if (scenarioIndex >= 0) scenarios[scenarioIndex].Stop();
+	}
+	
+	sealed class FirstPersonScenario : CameraControllerScenario {
+		FirstPersonCameraController _controller = null!;
+		ModelInstance[] _instances = null!;
+		
+		public FirstPersonScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
+
+		public override void Start() {
+			const int NumInstancesPerPlane = 100;
+			Smoothing = Strength.VeryMild;
+			_instances = Enumerable.Range(0, NumInstancesPerPlane * 2).Select(_ => AddTestModelToScene()).ToArray();
+			_controller = Camera.CreateController<FirstPersonCameraController>();
+			_controller.SetGlobalSmoothing(Strength.VeryMild);
+			
+			for (var i = 0; i < NumInstancesPerPlane; ++i) {
+				_instances[i].SetPosition(Location.Random(new PositionedCuboid(7f, 2f, 7f, (0f, 1.5f, 0f))));
+				_instances[i + NumInstancesPerPlane].SetPosition(Location.Random(new PositionedCuboid(7f, 2f, 7f, (0f, -1.5f, 0f))));
+			}
+		}
+		public override void Stop() {
+			_controller.Dispose();
+			foreach (var si in _instances) RemoveAndDispose(si);
+		}
+		public override string GetWindowTitleString() {
+			return
+				$"[0] Smoothing {Smoothing}";
+		}
+
+		public override void Iterate(float dt, ILatestInputRetriever input) {
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0)) {
+				CycleSmoothing();
+				_controller.SetGlobalSmoothing(Smoothing);
+			}
+
+			_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
+			_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
+			
+			_controller.Progress(dt);
+		}
 	}
 	
 	sealed class FreeFlyingScenario : CameraControllerScenario {

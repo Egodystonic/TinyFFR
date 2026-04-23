@@ -6,19 +6,19 @@ using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
 
-public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCameraController> {
+public sealed class FirstPersonCameraController : ICameraController<FirstPersonCameraController> {
 	#region Creation / Pooling
-	static readonly unsafe ObjectPool<FreeFlyingCameraController> _controllerPool = new(&New);
-	static FreeFlyingCameraController New() => new();
-	static FreeFlyingCameraController ICameraController<FreeFlyingCameraController>.RentAndTetherToCamera(Camera camera) {
+	static readonly unsafe ObjectPool<FirstPersonCameraController> _controllerPool = new(&New);
+	static FirstPersonCameraController New() => new();
+	static FirstPersonCameraController ICameraController<FirstPersonCameraController>.RentAndTetherToCamera(Camera camera) {
 		var result = _controllerPool.Rent();
 		result._camera = camera;
 		result.ResetParametersToDefault();
 		return result;
 	}
 	Camera? _camera;
-	public Camera Camera => _camera ?? throw new ObjectDisposedException(nameof(FreeFlyingCameraController));
-	FreeFlyingCameraController() { }
+	public Camera Camera => _camera ?? throw new ObjectDisposedException(nameof(FirstPersonCameraController));
+	FirstPersonCameraController() { }
 	public void Dispose() {
 		if (_camera == null) return;
 		_camera = null;
@@ -45,6 +45,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 		Strong: 0.14f,
 		VeryStrong: 0.2f
 	);
+	Direction _forwardDir;
 
 	public Strength PositionSmoothingStrength {
 		get => _positionSmoothingStrengthMap.From(_positionSetpoint.HalfLife);
@@ -58,24 +59,14 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 		}
 	}
 	
-	public Direction WorldForward {
+	public Plane GroundPlane {
 		get;
 		set {
-			if (!value.IsPhysicallyValidAndNotNone) return;
+			if (!value.IsPhysicallyValid) return;
 			field = value;
-#pragma warning disable CA2245 // Self-assignment: Forces re-limit-bounding
-			WorldUp = WorldUp;
-#pragma warning restore CA2245
+			_forwardDir = value.Normal.AnyOrthogonal();
 		}
 	}
-	public Direction WorldUp {
-		get;
-		set {
-			field = value.OrthogonalizedAgainst(WorldForward) ?? Direction.None;
-			if (!field.IsPhysicallyValidAndNotNone) field = WorldForward.AnyOrthogonal();
-		}
-	}
-	public bool AllowUpsideDownFlip { get; set; }
 	
 	public Location Position {
 		get => _positionSetpoint.TargetValue.AsLocation();
@@ -112,9 +103,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 	}
 
 	public void ResetParametersToDefault() {
-		WorldForward = Direction.Forward;
-		WorldUp = Direction.Up;
-		AllowUpsideDownFlip = false;
+		GroundPlane = new Plane(Direction.Up);
 		_positionSetpoint.Reset(Vect.Zero);
 		_yawSetpoint.Reset(Angle.Zero);
 		_pitchSetpoint.Reset(Angle.Zero);
@@ -122,25 +111,23 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 	}
 
 	public void Progress(float deltaTime) {
-		if (!AllowUpsideDownFlip) {
-			var curTarget = _pitchSetpoint.TargetValue;
-			var diffToLowerBound = curTarget - Angle.QuarterCircle;
-			var diffToUpperBound = (Angle.FullCircle - Angle.QuarterCircle) - curTarget;
-			if (diffToLowerBound > 0f && diffToUpperBound > 0f) {
-				if (diffToUpperBound < diffToLowerBound) _pitchSetpoint.TargetValue = Angle.FullCircle - Angle.QuarterCircle; 
-				else _pitchSetpoint.TargetValue = Angle.QuarterCircle; 
-			} 
+		var curTarget = _pitchSetpoint.TargetValue;
+		var diffToLowerBound = curTarget - Angle.QuarterCircle;
+		var diffToUpperBound = (Angle.FullCircle - Angle.QuarterCircle) - curTarget;
+		if (diffToLowerBound > 0f && diffToUpperBound > 0f) {
+			if (diffToUpperBound < diffToLowerBound) _pitchSetpoint.TargetValue = Angle.FullCircle - Angle.QuarterCircle; 
+			else _pitchSetpoint.TargetValue = Angle.QuarterCircle; 
 		}
 		
 		_positionSetpoint.Progress(deltaTime);
 		_pitchSetpoint.Progress(deltaTime);
 		_yawSetpoint.Progress(deltaTime);
 		
-		var currentHorizontalPlaneDir = WorldForward * (_yawSetpoint.CurrentValue % WorldUp);
-		var verticalTiltRot = _pitchSetpoint.CurrentValue % Direction.FromDualOrthogonalization(WorldUp, currentHorizontalPlaneDir);
+		var currentHorizontalPlaneDir = _forwardDir * (_yawSetpoint.CurrentValue % GroundPlane.Normal);
+		var verticalTiltRot = _pitchSetpoint.CurrentValue % Direction.FromDualOrthogonalization(GroundPlane.Normal, currentHorizontalPlaneDir);
 		
 		Camera.SetPosition(_positionSetpoint.CurrentValue.AsLocation());
-		Camera.SetViewAndUpDirection(currentHorizontalPlaneDir * verticalTiltRot, WorldUp * verticalTiltRot);
+		Camera.SetViewAndUpDirection(currentHorizontalPlaneDir * verticalTiltRot, GroundPlane.Normal * verticalTiltRot);
 	}
 
 	public void AdjustPitch(Angle adjustmentPerSec, float deltaTime) {
@@ -215,62 +202,90 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 		AdjustYaw(adjustmentPerSec, deltaTime);
 	}
 	
-	public void AdjustPosition(Vect adjustmentPerSec, float deltaTime) {
-		Position += adjustmentPerSec * deltaTime;
+	public void Move(Orientation2D orientation, float distance) {
+		static Direction GetDirWithCheckedFallback(Camera cam, Plane groundPlane, Orientation checkOrientation, Orientation desired, Orientation fallback) {
+			return (cam.GetDirectionRelativeToCamera(checkOrientation).IsApproximatelyOrthogonalTo(groundPlane)
+				? cam.GetDirectionRelativeToCamera(fallback).ParallelizedWith(groundPlane)
+				: cam.GetDirectionRelativeToCamera(desired).ParallelizedWith(groundPlane))
+				?? Direction.None;
+		}
+		static Direction GetDirWithFallback(Camera cam, Plane groundPlane, Orientation desired, Orientation fallback) {
+			return cam.GetDirectionRelativeToCamera(desired).ParallelizedWith(groundPlane)
+				?? cam.GetDirectionRelativeToCamera(fallback).ParallelizedWith(groundPlane)
+				?? Direction.None;
+		}
+		static Direction GetDir(Camera cam, Plane groundPlane, Orientation o) {
+			return cam.GetDirectionRelativeToCamera(o).ParallelizedWith(groundPlane)
+				?? Direction.None;
+		}
+		
+		var camDirection = orientation switch {
+			Orientation2D.Right => GetDir(Camera, GroundPlane, Orientation.Right),
+			Orientation2D.UpRight => GetDirWithCheckedFallback(Camera, GroundPlane, Orientation.Forward, Orientation.RightForward, Camera.ViewDirection.AngleTo(GroundPlane.Normal) > Angle.QuarterCircle ? Orientation.RightUp : Orientation.RightDown),
+			Orientation2D.Up => GetDirWithFallback(Camera, GroundPlane, Orientation.Forward, Camera.ViewDirection.AngleTo(GroundPlane.Normal) > Angle.QuarterCircle ? Orientation.Up : Orientation.Down),
+			Orientation2D.UpLeft => GetDirWithCheckedFallback(Camera, GroundPlane, Orientation.Forward, Orientation.LeftForward, Camera.ViewDirection.AngleTo(GroundPlane.Normal) > Angle.QuarterCircle ? Orientation.LeftUp : Orientation.LeftDown),
+			Orientation2D.Left => GetDir(Camera, GroundPlane, Orientation.Left),
+			Orientation2D.DownLeft => GetDirWithCheckedFallback(Camera, GroundPlane, Orientation.Backward, Orientation.LeftBackward, Camera.ViewDirection.AngleTo(GroundPlane.Normal) > Angle.QuarterCircle ? Orientation.LeftDown : Orientation.LeftUp),
+			Orientation2D.Down => GetDirWithFallback(Camera, GroundPlane, Orientation.Backward, Camera.ViewDirection.AngleTo(GroundPlane.Normal) > Angle.QuarterCircle ? Orientation.Down : Orientation.Up),
+			Orientation2D.DownRight => GetDirWithCheckedFallback(Camera, GroundPlane, Orientation.Backward, Orientation.RightBackward, Camera.ViewDirection.AngleTo(GroundPlane.Normal) > Angle.QuarterCircle ? Orientation.RightDown : Orientation.RightUp),
+			_ => Direction.None
+		};
+		
+		Position += camDirection * distance;
 	}
-	public void AdjustPositionViaMouseCursor(XYPair<int> cursorDelta, Vect adjustmentPerPixel, Axis2D axis = Axis2D.X, bool invertMouseControl = false) {
+	public void Move(Orientation2D orientation, float moveSpeed, float deltaTime) {
+		Move(orientation, moveSpeed * deltaTime);
+	}
+	public void MoveViaMouseCursor(XYPair<int> cursorDelta, float distancePerPixel, Axis2D axis = Axis2D.X, bool invertMouseControl = false) {
 		var delta = axis switch {
 			Axis2D.X => cursorDelta.X,
 			Axis2D.Y => cursorDelta.Y,
 			_ => 0
 		} * (invertMouseControl ? -1f : 1f);
 
-		Position += delta * adjustmentPerPixel;
+		Move(axis == Axis2D.X ? Orientation2D.Right : Orientation2D.Up, distancePerPixel * delta);
 	}
-	public void AdjustPositionViaMouseWheel(int mouseWheelDelta, Vect adjustmentPerWheelIncrement, bool invertMouseControl = false) {
-		Position += mouseWheelDelta * adjustmentPerWheelIncrement * (invertMouseControl ? -1f: 1f);
+	public void MoveViaMouseWheel(int mouseWheelDelta, float distancePerDelta, Orientation2D positiveOrientation, bool invertMouseControl = false) {
+		Move(positiveOrientation, distancePerDelta * mouseWheelDelta * (invertMouseControl ? -1f: 1f));
 	}
-	public void AdjustPositionViaControllerStick(GameControllerStickPosition stickPosition, Vect maxAdjustmentPerSec, float deltaTime, bool invertStickControl = false, Axis2D axis = Axis2D.X) {
+	public void MoveViaControllerStick(GameControllerStickPosition stickPosition, float maxSpeed, float deltaTime, bool invertStickControl = false, Axis2D axis = Axis2D.X) {
 		var delta = axis switch {
 			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
 			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
 			_ => 0f
 		} * (invertStickControl ? -deltaTime : deltaTime);
 
-		Position += maxAdjustmentPerSec * delta;
+		Move(axis == Axis2D.X ? Orientation2D.Right : Orientation2D.Up, maxSpeed * delta, deltaTime);
 	}
-	public void AdjustPositionViaControllerTriggers(GameControllerTriggerPosition positiveTriggerPosition, GameControllerTriggerPosition negativeTriggerPosition, Vect maxAdjustmentPerSec, float deltaTime) {
-		AdjustPosition(positiveTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - negativeTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
+	public void MoveViaControllerTriggers(GameControllerTriggerPosition positiveTriggerPosition, GameControllerTriggerPosition negativeTriggerPosition, Orientation2D positiveOrientation, float maxSpeed, float deltaTime) {
+		Move(positiveOrientation, positiveTriggerPosition.GetDisplacementWithDeadzone() * maxSpeed - negativeTriggerPosition.GetDisplacementWithDeadzone() * maxSpeed, deltaTime);
 	}
-	public void AdjustPositionViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Vect adjustmentPerSec, float deltaTime) {
+	public void MoveViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Orientation2D orientation, float speed, float deltaTime) {
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
-		AdjustPosition(adjustmentPerSec, deltaTime);
+		Move(orientation, speed, deltaTime);
 	}
-	public void AdjustPositionViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Vect adjustmentPerSec, float deltaTime) {
+	public void MoveViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Orientation2D orientation, float speed, float deltaTime) {
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
-		AdjustPosition(adjustmentPerSec, deltaTime);
+		Move(orientation, speed, deltaTime);
 	}
 
-	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, bool invertUpDownPositionalControl = false, Angle? pitchAdjustmentPerPixel = null, Angle? yawAdjustmentPerPixel = null, float? positionAdjustmentPerSec = null) {
+	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, Angle? pitchAdjustmentPerPixel = null, Angle? yawAdjustmentPerPixel = null, float? moveSpeed = null) {
 		AdjustPitchViaMouseCursor(kbmInput.MouseCursorDelta, pitchAdjustmentPerPixel ?? 0.02f, invertMouseControl: invertPitchControl);
 		AdjustYawViaMouseCursor(kbmInput.MouseCursorDelta, yawAdjustmentPerPixel ?? 0.02f, invertMouseControl: invertYawControl);
 		
-		var moveSpeed = positionAdjustmentPerSec ?? 0.5f;
-		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowLeft, Camera.GetDirectionRelativeToCamera(Orientation.Left) * moveSpeed, deltaTime);
-		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowRight, Camera.GetDirectionRelativeToCamera(Orientation.Right) * moveSpeed, deltaTime);
-		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowUp, Camera.GetDirectionRelativeToCamera(Orientation.Forward) * moveSpeed, deltaTime);
-		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowDown, Camera.GetDirectionRelativeToCamera(Orientation.Backward) * moveSpeed, deltaTime);
-		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.RightShift, Camera.GetDirectionRelativeToCamera(invertUpDownPositionalControl ? Orientation.Down : Orientation.Up) * moveSpeed, deltaTime);
-		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.RightControl, Camera.GetDirectionRelativeToCamera(invertUpDownPositionalControl ? Orientation.Up : Orientation.Down) * moveSpeed, deltaTime);
+		var speed = moveSpeed ?? 0.5f;
+		MoveViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowLeft, Orientation2D.Left, speed, deltaTime);
+		MoveViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowRight, Orientation2D.Right, speed, deltaTime);
+		MoveViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowUp, Orientation2D.Up, speed, deltaTime);
+		MoveViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowDown, Orientation2D.Down, speed, deltaTime);
 	}
 	
-	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, bool invertUpDownPositionalControl = false, Angle? maxPitchAdjustmentPerSec = null, Angle? maxYawAdjustmentPerSec = null, float? maxPositionAdjustmentPerSec = null) {
+	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, Angle? maxPitchAdjustmentPerSec = null, Angle? maxYawAdjustmentPerSec = null, float? maxMoveSpeed = null) {
 		AdjustPitchViaControllerStick(controllerInput.RightStickPosition, maxPitchAdjustmentPerSec ?? 120f, deltaTime, invertStickControl: invertPitchControl);
 		AdjustYawViaControllerStick(controllerInput.RightStickPosition, maxYawAdjustmentPerSec ?? 120f, deltaTime, invertStickControl: invertYawControl);
 		
-		var moveSpeed = maxPositionAdjustmentPerSec ?? 0.5f;
-		AdjustPositionViaControllerStick(controllerInput.LeftStickPosition, Camera.GetDirectionRelativeToCamera(Orientation.Forward) * moveSpeed, deltaTime, axis: Axis2D.Y);
-		AdjustPositionViaControllerStick(controllerInput.LeftStickPosition, Camera.GetDirectionRelativeToCamera(Orientation.Right) * moveSpeed, deltaTime, axis: Axis2D.X);
-		AdjustPositionViaControllerTriggers(controllerInput.LeftTriggerPosition, controllerInput.RightTriggerPosition, Camera.GetDirectionRelativeToCamera(invertUpDownPositionalControl ? Orientation.Down : Orientation.Up) * moveSpeed, deltaTime);
+		var maxSpeed = maxMoveSpeed ?? 0.5f;
+		MoveViaControllerStick(controllerInput.LeftStickPosition, maxSpeed, deltaTime, axis: Axis2D.X);
+		MoveViaControllerStick(controllerInput.LeftStickPosition, maxSpeed, deltaTime, axis: Axis2D.Y);
 	}
 }
