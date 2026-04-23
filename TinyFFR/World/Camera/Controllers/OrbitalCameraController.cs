@@ -140,7 +140,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	public Direction UpDirection {
 		get;
 		set {
-			if (!value.IsPhysicallyValid) return;
+			if (!value.IsPhysicallyValidAndNotNone) return;
 			field = value;
 #pragma warning disable CA2245 // Self-assignment: Forces re-orthogonalization
 			ZeroAngleDirection = ZeroAngleDirection;
@@ -151,7 +151,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		get;
 		set {
 			field = value.OrthogonalizedAgainst(UpDirection) ?? Direction.None;
-			if (!field.IsPhysicallyValid) field = UpDirection.AnyOrthogonal();
+			if (!field.IsPhysicallyValidAndNotNone) field = UpDirection.AnyOrthogonal();
 		}
 	}
 	public float Distance {
@@ -289,8 +289,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		Height += maxAdjustmentPerSec * delta;
 	}
 	public void AdjustHeightViaControllerTriggers(GameControllerTriggerPosition increasingTriggerPosition, GameControllerTriggerPosition decreasingTriggerPosition, float maxAdjustmentPerSec, float deltaTime) {
-		Height += deltaTime
-			* (increasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - decreasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec);
+		AdjustHeight(increasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - decreasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
 	}
 	public void AdjustHeightViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, float adjustmentPerSec, float deltaTime) {
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
@@ -326,8 +325,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		Distance += maxAdjustmentPerSec * delta;
 	}
 	public void AdjustDistanceViaControllerTriggers(GameControllerTriggerPosition increasingTriggerPosition, GameControllerTriggerPosition decreasingTriggerPosition, float maxAdjustmentPerSec, float deltaTime) {
-		Distance += deltaTime
-			* (increasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - decreasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec);
+		AdjustDistance(increasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - decreasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
 	}
 	public void AdjustDistanceViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, float adjustmentPerSec, float deltaTime) {
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;

@@ -29,9 +29,9 @@ class LocalCameraControllerTest {
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		
 		var scenarios = new CameraControllerScenario[] {
+			new OrbitalScenario(factory, camera, mesh, mat, scene),	
 			new FreeFlyingScenario(factory, camera, mesh, mat, scene),	
 			new PtzScenario(factory, camera, mesh, mat, scene),	
-			new OrbitalScenario(factory, camera, mesh, mat, scene)	
 		};
 		var scenarioIndex = -1;
 
@@ -66,11 +66,10 @@ class LocalCameraControllerTest {
 		public FreeFlyingScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
 
 		public override void Start() {
-			Smoothing = Strength.None;
+			Smoothing = Strength.VeryMild;
 			_instances = Enumerable.Range(0, 100).Select(_ => AddTestModelToScene()).ToArray();
 			_controller = Camera.CreateController<FreeFlyingCameraController>();
-			_controller.SetGlobalSmoothing(Strength.None);
-			_controller.SelfRightingStrength = Strength.Moderate;
+			_controller.SetGlobalSmoothing(Strength.VeryMild);
 			
 			foreach (var i in _instances) i.SetPosition(Location.Random(new Sphere(10f)));
 		}
@@ -79,29 +78,19 @@ class LocalCameraControllerTest {
 			foreach (var si in _instances) RemoveAndDispose(si);
 		}
 		public override string GetWindowTitleString() {
-			return "test";
-				// $"[1] Angle {_controller.Angle:N0} (range {_controller.AngleRange?.ToString("N0", null) ?? "<none>"}) " +
-				// $"[2] Height {_controller.Height:N2} (min {_controller.MinHeight?.ToString("N2") ?? "<none>"} max {_controller.MaxHeight?.ToString("N2") ?? "<none>"}) " +
-				// $"[3] Distance {_controller.Distance:N2} (min {_controller.MinDistance?.ToString("N2") ?? "<none>"} max {_controller.MaxDistance?.ToString("N2") ?? "<none>"}) " +
-				// $"[0] Smoothing {Smoothing}";
+			return
+				$"[1] Allow Flip {(_controller.AllowUpsideDownFlip ? "<yes>" : "<no>")} " +
+				$"[0] Smoothing {Smoothing}";
 		}
 
 		public override void Iterate(float dt, ILatestInputRetriever input) {
-			// if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) {
-			// 	_controller.AngleRange = CycleValue(_controller.AngleRange, null, 180f, 90f, 20f);
-			// }
-			// if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) {
-			// 	_controller.MinHeight = CycleValue<Real>(_controller.MinHeight, OrbitalCameraController.DefaultHeightMin, OrbitalCameraController.DefaultHeightMin * 2f, OrbitalCameraController.DefaultHeightMin * 0.2f, null);
-			// 	_controller.MaxHeight = CycleValue<Real>(_controller.MaxHeight, OrbitalCameraController.DefaultHeightMax, OrbitalCameraController.DefaultHeightMax * 2f, OrbitalCameraController.DefaultHeightMax * 0.2f, null);
-			// }
-			// if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow3)) {
-			// 	_controller.MinDistance = CycleValue<Real>(_controller.MinDistance, OrbitalCameraController.DefaultDistanceMin, OrbitalCameraController.DefaultDistanceMin * 2f, OrbitalCameraController.DefaultDistanceMin * 0.2f, null);
-			// 	_controller.MaxDistance = CycleValue<Real>(_controller.MaxDistance, OrbitalCameraController.DefaultDistanceMax, OrbitalCameraController.DefaultDistanceMax * 2f, OrbitalCameraController.DefaultDistanceMax * 0.2f, null);
-			// }
-			// if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0)) {
-			// 	CycleSmoothing();
-			// 	_controller.SetGlobalSmoothing(Smoothing);
-			// }
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) {
+				_controller.AllowUpsideDownFlip = !_controller.AllowUpsideDownFlip;
+			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0)) {
+				CycleSmoothing();
+				_controller.SetGlobalSmoothing(Smoothing);
+			}
 
 			_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
 			_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);

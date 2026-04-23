@@ -112,7 +112,8 @@ partial struct Direction :
 		orientation = OrientationUtils.CreateOrientationFromValueSigns(direction.X, direction.Y, direction.Z);
 	}
 	
-	public bool IsPhysicallyValid => IsUnitLength || this == None;
+	public bool IsPhysicallyValid => Single.IsFinite(X) && Single.IsFinite(Y) && Single.IsFinite(Z);
+	public bool IsPhysicallyValidAndNotNone => IsPhysicallyValid && this != None;
 
 	#region Scaling and Addition/Subtraction
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

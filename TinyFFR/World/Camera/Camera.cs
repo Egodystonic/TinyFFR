@@ -206,6 +206,14 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public TController CreateController<TController>() where TController : ICameraController<TController> => TController.RentAndTetherToCamera(this); 
+	
+	public Direction GetDirectionRelativeToCamera(Orientation o) {
+		var posZ = ViewDirection;
+		var posY = UpDirection;
+		var posX = Direction.FromDualOrthogonalization(posY, posZ);
+		
+		return (posX * o.GetAxisSign(Axis.X) + posY * o.GetAxisSign(Axis.Y) + posZ * o.GetAxisSign(Axis.Z)).Direction;
+	}
 
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

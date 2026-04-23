@@ -165,14 +165,14 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	public Direction ZeroPanTiltDirection {
 		get;
 		set {
-			if (!value.IsPhysicallyValid) return;
+			if (!value.IsPhysicallyValidAndNotNone) return;
 			field = value;
 		}
 	}
 	public Direction UpDirection {
 		get;
 		set {
-			if (!value.IsPhysicallyValid) return;
+			if (!value.IsPhysicallyValidAndNotNone) return;
 			field = value;
 		}
 	}
@@ -246,8 +246,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		Pan += maxAdjustmentPerSec * delta;
 	}
 	public void AdjustPanViaControllerTriggers(GameControllerTriggerPosition anticlockwiseTriggerPosition, GameControllerTriggerPosition clockwiseTriggerPosition, Angle maxAdjustmentPerSec, float deltaTime) {
-		Pan += deltaTime 
-			* (anticlockwiseTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - clockwiseTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec);
+		AdjustPan(anticlockwiseTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - clockwiseTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
 	}
 	public void AdjustPanViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Angle adjustmentPerSec, float deltaTime) {
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
@@ -283,8 +282,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		Tilt += maxAdjustmentPerSec * delta;
 	}
 	public void AdjustTiltViaControllerTriggers(GameControllerTriggerPosition upwardTiltTriggerPosition, GameControllerTriggerPosition downwardTiltTriggerPosition, Angle maxAdjustmentPerSec, float deltaTime) {
-		Tilt += deltaTime 
-			* (upwardTiltTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - downwardTiltTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec);
+		AdjustTilt(upwardTiltTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - downwardTiltTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
 	}
 	public void AdjustTiltViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Angle adjustmentPerSec, float deltaTime) {
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
@@ -320,8 +318,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		Zoom += maxAdjustmentPerSec * delta;
 	}
 	public void AdjustZoomViaControllerTriggers(GameControllerTriggerPosition zoomInTriggerPosition, GameControllerTriggerPosition zoomOutTriggerPosition, float maxAdjustmentPerSec, float deltaTime) {
-		Zoom += deltaTime 
-			* (zoomInTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - zoomOutTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec);
+		AdjustZoom(zoomInTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - zoomOutTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
 	}
 	public void AdjustZoomViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, float adjustmentPerSec, float deltaTime) {
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
