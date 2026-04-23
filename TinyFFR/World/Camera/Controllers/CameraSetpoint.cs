@@ -17,7 +17,7 @@ sealed class InterpolationBasedCameraSetpoint<T> where T : IInterpolatable<T> {
 	public float CompletionTime { get; private set; }
 	public float ElapsedTime { get; private set; }
 	public bool IsCompleted { get; private set; } = true;
-	
+
 	public void Reset(T targetValue, T startingValue, float completionTime) {
 		TargetValue = targetValue;
 		StartingValue = startingValue;
@@ -26,12 +26,12 @@ sealed class InterpolationBasedCameraSetpoint<T> where T : IInterpolatable<T> {
 		IsCompleted = !completionTime.IsPositiveAndFinite();
 		CurrentValue = IsCompleted ? TargetValue : StartingValue;
 	}
-	
+
 	public void AdjustTarget(T newTargetValue) {
 		TargetValue = newTargetValue;
 		if (IsCompleted) CurrentValue = newTargetValue;
 	}
-	
+
 	public void Progress(float deltaTime) {
 		if (IsCompleted || !deltaTime.IsPositiveAndFinite()) return;
 		ElapsedTime += deltaTime;
@@ -41,7 +41,7 @@ sealed class InterpolationBasedCameraSetpoint<T> where T : IInterpolatable<T> {
 			CurrentValue = TargetValue;
 			return;
 		}
-		
+
 		CurrentValue = InterpolationAlgorithm.UnsafeGetValueSkipNullAndDividendCheck(StartingValue, TargetValue, ElapsedTime, CompletionTime);
 	}
 }
@@ -50,7 +50,7 @@ sealed class Spring1DBasedCameraSetpoint {
 	const float HalfLifeOmegaProduct = 1.6783469f;
 	bool _springDisabled = false;
 	float _omega = 8f;
-	
+
 	public float HalfLife {
 		get => HalfLifeOmegaProduct / _omega;
 		set {
@@ -65,14 +65,14 @@ sealed class Spring1DBasedCameraSetpoint {
 	public float Velocity { get; private set; } = 0f;
 	public float CurrentValue { get; set; } = 0f;
 	public float TargetValue { get; set; } = 0f;
-	
+
 	public void Reset(float currentValue) {
 		Velocity = 0f;
 		CurrentValue = currentValue;
 		TargetValue = currentValue;
 		_springDisabled = false;
 	}
-	
+
 	public void Progress(float deltaTime) {
 		if (!deltaTime.IsPositiveAndFinite()) return;
 		if (_springDisabled) {
@@ -93,7 +93,7 @@ sealed class Spring3DBasedCameraSetpoint {
 	readonly Spring1DBasedCameraSetpoint _xComponentSpring = new();
 	readonly Spring1DBasedCameraSetpoint _yComponentSpring = new();
 	readonly Spring1DBasedCameraSetpoint _zComponentSpring = new();
-	
+
 	public float HalfLife {
 		get => _xComponentSpring.HalfLife;
 		set {
@@ -105,18 +105,18 @@ sealed class Spring3DBasedCameraSetpoint {
 	public Vect Velocity {
 		get {
 			return new Vect(
-				_xComponentSpring.Velocity,	
-				_yComponentSpring.Velocity,	
-				_zComponentSpring.Velocity	
+				_xComponentSpring.Velocity,
+				_yComponentSpring.Velocity,
+				_zComponentSpring.Velocity
 			);
 		}
-	} 
+	}
 	public Vect CurrentValue {
 		get {
 			return new Vect(
-				_xComponentSpring.CurrentValue,	
-				_yComponentSpring.CurrentValue,	
-				_zComponentSpring.CurrentValue	
+				_xComponentSpring.CurrentValue,
+				_yComponentSpring.CurrentValue,
+				_zComponentSpring.CurrentValue
 			);
 		}
 		set {
@@ -124,28 +124,28 @@ sealed class Spring3DBasedCameraSetpoint {
 			_yComponentSpring.CurrentValue = value.Y;
 			_zComponentSpring.CurrentValue = value.Z;
 		}
-	} 
+	}
 	public Vect TargetValue {
 		get {
 			return new Vect(
-				_xComponentSpring.TargetValue,	
-				_yComponentSpring.TargetValue,	
-				_zComponentSpring.TargetValue	
+				_xComponentSpring.TargetValue,
+				_yComponentSpring.TargetValue,
+				_zComponentSpring.TargetValue
 			);
-		} 
+		}
 		set {
 			_xComponentSpring.TargetValue = value.X;
 			_yComponentSpring.TargetValue = value.Y;
 			_zComponentSpring.TargetValue = value.Z;
 		}
 	}
-	
+
 	public void Reset(Vect currentValue) {
 		_xComponentSpring.Reset(currentValue.X);
 		_yComponentSpring.Reset(currentValue.Y);
 		_zComponentSpring.Reset(currentValue.Z);
 	}
-	
+
 	public void Progress(float deltaTime) {
 		_xComponentSpring.Progress(deltaTime);
 		_yComponentSpring.Progress(deltaTime);
@@ -175,4 +175,60 @@ sealed class SpringAngleBasedCameraSetpoint {
 
 	public void Reset(Angle currentValue) => _rawSetpoint.Reset(currentValue.Normalized.Radians);
 	public void Progress(float deltaTime) => _rawSetpoint.Progress(deltaTime);
+}
+
+sealed class SpringRotationBasedCameraSetpoint {
+	readonly Spring1DBasedCameraSetpoint _xComponentSpring = new();
+	readonly Spring1DBasedCameraSetpoint _yComponentSpring = new();
+	readonly Spring1DBasedCameraSetpoint _zComponentSpring = new();
+
+	public float HalfLife {
+		get => _xComponentSpring.HalfLife;
+		set {
+			_xComponentSpring.HalfLife = value;
+			_yComponentSpring.HalfLife = value;
+			_zComponentSpring.HalfLife = value;
+		}
+	}
+
+	public Vect AngularVelocity => new(
+		_xComponentSpring.Velocity,
+		_yComponentSpring.Velocity,
+		_zComponentSpring.Velocity
+	);
+
+	public Rotation CurrentValue { get; set; } = Rotation.None;
+	public Rotation TargetValue { get; set; } = Rotation.None;
+
+	public void Reset(Rotation currentValue) {
+		_xComponentSpring.Reset(0f);
+		_yComponentSpring.Reset(0f);
+		_zComponentSpring.Reset(0f);
+		CurrentValue = currentValue;
+		TargetValue = currentValue;
+	}
+
+	public void Progress(float deltaTime) {
+		var delta = (CurrentValue - TargetValue).Normalized;
+		var deltaVec = delta.Axis.AsVect(delta.Angle.Radians);
+
+		_xComponentSpring.CurrentValue = deltaVec.X;
+		_yComponentSpring.CurrentValue = deltaVec.Y;
+		_zComponentSpring.CurrentValue = deltaVec.Z;
+		_xComponentSpring.TargetValue = 0f;
+		_yComponentSpring.TargetValue = 0f;
+		_zComponentSpring.TargetValue = 0f;
+
+		_xComponentSpring.Progress(deltaTime);
+		_yComponentSpring.Progress(deltaTime);
+		_zComponentSpring.Progress(deltaTime);
+
+		var newDeltaVec = new Vect(
+			_xComponentSpring.CurrentValue,
+			_yComponentSpring.CurrentValue,
+			_zComponentSpring.CurrentValue
+		);
+		var newDeltaRot = new Rotation(Angle.FromRadians(newDeltaVec.Length), newDeltaVec.Direction);
+		CurrentValue = TargetValue + newDeltaRot;
+	}
 }
