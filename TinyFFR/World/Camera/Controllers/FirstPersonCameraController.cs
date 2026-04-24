@@ -202,38 +202,19 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 		AdjustYaw(adjustmentPerSec, deltaTime);
 	}
 	
-	public void Move(Orientation2D orientation, float distance) {
-		static Direction GetDirWithCheckedFallback(Camera cam, Plane groundPlane, Orientation checkOrientation, Orientation desired, Orientation fallback) {
-			return (cam.GetDirectionRelativeToCamera(checkOrientation).IsApproximatelyOrthogonalTo(groundPlane)
-				? cam.GetDirectionRelativeToCamera(fallback).ParallelizedWith(groundPlane)
-				: cam.GetDirectionRelativeToCamera(desired).ParallelizedWith(groundPlane))
-				?? Direction.None;
-		}
-		static Direction GetDirWithFallback(Camera cam, Plane groundPlane, Orientation desired, Orientation fallback) {
-			return cam.GetDirectionRelativeToCamera(desired).ParallelizedWith(groundPlane)
-				?? cam.GetDirectionRelativeToCamera(fallback).ParallelizedWith(groundPlane)
-				?? Direction.None;
-		}
-		static Direction GetDir(Camera cam, Plane groundPlane, Orientation o) {
-			return cam.GetDirectionRelativeToCamera(o).ParallelizedWith(groundPlane)
-				?? Direction.None;
-		}
+	public void Move(Angle polarOrientation, float distance) { 
+		var zeroDegreeDir = Camera.GetDirectionRelativeToCamera(Orientation.Right).ParallelizedWith(GroundPlane) 
+			?? Direction.FromDualOrthogonalization(Camera.ViewDirection, GroundPlane.Normal);
 		
-		var camDirection = orientation switch {
-			Orientation2D.Right => GetDir(Camera, GroundPlane, Orientation.Right),
-			Orientation2D.UpRight => GetDirWithCheckedFallback(Camera, GroundPlane, Orientation.Forward, Orientation.RightForward, Camera.ViewDirection.AngleTo(GroundPlane.Normal) > Angle.QuarterCircle ? Orientation.RightUp : Orientation.RightDown),
-			Orientation2D.Up => GetDirWithFallback(Camera, GroundPlane, Orientation.Forward, Camera.ViewDirection.AngleTo(GroundPlane.Normal) > Angle.QuarterCircle ? Orientation.Up : Orientation.Down),
-			Orientation2D.UpLeft => GetDirWithCheckedFallback(Camera, GroundPlane, Orientation.Forward, Orientation.LeftForward, Camera.ViewDirection.AngleTo(GroundPlane.Normal) > Angle.QuarterCircle ? Orientation.LeftUp : Orientation.LeftDown),
-			Orientation2D.Left => GetDir(Camera, GroundPlane, Orientation.Left),
-			Orientation2D.DownLeft => GetDirWithCheckedFallback(Camera, GroundPlane, Orientation.Backward, Orientation.LeftBackward, Camera.ViewDirection.AngleTo(GroundPlane.Normal) > Angle.QuarterCircle ? Orientation.LeftDown : Orientation.LeftUp),
-			Orientation2D.Down => GetDirWithFallback(Camera, GroundPlane, Orientation.Backward, Camera.ViewDirection.AngleTo(GroundPlane.Normal) > Angle.QuarterCircle ? Orientation.Down : Orientation.Up),
-			Orientation2D.DownRight => GetDirWithCheckedFallback(Camera, GroundPlane, Orientation.Backward, Orientation.RightBackward, Camera.ViewDirection.AngleTo(GroundPlane.Normal) > Angle.QuarterCircle ? Orientation.RightDown : Orientation.RightUp),
-			_ => Direction.None
-		};
-		
-		Position += camDirection * distance;
+		Position += (zeroDegreeDir * (polarOrientation % GroundPlane.Normal)) * distance;
 	}
-	public void Move(Orientation2D orientation, float moveSpeed, float deltaTime) {
+	public void Move(Angle polarOrientation, float moveSpeed, float deltaTime) { 
+		Move(polarOrientation, moveSpeed * deltaTime);
+	}
+	public void Move(Orientation2D orientation, float distance) { 
+		Move(Angle.From2DPolarAngle(orientation) ?? Angle.Zero, distance);
+	}
+	public void Move(Orientation2D orientation, float moveSpeed, float deltaTime) { 
 		Move(orientation, moveSpeed * deltaTime);
 	}
 	public void MoveViaMouseCursor(XYPair<int> cursorDelta, float distancePerPixel, Axis2D axis = Axis2D.X, bool invertMouseControl = false) {
@@ -248,14 +229,11 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 	public void MoveViaMouseWheel(int mouseWheelDelta, float distancePerDelta, Orientation2D positiveOrientation, bool invertMouseControl = false) {
 		Move(positiveOrientation, distancePerDelta * mouseWheelDelta * (invertMouseControl ? -1f: 1f));
 	}
-	public void MoveViaControllerStick(GameControllerStickPosition stickPosition, float maxSpeed, float deltaTime, bool invertStickControl = false, Axis2D axis = Axis2D.X) {
-		var delta = axis switch {
-			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
-			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
-			_ => 0f
-		} * (invertStickControl ? -deltaTime : deltaTime);
-
-		Move(axis == Axis2D.X ? Orientation2D.Right : Orientation2D.Up, maxSpeed * delta, deltaTime);
+	public void MoveViaControllerStick(GameControllerStickPosition stickPosition, float maxSpeed, float deltaTime) {
+		var angle = stickPosition.GetPolarAngle();
+		if (angle == null) return;
+		
+		Move(angle.Value, maxSpeed * stickPosition.Displacement, deltaTime);
 	}
 	public void MoveViaControllerTriggers(GameControllerTriggerPosition positiveTriggerPosition, GameControllerTriggerPosition negativeTriggerPosition, Orientation2D positiveOrientation, float maxSpeed, float deltaTime) {
 		Move(positiveOrientation, positiveTriggerPosition.GetDisplacementWithDeadzone() * maxSpeed - negativeTriggerPosition.GetDisplacementWithDeadzone() * maxSpeed, deltaTime);
@@ -285,7 +263,6 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 		AdjustYawViaControllerStick(controllerInput.RightStickPosition, maxYawAdjustmentPerSec ?? 120f, deltaTime, invertStickControl: invertYawControl);
 		
 		var maxSpeed = maxMoveSpeed ?? 0.5f;
-		MoveViaControllerStick(controllerInput.LeftStickPosition, maxSpeed, deltaTime, axis: Axis2D.X);
-		MoveViaControllerStick(controllerInput.LeftStickPosition, maxSpeed, deltaTime, axis: Axis2D.Y);
+		MoveViaControllerStick(controllerInput.LeftStickPosition, maxSpeed, deltaTime);
 	}
 }
