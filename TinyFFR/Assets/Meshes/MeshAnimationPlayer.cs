@@ -56,19 +56,19 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetTimePoint(float timePointSeconds, MeshAnimationWrapStyle wrapStyle) {
+	public void SetTimePoint(float timePointSeconds, AnimationWrapStyle wrapStyle) {
 		Animation.Apply(Instance, wrapStyle.ApplyToTimePoint(timePointSeconds * SpeedMultiplier, Animation.DefaultDurationSeconds));
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetTimePointAndGetNodeTransforms(float timePointSeconds, MeshAnimationWrapStyle wrapStyle, MeshNode node, out Matrix4x4 modelSpaceTransform) {
+	public void SetTimePointAndGetNodeTransforms(float timePointSeconds, AnimationWrapStyle wrapStyle, MeshNode node, out Matrix4x4 modelSpaceTransform) {
 		Animation.ApplyAndGetNodeTransforms(Instance, wrapStyle.ApplyToTimePoint(timePointSeconds * SpeedMultiplier, Animation.DefaultDurationSeconds), node, out modelSpaceTransform);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetTimePointAndGetNodeTransforms(float timePointSeconds, MeshAnimationWrapStyle wrapStyle, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+	public void SetTimePointAndGetNodeTransforms(float timePointSeconds, AnimationWrapStyle wrapStyle, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
 		Animation.ApplyAndGetNodeTransforms(Instance, wrapStyle.ApplyToTimePoint(timePointSeconds * SpeedMultiplier, Animation.DefaultDurationSeconds), nodes, modelSpaceTransforms);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetTimePointAndGetNodeTransforms(float timePointSeconds, MeshAnimationWrapStyle wrapStyle, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
+	public void SetTimePointAndGetNodeTransforms(float timePointSeconds, AnimationWrapStyle wrapStyle, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
 		Animation.ApplyAndGetNodeTransforms(Instance, wrapStyle.ApplyToTimePoint(timePointSeconds * SpeedMultiplier, Animation.DefaultDurationSeconds), nodeIndices, modelSpaceTransforms);
 	}
 	#endregion
@@ -92,19 +92,19 @@ public readonly struct MeshAnimationPlayer : IEquatable<MeshAnimationPlayer> {
 	}
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetCompletionFraction(float fraction, MeshAnimationWrapStyle wrapStyle) {
+	public void SetCompletionFraction(float fraction, AnimationWrapStyle wrapStyle) {
 		Animation.Apply(Instance, wrapStyle.ApplyToTimePoint(Animation.DefaultDurationSeconds * fraction, Animation.DefaultDurationSeconds));
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetCompletionFractionAndGetNodeTransforms(float fraction, MeshAnimationWrapStyle wrapStyle, MeshNode node, out Matrix4x4 modelSpaceTransform) {
+	public void SetCompletionFractionAndGetNodeTransforms(float fraction, AnimationWrapStyle wrapStyle, MeshNode node, out Matrix4x4 modelSpaceTransform) {
 		Animation.ApplyAndGetNodeTransforms(Instance, wrapStyle.ApplyToTimePoint(Animation.DefaultDurationSeconds * fraction, Animation.DefaultDurationSeconds), node, out modelSpaceTransform);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetCompletionFractionAndGetNodeTransforms(float fraction, MeshAnimationWrapStyle wrapStyle, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
+	public void SetCompletionFractionAndGetNodeTransforms(float fraction, AnimationWrapStyle wrapStyle, ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) {
 		Animation.ApplyAndGetNodeTransforms(Instance, wrapStyle.ApplyToTimePoint(Animation.DefaultDurationSeconds * fraction, Animation.DefaultDurationSeconds), nodes, modelSpaceTransforms);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetCompletionFractionAndGetNodeTransforms(float fraction, MeshAnimationWrapStyle wrapStyle, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
+	public void SetCompletionFractionAndGetNodeTransforms(float fraction, AnimationWrapStyle wrapStyle, ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) {
 		Animation.ApplyAndGetNodeTransforms(Instance, wrapStyle.ApplyToTimePoint(Animation.DefaultDurationSeconds * fraction, Animation.DefaultDurationSeconds), nodeIndices, modelSpaceTransforms);
 	}
 	#endregion

@@ -255,24 +255,24 @@ class LocalAnimationTest {
 					if (prevAnimTimeRemaining > 0f && prevAnimIndex < mi.Mesh.Animations.All.Count) {
 						if (isFirst) {
 							mi.GetAnimationPlayer(mi.Animations[curAnimIndex], mi.Animations[prevAnimIndex])
-								.SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime, mi.Skeleton.Nodes[curNodeIndex], out var transform);
+								.SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime, mi.Skeleton.Nodes[curNodeIndex], out var transform);
 							nodeHighlighter.SetTransform(transform * mi.Transform.ToMatrix());
 							nodeHighlighter.SetScaling(1f);
 						}
 						else {
 							mi.GetAnimationPlayer(mi.Animations[curAnimIndex], mi.Animations[prevAnimIndex])
-								.SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime);
+								.SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime);
 						}
 						prevAnimTimeRemaining -= deltaTime;
 					}
 					else {
 						if (isFirst) {
-							mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationWrapStyle.Loop, mi.Skeleton.Nodes[curNodeIndex], out var transform);
+							mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, mi.Skeleton.Nodes[curNodeIndex], out var transform);
 							nodeHighlighter.SetTransform(transform * mi.Transform.ToMatrix());
 							nodeHighlighter.SetScaling(1f);
 						}
 						else {
-							mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationWrapStyle.Loop);
+							mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop);
 						}	
 					}
 				}
