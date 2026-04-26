@@ -26,11 +26,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	}
 	#endregion
 
-	public const float DefaultFollowDistance = 0.6f;
-	public const float DefaultFollowHeight = 0.35f;
-	public const float DefaultFollowLateralOffset = 0.35f;
-
-	readonly Spring3DBasedCameraSetpoint _positionSetpoint = new();
+	readonly Spring3DBasedCameraSetpoint _positionRelativeSetpoint = new();
 	readonly CameraEffectStrengthMap _positionSmoothingStrengthMap = new(
 		None: 0f,
 		VeryMild: 0.05f,
@@ -40,25 +36,25 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		VeryStrong: 0.4f
 	);
 	
-	readonly Spring3DBasedCameraSetpoint _lookTargetSetpoint = new();
+	readonly Spring3DBasedCameraSetpoint _lookRelativeSetpoint = new();
 	readonly CameraEffectStrengthMap _trackingSmoothingStrengthMap = new(
 		None: 0f,
-		VeryMild: 0.15f,
-		Mild: 0.25f,
-		Standard: 0.35f,
-		Strong: 0.45f,
-		VeryStrong: 0.55f
+		VeryMild: 0.35f,
+		Mild: 0.5f,
+		Standard: 0.7f,
+		Strong: 1f,
+		VeryStrong: 1.4f
 	);
 	
 	Vect _targetPositionOffset;
 
 	public Strength PositionSmoothingStrength {
-		get => _positionSmoothingStrengthMap.From(_positionSetpoint.HalfLife);
-		set => _positionSetpoint.HalfLife = _positionSmoothingStrengthMap.From(value);
+		get => _positionSmoothingStrengthMap.From(_positionRelativeSetpoint.HalfLife);
+		set => _positionRelativeSetpoint.HalfLife = _positionSmoothingStrengthMap.From(value);
 	}
 	public Strength TrackingSmoothingStrength {
-		get => _trackingSmoothingStrengthMap.From(_lookTargetSetpoint.HalfLife);
-		set => _lookTargetSetpoint.HalfLife = _trackingSmoothingStrengthMap.From(value);
+		get => _trackingSmoothingStrengthMap.From(_lookRelativeSetpoint.HalfLife);
+		set => _lookRelativeSetpoint.HalfLife = _trackingSmoothingStrengthMap.From(value);
 	}
 
 	public Location Target {
@@ -66,8 +62,6 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		set {
 			if (!value.IsPhysicallyValid) return;
 			field = value;
-			UpdateLookTargetSetpoint();
-			UpdatePositionSetpoint();
 		}
 	}
 	public Direction TargetForward {
@@ -85,8 +79,8 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		set {
 			if (!value.IsPhysicallyValidAndNotNone) return;
 			field = value.OrthogonalizedAgainst(TargetForward) ?? TargetForward.AnyOrthogonal();
-			RecalculateTargetPositionOffset();
-			UpdatePositionSetpoint();
+			UpdatePositionOffset();
+			UpdateLookSetpoint();
 		}
 	}
 
@@ -95,17 +89,16 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		set {
 			if (!value.IsNonNegativeAndFinite()) return;
 			field = value;
-			RecalculateTargetPositionOffset();
-			UpdatePositionSetpoint();
+			UpdatePositionOffset();
 		}
 	}
 	public float FollowHeight {
 		get;
 		set {
-			if (!value.IsNonNegativeAndFinite()) return;
+			if (!Single.IsFinite(value)) return;
 			field = value;
-			RecalculateTargetPositionOffset();
-			UpdatePositionSetpoint();
+			UpdatePositionOffset();
+			UpdateLookSetpoint();
 		}
 	}
 	public float FollowLateralOffset {
@@ -113,8 +106,8 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		set {
 			if (!Single.IsFinite(value)) return;
 			field = value;
-			RecalculateTargetPositionOffset();
-			UpdatePositionSetpoint();
+			UpdatePositionOffset();
+			UpdateLookSetpoint();
 		}
 	}
 	public float LateralOffsetViewShiftMultiplier {
@@ -122,7 +115,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		set {
 			if (!value.IsNonNegativeAndFinite()) return;
 			field = value;
-			UpdateLookTargetSetpoint();
+			UpdateLookSetpoint();
 		}
 	}
 	public float HeightViewShiftMultiplier {
@@ -130,7 +123,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		set {
 			if (!value.IsNonNegativeAndFinite()) return;
 			field = value;
-			UpdateLookTargetSetpoint();
+			UpdateLookSetpoint();
 		}
 	}
 	public float LookaheadDistance {
@@ -138,15 +131,15 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		set {
 			if (!value.IsNonNegativeAndFinite()) return;
 			field = value;
-			UpdateLookTargetSetpoint();
+			UpdateLookSetpoint();
 		}
 	}
 
 	public void SetCustomPositionSmoothingStrength(float smoothingHalfLife) {
-		_positionSetpoint.HalfLife = smoothingHalfLife;
+		_positionRelativeSetpoint.HalfLife = smoothingHalfLife;
 	}
 	public void SetCustomTrackingSmoothingStrength(float smoothingHalfLife) {
-		_lookTargetSetpoint.HalfLife = smoothingHalfLife;
+		_lookRelativeSetpoint.HalfLife = smoothingHalfLife;
 	}
 	public void SetGlobalSmoothing(Strength newSmoothingStrength) {
 		PositionSmoothingStrength = newSmoothingStrength;
@@ -154,44 +147,40 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	}
 
 	public void ResetParametersToDefault() {
-		LateralOffsetViewShiftMultiplier = 0.5f;
-		HeightViewShiftMultiplier = 0.6f;
-		LookaheadDistance = 1f;
+		LateralOffsetViewShiftMultiplier = 0.28f;
+		HeightViewShiftMultiplier = 0.44f;
+		LookaheadDistance = 2.4f;
 		Target = Location.Origin;
 		TargetForward = Direction.Forward;
 		TargetUp = Direction.Up;
-		FollowDistance = DefaultFollowDistance;
-		FollowHeight = DefaultFollowHeight;
-		FollowLateralOffset = DefaultFollowLateralOffset;
-		_positionSetpoint.Reset((Target + _targetPositionOffset).AsVect());
-		_lookTargetSetpoint.Reset(Vect.Zero);
+		FollowDistance = 0.6f;
+		FollowHeight = 0.3f;
+		FollowLateralOffset = 0.4f;
+		_positionRelativeSetpoint.Reset(_positionRelativeSetpoint.TargetValue);
+		_lookRelativeSetpoint.Reset(_lookRelativeSetpoint.TargetValue);
 		SetGlobalSmoothing(Strength.VeryMild);
 	}
 	
-	void RecalculateTargetPositionOffset() {
-		_targetPositionOffset =
+	void UpdatePositionOffset() {
+		_positionRelativeSetpoint.TargetValue =
 			(TargetForward * -FollowDistance)
 			+ (TargetUp * FollowHeight)
 			+ (Direction.FromDualOrthogonalization(TargetForward, TargetUp) * FollowLateralOffset);
 	}
 	
-	void UpdateLookTargetSetpoint() {
-		_lookTargetSetpoint.TargetValue = Target.AsVect() 
-			+ (TargetForward * LookaheadDistance)
+	void UpdateLookSetpoint() {
+		_lookRelativeSetpoint.TargetValue =
+			(TargetForward * LookaheadDistance)
 			+ (TargetUp * FollowHeight * HeightViewShiftMultiplier)
 			+ (Direction.FromDualOrthogonalization(TargetForward, TargetUp) * FollowLateralOffset * LateralOffsetViewShiftMultiplier);
 	}
-	
-	void UpdatePositionSetpoint() {
-		_positionSetpoint.TargetValue = (Target + _targetPositionOffset).AsVect();
-	}
 
 	public void Progress(float deltaTime) {
-		_positionSetpoint.Progress(deltaTime);
-		_lookTargetSetpoint.Progress(deltaTime);
+		_positionRelativeSetpoint.Progress(deltaTime);
+		_lookRelativeSetpoint.Progress(deltaTime);
 
-		Camera.SetPosition(_positionSetpoint.CurrentValue.AsLocation());
-		Camera.LookAt(_lookTargetSetpoint.CurrentValue.AsLocation(), TargetUp);
+		Camera.SetPosition(Target + _positionRelativeSetpoint.CurrentValue);
+		Camera.LookAt(Target + _lookRelativeSetpoint.CurrentValue, TargetUp);
 	}
 
 	public void AdjustFollowDistance(float adjustmentPerSec, float deltaTime) {
