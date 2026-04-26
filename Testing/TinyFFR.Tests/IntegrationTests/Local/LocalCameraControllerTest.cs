@@ -29,6 +29,7 @@ class LocalCameraControllerTest {
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		
 		var scenarios = new CameraControllerScenario[] {
+			new FollowScenario(factory, camera, mesh, mat, scene),	
 			new FirstPersonScenario(factory, camera, mesh, mat, scene),	
 			new OrbitalScenario(factory, camera, mesh, mat, scene),	
 			new FreeFlyingScenario(factory, camera, mesh, mat, scene),	
@@ -58,6 +59,60 @@ class LocalCameraControllerTest {
 		}
 		
 		if (scenarioIndex >= 0) scenarios[scenarioIndex].Stop();
+	}
+	
+	sealed class FollowScenario : CameraControllerScenario {
+		FollowCameraController _controller = null!;
+		ModelInstance[] _instances = null!;
+		ModelInstance _targetInstance;
+		Location _nextTargetLoc;
+		float _nextTargetSpeed;
+		
+		public FollowScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
+
+		public override void Start() {
+			Smoothing = Strength.VeryMild;
+			_instances = Enumerable.Range(0, 100).Select(_ => AddTestModelToScene()).ToArray();
+			_targetInstance = AddTestModelToScene();			
+			_controller = Camera.CreateController<FollowCameraController>();
+			_controller.SetGlobalSmoothing(Strength.VeryMild);
+			
+			foreach (var i in _instances) i.SetPosition(Location.Random(new Sphere(10f)));
+			_nextTargetLoc = Location.Origin;
+			_targetInstance.SetPosition(Location.Origin);
+		}
+		public override void Stop() {
+			_controller.Dispose();
+			RemoveAndDispose(_targetInstance);
+			foreach (var si in _instances) RemoveAndDispose(si);
+		}
+		public override string GetWindowTitleString() {
+			return
+				$"D/H/L {_controller.FollowDistance:N2}/{_controller.FollowHeight:N2}/{_controller.FollowLateralOffset:N2} " +
+				$"[0] Smoothing {Smoothing}";
+		}
+
+		public override void Iterate(float dt, ILatestInputRetriever input) {
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0)) {
+				CycleSmoothing();
+				_controller.SetGlobalSmoothing(Smoothing);
+			}
+			
+			if (_targetInstance.Position.DistanceFrom(_nextTargetLoc) < 0.1f) {
+				_nextTargetLoc = Location.Random(new Cuboid(20f, 2f, 20f));
+				_nextTargetSpeed = _targetInstance.Position.DistanceFrom(_nextTargetLoc) * 0.33f;
+			}
+			var vectToTarget = _targetInstance.Position >> _nextTargetLoc;
+			_targetInstance.MoveBy(vectToTarget.WithLength(_nextTargetSpeed * dt));
+			_controller.TargetForward = vectToTarget.Direction;
+			_controller.TargetUp = Direction.Up.OrthogonalizedAgainst(_controller.TargetForward) ?? _controller.TargetForward.AnyOrthogonal();
+			_controller.Target = _targetInstance.Position;
+
+			_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
+			_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
+			
+			_controller.Progress(dt);
+		}
 	}
 	
 	sealed class FirstPersonScenario : CameraControllerScenario {

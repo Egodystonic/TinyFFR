@@ -1,4 +1,4 @@
-// Created on 2026-04-16 by Ben Bowen
+// Created on 2026-04-26 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
 using Egodystonic.TinyFFR.Environment.Input;
@@ -26,6 +26,10 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	}
 	#endregion
 
+	public const float DefaultFollowDistance = 0.6f;
+	public const float DefaultFollowHeight = 0.35f;
+	public const float DefaultFollowLateralOffset = 0.35f;
+
 	readonly Spring3DBasedCameraSetpoint _positionSetpoint = new();
 	readonly CameraEffectStrengthMap _positionSmoothingStrengthMap = new(
 		None: 0f,
@@ -35,54 +39,106 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		Strong: 0.3f,
 		VeryStrong: 0.4f
 	);
-	readonly SpringAngleBasedCameraSetpoint _yawSetpoint = new();
-	readonly SpringAngleBasedCameraSetpoint _pitchSetpoint = new();
+	
+	readonly Spring3DBasedCameraSetpoint _lookTargetSetpoint = new();
 	readonly CameraEffectStrengthMap _trackingSmoothingStrengthMap = new(
 		None: 0f,
-		VeryMild: 0.03f,
-		Mild: 0.06f,
-		Standard: 0.1f,
-		Strong: 0.14f,
-		VeryStrong: 0.2f
+		VeryMild: 0.15f,
+		Mild: 0.25f,
+		Standard: 0.35f,
+		Strong: 0.45f,
+		VeryStrong: 0.55f
 	);
-	Direction _zeroYawZeroPitchDir;
+	
+	Vect _targetPositionOffset;
 
 	public Strength PositionSmoothingStrength {
 		get => _positionSmoothingStrengthMap.From(_positionSetpoint.HalfLife);
 		set => _positionSetpoint.HalfLife = _positionSmoothingStrengthMap.From(value);
 	}
 	public Strength TrackingSmoothingStrength {
-		get => _trackingSmoothingStrengthMap.From(_yawSetpoint.HalfLife);
+		get => _trackingSmoothingStrengthMap.From(_lookTargetSetpoint.HalfLife);
+		set => _lookTargetSetpoint.HalfLife = _trackingSmoothingStrengthMap.From(value);
+	}
+
+	public Location Target {
+		get;
 		set {
-			_yawSetpoint.HalfLife = _trackingSmoothingStrengthMap.From(value);
-			_pitchSetpoint.HalfLife = _trackingSmoothingStrengthMap.From(value);
+			if (!value.IsPhysicallyValid) return;
+			field = value;
+			UpdateLookTargetSetpoint();
+			UpdatePositionSetpoint();
 		}
 	}
-	
-	public Direction WorldUp {
+	public Direction TargetForward {
 		get;
 		set {
 			if (!value.IsPhysicallyValidAndNotNone) return;
 			field = value;
-			_zeroYawZeroPitchDir = value.AnyOrthogonal();
+#pragma warning disable CA2245 // Self-assignment: Forces re-limit-bounding
+			TargetUp = TargetUp;
+#pragma warning restore CA2245
 		}
 	}
-	public bool AllowUpsideDownFlip { get; set; }
-	
-	public Location Target {
-		get; 
+	public Direction TargetUp {
+		get;
 		set {
-			if (!value.IsPhysicallyValid) return;
-			field = value;
-			RecalculateSetpoints();
+			if (!value.IsPhysicallyValidAndNotNone) return;
+			field = value.OrthogonalizedAgainst(TargetForward) ?? TargetForward.AnyOrthogonal();
+			RecalculateTargetPositionOffset();
+			UpdatePositionSetpoint();
 		}
 	}
-	public Vect TargetOffset {
+
+	public float FollowDistance {
+		get;
+		set {
+			if (!value.IsNonNegativeAndFinite()) return;
+			field = value;
+			RecalculateTargetPositionOffset();
+			UpdatePositionSetpoint();
+		}
+	}
+	public float FollowHeight {
+		get;
+		set {
+			if (!value.IsNonNegativeAndFinite()) return;
+			field = value;
+			RecalculateTargetPositionOffset();
+			UpdatePositionSetpoint();
+		}
+	}
+	public float FollowLateralOffset {
+		get;
+		set {
+			if (!Single.IsFinite(value)) return;
+			field = value;
+			RecalculateTargetPositionOffset();
+			UpdatePositionSetpoint();
+		}
+	}
+	public float LateralOffsetViewShiftMultiplier {
 		get; 
 		set {
-			if (!value.IsPhysicallyValid) return;
+			if (!value.IsNonNegativeAndFinite()) return;
 			field = value;
-			RecalculateSetpoints();
+			UpdateLookTargetSetpoint();
+		}
+	}
+	public float HeightViewShiftMultiplier {
+		get; 
+		set {
+			if (!value.IsNonNegativeAndFinite()) return;
+			field = value;
+			UpdateLookTargetSetpoint();
+		}
+	}
+	public float LookaheadDistance {
+		get;
+		set {
+			if (!value.IsNonNegativeAndFinite()) return;
+			field = value;
+			UpdateLookTargetSetpoint();
 		}
 	}
 
@@ -90,8 +146,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		_positionSetpoint.HalfLife = smoothingHalfLife;
 	}
 	public void SetCustomTrackingSmoothingStrength(float smoothingHalfLife) {
-		_yawSetpoint.HalfLife = smoothingHalfLife;
-		_pitchSetpoint.HalfLife = smoothingHalfLife;
+		_lookTargetSetpoint.HalfLife = smoothingHalfLife;
 	}
 	public void SetGlobalSmoothing(Strength newSmoothingStrength) {
 		PositionSmoothingStrength = newSmoothingStrength;
@@ -99,90 +154,163 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	}
 
 	public void ResetParametersToDefault() {
-		AllowUpsideDownFlip = false;
-		WorldUp = Direction.Up;
+		LateralOffsetViewShiftMultiplier = 0.5f;
+		HeightViewShiftMultiplier = 0.6f;
+		LookaheadDistance = 1f;
 		Target = Location.Origin;
-		TargetOffset = Direction.Backward * 0.7f + Direction.Up * 0.3f + Direction.Right * 0.2f;
-		_positionSetpoint.Reset(TargetOffset);
-		_yawSetpoint.Reset(Angle.Zero);
-		_pitchSetpoint.Reset(Angle.Zero);
+		TargetForward = Direction.Forward;
+		TargetUp = Direction.Up;
+		FollowDistance = DefaultFollowDistance;
+		FollowHeight = DefaultFollowHeight;
+		FollowLateralOffset = DefaultFollowLateralOffset;
+		_positionSetpoint.Reset((Target + _targetPositionOffset).AsVect());
+		_lookTargetSetpoint.Reset(Vect.Zero);
 		SetGlobalSmoothing(Strength.VeryMild);
 	}
 	
-	void RecalculateSetpoints() {
-		var cameraPos = Target + TargetOffset;
-		var cameraToTarget = cameraPos >> Target;
-		_positionSetpoint.TargetValue = cameraPos.AsVect();
-		_pitchSetpoint.TargetValue = _zeroYawZeroPitchDir.SignedAngleTo(cameraToTarget.Direction.OrthogonalizedAgainst(WorldUp) ?? _zeroYawZeroPitchDir, WorldUp);
-		_yawSetpoint.TargetValue = new Plane(WorldUp).SignedAngleTo(cameraToTarget.Direction);
-		
-		if (!AllowUpsideDownFlip) {
-			var curTarget = _pitchSetpoint.TargetValue;
-			var diffToLowerBound = curTarget - Angle.QuarterCircle;
-			var diffToUpperBound = (Angle.FullCircle - Angle.QuarterCircle) - curTarget;
-			if (diffToLowerBound > 0f && diffToUpperBound > 0f) {
-				if (diffToUpperBound < diffToLowerBound) _pitchSetpoint.TargetValue = Angle.FullCircle - Angle.QuarterCircle; 
-				else _pitchSetpoint.TargetValue = Angle.QuarterCircle; 
-			} 
-		}
+	void RecalculateTargetPositionOffset() {
+		_targetPositionOffset =
+			(TargetForward * -FollowDistance)
+			+ (TargetUp * FollowHeight)
+			+ (Direction.FromDualOrthogonalization(TargetForward, TargetUp) * FollowLateralOffset);
+	}
+	
+	void UpdateLookTargetSetpoint() {
+		_lookTargetSetpoint.TargetValue = Target.AsVect() 
+			+ (TargetForward * LookaheadDistance)
+			+ (TargetUp * FollowHeight * HeightViewShiftMultiplier)
+			+ (Direction.FromDualOrthogonalization(TargetForward, TargetUp) * FollowLateralOffset * LateralOffsetViewShiftMultiplier);
+	}
+	
+	void UpdatePositionSetpoint() {
+		_positionSetpoint.TargetValue = (Target + _targetPositionOffset).AsVect();
 	}
 
 	public void Progress(float deltaTime) {
 		_positionSetpoint.Progress(deltaTime);
-		_yawSetpoint.Progress(deltaTime);
-		_pitchSetpoint.Progress(deltaTime);
+		_lookTargetSetpoint.Progress(deltaTime);
 
-		var currentHorizontalPlaneDir = _zeroYawZeroPitchDir * (_yawSetpoint.CurrentValue % WorldUp);
-		var verticalTiltRot = _pitchSetpoint.CurrentValue % Direction.FromDualOrthogonalization(WorldUp, currentHorizontalPlaneDir);
-		
 		Camera.SetPosition(_positionSetpoint.CurrentValue.AsLocation());
-		Camera.SetViewAndUpDirection(currentHorizontalPlaneDir * verticalTiltRot, WorldUp * verticalTiltRot);
+		Camera.LookAt(_lookTargetSetpoint.CurrentValue.AsLocation(), TargetUp);
 	}
 
-	public void AdjustTargetOffsetViaMouseCursor(XYPair<int> cursorDelta, Angle adjustmentPerPixel, Axis2D axis = Axis2D.X, bool invertMouseControl = false) {
+	public void AdjustFollowDistance(float adjustmentPerSec, float deltaTime) {
+		FollowDistance += adjustmentPerSec * deltaTime;
+	}
+	public void AdjustFollowDistanceViaMouseCursor(XYPair<int> cursorDelta, float adjustmentPerPixel, Axis2D axis = Axis2D.Y, bool invertMouseControl = false) {
 		var delta = axis switch {
 			Axis2D.X => cursorDelta.X,
 			Axis2D.Y => cursorDelta.Y,
 			_ => 0
 		} * (invertMouseControl ? -1f : 1f);
 
-		Angle += delta * adjustmentPerPixel;
+		FollowDistance += delta * adjustmentPerPixel;
 	}
-	public void AdjustAngleViaMouseWheel(int mouseWheelDelta, Angle adjustmentPerWheelIncrement, bool invertMouseControl = false) {
-		Angle += mouseWheelDelta * adjustmentPerWheelIncrement * (invertMouseControl ? -1f: 1f);
+	public void AdjustFollowDistanceViaMouseWheel(int mouseWheelDelta, float adjustmentPerWheelIncrement, bool invertMouseControl = false) {
+		FollowDistance += mouseWheelDelta * adjustmentPerWheelIncrement * (invertMouseControl ? -1f : 1f);
 	}
-	public void AdjustAngleViaControllerStick(GameControllerStickPosition stickPosition, Angle maxAdjustmentPerSec, float deltaTime, bool invertStickControl = false, Axis2D axis = Axis2D.X) {
+	public void AdjustFollowDistanceViaControllerStick(GameControllerStickPosition stickPosition, float maxAdjustmentPerSec, float deltaTime, Axis2D axis = Axis2D.Y, bool invertStickControl = false) {
 		var delta = axis switch {
 			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
 			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
 			_ => 0f
 		} * (invertStickControl ? -deltaTime : deltaTime);
 
-		Angle += maxAdjustmentPerSec * delta;
+		FollowDistance += maxAdjustmentPerSec * delta;
 	}
-	public void AdjustAngleViaControllerTriggers(GameControllerTriggerPosition anticlockwiseTriggerPosition, GameControllerTriggerPosition clockwiseTriggerPosition, Angle maxAdjustmentPerSec, float deltaTime) {
-		Angle += deltaTime 
-			* (anticlockwiseTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - clockwiseTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec);
+	public void AdjustFollowDistanceViaControllerTriggers(GameControllerTriggerPosition increasingTriggerPosition, GameControllerTriggerPosition decreasingTriggerPosition, float maxAdjustmentPerSec, float deltaTime) {
+		AdjustFollowDistance(increasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - decreasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
 	}
-	public void AdjustAngleViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Angle adjustmentPerSec, float deltaTime) {
+	public void AdjustFollowDistanceViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, float adjustmentPerSec, float deltaTime) {
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
-		AdjustAngle(adjustmentPerSec, deltaTime);
+		AdjustFollowDistance(adjustmentPerSec, deltaTime);
 	}
-	public void AdjustAngleViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Angle adjustmentPerSec, float deltaTime) {
+	public void AdjustFollowDistanceViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, float adjustmentPerSec, float deltaTime) {
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
-		AdjustAngle(adjustmentPerSec, deltaTime);
+		AdjustFollowDistance(adjustmentPerSec, deltaTime);
 	}
 
-	
-	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime, bool invertAngleControl = false, bool invertHeightControl = false, bool invertDistanceControl = false, Angle? angleAdjustmentPerPixel = null, float? heightAdjustmentPerPixel = null, float? distanceAdjustmentPerWheelIncrement = null) {
-		AdjustAngleViaMouseCursor(kbmInput.MouseCursorDelta, angleAdjustmentPerPixel ?? 0.02f, invertMouseControl: invertAngleControl);
-		AdjustHeightViaMouseCursor(kbmInput.MouseCursorDelta, heightAdjustmentPerPixel ?? 0.0001f, invertMouseControl: invertHeightControl);
-		AdjustDistanceViaMouseWheel(kbmInput.MouseScrollWheelDelta, distanceAdjustmentPerWheelIncrement ?? 0.045f, invertMouseControl: invertDistanceControl);
+	public void AdjustFollowHeight(float adjustmentPerSec, float deltaTime) {
+		FollowHeight += adjustmentPerSec * deltaTime;
 	}
-	
-	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime, bool invertAngleControl = false, bool invertHeightControl = false, bool invertDistanceControl = false, Angle? maxAngleAdjustmentPerSec = null, float? maxHeightAdjustmentPerSec = null, float? maxDistanceAdjustmentPerSec = null) {
-		AdjustAngleViaControllerStick(controllerInput.RightStickPosition, maxAngleAdjustmentPerSec ?? 120f, deltaTime, invertStickControl: invertAngleControl);
-		AdjustHeightViaControllerTriggers(invertHeightControl ? controllerInput.RightTriggerPosition : controllerInput.LeftTriggerPosition, invertHeightControl ? controllerInput.LeftTriggerPosition : controllerInput.RightTriggerPosition, maxHeightAdjustmentPerSec ?? 0.5f, deltaTime);
-		AdjustDistanceViaControllerStick(controllerInput.LeftStickPosition, maxDistanceAdjustmentPerSec ?? 0.5f, deltaTime, invertStickControl: invertDistanceControl);
+	public void AdjustFollowHeightViaMouseCursor(XYPair<int> cursorDelta, float adjustmentPerPixel, Axis2D axis = Axis2D.Y, bool invertMouseControl = false) {
+		var delta = axis switch {
+			Axis2D.X => cursorDelta.X,
+			Axis2D.Y => cursorDelta.Y,
+			_ => 0
+		} * (invertMouseControl ? 1f : -1f);
+
+		FollowHeight += delta * adjustmentPerPixel;
+	}
+	public void AdjustFollowHeightViaMouseWheel(int mouseWheelDelta, float adjustmentPerWheelIncrement, bool invertMouseControl = false) {
+		FollowHeight += mouseWheelDelta * adjustmentPerWheelIncrement * (invertMouseControl ? -1f : 1f);
+	}
+	public void AdjustFollowHeightViaControllerStick(GameControllerStickPosition stickPosition, float maxAdjustmentPerSec, float deltaTime, Axis2D axis = Axis2D.Y, bool invertStickControl = false) {
+		var delta = axis switch {
+			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
+			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
+			_ => 0f
+		} * (invertStickControl ? -deltaTime : deltaTime);
+
+		FollowHeight += maxAdjustmentPerSec * delta;
+	}
+	public void AdjustFollowHeightViaControllerTriggers(GameControllerTriggerPosition increasingTriggerPosition, GameControllerTriggerPosition decreasingTriggerPosition, float maxAdjustmentPerSec, float deltaTime) {
+		AdjustFollowHeight(increasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - decreasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
+	}
+	public void AdjustFollowHeightViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, float adjustmentPerSec, float deltaTime) {
+		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
+		AdjustFollowHeight(adjustmentPerSec, deltaTime);
+	}
+	public void AdjustFollowHeightViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, float adjustmentPerSec, float deltaTime) {
+		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
+		AdjustFollowHeight(adjustmentPerSec, deltaTime);
+	}
+
+	public void AdjustFollowLateralOffset(float adjustmentPerSec, float deltaTime) {
+		FollowLateralOffset += adjustmentPerSec * deltaTime;
+	}
+	public void AdjustFollowLateralOffsetViaMouseCursor(XYPair<int> cursorDelta, float adjustmentPerPixel, Axis2D axis = Axis2D.X, bool invertMouseControl = false) {
+		var delta = axis switch {
+			Axis2D.X => cursorDelta.X,
+			Axis2D.Y => cursorDelta.Y,
+			_ => 0
+		} * (invertMouseControl ? -1f : 1f);
+
+		FollowLateralOffset += delta * adjustmentPerPixel;
+	}
+	public void AdjustFollowLateralOffsetViaMouseWheel(int mouseWheelDelta, float adjustmentPerWheelIncrement, bool invertMouseControl = false) {
+		FollowLateralOffset += mouseWheelDelta * adjustmentPerWheelIncrement * (invertMouseControl ? -1f : 1f);
+	}
+	public void AdjustFollowLateralOffsetViaControllerStick(GameControllerStickPosition stickPosition, float maxAdjustmentPerSec, float deltaTime, Axis2D axis = Axis2D.X, bool invertStickControl = false) {
+		var delta = axis switch {
+			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
+			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
+			_ => 0f
+		} * (invertStickControl ? -deltaTime : deltaTime);
+
+		FollowLateralOffset += maxAdjustmentPerSec * delta;
+	}
+	public void AdjustFollowLateralOffsetViaControllerTriggers(GameControllerTriggerPosition increasingTriggerPosition, GameControllerTriggerPosition decreasingTriggerPosition, float maxAdjustmentPerSec, float deltaTime) {
+		AdjustFollowLateralOffset(increasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - decreasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
+	}
+	public void AdjustFollowLateralOffsetViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, float adjustmentPerSec, float deltaTime) {
+		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
+		AdjustFollowLateralOffset(adjustmentPerSec, deltaTime);
+	}
+	public void AdjustFollowLateralOffsetViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, float adjustmentPerSec, float deltaTime) {
+		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
+		AdjustFollowLateralOffset(adjustmentPerSec, deltaTime);
+	}
+
+	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime, bool invertDistanceControl = false, bool invertHeightControl = false, bool invertLateralControl = false, float? distanceAdjustmentPerWheelIncrement = null, float? heightAdjustmentPerPixel = null, float? lateralAdjustmentPerPixel = null) {
+		AdjustFollowHeightViaMouseCursor(kbmInput.MouseCursorDelta, heightAdjustmentPerPixel ?? 0.0004f, invertMouseControl: invertHeightControl);
+		AdjustFollowDistanceViaMouseWheel(kbmInput.MouseScrollWheelDelta, distanceAdjustmentPerWheelIncrement ?? 0.05f, invertMouseControl: invertDistanceControl);
+		AdjustFollowLateralOffsetViaMouseCursor(kbmInput.MouseCursorDelta, lateralAdjustmentPerPixel ?? 0.0004f, invertMouseControl: invertLateralControl);
+	}
+
+	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime, bool invertDistanceControl = false, bool invertHeightControl = false, bool invertLateralControl = false, float? maxDistanceAdjustmentPerSec = null, float? maxHeightAdjustmentPerSec = null, float? maxLateralAdjustmentPerSec = null) {
+		AdjustFollowDistanceViaControllerStick(controllerInput.RightStickPosition, maxDistanceAdjustmentPerSec ?? 0.5f, deltaTime, invertStickControl: invertDistanceControl);
+		AdjustFollowHeightViaControllerTriggers(invertHeightControl ? controllerInput.RightTriggerPosition : controllerInput.LeftTriggerPosition, invertHeightControl ? controllerInput.LeftTriggerPosition : controllerInput.RightTriggerPosition, maxHeightAdjustmentPerSec ?? 0.5f, deltaTime);
+		AdjustFollowLateralOffsetViaControllerStick(controllerInput.LeftStickPosition, maxLateralAdjustmentPerSec ?? 0.5f, deltaTime, invertStickControl: invertLateralControl);
 	}
 }
