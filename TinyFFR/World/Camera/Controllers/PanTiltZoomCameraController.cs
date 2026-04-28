@@ -335,17 +335,23 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		AdjustZoom(adjustmentPerSec, deltaTime);
 	}
 	
+	public const float DefaultMousePanSensitivity = 0.02f;
+	public const float DefaultMouseTiltSensitivity = 0.02f;
+	public const float DefaultMouseZoomSensitivity = 0.025f;
 	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime, bool invertPanControl = false, bool invertTiltControl = false, bool invertZoomControl = false, Angle? panAdjustmentPerPixel = null, Angle? tiltAdjustmentPerPixel = null, float? zoomAdjustmentPerWheelIncrement = null) {
 		ArgumentNullException.ThrowIfNull(kbmInput);
-		AdjustPanViaMouseCursor(kbmInput.MouseCursorDelta, panAdjustmentPerPixel ?? 0.02f, invertMouseControl: invertPanControl);
-		AdjustTiltViaMouseCursor(kbmInput.MouseCursorDelta, tiltAdjustmentPerPixel ?? 0.02f, invertMouseControl: invertTiltControl);
-		AdjustZoomViaMouseWheel(kbmInput.MouseScrollWheelDelta, zoomAdjustmentPerWheelIncrement ?? 0.025f, invertMouseControl: invertZoomControl);
+		AdjustPanViaMouseCursor(kbmInput.MouseCursorDelta, panAdjustmentPerPixel ?? DefaultMousePanSensitivity, invertMouseControl: invertPanControl);
+		AdjustTiltViaMouseCursor(kbmInput.MouseCursorDelta, tiltAdjustmentPerPixel ?? DefaultMouseTiltSensitivity, invertMouseControl: invertTiltControl);
+		AdjustZoomViaMouseWheel(kbmInput.MouseScrollWheelDelta, zoomAdjustmentPerWheelIncrement ?? DefaultMouseZoomSensitivity, invertMouseControl: invertZoomControl);
 	}
 	
+	public const float DefaultControllerPanSensitivity = 120f;
+	public const float DefaultControllerTiltSensitivity = 120f;
+	public const float DefaultControllerZoomSensitivity = 0.5f;
 	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime, bool invertPanControl = false, bool invertTiltControl = false, bool invertZoomControl = false, Angle? maxPanAdjustmentPerSec = null, Angle? maxTiltAdjustmentPerSec = null, float? maxZoomAdjustmentPerSec = null) {
 		ArgumentNullException.ThrowIfNull(controllerInput);
-		AdjustPanViaControllerStick(controllerInput.LeftStickPosition, maxPanAdjustmentPerSec ?? 120f, deltaTime, invertStickControl: invertPanControl);
-		AdjustTiltViaControllerStick(controllerInput.LeftStickPosition, maxTiltAdjustmentPerSec ?? 0.5f, deltaTime, invertStickControl: invertTiltControl);
-		AdjustZoomViaControllerTriggers(invertZoomControl ? controllerInput.RightTriggerPosition : controllerInput.LeftTriggerPosition, invertZoomControl ? controllerInput.LeftTriggerPosition : controllerInput.RightTriggerPosition, maxZoomAdjustmentPerSec ?? 0.5f, deltaTime);
+		AdjustPanViaControllerStick(controllerInput.LeftStickPosition, maxPanAdjustmentPerSec ?? DefaultControllerPanSensitivity, deltaTime, invertStickControl: invertPanControl);
+		AdjustTiltViaControllerStick(controllerInput.LeftStickPosition, maxTiltAdjustmentPerSec ?? DefaultControllerTiltSensitivity, deltaTime, invertStickControl: invertTiltControl);
+		AdjustZoomViaControllerTriggers(invertZoomControl ? controllerInput.RightTriggerPosition : controllerInput.LeftTriggerPosition, invertZoomControl ? controllerInput.LeftTriggerPosition : controllerInput.RightTriggerPosition, maxZoomAdjustmentPerSec ?? DefaultControllerZoomSensitivity, deltaTime);
 	}
 }

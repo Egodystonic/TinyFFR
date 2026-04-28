@@ -253,24 +253,30 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 		Move(orientation, speed, deltaTime);
 	}
 
+	public const float DefaultMousePitchSensitivity = 0.02f;
+	public const float DefaultMouseYawSensitivity = 0.02f;
+	public const float DefaultKeyboardMoveSpeed = 0.5f;
 	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, Angle? pitchAdjustmentPerPixel = null, Angle? yawAdjustmentPerPixel = null, float? moveSpeed = null) {
 		ArgumentNullException.ThrowIfNull(kbmInput);
-		AdjustPitchViaMouseCursor(kbmInput.MouseCursorDelta, pitchAdjustmentPerPixel ?? 0.02f, invertMouseControl: invertPitchControl);
-		AdjustYawViaMouseCursor(kbmInput.MouseCursorDelta, yawAdjustmentPerPixel ?? 0.02f, invertMouseControl: invertYawControl);
-		
-		var speed = moveSpeed ?? 0.5f;
+		AdjustPitchViaMouseCursor(kbmInput.MouseCursorDelta, pitchAdjustmentPerPixel ?? DefaultMousePitchSensitivity, invertMouseControl: invertPitchControl);
+		AdjustYawViaMouseCursor(kbmInput.MouseCursorDelta, yawAdjustmentPerPixel ?? DefaultMouseYawSensitivity, invertMouseControl: invertYawControl);
+
+		var speed = moveSpeed ?? DefaultKeyboardMoveSpeed;
 		MoveViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowLeft, Orientation2D.Left, speed, deltaTime);
 		MoveViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowRight, Orientation2D.Right, speed, deltaTime);
 		MoveViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowUp, Orientation2D.Up, speed, deltaTime);
 		MoveViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowDown, Orientation2D.Down, speed, deltaTime);
 	}
 	
+	public const float DefaultControllerPitchSensitivity = 120f;
+	public const float DefaultControllerYawSensitivity = 120f;
+	public const float DefaultControllerMoveSpeed = 0.5f;
 	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, Angle? maxPitchAdjustmentPerSec = null, Angle? maxYawAdjustmentPerSec = null, float? maxMoveSpeed = null) {
 		ArgumentNullException.ThrowIfNull(controllerInput);
-		AdjustPitchViaControllerStick(controllerInput.RightStickPosition, maxPitchAdjustmentPerSec ?? 120f, deltaTime, invertStickControl: invertPitchControl);
-		AdjustYawViaControllerStick(controllerInput.RightStickPosition, maxYawAdjustmentPerSec ?? 120f, deltaTime, invertStickControl: invertYawControl);
-		
-		var maxSpeed = maxMoveSpeed ?? 0.5f;
+		AdjustPitchViaControllerStick(controllerInput.RightStickPosition, maxPitchAdjustmentPerSec ?? DefaultControllerPitchSensitivity, deltaTime, invertStickControl: invertPitchControl);
+		AdjustYawViaControllerStick(controllerInput.RightStickPosition, maxYawAdjustmentPerSec ?? DefaultControllerYawSensitivity, deltaTime, invertStickControl: invertYawControl);
+
+		var maxSpeed = maxMoveSpeed ?? DefaultControllerMoveSpeed;
 		MoveViaControllerStick(controllerInput.LeftStickPosition, maxSpeed, deltaTime);
 	}
 }
