@@ -29,11 +29,12 @@ class LocalCameraControllerTest {
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		
 		var scenarios = new CameraControllerScenario[] {
-			new FollowScenario(factory, camera, mesh, mat, scene),	
-			new FirstPersonScenario(factory, camera, mesh, mat, scene),	
-			new OrbitalScenario(factory, camera, mesh, mat, scene),	
-			new FreeFlyingScenario(factory, camera, mesh, mat, scene),	
-			new PtzScenario(factory, camera, mesh, mat, scene),	
+			new ProgrammedScenario(factory, camera, mesh, mat, scene),
+			new FollowScenario(factory, camera, mesh, mat, scene),
+			new FirstPersonScenario(factory, camera, mesh, mat, scene),
+			new OrbitalScenario(factory, camera, mesh, mat, scene),
+			new FreeFlyingScenario(factory, camera, mesh, mat, scene),
+			new PtzScenario(factory, camera, mesh, mat, scene),
 		};
 		var scenarioIndex = -1;
 
@@ -307,6 +308,66 @@ class LocalCameraControllerTest {
 		}
 	}
 	
+	sealed class ProgrammedScenario : CameraControllerScenario {
+		ProgrammedCameraController _controller = null!;
+		ModelInstance[] _instances = null!;
+
+		public ProgrammedScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
+
+		public override void Start() {
+			_instances = Enumerable.Range(0, 100).Select(_ => AddTestModelToScene()).ToArray();
+			_controller = Camera.CreateController<ProgrammedCameraController>();
+
+			foreach (var i in _instances) i.SetPosition(Location.Random(new Sphere(10f)));
+
+			_controller.AddPositionKeyframe(new(2f, InterpolationAlgorithm<Location>.Natural(true), new Location(3f, 0f, -3f)));
+			_controller.AddPositionKeyframe(new(2f, InterpolationAlgorithm<Location>.Natural(true), new Location(0f, 3f, 3f)));
+			_controller.AddPositionKeyframe(new(2f, InterpolationAlgorithm<Location>.Natural(true), new Location(-3f, 0f, 0f)));
+
+			_controller.AddOrientationKeyframe(new(1.5f, InterpolationAlgorithm<Direction>.Natural(false), Direction.Forward, Direction.Up));
+			_controller.AddOrientationKeyframe(new(1.5f, InterpolationAlgorithm<Direction>.Natural(false), Direction.Right, Direction.Up));
+			_controller.AddOrientationKeyframe(new(1.5f, InterpolationAlgorithm<Direction>.Natural(false), Direction.Backward, Direction.Up));
+
+			_controller.AddFieldOfViewKeyframe(new(1f, InterpolationAlgorithm<Angle>.Linear(), Angle.FromDegrees(60f)));
+			_controller.AddFieldOfViewKeyframe(new(1f, InterpolationAlgorithm<Angle>.Linear(), Angle.FromDegrees(90f)));
+			_controller.AddFieldOfViewKeyframe(new(1f, InterpolationAlgorithm<Angle>.Linear(), Angle.FromDegrees(45f)));
+		}
+		public override void Stop() {
+			_controller.Dispose();
+			foreach (var si in _instances) RemoveAndDispose(si);
+		}
+		public override string GetWindowTitleString() {
+			return
+				$"[1] PosWrap {_controller.PositionTrackWrapping?.ToString() ?? "<none>"} " +
+				$"[2] OrientWrap {_controller.OrientationTrackWrapping?.ToString() ?? "<none>"} " +
+				$"[3] FovWrap {_controller.FieldOfViewTrackWrapping?.ToString() ?? "<none>"} " +
+				$"[4] Time {_controller.CurrentTimestampSeconds:N2}";
+		}
+
+		public override void Iterate(float dt, ILatestInputRetriever input) {
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) {
+				_controller.PositionTrackWrapping = CycleWrapStyle(_controller.PositionTrackWrapping);
+			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) {
+				_controller.OrientationTrackWrapping = CycleWrapStyle(_controller.OrientationTrackWrapping);
+			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow3)) {
+				_controller.FieldOfViewTrackWrapping = CycleWrapStyle(_controller.FieldOfViewTrackWrapping);
+			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow4)) {
+				_controller.CurrentTimestampSeconds = 0f;
+			}
+
+			_controller.Progress(dt);
+		}
+
+		static AnimationWrapStyle? CycleWrapStyle(AnimationWrapStyle? current) {
+			if (current == null) return AnimationWrapStyle.Once;
+			var next = (AnimationWrapStyle) ((int) current.Value + 1);
+			return Enum.IsDefined(next) ? next : null;
+		}
+	}
+
 	abstract class CameraControllerScenario {
 		protected readonly ILocalTinyFfrFactory Factory;
 		protected readonly Camera Camera;

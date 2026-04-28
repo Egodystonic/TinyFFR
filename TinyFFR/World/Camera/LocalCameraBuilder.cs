@@ -129,7 +129,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (newFov < Camera.FieldOfViewMin || newFov > Camera.FieldOfViewMax) {
 			throw new ArgumentException(
-				$"Field of view must be between {nameof(Camera)}.{nameof(Camera.FieldOfViewMin)} ({Camera.FieldOfViewMin}) and {nameof(Camera)}.{nameof(Camera.FieldOfViewMax)} ({Camera.FieldOfViewMax}).",
+				$"Vertical field of view must be between {nameof(Camera)}.{nameof(Camera.FieldOfViewMin)} ({Camera.FieldOfViewMin}) and {nameof(Camera)}.{nameof(Camera.FieldOfViewMax)} ({Camera.FieldOfViewMax}).",
 				nameof(newFov)
 			);
 		}

@@ -93,7 +93,7 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 		}
 		public void Reset() {
 			Clear();
-			Wrapping = null;
+			Wrapping = AnimationWrapStyle.Once;
 		}
 		
 		public (T? PrevKeyframe, T Keyframe, float InterpDistance)? GetKeyframeAndInterpolationDistance(float timestampSecs) {
@@ -148,7 +148,6 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 	public float OrientationTrackLengthSeconds => _orientationTrack.TrackLengthSeconds;
 	public float FieldOfViewTrackLengthSeconds => _fovTrack.TrackLengthSeconds;
 	
-	public bool FieldOfViewValuesAreVertical { get; set; }
 	public float CurrentTimestampSeconds { get; set; }
 
 	public void AddPositionKeyframe(PositionKeyframe keyframe) {
@@ -178,7 +177,6 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 		_positionTrack.Reset();
 		_orientationTrack.Reset();
 		_fovTrack.Reset();
-		FieldOfViewValuesAreVertical = CameraCreationConfig.DefaultFieldOfViewVerticalFlag;
 		CurrentTimestampSeconds = 0f;
 		_startPosition = Location.Origin;
 		_startOrientationView = Direction.Forward;
@@ -191,7 +189,7 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 			_startPosition = Camera.Position;
 			_startOrientationView = Camera.ViewDirection;
 			_startOrientationUp = Camera.UpDirection;
-			_startFov = FieldOfViewValuesAreVertical ? Camera.VerticalFieldOfView : Camera.HorizontalFieldOfView;
+			_startFov = Camera.VerticalFieldOfView;
 		}
 		
 		CurrentTimestampSeconds += deltaTime;
@@ -210,8 +208,7 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 		}
 		if (fovTuple is { } f) {
 			var val = f.Keyframe.Algorithm.UnsafeGetValueSkipNullCheck(f.PrevKeyframe?.TargetValue ?? _startFov, f.Keyframe.TargetValue, f.InterpDistance);
-			if (FieldOfViewValuesAreVertical) Camera.SetVerticalFieldOfView(val);
-			else Camera.SetHorizontalFieldOfView(val);
+			Camera.SetVerticalFieldOfView(val.Clamp(Camera.FieldOfViewMin, Camera.FieldOfViewMax));
 		}
 	}
 }
