@@ -30,10 +30,10 @@ partial struct Direction :
 	const float ParallelComponentsCheckErrorMargin = 1E-5f;
 	const float OrthogonalDotErrorMargin = 1E-5f;
 
-	internal bool IsUnitLength {
+	internal bool IsApproxUnitLength {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get {
-			const float FloatingPointErrorMargin = 2E-3f;
+			const float FloatingPointErrorMargin = 3E-1f * 3E-1f;
 			return MathF.Abs(AsVector4.LengthSquared() - 1f) < FloatingPointErrorMargin;
 		}
 	}
@@ -112,8 +112,8 @@ partial struct Direction :
 		orientation = OrientationUtils.CreateOrientationFromValueSigns(direction.X, direction.Y, direction.Z);
 	}
 	
-	public bool IsPhysicallyValid => Single.IsFinite(X) && Single.IsFinite(Y) && Single.IsFinite(Z);
-	public bool IsPhysicallyValidAndNotNone => IsPhysicallyValid && this != None;
+	public bool IsPhysicallyValid => this == None || IsApproxUnitLength;
+	public bool IsPhysicallyValidAndNotNone => IsApproxUnitLength;
 
 	#region Scaling and Addition/Subtraction
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

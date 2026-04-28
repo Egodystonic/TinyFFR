@@ -323,33 +323,35 @@ class DirectionTest {
 	
 	[Test]
 	public void ShouldCorrectlyDetermineUnitLength() {
-		Assert.AreEqual(true, OneTwoNegThree.IsUnitLength);
-		Assert.AreEqual(false, Direction.None.IsUnitLength);
-		Assert.AreEqual(true, Direction.FromVector3PreNormalized(0.707f, 0f, -0.707f).IsUnitLength);
-		Assert.AreEqual(false, Direction.FromVector3PreNormalized(1, 1f, -1f).IsUnitLength);
+		Assert.AreEqual(true, OneTwoNegThree.IsApproxUnitLength);
+		Assert.AreEqual(false, Direction.None.IsApproxUnitLength);
+		Assert.AreEqual(true, Direction.FromVector3PreNormalized(0.707f, 0f, -0.707f).IsApproxUnitLength);
+		Assert.AreEqual(false, Direction.FromVector3PreNormalized(1, 1f, -1f).IsApproxUnitLength);
 	}
 
 	[Test]
 	public void ShouldUseAppropriateErrorMarginForUnitLengthTest() {
 		const int NumNonNormalizedRotations = 200;
 
-		Assert.AreEqual(true, Direction.FromVector3PreNormalized(0.707f, 0f, -0.707f).IsUnitLength);
-		Assert.AreEqual(true, Direction.FromVector3PreNormalized(0.706f, 0f, -0.707f).IsUnitLength);
-		Assert.AreEqual(true, Direction.FromVector3PreNormalized(0.707f, 0f, -0.706f).IsUnitLength);
-		Assert.AreEqual(false, Direction.FromVector3PreNormalized(0.706f, 0f, -0.706f).IsUnitLength);
+		Assert.AreEqual(true, Direction.FromVector3PreNormalized(0.707f, 0f, -0.707f).IsApproxUnitLength);
+		Assert.AreEqual(true, Direction.FromVector3PreNormalized(0.706f, 0f, -0.706f).IsApproxUnitLength);
+		Assert.AreEqual(true, Direction.FromVector3PreNormalized(0.706f, 0f, -0.706f).IsApproxUnitLength);
+		Assert.AreEqual(true, Direction.FromVector3PreNormalized(0.701f, 0f, -0.701f).IsApproxUnitLength);
+		Assert.AreEqual(true, Direction.FromVector3PreNormalized(0.69f, 0f, -0.69f).IsApproxUnitLength);
+		Assert.AreEqual(false, Direction.FromVector3PreNormalized(0.67f, 0f, -0.67f).IsApproxUnitLength);
 
 		for (var x = -5f; x <= 5f; x += 1f) {
 			for (var y = -5f; y <= 5f; y += 1f) {
 				for (var z = -5f; z <= 5f; z += 1f) {
 					var dir = new Direction(x, y, z);
 					if (dir == Direction.None) {
-						Assert.IsFalse(dir.IsUnitLength);
+						Assert.IsFalse(dir.IsApproxUnitLength);
 						continue;
 					}
 
 					var rot = (dir >> dir.AnyOrthogonal()) * 0.1f;
 					for (var i = 0; i < NumNonNormalizedRotations; ++i) dir = rot.RotateWithoutRenormalizing(dir);
-					Assert.IsTrue(dir.IsUnitLength);
+					Assert.IsTrue(dir.IsApproxUnitLength);
 				}
 			}
 		}
@@ -363,6 +365,13 @@ class DirectionTest {
 		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(0f, Single.NegativeInfinity, 0f)).IsPhysicallyValid);
 		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(0f, 0f, Single.PositiveInfinity)).IsPhysicallyValid);
 		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(1f, 1f, 1f)).IsPhysicallyValid);
+		
+		Assert.AreEqual(true, OneTwoNegThree.IsPhysicallyValidAndNotNone);
+		Assert.AreEqual(false, Direction.None.IsPhysicallyValidAndNotNone);
+		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(Single.NaN, 0f, 0f)).IsPhysicallyValidAndNotNone);
+		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(0f, Single.NegativeInfinity, 0f)).IsPhysicallyValidAndNotNone);
+		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(0f, 0f, Single.PositiveInfinity)).IsPhysicallyValidAndNotNone);
+		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(1f, 1f, 1f)).IsPhysicallyValidAndNotNone);
 		
 		for (var i = 0; i < 100_000; ++i) {
 			Assert.AreEqual(true, Direction.Random().IsPhysicallyValid);
@@ -554,11 +563,11 @@ class DirectionTest {
 				var thirdOrthogonal = Direction.FromDualOrthogonalization(dirA, dirB);
 				AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, 2f);
 				AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, 2f);
-				Assert.IsTrue(thirdOrthogonal.IsUnitLength);
+				Assert.IsTrue(thirdOrthogonal.IsApproxUnitLength);
 				thirdOrthogonal = Direction.FromDualOrthogonalization(dirB, dirA);
 				AssertToleranceEquals(90f, dirA ^ thirdOrthogonal, 2f);
 				AssertToleranceEquals(90f, dirB ^ thirdOrthogonal, 2f);
-				Assert.IsTrue(thirdOrthogonal.IsUnitLength);
+				Assert.IsTrue(thirdOrthogonal.IsApproxUnitLength);
 
 				if (dirA.IsApproximatelyParallelTo(dirB, 4f)) continue;
 				AssertToleranceEquals(180f, Direction.FromDualOrthogonalization(dirA, dirB, true) ^ Direction.FromDualOrthogonalization(dirA, dirB, false), 4f);
@@ -819,11 +828,11 @@ class DirectionTest {
 		void AssertCombination(Direction start, Direction end, float distance, Direction expectation) {
 			var result = Direction.Interpolate(start, end, distance);
 			AssertToleranceEquals(expectation, result, TestTolerance);
-			Assert.IsTrue(result.IsUnitLength);
+			Assert.IsTrue(result.IsApproxUnitLength);
 			var precomputation = Direction.CreateInterpolationPrecomputation(start, end);
 			result = Direction.InterpolateUsingPrecomputation(start, end, precomputation, distance);
 			AssertToleranceEquals(expectation, result, TestTolerance);
-			Assert.IsTrue(result.IsUnitLength);
+			Assert.IsTrue(result.IsApproxUnitLength);
 		}
 
 		AssertCombination(Direction.Right, Direction.Right, 0f, Direction.Right);
@@ -867,7 +876,7 @@ class DirectionTest {
 
 		for (var i = 0; i < NumIterations; ++i) {
 			var val = Direction.Random();
-			Assert.IsTrue(val.IsUnitLength);
+			Assert.IsTrue(val.IsApproxUnitLength);
 		}
 	}
 
