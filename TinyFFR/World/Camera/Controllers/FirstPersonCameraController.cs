@@ -207,7 +207,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 	}
 	
 	public void Move(Angle polarOrientation, float distance) { 
-		var zeroDegreeDir = Camera.GetDirectionRelativeToCamera(Orientation.Right).ParallelizedWith(GroundPlane) 
+		var zeroDegreeDir = Camera.GetRelativeOrientationDirection(Orientation.Right).ParallelizedWith(GroundPlane) 
 			?? Direction.FromDualOrthogonalization(Camera.ViewDirection, GroundPlane.Normal);
 		
 		Position += (zeroDegreeDir * (polarOrientation % GroundPlane.Normal)) * distance;

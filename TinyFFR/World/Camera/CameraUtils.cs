@@ -6,6 +6,14 @@ using System;
 namespace Egodystonic.TinyFFR.World;
 
 public static class CameraUtils {
+	public static Direction CalculateCameraRelativeOrientationDirection(Orientation orientation, Direction viewDirection, Direction upDirection) {
+		var posZ = viewDirection;
+		var posY = upDirection;
+		var posX = Direction.FromDualOrthogonalization(posY, posZ);
+		
+		return (posX * orientation.GetAxisSign(Axis.X) + posY * orientation.GetAxisSign(Axis.Y) + posZ * orientation.GetAxisSign(Axis.Z)).Direction;
+	}
+	
 	public static void CalculatePerspectiveProjectionMatrix(float nearPlaneDistance, float farPlaneDistance, Angle verticalFov, float aspectRatio, out Matrix4x4 dest) {
 		var frustumLength = farPlaneDistance - nearPlaneDistance;
 		var h = MathF.Tan(verticalFov.Radians * 0.5f) * nearPlaneDistance;

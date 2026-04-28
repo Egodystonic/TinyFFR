@@ -263,12 +263,12 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 		AdjustYawViaMouseCursor(kbmInput.MouseCursorDelta, yawAdjustmentPerPixel ?? 0.02f, invertMouseControl: invertYawControl);
 		
 		var moveSpeed = positionAdjustmentPerSec ?? 0.5f;
-		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowLeft, Camera.GetDirectionRelativeToCamera(Orientation.Left) * moveSpeed, deltaTime);
-		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowRight, Camera.GetDirectionRelativeToCamera(Orientation.Right) * moveSpeed, deltaTime);
-		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowUp, Camera.GetDirectionRelativeToCamera(Orientation.Forward) * moveSpeed, deltaTime);
-		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowDown, Camera.GetDirectionRelativeToCamera(Orientation.Backward) * moveSpeed, deltaTime);
-		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.RightShift, Camera.GetDirectionRelativeToCamera(invertUpDownPositionalControl ? Orientation.Down : Orientation.Up) * moveSpeed, deltaTime);
-		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.RightControl, Camera.GetDirectionRelativeToCamera(invertUpDownPositionalControl ? Orientation.Up : Orientation.Down) * moveSpeed, deltaTime);
+		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowLeft, Camera.GetRelativeOrientationDirection(Orientation.Left) * moveSpeed, deltaTime);
+		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowRight, Camera.GetRelativeOrientationDirection(Orientation.Right) * moveSpeed, deltaTime);
+		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowUp, Camera.GetRelativeOrientationDirection(Orientation.Forward) * moveSpeed, deltaTime);
+		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowDown, Camera.GetRelativeOrientationDirection(Orientation.Backward) * moveSpeed, deltaTime);
+		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.RightShift, Camera.GetRelativeOrientationDirection(invertUpDownPositionalControl ? Orientation.Down : Orientation.Up) * moveSpeed, deltaTime);
+		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.RightControl, Camera.GetRelativeOrientationDirection(invertUpDownPositionalControl ? Orientation.Up : Orientation.Down) * moveSpeed, deltaTime);
 	}
 	
 	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, bool invertUpDownPositionalControl = false, Angle? maxPitchAdjustmentPerSec = null, Angle? maxYawAdjustmentPerSec = null, float? maxPositionAdjustmentPerSec = null) {
@@ -277,8 +277,8 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 		AdjustYawViaControllerStick(controllerInput.RightStickPosition, maxYawAdjustmentPerSec ?? 120f, deltaTime, invertStickControl: invertYawControl);
 		
 		var moveSpeed = maxPositionAdjustmentPerSec ?? 0.5f;
-		AdjustPositionViaControllerStick(controllerInput.LeftStickPosition, Camera.GetDirectionRelativeToCamera(Orientation.Forward) * moveSpeed, deltaTime, axis: Axis2D.Y);
-		AdjustPositionViaControllerStick(controllerInput.LeftStickPosition, Camera.GetDirectionRelativeToCamera(Orientation.Right) * moveSpeed, deltaTime, axis: Axis2D.X);
-		AdjustPositionViaControllerTriggers(controllerInput.LeftTriggerPosition, controllerInput.RightTriggerPosition, Camera.GetDirectionRelativeToCamera(invertUpDownPositionalControl ? Orientation.Down : Orientation.Up) * moveSpeed, deltaTime);
+		AdjustPositionViaControllerStick(controllerInput.LeftStickPosition, Camera.GetRelativeOrientationDirection(Orientation.Forward) * moveSpeed, deltaTime, axis: Axis2D.Y);
+		AdjustPositionViaControllerStick(controllerInput.LeftStickPosition, Camera.GetRelativeOrientationDirection(Orientation.Right) * moveSpeed, deltaTime, axis: Axis2D.X);
+		AdjustPositionViaControllerTriggers(controllerInput.LeftTriggerPosition, controllerInput.RightTriggerPosition, Camera.GetRelativeOrientationDirection(invertUpDownPositionalControl ? Orientation.Down : Orientation.Up) * moveSpeed, deltaTime);
 	}
 }

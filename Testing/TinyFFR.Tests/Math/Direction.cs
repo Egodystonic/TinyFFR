@@ -362,15 +362,15 @@ class DirectionTest {
 		Assert.AreEqual(true, OneTwoNegThree.IsPhysicallyValid);
 		Assert.AreEqual(true, Direction.None.IsPhysicallyValid);
 		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(Single.NaN, 0f, 0f)).IsPhysicallyValid);
-		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(0f, Single.NegativeInfinity, 0f)).IsPhysicallyValid);
-		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(0f, 0f, Single.PositiveInfinity)).IsPhysicallyValid);
+		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(1f, Single.NegativeInfinity, 0f)).IsPhysicallyValid);
+		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(1f, 0f, Single.PositiveInfinity)).IsPhysicallyValid);
 		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(1f, 1f, 1f)).IsPhysicallyValid);
 		
 		Assert.AreEqual(true, OneTwoNegThree.IsPhysicallyValidAndNotNone);
 		Assert.AreEqual(false, Direction.None.IsPhysicallyValidAndNotNone);
 		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(Single.NaN, 0f, 0f)).IsPhysicallyValidAndNotNone);
-		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(0f, Single.NegativeInfinity, 0f)).IsPhysicallyValidAndNotNone);
-		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(0f, 0f, Single.PositiveInfinity)).IsPhysicallyValidAndNotNone);
+		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(1f, Single.NegativeInfinity, 0f)).IsPhysicallyValidAndNotNone);
+		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(1f, 0f, Single.PositiveInfinity)).IsPhysicallyValidAndNotNone);
 		Assert.AreEqual(false, Direction.FromVector3PreNormalized(new(1f, 1f, 1f)).IsPhysicallyValidAndNotNone);
 		
 		for (var i = 0; i < 100_000; ++i) {
