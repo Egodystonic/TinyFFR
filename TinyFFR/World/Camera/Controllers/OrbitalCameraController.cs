@@ -256,10 +256,12 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 			* (anticlockwiseTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - clockwiseTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec);
 	}
 	public void AdjustAngleViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Angle adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(kbmInput);
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
 		AdjustAngle(adjustmentPerSec, deltaTime);
 	}
 	public void AdjustAngleViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Angle adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(controllerInput);
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		AdjustAngle(adjustmentPerSec, deltaTime);
 	}
@@ -292,10 +294,12 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		AdjustHeight(increasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - decreasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
 	}
 	public void AdjustHeightViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, float adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(kbmInput);
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
 		AdjustHeight(adjustmentPerSec, deltaTime);
 	}
 	public void AdjustHeightViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, float adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(controllerInput);
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		AdjustHeight(adjustmentPerSec, deltaTime);
 	}
@@ -328,21 +332,25 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 		AdjustDistance(increasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - decreasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
 	}
 	public void AdjustDistanceViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, float adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(kbmInput);
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
 		AdjustDistance(adjustmentPerSec, deltaTime);
 	}
 	public void AdjustDistanceViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, float adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(controllerInput);
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		AdjustDistance(adjustmentPerSec, deltaTime);
 	}
 	
 	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime, bool invertAngleControl = false, bool invertHeightControl = false, bool invertDistanceControl = false, Angle? angleAdjustmentPerPixel = null, float? heightAdjustmentPerPixel = null, float? distanceAdjustmentPerWheelIncrement = null) {
+		ArgumentNullException.ThrowIfNull(kbmInput);
 		AdjustAngleViaMouseCursor(kbmInput.MouseCursorDelta, angleAdjustmentPerPixel ?? 0.02f, invertMouseControl: invertAngleControl);
 		AdjustHeightViaMouseCursor(kbmInput.MouseCursorDelta, heightAdjustmentPerPixel ?? 0.0001f, invertMouseControl: invertHeightControl);
 		AdjustDistanceViaMouseWheel(kbmInput.MouseScrollWheelDelta, distanceAdjustmentPerWheelIncrement ?? 0.045f, invertMouseControl: invertDistanceControl);
 	}
 	
 	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime, bool invertAngleControl = false, bool invertHeightControl = false, bool invertDistanceControl = false, Angle? maxAngleAdjustmentPerSec = null, float? maxHeightAdjustmentPerSec = null, float? maxDistanceAdjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(controllerInput);
 		AdjustAngleViaControllerStick(controllerInput.RightStickPosition, maxAngleAdjustmentPerSec ?? 120f, deltaTime, invertStickControl: invertAngleControl);
 		AdjustHeightViaControllerTriggers(invertHeightControl ? controllerInput.RightTriggerPosition : controllerInput.LeftTriggerPosition, invertHeightControl ? controllerInput.LeftTriggerPosition : controllerInput.RightTriggerPosition, maxHeightAdjustmentPerSec ?? 0.5f, deltaTime);
 		AdjustDistanceViaControllerStick(controllerInput.LeftStickPosition, maxDistanceAdjustmentPerSec ?? 0.5f, deltaTime, invertStickControl: invertDistanceControl);

@@ -45,8 +45,6 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		Strong: 1f,
 		VeryStrong: 1.4f
 	);
-	
-	Vect _targetPositionOffset;
 
 	public Strength PositionSmoothingStrength {
 		get => _positionSmoothingStrengthMap.From(_positionRelativeSetpoint.HalfLife);
@@ -211,10 +209,12 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		AdjustFollowDistance(increasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - decreasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
 	}
 	public void AdjustFollowDistanceViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, float adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(kbmInput);
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
 		AdjustFollowDistance(adjustmentPerSec, deltaTime);
 	}
 	public void AdjustFollowDistanceViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, float adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(controllerInput);
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		AdjustFollowDistance(adjustmentPerSec, deltaTime);
 	}
@@ -247,10 +247,12 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		AdjustFollowHeight(increasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - decreasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
 	}
 	public void AdjustFollowHeightViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, float adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(kbmInput);
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
 		AdjustFollowHeight(adjustmentPerSec, deltaTime);
 	}
 	public void AdjustFollowHeightViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, float adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(controllerInput);
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		AdjustFollowHeight(adjustmentPerSec, deltaTime);
 	}
@@ -283,21 +285,25 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		AdjustFollowLateralOffset(increasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - decreasingTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
 	}
 	public void AdjustFollowLateralOffsetViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, float adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(kbmInput);
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
 		AdjustFollowLateralOffset(adjustmentPerSec, deltaTime);
 	}
 	public void AdjustFollowLateralOffsetViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, float adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(controllerInput);
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		AdjustFollowLateralOffset(adjustmentPerSec, deltaTime);
 	}
 
 	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime, bool invertDistanceControl = false, bool invertHeightControl = false, bool invertLateralControl = false, float? distanceAdjustmentPerWheelIncrement = null, float? heightAdjustmentPerPixel = null, float? lateralAdjustmentPerPixel = null) {
+		ArgumentNullException.ThrowIfNull(kbmInput);
 		AdjustFollowHeightViaMouseCursor(kbmInput.MouseCursorDelta, heightAdjustmentPerPixel ?? 0.0004f, invertMouseControl: invertHeightControl);
 		AdjustFollowDistanceViaMouseWheel(kbmInput.MouseScrollWheelDelta, distanceAdjustmentPerWheelIncrement ?? 0.05f, invertMouseControl: invertDistanceControl);
 		AdjustFollowLateralOffsetViaMouseCursor(kbmInput.MouseCursorDelta, lateralAdjustmentPerPixel ?? 0.0004f, invertMouseControl: invertLateralControl);
 	}
 
 	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime, bool invertDistanceControl = false, bool invertHeightControl = false, bool invertLateralControl = false, float? maxDistanceAdjustmentPerSec = null, float? maxHeightAdjustmentPerSec = null, float? maxLateralAdjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(controllerInput);
 		AdjustFollowDistanceViaControllerStick(controllerInput.RightStickPosition, maxDistanceAdjustmentPerSec ?? 0.5f, deltaTime, invertStickControl: invertDistanceControl);
 		AdjustFollowHeightViaControllerTriggers(invertHeightControl ? controllerInput.RightTriggerPosition : controllerInput.LeftTriggerPosition, invertHeightControl ? controllerInput.LeftTriggerPosition : controllerInput.RightTriggerPosition, maxHeightAdjustmentPerSec ?? 0.5f, deltaTime);
 		AdjustFollowLateralOffsetViaControllerStick(controllerInput.LeftStickPosition, maxLateralAdjustmentPerSec ?? 0.5f, deltaTime, invertStickControl: invertLateralControl);

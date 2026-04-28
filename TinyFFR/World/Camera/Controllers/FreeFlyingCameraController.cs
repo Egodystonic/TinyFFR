@@ -171,10 +171,12 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 		AdjustPitch(pitchUpTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - pitchDownTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
 	}
 	public void AdjustPitchViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Angle adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(kbmInput);
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
 		AdjustPitch(adjustmentPerSec, deltaTime);
 	}
 	public void AdjustPitchViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Angle adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(controllerInput);
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		AdjustPitch(adjustmentPerSec, deltaTime);
 	}
@@ -207,10 +209,12 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 		AdjustYaw(yawLeftTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - yawRightTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
 	}
 	public void AdjustYawViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Angle adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(kbmInput);
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
 		AdjustYaw(adjustmentPerSec, deltaTime);
 	}
 	public void AdjustYawViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Angle adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(controllerInput);
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		AdjustYaw(adjustmentPerSec, deltaTime);
 	}
@@ -243,15 +247,18 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 		AdjustPosition(positiveTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - negativeTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
 	}
 	public void AdjustPositionViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Vect adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(kbmInput);
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
 		AdjustPosition(adjustmentPerSec, deltaTime);
 	}
 	public void AdjustPositionViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Vect adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(controllerInput);
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		AdjustPosition(adjustmentPerSec, deltaTime);
 	}
 
 	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, bool invertUpDownPositionalControl = false, Angle? pitchAdjustmentPerPixel = null, Angle? yawAdjustmentPerPixel = null, float? positionAdjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(kbmInput);
 		AdjustPitchViaMouseCursor(kbmInput.MouseCursorDelta, pitchAdjustmentPerPixel ?? 0.02f, invertMouseControl: invertPitchControl);
 		AdjustYawViaMouseCursor(kbmInput.MouseCursorDelta, yawAdjustmentPerPixel ?? 0.02f, invertMouseControl: invertYawControl);
 		
@@ -265,6 +272,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 	}
 	
 	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, bool invertUpDownPositionalControl = false, Angle? maxPitchAdjustmentPerSec = null, Angle? maxYawAdjustmentPerSec = null, float? maxPositionAdjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(controllerInput);
 		AdjustPitchViaControllerStick(controllerInput.RightStickPosition, maxPitchAdjustmentPerSec ?? 120f, deltaTime, invertStickControl: invertPitchControl);
 		AdjustYawViaControllerStick(controllerInput.RightStickPosition, maxYawAdjustmentPerSec ?? 120f, deltaTime, invertStickControl: invertYawControl);
 		

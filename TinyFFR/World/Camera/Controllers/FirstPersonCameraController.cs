@@ -158,10 +158,12 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 		AdjustPitch(pitchUpTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - pitchDownTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
 	}
 	public void AdjustPitchViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Angle adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(kbmInput);
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
 		AdjustPitch(adjustmentPerSec, deltaTime);
 	}
 	public void AdjustPitchViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Angle adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(controllerInput);
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		AdjustPitch(adjustmentPerSec, deltaTime);
 	}
@@ -194,10 +196,12 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 		AdjustYaw(yawLeftTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - yawRightTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
 	}
 	public void AdjustYawViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Angle adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(kbmInput);
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
 		AdjustYaw(adjustmentPerSec, deltaTime);
 	}
 	public void AdjustYawViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Angle adjustmentPerSec, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(controllerInput);
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		AdjustYaw(adjustmentPerSec, deltaTime);
 	}
@@ -239,15 +243,18 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 		Move(positiveOrientation, positiveTriggerPosition.GetDisplacementWithDeadzone() * maxSpeed - negativeTriggerPosition.GetDisplacementWithDeadzone() * maxSpeed, deltaTime);
 	}
 	public void MoveViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Orientation2D orientation, float speed, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(kbmInput);
 		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
 		Move(orientation, speed, deltaTime);
 	}
 	public void MoveViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Orientation2D orientation, float speed, float deltaTime) {
+		ArgumentNullException.ThrowIfNull(controllerInput);
 		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		Move(orientation, speed, deltaTime);
 	}
 
 	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, Angle? pitchAdjustmentPerPixel = null, Angle? yawAdjustmentPerPixel = null, float? moveSpeed = null) {
+		ArgumentNullException.ThrowIfNull(kbmInput);
 		AdjustPitchViaMouseCursor(kbmInput.MouseCursorDelta, pitchAdjustmentPerPixel ?? 0.02f, invertMouseControl: invertPitchControl);
 		AdjustYawViaMouseCursor(kbmInput.MouseCursorDelta, yawAdjustmentPerPixel ?? 0.02f, invertMouseControl: invertYawControl);
 		
@@ -259,6 +266,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 	}
 	
 	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, Angle? maxPitchAdjustmentPerSec = null, Angle? maxYawAdjustmentPerSec = null, float? maxMoveSpeed = null) {
+		ArgumentNullException.ThrowIfNull(controllerInput);
 		AdjustPitchViaControllerStick(controllerInput.RightStickPosition, maxPitchAdjustmentPerSec ?? 120f, deltaTime, invertStickControl: invertPitchControl);
 		AdjustYawViaControllerStick(controllerInput.RightStickPosition, maxYawAdjustmentPerSec ?? 120f, deltaTime, invertStickControl: invertYawControl);
 		
