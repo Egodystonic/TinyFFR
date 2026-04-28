@@ -71,7 +71,7 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 	}
 	#pragma warning restore CA1034
 	#pragma warning disable CA1001 // Warning that KeyframeTrack owns disposable fields without disposing them; but lifetime is app-wide
-	sealed record KeyframeTrack<T> where T : struct, ITimeKeyedItem {
+	sealed class KeyframeTrack<T> where T : struct, ITimeKeyedItem {
 		readonly ArrayPoolBackedVector<T> _keyframes = new();
 		int _curIndex;
 		float _curStartTimestamp;
@@ -107,9 +107,10 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 					_curStartTimestamp += _keyframes[_curIndex].TimeKeySeconds;
 					_curIndex++;
 				}
-				return ((_curIndex > 0 ? _keyframes[_curIndex - 1] : null), _keyframes[_curIndex], (timestampSecs - _curStartTimestamp) / _keyframes[_curIndex].TimeKeySeconds); 
+				var len = _keyframes[_curIndex].TimeKeySeconds;
+				return ((_curIndex > 0 ? _keyframes[_curIndex - 1] : null), _keyframes[_curIndex], len > 0f ? (timestampSecs - _curStartTimestamp) / len : 1f);
 			}
-			
+
 			var timeInToCurKeyframe = timestampSecs - _curStartTimestamp;
 			var curKeyframeLength = _keyframes[_curIndex].TimeKeySeconds;
 			while (timeInToCurKeyframe > curKeyframeLength && _curIndex < (_keyframes.Count - 1)) {
@@ -118,7 +119,7 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 				timeInToCurKeyframe = timestampSecs - _curStartTimestamp;
 				curKeyframeLength = _keyframes[_curIndex].TimeKeySeconds;
 			}
-			return ((_curIndex > 0 ? _keyframes[_curIndex - 1] : null), _keyframes[_curIndex], timeInToCurKeyframe / _keyframes[_curIndex].TimeKeySeconds);
+			return ((_curIndex > 0 ? _keyframes[_curIndex - 1] : null), _keyframes[_curIndex], curKeyframeLength > 0f ? timeInToCurKeyframe / curKeyframeLength : 1f);
 		}
 	}
 	#pragma warning restore CA1001
@@ -130,9 +131,18 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 	Direction _startOrientationUp;
 	Angle _startFov;
 	
-	public AnimationWrapStyle? PositionTrackWrapping => _positionTrack.Wrapping;
-	public AnimationWrapStyle? OrientationTrackWrapping => _orientationTrack.Wrapping;
-	public AnimationWrapStyle? FieldOfViewTrackWrapping => _fovTrack.Wrapping;
+	public AnimationWrapStyle? PositionTrackWrapping {
+		get => _positionTrack.Wrapping;
+		set => _positionTrack.Wrapping = value;
+	}
+	public AnimationWrapStyle? OrientationTrackWrapping {
+		get => _orientationTrack.Wrapping;
+		set => _orientationTrack.Wrapping = value;
+	}
+	public AnimationWrapStyle? FieldOfViewTrackWrapping {
+		get => _fovTrack.Wrapping;
+		set => _fovTrack.Wrapping = value;
+	}
 	
 	public float PositionTrackLengthSeconds => _positionTrack.TrackLengthSeconds;
 	public float OrientationTrackLengthSeconds => _orientationTrack.TrackLengthSeconds;
