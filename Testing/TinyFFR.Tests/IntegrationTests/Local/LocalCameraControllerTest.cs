@@ -64,7 +64,7 @@ class LocalCameraControllerTest {
 	
 	sealed class FollowScenario : CameraControllerScenario {
 		FollowCameraController _controller = null!;
-		ModelInstance[] _instances = null!;
+		ModelInstanceGroup _instances;
 		ModelInstance _targetInstance;
 		Location _nextTargetLoc;
 		float _nextTargetSpeed;
@@ -73,7 +73,7 @@ class LocalCameraControllerTest {
 
 		public override void Start() {
 			Smoothing = Strength.VeryMild;
-			_instances = Enumerable.Range(0, 100).Select(_ => AddTestModelToScene()).ToArray();
+			_instances = AddTestModelsToScene(100);
 			_targetInstance = AddTestModelToScene();			
 			_controller = Camera.CreateController<FollowCameraController>();
 			_controller.SetGlobalSmoothing(Strength.VeryMild);
@@ -85,7 +85,7 @@ class LocalCameraControllerTest {
 		public override void Stop() {
 			_controller.Dispose();
 			RemoveAndDispose(_targetInstance);
-			foreach (var si in _instances) RemoveAndDispose(si);
+			RemoveAndDispose(_instances);
 		}
 		public override string GetWindowTitleString() {
 			return
@@ -118,14 +118,14 @@ class LocalCameraControllerTest {
 	
 	sealed class FirstPersonScenario : CameraControllerScenario {
 		FirstPersonCameraController _controller = null!;
-		ModelInstance[] _instances = null!;
+		ModelInstanceGroup _instances;
 		
 		public FirstPersonScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
 
 		public override void Start() {
 			const int NumInstancesPerPlane = 100;
 			Smoothing = Strength.VeryMild;
-			_instances = Enumerable.Range(0, NumInstancesPerPlane * 2).Select(_ => AddTestModelToScene()).ToArray();
+			_instances = AddTestModelsToScene(NumInstancesPerPlane * 2);
 			_controller = Camera.CreateController<FirstPersonCameraController>();
 			_controller.SetGlobalSmoothing(Strength.VeryMild);
 			
@@ -136,7 +136,7 @@ class LocalCameraControllerTest {
 		}
 		public override void Stop() {
 			_controller.Dispose();
-			foreach (var si in _instances) RemoveAndDispose(si);
+			RemoveAndDispose(_instances);
 		}
 		public override string GetWindowTitleString() {
 			return
@@ -158,13 +158,13 @@ class LocalCameraControllerTest {
 	
 	sealed class FreeFlyingScenario : CameraControllerScenario {
 		FreeFlyingCameraController _controller = null!;
-		ModelInstance[] _instances = null!;
+		ModelInstanceGroup _instances;
 		
 		public FreeFlyingScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
 
 		public override void Start() {
 			Smoothing = Strength.VeryMild;
-			_instances = Enumerable.Range(0, 100).Select(_ => AddTestModelToScene()).ToArray();
+			_instances = AddTestModelsToScene(100);
 			_controller = Camera.CreateController<FreeFlyingCameraController>();
 			_controller.SetGlobalSmoothing(Strength.VeryMild);
 			
@@ -172,7 +172,7 @@ class LocalCameraControllerTest {
 		}
 		public override void Stop() {
 			_controller.Dispose();
-			foreach (var si in _instances) RemoveAndDispose(si);
+			RemoveAndDispose(_instances);
 		}
 		public override string GetWindowTitleString() {
 			return
@@ -310,12 +310,12 @@ class LocalCameraControllerTest {
 	
 	sealed class ProgrammedScenario : CameraControllerScenario {
 		ProgrammedCameraController _controller = null!;
-		ModelInstance[] _instances = null!;
+		ModelInstanceGroup _instances;
 
 		public ProgrammedScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
 
 		public override void Start() {
-			_instances = Enumerable.Range(0, 100).Select(_ => AddTestModelToScene()).ToArray();
+			_instances = AddTestModelsToScene(100);
 			_controller = Camera.CreateController<ProgrammedCameraController>();
 
 			foreach (var i in _instances) i.SetPosition(Location.Random(new Sphere(10f)));
@@ -334,7 +334,7 @@ class LocalCameraControllerTest {
 		}
 		public override void Stop() {
 			_controller.Dispose();
-			foreach (var si in _instances) RemoveAndDispose(si);
+			RemoveAndDispose(_instances);
 		}
 		public override string GetWindowTitleString() {
 			return
@@ -398,6 +398,21 @@ class LocalCameraControllerTest {
 		protected void RemoveAndDispose(ModelInstance i) {
 			Scene.Remove(i);
 			i.Dispose();
+		}
+		
+		protected ModelInstanceGroup AddTestModelsToScene(int count) {
+			var instances = new ModelInstance[count];
+			for (var i = 0; i < count; ++i) {
+				instances[i] = Factory.ObjectBuilder.CreateModelInstance(TestMesh, TestMat);
+			}
+			var result = Factory.ObjectBuilder.GroupModelInstances(instances);
+			result.Scaling = Vect.One * 0.3f;
+			Scene.Add(result);
+			return result;
+		}
+		protected void RemoveAndDispose(ModelInstanceGroup i) {
+			Scene.Remove(i);
+			i.Dispose(disposeContainedInstances: true);
 		}
 
 		protected T? CycleValue<T>(T? val, params T?[] options) where T : struct, IToleranceEquatable<T> {

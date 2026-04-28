@@ -139,7 +139,7 @@ class LocalModelLoadingTest {
 				}
 				Console.WriteLine();
 
-				modelInstances = factory.ObjectBuilder.CreateModelInstanceGroup(loadedResources.Value);
+				modelInstances = factory.ObjectBuilder.CreateModelInstances(loadedResources.Value.Models);
 				scene.Add(modelInstances.Value);
 				window.SetTitle($"L controls camera light | X/Y/Z rotates models | '{_filesToLoad[curFileIndex]}' ({loadedResources.Value.Models.Count} models / {loadedResources.Value.Meshes.Count} meshes / {loadedResources.Value.Materials.Count} materials / {loadedResources.Value.Textures.Count} textures)");
 			}

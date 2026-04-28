@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
+using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Factory.Local;
@@ -54,12 +55,38 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 		return result;
 	}
 
-	public ModelInstanceGroup CreateModelInstanceGroup(ResourceGroup modelGroup, in ModelInstanceCreationConfig config) {
+	public ModelInstanceGroup CreateModelInstances(IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, Model> models, in ModelInstanceCreationConfig config) {
 		ThrowIfThisIsDisposed();
-		var enumerator = modelGroup.Models;
-		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: enumerator.Count > 0 ? enumerator.Count : 1, name: config.Name);
-		foreach (var model in enumerator) {
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: models.Count > 0 ? models.Count : 1, name: config.Name);
+		foreach (var model in models) {
 			resourceGroup.Add(CreateModelInstance(model.Mesh, model.Material, in config));
+		}
+		resourceGroup.Seal();
+		return new ModelInstanceGroup(resourceGroup);
+	}
+	public ModelInstanceGroup CreateModelInstances(ReadOnlySpan<Model> models, in ModelInstanceCreationConfig config) {
+		ThrowIfThisIsDisposed();
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: models.Length > 0 ? models.Length : 1, name: config.Name);
+		foreach (var model in models) {
+			resourceGroup.Add(CreateModelInstance(model.Mesh, model.Material, in config));
+		}
+		resourceGroup.Seal();
+		return new ModelInstanceGroup(resourceGroup);
+	}
+	public ModelInstanceGroup GroupModelInstances(ReadOnlySpan<ModelInstance> instances, ReadOnlySpan<char> name) {
+		ThrowIfThisIsDisposed();
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: instances.Length > 0 ? instances.Length : 1, name: name);
+		foreach (var instance in instances) {
+			resourceGroup.Add(instance);
+		}
+		resourceGroup.Seal();
+		return new ModelInstanceGroup(resourceGroup);
+	}
+	public ModelInstanceGroup GroupModelInstances(IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, ModelInstance> instances, ReadOnlySpan<char> name) {
+		ThrowIfThisIsDisposed();
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: instances.Count > 0 ? instances.Count : 1, name: name);
+		foreach (var instance in instances) {
+			resourceGroup.Add(instance);
 		}
 		resourceGroup.Seal();
 		return new ModelInstanceGroup(resourceGroup);

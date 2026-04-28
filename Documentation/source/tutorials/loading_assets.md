@@ -274,8 +274,12 @@ In this example, we will use the ['Beautiful Game'](https://github.khronos.org/g
 Then we can load everything from the packed `glb` file with `LoadAll()`:
 
 ```csharp
-using var chessResources = assetLoader.LoadAll(@"your_path/ABeautifulGame.glb"); // (1)!
-using var chessInstanceGroup = objectBuilder.CreateModelInstanceGroup(chessResources); // (2)!
+using var chessResources = assetLoader.LoadAll( // (1)!
+	@"your_path/ABeautifulGame.glb"
+); 
+using var chessInstanceGroup = objectBuilder.CreateModelInstances( // (2)!
+	chessResources.Models
+);
 scene.Add(chessInstanceGroup); // (3)!
 ```
 
@@ -283,9 +287,9 @@ scene.Add(chessInstanceGroup); // (3)!
 
 	Disposing this group will dispose all those resources.
 	
-2.	`CreateModelInstance()` takes a `Mesh` and `Material` (or a `Model` representing those) and returns you a single `ModelInstance`.
+2.	`CreateModelInstance()` (singular) takes a `Model` (or `Mesh` + `Material` as separate parameters) and returns you a single `ModelInstance`.
 
-	Following-on from that, `CreateModelInstanceGroup()` takes a `ResourceGroup` and creates a `ModelInstance` for every contained `Model`; returning them as a combined `ModelInstanceGroup`.
+	Following-on from that, `CreateModelInstances()` (plural) takes an enumeration/span of `Model`s and creates a `ModelInstance` for each one; returning them as a combined `ModelInstanceGroup`.
 	
 	You can enumerate over a `ModelInstanceGroup` to access all contained `ModelInstance`s. Disposing the `ModelInstanceGroup` disposes all contained `ModelInstance`s.
 	

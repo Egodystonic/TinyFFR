@@ -182,7 +182,7 @@ class LocalAnimationTest {
 				curAnimCount = loadedResources.Value.Models.Max(m => m.Mesh.Animations.All.Count);
 				Assert.GreaterOrEqual(curAnimCount, 1);
 
-				modelInstanceGroup = factory.ObjectBuilder.CreateModelInstanceGroup(loadedResources.Value);
+				modelInstanceGroup = factory.ObjectBuilder.CreateModelInstances(loadedResources.Value.Models);
 				scene.Add(modelInstanceGroup.Value);
 				UpdateTitle();
 			}
