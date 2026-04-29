@@ -106,11 +106,11 @@ public readonly struct PositionedSphere : ITranslatedConvexShape<PositionedSpher
 	}
 
 	public float DistanceFrom(PositionedSphere sphere) => Single.Max(0f, Position.DistanceFrom(sphere.Position) - (Radius + sphere.Radius));
-	float IDistanceMeasurable<PositionedSphere>.DistanceSquaredFrom(PositionedSphere sphere) { var sqrt = DistanceFrom(sphere); return sqrt * sqrt; }  
+	float IDistanceMeasurable<PositionedSphere>.DistanceSquaredFrom(PositionedSphere sphere) { var dist = DistanceFrom(sphere); return dist * dist; }  
 	public float DistanceFrom(PositionedCuboid cuboid) => Single.Max(0f, cuboid.DistanceFrom(Position) - Radius); 
-	float IDistanceMeasurable<PositionedCuboid>.DistanceSquaredFrom(PositionedCuboid cuboid) { var sqrt = DistanceFrom(cuboid); return sqrt * sqrt; }
+	float IDistanceMeasurable<PositionedCuboid>.DistanceSquaredFrom(PositionedCuboid cuboid) { var dist = DistanceFrom(cuboid); return dist * dist; }
 	public float DistanceFrom(PositionedRotatedCuboid cuboid) => Single.Max(0f, cuboid.DistanceFrom(Position) - Radius);
-	float IDistanceMeasurable<PositionedRotatedCuboid>.DistanceSquaredFrom(PositionedRotatedCuboid cuboid) { var sqrt = DistanceFrom(cuboid); return sqrt * sqrt; }
+	float IDistanceMeasurable<PositionedRotatedCuboid>.DistanceSquaredFrom(PositionedRotatedCuboid cuboid) { var dist = DistanceFrom(cuboid); return dist * dist; }
 	public bool IsIntersectedBy(PositionedSphere sphere) { var radiiSum = Radius + sphere.Radius; return Position.DistanceSquaredFrom(sphere.Position) < radiiSum * radiiSum; }
 	public bool IsIntersectedBy(PositionedCuboid cuboid) => cuboid.DistanceSquaredFrom(Position) < RadiusSquared;
 	public bool IsIntersectedBy(PositionedRotatedCuboid cuboid) => cuboid.DistanceSquaredFrom(Position) < RadiusSquared;

@@ -168,17 +168,87 @@ public readonly struct PositionedRotatedCuboid : ITranslatedRotatedConvexShape<P
 		get => new(_impl.BaseShape.LargestEnclosedSphere, Position);
 	}
 	
+	// https://dev.to/pratyush_mohanty_6b8f2749/the-math-behind-bounding-box-collision-detection-aabb-vs-obbseparate-axis-theorem-1gdn
+	// https://gamedev.stackexchange.com/questions/44500/how-many-and-which-axes-to-use-for-3d-obb-collision-with-sat
+	static bool DetectIntersectionViaSeparatingAxisTest(Cuboid a, Cuboid b, Vector3 centerDelta, Vector3 bAxisX, Vector3 bAxisY, Vector3 bAxisZ) {
+		static bool AxisProjectionsDoNotOverlap(Cuboid a, Cuboid b, Vector3 centerDelta, Vector3 bx, Vector3 by, Vector3 bz, Vector3 axisToTest) {
+			const float MinCrossLengthSquared = 1E-9f;
+			if (axisToTest.LengthSquared() < MinCrossLengthSquared) return false; // cross products will be zero when axes are parallel
+			var aProjectedLen = a.HalfWidth * MathF.Abs(axisToTest.X) + a.HalfHeight * MathF.Abs(axisToTest.Y) + a.HalfDepth * MathF.Abs(axisToTest.Z);
+			var bProjectedLen = b.HalfWidth * MathF.Abs(Vector3.Dot(axisToTest, bx)) + b.HalfHeight * MathF.Abs(Vector3.Dot(axisToTest, by)) + b.HalfDepth * MathF.Abs(Vector3.Dot(axisToTest, bz));
+			var centerDeltaProjectedLen = MathF.Abs(Vector3.Dot(centerDelta, axisToTest));
+			return centerDeltaProjectedLen >= aProjectedLen + bProjectedLen;
+		}
+		
+		if (AxisProjectionsDoNotOverlap(a, b, centerDelta, bAxisX, bAxisY, bAxisZ, new(1f, 0f, 0f))) return false;
+		if (AxisProjectionsDoNotOverlap(a, b, centerDelta, bAxisX, bAxisY, bAxisZ, new(0f, 1f, 0f))) return false;
+		if (AxisProjectionsDoNotOverlap(a, b, centerDelta, bAxisX, bAxisY, bAxisZ, new(0f, 0f, 1f))) return false;
+		if (AxisProjectionsDoNotOverlap(a, b, centerDelta, bAxisX, bAxisY, bAxisZ, bAxisX)) return false;
+		if (AxisProjectionsDoNotOverlap(a, b, centerDelta, bAxisX, bAxisY, bAxisZ, bAxisY)) return false;
+		if (AxisProjectionsDoNotOverlap(a, b, centerDelta, bAxisX, bAxisY, bAxisZ, bAxisZ)) return false;
+		if (AxisProjectionsDoNotOverlap(a, b, centerDelta, bAxisX, bAxisY, bAxisZ, Vector3.Cross(new(1f, 0f, 0f), bAxisX))) return false;
+		if (AxisProjectionsDoNotOverlap(a, b, centerDelta, bAxisX, bAxisY, bAxisZ, Vector3.Cross(new(1f, 0f, 0f), bAxisY))) return false;
+		if (AxisProjectionsDoNotOverlap(a, b, centerDelta, bAxisX, bAxisY, bAxisZ, Vector3.Cross(new(1f, 0f, 0f), bAxisZ))) return false;
+		if (AxisProjectionsDoNotOverlap(a, b, centerDelta, bAxisX, bAxisY, bAxisZ, Vector3.Cross(new(0f, 1f, 0f), bAxisX))) return false;
+		if (AxisProjectionsDoNotOverlap(a, b, centerDelta, bAxisX, bAxisY, bAxisZ, Vector3.Cross(new(0f, 1f, 0f), bAxisY))) return false;
+		if (AxisProjectionsDoNotOverlap(a, b, centerDelta, bAxisX, bAxisY, bAxisZ, Vector3.Cross(new(0f, 1f, 0f), bAxisZ))) return false;
+		if (AxisProjectionsDoNotOverlap(a, b, centerDelta, bAxisX, bAxisY, bAxisZ, Vector3.Cross(new(0f, 0f, 1f), bAxisX))) return false;
+		if (AxisProjectionsDoNotOverlap(a, b, centerDelta, bAxisX, bAxisY, bAxisZ, Vector3.Cross(new(0f, 0f, 1f), bAxisY))) return false;
+		if (AxisProjectionsDoNotOverlap(a, b, centerDelta, bAxisX, bAxisY, bAxisZ, Vector3.Cross(new(0f, 0f, 1f), bAxisZ))) return false;
+		return true;
+	}
+	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(PositionedSphere sphere) => sphere.DistanceFrom(this);
-	float IDistanceMeasurable<PositionedSphere>.DistanceSquaredFrom(PositionedSphere sphere) { var sqrt = DistanceFrom(sphere); return sqrt * sqrt; }  
-	public float DistanceFrom(PositionedCuboid cuboid) { } // TODO
-	float IDistanceMeasurable<PositionedCuboid>.DistanceSquaredFrom(PositionedCuboid cuboid) { var sqrt = DistanceFrom(cuboid); return sqrt * sqrt; }
-	public float DistanceFrom(PositionedRotatedCuboid cuboid)  { } // TODO
-	float IDistanceMeasurable<PositionedRotatedCuboid>.DistanceSquaredFrom(PositionedRotatedCuboid cuboid) { var sqrt = DistanceFrom(cuboid); return sqrt * sqrt; }
+	float IDistanceMeasurable<PositionedSphere>.DistanceSquaredFrom(PositionedSphere sphere) { var dist = DistanceFrom(sphere); return dist * dist; }
+	public float DistanceFrom(PositionedCuboid cuboid) {
+		if (IsIntersectedBy(cuboid)) return 0f;
+		var min = Single.PositiveInfinity;
+		foreach (var corner in Corners) min = MathF.Min(min, cuboid.DistanceFrom(corner));
+		foreach (var corner in cuboid.Corners) min = MathF.Min(min, DistanceFrom(corner));
+		foreach (var ea in Edges) {
+			foreach (var eb in cuboid.Edges) min = MathF.Min(min, ea.DistanceFrom(eb));
+		}
+		return min;
+	}
+	float IDistanceMeasurable<PositionedCuboid>.DistanceSquaredFrom(PositionedCuboid cuboid) { var dist = DistanceFrom(cuboid); return dist * dist; }
+	public float DistanceFrom(PositionedRotatedCuboid cuboid) {
+		if (IsIntersectedBy(cuboid)) return 0f;
+		var min = Single.PositiveInfinity;
+		foreach (var corner in Corners) min = MathF.Min(min, cuboid.DistanceFrom(corner));
+		foreach (var corner in cuboid.Corners) min = MathF.Min(min, DistanceFrom(corner));
+		foreach (var ea in Edges) {
+			foreach (var eb in cuboid.Edges) min = MathF.Min(min, ea.DistanceFrom(eb));
+		}
+		return min;
+	}
+	float IDistanceMeasurable<PositionedRotatedCuboid>.DistanceSquaredFrom(PositionedRotatedCuboid cuboid) { var dist = DistanceFrom(cuboid); return dist * dist; }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsIntersectedBy(PositionedSphere sphere) => sphere.IsIntersectedBy(this); 
-	public bool IsIntersectedBy(PositionedCuboid cuboid) => { } // TODO
-	public bool IsIntersectedBy(PositionedRotatedCuboid cuboid) => { } // TODO
+	public bool IsIntersectedBy(PositionedSphere sphere) => sphere.IsIntersectedBy(this);
+	public bool IsIntersectedBy(PositionedCuboid cuboid) {
+		var reverseRot = Rotation.Reversed;
+		
+		return DetectIntersectionViaSeparatingAxisTest(
+			_impl.BaseShape, 
+			cuboid.ToStandardCuboid(), 
+			((cuboid.Position - Position) * reverseRot).ToVector3(), 
+			Direction.Left.RotatedBy(reverseRot).ToVector3(), 
+			Direction.Up.RotatedBy(reverseRot).ToVector3(), 
+			Direction.Forward.RotatedBy(reverseRot).ToVector3()
+		);
+	}
+	public bool IsIntersectedBy(PositionedRotatedCuboid cuboid) {
+		var reverseRot = Rotation.Reversed;
+	
+		return DetectIntersectionViaSeparatingAxisTest(
+			_impl.BaseShape, 
+			cuboid.ToStandardCuboid(), 
+			((cuboid.Position - Position) * reverseRot).ToVector3(), 
+			Direction.Left.RotatedBy(cuboid.Rotation).RotatedBy(reverseRot).ToVector3(), 
+			Direction.Up.RotatedBy(cuboid.Rotation).RotatedBy(reverseRot).ToVector3(), 
+			Direction.Forward.RotatedBy(cuboid.Rotation).RotatedBy(reverseRot).ToVector3()
+		);
+	}
 
 	#region Deferring Members
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public override string ToString() => ToString(null, null);

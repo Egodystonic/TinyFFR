@@ -156,15 +156,28 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public float DistanceFrom(PositionedSphere sphere) => sphere.DistanceFrom(this);
-	float IDistanceMeasurable<PositionedSphere>.DistanceSquaredFrom(PositionedSphere sphere) { var sqrt = DistanceFrom(sphere); return sqrt * sqrt; }  
-	public float DistanceFrom(PositionedCuboid cuboid) { } // TODO
-	float IDistanceMeasurable<PositionedCuboid>.DistanceSquaredFrom(PositionedCuboid cuboid) { var sqrt = DistanceFrom(cuboid); return sqrt * sqrt; }
-	public float DistanceFrom(PositionedRotatedCuboid cuboid)  { } // TODO
-	float IDistanceMeasurable<PositionedRotatedCuboid>.DistanceSquaredFrom(PositionedRotatedCuboid cuboid) { var sqrt = DistanceFrom(cuboid); return sqrt * sqrt; }
+	float IDistanceMeasurable<PositionedSphere>.DistanceSquaredFrom(PositionedSphere sphere) { var dist = DistanceFrom(sphere); return dist * dist; }
+	public float DistanceFrom(PositionedCuboid cuboid) {
+		var d = Position - cuboid.Position;
+		var dx = MathF.Max(0f, MathF.Abs(d.X) - HalfWidth - cuboid.HalfWidth);
+		var dy = MathF.Max(0f, MathF.Abs(d.Y) - HalfHeight - cuboid.HalfHeight);
+		var dz = MathF.Max(0f, MathF.Abs(d.Z) - HalfDepth - cuboid.HalfDepth);
+		return MathF.Sqrt(dx * dx + dy * dy + dz * dz);
+	}
+	float IDistanceMeasurable<PositionedCuboid>.DistanceSquaredFrom(PositionedCuboid cuboid) { var dist = DistanceFrom(cuboid); return dist * dist; }
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool IsIntersectedBy(PositionedSphere sphere) => sphere.IsIntersectedBy(this); 
-	public bool IsIntersectedBy(PositionedCuboid cuboid) => { } // TODO
-	public bool IsIntersectedBy(PositionedRotatedCuboid cuboid) => { } // TODO
+	public float DistanceFrom(PositionedRotatedCuboid cuboid) => cuboid.DistanceFrom(this);
+	float IDistanceMeasurable<PositionedRotatedCuboid>.DistanceSquaredFrom(PositionedRotatedCuboid cuboid) { var dist = DistanceFrom(cuboid); return dist * dist; }
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(PositionedSphere sphere) => sphere.IsIntersectedBy(this);
+	public bool IsIntersectedBy(PositionedCuboid cuboid) {
+		var d = Position - cuboid.Position;
+		return MathF.Abs(d.X) < HalfWidth + cuboid.HalfWidth
+			&& MathF.Abs(d.Y) < HalfHeight + cuboid.HalfHeight
+			&& MathF.Abs(d.Z) < HalfDepth + cuboid.HalfDepth;
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(PositionedRotatedCuboid cuboid) => cuboid.IsIntersectedBy(this);
 
 	#region Deferring Members
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public override string ToString() => ToString(null, null);
