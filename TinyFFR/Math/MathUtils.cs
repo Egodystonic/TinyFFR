@@ -7,8 +7,36 @@ namespace Egodystonic.TinyFFR;
 
 public static class MathUtils {
 	public const float GoldenRatio = 1.6180339887f;
+	public const float SquareRootOfTwo = 1.4142135623f;
+	public const float SquareRootOfThree = 1.7320508075f;
+	public const float SquareRootOfTwoReciprocal = 1f / SquareRootOfTwo;
+	public const float SquareRootOfThreeReciprocal = 1f / SquareRootOfThree;
 
 	public static T TrueModulus<T>(T lhs, T rhs) where T : IModulusOperators<T, T, T>, IAdditionOperators<T, T, T> => (lhs % rhs + rhs) % rhs;
+	
+	public static T Min<T>(T operand1, T operand2, T operand3) where T : IComparisonOperators<T, T, bool> {
+		return operand1 < operand2 ? (operand1 < operand3 ? operand1 : operand3) : (operand2 < operand3 ? operand2 : operand3);
+	}
+	public static T Min<T>(params ReadOnlySpan<T> operands) where T : IComparisonOperators<T, T, bool> {
+		if (operands.Length == 0) throw new ArgumentException("Requires at least one operand.", nameof(operands));
+		var result = operands[0];
+		for (var i = 1; i < operands.Length; ++i) {
+			if (operands[i] < result) result = operands[i];
+		}
+		return result;
+	}
+	
+	public static T Max<T>(T operand1, T operand2, T operand3) where T : IComparisonOperators<T, T, bool> {
+		return operand1 > operand2 ? (operand1 > operand3 ? operand1 : operand3) : (operand2 > operand3 ? operand2 : operand3);
+	}
+	public static T Max<T>(params ReadOnlySpan<T> operands) where T : IComparisonOperators<T, T, bool> {
+		if (operands.Length == 0) throw new ArgumentException("Requires at least one operand.", nameof(operands));
+		var result = operands[0];
+		for (var i = 1; i < operands.Length; ++i) {
+			if (operands[i] > result) result = operands[i];
+		}
+		return result;
+	}
 
 	public static Vector4 NormalizeOrZero(Vector4 v) {
 		var norm = Vector4.Normalize(v);

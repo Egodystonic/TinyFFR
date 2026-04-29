@@ -6,7 +6,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Egodystonic.TinyFFR;
 
-public readonly struct PositionedSphere : ITranslatedConvexShape<PositionedSphere, Sphere>, ISphere<PositionedSphere> {  
+public readonly struct PositionedSphere : ITranslatedConvexShape<PositionedSphere, Sphere>, ISphere<PositionedSphere>, 
+	IDistanceMeasurable<PositionedSphere>, IDistanceMeasurable<PositionedCuboid>, IDistanceMeasurable<PositionedRotatedCuboid>,
+	IIntersectable<PositionedSphere>, IIntersectable<PositionedCuboid>, IIntersectable<PositionedRotatedCuboid> {  
 	public static readonly PositionedSphere UnitSphereAtOrigin = new(Sphere.UnitSphere, Location.Origin);
 	public static readonly PositionedSphere OneMeterDiameterSphereAtOrigin = new(Sphere.OneMeterDiameterSphere, Location.Origin);
 	public static readonly PositionedSphere OneMeterCubedVolumeSphereAtOrigin = new (Sphere.OneMeterCubedVolumeSphere, Location.Origin);
@@ -93,6 +95,25 @@ public readonly struct PositionedSphere : ITranslatedConvexShape<PositionedSpher
 		circleCentrePoint = _impl.TransformToWorldSpace(circleCentrePoint);
 		return true;
 	}
+	
+	public PositionedCuboid SmallestEnclosingCube {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(_impl.BaseShape.SmallestEnclosingCube, Position);
+	}
+	public PositionedCuboid LargestEnclosedCube {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(_impl.BaseShape.LargestEnclosedCube, Position);
+	}
+
+	public float DistanceFrom(PositionedSphere sphere) => Single.Max(0f, Position.DistanceFrom(sphere.Position) - (Radius + sphere.Radius));
+	float IDistanceMeasurable<PositionedSphere>.DistanceSquaredFrom(PositionedSphere sphere) { var sqrt = DistanceFrom(sphere); return sqrt * sqrt; }  
+	public float DistanceFrom(PositionedCuboid cuboid) => Single.Max(0f, cuboid.DistanceFrom(Position) - Radius); 
+	float IDistanceMeasurable<PositionedCuboid>.DistanceSquaredFrom(PositionedCuboid cuboid) { var sqrt = DistanceFrom(cuboid); return sqrt * sqrt; }
+	public float DistanceFrom(PositionedRotatedCuboid cuboid) => Single.Max(0f, cuboid.DistanceFrom(Position) - Radius);
+	float IDistanceMeasurable<PositionedRotatedCuboid>.DistanceSquaredFrom(PositionedRotatedCuboid cuboid) { var sqrt = DistanceFrom(cuboid); return sqrt * sqrt; }
+	public bool IsIntersectedBy(PositionedSphere sphere) { var radiiSum = Radius + sphere.Radius; return Position.DistanceSquaredFrom(sphere.Position) < radiiSum * radiiSum; }
+	public bool IsIntersectedBy(PositionedCuboid cuboid) => cuboid.DistanceSquaredFrom(Position) < RadiusSquared;
+	public bool IsIntersectedBy(PositionedRotatedCuboid cuboid) => cuboid.DistanceSquaredFrom(Position) < RadiusSquared;
 
 	#region Deferring Members
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public override string ToString() => ToString(null, null);

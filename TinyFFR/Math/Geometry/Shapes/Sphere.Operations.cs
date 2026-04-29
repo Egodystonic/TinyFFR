@@ -326,4 +326,13 @@ partial struct Sphere {
 	Location IConvexShape.GetRandomInternalLocation() {
 		return (Direction.Random() * RandomUtils.NextSingle(0f, Radius)).AsLocation();
 	}
+	
+	public Cuboid SmallestEnclosingCube {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(Diameter);
+	}
+	public Cuboid LargestEnclosedCube {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(Diameter * MathUtils.SquareRootOfThreeReciprocal);
+	}
 }

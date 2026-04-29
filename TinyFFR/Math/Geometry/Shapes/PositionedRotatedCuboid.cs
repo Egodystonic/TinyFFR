@@ -6,7 +6,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Egodystonic.TinyFFR;
 
-public readonly struct PositionedRotatedCuboid : ITranslatedRotatedConvexShape<PositionedRotatedCuboid, Cuboid>, ICuboid<PositionedRotatedCuboid> {
+public readonly struct PositionedRotatedCuboid : ITranslatedRotatedConvexShape<PositionedRotatedCuboid, Cuboid>, ICuboid<PositionedRotatedCuboid>, 
+	IDistanceMeasurable<PositionedSphere>, IDistanceMeasurable<PositionedCuboid>, IDistanceMeasurable<PositionedRotatedCuboid>,
+	IIntersectable<PositionedSphere>, IIntersectable<PositionedCuboid>, IIntersectable<PositionedRotatedCuboid> {
 	public static readonly PositionedRotatedCuboid UnitCubeAtOriginUnrotated = new(Cuboid.UnitCube, Location.Origin, Rotation.None);
 	readonly TranslatedRotatedConvexShape<Cuboid> _impl;
 
@@ -156,6 +158,27 @@ public readonly struct PositionedRotatedCuboid : ITranslatedRotatedConvexShape<P
 	public Cuboid ToStandardCuboid() => _impl.BaseShape;
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public PositionedCuboid ToTranslatedCuboid() => new((TranslatedConvexShape<Cuboid>) _impl);
+	
+	public PositionedSphere SmallestEnclosingSphere {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(_impl.BaseShape.SmallestEnclosingSphere, Position);
+	}
+	public PositionedSphere LargestEnclosedSphere {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(_impl.BaseShape.LargestEnclosedSphere, Position);
+	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(PositionedSphere sphere) => sphere.DistanceFrom(this);
+	float IDistanceMeasurable<PositionedSphere>.DistanceSquaredFrom(PositionedSphere sphere) { var sqrt = DistanceFrom(sphere); return sqrt * sqrt; }  
+	public float DistanceFrom(PositionedCuboid cuboid) { } // TODO
+	float IDistanceMeasurable<PositionedCuboid>.DistanceSquaredFrom(PositionedCuboid cuboid) { var sqrt = DistanceFrom(cuboid); return sqrt * sqrt; }
+	public float DistanceFrom(PositionedRotatedCuboid cuboid)  { } // TODO
+	float IDistanceMeasurable<PositionedRotatedCuboid>.DistanceSquaredFrom(PositionedRotatedCuboid cuboid) { var sqrt = DistanceFrom(cuboid); return sqrt * sqrt; }
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(PositionedSphere sphere) => sphere.IsIntersectedBy(this); 
+	public bool IsIntersectedBy(PositionedCuboid cuboid) => { } // TODO
+	public bool IsIntersectedBy(PositionedRotatedCuboid cuboid) => { } // TODO
 
 	#region Deferring Members
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public override string ToString() => ToString(null, null);

@@ -269,10 +269,37 @@ class PositionedRotatedCuboidTest {
 	[Test]
 	public void ShouldCorrectlyGenerateRandomLocations() {
 		const int NumIterations = 100_000;
-		
+
 		for (var i = 0; i < NumIterations; ++i) {
 			var l = Location.Random(TestCuboid);
 			Assert.IsTrue(TestCuboid.Contains(l));
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateEnclosingAndEnclosedSpheres() {
+		var smallest = TestCuboid.SmallestEnclosingSphere;
+		AssertToleranceEquals(TestCuboid.Position, smallest.Position, TestTolerance);
+		AssertToleranceEquals(TestCuboid.ToStandardCuboid().SmallestEnclosingSphere, smallest.ToStandardSphere(), TestTolerance);
+		Assert.AreEqual(MathF.Sqrt(2f * 2f + 3f * 3f + 1f * 1f), smallest.Radius, TestTolerance);
+
+		var largest = TestCuboid.LargestEnclosedSphere;
+		AssertToleranceEquals(TestCuboid.Position, largest.Position, TestTolerance);
+		AssertToleranceEquals(TestCuboid.ToStandardCuboid().LargestEnclosedSphere, largest.ToStandardSphere(), TestTolerance);
+		Assert.AreEqual(1f, largest.Radius, TestTolerance);
+
+		// Rotation-invariance: spheres are symmetric, so the enclosing/enclosed sphere must
+		// not depend on the cuboid's rotation. Compare against several arbitrary rotations.
+		Rotation[] rotations = [
+			Rotation.None,
+			new Rotation(45f, Direction.Right),
+			new Rotation(180f, Direction.Forward),
+			new Rotation(33f, new Direction(1f, 2f, 3f)),
+		];
+		foreach (var rotation in rotations) {
+			var rotated = new PositionedRotatedCuboid(4f, 6f, 2f, TestCuboid.Position, rotation);
+			AssertToleranceEquals(smallest, rotated.SmallestEnclosingSphere, TestTolerance);
+			AssertToleranceEquals(largest, rotated.LargestEnclosedSphere, TestTolerance);
 		}
 	}
 }

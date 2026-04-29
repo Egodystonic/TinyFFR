@@ -266,10 +266,27 @@ class PositionedCuboidTest {
 	[Test]
 	public void ShouldCorrectlyGenerateRandomLocations() {
 		const int NumIterations = 100_000;
-		
+
 		for (var i = 0; i < NumIterations; ++i) {
 			var l = Location.Random(TestCuboid);
 			Assert.IsTrue(TestCuboid.Contains(l));
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateEnclosingAndEnclosedSpheres() {
+		var smallest = TestCuboid.SmallestEnclosingSphere;
+		AssertToleranceEquals(TestCuboid.Position, smallest.Position, TestTolerance);
+		AssertToleranceEquals(TestCuboid.ToStandardCuboid().SmallestEnclosingSphere, smallest.ToStandardSphere(), TestTolerance);
+		Assert.AreEqual(MathF.Sqrt(2f * 2f + 3f * 3f + 1f * 1f), smallest.Radius, TestTolerance);
+
+		var largest = TestCuboid.LargestEnclosedSphere;
+		AssertToleranceEquals(TestCuboid.Position, largest.Position, TestTolerance);
+		AssertToleranceEquals(TestCuboid.ToStandardCuboid().LargestEnclosedSphere, largest.ToStandardSphere(), TestTolerance);
+		Assert.AreEqual(1f, largest.Radius, TestTolerance);
+
+		foreach (var corner in TestCuboid.Corners) {
+			Assert.AreEqual(smallest.Radius, corner.DistanceFrom(smallest.Position), TestTolerance);
 		}
 	}
 }

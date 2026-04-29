@@ -184,12 +184,34 @@ class PositionedSphereTest {
 	[Test]
 	public void ShouldCorrectlyGenerateRandomLocations() {
 		const int NumIterations = 100_000;
-		
+
 		var sphere = new PositionedSphere(10f, new Location(3f, 5f, -2f));
-		
+
 		for (var i = 0; i < NumIterations; ++i) {
 			var l = Location.Random(sphere);
 			Assert.IsTrue(sphere.Contains(l));
 		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateEnclosingAndEnclosedCubes() {
+		var sphere = new PositionedSphere(7.4f, new Location(3f, 5f, -2f));
+
+		var smallest = sphere.SmallestEnclosingCube;
+		AssertToleranceEquals(sphere.Position, smallest.Position, TestTolerance);
+		AssertToleranceEquals(sphere.ToStandardSphere().SmallestEnclosingCube, smallest.ToStandardCuboid(), TestTolerance);
+		Assert.AreEqual(sphere.Diameter, smallest.Width, TestTolerance);
+		Assert.AreEqual(sphere.Diameter, smallest.Height, TestTolerance);
+		Assert.AreEqual(sphere.Diameter, smallest.Depth, TestTolerance);
+
+		var largest = sphere.LargestEnclosedCube;
+		AssertToleranceEquals(sphere.Position, largest.Position, TestTolerance);
+		AssertToleranceEquals(sphere.ToStandardSphere().LargestEnclosedCube, largest.ToStandardCuboid(), TestTolerance);
+		var expectedSide = sphere.Diameter * MathUtils.SquareRootOfThreeReciprocal;
+		Assert.AreEqual(expectedSide, largest.Width, TestTolerance);
+		Assert.AreEqual(expectedSide, largest.Height, TestTolerance);
+		Assert.AreEqual(expectedSide, largest.Depth, TestTolerance);
+
+		AssertToleranceEquals(sphere, largest.SmallestEnclosingSphere, TestTolerance);
 	}
 }

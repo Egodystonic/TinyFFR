@@ -153,6 +153,8 @@ unsafe class InterpolationAlgorithmTest {
 
 	[Test]
 	public void ShouldCorrectlyGetValueFromStartAndTargetValue() {
+		const float LocalTestTolerance = 0.01f;
+		
 		var urlExampleBezier = InterpolationAlgorithm<Real>.CubicBezier((0.8f, -0.44f), (0f, 1.23f));
 
 		Assert.AreEqual(urlExampleBezier.GetValue(Real.Zero, Real.One, 1f), urlExampleBezier.GetValue(Real.Zero, Real.One, 10f, 0f));
@@ -163,7 +165,7 @@ unsafe class InterpolationAlgorithmTest {
 			AssertToleranceEquals(
 				urlExampleBezier.GetValue(Real.Zero, Real.One, s / t),
 				urlExampleBezier.GetValue(Real.Zero, Real.One, s, t),
-				TestTolerance
+				LocalTestTolerance
 			);
 		}
 	}

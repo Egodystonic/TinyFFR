@@ -513,4 +513,13 @@ partial struct Cuboid : IIndependentAxisScalable<Cuboid> {
 			RandomUtils.NextSingle(-HalfDepth, HalfDepth)
 		);
 	}
+	
+	public Sphere SmallestEnclosingSphere {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(new Vect(HalfWidth, HalfHeight, HalfDepth).Length);
+	}
+	public Sphere LargestEnclosedSphere {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(SmallestHalfExtent);
+	}
 }

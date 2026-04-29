@@ -81,6 +81,10 @@ public readonly partial struct Cuboid : ICuboid<Cuboid> {
 
 	public float Volume => HalfWidth * HalfHeight * HalfDepth * 8f;
 	public float SurfaceArea => (Width * Height + Height * Depth + Depth * Width) * 2f;
+	public float SmallestHalfExtent => MathUtils.Min(HalfWidth, HalfHeight, HalfDepth);
+	public float SmallestExtent => SmallestHalfExtent * 2f;
+	public float LargestHalfExtent => MathUtils.Max(HalfWidth, HalfHeight, HalfDepth);
+	public float LargestExtent => LargestHalfExtent * 2f;
 
 	public unsafe IndirectEnumerable<Cuboid, Location> Corners => new(this, IteratorVersionNumber, &GetCornerCountForEnumerator, &GetIteratorVersion, &GetCornerForEnumerator);
 	static int GetCornerCountForEnumerator(Cuboid _) => 8;
