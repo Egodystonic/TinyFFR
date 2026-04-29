@@ -214,4 +214,117 @@ class PositionedSphereTest {
 
 		AssertToleranceEquals(sphere, largest.SmallestEnclosingSphere, TestTolerance);
 	}
+
+	[Test]
+	public void ShouldCorrectlyMeasureDistanceAndIntersectionsWithOtherSpheres() {
+		var sphere = new PositionedSphere(3f, new Location(0f, 0f, 0f));
+
+		var farSphere = new PositionedSphere(2f, new Location(10f, 0f, 0f));
+		Assert.AreEqual(5f, sphere.DistanceFrom(farSphere), TestTolerance);
+		Assert.AreEqual(5f, farSphere.DistanceFrom(sphere), TestTolerance);
+		Assert.IsFalse(sphere.IsIntersectedBy(farSphere));
+		Assert.IsFalse(farSphere.IsIntersectedBy(sphere));
+
+		var touchingSphere = new PositionedSphere(2f, new Location(5f, 0f, 0f));
+		Assert.AreEqual(0f, sphere.DistanceFrom(touchingSphere), TestTolerance);
+		Assert.AreEqual(0f, touchingSphere.DistanceFrom(sphere), TestTolerance);
+		Assert.IsFalse(sphere.IsIntersectedBy(touchingSphere));
+		Assert.IsFalse(touchingSphere.IsIntersectedBy(sphere));
+
+		var overlappingSphere = new PositionedSphere(2f, new Location(4f, 0f, 0f));
+		Assert.AreEqual(0f, sphere.DistanceFrom(overlappingSphere), TestTolerance);
+		Assert.AreEqual(0f, overlappingSphere.DistanceFrom(sphere), TestTolerance);
+		Assert.IsTrue(sphere.IsIntersectedBy(overlappingSphere));
+		Assert.IsTrue(overlappingSphere.IsIntersectedBy(sphere));
+
+		var coincidentSphere = new PositionedSphere(3f, new Location(0f, 0f, 0f));
+		Assert.AreEqual(0f, sphere.DistanceFrom(coincidentSphere), TestTolerance);
+		Assert.AreEqual(0f, coincidentSphere.DistanceFrom(sphere), TestTolerance);
+		Assert.IsTrue(sphere.IsIntersectedBy(coincidentSphere));
+		Assert.IsTrue(coincidentSphere.IsIntersectedBy(sphere));
+
+		var insideSphere = new PositionedSphere(0.5f, new Location(1f, 0f, 0f));
+		Assert.AreEqual(0f, sphere.DistanceFrom(insideSphere), TestTolerance);
+		Assert.AreEqual(0f, insideSphere.DistanceFrom(sphere), TestTolerance);
+		Assert.IsTrue(sphere.IsIntersectedBy(insideSphere));
+		Assert.IsTrue(insideSphere.IsIntersectedBy(sphere));
+
+		var diagonalSphere = new PositionedSphere(1f, new Location(3f, 4f, 0f));
+		Assert.AreEqual(1f, sphere.DistanceFrom(diagonalSphere), TestTolerance);
+		Assert.AreEqual(1f, diagonalSphere.DistanceFrom(sphere), TestTolerance);
+		Assert.IsFalse(sphere.IsIntersectedBy(diagonalSphere));
+		Assert.IsFalse(diagonalSphere.IsIntersectedBy(sphere));
+	}
+
+	[Test]
+	public void ShouldCorrectlyMeasureDistanceAndIntersectionWithCuboid() {
+		var sphere = new PositionedSphere(1f, new Location(0f, 0f, 0f));
+
+		var farCuboid = new PositionedCuboid(4f, 6f, 2f, new Location(10f, 0f, 0f));
+		Assert.AreEqual(7f, sphere.DistanceFrom(farCuboid), TestTolerance);
+		Assert.AreEqual(7f, farCuboid.DistanceFrom(sphere), TestTolerance);
+		Assert.IsFalse(sphere.IsIntersectedBy(farCuboid));
+		Assert.IsFalse(farCuboid.IsIntersectedBy(sphere));
+
+		var touchingCuboid = new PositionedCuboid(4f, 6f, 2f, new Location(3f, 0f, 0f));
+		Assert.AreEqual(0f, sphere.DistanceFrom(touchingCuboid), TestTolerance);
+		Assert.AreEqual(0f, touchingCuboid.DistanceFrom(sphere), TestTolerance);
+		Assert.IsFalse(sphere.IsIntersectedBy(touchingCuboid));
+		Assert.IsFalse(touchingCuboid.IsIntersectedBy(sphere));
+
+		var overlappingCuboid = new PositionedCuboid(4f, 6f, 2f, new Location(2.5f, 0f, 0f));
+		Assert.AreEqual(0f, sphere.DistanceFrom(overlappingCuboid), TestTolerance);
+		Assert.AreEqual(0f, overlappingCuboid.DistanceFrom(sphere), TestTolerance);
+		Assert.IsTrue(sphere.IsIntersectedBy(overlappingCuboid));
+		Assert.IsTrue(overlappingCuboid.IsIntersectedBy(sphere));
+
+		var enclosingCuboid = new PositionedCuboid(10f, 10f, 10f, new Location(0f, 0f, 0f));
+		Assert.AreEqual(0f, sphere.DistanceFrom(enclosingCuboid), TestTolerance);
+		Assert.AreEqual(0f, enclosingCuboid.DistanceFrom(sphere), TestTolerance);
+		Assert.IsTrue(sphere.IsIntersectedBy(enclosingCuboid));
+		Assert.IsTrue(enclosingCuboid.IsIntersectedBy(sphere));
+
+		var cornerCuboid = new PositionedCuboid(2f, 2f, 2f, new Location(5f, 5f, 0f));
+		var cornerExpected = MathF.Sqrt(32f) - 1f;
+		Assert.AreEqual(cornerExpected, sphere.DistanceFrom(cornerCuboid), TestTolerance);
+		Assert.AreEqual(cornerExpected, cornerCuboid.DistanceFrom(sphere), TestTolerance);
+		Assert.IsFalse(sphere.IsIntersectedBy(cornerCuboid));
+		Assert.IsFalse(cornerCuboid.IsIntersectedBy(sphere));
+	}
+
+	[Test]
+	public void ShouldCorrectlyMeasureDistanceAndIntersectionWithRotatedCuboid() {
+		var sphere = new PositionedSphere(1f, new Location(0f, 0f, 0f));
+
+		var unrotated = new PositionedRotatedCuboid(4f, 6f, 2f, new Location(10f, 0f, 0f), Rotation.None);
+		Assert.AreEqual(7f, sphere.DistanceFrom(unrotated), TestTolerance);
+		Assert.AreEqual(7f, unrotated.DistanceFrom(sphere), TestTolerance);
+		Assert.IsFalse(sphere.IsIntersectedBy(unrotated));
+		Assert.IsFalse(unrotated.IsIntersectedBy(sphere));
+
+		var rotatedCube = new PositionedRotatedCuboid(2f, 2f, 2f, new Location(5f, 0f, 0f), new Rotation(45f, Direction.Up));
+		var rotExpected = 4f - MathF.Sqrt(2f);
+		Assert.AreEqual(rotExpected, sphere.DistanceFrom(rotatedCube), TestTolerance);
+		Assert.AreEqual(rotExpected, rotatedCube.DistanceFrom(sphere), TestTolerance);
+		Assert.IsFalse(sphere.IsIntersectedBy(rotatedCube));
+		Assert.IsFalse(rotatedCube.IsIntersectedBy(sphere));
+
+		var enclosing = new PositionedRotatedCuboid(10f, 10f, 10f, new Location(0f, 0f, 0f), new Rotation(33f, new Direction(1f, 2f, 3f)));
+		Assert.AreEqual(0f, sphere.DistanceFrom(enclosing), TestTolerance);
+		Assert.AreEqual(0f, enclosing.DistanceFrom(sphere), TestTolerance);
+		Assert.IsTrue(sphere.IsIntersectedBy(enclosing));
+		Assert.IsTrue(enclosing.IsIntersectedBy(sphere));
+
+		var overlapping = new PositionedRotatedCuboid(2f, 2f, 2f, new Location(1f, 0f, 0f), new Rotation(45f, Direction.Up));
+		Assert.AreEqual(0f, sphere.DistanceFrom(overlapping), TestTolerance);
+		Assert.AreEqual(0f, overlapping.DistanceFrom(sphere), TestTolerance);
+		Assert.IsTrue(sphere.IsIntersectedBy(overlapping));
+		Assert.IsTrue(overlapping.IsIntersectedBy(sphere));
+
+		var touching = new PositionedRotatedCuboid(2f, 2f, 2f, new Location(1f + MathF.Sqrt(2f), 0f, 0f), new Rotation(45f, Direction.Up));
+		Assert.AreEqual(0f, sphere.DistanceFrom(touching), TestTolerance);
+		Assert.AreEqual(0f, touching.DistanceFrom(sphere), TestTolerance);
+		Assert.IsFalse(sphere.IsIntersectedBy(touching));
+		Assert.IsFalse(touching.IsIntersectedBy(sphere));
+	}
 }
