@@ -85,7 +85,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 	}
 	public void SetViewDirection(ResourceHandle<Camera> handle, Direction newDirection) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (newDirection == Direction.None) throw new ArgumentException($"View direction can not be '{nameof(Direction.None)}'.", nameof(newDirection));
+		if (!newDirection.IsPhysicallyValidAndNotNone) return;
 		_activeCameras[handle] = _activeCameras[handle] with {
 			ViewDirection = newDirection, 
 			UpDirection = GetReorthogonalizedUpOrViewDirection(_activeCameras[handle].UpDirection, newDirection)
@@ -99,7 +99,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 	}
 	public void SetUpDirection(ResourceHandle<Camera> handle, Direction newDirection) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (newDirection == Direction.None) throw new ArgumentException($"Up direction can not be '{nameof(Direction.None)}'.", nameof(newDirection));
+		if (!newDirection.IsPhysicallyValidAndNotNone) return;
 		_activeCameras[handle] = _activeCameras[handle] with {
 			UpDirection = newDirection,
 			ViewDirection = GetReorthogonalizedUpOrViewDirection(_activeCameras[handle].ViewDirection, newDirection)
@@ -109,8 +109,8 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 
 	public void SetViewAndUpDirection(ResourceHandle<Camera> handle, Direction newViewDirection, Direction newUpDirection, bool enforceOrthogonality) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (newViewDirection == Direction.None) throw new ArgumentException($"View direction can not be '{nameof(Direction.None)}'.", nameof(newViewDirection));
-		if (newUpDirection == Direction.None) throw new ArgumentException($"Up direction can not be '{nameof(Direction.None)}'.", nameof(newUpDirection));
+		if (!newViewDirection.IsPhysicallyValidAndNotNone) return;
+		if (!newUpDirection.IsPhysicallyValidAndNotNone) return;
 
 		if (enforceOrthogonality) newUpDirection = GetReorthogonalizedUpOrViewDirection(newUpDirection, newViewDirection);
 
@@ -127,12 +127,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 	}
 	public void SetVerticalFieldOfView(ResourceHandle<Camera> handle, Angle newFov) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (newFov < Camera.FieldOfViewMin || newFov > Camera.FieldOfViewMax) {
-			throw new ArgumentException(
-				$"Vertical field of view must be between {nameof(Camera)}.{nameof(Camera.FieldOfViewMin)} ({Camera.FieldOfViewMin}) and {nameof(Camera)}.{nameof(Camera.FieldOfViewMax)} ({Camera.FieldOfViewMax}).",
-				nameof(newFov)
-			);
-		}
+		newFov = newFov.Clamp(Camera.FieldOfViewMin, Camera.FieldOfViewMax);
 		_activeCameras[handle] = _activeCameras[handle] with { VerticalFovRadians = newFov.Radians };
 		UpdateProjectionMatrixFromParameters(handle);
 	}
@@ -152,7 +147,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 	}
 	public void SetOrthographicHeight(ResourceHandle<Camera> handle, float newHeight) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (!newHeight.IsNonNegativeAndFinite()) throw new ArgumentException($"Orthographic height must be non-negative and finite.", nameof(newHeight));
+		if (!newHeight.IsNonNegativeAndFinite()) return;
 		_activeCameras[handle] = _activeCameras[handle] with { OrthographicHeight = newHeight };
 		UpdateProjectionMatrixFromParameters(handle);
 	}
@@ -163,12 +158,7 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 	}
 	public void SetAspectRatio(ResourceHandle<Camera> handle, float newRatio) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (!newRatio.IsPositiveAndFinite()) {
-			throw new ArgumentException(
-				$"Aspect ratio must be a normal, positive floating-point value.",
-				nameof(newRatio)
-			);
-		}
+		if (!newRatio.IsPositiveAndFinite()) return;
 		_activeCameras[handle] = _activeCameras[handle] with { AspectRatio = newRatio };
 		UpdateProjectionMatrixFromParameters(handle);
 	}
@@ -179,20 +169,10 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 	}
 	public void SetNearPlaneDistance(ResourceHandle<Camera> handle, float newDistance) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (!Single.IsNormal(newDistance) || newDistance < Camera.NearPlaneDistanceMin) {
-			throw new ArgumentException(
-				$"Near-plane distance must be a normal floating-point value greater than or equal to {nameof(Camera)}.{nameof(Camera.NearPlaneDistanceMin)} ({Camera.NearPlaneDistanceMin}).", 
-				nameof(newDistance)
-			);
-		}
+		if (!Single.IsNormal(newDistance) || newDistance < Camera.NearPlaneDistanceMin) newDistance = Camera.NearPlaneDistanceMin;
 
 		var farDist = _activeCameras[handle].FarPlaneDistance;
-		if (newDistance >= farDist) {
-			throw new ArgumentException(
-				$"Near-plane distance must be less than far-plane distance (currently {farDist}).",
-				nameof(newDistance)
-			);
-		}
+		if (newDistance >= farDist) newDistance = farDist - 1f;
 
 		_activeCameras[handle] = _activeCameras[handle] with {
 			NearPlaneDistance = newDistance,
@@ -207,20 +187,10 @@ sealed class LocalCameraBuilder : ICameraBuilder, ICameraImplProvider, IResource
 	}
 	public void SetFarPlaneDistance(ResourceHandle<Camera> handle, float newDistance) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (!Single.IsNormal(newDistance)) {
-			throw new ArgumentException(
-				$"Far-plane distance must be a normal floating-point value.",
-				nameof(newDistance)
-			);
-		}
+		if (!Single.IsNormal(newDistance)) return;
 
 		var nearDist = _activeCameras[handle].NearPlaneDistance;
-		if (newDistance <= nearDist) {
-			throw new ArgumentException(
-				$"Far-plane distance must be greater than near-plane distance (currently {nearDist}).",
-				nameof(newDistance)
-			);
-		}
+		if (newDistance <= nearDist) newDistance = nearDist + 1f;
 
 		_activeCameras[handle] = _activeCameras[handle] with {
 			FarPlaneDistance = newDistance,

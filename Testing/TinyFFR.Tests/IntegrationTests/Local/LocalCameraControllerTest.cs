@@ -29,6 +29,7 @@ class LocalCameraControllerTest {
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		
 		var scenarios = new CameraControllerScenario[] {
+			new InspectorScenario(factory, camera, mesh, mat, scene),
 			new ProgrammedScenario(factory, camera, mesh, mat, scene),
 			new FollowScenario(factory, camera, mesh, mat, scene),
 			new FirstPersonScenario(factory, camera, mesh, mat, scene),
@@ -292,6 +293,60 @@ class LocalCameraControllerTest {
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow3)) {
 				_controller.MinDistance = CycleValue<Real>(_controller.MinDistance, OrbitalCameraController.DefaultDistanceMin, OrbitalCameraController.DefaultDistanceMin * 2f, OrbitalCameraController.DefaultDistanceMin * 0.2f, null);
 				_controller.MaxDistance = CycleValue<Real>(_controller.MaxDistance, OrbitalCameraController.DefaultDistanceMax, OrbitalCameraController.DefaultDistanceMax * 2f, OrbitalCameraController.DefaultDistanceMax * 0.2f, null);
+			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0)) {
+				CycleSmoothing();
+				_controller.SetGlobalSmoothing(Smoothing);
+			}
+			
+			_targetInstance.RotateBy(90f % Direction.Up * dt, Location.Origin);
+
+			_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
+			_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
+			
+			_controller.Target = _targetInstance.Position;
+			_controller.Progress(dt);
+		}
+	}
+	
+	sealed class InspectorScenario : CameraControllerScenario {
+		InspectorCameraController _controller = null!;
+		ModelInstance[] _staticInstances = null!;
+		ModelInstance _targetInstance;
+		
+		public InspectorScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) : base(factory, camera, testMesh, testMat, scene) { }
+
+		public override void Start() {
+			Smoothing = Strength.VeryMild;
+			_staticInstances = Enumerable.Range(0, 4).Select(_ => AddTestModelToScene()).ToArray();
+			_targetInstance = AddTestModelToScene();
+			_controller = Camera.CreateController<InspectorCameraController>();
+			
+			_staticInstances[0].SetPosition(new Location(-0.5f, 0f, 0f));
+			_staticInstances[1].SetPosition(new Location(0.5f, 0f, 0f));
+			_staticInstances[2].SetPosition(new Location(0, 0f, -0.5f));
+			_staticInstances[3].SetPosition(new Location(0, 0f, 0.5f));
+			_targetInstance.SetPosition(Location.Origin + Direction.Forward * 1f);
+		}
+		public override void Stop() {
+			_controller.Dispose();
+			foreach (var si in _staticInstances) RemoveAndDispose(si);
+			RemoveAndDispose(_targetInstance);
+		}
+		public override string GetWindowTitleString() {
+			return 
+				$"[1] Allow Flip ({(_controller.AllowUpsideDownFlip ? "<yes>" : "<no>")}) " +
+				$"[2] Distance {_controller.Distance:N2} (min {_controller.MinDistance?.ToString("N2") ?? "<none>"} max {_controller.MaxDistance?.ToString("N2") ?? "<none>"}) " +
+				$"[0] Smoothing {Smoothing}";
+		}
+
+		public override void Iterate(float dt, ILatestInputRetriever input) {
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) {
+				_controller.AllowUpsideDownFlip = !_controller.AllowUpsideDownFlip;
+			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) {
+				_controller.MinDistance = CycleValue<Real>(_controller.MinDistance, InspectorCameraController.DefaultDistanceMin, InspectorCameraController.DefaultDistanceMin * 2f, InspectorCameraController.DefaultDistanceMin * 0.2f, null);
+				_controller.MaxDistance = CycleValue<Real>(_controller.MaxDistance, InspectorCameraController.DefaultDistanceMax, InspectorCameraController.DefaultDistanceMax * 2f, InspectorCameraController.DefaultDistanceMax * 0.2f, null);
 			}
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0)) {
 				CycleSmoothing();

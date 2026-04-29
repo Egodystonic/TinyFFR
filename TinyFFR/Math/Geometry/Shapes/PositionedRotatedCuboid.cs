@@ -244,9 +244,9 @@ public readonly struct PositionedRotatedCuboid : ITranslatedRotatedConvexShape<P
 			_impl.BaseShape, 
 			cuboid.ToStandardCuboid(), 
 			((cuboid.Position - Position) * reverseRot).ToVector3(), 
-			Direction.Left.RotatedBy(cuboid.Rotation).RotatedBy(reverseRot).ToVector3(), 
-			Direction.Up.RotatedBy(cuboid.Rotation).RotatedBy(reverseRot).ToVector3(), 
-			Direction.Forward.RotatedBy(cuboid.Rotation).RotatedBy(reverseRot).ToVector3()
+			Direction.Left.RotatedBy(cuboid.Rotation + reverseRot).ToVector3(), 
+			Direction.Up.RotatedBy(cuboid.Rotation + reverseRot).ToVector3(), 
+			Direction.Forward.RotatedBy(cuboid.Rotation + reverseRot).ToVector3()
 		);
 	}
 
