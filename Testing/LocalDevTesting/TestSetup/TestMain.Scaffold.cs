@@ -19,8 +19,8 @@ namespace Egodystonic.TinyFFR.Testing.Local;
 #pragma warning restore IDE0160
 
 static partial class TestMain {
-	static void BeginDefaultLoop(Func<float, bool> loopAction, ApplicationLoop loop, Camera autoCameraControlTarget) {
-		TestScaffold.BeginDefaultLoop(loopAction, loop, autoCameraControlTarget);
+	static void BeginDefaultLoop(Func<float, bool> loopAction, ApplicationLoop loop, ICameraController autoCameraControlController) {
+		TestScaffold.BeginDefaultLoop(loopAction, loop, autoCameraControlController);
 	}
 	static void BeginDefaultLoop(Func<float, bool> loopAction, ApplicationLoop loop) {
 		TestScaffold.BeginDefaultLoop(loopAction, loop, null);

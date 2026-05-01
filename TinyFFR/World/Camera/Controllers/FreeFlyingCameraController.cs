@@ -287,4 +287,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 		AdjustPositionViaControllerStick(controllerInput.LeftStickPosition, Camera.GetRelativeOrientationDirection(Orientation.Right) * moveSpeed, deltaTime, axis: Axis2D.X);
 		AdjustPositionViaControllerTriggers(controllerInput.LeftTriggerPosition, controllerInput.RightTriggerPosition, Camera.GetRelativeOrientationDirection(invertUpDownPositionalControl ? Orientation.Down : Orientation.Up) * moveSpeed, deltaTime);
 	}
+
+	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime) => AdjustAllViaDefaultControls(kbmInput, deltaTime);
+	void ICameraController.AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime) => AdjustAllViaDefaultControls(controllerInput, deltaTime);
 }

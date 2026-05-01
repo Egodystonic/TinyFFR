@@ -27,6 +27,7 @@ sealed record TestContext {
 	readonly Camera? _camera;
 	readonly Renderer? _renderer;
 	readonly ApplicationLoop? _loop;
+	readonly ICameraController? _cameraController;
 
 	public ILocalTinyFfrFactory Factory => _factory ?? throw NoContextObjectException();
 	public Window Window => _window ?? throw NoContextObjectException();
@@ -39,10 +40,11 @@ sealed record TestContext {
 	public Camera Camera => _camera ?? throw NoContextObjectException();
 	public Renderer Renderer => _renderer ?? throw NoContextObjectException();
 	public ApplicationLoop Loop => _loop ?? throw NoContextObjectException();
+	public ICameraController CameraController => _cameraController ?? throw NoContextObjectException();
 
 	public ILatestInputRetriever Input => Loop.Input;
 
-	public TestContext(ILocalTinyFfrFactory? factory, Window? window, Scene? scene, Material? material, Mesh? mesh, ModelInstance? modelInstance, BackdropTexture? backdrop, DirectionalLight? directionLight, Camera? camera, Renderer? renderer, ApplicationLoop? loop) {
+	public TestContext(ILocalTinyFfrFactory? factory, Window? window, Scene? scene, Material? material, Mesh? mesh, ModelInstance? modelInstance, BackdropTexture? backdrop, DirectionalLight? directionLight, Camera? camera, Renderer? renderer, ApplicationLoop? loop, ICameraController? cameraController) {
 		_factory = factory;
 		_window = window;
 		_scene = scene;
@@ -54,9 +56,11 @@ sealed record TestContext {
 		_camera = camera;
 		_renderer = renderer;
 		_loop = loop;
+		_cameraController = cameraController;
 	}
 
 	public void DisposeObjects() {
+		_cameraController?.Dispose();
 		_loop?.Dispose();
 		_renderer?.Dispose();
 		_camera?.Dispose();
@@ -87,6 +91,7 @@ interface ITestContextBuilder {
 	public Camera? Camera { get; set; }
 	public Renderer? Renderer { get; set; }
 	public ApplicationLoop? Loop { get; set; }
+	public ICameraController? CameraController { get; set; }
 }
 
 sealed record TestContextBuilder : ITestContextBuilder {
@@ -104,6 +109,7 @@ sealed record TestContextBuilder : ITestContextBuilder {
 	ValOption<Camera> _camera = default;
 	ValOption<Renderer> _renderer = default;
 	ValOption<ApplicationLoop> _loop = default;
+	RefOption<ICameraController> _cameraController = default;
 
 	public ILocalTinyFfrFactory? Factory {
 		get => Materialize(ref _factory, CreateDefaultFactory);
@@ -159,6 +165,11 @@ sealed record TestContextBuilder : ITestContextBuilder {
 		get => Materialize(ref _loop, CreateDefaultLoop);
 		set => SetOrThrowIfAlreadySet(ref _loop, value);
 	}
+	
+	public ICameraController? CameraController {
+		get => Materialize(ref _cameraController, CreateDefaultCameraController);
+		set => SetOrThrowIfAlreadySet(ref _cameraController, value);
+	}
 
 	public TestContext Materialize() {
 		var result = new TestContext(
@@ -172,7 +183,8 @@ sealed record TestContextBuilder : ITestContextBuilder {
 			DirectionalLight,
 			Camera,
 			Renderer,
-			Loop
+			Loop,
+			CameraController
 		);
 		
 		if (ModelInstance is {} mi) Scene?.Add(mi);
@@ -242,6 +254,13 @@ sealed record TestContextBuilder : ITestContextBuilder {
 	ApplicationLoop? CreateDefaultLoop() {
 		if (Factory == null) return null;
 		return Factory.ApplicationLoopBuilder.CreateLoop(frameRateCapHz: null, name: "Default Test Loop");
+	}
+	ICameraController? CreateDefaultCameraController() {
+		if (Camera == null) return null;
+		var result = Camera.Value.CreateController<FreeFlyingCameraController>();
+		result.Position = Camera.Value.Position;
+		result.Pitch = 30f;
+		return result;
 	}
 }
 

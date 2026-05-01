@@ -1,6 +1,7 @@
 // Created on 2026-04-27 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
@@ -211,4 +212,7 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 			Camera.SetVerticalFieldOfView(val.Clamp(Camera.FieldOfViewMin, Camera.FieldOfViewMax));
 		}
 	}
+	
+	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime) { /* no-op */ }
+	void ICameraController.AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime) { /* no-op */ }
 }

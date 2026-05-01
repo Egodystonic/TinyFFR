@@ -279,4 +279,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 		var maxSpeed = maxMoveSpeed ?? DefaultControllerMoveSpeed;
 		MoveViaControllerStick(controllerInput.LeftStickPosition, maxSpeed, deltaTime);
 	}
+	
+	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime) => AdjustAllViaDefaultControls(kbmInput, deltaTime);
+	void ICameraController.AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime) => AdjustAllViaDefaultControls(controllerInput, deltaTime);
 }

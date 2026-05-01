@@ -299,4 +299,7 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 		AdjustYawViaControllerStick(controllerInput.RightStickPosition, maxYawAdjustmentPerSec ?? DefaultControllerYawSensitivity, deltaTime, invertStickControl: invertYawControl);
 		AdjustDistanceViaControllerStick(controllerInput.LeftStickPosition, maxDistanceAdjustmentPerSec ?? DefaultControllerDistanceSensitivity, deltaTime, invertStickControl: invertDistanceControl);
 	}
+	
+	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime) => AdjustAllViaDefaultControls(kbmInput, deltaTime);
+	void ICameraController.AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime) => AdjustAllViaDefaultControls(controllerInput, deltaTime);
 }

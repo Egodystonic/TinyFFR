@@ -314,4 +314,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		AdjustFollowHeightViaControllerTriggers(invertHeightControl ? controllerInput.RightTriggerPosition : controllerInput.LeftTriggerPosition, invertHeightControl ? controllerInput.LeftTriggerPosition : controllerInput.RightTriggerPosition, maxHeightAdjustmentPerSec ?? DefaultControllerDistanceSensitivity, deltaTime);
 		AdjustFollowLateralOffsetViaControllerStick(controllerInput.LeftStickPosition, maxLateralAdjustmentPerSec ?? DefaultControllerLateralOffsetSensitivity, deltaTime, invertStickControl: invertLateralControl);
 	}
+	
+	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime) => AdjustAllViaDefaultControls(kbmInput, deltaTime);
+	void ICameraController.AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime) => AdjustAllViaDefaultControls(controllerInput, deltaTime);
 }
