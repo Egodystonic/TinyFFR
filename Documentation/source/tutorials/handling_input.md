@@ -9,6 +9,10 @@ TinyFFR comes with a built-in API for reacting to user input via keyboard, mouse
 	This tutorial will mostly be concerned with showing you how to move a `Camera` according to input captured via keyboard & mouse and/or gamepad.
 
 	If you wish you can integrate these examples directly with the hello cube tutorial and/or the treasure chest tutorial from the previous page, you can simply manipulate the `camera` resource that's already created + added to the `scene`.
+	
+## Camera Control
+
+## Object Control
 
 ## Initial Setup
 

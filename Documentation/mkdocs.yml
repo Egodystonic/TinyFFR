@@ -144,6 +144,9 @@ nav:
   - Reference Docs:
     - Assets:
       - reference/texture_patterns.md
+    - Camera:
+      - Controllers:
+        - reference/camera_controller_pan_tilt_zoom.md
     - Utils:
       - reference/indirect_enumerable.md
 
