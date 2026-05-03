@@ -260,34 +260,34 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 	public const float DefaultMousePitchSensitivity = 0.02f;
 	public const float DefaultMouseYawSensitivity = 0.02f;
 	public const float DefaultKeyboardMoveSpeed = 0.5f;
-	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, bool invertUpDownPositionalControl = false, Angle? pitchAdjustmentPerPixel = null, Angle? yawAdjustmentPerPixel = null, float? positionAdjustmentPerSec = null) {
-		ArgumentNullException.ThrowIfNull(kbmInput);
-		AdjustPitchViaMouseCursor(kbmInput.MouseCursorDelta, pitchAdjustmentPerPixel ?? DefaultMousePitchSensitivity, invertMouseControl: invertPitchControl);
-		AdjustYawViaMouseCursor(kbmInput.MouseCursorDelta, yawAdjustmentPerPixel ?? DefaultMouseYawSensitivity, invertMouseControl: invertYawControl);
+	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, bool invertUpDownPositionalControl = false, Angle? pitchAdjustmentPerPixel = null, Angle? yawAdjustmentPerPixel = null, float? positionAdjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		AdjustPitchViaMouseCursor(input.MouseCursorDelta, pitchAdjustmentPerPixel ?? DefaultMousePitchSensitivity, invertMouseControl: invertPitchControl);
+		AdjustYawViaMouseCursor(input.MouseCursorDelta, yawAdjustmentPerPixel ?? DefaultMouseYawSensitivity, invertMouseControl: invertYawControl);
 
 		var moveSpeed = positionAdjustmentPerSec ?? DefaultKeyboardMoveSpeed;
-		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowLeft, Camera.GetRelativeOrientationDirection(Orientation.Left) * moveSpeed, deltaTime);
-		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowRight, Camera.GetRelativeOrientationDirection(Orientation.Right) * moveSpeed, deltaTime);
-		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowUp, Camera.GetRelativeOrientationDirection(Orientation.Forward) * moveSpeed, deltaTime);
-		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.ArrowDown, Camera.GetRelativeOrientationDirection(Orientation.Backward) * moveSpeed, deltaTime);
-		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.RightShift, Camera.GetRelativeOrientationDirection(invertUpDownPositionalControl ? Orientation.Down : Orientation.Up) * moveSpeed, deltaTime);
-		AdjustPositionViaKeyPress(kbmInput, KeyboardOrMouseKey.RightControl, Camera.GetRelativeOrientationDirection(invertUpDownPositionalControl ? Orientation.Up : Orientation.Down) * moveSpeed, deltaTime);
+		AdjustPositionViaKeyPress(input, KeyboardOrMouseKey.ArrowLeft, Camera.GetRelativeOrientationDirection(Orientation.Left) * moveSpeed, deltaTime);
+		AdjustPositionViaKeyPress(input, KeyboardOrMouseKey.ArrowRight, Camera.GetRelativeOrientationDirection(Orientation.Right) * moveSpeed, deltaTime);
+		AdjustPositionViaKeyPress(input, KeyboardOrMouseKey.ArrowUp, Camera.GetRelativeOrientationDirection(Orientation.Forward) * moveSpeed, deltaTime);
+		AdjustPositionViaKeyPress(input, KeyboardOrMouseKey.ArrowDown, Camera.GetRelativeOrientationDirection(Orientation.Backward) * moveSpeed, deltaTime);
+		AdjustPositionViaKeyPress(input, KeyboardOrMouseKey.RightShift, Camera.GetRelativeOrientationDirection(invertUpDownPositionalControl ? Orientation.Down : Orientation.Up) * moveSpeed, deltaTime);
+		AdjustPositionViaKeyPress(input, KeyboardOrMouseKey.RightControl, Camera.GetRelativeOrientationDirection(invertUpDownPositionalControl ? Orientation.Up : Orientation.Down) * moveSpeed, deltaTime);
 	}
 	
 	public const float DefaultControllerPitchSensitivity = 120f;
 	public const float DefaultControllerYawSensitivity = 120f;
 	public const float DefaultControllerMoveSpeed = 0.5f;
-	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, bool invertUpDownPositionalControl = false, Angle? maxPitchAdjustmentPerSec = null, Angle? maxYawAdjustmentPerSec = null, float? maxPositionAdjustmentPerSec = null) {
-		ArgumentNullException.ThrowIfNull(controllerInput);
-		AdjustPitchViaControllerStick(controllerInput.RightStickPosition, maxPitchAdjustmentPerSec ?? DefaultControllerPitchSensitivity, deltaTime, invertStickControl: invertPitchControl);
-		AdjustYawViaControllerStick(controllerInput.RightStickPosition, maxYawAdjustmentPerSec ?? DefaultControllerYawSensitivity, deltaTime, invertStickControl: invertYawControl);
+	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever input, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, bool invertUpDownPositionalControl = false, Angle? maxPitchAdjustmentPerSec = null, Angle? maxYawAdjustmentPerSec = null, float? maxPositionAdjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		AdjustPitchViaControllerStick(input.RightStickPosition, maxPitchAdjustmentPerSec ?? DefaultControllerPitchSensitivity, deltaTime, invertStickControl: invertPitchControl);
+		AdjustYawViaControllerStick(input.RightStickPosition, maxYawAdjustmentPerSec ?? DefaultControllerYawSensitivity, deltaTime, invertStickControl: invertYawControl);
 
 		var moveSpeed = maxPositionAdjustmentPerSec ?? DefaultControllerMoveSpeed;
-		AdjustPositionViaControllerStick(controllerInput.LeftStickPosition, Camera.GetRelativeOrientationDirection(Orientation.Forward) * moveSpeed, deltaTime, axis: Axis2D.Y);
-		AdjustPositionViaControllerStick(controllerInput.LeftStickPosition, Camera.GetRelativeOrientationDirection(Orientation.Right) * moveSpeed, deltaTime, axis: Axis2D.X);
-		AdjustPositionViaControllerTriggers(controllerInput.LeftTriggerPosition, controllerInput.RightTriggerPosition, Camera.GetRelativeOrientationDirection(invertUpDownPositionalControl ? Orientation.Down : Orientation.Up) * moveSpeed, deltaTime);
+		AdjustPositionViaControllerStick(input.LeftStickPosition, Camera.GetRelativeOrientationDirection(Orientation.Forward) * moveSpeed, deltaTime, axis: Axis2D.Y);
+		AdjustPositionViaControllerStick(input.LeftStickPosition, Camera.GetRelativeOrientationDirection(Orientation.Right) * moveSpeed, deltaTime, axis: Axis2D.X);
+		AdjustPositionViaControllerTriggers(input.LeftTriggerPosition, input.RightTriggerPosition, Camera.GetRelativeOrientationDirection(invertUpDownPositionalControl ? Orientation.Down : Orientation.Up) * moveSpeed, deltaTime);
 	}
 
-	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime) => AdjustAllViaDefaultControls(kbmInput, deltaTime);
-	void ICameraController.AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime) => AdjustAllViaDefaultControls(controllerInput, deltaTime);
+	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime) => AdjustAllViaDefaultControls(input, deltaTime);
+	void ICameraController.AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever input, float deltaTime) => AdjustAllViaDefaultControls(input, deltaTime);
 }

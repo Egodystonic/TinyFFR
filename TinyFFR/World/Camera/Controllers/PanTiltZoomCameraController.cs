@@ -221,140 +221,180 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 		Camera.SetVerticalFieldOfView(_zoomSetpoint.CurrentValue);
 	}
 
-	public void AdjustPan(Angle adjustmentPerSec, float deltaTime) {
-		Pan += adjustmentPerSec * deltaTime;
-	}
-	public void AdjustPanViaMouseCursor(XYPair<int> cursorDelta, Angle adjustmentPerPixel, Axis2D axis = Axis2D.X, bool invertMouseControl = false) {
+	public void AdjustPan(float deltaTime, Angle adjustmentPerSec) => Pan += adjustmentPerSec * deltaTime;
+
+	public const float DefaultPanSensitivityMouseCursor = 0.02f;
+	public void AdjustPanViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, Angle? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.X) {
+		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
-			Axis2D.X => cursorDelta.X,
-			Axis2D.Y => cursorDelta.Y,
+			Axis2D.X => input.MouseCursorDelta.X,
+			Axis2D.Y => input.MouseCursorDelta.Y,
 			_ => 0
 		} * (invertMouseControl ? 1f : -1f);
 
-		Pan += delta * adjustmentPerPixel;
+		Pan += delta * (adjustmentPerPixel ?? DefaultPanSensitivityMouseCursor);
 	}
-	public void AdjustPanViaMouseWheel(int mouseWheelDelta, Angle adjustmentPerWheelIncrement, bool invertMouseControl = false) {
-		Pan += mouseWheelDelta * adjustmentPerWheelIncrement * (invertMouseControl ? -1f: 1f);
+	public const float DefaultPanSensitivityMouseWheel = 5f;
+	public void AdjustPanViaMouseWheel(ILatestKeyboardAndMouseInputRetriever input, Angle? adjustmentPerWheelIncrement = null, bool invertMouseControl = false) {
+		ArgumentNullException.ThrowIfNull(input);
+		Pan += input.MouseScrollWheelDelta * (adjustmentPerWheelIncrement ?? DefaultPanSensitivityMouseWheel) * (invertMouseControl ? -1f: 1f);
 	}
-	public void AdjustPanViaControllerStick(GameControllerStickPosition stickPosition, Angle maxAdjustmentPerSec, float deltaTime, bool invertStickControl = false, Axis2D axis = Axis2D.X) {
+
+	public const float DefaultPanSensitivityControllerStick = 120f;
+	public void AdjustPanViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool useLeftStick = true, bool invertStickControl = false, Axis2D axis = Axis2D.X) {
+		ArgumentNullException.ThrowIfNull(input);
+		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
 		var delta = axis switch {
 			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
 			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
 			_ => 0f
 		} * (invertStickControl ? -deltaTime : deltaTime);
 
-		Pan += maxAdjustmentPerSec * delta;
+		Pan += (maxAdjustmentPerSec ?? DefaultPanSensitivityControllerStick) * delta;
 	}
-	public void AdjustPanViaControllerTriggers(GameControllerTriggerPosition anticlockwiseTriggerPosition, GameControllerTriggerPosition clockwiseTriggerPosition, Angle maxAdjustmentPerSec, float deltaTime) {
-		AdjustPan(anticlockwiseTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - clockwiseTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
+	
+	public const float DefaultPanSensitivityControllerTrigger = 120f;
+	public void AdjustPanViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerPansAnticlockwise = true) {
+		ArgumentNullException.ThrowIfNull(input);
+		var anticlockwiseTriggerPosition = leftTriggerPansAnticlockwise ? input.LeftTriggerPosition : input.RightTriggerPosition;
+		var clockwiseTriggerPosition = leftTriggerPansAnticlockwise ? input.RightTriggerPosition : input.LeftTriggerPosition;
+		AdjustPan(deltaTime, anticlockwiseTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultPanSensitivityControllerTrigger) 
+			- clockwiseTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultPanSensitivityControllerTrigger));
 	}
-	public void AdjustPanViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Angle adjustmentPerSec, float deltaTime) {
-		ArgumentNullException.ThrowIfNull(kbmInput);
-		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
-		AdjustPan(adjustmentPerSec, deltaTime);
+	public const float DefaultPanSensitivityKeyOrButtonPress = 120f;
+	public void AdjustPanViaKeyPress(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, KeyboardOrMouseKey keyToTestFor, Angle? adjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		if (!input.KeyIsCurrentlyDown(keyToTestFor)) return;
+		AdjustPan(deltaTime, adjustmentPerSec ?? DefaultPanSensitivityKeyOrButtonPress);
 	}
-	public void AdjustPanViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Angle adjustmentPerSec, float deltaTime) {
-		ArgumentNullException.ThrowIfNull(controllerInput);
-		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
-		AdjustPan(adjustmentPerSec, deltaTime);
+	public void AdjustPanViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, Angle? adjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		if (!input.ButtonIsCurrentlyDown(buttonToTestFor)) return;
+		AdjustPan(deltaTime, adjustmentPerSec ?? DefaultPanSensitivityKeyOrButtonPress);
 	}
 
-	public void AdjustTilt(Angle adjustmentPerSec, float deltaTime) {
-		Tilt += adjustmentPerSec * deltaTime;
-	}
-	public void AdjustTiltViaMouseCursor(XYPair<int> cursorDelta, Angle adjustmentPerPixel, Axis2D axis = Axis2D.Y, bool invertMouseControl = false) {
+	public void AdjustTilt(float deltaTime, Angle adjustmentPerSec) => Tilt += adjustmentPerSec * deltaTime;
+	
+	public const float DefaultTiltSensitivityMouseCursor = 0.02f;
+	public void AdjustTiltViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, Angle? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.Y) {
+		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
-			Axis2D.X => cursorDelta.X,
-			Axis2D.Y => cursorDelta.Y,
+			Axis2D.X => input.MouseCursorDelta.X,
+			Axis2D.Y => input.MouseCursorDelta.Y,
 			_ => 0
 		} * (invertMouseControl ? 1f : -1f);
 
-		Tilt += delta * adjustmentPerPixel;
+		Tilt += delta * (adjustmentPerPixel ?? DefaultTiltSensitivityMouseCursor);
 	}
-	public void AdjustTiltViaMouseWheel(int mouseWheelDelta, Angle adjustmentPerWheelIncrement, bool invertMouseControl = false) {
-		Tilt += mouseWheelDelta * adjustmentPerWheelIncrement * (invertMouseControl ? -1f: 1f);
+	
+	public const float DefaultTiltSensitivityMouseWheel = 5f;
+	public void AdjustTiltViaMouseWheel(ILatestKeyboardAndMouseInputRetriever input, Angle? adjustmentPerWheelIncrement = null, bool invertMouseControl = false) {
+		ArgumentNullException.ThrowIfNull(input);
+		Tilt += input.MouseScrollWheelDelta * (adjustmentPerWheelIncrement ?? DefaultTiltSensitivityMouseWheel) * (invertMouseControl ? -1f: 1f);
 	}
-	public void AdjustTiltViaControllerStick(GameControllerStickPosition stickPosition, Angle maxAdjustmentPerSec, float deltaTime, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
+	
+	public const float DefaultTiltSensitivityControllerStick = 120f;
+	public void AdjustTiltViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool useLeftStick = true, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
+		ArgumentNullException.ThrowIfNull(input);
+		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
 		var delta = axis switch {
 			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
-			Axis2D.Y => -stickPosition.GetDisplacementVerticalWithDeadzone(),
+			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
 			_ => 0f
 		} * (invertStickControl ? -deltaTime : deltaTime);
 
-		Tilt += maxAdjustmentPerSec * delta;
+		Tilt += (maxAdjustmentPerSec ?? DefaultTiltSensitivityControllerStick) * delta;
 	}
-	public void AdjustTiltViaControllerTriggers(GameControllerTriggerPosition upwardTiltTriggerPosition, GameControllerTriggerPosition downwardTiltTriggerPosition, Angle maxAdjustmentPerSec, float deltaTime) {
-		AdjustTilt(upwardTiltTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - downwardTiltTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
+	
+	public const float DefaultTiltSensitivityControllerTrigger = 120f;
+	public void AdjustTiltViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerTiltsUpward = true) {
+		ArgumentNullException.ThrowIfNull(input);
+		var upwardTiltTriggerPosition = leftTriggerTiltsUpward ? input.LeftTriggerPosition : input.RightTriggerPosition;
+		var downwardTiltTriggerPosition = leftTriggerTiltsUpward ? input.RightTriggerPosition : input.LeftTriggerPosition;
+		AdjustTilt(deltaTime, upwardTiltTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultTiltSensitivityControllerTrigger)
+			- downwardTiltTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultTiltSensitivityControllerTrigger));
 	}
-	public void AdjustTiltViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Angle adjustmentPerSec, float deltaTime) {
-		ArgumentNullException.ThrowIfNull(kbmInput);
-		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
-		AdjustTilt(adjustmentPerSec, deltaTime);
+	
+	public const float DefaultTiltSensitivityKeyOrButtonPress = 120f;
+	public void AdjustTiltViaKeyPress(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, KeyboardOrMouseKey keyToTestFor, Angle? adjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		if (!input.KeyIsCurrentlyDown(keyToTestFor)) return;
+		AdjustTilt(deltaTime, adjustmentPerSec ?? DefaultTiltSensitivityKeyOrButtonPress);
 	}
-	public void AdjustTiltViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Angle adjustmentPerSec, float deltaTime) {
-		ArgumentNullException.ThrowIfNull(controllerInput);
-		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
-		AdjustTilt(adjustmentPerSec, deltaTime);
+	public void AdjustTiltViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, Angle? adjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		if (!input.ButtonIsCurrentlyDown(buttonToTestFor)) return;
+		AdjustTilt(deltaTime, adjustmentPerSec ?? DefaultTiltSensitivityKeyOrButtonPress);
 	}
 
-	public void AdjustZoom(float adjustmentPerSec, float deltaTime) {
-		Zoom += adjustmentPerSec * deltaTime;
-	}
-	public void AdjustZoomViaMouseCursor(XYPair<int> cursorDelta, float adjustmentPerPixel, Axis2D axis = Axis2D.Y, bool invertMouseControl = false) {
+	public void AdjustZoom(float deltaTime, float adjustmentPerSec) => Zoom += adjustmentPerSec * deltaTime;
+	
+	public const float DefaultZoomSensitivityMouseCursor = 120f;
+	public void AdjustZoomViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, float? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.Y) {
+		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
-			Axis2D.X => cursorDelta.X,
-			Axis2D.Y => cursorDelta.Y,
+			Axis2D.X => input.MouseCursorDelta.X,
+			Axis2D.Y => input.MouseCursorDelta.Y,
 			_ => 0
 		} * (invertMouseControl ? -1f : 1f);
 
-		Zoom += delta * adjustmentPerPixel;
+		Pan += delta * (adjustmentPerPixel ?? DefaultZoomSensitivityMouseCursor);
 	}
-	public void AdjustZoomViaMouseWheel(int mouseWheelDelta, float adjustmentPerWheelIncrement, bool invertMouseControl = false) {
-		Zoom += mouseWheelDelta * adjustmentPerWheelIncrement * (invertMouseControl ? 1f: -1f);
+	
+	public const float DefaultZoomSensitivityMouseWheel = 0.025f;
+	public void AdjustZoomViaMouseWheel(ILatestKeyboardAndMouseInputRetriever input, float? adjustmentPerWheelIncrement = null, bool invertMouseControl = false) {
+		ArgumentNullException.ThrowIfNull(input);
+		Zoom += input.MouseScrollWheelDelta * (adjustmentPerWheelIncrement ?? DefaultZoomSensitivityMouseWheel) * (invertMouseControl ? 1f: -1f);
 	}
-	public void AdjustZoomViaControllerStick(GameControllerStickPosition stickPosition, float maxAdjustmentPerSec, float deltaTime, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
+		
+	public const float DefaultZoomSensitivityControllerStick = 0.33f;
+	public void AdjustZoomViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool useLeftStick = true, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
+		ArgumentNullException.ThrowIfNull(input);
+		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
 		var delta = axis switch {
 			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
 			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
 			_ => 0f
 		} * (invertStickControl ? -deltaTime : deltaTime);
 
-		Zoom += maxAdjustmentPerSec * delta;
-	}
-	public void AdjustZoomViaControllerTriggers(GameControllerTriggerPosition zoomInTriggerPosition, GameControllerTriggerPosition zoomOutTriggerPosition, float maxAdjustmentPerSec, float deltaTime) {
-		AdjustZoom(zoomInTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - zoomOutTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
-	}
-	public void AdjustZoomViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, float adjustmentPerSec, float deltaTime) {
-		ArgumentNullException.ThrowIfNull(kbmInput);
-		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
-		AdjustZoom(adjustmentPerSec, deltaTime);
-	}
-	public void AdjustZoomViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, float adjustmentPerSec, float deltaTime) {
-		ArgumentNullException.ThrowIfNull(controllerInput);
-		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
-		AdjustZoom(adjustmentPerSec, deltaTime);
+		Zoom += (maxAdjustmentPerSec ?? DefaultZoomSensitivityControllerStick) * delta;
 	}
 	
-	public const float DefaultMousePanSensitivity = 0.02f;
-	public const float DefaultMouseTiltSensitivity = 0.02f;
-	public const float DefaultMouseZoomSensitivity = 0.025f;
-	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime, bool invertPanControl = false, bool invertTiltControl = false, bool invertZoomControl = false, Angle? panAdjustmentPerPixel = null, Angle? tiltAdjustmentPerPixel = null, float? zoomAdjustmentPerWheelIncrement = null) {
-		ArgumentNullException.ThrowIfNull(kbmInput);
-		AdjustPanViaMouseCursor(kbmInput.MouseCursorDelta, panAdjustmentPerPixel ?? DefaultMousePanSensitivity, invertMouseControl: invertPanControl);
-		AdjustTiltViaMouseCursor(kbmInput.MouseCursorDelta, tiltAdjustmentPerPixel ?? DefaultMouseTiltSensitivity, invertMouseControl: invertTiltControl);
-		AdjustZoomViaMouseWheel(kbmInput.MouseScrollWheelDelta, zoomAdjustmentPerWheelIncrement ?? DefaultMouseZoomSensitivity, invertMouseControl: invertZoomControl);
+	public const float DefaultZoomSensitivityControllerTrigger = 0.5f;
+	public void AdjustZoomViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool leftTriggerZoomsIn = true) {
+		ArgumentNullException.ThrowIfNull(input);
+		var zoomInTriggerPosition = leftTriggerZoomsIn ? input.LeftTriggerPosition : input.RightTriggerPosition;
+		var zoomOutTriggerPosition = leftTriggerZoomsIn ? input.RightTriggerPosition : input.LeftTriggerPosition;
+		AdjustZoom(deltaTime, zoomInTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultZoomSensitivityControllerTrigger)
+			- zoomOutTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultZoomSensitivityControllerTrigger));
 	}
 	
-	public const float DefaultControllerPanSensitivity = 120f;
-	public const float DefaultControllerTiltSensitivity = 120f;
-	public const float DefaultControllerZoomSensitivity = 0.5f;
-	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime, bool invertPanControl = false, bool invertTiltControl = false, bool invertZoomControl = false, Angle? maxPanAdjustmentPerSec = null, Angle? maxTiltAdjustmentPerSec = null, float? maxZoomAdjustmentPerSec = null) {
-		ArgumentNullException.ThrowIfNull(controllerInput);
-		AdjustPanViaControllerStick(controllerInput.LeftStickPosition, maxPanAdjustmentPerSec ?? DefaultControllerPanSensitivity, deltaTime, invertStickControl: invertPanControl);
-		AdjustTiltViaControllerStick(controllerInput.LeftStickPosition, maxTiltAdjustmentPerSec ?? DefaultControllerTiltSensitivity, deltaTime, invertStickControl: invertTiltControl);
-		AdjustZoomViaControllerTriggers(invertZoomControl ? controllerInput.RightTriggerPosition : controllerInput.LeftTriggerPosition, invertZoomControl ? controllerInput.LeftTriggerPosition : controllerInput.RightTriggerPosition, maxZoomAdjustmentPerSec ?? DefaultControllerZoomSensitivity, deltaTime);
+	public const float DefaultZoomSensitivityKeyOrButtonPress = 0.33f;
+	public void AdjustZoomViaKeyPress(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, KeyboardOrMouseKey keyToTestFor, float? adjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		if (!input.KeyIsCurrentlyDown(keyToTestFor)) return;
+		AdjustZoom(deltaTime, adjustmentPerSec ?? DefaultZoomSensitivityKeyOrButtonPress);
+	}
+	public void AdjustZoomViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, float? adjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		if (!input.ButtonIsCurrentlyDown(buttonToTestFor)) return;
+		AdjustZoom(deltaTime, adjustmentPerSec ?? DefaultTiltSensitivityKeyOrButtonPress);
 	}
 	
-	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime) => AdjustAllViaDefaultControls(kbmInput, deltaTime);
-	void ICameraController.AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime) => AdjustAllViaDefaultControls(controllerInput, deltaTime);
+	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, bool invertPanControl = false, bool invertTiltControl = false, bool invertZoomControl = false, Angle? panAdjustmentPerPixel = null, Angle? tiltAdjustmentPerPixel = null, float? zoomAdjustmentPerWheelIncrement = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		AdjustPanViaMouseCursor(input, panAdjustmentPerPixel, invertMouseControl: invertPanControl);
+		AdjustTiltViaMouseCursor(input, tiltAdjustmentPerPixel, invertMouseControl: invertTiltControl);
+		AdjustZoomViaMouseWheel(input, zoomAdjustmentPerWheelIncrement, invertMouseControl: invertZoomControl);
+	}
+	
+	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever input, float deltaTime, bool invertPanControl = false, bool invertTiltControl = false, bool invertZoomControl = false, Angle? maxPanAdjustmentPerSec = null, Angle? maxTiltAdjustmentPerSec = null, float? maxZoomAdjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		AdjustPanViaControllerStick(input, deltaTime, maxPanAdjustmentPerSec, invertStickControl: invertPanControl);
+		AdjustTiltViaControllerStick(input, deltaTime, maxTiltAdjustmentPerSec, invertStickControl: invertTiltControl);
+		AdjustZoomViaControllerTriggers(input, deltaTime, maxZoomAdjustmentPerSec, leftTriggerZoomsIn: !invertZoomControl);
+	}
+	
+	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime) => AdjustAllViaDefaultControls(input, deltaTime);
+	void ICameraController.AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever input, float deltaTime) => AdjustAllViaDefaultControls(input, deltaTime);
 }

@@ -11,8 +11,8 @@ public interface ICameraController : IDisposable {
 	void ResetParametersToDefault();
 	void Progress(float deltaTime); 
 	void SetGlobalSmoothing(Strength newSmoothingStrength);
-	void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime);
-	void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime);
+	void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime);
+	void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever input, float deltaTime);
 }
 public interface ICameraController<out TSelf> : ICameraController where TSelf : ICameraController<TSelf> {
 	internal static abstract TSelf RentAndTetherToCamera(Camera camera);

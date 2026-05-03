@@ -213,6 +213,6 @@ public sealed class ProgrammedCameraController : ICameraController<ProgrammedCam
 		}
 	}
 	
-	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime) { /* no-op */ }
-	void ICameraController.AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime) { /* no-op */ }
+	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime) { /* no-op */ }
+	void ICameraController.AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever input, float deltaTime) { /* no-op */ }
 }

@@ -345,23 +345,23 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	public const float DefaultMouseAngleSensitivity = 0.02f;
 	public const float DefaultMouseHeightSensitivity = 0.0001f;
 	public const float DefaultMouseDistanceSensitivity = 0.045f;
-	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime, bool invertAngleControl = false, bool invertHeightControl = false, bool invertDistanceControl = false, Angle? angleAdjustmentPerPixel = null, float? heightAdjustmentPerPixel = null, float? distanceAdjustmentPerWheelIncrement = null) {
-		ArgumentNullException.ThrowIfNull(kbmInput);
-		AdjustAngleViaMouseCursor(kbmInput.MouseCursorDelta, angleAdjustmentPerPixel ?? DefaultMouseAngleSensitivity, invertMouseControl: invertAngleControl);
-		AdjustHeightViaMouseCursor(kbmInput.MouseCursorDelta, heightAdjustmentPerPixel ?? DefaultMouseHeightSensitivity, invertMouseControl: invertHeightControl);
-		AdjustDistanceViaMouseWheel(kbmInput.MouseScrollWheelDelta, distanceAdjustmentPerWheelIncrement ?? DefaultMouseDistanceSensitivity, invertMouseControl: invertDistanceControl);
+	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, bool invertAngleControl = false, bool invertHeightControl = false, bool invertDistanceControl = false, Angle? angleAdjustmentPerPixel = null, float? heightAdjustmentPerPixel = null, float? distanceAdjustmentPerWheelIncrement = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		AdjustAngleViaMouseCursor(input.MouseCursorDelta, angleAdjustmentPerPixel ?? DefaultMouseAngleSensitivity, invertMouseControl: invertAngleControl);
+		AdjustHeightViaMouseCursor(input.MouseCursorDelta, heightAdjustmentPerPixel ?? DefaultMouseHeightSensitivity, invertMouseControl: invertHeightControl);
+		AdjustDistanceViaMouseWheel(input.MouseScrollWheelDelta, distanceAdjustmentPerWheelIncrement ?? DefaultMouseDistanceSensitivity, invertMouseControl: invertDistanceControl);
 	}
 	
 	public const float DefaultControllerAngleSensitivity = 120f;
 	public const float DefaultControllerHeightSensitivity = 0.5f;
 	public const float DefaultControllerDistanceSensitivity = 0.5f;
-	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime, bool invertAngleControl = false, bool invertHeightControl = false, bool invertDistanceControl = false, Angle? maxAngleAdjustmentPerSec = null, float? maxHeightAdjustmentPerSec = null, float? maxDistanceAdjustmentPerSec = null) {
-		ArgumentNullException.ThrowIfNull(controllerInput);
-		AdjustAngleViaControllerStick(controllerInput.RightStickPosition, maxAngleAdjustmentPerSec ?? DefaultControllerAngleSensitivity, deltaTime, invertStickControl: invertAngleControl);
-		AdjustHeightViaControllerTriggers(invertHeightControl ? controllerInput.RightTriggerPosition : controllerInput.LeftTriggerPosition, invertHeightControl ? controllerInput.LeftTriggerPosition : controllerInput.RightTriggerPosition, maxHeightAdjustmentPerSec ?? DefaultControllerHeightSensitivity, deltaTime);
-		AdjustDistanceViaControllerStick(controllerInput.LeftStickPosition, maxDistanceAdjustmentPerSec ?? DefaultControllerDistanceSensitivity, deltaTime, invertStickControl: invertDistanceControl);
+	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever input, float deltaTime, bool invertAngleControl = false, bool invertHeightControl = false, bool invertDistanceControl = false, Angle? maxAngleAdjustmentPerSec = null, float? maxHeightAdjustmentPerSec = null, float? maxDistanceAdjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		AdjustAngleViaControllerStick(input.RightStickPosition, maxAngleAdjustmentPerSec ?? DefaultControllerAngleSensitivity, deltaTime, invertStickControl: invertAngleControl);
+		AdjustHeightViaControllerTriggers(invertHeightControl ? input.RightTriggerPosition : input.LeftTriggerPosition, invertHeightControl ? input.LeftTriggerPosition : input.RightTriggerPosition, maxHeightAdjustmentPerSec ?? DefaultControllerHeightSensitivity, deltaTime);
+		AdjustDistanceViaControllerStick(input.LeftStickPosition, maxDistanceAdjustmentPerSec ?? DefaultControllerDistanceSensitivity, deltaTime, invertStickControl: invertDistanceControl);
 	}
 	
-	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever kbmInput, float deltaTime) => AdjustAllViaDefaultControls(kbmInput, deltaTime);
-	void ICameraController.AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever controllerInput, float deltaTime) => AdjustAllViaDefaultControls(controllerInput, deltaTime);
+	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime) => AdjustAllViaDefaultControls(input, deltaTime);
+	void ICameraController.AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever input, float deltaTime) => AdjustAllViaDefaultControls(input, deltaTime);
 }
