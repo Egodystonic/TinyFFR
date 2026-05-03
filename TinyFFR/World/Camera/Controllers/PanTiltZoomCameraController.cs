@@ -262,15 +262,15 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 			- clockwiseTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultPanSensitivityControllerTrigger));
 	}
 	public const float DefaultPanSensitivityKeyOrButtonPress = 120f;
-	public void AdjustPanViaKeyPress(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, KeyboardOrMouseKey keyToTestFor, Angle? adjustmentPerSec = null) {
+	public void AdjustPanViaKeyPress(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, KeyboardOrMouseKey keyToTestFor, bool reverse, Angle? adjustmentPerSec = null) {
 		ArgumentNullException.ThrowIfNull(input);
 		if (!input.KeyIsCurrentlyDown(keyToTestFor)) return;
-		AdjustPan(deltaTime, adjustmentPerSec ?? DefaultPanSensitivityKeyOrButtonPress);
+		AdjustPan(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultPanSensitivityKeyOrButtonPress));
 	}
-	public void AdjustPanViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, Angle? adjustmentPerSec = null) {
+	public void AdjustPanViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, bool reverse, Angle? adjustmentPerSec = null) {
 		ArgumentNullException.ThrowIfNull(input);
 		if (!input.ButtonIsCurrentlyDown(buttonToTestFor)) return;
-		AdjustPan(deltaTime, adjustmentPerSec ?? DefaultPanSensitivityKeyOrButtonPress);
+		AdjustPan(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultPanSensitivityKeyOrButtonPress));
 	}
 
 	public void AdjustTilt(float deltaTime, Angle adjustmentPerSec) => Tilt += adjustmentPerSec * deltaTime;
@@ -290,7 +290,7 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	public const float DefaultTiltSensitivityMouseWheel = 5f;
 	public void AdjustTiltViaMouseWheel(ILatestKeyboardAndMouseInputRetriever input, Angle? adjustmentPerWheelIncrement = null, bool invertMouseControl = false) {
 		ArgumentNullException.ThrowIfNull(input);
-		Tilt += input.MouseScrollWheelDelta * (adjustmentPerWheelIncrement ?? DefaultTiltSensitivityMouseWheel) * (invertMouseControl ? -1f: 1f);
+		Tilt += input.MouseScrollWheelDelta * (adjustmentPerWheelIncrement ?? DefaultTiltSensitivityMouseWheel) * (invertMouseControl ? 1f: -1f);
 	}
 	
 	public const float DefaultTiltSensitivityControllerStick = 120f;
@@ -316,29 +316,29 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	}
 	
 	public const float DefaultTiltSensitivityKeyOrButtonPress = 120f;
-	public void AdjustTiltViaKeyPress(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, KeyboardOrMouseKey keyToTestFor, Angle? adjustmentPerSec = null) {
+	public void AdjustTiltViaKeyPress(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, KeyboardOrMouseKey keyToTestFor, bool reverse, Angle? adjustmentPerSec = null) {
 		ArgumentNullException.ThrowIfNull(input);
 		if (!input.KeyIsCurrentlyDown(keyToTestFor)) return;
-		AdjustTilt(deltaTime, adjustmentPerSec ?? DefaultTiltSensitivityKeyOrButtonPress);
+		AdjustTilt(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultTiltSensitivityKeyOrButtonPress));
 	}
-	public void AdjustTiltViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, Angle? adjustmentPerSec = null) {
+	public void AdjustTiltViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, bool reverse, Angle? adjustmentPerSec = null) {
 		ArgumentNullException.ThrowIfNull(input);
 		if (!input.ButtonIsCurrentlyDown(buttonToTestFor)) return;
-		AdjustTilt(deltaTime, adjustmentPerSec ?? DefaultTiltSensitivityKeyOrButtonPress);
+		AdjustTilt(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultTiltSensitivityKeyOrButtonPress));
 	}
 
 	public void AdjustZoom(float deltaTime, float adjustmentPerSec) => Zoom += adjustmentPerSec * deltaTime;
 	
-	public const float DefaultZoomSensitivityMouseCursor = 120f;
+	public const float DefaultZoomSensitivityMouseCursor = 0.0001f;
 	public void AdjustZoomViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, float? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
 			Axis2D.X => input.MouseCursorDelta.X,
-			Axis2D.Y => input.MouseCursorDelta.Y,
+			Axis2D.Y => -input.MouseCursorDelta.Y,
 			_ => 0
 		} * (invertMouseControl ? -1f : 1f);
 
-		Pan += delta * (adjustmentPerPixel ?? DefaultZoomSensitivityMouseCursor);
+		Zoom += delta * (adjustmentPerPixel ?? DefaultZoomSensitivityMouseCursor);
 	}
 	
 	public const float DefaultZoomSensitivityMouseWheel = 0.025f;
@@ -370,15 +370,15 @@ public sealed class PanTiltZoomCameraController : ICameraController<PanTiltZoomC
 	}
 	
 	public const float DefaultZoomSensitivityKeyOrButtonPress = 0.33f;
-	public void AdjustZoomViaKeyPress(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, KeyboardOrMouseKey keyToTestFor, float? adjustmentPerSec = null) {
+	public void AdjustZoomViaKeyPress(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, KeyboardOrMouseKey keyToTestFor, bool reverse, float? adjustmentPerSec = null) {
 		ArgumentNullException.ThrowIfNull(input);
 		if (!input.KeyIsCurrentlyDown(keyToTestFor)) return;
-		AdjustZoom(deltaTime, adjustmentPerSec ?? DefaultZoomSensitivityKeyOrButtonPress);
+		AdjustZoom(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultZoomSensitivityKeyOrButtonPress));
 	}
-	public void AdjustZoomViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, float? adjustmentPerSec = null) {
+	public void AdjustZoomViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, bool reverse, float? adjustmentPerSec = null) {
 		ArgumentNullException.ThrowIfNull(input);
 		if (!input.ButtonIsCurrentlyDown(buttonToTestFor)) return;
-		AdjustZoom(deltaTime, adjustmentPerSec ?? DefaultTiltSensitivityKeyOrButtonPress);
+		AdjustZoom(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultZoomSensitivityKeyOrButtonPress));
 	}
 	
 	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, bool invertPanControl = false, bool invertTiltControl = false, bool invertZoomControl = false, Angle? panAdjustmentPerPixel = null, Angle? tiltAdjustmentPerPixel = null, float? zoomAdjustmentPerWheelIncrement = null) {

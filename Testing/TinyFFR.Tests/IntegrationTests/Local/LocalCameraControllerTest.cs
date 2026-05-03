@@ -74,6 +74,7 @@ class LocalCameraControllerTest {
 
 		public override void Start() {
 			Smoothing = Strength.VeryMild;
+			UseAlternativeControlScheme = false;
 			_instances = AddTestModelsToScene(100);
 			_targetInstance = AddTestModelToScene();			
 			_controller = Camera.CreateController<FollowCameraController>();
@@ -91,13 +92,17 @@ class LocalCameraControllerTest {
 		public override string GetWindowTitleString() {
 			return
 				$"D/H/L {_controller.FollowDistance:N2}/{_controller.FollowHeight:N2}/{_controller.FollowLateralOffset:N2} " +
-				$"[0] Smoothing {Smoothing}";
+				$"[0] Smoothing {Smoothing} " +
+				$"[A] {(UseAlternativeControlScheme ? "Alt" : "Std")} Ctrl";
 		}
 
 		public override void Iterate(float dt, ILatestInputRetriever input) {
 			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0)) {
 				CycleSmoothing();
 				_controller.SetGlobalSmoothing(Smoothing);
+			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.A)) {
+				UseAlternativeControlScheme = !UseAlternativeControlScheme;
 			}
 			
 			if (_targetInstance.Position.DistanceFrom(_nextTargetLoc) < 0.1f) {
@@ -110,8 +115,22 @@ class LocalCameraControllerTest {
 			_controller.TargetUp = Direction.Up.OrthogonalizedAgainst(_controller.TargetForward) ?? _controller.TargetForward.AnyOrthogonal();
 			_controller.Target = _targetInstance.Position;
 
-			_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
-			_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
+			if (UseAlternativeControlScheme) {
+				_controller.AdjustFollowDistanceViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowDown, false);
+				_controller.AdjustFollowDistanceViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowUp, true);
+				_controller.AdjustFollowHeightViaMouseWheel(input.KeyboardAndMouse);
+				_controller.AdjustFollowLateralOffsetViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowLeft, true);
+				_controller.AdjustFollowLateralOffsetViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowRight, false);
+				
+				_controller.AdjustFollowDistanceViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.A, false);
+				_controller.AdjustFollowDistanceViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.B, true);
+				_controller.AdjustFollowHeightViaControllerStick(input.GameControllersCombined, dt);
+				_controller.AdjustFollowLateralOffsetViaControllerTriggers(input.GameControllersCombined, dt);
+			}
+			else {
+				_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
+				_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
+			}
 			
 			_controller.Progress(dt);
 		}
@@ -126,6 +145,7 @@ class LocalCameraControllerTest {
 		public override void Start() {
 			const int NumInstancesPerPlane = 100;
 			Smoothing = Strength.VeryMild;
+			UseAlternativeControlScheme = false;
 			_instances = AddTestModelsToScene(NumInstancesPerPlane * 2);
 			_controller = Camera.CreateController<FirstPersonCameraController>();
 			_controller.SetGlobalSmoothing(Strength.VeryMild);
@@ -141,7 +161,8 @@ class LocalCameraControllerTest {
 		}
 		public override string GetWindowTitleString() {
 			return
-				$"[0] Smoothing {Smoothing}";
+				$"[0] Smoothing {Smoothing} " +
+				$"[A] {(UseAlternativeControlScheme ? "Alt" : "Std")} Ctrl";
 		}
 
 		public override void Iterate(float dt, ILatestInputRetriever input) {
@@ -149,9 +170,26 @@ class LocalCameraControllerTest {
 				CycleSmoothing();
 				_controller.SetGlobalSmoothing(Smoothing);
 			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.A)) {
+				UseAlternativeControlScheme = !UseAlternativeControlScheme;
+			}
 
-			_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
-			_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
+			if (UseAlternativeControlScheme) {
+				_controller.AdjustPitchViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowDown, false);
+				_controller.AdjustPitchViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowUp, true);
+				_controller.AdjustYawViaMouseWheel(input.KeyboardAndMouse);
+				_controller.AdjustPositionViaMouseCursor(input.KeyboardAndMouse, axis: Axis2D.X);
+				_controller.AdjustPositionViaMouseCursor(input.KeyboardAndMouse, axis: Axis2D.Y);
+				
+				_controller.AdjustPitchViaControllerTriggers(input.GameControllersCombined, dt);
+				_controller.AdjustYawViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.A, false);
+				_controller.AdjustYawViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.B, true);
+				_controller.AdjustPositionViaControllerTriggers(input.GameControllersCombined, dt);
+			}
+			else {
+				_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
+				_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
+			}
 			
 			_controller.Progress(dt);
 		}
@@ -165,6 +203,7 @@ class LocalCameraControllerTest {
 
 		public override void Start() {
 			Smoothing = Strength.VeryMild;
+			UseAlternativeControlScheme = false;
 			_instances = AddTestModelsToScene(100);
 			_controller = Camera.CreateController<FreeFlyingCameraController>();
 			_controller.SetGlobalSmoothing(Strength.VeryMild);
@@ -178,7 +217,8 @@ class LocalCameraControllerTest {
 		public override string GetWindowTitleString() {
 			return
 				$"[1] Allow Flip {(_controller.AllowUpsideDownFlip ? "<yes>" : "<no>")} " +
-				$"[0] Smoothing {Smoothing}";
+				$"[0] Smoothing {Smoothing} " +
+				$"[A] {(UseAlternativeControlScheme ? "Alt" : "Std")} Ctrl";
 		}
 
 		public override void Iterate(float dt, ILatestInputRetriever input) {
@@ -189,9 +229,26 @@ class LocalCameraControllerTest {
 				CycleSmoothing();
 				_controller.SetGlobalSmoothing(Smoothing);
 			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.A)) {
+				UseAlternativeControlScheme = !UseAlternativeControlScheme;
+			}
 
-			_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
-			_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
+			if (UseAlternativeControlScheme) {
+				_controller.AdjustPitchViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowDown, false);
+				_controller.AdjustPitchViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowUp, true);
+				_controller.AdjustYawViaMouseWheel(input.KeyboardAndMouse);
+				_controller.AdjustPositionViaMouseCursor(input.KeyboardAndMouse, Orientation.Right, axis: Axis2D.X);
+				_controller.AdjustPositionViaMouseCursor(input.KeyboardAndMouse, Orientation.Forward, axis: Axis2D.Y);
+				
+				_controller.AdjustPitchViaControllerTriggers(input.GameControllersCombined, dt);
+				_controller.AdjustYawViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.A, false);
+				_controller.AdjustYawViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.B, true);
+				_controller.AdjustPositionViaControllerTriggers(input.GameControllersCombined, dt, Orientation.Forward);
+			}
+			else {
+				_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
+				_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
+			}
 			
 			_controller.Progress(dt);
 		}
@@ -207,6 +264,7 @@ class LocalCameraControllerTest {
 		public override void Start() {
 			_startFov = Camera.VerticalFieldOfView;
 			Smoothing = Strength.VeryMild;
+			UseAlternativeControlScheme = false;
 			_modelInstance = AddTestModelToScene();
 			_controller = Camera.CreateController<PanTiltZoomCameraController>();
 			_controller.Position = (0f, 1f, -2f);
@@ -224,7 +282,8 @@ class LocalCameraControllerTest {
 				$"[1] Pan {_controller.Pan:N0} (range {_controller.PanRange?.ToString("N0", null) ?? "<none>"}) " +
 				$"[2] Tilt {_controller.Tilt:N2} (max up {_controller.MaxTiltUp.ToString("N2", null)} max down {_controller.MaxTiltDown.ToString("N2", null)}) " +
 				$"[3] Zoom {PercentageUtils.ConvertFractionToPercentageString(_controller.Zoom, "N2")} (max in {_controller.MaxZoomInFov.ToString("N0", null)} max out {_controller.MaxZoomOutFov.ToString("N0", null)} " +
-				$"[0] Smoothing {Smoothing}";
+				$"[0] Smoothing {Smoothing} " +
+				$"[A] {(UseAlternativeControlScheme ? "Alt" : "Std")} Ctrl";
 		}
 
 		public override void Iterate(float dt, ILatestInputRetriever input) {
@@ -243,8 +302,25 @@ class LocalCameraControllerTest {
 				CycleSmoothing();
 				_controller.SetGlobalSmoothing(Smoothing);
 			}
-			_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
-			_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.A)) {
+				UseAlternativeControlScheme = !UseAlternativeControlScheme;
+			}
+			
+			if (UseAlternativeControlScheme) {
+				_controller.AdjustTiltViaMouseWheel(input.KeyboardAndMouse);
+				_controller.AdjustPanViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowLeft, false);
+				_controller.AdjustPanViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowRight, true);
+				_controller.AdjustZoomViaMouseCursor(input.KeyboardAndMouse);
+				
+				_controller.AdjustPanViaControllerTriggers(input.GameControllersCombined, dt);
+				_controller.AdjustTiltViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.A, false);
+				_controller.AdjustTiltViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.B, true);
+				_controller.AdjustZoomViaControllerStick(input.GameControllersCombined, dt);
+			}
+			else {
+				_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
+				_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
+			}
 			
 			_controller.Progress(dt);
 		}
@@ -259,6 +335,7 @@ class LocalCameraControllerTest {
 
 		public override void Start() {
 			Smoothing = Strength.VeryMild;
+			UseAlternativeControlScheme = false;
 			_staticInstances = Enumerable.Range(0, 4).Select(_ => AddTestModelToScene()).ToArray();
 			_targetInstance = AddTestModelToScene();
 			_controller = Camera.CreateController<OrbitalCameraController>();
@@ -279,7 +356,8 @@ class LocalCameraControllerTest {
 				$"[1] Angle {_controller.Angle:N0} (range {_controller.AngleRange?.ToString("N0", null) ?? "<none>"}) " +
 				$"[2] Height {_controller.Height:N2} (min {_controller.MinHeight?.ToString("N2") ?? "<none>"} max {_controller.MaxHeight?.ToString("N2") ?? "<none>"}) " +
 				$"[3] Distance {_controller.Distance:N2} (min {_controller.MinDistance?.ToString("N2") ?? "<none>"} max {_controller.MaxDistance?.ToString("N2") ?? "<none>"}) " +
-				$"[0] Smoothing {Smoothing}";
+				$"[0] Smoothing {Smoothing} " +
+				$"[A] {(UseAlternativeControlScheme ? "Alt" : "Std")} Ctrl";
 		}
 
 		public override void Iterate(float dt, ILatestInputRetriever input) {
@@ -298,11 +376,28 @@ class LocalCameraControllerTest {
 				CycleSmoothing();
 				_controller.SetGlobalSmoothing(Smoothing);
 			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.A)) {
+				UseAlternativeControlScheme = !UseAlternativeControlScheme;
+			}
 			
 			_targetInstance.RotateBy(90f % Direction.Up * dt, Location.Origin);
 
-			_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
-			_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
+			if (UseAlternativeControlScheme) {
+				_controller.AdjustDistanceViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowDown, false);
+				_controller.AdjustDistanceViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowUp, true);
+				_controller.AdjustHeightViaMouseWheel(input.KeyboardAndMouse);
+				_controller.AdjustAngleViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowLeft, true);
+				_controller.AdjustAngleViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowRight, false);
+				
+				_controller.AdjustDistanceViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.A, false);
+				_controller.AdjustDistanceViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.B, true);
+				_controller.AdjustHeightViaControllerStick(input.GameControllersCombined, dt);
+				_controller.AdjustAngleViaControllerTriggers(input.GameControllersCombined, dt);
+			}
+			else {
+				_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
+				_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
+			}
 			
 			_controller.Target = _targetInstance.Position;
 			_controller.Progress(dt);
@@ -318,6 +413,7 @@ class LocalCameraControllerTest {
 
 		public override void Start() {
 			Smoothing = Strength.VeryMild;
+			UseAlternativeControlScheme = false;
 			_staticInstances = Enumerable.Range(0, 4).Select(_ => AddTestModelToScene()).ToArray();
 			_targetInstance = AddTestModelToScene();
 			_controller = Camera.CreateController<InspectorCameraController>();
@@ -337,7 +433,8 @@ class LocalCameraControllerTest {
 			return 
 				$"[1] Allow Flip ({(_controller.AllowUpsideDownFlip ? "<yes>" : "<no>")}) " +
 				$"[2] Distance {_controller.Distance:N2} (min {_controller.MinDistance?.ToString("N2") ?? "<none>"} max {_controller.MaxDistance?.ToString("N2") ?? "<none>"}) " +
-				$"[0] Smoothing {Smoothing}";
+				$"[0] Smoothing {Smoothing} " +
+				$"[A] {(UseAlternativeControlScheme ? "Alt" : "Std")} Ctrl";
 		}
 
 		public override void Iterate(float dt, ILatestInputRetriever input) {
@@ -352,11 +449,28 @@ class LocalCameraControllerTest {
 				CycleSmoothing();
 				_controller.SetGlobalSmoothing(Smoothing);
 			}
+			if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.A)) {
+				UseAlternativeControlScheme = !UseAlternativeControlScheme;
+			}
 			
 			_targetInstance.RotateBy(90f % Direction.Up * dt, Location.Origin);
 
-			_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
-			_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
+			if (UseAlternativeControlScheme) {
+				_controller.AdjustDistanceViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowDown, false);
+				_controller.AdjustDistanceViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowUp, true);
+				_controller.AdjustPitchViaMouseWheel(input.KeyboardAndMouse);
+				_controller.AdjustYawViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowLeft, true);
+				_controller.AdjustYawViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowRight, false);
+				
+				_controller.AdjustDistanceViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.A, false);
+				_controller.AdjustDistanceViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.B, true);
+				_controller.AdjustPitchViaControllerStick(input.GameControllersCombined, dt);
+				_controller.AdjustYawViaControllerTriggers(input.GameControllersCombined, dt);
+			}
+			else {
+				_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
+				_controller.AdjustAllViaDefaultControls(input.GameControllersCombined, dt);
+			}
 			
 			_controller.Target = _targetInstance.Position;
 			_controller.Progress(dt);
@@ -430,6 +544,7 @@ class LocalCameraControllerTest {
 		protected readonly Material TestMat;
 		protected readonly Scene Scene;
 		protected Strength Smoothing;
+		protected bool UseAlternativeControlScheme;
 
 		protected CameraControllerScenario(ILocalTinyFfrFactory factory, Camera camera, Mesh testMesh, Material testMat, Scene scene) {
 			Factory = factory;

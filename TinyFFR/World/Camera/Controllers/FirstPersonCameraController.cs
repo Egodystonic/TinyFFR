@@ -130,154 +130,195 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 		Camera.SetViewAndUpDirection(currentHorizontalPlaneDir * verticalTiltRot, GroundPlane.Normal * verticalTiltRot);
 	}
 
-	public void AdjustPitch(Angle adjustmentPerSec, float deltaTime) {
-		Pitch += adjustmentPerSec * deltaTime;
-	}
-	public void AdjustPitchViaMouseCursor(XYPair<int> cursorDelta, Angle adjustmentPerPixel, Axis2D axis = Axis2D.Y, bool invertMouseControl = false) {
+	public void AdjustPitch(float deltaTime, Angle adjustmentPerSec) => Pitch += adjustmentPerSec * deltaTime;
+
+	public const float DefaultPitchSensitivityMouseCursor = 0.02f;
+	public void AdjustPitchViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, Angle? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.Y) {
+		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
-			Axis2D.X => cursorDelta.X,
-			Axis2D.Y => cursorDelta.Y,
+			Axis2D.X => input.MouseCursorDelta.X,
+			Axis2D.Y => input.MouseCursorDelta.Y,
 			_ => 0
 		} * (invertMouseControl ? -1f : 1f);
 
-		Pitch += delta * adjustmentPerPixel;
+		Pitch += delta * (adjustmentPerPixel ?? DefaultPitchSensitivityMouseCursor);
 	}
-	public void AdjustPitchViaMouseWheel(int mouseWheelDelta, Angle adjustmentPerWheelIncrement, bool invertMouseControl = false) {
-		Pitch += mouseWheelDelta * adjustmentPerWheelIncrement * (invertMouseControl ? -1f: 1f);
+
+	public const float DefaultPitchSensitivityMouseWheel = 5f;
+	public void AdjustPitchViaMouseWheel(ILatestKeyboardAndMouseInputRetriever input, Angle? adjustmentPerWheelIncrement = null, bool invertMouseControl = false) {
+		ArgumentNullException.ThrowIfNull(input);
+		Pitch += input.MouseScrollWheelDelta * (adjustmentPerWheelIncrement ?? DefaultPitchSensitivityMouseWheel) * (invertMouseControl ? -1f : 1f);
 	}
-	public void AdjustPitchViaControllerStick(GameControllerStickPosition stickPosition, Angle maxAdjustmentPerSec, float deltaTime, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
+
+	public const float DefaultPitchSensitivityControllerStick = 120f;
+	public void AdjustPitchViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool useLeftStick = false, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
+		ArgumentNullException.ThrowIfNull(input);
+		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
 		var delta = axis switch {
 			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
 			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
 			_ => 0f
 		} * (invertStickControl ? -deltaTime : deltaTime);
 
-		Pitch += maxAdjustmentPerSec * delta;
+		Pitch += (maxAdjustmentPerSec ?? DefaultPitchSensitivityControllerStick) * delta;
 	}
-	public void AdjustPitchViaControllerTriggers(GameControllerTriggerPosition pitchUpTriggerPosition, GameControllerTriggerPosition pitchDownTriggerPosition, Angle maxAdjustmentPerSec, float deltaTime) {
-		AdjustPitch(pitchUpTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - pitchDownTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
+
+	public const float DefaultPitchSensitivityControllerTrigger = 120f;
+	public void AdjustPitchViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerPitchesUp = true) {
+		ArgumentNullException.ThrowIfNull(input);
+		var pitchUpTriggerPosition = leftTriggerPitchesUp ? input.LeftTriggerPosition : input.RightTriggerPosition;
+		var pitchDownTriggerPosition = leftTriggerPitchesUp ? input.RightTriggerPosition : input.LeftTriggerPosition;
+		AdjustPitch(deltaTime, pitchUpTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultPitchSensitivityControllerTrigger)
+			- pitchDownTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultPitchSensitivityControllerTrigger));
 	}
-	public void AdjustPitchViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Angle adjustmentPerSec, float deltaTime) {
-		ArgumentNullException.ThrowIfNull(kbmInput);
-		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
-		AdjustPitch(adjustmentPerSec, deltaTime);
+
+	public const float DefaultPitchSensitivityKeyOrButtonPress = 80f;
+	public void AdjustPitchViaKeyPress(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, KeyboardOrMouseKey keyToTestFor, bool reverse, Angle? adjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		if (!input.KeyIsCurrentlyDown(keyToTestFor)) return;
+		AdjustPitch(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultPitchSensitivityKeyOrButtonPress));
 	}
-	public void AdjustPitchViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Angle adjustmentPerSec, float deltaTime) {
-		ArgumentNullException.ThrowIfNull(controllerInput);
-		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
-		AdjustPitch(adjustmentPerSec, deltaTime);
+	public void AdjustPitchViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, bool reverse, Angle? adjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		if (!input.ButtonIsCurrentlyDown(buttonToTestFor)) return;
+		AdjustPitch(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultPitchSensitivityKeyOrButtonPress));
 	}
-	
-	public void AdjustYaw(Angle adjustmentPerSec, float deltaTime) {
-		Yaw += adjustmentPerSec * deltaTime;
-	}
-	public void AdjustYawViaMouseCursor(XYPair<int> cursorDelta, Angle adjustmentPerPixel, Axis2D axis = Axis2D.X, bool invertMouseControl = false) {
+
+	public void AdjustYaw(float deltaTime, Angle adjustmentPerSec) => Yaw += adjustmentPerSec * deltaTime;
+
+	public const float DefaultYawSensitivityMouseCursor = 0.02f;
+	public void AdjustYawViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, Angle? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.X) {
+		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
-			Axis2D.X => cursorDelta.X,
-			Axis2D.Y => cursorDelta.Y,
+			Axis2D.X => input.MouseCursorDelta.X,
+			Axis2D.Y => input.MouseCursorDelta.Y,
 			_ => 0
 		} * (invertMouseControl ? 1f : -1f);
 
-		Yaw += delta * adjustmentPerPixel;
+		Yaw += delta * (adjustmentPerPixel ?? DefaultYawSensitivityMouseCursor);
 	}
-	public void AdjustYawViaMouseWheel(int mouseWheelDelta, Angle adjustmentPerWheelIncrement, bool invertMouseControl = false) {
-		Yaw += mouseWheelDelta * adjustmentPerWheelIncrement * (invertMouseControl ? -1f: 1f);
+
+	public const float DefaultYawSensitivityMouseWheel = 5f;
+	public void AdjustYawViaMouseWheel(ILatestKeyboardAndMouseInputRetriever input, Angle? adjustmentPerWheelIncrement = null, bool invertMouseControl = false) {
+		ArgumentNullException.ThrowIfNull(input);
+		Yaw += input.MouseScrollWheelDelta * (adjustmentPerWheelIncrement ?? DefaultYawSensitivityMouseWheel) * (invertMouseControl ? 1f : -1f);
 	}
-	public void AdjustYawViaControllerStick(GameControllerStickPosition stickPosition, Angle maxAdjustmentPerSec, float deltaTime, bool invertStickControl = false, Axis2D axis = Axis2D.X) {
+
+	public const float DefaultYawSensitivityControllerStick = 120f;
+	public void AdjustYawViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool useLeftStick = false, bool invertStickControl = false, Axis2D axis = Axis2D.X) {
+		ArgumentNullException.ThrowIfNull(input);
+		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
 		var delta = axis switch {
 			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
 			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
 			_ => 0f
 		} * (invertStickControl ? -deltaTime : deltaTime);
 
-		Yaw += maxAdjustmentPerSec * delta;
+		Yaw += (maxAdjustmentPerSec ?? DefaultYawSensitivityControllerStick) * delta;
 	}
-	public void AdjustYawViaControllerTriggers(GameControllerTriggerPosition yawLeftTriggerPosition, GameControllerTriggerPosition yawRightTriggerPosition, Angle maxAdjustmentPerSec, float deltaTime) {
-		AdjustYaw(yawLeftTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec - yawRightTriggerPosition.GetDisplacementWithDeadzone() * maxAdjustmentPerSec, deltaTime);
+
+	public const float DefaultYawSensitivityControllerTrigger = 120f;
+	public void AdjustYawViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerYawsLeft = true) {
+		ArgumentNullException.ThrowIfNull(input);
+		var yawLeftTriggerPosition = leftTriggerYawsLeft ? input.LeftTriggerPosition : input.RightTriggerPosition;
+		var yawRightTriggerPosition = leftTriggerYawsLeft ? input.RightTriggerPosition : input.LeftTriggerPosition;
+		AdjustYaw(deltaTime, yawLeftTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultYawSensitivityControllerTrigger)
+			- yawRightTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultYawSensitivityControllerTrigger));
 	}
-	public void AdjustYawViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Angle adjustmentPerSec, float deltaTime) {
-		ArgumentNullException.ThrowIfNull(kbmInput);
-		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
-		AdjustYaw(adjustmentPerSec, deltaTime);
+
+	public const float DefaultYawSensitivityKeyOrButtonPress = 120f;
+	public void AdjustYawViaKeyPress(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, KeyboardOrMouseKey keyToTestFor, bool reverse, Angle? adjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		if (!input.KeyIsCurrentlyDown(keyToTestFor)) return;
+		AdjustYaw(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultYawSensitivityKeyOrButtonPress));
 	}
-	public void AdjustYawViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Angle adjustmentPerSec, float deltaTime) {
-		ArgumentNullException.ThrowIfNull(controllerInput);
-		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
-		AdjustYaw(adjustmentPerSec, deltaTime);
+	public void AdjustYawViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, bool reverse, Angle? adjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		if (!input.ButtonIsCurrentlyDown(buttonToTestFor)) return;
+		AdjustYaw(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultYawSensitivityKeyOrButtonPress));
 	}
-	
-	public void Move(Angle polarOrientation, float distance) { 
-		var zeroDegreeDir = Camera.GetRelativeOrientationDirection(Orientation.Right).ParallelizedWith(GroundPlane) 
+
+	public void AdjustPosition(Angle polarOrientation, float distance) {
+		var zeroDegreeDir = Camera.GetRelativeOrientationDirection(Orientation.Right).ParallelizedWith(GroundPlane)
 			?? Direction.FromDualOrthogonalization(Camera.ViewDirection, GroundPlane.Normal);
-		
+
 		Position += (zeroDegreeDir * (polarOrientation % GroundPlane.Normal)) * distance;
 	}
-	public void Move(Angle polarOrientation, float moveSpeed, float deltaTime) { 
-		Move(polarOrientation, moveSpeed * deltaTime);
+	public void AdjustPosition(Angle polarOrientation, float moveSpeed, float deltaTime) {
+		AdjustPosition(polarOrientation, moveSpeed * deltaTime);
 	}
-	public void Move(Orientation2D orientation, float distance) { 
-		Move(Angle.From2DPolarAngle(orientation) ?? Angle.Zero, distance);
+	public void AdjustPosition(Orientation2D orientation, float distance) {
+		AdjustPosition(Angle.From2DPolarAngle(orientation) ?? Angle.Zero, distance);
 	}
-	public void Move(Orientation2D orientation, float moveSpeed, float deltaTime) { 
-		Move(orientation, moveSpeed * deltaTime);
+	public void AdjustPosition(Orientation2D orientation, float moveSpeed, float deltaTime) {
+		AdjustPosition(orientation, moveSpeed * deltaTime);
 	}
-	public void MoveViaMouseCursor(XYPair<int> cursorDelta, float distancePerPixel, Axis2D axis = Axis2D.X, bool invertMouseControl = false) {
+
+	public const float DefaultPositionSensitivityMouseCursor = 0.0002f;
+	public void AdjustPositionViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, float? distancePerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.X) {
+		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
-			Axis2D.X => cursorDelta.X,
-			Axis2D.Y => cursorDelta.Y,
+			Axis2D.X => input.MouseCursorDelta.X,
+			Axis2D.Y => -input.MouseCursorDelta.Y,
 			_ => 0
 		} * (invertMouseControl ? -1f : 1f);
 
-		Move(axis == Axis2D.X ? Orientation2D.Right : Orientation2D.Up, distancePerPixel * delta);
+		AdjustPosition(axis == Axis2D.X ? Orientation2D.Right : Orientation2D.Up, (distancePerPixel ?? DefaultPositionSensitivityMouseCursor) * delta);
 	}
-	public void MoveViaMouseWheel(int mouseWheelDelta, float distancePerDelta, Orientation2D positiveOrientation, bool invertMouseControl = false) {
-		Move(positiveOrientation, distancePerDelta * mouseWheelDelta * (invertMouseControl ? -1f: 1f));
+
+	public const float DefaultPositionSensitivityMouseWheel = 0.05f;
+	public void AdjustPositionViaMouseWheel(ILatestKeyboardAndMouseInputRetriever input, float? distancePerWheelIncrement = null, Orientation2D positiveOrientation = Orientation2D.Up, bool invertMouseControl = false) {
+		ArgumentNullException.ThrowIfNull(input);
+		AdjustPosition(positiveOrientation, (distancePerWheelIncrement ?? DefaultPositionSensitivityMouseWheel) * input.MouseScrollWheelDelta * (invertMouseControl ? -1f : 1f));
 	}
-	public void MoveViaControllerStick(GameControllerStickPosition stickPosition, float maxSpeed, float deltaTime) {
+
+	public const float DefaultPositionSensitivityControllerStick = 0.5f;
+	public void AdjustPositionViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxSpeed = null, bool useLeftStick = true) {
+		ArgumentNullException.ThrowIfNull(input);
+		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
 		var angle = stickPosition.GetPolarAngle();
 		if (angle == null) return;
-		
-		Move(angle.Value, maxSpeed * stickPosition.Displacement, deltaTime);
-	}
-	public void MoveViaControllerTriggers(GameControllerTriggerPosition positiveTriggerPosition, GameControllerTriggerPosition negativeTriggerPosition, Orientation2D positiveOrientation, float maxSpeed, float deltaTime) {
-		Move(positiveOrientation, positiveTriggerPosition.GetDisplacementWithDeadzone() * maxSpeed - negativeTriggerPosition.GetDisplacementWithDeadzone() * maxSpeed, deltaTime);
-	}
-	public void MoveViaKeyPress(ILatestKeyboardAndMouseInputRetriever kbmInput, KeyboardOrMouseKey keyToTestFor, Orientation2D orientation, float speed, float deltaTime) {
-		ArgumentNullException.ThrowIfNull(kbmInput);
-		if (!kbmInput.KeyIsCurrentlyDown(keyToTestFor)) return;
-		Move(orientation, speed, deltaTime);
-	}
-	public void MoveViaButtonPress(ILatestGameControllerInputStateRetriever controllerInput, GameControllerButton buttonToTestFor, Orientation2D orientation, float speed, float deltaTime) {
-		ArgumentNullException.ThrowIfNull(controllerInput);
-		if (!controllerInput.ButtonIsCurrentlyDown(buttonToTestFor)) return;
-		Move(orientation, speed, deltaTime);
+		AdjustPosition(angle.Value, (maxSpeed ?? DefaultPositionSensitivityControllerStick) * stickPosition.Displacement, deltaTime);
 	}
 
-	public const float DefaultMousePitchSensitivity = 0.02f;
-	public const float DefaultMouseYawSensitivity = 0.02f;
-	public const float DefaultKeyboardMoveSpeed = 0.5f;
+	public const float DefaultPositionSensitivityControllerTrigger = 0.5f;
+	public void AdjustPositionViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxSpeed = null, bool leftTriggerMovesPositive = true, Orientation2D positiveOrientation = Orientation2D.Up) {
+		ArgumentNullException.ThrowIfNull(input);
+		var positiveTriggerPosition = leftTriggerMovesPositive ? input.LeftTriggerPosition : input.RightTriggerPosition;
+		var negativeTriggerPosition = leftTriggerMovesPositive ? input.RightTriggerPosition : input.LeftTriggerPosition;
+		var sensitivity = maxSpeed ?? DefaultPositionSensitivityControllerTrigger;
+		AdjustPosition(positiveOrientation, positiveTriggerPosition.GetDisplacementWithDeadzone() * sensitivity - negativeTriggerPosition.GetDisplacementWithDeadzone() * sensitivity, deltaTime);
+	}
+
+	public const float DefaultPositionSensitivityKeyOrButtonPress = 0.5f;
+	public void AdjustPositionViaKeyPress(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, KeyboardOrMouseKey keyToTestFor, Orientation2D orientation, float? speed = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		if (!input.KeyIsCurrentlyDown(keyToTestFor)) return;
+		AdjustPosition(orientation, speed ?? DefaultPositionSensitivityKeyOrButtonPress, deltaTime);
+	}
+	public void AdjustPositionViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, Orientation2D orientation, float? speed = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		if (!input.ButtonIsCurrentlyDown(buttonToTestFor)) return;
+		AdjustPosition(orientation, speed ?? DefaultPositionSensitivityKeyOrButtonPress, deltaTime);
+	}
+
 	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, Angle? pitchAdjustmentPerPixel = null, Angle? yawAdjustmentPerPixel = null, float? moveSpeed = null) {
 		ArgumentNullException.ThrowIfNull(input);
-		AdjustPitchViaMouseCursor(input.MouseCursorDelta, pitchAdjustmentPerPixel ?? DefaultMousePitchSensitivity, invertMouseControl: invertPitchControl);
-		AdjustYawViaMouseCursor(input.MouseCursorDelta, yawAdjustmentPerPixel ?? DefaultMouseYawSensitivity, invertMouseControl: invertYawControl);
+		AdjustPitchViaMouseCursor(input, pitchAdjustmentPerPixel, invertMouseControl: invertPitchControl);
+		AdjustYawViaMouseCursor(input, yawAdjustmentPerPixel, invertMouseControl: invertYawControl);
 
-		var speed = moveSpeed ?? DefaultKeyboardMoveSpeed;
-		MoveViaKeyPress(input, KeyboardOrMouseKey.ArrowLeft, Orientation2D.Left, speed, deltaTime);
-		MoveViaKeyPress(input, KeyboardOrMouseKey.ArrowRight, Orientation2D.Right, speed, deltaTime);
-		MoveViaKeyPress(input, KeyboardOrMouseKey.ArrowUp, Orientation2D.Up, speed, deltaTime);
-		MoveViaKeyPress(input, KeyboardOrMouseKey.ArrowDown, Orientation2D.Down, speed, deltaTime);
+		AdjustPositionViaKeyPress(input, deltaTime, KeyboardOrMouseKey.ArrowLeft, Orientation2D.Left, moveSpeed);
+		AdjustPositionViaKeyPress(input, deltaTime, KeyboardOrMouseKey.ArrowRight, Orientation2D.Right, moveSpeed);
+		AdjustPositionViaKeyPress(input, deltaTime, KeyboardOrMouseKey.ArrowUp, Orientation2D.Up, moveSpeed);
+		AdjustPositionViaKeyPress(input, deltaTime, KeyboardOrMouseKey.ArrowDown, Orientation2D.Down, moveSpeed);
 	}
-	
-	public const float DefaultControllerPitchSensitivity = 120f;
-	public const float DefaultControllerYawSensitivity = 120f;
-	public const float DefaultControllerMoveSpeed = 0.5f;
+
 	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever input, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, Angle? maxPitchAdjustmentPerSec = null, Angle? maxYawAdjustmentPerSec = null, float? maxMoveSpeed = null) {
 		ArgumentNullException.ThrowIfNull(input);
-		AdjustPitchViaControllerStick(input.RightStickPosition, maxPitchAdjustmentPerSec ?? DefaultControllerPitchSensitivity, deltaTime, invertStickControl: invertPitchControl);
-		AdjustYawViaControllerStick(input.RightStickPosition, maxYawAdjustmentPerSec ?? DefaultControllerYawSensitivity, deltaTime, invertStickControl: invertYawControl);
+		AdjustPitchViaControllerStick(input, deltaTime, maxPitchAdjustmentPerSec, invertStickControl: invertPitchControl);
+		AdjustYawViaControllerStick(input, deltaTime, maxYawAdjustmentPerSec, invertStickControl: invertYawControl);
 
-		var maxSpeed = maxMoveSpeed ?? DefaultControllerMoveSpeed;
-		MoveViaControllerStick(input.LeftStickPosition, maxSpeed, deltaTime);
+		AdjustPositionViaControllerStick(input, deltaTime, maxMoveSpeed);
 	}
 	
 	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime) => AdjustAllViaDefaultControls(input, deltaTime);

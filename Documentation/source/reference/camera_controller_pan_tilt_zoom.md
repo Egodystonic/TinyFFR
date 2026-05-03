@@ -12,6 +12,10 @@ The `PanTiltZoomCameraController` allows you to place a camera in a specific `Po
 
 Created via `#!csharp camera.CreateController<PanTiltZoomCameraController>()`. Like all controllers, you must invoke `Progress()` every frame in order to make the controller actually manipulate the camera.
 
+### Example Usage
+
+TODO
+
 ## Properties
 
 <span class="def-icon">:material-card-bulleted-outline:</span> `Position`
@@ -109,5 +113,7 @@ Created via `#!csharp camera.CreateController<PanTiltZoomCameraController>()`. L
 	`cursorDelta` is expected to be an `XYPair<int>` representing the number of pixels the mouse has moved along the X and Y axis. Most commonly you will pass [MouseCursorDelta from the keyboard/mouse input retriever](/tutorials/input.md#ilatestkeyboardandmouseinputretriever) as this parameter.
 	
 	`adjustmentPerPixel` 
+	
+### Default Controls
 
 ## Smoothing
