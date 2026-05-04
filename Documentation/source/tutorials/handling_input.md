@@ -133,11 +133,111 @@ controller.AdjustPositionViaKeyPress(
 
 #### Gamepad
 
+Next, we set up gamepad control. By default, `AdjustYawViaControllerStick` and `AdjustPitchViaControllerStick` read the *right* stick (yaw on its X axis, pitch on its Y axis), and `AdjustPositionViaControllerStick` reads the *left* stick, wiring its Y axis to forward/backward and its X axis to left/right. As with keyboard movement, the orientations are interpreted relative to the camera's facing direction at each frame.
 
+??? success "GameControllersCombined"
+	`input.GameControllersCombined` is a virtual aggregate that merges the input state of every connected gamepad into a single source. This is provided as an easy way to simply accept input from any connected game controller. Most of the time this is fine- you'll only need to be more specific if supporting multiple users per device (e.g. local multiplayer games).
+	
+	If you *do* need to react to a specific physical controller, iterate `input.GameControllers` and use the per-controller retriever instead.
+
+You can swap the sticks by specifying `true` or `false` for the `useLeftStick` parameter supplied to each method as desired.
+
+Each method also accepts an `invertStickControl` flag and a `maxAdjustmentPerSec` / `maxSpeed` parameter. Below we double the camera's movement speed and invert the pitch axis:
+
+```csharp
+controller.AdjustPitchViaControllerStick(
+	input.GameControllersCombined,
+	deltaTime,
+	maxAdjustmentPerSec: FreeFlyingCameraController.DefaultPitchSensitivityControllerStick,
+	invertStickControl: true
+);
+controller.AdjustPositionViaControllerStick(
+	input.GameControllersCombined,
+	deltaTime,
+	Orientation.Forward,
+	maxSpeed: FreeFlyingCameraController.DefaultPositionSensitivityControllerStick * 2f,
+	axis: Axis2D.Y
+);
+controller.AdjustPositionViaControllerStick(
+	input.GameControllersCombined,
+	deltaTime,
+	Orientation.Right,
+	maxSpeed: FreeFlyingCameraController.DefaultPositionSensitivityControllerStick * 2f,
+	axis: Axis2D.X
+);
+```
+
+If you'd rather drive an axis from the *triggers* or from individual *buttons*, the controller exposes parallel methods: `AdjustPitchViaControllerTriggers`, `AdjustYawViaControllerTriggers`, `AdjustPositionViaControllerTriggers`, and a `…ViaButtonPress` family that takes a `GameControllerButton` value. These follow the same shape as the stick methods — see the [camera-controller reference docs](/reference/camera_controller_free_flying.md) for full parameter details.
+
+#### Progression
+
+Finally, we *progress* the camera controller-- this is what actually moves/mutates the attached `camera` for this frame. If you don't call `Progress()` on the camera controller nothing will actually *happen* to the camera!
+
+??? tip "Default Controls Shortcut"
+	If you're happy with the default control scheme for a camera controller you can invoke everything described above with two lines:
+	
+	```csharp
+	controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, deltaTime);
+	controller.AdjustAllViaDefaultControls(input.GameControllersCombined, deltaTime);
+	```
+	
+	Note that every camera controller exposes `AdjustAllViaDefaultControls()` (in fact, it's part of the camera controller interface, `ICameraController`)- this means you can offer a default control rubric for any camera controller without even knowing what controller type it is.
 
 ## Cursor Capture
 
+When using mouse-cursor controls in practice the cursor will quickly drift outside the window or get pinned against a screen edge-- at which point the operating system stops generating cursor-movement events and your camera stops turning. The fix is to *capture* the cursor to the application window, which hides it and pins it "inside" the window frame.
+
+Cursor capture is controlled via a single boolean property on the `Window` resource:
+
+```csharp
+window.LockCursor = true;
+```
+
+Setting `LockCursor` to `true` both pins the cursor in the centre of the window and hides it. The `MouseCursorDelta` values that drive `AdjustYawViaMouseCursor` and `AdjustPitchViaMouseCursor` continue to be reported normally while the cursor is locked, so your existing camera control code keeps working without any changes.
+
+For our example we'll use the left mouse button as a way to toggle cursor capture on and off. **Inside your tick loop** add the following lines:
+
+```csharp
+if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.MouseLeft)) {
+	window.LockCursor = !window.LockCursor;
+}
+```
+
+Now, test what happens when you press the left mouse button while inside the application window.
 
 ## Spawning Model Instances
 
+For our final example, we'll dynamically spawn new model instances into the scene each time the user presses a key.
 
+First, before the tick loop, we'll create a *sphere* mesh & material that every spawned instance will reference. We'll also need a list to track our spawned spheres so we can dispose them later:
+
+```csharp
+using var sphereMesh = factory.MeshBuilder.CreateMesh(new Sphere(radius: 0.25f));
+using var sphereMaterial = factory.MaterialBuilder.CreateTestMaterial();
+var spawnedSpheres = new List<ModelInstance>();
+```
+
+Now, *inside the tick loop*, we react to the `Return` (i.e. 'Enter') key being pressed by spawning a new sphere two units in front of the camera:
+
+```csharp
+if (input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Return)) {
+	var newSphere = factory.ObjectBuilder.CreateModelInstance(
+		sphereMesh,
+		sphereMaterial,
+		initialPosition: camera.Position + camera.ViewDirection * 2f // (1)!
+	);
+	scene.Add(newSphere);
+	spawnedSpheres.Add(newSphere);
+}
+```
+
+1.	This sets the initial position of the sphere to be at the camera's current `Position` *plus* two meters in front of it in the direction of its current `ViewDirection` (e.g. camera-forward).
+
+Finally, *after the tick loop has exited* (so below the `while` loop) we remove each sphere from the scene and dispose it:
+
+```csharp
+foreach (var sphere in spawnedSpheres) {
+	scene.Remove(sphere);
+	sphere.Dispose();
+}
+```
