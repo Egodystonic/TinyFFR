@@ -12,8 +12,8 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/7?closed=1) 
 
 ### Major Features
 
-* Enabled frustum culling by default, auto-calculate axis-aligned bounding box for all geometry
 * Added camera controllers
+* Enabled frustum culling by default, auto-calculate axis-aligned bounding box for all geometry
 * Added control for camera exposure
 * Added resource directory (allowing finding active resources at runtime)
 

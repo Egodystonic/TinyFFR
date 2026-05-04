@@ -59,12 +59,12 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 		}
 	}
 	
-	public Plane GroundPlane {
+	public Direction WorldUp {
 		get;
 		set {
 			if (!value.IsPhysicallyValid) return;
 			field = value;
-			_forwardDir = value.Normal.AnyOrthogonal();
+			_forwardDir = value.AnyOrthogonal();
 		}
 	}
 	
@@ -103,7 +103,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 	}
 
 	public void ResetParametersToDefault() {
-		GroundPlane = new Plane(Direction.Up);
+		WorldUp = Direction.Up;
 		_positionSetpoint.Reset(Vect.Zero);
 		_yawSetpoint.Reset(Angle.Zero);
 		_pitchSetpoint.Reset(Angle.Zero);
@@ -123,11 +123,11 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 		_pitchSetpoint.Progress(deltaTime);
 		_yawSetpoint.Progress(deltaTime);
 		
-		var currentHorizontalPlaneDir = _forwardDir * (_yawSetpoint.CurrentValue % GroundPlane.Normal);
-		var verticalTiltRot = _pitchSetpoint.CurrentValue % Direction.FromDualOrthogonalization(GroundPlane.Normal, currentHorizontalPlaneDir);
+		var currentHorizontalPlaneDir = _forwardDir * (_yawSetpoint.CurrentValue % WorldUp);
+		var verticalTiltRot = _pitchSetpoint.CurrentValue % Direction.FromDualOrthogonalization(WorldUp, currentHorizontalPlaneDir);
 		
 		Camera.SetPosition(_positionSetpoint.CurrentValue.AsLocation());
-		Camera.SetViewAndUpDirection(currentHorizontalPlaneDir * verticalTiltRot, GroundPlane.Normal * verticalTiltRot);
+		Camera.SetViewAndUpDirection(currentHorizontalPlaneDir * verticalTiltRot, WorldUp * verticalTiltRot);
 	}
 
 	public void AdjustPitch(float deltaTime, Angle adjustmentPerSec) => Pitch += adjustmentPerSec * deltaTime;
@@ -239,10 +239,10 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 	}
 
 	public void AdjustPosition(Angle polarOrientation, float distance) {
-		var zeroDegreeDir = Camera.GetRelativeOrientationDirection(Orientation.Right).ParallelizedWith(GroundPlane)
-			?? Direction.FromDualOrthogonalization(Camera.ViewDirection, GroundPlane.Normal);
+		var zeroDegreeDir = Camera.GetRelativeOrientationDirection(Orientation.Right).OrthogonalizedAgainst(WorldUp)
+			?? Direction.FromDualOrthogonalization(Camera.ViewDirection, WorldUp);
 
-		Position += (zeroDegreeDir * (polarOrientation % GroundPlane.Normal)) * distance;
+		Position += (zeroDegreeDir * (polarOrientation % WorldUp)) * distance;
 	}
 	public void AdjustPosition(Angle polarOrientation, float moveSpeed, float deltaTime) {
 		AdjustPosition(polarOrientation, moveSpeed * deltaTime);

@@ -4,7 +4,7 @@ title: Pan-Tilt-Zoom Camera Controller
 
 ## Summary
 
-The `PanTiltZoomCameraController` allows you to place a camera in a specific `Position` and then control where it's looking at via the `Pan`, `Tilt`, and `Zoom` properties.
+The `PanTiltZoomCameraController` allows you to place a camera in a specific `Position` and then control where it's looking at via the `Pan`, `Tilt`, and `Zoom` properties. This controller type is well suited for simulating a fixed "security" or "TV set" camera.
 
 * Adjusting `Pan` turns the camera left or right;
 * Adjusting `Tilt` tilts the camera up or down;

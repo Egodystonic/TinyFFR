@@ -140,7 +140,13 @@ nav:
       - reference/creating_mock_resources.md
     - Camera:
       - Controllers:
+        - reference/camera_controller_first_person.md
+        - reference/camera_controller_follow.md
+        - reference/camera_controller_free_flying.md
+        - reference/camera_controller_inspector.md
+        - reference/camera_controller_orbital.md
         - reference/camera_controller_pan_tilt_zoom.md
+        - reference/camera_controller_programmed.md
       - reference/camera_ray_casting.md
     - Performance:
       - reference/vsync.md

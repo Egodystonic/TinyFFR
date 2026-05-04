@@ -39,11 +39,11 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	readonly Spring3DBasedCameraSetpoint _lookRelativeSetpoint = new();
 	readonly CameraEffectStrengthMap _trackingSmoothingStrengthMap = new(
 		None: 0f,
-		VeryMild: 0.35f,
-		Mild: 0.5f,
-		Standard: 0.7f,
-		Strong: 1f,
-		VeryStrong: 1.4f
+		VeryMild: 0.5f,
+		Mild: 0.7f,
+		Standard: 1f,
+		Strong: 1.4f,
+		VeryStrong: 2f
 	);
 
 	public Strength PositionSmoothingStrength {
@@ -163,14 +163,14 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 		_positionRelativeSetpoint.TargetValue =
 			(TargetForward * -FollowDistance)
 			+ (TargetUp * FollowHeight)
-			+ (Direction.FromDualOrthogonalization(TargetForward, TargetUp) * FollowLateralOffset);
+			+ (Direction.FromDualOrthogonalization(TargetUp, TargetForward) * FollowLateralOffset);
 	}
 	
 	void UpdateLookSetpoint() {
 		_lookRelativeSetpoint.TargetValue =
 			(TargetForward * LookaheadDistance)
 			+ (TargetUp * FollowHeight * HeightViewShiftMultiplier)
-			+ (Direction.FromDualOrthogonalization(TargetForward, TargetUp) * FollowLateralOffset * LateralOffsetViewShiftMultiplier);
+			+ (Direction.FromDualOrthogonalization(TargetUp, TargetForward) * FollowLateralOffset * LateralOffsetViewShiftMultiplier);
 	}
 
 	public void Progress(float deltaTime) {
@@ -295,7 +295,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	public void AdjustFollowLateralOffsetViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, float? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.X) {
 		ArgumentNullException.ThrowIfNull(input);
 		var delta = axis switch {
-			Axis2D.X => input.MouseCursorDelta.X,
+			Axis2D.X => -input.MouseCursorDelta.X,
 			Axis2D.Y => input.MouseCursorDelta.Y,
 			_ => 0
 		} * (invertMouseControl ? -1f : 1f);
