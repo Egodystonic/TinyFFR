@@ -7,7 +7,7 @@ TinyFFR has a replete API for 3D/2D math and geometry operations. This page serv
 
 This page attempts to be beginner-friendly and does not assume any prior linear algebra / 3D math knowledge. Depending on your personal level of knowledge you may wish to skip some paragraphs that explain concepts you're already familiar with.
 
-Finally, note that this page only describes the surface-level, most common operations available on each mathematical type. Explore the types in the [reference docs](/reference/index.md) or via your IDE to see all defined functions.
+Finally, note that this page only describes the surface-level, most common operations available on each mathematical type. Explore the types in the reference docs or via your IDE to see all defined functions.
 
 ## Vectors
 
