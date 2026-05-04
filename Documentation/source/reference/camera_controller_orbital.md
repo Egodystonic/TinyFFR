@@ -252,7 +252,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `maxAdjustmentPerSec` value is the amount to add to `Height` when the stick is fully displaced along the given `axis`. If null, `DefaultHeightSensitivityControllerStick` will be used.
 	
-	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `true`.
+	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `false`.
 	
 	If `invertStickControl` is `true`, the calculated adjustment will be reversed.
 	
@@ -332,7 +332,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `maxAdjustmentPerSec` value is the amount to add to `Distance` when the stick is fully displaced along the given `axis`. If null, `DefaultDistanceSensitivityControllerStick` will be used.
 	
-	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `true`.
+	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `false`.
 	
 	If `invertStickControl` is `true`, the calculated adjustment will be reversed.
 	

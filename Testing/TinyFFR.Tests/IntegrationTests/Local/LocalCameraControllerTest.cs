@@ -184,7 +184,10 @@ class LocalCameraControllerTest {
 				_controller.AdjustPitchViaControllerTriggers(input.GameControllersCombined, dt);
 				_controller.AdjustYawViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.A, false);
 				_controller.AdjustYawViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.B, true);
-				_controller.AdjustPositionViaControllerTriggers(input.GameControllersCombined, dt);
+				_controller.AdjustPositionViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.DirectionalPadUp, Orientation2D.Up);
+				_controller.AdjustPositionViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.DirectionalPadDown, Orientation2D.Down);
+				_controller.AdjustPositionViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.DirectionalPadLeft, Orientation2D.Left);
+				_controller.AdjustPositionViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.DirectionalPadRight, Orientation2D.Right);
 			}
 			else {
 				_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
@@ -240,10 +243,11 @@ class LocalCameraControllerTest {
 				_controller.AdjustPositionViaMouseCursor(input.KeyboardAndMouse, Orientation.Right, axis: Axis2D.X);
 				_controller.AdjustPositionViaMouseCursor(input.KeyboardAndMouse, Orientation.Forward, axis: Axis2D.Y);
 				
-				_controller.AdjustPitchViaControllerTriggers(input.GameControllersCombined, dt);
+				_controller.AdjustPitchViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.X, false);
+				_controller.AdjustPitchViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.Y, true);
 				_controller.AdjustYawViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.A, false);
 				_controller.AdjustYawViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.B, true);
-				_controller.AdjustPositionViaControllerTriggers(input.GameControllersCombined, dt, Orientation.Forward);
+				_controller.AdjustPositionViaControllerTriggers(input.GameControllersCombined, dt, Orientation.Backward);
 			}
 			else {
 				_controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, dt);
@@ -389,9 +393,9 @@ class LocalCameraControllerTest {
 				_controller.AdjustAngleViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowLeft, true);
 				_controller.AdjustAngleViaKeyPress(input.KeyboardAndMouse, dt, KeyboardOrMouseKey.ArrowRight, false);
 				
-				_controller.AdjustDistanceViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.A, false);
-				_controller.AdjustDistanceViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.B, true);
-				_controller.AdjustHeightViaControllerStick(input.GameControllersCombined, dt);
+				_controller.AdjustDistanceViaControllerStick(input.GameControllersCombined, dt);
+				_controller.AdjustHeightViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.DirectionalPadUp, false);
+				_controller.AdjustHeightViaButtonPress(input.GameControllersCombined, dt, GameControllerButton.DirectionalPadDown, true);
 				_controller.AdjustAngleViaControllerTriggers(input.GameControllersCombined, dt);
 			}
 			else {

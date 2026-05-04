@@ -246,7 +246,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `maxAdjustmentPerSec` value is the angle to add to `Yaw` when the trigger is fully displaced. If null, `DefaultYawSensitivityControllerTrigger` will be used.
 	
-	If `leftTriggerYawsLeft` is true, the left trigger will yaw left and the right trigger yaw right; otherwise these directions will be reversed. Defaults to `true`.
+	If `leftTriggerYawsClockwise` is true, the left trigger will yaw anticlockwise and the right trigger yaw clockwise; otherwise these directions will be reversed. Defaults to `true`.
 	
 <span class="def-icon">:material-code-block-parentheses:</span> `AdjustYawViaButtonPress(...)`
 
@@ -314,7 +314,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `maxAdjustmentPerSec` value is the amount to add to `Distance` when the stick is fully displaced along the given `axis`. If null, `DefaultDistanceSensitivityControllerStick` will be used.
 	
-	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `true`.
+	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `false`.
 	
 	If `invertStickControl` is `true`, the calculated adjustment will be reversed.
 	

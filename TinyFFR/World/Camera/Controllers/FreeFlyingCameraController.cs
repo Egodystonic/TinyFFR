@@ -171,18 +171,18 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
 			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
 			_ => 0f
-		} * (invertStickControl ? -deltaTime : deltaTime);
+		} * (invertStickControl ? deltaTime : -deltaTime);
 
 		Pitch += (maxAdjustmentPerSec ?? DefaultPitchSensitivityControllerStick) * delta;
 	}
 
 	public const float DefaultPitchSensitivityControllerTrigger = 120f;
-	public void AdjustPitchViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerPitchesUp = true) {
+	public void AdjustPitchViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool rightTriggerPitchesUp = true) {
 		ArgumentNullException.ThrowIfNull(input);
-		var pitchUpTriggerPosition = leftTriggerPitchesUp ? input.LeftTriggerPosition : input.RightTriggerPosition;
-		var pitchDownTriggerPosition = leftTriggerPitchesUp ? input.RightTriggerPosition : input.LeftTriggerPosition;
-		AdjustPitch(deltaTime, pitchUpTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultPitchSensitivityControllerTrigger)
-			- pitchDownTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultPitchSensitivityControllerTrigger));
+		var pitchDownTriggerPosition = rightTriggerPitchesUp ? input.LeftTriggerPosition : input.RightTriggerPosition;
+		var pitchUpTriggerPosition = rightTriggerPitchesUp ? input.RightTriggerPosition : input.LeftTriggerPosition;
+		AdjustPitch(deltaTime, pitchDownTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultPitchSensitivityControllerTrigger)
+			- pitchUpTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultPitchSensitivityControllerTrigger));
 	}
 
 	public const float DefaultPitchSensitivityKeyOrButtonPress = 120f;
@@ -225,7 +225,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
 			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
 			_ => 0f
-		} * (invertStickControl ? -deltaTime : deltaTime);
+		} * (invertStickControl ? deltaTime : -deltaTime);
 
 		Yaw += (maxAdjustmentPerSec ?? DefaultYawSensitivityControllerStick) * delta;
 	}
@@ -350,7 +350,7 @@ public sealed class FreeFlyingCameraController : ICameraController<FreeFlyingCam
 
 		AdjustPositionViaControllerStick(input, deltaTime, Orientation.Forward, maxPositionAdjustmentSpeed, axis: Axis2D.Y);
 		AdjustPositionViaControllerStick(input, deltaTime, Orientation.Right, maxPositionAdjustmentSpeed, axis: Axis2D.X);
-		AdjustPositionViaControllerTriggers(input, deltaTime, invertUpDownPositionalControl ? Orientation.Down : Orientation.Up, maxPositionAdjustmentSpeed);
+		AdjustPositionViaControllerTriggers(input, deltaTime, invertUpDownPositionalControl ? Orientation.Up : Orientation.Down, maxPositionAdjustmentSpeed);
 	}
 
 	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime) => AdjustAllViaDefaultControls(input, deltaTime);

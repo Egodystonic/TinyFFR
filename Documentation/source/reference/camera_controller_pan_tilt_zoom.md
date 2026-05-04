@@ -180,7 +180,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `maxAdjustmentPerSec` value is the angle to add to `Pan` when the stick is fully displaced along the given `axis`. If null, `DefaultPanSensitivityControllerStick` will be used.
 	
-	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `true`.
+	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `false`.
 	
 	If `invertStickControl` is `true`, the calculated adjustment will be reversed.
 	
@@ -260,7 +260,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `maxAdjustmentPerSec` value is the angle to add to `Tilt` when the stick is fully displaced along the given `axis`. If null, `DefaultTiltSensitivityControllerStick` will be used.
 	
-	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `true`.
+	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `false`.
 	
 	If `invertStickControl` is `true`, the calculated adjustment will be reversed.
 	
@@ -342,7 +342,7 @@ Note that `Zoom` is a normalized `0f`–`1f` value, so all of the sensitivity pa
 	
 	The `maxAdjustmentPerSec` value is the amount to add to `Zoom` when the stick is fully displaced along the given `axis`. If null, `DefaultZoomSensitivityControllerStick` will be used.
 	
-	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `true`.
+	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `false`.
 	
 	If `invertStickControl` is `true`, the calculated adjustment will be reversed.
 	
@@ -354,7 +354,7 @@ Note that `Zoom` is a normalized `0f`–`1f` value, so all of the sensitivity pa
 	
 	The `maxAdjustmentPerSec` value is the amount to add to `Zoom` when the trigger is fully displaced. If null, `DefaultZoomSensitivityControllerTrigger` will be used.
 	
-	If `leftTriggerZoomsIn` is true, the left trigger will zoom in and the right trigger zoom out; otherwise these directions will be reversed. Defaults to `true`.
+	If `rightTriggerZoomsIn` is true, the right trigger will zoom in and the left trigger zoom out; otherwise these directions will be reversed. Defaults to `true`.
 	
 <span class="def-icon">:material-code-block-parentheses:</span> `AdjustZoomViaButtonPress(...)`
 

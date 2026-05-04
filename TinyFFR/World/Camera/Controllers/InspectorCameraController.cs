@@ -254,12 +254,12 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 	}
 
 	public const float DefaultYawSensitivityControllerTrigger = 120f;
-	public void AdjustYawViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerYawsLeft = true) {
+	public void AdjustYawViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerYawsClockwise = true) {
 		ArgumentNullException.ThrowIfNull(input);
-		var yawLeftTriggerPosition = leftTriggerYawsLeft ? input.LeftTriggerPosition : input.RightTriggerPosition;
-		var yawRightTriggerPosition = leftTriggerYawsLeft ? input.RightTriggerPosition : input.LeftTriggerPosition;
-		AdjustYaw(deltaTime, yawLeftTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultYawSensitivityControllerTrigger)
-			- yawRightTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultYawSensitivityControllerTrigger));
+		var yawClockwiseTriggerPosition = leftTriggerYawsClockwise ? input.RightTriggerPosition : input.LeftTriggerPosition;
+		var yawAnticlockwiseTriggerPosition = leftTriggerYawsClockwise ? input.LeftTriggerPosition : input.RightTriggerPosition;
+		AdjustYaw(deltaTime, yawClockwiseTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultYawSensitivityControllerTrigger)
+			- yawAnticlockwiseTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultYawSensitivityControllerTrigger));
 	}
 
 	public const float DefaultYawSensitivityKeyOrButtonPress = 120f;
@@ -295,14 +295,14 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 	}
 
 	public const float DefaultDistanceSensitivityControllerStick = 0.5f;
-	public void AdjustDistanceViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool useLeftStick = true, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
+	public void AdjustDistanceViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool useLeftStick = false, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
 		var delta = axis switch {
 			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
 			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
 			_ => 0f
-		} * (invertStickControl ? -deltaTime : deltaTime);
+		} * (invertStickControl ? deltaTime : -deltaTime);
 
 		Distance += (maxAdjustmentPerSec ?? DefaultDistanceSensitivityControllerStick) * delta;
 	}
@@ -339,7 +339,7 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 		ArgumentNullException.ThrowIfNull(input);
 		AdjustPitchViaControllerStick(input, deltaTime, maxPitchAdjustmentPerSec, invertStickControl: invertPitchControl);
 		AdjustYawViaControllerStick(input, deltaTime, maxYawAdjustmentPerSec, invertStickControl: invertYawControl);
-		AdjustDistanceViaControllerStick(input, deltaTime, maxDistanceAdjustmentPerSec, invertStickControl: invertDistanceControl);
+		AdjustDistanceViaControllerTriggers(input, deltaTime, maxDistanceAdjustmentPerSec, leftTriggerIncreasesDistance: !invertDistanceControl);
 	}
 	
 	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime) => AdjustAllViaDefaultControls(input, deltaTime);

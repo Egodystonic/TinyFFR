@@ -277,7 +277,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `maxAdjustmentPerSec` value is the amount to add to `FollowHeight` when the stick is fully displaced along the given `axis`. If null, `DefaultFollowHeightSensitivityControllerStick` will be used.
 	
-	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `true`.
+	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `false`.
 	
 	If `invertStickControl` is `true`, the calculated adjustment will be reversed.
 	
@@ -289,7 +289,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `maxAdjustmentPerSec` value is the amount to add to `FollowHeight` when the trigger is fully displaced. If null, `DefaultFollowHeightSensitivityControllerTrigger` will be used.
 	
-	If `leftTriggerRaisesHeight` is true, the left trigger will raise the camera and the right trigger lower it; otherwise these directions will be reversed. Defaults to `true`.
+	If `rightTriggerRaisesHeight` is true, the right trigger will raise the camera and the left trigger lower it; otherwise these directions will be reversed. Defaults to `true`.
 	
 <span class="def-icon">:material-code-block-parentheses:</span> `AdjustFollowHeightViaButtonPress(...)`
 
@@ -357,7 +357,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `maxAdjustmentPerSec` value is the amount to add to `FollowLateralOffset` when the stick is fully displaced along the given `axis`. If null, `DefaultFollowLateralOffsetSensitivityControllerStick` will be used.
 	
-	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `true`.
+	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `false`.
 	
 	If `invertStickControl` is `true`, the calculated adjustment will be reversed.
 	

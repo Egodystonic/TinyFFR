@@ -158,18 +158,18 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
 			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
 			_ => 0f
-		} * (invertStickControl ? -deltaTime : deltaTime);
+		} * (invertStickControl ? deltaTime : -deltaTime);
 
 		Pitch += (maxAdjustmentPerSec ?? DefaultPitchSensitivityControllerStick) * delta;
 	}
 
 	public const float DefaultPitchSensitivityControllerTrigger = 120f;
-	public void AdjustPitchViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool leftTriggerPitchesUp = true) {
+	public void AdjustPitchViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, Angle? maxAdjustmentPerSec = null, bool rightTriggerPitchesUp = true) {
 		ArgumentNullException.ThrowIfNull(input);
-		var pitchUpTriggerPosition = leftTriggerPitchesUp ? input.LeftTriggerPosition : input.RightTriggerPosition;
-		var pitchDownTriggerPosition = leftTriggerPitchesUp ? input.RightTriggerPosition : input.LeftTriggerPosition;
-		AdjustPitch(deltaTime, pitchUpTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultPitchSensitivityControllerTrigger)
-			- pitchDownTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultPitchSensitivityControllerTrigger));
+		var pitchDownTriggerPosition = rightTriggerPitchesUp ? input.LeftTriggerPosition : input.RightTriggerPosition;
+		var pitchUpTriggerPosition = rightTriggerPitchesUp ? input.RightTriggerPosition : input.LeftTriggerPosition;
+		AdjustPitch(deltaTime, pitchDownTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultPitchSensitivityControllerTrigger)
+			- pitchUpTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultPitchSensitivityControllerTrigger));
 	}
 
 	public const float DefaultPitchSensitivityKeyOrButtonPress = 80f;
@@ -212,7 +212,7 @@ public sealed class FirstPersonCameraController : ICameraController<FirstPersonC
 			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
 			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
 			_ => 0f
-		} * (invertStickControl ? -deltaTime : deltaTime);
+		} * (invertStickControl ? deltaTime : -deltaTime);
 
 		Yaw += (maxAdjustmentPerSec ?? DefaultYawSensitivityControllerStick) * delta;
 	}

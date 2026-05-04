@@ -209,7 +209,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
 			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
 			_ => 0f
-		} * (invertStickControl ? -deltaTime : deltaTime);
+		} * (invertStickControl ? deltaTime : -deltaTime);
 
 		FollowDistance += (maxAdjustmentPerSec ?? DefaultFollowDistanceSensitivityControllerStick) * delta;
 	}
@@ -256,7 +256,7 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	}
 
 	public const float DefaultFollowHeightSensitivityControllerStick = 0.5f;
-	public void AdjustFollowHeightViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool useLeftStick = true, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
+	public void AdjustFollowHeightViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool useLeftStick = false, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
 		var delta = axis switch {
@@ -269,10 +269,10 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	}
 
 	public const float DefaultFollowHeightSensitivityControllerTrigger = 0.5f;
-	public void AdjustFollowHeightViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool leftTriggerRaisesHeight = true) {
+	public void AdjustFollowHeightViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool rightTriggerRaisesHeight = true) {
 		ArgumentNullException.ThrowIfNull(input);
-		var increasingTriggerPosition = leftTriggerRaisesHeight ? input.LeftTriggerPosition : input.RightTriggerPosition;
-		var decreasingTriggerPosition = leftTriggerRaisesHeight ? input.RightTriggerPosition : input.LeftTriggerPosition;
+		var increasingTriggerPosition = rightTriggerRaisesHeight ? input.RightTriggerPosition : input.LeftTriggerPosition;
+		var decreasingTriggerPosition = rightTriggerRaisesHeight ? input.LeftTriggerPosition : input.RightTriggerPosition;
 		AdjustFollowHeight(deltaTime, increasingTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultFollowHeightSensitivityControllerTrigger)
 			- decreasingTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultFollowHeightSensitivityControllerTrigger));
 	}
@@ -310,14 +310,14 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	}
 
 	public const float DefaultFollowLateralOffsetSensitivityControllerStick = DefaultFollowHeightSensitivityControllerStick;
-	public void AdjustFollowLateralOffsetViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool useLeftStick = true, bool invertStickControl = false, Axis2D axis = Axis2D.X) {
+	public void AdjustFollowLateralOffsetViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool useLeftStick = false, bool invertStickControl = false, Axis2D axis = Axis2D.X) {
 		ArgumentNullException.ThrowIfNull(input);
 		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
 		var delta = axis switch {
 			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
 			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
 			_ => 0f
-		} * (invertStickControl ? -deltaTime : deltaTime);
+		} * (invertStickControl ? deltaTime : -deltaTime);
 
 		FollowLateralOffset += (maxAdjustmentPerSec ?? DefaultFollowLateralOffsetSensitivityControllerStick) * delta;
 	}
@@ -325,8 +325,8 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 	public const float DefaultFollowLateralOffsetSensitivityControllerTrigger = DefaultFollowHeightSensitivityControllerTrigger;
 	public void AdjustFollowLateralOffsetViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool leftTriggerOffsetsLeft = true) {
 		ArgumentNullException.ThrowIfNull(input);
-		var increasingTriggerPosition = leftTriggerOffsetsLeft ? input.RightTriggerPosition : input.LeftTriggerPosition;
-		var decreasingTriggerPosition = leftTriggerOffsetsLeft ? input.LeftTriggerPosition : input.RightTriggerPosition;
+		var increasingTriggerPosition = leftTriggerOffsetsLeft ? input.LeftTriggerPosition : input.RightTriggerPosition;
+		var decreasingTriggerPosition = leftTriggerOffsetsLeft ? input.RightTriggerPosition : input.LeftTriggerPosition;
 		AdjustFollowLateralOffset(deltaTime, increasingTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultFollowLateralOffsetSensitivityControllerTrigger)
 			- decreasingTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultFollowLateralOffsetSensitivityControllerTrigger));
 	}
@@ -352,9 +352,9 @@ public sealed class FollowCameraController : ICameraController<FollowCameraContr
 
 	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever input, float deltaTime, bool invertDistanceControl = false, bool invertHeightControl = false, bool invertLateralControl = false, float? maxDistanceAdjustmentPerSec = null, float? maxHeightAdjustmentPerSec = null, float? maxLateralAdjustmentPerSec = null) {
 		ArgumentNullException.ThrowIfNull(input);
-		AdjustFollowDistanceViaControllerStick(input, deltaTime, maxDistanceAdjustmentPerSec, invertStickControl: invertDistanceControl);
-		AdjustFollowHeightViaControllerTriggers(input, deltaTime, maxHeightAdjustmentPerSec, leftTriggerRaisesHeight: !invertHeightControl);
-		AdjustFollowLateralOffsetViaControllerStick(input, deltaTime, maxLateralAdjustmentPerSec, useLeftStick: true, invertStickControl: invertLateralControl);
+		AdjustFollowDistanceViaControllerTriggers(input, deltaTime, maxDistanceAdjustmentPerSec, leftTriggerIncreasesDistance: !invertDistanceControl);
+		AdjustFollowHeightViaControllerStick(input, deltaTime, maxHeightAdjustmentPerSec, invertStickControl: invertHeightControl);
+		AdjustFollowLateralOffsetViaControllerStick(input, deltaTime, maxLateralAdjustmentPerSec, invertStickControl: invertLateralControl);
 	}
 	
 	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime) => AdjustAllViaDefaultControls(input, deltaTime);

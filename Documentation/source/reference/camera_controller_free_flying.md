@@ -160,7 +160,7 @@ As camera controllers are often meant to be affected by user input, there are so
 	
 	The `maxAdjustmentPerSec` value is the angle to add to `Pitch` when the trigger is fully displaced. If null, `DefaultPitchSensitivityControllerTrigger` will be used.
 	
-	If `leftTriggerPitchesUp` is true, the left trigger will pitch up and the right trigger pitch down; otherwise these directions will be reversed. Defaults to `true`.
+	If `rightTriggerPitchesUp` is true, the right trigger will pitch up and the left trigger pitch down; otherwise these directions will be reversed. Defaults to `true`.
 	
 <span class="def-icon">:material-code-block-parentheses:</span> `AdjustPitchViaButtonPress(...)`
 

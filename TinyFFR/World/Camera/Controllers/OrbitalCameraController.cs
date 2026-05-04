@@ -302,7 +302,7 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	}
 
 	public const float DefaultHeightSensitivityControllerStick = 0.5f;
-	public void AdjustHeightViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool useLeftStick = true, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
+	public void AdjustHeightViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool useLeftStick = false, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
 		var delta = axis switch {
@@ -356,14 +356,14 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	}
 
 	public const float DefaultDistanceSensitivityControllerStick = 0.5f;
-	public void AdjustDistanceViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool useLeftStick = true, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
+	public void AdjustDistanceViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool useLeftStick = false, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
 		ArgumentNullException.ThrowIfNull(input);
 		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
 		var delta = axis switch {
 			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
 			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
 			_ => 0f
-		} * (invertStickControl ? -deltaTime : deltaTime);
+		} * (invertStickControl ? deltaTime : -deltaTime);
 
 		Distance += (maxAdjustmentPerSec ?? DefaultDistanceSensitivityControllerStick) * delta;
 	}
@@ -399,8 +399,8 @@ public sealed class OrbitalCameraController : ICameraController<OrbitalCameraCon
 	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever input, float deltaTime, bool invertAngleControl = false, bool invertHeightControl = false, bool invertDistanceControl = false, Angle? maxAngleAdjustmentPerSec = null, float? maxHeightAdjustmentPerSec = null, float? maxDistanceAdjustmentPerSec = null) {
 		ArgumentNullException.ThrowIfNull(input);
 		AdjustAngleViaControllerStick(input, deltaTime, maxAngleAdjustmentPerSec, invertStickControl: invertAngleControl);
-		AdjustHeightViaControllerTriggers(input, deltaTime, maxHeightAdjustmentPerSec, leftTriggerRaisesHeight: !invertHeightControl);
-		AdjustDistanceViaControllerStick(input, deltaTime, maxDistanceAdjustmentPerSec, invertStickControl: invertDistanceControl);
+		AdjustHeightViaControllerStick(input, deltaTime, maxHeightAdjustmentPerSec, invertStickControl: invertHeightControl);
+		AdjustDistanceViaControllerTriggers(input, deltaTime, maxDistanceAdjustmentPerSec, leftTriggerIncreasesDistance: !invertDistanceControl);
 	}
 	
 	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime) => AdjustAllViaDefaultControls(input, deltaTime);
