@@ -393,7 +393,7 @@ AdjustZoomViaMouseWheel(input, zoomAdjustmentPerWheelIncrement, invertMouseContr
 
 AdjustPanViaControllerStick(input, deltaTime, maxPanAdjustmentPerSec, invertStickControl: invertPanControl);
 AdjustTiltViaControllerStick(input, deltaTime, maxTiltAdjustmentPerSec, invertStickControl: invertTiltControl);
-AdjustZoomViaControllerTriggers(input, deltaTime, maxZoomAdjustmentPerSec, leftTriggerZoomsIn: !invertZoomControl);
+AdjustZoomViaControllerTriggers(input, deltaTime, maxZoomAdjustmentPerSec, rightTriggerZoomsIn: !invertZoomControl);
 ```
 
 ## Smoothing

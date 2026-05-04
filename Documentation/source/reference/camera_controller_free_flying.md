@@ -385,7 +385,7 @@ AdjustYawViaControllerStick(input, deltaTime, maxYawAdjustmentPerSec, invertStic
 
 AdjustPositionViaControllerStick(input, deltaTime, Orientation.Forward, maxPositionAdjustmentSpeed, axis: Axis2D.Y);
 AdjustPositionViaControllerStick(input, deltaTime, Orientation.Right, maxPositionAdjustmentSpeed, axis: Axis2D.X);
-AdjustPositionViaControllerTriggers(input, deltaTime, invertUpDownPositionalControl ? Orientation.Down : Orientation.Up, maxPositionAdjustmentSpeed);
+AdjustPositionViaControllerTriggers(input, deltaTime, invertUpDownPositionalControl ? Orientation.Up : Orientation.Down, maxPositionAdjustmentSpeed);
 ```
 
 ## Smoothing

@@ -406,9 +406,9 @@ AdjustFollowLateralOffsetViaMouseCursor(input, lateralAdjustmentPerPixel, invert
 ```csharp
 // AdjustAllViaDefaultControls(input.GameControllersCombined, deltaTime):
 
-AdjustFollowDistanceViaControllerStick(input, deltaTime, maxDistanceAdjustmentPerSec, invertStickControl: invertDistanceControl);
-AdjustFollowHeightViaControllerTriggers(input, deltaTime, maxHeightAdjustmentPerSec, leftTriggerRaisesHeight: !invertHeightControl);
-AdjustFollowLateralOffsetViaControllerStick(input, deltaTime, maxLateralAdjustmentPerSec, useLeftStick: true, invertStickControl: invertLateralControl);
+AdjustFollowDistanceViaControllerTriggers(input, deltaTime, maxDistanceAdjustmentPerSec, leftTriggerIncreasesDistance: !invertDistanceControl);
+AdjustFollowHeightViaControllerStick(input, deltaTime, maxHeightAdjustmentPerSec, invertStickControl: invertHeightControl);
+AdjustFollowLateralOffsetViaControllerStick(input, deltaTime, maxLateralAdjustmentPerSec, invertStickControl: invertLateralControl);
 ```
 
 ## Smoothing
