@@ -214,6 +214,168 @@ As camera controllers are often meant to be affected by user input, there are so
 
 	This method does not inspect any user input data but is provided as a convenience for building custom per-frame control code.
 	
+### Adjusting Tilt
+
+#### Keyboard / Mouse
+
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustTiltViaMouseCursor(...)`
+
+:   Adjusts `Tilt` according to the captured mouse cursor movement for this frame.
+
+	The `axis` sets which cursor movement direction will be used (defaults to `Y`, e.g. up/down).
+	
+	The `adjustmentPerPixel` value is the angle to add to `Tilt` for each pixel moved according to the given `axis`. If null, `DefaultTiltSensitivityMouseCursor` will be used.
+	
+	If `invertMouseControl` is `true`, the calculated adjustment will be reversed.
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustTiltViaMouseWheel(...)`
+
+:   Adjusts `Tilt` according to the captured mouse wheel movement for this frame.
+	
+	The `adjustmentPerWheelIncrement` value is the angle to add to `Tilt` for each scroll increment on the mouse wheel. If null, `DefaultTiltSensitivityMouseWheel` will be used.
+	
+	If `invertMouseControl` is `true`, the calculated adjustment will be reversed.
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustTiltViaKeyPress(...)`
+
+:   Adjusts `Tilt` according to whether a certain key is depressed for this frame.
+	
+	The `deltaTime` value is expected to be the time in seconds of this frame iteration.
+	
+	The `keyToTestFor` is the key that, when pressed, will adjust this property.
+	
+	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	
+	The `adjustmentPerSec` value is the angle to add to `Tilt` for each second this key is depressed. If null, `DefaultTiltSensitivityKeyOrButtonPress` will be used.
+	
+#### Gamepad
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustTiltViaControllerStick(...)`
+
+:   Adjusts `Tilt` according to the captured controller stick position for this frame.
+	
+	The `deltaTime` value is expected to be the time in seconds of this frame iteration.
+	
+	The `axis` sets which stick movement direction will be used (defaults to `Y`, e.g. up/down).
+	
+	The `maxAdjustmentPerSec` value is the angle to add to `Tilt` when the stick is fully displaced along the given `axis`. If null, `DefaultTiltSensitivityControllerStick` will be used.
+	
+	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `true`.
+	
+	If `invertStickControl` is `true`, the calculated adjustment will be reversed.
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustTiltViaControllerTriggers(...)`
+
+:   Adjusts `Tilt` according to the captured controller trigger positions for this frame.
+	
+	The `deltaTime` value is expected to be the time in seconds of this frame iteration.
+	
+	The `maxAdjustmentPerSec` value is the angle to add to `Tilt` when the trigger is fully displaced. If null, `DefaultTiltSensitivityControllerTrigger` will be used.
+	
+	If `leftTriggerTiltsUpward` is true, the left trigger will tilt up and the right trigger tilt down; otherwise these directions will be reversed. Defaults to `true`.
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustTiltViaButtonPress(...)`
+
+:   Adjusts `Tilt` according to whether a certain button is depressed for this frame.
+	
+	The `deltaTime` value is expected to be the time in seconds of this frame iteration.
+	
+	The `buttonToTestFor` is the button that, when pressed, will adjust this property.
+	
+	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	
+	The `adjustmentPerSec` value is the angle to add to `Tilt` for each second this button is depressed. If null, `DefaultTiltSensitivityKeyOrButtonPress` will be used.
+	
+#### Other
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustTilt(...)`
+
+:   Adjusts `Tilt` according to the given turn rate (`adjustmentPerSec`) and time step (`deltaTime`).
+
+	This method does not inspect any user input data but is provided as a convenience for building custom per-frame control code.
+	
+### Adjusting Zoom
+
+Note that `Zoom` is a normalized `0f`–`1f` value, so all of the sensitivity parameters below are `float?` rather than `Angle?`.
+
+#### Keyboard / Mouse
+
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustZoomViaMouseCursor(...)`
+
+:   Adjusts `Zoom` according to the captured mouse cursor movement for this frame.
+
+	The `axis` sets which cursor movement direction will be used (defaults to `Y`, e.g. up/down).
+	
+	The `adjustmentPerPixel` value is the amount to add to `Zoom` for each pixel moved according to the given `axis`. If null, `DefaultZoomSensitivityMouseCursor` will be used.
+	
+	If `invertMouseControl` is `true`, the calculated adjustment will be reversed.
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustZoomViaMouseWheel(...)`
+
+:   Adjusts `Zoom` according to the captured mouse wheel movement for this frame.
+	
+	The `adjustmentPerWheelIncrement` value is the amount to add to `Zoom` for each scroll increment on the mouse wheel. If null, `DefaultZoomSensitivityMouseWheel` will be used.
+	
+	If `invertMouseControl` is `true`, the calculated adjustment will be reversed.
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustZoomViaKeyPress(...)`
+
+:   Adjusts `Zoom` according to whether a certain key is depressed for this frame.
+	
+	The `deltaTime` value is expected to be the time in seconds of this frame iteration.
+	
+	The `keyToTestFor` is the key that, when pressed, will adjust this property.
+	
+	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	
+	The `adjustmentPerSec` value is the amount to add to `Zoom` for each second this key is depressed. If null, `DefaultZoomSensitivityKeyOrButtonPress` will be used.
+	
+#### Gamepad
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustZoomViaControllerStick(...)`
+
+:   Adjusts `Zoom` according to the captured controller stick position for this frame.
+	
+	The `deltaTime` value is expected to be the time in seconds of this frame iteration.
+	
+	The `axis` sets which stick movement direction will be used (defaults to `Y`, e.g. up/down).
+	
+	The `maxAdjustmentPerSec` value is the amount to add to `Zoom` when the stick is fully displaced along the given `axis`. If null, `DefaultZoomSensitivityControllerStick` will be used.
+	
+	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `true`.
+	
+	If `invertStickControl` is `true`, the calculated adjustment will be reversed.
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustZoomViaControllerTriggers(...)`
+
+:   Adjusts `Zoom` according to the captured controller trigger positions for this frame.
+	
+	The `deltaTime` value is expected to be the time in seconds of this frame iteration.
+	
+	The `maxAdjustmentPerSec` value is the amount to add to `Zoom` when the trigger is fully displaced. If null, `DefaultZoomSensitivityControllerTrigger` will be used.
+	
+	If `leftTriggerZoomsIn` is true, the left trigger will zoom in and the right trigger zoom out; otherwise these directions will be reversed. Defaults to `true`.
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustZoomViaButtonPress(...)`
+
+:   Adjusts `Zoom` according to whether a certain button is depressed for this frame.
+	
+	The `deltaTime` value is expected to be the time in seconds of this frame iteration.
+	
+	The `buttonToTestFor` is the button that, when pressed, will adjust this property.
+	
+	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	
+	The `adjustmentPerSec` value is the amount to add to `Zoom` for each second this button is depressed. If null, `DefaultZoomSensitivityKeyOrButtonPress` will be used.
+	
+#### Other
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustZoom(...)`
+
+:   Adjusts `Zoom` according to the given rate (`adjustmentPerSec`) and time step (`deltaTime`).
+
+	This method does not inspect any user input data but is provided as a convenience for building custom per-frame control code.
+	
 ### Default Controls
 
 The following snippets show the implementation of `AdjustAllViaDefaultControls(...)` for keyboard/mouse and gamepad respectively:

@@ -139,9 +139,9 @@ nav:
       - reference/texture_patterns.md
       - reference/creating_mock_resources.md
     - Camera:
-      - reference/camera_ray_casting.md
       - Controllers:
         - reference/camera_controller_pan_tilt_zoom.md
+      - reference/camera_ray_casting.md
     - Performance:
       - reference/vsync.md
       - reference/controlling_memory.md
