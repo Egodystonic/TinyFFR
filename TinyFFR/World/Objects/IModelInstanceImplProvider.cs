@@ -30,6 +30,7 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 
 	void TranslateBy(ResourceHandle<ModelInstance> handle, Vect translation);
 	void RotateBy(ResourceHandle<ModelInstance> handle, Rotation rotation);
+	void RotateBy(ResourceHandle<ModelInstance> handle, Rotation rotation, Location pivotPoint);
 	void ScaleBy(ResourceHandle<ModelInstance> handle, float scalar);
 	void ScaleBy(ResourceHandle<ModelInstance> handle, Vect vect);
 	void AdjustScaleBy(ResourceHandle<ModelInstance> handle, float scalar);

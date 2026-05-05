@@ -204,6 +204,11 @@ public readonly struct Camera : IDisposableResource<Camera, ICameraImplProvider>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray CastRayFromNearPlane(XYPair<float> normalizedNearPlaneCoord) => Implementation.CastRayFromNearPlane(_handle, normalizedNearPlaneCoord);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public TController CreateController<TController>() where TController : ICameraController<TController> => TController.RentAndTetherToCamera(this); 
+	
+	public Direction GetRelativeOrientationDirection(Orientation o) => CameraUtils.CalculateCameraRelativeOrientationDirection(o, ViewDirection, UpDirection);
+
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Implementation.Dispose(_handle);

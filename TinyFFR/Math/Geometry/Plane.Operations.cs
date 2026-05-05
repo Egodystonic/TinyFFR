@@ -28,7 +28,7 @@ partial struct Plane :
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Plane operator -(Plane operand) => operand.Flipped;
 
-	public bool IsPhysicallyValid => Normal != Direction.None;
+	public bool IsPhysicallyValid => Normal.IsPhysicallyValidAndNotNone;
 
 	#region Translation
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -94,21 +94,3 @@ have performance issues and bugs at this early stage.
 
 <span class="tffr-negative">:octicons-x-12:</span> TinyFFR may not be for you if you need a mature option at this point in time, [although the source is available!](https://github.com/Egodystonic/TinyFFR)
 { : style="margin-left:1em" }
-
-## Where to Start
-
-### :material-cogs: See Examples
-
-If you want to just get stuck in and writing code with TinyFFR, head to the tutorials section:
-{ : style="margin-left:1em" }
-
-[:octicons-arrow-right-24: Tutorials](/tutorials/index.md)
-{ : style="margin-left:1em" }
-
-### :fontawesome-solid-book: Read the Reference Documentation
-
-When you're ready to dive deep in to TinyFFR, head to the reference documentation:
-{ : style="margin-left:1em" }
-
-[:octicons-arrow-right-24: Reference Docs](/reference/index.md)
-{ : style="margin-left:1em" }

@@ -33,9 +33,20 @@ public interface IObjectBuilder {
 			name
 		);
 	}
-	ModelInstanceGroup CreateModelInstanceGroup(ResourceGroup modelGroup, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, ReadOnlySpan<char> name = default) {
-		return CreateModelInstanceGroup(
-			modelGroup,
+	ModelInstanceGroup CreateModelInstances(ReadOnlySpan<Model> models, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, ReadOnlySpan<char> name = default) {
+		return CreateModelInstances(
+			models,
+			new Transform(
+				translation: initialPosition?.AsVect() ?? ModelInstanceCreationConfig.DefaultInitialTransform.Translation,
+				rotation: initialRotation ?? ModelInstanceCreationConfig.DefaultInitialTransform.Rotation,
+				scaling: initialScaling ?? ModelInstanceCreationConfig.DefaultInitialTransform.Scaling
+			),
+			name
+		);
+	}
+	ModelInstanceGroup CreateModelInstances(IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, Model> models, Location? initialPosition = null, Rotation? initialRotation = null, Vect? initialScaling = null, ReadOnlySpan<char> name = default) {
+		return CreateModelInstances(
+			models,
 			new Transform(
 				translation: initialPosition?.AsVect() ?? ModelInstanceCreationConfig.DefaultInitialTransform.Translation,
 				rotation: initialRotation ?? ModelInstanceCreationConfig.DefaultInitialTransform.Rotation,
@@ -65,9 +76,18 @@ public interface IObjectBuilder {
 			}
 		);
 	}
-	ModelInstanceGroup CreateModelInstanceGroup(ResourceGroup modelGroup, Transform initialTransform, ReadOnlySpan<char> name = default) {
-		return CreateModelInstanceGroup(
-			modelGroup,
+	ModelInstanceGroup CreateModelInstances(ReadOnlySpan<Model> models, Transform initialTransform, ReadOnlySpan<char> name = default) {
+		return CreateModelInstances(
+			models,
+			new ModelInstanceCreationConfig {
+				InitialTransform = initialTransform,
+				Name = name
+			}
+		);
+	}
+	ModelInstanceGroup CreateModelInstances(IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, Model> models, Transform initialTransform, ReadOnlySpan<char> name = default) {
+		return CreateModelInstances(
+			models,
 			new ModelInstanceCreationConfig {
 				InitialTransform = initialTransform,
 				Name = name
@@ -79,5 +99,10 @@ public interface IObjectBuilder {
 
 	ModelInstance CreateModelInstance(Model model, in ModelInstanceCreationConfig config) => CreateModelInstance(model.Mesh, model.Material, in config);
 	ModelInstance CreateModelInstance(Mesh mesh, Material material, in ModelInstanceCreationConfig config);
-	ModelInstanceGroup CreateModelInstanceGroup(ResourceGroup modelGroup, in ModelInstanceCreationConfig config);
+	
+	ModelInstanceGroup CreateModelInstances(ReadOnlySpan<Model> models, in ModelInstanceCreationConfig config);
+	ModelInstanceGroup CreateModelInstances(IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, Model> models, in ModelInstanceCreationConfig config);
+	ModelInstanceGroup GroupModelInstances(params ReadOnlySpan<ModelInstance> instances) => GroupModelInstances(instances, default);
+	ModelInstanceGroup GroupModelInstances(ReadOnlySpan<ModelInstance> instances, ReadOnlySpan<char> name);
+	ModelInstanceGroup GroupModelInstances(IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, ModelInstance> instances, ReadOnlySpan<char> name = default);
 }

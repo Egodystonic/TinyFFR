@@ -117,6 +117,7 @@ class LocalAnimationTest {
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Press Space");
 		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f));
+		using var cameraController = camera.CreateController<FreeFlyingCameraController>();
 		camera.NearPlaneDistance = 0.001f;
 		var lightBrightnessStage = 3;
 		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, highQuality: true);
@@ -182,7 +183,7 @@ class LocalAnimationTest {
 				curAnimCount = loadedResources.Value.Models.Max(m => m.Mesh.Animations.All.Count);
 				Assert.GreaterOrEqual(curAnimCount, 1);
 
-				modelInstanceGroup = factory.ObjectBuilder.CreateModelInstanceGroup(loadedResources.Value);
+				modelInstanceGroup = factory.ObjectBuilder.CreateModelInstances(loadedResources.Value.Models);
 				scene.Add(modelInstanceGroup.Value);
 				UpdateTitle();
 			}
@@ -255,31 +256,32 @@ class LocalAnimationTest {
 					if (prevAnimTimeRemaining > 0f && prevAnimIndex < mi.Mesh.Animations.All.Count) {
 						if (isFirst) {
 							mi.GetAnimationPlayer(mi.Animations[curAnimIndex], mi.Animations[prevAnimIndex])
-								.SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime, mi.Skeleton.Nodes[curNodeIndex], out var transform);
+								.SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime, mi.Skeleton.Nodes[curNodeIndex], out var transform);
 							nodeHighlighter.SetTransform(transform * mi.Transform.ToMatrix());
 							nodeHighlighter.SetScaling(1f);
 						}
 						else {
 							mi.GetAnimationPlayer(mi.Animations[curAnimIndex], mi.Animations[prevAnimIndex])
-								.SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime);
+								.SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, (float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, prevAnimTimeRemaining / AnimBlendTime);
 						}
 						prevAnimTimeRemaining -= deltaTime;
 					}
 					else {
 						if (isFirst) {
-							mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationWrapStyle.Loop, mi.Skeleton.Nodes[curNodeIndex], out var transform);
+							mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePointAndGetNodeTransforms((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop, mi.Skeleton.Nodes[curNodeIndex], out var transform);
 							nodeHighlighter.SetTransform(transform * mi.Transform.ToMatrix());
 							nodeHighlighter.SetScaling(1f);
 						}
 						else {
-							mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, MeshAnimationWrapStyle.Loop);
+							mi.GetAnimationPlayer(mi.Animations[curAnimIndex]).SetTimePoint((float) loop.TotalIteratedTime.TotalSeconds, AnimationWrapStyle.Loop);
 						}	
 					}
 				}
 			}
 			
-			DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, camera, deltaTime, window);
-			DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, camera, deltaTime);
+			DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, cameraController, deltaTime, window);
+			DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, cameraController, deltaTime);
+			DefaultCameraInputHandler.Progress(cameraController, deltaTime);
 			
 			light.Position = camera.Position;
 			light.ConeDirection = camera.ViewDirection;

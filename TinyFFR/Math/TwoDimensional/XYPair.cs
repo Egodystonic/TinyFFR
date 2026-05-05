@@ -29,6 +29,13 @@ public readonly partial struct XYPair<T> : IMathPrimitive<XYPair<T>> where T : u
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		init => _y = value;
 	}
+	
+	public T this[Axis2D axis] => axis switch {
+		Axis2D.X => X,
+		Axis2D.Y => Y,
+		_ => throw new ArgumentOutOfRangeException(nameof(axis), axis, $"{nameof(Axis)} must not be anything except {nameof(Axis2D.X)} or {nameof(Axis2D.Y)}.")
+	};
+	public XYPair<T> this[Axis2D first, Axis2D second] => new(this[first], this[second]);
 
 	internal static bool IsFloatingPoint { get; } = typeof(T).GetInterface("IFloatingPoint`1") != null;
 

@@ -303,4 +303,62 @@ class MathUtilsTest {
 		AssertToleranceEquals((Real) 6f, ((Real) 2f).RemapRange(new(-2f, 2f), new(2f, 6f)), TestTolerance);
 		AssertToleranceEquals((Real) 2f, (-(Real) 2f).RemapRange(new(-2f, 2f), new(2f, 6f)), TestTolerance);
 	}
+
+	[Test]
+	public void ShouldCorrectlyAscertainMin() {
+		Assert.AreEqual(1, Min(1, 2, 3));
+		Assert.AreEqual(1, Min(1, 3, 2));
+		Assert.AreEqual(1, Min(2, 1, 3));
+		Assert.AreEqual(1, Min(2, 3, 1));
+		Assert.AreEqual(1, Min(3, 1, 2));
+		Assert.AreEqual(1, Min(3, 2, 1));
+
+		Assert.AreEqual(2, Min(2, 2, 3));
+		Assert.AreEqual(2, Min(3, 2, 2));
+		Assert.AreEqual(2, Min(2, 3, 2));
+		Assert.AreEqual(5, Min(5, 5, 5));
+
+		Assert.AreEqual(-1.5f, Min(-1.5f, 0f, 2.5f));
+		Assert.AreEqual(-2f, Min(-1f, -2f, 0f));
+
+		Assert.AreEqual(3L, Min(7L, 3L, 5L));
+
+		Assert.AreEqual(42, Min(42));
+		Assert.AreEqual(1, Min(5, 3, 8, 1, 9, 4));
+		Assert.AreEqual(1, Min(1, 5, 3, 8, 9, 4));
+		Assert.AreEqual(1, Min(5, 3, 8, 9, 4, 1));
+		Assert.AreEqual(1, Min(5, 3, 1, 8, 9, 4));
+		Assert.AreEqual(-3, Min(-3, -1, -2));
+
+		Assert.Throws<ArgumentException>(() => { Min<int>(); });
+	}
+
+	[Test]
+	public void ShouldCorrectlyAscertainMax() {
+		Assert.AreEqual(3, Max(1, 2, 3));
+		Assert.AreEqual(3, Max(1, 3, 2));
+		Assert.AreEqual(3, Max(2, 1, 3));
+		Assert.AreEqual(3, Max(2, 3, 1));
+		Assert.AreEqual(3, Max(3, 1, 2));
+		Assert.AreEqual(3, Max(3, 2, 1));
+
+		Assert.AreEqual(3, Max(2, 2, 3));
+		Assert.AreEqual(3, Max(3, 2, 2));
+		Assert.AreEqual(3, Max(2, 3, 2));
+		Assert.AreEqual(5, Max(5, 5, 5));
+
+		Assert.AreEqual(2.5f, Max(-1.5f, 0f, 2.5f));
+		Assert.AreEqual(0f, Max(-1f, -2f, 0f));
+
+		Assert.AreEqual(7L, Max(7L, 3L, 5L));
+
+		Assert.AreEqual(42, Max(42));
+		Assert.AreEqual(9, Max(5, 3, 8, 1, 9, 4));
+		Assert.AreEqual(9, Max(9, 5, 3, 8, 1, 4));
+		Assert.AreEqual(9, Max(5, 3, 8, 1, 4, 9));
+		Assert.AreEqual(9, Max(5, 3, 9, 8, 1, 4));
+		Assert.AreEqual(-1, Max(-3, -1, -2));
+
+		Assert.Throws<ArgumentException>(() => { Max<int>(); });
+	}
 }

@@ -2244,10 +2244,64 @@ class CuboidTest {
 	[Test]
 	public void ShouldCorrectlyGenerateRandomLocations() {
 		const int NumIterations = 100_000;
-		
+
 		for (var i = 0; i < NumIterations; ++i) {
 			var l = Location.Random(TestCuboid);
 			Assert.IsTrue(TestCuboid.Contains(l));
 		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateSmallestAndLargestExtents() {
+		Assert.AreEqual(0.7f, TestCuboid.SmallestHalfExtent, TestTolerance);
+		Assert.AreEqual(1.4f, TestCuboid.SmallestExtent, TestTolerance);
+		Assert.AreEqual(6.8f, TestCuboid.LargestHalfExtent, TestTolerance);
+		Assert.AreEqual(13.6f, TestCuboid.LargestExtent, TestTolerance);
+
+		Assert.AreEqual(0.5f, Cuboid.UnitCube.SmallestHalfExtent, TestTolerance);
+		Assert.AreEqual(1f, Cuboid.UnitCube.SmallestExtent, TestTolerance);
+		Assert.AreEqual(0.5f, Cuboid.UnitCube.LargestHalfExtent, TestTolerance);
+		Assert.AreEqual(1f, Cuboid.UnitCube.LargestExtent, TestTolerance);
+
+		var perfectCube = new Cuboid(5f);
+		Assert.AreEqual(2.5f, perfectCube.SmallestHalfExtent, TestTolerance);
+		Assert.AreEqual(2.5f, perfectCube.LargestHalfExtent, TestTolerance);
+		Assert.AreEqual(5f, perfectCube.SmallestExtent, TestTolerance);
+		Assert.AreEqual(5f, perfectCube.LargestExtent, TestTolerance);
+
+		var widthSmallest = new Cuboid(1f, 5f, 3f);
+		var heightSmallest = new Cuboid(5f, 1f, 3f);
+		var depthSmallest = new Cuboid(5f, 3f, 1f);
+		Assert.AreEqual(1f, widthSmallest.SmallestExtent, TestTolerance);
+		Assert.AreEqual(5f, widthSmallest.LargestExtent, TestTolerance);
+		Assert.AreEqual(1f, heightSmallest.SmallestExtent, TestTolerance);
+		Assert.AreEqual(5f, heightSmallest.LargestExtent, TestTolerance);
+		Assert.AreEqual(1f, depthSmallest.SmallestExtent, TestTolerance);
+		Assert.AreEqual(5f, depthSmallest.LargestExtent, TestTolerance);
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateSmallestEnclosingSphere() {
+		var expectedRadius = MathF.Sqrt(3.6f * 3.6f + 6.8f * 6.8f + 0.7f * 0.7f);
+		AssertToleranceEquals(new Sphere(expectedRadius), TestCuboid.SmallestEnclosingSphere, TestTolerance);
+
+		AssertToleranceEquals(new Sphere(MathF.Sqrt(0.75f)), Cuboid.UnitCube.SmallestEnclosingSphere, TestTolerance);
+
+		var sphere = TestCuboid.SmallestEnclosingSphere;
+		foreach (var corner in TestCuboid.Corners) {
+			Assert.AreEqual(sphere.Radius, corner.DistanceFromOrigin(), TestTolerance);
+		}
+	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateLargestEnclosedSphere() {
+		Assert.AreEqual(0.7f, TestCuboid.LargestEnclosedSphere.Radius, TestTolerance);
+		Assert.AreEqual(0.5f, Cuboid.UnitCube.LargestEnclosedSphere.Radius, TestTolerance);
+
+		var sphere = TestCuboid.LargestEnclosedSphere;
+		Assert.LessOrEqual(sphere.Radius, TestCuboid.HalfWidth + TestTolerance);
+		Assert.LessOrEqual(sphere.Radius, TestCuboid.HalfHeight + TestTolerance);
+		Assert.LessOrEqual(sphere.Radius, TestCuboid.HalfDepth + TestTolerance);
+		Assert.AreEqual(TestCuboid.SmallestHalfExtent, sphere.Radius, TestTolerance);
 	}
 }

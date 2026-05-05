@@ -61,10 +61,10 @@ Once you have a `MeshAnimationPlayer`, it can be used as follows to set the time
 
 ```csharp
 player.SetTimePoint(10f); // (1)!
-player.SetTimePoint(10f, MeshAnimationWrapStyle.Once); // (2)!
-player.SetTimePoint(10f, MeshAnimationWrapStyle.OncePingPonged); // (3)!
-player.SetTimePoint(10f, MeshAnimationWrapStyle.Loop); // (4)!
-player.SetTimePoint(10f, MeshAnimationWrapStyle.LoopPingPonged); // (5)!
+player.SetTimePoint(10f, AnimationWrapStyle.Once); // (2)!
+player.SetTimePoint(10f, AnimationWrapStyle.OncePingPonged); // (3)!
+player.SetTimePoint(10f, AnimationWrapStyle.Loop); // (4)!
+player.SetTimePoint(10f, AnimationWrapStyle.LoopPingPonged); // (5)!
 ```
 
 1.	This sets the animation to its defined pose at 10 seconds.
@@ -134,9 +134,9 @@ Playing blended animations then looks similar to playing non-blended ones; excep
 player.SetTimePoint(5f, 10f, 0.5f); // (1)!
 player.SetTimePoint( // (2)!
 	3f, 
-	MeshAnimationWrapStyle.Loop, 
+	AnimationWrapStyle.Loop, 
 	7f, 
-	MeshAnimationWrapStyle.OncePingPonged, 
+	AnimationWrapStyle.OncePingPonged, 
 	0.2f
 );
 ```
@@ -152,7 +152,7 @@ player.SetTimePoint( // (2)!
 ???+ info "Completion Fractions vs Time Points"
 	For every `SetTimePoint()` example shown above, you can also instead opt to use an alternative method named `SetCompletionFraction()`:
 	
-	`#!csharp player.SetCompletionFraction(0.4f, MeshAnimationWrapStyle.Loop, 1f, MeshAnimationWrapStyle.OncePingPonged, 0.2f);`
+	`#!csharp player.SetCompletionFraction(0.4f, AnimationWrapStyle.Loop, 1f, AnimationWrapStyle.OncePingPonged, 0.2f);`
 	
 	Whereas `SetTimePoint()` sets the animation pose to a specific timestamp, `SetCompletionFraction()` sets the animation at a percentage of its overall runtime. For example, `SetCompletionFraction(0.6f)` sets the animation to 60% completed.
 	

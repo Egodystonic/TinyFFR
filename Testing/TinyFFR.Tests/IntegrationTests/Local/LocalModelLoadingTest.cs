@@ -90,6 +90,9 @@ class LocalModelLoadingTest {
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "L controls camera light | X/Y/Z rotates models | Press Space");
 		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f));
+		using var cameraController = camera.CreateController<InspectorCameraController>();
+		cameraController.MinDistance = null;
+		cameraController.MaxDistance = null;
 		camera.NearPlaneDistance = 0.001f;
 		var lightBrightnessStage = 3;
 		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, highQuality: true);
@@ -139,7 +142,7 @@ class LocalModelLoadingTest {
 				}
 				Console.WriteLine();
 
-				modelInstances = factory.ObjectBuilder.CreateModelInstanceGroup(loadedResources.Value);
+				modelInstances = factory.ObjectBuilder.CreateModelInstances(loadedResources.Value.Models);
 				scene.Add(modelInstances.Value);
 				window.SetTitle($"L controls camera light | X/Y/Z rotates models | '{_filesToLoad[curFileIndex]}' ({loadedResources.Value.Models.Count} models / {loadedResources.Value.Meshes.Count} meshes / {loadedResources.Value.Materials.Count} materials / {loadedResources.Value.Textures.Count} textures)");
 			}
@@ -164,8 +167,9 @@ class LocalModelLoadingTest {
 				});
 			}
 			
-			DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, camera, deltaTime, window);
-			DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, camera, deltaTime);
+			DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, cameraController, deltaTime, window);
+			DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, cameraController, deltaTime);
+			DefaultCameraInputHandler.Progress(cameraController, deltaTime);
 			
 			light.Position = camera.Position;
 			light.ConeDirection = camera.ViewDirection;

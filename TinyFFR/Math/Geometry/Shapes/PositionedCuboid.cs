@@ -6,7 +6,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Egodystonic.TinyFFR;
 
-public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboid, Cuboid>, ICuboid<PositionedCuboid> {
+public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboid, Cuboid>, ICuboid<PositionedCuboid>, 
+	IDistanceMeasurable<PositionedSphere>, IDistanceMeasurable<PositionedCuboid>, IDistanceMeasurable<PositionedRotatedCuboid>,
+	IIntersectable<PositionedSphere>, IIntersectable<PositionedCuboid>, IIntersectable<PositionedRotatedCuboid> {
 	public static readonly PositionedCuboid UnitCubeAtOrigin = new(Cuboid.UnitCube, Location.Origin);
 	readonly TranslatedConvexShape<Cuboid> _impl;
 
@@ -142,6 +144,40 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 	public PositionedRotatedCuboid WithRotation(Rotation rotation) => ToTranslatedRotatedCuboid(rotation);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public PositionedRotatedCuboid ToTranslatedRotatedCuboid(Rotation rotation) => new(_impl.BaseShape, Position, rotation);
+	
+	public PositionedSphere SmallestEnclosingSphere {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(_impl.BaseShape.SmallestEnclosingSphere, Position);
+	}
+	public PositionedSphere LargestEnclosedSphere {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => new(_impl.BaseShape.LargestEnclosedSphere, Position);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(PositionedSphere sphere) => sphere.DistanceFrom(this);
+	float IDistanceMeasurable<PositionedSphere>.DistanceSquaredFrom(PositionedSphere sphere) { var dist = DistanceFrom(sphere); return dist * dist; }
+	public float DistanceFrom(PositionedCuboid cuboid) {
+		var d = Position - cuboid.Position;
+		var dx = MathF.Max(0f, MathF.Abs(d.X) - HalfWidth - cuboid.HalfWidth);
+		var dy = MathF.Max(0f, MathF.Abs(d.Y) - HalfHeight - cuboid.HalfHeight);
+		var dz = MathF.Max(0f, MathF.Abs(d.Z) - HalfDepth - cuboid.HalfDepth);
+		return MathF.Sqrt(dx * dx + dy * dy + dz * dz);
+	}
+	float IDistanceMeasurable<PositionedCuboid>.DistanceSquaredFrom(PositionedCuboid cuboid) { var dist = DistanceFrom(cuboid); return dist * dist; }
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public float DistanceFrom(PositionedRotatedCuboid cuboid) => cuboid.DistanceFrom(this);
+	float IDistanceMeasurable<PositionedRotatedCuboid>.DistanceSquaredFrom(PositionedRotatedCuboid cuboid) { var dist = DistanceFrom(cuboid); return dist * dist; }
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(PositionedSphere sphere) => sphere.IsIntersectedBy(this);
+	public bool IsIntersectedBy(PositionedCuboid cuboid) {
+		var d = Position - cuboid.Position;
+		return MathF.Abs(d.X) < HalfWidth + cuboid.HalfWidth
+			&& MathF.Abs(d.Y) < HalfHeight + cuboid.HalfHeight
+			&& MathF.Abs(d.Z) < HalfDepth + cuboid.HalfDepth;
+	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public bool IsIntersectedBy(PositionedRotatedCuboid cuboid) => cuboid.IsIntersectedBy(this);
 
 	#region Deferring Members
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public override string ToString() => ToString(null, null);

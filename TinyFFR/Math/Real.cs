@@ -10,6 +10,7 @@ namespace Egodystonic.TinyFFR;
 // This could go away with a 'shapes' or 'extension everything' implementation in C#
 public readonly struct Real : IMathPrimitive<Real>, IAlgebraicRing<Real>, IOrdinal<Real> {
 	public static readonly Real Zero = 0f;
+	public static readonly Real One = 1f;
 
 	public float AsFloat { get; }
 	public Real(float asFloat) { AsFloat = asFloat; }
@@ -28,10 +29,10 @@ public readonly struct Real : IMathPrimitive<Real>, IAlgebraicRing<Real>, IOrdin
 	public override string ToString() => ToString(null, null);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public string ToString(string? format, IFormatProvider? formatProvider) => AsFloat.ToString(format, formatProvider);
+	public string ToString(string? format, IFormatProvider? formatProvider = null) => AsFloat.ToString(format, formatProvider);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => AsFloat.TryFormat(destination, out charsWritten, format, provider);
+	public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider = null) => AsFloat.TryFormat(destination, out charsWritten, format, provider);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Real Parse(string s, IFormatProvider? provider) => Single.Parse(s, provider);
@@ -62,13 +63,16 @@ public readonly struct Real : IMathPrimitive<Real>, IAlgebraicRing<Real>, IOrdin
 	
 	#region Random / Interpolate / Clamp
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Real Random() => RandomUtils.NextSingle();
+	public static Real Random() => RandomZeroToOne();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Real Random(Real minInclusive, Real maxExclusive) => RandomUtils.NextSingle(minInclusive, maxExclusive);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Real RandomInclusive(Real minInclusive, Real maxInclusive) => RandomUtils.NextSingleInclusive(minInclusive, maxInclusive);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Real RandomZeroToOne() => RandomUtils.NextSingle();
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Real RandomZeroToOneInclusive() => RandomUtils.NextSingleZeroToOneInclusive();

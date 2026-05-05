@@ -41,7 +41,7 @@ static class TestScaffold {
 		if (_builder.AutoDisposeContextObjectsOnTestEnd) _materializedContext.DisposeObjects();
 	}
 	
-	public static void BeginDefaultLoop(Func<float, bool> loopAction, ApplicationLoop loop, Camera? autoCameraControlTarget) {
+	public static void BeginDefaultLoop(Func<float, bool> loopAction, ApplicationLoop loop, ICameraController? autoCameraControlController) {
 		if (_builder == null || _materializedContext == null) throw new InvalidOperationException($"Must complete {nameof(TestMain.ConfigureTest)} first.");
 
 		var periodicalFpsTimer = Stopwatch.StartNew();
@@ -51,9 +51,10 @@ static class TestScaffold {
 			var loopIterationTime = loop.IterateOnce();
 			var deltaTime = loopIterationTime.AsDeltaTime();
 
-			if (autoCameraControlTarget is { } camera) {
-				DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, camera, deltaTime, _builder.Context.Window);
-				DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, camera, deltaTime);
+			if (autoCameraControlController != null) {
+				DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, autoCameraControlController, deltaTime, _builder.Context.Window);
+				DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, autoCameraControlController, deltaTime);
+				DefaultCameraInputHandler.Progress(autoCameraControlController, deltaTime);
 			}
 
 			try {
@@ -76,9 +77,9 @@ static class TestScaffold {
 			}
 			if (_builder is { UpdateWindowTitleWithFpsStats: true, Context.Window: {} window }) {
 				window.SetTitle(
-					$"FPS: {loop.FramesPerSecondRecentAverage:N0} avg | " +
-					$"[{loop.FramesPerSecondRecentMin:N0} - {loop.FramesPerSecondRecentMax:N0}] range | " +
-					$"{loop.FramesPerSecondLatest:N0} current"
+					$"FPS: {loop.FramesPerSecondRecentAverage:00000} avg | " +
+					$"[{loop.FramesPerSecondRecentMin:00000} - {loop.FramesPerSecondRecentMax:00000}] range | " +
+					$"{loop.FramesPerSecondLatest:00000} current"
 				);
 			}
 		}
