@@ -85,7 +85,7 @@ while (!loop.Input.UserQuitRequested && loop.TotalIteratedTime < TimeSpan.FromSe
 scene.Remove(instance);
 
 var animResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/BrainStem.glb"));
-var animInstanceGroup = factory.ObjectBuilder.CreateModelInstanceGroup(animResources);
+var animInstanceGroup = factory.ObjectBuilder.CreateModelInstances(animResources.Models);
 animInstanceGroup.RotateBy(90f % Direction.Right);
 scene.Add(animInstanceGroup);
 
@@ -97,7 +97,7 @@ while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurren
 	var deltaTime = loop.IterateOnce().AsDeltaTime();
 
 	foreach (var i in animInstanceGroup) {
-		i.GetAnimationPlayerWithSpeedMultiplier(i.Animations[0], 0.8f).SetTimePoint(loop.TotalIteratedTime.AsDeltaTime(), MeshAnimationWrapStyle.Loop);
+		i.GetAnimationPlayerWithSpeedMultiplier(i.Animations[0], 0.8f).SetTimePoint(loop.TotalIteratedTime.AsDeltaTime(), AnimationWrapStyle.Loop);
 	}
 
 	renderer.Render();
