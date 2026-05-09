@@ -118,6 +118,14 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 		}
 	}
 	public Location Target { get; set; }
+	
+	public void SetParametersFromBoundingBox(PositionedCuboid boundingBox) {
+		var enclosingSphere = boundingBox.SmallestEnclosingSphere;
+		Target = enclosingSphere.Position;
+		MinDistance = Single.Min(enclosingSphere.Radius * 1f, boundingBox.SmallestHalfExtent);
+		MaxDistance = enclosingSphere.Radius * 3f;
+		Distance = enclosingSphere.Radius * 1.5f;
+	}
 
 	public void SetCustomRotationSmoothingStrength(float smoothingHalfLife) {
 		_yawSetpoint.HalfLife = smoothingHalfLife;
@@ -327,19 +335,80 @@ public sealed class InspectorCameraController : ICameraController<InspectorCamer
 		if (!input.ButtonIsCurrentlyDown(buttonToTestFor)) return;
 		AdjustDistance(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultDistanceSensitivityKeyOrButtonPress));
 	}
+	
+	public void AdjustDistancePercentage(float adjustment) {
+		if (MaxDistance is not { } max || MinDistance is not { } min) {
+			Distance += adjustment;
+			return;
+		}
+		Distance += (adjustment * (max - min));
+	}
+	public void AdjustDistancePercentage(float deltaTime, float adjustmentPerSec) => AdjustDistancePercentage(adjustmentPerSec * deltaTime);
 
-	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, bool invertDistanceControl = false, Angle? pitchAdjustmentPerPixel = null, Angle? yawAdjustmentPerPixel = null, float? distanceAdjustmentPerWheelIncrement = null) {
+	public const float DefaultDistancePercentageSensitivityMouseCursor = 0.01f;
+	public void AdjustDistancePercentageViaMouseCursor(ILatestKeyboardAndMouseInputRetriever input, float? adjustmentPerPixel = null, bool invertMouseControl = false, Axis2D axis = Axis2D.Y) {
+		ArgumentNullException.ThrowIfNull(input);
+		var delta = axis switch {
+			Axis2D.X => input.MouseCursorDelta.X,
+			Axis2D.Y => input.MouseCursorDelta.Y,
+			_ => 0
+		} * (invertMouseControl ? -1f : 1f);
+
+		AdjustDistancePercentage(delta * (adjustmentPerPixel ?? DefaultDistancePercentageSensitivityMouseCursor));
+	}
+
+	public const float DefaultDistancePercentageSensitivityMouseWheel = 0.05f;
+	public void AdjustDistancePercentageViaMouseWheel(ILatestKeyboardAndMouseInputRetriever input, float? adjustmentPerWheelIncrement = null, bool invertMouseControl = false) {
+		ArgumentNullException.ThrowIfNull(input);
+		AdjustDistancePercentage(input.MouseScrollWheelDelta * (adjustmentPerWheelIncrement ?? DefaultDistancePercentageSensitivityMouseWheel) * (invertMouseControl ? -1f : 1f));
+	}
+
+	public const float DefaultDistancePercentageSensitivityControllerStick = 0.3333f;
+	public void AdjustDistancePercentageViaControllerStick(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool useLeftStick = false, bool invertStickControl = false, Axis2D axis = Axis2D.Y) {
+		ArgumentNullException.ThrowIfNull(input);
+		var stickPosition = useLeftStick ? input.LeftStickPosition : input.RightStickPosition;
+		var delta = axis switch {
+			Axis2D.X => stickPosition.GetDisplacementHorizontalWithDeadzone(),
+			Axis2D.Y => stickPosition.GetDisplacementVerticalWithDeadzone(),
+			_ => 0f
+		} * (invertStickControl ? deltaTime : -deltaTime);
+
+		AdjustDistancePercentage((maxAdjustmentPerSec ?? DefaultDistancePercentageSensitivityControllerStick) * delta);
+	}
+
+	public const float DefaultDistancePercentageSensitivityControllerTrigger = 0.3333f;
+	public void AdjustDistancePercentageViaControllerTriggers(ILatestGameControllerInputStateRetriever input, float deltaTime, float? maxAdjustmentPerSec = null, bool leftTriggerIncreasesDistance = true) {
+		ArgumentNullException.ThrowIfNull(input);
+		var increasingTriggerPosition = leftTriggerIncreasesDistance ? input.LeftTriggerPosition : input.RightTriggerPosition;
+		var decreasingTriggerPosition = leftTriggerIncreasesDistance ? input.RightTriggerPosition : input.LeftTriggerPosition;
+		AdjustDistancePercentage(deltaTime, increasingTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultDistancePercentageSensitivityControllerTrigger)
+			- decreasingTriggerPosition.GetDisplacementWithDeadzone() * (maxAdjustmentPerSec ?? DefaultDistancePercentageSensitivityControllerTrigger));
+	}
+
+	public const float DefaultDistancePercentageSensitivityKeyOrButtonPress = 0.3333f;
+	public void AdjustDistancePercentageViaKeyPress(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, KeyboardOrMouseKey keyToTestFor, bool reverse, float? adjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		if (!input.KeyIsCurrentlyDown(keyToTestFor)) return;
+		AdjustDistancePercentage(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultDistancePercentageSensitivityKeyOrButtonPress));
+	}
+	public void AdjustDistancePercentageViaButtonPress(ILatestGameControllerInputStateRetriever input, float deltaTime, GameControllerButton buttonToTestFor, bool reverse, float? adjustmentPerSec = null) {
+		ArgumentNullException.ThrowIfNull(input);
+		if (!input.ButtonIsCurrentlyDown(buttonToTestFor)) return;
+		AdjustDistancePercentage(deltaTime, (reverse ? -1f : 1f) * (adjustmentPerSec ?? DefaultDistancePercentageSensitivityKeyOrButtonPress));
+	}
+
+	public void AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, bool invertDistanceControl = false, Angle? pitchAdjustmentPerPixel = null, Angle? yawAdjustmentPerPixel = null, float? distancePercentageAdjustmentPerWheelIncrement = null) {
 		ArgumentNullException.ThrowIfNull(input);
 		AdjustPitchViaMouseCursor(input, pitchAdjustmentPerPixel, invertMouseControl: invertPitchControl);
 		AdjustYawViaMouseCursor(input, yawAdjustmentPerPixel, invertMouseControl: invertYawControl);
-		AdjustDistanceViaMouseWheel(input, distanceAdjustmentPerWheelIncrement, invertMouseControl: invertDistanceControl);
+		AdjustDistancePercentageViaMouseWheel(input, distancePercentageAdjustmentPerWheelIncrement, invertMouseControl: invertDistanceControl);
 	}
 
-	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever input, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, bool invertDistanceControl = false, Angle? maxPitchAdjustmentPerSec = null, Angle? maxYawAdjustmentPerSec = null, float? maxDistanceAdjustmentPerSec = null) {
+	public void AdjustAllViaDefaultControls(ILatestGameControllerInputStateRetriever input, float deltaTime, bool invertPitchControl = false, bool invertYawControl = false, bool invertDistanceControl = false, Angle? maxPitchAdjustmentPerSec = null, Angle? maxYawAdjustmentPerSec = null, float? maxDistancePercentageAdjustmentPerSec = null) {
 		ArgumentNullException.ThrowIfNull(input);
 		AdjustPitchViaControllerStick(input, deltaTime, maxPitchAdjustmentPerSec, invertStickControl: invertPitchControl);
 		AdjustYawViaControllerStick(input, deltaTime, maxYawAdjustmentPerSec, invertStickControl: invertYawControl);
-		AdjustDistanceViaControllerTriggers(input, deltaTime, maxDistanceAdjustmentPerSec, leftTriggerIncreasesDistance: !invertDistanceControl);
+		AdjustDistancePercentageViaControllerTriggers(input, deltaTime, maxDistancePercentageAdjustmentPerSec, leftTriggerIncreasesDistance: !invertDistanceControl);
 	}
 	
 	void ICameraController.AdjustAllViaDefaultControls(ILatestKeyboardAndMouseInputRetriever input, float deltaTime) => AdjustAllViaDefaultControls(input, deltaTime);

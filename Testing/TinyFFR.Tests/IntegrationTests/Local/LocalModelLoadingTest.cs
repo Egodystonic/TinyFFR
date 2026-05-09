@@ -89,13 +89,10 @@ class LocalModelLoadingTest {
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "L controls camera light | X/Y/Z rotates models | Press Space");
-		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f));
+		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 0f, -1f), cameraRange: CameraPlaneConfiguration.CloseRange);
 		using var cameraController = camera.CreateController<InspectorCameraController>();
-		cameraController.MinDistance = null;
-		cameraController.MaxDistance = null;
-		camera.NearPlaneDistance = 0.001f;
-		var lightBrightnessStage = 3;
-		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, highQuality: true);
+		var lightBrightnessStage = 0;
+		using var light = factory.LightBuilder.CreateSpotLight(position: camera.Position, coneDirection: camera.ViewDirection, highQuality: true, brightness: 0f);
 		using var sunlight = factory.LightBuilder.CreateDirectionalLight(castsShadows: true);
 		using var backdrop = factory.AssetLoader.LoadPreprocessedBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.MetroSkyKtx), CommonTestAssets.FindAsset(KnownTestAsset.MetroIblKtx));
 		using var scene = factory.SceneBuilder.CreateScene(backdrop);
@@ -142,6 +139,7 @@ class LocalModelLoadingTest {
 				}
 				Console.WriteLine();
 
+				cameraController.SetParametersFromBoundingBox(loadedResources.Value.Models.CalculateCombinedBoundingBox());
 				modelInstances = factory.ObjectBuilder.CreateModelInstances(loadedResources.Value.Models);
 				scene.Add(modelInstances.Value);
 				window.SetTitle($"L controls camera light | X/Y/Z rotates models | '{_filesToLoad[curFileIndex]}' ({loadedResources.Value.Models.Count} models / {loadedResources.Value.Meshes.Count} meshes / {loadedResources.Value.Materials.Count} materials / {loadedResources.Value.Textures.Count} textures)");

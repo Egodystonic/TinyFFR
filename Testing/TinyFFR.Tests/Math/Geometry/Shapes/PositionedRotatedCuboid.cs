@@ -300,6 +300,23 @@ class PositionedRotatedCuboidTest {
 			AssertToleranceEquals(largest, rotated.LargestEnclosedSphere, TestTolerance);
 		}
 	}
+
+	[Test]
+	public void ShouldCorrectlyCalculateSmallestEnclosingNonRotatedCuboid() {
+		var pos = new Location(10f, 20f, 30f);
+
+		var unrotated = new PositionedRotatedCuboid(4f, 6f, 2f, pos, Rotation.None);
+		AssertToleranceEquals(new PositionedCuboid(4f, 6f, 2f, pos), unrotated.SmallestEnclosingNonRotatedCuboid, TestTolerance);
+
+		var unitRot45Y = new PositionedRotatedCuboid(1f, 1f, 1f, Location.Origin, new Rotation(45f, Direction.Up));
+		AssertToleranceEquals(new PositionedCuboid(MathF.Sqrt(2f), 1f, MathF.Sqrt(2f), Location.Origin), unitRot45Y.SmallestEnclosingNonRotatedCuboid, TestTolerance);
+
+		var swapAxes = new PositionedRotatedCuboid(2f, 4f, 6f, pos, new Rotation(90f, Direction.Up));
+		AssertToleranceEquals(new PositionedCuboid(6f, 4f, 2f, pos), swapAxes.SmallestEnclosingNonRotatedCuboid, TestTolerance);
+
+		AssertToleranceEquals(TestCuboid.Position, TestCuboid.SmallestEnclosingNonRotatedCuboid.Position, TestTolerance);
+		AssertToleranceEquals(PositionedCuboid.FromSmallestEnclosingCuboid(stackalloc[] { TestCuboid }), TestCuboid.SmallestEnclosingNonRotatedCuboid, TestTolerance);
+	}
 	
 	[Test]
 	public void ShouldCorrectlyMeasureDistanceAndIntersectionWithSphere() {

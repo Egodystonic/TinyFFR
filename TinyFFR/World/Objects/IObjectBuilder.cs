@@ -101,8 +101,8 @@ public interface IObjectBuilder {
 	ModelInstance CreateModelInstance(Mesh mesh, Material material, in ModelInstanceCreationConfig config);
 	
 	ModelInstanceGroup CreateModelInstances(ReadOnlySpan<Model> models, in ModelInstanceCreationConfig config);
-	ModelInstanceGroup CreateModelInstances(IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, Model> models, in ModelInstanceCreationConfig config);
+	ModelInstanceGroup CreateModelInstances<TModelList>(TModelList models, in ModelInstanceCreationConfig config) where TModelList : IReadOnlyList<Model>;
 	ModelInstanceGroup GroupModelInstances(params ReadOnlySpan<ModelInstance> instances) => GroupModelInstances(instances, default);
 	ModelInstanceGroup GroupModelInstances(ReadOnlySpan<ModelInstance> instances, ReadOnlySpan<char> name);
-	ModelInstanceGroup GroupModelInstances(IndirectEnumerable<IResourceGroupImplProvider.EnumerationInput, ModelInstance> instances, ReadOnlySpan<char> name = default);
+	ModelInstanceGroup GroupModelInstances<TInstanceList>(TInstanceList instances, ReadOnlySpan<char> name = default) where TInstanceList : IReadOnlyList<ModelInstance>;
 }

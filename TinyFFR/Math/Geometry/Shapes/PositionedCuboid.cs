@@ -3,6 +3,9 @@
 
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
+using Egodystonic.TinyFFR.Assets;
+using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR;
 
@@ -67,6 +70,23 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 		get => _impl.BaseShape.SurfaceArea;
 	}
 
+	public float SmallestHalfExtent {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.BaseShape.SmallestHalfExtent;
+	}
+	public float SmallestExtent {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.BaseShape.SmallestExtent;
+	}
+	public float LargestHalfExtent {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.BaseShape.LargestHalfExtent;
+	}
+	public float LargestExtent {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.BaseShape.LargestExtent;
+	}
+
 	public bool IsPhysicallyValid {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _impl.IsPhysicallyValid;
@@ -121,6 +141,7 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 		init => Position = value.AsLocation();
 	}
 
+	public PositionedCuboid(float widthHeightDepth, Location centerPoint) : this(new Cuboid(widthHeightDepth), centerPoint) { }
 	public PositionedCuboid(float width, float height, float depth, Location centerPoint) : this(new Cuboid(width, height, depth), centerPoint) { }
 	public PositionedCuboid(Cuboid baseShape, Location centerPoint) : this(new(baseShape, centerPoint.AsVect())) { }
 	public PositionedCuboid(TranslatedConvexShape<Cuboid> impl) {
@@ -137,6 +158,126 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 	public static implicit operator PositionedCuboid(TranslatedShape<Cuboid> operand) => new(operand);
 
 	public static PositionedCuboid FromHalfDimensions(float halfWidth, float halfHeight, float halfDepth, Location centerPoint) => new(Cuboid.FromHalfDimensions(halfWidth, halfHeight, halfDepth), centerPoint);
+	
+	const DiagonalOrientation AmalgamationMinExtentsCorner = DiagonalOrientation.RightDownBackward;
+	const DiagonalOrientation AmalgamationMaxExtentsCorner = DiagonalOrientation.LeftUpForward;
+	public static PositionedCuboid FromSmallestEnclosingCuboid(params ReadOnlySpan<PositionedCuboid> subCuboids) {
+		if (subCuboids.Length <= 0) return new(0f, Location.Origin);
+		
+		var minExtents = subCuboids[0].CornerAt(AmalgamationMinExtentsCorner);
+		var maxExtents = subCuboids[0].CornerAt(AmalgamationMaxExtentsCorner);
+		
+		for (var i = 1; i < subCuboids.Length; ++i) {
+			var cMin = subCuboids[i].CornerAt(AmalgamationMinExtentsCorner);
+			var cMax = subCuboids[i].CornerAt(AmalgamationMaxExtentsCorner);
+			minExtents = new Location(
+				Single.Min(minExtents.X, cMin.X),  	
+				Single.Min(minExtents.Y, cMin.Y),  	
+				Single.Min(minExtents.Z, cMin.Z)  	
+			);
+			maxExtents = new Location(
+				Single.Max(maxExtents.X, cMax.X),  	
+				Single.Max(maxExtents.Y, cMax.Y),  	
+				Single.Max(maxExtents.Z, cMax.Z)  	
+			);
+		}
+		
+		return new PositionedCuboid(
+			maxExtents.X - minExtents.X,	
+			maxExtents.Y - minExtents.Y,	
+			maxExtents.Z - minExtents.Z,
+			minExtents + minExtents.VectTo(maxExtents).ScaledBy(0.5f)
+		);
+	}
+	public static PositionedCuboid FromSmallestEnclosingCuboid<TCuboidList>(TCuboidList subCuboids) where TCuboidList : IReadOnlyList<PositionedCuboid> {
+		if (subCuboids.Count <= 0) return new(0f, Location.Origin);
+		
+		var minExtents = subCuboids[0].CornerAt(AmalgamationMinExtentsCorner);
+		var maxExtents = subCuboids[0].CornerAt(AmalgamationMaxExtentsCorner);
+		
+		for (var i = 1; i < subCuboids.Count; ++i) {
+			var cMin = subCuboids[i].CornerAt(AmalgamationMinExtentsCorner);
+			var cMax = subCuboids[i].CornerAt(AmalgamationMaxExtentsCorner);
+			minExtents = new Location(
+				Single.Min(minExtents.X, cMin.X),  	
+				Single.Min(minExtents.Y, cMin.Y),  	
+				Single.Min(minExtents.Z, cMin.Z)  	
+			);
+			maxExtents = new Location(
+				Single.Max(maxExtents.X, cMax.X),  	
+				Single.Max(maxExtents.Y, cMax.Y),  	
+				Single.Max(maxExtents.Z, cMax.Z)  	
+			);
+		}
+		
+		return new PositionedCuboid(
+			maxExtents.X - minExtents.X,	
+			maxExtents.Y - minExtents.Y,	
+			maxExtents.Z - minExtents.Z,
+			minExtents + minExtents.VectTo(maxExtents).ScaledBy(0.5f)
+		);
+	}
+	public static PositionedCuboid FromSmallestEnclosingCuboid(params ReadOnlySpan<PositionedRotatedCuboid> subCuboids) {
+		if (subCuboids.Length <= 0) return new(0f, Location.Origin);
+		
+		var minExtents = new Location(Single.MaxValue, Single.MaxValue, Single.MaxValue);
+		var maxExtents = new Location(Single.MinValue, Single.MinValue, Single.MinValue);
+		
+		for (var i = 0; i < subCuboids.Length; ++i) {
+			var corners = subCuboids[i].Corners;
+			for (var c = 0; c < corners.Count; ++c) {
+				var corner = corners[c];
+				minExtents = new Location(
+					Single.Min(minExtents.X, corner.X),  	
+					Single.Min(minExtents.Y, corner.Y),  	
+					Single.Min(minExtents.Z, corner.Z)  	
+				);
+				maxExtents = new Location(
+					Single.Max(maxExtents.X, corner.X),  	
+					Single.Max(maxExtents.Y, corner.Y),  	
+					Single.Max(maxExtents.Z, corner.Z)  	
+				);
+			}
+		}
+		
+		return new PositionedCuboid(
+			maxExtents.X - minExtents.X,	
+			maxExtents.Y - minExtents.Y,	
+			maxExtents.Z - minExtents.Z,
+			minExtents + minExtents.VectTo(maxExtents).ScaledBy(0.5f)
+		);
+	}
+	// ReSharper disable once MethodOverloadWithOptionalParameter
+	public static PositionedCuboid FromSmallestEnclosingCuboid<TCuboidList>(TCuboidList subCuboids, MethodOverloadStub ignoreMe = default) where TCuboidList : IReadOnlyList<PositionedRotatedCuboid> {
+		if (subCuboids.Count <= 0) return new(0f, Location.Origin);
+		
+		var minExtents = new Location(Single.MaxValue, Single.MaxValue, Single.MaxValue);
+		var maxExtents = new Location(Single.MinValue, Single.MinValue, Single.MinValue);
+		
+		for (var i = 0; i < subCuboids.Count; ++i) {
+			var corners = subCuboids[i].Corners;
+			for (var c = 0; c < corners.Count; ++c) {
+				var corner = corners[c];
+				minExtents = new Location(
+					Single.Min(minExtents.X, corner.X),  	
+					Single.Min(minExtents.Y, corner.Y),  	
+					Single.Min(minExtents.Z, corner.Z)  	
+				);
+				maxExtents = new Location(
+					Single.Max(maxExtents.X, corner.X),  	
+					Single.Max(maxExtents.Y, corner.Y),  	
+					Single.Max(maxExtents.Z, corner.Z)  	
+				);
+			}
+		}
+		
+		return new PositionedCuboid(
+			maxExtents.X - minExtents.X,	
+			maxExtents.Y - minExtents.Y,	
+			maxExtents.Z - minExtents.Z,
+			minExtents + minExtents.VectTo(maxExtents).ScaledBy(0.5f)
+		);
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Cuboid ToStandardCuboid() => _impl.BaseShape;
@@ -278,4 +419,60 @@ public readonly struct PositionedCuboid : ITranslatedConvexShape<PositionedCuboi
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] public static PositionedCuboid operator +(Vect left, PositionedCuboid right) => left + right._impl;
 	Location IConvexShape.GetRandomInternalLocation() => ((IConvexShape) _impl).GetRandomInternalLocation();
 	#endregion
+}
+
+public static class PositionedCuboidExtensions {
+	public static unsafe PositionedCuboid CalculateCombinedBoundingBox<TKey>(this IndirectEnumerable<TKey, Mesh> @this) {
+		static IndirectEnumerable<IndirectEnumerable<TKey, Mesh>, PositionedCuboid> Map(IndirectEnumerable<TKey, Mesh> input) {
+			static int GetCount(IndirectEnumerable<TKey, Mesh> i) => i.Count;
+			static int GetVersion(IndirectEnumerable<TKey, Mesh> _) => 0;
+			static PositionedCuboid GetItem(IndirectEnumerable<TKey, Mesh> i, int index) => i[index].BoundingBox;
+			
+			return new(
+				input,
+				0,
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+		
+		return PositionedCuboid.FromSmallestEnclosingCuboid(Map(@this));
+	}
+	
+	public static unsafe PositionedCuboid CalculateCombinedBoundingBox<TKey>(this IndirectEnumerable<TKey, ModelInstance> @this) {
+		static IndirectEnumerable<IndirectEnumerable<TKey, ModelInstance>, PositionedCuboid> Map(IndirectEnumerable<TKey, ModelInstance> input) {
+			static int GetCount(IndirectEnumerable<TKey, ModelInstance> i) => i.Count;
+			static int GetVersion(IndirectEnumerable<TKey, ModelInstance> _) => 0;
+			static PositionedCuboid GetItem(IndirectEnumerable<TKey, ModelInstance> i, int index) => i[index].Mesh.BoundingBox;
+			
+			return new(
+				input,
+				0,
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+		
+		return PositionedCuboid.FromSmallestEnclosingCuboid(Map(@this));
+	}
+	
+	public static unsafe PositionedCuboid CalculateCombinedBoundingBox<TKey>(this IndirectEnumerable<TKey, Model> @this) {
+		static IndirectEnumerable<IndirectEnumerable<TKey, Model>, PositionedCuboid> Map(IndirectEnumerable<TKey, Model> input) {
+			static int GetCount(IndirectEnumerable<TKey, Model> i) => i.Count;
+			static int GetVersion(IndirectEnumerable<TKey, Model> _) => 0;
+			static PositionedCuboid GetItem(IndirectEnumerable<TKey, Model> i, int index) => i[index].Mesh.BoundingBox;
+			
+			return new(
+				input,
+				0,
+				&GetCount,
+				&GetVersion,
+				&GetItem
+			);
+		}
+		
+		return PositionedCuboid.FromSmallestEnclosingCuboid(Map(@this));
+	}
 }

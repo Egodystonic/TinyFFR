@@ -423,4 +423,91 @@ class PositionedCuboidTest {
 		Assert.IsTrue(bigRotated.IsIntersectedBy(aabb));
 		Assert.IsTrue(aabb.IsIntersectedBy(bigRotated));
 	}
+
+	[Test]
+	public void ShouldCorrectlyAmalgamatePositionedCuboids() {
+		void AssertInputs(PositionedCuboid expectation, params PositionedCuboid[] inputs) {
+			AssertToleranceEquals(expectation, PositionedCuboid.FromSmallestEnclosingCuboid(inputs), TestTolerance);
+			AssertToleranceEquals(expectation, PositionedCuboid.FromSmallestEnclosingCuboid(inputs.ToList()), TestTolerance);
+		}
+
+		AssertInputs(new PositionedCuboid(0f, 0f, 0f, Location.Origin));
+
+		AssertInputs(
+			new PositionedCuboid(4f, 6f, 2f, new Location(10f, 20f, 30f)),
+			new PositionedCuboid(4f, 6f, 2f, new Location(10f, 20f, 30f))
+		);
+
+		AssertInputs(
+			new PositionedCuboid(12f, 2f, 2f, new Location(5f, 0f, 0f)),
+			new PositionedCuboid(2f, 2f, 2f, new Location(0f, 0f, 0f)),
+			new PositionedCuboid(2f, 2f, 2f, new Location(10f, 0f, 0f))
+		);
+
+		AssertInputs(
+			new PositionedCuboid(6f, 6f, 6f, new Location(1f, 1f, 1f)),
+			new PositionedCuboid(4f, 4f, 4f, new Location(0f, 0f, 0f)),
+			new PositionedCuboid(4f, 4f, 4f, new Location(2f, 2f, 2f))
+		);
+
+		AssertInputs(
+			new PositionedCuboid(10f, 10f, 10f, new Location(0f, 0f, 0f)),
+			new PositionedCuboid(10f, 10f, 10f, new Location(0f, 0f, 0f)),
+			new PositionedCuboid(2f, 2f, 2f, new Location(1f, 1f, 1f))
+		);
+
+		var asymmetricInputs = new[] {
+			new PositionedCuboid(2f, 2f, 2f, new Location(0f, 0f, 0f)),
+			new PositionedCuboid(2f, 2f, 2f, new Location(10f, 0f, 5f)),
+			new PositionedCuboid(4f, 2f, 6f, new Location(-3f, 4f, 0f))
+		};
+		var asymmetricExpected = new PositionedCuboid(16f, 6f, 9f, new Location(3f, 2f, 1.5f));
+		AssertInputs(asymmetricExpected, asymmetricInputs);
+		AssertInputs(asymmetricExpected, asymmetricInputs[2], asymmetricInputs[0], asymmetricInputs[1]);
+	}
+
+	[Test]
+	public void ShouldCorrectlyAmalgamatePositionedRotatedCuboids() {
+		void AssertInputs(PositionedCuboid expectation, params PositionedRotatedCuboid[] inputs) {
+			AssertToleranceEquals(expectation, PositionedCuboid.FromSmallestEnclosingCuboid(inputs), TestTolerance);
+			AssertToleranceEquals(expectation, PositionedCuboid.FromSmallestEnclosingCuboid(inputs.ToList()), TestTolerance);
+		}
+
+		AssertInputs(new PositionedCuboid(0f, 0f, 0f, Location.Origin));
+
+		AssertInputs(
+			new PositionedCuboid(4f, 6f, 2f, new Location(10f, 20f, 30f)),
+			new PositionedRotatedCuboid(4f, 6f, 2f, new Location(10f, 20f, 30f), Rotation.None)
+		);
+
+		AssertInputs(
+			new PositionedCuboid(MathF.Sqrt(2f), 1f, MathF.Sqrt(2f), Location.Origin),
+			new PositionedRotatedCuboid(1f, 1f, 1f, Location.Origin, new Rotation(45f, Direction.Up))
+		);
+
+		AssertInputs(
+			new PositionedCuboid(3f * MathF.Sqrt(2f), 3f * MathF.Sqrt(2f), 2f, Location.Origin),
+			new PositionedRotatedCuboid(2f, 4f, 2f, Location.Origin, new Rotation(45f, Direction.Forward))
+		);
+
+		var multiInputs = new[] {
+			new PositionedRotatedCuboid(2f, 2f, 2f, new Location(5f, 0f, 0f), new Rotation(30f, Direction.Up)),
+			new PositionedRotatedCuboid(1f, 3f, 1f, new Location(-5f, 0f, 0f), new Rotation(90f, Direction.Forward))
+		};
+		var multiExpected = new PositionedCuboid(
+			12f + MathF.Sqrt(3f) / 2f,
+			2f,
+			MathF.Sqrt(3f) + 1f,
+			new Location((MathF.Sqrt(3f) - 2f) / 4f, 0f, 0f)
+		);
+		AssertInputs(multiExpected, multiInputs);
+		AssertInputs(multiExpected, multiInputs[1], multiInputs[0]);
+
+		AssertInputs(
+			new PositionedCuboid(16f, 6f, 9f, new Location(3f, 2f, 1.5f)),
+			new PositionedRotatedCuboid(2f, 2f, 2f, new Location(0f, 0f, 0f), Rotation.None),
+			new PositionedRotatedCuboid(2f, 2f, 2f, new Location(10f, 0f, 5f), Rotation.None),
+			new PositionedRotatedCuboid(4f, 2f, 6f, new Location(-3f, 4f, 0f), Rotation.None)
+		);
+	}
 }

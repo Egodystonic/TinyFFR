@@ -73,6 +73,23 @@ public readonly struct PositionedRotatedCuboid : ITranslatedRotatedConvexShape<P
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => _impl.BaseShape.SurfaceArea;
 	}
+	
+	public float SmallestHalfExtent {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.BaseShape.SmallestHalfExtent;
+	}
+	public float SmallestExtent {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.BaseShape.SmallestExtent;
+	}
+	public float LargestHalfExtent {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.BaseShape.LargestHalfExtent;
+	}
+	public float LargestExtent {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => _impl.BaseShape.LargestExtent;
+	}
 
 	public bool IsPhysicallyValid {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -166,6 +183,32 @@ public readonly struct PositionedRotatedCuboid : ITranslatedRotatedConvexShape<P
 	public PositionedSphere LargestEnclosedSphere {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(_impl.BaseShape.LargestEnclosedSphere, Position);
+	}
+	public PositionedCuboid SmallestEnclosingNonRotatedCuboid {
+		get {
+			var corners = Corners;
+			var minExtents = corners[0];
+			var maxExtents = corners[0];
+			for (var i = 1; i < corners.Count; ++i) {
+				var corner = corners[i];
+				minExtents = new Location(
+					Single.Min(minExtents.X, corner.X),  	
+					Single.Min(minExtents.Y, corner.Y),  	
+					Single.Min(minExtents.Z, corner.Z)  	
+				);
+				maxExtents = new Location(
+					Single.Max(maxExtents.X, corner.X),  	
+					Single.Max(maxExtents.Y, corner.Y),  	
+					Single.Max(maxExtents.Z, corner.Z)  	
+				);
+			}
+			return new PositionedCuboid(
+				maxExtents.X - minExtents.X,
+				maxExtents.Y - minExtents.Y,
+				maxExtents.Z - minExtents.Z,
+				minExtents + (maxExtents - minExtents).ScaledBy(0.5f)
+			);
+		}
 	}
 	
 	// https://dev.to/pratyush_mohanty_6b8f2749/the-math-behind-bounding-box-collision-detection-aabb-vs-obbseparate-axis-theorem-1gdn

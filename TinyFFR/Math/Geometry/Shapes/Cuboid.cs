@@ -15,6 +15,10 @@ public interface ICuboid : IConvexShape {
 	float Depth { get; init; }
 	float Volume { get; }
 	float SurfaceArea { get; }
+	float SmallestHalfExtent{ get; }
+	float SmallestExtent { get; }
+	float LargestHalfExtent{ get; }
+	float LargestExtent { get; }
 	
 	Location CentroidAt(CardinalOrientation side);
 	Location CornerAt(DiagonalOrientation corner);

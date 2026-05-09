@@ -14,8 +14,8 @@ public readonly ref struct CameraCreationConfig : IConfigStruct<CameraCreationCo
 	public static readonly float DefaultOrthographicHeight = 1f;
 	public static readonly float DefaultAspectRatio = 16f / 9f;
 	public static readonly bool DefaultFieldOfViewVerticalFlag = true;
-	public static readonly float DefaultNearPlaneDistance = 0.15f;
-	public static readonly float DefaultFarPlaneDistance = 5_000f;
+	public static readonly float DefaultNearPlaneDistance = 0.03f;
+	public static readonly float DefaultFarPlaneDistance = 1_000f;
 	public static readonly CameraProjectionType DefaultProjectionType = CameraProjectionType.Perspective;
 
 	public Location Position { get; init; } = DefaultPosition;

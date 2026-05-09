@@ -4,8 +4,9 @@
 namespace Egodystonic.TinyFFR;
 
 #pragma warning disable CA1815 // "Should implement IEquatable" -- It's not recommended to compare function pointers, so there's no real way to provide equality for this type (plus it's not particularly useful anyway)
+#pragma warning disable CA1710 // "Should end in collection-like suffix" -- I don't really want this used like a collection, I only implement IROL<> because we get it for free due to Count and indexer property already existing, so why not
 // Represents an enumerator that takes a copy of TIn and uses a pointer to a static indexer and count method to avoid accidental garbage generation
-public readonly unsafe struct IndirectEnumerable<TIn, TOut> : IEnumerable<TOut> {
+public readonly unsafe struct IndirectEnumerable<TIn, TOut> : IReadOnlyList<TOut> {
 	public struct Enumerator : IEnumerator<TOut> {
 		readonly TIn _input;
 		readonly int _count;
