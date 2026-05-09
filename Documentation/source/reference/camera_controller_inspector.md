@@ -15,8 +15,8 @@ The `InspectorCameraController` orbits a camera around a `Target` location on a 
 ```csharp
 // One time setup:
 var controller = camera.CreateController<InspectorCameraController>(); // (1)!
-controller.Target = Location.Origin; // (2)!
-controller.WorldUp = Direction.Up; // (3)!
+controller.WorldUp = Direction.Up; // (2)!
+controller.SetParametersFromBoundingBox(myMesh.BoundingBox); // (3)!
 
 // Per-frame:
 controller.AdjustAllViaDefaultControls(input.KeyboardAndMouse, deltaTime); // (4)!
@@ -25,8 +25,13 @@ controller.Progress(deltaTime); // (6)!
 ```
 
 1.	This creates the controller, attached to the given `camera`.
-2.	This sets the location the camera will orbit around (and always look at).
-3.	This sets which way is "up" — the axis the camera yaws around, and the reference for what "up" means when tilting via `Pitch`.
+2.	This sets which way is "up" — the axis the camera yaws around, and the reference for what "up" means when tilting via `Pitch`.
+
+3.	This sets the camera's `Target`, `MinDistance`, `MaxDistance` and `Distance` properties according to the bounding box of the mesh you want to inspect.
+
+	For multiple models/meshes (e.g. as loaded by `LoadAll()`) you can calculate an amalgamated bounding box via e.g. `loadedAssetData.Models.CalculateCombinedBoundingBox()`.
+
+	Using this method is optional; you can set those properties manually if preferred.
 
 4.	This manipulates the camera according to the default keyboard and mouse scheme. The yaw/pitch/distance properties will change according to any registered user inputs for this frame.
 
@@ -104,6 +109,19 @@ controller.Progress(deltaTime); // (6)!
 	
 	Defaults to `2f`.
 
+----
+
+<span class="def-icon">:material-code-block-parentheses:</span> `SetParametersFromBoundingBox(...)`
+
+:   A convenience method for inspecting a single object or set of models: sets `Target`, `MinDistance`, `MaxDistance`, and `Distance` together from the supplied `boundingBox`.
+
+	Specifically, the smallest sphere enclosing the cuboid is calculated; then:
+	
+	* `Target` is set to the centre of that sphere.
+	* `MinDistance` is set to the smaller of the sphere's radius and the cuboid's smallest half-extent (so the camera can never end up inside the model, even for very flat objects).
+	* `MaxDistance` is set to three times the sphere's radius.
+	* `Distance` is set to one-and-a-half times the sphere's radius (a sensible default starting offset).
+	
 ## Reacting to Input
 
 As camera controllers are often meant to be affected by user input, there are some convenience methods supplied for controlling the primary per-frame target properties:
@@ -348,6 +366,92 @@ As camera controllers are often meant to be affected by user input, there are so
 
 	This method does not inspect any user input data but is provided as a convenience for building custom per-frame control code.
 	
+### Adjusting Distance (Percentage)
+
+These methods are direct counterparts to the `AdjustDistance...` family above, but each adjustment is interpreted as a fraction of the current `MaxDistance - MinDistance` range rather than as an absolute world-units delta.
+
+This is generally preferable when inspecting an object whose size is not known up-front (e.g. after calling `SetParametersFromBoundingBox(...)`) — the controls feel consistent regardless of how large or small the framed object is.
+
+If either `MinDistance` or `MaxDistance` is `null`, the methods fall back to adding the adjustment directly (i.e. they degenerate to using the same units as the equivalent `AdjustDistance...` methods).
+
+#### Keyboard / Mouse
+
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustDistancePercentageViaMouseCursor(...)`
+
+:   Adjusts `Distance` according to the captured mouse cursor movement for this frame, scaled by the current distance range.
+
+	The `axis` sets which cursor movement direction will be used (defaults to `Y`, e.g. up/down).
+	
+	The `adjustmentPerPixel` value is the percentage of the distance range to add for each pixel moved according to the given `axis`. If null, `DefaultDistancePercentageSensitivityMouseCursor` will be used.
+	
+	If `invertMouseControl` is `true`, the calculated adjustment will be reversed.
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustDistancePercentageViaMouseWheel(...)`
+
+:   Adjusts `Distance` according to the captured mouse wheel movement for this frame, scaled by the current distance range.
+	
+	The `adjustmentPerWheelIncrement` value is the percentage of the distance range to add for each scroll increment on the mouse wheel. If null, `DefaultDistancePercentageSensitivityMouseWheel` will be used.
+	
+	If `invertMouseControl` is `true`, the calculated adjustment will be reversed.
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustDistancePercentageViaKeyPress(...)`
+
+:   Adjusts `Distance` according to whether a certain key is depressed for this frame, scaled by the current distance range.
+	
+	The `deltaTime` value is expected to be the time in seconds of this frame iteration.
+	
+	The `keyToTestFor` is the key that, when pressed, will adjust this property.
+	
+	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two keys in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	
+	The `adjustmentPerSec` value is the percentage of the distance range to add for each second this key is depressed. If null, `DefaultDistancePercentageSensitivityKeyOrButtonPress` will be used.
+	
+#### Gamepad
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustDistancePercentageViaControllerStick(...)`
+
+:   Adjusts `Distance` according to the captured controller stick position for this frame, scaled by the current distance range.
+	
+	The `deltaTime` value is expected to be the time in seconds of this frame iteration.
+	
+	The `axis` sets which stick movement direction will be used (defaults to `Y`, e.g. up/down).
+	
+	The `maxAdjustmentPerSec` value is the percentage of the distance range to add when the stick is fully displaced along the given `axis`. If null, `DefaultDistancePercentageSensitivityControllerStick` will be used.
+	
+	If `useLeftStick` is true, the left controller stick will be measured; otherwise the right stick will be measured. Defaults to `false`.
+	
+	If `invertStickControl` is `true`, the calculated adjustment will be reversed.
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustDistancePercentageViaControllerTriggers(...)`
+
+:   Adjusts `Distance` according to the captured controller trigger positions for this frame, scaled by the current distance range.
+	
+	The `deltaTime` value is expected to be the time in seconds of this frame iteration.
+	
+	The `maxAdjustmentPerSec` value is the percentage of the distance range to add when the trigger is fully displaced. If null, `DefaultDistancePercentageSensitivityControllerTrigger` will be used.
+	
+	If `leftTriggerIncreasesDistance` is true, the left trigger will increase distance from the target and the right trigger decrease it; otherwise these directions will be reversed. Defaults to `true`.
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustDistancePercentageViaButtonPress(...)`
+
+:   Adjusts `Distance` according to whether a certain button is depressed for this frame, scaled by the current distance range.
+	
+	The `deltaTime` value is expected to be the time in seconds of this frame iteration.
+	
+	The `buttonToTestFor` is the button that, when pressed, will adjust this property.
+	
+	If `reverse` is `true`, the calculated adjustment will be reversed. Defaults to `false`. This parameter lets you specify two buttons in a pair that mirror each other by invoking this method twice (once with `reverse` as `false` and once with `reverse` as `true`).
+	
+	The `adjustmentPerSec` value is the percentage of the distance range to add for each second this button is depressed. If null, `DefaultDistancePercentageSensitivityKeyOrButtonPress` will be used.
+	
+#### Other
+	
+<span class="def-icon">:material-code-block-parentheses:</span> `AdjustDistancePercentage(...)`
+
+:   Adjusts `Distance` according to the given rate (`adjustmentPerSec`) and time step (`deltaTime`), scaled by the current distance range.
+
+	This method does not inspect any user input data but is provided as a convenience for building custom per-frame control code.
+	
 ### Default Controls
 
 The following snippets show the implementation of `AdjustAllViaDefaultControls(...)` for keyboard/mouse and gamepad respectively:
@@ -357,7 +461,7 @@ The following snippets show the implementation of `AdjustAllViaDefaultControls(.
 
 AdjustPitchViaMouseCursor(input, pitchAdjustmentPerPixel, invertMouseControl: invertPitchControl);
 AdjustYawViaMouseCursor(input, yawAdjustmentPerPixel, invertMouseControl: invertYawControl);
-AdjustDistanceViaMouseWheel(input, distanceAdjustmentPerWheelIncrement, invertMouseControl: invertDistanceControl);
+AdjustDistancePercentageViaMouseWheel(input, distancePercentageAdjustmentPerWheelIncrement, invertMouseControl: invertDistanceControl);
 ```
 
 ```csharp
@@ -365,7 +469,7 @@ AdjustDistanceViaMouseWheel(input, distanceAdjustmentPerWheelIncrement, invertMo
 
 AdjustPitchViaControllerStick(input, deltaTime, maxPitchAdjustmentPerSec, invertStickControl: invertPitchControl);
 AdjustYawViaControllerStick(input, deltaTime, maxYawAdjustmentPerSec, invertStickControl: invertYawControl);
-AdjustDistanceViaControllerTriggers(input, deltaTime, maxDistanceAdjustmentPerSec, leftTriggerIncreasesDistance: !invertDistanceControl);
+AdjustDistancePercentageViaControllerTriggers(input, deltaTime, maxDistancePercentageAdjustmentPerSec, leftTriggerIncreasesDistance: !invertDistanceControl);
 ```
 
 ## Smoothing
