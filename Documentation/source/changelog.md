@@ -24,6 +24,7 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/7?closed=1) 
 * Added ability to generate random locations inside convex shapes
 * Improved error messages when exceeding internal buffer size
 * Made it possible to create mock resources for testing
+* (0.8.1) Increased internal handle allocator size to improve speed of loading complex models
 
 ### Bug Fixes
 

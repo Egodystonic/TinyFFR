@@ -54,6 +54,7 @@ void native_impl_init::on_factory_build(interop_bool enableVsync, uint32_t comma
 	auto config = filament::Engine::Config{
 		.commandBufferSizeMB = commandBufferSizeMb * 5U, // x5 because we allow up to 5x frame queue
 		.perRenderPassArenaSizeMB = furtherReduceMemoryUsage ? 3U : 70U,
+		.driverHandleArenaSizeMB = furtherReduceMemoryUsage ? 8U : 128U,
 		.minCommandBufferSizeMB = commandBufferSizeMb,
 		.perFrameCommandsSizeMB = furtherReduceMemoryUsage ? 2U : 35U,
 		.disableVsync = enableVsync ? false : true,
