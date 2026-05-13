@@ -22,4 +22,6 @@ public interface IRendererImplProvider : IDisposableResourceImplProvider<Rendere
 	void CaptureScreenshot(ResourceHandle<Renderer> handle, Action<XYPair<int>, ReadOnlySpan<TexelRgb24>> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop);
 	unsafe void CaptureScreenshot(ResourceHandle<Renderer> handle, delegate* managed<XYPair<int>, ReadOnlySpan<TexelRgb24>, void> handler, XYPair<int>? captureResolution, bool lowestAddressesRepresentFrameTop);
 	Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom);
+	void SetTargetViewportDimensionsByFraction(ResourceHandle<Renderer> handle, XYPair<float> upperLeftCornerFractionalLocation, XYPair<float> fractionalDimensions); 
+	void SetTargetViewportDimensionsByPixel(ResourceHandle<Renderer> handle, XYPair<int> upperLeftCornerPixelLocation, XYPair<int> pixelDimensions); 
 }

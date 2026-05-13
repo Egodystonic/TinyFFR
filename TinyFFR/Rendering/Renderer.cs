@@ -87,6 +87,12 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray CastRayFromRenderSurface(XYPair<int> pixelCoord, bool yZeroOriginAtBottom) => Implementation.CastRayFromRenderSurface(_handle, pixelCoord, yZeroOriginAtBottom);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetRenderTargetAreaPixels(XYPair<int> upperLeftCornerPixelLocation, XYPair<int> pixelDimensions) => Implementation.SetTargetViewportDimensionsByPixel(_handle, upperLeftCornerPixelLocation, pixelDimensions);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void SetRenderTargetAreaFractional(XYPair<float> upperLeftCornerFractionalLocation, XYPair<float> fractionalDimensions) => Implementation.SetTargetViewportDimensionsByFraction(_handle, upperLeftCornerFractionalLocation, fractionalDimensions);
+
 	public override string ToString() => $"Renderer {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Disposal

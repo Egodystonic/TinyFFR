@@ -144,6 +144,14 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		_actualRenderer.SetFrustumCullingEnabled(enabled);
 	}
+	public void SetTargetViewportDimensionsByFraction(ResourceHandle<Renderer> handle, XYPair<float> upperLeftCornerFractionalLocation, XYPair<float> fractionalDimensions) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		_actualRenderer.SetRenderTargetAreaFractional(upperLeftCornerFractionalLocation, fractionalDimensions);
+	}
+	public void SetTargetViewportDimensionsByPixel(ResourceHandle<Renderer> handle, XYPair<int> upperLeftCornerPixelLocation, XYPair<int> pixelDimensions) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		_actualRenderer.SetRenderTargetAreaPixels(upperLeftCornerPixelLocation, pixelDimensions);
+	}
 	public void WaitForGpu(ResourceHandle<Renderer> handle) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		_actualRenderer.WaitForGpu();

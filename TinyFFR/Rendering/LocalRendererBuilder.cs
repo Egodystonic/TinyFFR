@@ -71,8 +71,64 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		public static bool operator !=(RenderTargetUnion left, RenderTargetUnion right) => !left.Equals(right);
 	}
 	
+	[StructLayout(LayoutKind.Explicit)]
+	readonly struct ViewportDimensionsUnion {
+		[FieldOffset(0)]
+		public readonly XYPair<int> UpperLeftCornerPixels;
+		[FieldOffset(8)]
+		public readonly XYPair<int> SizePixels;
+		[FieldOffset(0)]
+		public readonly XYPair<float> UpperLeftCornerFraction;
+		[FieldOffset(8)]
+		public readonly XYPair<float> SizeFraction;
+		[FieldOffset(16)]
+		public readonly bool SpecifiedAsPixel;
+		[FieldOffset(20)]
+		public readonly bool IsFullScreen;
+
+		public ViewportDimensionsUnion(XYPair<float> upperLeftCornerFraction, XYPair<float> sizeFraction) {
+			UpperLeftCornerFraction = upperLeftCornerFraction;
+			SizeFraction = sizeFraction;
+			SpecifiedAsPixel = false;
+			IsFullScreen = upperLeftCornerFraction == XYPair<float>.Zero && sizeFraction == XYPair<float>.One;
+		}
+		public ViewportDimensionsUnion(XYPair<int> upperLeftCornerPixels, XYPair<int> sizePixels) {
+			UpperLeftCornerPixels = upperLeftCornerPixels;
+			SizePixels = sizePixels;
+			SpecifiedAsPixel = true;
+			IsFullScreen = false;
+		}
+		
+		public (int UpperLeftX, int UpperLeftY, int Width, int Height) ExtractViewportPixelCoords(XYPair<int> renderTargetSize) {
+			if (IsFullScreen) return (0, 0, renderTargetSize.X, renderTargetSize.Y);
+			XYPair<int> upperLeftCornerPx, sizePx;
+			
+			if (SpecifiedAsPixel) {
+				upperLeftCornerPx = UpperLeftCornerPixels;
+				sizePx = SizePixels;
+			}
+			else {
+				var rtSizeFloat = renderTargetSize.Cast<float>();
+				upperLeftCornerPx = (rtSizeFloat * UpperLeftCornerFraction).CastWithRoundingIfNecessary<float, int>();
+				sizePx = (rtSizeFloat * SizeFraction).CastWithRoundingIfNecessary<float, int>();
+			}
+
+			var overshoot = (upperLeftCornerPx + sizePx) - renderTargetSize;
+			if (overshoot.X > 0) {
+				upperLeftCornerPx = upperLeftCornerPx with { X = Int32.Max(0, upperLeftCornerPx.X - overshoot.X) };
+				sizePx = sizePx with { X = Int32.Min(sizePx.X - overshoot.X, renderTargetSize.X - upperLeftCornerPx.X) }; 
+			}
+			if (overshoot.Y > 0) {
+				upperLeftCornerPx = upperLeftCornerPx with { Y = Int32.Max(0, upperLeftCornerPx.Y - overshoot.Y) };
+				sizePx = sizePx with { Y = Int32.Min(sizePx.Y - overshoot.Y, renderTargetSize.Y - upperLeftCornerPx.Y) }; 
+			}
+			
+			return (upperLeftCornerPx.X, upperLeftCornerPx.Y, sizePx.X, sizePx.Y);
+		}
+	}
+	
 	readonly record struct TargetSpecificData(UIntPtr RendererPtr, UIntPtr? SwapChainPtr, bool SwapchainShouldBeRenewed);
-	readonly record struct ViewportData(UIntPtr Handle, XYPair<int> CurrentSize);
+	readonly record struct ViewportData(UIntPtr Handle, XYPair<int> LastCheckedRenderTargetSize, XYPair<int> LastSetViewportSize, ViewportDimensionsUnion DesiredDimensions);
 	readonly record struct RendererData(Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, bool EmitFences, RenderQualityConfig Quality);
 	readonly unsafe struct OutputBufferCallbackData {
 		public bool InvertRows { get; }
@@ -217,7 +273,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 			rtu.IsBuffer ? _loadedBuffers[rtu.AsBuffer.Handle].RenderTargetHandle : UIntPtr.Zero,
 			out var viewDescriptorHandle
 		).ThrowIfFailure();
-		var viewportData = new ViewportData(viewDescriptorHandle, XYPair<int>.Zero);
+		var viewportData = new ViewportData(viewDescriptorHandle, XYPair<int>.Zero, XYPair<int>.Zero, new ViewportDimensionsUnion(XYPair<int>.Zero, XYPair<int>.One));
 
 		_previousHandleId++;
 		var handle = new ResourceHandle<Renderer>(_previousHandleId);
@@ -270,14 +326,21 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		lock (_loadedTargetDataMutationLock) {
 			targetData = _loadedTargets[rendererData.RenderTarget];
 		}
-		var curViewportSize = viewportData.CurrentSize;
+
 		var curTargetSize = rendererData.RenderTarget.ViewportDimensions;
 		var shouldRenewSwapChainIfIsWindowAndAlreadyExists = targetData.SwapchainShouldBeRenewed;
-		if (curViewportSize != curTargetSize) {
-			viewportData = viewportData with { CurrentSize = curTargetSize };
+		if (viewportData.LastCheckedRenderTargetSize != curTargetSize) {
+			var viewportCoords = viewportData.DesiredDimensions.ExtractViewportPixelCoords(curTargetSize);
+			viewportData = viewportData with { LastCheckedRenderTargetSize = curTargetSize, LastSetViewportSize = (viewportCoords.Width, viewportCoords.Height) };
 			rendererData = rendererData with { Viewport = viewportData };
+			SetViewDescriptorSize(
+				viewportData.Handle,
+				viewportCoords.UpperLeftX,
+				curTargetSize.Y - viewportCoords.UpperLeftY,
+				(uint) curTargetSize.X, 
+				(uint) curTargetSize.Y
+			).ThrowIfFailure();
 			_loadedRenderers[handle] = rendererData;
-			SetViewDescriptorSize(viewportData.Handle, (uint) curTargetSize.X, (uint) curTargetSize.Y).ThrowIfFailure();
 			if (rendererData.AutoUpdateCameraAspectRatio) {
 				rendererData.Camera.SetAspectRatio(curTargetSize.Ratio ?? CameraCreationConfig.DefaultAspectRatio);
 			}
@@ -410,6 +473,31 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		SetViewFrustumCullingEnabled(_loadedRenderers[handle].Viewport.Handle, enabled).ThrowIfFailure();
 	}
 
+	public void SetTargetViewportDimensionsByFraction(ResourceHandle<Renderer> handle, XYPair<float> upperLeftCornerFractionalLocation, XYPair<float> fractionalDimensions) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_loadedRenderers[handle] = _loadedRenderers[handle] with { 
+			Viewport = _loadedRenderers[handle].Viewport with {
+				LastCheckedRenderTargetSize = XYPair<int>.Zero,
+				DesiredDimensions = new ViewportDimensionsUnion(
+					upperLeftCornerFractionalLocation.Clamp(XYPair<float>.Zero, XYPair<float>.One), 
+					fractionalDimensions.Clamp(XYPair<float>.Zero, XYPair<float>.One)
+				)
+			}
+		};
+	}
+	public void SetTargetViewportDimensionsByPixel(ResourceHandle<Renderer> handle, XYPair<int> upperLeftCornerPixelLocation, XYPair<int> pixelDimensions) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_loadedRenderers[handle] = _loadedRenderers[handle] with { 
+			Viewport = _loadedRenderers[handle].Viewport with {
+				LastCheckedRenderTargetSize = XYPair<int>.Zero,
+				DesiredDimensions = new ViewportDimensionsUnion(
+					upperLeftCornerPixelLocation.Clamp(XYPair<int>.Zero, XYPair<int>.One), 
+					pixelDimensions.Clamp(XYPair<int>.Zero, XYPair<int>.One)
+				)
+			}
+		};
+	}
+
 	public Texture CreateDynamicTexture(ResourceHandle<RenderOutputBuffer> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return HandleToInstance(new ResourceHandle<Texture>(_loadedBuffers[handle].TextureHandle));
@@ -517,7 +605,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 	(RenderOutputBuffer Buffer, Renderer Renderer) SetUpScreenshotCapture(RendererData data, XYPair<int>? captureResolution) {
 		var buffer = CreateRenderOutputBuffer(new() {
 			Name = SnapshotBufferName,
-			TextureDimensions = captureResolution ?? data.Viewport.CurrentSize.Cast<int>()
+			TextureDimensions = captureResolution ?? data.Viewport.LastSetViewportSize
 		});
 		var renderer = CreateRenderer(data.Scene, data.Camera, buffer, new() {
 			AutoUpdateCameraAspectRatio = false,
@@ -687,6 +775,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_view_descriptor_size")]
 	static extern InteropResult SetViewDescriptorSize(
 		UIntPtr viewDescriptorHandle,
+		int x,
+		int y,
 		uint width,
 		uint height
 	);
