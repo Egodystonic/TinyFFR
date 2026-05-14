@@ -10,7 +10,6 @@ using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Rendering;
-using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Testing.Local.TestSetup;

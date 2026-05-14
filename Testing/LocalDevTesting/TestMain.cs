@@ -12,7 +12,6 @@ using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Rendering;
-using Egodystonic.TinyFFR.Rendering.Local;
 
 namespace Egodystonic.TinyFFR.Testing.Local;
 

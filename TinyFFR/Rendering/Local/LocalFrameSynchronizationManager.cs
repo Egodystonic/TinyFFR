@@ -7,7 +7,7 @@ using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
-namespace Egodystonic.TinyFFR.Rendering.Local.Sync;
+namespace Egodystonic.TinyFFR.Rendering.Local;
 
 static unsafe class LocalFrameSynchronizationManager {
 	[InlineArray(MaxBufferSize)]

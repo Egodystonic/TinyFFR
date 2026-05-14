@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
-using Egodystonic.TinyFFR.Rendering.Local;
+using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 

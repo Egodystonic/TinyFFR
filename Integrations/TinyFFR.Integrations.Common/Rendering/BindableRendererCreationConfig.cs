@@ -2,8 +2,6 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using System;
-using System.Text;
-using Egodystonic.TinyFFR.Rendering.Local.Sync;
 using static Egodystonic.TinyFFR.IConfigStruct;
 
 namespace Egodystonic.TinyFFR.Rendering;
