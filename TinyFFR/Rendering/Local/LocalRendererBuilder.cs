@@ -262,7 +262,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 			rtu.IsBuffer ? _loadedBuffers[rtu.AsBuffer.Handle].RenderTargetHandle : UIntPtr.Zero,
 			out var viewDescriptorHandle
 		).ThrowIfFailure();
-		var viewportData = new ViewportData(viewDescriptorHandle, XYPair<int>.Zero, XYPair<int>.Zero, XYPair<int>.Zero, new ViewportDimensionsUnion(XYPair<int>.Zero, XYPair<int>.One));
+		var viewportData = new ViewportData(viewDescriptorHandle, XYPair<int>.Zero, XYPair<int>.Zero, XYPair<int>.Zero, new ViewportDimensionsUnion(XYPair<float>.Zero, XYPair<float>.One));
 
 		_previousHandleId++;
 		var handle = new ResourceHandle<Renderer>(_previousHandleId);
