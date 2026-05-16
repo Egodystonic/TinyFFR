@@ -91,6 +91,12 @@ public static class OrientationUtils {
 		VerticalOrientation2D.Up,
 		VerticalOrientation2D.Down,
 	};
+	static readonly DiagonalOrientation2D[] _all2DDiagonals = {
+		DiagonalOrientation2D.UpRight,
+		DiagonalOrientation2D.UpLeft,
+		DiagonalOrientation2D.DownLeft,
+		DiagonalOrientation2D.DownRight,
+	};
 
 	public static ReadOnlySpan<Orientation> All3DOrientations => _all3DOrientations;
 	public static ReadOnlySpan<Axis> AllAxes => _allAxes;
@@ -100,6 +106,7 @@ public static class OrientationUtils {
 	public static ReadOnlySpan<Orientation2D> All2DOrientations => _all2DOrientations;
 	public static ReadOnlySpan<HorizontalOrientation2D> AllHorizontals => _allHorizontals;
 	public static ReadOnlySpan<VerticalOrientation2D> AllVerticals => _allVerticals;
+	public static ReadOnlySpan<DiagonalOrientation2D> All2DDiagonals => _all2DDiagonals;
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Orientation CreateOrientation(XAxisOrientation xValue, YAxisOrientation yValue, ZAxisOrientation zValue) => xValue.Plus(yValue, zValue);
