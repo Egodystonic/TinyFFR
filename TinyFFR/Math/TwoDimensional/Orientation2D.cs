@@ -37,6 +37,14 @@ public enum VerticalOrientation2D { // TODO mention in XMLDoc that's always safe
 	Down = DownBit,
 }
 
+public enum DiagonalOrientation2D { // TODO mention in XMLDoc that's always safe to cast this to Orientation2D but not the other way around
+	None = 0,
+	UpRight = UpBit | RightBit,
+	UpLeft = UpBit | LeftBit,
+	DownLeft = DownBit | LeftBit,
+	DownRight = DownBit | RightBit
+}
+
 [Flags]
 public enum Orientation2D {
 	None = 0,
@@ -56,6 +64,9 @@ public static class Orientation2DExtensions {
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Orientation2D AsGeneralOrientation(this VerticalOrientation2D @this) => (Orientation2D) @this;
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Orientation2D AsGeneralOrientation(this DiagonalOrientation2D @this) => (Orientation2D) @this;
 
 	public static Orientation2D Plus(this HorizontalOrientation2D @this, VerticalOrientation2D verticalComponent) => (Orientation2D) ((int) @this | (int) verticalComponent);
 
@@ -63,7 +74,12 @@ public static class Orientation2DExtensions {
 
 	public static HorizontalOrientation2D GetHorizontalComponent(this Orientation2D @this) => (HorizontalOrientation2D) ((int) @this & HorizontalBits);
 	public static VerticalOrientation2D GetVerticalComponent(this Orientation2D @this) => (VerticalOrientation2D) ((int) @this & VerticalBits);
+	public static HorizontalOrientation2D GetHorizontalComponent(this DiagonalOrientation2D @this) => (HorizontalOrientation2D) ((int) @this & HorizontalBits);
+	public static VerticalOrientation2D GetVerticalComponent(this DiagonalOrientation2D @this) => (VerticalOrientation2D) ((int) @this & VerticalBits);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Angle? ToPolarAngle(this Orientation2D @this) => Angle.From2DPolarAngle(@this);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Angle? ToPolarAngle(this DiagonalOrientation2D @this) => Angle.From2DPolarAngle(@this.AsGeneralOrientation());
 }

@@ -144,13 +144,13 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		_actualRenderer.SetFrustumCullingEnabled(enabled);
 	}
-	public void SetTargetViewportDimensionsByFraction(ResourceHandle<Renderer> handle, XYPair<float> upperLeftCornerFractionalLocation, XYPair<float> fractionalDimensions) {
+	public void SetTargetViewportDimensionsByFraction(ResourceHandle<Renderer> handle, Orientation2D anchor, XYPair<float> fractionalOffset, XYPair<float> fractionalDimensions) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
-		_actualRenderer.SetRenderTargetAreaFractional(upperLeftCornerFractionalLocation, fractionalDimensions);
+		_actualRenderer.SetRenderSubAreaFraction(anchor, fractionalOffset, fractionalDimensions);
 	}
-	public void SetTargetViewportDimensionsByPixel(ResourceHandle<Renderer> handle, XYPair<int> upperLeftCornerPixelLocation, XYPair<int> pixelDimensions) {
+	public void SetTargetViewportDimensionsByPixel(ResourceHandle<Renderer> handle, Orientation2D anchor, XYPair<int> fractionalLocation, XYPair<int> pixelDimensions) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
-		_actualRenderer.SetRenderTargetAreaPixels(upperLeftCornerPixelLocation, pixelDimensions);
+		_actualRenderer.SetRenderSubAreaPixels(anchor, fractionalLocation, pixelDimensions);
 	}
 	public void WaitForGpu(ResourceHandle<Renderer> handle) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);

@@ -68,28 +68,32 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 	}
 	
 	[StructLayout(LayoutKind.Explicit)]
-	readonly struct ViewportDimensionsUnion {
+	readonly struct DesiredViewportDimensionsUnion {
 		[FieldOffset(0)]
-		public readonly XYPair<int> UpperLeftCornerPixels;
+		public readonly XYPair<int> OffsetPixels;
 		[FieldOffset(8)]
 		public readonly XYPair<int> SizePixels;
 		[FieldOffset(0)]
-		public readonly XYPair<float> UpperLeftCornerFraction;
+		public readonly XYPair<float> OffsetFraction;
 		[FieldOffset(8)]
 		public readonly XYPair<float> SizeFraction;
 		[FieldOffset(16)]
 		public readonly bool SpecifiedAsPixel;
 		[FieldOffset(20)]
 		public readonly bool IsFullScreen;
+		[FieldOffset(24)]
+		public readonly Orientation2D Anchor;
 
-		public ViewportDimensionsUnion(XYPair<float> upperLeftCornerFraction, XYPair<float> sizeFraction) {
-			UpperLeftCornerFraction = upperLeftCornerFraction;
+		public DesiredViewportDimensionsUnion(Orientation2D anchor, XYPair<float> offsetFraction, XYPair<float> sizeFraction) {
+			Anchor = anchor;
+			OffsetFraction = offsetFraction;
 			SizeFraction = sizeFraction;
 			SpecifiedAsPixel = false;
-			IsFullScreen = upperLeftCornerFraction == XYPair<float>.Zero && sizeFraction == XYPair<float>.One;
+			IsFullScreen = offsetFraction == XYPair<float>.Zero && sizeFraction == XYPair<float>.One;
 		}
-		public ViewportDimensionsUnion(XYPair<int> upperLeftCornerPixels, XYPair<int> sizePixels) {
-			UpperLeftCornerPixels = upperLeftCornerPixels;
+		public DesiredViewportDimensionsUnion(Orientation2D anchor, XYPair<int> offsetPixels, XYPair<int> sizePixels) {
+			Anchor = anchor;
+			OffsetPixels = offsetPixels;
 			SizePixels = sizePixels;
 			SpecifiedAsPixel = true;
 			IsFullScreen = false;
@@ -100,12 +104,12 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 			XYPair<int> upperLeftCornerPx, sizePx;
 			
 			if (SpecifiedAsPixel) {
-				upperLeftCornerPx = UpperLeftCornerPixels;
+				upperLeftCornerPx = OffsetPixels;
 				sizePx = SizePixels;
 			}
 			else {
 				var rtSizeFloat = renderTargetSize.Cast<float>();
-				upperLeftCornerPx = (rtSizeFloat * UpperLeftCornerFraction).CastWithRoundingIfNecessary<float, int>();
+				upperLeftCornerPx = (rtSizeFloat * OffsetFraction).CastWithRoundingIfNecessary<float, int>();
 				sizePx = (rtSizeFloat * SizeFraction).CastWithRoundingIfNecessary<float, int>();
 			}
 
@@ -117,7 +121,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 	}
 	
 	readonly record struct TargetSpecificData(UIntPtr RendererPtr, UIntPtr? SwapChainPtr, bool SwapchainShouldBeRenewed);
-	readonly record struct ViewportData(UIntPtr Handle, XYPair<int> LastCheckedRenderTargetSize, XYPair<int> LastSetViewportUpperLeft, XYPair<int> LastSetViewportSize, ViewportDimensionsUnion DesiredDimensions);
+	readonly record struct ViewportData(UIntPtr Handle, XYPair<int> LastCheckedRenderTargetSize, XYPair<int> LastSetViewportUpperLeft, XYPair<int> LastSetViewportSize, DesiredViewportDimensionsUnion DesiredDimensions);
 	readonly record struct RendererData(Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, bool EmitFences, RenderQualityConfig Quality);
 	readonly unsafe struct OutputBufferCallbackData {
 		public bool InvertRows { get; }
@@ -262,7 +266,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 			rtu.IsBuffer ? _loadedBuffers[rtu.AsBuffer.Handle].RenderTargetHandle : UIntPtr.Zero,
 			out var viewDescriptorHandle
 		).ThrowIfFailure();
-		var viewportData = new ViewportData(viewDescriptorHandle, XYPair<int>.Zero, XYPair<int>.Zero, XYPair<int>.Zero, new ViewportDimensionsUnion(XYPair<float>.Zero, XYPair<float>.One));
+		var viewportData = new ViewportData(viewDescriptorHandle, XYPair<int>.Zero, XYPair<int>.Zero, XYPair<int>.Zero, new DesiredViewportDimensionsUnion(Orientation2D.None, XYPair<float>.Zero, XYPair<float>.One));
 
 		_previousHandleId++;
 		var handle = new ResourceHandle<Renderer>(_previousHandleId);
@@ -466,26 +470,28 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		SetViewFrustumCullingEnabled(_loadedRenderers[handle].Viewport.Handle, enabled).ThrowIfFailure();
 	}
 
-	public void SetTargetViewportDimensionsByFraction(ResourceHandle<Renderer> handle, XYPair<float> upperLeftCornerFractionalLocation, XYPair<float> fractionalDimensions) {
+	public void SetTargetViewportDimensionsByFraction(ResourceHandle<Renderer> handle, Orientation2D anchor, XYPair<float> fractionalOffset, XYPair<float> fractionalDimensions) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_loadedRenderers[handle] = _loadedRenderers[handle] with { 
 			Viewport = _loadedRenderers[handle].Viewport with {
 				LastCheckedRenderTargetSize = XYPair<int>.Zero,
-				DesiredDimensions = new ViewportDimensionsUnion(
-					upperLeftCornerFractionalLocation.Clamp(XYPair<float>.Zero, XYPair<float>.One), 
-					fractionalDimensions.Clamp(XYPair<float>.Zero, XYPair<float>.One)
+				DesiredDimensions = new DesiredViewportDimensionsUnion(
+					anchor,
+					fractionalOffset, 
+					fractionalDimensions
 				)
 			}
 		};
 	}
-	public void SetTargetViewportDimensionsByPixel(ResourceHandle<Renderer> handle, XYPair<int> upperLeftCornerPixelLocation, XYPair<int> pixelDimensions) {
+	public void SetTargetViewportDimensionsByPixel(ResourceHandle<Renderer> handle, Orientation2D anchor, XYPair<int> fractionalLocation, XYPair<int> pixelDimensions) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		_loadedRenderers[handle] = _loadedRenderers[handle] with {
 			Viewport = _loadedRenderers[handle].Viewport with {
 				LastCheckedRenderTargetSize = XYPair<int>.Zero,
-				DesiredDimensions = new ViewportDimensionsUnion(
-					upperLeftCornerPixelLocation.Absolute,
-					pixelDimensions.Absolute
+				DesiredDimensions = new DesiredViewportDimensionsUnion(
+					anchor,
+					fractionalLocation,
+					pixelDimensions
 				)
 			}
 		};

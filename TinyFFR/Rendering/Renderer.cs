@@ -88,10 +88,10 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	public Ray CastRayFromRenderSurface(XYPair<int> pixelCoord, bool yZeroOriginAtBottom) => Implementation.CastRayFromRenderSurface(_handle, pixelCoord, yZeroOriginAtBottom);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetRenderTargetAreaPixels(XYPair<int> upperLeftCornerPixelLocation, XYPair<int> pixelDimensions) => Implementation.SetTargetViewportDimensionsByPixel(_handle, upperLeftCornerPixelLocation, pixelDimensions);
+	public void SetRenderSubAreaPixels(Orientation2D anchor, XYPair<int> pixelOffset, XYPair<int> pixelDimensions) => Implementation.SetTargetViewportDimensionsByPixel(_handle, anchor, pixelOffset, pixelDimensions);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void SetRenderTargetAreaFractional(XYPair<float> upperLeftCornerFractionalLocation, XYPair<float> fractionalDimensions) => Implementation.SetTargetViewportDimensionsByFraction(_handle, upperLeftCornerFractionalLocation, fractionalDimensions);
+	public void SetRenderSubAreaFraction(Orientation2D anchor, XYPair<float> fractionalOffset, XYPair<float> fractionalDimensions) => Implementation.SetTargetViewportDimensionsByFraction(_handle, anchor, fractionalOffset, fractionalDimensions);
 
 	public override string ToString() => $"Renderer {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
