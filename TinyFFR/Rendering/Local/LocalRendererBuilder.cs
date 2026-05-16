@@ -640,7 +640,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		}
 	}
 
-	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom) {
+	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var rendererData = _loadedRenderers[handle];
@@ -651,9 +651,9 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 			? viewport.LastSetViewportBottomLeft
 			: viewport.DesiredDimensions.ExtractViewportPixelBounds(curTargetSize).BottomLeft;
 
-		return CastRayFromViewportSurface(handle, pixelCoord - viewportBottomLeft, yZeroOriginAtBottom);
+		return CastRayFromViewportSurface(handle, pixelCoord - viewportBottomLeft, yZeroOriginAtBottom, disableDpiScalingAdjustment);
 	}
-	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom) {
+	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
 		var rendererData = _loadedRenderers[handle];
@@ -663,6 +663,10 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		var viewportSize = viewport.LastCheckedRenderTargetSize == curTargetSize
 			? viewport.LastSetViewportSize
 			: viewport.DesiredDimensions.ExtractViewportPixelBounds(curTargetSize).Size;
+		
+		if (rendererData.RenderTarget.IsWindow && !disableDpiScalingAdjustment) {
+			viewportSize = viewportSize.ScaledByReal(rendererData.RenderTarget.AsWindow.Size.Cast<float>() / viewportSize.Cast<float>());
+		}
 		
 		var normalizedCoord = new XYPair<float>(
 			((Real) pixelCoord.X).RemapRange(new Pair<Real, Real>(0f, viewportSize.X), new Pair<Real, Real>(-1f, 1f)),

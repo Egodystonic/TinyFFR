@@ -170,13 +170,13 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		_actualRenderer.CaptureScreenshot(handler, captureResolution, lowestAddressesRepresentFrameTop);
 	}
 	
-	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom) {
+	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
-		return _actualRenderer.CastRayFromRenderSurface(pixelCoord, yZeroOriginAtBottom);
+		return _actualRenderer.CastRayFromRenderSurface(pixelCoord, yZeroOriginAtBottom, disableDpiScalingAdjustment);
 	}
-	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom) {
+	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
-		return _actualRenderer.CastRayFromViewportSurface(pixelCoord, yZeroOriginAtBottom);
+		return _actualRenderer.CastRayFromRenderSubAreaSurface(pixelCoord, yZeroOriginAtBottom, disableDpiScalingAdjustment);
 	}
 
 	public Scene GetScene(ResourceHandle<Renderer> handle) {
