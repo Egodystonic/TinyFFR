@@ -86,6 +86,11 @@ public readonly struct Renderer : IDisposableResource<Renderer, IRendererImplPro
 	public Ray CastRayFromRenderSurface(XYPair<int> pixelCoord) => CastRayFromRenderSurface(pixelCoord, false);
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Ray CastRayFromRenderSurface(XYPair<int> pixelCoord, bool yZeroOriginAtBottom) => Implementation.CastRayFromRenderSurface(_handle, pixelCoord, yZeroOriginAtBottom);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray CastRayFromViewportSurface(XYPair<int> pixelCoord) => CastRayFromViewportSurface(pixelCoord, false);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Ray CastRayFromViewportSurface(XYPair<int> pixelCoord, bool yZeroOriginAtBottom) => Implementation.CastRayFromViewportSurface(_handle, pixelCoord, yZeroOriginAtBottom);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetRenderSubAreaPixels(Orientation2D anchor, XYPair<int> pixelOffset, XYPair<int> pixelDimensions) => Implementation.SetTargetViewportDimensionsByPixel(_handle, anchor, pixelOffset, pixelDimensions);

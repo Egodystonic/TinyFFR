@@ -99,29 +99,37 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 			IsFullScreen = false;
 		}
 		
-		public (XYPair<int> UpperLeft, XYPair<int> Size) ExtractViewportPixelBounds(XYPair<int> renderTargetSize) {
+		public (XYPair<int> BottomLeft, XYPair<int> Size) ExtractViewportPixelBounds(XYPair<int> renderTargetSize) {
 			if (IsFullScreen || renderTargetSize == XYPair<int>.Zero) return (XYPair<int>.Zero, renderTargetSize);
-			XYPair<int> upperLeftCornerPx, sizePx;
+			XYPair<int> offsetPx, sizePx;
 			
 			if (SpecifiedAsPixel) {
-				upperLeftCornerPx = OffsetPixels;
+				offsetPx = OffsetPixels;
 				sizePx = SizePixels;
 			}
 			else {
 				var rtSizeFloat = renderTargetSize.Cast<float>();
-				upperLeftCornerPx = (rtSizeFloat * OffsetFraction).CastWithRoundingIfNecessary<float, int>();
+				offsetPx = (rtSizeFloat * OffsetFraction).CastWithRoundingIfNecessary<float, int>();
 				sizePx = (rtSizeFloat * SizeFraction).CastWithRoundingIfNecessary<float, int>();
 			}
+			
+			var bottomLeftPx = UiUtils.GetAnchoredCanvasAreaStartCoord(
+				renderTargetSize,
+				DiagonalOrientation2D.DownLeft,
+				Anchor,
+				offsetPx,
+				sizePx
+			);
 
-			upperLeftCornerPx = upperLeftCornerPx.Clamp(XYPair<int>.Zero, renderTargetSize - XYPair<int>.One);
-			sizePx = sizePx.Clamp(XYPair<int>.Zero, renderTargetSize - upperLeftCornerPx);
-
-			return (upperLeftCornerPx, sizePx);
+			bottomLeftPx = bottomLeftPx.Clamp(XYPair<int>.Zero, renderTargetSize - XYPair<int>.One);
+			sizePx = sizePx.Clamp(XYPair<int>.Zero, renderTargetSize - bottomLeftPx);
+			
+			return (bottomLeftPx, sizePx);
 		}
 	}
 	
 	readonly record struct TargetSpecificData(UIntPtr RendererPtr, UIntPtr? SwapChainPtr, bool SwapchainShouldBeRenewed);
-	readonly record struct ViewportData(UIntPtr Handle, XYPair<int> LastCheckedRenderTargetSize, XYPair<int> LastSetViewportUpperLeft, XYPair<int> LastSetViewportSize, DesiredViewportDimensionsUnion DesiredDimensions);
+	readonly record struct ViewportData(UIntPtr Handle, XYPair<int> LastCheckedRenderTargetSize, XYPair<int> LastSetViewportBottomLeft, XYPair<int> LastSetViewportSize, DesiredViewportDimensionsUnion DesiredDimensions);
 	readonly record struct RendererData(Scene Scene, Camera Camera, RenderTargetUnion RenderTarget, ViewportData Viewport, bool AutoUpdateCameraAspectRatio, bool EmitFences, RenderQualityConfig Quality);
 	readonly unsafe struct OutputBufferCallbackData {
 		public bool InvertRows { get; }
@@ -326,14 +334,14 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 			var viewportBounds = viewportData.DesiredDimensions.ExtractViewportPixelBounds(curTargetSize);
 			viewportData = viewportData with {
 				LastCheckedRenderTargetSize = curTargetSize,
-				LastSetViewportUpperLeft = viewportBounds.UpperLeft,
+				LastSetViewportBottomLeft = viewportBounds.BottomLeft,
 				LastSetViewportSize = viewportBounds.Size
 			};
 			rendererData = rendererData with { Viewport = viewportData };
 			SetViewDescriptorSize(
 				viewportData.Handle,
-				viewportBounds.UpperLeft.X,
-				curTargetSize.Y - (viewportBounds.UpperLeft.Y + viewportBounds.Size.Y),
+				viewportBounds.BottomLeft.X,
+				viewportBounds.BottomLeft.Y,
 				(uint) viewportBounds.Size.X,
 				(uint) viewportBounds.Size.Y
 			).ThrowIfFailure();
@@ -639,26 +647,29 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		var viewport = rendererData.Viewport;
 		var curTargetSize = rendererData.RenderTarget.ViewportDimensions;
 
-		XYPair<int> viewportUpperLeft;
-		XYPair<int> viewportSize;
-		if (viewport.LastCheckedRenderTargetSize == curTargetSize) {
-			viewportUpperLeft = viewport.LastSetViewportUpperLeft;
-			viewportSize = viewport.LastSetViewportSize;
-		}
-		else {
-			var bounds = viewport.DesiredDimensions.ExtractViewportPixelBounds(curTargetSize);
-			viewportUpperLeft = bounds.UpperLeft;
-			viewportSize = bounds.Size;
-		}
+		var viewportBottomLeft = viewport.LastCheckedRenderTargetSize == curTargetSize
+			? viewport.LastSetViewportBottomLeft
+			: viewport.DesiredDimensions.ExtractViewportPixelBounds(curTargetSize).BottomLeft;
 
-		var localX = pixelCoord.X - viewportUpperLeft.X;
-		var localY = pixelCoord.Y - viewportUpperLeft.Y;
+		return CastRayFromViewportSurface(handle, pixelCoord - viewportBottomLeft, yZeroOriginAtBottom);
+	}
+	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+
+		var rendererData = _loadedRenderers[handle];
+		var viewport = rendererData.Viewport;
+		var curTargetSize = rendererData.RenderTarget.ViewportDimensions;
+	
+		var viewportSize = viewport.LastCheckedRenderTargetSize == curTargetSize
+			? viewport.LastSetViewportSize
+			: viewport.DesiredDimensions.ExtractViewportPixelBounds(curTargetSize).Size;
+		
 		var normalizedCoord = new XYPair<float>(
-			((Real) localX).RemapRange(new Pair<Real, Real>(0f, viewportSize.X), new Pair<Real, Real>(-1f, 1f)),
-			((Real) localY).RemapRange(new Pair<Real, Real>(0f, viewportSize.Y), new Pair<Real, Real>(-1f, 1f))
+			((Real) pixelCoord.X).RemapRange(new Pair<Real, Real>(0f, viewportSize.X), new Pair<Real, Real>(-1f, 1f)),
+			((Real) pixelCoord.Y).RemapRange(new Pair<Real, Real>(0f, viewportSize.Y), new Pair<Real, Real>(-1f, 1f))
 		);
 		if (!yZeroOriginAtBottom) normalizedCoord = normalizedCoord with { Y = -normalizedCoord.Y };
-
+		
 		return rendererData.Camera.CastRayFromNearPlane(normalizedCoord);
 	}
 

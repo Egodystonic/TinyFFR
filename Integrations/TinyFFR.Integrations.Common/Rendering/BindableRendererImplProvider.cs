@@ -174,6 +174,10 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		return _actualRenderer.CastRayFromRenderSurface(pixelCoord, yZeroOriginAtBottom);
 	}
+	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		return _actualRenderer.CastRayFromViewportSurface(pixelCoord, yZeroOriginAtBottom);
+	}
 
 	public Scene GetScene(ResourceHandle<Renderer> handle) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
