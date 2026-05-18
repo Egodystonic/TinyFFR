@@ -144,6 +144,7 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		_actualRenderer.SetFrustumCullingEnabled(enabled);
 	}
+
 	public void SetTargetViewportDimensionsByFraction(ResourceHandle<Renderer> handle, Orientation2D anchor, XYPair<float> fractionalOffset, XYPair<float> fractionalDimensions) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		_actualRenderer.SetRenderSubAreaFraction(anchor, fractionalOffset, fractionalDimensions);

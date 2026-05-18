@@ -24,7 +24,8 @@ public:
 	static void dispose_renderer(RendererHandle renderer);
 
 	static void set_view_descriptor_size(ViewDescriptorHandle viewDescriptor, int32_t x, int32_t y, uint32_t width, uint32_t height);
-	static void render_scene(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, SwapChainHandle swapChain);
+	static void set_view_compositing_mode(ViewDescriptorHandle viewDescriptor, interop_bool blendTranslucent, interop_bool clearDepth);
+	static void render_scene(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, SwapChainHandle swapChain, interop_bool invokeBeginFrame, interop_bool invokeEndFrame);
 	static void render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity);
 
 	static void set_view_shadow_fidelity_level(ViewDescriptorHandle viewDescriptor, int32_t level);

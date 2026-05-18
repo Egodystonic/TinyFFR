@@ -41,6 +41,9 @@ class LocalViewportRayCreationTest {
 				return result;
 			} 
 		);
+		var compositor = factory.RendererBuilder.CreateCompositor(window);
+		foreach (var r in renderers.Values) compositor.Add(r, RenderCompositionType.Replace);
+
 		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere);
 		var spheres = OrientationUtils.All2DDiagonals.ToArray().ToDictionary(
 			o => o.AsGeneralOrientation(),
@@ -83,15 +86,15 @@ class LocalViewportRayCreationTest {
 						spheres[kvp.Key].SetPosition(ray.UnboundedLocationAtDistance(1f));
 					}
 					else {
-						if (click.Key == MouseKey.MouseRight) Console.Write(click.Location - subAreaOffset + " => ");
 						var ray = click.Key == MouseKey.MouseLeft 
 							? renderer.CastRayFromRenderSurface(click.Location) 
 							: renderer.CastRayFromRenderSubAreaSurface(click.Location - subAreaOffset);
 						spheres[kvp.Key].SetPosition(ray.UnboundedLocationAtDistance(1f));
 					}
 				}
-				renderer.Render();
 			}
+
+			compositor.RenderAll();
 		}
 		
 		foreach (var s in spheres.Values) {
@@ -100,6 +103,7 @@ class LocalViewportRayCreationTest {
 			s.Dispose();
 			mat.Dispose();
 		} 
+		compositor.Dispose(); // Must precede child disposal: the group depends on its member renderers
 		foreach (var r in renderers.Values) {
 			var c = r.TargetCamera;
 			r.Dispose();
