@@ -100,7 +100,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		}
 		
 		public (XYPair<int> BottomLeft, XYPair<int> Size) ExtractViewportPixelBounds(XYPair<int> renderTargetSize) {
-			if (IsFullScreen || renderTargetSize == XYPair<int>.Zero) return (XYPair<int>.Zero, renderTargetSize);
+			if (IsFullScreen) return (XYPair<int>.Zero, renderTargetSize);
+			if (renderTargetSize.X <= 1 || renderTargetSize.Y <= 1) return (XYPair<int>.Zero, XYPair<int>.One);
 			XYPair<int> offsetPx, sizePx;
 			
 			if (SpecifiedAsPixel) {
@@ -122,7 +123,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 			);
 
 			bottomLeftPx = bottomLeftPx.Clamp(XYPair<int>.Zero, renderTargetSize - XYPair<int>.One);
-			sizePx = sizePx.Clamp(XYPair<int>.Zero, renderTargetSize - bottomLeftPx);
+			sizePx = sizePx.Clamp(XYPair<int>.One, renderTargetSize - bottomLeftPx);
 			
 			return (bottomLeftPx, sizePx);
 		}
@@ -646,12 +647,26 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		var rendererData = _loadedRenderers[handle];
 		var viewport = rendererData.Viewport;
 		var curTargetSize = rendererData.RenderTarget.ViewportDimensions;
+		
+		if (rendererData.RenderTarget.IsWindow && !disableDpiScalingAdjustment) {
+			pixelCoord = pixelCoord.ScaledByReal(curTargetSize.Cast<float>() / rendererData.RenderTarget.AsWindow.Size.Cast<float>());
+		}
 
-		var viewportBottomLeft = viewport.LastCheckedRenderTargetSize == curTargetSize
-			? viewport.LastSetViewportBottomLeft
-			: viewport.DesiredDimensions.ExtractViewportPixelBounds(curTargetSize).BottomLeft;
+		XYPair<int> viewportTopLeft;
+		if (viewport.LastCheckedRenderTargetSize == curTargetSize) {
+			viewportTopLeft = new XYPair<int>(viewport.LastSetViewportBottomLeft.X, viewport.LastSetViewportBottomLeft.Y + viewport.LastSetViewportSize.Y);
+		}
+		else {
+			var vpBounds = viewport.DesiredDimensions.ExtractViewportPixelBounds(curTargetSize);
+			viewportTopLeft = new XYPair<int>(vpBounds.BottomLeft.X, vpBounds.BottomLeft.Y + vpBounds.Size.Y);
+		}
+		
+		var viewportRelativeCoord = new XYPair<int>(
+			pixelCoord.X - viewportTopLeft.X,
+			yZeroOriginAtBottom ? viewportTopLeft.Y - pixelCoord.Y : pixelCoord.Y - (curTargetSize.Y - viewportTopLeft.Y)
+		);
 
-		return CastRayFromViewportSurface(handle, pixelCoord - viewportBottomLeft, yZeroOriginAtBottom, disableDpiScalingAdjustment);
+		return CastRayFromViewportSurface(handle, viewportRelativeCoord, false, true);
 	}
 	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -665,7 +680,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 			: viewport.DesiredDimensions.ExtractViewportPixelBounds(curTargetSize).Size;
 		
 		if (rendererData.RenderTarget.IsWindow && !disableDpiScalingAdjustment) {
-			viewportSize = viewportSize.ScaledByReal(rendererData.RenderTarget.AsWindow.Size.Cast<float>() / viewportSize.Cast<float>());
+			viewportSize = viewportSize.ScaledByReal(rendererData.RenderTarget.AsWindow.Size.Cast<float>() / curTargetSize.Cast<float>());
 		}
 		
 		var normalizedCoord = new XYPair<float>(
