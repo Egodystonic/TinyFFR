@@ -3,7 +3,7 @@
 
 using System;
 using System.Text;
-using Egodystonic.TinyFFR.Rendering.Local.Sync;
+using Egodystonic.TinyFFR.Rendering.Local;
 using static Egodystonic.TinyFFR.IConfigStruct;
 
 namespace Egodystonic.TinyFFR.Rendering;

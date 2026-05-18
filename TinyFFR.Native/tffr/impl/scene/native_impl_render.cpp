@@ -141,12 +141,12 @@ StartExportedFunc(dispose_swap_chain, SwapChainHandle swapChain) {
 	EndExportedFunc
 }
 
-void native_impl_render::set_view_descriptor_size(ViewDescriptorHandle viewDescriptor, uint32_t width, uint32_t height) {
+void native_impl_render::set_view_descriptor_size(ViewDescriptorHandle viewDescriptor, int32_t x, int32_t y, uint32_t width, uint32_t height) {
 	ThrowIfNull(viewDescriptor, "View was null.");
-	viewDescriptor->setViewport({ 0, 0, width, height });
+	viewDescriptor->setViewport({ x, y, width, height });
 }
-StartExportedFunc(set_view_descriptor_size, ViewDescriptorHandle viewDescriptor, uint32_t width, uint32_t height) {
-	native_impl_render::set_view_descriptor_size(viewDescriptor, width, height);
+StartExportedFunc(set_view_descriptor_size, ViewDescriptorHandle viewDescriptor, int32_t x, int32_t y, uint32_t width, uint32_t height) {
+	native_impl_render::set_view_descriptor_size(viewDescriptor, x, y, width, height);
 	EndExportedFunc
 }
 

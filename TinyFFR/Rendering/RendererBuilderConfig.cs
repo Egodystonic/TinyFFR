@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Egodystonic.TinyFFR.Rendering.Local;
+namespace Egodystonic.TinyFFR.Rendering;
 
 public enum RenderingBackendApi {
 	SystemRecommended = 0,

@@ -8,7 +8,7 @@ using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Rendering;
-using Egodystonic.TinyFFR.Rendering.Local.Sync;
+using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 

@@ -2,7 +2,7 @@
 // (c) Egodystonic / TinyFFR 2024
 
 using Egodystonic.TinyFFR.Assets.Materials;
-using Egodystonic.TinyFFR.Rendering.Local.Sync;
+using Egodystonic.TinyFFR.Rendering.Local;
 using System;
 using static Egodystonic.TinyFFR.IConfigStruct;
 

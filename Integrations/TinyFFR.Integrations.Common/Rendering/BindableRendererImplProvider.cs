@@ -144,6 +144,14 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		_actualRenderer.SetFrustumCullingEnabled(enabled);
 	}
+	public void SetTargetViewportDimensionsByFraction(ResourceHandle<Renderer> handle, Orientation2D anchor, XYPair<float> fractionalOffset, XYPair<float> fractionalDimensions) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		_actualRenderer.SetRenderSubAreaFraction(anchor, fractionalOffset, fractionalDimensions);
+	}
+	public void SetTargetViewportDimensionsByPixel(ResourceHandle<Renderer> handle, Orientation2D anchor, XYPair<int> fractionalLocation, XYPair<int> pixelDimensions) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		_actualRenderer.SetRenderSubAreaPixels(anchor, fractionalLocation, pixelDimensions);
+	}
 	public void WaitForGpu(ResourceHandle<Renderer> handle) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
 		_actualRenderer.WaitForGpu();
@@ -162,9 +170,13 @@ sealed class BindableRendererImplProvider : IRendererImplProvider {
 		_actualRenderer.CaptureScreenshot(handler, captureResolution, lowestAddressesRepresentFrameTop);
 	}
 	
-	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom) {
+	public Ray CastRayFromRenderSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
 		ThrowIfHandleDoesNotBelongToThisInstance(handle);
-		return _actualRenderer.CastRayFromRenderSurface(pixelCoord, yZeroOriginAtBottom);
+		return _actualRenderer.CastRayFromRenderSurface(pixelCoord, yZeroOriginAtBottom, disableDpiScalingAdjustment);
+	}
+	public Ray CastRayFromViewportSurface(ResourceHandle<Renderer> handle, XYPair<int> pixelCoord, bool yZeroOriginAtBottom, bool disableDpiScalingAdjustment) {
+		ThrowIfHandleDoesNotBelongToThisInstance(handle);
+		return _actualRenderer.CastRayFromRenderSubAreaSurface(pixelCoord, yZeroOriginAtBottom, disableDpiScalingAdjustment);
 	}
 
 	public Scene GetScene(ResourceHandle<Renderer> handle) {

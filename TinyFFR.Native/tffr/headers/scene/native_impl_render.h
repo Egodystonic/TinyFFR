@@ -23,7 +23,7 @@ public:
 	static void dispose_swap_chain(SwapChainHandle swapChain);
 	static void dispose_renderer(RendererHandle renderer);
 
-	static void set_view_descriptor_size(ViewDescriptorHandle viewDescriptor, uint32_t width, uint32_t height);
+	static void set_view_descriptor_size(ViewDescriptorHandle viewDescriptor, int32_t x, int32_t y, uint32_t width, uint32_t height);
 	static void render_scene(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, SwapChainHandle swapChain);
 	static void render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity);
 

@@ -7,7 +7,6 @@ using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Input.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
-using Egodystonic.TinyFFR.Rendering.Local.Sync;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using System;
@@ -17,6 +16,8 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Resources;
 using System.Security;
+using Egodystonic.TinyFFR.Rendering;
+using Egodystonic.TinyFFR.Rendering.Local;
 using static Egodystonic.TinyFFR.Assets.Materials.Local.LocalShaderPackageConstants;
 
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
