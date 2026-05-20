@@ -56,7 +56,7 @@ class LocalViewportRayCreationTest {
 					_ => throw new ArgumentOutOfRangeException(nameof(o), o, null)
 				};
 				var sphereMat = factory.MaterialBuilder.CreateStandardMaterial(
-					colorMap: factory.TextureBuilder.CreateColorMap(matColour, false)	
+					colorMap: factory.TextureBuilder.CreateColorMap(matColour, false)
 				);
 				var result = factory.ObjectBuilder.CreateModelInstance(sphereMesh, sphereMat);
 				scene.Add(result);
