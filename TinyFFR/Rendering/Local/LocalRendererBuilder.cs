@@ -492,7 +492,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Render(ResourceHandle<Renderer> handle) => RenderInternal(handle, RenderOrdering.Standalone, RenderCompositionType.Replace);
+	public void Render(ResourceHandle<Renderer> handle) => RenderInternal(handle, RenderOrdering.Standalone, RenderCompositionType.Standard);
 
 	unsafe void RenderInternal(ResourceHandle<Renderer> handle, RenderOrdering ordering, RenderCompositionType compositionType) {
 		ThrowIfThisOrHandleIsDisposed(handle);
@@ -555,7 +555,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 
 		var isWindow = rendererData.RenderTarget.IsWindow;
 		(bool Translucent, bool ClearDepth) desiredCompositing = compositionType switch {
-			RenderCompositionType.Overlay => (true, true),
+			RenderCompositionType.RetainPreviousScenes => (true, true),
 			_ => (false, false)
 		};
 		if (rendererData.LastPushedCompositingMode != desiredCompositing) {

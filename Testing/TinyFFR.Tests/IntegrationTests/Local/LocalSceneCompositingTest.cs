@@ -79,11 +79,11 @@ class LocalSceneCompositingTest {
 		blueCubeScene.Add(blueCubeLight);
 		
 		using var compositor = factory.RendererBuilder.CreateCompositor(window);
-		//greenSphereRenderer.SetRenderSubAreaFraction(Orientation2D.Right, (0.1f, 0.0f), (0.2f, 0.2f));
-		compositor.Add(backdropRenderer, RenderCompositionType.Replace);
-		compositor.Add(redCubeRenderer, RenderCompositionType.Overlay);
-		compositor.Add(greenSphereRenderer, RenderCompositionType.Replace);
-		compositor.Add(blueCubeRenderer, RenderCompositionType.Overlay);
+		greenSphereRenderer.SetRenderSubAreaFraction(Orientation2D.Right, (0.1f, 0.0f), (0.2f, 0.2f));
+		compositor.Add(backdropRenderer, RenderCompositionType.Standard);
+		compositor.Add(redCubeRenderer, RenderCompositionType.RetainPreviousScenes);
+		compositor.Add(greenSphereRenderer, RenderCompositionType.Standard);
+		compositor.Add(blueCubeRenderer, RenderCompositionType.RetainPreviousScenes);
 	
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) {

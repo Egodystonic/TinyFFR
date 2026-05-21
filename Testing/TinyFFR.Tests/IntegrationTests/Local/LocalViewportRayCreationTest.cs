@@ -42,7 +42,7 @@ class LocalViewportRayCreationTest {
 			} 
 		);
 		var compositor = factory.RendererBuilder.CreateCompositor(window);
-		foreach (var r in renderers.Values) compositor.Add(r, RenderCompositionType.Replace);
+		foreach (var r in renderers.Values) compositor.Add(r, RenderCompositionType.Standard);
 
 		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere);
 		var spheres = OrientationUtils.All2DDiagonals.ToArray().ToDictionary(

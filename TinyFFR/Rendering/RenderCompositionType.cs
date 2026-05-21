@@ -4,6 +4,6 @@
 namespace Egodystonic.TinyFFR.Rendering;
 
 public enum RenderCompositionType {
-	Replace,
-	Overlay
+	Standard,
+	RetainPreviousScenes
 }
