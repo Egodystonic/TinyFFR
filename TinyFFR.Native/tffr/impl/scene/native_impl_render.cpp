@@ -290,11 +290,13 @@ StartExportedFunc(render_scene, RendererHandle renderer, ViewDescriptorHandle vi
 	EndExportedFunc
 }
 
-void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity) {
+void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity) {
 	ThrowIfNull(renderer, "Renderer was null.");
 	ThrowIfNull(viewDescriptor, "View was null.");
 	ThrowIfNull(renderTarget, "Render target pointer was null.");
 
+	// renderStandaloneView opens its own implicit beginFrame/endFrame, so ClearOptions must be set per call to preserve the buffer across composited sub-renders.
+	renderer->setClearOptions({ { 0.0, 0.0, 0.0, 0.0 }, 0U, static_cast<bool>(clearAndDiscard), static_cast<bool>(clearAndDiscard) });
 	renderer->renderStandaloneView(viewDescriptor);
 	if (optionalReadbackBuffer == nullptr) return;
 
@@ -315,8 +317,8 @@ void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDe
 	);
 	filament_engine->flushAndWait();
 }
-StartExportedFunc(render_scene_standalone, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity) {
-	native_impl_render::render_scene_standalone(renderer, viewDescriptor, renderTarget, optionalReadbackBuffer, readbackBufferLenBytes, readbackBufferWidth, readbackBufferHeight, bufferIdentity);
+StartExportedFunc(render_scene_standalone, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity) {
+	native_impl_render::render_scene_standalone(renderer, viewDescriptor, renderTarget, clearAndDiscard, optionalReadbackBuffer, readbackBufferLenBytes, readbackBufferWidth, readbackBufferHeight, bufferIdentity);
 	EndExportedFunc
 }
 

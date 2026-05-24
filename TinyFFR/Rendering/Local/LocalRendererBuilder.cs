@@ -575,12 +575,14 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		}
 		else if (rendererData.RenderTarget.IsBuffer) {
 			var performReadback = ordering is RenderOrdering.Standalone or RenderOrdering.Last;
+			var clearAndDiscard = ordering is RenderOrdering.Standalone or RenderOrdering.First;
 			var bufferData = _loadedBuffers[rendererData.RenderTarget.AsBuffer.Handle];
 			if (!performReadback || !bufferData.RenderCompletionHandlers.AnySet) {
 				RenderScene(
 					targetData.RendererPtr,
 					rendererData.Viewport.Handle,
 					bufferData.RenderTargetHandle,
+					clearAndDiscard,
 					null,
 					0U,
 					0U,
@@ -605,6 +607,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 					targetData.RendererPtr,
 					rendererData.Viewport.Handle,
 					bufferData.RenderTargetHandle,
+					clearAndDiscard,
 					(byte*) buffer.DataPtr,
 					(uint) buffer.DataLengthBytes,
 					(uint) bufferData.TextureDimensions.X,
@@ -1061,6 +1064,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		UIntPtr rendererHandle,
 		UIntPtr viewDescriptorHandle,
 		UIntPtr renderTargetHandle,
+		InteropBool clearAndDiscard,
 		byte* optionalReadbackBufferPtr,
 		uint readbackBufferLengthBytes,
 		uint readbackBufferWidth,
