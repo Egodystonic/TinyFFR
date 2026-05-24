@@ -150,6 +150,16 @@ StartExportedFunc(set_view_descriptor_size, ViewDescriptorHandle viewDescriptor,
 	EndExportedFunc
 }
 
+void native_impl_render::set_view_compositing_mode(ViewDescriptorHandle viewDescriptor, interop_bool blendTranslucent, interop_bool clearDepth) {
+	ThrowIfNull(viewDescriptor, "View was null.");
+	viewDescriptor->setBlendMode(blendTranslucent ? filament::BlendMode::TRANSLUCENT : filament::BlendMode::OPAQUE);
+	viewDescriptor->setChannelDepthClearEnabled(0, clearDepth);
+}
+StartExportedFunc(set_view_compositing_mode, ViewDescriptorHandle viewDescriptor, interop_bool blendTranslucent, interop_bool clearDepth) {
+	native_impl_render::set_view_compositing_mode(viewDescriptor, blendTranslucent, clearDepth);
+	EndExportedFunc
+}
+
 void native_impl_render::set_view_shadow_fidelity_level(ViewDescriptorHandle viewDescriptor, int32_t level) {
 	ThrowIfNull(viewDescriptor, "View was null.");
 	// TODO PCSS doesn't seem very stable, it may be that we need to better configure the frustum/FOV
@@ -265,26 +275,28 @@ StartExportedFunc(dispose_render_target, RenderTargetHandle renderTarget) {
 
 
 
-void native_impl_render::render_scene(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, SwapChainHandle swapChain) {
+void native_impl_render::render_scene(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, SwapChainHandle swapChain, interop_bool invokeBeginFrame, interop_bool invokeEndFrame) {
 	ThrowIfNull(renderer, "Renderer was null.");
 	ThrowIfNull(viewDescriptor, "View was null.");
 	ThrowIfNull(swapChain, "Swap chain pointer was null.");
 
 	//if (!renderer->beginFrame(swapChain)) return; // We do our own synchronization external to filament so we ignore this
-	renderer->beginFrame(swapChain);
+	if (invokeBeginFrame) renderer->beginFrame(swapChain);
 	renderer->render(viewDescriptor);
-	renderer->endFrame();
+	if (invokeEndFrame) renderer->endFrame();
 }
-StartExportedFunc(render_scene, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, SwapChainHandle swapChain) {
-	native_impl_render::render_scene(renderer, viewDescriptor, swapChain);
+StartExportedFunc(render_scene, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, SwapChainHandle swapChain, interop_bool invokeBeginFrame, interop_bool invokeEndFrame) {
+	native_impl_render::render_scene(renderer, viewDescriptor, swapChain, invokeBeginFrame, invokeEndFrame);
 	EndExportedFunc
 }
 
-void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity) {
+void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity) {
 	ThrowIfNull(renderer, "Renderer was null.");
 	ThrowIfNull(viewDescriptor, "View was null.");
 	ThrowIfNull(renderTarget, "Render target pointer was null.");
 
+	// renderStandaloneView opens its own implicit beginFrame/endFrame, so ClearOptions must be set per call to preserve the buffer across composited sub-renders.
+	renderer->setClearOptions({ { 0.0, 0.0, 0.0, 0.0 }, 0U, static_cast<bool>(clearAndDiscard), static_cast<bool>(clearAndDiscard) });
 	renderer->renderStandaloneView(viewDescriptor);
 	if (optionalReadbackBuffer == nullptr) return;
 
@@ -305,8 +317,8 @@ void native_impl_render::render_scene_standalone(RendererHandle renderer, ViewDe
 	);
 	filament_engine->flushAndWait();
 }
-StartExportedFunc(render_scene_standalone, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity) {
-	native_impl_render::render_scene_standalone(renderer, viewDescriptor, renderTarget, optionalReadbackBuffer, readbackBufferLenBytes, readbackBufferWidth, readbackBufferHeight, bufferIdentity);
+StartExportedFunc(render_scene_standalone, RendererHandle renderer, ViewDescriptorHandle viewDescriptor, RenderTargetHandle renderTarget, interop_bool clearAndDiscard, uint8_t* optionalReadbackBuffer, uint32_t readbackBufferLenBytes, uint32_t readbackBufferWidth, uint32_t readbackBufferHeight, BufferIdentity bufferIdentity) {
+	native_impl_render::render_scene_standalone(renderer, viewDescriptor, renderTarget, clearAndDiscard, optionalReadbackBuffer, readbackBufferLenBytes, readbackBufferWidth, readbackBufferHeight, bufferIdentity);
 	EndExportedFunc
 }
 

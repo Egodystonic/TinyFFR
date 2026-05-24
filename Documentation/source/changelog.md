@@ -6,6 +6,14 @@ search:
   exclude: true
 ---
 
+## 0.9
+
+__Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/8?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.9.0)__
+
+### Major Features
+
+* Added scene compositing
+
 ## 0.8
 
 __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/7?closed=1) | [Code](https://github.com/Egodystonic/TinyFFR/releases/tag/v0.8.0)__
@@ -25,8 +33,6 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/7?closed=1) 
 * Improved error messages when exceeding internal buffer size
 * Made it possible to create mock resources for testing
 * (0.8.1) Increased internal handle allocator size to improve speed of loading complex models
-
-### Bug Fixes
 
 ## 0.7
 

@@ -9,6 +9,7 @@ using Egodystonic.TinyFFR.Resources;
 namespace Egodystonic.TinyFFR.World;
 
 public enum BuiltInSceneBackdrop {
+	None,
 	Clouds,
 	Starfield
 }

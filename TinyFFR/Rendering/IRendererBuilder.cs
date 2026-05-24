@@ -24,4 +24,8 @@ public interface IRendererBuilder {
 		});
 	}
 	public RenderOutputBuffer CreateRenderOutputBuffer(in RenderOutputBufferCreationConfig config);
+
+	public RendererCompositor CreateCompositor(Window window, ReadOnlySpan<char> name = default) => CreateCompositor<Window>(window, name);
+	public RendererCompositor CreateCompositor(RenderOutputBuffer buffer, ReadOnlySpan<char> name = default) => CreateCompositor<RenderOutputBuffer>(buffer, name);
+	public RendererCompositor CreateCompositor<TRenderTarget>(TRenderTarget renderTarget, ReadOnlySpan<char> name = default) where TRenderTarget : IRenderTarget, IResource<TRenderTarget>;
 }

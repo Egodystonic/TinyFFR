@@ -232,6 +232,11 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 
 	#region Backdrop
 	public void SetBackdrop(ResourceHandle<Scene> handle, BuiltInSceneBackdrop backdrop, float indirectLightingIntensity, Rotation rotation) {
+		if (backdrop == BuiltInSceneBackdrop.None) {
+			RemoveBackdrop(handle);
+			return;
+		}
+		
 		ThrowIfThisOrHandleIsDisposed(handle);
 		
 		if (_loadedBuiltInBackdropTextures.TryGetValue(backdrop, out var preloadedTex)) {

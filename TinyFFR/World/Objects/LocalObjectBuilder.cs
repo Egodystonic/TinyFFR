@@ -73,18 +73,18 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 		resourceGroup.Seal();
 		return new ModelInstanceGroup(resourceGroup);
 	}
-	public ModelInstanceGroup GroupModelInstances(ReadOnlySpan<ModelInstance> instances, ReadOnlySpan<char> name) {
+	public ModelInstanceGroup GroupModelInstances(ReadOnlySpan<ModelInstance> instances, bool disposingGroupDisposesInstances, ReadOnlySpan<char> name) {
 		ThrowIfThisIsDisposed();
-		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: instances.Length > 0 ? instances.Length : 1, name: name);
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: disposingGroupDisposesInstances, initialCapacity: instances.Length > 0 ? instances.Length : 1, name: name);
 		for (var i = 0; i < instances.Length; ++i) {
 			resourceGroup.Add(instances[i]);
 		}
 		resourceGroup.Seal();
 		return new ModelInstanceGroup(resourceGroup);
 	}
-	public ModelInstanceGroup GroupModelInstances<TInstanceList>(TInstanceList instances, ReadOnlySpan<char> name = default) where TInstanceList : IReadOnlyList<ModelInstance> {
+	public ModelInstanceGroup GroupModelInstances<TInstanceList>(TInstanceList instances, bool disposingGroupDisposesInstances, ReadOnlySpan<char> name = default) where TInstanceList : IReadOnlyList<ModelInstance> {
 		ThrowIfThisIsDisposed();
-		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: true, initialCapacity: instances.Count > 0 ? instances.Count : 1, name: name);
+		var resourceGroup = _globals.ResourceGroupProvider.CreateGroup(disposeContainedResourcesWhenDisposed: disposingGroupDisposesInstances, initialCapacity: instances.Count > 0 ? instances.Count : 1, name: name);
 		for (var i = 0; i < instances.Count; ++i) {
 			resourceGroup.Add(instances[i]);
 		}
