@@ -152,6 +152,8 @@ nav:
       - reference/vsync.md
       - reference/controlling_memory.md
       - reference/measuring_framerate.md
+    - Rendering:
+      - reference/scene_compositing.md
     - Utils:
       - reference/indirect_enumerable.md
 
