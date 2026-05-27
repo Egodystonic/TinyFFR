@@ -7,19 +7,25 @@ using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
 
-sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IResourceDirectory<ModelInstance>, IDisposable {
+sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IResourceDirectory<ModelInstance>, IDisposable {
 	readonly record struct ActiveModelInstanceEffectsData(Material PerInstanceEffectMaterialCopy);
+
+	// Present in _activeInstanceMutationData only after a ModelInstance's first UpdateVertices call. Absent = instance still shares the mesh's GPU vertex buffer.
+	// LocalAabb is non-null only after a recalculateBoundingBox: true update; before that, Filament's AABB reflects the mesh's initial value.
+	readonly record struct ActiveModelInstanceMutationData(UIntPtr PrivateVertexBufferHandle, PooledHeapMemory<MeshVertex> CpuShadow, PositionedCuboid? LocalAabb);
 
 	const string DefaultModelInstanceName = "Unnamed Model Instance";
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	// Because instance transforms are set so frequently, they're kept in their own separate map for performance
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, Transform> _activeInstanceTransforms = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, ActiveModelInstanceEffectsData> _activeInstanceEffectsData = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, ActiveModelInstanceMutationData> _activeInstanceMutationData = new();
 	bool _isDisposed = false;
 
 	public LocalObjectBuilder(LocalFactoryGlobalObjectGroup globals) {
@@ -44,13 +50,13 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 			new Vector3(aabb.HalfWidth, aabb.HalfHeight, aabb.HalfDepth),
 			out var handle
 		).ThrowIfFailure();
-		
+
 		var result = HandleToInstance(handle);
 		_activeInstanceTransforms.Add(handle, config.InitialTransform);
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<ModelInstance>(handle).Ident, config.Name, DefaultModelInstanceName);
 		_globals.DependencyTracker.RegisterDependency(result, mesh);
 		_globals.DependencyTracker.RegisterDependency(result, material);
-		
+
 		if (meshBufferData.BoneCount > 0) mesh.ApplySkeletalBindPose(result);
 		return result;
 	}
@@ -179,12 +185,105 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 			meshBufferData.VertexBufferHandle,
 			meshBufferData.IndexBufferHandle,
 			meshBufferData.IndexBufferStartIndex,
-			meshBufferData.IndexBufferCount,
+			meshBufferData.IndexBufferCount
+		).ThrowIfFailure();
+		SetModelInstanceAabb(
+			handle,
 			aabb.Position.ToVector3(),
 			new Vector3(aabb.HalfWidth, aabb.HalfHeight, aabb.HalfDepth)
 		).ThrowIfFailure();
 		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), GetMesh(handle));
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMesh);
+	}
+
+	public void UpdateVertices(ResourceHandle<ModelInstance> handle, int startIndex, ReadOnlySpan<MeshVertex> newVertices, bool recalculateBoundingBox) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var mesh = GetMesh(handle);
+		var meshImpl = mesh.Implementation;
+		var meshHandle = mesh.Handle;
+
+		if (!meshImpl.GetAllowsPerInstanceVertexMutation(meshHandle)) {
+			throw new InvalidOperationException(
+				$"Source mesh was not created with {nameof(MeshCreationConfig.AllowsPerInstanceVertexMutation)} = true.");
+		}
+		if (meshImpl.GetBufferData(meshHandle).BoneCount > 0) {
+			throw new InvalidOperationException(
+				"Skeletal vertex mutation is not supported in this version of TinyFFR.");
+		}
+
+		var vertexCount = meshImpl.GetVertexCount(meshHandle);
+		if (startIndex < 0) {
+			throw new ArgumentOutOfRangeException(nameof(startIndex), startIndex, "Start index must be non-negative.");
+		}
+		if ((long) startIndex + newVertices.Length > vertexCount) {
+			throw new ArgumentOutOfRangeException(nameof(newVertices),
+				$"Update range [{startIndex}, {startIndex + newVertices.Length}) exceeds mesh vertex count {vertexCount}.");
+		}
+		if (newVertices.Length == 0) return;
+
+		// Lazy privatization on first mutation: clone mesh's CPU shadow into a private VB + CPU shadow owned by this instance.
+		if (!_activeInstanceMutationData.TryGetValue(handle, out var mutationData)) {
+			var meshShadow = meshImpl.GetDefaultVerticesIfMutable(meshHandle);
+			var instanceShadow = _globals.HeapPool.BorrowAndCopy(meshShadow);
+			var seedStaging = _globals.CreateGpuHoldingBufferAndCopyData<MeshVertex>(instanceShadow.Buffer);
+			AllocateVertexBuffer(seedStaging.BufferIdentity, (MeshVertex*) seedStaging.DataPtr, vertexCount, out var privateVbHandle).ThrowIfFailure();
+
+			var meshBuffer = meshImpl.GetBufferData(meshHandle);
+			SetModelInstanceMesh(
+				handle,
+				privateVbHandle,
+				meshBuffer.IndexBufferHandle,
+				meshBuffer.IndexBufferStartIndex,
+				meshBuffer.IndexBufferCount
+			).ThrowIfFailure();
+
+			mutationData = new ActiveModelInstanceMutationData(privateVbHandle, instanceShadow, LocalAabb: null);
+			_activeInstanceMutationData[handle] = mutationData;
+		}
+
+		// Apply update to instance CPU shadow and push the region to its private GPU VB.
+		newVertices.CopyTo(mutationData.CpuShadow.Buffer.Slice(startIndex, newVertices.Length));
+		var updateStaging = _globals.CreateGpuHoldingBufferAndCopyData(newVertices);
+		UpdateVertexBuffer(
+			mutationData.PrivateVertexBufferHandle,
+			updateStaging.BufferIdentity,
+			(MeshVertex*) updateStaging.DataPtr,
+			newVertices.Length,
+			startIndex
+		).ThrowIfFailure();
+
+		if (recalculateBoundingBox) {
+			var newAabb = CalculateBoundingBoxFromShadow(mutationData.CpuShadow.Buffer);
+			_activeInstanceMutationData[handle] = mutationData with { LocalAabb = newAabb };
+			SetModelInstanceAabb(
+				handle,
+				newAabb.Position.ToVector3(),
+				new Vector3(newAabb.HalfWidth, newAabb.HalfHeight, newAabb.HalfDepth)
+			).ThrowIfFailure();
+		}
+	}
+
+	static PositionedCuboid CalculateBoundingBoxFromShadow(ReadOnlySpan<MeshVertex> vertices) {
+		if (vertices.Length == 0) return PositionedCuboid.UnitCubeAtOrigin;
+
+		var (minX, minY, minZ) = vertices[0].Location;
+		var (maxX, maxY, maxZ) = vertices[0].Location;
+		for (var i = 1; i < vertices.Length; ++i) {
+			var loc = vertices[i].Location;
+			if (loc.X < minX) minX = loc.X;
+			if (loc.Y < minY) minY = loc.Y;
+			if (loc.Z < minZ) minZ = loc.Z;
+			if (loc.X > maxX) maxX = loc.X;
+			if (loc.Y > maxY) maxY = loc.Y;
+			if (loc.Z > maxZ) maxZ = loc.Z;
+		}
+
+		return new PositionedCuboid(
+			maxX - minX,
+			maxY - minY,
+			maxZ - minZ,
+			new Vect(minX + maxX, minY + maxY, minZ + maxZ).ScaledBy(0.5f).AsLocation()
+		);
 	}
 
 	public Material GetMaterial(ResourceHandle<ModelInstance> handle) {
@@ -306,10 +405,35 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 		UIntPtr vertexBufferHandle,
 		UIntPtr indexBufferHandle,
 		int indexBufferStartIndex,
-		int indexBufferCount,
+		int indexBufferCount
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_model_instance_aabb")]
+	static extern InteropResult SetModelInstanceAabb(
+		UIntPtr modelInstanceHandle,
 		Vector3 aabbCenter,
 		Vector3 aabbHalfExtents
 	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_vertex_buffer")]
+	static extern InteropResult AllocateVertexBuffer(
+		nuint bufferId,
+		MeshVertex* verticesPtr,
+		int numVertices,
+		out UIntPtr outBufferHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "update_vertex_buffer")]
+	static extern InteropResult UpdateVertexBuffer(
+		UIntPtr bufferHandle,
+		nuint bufferId,
+		MeshVertex* verticesPtr,
+		int vertexCount,
+		int startingIndex
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_vertex_buffer")]
+	static extern InteropResult DisposeVertexBuffer(UIntPtr bufferHandle);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_model_instance_material")]
 	static extern InteropResult SetModelInstanceMaterial(
@@ -340,7 +464,14 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		DisposeModelInstance(handle).ThrowIfFailure();
 		DisposeEffectMaterialCopyIfPresent(handle);
+		DisposeMutationDataIfPresent(handle);
 		if (removeFromMap) _activeInstanceTransforms.Remove(handle);
+	}
+
+	void DisposeMutationDataIfPresent(ResourceHandle<ModelInstance> handle) {
+		if (!_activeInstanceMutationData.Remove(handle, out var mutationData)) return;
+		mutationData.CpuShadow.Dispose();
+		LocalFrameSynchronizationManager.QueueResourceDisposal(mutationData.PrivateVertexBufferHandle, &DisposeVertexBuffer);
 	}
 
 	public void Dispose() {
@@ -349,6 +480,7 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 			foreach (var kvp in _activeInstanceTransforms) Dispose(kvp.Key, removeFromMap: false);
 			_activeInstanceTransforms.Dispose();
 			_activeInstanceEffectsData.Dispose();
+			_activeInstanceMutationData.Dispose();
 		}
 		finally {
 			_isDisposed = true;

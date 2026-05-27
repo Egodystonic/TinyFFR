@@ -27,6 +27,11 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 		get => Implementation.GetBoundingBox(_handle);
 	}
 
+	public bool AllowsPerInstanceVertexMutation {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => !Implementation.GetDefaultVerticesIfMutable(_handle).IsEmpty;
+	}
+
 	public MeshAnimationIndex Animations {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => new(this);
