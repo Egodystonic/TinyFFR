@@ -110,29 +110,6 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		return result;
 	}
 	
-	PositionedCuboid CalculateBoundingBox<TVertex>(ReadOnlySpan<TVertex> vertices) where TVertex : IMeshVertex {
-		if (vertices.Length == 0) return PositionedCuboid.UnitCubeAtOrigin;
-		
-		var (minX, minY, minZ) = vertices[0].Location;
-		var (maxX, maxY, maxZ) = vertices[0].Location;
-		for (var i = 1; i < vertices.Length; ++i) {
-			var loc = vertices[i].Location;
-			if (loc.X < minX) minX = loc.X;
-			if (loc.Y < minY) minY = loc.Y;
-			if (loc.Z < minZ) minZ = loc.Z;
-			if (loc.X > maxX) maxX = loc.X;
-			if (loc.Y > maxY) maxY = loc.Y;
-			if (loc.Z > maxZ) maxZ = loc.Z;
-		}
-		
-		return new(
-			maxX - minX,
-			maxY - minY,
-			maxZ - minZ,
-			new Vect(minX + maxX, minY + maxY, minZ + maxZ).ScaledBy(0.5f).AsLocation()
-		);
-	}
-	
 	Mesh ProcessVerticesAndCreateMesh<TVertex>(ReadOnlySpan<TVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config, int boneCount) where TVertex : unmanaged, IMeshVertex {
 		ThrowIfThisIsDisposed();
 		static void CheckTriangleIndex(char indexChar, int triangleIndex, int value, int numVertices) {
@@ -185,7 +162,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			}
 		}
 
-		var boundingBox = (config.BoundingBoxOverride ?? CalculateBoundingBox(tempVertexBuffer.AsSpan<TVertex>()))
+		// Maintainer's note: Do not replace this with the CalculateBoundingBox override that takes a margin parameter;
+		// the code below applies the margin to the user's override if there is one.
+		var boundingBox = (config.BoundingBoxOverride ?? MathUtils.CalculateBoundingBox(tempVertexBuffer.AsSpan<TVertex>()))
 			.WithAllExtentsAdjustedBy(config.BoundingBoxAdditionalMargin);
 
 		int indexBufferCount;
@@ -226,10 +205,14 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		return _activeMeshes[handle].BoundingBox;
 	}
 
-	public ReadOnlySpan<MeshVertex> GetDefaultVerticesIfMutable(ResourceHandle<Mesh> handle) {
+	public ReadOnlySpan<MeshVertex> GetDefaultVerticesIfMutableOrThrow(ResourceHandle<Mesh> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (_defaultMutableVerticesMap.TryGetValue(handle, out var result)) return result.Buffer;
-		else return ReadOnlySpan<MeshVertex>.Empty;
+		
+		throw new InvalidOperationException(
+			$"Can not modify vertices for instances of {HandleToInstance(handle)} as it was not created " +
+			$"with the '{nameof(MeshCreationConfig.AllowsPerInstanceVertexMutation)}' flag set to true."
+		);
 	}
 
 	public MeshAnimation AttachAnimation(

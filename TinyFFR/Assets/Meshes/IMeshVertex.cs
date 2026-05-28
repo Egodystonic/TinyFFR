@@ -7,7 +7,7 @@ using System;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
-interface IMeshVertex {
+public interface IMeshVertex {
 	public Location Location { get; init; }
 	public XYPair<float> TextureCoords { get; init; }
 	public Quaternion TangentRotation { get; init; }

@@ -29,7 +29,7 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 
 	public bool AllowsPerInstanceVertexMutation {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => !Implementation.GetDefaultVerticesIfMutable(_handle).IsEmpty;
+		get => !Implementation.GetDefaultVerticesIfMutableOrThrow(_handle).IsEmpty;
 	}
 
 	public MeshAnimationIndex Animations {
@@ -47,13 +47,33 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 		_impl = impl;
 	}
 	
+	public int GetNonModifiedVertexCountIfAllowsMutation() {
+		if (!AllowsPerInstanceVertexMutation) throw new InvalidOperationException(ToString() + " does not allow vertex mutation.");
+		return Implementation.GetDefaultVerticesIfMutableOrThrow(_handle).Length;
+	}
+	public int CopyNonModifiedVerticesIfAllowsMutation(Span<MeshVertex> destination) {
+		if (!AllowsPerInstanceVertexMutation) throw new InvalidOperationException(ToString() + " does not allow vertex mutation.");
+		var src = Implementation.GetDefaultVerticesIfMutableOrThrow(_handle);
+		src.CopyTo(destination);
+		return src.Length;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal IndirectEnumerable<Mesh, MeshAnimation> GetAnimations(MeshAnimationType? type) => Implementation.GetAnimations(_handle, type);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal IndirectEnumerable<Mesh, MeshNode> GetNodes() => Implementation.GetNodes(_handle);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal MeshAnimation? TryGetAnimationByName(ReadOnlySpan<char> name, MeshAnimationType? type) => Implementation.TryGetAnimationByName(_handle, name, type);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal MeshNode? TryGetNodeByName(ReadOnlySpan<char> name) => Implementation.TryGetNodeByName(_handle, name);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void ApplySkeletalBindPose(ModelInstance targetInstance) => Implementation.ApplySkeletalBindPose(_handle, targetInstance);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void GetSkeletalBindPoseNodeModelTransforms(ReadOnlySpan<MeshNode> nodes, Span<Matrix4x4> modelSpaceTransforms) => Implementation.GetSkeletalBindPoseNodeModelTransforms(_handle, nodes, modelSpaceTransforms);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void GetSkeletalBindPoseNodeModelTransforms(ReadOnlySpan<int> nodeIndices, Span<Matrix4x4> modelSpaceTransforms) => Implementation.GetSkeletalBindPoseNodeModelTransforms(_handle, nodeIndices, modelSpaceTransforms);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal ReadOnlySpan<MeshVertex> GetDefaultVerticesIfMutableOrThrow() => Implementation.GetDefaultVerticesIfMutableOrThrow(_handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);

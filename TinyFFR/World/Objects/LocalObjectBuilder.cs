@@ -16,16 +16,12 @@ namespace Egodystonic.TinyFFR.World;
 sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IResourceDirectory<ModelInstance>, IDisposable {
 	readonly record struct ActiveModelInstanceEffectsData(Material PerInstanceEffectMaterialCopy);
 
-	// Present in _activeInstanceMutationData only after a ModelInstance's first UpdateVertices call. Absent = instance still shares the mesh's GPU vertex buffer.
-	// LocalAabb is non-null only after a recalculateBoundingBox: true update; before that, Filament's AABB reflects the mesh's initial value.
-	readonly record struct ActiveModelInstanceMutationData(UIntPtr PrivateVertexBufferHandle, PooledHeapMemory<MeshVertex> CpuShadow, PositionedCuboid? LocalAabb);
-
 	const string DefaultModelInstanceName = "Unnamed Model Instance";
 	readonly LocalFactoryGlobalObjectGroup _globals;
-	// Because instance transforms are set so frequently, they're kept in their own separate map for performance
+	// Because these properties are set frequently, they're all kept in their own separate maps for performance
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, Transform> _activeInstanceTransforms = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, ActiveModelInstanceEffectsData> _activeInstanceEffectsData = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, ActiveModelInstanceMutationData> _activeInstanceMutationData = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, UIntPtr> _mutatedVertexBuffers = new();
 	bool _isDisposed = false;
 
 	public LocalObjectBuilder(LocalFactoryGlobalObjectGroup globals) {
@@ -196,94 +192,77 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMesh);
 	}
 
-	public void UpdateVertices(ResourceHandle<ModelInstance> handle, int startIndex, ReadOnlySpan<MeshVertex> newVertices, bool recalculateBoundingBox) {
+	public void ModifyVertices(ResourceHandle<ModelInstance> handle, int startIndex, ReadOnlySpan<MeshVertex> replacementVertices, bool recalculateBoundingBox) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var mesh = GetMesh(handle);
-		var meshImpl = mesh.Implementation;
-		var meshHandle = mesh.Handle;
+		var defaultVertices = mesh.GetDefaultVerticesIfMutableOrThrow();
 
-		if (!meshImpl.GetAllowsPerInstanceVertexMutation(meshHandle)) {
-			throw new InvalidOperationException(
-				$"Source mesh was not created with {nameof(MeshCreationConfig.AllowsPerInstanceVertexMutation)} = true.");
-		}
-		if (meshImpl.GetBufferData(meshHandle).BoneCount > 0) {
-			throw new InvalidOperationException(
-				"Skeletal vertex mutation is not supported in this version of TinyFFR.");
-		}
-
-		var vertexCount = meshImpl.GetVertexCount(meshHandle);
 		if (startIndex < 0) {
 			throw new ArgumentOutOfRangeException(nameof(startIndex), startIndex, "Start index must be non-negative.");
 		}
-		if ((long) startIndex + newVertices.Length > vertexCount) {
-			throw new ArgumentOutOfRangeException(nameof(newVertices),
-				$"Update range [{startIndex}, {startIndex + newVertices.Length}) exceeds mesh vertex count {vertexCount}.");
+		checked {
+			if (startIndex + replacementVertices.Length > defaultVertices.Length) {
+				throw new ArgumentOutOfRangeException(
+					nameof(replacementVertices), 
+					$"Start index ({startIndex}) + replacement vertex span length ({replacementVertices.Length}) " +
+					$"would exceed mesh vertex count ({defaultVertices.Length})."
+				);
+			}	
 		}
-		if (newVertices.Length == 0) return;
 
-		// Lazy privatization on first mutation: clone mesh's CPU shadow into a private VB + CPU shadow owned by this instance.
-		if (!_activeInstanceMutationData.TryGetValue(handle, out var mutationData)) {
-			var meshShadow = meshImpl.GetDefaultVerticesIfMutable(meshHandle);
-			var instanceShadow = _globals.HeapPool.BorrowAndCopy(meshShadow);
-			var seedStaging = _globals.CreateGpuHoldingBufferAndCopyData<MeshVertex>(instanceShadow.Buffer);
-			AllocateVertexBuffer(seedStaging.BufferIdentity, (MeshVertex*) seedStaging.DataPtr, vertexCount, out var privateVbHandle).ThrowIfFailure();
-
-			var meshBuffer = meshImpl.GetBufferData(meshHandle);
+		if (!_mutatedVertexBuffers.TryGetValue(handle, out var mutatedBufferHandle)) {
+			var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(defaultVertices);
+			replacementVertices.CopyTo(gpuHoldingBuffer.AsSpan<MeshVertex>()[startIndex..]);
+			
+			// We do this here because once we pass the buffer to AllocateVertexBuffer it could be disposed any time after (including immediately)
+			if (recalculateBoundingBox) {
+				var newAabb = MathUtils.CalculateBoundingBox(gpuHoldingBuffer.AsSpan<MeshVertex>(), MeshCreationConfig.DefaultBoundingBoxAdditionalMargin);
+				SetModelInstanceAabb(
+					handle,
+					newAabb.Position.ToVector3(),
+					new Vector3(newAabb.HalfWidth, newAabb.HalfHeight, newAabb.HalfDepth)
+				).ThrowIfFailure();
+			}
+			
+			AllocateVertexBuffer(
+				gpuHoldingBuffer.BufferIdentity, 
+				(MeshVertex*) gpuHoldingBuffer.DataPtr, 
+				defaultVertices.Length, 
+				out mutatedBufferHandle
+			).ThrowIfFailure();
+			_mutatedVertexBuffers[handle] = mutatedBufferHandle;
+			
+			var meshBufferData = mesh.BufferData;
 			SetModelInstanceMesh(
 				handle,
-				privateVbHandle,
-				meshBuffer.IndexBufferHandle,
-				meshBuffer.IndexBufferStartIndex,
-				meshBuffer.IndexBufferCount
-			).ThrowIfFailure();
-
-			mutationData = new ActiveModelInstanceMutationData(privateVbHandle, instanceShadow, LocalAabb: null);
-			_activeInstanceMutationData[handle] = mutationData;
-		}
-
-		// Apply update to instance CPU shadow and push the region to its private GPU VB.
-		newVertices.CopyTo(mutationData.CpuShadow.Buffer.Slice(startIndex, newVertices.Length));
-		var updateStaging = _globals.CreateGpuHoldingBufferAndCopyData(newVertices);
-		UpdateVertexBuffer(
-			mutationData.PrivateVertexBufferHandle,
-			updateStaging.BufferIdentity,
-			(MeshVertex*) updateStaging.DataPtr,
-			newVertices.Length,
-			startIndex
-		).ThrowIfFailure();
-
-		if (recalculateBoundingBox) {
-			var newAabb = CalculateBoundingBoxFromShadow(mutationData.CpuShadow.Buffer);
-			_activeInstanceMutationData[handle] = mutationData with { LocalAabb = newAabb };
-			SetModelInstanceAabb(
-				handle,
-				newAabb.Position.ToVector3(),
-				new Vector3(newAabb.HalfWidth, newAabb.HalfHeight, newAabb.HalfDepth)
+				mutatedBufferHandle,
+				meshBufferData.IndexBufferHandle,
+				meshBufferData.IndexBufferStartIndex,
+				meshBufferData.IndexBufferCount
 			).ThrowIfFailure();
 		}
-	}
-
-	static PositionedCuboid CalculateBoundingBoxFromShadow(ReadOnlySpan<MeshVertex> vertices) {
-		if (vertices.Length == 0) return PositionedCuboid.UnitCubeAtOrigin;
-
-		var (minX, minY, minZ) = vertices[0].Location;
-		var (maxX, maxY, maxZ) = vertices[0].Location;
-		for (var i = 1; i < vertices.Length; ++i) {
-			var loc = vertices[i].Location;
-			if (loc.X < minX) minX = loc.X;
-			if (loc.Y < minY) minY = loc.Y;
-			if (loc.Z < minZ) minZ = loc.Z;
-			if (loc.X > maxX) maxX = loc.X;
-			if (loc.Y > maxY) maxY = loc.Y;
-			if (loc.Z > maxZ) maxZ = loc.Z;
+		else {
+			var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(replacementVertices);
+			UpdateVertexBuffer(
+				mutatedBufferHandle,
+				gpuHoldingBuffer.BufferIdentity,
+				(MeshVertex*) gpuHoldingBuffer.DataPtr,
+				replacementVertices.Length,
+				startIndex
+			).ThrowIfFailure();
+			
+			if (recalculateBoundingBox) {
+				using var tempHeapBuffer = _globals.HeapPool.BorrowAndCopy(defaultVertices);
+				replacementVertices.CopyTo(tempHeapBuffer.Buffer[startIndex..]);
+				
+				var newAabb = MathUtils.CalculateBoundingBox(tempHeapBuffer.Buffer, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin);
+				SetModelInstanceAabb(
+					handle,
+					newAabb.Position.ToVector3(),
+					new Vector3(newAabb.HalfWidth, newAabb.HalfHeight, newAabb.HalfDepth)
+				).ThrowIfFailure();
+			}
 		}
-
-		return new PositionedCuboid(
-			maxX - minX,
-			maxY - minY,
-			maxZ - minZ,
-			new Vect(minX + maxX, minY + maxY, minZ + maxZ).ScaledBy(0.5f).AsLocation()
-		);
 	}
 
 	public Material GetMaterial(ResourceHandle<ModelInstance> handle) {
@@ -332,13 +311,6 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		).ThrowIfFailure();
 		_activeInstanceEffectsData[handle] = new(result);
 		return result;
-	}
-
-	void DisposeEffectMaterialCopyIfPresent(ResourceHandle<ModelInstance> handle) {
-		if (!_activeInstanceEffectsData.TryGetValue(handle, out var effectsData)) return;
-
-		effectsData.PerInstanceEffectMaterialCopy.Dispose();
-		_activeInstanceEffectsData.Remove(handle);
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<ModelInstance> handle) {
@@ -467,11 +439,18 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		DisposeMutationDataIfPresent(handle);
 		if (removeFromMap) _activeInstanceTransforms.Remove(handle);
 	}
+	
+	void DisposeEffectMaterialCopyIfPresent(ResourceHandle<ModelInstance> handle) {
+		if (!_activeInstanceEffectsData.TryGetValue(handle, out var effectsData)) return;
+
+		effectsData.PerInstanceEffectMaterialCopy.Dispose();
+		_activeInstanceEffectsData.Remove(handle);
+	}
 
 	void DisposeMutationDataIfPresent(ResourceHandle<ModelInstance> handle) {
-		if (!_activeInstanceMutationData.Remove(handle, out var mutationData)) return;
-		mutationData.CpuShadow.Dispose();
-		LocalFrameSynchronizationManager.QueueResourceDisposal(mutationData.PrivateVertexBufferHandle, &DisposeVertexBuffer);
+		if (!_mutatedVertexBuffers.Remove(handle, out var bufferHandle)) return;
+		
+		LocalFrameSynchronizationManager.QueueResourceDisposal(bufferHandle, &DisposeVertexBuffer);
 	}
 
 	public void Dispose() {
@@ -480,7 +459,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			foreach (var kvp in _activeInstanceTransforms) Dispose(kvp.Key, removeFromMap: false);
 			_activeInstanceTransforms.Dispose();
 			_activeInstanceEffectsData.Dispose();
-			_activeInstanceMutationData.Dispose();
+			_mutatedVertexBuffers.Dispose();
 		}
 		finally {
 			_isDisposed = true;

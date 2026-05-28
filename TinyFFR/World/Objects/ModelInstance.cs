@@ -119,10 +119,7 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void UpdateVertices(int startIndex, ReadOnlySpan<MeshVertex> newVertices, bool recalculateBoundingBox = false) => Implementation.UpdateVertices(_handle, startIndex, newVertices, recalculateBoundingBox);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void UpdateVertices(ReadOnlySpan<MeshVertex> newVertices, bool recalculateBoundingBox = false) => Implementation.UpdateVertices(_handle, 0, newVertices, recalculateBoundingBox);
+	public void ModifyVertices(int startIndex, ReadOnlySpan<MeshVertex> replacementVertices, bool recalculateBoundingBox = false) => Implementation.ModifyVertices(_handle, startIndex, replacementVertices, recalculateBoundingBox);
 
 	internal ModelInstance(ResourceHandle<ModelInstance> handle, IModelInstanceImplProvider impl) {
 		_handle = handle;
