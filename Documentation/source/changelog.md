@@ -4,6 +4,8 @@ description: Abridged changelog for TinyFFR.
 icon: material/source-branch-plus
 search:
   exclude: true
+hide:
+  - footer
 ---
 
 ## 0.9

@@ -6,7 +6,7 @@ repo_url: https://github.com/Egodystonic/TinyFFR
 edit_uri: Documentation/source/
 site_description: "Manual & Instructions for TinyFFR (Tiny Fixed Function Renderer C# .NET Library)"
 site_author: "Egodystonic / Ben Bowen"
-copyright: "(c) 2025 Egodystonic / Ben Bowen"
+copyright: "(c) 2025-2026 Egodystonic / Ben Bowen"
 extra_css:
   - stylesheets/additional_styles.css
 watch:
@@ -113,8 +113,8 @@ strict: true
 nav:
   - index.md
   - changelog.md
-  - Manual:
-    - Tutorials:
+  - Tutorials:
+    - Walkthroughs:
       - tutorials/hello_cube.md
       - tutorials/loading_assets.md
       - tutorials/handling_input.md
@@ -122,7 +122,7 @@ nav:
         - tutorials/integrating_wpf.md
         - tutorials/integrating_avalonia.md
         - tutorials/integrating_winforms.md
-    - Learning Topics:
+    - Topics:
       - tutorials/materials.md
       - tutorials/lighting.md
       - tutorials/input.md

@@ -4,11 +4,12 @@ description: This is the homepage/manual for Tiny FFR (C# Tiny Fixed Function Re
 icon: material/home
 search:
   exclude: true
+hide:
+  - toc
+  - footer
 ---
 
 # :material-cube: TinyFFR || Realtime .NET 3D
-
-![Rotating Cube](tffrcube.webp){ align=right : style="height:200px;width:200px;border-radius:12px"}
 
 TinyFFR (*Tiny* *F*ixed *F*unction *R*enderer) is a C# .NET9 library designed to help you render things in 3D:
 
