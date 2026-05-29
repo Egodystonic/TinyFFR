@@ -248,6 +248,15 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 				replacementVertices.Length,
 				startIndex
 			).ThrowIfFailure();
+			
+			// var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(vertexMutationData.CurrentVertices.Buffer);
+			// UpdateVertexBuffer(
+			// 	vertexMutationData.PrivateVertexBufferHandle,
+			// 	gpuHoldingBuffer.BufferIdentity,
+			// 	(MeshVertex*) gpuHoldingBuffer.DataPtr,
+			// 	vertexMutationData.CurrentVertices.Buffer.Length,
+			// 	0
+			// ).ThrowIfFailure();
 		}
 		
 		if (recalculateBoundingBox) {
@@ -339,7 +348,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	ModelInstance HandleToInstance(ResourceHandle<ModelInstance> h) => new(h, this);
 
 	#region Resource Directory
-	public unsafe IndirectEnumerable<object, ModelInstance> AllActiveInstances {
+	public IndirectEnumerable<object, ModelInstance> AllActiveInstances {
 		get {
 			static LocalObjectBuilder CastSelf(object self) => self as LocalObjectBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
 			static int GetCount(object self) => CastSelf(self)._activeInstanceTransforms.Count;

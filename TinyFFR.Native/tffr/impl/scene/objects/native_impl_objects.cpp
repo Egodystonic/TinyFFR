@@ -39,7 +39,7 @@ void native_impl_objects::allocate_model_instance(mat4f* initialTransformPtr, Ve
 	*outModelInstance = Entity::smuggle(entity);
 }
 StartExportedFunc(allocate_model_instance, mat4f* initialTransformPtr, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount, int32_t boneCount, MaterialHandle material, float3 aabbCenter, float3 aabbHalfExtents, ModelInstanceHandle* outModelInstance) {
-	native_impl_objects::allocate_model_instance(initialTransformPtr, vb, ib, ibStartIndex, ibCount, boneCount, material, outModelInstance);
+	native_impl_objects::allocate_model_instance(initialTransformPtr, vb, ib, ibStartIndex, ibCount, boneCount, material, aabbCenter, aabbHalfExtents, outModelInstance);
 	EndExportedFunc
 }
 
