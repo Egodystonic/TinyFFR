@@ -15,13 +15,14 @@ namespace Egodystonic.TinyFFR.World;
 
 sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IResourceDirectory<ModelInstance>, IDisposable {
 	readonly record struct ActiveModelInstanceEffectsData(Material PerInstanceEffectMaterialCopy);
+	readonly record struct LocalVertexMutationData(UIntPtr PrivateVertexBufferHandle, PooledHeapMemory<MeshVertex> CurrentVertices);
 
 	const string DefaultModelInstanceName = "Unnamed Model Instance";
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	// Because these properties are set frequently, they're all kept in their own separate maps for performance
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, Transform> _activeInstanceTransforms = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, ActiveModelInstanceEffectsData> _activeInstanceEffectsData = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, UIntPtr> _mutatedVertexBuffers = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, LocalVertexMutationData> _activeInstanceVertexMutationData = new();
 	bool _isDisposed = false;
 
 	public LocalObjectBuilder(LocalFactoryGlobalObjectGroup globals) {
@@ -210,59 +211,67 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			}	
 		}
 
-		if (!_mutatedVertexBuffers.TryGetValue(handle, out var mutatedBufferHandle)) {
-			var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(defaultVertices);
-			replacementVertices.CopyTo(gpuHoldingBuffer.AsSpan<MeshVertex>()[startIndex..]);
-			
-			// We do this here because once we pass the buffer to AllocateVertexBuffer it could be disposed any time after (including immediately)
-			if (recalculateBoundingBox) {
-				var newAabb = MathUtils.CalculateBoundingBox(gpuHoldingBuffer.AsSpan<MeshVertex>(), MeshCreationConfig.DefaultBoundingBoxAdditionalMargin);
-				SetModelInstanceAabb(
-					handle,
-					newAabb.Position.ToVector3(),
-					new Vector3(newAabb.HalfWidth, newAabb.HalfHeight, newAabb.HalfDepth)
-				).ThrowIfFailure();
-			}
-			
-			AllocateVertexBuffer(
+		if (!_activeInstanceVertexMutationData.TryGetValue(handle, out var vertexMutationData)) {
+			var currentVertexData = _globals.HeapPool.BorrowAndCopy(defaultVertices);
+			replacementVertices.CopyTo(currentVertexData.Buffer[startIndex..]);
+			var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(currentVertexData.Buffer);
+
+			var allocResult = AllocateVertexBuffer(
 				gpuHoldingBuffer.BufferIdentity, 
 				(MeshVertex*) gpuHoldingBuffer.DataPtr, 
 				defaultVertices.Length, 
-				out mutatedBufferHandle
-			).ThrowIfFailure();
-			_mutatedVertexBuffers[handle] = mutatedBufferHandle;
+				out var privateVbHandle
+			);
+			if (!allocResult) {
+				currentVertexData.Dispose();
+				allocResult.ThrowIfFailure();
+				throw new InvalidOperationException(); // Should never reach here but it's a guard just in case
+			}
+			_activeInstanceVertexMutationData[handle] = vertexMutationData = new(privateVbHandle, currentVertexData); 
 			
 			var meshBufferData = mesh.BufferData;
 			SetModelInstanceMesh(
 				handle,
-				mutatedBufferHandle,
+				privateVbHandle,
 				meshBufferData.IndexBufferHandle,
 				meshBufferData.IndexBufferStartIndex,
 				meshBufferData.IndexBufferCount
 			).ThrowIfFailure();
 		}
 		else {
+			replacementVertices.CopyTo(vertexMutationData.CurrentVertices.Buffer[startIndex..]);
 			var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(replacementVertices);
 			UpdateVertexBuffer(
-				mutatedBufferHandle,
+				vertexMutationData.PrivateVertexBufferHandle,
 				gpuHoldingBuffer.BufferIdentity,
 				(MeshVertex*) gpuHoldingBuffer.DataPtr,
 				replacementVertices.Length,
 				startIndex
 			).ThrowIfFailure();
-			
-			if (recalculateBoundingBox) {
-				using var tempHeapBuffer = _globals.HeapPool.BorrowAndCopy(defaultVertices);
-				replacementVertices.CopyTo(tempHeapBuffer.Buffer[startIndex..]);
-				
-				var newAabb = MathUtils.CalculateBoundingBox(tempHeapBuffer.Buffer, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin);
-				SetModelInstanceAabb(
-					handle,
-					newAabb.Position.ToVector3(),
-					new Vector3(newAabb.HalfWidth, newAabb.HalfHeight, newAabb.HalfDepth)
-				).ThrowIfFailure();
-			}
 		}
+		
+		if (recalculateBoundingBox) {
+			var newAabb = MathUtils.CalculateBoundingBox(vertexMutationData.CurrentVertices.Buffer, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin);
+			SetModelInstanceAabb(
+				handle,
+				newAabb.Position.ToVector3(),
+				new Vector3(newAabb.HalfWidth, newAabb.HalfHeight, newAabb.HalfDepth)
+			).ThrowIfFailure();
+		}
+	}
+
+	public ReadOnlySpan<MeshVertex> GetModifiedVerticesIfMutableOrThrow(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var mesh = GetMesh(handle);
+		if (!mesh.AllowsPerInstanceVertexMutation) {
+			throw new InvalidOperationException(
+				$"Can not load or modify vertices for instances of {mesh} as it was not created " +
+				$"with the '{nameof(MeshCreationConfig.AllowsPerInstanceVertexMutation)}' flag set to true."
+			);
+		}
+		
+		if (_activeInstanceVertexMutationData.TryGetValue(handle, out var mutationData)) return mutationData.CurrentVertices.Buffer;
+		else return mesh.GetDefaultVerticesIfMutableOrThrow();
 	}
 
 	public Material GetMaterial(ResourceHandle<ModelInstance> handle) {
@@ -448,9 +457,10 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	}
 
 	void DisposeMutationDataIfPresent(ResourceHandle<ModelInstance> handle) {
-		if (!_mutatedVertexBuffers.Remove(handle, out var bufferHandle)) return;
+		if (!_activeInstanceVertexMutationData.Remove(handle, out var mutationData)) return;
 		
-		LocalFrameSynchronizationManager.QueueResourceDisposal(bufferHandle, &DisposeVertexBuffer);
+		LocalFrameSynchronizationManager.QueueResourceDisposal(mutationData.PrivateVertexBufferHandle, &DisposeVertexBuffer);
+		mutationData.CurrentVertices.Dispose();
 	}
 
 	public void Dispose() {
@@ -459,7 +469,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			foreach (var kvp in _activeInstanceTransforms) Dispose(kvp.Key, removeFromMap: false);
 			_activeInstanceTransforms.Dispose();
 			_activeInstanceEffectsData.Dispose();
-			_mutatedVertexBuffers.Dispose();
+			_activeInstanceVertexMutationData.Dispose();
 		}
 		finally {
 			_isDisposed = true;

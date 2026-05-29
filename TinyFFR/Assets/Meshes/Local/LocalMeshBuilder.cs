@@ -205,12 +205,17 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		return _activeMeshes[handle].BoundingBox;
 	}
 
+	public bool GetAllowsPerInstanceVertexMutation(ResourceHandle<Mesh> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _defaultMutableVerticesMap.ContainsKey(handle);
+	}
+
 	public ReadOnlySpan<MeshVertex> GetDefaultVerticesIfMutableOrThrow(ResourceHandle<Mesh> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (_defaultMutableVerticesMap.TryGetValue(handle, out var result)) return result.Buffer;
 		
 		throw new InvalidOperationException(
-			$"Can not modify vertices for instances of {HandleToInstance(handle)} as it was not created " +
+			$"Can not load or modify vertices for instances of {HandleToInstance(handle)} as it was not created " +
 			$"with the '{nameof(MeshCreationConfig.AllowsPerInstanceVertexMutation)}' flag set to true."
 		);
 	}

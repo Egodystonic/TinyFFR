@@ -120,6 +120,17 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void ModifyVertices(int startIndex, ReadOnlySpan<MeshVertex> replacementVertices, bool recalculateBoundingBox = false) => Implementation.ModifyVertices(_handle, startIndex, replacementVertices, recalculateBoundingBox);
+	
+	public int GetModifiedVertexCountIfAllowsMutation() {
+		if (!Mesh.AllowsPerInstanceVertexMutation) throw new InvalidOperationException(Mesh + " does not allow vertex mutation.");
+		return Implementation.GetModifiedVerticesIfMutableOrThrow(_handle).Length;
+	}
+	public int CopyModifiedVerticesIfAllowsMutation(Span<MeshVertex> destination) {
+		if (!Mesh.AllowsPerInstanceVertexMutation) throw new InvalidOperationException(Mesh + " does not allow vertex mutation.");
+		var src = Implementation.GetModifiedVerticesIfMutableOrThrow(_handle);
+		src.CopyTo(destination);
+		return src.Length;
+	}
 
 	internal ModelInstance(ResourceHandle<ModelInstance> handle, IModelInstanceImplProvider impl) {
 		_handle = handle;
