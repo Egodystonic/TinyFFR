@@ -31,6 +31,19 @@ StartExportedFunc(allocate_vertex_buffer, BufferIdentity bufferIdentity, native_
 	EndExportedFunc
 }
 
+void native_impl_render_assets::update_vertex_buffer(VertexBufferHandle buffer, BufferIdentity bufferIdentity, MeshVertex* vertices, int32_t vertexCount, int32_t startingIndex) {
+	ThrowIfNull(buffer, "Buffer was null.");
+	ThrowIfNull(vertices, "Vertices pointer was null.");
+	ThrowIfNegative(vertexCount, "Vertex count was negative.");
+	ThrowIfNegative(startingIndex, "Vertex start index was negative.");
+	ThrowIf(vertexCount + startingIndex > buffer->getVertexCount(), "");
+	buffer->setBufferAt(*filament_engine, 0, backend::BufferDescriptor{ vertices, vertexCount * sizeof(MeshVertex), &handle_filament_buffer_copy_callback, bufferIdentity }, startingIndex * sizeof(MeshVertex));
+}
+StartExportedFunc(update_vertex_buffer, VertexBufferHandle buffer, BufferIdentity bufferIdentity, native_impl_render_assets::MeshVertex* vertices, int32_t vertexCount, int32_t startingIndex) {
+	native_impl_render_assets::update_vertex_buffer(buffer, bufferIdentity, vertices, vertexCount, startingIndex);
+	EndExportedFunc
+}
+
 void native_impl_render_assets::allocate_vertex_buffer_skeletal(BufferIdentity bufferIdentity, MeshVertexSkeletal* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer) {
 	ThrowIfNull(vertices, "Vertices pointer was null.");
 	ThrowIfNegative(vertexCount, "Vertex count was negative.");

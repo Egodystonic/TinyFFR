@@ -138,6 +138,7 @@ nav:
     - Assets:
       - reference/texture_patterns.md
       - reference/creating_mock_resources.md
+      - reference/vertex_mutation.md
     - Camera:
       - Controllers:
         - reference/camera_controller_first_person.md

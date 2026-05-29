@@ -24,6 +24,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	
 	const string DefaultMeshName = "Unnamed Mesh";
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, MeshData> _activeMeshes = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, PooledHeapMemory<MeshVertex>> _defaultMutableVerticesMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<VertexBuffer>, int> _vertexBufferRefCounts = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<IndexBuffer>, int> _indexBufferRefCounts = new();
 	readonly ObjectPool<LocalMeshPolygonGroup, LocalMeshBuilder> _meshPolyGroupPool;
@@ -109,29 +110,6 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		return result;
 	}
 	
-	PositionedCuboid CalculateBoundingBox<TVertex>(ReadOnlySpan<TVertex> vertices) where TVertex : IMeshVertex {
-		if (vertices.Length == 0) return PositionedCuboid.UnitCubeAtOrigin;
-		
-		var (minX, minY, minZ) = vertices[0].Location;
-		var (maxX, maxY, maxZ) = vertices[0].Location;
-		for (var i = 1; i < vertices.Length; ++i) {
-			var loc = vertices[i].Location;
-			if (loc.X < minX) minX = loc.X;
-			if (loc.Y < minY) minY = loc.Y;
-			if (loc.Z < minZ) minZ = loc.Z;
-			if (loc.X > maxX) maxX = loc.X;
-			if (loc.Y > maxY) maxY = loc.Y;
-			if (loc.Z > maxZ) maxZ = loc.Z;
-		}
-		
-		return new(
-			maxX - minX,
-			maxY - minY,
-			maxZ - minZ,
-			new Vect(minX + maxX, minY + maxY, minZ + maxZ).ScaledBy(0.5f).AsLocation()
-		);
-	}
-	
 	Mesh ProcessVerticesAndCreateMesh<TVertex>(ReadOnlySpan<TVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config, int boneCount) where TVertex : unmanaged, IMeshVertex {
 		ThrowIfThisIsDisposed();
 		static void CheckTriangleIndex(char indexChar, int triangleIndex, int value, int numVertices) {
@@ -144,11 +122,18 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		if (vertices.Length == 0) throw new ArgumentException("Vertices span must not be empty!", nameof(vertices));
 		if (triangles.Length == 0) throw new ArgumentException("Triangles span must not be empty!", nameof(triangles));
 
+		if (config.AllowsPerInstanceVertexMutation && typeof(TVertex) != typeof(MeshVertex)) {
+			throw new ArgumentException($"Per-instance vertex mutation is only supported for non-skeletal meshes.", nameof(config));
+		}
+		
 		for (var i = 0; i < triangles.Length; ++i) {
 			CheckTriangleIndex('A', i, triangles[i].IndexA, vertices.Length);
 			CheckTriangleIndex('B', i, triangles[i].IndexB, vertices.Length);
 			CheckTriangleIndex('C', i, triangles[i].IndexC, vertices.Length);
 		}
+		
+		_nextHandleId++;
+		var handle = new ResourceHandle<Mesh>(_nextHandleId);
 
 		var tempVertexBuffer = _globals.CreateGpuHoldingBufferAndCopyData(vertices);
 		var tempIndexBuffer = _globals.CreateGpuHoldingBufferAndCopyData(triangles);
@@ -177,7 +162,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			}
 		}
 
-		var boundingBox = (config.BoundingBoxOverride ?? CalculateBoundingBox(tempVertexBuffer.AsSpan<TVertex>()))
+		// Maintainer's note: Do not replace this with the CalculateBoundingBox override that takes a margin parameter;
+		// the code below applies the margin to the user's override if there is one.
+		var boundingBox = (config.BoundingBoxOverride ?? MathUtils.CalculateBoundingBox(tempVertexBuffer.AsSpan<TVertex>()))
 			.WithAllExtentsAdjustedBy(config.BoundingBoxAdditionalMargin);
 
 		int indexBufferCount;
@@ -188,6 +175,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		UIntPtr vbHandle;
 		if (typeof(TVertex) == typeof(MeshVertex)) {
 			AllocateVertexBuffer(tempVertexBuffer.BufferIdentity, (MeshVertex*) tempVertexBuffer.DataPtr, vertices.Length, out vbHandle).ThrowIfFailure();
+			if (config.AllowsPerInstanceVertexMutation) {
+				_defaultMutableVerticesMap[handle] = _globals.HeapPool.BorrowAndCopy(tempVertexBuffer.AsSpan<MeshVertex>());
+			}
 		}
 		else if (typeof(TVertex) == typeof(MeshVertexSkeletal)) {
 			AllocateSkeletalVertexBuffer(tempVertexBuffer.BufferIdentity, (MeshVertexSkeletal*) tempVertexBuffer.DataPtr, vertices.Length, out vbHandle).ThrowIfFailure();
@@ -200,8 +190,6 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 
 		_vertexBufferRefCounts.Add(vbHandle, 1);
 		_indexBufferRefCounts.Add(ibHandle, 1);
-		_nextHandleId++;
-		var handle = new ResourceHandle<Mesh>(_nextHandleId);
 		_activeMeshes.Add(handle, new(new MeshBufferData(vbHandle, ibHandle, 0, indexBufferCount, boneCount), boundingBox));
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultMeshName);
 		return new Mesh(handle, this);
@@ -215,6 +203,21 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	public PositionedCuboid GetBoundingBox(ResourceHandle<Mesh> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeMeshes[handle].BoundingBox;
+	}
+
+	public bool GetAllowsPerInstanceVertexMutation(ResourceHandle<Mesh> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _defaultMutableVerticesMap.ContainsKey(handle);
+	}
+
+	public ReadOnlySpan<MeshVertex> GetDefaultVerticesIfMutableOrThrow(ResourceHandle<Mesh> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (_defaultMutableVerticesMap.TryGetValue(handle, out var result)) return result.Buffer;
+		
+		throw new InvalidOperationException(
+			$"Can not load or modify vertices for instances of {HandleToInstance(handle)} as it was not created " +
+			$"with the '{nameof(MeshCreationConfig.AllowsPerInstanceVertexMutation)}' flag set to true."
+		);
 	}
 
 	public MeshAnimation AttachAnimation(
@@ -588,7 +591,11 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			_meshAnimationTablePool.Return(animTable);
 		}
 		
-		var bufferData = _activeMeshes[handle].BufferData;
+		if (_defaultMutableVerticesMap.Remove(handle, out var mutableVerts)) {
+			mutableVerts.Dispose();
+		}
+		var meshData = _activeMeshes[handle];
+		var bufferData = meshData.BufferData;
 		var curVbRefCount = _vertexBufferRefCounts[bufferData.VertexBufferHandle];
 		var curIbRefCount = _indexBufferRefCounts[bufferData.IndexBufferHandle];
 		if (curVbRefCount <= 1) {
@@ -607,6 +614,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		if (_isDisposed) return;
 		try {
 			foreach (var kvp in _activeMeshes) Dispose(kvp.Key, removeFromMap: false);
+			_defaultMutableVerticesMap.Dispose();
 			_activeMeshes.Dispose();
 			_activeMeshAnimationTables.Dispose();
 

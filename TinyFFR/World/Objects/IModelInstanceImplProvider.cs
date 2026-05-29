@@ -28,6 +28,9 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	Mesh GetMesh(ResourceHandle<ModelInstance> handle);
 	void SetMesh(ResourceHandle<ModelInstance> handle, Mesh newMesh);
 
+	void ModifyVertices(ResourceHandle<ModelInstance> handle, int startIndex, ReadOnlySpan<MeshVertex> replacementVertices, bool recalculateBoundingBox);
+	ReadOnlySpan<MeshVertex> GetModifiedVerticesIfMutableOrThrow(ResourceHandle<ModelInstance> handle);
+
 	void TranslateBy(ResourceHandle<ModelInstance> handle, Vect translation);
 	void RotateBy(ResourceHandle<ModelInstance> handle, Rotation rotation);
 	void RotateBy(ResourceHandle<ModelInstance> handle, Rotation rotation, Location pivotPoint);

@@ -13,6 +13,7 @@ __Github: [Issues](https://github.com/Egodystonic/TinyFFR/milestone/8?closed=1) 
 ### Major Features
 
 * Added scene compositing
+* Added CPU-controlled vertex mutation capability for non-skeletal meshes
 
 ## 0.8
 

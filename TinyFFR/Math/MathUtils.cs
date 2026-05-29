@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2023
 
 using System.Globalization;
+using Egodystonic.TinyFFR.Assets.Meshes;
 
 namespace Egodystonic.TinyFFR;
 
@@ -306,5 +307,57 @@ public static class MathUtils {
 	}
 	public static Vector4 GetColumn(this Matrix4x4 @this, int columnIndex) {
 		return new Vector4(@this[0, columnIndex], @this[1, columnIndex], @this[2, columnIndex], @this[3, columnIndex]);
+	}
+	
+	public static PositionedCuboid CalculateBoundingBox<TVertex>(ReadOnlySpan<TVertex> vertices, float additionalMargin) where TVertex : IMeshVertex {
+		return CalculateBoundingBox(vertices).WithAllExtentsAdjustedBy(additionalMargin);
+	}
+	public static PositionedCuboid CalculateBoundingBox<TVertex>(ReadOnlySpan<TVertex> vertices) where TVertex : IMeshVertex {
+		if (vertices.Length == 0) return PositionedCuboid.UnitCubeAtOrigin;
+		
+		var (minX, minY, minZ) = vertices[0].Location;
+		var (maxX, maxY, maxZ) = vertices[0].Location;
+		for (var i = 1; i < vertices.Length; ++i) {
+			var loc = vertices[i].Location;
+			if (loc.X < minX) minX = loc.X;
+			if (loc.Y < minY) minY = loc.Y;
+			if (loc.Z < minZ) minZ = loc.Z;
+			if (loc.X > maxX) maxX = loc.X;
+			if (loc.Y > maxY) maxY = loc.Y;
+			if (loc.Z > maxZ) maxZ = loc.Z;
+		}
+		
+		return new(
+			maxX - minX,
+			maxY - minY,
+			maxZ - minZ,
+			new Vect(minX + maxX, minY + maxY, minZ + maxZ).ScaledBy(0.5f).AsLocation()
+		);
+	}
+	
+	public static PositionedCuboid CalculateBoundingBox(ReadOnlySpan<Location> vertices, float additionalMargin) {
+		return CalculateBoundingBox(vertices).WithAllExtentsAdjustedBy(additionalMargin);
+	}
+	public static PositionedCuboid CalculateBoundingBox(ReadOnlySpan<Location> vertices) {
+		if (vertices.Length == 0) return PositionedCuboid.UnitCubeAtOrigin;
+		
+		var (minX, minY, minZ) = vertices[0];
+		var (maxX, maxY, maxZ) = vertices[0];
+		for (var i = 1; i < vertices.Length; ++i) {
+			var loc = vertices[i];
+			if (loc.X < minX) minX = loc.X;
+			if (loc.Y < minY) minY = loc.Y;
+			if (loc.Z < minZ) minZ = loc.Z;
+			if (loc.X > maxX) maxX = loc.X;
+			if (loc.Y > maxY) maxY = loc.Y;
+			if (loc.Z > maxZ) maxZ = loc.Z;
+		}
+		
+		return new(
+			maxX - minX,
+			maxY - minY,
+			maxZ - minZ,
+			new Vect(minX + maxX, minY + maxY, minZ + maxZ).ScaledBy(0.5f).AsLocation()
+		);
 	}
 }

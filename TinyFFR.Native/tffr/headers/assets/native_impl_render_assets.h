@@ -42,6 +42,7 @@ public:
 	static_assert(sizeof(MeshVertexSkeletal) == 56);
 
 	static void allocate_vertex_buffer(BufferIdentity bufferIdentity, MeshVertex* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer);
+	static void update_vertex_buffer(VertexBufferHandle buffer, BufferIdentity bufferIdentity, MeshVertex* vertices, int32_t vertexCount, int32_t startingIndex);
 	static void allocate_vertex_buffer_skeletal(BufferIdentity bufferIdentity, MeshVertexSkeletal* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer);
 	static void allocate_index_buffer(BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer);
 	static void dispose_vertex_buffer(VertexBufferHandle buffer);

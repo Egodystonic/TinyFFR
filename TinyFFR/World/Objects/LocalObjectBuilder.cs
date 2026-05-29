@@ -7,19 +7,22 @@ using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Rendering.Local;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
 namespace Egodystonic.TinyFFR.World;
 
-sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IResourceDirectory<ModelInstance>, IDisposable {
+sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IResourceDirectory<ModelInstance>, IDisposable {
 	readonly record struct ActiveModelInstanceEffectsData(Material PerInstanceEffectMaterialCopy);
+	readonly record struct LocalVertexMutationData(UIntPtr PrivateVertexBufferHandle, PooledHeapMemory<MeshVertex> CurrentVertices);
 
 	const string DefaultModelInstanceName = "Unnamed Model Instance";
 	readonly LocalFactoryGlobalObjectGroup _globals;
-	// Because instance transforms are set so frequently, they're kept in their own separate map for performance
+	// Because these properties are set frequently, they're all kept in their own separate maps for performance
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, Transform> _activeInstanceTransforms = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, ActiveModelInstanceEffectsData> _activeInstanceEffectsData = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, LocalVertexMutationData> _activeInstanceVertexMutationData = new();
 	bool _isDisposed = false;
 
 	public LocalObjectBuilder(LocalFactoryGlobalObjectGroup globals) {
@@ -44,13 +47,13 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 			new Vector3(aabb.HalfWidth, aabb.HalfHeight, aabb.HalfDepth),
 			out var handle
 		).ThrowIfFailure();
-		
+
 		var result = HandleToInstance(handle);
 		_activeInstanceTransforms.Add(handle, config.InitialTransform);
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<ModelInstance>(handle).Ident, config.Name, DefaultModelInstanceName);
 		_globals.DependencyTracker.RegisterDependency(result, mesh);
 		_globals.DependencyTracker.RegisterDependency(result, material);
-		
+
 		if (meshBufferData.BoneCount > 0) mesh.ApplySkeletalBindPose(result);
 		return result;
 	}
@@ -179,12 +182,105 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 			meshBufferData.VertexBufferHandle,
 			meshBufferData.IndexBufferHandle,
 			meshBufferData.IndexBufferStartIndex,
-			meshBufferData.IndexBufferCount,
+			meshBufferData.IndexBufferCount
+		).ThrowIfFailure();
+		SetModelInstanceAabb(
+			handle,
 			aabb.Position.ToVector3(),
 			new Vector3(aabb.HalfWidth, aabb.HalfHeight, aabb.HalfDepth)
 		).ThrowIfFailure();
 		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), GetMesh(handle));
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMesh);
+	}
+
+	public void ModifyVertices(ResourceHandle<ModelInstance> handle, int startIndex, ReadOnlySpan<MeshVertex> replacementVertices, bool recalculateBoundingBox) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var mesh = GetMesh(handle);
+		var defaultVertices = mesh.GetDefaultVerticesIfMutableOrThrow();
+
+		if (startIndex < 0) {
+			throw new ArgumentOutOfRangeException(nameof(startIndex), startIndex, "Start index must be non-negative.");
+		}
+		checked {
+			if (startIndex + replacementVertices.Length > defaultVertices.Length) {
+				throw new ArgumentOutOfRangeException(
+					nameof(replacementVertices), 
+					$"Start index ({startIndex}) + replacement vertex span length ({replacementVertices.Length}) " +
+					$"would exceed mesh vertex count ({defaultVertices.Length})."
+				);
+			}	
+		}
+
+		if (!_activeInstanceVertexMutationData.TryGetValue(handle, out var vertexMutationData)) {
+			var currentVertexData = _globals.HeapPool.BorrowAndCopy(defaultVertices);
+			replacementVertices.CopyTo(currentVertexData.Buffer[startIndex..]);
+			var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(currentVertexData.Buffer);
+
+			var allocResult = AllocateVertexBuffer(
+				gpuHoldingBuffer.BufferIdentity, 
+				(MeshVertex*) gpuHoldingBuffer.DataPtr, 
+				defaultVertices.Length, 
+				out var privateVbHandle
+			);
+			if (!allocResult) {
+				currentVertexData.Dispose();
+				allocResult.ThrowIfFailure();
+				throw new InvalidOperationException(); // Should never reach here but it's a guard just in case
+			}
+			_activeInstanceVertexMutationData[handle] = vertexMutationData = new(privateVbHandle, currentVertexData); 
+			
+			var meshBufferData = mesh.BufferData;
+			SetModelInstanceMesh(
+				handle,
+				privateVbHandle,
+				meshBufferData.IndexBufferHandle,
+				meshBufferData.IndexBufferStartIndex,
+				meshBufferData.IndexBufferCount
+			).ThrowIfFailure();
+		}
+		else {
+			replacementVertices.CopyTo(vertexMutationData.CurrentVertices.Buffer[startIndex..]);
+			var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(replacementVertices);
+			UpdateVertexBuffer(
+				vertexMutationData.PrivateVertexBufferHandle,
+				gpuHoldingBuffer.BufferIdentity,
+				(MeshVertex*) gpuHoldingBuffer.DataPtr,
+				replacementVertices.Length,
+				startIndex
+			).ThrowIfFailure();
+			
+			// var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(vertexMutationData.CurrentVertices.Buffer);
+			// UpdateVertexBuffer(
+			// 	vertexMutationData.PrivateVertexBufferHandle,
+			// 	gpuHoldingBuffer.BufferIdentity,
+			// 	(MeshVertex*) gpuHoldingBuffer.DataPtr,
+			// 	vertexMutationData.CurrentVertices.Buffer.Length,
+			// 	0
+			// ).ThrowIfFailure();
+		}
+		
+		if (recalculateBoundingBox) {
+			var newAabb = MathUtils.CalculateBoundingBox(vertexMutationData.CurrentVertices.Buffer, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin);
+			SetModelInstanceAabb(
+				handle,
+				newAabb.Position.ToVector3(),
+				new Vector3(newAabb.HalfWidth, newAabb.HalfHeight, newAabb.HalfDepth)
+			).ThrowIfFailure();
+		}
+	}
+
+	public ReadOnlySpan<MeshVertex> GetModifiedVerticesIfMutableOrThrow(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var mesh = GetMesh(handle);
+		if (!mesh.AllowsPerInstanceVertexMutation) {
+			throw new InvalidOperationException(
+				$"Can not load or modify vertices for instances of {mesh} as it was not created " +
+				$"with the '{nameof(MeshCreationConfig.AllowsPerInstanceVertexMutation)}' flag set to true."
+			);
+		}
+		
+		if (_activeInstanceVertexMutationData.TryGetValue(handle, out var mutationData)) return mutationData.CurrentVertices.Buffer;
+		else return mesh.GetDefaultVerticesIfMutableOrThrow();
 	}
 
 	public Material GetMaterial(ResourceHandle<ModelInstance> handle) {
@@ -235,13 +331,6 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 		return result;
 	}
 
-	void DisposeEffectMaterialCopyIfPresent(ResourceHandle<ModelInstance> handle) {
-		if (!_activeInstanceEffectsData.TryGetValue(handle, out var effectsData)) return;
-
-		effectsData.PerInstanceEffectMaterialCopy.Dispose();
-		_activeInstanceEffectsData.Remove(handle);
-	}
-
 	public string GetNameAsNewStringObject(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return new String(_globals.GetResourceName(handle.Ident, DefaultModelInstanceName));
@@ -259,7 +348,7 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 	ModelInstance HandleToInstance(ResourceHandle<ModelInstance> h) => new(h, this);
 
 	#region Resource Directory
-	public unsafe IndirectEnumerable<object, ModelInstance> AllActiveInstances {
+	public IndirectEnumerable<object, ModelInstance> AllActiveInstances {
 		get {
 			static LocalObjectBuilder CastSelf(object self) => self as LocalObjectBuilder ?? throw new InvalidOperationException($"Enumeration invoked on {self?.GetType().Name}.");
 			static int GetCount(object self) => CastSelf(self)._activeInstanceTransforms.Count;
@@ -306,10 +395,35 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 		UIntPtr vertexBufferHandle,
 		UIntPtr indexBufferHandle,
 		int indexBufferStartIndex,
-		int indexBufferCount,
+		int indexBufferCount
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_model_instance_aabb")]
+	static extern InteropResult SetModelInstanceAabb(
+		UIntPtr modelInstanceHandle,
 		Vector3 aabbCenter,
 		Vector3 aabbHalfExtents
 	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_vertex_buffer")]
+	static extern InteropResult AllocateVertexBuffer(
+		nuint bufferId,
+		MeshVertex* verticesPtr,
+		int numVertices,
+		out UIntPtr outBufferHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "update_vertex_buffer")]
+	static extern InteropResult UpdateVertexBuffer(
+		UIntPtr bufferHandle,
+		nuint bufferId,
+		MeshVertex* verticesPtr,
+		int vertexCount,
+		int startingIndex
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_vertex_buffer")]
+	static extern InteropResult DisposeVertexBuffer(UIntPtr bufferHandle);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_model_instance_material")]
 	static extern InteropResult SetModelInstanceMaterial(
@@ -340,7 +454,22 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		DisposeModelInstance(handle).ThrowIfFailure();
 		DisposeEffectMaterialCopyIfPresent(handle);
+		DisposeMutationDataIfPresent(handle);
 		if (removeFromMap) _activeInstanceTransforms.Remove(handle);
+	}
+	
+	void DisposeEffectMaterialCopyIfPresent(ResourceHandle<ModelInstance> handle) {
+		if (!_activeInstanceEffectsData.TryGetValue(handle, out var effectsData)) return;
+
+		effectsData.PerInstanceEffectMaterialCopy.Dispose();
+		_activeInstanceEffectsData.Remove(handle);
+	}
+
+	void DisposeMutationDataIfPresent(ResourceHandle<ModelInstance> handle) {
+		if (!_activeInstanceVertexMutationData.Remove(handle, out var mutationData)) return;
+		
+		LocalFrameSynchronizationManager.QueueResourceDisposal(mutationData.PrivateVertexBufferHandle, &DisposeVertexBuffer);
+		mutationData.CurrentVertices.Dispose();
 	}
 
 	public void Dispose() {
@@ -349,6 +478,7 @@ sealed class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IR
 			foreach (var kvp in _activeInstanceTransforms) Dispose(kvp.Key, removeFromMap: false);
 			_activeInstanceTransforms.Dispose();
 			_activeInstanceEffectsData.Dispose();
+			_activeInstanceVertexMutationData.Dispose();
 		}
 		finally {
 			_isDisposed = true;

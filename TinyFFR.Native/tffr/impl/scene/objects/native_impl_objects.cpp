@@ -58,7 +58,7 @@ StartExportedFunc(set_model_instance_bone_transforms, ModelInstanceHandle modelI
 	EndExportedFunc
 }
 
-void native_impl_objects::set_model_instance_mesh(ModelInstanceHandle modelInstance, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount, float3 aabbCenter, float3 aabbHalfExtents) {
+void native_impl_objects::set_model_instance_mesh(ModelInstanceHandle modelInstance, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount) {
 	ThrowIfNull(vb, "VB was null.");
 	ThrowIfNull(ib, "IB was null.");
 
@@ -66,10 +66,20 @@ void native_impl_objects::set_model_instance_mesh(ModelInstanceHandle modelInsta
 	auto instance = manager.getInstance(Entity::import(modelInstance));
 	ThrowIf(!instance.isValid(), "Given entity instance was not associated with any renderable.");
 	manager.setGeometryAt(instance, 0, RenderableManager::PrimitiveType::TRIANGLES, vb, ib, ibStartIndex, ibCount);
+}
+StartExportedFunc(set_model_instance_mesh, ModelInstanceHandle modelInstance, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount) {
+	native_impl_objects::set_model_instance_mesh(modelInstance, vb, ib, ibStartIndex, ibCount);
+	EndExportedFunc
+}
+
+void native_impl_objects::set_model_instance_aabb(ModelInstanceHandle modelInstance, float3 aabbCenter, float3 aabbHalfExtents) {
+	auto& manager = filament_engine->getRenderableManager();
+	auto instance = manager.getInstance(Entity::import(modelInstance));
+	ThrowIf(!instance.isValid(), "Given entity instance was not associated with any renderable.");
 	manager.setAxisAlignedBoundingBox(instance, { aabbCenter, aabbHalfExtents });
 }
-StartExportedFunc(set_model_instance_mesh, ModelInstanceHandle modelInstance, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount, float3 aabbCenter, float3 aabbHalfExtents) {
-	native_impl_objects::set_model_instance_mesh(modelInstance, vb, ib, ibStartIndex, ibCount, aabbCenter, aabbHalfExtents);
+StartExportedFunc(set_model_instance_aabb, ModelInstanceHandle modelInstance, float3 aabbCenter, float3 aabbHalfExtents) {
+	native_impl_objects::set_model_instance_aabb(modelInstance, aabbCenter, aabbHalfExtents);
 	EndExportedFunc
 }
 

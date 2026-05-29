@@ -113,6 +113,21 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
 	public void SetMesh(Mesh mesh) => Mesh = mesh;
 
+	public bool AllowsVertexMutation {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Mesh.AllowsPerInstanceVertexMutation;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void ModifyVertices(int startIndex, ReadOnlySpan<MeshVertex> replacementVertices, bool recalculateBoundingBox = false) => Implementation.ModifyVertices(_handle, startIndex, replacementVertices, recalculateBoundingBox);
+	
+	public int CopyModifiedVerticesIfAllowsMutation(Span<MeshVertex> destination) {
+		if (!Mesh.AllowsPerInstanceVertexMutation) throw new InvalidOperationException(Mesh + " does not allow vertex mutation.");
+		var src = Implementation.GetModifiedVerticesIfMutableOrThrow(_handle);
+		src.CopyTo(destination);
+		return src.Length;
+	}
+
 	internal ModelInstance(ResourceHandle<ModelInstance> handle, IModelInstanceImplProvider impl) {
 		_handle = handle;
 		_impl = impl;

@@ -85,7 +85,7 @@ public readonly ref struct MeshGenerationConfig : IConfigStruct<MeshGenerationCo
 
 public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig> {
 	public static readonly float DefaultBoundingBoxAdditionalMargin = 0.03f;
-	
+
 	public bool FlipTriangles { get; init; } = false;
 	public bool InvertTextureU { get; init; } = false;
 	public bool InvertTextureV { get; init; } = false;
@@ -93,6 +93,7 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 	public float LinearRescalingFactor { get; init; } = 1f;
 	public PositionedCuboid? BoundingBoxOverride { get; init; } = null;
 	public float BoundingBoxAdditionalMargin { get; init; } = DefaultBoundingBoxAdditionalMargin;
+	public bool AllowsPerInstanceVertexMutation { get; init; } = false;
 	public ReadOnlySpan<char> Name { get; init; }
 
 	public MeshCreationConfig() { }
@@ -111,6 +112,7 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 			+	SerializationSizeOfFloat() // LinearRescalingFactor
 			+	SerializationSizeOfNullable<PositionedCuboid>() // BoundingBoxOverride
 			+	SerializationSizeOfFloat() // BoundingBoxAdditionalMargin
+			+	SerializationSizeOfBool() // AllowPerInstanceVertexMutation
 			+	SerializationSizeOfString(src.Name); // Name
 	}
 	public static void AllocateAndConvertToHeapStorage(Span<byte> dest, in MeshCreationConfig src) {
@@ -121,6 +123,7 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 		SerializationWriteFloat(ref dest, src.LinearRescalingFactor);
 		SerializationWriteNullable(ref dest, src.BoundingBoxOverride);
 		SerializationWriteFloat(ref dest, src.BoundingBoxAdditionalMargin);
+		SerializationWriteBool(ref dest, src.AllowsPerInstanceVertexMutation);
 		SerializationWriteString(ref dest, src.Name);
 	}
 	public static MeshCreationConfig ConvertFromAllocatedHeapStorage(ReadOnlySpan<byte> src) {
@@ -132,6 +135,7 @@ public readonly ref struct MeshCreationConfig : IConfigStruct<MeshCreationConfig
 			LinearRescalingFactor = SerializationReadFloat(ref src),
 			BoundingBoxOverride = SerializationReadNullable<PositionedCuboid>(ref src),
 			BoundingBoxAdditionalMargin = SerializationReadFloat(ref src),
+			AllowsPerInstanceVertexMutation = SerializationReadBool(ref src),
 			Name = SerializationReadString(ref src),
 		};
 	}
