@@ -46,7 +46,7 @@ class LocalMeshVertexMutationTest {
 		cameraController.MinDistance = 2f;
 		cameraController.Distance = 4f;
 		
-		var numDefaultVertices = mesh.GetNonModifiedVertexCountIfAllowsMutation();
+		var numDefaultVertices = mesh.GetVertexCountIfAllowsMutation();
 		var vertexBuffer = new MeshVertex[numDefaultVertices];
 		mesh.CopyNonModifiedVerticesIfAllowsMutation(vertexBuffer);
 		
@@ -110,7 +110,7 @@ class LocalMeshVertexMutationTest {
 		var timeUntilNextVerticesSelected = TimeBetweenVertexSelectionsSecs;
 		var ongoingMutationIndices = new List<(int Index, float Time)>[NumInstances];
 		for (var i = 0; i < NumInstances; ++i) ongoingMutationIndices[i] = new List<(int Index, float Time)>();
-		var numDefaultVertices = mesh.GetNonModifiedVertexCountIfAllowsMutation();
+		var numDefaultVertices = mesh.GetVertexCountIfAllowsMutation();
 		var defaultVertices = new MeshVertex[numDefaultVertices];
 		mesh.CopyNonModifiedVerticesIfAllowsMutation(defaultVertices);
 		var interpAlgo = InterpolationAlgorithm<Real>.DecelerateFromFastWithOvershoot();

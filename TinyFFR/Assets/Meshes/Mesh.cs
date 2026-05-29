@@ -47,7 +47,7 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 		_impl = impl;
 	}
 	
-	public int GetNonModifiedVertexCountIfAllowsMutation() {
+	public int GetVertexCountIfAllowsMutation() {
 		if (!AllowsPerInstanceVertexMutation) throw new InvalidOperationException(ToString() + " does not allow vertex mutation.");
 		return Implementation.GetDefaultVerticesIfMutableOrThrow(_handle).Length;
 	}
