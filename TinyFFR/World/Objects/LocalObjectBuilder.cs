@@ -248,15 +248,6 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 				replacementVertices.Length,
 				startIndex
 			).ThrowIfFailure();
-			
-			// var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(vertexMutationData.CurrentVertices.Buffer);
-			// UpdateVertexBuffer(
-			// 	vertexMutationData.PrivateVertexBufferHandle,
-			// 	gpuHoldingBuffer.BufferIdentity,
-			// 	(MeshVertex*) gpuHoldingBuffer.DataPtr,
-			// 	vertexMutationData.CurrentVertices.Buffer.Length,
-			// 	0
-			// ).ThrowIfFailure();
 		}
 		
 		if (recalculateBoundingBox) {

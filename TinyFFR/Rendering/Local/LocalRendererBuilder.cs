@@ -497,8 +497,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 	unsafe void RenderInternal(ResourceHandle<Renderer> handle, RenderOrdering ordering, RenderCompositionType compositionType) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 
-		SetUpSceneShadowQuality(handle);
-
+		SetUpSceneForRender(handle);
+		
 		var rendererData = _loadedRenderers[handle];
 		var viewportData = rendererData.Viewport;
 		TargetSpecificData targetData;
@@ -942,14 +942,17 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		_globals.CopyResourceName(handle.Ident, DefaultRenderOutputBufferName, destinationBuffer);
 	}
 
-	void SetUpSceneShadowQuality(ResourceHandle<Renderer> handle) {
+	void SetUpSceneForRender(ResourceHandle<Renderer> handle) {
 		var scene = _loadedRenderers[handle].Scene;
 		var quality = _loadedRenderers[handle].Quality.ShadowQuality;
+		var localSceneImpl = (LocalSceneBuilder) scene.Implementation;
+		var sceneHandle = scene.GetHandleWithoutDisposeCheck();
 
 		// Currently in filament the cascade count only really affects directional lights, but we set values anyway in case that changes one day
 		switch (quality) {
 			case Quality.VeryLow:
-				scene.SetLightShadowFidelity(
+				localSceneImpl.SetLightShadowFidelity(
+					sceneHandle,
 					quality,
 					pointLightFidelity:			new(256, 1),
 					spotLightFidelity:			new(256, 1),
@@ -957,7 +960,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 				);
 				break;
 			case Quality.Low:
-				scene.SetLightShadowFidelity(
+				localSceneImpl.SetLightShadowFidelity(
+					sceneHandle,
 					quality,
 					pointLightFidelity:			new(512, 1),
 					spotLightFidelity:			new(512, 1),
@@ -965,7 +969,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 				);
 				break;
 			case Quality.High:
-				scene.SetLightShadowFidelity(
+				localSceneImpl.SetLightShadowFidelity(
+					sceneHandle,
 					quality,
 					pointLightFidelity:			new(1024, 2),
 					spotLightFidelity:			new(1024, 2),
@@ -973,7 +978,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 				);
 				break;
 			case Quality.VeryHigh:
-				scene.SetLightShadowFidelity(
+				localSceneImpl.SetLightShadowFidelity(
+					sceneHandle,
 					quality,
 					pointLightFidelity:			new(2048, 4),
 					spotLightFidelity:			new(2048, 4),
@@ -981,7 +987,8 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 				);
 				break;
 			default:
-				scene.SetLightShadowFidelity(
+				localSceneImpl.SetLightShadowFidelity(
+					sceneHandle,
 					quality,
 					pointLightFidelity:			new(1024, 1),
 					spotLightFidelity:			new(1024, 1),

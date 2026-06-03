@@ -93,10 +93,6 @@ public readonly struct Scene : IDisposableResource<Scene, ISceneImplProvider> {
 		return DefaultLux * brightness * brightness;
 	}
 
-	internal void SetLightShadowFidelity(Quality qualityPreset, LightShadowFidelityData pointLightFidelity, LightShadowFidelityData spotLightFidelity, LightShadowFidelityData directionalLightFidelity) {
-		Implementation.SetLightShadowFidelity(_handle, qualityPreset, pointLightFidelity, spotLightFidelity, directionalLightFidelity);
-	}
-
 	public override string ToString() => $"Scene {(IsDisposed ? "(Disposed)" : $"\"{GetNameAsNewStringObject()}\"")}";
 
 	#region Disposal

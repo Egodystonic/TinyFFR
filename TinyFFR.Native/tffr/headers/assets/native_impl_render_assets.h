@@ -40,10 +40,21 @@ public:
 	};
 	PopSafeStructPacking
 	static_assert(sizeof(MeshVertexSkeletal) == 56);
+	
+	PushSafeStructPacking
+	struct MeshVertexPrimitive {
+		float3 Position;
+		float4 Color;
+		float4 Tangent;
+	};
+	PopSafeStructPacking
+	static_assert(sizeof(MeshVertexPrimitive) == 44);
 
 	static void allocate_vertex_buffer(BufferIdentity bufferIdentity, MeshVertex* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer);
 	static void update_vertex_buffer(VertexBufferHandle buffer, BufferIdentity bufferIdentity, MeshVertex* vertices, int32_t vertexCount, int32_t startingIndex);
 	static void allocate_vertex_buffer_skeletal(BufferIdentity bufferIdentity, MeshVertexSkeletal* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer);
+	static void allocate_vertex_buffer_primitive(BufferIdentity bufferIdentity, MeshVertexPrimitive* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer);
+	static void update_vertex_buffer_primitive(VertexBufferHandle buffer, BufferIdentity bufferIdentity, MeshVertexPrimitive* vertices, int32_t vertexCount, int32_t startingIndex);
 	static void allocate_index_buffer(BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer);
 	static void dispose_vertex_buffer(VertexBufferHandle buffer);
 	static void dispose_index_buffer(IndexBufferHandle buffer);

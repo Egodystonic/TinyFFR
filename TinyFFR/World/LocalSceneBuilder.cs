@@ -494,7 +494,7 @@ sealed unsafe class LocalSceneBuilder : ISceneBuilder, ISceneImplProvider, IReso
 
 	public void Dispose(ResourceHandle<Scene> handle) {
 		if (IsDisposed(handle)) return;
-
+		
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 
 		RemoveBackdrop(handle);

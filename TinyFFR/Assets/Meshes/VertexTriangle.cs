@@ -8,5 +8,6 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = sizeof(int) * 3)]
 public readonly record struct VertexTriangle(int IndexA, int IndexB, int IndexC) {
 	public VertexTriangle ShiftedBy(int indexShift) => new(IndexA + indexShift, IndexB + indexShift, IndexC + indexShift);
+	public VertexTriangle Flipped() => new(IndexA, IndexC, IndexB);
 	public override string ToString() => $"<{IndexA}, {IndexB}, {IndexC}>";
 }

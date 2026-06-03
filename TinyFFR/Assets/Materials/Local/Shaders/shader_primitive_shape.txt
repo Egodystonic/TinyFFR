@@ -1,0 +1,17 @@
+﻿material {
+	name : %NAME%,
+	requires : [
+		color
+	],
+	shadingModel : unlit,
+	flipUV : false,
+	blending : transparent
+}
+
+fragment {
+	void material(inout MaterialInputs material) {
+		prepareMaterial(material);
+
+		material.postLightingColor.rgba = getColor();
+	}
+}

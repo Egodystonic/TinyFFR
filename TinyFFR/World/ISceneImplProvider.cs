@@ -28,6 +28,4 @@ public interface ISceneImplProvider : IDisposableResourceImplProvider<Scene> {
 	
 	IndirectEnumerable<Scene, ModelInstance> GetModelInstances(ResourceHandle<Scene> handle);
 	IndirectEnumerable<Scene, Light> GetLights(ResourceHandle<Scene> handle);
-
-	internal void SetLightShadowFidelity(ResourceHandle<Scene> handle, Quality qualityPreset, LightShadowFidelityData pointLightFidelity, LightShadowFidelityData spotLightFidelity, LightShadowFidelityData directionalLightFidelity);
 }
