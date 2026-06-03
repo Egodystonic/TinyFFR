@@ -107,14 +107,37 @@ public interface IObjectBuilder {
 	ModelInstanceGroup GroupModelInstances<TInstanceList>(TInstanceList instances, bool disposingGroupDisposesInstances = true, ReadOnlySpan<char> name = default) where TInstanceList : IReadOnlyList<ModelInstance>;
 	
 	#region QuadMesh
-	// Same plane & anchor point as below
-	// TODO actually the plane is unnecessary, just an anchor point, Orientation2D, and facing direction is sufficient
+	QuadInstance CreateImageInstance(QuadMesh mesh, Material material, Location position, XYPair<float> size, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, ReadOnlySpan<char> name = default) {
+		return CreateImageInstance(
+			mesh,
+			material,
+			new ModelInstanceCreationConfig {
+				InitialTransform = QuadMesh.CalculateTransformForStandardQuadMesh(position, size, facingDirection, uprightDirection, positionAnchor),
+				Name = name
+			}
+		);
+	}
+	QuadInstance CreateImageInstance(QuadMesh mesh, Material material, in ModelInstanceCreationConfig config) {
+		return new QuadInstance(CreateModelInstance(mesh.UnderlyingMesh, material, in config));
+	}
 	#endregion
 	
 	#region MutableGridMesh
-	// XYPair<float> Size, Direction upDirection, Location zeroPoint on other overloads -- actually, Plane and an anchor point with an Orientation2D indicating which part of the mesh is that anchor point
+	MutableGridInstance CreateMutableGridInstance(MutableGridMesh mesh, Material material, Location position, XYPair<float> size, Direction increasingHeightDirection, Orientation2D positionAnchor = Orientation2D.None, ReadOnlySpan<char> name = default) {
+		
+	}
+	MutableGridInstance CreateMutableGridInstance(MutableGridMesh mesh, Material material, Location position, XYPair<float> size, Direction increasingHeightDirection, Direction increasingXDirection, Direction increasingYDirection, Orientation2D positionAnchor = Orientation2D.None, ReadOnlySpan<char> name = default) {
+		return CreateImageInstance(
+			mesh,
+			material,
+			new ModelInstanceCreationConfig {
+				InitialTransform = QuadMesh.CalculateTransformForStandardQuadMesh(position, size, facingDirection, uprightDirection, positionAnchor),
+				Name = name
+			}
+		);
+	}
 	MutableGridInstance CreateMutableGridInstance(MutableGridMesh mesh, Material material, in ModelInstanceCreationConfig config) {
-		return CreateModelInstance(mesh.UnderlyingMesh, material, in config);
+		return new MutableGridInstance(CreateModelInstance(mesh.UnderlyingMesh, material, in config), mesh);
 	}
 	#endregion
 }

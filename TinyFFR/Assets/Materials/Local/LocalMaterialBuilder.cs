@@ -233,10 +233,10 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		var (bufferPtr, sizeBytes) = EmbeddedResourceResolver.GetResource(resourceName);
 		LoadShaderPackage(
-				(byte*) bufferPtr,
-				sizeBytes,
-				out var newHandle
-			).ThrowIfFailure();
+			(byte*) bufferPtr,
+			sizeBytes,
+			out var newHandle
+		).ThrowIfFailure();
 		_loadedShaderPackages.Add(resourceName, newHandle);
 		return newHandle;
 	}

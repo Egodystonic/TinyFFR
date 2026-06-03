@@ -14,14 +14,47 @@ public readonly struct MutableGridMesh : IDisposable, IStringSpanNameEnabled, IE
 	public XYPair<int> GridDimensions { get; }
 	public XYPair<float> CellSize { get; }
 
-	internal MutableGridMesh(Mesh underlyingMesh, XYPair<int> gridDimensions, XYPair<float> cellSize) {
+	public MutableGridMesh(Mesh underlyingMesh, XYPair<int> gridDimensions, XYPair<float> cellSize) {
 		UnderlyingMesh = underlyingMesh;
 		GridDimensions = gridDimensions;
 		CellSize = cellSize;
 	}
 	
 	public int GetVertexIndex(XYPair<int> coordinate, bool clampCoord = true) {
+		if (clampCoord) coordinate = coordinate.Clamp(XYPair<int>.Zero, GridDimensions - XYPair<int>.One);
+		return GridDimensions.Index(coordinate);
+	}
+	
+	public static Transform CalculateTransformForStandardMutableGridMesh(Location position, XYPair<float> size, Direction increasingHeightDirection, Orientation2D positionAnchor = Orientation2D.None) {
+		var xDir = increasingHeightDirection.AnyOrthogonal();
+		return CalculateTransformForStandardMutableGridMesh(
+			position, 
+			size, 
+			increasingHeightDirection,
+			xDir,
+			Direction.FromDualOrthogonalization(increasingHeightDirection, xDir),
+			positionAnchor	
+		);
+	}
+	public static Transform CalculateTransformForStandardMutableGridMesh(Location position, XYPair<float> size, Direction increasingHeightDirection, Direction increasingXDirection, Direction increasingYDirection, Orientation2D positionAnchor = Orientation2D.None) {
+		// Mutable grid meshes are built as 1x1 squares on the XY plane with Z being Forward by the IMeshBuilder default implementation
+		Direction.OrthogonalizeAll(increasingXDirection, ref increasingYDirection, ref increasingHeightDirection);
 		
+		var requiresYAxisInversion = increasingYDirection.SignedAngleTo(increasingXDirection, increasingHeightDirection) < Angle.Zero;
+		var rotation = Rotation.FromStartAndEndOrientation(Direction.Left, Direction.Forward, increasingXDirection, increasingHeightDirection);
+		
+		var translatedAnchorPoint = UiUtils.TranslateAnchoredCanvasOffset(
+			XYPair<int>.One * 2, 
+			DiagonalOrientation2D.DownLeft, 
+			positionAnchor, 
+			XYPair<int>.Zero
+		).Cast<float>() * size * -0.5f;
+		
+		return new Transform(
+			translation: (new Vect(translatedAnchorPoint.X, translatedAnchorPoint.Y, 0f) * rotation) + position.AsVect(),
+			rotation: rotation,
+			scaling: new Vect(size.X, size.Y * (requiresYAxisInversion ? -1f : 1f), 1f)
+		);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

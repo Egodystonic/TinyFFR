@@ -372,28 +372,28 @@ public interface IMeshBuilder {
 		
 		vertices[0] = new MeshVertex(
 			new Location(0f, 0f, 0f),
-			new XYPair<float>(0f, 0f),
+			new XYPair<float>(0f, 0f) * generationConfig.TextureTransform,
 			new Direction(1f, 0f, 0f),
 			new Direction(0f, 1f, 0f),
 			new Direction(0f, 0f, 1f)
 		);
 		vertices[1] = new MeshVertex(
 			new Location(1f, 0f, 0f),
-			new XYPair<float>(1f, 0f),
+			new XYPair<float>(1f, 0f) * generationConfig.TextureTransform,
 			new Direction(1f, 0f, 0f),
 			new Direction(0f, 1f, 0f),
 			new Direction(0f, 0f, 1f)
 		);
 		vertices[2] = new MeshVertex(
 			new Location(1f, 1f, 0f),
-			new XYPair<float>(1f, 1f),
+			new XYPair<float>(1f, 1f) * generationConfig.TextureTransform,
 			new Direction(1f, 0f, 0f),
 			new Direction(0f, 1f, 0f),
 			new Direction(0f, 0f, 1f)
 		);
 		vertices[3] = new MeshVertex(
 			new Location(0f, 1f, 0f),
-			new XYPair<float>(0f, 1f),
+			new XYPair<float>(0f, 1f) * generationConfig.TextureTransform,
 			new Direction(1f, 0f, 0f),
 			new Direction(0f, 1f, 0f),
 			new Direction(0f, 0f, 1f)
@@ -404,28 +404,28 @@ public interface IMeshBuilder {
 		if (twoSided) {
 			vertices[4] = new MeshVertex(
 				new Location(0f, 0f, 0f),
-				new XYPair<float>(backSideInvertsTextures ? 0f : 1f, 0f),
+				new XYPair<float>(backSideInvertsTextures ? 0f : 1f, 0f) * generationConfig.TextureTransform,
 				new Direction(1f, 0f, 0f),
 				new Direction(0f, 1f, 0f),
 				new Direction(0f, 0f, -1f)
 			);
 			vertices[5] = new MeshVertex(
 				new Location(1f, 0f, 0f),
-				new XYPair<float>(backSideInvertsTextures ? 1f : 0f, 0f),
+				new XYPair<float>(backSideInvertsTextures ? 1f : 0f, 0f) * generationConfig.TextureTransform,
 				new Direction(1f, 0f, 0f),
 				new Direction(0f, 1f, 0f),
 				new Direction(0f, 0f, -1f)
 			);
 			vertices[6] = new MeshVertex(
 				new Location(1f, 1f, 0f),
-				new XYPair<float>(backSideInvertsTextures ? 1f : 0f, 1f),
+				new XYPair<float>(backSideInvertsTextures ? 1f : 0f, 1f) * generationConfig.TextureTransform,
 				new Direction(1f, 0f, 0f),
 				new Direction(0f, 1f, 0f),
 				new Direction(0f, 0f, -1f)
 			);
 			vertices[7] = new MeshVertex(
 				new Location(0f, 1f, 0f),
-				new XYPair<float>(backSideInvertsTextures ? 0f : 1f, 1f),
+				new XYPair<float>(backSideInvertsTextures ? 0f : 1f, 1f) * generationConfig.TextureTransform,
 				new Direction(1f, 0f, 0f),
 				new Direction(0f, 1f, 0f),
 				new Direction(0f, 0f, -1f)
@@ -433,6 +433,8 @@ public interface IMeshBuilder {
 			triangles[2] = new VertexTriangle(5, 4, 6);
 			triangles[3] = new VertexTriangle(4, 7, 6);
 		}
+		
+		return new QuadMesh(CreateMesh(vertices, triangles, in config));
 	}
 	
 	MutableGridMesh CreateMutableGridMesh(XYPair<int> gridDimensions, bool twoSided = true, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) {
@@ -447,62 +449,61 @@ public interface IMeshBuilder {
 		if (gridDimensions.X < 2 || gridDimensions.Y < 2) {
 			throw new ArgumentOutOfRangeException(nameof(gridDimensions), gridDimensions, "Vertex count X and Y must be at least 2.");
 		}
-		
+
 		var cellCount = gridDimensions - XYPair<int>.One;
 		const int TrianglesPerCell = 2;
-		
+
 		using var vertexBuffer = GetPooledVertexBuffer(gridDimensions.Area * (twoSided ? 2 : 1));
 		using var triangleBuffer = GetPooledTriangleBuffer(cellCount.Area * TrianglesPerCell * (twoSided ? 2 : 1));
-		
-		var cellSize = meshSize / cellCount.Cast<float>(); // TODO rewrite to use index
-		for (var x = 0; x < gridDimensions.X; ++x) {
-			var isAtXEdge = x == cellCount.X;
-			
-			for (var y = 0; y < gridDimensions.Y; ++y) {
-				var isAtYEdge = y == cellCount.Y;
-				
-				// We override the value for the outer edge vertices to avoid floating point inaccuracy meaning the quad would be slightly less or more than its intended size
-				var coord = new XYPair<float>(
-					isAtXEdge ? meshSize.X : x * cellSize.X, 
-					isAtYEdge ? meshSize.Y : y * cellSize.Y
-				);
-				
-				var vertexIndex = y + x * gridDimensions.Y;
-					
-				vertexBuffer.Span[vertexIndex] = new(
-					new Location(coord.X, coord.Y, 0f) - config.OriginTranslation,
-					coord * generationConfig.TextureTransform,
-					new Direction(1f, 0f, 0f),
-					new Direction(0f, 1f, 0f),
-					new Direction(0f, 0f, 1f)
-				);
+
+		var cellSize = cellCount.Cast<float>().Reciprocal!.Value;
+		var frontNormal = new Direction(0f, 0f, 1f);
+		var backNormal = new Direction(0f, 0f, -1f);
+		var tangent = new Direction(1f, 0f, 0f);
+		var bitangent = new Direction(0f, 1f, 0f);
+
+		for (var y = 0; y < gridDimensions.Y; ++y) {
+			// We override the value for the outer edge vertices to avoid floating point inaccuracy meaning the quad would be slightly less or more than its intended size
+			var coordY = y == cellCount.Y ? 1f : y * cellSize.Y;
+
+			for (var x = 0; x < gridDimensions.X; ++x) {
+				var coordX = x == cellCount.X ? 1f : x * cellSize.X;
+
+				var coord = new XYPair<float>(coordX, coordY);
+				var location = new Location(coordX, coordY, 0f);
+				var texCoord = coord * generationConfig.TextureTransform;
+				var vertexIndex = gridDimensions.Index(x, y);
+
+				vertexBuffer.Span[vertexIndex] = new(location, texCoord, tangent, bitangent, frontNormal);
 				if (twoSided) {
-					vertexBuffer.Span[gridDimensions.Area + vertexIndex] = new(
-						new Location(coord.X, coord.Y, 0f) - config.OriginTranslation,
-						coord * generationConfig.TextureTransform,
-						new Direction(1f, 0f, 0f),
-						new Direction(0f, 1f, 0f),
-						new Direction(0f, 0f, -1f)
-					);
-				}
-				
-				if (!isAtXEdge && !isAtYEdge) {
-					var triangleBufferIdx = (y + x * cellCount.Y) * TrianglesPerCell;
-					var bottomLeftVertexIdx = vertexIndex;
-					var topLeftVertexIdx = bottomLeftVertexIdx + 1;
-					var bottomRightVertexIdx = bottomLeftVertexIdx + gridDimensions.Y;
-					var topRightVertexIdx = bottomRightVertexIdx + 1;
-					triangleBuffer.Span[triangleBufferIdx] = new(bottomLeftVertexIdx, topLeftVertexIdx, bottomRightVertexIdx);
-					triangleBuffer.Span[triangleBufferIdx + 1] = new(bottomRightVertexIdx, topLeftVertexIdx, topRightVertexIdx);
-					if (twoSided) {
-						triangleBuffer.Span[(cellCount.Area * TrianglesPerCell) + triangleBufferIdx] = new VertexTriangle(bottomLeftVertexIdx, topLeftVertexIdx, bottomRightVertexIdx).ShiftedBy(gridDimensions.Area).Flipped();
-						triangleBuffer.Span[(cellCount.Area * TrianglesPerCell) + triangleBufferIdx + 1] = new VertexTriangle(bottomRightVertexIdx, topLeftVertexIdx, topRightVertexIdx).ShiftedBy(gridDimensions.Area).Flipped();
-					}
+					vertexBuffer.Span[gridDimensions.Area + vertexIndex] = new(location, texCoord, tangent, bitangent, backNormal);
 				}
 			}
 		}
-			
-		var mesh = CreateMesh(vertexBuffer.Span, triangleBuffer.Span, config with { AllowsPerInstanceVertexMutation = true, OriginTranslation = Vect.Zero });
+
+		var backFaceTriangleOffset = cellCount.Area * TrianglesPerCell;
+		for (var y = 0; y < cellCount.Y; ++y) {
+			for (var x = 0; x < cellCount.X; ++x) {
+				var bottomLeftVertexIdx = gridDimensions.Index(x, y);
+				var bottomRightVertexIdx = bottomLeftVertexIdx + 1;
+				var topLeftVertexIdx = bottomLeftVertexIdx + gridDimensions.X;
+				var topRightVertexIdx = topLeftVertexIdx + 1;
+
+				var triangleBufferIdx = cellCount.Index(x, y) * TrianglesPerCell;
+				var frontTri1 = new VertexTriangle(bottomLeftVertexIdx, topLeftVertexIdx, bottomRightVertexIdx);
+				var frontTri2 = new VertexTriangle(bottomRightVertexIdx, topLeftVertexIdx, topRightVertexIdx);
+
+				triangleBuffer.Span[triangleBufferIdx] = frontTri1;
+				triangleBuffer.Span[triangleBufferIdx + 1] = frontTri2;
+
+				if (twoSided) {
+					triangleBuffer.Span[backFaceTriangleOffset + triangleBufferIdx] = frontTri1.ShiftedBy(gridDimensions.Area).Flipped();
+					triangleBuffer.Span[backFaceTriangleOffset + triangleBufferIdx + 1] = frontTri2.ShiftedBy(gridDimensions.Area).Flipped();
+				}
+			}
+		}
+
+		var mesh = CreateMesh(vertexBuffer.Span, triangleBuffer.Span, config with { AllowsPerInstanceVertexMutation = true });
 		return new MutableGridMesh(mesh, gridDimensions, cellSize);
 	}
 	#endregion

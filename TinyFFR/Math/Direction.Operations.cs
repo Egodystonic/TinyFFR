@@ -222,6 +222,13 @@ partial struct Direction :
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool IsWithinAngleTo(Direction other, Angle angle) => (this ^ other) <= angle;
+	
+	// TODO xmldoc explain that primary will never be altered, secondary will only be orthogonalized against primary, and tertiary will be orthogonalized against both
+	public static void OrthogonalizeAll(Direction primary, ref Direction secondary, ref Direction tertiary) {
+		secondary = secondary.OrthogonalizedAgainst(primary) ?? primary.AnyOrthogonal();
+		var dualOrthogonal = FromDualOrthogonalization(primary, secondary);
+		tertiary = MathF.Sign(dualOrthogonal.Dot(tertiary)) == 1 ? dualOrthogonal : -dualOrthogonal;
+	}
 	#endregion
 
 	#region Interactions w/ Vect

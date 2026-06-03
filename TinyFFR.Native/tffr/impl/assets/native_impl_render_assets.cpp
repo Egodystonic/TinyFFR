@@ -64,37 +64,6 @@ StartExportedFunc(allocate_vertex_buffer_skeletal, BufferIdentity bufferIdentity
 	EndExportedFunc
 }
 
-void native_impl_render_assets::allocate_vertex_buffer_primitive(BufferIdentity bufferIdentity, MeshVertexPrimitive* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer) {
-	ThrowIfNull(vertices, "Vertices pointer was null.");
-	ThrowIfNegative(vertexCount, "Vertex count was negative.");
-	ThrowIfNull(outBuffer, "Out buffer pointer was null.");
-	*outBuffer = VertexBuffer::Builder()
-		.vertexCount(vertexCount)
-		.bufferCount(1)
-		.attribute(VertexAttribute::POSITION, 0, VertexBuffer::AttributeType::FLOAT3, 0, sizeof(MeshVertex))
-		.attribute(VertexAttribute::COLOR, 0, VertexBuffer::AttributeType::FLOAT4, 12, sizeof(MeshVertex))
-		.attribute(VertexAttribute::TANGENTS, 0, VertexBuffer::AttributeType::FLOAT4, 28, sizeof(MeshVertex))
-		.build(*filament_engine);
-	(*outBuffer)->setBufferAt(*filament_engine, 0, backend::BufferDescriptor{ vertices, vertexCount * sizeof(MeshVertex), &handle_filament_buffer_copy_callback, bufferIdentity });
-}
-StartExportedFunc(allocate_vertex_buffer_primitive, BufferIdentity bufferIdentity, native_impl_render_assets::MeshVertexPrimitive* vertices, int32_t vertexCount, VertexBufferHandle* outBuffer) {
-	native_impl_render_assets::allocate_vertex_buffer_primitive(bufferIdentity, vertices, vertexCount, outBuffer);
-	EndExportedFunc
-}
-
-void native_impl_render_assets::update_vertex_buffer_primitive(VertexBufferHandle buffer, BufferIdentity bufferIdentity, MeshVertexPrimitive* vertices, int32_t vertexCount, int32_t startingIndex) {
-	ThrowIfNull(buffer, "Buffer was null.");
-	ThrowIfNull(vertices, "Vertices pointer was null.");
-	ThrowIfNegative(vertexCount, "Vertex count was negative.");
-	ThrowIfNegative(startingIndex, "Vertex start index was negative.");
-	ThrowIf(vertexCount + startingIndex > buffer->getVertexCount(), "");
-	buffer->setBufferAt(*filament_engine, 0, backend::BufferDescriptor{ vertices, vertexCount * sizeof(MeshVertexPrimitive), &handle_filament_buffer_copy_callback, bufferIdentity }, startingIndex * sizeof(MeshVertexPrimitive));
-}
-StartExportedFunc(update_vertex_buffer_primitive, VertexBufferHandle buffer, BufferIdentity bufferIdentity, native_impl_render_assets::MeshVertexPrimitive* vertices, int32_t vertexCount, int32_t startingIndex) {
-	native_impl_render_assets::update_vertex_buffer_primitive(buffer, bufferIdentity, vertices, vertexCount, startingIndex);
-	EndExportedFunc
-}
-
 void native_impl_render_assets::allocate_index_buffer(BufferIdentity bufferIdentity, int32_t* indices, int32_t indexCount, IndexBufferHandle* outBuffer) {
 	ThrowIfNull(indices, "Indices pointer was null.");
 	ThrowIfNegative(indexCount, "Index count was negative.");
