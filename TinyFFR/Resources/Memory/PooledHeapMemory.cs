@@ -9,7 +9,7 @@ namespace Egodystonic.TinyFFR.Resources.Memory;
 
 sealed unsafe class HeapPool : IDisposable {
 	readonly ArrayPool<byte> _pool = ArrayPool<byte>.Shared;
-	readonly ArrayPoolBackedMap<nuint, byte[]> _activeSpanLeases;
+	readonly ArrayPoolBackedMap<nuint, byte[]> _activeSpanLeases = new();
 	nuint _prevSpanLeaseId = 0U;
 
 	public PooledHeapMemory<T> BorrowAndCopy<T>(ReadOnlySpan<T> copySource) where T : unmanaged {

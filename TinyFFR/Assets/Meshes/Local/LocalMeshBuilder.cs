@@ -66,6 +66,15 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		return _meshPolyGroupPool.Rent();
 	}
 
+	public ScopedSpanLease<MeshVertex> GetPooledVertexBuffer(int vertexCount) {
+		ThrowIfThisIsDisposed();
+		return _globals.HeapPool.CreateSpanLease<MeshVertex>(vertexCount);
+	}
+	public ScopedSpanLease<VertexTriangle> GetPooledTriangleBuffer(int triangleCount) {
+		ThrowIfThisIsDisposed();
+		return _globals.HeapPool.CreateSpanLease<VertexTriangle>(triangleCount);
+	}
+
 	public Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config) {
 		return ProcessVerticesAndCreateMesh(vertices, triangles, in config, 0);
 	}

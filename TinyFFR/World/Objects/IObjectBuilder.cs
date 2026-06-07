@@ -107,8 +107,8 @@ public interface IObjectBuilder {
 	ModelInstanceGroup GroupModelInstances<TInstanceList>(TInstanceList instances, bool disposingGroupDisposesInstances = true, ReadOnlySpan<char> name = default) where TInstanceList : IReadOnlyList<ModelInstance>;
 	
 	#region QuadMesh
-	QuadInstance CreateImageInstance(QuadMesh mesh, Material material, Location position, XYPair<float> size, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, ReadOnlySpan<char> name = default) {
-		return CreateImageInstance(
+	QuadInstance CreateQuadInstance(QuadMesh mesh, Material material, Location position, XYPair<float> size, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None, ReadOnlySpan<char> name = default) {
+		return CreateQuadInstance(
 			mesh,
 			material,
 			new ModelInstanceCreationConfig {
@@ -117,21 +117,18 @@ public interface IObjectBuilder {
 			}
 		);
 	}
-	QuadInstance CreateImageInstance(QuadMesh mesh, Material material, in ModelInstanceCreationConfig config) {
+	QuadInstance CreateQuadInstance(QuadMesh mesh, Material material, in ModelInstanceCreationConfig config) {
 		return new QuadInstance(CreateModelInstance(mesh.UnderlyingMesh, material, in config));
 	}
 	#endregion
 	
 	#region MutableGridMesh
-	MutableGridInstance CreateMutableGridInstance(MutableGridMesh mesh, Material material, Location position, XYPair<float> size, Direction increasingHeightDirection, Orientation2D positionAnchor = Orientation2D.None, ReadOnlySpan<char> name = default) {
-		
-	}
-	MutableGridInstance CreateMutableGridInstance(MutableGridMesh mesh, Material material, Location position, XYPair<float> size, Direction increasingHeightDirection, Direction increasingXDirection, Direction increasingYDirection, Orientation2D positionAnchor = Orientation2D.None, ReadOnlySpan<char> name = default) {
-		return CreateImageInstance(
+	MutableGridInstance CreateMutableGridInstance(MutableGridMesh mesh, Material material, XYPair<float> size, Location position, Orientation2D positionAnchor = Orientation2D.None, ReadOnlySpan<char> name = default) {
+		return CreateMutableGridInstance(
 			mesh,
 			material,
 			new ModelInstanceCreationConfig {
-				InitialTransform = QuadMesh.CalculateTransformForStandardQuadMesh(position, size, facingDirection, uprightDirection, positionAnchor),
+				InitialTransform = mesh.CalculateTransform(position, size, positionAnchor),
 				Name = name
 			}
 		);

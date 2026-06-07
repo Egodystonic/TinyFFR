@@ -10,7 +10,9 @@ unsafe class HeapPoolTest {
 	}
 
 	[TearDown]
-	public void TearDownTest() { }
+	public void TearDownTest() {
+		_pool?.Dispose();
+	}
 
 	[Test]
 	public void ShouldBorrowRequestedSize() {

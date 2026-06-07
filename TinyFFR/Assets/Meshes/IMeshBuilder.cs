@@ -521,13 +521,13 @@ public interface IMeshBuilder {
 				OriginTranslation = config.OriginTranslation + gridOriginNormalizedOffset.X * xDir + gridOriginNormalizedOffset.Y * yDir
 			}
 		);
-		return new MutableGridMesh(mesh, gridDimensions, cellSize);
+		return new MutableGridMesh(mesh, gridDimensions, xDir, yDir, upDir);
 	}
 	#endregion
 
 	#region Vertices
 	protected ScopedSpanLease<MeshVertex> GetPooledVertexBuffer(int vertexCount);
-	protected ScopedSpanLease<VertexTriangle> GetPooledTriangleBuffer(int vertexCount);
+	protected ScopedSpanLease<VertexTriangle> GetPooledTriangleBuffer(int triangleCount);
 	
 	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, ReadOnlySpan<char> name = default) => CreateMesh(vertices, triangles, new MeshCreationConfig { Name = name });
 	Mesh CreateMesh(ReadOnlySpan<MeshVertex> vertices, ReadOnlySpan<VertexTriangle> triangles, in MeshCreationConfig config);

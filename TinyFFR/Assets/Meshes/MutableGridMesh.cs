@@ -3,6 +3,7 @@
 
 using Egodystonic.TinyFFR.Resources;
 using System;
+using System.Numerics;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.World;
@@ -10,51 +11,61 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 public readonly struct MutableGridMesh : IDisposable, IStringSpanNameEnabled, IEquatable<MutableGridMesh> {
+	readonly bool _directionsAllCardinal;
 	public Mesh UnderlyingMesh { get; } 
 	public XYPair<int> GridDimensions { get; }
-	public XYPair<float> CellSize { get; }
+	public Direction XDir { get; }
+	public Direction YDir { get; }
+	public Direction UpDir { get; }
 
-	public MutableGridMesh(Mesh underlyingMesh, XYPair<int> gridDimensions, XYPair<float> cellSize) {
+	public MutableGridMesh(Mesh underlyingMesh, XYPair<int> gridDimensions, Direction xDir, Direction yDir, Direction upDir) {
+		// ReSharper disable once CompareOfFloatsByEqualityOperator This is only used to help us skip using a matrix for the transform below and is not critical
+		static bool IsCardinal(Direction d) => MathF.Abs(d.X) + MathF.Abs(d.Y) + MathF.Abs(d.Z) == 1f;
+		
 		UnderlyingMesh = underlyingMesh;
 		GridDimensions = gridDimensions;
-		CellSize = cellSize;
+		XDir = xDir;
+		YDir = yDir;
+		UpDir = upDir;
+		_directionsAllCardinal = IsCardinal(xDir) && IsCardinal(yDir) && IsCardinal(upDir);
 	}
-	
+
 	public int GetVertexIndex(XYPair<int> coordinate, bool clampCoord = true) {
 		if (clampCoord) coordinate = coordinate.Clamp(XYPair<int>.Zero, GridDimensions - XYPair<int>.One);
 		return GridDimensions.Index(coordinate);
 	}
 	
-	public static Transform CalculateTransformForStandardMutableGridMesh(Location position, XYPair<float> size, Direction increasingHeightDirection, Orientation2D positionAnchor = Orientation2D.None) {
-		var xDir = increasingHeightDirection.AnyOrthogonal();
-		return CalculateTransformForStandardMutableGridMesh(
-			position, 
-			size, 
-			increasingHeightDirection,
-			xDir,
-			Direction.FromDualOrthogonalization(increasingHeightDirection, xDir),
-			positionAnchor	
-		);
-	}
-	public static Transform CalculateTransformForStandardMutableGridMesh(Location position, XYPair<float> size, Direction increasingHeightDirection, Direction increasingXDirection, Direction increasingYDirection, Orientation2D positionAnchor = Orientation2D.None) {
-		// Mutable grid meshes are built as 1x1 squares on the XY plane with Z being Forward by the IMeshBuilder default implementation
-		Direction.OrthogonalizeAll(increasingXDirection, ref increasingYDirection, ref increasingHeightDirection);
-		
-		var requiresYAxisInversion = increasingYDirection.SignedAngleTo(increasingXDirection, increasingHeightDirection) < Angle.Zero;
-		var rotation = Rotation.FromStartAndEndOrientation(Direction.Left, Direction.Forward, increasingXDirection, increasingHeightDirection);
-		
+	public Transform CalculateTransform(Location position, XYPair<float> size, Orientation2D positionAnchor = Orientation2D.None) {
 		var translatedAnchorPoint = UiUtils.TranslateAnchoredCanvasOffset(
-			XYPair<int>.One * 2, 
-			DiagonalOrientation2D.DownLeft, 
-			positionAnchor, 
+			XYPair<int>.One * 2,
+			DiagonalOrientation2D.None,
+			positionAnchor,
 			XYPair<int>.Zero
 		).Cast<float>() * size * -0.5f;
-		
-		return new Transform(
-			translation: (new Vect(translatedAnchorPoint.X, translatedAnchorPoint.Y, 0f) * rotation) + position.AsVect(),
-			rotation: rotation,
-			scaling: new Vect(size.X, size.Y * (requiresYAxisInversion ? -1f : 1f), 1f)
-		);
+
+		var translation = (translatedAnchorPoint.X * XDir + translatedAnchorPoint.Y * YDir) + position.AsVect();
+
+		if (_directionsAllCardinal) {
+			return new Transform(
+				translation: translation,
+				rotation: Rotation.None,
+				scaling: new Vect(
+					size.X * MathF.Abs(XDir.X) + size.Y * MathF.Abs(YDir.X) + MathF.Abs(UpDir.X),
+					size.X * MathF.Abs(XDir.Y) + size.Y * MathF.Abs(YDir.Y) + MathF.Abs(UpDir.Y),
+					size.X * MathF.Abs(XDir.Z) + size.Y * MathF.Abs(YDir.Z) + MathF.Abs(UpDir.Z)
+				)
+			);
+		}
+
+		var rowX = size.X * XDir.X * XDir + size.Y * YDir.X * YDir + UpDir.X * UpDir;
+		var rowY = size.X * XDir.Y * XDir + size.Y * YDir.Y * YDir + UpDir.Y * UpDir;
+		var rowZ = size.X * XDir.Z * XDir + size.Y * YDir.Z * YDir + UpDir.Z * UpDir;
+		return new Transform(new Matrix4x4(
+			rowX.X, rowX.Y, rowX.Z, 0f,
+			rowY.X, rowY.Y, rowY.Z, 0f,
+			rowZ.X, rowZ.Y, rowZ.Z, 0f,
+			translation.X, translation.Y, translation.Z, 1f
+		));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -89,6 +100,8 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 		UnderlyingModelInstance = underlyingModelInstance;
 		ParentGridMesh = parentGridMesh;
 	}
+	
+	// TODO vertex mutation and dynamic texture control, maybe also pass through material effects
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => UnderlyingModelInstance.GetNameAsNewStringObject();
@@ -97,25 +110,6 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CopyName(Span<char> destinationBuffer) => UnderlyingModelInstance.CopyName(destinationBuffer);
 	
-	public MaterialEffectController? MaterialEffects {
-		get {
-			if (!Material.SupportsPerInstanceEffects) return null;
-			return new MaterialEffectController(this);
-		}
-	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal void SetMaterialEffectTransform(Transform2D newTransform) => Implementation.SetMaterialEffectTransform(_handle, newTransform);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal void SetEffectBlendTexture(MaterialEffectMapType mapType, Texture texture) => Implementation.SetMaterialEffectBlendTexture(_handle, mapType, texture);
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal void SetEffectBlendDistance(MaterialEffectMapType mapType, float distance) => Implementation.SetMaterialEffectBlendDistance(_handle, mapType, distance);
-	
-	// TODO above and also vertex mutation
-	// TODO and then separately to keep it simple, dynamic texture alteration (if exists)
-
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => UnderlyingModelInstance.Dispose();
 
