@@ -123,12 +123,12 @@ public interface IObjectBuilder {
 	#endregion
 	
 	#region MutableGridMesh
-	MutableGridInstance CreateMutableGridInstance(MutableGridMesh mesh, Material material, XYPair<float> size, Location position, Orientation2D positionAnchor = Orientation2D.None, ReadOnlySpan<char> name = default) {
+	MutableGridInstance CreateMutableGridInstance(MutableGridMesh mesh, Material material, Location position, XYPair<float> size, ReadOnlySpan<char> name = default) {
 		return CreateMutableGridInstance(
 			mesh,
 			material,
 			new ModelInstanceCreationConfig {
-				InitialTransform = mesh.CalculateTransform(position, size, positionAnchor),
+				InitialTransform = mesh.CalculateTransform(position, size),
 				Name = name
 			}
 		);

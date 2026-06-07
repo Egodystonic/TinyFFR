@@ -227,7 +227,7 @@ partial struct Direction :
 	public static void OrthogonalizeAll(Direction primary, ref Direction secondary, ref Direction tertiary) {
 		secondary = secondary.OrthogonalizedAgainst(primary) ?? primary.AnyOrthogonal();
 		var dualOrthogonal = FromDualOrthogonalization(primary, secondary);
-		tertiary = MathF.Sign(dualOrthogonal.Dot(tertiary)) == 1 ? dualOrthogonal : -dualOrthogonal;
+		tertiary = dualOrthogonal.Dot(tertiary) < 0f ? -dualOrthogonal : dualOrthogonal;
 	}
 	#endregion
 

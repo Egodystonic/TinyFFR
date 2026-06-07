@@ -406,28 +406,28 @@ public interface IMeshBuilder {
 				new Location(0f, 0f, 0f),
 				new XYPair<float>(backSideInvertsTextures ? 0f : 1f, 0f) * generationConfig.TextureTransform,
 				new Direction(1f, 0f, 0f),
-				new Direction(0f, 1f, 0f),
+				new Direction(0f, -1f, 0f),
 				new Direction(0f, 0f, -1f)
 			);
 			vertices[5] = new MeshVertex(
 				new Location(1f, 0f, 0f),
 				new XYPair<float>(backSideInvertsTextures ? 1f : 0f, 0f) * generationConfig.TextureTransform,
 				new Direction(1f, 0f, 0f),
-				new Direction(0f, 1f, 0f),
+				new Direction(0f, -1f, 0f),
 				new Direction(0f, 0f, -1f)
 			);
 			vertices[6] = new MeshVertex(
 				new Location(1f, 1f, 0f),
 				new XYPair<float>(backSideInvertsTextures ? 1f : 0f, 1f) * generationConfig.TextureTransform,
 				new Direction(1f, 0f, 0f),
-				new Direction(0f, 1f, 0f),
+				new Direction(0f, -1f, 0f),
 				new Direction(0f, 0f, -1f)
 			);
 			vertices[7] = new MeshVertex(
 				new Location(0f, 1f, 0f),
 				new XYPair<float>(backSideInvertsTextures ? 0f : 1f, 1f) * generationConfig.TextureTransform,
 				new Direction(1f, 0f, 0f),
-				new Direction(0f, 1f, 0f),
+				new Direction(0f, -1f, 0f),
 				new Direction(0f, 0f, -1f)
 			);
 			triangles[2] = new VertexTriangle(5, 4, 6);
@@ -480,7 +480,7 @@ public interface IMeshBuilder {
 
 				vertexBuffer.Span[vertexIndex] = new(location, texCoord, xDir, yDir, upDir);
 				if (twoSided) {
-					vertexBuffer.Span[gridDimensions.Area + vertexIndex] = new(location, texCoord, xDir, yDir, -upDir);
+					vertexBuffer.Span[gridDimensions.Area + vertexIndex] = new(location, texCoord, xDir, -yDir, -upDir);
 				}
 			}
 		}

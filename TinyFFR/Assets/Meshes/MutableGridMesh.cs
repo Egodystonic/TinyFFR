@@ -35,16 +35,9 @@ public readonly struct MutableGridMesh : IDisposable, IStringSpanNameEnabled, IE
 		return GridDimensions.Index(coordinate);
 	}
 	
-	public Transform CalculateTransform(Location position, XYPair<float> size, Orientation2D positionAnchor = Orientation2D.None) {
-		var translatedAnchorPoint = UiUtils.TranslateAnchoredCanvasOffset(
-			XYPair<int>.One * 2,
-			DiagonalOrientation2D.None,
-			positionAnchor,
-			XYPair<int>.Zero
-		).Cast<float>() * size * -0.5f;
-
-		var translation = (translatedAnchorPoint.X * XDir + translatedAnchorPoint.Y * YDir) + position.AsVect();
-
+	public Transform CalculateTransform(Location position, XYPair<float> size) {
+		var translation = position.AsVect();
+		
 		if (_directionsAllCardinal) {
 			return new Transform(
 				translation: translation,
