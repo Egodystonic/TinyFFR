@@ -216,6 +216,7 @@ class TextureConfigTest {
 		var testConfigA = new TextureCreationConfig {
 			GenerateMipMaps = true,
 			IsLinearColorspace = true,
+			AllowsDynamicWrites = false,
 			Name = "Aa Aa",
 			ProcessingToApply = new TextureProcessingConfig {
 				FlipX = false,
@@ -233,6 +234,7 @@ class TextureConfigTest {
 		var testConfigB = new TextureCreationConfig {
 			GenerateMipMaps = false,
 			IsLinearColorspace = false,
+			AllowsDynamicWrites = true,
 			Name = "BBBbbb",
 			ProcessingToApply = new TextureProcessingConfig {
 				FlipX = true,
@@ -251,6 +253,7 @@ class TextureConfigTest {
 		void AssertConfigsMatch(TextureCreationConfig expected, TextureCreationConfig actual) {
 			Assert.AreEqual(expected.GenerateMipMaps, actual.GenerateMipMaps);
 			Assert.AreEqual(expected.IsLinearColorspace, actual.IsLinearColorspace);
+			Assert.AreEqual(expected.AllowsDynamicWrites, actual.AllowsDynamicWrites);
 			Assert.AreEqual(expected.Name.ToString(), actual.Name.ToString());
 			Assert.AreEqual(expected.ProcessingToApply, actual.ProcessingToApply);
 		}
@@ -261,6 +264,7 @@ class TextureConfigTest {
 		AssertHeapSerializationWithObjects<TextureCreationConfig>()
 			.Bool(true)
 			.Bool(true)
+			.Bool(false)
 			.String("Aa Aa")
 			.SubConfig(testConfigA.ProcessingToApply)
 			.For(testConfigA);
@@ -268,6 +272,7 @@ class TextureConfigTest {
 		AssertHeapSerializationWithObjects<TextureCreationConfig>()
 			.Bool(false)
 			.Bool(false)
+			.Bool(true)
 			.String("BBBbbb")
 			.SubConfig(testConfigB.ProcessingToApply)
 			.For(testConfigB);
@@ -275,6 +280,7 @@ class TextureConfigTest {
 		AssertPropertiesAccountedFor<TextureCreationConfig>()
 			.Including(nameof(TextureCreationConfig.GenerateMipMaps))
 			.Including(nameof(TextureCreationConfig.IsLinearColorspace))
+			.Including(nameof(TextureCreationConfig.AllowsDynamicWrites))
 			.Including(nameof(TextureCreationConfig.Name))
 			.Including(nameof(TextureCreationConfig.ProcessingToApply))
 			.End();

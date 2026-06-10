@@ -74,10 +74,10 @@ public static partial class TextureUtils {
 		}
 	}
 	
-	public static void Convert<TTexelIn, TTexelOut>(ReadOnlySpan<TTexelIn> inputBuffer, Span<TTexelOut> outputBuffer) where TTexelOut : unmanaged, IConversionSupplyingTexel<TTexelOut, TTexelIn> {
+	public static void Convert<TTexelIn, TTexelOut>(ReadOnlySpan<TTexelIn> inputBuffer, Span<TTexelOut> outputBuffer) where TTexelIn : unmanaged, IConversionSupplyingTexel<TTexelIn, TTexelOut> {
 		if (outputBuffer.Length < inputBuffer.Length) throw new ArgumentException($"Output buffer length ({outputBuffer.Length}) must be at least as high as input buffer length ({inputBuffer.Length}).", nameof(outputBuffer));
 		for (var i = 0; i < inputBuffer.Length; ++i) {
-			outputBuffer[i] = TTexelOut.ConvertFrom(inputBuffer[i]);
+			outputBuffer[i] = inputBuffer[i].Convert();
 		}
 	}
 }

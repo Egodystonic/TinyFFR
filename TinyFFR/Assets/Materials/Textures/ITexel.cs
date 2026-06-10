@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Contracts;
 using System.Globalization;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
@@ -21,8 +22,10 @@ public interface ITexel<TSelf> : ITexel, IBlendable<TSelf>, IFixedLengthByteSpan
 	TSelf WithInvertedChannelIfPresent(int channelIndex);
 	TSelf SwizzlePresentChannels(ColorChannel redSource, ColorChannel greenSource, ColorChannel blueSource, ColorChannel alphaSource);
 }
-public interface IConversionSupplyingTexel<TSelf, in TOther> : ITexel<TSelf> where TSelf : unmanaged, IConversionSupplyingTexel<TSelf, TOther> {
+public interface IConversionSupplyingTexel<TSelf, TOther> : ITexel<TSelf> where TSelf : unmanaged, IConversionSupplyingTexel<TSelf, TOther> {
 	static abstract TSelf ConvertFrom(TOther o);
+	[Pure]
+	TOther Convert();
 }
 public interface ITexel<TSelf, TChannel> : ITexel<TSelf> where TSelf : unmanaged, ITexel<TSelf, TChannel> where TChannel : struct {
 	TChannel this[int index] { get; }

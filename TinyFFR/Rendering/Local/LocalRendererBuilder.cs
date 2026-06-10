@@ -245,6 +245,10 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		public void Dispose(ResourceHandle<Texture> handle) { /* no-op */ }
 		public XYPair<int> GetDimensions(ResourceHandle<Texture> handle) => _owner._loadedBuffers[GetOwningBuffer(handle)].TextureDimensions.Cast<int>();
 		public TexelType GetTexelType(ResourceHandle<Texture> handle) => TexelType.Rgba32;
+		public bool GetAllowsDynamicWrites(ResourceHandle<Texture> handle) => false;
+		public void OverwriteTexels<TTexel>(ResourceHandle<Texture> handle, ReadOnlySpan<TTexel> newTexels, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
+			throw new InvalidOperationException($"Dynamic textures associated with {nameof(RenderOutputBuffer)}s can not be dynamically written to.");
+		}
 	}
 
 	public LocalRendererBuilder(LocalFactoryGlobalObjectGroup globals, RendererBuilderConfig config) {

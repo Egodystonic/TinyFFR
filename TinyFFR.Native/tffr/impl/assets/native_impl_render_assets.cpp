@@ -180,6 +180,50 @@ StartExportedFunc(load_texture_rgba_32, BufferIdentity bufferIdentity, void* dat
 	EndExportedFunc
 }
 
+void native_impl_render_assets::update_texture_rgb_24(TextureHandle texture, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t xOffset, uint32_t yOffset, uint32_t width, uint32_t height) {
+	ThrowIfNull(texture, "Texture was null.");
+	ThrowIfNull(dataPtr, "Data pointer was null.");
+	ThrowIfNegative(dataLen, "Data length was negative.");
+
+	Texture::PixelBufferDescriptor imageBuffer {
+		dataPtr,
+		static_cast<size_t>(dataLen),
+		backend::PixelDataFormat::RGB,
+		backend::PixelDataType::UBYTE,
+		1, 0, 0, 0,
+		&handle_filament_buffer_copy_callback,
+		bufferIdentity
+	};
+
+	texture->setImage(*filament_engine, 0, xOffset, yOffset, width, height, std::move(imageBuffer));
+}
+StartExportedFunc(update_texture_rgb_24, TextureHandle texture, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t xOffset, uint32_t yOffset, uint32_t width, uint32_t height) {
+	native_impl_render_assets::update_texture_rgb_24(texture, bufferIdentity, dataPtr, dataLen, xOffset, yOffset, width, height);
+	EndExportedFunc
+}
+
+void native_impl_render_assets::update_texture_rgba_32(TextureHandle texture, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t xOffset, uint32_t yOffset, uint32_t width, uint32_t height) {
+	ThrowIfNull(texture, "Texture was null.");
+	ThrowIfNull(dataPtr, "Data pointer was null.");
+	ThrowIfNegative(dataLen, "Data length was negative.");
+
+	Texture::PixelBufferDescriptor imageBuffer {
+		dataPtr,
+		static_cast<size_t>(dataLen),
+		backend::PixelDataFormat::RGBA,
+		backend::PixelDataType::UBYTE,
+		1, 0, 0, 0,
+		&handle_filament_buffer_copy_callback,
+		bufferIdentity
+	};
+
+	texture->setImage(*filament_engine, 0, xOffset, yOffset, width, height, std::move(imageBuffer));
+}
+StartExportedFunc(update_texture_rgba_32, TextureHandle texture, BufferIdentity bufferIdentity, void* dataPtr, int32_t dataLen, uint32_t xOffset, uint32_t yOffset, uint32_t width, uint32_t height) {
+	native_impl_render_assets::update_texture_rgba_32(texture, bufferIdentity, dataPtr, dataLen, xOffset, yOffset, width, height);
+	EndExportedFunc
+}
+
 void native_impl_render_assets::dispose_texture(TextureHandle texture) {
 	ThrowIfNull(texture, "Texture was null.");
 	filament_engine->destroy(texture);

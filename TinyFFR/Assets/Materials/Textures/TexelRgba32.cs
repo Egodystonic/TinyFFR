@@ -78,6 +78,9 @@ public readonly record struct TexelRgba32(byte R, byte G, byte B, byte A) : IFou
 	
 	public static TexelRgba32 ConvertFrom(ColorVect v) => new(v);
 	static TexelRgba32 IConversionSupplyingTexel<TexelRgba32, TexelRgba32>.ConvertFrom(TexelRgba32 t) => t;
+	ColorVect IConversionSupplyingTexel<TexelRgba32, ColorVect>.Convert() => ToColorVect();
+	TexelRgb24 IConversionSupplyingTexel<TexelRgba32, TexelRgb24>.Convert() => ToRgb24();
+	TexelRgba32 IConversionSupplyingTexel<TexelRgba32, TexelRgba32>.Convert() => this;
 	public static TexelRgba32 ConvertFrom(TexelRgb24 t) => t.ToRgba32();
 	public static TexelRgba32 ConvertFrom<T>(T v) where T : unmanaged, IFourByteChannelTexel<T> => new(v[0], v[1], v[2], v[3]);
 
