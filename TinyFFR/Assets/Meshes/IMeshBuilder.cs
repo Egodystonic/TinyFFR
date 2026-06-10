@@ -358,7 +358,7 @@ public interface IMeshBuilder {
 	#endregion
 	
 	#region Grid / Quad
-	Mesh CreateQuadMesh(bool twoSided = true, bool backSideInvertsTextures = false, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) {
+	QuadMesh CreateQuadMesh(bool twoSided = true, bool backSideInvertsTextures = false, Transform2D? textureTransform = null, ReadOnlySpan<char> name = default) {
 		return CreateQuadMesh(
 			twoSided,
 			backSideInvertsTextures,
@@ -366,7 +366,7 @@ public interface IMeshBuilder {
 			new MeshCreationConfig { Name = name }
 		);
 	}
-	Mesh CreateQuadMesh(bool twoSided, bool backSideInvertsTextures, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
+	QuadMesh CreateQuadMesh(bool twoSided, bool backSideInvertsTextures, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
 		Span<MeshVertex> vertices = stackalloc MeshVertex[twoSided ? 8 : 4];
 		Span<VertexTriangle> triangles = stackalloc VertexTriangle[twoSided ? 4 : 2];
 		
