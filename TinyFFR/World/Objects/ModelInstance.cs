@@ -118,16 +118,6 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 		get => Mesh.AllowsPerInstanceVertexMutation;
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void ModifyVertices(int startIndex, ReadOnlySpan<MeshVertex> replacementVertices, bool recalculateBoundingBox = false) => Implementation.ModifyVertices(_handle, startIndex, replacementVertices, recalculateBoundingBox);
-	
-	public int CopyModifiedVerticesIfAllowsMutation(Span<MeshVertex> destination) {
-		if (!Mesh.AllowsPerInstanceVertexMutation) throw new InvalidOperationException(Mesh + " does not allow vertex mutation.");
-		var src = Implementation.GetModifiedVerticesIfMutableOrThrow(_handle);
-		src.CopyTo(destination);
-		return src.Length;
-	}
-
 	internal ModelInstance(ResourceHandle<ModelInstance> handle, IModelInstanceImplProvider impl) {
 		_handle = handle;
 		_impl = impl;
@@ -150,6 +140,12 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public MeshBlendedAnimationPlayer GetAnimationPlayerWithTargetDuration(MeshAnimation startAnimation, float startAnimationDurationSeconds, MeshAnimation endAnimation, float endAnimationDurationSeconds) => MeshBlendedAnimationPlayer.CreateWithTargetDuration(this, startAnimation, endAnimation, endAnimationDurationSeconds, endAnimationDurationSeconds);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ScopedSpanLease<MeshVertex> BorrowVerticesSpan(bool recalculateBoundingBoxOnCommit) => BorrowVerticesSpan(recalculateBoundingBoxOnCommit, Range.All);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ScopedSpanLease<MeshVertex> BorrowVerticesSpan(bool recalculateBoundingBoxOnCommit, Range range) => Implementation.BorrowVerticesSpan(_handle, range, recalculateBoundingBoxOnCommit);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);

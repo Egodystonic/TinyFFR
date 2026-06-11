@@ -269,10 +269,10 @@ public interface IAssetLoader {
 		lock (_staticMutationLock) {
 			var fileMetadata = ReadTextureMetadata(filePath);
 			using var texelPoolMemory = _mapTextureProcessingPool.Borrow<TexelRgb24>(fileMetadata.Dimensions.Area);
-			ReadTexture(filePath, texelPoolMemory.Buffer);
-			ConvertRadialAngleToVectorFormatAnisotropy(texelPoolMemory.Buffer, zeroDirection, encodedRange, encodedAnticlockwise, strengthChannel);
+			ReadTexture(filePath, texelPoolMemory.Span);
+			ConvertRadialAngleToVectorFormatAnisotropy(texelPoolMemory.Span, zeroDirection, encodedRange, encodedAnticlockwise, strengthChannel);
 			return TextureBuilder.CreateTexture(
-				texelPoolMemory.Buffer, 
+				texelPoolMemory.Span, 
 				new TextureGenerationConfig { Dimensions = fileMetadata.Dimensions }, 
 				new TextureCreationConfig { IsLinearColorspace = true, Name = Path.GetFileName(filePath) }
 			);
@@ -292,11 +292,11 @@ public interface IAssetLoader {
 				strengthFilePath,
 				new TextureCombinationConfig(TextureA, R, TextureA, G, TextureB, R),
 				TextureProcessingConfig.None,
-				texelPoolMemory.Buffer
+				texelPoolMemory.Span
 			);
-			ConvertRadialAngleToVectorFormatAnisotropy(texelPoolMemory.Buffer, zeroDirection, encodedRange, encodedAnticlockwise, B);
+			ConvertRadialAngleToVectorFormatAnisotropy(texelPoolMemory.Span, zeroDirection, encodedRange, encodedAnticlockwise, B);
 			return TextureBuilder.CreateTexture(
-				texelPoolMemory.Buffer,
+				texelPoolMemory.Span,
 				new TextureGenerationConfig { Dimensions = combinedTexMetadata.Dimensions },
 				new TextureCreationConfig { IsLinearColorspace = true, Name = Path.GetFileName(name) }
 			);

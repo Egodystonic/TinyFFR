@@ -25,6 +25,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	const string DefaultMeshName = "Unnamed Mesh";
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, MeshData> _activeMeshes = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, PooledHeapMemory<MeshVertex>> _defaultMutableVerticesMap = new();
+	readonly ResourceHandleBasedSpanLeaseTracker<MeshVertex> _mutableVertexLeaseTracker;
 	readonly ArrayPoolBackedMap<ResourceHandle<VertexBuffer>, int> _vertexBufferRefCounts = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<IndexBuffer>, int> _indexBufferRefCounts = new();
 	readonly ObjectPool<LocalMeshPolygonGroup, LocalMeshBuilder> _meshPolyGroupPool;
@@ -40,6 +41,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		_globals = globals;
 		_meshPolyGroupPool = new(&CreateNewPolyGroupInstance, this);
 		_meshAnimationTablePool = new(&CreateNewMeshAnimationTable, this);
+		_mutableVertexLeaseTracker = new(null, true, globals.InEnhancedSecurityEnvironment);
 	}
 
 	static LocalMeshPolygonGroup CreateNewPolyGroupInstance(LocalMeshBuilder arg) => new(arg, &PolyGroupHeapPoolAccessorFunc, &ReturnPolyGroup);
@@ -219,14 +221,16 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		return _defaultMutableVerticesMap.ContainsKey(handle);
 	}
 
-	public ReadOnlySpan<MeshVertex> GetDefaultVerticesIfMutableOrThrow(ResourceHandle<Mesh> handle) {
+	public ScopedReadOnlySpanLease<MeshVertex> BorrowDefaultVerticesSpan(ResourceHandle<Mesh> handle, Range range) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		if (_defaultMutableVerticesMap.TryGetValue(handle, out var result)) return result.Buffer;
-		
-		throw new InvalidOperationException(
-			$"Can not load or modify vertices for instances of {HandleToInstance(handle)} as it was not created " +
-			$"with the '{nameof(MeshCreationConfig.AllowsPerInstanceVertexMutation)}' flag set to true."
-		);
+		if (!_defaultMutableVerticesMap.TryGetValue(handle, out var result)) {
+			throw new InvalidOperationException(
+				$"Can not load or modify vertices for instances of {HandleToInstance(handle)} as it was not created " +
+				$"with the '{nameof(MeshCreationConfig.AllowsPerInstanceVertexMutation)}' flag set to true."
+			);
+		}
+
+		return _mutableVertexLeaseTracker.CreateScopedLeaseOrThrow(handle, result.Span[range]);
 	}
 
 	public MeshAnimation AttachAnimation(
@@ -540,10 +544,10 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	public bool ResourceNameMatchIsMatching(MeshNode resource, ReadOnlySpan<char> name, bool allowPartialMatch, StringComparison comparisonType) {
 		var nameLen = resource.GetNameLength();
 		using var nameBuffer = _globals.HeapPool.Borrow<char>(nameLen);
-		resource.CopyName(nameBuffer.Buffer);
+		resource.CopyName(nameBuffer.Span);
 		return allowPartialMatch
-			? nameBuffer.Buffer.Contains(name, comparisonType)
-			: nameBuffer.Buffer.Equals(name, comparisonType);
+			? nameBuffer.Span.Contains(name, comparisonType)
+			: nameBuffer.Span.Equals(name, comparisonType);
 	}
 	#endregion
 
@@ -622,6 +626,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
+			_mutableVertexLeaseTracker.Dispose();
 			foreach (var kvp in _activeMeshes) Dispose(kvp.Key, removeFromMap: false);
 			_defaultMutableVerticesMap.Dispose();
 			_activeMeshes.Dispose();

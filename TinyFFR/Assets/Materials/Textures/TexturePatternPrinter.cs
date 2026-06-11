@@ -310,8 +310,8 @@ public static unsafe class TexturePatternPrinter {
 			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
 		}
 		try {
-			_ = PrintPattern(pattern, pooledMemory.Buffer);
-			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new() { IncludeAlphaChannel = TTexel.ChannelCount > 3 });
+			_ = PrintPattern(pattern, pooledMemory.Span);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Span, bitmapConfig ?? new() { IncludeAlphaChannel = TTexel.ChannelCount > 3 });
 		}
 		finally {
 			lock (_bitmapHeapPoolMutationLock) {
@@ -327,8 +327,8 @@ public static unsafe class TexturePatternPrinter {
 			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
 		}
 		try {
-			_ = PrintPattern(pattern, conversionMapFunc, pooledMemory.Buffer);
-			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new() { IncludeAlphaChannel = TTexel.ChannelCount > 3 });
+			_ = PrintPattern(pattern, conversionMapFunc, pooledMemory.Span);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Span, bitmapConfig ?? new() { IncludeAlphaChannel = TTexel.ChannelCount > 3 });
 		}
 		finally {
 			lock (_bitmapHeapPoolMutationLock) {
@@ -344,8 +344,8 @@ public static unsafe class TexturePatternPrinter {
 			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
 		}
 		try {
-			_ = PrintPattern(pattern1, pattern2, conversionMapFunc, pooledMemory.Buffer);
-			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new() { IncludeAlphaChannel = TTexel.ChannelCount > 3 });
+			_ = PrintPattern(pattern1, pattern2, conversionMapFunc, pooledMemory.Span);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Span, bitmapConfig ?? new() { IncludeAlphaChannel = TTexel.ChannelCount > 3 });
 		}
 		finally {
 			lock (_bitmapHeapPoolMutationLock) {
@@ -361,8 +361,8 @@ public static unsafe class TexturePatternPrinter {
 			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
 		}
 		try {
-			_ = PrintPattern(pattern1, pattern2, pattern3, conversionMapFunc, pooledMemory.Buffer);
-			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new() { IncludeAlphaChannel = TTexel.ChannelCount > 3 });
+			_ = PrintPattern(pattern1, pattern2, pattern3, conversionMapFunc, pooledMemory.Span);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Span, bitmapConfig ?? new() { IncludeAlphaChannel = TTexel.ChannelCount > 3 });
 		}
 		finally {
 			lock (_bitmapHeapPoolMutationLock) {
@@ -378,8 +378,8 @@ public static unsafe class TexturePatternPrinter {
 			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
 		}
 		try {
-			_ = PrintPattern(pattern1, pattern2, pattern3, pattern4, conversionMapFunc, pooledMemory.Buffer);
-			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new() { IncludeAlphaChannel = TTexel.ChannelCount > 3 });
+			_ = PrintPattern(pattern1, pattern2, pattern3, pattern4, conversionMapFunc, pooledMemory.Span);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Span, bitmapConfig ?? new() { IncludeAlphaChannel = TTexel.ChannelCount > 3 });
 		}
 		finally {
 			lock (_bitmapHeapPoolMutationLock) {
@@ -397,8 +397,8 @@ public static unsafe class TexturePatternPrinter {
 			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
 		}
 		try {
-			_ = PrintPattern(pattern, conversionMapFunc, pooledMemory.Buffer);
-			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new() { IncludeAlphaChannel = TTexel.ChannelCount > 3 });
+			_ = PrintPattern(pattern, conversionMapFunc, pooledMemory.Span);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Span, bitmapConfig ?? new() { IncludeAlphaChannel = TTexel.ChannelCount > 3 });
 		}
 		finally {
 			lock (_bitmapHeapPoolMutationLock) {
@@ -414,8 +414,8 @@ public static unsafe class TexturePatternPrinter {
 			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
 		}
 		try {
-			_ = PrintPattern(pattern1, pattern2, conversionMapFunc, pooledMemory.Buffer);
-			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new() { IncludeAlphaChannel = TTexel.ChannelCount > 3 });
+			_ = PrintPattern(pattern1, pattern2, conversionMapFunc, pooledMemory.Span);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Span, bitmapConfig ?? new() { IncludeAlphaChannel = TTexel.ChannelCount > 3 });
 		}
 		finally {
 			lock (_bitmapHeapPoolMutationLock) {
@@ -431,8 +431,8 @@ public static unsafe class TexturePatternPrinter {
 			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
 		}
 		try {
-			_ = PrintPattern(pattern1, pattern2, pattern3, conversionMapFunc, pooledMemory.Buffer);
-			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new() { IncludeAlphaChannel = TTexel.ChannelCount > 3 });
+			_ = PrintPattern(pattern1, pattern2, pattern3, conversionMapFunc, pooledMemory.Span);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Span, bitmapConfig ?? new() { IncludeAlphaChannel = TTexel.ChannelCount > 3 });
 		}
 		finally {
 			lock (_bitmapHeapPoolMutationLock) {
@@ -448,8 +448,8 @@ public static unsafe class TexturePatternPrinter {
 			pooledMemory = _bitmapHeapPool.Borrow<TTexel>(dimensions.Area);
 		}
 		try {
-			_ = PrintPattern(pattern1, pattern2, pattern3, pattern4, conversionMapFunc, pooledMemory.Buffer);
-			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Buffer, bitmapConfig ?? new() { IncludeAlphaChannel = TTexel.ChannelCount > 3 });
+			_ = PrintPattern(pattern1, pattern2, pattern3, pattern4, conversionMapFunc, pooledMemory.Span);
+			ImageUtils.SaveBitmap(bitmapFilePath, dimensions, pooledMemory.Span, bitmapConfig ?? new() { IncludeAlphaChannel = TTexel.ChannelCount > 3 });
 		}
 		finally {
 			lock (_bitmapHeapPoolMutationLock) {

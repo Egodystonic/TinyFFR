@@ -402,10 +402,10 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.B),
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R)
 				),
-				destinationBuffer.Buffer
+				destinationBuffer.Span
 			);
 			return TextureBuilder.CreateTexture(
-				destinationBuffer.Buffer,
+				destinationBuffer.Span,
 				new TextureGenerationConfig { Dimensions = destDim },
 				creationParams.Config with {
 					Name = creationParams.CreateTextureName(TextureTypeName),
@@ -434,9 +434,9 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 			case AssetMaterialParamDataFormat.TextureMap:
 				using (var embeddedTex = LoadAssetTexture(creationParams.AssetHandle, creationParams.MaterialIndex, paramPtr->TextureMapIndex, in creationParams.AssetRootDirStrRef, creationParams.UriUnescapeEmbeddedResourceStrings)) {
 					using var rgbTexelBuffer = _globals.HeapPool.Borrow<TexelRgb24>(embeddedTex.Dimensions.Area);
-					TextureUtils.Convert(embeddedTex.TexelSpan, rgbTexelBuffer.Buffer);
+					TextureUtils.Convert(embeddedTex.TexelSpan, rgbTexelBuffer.Span);
 					return TextureBuilder.CreateTexture(
-						rgbTexelBuffer.Buffer,
+						rgbTexelBuffer.Span,
 						new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
 						creationParams.Config with {
 							Name = creationParams.CreateTextureName(TextureTypeName), 
@@ -552,10 +552,10 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 						new TextureCombinationSource(TextureCombinationSourceTexture.TextureC, ColorChannel.B),
 						new TextureCombinationSource(TextureCombinationSourceTexture.TextureD, ColorChannel.A)
 					),
-					destinationBuffer.Buffer
+					destinationBuffer.Span
 				);
 				return TextureBuilder.CreateTexture(
-					destinationBuffer.Buffer,
+					destinationBuffer.Span,
 					new TextureGenerationConfig { Dimensions = destDim },
 					creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName + "r"), IsLinearColorspace = true }
 				);
@@ -572,10 +572,10 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 						new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.G),
 						new TextureCombinationSource(TextureCombinationSourceTexture.TextureC, ColorChannel.B)
 					),
-					destinationBuffer.Buffer
+					destinationBuffer.Span
 				);
 				return TextureBuilder.CreateTexture(
-					destinationBuffer.Buffer,
+					destinationBuffer.Span,
 					new TextureGenerationConfig { Dimensions = destDim },
 					creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true }
 				);
@@ -603,9 +603,9 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 				creationParams.UriUnescapeEmbeddedResourceStrings
 			);
 			using var rgbTexelBuffer = _globals.HeapPool.Borrow<TexelRgb24>(embeddedTex.Dimensions.Area);
-			TextureUtils.Convert(embeddedTex.TexelSpan, rgbTexelBuffer.Buffer);
+			TextureUtils.Convert(embeddedTex.TexelSpan, rgbTexelBuffer.Span);
 			return TextureBuilder.CreateTexture(
-				rgbTexelBuffer.Buffer,
+				rgbTexelBuffer.Span,
 				new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
 				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true }
 			);
@@ -647,12 +647,12 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R),
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R)
 				),
-				destinationBuffer.Buffer
+				destinationBuffer.Span
 			);
 			// After combining the disparate textures we need to convert them from angle/strength to tangent-space vector + strength
-			IAssetLoader.ConvertRadialAngleToVectorFormatAnisotropy(destinationBuffer.Buffer, Orientation2D.Right, AnisotropyRadialAngleRange.ZeroTo360, true, ColorChannel.B);
+			IAssetLoader.ConvertRadialAngleToVectorFormatAnisotropy(destinationBuffer.Span, Orientation2D.Right, AnisotropyRadialAngleRange.ZeroTo360, true, ColorChannel.B);
 			return TextureBuilder.CreateTexture(
-				destinationBuffer.Buffer,
+				destinationBuffer.Span,
 				new TextureGenerationConfig { Dimensions = destDim },
 				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true }
 			);
@@ -743,10 +743,10 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.B),
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R)
 				),
-				destinationBuffer.Buffer
+				destinationBuffer.Span
 			);
 			return TextureBuilder.CreateTexture(
-				destinationBuffer.Buffer,
+				destinationBuffer.Span,
 				new TextureGenerationConfig { Dimensions = destDim },
 				creationParams.Config with {
 					Name = creationParams.CreateTextureName(TextureTypeName), 
@@ -775,9 +775,9 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 				creationParams.UriUnescapeEmbeddedResourceStrings
 			);
 			using var rgbTexelBuffer = _globals.HeapPool.Borrow<TexelRgb24>(embeddedTex.Dimensions.Area);
-			TextureUtils.Convert(embeddedTex.TexelSpan, rgbTexelBuffer.Buffer);
+			TextureUtils.Convert(embeddedTex.TexelSpan, rgbTexelBuffer.Span);
 			return TextureBuilder.CreateTexture(
-				rgbTexelBuffer.Buffer,
+				rgbTexelBuffer.Span,
 				new TextureGenerationConfig { Dimensions = embeddedTex.Dimensions },
 				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true }
 			);
@@ -819,10 +819,10 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureB, ColorChannel.R),
 					new TextureCombinationSource(TextureCombinationSourceTexture.TextureA, ColorChannel.R)
 				),
-				destinationBuffer.Buffer
+				destinationBuffer.Span
 			);
 			return TextureBuilder.CreateTexture(
-				destinationBuffer.Buffer,
+				destinationBuffer.Span,
 				new TextureGenerationConfig { Dimensions = destDim },
 				creationParams.Config with { Name = creationParams.CreateTextureName(TextureTypeName), IsLinearColorspace = true }
 			);
@@ -1002,7 +1002,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 										out var nameLength
 									).ThrowIfFailure();
 									
-									translatedNodeBuffer.Buffer[n] = new(
+									translatedNodeBuffer.Span[n] = new(
 										defaultTransformMatrix,
 										inverseBindPoseMatrix,
 										parentNodeIndex >= 0 ? parentNodeIndex : null,
@@ -1014,7 +1014,7 @@ unsafe partial class LocalAssetLoader : IResourceDirectory<Model> {
 								mesh = _meshBuilder.CreateMesh(
 									copyResult.VertexBuffer.AsReadOnlySpan<MeshVertexSkeletal>(copyResult.NumVerticesWritten),
 									copyResult.TriangleBuffer.AsReadOnlySpan<VertexTriangle>(copyResult.NumTrianglesWritten),
-									translatedNodeBuffer.Buffer,
+									translatedNodeBuffer.Span,
 									config.MeshConfig with { Name = meshName }
 								);
 

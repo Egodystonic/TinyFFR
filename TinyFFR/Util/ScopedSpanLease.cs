@@ -4,37 +4,48 @@
 namespace Egodystonic.TinyFFR;
 
 public readonly unsafe ref struct ScopedSpanLease<T> {
-	readonly object _callbackParam;
-	readonly nuint _leaseId;
 	readonly delegate* managed<object, nuint, void> _disposalCallback;
+	readonly object _callbackParam;
+	public nuint LeaseId { get; }
 	public Span<T> Span { get; }
 
-	public ScopedSpanLease(object callbackParam, nuint leaseId, delegate*<object, nuint, void> disposalCallback, Span<T> span) {
+	public ScopedSpanLease(delegate*<object, UIntPtr, void> disposalCallback, object callbackParam, UIntPtr leaseId, Span<T> span) {
 		_callbackParam = callbackParam;
-		_leaseId = leaseId;
+		LeaseId = leaseId;
 		_disposalCallback = disposalCallback;
 		Span = span;
 	}
 	
 	public void Dispose() {
-		if (_disposalCallback != null) _disposalCallback(_callbackParam, _leaseId);
+		if (_disposalCallback != null) _disposalCallback(_callbackParam, LeaseId);
+	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static implicit operator Span<T>(ScopedSpanLease<T> operand) => operand.Span;
+	
+	public static implicit operator ScopedReadOnlySpanLease<T>(ScopedSpanLease<T> operand) {
+		return new ScopedReadOnlySpanLease<T>(operand._disposalCallback,
+			operand._callbackParam, operand.LeaseId, operand.Span);
 	}
 }
 
 public readonly unsafe ref struct ScopedReadOnlySpanLease<T> {
-	readonly object _callbackParam;
-	readonly nuint _leaseId;
 	readonly delegate* managed<object, nuint, void> _disposalCallback;
+	readonly object _callbackParam;
+	public nuint LeaseId { get; }
 	public ReadOnlySpan<T> Span { get; }
 
-	public ScopedReadOnlySpanLease(object callbackParam, nuint leaseId, delegate*<object, nuint, void> disposalCallback, ReadOnlySpan<T> span) {
+	public ScopedReadOnlySpanLease(delegate*<object, UIntPtr, void> disposalCallback, object callbackParam, UIntPtr leaseId, ReadOnlySpan<T> span) {
 		_callbackParam = callbackParam;
-		_leaseId = leaseId;
+		LeaseId = leaseId;
 		_disposalCallback = disposalCallback;
 		Span = span;
 	}
 	
 	public void Dispose() {
-		if (_disposalCallback != null) _disposalCallback(_callbackParam, _leaseId);
+		if (_disposalCallback != null) _disposalCallback(_callbackParam, LeaseId);
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static implicit operator ReadOnlySpan<T>(ScopedReadOnlySpanLease<T> operand) => operand.Span;
 }

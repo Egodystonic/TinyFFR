@@ -14,7 +14,7 @@ sealed unsafe class HeapPool : IDisposable {
 
 	public PooledHeapMemory<T> BorrowAndCopy<T>(ReadOnlySpan<T> copySource) where T : unmanaged {
 		var result = Borrow<T>(copySource.Length);
-		copySource.CopyTo(result.Buffer);
+		copySource.CopyTo(result.Span);
 		return result;
 	}
 	public PooledHeapMemory<T> Borrow<T>(int numElements) where T : unmanaged => Borrow<T>(numElements, sizeof(T));
@@ -25,24 +25,16 @@ sealed unsafe class HeapPool : IDisposable {
 		var byteLength = sizeof(T) * numElements;
 		var buffer = _pool.Rent(byteLength);
 		_activeSpanLeases[++_prevSpanLeaseId] = buffer;
-		return new(
-			this,
-			_prevSpanLeaseId,
-			&DisposeSpanLease,
-			MemoryMarshal.Cast<byte, T>(buffer.AsSpan(0, byteLength))
-		);
+		return new(&DisposeSpanLease,
+			this, _prevSpanLeaseId, MemoryMarshal.Cast<byte, T>(buffer.AsSpan(0, byteLength)));
 	}
 	
 	public ScopedReadOnlySpanLease<T> CreateReadOnlySpanLease<T>(int numElements) where T : unmanaged {
 		var byteLength = sizeof(T) * numElements;
 		var buffer = _pool.Rent(byteLength);
 		_activeSpanLeases[++_prevSpanLeaseId] = buffer;
-		return new(
-			this,
-			_prevSpanLeaseId,
-			&DisposeSpanLease,
-			MemoryMarshal.Cast<byte, T>(buffer.AsSpan(0, byteLength))
-		);
+		return new(&DisposeSpanLease,
+			this, _prevSpanLeaseId, MemoryMarshal.Cast<byte, T>(buffer.AsSpan(0, byteLength)));
 	}
 
 	public void Dispose() => _activeSpanLeases.Dispose();
@@ -64,7 +56,7 @@ readonly record struct PooledHeapMemory<T> : IDisposable where T : unmanaged {
 		_buffer = pool.Rent(requestedSizeBytes);
 	}
 
-	public Span<T> Buffer => MemoryMarshal.Cast<byte, T>(_buffer.AsSpan(0, _requestedSizeBytes));
+	public Span<T> Span => MemoryMarshal.Cast<byte, T>(_buffer.AsSpan(0, _requestedSizeBytes));
 
 	public void Dispose() => _pool.Return(_buffer);
 }

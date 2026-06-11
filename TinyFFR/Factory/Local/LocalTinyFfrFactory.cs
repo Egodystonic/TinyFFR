@@ -116,7 +116,8 @@ public sealed class LocalTinyFfrFactory : ILocalTinyFfrFactory, ILocalGpuHolding
 			_dependencyTracker,
 			_stringPool,
 			_heapPool,
-			resourceGroupProviderRef
+			resourceGroupProviderRef,
+			factoryConfig.EnhanceSecurity
 		);
 		_resourceGroupProvider = new(globals);
 		resourceGroupProviderRef.Resolve(_resourceGroupProvider);

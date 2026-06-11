@@ -105,7 +105,7 @@ unsafe partial class LocalAssetLoader {
 									out var nameLength
 								).ThrowIfFailure();
 								
-								translatedNodeBuffer.Buffer[n] = new(
+								translatedNodeBuffer.Span[n] = new(
 									defaultTransformMatrix,
 									inverseBindPoseMatrix,
 									parentNodeIndex >= 0 ? parentNodeIndex : null,
@@ -117,7 +117,7 @@ unsafe partial class LocalAssetLoader {
 							var result = _meshBuilder.CreateMesh(
 								copyResult.VertexBuffer.AsReadOnlySpan<MeshVertexSkeletal>(copyResult.NumVerticesWritten),
 								copyResult.TriangleBuffer.AsReadOnlySpan<VertexTriangle>(copyResult.NumTrianglesWritten),
-								translatedNodeBuffer.Buffer,
+								translatedNodeBuffer.Span,
 								config
 							);
 						
@@ -338,7 +338,7 @@ unsafe partial class LocalAssetLoader {
 				using var nodeNameHeapBuffer = nodeNameUtf16Length > MaxNameLengthForStackAlloc
 					? _globals.HeapPool.Borrow<char>(nodeNameUtf16Length)
 					: (PooledHeapMemory<char>?) null;
-				var nodeNameBuffer = nodeNameHeapBuffer.HasValue ? nodeNameHeapBuffer.Value.Buffer : stackNameBuffer;
+				var nodeNameBuffer = nodeNameHeapBuffer.HasValue ? nodeNameHeapBuffer.Value.Span : stackNameBuffer;
 				_animationAndNodeNameBuffer.ConvertToUtf16(nodeNameBuffer);
 				_meshBuilder.SetSkeletonNodeName(mesh, i, nodeNameBuffer[..nodeNameUtf16Length]);
 			}
@@ -381,7 +381,7 @@ unsafe partial class LocalAssetLoader {
 			using var animNameHeapBuffer = animNameUtf16Length > MaxNameLengthForStackAlloc
 				? _globals.HeapPool.Borrow<char>(animNameUtf16Length)
 				: (PooledHeapMemory<char>?) null;
-			var animNameBuffer = animNameHeapBuffer.HasValue ? animNameHeapBuffer.Value.Buffer : stackNameBuffer;
+			var animNameBuffer = animNameHeapBuffer.HasValue ? animNameHeapBuffer.Value.Span : stackNameBuffer;
 			if (animNameUtf16Length == 0) {
 				const string FallbackAnimationNamePrefix = "anim_";
 				FallbackAnimationNamePrefix.CopyTo(animNameBuffer);
@@ -422,8 +422,8 @@ unsafe partial class LocalAssetLoader {
 				}
 				if (nodeIndex < 0 || nodeIndex >= nodeHandleBufferCount) continue;
 				
-				channelsToInclude.Buffer[numChannelsIncluded] = c;
-				mutations.Buffer[numChannelsIncluded] = new SkeletalAnimationNodeMutationDescriptor(
+				channelsToInclude.Span[numChannelsIncluded] = c;
+				mutations.Span[numChannelsIncluded] = new SkeletalAnimationNodeMutationDescriptor(
 					nodeIndex,
 					totalScalingKeyframes, numScalingKeyframes,
 					totalRotationKeyframes, numRotationKeyframes,
@@ -450,7 +450,7 @@ unsafe partial class LocalAssetLoader {
 
 			try {
 				for (var i = 0; i < numChannelsIncluded; ++i) {
-					var c = channelsToInclude.Buffer[i];
+					var c = channelsToInclude.Span[i];
 					CopyLoadedAssetSkeletalAnimationChannelData(
 						assetHandle,
 						a, 
@@ -467,20 +467,20 @@ unsafe partial class LocalAssetLoader {
 						highestSingleChannelTranslationKeyframeCount
 					).ThrowIfFailure();
 
-					for (var s = 0; s < mutations.Buffer[i].ScalingKeyframeCount; ++s) {
-						scalingKeyframes.Buffer[mutations.Buffer[i].ScalingKeyframeStartIndex + s] = new SkeletalAnimationScalingKeyframe(
+					for (var s = 0; s < mutations.Span[i].ScalingKeyframeCount; ++s) {
+						scalingKeyframes.Span[mutations.Span[i].ScalingKeyframeStartIndex + s] = new SkeletalAnimationScalingKeyframe(
 							scalingTimeCodeBuffer.AsReadOnlySpan<float>()[s],
 							Vect.FromVector3(scalingVectorBuffer.AsReadOnlySpan<Vector3>()[s])
 						);
 					}
-					for (var r = 0; r < mutations.Buffer[i].RotationKeyframeCount; ++r) {
-						rotationKeyframes.Buffer[mutations.Buffer[i].RotationKeyframeStartIndex + r] = new SkeletalAnimationRotationKeyframe(
+					for (var r = 0; r < mutations.Span[i].RotationKeyframeCount; ++r) {
+						rotationKeyframes.Span[mutations.Span[i].RotationKeyframeStartIndex + r] = new SkeletalAnimationRotationKeyframe(
 							rotationTimeCodeBuffer.AsReadOnlySpan<float>()[r],
 							rotationQuaternionBuffer.AsReadOnlySpan<Quaternion>()[r]
 						);
 					}
-					for (var t = 0; t < mutations.Buffer[i].TranslationKeyframeCount; ++t) {
-						translationKeyframes.Buffer[mutations.Buffer[i].TranslationKeyframeStartIndex + t] = new SkeletalAnimationTranslationKeyframe(
+					for (var t = 0; t < mutations.Span[i].TranslationKeyframeCount; ++t) {
+						translationKeyframes.Span[mutations.Span[i].TranslationKeyframeStartIndex + t] = new SkeletalAnimationTranslationKeyframe(
 							translationTimeCodeBuffer.AsReadOnlySpan<float>()[t],
 							Vect.FromVector3(translationVectorBuffer.AsReadOnlySpan<Vector3>()[t])
 						);
@@ -489,7 +489,7 @@ unsafe partial class LocalAssetLoader {
 				
 				if (numChannelsIncluded != animationChannelCount) {
 					var newMutationsBuffer = _globals.HeapPool.Borrow<SkeletalAnimationNodeMutationDescriptor>(numChannelsIncluded);
-					mutations.Buffer[..numChannelsIncluded].CopyTo(newMutationsBuffer.Buffer);
+					mutations.Span[..numChannelsIncluded].CopyTo(newMutationsBuffer.Span);
 					mutations.Dispose();
 					mutations = newMutationsBuffer;
 				}

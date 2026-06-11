@@ -154,10 +154,10 @@ public interface IMeshBuilder {
 			else {
 				var texTransform = generationConfig.TextureTransform with { Scaling = generationConfig.TextureTransform.Scaling.Reciprocal ?? XYPair<float>.Zero };
 				for (var i = 0; i < defaultVertices.Length; ++i) {
-					verticesMemory.Value.Buffer[i] = defaultVertices[i] with { TextureCoords = defaultVertices[i].TextureCoords * texTransform };
+					verticesMemory.Value.Span[i] = defaultVertices[i] with { TextureCoords = defaultVertices[i].TextureCoords * texTransform };
 				}
-				FixIcosphereSeams(verticesMemory.Value.Buffer, triangles, verticesMemory.Value.Buffer, texTransform.Scaling.X);
-				return CreateMesh(verticesMemory.Value.Buffer, triangles, in configWithScaling);
+				FixIcosphereSeams(verticesMemory.Value.Span, triangles, verticesMemory.Value.Span, texTransform.Scaling.X);
+				return CreateMesh(verticesMemory.Value.Span, triangles, in configWithScaling);
 			}
 		}
 		finally {

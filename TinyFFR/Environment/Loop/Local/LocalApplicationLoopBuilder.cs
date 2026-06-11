@@ -30,7 +30,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		int PreviousIterationSlot,
 		bool TimingBufferIsFilled
 	) {
-		public int NumSlotsWritten => TimingBufferIsFilled ? TimingBuffer.Buffer.Length : (PreviousIterationSlot + 1); 
+		public int NumSlotsWritten => TimingBufferIsFilled ? TimingBuffer.Span.Length : (PreviousIterationSlot + 1); 
 	}
 
 	const string DefaultLoopName = "Unnamed Loop";
@@ -146,7 +146,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		var iterationSlotIncremented = curBufferData.PreviousIterationSlot + 1;
 		curBufferData = curBufferData with { PreviousIterationSlot = iterationSlotIncremented & _iterationTimingBufferMask };
 		curBufferData = curBufferData with { TimingBufferIsFilled = curBufferData.TimingBufferIsFilled || curBufferData.PreviousIterationSlot < iterationSlotIncremented };
-		curBufferData.TimingBuffer.Buffer[curBufferData.PreviousIterationSlot] = deltaTime;
+		curBufferData.TimingBuffer.Span[curBufferData.PreviousIterationSlot] = deltaTime;
 		_iterationTimingsMap[handle] = curBufferData;
 	}
 	
@@ -159,7 +159,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var timingBufferData = _iterationTimingsMap[handle];
 		if (timingBufferData.PreviousIterationSlot < 0) return 0f;
-		return ConvertTimeSpanToFpsValue(timingBufferData.TimingBuffer.Buffer[timingBufferData.PreviousIterationSlot]);
+		return ConvertTimeSpanToFpsValue(timingBufferData.TimingBuffer.Span[timingBufferData.PreviousIterationSlot]);
 	}
 	
 	public float GetFramesPerSecondRecentAverage(ResourceHandle<ApplicationLoop> handle) {
@@ -168,7 +168,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		if (timingBufferData.NumSlotsWritten == 0) return 0f;
 		var sum = TimeSpan.Zero;
 		for (var i = 0; i < timingBufferData.NumSlotsWritten; ++i) {
-			sum += timingBufferData.TimingBuffer.Buffer[i];
+			sum += timingBufferData.TimingBuffer.Span[i];
 		}
 		return ConvertTimeSpanToFpsValue(TimeSpan.FromTicks(sum.Ticks / timingBufferData.NumSlotsWritten));
 	}
@@ -177,7 +177,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		var timingBufferData = _iterationTimingsMap[handle];
 		var highestValue = TimeSpan.Zero;
 		for (var i = 0; i < timingBufferData.NumSlotsWritten; ++i) {
-			var val = timingBufferData.TimingBuffer.Buffer[i];
+			var val = timingBufferData.TimingBuffer.Span[i];
 			if (val > highestValue) highestValue = val;
 		}
 		return ConvertTimeSpanToFpsValue(highestValue);
@@ -187,7 +187,7 @@ sealed class LocalApplicationLoopBuilder : ILocalApplicationLoopBuilder, IApplic
 		var timingBufferData = _iterationTimingsMap[handle];
 		var lowestValue = TimeSpan.MaxValue;
 		for (var i = 0; i < timingBufferData.NumSlotsWritten; ++i) {
-			var val = timingBufferData.TimingBuffer.Buffer[i];
+			var val = timingBufferData.TimingBuffer.Span[i];
 			if (val < lowestValue) lowestValue = val;
 		}
 		return ConvertTimeSpanToFpsValue(lowestValue);

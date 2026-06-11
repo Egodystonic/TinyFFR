@@ -16,6 +16,7 @@ namespace Egodystonic.TinyFFR.World;
 sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IResourceDirectory<ModelInstance>, IDisposable {
 	readonly record struct ActiveModelInstanceEffectsData(Material PerInstanceEffectMaterialCopy);
 	readonly record struct LocalVertexMutationData(UIntPtr PrivateVertexBufferHandle, PooledHeapMemory<MeshVertex> CurrentVertices);
+	readonly record struct VertexLeaseData(Range Range, bool RecalculateBoundingBox);
 
 	const string DefaultModelInstanceName = "Unnamed Model Instance";
 	readonly LocalFactoryGlobalObjectGroup _globals;
@@ -23,11 +24,13 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, Transform> _activeInstanceTransforms = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, ActiveModelInstanceEffectsData> _activeInstanceEffectsData = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, LocalVertexMutationData> _activeInstanceVertexMutationData = new();
+	readonly ResourceHandleBasedSpanLeaseTracker<MeshVertex, VertexLeaseData> _vertexLeaseTracker;
 	bool _isDisposed = false;
 
 	public LocalObjectBuilder(LocalFactoryGlobalObjectGroup globals) {
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
+		_vertexLeaseTracker = new(null, true, globals.InEnhancedSecurityEnvironment, &HandleVertexLeaseDisposal, this);
 	}
 
 	public ModelInstance CreateModelInstance(Mesh mesh, Material material, in ModelInstanceCreationConfig config) {
@@ -193,74 +196,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMesh);
 	}
 
-	public void ModifyVertices(ResourceHandle<ModelInstance> handle, int startIndex, ReadOnlySpan<MeshVertex> replacementVertices, bool recalculateBoundingBox) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		var mesh = GetMesh(handle);
-		var defaultVertices = mesh.GetDefaultVerticesIfMutableOrThrow();
-
-		if (startIndex < 0) {
-			throw new ArgumentOutOfRangeException(nameof(startIndex), startIndex, "Start index must be non-negative.");
-		}
-		checked {
-			if (startIndex + replacementVertices.Length > defaultVertices.Length) {
-				throw new ArgumentOutOfRangeException(
-					nameof(replacementVertices), 
-					$"Start index ({startIndex}) + replacement vertex span length ({replacementVertices.Length}) " +
-					$"would exceed mesh vertex count ({defaultVertices.Length})."
-				);
-			}	
-		}
-
-		if (!_activeInstanceVertexMutationData.TryGetValue(handle, out var vertexMutationData)) {
-			var currentVertexData = _globals.HeapPool.BorrowAndCopy(defaultVertices);
-			replacementVertices.CopyTo(currentVertexData.Buffer[startIndex..]);
-			var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(currentVertexData.Buffer);
-
-			var allocResult = AllocateVertexBuffer(
-				gpuHoldingBuffer.BufferIdentity, 
-				(MeshVertex*) gpuHoldingBuffer.DataPtr, 
-				defaultVertices.Length, 
-				out var privateVbHandle
-			);
-			if (!allocResult) {
-				currentVertexData.Dispose();
-				allocResult.ThrowIfFailure();
-				throw new InvalidOperationException(); // Should never reach here but it's a guard just in case
-			}
-			_activeInstanceVertexMutationData[handle] = vertexMutationData = new(privateVbHandle, currentVertexData); 
-			
-			var meshBufferData = mesh.BufferData;
-			SetModelInstanceMesh(
-				handle,
-				privateVbHandle,
-				meshBufferData.IndexBufferHandle,
-				meshBufferData.IndexBufferStartIndex,
-				meshBufferData.IndexBufferCount
-			).ThrowIfFailure();
-		}
-		else {
-			replacementVertices.CopyTo(vertexMutationData.CurrentVertices.Buffer[startIndex..]);
-			var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(replacementVertices);
-			UpdateVertexBuffer(
-				vertexMutationData.PrivateVertexBufferHandle,
-				gpuHoldingBuffer.BufferIdentity,
-				(MeshVertex*) gpuHoldingBuffer.DataPtr,
-				replacementVertices.Length,
-				startIndex
-			).ThrowIfFailure();
-		}
-		
-		if (recalculateBoundingBox) {
-			var newAabb = MathUtils.CalculateBoundingBox(vertexMutationData.CurrentVertices.Buffer, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin);
-			SetModelInstanceAabb(
-				handle,
-				newAabb.Position.ToVector3(),
-				new Vector3(newAabb.HalfWidth, newAabb.HalfHeight, newAabb.HalfDepth)
-			).ThrowIfFailure();
-		}
-	}
-
-	public ReadOnlySpan<MeshVertex> GetModifiedVerticesIfMutableOrThrow(ResourceHandle<ModelInstance> handle) {
+	public ScopedSpanLease<MeshVertex> BorrowVerticesSpan(ResourceHandle<ModelInstance> handle, Range range, bool recalculateBoundingBox) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var mesh = GetMesh(handle);
 		if (!mesh.AllowsPerInstanceVertexMutation) {
@@ -270,8 +206,73 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			);
 		}
 		
-		if (_activeInstanceVertexMutationData.TryGetValue(handle, out var mutationData)) return mutationData.CurrentVertices.Buffer;
-		else return mesh.GetDefaultVerticesIfMutableOrThrow();
+		if (!_activeInstanceVertexMutationData.TryGetValue(handle, out var vertexMutationData)) {
+			using (var defaultVertsLease = mesh.BorrowDefaultVerticesSpan()) {
+				var currentVertexData = _globals.HeapPool.BorrowAndCopy(defaultVertsLease.Span);
+				var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(currentVertexData.Span);
+
+				var allocResult = AllocateVertexBuffer(
+					gpuHoldingBuffer.BufferIdentity, 
+					(MeshVertex*) gpuHoldingBuffer.DataPtr, 
+					defaultVertsLease.Span.Length, 
+					out var privateVbHandle
+				);
+				if (!allocResult) {
+					currentVertexData.Dispose();
+					allocResult.ThrowIfFailure();
+					throw new InvalidOperationException(); // Should never reach here but it's a guard just in case
+				}
+				_activeInstanceVertexMutationData[handle] = vertexMutationData = new(privateVbHandle, currentVertexData); 
+				
+				var meshBufferData = mesh.BufferData;
+				SetModelInstanceMesh(
+					handle,
+					privateVbHandle,
+					meshBufferData.IndexBufferHandle,
+					meshBufferData.IndexBufferStartIndex,
+					meshBufferData.IndexBufferCount
+				).ThrowIfFailure();
+			}
+		}
+
+		return _vertexLeaseTracker.CreateScopedLeaseOrThrow(handle, vertexMutationData.CurrentVertices.Span[range], new VertexLeaseData(range, recalculateBoundingBox));
+	}
+	static void HandleVertexLeaseDisposal(object? builder, ResourceHandle handle, VertexLeaseData leaseData, int _) {
+		((LocalObjectBuilder) builder!).ExecuteVertexMutation((ResourceHandle<ModelInstance>) handle, leaseData);
+	} 
+	void ExecuteVertexMutation(ResourceHandle<ModelInstance> handle, VertexLeaseData leaseData) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var vertexMutationData = _activeInstanceVertexMutationData[handle];
+
+		// In theory, this isn't possible. But we'll check anyway in case something went very wrong
+		// as the consequence is potentially passing out-of-bounds arguments to native side
+		var vertexCount = vertexMutationData.CurrentVertices.Span.Length;
+		var (startIndex, length) = leaseData.Range.GetOffsetAndLength(vertexCount);
+		if (startIndex < 0 || startIndex + length > vertexCount) {
+			throw new ArgumentOutOfRangeException(
+				nameof(leaseData), 
+				$"Start index ({startIndex}) + replacement vertex span length ({length}) " +
+				$"would exceed mesh vertex count ({vertexCount}). This is a bug in TinyFFR."
+			);
+		}
+
+		var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(vertexMutationData.CurrentVertices.Span[leaseData.Range]);
+		UpdateVertexBuffer(
+			vertexMutationData.PrivateVertexBufferHandle,
+			gpuHoldingBuffer.BufferIdentity,
+			(MeshVertex*) gpuHoldingBuffer.DataPtr,
+			length,
+			startIndex
+		).ThrowIfFailure();
+		
+		if (leaseData.RecalculateBoundingBox) {
+			var newAabb = MathUtils.CalculateBoundingBox(vertexMutationData.CurrentVertices.Span, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin);
+			SetModelInstanceAabb(
+				handle,
+				newAabb.Position.ToVector3(),
+				new Vector3(newAabb.HalfWidth, newAabb.HalfHeight, newAabb.HalfDepth)
+			).ThrowIfFailure();
+		}
 	}
 
 	public Material GetMaterial(ResourceHandle<ModelInstance> handle) {
@@ -466,6 +467,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	public void Dispose() {
 		try {
 			if (_isDisposed) return;
+			_vertexLeaseTracker.Dispose();
 			foreach (var kvp in _activeInstanceTransforms) Dispose(kvp.Key, removeFromMap: false);
 			_activeInstanceTransforms.Dispose();
 			_activeInstanceEffectsData.Dispose();

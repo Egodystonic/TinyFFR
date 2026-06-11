@@ -746,11 +746,11 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		using var currentlyQueuedFrameIdentities = _globals.HeapPool.Borrow<nuint>(_pendingRenderTargetReadbacks.Count);
 		var i = -1;
 		foreach (var key in _pendingRenderTargetReadbacks.Keys) {
-			currentlyQueuedFrameIdentities.Buffer[++i] = key;
+			currentlyQueuedFrameIdentities.Span[++i] = key;
 		}
 
 		for (; i >= 0; --i) {
-			var bufferId = currentlyQueuedFrameIdentities.Buffer[i];
+			var bufferId = currentlyQueuedFrameIdentities.Span[i];
 			var tuple = _pendingRenderTargetReadbacks[bufferId];
 			if (tuple.Builder == this && tuple.BufferHandle == handle) _pendingRenderTargetReadbacks.Remove(bufferId);
 		}
