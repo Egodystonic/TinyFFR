@@ -46,9 +46,10 @@ class LocalMeshVertexMutationTest {
 		cameraController.MinDistance = 2f;
 		cameraController.Distance = 4f;
 		
-		var numDefaultVertices = mesh.GetVertexCountIfAllowsMutation();
-		var vertexBuffer = new MeshVertex[numDefaultVertices];
-		mesh.CopyNonModifiedVerticesIfAllowsMutation(vertexBuffer);
+		MeshVertex[] vertexBuffer;
+		using (var lease = mesh.BorrowDefaultVerticesSpan()) {
+			vertexBuffer = lease.Span.ToArray();
+		}
 		
 		for (var i = 0; i < vertexBuffer.Length; ++i) Console.WriteLine(i + " : " + vertexBuffer[i].Location);
 	
@@ -57,15 +58,13 @@ class LocalMeshVertexMutationTest {
 			var dt = loop.IterateOnce().AsDeltaTime();
 			
 			const float MutationSpeed = 0.2f;
-			instance.CopyModifiedVerticesIfAllowsMutation(vertexBuffer);
-			var modifiedVertex = vertexBuffer[0] with { Location = vertexBuffer[0].Location.AsVect().WithLengthIncreasedBy(dt * MutationSpeed).AsLocation() };
-			instance.ModifyVertices(0, new ReadOnlySpan<MeshVertex>(in modifiedVertex));
-			var extraVertices = new[] {
-				vertexBuffer[15] with { Location = vertexBuffer[15].Location.AsVect().WithLengthIncreasedBy(dt * MutationSpeed).AsLocation() },
-				vertexBuffer[16],
-				vertexBuffer[17] with { Location = vertexBuffer[17].Location.AsVect().WithLengthIncreasedBy(dt * MutationSpeed).AsLocation() },
-			};
-			instance.ModifyVertices(15, extraVertices);
+			using (var leaseA = instance.BorrowVerticesSpan(true))
+			using (var leaseB = instance.BorrowVerticesSpan(true, new Range(15, 18))) {
+				leaseA.Span[0] = leaseA.Span[0] with { Location = leaseA.Span[0].Location.AsVect().WithLengthIncreasedBy(dt * MutationSpeed).AsLocation() };
+				
+				leaseB.Span[0] = leaseB.Span[0] with { Location = leaseB.Span[0].Location.AsVect().WithLengthIncreasedBy(dt * MutationSpeed).AsLocation() };
+				leaseB.Span[2] = leaseB.Span[2] with { Location = leaseB.Span[2].Location.AsVect().WithLengthIncreasedBy(dt * MutationSpeed).AsLocation() };
+			}
 			
 			if (loop.Input.KeyboardAndMouse.NewMouseClicks.Any(mc => mc.Key == MouseKey.MouseLeft)) window.LockCursor = !window.LockCursor;
 			
@@ -110,9 +109,12 @@ class LocalMeshVertexMutationTest {
 		var timeUntilNextVerticesSelected = TimeBetweenVertexSelectionsSecs;
 		var ongoingMutationIndices = new List<(int Index, float Time)>[NumInstances];
 		for (var i = 0; i < NumInstances; ++i) ongoingMutationIndices[i] = new List<(int Index, float Time)>();
-		var numDefaultVertices = mesh.GetVertexCountIfAllowsMutation();
-		var defaultVertices = new MeshVertex[numDefaultVertices];
-		mesh.CopyNonModifiedVerticesIfAllowsMutation(defaultVertices);
+		
+		MeshVertex[] defaultVertices;
+		using (var lease = mesh.BorrowDefaultVerticesSpan()) {
+			defaultVertices = lease.Span.ToArray();
+		}
+		
 		var interpAlgo = InterpolationAlgorithm<Real>.DecelerateFromFastWithOvershoot();
 	
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
@@ -123,7 +125,7 @@ class LocalMeshVertexMutationTest {
 			while (timeUntilNextVerticesSelected <= 0f) {
 				for (var i = 0; i < NumInstances; ++i) {
 					// Could technically double-add the same index but that's fine, it'll just look a bit odd for a bit
-					ongoingMutationIndices[i].Add((Random.Shared.Next(numDefaultVertices), 0f));
+					ongoingMutationIndices[i].Add((Random.Shared.Next(defaultVertices.Length), 0f));
 				}
 				timeUntilNextVerticesSelected += TimeBetweenVertexSelectionsSecs;
 			}
@@ -138,12 +140,16 @@ class LocalMeshVertexMutationTest {
 					if (newTime >= VertexAnimationTime) {
 						list.RemoveAt(j);
 						var newVert = defaultVert with { Location = defaultVert.Location.AsVect().WithLength(displacementTarget).AsLocation() };
-						instances[i].ModifyVertices(tuple.Index, new ReadOnlySpan<MeshVertex>(in newVert));
+						using (var lease = instances[i].BorrowVerticesSpan(false, tuple.Index..(tuple.Index + 1))) {
+							lease.Span[0] = newVert;
+						}
 					}
 					else {
 						list[j] = (tuple.Index, newTime);
 						var newVert = defaultVert with { Location = defaultVert.Location.AsVect().WithLength(displacementTarget * interpAlgo.GetValue(0f, 1f, newTime, VertexAnimationTime)).AsLocation() };
-						instances[i].ModifyVertices(tuple.Index, new ReadOnlySpan<MeshVertex>(in newVert));
+						using (var lease = instances[i].BorrowVerticesSpan(false, tuple.Index..(tuple.Index + 1))) {
+							lease.Span[0] = newVert;
+						}
 					}
 				}
 			}

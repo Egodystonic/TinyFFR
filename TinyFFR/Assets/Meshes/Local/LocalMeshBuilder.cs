@@ -595,6 +595,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	public void Dispose(ResourceHandle<Mesh> handle) => Dispose(handle, removeFromMap: true);
 	void Dispose(ResourceHandle<Mesh> handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
+		_mutableVertexLeaseTracker.ThrowIfAnyActiveRentals(handle, nameof(Mesh), _globals.GetResourceName(handle.Ident, DefaultMeshName)); 
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		
 #pragma warning disable CA2000 // Compiler incorrectly assumes animTable is going out of scope here and warns me to invoke Dispose() on it
@@ -626,8 +627,8 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	public void Dispose() {
 		if (_isDisposed) return;
 		try {
-			_mutableVertexLeaseTracker.Dispose();
 			foreach (var kvp in _activeMeshes) Dispose(kvp.Key, removeFromMap: false);
+			_mutableVertexLeaseTracker.Dispose();
 			_defaultMutableVerticesMap.Dispose();
 			_activeMeshes.Dispose();
 			_activeMeshAnimationTables.Dispose();

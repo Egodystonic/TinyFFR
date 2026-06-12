@@ -20,9 +20,6 @@ public readonly unsafe ref struct ScopedSpanLease<T> {
 		if (_disposalCallback != null) _disposalCallback(_callbackParam, LeaseId);
 	}
 	
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator Span<T>(ScopedSpanLease<T> operand) => operand.Span;
-	
 	public static implicit operator ScopedReadOnlySpanLease<T>(ScopedSpanLease<T> operand) {
 		return new ScopedReadOnlySpanLease<T>(operand._disposalCallback,
 			operand._callbackParam, operand.LeaseId, operand.Span);
@@ -45,7 +42,4 @@ public readonly unsafe ref struct ScopedReadOnlySpanLease<T> {
 	public void Dispose() {
 		if (_disposalCallback != null) _disposalCallback(_callbackParam, LeaseId);
 	}
-
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator ReadOnlySpan<T>(ScopedReadOnlySpanLease<T> operand) => operand.Span;
 }

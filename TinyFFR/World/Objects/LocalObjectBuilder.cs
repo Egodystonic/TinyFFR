@@ -196,7 +196,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMesh);
 	}
 
-	public ScopedSpanLease<MeshVertex> BorrowVerticesSpan(ResourceHandle<ModelInstance> handle, Range range, bool recalculateBoundingBox) {
+	LocalVertexMutationData GetOrAllocateActiveVertexMutationData(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var mesh = GetMesh(handle);
 		if (!mesh.AllowsPerInstanceVertexMutation) {
@@ -205,36 +205,44 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 				$"with the '{nameof(MeshCreationConfig.AllowsPerInstanceVertexMutation)}' flag set to true."
 			);
 		}
+
+		if (_activeInstanceVertexMutationData.TryGetValue(handle, out var vertexMutationData)) return vertexMutationData;
 		
-		if (!_activeInstanceVertexMutationData.TryGetValue(handle, out var vertexMutationData)) {
-			using (var defaultVertsLease = mesh.BorrowDefaultVerticesSpan()) {
-				var currentVertexData = _globals.HeapPool.BorrowAndCopy(defaultVertsLease.Span);
-				var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(currentVertexData.Span);
+		using (var defaultVertsLease = mesh.BorrowDefaultVerticesSpan()) {
+			var currentVertexData = _globals.HeapPool.BorrowAndCopy(defaultVertsLease.Span);
+			var gpuHoldingBuffer = _globals.CreateGpuHoldingBufferAndCopyData(currentVertexData.Span);
 
-				var allocResult = AllocateVertexBuffer(
-					gpuHoldingBuffer.BufferIdentity, 
-					(MeshVertex*) gpuHoldingBuffer.DataPtr, 
-					defaultVertsLease.Span.Length, 
-					out var privateVbHandle
-				);
-				if (!allocResult) {
-					currentVertexData.Dispose();
-					allocResult.ThrowIfFailure();
-					throw new InvalidOperationException(); // Should never reach here but it's a guard just in case
-				}
-				_activeInstanceVertexMutationData[handle] = vertexMutationData = new(privateVbHandle, currentVertexData); 
-				
-				var meshBufferData = mesh.BufferData;
-				SetModelInstanceMesh(
-					handle,
-					privateVbHandle,
-					meshBufferData.IndexBufferHandle,
-					meshBufferData.IndexBufferStartIndex,
-					meshBufferData.IndexBufferCount
-				).ThrowIfFailure();
+			var allocResult = AllocateVertexBuffer(
+				gpuHoldingBuffer.BufferIdentity,
+				(MeshVertex*) gpuHoldingBuffer.DataPtr,
+				defaultVertsLease.Span.Length,
+				out var privateVbHandle
+			);
+			if (!allocResult) {
+				currentVertexData.Dispose();
+				allocResult.ThrowIfFailure();
+				throw new InvalidOperationException(); // Should never reach here but it's a guard just in case
 			}
-		}
+			vertexMutationData = _activeInstanceVertexMutationData[handle] = new(privateVbHandle, currentVertexData);
 
+			var meshBufferData = mesh.BufferData;
+			SetModelInstanceMesh(
+				handle,
+				privateVbHandle,
+				meshBufferData.IndexBufferHandle,
+				meshBufferData.IndexBufferStartIndex,
+				meshBufferData.IndexBufferCount
+			).ThrowIfFailure();
+		}
+		
+		return vertexMutationData;
+	}
+	public ScopedReadOnlySpanLease<MeshVertex> BorrowVerticesSpanReadOnly(ResourceHandle<ModelInstance> handle) {
+		var vertexMutationData = GetOrAllocateActiveVertexMutationData(handle);
+		return _vertexLeaseTracker.CreateScopedLeaseOrThrow(handle, vertexMutationData.CurrentVertices.Span);
+	}
+	public ScopedSpanLease<MeshVertex> BorrowVerticesSpan(ResourceHandle<ModelInstance> handle, Range range, bool recalculateBoundingBox) {
+		var vertexMutationData = GetOrAllocateActiveVertexMutationData(handle);
 		return _vertexLeaseTracker.CreateScopedLeaseOrThrow(handle, vertexMutationData.CurrentVertices.Span[range], new VertexLeaseData(range, recalculateBoundingBox));
 	}
 	static void HandleVertexLeaseDisposal(object? builder, ResourceHandle handle, VertexLeaseData leaseData, int _) {
@@ -442,6 +450,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 
 	void Dispose(ResourceHandle<ModelInstance> handle, bool removeFromMap) {
 		if (IsDisposed(handle)) return;
+		_vertexLeaseTracker.ThrowIfAnyActiveRentals(handle, nameof(ModelInstance), _globals.GetResourceName(handle.Ident, DefaultModelInstanceName));
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		DisposeModelInstance(handle).ThrowIfFailure();
@@ -467,10 +476,10 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	public void Dispose() {
 		try {
 			if (_isDisposed) return;
-			_vertexLeaseTracker.Dispose();
 			foreach (var kvp in _activeInstanceTransforms) Dispose(kvp.Key, removeFromMap: false);
 			_activeInstanceTransforms.Dispose();
 			_activeInstanceEffectsData.Dispose();
+			_vertexLeaseTracker.Dispose();
 			_activeInstanceVertexMutationData.Dispose();
 		}
 		finally {

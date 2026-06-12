@@ -6,9 +6,10 @@ using Egodystonic.TinyFFR.Factory.Local;
 namespace Egodystonic.TinyFFR.Resources.Memory;
 
 interface IResourceHandleBasedSpanLeaseTracker<T> : IDisposable {
-	public ScopedSpanLease<T> CreateScopedLeaseOrThrow(ResourceHandle handle, Span<T> span);
-	public ScopedReadOnlySpanLease<T> CreateScopedLeaseOrThrow(ResourceHandle handle, ReadOnlySpan<T> span);
-	public int GetActiveRentalsCount(ResourceHandle handle);
+	ScopedSpanLease<T> CreateScopedLeaseOrThrow(ResourceHandle handle, Span<T> span);
+	ScopedReadOnlySpanLease<T> CreateScopedLeaseOrThrow(ResourceHandle handle, ReadOnlySpan<T> span);
+	int GetActiveRentalsCount(ResourceHandle handle);
+	void ThrowIfAnyActiveRentals(ResourceHandle handle, ReadOnlySpan<char> targetResourceTypeName, ReadOnlySpan<char> targetResourceName);
 }
 
 sealed unsafe class ResourceHandleBasedSpanLeaseTracker<T> : IResourceHandleBasedSpanLeaseTracker<T> {
@@ -40,7 +41,22 @@ sealed unsafe class ResourceHandleBasedSpanLeaseTracker<T> : IResourceHandleBase
 	}
 	
 	public int GetActiveRentalsCount(ResourceHandle handle) => _activeRentalCounts.TryGetValue(handle, out var result) ? result : 0;
- 
+
+	public void ThrowIfAnyActiveRentals(ResourceHandle handle, ReadOnlySpan<char> targetResourceTypeName, ReadOnlySpan<char> targetResourceName) {
+		if (GetActiveRentalsCount(handle) == 0) return;
+		
+		var rentalStrings = _activeRentalIds
+			.Where(kvp => kvp.Value == handle)
+			.Select(kvp => $"Leased {typeof(T)} span #{kvp.Key}")
+			.ToArray();
+		
+		throw ResourceDependencyException.CreateForPrematureDisposal(
+			targetResourceTypeName.ToString(),
+			targetResourceName.ToString(),
+			rentalStrings
+		);
+	}
+
 	public void Dispose() {
 		if (_throwOnDisposeIfAnyActiveRentals && _activeRentalCounts.Count > 0) {
 			var message = 
@@ -107,6 +123,7 @@ sealed unsafe class ResourceHandleBasedSpanLeaseTracker<T, TArg> : IResourceHand
 	public ScopedSpanLease<T> CreateScopedLeaseOrThrow(ResourceHandle handle, Span<T> span) => _unaryTracker.CreateScopedLeaseOrThrow(handle, span);
 	public ScopedReadOnlySpanLease<T> CreateScopedLeaseOrThrow(ResourceHandle handle, ReadOnlySpan<T> span) => _unaryTracker.CreateScopedLeaseOrThrow(handle, span);
 	public int GetActiveRentalsCount(ResourceHandle handle) => _unaryTracker.GetActiveRentalsCount(handle);
+	public void ThrowIfAnyActiveRentals(ResourceHandle handle, ReadOnlySpan<char> targetResourceTypeName, ReadOnlySpan<char> targetResourceName) => _unaryTracker.ThrowIfAnyActiveRentals(handle, targetResourceTypeName, targetResourceName);
 	
 	public ScopedSpanLease<T> CreateScopedLeaseOrThrow(ResourceHandle handle, Span<T> span, TArg arg) {
 		var result = CreateScopedLeaseOrThrow(handle, span);

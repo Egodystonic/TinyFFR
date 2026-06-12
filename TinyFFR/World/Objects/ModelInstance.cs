@@ -146,6 +146,9 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ScopedSpanLease<MeshVertex> BorrowVerticesSpan(bool recalculateBoundingBoxOnCommit, Range range) => Implementation.BorrowVerticesSpan(_handle, range, recalculateBoundingBoxOnCommit);
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ScopedReadOnlySpanLease<MeshVertex> BorrowVerticesSpanReadOnly() => Implementation.BorrowVerticesSpanReadOnly(_handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);
