@@ -440,7 +440,7 @@ public interface IMeshBuilder {
 	public static readonly Direction DefaultMutableGridMeshXDir = Direction.Right;
 	public static readonly Direction DefaultMutableGridMeshYDir = Direction.Forward;
 	public static readonly Direction DefaultMutableGridMeshUpDir = Direction.Up;
-	MutableGridMesh CreateMutableGridMesh(XYPair<int> gridDimensions, bool twoSided = true, Direction? xDir = null, Direction? yDir = null, Direction? upDir = null, Transform2D? textureTransform = null, Orientation2D gridOrigin = Orientation2D.None, ReadOnlySpan<char> name = default) {
+	MutableGridMesh CreateMutableGridMesh(XYPair<int> gridDimensions, bool twoSided = true, Direction? xDir = null, Direction? yDir = null, Direction? upDir = null, Transform2D? textureTransform = null, Orientation2D gridOrigin = Orientation2D.None, float? maxHeightDisplacement = null, ReadOnlySpan<char> name = default) {
 		return CreateMutableGridMesh(
 			gridDimensions,
 			twoSided,
@@ -448,11 +448,12 @@ public interface IMeshBuilder {
 			yDir ?? DefaultMutableGridMeshYDir,
 			upDir ?? DefaultMutableGridMeshUpDir,
 			gridOrigin,
+			maxHeightDisplacement,
 			new MeshGenerationConfig { TextureTransform = textureTransform ?? Transform2D.None },
 			new MeshCreationConfig { Name = name }
 		);
 	}
-	MutableGridMesh CreateMutableGridMesh(XYPair<int> gridDimensions, bool twoSided, Direction xDir, Direction yDir, Direction upDir, Orientation2D gridOrigin, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
+	MutableGridMesh CreateMutableGridMesh(XYPair<int> gridDimensions, bool twoSided, Direction xDir, Direction yDir, Direction upDir, Orientation2D gridOrigin, float? maxHeightDisplacement, in MeshGenerationConfig generationConfig, in MeshCreationConfig config) {
 		if (gridDimensions.X < 2 || gridDimensions.Y < 2) {
 			throw new ArgumentOutOfRangeException(nameof(gridDimensions), gridDimensions, "Vertex count X and Y must be at least 2.");
 		}
@@ -513,15 +514,28 @@ public interface IMeshBuilder {
 		}
 
 		var gridOriginNormalizedOffset = UiUtils.TranslateAnchoredCanvasOffset((2, 2), DiagonalOrientation2D.DownLeft, gridOrigin, XYPair<int>.Zero).Cast<float>().ScaledBy(0.5f);
+		var originTranslation = config.OriginTranslation + gridOriginNormalizedOffset.X * xDir + gridOriginNormalizedOffset.Y * yDir;
+		var boundingBoxOverride = default(PositionedCuboid?);
+		// ReSharper disable once CompareOfFloatsByEqualityOperator Explicit comparison against 1f is correct here
+		if (maxHeightDisplacement is { } maxHeight && config.LinearRescalingFactor == 1f) {
+			var doubleMaxHeight = maxHeight * 2f;
+			boundingBoxOverride = new PositionedCuboid(
+				MathF.Abs(xDir.X) + MathF.Abs(yDir.X) + doubleMaxHeight * MathF.Abs(upDir.X),
+				MathF.Abs(xDir.Y) + MathF.Abs(yDir.Y) + doubleMaxHeight * MathF.Abs(upDir.Y),
+				MathF.Abs(xDir.Z) + MathF.Abs(yDir.Z) + doubleMaxHeight * MathF.Abs(upDir.Z),
+				(xDir * 0.5f + yDir * 0.5f).AsLocation() - originTranslation
+			);
+		}
 		var mesh = CreateMesh(
 			vertexBuffer.Span, 
 			triangleBuffer.Span, 
 			config with {
 				AllowsPerInstanceVertexMutation = true,
-				OriginTranslation = config.OriginTranslation + gridOriginNormalizedOffset.X * xDir + gridOriginNormalizedOffset.Y * yDir
+				OriginTranslation = originTranslation,
+				BoundingBoxOverride = boundingBoxOverride
 			}
 		);
-		return new MutableGridMesh(mesh, gridDimensions, xDir, yDir, upDir);
+		return new MutableGridMesh(mesh, gridDimensions, xDir, yDir, upDir, maxHeightDisplacement.HasValue);
 	}
 	#endregion
 

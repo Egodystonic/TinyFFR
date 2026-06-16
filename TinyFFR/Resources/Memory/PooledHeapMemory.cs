@@ -25,22 +25,20 @@ sealed unsafe class HeapPool : IDisposable {
 		var byteLength = sizeof(T) * numElements;
 		var buffer = _pool.Rent(byteLength);
 		_activeSpanLeases[++_prevSpanLeaseId] = buffer;
-		return new(&DisposeSpanLease,
-			this, _prevSpanLeaseId, MemoryMarshal.Cast<byte, T>(buffer.AsSpan(0, byteLength)));
+		return new(&DisposeSpanLease, this, _prevSpanLeaseId, MemoryMarshal.Cast<byte, T>(buffer.AsSpan(0, byteLength)));
 	}
 	
 	public ScopedReadOnlySpanLease<T> CreateReadOnlySpanLease<T>(int numElements) where T : unmanaged {
 		var byteLength = sizeof(T) * numElements;
 		var buffer = _pool.Rent(byteLength);
 		_activeSpanLeases[++_prevSpanLeaseId] = buffer;
-		return new(&DisposeSpanLease,
-			this, _prevSpanLeaseId, MemoryMarshal.Cast<byte, T>(buffer.AsSpan(0, byteLength)));
+		return new(&DisposeSpanLease, this, _prevSpanLeaseId, MemoryMarshal.Cast<byte, T>(buffer.AsSpan(0, byteLength)));
 	}
 
 	public void Dispose() => _activeSpanLeases.Dispose();
 
-	static void DisposeSpanLease(object o, nuint id) {
-		var pool = (HeapPool) o;
+	static void DisposeSpanLease(object? o, nuint id) {
+		var pool = (HeapPool) o!;
 		if (pool._activeSpanLeases.Remove(id, out var buffer)) pool._pool.Return(buffer);
 	}
 }

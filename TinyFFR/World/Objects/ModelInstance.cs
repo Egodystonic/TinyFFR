@@ -142,13 +142,16 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	public MeshBlendedAnimationPlayer GetAnimationPlayerWithTargetDuration(MeshAnimation startAnimation, float startAnimationDurationSeconds, MeshAnimation endAnimation, float endAnimationDurationSeconds) => MeshBlendedAnimationPlayer.CreateWithTargetDuration(this, startAnimation, endAnimation, endAnimationDurationSeconds, endAnimationDurationSeconds);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ScopedSpanLease<MeshVertex> BorrowVerticesSpan(bool recalculateBoundingBoxOnCommit) => BorrowVerticesSpan(recalculateBoundingBoxOnCommit, Range.All);
+	public ScopedSpanLease<MeshVertex> BorrowVerticesSpan(bool recalculateBoundingBoxOnLeaseDispose) => BorrowVerticesSpan(recalculateBoundingBoxOnLeaseDispose, Range.All);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public ScopedSpanLease<MeshVertex> BorrowVerticesSpan(bool recalculateBoundingBoxOnCommit, Range range) => Implementation.BorrowVerticesSpan(_handle, range, recalculateBoundingBoxOnCommit);
+	public ScopedSpanLease<MeshVertex> BorrowVerticesSpan(bool recalculateBoundingBoxOnLeaseDispose, Range range) => Implementation.BorrowVerticesSpan(_handle, range, recalculateBoundingBoxOnLeaseDispose);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ScopedReadOnlySpanLease<MeshVertex> BorrowVerticesSpanReadOnly() => Implementation.BorrowVerticesSpanReadOnly(_handle);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void TriggerManualBoundingBoxRecalculation() => Implementation.TriggerManualBoundingBoxRecalculation(_handle);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => Implementation.GetNameAsNewStringObject(_handle);

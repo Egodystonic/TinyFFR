@@ -273,14 +273,19 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			startIndex
 		).ThrowIfFailure();
 		
-		if (leaseData.RecalculateBoundingBox) {
-			var newAabb = MathUtils.CalculateBoundingBox(vertexMutationData.CurrentVertices.Span, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin);
-			SetModelInstanceAabb(
-				handle,
-				newAabb.Position.ToVector3(),
-				new Vector3(newAabb.HalfWidth, newAabb.HalfHeight, newAabb.HalfDepth)
-			).ThrowIfFailure();
-		}
+		if (leaseData.RecalculateBoundingBox) CalculateAndUpdateBoundingBox(handle, vertexMutationData);
+	}
+	public void TriggerManualBoundingBoxRecalculation(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (_activeInstanceVertexMutationData.TryGetValue(handle, out var vertexMutationData)) CalculateAndUpdateBoundingBox(handle, vertexMutationData);
+	}
+	void CalculateAndUpdateBoundingBox(ResourceHandle<ModelInstance> handle, LocalVertexMutationData vertexMutationData) {
+		var newAabb = MathUtils.CalculateBoundingBox(vertexMutationData.CurrentVertices.Span, MeshCreationConfig.DefaultBoundingBoxAdditionalMargin);
+		SetModelInstanceAabb(
+			handle,
+			newAabb.Position.ToVector3(),
+			new Vector3(newAabb.HalfWidth, newAabb.HalfHeight, newAabb.HalfDepth)
+		).ThrowIfFailure();
 	}
 
 	public Material GetMaterial(ResourceHandle<ModelInstance> handle) {

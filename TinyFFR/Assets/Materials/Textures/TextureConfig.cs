@@ -35,7 +35,13 @@ public readonly ref struct TextureReadConfig : IConfigStruct<TextureReadConfig> 
 public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreationConfig> {
 	public bool GenerateMipMaps { get; init; } = true;
 	public required bool IsLinearColorspace { get; init; }
-	public bool AllowsDynamicWrites { get; init; } = false;
+	public bool AllowsDynamicWrites {
+		get; 
+		init {
+			if (value) GenerateMipMaps = false;
+			field = value;
+		}
+	} = false;
 	public ReadOnlySpan<char> Name { get; init; }
 	public TextureProcessingConfig ProcessingToApply { get; init; } = TextureProcessingConfig.None;
 

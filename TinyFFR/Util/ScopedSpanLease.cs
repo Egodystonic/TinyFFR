@@ -4,12 +4,12 @@
 namespace Egodystonic.TinyFFR;
 
 public readonly unsafe ref struct ScopedSpanLease<T> {
-	readonly delegate* managed<object, nuint, void> _disposalCallback;
-	readonly object _callbackParam;
+	readonly delegate* managed<object?, nuint, void> _disposalCallback;
+	readonly object? _callbackParam;
 	public nuint LeaseId { get; }
 	public Span<T> Span { get; }
 
-	public ScopedSpanLease(delegate*<object, UIntPtr, void> disposalCallback, object callbackParam, UIntPtr leaseId, Span<T> span) {
+	public ScopedSpanLease(delegate*<object?, UIntPtr, void> disposalCallback, object? callbackParam, UIntPtr leaseId, Span<T> span) {
 		_callbackParam = callbackParam;
 		LeaseId = leaseId;
 		_disposalCallback = disposalCallback;
@@ -27,12 +27,12 @@ public readonly unsafe ref struct ScopedSpanLease<T> {
 }
 
 public readonly unsafe ref struct ScopedReadOnlySpanLease<T> {
-	readonly delegate* managed<object, nuint, void> _disposalCallback;
-	readonly object _callbackParam;
+	readonly delegate* managed<object?, nuint, void> _disposalCallback;
+	readonly object? _callbackParam;
 	public nuint LeaseId { get; }
 	public ReadOnlySpan<T> Span { get; }
 
-	public ScopedReadOnlySpanLease(delegate*<object, UIntPtr, void> disposalCallback, object callbackParam, UIntPtr leaseId, ReadOnlySpan<T> span) {
+	public ScopedReadOnlySpanLease(delegate*<object?, UIntPtr, void> disposalCallback, object? callbackParam, UIntPtr leaseId, ReadOnlySpan<T> span) {
 		_callbackParam = callbackParam;
 		LeaseId = leaseId;
 		_disposalCallback = disposalCallback;

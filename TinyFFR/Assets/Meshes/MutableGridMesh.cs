@@ -4,6 +4,7 @@
 using Egodystonic.TinyFFR.Resources;
 using System;
 using System.Numerics;
+using System.Threading;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.World;
@@ -17,8 +18,9 @@ public readonly struct MutableGridMesh : IDisposable, IStringSpanNameEnabled, IE
 	public Direction XDir { get; }
 	public Direction YDir { get; }
 	public Direction UpDir { get; }
+	public bool HasMaxHeight { get; }
 
-	public MutableGridMesh(Mesh underlyingMesh, XYPair<int> gridDimensions, Direction xDir, Direction yDir, Direction upDir) {
+	public MutableGridMesh(Mesh underlyingMesh, XYPair<int> gridDimensions, Direction xDir, Direction yDir, Direction upDir, bool hasMaxHeight) {
 		// ReSharper disable once CompareOfFloatsByEqualityOperator This is only used to help us skip using a matrix for the transform below and is not critical
 		static bool IsCardinal(Direction d) => MathF.Abs(d.X) + MathF.Abs(d.Y) + MathF.Abs(d.Z) == 1f;
 		
@@ -27,12 +29,8 @@ public readonly struct MutableGridMesh : IDisposable, IStringSpanNameEnabled, IE
 		XDir = xDir;
 		YDir = yDir;
 		UpDir = upDir;
+		HasMaxHeight = hasMaxHeight;
 		_directionsAllCardinal = IsCardinal(xDir) && IsCardinal(yDir) && IsCardinal(upDir);
-	}
-
-	public int GetVertexIndex(XYPair<int> coordinate, bool clampCoord = true) {
-		if (clampCoord) coordinate = coordinate.Clamp(XYPair<int>.Zero, GridDimensions - XYPair<int>.One);
-		return GridDimensions.Index(coordinate);
 	}
 	
 	public Transform CalculateTransform(Location position, XYPair<float> size) {
@@ -86,15 +84,70 @@ public readonly struct MutableGridMesh : IDisposable, IStringSpanNameEnabled, IE
 }
 
 public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled, IEquatable<MutableGridInstance> {
+	static readonly Lock _staticMutationLock = new();
+	static readonly HeapPool _verticesHeapPool = new();
+	static readonly ArrayPoolBackedMap<nuint, MutableGridInstance> _activeLeaseMap = new();
+	static nuint _prevLeaseId = 0U;
+	
+	readonly PooledHeapMemory<MutableGridVertex> _vertexBuffer;
 	public ModelInstance UnderlyingModelInstance { get; }
-	public MutableGridMesh ParentGridMesh { get; init; }
+	public MutableGridMesh ParentGridMesh { get; }
 
 	public MutableGridInstance(ModelInstance underlyingModelInstance, MutableGridMesh parentGridMesh) {
 		UnderlyingModelInstance = underlyingModelInstance;
 		ParentGridMesh = parentGridMesh;
+		lock (_staticMutationLock) {
+			_vertexBuffer = _verticesHeapPool.Borrow<MutableGridVertex>(parentGridMesh.GridDimensions.Area);
+		}
+		_vertexBuffer.Span.Clear();
 	}
 	
-	// TODO vertex mutation and dynamic texture control, maybe also pass through material effects
+	public unsafe ScopedSpanLease<MutableGridVertex> BorrowVerticesSpan() {
+		static void HandleLeaseDisposal(object? _, nuint leaseId) {
+			MutableGridInstance @this;
+			lock (_staticMutationLock) {
+				if (!_activeLeaseMap.Remove(leaseId, out @this)) return;
+			}
+				
+			var gridVerts = @this._vertexBuffer.Span;
+			using var innerLease = @this.UnderlyingModelInstance.BorrowVerticesSpan(!@this.ParentGridMesh.HasMaxHeight);
+			using var defaultVertsLease = @this.ParentGridMesh.UnderlyingMesh.BorrowDefaultVerticesSpan();
+			var gridDimensions = @this.ParentGridMesh.GridDimensions;
+			var gridArea = gridDimensions.Area;
+			var isTwoSided = defaultVertsLease.Span.Length == gridArea * 2;
+			var xDir = @this.ParentGridMesh.XDir;
+			var yDir = @this.ParentGridMesh.YDir;
+			var upDir = @this.ParentGridMesh.UpDir;
+			var scalarOffsetPerGridStep = ((gridDimensions - XYPair<int>.One).Cast<float>().Reciprocal ?? XYPair<float>.One) * 0.5f;
+			var vectorOffsetPerGridStep = (X: xDir * scalarOffsetPerGridStep.X, Y: yDir * scalarOffsetPerGridStep.Y);
+			
+			for (var y = 0; y < gridDimensions.Y; ++y) {
+				for (var x = 0; x < gridDimensions.X; ++x) {
+					var index = gridDimensions.Index(x, y);
+					
+					innerLease.Span[index] = innerLease.Span[index] with {
+						Location = defaultVertsLease.Span[index].Location
+							+ (vectorOffsetPerGridStep.X * gridVerts[index].NormalizedLateralOffset.X)
+							+ (vectorOffsetPerGridStep.Y * gridVerts[index].NormalizedLateralOffset.Y)
+							+ (upDir * gridVerts[index].Height)
+					};
+					if (isTwoSided) { // Branch predictor should hopefully be able to elide this branch as the condition never changes once we enter the loop
+						innerLease.Span[index + gridArea] = innerLease.Span[index + gridArea] with { Location = innerLease.Span[index].Location };
+					}
+				}	
+			}
+		}
+		
+		lock (_staticMutationLock) {
+			var leaseId = ++_prevLeaseId;
+			_activeLeaseMap.Add(leaseId, this);
+			return new ScopedSpanLease<MutableGridVertex>(&HandleLeaseDisposal, null, leaseId, _vertexBuffer.Span);
+		}
+	}
+	
+	public void SetTransform(Location position, XYPair<float> size) {
+		UnderlyingModelInstance.SetTransform(ParentGridMesh.CalculateTransform(position, size));
+	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => UnderlyingModelInstance.GetNameAsNewStringObject();
@@ -104,7 +157,19 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 	public void CopyName(Span<char> destinationBuffer) => UnderlyingModelInstance.CopyName(destinationBuffer);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Dispose() => UnderlyingModelInstance.Dispose();
+	public void Dispose() {
+		lock (_staticMutationLock) {
+			foreach (var instance in _activeLeaseMap.Values) {
+				if (instance == this) {
+#pragma warning disable CA1065 // "Don't throw exceptions in dispose" -- Vastly preferable to leaking leases
+					throw new InvalidOperationException($"Can not dispose this {this} as there are least one active vertex span lease(s) not yet disposed.");
+#pragma warning restore CA1065
+				}
+			}
+			_vertexBuffer.Dispose();
+		}
+		UnderlyingModelInstance.Dispose();
+	}
 
 	public override string ToString() => $"{ParentGridMesh.GridDimensions.X}x{ParentGridMesh.GridDimensions.Y} Mutable Grid {UnderlyingModelInstance}";
 	
@@ -118,4 +183,8 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 	public static bool operator ==(MutableGridInstance left, MutableGridInstance right) => left.Equals(right);
 	public static bool operator !=(MutableGridInstance left, MutableGridInstance right) => !left.Equals(right);
 	#endregion
+}
+
+public readonly record struct MutableGridVertex(float Height, XYPair<float> NormalizedLateralOffset) {
+	public MutableGridVertex(float Height) : this(Height, XYPair<float>.Zero) { }
 }
