@@ -19,8 +19,9 @@ public readonly struct MutableGridMesh : IDisposable, IStringSpanNameEnabled, IE
 	public Direction YDir { get; }
 	public Direction UpDir { get; }
 	public bool HasMaxHeight { get; }
+	public Orientation2D Origin { get; }
 
-	public MutableGridMesh(Mesh underlyingMesh, XYPair<int> gridDimensions, Direction xDir, Direction yDir, Direction upDir, bool hasMaxHeight) {
+	public MutableGridMesh(Mesh underlyingMesh, XYPair<int> gridDimensions, Direction xDir, Direction yDir, Direction upDir, bool hasMaxHeight, Orientation2D origin) {
 		// ReSharper disable once CompareOfFloatsByEqualityOperator This is only used to help us skip using a matrix for the transform below and is not critical
 		static bool IsCardinal(Direction d) => MathF.Abs(d.X) + MathF.Abs(d.Y) + MathF.Abs(d.Z) == 1f;
 		
@@ -30,6 +31,7 @@ public readonly struct MutableGridMesh : IDisposable, IStringSpanNameEnabled, IE
 		YDir = yDir;
 		UpDir = upDir;
 		HasMaxHeight = hasMaxHeight;
+		Origin = origin;
 		_directionsAllCardinal = IsCardinal(xDir) && IsCardinal(yDir) && IsCardinal(upDir);
 	}
 	
@@ -60,6 +62,16 @@ public readonly struct MutableGridMesh : IDisposable, IStringSpanNameEnabled, IE
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetVertexIndex(XYPair<int> xy) => GridDimensions.Index(xy);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public XYPair<int> GetVertexCoordinate(int index) => GridDimensions.ReverseIndex(index);
+	public XYPair<float> GetVertexCoordinateNormalized(int index) => GetVertexCoordinateNormalized(GetVertexCoordinate(index));
+	public XYPair<float> GetVertexCoordinateNormalized(XYPair<int> xy) {
+		var result = xy.Cast<float>() / (GridDimensions - XYPair<int>.One).Cast<float>();
+		return result - UiUtils.TranslateAnchoredCanvasOffset((2, 2), DiagonalOrientation2D.DownLeft, Origin, XYPair<int>.Zero).Cast<float>().ScaledBy(0.5f);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => UnderlyingMesh.GetNameAsNewStringObject();
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public int GetNameLength() => UnderlyingMesh.GetNameLength();
@@ -85,11 +97,12 @@ public readonly struct MutableGridMesh : IDisposable, IStringSpanNameEnabled, IE
 
 public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled, IEquatable<MutableGridInstance> {
 	static readonly Lock _staticMutationLock = new();
-	static readonly HeapPool _verticesHeapPool = new();
+	static readonly HeapPool _sharedHeapPool = new();
 	static readonly ArrayPoolBackedMap<nuint, MutableGridInstance> _activeLeaseMap = new();
 	static nuint _prevLeaseId = 0U;
 	
 	readonly PooledHeapMemory<MutableGridVertex> _vertexBuffer;
+	readonly PooledHeapMemory<XYPair<float>> _precalculatedNormalizedCoords;
 	public ModelInstance UnderlyingModelInstance { get; }
 	public MutableGridMesh ParentGridMesh { get; }
 
@@ -97,13 +110,19 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 		UnderlyingModelInstance = underlyingModelInstance;
 		ParentGridMesh = parentGridMesh;
 		lock (_staticMutationLock) {
-			_vertexBuffer = _verticesHeapPool.Borrow<MutableGridVertex>(parentGridMesh.GridDimensions.Area);
+			_vertexBuffer = _sharedHeapPool.Borrow<MutableGridVertex>(parentGridMesh.GridDimensions.Area);
+			_precalculatedNormalizedCoords = _sharedHeapPool.Borrow<XYPair<float>>(parentGridMesh.GridDimensions.Area);
 		}
 		_vertexBuffer.Span.Clear();
+		for (var y = 0; y < parentGridMesh.GridDimensions.Y; ++y) {
+			for (var x = 0; x < parentGridMesh.GridDimensions.X; ++x) {
+				_precalculatedNormalizedCoords.Span[parentGridMesh.GridDimensions.Index(x, y)] = parentGridMesh.GetVertexCoordinateNormalized((x, y));
+			}
+		}
 	}
 	
-	public unsafe ScopedSpanLease<MutableGridVertex> BorrowVerticesSpan() {
-		static void HandleLeaseDisposal(object? _, nuint leaseId) {
+	public unsafe ScopedSpanLease<MutableGridVertex> BorrowVerticesSpan(bool permitLateralDisplacement) {
+		static void HandleLeaseDisposalWithLateralDisplacement(object? _, nuint leaseId) {
 			MutableGridInstance @this;
 			lock (_staticMutationLock) {
 				if (!_activeLeaseMap.Remove(leaseId, out @this)) return;
@@ -138,16 +157,56 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 			}
 		}
 		
+		static void HandleLeaseDisposal(object? _, nuint leaseId) {
+			MutableGridInstance @this;
+			lock (_staticMutationLock) {
+				if (!_activeLeaseMap.Remove(leaseId, out @this)) return;
+			}
+				
+			var gridVerts = @this._vertexBuffer.Span;
+			using var innerLease = @this.UnderlyingModelInstance.BorrowVerticesSpan(!@this.ParentGridMesh.HasMaxHeight);
+			using var defaultVertsLease = @this.ParentGridMesh.UnderlyingMesh.BorrowDefaultVerticesSpan();
+			var gridDimensions = @this.ParentGridMesh.GridDimensions;
+			var gridArea = gridDimensions.Area;
+			var isTwoSided = defaultVertsLease.Span.Length == gridArea * 2;
+			var upDir = @this.ParentGridMesh.UpDir;
+			
+			for (var y = 0; y < gridDimensions.Y; ++y) {
+				for (var x = 0; x < gridDimensions.X; ++x) {
+					var index = gridDimensions.Index(x, y);
+					
+					innerLease.Span[index] = innerLease.Span[index] with {
+						Location = defaultVertsLease.Span[index].Location + (upDir * gridVerts[index].Height)
+					};
+					if (isTwoSided) { // Branch predictor should hopefully be able to elide this branch as the condition never changes once we enter the loop
+						innerLease.Span[index + gridArea] = innerLease.Span[index + gridArea] with { Location = innerLease.Span[index].Location };
+					}
+				}	
+			}
+		}
+		
+		ObjectDisposedException.ThrowIf(UnderlyingModelInstance.IsDisposed, typeof(MutableGridMesh));
+		
 		lock (_staticMutationLock) {
 			var leaseId = ++_prevLeaseId;
 			_activeLeaseMap.Add(leaseId, this);
-			return new ScopedSpanLease<MutableGridVertex>(&HandleLeaseDisposal, null, leaseId, _vertexBuffer.Span);
+			return new ScopedSpanLease<MutableGridVertex>(permitLateralDisplacement ? &HandleLeaseDisposalWithLateralDisplacement : &HandleLeaseDisposal, null, leaseId, _vertexBuffer.Span);
 		}
 	}
 	
 	public void SetTransform(Location position, XYPair<float> size) {
 		UnderlyingModelInstance.SetTransform(ParentGridMesh.CalculateTransform(position, size));
 	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public int GetVertexIndex(XYPair<int> xy) => ParentGridMesh.GetVertexIndex(xy);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public XYPair<int> GetVertexCoordinate(int index) => ParentGridMesh.GetVertexCoordinate(index);
+	public XYPair<float> GetVertexCoordinateNormalized(int index) {
+		ObjectDisposedException.ThrowIf(UnderlyingModelInstance.IsDisposed, typeof(MutableGridMesh));
+		return _precalculatedNormalizedCoords.Span[index];
+	}
+	public XYPair<float> GetVertexCoordinateNormalized(XYPair<int> xy) => GetVertexCoordinateNormalized(ParentGridMesh.GridDimensions.Index(xy));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public string GetNameAsNewStringObject() => UnderlyingModelInstance.GetNameAsNewStringObject();
@@ -167,6 +226,7 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 				}
 			}
 			_vertexBuffer.Dispose();
+			_precalculatedNormalizedCoords.Dispose();
 		}
 		UnderlyingModelInstance.Dispose();
 	}

@@ -95,8 +95,8 @@ sealed unsafe class ResourceHandleBasedSpanLeaseTracker<T> : IResourceHandleBase
 		return _prevRentalId;
 	}
 	
-	static void HandleDisposal(object tracker, nuint id) {
-		var @this = (ResourceHandleBasedSpanLeaseTracker<T>) tracker;
+	static void HandleDisposal(object? tracker, nuint id) {
+		var @this = (ResourceHandleBasedSpanLeaseTracker<T>) tracker!;
 		if (!@this._activeRentalIds.Remove(id, out var handle)) return;
 		var newRentalCount = @this._activeRentalCounts[handle] - 1;
 		if (newRentalCount == 0) @this._activeRentalCounts.Remove(handle);

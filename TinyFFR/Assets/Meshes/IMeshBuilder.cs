@@ -535,7 +535,7 @@ public interface IMeshBuilder {
 				BoundingBoxOverride = boundingBoxOverride
 			}
 		);
-		return new MutableGridMesh(mesh, gridDimensions, xDir, yDir, upDir, maxHeightDisplacement.HasValue);
+		return new MutableGridMesh(mesh, gridDimensions, xDir, yDir, upDir, maxHeightDisplacement.HasValue, gridOrigin);
 	}
 	#endregion
 
