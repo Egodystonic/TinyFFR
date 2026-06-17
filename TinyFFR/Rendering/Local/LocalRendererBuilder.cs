@@ -247,7 +247,7 @@ sealed class LocalRendererBuilder : IRendererBuilder, IRendererImplProvider, IRe
 		public TexelType GetTexelType(ResourceHandle<Texture> handle) => TexelType.Rgba32;
 		public bool GetAllowsDynamicWrites(ResourceHandle<Texture> handle) => false;
 		public bool GetContainsMipMaps(ResourceHandle<Texture> handle) => false;
-		public TextureSamplingConfig GetSamplingConfig(ResourceHandle<Texture> handle) => new(true, false, Quality.Standard);
+		public TextureRenderingConfig GetRenderingConfig(ResourceHandle<Texture> handle) => new(true, false, Quality.Standard);
 		public void OverwriteTexels<TTexel>(ResourceHandle<Texture> handle, ReadOnlySpan<TTexel> newTexels, XYPair<int> dimensions, XYPair<int> offset) where TTexel : unmanaged, IConversionSupplyingTexel<TTexel, TexelRgb24>, IConversionSupplyingTexel<TTexel, TexelRgba32> {
 			throw new InvalidOperationException($"Dynamic textures associated with {nameof(RenderOutputBuffer)}s can not be dynamically written to.");
 		}

@@ -36,9 +36,9 @@ public readonly struct Texture : IDisposableResource<Texture, ITextureImplProvid
 		get => Implementation.GetContainsMipMaps(_handle);
 	}
 	
-	public TextureSamplingConfig SamplingConfig {
+	public TextureRenderingConfig RenderingConfig {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		get => Implementation.GetSamplingConfig(_handle);
+		get => Implementation.GetRenderingConfig(_handle);
 	}
 
 	internal Texture(ResourceHandle<Texture> handle, ITextureImplProvider impl) {

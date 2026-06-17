@@ -18,7 +18,8 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalMutableGridAndDynamicTextureTest {
-	static readonly XYPair<int> Dimensions = (16, 16);
+	static readonly XYPair<int> Dimensions = (128, 128);
+	const float MaxHeight = 0.05f;
 	
 	[SetUp]
 	public void SetUpTest() {
@@ -44,7 +45,7 @@ class LocalMutableGridAndDynamicTextureTest {
 		using var texture = factory.TextureBuilder.CreateTexture(
 			texels, 
 			new TextureGenerationConfig { Dimensions = Dimensions }, 
-			new TextureCreationConfig { SamplingConfig = new(true, false, Quality.Standard), AllowsDynamicWrites = true, IsLinearColorspace = false }
+			new TextureCreationConfig { RenderingConfig = new(true, false, Quality.Standard), AllowsDynamicWrites = true, IsLinearColorspace = false }
 		);
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(texture);
 		using var testMat = factory.MaterialBuilder.CreateTestMaterial(ignoresLighting: true);
@@ -94,8 +95,10 @@ class LocalMutableGridAndDynamicTextureTest {
 		using var camController = camera.CreateController<FreeFlyingCameraController>();
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
+		var animationTime = 0f;
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Escape)) {
 			var dt = loop.IterateOnce().AsDeltaTime();
+			animationTime += dt;
 			
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.X)) {
 				flipX = !flipX;
@@ -126,16 +129,18 @@ class LocalMutableGridAndDynamicTextureTest {
 			}
 			
 			if (instance is { } i) {
-				using var lease = i.BorrowVerticesSpan(true);
+				using var lease = i.BorrowVerticesSpan(false);
 				for (var y = 0; y < Dimensions.Y; ++y) {
 					for (var x = 0; x < Dimensions.X; ++x) {
 						var index = Dimensions.Index(x, y);
 						var normalizedCoord = i.GetVertexCoordinateNormalized(index);
+						var sin = MathF.Sin((normalizedCoord.DistanceSquaredFrom(XYPair<float>.Zero) * 100f) + animationTime);
 						texels[index] = new TexelRgb24(new ColorVect(
 							(normalizedCoord.X + 1f) * 0.5f,
 							(normalizedCoord.Y + 1f) * 0.5f,
-							0.5f
+							(sin + 1f) * 0.5f
 						));
+						lease.Span[index] = new(sin * MaxHeight);
 					}
 				}
 				texture.OverwriteTexels(texels);

@@ -243,17 +243,16 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 	void ApplyMaterialParam(Material material, Texture? map, ReadOnlySpan<byte> param) {
 		if (!map.HasValue) return;
-		var samplingConfig = map.Value.SamplingConfig;
-		Console.WriteLine(samplingConfig);
+		var renderingConfig = map.Value.RenderingConfig;
 		SetMaterialParameterTexture(
 			material.Handle,
 			in ParamRef(param),
 			ParamLen(param),
 			map.Value.Handle,
 			!map.Value.ContainsMipMaps,
-			samplingConfig.DisableTexelBlending,
-			samplingConfig.DisableTextureRepeat,
-			samplingConfig.AnisotropyLevel
+			renderingConfig.DisableTexelBlending,
+			renderingConfig.DisableTextureRepeat,
+			renderingConfig.AnisotropyLevel
 		).ThrowIfFailure();
 		_globals.DependencyTracker.RegisterDependency(material, map.Value);
 	}

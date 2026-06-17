@@ -8,7 +8,7 @@ using static Egodystonic.TinyFFR.IConfigStruct;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 
-public readonly record struct TextureSamplingConfig {
+public readonly record struct TextureRenderingConfig {
 	public bool DisableTextureRepeat { get; init; }
 	public bool DisableTexelBlending {
 		get; 
@@ -26,9 +26,9 @@ public readonly record struct TextureSamplingConfig {
 	}
 	internal float AnisotropyLevel { get; init; } = CalcAnisotropy(false, Quality.Standard);
 
-	public TextureSamplingConfig() { }
+	public TextureRenderingConfig() { }
 
-	public TextureSamplingConfig(bool disableTextureRepeat, bool disableTexelBlending, Quality anisotropicFilteringQuality) {
+	public TextureRenderingConfig(bool disableTextureRepeat, bool disableTexelBlending, Quality anisotropicFilteringQuality) {
 		DisableTextureRepeat = disableTextureRepeat;
 		DisableTexelBlending = disableTexelBlending;
 		AnisotropicFilteringQuality = anisotropicFilteringQuality;
@@ -75,7 +75,7 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 			field = value;
 		}
 	} = false;
-	public TextureSamplingConfig SamplingConfig { get; init; } = new();
+	public TextureRenderingConfig RenderingConfig { get; init; } = new();
 	public ReadOnlySpan<char> Name { get; init; }
 	public TextureProcessingConfig ProcessingToApply { get; init; } = TextureProcessingConfig.None;
 
@@ -103,9 +103,9 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 		SerializationWriteBool(ref dest, src.GenerateMipMaps);
 		SerializationWriteBool(ref dest, src.IsLinearColorspace);
 		SerializationWriteBool(ref dest, src.AllowsDynamicWrites);
-		SerializationWriteBool(ref dest, src.SamplingConfig.DisableTextureRepeat);
-		SerializationWriteBool(ref dest, src.SamplingConfig.DisableTexelBlending);
-		SerializationWriteInt(ref dest, (int) src.SamplingConfig.AnisotropicFilteringQuality);
+		SerializationWriteBool(ref dest, src.RenderingConfig.DisableTextureRepeat);
+		SerializationWriteBool(ref dest, src.RenderingConfig.DisableTexelBlending);
+		SerializationWriteInt(ref dest, (int) src.RenderingConfig.AnisotropicFilteringQuality);
 		SerializationWriteString(ref dest, src.Name);
 		SerializationWriteSubConfig(ref dest, src.ProcessingToApply);
 	}
@@ -114,7 +114,7 @@ public readonly ref struct TextureCreationConfig : IConfigStruct<TextureCreation
 			GenerateMipMaps = SerializationReadBool(ref src),
 			IsLinearColorspace = SerializationReadBool(ref src),
 			AllowsDynamicWrites = SerializationReadBool(ref src),
-			SamplingConfig = new(SerializationReadBool(ref src), SerializationReadBool(ref src), (Quality) SerializationReadInt(ref src)),
+			RenderingConfig = new(SerializationReadBool(ref src), SerializationReadBool(ref src), (Quality) SerializationReadInt(ref src)),
 			Name = SerializationReadString(ref src),
 			ProcessingToApply = SerializationReadSubConfig<TextureProcessingConfig>(ref src),
 		};

@@ -23,7 +23,7 @@ namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 [SuppressUnmanagedCodeSecurity]
 sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider, IResourceDirectory<Texture>, IDisposable {
-	readonly record struct TextureData(XYPair<int> Dimensions, TexelType TexelType, bool AllowsDynamicWrites, bool ContainsMipMaps, TextureSamplingConfig SamplingConfig);
+	readonly record struct TextureData(XYPair<int> Dimensions, TexelType TexelType, bool AllowsDynamicWrites, bool ContainsMipMaps, TextureRenderingConfig RenderingConfig);
 	const string DefaultTextureName = "Unnamed Texture";
 	readonly ArrayPoolBackedMap<ResourceHandle<Texture>, TextureData> _loadedTextures = new();
 	readonly LocalFactoryGlobalObjectGroup _globals;
@@ -86,7 +86,7 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 
 		var handle = (ResourceHandle<Texture>) outHandle;
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultTextureName);
-		_loadedTextures.Add(handle, new(generationConfig.Dimensions, TTexel.BlitType, config.AllowsDynamicWrites, config.GenerateMipMaps, config.SamplingConfig));
+		_loadedTextures.Add(handle, new(generationConfig.Dimensions, TTexel.BlitType, config.AllowsDynamicWrites, config.GenerateMipMaps, config.RenderingConfig));
 		return HandleToInstance(handle);
 	}
 
@@ -210,9 +210,9 @@ sealed unsafe class LocalTextureBuilder : ITextureBuilder, ITextureImplProvider,
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _loadedTextures[handle].ContainsMipMaps;
 	}
-	public TextureSamplingConfig GetSamplingConfig(ResourceHandle<Texture> handle) {
+	public TextureRenderingConfig GetRenderingConfig(ResourceHandle<Texture> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _loadedTextures[handle].SamplingConfig;
+		return _loadedTextures[handle].RenderingConfig;
 	}
 
 	public string GetNameAsNewStringObject(ResourceHandle<Texture> handle) {
