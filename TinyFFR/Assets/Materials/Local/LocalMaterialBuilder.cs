@@ -243,11 +243,17 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 	void ApplyMaterialParam(Material material, Texture? map, ReadOnlySpan<byte> param) {
 		if (!map.HasValue) return;
+		var samplingConfig = map.Value.SamplingConfig;
+		Console.WriteLine(samplingConfig);
 		SetMaterialParameterTexture(
 			material.Handle,
 			in ParamRef(param),
 			ParamLen(param),
-			map.Value.Handle
+			map.Value.Handle,
+			!map.Value.ContainsMipMaps,
+			samplingConfig.DisableTexelBlending,
+			samplingConfig.DisableTextureRepeat,
+			samplingConfig.AnisotropyLevel
 		).ThrowIfFailure();
 		_globals.DependencyTracker.RegisterDependency(material, map.Value);
 	}
@@ -411,7 +417,11 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		UIntPtr materialHandle,
 		ref readonly byte utf8ParameterNameBuffer,
 		int parameterNameBufferLength,
-		UIntPtr textureHandle
+		UIntPtr textureHandle,
+		InteropBool disableMinMapFiltering, 
+		InteropBool disableBilinearFiltering, 
+		InteropBool disableTextureRepeat, 
+		float anisotropyLevel
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_material_parameter_real")]

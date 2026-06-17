@@ -67,7 +67,7 @@ public:
 	static void load_shader_package(void* dataPtr, int32_t dataLen, PackageHandle* outHandle);
 	static void create_material(PackageHandle package, MaterialHandle* outMaterial);
 	static void duplicate_material(MaterialHandle targetMaterial, MaterialHandle* outMaterial);
-	static void set_material_parameter_texture(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture);
+	static void set_material_parameter_texture(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture, interop_bool disableMinMapFiltering, interop_bool disableBilinearFiltering, interop_bool disableTextureRepeat, float_t anisotropyLevel);
 	static void set_material_parameter_real(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, float val);
 	static void set_material_parameter_matrix(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, mat4f& valRef);
 	static void dispose_material(MaterialHandle material);

@@ -30,6 +30,16 @@ public readonly struct Texture : IDisposableResource<Texture, ITextureImplProvid
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetAllowsDynamicWrites(_handle);
 	}
+	
+	public bool ContainsMipMaps {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetContainsMipMaps(_handle);
+	}
+	
+	public TextureSamplingConfig SamplingConfig {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetSamplingConfig(_handle);
+	}
 
 	internal Texture(ResourceHandle<Texture> handle, ITextureImplProvider impl) {
 		_handle = handle;

@@ -267,22 +267,34 @@ StartExportedFunc(duplicate_material, MaterialHandle targetMaterial, MaterialHan
 	EndExportedFunc
 }
 
-void native_impl_render_assets::set_material_parameter_texture(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture) {
+void native_impl_render_assets::set_material_parameter_texture(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture, interop_bool disableMinMapFiltering, interop_bool disableBilinearFiltering, interop_bool disableTextureRepeat, float_t anisotropyLevel) {
 	ThrowIfNull(material, "Material was null.");
 	ThrowIfNull(parameterName, "Parameter name was null.");
 	ThrowIfNegative(parameterNameLength, "Parameter name length was negative.");
 	ThrowIfNull(texture, "Texture was null.");
 
+	auto minFilter = backend::SamplerMinFilter::LINEAR_MIPMAP_LINEAR;
+	auto magFilter = backend::SamplerMagFilter::LINEAR;
+	auto wrapMode = disableTextureRepeat ? backend::SamplerWrapMode::CLAMP_TO_EDGE : backend::SamplerWrapMode::REPEAT;
+	
+	if (disableBilinearFiltering) {
+		magFilter = backend::SamplerMagFilter::NEAREST;
+		minFilter = disableMinMapFiltering ? backend::SamplerMinFilter::NEAREST : backend::SamplerMinFilter::NEAREST_MIPMAP_LINEAR;
+	}
+	else if (disableMinMapFiltering) {
+		minFilter = backend::SamplerMinFilter::LINEAR_MIPMAP_NEAREST;
+	}
+		
 	TextureSampler sampler {
-		backend::SamplerMinFilter::LINEAR_MIPMAP_LINEAR,
-		backend::SamplerMagFilter::LINEAR,
-		backend::SamplerWrapMode::REPEAT
+		minFilter,
+		magFilter,
+		wrapMode
 	};
-	sampler.setAnisotropy(4.0f);
+	sampler.setAnisotropy(anisotropyLevel);
 	material->setParameter(parameterName, static_cast<size_t>(parameterNameLength), texture, sampler);
 }
-StartExportedFunc(set_material_parameter_texture, MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture) {
-	native_impl_render_assets::set_material_parameter_texture(material, parameterName, parameterNameLength, texture);
+StartExportedFunc(set_material_parameter_texture, MaterialHandle material, const char* parameterName, int32_t parameterNameLength, TextureHandle texture, interop_bool disableMinMapFiltering, interop_bool disableBilinearFiltering, interop_bool disableTextureRepeat, float_t anisotropyLevel) {
+	native_impl_render_assets::set_material_parameter_texture(material, parameterName, parameterNameLength, texture, disableMinMapFiltering, disableBilinearFiltering, disableTextureRepeat, anisotropyLevel);
 	EndExportedFunc
 }
 void native_impl_render_assets::set_material_parameter_real(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, float val) {

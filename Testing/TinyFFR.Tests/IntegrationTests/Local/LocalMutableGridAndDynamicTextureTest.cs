@@ -10,6 +10,7 @@ using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Testing;
 using Egodystonic.TinyFFR.World;
 
@@ -17,7 +18,7 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalMutableGridAndDynamicTextureTest {
-	static readonly XYPair<int> Dimensions = (256, 256);
+	static readonly XYPair<int> Dimensions = (16, 16);
 	
 	[SetUp]
 	public void SetUpTest() {
@@ -40,9 +41,13 @@ class LocalMutableGridAndDynamicTextureTest {
 		var texels = new TexelRgb24[Dimensions.Area];
 		texels.AsSpan().Fill(new TexelRgb24(255, 255, 255));
 		
-		using var texture = factory.TextureBuilder.CreateTexture(texels, new TextureGenerationConfig { Dimensions = Dimensions }, new TextureCreationConfig { AllowsDynamicWrites = true, IsLinearColorspace = false });
+		using var texture = factory.TextureBuilder.CreateTexture(
+			texels, 
+			new TextureGenerationConfig { Dimensions = Dimensions }, 
+			new TextureCreationConfig { SamplingConfig = new(true, false, Quality.Standard), AllowsDynamicWrites = true, IsLinearColorspace = false }
+		);
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(texture);
-		using var testMat = factory.MaterialBuilder.CreateTestMaterial();
+		using var testMat = factory.MaterialBuilder.CreateTestMaterial(ignoresLighting: true);
 		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
 		
 		var flipX = false;
@@ -79,7 +84,7 @@ class LocalMutableGridAndDynamicTextureTest {
 				$"{(!flipUp ? "Up=Default" : "Up=Flipped")} " +
 				$"Origin={origin} " +
 				$"{(twoSided ? "Sides=2" : "Sides=1")} " +
-				$"{(useUvMap ? "Tex=Dynamic" : "Tex=UV")}"
+				$"{(useUvMap ? "Tex=UV" : "Tex=Dynamic")}"
 			);
 		}
 		
