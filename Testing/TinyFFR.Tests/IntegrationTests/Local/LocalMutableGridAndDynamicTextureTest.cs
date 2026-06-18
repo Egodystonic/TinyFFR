@@ -20,6 +20,7 @@ namespace Egodystonic.TinyFFR;
 class LocalMutableGridAndDynamicTextureTest {
 	static readonly XYPair<int> Dimensions = (128, 128);
 	const float MaxHeight = 0.05f;
+	const float LateralPhaseNumVerticesMutatedPerSec = 100f;
 	
 	[SetUp]
 	public void SetUpTest() {
@@ -36,8 +37,8 @@ class LocalMutableGridAndDynamicTextureTest {
 		
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
-		using var window = factory.WindowBuilder.CreateWindow(display, title: "Keys: [XYUVO2]");
-		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "Keys: [XYUVO2M]");
+		using var camera = factory.CameraBuilder.CreateCamera(new Location(0f, 1f, 0f), new Direction(0f, -1f, -1f));
 		
 		var texels = new TexelRgb24[Dimensions.Area];
 		texels.AsSpan().Fill(new TexelRgb24(255, 255, 255));
@@ -57,6 +58,7 @@ class LocalMutableGridAndDynamicTextureTest {
 		var origin = Orientation2D.None;
 		var twoSided = true;
 		var useUvMap = false;
+		var firstMode = true;
 		
 		void ResetInstance() {
 			if (instance != null) {
@@ -78,6 +80,9 @@ class LocalMutableGridAndDynamicTextureTest {
 			instance = factory.ObjectBuilder.CreateMutableGridInstance(mesh.Value, useUvMap ? testMat : mat);
 			scene.Add(instance.Value);
 			
+			texels.AsSpan().Fill(new TexelRgb24(255, 255, 255));
+			texture.OverwriteTexels(texels);
+			
 			window.SetTitle(
 				$"Keys: [XYUO2] | " +
 				$"{(!flipX ? "X=Default" : "X=Flipped")} " +
@@ -85,7 +90,8 @@ class LocalMutableGridAndDynamicTextureTest {
 				$"{(!flipUp ? "Up=Default" : "Up=Flipped")} " +
 				$"Origin={origin} " +
 				$"{(twoSided ? "Sides=2" : "Sides=1")} " +
-				$"{(useUvMap ? "Tex=UV" : "Tex=Dynamic")}"
+				$"{(useUvMap ? "Tex=UV" : "Tex=Dynamic")} " +
+				$"{(firstMode ? "Mode=height" : "Mode=lateral")}"
 			);
 		}
 		
@@ -127,23 +133,45 @@ class LocalMutableGridAndDynamicTextureTest {
 				twoSided = !twoSided;
 				ResetInstance();
 			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.M)) {
+				firstMode = !firstMode;
+				ResetInstance();
+			}
 			
 			if (instance is { } i) {
-				using var lease = i.BorrowVerticesSpan(false);
-				for (var y = 0; y < Dimensions.Y; ++y) {
-					for (var x = 0; x < Dimensions.X; ++x) {
-						var index = Dimensions.Index(x, y);
-						var normalizedCoord = i.GetVertexCoordinateNormalized(index);
-						var sin = MathF.Sin((normalizedCoord.DistanceSquaredFrom(XYPair<float>.Zero) * 100f) + animationTime);
+				if (firstMode) {
+					using var lease = i.BorrowVerticesSpan(false);
+					for (var y = 0; y < Dimensions.Y; ++y) {
+						for (var x = 0; x < Dimensions.X; ++x) {
+							var index = Dimensions.Index(x, y);
+							var normalizedCoord = i.GetVertexCoordinateNormalized(index);
+							var sin = MathF.Sin((normalizedCoord.DistanceSquaredFrom(XYPair<float>.Zero) * 100f) + animationTime);
+							texels[index] = new TexelRgb24(new ColorVect(
+								(normalizedCoord.X + 1f) * 0.5f,
+								(normalizedCoord.Y + 1f) * 0.5f,
+								(sin + 1f) * 0.5f
+							));
+							lease.Span[index] = new(sin * MaxHeight);
+						}
+					}
+					texture.OverwriteTexels(texels);
+				}
+				else {
+					using var lease = i.BorrowVerticesSpan(true);
+					var numVerticesToModify = (int) LateralPhaseNumVerticesMutatedPerSec * dt;
+					for (var v = 0; v < numVerticesToModify; ++v) {
+						var index = RandomUtils.GlobalRng.Next(Dimensions.Area);
+						var offset = XYPair<float>.Random(XYPair<float>.Zero, XYPair<float>.One);
+						var colorChannelVal = 1f - offset.Length;
 						texels[index] = new TexelRgb24(new ColorVect(
-							(normalizedCoord.X + 1f) * 0.5f,
-							(normalizedCoord.Y + 1f) * 0.5f,
-							(sin + 1f) * 0.5f
+							colorChannelVal,
+							colorChannelVal,
+							colorChannelVal
 						));
-						lease.Span[index] = new(sin * MaxHeight);
+						lease.Span[index] = new(0f, offset);
+						texture.OverwriteTexels(texels.AsSpan(index, 1), XYPair<int>.One, i.GetVertexCoordinate(index));
 					}
 				}
-				texture.OverwriteTexels(texels);
 			}
 
 			DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, camController, dt, window);
