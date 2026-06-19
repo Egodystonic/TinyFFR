@@ -294,8 +294,8 @@ static class LocalShaderPackageConstants {
 		public ReadOnlySpan<byte> GetEffectOrmMapDistanceParamOrThrow() => ParamEffectOrmMapBlendDistance;
 	}
 
-	public static SimpleMaterialShaderConstants SimpleMaterialShader { get; } = new();
-	public sealed class SimpleMaterialShaderConstants : IShaderPackageConstants {
+	public static LightingIgnoringMaterialShaderConstants LightingIgnoringMaterialShader { get; } = new();
+	public sealed class LightingIgnoringMaterialShaderConstants : IShaderPackageConstants {
 		public enum AlphaModeVariant {
 			AlphaOff,
 			AlphaOn
@@ -303,8 +303,8 @@ static class LocalShaderPackageConstants {
 
 		readonly ArrayPoolBackedMap<(bool SupportsEffects, AlphaModeVariant AlphaMode), string> _resourceNameMap;
 
-		public SimpleMaterialShaderConstants() {
-			const string ShaderNameStart = ResourceNamespace + "simple";
+		public LightingIgnoringMaterialShaderConstants() {
+			const string ShaderNameStart = ResourceNamespace + "lighting_ignoring";
 			const string ShaderNameStartWithEffects = ShaderNameStart + ShaderWithEffectsSuffix;
 			const string AlphaModeVariantStart = "_alphamode=";
 			const AlphaModeVariant FirstAlphaMode = AlphaModeVariant.AlphaOff;

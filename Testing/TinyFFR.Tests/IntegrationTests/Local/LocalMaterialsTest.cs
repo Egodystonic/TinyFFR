@@ -73,7 +73,7 @@ class LocalMaterialsTest {
 			}
 			
 			return " || " + ShaderType switch {
-				1 => "SIMPLE",
+				1 => "LIGHTING_IGNORING",
 				3 => "TRANSMISSIVE",
 				4 => "ANISOMETAL",
 				5 => "HEXNORM",
@@ -152,7 +152,7 @@ class LocalMaterialsTest {
 
 			switch (curUserOptions.ShaderType) {
 				case 1:
-					newMaterialResources = CreateSimpleMaterial(
+					newMaterialResources = CreateLightingIgnoringMaterial(
 						factory.ResourceAllocator,
 						factory.TextureBuilder,
 						factory.MaterialBuilder,
@@ -355,10 +355,10 @@ class LocalMaterialsTest {
 		}
 	}
 
-	ResourceGroup CreateSimpleMaterial(IResourceAllocator resAllocator, ITextureBuilder texBuilder, IMaterialBuilder matBuilder, bool includeAlpha) {
+	ResourceGroup CreateLightingIgnoringMaterial(IResourceAllocator resAllocator, ITextureBuilder texBuilder, IMaterialBuilder matBuilder, bool includeAlpha) {
 		var result = resAllocator.CreateResourceGroup(
 			disposeContainedResourcesWhenDisposed: true,
-			name: "Simple Material Resources"
+			name: "Lighting-Ignoring Material Resources"
 		);
 
 		Texture colorMap;
@@ -375,7 +375,7 @@ class LocalMaterialsTest {
 					perturbationMagnitude: 0.3f
 				),
 				true,
-				name: "Simple Material Color Map"
+				name: "Lighting-Ignoring Material Color Map"
 			);
 		}
 		else {
@@ -390,16 +390,16 @@ class LocalMaterialsTest {
 					perturbationMagnitude: 0.3f
 				),
 				false,
-				name: "Simple Material Color Map"
+				name: "Lighting-Ignoring Material Color Map"
 			);
 		}
 		result.Add(colorMap);
 
-		var matConfig = new SimpleMaterialCreationConfig {
+		var matConfig = new LightingIgnoringMaterialCreationConfig {
 			ColorMap = colorMap,
-			Name = "Simple Material"
+			Name = "Lighting-Ignoring Material"
 		};
-		var mat = matBuilder.CreateSimpleMaterial(matConfig);
+		var mat = matBuilder.CreateLightingIgnoringMaterial(matConfig);
 		result.Add(mat);
 
 		return result;

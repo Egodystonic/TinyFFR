@@ -63,7 +63,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		var textureGroup = _testMaterialTexturesRef.Value;
 		
 		if (ignoresLighting) {
-			return CreateSimpleMaterial(new SimpleMaterialCreationConfig {
+			return CreateLightingIgnoringMaterial(new LightingIgnoringMaterialCreationConfig {
 				ColorMap = textureGroup.Textures[0],
 				Name = TestMaterialName
 			});
@@ -77,16 +77,16 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		}
 	}
 
-	public Material CreateSimpleMaterial(in SimpleMaterialCreationConfig config) {
+	public Material CreateLightingIgnoringMaterial(in LightingIgnoringMaterialCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
 
-		var shaderConstants = SimpleMaterialShader;
+		var shaderConstants = LightingIgnoringMaterialShader;
 
-		var alphaModeVariant = SimpleMaterialShaderConstants.AlphaModeVariant.AlphaOff;
+		var alphaModeVariant = LightingIgnoringMaterialShaderConstants.AlphaModeVariant.AlphaOff;
 
 		if (config.ColorMap.TexelType == TexelType.Rgba32) {
-			alphaModeVariant = SimpleMaterialShaderConstants.AlphaModeVariant.AlphaOn;
+			alphaModeVariant = LightingIgnoringMaterialShaderConstants.AlphaModeVariant.AlphaOn;
 		}
 
 		var shaderResourceName = shaderConstants.GetShaderResourceName(config.EnablePerInstanceEffects, alphaModeVariant);

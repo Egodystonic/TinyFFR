@@ -120,7 +120,7 @@ class LocalDependencyTest {
 				AssertDependency(blendMap, obj);
 			}
 			// ReSharper disable AccessToDisposedClosure We know it won't be disposed
-			CheckEffectsMaterial(t => factory.MaterialBuilder.CreateSimpleMaterial(t, enablePerInstanceEffects: true), (t, c) => c.SetBlendTexture(MaterialEffectMapType.Color, t));
+			CheckEffectsMaterial(t => factory.MaterialBuilder.CreateLightingIgnoringMaterial(t, enablePerInstanceEffects: true), (t, c) => c.SetBlendTexture(MaterialEffectMapType.Color, t));
 			CheckEffectsMaterial(t => factory.MaterialBuilder.CreateStandardMaterial(t, enablePerInstanceEffects: true), (t, c) => c.SetBlendTexture(MaterialEffectMapType.Color, t));
 			CheckEffectsMaterial(t => factory.MaterialBuilder.CreateStandardMaterial(t, ormOrOrmrMap: t, enablePerInstanceEffects: true), (t, c) => c.SetBlendTexture(MaterialEffectMapType.OcclusionRoughnessMetallic, t));
 			CheckEffectsMaterial(t => factory.MaterialBuilder.CreateStandardMaterial(t, emissiveMap: t, enablePerInstanceEffects: true), (t, c) => c.SetBlendTexture(MaterialEffectMapType.Emissive, t));

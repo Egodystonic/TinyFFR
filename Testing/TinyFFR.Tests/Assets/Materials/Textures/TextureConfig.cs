@@ -1,6 +1,7 @@
 ﻿// Created on 2025-09-15 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2025
 
+using Egodystonic.TinyFFR.Rendering;
 using static Egodystonic.TinyFFR.ConfigStructTestUtils;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
@@ -217,6 +218,7 @@ class TextureConfigTest {
 			GenerateMipMaps = true,
 			IsLinearColorspace = true,
 			AllowsDynamicWrites = false,
+			RenderingConfig = new(true, true, Quality.High),
 			Name = "Aa Aa",
 			ProcessingToApply = new TextureProcessingConfig {
 				FlipX = false,
@@ -235,6 +237,7 @@ class TextureConfigTest {
 			GenerateMipMaps = false,
 			IsLinearColorspace = false,
 			AllowsDynamicWrites = true,
+			RenderingConfig = new(false, false, Quality.Low),
 			Name = "BBBbbb",
 			ProcessingToApply = new TextureProcessingConfig {
 				FlipX = true,
@@ -254,6 +257,7 @@ class TextureConfigTest {
 			Assert.AreEqual(expected.GenerateMipMaps, actual.GenerateMipMaps);
 			Assert.AreEqual(expected.IsLinearColorspace, actual.IsLinearColorspace);
 			Assert.AreEqual(expected.AllowsDynamicWrites, actual.AllowsDynamicWrites);
+			Assert.AreEqual(expected.RenderingConfig, actual.RenderingConfig);
 			Assert.AreEqual(expected.Name.ToString(), actual.Name.ToString());
 			Assert.AreEqual(expected.ProcessingToApply, actual.ProcessingToApply);
 		}
@@ -265,6 +269,9 @@ class TextureConfigTest {
 			.Bool(true)
 			.Bool(true)
 			.Bool(false)
+			.Bool(true)
+			.Bool(true)
+			.Int(1)
 			.String("Aa Aa")
 			.SubConfig(testConfigA.ProcessingToApply)
 			.For(testConfigA);
@@ -273,6 +280,9 @@ class TextureConfigTest {
 			.Bool(false)
 			.Bool(false)
 			.Bool(true)
+			.Bool(false)
+			.Bool(false)
+			.Int(-1)
 			.String("BBBbbb")
 			.SubConfig(testConfigB.ProcessingToApply)
 			.For(testConfigB);
@@ -281,6 +291,7 @@ class TextureConfigTest {
 			.Including(nameof(TextureCreationConfig.GenerateMipMaps))
 			.Including(nameof(TextureCreationConfig.IsLinearColorspace))
 			.Including(nameof(TextureCreationConfig.AllowsDynamicWrites))
+			.Including(nameof(TextureCreationConfig.RenderingConfig))
 			.Including(nameof(TextureCreationConfig.Name))
 			.Including(nameof(TextureCreationConfig.ProcessingToApply))
 			.End();

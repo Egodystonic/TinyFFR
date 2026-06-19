@@ -51,21 +51,21 @@ class MaterialConfigsTest {
 	}
 
 	[Test]
-	public void ShouldCorrectlyConvertSimpleMaterialCreationConfigToAndFromHeapStorageFormat() {
+	public void ShouldCorrectlyConvertLightingIgnoringMaterialCreationConfigToAndFromHeapStorageFormat() {
 		var colorTexImplSub = Substitute.For<ITextureImplProvider>();
 		colorTexImplSub.IsDisposed(Arg.Any<ResourceHandle<Texture>>()).Returns(false);
-		var testConfigA = new SimpleMaterialCreationConfig {
+		var testConfigA = new LightingIgnoringMaterialCreationConfig {
 			Name = "Aa Aa",
 			EnablePerInstanceEffects = true,
 			ColorMap = new Texture(111, colorTexImplSub),
 		};
-		var testConfigB = new SimpleMaterialCreationConfig {
+		var testConfigB = new LightingIgnoringMaterialCreationConfig {
 			Name = "BBBbbb",
 			EnablePerInstanceEffects = false,
 			ColorMap = new Texture(1111, colorTexImplSub),
 		};
 
-		void CompareConfigs(SimpleMaterialCreationConfig expected, SimpleMaterialCreationConfig actual) {
+		void CompareConfigs(LightingIgnoringMaterialCreationConfig expected, LightingIgnoringMaterialCreationConfig actual) {
 			Assert.AreEqual(expected.ColorMap, actual.ColorMap);
 			CompareBaseConfigs(expected.BaseConfig, actual.BaseConfig);
 		}
@@ -73,19 +73,19 @@ class MaterialConfigsTest {
 		AssertRoundTripHeapStorage(testConfigA, CompareConfigs);
 		AssertRoundTripHeapStorage(testConfigB, CompareConfigs);
 
-		AssertHeapSerializationWithObjects<SimpleMaterialCreationConfig>()
+		AssertHeapSerializationWithObjects<LightingIgnoringMaterialCreationConfig>()
 			.Resource(testConfigA.ColorMap)
 			.SubConfig(testConfigA.BaseConfig)
 			.For(testConfigA);
 
-		AssertHeapSerializationWithObjects<SimpleMaterialCreationConfig>()
+		AssertHeapSerializationWithObjects<LightingIgnoringMaterialCreationConfig>()
 			.Resource(testConfigB.ColorMap)
 			.SubConfig(testConfigB.BaseConfig)
 			.For(testConfigB);
 
-		AssertPropertiesAccountedFor<SimpleMaterialCreationConfig>()
-			.Including(nameof(SimpleMaterialCreationConfig.ColorMap))
-			.Including(nameof(SimpleMaterialCreationConfig.Name));
+		AssertPropertiesAccountedFor<LightingIgnoringMaterialCreationConfig>()
+			.Including(nameof(LightingIgnoringMaterialCreationConfig.ColorMap))
+			.Including(nameof(LightingIgnoringMaterialCreationConfig.Name));
 	}
 
 	[Test]

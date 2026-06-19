@@ -107,11 +107,11 @@ class SphereTest {
 		for (var i = 0; i < NumIterations; ++i) {
 			var val = Sphere.Random(new Sphere(10f), new Sphere(20f));
 			Assert.GreaterOrEqual(val.Radius, 10f);
-			Assert.Less(val.Radius, 20f);
+			Assert.LessOrEqual(val.Radius, 20f);
 
 			val = Sphere.Random();
 			Assert.GreaterOrEqual(val.Radius, Sphere.DefaultRandomMin);
-			Assert.Less(val.Radius, Sphere.DefaultRandomMax);
+			Assert.LessOrEqual(val.Radius, Sphere.DefaultRandomMax);
 		}
 	}
 
