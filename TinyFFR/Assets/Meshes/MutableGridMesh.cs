@@ -18,10 +18,9 @@ public readonly struct MutableGridMesh : IDisposable, IStringSpanNameEnabled, IE
 	public Direction XDir { get; }
 	public Direction YDir { get; }
 	public Direction UpDir { get; }
-	public bool HasMaxHeight { get; }
 	public Orientation2D Origin { get; }
 
-	public MutableGridMesh(Mesh underlyingMesh, XYPair<int> gridDimensions, Direction xDir, Direction yDir, Direction upDir, bool hasMaxHeight, Orientation2D origin) {
+	public MutableGridMesh(Mesh underlyingMesh, XYPair<int> gridDimensions, Direction xDir, Direction yDir, Direction upDir, Orientation2D origin) {
 		// ReSharper disable once CompareOfFloatsByEqualityOperator This is only used to help us skip using a matrix for the transform below and is not critical
 		static bool IsCardinal(Direction d) => MathF.Abs(d.X) + MathF.Abs(d.Y) + MathF.Abs(d.Z) == 1f;
 		
@@ -30,7 +29,6 @@ public readonly struct MutableGridMesh : IDisposable, IStringSpanNameEnabled, IE
 		XDir = xDir;
 		YDir = yDir;
 		UpDir = upDir;
-		HasMaxHeight = hasMaxHeight;
 		Origin = origin;
 		_directionsAllCardinal = IsCardinal(xDir) && IsCardinal(yDir) && IsCardinal(upDir);
 	}
@@ -68,7 +66,7 @@ public readonly struct MutableGridMesh : IDisposable, IStringSpanNameEnabled, IE
 	public XYPair<float> GetVertexCoordinateNormalized(int index) => GetVertexCoordinateNormalized(GetVertexCoordinate(index));
 	public XYPair<float> GetVertexCoordinateNormalized(XYPair<int> xy) {
 		var result = xy.Cast<float>() / (GridDimensions - XYPair<int>.One).Cast<float>();
-		return result - UiUtils.TranslateAnchoredCanvasOffset((2, 2), DiagonalOrientation2D.DownLeft, Origin, XYPair<int>.Zero).Cast<float>().ScaledBy(0.5f);
+		return result - UiUtils.TranslateAnchoredCanvasOffsetNormalized(DiagonalOrientation2D.DownLeft, Origin);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -129,7 +127,7 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 			}
 				
 			var gridVerts = @this._vertexBuffer.Span;
-			using var innerLease = @this.UnderlyingModelInstance.BorrowVerticesSpan(!@this.ParentGridMesh.HasMaxHeight);
+			using var innerLease = @this.UnderlyingModelInstance.BorrowVerticesSpan(false);
 			using var defaultVertsLease = @this.ParentGridMesh.UnderlyingMesh.BorrowDefaultVerticesSpan();
 			var gridDimensions = @this.ParentGridMesh.GridDimensions;
 			var gridArea = gridDimensions.Area;
@@ -140,20 +138,34 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 			var scalarOffsetPerGridStep = ((gridDimensions - XYPair<int>.One).Cast<float>().Reciprocal ?? XYPair<float>.One) * 0.5f;
 			var vectorOffsetPerGridStep = (X: xDir * scalarOffsetPerGridStep.X, Y: yDir * scalarOffsetPerGridStep.Y);
 			
-			for (var y = 0; y < gridDimensions.Y; ++y) {
-				for (var x = 0; x < gridDimensions.X; ++x) {
-					var index = gridDimensions.Index(x, y);
-					
-					innerLease.Span[index] = innerLease.Span[index] with {
-						Location = defaultVertsLease.Span[index].Location
-							+ (vectorOffsetPerGridStep.X * gridVerts[index].NormalizedLateralOffset.X)
-							+ (vectorOffsetPerGridStep.Y * gridVerts[index].NormalizedLateralOffset.Y)
-							+ (upDir * gridVerts[index].Height)
-					};
-					if (isTwoSided) { // Branch predictor should hopefully be able to elide this branch as the condition never changes once we enter the loop
+			if (isTwoSided) {
+				for (var y = 0; y < gridDimensions.Y; ++y) {
+					for (var x = 0; x < gridDimensions.X; ++x) {
+						var index = gridDimensions.Index(x, y);
+						
+						innerLease.Span[index] = innerLease.Span[index] with {
+							Location = defaultVertsLease.Span[index].Location
+								+ (vectorOffsetPerGridStep.X * gridVerts[index].NormalizedLateralOffset.X)
+								+ (vectorOffsetPerGridStep.Y * gridVerts[index].NormalizedLateralOffset.Y)
+								+ (upDir * gridVerts[index].Height)
+						};
 						innerLease.Span[index + gridArea] = innerLease.Span[index + gridArea] with { Location = innerLease.Span[index].Location };
-					}
-				}	
+					}	
+				}
+			}
+			else {
+				for (var y = 0; y < gridDimensions.Y; ++y) {
+					for (var x = 0; x < gridDimensions.X; ++x) {
+						var index = gridDimensions.Index(x, y);
+						
+						innerLease.Span[index] = innerLease.Span[index] with {
+							Location = defaultVertsLease.Span[index].Location
+								+ (vectorOffsetPerGridStep.X * gridVerts[index].NormalizedLateralOffset.X)
+								+ (vectorOffsetPerGridStep.Y * gridVerts[index].NormalizedLateralOffset.Y)
+								+ (upDir * gridVerts[index].Height)
+						};
+					}	
+				}
 			}
 		}
 		
@@ -164,24 +176,35 @@ public readonly struct MutableGridInstance : IDisposable, IStringSpanNameEnabled
 			}
 				
 			var gridVerts = @this._vertexBuffer.Span;
-			using var innerLease = @this.UnderlyingModelInstance.BorrowVerticesSpan(!@this.ParentGridMesh.HasMaxHeight);
+			using var innerLease = @this.UnderlyingModelInstance.BorrowVerticesSpan(false);
 			using var defaultVertsLease = @this.ParentGridMesh.UnderlyingMesh.BorrowDefaultVerticesSpan();
 			var gridDimensions = @this.ParentGridMesh.GridDimensions;
 			var gridArea = gridDimensions.Area;
 			var isTwoSided = defaultVertsLease.Span.Length == gridArea * 2;
 			var upDir = @this.ParentGridMesh.UpDir;
 			
-			for (var y = 0; y < gridDimensions.Y; ++y) {
-				for (var x = 0; x < gridDimensions.X; ++x) {
-					var index = gridDimensions.Index(x, y);
-					
-					innerLease.Span[index] = innerLease.Span[index] with {
-						Location = defaultVertsLease.Span[index].Location + (upDir * gridVerts[index].Height)
-					};
-					if (isTwoSided) { // Branch predictor should hopefully be able to elide this branch as the condition never changes once we enter the loop
+			if (isTwoSided) {
+				for (var y = 0; y < gridDimensions.Y; ++y) {
+					for (var x = 0; x < gridDimensions.X; ++x) {
+						var index = gridDimensions.Index(x, y);
+						
+						innerLease.Span[index] = innerLease.Span[index] with {
+							Location = defaultVertsLease.Span[index].Location + (upDir * gridVerts[index].Height)
+						};
 						innerLease.Span[index + gridArea] = innerLease.Span[index + gridArea] with { Location = innerLease.Span[index].Location };
-					}
-				}	
+					}	
+				}
+			}
+			else {
+				for (var y = 0; y < gridDimensions.Y; ++y) {
+					for (var x = 0; x < gridDimensions.X; ++x) {
+						var index = gridDimensions.Index(x, y);
+						
+						innerLease.Span[index] = innerLease.Span[index] with {
+							Location = defaultVertsLease.Span[index].Location + (upDir * gridVerts[index].Height)
+						};
+					}	
+				}
 			}
 		}
 		

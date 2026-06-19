@@ -21,12 +21,7 @@ public readonly struct QuadMesh : IDisposable, IStringSpanNameEnabled, IEquatabl
 		
 		var rotation = Rotation.FromStartAndEndOrientation(Direction.Forward, Direction.Up, facingDirection, uprightDirection ?? Direction.Up);
 		
-		var translatedAnchorPoint = UiUtils.TranslateAnchoredCanvasOffset(
-			XYPair<int>.One * 2, 
-			DiagonalOrientation2D.DownLeft, 
-			positionAnchor, 
-			XYPair<int>.Zero
-		).Cast<float>() * size * -0.5f;
+		var translatedAnchorPoint = UiUtils.TranslateAnchoredCanvasOffsetNormalized(DiagonalOrientation2D.DownLeft, positionAnchor) * -size;
 		
 		return new Transform(
 			translation: (new Vect(translatedAnchorPoint.X, translatedAnchorPoint.Y, 0f) * rotation) + position.AsVect(),

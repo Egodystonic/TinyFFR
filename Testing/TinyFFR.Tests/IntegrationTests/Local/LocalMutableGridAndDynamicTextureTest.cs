@@ -71,13 +71,11 @@ class LocalMutableGridAndDynamicTextureTest {
 			
 			mesh = factory.MeshBuilder.CreateMutableGridMesh(
 				Dimensions,
-				twoSided,
-				flipX ? -IMeshBuilder.DefaultMutableGridMeshXDir : IMeshBuilder.DefaultMutableGridMeshXDir,
-				flipY ? -IMeshBuilder.DefaultMutableGridMeshYDir : IMeshBuilder.DefaultMutableGridMeshYDir,
-				flipUp ? -IMeshBuilder.DefaultMutableGridMeshUpDir : IMeshBuilder.DefaultMutableGridMeshUpDir,
-				null,
-				origin,
-				100f
+				twoSided: twoSided,
+				xDir: flipX ? -IMeshBuilder.DefaultMutableGridMeshXDir : IMeshBuilder.DefaultMutableGridMeshXDir,
+				yDir: flipY ? -IMeshBuilder.DefaultMutableGridMeshYDir : IMeshBuilder.DefaultMutableGridMeshYDir,
+				upDir: flipUp ? -IMeshBuilder.DefaultMutableGridMeshUpDir : IMeshBuilder.DefaultMutableGridMeshUpDir,
+				gridOrigin: origin
 			);
 			instance = factory.ObjectBuilder.CreateMutableGridInstance(mesh.Value, useUvMap ? testMat : mat);
 			scene.Add(instance.Value);

@@ -56,6 +56,7 @@ class LocalQuadTest {
 			DefaultCameraInputHandler.Progress(camController, dt);
 			
 			void UpdateInst(QuadInstance q) {
+				var posAnchor = Random.Shared.GetItems(Enum.GetValues<Orientation2D>(), 1)[0];
 				inst = q;
 				scene.Remove(twoSidedInvertQuadInst);
 				scene.Remove(oneSidedInvertQuadInst);
@@ -65,7 +66,8 @@ class LocalQuadTest {
 					position: camera.Position + camera.ViewDirection * 1f,
 					size: size,
 					facingDirection: -camera.ViewDirection,
-					uprightDirection: Direction.Up
+					uprightDirection: Direction.Up,
+					positionAnchor: posAnchor
 				);
 				if (inst == null) return; 
 				scene.Add(inst.Value);
@@ -74,7 +76,7 @@ class LocalQuadTest {
 				if (inst.Value == oneSidedInvertQuadInst) instName = "One-sided with inverted rear";
 				if (inst.Value == twoSidedNonInvertQuadInst) instName = "Two-sided with non-inverted rear";
 				if (inst.Value == oneSidedNonInvertQuadInst) instName = "One-sided with non-inverted rear";
-				window.SetTitle(instName + " @ " + size);
+				window.SetTitle(instName + ": " + size + " @ " + posAnchor);
 			}
 			
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) {
