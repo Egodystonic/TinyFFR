@@ -20,7 +20,7 @@ namespace Egodystonic.TinyFFR;
 class LocalMutableGridAndDynamicTextureTest {
 	static readonly XYPair<int> Dimensions = (128, 128);
 	const float MaxHeight = 0.05f;
-	const float LateralPhaseNumVerticesMutatedPerSec = 100f;
+	const float LateralPhaseNumVerticesMutatedPerSec = 300f;
 	
 	[SetUp]
 	public void SetUpTest() {
@@ -51,6 +51,8 @@ class LocalMutableGridAndDynamicTextureTest {
 		using var mat = factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(texture);
 		using var testMat = factory.MaterialBuilder.CreateTestMaterial(ignoresLighting: true);
 		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
+		using var sunlight = factory.LightBuilder.CreateDirectionalLight(new Direction(-0.2f, -1f, 0f), brightness: 0.5f);
+		scene.Add(sunlight);
 		
 		var flipX = false;
 		var flipY = false;
@@ -186,5 +188,7 @@ class LocalMutableGridAndDynamicTextureTest {
 			instance.Value.Dispose();
 			mesh!.Value.Dispose();
 		}
+		
+		scene.Remove(sunlight);
 	}
 }
