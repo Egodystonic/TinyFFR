@@ -54,8 +54,27 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		TextureBuilder = texBuilderRef;
 		_testMaterialTexturesRef = testMaterialTexturesRef;
 	}
-
 	
+	public Material AllocatePrimitiveMaterialInstance(PrimitiveMaterialShaderConstants.ShadingModeVariant shadingMode) {
+		ThrowIfThisIsDisposed();
+		
+		var shaderConstants = PrimitiveMaterialShader;
+
+		var shaderResourceName = shaderConstants.GetShaderResourceName(shadingMode);
+		var result = InstantiateMaterial(shaderResourceName, ReadOnlySpan<char>.Empty, shaderConstants);
+		SetPrimitiveMaterialBaseColor(result, ColorVect.White);
+
+		return result;
+	}
+	public bool IsPrimitiveMaterial(Material material) {
+		var handle = material.GetHandleWithoutDisposeCheck();
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return ReferenceEquals(_activeMaterials[handle].PackageConstants, PrimitiveMaterialShader);
+	}
+	public void SetPrimitiveMaterialBaseColor(Material material, ColorVect color) {
+		ThrowIfThisOrHandleIsDisposed(material.GetHandleWithoutDisposeCheck());
+		ApplyMaterialParam(material, color.AsVector4, PrimitiveMaterialShader.ParamBaseColor);
+	}
 
 	public Material CreateTestMaterial(bool ignoresLighting) {
 		ThrowIfThisIsDisposed();
@@ -225,6 +244,7 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 
 		_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, resourceName, DefaultMaterialName);
 		_activeMaterials.Add(handle, new MaterialData(packageConstants, 0, null, null, null, null));
+		
 		return HandleToInstance(handle);
 	}
 
@@ -260,6 +280,16 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 	void ApplyMaterialParam(Material material, float? val, ReadOnlySpan<byte> param) {
 		if (!val.HasValue) return;
 		SetMaterialParameterReal(
+			material.Handle,
+			in ParamRef(param),
+			ParamLen(param),
+			val.Value
+		).ThrowIfFailure();
+	}
+	
+	void ApplyMaterialParam(Material material, Vector4? val, ReadOnlySpan<byte> param) {
+		if (!val.HasValue) return;
+		SetMaterialParameterVect(
 			material.Handle,
 			in ParamRef(param),
 			ParamLen(param),
@@ -429,6 +459,14 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		ref readonly byte utf8ParameterNameBuffer,
 		int parameterNameBufferLength,
 		float val
+	);
+	
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_material_parameter_vect")]
+	static extern InteropResult SetMaterialParameterVect(
+		UIntPtr materialHandle,
+		ref readonly byte utf8ParameterNameBuffer,
+		int parameterNameBufferLength,
+		Vector4 val
 	);
 
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_material_parameter_matrix")]

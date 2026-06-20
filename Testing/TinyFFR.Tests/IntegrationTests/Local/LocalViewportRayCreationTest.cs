@@ -101,7 +101,7 @@ class LocalViewportRayCreationTest {
 			scene.Remove(s);
 			var mat = s.Material;
 			s.Dispose();
-			mat.Dispose();
+			mat!.Value.Dispose();
 		} 
 		compositor.Dispose(); // Must precede child disposal: the group depends on its member renderers
 		foreach (var r in renderers.Values) {

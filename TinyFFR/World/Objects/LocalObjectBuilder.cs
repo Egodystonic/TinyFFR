@@ -4,6 +4,7 @@
 using System;
 using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
@@ -14,29 +15,33 @@ using Egodystonic.TinyFFR.Resources.Memory;
 namespace Egodystonic.TinyFFR.World;
 
 sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvider, IResourceDirectory<ModelInstance>, IDisposable {
-	readonly record struct ActiveModelInstanceEffectsData(Material PerInstanceEffectMaterialCopy);
 	readonly record struct LocalVertexMutationData(UIntPtr PrivateVertexBufferHandle, PooledHeapMemory<MeshVertex> CurrentVertices);
 	readonly record struct VertexLeaseData(Range Range, bool RecalculateBoundingBox);
 
 	const string DefaultModelInstanceName = "Unnamed Model Instance";
+	const LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant DefaultPrimitiveShadingMode = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Plain3D;
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	// Because these properties are set frequently, they're all kept in their own separate maps for performance
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, Transform> _activeInstanceTransforms = new();
-	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, ActiveModelInstanceEffectsData> _activeInstanceEffectsData = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, Material> _privateMaterialInstances = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, LocalVertexMutationData> _activeInstanceVertexMutationData = new();
 	readonly ResourceHandleBasedSpanLeaseTracker<MeshVertex, VertexLeaseData> _vertexLeaseTracker;
+	readonly LocalMaterialBuilder _materialBuilder;
 	bool _isDisposed = false;
 
-	public LocalObjectBuilder(LocalFactoryGlobalObjectGroup globals) {
+	public LocalObjectBuilder(LocalFactoryGlobalObjectGroup globals, LocalMaterialBuilder materialBuilder) {
 		ArgumentNullException.ThrowIfNull(globals);
 		_globals = globals;
+		_materialBuilder = materialBuilder;
 		_vertexLeaseTracker = new(null, true, globals.InEnhancedSecurityEnvironment, &HandleVertexLeaseDisposal, this);
 	}
 
-	public ModelInstance CreateModelInstance(Mesh mesh, Material material, in ModelInstanceCreationConfig config) {
+	public ModelInstance CreateModelInstance(Mesh mesh, Material? material, in ModelInstanceCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		var meshBufferData = mesh.BufferData;
 		var aabb = mesh.BoundingBox;
+		
+		var materialActual = material ?? _materialBuilder.AllocatePrimitiveMaterialInstance(DefaultPrimitiveShadingMode);
 
 		AllocateModelInstance(
 			config.InitialTransform.ToMatrix(),
@@ -45,7 +50,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			meshBufferData.IndexBufferStartIndex,
 			meshBufferData.IndexBufferCount,
 			meshBufferData.BoneCount,
-			material.Handle,
+			materialActual.Handle,
 			aabb.Position.ToVector3(),
 			new Vector3(aabb.HalfWidth, aabb.HalfHeight, aabb.HalfDepth),
 			out var handle
@@ -55,7 +60,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		_activeInstanceTransforms.Add(handle, config.InitialTransform);
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<ModelInstance>(handle).Ident, config.Name, DefaultModelInstanceName);
 		_globals.DependencyTracker.RegisterDependency(result, mesh);
-		_globals.DependencyTracker.RegisterDependency(result, material);
+		if (material != null) _globals.DependencyTracker.RegisterDependency(result, materialActual);
 
 		if (meshBufferData.BoneCount > 0) mesh.ApplySkeletalBindPose(result);
 		return result;
@@ -288,21 +293,37 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		).ThrowIfFailure();
 	}
 
-	public Material GetMaterial(ResourceHandle<ModelInstance> handle) {
+	public Material? GetMaterial(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		return _globals.DependencyTracker.GetTargetsOfGivenType<ModelInstance, Material, IMaterialImplProvider>(HandleToInstance(handle))[0];
+		var targets = _globals.DependencyTracker.GetTargetsOfGivenType<ModelInstance, Material, IMaterialImplProvider>(HandleToInstance(handle));
+		if (targets.Count > 0) return targets[0];
+		else return null;
 	}
-	public void SetMaterial(ResourceHandle<ModelInstance> handle, Material newMaterial) {
+	public void SetMaterial(ResourceHandle<ModelInstance> handle, Material? newMaterial) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-
-		SetModelInstanceMaterial(
-			handle,
-			newMaterial.Handle
-		).ThrowIfFailure();
-		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), GetMaterial(handle));
-		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMaterial);
-
-		DisposeEffectMaterialCopyIfPresent(handle);
+		
+		if (newMaterial == null) {
+			var primitiveMat = _materialBuilder.AllocatePrimitiveMaterialInstance(DefaultPrimitiveShadingMode);
+			SetModelInstanceMaterial(
+				handle,
+				primitiveMat.Handle
+			).ThrowIfFailure();
+			DisposePrivateMaterialIfPresent(handle);
+			_privateMaterialInstances[handle] = primitiveMat;
+		}
+		else {
+			SetModelInstanceMaterial(
+				handle,
+				newMaterial.Value.Handle
+			).ThrowIfFailure();	
+			_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMaterial.Value);
+			DisposePrivateMaterialIfPresent(handle);
+		}
+		
+		var oldMat = GetMaterial(handle);
+		if (oldMat != null) {
+			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), oldMat.Value);
+		}
 	}
 
 	public void SetMaterialEffectTransform(ResourceHandle<ModelInstance> handle, Transform2D newTransform) {
@@ -322,17 +343,21 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	}
 
 	Material? GetOrCreateEffectMaterialCopy(ResourceHandle<ModelInstance> handle) {
-		if (_activeInstanceEffectsData.TryGetValue(handle, out var effectsData)) return effectsData.PerInstanceEffectMaterialCopy;
+		if (_privateMaterialInstances.TryGetValue(handle, out var privateMat) && _materialBuilder.IsPrimitiveMaterial(privateMat)) {
+			return privateMat;
+		}
 
 		var curMat = GetMaterial(handle);
-		if (!curMat.SupportsPerInstanceEffects) return null;
+		if (curMat?.SupportsPerInstanceEffects != true) return null;
+		
+		DisposePrivateMaterialIfPresent(handle);
 
-		var result = curMat.Duplicate();
+		var result = curMat.Value.Duplicate();
 		SetModelInstanceMaterial(
 			handle,
 			result.Handle
 		).ThrowIfFailure();
-		_activeInstanceEffectsData[handle] = new(result);
+		_privateMaterialInstances[handle] = result;
 		return result;
 	}
 
@@ -459,16 +484,13 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		_globals.DependencyTracker.ThrowForPrematureDisposalIfTargetHasDependents(HandleToInstance(handle));
 		_globals.DependencyTracker.DeregisterAllDependencies(HandleToInstance(handle));
 		DisposeModelInstance(handle).ThrowIfFailure();
-		DisposeEffectMaterialCopyIfPresent(handle);
+		DisposePrivateMaterialIfPresent(handle);
 		DisposeMutationDataIfPresent(handle);
 		if (removeFromMap) _activeInstanceTransforms.Remove(handle);
 	}
 	
-	void DisposeEffectMaterialCopyIfPresent(ResourceHandle<ModelInstance> handle) {
-		if (!_activeInstanceEffectsData.TryGetValue(handle, out var effectsData)) return;
-
-		effectsData.PerInstanceEffectMaterialCopy.Dispose();
-		_activeInstanceEffectsData.Remove(handle);
+	void DisposePrivateMaterialIfPresent(ResourceHandle<ModelInstance> handle) {
+		if (_privateMaterialInstances.Remove(handle, out var privateMat)) privateMat.Dispose();
 	}
 
 	void DisposeMutationDataIfPresent(ResourceHandle<ModelInstance> handle) {
@@ -483,7 +505,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			if (_isDisposed) return;
 			foreach (var kvp in _activeInstanceTransforms) Dispose(kvp.Key, removeFromMap: false);
 			_activeInstanceTransforms.Dispose();
-			_activeInstanceEffectsData.Dispose();
+			_privateMaterialInstances.Dispose();
 			_vertexLeaseTracker.Dispose();
 			_activeInstanceVertexMutationData.Dispose();
 		}

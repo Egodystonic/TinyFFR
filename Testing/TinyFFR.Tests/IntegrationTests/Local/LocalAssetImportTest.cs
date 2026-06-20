@@ -211,7 +211,7 @@ class LocalAssetImportTest {
 							colorMap: (Texture) resourcesToBeDisposed[0]
 						);
 						instance.Material = newMat;
-						prevMat.Dispose();
+						prevMat!.Value.Dispose();
 						window.SetTitle("Press Space // should be white cube");
 						break;
 					}
@@ -224,7 +224,7 @@ class LocalAssetImportTest {
 							normalMap: (Texture) resourcesToBeDisposed[^1]
 						);
 						instance.Material = newMat;
-						prevMat.Dispose();
+						prevMat!.Value.Dispose();
 						window.SetTitle("Press Space // should be white cube with weird normals");
 						break;
 					}
@@ -253,7 +253,7 @@ class LocalAssetImportTest {
 							ormOrOrmrMap: (Texture) resourcesToBeDisposed[^1]
 						);
 						instance.Material = newMat;
-						prevMat.Dispose();
+						prevMat!.Value.Dispose();
 						window.SetTitle("Press Space // should be white cube with reflectance");
 						break;
 					}
@@ -282,7 +282,7 @@ class LocalAssetImportTest {
 							refractionThickness: 1f
 						);
 						instance.Material = newMat;
-						prevMat.Dispose();
+						prevMat!.Value.Dispose();
 						window.SetTitle("Press Space // should be reddish translucent cube");
 						break;
 					}
@@ -299,7 +299,7 @@ class LocalAssetImportTest {
 							emissiveMap: (Texture) resourcesToBeDisposed[^1]
 						);
 						instance.Material = newMat;
-						prevMat.Dispose();
+						prevMat!.Value.Dispose();
 						window.SetTitle("Press Space // should be glowing cube");
 						break;
 					}
@@ -322,7 +322,7 @@ class LocalAssetImportTest {
 							anisotropyMap: (Texture) resourcesToBeDisposed[^1]
 						);
 						instance.Material = newMat;
-						prevMat.Dispose();
+						prevMat!.Value.Dispose();
 						window.SetTitle("Press Space // should be cube with anisotropic highlights");
 						break;
 					}
@@ -339,7 +339,7 @@ class LocalAssetImportTest {
 							clearCoatMap: (Texture) resourcesToBeDisposed[^1]
 						);
 						instance.Material = newMat;
-						prevMat.Dispose();
+						prevMat!.Value.Dispose();
 						window.SetTitle("Press Space // should be cube with clearcoat");
 						break;
 					}
@@ -355,7 +355,7 @@ class LocalAssetImportTest {
 		}
 		var mat = instance.Material;
 		instance.Dispose();
-		mat.Dispose();
+		mat!.Value.Dispose();
 		cube.Dispose();
 		foreach (var r in resourcesToBeDisposed) r.Dispose();
 	}

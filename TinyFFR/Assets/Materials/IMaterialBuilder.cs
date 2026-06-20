@@ -5,6 +5,7 @@ using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using System;
 using System.Xml.Linq;
+using Egodystonic.TinyFFR.Assets.Materials.Local;
 
 namespace Egodystonic.TinyFFR.Assets.Materials;
 

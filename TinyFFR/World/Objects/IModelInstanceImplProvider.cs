@@ -22,8 +22,8 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	Vect GetScaling(ResourceHandle<ModelInstance> handle);
 	void SetScaling(ResourceHandle<ModelInstance> handle, Vect newScaling);
 
-	Material GetMaterial(ResourceHandle<ModelInstance> handle);
-	void SetMaterial(ResourceHandle<ModelInstance> handle, Material newMaterial);
+	Material? GetMaterial(ResourceHandle<ModelInstance> handle);
+	void SetMaterial(ResourceHandle<ModelInstance> handle, Material? newMaterial);
 
 	Mesh GetMesh(ResourceHandle<ModelInstance> handle);
 	void SetMesh(ResourceHandle<ModelInstance> handle, Mesh newMesh);

@@ -308,6 +308,17 @@ StartExportedFunc(set_material_parameter_real, MaterialHandle material, const ch
 	native_impl_render_assets::set_material_parameter_real(material, parameterName, parameterNameLength, val);
 	EndExportedFunc
 }
+void native_impl_render_assets::set_material_parameter_vect(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, float4 val) {
+	ThrowIfNull(material, "Material was null.");
+	ThrowIfNull(parameterName, "Parameter name was null.");
+	ThrowIfNegative(parameterNameLength, "Parameter name length was negative.");
+
+	material->setParameter(parameterName, static_cast<size_t>(parameterNameLength), val);
+}
+StartExportedFunc(set_material_parameter_vect, MaterialHandle material, const char* parameterName, int32_t parameterNameLength, float4 val) {
+	native_impl_render_assets::set_material_parameter_vect(material, parameterName, parameterNameLength, val);
+	EndExportedFunc
+}
 
 void native_impl_render_assets::set_material_parameter_matrix(MaterialHandle material, const char* parameterName, int32_t parameterNameLength, mat4f& valRef) {
 	ThrowIfNull(material, "Material was null.");

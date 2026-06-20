@@ -61,14 +61,14 @@ public readonly struct QuadInstance : IDisposable, IStringSpanNameEnabled, IEqua
 		UnderlyingModelInstance = underlyingModelInstance;
 	}
 	
-	public Material Material {
+	public Material? Material {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => UnderlyingModelInstance.Material;
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => UnderlyingModelInstance.SetMaterial(value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetMaterial(Material material) => Material = material;
+	public void SetMaterial(Material? material) => Material = material;
 
 	public MaterialEffectController? MaterialEffects {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

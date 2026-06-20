@@ -3,6 +3,7 @@
 
 using System;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Assets.Meshes.Local;
 using Egodystonic.TinyFFR.Resources;
@@ -28,6 +29,11 @@ public readonly record struct MaterialEffectController {
 	public void SetBlendDistance(MaterialEffectMapType mapType, float distance) {
 		_attachedModelInstance.SetEffectBlendDistance(mapType, distance);
 	}
+}
+
+public enum PrimitiveShadingMode {
+	Plain = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Plain,
+	Plain3D = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Plain3D
 }
 
 public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModelInstanceImplProvider>, ITransformedSceneObject {
@@ -78,18 +84,18 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void SetScaling(float uniformScaling) => Scaling = new Vect(uniformScaling);
 
-	public Material Material {
+	public Material? Material {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetMaterial(_handle);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		set => Implementation.SetMaterial(_handle, value);
 	}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)] // Method can be obsoleted and ultimately removed once https://github.com/dotnet/roslyn/issues/45284 is fixed
-	public void SetMaterial(Material material) => Material = material;
+	public void SetMaterial(Material? material) => Material = material;
 
 	public MaterialEffectController? MaterialEffects {
 		get {
-			if (!Material.SupportsPerInstanceEffects) return null;
+			if (Material?.SupportsPerInstanceEffects != true) return null;
 			return new MaterialEffectController(this);
 		}
 	}
