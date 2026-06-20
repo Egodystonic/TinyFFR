@@ -61,6 +61,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<ModelInstance>(handle).Ident, config.Name, DefaultModelInstanceName);
 		_globals.DependencyTracker.RegisterDependency(result, mesh);
 		if (material != null) _globals.DependencyTracker.RegisterDependency(result, materialActual);
+		else _privateMaterialInstances[handle] = materialActual;
 
 		if (meshBufferData.BoneCount > 0) mesh.ApplySkeletalBindPose(result);
 		return result;
@@ -343,7 +344,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	}
 
 	Material? GetOrCreateEffectMaterialCopy(ResourceHandle<ModelInstance> handle) {
-		if (_privateMaterialInstances.TryGetValue(handle, out var privateMat) && _materialBuilder.IsPrimitiveMaterial(privateMat)) {
+		if (_privateMaterialInstances.TryGetValue(handle, out var privateMat) && !_materialBuilder.IsPrimitiveMaterial(privateMat)) {
 			return privateMat;
 		}
 
