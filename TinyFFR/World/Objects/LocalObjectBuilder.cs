@@ -302,7 +302,12 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	}
 	public void SetMaterial(ResourceHandle<ModelInstance> handle, Material? newMaterial) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		
+
+		var oldMat = GetMaterial(handle);
+		if (oldMat != null) {
+			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), oldMat.Value);
+		}
+
 		if (newMaterial == null) {
 			var primitiveMat = _materialBuilder.AllocatePrimitiveMaterialInstance(DefaultPrimitiveShadingMode);
 			SetModelInstanceMaterial(
@@ -316,14 +321,9 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			SetModelInstanceMaterial(
 				handle,
 				newMaterial.Value.Handle
-			).ThrowIfFailure();	
-			_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMaterial.Value);
+			).ThrowIfFailure();
 			DisposePrivateMaterialIfPresent(handle);
-		}
-		
-		var oldMat = GetMaterial(handle);
-		if (oldMat != null) {
-			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), oldMat.Value);
+			_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMaterial.Value);
 		}
 	}
 
