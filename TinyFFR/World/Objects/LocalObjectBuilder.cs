@@ -327,6 +327,12 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		}
 	}
 
+	public void SetNullMaterialBaseColor(ResourceHandle<ModelInstance> handle, ColorVect newBaseColor) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		if (!_privateMaterialInstances.TryGetValue(handle, out var primitiveMaterial)) return;
+		_materialBuilder.SetPrimitiveMaterialBaseColor(primitiveMaterial, newBaseColor);
+	}
+
 	public void SetMaterialEffectTransform(ResourceHandle<ModelInstance> handle, Transform2D newTransform) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var effectsMaterialInstance = GetOrCreateEffectMaterialCopy(handle);

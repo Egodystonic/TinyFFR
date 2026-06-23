@@ -18,10 +18,10 @@ fragment {
 		
 #option ShadingMode
 #variant Plain
-		material.postLightingColor.rgba = materialParams_base_color.rgba;
+		material.baseColor.rgba = materialParams.base_color.rgba;
 #variant Plain3D
-		material.postLightingColor.rgb = materialParams_base_color.rgb;
-		material.postLightingColor.a = materialParams_base_color.a;
+		material.baseColor.rgb = materialParams.base_color.rgb;
+		material.baseColor.a = materialParams.base_color.a;
 #endoption
 
 	}

@@ -39,6 +39,8 @@ public interface IModelInstanceImplProvider : IDisposableResourceImplProvider<Mo
 	void ScaleBy(ResourceHandle<ModelInstance> handle, Vect vect);
 	void AdjustScaleBy(ResourceHandle<ModelInstance> handle, float scalar);
 	void AdjustScaleBy(ResourceHandle<ModelInstance> handle, Vect vect);
+	
+	void SetNullMaterialBaseColor(ResourceHandle<ModelInstance> handle, ColorVect newBaseColor);
 
 	void SetMaterialEffectTransform(ResourceHandle<ModelInstance> handle, Transform2D newTransform);
 	void SetMaterialEffectBlendTexture(ResourceHandle<ModelInstance> handle, MaterialEffectMapType mapType, Texture mapTexture);

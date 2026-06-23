@@ -179,6 +179,8 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	public void ScaleBy(Vect vect) => Implementation.ScaleBy(_handle, vect);
 	public void AdjustScaleBy(float scalar) => Implementation.AdjustScaleBy(_handle, scalar);
 	public void AdjustScaleBy(Vect vect) => Implementation.AdjustScaleBy(_handle, vect);
+	
+	public void SetNullMaterialBaseColor(ColorVect baseColor) => Implementation.SetNullMaterialBaseColor(_handle, baseColor);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void SetMaterialEffectTransform(Transform2D newTransform) => Implementation.SetMaterialEffectTransform(_handle, newTransform);

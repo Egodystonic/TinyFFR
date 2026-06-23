@@ -1,0 +1,74 @@
+﻿// Created on 2024-01-22 by Ben Bowen
+// (c) Egodystonic / TinyFFR 2024
+
+using System.Diagnostics;
+using System.Numerics;
+using Egodystonic.TinyFFR.Assets.Local;
+using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Environment.Input;
+using Egodystonic.TinyFFR.Environment.Local;
+using Egodystonic.TinyFFR.Factory;
+using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Testing;
+using Egodystonic.TinyFFR.World;
+
+namespace Egodystonic.TinyFFR;
+
+[TestFixture, Explicit]
+class LocalPrimitiveRenderingTest {
+	const int NumInstances = 1000;
+	
+	[SetUp]
+	public void SetUpTest() {
+		
+	}
+
+	[TearDown]
+	public void TearDownTest() { }
+
+	[Test]
+	public void Execute() {
+		using var factory = new LocalTinyFfrFactory();
+		var display = factory.DisplayDiscoverer.Primary!.Value;
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Primitive Rendering Test");
+		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
+		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere, subdivisionLevel: 3);
+		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Starfield);
+		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
+		using var camController = camera.CreateController<InspectorCameraController>();
+		camController.MinDistance = 1f;
+		camController.MaxDistance = 2f;
+		camController.Distance = 1.5f;
+		
+		var instances = new ModelInstance[NumInstances];
+		instances[0] = factory.ObjectBuilder.CreateModelInstance(sphereMesh);
+		scene.Add(instances[0]);
+		for (var i = 1; i < NumInstances; ++i) {
+			instances[i] = factory.ObjectBuilder.CreateModelInstance(sphereMesh, initialScaling: new(0.1f), initialPosition: Location.Origin + Direction.Random() * RandomUtils.NextSingle(2f, 10f));
+			scene.Add(instances[i]);
+		}
+
+		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
+		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Escape)) {
+			var dt = loop.IterateOnce().AsDeltaTime();
+
+			DefaultCameraInputHandler.TickKbm(loop.Input.KeyboardAndMouse, camController, dt, window);
+			DefaultCameraInputHandler.TickGamepad(loop.Input.GameControllersCombined, camController, dt);
+			DefaultCameraInputHandler.Progress(camController, dt);
+			
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
+				for (var i = 0; i < NumInstances; ++i) {
+					instances[i].SetNullMaterialBaseColor(ColorVect.Random());
+				}
+			}
+			
+			renderer.Render();
+		}
+
+		for (var i = 0; i < NumInstances; ++i) {
+			scene.Remove(instances[i]);
+			instances[i].Dispose();
+		}
+	}
+}
