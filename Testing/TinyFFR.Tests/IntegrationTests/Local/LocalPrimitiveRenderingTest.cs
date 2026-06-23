@@ -10,6 +10,7 @@ using Egodystonic.TinyFFR.Environment.Input;
 using Egodystonic.TinyFFR.Environment.Local;
 using Egodystonic.TinyFFR.Factory;
 using Egodystonic.TinyFFR.Factory.Local;
+using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Testing;
 using Egodystonic.TinyFFR.World;
 
@@ -17,7 +18,7 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalPrimitiveRenderingTest {
-	const int NumInstances = 1000;
+	const int NumInstances = 10000;
 	
 	[SetUp]
 	public void SetUpTest() {
@@ -29,7 +30,7 @@ class LocalPrimitiveRenderingTest {
 
 	[Test]
 	public void Execute() {
-		using var factory = new LocalTinyFfrFactory();
+		using var factory = new LocalTinyFfrFactory(rendererBuilderConfig: new RendererBuilderConfig { EnableVSync = false });
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Primitive Rendering Test");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
@@ -38,14 +39,16 @@ class LocalPrimitiveRenderingTest {
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		using var camController = camera.CreateController<InspectorCameraController>();
 		camController.MinDistance = 1f;
-		camController.MaxDistance = 2f;
+		camController.MaxDistance = 4f;
 		camController.Distance = 1.5f;
 		
 		var instances = new ModelInstance[NumInstances];
 		instances[0] = factory.ObjectBuilder.CreateModelInstance(sphereMesh);
+		instances[0].SetNullMaterialBaseColor(ColorVect.RandomOpaque());
 		scene.Add(instances[0]);
 		for (var i = 1; i < NumInstances; ++i) {
-			instances[i] = factory.ObjectBuilder.CreateModelInstance(sphereMesh, initialScaling: new(0.1f), initialPosition: Location.Origin + Direction.Random() * RandomUtils.NextSingle(2f, 10f));
+			instances[i] = factory.ObjectBuilder.CreateModelInstance(sphereMesh, initialScaling: new(0.3f), initialPosition: Location.Origin + Direction.Random() * RandomUtils.NextSingle(5f, 150f));
+			instances[i].SetNullMaterialBaseColor(ColorVect.Random().WithPremultipliedAlpha());
 			scene.Add(instances[i]);
 		}
 
@@ -59,10 +62,21 @@ class LocalPrimitiveRenderingTest {
 			
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
 				for (var i = 0; i < NumInstances; ++i) {
-					instances[i].SetNullMaterialBaseColor(ColorVect.Random());
+					instances[i].SetNullMaterialBaseColor(ColorVect.Random().WithPremultipliedAlpha());
+				}
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0)) {
+				for (var i = 0; i < NumInstances; ++i) {
+					instances[i].SetNullMaterialShadingStyle(NullMaterialShadingStyle.Plain);
+				}
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) {
+				for (var i = 0; i < NumInstances; ++i) {
+					instances[i].SetNullMaterialShadingStyle(NullMaterialShadingStyle.Plain3D);
 				}
 			}
 			
+			window.SetTitle(loop.FramesPerSecondRecentAverage.ToString("N0"));
 			renderer.Render();
 		}
 

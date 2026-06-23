@@ -1,6 +1,6 @@
 ﻿material {
 	name : %NAME%,
-	requires : [ ],
+	requires : [ tangents ],
 	parameters : [
 		{
 			type : float4,
@@ -20,7 +20,8 @@ fragment {
 #variant Plain
 		material.baseColor.rgba = materialParams.base_color.rgba;
 #variant Plain3D
-		material.baseColor.rgb = materialParams.base_color.rgb;
+        float dot = clamp(dot(getWorldGeometricNormalVector(), getWorldViewVector()), 0.0, 1.0);
+		material.baseColor.rgb = materialParams.base_color.rgb * (0.25 + (0.75 * (dot * dot)));
 		material.baseColor.a = materialParams.base_color.a;
 #endoption
 

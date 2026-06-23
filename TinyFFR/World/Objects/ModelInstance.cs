@@ -31,9 +31,9 @@ public readonly record struct MaterialEffectController {
 	}
 }
 
-public enum PrimitiveShadingMode {
-	Plain = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Plain,
-	Plain3D = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Plain3D
+public enum NullMaterialShadingStyle {
+	Plain3D = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Plain3D,
+	Plain = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Plain
 }
 
 public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModelInstanceImplProvider>, ITransformedSceneObject {
@@ -181,6 +181,7 @@ public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModel
 	public void AdjustScaleBy(Vect vect) => Implementation.AdjustScaleBy(_handle, vect);
 	
 	public void SetNullMaterialBaseColor(ColorVect baseColor) => Implementation.SetNullMaterialBaseColor(_handle, baseColor);
+	public void SetNullMaterialShadingStyle(NullMaterialShadingStyle style) => Implementation.SetNullMaterialShadingStyle(_handle, style);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void SetMaterialEffectTransform(Transform2D newTransform) => Implementation.SetMaterialEffectTransform(_handle, newTransform);

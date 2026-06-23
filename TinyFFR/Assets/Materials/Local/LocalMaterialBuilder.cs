@@ -55,21 +55,16 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		_testMaterialTexturesRef = testMaterialTexturesRef;
 	}
 	
-	public Material AllocatePrimitiveMaterialInstance(PrimitiveMaterialShaderConstants.ShadingModeVariant shadingMode) {
+	public Material AllocatePrimitiveMaterialInstance(PrimitiveMaterialShaderConstants.ShadingModeVariant shadingMode, ColorVect baseColor) {
 		ThrowIfThisIsDisposed();
 		
 		var shaderConstants = PrimitiveMaterialShader;
 
 		var shaderResourceName = shaderConstants.GetShaderResourceName(shadingMode);
 		var result = InstantiateMaterial(shaderResourceName, ReadOnlySpan<char>.Empty, shaderConstants);
-		SetPrimitiveMaterialBaseColor(result, ColorVect.White);
+		SetPrimitiveMaterialBaseColor(result, baseColor);
 
 		return result;
-	}
-	public bool IsPrimitiveMaterial(Material material) {
-		var handle = material.GetHandleWithoutDisposeCheck();
-		ThrowIfThisOrHandleIsDisposed(handle);
-		return ReferenceEquals(_activeMaterials[handle].PackageConstants, PrimitiveMaterialShader);
 	}
 	public void SetPrimitiveMaterialBaseColor(Material material, ColorVect color) {
 		ThrowIfThisOrHandleIsDisposed(material.GetHandleWithoutDisposeCheck());
