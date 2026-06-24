@@ -8,6 +8,7 @@ namespace Egodystonic.TinyFFR.Assets.Meshes;
 
 public interface IMeshImplProvider : IDisposableResourceImplProvider<Mesh> {
 	MeshBufferData GetBufferData(ResourceHandle<Mesh> handle);
+	MeshBufferData? GetWireframeBufferData(ResourceHandle<Mesh> handle);
 	PositionedCuboid GetBoundingBox(ResourceHandle<Mesh> handle);
 	bool GetAllowsPerInstanceVertexMutation(ResourceHandle<Mesh> handle);
 	ScopedReadOnlySpanLease<MeshVertex> BorrowDefaultVerticesSpan(ResourceHandle<Mesh> handle, Range range);

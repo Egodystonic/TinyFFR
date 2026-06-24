@@ -22,6 +22,11 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 		get => Implementation.GetBufferData(_handle);
 	}
 
+	internal MeshBufferData? WireframeBufferData {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Implementation.GetWireframeBufferData(_handle);
+	}
+
 	public PositionedCuboid BoundingBox {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetBoundingBox(_handle);

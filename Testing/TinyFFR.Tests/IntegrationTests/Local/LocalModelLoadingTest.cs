@@ -124,7 +124,11 @@ class LocalModelLoadingTest {
 				if (curFileIndex >= _filesToLoad.Length) curFileIndex = 0;
 
 				Console.WriteLine(_filesToLoad[curFileIndex]);
-				loadedResources = factory.AssetLoader.LoadAll(CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), new ModelCreationConfig(), new ModelReadConfig() { MeshConfig = new() { LoadSkeletalAnimationDataIfPresent = false, CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true });
+				loadedResources = factory.AssetLoader.LoadAll(
+					CommonTestAssets.FindAsset("models/" + _filesToLoad[curFileIndex]), 
+					new ModelCreationConfig() { MeshConfig = new() { GenerateWireframeData = true }}, 
+					new ModelReadConfig() { MeshConfig = new() { LoadSkeletalAnimationDataIfPresent = false, CorrectFlippedOrientation = true }, HandleUriEscapedStrings = true }
+				);
 				Console.WriteLine("\tMeshes:");
 				foreach (var mesh in loadedResources.Value.Meshes) {
 					Console.WriteLine("\t\t" + mesh);
@@ -153,6 +157,23 @@ class LocalModelLoadingTest {
 			}
 			if (loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Z)) {
 				modelInstances?.RotateBy((90f * deltaTime) % Direction.Forward);
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.W)) {
+				if (modelInstances?.Instances is { } enumerable) {
+					foreach (var inst in enumerable) {
+						inst.SetMaterial(null);
+						inst.SetNullMaterialShadingStyle(NullMaterialShadingStyle.Wireframe);
+						inst.SetNullMaterialBaseColor(ColorVect.RandomOpaque());
+					}
+				}
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.P)) {
+				if (modelInstances?.Instances is { } enumerable) {
+					foreach (var inst in enumerable) {
+						inst.SetMaterial(null);
+						inst.SetNullMaterialBaseColor(ColorVect.RandomOpaque());
+					}
+				}
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.L)) {
 				lightBrightnessStage++;

@@ -371,7 +371,8 @@ static class LocalShaderPackageConstants {
 	public sealed class PrimitiveMaterialShaderConstants : IShaderPackageConstants {
 		public enum ShadingModeVariant {
 			Plain,
-			Plain3D
+			Plain3D,
+			Wireframe
 		}
 
 		readonly ArrayPoolBackedMap<ShadingModeVariant, string> _resourceNameMap;
@@ -380,7 +381,7 @@ static class LocalShaderPackageConstants {
 			const string ShaderNameStart = ResourceNamespace + "primitive";
 			const string ShadingModeVariantStart = "_shadingmode=";
 			const ShadingModeVariant FirstShadingMode = ShadingModeVariant.Plain;
-			const ShadingModeVariant LastShadingMode = ShadingModeVariant.Plain3D;
+			const ShadingModeVariant LastShadingMode = ShadingModeVariant.Wireframe;
 			
 			_resourceNameMap = new();
 
@@ -396,6 +397,7 @@ static class LocalShaderPackageConstants {
 					vShadingMode switch {
 						ShadingModeVariant.Plain => "plain",
 						ShadingModeVariant.Plain3D => "plain3d",
+						ShadingModeVariant.Wireframe => "wireframe",
 						_ => throw new ArgumentOutOfRangeException()
 					}
 				);

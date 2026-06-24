@@ -30,11 +30,11 @@ class LocalPrimitiveRenderingTest {
 
 	[Test]
 	public void Execute() {
-		using var factory = new LocalTinyFfrFactory(rendererBuilderConfig: new RendererBuilderConfig { EnableVSync = false });
+		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Primitive Rendering Test");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
-		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere, subdivisionLevel: 3);
+		using var sphereMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, centreTextureOrigin: false, config: new MeshCreationConfig { GenerateWireframeData = true }, generationConfig: new());
 		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Starfield);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		using var camController = camera.CreateController<InspectorCameraController>();
@@ -73,6 +73,11 @@ class LocalPrimitiveRenderingTest {
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) {
 				for (var i = 0; i < NumInstances; ++i) {
 					instances[i].SetNullMaterialShadingStyle(NullMaterialShadingStyle.Plain3D);
+				}
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) {
+				for (var i = 0; i < NumInstances; ++i) {
+					instances[i].SetNullMaterialShadingStyle(NullMaterialShadingStyle.Wireframe);
 				}
 			}
 			

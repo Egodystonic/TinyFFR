@@ -189,12 +189,20 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		ThrowIfThisOrHandleIsDisposed(handle);
 		var meshBufferData = newMesh.BufferData;
 		var aabb = newMesh.BoundingBox;
+
+		var geometry = meshBufferData;
+		if (_privateMaterialInstances.TryGetValue(handle, out var privateMaterialData)
+			&& privateMaterialData.IsPrimitive
+			&& privateMaterialData.CurrentShadingMode == ShadingModeVariant.Wireframe
+			&& newMesh.WireframeBufferData is { } newWireframeData) {
+			geometry = newWireframeData;
+		}
 		SetModelInstanceMesh(
 			handle,
-			meshBufferData.VertexBufferHandle,
-			meshBufferData.IndexBufferHandle,
-			meshBufferData.IndexBufferStartIndex,
-			meshBufferData.IndexBufferCount
+			geometry.VertexBufferHandle,
+			geometry.IndexBufferHandle,
+			geometry.IndexBufferStartIndex,
+			geometry.IndexBufferCount
 		).ThrowIfFailure();
 		SetModelInstanceAabb(
 			handle,
@@ -340,7 +348,18 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (!_privateMaterialInstances.TryGetValue(handle, out var privateMaterialData) || !privateMaterialData.IsPrimitive) return;
 		var newShadingMode = (ShadingModeVariant) newStyle;
-		if (newShadingMode == privateMaterialData.CurrentShadingMode) return;
+		var oldShadingMode = privateMaterialData.CurrentShadingMode;
+		if (newShadingMode == oldShadingMode) return;
+
+		if (newShadingMode == ShadingModeVariant.Wireframe) {
+			var wireframeData = GetMesh(handle).WireframeBufferData;
+			if (wireframeData == null) return;
+			SetInstanceGeometry(handle, wireframeData.Value);
+		}
+		else if (oldShadingMode == ShadingModeVariant.Wireframe) {
+			RestoreInstanceNonWireframeGeometry(handle);
+		}
+
 		var replacementMaterial = _materialBuilder.AllocatePrimitiveMaterialInstance(newShadingMode, privateMaterialData.BaseColor);
 		SetModelInstanceMaterial(
 			handle,
@@ -348,6 +367,30 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		).ThrowIfFailure();
 		privateMaterialData.Material.Dispose();
 		_privateMaterialInstances[handle] = privateMaterialData with { Material = replacementMaterial, CurrentShadingMode = newShadingMode };
+	}
+
+	void SetInstanceGeometry(ResourceHandle<ModelInstance> handle, MeshBufferData bufferData) {
+		SetModelInstanceMesh(
+			handle,
+			bufferData.VertexBufferHandle,
+			bufferData.IndexBufferHandle,
+			bufferData.IndexBufferStartIndex,
+			bufferData.IndexBufferCount
+		).ThrowIfFailure();
+	}
+
+	void RestoreInstanceNonWireframeGeometry(ResourceHandle<ModelInstance> handle) {
+		var meshBufferData = GetMesh(handle).BufferData;
+		var vertexBufferHandle = _activeInstanceVertexMutationData.TryGetValue(handle, out var mutationData)
+			? mutationData.PrivateVertexBufferHandle
+			: (UIntPtr) meshBufferData.VertexBufferHandle;
+		SetModelInstanceMesh(
+			handle,
+			vertexBufferHandle,
+			meshBufferData.IndexBufferHandle,
+			meshBufferData.IndexBufferStartIndex,
+			meshBufferData.IndexBufferCount
+		).ThrowIfFailure();
 	}
 
 	public void SetMaterialEffectTransform(ResourceHandle<ModelInstance> handle, Transform2D newTransform) {

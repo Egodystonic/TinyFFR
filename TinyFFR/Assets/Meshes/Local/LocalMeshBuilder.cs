@@ -28,6 +28,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	readonly ResourceHandleBasedSpanLeaseTracker<MeshVertex> _mutableVertexLeaseTracker;
 	readonly ArrayPoolBackedMap<ResourceHandle<VertexBuffer>, int> _vertexBufferRefCounts = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<IndexBuffer>, int> _indexBufferRefCounts = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, MeshBufferData> _wireframeBuffers = new();
 	readonly ObjectPool<LocalMeshPolygonGroup, LocalMeshBuilder> _meshPolyGroupPool;
 	readonly ObjectPool<LocalMeshAnimationTable, LocalMeshBuilder> _meshAnimationTablePool;
 	readonly ArrayPoolBackedMap<ResourceHandle<Mesh>, LocalMeshAnimationTable> _activeMeshAnimationTables = new();
@@ -136,6 +137,9 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		if (config.AllowsPerInstanceVertexMutation && typeof(TVertex) != typeof(MeshVertex)) {
 			throw new ArgumentException($"Per-instance vertex mutation is only supported for non-skeletal meshes.", nameof(config));
 		}
+		if (config.GenerateWireframeData && typeof(TVertex) != typeof(MeshVertex)) {
+			throw new ArgumentException($"Wireframe data generation is only supported for non-skeletal meshes.", nameof(config));
+		}
 		
 		for (var i = 0; i < triangles.Length; ++i) {
 			CheckTriangleIndex('A', i, triangles[i].IndexA, vertices.Length);
@@ -199,6 +203,10 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 
 		AllocateIndexBuffer(tempIndexBuffer.BufferIdentity, (VertexTriangle*) tempIndexBuffer.DataPtr, indexBufferCount, out var ibHandle).ThrowIfFailure();
 
+		if (config.GenerateWireframeData) {
+			GenerateAndStoreWireframeBuffers(handle, tempVertexBuffer.AsSpan<MeshVertex>(), tempIndexBuffer.AsSpan<int>(), triangles.Length, indexBufferCount);
+		}
+
 		_vertexBufferRefCounts.Add(vbHandle, 1);
 		_indexBufferRefCounts.Add(ibHandle, 1);
 		_activeMeshes.Add(handle, new(new MeshBufferData(vbHandle, ibHandle, 0, indexBufferCount, boneCount), boundingBox));
@@ -209,6 +217,38 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 	public MeshBufferData GetBufferData(ResourceHandle<Mesh> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return _activeMeshes[handle].BufferData;
+	}
+
+	public MeshBufferData? GetWireframeBufferData(ResourceHandle<Mesh> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _wireframeBuffers.TryGetValue(handle, out var data) ? data : null;
+	}
+
+	void GenerateAndStoreWireframeBuffers(ResourceHandle<Mesh> handle, ReadOnlySpan<MeshVertex> sourceVertices, ReadOnlySpan<int> sourceIndices, int triangleCount, int wireframeVertexCount) {
+		using var wfVertsLease = _globals.HeapPool.Borrow<MeshVertexPrimitive>(wireframeVertexCount);
+		using var wfTrisLease = _globals.HeapPool.Borrow<VertexTriangle>(triangleCount);
+		var wfVerts = wfVertsLease.Span;
+		var wfTris = wfTrisLease.Span;
+
+		for (var t = 0; t < triangleCount; ++t) {
+			for (var corner = 0; corner < 3; ++corner) {
+				var srcVertex = sourceVertices[sourceIndices[t * 3 + corner]];
+				var barycentric = corner switch {
+					0 => new Vector4(1f, 0f, 0f, 1f),
+					1 => new Vector4(0f, 1f, 0f, 1f),
+					_ => new Vector4(0f, 0f, 1f, 1f)
+				};
+				wfVerts[t * 3 + corner] = new MeshVertexPrimitive(srcVertex.Location, barycentric, srcVertex.TangentRotation);
+			}
+			wfTris[t] = new VertexTriangle(t * 3, t * 3 + 1, t * 3 + 2);
+		}
+
+		var wfVertexBuffer = _globals.CreateGpuHoldingBufferAndCopyData<MeshVertexPrimitive>(wfVerts);
+		AllocateVertexBufferPrimitive(wfVertexBuffer.BufferIdentity, (MeshVertexPrimitive*) wfVertexBuffer.DataPtr, wireframeVertexCount, out var wfVbHandle).ThrowIfFailure();
+		var wfIndexBuffer = _globals.CreateGpuHoldingBufferAndCopyData<VertexTriangle>(wfTris);
+		AllocateIndexBuffer(wfIndexBuffer.BufferIdentity, (VertexTriangle*) wfIndexBuffer.DataPtr, wireframeVertexCount, out var wfIbHandle).ThrowIfFailure();
+
+		_wireframeBuffers.Add(handle, new MeshBufferData(wfVbHandle, wfIbHandle, 0, wireframeVertexCount, 0));
 	}
 
 	public PositionedCuboid GetBoundingBox(ResourceHandle<Mesh> handle) {
@@ -568,6 +608,14 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		out UIntPtr outBufferHandle
 	);
 
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "allocate_vertex_buffer_primitive")]
+	static extern InteropResult AllocateVertexBufferPrimitive(
+		nuint bufferId,
+		MeshVertexPrimitive* verticesPtr,
+		int numVertices,
+		out UIntPtr outBufferHandle
+	);
+
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_vertex_buffer")]
 	static extern InteropResult DisposeVertexBuffer(
 		UIntPtr bufferHandle
@@ -608,6 +656,10 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 		if (_defaultMutableVerticesMap.Remove(handle, out var mutableVerts)) {
 			mutableVerts.Dispose();
 		}
+		if (_wireframeBuffers.Remove(handle, out var wireframeData)) {
+			LocalFrameSynchronizationManager.QueueResourceDisposal(wireframeData.VertexBufferHandle, &DisposeVertexBuffer);
+			LocalFrameSynchronizationManager.QueueResourceDisposal(wireframeData.IndexBufferHandle, &DisposeIndexBuffer);
+		}
 		var meshData = _activeMeshes[handle];
 		var bufferData = meshData.BufferData;
 		var curVbRefCount = _vertexBufferRefCounts[bufferData.VertexBufferHandle];
@@ -630,6 +682,7 @@ sealed unsafe class LocalMeshBuilder : IMeshBuilder, IMeshImplProvider, IResourc
 			foreach (var kvp in _activeMeshes) Dispose(kvp.Key, removeFromMap: false);
 			_mutableVertexLeaseTracker.Dispose();
 			_defaultMutableVerticesMap.Dispose();
+			_wireframeBuffers.Dispose();
 			_activeMeshes.Dispose();
 			_activeMeshAnimationTables.Dispose();
 

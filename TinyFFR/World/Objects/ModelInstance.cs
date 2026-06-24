@@ -33,7 +33,8 @@ public readonly record struct MaterialEffectController {
 
 public enum NullMaterialShadingStyle {
 	Plain3D = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Plain3D,
-	Plain = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Plain
+	Plain = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Plain,
+	Wireframe = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Wireframe
 }
 
 public readonly struct ModelInstance : IDisposableResource<ModelInstance, IModelInstanceImplProvider>, ITransformedSceneObject {
