@@ -7,6 +7,8 @@ using System;
 namespace Egodystonic.TinyFFR.Assets.Materials.Local;
 
 interface IShaderPackageConstants {
+	bool SupportsShadows { get; }
+
 	bool HasEffectUvTransform { get; }
 	bool HasEffectColorMap { get; }
 	bool HasEffectEmissiveMap { get; }
@@ -122,6 +124,8 @@ static class LocalShaderPackageConstants {
 		public string GetShaderResourceName(bool supportsEffects, Flags flags, AlphaModeVariant alphaMode, OrmReflectanceVariant ormReflectance) {
 			return _resourceNameMap[(supportsEffects, flags, alphaMode, ormReflectance)];
 		}
+
+		public bool SupportsShadows { get; } = true;
 
 		public ReadOnlySpan<byte> ParamColorMap => "color_map"u8;
 		public ReadOnlySpan<byte> ParamNormalMap => "normal_map"u8;
@@ -261,6 +265,8 @@ static class LocalShaderPackageConstants {
 			return _resourceNameMap[(supportsEffects, flags, alphaMode, refractionQuality, refractionType)];
 		}
 
+		public bool SupportsShadows { get; } = true;
+
 		public ReadOnlySpan<byte> ParamSurfaceThickness => "surface_thickness"u8;
 		public ReadOnlySpan<byte> ParamColorMap => "color_map"u8;
 		public ReadOnlySpan<byte> ParamAbsorptionTransmissionMap => "at_map"u8;
@@ -346,6 +352,8 @@ static class LocalShaderPackageConstants {
 			return _resourceNameMap[(supportsEffects, alphaMode)];
 		}
 
+		public bool SupportsShadows { get; } = false;
+
 		public ReadOnlySpan<byte> ParamColorMap => "color_map"u8;
 		public ReadOnlySpan<byte> ParamEffectUvTransform => "uv_transform"u8;
 		public ReadOnlySpan<byte> ParamEffectColorMapBlend => "color_map_blend"u8;
@@ -414,6 +422,8 @@ static class LocalShaderPackageConstants {
 		public string GetShaderResourceName(ShadingModeVariant shadingMode) {
 			return _resourceNameMap[shadingMode];
 		}
+
+		public bool SupportsShadows { get; } = false;
 
 		public ReadOnlySpan<byte> ParamBaseColor => "base_color"u8;
 

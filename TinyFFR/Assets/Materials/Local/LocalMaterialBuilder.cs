@@ -306,6 +306,11 @@ sealed unsafe class LocalMaterialBuilder : IMaterialBuilder, IMaterialImplProvid
 		return _activeMaterials[handle].SupportedEffects != 0;
 	}
 
+	public bool GetSupportsShadows(ResourceHandle<Material> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeMaterials[handle].PackageConstants.SupportsShadows;
+	}
+
 	public Material Duplicate(ResourceHandle<Material> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		DuplicateMaterial(

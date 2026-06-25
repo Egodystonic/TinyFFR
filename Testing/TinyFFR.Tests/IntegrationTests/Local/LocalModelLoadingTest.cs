@@ -171,6 +171,7 @@ class LocalModelLoadingTest {
 				if (modelInstances?.Instances is { } enumerable) {
 					foreach (var inst in enumerable) {
 						inst.SetMaterial(null);
+						inst.SetNullMaterialShadingStyle(NullMaterialShadingStyle.Plain3D);
 						inst.SetNullMaterialBaseColor(ColorVect.RandomOpaque());
 					}
 				}

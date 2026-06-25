@@ -60,6 +60,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		).ThrowIfFailure();
 
 		var result = HandleToInstance(handle);
+		SetShadowOptionsAccordingToMaterial(handle, materialActual);
 		_activeInstanceTransforms.Add(handle, config.InitialTransform);
 		_globals.StoreResourceNameOrDefaultIfEmpty(new ResourceHandle<ModelInstance>(handle).Ident, config.Name, DefaultModelInstanceName);
 		_globals.DependencyTracker.RegisterDependency(result, mesh);
@@ -334,6 +335,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 				handle,
 				primitiveMat.Handle
 			).ThrowIfFailure();
+			SetShadowOptionsAccordingToMaterial(handle, primitiveMat);
 			DisposePrivateMaterialIfPresent(handle);
 			_privateMaterialInstances[handle] = new(primitiveMat, true, DefaultPrimitiveShadingMode, DefaultPrimitiveBaseColor);
 		}
@@ -342,9 +344,15 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 				handle,
 				newMaterial.Value.Handle
 			).ThrowIfFailure();
+			SetShadowOptionsAccordingToMaterial(handle, newMaterial.Value);
 			DisposePrivateMaterialIfPresent(handle);
 			_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMaterial.Value);
 		}
+	}
+
+	void SetShadowOptionsAccordingToMaterial(ResourceHandle<ModelInstance> handle, Material material) {
+		var supportsShadows = _materialBuilder.GetSupportsShadows(material.GetHandleWithoutDisposeCheck());
+		SetModelInstanceShadowOptions(handle, supportsShadows, supportsShadows).ThrowIfFailure();
 	}
 
 	public void SetNullMaterialBaseColor(ResourceHandle<ModelInstance> handle, ColorVect newBaseColor) {
@@ -389,6 +397,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			handle,
 			replacementMaterial.GetHandleWithoutDisposeCheck()
 		).ThrowIfFailure();
+		SetShadowOptionsAccordingToMaterial(handle, replacementMaterial);
 		privateMaterialData.Material.Dispose();
 		_privateMaterialInstances[handle] = privateMaterialData with { Material = replacementMaterial, CurrentShadingMode = newShadingMode };
 	}
@@ -526,6 +535,13 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	static extern InteropResult SetModelInstanceMaterial(
 		UIntPtr modelInstanceHandle,
 		UIntPtr materialHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "set_model_instance_shadow_options")]
+	static extern InteropResult SetModelInstanceShadowOptions(
+		UIntPtr modelInstanceHandle,
+		InteropBool castShadows,
+		InteropBool receiveShadows
 	);
 
 	[SuppressGCTransition]

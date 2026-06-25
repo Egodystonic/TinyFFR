@@ -96,6 +96,18 @@ StartExportedFunc(set_model_instance_material, ModelInstanceHandle modelInstance
 	EndExportedFunc
 }
 
+void native_impl_objects::set_model_instance_shadow_options(ModelInstanceHandle modelInstance, interop_bool castShadows, interop_bool receiveShadows) {
+	auto& manager = filament_engine->getRenderableManager();
+	auto instance = manager.getInstance(Entity::import(modelInstance));
+	ThrowIf(!instance.isValid(), "Given entity instance was not associated with any renderable.");
+	manager.setCastShadows(instance, castShadows);
+	manager.setReceiveShadows(instance, receiveShadows);
+}
+StartExportedFunc(set_model_instance_shadow_options, ModelInstanceHandle modelInstance, interop_bool castShadows, interop_bool receiveShadows) {
+	native_impl_objects::set_model_instance_shadow_options(modelInstance, castShadows, receiveShadows);
+	EndExportedFunc
+}
+
 void native_impl_objects::set_model_instance_world_mat(ModelInstanceHandle modelInstance, mat4f* worldMatPtr) {
 	ThrowIfNull(worldMatPtr, "World matrix was null.");
 

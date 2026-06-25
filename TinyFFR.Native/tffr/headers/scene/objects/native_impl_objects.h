@@ -14,6 +14,7 @@ public:
 	static void set_model_instance_mesh(ModelInstanceHandle modelInstance, VertexBufferHandle vb, IndexBufferHandle ib, int32_t ibStartIndex, int32_t ibCount);
 	static void set_model_instance_aabb(ModelInstanceHandle modelInstance, float3 aabbCenter, float3 aabbHalfExtents);
 	static void set_model_instance_material(ModelInstanceHandle modelInstance, MaterialHandle material);
+	static void set_model_instance_shadow_options(ModelInstanceHandle modelInstance, interop_bool castShadows, interop_bool receiveShadows);
 	static void set_model_instance_world_mat(ModelInstanceHandle modelInstance, mat4f* worldMatPtr);
 	static void set_model_instance_bone_transforms(ModelInstanceHandle modelInstance, mat4f* transforms, int32_t boneCount);
 	static void dispose_model_instance(ModelInstanceHandle modelInstance);
