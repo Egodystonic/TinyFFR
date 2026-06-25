@@ -21,7 +21,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	readonly record struct PrivateMaterialData(Material Material, bool IsPrimitive, ShadingModeVariant CurrentShadingMode, ColorVect BaseColor);
 	
 	const string DefaultModelInstanceName = "Unnamed Model Instance";
-	const ShadingModeVariant DefaultPrimitiveShadingMode = ShadingModeVariant.Plain3D;
+	const ShadingModeVariant DefaultPrimitiveShadingMode = ShadingModeVariant.Plain3DOpaque;
 	static readonly ColorVect DefaultPrimitiveBaseColor = ColorVect.White;
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	// Because these properties are set frequently, they're all kept in their own separate maps for performance
@@ -355,17 +355,38 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		SetModelInstanceShadowOptions(handle, supportsShadows, supportsShadows).ThrowIfFailure();
 	}
 
+	ShadingModeVariant DetermineCorrectShadingModeVariant(ShadingModeVariant targetMode, ColorVect baseColor) {
+		return targetMode switch {
+			(ShadingModeVariant.Plain3D or ShadingModeVariant.Plain3DOpaque) when baseColor.Alpha < 1f => ShadingModeVariant.Plain3D, 
+			(ShadingModeVariant.Plain3D or ShadingModeVariant.Plain3DOpaque) => ShadingModeVariant.Plain3DOpaque,
+			(ShadingModeVariant.Plain or ShadingModeVariant.PlainOpaque) when baseColor.Alpha < 1f => ShadingModeVariant.Plain, 
+			(ShadingModeVariant.Plain or ShadingModeVariant.PlainOpaque) => ShadingModeVariant.PlainOpaque,
+			_ => targetMode	
+		};
+	}
 	public void SetNullMaterialBaseColor(ResourceHandle<ModelInstance> handle, ColorVect newBaseColor) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (!_privateMaterialInstances.TryGetValue(handle, out var privateMaterialData) || !privateMaterialData.IsPrimitive) return;
-		_materialBuilder.SetPrimitiveMaterialBaseColor(privateMaterialData.Material, newBaseColor);
-		_privateMaterialInstances[handle] = privateMaterialData with { BaseColor = newBaseColor };
+		var newShadingMode = DetermineCorrectShadingModeVariant(privateMaterialData.CurrentShadingMode, newBaseColor);
+		if (newShadingMode != privateMaterialData.CurrentShadingMode) {
+			var replacementMaterial = _materialBuilder.AllocatePrimitiveMaterialInstance(newShadingMode, newBaseColor);
+			SetModelInstanceMaterial(
+				handle,
+				replacementMaterial.GetHandleWithoutDisposeCheck()
+			).ThrowIfFailure();
+			privateMaterialData.Material.Dispose();
+			_privateMaterialInstances[handle] = privateMaterialData with { Material = replacementMaterial, CurrentShadingMode = newShadingMode, BaseColor = newBaseColor };
+		}
+		else {
+			_materialBuilder.SetPrimitiveMaterialBaseColor(privateMaterialData.Material, newBaseColor);
+			_privateMaterialInstances[handle] = privateMaterialData with { BaseColor = newBaseColor };
+		}
 	}
 	public void SetNullMaterialShadingStyle(ResourceHandle<ModelInstance> handle, NullMaterialShadingStyle newStyle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (!_privateMaterialInstances.TryGetValue(handle, out var privateMaterialData) || !privateMaterialData.IsPrimitive) return;
 		
-		var newShadingMode = (ShadingModeVariant) newStyle;
+		var newShadingMode = DetermineCorrectShadingModeVariant((ShadingModeVariant) newStyle, privateMaterialData.BaseColor);
 		var oldShadingMode = privateMaterialData.CurrentShadingMode;
 		if (newShadingMode == oldShadingMode) return;
 

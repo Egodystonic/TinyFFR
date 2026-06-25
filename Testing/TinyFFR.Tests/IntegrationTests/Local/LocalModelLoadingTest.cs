@@ -105,12 +105,15 @@ class LocalModelLoadingTest {
 		var curFileIndex = -1;
 		ResourceGroup? loadedResources = null; 
 		ModelInstanceGroup? modelInstances = null;
+		var nextPrimitiveColorIsOpaque = true;
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop(60);
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Escape)) {
 			var deltaTime = (float) loop.IterateOnce().TotalSeconds;
 			
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
+				nextPrimitiveColorIsOpaque = true;
+				
 				if (modelInstances is {} i) {
 					scene.Remove(i);
 					i.Dispose();
@@ -172,9 +175,10 @@ class LocalModelLoadingTest {
 					foreach (var inst in enumerable) {
 						inst.SetMaterial(null);
 						inst.SetNullMaterialShadingStyle(NullMaterialShadingStyle.Plain3D);
-						inst.SetNullMaterialBaseColor(ColorVect.RandomOpaque());
+						inst.SetNullMaterialBaseColor(nextPrimitiveColorIsOpaque ? ColorVect.RandomOpaque() : ColorVect.Random().WithPremultipliedAlpha());
 					}
 				}
+				nextPrimitiveColorIsOpaque = !nextPrimitiveColorIsOpaque;
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.L)) {
 				lightBrightnessStage++;

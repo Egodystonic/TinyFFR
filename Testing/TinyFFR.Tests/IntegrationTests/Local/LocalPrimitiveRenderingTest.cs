@@ -18,7 +18,9 @@ namespace Egodystonic.TinyFFR;
 
 [TestFixture, Explicit]
 class LocalPrimitiveRenderingTest {
-	const int NumInstances = 10000;
+	const int NumInstances = 1000;
+	const float MinDistanceForRandomObjects = 2f;
+	const float MaxDistanceForRandomObjects = 100f;
 	
 	[SetUp]
 	public void SetUpTest() {
@@ -48,8 +50,9 @@ class LocalPrimitiveRenderingTest {
 		instances[0].SetNullMaterialBaseColor(ColorVect.RandomOpaque());
 		scene.Add(instances[0]);
 		for (var i = 1; i < NumInstances; ++i) {
-			instances[i] = factory.ObjectBuilder.CreateModelInstance(sphereMesh, initialScaling: new(0.3f), initialPosition: Location.Origin + Direction.Random() * RandomUtils.NextSingle(5f, 150f));
-			instances[i].SetNullMaterialBaseColor(ColorVect.Random().WithPremultipliedAlpha());
+			instances[i] = factory.ObjectBuilder.CreateModelInstance(sphereMesh, initialScaling: new(0.3f), initialPosition: Location.Origin + Direction.Random() * RandomUtils.NextSingle(MinDistanceForRandomObjects, MaxDistanceForRandomObjects));
+			if (RandomUtils.GlobalRng.Next(2) == 1) instances[i].SetNullMaterialBaseColor(ColorVect.Random().WithPremultipliedAlpha());
+			else instances[i].SetNullMaterialBaseColor(ColorVect.RandomOpaque());
 			scene.Add(instances[i]);
 		}
 		
@@ -65,7 +68,8 @@ class LocalPrimitiveRenderingTest {
 			
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
 				for (var i = 0; i < NumInstances; ++i) {
-					instances[i].SetNullMaterialBaseColor(ColorVect.Random().WithPremultipliedAlpha());
+					if (RandomUtils.GlobalRng.Next(2) == 1) instances[i].SetNullMaterialBaseColor(ColorVect.Random().WithPremultipliedAlpha());
+					else instances[i].SetNullMaterialBaseColor(ColorVect.RandomOpaque());
 				}
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.S)) {

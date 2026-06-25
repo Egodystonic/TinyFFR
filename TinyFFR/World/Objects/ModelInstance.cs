@@ -32,8 +32,8 @@ public readonly record struct MaterialEffectController {
 }
 
 public enum NullMaterialShadingStyle {
-	Plain3D = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Plain3D,
-	Plain = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Plain,
+	Plain3D = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Plain3DOpaque,
+	Plain = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.PlainOpaque,
 	Wireframe = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Wireframe
 }
 

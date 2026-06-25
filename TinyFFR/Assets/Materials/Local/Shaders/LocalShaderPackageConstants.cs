@@ -378,6 +378,8 @@ static class LocalShaderPackageConstants {
 	public static PrimitiveMaterialShaderConstants PrimitiveMaterialShader { get; } = new();
 	public sealed class PrimitiveMaterialShaderConstants : IShaderPackageConstants {
 		public enum ShadingModeVariant {
+			PlainOpaque,
+			Plain3DOpaque,
 			Plain,
 			Plain3D,
 			Wireframe
@@ -388,7 +390,7 @@ static class LocalShaderPackageConstants {
 		public PrimitiveMaterialShaderConstants() {
 			const string ShaderNameStart = ResourceNamespace + "primitive";
 			const string ShadingModeVariantStart = "_shadingmode=";
-			const ShadingModeVariant FirstShadingMode = ShadingModeVariant.Plain;
+			const ShadingModeVariant FirstShadingMode = ShadingModeVariant.PlainOpaque;
 			const ShadingModeVariant LastShadingMode = ShadingModeVariant.Wireframe;
 			
 			_resourceNameMap = new();
@@ -403,6 +405,8 @@ static class LocalShaderPackageConstants {
 				Write(
 					ref emptySpaceSpan,
 					vShadingMode switch {
+						ShadingModeVariant.PlainOpaque => "plainopaque",
+						ShadingModeVariant.Plain3DOpaque => "plain3dopaque",
 						ShadingModeVariant.Plain => "plain",
 						ShadingModeVariant.Plain3D => "plain3d",
 						ShadingModeVariant.Wireframe => "wireframe",

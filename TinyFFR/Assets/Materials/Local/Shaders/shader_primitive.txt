@@ -1,6 +1,13 @@
 ﻿material {
 	name : %NAME%,
 #option ShadingMode
+#variant PlainOpaque
+	requires : [ tangents ],
+	blending : opaque,
+#variant Plain3DOpaque
+	requires : [ tangents ],
+	blending : opaque,
+	transparency : twoPassesTwoSides,
 #variant Plain
 	requires : [ tangents ],
 	blending : transparent,
@@ -29,8 +36,13 @@ fragment {
 		prepareMaterial(material);
 
 #option ShadingMode
+#variant PlainOpaque
+		material.baseColor.rgb = materialParams.base_color.rgb;
 #variant Plain
 		material.baseColor.rgba = materialParams.base_color.rgba;
+#variant Plain3DOpaque
+        float dot = saturate(abs(dot(getWorldGeometricNormalVector(), getWorldViewVector())));
+		material.baseColor.rgb = materialParams.base_color.rgb * (0.25 + (0.75 * sq(dot)));
 #variant Plain3D
         float dot = saturate(abs(dot(getWorldGeometricNormalVector(), getWorldViewVector())));
 		material.baseColor.rgb = materialParams.base_color.rgb * (0.25 + (0.75 * sq(dot)));
@@ -39,8 +51,13 @@ fragment {
 		vec3 barycentre = getColor().rgb;
 		float minComponent = min(min(barycentre.x, barycentre.y), barycentre.z);
 		float divisor = max(fwidth(minComponent), 1E-6);
-		const float lineHalfWidthPx = 1.0;
-		float coverage = 1.0 - smoothstep(lineHalfWidthPx - 0.5, lineHalfWidthPx + 0.5, minComponent / divisor);
+		float edgeDistancePx = minComponent / divisor;
+
+		const float lineWorldThickness = 1.5;
+		float camDistance = max(distance(getWorldPosition(), getWorldCameraPosition()), 1E-4);
+		float lineHalfWidthPx = clamp(lineWorldThickness / camDistance, 0.1, 3.0);
+
+		float coverage = 1.0 - smoothstep(lineHalfWidthPx - 0.5, lineHalfWidthPx + 0.5, edgeDistancePx);
 		material.baseColor.rgb = materialParams.base_color.rgb;
 		material.baseColor.a = coverage;
 #endoption
