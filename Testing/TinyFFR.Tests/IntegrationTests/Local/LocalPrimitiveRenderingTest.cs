@@ -34,7 +34,8 @@ class LocalPrimitiveRenderingTest {
 		var display = factory.DisplayDiscoverer.Primary!.Value;
 		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Primitive Rendering Test");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
-		using var sphereMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, centreTextureOrigin: false, config: new MeshCreationConfig { GenerateWireframeData = true }, generationConfig: new());
+		using var sphereMesh = factory.MeshBuilder.CreateMesh(Sphere.OneMeterCubedVolumeSphere, subdivisionLevel: 3, config: new MeshCreationConfig { GenerateWireframeData = true }, generationConfig: new());
+		using var cubeMesh = factory.MeshBuilder.CreateMesh(Cuboid.UnitCube, centreTextureOrigin: false, config: new MeshCreationConfig { GenerateWireframeData = true }, generationConfig: new());
 		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Starfield);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		using var camController = camera.CreateController<InspectorCameraController>();
@@ -51,6 +52,8 @@ class LocalPrimitiveRenderingTest {
 			instances[i].SetNullMaterialBaseColor(ColorVect.Random().WithPremultipliedAlpha());
 			scene.Add(instances[i]);
 		}
+		
+		var usingSphereMesh = true;
 
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Escape)) {
@@ -63,6 +66,12 @@ class LocalPrimitiveRenderingTest {
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.Space)) {
 				for (var i = 0; i < NumInstances; ++i) {
 					instances[i].SetNullMaterialBaseColor(ColorVect.Random().WithPremultipliedAlpha());
+				}
+			}
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.S)) {
+				usingSphereMesh = !usingSphereMesh;
+				for (var i = 0; i < NumInstances; ++i) {
+					instances[i].SetMesh(usingSphereMesh ? sphereMesh : cubeMesh);
 				}
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow0)) {

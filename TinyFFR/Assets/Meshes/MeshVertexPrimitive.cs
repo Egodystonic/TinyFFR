@@ -5,9 +5,6 @@ using System;
 
 namespace Egodystonic.TinyFFR.Assets.Meshes;
 
-// Internal vertex format used for primitive rendering buffers (e.g. wireframe). Mirrors the native
-// 'MeshVertexPrimitive' struct (Position FLOAT3 @ 0, Color FLOAT4 @ 12, Tangent FLOAT4 @ 28).
-// For wireframe meshes the Color channel carries per-corner barycentric coordinates.
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = ExpectedSerializedSize)]
 readonly record struct MeshVertexPrimitive {
 	internal const int ExpectedSerializedSize = 44;
@@ -42,9 +39,14 @@ readonly record struct MeshVertexPrimitive {
 		}
 	}
 
+	public MeshVertexPrimitive(Location location, Vector4 color, Direction tangent, Direction bitangent, Direction normal)
+		: this(location, color, CalculateTangentRotation(tangent, bitangent, normal)) { }
 	public MeshVertexPrimitive(Location location, Vector4 color, Quaternion tangentRotation) {
 		Location = location;
 		Color = color;
 		TangentRotation = tangentRotation;
 	}
+	
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static Quaternion CalculateTangentRotation(Direction tangent, Direction bitangent, Direction normal) => IMeshVertex.CalculateTangentRotation(tangent, bitangent, normal);
 }

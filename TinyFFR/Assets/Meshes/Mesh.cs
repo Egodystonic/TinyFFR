@@ -26,6 +26,11 @@ public readonly struct Mesh : IDisposableResource<Mesh, IMeshImplProvider> {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Implementation.GetWireframeBufferData(_handle);
 	}
+	
+	public bool SupportsWireframeRendering {
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => WireframeBufferData != null;
+	}
 
 	public PositionedCuboid BoundingBox {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

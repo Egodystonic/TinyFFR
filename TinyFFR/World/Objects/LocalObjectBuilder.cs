@@ -187,28 +187,28 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	}
 	public void SetMesh(ResourceHandle<ModelInstance> handle, Mesh newMesh) {
 		ThrowIfThisOrHandleIsDisposed(handle);
-		var meshBufferData = newMesh.BufferData;
-		var aabb = newMesh.BoundingBox;
+		var newMeshBufferData = newMesh.BufferData;
+		var newMeshBoundingBox = newMesh.BoundingBox;
 
-		var geometry = meshBufferData;
 		if (_privateMaterialInstances.TryGetValue(handle, out var privateMaterialData)
-			&& privateMaterialData.IsPrimitive
-			&& privateMaterialData.CurrentShadingMode == ShadingModeVariant.Wireframe
+			&& privateMaterialData is { IsPrimitive: true, CurrentShadingMode: ShadingModeVariant.Wireframe }
 			&& newMesh.WireframeBufferData is { } newWireframeData) {
-			geometry = newWireframeData;
+			newMeshBufferData = newWireframeData;
 		}
+		
 		SetModelInstanceMesh(
 			handle,
-			geometry.VertexBufferHandle,
-			geometry.IndexBufferHandle,
-			geometry.IndexBufferStartIndex,
-			geometry.IndexBufferCount
+			newMeshBufferData.VertexBufferHandle,
+			newMeshBufferData.IndexBufferHandle,
+			newMeshBufferData.IndexBufferStartIndex,
+			newMeshBufferData.IndexBufferCount
 		).ThrowIfFailure();
 		SetModelInstanceAabb(
 			handle,
-			aabb.Position.ToVector3(),
-			new Vector3(aabb.HalfWidth, aabb.HalfHeight, aabb.HalfDepth)
+			newMeshBoundingBox.Position.ToVector3(),
+			new Vector3(newMeshBoundingBox.HalfWidth, newMeshBoundingBox.HalfHeight, newMeshBoundingBox.HalfDepth)
 		).ThrowIfFailure();
+		
 		_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), GetMesh(handle));
 		_globals.DependencyTracker.RegisterDependency(HandleToInstance(handle), newMesh);
 	}
@@ -318,6 +318,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		if (oldMat != null) {
 			_globals.DependencyTracker.DeregisterDependency(HandleToInstance(handle), oldMat.Value);
 		}
+		else if (newMaterial == null) return; // Return early if old mat is null and we're setting null again (no-op)
 
 		if (newMaterial == null) {
 			var primitiveMat = _materialBuilder.AllocatePrimitiveMaterialInstance(DefaultPrimitiveShadingMode, DefaultPrimitiveBaseColor);
@@ -347,17 +348,32 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	public void SetNullMaterialShadingStyle(ResourceHandle<ModelInstance> handle, NullMaterialShadingStyle newStyle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		if (!_privateMaterialInstances.TryGetValue(handle, out var privateMaterialData) || !privateMaterialData.IsPrimitive) return;
+		
 		var newShadingMode = (ShadingModeVariant) newStyle;
 		var oldShadingMode = privateMaterialData.CurrentShadingMode;
 		if (newShadingMode == oldShadingMode) return;
 
 		if (newShadingMode == ShadingModeVariant.Wireframe) {
-			var wireframeData = GetMesh(handle).WireframeBufferData;
-			if (wireframeData == null) return;
-			SetInstanceGeometry(handle, wireframeData.Value);
+			if (GetMesh(handle).WireframeBufferData is not { } wireframeBufferData) return;
+			SetModelInstanceMesh(
+				handle,
+				wireframeBufferData.VertexBufferHandle,
+				wireframeBufferData.IndexBufferHandle,
+				wireframeBufferData.IndexBufferStartIndex,
+				wireframeBufferData.IndexBufferCount
+			).ThrowIfFailure();
 		}
 		else if (oldShadingMode == ShadingModeVariant.Wireframe) {
-			RestoreInstanceNonWireframeGeometry(handle);
+			var nonWireframeBufferData = GetMesh(handle).BufferData;
+			SetModelInstanceMesh(
+				handle,
+				// Maintainer's note: Shouldn't be possible right now because we don't allow generation of wireframe data at the same time as setting the mutation-permitted flag
+				// But it's possible that might change in the future and in case we forget to alter this area I'm pre-emptively checking for it here
+				_activeInstanceVertexMutationData.TryGetValue(handle, out var mutationData) ? mutationData.PrivateVertexBufferHandle : nonWireframeBufferData.VertexBufferHandle,
+				nonWireframeBufferData.IndexBufferHandle,
+				nonWireframeBufferData.IndexBufferStartIndex,
+				nonWireframeBufferData.IndexBufferCount
+			).ThrowIfFailure();
 		}
 
 		var replacementMaterial = _materialBuilder.AllocatePrimitiveMaterialInstance(newShadingMode, privateMaterialData.BaseColor);
@@ -367,30 +383,6 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		).ThrowIfFailure();
 		privateMaterialData.Material.Dispose();
 		_privateMaterialInstances[handle] = privateMaterialData with { Material = replacementMaterial, CurrentShadingMode = newShadingMode };
-	}
-
-	void SetInstanceGeometry(ResourceHandle<ModelInstance> handle, MeshBufferData bufferData) {
-		SetModelInstanceMesh(
-			handle,
-			bufferData.VertexBufferHandle,
-			bufferData.IndexBufferHandle,
-			bufferData.IndexBufferStartIndex,
-			bufferData.IndexBufferCount
-		).ThrowIfFailure();
-	}
-
-	void RestoreInstanceNonWireframeGeometry(ResourceHandle<ModelInstance> handle) {
-		var meshBufferData = GetMesh(handle).BufferData;
-		var vertexBufferHandle = _activeInstanceVertexMutationData.TryGetValue(handle, out var mutationData)
-			? mutationData.PrivateVertexBufferHandle
-			: (UIntPtr) meshBufferData.VertexBufferHandle;
-		SetModelInstanceMesh(
-			handle,
-			vertexBufferHandle,
-			meshBufferData.IndexBufferHandle,
-			meshBufferData.IndexBufferStartIndex,
-			meshBufferData.IndexBufferCount
-		).ThrowIfFailure();
 	}
 
 	public void SetMaterialEffectTransform(ResourceHandle<ModelInstance> handle, Transform2D newTransform) {
