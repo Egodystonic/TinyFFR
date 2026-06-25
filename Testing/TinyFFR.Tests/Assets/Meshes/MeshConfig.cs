@@ -116,6 +116,7 @@ class MeshConfigTest {
 			BoundingBoxOverride = null,
 			BoundingBoxAdditionalMargin = 0f,
 			AllowsPerInstanceVertexMutation = true,
+			GenerateWireframeData = false,
 			Name = "Aa Aa"
 		};
 		var testConfigB = new MeshCreationConfig {
@@ -127,6 +128,7 @@ class MeshConfigTest {
 			BoundingBoxOverride = PositionedCuboid.FromHalfDimensions(1f, 2f, 3f, new Location(4f, 5f, 6f)),
 			BoundingBoxAdditionalMargin = 0.5f,
 			AllowsPerInstanceVertexMutation = false,
+			GenerateWireframeData = true,
 			Name = "BBBbbb"
 		};
 
@@ -139,6 +141,7 @@ class MeshConfigTest {
 			Assert.AreEqual(expected.BoundingBoxOverride, actual.BoundingBoxOverride);
 			Assert.AreEqual(expected.BoundingBoxAdditionalMargin, actual.BoundingBoxAdditionalMargin);
 			Assert.AreEqual(expected.AllowsPerInstanceVertexMutation, actual.AllowsPerInstanceVertexMutation);
+			Assert.AreEqual(expected.GenerateWireframeData, actual.GenerateWireframeData);
 			Assert.AreEqual(expected.Name.ToString(), actual.Name.ToString());
 		}
 
@@ -155,6 +158,7 @@ class MeshConfigTest {
 			.Obj(default(PositionedCuboid))
 			.Float(0f)
 			.Bool(true)
+			.Bool(false)
 			.String("Aa Aa")
 			.For(testConfigA);
 
@@ -168,6 +172,7 @@ class MeshConfigTest {
 			.Obj(PositionedCuboid.FromHalfDimensions(1f, 2f, 3f, new Location(4f, 5f, 6f)))
 			.Float(0.5f)
 			.Bool(false)
+			.Bool(true)
 			.String("BBBbbb")
 			.For(testConfigB);
 
@@ -180,6 +185,7 @@ class MeshConfigTest {
 			.Including(nameof(MeshCreationConfig.BoundingBoxOverride))
 			.Including(nameof(MeshCreationConfig.BoundingBoxAdditionalMargin))
 			.Including(nameof(MeshCreationConfig.AllowsPerInstanceVertexMutation))
+			.Including(nameof(MeshCreationConfig.GenerateWireframeData))
 			.Including(nameof(MeshCreationConfig.Name))
 			.End();
 	}
