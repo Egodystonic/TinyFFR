@@ -11,6 +11,7 @@
 #variant Wireframe
 	requires : [ tangents, color ],
 	blending : masked,
+	maskThreshold : 0.1,
 	culling : none,
 #endoption
 	parameters : [
@@ -35,12 +36,13 @@ fragment {
 		material.baseColor.rgb = materialParams.base_color.rgb * (0.25 + (0.75 * sq(dot)));
 		material.baseColor.a = materialParams.base_color.a;
 #variant Wireframe
-		vec3 bary = getColor().rgb;
-		vec3 baryWidth = fwidth(bary);
-		vec3 baryFalloff = smoothstep(vec3(0.0), baryWidth * 2.5, bary);
-		float edgeFactor = 1.0 - min(min(baryFalloff.x, baryFalloff.y), baryFalloff.z);
+		vec3 barycentre = getColor().rgb;
+		float minComponent = min(min(barycentre.x, barycentre.y), barycentre.z);
+		float divisor = max(fwidth(minComponent), 1E-6);
+		const float lineHalfWidthPx = 1.0;
+		float coverage = 1.0 - smoothstep(lineHalfWidthPx - 0.5, lineHalfWidthPx + 0.5, minComponent / divisor);
 		material.baseColor.rgb = materialParams.base_color.rgb;
-		material.baseColor.a = edgeFactor;
+		material.baseColor.a = coverage;
 #endoption
 
 	}
