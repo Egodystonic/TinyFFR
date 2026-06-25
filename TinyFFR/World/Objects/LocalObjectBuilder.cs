@@ -187,13 +187,21 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	}
 	public void SetMesh(ResourceHandle<ModelInstance> handle, Mesh newMesh) {
 		ThrowIfThisOrHandleIsDisposed(handle);
+		_vertexLeaseTracker.ThrowIfAnyActiveRentals(handle, nameof(ModelInstance), _globals.GetResourceName(handle.Ident, DefaultModelInstanceName));
+		
 		var newMeshBufferData = newMesh.BufferData;
 		var newMeshBoundingBox = newMesh.BoundingBox;
 
-		if (_privateMaterialInstances.TryGetValue(handle, out var privateMaterialData)
-			&& privateMaterialData is { IsPrimitive: true, CurrentShadingMode: ShadingModeVariant.Wireframe }
-			&& newMesh.WireframeBufferData is { } newWireframeData) {
-			newMeshBufferData = newWireframeData;
+		DisposeMutationDataIfPresent(handle);
+
+		if (_privateMaterialInstances.TryGetValue(handle, out var privateMaterialData) && privateMaterialData is { IsPrimitive: true, CurrentShadingMode: ShadingModeVariant.Wireframe }) {
+			if (newMesh.WireframeBufferData is { } newWireframeData) newMeshBufferData = newWireframeData;
+			else {
+				var replacementPrimitiveMaterial = _materialBuilder.AllocatePrimitiveMaterialInstance(DefaultPrimitiveShadingMode, privateMaterialData.BaseColor);
+				SetModelInstanceMaterial(handle, replacementPrimitiveMaterial.GetHandleWithoutDisposeCheck()).ThrowIfFailure();
+				privateMaterialData.Material.Dispose();
+				_privateMaterialInstances[handle] = privateMaterialData with { CurrentShadingMode = DefaultPrimitiveShadingMode, Material = replacementPrimitiveMaterial };
+			}
 		}
 		
 		SetModelInstanceMesh(

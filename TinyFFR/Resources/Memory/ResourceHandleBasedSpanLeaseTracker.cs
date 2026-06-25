@@ -50,7 +50,7 @@ sealed unsafe class ResourceHandleBasedSpanLeaseTracker<T> : IResourceHandleBase
 			.Select(kvp => $"Leased {typeof(T)} span #{kvp.Key}")
 			.ToArray();
 		
-		throw ResourceDependencyException.CreateForPrematureDisposal(
+		throw ResourceDependencyException.CreateForPrematureDisposalOrMutation(
 			targetResourceTypeName.ToString(),
 			targetResourceName.ToString(),
 			rentalStrings
