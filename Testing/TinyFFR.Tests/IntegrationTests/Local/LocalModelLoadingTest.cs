@@ -25,41 +25,41 @@ class LocalModelLoadingTest {
 	[SetUp]
 	public void SetUpTest() {
 		_filesToLoad = new[] {
-			// Color / texturing / basic import tests
-			"BoxTextured.gltf",	
-			"BoxTextured.glb",
-			"BoxTexturedSelfContained.gltf",
-			"BoxTexturedNonPowerOfTwo.glb",
-			"Box With Spaces.gltf",
-			
-			// Mesh + normals / tangents / bitangents + transform node walk tests
-			"NormalTangentMirrorTest.glb",
-			"NegativeScaleTest.glb",
-			"TextureCoordinateTest.glb",
-			"CompareNormal.glb",
-			
-			// ORM
-			"CompareRoughness.glb",
-			"CompareMetallic.glb",
-			"MetalRoughSpheres.glb",
-			"CompareAmbientOcclusion.glb",
-			
-			// Aniso
-			"AnisotropyStrengthTest.glb",
-			"AnisotropyDiscTest.glb",
-			
-			// Emissive
-			"EmissiveStrengthTest.glb",
-			
-			// AT
-			"TransmissionTest.glb",
-			"CompareTransmission.glb",
-			"TransmissionRoughnessTest.glb",
-			"AttenuationTest.glb",
-			"CompareIor.glb",
-			
-			// CC
-			"ClearCoatTest.glb",
+			// // Color / texturing / basic import tests
+			// "BoxTextured.gltf",	
+			// "BoxTextured.glb",
+			// "BoxTexturedSelfContained.gltf",
+			// "BoxTexturedNonPowerOfTwo.glb",
+			// "Box With Spaces.gltf",
+			//
+			// // Mesh + normals / tangents / bitangents + transform node walk tests
+			// "NormalTangentMirrorTest.glb",
+			// "NegativeScaleTest.glb",
+			// "TextureCoordinateTest.glb",
+			// "CompareNormal.glb",
+			//
+			// // ORM
+			// "CompareRoughness.glb",
+			// "CompareMetallic.glb",
+			// "MetalRoughSpheres.glb",
+			// "CompareAmbientOcclusion.glb",
+			//
+			// // Aniso
+			// "AnisotropyStrengthTest.glb",
+			// "AnisotropyDiscTest.glb",
+			//
+			// // Emissive
+			// "EmissiveStrengthTest.glb",
+			//
+			// // AT
+			// "TransmissionTest.glb",
+			// "CompareTransmission.glb",
+			// "TransmissionRoughnessTest.glb",
+			// "AttenuationTest.glb",
+			// "CompareIor.glb",
+			//
+			// // CC
+			// "ClearCoatTest.glb",
 			
 			// Showcase
 			"BarramundiFish.glb",

@@ -53,9 +53,11 @@ fragment {
 		float divisor = max(fwidth(minComponent), 1E-6);
 		float edgeDistancePx = minComponent / divisor;
 
-		const float lineWorldThickness = 1.5;
+		const float lineWorldThickness = 0.5;
+		const float minScreenSpaceThickness = 0.1;
+		const float maxScreenSpaceThickness = 1.0;
 		float camDistance = max(distance(getWorldPosition(), getWorldCameraPosition()), 1E-4);
-		float lineHalfWidthPx = clamp(lineWorldThickness / camDistance, 0.1, 3.0);
+		float lineHalfWidthPx = clamp(lineWorldThickness / camDistance, minScreenSpaceThickness, maxScreenSpaceThickness);
 
 		float coverage = 1.0 - smoothstep(lineHalfWidthPx - 0.5, lineHalfWidthPx + 0.5, edgeDistancePx);
 		material.baseColor.rgb = materialParams.base_color.rgb;

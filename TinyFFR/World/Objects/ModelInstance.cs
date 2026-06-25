@@ -31,7 +31,9 @@ public readonly record struct MaterialEffectController {
 	}
 }
 
+#pragma warning disable CA1027 // This isn't a bitfield enum
 public enum NullMaterialShadingStyle {
+#pragma warning restore CA1027
 	Plain3D = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Plain3DOpaque,
 	Plain = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.PlainOpaque,
 	Wireframe = LocalShaderPackageConstants.PrimitiveMaterialShaderConstants.ShadingModeVariant.Wireframe
