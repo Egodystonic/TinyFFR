@@ -10,7 +10,7 @@ namespace Egodystonic.TinyFFR.Assets.Text;
 public readonly ref struct FontCreationConfig : IConfigStruct<FontCreationConfig> {
 	static readonly Rune[] _defaultSupportedRunes = BuildDefaultRuneSet();
 	public static ReadOnlySpan<Rune> DefaultSupportedRunes => _defaultSupportedRunes;
-	public ReadOnlySpan<Rune> SupportedRunes { get; init; }
+	public ReadOnlySpan<Rune> SupportedRunes { get; init; } = DefaultSupportedRunes;
 	public ReadOnlySpan<char> Name { get; init; }
 	
 	public FontCreationConfig() { }

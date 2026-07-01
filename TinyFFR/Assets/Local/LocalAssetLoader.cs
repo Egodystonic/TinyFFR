@@ -34,7 +34,7 @@ sealed unsafe partial class LocalAssetLoader : ILocalAssetLoader, IModelImplProv
 		_meshBuilder = new LocalMeshBuilder(globals);
 		_textureBuilder = new LocalTextureBuilder(globals, config);
 		_materialBuilder = new LocalMaterialBuilder(globals, config, _textureBuilder, _testMaterialTextures);
-		_fontLoader = new LocalFontLoader(globals, config);
+		_fontLoader = new LocalFontLoader(globals, config, _meshBuilder, _textureBuilder, _materialBuilder);
 		_assetFilePathBuffer = new InteropStringBuffer(config.MaxAssetFilePathLengthChars, addOneForNullTerminator: true);
 		_animationAndNodeNameBuffer = new InteropStringBuffer(config.MaxAnimationAndNodeNameLengthChars, addOneForNullTerminator: true);
 		_vertexTriangleBufferPool = FixedByteBufferPool.CreateFromUserConfigurableParameter(config.MaxAssetVertexIndexBufferSizeBytes);

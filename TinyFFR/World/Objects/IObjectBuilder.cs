@@ -5,6 +5,7 @@ using System;
 using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 
@@ -145,5 +146,9 @@ public interface IObjectBuilder {
 	MutableGridInstance CreateMutableGridInstance(MutableGridMesh mesh, Material material, in ModelInstanceCreationConfig config) {
 		return new MutableGridInstance(CreateModelInstance(mesh.UnderlyingMesh, material, in config), mesh);
 	}
+	#endregion
+	
+	#region Text
+	TextInstance CreateTextInstance(Font font, FontPen pen, ReadOnlySpan<char> initialText = default) => new(font, CreateModelInstance(font.CreateMeshForText(initialText), pen.GetPenMaterial()));
 	#endregion
 }

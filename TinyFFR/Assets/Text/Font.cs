@@ -2,6 +2,7 @@
 // (c) Egodystonic / TinyFFR 2026
 
 using System;
+using Egodystonic.TinyFFR.Assets.Meshes;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.World;
 
@@ -45,7 +46,7 @@ public readonly struct Font : IDisposableResource<Font, IFontImplProvider> {
 	public XYPair<int> MeasureString(ReadOnlySpan<char> str) => Implementation.MeasureString(_handle, str);
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public TextInstance CreateTextInstance() => Implementation.CreateTextInstance(_handle);
+	internal Mesh CreateTextInstance() => Implementation.CreateTextInstance(_handle);
 	
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal void DisposeTextInstance(TextInstance instance) => Implementation.DisposeTextInstance(_handle, instance);

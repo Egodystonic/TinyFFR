@@ -4,6 +4,8 @@
 using System.Text;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
+using Egodystonic.TinyFFR.Assets.Materials.Local;
+using Egodystonic.TinyFFR.Assets.Meshes.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Resources;
@@ -19,14 +21,20 @@ sealed class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font>, IDis
 	const string DefaultFontName = "Unnamed Font";
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly LocalAssetLoaderConfig _config;
+	readonly LocalMeshBuilder _meshBuilder;
+	readonly LocalTextureBuilder _textureBuilder;
+	readonly LocalMaterialBuilder _materialBuilder;
 	readonly MapPool<Rune, XYPair<float>> _coordsMapPool = new(false);
 	readonly MapPool<nuint, PenData> _penMapPool = new(false);
 	readonly ArrayPoolBackedMap<ResourceHandle<Font>, FontData> _activeFonts = new();
 	bool _isDisposed = false;
 
-	public LocalFontLoader(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config) {
+	public LocalFontLoader(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config, LocalMeshBuilder meshBuilder, LocalTextureBuilder textureBuilder, LocalMaterialBuilder materialBuilder) {
 		_globals = globals;
 		_config = config;
+		_meshBuilder = meshBuilder;
+		_textureBuilder = textureBuilder;
+		_materialBuilder = materialBuilder;
 	}
 	
 	public Font LoadFont(BuiltInFont font, in FontCreationConfig config) {

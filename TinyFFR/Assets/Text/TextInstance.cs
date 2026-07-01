@@ -32,8 +32,11 @@ public readonly struct TextInstance : IDisposable, IStringSpanNameEnabled, IEqua
 		UnderlyingModelInstance.SetTransform(); // TODO maybe this needs to happen as part of SetText
 	}
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void Dispose() => Font.DisposeTextInstance(this);
+	public void Dispose() {
+		// TODO dispose text model?
+		// TODO any maybe let's stop exposing the underlying model instance directly here and on the other types and just expose the properties we want to expose safely
+		// TODO including the implicit conversion -- we want to update scene.Add anyway. We can add a static Coerce or something for users that really really need it
+	}
 
 	public override string ToString() => $"Text {UnderlyingModelInstance}";
 	
