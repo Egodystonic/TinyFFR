@@ -42,7 +42,7 @@ class LocalResourceDirectoryTest {
 
 		
 		TestDirectoryRetrieval(n => factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr), name: n));
-		using (var tex = factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false, name: "bbbbb")) {
+		using (var tex = factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.WhiteOpaque), includeAlpha: false, name: "bbbbb")) {
 			TestDirectoryRetrieval(n => factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex, name: n));
 			using (var mesh = factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f))) {
 				using (var mat = factory.MaterialBuilder.CreateStandardMaterial(tex, name: "bbbbb")) {
@@ -51,7 +51,7 @@ class LocalResourceDirectoryTest {
 				}
 			}
 		}
-		TestDirectoryRetrieval(n => factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false, name: n));
+		TestDirectoryRetrieval(n => factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.WhiteOpaque), includeAlpha: false, name: n));
 		TestDirectoryRetrieval(n => factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f), name: n));
 		TestDirectoryRetrieval(n => factory.ApplicationLoopBuilder.CreateLoop(name: n));
 		if (factory.DisplayDiscoverer.Primary is { } primaryDisplay) {

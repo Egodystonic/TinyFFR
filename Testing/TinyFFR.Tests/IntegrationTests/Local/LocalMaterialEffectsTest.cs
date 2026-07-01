@@ -101,12 +101,12 @@ class LocalMaterialEffectsTest {
 				interiorSize: TexturePatternDefaultValues.RectanglesDefaultInteriorSize,
 				borderSize: new XYPair<int>(16, 16),
 				paddingSize: TexturePatternDefaultValues.RectanglesDefaultPaddingSize,
-				interiorValue: ColorVect.White,
+				interiorValue: ColorVect.WhiteOpaque,
 				borderRightValue: new ColorVect(1f, 0f, 0f).WithHueAdjustedBy(135f),
 				borderTopValue: new ColorVect(1f, 1f, 0f).WithHueAdjustedBy(135f),
 				borderLeftValue: new ColorVect(0f, 1f, 0f).WithHueAdjustedBy(135f),
 				borderBottomValue: new ColorVect(0f, 0f, 1f).WithHueAdjustedBy(135f),
-				paddingValue: ColorVect.Black,
+				paddingValue: ColorVect.BlackOpaque,
 				repetitions: (1, 1)
 			),
 			TexturePattern.PlainFill<Real>(0f)
@@ -116,12 +116,12 @@ class LocalMaterialEffectsTest {
 				interiorSize: TexturePatternDefaultValues.RectanglesDefaultInteriorSize,
 				borderSize: new XYPair<int>(16, 16),
 				paddingSize: TexturePatternDefaultValues.RectanglesDefaultPaddingSize,
-				interiorValue: ColorVect.White,
+				interiorValue: ColorVect.WhiteOpaque,
 				borderRightValue: new ColorVect(1f, 0f, 0f),
 				borderTopValue: new ColorVect(1f, 1f, 0f),
 				borderLeftValue: new ColorVect(0f, 1f, 0f),
 				borderBottomValue: new ColorVect(0f, 0f, 1f),
-				paddingValue: ColorVect.Black,
+				paddingValue: ColorVect.BlackOpaque,
 				repetitions: (1, 1)
 			),
 			TexturePattern.Rectangles<Real>(
@@ -139,7 +139,7 @@ class LocalMaterialEffectsTest {
 			1f, 1f, 1f, 1f
 		);
 		using var atMap = factory.TextureBuilder.CreateAbsorptionTransmissionMap(
-			ColorVect.Black, 1f
+			ColorVect.BlackOpaque, 1f
 		);
 		using var atMapBlend = factory.TextureBuilder.CreateAbsorptionTransmissionMap(
 			new ColorVect(0f, 1f, 1f), 0.5f
@@ -157,7 +157,7 @@ class LocalMaterialEffectsTest {
 			enablePerInstanceEffects: true
 		);
 		using var rightMat = factory.MaterialBuilder.CreateTransmissiveMaterial(
-			colorMap: factory.TextureBuilder.CreateColorMap(TexturePattern.Chequerboard(ColorVect.White, new ColorVect(0.7f, 0.7f, 0.7f)), includeAlpha: false),
+			colorMap: factory.TextureBuilder.CreateColorMap(TexturePattern.Chequerboard(ColorVect.WhiteOpaque, new ColorVect(0.7f, 0.7f, 0.7f)), includeAlpha: false),
 			absorptionTransmissionMap: atMap,
 			emissiveMap: emissiveMap,
 			ormrMap: ormMap,

@@ -74,7 +74,7 @@ public unsafe interface ITextureBuilder {
 	#endregion
 
 	#region Color Map Patterns
-	static readonly ColorVect DefaultColor = ColorVect.White;
+	static readonly ColorVect DefaultColor = ColorVect.WhiteOpaque;
 	static TexelRgba32 CreateColorTexel(ColorVect color) => new(color);
 
 	Texture CreateColorMap(in TexturePattern<ColorVect> colorPattern, bool includeAlpha, ReadOnlySpan<char> name = default) { 
@@ -215,7 +215,7 @@ public unsafe interface ITextureBuilder {
 	#endregion
 
 	#region Absorption Transmission Map Patterns
-	static readonly ColorVect DefaultAbsorption = ColorVect.Black;
+	static readonly ColorVect DefaultAbsorption = ColorVect.BlackOpaque;
 	static readonly Real DefaultTransmission = 0.5f;
 	static TexelRgba32 CreateAbsorptionTransmissionTexel(ColorVect absorption, Real transmission) => new(new TexelRgb24(absorption), (byte) (transmission * Byte.MaxValue));
 

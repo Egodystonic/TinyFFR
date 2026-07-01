@@ -380,7 +380,7 @@ class LocalShadowsTest {
 		renderer.SetQuality(new() { ShadowQuality = Quality.VeryLow });
 
 		using var window2 = factory.WindowBuilder.CreateWindow(factory.DisplayDiscoverer.Primary!.Value, size: (200, 200));
-		using var scene2 = factory.SceneBuilder.CreateScene(backdropColor: ColorVect.Black);
+		using var scene2 = factory.SceneBuilder.CreateScene(backdropColor: ColorVect.BlackOpaque);
 		using var renderer2 = factory.RendererBuilder.CreateRenderer(scene2, camera, window2, new RendererCreationConfig { AutoUpdateCameraAspectRatio = false, GpuSynchronizationFrameBufferCount = -1 });
 		renderer2.SetQuality(new() { ShadowQuality = Quality.VeryHigh });
 

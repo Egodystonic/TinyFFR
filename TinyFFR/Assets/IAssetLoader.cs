@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using static Egodystonic.TinyFFR.Assets.Materials.TextureCombinationSourceTexture;
@@ -416,6 +417,17 @@ public interface IAssetLoader {
 		);
 	}
 	BackdropTexture LoadPreprocessedBackdropTexture(ReadOnlySpan<char> skyboxKtxFilePath, ReadOnlySpan<char> iblKtxFilePath, in BackdropTextureCreationConfig config);
+	#endregion
+	
+	#region Load Font
+	Font LoadFont(BuiltInFont font, ReadOnlySpan<char> name = default) {
+		return LoadFont(font, new FontCreationConfig { Name = name });
+	}
+	Font LoadFont(ReadOnlySpan<char> fontFilePath, ReadOnlySpan<char> name = default) {
+		return LoadFont(fontFilePath, new FontCreationConfig { Name = name });
+	}
+	Font LoadFont(BuiltInFont font, in FontCreationConfig config);
+	Font LoadFont(ReadOnlySpan<char> fontFilePath, in FontCreationConfig config);
 	#endregion
 
 	#region Load / Read Mesh

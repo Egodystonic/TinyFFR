@@ -15,8 +15,16 @@ public readonly partial struct ColorVect : IVect<ColorVect> {
 	public static readonly Angle RedHueAngle = 0f;
 	public static readonly Angle GreenHueAngle = 120f;
 	public static readonly Angle BlueHueAngle = 240f;
-	public static readonly ColorVect White = new(1f, 1f, 1f, 1f);
-	public static readonly ColorVect Black = new(0f, 0f, 0f, 1f);
+	public static readonly ColorVect WhiteOpaque = new(1f, 1f, 1f, 1f);
+	public static readonly ColorVect BlackOpaque = new(0f, 0f, 0f, 1f);
+	public static readonly ColorVect RedOpaque = new(1f, 0f, 0f, 1f);
+	public static readonly ColorVect GreenOpaque = new(0f, 1f, 0f, 1f);
+	public static readonly ColorVect BlueOpaque = new(0f, 0f, 1f, 1f);
+	public static readonly ColorVect WhiteTransparent = new(1f, 1f, 1f, 0f);
+	public static readonly ColorVect BlackTransparent = new(0f, 0f, 0f, 0f);
+	public static readonly ColorVect RedTransparent = new(1f, 0f, 0f, 0f);
+	public static readonly ColorVect GreenTransparent = new(0f, 1f, 0f, 0f);
+	public static readonly ColorVect BlueTransparent = new(0f, 0f, 1f, 0f);
 
 	internal readonly Vector4 AsVector4;
 

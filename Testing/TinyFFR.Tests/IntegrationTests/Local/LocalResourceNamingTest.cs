@@ -37,12 +37,12 @@ class LocalResourceNamingTest {
 		
 		// ReSharper disable AccessToDisposedClosure Factory will be disposed only after closure is no longer in use
 		using var factory = new LocalTinyFfrFactory();
-		using var tex = factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false);
+		using var tex = factory.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.WhiteOpaque), includeAlpha: false);
 		using var mat = factory.MaterialBuilder.CreateStandardMaterial(tex);
 		
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.LoadBackdropTexture(CommonTestAssets.FindAsset(KnownTestAsset.CloudsHdr), name: n));
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.MaterialBuilder.CreateStandardMaterial(tex, name: n));
-		TestNameStorageAndRetrieval(n => factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.White), includeAlpha: false, name: n));
+		TestNameStorageAndRetrieval(n => factory.AssetLoader.TextureBuilder.CreateColorMap(TexturePattern.PlainFill(ColorVect.WhiteOpaque), includeAlpha: false, name: n));
 		TestNameStorageAndRetrieval(n => factory.AssetLoader.MeshBuilder.CreateMesh(new Cuboid(1f), name: n));
 		TestNameStorageAndRetrieval(n => factory.ApplicationLoopBuilder.CreateLoop(name: n));
 		if (factory.DisplayDiscoverer.Primary is { } primaryDisplay) {

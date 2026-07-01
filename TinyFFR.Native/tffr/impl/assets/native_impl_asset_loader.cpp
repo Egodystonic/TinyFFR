@@ -8,7 +8,8 @@
 
 #define STBI_FAILURE_USERMSG
 #define STB_IMAGE_IMPLEMENTATION // This should only be defined in one file ever, it imports the entire implementation for stb_image in as a definition file
-#define STB_IMAGE_WRITE_IMPLEMENTATION // This should only be defined in one file ever, it imports the entire implementation for stb_image in as a definition file
+#define STB_IMAGE_WRITE_IMPLEMENTATION // This should only be defined in one file ever, it imports the entire implementation for stb_image_write in as a definition file
+#define STB_TRUETYPE_IMPLEMENTATION // This should only be defined in one file ever, it imports the entire implementation for stb_truetype in as a definition file
 #include <filesystem>
 
 #include <unordered_map>
@@ -16,6 +17,7 @@
 #include "assimp/GltfMaterial.h"
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
+#include "stb/stb_truetype.h"
 
 constexpr unsigned int MeshMaxCount = 1000000;
 constexpr unsigned int NoAnswerFoundGlobalIndex = MeshMaxCount + 1;

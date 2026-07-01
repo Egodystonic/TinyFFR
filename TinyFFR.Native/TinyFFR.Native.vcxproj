@@ -122,6 +122,7 @@ xcopy /y "$(ProjectDir)third_party\binaries\sdl\$(Configuration)\*.*" "$(Solutio
     <ClInclude Include="tffr\headers\utils_and_constants.h" />
     <ClInclude Include="third_party\headers\stb\stb_image.h" />
     <ClInclude Include="third_party\headers\stb\stb_image_write.h" />
+    <ClInclude Include="third_party\headers\stb\stb_truetype.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

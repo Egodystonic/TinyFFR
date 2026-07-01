@@ -457,12 +457,12 @@ class LocalMaterialsTest {
 					interiorSize: TexturePatternDefaultValues.RectanglesDefaultInteriorSize,
 					borderSize: new XYPair<int>(16, 16),
 					paddingSize: TexturePatternDefaultValues.RectanglesDefaultPaddingSize,
-					interiorValue: ColorVect.White,
+					interiorValue: ColorVect.WhiteOpaque,
 					borderRightValue: new ColorVect(1f, 0f, 0f),
 					borderTopValue: new ColorVect(1f, 1f, 0f),
 					borderLeftValue: new ColorVect(0f, 1f, 0f),
 					borderBottomValue: new ColorVect(0f, 0f, 1f),
-					paddingValue: ColorVect.Black,
+					paddingValue: ColorVect.BlackOpaque,
 					repetitions: (1, 1)
 				),
 				TexturePattern.Rectangles<Real>(
@@ -642,12 +642,12 @@ class LocalMaterialsTest {
 					interiorSize: TexturePatternDefaultValues.RectanglesDefaultInteriorSize,
 					borderSize: new XYPair<int>(16, 16),
 					paddingSize: TexturePatternDefaultValues.RectanglesDefaultPaddingSize,
-					interiorValue: ColorVect.White,
+					interiorValue: ColorVect.WhiteOpaque,
 					borderRightValue: new ColorVect(1f, 0f, 0f),
 					borderTopValue: new ColorVect(1f, 1f, 0f),
 					borderLeftValue: new ColorVect(0f, 1f, 0f),
 					borderBottomValue: new ColorVect(0f, 0f, 1f),
-					paddingValue: ColorVect.Black,
+					paddingValue: ColorVect.BlackOpaque,
 					repetitions: (1, 1)
 				),
 				TexturePattern.Rectangles<Real>(
@@ -798,8 +798,8 @@ class LocalMaterialsTest {
 			name: "Glass Material Resources"
 		);
 
-		var albedo = texBuilder.CreateColorMap(ColorVect.White, includeAlpha: false);
-		var at = texBuilder.CreateAbsorptionTransmissionMap(ColorVect.Black, transmission: 1f);
+		var albedo = texBuilder.CreateColorMap(ColorVect.WhiteOpaque, includeAlpha: false);
+		var at = texBuilder.CreateAbsorptionTransmissionMap(ColorVect.BlackOpaque, transmission: 1f);
 		var ormr = texBuilder.CreateOcclusionRoughnessMetallicReflectanceMap(
 			occlusion: 1f,
 			roughness: 0f,
@@ -846,8 +846,8 @@ class LocalMaterialsTest {
 			name: "Mirror Material Resources"
 		);
 
-		var albedo = texBuilder.CreateColorMap(ColorVect.White, includeAlpha: false);
-		var at = texBuilder.CreateAbsorptionTransmissionMap(ColorVect.White, transmission: 0f);
+		var albedo = texBuilder.CreateColorMap(ColorVect.WhiteOpaque, includeAlpha: false);
+		var at = texBuilder.CreateAbsorptionTransmissionMap(ColorVect.WhiteOpaque, transmission: 0f);
 		var ormr = texBuilder.CreateOcclusionRoughnessMetallicReflectanceMap(
 			occlusion: 1f,
 			roughness: 0f,

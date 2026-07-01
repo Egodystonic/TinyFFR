@@ -22,7 +22,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	
 	const string DefaultModelInstanceName = "Unnamed Model Instance";
 	const ShadingModeVariant DefaultPrimitiveShadingMode = ShadingModeVariant.Plain3DOpaque;
-	static readonly ColorVect DefaultPrimitiveBaseColor = ColorVect.White;
+	static readonly ColorVect DefaultPrimitiveBaseColor = ColorVect.WhiteOpaque;
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	// Because these properties are set frequently, they're all kept in their own separate maps for performance
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, Transform> _activeInstanceTransforms = new();
