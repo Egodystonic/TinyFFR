@@ -1,6 +1,7 @@
 // Created on 2026-06-29 by Ben Bowen
 // (c) Egodystonic / TinyFFR 2026
 
+using System.IO;
 using System.Text;
 using Egodystonic.TinyFFR.Assets.Local;
 using Egodystonic.TinyFFR.Assets.Materials;
@@ -8,25 +9,33 @@ using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes.Local;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
+using Egodystonic.TinyFFR.Rendering;
 using Egodystonic.TinyFFR.Resources;
 using Egodystonic.TinyFFR.Resources.Memory;
 using Egodystonic.TinyFFR.World;
 
 namespace Egodystonic.TinyFFR.Assets.Text;
 
-sealed class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font>, IDisposable {
-	readonly record struct FontData(Texture Atlas, ArrayPoolBackedMap<Rune, XYPair<float>> CoordsMap, ArrayPoolBackedMap<nuint, PenData> ActivePens);
+sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font>, IDisposable {
+	readonly record struct AtlasRuneData(XYPair<float> Offset, XYPair<float> Size);
+	readonly record struct FontData(Texture Atlas, ArrayPoolBackedMap<Rune, AtlasRuneData> CoordsMap, ArrayPoolBackedMap<nuint, PenData> ActivePens);
 	readonly record struct PenData(ResourceHandle<Font> OwningFont, Material Material);
-	
+
 	const string DefaultFontName = "Unnamed Font";
+	const float DefaultGlyphPixelHeight = 64f;
+	const int GlyphCellPadding = 2;
+	const int SdfPadding = 5;
+	const byte SdfOnEdgeValue = 180;
+	const float SdfPixelDistScale = SdfOnEdgeValue / (float) SdfPadding;
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly LocalAssetLoaderConfig _config;
 	readonly LocalMeshBuilder _meshBuilder;
 	readonly LocalTextureBuilder _textureBuilder;
 	readonly LocalMaterialBuilder _materialBuilder;
-	readonly MapPool<Rune, XYPair<float>> _coordsMapPool = new(false);
+	readonly MapPool<Rune, AtlasRuneData> _coordsMapPool = new(false);
 	readonly MapPool<nuint, PenData> _penMapPool = new(false);
 	readonly ArrayPoolBackedMap<ResourceHandle<Font>, FontData> _activeFonts = new();
+	nuint _nextHandleId = 0;
 	bool _isDisposed = false;
 
 	public LocalFontLoader(LocalFactoryGlobalObjectGroup globals, LocalAssetLoaderConfig config, LocalMeshBuilder meshBuilder, LocalTextureBuilder textureBuilder, LocalMaterialBuilder materialBuilder) {
@@ -41,7 +50,118 @@ sealed class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font>, IDis
 		
 	}
 	public Font LoadFont(ReadOnlySpan<char> fontFilePath, in FontCreationConfig config) {
-		
+		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+
+		var runes = config.SupportedRunes;
+		var count = runes.Length;
+		if (count <= 0) throw new ArgumentException("Font creation config must specify at least one supported rune.", nameof(config));
+
+		var glyphPixelHeight = DefaultGlyphPixelHeight; // TODO this will eventually be auto-calculated
+
+		UnmanagedBuffer<byte> fontBuffer;
+		try {
+			using var fileStream = new FileStream(fontFilePath.ToString(), FileMode.Open, FileAccess.Read);
+			var lengthBytes = checked((int) fileStream.Length);
+			fontBuffer = new UnmanagedBuffer<byte>(lengthBytes);
+			fileStream.ReadExactly(fontBuffer.AsSpan);
+		}
+		catch (Exception e) {
+			var fontFilePathAsStr = fontFilePath.ToString();
+			if (!File.Exists(fontFilePathAsStr)) throw new InvalidOperationException($"File '{fontFilePathAsStr}' does not exist (full path \"{Path.GetFullPath(fontFilePathAsStr)}\").", e);
+			else throw;
+		}
+
+		try {
+			InitFont(fontBuffer.BufferPointer, fontBuffer.Length, 0, out var fontHandle).ThrowIfFailure();
+			try {
+				GetFontVerticalMetrics(fontHandle, glyphPixelHeight, out var scale, out _, out _, out _).ThrowIfFailure();
+
+				var cellSize = (int) MathF.Ceiling(glyphPixelHeight) + 2 * SdfPadding + GlyphCellPadding;
+				var columns = (int) MathF.Ceiling(MathF.Sqrt(count));
+				var rows = (count + columns - 1) / columns;
+				var atlasWidth = columns * cellSize;
+				var atlasHeight = rows * cellSize;
+				var area = atlasWidth * atlasHeight;
+
+				using var coveragePool = _globals.HeapPool.Borrow<byte>(area);
+				var coverageSpan = coveragePool.Span;
+				coverageSpan.Clear();
+
+				var coordsMap = _coordsMapPool.Rent();
+
+				for (var i = 0; i < count; ++i) {
+					var codepoint = runes[i].Value;
+
+					FontContainsCodepoint(fontHandle, codepoint, out var isIncluded).ThrowIfFailure();
+					if (!isIncluded) continue; // Missing runes are simply left out of the map
+
+					var cellX = (i % columns) * cellSize;
+					var cellY = (i / columns) * cellSize;
+
+					GetCodepointSdf(fontHandle, codepoint, scale, SdfPadding, SdfOnEdgeValue, SdfPixelDistScale, out var glyphWidth, out var glyphHeight, out _, out _, out var sdfPtr).ThrowIfFailure();
+
+					// A null buffer indicates a glyph with no contours (e.g. whitespace); record an empty rect at the cell origin
+					if (sdfPtr == null) {
+						coordsMap.Add(runes[i], new AtlasRuneData(new((float) cellX / atlasWidth, (float) cellY / atlasHeight), XYPair<float>.Zero));
+						continue;
+					}
+
+					try {
+						// Guard against oversized glyphs bleeding in to neighbouring cells
+						var copyWidth = Math.Min(glyphWidth, cellSize);
+						var copyHeight = Math.Min(glyphHeight, cellSize);
+
+						for (var row = 0; row < copyHeight; ++row) {
+							new ReadOnlySpan<byte>(sdfPtr + row * glyphWidth, copyWidth)
+								.CopyTo(coverageSpan.Slice((cellY + row) * atlasWidth + cellX, copyWidth));
+						}
+
+						coordsMap.Add(
+							runes[i],
+							new AtlasRuneData(
+								new((float) cellX / atlasWidth, (float) cellY / atlasHeight),
+								new((float) copyWidth / atlasWidth, (float) copyHeight / atlasHeight)
+							)
+						);
+					}
+					finally {
+						FreeCodepointSdf(sdfPtr);
+					}
+				}
+
+				using var rgbPool = _globals.HeapPool.Borrow<TexelRgb24>(area);
+				var rgbSpan = rgbPool.Span;
+				for (var i = 0; i < area; ++i) {
+					var coverage = coverageSpan[i];
+					rgbSpan[i] = new TexelRgb24(coverage, coverage, coverage);
+				}
+
+				var atlas = _textureBuilder.CreateTexture(
+					(ReadOnlySpan<TexelRgb24>) rgbSpan,
+					new TextureGenerationConfig { Dimensions = new(atlasWidth, atlasHeight) },
+					new TextureCreationConfig {
+						IsLinearColorspace = true,
+						GenerateMipMaps = false,
+						RenderingConfig = new(disableTextureRepeat: true, disableTexelBlending: false, Quality.Standard),
+						Name = config.Name
+					}
+				);
+
+				var pens = _penMapPool.Rent();
+				_nextHandleId++;
+				var handle = new ResourceHandle<Font>(_nextHandleId);
+				_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultFontName);
+				_activeFonts.Add(handle, new FontData(atlas, coordsMap, pens));
+				return HandleToInstance(handle);
+			}
+			finally {
+				DisposeFont(fontHandle).ThrowIfFailure();
+			}
+		}
+		finally {
+			fontBuffer.Dispose();
+		}
 	}
 
 	public FontPen CreatePen(ResourceHandle<Font> handle, ColorVect foregroundColor, ColorVect backgroundColor, ColorVect outlineColor, float outlineThicknessMultiplier, ColorVect glowColor, float glowSizeMultiplier) {
@@ -78,9 +198,54 @@ sealed class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font>, IDis
 	}
 
 	#region Native Methods
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_shader_package")]
-	static extern InteropResult DisposeShaderPackage(
-		UIntPtr packageHandle
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "init_font")]
+	static extern InteropResult InitFont(
+		byte* fontData,
+		int fontDataLength,
+		int fontIndex,
+		out UIntPtr outFontHandle
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_font_vertical_metrics")]
+	static extern InteropResult GetFontVerticalMetrics(
+		UIntPtr fontHandle,
+		float pixelHeight,
+		out float outScale,
+		out int outAscent,
+		out int outDescent,
+		out int outLineGap
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "font_contains_codepoint")]
+	static extern InteropResult FontContainsCodepoint(
+		UIntPtr fontHandle,
+		int codepoint,
+		out InteropBool outResult
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_codepoint_sdf")]
+	static extern InteropResult GetCodepointSdf(
+		UIntPtr fontHandle,
+		int codepoint,
+		float scale,
+		int padding,
+		byte onedgeValue,
+		float pixelDistScale,
+		out int outWidth,
+		out int outHeight,
+		out int outXOff,
+		out int outYOff,
+		out byte* outBufferPtr
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "free_codepoint_sdf")]
+	static extern InteropResult FreeCodepointSdf(
+		byte* bufferPtr
+	);
+
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_font")]
+	static extern InteropResult DisposeFont(
+		UIntPtr fontHandle
 	);
 	#endregion
 	

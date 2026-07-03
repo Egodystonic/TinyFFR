@@ -75,7 +75,8 @@ public readonly ref struct FontCreationConfig : IConfigStruct<FontCreationConfig
 			(0x2122, 0x2123), // Language: TM (Trademark)
 			(0x2190, 0x2200), // UI: Arrows
 			(0x2200, 0x2300), // Maths: Various Symbols
-			(0x2500, 0x2600)  // UI: Boxes, Gradients, Tree/Graph Symbols, Shapes, State Markers
+			(0x2500, 0x2600), // UI: Boxes, Gradients, Tree/Graph Symbols, Shapes, State Markers
+			(0xFFFD, 0xFFFE)  // Unicode replacement char
 		);
 	}
 }

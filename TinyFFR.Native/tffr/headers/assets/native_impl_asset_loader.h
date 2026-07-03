@@ -9,6 +9,7 @@
 
 typedef const aiScene* MemoryLoadedAssetHandle;
 typedef unsigned char* MemoryLoadedTextureRgba32DataPtr;
+typedef void* FontHandle;
 
 class native_impl_asset_loader {
 public:
@@ -99,7 +100,14 @@ public:
 	static void get_texture_file_data(const char* filePath, int32_t* outWidth, int32_t* outHeight, int32_t* outChannelCount);
 	static void load_texture_file_in_to_memory(const char* filePath, interop_bool includeWAlphaChannel, int32_t* outWidth, int32_t* outHeight, MemoryLoadedTextureRgba32DataPtr* outTextureData);
 	static void unload_texture_file_from_memory(MemoryLoadedTextureRgba32DataPtr textureData);
-	static void write_texels_to_disk(const char* filePath, int32_t width, int32_t height, int32_t bytesPerPixel, const void* data);	
+	static void write_texels_to_disk(const char* filePath, int32_t width, int32_t height, int32_t bytesPerPixel, const void* data);
+
+	static void init_font(const uint8_t* fontData, int32_t fontDataLength, int32_t fontIndex, FontHandle* outFontHandle);
+	static void get_font_vertical_metrics(FontHandle font, float pixelHeight, float* outScale, int32_t* outAscent, int32_t* outDescent, int32_t* outLineGap);
+	static void font_contains_codepoint(FontHandle font, int32_t codepoint, interop_bool* outResult);
+	static void get_codepoint_sdf(FontHandle font, int32_t codepoint, float scale, int32_t padding, uint8_t onedgeValue, float pixelDistScale, int32_t* outWidth, int32_t* outHeight, int32_t* outXOff, int32_t* outYOff, uint8_t** outBufferPtr);
+	static void free_codepoint_sdf(uint8_t* bufferPtr);
+	static void dispose_font(FontHandle font);
 
 	static void load_skybox_file_in_to_memory(uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle);
 	static void unload_skybox_file_from_memory(TextureHandle textureHandle);
