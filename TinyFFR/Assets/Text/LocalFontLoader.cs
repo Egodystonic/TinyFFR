@@ -73,9 +73,9 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		}
 
 		try {
-			InitFont(fontBuffer.BufferPointer, fontBuffer.Length, 0, out var fontHandle).ThrowIfFailure();
+			FontInit(fontBuffer.BufferPointer, fontBuffer.Length, 0, out var fontHandle).ThrowIfFailure();
 			try {
-				GetFontVerticalMetrics(fontHandle, glyphPixelHeight, out var scale, out _, out _, out _).ThrowIfFailure();
+				FontGetVerticalMetrics(fontHandle, glyphPixelHeight, out var scale, out _, out _, out _).ThrowIfFailure();
 
 				var cellSize = (int) MathF.Ceiling(glyphPixelHeight) + 2 * SdfPadding + GlyphCellPadding;
 				var columns = (int) MathF.Ceiling(MathF.Sqrt(count));
@@ -99,7 +99,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 					var cellX = (i % columns) * cellSize;
 					var cellY = (i / columns) * cellSize;
 
-					GetCodepointSdf(fontHandle, codepoint, scale, SdfPadding, SdfOnEdgeValue, SdfPixelDistScale, out var glyphWidth, out var glyphHeight, out _, out _, out var sdfPtr).ThrowIfFailure();
+					FontGenerateSdfBuffer(fontHandle, codepoint, scale, SdfPadding, SdfOnEdgeValue, SdfPixelDistScale, out var glyphWidth, out var glyphHeight, out _, out _, out var sdfPtr).ThrowIfFailure();
 
 					// A null buffer indicates a glyph with no contours (e.g. whitespace); record an empty rect at the cell origin
 					if (sdfPtr == null) {
@@ -126,7 +126,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 						);
 					}
 					finally {
-						FreeCodepointSdf(sdfPtr);
+						FontFreeSdfBuffer(sdfPtr);
 					}
 				}
 
@@ -156,7 +156,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 				return HandleToInstance(handle);
 			}
 			finally {
-				DisposeFont(fontHandle).ThrowIfFailure();
+				FontDispose(fontHandle).ThrowIfFailure();
 			}
 		}
 		finally {
@@ -198,36 +198,36 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	}
 
 	#region Native Methods
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "init_font")]
-	static extern InteropResult InitFont(
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "font_init")]
+	static extern InteropResult FontInit(
 		byte* fontData,
 		int fontDataLength,
 		int fontIndex,
 		out UIntPtr outFontHandle
 	);
 
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_font_vertical_metrics")]
-	static extern InteropResult GetFontVerticalMetrics(
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "font_get_vertical_metrics")]
+	static extern InteropResult FontGetVerticalMetrics(
 		UIntPtr fontHandle,
 		float pixelHeight,
-		out float outScale,
+		out float outScalingConstant,
 		out int outAscent,
 		out int outDescent,
 		out int outLineGap
 	);
 
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "font_contains_codepoint")]
-	static extern InteropResult FontContainsCodepoint(
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "font_get_codepoint_glyph_index")]
+	static extern InteropResult FontGetCodepointGlyphIndex(
 		UIntPtr fontHandle,
 		int codepoint,
-		out InteropBool outResult
+		out int outGlyphIndex
 	);
 
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "get_codepoint_sdf")]
-	static extern InteropResult GetCodepointSdf(
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "font_generate_sdf_buffer")]
+	static extern InteropResult FontGenerateSdfBuffer(
 		UIntPtr fontHandle,
-		int codepoint,
-		float scale,
+		int glyphIndex,
+		float scalingConstant,
 		int padding,
 		byte onedgeValue,
 		float pixelDistScale,
@@ -235,16 +235,16 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		out int outHeight,
 		out int outXOff,
 		out int outYOff,
-		out byte* outBufferPtr
+		out byte* outPotentialBufferPtr
 	);
 
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "free_codepoint_sdf")]
-	static extern InteropResult FreeCodepointSdf(
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "font_free_sdf_buffer")]
+	static extern InteropResult FontFreeSdfBuffer(
 		byte* bufferPtr
 	);
 
-	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "dispose_font")]
-	static extern InteropResult DisposeFont(
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "font_dispose")]
+	static extern InteropResult FontDispose(
 		UIntPtr fontHandle
 	);
 	#endregion

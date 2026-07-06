@@ -17,7 +17,6 @@
 #include "assimp/GltfMaterial.h"
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
-#include "stb/stb_truetype.h"
 
 constexpr unsigned int MeshMaxCount = 1000000;
 constexpr unsigned int NoAnswerFoundGlobalIndex = MeshMaxCount + 1;
@@ -1012,97 +1011,6 @@ StartExportedFunc(write_texels_to_disk, const char* filePath, int32_t width, int
 	EndExportedFunc
 }
 
-void native_impl_asset_loader::init_font(const uint8_t* fontData, int32_t fontDataLength, int32_t fontIndex, FontHandle* outFontHandle) {
-	ThrowIfNull(fontData, "Font data pointer was null.");
-	ThrowIfNotPositive(fontDataLength, "Font data length was non-positive.");
-	ThrowIfNull(outFontHandle, "Out font handle pointer was null.");
-
-	auto offset = stbtt_GetFontOffsetForIndex(fontData, fontIndex);
-	ThrowIf(offset < 0, "Font index was out of bounds for the given font data.");
-
-	auto* info = new stbtt_fontinfo{};
-	if (!stbtt_InitFont(info, fontData, offset)) {
-		delete info;
-		Throw("Could not initialize font from given data.");
-	}
-	*outFontHandle = info;
-}
-StartExportedFunc(init_font, const uint8_t* fontData, int32_t fontDataLength, int32_t fontIndex, FontHandle* outFontHandle) {
-	native_impl_asset_loader::init_font(fontData, fontDataLength, fontIndex, outFontHandle);
-	EndExportedFunc
-}
-
-void native_impl_asset_loader::get_font_vertical_metrics(FontHandle font, float pixelHeight, float* outScale, int32_t* outAscent, int32_t* outDescent, int32_t* outLineGap) {
-	ThrowIfNull(font, "Font handle was null.");
-	ThrowIfNull(outScale, "Out scale pointer was null.");
-	ThrowIfNull(outAscent, "Out ascent pointer was null.");
-	ThrowIfNull(outDescent, "Out descent pointer was null.");
-	ThrowIfNull(outLineGap, "Out line gap pointer was null.");
-
-	auto* info = static_cast<stbtt_fontinfo*>(font);
-	*outScale = stbtt_ScaleForPixelHeight(info, pixelHeight);
-	int ascent, descent, lineGap;
-	stbtt_GetFontVMetrics(info, &ascent, &descent, &lineGap);
-	*outAscent = static_cast<int32_t>(ascent);
-	*outDescent = static_cast<int32_t>(descent);
-	*outLineGap = static_cast<int32_t>(lineGap);
-}
-StartExportedFunc(get_font_vertical_metrics, FontHandle font, float pixelHeight, float* outScale, int32_t* outAscent, int32_t* outDescent, int32_t* outLineGap) {
-	native_impl_asset_loader::get_font_vertical_metrics(font, pixelHeight, outScale, outAscent, outDescent, outLineGap);
-	EndExportedFunc
-}
-
-void native_impl_asset_loader::font_contains_codepoint(FontHandle font, int32_t codepoint, interop_bool* outResult) {
-	ThrowIfNull(font, "Font handle was null.");
-	ThrowIfNull(outResult, "Out result pointer was null.");
-
-	auto* info = static_cast<stbtt_fontinfo*>(font);
-	*outResult = stbtt_FindGlyphIndex(info, codepoint) != 0 ? interop_bool_true : interop_bool_false;
-}
-StartExportedFunc(font_contains_codepoint, FontHandle font, int32_t codepoint, interop_bool* outResult) {
-	native_impl_asset_loader::font_contains_codepoint(font, codepoint, outResult);
-	EndExportedFunc
-}
-
-void native_impl_asset_loader::get_codepoint_sdf(FontHandle font, int32_t codepoint, float scale, int32_t padding, uint8_t onedgeValue, float pixelDistScale, int32_t* outWidth, int32_t* outHeight, int32_t* outXOff, int32_t* outYOff, uint8_t** outBufferPtr) {
-	ThrowIfNull(font, "Font handle was null.");
-	ThrowIfNull(outWidth, "Out width pointer was null.");
-	ThrowIfNull(outHeight, "Out height pointer was null.");
-	ThrowIfNull(outXOff, "Out x offset pointer was null.");
-	ThrowIfNull(outYOff, "Out y offset pointer was null.");
-	ThrowIfNull(outBufferPtr, "Out buffer pointer was null.");
-
-	auto* info = static_cast<stbtt_fontinfo*>(font);
-	int width = 0, height = 0, xOff = 0, yOff = 0;
-	// A null return is valid and expected for glyphs with no contours (e.g. whitespace); the caller handles it
-	*outBufferPtr = stbtt_GetCodepointSDF(info, scale, codepoint, padding, onedgeValue, pixelDistScale, &width, &height, &xOff, &yOff);
-	*outWidth = static_cast<int32_t>(width);
-	*outHeight = static_cast<int32_t>(height);
-	*outXOff = static_cast<int32_t>(xOff);
-	*outYOff = static_cast<int32_t>(yOff);
-}
-StartExportedFunc(get_codepoint_sdf, FontHandle font, int32_t codepoint, float scale, int32_t padding, uint8_t onedgeValue, float pixelDistScale, int32_t* outWidth, int32_t* outHeight, int32_t* outXOff, int32_t* outYOff, uint8_t** outBufferPtr) {
-	native_impl_asset_loader::get_codepoint_sdf(font, codepoint, scale, padding, onedgeValue, pixelDistScale, outWidth, outHeight, outXOff, outYOff, outBufferPtr);
-	EndExportedFunc
-}
-
-void native_impl_asset_loader::free_codepoint_sdf(uint8_t* bufferPtr) {
-	stbtt_FreeSDF(bufferPtr, nullptr);
-}
-StartExportedFunc(free_codepoint_sdf, uint8_t* bufferPtr) {
-	native_impl_asset_loader::free_codepoint_sdf(bufferPtr);
-	EndExportedFunc
-}
-
-void native_impl_asset_loader::dispose_font(FontHandle font) {
-	ThrowIfNull(font, "Font handle was null.");
-	delete static_cast<stbtt_fontinfo*>(font);
-}
-StartExportedFunc(dispose_font, FontHandle font) {
-	native_impl_asset_loader::dispose_font(font);
-	EndExportedFunc
-}
-
 void native_impl_asset_loader::load_skybox_file_in_to_memory(uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle) {
 	ThrowIfNull(textureData, "Texture data pointer was null.");
 	ThrowIf(textureDataLength < 0, "Texture data length was negative.");
@@ -1150,3 +1058,92 @@ StartExportedFunc(unload_ibl_file_from_memory, TextureHandle textureHandle) {
 	EndExportedFunc
 }
 #pragma endregion
+
+#pragma region Fonts
+void native_impl_asset_loader::font_init(const uint8_t* fontData, int32_t fontDataLength, int32_t fontIndex, FontHandle* outFontHandle) {
+	ThrowIfNull(fontData, "Font data pointer was null.");
+	ThrowIfNotPositive(fontDataLength, "Font data length was non-positive.");
+	ThrowIfNull(outFontHandle, "Out font handle pointer was null.");
+
+	auto offset = stbtt_GetFontOffsetForIndex(fontData, fontIndex);
+	ThrowIf(offset < 0, "Font index was out of bounds for the given font data.");
+
+	auto* info = new stbtt_fontinfo{};
+	if (!stbtt_InitFont(info, fontData, offset)) {
+		delete info;
+		Throw("Could not initialize font from given data.");
+	}
+	*outFontHandle = info;
+}
+StartExportedFunc(font_init, const uint8_t* fontData, int32_t fontDataLength, int32_t fontIndex, FontHandle* outFontHandle) {
+	native_impl_asset_loader::font_init(fontData, fontDataLength, fontIndex, outFontHandle);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::font_get_vertical_metrics(FontHandle font, float pixelHeight, float* outScalingConstant, int32_t* outAscent, int32_t* outDescent, int32_t* outLineGap) {
+	ThrowIfNull(font, "Font handle was null.");
+	ThrowIfNull(outScalingConstant, "Out scale pointer was null.");
+	ThrowIfNull(outAscent, "Out ascent pointer was null.");
+	ThrowIfNull(outDescent, "Out descent pointer was null.");
+	ThrowIfNull(outLineGap, "Out line gap pointer was null.");
+
+	int ascent, descent, lineGap;
+	stbtt_GetFontVMetrics(font, &ascent, &descent, &lineGap);
+	*outAscent = static_cast<int32_t>(ascent);
+	*outDescent = static_cast<int32_t>(descent);
+	*outLineGap = static_cast<int32_t>(lineGap);
+	*outScalingConstant = stbtt_ScaleForPixelHeight(font, pixelHeight);
+}
+StartExportedFunc(font_get_vertical_metrics, FontHandle font, float pixelHeight, float* outScalingConstant, int32_t* outAscent, int32_t* outDescent, int32_t* outLineGap) {
+	native_impl_asset_loader::font_get_vertical_metrics(font, pixelHeight, outScalingConstant, outAscent, outDescent, outLineGap);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::font_get_codepoint_glyph_index(FontHandle font, int32_t codepoint, int32_t* outGlyphIndex) {
+	ThrowIfNull(font, "Font handle was null.");
+	ThrowIfNull(outGlyphIndex, "Out glyph index pointer was null.");
+
+	*outGlyphIndex = static_cast<int32_t>(stbtt_FindGlyphIndex(font, codepoint));
+}
+StartExportedFunc(font_get_codepoint_glyph_index, FontHandle font, int32_t codepoint, int32_t* outGlyphIndex) {
+	native_impl_asset_loader::font_get_codepoint_glyph_index(font, codepoint, outGlyphIndex);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::font_generate_sdf_buffer(FontHandle font, int32_t glyphIndex, float scalingConstant, int32_t padding, uint8_t onedgeValue, float pixelDistScale, int32_t* outWidth, int32_t* outHeight, int32_t* outXOff, int32_t* outYOff, uint8_t** outPotentialBufferPtr) {
+	ThrowIfNull(font, "Font handle was null.");
+	ThrowIfNull(outWidth, "Out width pointer was null.");
+	ThrowIfNull(outHeight, "Out height pointer was null.");
+	ThrowIfNull(outXOff, "Out x offset pointer was null.");
+	ThrowIfNull(outYOff, "Out y offset pointer was null.");
+	ThrowIfNull(outPotentialBufferPtr, "Out buffer pointer was null.");
+
+	int width = 0, height = 0, xOff = 0, yOff = 0;
+	*outPotentialBufferPtr = stbtt_GetGlyphSDF(font, scalingConstant, glyphIndex, padding, onedgeValue, pixelDistScale, &width, &height, &xOff, &yOff);
+	*outWidth = static_cast<int32_t>(width);
+	*outHeight = static_cast<int32_t>(height);
+	*outXOff = static_cast<int32_t>(xOff);
+	*outYOff = static_cast<int32_t>(yOff);
+}
+StartExportedFunc(font_generate_sdf_buffer, FontHandle font, int32_t glyphIndex, float scalingConstant, int32_t padding, uint8_t onedgeValue, float pixelDistScale, int32_t* outWidth, int32_t* outHeight, int32_t* outXOff, int32_t* outYOff, uint8_t** outPotentialBufferPtr) {
+	native_impl_asset_loader::font_generate_sdf_buffer(font, glyphIndex, scalingConstant, padding, onedgeValue, pixelDistScale, outWidth, outHeight, outXOff, outYOff, outPotentialBufferPtr);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::font_free_sdf_buffer(uint8_t* bufferPtr) {
+	stbtt_FreeSDF(bufferPtr, nullptr);
+}
+StartExportedFunc(font_free_sdf_buffer, uint8_t* bufferPtr) {
+	native_impl_asset_loader::font_free_sdf_buffer(bufferPtr);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::font_dispose(FontHandle font) {
+	ThrowIfNull(font, "Font handle was null.");
+	delete static_cast<stbtt_fontinfo*>(font);
+}
+StartExportedFunc(font_dispose, FontHandle font) {
+	native_impl_asset_loader::font_dispose(font);
+	EndExportedFunc
+}
+#pragma endregion 
