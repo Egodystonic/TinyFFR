@@ -1060,7 +1060,7 @@ StartExportedFunc(unload_ibl_file_from_memory, TextureHandle textureHandle) {
 #pragma endregion
 
 #pragma region Fonts
-void native_impl_asset_loader::font_init(const uint8_t* fontData, int32_t fontDataLength, int32_t fontIndex, FontHandle* outFontHandle) {
+void native_impl_asset_loader::font_load(const uint8_t* fontData, int32_t fontDataLength, int32_t fontIndex, FontHandle* outFontHandle) {
 	ThrowIfNull(fontData, "Font data pointer was null.");
 	ThrowIfNotPositive(fontDataLength, "Font data length was non-positive.");
 	ThrowIfNull(outFontHandle, "Out font handle pointer was null.");
@@ -1075,8 +1075,8 @@ void native_impl_asset_loader::font_init(const uint8_t* fontData, int32_t fontDa
 	}
 	*outFontHandle = info;
 }
-StartExportedFunc(font_init, const uint8_t* fontData, int32_t fontDataLength, int32_t fontIndex, FontHandle* outFontHandle) {
-	native_impl_asset_loader::font_init(fontData, fontDataLength, fontIndex, outFontHandle);
+StartExportedFunc(font_load, const uint8_t* fontData, int32_t fontDataLength, int32_t fontIndex, FontHandle* outFontHandle) {
+	native_impl_asset_loader::font_load(fontData, fontDataLength, fontIndex, outFontHandle);
 	EndExportedFunc
 }
 

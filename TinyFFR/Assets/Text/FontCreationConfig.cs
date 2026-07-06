@@ -15,11 +15,11 @@ public readonly ref struct FontCreationConfig : IConfigStruct<FontCreationConfig
 	
 	public FontCreationConfig() { }
 
-#pragma warning disable CA1822 // "Could be static" -- Placeholder method for future
 	internal void ThrowIfInvalid() {
-		/* no op */
+		if (SupportedRunes.Length == 0) {
+			throw new ArgumentOutOfRangeException(nameof(SupportedRunes), SupportedRunes.Length, "Must supplt at least one supported rune.");
+		}
 	}
-#pragma warning restore CA1822
 
 	public static int GetHeapStorageFormattedLength(in FontCreationConfig src) {
 		return SerializationSizeOfString(src.Name); // Name

@@ -108,7 +108,7 @@ public:
 	static void load_ibl_file_in_to_memory(uint8_t* textureData, int32_t textureDataLength, TextureHandle* outTextureHandle);
 	static void unload_ibl_file_from_memory(TextureHandle textureHandle);
 	
-	static void font_init(const uint8_t* fontData, int32_t fontDataLength, int32_t fontIndex, FontHandle* outFontHandle);
+	static void font_load(const uint8_t* fontData, int32_t fontDataLength, int32_t fontIndex, FontHandle* outFontHandle);
 	static void font_get_vertical_metrics(FontHandle font, float pixelHeight, float* outScalingConstant, int32_t* outAscent, int32_t* outDescent, int32_t* outLineGap);
 	static void font_get_codepoint_glyph_index(FontHandle font, int32_t codepoint, int32_t* outGlyphIndex);
 	static void font_generate_sdf_buffer(FontHandle font, int32_t glyphIndex, float scalingConstant, int32_t padding, uint8_t onedgeValue, float pixelDistScale, int32_t* outWidth, int32_t* outHeight, int32_t* outXOff, int32_t* outYOff, uint8_t** outPotentialBufferPtr);
