@@ -17,7 +17,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Text;
 
 sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font>, IDisposable {
-	readonly record struct AtlasRuneData(XYPair<float> NibOffset, XYPair<float> QuadSize);
+	readonly record struct AtlasRuneData(XYPair<float> AtlasUVOffset, XYPair<float> AtlasUVSize, XYPair<float> NibOffset);
 	readonly record struct FontData(Texture Atlas, ArrayPoolBackedMap<Rune, AtlasRuneData> RuneMap, ArrayPoolBackedMap<nuint, PenData> ActivePens);
 	readonly record struct PenData(ResourceHandle<Font> OwningFont, Material Material);
 
@@ -27,13 +27,13 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	const byte SdfOnEdgeValue = 180;
 	const float SdfPixelDistScale = SdfOnEdgeValue / (float) SdfRenderPadding;
 	readonly int[] _atlasSizeTargets = [ 1024, 2048, 4096, 8192 ];
-	readonly float[] _sdfRenderHeightTargets = [ 64f, 48f, 32f ];
+	readonly int[] _sdfRenderHeightTargets = [ 64, 48, 32 ];
 	readonly LocalFactoryGlobalObjectGroup _globals;
 	readonly LocalAssetLoaderConfig _config;
 	readonly LocalMeshBuilder _meshBuilder;
 	readonly LocalTextureBuilder _textureBuilder;
 	readonly LocalMaterialBuilder _materialBuilder;
-	readonly MapPool<Rune, AtlasRuneData> _coordsMapPool = new(false);
+	readonly MapPool<Rune, AtlasRuneData> _runeMapPool = new(false);
 	readonly MapPool<nuint, PenData> _penMapPool = new(false);
 	readonly ArrayPoolBackedMap<Rune, int> _fontLoadRuneToGlyphMap = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<Font>, FontData> _activeFonts = new();
@@ -54,11 +54,66 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	public Font LoadFont(ReadOnlySpan<char> fontFilePath, in FontCreationConfig config) {
 
 	}
+	int GetAtlasCellHeight(int renderHeight) => renderHeight + SdfRenderPadding * 2 + AdditionalAtlasGlyphCellPadding;
+	(int RenderHeight, float ScalingConstant, int AtlasDimension) DetermineAppropriateFontRenderMetrics(UIntPtr fontHandle, in FontCreationConfig config) {
+		// Assumes _fontLoadRuneToGlyphMap has been populated
+		
+		for (var i = 0; i < _atlasSizeTargets.Length; ++i) {
+			var heightTargetRange = i == _atlasSizeTargets.Length - 1 
+				? new Range(0, ^0)
+				: new Range(0, 1);
+
+			var heightTargets = _sdfRenderHeightTargets.AsSpan(heightTargetRange);
+			for (var j = 0; j < heightTargets.Length; ++j) {
+				FontGetVerticalMetrics(
+					fontHandle,
+					heightTargets[j],
+					out var scalingConstant,
+					out _,
+					out _,
+					out _
+				).ThrowIfFailure();
+				
+				var cellHeight = GetAtlasCellHeight(heightTargets[j]);
+				
+				var numRowsRemaining = _atlasSizeTargets[i] / cellHeight;
+				var texelsRemainingInCurrentRow = _atlasSizeTargets[i];
+				
+				for (var r = 0; r < config.SupportedRunes.Length; ++r) {
+					FontGetSdfBufferDimensions(
+						fontHandle,
+						_fontLoadRuneToGlyphMap[config.SupportedRunes[r]],
+						scalingConstant,
+						SdfRenderPadding,
+						out var width,
+						out _
+					).ThrowIfFailure();
+					
+					if (width <= 0) continue;
+					
+					texelsRemainingInCurrentRow -= width;
+					while (texelsRemainingInCurrentRow < 0) {
+						--numRowsRemaining;
+						if (numRowsRemaining == 0) goto atlasTooSmall;
+						texelsRemainingInCurrentRow += _atlasSizeTargets[i];
+					}
+				}
+				
+				return (heightTargets[j], scalingConstant, _atlasSizeTargets[i]);
+				atlasTooSmall: continue;
+			}
+		}
+		
+		throw new InvalidOperationException(
+			$"Can not load font because the requested rune set " +
+			$"({config.SupportedRunes.Length} runes) is too large " +
+			$"to fit in a pre-baked font atlas. TinyFFR does not yet " +
+			$"support dynamic font atlas writing for larger rune sets."
+		);
+	}
 	Font LoadFont(byte* ttfFileStreamPtr, int ttfFileStreamLengthBytes, in FontCreationConfig config) {
 		ThrowIfThisIsDisposed();
 		config.ThrowIfInvalid();
-
-		var runes = config.SupportedRunes;
 
 		FontLoad(
 			ttfFileStreamPtr,
@@ -67,137 +122,91 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			out var fontHandle
 		).ThrowIfFailure();
 		try {
-			float chosenSdfRenderHeight;
-			int chosenAtlasDimension;
-			float chosenScalingConstant;
-
+			var runes = config.SupportedRunes;
+		
 			_fontLoadRuneToGlyphMap.ClearWithoutZeroingMemory();
-			for (var i = 0; i < config.SupportedRunes.Length; ++i) {
+			for (var r = 0; r < runes.Length; ++r) {
 				FontGetCodepointGlyphIndex(
 					fontHandle,
-					config.SupportedRunes[i].Value,
+					runes[r].Value,
 					out var glyphIndex
 				).ThrowIfFailure();
-				_fontLoadRuneToGlyphMap[config.SupportedRunes[i]] = glyphIndex;
-			}
-
-			for (var i = 0; i < _atlasSizeTargets.Length; ++i) {
-				var isLastSizeTarget = i == _atlasSizeTargets.Length - 1;
-				var heightTargetRange = isLastSizeTarget 
-					? new Range(0, ^0)
-					: new Range(0, 1);
-
-				var heightTargets = _sdfRenderHeightTargets.AsSpan(heightTargetRange);
-				for (var j = 0; j < heightTargets.Length; ++j) {
-					FontGetVerticalMetrics(
-						fontHandle,
-						heightTargets[j],
-						out var scalingConstant,
-						out _,
-						out _,
-						out _
-					).ThrowIfFailure();
-
-					// TODO here use stbtt_GetGlyphBitmapBox -- but need to add padding ourselves
-				}
-
-				if (isLastSizeTarget) {
-					throw new InvalidOperationException(
-						$"Can not load font because the requested rune set " +
-						$"({config.SupportedRunes.Length} runes) is too large " +
-						$"to fit in a pre-baked font atlas. TinyFFR does not yet " +
-						$"support dynamic font atlas writing for larger rune sets."
-					);
-				}
+				_fontLoadRuneToGlyphMap[runes[r]] = glyphIndex;
 			}
 			
-
-
-
-
-
-
-
-
-
+			var runeMap = _runeMapPool.Rent();
+			var (renderHeight, scalingConstant, atlasDimension) = DetermineAppropriateFontRenderMetrics(fontHandle, in config);
+			var atlasDimensionReciprocal = 1f / atlasDimension;
+			var cellHeight = GetAtlasCellHeight(renderHeight);
+			using var texelBuffer = _globals.HeapPool.Borrow<TexelRgb24>(atlasDimension * atlasDimension);
+			var nib = XYPair<int>.Zero;
 			
-
-			var cellSize = (int) MathF.Ceiling(glyphPixelHeight) + 2 * SdfRenderPadding + AdditionalAtlasGlyphCellPadding;
-			var columns = (int) MathF.Ceiling(MathF.Sqrt(count));
-			var rows = (count + columns - 1) / columns;
-			var atlasWidth = columns * cellSize;
-			var atlasHeight = rows * cellSize;
-			var area = atlasWidth * atlasHeight;
-
-			using var coveragePool = _globals.HeapPool.Borrow<byte>(area);
-			var coverageSpan = coveragePool.Span;
-			coverageSpan.Clear();
-
-			var coordsMap = _coordsMapPool.Rent();
-
-			for (var i = 0; i < count; ++i) {
-				var codepoint = runes[i].Value;
-
-				FontContainsCodepoint(fontHandle, codepoint, out var isIncluded).ThrowIfFailure();
-				if (!isIncluded) continue; // Missing runes are simply left out of the map
-
-				var cellX = (i % columns) * cellSize;
-				var cellY = (i / columns) * cellSize;
-
-				FontGenerateSdfBuffer(fontHandle, codepoint, scale, SdfRenderPadding, SdfOnEdgeValue, SdfPixelDistScale, out var glyphWidth, out var glyphHeight, out _, out _, out var sdfPtr).ThrowIfFailure();
-
-				// A null buffer indicates a glyph with no contours (e.g. whitespace); record an empty rect at the cell origin
-				if (sdfPtr == null) {
-					coordsMap.Add(runes[i], new AtlasRuneData(new((float) cellX / atlasWidth, (float) cellY / atlasHeight), XYPair<float>.Zero));
-					continue;
-				}
-
+			for (var r = 0; r < runes.Length; ++r) {
+				byte* potentialBufferPtr = null;
 				try {
-					// Guard against oversized glyphs bleeding in to neighbouring cells
-					var copyWidth = Math.Min(glyphWidth, cellSize);
-					var copyHeight = Math.Min(glyphHeight, cellSize);
-
-					for (var row = 0; row < copyHeight; ++row) {
-						new ReadOnlySpan<byte>(sdfPtr + row * glyphWidth, copyWidth)
-							.CopyTo(coverageSpan.Slice((cellY + row) * atlasWidth + cellX, copyWidth));
+					FontGenerateSdfBuffer(
+						fontHandle,
+						_fontLoadRuneToGlyphMap[runes[r]],
+						scalingConstant,
+						SdfRenderPadding,
+						SdfOnEdgeValue,
+						SdfPixelDistScale,
+						out var bufferWidth,
+						out var bufferHeight,
+						out var xOffset,
+						out var yOffset,
+						out potentialBufferPtr
+					).ThrowIfFailure();
+					
+					if (potentialBufferPtr == null || bufferWidth == 0 || bufferHeight == 0) continue;
+					if (nib.X + bufferWidth > atlasDimension) {
+						nib = (0, nib.Y + cellHeight);
+						if (nib.Y + cellHeight > atlasDimension) {
+							throw new InvalidOperationException("Ran out of atlas space when generating font (this is a bug in TinyFFR).");
+						}
 					}
-
-					coordsMap.Add(
-						runes[i],
-						new AtlasRuneData(
-							new((float) cellX / atlasWidth, (float) cellY / atlasHeight),
-							new((float) copyWidth / atlasWidth, (float) copyHeight / atlasHeight)
-						)
+					
+					bufferHeight = Int32.Min(bufferHeight, cellHeight);
+					for (var row = 0; row < bufferHeight; ++row) {
+						var verticalNibOffset = bufferHeight - (row + 1); // Because stb returns bitmap in top-to-bottom order
+						var spanStartIndex = (verticalNibOffset + nib.Y) * atlasDimension + nib.X;
+						var bufferStartIndex = row * bufferWidth;
+						for (var column = 0; column < bufferWidth; ++column) {
+							var sdfValue = potentialBufferPtr[bufferStartIndex + column];
+							texelBuffer.Span[spanStartIndex + column] = new TexelRgb24(sdfValue, sdfValue, sdfValue);
+						}
+					}
+					
+					runeMap[runes[r]] = new AtlasRuneData(
+						nib.Cast<float>() * atlasDimensionReciprocal,
+						new XYPair<float>(bufferWidth, bufferHeight) * atlasDimensionReciprocal, 
+						new XYPair<float>(xOffset, yOffset) * atlasDimensionReciprocal
 					);
+					
+					nib = nib with { X = nib.X + bufferWidth };
 				}
 				finally {
-					FontFreeSdfBuffer(sdfPtr);
+					if (potentialBufferPtr != null) FontFreeSdfBuffer(potentialBufferPtr).ThrowIfFailure();
 				}
-			}
-
-			using var rgbPool = _globals.HeapPool.Borrow<TexelRgb24>(area);
-			var rgbSpan = rgbPool.Span;
-			for (var i = 0; i < area; ++i) {
-				var coverage = coverageSpan[i];
-				rgbSpan[i] = new TexelRgb24(coverage, coverage, coverage);
 			}
 
 			var atlas = _textureBuilder.CreateTexture(
-				(ReadOnlySpan<TexelRgb24>) rgbSpan,
-				new TextureGenerationConfig { Dimensions = new(atlasWidth, atlasHeight) },
+				texelBuffer.Span,
+				new TextureGenerationConfig {
+					Dimensions = new(atlasDimension, atlasDimension)
+				},
 				new TextureCreationConfig {
 					IsLinearColorspace = true,
-					GenerateMipMaps = false,
+					GenerateMipMaps = true,
 					RenderingConfig = new(disableTextureRepeat: true, disableTexelBlending: false, Quality.Standard),
 					Name = config.Name
 				}
 			);
 
-			var pens = _penMapPool.Rent();
 			_nextHandleId++;
 			var handle = new ResourceHandle<Font>(_nextHandleId);
 			_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultFontName);
-			_activeFonts.Add(handle, new FontData(atlas, coordsMap, pens));
+			_activeFonts.Add(handle, new FontData(atlas, runeMap, _penMapPool.Rent()));
 			return HandleToInstance(handle);
 		}
 		finally {
@@ -265,6 +274,16 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		out int outGlyphIndex
 	);
 
+	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "font_get_sdf_buffer_dimensions")]
+	static extern InteropResult FontGetSdfBufferDimensions(
+		UIntPtr fontHandle,
+		int glyphIndex,
+		float scalingConstant,
+		int padding,
+		out int outWidth,
+		out int outHeight
+	);
+	
 	[DllImport(LocalNativeUtils.NativeLibName, EntryPoint = "font_generate_sdf_buffer")]
 	static extern InteropResult FontGenerateSdfBuffer(
 		UIntPtr fontHandle,
@@ -337,7 +356,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		
 		data.Atlas.Dispose();
 		_penMapPool.Return(data.ActivePens);
-		_coordsMapPool.Return(data.CoordsMap);
+		_runeMapPool.Return(data.RuneMap);
 		
 		if (removeFromMap) _activeFonts.Remove(handle);
 	}
@@ -362,7 +381,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			_activeFonts.Dispose();
 			
 			_penMapPool.Dispose();
-			_coordsMapPool.Dispose();
+			_runeMapPool.Dispose();
 		}
 		finally {
 			_isDisposed = true;

@@ -111,6 +111,7 @@ public:
 	static void font_load(const uint8_t* fontData, int32_t fontDataLength, int32_t fontIndex, FontHandle* outFontHandle);
 	static void font_get_vertical_metrics(FontHandle font, float pixelHeight, float* outScalingConstant, int32_t* outAscent, int32_t* outDescent, int32_t* outLineGap);
 	static void font_get_codepoint_glyph_index(FontHandle font, int32_t codepoint, int32_t* outGlyphIndex);
+	static void font_get_sdf_buffer_dimensions(FontHandle font, int32_t glyphIndex, float scalingConstant, int32_t padding, int32_t* outWidth, int32_t* outHeight);
 	static void font_generate_sdf_buffer(FontHandle font, int32_t glyphIndex, float scalingConstant, int32_t padding, uint8_t onedgeValue, float pixelDistScale, int32_t* outWidth, int32_t* outHeight, int32_t* outXOff, int32_t* outYOff, uint8_t** outPotentialBufferPtr);
 	static void font_free_sdf_buffer(uint8_t* bufferPtr);
 	static void font_dispose(FontHandle font);

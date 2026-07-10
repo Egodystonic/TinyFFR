@@ -1110,6 +1110,29 @@ StartExportedFunc(font_get_codepoint_glyph_index, FontHandle font, int32_t codep
 	EndExportedFunc
 }
 
+void native_impl_asset_loader::font_get_sdf_buffer_dimensions(FontHandle font, int32_t glyphIndex, float scalingConstant, int32_t padding, int32_t* outWidth, int32_t* outHeight) {
+	ThrowIfNull(font, "Font handle was null.");
+	ThrowIfNull(outWidth, "Out width pointer was null.");
+	ThrowIfNull(outHeight, "Out height pointer was null.");
+	
+	int xLower, xHigher, yLower, yHigher;
+	stbtt_GetGlyphBitmapBox(font, glyphIndex, scalingConstant, scalingConstant, &xLower, &yLower, &xHigher, &yHigher);
+	auto nonPaddedWidth = static_cast<int32_t>(xHigher - xLower);
+	auto nonPaddedHeight = static_cast<int32_t>(yHigher - yLower);
+	if (nonPaddedWidth == 0 || nonPaddedHeight == 0) {
+		*outWidth = 0;
+		*outHeight = 0;
+	}
+	else {
+		*outWidth = nonPaddedWidth + (2 * padding);
+		*outHeight = nonPaddedHeight + (2 * padding);
+	}
+}
+StartExportedFunc(font_get_sdf_buffer_dimensions, FontHandle font, int32_t glyphIndex, float scalingConstant, int32_t padding, int32_t* outWidth, int32_t* outHeight) {
+	native_impl_asset_loader::font_get_sdf_buffer_dimensions(font, glyphIndex, scalingConstant, padding, outWidth, outHeight);
+	EndExportedFunc
+}
+
 void native_impl_asset_loader::font_generate_sdf_buffer(FontHandle font, int32_t glyphIndex, float scalingConstant, int32_t padding, uint8_t onedgeValue, float pixelDistScale, int32_t* outWidth, int32_t* outHeight, int32_t* outXOff, int32_t* outYOff, uint8_t** outPotentialBufferPtr) {
 	ThrowIfNull(font, "Font handle was null.");
 	ThrowIfNull(outWidth, "Out width pointer was null.");
