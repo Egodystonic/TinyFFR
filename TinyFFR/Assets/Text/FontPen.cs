@@ -18,5 +18,5 @@ public readonly record struct FontPen : IDisposable {
 
 	internal Material GetPenMaterial() => Font.Implementation.GetPenMaterial(Font.Handle, PenHandle);
 
-	public void Dispose() => Font.Implementation.Dispose(Font.Handle, PenHandle);
+	public void Dispose() => Font.Implementation.DisposePen(Font.Handle, PenHandle);
 }

@@ -149,6 +149,7 @@ public interface IObjectBuilder {
 	#endregion
 	
 	#region Text
-	TextInstance CreateTextInstance(Font font, FontPen pen, ReadOnlySpan<char> initialText = default) => new(font, CreateModelInstance(font.CreateMeshForText(initialText), pen.GetPenMaterial()));
+	// TODO this will probably take a FontPen and FontString now
+	TextInstance CreateTextInstance(Font font, FontPen pen, ReadOnlySpan<char> initialText = default) => new(font, CreateModelInstance(font.GetMeshForText(initialText), pen.GetPenMaterial()));
 	#endregion
 }

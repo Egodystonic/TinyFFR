@@ -1110,6 +1110,19 @@ StartExportedFunc(font_get_codepoint_glyph_index, FontHandle font, int32_t codep
 	EndExportedFunc
 }
 
+void native_impl_asset_loader::font_get_glyph_advance(FontHandle font, int32_t glyphIndex, int32_t* outAdvanceWidth) {
+	ThrowIfNull(font, "Font handle was null.");
+	ThrowIfNull(outAdvanceWidth, "Out advance width pointer was null.");
+
+	int advanceWidth;
+	stbtt_GetGlyphHMetrics(font, glyphIndex, &advanceWidth, nullptr);
+	*outAdvanceWidth = static_cast<int32_t>(advanceWidth);
+}
+StartExportedFunc(font_get_glyph_advance, FontHandle font, int32_t glyphIndex, int32_t* outAdvanceWidth) {
+	native_impl_asset_loader::font_get_glyph_advance(font, glyphIndex, outAdvanceWidth);
+	EndExportedFunc
+}
+
 void native_impl_asset_loader::font_get_sdf_buffer_dimensions(FontHandle font, int32_t glyphIndex, float scalingConstant, int32_t padding, int32_t* outWidth, int32_t* outHeight) {
 	ThrowIfNull(font, "Font handle was null.");
 	ThrowIfNull(outWidth, "Out width pointer was null.");

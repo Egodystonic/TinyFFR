@@ -43,13 +43,9 @@ public readonly struct Font : IDisposableResource<Font, IFontImplProvider> {
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public XYPair<int> MeasureString(ReadOnlySpan<char> str) => Implementation.MeasureString(_handle, str);
+	public XYPair<float> MeasureString(ReadOnlySpan<char> str) => Implementation.MeasureString(_handle, str);
 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal Mesh CreateTextInstance() => Implementation.CreateTextInstance(_handle);
 	
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal void DisposeTextInstance(TextInstance instance) => Implementation.DisposeTextInstance(_handle, instance);
 	
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

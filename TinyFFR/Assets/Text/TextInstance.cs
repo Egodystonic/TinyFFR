@@ -9,6 +9,7 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Text;
 
 public readonly struct TextInstance : IDisposable, IStringSpanNameEnabled, IEquatable<TextInstance> {
+	// TODO this whole type will change 
 	public Font Font { get; }
 	public ModelInstance UnderlyingModelInstance { get; }
 
