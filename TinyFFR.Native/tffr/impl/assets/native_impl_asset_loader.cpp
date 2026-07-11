@@ -1123,6 +1123,28 @@ StartExportedFunc(font_get_glyph_advance, FontHandle font, int32_t glyphIndex, i
 	EndExportedFunc
 }
 
+void native_impl_asset_loader::font_get_glyph_pair_kern_advance(FontHandle font, int32_t glyphIndex1, int32_t glyphIndex2, int32_t* outKernAdvance) {
+	ThrowIfNull(font, "Font handle was null.");
+	ThrowIfNull(outKernAdvance, "Out kern advance pointer was null.");
+
+	*outKernAdvance = static_cast<int32_t>(stbtt_GetGlyphKernAdvance(font, glyphIndex1, glyphIndex2));
+}
+StartExportedFunc(font_get_glyph_pair_kern_advance, FontHandle font, int32_t glyphIndex1, int32_t glyphIndex2, int32_t* outKernAdvance) {
+	native_impl_asset_loader::font_get_glyph_pair_kern_advance(font, glyphIndex1, glyphIndex2, outKernAdvance);
+	EndExportedFunc
+}
+
+void native_impl_asset_loader::font_get_kerning_data_present(FontHandle font, interop_bool* outResult) {
+	ThrowIfNull(font, "Font handle was null.");
+	ThrowIfNull(outResult, "Out result pointer was null.");
+
+	*outResult = (font->kern != 0 || font->gpos != 0) ? interop_bool_true : interop_bool_false;
+}
+StartExportedFunc(font_get_kerning_data_present, FontHandle font, interop_bool* outResult) {
+	native_impl_asset_loader::font_get_kerning_data_present(font, outResult);
+	EndExportedFunc
+}
+
 void native_impl_asset_loader::font_get_sdf_buffer_dimensions(FontHandle font, int32_t glyphIndex, float scalingConstant, int32_t padding, int32_t* outWidth, int32_t* outHeight) {
 	ThrowIfNull(font, "Font handle was null.");
 	ThrowIfNull(outWidth, "Out width pointer was null.");

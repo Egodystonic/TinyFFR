@@ -35,7 +35,24 @@ sealed unsafe class ArrayPoolBackedLruCache<TKey, TValue> : IDisposable {
 	}
 
 	public void AddOrSet(TKey key, TValue @value) {
+		AddOrSet(key, value, _liveNodeIndexLookupMap.TryGetValue(key, out var liveIndex) ? liveIndex : null);
+	}
+	
+	public bool AddOrSet(TKey key, TValue @value, out TValue previousValue) {
 		if (_liveNodeIndexLookupMap.TryGetValue(key, out var liveIndex)) {
+			previousValue = _nodes[liveIndex].Value;
+			AddOrSet(key, value, liveIndex);
+			return true;
+		}
+		else {
+			previousValue = default!;
+			AddOrSet(key, value, null);
+			return false;
+		}
+	}
+	
+	void AddOrSet(TKey key, TValue @value, int? preLookedUpIndex) {
+		if (preLookedUpIndex is { } liveIndex) {
 			_nodes[liveIndex].Value = @value;
 			SetNodeMostRecent(liveIndex);
 			return;
@@ -87,7 +104,28 @@ sealed unsafe class ArrayPoolBackedLruCache<TKey, TValue> : IDisposable {
 		if (_leastRecentNodeIndex == NullIndex) _leastRecentNodeIndex = index;
 	}
 
-	public void Dispose() {
+	void IDisposable.Dispose() => Dispose(invokeCacheEvictionCallbackOnAllContainedValues: true);
+	
+	public void Clear(bool invokeCacheEvictionCallbackOnAllContainedValues) {
+		if (invokeCacheEvictionCallbackOnAllContainedValues && _cacheEvictionCallback != null) {
+			for (var i = 0; i < _count; ++i) {
+				_cacheEvictionCallback(_cacheEvictionCallbackArg, _nodes[i].Key, _nodes[i].Value);
+			}
+		}
+		
+		_count = 0;
+		_leastRecentNodeIndex = NullIndex;
+		_mostRecentNodeIndex = NullIndex;
+		_liveNodeIndexLookupMap.Clear();
+	}
+	
+	public void Dispose(bool invokeCacheEvictionCallbackOnAllContainedValues) {
+		if (invokeCacheEvictionCallbackOnAllContainedValues && _cacheEvictionCallback != null) {
+			for (var i = 0; i < _count; ++i) {
+				_cacheEvictionCallback(_cacheEvictionCallbackArg, _nodes[i].Key, _nodes[i].Value);
+			}
+		}
+		
 		ArrayPool<Node>.Shared.Return(_nodes, clearArray: true);
 		_liveNodeIndexLookupMap.Dispose();
 	}
