@@ -9,17 +9,25 @@ using Egodystonic.TinyFFR.World;
 namespace Egodystonic.TinyFFR.Assets.Text;
 
 public readonly struct TextInstance : IDisposable, IStringSpanNameEnabled, IEquatable<TextInstance> {
-	// TODO this whole type will change 
-	public Font Font { get; }
 	public ModelInstance UnderlyingModelInstance { get; }
-
-	public TextInstance(Font font, ModelInstance underlyingModelInstance) {
-		Font = font;
-		UnderlyingModelInstance = underlyingModelInstance;
+	public FontPen Pen {
+		get => UnderlyingModelInstance.Implementation.GetTextInstancePen(UnderlyingModelInstance.GetHandleWithoutDisposeCheck());
+		set {
+			UnderlyingModelInstance.SetMaterial(Pen.GetPenMaterial());
+			UnderlyingModelInstance.Implementation.UpdateTextInstancePen(UnderlyingModelInstance.GetHandleWithoutDisposeCheck(), value);
+		}
 	}
-	
-	public void SetText(ReadOnlySpan<char> text, FontPen pen) {
-		UnderlyingModelInstance.SetMaterial(pen.GetPenMaterial());
+	public FontString String {
+		get => UnderlyingModelInstance.Implementation.GetTextInstanceString(UnderlyingModelInstance.GetHandleWithoutDisposeCheck());
+		set {
+			UnderlyingModelInstance.SetMesh(String.GetStringMesh());
+			UnderlyingModelInstance.Implementation.UpdateTextInstanceString(UnderlyingModelInstance.GetHandleWithoutDisposeCheck(), value);
+		}
+	}
+
+	public TextInstance(ModelInstance underlyingModelInstance, FontPen pen, FontString @string) {
+		UnderlyingModelInstance = underlyingModelInstance;
+		UnderlyingModelInstance.Implementation.SetTextInstanceInitialPenAndString(UnderlyingModelInstance.GetHandleWithoutDisposeCheck(), pen, @string);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -29,20 +37,34 @@ public readonly struct TextInstance : IDisposable, IStringSpanNameEnabled, IEqua
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void CopyName(Span<char> destinationBuffer) => UnderlyingModelInstance.CopyName(destinationBuffer);
 	
-	public void SetTransform(Location position, XYPair<float> size, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
-		UnderlyingModelInstance.SetTransform(); // TODO maybe this needs to happen as part of SetText
+	public void SetTransformUsingFixedWidth(Location position, float width, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
+		var @string = String;
+		var stringSize = @string.Size;
+		var transform = String.Font.GetStringTransformUsingFixedWidth(stringSize, position, width, facingDirection, uprightDirection, positionAnchor);
+		UnderlyingModelInstance.SetTransform(transform);
+	}
+	public void SetTransformUsingFixedHeight(Location position, float height, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
+		var @string = String;
+		var stringSize = @string.Size;
+		var transform = String.Font.GetStringTransformUsingFixedHeight(stringSize, position, height, facingDirection, uprightDirection, positionAnchor);
+		UnderlyingModelInstance.SetTransform(transform);
+	}
+	public void SetTransformUsingFixedWidthAndHeight(Location position, XYPair<float> widthAndHeight, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
+		var @string = String;
+		var stringSize = @string.Size;
+		var transform = String.Font.GetStringTransformUsingFixedWidthAndHeight(stringSize, position, widthAndHeight, facingDirection, uprightDirection, positionAnchor);
+		UnderlyingModelInstance.SetTransform(transform);
+	}
+	public void SetTransformUsingFontSize(Location position, float fontSizeMultiplier, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
+		var @string = String;
+		var stringSize = @string.Size;
+		var transform = String.Font.GetStringTransformUsingFontSize(stringSize, position, fontSizeMultiplier, facingDirection, uprightDirection, positionAnchor);
+		UnderlyingModelInstance.SetTransform(transform);
 	}
 
-	public void Dispose() {
-		// TODO dispose text model?
-		// TODO any maybe let's stop exposing the underlying model instance directly here and on the other types and just expose the properties we want to expose safely
-		// TODO including the implicit conversion -- we want to update scene.Add anyway. We can add a static Coerce or something for users that really really need it
-	}
+	public void Dispose() => UnderlyingModelInstance.Dispose();
 
 	public override string ToString() => $"Text {UnderlyingModelInstance}";
-	
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static implicit operator ModelInstance(TextInstance operand) => operand.UnderlyingModelInstance;
 
 	#region Equality
 	public bool Equals(TextInstance other) => UnderlyingModelInstance.Equals(other.UnderlyingModelInstance);

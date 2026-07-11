@@ -20,7 +20,7 @@ namespace Egodystonic.TinyFFR.Assets.Text;
 sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font>, IDisposable {
 	readonly record struct RenderedTextData(ManagedStringPool.RentedStringHandle Text, PooledHeapMemory<MeshVertex> Vertices, PooledHeapMemory<VertexTriangle> Triangles, XYPair<float> Size, float LowestVerticalPoint);
 	readonly record struct AtlasRuneData(XYPair<float> AtlasUVOffset, XYPair<float> AtlasUVSize, XYPair<float> NibOffset, float AdvanceWidth);
-	readonly record struct FontData(Texture Atlas, ArrayPoolBackedMap<Rune, AtlasRuneData> RuneMap, ArrayPoolBackedMap<ulong, float> KerningMap, ArrayPoolBackedMap<nuint, PenData> ActivePens, ArrayPoolBackedMap<nuint, StringData> ActiveStrings, ArrayPoolBackedLruCache<int, RenderedTextData> RenderedTextCache);
+	readonly record struct FontData(Texture Atlas, float Ascent, float Descent, ArrayPoolBackedMap<Rune, AtlasRuneData> RuneMap, ArrayPoolBackedMap<ulong, float> KerningMap, ArrayPoolBackedMap<nuint, PenData> ActivePens, ArrayPoolBackedMap<nuint, StringData> ActiveStrings, ArrayPoolBackedLruCache<int, RenderedTextData> RenderedTextCache);
 	readonly record struct PenData(ResourceHandle<Font> OwningFont, Material Material);
 	readonly record struct StringData(ResourceHandle<Font> OwningFont, Mesh Mesh, XYPair<float> Size, float LowestVerticalPoint);
 
@@ -72,7 +72,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 
 	}
 	int GetAtlasCellHeight(int renderHeight) => renderHeight + SdfRenderPadding * 2 + AdditionalAtlasGlyphCellPadding;
-	(int RenderHeight, float ScalingConstant, int AtlasDimension) DetermineAppropriateFontRenderMetrics(UIntPtr fontHandle, in FontCreationConfig config) {
+	(int RenderHeight, float ScalingConstant, int AtlasDimension, float Ascent, float Descent) DetermineAppropriateFontRenderMetrics(UIntPtr fontHandle, in FontCreationConfig config) {
 		// Assumes _fontLoadRuneToGlyphMap has been populated
 		
 		for (var i = 0; i < _atlasSizeTargets.Length; ++i) {
@@ -86,8 +86,8 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 					fontHandle,
 					heightTargets[j],
 					out var scalingConstant,
-					out _,
-					out _,
+					out var ascent,
+					out var descent,
 					out _
 				).ThrowIfFailure();
 				
@@ -120,7 +120,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 					texelsRemainingInCurrentRow -= width + AdditionalAtlasGlyphCellPadding;
 				}
 				
-				return (heightTargets[j], scalingConstant, _atlasSizeTargets[i]);
+				return (heightTargets[j], scalingConstant, _atlasSizeTargets[i], ascent, descent);
 				atlasTooSmall: continue;
 			}
 		}
@@ -155,7 +155,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 				_fontLoadRuneToGlyphMap[runes[r]] = glyphIndex;
 			}
 			
-			var (renderHeight, scalingConstant, atlasDimension) = DetermineAppropriateFontRenderMetrics(fontHandle, in config);
+			var (renderHeight, scalingConstant, atlasDimension, ascent, descent) = DetermineAppropriateFontRenderMetrics(fontHandle, in config);
 			var atlasDimensionReciprocal = 1f / atlasDimension;
 			var cellHeight = GetAtlasCellHeight(renderHeight);
 			var runeMap = _runeMapPool.Rent();
@@ -256,7 +256,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 				_prevHandleId++;
 				var handle = new ResourceHandle<Font>(_prevHandleId);
 				_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultFontName);
-				_activeFonts.Add(handle, new FontData(atlas, runeMap, kerningMap, _penMapPool.Rent(), _stringMapPool.Rent(), _renderedTextCachePool.Rent()));
+				_activeFonts.Add(handle, new FontData(atlas, ascent, descent, runeMap, kerningMap, _penMapPool.Rent(), _stringMapPool.Rent(), _renderedTextCachePool.Rent()));
 				return HandleToInstance(handle);
 			}
 			catch {
@@ -318,13 +318,6 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		++_prevHandleId;
 		fontData.ActiveStrings[_prevHandleId] = new StringData(handle, mesh, textData.Size, textData.LowestVerticalPoint);
 		return new FontString(HandleToInstance(handle), _prevHandleId);
-	}
-
-	public Mesh GetStringMesh(ResourceHandle<Font> handle, nuint stringHandle) {
-		ThrowIfThisOrHandleIsDisposed(handle);
-		var fontData = _activeFonts[handle];
-		ObjectDisposedException.ThrowIf(!fontData.ActiveStrings.TryGetValue(stringHandle, out var stringData), typeof(FontString));
-		return stringData.Mesh;
 	}
 
 	RenderedTextData RenderAndCacheText(ResourceHandle<Font> fontHandle, ReadOnlySpan<char> text, int textHash) {
@@ -400,6 +393,71 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		return result;
 	}
 	
+	public Mesh GetStringMesh(ResourceHandle<Font> handle, nuint stringHandle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var fontData = _activeFonts[handle];
+		ObjectDisposedException.ThrowIf(!fontData.ActiveStrings.TryGetValue(stringHandle, out var stringData), typeof(FontString));
+		return stringData.Mesh;
+	}
+
+	public XYPair<float> GetStringSize(ResourceHandle<Font> handle, nuint stringHandle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var fontData = _activeFonts[handle];
+		ObjectDisposedException.ThrowIf(!fontData.ActiveStrings.TryGetValue(stringHandle, out var stringData), typeof(FontString));
+		return stringData.Size;
+	}
+
+	/* Maintainer's note:
+	 * To stop text instances 'jumping around' vertically as the string data changes, the vertical offsets are essentially hard-coded according to the font:
+	 *	Vertical top: Ascent
+	 *	Vertical bottom: Descent
+	 *	Vertical centre: Baseline
+	 */
+	public Transform GetStringTransformUsingFixedWidth(ResourceHandle<Font> handle, XYPair<float> stringSize, Location position, float width, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var fontData = _activeFonts[handle];
+		var scaling = XYPair<float>.One * (width / stringSize.X);
+		return GetStringTransform(in fontData, scaling, stringSize, position, facingDirection, uprightDirection, positionAnchor);
+	}
+	public Transform GetStringTransformUsingFixedHeight(ResourceHandle<Font> handle, XYPair<float> stringSize, Location position, float height, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var fontData = _activeFonts[handle];
+		var scaling = XYPair<float>.One * (height / stringSize.Y); // TODO I think we should use Ascent + Descent for a fixed string size here but not sure
+		return GetStringTransform(in fontData, scaling, stringSize, position, facingDirection, uprightDirection, positionAnchor);
+	}
+	public Transform GetStringTransformUsingFixedWidthAndHeight(ResourceHandle<Font> handle, XYPair<float> stringSize, Location position, XYPair<float> widthAndHeight, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var fontData = _activeFonts[handle];
+		var scaling = widthAndHeight / stringSize; // TODO as above, maybe string size should always have Y set to ascent + descent
+		return GetStringTransform(in fontData, scaling, stringSize, position, facingDirection, uprightDirection, positionAnchor);
+	}
+	public Transform GetStringTransformUsingFontSize(ResourceHandle<Font> handle, XYPair<float> stringSize, Location position, float fontSizeMultiplier, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		var fontData = _activeFonts[handle];
+		var scaling = XYPair<float>.One * fontSizeMultiplier; // TODO I think this is dependent on the atlas dimension and therefore isn't stable across application runs, maybe we need to handle that better
+		return GetStringTransform(in fontData, scaling, stringSize, position, facingDirection, uprightDirection, positionAnchor);
+	}
+	Transform GetStringTransform(in FontData fontData, XYPair<float> scaling, XYPair<float> stringSize, Location position, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor) {
+		var rotation = Rotation.FromStartAndEndOrientation(Direction.Backward, Direction.Up, facingDirection, uprightDirection, enforceOrthogonality: false);
+		var horizontalTranslation = (Direction.Left * rotation) * positionAnchor.GetHorizontalComponent() switch {
+			HorizontalOrientation2D.Right => stringSize.X * scaling.X,
+			HorizontalOrientation2D.Left => 0f,
+			_ => stringSize.X * scaling.X * 0.5f
+		};
+		var verticalTranslation = (Direction.Up * rotation) * positionAnchor.GetVerticalComponent() switch {
+			VerticalOrientation2D.Up => fontData.Ascent * scaling.Y,
+			VerticalOrientation2D.Down => fontData.Descent * scaling.Y,
+			_ => 0f
+		};
+		
+		return new Transform(
+			translation: position.AsVect() + horizontalTranslation + verticalTranslation,
+			rotation: rotation,
+			scaling: new Vect(scaling.X, scaling.Y, 1f)
+		);
+	}
+	
+
 	public string GetNameAsNewStringObject(ResourceHandle<Font> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return new String(_globals.GetResourceName(handle.Ident, DefaultFontName));

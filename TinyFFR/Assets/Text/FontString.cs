@@ -11,13 +11,15 @@ namespace Egodystonic.TinyFFR.Assets.Text;
 public readonly record struct FontString : IDisposable {
 	public Font Font { get; }
 	internal nuint StringHandle { get; }
+	
+	public XYPair<float> Size => Font.Implementation.GetStringSize(Font.GetHandleWithoutDisposeCheck(), StringHandle);
 
-	public FontString(Font font, UIntPtr stringHandle) {
+	public FontString(Font font, nuint stringHandle) {
 		Font = font;
 		StringHandle = stringHandle;
 	}
 
-	internal Mesh GetStringMesh() => Font.Implementation.GetStringMesh(Font.Handle, StringHandle);
+	internal Mesh GetStringMesh() => Font.Implementation.GetStringMesh(Font.GetHandleWithoutDisposeCheck(), StringHandle);
 
-	public void Dispose() => Font.Implementation.DisposeString(Font.Handle, StringHandle);
+	public void Dispose() => Font.Implementation.DisposeString(Font.GetHandleWithoutDisposeCheck(), StringHandle);
 }

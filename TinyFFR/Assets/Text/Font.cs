@@ -37,15 +37,28 @@ public readonly struct Font : IDisposableResource<Font, IFontImplProvider> {
 	public ResourceHandle<Font> GetHandleWithoutDisposeCheck() => _handle;
 	
 	public FontPen CreatePen(ColorVect foregroundColor, ColorVect backgroundColor) => CreatePen(foregroundColor, backgroundColor, ColorVect.BlackTransparent, 0f);
-	public FontPen CreatePen(ColorVect foregroundColor, ColorVect backgroundColor, ColorVect outlineColor, float outlineThicknessMultiplier) => CreatePen(foregroundColor, backgroundColor, outlineColor, outlineThicknessMultiplier, ColorVect.BlackTransparent, 0f);
-	public FontPen CreatePen(ColorVect foregroundColor, ColorVect backgroundColor, ColorVect outlineColor, float outlineThicknessMultiplier, ColorVect glowColor, float glowSizeMultiplier) {
-		return Implementation.CreatePen(_handle, foregroundColor, backgroundColor, outlineColor, outlineThicknessMultiplier, glowColor, glowSizeMultiplier);
+	public FontPen CreatePen(ColorVect foregroundColor, ColorVect backgroundColor, ColorVect outlineColor, float outlineThicknessMultiplier) {
+		return Implementation.CreatePen(_handle, foregroundColor, backgroundColor, outlineColor, outlineThicknessMultiplier);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public XYPair<float> MeasureString(ReadOnlySpan<char> str) => Implementation.MeasureString(_handle, str);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public FontString CreateString(ReadOnlySpan<char> str) => Implementation.CreateString(_handle, str);
 	
+	public Transform GetStringTransformUsingFixedWidth(XYPair<float> stringSize, Location position, float width, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
+		return Implementation.GetStringTransformUsingFixedWidth(_handle, stringSize, position, width, facingDirection, uprightDirection ?? Direction.Up.OrthogonalizedAgainst(facingDirection) ?? facingDirection.AnyOrthogonal(), positionAnchor);
+	}
+	public Transform GetStringTransformUsingFixedHeight(XYPair<float> stringSize, Location position, float height, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
+		return Implementation.GetStringTransformUsingFixedHeight(_handle, stringSize, position, height, facingDirection, uprightDirection ?? Direction.Up.OrthogonalizedAgainst(facingDirection) ?? facingDirection.AnyOrthogonal(), positionAnchor);
+	}
+	public Transform GetStringTransformUsingFixedWidthAndHeight(XYPair<float> stringSize, Location position, XYPair<float> widthAndHeight, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
+		return Implementation.GetStringTransformUsingFixedWidthAndHeight(_handle, stringSize, position, widthAndHeight, facingDirection, uprightDirection ?? Direction.Up.OrthogonalizedAgainst(facingDirection) ?? facingDirection.AnyOrthogonal(), positionAnchor);
+	}
+	public Transform GetStringTransformUsingFontSize(XYPair<float> stringSize, Location position, float fontSizeMultiplier, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
+		return Implementation.GetStringTransformUsingFontSize(_handle, stringSize, position, fontSizeMultiplier, facingDirection, uprightDirection ?? Direction.Up.OrthogonalizedAgainst(facingDirection) ?? facingDirection.AnyOrthogonal(), positionAnchor);
+	}
 	
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

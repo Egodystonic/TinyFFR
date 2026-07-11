@@ -6,6 +6,7 @@ using Egodystonic.TinyFFR.Assets;
 using Egodystonic.TinyFFR.Assets.Materials;
 using Egodystonic.TinyFFR.Assets.Materials.Local;
 using Egodystonic.TinyFFR.Assets.Meshes;
+using Egodystonic.TinyFFR.Assets.Text;
 using Egodystonic.TinyFFR.Factory.Local;
 using Egodystonic.TinyFFR.Interop;
 using Egodystonic.TinyFFR.Rendering.Local;
@@ -19,6 +20,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	readonly record struct LocalVertexMutationData(UIntPtr PrivateVertexBufferHandle, PooledHeapMemory<MeshVertex> CurrentVertices);
 	readonly record struct VertexLeaseData(Range Range, bool RecalculateBoundingBox);
 	readonly record struct PrivateMaterialData(Material Material, bool IsPrimitive, ShadingModeVariant CurrentShadingMode, ColorVect BaseColor);
+	readonly record struct TextInstanceData(FontPen Pen, FontString String);
 	
 	const string DefaultModelInstanceName = "Unnamed Model Instance";
 	const ShadingModeVariant DefaultPrimitiveShadingMode = ShadingModeVariant.Plain3DOpaque;
@@ -28,6 +30,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, Transform> _activeInstanceTransforms = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, PrivateMaterialData> _privateMaterialInstances = new();
 	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, LocalVertexMutationData> _activeInstanceVertexMutationData = new();
+	readonly ArrayPoolBackedMap<ResourceHandle<ModelInstance>, TextInstanceData> _activeInstanceTextInstanceData = new();
 	readonly ResourceHandleBasedSpanLeaseTracker<MeshVertex, VertexLeaseData> _vertexLeaseTracker;
 	readonly LocalMaterialBuilder _materialBuilder;
 	bool _isDisposed = false;
@@ -458,6 +461,27 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		return result;
 	}
 
+	public void SetTextInstanceInitialPenAndString(ResourceHandle<ModelInstance> handle, FontPen pen, FontString @string) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_activeInstanceTextInstanceData[handle] = new(pen, @string);
+	}
+	public void UpdateTextInstancePen(ResourceHandle<ModelInstance> handle, FontPen pen) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_activeInstanceTextInstanceData[handle] = _activeInstanceTextInstanceData[handle] with { Pen = pen };
+	}
+	public void UpdateTextInstanceString(ResourceHandle<ModelInstance> handle, FontString @string) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		_activeInstanceTextInstanceData[handle] = _activeInstanceTextInstanceData[handle] with { String = @string };
+	}
+	public FontPen GetTextInstancePen(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeInstanceTextInstanceData[handle].Pen;
+	}
+	public FontString GetTextInstanceString(ResourceHandle<ModelInstance> handle) {
+		ThrowIfThisOrHandleIsDisposed(handle);
+		return _activeInstanceTextInstanceData[handle].String;
+	}
+
 	public string GetNameAsNewStringObject(ResourceHandle<ModelInstance> handle) {
 		ThrowIfThisOrHandleIsDisposed(handle);
 		return new String(_globals.GetResourceName(handle.Ident, DefaultModelInstanceName));
@@ -590,6 +614,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		DisposeModelInstance(handle).ThrowIfFailure();
 		DisposePrivateMaterialIfPresent(handle);
 		DisposeMutationDataIfPresent(handle);
+		DisposeTextInstanceDataIfPresent(handle);
 		if (removeFromMap) _activeInstanceTransforms.Remove(handle);
 	}
 	
@@ -603,6 +628,8 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 		LocalFrameSynchronizationManager.QueueResourceDisposal(mutationData.PrivateVertexBufferHandle, &DisposeVertexBuffer);
 		mutationData.CurrentVertices.Dispose();
 	}
+	
+	void DisposeTextInstanceDataIfPresent(ResourceHandle<ModelInstance> handle) => _activeInstanceTextInstanceData.Remove(handle);
 
 	public void Dispose() {
 		try {
@@ -612,6 +639,7 @@ sealed unsafe class LocalObjectBuilder : IObjectBuilder, IModelInstanceImplProvi
 			_privateMaterialInstances.Dispose();
 			_vertexLeaseTracker.Dispose();
 			_activeInstanceVertexMutationData.Dispose();
+			_activeInstanceTextInstanceData.Dispose();
 		}
 		finally {
 			_isDisposed = true;
