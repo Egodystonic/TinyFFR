@@ -33,15 +33,16 @@ class LocalTextRenderingTest {
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
-		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Text Rendering Test (Space / 1 / 2 / 3 / A)");
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Text Rendering Test (Space / 1 / 2 / 3 / 4 / A)");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var font = factory.AssetLoader.LoadFont(CommonTestAssets.FindAsset("DejaVuSans.ttf"));
 		var pen1 = font.CreatePen(ColorVect.WhiteOpaque, ColorVect.BlackOpaque, 1f);
 		var pen2 = font.CreatePen(new ColorVect(1f, 1f, 0f, 0.3f).WithPremultipliedAlpha(), new ColorVect(0f, 1f, 1f, 0.75f).WithPremultipliedAlpha(), 0.5f);
-		var pen3 = font.CreatePen(ColorVect.BlackOpaque, new ColorVect(1f, 1f, 1f, 0.5f).WithPremultipliedAlpha());
+		var pen3 = font.CreatePen(ColorVect.BlackOpaque, new ColorVect(1f, 1f, 1f, 0.04f).WithPremultipliedAlpha());
+		var pen4 = font.CreatePen(ColorVect.BlackTransparent, ColorVect.RedOpaque, 1f, ColorVect.GreenOpaque);
 		var strings = new[] {
 			// ReSharper disable StringLiteralTypo
-			font.CreateString("AaBbÉé Ññ Œœ Δλ ΣΩ \"…\"—•† ‰ ™€ x⁴H₂O → ∑≠√∞ ┌┐■●◆ ▓ �"), // Smoke test
+			font.CreateString("AaBbÉé Ññ Œœ Δλ ΣΩ \"…\"—•† ‰ ™€ x⁴H₂O → ∑≠√∞ ┌┐■●◆ ▓ � ⁂"), // Smoke test (last char deliberately chosen to not be included -- tests fallback to �)
 			font.CreateString("AVAST To Wave, Ye Types LTa VA WA T. rn cl — jpqgy bdfklh"), // Kerning test
 			font.CreateString("Café résumé naïve · Zürich Køben Łódź Škoda piñata façade ¡Añejo! ¿Qué? Œuvre Ægir þorn ð ß · āčēģīķļņōšūž ąężźćń őű ğıİ"), // Latin test
 			font.CreateString("ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ αβγδεζηθικλμνξοπρςστυφχψω"), // Greek test
@@ -84,10 +85,10 @@ class LocalTextRenderingTest {
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) textInstance.SetPen(pen1);
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) textInstance.SetPen(pen2);
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow3)) textInstance.SetPen(pen3);
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow4)) textInstance.SetPen(pen4);
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.A)) {
 				++curAnchorIdx;
 				if (curAnchorIdx >= anchors.Length) curAnchorIdx = 0;
-				window.SetTitle("Local Text Rendering Test (Space / 1 / 2 / 3 / A) | Anchor: " + anchors[curAnchorIdx]);
 				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, TextHeight, uprightDirection: camera.UpDirection, positionAnchor: anchors[curAnchorIdx]);
 			}
 			

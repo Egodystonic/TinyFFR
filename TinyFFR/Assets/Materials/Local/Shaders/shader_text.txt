@@ -14,6 +14,10 @@ material {
 			name : outline_color
 		},
 		{
+			type : float4,
+			name : background_color
+		},
+		{
 			type : float,
 			name : outline_thickness
 		}
@@ -37,13 +41,15 @@ fragment {
 	void material(inout MaterialInputs material) {
 		prepareMaterial(material);
 
-		float distanceValue = texture(materialParams_sdf_map, getUV0()).r;
+		vec3 atlasTexel = texture(materialParams_sdf_map, getUV0()).rgb;
+		float distanceValue = atlasTexel.r;
+		float backgroundFactor = atlasTexel.b;
 		float aaHalfWidth = max(fwidth(distanceValue) * 0.5, 1E-5);
 		float outlineEdgeValue = TextEdgeValue - materialParams.outline_thickness * MaxOutlineOffset;
 
 		float textCoverage = smoothstep(TextEdgeValue - aaHalfWidth, TextEdgeValue + aaHalfWidth, distanceValue);
 		float outlineCoverage = smoothstep(max(outlineEdgeValue - aaHalfWidth, 2.0 / 255.0), outlineEdgeValue + aaHalfWidth, distanceValue);
 
-		material.baseColor = mix(materialParams.outline_color, materialParams.text_color, textCoverage) * outlineCoverage;
+		material.baseColor = mix(materialParams.outline_color, materialParams.text_color, textCoverage) * outlineCoverage + materialParams.background_color * backgroundFactor;
 	}
 }

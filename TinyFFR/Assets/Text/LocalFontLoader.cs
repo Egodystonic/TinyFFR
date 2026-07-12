@@ -27,6 +27,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	const string DefaultFontName = "Unnamed Font";
 	const int SdfRenderPadding = 5; // Changes to this require changing the text shader | Defines the max outline width (but because we do single-pass rendering for now too high values overlap glyphs)
 	const int AdditionalAtlasGlyphCellPadding = 2; // Any lower risks interference from bilinear filtering
+	const int ReservedBackgroundBlockDimension = 3;
 	const byte SdfOnEdgeValue = 180; // Changes to this require changing the text shader | Defines the crossover point (on the 0 to 255 scale) where anything lower becomes 'outline' -- higher is better to give more resolution
 	const float SdfPixelDistScale = SdfOnEdgeValue / (float) SdfRenderPadding;
 	const float DefaultFontHeight = 0.1f;
@@ -67,7 +68,12 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	}
 	
 	public Font LoadFont(BuiltInFont font, in FontCreationConfig config) {
-		throw new NotImplementedException();
+		ThrowIfThisIsDisposed();
+		config.ThrowIfInvalid();
+		var fontDataRef = EmbeddedResourceResolver.GetResource("Assets.Text.builtin_font_dejavusans.zip");
+		return config.Name.IsEmpty
+			? LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, config with { Name = "Built-In-Font Default" })
+			: LoadFont((byte*) fontDataRef.DataPtr, fontDataRef.DataLenBytes, in config);
 	}
 	public Font LoadFont(ReadOnlySpan<char> fontFilePath, in FontCreationConfig config) {
 		ThrowIfThisIsDisposed();
@@ -113,7 +119,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 				var cellHeight = GetAtlasCellHeight(heightTargets[j]);
 				
 				var numRowsRemaining = _atlasSizeTargets[i] / cellHeight;
-				var texelsRemainingInCurrentRow = _atlasSizeTargets[i];
+				var texelsRemainingInCurrentRow = _atlasSizeTargets[i] - (ReservedBackgroundBlockDimension + AdditionalAtlasGlyphCellPadding);
 				
 				for (var r = 0; r < config.SupportedRunes.Length; ++r) {
 					var glyphIndex = _fontLoadRuneToGlyphMap[config.SupportedRunes[r]];
@@ -182,7 +188,12 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			try {
 				using var texelBuffer = _globals.HeapPool.Borrow<TexelRgb24>(atlasDimension * atlasDimension);
 				texelBuffer.Span.Clear();
-				var nib = XYPair<int>.Zero;
+				for (var row = 0; row < ReservedBackgroundBlockDimension; ++row) {
+					for (var column = 0; column < ReservedBackgroundBlockDimension; ++column) {
+						texelBuffer.Span[row * atlasDimension + column] = new TexelRgb24(0, 0, 255);
+					}
+				}
+				var nib = new XYPair<int>(ReservedBackgroundBlockDimension + AdditionalAtlasGlyphCellPadding, 0);
 				
 				for (var r = 0; r < runes.Length; ++r) {
 					if (_fontLoadRuneToGlyphMap[runes[r]] == 0) continue;
@@ -224,7 +235,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 							var bufferStartIndex = row * bufferWidth;
 							for (var column = 0; column < bufferWidth; ++column) {
 								var sdfValue = potentialBufferPtr[bufferStartIndex + column];
-								texelBuffer.Span[spanStartIndex + column] = new TexelRgb24(sdfValue, sdfValue, sdfValue);
+								texelBuffer.Span[spanStartIndex + column] = new TexelRgb24(sdfValue, sdfValue, 0);
 							}
 						}
 						
@@ -275,7 +286,19 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 				_prevHandleId++;
 				var handle = new ResourceHandle<Font>(_prevHandleId);
 				_globals.StoreResourceNameOrDefaultIfEmpty(handle.Ident, config.Name, DefaultFontName);
-				_activeFonts.Add(handle, new FontData(atlas, ascent * scalingConstant * atlasDimensionReciprocal, descent * scalingConstant * atlasDimensionReciprocal, runeMap, kerningMap, _penMapPool.Rent(), _stringMapPool.Rent(), _renderedTextCachePool.Rent()));
+				_activeFonts.Add(
+					handle, 
+					new FontData(
+						atlas, 
+						ascent * scalingConstant * atlasDimensionReciprocal, 
+						descent * scalingConstant * atlasDimensionReciprocal, 
+						runeMap,
+						kerningMap, 
+						_penMapPool.Rent(), 
+						_stringMapPool.Rent(), 
+						_renderedTextCachePool.Rent()
+					)
+				);
 				return HandleToInstance(handle);
 			}
 			catch {
@@ -342,20 +365,22 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 		var runeCount = 0;
 		foreach (var _ in text.EnumerateRunes()) ++runeCount;
 		
-		var vertexBuffer = _globals.HeapPool.Borrow<MeshVertex>(runeCount * 4);
-		var triangleBuffer = _globals.HeapPool.Borrow<VertexTriangle>(runeCount * 2);
+		var vertexBuffer = _globals.HeapPool.Borrow<MeshVertex>(runeCount * 4 + 4);
+		var triangleBuffer = _globals.HeapPool.Borrow<VertexTriangle>(runeCount * 2 + 2);
 		var fontData = _activeFonts[fontHandle];
 		var runeMap = fontData.RuneMap;
 		var kerningMap = fontData.KerningMap;
 		if (!runeMap.TryGetValue(new Rune(UnicodeReplacementChar), out var replacementRuneData)) {
-			replacementRuneData = new AtlasRuneData(XYPair<float>.Zero, XYPair<float>.Zero, XYPair<float>.Zero, 0f);
+			if (!runeMap.TryGetValue(new Rune('?'), out replacementRuneData)) {
+				replacementRuneData = new AtlasRuneData(XYPair<float>.Zero, XYPair<float>.Zero, XYPair<float>.Zero, 0f);
+			}
 		}
 
-		// TODO Render background quads
 		var runeIndex = 0;
 		var nibHorizontalLocation = 0f;
 		var tangentRotation = MeshVertex.CalculateTangentRotation(Direction.Right, Direction.Up, Direction.Backward);
 		var horizontalSize = 0f;
+		var backgroundBounds = (MinX: Single.PositiveInfinity, MaxX: Single.NegativeInfinity, MinY: Single.PositiveInfinity, MaxY: Single.NegativeInfinity);
 		Rune? previousRune = null;
 		foreach (var rune in text.EnumerateRunes()) {
 			if (!runeMap.TryGetValue(rune, out var runeData)) runeData = replacementRuneData;
@@ -368,36 +393,70 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 				nibHorizontalLocation - runeData.NibOffset.X,
 				-(runeData.NibOffset.Y + runeData.AtlasUVSize.Y)
 			);
+			var vertexStartIndex = runeIndex * 4 + 4;
 
-			vertexBuffer.Span[runeIndex * 4 + 0] = new MeshVertex(
+			if (runeData.AtlasUVSize != XYPair<float>.Zero) {
+				backgroundBounds.MinX = Single.Min(backgroundBounds.MinX, quadStartPoint.X - runeData.AtlasUVSize.X);
+				backgroundBounds.MaxX = Single.Max(backgroundBounds.MaxX, quadStartPoint.X);
+				backgroundBounds.MinY = Single.Min(backgroundBounds.MinY, quadStartPoint.Y);
+				backgroundBounds.MaxY = Single.Max(backgroundBounds.MaxY, quadStartPoint.Y + runeData.AtlasUVSize.Y);
+			}
+
+			vertexBuffer.Span[vertexStartIndex + 0] = new MeshVertex(
 				location: new(quadStartPoint.X, quadStartPoint.Y, 0f),
 				textureCoords: runeData.AtlasUVOffset,
 				tangentRotation: tangentRotation
 			);
-			vertexBuffer.Span[runeIndex * 4 + 1] = new MeshVertex(
+			vertexBuffer.Span[vertexStartIndex + 1] = new MeshVertex(
 				location: new(quadStartPoint.X - runeData.AtlasUVSize.X, quadStartPoint.Y, 0f),
 				textureCoords: runeData.AtlasUVOffset with { X = runeData.AtlasUVOffset.X + runeData.AtlasUVSize.X },
 				tangentRotation: tangentRotation
 			);
-			vertexBuffer.Span[runeIndex * 4 + 2] = new MeshVertex(
+			vertexBuffer.Span[vertexStartIndex + 2] = new MeshVertex(
 				location: new(quadStartPoint.X - runeData.AtlasUVSize.X, quadStartPoint.Y + runeData.AtlasUVSize.Y, 0f),
 				textureCoords: runeData.AtlasUVOffset + runeData.AtlasUVSize,
 				tangentRotation: tangentRotation
 			);
-			vertexBuffer.Span[runeIndex * 4 + 3] = new MeshVertex(
+			vertexBuffer.Span[vertexStartIndex + 3] = new MeshVertex(
 				location: new(quadStartPoint.X, quadStartPoint.Y + runeData.AtlasUVSize.Y, 0f),
 				textureCoords: runeData.AtlasUVOffset with { Y = runeData.AtlasUVOffset.Y + runeData.AtlasUVSize.Y },
 				tangentRotation: tangentRotation
 			);
-			
-			triangleBuffer.Span[runeIndex * 2 + 0] = new VertexTriangle(runeIndex * 4 + 0, runeIndex * 4 + 1, runeIndex * 4 + 2);
-			triangleBuffer.Span[runeIndex * 2 + 1] = new VertexTriangle(runeIndex * 4 + 0, runeIndex * 4 + 2, runeIndex * 4 + 3);
-			
+
+			triangleBuffer.Span[runeIndex * 2 + 2] = new VertexTriangle(vertexStartIndex + 0, vertexStartIndex + 1, vertexStartIndex + 2);
+			triangleBuffer.Span[runeIndex * 2 + 3] = new VertexTriangle(vertexStartIndex + 0, vertexStartIndex + 2, vertexStartIndex + 3);
+
 			horizontalSize = -quadStartPoint.X + runeData.AtlasUVSize.X;
 			++runeIndex;
 			nibHorizontalLocation -= runeData.AdvanceWidth;
 			previousRune = rune;
 		}
+
+		// The background quad occupies the first vertex/triangle slots so every glyph quad rasterizes after
+		// (and therefore composites over) it; its constant UV points at the reserved B=255 atlas block
+		if (backgroundBounds.MinX > backgroundBounds.MaxX) backgroundBounds = (0f, 0f, 0f, 0f);
+		vertexBuffer.Span[0] = new MeshVertex(
+			location: new(backgroundBounds.MaxX, backgroundBounds.MinY, 0f),
+			textureCoords: XYPair<float>.Zero,
+			tangentRotation: tangentRotation
+		);
+		vertexBuffer.Span[1] = new MeshVertex(
+			location: new(backgroundBounds.MinX, backgroundBounds.MinY, 0f),
+			textureCoords: XYPair<float>.Zero,
+			tangentRotation: tangentRotation
+		);
+		vertexBuffer.Span[2] = new MeshVertex(
+			location: new(backgroundBounds.MinX, backgroundBounds.MaxY, 0f),
+			textureCoords: XYPair<float>.Zero,
+			tangentRotation: tangentRotation
+		);
+		vertexBuffer.Span[3] = new MeshVertex(
+			location: new(backgroundBounds.MaxX, backgroundBounds.MaxY, 0f),
+			textureCoords: XYPair<float>.Zero,
+			tangentRotation: tangentRotation
+		);
+		triangleBuffer.Span[0] = new VertexTriangle(0, 1, 2);
+		triangleBuffer.Span[1] = new VertexTriangle(0, 2, 3);
 
 		var result = new RenderedTextData(_globals.StringPool.RentAndCopy(text), vertexBuffer, triangleBuffer, new XYPair<float>(horizontalSize, fontData.Ascent - fontData.Descent));
 		if (fontData.RenderedTextCache.AddOrSet(textHash, result, out var previouslyCachedData)) {
@@ -443,7 +502,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			_globals.GetResourceName(handle.Ident, DefaultFontName),
 			NameEndingString
 		);
-		var material = _materialBuilder.AllocateTextMaterialInstance(fontData.Atlas, foregroundColor, outlineColor, outlineThicknessNormalized, nameBuffer.Span);
+		var material = _materialBuilder.AllocateTextMaterialInstance(fontData.Atlas, foregroundColor, backgroundColor, outlineColor, outlineThicknessNormalized, nameBuffer.Span);
 		++_prevHandleId;
 		fontData.ActivePens[_prevHandleId] = new PenData(handle, material);
 		return new FontPen(HandleToInstance(handle), _prevHandleId);

@@ -456,6 +456,7 @@ static class LocalShaderPackageConstants {
 		public ReadOnlySpan<byte> ParamSdfMap => "sdf_map"u8;
 		public ReadOnlySpan<byte> ParamTextColor => "text_color"u8;
 		public ReadOnlySpan<byte> ParamOutlineColor => "outline_color"u8;
+		public ReadOnlySpan<byte> ParamBackgroundColor => "background_color"u8;
 		public ReadOnlySpan<byte> ParamOutlineThickness => "outline_thickness"u8;
 
 		public bool HasEffectUvTransform { get; } = false;
