@@ -25,10 +25,11 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 	readonly record struct StringData(ResourceHandle<Font> OwningFont, Mesh Mesh, XYPair<float> Size);
 
 	const string DefaultFontName = "Unnamed Font";
-	const int SdfRenderPadding = 5;
+	const int SdfRenderPadding = 5; // Changes to this require changing the text shader | Defines the max outline width (but because we do single-pass rendering for now too high values overlap glyphs)
 	const int AdditionalAtlasGlyphCellPadding = 2; // Any lower risks interference from bilinear filtering
-	const byte SdfOnEdgeValue = 180;
+	const byte SdfOnEdgeValue = 180; // Changes to this require changing the text shader | Defines the crossover point (on the 0 to 255 scale) where anything lower becomes 'outline' -- higher is better to give more resolution
 	const float SdfPixelDistScale = SdfOnEdgeValue / (float) SdfRenderPadding;
+	const float DefaultFontHeight = 0.1f;
 	readonly int[] _atlasSizeTargets = [ 1024, 2048, 4096, 8192 ];
 	readonly int[] _sdfRenderHeightTargets = [ 64, 48, 32 ];
 	readonly LocalFactoryGlobalObjectGroup _globals;
@@ -468,7 +469,7 @@ sealed unsafe class LocalFontLoader : IFontImplProvider, IResourceDirectory<Font
 			(null, not null) => new XYPair<float>(textInstanceHeight.Value) / stringSize.Y,
 			(not null, null) => new XYPair<float>(textInstanceWidth.Value) / stringSize.X,
 			(not null, not null) => new XYPair<float>(textInstanceWidth.Value / stringSize.X, textInstanceHeight.Value / stringSize.Y),
-			_ => XYPair<float>.One,
+			_ => new XYPair<float>(DefaultFontHeight) / stringSize.Y,
 		};
 		
 		var rotation = Rotation.FromStartAndEndOrientation(Direction.Backward, Direction.Up, facingDirection, uprightDirection, enforceOrthogonality: false);

@@ -33,12 +33,12 @@ class LocalTextRenderingTest {
 	public void Execute() {
 		using var factory = new LocalTinyFfrFactory();
 		var display = factory.DisplayDiscoverer.Primary!.Value;
-		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Text Rendering Test (Space / 1 / 2 / 3)");
+		using var window = factory.WindowBuilder.CreateWindow(display, title: "Local Text Rendering Test (Space / 1 / 2 / 3 / A)");
 		using var camera = factory.CameraBuilder.CreateCamera(Location.Origin);
 		using var font = factory.AssetLoader.LoadFont(CommonTestAssets.FindAsset("DejaVuSans.ttf"));
-		var pen1 = font.CreatePen(ColorVect.WhiteOpaque, ColorVect.BlackTransparent, ColorVect.BlackOpaque, 1f);
-		var pen2 = font.CreatePen(new ColorVect(1f, 1f, 0f, 0.3f).WithPremultipliedAlpha(), ColorVect.BlackTransparent, new ColorVect(0f, 1f, 1f, 0.75f).WithPremultipliedAlpha(), 0.5f);
-		var pen3 = font.CreatePen(ColorVect.WhiteOpaque, ColorVect.BlackOpaque);
+		var pen1 = font.CreatePen(ColorVect.WhiteOpaque, ColorVect.BlackOpaque, 1f);
+		var pen2 = font.CreatePen(new ColorVect(1f, 1f, 0f, 0.3f).WithPremultipliedAlpha(), new ColorVect(0f, 1f, 1f, 0.75f).WithPremultipliedAlpha(), 0.5f);
+		var pen3 = font.CreatePen(ColorVect.BlackOpaque, new ColorVect(1f, 1f, 1f, 0.5f).WithPremultipliedAlpha());
 		var strings = new[] {
 			// ReSharper disable StringLiteralTypo
 			font.CreateString("AaBbÉé Ññ Œœ Δλ ΣΩ \"…\"—•† ‰ ™€ x⁴H₂O → ∑≠√∞ ┌┐■●◆ ▓ �"), // Smoke test
@@ -50,14 +50,22 @@ class LocalTextRenderingTest {
 			font.CreateString("← ↑ → ↓ ↔ ↕ ↖ ↗ ↘ ↙ ⇐ ⇒ ⇑ ⇓ ⇔ ↩ ↪"), // Arrow test
 			font.CreateString("∀x: x ≤ y ∧ x ≠ ∅ · ∑ ∏ ∫ √ ∞ ∂ ∇ ∈ ∉ ⊂ ⊃ ∪ ∩ ≈ ≡ ≥ ± ∓ ⊕ ⊗ ⊥ ∠ ∴ ∝"), // Maths test
 			font.CreateString("■ □ ▲ △ ▶ ▷ ▼ ▽ ◀ ◁ ● ○ ◆ ◇ ◢ ◣ ▪ ▫ ◉ ◐ ◑ ┌──┬──┐  ╔══╦══╗   ░▒▓█ ▁▂▃▄▅▆▇█"), // Shapes test
+			font.CreateString("■■■"), // Anchor test
 			// ReSharper restore StringLiteralTypo
 		};
 		using var scene = factory.SceneBuilder.CreateScene(BuiltInSceneBackdrop.Clouds);
 		using var renderer = factory.RendererBuilder.CreateRenderer(scene, camera, window);
 		using var camController = camera.CreateController<FreeFlyingCameraController>();
 		using var textInstance = factory.ObjectBuilder.CreateTextInstance(pen1, strings[0], position: new(0f, 0f, 1f), textInstanceHeight: TextHeight);
+		var anchors = new[] {
+			Orientation2D.UpRight, Orientation2D.Up, Orientation2D.UpLeft,
+			Orientation2D.Right, Orientation2D.None, Orientation2D.Left,
+			Orientation2D.DownRight, Orientation2D.Down, Orientation2D.DownLeft,
+		};
+		var curAnchorIdx = Array.IndexOf(anchors, Orientation2D.None);
 		var curStringIdx = 0;
 		scene.Add(textInstance.UnderlyingModelInstance);
+		
 		
 		using var loop = factory.ApplicationLoopBuilder.CreateLoop();
 		while (!loop.Input.UserQuitRequested && !loop.Input.KeyboardAndMouse.KeyIsCurrentlyDown(KeyboardOrMouseKey.Escape)) {
@@ -71,11 +79,17 @@ class LocalTextRenderingTest {
 				++curStringIdx;
 				if (curStringIdx >= strings.Length) curStringIdx = 0;
 				textInstance.String = strings[curStringIdx];
-				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, TextHeight);
+				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, TextHeight, uprightDirection: camera.UpDirection, positionAnchor: anchors[curAnchorIdx]);
 			}
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow1)) textInstance.SetPen(pen1);
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow2)) textInstance.SetPen(pen2);
 			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.NumberRow3)) textInstance.SetPen(pen3);
+			if (loop.Input.KeyboardAndMouse.KeyWasPressedThisIteration(KeyboardOrMouseKey.A)) {
+				++curAnchorIdx;
+				if (curAnchorIdx >= anchors.Length) curAnchorIdx = 0;
+				window.SetTitle("Local Text Rendering Test (Space / 1 / 2 / 3 / A) | Anchor: " + anchors[curAnchorIdx]);
+				textInstance.SetTransform(camera.Position + camera.ViewDirection * 1f, -camera.ViewDirection, TextHeight, uprightDirection: camera.UpDirection, positionAnchor: anchors[curAnchorIdx]);
+			}
 			
 			renderer.Render();
 		}

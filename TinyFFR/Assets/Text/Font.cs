@@ -36,8 +36,14 @@ public readonly struct Font : IDisposableResource<Font, IFontImplProvider> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ResourceHandle<Font> GetHandleWithoutDisposeCheck() => _handle;
 	
-	public FontPen CreatePen(ColorVect foregroundColor, ColorVect backgroundColor) => CreatePen(foregroundColor, backgroundColor, ColorVect.BlackTransparent, 0f);
-	public FontPen CreatePen(ColorVect foregroundColor, ColorVect backgroundColor, ColorVect outlineColor, float outlineThicknessNormalized) {
+	public FontPen CreatePen(ColorVect foregroundColor) => CreatePen(foregroundColor, ColorVect.BlackTransparent, 0f);
+	public FontPen CreatePen(ColorVect foregroundColor, ColorVect outlineColor, float outlineThicknessNormalized) {
+		return CreatePen(foregroundColor, outlineColor, outlineThicknessNormalized, ColorVect.BlackTransparent);
+	}
+	public FontPen CreatePen(ColorVect foregroundColor, ColorVect backgroundColor) {
+		return CreatePen(foregroundColor, ColorVect.BlackTransparent, 0f, backgroundColor);
+	}
+	public FontPen CreatePen(ColorVect foregroundColor, ColorVect outlineColor, float outlineThicknessNormalized, ColorVect backgroundColor) {
 		return Implementation.CreatePen(_handle, foregroundColor, backgroundColor, outlineColor, outlineThicknessNormalized);
 	}
 

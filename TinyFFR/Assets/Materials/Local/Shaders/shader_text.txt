@@ -25,12 +25,14 @@ material {
 }
 
 fragment {
-	// These constants mirror SdfOnEdgeValue / SdfPixelDistScale / SdfRenderPadding in LocalFontLoader.cs.
+	// These constants mirror SdfOnEdgeValue / SdfRenderPadding in LocalFontLoader.cs. Changing these require changing the values there too.
 	// MaxOutlineOffset is deliberately 4/5 of the SDF render padding: the outermost padding texel is reserved
 	// so the outline isoline always sits in live field gradient (for antialiasing) and never reaches the
 	// clamped-to-zero region or the quad border.
-	const float TextEdgeValue = 180.0 / 255.0;
-	const float MaxOutlineOffset = 144.0 / 255.0;
+	const float SdfPadding = 5.0;
+	const float OnEdgeValue = 180.0;
+	const float TextEdgeValue = OnEdgeValue / 255.0;
+	const float MaxOutlineOffset = (OnEdgeValue * ((SdfPadding - 1.0) / SdfPadding)) / 255.0;
 
 	void material(inout MaterialInputs material) {
 		prepareMaterial(material);
@@ -42,8 +44,6 @@ fragment {
 		float textCoverage = smoothstep(TextEdgeValue - aaHalfWidth, TextEdgeValue + aaHalfWidth, distanceValue);
 		float outlineCoverage = smoothstep(max(outlineEdgeValue - aaHalfWidth, 2.0 / 255.0), outlineEdgeValue + aaHalfWidth, distanceValue);
 
-		// Color params are expected premultiplied; the output must also be premultiplied because
-		// Filament's fade blending uses (ONE, ONE_MINUS_SRC_ALPHA) and unlit materials emit baseColor verbatim
 		material.baseColor = mix(materialParams.outline_color, materialParams.text_color, textCoverage) * outlineCoverage;
 	}
 }

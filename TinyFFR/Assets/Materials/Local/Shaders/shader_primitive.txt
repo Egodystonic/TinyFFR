@@ -39,14 +39,12 @@ fragment {
 #variant PlainOpaque
 		material.baseColor.rgb = materialParams.base_color.rgb;
 #variant Plain
-		// base_color is straight alpha; premultiplied output required by Filament's (ONE, ONE_MINUS_SRC_ALPHA) transparent blending
 		material.baseColor = vec4(materialParams.base_color.rgb * materialParams.base_color.a, materialParams.base_color.a);
 #variant Plain3DOpaque
         float dot = saturate(abs(dot(getWorldGeometricNormalVector(), getWorldViewVector())));
 		material.baseColor.rgb = materialParams.base_color.rgb * (0.25 + (0.75 * sq(dot)));
 #variant Plain3D
         float dot = saturate(abs(dot(getWorldGeometricNormalVector(), getWorldViewVector())));
-		// base_color is straight alpha; premultiplied output required by Filament's (ONE, ONE_MINUS_SRC_ALPHA) transparent blending
 		material.baseColor.rgb = materialParams.base_color.rgb * (0.25 + (0.75 * sq(dot))) * materialParams.base_color.a;
 		material.baseColor.a = materialParams.base_color.a;
 #variant Wireframe
