@@ -56,10 +56,7 @@ public readonly struct Font : IDisposableResource<Font, IFontImplProvider> {
 	public Transform GetStringTransformUsingFixedWidthAndHeight(XYPair<float> stringSize, Location position, XYPair<float> widthAndHeight, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
 		return Implementation.GetStringTransformUsingFixedWidthAndHeight(_handle, stringSize, position, widthAndHeight, facingDirection, uprightDirection ?? Direction.Up.OrthogonalizedAgainst(facingDirection) ?? facingDirection.AnyOrthogonal(), positionAnchor);
 	}
-	public Transform GetStringTransformUsingFontSize(XYPair<float> stringSize, Location position, float fontSizeMultiplier, Direction facingDirection, Direction? uprightDirection = null, Orientation2D positionAnchor = Orientation2D.None) {
-		return Implementation.GetStringTransformUsingFontSize(_handle, stringSize, position, fontSizeMultiplier, facingDirection, uprightDirection ?? Direction.Up.OrthogonalizedAgainst(facingDirection) ?? facingDirection.AnyOrthogonal(), positionAnchor);
-	}
-	
+
 	#region Disposal
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public void Dispose() => Implementation.Dispose(_handle);

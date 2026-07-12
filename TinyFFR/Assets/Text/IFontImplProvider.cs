@@ -20,5 +20,4 @@ public interface IFontImplProvider : IDisposableResourceImplProvider<Font> {
 	Transform GetStringTransformUsingFixedWidth(ResourceHandle<Font> handle, XYPair<float> stringSize, Location position, float width, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor);
 	Transform GetStringTransformUsingFixedHeight(ResourceHandle<Font> handle, XYPair<float> stringSize, Location position, float height, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor);
 	Transform GetStringTransformUsingFixedWidthAndHeight(ResourceHandle<Font> handle, XYPair<float> stringSize, Location position, XYPair<float> widthAndHeight, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor);
-	Transform GetStringTransformUsingFontSize(ResourceHandle<Font> handle, XYPair<float> stringSize, Location position, float fontSizeMultiplier, Direction facingDirection, Direction uprightDirection, Orientation2D positionAnchor);
 }
